@@ -37,6 +37,7 @@ function loadExploreScreen(availableEvents: Record<string, unknown>[] = []) {
     jest.resetModules();
 
     jest.doMock("react-native", () => ({
+      ActivityIndicator: "ActivityIndicator",
       AccessibilityInfo: {
         addEventListener: jest.fn(),
         isReduceMotionEnabled: () => Promise.resolve(false),
@@ -98,6 +99,9 @@ function loadExploreScreen(availableEvents: Record<string, unknown>[] = []) {
       default: {
         View: "Reanimated.View",
       },
+    }));
+    jest.doMock("react-native-safe-area-context", () => ({
+      useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
     }));
 
     jest.doMock("expo-constants", () => ({
@@ -201,6 +205,10 @@ function loadExploreScreen(availableEvents: Record<string, unknown>[] = []) {
       }),
     }));
     jest.doMock("../../components/EventBanner", () => "EventBanner");
+    jest.doMock(
+      "../../components/EventBannerBackgroundVideo",
+      () => "EventBannerBackgroundVideo",
+    );
     jest.doMock("../../components/PassesDisplay", () => "PassesDisplay");
     jest.doMock("../../lib/event-chat", () => ({
       getEventChatAvatarUrl: ({ senderId }: { senderId?: string }) =>
@@ -272,5 +280,57 @@ describe("ExploreScreen disabled tutorial gate", () => {
     await TestRenderer.act(async () => {
       renderer!.unmount();
     });
+  });
+
+  it("shows reloading feedback and event skeletons while refreshing the catalogue", async () => {
+    jest.useFakeTimers();
+    try {
+      const events = [
+        {
+          id: "chile2026",
+          title: "BSL Chile 2026",
+          subtitle: "Santiago, Chile",
+          color: "#FF5B5B",
+          eventStartDate: "2026-11-05T09:00:00-05:00",
+        },
+      ];
+      const { React, TestRenderer, ExploreScreen } = loadExploreScreen(events);
+      let renderer: import("react-test-renderer").ReactTestRenderer;
+
+      await TestRenderer.act(async () => {
+        renderer = TestRenderer.create(React.createElement(ExploreScreen));
+      });
+
+      const reloadButton = renderer!.root
+        .findAllByType("TouchableOpacity" as any)
+        .find((node) => node.props.accessibilityLabel === "Reload events");
+      expect(reloadButton).toBeTruthy();
+
+      await TestRenderer.act(async () => {
+        reloadButton!.props.onPress();
+        await Promise.resolve();
+      });
+
+      expect(
+        renderer!.root.findByProps({ accessibilityLabel: "Reloading events…" }),
+      ).toBeTruthy();
+      expect(
+        renderer!.root.findByProps({ accessibilityLabel: "Loading events" }),
+      ).toBeTruthy();
+
+      await TestRenderer.act(async () => {
+        jest.advanceTimersByTime(350);
+        await Promise.resolve();
+      });
+
+      expect(
+        renderer!.root.findAllByProps({ accessibilityLabel: "Loading events" }),
+      ).toHaveLength(0);
+      await TestRenderer.act(async () => {
+        renderer!.unmount();
+      });
+    } finally {
+      jest.useRealTimers();
+    }
   });
 });

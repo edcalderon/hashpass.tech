@@ -176,6 +176,22 @@ describe('PassesWallet', () => {
     expect(renderer.root.findAllByProps({ name: 'chevron-right' })).toHaveLength(0);
   });
 
+  it('uses Explorer filters and hides its duplicate search and summary controls', async () => {
+    (passSystemService.getAllUserPasses as jest.Mock).mockResolvedValue([
+      makePass({ pass_id: 'chile', event_id: 'chile2026' }),
+      makePass({ pass_id: 'colombia', event_id: 'colombia2026', pass_type: 'vip' }),
+    ]);
+
+    const renderer = await renderWallet({
+      explorerFilters: { eventIds: ['colombia2026'], query: 'vip' },
+      hideWalletControls: true,
+    });
+
+    expect(renderer.root.findAllByType('MockSearchAndFilter')).toHaveLength(0);
+    expect(renderer.root.findAllByType('MockPassWalletCard')).toHaveLength(1);
+    expect(renderer.root.findByProps({ passId: 'colombia' })).toBeTruthy();
+  });
+
   it('reloads already-loaded passes from both BSL and HashPass wallet layouts', async () => {
     (passSystemService.getAllUserPasses as jest.Mock).mockResolvedValue([makePass()]);
 
@@ -414,11 +430,11 @@ describe('PassesWallet', () => {
       const renderer = await renderWallet();
 
       await act(async () => {
-        jest.advanceTimersByTime(5_000);
+        jest.advanceTimersByTime(15_000);
         await Promise.resolve();
       });
       await act(async () => {
-        jest.advanceTimersByTime(5_000);
+        jest.advanceTimersByTime(15_000);
         await Promise.resolve();
       });
 
@@ -441,7 +457,7 @@ describe('PassesWallet', () => {
       const renderer = await renderWallet({ layout: 'plain' });
 
       await act(async () => {
-        jest.advanceTimersByTime(10_000);
+        jest.advanceTimersByTime(30_000);
         await Promise.resolve();
       });
 
@@ -474,7 +490,7 @@ describe('PassesWallet', () => {
       const renderer = await renderWallet({ layout: 'plain' });
 
       await act(async () => {
-        jest.advanceTimersByTime(10_000);
+        jest.advanceTimersByTime(30_000);
         await Promise.resolve();
       });
       await act(async () => {

@@ -1,0 +1,53 @@
+name: Event source sync
+
+on:
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: develop
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.22.0
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: npm run sync:events
+      - name: Open snapshot update PR
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: automation/event-source-sync
+          base: develop
+          delete-branch: true
+          commit-message: "chore(events): sync public event sources"
+          title: "chore(events): sync public event sources"
+          body: |
+            Automated refresh of validated public event-source data.
+
+            - Source: PKRR / Hash Poker Room
+            - Workflow: `${{ github.workflow }}`
+            - Run: `${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`
+          add-paths: |
+            packages/config/src/generated/ingested-events.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: event-source-sync
+          path: |
+            packages/config/src/generated/ingested-events.json
+            artifacts/event-ingestion/health.json
+          retention-days: 14

@@ -406,6 +406,20 @@ describe('canonical BSL 2026 event catalog migration contract', () => {
   });
 });
 
+describe('development demo migration plan', () => {
+  it('runs the CLF demo bootstrap only for the BSL development profile', () => {
+    const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+
+    expect(config.profileGroups['bsl-development']).toContain('demo-event-bootstrap');
+    expect(config.profileGroups['bsl-production'] || []).not.toContain('demo-event-bootstrap');
+    expect(config.groups['demo-event-bootstrap']).toEqual([
+      'db/migrations/V076__add_event_demo_mode_flag.sql',
+      'db/migrations/V077__provision_criptolatinfest_general_pass.sql',
+      'db/migrations/V078__align_dev_bsl_speakers_legacy_columns.sql',
+    ]);
+  });
+});
+
 describe('verified speaker identity claim migration contract', () => {
   it('claims a preconfigured speaker only after verified signup and applies only preapproved event roles', () => {
     const migration = fs.existsSync(speakerIdentityClaimsMigrationPath)

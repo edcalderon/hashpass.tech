@@ -42,6 +42,10 @@ sst-env.d.ts
 !terraform.tfvars.example
 *.tfstate
 *.tfstate.*
+# terraform plan files embed resolved variable values (including sensitive
+# ones from *.tfvars) in binary form -- never commit these.
+tfplan
+*.tfplan
 .terraform/
 
 # Environment and credentials

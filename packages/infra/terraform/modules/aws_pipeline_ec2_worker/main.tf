@@ -424,6 +424,9 @@ resource "aws_cloudwatch_metric_alarm" "cpu_high" {
     InstanceId = aws_instance.worker[count.index].id
   }
 
+  alarm_actions = var.alarm_actions
+  ok_actions    = var.ok_actions
+
   tags = local.common_tags
 }
 
@@ -445,6 +448,9 @@ resource "aws_cloudwatch_metric_alarm" "status_check_instance" {
     InstanceId = aws_instance.worker[count.index].id
   }
 
+  alarm_actions = var.alarm_actions
+  ok_actions    = var.ok_actions
+
   tags = local.common_tags
 }
 
@@ -465,6 +471,9 @@ resource "aws_cloudwatch_metric_alarm" "status_check_system" {
   dimensions = {
     InstanceId = aws_instance.worker[count.index].id
   }
+
+  alarm_actions = var.alarm_actions
+  ok_actions    = var.ok_actions
 
   tags = local.common_tags
 }

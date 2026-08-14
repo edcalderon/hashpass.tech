@@ -1,0 +1,14 @@
+{
+  "name": "@hashpass/event-ingestion",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": {
+    "test": "tsx --test test/*.test.ts",
+    "test:coverage": "c8 --all --include=src/**/*.ts --reporter=lcov --reporter=text --reports-dir=coverage tsx --test test/*.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": { "parse5": "^7.3.0", "zod": "^3.25.76" },
+  "devDependencies": { "c8": "^10.1.3", "tsx": "^4.20.6", "typescript": "~5.8.3" }
+}

@@ -39,11 +39,14 @@ jobs:
       - name: Run coverage tests
         run: pnpm --dir apps/mobile-app test:coverage
 
+      - name: Run event ingestion coverage tests
+        run: pnpm --filter @hashpass/event-ingestion test:coverage
+
       - name: Upload coverage to Codecov
         if: ${{ env.CODECOV_TOKEN != '' }}
         uses: codecov/codecov-action@v7
         with:
-          files: ./apps/mobile-app/coverage/lcov.info
+          files: ./apps/mobile-app/coverage/lcov.info,./packages/event-ingestion/coverage/lcov.info
           # The coverage test command above remains the required gate. Upload
           # failures are external/transient (and push + PR runs can upload the
           # same report concurrently), so they must not block a valid release.

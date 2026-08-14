@@ -307,6 +307,89 @@ function linkNodeModules(sourceDir, targetDir) {
   fs.symlinkSync(source, target, linkType);
 }
 
+function copyDirRecursive(src, dest) {
+  fs.mkdirSync(dest, { recursive: true });
+  for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
+    const srcPath = path.join(src, entry.name);
+    const destPath = path.join(dest, entry.name);
+    if (entry.isDirectory()) {
+      copyDirRecursive(srcPath, destPath);
+    } else if (entry.isFile()) {
+      fs.copyFileSync(srcPath, destPath);
+    }
+  }
+}
+
+// `@hashpass/*` specifiers resolve via tsconfig `paths` to a real,
+// always-on-disk `packages/<name>/src` directory (these are all under
+// 250KB). A lossy `any` stub here silently breaks any consumer that does
+// structural composition on the imported type -- e.g. `Omit<EventConfig,
+// 'name'>` collapses to `any` extending `any`, which then loses every field
+// including ones the stub never even knew about (confirmed live regression:
+// `EventInfo extends Omit<EventConfig, ...>` lost `id` and every other
+// field once EventConfig was stubbed to `any`, breaking typecheck-changed's
+// own sandboxed check on files that were otherwise correct -- verified via
+// a real unsandboxed `tsc -p tsconfig.json` pass with zero errors on the
+// same files). Copying the real source is cheap and always accurate, so do
+// that instead of stubbing for these specifically -- the recursion-blowup
+// concern that motivates stubbing elsewhere doesn't apply here since it's
+// one shallow, small, self-contained directory per package.
+const copiedWorkspacePackages = new Set();
+
+// Walk every .ts(x) file just copied into the sandbox for a workspace
+// package and follow any further `@hashpass/*` imports it makes, copying
+// those packages too. Without this, a package like `@hashpass/auth` (whose
+// own source imports `@hashpass/config`/`@hashpass/utils`) gets copied
+// wholesale but its transitive workspace deps are never scanned -- since the
+// import-collection loop in main() only walks the originally *changed*
+// files, not files pulled in afterwards by this copy step. That produced a
+// real "Cannot find module '@hashpass/config'" false positive the moment a
+// changed file imported @hashpass/auth. Recurses via a queue rather than
+// self-recursion so a copy-of-a-copy chain of any depth is still covered.
+function listFilesRecursive(dir) {
+  const results = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const entryPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      results.push(...listFilesRecursive(entryPath));
+    } else if (entry.isFile() && isTypeScriptFile(entry.name)) {
+      results.push(entryPath);
+    }
+  }
+  return results;
+}
+
+function copyAliasedWorkspacePackageSource(specifier, aliasEntries, tempDir) {
+  const initialMatch = /^@hashpass\/([a-z0-9-]+)/.exec(specifier);
+  if (!initialMatch) return false;
+
+  const queue = [initialMatch[1]];
+
+  while (queue.length > 0) {
+    const pkgName = queue.shift();
+    if (copiedWorkspacePackages.has(pkgName)) continue;
+
+    const realSrcDir = path.join(ROOT_DIR, 'packages', pkgName, 'src');
+    if (!fs.existsSync(realSrcDir)) continue;
+
+    const tempSrcDir = path.join(tempDir, 'packages', pkgName, 'src');
+    copyDirRecursive(realSrcDir, tempSrcDir);
+    copiedWorkspacePackages.add(pkgName);
+
+    for (const copiedFile of listFilesRecursive(tempSrcDir)) {
+      const content = fs.readFileSync(copiedFile, 'utf8');
+      for (const spec of collectImportSpecifiers(content)) {
+        const nestedMatch = /^@hashpass\/([a-z0-9-]+)/.exec(spec.specifier);
+        if (nestedMatch && !copiedWorkspacePackages.has(nestedMatch[1])) {
+          queue.push(nestedMatch[1]);
+        }
+      }
+    }
+  }
+
+  return copiedWorkspacePackages.has(initialMatch[1]);
+}
+
 function writeStubModule(stubPath, stubInfo) {
   // If the aliased import target is itself one of the changed files, it was
   // already copied into the sandbox with its real types intact — a stub at
@@ -510,6 +593,10 @@ function main() {
 
     for (const spec of imports) {
       if (!isLocalSpecifier(spec.specifier, localSpecifierMatchers)) {
+        continue;
+      }
+
+      if (copyAliasedWorkspacePackageSource(spec.specifier, pathAliasEntries, tempDir)) {
         continue;
       }
 

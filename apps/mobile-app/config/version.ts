@@ -22,22 +22,49 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202608130445, // Updated to current timestamp
-  releaseDate: '2026-08-13',
+  buildNumber: 202608141144, // Updated to current timestamp
+  releaseDate: '2026-08-14',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'secure event room chat and presence'
+    'expand global event discovery',
+    'auto-provision criptolatinfest general pass on signup',
+    'add reusable event ingestion package + PKRR (Hash Poker Room) adapter and landing integration (#185)',
+    'onboard CriptoLatinFest as a demo-mode tenant'
   ],
   bugfixes: [
-    // No bugfixes
+    'add missing legacy bsl_speakers columns to bsl-development',
+    'follow transitive @hashpass/* imports in typecheck-changed sandbox',
+    'circuit-break Supabase calls and back off Realtime/polling on failures',
+    'stop leaking BSL branding into other whitelabel tenants'
   ],
   breakingChanges: [],
-  notes: 'secure event room chat and presence'
+  notes: 'expand global event discovery; auto-provision criptolatinfest general pass on signup; add reusable event ingestion package + PKRR (Hash Poker Room) adapter and landing integration (#185); onboard CriptoLatinFest as a demo-mode tenant; add missing legacy bsl_speakers columns to bsl-development; follow transitive @hashpass/* imports in typecheck-changed sandbox; circuit-break Supabase calls and back off Realtime/polling on failures; stop leaking BSL branding into other whitelabel tenants'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.341': {
+    version: '1.8.341',
+    buildNumber: 202608141144,
+    releaseDate: '2026-08-14',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'expand global event discovery',
+      'auto-provision criptolatinfest general pass on signup',
+      'add reusable event ingestion package + PKRR (Hash Poker Room) adapter and landing integration (#185)',
+      'onboard CriptoLatinFest as a demo-mode tenant'
+    ],
+    bugfixes: [
+      'add missing legacy bsl_speakers columns to bsl-development',
+      'follow transitive @hashpass/* imports in typecheck-changed sandbox',
+      'circuit-break Supabase calls and back off Realtime/polling on failures',
+      'stop leaking BSL branding into other whitelabel tenants'
+    ],
+    breakingChanges: [],
+    notes: 'expand global event discovery; auto-provision criptolatinfest general pass on signup; add reusable event ingestion package + PKRR (Hash Poker Room) adapter and landing integration (#185); onboard CriptoLatinFest as a demo-mode tenant; add missing legacy bsl_speakers columns to bsl-development; follow transitive @hashpass/* imports in typecheck-changed sandbox; circuit-break Supabase calls and back off Realtime/polling on failures; stop leaking BSL branding into other whitelabel tenants'
+  },
   '1.8.340': {
     version: '1.8.340',
     buildNumber: 202608130445,

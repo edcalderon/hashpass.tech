@@ -370,6 +370,57 @@ variable "github_actions_role_name" {
   default     = "hashpass-web-github-actions"
 }
 
+variable "ops_alert_email" {
+  description = "Confirmed support mailbox that receives EC2 lifecycle, budget, anomaly, and CloudWatch alarm notifications."
+  type        = string
+  default     = "support@hashpass.tech"
+}
+
+variable "monthly_cost_budget_usd" {
+  description = "Monthly AWS account cost ceiling in USD. Alerts fire at 50%, 75%, 80% forecast, 90%, and 100% forecast."
+  type        = number
+  default     = 80
+
+  validation {
+    condition     = var.monthly_cost_budget_usd > 0
+    error_message = "monthly_cost_budget_usd must be greater than zero."
+  }
+}
+
+variable "monthly_cost_budget_name" {
+  description = "Existing monthly account-wide AWS cost budget to manage."
+  type        = string
+  default     = "My Monthly Cost Budget"
+}
+
+variable "ec2_compute_monthly_budget_usd" {
+  description = "Monthly EC2 compute ceiling in USD. This is separate from the account-wide budget to catch build-worker spend early."
+  type        = number
+  default     = 25
+
+  validation {
+    condition     = var.ec2_compute_monthly_budget_usd > 0
+    error_message = "ec2_compute_monthly_budget_usd must be greater than zero."
+  }
+}
+
+variable "cost_anomaly_threshold_usd" {
+  description = "Minimum absolute USD impact that sends an immediate AWS Cost Anomaly Detection alert."
+  type        = number
+  default     = 5
+
+  validation {
+    condition     = var.cost_anomaly_threshold_usd > 0
+    error_message = "cost_anomaly_threshold_usd must be greater than zero."
+  }
+}
+
+variable "cost_anomaly_monitor_arn" {
+  description = "Existing AWS Cost Anomaly Detection monitor ARN to reuse. Leave empty only for a new account where this stack should create an AWS services monitor."
+  type        = string
+  default     = ""
+}
+
 variable "tags" {
   description = "Tags applied to all resources"
   type        = map(string)

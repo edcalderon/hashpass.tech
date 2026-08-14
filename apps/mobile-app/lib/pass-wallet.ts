@@ -1,15 +1,15 @@
-import { EVENTS } from '../config/events';
-import type { PassInfo, PassType } from './pass-system';
+import { EVENTS } from "../config/events";
+import type { PassInfo, PassType } from "./pass-system";
 
 // Where a pass sits relative to today. Derived from the event's own configured
 // start/end dates, NOT from pass.status -- a cancelled pass for next month is
 // still an upcoming-event pass, it just isn't usable. Usability is carried
 // separately by `isArchived` so the card can dim it without lying about when
 // the event happens.
-export type PassTimeline = 'live' | 'upcoming' | 'past';
+export type PassTimeline = "live" | "upcoming" | "past";
 
-export type PassTimelineFilter = 'all' | PassTimeline;
-export type PassTypeFilter = 'all' | PassType;
+export type PassTimelineFilter = "all" | PassTimeline;
+export type PassTypeFilter = "all" | PassType;
 
 export interface WalletPass extends PassInfo {
   // Stable list key. pass_id is unique per row, but the legacy counts-only
@@ -46,41 +46,41 @@ export const normalizePassNumber = (value: unknown): string =>
   value === null || value === undefined ? "" : String(value);
 
 const PASS_TYPE_ACCENTS: Record<string, string> = {
-  general: '#34A853',
-  business: '#007AFF',
-  vip: '#FF9500',
+  general: "#34A853",
+  business: "#007AFF",
+  vip: "#FF9500",
 };
 
 const parseDate = (value: unknown): number | null => {
-  if (typeof value !== 'string' || !value) return null;
+  if (typeof value !== "string" || !value) return null;
   const parsed = Date.parse(value);
   return Number.isNaN(parsed) ? null : parsed;
 };
 
 export const getPassTypeAccent = (passType?: string | null): string =>
-  PASS_TYPE_ACCENTS[passType ?? ''] ?? '#8E8E93';
+  PASS_TYPE_ACCENTS[passType ?? ""] ?? "#8E8E93";
 
 const classifyTimeline = (
   startsAt: number | null,
   endsAt: number | null,
-  now: number
+  now: number,
 ): PassTimeline => {
   // An event with no configured dates can't be placed on the calendar. Treat
   // it as upcoming rather than past so a live pass never gets filed into the
   // history section by accident.
-  if (endsAt === null) return 'upcoming';
-  if (endsAt < now) return 'past';
-  if (startsAt !== null && startsAt <= now) return 'live';
-  return 'upcoming';
+  if (endsAt === null) return "upcoming";
+  if (endsAt < now) return "past";
+  if (startsAt !== null && startsAt <= now) return "live";
+  return "upcoming";
 };
 
 const resolveEventMeta = (eventId?: string) => {
   const config = eventId ? (EVENTS as Record<string, any>)[eventId] : undefined;
   if (!config) {
     return {
-      name: eventId ?? 'Event',
-      dateLabel: '',
-      location: '',
+      name: eventId ?? "Event",
+      dateLabel: "",
+      location: "",
       startsAt: null as number | null,
       endsAt: null as number | null,
     };
@@ -88,12 +88,13 @@ const resolveEventMeta = (eventId?: string) => {
 
   const city = config.tour?.city as string | undefined;
   const country = config.tour?.country as string | undefined;
-  const location = city && country ? `${city}, ${country}` : city || country || '';
+  const location =
+    city && country ? `${city}, ${country}` : city || country || "";
 
   return {
     name: (config.name || config.title || eventId) as string,
-    dateLabel: (config.eventDateString || config.subtitle || '') as string,
-    location: location || ((config.subtitle || '') as string),
+    dateLabel: (config.eventDateString || config.subtitle || "") as string,
+    location: location || ((config.subtitle || "") as string),
     startsAt: parseDate(config.eventStartDate),
     endsAt: parseDate(config.eventEndDate),
   };
@@ -106,16 +107,19 @@ const resolveEventMeta = (eventId?: string) => {
  */
 export const buildWalletPasses = (
   passes: PassInfo[],
-  now: number = Date.now()
+  now: number = Date.now(),
 ): WalletPass[] => {
   const decorated = passes.map((pass) => {
     const meta = resolveEventMeta(pass.event_id);
     const timeline = classifyTimeline(meta.startsAt, meta.endsAt, now);
-    const typeLabel = pass.pass_type ?? '';
+    const typeLabel = pass.pass_type ?? "";
 
     return {
       ...pass,
-      id: pass.pass_id && pass.pass_id !== 'unknown' ? pass.pass_id : `${pass.event_id ?? 'event'}-${typeLabel}`,
+      id:
+        pass.pass_id && pass.pass_id !== "unknown"
+          ? pass.pass_id
+          : `${pass.event_id ?? "event"}-${typeLabel}`,
       eventId: pass.event_id,
       eventName: meta.name,
       eventDateLabel: meta.dateLabel,
@@ -124,16 +128,16 @@ export const buildWalletPasses = (
       timeline,
       startsAt: meta.startsAt,
       endsAt: meta.endsAt,
-      isArchived: pass.status !== 'active',
+      isArchived: pass.status !== "active",
       searchText: [
         meta.name,
         meta.dateLabel,
         meta.location,
         typeLabel,
-        pass.status ?? '',
-        pass.pass_number ?? '',
+        pass.status ?? "",
+        pass.pass_number ?? "",
       ]
-        .join(' ')
+        .join(" ")
         .toLowerCase(),
     } satisfies WalletPass;
   });
@@ -141,7 +145,11 @@ export const buildWalletPasses = (
   return sortWalletPasses(decorated);
 };
 
-const TIMELINE_ORDER: Record<PassTimeline, number> = { live: 0, upcoming: 1, past: 2 };
+const TIMELINE_ORDER: Record<PassTimeline, number> = {
+  live: 0,
+  upcoming: 1,
+  past: 2,
+};
 
 export const sortWalletPasses = (passes: WalletPass[]): WalletPass[] =>
   [...passes].sort((a, b) => {
@@ -149,7 +157,7 @@ export const sortWalletPasses = (passes: WalletPass[]): WalletPass[] =>
     if (groupDelta !== 0) return groupDelta;
 
     // Within upcoming/live: soonest first. Within past: most recent first.
-    if (a.timeline === 'past') {
+    if (a.timeline === "past") {
       return (b.endsAt ?? 0) - (a.endsAt ?? 0);
     }
 
@@ -161,16 +169,47 @@ export const sortWalletPasses = (passes: WalletPass[]): WalletPass[] =>
 
 export const filterWalletPasses = (
   passes: WalletPass[],
-  { query = '', timeline = 'all', passType = 'all' }: WalletFilters = {}
+  { query = "", timeline = "all", passType = "all" }: WalletFilters = {},
 ): WalletPass[] => {
   const normalizedQuery = query.trim().toLowerCase();
 
   return passes.filter((pass) => {
-    if (timeline !== 'all' && pass.timeline !== timeline) return false;
-    if (passType !== 'all' && pass.pass_type !== passType) return false;
-    if (normalizedQuery && !pass.searchText.includes(normalizedQuery)) return false;
+    if (timeline !== "all" && pass.timeline !== timeline) return false;
+    if (passType !== "all" && pass.pass_type !== passType) return false;
+    if (normalizedQuery && !pass.searchText.includes(normalizedQuery))
+      return false;
     return true;
   });
+};
+
+/**
+ * The Explorer owns the discovery filters for both event cards and passes.
+ * `undefined` means no event constraint; an empty array intentionally means
+ * no event matches, which keeps a filtered Explorer from falling back to the
+ * entire wallet.
+ */
+export const filterWalletPassesForExplorer = (
+  passes: WalletPass[],
+  {
+    query = "",
+    eventIds,
+    timeline = "all",
+    passType = "all",
+  }: {
+    query?: string;
+    eventIds?: string[];
+    timeline?: PassTimelineFilter;
+    passType?: PassTypeFilter;
+  } = {},
+): WalletPass[] => {
+  const allowedEventIds = eventIds === undefined ? null : new Set(eventIds);
+  const eventScopedPasses = allowedEventIds
+    ? passes.filter((pass) =>
+        Boolean(pass.eventId && allowedEventIds.has(pass.eventId)),
+      )
+    : passes;
+
+  return filterWalletPasses(eventScopedPasses, { query, timeline, passType });
 };
 
 export interface WalletCounts {
@@ -186,5 +225,5 @@ export const countWalletPasses = (passes: WalletPass[]): WalletCounts =>
       counts[pass.timeline] += 1;
       return counts;
     },
-    { total: passes.length, live: 0, upcoming: 0, past: 0 }
+    { total: passes.length, live: 0, upcoming: 0, past: 0 },
   );

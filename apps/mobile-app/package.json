@@ -1,6 +1,6 @@
 {
   "name": "hashpass-mobile-app",
-  "version": "1.8.340",
+  "version": "1.8.341",
   "private": true,
   "packageManager": "pnpm@9.15.5",
   "main": "index.js",
@@ -125,6 +125,7 @@
     "expo-symbols": "~0.4.4",
     "expo-system-ui": "~5.0.7",
     "expo-updates": "~0.28.18",
+    "expo-video": "~2.2.2",
     "expo-web-browser": "~14.2.0",
     "framer-motion": "11.11.17",
     "html5-qrcode": "^2.3.8",

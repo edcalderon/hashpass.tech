@@ -271,6 +271,7 @@ const loadHomeScreen = ({
 
     jest.doMock("../../lib/event-detector", () => ({
       getCurrentEvent: () => null,
+      isGlobalEventTenant: () => true,
     }));
 
     jest.doMock("../../lib/hashpass-logo", () => ({
@@ -436,6 +437,13 @@ describe("HomeScreen native tablet layout", () => {
       );
 
     expect(topControls).toBeTruthy();
+  });
+
+  it("keeps event banner calls to action inside the dashboard explorer", () => {
+    const { renderer } = loadHomeScreen({ platform: "web" });
+
+    const carousel = renderer.root.findByType("EventBannerCarousel");
+    expect(carousel.props.showCtas).toBe(false);
   });
 
   it("renders the native landing first frame visibly without waiting for scroll", () => {

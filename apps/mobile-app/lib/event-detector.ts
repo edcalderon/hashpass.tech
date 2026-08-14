@@ -1,16 +1,17 @@
 // Event Detection Utility
 // This utility detects available events based on the current deployment context
 
-import { EVENTS } from '../config/events';
-import type { EventConfig } from '@hashpass/types';
+import { EVENTS } from "../config/events";
+import type { EventConfig } from "@hashpass/types";
 
 // EventInfo is the UI-focused view of EventConfig
 // It omits backend-specific fields (name, domain) and adds availability flag
-export interface EventInfo extends Omit<EventConfig, 'name' | 'domain'> {
+export interface EventInfo extends Omit<EventConfig, "name" | "domain"> {
   available: boolean;
 }
 
-export type EventTenantSource = 'env-event-ids' | 'env-tenant' | 'config' | 'default';
+export type EventTenantSource =
+  "env-event-ids" | "env-tenant" | "config" | "default";
 
 export interface EventTenantContext {
   id: string;
@@ -20,60 +21,71 @@ export interface EventTenantContext {
   showAllEvents: boolean;
 }
 
-const MAIN_EVENT_TENANT_ID = 'main';
+const MAIN_EVENT_TENANT_ID = "main";
 
 const TENANT_ALIASES: Record<string, string> = {
-  all: 'main',
-  core: 'main',
-  default: 'main',
-  hashpass: 'main',
-  hs: 'main',
-  main: 'main',
-  blockchain: 'bsl',
-  'blockchain-summit': 'bsl',
-  blockchainsummit: 'bsl',
-  'bsl-on-tour': 'bsl',
-  'bsl-ontour': 'bsl',
-  bsl: 'bsl',
-  ontour: 'bsl',
-  'bsl-2025': 'bsl2025',
-  bsl2025: 'bsl2025',
+  all: "main",
+  core: "main",
+  default: "main",
+  hashpass: "main",
+  hs: "main",
+  main: "main",
+  blockchain: "bsl",
+  "blockchain-summit": "bsl",
+  blockchainsummit: "bsl",
+  "bsl-on-tour": "bsl",
+  "bsl-ontour": "bsl",
+  bsl: "bsl",
+  ontour: "bsl",
+  "bsl-2025": "bsl2025",
+  bsl2025: "bsl2025",
+  pkrr: "hash-poker",
+  "hash-poker": "hash-poker",
+  criptolatinfest: "criptolatinfest",
+  clf: "criptolatinfest",
+  "cripto-latin-fest": "criptolatinfest",
+  "cripto-latin-fest-2026": "criptolatinfest",
+  "criptolatinfest-2026": "criptolatinfest",
+  clf2026: "criptolatinfest",
 };
 
 const TENANT_HOSTNAME_ALIASES: Record<string, string> = {
-  'hashpass.co': MAIN_EVENT_TENANT_ID,
-  'www.hashpass.co': MAIN_EVENT_TENANT_ID,
-  'hashpass.tech': MAIN_EVENT_TENANT_ID,
-  'www.hashpass.tech': MAIN_EVENT_TENANT_ID,
-  'dev.hashpass.tech': MAIN_EVENT_TENANT_ID,
-  'localhost': MAIN_EVENT_TENANT_ID,
-  '127.0.0.1': MAIN_EVENT_TENANT_ID,
-  '0.0.0.0': MAIN_EVENT_TENANT_ID,
-  'bsl.hashpass.tech': 'bsl',
-  'bsl.hashpass.co': 'bsl',
-  'bsl-dev.hashpass.tech': 'bsl',
-  'bsl-dev.hashpass.co': 'bsl',
-  'bsl2025.hashpass.tech': 'bsl2025',
-  'bsl2025.hashpass.co': 'bsl2025',
-  'blockchainsummit.hashpass.lat': 'bsl2025',
-  'blockchainsummit-dev.hashpass.lat': 'bsl2025',
-  'peru2026.hashpass.tech': 'peru2026',
-  'chile2026.hashpass.tech': 'chile2026',
-  'colombia2026.hashpass.tech': 'colombia2026',
+  "hashpass.co": MAIN_EVENT_TENANT_ID,
+  "www.hashpass.co": MAIN_EVENT_TENANT_ID,
+  "hashpass.tech": MAIN_EVENT_TENANT_ID,
+  "www.hashpass.tech": MAIN_EVENT_TENANT_ID,
+  "dev.hashpass.tech": MAIN_EVENT_TENANT_ID,
+  localhost: MAIN_EVENT_TENANT_ID,
+  "127.0.0.1": MAIN_EVENT_TENANT_ID,
+  "0.0.0.0": MAIN_EVENT_TENANT_ID,
+  "bsl.hashpass.tech": "bsl",
+  "bsl.hashpass.co": "bsl",
+  "bsl-dev.hashpass.tech": "bsl",
+  "bsl-dev.hashpass.co": "bsl",
+  "bsl2025.hashpass.tech": "bsl2025",
+  "bsl2025.hashpass.co": "bsl2025",
+  "blockchainsummit.hashpass.lat": "bsl2025",
+  "blockchainsummit-dev.hashpass.lat": "bsl2025",
+  "peru2026.hashpass.tech": "peru2026",
+  "chile2026.hashpass.tech": "chile2026",
+  "colombia2026.hashpass.tech": "colombia2026",
+  "hash.poker": "hash-poker",
+  "www.hash.poker": "hash-poker",
+  "demo-criptolatinfest.hashpass.tech": "criptolatinfest",
 };
 
 const getEventTourHubId = (eventId: string): string | null => {
   const event = EVENTS[eventId];
   if (!event) return null;
-  if (event.tour?.role === 'hub') return event.id;
+  if (event.tour?.role === "hub") return event.id;
   return event.tour?.hubEventId || null;
 };
 
 const compareEventInfos = (a: EventInfo, b: EventInfo): number => {
   const roleOrder = (event: EventInfo): number => {
-    if (event.tour?.role === 'hub') return 0;
-    if (event.tour?.role === 'stop') return 1;
-    if (event.tour?.role === 'archive') return 2;
+    if (event.tour?.role === "hub") return 0;
+    if (event.tour?.role === "stop") return 1;
+    if (event.tour?.role === "archive") return 2;
     return 3;
   };
 
@@ -81,12 +93,22 @@ const compareEventInfos = (a: EventInfo, b: EventInfo): number => {
   const bRole = roleOrder(b);
   if (aRole !== bRole) return aRole - bRole;
 
-  const aStop = typeof a.tour?.stopOrder === 'number' ? a.tour.stopOrder : Number.MAX_SAFE_INTEGER;
-  const bStop = typeof b.tour?.stopOrder === 'number' ? b.tour.stopOrder : Number.MAX_SAFE_INTEGER;
+  const aStop =
+    typeof a.tour?.stopOrder === "number"
+      ? a.tour.stopOrder
+      : Number.MAX_SAFE_INTEGER;
+  const bStop =
+    typeof b.tour?.stopOrder === "number"
+      ? b.tour.stopOrder
+      : Number.MAX_SAFE_INTEGER;
   if (aStop !== bStop) return aStop - bStop;
 
-  const aDate = a.eventStartDate ? new Date(a.eventStartDate).getTime() : Number.MAX_SAFE_INTEGER;
-  const bDate = b.eventStartDate ? new Date(b.eventStartDate).getTime() : Number.MAX_SAFE_INTEGER;
+  const aDate = a.eventStartDate
+    ? new Date(a.eventStartDate).getTime()
+    : Number.MAX_SAFE_INTEGER;
+  const bDate = b.eventStartDate
+    ? new Date(b.eventStartDate).getTime()
+    : Number.MAX_SAFE_INTEGER;
   if (aDate !== bDate) return aDate - bDate;
 
   return a.title.localeCompare(b.title);
@@ -99,14 +121,21 @@ const sortEventInfos = (events: EventInfo[]): EventInfo[] => {
 const getEventTourFamilyIds = (hubEventId: string): string[] => {
   const allEvents = Object.values(EVENTS) as EventConfig[];
   const family = allEvents
-    .filter((event: EventConfig) => event.eventType === 'whitelabel' && (event.id === hubEventId || event.tour?.hubEventId === hubEventId))
+    .filter(
+      (event: EventConfig) =>
+        event.eventType === "whitelabel" &&
+        (event.id === hubEventId || event.tour?.hubEventId === hubEventId),
+    )
     .map((event: EventConfig) => configToEventInfo(event, true));
 
-  return sortEventInfos(family).map(event => event.id);
+  return sortEventInfos(family).map((event) => event.id);
 };
 
 // Helper function to convert EventConfig to EventInfo
-const configToEventInfo = (config: EventConfig, available: boolean): EventInfo => {
+const configToEventInfo = (
+  config: EventConfig,
+  available: boolean,
+): EventInfo => {
   const { name, domain, ...rest } = config;
   return {
     ...rest,
@@ -117,39 +146,46 @@ const configToEventInfo = (config: EventConfig, available: boolean): EventInfo =
 };
 
 const readEnv = (name: string): string | undefined => {
-  if (typeof process === 'undefined' || !process.env) return undefined;
+  if (typeof process === "undefined" || !process.env) return undefined;
   const value = process.env[name];
-  return typeof value === 'string' && value.trim().length > 0 ? value.trim() : undefined;
+  return typeof value === "string" && value.trim().length > 0
+    ? value.trim()
+    : undefined;
 };
 
 const normalizeToken = (value?: string | null): string => {
-  return (value || '').trim().toLowerCase();
+  return (value || "").trim().toLowerCase();
 };
 
 const normalizeHostname = (hostname?: string): string => {
   let raw = hostname;
 
-  if (!raw && typeof window !== 'undefined' && window.location?.hostname) {
+  if (!raw && typeof window !== "undefined" && window.location?.hostname) {
     raw = window.location.hostname;
   }
 
-  if (!raw) return '';
+  if (!raw) return "";
 
   const normalized = raw.trim().toLowerCase();
 
   try {
-    if (normalized.includes('://')) {
+    if (normalized.includes("://")) {
       return new URL(normalized).hostname.toLowerCase();
     }
   } catch {
     // Fall through to simple host cleanup below.
   }
 
-  return normalized.split('/')[0].split(':')[0];
+  return normalized.split("/")[0].split(":")[0];
 };
 
 const isLocalHostname = (hostname: string): boolean => {
-  return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0' || hostname.endsWith('.local');
+  return (
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    hostname === "0.0.0.0" ||
+    hostname.endsWith(".local")
+  );
 };
 
 const normalizeTenantId = (value?: string | null): string | null => {
@@ -169,7 +205,9 @@ const resolveHostnameTenantId = (hostname: string): string | null => {
   return TENANT_HOSTNAME_ALIASES[normalizedHostname] || null;
 };
 
-export const getRouteEventIdFromPathname = (pathname?: string): string | null => {
+export const getRouteEventIdFromPathname = (
+  pathname?: string,
+): string | null => {
   const normalizedPath = normalizeToken(pathname);
   const match = normalizedPath.match(/^\/events\/([^/]+)/);
   if (!match) return null;
@@ -178,22 +216,32 @@ export const getRouteEventIdFromPathname = (pathname?: string): string | null =>
 
 const readEventTenantEnv = (): string | undefined => {
   return (
-    readEnv('EXPO_PUBLIC_EVENT_TENANT') ||
-    readEnv('EXPO_PUBLIC_TENANT') ||
-    readEnv('EVENT_TENANT')
+    readEnv("EXPO_PUBLIC_EVENT_TENANT") ||
+    readEnv("EXPO_PUBLIC_TENANT") ||
+    readEnv("EVENT_TENANT")
   );
 };
 
 const readEventIdsEnv = (): string[] | null => {
-  const raw = readEnv('EXPO_PUBLIC_EVENT_IDS') || readEnv('EVENT_IDS');
+  const raw = readEnv("EXPO_PUBLIC_EVENT_IDS") || readEnv("EVENT_IDS");
   if (!raw) return null;
 
   const eventIds = raw
-    .split(',')
-    .map(value => normalizeToken(value))
+    .split(",")
+    .map((value) => normalizeToken(value))
     .filter(Boolean);
 
   return eventIds.length > 0 ? eventIds : null;
+};
+
+// `SHOW_DEMO_EVENTS` is deliberately opt-in: it supports local catalog
+// verification without treating a prospective tenant as a public partner.
+// Expo only exposes EXPO_PUBLIC_* values to client bundles, so the alias is
+// accepted for local web/native testing while retaining the canonical flag.
+const shouldShowDemoEvents = (): boolean => {
+  const value =
+    readEnv("SHOW_DEMO_EVENTS") || readEnv("EXPO_PUBLIC_SHOW_DEMO_EVENTS");
+  return ["1", "true", "yes", "on"].includes(normalizeToken(value));
 };
 
 const resolveEventIdsForTenant = (tenantId: string): string[] | null => {
@@ -202,8 +250,11 @@ const resolveEventIdsForTenant = (tenantId: string): string[] | null => {
   }
 
   const event = EVENTS[tenantId];
-  if (event?.eventType === 'whitelabel') {
-    if (event.tour?.role === 'hub' || getEventTourHubId(tenantId) === tenantId) {
+  if (event?.eventType === "whitelabel") {
+    if (
+      event.tour?.role === "hub" ||
+      getEventTourHubId(tenantId) === tenantId
+    ) {
       return getEventTourFamilyIds(tenantId);
     }
 
@@ -216,7 +267,10 @@ const resolveEventIdsForTenant = (tenantId: string): string[] | null => {
   }
 
   const prefixMatches = (Object.values(EVENTS) as EventConfig[])
-    .filter((event: EventConfig) => event.eventType === 'whitelabel' && event.id.startsWith(tenantId))
+    .filter(
+      (event: EventConfig) =>
+        event.eventType === "whitelabel" && event.id.startsWith(tenantId),
+    )
     .map((event: EventConfig) => event.id);
 
   return prefixMatches;
@@ -226,7 +280,7 @@ const buildTenantContext = (
   tenantId: string,
   source: EventTenantSource,
   hostname: string,
-  eventIdsOverride?: string[] | null
+  eventIdsOverride?: string[] | null,
 ): EventTenantContext => {
   const eventIds = eventIdsOverride ?? resolveEventIdsForTenant(tenantId);
 
@@ -243,56 +297,80 @@ const buildTenantContext = (
 // getAvailableEvents() so every consumer shares the same env/config policy.
 export const AVAILABLE_EVENTS: EventInfo[] = sortEventInfos(
   (Object.values(EVENTS) as EventConfig[])
-    .filter((event: EventConfig) => event.eventType === 'whitelabel')
-    .map((event: EventConfig) => configToEventInfo(event, true))
+    .filter((event: EventConfig) => event.eventType === "whitelabel")
+    .map((event: EventConfig) => configToEventInfo(event, true)),
 );
 
-export const getEventTenantContext = (hostname?: string): EventTenantContext => {
+export const getEventTenantContext = (
+  hostname?: string,
+): EventTenantContext => {
   const normalizedHostname = normalizeHostname(hostname);
 
   const eventIdsFromEnv = readEventIdsEnv();
   if (eventIdsFromEnv) {
-    return buildTenantContext('custom', 'env-event-ids', normalizedHostname, eventIdsFromEnv);
+    return buildTenantContext(
+      "custom",
+      "env-event-ids",
+      normalizedHostname,
+      eventIdsFromEnv,
+    );
   }
 
   const configTenantId = resolveHostnameTenantId(normalizedHostname);
   if (configTenantId && configTenantId !== MAIN_EVENT_TENANT_ID) {
-    return buildTenantContext(configTenantId, 'config', normalizedHostname);
+    return buildTenantContext(configTenantId, "config", normalizedHostname);
   }
 
   const envTenantId = normalizeTenantId(readEventTenantEnv());
   if (envTenantId) {
-    return buildTenantContext(envTenantId, 'env-tenant', normalizedHostname);
+    return buildTenantContext(envTenantId, "env-tenant", normalizedHostname);
   }
 
-  return buildTenantContext(MAIN_EVENT_TENANT_ID, 'default', normalizedHostname);
+  return buildTenantContext(
+    MAIN_EVENT_TENANT_ID,
+    "default",
+    normalizedHostname,
+  );
 };
 
 // Get available events based on current context
 export const getAvailableEvents = (hostname?: string): EventInfo[] => {
   const tenantContext = getEventTenantContext(hostname);
-  const availableEvents = AVAILABLE_EVENTS.filter(event => event.available);
+  const availableEvents = AVAILABLE_EVENTS.filter((event) => event.available);
 
   if (tenantContext.showAllEvents) {
-    return sortEventInfos(availableEvents);
+    // Demo tenants remain addressable on their own host, but are not
+    // confirmed global events and must not appear in the HASHPASS catalog.
+    return sortEventInfos(
+      availableEvents.filter(
+        (event) => !event.isDemo || shouldShowDemoEvents(),
+      ),
+    );
   }
 
   const allowedEventIds = new Set(tenantContext.eventIds || []);
-  return sortEventInfos(availableEvents.filter(event => allowedEventIds.has(event.id)));
+  return sortEventInfos(
+    availableEvents.filter((event) => allowedEventIds.has(event.id)),
+  );
 };
 
 // Get current event from route, hostname, or context
-export const getCurrentEvent = (eventId?: string, hostname?: string): EventInfo | null => {
+export const getCurrentEvent = (
+  eventId?: string,
+  hostname?: string,
+): EventInfo | null => {
   const availableEvents = getAvailableEvents(hostname);
 
   if (eventId) {
-    return availableEvents.find(e => e.id === eventId) || null;
+    return availableEvents.find((e) => e.id === eventId) || null;
   }
 
   const tenantContext = getEventTenantContext(hostname);
 
   if (!tenantContext.showAllEvents) {
-    const tenantEvent = availableEvents.find(event => event.id === tenantContext.id);
+    const tenantEvent = availableEvents.find(
+      (event) => event.id === tenantContext.id,
+    );
     return tenantEvent || availableEvents[0] || null;
   }
 
@@ -324,28 +402,28 @@ export const getEventQuickAccessItems = (eventId: string) => {
   // Default items for events without custom quickAccessItems
   return [
     {
-      id: 'speakers',
-      title: 'Speakers',
-      subtitle: 'Meet the experts',
-      icon: 'people',
-      color: '#007AFF',
-      route: `/events/${eventId}/speakers`
+      id: "speakers",
+      title: "Speakers",
+      subtitle: "Meet the experts",
+      icon: "people",
+      color: "#007AFF",
+      route: `/events/${eventId}/speakers`,
     },
     {
-      id: 'agenda',
-      title: 'Agenda',
-      subtitle: 'Event Schedule',
-      icon: 'event',
-      color: '#34A853',
-      route: `/events/${eventId}/agenda`
+      id: "agenda",
+      title: "Agenda",
+      subtitle: "Event Schedule",
+      icon: "event",
+      color: "#34A853",
+      route: `/events/${eventId}/agenda`,
     },
     {
-      id: 'info',
-      title: 'Event Info',
-      subtitle: 'Details & Logistics',
-      icon: 'info',
-      color: '#FF9500',
-      route: `/events/${eventId}/event-info`
-    }
+      id: "info",
+      title: "Event Info",
+      subtitle: "Details & Logistics",
+      icon: "info",
+      color: "#FF9500",
+      route: `/events/${eventId}/event-info`,
+    },
   ];
 };

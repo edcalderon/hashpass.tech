@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -10,25 +10,34 @@ import {
   TouchableOpacity,
   useWindowDimensions,
   View,
-} from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
-import { MaterialIcons } from '../../lib/vector-icons';
-import { useTheme } from '../../hooks/useTheme';
-import { useAuth } from '../../hooks/useAuth';
-import { useTranslation } from '../../i18n/i18n';
-import { passSystemService, type PassInfo } from '../../lib/pass-system';
+} from "react-native";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from "react-native-reanimated";
+import { MaterialIcons } from "../../lib/vector-icons";
+import { useTheme } from "../../hooks/useTheme";
+import { useAuth } from "../../hooks/useAuth";
+import { useTranslation } from "../../i18n/i18n";
+import { passSystemService, type PassInfo } from "../../lib/pass-system";
 import {
   buildWalletPasses,
   countWalletPasses,
   filterWalletPasses,
+  filterWalletPassesForExplorer,
   MAX_VISIBLE_STACK,
   type PassTimelineFilter,
   type PassTypeFilter,
   type WalletPass,
-} from '../../lib/pass-wallet';
-import { getSelectEventCardWatermark } from '../../lib/event-branding';
-import UnifiedSearchAndFilter from '../UnifiedSearchAndFilter';
-import PassWalletCard, { PASS_CARD_HEIGHT, PASS_CARD_WIDTH } from './PassWalletCard';
+} from "../../lib/pass-wallet";
+import { getSelectEventCardWatermark } from "../../lib/event-branding";
+import UnifiedSearchAndFilter from "../UnifiedSearchAndFilter";
+import PassWalletCard, {
+  PASS_CARD_HEIGHT,
+  PASS_CARD_WIDTH,
+} from "./PassWalletCard";
 
 interface PassesWalletProps {
   /**
@@ -41,7 +50,19 @@ interface PassesWalletProps {
   eventIds?: string[];
   refreshTrigger?: number;
   onPassesLoaded?: (passes: PassInfo[]) => void;
-  layout?: 'stacked' | 'plain';
+  onPassesLoadingChange?: (isLoading: boolean) => void;
+  layout?: "stacked" | "plain";
+  /**
+   * Explorer can provide its single discovery query and event-filter scope so
+   * passes never grow a competing search/filter surface below the catalogue.
+   */
+  explorerFilters?: {
+    query?: string;
+    eventIds?: string[];
+    timeline?: PassTimelineFilter;
+    passType?: PassTypeFilter;
+  };
+  hideWalletControls?: boolean;
 }
 
 // How far each card behind the front one peeks out to the right, and how much
@@ -56,9 +77,12 @@ interface PassesWalletProps {
 // behind to peek out at all.
 const STACK_OFFSET_X = 26;
 const STACK_SCALE_STEP = 0.04;
-const PASS_LOAD_ATTEMPT_TIMEOUT_MS = 5_000;
+// The API client already owns the network abort. This guard only protects the
+// wallet from a stalled native auth/session hand-off, which can take longer
+// than a web request immediately after the app resumes.
+const PASS_LOAD_ATTEMPT_TIMEOUT_MS = 15_000;
 const PASS_LOAD_ATTEMPTS = 2;
-const RESTORABLE_BSL_EVENT_IDS = ['chile2026', 'colombia2026'] as const;
+const RESTORABLE_BSL_EVENT_IDS = ["chile2026", "colombia2026"] as const;
 
 function PassCardsSkeleton({
   colors,
@@ -66,7 +90,7 @@ function PassCardsSkeleton({
   label,
 }: {
   colors: any;
-  layout: 'stacked' | 'plain';
+  layout: "stacked" | "plain";
   label: string;
 }) {
   const pulse = useSharedValue(0.45);
@@ -76,12 +100,17 @@ function PassCardsSkeleton({
   }, [pulse]);
 
   const style = useAnimatedStyle(() => ({ opacity: pulse.value }));
-  const cardWidth = layout === 'plain' ? PASS_CARD_WIDTH : PASS_CARD_WIDTH - 12;
+  const cardWidth = layout === "plain" ? PASS_CARD_WIDTH : PASS_CARD_WIDTH - 12;
 
   return (
     <View
       accessibilityLabel="Refreshing passes"
-      style={{ alignItems: 'center', height: PASS_CARD_HEIGHT, justifyContent: 'center', paddingHorizontal: 12 }}
+      style={{
+        alignItems: "center",
+        height: PASS_CARD_HEIGHT,
+        justifyContent: "center",
+        paddingHorizontal: 12,
+      }}
     >
       <Animated.View
         style={[
@@ -92,30 +121,65 @@ function PassCardsSkeleton({
             borderRadius: 20,
             borderWidth: 1,
             height: PASS_CARD_HEIGHT - 18,
-            overflow: 'hidden',
+            overflow: "hidden",
             width: cardWidth,
           },
         ]}
       >
-        <View style={{ backgroundColor: colors.divider, height: 62, margin: 16, borderRadius: 10 }} />
-        <View style={{ backgroundColor: colors.divider, height: 150, marginHorizontal: 16, borderRadius: 10 }} />
-        <View style={{ flexDirection: 'row', gap: 12, margin: 16 }}>
-          <View style={{ backgroundColor: colors.divider, flex: 1, height: 48, borderRadius: 8 }} />
-          <View style={{ backgroundColor: colors.divider, flex: 1, height: 48, borderRadius: 8 }} />
+        <View
+          style={{
+            backgroundColor: colors.divider,
+            height: 62,
+            margin: 16,
+            borderRadius: 10,
+          }}
+        />
+        <View
+          style={{
+            backgroundColor: colors.divider,
+            height: 150,
+            marginHorizontal: 16,
+            borderRadius: 10,
+          }}
+        />
+        <View style={{ flexDirection: "row", gap: 12, margin: 16 }}>
+          <View
+            style={{
+              backgroundColor: colors.divider,
+              flex: 1,
+              height: 48,
+              borderRadius: 8,
+            }}
+          />
+          <View
+            style={{
+              backgroundColor: colors.divider,
+              flex: 1,
+              height: 48,
+              borderRadius: 8,
+            }}
+          />
         </View>
         <View
           style={{
-            alignItems: 'center',
+            alignItems: "center",
             bottom: 0,
-            justifyContent: 'center',
+            justifyContent: "center",
             left: 0,
-            position: 'absolute',
+            position: "absolute",
             right: 0,
             top: 0,
           }}
         >
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={{ color: colors.text.primary, fontSize: 13, fontWeight: '700', marginTop: 10 }}>
+          <Text
+            style={{
+              color: colors.text.primary,
+              fontSize: 13,
+              fontWeight: "700",
+              marginTop: 10,
+            }}
+          >
             {label}
           </Text>
         </View>
@@ -128,11 +192,14 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
   eventIds,
   refreshTrigger,
   onPassesLoaded,
-  layout = 'stacked',
+  onPassesLoadingChange,
+  layout = "stacked",
+  explorerFilters,
+  hideWalletControls = false,
 }) => {
   const { colors, isDark } = useTheme();
   const { dbUserId, retryDatabaseSession } = useAuth();
-  const { t } = useTranslation('passes');
+  const { t } = useTranslation("passes");
   const { width: windowWidth } = useWindowDimensions();
 
   const [passes, setPasses] = useState<PassInfo[]>([]);
@@ -143,7 +210,7 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
   const [retryNonce, setRetryNonce] = useState(0);
   const [restoringIncludedPasses, setRestoringIncludedPasses] = useState(false);
   const [claimModalVisible, setClaimModalVisible] = useState(false);
-  const [claimCode, setClaimCode] = useState('');
+  const [claimCode, setClaimCode] = useState("");
   const [claimingPass, setClaimingPass] = useState(false);
   const [claimError, setClaimError] = useState<string | null>(null);
   const [filteredPasses, setFilteredPasses] = useState<WalletPass[]>([]);
@@ -156,7 +223,11 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
   // reordered array so it stays correct when filtering changes the set.
   const [frontId, setFrontId] = useState<string | null>(null);
 
-  const eventIdsKey = eventIds?.join(',');
+  const eventIdsKey = eventIds?.join(",");
+
+  useEffect(() => {
+    onPassesLoadingChange?.(loading || isRefreshing);
+  }, [isRefreshing, loading, onPassesLoadingChange]);
 
   useEffect(() => {
     let active = true;
@@ -187,7 +258,9 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
       setLoading(!hasVisiblePasses);
       setIsRefreshing(hasVisiblePasses);
       try {
-        const scopedIds = eventIdsKey ? eventIdsKey.split(',').filter(Boolean) : undefined;
+        const scopedIds = eventIdsKey
+          ? eventIdsKey.split(",").filter(Boolean)
+          : undefined;
         let lastError: unknown;
         let result: PassInfo[] | undefined;
 
@@ -201,7 +274,7 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
               request,
               new Promise<never>((_, reject) => {
                 requestTimeout = setTimeout(
-                  () => reject(new Error('PASS_LOAD_TIMEOUT')),
+                  () => reject(new Error("PASS_LOAD_TIMEOUT")),
                   PASS_LOAD_ATTEMPT_TIMEOUT_MS,
                 );
               }),
@@ -214,14 +287,14 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
           }
         }
 
-        if (!result) throw lastError ?? new Error('PASS_LOAD_FAILED');
+        if (!result) throw lastError ?? new Error("PASS_LOAD_FAILED");
         if (!active) return;
         setPasses(result);
         onPassesLoaded?.(result);
       } catch (error) {
         if (active) {
           setPasses([]);
-          if (error instanceof Error && error.message === 'PASS_LOAD_TIMEOUT') {
+          if (error instanceof Error && error.message === "PASS_LOAD_TIMEOUT") {
             setLoadTimedOut(true);
           } else {
             setLoadError(true);
@@ -245,8 +318,15 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dbUserId, refreshTrigger, eventIdsKey, retryNonce]);
 
-  const walletPasses: WalletPass[] = useMemo(() => buildWalletPasses(passes), [passes]);
+  const walletPasses: WalletPass[] = useMemo(
+    () => buildWalletPasses(passes),
+    [passes],
+  );
   const counts = useMemo(() => countWalletPasses(walletPasses), [walletPasses]);
+  const explorerFilteredPasses = useMemo(
+    () => filterWalletPassesForExplorer(walletPasses, explorerFilters),
+    [explorerFilters, walletPasses],
+  );
 
   const handleFilteredData = useCallback((next: WalletPass[]) => {
     setFilteredPasses(next);
@@ -268,44 +348,50 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
     setRetryNonce((current) => current + 1);
   }, [passes.length, retryDatabaseSession]);
 
-  const handleRestoreIncludedPasses = useCallback(async (): Promise<boolean> => {
-    if (!dbUserId || restoringIncludedPasses) return false;
+  const handleRestoreIncludedPasses =
+    useCallback(async (): Promise<boolean> => {
+      if (!dbUserId || restoringIncludedPasses) return false;
 
-    setRestoringIncludedPasses(true);
-    try {
-      const restoredPassIds = await Promise.all(
-        RESTORABLE_BSL_EVENT_IDS.map((eventId) =>
-          passSystemService.createDefaultPass(dbUserId, 'general', eventId),
-        ),
-      );
-      if (restoredPassIds.some(Boolean)) {
-        handleRetry();
-        return true;
-      } else {
-        setLoadError(true);
-        return false;
+      setRestoringIncludedPasses(true);
+      try {
+        const restoredPassIds = await Promise.all(
+          RESTORABLE_BSL_EVENT_IDS.map((eventId) =>
+            passSystemService.createDefaultPass(dbUserId, "general", eventId),
+          ),
+        );
+        if (restoredPassIds.some(Boolean)) {
+          handleRetry();
+          return true;
+        } else {
+          setLoadError(true);
+          return false;
+        }
+      } finally {
+        setRestoringIncludedPasses(false);
       }
-    } finally {
-      setRestoringIncludedPasses(false);
-    }
-  }, [dbUserId, handleRetry, restoringIncludedPasses]);
+    }, [dbUserId, handleRetry, restoringIncludedPasses]);
 
   const handleClaimPassCode = useCallback(async () => {
     if (!dbUserId || claimingPass) return;
     if (!claimCode.trim()) {
-      setClaimError('Enter your pass or courtesy code.');
+      setClaimError("Enter your pass or courtesy code.");
       return;
     }
 
     setClaimingPass(true);
     setClaimError(null);
     try {
-      const claim = await passSystemService.claimPassByCode(dbUserId, claimCode);
+      const claim = await passSystemService.claimPassByCode(
+        dbUserId,
+        claimCode,
+      );
       if (!claim) {
-        setClaimError('This code is invalid, unavailable, or has already been used.');
+        setClaimError(
+          "This code is invalid, unavailable, or has already been used.",
+        );
         return;
       }
-      setClaimCode('');
+      setClaimCode("");
       setClaimModalVisible(false);
       handleRetry();
     } finally {
@@ -314,39 +400,63 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
   }, [claimCode, claimingPass, dbUserId, handleRetry]);
 
   const customFilterLogic = useCallback(
-    (data: WalletPass[], filters: { [key: string]: any }, searchQuery: string) =>
+    (
+      data: WalletPass[],
+      filters: { [key: string]: any },
+      searchQuery: string,
+    ) =>
       filterWalletPasses(data, {
         query: searchQuery,
-        timeline: (filters.timeline as PassTimelineFilter) || 'all',
-        passType: (filters.passType as PassTypeFilter) || 'all',
+        timeline: (filters.timeline as PassTimelineFilter) || "all",
+        passType: (filters.passType as PassTypeFilter) || "all",
       }),
-    []
+    [],
   );
 
   const filterGroups = useMemo(
     () => [
       {
-        key: 'timeline',
-        label: t('wallet.filter.when', 'When'),
-        type: 'single' as const,
+        key: "timeline",
+        label: t("wallet.filter.when", "When"),
+        type: "single" as const,
         options: [
-          { key: 'live', label: t('wallet.timeline.live', 'Happening now'), icon: 'sensors' },
-          { key: 'upcoming', label: t('wallet.timeline.upcoming', 'Upcoming'), icon: 'event-available' },
-          { key: 'past', label: t('wallet.timeline.past', 'Past event'), icon: 'history' },
+          {
+            key: "live",
+            label: t("wallet.timeline.live", "Happening now"),
+            icon: "sensors",
+          },
+          {
+            key: "upcoming",
+            label: t("wallet.timeline.upcoming", "Upcoming"),
+            icon: "event-available",
+          },
+          {
+            key: "past",
+            label: t("wallet.timeline.past", "Past event"),
+            icon: "history",
+          },
         ],
       },
       {
-        key: 'passType',
-        label: t('wallet.filter.passType', 'Pass type'),
-        type: 'single' as const,
+        key: "passType",
+        label: t("wallet.filter.passType", "Pass type"),
+        type: "single" as const,
         options: [
-          { key: 'general', label: t('type.general', 'General'), icon: 'confirmation-number' },
-          { key: 'business', label: t('type.business', 'Business'), icon: 'business-center' },
-          { key: 'vip', label: t('type.vip', 'VIP'), icon: 'star' },
+          {
+            key: "general",
+            label: t("type.general", "General"),
+            icon: "confirmation-number",
+          },
+          {
+            key: "business",
+            label: t("type.business", "Business"),
+            icon: "business-center",
+          },
+          { key: "vip", label: t("type.vip", "VIP"), icon: "star" },
         ],
       },
     ],
-    [t]
+    [t],
   );
 
   // Fixed order the pagination row is measured against. Deliberately never
@@ -354,7 +464,11 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
   // actually move (see stableIndex below) instead of always landing on the
   // first dot, which is what happened when the indicator was derived from
   // `deck` itself.
-  const stableOrder: WalletPass[] = hasFilterResult ? filteredPasses : walletPasses;
+  const stableOrder: WalletPass[] = explorerFilters
+    ? explorerFilteredPasses
+    : hasFilterResult
+      ? filteredPasses
+      : walletPasses;
 
   // Draw order for the stack: whichever card was last tapped sits in front,
   // everything else keeps stableOrder. Deriving this rather than storing a
@@ -368,16 +482,19 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
 
   const activeIndex = Math.max(
     0,
-    stableOrder.findIndex((pass) => pass.id === (frontId ?? stableOrder[0]?.id))
+    stableOrder.findIndex(
+      (pass) => pass.id === (frontId ?? stableOrder[0]?.id),
+    ),
   );
 
   const goToOffset = useCallback(
     (delta: number) => {
       if (stableOrder.length < 2) return;
-      const nextIndex = (activeIndex + delta + stableOrder.length) % stableOrder.length;
+      const nextIndex =
+        (activeIndex + delta + stableOrder.length) % stableOrder.length;
       setFrontId(stableOrder[nextIndex].id);
     },
-    [activeIndex, stableOrder]
+    [activeIndex, stableOrder],
   );
 
   const visibleDeck = deck.slice(0, MAX_VISIBLE_STACK);
@@ -385,9 +502,12 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
   // The peeking cards extend the deck to the right, so they have to come out
   // of the card's own width -- otherwise the stack overflows the section on a
   // narrow phone.
-  const cardWidth = Math.min(PASS_CARD_WIDTH, windowWidth - 48 - stackDepth * STACK_OFFSET_X);
+  const cardWidth = Math.min(
+    PASS_CARD_WIDTH,
+    windowWidth - 48 - stackDepth * STACK_OFFSET_X,
+  );
   const deckWidth = cardWidth + stackDepth * STACK_OFFSET_X;
-  const canRestoreIncludedBslPasses = layout === 'plain' && Boolean(dbUserId);
+  const canRestoreIncludedBslPasses = layout === "plain" && Boolean(dbUserId);
   // Keep the recovery action visible even while the Better Auth -> Supabase
   // bridge is restoring. It gives the attendee an explicit next step instead
   // of silently hiding the claim flow; the dialog explains if the account is
@@ -398,8 +518,8 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
     return (
       <WalletSkeleton
         colors={colors}
-        label={t('loading', 'Loading your pass information...')}
-        sublabel={t('loadingSubtitle', 'This should only take a moment.')}
+        label={t("loading", "Loading your pass information...")}
+        sublabel={t("loadingSubtitle", "This should only take a moment.")}
       />
     );
   }
@@ -408,19 +528,25 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
   // recoverable state and shouldn't suggest contacting support.
   if (!walletPasses.length) {
     const fallbackTitle = loadTimedOut
-      ? t('loadTimeoutTitle', 'Passes took too long to load')
+      ? t("loadTimeoutTitle", "Passes took too long to load")
       : loadError
-        ? t('loadErrorTitle', 'Unable to load your passes')
+        ? t("loadErrorTitle", "Unable to load your passes")
         : !dbUserId
-          ? t('sessionPendingTitle', 'Your pass session is still loading')
-          : t('noPassFound', 'No passes found');
+          ? t("sessionPendingTitle", "Your pass session is still loading")
+          : t("noPassFound", "No passes found");
     const fallbackMessage = loadTimedOut
-      ? t('loadTimeoutMessage', 'Check your connection and try again.')
+      ? t("loadTimeoutMessage", "Check your connection and try again.")
       : loadError
-        ? t('loadErrorMessage', 'We could not reach your pass information right now.')
+        ? t(
+            "loadErrorMessage",
+            "We could not reach your pass information right now.",
+          )
         : !dbUserId
-          ? t('sessionPendingMessage', 'Your account is still being connected. Try again in a moment.')
-          : t('contactSupport', 'Contact support to get your event passes');
+          ? t(
+              "sessionPendingMessage",
+              "Your account is still being connected. Try again in a moment.",
+            )
+          : t("contactSupport", "Contact support to get your event passes");
 
     return (
       <View
@@ -431,14 +557,14 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
           borderColor: colors.divider,
           paddingVertical: 34,
           paddingHorizontal: 24,
-          alignItems: 'center',
-          overflow: 'hidden',
+          alignItems: "center",
+          overflow: "hidden",
         }}
       >
         <Image
           source={getSelectEventCardWatermark(isDark)}
           style={{
-            position: 'absolute',
+            position: "absolute",
             right: -30,
             bottom: -18,
             width: 170,
@@ -447,8 +573,19 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
           }}
           resizeMode="contain"
         />
-        <MaterialIcons name="confirmation-number" size={40} color={colors.text.disabled} />
-        <Text style={{ fontSize: 15, fontWeight: '700', color: colors.text.primary, marginTop: 12 }}>
+        <MaterialIcons
+          name="confirmation-number"
+          size={40}
+          color={colors.text.disabled}
+        />
+        <Text
+          style={{
+            fontSize: 15,
+            fontWeight: "700",
+            color: colors.text.primary,
+            marginTop: 12,
+          }}
+        >
           {fallbackTitle}
         </Text>
         <Text
@@ -456,16 +593,24 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
             fontSize: 12,
             color: colors.text.secondary,
             marginTop: 6,
-            textAlign: 'center',
+            textAlign: "center",
             lineHeight: 18,
           }}
         >
           {fallbackMessage}
         </Text>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 10, marginTop: 16 }}>
+        <View
+          style={{
+            flexDirection: "row",
+            flexWrap: "wrap",
+            justifyContent: "center",
+            gap: 10,
+            marginTop: 16,
+          }}
+        >
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={t('tryAgain', 'Try again')}
+            accessibilityLabel={t("tryAgain", "Try again")}
             onPress={handleRetry}
             style={{
               paddingHorizontal: 18,
@@ -474,8 +619,8 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
               backgroundColor: colors.primary,
             }}
           >
-            <Text style={{ color: '#fff', fontSize: 13, fontWeight: '700' }}>
-              {t('tryAgain', 'Try again')}
+            <Text style={{ color: "#fff", fontSize: 13, fontWeight: "700" }}>
+              {t("tryAgain", "Try again")}
             </Text>
           </Pressable>
           {canRestoreIncludedBslPasses && (
@@ -493,15 +638,32 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
                 opacity: restoringIncludedPasses ? 0.65 : 1,
               }}
             >
-              <Text style={{ color: colors.primary, fontSize: 13, fontWeight: '700' }}>
-                {restoringIncludedPasses ? 'Restoring passes…' : 'Restore included passes'}
+              <Text
+                style={{
+                  color: colors.primary,
+                  fontSize: 13,
+                  fontWeight: "700",
+                }}
+              >
+                {restoringIncludedPasses
+                  ? "Restoring passes…"
+                  : "Restore included passes"}
               </Text>
             </Pressable>
           )}
         </View>
         {canRestoreIncludedBslPasses && (
-          <Text style={{ color: colors.text.secondary, fontSize: 11, lineHeight: 16, marginTop: 10, textAlign: 'center' }}>
-            Restore your complimentary BSL General passes. Paid upgrades are never changed.
+          <Text
+            style={{
+              color: colors.text.secondary,
+              fontSize: 11,
+              lineHeight: 16,
+              marginTop: 10,
+              textAlign: "center",
+            }}
+          >
+            Restore your complimentary BSL General passes. Paid upgrades are
+            never changed.
           </Text>
         )}
         {canClaimPass && (
@@ -510,13 +672,22 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
             accessibilityLabel="Have a pass? Claim it here"
             onPress={() => {
               setClaimError(
-                dbUserId ? null : 'Your account is still connecting. Please try again in a moment.',
+                dbUserId
+                  ? null
+                  : "Your account is still connecting. Please try again in a moment.",
               );
               setClaimModalVisible(true);
             }}
             style={{ marginTop: 12, paddingVertical: 4 }}
           >
-            <Text style={{ color: colors.primary, fontSize: 12, fontWeight: '700', textDecorationLine: 'underline' }}>
+            <Text
+              style={{
+                color: colors.primary,
+                fontSize: 12,
+                fontWeight: "700",
+                textDecorationLine: "underline",
+              }}
+            >
               Have a pass? Claim it here
             </Text>
           </Pressable>
@@ -527,11 +698,40 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
           visible={claimModalVisible}
           onRequestClose={() => setClaimModalVisible(false)}
         >
-          <View style={{ flex: 1, justifyContent: 'center', padding: 24, backgroundColor: 'rgba(0, 0, 0, 0.45)' }}>
-            <View style={{ backgroundColor: colors.background.paper, borderRadius: 18, padding: 20, gap: 12 }}>
-              <Text style={{ color: colors.text.primary, fontSize: 18, fontWeight: '700' }}>Claim your pass</Text>
-              <Text style={{ color: colors.text.secondary, fontSize: 13, lineHeight: 19 }}>
-                Enter an invitation or courtesy code from the event team. Codes can be used only by the signed-in account.
+          <View
+            style={{
+              flex: 1,
+              justifyContent: "center",
+              padding: 24,
+              backgroundColor: "rgba(0, 0, 0, 0.45)",
+            }}
+          >
+            <View
+              style={{
+                backgroundColor: colors.background.paper,
+                borderRadius: 18,
+                padding: 20,
+                gap: 12,
+              }}
+            >
+              <Text
+                style={{
+                  color: colors.text.primary,
+                  fontSize: 18,
+                  fontWeight: "700",
+                }}
+              >
+                Claim your pass
+              </Text>
+              <Text
+                style={{
+                  color: colors.text.secondary,
+                  fontSize: 13,
+                  lineHeight: 19,
+                }}
+              >
+                Enter an invitation or courtesy code from the event team. Codes
+                can be used only by the signed-in account.
               </Text>
               <TextInput
                 accessibilityLabel="Pass or courtesy code"
@@ -542,18 +742,40 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
                 placeholder="Enter code"
                 placeholderTextColor={colors.text.disabled}
                 value={claimCode}
-                style={{ borderWidth: 1, borderColor: colors.divider, borderRadius: 10, color: colors.text.primary, fontSize: 15, fontWeight: '600', letterSpacing: 0.5, paddingHorizontal: 12, paddingVertical: 11 }}
+                style={{
+                  borderWidth: 1,
+                  borderColor: colors.divider,
+                  borderRadius: 10,
+                  color: colors.text.primary,
+                  fontSize: 15,
+                  fontWeight: "600",
+                  letterSpacing: 0.5,
+                  paddingHorizontal: 12,
+                  paddingVertical: 11,
+                }}
               />
-              {claimError && <Text style={{ color: '#C81000', fontSize: 12 }}>{claimError}</Text>}
+              {claimError && (
+                <Text style={{ color: "#C81000", fontSize: 12 }}>
+                  {claimError}
+                </Text>
+              )}
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Redeem pass code"
                 disabled={claimingPass || !dbUserId}
                 onPress={handleClaimPassCode}
-                style={{ alignItems: 'center', backgroundColor: colors.primary, borderRadius: 10, opacity: claimingPass || !dbUserId ? 0.65 : 1, paddingVertical: 11 }}
+                style={{
+                  alignItems: "center",
+                  backgroundColor: colors.primary,
+                  borderRadius: 10,
+                  opacity: claimingPass || !dbUserId ? 0.65 : 1,
+                  paddingVertical: 11,
+                }}
               >
-                <Text style={{ color: '#fff', fontSize: 14, fontWeight: '700' }}>
-                  {claimingPass ? 'Redeeming…' : 'Redeem code'}
+                <Text
+                  style={{ color: "#fff", fontSize: 14, fontWeight: "700" }}
+                >
+                  {claimingPass ? "Redeeming…" : "Redeem code"}
                 </Text>
               </Pressable>
               {canRestoreIncludedBslPasses && (
@@ -562,11 +784,18 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
                   accessibilityLabel="Restore BSL complimentary passes"
                   disabled={restoringIncludedPasses}
                   onPress={async () => {
-                    if (await handleRestoreIncludedPasses()) setClaimModalVisible(false);
+                    if (await handleRestoreIncludedPasses())
+                      setClaimModalVisible(false);
                   }}
-                  style={{ alignItems: 'center', paddingVertical: 6 }}
+                  style={{ alignItems: "center", paddingVertical: 6 }}
                 >
-                  <Text style={{ color: colors.primary, fontSize: 13, fontWeight: '700' }}>
+                  <Text
+                    style={{
+                      color: colors.primary,
+                      fontSize: 13,
+                      fontWeight: "700",
+                    }}
+                  >
                     Restore BSL complimentary passes
                   </Text>
                 </Pressable>
@@ -575,9 +804,11 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
                 accessibilityRole="button"
                 accessibilityLabel="Close pass claim dialog"
                 onPress={() => setClaimModalVisible(false)}
-                style={{ alignItems: 'center', paddingVertical: 4 }}
+                style={{ alignItems: "center", paddingVertical: 4 }}
               >
-                <Text style={{ color: colors.text.secondary, fontSize: 13 }}>Cancel</Text>
+                <Text style={{ color: colors.text.secondary, fontSize: 13 }}>
+                  Cancel
+                </Text>
               </Pressable>
             </View>
           </View>
@@ -590,24 +821,35 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
   // only two tour-stop passes, so a stack/search/filter surface adds motion
   // and controls without helping the attendee. The main hashpass.tech tenant
   // continues to use the stacked 3D wallet below.
-  if (layout === 'plain') {
+  if (layout === "plain") {
     return (
       <View>
-        <View style={{ alignItems: 'flex-end', marginBottom: 10 }}>
+        <View style={{ alignItems: "flex-end", marginBottom: 10 }}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={t('wallet.reload', 'Reload passes')}
+            accessibilityLabel={t("wallet.reload", "Reload passes")}
             disabled={isRefreshing}
             onPress={handleRetry}
-            style={{ alignItems: 'center', flexDirection: 'row', gap: 6, opacity: isRefreshing ? 0.7 : 1, paddingHorizontal: 8, paddingVertical: 5 }}
+            style={{
+              alignItems: "center",
+              flexDirection: "row",
+              gap: 6,
+              opacity: isRefreshing ? 0.7 : 1,
+              paddingHorizontal: 8,
+              paddingVertical: 5,
+            }}
           >
             {isRefreshing ? (
               <ActivityIndicator size="small" color={colors.primary} />
             ) : (
               <MaterialIcons name="refresh" size={18} color={colors.primary} />
             )}
-            <Text style={{ color: colors.primary, fontSize: 12, fontWeight: '700' }}>
-              {isRefreshing ? t('wallet.refreshing', 'Refreshing passes…') : t('wallet.reload', 'Reload passes')}
+            <Text
+              style={{ color: colors.primary, fontSize: 12, fontWeight: "700" }}
+            >
+              {isRefreshing
+                ? t("wallet.refreshing", "Refreshing passes…")
+                : t("wallet.reload", "Reload passes")}
             </Text>
           </Pressable>
         </View>
@@ -617,7 +859,11 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
           contentContainerStyle={{ paddingRight: 20 }}
         >
           {isRefreshing ? (
-            <PassCardsSkeleton colors={colors} layout="plain" label={t('wallet.refreshing', 'Refreshing passes…')} />
+            <PassCardsSkeleton
+              colors={colors}
+              layout="plain"
+              label={t("wallet.refreshing", "Refreshing passes…")}
+            />
           ) : (
             walletPasses.map((pass) => (
               <View key={pass.id} style={{ width: cardWidth, marginRight: 16 }}>
@@ -632,74 +878,119 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
 
   return (
     <View>
-      {/* Summary strip */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10, gap: 8 }}>
-        <WalletStat
-          colors={colors}
-          value={counts.total}
-          label={t('wallet.stat.total', 'Passes')}
-          isRefreshing={isRefreshing}
-        />
-        <WalletStat
-          colors={colors}
-          value={counts.live + counts.upcoming}
-          label={t('wallet.stat.active', 'Upcoming')}
-          accent="#34A853"
-          isRefreshing={isRefreshing}
-        />
-        <WalletStat
-          colors={colors}
-          value={counts.past}
-          label={t('wallet.stat.past', 'Past')}
-          isRefreshing={isRefreshing}
-        />
-      </View>
+      {!hideWalletControls && (
+        <>
+          {/* Summary strip */}
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              marginBottom: 10,
+              gap: 8,
+            }}
+          >
+            <WalletStat
+              colors={colors}
+              value={counts.total}
+              label={t("wallet.stat.total", "Passes")}
+              isRefreshing={isRefreshing}
+            />
+            <WalletStat
+              colors={colors}
+              value={counts.live + counts.upcoming}
+              label={t("wallet.stat.active", "Upcoming")}
+              accent="#34A853"
+              isRefreshing={isRefreshing}
+            />
+            <WalletStat
+              colors={colors}
+              value={counts.past}
+              label={t("wallet.stat.past", "Past")}
+              isRefreshing={isRefreshing}
+            />
+          </View>
 
-      {/* Search + filters. Same bar the agenda, notifications and my-requests
-          screens use, so filtering behaves identically everywhere. */}
-      <View style={{ marginHorizontal: -20 }}>
-        <UnifiedSearchAndFilter<WalletPass>
-          data={walletPasses}
-          onFilteredData={handleFilteredData}
-          onSearchChange={handleSearchChange}
-          searchPlaceholder={t('wallet.searchPlaceholder', 'Search your passes')}
-          filterGroups={filterGroups}
-          customFilterLogic={customFilterLogic}
-          showResultsCount={false}
-        />
-      </View>
+          {/* Search + filters. Same bar the agenda, notifications and my-requests
+              screens use, so filtering behaves identically everywhere. */}
+          <View style={{ marginHorizontal: -20 }}>
+            <UnifiedSearchAndFilter<WalletPass>
+              data={walletPasses}
+              onFilteredData={handleFilteredData}
+              onSearchChange={handleSearchChange}
+              searchPlaceholder={t(
+                "wallet.searchPlaceholder",
+                "Search your passes",
+              )}
+              filterGroups={filterGroups}
+              customFilterLogic={customFilterLogic}
+              showResultsCount={false}
+            />
+          </View>
+        </>
+      )}
 
-      <View style={{ alignItems: 'flex-end', marginBottom: 10 }}>
+      <View style={{ alignItems: "flex-end", marginBottom: 10 }}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={t('wallet.reload', 'Reload passes')}
+          accessibilityLabel={t("wallet.reload", "Reload passes")}
           disabled={isRefreshing}
           onPress={handleRetry}
-          style={{ alignItems: 'center', flexDirection: 'row', gap: 6, opacity: isRefreshing ? 0.7 : 1, paddingHorizontal: 8, paddingVertical: 5 }}
+          style={{
+            alignItems: "center",
+            flexDirection: "row",
+            gap: 6,
+            opacity: isRefreshing ? 0.7 : 1,
+            paddingHorizontal: 8,
+            paddingVertical: 5,
+          }}
         >
           {isRefreshing ? (
             <ActivityIndicator size="small" color={colors.primary} />
           ) : (
             <MaterialIcons name="refresh" size={18} color={colors.primary} />
           )}
-          <Text style={{ color: colors.primary, fontSize: 12, fontWeight: '700' }}>
-            {isRefreshing ? t('wallet.refreshing', 'Refreshing passes…') : t('wallet.reload', 'Reload passes')}
+          <Text
+            style={{ color: colors.primary, fontSize: 12, fontWeight: "700" }}
+          >
+            {isRefreshing
+              ? t("wallet.refreshing", "Refreshing passes…")
+              : t("wallet.reload", "Reload passes")}
           </Text>
         </Pressable>
       </View>
 
       {isRefreshing ? (
-        <PassCardsSkeleton colors={colors} layout="stacked" label={t('wallet.refreshing', 'Refreshing passes…')} />
+        <PassCardsSkeleton
+          colors={colors}
+          layout="stacked"
+          label={t("wallet.refreshing", "Refreshing passes…")}
+        />
       ) : deck.length === 0 ? (
-        <View style={{ paddingVertical: 34, alignItems: 'center' }}>
-          <MaterialIcons name="search-off" size={32} color={colors.text.disabled} />
-          <Text style={{ fontSize: 13, color: colors.text.secondary, marginTop: 10 }}>
-            {t('wallet.noMatches', 'No passes match your filters')}
+        <View style={{ paddingVertical: 34, alignItems: "center" }}>
+          <MaterialIcons
+            name="search-off"
+            size={32}
+            color={colors.text.disabled}
+          />
+          <Text
+            style={{
+              fontSize: 13,
+              color: colors.text.secondary,
+              marginTop: 10,
+            }}
+          >
+            {t("wallet.noMatches", "No passes match your filters")}
           </Text>
         </View>
       ) : (
         <View style={{ marginTop: 10 }}>
-          <View style={{ height: PASS_CARD_HEIGHT, width: deckWidth, alignSelf: 'center' }}>
+          <View
+            style={{
+              height: PASS_CARD_HEIGHT,
+              width: deckWidth,
+              alignSelf: "center",
+            }}
+          >
             {/* Painted back-to-front so the front card is the last child:
                 Android ignores zIndex in enough cases that document order is
                 the only reliable stacking signal. */}
@@ -720,15 +1011,23 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
           {deck.length > 1 && (
             <View
               style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'center',
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
                 gap: 10,
                 marginTop: 14,
               }}
             >
-              <TouchableOpacity onPress={() => goToOffset(-1)} hitSlop={8} style={{ padding: 4 }}>
-                <MaterialIcons name="chevron-left" size={22} color={colors.text.secondary} />
+              <TouchableOpacity
+                onPress={() => goToOffset(-1)}
+                hitSlop={8}
+                style={{ padding: 4 }}
+              >
+                <MaterialIcons
+                  name="chevron-left"
+                  size={22}
+                  color={colors.text.secondary}
+                />
               </TouchableOpacity>
 
               {stableOrder.map((pass, index) => (
@@ -740,13 +1039,22 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
                     width: index === activeIndex ? 18 : 6,
                     height: 6,
                     borderRadius: 3,
-                    backgroundColor: index === activeIndex ? pass.accentColor : colors.divider,
+                    backgroundColor:
+                      index === activeIndex ? pass.accentColor : colors.divider,
                   }}
                 />
               ))}
 
-              <TouchableOpacity onPress={() => goToOffset(1)} hitSlop={8} style={{ padding: 4 }}>
-                <MaterialIcons name="chevron-right" size={22} color={colors.text.secondary} />
+              <TouchableOpacity
+                onPress={() => goToOffset(1)}
+                hitSlop={8}
+                style={{ padding: 4 }}
+              >
+                <MaterialIcons
+                  name="chevron-right"
+                  size={22}
+                  color={colors.text.secondary}
+                />
               </TouchableOpacity>
             </View>
           )}
@@ -755,12 +1063,12 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
             style={{
               fontSize: 11,
               color: colors.text.disabled,
-              textAlign: 'center',
+              textAlign: "center",
               marginTop: 8,
             }}
           >
             {deck.length > 1
-              ? t('wallet.stackHint', 'Tap a card behind to bring it forward')
+              ? t("wallet.stackHint", "Tap a card behind to bring it forward")
               : `${deck[0].eventName}`}
           </Text>
         </View>
@@ -784,7 +1092,11 @@ const StackedCard: React.FC<{
   const isFront = position === 0;
 
   useEffect(() => {
-    offset.value = withSpring(position, { damping: 18, stiffness: 160, mass: 0.7 });
+    offset.value = withSpring(position, {
+      damping: 18,
+      stiffness: 160,
+      mass: 0.7,
+    });
   }, [offset, position]);
 
   const style = useAnimatedStyle(() => ({
@@ -799,7 +1111,7 @@ const StackedCard: React.FC<{
     <Animated.View
       style={[
         {
-          position: 'absolute',
+          position: "absolute",
           top: 0,
           left: 0,
           width,
@@ -816,7 +1128,14 @@ const StackedCard: React.FC<{
       {!isFront && (
         <Pressable
           onPress={onBringToFront}
-          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 16 }}
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            borderRadius: 16,
+          }}
         />
       )}
     </Animated.View>
@@ -846,12 +1165,23 @@ const WalletStat: React.FC<{
         accessibilityLabel="Refreshing pass summary"
         color={accent || colors.primary}
         size="small"
-        style={{ alignSelf: 'flex-start', height: 22 }}
+        style={{ alignSelf: "flex-start", height: 22 }}
       />
     ) : (
-      <Text style={{ fontSize: 18, fontWeight: '800', color: accent || colors.text.primary }}>{value}</Text>
+      <Text
+        style={{
+          fontSize: 18,
+          fontWeight: "800",
+          color: accent || colors.text.primary,
+        }}
+      >
+        {value}
+      </Text>
     )}
-    <Text style={{ fontSize: 10, color: colors.text.secondary, marginTop: 1 }} numberOfLines={1}>
+    <Text
+      style={{ fontSize: 10, color: colors.text.secondary, marginTop: 1 }}
+      numberOfLines={1}
+    >
       {label}
     </Text>
   </View>
@@ -862,11 +1192,11 @@ const WalletStat: React.FC<{
 // one consistent visual family instead of the loading state looking like a
 // different, disconnected UI (a spinner+label row floating above a separate
 // empty placeholder box).
-const WalletSkeleton: React.FC<{ colors: any; label: string; sublabel?: string }> = ({
-  colors,
-  label,
-  sublabel,
-}) => {
+const WalletSkeleton: React.FC<{
+  colors: any;
+  label: string;
+  sublabel?: string;
+}> = ({ colors, label, sublabel }) => {
   const pulse = useSharedValue(0.5);
 
   useEffect(() => {
@@ -884,13 +1214,20 @@ const WalletSkeleton: React.FC<{ colors: any; label: string; sublabel?: string }
         borderColor: colors.divider,
         paddingVertical: 34,
         paddingHorizontal: 24,
-        alignItems: 'center',
+        alignItems: "center",
       }}
     >
       <Animated.View style={style}>
         <ActivityIndicator size="large" color={colors.primary} />
       </Animated.View>
-      <Text style={{ fontSize: 15, fontWeight: '700', color: colors.text.primary, marginTop: 12 }}>
+      <Text
+        style={{
+          fontSize: 15,
+          fontWeight: "700",
+          color: colors.text.primary,
+          marginTop: 12,
+        }}
+      >
         {label}
       </Text>
       {sublabel ? (
@@ -899,7 +1236,7 @@ const WalletSkeleton: React.FC<{ colors: any; label: string; sublabel?: string }
             fontSize: 12,
             color: colors.text.secondary,
             marginTop: 6,
-            textAlign: 'center',
+            textAlign: "center",
             lineHeight: 18,
           }}
         >

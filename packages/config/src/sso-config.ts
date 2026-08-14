@@ -45,6 +45,7 @@ export const SSO_CONFIG = {
       'https://peru2026.hashpass.tech',
       'https://chile2026.hashpass.tech',
       'https://colombia2026.hashpass.tech',
+      'https://demo-criptolatinfest.hashpass.tech',
       'https://blockchainsummit.hashpass.lat',
       'https://blockchainsummit-dev.hashpass.lat',
       'https://api.hashpass.tech',
@@ -124,6 +125,24 @@ export const SSO_CONFIG = {
         secondary: '#06111F',
       },
     } as TenantConfig,
+    'criptolatinfest': {
+      id: 'criptolatinfest',
+      name: 'Cripto Latin Fest 2026 (Demo)',
+      domain: 'demo-criptolatinfest.hashpass.tech',
+      slug: 'criptolatinfest',
+      authProvider: 'better-auth',
+      // Demo-mode tenant, guarded to the develop DB only -- see
+      // apps/mobile-app/config/supabase-profiles.ts's isDemo guard. Points
+      // at the dev Lambda (which already has bsl-development credentials
+      // configured) rather than api.hashpass.tech, matching bsl-dev's
+      // apiBaseUrl below.
+      apiBaseUrl: 'https://api-dev.hashpass.tech/api',
+      theme: {
+        primary: '#046BD2',
+        secondary: '#06111F',
+      },
+      isDemo: true,
+    } as TenantConfig,
     'bsl-dev': {
       id: 'bsl-dev',
       name: 'Blockchain Summit Latam On Tour Dev',
@@ -162,6 +181,8 @@ export interface TenantConfig {
     primary: string;
     secondary: string;
   };
+  /** Marks a tenant as a demo/proof-of-concept deployment for a prospective client. */
+  isDemo?: boolean;
 }
 
 // ===========================================
