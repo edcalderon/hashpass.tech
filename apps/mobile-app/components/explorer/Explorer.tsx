@@ -355,7 +355,7 @@ export default function Explorer({
         series: filterSeries,
         cityKey: filterCity,
         onlyPasses: false,
-      }).map((event) => event.id),
+      }).map((event: ExplorerEvent) => event.id),
     [
       explorerEvents,
       filterCity,
@@ -644,6 +644,7 @@ export default function Explorer({
             <EventBannerBackgroundVideo
               source={heroSlide.media.url}
               loadingLogo={selectedEvent.branding?.logo || selectedEvent.image}
+              preferBundledSource={selectedEvent.id === "criptolatinfest"}
               loadingLabel={translate(
                 "explore.rework.loadingEventFilm",
                 "Loading event film",

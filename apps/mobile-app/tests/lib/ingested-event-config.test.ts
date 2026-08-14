@@ -21,6 +21,8 @@ describe("Hash Poker landing and host configuration", () => {
   it("never promotes stale events into an active host configuration", () => {
     expect(isActiveIngestedEvent({ sourceId: "pkrr-hash-poker", status: "stale" })).toBe(false);
     expect(isActiveIngestedEvent({ sourceId: "pkrr-hash-poker", status: "cancelled" })).toBe(false);
+    expect(isActiveIngestedEvent({ sourceId: "pkrr-hash-poker", status: "past" })).toBe(false);
+    expect(isActiveIngestedEvent({ sourceId: "pkrr-hash-poker", status: "live" })).toBe(true);
     expect(isActiveIngestedEvent({ sourceId: "pkrr-hash-poker", status: "upcoming" })).toBe(true);
   });
 });

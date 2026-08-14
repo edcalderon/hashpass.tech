@@ -6,16 +6,17 @@ import NativeEventBannerBackgroundVideo from "../../components/EventBannerBackgr
 import WebEventBannerBackgroundVideo from "../../components/EventBannerBackgroundVideo.web";
 
 const mockNativePlayer = { loop: false, muted: false, play: jest.fn() };
-
-jest.mock("expo-video", () => ({
-  VideoView: "VideoView",
-  useVideoPlayer: (
-    source: string,
-    setup: (player: typeof mockNativePlayer) => void,
-  ) => {
+const mockUseVideoPlayer = jest.fn(
+  (source: unknown, setup: (player: typeof mockNativePlayer) => void) => {
     setup(mockNativePlayer);
     return { source };
   },
+);
+
+jest.mock("expo-video", () => ({
+  VideoView: "VideoView",
+  useVideoPlayer: (...args: Parameters<typeof mockUseVideoPlayer>) =>
+    mockUseVideoPlayer(...args),
 }));
 
 type VideoEvent = "canplay" | "loadeddata";
@@ -56,6 +57,7 @@ describe("EventBannerBackgroundVideo", () => {
     mockNativePlayer.loop = false;
     mockNativePlayer.muted = false;
     mockNativePlayer.play.mockClear();
+    mockUseVideoPlayer.mockClear();
     Object.defineProperty(global, "HTMLMediaElement", {
       configurable: true,
       value: { HAVE_CURRENT_DATA: 2 },
@@ -122,6 +124,19 @@ describe("EventBannerBackgroundVideo", () => {
     expect(video.removeEventListener).toHaveBeenCalledWith(
       "loadeddata",
       expect.any(Function),
+    );
+  });
+
+  it("uses the bundled CLF film on native instead of relying on the remote URL", () => {
+    render(
+      <NativeEventBannerBackgroundVideo
+        source="https://cdn.example/clf.mp4"
+        preferBundledSource
+      />,
+    );
+
+    expect(mockUseVideoPlayer.mock.calls[0]?.[0]).not.toBe(
+      "https://cdn.example/clf.mp4",
     );
   });
 

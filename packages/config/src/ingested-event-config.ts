@@ -9,8 +9,7 @@ export function isActiveIngestedEvent(event: {
 }): boolean {
   return (
     event.sourceId === "pkrr-hash-poker" &&
-    event.status !== "cancelled" &&
-    event.status !== "stale"
+    (event.status === "upcoming" || event.status === "live")
   );
 }
 

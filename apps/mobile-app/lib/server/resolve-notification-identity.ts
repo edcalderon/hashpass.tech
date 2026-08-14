@@ -15,14 +15,29 @@ import { recordDbFailure, recordDbSuccess, shouldBackOff } from './db-health-gua
 const REGISTRY_CACHE_TTL_MS = 30_000;
 const registryCache = new Map<string, { value: { id: string | null; provider_ids?: any } | null; expiresAt: number }>();
 
-const getCachedRegistryRow = (email: string) => {
-  const cached = registryCache.get(email);
+// A warm Lambda may serve core and BSL requests in the same process. The
+// registry row belongs to the resolved Supabase profile, so email alone is
+// not a safe cache identity. Callers without a resolved profile deliberately
+// skip caching rather than risking a cross-tenant identity leak.
+const registryCacheKey = (email: string, profileId?: string): string | null =>
+  profileId ? `${profileId}:${email}` : null;
+
+const getCachedRegistryRow = (email: string, profileId?: string) => {
+  const cacheKey = registryCacheKey(email, profileId);
+  if (!cacheKey) return undefined;
+  const cached = registryCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) return cached.value;
   return undefined; // undefined = not cached (distinct from null = cached "no row")
 };
 
-const setCachedRegistryRow = (email: string, value: { id: string | null; provider_ids?: any } | null) => {
-  registryCache.set(email, { value, expiresAt: Date.now() + REGISTRY_CACHE_TTL_MS });
+const setCachedRegistryRow = (
+  email: string,
+  value: { id: string | null; provider_ids?: any } | null,
+  profileId?: string,
+) => {
+  const cacheKey = registryCacheKey(email, profileId);
+  if (!cacheKey) return;
+  registryCache.set(cacheKey, { value, expiresAt: Date.now() + REGISTRY_CACHE_TTL_MS });
 };
 
 type AuthenticatedUser = {
@@ -78,7 +93,7 @@ export async function resolveSupabaseIdentityForUser(
     return { supabaseUserId: null, registryUserId: null, email: '' };
   }
 
-  const cached = getCachedRegistryRow(email);
+  const cached = getCachedRegistryRow(email, guardContext?.profileId);
   if (cached !== undefined) {
     return {
       supabaseUserId: cached?.provider_ids?.supabase ?? null,
@@ -101,7 +116,7 @@ export async function resolveSupabaseIdentityForUser(
     }
 
     if (guardContext) recordDbSuccess(guardContext.profileId);
-    setCachedRegistryRow(email, registryRow ?? null);
+    setCachedRegistryRow(email, registryRow ?? null, guardContext?.profileId);
     const supabaseUserId = registryRow?.provider_ids?.supabase ?? null;
     const registryUserId = registryRow?.id ?? null;
     return { supabaseUserId, registryUserId, email };
@@ -124,7 +139,7 @@ async function resolveOrCreateRegistryUserId(
   params: { email: string; authUserId: string; fullName?: string | null; avatarUrl?: string | null },
   guardContext?: { profileId: string; environment: 'development' | 'production' }
 ): Promise<string | null> {
-  const cached = getCachedRegistryRow(params.email);
+  const cached = getCachedRegistryRow(params.email, guardContext?.profileId);
   if (cached !== undefined && cached?.id) {
     return cached.id;
   }
@@ -177,7 +192,13 @@ async function resolveOrCreateRegistryUserId(
     }
 
     if (guardContext) recordDbSuccess(guardContext.profileId);
-    if (upserted?.id) setCachedRegistryRow(params.email, { id: upserted.id, provider_ids: { supabase: params.authUserId } });
+    if (upserted?.id) {
+      setCachedRegistryRow(
+        params.email,
+        { id: upserted.id, provider_ids: { supabase: params.authUserId } },
+        guardContext?.profileId,
+      );
+    }
     return upserted?.id ?? null;
   } catch (e) {
     console.error('[resolve-notification-identity] registry self-heal failed:', e);

@@ -209,6 +209,7 @@ export default function EventBanner({
             source={eventVideo!}
             loadingLogo={eventImage}
             loadingLabel={t("rework.loadingEventFilm", "Loading event film")}
+            preferBundledSource={eventId === "criptolatinfest"}
           />
           <SafeLinearGradient
             colors={

@@ -40,7 +40,10 @@ export async function syncEventSources(options: SyncOptions) {
       return JSON.stringify(eventContent(candidate)) === JSON.stringify(eventContent(prior)) ? prior : candidate;
     });
     const incomingIds = new Set(stableIncoming.map(event => event.id));
-    const retained = previous.filter(event => !incomingIds.has(event.id)).map(event => event.sourceId === PKRR_SOURCE.sourceId && event.status === "upcoming" ? { ...event, status: "stale" as const, needsReview: true } : event);
+    // A PKRR row absent from a successful source fetch is no longer a
+    // published candidate. Mark every non-cancelled retained row stale so a
+    // historical weekly snapshot cannot be rolled forward forever.
+    const retained = previous.filter(event => !incomingIds.has(event.id)).map(event => event.sourceId === PKRR_SOURCE.sourceId && event.status !== "cancelled" ? { ...event, status: "stale" as const, needsReview: true } : event);
     events = deduplicateEvents([...retained, ...stableIncoming]);
     health.status = "healthy"; health.lastSuccessfulSync = now.toISOString(); health.eventCount = incoming.length;
   } catch (error) {

@@ -4,6 +4,7 @@ interface EventBannerBackgroundVideoProps {
   source: string;
   loadingLogo?: string;
   loadingLabel?: string;
+  preferBundledSource?: boolean;
 }
 
 /**

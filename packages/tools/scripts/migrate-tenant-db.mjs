@@ -149,7 +149,11 @@ function main() {
     throw new Error(`Unknown database profile "${args.profile}". Known profiles: ${Object.keys(config.profiles).join(', ')}`);
   }
 
-  const groupNames = (args.groups ? args.groups.split(',') : config.defaultGroups)
+  const defaultGroups = [
+    ...config.defaultGroups,
+    ...(config.profileGroups?.[args.profile] || []),
+  ];
+  const groupNames = (args.groups ? args.groups.split(',') : defaultGroups)
     .map((group) => group.trim())
     .filter(Boolean);
   const migrationFiles = resolveMigrationFiles(config, groupNames);

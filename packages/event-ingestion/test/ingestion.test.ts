@@ -91,4 +91,18 @@ describe("sync failure", () => {
     await syncEventSources({ outputFile, healthFile, fetchImpl: fetchImpl as typeof fetch, now: new Date("2026-08-14T01:00:00Z") });
     assert.equal(await readFile(outputFile, "utf8"), first);
   });
+  it("retires PKRR rows that disappear from a successful source sync", async () => {
+    const outputFile = `/tmp/hashpass-events-retired-${process.pid}.json`; const healthFile = `/tmp/hashpass-health-retired-${process.pid}.json`; files.push(outputFile, healthFile);
+    const { writeFile } = await import("node:fs/promises");
+    const [published] = parsePkrrHtml(await fixture("pkrr.html"), new Date("2026-08-14T00:00:00Z"));
+    await writeFile(outputFile, JSON.stringify({ events: [{ ...published, id: "pkrr-hash-poker:retired", externalId: "retired", status: "past" }] }));
+    const html = await fixture("pkrr.html");
+    const fetchImpl = async (input: string | URL | Request) => new Response(String(input).includes("robots.txt") ? "User-agent: *\nAllow: /" : html, { status: 200 });
+    const result = await syncEventSources({ outputFile, healthFile, fetchImpl: fetchImpl as typeof fetch, now: new Date("2026-08-14T00:00:00Z") });
+
+    assert.equal(result.health.status, "healthy");
+    const retired = result.events.find(event => event.externalId === "retired");
+    assert.equal(retired?.status, "stale");
+    assert.equal(retired?.needsReview, true);
+  });
 });

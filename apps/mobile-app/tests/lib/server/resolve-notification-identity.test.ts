@@ -59,6 +59,55 @@ describe('resolveNotificationIdentity', () => {
     expect(mockAuthenticateRequest).toHaveBeenCalledTimes(1);
   });
 
+  it('scopes the registry cache to the resolved Supabase profile', async () => {
+    const coreMaybeSingle = jest.fn().mockResolvedValue({
+      data: { id: 'core-registry-id', provider_ids: { supabase: 'core-auth-id' } },
+      error: null,
+    });
+    const bslMaybeSingle = jest.fn().mockResolvedValue({
+      data: { id: 'bsl-registry-id', provider_ids: { supabase: 'bsl-auth-id' } },
+      error: null,
+    });
+    const makeSupabase = (maybeSingle: jest.Mock) => ({
+      auth: { getUser: jest.fn() },
+      from: () => ({ select: () => ({ eq: () => ({ maybeSingle }) }) }),
+    });
+    mockGetSupabaseServerForRequest.mockImplementation((_request, profileId) =>
+      profileId === 'bsl-development'
+        ? makeSupabase(bslMaybeSingle)
+        : makeSupabase(coreMaybeSingle),
+    );
+    mockAuthenticateRequest.mockResolvedValue({
+      user: { id: 'provider-user-id', email: 'shared@example.com' },
+      error: null,
+    });
+
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    const { resolveNotificationIdentity } = require('../../../lib/server/resolve-notification-identity');
+    await expect(
+      resolveNotificationIdentity(
+        new Request('https://api.hashpass.tech/api/passes'),
+        'core-development',
+      ),
+    ).resolves.toEqual({
+      supabaseUserId: 'core-auth-id',
+      registryUserId: 'core-registry-id',
+      email: 'shared@example.com',
+    });
+    await expect(
+      resolveNotificationIdentity(
+        new Request('https://bsl-dev.hashpass.tech/api/passes'),
+        'bsl-development',
+      ),
+    ).resolves.toEqual({
+      supabaseUserId: 'bsl-auth-id',
+      registryUserId: 'bsl-registry-id',
+      email: 'shared@example.com',
+    });
+    expect(coreMaybeSingle).toHaveBeenCalledTimes(1);
+    expect(bslMaybeSingle).toHaveBeenCalledTimes(1);
+  });
+
   it('keeps the real Supabase UUID and resolves the registry id when a bearer token is valid', async () => {
     const getUser = jest.fn().mockResolvedValue({
       data: { user: { id: '7f60f5d2-5948-4df1-9670-2f9177cf2fe4', email: 'edward@hashpass.app', user_metadata: {} } },
