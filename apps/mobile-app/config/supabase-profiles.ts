@@ -1,3 +1,5 @@
+import { resolveTenantByHostname } from '@hashpass/config';
+
 export type SupabaseProfileId =
   | 'core-development'
   | 'core-production'
@@ -274,7 +276,14 @@ const PROFILES: SupabaseProfile[] = [
     id: 'bsl-development',
     tenant: 'bsl',
     environment: 'development',
-    hosts: ['bsl-dev.hashpass.tech'],
+    // demo-criptolatinfest.hashpass.tech piggybacks on the BSL dev DB/app
+    // bundle (see packages/config/src/events.ts's `criptolatinfest` entry,
+    // isDemo: true). Demo-mode tenants are guarded to development
+    // databases only -- see the isDemoHostname() check in
+    // resolveSupabaseProfile() below, which force-downgrades any demo
+    // hostname to its tenant's `-development` profile even if this host
+    // ever ends up listed on a `-production` profile by mistake.
+    hosts: ['bsl-dev.hashpass.tech', 'demo-criptolatinfest.hashpass.tech'],
     publicUrlEnv: [
       'EXPO_PUBLIC_BSL_SUPABASE_URL_DEV',
       'EXPO_PUBLIC_SUPABASE_URL_BSL_DEV',
@@ -467,24 +476,49 @@ const runtimeHostname = (hostname?: string) => {
 const profileById = (profileId?: string | null): SupabaseProfile | undefined =>
   PROFILES.find((profile) => profile.id === profileId);
 
+// Demo-mode tenants (TenantConfig.isDemo / EventConfig.isDemo in
+// packages/config/src/sso-config.ts) are for prospective clients whose deal
+// isn't signed yet -- they must never be able to reach a production
+// Supabase project, however they got resolved (hosts[] entry, explicit
+// profileId override, or the tenant-less fallback rule below).
+const isDemoHostname = (hostname: string): boolean => {
+  if (!hostname) return false;
+  try {
+    return Boolean(resolveTenantByHostname(hostname)?.isDemo);
+  } catch {
+    return false;
+  }
+};
+
 export const resolveSupabaseProfile = (input?: {
   hostname?: string;
   profileId?: string | null;
 }): SupabaseProfile => {
-  const explicitProfile = profileById(input?.profileId);
-
-  if (explicitProfile) return explicitProfile;
-
   const host = runtimeHostname(input?.hostname);
-  const matched = PROFILES.find((profile) => profile.hosts.includes(host));
-  if (matched) return matched;
 
-  const buildProfile =
-    profileById(readProcessEnv('EXPO_PUBLIC_SUPABASE_PROFILE')) ||
-    profileById(readProcessEnv('SUPABASE_PROFILE'));
-  if (buildProfile) return buildProfile;
+  const resolved = (() => {
+    const explicitProfile = profileById(input?.profileId);
+    if (explicitProfile) return explicitProfile;
 
-  return host.includes('bsl') ? profileById('bsl-production')! : profileById('core-production')!;
+    const matched = PROFILES.find((profile) => profile.hosts.includes(host));
+    if (matched) return matched;
+
+    const buildProfile =
+      profileById(readProcessEnv('EXPO_PUBLIC_SUPABASE_PROFILE')) ||
+      profileById(readProcessEnv('SUPABASE_PROFILE'));
+    if (buildProfile) return buildProfile;
+
+    return host.includes('bsl') ? profileById('bsl-production')! : profileById('core-production')!;
+  })();
+
+  if (resolved.environment === 'production' && isDemoHostname(host)) {
+    const devCounterpart = PROFILES.find(
+      (profile) => profile.tenant === resolved.tenant && profile.environment === 'development'
+    );
+    if (devCounterpart) return devCounterpart;
+  }
+
+  return resolved;
 };
 
 export const resolvePublicSupabaseConfig = (input?: {

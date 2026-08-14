@@ -17,7 +17,7 @@ export interface AgendaItem {
   title: string;
   description?: string;
   speakers?: string[];
-  type: "keynote" | "panel" | "break" | "meal" | "registration";
+  type: "keynote" | "panel" | "workshop" | "break" | "meal" | "registration";
   location?: string;
   // Explicit day number ('1' | '2' | '3', see app/events/[eventSlug]/agenda.tsx)
   // for multi-day events. Without it, the agenda screen falls back to
@@ -113,4 +113,10 @@ export interface EventConfig {
   eventType?: "hashpass" | "whitelabel";
   tour?: EventTourMeta;
   website?: string; // Event website URL for footer links
+  /**
+   * Marks an event as a demo/proof-of-concept deployment for a prospective
+   * client whose deal isn't signed yet (e.g. shown on a demo-* subdomain).
+   * Purely a display/schema flag today -- not wired to feature gating.
+   */
+  isDemo?: boolean;
 }
