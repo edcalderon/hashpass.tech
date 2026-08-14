@@ -82,13 +82,13 @@
       "db/migrations/V056__admin_email_delivery_template.sql",
       "db/migrations/V057__admin_event_scoped_attendees.sql"
     ],
-    "core": ["apps/mobile-app/db/migrations/V001__init_core_schema.sql"],
+    "core": ["db/migrations-mobile-bootstrap/V001__init_core_schema.sql"],
     "events": [
-      "apps/mobile-app/db/migrations/V002__meeting_requests_system.sql"
+      "db/migrations-mobile-bootstrap/V002__meeting_requests_system.sql"
     ],
-    "security": ["apps/mobile-app/db/migrations/V003__row_level_security.sql"],
-    "wallet": ["apps/mobile-app/db/migrations/V004__wallet_auth.sql"],
-    "auth": ["apps/mobile-app/db/migrations/V005__otp_codes.sql"],
+    "security": ["db/migrations-mobile-bootstrap/V003__row_level_security.sql"],
+    "wallet": ["db/migrations-mobile-bootstrap/V004__wallet_auth.sql"],
+    "auth": ["db/migrations-mobile-bootstrap/V005__otp_codes.sql"],
     "rls-hardening": [
       "db/migrations/V008__enable_missing_rls.sql",
       "db/migrations/V009__meeting_slots_select_policy.sql",
