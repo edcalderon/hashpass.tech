@@ -97,3 +97,55 @@ CREATE POLICY "tenant_isolation" ON my_table
   FOR ALL
   USING (tenant_id = current_setting('app.tenant_id', true)::uuid);
 ```
+
+## Multi-database Tenant Migrations
+
+For hosted tenants that use separate Supabase projects, prefer the repository
+migration runner. It applies the same migration groups to a named database
+profile and records applied files in `public.hashpass_schema_migrations`.
+
+```bash
+# Preview the BSL production migration plan
+pnpm run db:migrate:bsl:prod:dry
+
+# Apply core, event, wallet, auth, and RLS migrations to BSL production
+pnpm run db:migrate:bsl:prod
+
+# Apply only selected groups
+pnpm run db:migrate -- --profile bsl-production --groups core,wallet,auth
+```
+
+Required database URL env vars:
+- `BSL_SUPABASE_DB_URL_PROD` for `bsl.hashpass.tech`
+- `BSL_SUPABASE_DB_URL_DEV` for `bsl-dev.hashpass.tech`
+- `SUPABASE_DB_URL_PROD` for `hashpass.tech`
+- `SUPABASE_DB_URL_DEV` for local/develop core
+
+For production release and infra sync, the matching BSL alias keys should also
+be present in root `.env`:
+- `EXPO_PUBLIC_BSL_SUPABASE_URL_PROD`
+- `EXPO_PUBLIC_BSL_SUPABASE_KEY_PROD`
+- `BSL_SUPABASE_SERVICE_ROLE_KEY_PROD`
+- `BSL_SUPABASE_DB_URL_PROD`
+
+The URL must be a PostgreSQL connection string with enough privileges to create
+tables, functions, policies, and extensions.
+
+## `migrations-mobile-bootstrap/`
+
+A second, independent migration sequence living alongside `migrations/`, not a
+duplicate of it. It's the original foundational bootstrap (`core`, `events`,
+`security`, `wallet`, `auth` groups in
+`packages/tools/scripts/config/database-profiles.json`) used to provision a
+brand-new tenant database from scratch — formerly kept under
+`apps/mobile-app/db/migrations/`, moved here 2026-08-14 so every migration
+lives under one root `db/` folder. File names were kept byte-identical during
+the move: `public.hashpass_schema_migrations` tracks applied migrations by
+file basename, and BSL production already has `V001`–`V005` from this
+sequence recorded under those exact names — renaming them would have broken
+that tracking. It is **not** a drop-in continuation of `migrations/`'s own
+numbering: `migrations/` independently has its own `V001`–`V007` (a different,
+later schema-evolution path) — confirmed diverged for real between BSL
+production (took this bootstrap path) and BSL development (took the
+`migrations/` path instead) at the `V004`–`V007` range. Do not attempt to
+merge the two numbering sequences or renumber files in either one.

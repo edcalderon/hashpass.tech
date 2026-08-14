@@ -125,7 +125,7 @@ apps/web-app/.env.staging
 TODO
 
 # OpenProof submission exports are generated locally / attached to releases.
-artifacts/openproof/*.png
-artifacts/openproof/*.mp4
+assets/openproof/*.png
+assets/openproof/*.mp4
 apps/web-app/public/openproof/*.png
 apps/web-app/public/openproof/*.mp4
