@@ -2,6 +2,9 @@ export * from "./agenda";
 export {
   Speaker,
   EventConfig,
+  EventBannerSlide,
+  EventBannerCtaPosition,
+  EventBannerSlideI18n,
   EventGeo,
   EventContinent,
   QuickAccessItem,

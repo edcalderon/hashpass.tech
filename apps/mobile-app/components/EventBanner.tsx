@@ -1,13 +1,29 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Animated, TouchableOpacity, StatusBar, Image, ImageBackground } from 'react-native';
-import { useTheme } from '../hooks/useTheme';
-import { useRouter } from 'expo-router';
-import { useTranslation } from '../i18n/i18n';
-import { isMainBranch } from '../lib/event-detector';
-import { getTourBrandAsset, resolveEventImageSource } from '../lib/event-branding';
-import { MaterialIcons } from '../lib/vector-icons';
-import AgendaTracker from './AgendaTracker';
-import SafeLinearGradient from './SafeLinearGradient';
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Animated,
+  TouchableOpacity,
+  StatusBar,
+  Image,
+  ImageBackground,
+  Linking,
+} from "react-native";
+import { useTheme } from "../hooks/useTheme";
+import { useRouter } from "expo-router";
+import { useTranslation } from "../i18n/i18n";
+import { isMainBranch } from "../lib/event-detector";
+import {
+  getTourBrandAsset,
+  resolveEventImageSource,
+} from "../lib/event-branding";
+import { MaterialIcons } from "../lib/vector-icons";
+import AgendaTracker from "./AgendaTracker";
+import EventBannerBackgroundVideo from "./EventBannerBackgroundVideo";
+import SafeLinearGradient from "./SafeLinearGradient";
+import { getEventBannerCtaLayout } from "../lib/banner-cta";
+import type { EventBannerCtaPosition } from "@hashpass/types";
 
 interface EventBannerProps {
   title: string;
@@ -24,7 +40,11 @@ interface EventBannerProps {
   eventImage?: string; // Optional event hero image
   isEventFinished?: boolean; // Whether the event has finished
   eventLabel?: string;
+  eventShortName?: string;
+  eventVideo?: string;
   ctaLabel?: string;
+  ctaUrl?: string;
+  ctaPosition?: EventBannerCtaPosition;
 }
 
 interface TimeLeft {
@@ -58,11 +78,11 @@ const calculateTimeLeft = (eventStartDate?: string): TimeLeft => {
   };
 };
 
-export default function EventBanner({ 
-  title, 
-  subtitle, 
-  date, 
-  backgroundColor = '#007AFF',
+export default function EventBanner({
+  title,
+  subtitle,
+  date,
+  backgroundColor = "#007AFF",
   showCountdown = false,
   showLiveIndicator = false,
   eventStartDate,
@@ -73,18 +93,31 @@ export default function EventBanner({
   eventImage,
   isEventFinished = false,
   eventLabel,
+  eventShortName,
+  eventVideo,
   ctaLabel,
+  ctaUrl,
+  ctaPosition,
 }: EventBannerProps) {
   const { isDark, colors } = useTheme();
   const router = useRouter();
-  const { t } = useTranslation('explore');
+  const { t } = useTranslation("explore");
   const tourBrand = getTourBrandAsset(eventId);
   const heroImageSource = resolveEventImageSource(eventImage);
-  const hasValidStartDate = Boolean(eventStartDate && !Number.isNaN(new Date(eventStartDate).getTime()));
-  const gratitudeEventLabel = title || 'this event';
-  const isArchiveEvent = Boolean(isEventFinished || eventId === 'bsl2025' || tourBrand?.label?.toLowerCase().includes('archive'));
+  const hasVideoBackground = Boolean(eventVideo);
+  const hasValidStartDate = Boolean(
+    eventStartDate && !Number.isNaN(new Date(eventStartDate).getTime()),
+  );
+  const gratitudeEventLabel = title || "this event";
+  const isArchiveEvent = Boolean(
+    isEventFinished ||
+    eventId === "bsl2025" ||
+    tourBrand?.label?.toLowerCase().includes("archive"),
+  );
   const suppressLiveContent = isArchiveEvent && !isEventFinished;
-  const [timeLeft, setTimeLeft] = useState<TimeLeft>(() => calculateTimeLeft(eventStartDate));
+  const [timeLeft, setTimeLeft] = useState<TimeLeft>(() =>
+    calculateTimeLeft(eventStartDate),
+  );
   const [isEventLive, setIsEventLive] = useState(false);
   const [pulseAnim] = useState(new Animated.Value(1));
   const styles = getStyles(isDark, colors, backgroundColor, isArchiveEvent);
@@ -122,7 +155,14 @@ export default function EventBanner({
 
       return () => clearInterval(timer);
     }
-  }, [showCountdown, eventStartDate, hasValidStartDate, isEventLive, isLive, suppressLiveContent]);
+  }, [
+    showCountdown,
+    eventStartDate,
+    hasValidStartDate,
+    isEventLive,
+    isLive,
+    suppressLiveContent,
+  ]);
 
   // Live indicator pulse animation
   useEffect(() => {
@@ -146,12 +186,48 @@ export default function EventBanner({
   }, [showLiveIndicator, isLive, isEventLive, pulseAnim, suppressLiveContent]);
 
   const formatTimeUnit = (value: number): string => {
-    return value.toString().padStart(2, '0');
+    return value.toString().padStart(2, "0");
+  };
+
+  const handleCtaPress = () => {
+    if (!ctaUrl) return;
+    if (/^https?:\/\//i.test(ctaUrl)) {
+      Linking.openURL(ctaUrl).catch(() => {});
+      return;
+    }
+    router.push(ctaUrl as any);
   };
 
   return (
     <View style={styles.headerSection}>
-      {heroImageSource ? (
+      {hasVideoBackground ? (
+        <>
+          <EventBannerBackgroundVideo
+            source={eventVideo!}
+            loadingLogo={eventImage}
+            loadingLabel={t("rework.loadingEventFilm", "Loading event film")}
+          />
+          <SafeLinearGradient
+            colors={
+              isDark
+                ? [
+                    "rgba(6, 12, 24, 0.20)",
+                    "rgba(6, 12, 24, 0.74)",
+                    "rgba(6, 12, 24, 0.94)",
+                  ]
+                : [
+                    "rgba(5, 12, 24, 0.16)",
+                    "rgba(5, 12, 24, 0.58)",
+                    "rgba(5, 12, 24, 0.90)",
+                  ]
+            }
+            locations={[0, 0.58, 1]}
+            start={{ x: 0.5, y: 0 }}
+            end={{ x: 0.5, y: 1 }}
+            style={styles.heroOverlay}
+          />
+        </>
+      ) : heroImageSource ? (
         <ImageBackground
           source={heroImageSource}
           resizeMode="cover"
@@ -161,8 +237,16 @@ export default function EventBanner({
           <SafeLinearGradient
             colors={
               isDark
-                ? ['rgba(6, 12, 24, 0.18)', 'rgba(6, 12, 24, 0.72)', 'rgba(6, 12, 24, 0.94)']
-                : ['rgba(5, 12, 24, 0.08)', 'rgba(5, 12, 24, 0.52)', 'rgba(5, 12, 24, 0.88)']
+                ? [
+                    "rgba(6, 12, 24, 0.18)",
+                    "rgba(6, 12, 24, 0.72)",
+                    "rgba(6, 12, 24, 0.94)",
+                  ]
+                : [
+                    "rgba(5, 12, 24, 0.08)",
+                    "rgba(5, 12, 24, 0.52)",
+                    "rgba(5, 12, 24, 0.88)",
+                  ]
             }
             locations={[0, 0.58, 1]}
             start={{ x: 0.5, y: 0 }}
@@ -174,7 +258,7 @@ export default function EventBanner({
         <SafeLinearGradient
           colors={
             isArchiveEvent
-              ? ['#07111F', '#0B1728', backgroundColor]
+              ? ["#07111F", "#0B1728", backgroundColor]
               : [backgroundColor, backgroundColor, backgroundColor]
           }
           locations={[0, 0.52, 1]}
@@ -191,14 +275,16 @@ export default function EventBanner({
         {isArchiveEvent && (
           <View style={styles.archiveBadge}>
             <MaterialIcons name="history" size={16} color="#FFFFFF" />
-            <Text style={styles.archiveBadgeText}>{t('banner.pastEvent')}</Text>
+            <Text style={styles.archiveBadgeText}>{t("banner.pastEvent")}</Text>
           </View>
         )}
 
         {/* Main Event Info */}
         <View style={styles.mainInfo}>
           {eventLabel ? (
-            <View style={styles.communityLabel}><Text style={styles.communityLabelText}>{eventLabel}</Text></View>
+            <View style={styles.communityLabel}>
+              <Text style={styles.communityLabelText}>{eventLabel}</Text>
+            </View>
           ) : null}
           {tourBrand ? (
             <View style={styles.logoContainer}>
@@ -210,11 +296,15 @@ export default function EventBanner({
               <Text style={styles.logoSubLabel}>{tourBrand.label}</Text>
             </View>
           ) : (
-            <Text style={styles.eventTitle}>{title}</Text>
+            <View style={styles.eventTitleRow}>
+              {eventShortName ? (
+                <Text style={styles.eventShortName}>{eventShortName}</Text>
+              ) : null}
+              <Text style={styles.eventTitle}>{title}</Text>
+            </View>
           )}
           <Text style={styles.eventSubtitle}>{subtitle}</Text>
           <Text style={styles.eventDate}>{date}</Text>
-          {ctaLabel ? <Text style={styles.communityCta}>{ctaLabel} →</Text> : null}
         </View>
 
         {/* Finished Event Badge */}
@@ -222,7 +312,7 @@ export default function EventBanner({
           <View style={styles.finishedBadge}>
             <MaterialIcons name="celebration" size={20} color="#FFFFFF" />
             <Text style={styles.finishedBadgeText}>
-              {t('banner.archivedEdition')}
+              {t("banner.archivedEdition")}
             </Text>
           </View>
         )}
@@ -238,14 +328,18 @@ export default function EventBanner({
               Thank you for being part of {gratitudeEventLabel}!
             </Text>
             <Text style={styles.gratitudeSubtitle}>
-              Esta edición quedó archivada como referencia histórica. Agradecemos a todos los asistentes, speakers y colaboradores que hicieron posible el evento.
+              Esta edición quedó archivada como referencia histórica.
+              Agradecemos a todos los asistentes, speakers y colaboradores que
+              hicieron posible el evento.
             </Text>
             <Text style={styles.gratitudeSubtitleEn}>
-              This edition is archived as a historical reference. We thank all attendees, speakers and collaborators who made it possible.
+              This edition is archived as a historical reference. We thank all
+              attendees, speakers and collaborators who made it possible.
             </Text>
             <View style={styles.gratitudeThanksContainer}>
               <Text style={styles.gratitudeThanks}>
-                Especial agradecimiento al equipo organizador y a las instituciones anfitrionas.
+                Especial agradecimiento al equipo organizador y a las
+                instituciones anfitrionas.
               </Text>
               <Text style={styles.gratitudeThanksEn}>
                 Special thanks to the organizing team and the host institutions.
@@ -253,12 +347,14 @@ export default function EventBanner({
             </View>
             <TouchableOpacity
               style={styles.viewMoreEventsButton}
-              onPress={() => router.push('/(shared)/dashboard/explore' as any)}
+              onPress={() => router.push("/(shared)/dashboard/explore" as any)}
               activeOpacity={0.8}
             >
               <MaterialIcons name="explore" size={20} color="#FFFFFF" />
               <Text style={styles.viewMoreEventsText}>
-                {isMainBranch ? t('banner.exploreAllEvents') : t('banner.exploreMoreEvents')}
+                {isMainBranch
+                  ? t("banner.exploreAllEvents")
+                  : t("banner.exploreMoreEvents")}
               </Text>
             </TouchableOpacity>
           </View>
@@ -266,354 +362,429 @@ export default function EventBanner({
           <>
             {/* Agenda Tracker - Show when event is live */}
             {!suppressLiveContent && (isLive || isEventLive) && (
-              <AgendaTracker eventId={eventId} backgroundColor={backgroundColor} />
+              <AgendaTracker
+                eventId={eventId}
+                backgroundColor={backgroundColor}
+              />
             )}
 
             {/* Countdown Timer - Only show before event starts */}
-            {showCountdown && hasValidStartDate && !suppressLiveContent && !isLive && !isEventLive && (
-              <View style={styles.countdownContainer}>
-                <Text style={styles.countdownLabel}>{t('banner.startsIn')}</Text>
-                <View style={styles.countdownTimer}>
-                  <View style={styles.timeUnit}>
-                    <Text style={styles.timeValue}>{formatTimeUnit(timeLeft.days)}</Text>
-                    <Text style={styles.timeLabel}>{t('banner.days')}</Text>
-                  </View>
-                  <Text style={styles.timeSeparator}>:</Text>
-                  <View style={styles.timeUnit}>
-                    <Text style={styles.timeValue}>{formatTimeUnit(timeLeft.hours)}</Text>
-                    <Text style={styles.timeLabel}>{t('banner.hours')}</Text>
-                  </View>
-                  <Text style={styles.timeSeparator}>:</Text>
-                  <View style={styles.timeUnit}>
-                    <Text style={styles.timeValue}>{formatTimeUnit(timeLeft.minutes)}</Text>
-                    <Text style={styles.timeLabel}>{t('banner.minutes')}</Text>
-                  </View>
-                  <Text style={styles.timeSeparator}>:</Text>
-                  <View style={styles.timeUnit}>
-                    <Text style={styles.timeValue}>{formatTimeUnit(timeLeft.seconds)}</Text>
-                    <Text style={styles.timeLabel}>{t('banner.seconds')}</Text>
+            {showCountdown &&
+              hasValidStartDate &&
+              !suppressLiveContent &&
+              !isLive &&
+              !isEventLive && (
+                <View style={styles.countdownContainer}>
+                  <Text style={styles.countdownLabel}>
+                    {t("banner.startsIn")}
+                  </Text>
+                  <View style={styles.countdownTimer}>
+                    <View style={styles.timeUnit}>
+                      <Text style={styles.timeValue}>
+                        {formatTimeUnit(timeLeft.days)}
+                      </Text>
+                      <Text style={styles.timeLabel}>{t("banner.days")}</Text>
+                    </View>
+                    <Text style={styles.timeSeparator}>:</Text>
+                    <View style={styles.timeUnit}>
+                      <Text style={styles.timeValue}>
+                        {formatTimeUnit(timeLeft.hours)}
+                      </Text>
+                      <Text style={styles.timeLabel}>{t("banner.hours")}</Text>
+                    </View>
+                    <Text style={styles.timeSeparator}>:</Text>
+                    <View style={styles.timeUnit}>
+                      <Text style={styles.timeValue}>
+                        {formatTimeUnit(timeLeft.minutes)}
+                      </Text>
+                      <Text style={styles.timeLabel}>
+                        {t("banner.minutes")}
+                      </Text>
+                    </View>
+                    <Text style={styles.timeSeparator}>:</Text>
+                    <View style={styles.timeUnit}>
+                      <Text style={styles.timeValue}>
+                        {formatTimeUnit(timeLeft.seconds)}
+                      </Text>
+                      <Text style={styles.timeLabel}>
+                        {t("banner.seconds")}
+                      </Text>
+                    </View>
                   </View>
                 </View>
-              </View>
-            )}
+              )}
           </>
         )}
       </View>
+      {ctaLabel ? (
+        <TouchableOpacity
+          disabled={!ctaUrl}
+          onPress={handleCtaPress}
+          accessibilityRole={ctaUrl ? "button" : undefined}
+          accessibilityLabel={ctaLabel}
+          style={[
+            styles.bannerCta,
+            getEventBannerCtaLayout(ctaPosition, { bottom: 24 }),
+          ]}
+        >
+          <Text style={styles.communityCta}>{ctaLabel}</Text>
+        </TouchableOpacity>
+      ) : null}
     </View>
   );
 }
 
-const getStyles = (isDark: boolean, colors: any, backgroundColor: string, isArchiveEvent: boolean) => StyleSheet.create({
-  headerSection: {
-    padding: 20,
-    paddingTop: (StatusBar.currentHeight || 0) + 100, // Extra top padding to account for nav bar overlay
-    backgroundColor: isArchiveEvent ? (isDark ? '#07111F' : '#F4F7FB') : backgroundColor,
-    alignItems: 'center',
-    minHeight: 390,
-    justifyContent: 'center',
-    flex: 1,
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  heroBackground: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  heroBackgroundImage: {
-    transform: [{ scale: 1.12 }],
-    opacity: isDark ? 0.9 : 1,
-  },
-  heroOverlay: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  heroFallback: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  lightBeamEffect: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 120,
-    backgroundColor: isDark ? 'rgba(0, 212, 255, 0.15)' : 'rgba(255, 107, 107, 0.15)',
-    zIndex: 1,
-    pointerEvents: 'none',
-  },
-  contentShell: {
-    width: '100%',
-    position: 'relative',
-    zIndex: 2,
-    alignItems: 'center',
-  },
-  archiveBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'center',
-    backgroundColor: 'rgba(7, 17, 31, 0.52)',
-    borderColor: 'rgba(255, 255, 255, 0.22)',
-    borderWidth: 1,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 999,
-    marginBottom: 16,
-  },
-  archiveBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '800',
-    marginLeft: 6,
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-  },
-  mainInfo: {
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  eventTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginBottom: 4,
-    textAlign: 'center',
-  },
-  logoContainer: {
-    alignItems: 'center',
-    marginBottom: 4,
-    width: '100%',
-  },
-  eventLogo: {
-    width: 168,
-    height: 54,
-    marginBottom: 6,
-  },
-  logoSubLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    letterSpacing: 1.5,
-    textTransform: 'uppercase',
-    marginTop: 4,
-  },
-  eventSubtitle: {
-    fontSize: 16,
-    color: '#E3F2FD',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  eventDate: {
-    fontSize: 14,
-    color: '#BBDEFB',
-    textAlign: 'center',
-  },
-  communityLabel: {
-    backgroundColor: 'rgba(255, 255, 255, 0.18)',
-    borderColor: 'rgba(255, 255, 255, 0.42)',
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    marginBottom: 10,
-  },
-  communityLabelText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-  },
-  communityCta: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '700',
-    marginTop: 12,
-  },
-  // Live Indicator Styles
-  liveIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    marginBottom: 16,
-  },
-  liveDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#FF3B30',
-    marginRight: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  liveDotInner: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#FFFFFF',
-  },
-  liveText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: 'bold',
-    letterSpacing: 1,
-  },
-  notLiveText: {
-    color: '#BBDEFB',
-    fontSize: 12,
-    fontWeight: 'bold',
-    letterSpacing: 1,
-  },
-  lastUpdatedText: {
-    color: '#BBDEFB',
-    fontSize: 10,
-    marginTop: 2,
-  },
-  // Countdown Styles
-  countdownContainer: {
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  countdownLabel: {
-    color: '#E3F2FD',
-    fontSize: 14,
-    marginBottom: 8,
-    fontWeight: '500',
-  },
-  countdownTimer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  timeUnit: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    borderRadius: 8,
-    minWidth: 50,
-  },
-  timeValue: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: 'bold',
-    lineHeight: 20,
-  },
-  timeLabel: {
-    color: '#BBDEFB',
-    fontSize: 10,
-    fontWeight: '600',
-    letterSpacing: 0.5,
-  },
-  timeSeparator: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginHorizontal: 4,
-  },
-  // Finished Event Badge
-  finishedBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.22)',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginBottom: 16,
-  },
-  finishedBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-    marginLeft: 8,
-  },
-  // Gratitude Message Styles (replaces Agenda Tracker)
-  gratitudeContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    marginTop: 8,
-    width: '100%',
-  },
-  gratitudeTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    textAlign: 'center',
-    marginTop: 12,
-    marginBottom: 6,
-    lineHeight: 28,
-  },
-  gratitudeTitleEn: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    textAlign: 'center',
-    marginBottom: 16,
-    opacity: 0.95,
-    fontStyle: 'italic',
-    lineHeight: 24,
-  },
-  gratitudeSubtitle: {
-    fontSize: 15,
-    color: '#FFFFFF',
-    textAlign: 'center',
-    marginBottom: 10,
-    lineHeight: 21,
-    opacity: 0.95,
-    paddingHorizontal: 8,
-    maxWidth: 560,
-  },
-  gratitudeSubtitleEn: {
-    fontSize: 13,
-    color: '#FFFFFF',
-    textAlign: 'center',
-    marginBottom: 16,
-    lineHeight: 19,
-    opacity: 0.85,
-    fontStyle: 'italic',
-    paddingHorizontal: 8,
-    maxWidth: 560,
-  },
-  gratitudeThanksContainer: {
-    marginTop: 8,
-    paddingHorizontal: 8,
-  },
-  gratitudeThanks: {
-    fontSize: 14,
-    color: '#FFFFFF',
-    textAlign: 'center',
-    marginBottom: 6,
-    lineHeight: 20,
-    fontWeight: '600',
-    opacity: 0.95,
-  },
-  gratitudeThanksEn: {
-    fontSize: 12,
-    color: '#FFFFFF',
-    textAlign: 'center',
-    lineHeight: 18,
-    opacity: 0.85,
-    fontStyle: 'italic',
-  },
-  // View More Events Button
-  viewMoreEventsButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 25,
-    marginTop: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-  },
-  viewMoreEventsText: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '600',
-    marginLeft: 8,
-    letterSpacing: 0.5,
-  },
-});
+const getStyles = (
+  isDark: boolean,
+  colors: any,
+  backgroundColor: string,
+  isArchiveEvent: boolean,
+) =>
+  StyleSheet.create({
+    headerSection: {
+      padding: 20,
+      paddingTop: (StatusBar.currentHeight || 0) + 100, // Extra top padding to account for nav bar overlay
+      backgroundColor: isArchiveEvent
+        ? isDark
+          ? "#07111F"
+          : "#F4F7FB"
+        : backgroundColor,
+      alignItems: "center",
+      minHeight: 390,
+      justifyContent: "center",
+      flex: 1,
+      position: "relative",
+      overflow: "hidden",
+    },
+    heroBackground: {
+      ...StyleSheet.absoluteFillObject,
+    },
+    eventTitleRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      flexWrap: "wrap",
+    },
+    eventShortName: {
+      color: "#FFFFFF",
+      borderColor: "rgba(255, 255, 255, 0.72)",
+      borderWidth: 1,
+      borderRadius: 999,
+      fontSize: 12,
+      fontWeight: "800",
+      letterSpacing: 1.2,
+      lineHeight: 16,
+      marginRight: 10,
+      overflow: "hidden",
+      paddingHorizontal: 9,
+      paddingVertical: 3,
+    },
+    heroBackgroundImage: {
+      transform: [{ scale: 1.12 }],
+      opacity: isDark ? 0.9 : 1,
+    },
+    heroOverlay: {
+      ...StyleSheet.absoluteFillObject,
+    },
+    heroFallback: {
+      ...StyleSheet.absoluteFillObject,
+    },
+    lightBeamEffect: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      height: 120,
+      backgroundColor: isDark
+        ? "rgba(0, 212, 255, 0.15)"
+        : "rgba(255, 107, 107, 0.15)",
+      zIndex: 1,
+      pointerEvents: "none",
+    },
+    contentShell: {
+      width: "100%",
+      position: "relative",
+      zIndex: 2,
+      alignItems: "center",
+    },
+    archiveBadge: {
+      flexDirection: "row",
+      alignItems: "center",
+      alignSelf: "center",
+      backgroundColor: "rgba(7, 17, 31, 0.52)",
+      borderColor: "rgba(255, 255, 255, 0.22)",
+      borderWidth: 1,
+      paddingHorizontal: 14,
+      paddingVertical: 6,
+      borderRadius: 999,
+      marginBottom: 16,
+    },
+    archiveBadgeText: {
+      color: "#FFFFFF",
+      fontSize: 12,
+      fontWeight: "800",
+      marginLeft: 6,
+      letterSpacing: 0.8,
+      textTransform: "uppercase",
+    },
+    mainInfo: {
+      alignItems: "center",
+      marginBottom: 16,
+    },
+    eventTitle: {
+      fontSize: 28,
+      fontWeight: "bold",
+      color: "#FFFFFF",
+      marginBottom: 4,
+      textAlign: "center",
+    },
+    logoContainer: {
+      alignItems: "center",
+      marginBottom: 4,
+      width: "100%",
+    },
+    eventLogo: {
+      width: 168,
+      height: 54,
+      marginBottom: 6,
+    },
+    logoSubLabel: {
+      fontSize: 12,
+      fontWeight: "600",
+      color: "#FFFFFF",
+      letterSpacing: 1.5,
+      textTransform: "uppercase",
+      marginTop: 4,
+    },
+    eventSubtitle: {
+      fontSize: 16,
+      color: "#E3F2FD",
+      marginBottom: 8,
+      textAlign: "center",
+    },
+    eventDate: {
+      fontSize: 14,
+      color: "#BBDEFB",
+      textAlign: "center",
+    },
+    communityLabel: {
+      backgroundColor: "rgba(255, 255, 255, 0.18)",
+      borderColor: "rgba(255, 255, 255, 0.42)",
+      borderWidth: 1,
+      borderRadius: 999,
+      paddingHorizontal: 12,
+      paddingVertical: 5,
+      marginBottom: 10,
+    },
+    communityLabelText: {
+      color: "#FFFFFF",
+      fontSize: 12,
+      fontWeight: "700",
+      letterSpacing: 0.6,
+      textTransform: "uppercase",
+    },
+    communityCta: {
+      color: "#FFFFFF",
+      fontSize: 14,
+      fontWeight: "700",
+    },
+    bannerCta: {
+      minHeight: 44,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: 18,
+      borderRadius: 12,
+      backgroundColor: colors.primary,
+      zIndex: 3,
+    },
+    // Live Indicator Styles
+    liveIndicator: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: "rgba(255, 255, 255, 0.2)",
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 20,
+      marginBottom: 16,
+    },
+    liveDot: {
+      width: 12,
+      height: 12,
+      borderRadius: 6,
+      backgroundColor: "#FF3B30",
+      marginRight: 8,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    liveDotInner: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+      backgroundColor: "#FFFFFF",
+    },
+    liveText: {
+      color: "#FFFFFF",
+      fontSize: 12,
+      fontWeight: "bold",
+      letterSpacing: 1,
+    },
+    notLiveText: {
+      color: "#BBDEFB",
+      fontSize: 12,
+      fontWeight: "bold",
+      letterSpacing: 1,
+    },
+    lastUpdatedText: {
+      color: "#BBDEFB",
+      fontSize: 10,
+      marginTop: 2,
+    },
+    // Countdown Styles
+    countdownContainer: {
+      alignItems: "center",
+      marginBottom: 16,
+    },
+    countdownLabel: {
+      color: "#E3F2FD",
+      fontSize: 14,
+      marginBottom: 8,
+      fontWeight: "500",
+    },
+    countdownTimer: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
+    timeUnit: {
+      alignItems: "center",
+      backgroundColor: "rgba(255, 255, 255, 0.2)",
+      paddingHorizontal: 8,
+      paddingVertical: 6,
+      borderRadius: 8,
+      minWidth: 50,
+    },
+    timeValue: {
+      color: "#FFFFFF",
+      fontSize: 18,
+      fontWeight: "bold",
+      lineHeight: 20,
+    },
+    timeLabel: {
+      color: "#BBDEFB",
+      fontSize: 10,
+      fontWeight: "600",
+      letterSpacing: 0.5,
+    },
+    timeSeparator: {
+      color: "#FFFFFF",
+      fontSize: 16,
+      fontWeight: "bold",
+      marginHorizontal: 4,
+    },
+    // Finished Event Badge
+    finishedBadge: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: "rgba(0, 0, 0, 0.22)",
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      borderRadius: 20,
+      marginBottom: 16,
+    },
+    finishedBadgeText: {
+      color: "#FFFFFF",
+      fontSize: 12,
+      fontWeight: "700",
+      letterSpacing: 0.5,
+      marginLeft: 8,
+    },
+    // Gratitude Message Styles (replaces Agenda Tracker)
+    gratitudeContainer: {
+      alignItems: "center",
+      justifyContent: "center",
+      paddingVertical: 16,
+      paddingHorizontal: 16,
+      marginTop: 8,
+      width: "100%",
+    },
+    gratitudeTitle: {
+      fontSize: 22,
+      fontWeight: "700",
+      color: "#FFFFFF",
+      textAlign: "center",
+      marginTop: 12,
+      marginBottom: 6,
+      lineHeight: 28,
+    },
+    gratitudeTitleEn: {
+      fontSize: 18,
+      fontWeight: "600",
+      color: "#FFFFFF",
+      textAlign: "center",
+      marginBottom: 16,
+      opacity: 0.95,
+      fontStyle: "italic",
+      lineHeight: 24,
+    },
+    gratitudeSubtitle: {
+      fontSize: 15,
+      color: "#FFFFFF",
+      textAlign: "center",
+      marginBottom: 10,
+      lineHeight: 21,
+      opacity: 0.95,
+      paddingHorizontal: 8,
+      maxWidth: 560,
+    },
+    gratitudeSubtitleEn: {
+      fontSize: 13,
+      color: "#FFFFFF",
+      textAlign: "center",
+      marginBottom: 16,
+      lineHeight: 19,
+      opacity: 0.85,
+      fontStyle: "italic",
+      paddingHorizontal: 8,
+      maxWidth: 560,
+    },
+    gratitudeThanksContainer: {
+      marginTop: 8,
+      paddingHorizontal: 8,
+    },
+    gratitudeThanks: {
+      fontSize: 14,
+      color: "#FFFFFF",
+      textAlign: "center",
+      marginBottom: 6,
+      lineHeight: 20,
+      fontWeight: "600",
+      opacity: 0.95,
+    },
+    gratitudeThanksEn: {
+      fontSize: 12,
+      color: "#FFFFFF",
+      textAlign: "center",
+      lineHeight: 18,
+      opacity: 0.85,
+      fontStyle: "italic",
+    },
+    // View More Events Button
+    viewMoreEventsButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: "rgba(255, 255, 255, 0.2)",
+      paddingHorizontal: 20,
+      paddingVertical: 12,
+      borderRadius: 25,
+      marginTop: 20,
+      borderWidth: 1,
+      borderColor: "rgba(255, 255, 255, 0.3)",
+    },
+    viewMoreEventsText: {
+      color: "#FFFFFF",
+      fontSize: 15,
+      fontWeight: "600",
+      marginLeft: 8,
+      letterSpacing: 0.5,
+    },
+  });

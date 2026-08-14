@@ -52,6 +52,45 @@ export interface EventGeo {
   continent: EventContinent;
 }
 
+/** An organizer-managed promotional slide shown within one event's banner. */
+export type EventBannerCtaPosition =
+  "bottom-right" | "bottom-left" | "top-right" | "top-left";
+
+export interface EventBannerSlideI18n {
+  /** Translation keys resolved by each presentation surface. */
+  eyebrow?: string;
+  title?: string;
+  subtitle?: string;
+  date?: string;
+  ctaLabel?: string;
+}
+
+export interface EventBannerSlide {
+  /** Stable identifier used for ordering, analytics, and admin updates. */
+  id: string;
+  /** A slide can override the event's default static image with video or image media. */
+  media: {
+    type: "image" | "video";
+    url: string;
+  };
+  eyebrow?: string;
+  title?: string;
+  subtitle?: string;
+  date?: string;
+  /** Display duration before advancing to the next slide. Video slides can
+   * use their rendered duration; static slides default to five seconds. */
+  durationMs?: number;
+  backgroundColor?: string;
+  /** Optional locale keys for campaign copy; event names remain canonical. */
+  i18n?: EventBannerSlideI18n;
+  cta?: {
+    label: string;
+    url: string;
+    /** Defaults to bottom-right. Override only when campaign art needs it. */
+    position?: EventBannerCtaPosition;
+  };
+}
+
 export interface EventTourMeta {
   hubEventId?: string;
   role?: EventTourRole;
@@ -65,12 +104,23 @@ export interface EventTourMeta {
 export interface EventConfig {
   id: string;
   name: string;
+  /** Compact event name for constrained UI, e.g. BSL or CLF. */
+  shortName?: string;
+  /** Canonical alternate names used by search, imports, and tenant routing. */
+  aliases?: string[];
   domain: string;
   features: string[];
   // UI display fields
   title: string;
   subtitle: string;
   image: string;
+  /** Optional autoplaying hero footage for event discovery surfaces. */
+  heroVideo?: string;
+  /**
+   * Ordered promotional slides owned by this event. When omitted, discovery
+   * falls back to one static slide using `image` and the event's core details.
+   */
+  bannerSlides?: EventBannerSlide[];
   color: string;
   // Event dates for countdown and display
   eventStartDate?: string; // ISO date string for countdown
@@ -116,7 +166,8 @@ export interface EventConfig {
   /** Ingestion/community metadata; conference-only surfaces are feature-gated. */
   sourceId?: string;
   organizerName?: string;
-  communityEventType?: "poker_room_event" | "community_tournament" | "community_event";
+  communityEventType?:
+    "poker_room_event" | "community_tournament" | "community_event";
   recurrenceLabel?: string;
   cta?: { label: string; url: string };
   networkingEnabled?: boolean;

@@ -1,87 +1,125 @@
 /// <reference types="jest" />
 
-import fs from 'fs';
-import path from 'path';
+import fs from "fs";
+import path from "path";
 
 const readSource = (relativePath: string) =>
-  fs.readFileSync(path.resolve(__dirname, relativePath), 'utf8');
+  fs.readFileSync(path.resolve(__dirname, relativePath), "utf8");
 
-describe('Android layout event crash guards', () => {
-  it('does not attach landing page onLayout handlers on Android', () => {
-    const source = readSource('../../app/home.tsx');
+describe("Android layout event crash guards", () => {
+  it("does not attach landing page onLayout handlers on Android", () => {
+    const source = readSource("../../app/home.tsx");
 
-    expect(source).toContain('onLayout={Platform.OS === "android" ? undefined : handleInitialScrollLayout}');
+    expect(source).toContain(
+      'onLayout={Platform.OS === "android" ? undefined : handleInitialScrollLayout}',
+    );
     expect(source).toContain('Platform.OS === "android"');
-    expect(source).toContain('featuresLayoutRef.current = { y };');
+    expect(source).toContain("featuresLayoutRef.current = { y };");
   });
 
-  it('keeps the reworked explorer scroll handling platform-safe', () => {
-    const source = readSource('../../app/(shared)/dashboard/explore.tsx');
-    const explorerSource = readSource('../../components/explorer/Explorer.tsx');
+  it("keeps the reworked explorer scroll handling platform-safe", () => {
+    const source = readSource("../../app/(shared)/dashboard/explore.tsx");
+    const explorerSource = readSource("../../components/explorer/Explorer.tsx");
     // The reworked explorer owns its event rails and derives horizontal
     // scroll state from native scroll metrics. It no longer mounts the old
     // quick-access/select-event layout handlers on this route.
-    expect(source).toContain('import Explorer from "../../../components/explorer/Explorer"');
-    expect(explorerSource).toContain('onScroll={(event) => handleScroll(event, "horizontal")}');
-    expect(explorerSource).toContain('setShowBackToTop(contentOffset.y > 120)');
+    expect(source).toContain(
+      'import Explorer from "../../../components/explorer/Explorer"',
+    );
+    expect(explorerSource).toContain(
+      'onScroll={(event) => handleScroll(event, "horizontal")}',
+    );
+    expect(explorerSource).toContain("setShowBackToTop(contentOffset.y > 120)");
 
     // Legacy dashboard rows still share the hook, which owns the Android
     // viewport fallback guard used by those rows.
-    const hookSource = readSource('../../hooks/useHorizontalScrollArrows.ts');
+    const hookSource = readSource("../../hooks/useHorizontalScrollArrows.ts");
 
-    expect(hookSource).toContain("if (Platform.OS === 'android' && viewportWidthRef.current <= 0 && androidFallbackWidth)");
+    expect(hookSource).toContain(
+      "if (Platform.OS === 'android' && viewportWidthRef.current <= 0 && androidFallbackWidth)",
+    );
   });
 
-  it('does not attach dashboard scroll-card onLayout handlers on Android', () => {
-    const hashPointsSource = readSource('../../components/HashPointsView.tsx');
-    const blockchainTokensSource = readSource('../../components/BlockchainTokensView.tsx');
-    const quickAccessGridSource = readSource('../../components/explorer/QuickAccessGrid.tsx');
+  it("does not attach dashboard scroll-card onLayout handlers on Android", () => {
+    const hashPointsSource = readSource("../../components/HashPointsView.tsx");
+    const blockchainTokensSource = readSource(
+      "../../components/BlockchainTokensView.tsx",
+    );
+    const quickAccessGridSource = readSource(
+      "../../components/explorer/QuickAccessGrid.tsx",
+    );
 
-    expect(hashPointsSource).toContain("onLayout={Platform.OS === 'android' ? undefined : handleLayout}");
-    expect(blockchainTokensSource).toContain("onLayout={Platform.OS === 'android' ? undefined : handleLayout}");
-    expect(quickAccessGridSource).toContain("onLayout={Platform.OS === 'android' ? undefined : handleLayout}");
+    expect(hashPointsSource).toContain(
+      "onLayout={Platform.OS === 'android' ? undefined : handleLayout}",
+    );
+    expect(blockchainTokensSource).toContain(
+      "onLayout={Platform.OS === 'android' ? undefined : handleLayout}",
+    );
+    expect(quickAccessGridSource).toContain(
+      "onLayout={Platform.OS === 'android' ? undefined : handleLayout}",
+    );
   });
 
-  it('uses the black full HASHPASS logo on light native landing surfaces', () => {
-    const logoSource = readSource('../../lib/hashpass-logo.ts');
-    const dashboardSource = readSource('../../app/(shared)/dashboard/_layout.tsx');
+  it("uses the black full HASHPASS logo on light native landing surfaces", () => {
+    const logoSource = readSource("../../lib/hashpass-logo.ts");
+    const dashboardSource = readSource(
+      "../../app/(shared)/dashboard/_layout.tsx",
+    );
 
-    expect(logoSource).toContain('logo-full-hashpass-black.webp');
-    expect(dashboardSource).toContain("require('../../../assets/logos/hashpass/logo-full-hashpass-white.webp')");
+    expect(logoSource).toContain("logo-full-hashpass-black.webp");
+    expect(dashboardSource).toContain(
+      'require("../../../assets/logos/hashpass/logo-full-hashpass-white.webp")',
+    );
   });
 
-  it('routes native post-auth dashboard navigation through the shared route group', () => {
-    const authSource = readSource('../../app/(shared)/auth.tsx');
-    const homeSource = readSource('../../app/home.tsx');
+  it("routes native post-auth dashboard navigation through the shared route group", () => {
+    const authSource = readSource("../../app/(shared)/auth.tsx");
+    const homeSource = readSource("../../app/home.tsx");
 
-    expect(authSource).toContain('const DASHBOARD_EXPLORE_PUBLIC_PATH = "/dashboard/explore";');
-    expect(authSource).toContain('const DASHBOARD_EXPLORE_ROUTER_PATH = "/(shared)/dashboard/explore";');
-    expect(authSource).toContain('router.replace(routerRedirectPath as any);');
-    expect(authSource).toContain('return <Redirect href={routerRedirectPath as any} />;');
-    expect(homeSource).toContain('router.replace("/(shared)/dashboard/explore" as any);');
+    expect(authSource).toContain(
+      'const DASHBOARD_EXPLORE_PUBLIC_PATH = "/dashboard/explore";',
+    );
+    expect(authSource).toContain(
+      'const DASHBOARD_EXPLORE_ROUTER_PATH = "/(shared)/dashboard/explore";',
+    );
+    expect(authSource).toContain("router.replace(routerRedirectPath as any);");
+    expect(authSource).toContain(
+      "return <Redirect href={routerRedirectPath as any} />;",
+    );
+    expect(homeSource).toContain(
+      'router.replace("/(shared)/dashboard/explore" as any);',
+    );
   });
 
-  it('keeps native OTP autofill from leaving stale text in the first digit cell', () => {
-    const authSource = readSource('../../app/(shared)/auth.tsx');
+  it("keeps native OTP autofill from leaving stale text in the first digit cell", () => {
+    const authSource = readSource("../../app/(shared)/auth.tsx");
 
-    expect(authSource).toContain('const [otpCell0RemountKey, setOtpCell0RemountKey] = useState(0);');
-    expect(authSource).toContain('setOtpCell0RemountKey((k) => k + 1);');
-    expect(authSource).toContain('`otp-input-${key}-${otpCell0RemountKey}`');
-    expect(authSource).toContain('`otp-input-${key}`');
-    expect(authSource).toContain('maxLength={index === 0 ? OTP_CODE_LENGTH : 1}');
+    expect(authSource).toContain(
+      "const [otpCell0RemountKey, setOtpCell0RemountKey] = useState(0);",
+    );
+    expect(authSource).toContain("setOtpCell0RemountKey((k) => k + 1);");
+    expect(authSource).toContain("`otp-input-${key}-${otpCell0RemountKey}`");
+    expect(authSource).toContain("`otp-input-${key}`");
+    expect(authSource).toContain(
+      "maxLength={index === 0 ? OTP_CODE_LENGTH : 1}",
+    );
     expect(authSource).toContain('index === 0 ? "oneTimeCode" : undefined');
   });
 
-  it('keeps the native dashboard drawer clear of Android system edges', () => {
-    const dashboardSource = readSource('../../app/(shared)/dashboard/_layout.tsx');
+  it("keeps the native dashboard drawer clear of Android system edges", () => {
+    const dashboardSource = readSource(
+      "../../app/(shared)/dashboard/_layout.tsx",
+    );
 
-    expect(dashboardSource).toContain('const ANDROID_DRAWER_BOTTOM_GUARD = 56;');
-    expect(dashboardSource).toContain('Platform.OS !== \'web\' && isMobile');
-    expect(dashboardSource).toContain('width: dashboardDrawerWidth');
-    expect(dashboardSource).toContain('bottomInset={drawerSafeInsets.bottom}');
+    expect(dashboardSource).toContain(
+      "const ANDROID_DRAWER_BOTTOM_GUARD = 56;",
+    );
+    expect(dashboardSource).toContain('Platform.OS !== "web" && isMobile');
+    expect(dashboardSource).toContain("width: dashboardDrawerWidth");
+    expect(dashboardSource).toContain("bottomInset={drawerSafeInsets.bottom}");
   });
 
-  it('keeps a stable drawerStyle reference so the open/close animation is not re-targeted mid-transition', () => {
+  it("keeps a stable drawerStyle reference so the open/close animation is not re-targeted mid-transition", () => {
     // Regression for: opening the drawer looked like it stopped at an
     // intermediate width (~40%) on the first tap and needed a second tap to
     // reach the full 80%; closing showed the same two-tap symptom in reverse.
@@ -94,15 +132,21 @@ describe('Android layout event crash guards', () => {
     // in-progress animation from wherever it currently sits. Memoizing both
     // the width value and the wrapper object keeps that reference stable
     // across renders that don't actually change the width.
-    const dashboardSource = readSource('../../app/(shared)/dashboard/_layout.tsx');
+    const dashboardSource = readSource(
+      "../../app/(shared)/dashboard/_layout.tsx",
+    );
 
-    expect(dashboardSource).toContain('const dashboardDrawerWidth = useMemo<DimensionValue>(');
-    expect(dashboardSource).toContain('const dashboardDrawerStyle = useMemo(');
-    expect(dashboardSource).toContain('() => ({ width: dashboardDrawerWidth }),');
-    expect(dashboardSource).toContain('drawerStyle: dashboardDrawerStyle,');
+    expect(dashboardSource).toContain(
+      "const dashboardDrawerWidth = useMemo<DimensionValue>(",
+    );
+    expect(dashboardSource).toContain("const dashboardDrawerStyle = useMemo(");
+    expect(dashboardSource).toContain(
+      "() => ({ width: dashboardDrawerWidth }),",
+    );
+    expect(dashboardSource).toContain("drawerStyle: dashboardDrawerStyle,");
   });
 
-  it('navigates drawer menu items by screen name and auto-collapses on route change', () => {
+  it("navigates drawer menu items by screen name and auto-collapses on route change", () => {
     // Regression for two live-reproduced bugs: (1) tapping a menu item did not
     // change the tab behind it — router.push('./wallet') from the drawer
     // content's route context resolved inconsistently and was frequently a
@@ -110,63 +154,85 @@ describe('Android layout event crash guards', () => {
     // sidebar did not auto-collapse on tab change — closing it inline was
     // overridden by the async navigation update, so the reliable close lives in
     // an effect keyed on pathname (fires after the route actually changes).
-    const dashboardSource = readSource('../../app/(shared)/dashboard/_layout.tsx');
+    const dashboardSource = readSource(
+      "../../app/(shared)/dashboard/_layout.tsx",
+    );
     const handleNavigationSource = dashboardSource.slice(
-      dashboardSource.indexOf('const handleNavigation ='),
-      dashboardSource.indexOf('const handleLogout =')
+      dashboardSource.indexOf("const handleNavigation ="),
+      dashboardSource.indexOf("const handleLogout ="),
     );
 
-    expect(handleNavigationSource).toContain("const screenName = route.replace('./', '');");
-    expect(handleNavigationSource).toContain('navigation.navigate(screenName);');
-    expect(handleNavigationSource).not.toContain('router.push(route)');
+    expect(handleNavigationSource).toContain(
+      'const screenName = route.replace("./", "");',
+    );
+    expect(handleNavigationSource).toContain(
+      "navigation.navigate(screenName);",
+    );
+    expect(handleNavigationSource).not.toContain("router.push(route)");
     // Auto-collapse effect keyed on pathname. Closes via setDrawerOpen (the
     // openControlRef-backed helper — see the "uses one drawer gesture owner"
     // test below), not a direct dispatch, so this is keyed on setDrawerOpen.
-    expect(dashboardSource).toContain('const previousPathnameRef = useRef(pathname);');
-    expect(dashboardSource).toContain('}, [pathname, setDrawerOpen]);');
+    expect(dashboardSource).toContain(
+      "const previousPathnameRef = useRef(pathname);",
+    );
+    expect(dashboardSource).toContain("}, [pathname, setDrawerOpen]);");
   });
 
-  it('routes dashboard drawer logout to the login screen after clearing the local session', () => {
+  it("routes dashboard drawer logout to the login screen after clearing the local session", () => {
     // Logout must clear the actual persisted session (see
     // SupabaseAuthProvider/BetterAuthProvider signOut fixes) and land on the
     // login screen, not silently do nothing and not leave a resurrectable
     // session behind for a later getSession() to pick back up.
-    const dashboardSource = readSource('../../app/(shared)/dashboard/_layout.tsx');
+    const dashboardSource = readSource(
+      "../../app/(shared)/dashboard/_layout.tsx",
+    );
     const handleLogoutSource = dashboardSource.slice(
-      dashboardSource.indexOf('const handleLogout = async () => {'),
-      dashboardSource.indexOf('const handleLanguageToggle')
+      dashboardSource.indexOf("const handleLogout = async () => {"),
+      dashboardSource.indexOf("const handleLanguageToggle"),
     );
 
-    expect(dashboardSource).toContain('const [isSigningOut, setIsSigningOut] = React.useState(false);');
-    expect(dashboardSource).toContain('disabled={isSigningOut}');
-    expect(handleLogoutSource).toContain('router.replace(\'/(shared)/auth\' as any);');
+    expect(dashboardSource).toContain(
+      "const [isSigningOut, setIsSigningOut] = React.useState(false);",
+    );
+    expect(dashboardSource).toContain("disabled={isSigningOut}");
+    expect(handleLogoutSource).toContain(
+      'router.replace("/(shared)/auth" as any);',
+    );
   });
 
-  it('leaves a visible dimmed backdrop next to the open drawer instead of covering the full screen', () => {
+  it("leaves a visible dimmed backdrop next to the open drawer instead of covering the full screen", () => {
     // Regression for: the drawer was set to Math.ceil(viewportWidth) (100%
     // of the screen) on native mobile. With no gap left over, there is
     // nothing for the drawer's own tap-outside-to-close overlay Pressable to
     // render on top of — there is no "outside" a user can tap, even though
     // the close handlers themselves are fine. Must be less than full width
     // so a dimmed, tappable area remains on the right.
-    const dashboardSource = readSource('../../app/(shared)/dashboard/_layout.tsx');
+    const dashboardSource = readSource(
+      "../../app/(shared)/dashboard/_layout.tsx",
+    );
 
-    expect(dashboardSource).toContain('Math.ceil(viewportWidth * 0.8)');
+    expect(dashboardSource).toContain("Math.ceil(viewportWidth * 0.8)");
   });
 
-  it('only runs the drawer header gradient animations while the drawer is open', () => {
+  it("only runs the drawer header gradient animations while the drawer is open", () => {
     // Regression for: these 4 infinite (-1) Reanimated animations ran for as
     // long as CustomDrawerContent stayed mounted, i.e. the whole time the
     // dashboard is open, not just the moments this decorative background is
     // actually visible — measured at a sustained ~65%+ CPU on an emulator
     // with the drawer merely left open and nothing being touched.
-    const dashboardSource = readSource('../../app/(shared)/dashboard/_layout.tsx');
+    const dashboardSource = readSource(
+      "../../app/(shared)/dashboard/_layout.tsx",
+    );
 
-    expect(dashboardSource).toContain('if (decorativeAnimationsEnabled && drawerStatus === \'open\') {');
-    expect(dashboardSource).toContain('}, [decorativeAnimationsEnabled, drawerStatus]);');
+    expect(dashboardSource).toContain(
+      'if (decorativeAnimationsEnabled && drawerStatus === "open") {',
+    );
+    expect(dashboardSource).toContain(
+      "}, [decorativeAnimationsEnabled, drawerStatus]);",
+    );
   });
 
-  it('disables all decorative drawer animation on native, not just web-tuned gating', () => {
+  it("disables all decorative drawer animation on native, not just web-tuned gating", () => {
     // Regression for: the sidebar still felt slow to open/close on native even
     // after the gradient animations were gated to only run while open (test
     // above). The 4 gradient animations, the gradient layers themselves, and
@@ -174,23 +240,27 @@ describe('Android layout event crash guards', () => {
     // the drawer's own open/close slide for UI-thread frame budget. Native now
     // opts out of all of it; the decoration is kept on web only, where it's
     // cheap and the slowness was never reported.
-    const dashboardSource = readSource('../../app/(shared)/dashboard/_layout.tsx');
-
-    expect(dashboardSource).toContain(
-      "const decorativeAnimationsEnabled = animationsEnabled && Platform.OS === 'web';"
+    const dashboardSource = readSource(
+      "../../app/(shared)/dashboard/_layout.tsx",
     );
-    expect(dashboardSource).toContain('{decorativeAnimationsEnabled ? (');
-    expect(dashboardSource).toContain("if (Platform.OS !== 'web') return;");
+
+    expect(dashboardSource).toMatch(
+      /const decorativeAnimationsEnabled\s*=\s*animationsEnabled && Platform\.OS === "web";/,
+    );
+    expect(dashboardSource).toContain("{decorativeAnimationsEnabled ? (");
+    expect(dashboardSource).toContain('if (Platform.OS !== "web") return;');
   });
 
-  it('uses one drawer gesture owner so the close button or outside press always settles fully closed', () => {
-    const dashboardSource = readSource('../../app/(shared)/dashboard/_layout.tsx');
+  it("uses one drawer gesture owner so the close button or outside press always settles fully closed", () => {
+    const dashboardSource = readSource(
+      "../../app/(shared)/dashboard/_layout.tsx",
+    );
 
     // react-native-drawer-layout already owns a whole-screen pan and outside
     // overlay. A second GestureDetector inside drawer content competed with
     // it, allowing the close transition to be left partially open.
-    expect(dashboardSource).not.toContain('GestureDetector');
-    expect(dashboardSource).not.toContain('DrawerActions.toggleDrawer()');
+    expect(dashboardSource).not.toContain("GestureDetector");
+    expect(dashboardSource).not.toContain("DrawerActions.toggleDrawer()");
     // closeDrawer() is the one canonical close path (X button, menu-item
     // auto-collapse, logout, tutorial-forced close all route through it —
     // see the other tests in this file). It calls setDrawerOpen(false), not
@@ -201,16 +271,24 @@ describe('Android layout event crash guards', () => {
     // any local build of identical source). setDrawerOpen drives the
     // patched @react-navigation/drawer's own openControlRef instead,
     // bypassing that broken pipeline.
-    expect(dashboardSource).toContain('const closeDrawer = () => {\n    setDrawerOpen(false);\n  };');
-    expect(dashboardSource).toContain('onPress={() => openDashboardDrawerFromHeader(navigation)}');
-    expect(dashboardSource).toContain("id: 'nav.closeMenu', message: 'Close navigation menu'");
+    expect(dashboardSource).toContain(
+      "const closeDrawer = () => {\n    setDrawerOpen(false);\n  };",
+    );
+    expect(dashboardSource).toContain(
+      "onPress={() => openDashboardDrawerFromHeader(navigation)}",
+    );
+    expect(dashboardSource).toMatch(
+      /id: "nav\.closeMenu",\s*message: "Close navigation menu",/,
+    );
   });
 
-  it('always forwards the first native hamburger tap to the drawer navigator', () => {
-    const dashboardSource = readSource('../../app/(shared)/dashboard/_layout.tsx');
+  it("always forwards the first native hamburger tap to the drawer navigator", () => {
+    const dashboardSource = readSource(
+      "../../app/(shared)/dashboard/_layout.tsx",
+    );
     const openDrawerSource = dashboardSource.slice(
-      dashboardSource.indexOf('const openDashboardDrawer = useCallback'),
-      dashboardSource.indexOf('const closeDashboardDrawer = useCallback')
+      dashboardSource.indexOf("const openDashboardDrawer = useCallback"),
+      dashboardSource.indexOf("const closeDashboardDrawer = useCallback"),
     );
 
     // Regression for v1.8.258: a local "opening" transition lock could be
@@ -218,33 +296,51 @@ describe('Android layout event crash guards', () => {
     // some production Android devices. That made the first (and every later)
     // hamburger press a no-op. The navigator owns its transition state; the
     // header must always dispatch the initial open action.
-    expect(dashboardSource).toContain("swipeEnabled: Platform.OS === 'web'");
-    expect(dashboardSource).not.toContain('drawerTransitionRef');
-    expect(openDrawerSource).toContain('const wasOpen = drawerOpenRef.current;');
-    expect(openDrawerSource).toContain('const opened = openTargetedDashboardDrawer({');
-    expect(openDrawerSource).toContain('openDrawerAction: DrawerActions.openDrawer(),');
-    expect(openDrawerSource.indexOf('const opened = openTargetedDashboardDrawer({')).toBeLessThan(
-      openDrawerSource.indexOf('if (wasOpen) {')
+    expect(dashboardSource).toContain('swipeEnabled: Platform.OS === "web"');
+    expect(dashboardSource).not.toContain("drawerTransitionRef");
+    expect(openDrawerSource).toContain(
+      "const wasOpen = drawerOpenRef.current;",
     );
+    expect(openDrawerSource).toContain(
+      "const opened = openTargetedDashboardDrawer({",
+    );
+    expect(openDrawerSource).toContain(
+      "openDrawerAction: DrawerActions.openDrawer(),",
+    );
+    expect(
+      openDrawerSource.indexOf("const opened = openTargetedDashboardDrawer({"),
+    ).toBeLessThan(openDrawerSource.indexOf("if (wasOpen) {"));
   });
 
-  it('always opens the native drawer from the hamburger instead of trusting stale drawer status', () => {
+  it("always opens the native drawer from the hamburger instead of trusting stale drawer status", () => {
     // Regression for v1.8.259: on some Android devices the Drawer status ref
     // reported "open" while the drawer was visibly closed. Treating the
     // hamburger as a toggle then dispatched closeDrawer(), which appeared to
     // users as a dead menu button. The hamburger is now a one-way open action;
     // the drawer's close button/backdrop own the close path.
-    const dashboardSource = readSource('../../app/(shared)/dashboard/_layout.tsx');
+    const dashboardSource = readSource(
+      "../../app/(shared)/dashboard/_layout.tsx",
+    );
 
-    expect(dashboardSource).toContain("import { openTargetedDashboardDrawer } from '../../../lib/dashboard-drawer';");
-    expect(dashboardSource).toContain('const openDashboardDrawerFromHeader = useCallback');
-    expect(dashboardSource).toContain('openDashboardDrawer(navigation);');
-    expect(dashboardSource).toContain('onPress={() => openDashboardDrawerFromHeader(navigation)}');
-    expect(dashboardSource).toContain('onPress={() => openDashboardDrawerFromHeader(navigationFromContext)}');
-    expect(dashboardSource).not.toContain('onPress={() => toggleDashboardDrawer(navigation)}');
+    expect(dashboardSource).toContain(
+      'import { openTargetedDashboardDrawer } from "../../../lib/dashboard-drawer";',
+    );
+    expect(dashboardSource).toContain(
+      "const openDashboardDrawerFromHeader = useCallback",
+    );
+    expect(dashboardSource).toContain("openDashboardDrawer(navigation);");
+    expect(dashboardSource).toContain(
+      "onPress={() => openDashboardDrawerFromHeader(navigation)}",
+    );
+    expect(dashboardSource).toMatch(
+      /onPress=\{\(\) =>\s*openDashboardDrawerFromHeader\(navigationFromContext\)\s*\}/,
+    );
+    expect(dashboardSource).not.toContain(
+      "onPress={() => toggleDashboardDrawer(navigation)}",
+    );
   });
 
-  it('waits for the bounded local session cleanup, but not remote cleanup, before leaving the dashboard', () => {
+  it("waits for the bounded local session cleanup, but not remote cleanup, before leaving the dashboard", () => {
     // Regression for a real race: an earlier version of this handler made
     // the entire signOut() call fire-and-forget (`void signOut(...)`) and
     // navigated immediately, so the SecureStore/AsyncStorage clear inside
@@ -254,83 +350,109 @@ describe('Android layout event crash guards', () => {
     // signOut({waitForRemoteCleanup: false}) itself, which only blocks on
     // the now-timeout-bounded local clear, not the slow/flaky remote
     // provider sign-out calls (see SIGN_OUT_STEP_TIMEOUT_MS in useAuth.ts).
-    const dashboardSource = readSource('../../app/(shared)/dashboard/_layout.tsx');
-    const authHookSource = readSource('../../hooks/useAuth.ts');
+    const dashboardSource = readSource(
+      "../../app/(shared)/dashboard/_layout.tsx",
+    );
+    const authHookSource = readSource("../../hooks/useAuth.ts");
     const handleLogoutSource = dashboardSource.slice(
-      dashboardSource.indexOf('const handleLogout = async () => {'),
-      dashboardSource.indexOf('const handleLanguageToggle')
+      dashboardSource.indexOf("const handleLogout = async () => {"),
+      dashboardSource.indexOf("const handleLanguageToggle"),
     );
 
-    expect(handleLogoutSource).toContain('await signOut({ waitForRemoteCleanup: false });');
-    expect(handleLogoutSource.indexOf('await signOut({ waitForRemoteCleanup: false });')).toBeLessThan(
-      handleLogoutSource.indexOf("router.replace('/(shared)/auth' as any);")
+    expect(handleLogoutSource).toContain(
+      "await signOut({ waitForRemoteCleanup: false });",
+    );
+    expect(
+      handleLogoutSource.indexOf(
+        "await signOut({ waitForRemoteCleanup: false });",
+      ),
+    ).toBeLessThan(
+      handleLogoutSource.indexOf('router.replace("/(shared)/auth" as any);'),
     );
     expect(authHookSource).toContain("from '../lib/auth/native-session-clear'");
-    expect(authHookSource).toContain('clearPersistedNativeProviderSessions()');
+    expect(authHookSource).toContain("clearPersistedNativeProviderSessions()");
     expect(authHookSource).toContain(
       "withTimeout(clearPersistedNativeProviderSessions(), SIGN_OUT_STEP_TIMEOUT_MS, 'clearPersistedNativeProviderSessions')",
     );
   });
 
-  it('finishes native Google account cleanup before allowing a new login attempt', () => {
-    const authHookSource = readSource('../../hooks/useAuth.ts');
+  it("finishes native Google account cleanup before allowing a new login attempt", () => {
+    const authHookSource = readSource("../../hooks/useAuth.ts");
     const signOutSource = authHookSource.slice(
-      authHookSource.indexOf('const signOut = useCallback'),
-      authHookSource.indexOf('const signIn = useCallback')
+      authHookSource.indexOf("const signOut = useCallback"),
+      authHookSource.indexOf("const signIn = useCallback"),
     );
 
-    expect(signOutSource).toContain('const clearNativeGoogleBeforeNextLogin = async () =>');
-    expect(signOutSource).toContain('const nativeGoogleCleanupPromise = clearNativeGoogleBeforeNextLogin();');
-    expect(signOutSource.indexOf('const nativeGoogleCleanupPromise = clearNativeGoogleBeforeNextLogin();')).toBeLessThan(
-      signOutSource.indexOf('const finishRemoteCleanup = async () =>')
+    expect(signOutSource).toContain(
+      "const clearNativeGoogleBeforeNextLogin = async () =>",
+    );
+    expect(signOutSource).toContain(
+      "const nativeGoogleCleanupPromise = clearNativeGoogleBeforeNextLogin();",
+    );
+    expect(
+      signOutSource.indexOf(
+        "const nativeGoogleCleanupPromise = clearNativeGoogleBeforeNextLogin();",
+      ),
+    ).toBeLessThan(
+      signOutSource.indexOf("const finishRemoteCleanup = async () =>"),
     );
   });
 
-  it('makes a new native Google login wait for an in-flight logout cleanup', () => {
-    const authHookSource = readSource('../../hooks/useAuth.ts');
+  it("makes a new native Google login wait for an in-flight logout cleanup", () => {
+    const authHookSource = readSource("../../hooks/useAuth.ts");
     const oauthSource = authHookSource.slice(
-      authHookSource.indexOf('const signInWithOAuth = useCallback'),
-      authHookSource.indexOf('const processOAuthCallback = useCallback')
+      authHookSource.indexOf("const signInWithOAuth = useCallback"),
+      authHookSource.indexOf("const processOAuthCallback = useCallback"),
     );
 
-    expect(authHookSource).toContain('let nativeGoogleSignOutCleanup: Promise<void> | null = null;');
-    expect(authHookSource).toContain('nativeGoogleSignOutCleanup = nativeGoogleCleanupPromise;');
-    expect(oauthSource).toContain('await nativeGoogleSignOutCleanup;');
+    expect(authHookSource).toContain(
+      "let nativeGoogleSignOutCleanup: Promise<void> | null = null;",
+    );
+    expect(authHookSource).toContain(
+      "nativeGoogleSignOutCleanup = nativeGoogleCleanupPromise;",
+    );
+    expect(oauthSource).toContain("await nativeGoogleSignOutCleanup;");
   });
 
-  it('keeps safe-area Fabric events on the generated Fabric event name', () => {
+  it("keeps safe-area Fabric events on the generated Fabric event name", () => {
     const fabricInsetsEventSource = readSource(
-      '../../../../node_modules/react-native-safe-area-context/android/src/fabric/java/com/th3rdwave/safeareacontext/InsetsChangeEvent.kt',
+      "../../../../node_modules/react-native-safe-area-context/android/src/fabric/java/com/th3rdwave/safeareacontext/InsetsChangeEvent.kt",
     );
     const paperInsetsEventSource = readSource(
-      '../../../../node_modules/react-native-safe-area-context/android/src/paper/java/com/th3rdwave/safeareacontext/InsetsChangeEvent.kt',
+      "../../../../node_modules/react-native-safe-area-context/android/src/paper/java/com/th3rdwave/safeareacontext/InsetsChangeEvent.kt",
     );
 
-    expect(fabricInsetsEventSource).toContain('const val EVENT_NAME = "insetsChange"');
-    expect(fabricInsetsEventSource).not.toContain('const val EVENT_NAME = "topInsetsChange"');
-    expect(paperInsetsEventSource).toContain('const val EVENT_NAME = "topInsetsChange"');
+    expect(fabricInsetsEventSource).toContain(
+      'const val EVENT_NAME = "insetsChange"',
+    );
+    expect(fabricInsetsEventSource).not.toContain(
+      'const val EVENT_NAME = "topInsetsChange"',
+    );
+    expect(paperInsetsEventSource).toContain(
+      'const val EVENT_NAME = "topInsetsChange"',
+    );
   });
 
-  it('keeps React Native Screens Android events on generated Fabric event names', () => {
+  it("keeps React Native Screens Android events on generated Fabric event names", () => {
     const screensEvents: Record<string, string> = {
-      HeaderAttachedEvent: 'attached',
-      HeaderBackButtonClickedEvent: 'headerBackButtonClicked',
-      HeaderDetachedEvent: 'detached',
-      HeaderHeightChangeEvent: 'headerHeightChange',
-      ScreenAppearEvent: 'appear',
-      ScreenDisappearEvent: 'disappear',
-      ScreenDismissedEvent: 'dismissed',
-      ScreenTransitionProgressEvent: 'transitionProgress',
-      ScreenWillAppearEvent: 'willAppear',
-      ScreenWillDisappearEvent: 'willDisappear',
-      SearchBarBlurEvent: 'searchBlur',
-      SearchBarChangeTextEvent: 'changeText',
-      SearchBarCloseEvent: 'close',
-      SearchBarFocusEvent: 'searchFocus',
-      SearchBarOpenEvent: 'open',
-      SearchBarSearchButtonPressEvent: 'searchButtonPress',
-      SheetDetentChangedEvent: 'sheetDetentChanged',
-      StackFinishTransitioningEvent: 'finishTransitioning',
+      HeaderAttachedEvent: "attached",
+      HeaderBackButtonClickedEvent: "headerBackButtonClicked",
+      HeaderDetachedEvent: "detached",
+      HeaderHeightChangeEvent: "headerHeightChange",
+      ScreenAppearEvent: "appear",
+      ScreenDisappearEvent: "disappear",
+      ScreenDismissedEvent: "dismissed",
+      ScreenTransitionProgressEvent: "transitionProgress",
+      ScreenWillAppearEvent: "willAppear",
+      ScreenWillDisappearEvent: "willDisappear",
+      SearchBarBlurEvent: "searchBlur",
+      SearchBarChangeTextEvent: "changeText",
+      SearchBarCloseEvent: "close",
+      SearchBarFocusEvent: "searchFocus",
+      SearchBarOpenEvent: "open",
+      SearchBarSearchButtonPressEvent: "searchButtonPress",
+      SheetDetentChangedEvent: "sheetDetentChanged",
+      StackFinishTransitioningEvent: "finishTransitioning",
     };
 
     for (const [eventFile, eventName] of Object.entries(screensEvents)) {

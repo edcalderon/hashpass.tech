@@ -9,6 +9,33 @@ export const EXPLORER_HERO_LAYOUT = {
   progressBottomInset: 18,
 } as const;
 
+// Vertical list pages intentionally stay compact so the catalogue, pass
+// wallet, and quick access remain reachable without a long mobile scroll.
+export const EXPLORER_EVENTS_PER_PAGE = 3;
+
+// Floating controls need enough room above Android's three-button navigation
+// even when a device reports a zero bottom inset. Every Explorer action that
+// is pinned to the lower-right corner can use this instead of guessing at the
+// system navigation height.
+export const getExplorerFloatingBottomInset = (safeAreaBottom = 0): number =>
+  Math.max(safeAreaBottom + 16, 40);
+
+export const getExplorerPageCount = (
+  eventCount: number,
+  pageSize: number = EXPLORER_EVENTS_PER_PAGE,
+): number => Math.max(1, Math.ceil(eventCount / pageSize));
+
+export const getExplorerPageEvents = <T>(
+  events: T[],
+  page: number,
+  pageSize: number = EXPLORER_EVENTS_PER_PAGE,
+): T[] => {
+  const pageCount = getExplorerPageCount(events.length, pageSize);
+  const safePage = Math.min(Math.max(page, 0), pageCount - 1);
+  const start = safePage * pageSize;
+  return events.slice(start, start + pageSize);
+};
+
 export interface ExplorerHeroActionTarget {
   route: string;
   eventId?: string;
@@ -51,6 +78,7 @@ export interface ExplorerEvent {
   color?: string;
   tourRole?: "hub" | "stop" | "archive" | string;
   image?: string;
+  shortName?: string;
 }
 
 export interface ExplorerFilters {
@@ -62,6 +90,8 @@ export interface ExplorerFilters {
   series?: string[];
   cityKey?: string;
   onlyPasses?: boolean;
+  passTimeline?: "all" | "live" | "upcoming" | "past";
+  passType?: "all" | "general" | "business" | "vip";
   sortBy?: "date" | "name";
 }
 
@@ -146,10 +176,21 @@ export const sortExplorerEvents = (
   events: ExplorerEvent[],
   bookmarkedEventIds: string[] = [],
   sortBy: "date" | "name" = "date",
+  now: number = Date.now(),
 ): ExplorerEvent[] => {
   const bookmarked = new Set(bookmarkedEventIds);
 
   return [...events].sort((a, b) => {
+    // The default date view is a forward-looking catalogue. Archive entries
+    // remain discoverable, but never take the first page ahead of live or
+    // upcoming events, including when someone has bookmarked an archive.
+    if (sortBy === "date") {
+      const pastOrder =
+        Number(getExplorerEventStatus(a, now) === "past") -
+        Number(getExplorerEventStatus(b, now) === "past");
+      if (pastOrder !== 0) return pastOrder;
+    }
+
     const bookmarkOrder =
       Number(bookmarked.has(b.id)) - Number(bookmarked.has(a.id));
     if (bookmarkOrder !== 0) return bookmarkOrder;
@@ -239,6 +280,8 @@ export const getActiveFilterCount = (filters: ExplorerFilters): number => {
     (filters.series?.length ? 1 : 0) +
     (filters.cityKey && filters.cityKey !== "all" ? 1 : 0) +
     (filters.onlyPasses ? 1 : 0) +
+    (filters.passTimeline && filters.passTimeline !== "all" ? 1 : 0) +
+    (filters.passType && filters.passType !== "all" ? 1 : 0) +
     (filters.sortBy && filters.sortBy !== "date" ? 1 : 0)
   );
 };

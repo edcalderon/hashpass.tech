@@ -271,6 +271,7 @@ const loadHomeScreen = ({
 
     jest.doMock("../../lib/event-detector", () => ({
       getCurrentEvent: () => null,
+      isGlobalEventTenant: () => true,
     }));
 
     jest.doMock("../../lib/hashpass-logo", () => ({

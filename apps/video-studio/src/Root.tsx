@@ -8,6 +8,7 @@ import {appTutorialStepsEn, appTutorialStepsEs, bslShowcaseClips} from './conten
 import {bslNarrationEn, bslNarrationEs, narrationEn, narrationEs} from './content/narration';
 import {layoutClips} from './lib/clip-layout';
 import {OpenProof} from './compositions/OpenProof';
+import {ClfHeroLoop} from './compositions/ClfHeroLoop';
 
 // Real recordings vary a lot in length (a landing scroll vs. a 30s OTP
 // sign-in with a manual-entry pause), so each composition's duration and
@@ -20,6 +21,7 @@ export const RemotionRoot: React.FC = () => {
   return (
     <>
       <Composition id="OpenProof" component={OpenProof} durationInFrames={2520} fps={30} width={1920} height={1080}/>
+      <Composition id="ClfHeroLoop" component={ClfHeroLoop} durationInFrames={900} fps={FPS} width={WIDTH} height={HEIGHT}/>
       <Composition
         id="BslShowcase"
         component={BslShowcase}

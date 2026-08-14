@@ -99,6 +99,9 @@ function loadExploreScreen(availableEvents: Record<string, unknown>[] = []) {
         View: "Reanimated.View",
       },
     }));
+    jest.doMock("react-native-safe-area-context", () => ({
+      useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
+    }));
 
     jest.doMock("expo-constants", () => ({
       __esModule: true,
@@ -201,6 +204,10 @@ function loadExploreScreen(availableEvents: Record<string, unknown>[] = []) {
       }),
     }));
     jest.doMock("../../components/EventBanner", () => "EventBanner");
+    jest.doMock(
+      "../../components/EventBannerBackgroundVideo",
+      () => "EventBannerBackgroundVideo",
+    );
     jest.doMock("../../components/PassesDisplay", () => "PassesDisplay");
     jest.doMock("../../lib/event-chat", () => ({
       getEventChatAvatarUrl: ({ senderId }: { senderId?: string }) =>

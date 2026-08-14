@@ -108,7 +108,11 @@ export const useTranslation = (ns?: string) => {
 
       if (typeof fallbackOrParams === 'string') {
         const params = (maybeParams && typeof maybeParams === 'object') ? maybeParams : {};
-        return (i18n as any)._({ id: fullKey, message: fallbackOrParams }, params as any) as unknown as string;
+        const translated = (i18n as any)._({ id: fullKey, message: fallbackOrParams }, params as any) as unknown as string;
+        // Native can briefly render against an older catalog after an OTA
+        // update. Never expose the internal message id while that catalog is
+        // catching up; the caller's English fallback is safe and readable.
+        return translated === fullKey ? fallbackOrParams : translated;
       }
 
       const params =

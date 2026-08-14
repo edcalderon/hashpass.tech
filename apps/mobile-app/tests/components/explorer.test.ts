@@ -1,8 +1,11 @@
 import {
   filterExplorerEvents,
   getExplorerEventStatus,
+  getExplorerFloatingBottomInset,
   getExplorerHeroActionTarget,
   getExplorerLayout,
+  getExplorerPageCount,
+  getExplorerPageEvents,
   EXPLORER_HERO_LAYOUT,
   getExplorerScopeLabel,
   getEventRoomTarget,
@@ -48,6 +51,12 @@ const events: ExplorerEvent[] = [
 ];
 
 describe("explorer rework behavior", () => {
+  it("keeps floating Explorer controls above Android navigation affordances", () => {
+    expect(getExplorerFloatingBottomInset(0)).toBe(40);
+    expect(getExplorerFloatingBottomInset(24)).toBe(40);
+    expect(getExplorerFloatingBottomInset(48)).toBe(64);
+  });
+
   it("searches across event titles, locations, and dates without mutating the source list", () => {
     const result = filterExplorerEvents(events, { query: "santiago" });
 
@@ -105,6 +114,22 @@ describe("explorer rework behavior", () => {
     });
   });
 
+  it("shows three events at a time and clamps an invalid page to the last page", () => {
+    const catalog = Array.from({ length: 11 }, (_, index) => ({
+      id: `${index}`,
+    }));
+
+    expect(getExplorerPageCount(catalog.length)).toBe(4);
+    expect(getExplorerPageEvents(catalog, 1).map((event) => event.id)).toEqual([
+      "3",
+      "4",
+      "5",
+    ]);
+    expect(getExplorerPageEvents(catalog, 99).map((event) => event.id)).toEqual(
+      ["9", "10"],
+    );
+  });
+
   it("keeps the native hero content close to the top bar with balanced spacing", () => {
     expect(EXPLORER_HERO_LAYOUT).toEqual({
       height: 360,
@@ -114,10 +139,15 @@ describe("explorer rework behavior", () => {
     });
   });
 
-  it("pins bookmarked events before sorting the remaining catalog by date", () => {
+  it("keeps past events after upcoming events in the default date order", () => {
     expect(
-      sortExplorerEvents(events, ["bsl2025"]).map((event) => event.id),
-    ).toEqual(["bsl2025", "peru2026", "chile2026"]);
+      sortExplorerEvents(
+        events,
+        ["bsl2025"],
+        "date",
+        Date.parse("2026-01-01T12:00:00Z"),
+      ).map((event) => event.id),
+    ).toEqual(["peru2026", "chile2026", "bsl2025"]);
   });
 
   it("uses the actual event geography for Explorer scope copy", () => {
@@ -139,6 +169,12 @@ describe("explorer rework behavior", () => {
   it("counts only active filters for the filter badge", () => {
     expect(getActiveFilterCount({ query: "", includePast: true })).toBe(0);
     expect(getActiveFilterCount({ query: "peru", includePast: false })).toBe(2);
+    expect(
+      getActiveFilterCount({
+        passTimeline: "upcoming",
+        passType: "vip",
+      }),
+    ).toBe(2);
   });
 
   it("routes pass and tour hero actions to their distinct destinations", () => {

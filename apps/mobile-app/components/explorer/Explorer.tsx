@@ -1,6 +1,14 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
+  ActivityIndicator,
   Image,
+  Linking,
   Modal,
   ScrollView,
   StyleSheet,
@@ -14,6 +22,7 @@ import {
 import { NativeSafeIcon } from "../../lib/vector-icons";
 import { useTheme } from "../../hooks/useTheme";
 import { useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "../../i18n/i18n";
 import PassesDisplay from "../PassesDisplay";
 import { getEventQuickAccessItems } from "../../lib/event-detector";
@@ -28,13 +37,22 @@ import {
   saveExplorerBookmarks,
 } from "../../lib/explorer-bookmarks";
 import type { EventInfo } from "../../lib/event-detector";
-import type { EventPassInfo } from "../../lib/pass-system";
+import type { PassInfo } from "../../lib/pass-system";
+import {
+  buildWalletPasses,
+  filterWalletPassesForExplorer,
+  type PassTimelineFilter,
+  type PassTypeFilter,
+} from "../../lib/pass-wallet";
 import {
   EXPLORER_HERO_LAYOUT,
   filterExplorerEvents,
   getActiveFilterCount,
+  getExplorerPageCount,
+  getExplorerPageEvents,
   getEventRoomTarget,
   getExplorerEventStatus,
+  getExplorerFloatingBottomInset,
   getExplorerHeroActionTarget,
   getExplorerLayout,
   getExplorerScopeLabel,
@@ -42,15 +60,23 @@ import {
   type ExplorerEvent,
   type ExplorerLayoutMode,
 } from "./explorer";
+import {
+  getEventBannerSlides,
+  localizeEventBannerSlide,
+} from "../../lib/event-banners";
+import { getEventBannerCtaLayout } from "../../lib/banner-cta";
+import EventBannerBackgroundVideo from "../EventBannerBackgroundVideo";
 
 interface ExplorerProps {
   events: EventInfo[];
   selectedEvent: EventInfo | null;
   onSelectEvent: (event: EventInfo) => void;
+  onResetSelection: () => void;
   isLoggedIn: boolean;
   dbUserId?: string | null;
   isLoading?: boolean;
   isGlobalExplorer: boolean;
+  onRefreshEvents?: () => void | Promise<void>;
 }
 
 type HeroSlide = {
@@ -59,6 +85,7 @@ type HeroSlide = {
   subtitle: string;
   tone: string;
   action?: string;
+  actionPosition?: import("@hashpass/types").EventBannerCtaPosition;
 };
 
 const HERO_SLIDES: HeroSlide[] = [
@@ -90,6 +117,8 @@ const HERO_SLIDES: HeroSlide[] = [
     tone: "#18212D",
   },
 ];
+
+const DEFAULT_EVENT_HERO_DURATION_MS = 5_000;
 
 const FILTER_SERIES = [
   "BSL On Tour",
@@ -125,6 +154,7 @@ const toExplorerEvent = (event: EventInfo): ExplorerEvent => ({
   color: event.color,
   tourRole: event.tour?.role,
   image: event.image,
+  shortName: event.shortName,
 });
 
 const resolveExplorerIconName = (name: string) => {
@@ -142,6 +172,7 @@ const resolveExplorerIconName = (name: string) => {
     "search-off": "search-off",
     "arrow-upward": "arrow-up",
     "arrow-back": "arrow-left",
+    "arrow-forward": "arrow-right",
     event: "event",
     people: "people",
     info: "info",
@@ -169,19 +200,25 @@ export default function Explorer({
   events,
   selectedEvent,
   onSelectEvent,
+  onResetSelection,
   isLoggedIn,
   dbUserId = null,
   isLoading = false,
   isGlobalExplorer,
+  onRefreshEvents,
 }: ExplorerProps) {
   const { isDark, colors } = useTheme();
+  const safeAreaInsets = useSafeAreaInsets();
   const router = useRouter();
   const styles = getStyles(isDark, colors);
   const { t: translate } = useTranslation();
   const [heroIndex, setHeroIndex] = useState(2);
+  const [selectedHeroSlideIndex, setSelectedHeroSlideIndex] = useState(0);
+  const [selectedHeroSlideProgress, setSelectedHeroSlideProgress] = useState(0);
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
+  const [filterTab, setFilterTab] = useState<"events" | "passes">("events");
   const [filterStatus, setFilterStatus] = useState<"All" | "Upcoming" | "Past">(
     "All",
   );
@@ -190,18 +227,23 @@ export default function Explorer({
   const [filterSeries, setFilterSeries] = useState<string[]>([]);
   const [filterCity, setFilterCity] = useState("all");
   const [onlyPasses, setOnlyPasses] = useState(false);
+  const [passTimeline, setPassTimeline] = useState<PassTimelineFilter>("all");
+  const [passType, setPassType] = useState<PassTypeFilter>("all");
   const [sortBy, setSortBy] = useState<"date" | "name">("date");
   const [mode, setMode] = useState<ExplorerLayoutMode>("list");
-  const [visibleCount, setVisibleCount] = useState(8);
-  const [loadingMore, setLoadingMore] = useState(false);
+  const [eventPage, setEventPage] = useState(0);
   const [bookmarkedEventIds, setBookmarkedEventIds] = useState<string[]>([]);
   const [passEventIds, setPassEventIds] = useState<string[]>([]);
+  const [walletPasses, setWalletPasses] = useState<PassInfo[]>([]);
+  const [isRefreshingEvents, setIsRefreshingEvents] = useState(false);
+  const [isRefreshingPasses, setIsRefreshingPasses] = useState(false);
   const [roomPresenceByEventId, setRoomPresenceByEventId] = useState<
     Record<string, EventChatPresence>
   >({});
   const [showBackToTop, setShowBackToTop] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
-  const loadMoreTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const railScrollRef = useRef<ScrollView>(null);
+  const railScrollOffsetRef = useRef(0);
 
   useEffect(() => {
     let mounted = true;
@@ -213,35 +255,26 @@ export default function Explorer({
     };
   }, []);
 
+  // The pass wallet owns the authenticated, retry-aware pass request. Keeping
+  // this view fed from that one source prevents a second Explorer request from
+  // racing it and replacing real pass data with an empty result.
+  const handleWalletPassesLoaded = useCallback((passes: PassInfo[]) => {
+    setWalletPasses(passes);
+    setPassEventIds(
+      Array.from(
+        new Set(
+          passes
+            .map((pass) => pass.event_id)
+            .filter((eventId): eventId is string => Boolean(eventId)),
+        ),
+      ),
+    );
+  }, []);
+
   useEffect(() => {
-    if (!dbUserId) {
-      setPassEventIds([]);
-      return;
-    }
-
-    let mounted = true;
-    // Keep pass loading lazy: the Explorer can render for signed-out users
-    // without initializing the pass/auth client bundle.
-    import("../../lib/pass-system")
-      .then((module) =>
-        (
-          module as unknown as {
-            default: {
-              getAllUserPasses: (userId: string) => Promise<EventPassInfo[]>;
-            };
-          }
-        ).default.getAllUserPasses(dbUserId),
-      )
-      .then((passes: EventPassInfo[]) => {
-        if (mounted) setPassEventIds(passes.map((pass) => pass.event_id));
-      })
-      .catch(() => {
-        if (mounted) setPassEventIds([]);
-      });
-
-    return () => {
-      mounted = false;
-    };
+    if (dbUserId) return;
+    setPassEventIds([]);
+    setWalletPasses([]);
   }, [dbUserId]);
 
   useEffect(() => {
@@ -329,12 +362,94 @@ export default function Explorer({
       query,
     ],
   );
+  // Keep event-driven filters (date, city, series and timeline) shared with
+  // the wallet. The free-text query is evaluated against a pass's own event
+  // and pass metadata, so searching a pass number or tier still works.
+  const passFilterEventIds = useMemo(
+    () =>
+      filterExplorerEvents(explorerEvents, {
+        status: filterStatus,
+        fromDate: filterFromDate,
+        toDate: filterToDate,
+        series: filterSeries,
+        cityKey: filterCity,
+        onlyPasses: false,
+      }).map((event) => event.id),
+    [
+      explorerEvents,
+      filterCity,
+      filterFromDate,
+      filterSeries,
+      filterStatus,
+      filterToDate,
+    ],
+  );
+  const walletPassesWithMeta = useMemo(
+    () => buildWalletPasses(walletPasses),
+    [walletPasses],
+  );
+  const filteredWalletPasses = useMemo(
+    () =>
+      filterWalletPassesForExplorer(walletPassesWithMeta, {
+        query,
+        eventIds: passFilterEventIds,
+        timeline: passTimeline,
+        passType,
+      }),
+    [passFilterEventIds, passTimeline, passType, query, walletPassesWithMeta],
+  );
+  const discoverySummary = useMemo(() => {
+    const ownedEventIds = new Set(
+      walletPassesWithMeta
+        .map((pass) => pass.eventId)
+        .filter((eventId): eventId is string => Boolean(eventId)),
+    );
+    const datedEvents = explorerEvents.filter((event) =>
+      Boolean(event.eventStartDate),
+    );
+    const upcomingEvents = datedEvents.filter(
+      (event) => getExplorerEventStatus(event) === "upcoming",
+    );
+    const pastEvents = datedEvents.filter(
+      (event) => getExplorerEventStatus(event) === "past",
+    );
+
+    return {
+      totalEvents: explorerEvents.length,
+      attendingEvents: explorerEvents.filter((event) =>
+        ownedEventIds.has(event.id),
+      ).length,
+      totalPasses: walletPassesWithMeta.length,
+      activePasses: walletPassesWithMeta.filter(
+        (pass) =>
+          pass.status.toLowerCase() === "active" && pass.timeline !== "past",
+      ).length,
+      upcomingEvents: upcomingEvents.length,
+      upcomingEventsWithPass: upcomingEvents.filter((event) =>
+        ownedEventIds.has(event.id),
+      ).length,
+      pastEvents: pastEvents.length,
+      pastEventsWithPass: pastEvents.filter((event) =>
+        ownedEventIds.has(event.id),
+      ).length,
+    };
+  }, [explorerEvents, walletPassesWithMeta]);
+
+  const handleEventsReload = useCallback(async () => {
+    if (isRefreshingEvents) return;
+    setIsRefreshingEvents(true);
+    try {
+      await onRefreshEvents?.();
+    } finally {
+      setIsRefreshingEvents(false);
+    }
+  }, [isRefreshingEvents, onRefreshEvents]);
   const sortedEvents = useMemo(
     () => sortExplorerEvents(filteredEvents, bookmarkedEventIds, sortBy),
     [bookmarkedEventIds, filteredEvents, sortBy],
   );
-  const visibleEvents = sortedEvents.slice(0, visibleCount);
-  const hasMore = visibleEvents.length < filteredEvents.length;
+  const pageCount = getExplorerPageCount(sortedEvents.length);
+  const visibleEvents = getExplorerPageEvents(sortedEvents, eventPage);
   const activeFilterCount = getActiveFilterCount({
     query,
     status: filterStatus,
@@ -343,12 +458,16 @@ export default function Explorer({
     series: filterSeries,
     cityKey: filterCity,
     onlyPasses,
+    passTimeline,
+    passType,
     sortBy,
   });
-  const selectedExplorerEvent = activeEvent
-    ? toExplorerEvent(activeEvent)
-    : null;
   const layout = getExplorerLayout(mode);
+  const selectedHeroSlides = useMemo(
+    () => (selectedEvent ? getEventBannerSlides(selectedEvent) : []),
+    [selectedEvent],
+  );
+  const selectedHeroSlide = selectedHeroSlides[selectedHeroSlideIndex];
 
   useEffect(() => {
     // The rotating hero slides (Colombia/BSL On Tour/etc.) only apply to the
@@ -363,45 +482,95 @@ export default function Explorer({
 
     return () => {
       if (timer) clearInterval(timer);
-      if (loadMoreTimerRef.current) clearTimeout(loadMoreTimerRef.current);
     };
   }, [isGlobalExplorer]);
+
+  useEffect(() => {
+    setSelectedHeroSlideIndex(0);
+    setSelectedHeroSlideProgress(0);
+  }, [selectedEvent?.id]);
+
+  useEffect(() => {
+    if (
+      !selectedEvent ||
+      selectedHeroSlides.length <= 1 ||
+      !selectedHeroSlide
+    ) {
+      return;
+    }
+
+    const duration =
+      selectedHeroSlide.durationMs || DEFAULT_EVENT_HERO_DURATION_MS;
+    const startedAt = Date.now();
+    const timer = setInterval(() => {
+      const progress = Math.min(1, (Date.now() - startedAt) / duration);
+      setSelectedHeroSlideProgress(progress);
+      if (progress >= 1) {
+        setSelectedHeroSlideIndex(
+          (current) => (current + 1) % selectedHeroSlides.length,
+        );
+        setSelectedHeroSlideProgress(0);
+      }
+    }, 100);
+
+    return () => clearInterval(timer);
+  }, [selectedEvent, selectedHeroSlide, selectedHeroSlides.length]);
+
+  useEffect(() => {
+    setEventPage(0);
+    railScrollOffsetRef.current = 0;
+    railScrollRef.current?.scrollTo({ x: 0, animated: false });
+  }, [
+    filterCity,
+    filterFromDate,
+    filterSeries,
+    filterStatus,
+    filterToDate,
+    mode,
+    onlyPasses,
+    query,
+    sortBy,
+  ]);
+
+  useEffect(() => {
+    if (eventPage >= pageCount) setEventPage(pageCount - 1);
+  }, [eventPage, pageCount]);
 
   const handleScroll = (
     event: NativeSyntheticEvent<NativeScrollEvent>,
     axis: "vertical" | "horizontal" = "vertical",
   ) => {
-    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+    const { contentOffset } = event.nativeEvent;
     if (axis === "vertical") {
       setShowBackToTop(contentOffset.y > 120);
     }
-    const offset = axis === "horizontal" ? contentOffset.x : contentOffset.y;
-    const viewport =
-      axis === "horizontal"
-        ? layoutMeasurement.width
-        : layoutMeasurement.height;
-    const contentLength =
-      axis === "horizontal" ? contentSize.width : contentSize.height;
-    const threshold = axis === "horizontal" ? 180 : 520;
+    if (axis === "horizontal") railScrollOffsetRef.current = contentOffset.x;
+  };
 
-    if (
-      hasMore &&
-      !loadingMore &&
-      contentLength > viewport &&
-      offset + viewport >= contentLength - threshold
-    ) {
-      setLoadingMore(true);
-      loadMoreTimerRef.current = setTimeout(() => {
-        setVisibleCount((current) => current + 8);
-        setLoadingMore(false);
-        loadMoreTimerRef.current = null;
-      }, 450);
-    }
+  const handleRailWheel = (event: any) => {
+    const wheel = event?.nativeEvent || event;
+    const delta = wheel?.deltaY || wheel?.deltaX || 0;
+    if (!delta) return;
+
+    event?.preventDefault?.();
+    railScrollOffsetRef.current = Math.max(
+      0,
+      railScrollOffsetRef.current + delta,
+    );
+    railScrollRef.current?.scrollTo({
+      x: railScrollOffsetRef.current,
+      animated: false,
+    });
+  };
+
+  const changeEventPage = (nextPage: number) => {
+    setEventPage(Math.min(Math.max(nextPage, 0), pageCount - 1));
+    railScrollOffsetRef.current = 0;
+    railScrollRef.current?.scrollTo({ x: 0, animated: true });
   };
 
   const handleSearch = (value: string) => {
     setQuery(value);
-    setVisibleCount(8);
     setSearchOpen(true);
   };
 
@@ -413,9 +582,12 @@ export default function Explorer({
     setFilterSeries([]);
     setFilterCity("all");
     setOnlyPasses(false);
+    setPassTimeline("all");
+    setPassType("all");
+    setFilterTab("events");
     setSortBy("date");
-    setVisibleCount(8);
     setFilterSheetOpen(false);
+    onResetSelection();
   };
 
   const toggleBookmark = (eventId: string) => {
@@ -438,6 +610,15 @@ export default function Explorer({
     if (target.eventId) selectEvent(target.eventId);
   };
 
+  const handleSelectedHeroCta = (url?: string) => {
+    if (!url) return;
+    if (/^https?:\/\//i.test(url)) {
+      Linking.openURL(url).catch(() => {});
+      return;
+    }
+    router.push(url as any);
+  };
+
   const openEventRoom = (event: ExplorerEvent) => {
     // Let the room screen show its rules/name modal before making the
     // protected entitlement request. The backend remains the source of truth
@@ -446,6 +627,117 @@ export default function Explorer({
   };
 
   const renderHero = () => {
+    // Selecting an event changes discovery context; it must not navigate
+    // through a catalogue of other event banners. The selected event owns
+    // this carousel and can publish any number of static/image/video slides.
+    if (selectedEvent) {
+      const heroSlide = selectedHeroSlide || selectedHeroSlides[0];
+      if (!heroSlide) return null;
+      const localizedHeroSlide = localizeEventBannerSlide(heroSlide, translate);
+      const imageSource =
+        heroSlide.media.type === "image"
+          ? resolveEventImageSource(heroSlide.media.url)
+          : null;
+
+      return (
+        <View
+          style={[
+            styles.hero,
+            {
+              backgroundColor:
+                heroSlide.backgroundColor || selectedEvent.color || "#18212D",
+            },
+          ]}
+        >
+          {heroSlide.media.type === "video" ? (
+            <EventBannerBackgroundVideo
+              source={heroSlide.media.url}
+              loadingLogo={selectedEvent.branding?.logo || selectedEvent.image}
+              loadingLabel={translate(
+                "explore.rework.loadingEventFilm",
+                "Loading event film",
+              )}
+            />
+          ) : imageSource ? (
+            <Image
+              source={imageSource}
+              style={styles.heroBackgroundMedia}
+              resizeMode="cover"
+            />
+          ) : null}
+          {heroSlide.media.type !== "video" && (
+            <View style={styles.heroTexture} />
+          )}
+          <View style={styles.heroScrim} />
+          <View style={styles.heroContent}>
+            <View style={styles.heroEyebrow}>
+              <View style={styles.liveDot} />
+              <Text style={styles.heroEyebrowText}>
+                {localizedHeroSlide.eyebrow ||
+                  selectedEvent.shortName ||
+                  translate("explore.rework.heroFeatured", "FEATURED EVENT")}
+              </Text>
+            </View>
+            <Text style={styles.heroTitle}>{localizedHeroSlide.title}</Text>
+            <Text style={styles.heroSubtitle}>
+              {localizedHeroSlide.subtitle}
+            </Text>
+          </View>
+          {localizedHeroSlide.cta && (
+            <TouchableOpacity
+              style={[
+                styles.heroAction,
+                getEventBannerCtaLayout(localizedHeroSlide.cta.position, {
+                  bottom: EXPLORER_HERO_LAYOUT.progressBottomInset + 12,
+                }),
+              ]}
+              onPress={() => handleSelectedHeroCta(localizedHeroSlide.cta?.url)}
+              accessibilityRole="button"
+            >
+              <Text style={styles.heroActionText}>
+                {localizedHeroSlide.cta.label}
+              </Text>
+            </TouchableOpacity>
+          )}
+          {selectedHeroSlides.length > 1 && (
+            <View
+              style={styles.heroProgress}
+              accessibilityLabel={translate(
+                "explore.rework.eventBannerSlides",
+                "Event banner slides",
+              )}
+            >
+              {selectedHeroSlides.map((slide, index) => (
+                <TouchableOpacity
+                  key={slide.id}
+                  accessibilityRole="button"
+                  accessibilityLabel={translate(
+                    "explore.rework.showEventBanner",
+                    "Show banner {number}",
+                    { number: index + 1 },
+                  )}
+                  style={styles.heroProgressTrack}
+                  onPress={() => {
+                    setSelectedHeroSlideIndex(index);
+                    setSelectedHeroSlideProgress(0);
+                  }}
+                >
+                  <View
+                    style={[
+                      styles.heroProgressFill,
+                      index === selectedHeroSlideIndex && {
+                        width: `${Math.round(selectedHeroSlideProgress * 100)}%`,
+                      },
+                    ]}
+                  />
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+        </View>
+      );
+    }
+
     // Single-tenant whitelabel domains (e.g. demo-criptolatinfest.hashpass.tech)
     // get a static hero built from their own event -- never the hardcoded
     // Colombia/BSL On Tour/partners slides below, which are global-explorer
@@ -455,7 +747,12 @@ export default function Explorer({
       if (!heroEvent) return null;
 
       return (
-        <View style={[styles.hero, { backgroundColor: heroEvent.color || "#18212D" }]}>
+        <View
+          style={[
+            styles.hero,
+            { backgroundColor: heroEvent.color || "#18212D" },
+          ]}
+        >
           <View style={styles.heroTexture} />
           <View style={styles.heroScrim} />
           <View style={styles.heroContent}>
@@ -536,16 +833,21 @@ export default function Explorer({
           </View>
           <Text style={styles.heroTitle}>{localizedSlide.title}</Text>
           <Text style={styles.heroSubtitle}>{localizedSlide.subtitle}</Text>
-          {localizedSlide.action && (
-            <TouchableOpacity
-              style={styles.heroAction}
-              onPress={() => handleHeroAction(hero.action || "")}
-              accessibilityRole="button"
-            >
-              <Text style={styles.heroActionText}>{localizedSlide.action}</Text>
-            </TouchableOpacity>
-          )}
         </View>
+        {localizedSlide.action && (
+          <TouchableOpacity
+            style={[
+              styles.heroAction,
+              getEventBannerCtaLayout(localizedSlide.actionPosition, {
+                bottom: EXPLORER_HERO_LAYOUT.progressBottomInset + 12,
+              }),
+            ]}
+            onPress={() => handleHeroAction(hero.action || "")}
+            accessibilityRole="button"
+          >
+            <Text style={styles.heroActionText}>{localizedSlide.action}</Text>
+          </TouchableOpacity>
+        )}
         <View
           style={styles.heroProgress}
           accessibilityLabel={translate(
@@ -588,15 +890,15 @@ export default function Explorer({
             onChangeText={handleSearch}
             onFocus={() => setSearchOpen(true)}
             placeholder={translate(
-              "explore.rework.search",
-              "Search events, cities, series",
+              "explore.rework.searchDiscovery",
+              "Search events, passes, cities, series",
             )}
             placeholderTextColor={colors.text.secondary}
             style={styles.searchInput}
             returnKeyType="search"
             accessibilityLabel={translate(
               "explore.rework.searchEvents",
-              "Search events",
+              "Search events and passes",
             )}
           />
           {query.length > 0 && (
@@ -626,50 +928,73 @@ export default function Explorer({
           )}
         </TouchableOpacity>
       </View>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.chipRow}
-      >
-        {[
-          {
-            label: translate("explore.rework.all", "All events"),
-            active: filterStatus === "All" && !query,
-            onPress: clearFilters,
-          },
-          {
-            label: translate("explore.rework.upcoming", "Upcoming"),
-            active: filterStatus === "Upcoming",
-            onPress: () => {
-              setFilterStatus("Upcoming");
-              setVisibleCount(8);
+      <View style={styles.toolbarFilterRow}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.filterChipScroll}
+          contentContainerStyle={styles.chipRow}
+        >
+          {[
+            {
+              label: translate("explore.rework.all", "All events"),
+              active: filterStatus === "All" && !query,
+              onPress: clearFilters,
             },
-          },
-          {
-            label: translate("explore.rework.cities", "Cities"),
-            active: false,
-            onPress: () => setFilterSheetOpen(true),
-          },
-          {
-            label: translate("explore.rework.series", "Series"),
-            active: false,
-            onPress: () => setFilterSheetOpen(true),
-          },
-        ].map((chip) => (
-          <TouchableOpacity
-            key={chip.label}
-            style={[styles.chip, chip.active && styles.chipActive]}
-            onPress={chip.onPress}
-            accessibilityRole="button"
-          >
-            <Text
-              style={[styles.chipText, chip.active && styles.chipTextActive]}
+            {
+              label: translate("explore.rework.upcoming", "Upcoming"),
+              active: filterStatus === "Upcoming",
+              onPress: () => {
+                setFilterStatus("Upcoming");
+              },
+            },
+            {
+              label: translate("explore.rework.cities", "Cities"),
+              active: false,
+              onPress: () => setFilterSheetOpen(true),
+            },
+            {
+              label: translate("explore.rework.series", "Series"),
+              active: false,
+              onPress: () => setFilterSheetOpen(true),
+            },
+          ].map((chip) => (
+            <TouchableOpacity
+              key={chip.label}
+              style={[styles.chip, chip.active && styles.chipActive]}
+              onPress={chip.onPress}
+              accessibilityRole="button"
             >
-              {chip.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+              <Text
+                style={[styles.chipText, chip.active && styles.chipTextActive]}
+              >
+                {chip.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+        <TouchableOpacity
+          style={styles.reloadEventsButton}
+          onPress={handleEventsReload}
+          disabled={isRefreshingEvents}
+          accessibilityRole="button"
+          accessibilityLabel={translate(
+            "explore.rework.reloadEvents",
+            "Reload events",
+          )}
+        >
+          {isRefreshingEvents ? (
+            <ActivityIndicator size="small" color={colors.primary} />
+          ) : (
+            <Icon name="refresh" color={colors.primary} size={18} />
+          )}
+          <Text style={styles.reloadEventsText}>
+            {isRefreshingEvents
+              ? translate("explore.rework.reloadingEvents", "Reloading events…")
+              : translate("explore.rework.reloadEvents", "Reload events")}
+          </Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 
@@ -759,8 +1084,132 @@ export default function Explorer({
     </View>
   );
 
+  const renderDiscoveryCounters = () => {
+    const counterCount = isLoggedIn ? 4 : 1;
+    if (isRefreshingEvents) {
+      return (
+        <View
+          style={styles.discoveryCounters}
+          accessibilityLabel={translate(
+            "explore.rework.reloadingEvents",
+            "Reloading events…",
+          )}
+        >
+          {Array.from({ length: counterCount }, (_, index) => (
+            <View key={index} style={styles.discoveryCounterCard}>
+              <View style={styles.counterSkeletonValue} />
+              <View style={styles.counterSkeletonLabel} />
+            </View>
+          ))}
+        </View>
+      );
+    }
+
+    return (
+      <View
+        style={styles.discoveryCounters}
+        accessibilityLabel={translate(
+          "explore.rework.discoverySummary",
+          "Event and pass summary",
+        )}
+      >
+        <View style={styles.discoveryCounterCard}>
+          <Text style={styles.discoveryCounterValue}>
+            {discoverySummary.totalEvents}
+          </Text>
+          <Text style={styles.discoveryCounterLabel}>
+            {translate("explore.rework.events", "Events")}
+          </Text>
+          {isLoggedIn &&
+            (isRefreshingPasses ? (
+              <View style={styles.discoveryCounterDetailSkeleton} />
+            ) : (
+              <Text style={styles.discoveryCounterDetail}>
+                {translate(
+                  "explore.rework.eventsAttending",
+                  "{count} you're attending",
+                  { count: discoverySummary.attendingEvents },
+                )}
+              </Text>
+            ))}
+        </View>
+        {isLoggedIn && (
+          <>
+            <View style={styles.discoveryCounterCard}>
+              {isRefreshingPasses ? (
+                <View style={styles.discoveryCounterValueSkeleton} />
+              ) : (
+                <Text style={styles.discoveryCounterValue}>
+                  {discoverySummary.totalPasses}
+                </Text>
+              )}
+              <Text style={styles.discoveryCounterLabel}>
+                {translate("explore.rework.passes", "Passes")}
+              </Text>
+              {isRefreshingPasses ? (
+                <View style={styles.discoveryCounterDetailSkeleton} />
+              ) : (
+                <Text style={styles.discoveryCounterDetail}>
+                  {translate("explore.rework.activePasses", "{count} active", {
+                    count: discoverySummary.activePasses,
+                  })}
+                </Text>
+              )}
+            </View>
+            <View style={styles.discoveryCounterCard}>
+              <Text
+                style={[
+                  styles.discoveryCounterValue,
+                  styles.discoveryCounterUpcoming,
+                ]}
+              >
+                {discoverySummary.upcomingEvents}
+              </Text>
+              <Text style={styles.discoveryCounterLabel}>
+                {translate("explore.rework.upcoming", "Upcoming")}
+              </Text>
+              {isRefreshingPasses ? (
+                <View style={styles.discoveryCounterDetailSkeleton} />
+              ) : (
+                <Text style={styles.discoveryCounterDetail}>
+                  {translate(
+                    "explore.rework.eventsWithPass",
+                    "{count} with your pass",
+                    { count: discoverySummary.upcomingEventsWithPass },
+                  )}
+                </Text>
+              )}
+            </View>
+            <View style={styles.discoveryCounterCard}>
+              <Text style={styles.discoveryCounterValue}>
+                {discoverySummary.pastEvents}
+              </Text>
+              <Text style={styles.discoveryCounterLabel}>
+                {translate("explore.rework.past", "Past")}
+              </Text>
+              {isRefreshingPasses ? (
+                <View style={styles.discoveryCounterDetailSkeleton} />
+              ) : (
+                <Text style={styles.discoveryCounterDetail}>
+                  {translate(
+                    "explore.rework.eventsWithPass",
+                    "{count} with your pass",
+                    { count: discoverySummary.pastEventsWithPass },
+                  )}
+                </Text>
+              )}
+            </View>
+          </>
+        )}
+      </View>
+    );
+  };
+
   const renderEventCard = (event: ExplorerEvent) => {
-    const selected = selectedExplorerEvent?.id === event.id;
+    // `activeEvent` is only a useful fallback for Quick Access. Visual
+    // selection is explicit: after reset (or on first global load) no event
+    // card should imply that it owns the default Hashpass showcase.
+    const selected = selectedEvent?.id === event.id;
     const archive = getExplorerEventStatus(event) === "past";
     const bookmarked = bookmarkedEventIds.includes(event.id);
     const presence = roomPresenceByEventId[event.id];
@@ -768,6 +1217,10 @@ export default function Explorer({
       event.eventDateString ||
       translate("explore.rework.dateToBeAnnounced", "Date to be announced");
     const imageSource = resolveEventImageSource(event.image);
+    const eventBadgeLabel = archive
+      ? translate("explore.rework.pastEvent", "PAST EVENT")
+      : event.shortName ||
+        (event.series === "BSL On Tour" ? "BSL" : event.series || "HASHPASS");
     const cardStyle =
       mode === "grid"
         ? styles.gridCard
@@ -810,14 +1263,10 @@ export default function Explorer({
           <Text style={styles.eventCoverMark}>
             {archive
               ? translate("explore.rework.archive", "ARCHIVE")
-              : translate("explore.rework.onTour", "BSL ON TOUR")}
+              : eventBadgeLabel}
           </Text>
           <View style={styles.eventBadge}>
-            <Text style={styles.eventBadgeText}>
-              {archive
-                ? translate("explore.rework.pastEvent", "PAST EVENT")
-                : translate("explore.rework.onTour", "BSL ON TOUR")}
-            </Text>
+            <Text style={styles.eventBadgeText}>{eventBadgeLabel}</Text>
           </View>
           <TouchableOpacity
             style={[
@@ -902,7 +1351,7 @@ export default function Explorer({
   };
 
   const renderEvents = () => {
-    if (isLoading) {
+    if (isLoading || isRefreshingEvents) {
       return (
         <View
           style={styles.eventList}
@@ -960,6 +1409,7 @@ export default function Explorer({
     if (mode === "rail") {
       return (
         <ScrollView
+          ref={railScrollRef}
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.railList}
@@ -967,6 +1417,7 @@ export default function Explorer({
           decelerationRate="fast"
           onScroll={(event) => handleScroll(event, "horizontal")}
           scrollEventThrottle={16}
+          {...({ onWheel: handleRailWheel } as any)}
         >
           {visibleEvents.map(renderEventCard)}
         </ScrollView>
@@ -976,6 +1427,83 @@ export default function Explorer({
     return (
       <View style={[styles.eventList, mode === "grid" && styles.gridList]}>
         {visibleEvents.map(renderEventCard)}
+      </View>
+    );
+  };
+
+  const renderPagination = () => {
+    if (pageCount <= 1 || isLoading || visibleEvents.length === 0) return null;
+
+    return (
+      <View
+        style={styles.pagination}
+        accessibilityLabel={translate(
+          "explore.rework.eventPagination",
+          "Event pagination",
+        )}
+      >
+        <TouchableOpacity
+          style={[
+            styles.pageButton,
+            eventPage === 0 && styles.pageButtonDisabled,
+          ]}
+          onPress={() => changeEventPage(eventPage - 1)}
+          disabled={eventPage === 0}
+          accessibilityRole="button"
+          accessibilityLabel={translate(
+            "explore.rework.previousEventsPage",
+            "Previous events page",
+          )}
+        >
+          <Icon
+            name="arrow-back"
+            color={eventPage === 0 ? colors.text.secondary : colors.primary}
+            size={18}
+          />
+          <Text
+            style={[
+              styles.pageButtonText,
+              eventPage === 0 && styles.pageButtonTextDisabled,
+            ]}
+          >
+            {translate("explore.rework.previous", "Previous")}
+          </Text>
+        </TouchableOpacity>
+        <Text style={styles.pageStatus}>
+          {translate("explore.rework.pageOf", "Page {page} of {total}", {
+            page: eventPage + 1,
+            total: pageCount,
+          })}
+        </Text>
+        <TouchableOpacity
+          style={[
+            styles.pageButton,
+            styles.pageButtonNext,
+            eventPage === pageCount - 1 && styles.pageButtonDisabled,
+          ]}
+          onPress={() => changeEventPage(eventPage + 1)}
+          disabled={eventPage === pageCount - 1}
+          accessibilityRole="button"
+          accessibilityLabel={translate(
+            "explore.rework.nextEventsPage",
+            "Next events page",
+          )}
+        >
+          <Text
+            style={[
+              styles.pageButtonText,
+              styles.pageButtonTextNext,
+              eventPage === pageCount - 1 && styles.pageButtonTextDisabled,
+            ]}
+          >
+            {translate("explore.rework.next", "Next")}
+          </Text>
+          <Icon
+            name="arrow-forward"
+            color={eventPage === pageCount - 1 ? colors.text.secondary : "#fff"}
+            size={18}
+          />
+        </TouchableOpacity>
       </View>
     );
   };
@@ -1053,24 +1581,11 @@ export default function Explorer({
       >
         {renderHero()}
         {renderSearchBar()}
+        {renderDiscoveryCounters()}
         <View style={styles.resultsSection}>
           {renderModeSwitcher()}
           {renderEvents()}
-          {loadingMore && (
-            <View style={styles.loadingMore}>
-              <View style={styles.loadingDot} />
-              <View style={styles.loadingDot} />
-              <View style={styles.loadingDot} />
-              <Text style={styles.loadingMoreText}>
-                {translate("explore.rework.loadingMore", "Loading more events")}
-              </Text>
-            </View>
-          )}
-          {!hasMore && visibleEvents.length > 0 && (
-            <Text style={styles.endLine}>
-              {translate("explore.rework.allCaughtUp", "You’re all caught up.")}
-            </Text>
-          )}
+          {renderPagination()}
         </View>
         {isLoggedIn && (
           <View style={styles.passesSection}>
@@ -1082,6 +1597,15 @@ export default function Explorer({
               showTitle={false}
               showPassComparison={false}
               walletLayout={isGlobalExplorer ? "stacked" : "plain"}
+              explorerFilters={{
+                query,
+                eventIds: passFilterEventIds,
+                timeline: passTimeline,
+                passType,
+              }}
+              hideWalletControls
+              onPassesLoaded={handleWalletPassesLoaded}
+              onPassesLoadingChange={setIsRefreshingPasses}
             />
           </View>
         )}
@@ -1090,7 +1614,10 @@ export default function Explorer({
 
       {showBackToTop && (
         <TouchableOpacity
-          style={styles.toTop}
+          style={[
+            styles.toTop,
+            { bottom: getExplorerFloatingBottomInset(safeAreaInsets.bottom) },
+          ]}
           onPress={() => {
             setShowBackToTop(false);
             scrollRef.current?.scrollTo({ y: 0, animated: true });
@@ -1124,16 +1651,16 @@ export default function Explorer({
             <TextInput
               autoFocus
               value={query}
-              onChangeText={setQuery}
+              onChangeText={handleSearch}
               placeholder={translate(
-                "explore.rework.search",
-                "Search events, cities, series",
+                "explore.rework.searchDiscovery",
+                "Search events, passes, cities, series",
               )}
               placeholderTextColor={colors.text.secondary}
               style={styles.searchLayerInput}
               accessibilityLabel={translate(
                 "explore.rework.searchEvents",
-                "Search events",
+                "Search events and passes",
               )}
             />
           </View>
@@ -1147,7 +1674,7 @@ export default function Explorer({
                   key={recent}
                   style={styles.searchPill}
                   onPress={() => {
-                    setQuery(recent);
+                    handleSearch(recent);
                     setSearchOpen(false);
                   }}
                 >
@@ -1164,7 +1691,7 @@ export default function Explorer({
                 style={styles.suggestion}
                 onPress={() => {
                   onSelectEvent(event);
-                  setQuery(event.title);
+                  handleSearch(event.title);
                   setSearchOpen(false);
                 }}
               >
@@ -1216,116 +1743,35 @@ export default function Explorer({
                 </TouchableOpacity>
               </View>
 
-              <Text style={styles.sheetLabel}>
-                {translate("explore.rework.when", "When")}
-              </Text>
-              <View style={styles.statusSegmented}>
-                {(["All", "Upcoming", "Past"] as const).map((status) => (
-                  <TouchableOpacity
-                    key={status}
-                    style={[
-                      styles.statusSegment,
-                      filterStatus === status && styles.statusSegmentActive,
-                    ]}
-                    onPress={() => {
-                      setFilterStatus(status);
-                      setVisibleCount(8);
-                    }}
-                  >
-                    <Text
-                      style={[
-                        styles.statusSegmentText,
-                        filterStatus === status &&
-                          styles.statusSegmentTextActive,
-                      ]}
-                    >
-                      {status === "All"
-                        ? translate("explore.rework.all", "All events")
-                        : status === "Upcoming"
-                          ? translate("explore.rework.upcoming", "Upcoming")
-                          : translate("explore.rework.past", "Past")}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-              <View style={styles.dateRangeRow}>
-                <TextInput
-                  value={filterFromDate}
-                  onChangeText={setFilterFromDate}
-                  placeholder={translate(
-                    "explore.rework.fromDate",
-                    "From · any date",
-                  )}
-                  placeholderTextColor={colors.text.secondary}
-                  style={styles.dateField}
-                  accessibilityLabel="Filter from date"
-                />
-                <TextInput
-                  value={filterToDate}
-                  onChangeText={setFilterToDate}
-                  placeholder={translate(
-                    "explore.rework.toDate",
-                    "To · any date",
-                  )}
-                  placeholderTextColor={colors.text.secondary}
-                  style={styles.dateField}
-                  accessibilityLabel="Filter to date"
-                />
-              </View>
-
-              <Text style={styles.sheetLabel}>
-                {translate("explore.rework.seriesLabel", "Series")}
-              </Text>
-              <View style={styles.filterPillRow}>
-                {FILTER_SERIES.map((series) => {
-                  const active = filterSeries.includes(series);
+              <View style={styles.sheetModeRow}>
+                {(
+                  [
+                    [
+                      "events",
+                      translate("explore.rework.filterEvents", "Events"),
+                    ],
+                    [
+                      "passes",
+                      translate("explore.rework.filterPasses", "Passes"),
+                    ],
+                  ] as const
+                ).map(([value, label]) => {
+                  const active = filterTab === value;
                   return (
                     <TouchableOpacity
-                      key={series}
+                      key={value}
                       style={[
-                        styles.filterPill,
-                        active && styles.filterPillActive,
+                        styles.sheetMode,
+                        active && styles.sheetModeActive,
                       ]}
-                      onPress={() =>
-                        setFilterSeries((current) =>
-                          active
-                            ? current.filter((item) => item !== series)
-                            : [...current, series],
-                        )
-                      }
+                      onPress={() => setFilterTab(value)}
+                      accessibilityRole="tab"
+                      accessibilityState={{ selected: active }}
                     >
                       <Text
                         style={[
-                          styles.filterPillText,
-                          active && styles.filterPillTextActive,
-                        ]}
-                      >
-                        {series}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-
-              <Text style={styles.sheetLabel}>
-                {translate("explore.rework.city", "City")}
-              </Text>
-              <View style={styles.filterPillRow}>
-                {FILTER_CITIES.map(([label, key]) => {
-                  const active = filterCity === key;
-                  return (
-                    <TouchableOpacity
-                      key={key}
-                      style={[
-                        styles.filterPill,
-                        active && styles.filterPillActive,
-                      ]}
-                      onPress={() => setFilterCity(active ? "all" : key)}
-                    >
-                      <Text
-                        style={[
-                          styles.filterPillText,
-                          active && styles.filterPillTextActive,
+                          styles.sheetModeText,
+                          active && styles.sheetModeTextActive,
                         ]}
                       >
                         {label}
@@ -1335,62 +1781,291 @@ export default function Explorer({
                 })}
               </View>
 
-              <Text style={styles.sheetLabel}>
-                {translate("explore.rework.access", "Access")}
-              </Text>
-              <View style={styles.accessRows}>
-                <TouchableOpacity
-                  style={styles.accessRow}
-                  onPress={() => setOnlyPasses((value) => !value)}
-                  accessibilityRole="switch"
-                  accessibilityState={{ checked: onlyPasses }}
-                >
-                  <Text style={styles.accessText}>
-                    {translate(
-                      "explore.rework.onlyPasses",
-                      "Only events I hold a pass for",
-                    )}
+              {filterTab === "events" ? (
+                <>
+                  <Text style={styles.sheetLabel}>
+                    {translate("explore.rework.when", "When")}
                   </Text>
-                  <View
-                    style={[styles.toggle, onlyPasses && styles.toggleActive]}
-                  >
-                    <View
-                      style={[
-                        styles.toggleThumb,
-                        onlyPasses && styles.toggleThumbActive,
-                      ]}
+                  <View style={styles.filterPillRow}>
+                    {(["All", "Upcoming", "Past"] as const).map((status) => (
+                      <TouchableOpacity
+                        key={status}
+                        style={[
+                          styles.statusPill,
+                          filterStatus === status && styles.statusPillActive,
+                        ]}
+                        onPress={() => {
+                          setFilterStatus(status);
+                        }}
+                        accessibilityRole="button"
+                        accessibilityState={{
+                          selected: filterStatus === status,
+                        }}
+                      >
+                        <Text
+                          style={[
+                            styles.statusPillText,
+                            filterStatus === status &&
+                              styles.statusPillTextActive,
+                          ]}
+                        >
+                          {status === "All"
+                            ? translate("explore.rework.all", "All events")
+                            : status === "Upcoming"
+                              ? translate("explore.rework.upcoming", "Upcoming")
+                              : translate("explore.rework.past", "Past")}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                  <View style={styles.dateRangeRow}>
+                    <TextInput
+                      value={filterFromDate}
+                      onChangeText={setFilterFromDate}
+                      placeholder={translate(
+                        "explore.rework.fromDate",
+                        "From · any date",
+                      )}
+                      placeholderTextColor={colors.text.secondary}
+                      style={styles.dateField}
+                      accessibilityLabel="Filter from date"
+                    />
+                    <TextInput
+                      value={filterToDate}
+                      onChangeText={setFilterToDate}
+                      placeholder={translate(
+                        "explore.rework.toDate",
+                        "To · any date",
+                      )}
+                      placeholderTextColor={colors.text.secondary}
+                      style={styles.dateField}
+                      accessibilityLabel="Filter to date"
                     />
                   </View>
-                </TouchableOpacity>
-              </View>
 
-              <Text style={styles.sheetLabel}>
-                {translate("explore.rework.sortBy", "Sort by")}
-              </Text>
-              <View style={styles.sortOptions}>
-                {(
-                  [
-                    ["date", translate("explore.rework.date", "Date")],
-                    ["name", translate("explore.rework.name", "Name A–Z")],
-                  ] as const
-                ).map(([value, label]) => (
-                  <TouchableOpacity
-                    key={value}
-                    style={styles.sortOption}
-                    onPress={() => setSortBy(value)}
-                  >
-                    <Text style={styles.sortOptionText}>{label}</Text>
-                    <View
-                      style={[
-                        styles.radio,
-                        sortBy === value && styles.radioActive,
-                      ]}
+                  <Text style={styles.sheetLabel}>
+                    {translate("explore.rework.seriesLabel", "Series")}
+                  </Text>
+                  <View style={styles.filterPillRow}>
+                    {FILTER_SERIES.map((series) => {
+                      const active = filterSeries.includes(series);
+                      return (
+                        <TouchableOpacity
+                          key={series}
+                          style={[
+                            styles.filterPill,
+                            active && styles.filterPillActive,
+                          ]}
+                          onPress={() =>
+                            setFilterSeries((current) =>
+                              active
+                                ? current.filter((item) => item !== series)
+                                : [...current, series],
+                            )
+                          }
+                        >
+                          <Text
+                            style={[
+                              styles.filterPillText,
+                              active && styles.filterPillTextActive,
+                            ]}
+                          >
+                            {series}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+
+                  <Text style={styles.sheetLabel}>
+                    {translate("explore.rework.city", "City")}
+                  </Text>
+                  <View style={styles.filterPillRow}>
+                    {FILTER_CITIES.map(([label, key]) => {
+                      const active = filterCity === key;
+                      return (
+                        <TouchableOpacity
+                          key={key}
+                          style={[
+                            styles.filterPill,
+                            active && styles.filterPillActive,
+                          ]}
+                          onPress={() => setFilterCity(active ? "all" : key)}
+                        >
+                          <Text
+                            style={[
+                              styles.filterPillText,
+                              active && styles.filterPillTextActive,
+                            ]}
+                          >
+                            {label}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+
+                  <Text style={styles.sheetLabel}>
+                    {translate("explore.rework.access", "Access")}
+                  </Text>
+                  <View style={styles.accessRows}>
+                    <TouchableOpacity
+                      style={styles.accessRow}
+                      onPress={() => setOnlyPasses((value) => !value)}
+                      accessibilityRole="switch"
+                      accessibilityState={{ checked: onlyPasses }}
                     >
-                      {sortBy === value && <View style={styles.radioDot} />}
-                    </View>
-                  </TouchableOpacity>
-                ))}
-              </View>
+                      <Text style={styles.accessText}>
+                        {translate(
+                          "explore.rework.onlyPasses",
+                          "Only events I hold a pass for",
+                        )}
+                      </Text>
+                      <View
+                        style={[
+                          styles.toggle,
+                          onlyPasses && styles.toggleActive,
+                        ]}
+                      >
+                        <View
+                          style={[
+                            styles.toggleThumb,
+                            onlyPasses && styles.toggleThumbActive,
+                          ]}
+                        />
+                      </View>
+                    </TouchableOpacity>
+                  </View>
+
+                  <Text style={styles.sheetLabel}>
+                    {translate("explore.rework.sortBy", "Sort by")}
+                  </Text>
+                  <View style={styles.sortOptions}>
+                    {(
+                      [
+                        ["date", translate("explore.rework.date", "Date")],
+                        ["name", translate("explore.rework.name", "Name A–Z")],
+                      ] as const
+                    ).map(([value, label]) => (
+                      <TouchableOpacity
+                        key={value}
+                        style={styles.sortOption}
+                        onPress={() => setSortBy(value)}
+                      >
+                        <Text style={styles.sortOptionText}>{label}</Text>
+                        <View
+                          style={[
+                            styles.radio,
+                            sortBy === value && styles.radioActive,
+                          ]}
+                        >
+                          {sortBy === value && <View style={styles.radioDot} />}
+                        </View>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </>
+              ) : (
+                <>
+                  <Text style={styles.sheetLabel}>
+                    {translate("explore.rework.passTiming", "Pass timing")}
+                  </Text>
+                  <View style={styles.filterPillRow}>
+                    {(
+                      [
+                        [
+                          "all",
+                          translate("explore.rework.allPasses", "All passes"),
+                        ],
+                        [
+                          "live",
+                          translate(
+                            "explore.rework.happeningNow",
+                            "Happening now",
+                          ),
+                        ],
+                        [
+                          "upcoming",
+                          translate("explore.rework.upcoming", "Upcoming"),
+                        ],
+                        [
+                          "past",
+                          translate("explore.rework.pastEvent", "Past event"),
+                        ],
+                      ] as const
+                    ).map(([value, label]) => {
+                      const active = passTimeline === value;
+                      return (
+                        <TouchableOpacity
+                          key={value}
+                          style={[
+                            styles.filterPill,
+                            active && styles.filterPillActive,
+                          ]}
+                          onPress={() => setPassTimeline(value)}
+                          accessibilityRole="button"
+                          accessibilityState={{ selected: active }}
+                        >
+                          <Text
+                            style={[
+                              styles.filterPillText,
+                              active && styles.filterPillTextActive,
+                            ]}
+                          >
+                            {label}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+
+                  <Text style={styles.sheetLabel}>
+                    {translate("explore.rework.passType", "Pass type")}
+                  </Text>
+                  <View style={styles.filterPillRow}>
+                    {(
+                      [
+                        [
+                          "all",
+                          translate("explore.rework.allPassTypes", "All types"),
+                        ],
+                        [
+                          "general",
+                          translate("explore.rework.passGeneral", "General"),
+                        ],
+                        [
+                          "business",
+                          translate("explore.rework.passBusiness", "Business"),
+                        ],
+                        ["vip", translate("explore.rework.passVip", "VIP")],
+                      ] as const
+                    ).map(([value, label]) => {
+                      const active = passType === value;
+                      return (
+                        <TouchableOpacity
+                          key={value}
+                          style={[
+                            styles.filterPill,
+                            active && styles.filterPillActive,
+                          ]}
+                          onPress={() => setPassType(value)}
+                          accessibilityRole="button"
+                          accessibilityState={{ selected: active }}
+                        >
+                          <Text
+                            style={[
+                              styles.filterPillText,
+                              active && styles.filterPillTextActive,
+                            ]}
+                          >
+                            {label}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </>
+              )}
             </ScrollView>
             <View style={styles.sheetFooter}>
               <TouchableOpacity
@@ -1399,8 +2074,24 @@ export default function Explorer({
                 accessibilityRole="button"
               >
                 <Text style={styles.applyButtonText}>
-                  Show {filteredEvents.length} events
-                  {activeFilterCount ? ` · ${activeFilterCount} filters` : ""}
+                  {filterTab === "events"
+                    ? translate(
+                        "explore.rework.showEvents",
+                        "Show {count} events",
+                        { count: filteredEvents.length },
+                      )
+                    : translate(
+                        "explore.rework.showPasses",
+                        "Show {count} passes",
+                        { count: filteredWalletPasses.length },
+                      )}
+                  {activeFilterCount
+                    ? ` · ${translate(
+                        "explore.rework.filtersApplied",
+                        "{count} filters",
+                        { count: activeFilterCount },
+                      )}`
+                    : ""}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -1428,6 +2119,12 @@ const getStyles = (isDark: boolean, colors: any) =>
       backgroundImage:
         "repeating-linear-gradient(115deg, rgba(255,255,255,.16) 0 12px, transparent 12px 24px)",
     } as any,
+    heroBackgroundMedia: {
+      ...StyleSheet.absoluteFillObject,
+      width: "100%",
+      height: "100%",
+      opacity: 0.84,
+    },
     heroScrim: {
       ...StyleSheet.absoluteFillObject,
       backgroundColor: "rgba(6, 8, 16, .32)",
@@ -1551,7 +2248,29 @@ const getStyles = (isDark: boolean, colors: any) =>
       fontWeight: "800",
       lineHeight: 18,
     },
-    chipRow: { gap: 8, paddingTop: 11, paddingBottom: 2 },
+    toolbarFilterRow: {
+      alignItems: "center",
+      flexDirection: "row",
+      gap: 4,
+      paddingTop: 6,
+    },
+    filterChipScroll: {
+      flex: 1,
+    },
+    chipRow: { gap: 8, paddingVertical: 5 },
+    reloadEventsButton: {
+      alignItems: "center",
+      flexDirection: "row",
+      gap: 6,
+      minHeight: 34,
+      paddingHorizontal: 6,
+      paddingVertical: 5,
+    },
+    reloadEventsText: {
+      color: colors.primary,
+      fontSize: 12,
+      fontWeight: "700",
+    },
     chip: {
       height: 34,
       justifyContent: "center",
@@ -1567,6 +2286,75 @@ const getStyles = (isDark: boolean, colors: any) =>
     },
     chipText: { color: colors.text.secondary, fontSize: 12, fontWeight: "700" },
     chipTextActive: { color: "#fff" },
+    discoveryCounters: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 8,
+      paddingHorizontal: 16,
+      paddingTop: 14,
+    },
+    discoveryCounterCard: {
+      flexGrow: 1,
+      flexBasis: "22%",
+      minWidth: 76,
+      paddingVertical: 11,
+      paddingHorizontal: 12,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: colors.divider,
+      backgroundColor: colors.background.paper,
+      position: "relative",
+    },
+    discoveryCounterValue: {
+      color: colors.text.primary,
+      fontSize: 18,
+      fontWeight: "800",
+    },
+    discoveryCounterUpcoming: { color: "#34A853" },
+    discoveryCounterLabel: {
+      color: colors.text.secondary,
+      fontSize: 11,
+      fontWeight: "600",
+      marginTop: 2,
+    },
+    discoveryCounterDetail: {
+      color: colors.text.secondary,
+      fontSize: 9,
+      fontWeight: "700",
+      lineHeight: 12,
+      position: "absolute",
+      bottom: 12,
+      right: 12,
+      textAlign: "right",
+    },
+    counterSkeletonValue: {
+      width: 24,
+      height: 18,
+      borderRadius: 6,
+      backgroundColor: isDark ? "rgba(255,255,255,.12)" : "#E5E7EB",
+    },
+    counterSkeletonLabel: {
+      width: 54,
+      height: 11,
+      marginTop: 6,
+      borderRadius: 5,
+      backgroundColor: isDark ? "rgba(255,255,255,.08)" : "#EEF0F3",
+    },
+    discoveryCounterValueSkeleton: {
+      width: 24,
+      height: 18,
+      borderRadius: 6,
+      backgroundColor: isDark ? "rgba(255,255,255,.12)" : "#E5E7EB",
+    },
+    discoveryCounterDetailSkeleton: {
+      width: 48,
+      height: 10,
+      borderRadius: 5,
+      backgroundColor: isDark ? "rgba(255,255,255,.08)" : "#EEF0F3",
+      position: "absolute",
+      right: 12,
+      bottom: 13,
+    },
     resultsSection: { paddingHorizontal: 16, paddingTop: 20 },
     sectionHeader: {
       flexDirection: "row",
@@ -1623,6 +2411,37 @@ const getStyles = (isDark: boolean, colors: any) =>
     eventList: { gap: 12 },
     gridList: { flexDirection: "row", flexWrap: "wrap", gap: 9 },
     railList: { gap: 14, paddingBottom: 6 },
+    pagination: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 10,
+      marginTop: 18,
+    },
+    pageButton: {
+      minHeight: 36,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 6,
+      paddingHorizontal: 12,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.primary,
+    },
+    pageButtonNext: { backgroundColor: colors.primary },
+    pageButtonDisabled: {
+      borderColor: colors.divider,
+      backgroundColor: "transparent",
+    },
+    pageButtonText: { color: colors.primary, fontSize: 12, fontWeight: "800" },
+    pageButtonTextNext: { color: "#fff" },
+    pageButtonTextDisabled: { color: colors.text.secondary },
+    pageStatus: {
+      color: colors.text.secondary,
+      fontSize: 12,
+      fontWeight: "700",
+    },
     eventCard: {
       overflow: "hidden",
       flexDirection: "row",
@@ -1992,26 +2811,26 @@ const getStyles = (isDark: boolean, colors: any) =>
       marginTop: 26,
       marginBottom: 10,
     },
-    statusSegmented: {
-      flexDirection: "row",
-      padding: 5,
-      borderRadius: 15,
-      backgroundColor: isDark ? "#252528" : "#F3F3F5",
-    },
-    statusSegment: {
-      flex: 1,
+    statusPill: {
       minHeight: 44,
+      paddingHorizontal: 18,
       alignItems: "center",
       justifyContent: "center",
-      borderRadius: 11,
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: colors.divider,
+      backgroundColor: isDark ? "#252528" : "#F5F5F7",
     },
-    statusSegmentActive: { backgroundColor: colors.primary },
-    statusSegmentText: {
-      color: colors.text.secondary,
+    statusPillActive: {
+      borderColor: colors.primary,
+      backgroundColor: colors.primary,
+    },
+    statusPillText: {
+      color: colors.text.primary,
       fontSize: 14,
       fontWeight: "700",
     },
-    statusSegmentTextActive: { color: "#fff" },
+    statusPillTextActive: { color: "#fff" },
     dateRangeRow: { flexDirection: "row", gap: 9, marginTop: 11 },
     dateField: {
       flex: 1,

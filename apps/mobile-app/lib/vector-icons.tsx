@@ -147,6 +147,7 @@ export type NativeSafeIconName =
   | "search-off"
   | "arrow-up"
   | "arrow-left"
+  | "arrow-right"
   | "event"
   | "people"
   | "info";
@@ -163,6 +164,7 @@ const NATIVE_SAFE_ICONS: Record<NativeSafeIconName, WebIconComponent> = {
   "search-off": SearchX,
   "arrow-up": ArrowUp,
   "arrow-left": ArrowLeft,
+  "arrow-right": ArrowRight,
   event: CalendarDays,
   people: Users,
   info: Info,
