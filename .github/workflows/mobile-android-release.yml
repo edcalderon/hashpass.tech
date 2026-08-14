@@ -745,7 +745,7 @@ jobs:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: gradle-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml', 'apps/mobile-app/package.json', 'patches/*.patch') }}
+          key: gradle-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml', 'apps/mobile-app/package.json', 'patches/**/*.patch') }}
           restore-keys: |
             gradle-${{ runner.os }}-
 
@@ -764,7 +764,7 @@ jobs:
         id: install-deps
         run: |
           set -euo pipefail
-          LOCK_HASH=$(sha256sum pnpm-lock.yaml patches/*.patch | sha256sum | cut -d' ' -f1)
+          LOCK_HASH=$(sha256sum pnpm-lock.yaml patches/*/*.patch | sha256sum | cut -d' ' -f1)
           HASH_FILE="$HOME/.gradle/.pnpm-lock-hash"
           mkdir -p "$(dirname "$HASH_FILE")"
           STORED=$(cat "$HASH_FILE" 2>/dev/null || echo "none")
@@ -1319,7 +1319,7 @@ jobs:
               devDependencies: pkg.devDependencies,
             }));
           " 2>/dev/null)
-          CURRENT_HASH=$(printf '%s' "$NATIVE_CONFIG" && cat pnpm-lock.yaml patches/*.patch 2>/dev/null)
+          CURRENT_HASH=$(printf '%s' "$NATIVE_CONFIG" && cat pnpm-lock.yaml patches/*/*.patch 2>/dev/null)
           CURRENT_HASH=$(printf '%s' "$CURRENT_HASH" | sha256sum | cut -d' ' -f1)
           STORED_HASH=$(cat "$HASH_FILE" 2>/dev/null || echo "none")
 

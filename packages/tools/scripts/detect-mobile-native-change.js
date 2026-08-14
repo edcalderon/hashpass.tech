@@ -43,11 +43,12 @@ const NATIVE_SENSITIVE_PATH_PREFIXES = [
   'apps/mobile-app/fastlane/',
   // Root pnpm.patchedDependencies patches (package.json) -- these patch
   // native RN/Expo packages in place (react-native, react-native-svg,
-  // react-native-screens, etc: see patches/*.patch and package.json's
+  // react-native-screens, etc: see patches/mobile-app/*.patch and
+  // patches/shared/*.patch, split by scope 2026-08-14, plus package.json's
   // pnpm.patchedDependencies), so a patch edit changes native behavior
   // without necessarily touching apps/mobile-app/package.json's own
   // dependencies object. mobile-android-release.yml's own Gradle cache key
-  // already hashes patches/*.patch alongside pnpm-lock.yaml for exactly
+  // already hashes patches/*/*.patch alongside pnpm-lock.yaml for exactly
   // this reason.
   'patches/',
 ];
