@@ -93,6 +93,11 @@ output "github_actions_role_arn" {
   value       = var.enable_github_actions_worker_control ? aws_iam_role.github_actions[0].arn : ""
 }
 
+output "ops_alerts_topic_arn" {
+  description = "SNS topic for EC2 lifecycle, worker health, budget, and cost anomaly alerts. Confirm the support email subscription after apply."
+  value       = aws_sns_topic.ops_alerts.arn
+}
+
 output "build_action_provider_name" {
   description = "Custom CodePipeline build action provider name for production"
   value       = module.site.build_action_provider_name

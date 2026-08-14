@@ -55,6 +55,16 @@ pipeline_build_worker_approval_reference = ""
 enable_github_actions_worker_control = false
 create_github_oidc_provider          = false
 
+# Operations and spend protection. The email subscription must be confirmed
+# once AWS sends its confirmation message to support@hashpass.tech.
+ops_alert_email               = "support@hashpass.tech"
+monthly_cost_budget_name      = "My Monthly Cost Budget"
+monthly_cost_budget_usd       = 80
+ec2_compute_monthly_budget_usd = 25
+cost_anomaly_threshold_usd    = 5
+# Reuse an existing AWS services anomaly monitor when the account already has one.
+# cost_anomaly_monitor_arn = "arn:aws:ce::<account-id>:anomalymonitor/<monitor-id>"
+
 # Production CloudFront for hashpass.tech. Request/validate the ACM certificate
 # in us-east-1, then paste the issued ARN here before enabling the cutover.
 site_route53_zone_name   = "hashpass.tech"

@@ -100,6 +100,18 @@ variable "detailed_monitoring" {
   default     = true
 }
 
+variable "alarm_actions" {
+  description = "SNS topic ARNs invoked when worker health alarms enter ALARM."
+  type        = list(string)
+  default     = []
+}
+
+variable "ok_actions" {
+  description = "SNS topic ARNs invoked when worker health alarms recover."
+  type        = list(string)
+  default     = []
+}
+
 variable "tags" {
   description = "Tags applied to all worker resources"
   type        = map(string)

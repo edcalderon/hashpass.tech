@@ -277,6 +277,8 @@ module "production_build_worker" {
   lambda_region                   = var.lambda_region
   root_volume_size_gb             = var.build_worker_root_volume_size_gb
   detailed_monitoring             = var.build_worker_detailed_monitoring
+  alarm_actions                   = [aws_sns_topic.ops_alerts.arn]
+  ok_actions                      = [aws_sns_topic.ops_alerts.arn]
   tags                            = var.tags
 }
 
@@ -300,6 +302,8 @@ module "development_build_worker" {
   lambda_region                   = var.lambda_region
   root_volume_size_gb             = var.build_worker_root_volume_size_gb
   detailed_monitoring             = var.build_worker_detailed_monitoring
+  alarm_actions                   = [aws_sns_topic.ops_alerts.arn]
+  ok_actions                      = [aws_sns_topic.ops_alerts.arn]
   tags                            = var.tags
 }
 
@@ -735,6 +739,7 @@ resource "aws_iam_role_policy" "github_actions_worker_control" {
         Sid    = "MonitorWebPipelines"
         Effect = "Allow"
         Action = [
+          "codepipeline:GetPipeline",
           "codepipeline:GetPipelineState",
           "codepipeline:GetPipelineExecution",
           "codepipeline:ListPipelineExecutions",
@@ -764,4 +769,235 @@ resource "aws_iam_role_policy" "github_actions_worker_control" {
       },
     ]
   })
+}
+
+# ── Operations and cost alerts ──────────────────────────────────────────────
+# A single topic keeps security, runtime, and cost alerts together. The email
+# subscription must be confirmed by support@hashpass.tech after the first apply.
+resource "aws_sns_topic" "ops_alerts" {
+  name         = "${var.name_prefix}-ops-alerts"
+  display_name = "HashPass operations"
+  tags         = merge(var.tags, { Service = "operations-alerts" })
+}
+
+data "aws_iam_policy_document" "ops_alerts" {
+  statement {
+    sid    = "AllowAccountAdministration"
+    effect = "Allow"
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+    }
+    actions = [
+      "SNS:GetTopicAttributes",
+      "SNS:SetTopicAttributes",
+      "SNS:AddPermission",
+      "SNS:RemovePermission",
+      "SNS:DeleteTopic",
+      "SNS:Subscribe",
+      "SNS:ListSubscriptionsByTopic",
+      "SNS:Publish",
+      "SNS:Receive",
+    ]
+    resources = [aws_sns_topic.ops_alerts.arn]
+  }
+
+  statement {
+    sid    = "AllowEventBridgePublish"
+    effect = "Allow"
+    principals {
+      type        = "Service"
+      identifiers = ["events.amazonaws.com"]
+    }
+    actions   = ["SNS:Publish"]
+    resources = [aws_sns_topic.ops_alerts.arn]
+    condition {
+      test     = "ArnEquals"
+      variable = "aws:SourceArn"
+      values   = [aws_cloudwatch_event_rule.ec2_running.arn]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "aws:SourceAccount"
+      values   = [data.aws_caller_identity.current.account_id]
+    }
+  }
+
+  statement {
+    sid    = "AllowCloudWatchPublish"
+    effect = "Allow"
+    principals {
+      type        = "Service"
+      identifiers = ["cloudwatch.amazonaws.com"]
+    }
+    actions   = ["SNS:Publish"]
+    resources = [aws_sns_topic.ops_alerts.arn]
+    condition {
+      test     = "StringEquals"
+      variable = "aws:SourceAccount"
+      values   = [data.aws_caller_identity.current.account_id]
+    }
+  }
+
+  statement {
+    sid    = "AllowBudgetsPublish"
+    effect = "Allow"
+    principals {
+      type        = "Service"
+      identifiers = ["budgets.amazonaws.com"]
+    }
+    actions   = ["SNS:Publish"]
+    resources = [aws_sns_topic.ops_alerts.arn]
+    condition {
+      test     = "StringEquals"
+      variable = "aws:SourceAccount"
+      values   = [data.aws_caller_identity.current.account_id]
+    }
+  }
+
+  statement {
+    sid    = "AllowCostAnomalyPublish"
+    effect = "Allow"
+    principals {
+      type        = "Service"
+      identifiers = ["costalerts.amazonaws.com"]
+    }
+    actions   = ["SNS:Publish"]
+    resources = [aws_sns_topic.ops_alerts.arn]
+    condition {
+      test     = "StringEquals"
+      variable = "aws:SourceAccount"
+      values   = [data.aws_caller_identity.current.account_id]
+    }
+  }
+}
+
+resource "aws_sns_topic_policy" "ops_alerts" {
+  arn    = aws_sns_topic.ops_alerts.arn
+  policy = data.aws_iam_policy_document.ops_alerts.json
+}
+
+resource "aws_sns_topic_subscription" "ops_email" {
+  topic_arn = aws_sns_topic.ops_alerts.arn
+  protocol  = "email"
+  endpoint  = var.ops_alert_email
+}
+
+# EC2 emits this event as soon as an instance reaches running. Keeping the
+# notification account-wide ensures a newly-created instance is never silent.
+resource "aws_cloudwatch_event_rule" "ec2_running" {
+  name        = "${var.name_prefix}-ec2-running-alert"
+  description = "Notify operations whenever an EC2 instance starts running."
+  event_pattern = jsonencode({
+    source        = ["aws.ec2"]
+    "detail-type" = ["EC2 Instance State-change Notification"]
+    detail = {
+      state = ["running"]
+    }
+  })
+  tags = merge(var.tags, { Service = "operations-alerts" })
+}
+
+resource "aws_cloudwatch_event_target" "ec2_running_ops_alerts" {
+  rule      = aws_cloudwatch_event_rule.ec2_running.name
+  target_id = "ops-alerts"
+  arn       = aws_sns_topic.ops_alerts.arn
+
+  depends_on = [aws_sns_topic_policy.ops_alerts]
+}
+
+locals {
+  budget_alert_thresholds = [
+    { threshold = 50, notification_type = "ACTUAL" },
+    { threshold = 75, notification_type = "ACTUAL" },
+    { threshold = 90, notification_type = "ACTUAL" },
+    { threshold = 80, notification_type = "FORECASTED" },
+    { threshold = 100, notification_type = "FORECASTED" },
+  ]
+}
+
+resource "aws_budgets_budget" "monthly_cost" {
+  name         = var.monthly_cost_budget_name
+  budget_type  = "COST"
+  limit_amount = tostring(var.monthly_cost_budget_usd)
+  limit_unit   = "USD"
+  time_unit    = "MONTHLY"
+  account_id   = data.aws_caller_identity.current.account_id
+
+  dynamic "notification" {
+    for_each = local.budget_alert_thresholds
+    content {
+      comparison_operator       = "GREATER_THAN"
+      threshold                 = notification.value.threshold
+      threshold_type            = "PERCENTAGE"
+      notification_type         = notification.value.notification_type
+      subscriber_sns_topic_arns = [aws_sns_topic.ops_alerts.arn]
+    }
+  }
+
+  depends_on = [aws_sns_topic_policy.ops_alerts]
+  tags       = merge(var.tags, { Service = "operations-alerts" })
+}
+
+resource "aws_budgets_budget" "ec2_compute" {
+  name         = "${var.name_prefix}-monthly-ec2-compute"
+  budget_type  = "COST"
+  limit_amount = tostring(var.ec2_compute_monthly_budget_usd)
+  limit_unit   = "USD"
+  time_unit    = "MONTHLY"
+  account_id   = data.aws_caller_identity.current.account_id
+
+  cost_filter {
+    name   = "Service"
+    values = ["Amazon Elastic Compute Cloud - Compute"]
+  }
+
+  dynamic "notification" {
+    for_each = local.budget_alert_thresholds
+    content {
+      comparison_operator       = "GREATER_THAN"
+      threshold                 = notification.value.threshold
+      threshold_type            = "PERCENTAGE"
+      notification_type         = notification.value.notification_type
+      subscriber_sns_topic_arns = [aws_sns_topic.ops_alerts.arn]
+    }
+  }
+
+  depends_on = [aws_sns_topic_policy.ops_alerts]
+  tags       = merge(var.tags, { Service = "operations-alerts" })
+}
+
+resource "aws_ce_anomaly_monitor" "aws_services" {
+  count = trimspace(var.cost_anomaly_monitor_arn) == "" ? 1 : 0
+
+  name              = "${var.name_prefix}-aws-services"
+  monitor_type      = "DIMENSIONAL"
+  monitor_dimension = "SERVICE"
+  tags              = merge(var.tags, { Service = "operations-alerts" })
+}
+
+locals {
+  cost_anomaly_monitor_arn = trimspace(var.cost_anomaly_monitor_arn) != "" ? var.cost_anomaly_monitor_arn : aws_ce_anomaly_monitor.aws_services[0].arn
+}
+
+resource "aws_ce_anomaly_subscription" "immediate" {
+  name             = "${var.name_prefix}-cost-anomaly-immediate"
+  frequency        = "IMMEDIATE"
+  monitor_arn_list = [local.cost_anomaly_monitor_arn]
+
+  subscriber {
+    type    = "SNS"
+    address = aws_sns_topic.ops_alerts.arn
+  }
+
+  threshold_expression {
+    dimension {
+      key           = "ANOMALY_TOTAL_IMPACT_ABSOLUTE"
+      values        = [tostring(var.cost_anomaly_threshold_usd)]
+      match_options = ["GREATER_THAN_OR_EQUAL"]
+    }
+  }
+
+  depends_on = [aws_sns_topic_policy.ops_alerts]
+  tags       = merge(var.tags, { Service = "operations-alerts" })
 }
