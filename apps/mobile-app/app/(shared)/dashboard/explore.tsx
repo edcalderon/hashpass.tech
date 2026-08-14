@@ -27,7 +27,9 @@ export default function ExploreScreen() {
     typeof params.eventId === "string" ? params.eventId : undefined;
   const isTourView = params.tour === "bsl-on-tour";
   const shouldResetExplorer = params.reset === "1";
-  const currentEventFromRoute = getCurrentEvent(routeEventIdParam);
+  const currentEventFromRoute = getCurrentEvent(routeEventIdParam, undefined, {
+    includeAllTenants: showAllTenants,
+  });
   const currentEventInfo: EventInfo | null = currentEventFromRoute
     ? currentEventFromRoute
     : currentEventFromContext
@@ -59,6 +61,21 @@ export default function ExploreScreen() {
     );
   }, [showAllTenants]);
 
+  // Disabling the discovery preference (or any other change that narrows the
+  // catalogue) can leave `selectedEvent` pointing at an event that's no
+  // longer in scope -- e.g. a foreign tenant's event that was selected while
+  // showAllTenants was on. Explorer keeps prioritizing that stale selection
+  // for its hero/quick-access content, so it must be cleared once it falls
+  // out of the refreshed catalogue rather than left dangling.
+  useEffect(() => {
+    if (
+      selectedEvent &&
+      !availableEvents.some((event) => event.id === selectedEvent.id)
+    ) {
+      setSelectedEvent(null);
+    }
+  }, [availableEvents, selectedEvent]);
+
   useEffect(() => {
     // The global brand mark and the Explorer filter Reset both route here.
     // A reset is intentionally stronger than an event-id deep link: it
@@ -87,9 +104,17 @@ export default function ExploreScreen() {
       return;
     lastSyncedRouteEventIdRef.current = routeEventIdParam;
 
-    const matchedEvent = getCurrentEvent(routeEventIdParam);
+    const matchedEvent = getCurrentEvent(routeEventIdParam, undefined, {
+      includeAllTenants: showAllTenants,
+    });
     if (matchedEvent) setSelectedEvent(matchedEvent);
-  }, [isTourView, routeEventIdParam, router, shouldResetExplorer]);
+  }, [
+    isTourView,
+    routeEventIdParam,
+    router,
+    shouldResetExplorer,
+    showAllTenants,
+  ]);
 
   return (
     <Explorer
