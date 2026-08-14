@@ -145,6 +145,9 @@ describe('PassWalletCard', () => {
     (useRouter as jest.Mock).mockReturnValue({ push: routerPush });
     (Clipboard.setStringAsync as jest.Mock).mockResolvedValue(undefined);
     share.mockResolvedValue(undefined);
+    if (!global.navigator) {
+      Object.defineProperty(global, 'navigator', { configurable: true, value: {} });
+    }
     Object.assign(global.navigator, { share: undefined });
   });
 

@@ -31,6 +31,13 @@ jest.mock('react-native-css-interop', () => ({
   createInteropElement: require('react').createElement,
 }));
 
+jest.mock('@hashpass/utils', () => ({
+  memoryManager: {
+    registerSubscription: jest.fn(),
+    unregisterSubscription: jest.fn(),
+  },
+}));
+
 const mockEnsureChatKeyPair = jest.fn();
 const mockFetchParticipantPublicKey = jest.fn();
 const mockEncryptChatMessage = jest.fn();
@@ -80,8 +87,17 @@ jest.mock('../../lib/supabase', () => ({
 // so fake timers must already be installed before this module (transitively
 // pulled in by the hook) is required.
 jest.useFakeTimers();
+interface RealtimeChatProps {
+  meetingId: string;
+  roomName: string;
+  username: string;
+  userId: string;
+  otherParticipantId?: string;
+}
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const { useRealtimeChat } = require('../../hooks/useRealtimeChat') as typeof import('../../hooks/useRealtimeChat');
+const { useRealtimeChat } = require('../../hooks/useRealtimeChat') as {
+  useRealtimeChat: (props: RealtimeChatProps) => any;
+};
 
 let latest: ReturnType<typeof useRealtimeChat> | null = null;
 

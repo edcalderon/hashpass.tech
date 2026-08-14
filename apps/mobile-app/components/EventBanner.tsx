@@ -23,6 +23,8 @@ interface EventBannerProps {
   eventId?: string; // Event ID to determine if logo should be shown
   eventImage?: string; // Optional event hero image
   isEventFinished?: boolean; // Whether the event has finished
+  eventLabel?: string;
+  ctaLabel?: string;
 }
 
 interface TimeLeft {
@@ -69,7 +71,9 @@ export default function EventBanner({
   usingJsonFallback = false,
   eventId,
   eventImage,
-  isEventFinished = false
+  isEventFinished = false,
+  eventLabel,
+  ctaLabel,
 }: EventBannerProps) {
   const { isDark, colors } = useTheme();
   const router = useRouter();
@@ -193,6 +197,9 @@ export default function EventBanner({
 
         {/* Main Event Info */}
         <View style={styles.mainInfo}>
+          {eventLabel ? (
+            <View style={styles.communityLabel}><Text style={styles.communityLabelText}>{eventLabel}</Text></View>
+          ) : null}
           {tourBrand ? (
             <View style={styles.logoContainer}>
               <Image
@@ -207,6 +214,7 @@ export default function EventBanner({
           )}
           <Text style={styles.eventSubtitle}>{subtitle}</Text>
           <Text style={styles.eventDate}>{date}</Text>
+          {ctaLabel ? <Text style={styles.communityCta}>{ctaLabel} →</Text> : null}
         </View>
 
         {/* Finished Event Badge */}
@@ -395,6 +403,28 @@ const getStyles = (isDark: boolean, colors: any, backgroundColor: string, isArch
     fontSize: 14,
     color: '#BBDEFB',
     textAlign: 'center',
+  },
+  communityLabel: {
+    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+    borderColor: 'rgba(255, 255, 255, 0.42)',
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    marginBottom: 10,
+  },
+  communityLabelText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+  },
+  communityCta: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+    marginTop: 12,
   },
   // Live Indicator Styles
   liveIndicator: {

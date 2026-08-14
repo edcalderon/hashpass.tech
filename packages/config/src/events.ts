@@ -4,6 +4,7 @@ import type {
   EventContinent,
   Speaker,
 } from "@hashpass/types";
+import { getHashPokerEventConfig } from "./ingested-event-config";
 
 export type {
   Speaker,
@@ -201,6 +202,8 @@ const makeTourStopConfig = (
   },
   quickAccessItems: makeTourQuickAccess(eventId) as any,
 });
+
+const HASH_POKER_EVENT = getHashPokerEventConfig();
 
 // CriptoLatinFest 2026 real speaker/agenda data, scraped from
 // criptolatinfest.com and agenda.criptolatinfest.com (see
@@ -2208,6 +2211,7 @@ export const EVENTS: Record<string, EventConfig> = {
       },
     ],
   },
+  ...(HASH_POKER_EVENT ? { "hash-poker": HASH_POKER_EVENT } : {}),
   criptolatinfest: {
     id: "criptolatinfest",
     name: "Cripto Latin Fest 2026",

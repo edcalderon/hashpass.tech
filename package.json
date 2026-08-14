@@ -101,6 +101,8 @@
     "deploy:web:s3": "npm run build:web && bash packages/tools/scripts/deploy-static-site.sh",
     "deploy:cloudflare": "npm run env:propagate production && npm run env:sync production && npm run build:web && npx wrangler pages deploy ./dist/client --project-name=hashpass",
     "seed:bsl": "node packages/tools/scripts/util/seed-bsl.mjs",
+    "sync:events": "pnpm --filter @hashpass/event-ingestion exec tsx src/cli.ts",
+    "test:event-ingestion": "pnpm --filter @hashpass/event-ingestion test",
     "test:e2e:bsl": "node ./apps/mobile-app/tests/bsl/e2e.mjs",
     "match:speakers": "node packages/tools/scripts/match-users-to-speakers-update-vip.mjs",
     "grant:lukas": "node packages/tools/scripts/grant-1-luka-to-all-users.mjs",

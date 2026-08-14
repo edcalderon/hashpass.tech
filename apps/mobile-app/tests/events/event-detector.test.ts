@@ -43,19 +43,19 @@ afterEach(() => {
 describe('event tenant detection', () => {
   it('treats hashpass.tech as the global HASHPASS event explorer', () => {
     const tenant = getEventTenantContext('hashpass.tech');
-    const events = getAvailableEvents('hashpass.tech').map(event => event.id);
+    const events = getAvailableEvents('hashpass.tech').map((event: { id: string }) => event.id);
 
     expect(tenant.id).toBe('main');
     expect(tenant.showAllEvents).toBe(true);
     expect(isGlobalEventTenant('hashpass.tech')).toBe(true);
-    expect(events).toEqual(['bsl', 'peru2026', 'chile2026', 'colombia2026', 'bsl2025']);
+    expect(events).toEqual(['bsl', 'peru2026', 'chile2026', 'colombia2026', 'bsl2025', 'hash-poker', 'criptolatinfest']);
   });
 
   it('scopes bsl.hashpass.tech to the BSL event family via shared tenant config', () => {
     setEnv('EXPO_PUBLIC_EVENT_TENANT', 'main');
 
     const tenant = getEventTenantContext('bsl.hashpass.tech');
-    const events = getAvailableEvents('bsl.hashpass.tech').map(event => event.id);
+    const events = getAvailableEvents('bsl.hashpass.tech').map((event: { id: string }) => event.id);
 
     expect(tenant.id).toBe('bsl');
     expect(tenant.source).toBe('config');
@@ -67,7 +67,7 @@ describe('event tenant detection', () => {
     setEnv('EXPO_PUBLIC_EVENT_TENANT', 'main');
 
     const tenant = getEventTenantContext('bsl2025.hashpass.tech');
-    const events = getAvailableEvents('bsl2025.hashpass.tech').map(event => event.id);
+    const events = getAvailableEvents('bsl2025.hashpass.tech').map((event: { id: string }) => event.id);
 
     expect(tenant.id).toBe('bsl2025');
     expect(tenant.source).toBe('config');
@@ -79,7 +79,7 @@ describe('event tenant detection', () => {
     setEnv('EXPO_PUBLIC_EVENT_TENANT', 'bsl');
 
     const tenant = getEventTenantContext('localhost');
-    const events = getAvailableEvents('localhost').map(event => event.id);
+    const events = getAvailableEvents('localhost').map((event: { id: string }) => event.id);
 
     expect(tenant.id).toBe('bsl');
     expect(tenant.source).toBe('env-tenant');
@@ -91,7 +91,7 @@ describe('event tenant detection', () => {
     setEnv('EXPO_PUBLIC_EVENT_IDS', 'bsl2025');
 
     const tenant = getEventTenantContext('localhost:8081');
-    const events = getAvailableEvents('localhost:8081').map(event => event.id);
+    const events = getAvailableEvents('localhost:8081').map((event: { id: string }) => event.id);
 
     expect(tenant.source).toBe('env-event-ids');
     expect(events).toEqual(['bsl2025']);
