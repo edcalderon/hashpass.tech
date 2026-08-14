@@ -225,6 +225,8 @@ export default function Explorer({
   const scrollRef = useRef<ScrollView>(null);
   const railScrollRef = useRef<ScrollView>(null);
   const railScrollOffsetRef = useRef(0);
+  const filterChipScrollRef = useRef<ScrollView>(null);
+  const filterChipScrollOffsetRef = useRef(0);
 
   useEffect(() => {
     let mounted = true;
@@ -550,6 +552,28 @@ export default function Explorer({
     );
     railScrollRef.current?.scrollTo({
       x: railScrollOffsetRef.current,
+      animated: false,
+    });
+  };
+
+  const handleFilterChipScroll = (
+    event: NativeSyntheticEvent<NativeScrollEvent>,
+  ) => {
+    filterChipScrollOffsetRef.current = event.nativeEvent.contentOffset.x;
+  };
+
+  const handleFilterChipWheel = (event: any) => {
+    const wheel = event?.nativeEvent || event;
+    const delta = wheel?.deltaY || wheel?.deltaX || 0;
+    if (!delta) return;
+
+    event?.preventDefault?.();
+    filterChipScrollOffsetRef.current = Math.max(
+      0,
+      filterChipScrollOffsetRef.current + delta,
+    );
+    filterChipScrollRef.current?.scrollTo({
+      x: filterChipScrollOffsetRef.current,
       animated: false,
     });
   };
@@ -924,10 +948,14 @@ export default function Explorer({
       </View>
       <View style={styles.toolbarFilterRow}>
         <ScrollView
+          ref={filterChipScrollRef}
           horizontal
           showsHorizontalScrollIndicator={false}
           style={styles.filterChipScroll}
           contentContainerStyle={styles.chipRow}
+          onScroll={handleFilterChipScroll}
+          scrollEventThrottle={16}
+          {...({ onWheel: handleFilterChipWheel } as any)}
         >
           {[
             {
@@ -2245,30 +2273,31 @@ const getStyles = (isDark: boolean, colors: any) =>
     toolbarFilterRow: {
       alignItems: "center",
       flexDirection: "row",
-      gap: 4,
-      paddingTop: 6,
+      gap: 6,
+      paddingTop: 4,
     },
     filterChipScroll: {
       flex: 1,
     },
-    chipRow: { gap: 8, paddingVertical: 5 },
+    chipRow: { gap: 6, paddingVertical: 3, paddingRight: 4 },
     reloadEventsButton: {
       alignItems: "center",
       flexDirection: "row",
-      gap: 6,
-      minHeight: 34,
-      paddingHorizontal: 6,
-      paddingVertical: 5,
+      flexShrink: 0,
+      gap: 4,
+      minHeight: 30,
+      paddingHorizontal: 4,
+      paddingVertical: 3,
     },
     reloadEventsText: {
       color: colors.primary,
-      fontSize: 12,
+      fontSize: 11,
       fontWeight: "700",
     },
     chip: {
-      height: 34,
+      height: 30,
       justifyContent: "center",
-      paddingHorizontal: 14,
+      paddingHorizontal: 10,
       borderRadius: 999,
       borderWidth: 1,
       borderColor: colors.divider,
@@ -2278,7 +2307,7 @@ const getStyles = (isDark: boolean, colors: any) =>
       borderColor: colors.primary,
       backgroundColor: colors.primary,
     },
-    chipText: { color: colors.text.secondary, fontSize: 12, fontWeight: "700" },
+    chipText: { color: colors.text.secondary, fontSize: 11, fontWeight: "700" },
     chipTextActive: { color: "#fff" },
     discoveryCounters: {
       flexDirection: "row",

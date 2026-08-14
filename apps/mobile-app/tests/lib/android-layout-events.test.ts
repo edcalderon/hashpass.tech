@@ -30,6 +30,12 @@ describe("Android layout event crash guards", () => {
       'onScroll={(event) => handleScroll(event, "horizontal")}',
     );
     expect(explorerSource).toContain("setShowBackToTop(contentOffset.y > 120)");
+    expect(explorerSource).toContain(
+      "const handleFilterChipWheel = (event: any) => {",
+    );
+    expect(explorerSource).toContain("ref={filterChipScrollRef}");
+    expect(explorerSource).toContain("onWheel: handleFilterChipWheel");
+    expect(explorerSource).toContain("height: 30,");
 
     // Legacy dashboard rows still share the hook, which owns the Android
     // viewport fallback guard used by those rows.
@@ -117,6 +123,13 @@ describe("Android layout event crash guards", () => {
     expect(dashboardSource).toContain('Platform.OS !== "web" && isMobile');
     expect(dashboardSource).toContain("width: dashboardDrawerWidth");
     expect(dashboardSource).toContain("bottomInset={drawerSafeInsets.bottom}");
+    expect(dashboardSource).toContain(
+      "const DASHBOARD_DRAWER_FALLBACK_VIEWPORT_WIDTH = 360;",
+    );
+    expect(dashboardSource).toContain('Dimensions.get("window").width');
+    expect(dashboardSource).toContain(
+      "Math.ceil(dashboardViewportWidth * 0.8)",
+    );
   });
 
   it("keeps a stable drawerStyle reference so the open/close animation is not re-targeted mid-transition", () => {
@@ -211,7 +224,9 @@ describe("Android layout event crash guards", () => {
       "../../app/(shared)/dashboard/_layout.tsx",
     );
 
-    expect(dashboardSource).toContain("Math.ceil(viewportWidth * 0.8)");
+    expect(dashboardSource).toContain(
+      "Math.ceil(dashboardViewportWidth * 0.8)",
+    );
   });
 
   it("only runs the drawer header gradient animations while the drawer is open", () => {

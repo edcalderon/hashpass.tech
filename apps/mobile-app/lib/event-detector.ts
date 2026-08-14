@@ -334,11 +334,22 @@ export const getEventTenantContext = (
 };
 
 // Get available events based on current context
-export const getAvailableEvents = (hostname?: string): EventInfo[] => {
+export const getAvailableEvents = (
+  hostname?: string,
+  options?: {
+    // Lets a whitelabel tenant opt into the global HASHPASS catalogue (all
+    // tenants' events, not just its own) via the user's own "show all
+    // events" discovery preference -- see DiscoveryScopeProvider. Has no
+    // effect on a domain that is already global.
+    includeAllTenants?: boolean;
+  },
+): EventInfo[] => {
   const tenantContext = getEventTenantContext(hostname);
   const availableEvents = AVAILABLE_EVENTS.filter((event) => event.available);
+  const showAllEvents =
+    tenantContext.showAllEvents || options?.includeAllTenants === true;
 
-  if (tenantContext.showAllEvents) {
+  if (showAllEvents) {
     // Demo tenants remain addressable on their own host, but are not
     // confirmed global events and must not appear in the HASHPASS catalog.
     return sortEventInfos(

@@ -8,6 +8,7 @@ import {
   isMainBranch,
   type EventInfo,
 } from "../../../lib/event-detector";
+import { useDiscoveryScope } from "../../../providers/DiscoveryScopeProvider";
 import Explorer from "../../../components/explorer/Explorer";
 
 export default function ExploreScreen() {
@@ -15,10 +16,13 @@ export default function ExploreScreen() {
   const { isLoggedIn, isLoading: authLoading, dbUserId } = useAuth();
   const router = useRouter();
   const params = useLocalSearchParams();
+  // The user's own "show all events" discovery preference (Settings). Always
+  // on for the main hashpass.tech domain -- see DiscoveryScopeProvider.
+  const { showAllTenants } = useDiscoveryScope();
   const [availableEvents, setAvailableEvents] = useState<EventInfo[]>(() =>
-    getAvailableEvents(),
+    getAvailableEvents(undefined, { includeAllTenants: showAllTenants }),
   );
-  const isGlobalExplorer = isMainBranch;
+  const isGlobalExplorer = isMainBranch || showAllTenants;
   const routeEventIdParam =
     typeof params.eventId === "string" ? params.eventId : undefined;
   const isTourView = params.tour === "bsl-on-tour";
@@ -42,8 +46,18 @@ export default function ExploreScreen() {
     // cards and the catalogue summary together. This is deliberately owned by
     // the route, where a remote event source can be added without coupling it
     // to the Explorer presentation component.
-    setAvailableEvents(getAvailableEvents());
-  }, []);
+    setAvailableEvents(
+      getAvailableEvents(undefined, { includeAllTenants: showAllTenants }),
+    );
+  }, [showAllTenants]);
+
+  // Toggling the discovery preference in Settings should update this screen
+  // immediately, not just on the next manual/route-triggered reload.
+  useEffect(() => {
+    setAvailableEvents(
+      getAvailableEvents(undefined, { includeAllTenants: showAllTenants }),
+    );
+  }, [showAllTenants]);
 
   useEffect(() => {
     // The global brand mark and the Explorer filter Reset both route here.

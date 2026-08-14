@@ -865,11 +865,20 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
               label={t("wallet.refreshing", "Refreshing passes…")}
             />
           ) : (
-            walletPasses.map((pass) => (
-              <View key={pass.id} style={{ width: cardWidth, marginRight: 16 }}>
-                <PassWalletCard pass={pass} />
-              </View>
-            ))
+            // Respect the Explorer's event scope here too: without this, a
+            // single-tenant explorer (BSL, criptolatinfest, ...) rendered
+            // every pass the signed-in user holds across every tenant --
+            // including ones for events that tenant never mentions.
+            (explorerFilters ? explorerFilteredPasses : walletPasses).map(
+              (pass) => (
+                <View
+                  key={pass.id}
+                  style={{ width: cardWidth, marginRight: 16 }}
+                >
+                  <PassWalletCard pass={pass} />
+                </View>
+              ),
+            )
           )}
         </ScrollView>
       </View>

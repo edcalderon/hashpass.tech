@@ -3,6 +3,7 @@ import { View, Text, Switch, TouchableOpacity, ScrollView, StyleSheet, Alert, St
 import { useTheme } from '../../../hooks/useTheme';
 import { useLanguage } from '../../../providers/LanguageProvider';
 import { useAnimations } from '../../../providers/AnimationProvider';
+import { useDiscoveryScope } from '../../../providers/DiscoveryScopeProvider';
 import { useToastHelpers } from '@contexts/ToastContext';
 import { Ionicons } from '../../../lib/vector-icons';
 import Svg, { Circle as SvgCircle, Path as SvgPath } from 'react-native-svg';
@@ -29,6 +30,7 @@ export default function SettingsScreen() {
   const { isDark, toggleTheme, colors } = useTheme();
   const { locale, setLocale } = useLanguage();
   const { animationsEnabled, setAnimationsEnabled } = useAnimations();
+  const { showAllTenants, setShowAllTenants, isEditable: showAllTenantsEditable } = useDiscoveryScope();
   const { headerHeight } = useScroll();
   const { showSuccess, showInfo, showError } = useToastHelpers();
   const { t: tProfile } = useTranslation('profile');
@@ -78,6 +80,33 @@ export default function SettingsScreen() {
       }
     } catch (error) {
       console.error('Failed to toggle animations:', error);
+    }
+  };
+
+  const handleShowAllTenantsToggle = async (enabled: boolean) => {
+    if (!showAllTenantsEditable) return;
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      await setShowAllTenants(enabled);
+      if (enabled) {
+        showSuccess(
+          tSettings('showAllTenantsEnabledTitle', 'Showing all HASHPASS events'),
+          tSettings(
+            'showAllTenantsEnabledBody',
+            'Events and passes from every HASHPASS tenant are now visible here.',
+          ),
+        );
+      } else {
+        showInfo(
+          tSettings('showAllTenantsDisabledTitle', 'Showing this event only'),
+          tSettings(
+            'showAllTenantsDisabledBody',
+            'Only this event’s own passes and events are shown.',
+          ),
+        );
+      }
+    } catch (error) {
+      console.error('Failed to toggle discovery scope:', error);
     }
   };
 
@@ -420,6 +449,35 @@ export default function SettingsScreen() {
                 onValueChange={handleAnimationsToggle}
                 trackColor={{ false: '#e5e7eb', true: colors.primary }}
                 thumbColor={animationsEnabled ? '#4f46e5' : '#f3f4f6'}
+              />
+            ),
+          })}
+
+          {renderSettingItem({
+            icon: 'globe-outline',
+            title: tSettings('showAllTenants', 'Show all HASHPASS events'),
+            subtitle: !showAllTenantsEditable
+              ? tSettings(
+                  'showAllTenantsMainSubtitle',
+                  'This is the main HASHPASS app, so every event and pass is always shown',
+                )
+              : showAllTenants
+                ? tSettings(
+                    'showAllTenantsOnSubtitle',
+                    'Showing events and passes from every HASHPASS tenant, not just this one',
+                  )
+                : tSettings(
+                    'showAllTenantsOffSubtitle',
+                    'Only this event’s own passes and events are shown here',
+                  ),
+            disabled: !showAllTenantsEditable,
+            rightComponent: (
+              <Switch
+                value={showAllTenants}
+                onValueChange={handleShowAllTenantsToggle}
+                disabled={!showAllTenantsEditable}
+                trackColor={{ false: '#e5e7eb', true: colors.primary }}
+                thumbColor={showAllTenants ? '#4f46e5' : '#f3f4f6'}
               />
             ),
           })}

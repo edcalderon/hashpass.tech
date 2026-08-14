@@ -187,6 +187,14 @@ function loadExploreScreen(availableEvents: Record<string, unknown>[] = []) {
       isMainBranch: false,
       shouldShowEventSelector: () => false,
     }));
+    jest.doMock("../../providers/DiscoveryScopeProvider", () => ({
+      useDiscoveryScope: () => ({
+        showAllTenants: false,
+        setShowAllTenants: jest.fn(),
+        isEditable: true,
+        isReady: true,
+      }),
+    }));
     jest.doMock("../../lib/event-branding", () => ({
       getSelectEventCardWatermark: () => 1,
       resolveEventImageSource: () => undefined,
