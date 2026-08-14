@@ -31,6 +31,21 @@ describe("event banner slides", () => {
       left: 20,
       top: 20,
     });
+    expect(resolveEventBannerCtaPosition("bottom-left")).toBe("bottom-left");
+    expect(
+      getEventBannerCtaLayout("bottom-left", { edge: 12, bottom: 18 }),
+    ).toEqual({
+      position: "absolute",
+      left: 12,
+      bottom: 18,
+    });
+    expect(getEventBannerCtaLayout("top-right", { edge: 16, top: 14 })).toEqual(
+      {
+        position: "absolute",
+        right: 16,
+        top: 14,
+      },
+    );
   });
 
   it("gives every event one static banner when no campaign media is configured", () => {
@@ -56,7 +71,10 @@ describe("event banner slides", () => {
       ],
     });
 
-    expect(slides.map((slide) => slide.id)).toEqual(["static", "film"]);
+    expect(slides.map((slide: (typeof slides)[number]) => slide.id)).toEqual([
+      "static",
+      "film",
+    ]);
     expect(slides[1]).toMatchObject({
       media: { type: "video", url: "campaign.mp4" },
       cta: { label: "Watch", url: "/events/clf/home" },
@@ -87,7 +105,7 @@ describe("event banner slides", () => {
     };
     const localized = localizeEventBannerSlide(
       slide,
-      (key, fallback) => translations[key] || fallback,
+      (key: string, fallback: string) => translations[key] || fallback,
     );
 
     expect(localized.eyebrow).toBe("Película oficial");

@@ -2,17 +2,48 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { afterEach, describe, it } from "node:test";
 import { join } from "node:path";
-import { deduplicateEvents, inspectPublicHtml, nextWeeklyOccurrence, normalizedEventSchema, parseJsonLdEvents, parsePkrrHtml, syncEventSources } from "../src/index.js";
+import { attribute, deduplicateEvents, elements, firstElement, hasClass, inspectPublicHtml, isElement, isoDateCandidates, nextWeeklyOccurrence, normalizedEventSchema, parseHtml, parseJsonLdEvents, parsePkrrHtml, quotedPathCandidates, syncEventSources, textContent } from "../src/index.js";
 
 const fixture = (name: string) => readFile(join(import.meta.dirname, "fixtures", name), "utf8");
 
 describe("event ingestion", () => {
+  it("reads public HTML safely through the shared DOM helpers", () => {
+    const root = parseHtml('<main><article class="event featured"><a HREF="/rsvp">Join <strong>now</strong></a></article></main>');
+    const article = firstElement(root, element => element.tagName === "article");
+    assert.ok(article && isElement(article));
+    assert.equal(attribute(article, "CLASS"), "event featured");
+    assert.equal(hasClass(article, "featured"), true);
+    assert.equal(textContent(article), "Join now");
+    assert.equal(elements(root, element => element.tagName === "a").length, 1);
+    assert.deepEqual(quotedPathCandidates('fetch("/api/events"); query("/graphql/events?event=clf")'), ["/api/events", "/graphql/events?event=clf"]);
+    assert.deepEqual(isoDateCandidates("2026-08-14 and 2026-08-14, but not 2026-99-99"), ["2026-08-14"]);
+  });
+
   it("normalizes PKRR as a no-speaker community event", async () => {
     const [event] = parsePkrrHtml(await fixture("pkrr.html"), new Date("2026-08-14T00:00:00Z"));
     assert.equal(event.startsAt, "2026-08-18T18:05:00-05:00");
     assert.equal(event.organizerName, "Hash Poker Room"); assert.deepEqual(event.speakers, []);
     assert.equal(event.networkingEnabled, true); assert.equal(event.cta?.label, "Reserve seat");
     assert.doesNotThrow(() => normalizedEventSchema.parse(event));
+  });
+  it("parses PKRR card variants and discards incomplete cards", () => {
+    const [event] = parsePkrrHtml(`<div class="wp-day-row" data-date="2026-08-20">
+      <a class="wp-ev" href="/event/main-event">
+        <span class="wp-ev-title">Main Event</span>
+        <span class="wp-ev-time"><span>12:30 p.m.</span></span>
+        <span class="wp-ev-short">Deep stack tournament</span>
+        <div class="row"><span>Hash House Club</span></div>
+        <img src="/covers/main.jpg" />
+      </a>
+      <a class="wp-ev" href="/event/incomplete"><span class="wp-ev-title">No time</span></a>
+    </div>`, new Date("2026-08-14T00:00:00Z"));
+
+    assert.equal(event.startsAt, "2026-08-20T12:30:00-05:00");
+    assert.equal(event.eventType, "community_tournament");
+    assert.equal(event.coverImage, "https://pkrr.io/covers/main.jpg");
+    assert.equal(event.confidence, 0.95);
+    assert.equal(event.needsReview, false);
+    assert.throws(() => parsePkrrHtml('<div class="wp-day-row" data-date="2026-08-20"><a class="wp-ev" href="/event/bad"><span class="wp-ev-title">Bad time</span><span class="wp-ev-time">noonish</span></a></div>'), /Invalid PKRR time/);
   });
   it("advances recurrence, rejects invalid dates, and deduplicates", async () => {
     assert.equal(nextWeeklyOccurrence("2026-08-04T23:05:00.000Z", new Date("2026-08-14T00:00:00Z")), "2026-08-18T23:05:00.000Z");
