@@ -20,6 +20,30 @@ export const EXPLORER_EVENTS_PER_PAGE = 3;
 export const getExplorerFloatingBottomInset = (safeAreaBottom = 0): number =>
   Math.max(safeAreaBottom + 16, 40);
 
+export const resolveExplorerIconName = (name: string) => {
+  const aliases = {
+    search: "search",
+    tune: "filter",
+    "filter-list": "filter",
+    view_agenda: "list",
+    apps: "grid",
+    view_carousel: "rail",
+    "unfold-more": "sort",
+    bookmark: "bookmark",
+    "bookmark-border": "bookmark",
+    "bookmark-added": "bookmark-filled",
+    "search-off": "search-off",
+    "arrow-upward": "arrow-up",
+    "arrow-back": "arrow-left",
+    "arrow-forward": "arrow-right",
+    refresh: "refresh",
+    event: "event",
+    people: "people",
+    info: "info",
+  } as const;
+  return aliases[name as keyof typeof aliases] || "info";
+};
+
 export const getExplorerPageCount = (
   eventCount: number,
   pageSize: number = EXPLORER_EVENTS_PER_PAGE,

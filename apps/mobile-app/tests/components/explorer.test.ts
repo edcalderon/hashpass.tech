@@ -10,6 +10,7 @@ import {
   getExplorerScopeLabel,
   getEventRoomTarget,
   getActiveFilterCount,
+  resolveExplorerIconName,
   sortExplorerEvents,
   type ExplorerEvent,
 } from "../../components/explorer/explorer";
@@ -51,6 +52,10 @@ const events: ExplorerEvent[] = [
 ];
 
 describe("explorer rework behavior", () => {
+  it("uses the refresh glyph for the compact event reload control", () => {
+    expect(resolveExplorerIconName("refresh")).toBe("refresh");
+  });
+
   it("keeps floating Explorer controls above Android navigation affordances", () => {
     expect(getExplorerFloatingBottomInset(0)).toBe(40);
     expect(getExplorerFloatingBottomInset(24)).toBe(40);

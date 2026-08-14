@@ -43,6 +43,7 @@ import {
   filterWalletPassesForExplorer,
   type PassTimelineFilter,
   type PassTypeFilter,
+  type WalletPass,
 } from "../../lib/pass-wallet";
 import {
   EXPLORER_HERO_LAYOUT,
@@ -56,6 +57,7 @@ import {
   getExplorerHeroActionTarget,
   getExplorerLayout,
   getExplorerScopeLabel,
+  resolveExplorerIconName,
   sortExplorerEvents,
   type ExplorerEvent,
   type ExplorerLayoutMode,
@@ -63,6 +65,7 @@ import {
 import {
   getEventBannerSlides,
   localizeEventBannerSlide,
+  type ResolvedEventBannerSlide,
 } from "../../lib/event-banners";
 import { getEventBannerCtaLayout } from "../../lib/banner-cta";
 import EventBannerBackgroundVideo from "../EventBannerBackgroundVideo";
@@ -156,29 +159,6 @@ const toExplorerEvent = (event: EventInfo): ExplorerEvent => ({
   image: event.image,
   shortName: event.shortName,
 });
-
-const resolveExplorerIconName = (name: string) => {
-  const aliases = {
-    search: "search",
-    tune: "filter",
-    "filter-list": "filter",
-    view_agenda: "list",
-    apps: "grid",
-    view_carousel: "rail",
-    "unfold-more": "sort",
-    bookmark: "bookmark",
-    "bookmark-border": "bookmark",
-    "bookmark-added": "bookmark-filled",
-    "search-off": "search-off",
-    "arrow-upward": "arrow-up",
-    "arrow-back": "arrow-left",
-    "arrow-forward": "arrow-right",
-    event: "event",
-    people: "people",
-    info: "info",
-  } as const;
-  return aliases[name as keyof typeof aliases] || "info";
-};
 
 const Icon = ({
   name,
@@ -384,7 +364,7 @@ export default function Explorer({
       filterToDate,
     ],
   );
-  const walletPassesWithMeta = useMemo(
+  const walletPassesWithMeta = useMemo<WalletPass[]>(
     () => buildWalletPasses(walletPasses),
     [walletPasses],
   );
@@ -401,8 +381,10 @@ export default function Explorer({
   const discoverySummary = useMemo(() => {
     const ownedEventIds = new Set(
       walletPassesWithMeta
-        .map((pass) => pass.eventId)
-        .filter((eventId): eventId is string => Boolean(eventId)),
+        .map((pass: WalletPass) => pass.eventId)
+        .filter((eventId: string | undefined): eventId is string =>
+          Boolean(eventId),
+        ),
     );
     const datedEvents = explorerEvents.filter((event) =>
       Boolean(event.eventStartDate),
@@ -421,7 +403,7 @@ export default function Explorer({
       ).length,
       totalPasses: walletPassesWithMeta.length,
       activePasses: walletPassesWithMeta.filter(
-        (pass) =>
+        (pass: WalletPass) =>
           pass.status.toLowerCase() === "active" && pass.timeline !== "past",
       ).length,
       upcomingEvents: upcomingEvents.length,
@@ -463,7 +445,7 @@ export default function Explorer({
     sortBy,
   });
   const layout = getExplorerLayout(mode);
-  const selectedHeroSlides = useMemo(
+  const selectedHeroSlides = useMemo<ResolvedEventBannerSlide[]>(
     () => (selectedEvent ? getEventBannerSlides(selectedEvent) : []),
     [selectedEvent],
   );
@@ -707,31 +689,33 @@ export default function Explorer({
                 "Event banner slides",
               )}
             >
-              {selectedHeroSlides.map((slide, index) => (
-                <TouchableOpacity
-                  key={slide.id}
-                  accessibilityRole="button"
-                  accessibilityLabel={translate(
-                    "explore.rework.showEventBanner",
-                    "Show banner {number}",
-                    { number: index + 1 },
-                  )}
-                  style={styles.heroProgressTrack}
-                  onPress={() => {
-                    setSelectedHeroSlideIndex(index);
-                    setSelectedHeroSlideProgress(0);
-                  }}
-                >
-                  <View
-                    style={[
-                      styles.heroProgressFill,
-                      index === selectedHeroSlideIndex && {
-                        width: `${Math.round(selectedHeroSlideProgress * 100)}%`,
-                      },
-                    ]}
-                  />
-                </TouchableOpacity>
-              ))}
+              {selectedHeroSlides.map(
+                (slide: ResolvedEventBannerSlide, index: number) => (
+                  <TouchableOpacity
+                    key={slide.id}
+                    accessibilityRole="button"
+                    accessibilityLabel={translate(
+                      "explore.rework.showEventBanner",
+                      "Show banner {number}",
+                      { number: index + 1 },
+                    )}
+                    style={styles.heroProgressTrack}
+                    onPress={() => {
+                      setSelectedHeroSlideIndex(index);
+                      setSelectedHeroSlideProgress(0);
+                    }}
+                  >
+                    <View
+                      style={[
+                        styles.heroProgressFill,
+                        index === selectedHeroSlideIndex && {
+                          width: `${Math.round(selectedHeroSlideProgress * 100)}%`,
+                        },
+                      ]}
+                    />
+                  </TouchableOpacity>
+                ),
+              )}
             </View>
           )}
         </View>
