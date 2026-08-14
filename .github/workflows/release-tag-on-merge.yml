@@ -6,7 +6,14 @@ name: Release tag on merge
 # used to run on main, and commits it as its own labeled commit before the
 # PR opens) — so by the time this workflow runs, the merge commit on main
 # already has the final, reviewed version in package.json. This job's only
-# jobs are: tag that exact commit, and fast-forward develop to match.
+# jobs are: tag that exact commit, and sync develop to match -- a plain
+# fast-forward when possible, falling back to a real (content-empty) merge
+# when the PR was squash- or rebase-merged, since main's new commit then
+# isn't a descendant of develop and a fast-forward push is correctly
+# rejected. That fallback was added 2026-08-14 after two consecutive real
+# failures (v1.8.341, v1.8.342) from squash-merging this PR -- see the
+# "Sync develop from main" step below for the recovery logic, which mirrors
+# the manual fix used both times.
 #
 # See .agents/active/task-release-flow-automation.md for the full design
 # and the security considerations behind each piece below. In short:
@@ -114,9 +121,37 @@ jobs:
       - name: Sync develop from main
         env:
           MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
         run: |
           set -euo pipefail
-          git push origin "${MERGE_SHA}:refs/heads/develop"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # Fast path: works when the merge commit is a direct descendant of
+          # develop -- true for a regular ("Create a merge commit") PR
+          # merge, whose second parent is develop's tip. This is a plain
+          # fast-forward, so it's a no-op push if it's not applicable.
+          if git push origin "${MERGE_SHA}:refs/heads/develop"; then
+            echo "Fast-forwarded develop to ${MERGE_SHA}."
+            exit 0
+          fi
+
+          # Fallback: this repo allows squash and rebase merges too (see
+          # repo settings), and either produces a main commit with different
+          # ancestry than develop -- the fast-forward push above is then
+          # correctly rejected as non-fast-forward. Reproduces the manual
+          # recovery already needed twice for real (v1.8.341, v1.8.342 on
+          # 2026-08-14): merge main's tip into develop instead of forcing it.
+          # Since a squash/rebase merge's tree is byte-identical to
+          # develop's pre-merge tip (same source branch, same diff), this
+          # merge is content-empty and never conflicts -- it only exists to
+          # give develop an ancestry path that includes main's tip.
+          echo "Fast-forward rejected (squash/rebase merge) -- falling back to a real merge."
+          git fetch origin develop
+          git checkout -B develop origin/develop
+          git merge --no-edit "${MERGE_SHA}" \
+            -m "🔀 merge: sync develop with main (v${RELEASE_VERSION})"
+          git push origin develop
 
       - name: Notify on failure
         if: failure()
