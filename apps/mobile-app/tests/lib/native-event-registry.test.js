@@ -207,7 +207,7 @@ describe('native event registry patch', () => {
 
   it('patches RN renderers to synthesize missing top-level direct events before throwing', () => {
     const patch = fs.readFileSync(
-      path.resolve(__dirname, '../../../../patches/react-native@0.79.6.patch'),
+      path.resolve(__dirname, '../../../../patches/shared/react-native@0.79.6.patch'),
       'utf8',
     );
 
