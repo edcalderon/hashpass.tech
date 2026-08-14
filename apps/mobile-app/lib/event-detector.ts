@@ -334,16 +334,36 @@ export const getEventTenantContext = (
 };
 
 // Get available events based on current context
-export const getAvailableEvents = (hostname?: string): EventInfo[] => {
+export const getAvailableEvents = (
+  hostname?: string,
+  options?: {
+    // Lets a whitelabel tenant opt into the global HASHPASS catalogue (all
+    // tenants' events, not just its own) via the user's own "show all
+    // events" discovery preference -- see DiscoveryScopeProvider. Has no
+    // effect on a domain that is already global.
+    includeAllTenants?: boolean;
+  },
+): EventInfo[] => {
   const tenantContext = getEventTenantContext(hostname);
   const availableEvents = AVAILABLE_EVENTS.filter((event) => event.available);
+  const showAllEvents =
+    tenantContext.showAllEvents || options?.includeAllTenants === true;
 
-  if (tenantContext.showAllEvents) {
+  if (showAllEvents) {
     // Demo tenants remain addressable on their own host, but are not
-    // confirmed global events and must not appear in the HASHPASS catalog.
+    // confirmed global events and must not appear in the HASHPASS catalog --
+    // EXCEPT the requesting tenant's own event(s): a demo tenant (e.g.
+    // demo-criptolatinfest.hashpass.tech) opting into includeAllTenants must
+    // not lose its own event out of the expanded catalogue just because that
+    // event happens to be demo-flagged. Only OTHER tenants' demo events stay
+    // hidden.
+    const ownTenantEventIds = new Set(tenantContext.eventIds || []);
     return sortEventInfos(
       availableEvents.filter(
-        (event) => !event.isDemo || shouldShowDemoEvents(),
+        (event) =>
+          !event.isDemo ||
+          shouldShowDemoEvents() ||
+          ownTenantEventIds.has(event.id),
       ),
     );
   }
@@ -358,8 +378,9 @@ export const getAvailableEvents = (hostname?: string): EventInfo[] => {
 export const getCurrentEvent = (
   eventId?: string,
   hostname?: string,
+  options?: { includeAllTenants?: boolean },
 ): EventInfo | null => {
-  const availableEvents = getAvailableEvents(hostname);
+  const availableEvents = getAvailableEvents(hostname, options);
 
   if (eventId) {
     return availableEvents.find((e) => e.id === eventId) || null;
@@ -367,7 +388,7 @@ export const getCurrentEvent = (
 
   const tenantContext = getEventTenantContext(hostname);
 
-  if (!tenantContext.showAllEvents) {
+  if (!tenantContext.showAllEvents && options?.includeAllTenants !== true) {
     const tenantEvent = availableEvents.find(
       (event) => event.id === tenantContext.id,
     );

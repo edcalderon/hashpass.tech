@@ -17,6 +17,7 @@ import {
   ScrollView,
   useWindowDimensions,
   ActivityIndicator,
+  Dimensions,
   type DimensionValue,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -60,6 +61,7 @@ import {
   AnimationProvider,
   useAnimations,
 } from "../../../providers/AnimationProvider";
+import { DiscoveryScopeProvider } from "../../../providers/DiscoveryScopeProvider";
 import VersionDisplay from "../../../components/VersionDisplay";
 import SafeBlurView from "../../../components/SafeBlurView";
 import QRScanner from "../../../components/QRScanner";
@@ -76,6 +78,14 @@ import FlipWords from "../../../components/FlipWords";
 const ANDROID_DASHBOARD_HEADER_HEIGHT = 64;
 const ANDROID_DRAWER_EDGE_GUARD = 16;
 const ANDROID_DRAWER_BOTTOM_GUARD = 56;
+// useWindowDimensions() can briefly report a stale/zero width on some Android
+// devices right after a cold start or resume, before the native bridge has
+// measured the window -- multiplying that straight into the drawer width
+// below would render (or flash) an effectively invisible 0px-wide drawer.
+// Dimensions.get('window') reads the current value imperatively rather than
+// through that same hook, so it's a same-tick fallback; this constant is the
+// last-resort default if even that comes back unusable.
+const DASHBOARD_DRAWER_FALLBACK_VIEWPORT_WIDTH = 360;
 
 type DashboardDrawerInsets = {
   top?: number;
@@ -710,6 +720,12 @@ function CustomDrawerContent({
       navigation,
       router,
       closeDrawerAction: DrawerActions.closeDrawer(),
+      // Use the same resilient imperative close path as every other drawer
+      // toggle in this file (see the DrawerOpenControlRef comment above) --
+      // navigateDashboardBrandToLanding also now defers the actual route
+      // replace by one tick so it never races the drawer's still-in-flight
+      // close transition (the native crash this tap was causing).
+      closeDrawer: () => setDrawerOpen(false),
     });
   };
 
@@ -1239,15 +1255,17 @@ export default function DashboardLayout() {
   // still-transitioning current position, which reads exactly as "stops
   // partway, needs a second tap to finish." A stable `dashboardDrawerWidth` +
   // `drawerStyle` reference removes that as a possible cause.
-  const dashboardDrawerWidth = useMemo<DimensionValue>(
-    () =>
-      Platform.OS !== "web" && isMobile
-        ? Math.ceil(viewportWidth * 0.8)
-        : isMobile
-          ? "88%"
-          : 360,
-    [isMobile, viewportWidth],
-  );
+  const dashboardDrawerWidth = useMemo<DimensionValue>(() => {
+    const dashboardViewportWidth =
+      viewportWidth ||
+      Dimensions.get("window").width ||
+      DASHBOARD_DRAWER_FALLBACK_VIEWPORT_WIDTH;
+    return Platform.OS !== "web" && isMobile
+      ? Math.ceil(dashboardViewportWidth * 0.8)
+      : isMobile
+        ? "88%"
+        : 360;
+  }, [isMobile, viewportWidth]);
   const dashboardDrawerStyle = useMemo(
     () => ({ width: dashboardDrawerWidth }),
     [dashboardDrawerWidth],
@@ -1857,9 +1875,10 @@ export default function DashboardLayout() {
 
   return (
     <AnimationProvider>
-      <NotificationProvider>
-        <ScrollProvider>
-          <View style={{ flex: 1 }}>
+      <DiscoveryScopeProvider>
+        <NotificationProvider>
+          <ScrollProvider>
+            <View style={{ flex: 1 }}>
             <Drawer
               openControlRef={drawerOpenControlRef}
               drawerContent={renderDrawerContent}
@@ -1898,7 +1917,8 @@ export default function DashboardLayout() {
             )}
           </View>
         </ScrollProvider>
-      </NotificationProvider>
+        </NotificationProvider>
+      </DiscoveryScopeProvider>
     </AnimationProvider>
   );
 }

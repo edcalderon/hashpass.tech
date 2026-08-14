@@ -20,7 +20,7 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.341)
+## 📋 Latest Changes (v1.8.342)
 
 ### Bug Fixes
 
@@ -36,7 +36,7 @@
 * **event-ingestion:** add reusable event ingestion package + PKRR (Hash Poker Room) adapter and landing integration ([#185](https://github.com/hashpass-tech/hashpass.tech/issues/185)) ([df632a3](https://github.com/hashpass-tech/hashpass.tech/commit/df632a338579aa38481c621b2f2912db71a6d13a))
 * onboard CriptoLatinFest as a demo-mode tenant ([624c6ca](https://github.com/hashpass-tech/hashpass.tech/commit/624c6ca5652b537cbe91f160a62d038ada218da6))
 ### Release Highlights
-- expand global event discovery; auto-provision criptolatinfest general pass on signup; add reusable event ingestion package + PKRR (Hash Poker Room) adapter and landing integration (#185); onboard CriptoLatinFest as a demo-mode tenant; add missing legacy bsl_speakers columns to bsl-development; follow transitive @hashpass/* imports in typecheck-changed sandbox; circuit-break Supabase calls and back off Realtime/polling on failures; stop leaking BSL branding into other whitelabel tenants
+- expand global event discovery; auto-provision criptolatinfest general pass on signup; add reusable event ingestion package + PKRR (Hash Poker Room) adapter and landing integration (#185); onboard CriptoLatinFest as a demo-mode tenant; annotate WalletPass callback param for isolated typecheck; crash on brand-mark tap, tenant pass/event leakage; fail fast for unavailable EC2 release runner; isolate tenant event integrations; show event reload feedback; hide landing event banner ctas; render event reload glyph; add missing legacy bsl_speakers columns to bsl-development; follow transitive @hashpass/* imports in typecheck-changed sandbox; circuit-break Supabase calls and back off Realtime/polling on failures; stop leaking BSL branding into other whitelabel tenants
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

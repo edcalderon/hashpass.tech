@@ -179,4 +179,69 @@ describe("event tenant detection", () => {
       getRouteEventIdFromPathname("/events/chile2026/speakers/calendar"),
     ).toBe("chile2026");
   });
+
+  describe("includeAllTenants (Settings 'show all events' opt-in)", () => {
+    it("expands a whitelabel tenant to the full global catalogue", () => {
+      const events = getAvailableEvents("bsl.hashpass.tech", {
+        includeAllTenants: true,
+      }).map((event: { id: string }) => event.id);
+
+      expect(events).toContain("hash-poker");
+    });
+
+    it("keeps the requesting demo tenant's own event even though it is demo-flagged", () => {
+      const events = getAvailableEvents("demo-criptolatinfest.hashpass.tech", {
+        includeAllTenants: true,
+      }).map((event: { id: string }) => event.id);
+
+      expect(events).toContain("criptolatinfest");
+      expect(events).toContain("bsl");
+    });
+
+    it("still hides other tenants' demo events when SHOW_DEMO_EVENTS is unset", () => {
+      // criptolatinfest is the only demo event today; assert the general
+      // policy holds by checking a non-owning tenant's expanded catalogue
+      // never leaks a foreign demo event without SHOW_DEMO_EVENTS.
+      const events = getAvailableEvents("bsl.hashpass.tech", {
+        includeAllTenants: true,
+      }).map((event: { id: string }) => event.id);
+
+      expect(events).not.toContain("criptolatinfest");
+    });
+
+    it("has no effect on the already-global main tenant", () => {
+      const withOption = getAvailableEvents("hashpass.tech", {
+        includeAllTenants: true,
+      }).map((event: { id: string }) => event.id);
+      const withoutOption = getAvailableEvents("hashpass.tech").map(
+        (event: { id: string }) => event.id,
+      );
+
+      expect(withOption).toEqual(withoutOption);
+      expect(withOption).not.toContain("criptolatinfest");
+    });
+
+    it("resolves a foreign tenant's event via getCurrentEvent when opted in", () => {
+      expect(
+        getCurrentEvent("bsl", "demo-criptolatinfest.hashpass.tech"),
+      ).toBeNull();
+
+      const resolved = getCurrentEvent(
+        "bsl",
+        "demo-criptolatinfest.hashpass.tech",
+        { includeAllTenants: true },
+      );
+      expect(resolved?.id).toBe("bsl");
+    });
+
+    it("falls back to the global default event, not the narrow tenant, when opted in with no eventId", () => {
+      const resolved = getCurrentEvent(
+        undefined,
+        "demo-criptolatinfest.hashpass.tech",
+        { includeAllTenants: true },
+      );
+
+      expect(resolved?.id).toBe("default");
+    });
+  });
 });

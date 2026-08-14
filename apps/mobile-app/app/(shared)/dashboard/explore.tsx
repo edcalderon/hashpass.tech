@@ -8,6 +8,7 @@ import {
   isMainBranch,
   type EventInfo,
 } from "../../../lib/event-detector";
+import { useDiscoveryScope } from "../../../providers/DiscoveryScopeProvider";
 import Explorer from "../../../components/explorer/Explorer";
 
 export default function ExploreScreen() {
@@ -15,15 +16,20 @@ export default function ExploreScreen() {
   const { isLoggedIn, isLoading: authLoading, dbUserId } = useAuth();
   const router = useRouter();
   const params = useLocalSearchParams();
+  // The user's own "show all events" discovery preference (Settings). Always
+  // on for the main hashpass.tech domain -- see DiscoveryScopeProvider.
+  const { showAllTenants } = useDiscoveryScope();
   const [availableEvents, setAvailableEvents] = useState<EventInfo[]>(() =>
-    getAvailableEvents(),
+    getAvailableEvents(undefined, { includeAllTenants: showAllTenants }),
   );
-  const isGlobalExplorer = isMainBranch;
+  const isGlobalExplorer = isMainBranch || showAllTenants;
   const routeEventIdParam =
     typeof params.eventId === "string" ? params.eventId : undefined;
   const isTourView = params.tour === "bsl-on-tour";
   const shouldResetExplorer = params.reset === "1";
-  const currentEventFromRoute = getCurrentEvent(routeEventIdParam);
+  const currentEventFromRoute = getCurrentEvent(routeEventIdParam, undefined, {
+    includeAllTenants: showAllTenants,
+  });
   const currentEventInfo: EventInfo | null = currentEventFromRoute
     ? currentEventFromRoute
     : currentEventFromContext
@@ -42,8 +48,33 @@ export default function ExploreScreen() {
     // cards and the catalogue summary together. This is deliberately owned by
     // the route, where a remote event source can be added without coupling it
     // to the Explorer presentation component.
-    setAvailableEvents(getAvailableEvents());
-  }, []);
+    setAvailableEvents(
+      getAvailableEvents(undefined, { includeAllTenants: showAllTenants }),
+    );
+  }, [showAllTenants]);
+
+  // Toggling the discovery preference in Settings should update this screen
+  // immediately, not just on the next manual/route-triggered reload.
+  useEffect(() => {
+    setAvailableEvents(
+      getAvailableEvents(undefined, { includeAllTenants: showAllTenants }),
+    );
+  }, [showAllTenants]);
+
+  // Disabling the discovery preference (or any other change that narrows the
+  // catalogue) can leave `selectedEvent` pointing at an event that's no
+  // longer in scope -- e.g. a foreign tenant's event that was selected while
+  // showAllTenants was on. Explorer keeps prioritizing that stale selection
+  // for its hero/quick-access content, so it must be cleared once it falls
+  // out of the refreshed catalogue rather than left dangling.
+  useEffect(() => {
+    if (
+      selectedEvent &&
+      !availableEvents.some((event) => event.id === selectedEvent.id)
+    ) {
+      setSelectedEvent(null);
+    }
+  }, [availableEvents, selectedEvent]);
 
   useEffect(() => {
     // The global brand mark and the Explorer filter Reset both route here.
@@ -73,9 +104,17 @@ export default function ExploreScreen() {
       return;
     lastSyncedRouteEventIdRef.current = routeEventIdParam;
 
-    const matchedEvent = getCurrentEvent(routeEventIdParam);
+    const matchedEvent = getCurrentEvent(routeEventIdParam, undefined, {
+      includeAllTenants: showAllTenants,
+    });
     if (matchedEvent) setSelectedEvent(matchedEvent);
-  }, [isTourView, routeEventIdParam, router, shouldResetExplorer]);
+  }, [
+    isTourView,
+    routeEventIdParam,
+    router,
+    shouldResetExplorer,
+    showAllTenants,
+  ]);
 
   return (
     <Explorer
