@@ -20,13 +20,23 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.340)
+## 📋 Latest Changes (v1.8.341)
+
+### Bug Fixes
+
+* add missing legacy bsl_speakers columns to bsl-development ([4197bc6](https://github.com/hashpass-tech/hashpass.tech/commit/4197bc63ce235dd0ced5be0c4aa180bc8ba49a01))
+* circuit-break Supabase calls and back off Realtime/polling on failures ([a27eb06](https://github.com/hashpass-tech/hashpass.tech/commit/a27eb06a0e74398f802c0f3cea608b7e2f9f9a31))
+* follow transitive @hashpass/* imports in typecheck-changed sandbox ([f3e5207](https://github.com/hashpass-tech/hashpass.tech/commit/f3e520763cbef23279dcaa110307582fb587f2ea))
+* stop leaking BSL branding into other whitelabel tenants ([dc8ed4b](https://github.com/hashpass-tech/hashpass.tech/commit/dc8ed4b339e6ae1ebe552a13b458760e7a2fba54))
+
 
 ### Features
 
-* secure event room chat and presence ([1ba0498](https://github.com/hashpass-tech/hashpass.tech/commit/1ba0498099083f9473e0712379ab8b2c474cc904))
+* auto-provision criptolatinfest general pass on signup ([1629191](https://github.com/hashpass-tech/hashpass.tech/commit/16291916f40cdcb6d96e39ad2b6bfdf7c6f94c2a))
+* **event-ingestion:** add reusable event ingestion package + PKRR (Hash Poker Room) adapter and landing integration ([#185](https://github.com/hashpass-tech/hashpass.tech/issues/185)) ([df632a3](https://github.com/hashpass-tech/hashpass.tech/commit/df632a338579aa38481c621b2f2912db71a6d13a))
+* onboard CriptoLatinFest as a demo-mode tenant ([624c6ca](https://github.com/hashpass-tech/hashpass.tech/commit/624c6ca5652b537cbe91f160a62d038ada218da6))
 ### Release Highlights
-- secure event room chat and presence
+- expand global event discovery; auto-provision criptolatinfest general pass on signup; add reusable event ingestion package + PKRR (Hash Poker Room) adapter and landing integration (#185); onboard CriptoLatinFest as a demo-mode tenant; add missing legacy bsl_speakers columns to bsl-development; follow transitive @hashpass/* imports in typecheck-changed sandbox; circuit-break Supabase calls and back off Realtime/polling on failures; stop leaking BSL branding into other whitelabel tenants
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
