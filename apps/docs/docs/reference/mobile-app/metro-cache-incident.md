@@ -47,11 +47,11 @@ local/CI/self-hosted-runner build topology, not a one-off.
 
 `.github/workflows/mobile-android-release.yml`'s `Install dependencies`
 step (in the `release` job) skips `pnpm install` entirely when a hash of
-`pnpm-lock.yaml` + `patches/*.patch` matches what was stored from the
+`pnpm-lock.yaml` + `patches/*/*.patch` matches what was stored from the
 previous run, reusing whatever's already in `node_modules`:
 
 ```bash
-LOCK_HASH=$(sha256sum pnpm-lock.yaml patches/*.patch | sha256sum | cut -d' ' -f1)
+LOCK_HASH=$(sha256sum pnpm-lock.yaml patches/*/*.patch | sha256sum | cut -d' ' -f1)
 # ...if $LOCK_HASH matches the stored hash and node_modules exists, skip pnpm install
 ```
 
@@ -117,7 +117,7 @@ every prior attempt to fix this exact drawer/sidebar behavior
 
 - Clears `$METRO_CACHE_DIR` automatically whenever the `Install
   dependencies` step actually ran `pnpm install` (i.e. whenever
-  `pnpm-lock.yaml`/`patches/*.patch` changed) — tying Metro cache
+  `pnpm-lock.yaml`/`patches/*/*.patch` changed) — tying Metro cache
   invalidation to the exact same signal that already governs
   `node_modules` reinstallation, so the two can never drift apart again
   the way they did here.
