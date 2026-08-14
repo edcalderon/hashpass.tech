@@ -1,6 +1,29 @@
 import { getSupabaseServerForRequest } from '../supabase-server';
 import { authenticateRequest, extractToken } from '@hashpass/auth';
 import { getBetterAuthSessionUser } from './better-auth';
+import { resolveSupabaseProfile, hostnameFromRequest } from '../../config/supabase-profiles';
+import { recordDbFailure, recordDbSuccess, shouldBackOff } from './db-health-guard';
+
+// Short-lived cache for the registry lookup this module does on every
+// authenticated API call (~15 call sites -- notifications, admin/access,
+// meetings, chat, passes, etc). Uncached, this resolved 14,474 times against
+// one dev DB in a single test session (confirmed via pg_stat_statements) --
+// almost entirely redundant identical lookups for the same handful of users
+// within seconds of each other. A warm Lambda container serves many
+// invocations, so a short in-memory TTL cache removes the bulk of that
+// without meaningfully staling the result (registry rows change rarely).
+const REGISTRY_CACHE_TTL_MS = 30_000;
+const registryCache = new Map<string, { value: { id: string | null; provider_ids?: any } | null; expiresAt: number }>();
+
+const getCachedRegistryRow = (email: string) => {
+  const cached = registryCache.get(email);
+  if (cached && cached.expiresAt > Date.now()) return cached.value;
+  return undefined; // undefined = not cached (distinct from null = cached "no row")
+};
+
+const setCachedRegistryRow = (email: string, value: { id: string | null; provider_ids?: any } | null) => {
+  registryCache.set(email, { value, expiresAt: Date.now() + REGISTRY_CACHE_TTL_MS });
+};
 
 type AuthenticatedUser = {
   id: string;
@@ -47,11 +70,21 @@ export function isResolveIdentityError(
  */
 export async function resolveSupabaseIdentityForUser(
   supabase: ReturnType<typeof getSupabaseServerForRequest>,
-  user: AuthenticatedUser
+  user: AuthenticatedUser,
+  guardContext?: { profileId: string; environment: 'development' | 'production' }
 ): Promise<ResolvedNotificationIdentity> {
   const email = user.email?.trim().toLowerCase() || '';
   if (!email) {
     return { supabaseUserId: null, registryUserId: null, email: '' };
+  }
+
+  const cached = getCachedRegistryRow(email);
+  if (cached !== undefined) {
+    return {
+      supabaseUserId: cached?.provider_ids?.supabase ?? null,
+      registryUserId: cached?.id ?? null,
+      email,
+    };
   }
 
   try {
@@ -63,14 +96,18 @@ export async function resolveSupabaseIdentityForUser(
 
     if (error) {
       console.error('[resolve-notification-identity] registry lookup failed:', error);
+      if (guardContext) recordDbFailure({ ...guardContext, context: 'registry lookup', error });
       return { supabaseUserId: null, registryUserId: null, email };
     }
 
+    if (guardContext) recordDbSuccess(guardContext.profileId);
+    setCachedRegistryRow(email, registryRow ?? null);
     const supabaseUserId = registryRow?.provider_ids?.supabase ?? null;
     const registryUserId = registryRow?.id ?? null;
     return { supabaseUserId, registryUserId, email };
   } catch (registryError) {
     console.error('[resolve-notification-identity] registry lookup failed:', registryError);
+    if (guardContext) recordDbFailure({ ...guardContext, context: 'registry lookup', error: registryError });
     return { supabaseUserId: null, registryUserId: null, email };
   }
 }
@@ -84,8 +121,14 @@ export async function resolveSupabaseIdentityForUser(
 // rather than permanently failing every write for that account.
 async function resolveOrCreateRegistryUserId(
   supabase: ReturnType<typeof getSupabaseServerForRequest>,
-  params: { email: string; authUserId: string; fullName?: string | null; avatarUrl?: string | null }
+  params: { email: string; authUserId: string; fullName?: string | null; avatarUrl?: string | null },
+  guardContext?: { profileId: string; environment: 'development' | 'production' }
 ): Promise<string | null> {
+  const cached = getCachedRegistryRow(params.email);
+  if (cached !== undefined && cached?.id) {
+    return cached.id;
+  }
+
   try {
     const { data: existing, error } = await (supabase as any)
       .from('user')
@@ -94,7 +137,18 @@ async function resolveOrCreateRegistryUserId(
       .maybeSingle();
 
     if (!error && existing?.id) {
+      if (guardContext) recordDbSuccess(guardContext.profileId);
       return existing.id;
+    }
+    if (error && guardContext) recordDbFailure({ ...guardContext, context: 'registry self-heal lookup', error });
+
+    // The self-heal write is the expensive, retry-prone part (an RPC that
+    // does its own INSERT/UPDATE) -- skip it while the backend is already
+    // flagged unhealthy instead of adding write load to a struggling DB on
+    // every single request. The caller already has a well-defined fallback
+    // for a null registryUserId.
+    if (guardContext && shouldBackOff(guardContext.profileId)) {
+      return null;
     }
 
     const { data: upserted, error: upsertError } = await (supabase as any).rpc(
@@ -118,12 +172,16 @@ async function resolveOrCreateRegistryUserId(
 
     if (upsertError) {
       console.error('[resolve-notification-identity] registry self-heal failed:', upsertError);
+      if (guardContext) recordDbFailure({ ...guardContext, context: 'registry self-heal upsert', error: upsertError });
       return null;
     }
 
+    if (guardContext) recordDbSuccess(guardContext.profileId);
+    if (upserted?.id) setCachedRegistryRow(params.email, { id: upserted.id, provider_ids: { supabase: params.authUserId } });
     return upserted?.id ?? null;
   } catch (e) {
     console.error('[resolve-notification-identity] registry self-heal failed:', e);
+    if (guardContext) recordDbFailure({ ...guardContext, context: 'registry self-heal', error: e });
     return null;
   }
 }
@@ -139,6 +197,8 @@ export async function resolveNotificationIdentity(
 ): Promise<ResolvedNotificationIdentity | ResolveIdentityError> {
   const supabase = getSupabaseServerForRequest(request, profileId);
   const token = extractToken(request);
+  const resolvedProfile = resolveSupabaseProfile({ hostname: hostnameFromRequest(request), profileId });
+  const guardContext = { profileId: resolvedProfile.id, environment: resolvedProfile.environment };
 
   // 1. Try a direct Supabase bearer token first — covers native Android and
   //    any web session that already went through Supabase auth. If this
@@ -155,12 +215,16 @@ export async function resolveNotificationIdentity(
         const avatarUrl =
           (metadata.avatar_url as string | undefined) || (metadata.picture as string | undefined) || null;
         const registryUserId = email
-          ? await resolveOrCreateRegistryUserId(supabase, {
-              email,
-              authUserId: data.user.id,
-              fullName,
-              avatarUrl,
-            })
+          ? await resolveOrCreateRegistryUserId(
+              supabase,
+              {
+                email,
+                authUserId: data.user.id,
+                fullName,
+                avatarUrl,
+              },
+              guardContext
+            )
           : null;
         return { supabaseUserId: data.user.id, registryUserId, email: data.user.email || '' };
       }
@@ -177,7 +241,7 @@ export async function resolveNotificationIdentity(
     if (!user.email) {
       return { error: 'Authenticated user has no email on record', status: 400 };
     }
-    return resolveSupabaseIdentityForUser(supabase, user);
+    return resolveSupabaseIdentityForUser(supabase, user, guardContext);
   }
 
   // 3. A Better Auth session is cookie-backed. Verify it directly after a
@@ -191,7 +255,7 @@ export async function resolveNotificationIdentity(
     if (!betterAuthUser.email) {
       return { error: 'Authenticated user has no email on record', status: 400 };
     }
-    return resolveSupabaseIdentityForUser(supabase, betterAuthUser);
+    return resolveSupabaseIdentityForUser(supabase, betterAuthUser, guardContext);
   }
 
   // Neither the bearer nor the Better Auth cookie authenticated the caller.

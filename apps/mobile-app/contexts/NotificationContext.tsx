@@ -36,6 +36,14 @@ export interface NotificationContextType {
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
+// Fallback poll base/cap and the failure count at which the client treats
+// the backend as degraded and stops opening/renewing the Realtime
+// postgres_changes subscription (the dominant cost during the real incident
+// this guards against -- see NotificationProvider's consecutiveFailuresRef).
+const NOTIFICATION_POLL_BASE_MS = 30_000;
+const NOTIFICATION_POLL_MAX_MS = 5 * 60_000;
+const CLIENT_FAILURE_THRESHOLD = 3;
+
 export const useNotifications = () => {
   const context = useContext(NotificationContext);
   if (!context) {
@@ -56,14 +64,39 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
 
   // Track current user ID to prevent unnecessary re-fetches
   const currentUserIdRef = useRef<string | null>(null);
+  // Client-side backoff so a struggling backend doesn't get hammered by every
+  // open tab polling every 30s and immediately re-subscribing to Realtime --
+  // confirmed root cause of a real incident: ~25k Realtime WAL-polling calls
+  // against one dev DB in a single session (pg_stat_statements). Reset on
+  // any success; grows (capped) on consecutive failures. Gates both the
+  // fallback poll interval and whether a new Realtime channel is opened at
+  // all -- adding a persistent WAL-tailing subscription on top of an already
+  // failing backend makes things worse, not better.
+  const consecutiveFailuresRef = useRef(0);
   // The REAL Supabase auth.users(id) UUID for the current session, resolved
   // server-side (see lib/server/resolve-notification-identity.ts). This can
   // differ from `user.id` when the active session came from a non-Supabase
   // provider (e.g. Better Auth uses its own non-UUID id format). Used to
   // scope the realtime subscription filter correctly.
   const [resolvedUserId, setResolvedUserId] = useState<string | null>(null);
+  // Mirrors consecutiveFailuresRef crossing CLIENT_FAILURE_THRESHOLD, as state
+  // so the Realtime subscription effect (which reads it in its deps) actually
+  // re-runs and tears the channel down -- a ref alone wouldn't trigger that.
+  const [backendDegraded, setBackendDegraded] = useState(false);
 
   const unreadCount = notifications.filter(n => !n.is_read && !n.is_archived).length;
+
+  const recordFetchFailure = useCallback(() => {
+    consecutiveFailuresRef.current += 1;
+    if (consecutiveFailuresRef.current >= CLIENT_FAILURE_THRESHOLD) {
+      setBackendDegraded(true);
+    }
+  }, []);
+
+  const recordFetchSuccess = useCallback(() => {
+    consecutiveFailuresRef.current = 0;
+    setBackendDegraded(false);
+  }, []);
 
   const fetchNotifications = useCallback(async (force = false) => {
     if (!user) {
@@ -91,8 +124,11 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
 
       if (!messagesResponse.success || !messagesResponse.data || !updatesResponse.success || !updatesResponse.data) {
         console.error('Error fetching notifications:', messagesResponse.error || updatesResponse.error);
+        recordFetchFailure();
         return;
       }
+
+      recordFetchSuccess();
 
       // Only lock in "already fetched for this user" on success. Right
       // after a fresh Better Auth sign-in, `user` is truthy before the
@@ -124,10 +160,11 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       setNotifications(translatedNotifications);
     } catch (error) {
       console.error('Error fetching notifications:', error);
+      recordFetchFailure();
     } finally {
       setIsLoading(false);
     }
-  }, [user, t]);
+  }, [user, t, recordFetchFailure, recordFetchSuccess]);
 
   const markAsRead = useCallback(async (notificationId: string) => {
     if (!user) return;
@@ -284,7 +321,13 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   // would never match the notifications.user_id column and silently receive
   // no events.
   useEffect(() => {
-    if (!user || !resolvedUserId) return;
+    // Skip opening (or renewing) the WAL-tailing subscription while the
+    // backend is flagged degraded -- confirmed via pg_stat_statements to be
+    // the dominant cost during a real incident (~25k calls in one session),
+    // and a reconnect storm on top of an already-struggling DB only makes it
+    // worse. The 30s poll below keeps working as the fallback in the
+    // meantime; this effect re-runs once backendDegraded clears.
+    if (!user || !resolvedUserId || backendDegraded) return;
 
     const channel = supabase
       .channel('notifications')
@@ -375,7 +418,19 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
           );
         }
       )
-      .subscribe();
+      .subscribe((status: string, err?: Error) => {
+        // CHANNEL_ERROR/TIMED_OUT mean the subscription itself is failing
+        // (e.g. the backend rejecting/dropping connections during an
+        // incident) -- feed that into the same failure counter as fetch
+        // failures so a broken Realtime channel alone can also trip
+        // backendDegraded, not just failed HTTP polls.
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.error('[notifications] realtime channel unhealthy:', status, err);
+          recordFetchFailure();
+        } else if (status === 'SUBSCRIBED') {
+          recordFetchSuccess();
+        }
+      });
 
     // Request notification permission (web-only)
     if (typeof window !== 'undefined' && typeof Notification !== 'undefined' && Notification.permission === 'default') {
@@ -386,19 +441,36 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       supabase.removeChannel(channel);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id, resolvedUserId]); // Only depend on identity to prevent re-subscription on other user changes
+  }, [user?.id, resolvedUserId, backendDegraded]); // Identity + degraded-state gate; other user changes intentionally excluded
 
-  // Auto-refresh notifications every 30 seconds as fallback
+  // Auto-refresh notifications as a fallback, with exponential backoff on
+  // consecutive failures (capped at NOTIFICATION_POLL_MAX_MS) instead of a
+  // fixed 30s interval -- a fixed interval kept hammering an already-failing
+  // backend at full frequency during the real incident this guards against.
   useEffect(() => {
     if (!user) return;
 
-    const interval = setInterval(() => {
-      void fetchNotifications(true);
-    }, 30000);
+    let timeoutId: ReturnType<typeof setTimeout>;
+    let cancelled = false;
 
-    return () => clearInterval(interval);
+    const scheduleNext = () => {
+      const failures = consecutiveFailuresRef.current;
+      const delay = Math.min(NOTIFICATION_POLL_BASE_MS * Math.pow(2, failures), NOTIFICATION_POLL_MAX_MS);
+      timeoutId = setTimeout(async () => {
+        if (cancelled) return;
+        await fetchNotifications(true);
+        if (!cancelled) scheduleNext();
+      }, delay);
+    };
+
+    scheduleNext();
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]); // Only depend on user.id to prevent interval recreation
+  }, [user?.id, fetchNotifications]); // Only depend on identity + the fetch fn to prevent timer-chain recreation on other user changes
 
   const value: NotificationContextType = {
     notifications,

@@ -844,6 +844,35 @@ export async function sendCriticalNotificationEmail(
 }
 
 /**
+ * Send an internal operational alert to support@hashpass.tech (or
+ * NODEMAILER_FROM_SUPPORT if set). Plain, unbranded, not tied to any end
+ * user -- for automated infra alerts (see lib/server/db-health-guard.ts),
+ * not user-facing notifications. Callers should treat this as
+ * fire-and-forget and never let it block the request that triggered it.
+ */
+export async function sendOpsAlertEmail(details: {
+  subject: string;
+  message: string;
+}): Promise<{ success: boolean; error?: string; messageId?: string }> {
+  if (!emailEnabled || !transporter) return { success: false, error: 'Email service is not configured' };
+
+  try {
+    const supportEmail = process.env.NODEMAILER_FROM_SUPPORT || 'support@hashpass.tech';
+    const info = await transporter.sendMail({
+      from: `HASHPASS Ops <${smtpFrom}>`,
+      to: supportEmail,
+      subject: details.subject,
+      text: details.message,
+      html: `<pre style="font-family:monospace;white-space:pre-wrap">${escapeEmailHtml(details.message)}</pre>`,
+    });
+    return { success: true, messageId: info.messageId };
+  } catch (error: any) {
+    console.error('[ops-alert-email] delivery failed:', error?.message || error);
+    return { success: false, error: error?.message || 'Email delivery failed' };
+  }
+}
+
+/**
  * Send user onboarding email with tutorial guide
  */
 export async function sendUserOnboardingEmail(
