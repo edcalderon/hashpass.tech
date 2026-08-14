@@ -13,6 +13,16 @@ export const EXPLORER_HERO_LAYOUT = {
 // wallet, and quick access remain reachable without a long mobile scroll.
 export const EXPLORER_EVENTS_PER_PAGE = 3;
 
+// The local catalogue resolves synchronously today. Keep the pending state
+// perceptible so a tap always confirms that the event list was refreshed.
+export const EXPLORER_RELOAD_FEEDBACK_MINIMUM_MS = 350;
+
+export const getExplorerReloadFeedbackDelay = (
+  startedAt: number,
+  completedAt: number = Date.now(),
+): number =>
+  Math.max(0, EXPLORER_RELOAD_FEEDBACK_MINIMUM_MS - (completedAt - startedAt));
+
 // Floating controls need enough room above Android's three-button navigation
 // even when a device reports a zero bottom inset. Every Explorer action that
 // is pinned to the lower-right corner can use this instead of guessing at the

@@ -6,6 +6,7 @@ import {
   getExplorerLayout,
   getExplorerPageCount,
   getExplorerPageEvents,
+  getExplorerReloadFeedbackDelay,
   EXPLORER_HERO_LAYOUT,
   getExplorerScopeLabel,
   getEventRoomTarget,
@@ -54,6 +55,12 @@ const events: ExplorerEvent[] = [
 describe("explorer rework behavior", () => {
   it("uses the refresh glyph for the compact event reload control", () => {
     expect(resolveExplorerIconName("refresh")).toBe("refresh");
+  });
+
+  it("keeps reload feedback visible long enough to show event skeletons", () => {
+    expect(getExplorerReloadFeedbackDelay(1_000, 1_000)).toBe(350);
+    expect(getExplorerReloadFeedbackDelay(1_000, 1_250)).toBe(100);
+    expect(getExplorerReloadFeedbackDelay(1_000, 1_500)).toBe(0);
   });
 
   it("keeps floating Explorer controls above Android navigation affordances", () => {

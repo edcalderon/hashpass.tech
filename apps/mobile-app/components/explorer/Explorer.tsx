@@ -51,6 +51,7 @@ import {
   getActiveFilterCount,
   getExplorerPageCount,
   getExplorerPageEvents,
+  getExplorerReloadFeedbackDelay,
   getEventRoomTarget,
   getExplorerEventStatus,
   getExplorerFloatingBottomInset,
@@ -419,9 +420,17 @@ export default function Explorer({
 
   const handleEventsReload = useCallback(async () => {
     if (isRefreshingEvents) return;
+    const refreshStartedAt = Date.now();
     setIsRefreshingEvents(true);
     try {
       await onRefreshEvents?.();
+      const remainingFeedbackTime =
+        getExplorerReloadFeedbackDelay(refreshStartedAt);
+      if (remainingFeedbackTime > 0) {
+        await new Promise<void>((resolve) => {
+          setTimeout(resolve, remainingFeedbackTime);
+        });
+      }
     } finally {
       setIsRefreshingEvents(false);
     }
