@@ -336,20 +336,58 @@ function copyDirRecursive(src, dest) {
 // one shallow, small, self-contained directory per package.
 const copiedWorkspacePackages = new Set();
 
+// Walk every .ts(x) file just copied into the sandbox for a workspace
+// package and follow any further `@hashpass/*` imports it makes, copying
+// those packages too. Without this, a package like `@hashpass/auth` (whose
+// own source imports `@hashpass/config`/`@hashpass/utils`) gets copied
+// wholesale but its transitive workspace deps are never scanned -- since the
+// import-collection loop in main() only walks the originally *changed*
+// files, not files pulled in afterwards by this copy step. That produced a
+// real "Cannot find module '@hashpass/config'" false positive the moment a
+// changed file imported @hashpass/auth. Recurses via a queue rather than
+// self-recursion so a copy-of-a-copy chain of any depth is still covered.
+function listFilesRecursive(dir) {
+  const results = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const entryPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      results.push(...listFilesRecursive(entryPath));
+    } else if (entry.isFile() && isTypeScriptFile(entry.name)) {
+      results.push(entryPath);
+    }
+  }
+  return results;
+}
+
 function copyAliasedWorkspacePackageSource(specifier, aliasEntries, tempDir) {
-  const match = /^@hashpass\/([a-z0-9-]+)/.exec(specifier);
-  if (!match) return false;
+  const initialMatch = /^@hashpass\/([a-z0-9-]+)/.exec(specifier);
+  if (!initialMatch) return false;
 
-  const pkgName = match[1];
-  if (copiedWorkspacePackages.has(pkgName)) return true;
+  const queue = [initialMatch[1]];
 
-  const realSrcDir = path.join(ROOT_DIR, 'packages', pkgName, 'src');
-  if (!fs.existsSync(realSrcDir)) return false;
+  while (queue.length > 0) {
+    const pkgName = queue.shift();
+    if (copiedWorkspacePackages.has(pkgName)) continue;
 
-  const tempSrcDir = path.join(tempDir, 'packages', pkgName, 'src');
-  copyDirRecursive(realSrcDir, tempSrcDir);
-  copiedWorkspacePackages.add(pkgName);
-  return true;
+    const realSrcDir = path.join(ROOT_DIR, 'packages', pkgName, 'src');
+    if (!fs.existsSync(realSrcDir)) continue;
+
+    const tempSrcDir = path.join(tempDir, 'packages', pkgName, 'src');
+    copyDirRecursive(realSrcDir, tempSrcDir);
+    copiedWorkspacePackages.add(pkgName);
+
+    for (const copiedFile of listFilesRecursive(tempSrcDir)) {
+      const content = fs.readFileSync(copiedFile, 'utf8');
+      for (const spec of collectImportSpecifiers(content)) {
+        const nestedMatch = /^@hashpass\/([a-z0-9-]+)/.exec(spec.specifier);
+        if (nestedMatch && !copiedWorkspacePackages.has(nestedMatch[1])) {
+          queue.push(nestedMatch[1]);
+        }
+      }
+    }
+  }
+
+  return copiedWorkspacePackages.has(initialMatch[1]);
 }
 
 function writeStubModule(stubPath, stubInfo) {
