@@ -35,9 +35,9 @@ variable "instance_type" {
 }
 
 variable "instance_count" {
-  description = "Number of runner instances to provision"
+  description = "Number of EC2 runner instances to provision. Keep at zero unless an EC2 fallback has been explicitly approved."
   type        = number
-  default     = 1
+  default     = 0
 }
 
 variable "subnet_ids" {

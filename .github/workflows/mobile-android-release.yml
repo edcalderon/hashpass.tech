@@ -87,7 +87,7 @@ on:
       runner:
         description: 'Build runner — aws-ec2 uses the self-hosted EC2 instance, github-hosted uses GitHub Actions infrastructure'
         required: false
-        default: aws-ec2
+        default: github-hosted
         type: choice
         options:
           - aws-ec2

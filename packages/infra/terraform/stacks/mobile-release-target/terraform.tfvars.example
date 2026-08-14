@@ -9,6 +9,10 @@ github_repository = "hashpass-tech/hashpass.tech"
 runner_name_prefix = "hashpass-mobile-release-target"
 runner_labels      = ["hashpass-mobile-release-target"]
 
+# GitHub-hosted runners are the default release path. Keep this at zero unless
+# a temporary EC2 fallback is explicitly approved for a specific release.
+instance_count = 0
+
 # t3a.xlarge gives 4 vCPU / 16 GiB RAM. Restored 2026-07-28 to maximize build
 # speed -- t3a.large (2 vCPU / 8 GiB, minimum viable without OOM; t3a.medium's
 # 4 GiB OOM'd after ~18 min during native compilation) left a cold-cache

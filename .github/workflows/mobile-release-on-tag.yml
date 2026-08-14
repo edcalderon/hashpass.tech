@@ -141,4 +141,4 @@ jobs:
             --field auto_promote_beta=true \
             --field beta_release_status=completed \
             --field backend=fastlane \
-            --field runner=aws-ec2
+            --field runner=github-hosted
