@@ -41,9 +41,9 @@ import {
   sortExplorerEvents,
   type ExplorerEvent,
   type ExplorerLayoutMode,
-} from "./explorer-rework";
+} from "./explorer";
 
-interface ExplorerReworkProps {
+interface ExplorerProps {
   events: EventInfo[];
   selectedEvent: EventInfo | null;
   onSelectEvent: (event: EventInfo) => void;
@@ -165,7 +165,7 @@ const Icon = ({
   />
 );
 
-export default function ExplorerRework({
+export default function Explorer({
   events,
   selectedEvent,
   onSelectEvent,
@@ -173,7 +173,7 @@ export default function ExplorerRework({
   dbUserId = null,
   isLoading = false,
   isGlobalExplorer,
-}: ExplorerReworkProps) {
+}: ExplorerProps) {
   const { isDark, colors } = useTheme();
   const router = useRouter();
   const styles = getStyles(isDark, colors);
@@ -351,15 +351,21 @@ export default function ExplorerRework({
   const layout = getExplorerLayout(mode);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setHeroIndex((current) => (current + 1) % HERO_SLIDES.length);
-    }, 5000);
+    // The rotating hero slides (Colombia/BSL On Tour/etc.) only apply to the
+    // global explorer -- a single-tenant whitelabel domain renders one
+    // static hero built from its own event instead (see renderHero below),
+    // so there's nothing to rotate there.
+    const timer = isGlobalExplorer
+      ? setInterval(() => {
+          setHeroIndex((current) => (current + 1) % HERO_SLIDES.length);
+        }, 5000)
+      : null;
 
     return () => {
-      clearInterval(timer);
+      if (timer) clearInterval(timer);
       if (loadMoreTimerRef.current) clearTimeout(loadMoreTimerRef.current);
     };
-  }, []);
+  }, [isGlobalExplorer]);
 
   const handleScroll = (
     event: NativeSyntheticEvent<NativeScrollEvent>,
@@ -440,6 +446,34 @@ export default function ExplorerRework({
   };
 
   const renderHero = () => {
+    // Single-tenant whitelabel domains (e.g. demo-criptolatinfest.hashpass.tech)
+    // get a static hero built from their own event -- never the hardcoded
+    // Colombia/BSL On Tour/partners slides below, which are global-explorer
+    // only (confirmed live bug: those rendered on every tenant regardless).
+    if (!isGlobalExplorer) {
+      const heroEvent = selectedEvent || events[0];
+      if (!heroEvent) return null;
+
+      return (
+        <View style={[styles.hero, { backgroundColor: heroEvent.color || "#18212D" }]}>
+          <View style={styles.heroTexture} />
+          <View style={styles.heroScrim} />
+          <View style={styles.heroContent}>
+            <View style={styles.heroEyebrow}>
+              <View style={styles.liveDot} />
+              <Text style={styles.heroEyebrowText}>
+                {translate("explore.rework.heroFeatured", "FEATURED EVENT")}
+              </Text>
+            </View>
+            <Text style={styles.heroTitle}>{heroEvent.title}</Text>
+            <Text style={styles.heroSubtitle}>
+              {heroEvent.subtitle || heroEvent.eventDateString || ""}
+            </Text>
+          </View>
+        </View>
+      );
+    }
+
     const hero = HERO_SLIDES[heroIndex];
     const localizedHero = [
       {

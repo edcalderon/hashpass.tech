@@ -16,7 +16,7 @@ import { useRouter } from "expo-router";
 import { useAuth } from "../hooks/useAuth";
 import { useTheme } from "../hooks/useTheme";
 import { useIsMobile } from "@/hooks/useIsMobile";
-import { getCurrentEvent } from "../lib/event-detector";
+import { getCurrentEvent, isGlobalEventTenant } from "../lib/event-detector";
 import Animated, {
   useAnimatedScrollHandler,
   useAnimatedStyle,
@@ -637,9 +637,15 @@ export default function HomeScreen() {
           />
         </View>
 
-        <Animated.View style={[styles.socialProof, featuresAnimatedStyle]}>
-          <Testimonials locale={getCurrentLocale()} />
-        </Animated.View>
+        {/* Generic HASHPASS testimonials aren't specific to any single
+            whitelabel tenant's event -- only show them on the global
+            explorer (hashpass.tech), never on a single-tenant domain like
+            demo-criptolatinfest.hashpass.tech. */}
+        {isGlobalEventTenant() && (
+          <Animated.View style={[styles.socialProof, featuresAnimatedStyle]}>
+            <Testimonials locale={getCurrentLocale()} />
+          </Animated.View>
+        )}
 
         {/* Event Banner Carousel with Mobile App Download */}
         <Animated.View style={[styles.carouselSection, ctaAnimatedStyle]}>

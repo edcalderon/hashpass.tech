@@ -17,11 +17,11 @@ describe('Android layout event crash guards', () => {
 
   it('keeps the reworked explorer scroll handling platform-safe', () => {
     const source = readSource('../../app/(shared)/dashboard/explore.tsx');
-    const explorerSource = readSource('../../components/explorer/ExplorerRework.tsx');
+    const explorerSource = readSource('../../components/explorer/Explorer.tsx');
     // The reworked explorer owns its event rails and derives horizontal
     // scroll state from native scroll metrics. It no longer mounts the old
     // quick-access/select-event layout handlers on this route.
-    expect(source).toContain('ExplorerRework');
+    expect(source).toContain('import Explorer from "../../../components/explorer/Explorer"');
     expect(explorerSource).toContain('onScroll={(event) => handleScroll(event, "horizontal")}');
     expect(explorerSource).toContain('setShowBackToTop(contentOffset.y > 120)');
 

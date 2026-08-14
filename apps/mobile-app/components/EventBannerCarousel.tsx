@@ -4,7 +4,7 @@ import { useTheme } from '../hooks/useTheme';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import EventBanner from './EventBanner';
 import LampBrandBanner from './LampBrandBanner';
-import { getAvailableEvents } from '../lib/event-detector';
+import { getAvailableEvents, isGlobalEventTenant } from '../lib/event-detector';
 import type { EventInfo } from '../lib/event-detector';
 import { getLampBrandConfig } from '../lib/event-branding';
 import SafeLinearGradient from './SafeLinearGradient';
@@ -164,38 +164,50 @@ export default function EventBannerCarousel({
     [defaultLampBrandingByEvent, lampBrandingOverrides]
   );
 
+  // The HASHPASS/BSL brand logo slides only belong on the global explorer
+  // (hashpass.tech, showing every tenant) -- a single-tenant whitelabel
+  // domain like demo-criptolatinfest.hashpass.tech must show only its own
+  // event, never another tenant's branding (confirmed live bug: these were
+  // previously unconditional, so BSL's hero logos and tour cards rendered
+  // on every whitelabel tenant's landing page regardless of context).
+  const isGlobalTenant = isGlobalEventTenant();
+
   // Build slides: event banners + logo slides
   const slides: CarouselSlide[] = [
     // { type: 'download' }, // Temporarily hidden
-    // Add main HASHPASS logo first
-    {
-      type: 'logo' as const,
-      logoId: MAIN_HASHPASS_LOGO.id,
-      logoSrcDark: MAIN_HASHPASS_LOGO.darkSrc,
-      logoSrcLight: MAIN_HASHPASS_LOGO.lightSrc,
-      // This is a branded dark hero rather than a theme-colored content
-      // surface. Keep its background and logo contrast paired in light and
-      // dark mode, just like the BSL logo slides below.
-      backgroundColor: MAIN_HASHPASS_LOGO.backgroundColor,
-      accentColor: MAIN_HASHPASS_LOGO.accentColor,
-    },
-    // Add BSL plain logo second
-    {
-      type: 'logo' as const,
-      logoId: BSL_PLAIN_LOGO.id,
-      logoSrcDark: BSL_PLAIN_LOGO.darkSrc,
-      logoSrcLight: BSL_PLAIN_LOGO.lightSrc,
-      backgroundColor: BSL_PLAIN_LOGO.backgroundColor,
-      accentColor: BSL_PLAIN_LOGO.accentColor,
-    },
-    // Add BSL event logos with brand colors
-    ...BSL_LOGOS.map(logo => ({
-      type: 'logo' as const,
-      logoId: logo.id,
-      logoSrc: logo.logoSrc,
-      backgroundColor: MAIN_HASHPASS_LOGO.backgroundColor,
-      accentColor: logo.accentColor,
-    })),
+    ...(isGlobalTenant
+      ? [
+          // Add main HASHPASS logo first
+          {
+            type: 'logo' as const,
+            logoId: MAIN_HASHPASS_LOGO.id,
+            logoSrcDark: MAIN_HASHPASS_LOGO.darkSrc,
+            logoSrcLight: MAIN_HASHPASS_LOGO.lightSrc,
+            // This is a branded dark hero rather than a theme-colored content
+            // surface. Keep its background and logo contrast paired in light
+            // and dark mode, just like the BSL logo slides below.
+            backgroundColor: MAIN_HASHPASS_LOGO.backgroundColor,
+            accentColor: MAIN_HASHPASS_LOGO.accentColor,
+          },
+          // Add BSL plain logo second
+          {
+            type: 'logo' as const,
+            logoId: BSL_PLAIN_LOGO.id,
+            logoSrcDark: BSL_PLAIN_LOGO.darkSrc,
+            logoSrcLight: BSL_PLAIN_LOGO.lightSrc,
+            backgroundColor: BSL_PLAIN_LOGO.backgroundColor,
+            accentColor: BSL_PLAIN_LOGO.accentColor,
+          },
+          // Add BSL event logos with brand colors
+          ...BSL_LOGOS.map(logo => ({
+            type: 'logo' as const,
+            logoId: logo.id,
+            logoSrc: logo.logoSrc,
+            backgroundColor: MAIN_HASHPASS_LOGO.backgroundColor,
+            accentColor: logo.accentColor,
+          })),
+        ]
+      : []),
     ...availableEvents.map(event => ({ type: 'event' as const, event })),
   ];
 

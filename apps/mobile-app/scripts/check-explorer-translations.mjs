@@ -30,11 +30,12 @@ const requiredKeys = [
   'explore.quick.networking.subtitle',
   'explore.quick.information.title',
   'explore.quick.information.subtitle',
-  // ExplorerRework owns the global dashboard view. Keep this explicit list
+  // Explorer owns the global dashboard view. Keep this explicit list
   // because these IDs are resolved at runtime through the app translation
   // hook and therefore are not guaranteed to be present in Lingui extraction.
   'explore.rework.heroSlides',
   'explore.rework.show',
+  'explore.rework.heroFeatured',
   'explore.rework.heroNextUp',
   'explore.rework.heroNextTitle',
   'explore.rework.heroNextSubtitle',
@@ -152,10 +153,10 @@ const catalogs = Object.fromEntries(requiredLocales.map((locale) => [locale, rea
 const errors = [];
 
 // Catch a new runtime Explorer ID even when it has not yet been added to the
-// explicit contract above. ExplorerRework uses the app translation hook, so
+// explicit contract above. Explorer uses the app translation hook, so
 // Lingui extraction cannot reliably discover these calls for us.
 const explorerSource = fs.readFileSync(
-  path.join(scriptDir, '..', 'components', 'explorer', 'ExplorerRework.tsx'),
+  path.join(scriptDir, '..', 'components', 'explorer', 'Explorer.tsx'),
   'utf8',
 );
 const sourceKeys = new Set(

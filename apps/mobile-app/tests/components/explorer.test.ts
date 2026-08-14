@@ -9,7 +9,7 @@ import {
   getActiveFilterCount,
   sortExplorerEvents,
   type ExplorerEvent,
-} from "../../components/explorer/explorer-rework";
+} from "../../components/explorer/explorer";
 
 const events: ExplorerEvent[] = [
   {

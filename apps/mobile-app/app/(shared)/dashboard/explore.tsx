@@ -8,7 +8,7 @@ import {
   isMainBranch,
   type EventInfo,
 } from "../../../lib/event-detector";
-import ExplorerRework from "../../../components/explorer/ExplorerRework";
+import Explorer from "../../../components/explorer/Explorer";
 
 export default function ExploreScreen() {
   const { event: currentEventFromContext } = useEvent();
@@ -52,7 +52,7 @@ export default function ExploreScreen() {
   }, [isTourView, routeEventIdParam]);
 
   return (
-    <ExplorerRework
+    <Explorer
       events={availableEvents}
       selectedEvent={selectedEvent}
       onSelectEvent={setSelectedEvent}
