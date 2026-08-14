@@ -152,6 +152,15 @@ jobs:
               ;;
           esac
 
+          if [ "${{ inputs.runner }}" = "aws-ec2" ] && { [ -z "${{ vars.AWS_RUNNER_ROLE_ARN }}" ] || [ -z "${{ vars.EC2_RUNNER_INSTANCE_ID }}" ]; }; then
+            cat >&2 <<'EOF'
+            runner=aws-ec2 requires AWS_RUNNER_ROLE_ARN and EC2_RUNNER_INSTANCE_ID.
+            Configure the EC2 runner-control variables or choose runner=github-hosted.
+            Failing here prevents a self-hosted release job from waiting forever for an unavailable runner.
+            EOF
+            exit 1
+          fi
+
           if [ "${{ inputs.promote_only }}" = "true" ] && [ "${{ inputs.backend }}" != "fastlane" ]; then
             cat >&2 <<'EOF'
             Promotion-only releases currently require backend=fastlane.
