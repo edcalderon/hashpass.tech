@@ -870,7 +870,7 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
             // every pass the signed-in user holds across every tenant --
             // including ones for events that tenant never mentions.
             (explorerFilters ? explorerFilteredPasses : walletPasses).map(
-              (pass) => (
+              (pass: WalletPass) => (
                 <View
                   key={pass.id}
                   style={{ width: cardWidth, marginRight: 16 }}
