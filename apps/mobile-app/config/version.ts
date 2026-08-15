@@ -22,22 +22,39 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202608151856, // Updated to current timestamp
+  buildNumber: 202608151955, // Updated to current timestamp
   releaseDate: '2026-08-15',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
+    'add QR link lifecycle controls',
     'expand club experience and QR links'
   ],
   bugfixes: [
-    // No bugfixes
+    'align club settings control with avatar'
   ],
   breakingChanges: [],
-  notes: 'expand club experience and QR links'
+  notes: 'add QR link lifecycle controls; expand club experience and QR links; align club settings control with avatar'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.2': {
+    version: '1.9.2',
+    buildNumber: 202608151955,
+    releaseDate: '2026-08-15',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'add QR link lifecycle controls',
+      'expand club experience and QR links'
+    ],
+    bugfixes: [
+      'align club settings control with avatar'
+    ],
+    breakingChanges: [],
+    notes: 'add QR link lifecycle controls; expand club experience and QR links; align club settings control with avatar'
+  },
   '1.9.1': {
     version: '1.9.1',
     buildNumber: 202608151856,

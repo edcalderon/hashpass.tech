@@ -1,3 +1,17 @@
+## [1.9.2](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.0...v1.9.2) (2026-08-15)
+
+
+### Bug Fixes
+
+* align club settings control with avatar ([8edef52](https://github.com/hashpass-tech/hashpass.tech/commit/8edef52f1807262f824297dda7c0e9cec9168fe3))
+
+
+### Features
+
+* expand club experience and QR links ([39dabb3](https://github.com/hashpass-tech/hashpass.tech/commit/39dabb35ce7828d2b7c0e80ae5f5bcbd2dc6ee69))
+### Release Highlights
+- add QR link lifecycle controls; expand club experience and QR links; align club settings control with avatar
+
 ## [1.9.1](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.0...v1.9.1) (2026-08-15)
 
 

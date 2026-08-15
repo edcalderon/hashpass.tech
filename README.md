@@ -20,11 +20,18 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.1)
+## 📋 Latest Changes (v1.9.2)
+
+### Bug Fixes
+
+* align club settings control with avatar ([8edef52](https://github.com/hashpass-tech/hashpass.tech/commit/8edef52f1807262f824297dda7c0e9cec9168fe3))
+
 
 ### Features
 
 * expand club experience and QR links ([39dabb3](https://github.com/hashpass-tech/hashpass.tech/commit/39dabb35ce7828d2b7c0e80ae5f5bcbd2dc6ee69))
+### Release Highlights
+- add QR link lifecycle controls; expand club experience and QR links; align club settings control with avatar
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
