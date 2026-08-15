@@ -6,6 +6,9 @@ import path from 'path';
 import { spawnSync } from 'child_process';
 import { fileURLToPath } from 'url';
 import { syncReadme } from './update-readme.mjs';
+import readmeGuard from './readme-guard.js';
+
+const { README_GUARD_BYPASS_ENV, isReadmeGuardBypassed } = readmeGuard;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -61,6 +64,14 @@ function diffFiles(actualPath, expectedPath) {
 }
 
 function main() {
+  if (isReadmeGuardBypassed(process.argv.slice(2), process.env)) {
+    console.warn(
+      `⚠️  README sync guard bypassed via ${process.argv.includes('--allow-stale') ? '--allow-stale' : `${README_GUARD_BYPASS_ENV}=1`}.`,
+    );
+    console.warn('Use only to unblock an emergency commit; restore README/CHANGELOG sync immediately afterwards.');
+    return;
+  }
+
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'hashpass-readme-check-'));
 
   try {

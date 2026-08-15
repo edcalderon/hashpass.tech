@@ -6,8 +6,7 @@ the browser ends up with a real HashPass session — no password, no email
 round trip.
 
 Implementation detail (routes, env vars, local dev, Terraform, Phase 2
-scope) lives in
-[`packages/hashpass-links-api/README.md`](../../../../packages/hashpass-links-api/README.md).
+scope) lives in the `packages/hashpass-links-api/README.md` package guide.
 This page covers the flow and where each piece lives, for orientation.
 
 ## Why a separate service

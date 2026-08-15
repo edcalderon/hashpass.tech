@@ -27,6 +27,7 @@ export interface QrLink {
   description?: string;
   destinationUrl: string;
   status: QrLinkStatus;
+  startsAt?: string;
   expiresAt?: string;
   visualConfig: QrVisualConfig;
   campaign?: QrLinkCampaign;

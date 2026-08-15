@@ -6,6 +6,7 @@
 // reinvented, just wired to this service's own handleRequest() instead of
 // Expo's createRequestHandler().
 import { handleRequest } from '../src/router';
+import { archiveExpiredQrLinks } from '../src/routes/qr-links';
 
 interface ApiGatewayEvent {
   httpMethod?: string;
@@ -31,6 +32,11 @@ interface ApiGatewayResponse {
   isBase64Encoded: boolean;
   cookies?: string[];
   multiValueHeaders?: Record<string, string[]>;
+}
+
+interface ScheduledEvent {
+  source?: string;
+  'detail-type'?: string;
 }
 
 const DEFAULT_CORS_ALLOWED_ORIGINS = [
@@ -110,36 +116,47 @@ function buildRequestHeaders(event: ApiGatewayEvent): Headers {
   return headers;
 }
 
-export async function handleLambdaEvent(event: ApiGatewayEvent): Promise<ApiGatewayResponse> {
+export async function handleLambdaEvent(event: ApiGatewayEvent | ScheduledEvent): Promise<ApiGatewayResponse> {
   try {
-    const method = event.httpMethod || event.requestContext?.http?.method || event.requestContext?.httpMethod || 'GET';
+    if (event.source === 'aws.events' && event['detail-type'] === 'Scheduled Event') {
+      const archived = await archiveExpiredQrLinks();
+      return {
+        statusCode: 200,
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ archived }),
+        isBase64Encoded: false,
+      };
+    }
+
+    const apiEvent = event as ApiGatewayEvent;
+    const method = apiEvent.httpMethod || apiEvent.requestContext?.http?.method || apiEvent.requestContext?.httpMethod || 'GET';
 
     if (method === 'OPTIONS') {
       return {
         statusCode: 204,
-        headers: applyCorsHeaders({ 'access-control-max-age': '86400' }, event),
+        headers: applyCorsHeaders({ 'access-control-max-age': '86400' }, apiEvent),
         body: '',
         isBase64Encoded: false,
       };
     }
 
-    let requestPath = event.path || event.requestContext?.http?.path || event.requestContext?.path || '/';
+    let requestPath = apiEvent.path || apiEvent.requestContext?.http?.path || apiEvent.requestContext?.path || '/';
     if (requestPath.startsWith('/prod/')) {
       requestPath = requestPath.replace('/prod', '');
     }
 
     const queryString =
-      event.rawQueryString ||
-      (event.queryStringParameters ? new URLSearchParams(event.queryStringParameters).toString() : '');
+      apiEvent.rawQueryString ||
+      (apiEvent.queryStringParameters ? new URLSearchParams(apiEvent.queryStringParameters).toString() : '');
 
-    const domainName = event.requestContext?.domainName || getHeader(event.headers, 'Host') || 'hashpass.link';
-    const protocol = getHeader(event.headers, 'X-Forwarded-Proto') || 'https';
+    const domainName = apiEvent.requestContext?.domainName || getHeader(apiEvent.headers, 'Host') || 'hashpass.link';
+    const protocol = getHeader(apiEvent.headers, 'X-Forwarded-Proto') || 'https';
     const fullUrl = `${protocol}://${domainName}${requestPath}${queryString ? `?${queryString}` : ''}`;
 
     const request = new Request(fullUrl, {
       method,
-      headers: buildRequestHeaders(event),
-      body: event.body && method !== 'GET' && method !== 'HEAD' ? event.body : undefined,
+      headers: buildRequestHeaders(apiEvent),
+      body: apiEvent.body && method !== 'GET' && method !== 'HEAD' ? apiEvent.body : undefined,
     });
 
     const response = await handleRequest(request);
@@ -154,7 +171,7 @@ export async function handleLambdaEvent(event: ApiGatewayEvent): Promise<ApiGate
         headers[lowerKey] = value;
       }
     });
-    applyCorsHeaders(headers, event);
+    applyCorsHeaders(headers, apiEvent);
 
     const apiGatewayResponse: ApiGatewayResponse = {
       statusCode: response.status,
@@ -164,7 +181,7 @@ export async function handleLambdaEvent(event: ApiGatewayEvent): Promise<ApiGate
     };
 
     if (setCookieHeaders.length > 0) {
-      if (event.version === '2.0') {
+      if (apiEvent.version === '2.0') {
         apiGatewayResponse.cookies = setCookieHeaders;
       } else {
         apiGatewayResponse.multiValueHeaders = { 'set-cookie': setCookieHeaders };
@@ -177,7 +194,7 @@ export async function handleLambdaEvent(event: ApiGatewayEvent): Promise<ApiGate
 
     return {
       statusCode: 500,
-      headers: applyCorsHeaders({ 'content-type': 'application/json' }, event),
+      headers: applyCorsHeaders({ 'content-type': 'application/json' }, event as ApiGatewayEvent),
       body: JSON.stringify({ error: 'Internal Server Error' }),
       isBase64Encoded: false,
     };

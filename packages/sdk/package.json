@@ -22,6 +22,11 @@
       "import": "./dist/auth-qr/index.js",
       "default": "./dist/auth-qr/index.js"
     },
+    "./qr-links": {
+      "types": "./dist/qr-links/index.d.ts",
+      "import": "./dist/qr-links/index.js",
+      "default": "./dist/qr-links/index.js"
+    },
     "./support": {
       "types": "./dist/support/index.d.ts",
       "import": "./dist/support/index.js",

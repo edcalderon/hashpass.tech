@@ -1,5 +1,15 @@
 import { health } from './routes/health';
 import { approveChallenge, createChallenge, exchangeChallenge, pollChallenge } from './routes/auth-qr';
+import {
+  createQrLink,
+  deleteQrLink,
+  getQrLink,
+  getQrLinkAnalytics,
+  getQrSlugAvailability,
+  listQrLinks,
+  redirectQrLink,
+  updateQrLink,
+} from './routes/qr-links';
 import { apiError } from './server';
 
 type Handler = (request: Request, match: RegExpMatchArray) => Promise<Response>;
@@ -7,10 +17,7 @@ type Handler = (request: Request, match: RegExpMatchArray) => Promise<Response>;
 // Ordered [method, path pattern, handler] table rather than a routing
 // library -- this service is deliberately minimal (see the original spec's
 // "minimal, high-performance redirect service" requirement) and the whole
-// route surface fits on one screen. `Phase 2` entries return 501 for now:
-// their DB migration and validation logic already exist
-// (@hashpass/backend's qr-links module) but aren't wired to a live route
-// yet -- see packages/hashpass-links-api/README.md.
+// route surface fits on one screen.
 const ROUTES: Array<[string, RegExp, Handler]> = [
   ['GET', /^\/api\/health$/, () => health()],
   ['POST', /^\/api\/v1\/auth\/qr\/challenges$/, (request) => createChallenge(request)],
@@ -21,18 +28,17 @@ const ROUTES: Array<[string, RegExp, Handler]> = [
     (request, match) => approveChallenge(request, match[1]),
   ],
   ['POST', /^\/api\/v1\/auth\/qr\/exchange$/, (request) => exchangeChallenge(request)],
-  // Phase 2 (not yet live -- see README "Phase 2" section):
-  ['GET', /^\/q\/([^/]+)$/, async () => phase2NotReady()],
-  ['GET', /^\/api\/v1\/qr-links$/, async () => phase2NotReady()],
-  ['POST', /^\/api\/v1\/qr-links$/, async () => phase2NotReady()],
-  ['GET', /^\/api\/v1\/qr-links\/([^/]+)$/, async () => phase2NotReady()],
-  ['PATCH', /^\/api\/v1\/qr-links\/([^/]+)$/, async () => phase2NotReady()],
-  ['GET', /^\/api\/v1\/qr-links\/([^/]+)\/analytics$/, async () => phase2NotReady()],
+  // HashPass Links (custom/dynamic QR links) -- see README "QR link
+  // lifecycle" section.
+  ['GET', /^\/q\/([^/]+)$/, (request, match) => redirectQrLink(request, match[1])],
+  ['GET', /^\/api\/v1\/qr-links$/, (request) => listQrLinks(request)],
+  ['POST', /^\/api\/v1\/qr-links$/, (request) => createQrLink(request)],
+  ['GET', /^\/api\/v1\/qr-links\/slug-availability$/, (request) => getQrSlugAvailability(request)],
+  ['GET', /^\/api\/v1\/qr-links\/([^/]+)$/, (request, match) => getQrLink(request, match[1])],
+  ['PATCH', /^\/api\/v1\/qr-links\/([^/]+)$/, (request, match) => updateQrLink(request, match[1])],
+  ['DELETE', /^\/api\/v1\/qr-links\/([^/]+)$/, (request, match) => deleteQrLink(request, match[1])],
+  ['GET', /^\/api\/v1\/qr-links\/([^/]+)\/analytics$/, (request, match) => getQrLinkAnalytics(request, match[1])],
 ];
-
-function phase2NotReady(): Response {
-  return apiError('This endpoint is not live yet (Phase 2).', 501);
-}
 
 export async function handleRequest(request: Request): Promise<Response> {
   const { pathname } = new URL(request.url);

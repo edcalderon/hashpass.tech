@@ -9,17 +9,24 @@ session.
 This package is intentionally its own service, separate from the main
 `api.hashpass.tech` (Expo Router) API — see "Why a separate service?" below.
 
-## Status: Phase 1 (auth-QR login only)
+## Status: Phase 1 (auth-QR login) and Phase 2 (QR link lifecycle) are both live
 
-Everything in this package today is the auth-QR login flow, end to end, on
-real infra (Lambda + API Gateway, real Supabase-backed sessions). The wider
-"HashPass Links" product — arbitrary shortened/dynamic QR links, a
-management dashboard, click analytics, the public `/q/:slug` redirect — is
-**Phase 2** and deliberately not built yet. Its schema and validation logic
-already exist (`@hashpass/backend`'s `qr-links` module,
-`db/migrations/V079__hashpass_links_dynamic_qr.sql`) and this service's
-router already has stub routes for it (see "Phase 2 stub routes" below), but
-none of it is live. Building Phase 2 is future work, not started.
+Phase 1 is the auth-QR login flow, end to end, on real infra (Lambda + API
+Gateway, real Supabase-backed sessions).
+
+Phase 2 — "HashPass Links": custom/dynamic QR links an admin creates for an
+event or campaign, with full lifecycle administration (create, edit,
+pause/resume, archive) and scan tracking — is now live too (2026-08-15), as
+part of `.agents/active/task-panel-web-club-events-qr.md`. It's consumed by
+`apps/web-app`'s `/panel/qr` section via `@hashpass/sdk`'s `QrLinksClient`
+(`client.qrLinks`). See "Routes" below for the live route table; there are
+no more Phase-2 stub routes.
+
+Still outstanding for Phase 2: real end-to-end verification against a live
+(non-fake) Supabase project and a deployed Lambda (this service's own tests
+only exercise the code against the in-memory fake Supabase client, see
+"Testing" below), and the `hashpass.link` domain cutover itself (see below —
+deliberately still deferred).
 
 ## Why a separate service?
 
@@ -98,6 +105,7 @@ install step, unlike the Expo Router API's packaging script.
 | `SUPABASE_URL` | yes | Admin Supabase client (`src/server.ts`'s `adminDb()`) |
 | `SUPABASE_SERVICE_ROLE_KEY` | yes | Same — service-role key, never exposed to clients |
 | `CORS_ALLOW_ORIGINS` | no | Comma-separated extra allowed origins, added to the built-in default list (`lambda/index.ts`'s `DEFAULT_CORS_ALLOWED_ORIGINS`: `hashpass.club`, `hashpass.link`, `localhost:3000`) |
+| `QR_ANALYTICS_SECRET` | no, but recommended | HMAC secret (32+ chars) `logScan()` in `src/routes/qr-links.ts` passes to `anonymizeVisitor()` to hash a scanning visitor's IP. Missing it doesn't break the redirect — every scan just collapses into one `'unconfigured'` visitor bucket instead of being individually anonymized-and-distinguished, so scan *counts* stay correct but per-visitor uniqueness doesn't. Rotate periodically; `anonymizeVisitor` itself already rotates the hash monthly so old and new hashes for the same visitor can't be correlated. |
 
 The `qrUrl` returned by `POST /api/v1/auth/qr/challenges` is built from the
 origin of the incoming request itself (`new URL(request.url).origin`), not
@@ -119,6 +127,12 @@ their own `NEXT_PUBLIC_LINKS_API_BASE_URL` / `EXPO_PUBLIC_LINKS_API_BASE_URL`
 | `GET` | `/api/v1/auth/qr/challenges/:id` | `x-hashpass-binding` header + `state` | Browser polls for the mobile app's decision |
 | `POST` | `/api/v1/auth/qr/challenges/:id/approve` | bearer token (app's own session) | Mobile app approves/denies, called under the user's own authenticated session |
 | `POST` | `/api/v1/auth/qr/exchange` | `x-hashpass-binding` header | Browser trades the one-time authorization code + PKCE verifier for a real session |
+| `GET` | `/q/:slug` | none | Public QR redirect — 302s to the link's destination (with campaign UTM params merged in) and logs a scan event; 404 if the slug is unknown, paused, archived, or expired |
+| `GET` | `/api/v1/qr-links` | bearer token | Lists every QR link the caller owns |
+| `POST` | `/api/v1/qr-links` | bearer token | Creates a new QR link owned by the caller |
+| `GET` | `/api/v1/qr-links/:id` | bearer token, owner-only | Fetches one QR link |
+| `PATCH` | `/api/v1/qr-links/:id` | bearer token, owner-only | Edits a QR link's fields, or transitions its status (`active`/`paused`/`archived`) |
+| `GET` | `/api/v1/qr-links/:id/analytics` | bearer token, owner-only | Scan counts and device/bot breakdown over the trailing 30 days |
 
 Security properties, in one place since they're spread across a few files:
 opaque/random/single-use/short-lived challenge IDs and codes
@@ -145,20 +159,36 @@ an explicit header instead sidesteps browser cookie policy entirely — the
 SDK receives it directly in the create-challenge response body and sends it
 back explicitly on every subsequent call (see `packages/sdk/src/auth-qr/client.ts`).
 
-### Phase 2 stub routes
+### QR link lifecycle
 
-`GET /q/:slug`, and the `qr-links` CRUD/analytics routes, currently all
-return `501` via `phase2NotReady()` in `src/router.ts`. Their schema
-(`qr_links`, `qr_scan_events`, `qr_link_audit_events` tables) and validation
+The `qr-links` routes (`src/routes/qr-links.ts`) build on pieces that
+already existed and were already tested before Phase 2 went live: schema
+(`qr_links`, `qr_scan_events`, `qr_link_audit_events` tables, in
+`db/migrations/V079__hashpass_links_dynamic_qr.sql`), validation
 (`@hashpass/backend`'s `qr-links/validation.ts` — destination SSRF
-allowlisting, QR visual-config contrast/quiet-zone checks) already exist and
-are tested; only the live routes and any UI are what's missing.
+allowlisting, QR visual-config contrast/quiet-zone checks), and privacy-
+conscious scan analytics (`@hashpass/backend`'s `analytics/privacy.ts` —
+`anonymizeVisitor`'s monthly-rotating HMAC visitor hash, never the raw IP,
+and `classifyAgent`'s bot/device detection).
+
+A create/update writes a `qr_link_audit_events` row (actor, before/after
+summary) the same way the auth-QR routes write `qr_auth_events`. The public
+redirect (`GET /q/:slug`) never authenticates and never fails the redirect
+itself because of a scan-logging error — `redirectQrLink()` awaits
+`logScan()` but swallows its errors, since a real visitor waiting on the
+redirect must never see an analytics hiccup as a broken QR code. Every
+campaign field set on the link (`campaign.source`/`medium`/`campaign`/
+`term`/`content`) gets merged into the destination as `utm_*` query params
+on every redirect.
 
 ## Testing
 
 `src/router.test.ts` drives the full challenge → approve → exchange sequence
 (including expiry, deny, sequential replay, and a genuine concurrent-race
-case) against a fake in-memory Supabase client
+case); `src/routes/qr-links.test.ts` drives create/list/get/update/analytics
+plus the public redirect (including the SSRF destination guard, owner-only
+access, a paused link 404ing without logging a scan, and campaign UTM
+merging on redirect) — both against a fake in-memory Supabase client
 (`src/test-utils/fake-supabase-client.ts`), injected via
 `setAdminDbForTesting()` in `src/server.ts`. No real Supabase project or
 network access is needed to run these tests. `@hashpass/backend`'s own
@@ -182,8 +212,9 @@ terraform plan
 
 ### hashpass.link cutover
 
-**`hashpass.link` is not yet confirmed as a registered/owned domain, and its
-DNS/ACM must not be touched without an explicit go-ahead.** The stack
+**`hashpass.link` uses `hashpass.link` for production and
+`dev.hashpass.link` for development. DNS/ACM must not be touched without an
+explicit go-ahead.** The stack
 defaults to `enable_custom_domain = false`: applying it creates real Lambda
 + API Gateway resources reachable at their default
 `*.execute-api.<region>.amazonaws.com` invoke URL — enough to validate the

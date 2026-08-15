@@ -1,4 +1,6 @@
 const {
+  classifyAffectedReleaseScopes,
+  formatAffectedReleaseScopes,
   buildPromotionPullRequestBody,
   buildPromotionFileHighlights,
   extractVersionArray,
@@ -6,6 +8,7 @@ const {
   incrementPatchVersion,
   resolvePromotionVersion,
 } = require('./release.js');
+const { isReadmeGuardBypassed } = require('./readme-guard.js');
 
 describe('release promotion PR body', () => {
   const sampleSummary = formatPromotionSummarySections({
@@ -98,6 +101,57 @@ describe('release promotion PR body', () => {
     expect(summary).toContain('release docs and CLAUDE guidance');
     expect(summary).toContain('promotion PR generator');
     expect(summary).toContain('README sync aligned');
+  });
+
+  it('labels the specific products and packages affected by the release range', () => {
+    const scopes = classifyAffectedReleaseScopes([
+      'apps/web-app/app/panel/qr/page.tsx',
+      'apps/mobile-app/app/index.tsx',
+      'packages/hashpass-links-api/src/routes/qr-links.ts',
+      'packages/sdk/src/qr-links/client.ts',
+      'db/migrations/V081__qr_link_custom_slugs.sql',
+      'packages/tools/scripts/release.js',
+    ]);
+
+    expect(scopes).toEqual([
+      'Club web',
+      'Mobile app',
+      'QR links API',
+      'SDK',
+      'Database migrations',
+      'Release tooling',
+    ]);
+  });
+
+  it('renders a release scope block with the previous global tag', () => {
+    const summary = formatAffectedReleaseScopes('v1.9.0', [
+      'apps/web-app/app/page.tsx',
+      'packages/hashpass-links-api/src/routes/qr-links.ts',
+    ]);
+
+    expect(summary).toContain('### Release scope');
+    expect(summary).toContain('Compared with: `v1.9.0`');
+    expect(summary).toContain('### Affected products & packages');
+    expect(summary).toContain('- Club web');
+    expect(summary).toContain('- QR links API');
+  });
+
+  it('does not label an app solely because the release updates generated version files', () => {
+    const scopes = classifyAffectedReleaseScopes([
+      'apps/mobile-app/config/version.ts',
+      'apps/mobile-app/config/versions.json',
+      'apps/mobile-app/package.json',
+      'app.json',
+    ]);
+
+    expect(scopes).toEqual([]);
+  });
+
+  it('only bypasses the README guard with the explicit emergency switch', () => {
+    expect(isReadmeGuardBypassed([], {})).toBe(false);
+    expect(isReadmeGuardBypassed(['--allow-stale'], {})).toBe(true);
+    expect(isReadmeGuardBypassed([], { HASHPASS_SKIP_README_GUARD: '1' })).toBe(true);
+    expect(isReadmeGuardBypassed([], { HASHPASS_SKIP_README_GUARD: 'true' })).toBe(false);
   });
 
   it('parses version.ts arrays with inline commas and escaped quotes', () => {

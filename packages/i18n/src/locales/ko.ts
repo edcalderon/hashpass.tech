@@ -32,7 +32,6 @@ export const ko = {
     comingSoonTitle: '곧 제공됩니다',
     comingSoonBody: '이 패널은 준비 중입니다. 다음에 추가될 내용입니다.',
     featureQr: 'QR 로그인 링크 생성 및 관리',
-    featurePasses: '패스 및 액세스 추적',
     featureMembers: '회원 및 역할 관리',
     signInRequiredTitle: '로그인이 필요합니다',
     signInRequiredBody: 'HASHPASS로 로그인하여 클럽 패널에 액세스하세요.',

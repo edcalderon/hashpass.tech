@@ -21,7 +21,7 @@ variable "domain_name" {
     prod = string
   })
   default = {
-    dev  = "links-dev.hashpass.link"
+    dev  = "dev.hashpass.link"
     prod = "hashpass.link"
   }
 }
@@ -135,6 +135,12 @@ variable "log_retention_days" {
   description = "CloudWatch log retention in days"
   type        = number
   default     = 14
+}
+
+variable "qr_link_expiry_sweep_schedule" {
+  description = "EventBridge schedule that archives QR links whose availability window has ended"
+  type        = string
+  default     = "rate(5 minutes)"
 }
 
 variable "tags" {

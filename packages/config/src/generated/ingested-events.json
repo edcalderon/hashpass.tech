@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-14T05:07:52.000Z",
+  "generatedAt": "2026-08-15T18:50:12.048Z",
   "events": [
     {
       "id": "pkrr:30k-show-me-vjmxh",
@@ -27,7 +27,7 @@
           5
         ]
       },
-      "status": "upcoming",
+      "status": "stale",
       "tags": [
         "Weekly Poker Room",
         "Community Tournament",
@@ -68,7 +68,7 @@
         "time": "6:05 p. m."
       },
       "confidence": 0.95,
-      "needsReview": false
+      "needsReview": true
     },
     {
       "id": "pkrr:100k-main-event-5tvqt",

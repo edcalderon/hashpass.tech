@@ -20,25 +20,18 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.0)
+## 📋 Latest Changes (v1.9.2)
 
 ### Bug Fixes
 
-* add missing legacy bsl_speakers columns to bsl-development ([4197bc6](https://github.com/hashpass-tech/hashpass.tech/commit/4197bc63ce235dd0ced5be0c4aa180bc8ba49a01))
-* address review findings — third-party cookies, QR origin, approve race, setSession errors ([0f362a3](https://github.com/hashpass-tech/hashpass.tech/commit/0f362a3134ce7e5f027cf9cf77d7bd5d3b589f55))
-* circuit-break Supabase calls and back off Realtime/polling on failures ([a27eb06](https://github.com/hashpass-tech/hashpass.tech/commit/a27eb06a0e74398f802c0f3cea608b7e2f9f9a31))
-* follow transitive @hashpass/* imports in typecheck-changed sandbox ([f3e5207](https://github.com/hashpass-tech/hashpass.tech/commit/f3e520763cbef23279dcaa110307582fb587f2ea))
-* make HashPass Auth resolvable in Metro/Jest and add a local dev server ([54283ee](https://github.com/hashpass-tech/hashpass.tech/commit/54283ee8f0fb3a41f27a8bd080334295e9aafe26)), closes [#191](https://github.com/hashpass-tech/hashpass.tech/issues/191) [#191](https://github.com/hashpass-tech/hashpass.tech/issues/191)
-* resolve @hashpass/sdk in Jest via source, not a CI-absent dist build ([c820aff](https://github.com/hashpass-tech/hashpass.tech/commit/c820affa634669ac9c453181da6a2a35e53193a8))
-* stop leaking BSL branding into other whitelabel tenants ([dc8ed4b](https://github.com/hashpass-tech/hashpass.tech/commit/dc8ed4b339e6ae1ebe552a13b458760e7a2fba54))
+* align club settings control with avatar ([8edef52](https://github.com/hashpass-tech/hashpass.tech/commit/8edef52f1807262f824297dda7c0e9cec9168fe3))
 
 
 ### Features
 
-* add HashPass Auth (QR login) end-to-end ([1c09c10](https://github.com/hashpass-tech/hashpass.tech/commit/1c09c10a860860823d48bc50956066c0207d39d1)), closes [#189](https://github.com/hashpass-tech/hashpass.tech/issues/189)
-* auto-provision criptolatinfest general pass on signup ([1629191](https://github.com/hashpass-tech/hashpass.tech/commit/16291916f40cdcb6d96e39ad2b6bfdf7c6f94c2a))
-* **event-ingestion:** add reusable event ingestion package + PKRR (Hash Poker Room) adapter and landing integration ([#185](https://github.com/hashpass-tech/hashpass.tech/issues/185)) ([df632a3](https://github.com/hashpass-tech/hashpass.tech/commit/df632a338579aa38481c621b2f2912db71a6d13a))
-* onboard CriptoLatinFest as a demo-mode tenant ([624c6ca](https://github.com/hashpass-tech/hashpass.tech/commit/624c6ca5652b537cbe91f160a62d038ada218da6))
+* expand club experience and QR links ([39dabb3](https://github.com/hashpass-tech/hashpass.tech/commit/39dabb35ce7828d2b7c0e80ae5f5bcbd2dc6ee69))
+### Release Highlights
+- add QR link lifecycle controls; expand club experience and QR links; align club settings control with avatar
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

@@ -3,12 +3,11 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useTranslation } from '@hashpass/i18n';
-import { useLocale, useSetLocale, useAvailableLocales } from '@hashpass/i18n';
-import type { SupportedLocale } from '@hashpass/i18n';
 import { useTheme } from './ThemeProvider';
 import { SignInModal } from './SignInModal';
 import { useSession } from './SessionProvider';
 import { UserMenu } from './UserMenu';
+import { ClubSettingsMenu } from './ClubSettingsMenu';
 
 // ── Pill / icon-button shared styles ─────────────────────────────────────────
 type PillStyle = {
@@ -16,6 +15,8 @@ type PillStyle = {
   border: string;
   color: string;
 };
+
+const TOPBAR_CONTROL_SIZE = 40;
 
 function pillStyle(overHero: boolean, isDark: boolean): PillStyle {
   if (overHero) {
@@ -93,13 +94,9 @@ interface NavbarProps {
 }
 
 export function Navbar({ showMarketingLinks = true }: NavbarProps) {
-  const { resolvedTheme, setTheme } = useTheme();
+  const { resolvedTheme } = useTheme();
   const { t } = useTranslation('nav');
-  const locale = useLocale();
-  const setLocale = useSetLocale();
-  const availableLocales = useAvailableLocales();
   const [scrolled, setScrolled] = useState(false);
-  const [langOpen, setLangOpen] = useState(false);
   const [signInOpen, setSignInOpen] = useState(false);
   const { user, isLoading: sessionLoading } = useSession();
   const isSignedIn = !sessionLoading && !!user;
@@ -123,8 +120,7 @@ export function Navbar({ showMarketingLinks = true }: NavbarProps) {
   const linkColor      = overHero ? 'rgba(255,255,255,0.80)' : 'var(--text-secondary)';
   const linkHoverColor = overHero ? '#ffffff' : 'var(--text-primary)';
 
-  // Accent border tints for each control
-  const themeBorder   = overHero ? 'rgba(0,229,255,0.55)' : isDark ? 'rgba(41,121,255,0.55)' : 'rgba(25,118,210,0.40)';
+  // Accent border tint for authentication entry.
   const signInBorder  = overHero ? 'rgba(255,64,129,0.65)' : isDark ? 'rgba(233,30,140,0.55)' : 'rgba(194,24,91,0.45)';
   const signInColor   = overHero ? 'rgba(255,130,170,0.95)' : isDark ? '#ff80ab' : '#c2185b';
 
@@ -266,123 +262,19 @@ export function Navbar({ showMarketingLinks = true }: NavbarProps) {
           {/* ── Right controls: mobile-style pill icons ── */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
 
-            {/* Language picker */}
-            <div style={{ position: 'relative' }}>
-              <IconPill
-                onClick={() => setLangOpen((v) => !v)}
-                ariaLabel="Select language"
-                bg={pill.bg}
-                border={pill.border}
-                color={pill.color}
-                style={{ width: 'auto', minWidth: 36, padding: '0 10px', borderRadius: 999, gap: 5 }}
-              >
-                <span style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  letterSpacing: 0.8,
-                  fontFamily: 'var(--font-mono)',
-                }}>
-                  {locale.toUpperCase()}
-                </span>
-                <svg width="8" height="8" viewBox="0 0 10 10" fill="none" aria-hidden style={{ flexShrink: 0, opacity: 0.6 }}>
-                  <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </IconPill>
-
-              {langOpen && (
-                <>
-                  <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setLangOpen(false)} />
-                  <div
-                    style={{
-                      position: 'absolute',
-                      top: 'calc(100% + 8px)',
-                      right: 0,
-                      zIndex: 100,
-                      background: isDark ? 'rgba(13,23,40,0.96)' : 'rgba(255,255,255,0.97)',
-                      border: `1px solid ${isDark ? 'rgba(163,183,214,0.22)' : 'rgba(100,120,180,0.18)'}`,
-                      borderRadius: 16,
-                      boxShadow: 'var(--shadow-md)',
-                      padding: '6px',
-                      minWidth: 180,
-                      backdropFilter: 'blur(20px)',
-                      WebkitBackdropFilter: 'blur(20px)',
-                    }}
-                  >
-                    {availableLocales.map((loc) => {
-                      const active = locale === loc.code;
-                      return (
-                        <button
-                          key={loc.code}
-                          onClick={() => { setLocale(loc.code as SupportedLocale); setLangOpen(false); }}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            gap: 10,
-                            width: '100%',
-                            padding: '9px 12px',
-                            borderRadius: 10,
-                            border: 'none',
-                            background: active ? 'var(--accent-soft)' : 'transparent',
-                            color: active ? 'var(--accent)' : 'var(--text-primary)',
-                            fontSize: 14,
-                            fontWeight: active ? 600 : 400,
-                            cursor: 'pointer',
-                            textAlign: 'left',
-                            transition: 'background 0.15s',
-                          }}
-                          onMouseEnter={(e) => {
-                            if (!active) (e.currentTarget as HTMLElement).style.background = 'var(--bg-overlay)';
-                          }}
-                          onMouseLeave={(e) => {
-                            if (!active) (e.currentTarget as HTMLElement).style.background = 'transparent';
-                          }}
-                        >
-                          <span>{loc.nativeName}</span>
-                          <span style={{
-                            fontSize: 10, fontFamily: 'var(--font-mono)', fontWeight: 700,
-                            letterSpacing: 0.8, color: active ? 'var(--accent)' : 'var(--text-faint)',
-                            padding: '2px 6px', borderRadius: 4,
-                            background: active ? 'var(--accent-soft)' : 'var(--bg-overlay)',
-                          }}>
-                            {loc.code.toUpperCase()}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </>
-              )}
-            </div>
-
-            {/* Theme toggle — cyan accent border */}
-            <IconPill
-              onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
-              ariaLabel={t('toggle' as any) ?? 'Toggle theme'}
-              title={isDark ? 'Switch to light' : 'Switch to dark'}
-              bg={pill.bg}
-              border={pill.border}
-              color={pill.color}
-              accentBorder={themeBorder}
-            >
-              {isDark ? (
-                /* Sun */
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                  <circle cx="12" cy="12" r="4"/>
-                  <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
-                </svg>
-              ) : (
-                /* Moon */
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-                </svg>
-              )}
-            </IconPill>
+            <ClubSettingsMenu
+              size={TOPBAR_CONTROL_SIZE}
+              triggerStyle={{
+                background: pill.bg,
+                border: `1.5px solid ${overHero ? 'rgba(0,229,255,0.55)' : isDark ? 'rgba(41,121,255,0.55)' : 'rgba(25,118,210,0.40)'}`,
+                color: pill.color,
+              }}
+            />
 
             {/* Sign in — pink accent border — or, once a session exists, the
                 avatar/profile dropdown in its place. */}
             {isSignedIn ? (
-              <UserMenu />
+              <UserMenu size={TOPBAR_CONTROL_SIZE} />
             ) : (
               <IconPill
                 onClick={() => setSignInOpen(true)}

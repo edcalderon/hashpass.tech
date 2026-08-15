@@ -8,6 +8,11 @@ test('accepts public HTTP(S) destinations', () => {
   assert.equal(validateDestination('http://example.org').protocol, 'http:');
 });
 
+test('rejects destinations without a public domain name', () => {
+  assert.throws(() => validateDestination('https://hashpass/path'));
+  assert.throws(() => validateDestination('https://192.0.2.10/path'));
+});
+
 const UNSAFE_DESTINATIONS = [
   'javascript:alert(1)',
   'data:text/html,<script>alert(1)</script>',
@@ -34,9 +39,9 @@ for (const value of UNSAFE_DESTINATIONS) {
   });
 }
 
-test('accepts a public IP that only superficially resembles a private one', () => {
-  // 172.32.x.x is outside the 172.16.0.0/12 private range (16-31 only).
-  assert.doesNotThrow(() => validateDestination('http://172.32.0.1'));
+test('rejects literal IP destinations, including public addresses', () => {
+  // QR destinations are public websites, not raw network addresses.
+  assert.throws(() => validateDestination('http://172.32.0.1'));
 });
 
 test('enforces minimum contrast between foreground and background', () => {

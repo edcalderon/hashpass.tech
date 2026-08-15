@@ -58,7 +58,7 @@ Keep screenshots, recordings, logs, and copied page text free of credentials, co
 ### Version Management
 **NEVER manually edit version numbers in package.json or app.json.**
 **Do not hand-release.** The release scripts own the version bump, CHANGELOG.md, README.md sync, tag, and push flow.
-The Husky pre-commit hook runs `pnpm run readme:check`, so stale changelog/README pairs must be fixed with `pnpm run update-readme` before commit.
+The Husky pre-commit hook runs `pnpm run readme:check`, so stale changelog/README pairs must be fixed with `pnpm run update-readme` before commit. The guard has one explicit emergency escape hatch: use `HASHPASS_SKIP_README_GUARD=1 git commit ...` (or `pnpm run readme:check -- --allow-stale`) only to unblock an urgent commit, then restore the generated README immediately. The release command never sets this flag.
 
 Always use the release script:
 ```bash
@@ -80,10 +80,30 @@ Protected promotion flow:
 - `npm run release:promote` opens the `develop -> main` pull request instead of pushing or merging to `main` directly. **Since 2026-07-13, it also runs the real version bump and writes the changelog**, committing that as its own labeled commit (`chore: release vX.Y.Z`) before the PR opens — the PR diff a reviewer sees *is* the release artifact, version bump included, not a prediction of one. Pass `--skip-version-bump` to fall back to the old predict-only behavior if needed.
 - `main` is genuinely branch-protected by an active GitHub ruleset (id `18627241`) — direct pushes to `main` are rejected; release promotion must go through a PR, review, coverage checks, and the GitHub security scans. (This ruleset existed but had `enforcement: disabled` until 2026-07-13 — `main` was not actually protected before that despite this doc saying so. Verify with `gh api repos/hashpass-tech/hashpass.tech/rulesets/18627241 --jq .enforcement` if anything here seems inconsistent with observed behavior.)
 - `@edcalderon` is the intended code owner for release PR approval, though the ruleset's `require_code_owner_review` is currently `false` — any single approving review satisfies it today, not specifically the codeowner.
-- The promotion PR body is release-note driven: it derives the next patch version from the latest release tag when the branch is still on the released semver, then surfaces the readable release summary from version metadata/changelog first, adds auto-generated implementation bullets for docs/release/tooling changes, and keeps changed files tucked into a collapsible details block
+- The promotion PR body and generated release artifacts are range-driven: they compare `HEAD` with the previous reachable global `vX.Y.Z` tag (never the independent `club-vX.Y.Z` stream), then show the affected products/packages before the human-readable notes. The fixed categories are Club web, Mobile app, QR links API, SDK, shared UI/auth, database migrations, infrastructure, documentation, and release tooling. This prevents a Club-only or API-only patch from being presented as an undifferentiated mobile release.
 - **Once the PR merges, `.github/workflows/release-tag-on-merge.yml` runs automatically**: it tags the exact merge commit as `vX.Y.Z` (reading the version already bumped inside the PR — no second bump happens on `main`) and fast-forwards `develop` to match, in one step. `npm run release:patch` run manually on `main` is no longer part of the normal flow — see Mobile Android Release Workflow below.
 
 **Why:** Manual version bumps cause version skipping, inconsistency, and incorrect release ordering. The version bump living inside the reviewed PR (rather than as a separate post-merge step) closes the gap between "what was reviewed" and "what got tagged," and removes the manual post-merge steps that a human previously had to remember and run correctly by hand — see `.agents/active/task-release-flow-automation.md` for the full design and incident history behind this change.
+
+### Club web release (separate version stream)
+
+`apps/web-app` (`hashpass.club`) has its own version and release tag stream. Do
+not use the root `release:patch` or `release:promote` commands for a club-only
+change: those are global/mobile releases (`vX.Y.Z`) and follow the protected
+`develop -> main` promotion flow above.
+
+For the club web app, start from a clean worktree and run:
+
+```bash
+pnpm run release:club:web:patch
+```
+
+This updates only the club app's version metadata, creates a
+`chore(club-web): release vX.Y.Z` commit, and pushes a `club-vX.Y.Z` tag. The
+tag triggers `.github/workflows/deploy-club-docs.yml` to publish the club Pages
+site. It does not create a global release PR, merge `develop` into `main`, or
+start an Android release. Never manually edit either release stream's version
+or changelog files.
 
 ### Mobile Android Release Workflow
 
@@ -148,6 +168,8 @@ for full detail.
 
 By design, `track=beta` (open testing — publicly joinable via a Play link, anyone can opt in) still runs on `environment=development`. It's a testing phase even though it's public: real external testers exercise the full Play distribution pipeline (review, staged rollout, public opt-in) without touching production data. Only `track=production` requires `environment=production` — that's the one artifact that should ever point real users at the real backend, and it's the only track that always needs a **fresh build** rather than a promoted one, since the backend URL is baked into the JS bundle at build time. `environment=production` may only be paired with `track=production`; every other track intentionally stays on `environment=development`. Dispatching any mismatched pair (e.g. `environment=production track=alpha`) fails validation immediately.
 
+**`runner=github-hosted` is the current working default for every manual dispatch below — `runner=aws-ec2` is not currently usable.** Confirmed 2026-08-15: `vars.AWS_RUNNER_ROLE_ARN` and `vars.EC2_RUNNER_INSTANCE_ID` don't exist as repo variables at all (a direct `gh api repos/hashpass-tech/hashpass.tech/actions/variables/<name>` lookup 404s on both, not just a listing gap), so `mobile-android-release.yml`'s `validate-release-target` job fails any `runner=aws-ec2` dispatch immediately, before it ever reaches the build. The tag-triggered auto-dispatch already knows this and passes `runner=github-hosted` itself, which is why the automatic internal → alpha → beta chain keeps working even though the EC2 path is currently broken for a manual dispatch. This is very likely intentional, not an oversight: see `.agents/active/task-aws-cost-audit-and-controls.md` (P0, active) — the mobile EC2 runner (`i-05628f925bb57e2f1`, `t3a.xlarge`) is a flagged cost driver in an ongoing AWS billing spike investigation, and that task's own safe-work queue recommends "route non-production builds, tests, previews, and retry runs to GitHub-hosted runners... keep production/internal native releases on the EC2 runner until benchmarked" as an explicitly *safe*, no-approval-needed mitigation. Restoring `AWS_RUNNER_ROLE_ARN`/`EC2_RUNNER_INSTANCE_ID` (and switching back to `runner=aws-ec2`) should go through that task's owner-approval process, not be re-added ad hoc just because a manual dispatch failed validation.
+
 1. **Create and validate the commit on `develop`**
 2. **Run `npm run release:promote`** on `develop` — this:
    - Commits the release-prep changes
@@ -173,7 +195,7 @@ By design, `track=beta` (open testing — publicly joinable via a Play link, any
      --field auto_promote_beta=true \
      --field beta_release_status=completed \
      --field backend=fastlane \
-     --field runner=aws-ec2
+     --field runner=github-hosted
    ```
    Manually dispatching this after a normal merge creates a duplicate run racing the auto-triggered one for the same Play Console version code — confirmed 2026-07-13. Don't.
    The alpha handoff uses the promote-only path (`promote_only=true`) so it reuses the internal Play release instead of uploading a second bundle — no rebuild, just a Play Developer API track-promotion call via Fastlane `supply`'s `track_promote_to`.
@@ -214,7 +236,7 @@ By design, `track=beta` (open testing — publicly joinable via a Play link, any
      --field track=production \
      --field release_status=completed \
      --field backend=fastlane \
-     --field runner=aws-ec2
+     --field runner=github-hosted
    ```
    Gated by `require-beta-before-production`: a beta (open testing) release must have succeeded for that same ref first — same full-history search, not time-bound. This gate only certifies the code was validated by real external testers before anyone ships it to the real backend; it does not mean production reuses the beta build. Never dispatch `promote_only=true` with `track=production` — `validate-release-target` rejects it outright, since promoting an `environment=development` artifact onto the production track would ship a build that talks to `api-dev` under the guise of a production release.
    Expo prebuild enables Android release minification, so Gradle emits a `mapping.txt` file for release builds.

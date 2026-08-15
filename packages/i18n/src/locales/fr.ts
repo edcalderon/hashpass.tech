@@ -32,7 +32,6 @@ export const fr = {
     comingSoonTitle: 'Bientôt disponible',
     comingSoonBody: 'Ce panneau est en construction. Voici ce qui arrive ensuite.',
     featureQr: 'Créer et gérer des liens QR de connexion',
-    featurePasses: 'Suivre les pass et les accès',
     featureMembers: 'Gérer les membres et les rôles',
     signInRequiredTitle: 'Connexion requise',
     signInRequiredBody: 'Connectez-vous avec HASHPASS pour accéder au panneau de votre club.',

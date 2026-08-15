@@ -8,18 +8,21 @@ import { useSession } from '../components/SessionProvider';
 
 // Landing spot for "Explorar panel" (UserMenu + SignInModal's post-success
 // CTA) -- lives inside hashpass.club itself rather than opening the main
-// mobile app, since QR-link creation and club management are being built
-// here, not there. Real content (QR creation, roster/member management)
-// lands in a follow-up; this is the authenticated shell it'll grow into.
+// mobile app, since event creation and QR-link management are being built
+// here, not there (pass/access tracking stays on the mobile app, inside
+// each event -- see .agents/active/task-panel-web-club-events-qr.md).
+// QR link creation/administration is live at /panel/qr; event creation and
+// member/roster management are still coming soon.
 export default function PanelPage() {
   const { t } = useTranslation('panel');
   const { user, isLoading } = useSession();
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-canvas)' }}>
+    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--bg-canvas)' }}>
       <Navbar showMarketingLinks={false} />
       <main
         style={{
+          flex: '1 0 auto',
           maxWidth: 720,
           margin: '0 auto',
           padding: 'clamp(120px, 14vw, 160px) 24px 80px',
@@ -78,6 +81,33 @@ export default function PanelPage() {
               {t('subtitle', { name: (user.user_metadata?.full_name as string | undefined) || user.email || '' })}
             </p>
 
+            <Link
+              href="/panel/qr"
+              style={{
+                display: 'flex', alignItems: 'center', gap: 16, textDecoration: 'none',
+                border: '1px solid var(--border-strong)', borderRadius: 20,
+                padding: 'clamp(20px, 3vw, 28px)', background: 'var(--bg-surface-raised)',
+                marginBottom: 16,
+              }}
+            >
+              <span style={{
+                width: 40, height: 40, borderRadius: 12, flexShrink: 0,
+                background: 'var(--accent-soft)', color: 'var(--accent)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <FeatureIcon name="qr" />
+              </span>
+              <span style={{ flex: 1 }}>
+                <span style={{ display: 'block', fontSize: 15, fontWeight: 700, color: 'var(--text-primary)' }}>
+                  {t('featureQr')}
+                </span>
+                <span style={{ display: 'block', fontSize: 13, color: 'var(--text-faint)', marginTop: 2 }}>
+                  {t('featureQrSubtitle')}
+                </span>
+              </span>
+              <span aria-hidden style={{ color: 'var(--accent)', fontSize: 18 }}>→</span>
+            </Link>
+
             <div style={{
               border: '1px solid var(--border-strong)', borderRadius: 20,
               padding: 'clamp(24px, 4vw, 32px)', background: 'var(--bg-surface-raised)',
@@ -93,9 +123,8 @@ export default function PanelPage() {
 
               <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 14 }}>
                 {[
-                  { icon: 'qr', label: t('featureQr') },
+                  { icon: 'events', label: t('featureEvents') },
                   { icon: 'members', label: t('featureMembers') },
-                  { icon: 'passes', label: t('featurePasses') },
                 ].map(({ icon, label }) => (
                   <li key={icon} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     <span style={{
@@ -145,8 +174,8 @@ function FeatureIcon({ name }: { name: string }) {
   }
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
-      <circle cx="7" cy="7" r="1"/>
+      <rect x="3" y="4" width="18" height="18" rx="2"/>
+      <path d="M16 2v4M8 2v4M3 10h18"/>
     </svg>
   );
 }
