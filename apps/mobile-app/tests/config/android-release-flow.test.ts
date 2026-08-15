@@ -42,7 +42,14 @@ function createReleaseTestEnv(profile: 'production' | 'preview') {
   };
 }
 
-function resolveExpectedAndroidVersionCode(version: string) {
+// Floor only, not an exact value: update-version.mjs takes the max of this
+// semver-derived number and (previous committed versionCode + 1), so a
+// minor/major bump that follows a long patch run can legitimately produce a
+// versionCode higher than this formula alone would -- see that script's own
+// comment for why a pure semver formula silently regresses Play's required
+// "always increasing" versionCode the moment a minor/major bump resets
+// patch to 0.
+function resolveMinimumAndroidVersionCode(version: string) {
   const [major, minor, patch] = version.split('.').map(Number);
   return major * 10000 + minor * 100 + patch;
 }
@@ -170,7 +177,9 @@ describe('Android release flow', () => {
   it('keeps app.json aligned with the current store version and leaves Expo project linking to app.config.js', () => {
     expect(appJson.version).toBe(rootPackageJson.version);
     expect(appJson.slug).toBe('hash-pass-tech');
-    expect(appJson.android?.versionCode).toBe(resolveExpectedAndroidVersionCode(rootPackageJson.version));
+    expect(appJson.android?.versionCode).toBeGreaterThanOrEqual(
+      resolveMinimumAndroidVersionCode(rootPackageJson.version),
+    );
     expect(appJson.buildNumber).toBeUndefined();
     expect(appJson.extra?.eas?.projectId).toBeUndefined();
     expect(appJson.owner).toBe('hashpasstechs-team');
