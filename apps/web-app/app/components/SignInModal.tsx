@@ -1,15 +1,23 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import QRCode from 'react-qr-code';
+import { HashpassError, type BeginQrLoginResult } from '@hashpass/sdk';
 import { useTranslation, useLocale, useSetLocale, useAvailableLocales } from '@hashpass/i18n';
 import type { SupportedLocale } from '@hashpass/i18n';
+import { hashpassSdk } from '../../lib/hashpass-sdk';
+import { supabaseClient } from '../../lib/supabase-client';
 import { useTheme } from './ThemeProvider';
 
 interface SignInModalProps {
   open: boolean;
   onClose: () => void;
 }
+
+// HashPass Auth: passwordless login via QR code, approved by the HashPass
+// mobile app under the user's own session. See
+// packages/hashpass-links-api/README.md for the service this talks to.
+type QrAuthPhase = 'connecting' | 'waiting' | 'denied' | 'expired' | 'success' | 'error';
 
 // Encodes a deep-link the HASHPASS mobile app can handle.
 // hashpass://auth/connect?source=web will open the app's auth flow.
@@ -87,6 +95,49 @@ export function SignInModal({ open, onClose }: SignInModalProps) {
   const [langOpen, setLangOpen] = useState(false);
   const backdropRef = useRef<HTMLDivElement>(null);
 
+  const [qrPhase, setQrPhase] = useState<QrAuthPhase>('connecting');
+  const [qrLogin, setQrLogin] = useState<BeginQrLoginResult | null>(null);
+  const qrAbortRef = useRef<AbortController | null>(null);
+
+  const startQrLogin = useCallback(() => {
+    qrAbortRef.current?.abort();
+    const controller = new AbortController();
+    qrAbortRef.current = controller;
+    setQrPhase('connecting');
+    setQrLogin(null);
+
+    (async () => {
+      try {
+        const result = await hashpassSdk().authQr.beginLogin();
+        if (controller.signal.aborted) return;
+        setQrLogin(result);
+        setQrPhase('waiting');
+
+        const session = await hashpassSdk().authQr.waitForLogin(result, { signal: controller.signal });
+        if (controller.signal.aborted) return;
+        // setSession() reports an invalid/mismatched/expired token through
+        // its returned `error`, not necessarily by rejecting the promise --
+        // ignoring it would show "success" while no usable session was
+        // actually installed.
+        const { error: setSessionError } = await supabaseClient().auth.setSession({
+          access_token: session.accessToken,
+          refresh_token: session.refreshToken,
+        });
+        if (controller.signal.aborted) return;
+        if (setSessionError) {
+          setQrPhase('error');
+          return;
+        }
+        setQrPhase('success');
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        if (error instanceof HashpassError && error.code === 'unauthorized') setQrPhase('denied');
+        else if (error instanceof HashpassError && error.code === 'timeout') setQrPhase('expired');
+        else setQrPhase('error');
+      }
+    })();
+  }, []);
+
   // Close on Escape
   useEffect(() => {
     if (!open) return;
@@ -98,6 +149,18 @@ export function SignInModal({ open, onClose }: SignInModalProps) {
       document.body.style.overflow = '';
     };
   }, [open, onClose]);
+
+  // Start a fresh challenge every time the modal opens, and stop polling the
+  // moment it closes -- waitForLogin() otherwise keeps polling in the
+  // background indefinitely.
+  useEffect(() => {
+    if (!open) {
+      qrAbortRef.current?.abort();
+      return;
+    }
+    startQrLogin();
+    return () => qrAbortRef.current?.abort();
+  }, [open, startQrLogin]);
 
   if (!open) return null;
 
@@ -291,22 +354,75 @@ export function SignInModal({ open, onClose }: SignInModalProps) {
 
         {/* QR frame */}
         <div style={{
+          width: 196,
+          height: 196,
           padding: 16,
           borderRadius: 18,
           background: qrBg,
           border: `1.5px solid ${isDark ? 'rgba(41,121,255,0.22)' : 'rgba(21,101,192,0.14)'}`,
           boxShadow: isDark ? '0 0 0 1px rgba(41,121,255,0.10), 0 8px 24px rgba(0,0,0,0.4)' : '0 4px 24px rgba(13,23,40,0.10)',
-          marginBottom: 24,
+          marginBottom: 12,
+          boxSizing: 'content-box',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
         }}>
-          <QRCode
-            value={QR_VALUE}
-            size={196}
-            fgColor={qrFg}
-            bgColor={qrBg}
-            style={{ display: 'block', borderRadius: 8 }}
-            level="M"
-          />
+          {qrPhase === 'waiting' && qrLogin ? (
+            <QRCode
+              value={qrLogin.challenge.qrUrl}
+              size={196}
+              fgColor={qrFg}
+              bgColor={qrBg}
+              style={{ display: 'block', borderRadius: 8 }}
+              level="M"
+            />
+          ) : (
+            <div style={{
+              width: 196, height: 196,
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              gap: 10, textAlign: 'center', padding: 12,
+            }}>
+              {(qrPhase === 'connecting' || qrPhase === 'success') && (
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden style={{
+                  color: 'var(--accent)',
+                  animation: qrPhase === 'connecting' ? 'qr-spin 0.9s linear infinite' : undefined,
+                }}>
+                  {qrPhase === 'success' ? (
+                    <path d="M4 12l5 5L20 6" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/>
+                  ) : (
+                    <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"/>
+                  )}
+                </svg>
+              )}
+              <span style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                {qrPhase === 'connecting' && t('qrConnecting')}
+                {qrPhase === 'success' && t('qrSuccess')}
+                {qrPhase === 'denied' && t('qrDenied')}
+                {qrPhase === 'expired' && t('qrExpired')}
+                {qrPhase === 'error' && t('qrError')}
+              </span>
+              {(qrPhase === 'denied' || qrPhase === 'expired' || qrPhase === 'error') && (
+                <button
+                  onClick={startQrLogin}
+                  style={{
+                    marginTop: 4, padding: '6px 14px', borderRadius: 999,
+                    border: '1px solid var(--accent)', background: 'transparent',
+                    color: 'var(--accent)', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                  }}
+                >
+                  {t('qrRetry')}
+                </button>
+              )}
+            </div>
+          )}
         </div>
+        <p style={{
+          fontSize: 12, color: 'var(--text-faint)', textAlign: 'center',
+          margin: qrPhase === 'waiting' ? '0 0 24px' : '0 0 24px',
+          minHeight: 16,
+        }}>
+          {qrPhase === 'waiting' ? t('qrWaiting') : ' '}
+        </p>
 
         {/* Open app button */}
         <a

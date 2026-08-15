@@ -54,7 +54,15 @@
     "admin-matchmaking-communications"
   ],
   "profileGroups": {
-    "bsl-development": ["demo-event-bootstrap"]
+    "bsl-development": [
+      "demo-event-bootstrap"
+    ],
+    "core-development": [
+      "hashpass-auth-qr"
+    ],
+    "core-production": [
+      "hashpass-auth-qr"
+    ]
   },
   "groups": {
     "demo-event-bootstrap": [
@@ -82,13 +90,21 @@
       "db/migrations/V056__admin_email_delivery_template.sql",
       "db/migrations/V057__admin_event_scoped_attendees.sql"
     ],
-    "core": ["db/migrations-mobile-bootstrap/V001__init_core_schema.sql"],
+    "core": [
+      "db/migrations-mobile-bootstrap/V001__init_core_schema.sql"
+    ],
     "events": [
       "db/migrations-mobile-bootstrap/V002__meeting_requests_system.sql"
     ],
-    "security": ["db/migrations-mobile-bootstrap/V003__row_level_security.sql"],
-    "wallet": ["db/migrations-mobile-bootstrap/V004__wallet_auth.sql"],
-    "auth": ["db/migrations-mobile-bootstrap/V005__otp_codes.sql"],
+    "security": [
+      "db/migrations-mobile-bootstrap/V003__row_level_security.sql"
+    ],
+    "wallet": [
+      "db/migrations-mobile-bootstrap/V004__wallet_auth.sql"
+    ],
+    "auth": [
+      "db/migrations-mobile-bootstrap/V005__otp_codes.sql"
+    ],
     "rls-hardening": [
       "db/migrations/V008__enable_missing_rls.sql",
       "db/migrations/V009__meeting_slots_select_policy.sql",
@@ -154,6 +170,9 @@
     ],
     "admin-pass-identity": [
       "db/migrations/V059__admin_pass_registry_identity_fallback.sql"
+    ],
+    "hashpass-auth-qr": [
+      "db/migrations/V079__hashpass_links_dynamic_qr.sql"
     ]
   }
 }

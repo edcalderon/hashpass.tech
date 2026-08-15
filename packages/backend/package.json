@@ -9,13 +9,17 @@
   },
   "scripts": {
     "build": "tsc --noEmit",
+    "test": "tsx --test",
     "clean": "rm -rf dist"
   },
   "dependencies": {
     "@hashpass/types": "workspace:*",
+    "@supabase/auth-js": "^2.95.3",
     "@supabase/supabase-js": "^2.81.1"
   },
   "devDependencies": {
+    "@types/node": "^24.9.1",
+    "tsx": "^4.20.6",
     "typescript": "~5.8.3"
   }
 }

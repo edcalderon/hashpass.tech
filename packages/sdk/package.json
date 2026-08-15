@@ -9,15 +9,23 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
     },
     "./auth": {
       "types": "./dist/auth/index.d.ts",
-      "import": "./dist/auth/index.js"
+      "import": "./dist/auth/index.js",
+      "default": "./dist/auth/index.js"
+    },
+    "./auth-qr": {
+      "types": "./dist/auth-qr/index.d.ts",
+      "import": "./dist/auth-qr/index.js",
+      "default": "./dist/auth-qr/index.js"
     },
     "./support": {
       "types": "./dist/support/index.d.ts",
-      "import": "./dist/support/index.js"
+      "import": "./dist/support/index.js",
+      "default": "./dist/support/index.js"
     }
   },
   "files": [

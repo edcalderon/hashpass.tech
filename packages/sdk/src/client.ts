@@ -1,3 +1,4 @@
+import { AuthQrClient } from "./auth-qr/client.js";
 import { HashpassAuth, MemorySessionStore } from "./auth/client.js";
 import { HashpassError } from "./errors.js";
 import { SupportClient } from "./support/client.js";
@@ -13,6 +14,8 @@ const ENVIRONMENT_URLS: Record<HashpassEnvironment, string> = {
 export class HashpassClient {
   readonly support: SupportClient;
   readonly auth: HashpassAuth;
+  /** "HashPass Auth": passwordless QR login, backed by a separate service -- see linksApiBaseUrl. */
+  readonly authQr: AuthQrClient;
 
   constructor(options: HashpassSdkOptions) {
     validateOptions(options);
@@ -30,8 +33,17 @@ export class HashpassClient {
     };
     const authTransport = new HttpTransport(shared);
     this.auth = new HashpassAuth(authTransport, options.sessionStore ?? new MemorySessionStore());
-    const transport = new HttpTransport({ ...shared, auth: options.auth ?? this.auth });
+    const resolvedAuth = options.auth ?? this.auth;
+    const transport = new HttpTransport({ ...shared, auth: resolvedAuth });
     this.support = new SupportClient(transport);
+    this.authQr = new AuthQrClient({
+      baseUrl: options.linksApiBaseUrl,
+      appId: options.appId,
+      fetch: fetchImplementation,
+      headers: options.headers,
+      timeoutMs: options.timeoutMs ?? 15_000,
+      auth: resolvedAuth,
+    });
   }
 }
 
