@@ -140,6 +140,21 @@ test('the expiry sweep archives active QR links after their end time', async () 
   assert.equal(typeof row.archived_at, 'string');
 });
 
+test('a past expiry is exposed as expired to QR-link management clients', async () => {
+  const client = useFakeDb();
+  const created = await (await createLink()).json();
+  const row = client._tables.get('qr_links')?.get(created.id)!;
+  row.expires_at = new Date(Date.now() - 60 * 1000).toISOString();
+
+  const list = await handleRequest(new Request('https://api.hashpass.link/api/v1/qr-links', authed(OWNER.token)));
+  assert.equal((await list.json()).links[0].status, 'expired');
+
+  const detail = await handleRequest(
+    new Request(`https://api.hashpass.link/api/v1/qr-links/${created.id}`, authed(OWNER.token))
+  );
+  assert.equal((await detail.json()).status, 'expired');
+});
+
 test('list only returns the caller\'s own QR links', async () => {
   useFakeDb();
   await createLink({ name: 'Owner link' });
@@ -267,6 +282,27 @@ test('an active link redirects to its destination with campaign UTM params merge
   assert.equal((scan as { bot_classification: string }).bot_classification, 'human');
 });
 
+test('a stalled analytics insert cannot block a public QR redirect', async () => {
+  const client = useFakeDb();
+  const created = await (await createLink()).json();
+  const stalledDb = {
+    ...client,
+    from(table: string) {
+      if (table === 'qr_scan_events') return { insert: () => new Promise(() => {}) };
+      return client.from(table);
+    },
+  };
+  setAdminDbForTesting(stalledDb as unknown as SupabaseClient);
+
+  const result = await Promise.race([
+    handleRequest(new Request(`https://api.hashpass.link/q/${created.publicSlug}`, { redirect: 'manual' })),
+    new Promise<'timed-out'>((resolve) => setTimeout(() => resolve('timed-out'), 300)),
+  ]);
+
+  assert.notEqual(result, 'timed-out');
+  assert.equal((result as Response).status, 302);
+});
+
 test('analytics reflects scans recorded since creation, and is owner-only', async () => {
   useFakeDb();
   const created = await (await createLink()).json();
@@ -292,4 +328,33 @@ test('analytics reflects scans recorded since creation, and is owner-only', asyn
   );
   const listBody = await list.json();
   assert.equal(listBody.links[0].scanCount, 2);
+});
+
+test('analytics and scan counts include every scan beyond PostgREST\'s response cap', async () => {
+  const client = useFakeDb();
+  const created = await (await createLink()).json();
+  const scanEvents = client._tables.get('qr_scan_events') ?? new Map();
+  client._tables.set('qr_scan_events', scanEvents);
+  const now = Date.now();
+
+  for (let index = 0; index < 1005; index += 1) {
+    scanEvents.set(`scan-${index}`, {
+      id: `scan-${index}`,
+      qr_link_id: created.id,
+      scanned_at: new Date(now - index * 1000).toISOString(),
+      device_type: index % 2 === 0 ? 'mobile' : 'desktop',
+      bot_classification: index % 3 === 0 ? 'bot' : 'human',
+    });
+  }
+
+  const analytics = await handleRequest(
+    new Request(`https://api.hashpass.link/api/v1/qr-links/${created.id}/analytics`, authed(OWNER.token))
+  );
+  const analyticsBody = await analytics.json();
+  assert.equal(analyticsBody.totalScans, 1005);
+  assert.equal(analyticsBody.humanScans + analyticsBody.botScans, 1005);
+  assert.equal(Object.values(analyticsBody.scansByDevice).reduce((sum: number, count) => sum + Number(count), 0), 1005);
+
+  const list = await handleRequest(new Request('https://api.hashpass.link/api/v1/qr-links', authed(OWNER.token)));
+  assert.equal((await list.json()).links[0].scanCount, 1005);
 });

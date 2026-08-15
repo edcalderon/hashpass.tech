@@ -350,9 +350,9 @@ export default function PanelQrPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-canvas)' }}>
+    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--bg-canvas)' }}>
       <Navbar showMarketingLinks={false} />
-      <main style={{ maxWidth: 880, margin: '0 auto', padding: 'clamp(120px, 14vw, 160px) 24px 80px' }}>
+      <main style={{ flex: '1 0 auto', maxWidth: 880, margin: '0 auto', padding: 'clamp(120px, 14vw, 160px) 24px 80px' }}>
         {sessionLoading ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 0' }}>
             <Spinner />
@@ -773,6 +773,8 @@ function QrLinkRow({
       await downloadQrPng(svgRef.current, {
         fileName: `${safeName || link.publicSlug}-qr.png`,
         brandIconSrc: displayConfig.logo ? BRAND_ICON_SRC : undefined,
+        marginModules: link.visualConfig.margin,
+        backgroundColor: displayConfig.background,
       });
     } catch {
       toast.error(t('errorGeneric'));
@@ -793,7 +795,7 @@ function QrLinkRow({
       }}
     >
       <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-        <div style={{ position: 'relative', background: '#fff', padding: 8, borderRadius: 10, flexShrink: 0, alignSelf: 'flex-start' }}>
+        <div style={{ position: 'relative', background: displayConfig.background, padding: Math.max(8, link.visualConfig.margin * 2), borderRadius: 10, flexShrink: 0, alignSelf: 'flex-start' }}>
           <QRCode
             // react-qr-code's .d.ts declares this component as a plain class
             // (`class QRCode extends React.Component`), but the real

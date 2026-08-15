@@ -6,6 +6,20 @@
 
 const EXPORT_SIZE = 1024;
 
+export function qrExportLayout({
+  imageSize,
+  moduleCount,
+  marginModules,
+}: {
+  imageSize: number;
+  moduleCount: number;
+  marginModules: number;
+}): { codeSize: number; padding: number } {
+  const totalModules = moduleCount + marginModules * 2;
+  const codeSize = Math.round((imageSize * moduleCount) / totalModules);
+  return { codeSize, padding: (imageSize - codeSize) / 2 };
+}
+
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const image = new Image();
@@ -41,10 +55,31 @@ export interface DownloadQrOptions {
   fileName: string;
   /** Draws a small circular badge with this image centered on the QR -- mirrors the on-screen preview's branding overlay. */
   brandIconSrc?: string;
+  /** Quiet-zone width in QR modules, kept in sync with the saved visual configuration. */
+  marginModules: number;
+  /** Background used for both the QR and its quiet zone. */
+  backgroundColor: string;
 }
 
 export async function downloadQrPng(svgElement: SVGSVGElement, options: DownloadQrOptions): Promise<void> {
-  const canvas = await rasterizeSvg(svgElement, EXPORT_SIZE);
+  const viewBox = svgElement.viewBox.baseVal;
+  const moduleCount = viewBox.width || viewBox.height;
+  if (!Number.isFinite(moduleCount) || moduleCount <= 0) throw new Error('QR code has no valid module grid');
+
+  const layout = qrExportLayout({
+    imageSize: EXPORT_SIZE,
+    moduleCount,
+    marginModules: options.marginModules,
+  });
+  const qrCanvas = await rasterizeSvg(svgElement, layout.codeSize);
+  const canvas = document.createElement('canvas');
+  canvas.width = EXPORT_SIZE;
+  canvas.height = EXPORT_SIZE;
+  const canvasContext = canvas.getContext('2d');
+  if (!canvasContext) throw new Error('Canvas 2D context is not available');
+  canvasContext.fillStyle = options.backgroundColor;
+  canvasContext.fillRect(0, 0, EXPORT_SIZE, EXPORT_SIZE);
+  canvasContext.drawImage(qrCanvas, layout.padding, layout.padding, layout.codeSize, layout.codeSize);
 
   if (options.brandIconSrc) {
     const ctx = canvas.getContext('2d');

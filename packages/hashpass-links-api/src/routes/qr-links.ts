@@ -21,6 +21,8 @@ const STATUSES: QrLinkStatus[] = ['active', 'paused', 'expired', 'archived'];
 // column has a real UNIQUE constraint, so a retry loop is cheap insurance
 // against ever surfacing that as a hard failure to an admin creating a link.
 const UNIQUE_VIOLATION = '23505';
+const SCAN_PAGE_SIZE = 1000;
+const REDIRECT_SCAN_LOG_TIMEOUT_MS = 200;
 
 interface QrLinkRow {
   id: string;
@@ -56,6 +58,7 @@ function toCampaign(row: QrLinkRow): QrLinkCampaign | undefined {
 }
 
 function toPublic(row: QrLinkRow, scans?: { count: number; lastScanAt?: string }): QrLink {
+  const expired = row.status === 'active' && row.expires_at && new Date(row.expires_at) <= new Date();
   return {
     id: row.id,
     ownerId: row.owner_id,
@@ -63,7 +66,7 @@ function toPublic(row: QrLinkRow, scans?: { count: number; lastScanAt?: string }
     name: row.name,
     description: row.description ?? undefined,
     destinationUrl: row.destination_url,
-    status: row.status,
+    status: expired ? 'expired' : row.status,
     startsAt: row.starts_at ?? undefined,
     expiresAt: row.expires_at ?? undefined,
     visualConfig: row.visual_config,
@@ -122,13 +125,23 @@ async function scanCounts(
 ): Promise<Record<string, { count: number; lastScanAt?: string }>> {
   if (qrLinkIds.length === 0) return {};
 
-  const { data } = await db.from('qr_scan_events').select('qr_link_id, scanned_at').in('qr_link_id', qrLinkIds);
   const result: Record<string, { count: number; lastScanAt?: string }> = {};
-  for (const row of (data ?? []) as Array<{ qr_link_id: string; scanned_at: string }>) {
-    const entry = result[row.qr_link_id] ?? { count: 0, lastScanAt: undefined };
-    entry.count += 1;
-    if (!entry.lastScanAt || row.scanned_at > entry.lastScanAt) entry.lastScanAt = row.scanned_at;
-    result[row.qr_link_id] = entry;
+  for (let offset = 0; ; offset += SCAN_PAGE_SIZE) {
+    const { data, error } = await db
+      .from('qr_scan_events')
+      .select('qr_link_id, scanned_at')
+      .in('qr_link_id', qrLinkIds)
+      .range(offset, offset + SCAN_PAGE_SIZE - 1);
+    if (error) break;
+
+    const page = (data ?? []) as Array<{ qr_link_id: string; scanned_at: string }>;
+    for (const row of page) {
+      const entry = result[row.qr_link_id] ?? { count: 0, lastScanAt: undefined };
+      entry.count += 1;
+      if (!entry.lastScanAt || row.scanned_at > entry.lastScanAt) entry.lastScanAt = row.scanned_at;
+      result[row.qr_link_id] = entry;
+    }
+    if (page.length < SCAN_PAGE_SIZE) break;
   }
   return result;
 }
@@ -431,15 +444,21 @@ export async function getQrLinkAnalytics(request: Request, id: string): Promise<
 
   const windowDays = 30;
   const since = new Date(Date.now() - windowDays * 24 * 60 * 60 * 1000).toISOString();
-  const { data: scanData, error: scanError } = await db
-    .from('qr_scan_events')
-    .select('scanned_at, device_type, bot_classification')
-    .eq('qr_link_id', id)
-    .gte('scanned_at', since)
-    .order('scanned_at', { ascending: false });
-  if (scanError) return apiError('Unable to load QR link analytics', 500);
+  const scans: Array<{ scanned_at: string; device_type: string; bot_classification: string }> = [];
+  for (let offset = 0; ; offset += SCAN_PAGE_SIZE) {
+    const { data, error } = await db
+      .from('qr_scan_events')
+      .select('scanned_at, device_type, bot_classification')
+      .eq('qr_link_id', id)
+      .gte('scanned_at', since)
+      .order('scanned_at', { ascending: false })
+      .range(offset, offset + SCAN_PAGE_SIZE - 1);
+    if (error) return apiError('Unable to load QR link analytics', 500);
 
-  const scans = (scanData ?? []) as Array<{ scanned_at: string; device_type: string; bot_classification: string }>;
+    const page = (data ?? []) as Array<{ scanned_at: string; device_type: string; bot_classification: string }>;
+    scans.push(...page);
+    if (page.length < SCAN_PAGE_SIZE) break;
+  }
   const scansByDay: Record<string, number> = {};
   const scansByDevice: Record<string, number> = {};
   let botScans = 0;
@@ -518,6 +537,20 @@ async function logScan(db: SupabaseClient, qrLinkId: string, request: Request): 
   });
 }
 
+async function logScanWithoutBlockingRedirect(db: SupabaseClient, qrLinkId: string, request: Request): Promise<void> {
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  try {
+    await Promise.race([
+      logScan(db, qrLinkId, request).catch(() => undefined),
+      new Promise<void>((resolve) => {
+        timeout = setTimeout(resolve, REDIRECT_SCAN_LOG_TIMEOUT_MS);
+      }),
+    ]);
+  } finally {
+    if (timeout) clearTimeout(timeout);
+  }
+}
+
 // GET /q/:slug -- the public redirect. No auth: this is what a phone camera
 // actually opens when it scans the printed/displayed QR code.
 export async function redirectQrLink(request: Request, slug: string): Promise<Response> {
@@ -539,9 +572,10 @@ export async function redirectQrLink(request: Request, slug: string): Promise<Re
   if (link.campaign_term) destination.searchParams.set('utm_term', link.campaign_term);
   if (link.campaign_content) destination.searchParams.set('utm_content', link.campaign_content);
 
-  // Scan logging failing must never break the redirect a real visitor is
-  // waiting on -- swallow and move on.
-  await logScan(db, link.id, request).catch(() => {});
+  // Analytics must not consume the redirect's Lambda timeout. A short,
+  // best-effort write keeps normal tracking intact while allowing visitors to
+  // proceed even when the analytics datastore is stalled.
+  await logScanWithoutBlockingRedirect(db, link.id, request);
 
   return Response.redirect(destination.toString(), 302);
 }

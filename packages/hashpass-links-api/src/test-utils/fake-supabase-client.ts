@@ -24,6 +24,7 @@ class FakeQueryBuilder implements PromiseLike<{ data: unknown; error: { message:
   private filters: Predicate[] = [];
   private wantsSingle = false;
   private sortBy: { column: string; ascending: boolean } | undefined;
+  private rowRange: { from: number; to: number } | undefined;
 
   constructor(private readonly tableName: string, private readonly table: Map<string, Row>) {}
 
@@ -78,6 +79,14 @@ class FakeQueryBuilder implements PromiseLike<{ data: unknown; error: { message:
     return this;
   }
 
+  // PostgREST caps unbounded responses at 1,000 rows by default. Modelling
+  // that behaviour makes our analytics tests catch missed pagination rather
+  // than accidentally passing against an unlimited in-memory Map.
+  range(from: number, to: number): this {
+    this.rowRange = { from, to };
+    return this;
+  }
+
   single(): this {
     this.wantsSingle = true;
     return this;
@@ -85,15 +94,18 @@ class FakeQueryBuilder implements PromiseLike<{ data: unknown; error: { message:
 
   private matchedRows(): Row[] {
     const rows = [...this.table.values()].filter((row) => this.filters.every((predicate) => predicate(row)));
-    if (!this.sortBy) return rows;
+    const orderedRows = !this.sortBy
+      ? rows
+      : rows.sort((a, b) => {
+        const { column, ascending } = this.sortBy!;
+        const left = a[column] as string | number;
+        const right = b[column] as string | number;
+        if (left === right) return 0;
+        return (left > right ? 1 : -1) * (ascending ? 1 : -1);
+      });
 
-    const { column, ascending } = this.sortBy;
-    return rows.sort((a, b) => {
-      const left = a[column] as string | number;
-      const right = b[column] as string | number;
-      if (left === right) return 0;
-      return (left > right ? 1 : -1) * (ascending ? 1 : -1);
-    });
+    if (this.rowRange) return orderedRows.slice(this.rowRange.from, this.rowRange.to + 1);
+    return this.tableName === 'qr_scan_events' ? orderedRows.slice(0, 1000) : orderedRows;
   }
 
   private execute(): { data: unknown; error: { message: string; code?: string } | null } {
