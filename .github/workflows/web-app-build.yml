@@ -1,0 +1,69 @@
+name: Web app build
+
+# Builds apps/web-app (hashpass.club, static export) on every PR/push that
+# touches it or a workspace package it depends on. This didn't exist before
+# -- the only thing that ever built this app was deploy-club-docs.yml, which
+# only runs on a `club-v*` tag push, i.e. at actual release time. A real
+# regression (packages/sdk's compiled dist/ missing, so the static export
+# failed at build time with a module-resolution error) shipped all the way
+# to a merged PR without any CI catching it, only surfacing when a live dev
+# server hit it. This is the fast, PR-time equivalent of that same build.
+
+on:
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - "apps/web-app/**"
+      - "packages/sdk/**"
+      - "packages/ui/**"
+      - "packages/i18n/**"
+      - "packages/types/**"
+      - "packages/utils/**"
+      - "packages/config/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/web-app-build.yml"
+  push:
+    branches: [main, develop]
+    paths:
+      - "apps/web-app/**"
+      - "packages/sdk/**"
+      - "packages/ui/**"
+      - "packages/i18n/**"
+      - "packages/types/**"
+      - "packages/utils/**"
+      - "packages/config/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build web-app static export
+    runs-on: ubuntu-latest
+    env:
+      CI: "1"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.22.0"
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --prefer-offline
+
+      - name: Typecheck
+        run: pnpm --filter hashpass-club-web run typecheck
+
+      - name: Build static export
+        run: pnpm --filter hashpass-club-web run build

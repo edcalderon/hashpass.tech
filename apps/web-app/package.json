@@ -3,7 +3,9 @@
   "version": "1.0.16",
   "private": true,
   "scripts": {
+    "predev": "pnpm --filter @hashpass/sdk run build",
     "dev": "next dev --webpack",
+    "prebuild": "pnpm --filter @hashpass/sdk run build",
     "build": "pnpm brand:check && next build --webpack",
     "brand:check": "node scripts/check-brand-assets.mjs",
     "start": "next start",
