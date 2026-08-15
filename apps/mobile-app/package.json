@@ -55,6 +55,7 @@
     "@hashpass/backend": "workspace:*",
     "@hashpass/config": "workspace:*",
     "@hashpass/emails": "workspace:*",
+    "@hashpass/sdk": "workspace:*",
     "@hashpass/types": "workspace:*",
     "@hashpass/ui": "workspace:*",
     "@hashpass/utils": "workspace:*",

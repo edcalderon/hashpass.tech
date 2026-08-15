@@ -1,0 +1,54 @@
+# HashPass Links API stack -- Lambda + API Gateway backing HashPass Auth
+# (QR login). See packages/hashpass-links-api/README.md.
+aws_region = "us-east-1"
+
+name_prefix = "hashpass-links"
+
+# Build the Lambda ZIP before apply:
+#   ./packages/tools/scripts/package-hashpass-links-lambda.sh
+lambda_zip_path         = "../../../../../hashpass-links-api-lambda.zip"
+lambda_source_code_hash = null
+
+# hashpass.link is NOT confirmed registered yet. Leave this false -- the
+# stack stands up real Lambda + API Gateway resources behind their default
+# execute-api.amazonaws.com invoke URL, which is enough to validate the
+# full challenge -> approve -> exchange flow end-to-end. Only flip this
+# once the domain is confirmed owned and a DNS/ACM cutover is explicitly
+# approved (see the README's "hashpass.link cutover" section).
+enable_custom_domain = false
+
+domain_name = {
+  dev  = "links-dev.hashpass.link"
+  prod = "hashpass.link"
+}
+route53_zone_name = "hashpass.link"
+
+# Real values belong in a gitignored *.auto.tfvars or CI secret, never here.
+supabase_urls = {
+  dev  = ""
+  prod = ""
+}
+supabase_service_role_keys = {
+  dev  = ""
+  prod = ""
+}
+
+link_origins = {
+  dev  = "https://links-dev.hashpass.link"
+  prod = "https://hashpass.link"
+}
+
+cors_allow_origins = {
+  dev = [
+    "http://localhost:3000",
+    "https://hashpass.club",
+  ]
+  prod = [
+    "https://hashpass.club",
+  ]
+}
+
+tags = {
+  Environment = "target"
+  Project     = "hashpass-links-api"
+}
