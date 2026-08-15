@@ -5,12 +5,17 @@ MOBILE_PID=""
 CLUB_PID=""
 DOCS_PID=""
 VIDEO_STUDIO_PID=""
+LINKS_API_PID=""
 declare -a RESERVED_PORTS=()
 CLUB_PORT="${CLUB_PORT:-3000}"
 DOCS_PORT="${DOCS_PORT:-3101}"
 VIDEO_STUDIO_PORT="${VIDEO_STUDIO_PORT:-3105}"
 # Keep the Expo web app on 8081 so it stays out of the club app's 3000 slot.
 MOBILE_PORT="${MOBILE_PORT:-8081}"
+# Matches NEXT_PUBLIC_LINKS_API_BASE_URL / EXPO_PUBLIC_LINKS_API_BASE_URL's
+# hardcoded default in the root .env -- if this is overridden, keep those in
+# sync too (same caveat as MOBILE_PORT/CLUB_PORT above).
+LINKS_API_PORT="${LINKS_API_PORT:-8788}"
 NODE_MAX_OLD_SPACE_SIZE="${NODE_MAX_OLD_SPACE_SIZE:-12288}"
 EXPO_WEB_MAX_WORKERS="${EXPO_WEB_MAX_WORKERS:-2}"
 DIRECTUS_PING_URL="${DIRECTUS_PING_URL:-http://127.0.0.1:8055/server/ping}"
@@ -157,6 +162,18 @@ claim_port() {
   printf '%s\n' "${port}"
 }
 
+# Reads a single value out of the root .env without sourcing the whole
+# file into this script's environment -- broadly exporting every var in
+# there (bare, _DEV, and _PROD alike) would leak into every child process
+# below and get picked up by their own dotenv loaders ahead of the
+# per-app .env/.env.local files those already correctly generate, silently
+# overriding them. Last matching line wins, same precedence `dotenv.parse()`
+# (used by propagate-env.js) and bash `source` both use for a repeated key.
+read_root_env_value() {
+  local name="$1"
+  grep "^${name}=" .env 2>/dev/null | tail -n1 | cut -d= -f2-
+}
+
 wait_for_directus() {
   local deadline=$((SECONDS + DIRECTUS_READY_TIMEOUT_SECONDS))
   local ping_url="$DIRECTUS_PING_URL"
@@ -206,6 +223,11 @@ stop_background_apps() {
     kill "${VIDEO_STUDIO_PID}" >/dev/null 2>&1 || true
     wait "${VIDEO_STUDIO_PID}" >/dev/null 2>&1 || true
   fi
+
+  if [[ -n "${LINKS_API_PID}" ]]; then
+    kill "${LINKS_API_PID}" >/dev/null 2>&1 || true
+    wait "${LINKS_API_PID}" >/dev/null 2>&1 || true
+  fi
 }
 
 cleanup() {
@@ -229,8 +251,9 @@ MOBILE_PORT="$(claim_port "mobile app" "${MOBILE_PORT}")"
 CLUB_PORT="$(claim_port "club web app" "${CLUB_PORT}")"
 DOCS_PORT="$(claim_port "docs app" "${DOCS_PORT}")"
 VIDEO_STUDIO_PORT="$(claim_port "video studio" "${VIDEO_STUDIO_PORT}")"
+LINKS_API_PORT="$(claim_port "hashpass-links-api" "${LINKS_API_PORT}")"
 
-echo "Using ports: mobile=${MOBILE_PORT}, club=${CLUB_PORT}, docs=${DOCS_PORT}, video-studio=${VIDEO_STUDIO_PORT}"
+echo "Using ports: mobile=${MOBILE_PORT}, club=${CLUB_PORT}, docs=${DOCS_PORT}, video-studio=${VIDEO_STUDIO_PORT}, links-api=${LINKS_API_PORT}"
 
 echo "Starting Directus (detached)..."
 pnpm --filter hashpass-directus run up
@@ -242,6 +265,30 @@ CLUB_RUNTIME_DIR="$(node packages/tools/scripts/prepare-club-dev-runtime.mjs "${
   pnpm exec next dev --webpack --port "${CLUB_PORT}"
 ) &
 CLUB_PID=$!
+
+echo "Starting hashpass-links-api on port ${LINKS_API_PORT}..."
+# HashPass Auth (QR login) needs its session-issuing backend talking to the
+# SAME Supabase project apps/mobile-app's core-development profile already
+# resolves to on localhost (EXPO_PUBLIC_SUPABASE_URL_DEV) and apps/web-app's
+# bare NEXT_PUBLIC_SUPABASE_URL is set to for local dev -- deliberately the
+# _DEV project (gsugeqozyeokncpbndna), not whatever the ambiguous bare
+# SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY fallback happens to hold (those
+# double as core-production's own fallback chain, see .env's comments).
+# Mismatched projects here is exactly what caused club web's setSession() to
+# fail with "invalid JWT: unable to parse or verify signature" while the
+# mobile app still reported "Login approved".
+LINKS_API_SUPABASE_URL="$(read_root_env_value EXPO_PUBLIC_SUPABASE_URL_DEV)"
+LINKS_API_SERVICE_ROLE_KEY="$(read_root_env_value SUPABASE_SERVICE_ROLE_KEY_DEV)"
+if [[ -z "${LINKS_API_SUPABASE_URL}" || -z "${LINKS_API_SERVICE_ROLE_KEY}" ]]; then
+  echo "EXPO_PUBLIC_SUPABASE_URL_DEV / SUPABASE_SERVICE_ROLE_KEY_DEV missing from .env -- cannot start hashpass-links-api." >&2
+  exit 1
+fi
+(
+  cd packages/hashpass-links-api
+  PORT="${LINKS_API_PORT}" SUPABASE_URL="${LINKS_API_SUPABASE_URL}" SUPABASE_SERVICE_ROLE_KEY="${LINKS_API_SERVICE_ROLE_KEY}" \
+    pnpm exec tsx dev-server.ts
+) &
+LINKS_API_PID=$!
 
 echo "Starting docs app on port ${DOCS_PORT}..."
 (
@@ -268,7 +315,7 @@ echo "Starting mobile app..."
 MOBILE_PID=$!
 
 set +e
-wait -n "$MOBILE_PID" "$CLUB_PID" "$DOCS_PID" "$VIDEO_STUDIO_PID"
+wait -n "$MOBILE_PID" "$CLUB_PID" "$DOCS_PID" "$VIDEO_STUDIO_PID" "$LINKS_API_PID"
 status=$?
 set -e
 
