@@ -34,6 +34,29 @@ export function resetAdminDbCache(): void {
   cachedAdminClient = null;
 }
 
+let verifyClientFactoryOverride: (() => SupabaseClient | null) | null = null;
+
+// Builds a fresh, uncached Supabase client for issueSessionForUser()'s
+// verifyOtp() call -- deliberately never adminDb()'s cached instance. See
+// the comment in packages/backend/src/auth-qr/session.ts for why: verifying
+// an OTP mutates whatever client performs it, and mutating the cached admin
+// client would leave a warm Lambda authenticated as the end user instead of
+// the service role for every later request.
+export function createVerifyClient(): SupabaseClient | null {
+  if (verifyClientFactoryOverride) return verifyClientFactoryOverride();
+
+  const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !serviceKey) return null;
+
+  return createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
+}
+
+// Test-only dependency injection for createVerifyClient() above.
+export function setVerifyClientFactoryForTesting(factory: (() => SupabaseClient | null) | null): void {
+  verifyClientFactoryOverride = factory;
+}
+
 export function apiError(message: string, status = 400): Response {
   return Response.json({ message }, { status });
 }

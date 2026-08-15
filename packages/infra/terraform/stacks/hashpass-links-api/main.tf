@@ -3,6 +3,23 @@ locals {
     ManagedBy = "terraform"
     Project   = "hashpass-links-api"
   })
+
+  # aws_expo_router_api's own cors_allow_headers default (Content-Type,
+  # Authorization, Cache-Control, Pragma, Expires, X-Client-Version) doesn't
+  # include the two custom headers @hashpass/sdk's AuthQrClient sends
+  # (x-hashpass-app-id on every request, x-hashpass-binding on poll/exchange
+  # -- see packages/sdk/src/auth-qr/client.ts and
+  # packages/hashpass-links-api/src/routes/auth-qr.ts). API Gateway's native
+  # CORS support answers the browser's preflight OPTIONS itself, before
+  # Lambda ever runs, so an incomplete allowlist here rejects the preflight
+  # outright -- the request body never even leaves the browser.
+  cors_allow_headers = [
+    "Content-Type",
+    "Authorization",
+    "Cache-Control",
+    "X-Hashpass-App-Id",
+    "X-Hashpass-Binding",
+  ]
 }
 
 # Only evaluated once enable_custom_domain = true -- see the domain_name
@@ -42,6 +59,7 @@ module "links_api_dev" {
   )
 
   cors_allow_origins = lookup(var.cors_allow_origins, "dev", ["http://localhost:3000"])
+  cors_allow_headers = local.cors_allow_headers
 
   tags = merge(local.common_tags, {
     Environment = "dev"
@@ -77,6 +95,7 @@ module "links_api_prod" {
   )
 
   cors_allow_origins = lookup(var.cors_allow_origins, "prod", ["https://hashpass.club"])
+  cors_allow_headers = local.cors_allow_headers
 
   tags = merge(local.common_tags, {
     Environment = "prod"

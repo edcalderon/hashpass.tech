@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { challengeHash } from '@hashpass/backend';
 import { handleRequest } from './router';
-import { resetAdminDbCache, setAdminDbForTesting } from './server';
+import { resetAdminDbCache, setAdminDbForTesting, setVerifyClientFactoryForTesting } from './server';
 import { createFakeSupabaseClient, type FakeUser } from './test-utils/fake-supabase-client';
 
 const MOBILE_USER: FakeUser = { id: 'user-1', email: 'approver@example.com', token: 'mobile-session-token' };
@@ -12,11 +12,17 @@ const BINDING_HEADER = 'x-hashpass-binding';
 function useFakeDb(users: FakeUser[] = [MOBILE_USER]) {
   const client = createFakeSupabaseClient(users);
   setAdminDbForTesting(client as unknown as SupabaseClient);
+  // The fake client has no real session-mutation side effects, so reusing
+  // it as the "isolated verify client" too is fine here -- production code
+  // (createVerifyClient() in server.ts) always builds a genuinely separate
+  // client instead of ever reusing the cached admin one.
+  setVerifyClientFactoryForTesting(() => client as unknown as SupabaseClient);
   return client;
 }
 
 test.afterEach(() => {
   setAdminDbForTesting(null);
+  setVerifyClientFactoryForTesting(null);
   resetAdminDbCache();
 });
 

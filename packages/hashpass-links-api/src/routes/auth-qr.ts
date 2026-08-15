@@ -5,7 +5,7 @@ import {
   QR_AUTH_TTL_SECONDS,
   verifyCodeVerifier,
 } from '@hashpass/backend';
-import { adminDb, apiError, authenticatedUser } from '../server';
+import { adminDb, apiError, authenticatedUser, createVerifyClient } from '../server';
 
 const RELYING_PARTY = 'HashPass Club';
 // Carried as an explicit header, not a cookie: hashpass.club (browser) and
@@ -210,7 +210,7 @@ export async function exchangeChallenge(request: Request): Promise<Response> {
     metadata: { relying_party: RELYING_PARTY },
   });
 
-  const session = await issueSessionForUser(db, consumed.approved_by_user_id);
+  const session = await issueSessionForUser(db, consumed.approved_by_user_id, createVerifyClient);
   if (!session) {
     // The challenge is already consumed at this point -- fail closed rather
     // than leaving it re-triable, since a retry would just report "already

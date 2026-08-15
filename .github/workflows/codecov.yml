@@ -42,6 +42,20 @@ jobs:
       - name: Run event ingestion coverage tests
         run: pnpm --filter @hashpass/event-ingestion test:coverage
 
+      # These three packages weren't in any workflow at all -- their tests
+      # only ever ran locally, so a passing local run gave no real CI
+      # guarantee. No lcov/coverage reporting here (their tsx/node --test
+      # runners don't produce it without extra tooling); this is just the
+      # pass/fail gate.
+      - name: Run backend tests
+        run: pnpm --filter @hashpass/backend run test
+
+      - name: Run hashpass-links-api tests
+        run: pnpm --filter @hashpass/hashpass-links-api run test
+
+      - name: Run sdk tests
+        run: pnpm --filter @hashpass/sdk run test
+
       - name: Upload coverage to Codecov
         if: ${{ env.CODECOV_TOKEN != '' }}
         uses: codecov/codecov-action@v7

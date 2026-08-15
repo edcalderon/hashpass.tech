@@ -242,11 +242,25 @@ if (autoGit || shouldCommit || shouldTag || shouldPush) {
 const buildNumber = parseInt(new Date().toISOString().replace(/[-:T]/g, '').slice(0, 12));
 const releaseDate = new Date().toISOString().split('T')[0];
 
-// Android version code — derived from semver so it's deterministic and always
-// increases with every release. Formula: major*10000 + minor*100 + patch.
-// Range: up to ~2M for v2.0.0, well within Android's 2.1B limit.
+// Android version code. Play Store requires this to be strictly greater
+// than every versionCode ever uploaded, for the lifetime of the app --
+// not just "increasing within the current minor/major line". A pure
+// semver-derived formula (major*10000 + minor*100 + patch) breaks that the
+// moment a minor/major bump resets `patch` to 0: e.g. v1.8.344 encoded as
+// 11144, but v1.9.0 would encode as 10900 -- lower, which Play rejects
+// outright. Guard against that by never producing a value <= whatever is
+// already on disk (the last real value this repo shipped), regardless of
+// how the semver components moved.
 const [vMajor, vMinor, vPatch] = newVersion.split('.').map(Number);
-const androidVersionCode = vMajor * 10000 + vMinor * 100 + vPatch;
+const semverDerivedVersionCode = vMajor * 10000 + vMinor * 100 + vPatch;
+let previousVersionCode = 0;
+try {
+  const appJsonPath = path.join(projectRoot, 'apps/mobile-app/app.json');
+  previousVersionCode = JSON.parse(fs.readFileSync(appJsonPath, 'utf8'))?.expo?.android?.versionCode || 0;
+} catch {
+  // No existing app.json (or unparseable) -- treat as no prior release.
+}
+const androidVersionCode = Math.max(semverDerivedVersionCode, previousVersionCode + 1);
 
 // Real release content for THIS version, derived from git history below
 // (function is hoisted — defined further down, called here before that

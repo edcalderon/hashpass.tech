@@ -1,4 +1,4 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { EmailOtpType } from '@supabase/auth-js';
 
 // Issues a real Supabase session for a user who has already been verified
@@ -15,9 +15,19 @@ export type QrAuthSession = {
   refreshToken: string;
 };
 
+function defaultCreateVerifyClient(): SupabaseClient | null {
+  const verifyUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const verifyKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!verifyUrl || !verifyKey) return null;
+  return createClient(verifyUrl, verifyKey, { auth: { persistSession: false, autoRefreshToken: false } });
+}
+
 export async function issueSessionForUser(
   client: SupabaseClient,
-  userId: string
+  userId: string,
+  // Test-only seam: lets tests assert verifyOtp() runs on an isolated
+  // client without needing a real network call or module-mocking.
+  createVerifyClient: () => SupabaseClient | null = defaultCreateVerifyClient
 ): Promise<QrAuthSession | null> {
   const { data: userData, error: userError } = await client.auth.admin.getUserById(userId);
   const email = userData?.user?.email;
@@ -58,7 +68,25 @@ export async function issueSessionForUser(
     return null;
   }
 
-  const { data: verifyData, error: verifyError } = await client.auth.verifyOtp({
+  // Deliberately NOT verified on `client`: verifyOtp() is a sign-in
+  // operation, and Supabase JS clients track whatever session it produces
+  // in memory (independent of the `persistSession` option, which only
+  // controls whether that session is written to storage). `client` here is
+  // typically `adminDb()`'s process-wide cached instance -- in a warm
+  // Lambda container, mutating its session would leave every later
+  // `.from('qr_auth_challenges')` call authenticated as this end user
+  // instead of the service role. Since V079 enables RLS on that table with
+  // no user-facing policies, those later calls would then fail outright
+  // until the container cold-starts. A throwaway client, used once and
+  // discarded, can't leak session state into anything else -- same env
+  // vars adminDb() itself uses (see packages/hashpass-links-api/src/server.ts),
+  // read directly rather than reaching into `client`'s internal fields.
+  const verifyClient = createVerifyClient();
+  if (!verifyClient) {
+    console.warn('[QR Auth] Cannot isolate session verification: SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY missing.');
+    return null;
+  }
+  const { data: verifyData, error: verifyError } = await verifyClient.auth.verifyOtp({
     token_hash: tokenHash,
     type: verificationType as EmailOtpType,
   });
