@@ -115,10 +115,19 @@ export function SignInModal({ open, onClose }: SignInModalProps) {
 
         const session = await hashpassSdk().authQr.waitForLogin(result, { signal: controller.signal });
         if (controller.signal.aborted) return;
-        await supabaseClient().auth.setSession({
+        // setSession() reports an invalid/mismatched/expired token through
+        // its returned `error`, not necessarily by rejecting the promise --
+        // ignoring it would show "success" while no usable session was
+        // actually installed.
+        const { error: setSessionError } = await supabaseClient().auth.setSession({
           access_token: session.accessToken,
           refresh_token: session.refreshToken,
         });
+        if (controller.signal.aborted) return;
+        if (setSessionError) {
+          setQrPhase('error');
+          return;
+        }
         setQrPhase('success');
       } catch (error) {
         if (controller.signal.aborted) return;

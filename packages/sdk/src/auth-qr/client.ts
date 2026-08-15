@@ -14,11 +14,14 @@ export interface AuthQrClientOptions {
   auth?: AuthProvider | undefined;
 }
 
+const BINDING_HEADER = "x-hashpass-binding";
+
 interface CreateChallengeResponse {
   id: string;
   qrUrl: string;
   expiresAt: string;
   state: string;
+  binding: string;
 }
 
 interface ExchangeResponse {
@@ -50,21 +53,10 @@ export class AuthQrClient {
       );
     }
     if (!this.#transport) {
-      const baseFetch = this.#options.fetch;
-      // The API's browser-binding cookie is what proves poll/exchange come
-      // from the same browser that created the challenge. hashpass.club and
-      // hashpass.link are different registrable domains, so every request
-      // through this transport is cross-site by definition and needs
-      // credentials:'include' to carry that cookie -- see the SameSite=None
-      // comment in packages/hashpass-links-api/src/routes/auth-qr.ts for the
-      // matching server-side half of this.
-      const withCredentials: typeof globalThis.fetch = (input, init) =>
-        baseFetch(input, { ...init, credentials: "include" });
-
       this.#transport = new HttpTransport({
         baseUrl: this.#options.baseUrl,
         appId: this.#options.appId,
-        fetch: withCredentials,
+        fetch: this.#options.fetch,
         headers: this.#options.headers,
         timeoutMs: this.#options.timeoutMs,
         auth: this.#options.auth,
@@ -73,35 +65,43 @@ export class AuthQrClient {
     return this.#transport;
   }
 
-  /** Starts a login attempt: creates a server-side challenge and returns the QR payload plus the PKCE verifier to hold onto until exchange. */
+  /** Starts a login attempt: creates a server-side challenge and returns the QR payload plus the PKCE verifier and binding secret to hold onto until exchange. */
   async beginLogin(): Promise<BeginQrLoginResult> {
     const { codeVerifier, codeChallenge } = await createPkcePair();
-    const challenge = await this.#transportOrThrow().request<CreateChallengeResponse>("api/v1/auth/qr/challenges", {
+    const response = await this.#transportOrThrow().request<CreateChallengeResponse>("api/v1/auth/qr/challenges", {
       method: "POST",
       authenticated: false,
       body: { codeChallenge },
     });
-    return { challenge, codeVerifier };
+    const { binding, ...challenge } = response;
+    return { challenge, codeVerifier, binding };
   }
 
   /** Polls the challenge's current status once. Most callers want waitForLogin() instead, which drives the full poll loop. */
-  async pollLogin(challengeId: string, state: string, options: { signal?: AbortSignal | undefined } = {}): Promise<QrLoginPoll> {
+  async pollLogin(
+    challengeId: string,
+    state: string,
+    binding: string,
+    options: { signal?: AbortSignal | undefined } = {},
+  ): Promise<QrLoginPoll> {
     return this.#transportOrThrow().request<QrLoginPoll>(
       `api/v1/auth/qr/challenges/${encodeURIComponent(challengeId)}`,
-      { authenticated: false, query: { state }, signal: options.signal },
+      { authenticated: false, query: { state }, headers: { [BINDING_HEADER]: binding }, signal: options.signal },
     );
   }
 
-  /** Trades an approved, one-time authorization code (plus its PKCE verifier) for a real session. Exposed directly for callers driving their own poll loop instead of waitForLogin(). */
+  /** Trades an approved, one-time authorization code (plus its PKCE verifier and binding secret) for a real session. Exposed directly for callers driving their own poll loop instead of waitForLogin(). */
   async exchangeLogin(input: {
     challengeId: string;
     state: string;
     codeVerifier: string;
+    binding: string;
     authorizationCode: string;
   }): Promise<QrLoginSession> {
     const response = await this.#transportOrThrow().request<ExchangeResponse>("api/v1/auth/qr/exchange", {
       method: "POST",
       authenticated: false,
+      headers: { [BINDING_HEADER]: input.binding },
       body: {
         challengeId: input.challengeId,
         state: input.state,
@@ -119,10 +119,10 @@ export class AuthQrClient {
   /** Polls until the challenge is approved, denied, or expired (or the caller aborts), then exchanges an approval for a real session. */
   async waitForLogin(result: BeginQrLoginResult, options: WaitForQrLoginOptions = {}): Promise<QrLoginSession> {
     const interval = options.pollIntervalMs ?? 2_000;
-    const { challenge, codeVerifier } = result;
+    const { challenge, codeVerifier, binding } = result;
 
     while (!options.signal?.aborted) {
-      const poll = await this.pollLogin(challenge.id, challenge.state, { signal: options.signal });
+      const poll = await this.pollLogin(challenge.id, challenge.state, binding, { signal: options.signal });
       options.onPoll?.(poll);
 
       if (poll.status === "approved" && poll.authorizationCode) {
@@ -130,6 +130,7 @@ export class AuthQrClient {
           challengeId: challenge.id,
           state: challenge.state,
           codeVerifier,
+          binding,
           authorizationCode: poll.authorizationCode,
         });
       }
@@ -148,7 +149,7 @@ export class AuthQrClient {
    * Called by the HashPass mobile app, under its own authenticated session,
    * to approve or deny a scanned login. Unlike the browser-side methods
    * above, this is bearer-token authenticated (via this client's configured
-   * `auth`), not bound by the browser cookie.
+   * `auth`), not the browser-binding header.
    */
   async respondToLogin(challengeId: string, decision: "approve" | "deny"): Promise<{ status: "approved" | "denied" }> {
     return this.#transportOrThrow().request(`api/v1/auth/qr/challenges/${encodeURIComponent(challengeId)}/approve`, {

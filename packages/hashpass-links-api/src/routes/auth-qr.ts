@@ -5,32 +5,30 @@ import {
   QR_AUTH_TTL_SECONDS,
   verifyCodeVerifier,
 } from '@hashpass/backend';
-import { adminDb, apiError, authenticatedUser, getCookie } from '../server';
+import { adminDb, apiError, authenticatedUser } from '../server';
 
 const RELYING_PARTY = 'HashPass Club';
-const BINDING_COOKIE = 'hp_qr_binding';
-// hashpass.link fronts both the redirect service and this API (see the
-// plan's Phase 1 scope) -- the cookie only needs to reach the auth-qr
-// surface, not qr-links or the eventual /q/:slug redirect.
-const BINDING_COOKIE_PATH = '/api/v1/auth/qr';
+// Carried as an explicit header, not a cookie: hashpass.club (browser) and
+// hashpass.link (this API) are different registrable domains, making this a
+// third-party cookie in every browser's eyes. SameSite=None does not opt a
+// cookie back into being sent once a browser (Safari's ITP by default,
+// increasingly Chrome/Firefox too) is blocking third-party cookies outright
+// -- that blocking happens beneath SameSite entirely, so the cookie-based
+// design was silently broken for a large and growing share of real users.
+// An explicit header carries the same opaque secret without depending on
+// any browser cookie policy. It's no less safe than the cookie was in
+// practice: this whole flow is already driven by client-side JS holding
+// `state`/`codeVerifier` in memory, so a page compromised badly enough to
+// read this header could just as easily drive the SDK calls directly --
+// the cookie's HttpOnly protection was not doing meaningful work here.
+const BINDING_HEADER = 'x-hashpass-binding';
 
-// SameSite=None (not Strict/Lax): hashpass.club (browser) and hashpass.link
-// (this API) are different registrable domains, so poll/exchange are
-// cross-site fetches by definition -- a Strict or Lax cookie would never be
-// attached to them at all, silently breaking the binding check every time.
-// None+Secure is safe here because the cookie is HttpOnly (unreadable by
-// any page's JS, including a malicious one) and the response is only
-// exposed cross-origin to the small CORS allow-list in lambda/index.ts
-// (which also sets Access-Control-Allow-Credentials for exactly those
-// origins) -- an attacker page can trigger the cookie to be sent, but can't
-// read the response, and separately doesn't have the `state` value that's
-// only ever returned in the JSON body to the legitimate caller.
-function bindingCookie(value: string, maxAgeSeconds: number): string {
-  return `${BINDING_COOKIE}=${value}; HttpOnly; Secure; SameSite=None; Path=${BINDING_COOKIE_PATH}; Max-Age=${maxAgeSeconds}`;
+function getBinding(request: Request): string | undefined {
+  return request.headers.get(BINDING_HEADER) || undefined;
 }
 
 // POST /api/v1/auth/qr/challenges -- browser starts a login attempt.
-export async function createChallenge(request: Request, shortOrigin: string): Promise<Response> {
+export async function createChallenge(request: Request): Promise<Response> {
   const body = await request.json().catch(() => ({}));
   if (typeof body.codeChallenge !== 'string' || body.codeChallenge.length < 40) {
     return apiError('A PKCE code challenge is required');
@@ -57,25 +55,28 @@ export async function createChallenge(request: Request, shortOrigin: string): Pr
     metadata: { relying_party: RELYING_PARTY },
   });
 
+  // The QR's origin is derived from the request that's actually serving it,
+  // not a fixed env-var default -- hashpass.link's DNS/ACM hasn't been cut
+  // over yet (see README.md), so this service is reachable at whatever its
+  // real deployed origin currently is (a raw execute-api.amazonaws.com
+  // invoke URL pre-cutover, the custom domain after). A fixed default would
+  // point the QR at an origin nobody can reach pre-cutover, and would also
+  // never match EXPO_PUBLIC_LINKS_API_BASE_URL's origin-matching check in
+  // apps/mobile-app/lib/auth-qr.ts.
+  const origin = new URL(request.url).origin;
+
   return Response.json(
-    { id, qrUrl: `${shortOrigin}/auth/${id}`, expiresAt, state },
-    {
-      status: 201,
-      headers: {
-        'set-cookie': bindingCookie(binding, QR_AUTH_TTL_SECONDS),
-        'cache-control': 'no-store',
-      },
-    }
+    { id, qrUrl: `${origin}/auth/${id}`, expiresAt, state, binding },
+    { status: 201, headers: { 'cache-control': 'no-store' } }
   );
 }
 
 // GET /api/v1/auth/qr/challenges/:id?state=... -- browser polls for the
-// mobile app's decision. Gated on the browser-binding cookie (HttpOnly, so
-// only this browser's own requests can present it) and the state value the
-// browser already holds from the create response, not on any bearer token
-// -- the caller here is deliberately anonymous until approval.
+// mobile app's decision. Gated on the browser-binding header and the state
+// value the browser already holds from the create response, not on any
+// bearer token -- the caller here is deliberately anonymous until approval.
 export async function pollChallenge(request: Request, id: string): Promise<Response> {
-  const binding = getCookie(request, BINDING_COOKIE);
+  const binding = getBinding(request);
   const state = new URL(request.url).searchParams.get('state');
   if (!binding || !state) return apiError('Browser binding and state are required', 401);
 
@@ -128,7 +129,17 @@ export async function approveChallenge(request: Request, id: string): Promise<Re
   const code = approved ? opaqueToken() : null;
   const status = approved ? 'approved' : 'denied';
 
-  const { error } = await db
+  // .select().single() (not just checking `error`) is required here: two
+  // concurrent approve/deny requests can both pass the `select` above while
+  // status is still 'pending', but only one of the resulting conditional
+  // updates below actually matches a row. Supabase does not return an error
+  // for an update that affected zero rows -- it returns error: null with an
+  // empty result -- so the losing request would otherwise fall through,
+  // log an audit event, and report its own decision as successful even
+  // though the browser only ever sees the winning decision. Mirrors the
+  // same guard exchangeChallenge already has around its own conditional
+  // update below.
+  const { data: updated, error } = await db
     .from('qr_auth_challenges')
     .update({
       status,
@@ -137,8 +148,10 @@ export async function approveChallenge(request: Request, id: string): Promise<Re
       authorization_code_secret: code,
     })
     .eq('id', id)
-    .eq('status', 'pending');
-  if (error) return apiError('Unable to handle challenge', 409);
+    .eq('status', 'pending')
+    .select('id')
+    .single();
+  if (error || !updated) return apiError('Challenge is expired or already handled', 409);
 
   await db.from('qr_auth_events').insert({
     challenge_id: id,
@@ -154,13 +167,12 @@ export async function approveChallenge(request: Request, id: string): Promise<Re
 // authorization code (plus its PKCE verifier) for a real HashPass session.
 // Atomically consumes the challenge (the `.eq('status','approved')` in the
 // update below means a second, racing exchange attempt finds nothing to
-// update and gets the "already consumed" response) and clears both the
-// authorization code and the browser-binding cookie once used.
+// update and gets the "already consumed" response).
 export async function exchangeChallenge(request: Request): Promise<Response> {
   const body = await request.json().catch(() => ({}));
   const { challengeId, authorizationCode, codeVerifier, state } = body;
 
-  const binding = getCookie(request, BINDING_COOKIE);
+  const binding = getBinding(request);
   if (!binding) return apiError('Browser binding required', 401);
 
   const db = adminDb();
@@ -212,11 +224,6 @@ export async function exchangeChallenge(request: Request): Promise<Response> {
       userId: consumed.approved_by_user_id,
       session: { accessToken: session.accessToken, refreshToken: session.refreshToken },
     },
-    {
-      headers: {
-        'set-cookie': `${BINDING_COOKIE}=; HttpOnly; Secure; SameSite=None; Path=${BINDING_COOKIE_PATH}; Max-Age=0`,
-        'cache-control': 'no-store',
-      },
-    }
+    { headers: { 'cache-control': 'no-store' } }
   );
 }

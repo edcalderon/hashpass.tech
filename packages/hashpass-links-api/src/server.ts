@@ -1,7 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
-export const shortOrigin = (): string => process.env.HASHPASS_LINK_ORIGIN || 'https://hashpass.link';
-
 let cachedAdminClient: SupabaseClient | null = null;
 let testClientOverride: SupabaseClient | null = null;
 
@@ -38,17 +36,6 @@ export function resetAdminDbCache(): void {
 
 export function apiError(message: string, status = 400): Response {
   return Response.json({ message }, { status });
-}
-
-export function getCookie(request: Request, name: string): string | undefined {
-  const header = request.headers.get('cookie');
-  if (!header) return undefined;
-
-  return header
-    .split(';')
-    .map((entry) => entry.trim())
-    .find((entry) => entry.startsWith(`${name}=`))
-    ?.slice(name.length + 1);
 }
 
 export async function authenticatedUser(request: Request) {

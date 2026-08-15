@@ -111,17 +111,8 @@ variable "supabase_service_role_keys" {
   sensitive   = true
 }
 
-variable "link_origins" {
-  description = "Public origin used to build shortened auth QR URLs (HASHPASS_LINK_ORIGIN), per environment"
-  type        = map(string)
-  default = {
-    dev  = "https://links-dev.hashpass.link"
-    prod = "https://hashpass.link"
-  }
-}
-
 variable "cors_allow_origins" {
-  description = "Allowed CORS origins by environment -- the browsers allowed to call this API with credentials (see the SameSite=None cookie note in packages/hashpass-links-api/src/routes/auth-qr.ts)"
+  description = "Allowed CORS origins by environment -- the browsers allowed to call this API (see packages/hashpass-links-api/src/routes/auth-qr.ts's browser-binding header note)"
   type        = map(list(string))
   default = {
     dev = [

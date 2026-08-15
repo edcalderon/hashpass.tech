@@ -7,6 +7,7 @@ import { resetAdminDbCache, setAdminDbForTesting } from './server';
 import { createFakeSupabaseClient, type FakeUser } from './test-utils/fake-supabase-client';
 
 const MOBILE_USER: FakeUser = { id: 'user-1', email: 'approver@example.com', token: 'mobile-session-token' };
+const BINDING_HEADER = 'x-hashpass-binding';
 
 function useFakeDb(users: FakeUser[] = [MOBILE_USER]) {
   const client = createFakeSupabaseClient(users);
@@ -18,12 +19,6 @@ test.afterEach(() => {
   setAdminDbForTesting(null);
   resetAdminDbCache();
 });
-
-function extractCookieValue(setCookieHeader: string | null, name: string): string {
-  const match = setCookieHeader?.match(new RegExp(`${name}=([^;]+)`));
-  if (!match) throw new Error(`Missing ${name} cookie in response`);
-  return match[1];
-}
 
 // A PKCE verifier/challenge pair matching the real verifyCodeVerifier logic
 // (challengeHash(verifier) === challenge).
@@ -47,9 +42,8 @@ async function driveFullFlow() {
   const createResponse = await createChallengeRequest(codeChallenge);
   assert.equal(createResponse.status, 201);
   const created = await createResponse.json();
-  const binding = extractCookieValue(createResponse.headers.get('set-cookie'), 'hp_qr_binding');
 
-  return { created, binding, codeVerifier };
+  return { created, binding: created.binding as string, codeVerifier };
 }
 
 test('full challenge -> approve -> exchange flow issues a real session', async () => {
@@ -58,7 +52,7 @@ test('full challenge -> approve -> exchange flow issues a real session', async (
 
   const pollBeforeApproval = await handleRequest(
     new Request(`https://api.hashpass.link/api/v1/auth/qr/challenges/${created.id}?state=${created.state}`, {
-      headers: { cookie: `hp_qr_binding=${binding}` },
+      headers: { [BINDING_HEADER]: binding },
     })
   );
   assert.equal((await pollBeforeApproval.json()).status, 'pending');
@@ -75,7 +69,7 @@ test('full challenge -> approve -> exchange flow issues a real session', async (
 
   const pollAfterApproval = await handleRequest(
     new Request(`https://api.hashpass.link/api/v1/auth/qr/challenges/${created.id}?state=${created.state}`, {
-      headers: { cookie: `hp_qr_binding=${binding}` },
+      headers: { [BINDING_HEADER]: binding },
     })
   );
   const polled = await pollAfterApproval.json();
@@ -91,7 +85,7 @@ test('full challenge -> approve -> exchange flow issues a real session', async (
   const exchangeResponse = await handleRequest(
     new Request('https://api.hashpass.link/api/v1/auth/qr/exchange', {
       method: 'POST',
-      headers: { cookie: `hp_qr_binding=${binding}` },
+      headers: { [BINDING_HEADER]: binding },
       body: exchangeBody,
     })
   );
@@ -110,11 +104,18 @@ test('full challenge -> approve -> exchange flow issues a real session', async (
   const replayResponse = await handleRequest(
     new Request('https://api.hashpass.link/api/v1/auth/qr/exchange', {
       method: 'POST',
-      headers: { cookie: `hp_qr_binding=${binding}` },
+      headers: { [BINDING_HEADER]: binding },
       body: exchangeBody,
     })
   );
   assert.equal(replayResponse.status, 400);
+});
+
+test('the QR URL origin matches the request that created the challenge, not a fixed default', async () => {
+  useFakeDb();
+  const response = await createChallengeRequest(pkcePair().codeChallenge);
+  const created = await response.json();
+  assert.ok(created.qrUrl.startsWith('https://api.hashpass.link/auth/'));
 });
 
 test('concurrent exchange attempts race safely: exactly one succeeds', async () => {
@@ -131,7 +132,7 @@ test('concurrent exchange attempts race safely: exactly one succeeds', async () 
   const polled = await (
     await handleRequest(
       new Request(`https://api.hashpass.link/api/v1/auth/qr/challenges/${created.id}?state=${created.state}`, {
-        headers: { cookie: `hp_qr_binding=${binding}` },
+        headers: { [BINDING_HEADER]: binding },
       })
     )
   ).json();
@@ -146,7 +147,7 @@ test('concurrent exchange attempts race safely: exactly one succeeds', async () 
     handleRequest(
       new Request('https://api.hashpass.link/api/v1/auth/qr/exchange', {
         method: 'POST',
-        headers: { cookie: `hp_qr_binding=${binding}` },
+        headers: { [BINDING_HEADER]: binding },
         body: exchangeBody,
       })
     );
@@ -154,6 +155,31 @@ test('concurrent exchange attempts race safely: exactly one succeeds', async () 
   const [first, second] = await Promise.all([attempt(), attempt()]);
   const statuses = [first.status, second.status].sort();
   assert.deepEqual(statuses, [200, 409]);
+});
+
+test('concurrent approve/deny attempts race safely: only the winner is reported', async () => {
+  useFakeDb();
+  const { created } = await driveFullFlow();
+
+  const attempt = (decision: 'approve' | 'deny') =>
+    handleRequest(
+      new Request(`https://api.hashpass.link/api/v1/auth/qr/challenges/${created.id}/approve`, {
+        method: 'POST',
+        headers: { authorization: `Bearer ${MOBILE_USER.token}` },
+        body: JSON.stringify({ decision }),
+      })
+    );
+
+  const [approve, deny] = await Promise.all([attempt('approve'), attempt('deny')]);
+  const results = await Promise.all([approve, deny].map((response) => response.json()));
+
+  // Exactly one of the two concurrent decisions actually wins the
+  // conditional update; the other must be told it lost (409), not silently
+  // report its own decision as if it had taken effect.
+  const statuses = [approve.status, deny.status].sort();
+  assert.deepEqual(statuses, [200, 409]);
+  const winner = results.find((body) => body.status === 'approved' || body.status === 'denied');
+  assert.ok(winner);
 });
 
 test('deny decision blocks exchange', async () => {
@@ -172,7 +198,7 @@ test('deny decision blocks exchange', async () => {
   const exchangeResponse = await handleRequest(
     new Request('https://api.hashpass.link/api/v1/auth/qr/exchange', {
       method: 'POST',
-      headers: { cookie: `hp_qr_binding=${binding}` },
+      headers: { [BINDING_HEADER]: binding },
       body: JSON.stringify({
         challengeId: created.id,
         authorizationCode: 'irrelevant',
@@ -197,13 +223,13 @@ test('approve requires an authenticated app session', async () => {
   assert.equal(response.status, 401);
 });
 
-test('polling with the wrong browser binding cookie is rejected', async () => {
+test('polling with the wrong browser binding header is rejected', async () => {
   useFakeDb();
   const { created } = await driveFullFlow();
 
   const response = await handleRequest(
     new Request(`https://api.hashpass.link/api/v1/auth/qr/challenges/${created.id}?state=${created.state}`, {
-      headers: { cookie: 'hp_qr_binding=wrong-binding-value' },
+      headers: { [BINDING_HEADER]: 'wrong-binding-value' },
     })
   );
   assert.equal(response.status, 403);
@@ -219,7 +245,7 @@ test('an expired challenge cannot be approved or exchanged', async () => {
 
   const pollResponse = await handleRequest(
     new Request(`https://api.hashpass.link/api/v1/auth/qr/challenges/${created.id}?state=${created.state}`, {
-      headers: { cookie: `hp_qr_binding=${binding}` },
+      headers: { [BINDING_HEADER]: binding },
     })
   );
   assert.equal((await pollResponse.json()).status, 'expired');
@@ -236,7 +262,7 @@ test('an expired challenge cannot be approved or exchanged', async () => {
   const exchangeResponse = await handleRequest(
     new Request('https://api.hashpass.link/api/v1/auth/qr/exchange', {
       method: 'POST',
-      headers: { cookie: `hp_qr_binding=${binding}` },
+      headers: { [BINDING_HEADER]: binding },
       body: JSON.stringify({ challengeId: created.id, authorizationCode: 'x', codeVerifier, state: created.state }),
     })
   );

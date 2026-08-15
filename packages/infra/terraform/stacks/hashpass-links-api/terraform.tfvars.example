@@ -33,11 +33,6 @@ supabase_service_role_keys = {
   prod = ""
 }
 
-link_origins = {
-  dev  = "https://links-dev.hashpass.link"
-  prod = "https://hashpass.link"
-}
-
 cors_allow_origins = {
   dev = [
     "http://localhost:3000",

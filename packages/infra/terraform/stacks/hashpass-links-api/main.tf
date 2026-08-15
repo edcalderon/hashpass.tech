@@ -36,7 +36,6 @@ module "links_api_dev" {
     {
       SUPABASE_URL              = lookup(var.supabase_urls, "dev", "")
       SUPABASE_SERVICE_ROLE_KEY = lookup(var.supabase_service_role_keys, "dev", "")
-      HASHPASS_LINK_ORIGIN      = lookup(var.link_origins, "dev", "")
       CORS_ALLOW_ORIGINS        = join(",", lookup(var.cors_allow_origins, "dev", []))
     },
     lookup(var.lambda_environment_overrides, "dev", {})
@@ -72,7 +71,6 @@ module "links_api_prod" {
     {
       SUPABASE_URL              = lookup(var.supabase_urls, "prod", "")
       SUPABASE_SERVICE_ROLE_KEY = lookup(var.supabase_service_role_keys, "prod", "")
-      HASHPASS_LINK_ORIGIN      = lookup(var.link_origins, "prod", "")
       CORS_ALLOW_ORIGINS        = join(",", lookup(var.cors_allow_origins, "prod", []))
     },
     lookup(var.lambda_environment_overrides, "prod", {})

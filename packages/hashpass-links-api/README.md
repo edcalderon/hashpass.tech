@@ -71,8 +71,7 @@ SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... pnpm --filter @hashpass/hashpass-
 
 `dev-server.ts` wraps `handleRequest` from `src/router.ts` in a plain Node
 `http.createServer`, echoing CORS headers the same way `lambda/index.ts`
-does in production so the browser-binding cookie flow behaves the same
-locally as it will once deployed. Point `apps/web-app`'s
+does in production. Point `apps/web-app`'s
 `NEXT_PUBLIC_LINKS_API_BASE_URL` (and `apps/mobile-app`'s
 `EXPO_PUBLIC_LINKS_API_BASE_URL`, for the approve side) at that URL for
 local end-to-end testing. Requires the `V079__hashpass_links_dynamic_qr.sql`
@@ -98,8 +97,13 @@ install step, unlike the Expo Router API's packaging script.
 |---|---|---|
 | `SUPABASE_URL` | yes | Admin Supabase client (`src/server.ts`'s `adminDb()`) |
 | `SUPABASE_SERVICE_ROLE_KEY` | yes | Same — service-role key, never exposed to clients |
-| `HASHPASS_LINK_ORIGIN` | no (defaults to `https://hashpass.link`) | Origin used to build the `qrUrl` returned by `POST /api/v1/auth/qr/challenges` |
 | `CORS_ALLOW_ORIGINS` | no | Comma-separated extra allowed origins, added to the built-in default list (`lambda/index.ts`'s `DEFAULT_CORS_ALLOWED_ORIGINS`: `hashpass.club`, `hashpass.link`, `localhost:3000`) |
+
+The `qrUrl` returned by `POST /api/v1/auth/qr/challenges` is built from the
+origin of the incoming request itself (`new URL(request.url).origin`), not
+an env var — so it's always wherever this service is actually reachable
+(the raw invoke URL pre-cutover, the real custom domain after), and can't
+drift out of sync the way a separate `HASHPASS_LINK_ORIGIN` default could.
 
 Consumers (`apps/web-app`, `apps/mobile-app`) point at this service via
 their own `NEXT_PUBLIC_LINKS_API_BASE_URL` / `EXPO_PUBLIC_LINKS_API_BASE_URL`
@@ -111,31 +115,35 @@ their own `NEXT_PUBLIC_LINKS_API_BASE_URL` / `EXPO_PUBLIC_LINKS_API_BASE_URL`
 | Method | Path | Auth | Purpose |
 |---|---|---|---|
 | `GET` | `/api/health` | none | Liveness check |
-| `POST` | `/api/v1/auth/qr/challenges` | none | Browser starts a login attempt (PKCE `codeChallenge` in, `qrUrl`/`state` + `HttpOnly` binding cookie out) |
-| `GET` | `/api/v1/auth/qr/challenges/:id` | browser-binding cookie + `state` | Browser polls for the mobile app's decision |
+| `POST` | `/api/v1/auth/qr/challenges` | none | Browser starts a login attempt (PKCE `codeChallenge` in, `qrUrl`/`state`/`binding` out) |
+| `GET` | `/api/v1/auth/qr/challenges/:id` | `x-hashpass-binding` header + `state` | Browser polls for the mobile app's decision |
 | `POST` | `/api/v1/auth/qr/challenges/:id/approve` | bearer token (app's own session) | Mobile app approves/denies, called under the user's own authenticated session |
-| `POST` | `/api/v1/auth/qr/exchange` | browser-binding cookie | Browser trades the one-time authorization code + PKCE verifier for a real session |
+| `POST` | `/api/v1/auth/qr/exchange` | `x-hashpass-binding` header | Browser trades the one-time authorization code + PKCE verifier for a real session |
 
 Security properties, in one place since they're spread across a few files:
 opaque/random/single-use/short-lived challenge IDs and codes
 (`@hashpass/backend`'s `auth-qr/challenge.ts`, 180s TTL), browser-session
-binding via an `HttpOnly`/`Secure` cookie, explicit mobile-app approval
-(never auto-approved), PKCE (`code_challenge`/`code_verifier`, timing-safe
-comparison), and atomic single-use consumption at exchange time (a
-conditional `.eq('status', 'approved')` update — see the comment above
-`exchangeChallenge` in `src/routes/auth-qr.ts` for the exact race it closes,
-and `src/router.test.ts`'s "concurrent exchange attempts" test for a real
+binding via an explicit opaque secret (see note below), explicit mobile-app
+approval (never auto-approved), PKCE (`code_challenge`/`code_verifier`,
+timing-safe comparison), and atomic single-use consumption at both the
+approve and exchange steps (conditional `.eq('status', ...)` updates that
+also check whether a row actually came back, not just the absence of an
+error — see the comments on `approveChallenge`/`exchangeChallenge` in
+`src/routes/auth-qr.ts` for the exact races these close, and
+`src/router.test.ts`'s "concurrent exchange attempts" test for a real
 demonstration that exactly one of two simultaneous exchanges wins).
 
-**Cross-origin cookie note:** the binding cookie is `SameSite=None` (not
-`Strict`), because `hashpass.club` (browser) and `hashpass.link` (this API)
-are different registrable domains — every poll/exchange call is a
-cross-site request by definition, and a `Strict`/`Lax` cookie would never be
-attached to those at all. This is safe because the cookie is `HttpOnly`
-(unreadable by any page's JS) and the response is only exposed cross-origin
-to the small CORS allow-list above (which also sets
-`Access-Control-Allow-Credentials` for exactly those origins). See the
-comment on `bindingCookie()` in `src/routes/auth-qr.ts`.
+**Why a header instead of a cookie:** the binding secret used to be an
+`HttpOnly` cookie, but `hashpass.club` (browser) and `hashpass.link` (this
+API) are different registrable domains, making it a *third-party* cookie —
+and third-party cookie blocking (on by default in Safari, increasingly
+elsewhere) operates independently of the `SameSite` attribute. A `SameSite`
+fix alone does not make a blocked third-party cookie get sent; the browser
+just never stores or attaches it, so the first poll would silently 401 for
+a large and growing share of real users. Carrying the same opaque secret as
+an explicit header instead sidesteps browser cookie policy entirely — the
+SDK receives it directly in the create-challenge response body and sends it
+back explicitly on every subsequent call (see `packages/sdk/src/auth-qr/client.ts`).
 
 ### Phase 2 stub routes
 

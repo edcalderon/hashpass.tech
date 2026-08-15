@@ -15,10 +15,11 @@ export interface QrLoginPoll {
   authorizationCode?: string | undefined;
 }
 
-/** The PKCE verifier travels alongside the challenge but is never itself part of the QR payload -- keep it in memory, not in anything rendered or logged. */
+/** The PKCE verifier and binding secret travel alongside the challenge but are never themselves part of the QR payload -- keep them in memory, not in anything rendered or logged. `binding` proves poll/exchange calls come from the same browser that created the challenge; sent back as the `x-hashpass-binding` header (not a cookie -- see the API's README for why). */
 export interface BeginQrLoginResult {
   challenge: QrLoginChallenge;
   codeVerifier: string;
+  binding: string;
 }
 
 export interface QrLoginSession {

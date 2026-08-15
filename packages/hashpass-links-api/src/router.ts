@@ -1,6 +1,6 @@
 import { health } from './routes/health';
 import { approveChallenge, createChallenge, exchangeChallenge, pollChallenge } from './routes/auth-qr';
-import { apiError, shortOrigin } from './server';
+import { apiError } from './server';
 
 type Handler = (request: Request, match: RegExpMatchArray) => Promise<Response>;
 
@@ -13,7 +13,7 @@ type Handler = (request: Request, match: RegExpMatchArray) => Promise<Response>;
 // yet -- see packages/hashpass-links-api/README.md.
 const ROUTES: Array<[string, RegExp, Handler]> = [
   ['GET', /^\/api\/health$/, () => health()],
-  ['POST', /^\/api\/v1\/auth\/qr\/challenges$/, (request) => createChallenge(request, shortOrigin())],
+  ['POST', /^\/api\/v1\/auth\/qr\/challenges$/, (request) => createChallenge(request)],
   ['GET', /^\/api\/v1\/auth\/qr\/challenges\/([^/]+)$/, (request, match) => pollChallenge(request, match[1])],
   [
     'POST',

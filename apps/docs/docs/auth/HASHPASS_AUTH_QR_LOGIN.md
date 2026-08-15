@@ -26,12 +26,14 @@ HTTP.
 1. **Browser starts a challenge.** `apps/web-app`'s `SignInModal` calls
    `@hashpass/sdk`'s `AuthQrClient.beginLogin()`, which generates a PKCE
    pair and `POST`s `codeChallenge` to `/api/v1/auth/qr/challenges`. The API
-   returns an opaque challenge id, a `qrUrl`, and a `state` value, and sets
-   an `HttpOnly` browser-binding cookie.
-2. **Browser renders the QR and polls.** The QR encodes `qrUrl` — a URL like
-   `https://hashpass.link/auth/<challengeId>`. The browser polls
-   `GET /api/v1/auth/qr/challenges/:id` (bound by the cookie + `state`)
-   until the status changes from `pending`.
+   returns an opaque challenge id, a `qrUrl`, a `state` value, and a
+   `binding` secret — derived from wherever the request actually reached
+   the service, so it works whether that's the raw Lambda invoke URL
+   (pre-`hashpass.link`-cutover) or the eventual custom domain.
+2. **Browser renders the QR and polls.** The QR encodes `qrUrl`. The browser
+   polls `GET /api/v1/auth/qr/challenges/:id` (sending `binding` back as an
+   `x-hashpass-binding` header, plus `state`) until the status changes from
+   `pending`.
 3. **Mobile app scans and approves.** `apps/mobile-app`'s existing
    `QRScanner` component recognizes the `/auth/:id` URL shape
    (`lib/auth-qr.ts`'s `parseAuthQrScan`) before falling through to its
@@ -50,16 +52,17 @@ HTTP.
 ## Security properties
 
 - Opaque, random, single-use, short-lived (180s) challenges and codes.
-- Browser-session binding via an `HttpOnly`/`Secure` cookie — note it's
-  `SameSite=None`, not `Strict`/`Lax`, because `hashpass.club` and
-  `hashpass.link` are different registrable domains and every poll/exchange
-  call is cross-site by definition. Safe because the cookie itself is
-  unreadable by page JS and the response is only exposed cross-origin to a
-  small CORS allow-list with explicit `Access-Control-Allow-Credentials`.
+- Browser-session binding via an explicit `x-hashpass-binding` header, not a
+  cookie. `hashpass.club` and `hashpass.link` are different registrable
+  domains, which makes a binding cookie a *third-party* cookie — and
+  browsers that block third-party cookies (Safari by default, increasingly
+  others) do so independently of the `SameSite` attribute, so a cookie-based
+  design would silently fail for a large share of real users. An explicit
+  header sidesteps that entirely.
 - Explicit mobile-app approval — never auto-approved.
 - PKCE (`code_challenge`/`code_verifier`), timing-safe comparison.
-- Atomic single-use consumption at exchange time, so two racing exchange
-  attempts can't both succeed (see
+- Atomic single-use consumption at both the approve and exchange steps, so
+  two racing requests can't both succeed (see
   `packages/hashpass-links-api/src/router.test.ts`'s concurrent-exchange
   test).
 
