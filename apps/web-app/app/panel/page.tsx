@@ -18,10 +18,11 @@ export default function PanelPage() {
   const { user, isLoading } = useSession();
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-canvas)' }}>
+    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--bg-canvas)' }}>
       <Navbar showMarketingLinks={false} />
       <main
         style={{
+          flex: '1 0 auto',
           maxWidth: 720,
           margin: '0 auto',
           padding: 'clamp(120px, 14vw, 160px) 24px 80px',

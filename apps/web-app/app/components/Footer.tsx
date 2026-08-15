@@ -41,6 +41,7 @@ export function Footer() {
   return (
     <footer
       style={{
+        flexShrink: 0,
         background: 'var(--bg-canvas)',
         borderTop: '1px solid var(--border)',
         padding: 'clamp(40px, 6vw, 64px) 20px 24px',
