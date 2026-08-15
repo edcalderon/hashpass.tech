@@ -14,8 +14,8 @@ export const ko = {
     qrSuccess: '로그인되었습니다!',
     qrError: '문제가 발생했습니다. 다시 시도해 주세요.',
     qrRetry: '새 코드 받기',
-    orContinue: '또는 웹에서 계속',
-    openApp: 'HASHPASS 열기',
+    qrRefresh: '새 코드',
+    openApp: 'HASHPASS.TECH 열기',
     downloadApp: '앱 다운로드',
   },
   hero: {

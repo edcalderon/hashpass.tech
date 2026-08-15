@@ -14,8 +14,8 @@ export const pt = {
     qrSuccess: 'Login realizado!',
     qrError: 'Algo deu errado. Tente novamente.',
     qrRetry: 'Obter um novo código',
-    orContinue: 'ou continuar na web',
-    openApp: 'Abrir HASHPASS',
+    qrRefresh: 'Novo código',
+    openApp: 'Abrir HASHPASS.TECH',
     downloadApp: 'Baixar o app',
   },
   hero: {

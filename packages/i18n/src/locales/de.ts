@@ -14,8 +14,8 @@ export const de = {
     qrSuccess: 'Angemeldet!',
     qrError: 'Etwas ist schiefgelaufen. Bitte versuche es erneut.',
     qrRetry: 'Neuen Code anfordern',
-    orContinue: 'oder im Web fortfahren',
-    openApp: 'HASHPASS öffnen',
+    qrRefresh: 'Neuer Code',
+    openApp: 'HASHPASS.TECH öffnen',
     downloadApp: 'App herunterladen',
   },
   hero: {

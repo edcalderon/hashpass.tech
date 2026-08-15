@@ -16,6 +16,7 @@ import '@fontsource/manrope/800.css';
 import './globals.css';
 
 import { ThemeProvider } from './components/ThemeProvider';
+import { ToastProvider } from './components/Toast';
 import { I18nProvider } from '@hashpass/i18n';
 
 const CANONICAL_SITE_URL = 'https://hashpass.club';
@@ -122,7 +123,9 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
       <body>
         <ThemeProvider>
           <I18nProvider defaultLocale="en">
-            {children}
+            <ToastProvider>
+              {children}
+            </ToastProvider>
           </I18nProvider>
         </ThemeProvider>
       </body>

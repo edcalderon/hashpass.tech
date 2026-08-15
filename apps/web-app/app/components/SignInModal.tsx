@@ -8,6 +8,7 @@ import type { SupportedLocale } from '@hashpass/i18n';
 import { hashpassSdk } from '../../lib/hashpass-sdk';
 import { supabaseClient } from '../../lib/supabase-client';
 import { useTheme } from './ThemeProvider';
+import { useToast } from './Toast';
 
 interface SignInModalProps {
   open: boolean;
@@ -28,8 +29,25 @@ type QrAuthPhase = 'connecting' | 'waiting' | 'denied' | 'expired' | 'success' |
 const QR_VALUE = 'hashpass://auth/connect?source=web&ref=landing';
 const PLAY_STORE_URL =
   'https://play.google.com/store/apps/details?id=com.hashpass.tech&hl=en-US&ah=RlHQxhHQladajDZn9ZGTm7_ucMs';
-const WEB_APP_URL = 'https://hashpass.club';
 const APP_OPEN_FALLBACK_MS = 1400;
+
+// The main HASHPASS app (not this hashpass.club site) is what the blue
+// button opens on desktop. hashpass.club has no build-time dev/prod split of
+// its own (single GitHub Pages deploy from `main`), so this resolves the
+// *target* app's environment from the browser's own origin at click time --
+// same "trust the real origin" pattern as resolveWebOrigin() in
+// packages/auth/src/supabase-oauth.ts -- rather than a hardcoded constant.
+function resolveHashpassAppUrl(): string {
+  if (typeof window === 'undefined') return 'https://hashpass.tech';
+  const hostname = window.location.hostname;
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return 'http://localhost:8081';
+  }
+  if (hostname.startsWith('dev.') || hostname.includes('-dev.')) {
+    return 'https://dev.hashpass.tech';
+  }
+  return 'https://hashpass.tech';
+}
 
 type Platform = 'ios' | 'android' | 'desktop';
 
@@ -49,16 +67,18 @@ function detectPlatform(): Platform {
 }
 
 // Tries the native app first (mobile only), falls back to the store if the
-// app isn't installed (page stays visible past the fallback window), and
-// falls back straight to the production web app on desktop -- opening
-// hashpass.club there lets the browser route to an already-installed PWA
-// window on its own (Chrome/Edge/Safari all do this for installed,
-// in-scope PWAs) instead of always forcing a plain browser tab.
+// app isn't installed (page stays visible past the fallback window), and on
+// desktop opens the main HASHPASS app in a new tab -- if the browser there
+// already has an authenticated session (an installed PWA window routes to
+// it automatically; Chrome/Edge/Safari all do this for in-scope installed
+// PWAs), the app can pick up `source=web` and complete sign-in without a
+// phone at all, using the same connect intent as the mobile deep link.
 function openHashpassApp() {
   const platform = detectPlatform();
 
   if (platform === 'desktop') {
-    window.open(WEB_APP_URL, '_blank', 'noopener,noreferrer');
+    const appUrl = resolveHashpassAppUrl();
+    window.open(`${appUrl}/auth/connect?source=web&ref=landing`, '_blank', 'noopener,noreferrer');
     return;
   }
 
@@ -96,10 +116,21 @@ export function SignInModal({ open, onClose }: SignInModalProps) {
   const availableLocales = useAvailableLocales();
   const [langOpen, setLangOpen] = useState(false);
   const backdropRef = useRef<HTMLDivElement>(null);
+  const toast = useToast();
 
   const [qrPhase, setQrPhase] = useState<QrAuthPhase>('connecting');
   const [qrLogin, setQrLogin] = useState<BeginQrLoginResult | null>(null);
   const qrAbortRef = useRef<AbortController | null>(null);
+
+  // startQrLogin below is intentionally a stable useCallback([]) -- the
+  // effect that auto-starts it on modal open depends on it, and a
+  // reference that changes every render would restart the whole flow on
+  // every render while the modal is open. t/toast aren't stable across
+  // renders (translations re-render on locale change, toast's context
+  // value is a fresh object per ToastProvider render), so they're read via
+  // refs instead of being closed over directly.
+  const latestRef = useRef({ t, toast });
+  latestRef.current = { t, toast };
 
   const startQrLogin = useCallback(() => {
     qrAbortRef.current?.abort();
@@ -127,19 +158,27 @@ export function SignInModal({ open, onClose }: SignInModalProps) {
         });
         if (controller.signal.aborted) return;
         if (setSessionError) {
+          console.error('[HashPass Auth] setSession failed:', setSessionError);
+          latestRef.current.toast.error(latestRef.current.t('qrError'));
           setQrPhase('error');
           return;
         }
+        latestRef.current.toast.success(latestRef.current.t('qrSuccess'));
         setQrPhase('success');
       } catch (error) {
         if (controller.signal.aborted) return;
-        if (error instanceof HashpassError && error.code === 'unauthorized') setQrPhase('denied');
-        else if (error instanceof HashpassError && error.code === 'timeout') setQrPhase('expired');
-        else {
+        if (error instanceof HashpassError && error.code === 'unauthorized') {
+          latestRef.current.toast.info(latestRef.current.t('qrDenied'));
+          setQrPhase('denied');
+        } else if (error instanceof HashpassError && error.code === 'timeout') {
+          latestRef.current.toast.info(latestRef.current.t('qrExpired'));
+          setQrPhase('expired');
+        } else {
           // Anything landing here is unexpected (not a normal deny/expiry) --
           // log it so a real failure is diagnosable from the console instead
           // of just a generic "Something went wrong" with no trace of why.
           console.error('[HashPass Auth] QR login failed:', error);
+          latestRef.current.toast.error(latestRef.current.t('qrError'));
           setQrPhase('error');
         }
       }
@@ -424,13 +463,38 @@ export function SignInModal({ open, onClose }: SignInModalProps) {
             </div>
           )}
         </div>
-        <p style={{
-          fontSize: 12, color: 'var(--text-faint)', textAlign: 'center',
-          margin: qrPhase === 'waiting' ? '0 0 24px' : '0 0 24px',
-          minHeight: 16,
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+          margin: '0 0 24px', minHeight: 16,
         }}>
-          {qrPhase === 'waiting' ? t('qrWaiting') : ' '}
-        </p>
+          <p style={{ fontSize: 12, color: 'var(--text-faint)', textAlign: 'center', margin: 0 }}>
+            {qrPhase === 'waiting' ? t('qrWaiting') : ' '}
+          </p>
+          {qrPhase === 'waiting' && (
+            <button
+              onClick={startQrLogin}
+              aria-label={t('qrRefresh')}
+              title={t('qrRefresh')}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: 20, height: 20, padding: 0, borderRadius: '50%',
+                border: 'none', background: 'transparent', color: 'var(--text-faint)',
+                cursor: 'pointer', transition: 'color 0.15s, transform 0.15s',
+              }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--accent)'; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--text-faint)'; }}
+              onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'rotate(-90deg)'; }}
+              onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'rotate(0deg)'; }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
+                <path
+                  d="M20 11A8 8 0 0 0 6.34 6.34M4 13a8 8 0 0 0 13.66 4.66M4 4v5h5M20 20v-5h-5"
+                  stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+          )}
+        </div>
 
         {/* Open app button */}
         <a
@@ -467,49 +531,8 @@ export function SignInModal({ open, onClose }: SignInModalProps) {
           {t('openApp')}
         </a>
 
-        {/* Divider */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', marginBottom: 12 }}>
-          <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
-          <span style={{ fontSize: 12, color: 'var(--text-faint)', whiteSpace: 'nowrap' }}>
-            {t('orContinue')}
-          </span>
-          <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
-        </div>
-
-        {/* Web link */}
-        <a
-          href={WEB_APP_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            width: '100%', padding: '11px 20px',
-            borderRadius: 12,
-            border: '1.5px solid var(--border-strong)',
-            background: 'var(--bg-overlay)',
-            color: 'var(--text-primary)',
-            fontSize: 14, fontWeight: 600, textDecoration: 'none',
-            transition: 'border-color 0.15s, background 0.15s',
-            marginBottom: 20,
-          }}
-          onMouseEnter={(e) => {
-            (e.currentTarget as HTMLElement).style.borderColor = 'var(--accent)';
-            (e.currentTarget as HTMLElement).style.background = 'var(--accent-soft)';
-          }}
-          onMouseLeave={(e) => {
-            (e.currentTarget as HTMLElement).style.borderColor = 'var(--border-strong)';
-            (e.currentTarget as HTMLElement).style.background = 'var(--bg-overlay)';
-          }}
-        >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden>
-            <circle cx="12" cy="12" r="10"/>
-            <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-          </svg>
-          hashpass.club
-        </a>
-
         {/* App store links -- Play Store only for now, no iOS listing yet */}
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 4 }}>
           <a href={PLAY_STORE_URL} target="_blank" rel="noopener noreferrer" style={{ opacity: 0.6, transition: 'opacity 0.15s', display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--text-faint)', textDecoration: 'none', fontFamily: 'var(--font-mono)', letterSpacing: 0.3 }}
             onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.opacity = '1'; }}
             onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.opacity = '0.6'; }}
