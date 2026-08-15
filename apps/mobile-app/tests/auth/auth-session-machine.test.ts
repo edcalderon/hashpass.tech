@@ -2,6 +2,7 @@ import { createActor } from 'xstate';
 
 import {
   AUTH_SESSION_SETTLE_DELAY_MS,
+  SIGN_OUT_RESURRECTION_BARRIER_MS,
   authSessionMachine,
   getAuthViewState,
   type AuthSessionMachineEvent,
@@ -216,6 +217,85 @@ describe('authSessionMachine', () => {
     expect(actor.getSnapshot().value).toBe('authenticated');
     expect(getAuthViewState(actor.getSnapshot())).toEqual({
       user: expect.objectContaining({ id: 'native-otp-user' }),
+      isLoggedIn: true,
+      isLoading: false,
+    });
+  });
+
+  it('does not resurrect the dashboard from a stale loggedIn resolution arriving right after sign-out', () => {
+    const actor = createActor(authSessionMachine).start();
+
+    send(actor, {
+      type: 'PROVIDER_RESOLVED',
+      provider: 'betterAuth',
+      session: makeSession('logged-out-user', 'better-auth'),
+    });
+    settleAuthSession();
+    expect(getAuthViewState(actor.getSnapshot()).isLoggedIn).toBe(true);
+
+    send(actor, { type: 'SIGNED_OUT' });
+    expect(actor.getSnapshot().value).toBe('unauthenticated');
+
+    // Simulates a detached remote sign-out call, or a fresh useAuth() mount
+    // re-subscribing to a provider's onAuthStateChange, reporting the
+    // pre-logout session it hadn't revoked yet -- see
+    // SIGN_OUT_RESURRECTION_BARRIER_MS.
+    jest.advanceTimersByTime(SIGN_OUT_RESURRECTION_BARRIER_MS / 2);
+    send(actor, {
+      type: 'PROVIDER_RESOLVED',
+      provider: 'betterAuth',
+      session: makeSession('logged-out-user', 'better-auth'),
+    });
+
+    expect(actor.getSnapshot().value).toBe('unauthenticated');
+    expect(getAuthViewState(actor.getSnapshot())).toEqual({
+      user: null,
+      isLoggedIn: false,
+      isLoading: false,
+    });
+
+    // A loggedIn:false resolution during the same window is not barred --
+    // it should still update provider state normally.
+    send(actor, {
+      type: 'PROVIDER_RESOLVED',
+      provider: 'supabase',
+      session: null,
+    });
+    expect(actor.getSnapshot().value).toBe('unauthenticated');
+
+    // Once the barrier window has fully elapsed, a genuine new sign-in is
+    // honored again.
+    jest.advanceTimersByTime(SIGN_OUT_RESURRECTION_BARRIER_MS);
+    send(actor, {
+      type: 'PROVIDER_RESOLVED',
+      provider: 'betterAuth',
+      session: makeSession('new-user', 'better-auth'),
+    });
+    settleAuthSession();
+
+    expect(getAuthViewState(actor.getSnapshot())).toEqual({
+      user: expect.objectContaining({ id: 'new-user' }),
+      isLoggedIn: true,
+      isLoading: false,
+    });
+  });
+
+  it('honors an explicit SESSION_OVERRIDE immediately even inside the sign-out barrier window', () => {
+    const actor = createActor(authSessionMachine).start();
+
+    send(actor, { type: 'SESSION_OVERRIDE', session: makeSession('first-user', 'supabase') });
+    settleAuthSession();
+    send(actor, { type: 'SIGNED_OUT' });
+    expect(actor.getSnapshot().value).toBe('unauthenticated');
+
+    // A real, explicit new sign-in right after logout (e.g. the user
+    // deliberately signs back in within the barrier window) must not be
+    // blocked.
+    send(actor, { type: 'SESSION_OVERRIDE', session: makeSession('second-user', 'supabase') });
+    settleAuthSession();
+
+    expect(getAuthViewState(actor.getSnapshot())).toEqual({
+      user: expect.objectContaining({ id: 'second-user' }),
       isLoggedIn: true,
       isLoading: false,
     });
