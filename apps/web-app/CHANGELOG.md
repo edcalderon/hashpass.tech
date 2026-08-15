@@ -5,6 +5,17 @@ All notable changes to the HashPass Club web app will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and the project follows Semantic Versioning.
 
+## [1.0.17] - 2026-08-15
+
+### Stable
+- Release QR link lifecycle controls and club landing improvements.
+
+### Technical Details
+- Version: 1.0.17
+- Release Type: stable
+- Build Number: 20260815200458
+- Release Date: 2026-08-15
+
 ## [1.0.16] - 2026-08-10
 
 ### Stable
