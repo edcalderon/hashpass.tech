@@ -22,17 +22,23 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202608142238, // Updated to current timestamp
-  releaseDate: '2026-08-14',
+  buildNumber: 202608150149, // Updated to current timestamp
+  releaseDate: '2026-08-15',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
+    'add HashPass Auth (QR login) end-to-end',
     'expand global event discovery',
     'auto-provision criptolatinfest general pass on signup',
     'add reusable event ingestion package + PKRR (Hash Poker Room) adapter and landing integration (#185)',
     'onboard CriptoLatinFest as a demo-mode tenant'
   ],
   bugfixes: [
+    'address review findings — third-party cookies, QR origin, approve race, setSession errors',
+    'resolve @hashpass/sdk in Jest via source, not a CI-absent dist build',
+    'make HashPass Auth resolvable in Metro/Jest and add a local dev server',
+    'update tests and docs for the split patches/*/*.patch glob',
+    'untrack accidentally-committed assets/ again',
     'repoint patches/*.patch globs at the new split layout',
     'point stale artifacts/openproof and patches refs at new paths',
     'untrack accidentally-committed unrelated in-progress files',
@@ -51,11 +57,50 @@ export const CURRENT_VERSION: VersionInfo = {
     'stop leaking BSL branding into other whitelabel tenants'
   ],
   breakingChanges: [],
-  notes: 'expand global event discovery; auto-provision criptolatinfest general pass on signup; add reusable event ingestion package + PKRR (Hash Poker Room) adapter and landing integration (#185); onboard CriptoLatinFest as a demo-mode tenant; repoint patches/*.patch globs at the new split layout; point stale artifacts/openproof and patches refs at new paths; untrack accidentally-committed unrelated in-progress files; handle squash/rebase merges in release-tag-on-merge sync; reconcile discovery-scope edge cases, add coverage; annotate WalletPass callback param for isolated typecheck; crash on brand-mark tap, tenant pass/event leakage; fail fast for unavailable EC2 release runner; isolate tenant event integrations; show event reload feedback; hide landing event banner ctas; render event reload glyph; add missing legacy bsl_speakers columns to bsl-development; follow transitive @hashpass/* imports in typecheck-changed sandbox; circuit-break Supabase calls and back off Realtime/polling on failures; stop leaking BSL branding into other whitelabel tenants'
+  notes: 'add HashPass Auth (QR login) end-to-end; expand global event discovery; auto-provision criptolatinfest general pass on signup; add reusable event ingestion package + PKRR (Hash Poker Room) adapter and landing integration (#185); onboard CriptoLatinFest as a demo-mode tenant; address review findings — third-party cookies, QR origin, approve race, setSession errors; resolve @hashpass/sdk in Jest via source, not a CI-absent dist build; make HashPass Auth resolvable in Metro/Jest and add a local dev server; update tests and docs for the split patches/*/*.patch glob; untrack accidentally-committed assets/ again; repoint patches/*.patch globs at the new split layout; point stale artifacts/openproof and patches refs at new paths; untrack accidentally-committed unrelated in-progress files; handle squash/rebase merges in release-tag-on-merge sync; reconcile discovery-scope edge cases, add coverage; annotate WalletPass callback param for isolated typecheck; crash on brand-mark tap, tenant pass/event leakage; fail fast for unavailable EC2 release runner; isolate tenant event integrations; show event reload feedback; hide landing event banner ctas; render event reload glyph; add missing legacy bsl_speakers columns to bsl-development; follow transitive @hashpass/* imports in typecheck-changed sandbox; circuit-break Supabase calls and back off Realtime/polling on failures; stop leaking BSL branding into other whitelabel tenants'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.0': {
+    version: '1.9.0',
+    buildNumber: 202608150149,
+    releaseDate: '2026-08-15',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'add HashPass Auth (QR login) end-to-end',
+      'expand global event discovery',
+      'auto-provision criptolatinfest general pass on signup',
+      'add reusable event ingestion package + PKRR (Hash Poker Room) adapter and landing integration (#185)',
+      'onboard CriptoLatinFest as a demo-mode tenant'
+    ],
+    bugfixes: [
+      'address review findings — third-party cookies, QR origin, approve race, setSession errors',
+      'resolve @hashpass/sdk in Jest via source, not a CI-absent dist build',
+      'make HashPass Auth resolvable in Metro/Jest and add a local dev server',
+      'update tests and docs for the split patches/*/*.patch glob',
+      'untrack accidentally-committed assets/ again',
+      'repoint patches/*.patch globs at the new split layout',
+      'point stale artifacts/openproof and patches refs at new paths',
+      'untrack accidentally-committed unrelated in-progress files',
+      'handle squash/rebase merges in release-tag-on-merge sync',
+      'reconcile discovery-scope edge cases, add coverage',
+      'annotate WalletPass callback param for isolated typecheck',
+      'crash on brand-mark tap, tenant pass/event leakage',
+      'fail fast for unavailable EC2 release runner',
+      'isolate tenant event integrations',
+      'show event reload feedback',
+      'hide landing event banner ctas',
+      'render event reload glyph',
+      'add missing legacy bsl_speakers columns to bsl-development',
+      'follow transitive @hashpass/* imports in typecheck-changed sandbox',
+      'circuit-break Supabase calls and back off Realtime/polling on failures',
+      'stop leaking BSL branding into other whitelabel tenants'
+    ],
+    breakingChanges: [],
+    notes: 'add HashPass Auth (QR login) end-to-end; expand global event discovery; auto-provision criptolatinfest general pass on signup; add reusable event ingestion package + PKRR (Hash Poker Room) adapter and landing integration (#185); onboard CriptoLatinFest as a demo-mode tenant; address review findings — third-party cookies, QR origin, approve race, setSession errors; resolve @hashpass/sdk in Jest via source, not a CI-absent dist build; make HashPass Auth resolvable in Metro/Jest and add a local dev server; update tests and docs for the split patches/*/*.patch glob; untrack accidentally-committed assets/ again; repoint patches/*.patch globs at the new split layout; point stale artifacts/openproof and patches refs at new paths; untrack accidentally-committed unrelated in-progress files; handle squash/rebase merges in release-tag-on-merge sync; reconcile discovery-scope edge cases, add coverage; annotate WalletPass callback param for isolated typecheck; crash on brand-mark tap, tenant pass/event leakage; fail fast for unavailable EC2 release runner; isolate tenant event integrations; show event reload feedback; hide landing event banner ctas; render event reload glyph; add missing legacy bsl_speakers columns to bsl-development; follow transitive @hashpass/* imports in typecheck-changed sandbox; circuit-break Supabase calls and back off Realtime/polling on failures; stop leaking BSL branding into other whitelabel tenants'
+  },
   '1.8.344': {
     version: '1.8.344',
     buildNumber: 202608142238,

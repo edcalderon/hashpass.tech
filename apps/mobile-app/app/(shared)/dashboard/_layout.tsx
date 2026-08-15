@@ -70,6 +70,7 @@ import { hasRecentAuthSuccess } from "../../../lib/auth/recent-auth";
 import { isDevAuthBypassEnabled } from "../../../lib/auth/dev-bypass";
 import { navigateDashboardBrandToLanding } from "../../../lib/dashboard-navigation";
 import { openTargetedDashboardDrawer } from "../../../lib/dashboard-drawer";
+import { parseAuthQrScan } from "../../../lib/auth-qr";
 import { t } from "@lingui/macro";
 import { CopilotStep, walkthroughable, useCopilot } from "@lib/copilot-shim";
 import { hapticLight, hapticMedium } from "../../../lib/haptics";
@@ -1746,6 +1747,16 @@ export default function DashboardLayout() {
               console.error("QR Scan Error:", error);
               // Error is already shown in the scanner component
             }}
+            onRawScan={(data) => {
+              const parsed = parseAuthQrScan(data);
+              if (!parsed) return false;
+              setQrScannerVisible(false);
+              headerRouter.push({
+                pathname: "./auth-qr-approve",
+                params: { challengeId: parsed.challengeId },
+              } as any);
+              return true;
+            }}
           />
         )}
       </RNAnimated.View>
@@ -1902,6 +1913,7 @@ export default function DashboardLayout() {
               <Drawer.Screen name="admin" />
               <Drawer.Screen name="qr-view" />
               <Drawer.Screen name="pass-details" />
+              <Drawer.Screen name="auth-qr-approve" />
             </Drawer>
             {Platform.OS === "android" && (
               <QRScanner
@@ -1912,6 +1924,16 @@ export default function DashboardLayout() {
                 }}
                 onScanError={(error: unknown) => {
                   console.error("QR Scan Error:", error);
+                }}
+                onRawScan={(data) => {
+                  const parsed = parseAuthQrScan(data);
+                  if (!parsed) return false;
+                  setAndroidQrScannerVisible(false);
+                  router.push({
+                    pathname: "./auth-qr-approve",
+                    params: { challengeId: parsed.challengeId },
+                  } as any);
+                  return true;
                 }}
               />
             )}

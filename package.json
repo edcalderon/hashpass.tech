@@ -1,7 +1,7 @@
 {
   "name": "hashpass.tech",
   "main": "index.js",
-  "version": "1.8.344",
+  "version": "1.9.0",
   "packageManager": "pnpm@9.15.5",
   "pnpm": {
     "overrides": {
@@ -256,11 +256,11 @@
     "workbox-cli": "^7.1.0"
   },
   "engines": {
-    "node": "22.22.0"
+    "node": "22.22.2"
   },
   "devDependencies": {
     "@babel/preset-typescript": "^7.28.5",
-    "@edcalderon/versioning": "^1.5.11",
+    "@edcalderon/versioning": "^1.5.13",
     "@expo/metro-config": "^0.20.17",
     "@lingui/cli": "^5.5.2",
     "@storybook/addon-essentials": "^8.6.14",

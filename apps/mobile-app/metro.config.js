@@ -39,6 +39,7 @@ const runtimeWorkspacePackages = [
   'config',
   'emails',
   'i18n',
+  'sdk',
   'types',
   'ui',
   'utils',
@@ -123,7 +124,51 @@ config.watchFolders = [
   path.resolve(workspaceRoot, 'node_modules'),
 ];
 
+// @hashpass/sdk is the one workspace package meant for real external npm
+// publishing (publishConfig.access=public), so unlike every other
+// @hashpass/* package -- which points main/exports straight at raw .ts
+// source and is never actually published -- it has a real tsc build with
+// "type": "module" ESM output under dist/. That's exactly what the
+// blockList below excludes (packages/*/dist/* is blocked repo-wide to keep
+// Metro's Haste graph small), so resolving it through package.json alone
+// would fail here even after adding 'sdk' to runtimeWorkspacePackages.
+// Redirect straight to source instead, matching how every sibling
+// @hashpass/* package is already consumed at runtime.
+const sdkSourceDir = path.resolve(workspaceRoot, 'packages/sdk/src');
+const sdkSubpathEntryFiles = {
+  '@hashpass/sdk': 'index.ts',
+  '@hashpass/sdk/auth': 'auth/index.ts',
+  '@hashpass/sdk/auth-qr': 'auth-qr/index.ts',
+  '@hashpass/sdk/support': 'support/index.ts',
+};
+
 const metroResolveRequest = (context, moduleName, platform) => {
+  const sdkEntryFile = sdkSubpathEntryFiles[moduleName];
+  if (sdkEntryFile) {
+    return { type: 'sourceFile', filePath: path.resolve(sdkSourceDir, sdkEntryFile) };
+  }
+
+  // packages/sdk's source uses "module": "NodeNext", which requires
+  // .js-suffixed relative imports even between .ts files (e.g. client.ts
+  // imports "./errors.js") -- TypeScript maps that back to the compiled
+  // .js at build time, but Metro has no such mapping when resolving the
+  // raw .ts source directly (the redirect above). Only applies to relative
+  // imports originating from inside packages/sdk/src, so it can't affect
+  // resolution anywhere else in the app.
+  if (
+    moduleName.endsWith('.js') &&
+    (moduleName.startsWith('./') || moduleName.startsWith('../')) &&
+    context.originModulePath?.startsWith(sdkSourceDir + path.sep)
+  ) {
+    const withoutExt = moduleName.slice(0, -3);
+    for (const ext of ['.ts', '.tsx']) {
+      const candidate = path.resolve(path.dirname(context.originModulePath), `${withoutExt}${ext}`);
+      if (fs.existsSync(candidate)) {
+        return { type: 'sourceFile', filePath: candidate };
+      }
+    }
+  }
+
   const workspaceNodeModulePath = resolveWorkspaceNodeModulesPath(moduleName);
   if (workspaceNodeModulePath) {
     return { type: 'sourceFile', filePath: workspaceNodeModulePath };

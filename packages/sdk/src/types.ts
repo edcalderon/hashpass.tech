@@ -7,6 +7,8 @@ export interface HashpassSdkOptions {
   appId: string;
   environment?: HashpassEnvironment | undefined;
   baseUrl?: string | undefined;
+  /** Base URL of the HashPass Links API (hashpass.link) that backs HashPass Auth (QR login) -- a separate service from the main Hashpass API. No default yet (DNS/infra pending); required only if `client.authQr` is used. */
+  linksApiBaseUrl?: string | undefined;
   fetch?: typeof globalThis.fetch | undefined;
   headers?: Record<string, string> | undefined;
   timeoutMs?: number | undefined;

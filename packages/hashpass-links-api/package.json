@@ -1,0 +1,28 @@
+{
+  "name": "@hashpass/hashpass-links-api",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc --noEmit",
+    "build:lambda": "esbuild lambda/index.ts --bundle --platform=node --target=node20 --format=cjs --outfile=dist-lambda/index.js",
+    "dev": "tsx dev-server.ts",
+    "test": "tsx --test src/**/*.test.ts",
+    "clean": "rm -rf dist-lambda"
+  },
+  "dependencies": {
+    "@hashpass/backend": "workspace:*",
+    "@hashpass/types": "workspace:*",
+    "@supabase/supabase-js": "^2.81.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.9.1",
+    "esbuild": "^0.25.12",
+    "tsx": "^4.20.6",
+    "typescript": "~5.8.3"
+  }
+}

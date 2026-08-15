@@ -81,6 +81,23 @@ for (const name of ['package.json', 'postcss.config.js', 'tailwind.config.ts']) 
   await replaceWithSymlink(name, path.join('..', name));
 }
 
+// Next's own env loading (@next/env) only reads .env* files from the
+// directory next actually runs in -- which is this runtime directory, not
+// apps/web-app itself. Without these symlinks every NEXT_PUBLIC_* var
+// (Supabase, HashPass Auth's linksApiBaseUrl, ...) silently resolves to
+// undefined under `dev:all` specifically, even though the real files in
+// apps/web-app/ are correctly populated -- confirmed live: this is why
+// "requires linksApiBaseUrl to be configured" only ever reproduced through
+// dev:all, never through a plain `pnpm run dev` in apps/web-app directly.
+for (const name of ['.env', '.env.local', '.env.development', '.env.production']) {
+  try {
+    await access(path.join(clubRoot, name));
+  } catch {
+    continue; // Optional -- not every env file exists in every checkout.
+  }
+  await replaceWithSymlink(name, path.join('..', name));
+}
+
 await writeFile(
   path.join(runtimeDirectory, 'next.config.mjs'),
   `import sourceConfig from '../next.config.mjs';\n\nexport default {\n  ...sourceConfig,\n  distDir: '.next',\n  typescript: {\n    ...sourceConfig.typescript,\n    tsconfigPath: 'tsconfig.json',\n  },\n};\n`,

@@ -1,6 +1,6 @@
 {
   "name": "hashpass-mobile-app",
-  "version": "1.8.344",
+  "version": "1.9.0",
   "private": true,
   "packageManager": "pnpm@9.15.5",
   "main": "index.js",
@@ -55,6 +55,7 @@
     "@hashpass/backend": "workspace:*",
     "@hashpass/config": "workspace:*",
     "@hashpass/emails": "workspace:*",
+    "@hashpass/sdk": "workspace:*",
     "@hashpass/types": "workspace:*",
     "@hashpass/ui": "workspace:*",
     "@hashpass/utils": "workspace:*",

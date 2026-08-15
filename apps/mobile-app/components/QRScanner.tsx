@@ -27,6 +27,16 @@ interface QRScannerProps {
   onScanError?: (error: string) => void;
   title?: string;
   description?: string;
+  /**
+   * Inspects a raw scan before it's handed to the pass/ticket QR pipeline
+   * (qrScannerService.parseQRData + qrSystemService.validateAndUseQR), which
+   * only understands this app's own minted QR tokens. Return true to claim
+   * the scan (e.g. it's a HashPass Auth login QR) and skip that pipeline
+   * entirely -- the caller is then responsible for whatever happens next
+   * (navigation, showing its own result UI, etc). Returning false/undefined
+   * falls through to the normal pass-scanning behavior unchanged.
+   */
+  onRawScan?: (data: string) => boolean;
 }
 
 export default function QRScanner({
@@ -36,6 +46,7 @@ export default function QRScanner({
   onScanError,
   title = 'Scan QR Code',
   description = 'Position the QR code within the frame',
+  onRawScan,
 }: QRScannerProps) {
   const { colors, isDark } = useTheme();
   const { user } = useAuth();
@@ -236,6 +247,11 @@ export default function QRScanner({
     setIsProcessing(true);
 
     try {
+      if (onRawScan?.(data)) {
+        setIsProcessing(false);
+        return;
+      }
+
       // Use professional QR parser
       const parsed = qrScannerService.parseQRData(data);
       
@@ -328,7 +344,7 @@ export default function QRScanner({
     } finally {
       setIsProcessing(false);
     }
-  }, [scanned, isProcessing, user?.id, isUserAdmin, onScanSuccess, onScanError, onClose, resetScanner]);
+  }, [scanned, isProcessing, user?.id, isUserAdmin, onScanSuccess, onScanError, onClose, resetScanner, onRawScan]);
 
   const errorCallback = useCallback((error: Error) => {
     console.error('QR scan error:', error);

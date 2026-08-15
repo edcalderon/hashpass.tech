@@ -206,6 +206,11 @@ video {
   50% { transform: translateY(-8px); }
 }
 
+@keyframes download-badge-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
 @keyframes download-arrow-bounce {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(3px); }
@@ -215,20 +220,53 @@ video {
   animation: download-card-float 5s ease-in-out infinite;
 }
 
+/* The app icon itself stays put -- only the blue download badge floats. */
 .download-showcase__app-icon {
   position: relative;
-  animation: download-card-float 3.6s ease-in-out infinite reverse;
+}
+
+.download-showcase__badge {
+  animation: download-badge-float 2.2s ease-in-out infinite;
 }
 
 .download-showcase__arrow {
   animation: download-arrow-bounce 1.5s ease-in-out infinite;
 }
 
+/* Both download CTAs get a diagonal shine sweep on hover for a bit of
+   tactile polish. */
+.download-showcase__shine-cta {
+  position: relative;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+.download-showcase__shine-cta::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  left: -75%;
+  width: 50%;
+  background: linear-gradient(115deg, transparent, rgba(255, 255, 255, 0.65), transparent);
+  transform: skewX(-20deg);
+  transition: left 0.65s ease;
+  pointer-events: none;
+}
+
+.download-showcase__shine-cta:hover::after {
+  left: 125%;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .download-showcase__card,
-  .download-showcase__app-icon,
+  .download-showcase__badge,
   .download-showcase__arrow {
     animation: none;
+  }
+
+  .download-showcase__shine-cta::after {
+    transition: none;
   }
 }
 

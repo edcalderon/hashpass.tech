@@ -13,6 +13,11 @@ type ProviderSessionState = {
 type AuthSessionMachineContext = {
   sessionOverride: AuthSession | null;
   providers: Record<AuthSessionProvider, ProviderSessionState>;
+  // Set to a future timestamp by SIGNED_OUT, cleared by a real
+  // SESSION_OVERRIDE. While "now" is before this, a PROVIDER_RESOLVED
+  // reporting loggedIn:true is dropped instead of applied -- see
+  // SIGN_OUT_RESURRECTION_BARRIER_MS below for why this window exists.
+  signOutBarrierUntil: number | null;
 };
 
 export type AuthSessionMachineEvent =
@@ -36,6 +41,20 @@ export type AuthSessionMachineEvent =
 
 const PROVIDER_PRIORITY: AuthSessionProvider[] = ['betterAuth', 'supabase', 'directus'];
 export const AUTH_SESSION_SETTLE_DELAY_MS = 350;
+// signOut() in hooks/useAuth.ts emits SIGNED_OUT synchronously but then runs
+// remote provider sign-outs (Better Auth, native Google, Supabase) as
+// detached, individually-timed-out (SIGN_OUT_STEP_TIMEOUT_MS, 8s each)
+// background work when called with waitForRemoteCleanup:false -- the whole
+// point being that the caller doesn't wait on them before navigating away.
+// Those detached calls, plus a fresh useAuth() mount re-subscribing to
+// provider onAuthStateChange while GoTrue's in-memory session hasn't been
+// revoked yet, can both emit a PROVIDER_RESOLVED with loggedIn:true for up
+// to that ~8s window even though the user just explicitly signed out --
+// resurrecting the dashboard with the stale pre-logout user until the next
+// cold start clears every in-memory cache. This barrier is intentionally a
+// little longer than the single-step timeout to also cover the sequential
+// native Google cleanup step ahead of the parallel batch.
+export const SIGN_OUT_RESURRECTION_BARRIER_MS = 10_000;
 
 const emptyProviderState = (): ProviderSessionState => ({
   ready: false,
@@ -56,6 +75,7 @@ const createInitialContext = (): AuthSessionMachineContext => ({
     betterAuth: emptyProviderState(),
     supabase: emptyProviderState(),
   },
+  signOutBarrierUntil: null,
 });
 
 const toProviderSessionState = (
@@ -138,10 +158,10 @@ export const authSessionMachine = createMachine(
           },
         ],
         on: {
-          PROVIDER_RESOLVED: {
-            guard: 'providerResolutionChanged',
-            actions: 'setProviderResolved',
-          },
+          PROVIDER_RESOLVED: [
+            { guard: 'providerResolutionBarred' },
+            { guard: 'providerResolutionChanged', actions: 'setProviderResolved' },
+          ],
           SESSION_OVERRIDE: {
             actions: 'setSessionOverride',
           },
@@ -166,10 +186,10 @@ export const authSessionMachine = createMachine(
           },
         ],
         on: {
-          PROVIDER_RESOLVED: {
-            guard: 'providerResolutionChanged',
-            actions: 'setProviderResolved',
-          },
+          PROVIDER_RESOLVED: [
+            { guard: 'providerResolutionBarred' },
+            { guard: 'providerResolutionChanged', actions: 'setProviderResolved' },
+          ],
           SESSION_OVERRIDE: {
             actions: 'setSessionOverride',
           },
@@ -200,10 +220,10 @@ export const authSessionMachine = createMachine(
           },
         },
         on: {
-          PROVIDER_RESOLVED: {
-            guard: 'providerResolutionChanged',
-            actions: 'setProviderResolved',
-          },
+          PROVIDER_RESOLVED: [
+            { guard: 'providerResolutionBarred' },
+            { guard: 'providerResolutionChanged', actions: 'setProviderResolved' },
+          ],
           SESSION_OVERRIDE: {
             actions: 'setSessionOverride',
           },
@@ -228,10 +248,10 @@ export const authSessionMachine = createMachine(
           },
         ],
         on: {
-          PROVIDER_RESOLVED: {
-            guard: 'providerResolutionChanged',
-            actions: 'setProviderResolved',
-          },
+          PROVIDER_RESOLVED: [
+            { guard: 'providerResolutionBarred' },
+            { guard: 'providerResolutionChanged', actions: 'setProviderResolved' },
+          ],
           SESSION_OVERRIDE: {
             actions: 'setSessionOverride',
           },
@@ -265,20 +285,27 @@ export const authSessionMachine = createMachine(
         }
 
         return {
+          // A real, explicit new session (magic link/OTP verify, etc.)
+          // always wins over a stale sign-out barrier -- this is exactly
+          // the "genuine new sign-in" case the barrier isn't meant to
+          // block, so clear it here rather than making the user wait out
+          // the rest of the window.
           sessionOverride: event.session,
+          signOutBarrierUntil: null,
         };
       }),
       clearSessionOverride: assign({
         sessionOverride: null,
       }),
-      clearAuthState: assign({
+      clearAuthState: assign(() => ({
         sessionOverride: null,
         providers: {
           directus: loggedOutProviderState(),
           betterAuth: loggedOutProviderState(),
           supabase: loggedOutProviderState(),
         },
-      }),
+        signOutBarrierUntil: Date.now() + SIGN_OUT_RESURRECTION_BARRIER_MS,
+      })),
     },
     guards: {
       hasAuthenticatedUser: ({ context }) => hasAuthenticatedUser(context),
@@ -296,6 +323,21 @@ export const authSessionMachine = createMachine(
           context.providers[event.provider],
           toProviderSessionState(event),
         );
+      },
+      // Drops a loggedIn:true resolution arriving inside the post-sign-out
+      // barrier window -- see SIGN_OUT_RESURRECTION_BARRIER_MS. A
+      // loggedIn:false resolution during the same window is NOT barred (it
+      // falls through to providerResolutionChanged normally): confirming
+      // "this provider is now signed out" is exactly what should keep
+      // flowing through during the window.
+      providerResolutionBarred: ({ context, event }) => {
+        if (event.type !== 'PROVIDER_RESOLVED') {
+          return false;
+        }
+        if (context.signOutBarrierUntil === null || Date.now() >= context.signOutBarrierUntil) {
+          return false;
+        }
+        return toProviderSessionState(event).loggedIn;
       },
     },
   }
