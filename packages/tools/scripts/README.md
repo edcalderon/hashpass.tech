@@ -32,7 +32,7 @@ Release flow:
 - `release:pipeline` remains the tenant/deploy pipeline for infra and legacy work
 - `release:dev` / `release:prod` target `core` by default
 - `release:bsl:dev` / `release:bsl:prod` follow the event tenant path and remain available for the historical branch-aware release flow
-- `release:club:web` / `release:club:web:patch` run the club web app patch release flow and emit `club-vX.Y.Z` tags
+- `release:club:web` / `release:club:web:patch` run the club web app patch release flow and emit `club-vX.Y.Z` tags. This is independent from the root `vX.Y.Z` global/mobile promotion flow and deploys through the club Pages tag workflow.
 - `release:club` / `release:club-dev` target the standalone Next.js app pipelines
 - `release:all:dev` / `release:all:prod` fan out to every configured tenant only when you ask for it, including the club tenants once their app ids are configured
 
@@ -87,7 +87,7 @@ packages/tools/scripts/setup-infra-role.sh hashpass-tech/hashpass.tech
 node packages/tools/scripts/release.js patch
 node packages/tools/scripts/release.js minor --promote
 node packages/tools/scripts/release.js major --branch main
-node packages/tools/scripts/release-club-web.js patch --branch main
+pnpm run release:club:web:patch
 node packages/tools/scripts/release-pipeline.js --env development
 node packages/tools/scripts/release-pipeline.js --env production --tenant core --bump minor
 node packages/tools/scripts/release-pipeline.js --env production --tenant blockchainsummit --bump minor

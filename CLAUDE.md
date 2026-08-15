@@ -85,6 +85,26 @@ Protected promotion flow:
 
 **Why:** Manual version bumps cause version skipping, inconsistency, and incorrect release ordering. The version bump living inside the reviewed PR (rather than as a separate post-merge step) closes the gap between "what was reviewed" and "what got tagged," and removes the manual post-merge steps that a human previously had to remember and run correctly by hand — see `.agents/active/task-release-flow-automation.md` for the full design and incident history behind this change.
 
+### Club web release (separate version stream)
+
+`apps/web-app` (`hashpass.club`) has its own version and release tag stream. Do
+not use the root `release:patch` or `release:promote` commands for a club-only
+change: those are global/mobile releases (`vX.Y.Z`) and follow the protected
+`develop -> main` promotion flow above.
+
+For the club web app, start from a clean worktree and run:
+
+```bash
+pnpm run release:club:web:patch
+```
+
+This updates only the club app's version metadata, creates a
+`chore(club-web): release vX.Y.Z` commit, and pushes a `club-vX.Y.Z` tag. The
+tag triggers `.github/workflows/deploy-club-docs.yml` to publish the club Pages
+site. It does not create a global release PR, merge `develop` into `main`, or
+start an Android release. Never manually edit either release stream's version
+or changelog files.
+
 ### Mobile Android Release Workflow
 
 **Default-to-OTA posture (added 2026-07-28):** every release ships its JS via
