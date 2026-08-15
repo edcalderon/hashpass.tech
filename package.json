@@ -256,7 +256,7 @@
     "workbox-cli": "^7.1.0"
   },
   "engines": {
-    "node": "22.22.0"
+    "node": "22.22.2"
   },
   "devDependencies": {
     "@babel/preset-typescript": "^7.28.5",

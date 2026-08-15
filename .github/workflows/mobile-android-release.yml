@@ -473,7 +473,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "22.22.0"
+          node-version: "22.22.2"
           cache: pnpm
 
       - name: Install dependencies
@@ -549,7 +549,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "22.22.0"
+          node-version: "22.22.2"
           cache: pnpm
 
       - name: Install dependencies
@@ -723,7 +723,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "22.22.0"
+          node-version: "22.22.2"
           # On EC2, pnpm store lives on persistent EBS — skip GitHub's remote cache
           # to avoid a ~2 min cache-upload in "Post Setup Node" that helps no one.
           cache: ${{ inputs.runner == 'github-hosted' && 'pnpm' || '' }}
