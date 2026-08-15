@@ -15,6 +15,12 @@ NODE_MAX_OLD_SPACE_SIZE="${NODE_MAX_OLD_SPACE_SIZE:-12288}"
 EXPO_WEB_MAX_WORKERS="${EXPO_WEB_MAX_WORKERS:-2}"
 DIRECTUS_PING_URL="${DIRECTUS_PING_URL:-http://127.0.0.1:8055/server/ping}"
 DIRECTUS_READY_TIMEOUT_SECONDS="${DIRECTUS_READY_TIMEOUT_SECONDS:-90}"
+# Opt-in: when a reserved port is already busy, kill whatever holds it and
+# reuse the SAME port -- dev:all never silently falls back to a different
+# port (that's what caused hours of "why is my browser talking to a stale
+# process on the wrong port" confusion before this existed). Default is off:
+# a busy port is a hard failure with a clear diagnostic, not a quiet retry.
+KILL_BUSY_PORTS="${KILL_BUSY_PORTS:-false}"
 
 port_is_busy() {
   local port="$1"
@@ -54,23 +60,84 @@ port_is_reserved() {
   return 1
 }
 
+print_port_holder() {
+  local port="$1"
+
+  if command -v lsof >/dev/null 2>&1; then
+    lsof -nP -iTCP:"${port}" -sTCP:LISTEN 2>/dev/null | sed 's/^/   /' >&2
+  fi
+}
+
+kill_port_holder() {
+  local port="$1"
+  local pids=""
+
+  if command -v lsof >/dev/null 2>&1; then
+    pids="$(lsof -tnP -iTCP:"${port}" -sTCP:LISTEN 2>/dev/null || true)"
+  fi
+
+  if [[ -z "${pids}" ]] && command -v fuser >/dev/null 2>&1; then
+    pids="$(fuser "${port}/tcp" 2>/dev/null | tr -s ' \t' ' ' || true)"
+  fi
+
+  if [[ -z "${pids//[[:space:]]/}" ]]; then
+    echo "   Could not identify which process holds port ${port} (lsof/fuser unavailable or denied) -- cannot kill it automatically." >&2
+    return 1
+  fi
+
+  echo "   Killing process(es) on port ${port}: ${pids}" >&2
+  # shellcheck disable=SC2086
+  kill -9 ${pids} >/dev/null 2>&1 || true
+
+  local waited=0
+  while port_is_busy "${port}" && (( waited < 20 )); do
+    sleep 0.5
+    waited=$((waited + 1))
+  done
+
+  if port_is_busy "${port}"; then
+    echo "   Port ${port} is still busy 10s after attempting to kill its holder." >&2
+    return 1
+  fi
+
+  return 0
+}
+
+# Reserves exactly the requested port -- never a different one. A busy port
+# is either a hard failure (default) or, with KILL_BUSY_PORTS=true, gets its
+# holder killed so the same port can still be used.
 claim_port() {
   local label="$1"
   local port="$2"
-  local start_port="$2"
-  local max_port=$((start_port + 50))
 
-  while port_is_busy "${port}" || port_is_reserved "${port}"; do
-    if (( port >= max_port )); then
-      echo "No free port found for ${label} starting at ${start_port}." >&2
+  if port_is_reserved "${port}"; then
+    echo "Port ${port} was requested twice in this script (label: ${label}) -- that's a config bug, not a runtime conflict." >&2
+    return 1
+  fi
+
+  if port_is_busy "${port}"; then
+    if [[ "${KILL_BUSY_PORTS}" == "true" ]]; then
+      echo "Port ${port} (${label}) is busy; KILL_BUSY_PORTS=true, freeing it..." >&2
+      print_port_holder "${port}"
+      if ! kill_port_holder "${port}"; then
+        echo "Failed to free port ${port} for ${label}. Aborting -- dev:all does not fall back to a different port." >&2
+        return 1
+      fi
+      echo "Port ${port} is now free; ${label} will use it." >&2
+    else
+      echo "" >&2
+      echo "Port ${port} (needed for ${label}) is already in use:" >&2
+      print_port_holder "${port}"
+      echo "" >&2
+      echo "dev:all does not silently fall back to a different port. Free port ${port} yourself," >&2
+      echo "or re-run with KILL_BUSY_PORTS=true to have dev:all kill whatever holds it and reuse it." >&2
+      echo "" >&2
       return 1
     fi
-
-    echo "Port ${port} is busy; ${label} will try $((port + 1))." >&2
-    port=$((port + 1))
-  done
+  fi
 
   RESERVED_PORTS+=("${port}")
+  echo "${label}: using port ${port}" >&2
   printf '%s\n' "${port}"
 }
 

@@ -68,17 +68,20 @@ function detectPlatform(): Platform {
 
 // Tries the native app first (mobile only), falls back to the store if the
 // app isn't installed (page stays visible past the fallback window), and on
-// desktop opens the main HASHPASS app in a new tab -- if the browser there
-// already has an authenticated session (an installed PWA window routes to
-// it automatically; Chrome/Edge/Safari all do this for in-scope installed
-// PWAs), the app can pick up `source=web` and complete sign-in without a
-// phone at all, using the same connect intent as the mobile deep link.
-function openHashpassApp() {
+// desktop opens the main HASHPASS app's /auth/connect screen in a new tab --
+// if that browser already has an authenticated session, the app approves
+// this exact challenge directly (see apps/mobile-app/app/auth/connect), no
+// phone needed. `challengeId` is the same public id embedded in the QR
+// code's own URL, not the PKCE verifier or binding secret, so it's safe to
+// pass in a plain query string.
+function openHashpassApp(challengeId?: string) {
   const platform = detectPlatform();
 
   if (platform === 'desktop') {
     const appUrl = resolveHashpassAppUrl();
-    window.open(`${appUrl}/auth/connect?source=web&ref=landing`, '_blank', 'noopener,noreferrer');
+    const connectParams = new URLSearchParams({ source: 'web', ref: 'landing' });
+    if (challengeId) connectParams.set('challengeId', challengeId);
+    window.open(`${appUrl}/auth/connect?${connectParams.toString()}`, '_blank', 'noopener,noreferrer');
     return;
   }
 
@@ -501,7 +504,7 @@ export function SignInModal({ open, onClose }: SignInModalProps) {
           href={QR_VALUE}
           onClick={(e) => {
             e.preventDefault();
-            openHashpassApp();
+            openHashpassApp(qrLogin?.challenge.id);
           }}
           style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
