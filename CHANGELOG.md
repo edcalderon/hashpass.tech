@@ -1,3 +1,14 @@
+## [1.9.1](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.0...v1.9.1) (2026-08-15)
+
+
+### Features
+
+* expand club experience and QR links ([39dabb3](https://github.com/hashpass-tech/hashpass.tech/commit/39dabb35ce7828d2b7c0e80ae5f5bcbd2dc6ee69))
+
+
+
+
+
 # [1.9.0](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.344...v1.9.0) (2026-08-15)
 
 
@@ -18,10 +29,8 @@
 * auto-provision criptolatinfest general pass on signup ([1629191](https://github.com/hashpass-tech/hashpass.tech/commit/16291916f40cdcb6d96e39ad2b6bfdf7c6f94c2a))
 * **event-ingestion:** add reusable event ingestion package + PKRR (Hash Poker Room) adapter and landing integration ([#185](https://github.com/hashpass-tech/hashpass.tech/issues/185)) ([df632a3](https://github.com/hashpass-tech/hashpass.tech/commit/df632a338579aa38481c621b2f2912db71a6d13a))
 * onboard CriptoLatinFest as a demo-mode tenant ([624c6ca](https://github.com/hashpass-tech/hashpass.tech/commit/624c6ca5652b537cbe91f160a62d038ada218da6))
-
-
-
-
+### Release Highlights
+- expand club experience and QR links
 
 ## [1.9.0] - 2026-08-15
 
