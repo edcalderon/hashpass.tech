@@ -1,12 +1,14 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import QRCode from 'react-qr-code';
 import { HashpassError, type BeginQrLoginResult } from '@hashpass/sdk';
 import { useTranslation, useLocale, useSetLocale, useAvailableLocales } from '@hashpass/i18n';
 import type { SupportedLocale } from '@hashpass/i18n';
 import { hashpassSdk } from '../../lib/hashpass-sdk';
 import { supabaseClient } from '../../lib/supabase-client';
+import { resolveHashpassAppUrl } from '../../lib/hashpass-app-url';
 import { useTheme } from './ThemeProvider';
 import { useToast } from './Toast';
 
@@ -30,24 +32,6 @@ const QR_VALUE = 'hashpass://auth/connect?source=web&ref=landing';
 const PLAY_STORE_URL =
   'https://play.google.com/store/apps/details?id=com.hashpass.tech&hl=en-US&ah=RlHQxhHQladajDZn9ZGTm7_ucMs';
 const APP_OPEN_FALLBACK_MS = 1400;
-
-// The main HASHPASS app (not this hashpass.club site) is what the blue
-// button opens on desktop. hashpass.club has no build-time dev/prod split of
-// its own (single GitHub Pages deploy from `main`), so this resolves the
-// *target* app's environment from the browser's own origin at click time --
-// same "trust the real origin" pattern as resolveWebOrigin() in
-// packages/auth/src/supabase-oauth.ts -- rather than a hardcoded constant.
-function resolveHashpassAppUrl(): string {
-  if (typeof window === 'undefined') return 'https://hashpass.tech';
-  const hostname = window.location.hostname;
-  if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    return 'http://localhost:8081';
-  }
-  if (hostname.startsWith('dev.') || hostname.includes('-dev.')) {
-    return 'https://dev.hashpass.tech';
-  }
-  return 'https://hashpass.tech';
-}
 
 type Platform = 'ios' | 'android' | 'desktop';
 
@@ -499,61 +483,101 @@ export function SignInModal({ open, onClose }: SignInModalProps) {
           )}
         </div>
 
-        {/* Open app button */}
-        <a
-          href={QR_VALUE}
-          onClick={(e) => {
-            e.preventDefault();
-            openHashpassApp(qrLogin?.challenge.id);
-          }}
-          style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            width: '100%', padding: '12px 20px',
-            borderRadius: 12,
-            background: 'var(--accent)',
-            color: '#ffffff',
-            fontSize: 14, fontWeight: 700, textDecoration: 'none',
-            letterSpacing: -0.2,
-            transition: 'opacity 0.15s, transform 0.15s',
-            marginBottom: 12,
-          }}
-          onMouseEnter={(e) => {
-            (e.currentTarget as HTMLElement).style.opacity = '0.88';
-            (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)';
-          }}
-          onMouseLeave={(e) => {
-            (e.currentTarget as HTMLElement).style.opacity = '1';
-            (e.currentTarget as HTMLElement).style.transform = 'translateY(0)';
-          }}
-        >
-          {/* HASHPASS icon */}
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-            <rect x="3" y="3" width="18" height="18" rx="5" stroke="currentColor" strokeWidth="1.8"/>
-            <path d="M8 12h8M12 8v8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
-          </svg>
-          {t('openApp')}
-        </a>
-
-        {/* Divider */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', marginBottom: 12 }}>
-          <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
-          <span style={{ fontSize: 12, color: 'var(--text-faint)', whiteSpace: 'nowrap' }}>
-            {t('orDownload')}
-          </span>
-          <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
-        </div>
-
-        {/* App store links -- Play Store only for now, no iOS listing yet */}
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
-          <a href={PLAY_STORE_URL} target="_blank" rel="noopener noreferrer" style={{ opacity: 0.6, transition: 'opacity 0.15s', display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--text-faint)', textDecoration: 'none', fontFamily: 'var(--font-mono)', letterSpacing: 0.3 }}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.opacity = '1'; }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.opacity = '0.6'; }}
+        {qrPhase === 'success' ? (
+          /* Signed in -- the connect flow's job is done, so this button
+             stops being about reaching the app at all and starts being
+             about actually using it. Navigates inside hashpass.club itself
+             (the club commander center -- QR-link creation, member/pass
+             management) rather than opening the mobile app's dashboard. */
+          <Link
+            href="/panel"
+            onClick={() => onClose()}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              width: '100%', padding: '12px 20px',
+              borderRadius: 12,
+              background: 'var(--accent)',
+              color: '#ffffff',
+              fontSize: 14, fontWeight: 700, textDecoration: 'none',
+              letterSpacing: -0.2,
+              transition: 'opacity 0.15s, transform 0.15s',
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLElement).style.opacity = '0.88';
+              (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)';
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLElement).style.opacity = '1';
+              (e.currentTarget as HTMLElement).style.transform = 'translateY(0)';
+            }}
           >
-            {/* Android */}
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M3 20.5v-17c0-.83.94-1.3 1.6-.8l14 8.5c.6.37.6 1.23 0 1.6l-14 8.5c-.66.5-1.6.03-1.6-.8z"/></svg>
-            Google Play
-          </a>
-        </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <rect x="3" y="3" width="7" height="7" rx="1.5"/>
+              <rect x="14" y="3" width="7" height="7" rx="1.5"/>
+              <rect x="3" y="14" width="7" height="7" rx="1.5"/>
+              <rect x="14" y="14" width="7" height="7" rx="1.5"/>
+            </svg>
+            {t('exploreDashboard')}
+          </Link>
+        ) : (
+          <>
+            {/* Open app button */}
+            <a
+              href={QR_VALUE}
+              onClick={(e) => {
+                e.preventDefault();
+                openHashpassApp(qrLogin?.challenge.id);
+              }}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                width: '100%', padding: '12px 20px',
+                borderRadius: 12,
+                background: 'var(--accent)',
+                color: '#ffffff',
+                fontSize: 14, fontWeight: 700, textDecoration: 'none',
+                letterSpacing: -0.2,
+                transition: 'opacity 0.15s, transform 0.15s',
+                marginBottom: 12,
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLElement).style.opacity = '0.88';
+                (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)';
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLElement).style.opacity = '1';
+                (e.currentTarget as HTMLElement).style.transform = 'translateY(0)';
+              }}
+            >
+              {/* HASHPASS icon */}
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+                <rect x="3" y="3" width="18" height="18" rx="5" stroke="currentColor" strokeWidth="1.8"/>
+                <path d="M8 12h8M12 8v8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+              </svg>
+              {t('openApp')}
+            </a>
+
+            {/* Divider */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', marginBottom: 12 }}>
+              <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+              <span style={{ fontSize: 12, color: 'var(--text-faint)', whiteSpace: 'nowrap' }}>
+                {t('orDownload')}
+              </span>
+              <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+            </div>
+
+            {/* App store links -- Play Store only for now, no iOS listing yet */}
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+              <a href={PLAY_STORE_URL} target="_blank" rel="noopener noreferrer" style={{ opacity: 0.6, transition: 'opacity 0.15s', display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--text-faint)', textDecoration: 'none', fontFamily: 'var(--font-mono)', letterSpacing: 0.3 }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.opacity = '1'; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.opacity = '0.6'; }}
+              >
+                {/* Android */}
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M3 20.5v-17c0-.83.94-1.3 1.6-.8l14 8.5c.6.37.6 1.23 0 1.6l-14 8.5c-.66.5-1.6.03-1.6-.8z"/></svg>
+                Google Play
+              </a>
+            </div>
+          </>
+        )}
       </div>
 
       <style>{`

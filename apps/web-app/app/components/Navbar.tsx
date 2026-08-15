@@ -7,6 +7,8 @@ import { useLocale, useSetLocale, useAvailableLocales } from '@hashpass/i18n';
 import type { SupportedLocale } from '@hashpass/i18n';
 import { useTheme } from './ThemeProvider';
 import { SignInModal } from './SignInModal';
+import { useSession } from './SessionProvider';
+import { UserMenu } from './UserMenu';
 
 // ── Pill / icon-button shared styles ─────────────────────────────────────────
 type PillStyle = {
@@ -91,6 +93,8 @@ export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
   const [signInOpen, setSignInOpen] = useState(false);
+  const { user, isLoading: sessionLoading } = useSession();
+  const isSignedIn = !sessionLoading && !!user;
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -365,26 +369,31 @@ export function Navbar() {
               )}
             </IconPill>
 
-            {/* Sign in — pink accent border */}
-            <IconPill
-              onClick={() => setSignInOpen(true)}
-              ariaLabel={t('signIn')}
-              bg={pill.bg}
-              border={pill.border}
-              color={signInColor}
-              accentBorder={signInBorder}
-              style={{ width: 'auto', minWidth: 36, padding: '0 12px', borderRadius: 999, gap: 6 }}
-            >
-              {/* Arrow-right into box */}
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
-                <polyline points="10 17 15 12 10 7"/>
-                <line x1="15" y1="12" x2="3" y2="12"/>
-              </svg>
-              <span className="signin-label" style={{ fontSize: 13, fontWeight: 600, letterSpacing: -0.2 }}>
-                {t('signIn')}
-              </span>
-            </IconPill>
+            {/* Sign in — pink accent border — or, once a session exists, the
+                avatar/profile dropdown in its place. */}
+            {isSignedIn ? (
+              <UserMenu />
+            ) : (
+              <IconPill
+                onClick={() => setSignInOpen(true)}
+                ariaLabel={t('signIn')}
+                bg={pill.bg}
+                border={pill.border}
+                color={signInColor}
+                accentBorder={signInBorder}
+                style={{ width: 'auto', minWidth: 36, padding: '0 12px', borderRadius: 999, gap: 6 }}
+              >
+                {/* Arrow-right into box */}
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+                  <polyline points="10 17 15 12 10 7"/>
+                  <line x1="15" y1="12" x2="3" y2="12"/>
+                </svg>
+                <span className="signin-label" style={{ fontSize: 13, fontWeight: 600, letterSpacing: -0.2 }}>
+                  {t('signIn')}
+                </span>
+              </IconPill>
+            )}
           </div>
         </nav>
       </header>

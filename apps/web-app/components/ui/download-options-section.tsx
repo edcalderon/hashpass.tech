@@ -5,6 +5,7 @@ import { Download, Sparkles } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { HashpassLogo } from '@/components/ui/hashpass-logo';
+import { resolveHashpassAppUrl } from '@/lib/hashpass-app-url';
 
 export const PLAY_STORE_URL =
   'https://play.google.com/store/apps/details?id=com.hashpass.tech&hl=en-US&ah=RlHQxhHQladajDZn9ZGTm7_ucMs';
@@ -36,7 +37,7 @@ export function DownloadShowcase() {
         <div className="relative">
           <div className="download-showcase__app-icon mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-white shadow-[0_12px_35px_rgba(21,101,192,0.25)] ring-1 ring-black/5 dark:bg-slate-900 dark:ring-white/10">
             <HashpassLogo alt="" width={48} height={48} priority />
-            <span className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 text-white shadow-lg">
+            <span className="download-showcase__badge absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 text-white shadow-lg">
               <Download className="h-3.5 w-3.5" strokeWidth={2.5} />
             </span>
           </div>
@@ -53,7 +54,7 @@ export function DownloadShowcase() {
 
           <div className="mt-5 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
             <Button asChild size="lg" className="h-14 rounded-2xl bg-slate-950 px-6 !text-white shadow-xl shadow-blue-950/15 hover:bg-slate-800 dark:bg-white dark:!text-slate-950 dark:hover:bg-slate-100">
-              <a href={PLAY_STORE_URL} target="_blank" rel="noreferrer" aria-label={t('googlePlayAriaLabel')}>
+              <a href={PLAY_STORE_URL} target="_blank" rel="noreferrer" aria-label={t('googlePlayAriaLabel')} className="download-showcase__shine-cta">
                 <GooglePlayIcon />
                 <span className="ml-3 flex flex-col items-start leading-none">
                   <span className="text-[9px] font-medium uppercase tracking-[0.14em] opacity-70">{t('getItOn')}</span>
@@ -61,14 +62,42 @@ export function DownloadShowcase() {
                 </span>
               </a>
             </Button>
+            {/* Goes to the main HASHPASS app (not the Play Store -- that's
+                the button above) -- env-aware the same way SignInModal's
+                "Open HASHPASS.TECH" button is: localhost -> local Expo web,
+                a dev host -> dev.hashpass.tech, otherwise -> hashpass.tech.
+                Static href is a safe no-JS/build-time fallback; the real
+                resolved target is set on click. */}
             <Button asChild size="lg" variant="outline" className="h-14 rounded-2xl border-blue-500/25 bg-white/55 px-6 !text-slate-900 shadow-lg shadow-blue-950/5 backdrop-blur-md hover:bg-white/90 dark:border-white/15 dark:bg-slate-900/80 dark:!text-white dark:hover:bg-slate-900">
-              <a href={PLAY_STORE_URL} target="_blank" rel="noreferrer" aria-label={t('downloadAriaLabel')}>
+              <a
+                href="https://hashpass.tech"
+                target="_blank"
+                rel="noreferrer"
+                aria-label={t('downloadAriaLabel')}
+                className="download-showcase__shine-cta"
+                onClick={(event) => {
+                  event.preventDefault();
+                  window.open(resolveHashpassAppUrl(), '_blank', 'noopener,noreferrer');
+                }}
+              >
                 <HashpassLogo alt="" width={28} height={28} />
-                <span className="ml-3 font-semibold">{t('downloadHashpass')}</span>
+                <span className="ml-3 font-semibold">
+                  {t('downloadHashpass')}
+                  <sup className="ml-0.5 text-[10px] font-bold">*</sup>
+                </span>
                 <Download className="ml-2 h-4 w-4 download-showcase__arrow" />
               </a>
             </Button>
           </div>
+
+          {/* "Download HASHPASS" opens the web app on desktop, not a literal
+              file download (Android install lives on the Google Play
+              button) -- the asterisk on the button ties to this footnote so
+              that isn't misread as broken given the download-arrow icon
+              still on it. */}
+          <p className="mx-auto mt-3 max-w-md text-[11px] leading-4 text-muted-foreground/70">
+            * {t('webDisclaimer')}
+          </p>
         </div>
       </div>
     </section>
