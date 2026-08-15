@@ -148,6 +148,8 @@ for full detail.
 
 By design, `track=beta` (open testing — publicly joinable via a Play link, anyone can opt in) still runs on `environment=development`. It's a testing phase even though it's public: real external testers exercise the full Play distribution pipeline (review, staged rollout, public opt-in) without touching production data. Only `track=production` requires `environment=production` — that's the one artifact that should ever point real users at the real backend, and it's the only track that always needs a **fresh build** rather than a promoted one, since the backend URL is baked into the JS bundle at build time. `environment=production` may only be paired with `track=production`; every other track intentionally stays on `environment=development`. Dispatching any mismatched pair (e.g. `environment=production track=alpha`) fails validation immediately.
 
+**`runner=github-hosted` is the current working default for every manual dispatch below — `runner=aws-ec2` is not currently usable.** Confirmed 2026-08-15: `vars.AWS_RUNNER_ROLE_ARN` and `vars.EC2_RUNNER_INSTANCE_ID` don't exist as repo variables at all (a direct `gh api repos/hashpass-tech/hashpass.tech/actions/variables/<name>` lookup 404s on both, not just a listing gap), so `mobile-android-release.yml`'s `validate-release-target` job fails any `runner=aws-ec2` dispatch immediately, before it ever reaches the build. The tag-triggered auto-dispatch already knows this and passes `runner=github-hosted` itself, which is why the automatic internal → alpha → beta chain keeps working even though the EC2 path is currently broken for a manual dispatch. This is very likely intentional, not an oversight: see `.agents/active/task-aws-cost-audit-and-controls.md` (P0, active) — the mobile EC2 runner (`i-05628f925bb57e2f1`, `t3a.xlarge`) is a flagged cost driver in an ongoing AWS billing spike investigation, and that task's own safe-work queue recommends "route non-production builds, tests, previews, and retry runs to GitHub-hosted runners... keep production/internal native releases on the EC2 runner until benchmarked" as an explicitly *safe*, no-approval-needed mitigation. Restoring `AWS_RUNNER_ROLE_ARN`/`EC2_RUNNER_INSTANCE_ID` (and switching back to `runner=aws-ec2`) should go through that task's owner-approval process, not be re-added ad hoc just because a manual dispatch failed validation.
+
 1. **Create and validate the commit on `develop`**
 2. **Run `npm run release:promote`** on `develop` — this:
    - Commits the release-prep changes
@@ -173,7 +175,7 @@ By design, `track=beta` (open testing — publicly joinable via a Play link, any
      --field auto_promote_beta=true \
      --field beta_release_status=completed \
      --field backend=fastlane \
-     --field runner=aws-ec2
+     --field runner=github-hosted
    ```
    Manually dispatching this after a normal merge creates a duplicate run racing the auto-triggered one for the same Play Console version code — confirmed 2026-07-13. Don't.
    The alpha handoff uses the promote-only path (`promote_only=true`) so it reuses the internal Play release instead of uploading a second bundle — no rebuild, just a Play Developer API track-promotion call via Fastlane `supply`'s `track_promote_to`.
@@ -214,7 +216,7 @@ By design, `track=beta` (open testing — publicly joinable via a Play link, any
      --field track=production \
      --field release_status=completed \
      --field backend=fastlane \
-     --field runner=aws-ec2
+     --field runner=github-hosted
    ```
    Gated by `require-beta-before-production`: a beta (open testing) release must have succeeded for that same ref first — same full-history search, not time-bound. This gate only certifies the code was validated by real external testers before anyone ships it to the real backend; it does not mean production reuses the beta build. Never dispatch `promote_only=true` with `track=production` — `validate-release-target` rejects it outright, since promoting an `environment=development` artifact onto the production track would ship a build that talks to `api-dev` under the guise of a production release.
    Expo prebuild enables Android release minification, so Gradle emits a `mapping.txt` file for release builds.

@@ -153,10 +153,10 @@ gh workflow run mobile-android-release.yml \
   --field auto_promote_alpha=true \
   --field alpha_release_status=completed \
   --field backend=fastlane \
-  --field runner=aws-ec2
+  --field runner=github-hosted
 ```
 
-This builds a signed AAB on the EC2 runner and submits it to Play via Fastlane on the development profile.
+This builds a signed AAB and submits it to Play via Fastlane on the development profile. `runner=github-hosted` is the current working default for every manual dispatch in this doc — `runner=aws-ec2` fails `validate-release-target` immediately because `AWS_RUNNER_ROLE_ARN`/`EC2_RUNNER_INSTANCE_ID` don't currently exist as repo variables (confirmed 2026-08-15). See CLAUDE.md's Mobile Android Release Workflow section for the full explanation and the active AWS cost-audit task it's tied to before restoring the EC2 path.
 
 Use `environment=development` with `track=internal` for the first pass.
 
@@ -174,7 +174,7 @@ gh workflow run mobile-android-release.yml \
   --field track=alpha \
   --field release_status=completed \
   --field backend=fastlane \
-  --field runner=aws-ec2
+  --field runner=github-hosted
 ```
 
 The workflow track input maps directly to Play Console tracks. `internal` is the first pass, `alpha` is the closed-testing path requested for Play review prep, and production is paused until the freeze lifts. `release_status` and `alpha_release_status` default to `completed`; keep them completed so Play publishes without manual draft review.

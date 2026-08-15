@@ -2,6 +2,8 @@
 
 This guide covers the Play Console track ladder for HASHPASS and how it maps to the repo's Android release workflow.
 
+> **This doc's release-posture section (internal-first, alpha-only, "production paused until the freeze lifts") is stale.** Production has been live since 2026-07-26 and beta/alpha now auto-promote from a single tag push — see CLAUDE.md's "Mobile Android Release Workflow" section for the current posture and manual-dispatch commands. Only the runner guidance below (`runner=github-hosted`) has been kept current; the rest of this page needs a full pass.
+
 Temporary release posture: the current cycle is internal-first on the development profile. Use `environment=development` for validation, keep alpha gated by the matching internal release on the same tag, and do not publish to production until the release freeze is lifted. Closed testing can be published directly with `release_status=completed`; only the first alpha upload needs `draft` if Play still treats the app as a draft.
 
 Release tags are created on `develop` and then promoted to `main` through the protected PR flow documented in [RELEASE_WORKFLOW.md](./RELEASE_WORKFLOW.md). Do not cut Android releases from a stale feature branch or before the release PR has been approved and merged.
@@ -49,7 +51,7 @@ gh workflow run mobile-android-release.yml \
   --field auto_promote_alpha=true \
   --field alpha_release_status=completed \
   --field backend=fastlane \
-  --field runner=aws-ec2
+  --field runner=github-hosted
 ```
 
 What to do in Play Console:
@@ -88,7 +90,7 @@ gh workflow run mobile-android-release.yml \
   --field track=alpha \
   --field release_status=completed \
   --field backend=fastlane \
-  --field runner=aws-ec2
+  --field runner=github-hosted
 ```
 
 If Play Console still shows the app as `Draft`, switch `release_status` to `draft` for that one upload. Once the app leaves draft, keep `completed` and let the workflow publish directly.
@@ -139,7 +141,7 @@ gh workflow run mobile-android-release.yml \
   --field track=beta \
   --field release_status=completed \
   --field backend=fastlane \
-  --field runner=aws-ec2
+  --field runner=github-hosted
 ```
 
 What to do in Play Console:
@@ -176,7 +178,7 @@ gh workflow run mobile-android-release.yml \
   --field track=production \
   --field release_status=completed \
   --field backend=fastlane \
-  --field runner=aws-ec2
+  --field runner=github-hosted
 ```
 
 What to do in Play Console:
@@ -204,7 +206,7 @@ This checklist is deferred until production access has been approved and the rel
 1. Confirm the alpha closed test is still active, has at least 12 opted-in testers, and those testers have remained opted in for 14 continuous days.
 2. Confirm production access has been approved in Play Console and that Store listing, Data Safety, content rating, app access, and signing are all complete.
 3. Cut the next patch version from `main` with `npm run release:patch`. Do not reuse the last shipped tag for production.
-4. Trigger `mobile-android-release.yml` on the new tag with `environment=production`, `track=production`, `release_status=completed`, `backend=fastlane`, and `runner=aws-ec2`.
+4. Trigger `mobile-android-release.yml` on the new tag with `environment=production`, `track=production`, `release_status=completed`, `backend=fastlane`, and `runner=github-hosted`.
 5. In Play Console, add production release notes, pick a staged rollout percentage, and start the rollout.
 6. Verify the workflow run, the web deploy checks, and Android Vitals after rollout begins.
 7. If the rollout shows crashes, policy issues, or a bad store listing, halt it and cut the next patch before expanding further.
