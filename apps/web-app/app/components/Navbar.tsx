@@ -16,6 +16,8 @@ type PillStyle = {
   color: string;
 };
 
+const TOPBAR_CONTROL_SIZE = 40;
+
 function pillStyle(overHero: boolean, isDark: boolean): PillStyle {
   if (overHero) {
     return {
@@ -261,6 +263,7 @@ export function Navbar({ showMarketingLinks = true }: NavbarProps) {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
 
             <ClubSettingsMenu
+              size={TOPBAR_CONTROL_SIZE}
               triggerStyle={{
                 background: pill.bg,
                 border: `1.5px solid ${overHero ? 'rgba(0,229,255,0.55)' : isDark ? 'rgba(41,121,255,0.55)' : 'rgba(25,118,210,0.40)'}`,
@@ -271,7 +274,7 @@ export function Navbar({ showMarketingLinks = true }: NavbarProps) {
             {/* Sign in — pink accent border — or, once a session exists, the
                 avatar/profile dropdown in its place. */}
             {isSignedIn ? (
-              <UserMenu />
+              <UserMenu size={TOPBAR_CONTROL_SIZE} />
             ) : (
               <IconPill
                 onClick={() => setSignInOpen(true)}

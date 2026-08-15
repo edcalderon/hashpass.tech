@@ -33,7 +33,7 @@ function menuItemStyle(color: string): CSSProperties {
 
 // Replaces the navbar's "Sign in" pill once a Supabase session exists
 // (HashPass Auth QR login, or any future auth path this app grows).
-export function UserMenu() {
+export function UserMenu({ size = 40 }: { size?: number }) {
   const { user } = useSession();
   const { resolvedTheme } = useTheme();
   const { t } = useTranslation('nav');
@@ -86,8 +86,9 @@ export function UserMenu() {
         aria-haspopup="menu"
         aria-expanded={open}
         style={{
-          width: 36,
-          height: 36,
+          width: size,
+          height: size,
+          boxSizing: 'border-box',
           borderRadius: '50%',
           border: '1.5px solid var(--border-strong)',
           cursor: 'pointer',
