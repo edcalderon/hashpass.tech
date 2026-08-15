@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
+import React, { useEffect, useRef, useState, type ReactNode } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Image, ScrollView } from 'react-native';
 import { Ionicons } from '../lib/vector-icons';
 import { useTheme } from '../hooks/useTheme';
 import { HashpassError } from '@hashpass/sdk';
@@ -7,6 +7,24 @@ import { hashpassSdk } from '../lib/hashpass-sdk';
 import { getHashpassFullLogo } from '../lib/hashpass-logo';
 
 type ApprovalState = 'idle' | 'submitting' | 'approved' | 'denied' | 'error' | 'needs_sign_in';
+
+// Web's CookieConsentBanner (components/CookieConsentBanner.tsx) is
+// position:fixed, docked to the bottom of the viewport with zIndex 9998 --
+// on a short viewport, a plain vertically-centered View can place this
+// card's primary button right where that banner intercepts taps, making it
+// look unresponsive. Scrollable + extra bottom padding keeps the button
+// reachable either way: still visually centered when it fits, scrollable
+// past the banner when it doesn't.
+function CardScroll({ children }: { children: ReactNode }) {
+  return (
+    <ScrollView
+      contentContainerStyle={{ flexGrow: 1 }}
+      keyboardShouldPersistTaps="handled"
+    >
+      {children}
+    </ScrollView>
+  );
+}
 
 const SIGN_IN_COUNTDOWN_SECONDS = 5;
 
@@ -108,106 +126,116 @@ export function AuthQrApprovalCard({
 
   if (sessionStatus === 'checking') {
     return (
-      <View style={styles.container}>
-        {logo}
-        <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 20 }} />
-        <Text style={[styles.subtitle, { marginTop: 16 }]}>Checking your session…</Text>
-      </View>
+      <CardScroll>
+        <View style={styles.container}>
+          {logo}
+          <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 20 }} />
+          <Text style={[styles.subtitle, { marginTop: 16 }]}>Checking your session…</Text>
+        </View>
+      </CardScroll>
     );
   }
 
   if (sessionStatus === 'signed_out' || state === 'needs_sign_in') {
     return (
-      <View style={styles.container}>
-        {logo}
-        <Ionicons name="lock-closed-outline" size={40} color={colors.primary} style={{ marginTop: 16 }} />
-        <Text style={styles.title}>Sign in required</Text>
-        <Text style={styles.subtitle}>
-          You need to sign in to your HASHPASS account first. Sign in, then come back and try again.
-        </Text>
-        {sessionStatus === 'signed_out' && (
-          <Text style={styles.countdown}>Redirecting to sign in in {secondsLeft}…</Text>
-        )}
-        <TouchableOpacity style={styles.primaryButton} onPress={goToSignIn}>
-          <Text style={styles.primaryButtonText}>Sign in now</Text>
-        </TouchableOpacity>
-      </View>
+      <CardScroll>
+        <View style={styles.container}>
+          {logo}
+          <Ionicons name="lock-closed-outline" size={40} color={colors.primary} style={{ marginTop: 16 }} />
+          <Text style={styles.title}>Sign in required</Text>
+          <Text style={styles.subtitle}>
+            You need to sign in to your HASHPASS account first. Sign in, then come back and try again.
+          </Text>
+          {sessionStatus === 'signed_out' && (
+            <Text style={styles.countdown}>Redirecting to sign in in {secondsLeft}…</Text>
+          )}
+          <TouchableOpacity style={styles.primaryButton} onPress={goToSignIn}>
+            <Text style={styles.primaryButtonText}>Sign in now</Text>
+          </TouchableOpacity>
+        </View>
+      </CardScroll>
     );
   }
 
   if (!challengeId) {
     return (
-      <View style={styles.container}>
-        {logo}
-        <Ionicons name="alert-circle-outline" size={40} color={colors.error.main} style={{ marginTop: 16 }} />
-        <Text style={styles.title}>{invalidTitle}</Text>
-        <Text style={styles.subtitle}>{invalidSubtitle}</Text>
-        <TouchableOpacity style={styles.primaryButton} onPress={onInvalidAction}>
-          <Text style={styles.primaryButtonText}>{invalidActionLabel}</Text>
-        </TouchableOpacity>
-      </View>
+      <CardScroll>
+        <View style={styles.container}>
+          {logo}
+          <Ionicons name="alert-circle-outline" size={40} color={colors.error.main} style={{ marginTop: 16 }} />
+          <Text style={styles.title}>{invalidTitle}</Text>
+          <Text style={styles.subtitle}>{invalidSubtitle}</Text>
+          <TouchableOpacity style={styles.primaryButton} onPress={onInvalidAction}>
+            <Text style={styles.primaryButtonText}>{invalidActionLabel}</Text>
+          </TouchableOpacity>
+        </View>
+      </CardScroll>
     );
   }
 
   if (state === 'approved' || state === 'denied') {
     return (
-      <View style={styles.container}>
-        {logo}
-        <Ionicons
-          name={state === 'approved' ? 'checkmark-circle' : 'close-circle'}
-          size={52}
-          color={state === 'approved' ? colors.success.main : colors.error.main}
-          style={{ marginTop: 16 }}
-        />
-        <Text style={styles.title}>
-          {state === 'approved' ? 'Login approved' : 'Login denied'}
-        </Text>
-        <Text style={styles.subtitle}>
-          {state === 'approved'
-            ? 'You can go back to your browser to finish signing in.'
-            : "We told the browser this login wasn't you."}
-        </Text>
-        <TouchableOpacity
-          style={styles.primaryButton}
-          onPress={state === 'approved' ? onApproved : onDenied}
-        >
-          <Text style={styles.primaryButtonText}>{doneLabel}</Text>
-        </TouchableOpacity>
-      </View>
+      <CardScroll>
+        <View style={styles.container}>
+          {logo}
+          <Ionicons
+            name={state === 'approved' ? 'checkmark-circle' : 'close-circle'}
+            size={52}
+            color={state === 'approved' ? colors.success.main : colors.error.main}
+            style={{ marginTop: 16 }}
+          />
+          <Text style={styles.title}>
+            {state === 'approved' ? 'Login approved' : 'Login denied'}
+          </Text>
+          <Text style={styles.subtitle}>
+            {state === 'approved'
+              ? 'You can go back to your browser to finish signing in.'
+              : "We told the browser this login wasn't you."}
+          </Text>
+          <TouchableOpacity
+            style={styles.primaryButton}
+            onPress={state === 'approved' ? onApproved : onDenied}
+          >
+            <Text style={styles.primaryButtonText}>{doneLabel}</Text>
+          </TouchableOpacity>
+        </View>
+      </CardScroll>
     );
   }
 
   return (
-    <View style={styles.container}>
-      {logo}
-      <Text style={styles.title}>Sign in with HASHPASS Auth</Text>
-      <Text style={styles.subtitle}>
-        Someone is trying to sign in using your HASHPASS account. If this is you, approve it below.
-      </Text>
+    <CardScroll>
+      <View style={styles.container}>
+        {logo}
+        <Text style={styles.title}>Sign in with HASHPASS Auth</Text>
+        <Text style={styles.subtitle}>
+          Someone is trying to sign in using your HASHPASS account. If this is you, approve it below.
+        </Text>
 
-      {state === 'error' && errorMessage && (
-        <View style={styles.errorBanner}>
-          <Text style={styles.errorBannerText}>{errorMessage}</Text>
-        </View>
-      )}
+        {state === 'error' && errorMessage && (
+          <View style={styles.errorBanner}>
+            <Text style={styles.errorBannerText}>{errorMessage}</Text>
+          </View>
+        )}
 
-      {state === 'submitting' ? (
-        <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 24 }} />
-      ) : (
-        <View style={styles.actions}>
-          <TouchableOpacity style={styles.primaryButton} onPress={() => respond('approve')}>
-            <Text style={styles.primaryButtonText}>Approve</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.secondaryButton} onPress={() => respond('deny')}>
-            <Text style={styles.secondaryButtonText}>Deny</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+        {state === 'submitting' ? (
+          <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 24 }} />
+        ) : (
+          <View style={styles.actions}>
+            <TouchableOpacity style={styles.primaryButton} onPress={() => respond('approve')}>
+              <Text style={styles.primaryButtonText}>Approve</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.secondaryButton} onPress={() => respond('deny')}>
+              <Text style={styles.secondaryButtonText}>Deny</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
-      <TouchableOpacity onPress={onCancel} style={styles.cancelLink}>
-        <Text style={styles.cancelLinkText}>Cancel</Text>
-      </TouchableOpacity>
-    </View>
+        <TouchableOpacity onPress={onCancel} style={styles.cancelLink}>
+          <Text style={styles.cancelLinkText}>Cancel</Text>
+        </TouchableOpacity>
+      </View>
+    </CardScroll>
   );
 }
 
@@ -218,6 +246,9 @@ const getStyles = (isDark: boolean, colors: any) =>
       alignItems: 'center',
       justifyContent: 'center',
       padding: 32,
+      // Extra bottom room so the primary button clears web's fixed,
+      // zIndex:9998 CookieConsentBanner instead of sitting right under it.
+      paddingBottom: 140,
       backgroundColor: colors.background.default,
     },
     logo: {
