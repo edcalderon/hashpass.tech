@@ -135,7 +135,13 @@ export function SignInModal({ open, onClose }: SignInModalProps) {
         if (controller.signal.aborted) return;
         if (error instanceof HashpassError && error.code === 'unauthorized') setQrPhase('denied');
         else if (error instanceof HashpassError && error.code === 'timeout') setQrPhase('expired');
-        else setQrPhase('error');
+        else {
+          // Anything landing here is unexpected (not a normal deny/expiry) --
+          // log it so a real failure is diagnosable from the console instead
+          // of just a generic "Something went wrong" with no trace of why.
+          console.error('[HashPass Auth] QR login failed:', error);
+          setQrPhase('error');
+        }
       }
     })();
   }, []);

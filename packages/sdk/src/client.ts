@@ -19,7 +19,16 @@ export class HashpassClient {
 
   constructor(options: HashpassSdkOptions) {
     validateOptions(options);
-    const fetchImplementation = options.fetch ?? globalThis.fetch;
+    // Binding matters: every transport stores this on a private #options
+    // field and later invokes it as `this.#options.fetch(...)` -- a method
+    // call on an object that is not `window`/`globalThis`. Browsers'
+    // native fetch is a "needs receiver" Web IDL operation, so calling the
+    // unbound reference that way throws "TypeError: Failed to execute
+    // 'fetch' on 'Window': Illegal invocation". This is invisible to every
+    // test that passes its own mock `fetch` (a plain function has no such
+    // receiver requirement) -- it only fires on the real default path,
+    // i.e. exactly what every app not overriding `fetch` actually hits.
+    const fetchImplementation = options.fetch ?? globalThis.fetch?.bind(globalThis);
     if (!fetchImplementation) {
       throw new HashpassError("A Fetch API implementation is required", { code: "configuration_error" });
     }

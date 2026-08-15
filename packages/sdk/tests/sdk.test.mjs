@@ -2,6 +2,35 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { HashpassError, createHashpass } from "../dist/index.js";
 
+test("binds the default globalThis.fetch so it survives being invoked as a method on another object", async () => {
+  // Regression test: every other test in this file passes its own `fetch`
+  // mock explicitly, which is a plain function with no receiver
+  // requirement -- none of them exercised the *default* path
+  // (`options.fetch ?? globalThis.fetch`) that every real app actually
+  // uses. Real browsers' native fetch is a Web IDL operation that requires
+  // its receiver to be `window`; every SDK transport stores fetch on a
+  // private #options field and calls it as `this.#options.fetch(...)`,
+  // which is a *different* receiver. Real symptom hit in production:
+  // "TypeError: Failed to execute 'fetch' on 'Window': Illegal
+  // invocation" -- silently caught as a generic network_error, with zero
+  // network activity, easy to mistake for a config/CORS problem instead of
+  // what it actually was.
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = function fakeNativeFetch() {
+    if (this !== globalThis) {
+      throw new TypeError("Failed to execute 'fetch' on 'Window': Illegal invocation");
+    }
+    return Response.json({ id: "ticket_1", subject: "s", status: "open", priority: "normal" });
+  };
+  try {
+    const sdk = createHashpass({ appId: "app_test" }); // no explicit fetch -- exercises the default path
+    const ticket = await sdk.support.getTicket("ticket_1");
+    assert.equal(ticket.id, "ticket_1");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("requires a public app id", () => {
   assert.throws(() => createHashpass({ appId: "" }), (error) => {
     assert.equal(error.code, "configuration_error");
