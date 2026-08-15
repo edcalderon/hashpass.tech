@@ -4,6 +4,7 @@ const os = require('os');
 const path = require('path');
 
 const scriptPath = path.join(__dirname, 'update-version.mjs');
+const releaseScopesPath = path.join(__dirname, 'release-scopes.js');
 
 function writeJson(filePath, value) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
@@ -22,6 +23,10 @@ function createFixtureRepo() {
   writeFile(
     path.join(root, 'packages/tools/scripts/update-version.mjs'),
     fs.readFileSync(scriptPath, 'utf8'),
+  );
+  writeFile(
+    path.join(root, 'packages/tools/scripts/release-scopes.js'),
+    fs.readFileSync(releaseScopesPath, 'utf8'),
   );
   writeJson(path.join(root, 'package.json'), {
     name: 'hashpass-version-fixture',
@@ -92,6 +97,16 @@ ${escapedDoubleQuoteFeature}
   );
 
   return root;
+}
+
+function initializeGitHistory(root) {
+  execFileSync('git', ['init', '--initial-branch=develop'], { cwd: root, stdio: 'pipe' });
+  execFileSync('git', ['config', 'user.email', 'release-test@example.test'], { cwd: root, stdio: 'pipe' });
+  execFileSync('git', ['config', 'user.name', 'Release Test'], { cwd: root, stdio: 'pipe' });
+  execFileSync('git', ['add', '.'], { cwd: root, stdio: 'pipe' });
+  execFileSync('git', ['commit', '-m', 'chore: baseline'], { cwd: root, stdio: 'pipe' });
+  execFileSync('git', ['tag', 'v1.0.0'], { cwd: root, stdio: 'pipe' });
+  execFileSync('git', ['tag', 'club-v9.9.9'], { cwd: root, stdio: 'pipe' });
 }
 
 describe('update-version', () => {
@@ -207,6 +222,74 @@ describe('update-version', () => {
       expect(changelog).toContain('- Complete release summary');
       expect(changelog).not.toContain('- Stale summary');
       expect(changelog.match(/### Release Highlights/g)).toHaveLength(1);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('replaces a stale release scope without removing technical details', () => {
+    const root = createFixtureRepo();
+
+    try {
+      writeFile(
+        path.join(root, 'CHANGELOG.md'),
+        [
+          '## [1.0.1] - 2026-07-24',
+          '',
+          '### Bug Fixes',
+          '- Existing parser fix',
+          '',
+          '### Release scope',
+          '- Compared with: `v1.0.0`',
+          '',
+          '### Affected products & packages',
+          '- Mobile app',
+          '',
+          '### Technical Details',
+          '- Build Number: 42',
+          '',
+        ].join('\n'),
+      );
+
+      execFileSync('node', [
+        'packages/tools/scripts/update-version.mjs',
+        '1.0.1',
+        '--skip-git-info',
+        '--notes=Complete release summary',
+      ], {
+        cwd: root,
+        encoding: 'utf8',
+        env: { ...process.env, HUSKY: '0' },
+      });
+
+      const changelog = fs.readFileSync(path.join(root, 'CHANGELOG.md'), 'utf8');
+      expect(changelog).toContain('### Release scope');
+      expect(changelog).toContain('### Technical Details');
+      expect(changelog).toContain('- Build Number: 42');
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('writes the changelog scope from the previous global tag, not the club tag', () => {
+    const root = createFixtureRepo();
+
+    try {
+      initializeGitHistory(root);
+      writeFile(path.join(root, 'apps/web-app/app/release-note.ts'), 'export const scope = "club";\n');
+      execFileSync('git', ['add', '.'], { cwd: root, stdio: 'pipe' });
+      execFileSync('git', ['commit', '-m', 'feat: add club release scope'], { cwd: root, stdio: 'pipe' });
+
+      execFileSync('node', ['packages/tools/scripts/update-version.mjs', '1.0.1', '--skip-git-info'], {
+        cwd: root,
+        encoding: 'utf8',
+        env: { ...process.env, HUSKY: '0' },
+      });
+
+      const changelog = fs.readFileSync(path.join(root, 'CHANGELOG.md'), 'utf8');
+      expect(changelog).toContain('Compared with: `v1.0.0`');
+      expect(changelog).not.toContain('club-v9.9.9');
+      expect(changelog).toContain('- Club web');
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }

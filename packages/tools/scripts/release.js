@@ -14,6 +14,10 @@
 const { spawnSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const {
+  classifyAffectedReleaseScopes,
+  formatAffectedReleaseScopes,
+} = require('./release-scopes.js');
 
 const ROOT_DIR = path.resolve(__dirname, '../../..');
 const VERSIONING_BIN = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm';
@@ -1084,10 +1088,11 @@ function buildPromotionChangeSummary(baseReleaseVersion, releaseVersion) {
   const releaseInfo = readPromotionVersionInfo();
   const summary = formatPromotionSummarySections(releaseInfo);
   const files = getPromotionChangedFiles(baseReleaseVersion);
+  const releaseScope = formatAffectedReleaseScopes(baseReleaseVersion, files);
   const fileHighlights = buildPromotionFileHighlights(files);
   const fileDetails = buildPromotionFileDetails(baseReleaseVersion);
 
-  const blocks = [summary, fileHighlights, fileDetails].filter(Boolean);
+  const blocks = [releaseScope, summary, fileHighlights, fileDetails].filter(Boolean);
 
   if (blocks.length > 0) {
     return blocks.join('\n\n');
@@ -1359,7 +1364,9 @@ module.exports = {
   buildPromotionPullRequestBody,
   buildPromotionChangeSummary,
   buildPromotionFileHighlights,
+  classifyAffectedReleaseScopes,
   extractVersionArray,
+  formatAffectedReleaseScopes,
   formatPromotionSummarySections,
   incrementPatchVersion,
   resolvePromotionVersion,

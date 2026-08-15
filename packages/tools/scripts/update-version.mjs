@@ -14,6 +14,9 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { execSync } from 'child_process';
+import releaseScopes from './release-scopes.js';
+
+const { formatAffectedReleaseScopes } = releaseScopes;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -370,6 +373,35 @@ function deriveReleaseSummaryFromGit(fromVersion, currentNewVersion) {
   return { features, bugfixes, breakingChanges, notes };
 }
 
+function getReleaseScopeSummary() {
+  let previousTag = '';
+  try {
+    previousTag = execSync('git describe --tags --abbrev=0 --match "v[0-9]*"', {
+      cwd: projectRoot,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
+  } catch {
+    return formatAffectedReleaseScopes('', []);
+  }
+
+  let changedFiles = [];
+  try {
+    changedFiles = execSync(`git diff --name-only --diff-filter=ACMRTUXB ${previousTag}..HEAD`, {
+      cwd: projectRoot,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    })
+      .split('\n')
+      .map((file) => file.trim())
+      .filter(Boolean);
+  } catch {
+    // Keep the release artifact explicit about the baseline even if this checkout is shallow.
+  }
+
+  return formatAffectedReleaseScopes(previousTag, changedFiles);
+}
+
 // Rewrite CURRENT_VERSION's features/bugfixes/breakingChanges arrays in place
 // with this release's gitDerivedSummary. VERSION_HISTORY entries are built
 // separately (also from gitDerivedSummary, see the "Update version history"
@@ -407,11 +439,11 @@ function applyCurrentVersionArrays(content, { features, bugfixes, breakingChange
 }
 
 // Function to update the CHANGELOG.md file
-function updateChangelog(version, releaseType, notes = '') {
+function updateChangelog(version, releaseType, notes = '', releaseScope = '') {
   const changelogPath = path.join(projectRoot, 'CHANGELOG.md');
   if (!fs.existsSync(changelogPath)) {
     console.log('ℹ️ CHANGELOG.md not found, creating a new one');
-    const initialContent = `# Changelog\n\nAll notable changes to the BSL 2025 HashPass application will be documented in this file.\n\nThe format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),\nand this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).\n\n## [${version}] - ${releaseDate}\n\n### ${releaseType === 'stable' ? 'Released' : releaseType.charAt(0).toUpperCase() + releaseType.slice(1)}\n- ${notes || `Version ${version} release`}\n\n### Technical Details\n- Version: ${version}\n- Release Type: ${releaseType}\n- Build Number: ${buildNumber}\n- Release Date: ${new Date().toISOString()}\n`;
+    const initialContent = `# Changelog\n\nAll notable changes to the BSL 2025 HashPass application will be documented in this file.\n\nThe format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),\nand this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).\n\n## [${version}] - ${releaseDate}\n\n### ${releaseType === 'stable' ? 'Released' : releaseType.charAt(0).toUpperCase() + releaseType.slice(1)}\n- ${notes || `Version ${version} release`}\n\n${releaseScope}\n\n### Technical Details\n- Version: ${version}\n- Release Type: ${releaseType}\n- Build Number: ${buildNumber}\n- Release Date: ${new Date().toISOString()}\n`;
     fs.writeFileSync(changelogPath, initialContent);
     return;
   }
@@ -433,11 +465,15 @@ function updateChangelog(version, releaseType, notes = '') {
 
     if (hasDocumentedChanges) {
       const releaseHighlights = notes ? `\n### Release Highlights\n- ${notes}\n` : '';
-      if (releaseHighlights) {
+      if (releaseHighlights || releaseScope) {
         const existingHighlightsPattern = /\n### Release Highlights\n(?:\s*(?:[-*+]|\d+\.)\s+.*\n?)*/;
-        const mergedEntry = existingHighlightsPattern.test(existingEntry)
+        let mergedEntry = existingHighlightsPattern.test(existingEntry)
           ? existingEntry.replace(existingHighlightsPattern, releaseHighlights)
           : existingEntry.trimEnd() + releaseHighlights;
+        const releaseScopePattern = /\n### Release scope\n[\s\S]*?\n### Affected products & packages\n[\s\S]*?(?=\n### |\n## |\s*$)/;
+        mergedEntry = releaseScopePattern.test(mergedEntry)
+          ? mergedEntry.replace(releaseScopePattern, `\n${releaseScope}\n`)
+          : `${mergedEntry.trimEnd()}\n\n${releaseScope}\n`;
         content = content.slice(0, existingEntryStart) + mergedEntry + content.slice(existingEntryEnd);
         fs.writeFileSync(changelogPath, content);
         console.log(`✅ Added derived release notes to CHANGELOG.md entry for version ${version}`);
@@ -447,7 +483,7 @@ function updateChangelog(version, releaseType, notes = '') {
       return;
     }
 
-    const documentedChanges = `\n### ${releaseType === 'stable' ? 'Released' : releaseType.charAt(0).toUpperCase() + releaseType.slice(1)}\n- ${notes || `Version ${version} release`}\n`;
+    const documentedChanges = `\n### ${releaseType === 'stable' ? 'Released' : releaseType.charAt(0).toUpperCase() + releaseType.slice(1)}\n- ${notes || `Version ${version} release`}\n\n${releaseScope}\n`;
     content = content.slice(0, existingEntryEnd).trimEnd() + documentedChanges + content.slice(existingEntryEnd);
     fs.writeFileSync(changelogPath, content);
     console.log(`✅ Filled empty CHANGELOG.md entry for version ${version}`);
@@ -456,7 +492,7 @@ function updateChangelog(version, releaseType, notes = '') {
 
   // Add the new version at the top of the changelog
   const today = new Date().toISOString().split('T')[0];
-  const newEntry = `## [${version}] - ${today}\n\n### ${releaseType === 'stable' ? 'Released' : releaseType.charAt(0).toUpperCase() + releaseType.slice(1)}\n- ${notes || `Version ${version} release`}\n\n### Technical Details\n- Version: ${version}\n- Release Type: ${releaseType}\n- Build Number: ${buildNumber}\n- Release Date: ${new Date().toISOString()}\n\n`;
+  const newEntry = `## [${version}] - ${today}\n\n### ${releaseType === 'stable' ? 'Released' : releaseType.charAt(0).toUpperCase() + releaseType.slice(1)}\n- ${notes || `Version ${version} release`}\n\n${releaseScope}\n\n### Technical Details\n- Version: ${version}\n- Release Type: ${releaseType}\n- Build Number: ${buildNumber}\n- Release Date: ${new Date().toISOString()}\n\n`;
 
   // Insert the new version after the changelog header
   const headerEnd = content.indexOf('\n## [');
@@ -666,7 +702,8 @@ for (const file of filesToUpdate) {
 }
 
 // Update CHANGELOG.md
-updateChangelog(newVersion, releaseType, releaseNotes || gitDerivedSummary.notes);
+const releaseScopeSummary = getReleaseScopeSummary();
+updateChangelog(newVersion, releaseType, releaseNotes || gitDerivedSummary.notes, releaseScopeSummary);
 
 try {
   syncReadmeFromChangelog();

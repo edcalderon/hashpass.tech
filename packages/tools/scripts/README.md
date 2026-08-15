@@ -28,7 +28,7 @@ Shared branch cadence:
 Release flow:
 
 - `release` / `release:patch` / `release:minor` / `release:major` run the branch-aware version release flow for the repo root
-- `release:promote` prepares the protected `develop -> main` promotion PR. The script derives the next patch version from the latest release tag when needed, then fills the PR body with an auto-generated release summary from version metadata/changelog, implementation bullets for docs/release/tooling changes, and a collapsed changed-files details block. Repository protections still enforce the current `@edcalderon` codeowner review, coverage, and security checks.
+- `release:promote` prepares the protected `develop -> main` promotion PR. It compares the release with the previous reachable global `vX.Y.Z` tag (not a `club-vX.Y.Z` tag), labels the affected apps/packages, then adds human-readable release notes and a collapsed changed-files details block. The same release-scope block is written into the generated changelog and README latest-changes content. Repository protections still enforce the current `@edcalderon` codeowner review, coverage, and security checks.
 - `release:pipeline` remains the tenant/deploy pipeline for infra and legacy work
 - `release:dev` / `release:prod` target `core` by default
 - `release:bsl:dev` / `release:bsl:prod` follow the event tenant path and remain available for the historical branch-aware release flow
@@ -50,7 +50,7 @@ The branch-aware release flow:
 - Runs `versioning check-secrets`, `versioning cleanup scan`, and `versioning validate`
 - Uses `@edcalderon/versioning` to create the changelog, version commit, and git tag
 - Uses the repo-owned `update-readme` wrapper so the latest-changes block and GitHub releases link stay on this repository
-- `pnpm run readme:check` is the Husky pre-commit guard that blocks stale README/changelog pairs before a release commit lands
+- `pnpm run readme:check` is the Husky pre-commit guard that blocks stale README/changelog pairs before a release commit lands. For a genuine emergency only, `HASHPASS_SKIP_README_GUARD=1 git commit ...` or `pnpm run readme:check -- --allow-stale` bypasses this one guard with a visible warning; it does not change the release command or the other pre-commit checks.
 - Pushes the current branch with `--follow-tags` to both `origin` and `upstream`
 - Can optionally prepare a `develop -> main` promotion PR instead of pushing to `main`
 
