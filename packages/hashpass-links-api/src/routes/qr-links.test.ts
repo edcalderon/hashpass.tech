@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { handleRequest } from '../router';
+import { archiveExpiredQrLinks } from './qr-links';
 import { resetAdminDbCache, setAdminDbForTesting } from '../server';
 import { createFakeSupabaseClient, type FakeUser } from '../test-utils/fake-supabase-client';
 
@@ -74,6 +75,71 @@ test('creating a QR link succeeds and returns a public slug', async () => {
   assert.equal(body.scanCount, 0);
 });
 
+test('an owner can create and edit a safe custom QR slug', async () => {
+  useFakeDb();
+  const created = await (await createLink({ publicSlug: 'summer-club' })).json();
+  assert.equal(created.publicSlug, 'summer-club');
+
+  const updated = await handleRequest(
+    new Request(`https://api.hashpass.link/api/v1/qr-links/${created.id}`, authed(OWNER.token, {
+      method: 'PATCH',
+      body: JSON.stringify({ publicSlug: 'club-night-2026' }),
+    }))
+  );
+  assert.equal(updated.status, 200);
+  assert.equal((await updated.json()).publicSlug, 'club-night-2026');
+});
+
+test('an authenticated owner can check whether a custom QR slug is available', async () => {
+  useFakeDb();
+  await createLink({ publicSlug: 'summer-club' });
+
+  const taken = await handleRequest(
+    new Request('https://api.hashpass.link/api/v1/qr-links/slug-availability?slug=summer-club', authed(OWNER.token))
+  );
+  assert.deepEqual(await taken.json(), { available: false, slug: 'summer-club' });
+
+  const available = await handleRequest(
+    new Request('https://api.hashpass.link/api/v1/qr-links/slug-availability?slug=fresh-club', authed(OWNER.token))
+  );
+  assert.deepEqual(await available.json(), { available: true, slug: 'fresh-club' });
+});
+
+test('a scheduled QR link only redirects inside its configured availability window', async () => {
+  useFakeDb();
+  const startsAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+  const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
+  const created = await (await createLink({ startsAt, expiresAt })).json();
+
+  assert.equal(created.startsAt, startsAt);
+  assert.equal(created.expiresAt, expiresAt);
+
+  const redirect = await handleRequest(new Request(`https://api.hashpass.link/q/${created.publicSlug}`, { redirect: 'manual' }));
+  assert.equal(redirect.status, 404);
+});
+
+test('creating a scheduled QR link rejects an end time that is not after its start time', async () => {
+  useFakeDb();
+  const startsAt = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
+  const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+
+  const response = await createLink({ startsAt, expiresAt });
+  assert.equal(response.status, 400);
+});
+
+test('the expiry sweep archives active QR links after their end time', async () => {
+  const client = useFakeDb();
+  const created = await (await createLink({ expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString() })).json();
+  const row = client._tables.get('qr_links')?.get(created.id)!;
+  row.expires_at = new Date(Date.now() - 60 * 1000).toISOString();
+
+  const archived = await archiveExpiredQrLinks(new Date());
+
+  assert.equal(archived, 1);
+  assert.equal(row.status, 'archived');
+  assert.equal(typeof row.archived_at, 'string');
+});
+
 test('list only returns the caller\'s own QR links', async () => {
   useFakeDb();
   await createLink({ name: 'Owner link' });
@@ -136,6 +202,23 @@ test('owner can update name, destination, and pause/resume/archive the link', as
   assert.equal(archivedBody.status, 'archived');
   assert.equal(archivedBody.name, 'Chile 2026 flyer (retired)');
   assert.ok(archivedBody.archivedAt);
+});
+
+test('owner can delete a QR link, removing it from management and public redirects', async () => {
+  const client = useFakeDb();
+  const created = await (await createLink()).json();
+
+  const deleted = await handleRequest(
+    new Request(`https://api.hashpass.link/api/v1/qr-links/${created.id}`, authed(OWNER.token, { method: 'DELETE' }))
+  );
+  assert.equal(deleted.status, 204);
+  assert.equal(typeof client._tables.get('qr_links')?.get(created.id)?.deleted_at, 'string');
+
+  const list = await handleRequest(new Request('https://api.hashpass.link/api/v1/qr-links', authed(OWNER.token)));
+  assert.deepEqual((await list.json()).links, []);
+
+  const redirect = await handleRequest(new Request(`https://api.hashpass.link/q/${created.publicSlug}`, { redirect: 'manual' }));
+  assert.equal(redirect.status, 404);
 });
 
 test('a paused link 404s on the public redirect and is not scanned', async () => {

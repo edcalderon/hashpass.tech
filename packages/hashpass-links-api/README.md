@@ -212,8 +212,9 @@ terraform plan
 
 ### hashpass.link cutover
 
-**`hashpass.link` is not yet confirmed as a registered/owned domain, and its
-DNS/ACM must not be touched without an explicit go-ahead.** The stack
+**`hashpass.link` uses `hashpass.link` for production and
+`dev.hashpass.link` for development. DNS/ACM must not be touched without an
+explicit go-ahead.** The stack
 defaults to `enable_custom_domain = false`: applying it creates real Lambda
 + API Gateway resources reachable at their default
 `*.execute-api.<region>.amazonaws.com` invoke URL — enough to validate the

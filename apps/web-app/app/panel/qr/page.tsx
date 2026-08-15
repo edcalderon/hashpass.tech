@@ -11,6 +11,15 @@ import { useSession } from '../../components/SessionProvider';
 import { useToast } from '../../components/Toast';
 import { hashpassSdk } from '../../../lib/hashpass-sdk';
 import { downloadQrPng } from '../../../lib/qr-image';
+import {
+  beginQrLinkEdit,
+  deleteConfirmationMatches,
+  destinationInputFromUrl,
+  paginateQrLinks,
+  resolveQrLinkAvailability,
+  toHttpsDestination,
+  type QrLinkFormState,
+} from '../../../lib/qr-link-editor';
 
 // The QR creation/management section of the panel -- see
 // .agents/active/task-panel-web-club-events-qr.md, Phase B. Talks to
@@ -20,40 +29,32 @@ import { downloadQrPng } from '../../../lib/qr-image';
 // README "hashpass.link cutover"), so the short link shown/copied here is
 // whatever invoke URL that env var currently resolves to.
 const LINKS_ORIGIN = (process.env.NEXT_PUBLIC_LINKS_API_BASE_URL || '').replace(/\/$/, '');
+const SHORT_LINK_PREFIX = LINKS_ORIGIN ? `${LINKS_ORIGIN}/q/` : 'hashpass.link/q/';
 
 // The square icon-only HASHPASS mark (not the wide logotype in
 // hashpass-logo.tsx) -- the right shape for a small centered QR badge.
 const BRAND_ICON_SRC = '/icon-512.png';
 const PREVIEW_SIZE = 108;
+const QR_LINKS_PER_PAGE = 3;
 
 type FetchState = 'loading' | 'ready' | 'not-configured' | 'error';
+type SlugAvailabilityState = 'idle' | 'current' | 'checking' | 'available' | 'taken' | 'invalid';
+type ConfirmationAction = { kind: 'archive' | 'delete'; link: QrLink };
 
-interface FormState {
-  name: string;
-  destinationUrl: string;
-  description: string;
-  campaignSource: string;
-  campaignMedium: string;
-  campaignName: string;
-}
+type FormState = QrLinkFormState;
 
 const EMPTY_FORM: FormState = {
   name: '',
+  publicSlug: '',
   destinationUrl: '',
   description: '',
   campaignSource: '',
   campaignMedium: '',
   campaignName: '',
+  availability: 'permanent',
+  startsAt: '',
+  expiresAt: '',
 };
-
-function isValidHttpUrl(value: string): boolean {
-  try {
-    const url = new URL(value);
-    return url.protocol === 'http:' || url.protocol === 'https:';
-  } catch {
-    return false;
-  }
-}
 
 function shortLinkFor(slug: string): string {
   return LINKS_ORIGIN ? `${LINKS_ORIGIN}/q/${slug}` : `/q/${slug}`;
@@ -66,14 +67,23 @@ export default function PanelQrPage() {
   const toast = useToast();
 
   const [links, setLinks] = useState<QrLink[]>([]);
+  const [page, setPage] = useState(1);
   const [state, setState] = useState<FetchState>('loading');
   const [formOpen, setFormOpen] = useState(false);
   const [campaignOpen, setCampaignOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [originalSlug, setOriginalSlug] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
+  const [slugAvailability, setSlugAvailability] = useState<SlugAvailabilityState>('idle');
+  const [focusEditor, setFocusEditor] = useState(false);
   const [saving, setSaving] = useState(false);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
+  const [confirmation, setConfirmation] = useState<ConfirmationAction | null>(null);
+  const [deleteAcknowledgement, setDeleteAcknowledgement] = useState('');
   const [analytics, setAnalytics] = useState<Record<string, QrLinkAnalytics | 'loading' | 'error'>>({});
+  const formRef = useRef<HTMLFormElement | null>(null);
+  const nameInputRef = useRef<HTMLInputElement | null>(null);
+  const pagination = paginateQrLinks(links, page, QR_LINKS_PER_PAGE);
 
   const load = useCallback(async () => {
     setState('loading');
@@ -95,31 +105,74 @@ export default function PanelQrPage() {
     load();
   }, [user, load]);
 
+  useEffect(() => {
+    if (page !== pagination.currentPage) setPage(pagination.currentPage);
+  }, [page, pagination.currentPage]);
+
+  useEffect(() => {
+    if (!formOpen || !focusEditor) return;
+
+    const frame = window.requestAnimationFrame(() => {
+      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      nameInputRef.current?.focus({ preventScroll: true });
+      setFocusEditor(false);
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [focusEditor, formOpen]);
+
+  useEffect(() => {
+    const slug = form.publicSlug.trim();
+    if (!formOpen || !slug) {
+      setSlugAvailability('idle');
+      return;
+    }
+    if (slug === originalSlug) {
+      setSlugAvailability('current');
+      return;
+    }
+
+    setSlugAvailability('checking');
+    let cancelled = false;
+    const timeout = window.setTimeout(async () => {
+      try {
+        const result = await hashpassSdk().qrLinks.slugAvailability(slug);
+        if (!cancelled) setSlugAvailability(result.available ? 'available' : 'taken');
+      } catch {
+        if (!cancelled) setSlugAvailability('invalid');
+      }
+    }, 350);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeout);
+    };
+  }, [form.publicSlug, formOpen, originalSlug]);
+
   function openCreateForm() {
     setEditingId(null);
+    setOriginalSlug(null);
     setForm(EMPTY_FORM);
     setCampaignOpen(false);
+    setFocusEditor(false);
+    setPage(1);
     setFormOpen(true);
   }
 
   function openEditForm(link: QrLink) {
+    const session = beginQrLinkEdit(link);
     setEditingId(link.id);
-    setForm({
-      name: link.name,
-      destinationUrl: link.destinationUrl,
-      description: link.description ?? '',
-      campaignSource: link.campaign?.source ?? '',
-      campaignMedium: link.campaign?.medium ?? '',
-      campaignName: link.campaign?.campaign ?? '',
-    });
-    setCampaignOpen(Boolean(link.campaign?.source || link.campaign?.medium || link.campaign?.campaign));
+    setOriginalSlug(link.publicSlug);
+    setForm(session.form);
+    setCampaignOpen(session.campaignOpen);
+    setFocusEditor(session.focusEditor);
     setFormOpen(true);
   }
 
   function closeForm() {
     setFormOpen(false);
     setEditingId(null);
+    setOriginalSlug(null);
     setForm(EMPTY_FORM);
+    setFocusEditor(false);
   }
 
   async function handleSubmit(event: FormEvent) {
@@ -128,8 +181,18 @@ export default function PanelQrPage() {
       toast.error(t('formNameRequired'));
       return;
     }
-    if (!isValidHttpUrl(form.destinationUrl)) {
+    let destinationUrl: string;
+    try {
+      destinationUrl = toHttpsDestination(form.destinationUrl);
+    } catch {
       toast.error(t('formInvalidDestination'));
+      return;
+    }
+    let availability: { startsAt: string | null; expiresAt: string | null };
+    try {
+      availability = resolveQrLinkAvailability(form.availability, form.startsAt, form.expiresAt);
+    } catch {
+      toast.error(t('formInvalidAvailability'));
       return;
     }
 
@@ -141,31 +204,42 @@ export default function PanelQrPage() {
             campaign: form.campaignName || undefined,
           }
         : undefined;
+    const changedSlug = form.publicSlug.trim() && form.publicSlug.trim() !== originalSlug
+      ? form.publicSlug.trim()
+      : undefined;
+    if (slugAvailability === 'taken') {
+      toast.error(t('formSlugTaken'));
+      return;
+    }
 
     setSaving(true);
     try {
       if (editingId) {
         const updated = await hashpassSdk().qrLinks.update(editingId, {
           name: form.name.trim(),
-          destinationUrl: form.destinationUrl,
+          destinationUrl,
           description: form.description || null,
           campaign,
+          ...availability,
+          ...(changedSlug ? { publicSlug: changedSlug } : {}),
         });
         setLinks((current) => current.map((link) => (link.id === updated.id ? { ...link, ...updated } : link)));
         toast.success(t('toastUpdated'));
       } else {
         const created = await hashpassSdk().qrLinks.create({
           name: form.name.trim(),
-          destinationUrl: form.destinationUrl,
+          destinationUrl,
           description: form.description || undefined,
           campaign,
+          ...availability,
+          ...(form.publicSlug.trim() ? { publicSlug: form.publicSlug.trim() } : {}),
         });
         setLinks((current) => [created, ...current]);
         toast.success(t('toastCreated'));
       }
       closeForm();
-    } catch {
-      toast.error(t('errorGeneric'));
+    } catch (error) {
+      toast.error(error instanceof HashpassError ? error.message : t('errorGeneric'));
     } finally {
       setSaving(false);
     }
@@ -184,15 +258,41 @@ export default function PanelQrPage() {
     }
   }
 
-  async function archiveLink(link: QrLink) {
-    if (!window.confirm(t('confirmArchive'))) return;
+  function requestArchive(link: QrLink) {
+    setDeleteAcknowledgement('');
+    setConfirmation({ kind: 'archive', link });
+  }
+
+  function requestDelete(link: QrLink) {
+    setDeleteAcknowledgement('');
+    setConfirmation({ kind: 'delete', link });
+  }
+
+  async function confirmLifecycleAction() {
+    if (!confirmation) return;
+    const { kind, link } = confirmation;
+    if (kind === 'delete' && !deleteConfirmationMatches(deleteAcknowledgement)) return;
+
     setPendingAction(link.id);
     try {
-      const updated = await hashpassSdk().qrLinks.update(link.id, { status: 'archived' });
-      setLinks((current) => current.map((item) => (item.id === updated.id ? { ...item, ...updated } : item)));
-      toast.success(t('toastArchived'));
-    } catch {
-      toast.error(t('errorGeneric'));
+      if (kind === 'archive') {
+        const updated = await hashpassSdk().qrLinks.update(link.id, { status: 'archived' });
+        setLinks((current) => current.map((item) => (item.id === updated.id ? { ...item, ...updated } : item)));
+        toast.success(t('toastArchived'));
+      } else {
+        await hashpassSdk().qrLinks.delete(link.id);
+        setLinks((current) => current.filter((item) => item.id !== link.id));
+        setAnalytics((current) => {
+          const next = { ...current };
+          delete next[link.id];
+          return next;
+        });
+        if (editingId === link.id) closeForm();
+        toast.success(t('toastDeleted'));
+      }
+      setConfirmation(null);
+    } catch (error) {
+      toast.error(error instanceof HashpassError ? error.message : t('errorGeneric'));
     } finally {
       setPendingAction(null);
     }
@@ -298,9 +398,10 @@ export default function PanelQrPage() {
             </div>
 
             {formOpen && (
-              <form onSubmit={handleSubmit} style={cardStyle}>
+              <form ref={formRef} onSubmit={handleSubmit} style={cardStyle}>
                 <Field label={t('formNameLabel')}>
                   <input
+                    ref={nameInputRef}
                     value={form.name}
                     onChange={(event) => setForm((f) => ({ ...f, name: event.target.value }))}
                     placeholder={t('formNamePlaceholder')}
@@ -308,13 +409,58 @@ export default function PanelQrPage() {
                     maxLength={120}
                   />
                 </Field>
+                <Field label={t('formSlugLabel')}>
+                  <div style={urlInputShellStyle}>
+                    <span aria-hidden style={urlPrefixStyle}>{SHORT_LINK_PREFIX}</span>
+                    <input
+                      value={form.publicSlug}
+                      onChange={(event) => setForm((current) => ({ ...current, publicSlug: event.target.value.toLowerCase() }))}
+                      placeholder={t('formSlugPlaceholder')}
+                      aria-label={t('formSlugLabel')}
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      maxLength={48}
+                      style={urlInputStyle}
+                    />
+                  </div>
+                  <p style={{ margin: '6px 0 0', fontSize: 12, color: 'var(--text-faint)' }}>{t('formSlugHint')}</p>
+                  {slugAvailability !== 'idle' && (
+                    <p
+                      style={{
+                        margin: '5px 0 0', fontSize: 12, fontWeight: 700,
+                        color: slugAvailability === 'taken' || slugAvailability === 'invalid'
+                          ? 'var(--danger)'
+                          : slugAvailability === 'available' || slugAvailability === 'current'
+                            ? 'var(--success)'
+                            : 'var(--text-faint)',
+                      }}
+                    >
+                      {slugAvailability === 'checking'
+                        ? t('formSlugChecking')
+                        : slugAvailability === 'available'
+                          ? t('formSlugAvailable')
+                          : slugAvailability === 'current'
+                            ? t('formSlugCurrent')
+                            : slugAvailability === 'taken'
+                              ? t('formSlugTaken')
+                              : t('formSlugInvalid')}
+                    </p>
+                  )}
+                </Field>
                 <Field label={t('formDestinationLabel')}>
-                  <input
-                    value={form.destinationUrl}
-                    onChange={(event) => setForm((f) => ({ ...f, destinationUrl: event.target.value }))}
-                    placeholder={t('formDestinationPlaceholder')}
-                    style={inputStyle}
-                  />
+                  <div style={urlInputShellStyle}>
+                    <span aria-hidden style={urlPrefixStyle}>https://</span>
+                    <input
+                      value={form.destinationUrl}
+                      onChange={(event) => setForm((f) => ({ ...f, destinationUrl: destinationInputFromUrl(event.target.value) }))}
+                      placeholder="www.example.com/path"
+                      aria-label={t('formDestinationLabel')}
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      inputMode="url"
+                      style={urlInputStyle}
+                    />
+                  </div>
                 </Field>
                 <Field label={t('formDescriptionLabel')}>
                   <input
@@ -325,6 +471,64 @@ export default function PanelQrPage() {
                     maxLength={1000}
                   />
                 </Field>
+
+                <Field label={t('formAvailabilityLabel')}>
+                  <div role="radiogroup" aria-label={t('formAvailabilityLabel')} style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    {(['permanent', 'expiring', 'scheduled'] as const).map((mode) => {
+                      const selected = form.availability === mode;
+                      return (
+                        <label
+                          key={mode}
+                          style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 8, padding: '9px 12px', borderRadius: 10,
+                            border: `1px solid ${selected ? 'var(--accent)' : 'var(--border-strong)'}`,
+                            background: selected ? 'color-mix(in srgb, var(--accent) 14%, transparent)' : 'transparent',
+                            color: 'var(--text-primary)', cursor: 'pointer', fontSize: 13, fontWeight: 700,
+                          }}
+                        >
+                          <input
+                            type="radio"
+                            name="qr-availability"
+                            value={mode}
+                            checked={selected}
+                            onChange={() => setForm((current) => ({ ...current, availability: mode }))}
+                          />
+                          {mode === 'permanent'
+                            ? t('formAvailabilityPermanent')
+                            : mode === 'expiring'
+                              ? t('formAvailabilityExpiring')
+                              : t('formAvailabilityScheduled')}
+                        </label>
+                      );
+                    })}
+                  </div>
+                </Field>
+
+                {form.availability !== 'permanent' && (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 12, marginBottom: 8 }}>
+                    {form.availability === 'scheduled' && (
+                      <Field label={t('formStartsAtLabel')}>
+                        <input
+                          type="datetime-local"
+                          value={form.startsAt}
+                          onChange={(event) => setForm((current) => ({ ...current, startsAt: event.target.value }))}
+                          style={inputStyle}
+                        />
+                      </Field>
+                    )}
+                    <Field label={t('formExpiresAtLabel')}>
+                      <input
+                        type="datetime-local"
+                        value={form.expiresAt}
+                        onChange={(event) => setForm((current) => ({ ...current, expiresAt: event.target.value }))}
+                        style={inputStyle}
+                      />
+                    </Field>
+                    <p style={{ gridColumn: '1 / -1', margin: '-4px 0 8px', fontSize: 12, color: 'var(--text-faint)' }}>
+                      {form.availability === 'scheduled' ? t('formAvailabilityHint') : t('formExpiringHint')}
+                    </p>
+                  </div>
+                )}
 
                 <button
                   type="button"
@@ -388,15 +592,17 @@ export default function PanelQrPage() {
               )}
 
               {state === 'ready' &&
-                links.map((link) => (
+                pagination.items.map((link) => (
                   <QrLinkRow
                     key={link.id}
                     link={link}
+                    editing={editingId === link.id}
                     busy={pendingAction === link.id}
                     analytics={analytics[link.id]}
                     onEdit={() => openEditForm(link)}
                     onToggleActive={() => toggleActive(link)}
-                    onArchive={() => archiveLink(link)}
+                    onArchive={() => requestArchive(link)}
+                    onDelete={() => requestDelete(link)}
                     onToggleAnalytics={() => toggleAnalytics(link)}
                     onCopy={() => copyLink(link)}
                     onShare={() => shareLink(link)}
@@ -405,12 +611,48 @@ export default function PanelQrPage() {
                     t={t}
                   />
                 ))}
+
+              {state === 'ready' && links.length > QR_LINKS_PER_PAGE && (
+                <nav aria-label={t('paginationLabel')} style={paginationStyle}>
+                  <button
+                    type="button"
+                    onClick={() => setPage((current) => Math.max(1, current - 1))}
+                    disabled={pagination.currentPage === 1}
+                    style={{ ...paginationButtonStyle, opacity: pagination.currentPage === 1 ? 0.45 : 1 }}
+                  >
+                    {t('paginationPrevious')}
+                  </button>
+                  <span style={{ color: 'var(--text-secondary)', fontSize: 13, fontWeight: 700 }}>
+                    {t('paginationStatus', { current: pagination.currentPage, total: pagination.pageCount })}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setPage((current) => Math.min(pagination.pageCount, current + 1))}
+                    disabled={pagination.currentPage === pagination.pageCount}
+                    style={{ ...paginationButtonStyle, opacity: pagination.currentPage === pagination.pageCount ? 0.45 : 1 }}
+                  >
+                    {t('paginationNext')}
+                  </button>
+                </nav>
+              )}
             </div>
+
+            <QrLinkConfirmationDialog
+              action={confirmation}
+              acknowledgement={deleteAcknowledgement}
+              processing={confirmation !== null && pendingAction === confirmation.link.id}
+              onAcknowledgementChange={setDeleteAcknowledgement}
+              onCancel={() => setConfirmation(null)}
+              onConfirm={confirmLifecycleAction}
+              t={t}
+            />
           </>
         )}
       </main>
       <Footer />
-      <style>{`@keyframes panel-spin { to { transform: rotate(360deg); } }`}</style>
+      <style>{`@keyframes panel-spin { to { transform: rotate(360deg); } }
+        dialog::backdrop { background: rgba(1, 8, 24, 0.76); backdrop-filter: blur(5px); }
+      `}</style>
     </div>
   );
 }
@@ -451,11 +693,13 @@ const STATUS_COLOR: Record<QrLink['status'], string> = {
 
 function QrLinkRow({
   link,
+  editing,
   busy,
   analytics,
   onEdit,
   onToggleActive,
   onArchive,
+  onDelete,
   onToggleAnalytics,
   onCopy,
   onShare,
@@ -464,11 +708,13 @@ function QrLinkRow({
   t,
 }: {
   link: QrLink;
+  editing: boolean;
   busy: boolean;
   analytics: QrLinkAnalytics | 'loading' | 'error' | undefined;
   onEdit: () => void;
   onToggleActive: () => void;
   onArchive: () => void;
+  onDelete: () => void;
   onToggleAnalytics: () => void;
   onCopy: () => void;
   onShare: () => void;
@@ -536,7 +782,16 @@ function QrLinkRow({
   }
 
   return (
-    <div style={{ ...cardStyle, marginTop: 14 }}>
+    <div
+      aria-current={editing ? 'true' : undefined}
+      style={{
+        ...cardStyle,
+        marginTop: 14,
+        borderColor: editing ? 'var(--accent)' : cardStyle.borderColor,
+        boxShadow: editing ? '0 0 0 1px color-mix(in srgb, var(--accent) 38%, transparent), 0 16px 36px color-mix(in srgb, var(--accent) 12%, transparent)' : undefined,
+        background: editing ? 'color-mix(in srgb, var(--bg-surface-raised) 94%, var(--accent))' : cardStyle.background,
+      }}
+    >
       <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
         <div style={{ position: 'relative', background: '#fff', padding: 8, borderRadius: 10, flexShrink: 0, alignSelf: 'flex-start' }}>
           <QRCode
@@ -577,6 +832,7 @@ function QrLinkRow({
             <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: 0.4 }}>
               {t(`status${link.status.charAt(0).toUpperCase()}${link.status.slice(1)}`)}
             </span>
+            {editing && <span style={editingBadgeStyle}>{t('editingLink')}</span>}
           </div>
           <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', margin: '4px 0 4px' }}>{link.name}</h3>
           <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: '0 0 8px', wordBreak: 'break-all' }}>
@@ -607,6 +863,7 @@ function QrLinkRow({
             {canReactivate && (
               <button type="button" disabled={busy} onClick={onArchive} style={dangerButtonStyle}>{t('actionArchive')}</button>
             )}
+            <button type="button" disabled={busy} onClick={onDelete} style={deleteButtonStyle}>{t('actionDelete')}</button>
             <button type="button" onClick={onToggleAnalytics} style={secondaryButtonStyle}>
               {analytics === undefined ? t('actionAnalytics') : t('actionHideAnalytics')}
             </button>
@@ -655,6 +912,85 @@ function QrLinkRow({
         </div>
       </div>
     </div>
+  );
+}
+
+function QrLinkConfirmationDialog({
+  action,
+  acknowledgement,
+  processing,
+  onAcknowledgementChange,
+  onCancel,
+  onConfirm,
+  t,
+}: {
+  action: ConfirmationAction | null;
+  acknowledgement: string;
+  processing: boolean;
+  onAcknowledgementChange: (value: string) => void;
+  onCancel: () => void;
+  onConfirm: () => void;
+  t: (key: string, params?: Record<string, string | number>) => string;
+}) {
+  const dialogRef = useRef<HTMLDialogElement | null>(null);
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (action && dialog && !dialog.open) dialog.showModal();
+  }, [action]);
+
+  if (!action) return null;
+  const isDelete = action.kind === 'delete';
+  const canConfirm = !processing && (!isDelete || deleteConfirmationMatches(acknowledgement));
+
+  return (
+    <dialog
+      ref={dialogRef}
+      aria-labelledby="qr-confirmation-title"
+      onCancel={(event) => {
+        event.preventDefault();
+        if (!processing) onCancel();
+      }}
+      style={confirmationDialogStyle}
+    >
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+        <span aria-hidden style={{ ...confirmationIconStyle, color: isDelete ? 'var(--danger)' : 'var(--warning)' }}>{isDelete ? '×' : '!'}</span>
+        <div>
+          <p style={{ margin: 0, color: 'var(--text-faint)', fontSize: 12, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase' }}>
+            {isDelete ? t('deleteDialogEyebrow') : t('archiveDialogEyebrow')}
+          </p>
+          <h2 id="qr-confirmation-title" style={{ margin: '5px 0 8px', color: 'var(--text-primary)', fontSize: 22, fontFamily: 'var(--font-display)' }}>
+            {isDelete ? t('deleteDialogTitle') : t('archiveDialogTitle')}
+          </h2>
+          <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.55 }}>
+            {isDelete ? t('deleteDialogBody', { name: action.link.name }) : t('archiveDialogBody', { name: action.link.name })}
+          </p>
+        </div>
+      </div>
+
+      {isDelete && (
+        <label style={{ display: 'block', marginTop: 20 }}>
+          <span style={{ display: 'block', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 700, marginBottom: 7 }}>
+            {t('deleteDialogPrompt')}
+          </span>
+          <input
+            autoFocus
+            value={acknowledgement}
+            onChange={(event) => onAcknowledgementChange(event.target.value)}
+            placeholder="DELETE"
+            disabled={processing}
+            style={inputStyle}
+          />
+        </label>
+      )}
+
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 24, flexWrap: 'wrap' }}>
+        <button type="button" disabled={processing} onClick={onCancel} style={secondaryButtonStyle}>{t('formCancel')}</button>
+        <button type="button" disabled={!canConfirm} onClick={onConfirm} style={{ ...deleteButtonStyle, opacity: canConfirm ? 1 : 0.45 }}>
+          {processing ? t('actionWorking') : isDelete ? t('deleteDialogConfirm') : t('archiveDialogConfirm')}
+        </button>
+      </div>
+    </dialog>
   );
 }
 
@@ -718,6 +1054,37 @@ const cardStyle: React.CSSProperties = {
   marginTop: 24,
 };
 
+const paginationStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: 12,
+  flexWrap: 'wrap',
+  marginTop: 22,
+};
+
+const paginationButtonStyle: React.CSSProperties = {
+  padding: '8px 13px',
+  borderRadius: 10,
+  border: '1px solid var(--border-strong)',
+  background: 'transparent',
+  color: 'var(--text-primary)',
+  fontSize: 13,
+  fontWeight: 600,
+  cursor: 'pointer',
+};
+
+const editingBadgeStyle: React.CSSProperties = {
+  borderRadius: 999,
+  padding: '3px 8px',
+  color: 'var(--accent)',
+  background: 'color-mix(in srgb, var(--accent) 14%, transparent)',
+  fontSize: 10,
+  fontWeight: 800,
+  letterSpacing: 0.7,
+  textTransform: 'uppercase',
+};
+
 const colorInputStyle: React.CSSProperties = {
   width: 44,
   height: 32,
@@ -737,6 +1104,34 @@ const inputStyle: React.CSSProperties = {
   color: 'var(--text-primary)',
   fontSize: 14,
   boxSizing: 'border-box',
+};
+
+const urlInputShellStyle: React.CSSProperties = {
+  width: '100%',
+  display: 'flex',
+  alignItems: 'center',
+  gap: 0,
+  padding: '0 12px',
+  borderRadius: 10,
+  border: '1px solid var(--border)',
+  background: 'var(--bg-surface)',
+  boxSizing: 'border-box',
+};
+
+const urlPrefixStyle: React.CSSProperties = {
+  color: 'var(--text-faint)',
+  fontFamily: 'var(--font-mono)',
+  fontSize: 14,
+  whiteSpace: 'nowrap',
+};
+
+const urlInputStyle: React.CSSProperties = {
+  ...inputStyle,
+  flex: 1,
+  minWidth: 0,
+  paddingLeft: 0,
+  border: 'none',
+  outline: 'none',
 };
 
 const primaryButtonStyle: React.CSSProperties = {
@@ -765,6 +1160,38 @@ const dangerButtonStyle: React.CSSProperties = {
   ...secondaryButtonStyle,
   color: 'var(--danger)',
   borderColor: 'var(--danger)',
+};
+
+const deleteButtonStyle: React.CSSProperties = {
+  ...secondaryButtonStyle,
+  color: '#ffffff',
+  borderColor: 'var(--danger)',
+  background: 'var(--danger)',
+};
+
+const confirmationDialogStyle: React.CSSProperties = {
+  width: 'min(460px, calc(100vw - 32px))',
+  boxSizing: 'border-box',
+  padding: 24,
+  border: '1px solid var(--border-strong)',
+  borderRadius: 18,
+  background: 'var(--bg-surface-raised)',
+  color: 'var(--text-primary)',
+  boxShadow: '0 28px 80px rgba(0, 0, 0, 0.45)',
+};
+
+const confirmationIconStyle: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: 30,
+  height: 30,
+  flexShrink: 0,
+  borderRadius: '50%',
+  background: 'color-mix(in srgb, currentColor 14%, transparent)',
+  border: '1px solid currentColor',
+  fontSize: 19,
+  fontWeight: 800,
 };
 
 const linkButtonStyle: React.CSSProperties = {

@@ -18,7 +18,7 @@ const TABLE_INSERT_DEFAULTS: Record<string, Row> = {
   qr_links: { status: 'active' },
 };
 
-class FakeQueryBuilder implements PromiseLike<{ data: unknown; error: { message: string } | null }> {
+class FakeQueryBuilder implements PromiseLike<{ data: unknown; error: { message: string; code?: string } | null }> {
   private mode: 'select' | 'insert' | 'update' = 'select';
   private payload: Row = {};
   private filters: Predicate[] = [];
@@ -68,6 +68,11 @@ class FakeQueryBuilder implements PromiseLike<{ data: unknown; error: { message:
     return this;
   }
 
+  lt(column: string, value: string | number): this {
+    this.filters.push((row) => (row[column] as string | number) < value);
+    return this;
+  }
+
   order(column: string, options: { ascending?: boolean } = {}): this {
     this.sortBy = { column, ascending: options.ascending !== false };
     return this;
@@ -91,19 +96,28 @@ class FakeQueryBuilder implements PromiseLike<{ data: unknown; error: { message:
     });
   }
 
-  private execute(): { data: unknown; error: { message: string } | null } {
+  private execute(): { data: unknown; error: { message: string; code?: string } | null } {
     if (this.mode === 'insert') {
       const row: Row = {
         id: randomUUID(),
         ...(TABLE_INSERT_DEFAULTS[this.tableName] ?? {}),
         ...this.payload,
       };
+      if (this.tableName === 'qr_links' && [...this.table.values()].some((existing) => existing.public_slug === row.public_slug)) {
+        return { data: null, error: { message: 'duplicate key value violates unique constraint', code: '23505' } };
+      }
       this.table.set(row.id as string, row);
       return { data: row, error: null };
     }
 
     if (this.mode === 'update') {
       const rows = this.matchedRows();
+      if (this.tableName === 'qr_links' && this.payload.public_slug !== undefined) {
+        const updatingIds = new Set(rows.map((row) => row.id));
+        if ([...this.table.values()].some((existing) => !updatingIds.has(existing.id) && existing.public_slug === this.payload.public_slug)) {
+          return { data: null, error: { message: 'duplicate key value violates unique constraint', code: '23505' } };
+        }
+      }
       for (const row of rows) Object.assign(row, this.payload);
       if (this.wantsSingle) return { data: rows[0] ?? null, error: null };
       return { data: rows, error: null };
@@ -118,7 +132,7 @@ class FakeQueryBuilder implements PromiseLike<{ data: unknown; error: { message:
   }
 
   then<TResult1, TResult2 = never>(
-    onfulfilled?: ((value: { data: unknown; error: { message: string } | null }) => TResult1 | PromiseLike<TResult1>) | null,
+    onfulfilled?: ((value: { data: unknown; error: { message: string; code?: string } | null }) => TResult1 | PromiseLike<TResult1>) | null,
     onrejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null
   ): PromiseLike<TResult1 | TResult2> {
     return Promise.resolve(this.execute()).then(onfulfilled, onrejected);

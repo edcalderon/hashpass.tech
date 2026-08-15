@@ -5,6 +5,7 @@ import type {
   CreateQrLinkInput,
   QrLink,
   QrLinkAnalytics,
+  QrSlugAvailability,
   UpdateQrLinkInput,
 } from "./types.js";
 
@@ -71,12 +72,22 @@ export class QrLinksClient {
     return this.#transportOrThrow().request<QrLink>(`api/v1/qr-links/${encodeURIComponent(id)}`);
   }
 
+  /** Checks a proposed custom short-link name before saving; the API's unique constraint remains authoritative. */
+  async slugAvailability(slug: string): Promise<QrSlugAvailability> {
+    return this.#transportOrThrow().request<QrSlugAvailability>(`api/v1/qr-links/slug-availability?slug=${encodeURIComponent(slug)}`);
+  }
+
   /** Edits a QR link's fields, or transitions its lifecycle status (pause/resume/archive) -- both go through the same PATCH since every field is optional. */
   async update(id: string, input: UpdateQrLinkInput): Promise<QrLink> {
     return this.#transportOrThrow().request<QrLink>(`api/v1/qr-links/${encodeURIComponent(id)}`, {
       method: "PATCH",
       body: input,
     });
+  }
+
+  /** Removes a QR link from management and disables its public redirect. */
+  async delete(id: string): Promise<void> {
+    await this.#transportOrThrow().request<void>(`api/v1/qr-links/${encodeURIComponent(id)}`, { method: "DELETE" });
   }
 
   /** Scan counts and device/bot breakdown for one QR link, over the trailing window the API reports (`windowDays` on the response). */

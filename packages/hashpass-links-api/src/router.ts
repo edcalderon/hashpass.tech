@@ -2,8 +2,10 @@ import { health } from './routes/health';
 import { approveChallenge, createChallenge, exchangeChallenge, pollChallenge } from './routes/auth-qr';
 import {
   createQrLink,
+  deleteQrLink,
   getQrLink,
   getQrLinkAnalytics,
+  getQrSlugAvailability,
   listQrLinks,
   redirectQrLink,
   updateQrLink,
@@ -31,8 +33,10 @@ const ROUTES: Array<[string, RegExp, Handler]> = [
   ['GET', /^\/q\/([^/]+)$/, (request, match) => redirectQrLink(request, match[1])],
   ['GET', /^\/api\/v1\/qr-links$/, (request) => listQrLinks(request)],
   ['POST', /^\/api\/v1\/qr-links$/, (request) => createQrLink(request)],
+  ['GET', /^\/api\/v1\/qr-links\/slug-availability$/, (request) => getQrSlugAvailability(request)],
   ['GET', /^\/api\/v1\/qr-links\/([^/]+)$/, (request, match) => getQrLink(request, match[1])],
   ['PATCH', /^\/api\/v1\/qr-links\/([^/]+)$/, (request, match) => updateQrLink(request, match[1])],
+  ['DELETE', /^\/api\/v1\/qr-links\/([^/]+)$/, (request, match) => deleteQrLink(request, match[1])],
   ['GET', /^\/api\/v1\/qr-links\/([^/]+)\/analytics$/, (request, match) => getQrLinkAnalytics(request, match[1])],
 ];
 

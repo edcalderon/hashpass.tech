@@ -7,6 +7,17 @@ import type { QrVisualConfig } from './types';
 // is the one metadata hostname that resolves outside that range in some
 // environments, so it's still blocked explicitly.
 const BLOCKED_HOSTS = new Set(['localhost', 'localhost.localdomain', 'metadata.google.internal']);
+const RESERVED_QR_SLUGS = new Set(['api', 'auth', 'health', 'q', 'admin', 'www', 'support', 'status']);
+
+export function validateCustomQrSlug(input: unknown): string {
+  if (typeof input !== 'string') throw new Error('Custom link name must be text');
+  const slug = input.trim().toLowerCase();
+  if (!/^[a-z0-9](?:[a-z0-9-]{1,46}[a-z0-9])?$/.test(slug)) {
+    throw new Error('Custom link name must use 3–48 lowercase letters, numbers, or hyphens');
+  }
+  if (RESERVED_QR_SLUGS.has(slug)) throw new Error('That custom link name is reserved');
+  return slug;
+}
 
 export function validateDestination(input: string): URL {
   let url: URL;
@@ -24,11 +35,21 @@ export function validateDestination(input: string): URL {
   }
 
   const host = url.hostname.toLowerCase().replace(/\.$/, '');
-  if (!host || BLOCKED_HOSTS.has(host) || host.endsWith('.localhost') || isPrivateIp(host)) {
-    throw new Error('Private, local, and metadata destinations are not allowed');
+  if (!host || BLOCKED_HOSTS.has(host) || host.endsWith('.localhost') || isIP(host) || !isPublicDomain(host) || isPrivateIp(host)) {
+    throw new Error('A public domain name is required for the destination');
   }
 
   return url;
+}
+
+function isPublicDomain(host: string): boolean {
+  if (host.length > 253 || !host.includes('.')) return false;
+
+  return host.split('.').every((label) => (
+    label.length > 0 &&
+    label.length <= 63 &&
+    /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/i.test(label)
+  ));
 }
 
 // Only catches literal IP addresses in the destination (matches this

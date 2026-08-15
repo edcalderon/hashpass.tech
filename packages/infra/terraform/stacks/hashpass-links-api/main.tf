@@ -101,3 +101,47 @@ module "links_api_prod" {
     Environment = "prod"
   })
 }
+
+resource "aws_cloudwatch_event_rule" "qr_link_expiry_dev" {
+  name                = "${var.name_prefix}-dev-qr-link-expiry"
+  description         = "Archives ended HashPass QR links"
+  schedule_expression = var.qr_link_expiry_sweep_schedule
+  tags = merge(local.common_tags, {
+    Environment = "dev"
+  })
+}
+
+resource "aws_cloudwatch_event_target" "qr_link_expiry_dev" {
+  rule = aws_cloudwatch_event_rule.qr_link_expiry_dev.name
+  arn  = module.links_api_dev.lambda_function_arn
+}
+
+resource "aws_lambda_permission" "allow_qr_link_expiry_dev" {
+  statement_id  = "AllowEventBridgeQrLinkExpiry"
+  action        = "lambda:InvokeFunction"
+  function_name = module.links_api_dev.lambda_function_name
+  principal     = "events.amazonaws.com"
+  source_arn    = aws_cloudwatch_event_rule.qr_link_expiry_dev.arn
+}
+
+resource "aws_cloudwatch_event_rule" "qr_link_expiry_prod" {
+  name                = "${var.name_prefix}-prod-qr-link-expiry"
+  description         = "Archives ended HashPass QR links"
+  schedule_expression = var.qr_link_expiry_sweep_schedule
+  tags = merge(local.common_tags, {
+    Environment = "prod"
+  })
+}
+
+resource "aws_cloudwatch_event_target" "qr_link_expiry_prod" {
+  rule = aws_cloudwatch_event_rule.qr_link_expiry_prod.name
+  arn  = module.links_api_prod.lambda_function_arn
+}
+
+resource "aws_lambda_permission" "allow_qr_link_expiry_prod" {
+  statement_id  = "AllowEventBridgeQrLinkExpiry"
+  action        = "lambda:InvokeFunction"
+  function_name = module.links_api_prod.lambda_function_name
+  principal     = "events.amazonaws.com"
+  source_arn    = aws_cloudwatch_event_rule.qr_link_expiry_prod.arn
+}

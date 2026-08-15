@@ -39,6 +39,7 @@ export interface QrLink {
   description?: string;
   destinationUrl: string;
   status: QrLinkStatus;
+  startsAt?: string;
   expiresAt?: string;
   visualConfig: QrVisualConfig;
   campaign?: QrLinkCampaign;
@@ -53,19 +54,23 @@ export interface QrLink {
 export interface CreateQrLinkInput {
   name: string;
   destinationUrl: string;
+  publicSlug?: string;
   description?: string;
   visualConfig?: Partial<QrVisualConfig>;
   campaign?: QrLinkCampaign;
-  expiresAt?: string;
+  startsAt?: string | null;
+  expiresAt?: string | null;
 }
 
 /** Every field is optional -- only the ones supplied are changed. Setting `status` drives the link's lifecycle (`active` <-> `paused`, or -> `archived`). */
 export interface UpdateQrLinkInput {
   name?: string;
+  publicSlug?: string;
   description?: string | null;
   destinationUrl?: string;
   visualConfig?: Partial<QrVisualConfig>;
   campaign?: QrLinkCampaign;
+  startsAt?: string | null;
   expiresAt?: string | null;
   status?: QrLinkStatus;
 }
@@ -77,4 +82,9 @@ export interface QrLinkAnalytics {
   botScans: number;
   scansByDay: Record<string, number>;
   scansByDevice: Record<string, number>;
+}
+
+export interface QrSlugAvailability {
+  available: boolean;
+  slug: string;
 }

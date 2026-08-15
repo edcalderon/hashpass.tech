@@ -4,6 +4,7 @@ import {
   classifyAgent,
   DEFAULT_QR_VISUAL,
   opaqueToken,
+  validateCustomQrSlug,
   validateDestination,
   validateVisualConfig,
   type QrLink,
@@ -35,6 +36,7 @@ interface QrLinkRow {
   campaign_content: string | null;
   visual_config: QrVisualConfig;
   status: QrLinkStatus;
+  starts_at: string | null;
   expires_at: string | null;
   archived_at: string | null;
   created_at: string;
@@ -62,6 +64,7 @@ function toPublic(row: QrLinkRow, scans?: { count: number; lastScanAt?: string }
     description: row.description ?? undefined,
     destinationUrl: row.destination_url,
     status: row.status,
+    startsAt: row.starts_at ?? undefined,
     expiresAt: row.expires_at ?? undefined,
     visualConfig: row.visual_config,
     campaign: toCampaign(row),
@@ -82,6 +85,35 @@ function campaignColumns(campaign: QrLinkCampaign | undefined) {
     campaign_term: c.term ?? null,
     campaign_content: c.content ?? null,
   };
+}
+
+function availabilityWindow(input: { startsAt?: unknown; expiresAt?: unknown }, existing?: QrLinkRow):
+  | { startsAt: string | null; expiresAt: string | null }
+  | { error: string } {
+  const startsInput = input.startsAt === undefined ? existing?.starts_at ?? null : input.startsAt;
+  const expiresInput = input.expiresAt === undefined ? existing?.expires_at ?? null : input.expiresAt;
+
+  const parse = (value: unknown, label: string): string | null | { error: string } => {
+    if (value === null || value === undefined || value === '') return null;
+    if (typeof value !== 'string') return { error: `${label} must be a valid date and time` };
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return { error: `${label} must be a valid date and time` };
+    return date.toISOString();
+  };
+
+  const startsAt = parse(startsInput, 'Start time');
+  if (startsAt && typeof startsAt === 'object') return startsAt;
+  const expiresAt = parse(expiresInput, 'End time');
+  if (expiresAt && typeof expiresAt === 'object') return expiresAt;
+
+  if (expiresAt && new Date(expiresAt) <= new Date()) {
+    return { error: 'End time must be in the future' };
+  }
+  if (startsAt && expiresAt && new Date(startsAt) >= new Date(expiresAt)) {
+    return { error: 'End time must be after the start time' };
+  }
+
+  return { startsAt, expiresAt };
 }
 
 async function scanCounts(
@@ -131,19 +163,32 @@ export async function createQrLink(request: Request): Promise<Response> {
     return apiError(error instanceof Error ? error.message : 'Invalid QR visual config');
   }
 
+  const availability = availabilityWindow(body);
+  if ('error' in availability) return apiError(availability.error);
+
+  let customSlug: string | null = null;
+  if (body.publicSlug !== undefined && body.publicSlug !== null && body.publicSlug !== '') {
+    try {
+      customSlug = validateCustomQrSlug(body.publicSlug);
+    } catch (error) {
+      return apiError(error instanceof Error ? error.message : 'Invalid custom link name');
+    }
+  }
+
   const db = adminDb();
 
-  for (let attempt = 0; attempt < 5; attempt++) {
+  for (let attempt = 0; attempt < (customSlug ? 1 : 5); attempt++) {
     const { data, error } = await db
       .from('qr_links')
       .insert({
         owner_id: user.id,
-        public_slug: opaqueToken(6),
+        public_slug: customSlug ?? opaqueToken(6),
         name: body.name.trim(),
         description: body.description ?? null,
         destination_url: destination.toString(),
         visual_config: visualConfig,
-        expires_at: body.expiresAt ?? null,
+        starts_at: availability.startsAt,
+        expires_at: availability.expiresAt,
         ...campaignColumns(body.campaign),
       })
       .select('*')
@@ -162,6 +207,7 @@ export async function createQrLink(request: Request): Promise<Response> {
     if (error?.code !== UNIQUE_VIOLATION) {
       return apiError('Unable to create QR link', 500);
     }
+    if (customSlug) return apiError('This custom link name is already taken', 409);
     // else: slug collision, loop and retry with a freshly generated slug.
   }
 
@@ -188,6 +234,30 @@ export async function listQrLinks(request: Request): Promise<Response> {
     { links: rows.map((row) => toPublic(row, counts[row.id])) },
     { headers: { 'cache-control': 'no-store' } }
   );
+}
+
+// GET /api/v1/qr-links/slug-availability?slug=... -- authenticated preflight
+// for the editor. The unique index remains the final authority at save time.
+export async function getQrSlugAvailability(request: Request): Promise<Response> {
+  const user = await authenticatedUser(request);
+  if (!user) return apiError('Authenticated HashPass session required', 401);
+
+  const rawSlug = new URL(request.url).searchParams.get('slug');
+  let slug: string;
+  try {
+    slug = validateCustomQrSlug(rawSlug);
+  } catch (error) {
+    return apiError(error instanceof Error ? error.message : 'Invalid custom link name');
+  }
+
+  const { data, error } = await adminDb()
+    .from('qr_links')
+    .select('id')
+    .eq('public_slug', slug)
+    .is('deleted_at', null);
+  if (error) return apiError('Unable to check custom link name', 500);
+
+  return Response.json({ available: (data as unknown[] | null)?.length === 0, slug }, { headers: { 'cache-control': 'no-store' } });
 }
 
 // GET /api/v1/qr-links/:id -- fetch one QR link the caller owns.
@@ -237,6 +307,13 @@ export async function updateQrLink(request: Request, id: string): Promise<Respon
     }
     patch.name = body.name.trim();
   }
+  if (body.publicSlug !== undefined) {
+    try {
+      patch.public_slug = validateCustomQrSlug(body.publicSlug);
+    } catch (error) {
+      return apiError(error instanceof Error ? error.message : 'Invalid custom link name');
+    }
+  }
   if (body.description !== undefined) {
     if (body.description !== null && (typeof body.description !== 'string' || body.description.length > 1000)) {
       return apiError('Description must be 1000 characters or fewer');
@@ -260,8 +337,11 @@ export async function updateQrLink(request: Request, id: string): Promise<Respon
   if (body.campaign !== undefined) {
     Object.assign(patch, campaignColumns(body.campaign));
   }
-  if (body.expiresAt !== undefined) {
-    patch.expires_at = body.expiresAt;
+  if (body.startsAt !== undefined || body.expiresAt !== undefined) {
+    const availability = availabilityWindow(body, existing);
+    if ('error' in availability) return apiError(availability.error);
+    if (body.startsAt !== undefined) patch.starts_at = availability.startsAt;
+    if (body.expiresAt !== undefined) patch.expires_at = availability.expiresAt;
   }
   if (body.status !== undefined) {
     if (!STATUSES.includes(body.status)) return apiError('Invalid status');
@@ -280,6 +360,7 @@ export async function updateQrLink(request: Request, id: string): Promise<Respon
     .eq('owner_id', user.id)
     .select('*')
     .single();
+  if (error?.code === UNIQUE_VIOLATION) return apiError('This custom link name is already taken', 409);
   if (error || !updatedData) return apiError('Unable to update QR link', 500);
   const updated = updatedData as QrLinkRow;
 
@@ -292,6 +373,44 @@ export async function updateQrLink(request: Request, id: string): Promise<Respon
   });
 
   return Response.json(toPublic(updated), { headers: { 'cache-control': 'no-store' } });
+}
+
+// DELETE /api/v1/qr-links/:id -- an owner-only soft deletion. `deleted_at`
+// makes the public redirect, owner list, and analytics routes unavailable
+// immediately while retaining a minimal audit trail for accountability.
+export async function deleteQrLink(request: Request, id: string): Promise<Response> {
+  const user = await authenticatedUser(request);
+  if (!user) return apiError('Authenticated HashPass session required', 401);
+
+  const db = adminDb();
+  const { data: existingData, error: fetchError } = await db
+    .from('qr_links')
+    .select('*')
+    .eq('id', id)
+    .eq('owner_id', user.id)
+    .is('deleted_at', null)
+    .single();
+  if (fetchError || !existingData) return apiError('QR link not found', 404);
+  const existing = existingData as QrLinkRow;
+  const deletedAt = new Date().toISOString();
+
+  const { error } = await db
+    .from('qr_links')
+    .update({ status: 'archived', archived_at: existing.archived_at ?? deletedAt, deleted_at: deletedAt })
+    .eq('id', id)
+    .eq('owner_id', user.id)
+    .is('deleted_at', null);
+  if (error) return apiError('Unable to delete QR link', 500);
+
+  await db.from('qr_link_audit_events').insert({
+    qr_link_id: id,
+    actor_id: user.id,
+    event_type: 'deleted',
+    before_summary: { name: existing.name, destinationUrl: existing.destination_url, status: existing.status },
+    after_summary: { deletedAt },
+  });
+
+  return new Response(null, { status: 204 });
 }
 
 // GET /api/v1/qr-links/:id/analytics -- scan counts and breakdowns over the
@@ -345,6 +464,30 @@ export async function getQrLinkAnalytics(request: Request, id: string): Promise<
   );
 }
 
+/** Invoked by the EventBridge schedule so ended QR links become archived even without a scan. */
+export async function archiveExpiredQrLinks(now = new Date()): Promise<number> {
+  const db = adminDb();
+  const archivedAt = now.toISOString();
+  const { data, error } = await db
+    .from('qr_links')
+    .update({ status: 'archived', archived_at: archivedAt })
+    .eq('status', 'active')
+    .is('deleted_at', null)
+    .lt('expires_at', archivedAt)
+    .select('*');
+  if (error) throw new Error('Unable to archive expired QR links');
+
+  const rows = (data ?? []) as QrLinkRow[];
+  await Promise.all(rows.map((row) => db.from('qr_link_audit_events').insert({
+    qr_link_id: row.id,
+    actor_id: null,
+    event_type: 'expired_archived',
+    before_summary: { status: 'active', expiresAt: row.expires_at },
+    after_summary: { status: 'archived', archivedAt },
+  })));
+  return rows.length;
+}
+
 async function logScan(db: SupabaseClient, qrLinkId: string, request: Request): Promise<void> {
   const secret = process.env.QR_ANALYTICS_SECRET;
   const ip =
@@ -382,8 +525,10 @@ export async function redirectQrLink(request: Request, slug: string): Promise<Re
   const { data } = await db.from('qr_links').select('*').eq('public_slug', slug).is('deleted_at', null).single();
   const link = data as QrLinkRow | null;
 
-  const expired = link?.expires_at ? new Date(link.expires_at) <= new Date() : false;
-  if (!link || link.status !== 'active' || expired) {
+  const now = new Date();
+  const beforeStart = link?.starts_at ? new Date(link.starts_at) > now : false;
+  const expired = link?.expires_at ? new Date(link.expires_at) <= now : false;
+  if (!link || link.status !== 'active' || beforeStart || expired) {
     return apiError('This QR link is not available', 404);
   }
 

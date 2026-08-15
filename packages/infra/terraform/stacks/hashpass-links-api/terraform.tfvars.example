@@ -8,6 +8,7 @@ name_prefix = "hashpass-links"
 #   ./packages/tools/scripts/package-hashpass-links-lambda.sh
 lambda_zip_path         = "../../../../../hashpass-links-api-lambda.zip"
 lambda_source_code_hash = null
+qr_link_expiry_sweep_schedule = "rate(5 minutes)"
 
 # hashpass.link is NOT confirmed registered yet. Leave this false -- the
 # stack stands up real Lambda + API Gateway resources behind their default
@@ -18,7 +19,7 @@ lambda_source_code_hash = null
 enable_custom_domain = false
 
 domain_name = {
-  dev  = "links-dev.hashpass.link"
+  dev  = "dev.hashpass.link"
   prod = "hashpass.link"
 }
 route53_zone_name = "hashpass.link"
