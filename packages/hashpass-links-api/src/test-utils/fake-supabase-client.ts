@@ -7,13 +7,25 @@ import { randomUUID } from 'node:crypto';
 
 type Row = Record<string, unknown>;
 
+type Predicate = (row: Row) => boolean;
+
+// This in-memory store has no real schema, so column defaults that a real
+// Postgres insert would apply silently (V079's `qr_auth_challenges.status
+// DEFAULT 'pending'` and `qr_links.status DEFAULT 'active'`) have to be
+// told explicitly, per table, here.
+const TABLE_INSERT_DEFAULTS: Record<string, Row> = {
+  qr_auth_challenges: { status: 'pending' },
+  qr_links: { status: 'active' },
+};
+
 class FakeQueryBuilder implements PromiseLike<{ data: unknown; error: { message: string } | null }> {
   private mode: 'select' | 'insert' | 'update' = 'select';
   private payload: Row = {};
-  private filters: Array<[string, unknown]> = [];
+  private filters: Predicate[] = [];
   private wantsSingle = false;
+  private sortBy: { column: string; ascending: boolean } | undefined;
 
-  constructor(private readonly table: Map<string, Row>) {}
+  constructor(private readonly tableName: string, private readonly table: Map<string, Row>) {}
 
   insert(payload: Row): this {
     this.mode = 'insert';
@@ -33,7 +45,31 @@ class FakeQueryBuilder implements PromiseLike<{ data: unknown; error: { message:
   }
 
   eq(column: string, value: unknown): this {
-    this.filters.push([column, value]);
+    this.filters.push((row) => row[column] === value);
+    return this;
+  }
+
+  // `.is(column, null)` -- the only form this service's routes actually use
+  // (soft-delete checks like `.is('deleted_at', null)`), so that's the only
+  // form implemented here.
+  is(column: string, value: null): this {
+    this.filters.push((row) => (row[column] ?? null) === value);
+    return this;
+  }
+
+  in(column: string, values: unknown[]): this {
+    const set = new Set(values);
+    this.filters.push((row) => set.has(row[column]));
+    return this;
+  }
+
+  gte(column: string, value: string | number): this {
+    this.filters.push((row) => (row[column] as string | number) >= value);
+    return this;
+  }
+
+  order(column: string, options: { ascending?: boolean } = {}): this {
+    this.sortBy = { column, ascending: options.ascending !== false };
     return this;
   }
 
@@ -43,17 +79,25 @@ class FakeQueryBuilder implements PromiseLike<{ data: unknown; error: { message:
   }
 
   private matchedRows(): Row[] {
-    return [...this.table.values()].filter((row) => this.filters.every(([column, value]) => row[column] === value));
+    const rows = [...this.table.values()].filter((row) => this.filters.every((predicate) => predicate(row)));
+    if (!this.sortBy) return rows;
+
+    const { column, ascending } = this.sortBy;
+    return rows.sort((a, b) => {
+      const left = a[column] as string | number;
+      const right = b[column] as string | number;
+      if (left === right) return 0;
+      return (left > right ? 1 : -1) * (ascending ? 1 : -1);
+    });
   }
 
   private execute(): { data: unknown; error: { message: string } | null } {
     if (this.mode === 'insert') {
-      // Mirrors the `qr_auth_challenges.status` column default in
-      // db/migrations/V079__hashpass_links_dynamic_qr.sql -- a real Postgres
-      // insert that omits `status` gets 'pending' from the column default;
-      // this in-memory table has no schema/defaults of its own, so it has to
-      // be told explicitly.
-      const row: Row = { id: randomUUID(), status: 'pending', ...this.payload };
+      const row: Row = {
+        id: randomUUID(),
+        ...(TABLE_INSERT_DEFAULTS[this.tableName] ?? {}),
+        ...this.payload,
+      };
       this.table.set(row.id as string, row);
       return { data: row, error: null };
     }
@@ -100,7 +144,7 @@ export function createFakeSupabaseClient(users: FakeUser[] = []) {
 
   return {
     from(name: string) {
-      return new FakeQueryBuilder(tableFor(name));
+      return new FakeQueryBuilder(name, tableFor(name));
     },
     auth: {
       async getUser(token: string) {

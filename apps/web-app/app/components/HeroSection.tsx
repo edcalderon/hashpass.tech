@@ -1,8 +1,9 @@
 'use client';
 
-import { useRef, useState, type CSSProperties, type PointerEvent } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type PointerEvent } from 'react';
 import { useTranslation } from '@hashpass/i18n';
 import { ShaderBackground } from './ShaderBackground';
+import { useLandingAnimationMode } from './LandingAnimationProvider';
 import { useTheme } from './ThemeProvider';
 import {
   ContainerScroll,
@@ -13,32 +14,58 @@ import {
 import { DownloadShowcase } from '@/components/ui/download-options-section';
 
 // ── HASHPASS event / club / membership photography ───────────────────────────
-const COL_1 = [
-  'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=900&auto=format&fit=crop&q=70',
-  'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=900&auto=format&fit=crop&q=70',
-  'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=900&auto=format&fit=crop&q=70',
-  'https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?w=900&auto=format&fit=crop&q=70',
+type GalleryImage = {
+  alt: string;
+  command: string;
+  src: string;
+};
+
+const COL_1: GalleryImage[] = [
+  { src: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=900&auto=format&fit=crop&q=70', alt: 'Conference audience', command: 'Command your conference.' },
+  { src: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=900&auto=format&fit=crop&q=70', alt: 'Live music performer', command: 'Command your concert.' },
+  { src: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=900&auto=format&fit=crop&q=70', alt: 'Music festival crowd', command: 'Command your music club.' },
+  { src: 'https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?w=900&auto=format&fit=crop&q=70', alt: 'Fans at a live show', command: 'Command your fan club.' },
 ];
-const COL_2 = [
-  'https://images.unsplash.com/photo-1543269865-cbf427effbad?w=900&auto=format&fit=crop&q=70',
-  'https://images.unsplash.com/photo-1591115765373-5207764f72e7?w=900&auto=format&fit=crop&q=70',
-  'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=900&auto=format&fit=crop&q=70',
-  'https://images.unsplash.com/photo-1461897104016-0b3b00cc81ee?w=900&auto=format&fit=crop&q=70',
+const COL_2: GalleryImage[] = [
+  { src: 'https://images.unsplash.com/photo-1543269865-cbf427effbad?w=900&auto=format&fit=crop&q=70', alt: 'Community planning session', command: 'Command your community.' },
+  { src: 'https://images.unsplash.com/photo-1591115765373-5207764f72e7?w=900&auto=format&fit=crop&q=70', alt: 'Technology conference presentation', command: 'Command your tech conference.' },
+  { src: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=900&auto=format&fit=crop&q=70', alt: 'Friends in a social club', command: 'Command your social club.' },
+  { src: 'https://images.unsplash.com/photo-1461897104016-0b3b00cc81ee?w=900&auto=format&fit=crop&q=70', alt: 'Running club race', command: 'Command your running club.' },
 ];
-const COL_3 = [
-  'https://images.unsplash.com/photo-1516997121675-4c2d1684aa3e?w=900&auto=format&fit=crop&q=70',
-  'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=900&auto=format&fit=crop&q=70',
-  'https://images.unsplash.com/photo-1506157786151-b8491531f063?w=900&auto=format&fit=crop&q=70',
-  'https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=900&auto=format&fit=crop&q=70',
+const COL_3: GalleryImage[] = [
+  { src: 'https://images.unsplash.com/photo-1516997121675-4c2d1684aa3e?w=900&auto=format&fit=crop&q=70', alt: 'Private dinner gathering', command: 'Command your members’ club.' },
+  { src: 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=900&auto=format&fit=crop&q=70', alt: 'Digital community network', command: 'Command your digital club.' },
+  { src: 'https://images.unsplash.com/photo-1506157786151-b8491531f063?w=900&auto=format&fit=crop&q=70', alt: 'Night club dance floor', command: 'Command your night club.' },
+  { src: 'https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=900&auto=format&fit=crop&q=70', alt: 'Private event venue', command: 'Command your private club.' },
 ];
+
+function GalleryImageCard({ image, onSelect }: { image: GalleryImage; onSelect: (command: string) => void }) {
+  return (
+    <button
+      type="button"
+      className="club-gallery-card"
+      aria-label={image.command}
+      onClick={() => onSelect(image.command)}
+    >
+      <img
+        src={image.src}
+        alt={image.alt}
+        className="aspect-video block h-auto w-full object-cover shadow-md"
+        loading="lazy"
+      />
+    </button>
+  );
+}
 
 export function HeroSection() {
   const { t } = useTranslation('hero');
   const { resolvedTheme } = useTheme();
+  const { animationMode } = useLandingAnimationMode();
   const galleryRef = useRef<HTMLDivElement>(null);
   const titleEffectRef = useRef<HTMLDivElement>(null);
   const [titlePulse, setTitlePulse] = useState(0);
   const [activeTitleLetter, setActiveTitleLetter] = useState<number | null>(null);
+  const [galleryCommand, setGalleryCommand] = useState<{ nonce: number; text: string } | null>(null);
   const isDark = resolvedTheme === 'dark';
 
   // ── Hero text colors ────────────────────────────────────────────────────────
@@ -82,6 +109,16 @@ export function HeroSection() {
 
   const activateTitleEffect = () => setTitlePulse((value) => value + 1);
 
+  const showGalleryCommand = (text: string) => {
+    setGalleryCommand((current) => ({ text, nonce: (current?.nonce ?? 0) + 1 }));
+  };
+
+  useEffect(() => {
+    if (!galleryCommand) return;
+    const timeout = window.setTimeout(() => setGalleryCommand(null), 3200);
+    return () => window.clearTimeout(timeout);
+  }, [galleryCommand?.nonce]);
+
   const moveTitleLetter = (event: PointerEvent<HTMLSpanElement>, index: number) => {
     moveTitleLight(event);
     setActiveTitleLetter(index);
@@ -108,7 +145,7 @@ export function HeroSection() {
   return (
     <>
       {/* ── Shader hero ─────────────────────────────────────────────────────── */}
-      <ShaderBackground>
+      <ShaderBackground animationMode={animationMode}>
         <div
           style={{
             display: 'flex',
@@ -349,6 +386,93 @@ export function HeroSection() {
           .club-hero-title-orbit[data-pulse]:not([data-pulse="0"]) .club-hero-title-dust i {
             animation: club-title-dust 1.25s cubic-bezier(.1,.9,.26,1) both;
           }
+          .club-gallery-card {
+            position: relative;
+            display: block;
+            width: 100%;
+            padding: 0;
+            overflow: hidden;
+            cursor: pointer;
+            border: 0;
+            border-radius: 12px;
+            background: transparent;
+            isolation: isolate;
+            transform: translateZ(0);
+          }
+          .club-gallery-card::after {
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            content: '';
+            border: 2px solid transparent;
+            border-radius: inherit;
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,.12), 0 0 0 rgba(72,156,255,0);
+            transition: border-color 180ms ease, box-shadow 220ms ease, background 220ms ease;
+            pointer-events: none;
+          }
+          .club-gallery-card:hover::after,
+          .club-gallery-card:focus-visible::after {
+            border-color: rgba(142,204,255,.96);
+            background: linear-gradient(135deg, rgba(88,171,255,.18), transparent 45%, rgba(242,112,204,.18));
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,.56), 0 0 25px rgba(61,151,255,.55), 0 0 48px rgba(237,69,182,.22);
+          }
+          .club-gallery-card:focus-visible { outline: 0; }
+          .club-gallery-card img {
+            transition: filter 220ms ease, transform 350ms cubic-bezier(.16,.9,.3,1);
+          }
+          .club-gallery-card:hover img,
+          .club-gallery-card:focus-visible img {
+            filter: saturate(1.12) brightness(1.08);
+            transform: scale(1.035);
+          }
+          @media (min-aspect-ratio: 5 / 4) {
+            .club-gallery-fit {
+              width: 48%;
+              margin-inline: auto;
+            }
+          }
+          .club-gallery-command {
+            position: absolute;
+            inset: 0;
+            z-index: 5;
+            display: grid;
+            place-content: center;
+            padding: 32px;
+            text-align: center;
+            pointer-events: none;
+            background: radial-gradient(ellipse at center, rgba(7,18,45,.8), rgba(4,10,25,.16) 54%, transparent 76%);
+            animation: club-gallery-command-veil 320ms ease both;
+          }
+          .club-gallery-command span {
+            margin-bottom: 10px;
+            color: #9fceff;
+            font-family: var(--font-mono);
+            font-size: clamp(10px, 1vw, 13px);
+            font-weight: 700;
+            letter-spacing: .2em;
+            text-transform: uppercase;
+            animation: club-gallery-command-up 440ms 60ms cubic-bezier(.16,.9,.3,1) both;
+          }
+          .club-gallery-command strong {
+            max-width: 10ch;
+            color: #fff;
+            font-family: var(--font-display);
+            font-size: clamp(38px, 7vw, 98px);
+            font-weight: 700;
+            line-height: .95;
+            letter-spacing: -0.06em;
+            text-wrap: balance;
+            text-shadow: 0 0 18px rgba(162,211,255,.9), 0 12px 35px rgba(28,99,255,.55);
+            animation: club-gallery-command-up 600ms 100ms cubic-bezier(.16,.9,.3,1) both;
+          }
+          @keyframes club-gallery-command-veil {
+            from { opacity: 0; }
+            to { opacity: 1; }
+          }
+          @keyframes club-gallery-command-up {
+            from { opacity: 0; transform: translateY(20px) scale(.96); filter: blur(9px); }
+            to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+          }
           @keyframes club-letter-liquid {
             0% { background-size: 105% 105%, 100% 100%; filter: brightness(1.3) drop-shadow(0 0 3px rgba(255,255,255,.28)); }
             54% { background-size: 268% 268%, 186% 186%; filter: brightness(1.06) drop-shadow(0 0 14px rgba(255,255,255,.54)); }
@@ -364,7 +488,10 @@ export function HeroSection() {
             .club-hero-title-orbit:hover .club-hero-title,
             .club-hero-title-letter[data-active=\"true\"],
             .club-hero-title-orbit:hover .club-hero-title-dust i,
-            .club-hero-title-orbit[data-pulse]:not([data-pulse="0"]) .club-hero-title-dust i { animation: none; }
+            .club-hero-title-orbit[data-pulse]:not([data-pulse="0"]) .club-hero-title-dust i,
+            .club-gallery-command,
+            .club-gallery-command span,
+            .club-gallery-command strong { animation: none; }
             .club-hero-title-glass, .club-hero-title-orbit:hover .club-hero-title-glass { opacity: 0; }
           }
         `}</style>
@@ -431,49 +558,35 @@ export function HeroSection() {
           }}
         />
 
-        {/* Scroll-driven 3D gallery */}
-        <div style={{ position: 'relative', zIndex: 2 }}>
-          {/* h-[220vh] gives enough runway for phase 1 (3D tilt) + phase 2 (horizontal spread) */}
-          <ContainerScroll className="h-[220vh]">
-            <ContainerSticky className="h-svh">
-              <GalleryContainer>
+        {/* A compact motion runway hands directly from the complete collage to
+            the download call to action, without empty scroll space. */}
+        <ContainerScroll className="h-[120vh]">
+            <ContainerSticky className="relative h-svh">
+              <GalleryContainer className="club-gallery-fit">
                 <GalleryCol yRange={['-10%', '6%']} xRange={['0%', '-28%']} className="-mt-2">
-                  {COL_1.map((src, i) => (
-                    <img
-                      key={i}
-                      src={src}
-                      alt="HASHPASS event"
-                      className="aspect-video block h-auto w-full rounded-xl object-cover shadow-md"
-                      loading="lazy"
-                    />
+                  {COL_1.map((image) => (
+                    <GalleryImageCard key={image.src} image={image} onSelect={showGalleryCommand} />
                   ))}
                 </GalleryCol>
                 <GalleryCol className="mt-[-50%]" yRange={['15%', '6%']} xRange={['0%', '0%']}>
-                  {COL_2.map((src, i) => (
-                    <img
-                      key={i}
-                      src={src}
-                      alt="HASHPASS community"
-                      className="aspect-video block h-auto w-full rounded-xl object-cover shadow-md"
-                      loading="lazy"
-                    />
+                  {COL_2.map((image) => (
+                    <GalleryImageCard key={image.src} image={image} onSelect={showGalleryCommand} />
                   ))}
                 </GalleryCol>
                 <GalleryCol yRange={['-10%', '6%']} xRange={['0%', '28%']} className="-mt-2">
-                  {COL_3.map((src, i) => (
-                    <img
-                      key={i}
-                      src={src}
-                      alt="HASHPASS access"
-                      className="aspect-video block h-auto w-full rounded-xl object-cover shadow-md"
-                      loading="lazy"
-                    />
+                  {COL_3.map((image) => (
+                    <GalleryImageCard key={image.src} image={image} onSelect={showGalleryCommand} />
                   ))}
                 </GalleryCol>
               </GalleryContainer>
+              {galleryCommand && (
+                <div key={galleryCommand.nonce} className="club-gallery-command" role="status" aria-live="polite">
+                  <span>HASHPASS CLUB</span>
+                  <strong>{galleryCommand.text}</strong>
+                </div>
+              )}
             </ContainerSticky>
-          </ContainerScroll>
-        </div>
+        </ContainerScroll>
 
         {/* The gallery has finished its scroll animation before the app install CTA appears. */}
         <DownloadShowcase />

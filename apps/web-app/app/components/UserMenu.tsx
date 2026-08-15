@@ -63,15 +63,10 @@ export function UserMenu() {
     router.push('/panel');
   };
 
-  const openProfile = () => {
-    setOpen(false);
-    // The real HASHPASS account/profile screen lives in the main app, not
-    // hashpass.club -- env-aware the same way SignInModal's "Open
-    // HASHPASS.TECH" button and the download CTA's "Download HASHPASS"
-    // button already are: localhost -> local Expo web, a dev host ->
-    // dev.hashpass.tech, otherwise -> hashpass.tech.
-    window.open(`${resolveHashpassAppUrl()}${HASHPASS_PROFILE_PATH}`, '_blank', 'noopener,noreferrer');
-  };
+  // The real HASHPASS account/profile screen lives in the main app, not
+  // hashpass.club. Keep this env-aware so the profile shortcut works on
+  // localhost, development, and production environments.
+  const profileUrl = `${resolveHashpassAppUrl()}${HASHPASS_PROFILE_PATH}`;
 
   const signOut = async () => {
     setOpen(false);
@@ -139,12 +134,41 @@ export function UserMenu() {
             }}
           >
             <div style={{ padding: '10px 12px 8px', borderBottom: '1px solid var(--border)', marginBottom: 4 }}>
-              <p style={{
-                margin: 0, fontSize: 13, fontWeight: 700, color: 'var(--text-primary)',
-                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-              }}>
-                {displayName}
-              </p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                <p style={{
+                  margin: 0, flex: 1, minWidth: 0, fontSize: 13, fontWeight: 700, color: 'var(--text-primary)',
+                  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                }}>
+                  {displayName}
+                </p>
+                <a
+                  href={profileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={t('profileInfo')}
+                  title={t('profileInfo')}
+                  onClick={() => setOpen(false)}
+                  style={{
+                    width: 24, height: 24, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    flexShrink: 0, borderRadius: 6, color: 'var(--text-faint)', textDecoration: 'none',
+                    transition: 'color 0.15s, background 0.15s',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = 'var(--text-primary)';
+                    e.currentTarget.style.background = 'var(--bg-overlay)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = 'var(--text-faint)';
+                    e.currentTarget.style.background = 'transparent';
+                  }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M10 14 21 3" />
+                    <path d="M15 3h6v6" />
+                    <path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5" />
+                  </svg>
+                </a>
+              </div>
               {user.email && displayName !== user.email && (
                 <p style={{
                   margin: '2px 0 0', fontSize: 12, color: 'var(--text-faint)',
@@ -154,20 +178,6 @@ export function UserMenu() {
                 </p>
               )}
             </div>
-
-            <button
-              onClick={openProfile}
-              role="menuitem"
-              style={menuItemStyle('var(--text-primary)')}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'var(--bg-overlay)'; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
-            >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <circle cx="12" cy="8" r="4"/>
-                <path d="M4 20c0-4 3.5-6 8-6s8 2 8 6"/>
-              </svg>
-              {t('profileInfo')}
-            </button>
 
             <button
               onClick={openPanel}

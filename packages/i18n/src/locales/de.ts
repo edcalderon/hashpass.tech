@@ -32,7 +32,6 @@ export const de = {
     comingSoonTitle: 'Demnächst verfügbar',
     comingSoonBody: 'Dieses Panel befindet sich im Aufbau. Das kommt als Nächstes.',
     featureQr: 'QR-Anmeldelinks erstellen und verwalten',
-    featurePasses: 'Pässe und Zugänge verfolgen',
     featureMembers: 'Mitglieder und Rollen verwalten',
     signInRequiredTitle: 'Anmeldung erforderlich',
     signInRequiredBody: 'Melde dich mit HASHPASS an, um auf das Panel deines Clubs zuzugreifen.',

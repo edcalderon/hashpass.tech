@@ -32,7 +32,6 @@ export const pt = {
     comingSoonTitle: 'Em breve',
     comingSoonBody: 'Este painel está em construção. Veja o que vem a seguir.',
     featureQr: 'Criar e gerenciar links QR de login',
-    featurePasses: 'Acompanhar passes e acessos',
     featureMembers: 'Gerenciar membros e papéis',
     signInRequiredTitle: 'Login necessário',
     signInRequiredBody: 'Entre com HASHPASS para acessar o painel do seu clube.',

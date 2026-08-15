@@ -45,6 +45,7 @@ These were open questions in the original spec; they are now settled and impleme
 4. **Event config keeps a TypeScript fallback during migration** — `events` DB rows are the mutable source of truth once an event is imported/seeded; the old hardcoded `packages/config/src/events.ts` is not deleted yet (dual-read period).
 5. **`bsl_speakers` is not renamed.** A new, generic `speakers` table was introduced instead (`event_id`-scoped from day one), decoupled from the legacy BSL-specific meeting-matching tables. This avoids the FK-migration risk called out in the original spec, at the cost of running two speaker tables in parallel until `bsl_speakers` is retired.
 6. **"Revoke" reuses the existing `PassStatus` enum** (`cancelled`/`suspended`) rather than adding a new DB enum value — no `revoked_at`/`revoked_by`/`reason` columns yet. Accountability instead comes entirely from `admin_action_log` (actor/event/action/target per mutation), not from columns on `passes` itself.
+7. **Resolved 2026-08-15: top-level event creation moves to the hashpass.club web panel, not this mobile admin surface.** This task's own `events`/`event_roles` schema and `has_event_admin_access()`/`admin_mutate_event_role()` RPCs remain the shared source of truth and are expected to be reused by whatever route the web panel ends up calling (see `.agents/active/task-panel-web-club-events-qr.md`, Phase A). What stays in this task's scope under the old "Add `/api/admin/events`" line is narrower: **sub-events/side-events** nested under an already-published parent event, not the parent event itself.
 
 ## What's done (merged to `develop` via PR #92, 2026-07-24)
 
@@ -90,7 +91,7 @@ Tests: `apps/mobile-app/tests/api/admin-passes.test.ts` covers invalid input (re
 
 ## What's NOT done yet (next phases)
 
-- **No `/api/admin/events` route** — no way to create/edit an event (info, venue, branding) from the UI or an API. `events` rows exist only via the V012 seed insert.
+- **No `/api/admin/events` route** — no way to create/edit an event (info, venue, branding) from the UI or an API. `events` rows exist only via the V012 seed insert. **Rescoped 2026-08-15**: top-level event creation/publishing (the kind that shows up on hashpass.tech) is owned by the hashpass.club web panel now, not this mobile admin surface — see `.agents/active/task-panel-web-club-events-qr.md`. What's still open here is narrower: creating/editing **sub-events or side events** nested under an already-published top-level event (e.g. a satellite session, breakout track, or associated smaller gathering tied to a parent event), not the parent event itself.
 - **No speaker/agenda/venue CRUD** — UI and API routes both outstanding. The `speakers`/`event_agenda_items` tables exist but nothing writes to them yet.
 - **No active/checked-in users view** for event admins.
 - **No `admin_action_log` viewer.**
@@ -118,7 +119,7 @@ Tests: `apps/mobile-app/tests/api/admin-passes.test.ts` covers invalid input (re
 - [x] Add `/api/admin/roles` (grant/revoke `event_admin`/`moderator`, enforcing the escalation rule above).
 - [x] Add a "Staff & Roles" tab in `admin.tsx` that calls `/api/admin/roles`.
 - [x] Reconcile dev's schema to prod's baseline (`V015`) and apply `V012`-`V015` to both environments.
-- [ ] Add `/api/admin/events` (create/edit event info, venue, branding) + UI.
+- [ ] Add `/api/admin/events` scoped to **sub-events/side-events only** (create/edit a child event's info, venue, branding, nested under an existing parent `events` row) + UI. Top-level event creation/publishing is out of this task's scope as of 2026-08-15 — it's owned by the hashpass.club web panel, see `.agents/active/task-panel-web-club-events-qr.md`.
 - [ ] Add agenda and speaker CRUD routes and UI.
 - [ ] Import remaining TypeScript event metadata into `events`/`speakers`/`event_agenda_items`; reconcile legacy `passes.event_id` values against real `events` rows.
 - [ ] `VALIDATE CONSTRAINT passes_event_id_fkey` once legacy data is reconciled.

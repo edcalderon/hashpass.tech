@@ -282,7 +282,8 @@ test('health check responds ok', async () => {
   assert.equal(body.status, 'ok');
 });
 
-test('phase 2 routes report not-yet-live', async () => {
+test('unauthenticated qr-links list is rejected', async () => {
+  useFakeDb();
   const response = await handleRequest(new Request('https://api.hashpass.link/api/v1/qr-links'));
-  assert.equal(response.status, 501);
+  assert.equal(response.status, 401);
 });

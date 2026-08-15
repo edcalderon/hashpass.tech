@@ -11,4 +11,5 @@ export type {
 } from "./types.js";
 export * from "./auth/index.js";
 export * from "./auth-qr/index.js";
+export * from "./qr-links/index.js";
 export * from "./support/index.js";
