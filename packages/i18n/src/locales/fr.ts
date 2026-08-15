@@ -20,6 +20,7 @@ export const fr = {
     downloadApp: 'Télécharger l\'app',
     exploreDashboard: 'Explorer le tableau de bord',
     account: 'Compte',
+    profileInfo: 'Infos du profil',
     signOut: 'Se déconnecter',
     signOutSuccess: 'Déconnecté.',
     signOutError: 'Impossible de se déconnecter. Veuillez réessayer.',

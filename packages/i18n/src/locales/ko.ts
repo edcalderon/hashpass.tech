@@ -20,6 +20,7 @@ export const ko = {
     downloadApp: '앱 다운로드',
     exploreDashboard: '대시보드 열기',
     account: '계정',
+    profileInfo: '프로필 정보',
     signOut: '로그아웃',
     signOutSuccess: '로그아웃되었습니다.',
     signOutError: '로그아웃하지 못했습니다. 다시 시도해 주세요.',

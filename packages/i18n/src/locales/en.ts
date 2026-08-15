@@ -20,6 +20,7 @@ export const en = {
     downloadApp: 'Download the app',
     exploreDashboard: 'Explore dashboard',
     account: 'Account',
+    profileInfo: 'Profile info',
     signOut: 'Sign out',
     signOutSuccess: 'Signed out.',
     signOutError: 'Could not sign out. Please try again.',

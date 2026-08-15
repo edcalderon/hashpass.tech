@@ -84,7 +84,15 @@ function IconPill({
   );
 }
 
-export function Navbar() {
+interface NavbarProps {
+  // The #features/#pricing anchors only resolve on the landing page itself,
+  // and /documentation/ reads oddly as primary nav once you're inside an
+  // authenticated area like /panel -- pages that aren't the marketing
+  // landing page pass false here instead of duplicating the whole Navbar.
+  showMarketingLinks?: boolean;
+}
+
+export function Navbar({ showMarketingLinks = true }: NavbarProps) {
   const { resolvedTheme, setTheme } = useTheme();
   const { t } = useTranslation('nav');
   const locale = useLocale();
@@ -195,6 +203,7 @@ export function Navbar() {
           </Link>
 
           {/* ── Desktop nav links ── */}
+          {showMarketingLinks && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 2 }} className="nav-links-desktop">
             {navLinks.map(({ key, href }) => (
               href.startsWith('/') ? (
@@ -252,6 +261,7 @@ export function Navbar() {
               )
             ))}
           </div>
+          )}
 
           {/* ── Right controls: mobile-style pill icons ── */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>

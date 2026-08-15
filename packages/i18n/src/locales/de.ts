@@ -20,6 +20,7 @@ export const de = {
     downloadApp: 'App herunterladen',
     exploreDashboard: 'Dashboard öffnen',
     account: 'Konto',
+    profileInfo: 'Profilinfo',
     signOut: 'Abmelden',
     signOutSuccess: 'Abgemeldet.',
     signOutError: 'Abmelden fehlgeschlagen. Bitte versuche es erneut.',

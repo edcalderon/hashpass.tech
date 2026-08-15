@@ -20,6 +20,7 @@ export const es = {
     downloadApp: 'Descargar la app',
     exploreDashboard: 'Explorar panel',
     account: 'Cuenta',
+    profileInfo: 'Información de perfil',
     signOut: 'Cerrar sesión',
     signOutSuccess: 'Sesión cerrada.',
     signOutError: 'No se pudo cerrar sesión. Inténtalo de nuevo.',

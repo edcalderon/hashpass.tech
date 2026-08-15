@@ -7,6 +7,11 @@ import { useTheme } from './ThemeProvider';
 import { useSession } from './SessionProvider';
 import { useToast } from './Toast';
 import { supabaseClient } from '../../lib/supabase-client';
+import { resolveHashpassAppUrl } from '../../lib/hashpass-app-url';
+
+// Matches apps/mobile-app/app/(shared)/dashboard/profile.tsx's public
+// router path.
+const HASHPASS_PROFILE_PATH = '/dashboard/profile';
 
 // Same fallback service (and same params) apps/mobile-app's own profile
 // screen uses (generateUIAvatarUrl in app/(shared)/dashboard/profile.tsx) --
@@ -56,6 +61,16 @@ export function UserMenu() {
   const openPanel = () => {
     setOpen(false);
     router.push('/panel');
+  };
+
+  const openProfile = () => {
+    setOpen(false);
+    // The real HASHPASS account/profile screen lives in the main app, not
+    // hashpass.club -- env-aware the same way SignInModal's "Open
+    // HASHPASS.TECH" button and the download CTA's "Download HASHPASS"
+    // button already are: localhost -> local Expo web, a dev host ->
+    // dev.hashpass.tech, otherwise -> hashpass.tech.
+    window.open(`${resolveHashpassAppUrl()}${HASHPASS_PROFILE_PATH}`, '_blank', 'noopener,noreferrer');
   };
 
   const signOut = async () => {
@@ -139,6 +154,20 @@ export function UserMenu() {
                 </p>
               )}
             </div>
+
+            <button
+              onClick={openProfile}
+              role="menuitem"
+              style={menuItemStyle('var(--text-primary)')}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'var(--bg-overlay)'; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <circle cx="12" cy="8" r="4"/>
+                <path d="M4 20c0-4 3.5-6 8-6s8 2 8 6"/>
+              </svg>
+              {t('profileInfo')}
+            </button>
 
             <button
               onClick={openPanel}

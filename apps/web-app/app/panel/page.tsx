@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useTranslation } from '@hashpass/i18n';
 import { Navbar } from '../components/Navbar';
+import { Footer } from '../components/Footer';
 import { useSession } from '../components/SessionProvider';
 
 // Landing spot for "Explorar panel" (UserMenu + SignInModal's post-success
@@ -16,7 +17,7 @@ export default function PanelPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-canvas)' }}>
-      <Navbar />
+      <Navbar showMarketingLinks={false} />
       <main
         style={{
           maxWidth: 720,
@@ -112,6 +113,8 @@ export default function PanelPage() {
           </>
         )}
       </main>
+
+      <Footer />
 
       <style>{`
         @keyframes panel-spin { to { transform: rotate(360deg); } }

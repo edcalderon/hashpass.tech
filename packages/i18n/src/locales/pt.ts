@@ -20,6 +20,7 @@ export const pt = {
     downloadApp: 'Baixar o app',
     exploreDashboard: 'Explorar painel',
     account: 'Conta',
+    profileInfo: 'Informações do perfil',
     signOut: 'Sair',
     signOutSuccess: 'Sessão encerrada.',
     signOutError: 'Não foi possível sair. Tente novamente.',
