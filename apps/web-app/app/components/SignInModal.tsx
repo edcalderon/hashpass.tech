@@ -531,8 +531,17 @@ export function SignInModal({ open, onClose }: SignInModalProps) {
           {t('openApp')}
         </a>
 
+        {/* Divider */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', marginBottom: 12 }}>
+          <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+          <span style={{ fontSize: 12, color: 'var(--text-faint)', whiteSpace: 'nowrap' }}>
+            {t('orDownload')}
+          </span>
+          <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+        </div>
+
         {/* App store links -- Play Store only for now, no iOS listing yet */}
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 4 }}>
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
           <a href={PLAY_STORE_URL} target="_blank" rel="noopener noreferrer" style={{ opacity: 0.6, transition: 'opacity 0.15s', display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--text-faint)', textDecoration: 'none', fontFamily: 'var(--font-mono)', letterSpacing: 0.3 }}
             onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.opacity = '1'; }}
             onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.opacity = '0.6'; }}
