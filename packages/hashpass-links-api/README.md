@@ -62,10 +62,23 @@ pnpm --filter @hashpass/hashpass-links-api run build   # typecheck (tsc --noEmit
 pnpm --filter @hashpass/hashpass-links-api run test     # tsx --test, no live DB needed
 ```
 
-To exercise the service as a real HTTP server locally, write a tiny wrapper
-around `handleRequest` from `src/router.ts` (e.g. Node's `http.createServer`
-or `Bun.serve`) with `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` pointed at a
-real (dev) Supabase project — there's no dedicated local-server script yet.
+To exercise the service as a real HTTP server locally:
+
+```bash
+SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... pnpm --filter @hashpass/hashpass-links-api run dev
+# -> http://localhost:8788 (PORT env var to override)
+```
+
+`dev-server.ts` wraps `handleRequest` from `src/router.ts` in a plain Node
+`http.createServer`, echoing CORS headers the same way `lambda/index.ts`
+does in production so the browser-binding cookie flow behaves the same
+locally as it will once deployed. Point `apps/web-app`'s
+`NEXT_PUBLIC_LINKS_API_BASE_URL` (and `apps/mobile-app`'s
+`EXPO_PUBLIC_LINKS_API_BASE_URL`, for the approve side) at that URL for
+local end-to-end testing. Requires the `V079__hashpass_links_dynamic_qr.sql`
+migration to have been applied to whichever Supabase project you point it
+at (`node packages/tools/scripts/migrate-tenant-db.mjs --profile=core-development --groups=hashpass-auth-qr`
+for the shared dev database).
 
 To build the actual Lambda deployment artifact:
 

@@ -31,9 +31,13 @@ module.exports = {
   // jest-preset.js), leaving everything else in node_modules as raw ESM.
   // @noble/ciphers, @noble/curves, and @noble/hashes (the chat-encryption
   // crypto libs) ship pure ESM with no CJS build, so this extends that same
-  // allow-list with @noble rather than replacing it outright.
+  // allow-list with @noble rather than replacing it outright. @hashpass/sdk
+  // is the same situation: a real "type": "module" package (dist/ built via
+  // tsc, ESM-only) meant for external/bundler consumers, not this repo's
+  // other @hashpass/* workspace packages (which point straight at raw .ts
+  // source and never hit this problem).
   transformIgnorePatterns: [
-    '/node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|native-base|react-native-svg|@noble/.*)',
+    '/node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|native-base|react-native-svg|@noble/.*|@hashpass/sdk)',
     '/node_modules/react-native-reanimated/plugin/',
   ],
 };

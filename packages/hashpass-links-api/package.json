@@ -10,6 +10,7 @@
   "scripts": {
     "build": "tsc --noEmit",
     "build:lambda": "esbuild lambda/index.ts --bundle --platform=node --target=node20 --format=cjs --outfile=dist-lambda/index.js",
+    "dev": "tsx dev-server.ts",
     "test": "tsx --test",
     "clean": "rm -rf dist-lambda"
   },
