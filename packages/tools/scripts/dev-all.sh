@@ -20,7 +20,23 @@ DIRECTUS_READY_TIMEOUT_SECONDS="${DIRECTUS_READY_TIMEOUT_SECONDS:-90}"
 # port (that's what caused hours of "why is my browser talking to a stale
 # process on the wrong port" confusion before this existed). Default is off:
 # a busy port is a hard failure with a clear diagnostic, not a quiet retry.
+# Settable either as an env var (KILL_BUSY_PORTS=true npm run dev:all) or as
+# a CLI flag (npm run dev:all -- --kill-allowed) -- the flag wins if both are
+# given, since it's the more explicit, harder-to-leave-on-by-accident form.
 KILL_BUSY_PORTS="${KILL_BUSY_PORTS:-false}"
+
+for arg in "$@"; do
+  case "${arg}" in
+    --kill-allowed|--kill-busy-ports)
+      KILL_BUSY_PORTS=true
+      ;;
+    *)
+      echo "Unknown argument: ${arg}" >&2
+      echo "Usage: dev-all.sh [--kill-allowed]" >&2
+      exit 1
+      ;;
+  esac
+done
 
 port_is_busy() {
   local port="$1"
