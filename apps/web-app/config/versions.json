@@ -3,17 +3,28 @@
   "_source": "This file is generated from apps/web-app/package.json",
   "_instructions": "Run npm run version:update or npm run release:patch from apps/web-app to update it.",
   "currentVersion": {
-    "version": "1.0.17",
-    "buildNumber": 20260815200458,
+    "version": "1.0.18",
+    "buildNumber": 20260815200751,
     "releaseDate": "2026-08-15",
     "releaseType": "stable",
     "environment": "production",
     "features": [],
     "bugfixes": [],
     "breakingChanges": [],
-    "notes": "Release QR link lifecycle controls and club landing improvements."
+    "notes": "Fix the docs build for the club Pages deployment."
   },
   "versions": [
+    {
+      "version": "1.0.18",
+      "buildNumber": 20260815200751,
+      "releaseDate": "2026-08-15",
+      "releaseType": "stable",
+      "environment": "production",
+      "features": [],
+      "bugfixes": [],
+      "breakingChanges": [],
+      "notes": "Fix the docs build for the club Pages deployment."
+    },
     {
       "version": "1.0.17",
       "buildNumber": 20260815200458,
