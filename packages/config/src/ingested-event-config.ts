@@ -1,7 +1,7 @@
 import type { EventConfig } from "@hashpass/types";
 import snapshot from "./generated/ingested-events.json";
 
-type IngestedEvent = (typeof snapshot.events)[number];
+export type IngestedEvent = (typeof snapshot.events)[number];
 
 export function isActiveIngestedEvent(event: {
   sourceId: string;
@@ -28,7 +28,14 @@ export function resolveNextOccurrence(
 }
 
 export function getHashPokerEventConfig(now = new Date()): EventConfig | null {
-  const candidates = snapshot.events
+  return toHashPokerEventConfig(snapshot.events, now);
+}
+
+export function toHashPokerEventConfig(
+  events: readonly IngestedEvent[],
+  now = new Date(),
+): EventConfig | null {
+  const candidates = events
     .filter(isActiveIngestedEvent)
     .map((event) => ({ event, next: resolveNextOccurrence(event, now) }))
     .sort((a, b) => Date.parse(a.next) - Date.parse(b.next));
@@ -70,20 +77,18 @@ export function getHashPokerEventConfig(now = new Date()): EventConfig | null {
       speakers: "/events/hash-poker/home",
       bookings: "/events/hash-poker/my-bookings",
     },
-    agenda: candidates
-      .slice(0, 8)
-      .map(({ event: item, next }) => ({
-        id: item.externalId,
-        time: new Intl.DateTimeFormat("en", {
-          weekday: "short",
-          hour: "numeric",
-          minute: "2-digit",
-          timeZone: item.timezone,
-        }).format(new Date(next)),
-        title: item.title,
-        description: item.description,
-        type: "registration",
-      })),
+    agenda: candidates.slice(0, 8).map(({ event: item, next }) => ({
+      id: item.externalId,
+      time: new Intl.DateTimeFormat("en", {
+        weekday: "short",
+        hour: "numeric",
+        minute: "2-digit",
+        timeZone: item.timezone,
+      }).format(new Date(next)),
+      title: item.title,
+      description: item.description,
+      type: "registration",
+    })),
     quickAccessItems: [
       {
         id: "agenda",

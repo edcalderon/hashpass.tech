@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { afterEach, describe, it } from "node:test";
 import { join } from "node:path";
-import { attribute, deduplicateEvents, elements, firstElement, hasClass, inspectPublicHtml, isElement, isoDateCandidates, nextWeeklyOccurrence, normalizedEventSchema, parseHtml, parseJsonLdEvents, parsePkrrHtml, quotedPathCandidates, syncEventSources, textContent } from "../src/index.js";
+import { attribute, deduplicateEvents, elements, firstElement, hasClass, inspectPublicHtml, isElement, isoDateCandidates, nextWeeklyOccurrence, normalizedEventSchema, parseHtml, parseJsonLdEvents, parsePkrrHtml, PostgrestEventStore, quotedPathCandidates, syncEventSources, textContent, type EventIngestionStore } from "../src/index.js";
 
 const fixture = (name: string) => readFile(join(import.meta.dirname, "fixtures", name), "utf8");
 
@@ -82,6 +82,13 @@ describe("sync failure", () => {
     const result = await syncEventSources({ outputFile, healthFile, fetchImpl: fetchImpl as typeof fetch });
     assert.equal(result.health.status, "degraded"); assert.equal(result.events.length, 1);
   });
+  it("bounds source bodies while streaming instead of buffering them", async () => {
+    const outputFile = `/tmp/hashpass-events-large-${process.pid}.json`; const healthFile = `/tmp/hashpass-health-large-${process.pid}.json`; files.push(outputFile, healthFile);
+    const fetchImpl = async (input: string | URL | Request) => new Response(String(input).includes("robots.txt") ? "User-agent: *\nAllow: /" : "x".repeat(256));
+    const result = await syncEventSources({ outputFile, healthFile, fetchImpl: fetchImpl as typeof fetch, maxResponseBytes: 64 });
+    assert.equal(result.health.status, "failed");
+    assert.match(result.health.error || "", /size limit/);
+  });
   it("does not churn the persisted snapshot when public event content is unchanged", async () => {
     const outputFile = `/tmp/hashpass-events-stable-${process.pid}.json`; const healthFile = `/tmp/hashpass-health-stable-${process.pid}.json`; files.push(outputFile, healthFile);
     const html = await fixture("pkrr.html");
@@ -104,5 +111,77 @@ describe("sync failure", () => {
     const retired = result.events.find(event => event.externalId === "retired");
     assert.equal(retired?.status, "stale");
     assert.equal(retired?.needsReview, true);
+  });
+  it("retains cancelled rows and applies changed source content", async () => {
+    const outputFile = `/tmp/hashpass-events-changed-${process.pid}.json`; const healthFile = `/tmp/hashpass-health-changed-${process.pid}.json`; files.push(outputFile, healthFile);
+    const { writeFile } = await import("node:fs/promises");
+    const [event] = parsePkrrHtml(await fixture("pkrr.html"), new Date("2026-08-14T00:00:00Z"));
+    const cancelled = { ...event, id: "pkrr-hash-poker:cancelled", externalId: "cancelled", status: "cancelled" as const };
+    await writeFile(outputFile, JSON.stringify({ events: [{ ...event, title: "Old title" }, cancelled] }));
+    const html = await fixture("pkrr.html");
+    const fetchImpl = async (input: string | URL | Request) => new Response(String(input).includes("robots.txt") ? "User-agent: *\nAllow: /" : html);
+
+    const result = await syncEventSources({ outputFile, healthFile, fetchImpl: fetchImpl as typeof fetch, now: new Date("2026-08-14T00:00:00Z") });
+
+    assert.equal(result.events.find(item => item.id === event.id)?.title, event.title);
+    assert.equal(result.events.find(item => item.id === cancelled.id)?.status, "cancelled");
+  });
+});
+
+
+describe("database event store", () => {
+  const files: string[] = [];
+  afterEach(async () => { const { rm } = await import("node:fs/promises"); await Promise.all(files.splice(0).map(file => rm(file, { force: true }))); });
+  it("loads normalized events and persists a transactional sync RPC", async () => {
+    const event = parsePkrrHtml(await fixture("pkrr.html"), new Date("2026-08-14T00:00:00Z"))[0];
+    const requests: Array<{ url: string; init?: RequestInit }> = [];
+    const fetchImpl = async (input: string | URL | Request, init?: RequestInit) => {
+      requests.push({ url: String(input), init });
+      return new Response(requests.length === 1 ? JSON.stringify([{ normalized_payload: event }]) : null, { status: requests.length === 1 ? 200 : 204 });
+    };
+    const store = new PostgrestEventStore({ baseUrl: "https://db.example.test/", serviceRoleKey: "test-service-key", fetchImpl: fetchImpl as typeof fetch });
+    assert.equal((await store.loadEvents("pkrr-hash-poker"))[0].externalId, event.externalId);
+    await store.persistSync({ sourceId: "pkrr-hash-poker", attemptedAt: event.updatedAt, events: [event], health: { sourceId: "pkrr-hash-poker", status: "healthy", lastSuccessfulSync: event.updatedAt, lastAttempt: event.updatedAt, eventCount: 1 } });
+    assert.match(requests[0].url, /external_events/);
+    assert.match(requests[1].url, /rpc\/ingest_event_source_sync/);
+    assert.equal(requests[1].init?.method, "POST");
+    assert.equal(new Headers(requests[1].init?.headers).get("authorization"), "Bearer test-service-key");
+  });
+
+  it("rejects incomplete credentials and reports bounded PostgREST errors", async () => {
+    assert.throws(() => new PostgrestEventStore({ baseUrl: "", serviceRoleKey: "" }), /requires a base URL/);
+    const fetchImpl = async () => new Response("database denied ".repeat(100), { status: 403 });
+    const store = new PostgrestEventStore({ baseUrl: "https://db.example.test///", serviceRoleKey: "test-key", fetchImpl: fetchImpl as typeof fetch });
+
+    await assert.rejects(store.loadEvents("pkrr-hash-poker"), error => {
+      assert.ok(error instanceof Error);
+      assert.match(error.message, /^Event storage responded 403: database denied/);
+      assert.ok(error.message.length < 550);
+      return true;
+    });
+  });
+
+  it("uses database history and can disable the legacy snapshot write", async () => {
+    const outputFile = `/tmp/hashpass-events-db-${process.pid}.json`; const healthFile = `/tmp/hashpass-health-db-${process.pid}.json`; files.push(outputFile, healthFile);
+    const html = await fixture("pkrr.html"); const persisted: unknown[] = [];
+    const store: EventIngestionStore = { loadEvents: async () => [], persistSync: async input => { persisted.push(input); } };
+    const fetchImpl = async (input: string | URL | Request) => new Response(String(input).includes("robots.txt") ? "User-agent: *\nAllow: /" : html, { status: 200 });
+    const result = await syncEventSources({ outputFile, healthFile, store, legacySnapshotFallback: false, fetchImpl: fetchImpl as typeof fetch, now: new Date("2026-08-14T00:00:00Z") });
+    assert.equal(result.health.status, "healthy"); assert.equal(persisted.length, 1);
+    await assert.rejects(readFile(outputFile, "utf8"));
+  });
+  it("writes failure health and uses legacy continuity when the store read fails", async () => {
+    const outputFile = `/tmp/hashpass-events-store-failure-${process.pid}.json`; const healthFile = `/tmp/hashpass-health-store-failure-${process.pid}.json`; files.push(outputFile, healthFile);
+    const { writeFile } = await import("node:fs/promises");
+    const event = parsePkrrHtml(await fixture("pkrr.html"), new Date("2026-08-14T00:00:00Z"))[0];
+    await writeFile(outputFile, JSON.stringify({ events: [event] }));
+    let persisted = false;
+    const store: EventIngestionStore = { loadEvents: async () => { throw new Error("database offline"); }, persistSync: async () => { persisted = true; } };
+    const result = await syncEventSources({ outputFile, healthFile, store, legacySnapshotFallback: true });
+    assert.equal(result.health.status, "degraded");
+    assert.match(result.health.error || "", /storage read failed/);
+    assert.equal(result.events[0].externalId, event.externalId);
+    assert.equal(persisted, false);
+    assert.match(await readFile(healthFile, "utf8"), /database offline/);
   });
 });

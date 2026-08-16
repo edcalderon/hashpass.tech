@@ -4,13 +4,30 @@ import { inspectPublicHtml } from "./detector.js";
 import { deduplicateEvents } from "./recurrence.js";
 import { parsePkrrHtml, PKRR_SOURCE } from "./pkrr.js";
 import type { NormalizedEvent, SourceHealth } from "./schema.js";
+import type { EventIngestionStore } from "./store.js";
 
-export interface SyncOptions { outputFile: string; healthFile: string; fetchImpl?: typeof fetch; now?: Date }
-interface EventSnapshot { generatedAt: string | null; events: NormalizedEvent[] }
+export interface SyncOptions {
+  outputFile: string;
+  healthFile: string;
+  fetchImpl?: typeof fetch;
+  now?: Date;
+  store?: EventIngestionStore;
+  legacySnapshotFallback?: boolean;
+  requestTimeoutMs?: number;
+  maxResponseBytes?: number;
+}
+interface EventSnapshot {
+  generatedAt: string | null;
+  events: NormalizedEvent[];
+}
 const readPrevious = async (file: string): Promise<EventSnapshot> => {
   try {
     const value = JSON.parse(await readFile(file, "utf8"));
-    return { generatedAt: typeof value.generatedAt === "string" ? value.generatedAt : null, events: value.events || [] };
+    return {
+      generatedAt:
+        typeof value.generatedAt === "string" ? value.generatedAt : null,
+      events: value.events || [],
+    };
   } catch {
     return { generatedAt: null, events: [] };
   }
@@ -20,40 +37,135 @@ const eventContent = (event: NormalizedEvent) => {
   return content;
 };
 
+const readLimitedBody = async (response: Response, maxBytes: number) => {
+  const declaredLength = response.headers.get("content-length");
+  if (declaredLength && Number(declaredLength) > maxBytes)
+    throw new Error("PKRR response exceeded the configured size limit");
+  if (!response.body) return "";
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let received = 0;
+  let value = "";
+  while (true) {
+    const chunk = await reader.read();
+    if (chunk.done) break;
+    received += chunk.value.byteLength;
+    if (received > maxBytes) {
+      await reader.cancel();
+      throw new Error("PKRR response exceeded the configured size limit");
+    }
+    value += decoder.decode(chunk.value, { stream: true });
+  }
+  return value + decoder.decode();
+};
+
 export async function syncEventSources(options: SyncOptions) {
-  const fetcher = options.fetchImpl || fetch; const now = options.now || new Date(); const previousSnapshot = await readPrevious(options.outputFile); const previous = previousSnapshot.events;
-  const health: SourceHealth = { sourceId: PKRR_SOURCE.sourceId, status: "failed", lastSuccessfulSync: null, lastAttempt: now.toISOString(), eventCount: 0 };
+  const fetcher = options.fetchImpl || fetch;
+  const now = options.now || new Date();
+  const previousSnapshot = await readPrevious(options.outputFile);
+  const legacySnapshotFallback = options.legacySnapshotFallback ?? true;
+  let previous = legacySnapshotFallback ? previousSnapshot.events : [];
+  const health: SourceHealth = {
+    sourceId: PKRR_SOURCE.sourceId,
+    status: "failed",
+    lastSuccessfulSync: null,
+    lastAttempt: now.toISOString(),
+    eventCount: 0,
+  };
   let events = previous;
+  let storeAvailable = true;
   try {
-    const [robotsResponse, pageResponse] = await Promise.all([fetcher("https://pkrr.io/robots.txt"), fetcher(PKRR_SOURCE.baseUrl)]);
-    if (!pageResponse.ok) throw new Error(`PKRR responded ${pageResponse.status}`);
-    const [robots, html] = await Promise.all([robotsResponse.ok ? robotsResponse.text() : "", pageResponse.text()]);
+    if (options.store) {
+      try {
+        previous = await options.store.loadEvents(PKRR_SOURCE.sourceId);
+        events = previous;
+      } catch (error) {
+        storeAvailable = false;
+        throw new Error(
+          `Event storage read failed: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    }
+    const timeoutMs = options.requestTimeoutMs || 20_000;
+    const request = (url: string) =>
+      fetcher(url, {
+        headers: {
+          Accept: "text/html,text/plain;q=0.9",
+          "User-Agent": "HashPass-Event-Ingestion/1.0 (+https://hashpass.tech)",
+        },
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+    const [robotsResponse, pageResponse] = await Promise.all([
+      request("https://pkrr.io/robots.txt"),
+      request(PKRR_SOURCE.baseUrl),
+    ]);
+    if (!pageResponse.ok)
+      throw new Error(`PKRR responded ${pageResponse.status}`);
+    const maxResponseBytes = options.maxResponseBytes || 2_000_000;
+    const [robots, html] = await Promise.all([
+      robotsResponse.ok ? readLimitedBody(robotsResponse, 100_000) : "",
+      readLimitedBody(pageResponse, maxResponseBytes),
+    ]);
     const signals = inspectPublicHtml(html, PKRR_SOURCE.baseUrl, robots);
-    if (!signals.allowedByRobots) throw new Error("PKRR community path is disallowed by robots.txt");
+    if (!signals.allowedByRobots)
+      throw new Error("PKRR community path is disallowed by robots.txt");
     const incoming = parsePkrrHtml(html, now);
-    if (!incoming.length) throw new Error("PKRR parser returned no public events");
-    const previousById = new Map(previous.map(event => [event.id, event]));
-    const stableIncoming = incoming.map(event => {
+    if (!incoming.length)
+      throw new Error("PKRR parser returned no public events");
+    const previousById = new Map(previous.map((event) => [event.id, event]));
+    const stableIncoming = incoming.map((event) => {
       const prior = previousById.get(event.id);
       if (!prior) return event;
       const candidate = { ...event, createdAt: prior.createdAt };
-      return JSON.stringify(eventContent(candidate)) === JSON.stringify(eventContent(prior)) ? prior : candidate;
+      return JSON.stringify(eventContent(candidate)) ===
+        JSON.stringify(eventContent(prior))
+        ? prior
+        : candidate;
     });
-    const incomingIds = new Set(stableIncoming.map(event => event.id));
+    const incomingIds = new Set(stableIncoming.map((event) => event.id));
     // A PKRR row absent from a successful source fetch is no longer a
     // published candidate. Mark every non-cancelled retained row stale so a
     // historical weekly snapshot cannot be rolled forward forever.
-    const retained = previous.filter(event => !incomingIds.has(event.id)).map(event => event.sourceId === PKRR_SOURCE.sourceId && event.status !== "cancelled" ? { ...event, status: "stale" as const, needsReview: true } : event);
+    const retained = previous
+      .filter((event) => !incomingIds.has(event.id))
+      .map((event) =>
+        event.sourceId === PKRR_SOURCE.sourceId && event.status !== "cancelled"
+          ? { ...event, status: "stale" as const, needsReview: true }
+          : event,
+      );
     events = deduplicateEvents([...retained, ...stableIncoming]);
-    health.status = "healthy"; health.lastSuccessfulSync = now.toISOString(); health.eventCount = incoming.length;
+    health.status = "healthy";
+    health.lastSuccessfulSync = now.toISOString();
+    health.eventCount = incoming.length;
   } catch (error) {
     health.error = error instanceof Error ? error.message : String(error);
     health.status = previous.length ? "degraded" : "failed";
   }
-  await mkdir(dirname(options.outputFile), { recursive: true });
-  const hasChanges = JSON.stringify(events) !== JSON.stringify(previous);
-  const generatedAt = hasChanges || !previousSnapshot.generatedAt ? now.toISOString() : previousSnapshot.generatedAt;
-  const temp = `${options.outputFile}.tmp`; await writeFile(temp, `${JSON.stringify({ generatedAt, events }, null, 2)}\n`); await rename(temp, options.outputFile);
-  await mkdir(dirname(options.healthFile), { recursive: true }); await writeFile(options.healthFile, `${JSON.stringify({ sources: [health] }, null, 2)}\n`);
+  if (options.store && storeAvailable)
+    await options.store.persistSync({
+      sourceId: PKRR_SOURCE.sourceId,
+      attemptedAt: now.toISOString(),
+      health,
+      events,
+    });
+  if (legacySnapshotFallback) {
+    await mkdir(dirname(options.outputFile), { recursive: true });
+    const hasChanges = JSON.stringify(events) !== JSON.stringify(previous);
+    const generatedAt =
+      hasChanges || !previousSnapshot.generatedAt
+        ? now.toISOString()
+        : previousSnapshot.generatedAt;
+    const temp = `${options.outputFile}.tmp`;
+    await writeFile(
+      temp,
+      `${JSON.stringify({ generatedAt, events }, null, 2)}\n`,
+    );
+    await rename(temp, options.outputFile);
+  }
+  await mkdir(dirname(options.healthFile), { recursive: true });
+  await writeFile(
+    options.healthFile,
+    `${JSON.stringify({ sources: [health] }, null, 2)}\n`,
+  );
   return { events, health };
 }
