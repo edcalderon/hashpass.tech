@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { afterEach, describe, it } from "node:test";
 import { join } from "node:path";
-import { attribute, deduplicateEvents, elements, firstElement, hasClass, inspectPublicHtml, isElement, isoDateCandidates, nextWeeklyOccurrence, normalizedEventSchema, parseHtml, parseJsonLdEvents, parsePkrrHtml, quotedPathCandidates, syncEventSources, textContent } from "../src/index.js";
+import { attribute, deduplicateEvents, elements, firstElement, hasClass, inspectPublicHtml, isElement, isoDateCandidates, nextWeeklyOccurrence, normalizedEventSchema, parseHtml, parseJsonLdEvents, parsePkrrHtml, PostgrestEventStore, quotedPathCandidates, syncEventSources, textContent, type EventIngestionStore } from "../src/index.js";
 
 const fixture = (name: string) => readFile(join(import.meta.dirname, "fixtures", name), "utf8");
 
@@ -104,5 +104,36 @@ describe("sync failure", () => {
     const retired = result.events.find(event => event.externalId === "retired");
     assert.equal(retired?.status, "stale");
     assert.equal(retired?.needsReview, true);
+  });
+});
+
+
+describe("database event store", () => {
+  const files: string[] = [];
+  afterEach(async () => { const { rm } = await import("node:fs/promises"); await Promise.all(files.splice(0).map(file => rm(file, { force: true }))); });
+  it("loads normalized events and persists a transactional sync RPC", async () => {
+    const event = parsePkrrHtml(await fixture("pkrr.html"), new Date("2026-08-14T00:00:00Z"))[0];
+    const requests: Array<{ url: string; init?: RequestInit }> = [];
+    const fetchImpl = async (input: string | URL | Request, init?: RequestInit) => {
+      requests.push({ url: String(input), init });
+      return new Response(requests.length === 1 ? JSON.stringify([{ normalized_payload: event }]) : null, { status: requests.length === 1 ? 200 : 204 });
+    };
+    const store = new PostgrestEventStore({ baseUrl: "https://db.example.test/", serviceRoleKey: "test-service-key", fetchImpl: fetchImpl as typeof fetch });
+    assert.equal((await store.loadEvents("pkrr-hash-poker"))[0].externalId, event.externalId);
+    await store.persistSync({ sourceId: "pkrr-hash-poker", attemptedAt: event.updatedAt, events: [event], health: { sourceId: "pkrr-hash-poker", status: "healthy", lastSuccessfulSync: event.updatedAt, lastAttempt: event.updatedAt, eventCount: 1 } });
+    assert.match(requests[0].url, /external_events/);
+    assert.match(requests[1].url, /rpc\/ingest_event_source_sync/);
+    assert.equal(requests[1].init?.method, "POST");
+    assert.equal(new Headers(requests[1].init?.headers).get("authorization"), "Bearer test-service-key");
+  });
+
+  it("uses database history and can disable the legacy snapshot write", async () => {
+    const outputFile = `/tmp/hashpass-events-db-${process.pid}.json`; const healthFile = `/tmp/hashpass-health-db-${process.pid}.json`; files.push(outputFile, healthFile);
+    const html = await fixture("pkrr.html"); const persisted: unknown[] = [];
+    const store: EventIngestionStore = { loadEvents: async () => [], persistSync: async input => { persisted.push(input); } };
+    const fetchImpl = async (input: string | URL | Request) => new Response(String(input).includes("robots.txt") ? "User-agent: *\nAllow: /" : html, { status: 200 });
+    const result = await syncEventSources({ outputFile, healthFile, store, legacySnapshotFallback: false, fetchImpl: fetchImpl as typeof fetch, now: new Date("2026-08-14T00:00:00Z") });
+    assert.equal(result.health.status, "healthy"); assert.equal(persisted.length, 1);
+    await assert.rejects(readFile(outputFile, "utf8"));
   });
 });
