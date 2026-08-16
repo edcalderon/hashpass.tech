@@ -1,0 +1,12 @@
+name: "HashPass CodeQL config"
+
+# archive/ holds frozen historical code kept for reference only -- it's
+# outside the pnpm workspace entirely (see pnpm-workspace.yaml: only
+# apps/* and packages/*) and confirmed unreferenced by anything active
+# (packages/tools/scripts/fix-directus-oauth-provider-mismatch.mjs and
+# the auth/callback.tsx security fixes on 2026-08-16 verified this before
+# excluding it). Findings there describe code that will never run again,
+# not a live risk -- excluding it keeps the alert list focused on code
+# that's actually shipped.
+paths-ignore:
+  - archive/**
