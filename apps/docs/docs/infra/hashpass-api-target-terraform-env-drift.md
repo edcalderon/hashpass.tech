@@ -39,6 +39,57 @@ through a real, reconciled `terraform apply` -- not a blocking gap (a
 but worth knowing next time either of those two pipelines seems to not
 have rebuilt when you expected it to.
 
+### `hashpass-web` root-cause detail, traced 2026-08-16
+
+Followed up on the "16 add / 15 change / 15 destroy" plan to separate real
+danger from noise. Three distinct, unrelated causes, not one:
+
+1. **`var.dev_site_bucket_name` isn't set locally.** Defaults to `null`,
+   which makes the stack compute a fallback bucket name
+   (`hashpass-dev-site-<account>-<region>`) instead of the real live bucket
+   (`dev.hashpass.tech`). A plan without the correct override shows
+   `module.site_dev.aws_s3_bucket.site` (and everything attached to it --
+   ownership controls, public-access block, encryption, versioning, website
+   config, bucket policy) as **delete + create**, i.e. destroying and
+   recreating the live dev site's bucket. The correct value
+   (`dev_site_bucket_name = "dev.hashpass.tech"`) isn't in
+   `terraform.tfvars.example` (shown commented-out/empty there) -- it was
+   only ever supplied as a one-off override, same pattern as
+   `hashpass-api-target`'s `enable_custom_domain`.
+2. **`var.enable_github_actions_worker_control` isn't set locally.**
+   Defaults to `false`; live state has it effectively `true` (the
+   `aws_iam_role.github_actions[0]` and its policy currently exist). A plan
+   without the override shows both as **delete**.
+3. **The ops-alerts/cost-monitoring subsystem was added to the Terraform
+   code but never applied.** Confirmed live: SNS topic
+   `arn:aws:sns:us-east-2:952191196420:hashpass-ops-alerts` already exists
+   and already has real subscribers/alarm wiring -- the six existing
+   `aws_cloudwatch_metric_alarm` resources' live `alarm_actions` point at
+   it by that exact ARN. But the *current* Terraform code creates a
+   **separate, new** `aws_sns_topic.ops_alerts` resource and wires the
+   alarms to `aws_sns_topic.ops_alerts.arn` instead of the existing topic
+   by ARN -- so a plan shows the six alarms as **delete** (their
+   live `alarm_actions` doesn't match what the new topic reference would
+   produce) alongside a bundle of **new-create** budget/anomaly-monitor/SNS
+   resources (`aws_budgets_budget.*`, `aws_ce_anomaly_monitor.*`,
+   `aws_ce_anomaly_subscription.immediate`, `aws_sns_topic.ops_alerts` +
+   policy + subscription, `aws_cloudwatch_event_rule.ec2_running` + target).
+   This last group matches the AWS cost-audit task's own pending "configure
+   budget alerts" item -- it looks like someone wrote this code as that
+   follow-up but never got to apply it.
+
+   **Lower-stakes than it first looks:** `aws sns list-subscriptions-by-topic`
+   against the existing `hashpass-ops-alerts` topic returns zero
+   subscribers -- nothing is actually being alerted through it today, so
+   swapping to the new Terraform-managed topic wouldn't silently break a
+   working alert path. Still worth a deliberate decision (new topic vs.
+   referencing the existing one by ARN) rather than an unreviewed apply,
+   but "orphaning real subscribers" specifically is not a live risk here.
+
+`bsl-target` was not independently traced to this same depth (time-boxed);
+treat it with the same suspicion until someone actually runs the same
+kind of investigation there.
+
 ## The danger
 
 `packages/infra/terraform/stacks/hashpass-api-target` provisions

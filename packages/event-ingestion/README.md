@@ -14,9 +14,9 @@ For Hash Poker, PKRR remains the poker identity/player-profile system. HashPass 
 2. **Detector** — inspects public HTML, robots directives, sitemap declarations, JSON-LD, Next/Nuxt hydration, RSS/iCal links, public API URL candidates, and assets.
 3. **Adapters** — PKRR's Next-rendered public timeline and a generic Schema.org `Event` JSON-LD parser. A future adapter may use a documented API, RSS/iCal, static HTML, or Playwright.
 4. **Normalizer/quality** — stable `sourceId + externalId` identity, ISO dates, confidence, review flags, raw public payload, recurrence, and deduplication.
-5. **Sync** — fetches active sources, validates before replacing data, atomically writes the snapshot, retains missing records as stale/reviewable instead of deleting them, and writes machine-readable health.
+5. **Sync** — fetches active sources, validates before replacing data, transactionally records observations and normalized candidates in PostgreSQL, retains missing records as stale/reviewable instead of deleting them, and writes machine-readable health.
 
-The checked-in snapshot at `packages/config/src/generated/ingested-events.json` feeds `getHashPokerEventConfig()`. The event registry therefore supplies the normal `getAvailableEvents()` path used by the global carousel; the UI does not parse or hardcode PKRR HTML. At runtime the helper rolls a recurring source date forward by whole weeks and chooses the nearest occurrence.
+The database-backed `published_external_events` feed is the primary runtime source. The checked-in snapshot at `packages/config/src/generated/ingested-events.json` is now a **legacy fallback** and is used only when `EVENT_INGESTION_LEGACY_JSON_FALLBACK=true`. At runtime the helper rolls a recurring source date forward by whole weeks and chooses the nearest occurrence.
 
 ## Normalized mapping
 
@@ -52,14 +52,17 @@ npm run test:event-ingestion
 pnpm --filter @hashpass/event-ingestion typecheck
 ```
 
-Run `npm run sync:events` from cron or a scheduled CI runner. It writes:
+Run `npm run sync:events` from cron or a scheduled CI runner. With `EVENT_INGESTION_SUPABASE_URL` and `EVENT_INGESTION_SUPABASE_SERVICE_ROLE_KEY` configured, it writes:
 
-* normalized public events: `packages/config/src/generated/ingested-events.json`;
+* immutable observations, sync health, review candidates, and published normalized events to PostgreSQL;
+* normalized public events to `packages/config/src/generated/ingested-events.json` only while the legacy fallback flag is enabled;
 * operational health: `artifacts/event-ingestion/health.json` (runtime artifact, not product data).
 
 Recommended schedule is hourly for the lightweight PKRR page, with exponential scheduling/backoff supplied by the job runner after failures. A `failed` health state means no usable prior snapshot; `degraded` means the source failed but retained data remains. Alert on repeated degraded/failed status or a stale `lastSuccessfulSync`.
 
-The scheduled workflow persists successful changes by opening or updating the `automation/event-source-sync` pull request against `develop`; the application never depends on a disposable workflow artifact. The artifact remains available for diagnostics. Repository protections and normal review/deployment checks therefore apply before a refreshed snapshot reaches users.
+The scheduled workflow uses database mode when its dedicated Supabase secrets are configured. Safe, high-confidence records are published transactionally; protected-field changes, stale/cancelled records, and low-confidence records enter `needs_review`. During migration the workflow also updates the legacy snapshot PR. Disable `EVENT_INGESTION_LEGACY_JSON_FALLBACK` after the database migration and runtime endpoint are verified; routine source changes then require neither a merge nor a deployment.
+
+Database ingestion uses `db/migrations/V082__database_event_source_ingestion.sql`. Configure only the dedicated server-side secrets `EVENT_INGESTION_SUPABASE_URL` and `EVENT_INGESTION_SUPABASE_SERVICE_ROLE_KEY`. The service key must never be exposed to a browser or mobile bundle. The public API reads the RLS-filtered `published_external_events` view; ingestion history and review candidates remain service-role only.
 
 Stale events remain in the snapshot for audit and manual review, but the active Hash Poker host configuration explicitly excludes both `stale` and `cancelled` records. Missing tournaments can therefore never be rolled forward into a landing card or active agenda.
 

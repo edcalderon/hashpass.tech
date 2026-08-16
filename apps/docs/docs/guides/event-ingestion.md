@@ -14,7 +14,8 @@ PKRR remains responsible for poker identity and player profiles. HashPass suppli
 2. The adapter parses the public Next.js-rendered timeline with a standards-based HTML parser and validates normalized records with Zod.
 3. Successful synchronization retains missing events as `stale` for review instead of deleting them.
 4. Stale and cancelled events are excluded from the active landing and host configuration.
-5. A scheduled workflow opens or updates an automation pull request when the checked-in event snapshot changes, so repository review and deployment protections apply.
+5. A scheduled workflow persists observations and safe normalized updates to PostgreSQL; risky changes enter a review queue.
+6. The API reads the RLS-filtered published-event view. The checked-in snapshot and automation PR are explicitly retained as a legacy fallback during migration only.
 
 ## Operator commands
 
@@ -24,7 +25,7 @@ npm run test:event-ingestion
 pnpm --filter @hashpass/event-ingestion typecheck
 ```
 
-The normalized snapshot is written to `packages/config/src/generated/ingested-events.json`. Sync health is written to `artifacts/event-ingestion/health.json` for diagnostics.
+The primary normalized feed is stored in PostgreSQL by `V082__database_event_source_ingestion.sql`. Sync health is written both to the durable sync-run table and to `artifacts/event-ingestion/health.json` for job diagnostics. Set `EVENT_INGESTION_LEGACY_JSON_FALLBACK=true` only to retain the checked-in snapshot fallback.
 
 Review records marked `needsReview`, records below the configured confidence threshold, and retained `stale` records. Do not hand-edit generated event data; correct the source adapter or upstream public metadata and rerun synchronization.
 

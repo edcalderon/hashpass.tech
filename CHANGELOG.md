@@ -1,3 +1,26 @@
+## [1.9.6](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.5...v1.9.6) (2026-08-16)
+
+
+### Bug Fixes
+
+* **events:** harden database ingestion rollout ([fc8e049](https://github.com/hashpass-tech/hashpass.tech/commit/fc8e0496991703a8bb2a916ee97a4521569de766))
+
+
+### Features
+
+* **events:** add database-first source ingestion ([131075e](https://github.com/hashpass-tech/hashpass.tech/commit/131075e0a753f49fe2c8ca304fd6f9334d980d5e))
+### Release Highlights
+- add database-first source ingestion; harden database ingestion rollout
+
+### Release scope
+- Compared with: `v1.9.5` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Database migrations
+- Documentation
+- Release tooling
+
 ## [1.9.5](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.4...v1.9.5) (2026-08-16)
 ### Released
 - self-hosted Autodiscover responder for hashpass.tech; address 9 of 15 open CodeQL error-severity findings; add missing path filter to criptolatinfest's CodePipeline

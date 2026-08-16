@@ -22,23 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202608162155, // Updated to current timestamp
+  buildNumber: 202608162310, // Updated to current timestamp
   releaseDate: '2026-08-16',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'self-hosted Autodiscover responder for hashpass.tech'
+    'add database-first source ingestion'
   ],
   bugfixes: [
-    'address 9 of 15 open CodeQL error-severity findings',
-    'add missing path filter to criptolatinfest\'s CodePipeline'
+    'harden database ingestion rollout'
   ],
   breakingChanges: [],
-  notes: 'self-hosted Autodiscover responder for hashpass.tech; address 9 of 15 open CodeQL error-severity findings; add missing path filter to criptolatinfest\'s CodePipeline'
+  notes: 'add database-first source ingestion; harden database ingestion rollout'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.6': {
+    version: '1.9.6',
+    buildNumber: 202608162310,
+    releaseDate: '2026-08-16',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'add database-first source ingestion'
+    ],
+    bugfixes: [
+      'harden database ingestion rollout'
+    ],
+    breakingChanges: [],
+    notes: 'add database-first source ingestion; harden database ingestion rollout'
+  },
   '1.9.5': {
     version: '1.9.5',
     buildNumber: 202608162155,

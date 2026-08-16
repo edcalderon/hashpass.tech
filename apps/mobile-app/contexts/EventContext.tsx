@@ -1,9 +1,10 @@
-import React, { createContext, useContext, ReactNode } from 'react';
+import React, { createContext, useContext, ReactNode, useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import { EventConfig, EVENTS } from '../config/events';
 import { getCurrentEvent, getRouteEventIdFromPathname } from '../lib/event-detector';
 import { ENV_CONFIG, TenantConfig } from '@hashpass/config';
 import { usePathname } from 'expo-router';
+import { refreshHashPokerRuntimeEvent } from '../lib/runtime-event-registry';
 
 interface EventContextType {
   event: EventConfig | null;
@@ -21,6 +22,16 @@ interface EventProviderProps {
 }
 
 export function EventProvider({ children }: EventProviderProps) {
+  const [, setRegistryRevision] = useState(0);
+  useEffect(() => {
+    let active = true;
+    refreshHashPokerRuntimeEvent()
+      .then((changed) => {
+        if (active && changed) setRegistryRevision((value) => value + 1);
+      })
+      .catch((error) => console.error('[HashPass] Event registry refresh failed', error));
+    return () => { active = false; };
+  }, []);
   const pathname = usePathname();
   const routeEventId = getRouteEventIdFromPathname(pathname);
   const hostname =
