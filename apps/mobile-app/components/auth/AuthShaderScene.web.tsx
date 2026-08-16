@@ -53,28 +53,50 @@ export default function AuthShaderScene() {
       return;
     }
 
-    const camera = new THREE.Camera();
-    camera.position.z = 1;
-
-    const scene = new THREE.Scene();
-    const geometry = new THREE.PlaneGeometry(2, 2);
+    // `new THREE.WebGLRenderer()` throws synchronously (not just returns
+    // null) when the browser/device can't create a WebGL context -- some
+    // Android GPU drivers are denylisted, WebGL can be disabled by policy,
+    // or the device is simply out of contexts. This runs inside a
+    // useEffect on the auth screen (the real "first thing a visitor sees"
+    // entry point), so an uncaught throw here takes down the entire app on
+    // load, not just this decorative background. There is no local error
+    // boundary around this component (unlike AuthBackgroundScene, the
+    // other 50% A/B variant, which has one) -- this try/catch is the only
+    // thing standing between a WebGL failure and a full-app crash screen.
+    let renderer: THREE.WebGLRenderer;
+    let scene: THREE.Scene;
+    let geometry: THREE.PlaneGeometry;
+    let material: THREE.ShaderMaterial;
+    let camera: THREE.Camera;
+    let mesh: THREE.Mesh;
     const uniforms = {
       time: { value: 1.0 },
       resolution: { value: new THREE.Vector2() },
     };
+    try {
+      camera = new THREE.Camera();
+      camera.position.z = 1;
 
-    const material = new THREE.ShaderMaterial({
-      uniforms,
-      vertexShader,
-      fragmentShader,
-      transparent: true,
-      depthWrite: false,
-    });
+      scene = new THREE.Scene();
+      geometry = new THREE.PlaneGeometry(2, 2);
 
-    const mesh = new THREE.Mesh(geometry, material);
-    scene.add(mesh);
+      material = new THREE.ShaderMaterial({
+        uniforms,
+        vertexShader,
+        fragmentShader,
+        transparent: true,
+        depthWrite: false,
+      });
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      mesh = new THREE.Mesh(geometry, material);
+      scene.add(mesh);
+
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    } catch (error) {
+      console.error('AuthShaderScene: WebGL unavailable, skipping animated background', error);
+      return;
+    }
+
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.setClearColor(0x000000, 0);
     renderer.domElement.style.display = 'block';

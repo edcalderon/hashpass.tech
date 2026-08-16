@@ -3,17 +3,28 @@
   "_source": "This file is generated from apps/web-app/package.json",
   "_instructions": "Run npm run version:update or npm run release:patch from apps/web-app to update it.",
   "currentVersion": {
-    "version": "1.0.18",
-    "buildNumber": 20260815200751,
-    "releaseDate": "2026-08-15",
+    "version": "1.0.19",
+    "buildNumber": 20260816015607,
+    "releaseDate": "2026-08-16",
     "releaseType": "stable",
     "environment": "production",
     "features": [],
     "bugfixes": [],
     "breakingChanges": [],
-    "notes": "Fix the docs build for the club Pages deployment."
+    "notes": "Version 1.0.19 release"
   },
   "versions": [
+    {
+      "version": "1.0.19",
+      "buildNumber": 20260816015607,
+      "releaseDate": "2026-08-16",
+      "releaseType": "stable",
+      "environment": "production",
+      "features": [],
+      "bugfixes": [],
+      "breakingChanges": [],
+      "notes": "Version 1.0.19 release"
+    },
     {
       "version": "1.0.18",
       "buildNumber": 20260815200751,

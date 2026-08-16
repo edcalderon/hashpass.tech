@@ -13,6 +13,7 @@ import {
   type QrVisualConfig,
 } from '@hashpass/backend';
 import { adminDb, apiError, authenticatedUser } from '../server';
+import { validateCaptchaToken } from './captcha';
 
 const STATUSES: QrLinkStatus[] = ['active', 'paused', 'expired', 'archived'];
 
@@ -153,6 +154,16 @@ export async function createQrLink(request: Request): Promise<Response> {
 
   const body = await request.json().catch(() => ({}));
 
+  // Bot/abuse protection on creation specifically -- a signed-in session
+  // alone doesn't stop a scripted account from mass-creating links against
+  // this free service. Same Cap (proof-of-work) flow the newsletter signup
+  // uses: the client solves a challenge from POST /api/captcha/challenge
+  // and redeems it via POST /api/captcha/redeem before submitting here.
+  const captchaValid = await validateCaptchaToken(body.captchaToken);
+  if (!captchaValid) {
+    return Response.json({ message: 'Security check expired. Please solve the captcha again.', captchaExpired: true }, { status: 400 });
+  }
+
   if (typeof body.name !== 'string' || body.name.trim().length < 1 || body.name.length > 120) {
     return apiError('A link name (1-120 characters) is required');
   }
@@ -249,12 +260,13 @@ export async function listQrLinks(request: Request): Promise<Response> {
   );
 }
 
-// GET /api/v1/qr-links/slug-availability?slug=... -- authenticated preflight
-// for the editor. The unique index remains the final authority at save time.
+// GET /api/v1/qr-links/slug-availability?slug=... -- deliberately public
+// (no auth), so the anonymous hashpass.club/qr showcase can preflight a
+// custom slug too, not just the signed-in /panel/qr editor. Only ever
+// returns a boolean + the normalized slug -- never who owns it -- so there's
+// nothing sensitive to gate behind a session. The unique index remains the
+// final authority at save time either way.
 export async function getQrSlugAvailability(request: Request): Promise<Response> {
-  const user = await authenticatedUser(request);
-  if (!user) return apiError('Authenticated HashPass session required', 401);
-
   const rawSlug = new URL(request.url).searchParams.get('slug');
   let slug: string;
   try {

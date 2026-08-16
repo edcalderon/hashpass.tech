@@ -244,25 +244,122 @@ already appear in full throughout this repo's own `.env`, CLAUDE.md, and git
 history, so partial redaction here would create a false sense of protection
 without actually limiting exposure.
 
-## Resolved: core prod credential (fixed 2026-08-06)
+## Resolved: core prod credential (fixed 2026-08-06, corrected further 2026-08-15)
 
-The issue previously documented here is fixed. A working core-prod DB
-credential was obtained; local `.env`'s `SUPABASE_DB_URL_PROD` now correctly
-points at `fxgftanraszjjyeidvia` (verified via a live connection, not
-assumed), and a stale duplicate `SUPABASE_DB_URL_PROD`/`DATABASE_URL_PROD`
-pair further down the file (holding BSL's connection string, which was
-silently winning via bash's last-definition-wins `source` behavior) was
-removed. `SUPABASE_SERVICE_ROLE_KEY_PROD` had the same class of bug --
-holding BSL's key instead of core's own -- and is fixed the same way; see
-the `tenants.json` section above for how this actually happened and its
-likely link to the "prod Supabase key invalid" issue. `DB_PASSWORD` was also
+The ref-mismatch issue previously documented here is fixed. A working
+core-prod DB credential was obtained; local `.env`'s `SUPABASE_DB_URL_PROD`
+now correctly points at `fxgftanraszjjyeidvia` (verified via a live
+connection, not assumed), and a stale duplicate
+`SUPABASE_DB_URL_PROD`/`DATABASE_URL_PROD` pair further down the file
+(holding BSL's connection string, which was silently winning via bash's
+last-definition-wins `source` behavior) was removed. `DB_PASSWORD` was also
 just stale (not a syntax issue) and is now correct.
 
-Deploying this fix to the **live** Lambda (`hashpass-prod-expo-router-api`)
-is a separate, not-yet-done step -- `.env` only fixes local tooling. That
-needs `packages/tools/scripts/deploy-api-lambda.sh` (or the next normal
-`infra-deploy.yml` run on a `main` push) and is a real production mutation,
-left for a human to trigger deliberately.
+**2026-08-15 correction: the 2026-08-06 fix was necessary but not
+sufficient.** `SUPABASE_SERVICE_ROLE_KEY_PROD` did get pointed at the
+correct ref (`fxgftanraszjjyeidvia`, was BSL's) that day, but the fix was
+never actually tested against a live endpoint, and a **second, independent**
+bug was hiding behind it: core-production's Supabase project has completed
+Supabase's key-format migration and now rejects *every* legacy JWT-format
+key outright, correct ref/role/expiry or not. Confirmed empirically with a
+direct `curl` against `/rest/v1/` and `/auth/v1/admin/users` -- both gave a
+real `401 Invalid API key` straight from Supabase's own gateway for the
+JWT-format key, and both succeeded (`200`) with `SUPABASE_API_KEY`'s value
+(new `sb_secret_...` format) substituted in. Also found the same day: three
+more vars (`EXPO_PUBLIC_SUPABASE_URL_PROD`, `EXPO_PUBLIC_SUPABASE_KEY_PROD`,
+`EXPO_PUBLIC_SUPABASE_ANON_KEY_PROD`) had the *original* BSL-ref bug that
+`SUPABASE_SERVICE_ROLE_KEY_PROD` had on 2026-08-06 -- never caught then
+because only the service-role key was checked at the time. All four are now
+fixed in `.env`: the URL/anon-key trio point at `fxgftanraszjjyeidvia`
+(matching `EXPO_PUBLIC_SUPABASE_URL`/`EXPO_PUBLIC_SUPABASE_KEY` in section 4),
+and `SUPABASE_SERVICE_ROLE_KEY`/`SUPABASE_SERVICE_ROLE_KEY_PROD` both now
+hold `SUPABASE_API_KEY`'s working new-format value (`@supabase/supabase-js`
+accepts either key format interchangeably, so no application code needed to
+change). The old JWT value is kept, unused, under
+`SUPABASE_SERVICE_ROLE_KEY_LEGACY_INVALID` as a documented "don't reach for
+this" marker rather than deleted outright.
+
+**Deployed and verified live, 2026-08-15.** Both Lambdas now carry the
+corrected values: `hashpass-links-prod-expo-router-api` via a targeted
+`terraform apply` (confirmed via a real `200` on
+`GET /api/v1/qr-links/slug-availability`), and
+`hashpass-prod-expo-router-api` via a direct
+`aws lambda update-function-configuration` call after
+`deploy-api-lambda.sh`'s own env-sync step silently skipped itself -- see
+"env-sync silently no-ops above 4KB" below. Confirmed via
+`get-function-configuration` (`EXPO_PUBLIC_SUPABASE_URL` resolves to
+`fxgftanraszjjyeidvia`, not `mnnqryrdlhddorqsrtbn`) and a real
+`POST /api/auth/otp` call returning `200` against the live API
+(`api.hashpass.tech`) -- that route calls `admin.generateLink()`, an
+auth-admin-only operation, so a `200` is real proof the key has full
+`service_role`-equivalent privileges, not just read access.
+
+### `sb_secret_...` "secret key" is not a downgrade from `service_role`
+
+This came up again while applying the fix above, worth stating explicitly
+since the naming looks suspicious at a glance: `SUPABASE_SERVICE_ROLE_KEY*`
+variables now holding a `sb_secret_...` value (instead of the old
+`eyJ...` JWT) is **not a misnaming**. Per Supabase's own API keys docs:
+"Secret keys authorize access to your project's data via the built-in
+`service_role` Postgres role. By design, this role has full access to your
+project's data," and the secret key format is explicitly described as "an
+improvement over the old JWT-based `service_role` key." Same Postgres
+role, same full access, same RLS bypass -- only the credential *format*
+changed as part of Supabase's platform-wide key migration (paired with
+`anon` key -> `sb_publishable_...`). The env var name should keep
+describing the credential's *role* in our system (`SERVICE_ROLE_KEY`);
+it's expected for the value itself to be in the new format once a
+project completes migration, exactly as `EXPO_PUBLIC_SUPABASE_KEY` /
+`_ANON_KEY` already are.
+
+### `.env` hygiene found while fixing this, 2026-08-15
+
+Two dead, near-identical-looking variable names turned out to be
+transcription typos, silently unused because nothing in the codebase
+reads the misspelled name:
+
+- `SUBAPASE_SERVICE_ROLE_KEY_PROD` (letters transposed: "SUB-APASE" vs
+  "SUP-ABASE") -- held a copy of the same legacy JWT as
+  `SUPABASE_SERVICE_ROLE_KEY_LEGACY_INVALID` above, but differing by a
+  single character in the signature (`TdHm` vs `TdHM`) -- two drifted
+  copies of what was meant to be one value. Deleted; the
+  `_LEGACY_INVALID` marker is the single source of truth for "this is the
+  old rejected JWT, do not resurrect it."
+- `BSL_SUPABAS_API_KEY` (missing the "E" in SUPABASE) -- renamed to
+  `BSL_SUPABASE_API_KEY`, matching the working, correctly-named
+  `SUPABASE_API_KEY` above it.
+
+**Lesson:** a typo'd env var name doesn't error -- it just silently
+creates an unused variable next to the real one, and both can look
+equally plausible on a quick read. If a credential looks like it "isn't
+taking effect," grep the codebase for the exact variable name before
+assuming the value itself is wrong.
+
+### `deploy-api-lambda.sh`'s env-sync silently no-ops above 4KB
+
+Found while deploying this fix: `sync_lambda_environment` in
+`packages/tools/scripts/deploy-api-lambda.sh` merges a ~25-key allowlist
+into whatever the Lambda's current env already has, then **skips the
+entire sync with only a warning** (not a failure) if the merged JSON
+exceeds a conservative 3900-byte safety threshold.
+`hashpass-prod-expo-router-api`'s config was already at 4027/4096 bytes --
+AWS's real hard cap on total Lambda env-var JSON is 4096 bytes -- and a
+dozen of those allowlist keys (`_DEV`/`_PROD`-suffixed variants,
+`EXPO_PUBLIC_SUPABASE_PROFILE`, `SITE_URL`, etc.) don't exist on this
+Lambda at all, so merging them pushed the payload to 5066 bytes and the
+sync silently skipped, **including the 4 keys that actually mattered**
+for this fix. The code deploy itself still "succeeded" and logged
+`API version verified`, so nothing outwardly looked wrong -- this is
+easy to miss unless you read the full deploy log. Worked around by hand
+-building a minimal payload with only the 4 keys that both needed new
+values and already existed on the Lambda (replacement values were
+same-or-shorter, since `sb_secret_.../sb_publishable_...` format is much
+shorter than the old JWTs), applied via a direct
+`aws lambda update-function-configuration` call. **Not yet fixed in the
+script itself** -- a future change should either prune `syncKeys` to only
+the vars each specific Lambda actually uses, or turn a size-limit skip
+into a hard failure so a deploy can't quietly no-op the exact sync it was
+run for.
 
 ## Practical checklist before touching `.env`
 

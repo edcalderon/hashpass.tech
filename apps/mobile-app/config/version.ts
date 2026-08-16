@@ -22,23 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202608151955, // Updated to current timestamp
-  releaseDate: '2026-08-15',
+  buildNumber: 202608160200, // Updated to current timestamp
+  releaseDate: '2026-08-16',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'add QR link lifecycle controls',
-    'expand club experience and QR links'
+    // No new features
   ],
   bugfixes: [
-    'align club settings control with avatar'
+    'guard WebGL shader background against context creation failure'
   ],
   breakingChanges: [],
-  notes: 'add QR link lifecycle controls; expand club experience and QR links; align club settings control with avatar'
+  notes: 'guard WebGL shader background against context creation failure'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.3': {
+    version: '1.9.3',
+    buildNumber: 202608160200,
+    releaseDate: '2026-08-16',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'guard WebGL shader background against context creation failure'
+    ],
+    breakingChanges: [],
+    notes: 'guard WebGL shader background against context creation failure'
+  },
   '1.9.2': {
     version: '1.9.2',
     buildNumber: 202608151955,

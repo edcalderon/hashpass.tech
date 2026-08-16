@@ -4,6 +4,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { handleRequest } from '../router';
 import { archiveExpiredQrLinks } from './qr-links';
 import { resetAdminDbCache, setAdminDbForTesting } from '../server';
+import { setCaptchaValidatorForTesting } from './captcha';
 import { createFakeSupabaseClient, type FakeUser } from '../test-utils/fake-supabase-client';
 
 const OWNER: FakeUser = { id: 'owner-1', email: 'owner@example.com', token: 'owner-token' };
@@ -17,11 +18,13 @@ function useFakeDb(users: FakeUser[] = [OWNER, OTHER_USER]) {
 
 test.beforeEach(() => {
   process.env.QR_ANALYTICS_SECRET = 'a'.repeat(32);
+  setCaptchaValidatorForTesting(async () => true);
 });
 
 test.afterEach(() => {
   setAdminDbForTesting(null);
   resetAdminDbCache();
+  setCaptchaValidatorForTesting(null);
   delete process.env.QR_ANALYTICS_SECRET;
 });
 
@@ -50,6 +53,15 @@ test('creating a QR link requires an authenticated session', async () => {
     })
   );
   assert.equal(response.status, 401);
+});
+
+test('creating a QR link rejects a missing/invalid captcha token', async () => {
+  useFakeDb();
+  setCaptchaValidatorForTesting(async () => false);
+  const response = await createLink();
+  assert.equal(response.status, 400);
+  const body = await response.json();
+  assert.equal(body.captchaExpired, true);
 });
 
 test('creating a QR link rejects a missing name', async () => {
@@ -101,6 +113,22 @@ test('an authenticated owner can check whether a custom QR slug is available', a
 
   const available = await handleRequest(
     new Request('https://api.hashpass.link/api/v1/qr-links/slug-availability?slug=fresh-club', authed(OWNER.token))
+  );
+  assert.deepEqual(await available.json(), { available: true, slug: 'fresh-club' });
+});
+
+test('slug availability is checkable without a session -- the anonymous hashpass.club/qr showcase relies on this', async () => {
+  useFakeDb();
+  await createLink({ publicSlug: 'summer-club' });
+
+  const taken = await handleRequest(
+    new Request('https://api.hashpass.link/api/v1/qr-links/slug-availability?slug=summer-club')
+  );
+  assert.equal(taken.status, 200);
+  assert.deepEqual(await taken.json(), { available: false, slug: 'summer-club' });
+
+  const available = await handleRequest(
+    new Request('https://api.hashpass.link/api/v1/qr-links/slug-availability?slug=fresh-club')
   );
   assert.deepEqual(await available.json(), { available: true, slug: 'fresh-club' });
 });

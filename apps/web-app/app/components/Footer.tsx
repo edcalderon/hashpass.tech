@@ -17,6 +17,7 @@ export function Footer() {
       title: t('product'),
       links: [
         { label: t('features'), href: '#features' },
+        { label: t('qrLinks'), href: '/qr' },
         { label: t('pricing'), href: '#pricing' },
         { label: t('docs'), href: '/documentation/' },
         { label: t('status'), href: '#' },

@@ -1151,6 +1151,9 @@ importers:
 
   packages/backend:
     dependencies:
+      '@cap.js/server':
+        specifier: ^4.0.5
+        version: 4.0.5
       '@hashpass/types':
         specifier: workspace:*
         version: link:../types
