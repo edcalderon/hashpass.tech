@@ -20,18 +20,25 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.5)
+## 📋 Latest Changes (v1.9.6)
 
-### Released
-- self-hosted Autodiscover responder for hashpass.tech; address 9 of 15 open CodeQL error-severity findings; add missing path filter to criptolatinfest's CodePipeline
+### Bug Fixes
+
+* **events:** harden database ingestion rollout ([fc8e049](https://github.com/hashpass-tech/hashpass.tech/commit/fc8e0496991703a8bb2a916ee97a4521569de766))
+
+
+### Features
+
+* **events:** add database-first source ingestion ([131075e](https://github.com/hashpass-tech/hashpass.tech/commit/131075e0a753f49fe2c8ca304fd6f9334d980d5e))
+### Release Highlights
+- add database-first source ingestion; harden database ingestion rollout
 
 ### Release scope
-- Compared with: `v1.9.4` (the previous global release tag)
+- Compared with: `v1.9.5` (the previous global release tag)
 
 ### Affected products & packages
 - Mobile app
-- Auth
-- Infrastructure
+- Database migrations
 - Documentation
 - Release tooling
 
