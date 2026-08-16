@@ -112,6 +112,20 @@ describe("sync failure", () => {
     assert.equal(retired?.status, "stale");
     assert.equal(retired?.needsReview, true);
   });
+  it("retains cancelled rows and applies changed source content", async () => {
+    const outputFile = `/tmp/hashpass-events-changed-${process.pid}.json`; const healthFile = `/tmp/hashpass-health-changed-${process.pid}.json`; files.push(outputFile, healthFile);
+    const { writeFile } = await import("node:fs/promises");
+    const [event] = parsePkrrHtml(await fixture("pkrr.html"), new Date("2026-08-14T00:00:00Z"));
+    const cancelled = { ...event, id: "pkrr-hash-poker:cancelled", externalId: "cancelled", status: "cancelled" as const };
+    await writeFile(outputFile, JSON.stringify({ events: [{ ...event, title: "Old title" }, cancelled] }));
+    const html = await fixture("pkrr.html");
+    const fetchImpl = async (input: string | URL | Request) => new Response(String(input).includes("robots.txt") ? "User-agent: *\nAllow: /" : html);
+
+    const result = await syncEventSources({ outputFile, healthFile, fetchImpl: fetchImpl as typeof fetch, now: new Date("2026-08-14T00:00:00Z") });
+
+    assert.equal(result.events.find(item => item.id === event.id)?.title, event.title);
+    assert.equal(result.events.find(item => item.id === cancelled.id)?.status, "cancelled");
+  });
 });
 
 
@@ -132,6 +146,19 @@ describe("database event store", () => {
     assert.match(requests[1].url, /rpc\/ingest_event_source_sync/);
     assert.equal(requests[1].init?.method, "POST");
     assert.equal(new Headers(requests[1].init?.headers).get("authorization"), "Bearer test-service-key");
+  });
+
+  it("rejects incomplete credentials and reports bounded PostgREST errors", async () => {
+    assert.throws(() => new PostgrestEventStore({ baseUrl: "", serviceRoleKey: "" }), /requires a base URL/);
+    const fetchImpl = async () => new Response("database denied ".repeat(100), { status: 403 });
+    const store = new PostgrestEventStore({ baseUrl: "https://db.example.test///", serviceRoleKey: "test-key", fetchImpl: fetchImpl as typeof fetch });
+
+    await assert.rejects(store.loadEvents("pkrr-hash-poker"), error => {
+      assert.ok(error instanceof Error);
+      assert.match(error.message, /^Event storage responded 403: database denied/);
+      assert.ok(error.message.length < 550);
+      return true;
+    });
   });
 
   it("uses database history and can disable the legacy snapshot write", async () => {
