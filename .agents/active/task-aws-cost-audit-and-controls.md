@@ -3,7 +3,7 @@
 **Status:** ACTIVE — high priority
 **Priority:** P0 (billing/credit risk)  
 **Created:** 2026-08-04
-**Last updated:** 2026-08-15
+**Last updated:** 2026-08-16
 
 ## Trigger and current signal
 
@@ -203,6 +203,68 @@ different account/service view.
 The `default` AWS profile is a separate source account and has CodeBuild
 projects, so build spend must be reconciled across both accounts before
 attributing the $238.98 forecast to this runner.
+
+### Trigger gap found and fixed, CodeBuild-vs-EC2 comparison — 2026-08-16
+
+**New signal:** console MTD jumped from $35.21 (2026-08-15 audit) to $120.95
+in roughly one day, forecast holding steady around $240. CLI `aws ce
+get-cost-and-usage` still reconciles to near-zero on both the `hashpass`
+(target) and `default` (source) profiles for the same period -- the
+console/API reconciliation gap flagged 2026-08-15 remains open and
+unresolved; this update relies on live resource/build-history evidence
+instead, which doesn't have that lag.
+
+**Confirmed no currently-running EC2 instance** in any of the 7 regions
+with historical usage, at query time. The spike is not an EC2 leak.
+
+**Root cause found: `hashpass-criptolatinfest-develop-site` was the only
+one of 5 site-build CodePipelines with no path filter at all.** The other
+four (`bsl-hashpass-dev`, `bsl-hashpass-prod`, `hashpass-dev-site`,
+`hashpass-production-site`) already run CodePipeline V2 with a working
+`filePaths` trigger (confirmed live via `aws codepipeline get-pipeline`,
+matching the Terraform in `hashpass-web`/`bsl-target`'s `main.tf`) --
+`enable_path_filtered_trigger` is a real, working, already-proven feature
+in `modules/aws_static_site_pipeline`. The demo-events stack
+(`stacks/demo-events/pipeline.tf`, criptolatinfest's dedicated pipeline)
+simply never set it, so that one pipeline stayed on V1 with an unconditional
+per-commit EventBridge trigger. Measured build history over the prior 2
+days: **688.8 total build-minutes across the 5 projects**, of which
+criptolatinfest alone accounted for **260.8 minutes (27 builds)** -- the
+single largest contributor, all avoidable once filtered. A high-frequency
+session (~10 pushes to `develop`/`main` in a few hours, each triggering a
+full rebuild of every matching pipeline) is what turned an existing,
+known-pending gap into a same-day spike.
+
+**Fixed:** added `enable_path_filtered_trigger = true` plus matching
+`trigger_path_includes`/`excludes` (mirroring `hashpass-dev-site`'s proven
+list, trimmed to stay under AWS's 8-pattern cap) to the
+`criptolatinfest_pipeline` module call. Applied via a scoped
+`terraform plan`/`apply` against the isolated `demo-events` stack only (0
+added, 1 changed, 0 destroyed) and confirmed live
+(`pipelineType: V2, hasTrigger: true`). Expected to cut criptolatinfest's
+build volume by roughly 35-40% of tonight's total going forward, since most
+future commits won't touch `apps/mobile-app`/`packages/**`.
+
+**Also checked and found already correct:** all 5 pipelines use
+`executionMode: SUPERSEDED`, meaning a new push already cancels a stale
+in-flight run of the same pipeline. The "add concurrency cancellation" item
+in the pending list below is already satisfied -- no action needed there.
+
+**CodeBuild-vs-EC2 comparison, requested 2026-08-16:** using the measured
+688.8 build-minutes, CodeBuild's actual cost is ~$12.13 (mixed
+LARGE/MEDIUM tiers) versus an estimated ~$2.20 for the same total minutes
+on `m6i.xlarge` EC2 (the account's own historical instance type) -- EC2 is
+genuinely ~5.5x cheaper per raw compute-minute. Recommendation is to stay
+on CodeBuild anyway: matching tonight's burst concurrency (3-5 pipelines
+firing within minutes of each other) would need multiple parallel EC2
+workers, not one; each EC2 build pays real boot/bootstrap latency CodeBuild
+doesn't; and this account has a *confirmed prior incident* of a cancelled
+CodePipeline execution leaving an EC2-backed worker running indefinitely
+(the "zombie worker" bug referenced above) -- a single missed stop-on-cancel
+edge case in a busy week can cost more than CodeBuild's entire delta for
+the month. Revisit only after observing a few days of the reduced
+(correctly-filtered) CodeBuild volume, and only with the stop-on-cancel
+path proven first, per the existing benchmark checklist below.
 
 ## Phase 2 — inventory likely drivers
 
