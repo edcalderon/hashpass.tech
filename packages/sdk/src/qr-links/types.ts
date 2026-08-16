@@ -60,6 +60,8 @@ export interface CreateQrLinkInput {
   campaign?: QrLinkCampaign;
   startsAt?: string | null;
   expiresAt?: string | null;
+  /** Solved Cap (proof-of-work captcha) token -- required, see packages/hashpass-links-api/src/routes/qr-links.ts's createQrLink. */
+  captchaToken: string;
 }
 
 /** Every field is optional -- only the ones supplied are changed. Setting `status` drives the link's lifecycle (`active` <-> `paused`, or -> `archived`). */

@@ -17,6 +17,7 @@ apps/web-app/.next-dev-all-runtime-*/
 apps/web-app/.vercel/
 apps/web-app/out/
 lambda-deployment.zip
+hashpass-links-api-lambda.zip
 
 # Remotion video studio: rendered output and raw screen recordings are
 # large binaries that don't belong in git — keep only the folder structure.

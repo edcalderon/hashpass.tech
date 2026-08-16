@@ -1,5 +1,6 @@
 import { health } from './routes/health';
 import { approveChallenge, createChallenge, exchangeChallenge, pollChallenge } from './routes/auth-qr';
+import { createCaptchaChallenge, redeemCaptchaChallenge } from './routes/captcha';
 import {
   createQrLink,
   deleteQrLink,
@@ -20,6 +21,8 @@ type Handler = (request: Request, match: RegExpMatchArray) => Promise<Response>;
 // route surface fits on one screen.
 const ROUTES: Array<[string, RegExp, Handler]> = [
   ['GET', /^\/api\/health$/, () => health()],
+  ['POST', /^\/api\/captcha\/challenge$/, () => createCaptchaChallenge()],
+  ['POST', /^\/api\/captcha\/redeem$/, (request) => redeemCaptchaChallenge(request)],
   ['POST', /^\/api\/v1\/auth\/qr\/challenges$/, (request) => createChallenge(request)],
   ['GET', /^\/api\/v1\/auth\/qr\/challenges\/([^/]+)$/, (request, match) => pollChallenge(request, match[1])],
   [

@@ -244,25 +244,49 @@ already appear in full throughout this repo's own `.env`, CLAUDE.md, and git
 history, so partial redaction here would create a false sense of protection
 without actually limiting exposure.
 
-## Resolved: core prod credential (fixed 2026-08-06)
+## Resolved: core prod credential (fixed 2026-08-06, corrected further 2026-08-15)
 
-The issue previously documented here is fixed. A working core-prod DB
-credential was obtained; local `.env`'s `SUPABASE_DB_URL_PROD` now correctly
-points at `fxgftanraszjjyeidvia` (verified via a live connection, not
-assumed), and a stale duplicate `SUPABASE_DB_URL_PROD`/`DATABASE_URL_PROD`
-pair further down the file (holding BSL's connection string, which was
-silently winning via bash's last-definition-wins `source` behavior) was
-removed. `SUPABASE_SERVICE_ROLE_KEY_PROD` had the same class of bug --
-holding BSL's key instead of core's own -- and is fixed the same way; see
-the `tenants.json` section above for how this actually happened and its
-likely link to the "prod Supabase key invalid" issue. `DB_PASSWORD` was also
+The ref-mismatch issue previously documented here is fixed. A working
+core-prod DB credential was obtained; local `.env`'s `SUPABASE_DB_URL_PROD`
+now correctly points at `fxgftanraszjjyeidvia` (verified via a live
+connection, not assumed), and a stale duplicate
+`SUPABASE_DB_URL_PROD`/`DATABASE_URL_PROD` pair further down the file
+(holding BSL's connection string, which was silently winning via bash's
+last-definition-wins `source` behavior) was removed. `DB_PASSWORD` was also
 just stale (not a syntax issue) and is now correct.
 
-Deploying this fix to the **live** Lambda (`hashpass-prod-expo-router-api`)
-is a separate, not-yet-done step -- `.env` only fixes local tooling. That
-needs `packages/tools/scripts/deploy-api-lambda.sh` (or the next normal
-`infra-deploy.yml` run on a `main` push) and is a real production mutation,
-left for a human to trigger deliberately.
+**2026-08-15 correction: the 2026-08-06 fix was necessary but not
+sufficient.** `SUPABASE_SERVICE_ROLE_KEY_PROD` did get pointed at the
+correct ref (`fxgftanraszjjyeidvia`, was BSL's) that day, but the fix was
+never actually tested against a live endpoint, and a **second, independent**
+bug was hiding behind it: core-production's Supabase project has completed
+Supabase's key-format migration and now rejects *every* legacy JWT-format
+key outright, correct ref/role/expiry or not. Confirmed empirically with a
+direct `curl` against `/rest/v1/` and `/auth/v1/admin/users` -- both gave a
+real `401 Invalid API key` straight from Supabase's own gateway for the
+JWT-format key, and both succeeded (`200`) with `SUPABASE_API_KEY`'s value
+(new `sb_secret_...` format) substituted in. Also found the same day: three
+more vars (`EXPO_PUBLIC_SUPABASE_URL_PROD`, `EXPO_PUBLIC_SUPABASE_KEY_PROD`,
+`EXPO_PUBLIC_SUPABASE_ANON_KEY_PROD`) had the *original* BSL-ref bug that
+`SUPABASE_SERVICE_ROLE_KEY_PROD` had on 2026-08-06 -- never caught then
+because only the service-role key was checked at the time. All four are now
+fixed in `.env`: the URL/anon-key trio point at `fxgftanraszjjyeidvia`
+(matching `EXPO_PUBLIC_SUPABASE_URL`/`EXPO_PUBLIC_SUPABASE_KEY` in section 4),
+and `SUPABASE_SERVICE_ROLE_KEY`/`SUPABASE_SERVICE_ROLE_KEY_PROD` both now
+hold `SUPABASE_API_KEY`'s working new-format value (`@supabase/supabase-js`
+accepts either key format interchangeably, so no application code needed to
+change). The old JWT value is kept, unused, under
+`SUPABASE_SERVICE_ROLE_KEY_LEGACY_INVALID` as a documented "don't reach for
+this" marker rather than deleted outright.
+
+Deploying this fix to the **live** Lambdas (`hashpass-prod-expo-router-api`
+and `hashpass-links-prod-expo-router-api`) is a separate step from fixing
+`.env` -- see git/session history for whether that redeploy has actually
+happened by the time you're reading this; if either Lambda's live
+`SUPABASE_URL`/`EXPO_PUBLIC_SUPABASE_URL` env var still decodes to
+`mnnqryrdlhddorqsrtbn` or its service-role key still starts with `eyJ...`
+(JWT format) instead of `sb_secret_...`, the fix above hasn't been deployed
+yet, only written to `.env`.
 
 ## Practical checklist before touching `.env`
 

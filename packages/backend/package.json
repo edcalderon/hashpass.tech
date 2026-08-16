@@ -13,6 +13,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "@cap.js/server": "^4.0.5",
     "@hashpass/types": "workspace:*",
     "@supabase/auth-js": "^2.95.3",
     "@supabase/supabase-js": "^2.81.1"

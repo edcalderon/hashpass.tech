@@ -5,6 +5,12 @@ import Link from 'next/link';
 import QRCode from 'react-qr-code';
 import { HashpassError, type QrLink, type QrLinkAnalytics, type QrVisualConfig } from '@hashpass/sdk';
 import { useTranslation } from '@hashpass/i18n';
+// Direct subpath import, not the package's main barrel (@hashpass/ui) --
+// that barrel re-exports HeroCard.tsx, which pulls in expo-image (a
+// React-Native-only package Next's webpack build can't parse). This is the
+// first thing apps/web-app has ever imported from @hashpass/ui; see that
+// package's package.json "exports" for the subpath that makes this safe.
+import { CaptchaWidget } from '@hashpass/ui/CaptchaWidget';
 import { Navbar } from '../../components/Navbar';
 import { Footer } from '../../components/Footer';
 import { useSession } from '../../components/SessionProvider';
@@ -30,6 +36,10 @@ import {
 // whatever invoke URL that env var currently resolves to.
 const LINKS_ORIGIN = (process.env.NEXT_PUBLIC_LINKS_API_BASE_URL || '').replace(/\/$/, '');
 const SHORT_LINK_PREFIX = LINKS_ORIGIN ? `${LINKS_ORIGIN}/q/` : 'hashpass.link/q/';
+// Bot protection on link creation (see packages/hashpass-links-api/src/routes/qr-links.ts's
+// createQrLink) -- same Cap (proof-of-work, no third-party keys) flow the
+// newsletter signup uses, via the shared @hashpass/ui CaptchaWidget.
+const CAPTCHA_API_ENDPOINT = `${LINKS_ORIGIN}/api/captcha`;
 
 // The square icon-only HASHPASS mark (not the wide logotype in
 // hashpass-logo.tsx) -- the right shape for a small centered QR badge.
@@ -77,6 +87,8 @@ export default function PanelQrPage() {
   const [slugAvailability, setSlugAvailability] = useState<SlugAvailabilityState>('idle');
   const [focusEditor, setFocusEditor] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaResetKey, setCaptchaResetKey] = useState(0);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
   const [confirmation, setConfirmation] = useState<ConfirmationAction | null>(null);
   const [deleteAcknowledgement, setDeleteAcknowledgement] = useState('');
@@ -154,6 +166,7 @@ export default function PanelQrPage() {
     setCampaignOpen(false);
     setFocusEditor(false);
     setPage(1);
+    setCaptchaToken(null);
     setFormOpen(true);
   }
 
@@ -173,6 +186,7 @@ export default function PanelQrPage() {
     setOriginalSlug(null);
     setForm(EMPTY_FORM);
     setFocusEditor(false);
+    setCaptchaToken(null);
   }
 
   async function handleSubmit(event: FormEvent) {
@@ -211,6 +225,10 @@ export default function PanelQrPage() {
       toast.error(t('formSlugTaken'));
       return;
     }
+    if (!editingId && !captchaToken) {
+      toast.error(t('formCaptchaRequired'));
+      return;
+    }
 
     setSaving(true);
     try {
@@ -233,12 +251,23 @@ export default function PanelQrPage() {
           campaign,
           ...availability,
           ...(form.publicSlug.trim() ? { publicSlug: form.publicSlug.trim() } : {}),
+          // Checked above for !editingId, but TS can't see through that --
+          // captchaToken is required on CreateQrLinkInput.
+          captchaToken: captchaToken!,
         });
         setLinks((current) => [created, ...current]);
         toast.success(t('toastCreated'));
       }
       closeForm();
     } catch (error) {
+      // A consumed/expired captcha token surfaces via the details payload
+      // (see packages/hashpass-links-api's createQrLink) -- force a fresh
+      // challenge rather than leaving the stale, already-submitted one.
+      const details = error instanceof HashpassError ? (error.details as { captchaExpired?: boolean } | undefined) : undefined;
+      if (details?.captchaExpired) {
+        setCaptchaToken(null);
+        setCaptchaResetKey((key) => key + 1);
+      }
       toast.error(error instanceof HashpassError ? error.message : t('errorGeneric'));
     } finally {
       setSaving(false);
@@ -563,8 +592,27 @@ export default function PanelQrPage() {
                   </div>
                 )}
 
+                {!editingId && (
+                  <div style={{ marginTop: 16 }}>
+                    <span style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 8 }}>
+                      {t('formCaptchaLabel')}
+                    </span>
+                    <CaptchaWidget
+                      apiEndpoint={CAPTCHA_API_ENDPOINT}
+                      resetKey={captchaResetKey}
+                      onSolve={setCaptchaToken}
+                      onReset={() => setCaptchaToken(null)}
+                      onError={() => toast.error(t('formCaptchaError'))}
+                    />
+                  </div>
+                )}
+
                 <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-                  <button type="submit" disabled={saving} style={{ ...primaryButtonStyle, opacity: saving ? 0.6 : 1 }}>
+                  <button
+                    type="submit"
+                    disabled={saving || (!editingId && !captchaToken)}
+                    style={{ ...primaryButtonStyle, opacity: saving || (!editingId && !captchaToken) ? 0.6 : 1 }}
+                  >
                     {editingId ? t('formSubmitSave') : t('formSubmitCreate')}
                   </button>
                   <button type="button" onClick={closeForm} style={secondaryButtonStyle}>
