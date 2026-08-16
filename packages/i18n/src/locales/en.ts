@@ -164,6 +164,7 @@ export const en = {
     playgroundSlugUnsafe: 'Choose a different destination or short link name.',
     playgroundResetButton: 'Start over',
     playgroundMembershipNote: '* Custom links and subdomains are available to hashpass.club members — sign in to join.',
+    playgroundAnonymousDestinationNote: 'This demo code opens your destination directly. Sign in to hashpass.club for a permanent, trackable hashpass.link short code instead.',
     playgroundCaptchaError: 'Security check failed to load. Please refresh and try again.',
     playgroundGenerateButton: 'Generate QR',
     playgroundGeneratingLabel: 'Generating…',

@@ -164,6 +164,7 @@ export const es = {
     playgroundSlugUnsafe: 'Elige otro destino o nombre de enlace corto.',
     playgroundResetButton: 'Empezar de nuevo',
     playgroundMembershipNote: '* Los enlaces personalizados y subdominios están disponibles para miembros de hashpass.club — inicia sesión para unirte.',
+    playgroundAnonymousDestinationNote: 'Este código de demostración abre tu destino directamente. Inicia sesión en hashpass.club para obtener un enlace corto hashpass.link permanente y rastreable.',
     playgroundCaptchaError: 'No se pudo cargar la verificación de seguridad. Actualiza la página e inténtalo de nuevo.',
     playgroundGenerateButton: 'Generar QR',
     playgroundGeneratingLabel: 'Generando…',

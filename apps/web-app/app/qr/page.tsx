@@ -31,12 +31,6 @@ const CAPTCHA_API_ENDPOINT = `${LINKS_ORIGIN}/api/captcha`;
 // see the EngineSection's "coming soon" card below. Anonymous visitors can
 // only edit the slug, never this prefix.
 const FREE_LINK_PREFIX = 'hashpass.link/q/';
-// Deliberately not "your-club" -- that string is reserved for the
-// EngineSection's your-club.hashpass.link custom-subdomain example just
-// below, and reusing it here as the free slug's default made the free
-// (shared-domain) and paid (custom-subdomain) patterns look like the same
-// thing instead of two different tiers.
-const DEFAULT_DEMO_SLUG = 'my-event';
 // Rotates through the Destination field's empty-state placeholder -- real
 // domain shapes (with a TLD), since that field is validated as an actual
 // public domain via toHttpsDestination, not a free-text slug fragment.
@@ -282,6 +276,11 @@ function QrPlayground() {
   // time (typed value, or a fresh random one if left blank) and held fixed
   // through verifying, since a random slug must not change on every render.
   const [generatedSlug, setGeneratedSlug] = useState('');
+  // The normalized destination generation was actually verified against --
+  // resolved once at Generate-click time, same reasoning as generatedSlug.
+  // See qrValue below for why this (not a fake hashpass.link/q/ address) is
+  // what the QR actually encodes.
+  const [generatedDestination, setGeneratedDestination] = useState('');
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
   const [foreground, setForeground] = useState('#071426');
   const [background, setBackground] = useState('#ffffff');
@@ -328,10 +327,16 @@ function QrPlayground() {
   // anonymously). Not a real state value on purpose.
   const brandIcon = true;
 
-  // The QR encodes the short link (hashpass.link/q/{slug}), exactly like
-  // the real product's QrLinkRow -- scanning it is what actually redirects
-  // to the destination once this is a real, backend-registered link.
-  const qrValue = `https://${FREE_LINK_PREFIX}${generatedSlug || DEFAULT_DEMO_SLUG}`;
+  // FIXED 2026-08-15: this used to encode a fake `hashpass.link/q/{slug}`
+  // address that was never actually created server-side (createQrLink
+  // requires an authenticated session, which this anonymous public page
+  // deliberately never has -- see the captcha block below), so every scan
+  // hit a real 404. The Short Link field above still *previews* the
+  // hashpass.link/q/ shape a signed-in member's real link would get, but
+  // the QR itself must only ever encode something that actually resolves
+  // -- the verified destination -- so a downloaded/shared/scanned code from
+  // this anonymous demo is never dead.
+  const qrValue = phase === 'generated' && generatedDestination ? generatedDestination : DEFAULT_PREVIEW_VALUE;
   const effectiveLevel = brandIcon ? 'H' : 'Q';
   const iconSize = QR_PREVIEW_SIZE * 0.2;
   const badgeSize = iconSize * 1.32;
@@ -411,6 +416,7 @@ function QrPlayground() {
     setDestinationTouchedInvalid(false);
     setSlugInput('');
     setGeneratedSlug('');
+    setGeneratedDestination('');
     setForeground('#071426');
     setBackground('#ffffff');
     setPhase('idle');
@@ -433,6 +439,7 @@ function QrPlayground() {
     // Resolved once here, not derived reactively -- a random slug must stay
     // fixed through the captcha step instead of changing on every render.
     setGeneratedSlug(sanitizeSlugInput(slugInput) || generateRandomSlug());
+    setGeneratedDestination(toHttpsDestination(destinationInput.trim()));
     setPhase('verifying');
   }
 
@@ -730,6 +737,9 @@ function QrPlayground() {
                   {t('playgroundResetButton')}
                 </button>
               </div>
+              <p style={{ margin: 0, fontSize: 11, lineHeight: 1.5, color: 'rgba(255,255,255,0.4)', maxWidth: 380 }}>
+                {t('playgroundAnonymousDestinationNote')}
+              </p>
             </div>
           )}
         </div>
