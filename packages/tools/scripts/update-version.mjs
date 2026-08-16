@@ -57,6 +57,16 @@ function escapeJsStringLiteral(value) {
   return String(value).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 }
 
+// Full regex-metacharacter escape for building a dynamic RegExp from a
+// value that isn't guaranteed plain text (CodeQL js/regex-injection). The
+// version-exists check below previously only escaped '.', which is enough
+// for a normal x.y.z version string but leaves every other regex
+// metacharacter (*, +, ?, (, ), [, ], {, }, ^, $, |, \) unescaped if
+// newVersion is ever anything else -- this escapes all of them.
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 // Extracts and decodes a single-quoted `field: '...'` value written by
 // escapeJsStringLiteral() above. A naive `'([^']+)'` capture (the previous
 // approach here) stops at the first quote it sees, including an escaped
@@ -760,7 +770,7 @@ ${bugfixesStr}
   },`;
 
     // Check if version already exists in VERSION_HISTORY to avoid duplicates
-    const versionExistsRegex = new RegExp(`'${newVersion.replace(/\./g, '\\.')}':\\s*\\{`);
+    const versionExistsRegex = new RegExp(`'${escapeRegExp(newVersion)}':\\s*\\{`);
     if (versionExistsRegex.test(content)) {
       console.log(`ℹ️ Version ${newVersion} already exists in VERSION_HISTORY, skipping duplicate entry`);
     } else {

@@ -18,40 +18,42 @@ if (Platform.OS === 'web') {
     removeItem: async (key: string) => {},
   };
 } else {
-  // For native (iOS, Android), keep AsyncStorage lazy without dynamic import.
-  // Metro rewrites import() through Expo's async-require helper, which is not
-  // available in the current Android release bundle toolchain.
-  let asyncStorage: any = null;
-  const loadAsyncStorage = async () => {
-    if (!asyncStorage) {
+  // For native (iOS, Android), use SecureStore (Keychain/Keystore-backed,
+  // encrypted at rest) instead of AsyncStorage (plaintext) -- this session
+  // includes a live access_token/refresh_token. Matches the pattern already
+  // proven in lib/auth/providers/directus.ts. Keep lazy without dynamic
+  // import(), which Metro rewrites through Expo's async-require helper --
+  // not available in the current Android release bundle toolchain.
+  let secureStore: any = null;
+  const loadSecureStore = async () => {
+    if (!secureStore) {
       try {
-        const AsyncStorage = require('@react-native-async-storage/async-storage');
-        asyncStorage = AsyncStorage.default ?? AsyncStorage;
+        secureStore = require('expo-secure-store');
       } catch (error) {
-        console.error('Failed to load AsyncStorage:', error);
+        console.error('Failed to load SecureStore:', error);
         // Fallback to dummy storage
-        asyncStorage = {
-          getItem: async () => null,
-          setItem: async () => {},
-          removeItem: async () => {},
+        secureStore = {
+          getItemAsync: async () => null,
+          setItemAsync: async () => {},
+          deleteItemAsync: async () => {},
         };
       }
     }
-    return asyncStorage;
+    return secureStore;
   };
-  
+
   storage = {
     getItem: async (key: string) => {
-      const AsyncStorage = await loadAsyncStorage();
-      return await AsyncStorage.getItem(key);
+      const SecureStore = await loadSecureStore();
+      return await SecureStore.getItemAsync(key);
     },
     setItem: async (key: string, value: string) => {
-      const AsyncStorage = await loadAsyncStorage();
-      return await AsyncStorage.setItem(key, value);
+      const SecureStore = await loadSecureStore();
+      return await SecureStore.setItemAsync(key, value);
     },
     removeItem: async (key: string) => {
-      const AsyncStorage = await loadAsyncStorage();
-      return await AsyncStorage.removeItem(key);
+      const SecureStore = await loadSecureStore();
+      return await SecureStore.deleteItemAsync(key);
     }
   };
 }
