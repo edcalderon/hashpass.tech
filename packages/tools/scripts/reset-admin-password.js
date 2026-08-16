@@ -92,9 +92,7 @@ async function resetAdminPassword() {
     if (updateResult.rowCount > 0) {
       console.log(`✅ Password updated successfully for ${updateResult.rows[0].email}`);
       console.log('');
-      console.log('🎉 You can now login with:');
-      console.log(`   Email: ${email}`);
-      console.log(`   Password: ${password}`);
+      console.log(`🎉 You can now login with the password you provided for: ${email}`);
     } else {
       console.error('❌ Failed to update password');
     }

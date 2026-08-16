@@ -22,22 +22,39 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202608160518, // Updated to current timestamp
+  buildNumber: 202608162155, // Updated to current timestamp
   releaseDate: '2026-08-16',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    // No new features
+    'self-hosted Autodiscover responder for hashpass.tech'
   ],
   bugfixes: [
-    'stop missing Supabase config from crashing the entire site'
+    'address 9 of 15 open CodeQL error-severity findings',
+    'add missing path filter to criptolatinfest\'s CodePipeline'
   ],
   breakingChanges: [],
-  notes: 'stop missing Supabase config from crashing the entire site'
+  notes: 'self-hosted Autodiscover responder for hashpass.tech; address 9 of 15 open CodeQL error-severity findings; add missing path filter to criptolatinfest\'s CodePipeline'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.5': {
+    version: '1.9.5',
+    buildNumber: 202608162155,
+    releaseDate: '2026-08-16',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'self-hosted Autodiscover responder for hashpass.tech'
+    ],
+    bugfixes: [
+      'address 9 of 15 open CodeQL error-severity findings',
+      'add missing path filter to criptolatinfest\'s CodePipeline'
+    ],
+    breakingChanges: [],
+    notes: 'self-hosted Autodiscover responder for hashpass.tech; address 9 of 15 open CodeQL error-severity findings; add missing path filter to criptolatinfest\'s CodePipeline'
+  },
   '1.9.4': {
     version: '1.9.4',
     buildNumber: 202608160518,

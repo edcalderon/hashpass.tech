@@ -7,6 +7,33 @@
 # for the next demo-mode event.
 # ============================================================================
 
+locals {
+  # Mirrors hashpass-web's site_dev trigger lists (same apps/mobile-app +
+  # packages/** dependency shape, same develop branch) -- see that stack's
+  # main.tf locals block for the shared reasoning.
+  criptolatinfest_trigger_includes = [
+    "apps/mobile-app/**",
+    "packages/**",
+    "package.json",
+    "pnpm-lock.yaml",
+    "pnpm-workspace.yaml",
+  ]
+
+  # AWS caps this list at 8 entries -- matches hashpass-dev-site's exact
+  # list (proven, already live on that pipeline) rather than adding a 9th
+  # (e.g. hashpass-web/**) and tripping the cap.
+  criptolatinfest_trigger_excludes = [
+    "packages/infra/terraform/stacks/bsl-target/**",
+    "packages/infra/sst.config.ts",
+    "packages/infra/src/**",
+    "packages/infra/terraform/stacks/mobile-release-target/**",
+    "packages/infra/terraform/stacks/mobile-release-legacy-source-account/**",
+    "packages/infra/terraform/stacks/gcp/**",
+    "packages/tools/scripts/build-bsl-infra.sh",
+    "packages/tools/scripts/check-infra-dns.sh",
+  ]
+}
+
 module "criptolatinfest_pipeline" {
   source = "../../modules/aws_static_site_pipeline"
 
@@ -17,6 +44,18 @@ module "criptolatinfest_pipeline" {
   repository     = var.repository
   branch_name    = "develop"
   connection_arn = var.connection_arn
+
+  # FIXED 2026-08-16: this pipeline was the only one of the five hashpass.tech
+  # dev/prod/BSL/demo site pipelines with no path filter at all -- V1, no
+  # trigger block, rebuilding on every single commit to `develop` regardless
+  # of relevance. Confirmed live via `aws codepipeline get-pipeline` (the
+  # other four are all V2 with a filePaths trigger already). Same
+  # apps/mobile-app + packages/** dependency shape as hashpass-dev-site (this
+  # is also an Expo export build off apps/mobile-app), so mirrors that
+  # pipeline's exact include/exclude lists rather than inventing a new one.
+  enable_path_filtered_trigger = true
+  trigger_path_includes        = local.criptolatinfest_trigger_includes
+  trigger_path_excludes        = local.criptolatinfest_trigger_excludes
 
   # Explicit names (single source of truth: main.tf's locals, which the
   # CloudFront origin also reads) -- the module's own default naming for the

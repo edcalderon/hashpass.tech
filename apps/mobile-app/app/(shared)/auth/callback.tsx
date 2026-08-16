@@ -133,12 +133,13 @@ export default function AuthCallback() {
     
     const [status, setStatus] = useState<'processing' | 'success' | 'error'>('processing');
     const [message, setMessage] = useState('Processing authentication...');
-    const [openInAppUrl, setOpenInAppUrl] = useState<string | null>(() => {
-        if (Platform.OS === 'web' && typeof window !== 'undefined' && window.sessionStorage) {
-            return window.sessionStorage.getItem('pending_native_relay_url');
-        }
-        return null;
-    });
+    // Deliberately not persisted across reloads (e.g. via sessionStorage) --
+    // retryDeepLink below carries a live OAuth code/token in the URL, and
+    // Web Storage is readable by any same-origin script, so storing it in
+    // cleartext would keep that credential around longer than necessary.
+    // A reload while this specific fallback screen is showing just loses
+    // the "tap to open app" button; the user can restart the sign-in flow.
+    const [openInAppUrl, setOpenInAppUrl] = useState<string | null>(null);
     
     // Track if we've already navigated to prevent duplicate navigation
     const getHasNavigated = () => {
@@ -242,8 +243,22 @@ export default function AuthCallback() {
             // Keep original value if decoding fails.
         }
 
-        if (!normalized.startsWith('/')) {
-            normalized = '/dashboard/explore';
+        // Browsers strip leading C0 control characters and spaces during
+        // URL parsing (WHATWG URL spec) -- a leading space or tab before
+        // '//evil.com' would still be parsed as protocol-relative once
+        // handed to window.location.replace(), even though the raw string
+        // here doesn't start with '/'. Strip the same way before validating.
+        normalized = normalized.replace(/^[\x00-\x20]+/, '');
+
+        // A single leading '/' is NOT sufficient to prove this is a
+        // same-origin relative path -- '//evil.com' and '/\evil.com' (and
+        // their backslash variants) both start with '/' but browsers treat
+        // them as protocol-relative URLs, redirecting to an entirely
+        // different origin when passed to window.location.replace(). Only
+        // exactly one leading '/' followed by something that is not
+        // another '/' or '\' is safe.
+        if (!/^\/[^/\\]/.test(normalized)) {
+            return '/dashboard/explore';
         }
 
         // Route groups are internal to Expo Router and should not be used in browser URLs.
@@ -514,9 +529,6 @@ export default function AuthCallback() {
                         setMessage('If the HASHPASS app did not open automatically, tap the button below.');
                         setOpenInAppUrl(retryDeepLink);
                         isProcessingRef.current = false;
-                        if (typeof window !== 'undefined' && window.sessionStorage) {
-                            window.sessionStorage.setItem('pending_native_relay_url', retryDeepLink);
-                        }
                         window.location.replace(retryDeepLink);
                         return;
                     }

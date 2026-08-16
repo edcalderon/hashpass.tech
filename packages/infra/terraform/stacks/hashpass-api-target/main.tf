@@ -1,3 +1,15 @@
+# ============================================================================
+# WARNING (2026-08-16): do not run a bare `terraform plan`/`apply` here.
+# This stack's lambda_environment only declares 3 hardcoded keys, but the
+# LIVE Lambda has ~40 (managed out-of-band via
+# packages/tools/scripts/deploy-api-lambda.sh). A real terraform plan
+# confirmed applying without -var="enable_custom_domain=true" AND without
+# first diffing the environment block would wipe production secrets and
+# destroy the live custom domains. Full writeup, safe procedure, and the
+# real fix (not yet done):
+# apps/docs/docs/infra/hashpass-api-target-terraform-env-drift.md
+# ============================================================================
+
 locals {
   tech_zone_name = "${trim(var.route53_zone_tech_name, ".")}."
 

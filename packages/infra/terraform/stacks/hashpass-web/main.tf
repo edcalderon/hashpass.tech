@@ -1,3 +1,13 @@
+# ============================================================================
+# WARNING (2026-08-16): do not run a bare `terraform plan`/`apply` here
+# without reproducing the exact original -var overrides. A plan against this
+# stack (connection_arn/supabase_url/supabase_key supplied, otherwise
+# defaults) showed 16 to add, 15 to change, 15 to destroy -- including
+# destroying both live build-worker EC2 instances and blanking
+# github_actions_role_arn. Not applied. Full writeup:
+# apps/docs/docs/infra/hashpass-api-target-terraform-env-drift.md
+# ============================================================================
+
 data "aws_caller_identity" "current" {}
 
 locals {
@@ -47,6 +57,7 @@ locals {
     "packages/**",
     "package.json",
     "pnpm-lock.yaml",
+    "pnpm-workspace.yaml",
   ]
 
   site_trigger_excludes = [

@@ -20,16 +20,17 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.4)
+## 📋 Latest Changes (v1.9.5)
 
 ### Released
-- stop missing Supabase config from crashing the entire site
+- self-hosted Autodiscover responder for hashpass.tech; address 9 of 15 open CodeQL error-severity findings; add missing path filter to criptolatinfest's CodePipeline
 
 ### Release scope
-- Compared with: `v1.9.3` (the previous global release tag)
+- Compared with: `v1.9.4` (the previous global release tag)
 
 ### Affected products & packages
-- Club web
+- Mobile app
+- Auth
 - Infrastructure
 - Documentation
 - Release tooling

@@ -25,7 +25,20 @@ const DIRECTUS_URL =
 const directusAdminEmail = process.env.ADMIN_EMAIL || process.env.DIRECTUS_ADMIN_EMAIL;
 const directusAdminPassword = process.env.ADMIN_PASSWORD;
 const defaultRoleId = process.env.DEFAULT_ROLE_ID;
-const TARGET_PROVIDER = process.env.TARGET_OAUTH_PROVIDER || 'google';
+
+// Validated against a fixed allowlist rather than used directly -- CodeQL
+// flags any raw env var reaching a console.log call as a potential
+// clear-text secret exposure (js/clear-text-logging), since it can't tell
+// TARGET_OAUTH_PROVIDER apart from something like an API key by name alone.
+// Resolving through a known-safe allowlist first breaks that taint flow:
+// after this, the value is provably one of a few literal strings, not raw
+// untrusted input, wherever it's logged below.
+function normalizeProvider(value) {
+  const normalized = String(value || '').trim().toLowerCase();
+  const allowedProviders = new Set(['google', 'github', 'azure', 'okta', 'auth0', 'default']);
+  return allowedProviders.has(normalized) ? normalized : 'google';
+}
+const TARGET_PROVIDER = normalizeProvider(process.env.TARGET_OAUTH_PROVIDER);
 const DRY_RUN = process.argv.includes('--dry-run');
 
 const required = [
@@ -107,6 +120,17 @@ async function patchUserProvider(adminToken, user) {
   });
 }
 
+// Diagnostic console output only, never used for the actual API calls
+// (those still use the real user.email) -- keeps enough of the address to
+// spot-check the right accounts are targeted without printing full PII to
+// scrollback/CI logs.
+function maskEmail(email) {
+  const [local, domain] = String(email).split('@');
+  if (!domain) return '***';
+  const visible = local.slice(0, 2);
+  return `${visible}${'*'.repeat(Math.max(local.length - visible.length, 1))}@${domain}`;
+}
+
 async function main() {
   const adminToken = await login();
   if (!adminToken) {
@@ -120,8 +144,7 @@ async function main() {
 
   for (const user of users) {
     console.log(
-      `- ${user.email} (${user.id}) provider=${user.provider} -> ${TARGET_PROVIDER}, ` +
-      `external_identifier -> ${user.email}`
+      `- ${maskEmail(user.email)} (${user.id}) provider=${user.provider} -> ${TARGET_PROVIDER}`
     );
     if (!DRY_RUN) {
       await patchUserProvider(adminToken, user);
