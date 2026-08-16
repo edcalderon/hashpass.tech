@@ -1,130 +1,106 @@
-# HASHPASS AWS Account Migration Playbook
+# HASHPASS AWS Account and DNS Cutover
 
-> Status: historical reference. The live web path now runs through the target-account `hashpass.tech` web pipeline and the source-account CloudFront front door, and the current infra docs describe the active state. **Decision (2026-07-28): DNS/hosted zone hosting for `hashpass.tech`, `hashpass.club`, `hashpass.lat`, and `hashpass.info` stays on the source account indefinitely** — the source-CDN-to-target-origin shape below is the stable end state for those domains, not a transient step awaiting a DNS cutover. `bsl-dev.hashpass.tech` now uses this exact shape too (cut over 2026-07-28: source CloudFront unchanged, target S3 origin); `bsl.hashpass.tech` (prod) hasn't cut over yet and is still fully source-account SST. See `.agents/active/task-aws-account-migration.md` for the current verified account-by-account inventory and what's actually still outstanding.
+> Status: active, staged migration. Public DNS is still delegated to the source account. Last audited: 2026-08-16.
 
-This playbook documents the migration from AWS account `<source-account-id>` to AWS account `<target-account-id>`.
+This runbook moves HASHPASS-owned DNS and the remaining delivery resources from the legacy AWS account to the HashPass AWS account without changing mailbox providers or creating an untested traffic cutover.
 
-The rule for every phase is simple:
+| Role | AWS account | Local AWS CLI profile |
+| --- | --- | --- |
+| Source (legacy) | `058264267235` | `default` |
+| Target (HashPass) | `952191196420` | `hashpass` |
 
-- build the replacement in the target account first
-- verify it in parallel
-- do not destroy the source account until the replacement is confirmed healthy
-- rollback must be a traffic or configuration flip, not a rebuild
+## Scope and mail-provider policy
 
-## Why this exists
+| Domain | Target hosted zone | Mail provider after cutover | Rule |
+| --- | --- | --- | --- |
+| `hashpass.tech` | `Z071072129KV7AWT9B0DA` | Hostinger Email | Preserve Hostinger MX, SPF, DKIM, `autodiscover`, and `autoconfig`. Keep `include:amazonses.com` in the single SPF record while SES sends application mail. |
+| `hashpass.club` | `Z071178839CVVJDHQDNNO` | TLAO | Preserve the existing TLAO MX, SPF, DKIM, DMARC, TLS report, and auto-configuration records exactly. Do not add Hostinger records. |
+| `hashpass.info` | `Z00577161PBYNBXR7HPU2` | TLAO | Preserve the existing TLAO mail records exactly. Do not add Hostinger records. |
+| `hashpass.lat` | `Z07096652QWZKNQHJRQH0` | No configured mailbox routing | Do not introduce mail records as part of this migration. |
 
-HASHPASS currently spans several AWS delivery paths:
+The registrar is not managed by Route 53 Domains in either AWS account. Registrar nameserver changes therefore happen in the external registrar console only, after the target service cutover gates have passed.
 
-- `hashpass.tech` is fronted by a source-account CloudFront distribution that points at the target-account static origin
-- `api.hashpass.tech` and `api-dev.hashpass.tech` live on the target-account Lambda + API Gateway path
-- `bsl.hashpass.tech` and `bsl-dev.hashpass.tech` use CodeBuild and CodePipeline in the source account
-- the Android build runner lives on EC2 in the source account
-- the public `hashpass.tech` hosted zone also lives in the source account
-- the new account now has the target hosted zones, static site stack, API backend, and Android runner in place, but the public registrar delegation still points at the source account
+## Completed staging
 
-The new account started empty for these surfaces, which made it suitable for a clean IaC rollout and a low-risk rollback posture. It is now populated in parallel with the source account so we can validate before any registrar flip.
+The Terraform-managed `packages/infra/terraform/stacks/hashpass-dns` stack owns the target hosted zones. On 2026-08-16 it was extended to include `hashpass.info`, then applied with `AWS_PROFILE=hashpass`.
 
-## Migration goals
+All non-`NS`/`SOA` records were staged from source to target without changing public delegation:
 
-1. Remove Amplify from the new account.
-2. Host `hashpass.tech` through IaC-managed static hosting in the new account.
-3. Recreate the BSL pipelines in the new account.
-4. Recreate the Android EC2 runner in the new account.
-5. Keep the source account live until the target stack is fully validated.
+- `hashpass.tech`: Hostinger mail records were copied and stale target WorkMail records were replaced. Target-only ACM validation CNAMEs were retained. Two legacy `bls2025` alias records remain unchanged because their source-zone alias target cannot be imported into another hosted zone.
+- `hashpass.club` and `hashpass.info`: TLAO records were copied unchanged.
+- `hashpass.lat`: the three existing CloudFront/ACM records were copied.
 
-## Historical source-account inventory
+The Route 53 change IDs were `C04456253BUFHEBVMF7FY` (`.tech`), `C0851910ZQOJXEIVKDVC` (`.club`), `C06048691AJI2G17Y8UKQ` (`.info`), and `C08519151PAI9OFT829PH` (`.lat`); all reached `INSYNC`.
 
-The source account currently contains these relevant resources:
+The target certificate `arn:aws:acm:us-east-1:952191196420:certificate/7dd3e108-0639-4eaa-9538-fea5710e0f01` is issued for `hashpass.tech` and `www.hashpass.tech`. Its `www` validation CNAME was added to both zones (source change `C05278821HVMCTJB2QUZP`, target change `C066748434FKHVW7VBI4P`) so it remains valid before and after delegation.
 
-- the source CloudFront front door for `hashpass.tech`
-- the source CloudFront front door for `dev.hashpass.tech`, which points at the target-account static origin so the public dev hostname stays HTTPS-only
-- CodeBuild projects `bsl-hashpass-dev-build` and `bsl-hashpass-prod-build`
-- CodePipeline pipelines `bsl-hashpass-dev` and `bsl-hashpass-prod`
-- EC2 runner `hashpass-mobile-release-1`
-- Route53 hosted zone `hashpass.tech`
-- legacy source-account API Gateway and Lambda resources are retired or being removed now that the target API custom domains are live
+At this point the public registrar still delegates all four zones to the source-account nameservers. That is intentional: the staged zones are a rollback-ready copy, not a live cutover.
 
-The hosted zone also carries DNS for `api.hashpass.tech`, `api-dev.hashpass.tech`, `bsl.hashpass.tech`, `bsl-dev.hashpass.tech`, `www.hashpass.tech`, and several legacy or auxiliary records.
+## Current dependency map
 
-## Reversible rollout model
+```text
+public registrar
+  -> source Route 53 zones (currently authoritative)
+      -> source CloudFront front doors
+          -> target-account S3 website origins
+      -> target API Gateway custom domains (api.hashpass.tech, api-dev.hashpass.tech)
 
-### Phase 1: Stand up the target account
+target Route 53 zones (staged, not authoritative)
+  -> copied DNS records and target ACM validation records
+  -> ready for delegation only after target front doors own their aliases
+```
 
-- Use IaC only.
-- Create the target IAM roles, hosted zones, S3 buckets, CloudFront distribution, build worker, and runner resources.
-- If CloudFront is unavailable in the new account, keep the public hostname on the source-account CloudFront front door and point its origin at the target-account S3 website bucket until AWS verifies the target account for CloudFront.
-- The first web surface lands in `packages/infra/terraform/stacks/hashpass-web` and deploys through the shared EC2 worker plus `packages/tools/scripts/build-static-site.sh` and `packages/tools/scripts/deploy-static-site.sh`.
-- Use a non-burstable worker shape such as `m6i.large` for the shared EC2 build worker. The burstable `t3a.medium` shape was throttling sustained Expo export builds and pushed pipeline runtime from about 7 minutes to more than 25 minutes.
-- That stack now provisions both the production `main` pipeline and the development `develop` pipeline in the target account.
-- The target DNS stack now keeps `dev.hashpass.tech` inside the parent `hashpass.tech` hosted zone so the development site can be isolated without a separate child zone.
-- The DNS landing zone lives in `packages/infra/terraform/stacks/hashpass-dns`.
-- The API backend lives in `packages/infra/terraform/stacks/hashpass-api-target` and now owns the public custom domains in the target account.
-- Use `pnpm run infra:hashpass-web:plan` and `pnpm run infra:hashpass-web:apply` once the CodeConnections handshake is complete and the target-account `terraform.tfvars` is populated.
-- Keep the source account untouched.
-- Validate the new stack using the S3 website endpoint or a temporary parallel hostname before any DNS cutover.
-- Keep the public `dev.hashpass.tech` hostname on CloudFront during the migration so browsers always get HTTPS, even if the target stack itself is still publishing to the S3 website bucket.
+The critical remaining dependency is CloudFront. The source account currently owns the CloudFront alternate-domain names for `hashpass.tech`, `www.hashpass.tech`, `dev.hashpass.tech`, `bsl.hashpass.tech`, and `bsl-dev.hashpass.tech`; their origins already point at target-account S3 website buckets. The target account currently owns the API Gateway custom domains and their certificates, but does not yet own the primary CloudFront aliases. A CloudFront alternate domain cannot be served by two distributions, so copying DNS alone cannot complete this migration.
 
-### Phase 2: Mirror the web surface
+## Required cutover sequence
 
-- Deploy the `hashpass.tech` static site in the target account.
-- Confirm the production build succeeds from the same monorepo revision.
-- Verify the site loads, routes resolve, and the auth callbacks still work.
-- Do not remove Amplify yet.
-- Use the emitted CloudFront domain for validation when CloudFront is enabled; otherwise use the S3 website endpoint until the account is verified.
+### 1. Complete target delivery resources
 
-### Phase 3: Mirror BSL
+1. Create target-account ACM certificates in `us-east-1` for every CloudFront alias to move, including `hashpass.tech` and `www.hashpass.tech` together. Add the validation CNAMEs to the staged target zone and wait for `ISSUED`.
+2. Create target CloudFront distributions with the target S3 origins and matching behavior, SPA fallback, security headers, cache policy, error handling, logging, and price class.
+3. Validate each target distribution using its CloudFront domain before attaching production aliases.
+4. Recreate any remaining source-only BSL pipelines, build roles, runner resources, secrets, and alarms in the target account. Do not copy secrets into source control; migrate them through their owning secret/parameter service.
+5. Record each replacement resource ARN and validation evidence in the migration change record.
 
-- Recreate the BSL CodeBuild and CodePipeline resources in the target account.
-- Verify both `dev` and `production` builds against the target account.
-- Keep the source pipelines active until the target pipelines are healthy.
+### 2. Reconcile staged DNS
 
-### Phase 4: Recreate the Android runner
+Immediately before the registrar change, compare source and target records excluding zone-owned `NS` and `SOA` records. Resolve differences deliberately:
 
-- Provision the EC2 runner stack with Terraform in the target account.
-- Register the runner and validate a full Android build.
-- Keep the source runner available until the target runner has proven stable.
+- keep Hostinger records only on `hashpass.tech`;
+- keep TLAO records on `.club` and `.info`;
+- preserve all active ACM/SES/Brevo verification records;
+- replace source CloudFront aliases with the new target CloudFront aliases only after the domain aliases have moved;
+- repair or retire the two legacy `bls2025` records separately rather than treating their source-zone alias as portable.
 
-### Phase 5: DNS cutover
+Lower mutable-record TTLs to 300 at least 24 hours before the change. Do not lower delegation TTLs by editing Route 53 `NS` records; the registrar controls the public delegation.
 
-- The `hashpass.tech`, `hashpass.lat`, and `hashpass.club` hosted zones now exist in the target account.
-- Compare records before updating any registrar or alias data.
-- Switch traffic only after the target website, API, and runner paths are validated.
-- Once the source CloudFront front door is verified, remove any remaining legacy source-account API/Lambda leftovers that are no longer needed.
+### 3. Move aliases, then delegate
 
-## Rollback procedure
+1. Remove or associate each alternate domain from the source CloudFront distribution only when the equivalent target distribution is deployed and validated.
+2. Attach the alternate domain and target-account certificate to the target distribution, then wait for CloudFront deployment.
+3. Update target Route 53 aliases to the target distributions.
+4. Change nameservers at the external registrar to the target zone's four nameservers for one domain at a time, beginning with `hashpass.tech`.
+5. Query each authoritative target nameserver and public resolvers for A/AAAA, MX, TXT, DKIM, API, and required subdomains before moving to the next domain.
 
-Rollback should be a traffic flip, not a rebuild.
+### 4. Post-cutover validation
 
-1. Restore the DNS target back to the source account.
-2. Keep the target stack deployed for debugging.
-3. Leave the source CloudFront front door, pipelines, and runner intact.
-4. Re-test the source stack.
-5. Only destroy the target stack after the source has been confirmed healthy again.
+- `https://hashpass.tech`, `https://www.hashpass.tech`, `https://dev.hashpass.tech`, BSL routes, and `https://api.hashpass.tech/api/config/versions` return the expected target service.
+- `contact@hashpass.tech` receives through Hostinger and Thunderbird/IMAP works.
+- `.club` and `.info` mail continues through TLAO; test inbound and outbound mail without changing their mail records.
+- SES/Brevo messages pass SPF, DKIM, and DMARC.
+- Monitor CloudFront, API Gateway, Lambda, pipeline, and email-provider logs for at least the agreed rollback window.
 
-## Validation checklist
+## Rollback
 
-- `hashpass.tech` loads from the target account without Amplify.
-- `api.hashpass.tech` responds from the expected backend.
-- BSL dev and production builds complete in the target account.
-- The Android runner can start, build, and upload without manual console intervention.
-- DNS records in the target hosted zone match the source zone before cutover.
-- Rollback to the source account is a documented and tested path.
+Within the rollback window, restore the external registrar delegation to the source zone nameservers. Do not delete target zones, target certificates, or target distributions during rollback. This returns DNS authority while keeping the target environment available for diagnosis.
 
-## Operator notes
+## Source-account retirement
 
-- Use the target AWS credentials from the repository root `.env` when operating against account `<target-account-id>`.
-- Use `TARGET_AWS_ACCOUNT_ID` when you need scripts to assert the destination account explicitly.
-- Build the target static site with `pnpm run deploy:web:s3` for a local dry run, or let the new EC2 worker perform the same build and S3 sync inside AWS.
-- Keep `dev.hashpass.tech` on the CloudFront front door while the migration is in flight; use the S3 website endpoint only as the origin behind that distribution.
-- Use `.github/workflows/hashpass-web-pipeline-monitor.yml` for day-to-day control of the web worker. Set `AWS_WEB_PIPELINE_ROLE_ARN` from the Terraform output and dispatch the workflow with `mode=monitor` or `mode=stop` instead of using ad hoc target-account AWS CLI calls, unless you are debugging a failure. The workflow also runs a periodic stop sweep and uses a 30 second idle grace check so idle workers get reclaimed quickly even if the final build finished without another push.
-- If the GitHub repo variable is missing during bootstrap, pass the same role ARN through the manual `aws_web_pipeline_role_arn` workflow dispatch input and then save it as the repo variable after the first successful run.
-- The target Supabase compatibility layer lives in
-  `packages/tools/scripts/sql/target-bsl-bootstrap.sql`. Apply that script once
-  to the target database before testing the new web/API flow, then keep future
-  target DB changes in checked-in SQL migrations instead of ad hoc target CLI.
-- Keep the source hosted zone authoritative for `hashpass.tech` until the apex
-  cutover. Route `dev.hashpass.tech` through CloudFront so HTTPS remains the
-  default while the development path is being validated.
-- If CloudFront is unavailable in the target account, keep `enable_cloudfront = false` in the stack tfvars and validate against the S3 website endpoint first.
-- For the target API Lambda, keep `BETTER_AUTH_DATABASE_URL` in pooler format (`aws-0-us-east-2.pooler.supabase.com` for dev, `aws-1-us-west-2.pooler.supabase.com` for prod). The direct `db.<ref>.supabase.co` form can fail DNS resolution inside Lambda even when the Supabase project ref itself is valid.
-- Keep source-account credentials and resources available until the migration has been stable long enough to close the rollback window.
+Only after every domain has been stable through the rollback window:
+
+1. Export a final Route 53 record-set backup and ACM/CloudFront inventory.
+2. Confirm no live registrar delegates to a source hosted zone.
+3. Confirm no production CloudFront distribution, pipeline, runner, secret, or API domain remains in the source account.
+4. Remove source resources using their IaC or service-specific retirement path, then delete the empty source hosted zones last.
+
+Never delete source zones or AWS WorkMail until these checks are complete. WorkMail is no longer the MX target for `hashpass.tech`, but historical mailbox retention/export remains a separate decision.

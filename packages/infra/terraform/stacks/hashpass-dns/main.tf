@@ -23,3 +23,9 @@ resource "aws_route53_zone" "club" {
   comment = "HashPass target hosted zone for ${trim(var.club_zone_name, ".")}"
   tags    = merge(local.common_tags, { Domain = trim(var.club_zone_name, ".") })
 }
+
+resource "aws_route53_zone" "info" {
+  name    = trim(var.info_zone_name, ".")
+  comment = "HashPass target hosted zone for ${trim(var.info_zone_name, ".")}"
+  tags    = merge(local.common_tags, { Domain = trim(var.info_zone_name, ".") })
+}
