@@ -26,15 +26,29 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let active = true;
 
-    supabaseClient()
-      .auth.getSession()
-      .then(({ data }) => {
-        if (!active) return;
-        setSession(data.session);
-        setIsLoading(false);
-      });
+    // supabaseClient() throws synchronously if NEXT_PUBLIC_SUPABASE_URL /
+    // NEXT_PUBLIC_SUPABASE_ANON_KEY are missing from the build -- this
+    // provider is mounted app-wide in app/layout.tsx, so an uncaught throw
+    // here takes down every page, not just auth-gated ones (confirmed live
+    // 2026-08-16: a CI build missing those vars did exactly that). Most of
+    // this site works fine signed out, so a broken/missing auth config
+    // should degrade to "no session," never crash the app.
+    let client: ReturnType<typeof supabaseClient>;
+    try {
+      client = supabaseClient();
+    } catch (error) {
+      console.error('SessionProvider: Supabase client unavailable, staying signed out', error);
+      setIsLoading(false);
+      return;
+    }
 
-    const { data: listener } = supabaseClient().auth.onAuthStateChange((_event, nextSession) => {
+    client.auth.getSession().then(({ data }) => {
+      if (!active) return;
+      setSession(data.session);
+      setIsLoading(false);
+    });
+
+    const { data: listener } = client.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession);
       setIsLoading(false);
     });

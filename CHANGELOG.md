@@ -1,3 +1,16 @@
+## [1.9.4](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.3...v1.9.4) (2026-08-16)
+### Released
+- stop missing Supabase config from crashing the entire site
+
+### Release scope
+- Compared with: `v1.9.3` (the previous global release tag)
+
+### Affected products & packages
+- Club web
+- Infrastructure
+- Documentation
+- Release tooling
+
 ## [1.9.3](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.2...v1.9.3) (2026-08-16)
 ### Released
 - guard WebGL shader background against context creation failure

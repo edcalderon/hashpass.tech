@@ -50,6 +50,20 @@ jobs:
         uses: actions/configure-pages@v5
 
       - name: Build club and docs artifact
+        env:
+          # NEXT_PUBLIC_* vars are inlined at build time by `next build`'s
+          # static export -- unset here means the deployed bundle literally
+          # has no value baked in, not an empty string it could fall back
+          # from. Missing entirely until 2026-08-16: apps/web-app's
+          # SessionProvider (added 2026-08-15, mounted app-wide in
+          # app/layout.tsx) calls supabaseClient() unconditionally on every
+          # page's first render, which throws synchronously without these,
+          # taking down the whole site -- not just the auth-gated parts.
+          # Points at core-production (fxgftanraszjjyeidvia), matching the
+          # project mobile's core-production profile resolves to, since
+          # real club visitors must authenticate against the real database.
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
         run: pnpm --filter @hashpass/infra run build:club-docs-site
 
       - name: Upload Pages artifact

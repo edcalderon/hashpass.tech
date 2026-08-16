@@ -28,6 +28,12 @@ variable "club_zone_name" {
   default     = "hashpass.club"
 }
 
+variable "info_zone_name" {
+  description = "HashPass information hosted zone name"
+  type        = string
+  default     = "hashpass.info"
+}
+
 variable "tags" {
   description = "Tags applied to hosted zones"
   type        = map(string)
