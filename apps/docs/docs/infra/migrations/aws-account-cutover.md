@@ -1,22 +1,22 @@
 # HASHPASS AWS Account and DNS Cutover
 
-> Status: active, staged migration. Public DNS is still delegated to the source account. Last audited: 2026-08-16.
+> Status: active migration. Registrar delegation has moved for `.tech`, `.club`, and `.lat`; `.info` remains pending. Last audited: 2026-08-16.
 
 This runbook moves HASHPASS-owned DNS and the remaining delivery resources from the legacy AWS account to the HashPass AWS account without changing mailbox providers or creating an untested traffic cutover.
 
 | Role | AWS account | Local AWS CLI profile |
 | --- | --- | --- |
-| Source (legacy) | `058264267235` | `default` |
-| Target (HashPass) | `952191196420` | `hashpass` |
+| Source (legacy) | `<source-account-id>` | `default` |
+| Target (HashPass) | `<target-account-id>` | `hashpass` |
 
 ## Scope and mail-provider policy
 
 | Domain | Target hosted zone | Mail provider after cutover | Rule |
 | --- | --- | --- | --- |
-| `hashpass.tech` | `Z071072129KV7AWT9B0DA` | Hostinger Email | Preserve Hostinger MX, SPF, DKIM, `autodiscover`, and `autoconfig`. Keep `include:amazonses.com` in the single SPF record while SES sends application mail. |
-| `hashpass.club` | `Z071178839CVVJDHQDNNO` | TLAO | Preserve the existing TLAO MX, SPF, DKIM, DMARC, TLS report, and auto-configuration records exactly. Do not add Hostinger records. |
-| `hashpass.info` | `Z00577161PBYNBXR7HPU2` | TLAO | Preserve the existing TLAO mail records exactly. Do not add Hostinger records. |
-| `hashpass.lat` | `Z07096652QWZKNQHJRQH0` | No configured mailbox routing | Do not introduce mail records as part of this migration. |
+| `hashpass.tech` | Target zone | Hostinger Email | Preserve Hostinger MX, SPF, DKIM, `autodiscover`, and `autoconfig`. Keep `include:amazonses.com` in the single SPF record while SES sends application mail. |
+| `hashpass.club` | Target zone | TLAO | Preserve the existing TLAO MX, SPF, DKIM, DMARC, TLS report, and auto-configuration records exactly. Do not add Hostinger records. |
+| `hashpass.info` | Target zone | TLAO | Preserve the existing TLAO mail records exactly. Do not add Hostinger records. |
+| `hashpass.lat` | Target zone | No configured mailbox routing | Do not introduce mail records as part of this migration. |
 
 The registrar is not managed by Route 53 Domains in either AWS account. Registrar nameserver changes therefore happen in the external registrar console only, after the target service cutover gates have passed.
 
@@ -32,9 +32,9 @@ All non-`NS`/`SOA` records were staged from source to target without changing pu
 
 The Route 53 change IDs were `C04456253BUFHEBVMF7FY` (`.tech`), `C0851910ZQOJXEIVKDVC` (`.club`), `C06048691AJI2G17Y8UKQ` (`.info`), and `C08519151PAI9OFT829PH` (`.lat`); all reached `INSYNC`.
 
-The target certificate `arn:aws:acm:us-east-1:952191196420:certificate/7dd3e108-0639-4eaa-9538-fea5710e0f01` is issued for `hashpass.tech` and `www.hashpass.tech`. Its `www` validation CNAME was added to both zones (source change `C05278821HVMCTJB2QUZP`, target change `C066748434FKHVW7VBI4P`) so it remains valid before and after delegation.
+The target certificate for `hashpass.tech` and `www.hashpass.tech` is issued. Its `www` validation CNAME was added to both zones so it remains valid before and after delegation.
 
-At this point the public registrar still delegates all four zones to the source-account nameservers. That is intentional: the staged zones are a rollback-ready copy, not a live cutover.
+The public registrar now delegates `.tech`, `.club`, and `.lat` to their target zones. `.info` remains on the source zone until its registrar change is complete. Retain every source zone during the rollback window; recursive resolvers can retain the former delegation for up to 48 hours.
 
 ## Current dependency map
 
@@ -74,13 +74,16 @@ Immediately before the registrar change, compare source and target records exclu
 
 Lower mutable-record TTLs to 300 at least 24 hours before the change. Do not lower delegation TTLs by editing Route 53 `NS` records; the registrar controls the public delegation.
 
-### 3. Move aliases, then delegate
+### 3. Move aliases while both zones remain valid
 
-1. Remove or associate each alternate domain from the source CloudFront distribution only when the equivalent target distribution is deployed and validated.
-2. Attach the alternate domain and target-account certificate to the target distribution, then wait for CloudFront deployment.
-3. Update target Route 53 aliases to the target distributions.
-4. Change nameservers at the external registrar to the target zone's four nameservers for one domain at a time, beginning with `hashpass.tech`.
-5. Query each authoritative target nameserver and public resolvers for A/AAAA, MX, TXT, DKIM, API, and required subdomains before moving to the next domain.
+The source zone is authoritative until registrar propagation completes. It must therefore be updated during the alias transfer; updating the staged target zone alone is insufficient.
+
+1. Keep the source CloudFront distribution and its certificate intact until a target distribution without production aliases has been validated.
+2. During the planned handoff, transfer each alternate domain to the target distribution and attach its target certificate. Wait until CloudFront reports the target distribution as deployed.
+3. Immediately update the **currently authoritative source-zone** A/AAAA aliases to the deployed target distribution. Validate the production hostname against the source-zone nameservers before changing registrar delegation.
+4. Update the corresponding aliases in the target zone to the same target distribution, then validate target-zone authoritative nameservers.
+5. Change nameservers at the external registrar one domain at a time. During resolver-cache propagation, both the old source zone and new target zone now route to the same validated target distribution.
+6. Query public resolvers for A/AAAA, MX, TXT, DKIM, API, and required subdomains before moving to the next domain.
 
 ### 4. Post-cutover validation
 
@@ -92,7 +95,7 @@ Lower mutable-record TTLs to 300 at least 24 hours before the change. Do not low
 
 ## Rollback
 
-Within the rollback window, restore the external registrar delegation to the source zone nameservers. Do not delete target zones, target certificates, or target distributions during rollback. This returns DNS authority while keeping the target environment available for diagnosis.
+Within the rollback window, do not restore only the registrar delegation: source-zone aliases would still point at the target distribution after the handoff. First transfer each alternate domain and certificate back to the source distribution, wait for its deployment, and update the source-zone aliases to the restored source distribution. Validate the source-zone authoritative nameservers, then restore external registrar delegation. Do not delete target zones, target certificates, or target distributions during rollback.
 
 ## Source-account retirement
 

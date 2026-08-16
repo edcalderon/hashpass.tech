@@ -16,18 +16,17 @@ This is the authoritative reference for which service hosts which domain and how
 
 ## Account split: what's on the source account vs. the target account
 
-Two AWS accounts are in play (see `.agents/active/task-aws-account-migration.md`
-for the full, verified audit): the **source account** (`<source-account-id>`, the
-original account, still holds DNS/CloudFront/email for all `hashpass.*`
-domains) and the **target account** (`<target-account-id>`, the newer account,
-holds the actual compute — Lambda, the Android release runner, the S3
-origins CloudFront serves). **DNS/hosted zone hosting for `hashpass.tech`,
-`hashpass.club`, `hashpass.lat`, and `hashpass.info` stays on the source
-account indefinitely by decision (2026-07-28)** — this is not a pending
-cutover, it's the intended stable state. `hashpass.club` and `hashpass.info`
-also carry live email (MX/DKIM/DMARC) on the source account; `hashpass.info`
-specifically is the planned fallback SMTP domain for
-`.agents/pending/email-proxy-balancer.md`.
+Two AWS accounts are in play: the **source account** (`<source-account-id>`)
+and the **target account** (`<target-account-id>`). The target account owns
+the active compute and the destination Route 53 zones. The former
+2026-07-28 decision to retain DNS indefinitely in the source account is
+explicitly superseded by the active [AWS account and DNS cutover runbook](./migrations/aws-account-cutover.md).
+
+As of 2026-08-16, registrar delegation has moved for `hashpass.tech`,
+`hashpass.club`, and `hashpass.lat`; `hashpass.info` is pending. Retain the
+source zones throughout the rollback window. Mail-provider ownership does not
+change with DNS ownership: `.tech` uses Hostinger Email, `.club` and `.info`
+use TLAO, and `.lat` has no mailbox routing.
 
 **Two things found live in AWS during that audit but not documented
 anywhere in this file before now:**
