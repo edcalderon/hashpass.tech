@@ -1,3 +1,17 @@
+## [1.9.5](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.4...v1.9.5) (2026-08-16)
+### Released
+- self-hosted Autodiscover responder for hashpass.tech; address 9 of 15 open CodeQL error-severity findings; add missing path filter to criptolatinfest's CodePipeline
+
+### Release scope
+- Compared with: `v1.9.4` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Auth
+- Infrastructure
+- Documentation
+- Release tooling
+
 ## [1.9.4](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.3...v1.9.4) (2026-08-16)
 ### Released
 - stop missing Supabase config from crashing the entire site
