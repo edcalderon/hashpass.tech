@@ -20,21 +20,19 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.3)
+## 📋 Latest Changes (v1.9.4)
 
 ### Released
-- guard WebGL shader background against context creation failure
+- stop missing Supabase config from crashing the entire site
 
 ### Release scope
-- Compared with: `v1.9.2` (the previous global release tag)
+- Compared with: `v1.9.3` (the previous global release tag)
 
 ### Affected products & packages
 - Club web
-- Mobile app
-- QR links API
-- SDK
-- Shared UI
+- Infrastructure
 - Documentation
+- Release tooling
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

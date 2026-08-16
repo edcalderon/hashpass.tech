@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202608160200, // Updated to current timestamp
+  buildNumber: 202608160518, // Updated to current timestamp
   releaseDate: '2026-08-16',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,14 +30,29 @@ export const CURRENT_VERSION: VersionInfo = {
     // No new features
   ],
   bugfixes: [
-    'guard WebGL shader background against context creation failure'
+    'stop missing Supabase config from crashing the entire site'
   ],
   breakingChanges: [],
-  notes: 'guard WebGL shader background against context creation failure'
+  notes: 'stop missing Supabase config from crashing the entire site'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.4': {
+    version: '1.9.4',
+    buildNumber: 202608160518,
+    releaseDate: '2026-08-16',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'stop missing Supabase config from crashing the entire site'
+    ],
+    breakingChanges: [],
+    notes: 'stop missing Supabase config from crashing the entire site'
+  },
   '1.9.3': {
     version: '1.9.3',
     buildNumber: 202608160200,
