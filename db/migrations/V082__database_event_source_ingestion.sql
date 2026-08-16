@@ -53,8 +53,22 @@ CREATE TABLE IF NOT EXISTS public.external_events (
   last_reviewed_payload_hash text,
   PRIMARY KEY (source_id, external_id)
 );
+-- Postgres marks both ::timestamptz and ::timestamp text casts STABLE, not
+-- IMMUTABLE (parsing can depend on the session TimeZone/DateStyle GUCs), so
+-- neither is usable directly in an index expression. The standard fix is an
+-- explicit IMMUTABLE wrapper -- safe here specifically because
+-- normalized_payload->>'startsAt' is always a normalizer-produced,
+-- unambiguous ISO 8601 UTC string, not arbitrary user input.
+CREATE OR REPLACE FUNCTION public.parse_iso8601_immutable(value text)
+RETURNS timestamptz
+LANGUAGE sql
+IMMUTABLE
+AS $$
+  SELECT value::timestamptz
+$$;
+
 CREATE INDEX IF NOT EXISTS external_events_publication_start_idx
-  ON public.external_events(publication_status, ((normalized_payload->>'startsAt')::timestamptz));
+  ON public.external_events(publication_status, (public.parse_iso8601_immutable(normalized_payload->>'startsAt')));
 
 CREATE TABLE IF NOT EXISTS public.external_event_observations (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -95,6 +109,12 @@ ALTER TABLE public.external_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.external_event_observations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.event_ingestion_reviews ENABLE ROW LEVEL SECURITY;
 
+-- CREATE POLICY has no IF NOT EXISTS form, unlike the CREATE TABLE/INDEX
+-- statements above -- DROP+CREATE keeps this migration safely re-runnable
+-- (confirmed needed live: an earlier attempt committed everything up to
+-- this point before a downstream IMMUTABLE/search_path bug was caught,
+-- so a bare CREATE POLICY on retry failed with "already exists").
+DROP POLICY IF EXISTS published_external_events_are_public ON public.external_events;
 CREATE POLICY published_external_events_are_public ON public.external_events
   FOR SELECT TO anon, authenticated
   USING (publication_status = 'published' AND source_status IN ('upcoming', 'live'));
@@ -108,7 +128,7 @@ CREATE OR REPLACE FUNCTION public.ingest_event_source_sync(
 ) RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, pg_temp
+SET search_path = public, extensions, pg_temp
 AS $$
 DECLARE
   v_run_id uuid;
@@ -203,7 +223,7 @@ CREATE OR REPLACE FUNCTION public.review_external_event_candidate(
 ) RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, pg_temp
+SET search_path = public, extensions, pg_temp
 AS $$
 DECLARE
   v_event public.external_events%ROWTYPE;
