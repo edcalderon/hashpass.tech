@@ -43,10 +43,45 @@ if (Platform.OS === 'web') {
     return secureStore;
   };
 
+  // Kept only to migrate/purge sessions written by pre-SecureStore app
+  // versions -- never used for new writes. Without this, a user upgrading
+  // from an older build would (a) look silently signed out, since reads now
+  // only check SecureStore, and (b) keep their old plaintext access/refresh
+  // tokens sitting in AsyncStorage indefinitely, even after a later
+  // sign-out, since removeItem previously only ever touched one store.
+  let legacyAsyncStorage: any = null;
+  const loadLegacyAsyncStorage = async () => {
+    if (!legacyAsyncStorage) {
+      try {
+        const AsyncStorage = require('@react-native-async-storage/async-storage');
+        legacyAsyncStorage = AsyncStorage.default ?? AsyncStorage;
+      } catch {
+        legacyAsyncStorage = { getItem: async () => null, removeItem: async () => {} };
+      }
+    }
+    return legacyAsyncStorage;
+  };
+
   storage = {
     getItem: async (key: string) => {
       const SecureStore = await loadSecureStore();
-      return await SecureStore.getItemAsync(key);
+      const current = await SecureStore.getItemAsync(key);
+      if (current !== null && current !== undefined) {
+        return current;
+      }
+
+      // One-time migration: a legacy plaintext value from before this
+      // switch. Move it into SecureStore and purge the old copy so it
+      // doesn't linger in cleartext.
+      const AsyncStorage = await loadLegacyAsyncStorage();
+      const legacyValue = await AsyncStorage.getItem(key);
+      if (legacyValue !== null && legacyValue !== undefined) {
+        await SecureStore.setItemAsync(key, legacyValue);
+        await AsyncStorage.removeItem(key);
+        return legacyValue;
+      }
+
+      return null;
     },
     setItem: async (key: string, value: string) => {
       const SecureStore = await loadSecureStore();
@@ -54,7 +89,11 @@ if (Platform.OS === 'web') {
     },
     removeItem: async (key: string) => {
       const SecureStore = await loadSecureStore();
-      return await SecureStore.deleteItemAsync(key);
+      await SecureStore.deleteItemAsync(key);
+      // Purge any leftover legacy copy too, regardless of whether the
+      // migration above ever ran for this key.
+      const AsyncStorage = await loadLegacyAsyncStorage();
+      await AsyncStorage.removeItem(key);
     }
   };
 }

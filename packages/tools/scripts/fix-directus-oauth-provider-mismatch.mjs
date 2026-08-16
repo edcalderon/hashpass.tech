@@ -25,7 +25,20 @@ const DIRECTUS_URL =
 const directusAdminEmail = process.env.ADMIN_EMAIL || process.env.DIRECTUS_ADMIN_EMAIL;
 const directusAdminPassword = process.env.ADMIN_PASSWORD;
 const defaultRoleId = process.env.DEFAULT_ROLE_ID;
-const TARGET_PROVIDER = process.env.TARGET_OAUTH_PROVIDER || 'google';
+
+// Validated against a fixed allowlist rather than used directly -- CodeQL
+// flags any raw env var reaching a console.log call as a potential
+// clear-text secret exposure (js/clear-text-logging), since it can't tell
+// TARGET_OAUTH_PROVIDER apart from something like an API key by name alone.
+// Resolving through a known-safe allowlist first breaks that taint flow:
+// after this, the value is provably one of a few literal strings, not raw
+// untrusted input, wherever it's logged below.
+function normalizeProvider(value) {
+  const normalized = String(value || '').trim().toLowerCase();
+  const allowedProviders = new Set(['google', 'github', 'azure', 'okta', 'auth0', 'default']);
+  return allowedProviders.has(normalized) ? normalized : 'google';
+}
+const TARGET_PROVIDER = normalizeProvider(process.env.TARGET_OAUTH_PROVIDER);
 const DRY_RUN = process.argv.includes('--dry-run');
 
 const required = [

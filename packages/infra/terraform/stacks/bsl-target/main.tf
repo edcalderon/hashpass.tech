@@ -274,6 +274,7 @@ locals {
     "packages/**",
     "package.json",
     "pnpm-lock.yaml",
+    "pnpm-workspace.yaml",
   ]
 
   # Everything under packages/** that is hashpass-web-only or belongs to an

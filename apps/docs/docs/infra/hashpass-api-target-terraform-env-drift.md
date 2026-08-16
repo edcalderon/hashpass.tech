@@ -1,7 +1,43 @@
-# `hashpass-api-target`'s Terraform state has drifted from live reality — do not `apply` without reading this
+# Several Terraform stacks have drifted from live reality — do not `apply` without reading this
 
-**Found:** 2026-08-16, while adding an unrelated Autodiscover Lambda.
-**Status:** confirmed, unfixed. This is a warning, not a resolved incident.
+**Found:** 2026-08-16, while adding an unrelated Autodiscover Lambda and
+fixing a missing `pnpm-workspace.yaml` trigger path. Originally written
+about `hashpass-api-target` alone; broadened the same day after the exact
+same class of risk turned up in a second stack.
+**Status:** confirmed in two stacks, unfixed in either. This is a warning,
+not a resolved incident.
+
+## Also confirmed: `hashpass-web`
+
+While adding `pnpm-workspace.yaml` to `site_trigger_includes` (a one-line,
+otherwise-inert `locals` change), `terraform plan` against this stack --
+supplied with the same `connection_arn`/`supabase_url`/`supabase_key`
+values already verified correct elsewhere this session -- showed **16 to
+add, 15 to change, 15 to destroy**, including destroying both live build-worker
+EC2 instances (`build_worker_instance_ids` going to empty) and blanking
+`github_actions_role_arn` to `""`. Not applied. The root cause wasn't
+investigated in depth (out of scope for the trigger fix that surfaced it),
+but the shape matches `hashpass-api-target`'s issue: this stack's variables
+were evidently supplied via one-off `-var` overrides or a local
+`terraform.tfvars` that was never committed, so a plan run without
+reproducing that exact original invocation shows large, false drift.
+
+**`bsl-target` was not plan-tested directly** (same missing-tfvars pattern
+observed via `ls terraform.tfvars*` -- only `.example` exists, same as
+`hashpass-web` before its plan was run), but given the shared operational
+history and stack shape, it should be treated with the same caution until
+someone actually verifies it, not assumed safe.
+
+**Practical consequence:** the `pnpm-workspace.yaml` trigger-path addition
+(see the CodeQL/PR-review-driven fix on the same date) is committed as
+source in all three stacks (`demo-events`, `hashpass-web`, `bsl-target`)
+but **only actually applied to the live `demo-events` pipeline** (the one
+stack confirmed isolated and safe). `hashpass-web`'s and `bsl-target`'s
+live pipelines still don't have this trigger path until someone applies it
+through a real, reconciled `terraform apply` -- not a blocking gap (a
+`pnpm-workspace.yaml`-only commit is a rare, low-value trigger to miss),
+but worth knowing next time either of those two pipelines seems to not
+have rebuilt when you expected it to.
 
 ## The danger
 

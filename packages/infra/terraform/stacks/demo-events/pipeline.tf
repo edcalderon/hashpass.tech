@@ -16,6 +16,7 @@ locals {
     "packages/**",
     "package.json",
     "pnpm-lock.yaml",
+    "pnpm-workspace.yaml",
   ]
 
   # AWS caps this list at 8 entries -- matches hashpass-dev-site's exact
