@@ -82,6 +82,13 @@ describe("sync failure", () => {
     const result = await syncEventSources({ outputFile, healthFile, fetchImpl: fetchImpl as typeof fetch });
     assert.equal(result.health.status, "degraded"); assert.equal(result.events.length, 1);
   });
+  it("bounds source bodies while streaming instead of buffering them", async () => {
+    const outputFile = `/tmp/hashpass-events-large-${process.pid}.json`; const healthFile = `/tmp/hashpass-health-large-${process.pid}.json`; files.push(outputFile, healthFile);
+    const fetchImpl = async (input: string | URL | Request) => new Response(String(input).includes("robots.txt") ? "User-agent: *\nAllow: /" : "x".repeat(256));
+    const result = await syncEventSources({ outputFile, healthFile, fetchImpl: fetchImpl as typeof fetch, maxResponseBytes: 64 });
+    assert.equal(result.health.status, "failed");
+    assert.match(result.health.error || "", /size limit/);
+  });
   it("does not churn the persisted snapshot when public event content is unchanged", async () => {
     const outputFile = `/tmp/hashpass-events-stable-${process.pid}.json`; const healthFile = `/tmp/hashpass-health-stable-${process.pid}.json`; files.push(outputFile, healthFile);
     const html = await fixture("pkrr.html");
@@ -135,5 +142,19 @@ describe("database event store", () => {
     const result = await syncEventSources({ outputFile, healthFile, store, legacySnapshotFallback: false, fetchImpl: fetchImpl as typeof fetch, now: new Date("2026-08-14T00:00:00Z") });
     assert.equal(result.health.status, "healthy"); assert.equal(persisted.length, 1);
     await assert.rejects(readFile(outputFile, "utf8"));
+  });
+  it("writes failure health and uses legacy continuity when the store read fails", async () => {
+    const outputFile = `/tmp/hashpass-events-store-failure-${process.pid}.json`; const healthFile = `/tmp/hashpass-health-store-failure-${process.pid}.json`; files.push(outputFile, healthFile);
+    const { writeFile } = await import("node:fs/promises");
+    const event = parsePkrrHtml(await fixture("pkrr.html"), new Date("2026-08-14T00:00:00Z"))[0];
+    await writeFile(outputFile, JSON.stringify({ events: [event] }));
+    let persisted = false;
+    const store: EventIngestionStore = { loadEvents: async () => { throw new Error("database offline"); }, persistSync: async () => { persisted = true; } };
+    const result = await syncEventSources({ outputFile, healthFile, store, legacySnapshotFallback: true });
+    assert.equal(result.health.status, "degraded");
+    assert.match(result.health.error || "", /storage read failed/);
+    assert.equal(result.events[0].externalId, event.externalId);
+    assert.equal(persisted, false);
+    assert.match(await readFile(healthFile, "utf8"), /database offline/);
   });
 });

@@ -345,7 +345,13 @@ export const getAvailableEvents = (
   },
 ): EventInfo[] => {
   const tenantContext = getEventTenantContext(hostname);
-  const availableEvents = AVAILABLE_EVENTS.filter((event) => event.available);
+  // Build from the mutable runtime registry so database-published event
+  // updates installed by EventProvider reach carousels and route resolution.
+  const availableEvents = sortEventInfos(
+    (Object.values(EVENTS) as EventConfig[])
+      .filter((event) => event.eventType === "whitelabel")
+      .map((event) => configToEventInfo(event, true)),
+  ).filter((event) => event.available);
   const showAllEvents =
     tenantContext.showAllEvents || options?.includeAllTenants === true;
 

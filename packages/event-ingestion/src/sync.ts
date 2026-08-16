@@ -37,14 +37,34 @@ const eventContent = (event: NormalizedEvent) => {
   return content;
 };
 
+const readLimitedBody = async (response: Response, maxBytes: number) => {
+  const declaredLength = response.headers.get("content-length");
+  if (declaredLength && Number(declaredLength) > maxBytes)
+    throw new Error("PKRR response exceeded the configured size limit");
+  if (!response.body) return "";
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let received = 0;
+  let value = "";
+  while (true) {
+    const chunk = await reader.read();
+    if (chunk.done) break;
+    received += chunk.value.byteLength;
+    if (received > maxBytes) {
+      await reader.cancel();
+      throw new Error("PKRR response exceeded the configured size limit");
+    }
+    value += decoder.decode(chunk.value, { stream: true });
+  }
+  return value + decoder.decode();
+};
+
 export async function syncEventSources(options: SyncOptions) {
   const fetcher = options.fetchImpl || fetch;
   const now = options.now || new Date();
   const previousSnapshot = await readPrevious(options.outputFile);
   const legacySnapshotFallback = options.legacySnapshotFallback ?? true;
-  const previous = options.store
-    ? await options.store.loadEvents(PKRR_SOURCE.sourceId)
-    : previousSnapshot.events;
+  let previous = legacySnapshotFallback ? previousSnapshot.events : [];
   const health: SourceHealth = {
     sourceId: PKRR_SOURCE.sourceId,
     status: "failed",
@@ -53,7 +73,19 @@ export async function syncEventSources(options: SyncOptions) {
     eventCount: 0,
   };
   let events = previous;
+  let storeAvailable = true;
   try {
+    if (options.store) {
+      try {
+        previous = await options.store.loadEvents(PKRR_SOURCE.sourceId);
+        events = previous;
+      } catch (error) {
+        storeAvailable = false;
+        throw new Error(
+          `Event storage read failed: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    }
     const timeoutMs = options.requestTimeoutMs || 20_000;
     const request = (url: string) =>
       fetcher(url, {
@@ -69,13 +101,11 @@ export async function syncEventSources(options: SyncOptions) {
     ]);
     if (!pageResponse.ok)
       throw new Error(`PKRR responded ${pageResponse.status}`);
-    const [robots, html] = await Promise.all([
-      robotsResponse.ok ? robotsResponse.text() : "",
-      pageResponse.text(),
-    ]);
     const maxResponseBytes = options.maxResponseBytes || 2_000_000;
-    if (robots.length > 100_000 || html.length > maxResponseBytes)
-      throw new Error("PKRR response exceeded the configured size limit");
+    const [robots, html] = await Promise.all([
+      robotsResponse.ok ? readLimitedBody(robotsResponse, 100_000) : "",
+      readLimitedBody(pageResponse, maxResponseBytes),
+    ]);
     const signals = inspectPublicHtml(html, PKRR_SOURCE.baseUrl, robots);
     if (!signals.allowedByRobots)
       throw new Error("PKRR community path is disallowed by robots.txt");
@@ -111,7 +141,7 @@ export async function syncEventSources(options: SyncOptions) {
     health.error = error instanceof Error ? error.message : String(error);
     health.status = previous.length ? "degraded" : "failed";
   }
-  if (options.store)
+  if (options.store && storeAvailable)
     await options.store.persistSync({
       sourceId: PKRR_SOURCE.sourceId,
       attemptedAt: now.toISOString(),

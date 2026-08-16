@@ -50,6 +50,7 @@ CREATE TABLE IF NOT EXISTS public.external_events (
   reviewed_at timestamptz,
   reviewed_by uuid,
   review_reason text,
+  last_reviewed_payload_hash text,
   PRIMARY KEY (source_id, external_id)
 );
 CREATE INDEX IF NOT EXISTS external_events_publication_start_idx
@@ -115,6 +116,7 @@ DECLARE
   v_existing public.external_events%ROWTYPE;
   v_review boolean;
   v_observation_id uuid;
+  v_payload_hash text;
 BEGIN
   IF p_status NOT IN ('healthy', 'degraded', 'failed') OR jsonb_typeof(p_events) <> 'array' THEN
     RAISE EXCEPTION 'Invalid event ingestion payload' USING ERRCODE = '22023';
@@ -145,19 +147,20 @@ BEGIN
       RAISE EXCEPTION 'Event identity does not match source' USING ERRCODE = '22023';
     END IF;
 
+    v_payload_hash := encode(digest(v_event::text, 'sha256'), 'hex');
     INSERT INTO public.external_event_observations(
       sync_run_id, source_id, external_id, observed_at, payload_hash,
       normalized_payload, confidence, needs_review
     ) VALUES (
       v_run_id, p_source_id, v_event->>'externalId', p_attempted_at,
-      encode(digest(v_event::text, 'sha256'), 'hex'), v_event,
+      v_payload_hash, v_event,
       (v_event->>'confidence')::numeric, (v_event->>'needsReview')::boolean
     ) RETURNING id INTO v_observation_id;
 
     SELECT * INTO v_existing FROM public.external_events
     WHERE source_id = p_source_id AND external_id = v_event->>'externalId' FOR UPDATE;
 
-    v_review := (v_event->>'needsReview')::boolean
+    v_review := ((v_event->>'needsReview')::boolean
       OR (v_event->>'confidence')::numeric < 0.90
       OR v_event->>'status' IN ('stale', 'cancelled')
       OR (v_existing.source_id IS NOT NULL AND (
@@ -165,7 +168,8 @@ BEGIN
         OR v_existing.normalized_payload->>'title' IS DISTINCT FROM v_event->>'title'
         OR v_existing.normalized_payload->>'venueName' IS DISTINCT FROM v_event->>'venueName'
         OR v_existing.normalized_payload->>'sourceUrl' IS DISTINCT FROM v_event->>'sourceUrl'
-      ));
+      ))) AND (v_existing.source_id IS NULL
+        OR v_existing.last_reviewed_payload_hash IS DISTINCT FROM v_payload_hash);
 
     INSERT INTO public.external_events(
       source_id, external_id, source_status, publication_status, normalized_payload,
@@ -230,7 +234,9 @@ BEGIN
     END,
     candidate_payload = NULL,
     published_at = CASE WHEN p_decision = 'approved' AND candidate_payload->>'status' IN ('upcoming', 'live') THEN now() ELSE published_at END,
-    reviewed_at = now(), reviewed_by = p_reviewer, review_reason = left(p_reason, 1000)
+    reviewed_at = now(), reviewed_by = p_reviewer,
+    review_reason = left(p_reason, 1000),
+    last_reviewed_payload_hash = encode(digest(candidate_payload::text, 'sha256'), 'hex')
   WHERE source_id = p_source_id AND external_id = p_external_id;
 END;
 $$;

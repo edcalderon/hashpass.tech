@@ -21,7 +21,11 @@ export interface PostgrestEventStoreOptions {
   timeoutMs?: number;
 }
 
-const withoutTrailingSlash = (value: string) => value.replace(/\/+$/, "");
+const withoutTrailingSlash = (value: string) => {
+  let end = value.length;
+  while (end > 0 && value.charCodeAt(end - 1) === 47) end -= 1;
+  return value.slice(0, end);
+};
 
 export class PostgrestEventStore implements EventIngestionStore {
   private readonly fetcher: typeof fetch;
