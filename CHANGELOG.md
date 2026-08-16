@@ -1,3 +1,18 @@
+## [1.9.3](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.2...v1.9.3) (2026-08-16)
+### Released
+- guard WebGL shader background against context creation failure
+
+### Release scope
+- Compared with: `v1.9.2` (the previous global release tag)
+
+### Affected products & packages
+- Club web
+- Mobile app
+- QR links API
+- SDK
+- Shared UI
+- Documentation
+
 ## [1.9.2](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.0...v1.9.2) (2026-08-15)
 
 
