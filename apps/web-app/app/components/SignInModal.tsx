@@ -33,6 +33,14 @@ const PLAY_STORE_URL =
   'https://play.google.com/store/apps/details?id=com.hashpass.tech&hl=en-US&ah=RlHQxhHQladajDZn9ZGTm7_ucMs';
 const APP_OPEN_FALLBACK_MS = 1400;
 
+// Branded-QR sizing, matching app/qr/page.tsx's showcase ratios (icon 20%
+// of the code, badge 1.32x the icon) so both codes read as the same
+// HASHPASS Club visual system even though this one is a different size.
+const QR_BRAND_ICON_SRC = '/icon-512.png';
+const QR_LOGIN_SIZE = 196;
+const QR_ICON_SIZE = QR_LOGIN_SIZE * 0.2;
+const QR_BADGE_SIZE = QR_ICON_SIZE * 1.32;
+
 // Opens the main HASHPASS web app's /auth/connect screen in a new tab -- if
 // that browser already has an authenticated session, the app approves this
 // exact challenge directly (see apps/mobile-app/app/auth/connect), no phone
@@ -378,8 +386,8 @@ export function SignInModal({ open, onClose }: SignInModalProps) {
 
         {/* QR frame */}
         <div style={{
-          width: 196,
-          height: 196,
+          width: QR_LOGIN_SIZE,
+          height: QR_LOGIN_SIZE,
           padding: 16,
           borderRadius: 18,
           background: qrBg,
@@ -392,17 +400,34 @@ export function SignInModal({ open, onClose }: SignInModalProps) {
           justifyContent: 'center',
         }}>
           {qrPhase === 'waiting' && qrLogin ? (
-            <QRCode
-              value={qrLogin.challenge.qrUrl}
-              size={196}
-              fgColor={qrFg}
-              bgColor={qrBg}
-              style={{ display: 'block', borderRadius: 8 }}
-              level="M"
-            />
+            // Same branded-QR treatment as the /qr showcase (app/qr/page.tsx):
+            // a centered HASHPASS mark badge over a high-error-correction
+            // code, so both codes carry consistent HASHPASS Club branding
+            // instead of this one being a plain, unbranded code.
+            <div style={{ position: 'relative' }}>
+              <QRCode
+                value={qrLogin.challenge.qrUrl}
+                size={QR_LOGIN_SIZE}
+                fgColor={qrFg}
+                bgColor={qrBg}
+                style={{ display: 'block', borderRadius: 8 }}
+                level="H"
+              />
+              <div
+                aria-hidden
+                style={{
+                  position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+                  width: QR_BADGE_SIZE, height: QR_BADGE_SIZE, borderRadius: '50%', background: '#fff',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 0 1px rgba(0,0,0,0.06)',
+                }}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element -- static export, no next/image loader available */}
+                <img src={QR_BRAND_ICON_SRC} alt="" width={QR_ICON_SIZE} height={QR_ICON_SIZE} style={{ display: 'block' }} />
+              </div>
+            </div>
           ) : (
             <div style={{
-              width: 196, height: 196,
+              width: QR_LOGIN_SIZE, height: QR_LOGIN_SIZE,
               display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
               gap: 10, textAlign: 'center', padding: 12,
             }}>
