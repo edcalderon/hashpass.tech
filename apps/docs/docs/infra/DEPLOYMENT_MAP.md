@@ -13,6 +13,7 @@ This is the authoritative reference for which service hosts which domain and how
 | `bsl.hashpass.tech` | Hybrid (cut over 2026-07-29): source-account CloudFront (unchanged, `E2FCDJB1JCS7TW`) fronting a plain target-account S3 bucket. Source-account pipeline deleted. | Static (Expo web export) | us-east-2 | Auto — `bsl-hashpass-prod` pipeline (target account, `bsl-target` stack) on push to `main`, running `build-bsl-static-site.sh` (no SST) |
 | `bsl-dev.hashpass.tech` | Hybrid (cut over 2026-07-28): source-account CloudFront (unchanged, `E279RW9PP52TC0`) fronting a plain target-account S3 bucket | Static (Expo web export) | us-east-2 | Auto — `bsl-hashpass-dev` pipeline (target account, `bsl-target` stack) on push to `develop`, running `build-bsl-static-site.sh` (no SST) |
 | `hashpass.club` | GitHub Pages | Next.js static | CDN | Auto — `deploy-club-docs.yml` on push to `main` |
+| `hashpass.link`, `hpass.id`, `hashp.link` | AWS Lambda + API Gateway (one shared prod API/Lambda, three custom domain mappings) | `hashpass-links-api` (QR/short-link redirect + HashPass Auth) | us-east-1 | Manual `terraform apply` — see below. `hpass.id` is primary, `hashpass.link` is the trust-oriented alias, `hashp.link` is a defensive alias; no domain-based analytics split |
 
 ## Account split: what's on the source account vs. the target account
 
@@ -83,6 +84,51 @@ Patch releases also run `packages/tools/scripts/deploy-api-lambda.sh` from `infr
 - Production must return the release version from `https://api.hashpass.tech/api/config/versions`.
 - Development must return the release version from `https://api-dev.hashpass.tech/api/config/versions`.
 - A deploy that leaves either endpoint stale is failed and must not be reported as complete.
+
+### `hashpass.link` / `hpass.id` / `hashp.link`
+
+All three domains front the exact same production Lambda/API Gateway
+(`hashpass-links-prod-*`, `packages/infra/terraform/stacks/hashpass-links-api`)
+— one `qr_links` table, one set of scan-analytics rows, no per-domain split.
+`GET /q/:slug` and every other route in `packages/hashpass-links-api/src/router.ts`
+are host-agnostic by construction; adding a domain here is infra-only, not an
+app code change. `hpass.id` is the primary short-link/QR domain (what
+`NEXT_PUBLIC_LINKS_API_BASE_URL` / `EXPO_PUBLIC_LINKS_API_BASE_URL_PROD`
+point at), `hashpass.link` is kept as an explicit/trust-oriented alias,
+`hashp.link` is a cheap defensive alias.
+
+- `hashpass.link`'s custom domain is the stack's own first-class
+  `aws_expo_router_api` domain (`enable_custom_domain` + `domain_name.prod`).
+  `hpass.id` and `hashp.link` are each wired via the additive
+  `packages/infra/terraform/modules/aws_apigatewayv2_extra_domain` module
+  (own `enable_hpass_id_domain` / `enable_hashp_link_domain` flags), which
+  attaches one more ACM-cert-backed custom domain onto the *same* API
+  instead of creating a new one — keeps `aws_expo_router_api` (also used by
+  `hashpass-api-target` and `hashpass-autodiscover`) untouched.
+- Hosted zones for `hpass.id` and `hashp.link` are owned by
+  `packages/infra/terraform/stacks/hashpass-dns` (same pattern as
+  `tech`/`lat`/`club`/`info`). `hashpass.link`'s zone predates that stack and
+  was created out-of-band; it's still only read via a `data` lookup there.
+  Both new domains are registered at Spaceship — delegating them requires a
+  manual NS-record update at the registrar to the zone's own `name_servers`
+  output, which Terraform can't do for you.
+- No dev counterpart for `hpass.id`/`hashp.link` — prod-only. Dev traffic
+  still uses `dev.hashpass.link` (already live under the same
+  `aws_expo_router_api` domain as prod's `hashpass.link`).
+- A bare `GET /` on any of the three domains 302s to `hashpass.club` instead
+  of a raw JSON 404 (`router.ts`) — real visitors landing on the bare domain
+  are a plausible case; every other unmatched path still 404s.
+- See `packages/hashpass-links-api/README.md`'s "Multi-domain cutover"
+  section for the full rollout runbook (zone creation → registrar NS cutover
+  → per-domain `enable_*` flag → `terraform apply`) and the exact Terraform
+  commands.
+- **Newly created custom domains can 404 intermittently for a few minutes**
+  right after `terraform apply` (ACM/API Gateway edge propagation across the
+  regional endpoint's IP fleet) — this is normal AWS eventual consistency,
+  not a config error; retest a few minutes later before assuming something's
+  wrong. Also: `curl -I` sends `HEAD`, which this service's redirect logic
+  intentionally doesn't handle (every route, including the bare-domain
+  redirect, is `GET`-only) — use plain `curl` (GET) when testing, not `-I`.
 
 ### `bsl.hashpass.tech` / `bsl-dev.hashpass.tech`
 
