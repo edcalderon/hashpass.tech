@@ -19,7 +19,7 @@ export default function PanelPage() {
 
   return (
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--bg-canvas)' }}>
-      <Navbar showMarketingLinks={false} />
+      <Navbar showMarketingLinks={false} hasHero={false} />
       <main
         style={{
           flex: '1 0 auto',

@@ -52,7 +52,7 @@ export default function QrShowcasePage() {
   return (
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--bg-canvas)' }}>
       <LandingAnimationProvider>
-        <Navbar showMarketingLinks={false} />
+        <Navbar showMarketingLinks={false} hasHero={false} />
         <main style={{ flex: '1 0 auto' }}>
           <QrHero />
         </main>
