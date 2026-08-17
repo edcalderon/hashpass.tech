@@ -672,6 +672,12 @@ jobs:
       EXPO_PUBLIC_SUPABASE_URL: ${{ inputs.environment == 'development' && vars.EXPO_PUBLIC_SUPABASE_URL_DEV || vars.EXPO_PUBLIC_SUPABASE_URL_PROD }}
       EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ inputs.environment == 'development' && vars.EXPO_PUBLIC_SUPABASE_ANON_KEY_DEV || vars.EXPO_PUBLIC_SUPABASE_ANON_KEY_PROD }}
       EXPO_PUBLIC_DIRECTUS_URL: ${{ vars.EXPO_PUBLIC_DIRECTUS_URL }}
+      # HashPass Auth (QR login) / HashPass Links -- see
+      # packages/hashpass-links-api/README.md. Without this, @hashpass/sdk's
+      # AuthQrClient/QrLinksClient throw "requires linksApiBaseUrl to be
+      # configured" the moment a native flow (scan-to-approve, the
+      # hashpass.club -> hashpass.tech web handoff) tries to call them.
+      EXPO_PUBLIC_LINKS_API_BASE_URL: ${{ inputs.environment == 'development' && vars.EXPO_PUBLIC_LINKS_API_BASE_URL_DEV || vars.EXPO_PUBLIC_LINKS_API_BASE_URL_PROD }}
       # Used by getSupabaseOAuthRedirectUrl as the web-relay origin for native OAuth
       # and magic-link callbacks. Without this, the polyfilled window.location.origin
       # (localhost:8081 from Metro) gets embedded in the OAuth redirect URL.
@@ -1144,6 +1150,7 @@ jobs:
           [ -n "${EXPO_PUBLIC_SUPABASE_URL:-}" ]        && printf 'EXPO_PUBLIC_SUPABASE_URL=%s\n'        "$EXPO_PUBLIC_SUPABASE_URL"        >> "$env_file"
           [ -n "${EXPO_PUBLIC_SUPABASE_ANON_KEY:-}" ]   && printf 'EXPO_PUBLIC_SUPABASE_ANON_KEY=%s\n'   "$EXPO_PUBLIC_SUPABASE_ANON_KEY"   >> "$env_file"
           [ -n "${EXPO_PUBLIC_DIRECTUS_URL:-}" ]        && printf 'EXPO_PUBLIC_DIRECTUS_URL=%s\n'        "$EXPO_PUBLIC_DIRECTUS_URL"        >> "$env_file"
+          [ -n "${EXPO_PUBLIC_LINKS_API_BASE_URL:-}" ]  && printf 'EXPO_PUBLIC_LINKS_API_BASE_URL=%s\n'  "$EXPO_PUBLIC_LINKS_API_BASE_URL"  >> "$env_file"
           # EXPO_PUBLIC_SITE_URL is the web-relay origin used by getSupabaseOAuthRedirectUrl
           # for both Google OAuth (native relay) and magic-link emailRedirectTo.
           # Without this in the .env file, window.location.origin (localhost from Metro)
