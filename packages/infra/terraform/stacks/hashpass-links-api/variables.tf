@@ -169,6 +169,10 @@ variable "cors_allow_origins" {
     ]
     prod = [
       "https://hashpass.club",
+      # The Club's web-app approval link opens at hashpass.tech. API Gateway
+      # owns OPTIONS, so this must be listed here as well as in the Lambda.
+      "https://hashpass.tech",
+      "https://www.hashpass.tech",
     ]
   }
 }

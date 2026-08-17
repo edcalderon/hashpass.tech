@@ -10,6 +10,19 @@ test.afterEach(() => {
   resetAdminDbCache();
 });
 
+test('allows the HashPass app origin to preflight QR approval requests', async () => {
+  const response = await handler({
+    version: '2.0',
+    headers: { origin: 'https://hashpass.tech' },
+    requestContext: { http: { method: 'OPTIONS' } },
+  });
+
+  assert.equal(response.statusCode, 204);
+  assert.equal(response.headers['access-control-allow-origin'], 'https://hashpass.tech');
+  assert.equal(response.headers['access-control-allow-credentials'], 'true');
+  assert.match(response.headers['access-control-allow-methods'], /POST/);
+});
+
 test('an EventBridge scheduled event archives expired QR links', async () => {
   const client = createFakeSupabaseClient();
   setAdminDbForTesting(client as unknown as SupabaseClient);

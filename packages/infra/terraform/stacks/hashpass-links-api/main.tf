@@ -109,7 +109,11 @@ module "links_api_prod" {
     lookup(var.lambda_environment_overrides, "prod", {})
   )
 
-  cors_allow_origins = lookup(var.cors_allow_origins, "prod", ["https://hashpass.club"])
+  cors_allow_origins = lookup(var.cors_allow_origins, "prod", [
+    "https://hashpass.club",
+    "https://hashpass.tech",
+    "https://www.hashpass.tech",
+  ])
   cors_allow_headers = local.cors_allow_headers
 
   tags = merge(local.common_tags, {

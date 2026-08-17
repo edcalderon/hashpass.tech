@@ -46,6 +46,9 @@ cors_allow_origins = {
   ]
   prod = [
     "https://hashpass.club",
+    # The approval UI is served from this origin after the Club opens it.
+    "https://hashpass.tech",
+    "https://www.hashpass.tech",
   ]
 }
 
