@@ -38,6 +38,26 @@ variable "supabase_url" {
   type        = string
 }
 
+# HashPass Auth (QR login) / HashPass Links -- see
+# packages/hashpass-links-api/README.md. Without this, @hashpass/sdk's
+# AuthQrClient/QrLinksClient are built with linksApiBaseUrl undefined and
+# throw "requires linksApiBaseUrl to be configured" the moment
+# hashpass.tech's own /auth/connect screen calls respondToLogin() -- this
+# var was missing entirely until 2026-08-17, confirmed via the deployed
+# bundle never actually setting it (only a coincidental string match from
+# unrelated changelog text).
+variable "links_api_base_url" {
+  description = "Public HashPass Links API origin for the production web build (e.g. https://hpass.id)"
+  type        = string
+  default     = ""
+}
+
+variable "links_api_base_url_dev" {
+  description = "Public HashPass Links API origin for the development web build (e.g. https://dev.hashpass.link). Falls back to links_api_base_url if unset."
+  type        = string
+  default     = ""
+}
+
 variable "supabase_key" {
   description = "Public Supabase anon key for the production web build"
   type        = string

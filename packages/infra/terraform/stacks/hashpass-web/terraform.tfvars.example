@@ -28,6 +28,13 @@ google_client_id  = "<GOOGLE_CLIENT_ID>"
 ga_measurement_id = "G-BY2BLQFHC9"
 sentry_dsn        = "<SENTRY_DSN>"
 
+# HashPass Auth (QR login) / HashPass Links. Was missing entirely until
+# 2026-08-17 -- fixed directly via `aws codebuild update-project` first
+# (hashpass-prod-site-build/hashpass-dev-site-build), same day this stack's
+# .tf gained the variables. This example must stay correct so a future
+# terraform apply doesn't reintroduce the empty-string default.
+links_api_base_url = "https://hpass.id"
+
 # Development web build inputs. core-development and bsl-development
 # intentionally share one dev project (gsugeqozyeokncpbndna) -- see
 # apps/docs/docs/infra/supabase-project-map.md. FIXED 2026-08-16: this
@@ -36,6 +43,8 @@ sentry_dsn        = "<SENTRY_DSN>"
 # same live-drift incident, same day.
 supabase_url_dev = "https://gsugeqozyeokncpbndna.supabase.co"
 supabase_key_dev = "<EXPO_PUBLIC_SUPABASE_KEY_DEV>"
+
+links_api_base_url_dev = "https://dev.hashpass.link"
 
 build_action_provider_name = "hashpass-ec2-build"
 production_build_action_provider_name = "hashpass-prod-ec2-build"
