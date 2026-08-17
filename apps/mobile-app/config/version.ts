@@ -22,22 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202608170346, // Updated to current timestamp
+  buildNumber: 202608170453, // Updated to current timestamp
   releaseDate: '2026-08-17',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'explorer stats card fixes, morphicons pilot, unified slider progress bar'
+    // No new features
   ],
   bugfixes: [
-    'annotate QRScanner onRawScan param type'
+    'stop unauthenticated users from landing on the dashboard, rebuild event-info page'
   ],
   breakingChanges: [],
-  notes: 'explorer stats card fixes, morphicons pilot, unified slider progress bar; annotate QRScanner onRawScan param type'
+  notes: 'stop unauthenticated users from landing on the dashboard, rebuild event-info page'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.9': {
+    version: '1.9.9',
+    buildNumber: 202608170453,
+    releaseDate: '2026-08-17',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'stop unauthenticated users from landing on the dashboard, rebuild event-info page'
+    ],
+    breakingChanges: [],
+    notes: 'stop unauthenticated users from landing on the dashboard, rebuild event-info page'
+  },
   '1.9.8': {
     version: '1.9.8',
     buildNumber: 202608170346,

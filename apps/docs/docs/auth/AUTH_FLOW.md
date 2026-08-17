@@ -380,3 +380,55 @@ has regressed or the deployed API bundle is older than the frontend bundle.
 - For `DEVELOPER_ERROR` on Android Google Sign-In: verify the SHA-1 in the GCP Android OAuth client is the **App signing key** SHA-1 from Play Console (not the upload key).
 - If the system account picker is skipped and the previous account is reused: the user should tap **Reset Google Account** in Settings → Security, or sign out and back in.
 - If login ever reaches the Directus bridge (`/api/auth/oauth/login`) unexpectedly for `provider=google` on web, that's itself a bug now — see ["Do we still need Directus?"](#do-we-still-need-directus).
+
+## Logged-out visitors must never render the dashboard (fixed 2026-08-17)
+
+`app/events/[eventSlug]/home.tsx` — the redirect target for every "open this
+event" tap on the public landing page (including the landing hero carousel)
+— unconditionally sent **every** visitor, logged in or not, into
+`/(shared)/dashboard/explore`, a protected route. This wasn't just a
+redirect-to-the-wrong-place bug: the dashboard layout's own guard
+(`app/(shared)/dashboard/_layout.tsx`) only ejects an unauthenticated visitor
+after a multi-second grace period *by design* (see
+[AUTH_BOOTSTRAP_STABILITY.md](AUTH_BOOTSTRAP_STABILITY.md) and the comment
+above that effect) — that delay exists to avoid force-unmounting mid-render
+during a real transient auth-provider flap, which was crashing natively on
+Android. So a genuinely logged-out visitor would see real dashboard content
+render for real, for real seconds, before the eventual bounce to `/auth`.
+
+A second, independent leak had the same effect: `components/EventBanner.tsx`'s
+"explore more events" button (shown on a finished/archived event's banner —
+reachable from the landing carousel and from
+`/events/{id}/event-info`) pushed straight to
+`/(shared)/dashboard/explore` with no auth check of its own.
+
+Both are fixed the same way — check `isLoggedIn` from `useAuth()` before
+ever navigating toward the dashboard, and send a logged-out visitor to the
+event's own public info page (`/events/{id}/event-info`, no auth required)
+instead:
+
+- `events/[eventSlug]/home.tsx`: authenticated → `/(shared)/dashboard/explore?eventId=...` (unchanged); logged out → `/events/{id}/event-info`.
+- `EventBanner.tsx`'s "explore more events" button: same branch, using its own `eventId` prop.
+
+`app/index.tsx` (the app root) was already correctly gated on
+`isLoggedIn && user` and was not affected.
+
+**Defense in depth added to `dashboard/_layout.tsx` itself:** the redirect
+timer's timing is unchanged (still delayed, still only for the real
+transient-flap case the crash fix needs) — but the component now also
+refuses to *render* dashboard content at all when auth has finished loading,
+`isLoggedIn` is false, and there's no recent-auth grace window
+(`hasRecentAuthSuccess()`) that could mean this is just that transient flap
+on a real session. In that unambiguous case it renders a plain
+`LoadingScreen` while the existing redirect timer runs its course, instead
+of the real dashboard UI. This means any *future* path that mistakenly
+routes a logged-out visitor into `/dashboard/*` no longer results in visible
+protected content, even temporarily — the specific two leaks above are still
+the real fix; this is the safety net for the next one.
+
+**Local testing note:** `EXPO_PUBLIC_DEV_AUTH_BYPASS` (see
+`lib/auth/dev-bypass.ts`) intentionally overrides all of the above for local
+dev convenience — both the entry-point redirects and the dashboard's guard
+treat it the same as `isLoggedIn`. Set it to `false` in your local
+`.env`/`.env.local` before testing logged-out behavior, or you'll reproduce
+exactly this bug by design and think the fix didn't work.
