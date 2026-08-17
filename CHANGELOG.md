@@ -1,3 +1,18 @@
+## [1.9.13](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.12...v1.9.13) (2026-08-17)
+
+
+### Bug Fixes
+
+* **club:** the actual root cause of "This link is missing information" ([1706d42](https://github.com/hashpass-tech/hashpass.tech/commit/1706d42a677c353f25a94a8daf1b7bc3a5bc6fcb))
+### Release Highlights
+- the actual root cause of "This link is missing information"
+
+### Release scope
+- Compared with: `v1.9.12` (the previous global release tag)
+
+### Affected products & packages
+- Club web
+
 ## [1.9.12](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.11...v1.9.12) (2026-08-17)
 
 

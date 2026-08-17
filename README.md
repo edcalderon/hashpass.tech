@@ -20,23 +20,19 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.12)
+## 📋 Latest Changes (v1.9.13)
 
 ### Bug Fixes
 
-* **infra:** retry Lambda updates on ResourceConflictException ([c31468d](https://github.com/hashpass-tech/hashpass.tech/commit/c31468d5e65115353fac56a86ae64f13cda013e3))
-* **infra:** wire EXPO_PUBLIC_LINKS_API_BASE_URL into the hashpass-web build ([7b8caae](https://github.com/hashpass-tech/hashpass.tech/commit/7b8caae2b8d523ff22fea6d2a83a0984b0384727))
+* **club:** the actual root cause of "This link is missing information" ([1706d42](https://github.com/hashpass-tech/hashpass.tech/commit/1706d42a677c353f25a94a8daf1b7bc3a5bc6fcb))
 ### Release Highlights
-- wire EXPO_PUBLIC_LINKS_API_BASE_URL into the hashpass-web build; retry Lambda updates on ResourceConflictException
+- the actual root cause of "This link is missing information"
 
 ### Release scope
-- Compared with: `v1.9.11` (the previous global release tag)
+- Compared with: `v1.9.12` (the previous global release tag)
 
 ### Affected products & packages
 - Club web
-- Infrastructure
-- Documentation
-- Release tooling
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
