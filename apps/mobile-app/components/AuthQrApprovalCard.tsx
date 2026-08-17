@@ -4,6 +4,7 @@ import { Ionicons } from '../lib/vector-icons';
 import { useTheme } from '../hooks/useTheme';
 import { hashpassSdk } from '../lib/hashpass-sdk';
 import { getHashpassFullLogo } from '../lib/hashpass-logo';
+import { useTranslation } from '../i18n/i18n';
 import {
   createAuthQrApprovalActor,
   type AuthQrApprovalMachineSnapshot,
@@ -69,19 +70,26 @@ export function AuthQrApprovalCard({
   onDenied,
   onCancel,
   onSignInRequired,
-  invalidTitle = 'Invalid QR code',
-  invalidSubtitle = "This doesn't look like a HASHPASS Auth login code.",
-  invalidActionLabel = 'Close',
+  invalidTitle,
+  invalidSubtitle,
+  invalidActionLabel,
   onInvalidAction,
-  doneLabel = 'Done',
+  doneLabel,
 }: AuthQrApprovalCardProps) {
   const { colors, isDark } = useTheme();
   const styles = getStyles(isDark, colors);
+  const { t } = useTranslation('auth.qrApproval');
+
+  const resolvedInvalidTitle = invalidTitle ?? t('invalidTitle', 'Invalid QR code');
+  const resolvedInvalidSubtitle = invalidSubtitle ?? t('invalidSubtitle', "This doesn't look like a HASHPASS Auth login code.");
+  const resolvedInvalidActionLabel = invalidActionLabel ?? t('close', 'Close');
+  const resolvedDoneLabel = doneLabel ?? t('done', 'Done');
 
   const actorRef = useRef(
     createAuthQrApprovalActor({
       challengeId,
-      respondToLogin: (id, decision) => hashpassSdk().authQr.respondToLogin(id, decision),
+      respondToLogin: (id: string, decision: 'approve' | 'deny') =>
+        hashpassSdk().authQr.respondToLogin(id, decision),
       onApproved,
       onDenied,
       onCancel,
@@ -125,7 +133,7 @@ export function AuthQrApprovalCard({
         <View style={styles.container}>
           {logo}
           <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 20 }} />
-          <Text style={[styles.subtitle, { marginTop: 16 }]}>Waiting for session…</Text>
+          <Text style={[styles.subtitle, { marginTop: 16 }]}>{t('waitingForSession', 'Waiting for session…')}</Text>
         </View>
       </CardScroll>
     );
@@ -137,18 +145,18 @@ export function AuthQrApprovalCard({
         <View style={styles.container}>
           {logo}
           <Ionicons name="lock-closed-outline" size={40} color={colors.primary} style={{ marginTop: 16 }} />
-          <Text style={styles.title}>Sign in required</Text>
+          <Text style={styles.title}>{t('signInRequiredTitle', 'Sign in required')}</Text>
           <Text style={styles.subtitle}>
-            You need to sign in to your HASHPASS account first. Sign in, then come back and try again.
+            {t('signInRequiredSubtitle', 'You need to sign in to your HASHPASS account first. Sign in, then come back and try again.')}
           </Text>
           <Text style={styles.countdown}>
-            Redirecting to sign in in {snapshot.context.secondsLeft}…
+            {t('redirectingCountdown', 'Redirecting to sign in in {seconds}…', { seconds: snapshot.context.secondsLeft })}
           </Text>
           <TouchableOpacity
             style={styles.primaryButton}
             onPress={() => actorRef.current.send({ type: 'SIGN_IN_NOW' })}
           >
-            <Text style={styles.primaryButtonText}>Sign in now</Text>
+            <Text style={styles.primaryButtonText}>{t('signInNow', 'Sign in now')}</Text>
           </TouchableOpacity>
         </View>
       </CardScroll>
@@ -161,13 +169,13 @@ export function AuthQrApprovalCard({
         <View style={styles.container}>
           {logo}
           <Ionicons name="alert-circle-outline" size={40} color={colors.error.main} style={{ marginTop: 16 }} />
-          <Text style={styles.title}>{invalidTitle}</Text>
-          <Text style={styles.subtitle}>{invalidSubtitle}</Text>
+          <Text style={styles.title}>{resolvedInvalidTitle}</Text>
+          <Text style={styles.subtitle}>{resolvedInvalidSubtitle}</Text>
           <TouchableOpacity
             style={styles.primaryButton}
             onPress={() => actorRef.current.send({ type: 'INVALID_ACTION' })}
           >
-            <Text style={styles.primaryButtonText}>{invalidActionLabel}</Text>
+            <Text style={styles.primaryButtonText}>{resolvedInvalidActionLabel}</Text>
           </TouchableOpacity>
         </View>
       </CardScroll>
@@ -186,17 +194,19 @@ export function AuthQrApprovalCard({
             color={approved ? colors.success.main : colors.error.main}
             style={{ marginTop: 16 }}
           />
-          <Text style={styles.title}>{approved ? 'Login approved' : 'Login denied'}</Text>
+          <Text style={styles.title}>
+            {approved ? t('loginApprovedTitle', 'Login approved') : t('loginDeniedTitle', 'Login denied')}
+          </Text>
           <Text style={styles.subtitle}>
             {approved
-              ? 'You can go back to your browser to finish signing in.'
-              : "We told the browser this login wasn't you."}
+              ? t('loginApprovedSubtitle', 'You can go back to your browser to finish signing in.')
+              : t('loginDeniedSubtitle', "We told the browser this login wasn't you.")}
           </Text>
           <TouchableOpacity
             style={styles.primaryButton}
             onPress={() => actorRef.current.send({ type: 'DONE' })}
           >
-            <Text style={styles.primaryButtonText}>{doneLabel}</Text>
+            <Text style={styles.primaryButtonText}>{resolvedDoneLabel}</Text>
           </TouchableOpacity>
         </View>
       </CardScroll>
@@ -208,9 +218,9 @@ export function AuthQrApprovalCard({
     <CardScroll>
       <View style={styles.container}>
         {logo}
-        <Text style={styles.title}>Sign in with HASHPASS Auth</Text>
+        <Text style={styles.title}>{t('signInTitle', 'Sign in with HASHPASS Auth')}</Text>
         <Text style={styles.subtitle}>
-          Someone is trying to sign in using your HASHPASS account. If this is you, approve it below.
+          {t('signInSubtitle', 'Someone is trying to sign in using your HASHPASS account. If this is you, approve it below.')}
         </Text>
 
         {snapshot.matches('error') && snapshot.context.errorMessage && (
@@ -227,14 +237,16 @@ export function AuthQrApprovalCard({
               style={styles.primaryButton}
               onPress={() => actorRef.current.send({ type: snapshot.matches('error') ? 'RETRY' : 'APPROVE' })}
             >
-              <Text style={styles.primaryButtonText}>{snapshot.matches('error') ? 'Try again' : 'Approve'}</Text>
+              <Text style={styles.primaryButtonText}>
+                {snapshot.matches('error') ? t('tryAgain', 'Try again') : t('approve', 'Approve')}
+              </Text>
             </TouchableOpacity>
             {!snapshot.matches('error') && (
               <TouchableOpacity
                 style={styles.secondaryButton}
                 onPress={() => actorRef.current.send({ type: 'DENY' })}
               >
-                <Text style={styles.secondaryButtonText}>Deny</Text>
+                <Text style={styles.secondaryButtonText}>{t('deny', 'Deny')}</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -244,7 +256,7 @@ export function AuthQrApprovalCard({
           onPress={() => actorRef.current.send({ type: 'CANCEL' })}
           style={styles.cancelLink}
         >
-          <Text style={styles.cancelLinkText}>Cancel</Text>
+          <Text style={styles.cancelLinkText}>{t('cancel', 'Cancel')}</Text>
         </TouchableOpacity>
       </View>
     </CardScroll>

@@ -57,10 +57,11 @@ const QR_BADGE_SIZE = QR_ICON_SIZE * 1.32;
 // hashpass.tech/auth/connect is exactly what happens when this path fires
 // without a real challengeId in flight -- letting the visitor pick
 // explicitly removes that whole class of guess-wrong failure.
-function openWebApp(challengeId?: string) {
+function openWebApp(challengeId?: string, locale?: string) {
   const appUrl = resolveHashpassAppUrl();
   const connectParams = new URLSearchParams({ source: 'web', ref: 'landing' });
   if (challengeId) connectParams.set('challengeId', challengeId);
+  if (locale) connectParams.set('locale', locale);
   window.open(`${appUrl}/auth/connect?${connectParams.toString()}`, '_blank', 'noopener,noreferrer');
 }
 
@@ -544,7 +545,7 @@ export function SignInModal({ open, onClose }: SignInModalProps) {
               href={QR_VALUE}
               onClick={(e) => {
                 e.preventDefault();
-                openWebApp(qrLogin?.challenge.id);
+                openWebApp(qrLogin?.challenge.id, locale);
               }}
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,

@@ -210,7 +210,31 @@
     "verifyCode": "Vérifier le code",
     "welcomeBack": "Bon retour !",
     "passwordlessUnavailableTitle": "Lien e-mail et OTP indisponibles",
-    "passwordlessUnavailableMessage": "La connexion par lien magique et OTP n'est pas disponible car le mode sans mot de passe de Supabase n'est pas configuré pour cet environnement."
+    "passwordlessUnavailableMessage": "La connexion par lien magique et OTP n'est pas disponible car le mode sans mot de passe de Supabase n'est pas configuré pour cet environnement.",
+    "qrApproval": {
+      "waitingForSession": "En attente de la session…",
+      "signInRequiredTitle": "Connexion requise",
+      "signInRequiredSubtitle": "Vous devez d'abord vous connecter à votre compte HASHPASS. Connectez-vous, puis revenez réessayer.",
+      "redirectingCountdown": "Redirection vers la connexion dans {seconds}…",
+      "signInNow": "Se connecter maintenant",
+      "invalidTitle": "Code QR invalide",
+      "invalidSubtitle": "Cela ne ressemble pas à un code de connexion HASHPASS Auth.",
+      "close": "Fermer",
+      "loginApprovedTitle": "Connexion approuvée",
+      "loginDeniedTitle": "Connexion refusée",
+      "loginApprovedSubtitle": "Vous pouvez retourner à votre navigateur pour terminer la connexion.",
+      "loginDeniedSubtitle": "Nous avons indiqué au navigateur que ce n'était pas vous.",
+      "done": "Terminé",
+      "signInTitle": "Connectez-vous avec HASHPASS Auth",
+      "signInSubtitle": "Quelqu'un essaie de se connecter avec votre compte HASHPASS. Si c'est vous, approuvez ci-dessous.",
+      "tryAgain": "Réessayer",
+      "approve": "Approuver",
+      "deny": "Refuser",
+      "cancel": "Annuler",
+      "connectDoneLabel": "Terminé — Retour au Club",
+      "connectInvalidTitle": "Il manque des informations à ce lien",
+      "connectInvalidSubtitle": "Retournez sur hashpass.club et cliquez à nouveau sur « Ouvrir HASHPASS.TECH » pour obtenir un nouveau lien."
+    }
   },
   "pwaPrompt": {
     "installAction": "Installer HASHPASS",

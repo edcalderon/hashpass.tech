@@ -209,7 +209,31 @@
     "verifyCode": "Verificar código",
     "welcomeBack": "Bem-vindo de volta!",
     "passwordlessUnavailableTitle": "Link por e-mail e OTP indisponíveis",
-    "passwordlessUnavailableMessage": "O login por link mágico e OTP não está disponível porque o passwordless do Supabase não está configurado para este ambiente."
+    "passwordlessUnavailableMessage": "O login por link mágico e OTP não está disponível porque o passwordless do Supabase não está configurado para este ambiente.",
+    "qrApproval": {
+      "waitingForSession": "Aguardando sessão…",
+      "signInRequiredTitle": "Login necessário",
+      "signInRequiredSubtitle": "Você precisa entrar na sua conta HASHPASS primeiro. Faça login e tente novamente.",
+      "redirectingCountdown": "Redirecionando para o login em {seconds}…",
+      "signInNow": "Entrar agora",
+      "invalidTitle": "Código QR inválido",
+      "invalidSubtitle": "Isso não parece um código de login do HASHPASS Auth.",
+      "close": "Fechar",
+      "loginApprovedTitle": "Login aprovado",
+      "loginDeniedTitle": "Login negado",
+      "loginApprovedSubtitle": "Você pode voltar ao seu navegador para concluir o login.",
+      "loginDeniedSubtitle": "Informamos ao navegador que não foi você.",
+      "done": "Concluído",
+      "signInTitle": "Entre com o HASHPASS Auth",
+      "signInSubtitle": "Alguém está tentando entrar com sua conta HASHPASS. Se for você, aprove abaixo.",
+      "tryAgain": "Tentar novamente",
+      "approve": "Aprovar",
+      "deny": "Negar",
+      "cancel": "Cancelar",
+      "connectDoneLabel": "Concluído — Voltar ao Club",
+      "connectInvalidTitle": "Este link está com informações faltando",
+      "connectInvalidSubtitle": "Volte para hashpass.club e clique em \"Abrir HASHPASS.TECH\" novamente para obter um novo link."
+    }
   },
   "pwaPrompt": {
     "installAction": "Instalar HASHPASS",

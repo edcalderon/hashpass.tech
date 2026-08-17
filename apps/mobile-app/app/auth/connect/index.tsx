@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../../../hooks/useAuth';
 import { AuthQrApprovalCard } from '../../../components/AuthQrApprovalCard';
+import { setLocale, useTranslation } from '../../../i18n/i18n';
 
 // Bounds how long to wait for the Supabase bridge session (dbUserId) before
 // treating the visitor as signed out -- the bridge can fail silently (see
@@ -20,8 +21,19 @@ export default function AuthConnectScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const { user, isLoggedIn, isLoading: authLoading, dbUserId } = useAuth();
+  const { t } = useTranslation('auth.qrApproval');
 
   const challengeId = typeof params.challengeId === 'string' ? params.challengeId : undefined;
+  const requestedLocale = typeof params.locale === 'string' ? params.locale : undefined;
+
+  // hashpass.club passes its visitor's current locale in the query string
+  // (SignInModal's openWebApp()) so this screen matches the language they
+  // were already using there instead of falling back to device locale --
+  // setLocale() itself validates against the known locale set and falls
+  // back to 'en' for anything unrecognized, so no validation needed here.
+  useEffect(() => {
+    if (requestedLocale) setLocale(requestedLocale).catch(() => {});
+  }, [requestedLocale]);
 
   const returnTo = useMemo(() => {
     const search = new URLSearchParams();
@@ -74,10 +86,13 @@ export default function AuthConnectScreen() {
       onDenied={closeOrLeave}
       onCancel={closeOrLeave}
       onSignInRequired={goToSignIn}
-      doneLabel="Done — Back to Club"
-      invalidTitle="This link is missing information"
-      invalidSubtitle="Go back to hashpass.club and click 'Open HASHPASS.TECH' again to get a fresh link."
-      invalidActionLabel="Close"
+      doneLabel={t('connectDoneLabel', 'Done — Back to Club')}
+      invalidTitle={t('connectInvalidTitle', 'This link is missing information')}
+      invalidSubtitle={t(
+        'connectInvalidSubtitle',
+        "Go back to hashpass.club and click \"Open HASHPASS.TECH\" again to get a fresh link."
+      )}
+      invalidActionLabel={t('close', 'Close')}
       onInvalidAction={closeOrLeave}
     />
   );

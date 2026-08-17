@@ -213,7 +213,31 @@
     "verifyCode": "Verify Code",
     "welcomeBack": "Welcome back!",
     "passwordlessUnavailableTitle": "Email Link and OTP Unavailable",
-    "passwordlessUnavailableMessage": "Magic link and OTP sign-in are unavailable because Supabase passwordless is not configured for this environment."
+    "passwordlessUnavailableMessage": "Magic link and OTP sign-in are unavailable because Supabase passwordless is not configured for this environment.",
+    "qrApproval": {
+      "waitingForSession": "Waiting for session…",
+      "signInRequiredTitle": "Sign in required",
+      "signInRequiredSubtitle": "You need to sign in to your HASHPASS account first. Sign in, then come back and try again.",
+      "redirectingCountdown": "Redirecting to sign in in {seconds}…",
+      "signInNow": "Sign in now",
+      "invalidTitle": "Invalid QR code",
+      "invalidSubtitle": "This doesn't look like a HASHPASS Auth login code.",
+      "close": "Close",
+      "loginApprovedTitle": "Login approved",
+      "loginDeniedTitle": "Login denied",
+      "loginApprovedSubtitle": "You can go back to your browser to finish signing in.",
+      "loginDeniedSubtitle": "We told the browser this login wasn't you.",
+      "done": "Done",
+      "signInTitle": "Sign in with HASHPASS Auth",
+      "signInSubtitle": "Someone is trying to sign in using your HASHPASS account. If this is you, approve it below.",
+      "tryAgain": "Try again",
+      "approve": "Approve",
+      "deny": "Deny",
+      "cancel": "Cancel",
+      "connectDoneLabel": "Done — Back to Club",
+      "connectInvalidTitle": "This link is missing information",
+      "connectInvalidSubtitle": "Go back to hashpass.club and click \"Open HASHPASS.TECH\" again to get a fresh link."
+    }
   },
   "pwaPrompt": {
     "installAction": "Install HASHPASS",
