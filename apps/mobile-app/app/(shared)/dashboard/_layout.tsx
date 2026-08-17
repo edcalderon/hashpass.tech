@@ -1755,7 +1755,7 @@ export default function DashboardLayout() {
               console.error("QR Scan Error:", error);
               // Error is already shown in the scanner component
             }}
-            onRawScan={(data) => {
+            onRawScan={(data: string) => {
               const parsed = parseAuthQrScan(data);
               if (!parsed) return false;
               setQrScannerVisible(false);
@@ -1936,7 +1936,7 @@ export default function DashboardLayout() {
                 onScanError={(error: unknown) => {
                   console.error("QR Scan Error:", error);
                 }}
-                onRawScan={(data) => {
+                onRawScan={(data: string) => {
                   const parsed = parseAuthQrScan(data);
                   if (!parsed) return false;
                   setAndroidQrScannerVisible(false);
