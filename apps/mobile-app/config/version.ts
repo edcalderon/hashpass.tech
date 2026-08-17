@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202608171634, // Updated to current timestamp
+  buildNumber: 202608171737, // Updated to current timestamp
   releaseDate: '2026-08-17',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,15 +30,29 @@ export const CURRENT_VERSION: VersionInfo = {
     // No new features
   ],
   bugfixes: [
-    'wire EXPO_PUBLIC_LINKS_API_BASE_URL into the hashpass-web build',
-    'retry Lambda updates on ResourceConflictException'
+    'the actual root cause of "This link is missing information"'
   ],
   breakingChanges: [],
-  notes: 'wire EXPO_PUBLIC_LINKS_API_BASE_URL into the hashpass-web build; retry Lambda updates on ResourceConflictException'
+  notes: 'the actual root cause of "This link is missing information"'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.13': {
+    version: '1.9.13',
+    buildNumber: 202608171737,
+    releaseDate: '2026-08-17',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'the actual root cause of "This link is missing information"'
+    ],
+    breakingChanges: [],
+    notes: 'the actual root cause of "This link is missing information"'
+  },
   '1.9.12': {
     version: '1.9.12',
     buildNumber: 202608171634,
