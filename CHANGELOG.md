@@ -1,3 +1,28 @@
+## [1.9.10](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.9...v1.9.10) (2026-08-17)
+
+
+### Bug Fixes
+
+* **club:** navbar logo/links washed out on light-mode pages without a hero ([adaee99](https://github.com/hashpass-tech/hashpass.tech/commit/adaee99b36496c00b37a4bf9c7d245288a638709))
+* **club:** QR login broken in production (missing linksApiBaseUrl), replace ambiguous sign-in button with explicit web/Android choices ([07df367](https://github.com/hashpass-tech/hashpass.tech/commit/07df367e58bf26ff0f49c7a135a82c835aa28947))
+
+
+### Features
+
+* **auth:** match hashpass.club's locale when opening the connect flow ([9bc8f29](https://github.com/hashpass-tech/hashpass.tech/commit/9bc8f29cef69f4c72a336a3861489c04e8ee7ff4))
+* **club:** brand the sign-in QR code the same way as the /qr showcase ([6837bd5](https://github.com/hashpass-tech/hashpass.tech/commit/6837bd5937d012ad90fad1c4a06661251468b342))
+### Release Highlights
+- match hashpass.club's locale when opening the connect flow; brand the sign-in QR code the same way as the /qr showcase; navbar logo/links washed out on light-mode pages without a hero; QR login broken in production (missing linksApiBaseUrl), replace ambiguous sign-in button with explicit web/Android choices
+
+### Release scope
+- Compared with: `v1.9.9` (the previous global release tag)
+
+### Affected products & packages
+- Club web
+- Mobile app
+- Documentation
+- Release tooling
+
 ## [1.9.9](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.8...v1.9.9) (2026-08-17)
 
 

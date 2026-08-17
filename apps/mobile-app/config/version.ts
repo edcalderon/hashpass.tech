@@ -22,22 +22,41 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202608170453, // Updated to current timestamp
+  buildNumber: 202608170751, // Updated to current timestamp
   releaseDate: '2026-08-17',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    // No new features
+    'match hashpass.club\'s locale when opening the connect flow',
+    'brand the sign-in QR code the same way as the /qr showcase'
   ],
   bugfixes: [
-    'stop unauthenticated users from landing on the dashboard, rebuild event-info page'
+    'navbar logo/links washed out on light-mode pages without a hero',
+    'QR login broken in production (missing linksApiBaseUrl), replace ambiguous sign-in button with explicit web/Android choices'
   ],
   breakingChanges: [],
-  notes: 'stop unauthenticated users from landing on the dashboard, rebuild event-info page'
+  notes: 'match hashpass.club\'s locale when opening the connect flow; brand the sign-in QR code the same way as the /qr showcase; navbar logo/links washed out on light-mode pages without a hero; QR login broken in production (missing linksApiBaseUrl), replace ambiguous sign-in button with explicit web/Android choices'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.10': {
+    version: '1.9.10',
+    buildNumber: 202608170751,
+    releaseDate: '2026-08-17',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'match hashpass.club\'s locale when opening the connect flow',
+      'brand the sign-in QR code the same way as the /qr showcase'
+    ],
+    bugfixes: [
+      'navbar logo/links washed out on light-mode pages without a hero',
+      'QR login broken in production (missing linksApiBaseUrl), replace ambiguous sign-in button with explicit web/Android choices'
+    ],
+    breakingChanges: [],
+    notes: 'match hashpass.club\'s locale when opening the connect flow; brand the sign-in QR code the same way as the /qr showcase; navbar logo/links washed out on light-mode pages without a hero; QR login broken in production (missing linksApiBaseUrl), replace ambiguous sign-in button with explicit web/Android choices'
+  },
   '1.9.9': {
     version: '1.9.9',
     buildNumber: 202608170453,
