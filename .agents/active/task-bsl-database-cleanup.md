@@ -1,8 +1,40 @@
 # Task: Audit and safely clean BSL database schemas
 
-**Status:** PENDING — design and inventory only  
+**Status:** ACTIVE — Phase 1 partially covered by a related audit, moved
+from pending 2026-08-16  
 **Priority:** High (data integrity)  
-**Created:** 2026-08-04
+**Created:** 2026-08-04  
+**Updated:** 2026-08-16 (moved pending -> active; found related prior work
+while triaging the pending queue)
+
+## Progress found 2026-08-16 (not previously reflected in this file)
+
+A separate, related effort — the "exhaustive DB schema audit" memory
+entry, dated 2026-08-11 — already did real read-only inventory work
+covering some of this task's Phase 1 scope: found 8 confirmed-dead tables
+(pending drop approval, not yet dropped), confirmed core-prod's
+`directus_users` has 6 orphaned real accounts that must never be dropped,
+and confirmed the `BSL_*` views are *not* duplicates (contradicting one of
+this task's own candidate assumptions in the Scope section above). A
+second related fix — `project_directus_rls_exposure_fixed`, also
+2026-08-11 — found and fixed 27 `directus_*` tables on dev with RLS
+disabled (via migration V063), which overlaps this task's `directus_*`
+candidate scope directly.
+
+**This does not fully satisfy Phase 1 as written.** That audit was scoped
+more broadly (general schema health, not specifically the quoted/
+case-duplicate-table and legacy-object cleanup this task describes) and
+doesn't appear to have followed this task's exact evidence format
+(relkind, row estimates, `pg_depend`, RLS policies, grants, per the
+"Required phases" section below) or produced the sanitized comparison
+report this task's acceptance criteria calls for. Phases 2-4 (candidate
+review, quarantine, retirement) have not started.
+
+**Next step, if resuming this task**: reconcile the 2026-08-11 audit's
+findings against this task's specific candidate list (quoted/case
+duplicates like `bsl_audit`/`BSL_Audit`) rather than re-running a full
+inventory from scratch — much of the read-only groundwork may already
+exist, just not in this task's format.
 
 ## Goal
 
