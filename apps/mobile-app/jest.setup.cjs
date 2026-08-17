@@ -85,16 +85,28 @@ jest.mock(
 jest.mock('react-native-reanimated', () => {
   const React = require('react');
 
-  const makeSharedValue = (initial) => ({ value: initial });
-
-  const runAnimation = (toValue, config, callback) => {
-    const value =
-      config && typeof config === 'object' && 'value' in config
-        ? config.value
-        : toValue;
-    if (typeof callback === 'function') callback(true);
-    return value;
+  // The real useSharedValue persists the same object across re-renders of
+  // the same component (like useRef) -- only using `initial` on the first
+  // call. A naive `(initial) => ({ value: initial })` mock creates a fresh
+  // object every render, silently discarding whatever a previous render's
+  // effect wrote to `.value` (e.g. a paused progress fraction).
+  const useSharedValue = (initial) => {
+    const ref = React.useRef();
+    if (ref.current === undefined) ref.current = { value: initial };
+    return ref.current;
   };
+
+  // Jumps straight to toValue (no real timing driver exists under jest) and
+  // does NOT invoke the completion callback. Auto-firing it synchronously
+  // was tried first and is a real footgun: a hook that calls runOnJS(advance)
+  // from that callback (e.g. useAutoAdvanceProgress) would have every
+  // withTiming call synchronously trigger the next state change, which
+  // synchronously starts the next segment's withTiming, which fires
+  // immediately too -- an infinite synchronous update loop within a single
+  // render for any multi-item (count > 1) case. Tests that need to assert
+  // on completion-callback behavior should spy on withTiming locally and
+  // invoke the captured callback themselves.
+  const runAnimation = (toValue) => toValue;
 
   const identityEasing = (t) => t;
   const Easing = {
@@ -156,11 +168,11 @@ jest.mock('react-native-reanimated', () => {
           React.createElement(Component, { ...props, ref }),
         ),
     },
-    useSharedValue: makeSharedValue,
+    useSharedValue,
     useAnimatedStyle: (styleFactory) => styleFactory(),
     useAnimatedProps: (propsFactory) => propsFactory(),
     useAnimatedReaction: () => {},
-    useDerivedValue: (factory) => makeSharedValue(factory()),
+    useDerivedValue: (factory) => useSharedValue(factory()),
     withTiming: runAnimation,
     withSpring: runAnimation,
     withDelay: (_delayMs, animation) => animation,
