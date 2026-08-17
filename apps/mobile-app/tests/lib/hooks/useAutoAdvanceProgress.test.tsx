@@ -34,7 +34,19 @@ import React from "react";
 import TestRenderer, { act } from "react-test-renderer";
 import { useAutoAdvanceProgress } from "../../../lib/hooks/useAutoAdvanceProgress";
 
-type HookProps = Parameters<typeof useAutoAdvanceProgress>[0];
+// Deliberately not `Parameters<typeof useAutoAdvanceProgress>[0]`: the repo's
+// changed-file typecheck sandbox (packages/tools/scripts/typecheck-changed.mjs)
+// stubs out local relative imports with a loose auto-generated signature
+// instead of using the real source, which collapses a derived type like this
+// down to something JSX prop-checking rejects. Spelling it out matches
+// UseAutoAdvanceProgressOptions in lib/hooks/useAutoAdvanceProgress.ts --
+// keep the two in sync if that shape changes.
+interface HookProps {
+  count: number;
+  durationMs: (index: number) => number;
+  resetKey?: unknown;
+  initialIndex?: number;
+}
 type HookResult = ReturnType<typeof useAutoAdvanceProgress>;
 
 let latest: HookResult | null = null;
@@ -47,7 +59,7 @@ function Capture(props: HookProps) {
 const renderHook = (props: HookProps) => {
   let renderer!: TestRenderer.ReactTestRenderer;
   act(() => {
-    renderer = TestRenderer.create(React.createElement(Capture, props));
+    renderer = TestRenderer.create(<Capture {...props} />);
   });
   return renderer;
 };
@@ -133,11 +145,7 @@ describe("useAutoAdvanceProgress", () => {
 
     act(() => {
       renderer.update(
-        React.createElement(Capture, {
-          count: 3,
-          durationMs: () => 5000,
-          resetKey: "event-b",
-        }),
+        <Capture count={3} durationMs={() => 5000} resetKey="event-b" />,
       );
     });
 
