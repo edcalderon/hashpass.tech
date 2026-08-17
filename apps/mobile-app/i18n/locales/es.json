@@ -212,7 +212,31 @@
     "verifyCode": "Verificar código",
     "welcomeBack": "¡Bienvenido de nuevo!",
     "passwordlessUnavailableTitle": "Enlace por correo y OTP no disponibles",
-    "passwordlessUnavailableMessage": "El inicio con enlace mágico y OTP no está disponible porque el acceso sin contraseña de Supabase no está configurado para este entorno."
+    "passwordlessUnavailableMessage": "El inicio con enlace mágico y OTP no está disponible porque el acceso sin contraseña de Supabase no está configurado para este entorno.",
+    "qrApproval": {
+      "waitingForSession": "Esperando sesión…",
+      "signInRequiredTitle": "Inicio de sesión requerido",
+      "signInRequiredSubtitle": "Primero debes iniciar sesión en tu cuenta de HASHPASS. Inicia sesión y vuelve a intentarlo.",
+      "redirectingCountdown": "Redirigiendo al inicio de sesión en {seconds}…",
+      "signInNow": "Iniciar sesión ahora",
+      "invalidTitle": "Código QR inválido",
+      "invalidSubtitle": "Esto no parece un código de inicio de sesión de HASHPASS Auth.",
+      "close": "Cerrar",
+      "loginApprovedTitle": "Inicio de sesión aprobado",
+      "loginDeniedTitle": "Inicio de sesión denegado",
+      "loginApprovedSubtitle": "Puedes volver a tu navegador para terminar de iniciar sesión.",
+      "loginDeniedSubtitle": "Le dijimos al navegador que no fuiste tú.",
+      "done": "Listo",
+      "signInTitle": "Inicia sesión con HASHPASS Auth",
+      "signInSubtitle": "Alguien está intentando iniciar sesión con tu cuenta de HASHPASS. Si eres tú, apruébalo abajo.",
+      "tryAgain": "Intentar de nuevo",
+      "approve": "Aprobar",
+      "deny": "Denegar",
+      "cancel": "Cancelar",
+      "connectDoneLabel": "Listo — Volver al Club",
+      "connectInvalidTitle": "A este enlace le falta información",
+      "connectInvalidSubtitle": "Vuelve a hashpass.club y haz clic en \"Iniciar sesión con la app web\" de nuevo para obtener un enlace nuevo."
+    }
   },
   "pwaPrompt": {
     "installAction": "Instalar HASHPASS",

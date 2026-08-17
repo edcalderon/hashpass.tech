@@ -380,7 +380,7 @@ export default function PanelQrPage() {
 
   return (
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--bg-canvas)' }}>
-      <Navbar showMarketingLinks={false} />
+      <Navbar showMarketingLinks={false} hasHero={false} />
       <main style={{ flex: '1 0 auto', maxWidth: 880, margin: '0 auto', padding: 'clamp(120px, 14vw, 160px) 24px 80px' }}>
         {sessionLoading ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 0' }}>

@@ -209,7 +209,31 @@
     "verifyCode": "Code verifizieren",
     "welcomeBack": "Willkommen zurück!",
     "passwordlessUnavailableTitle": "E-Mail-Link und OTP nicht verfügbar",
-    "passwordlessUnavailableMessage": "Die Anmeldung per Magic Link und OTP ist nicht verfügbar, weil Supabase Passwordless für diese Umgebung nicht konfiguriert ist."
+    "passwordlessUnavailableMessage": "Die Anmeldung per Magic Link und OTP ist nicht verfügbar, weil Supabase Passwordless für diese Umgebung nicht konfiguriert ist.",
+    "qrApproval": {
+      "waitingForSession": "Warte auf Sitzung…",
+      "signInRequiredTitle": "Anmeldung erforderlich",
+      "signInRequiredSubtitle": "Du musst dich zuerst bei deinem HASHPASS-Konto anmelden. Melde dich an und versuche es dann erneut.",
+      "redirectingCountdown": "Weiterleitung zur Anmeldung in {seconds}…",
+      "signInNow": "Jetzt anmelden",
+      "invalidTitle": "Ungültiger QR-Code",
+      "invalidSubtitle": "Das sieht nicht wie ein HASHPASS Auth-Anmeldecode aus.",
+      "close": "Schließen",
+      "loginApprovedTitle": "Anmeldung genehmigt",
+      "loginDeniedTitle": "Anmeldung abgelehnt",
+      "loginApprovedSubtitle": "Du kannst zu deinem Browser zurückkehren, um die Anmeldung abzuschließen.",
+      "loginDeniedSubtitle": "Wir haben dem Browser mitgeteilt, dass du das nicht warst.",
+      "done": "Fertig",
+      "signInTitle": "Mit HASHPASS Auth anmelden",
+      "signInSubtitle": "Jemand versucht, sich mit deinem HASHPASS-Konto anzumelden. Wenn du das bist, genehmige es unten.",
+      "tryAgain": "Erneut versuchen",
+      "approve": "Genehmigen",
+      "deny": "Ablehnen",
+      "cancel": "Abbrechen",
+      "connectDoneLabel": "Fertig — Zurück zum Club",
+      "connectInvalidTitle": "Diesem Link fehlen Informationen",
+      "connectInvalidSubtitle": "Gehe zurück zu hashpass.club und klicke erneut auf „Über die Web-App anmelden“, um einen neuen Link zu erhalten."
+    }
   },
   "pwaPrompt": {
     "installAction": "HASHPASS installieren",

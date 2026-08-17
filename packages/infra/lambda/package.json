@@ -1,6 +1,6 @@
 {
   "name": "hashpass-api-handler",
-  "version": "1.9.9",
+  "version": "1.9.10",
   "description": "HashPass API handler using Expo Server",
   "main": "index.js",
   "type": "commonjs",

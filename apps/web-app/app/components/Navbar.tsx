@@ -91,9 +91,15 @@ interface NavbarProps {
   // authenticated area like /panel -- pages that aren't the marketing
   // landing page pass false here instead of duplicating the whole Navbar.
   showMarketingLinks?: boolean;
+  // Only the landing page renders a dark/colorful hero behind the top of
+  // the page, which is what the white logo + light link colors below are
+  // designed to sit on. Pages without a hero (panel, qr) start directly on
+  // the plain theme background, so they must skip the "over hero" styling
+  // entirely or the white variant renders washed-out on a light background.
+  hasHero?: boolean;
 }
 
-export function Navbar({ showMarketingLinks = true }: NavbarProps) {
+export function Navbar({ showMarketingLinks = true, hasHero = true }: NavbarProps) {
   const { resolvedTheme } = useTheme();
   const { t } = useTranslation('nav');
   const [scrolled, setScrolled] = useState(false);
@@ -113,7 +119,7 @@ export function Navbar({ showMarketingLinks = true }: NavbarProps) {
     { key: 'docs',     href: '/documentation/' },
   ] as const;
 
-  const overHero = !scrolled;
+  const overHero = hasHero && !scrolled;
   const isDark   = resolvedTheme === 'dark';
 
   const pill = pillStyle(overHero, isDark);
