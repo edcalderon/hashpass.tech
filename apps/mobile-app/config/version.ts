@@ -22,22 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202608170030, // Updated to current timestamp
+  buildNumber: 202608170346, // Updated to current timestamp
   releaseDate: '2026-08-17',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    // No new features
+    'explorer stats card fixes, morphicons pilot, unified slider progress bar'
   ],
   bugfixes: [
-    'correct BSL/core Supabase project swap in hashpass-web\'s tfvars example'
+    'annotate QRScanner onRawScan param type'
   ],
   breakingChanges: [],
-  notes: 'correct BSL/core Supabase project swap in hashpass-web\'s tfvars example'
+  notes: 'explorer stats card fixes, morphicons pilot, unified slider progress bar; annotate QRScanner onRawScan param type'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.8': {
+    version: '1.9.8',
+    buildNumber: 202608170346,
+    releaseDate: '2026-08-17',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'explorer stats card fixes, morphicons pilot, unified slider progress bar'
+    ],
+    bugfixes: [
+      'annotate QRScanner onRawScan param type'
+    ],
+    breakingChanges: [],
+    notes: 'explorer stats card fixes, morphicons pilot, unified slider progress bar; annotate QRScanner onRawScan param type'
+  },
   '1.9.7': {
     version: '1.9.7',
     buildNumber: 202608170030,

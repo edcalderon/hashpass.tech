@@ -151,7 +151,10 @@ export type NativeSafeIconName =
   | "refresh"
   | "event"
   | "people"
-  | "info";
+  | "info"
+  | "ticket"
+  | "schedule"
+  | "history";
 
 const NATIVE_SAFE_ICONS: Record<NativeSafeIconName, WebIconComponent> = {
   search: Search,
@@ -170,6 +173,9 @@ const NATIVE_SAFE_ICONS: Record<NativeSafeIconName, WebIconComponent> = {
   event: CalendarDays,
   people: Users,
   info: Info,
+  ticket: Ticket,
+  schedule: Clock,
+  history: History,
 };
 
 export function NativeSafeIcon({

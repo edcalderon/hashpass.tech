@@ -31,6 +31,8 @@ import Animated, {
 } from "react-native-reanimated";
 import { SystemBars } from "react-native-edge-to-edge";
 import { Ionicons } from "../../../lib/vector-icons";
+import { MorphIcon, type MorphHandle } from "../../../lib/morph-icon";
+import { Menu as LucideMenu, X as LucideX } from "lucide";
 import {
   useRouter,
   usePathname,
@@ -1282,8 +1284,14 @@ export default function DashboardLayout() {
   // JS work competing with the UI-thread slide is part of why the sidebar felt
   // slow. A ref updates without re-rendering, so the slide runs undisturbed.
   const drawerOpenRef = useRef(false);
+  // Drives the header hamburger<->close morph imperatively (see lib/morph-icon.tsx)
+  // off the same real drawer-status signal as drawerOpenRef, so it fires for every
+  // transition (header tap, swipe, back button) without adding React state or a
+  // re-render — matching this file's existing "ref, not state" perf pattern.
+  const headerMenuIconRef = useRef<MorphHandle>(null);
   const handleDrawerStatusChange = useCallback((isOpen: boolean) => {
     drawerOpenRef.current = isOpen;
+    headerMenuIconRef.current?.morphTo(isOpen ? LucideX : LucideMenu);
   }, []);
   // See the DrawerOpenControlRef comment above CustomDrawerContent. Populated
   // by the patched DrawerView; a plain ref so wiring it up doesn't cascade a
@@ -1747,7 +1755,7 @@ export default function DashboardLayout() {
               console.error("QR Scan Error:", error);
               // Error is already shown in the scanner component
             }}
-            onRawScan={(data) => {
+            onRawScan={(data: string) => {
               const parsed = parseAuthQrScan(data);
               if (!parsed) return false;
               setQrScannerVisible(false);
@@ -1841,10 +1849,13 @@ export default function DashboardLayout() {
             accessibilityRole="button"
             accessibilityLabel="Open navigation menu"
           >
-            <Ionicons
-              name="menu"
+            <MorphIcon
+              ref={headerMenuIconRef}
+              icon={drawerOpenRef.current ? LucideX : LucideMenu}
               size={26}
               color={isDark ? "#FFFFFF" : "#000000"}
+              fallbackIconName="menu"
+              spring="snappy"
             />
           </CopilotTouchableOpacity>
         </CopilotStep>
@@ -1925,7 +1936,7 @@ export default function DashboardLayout() {
                 onScanError={(error: unknown) => {
                   console.error("QR Scan Error:", error);
                 }}
-                onRawScan={(data) => {
+                onRawScan={(data: string) => {
                   const parsed = parseAuthQrScan(data);
                   if (!parsed) return false;
                   setAndroidQrScannerVisible(false);

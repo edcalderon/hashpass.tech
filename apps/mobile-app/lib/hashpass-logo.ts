@@ -29,12 +29,19 @@ export const getHashpassFooterLogo = (isDark: boolean): ImageSourcePropType => {
 };
 
 export const getHashpassStaticHeroLogo = (
-  _isDark: boolean,
+  isDark: boolean,
 ): ImageSourcePropType => {
-  // The landing hero is dark in every theme. Web can render the exact,
-  // verified SVG with white letters and the red mark; native Image cannot
-  // decode SVG, so it receives the bundled white-letter raster fallback.
-  return Platform.OS === "web"
-    ? HASHPASS_WHITE_LETTER_RED_MARK_WEB
-    : HASHPASS_WHITE_LETTER_CYAN_MARK_RASTER;
+  // The landing hero background is dark in every theme, but the mark itself
+  // still needs to follow the app theme: dark mode gets the cyan-accented
+  // mark (matching the carousel's dark-mode logo), light mode keeps the
+  // exact, verified white-letter red-mark SVG on web. Native Image cannot
+  // decode SVG, so it always receives the bundled cyan raster -- this was
+  // already theme-independent before this fix and dark-mode-native was
+  // already correct; only the web branch was ignoring the theme.
+  if (Platform.OS === "web") {
+    return isDark
+      ? HASHPASS_WHITE_LETTER_CYAN_MARK_RASTER
+      : HASHPASS_WHITE_LETTER_RED_MARK_WEB;
+  }
+  return HASHPASS_WHITE_LETTER_CYAN_MARK_RASTER;
 };

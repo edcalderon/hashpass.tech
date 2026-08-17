@@ -20,11 +20,20 @@ const HASHPASS_LIGHT_LOGO = require('../assets/logos/hashpass/logo-full-hashpass
 // the white-fill variant, light theme the black-fill one.
 const PRESENTS_WATERMARK_DARK = require('../assets/logos/bsl/bsl-presents-pro-white.webp');
 const PRESENTS_WATERMARK_LIGHT = require('../assets/logos/bsl/bsl-presents-pro-black.webp');
+// Cropped from the real Hash Poker Room club header (downloaded from
+// pkrr.io and re-hosted here rather than hotlinked, same policy as the BSL
+// and CLF brand assets above).
+const HASH_POKER_LOGO = require('../assets/logos/hash-poker/hash-poker-room-logo.webp');
 
 export interface TourBrandAsset {
   logo: ImageSourcePropType;
   label: string;
   accentColor: string;
+}
+
+export interface EventBadgeAsset {
+  logo: ImageSourcePropType;
+  aspectRatio: number;
 }
 
 export interface LampBrandConfig {
@@ -103,6 +112,24 @@ export const getTourBrandAsset = (eventId?: string | null): TourBrandAsset | nul
   const brand = TOUR_BRAND_ASSETS[eventId];
   if (!brand) return null;
   return brand;
+};
+
+// Unlike TOUR_BRAND_ASSETS (which replaces the whole title block with a
+// full brand lockup, e.g. BSL's tour stops), this is a small real logo shown
+// alongside a still-visible event-specific title -- for events like Hash
+// Poker Room where each slide is a distinct tournament ("50K Turbo", "100K
+// Main Event") that still needs its own title even though the club has one
+// consistent logo.
+const EVENT_BADGE_ASSETS: Record<string, EventBadgeAsset> = {
+  'hash-poker': {
+    logo: HASH_POKER_LOGO,
+    aspectRatio: 385 / 190,
+  },
+};
+
+export const getEventBadgeAsset = (eventId?: string | null): EventBadgeAsset | null => {
+  if (!eventId) return null;
+  return EVENT_BADGE_ASSETS[eventId] || null;
 };
 
 export const getLampBrandConfig = (eventId?: string | null): LampBrandConfig | null => {

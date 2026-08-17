@@ -84,10 +84,13 @@ describe("getHashpassStaticHeroLogo", () => {
     expect(getHashpassStaticHeroLogo(false)).toBe("black-svg");
   });
 
-  it("keeps the verified white-letter SVG in dark web mode", () => {
+  it("switches to the white-cyan mark in dark web mode", () => {
     mockPlatform.OS = "web";
 
-    expect(getHashpassStaticHeroLogo(true)).toBe("black-svg");
+    // FIXED: this previously asserted the bug (dark mode ignored and stuck
+    // on the light-mode red-mark SVG) -- dark mode must follow the theme,
+    // same as every other logo getter in this file.
+    expect(getHashpassStaticHeroLogo(true)).toBe("white-cyan-native-png");
   });
 
   it("uses the white-letter native fallback on the landing hero", () => {

@@ -69,63 +69,44 @@ export interface LampBrandingConfig {
 // arbitrary `/assets/...` paths, and SVG imports can be interpreted by Metro as
 // directory requests (`/logos/bsl`), producing ENOENT and blank carousel cards.
 const HASHPASS_DARK_LOGO = require("../assets/logos/hashpass/logo-full-hashpass-white-cyan.webp");
-const BSL_WHITE_BRAND_LOGO = require("../assets/logos/bsl/bsl-white.webp");
-const BSL_ONTOUR_LOGO = require("../assets/logos/bsl/bsl-ontour-pro.webp");
-const BSL_PERU_LOGO = require("../assets/logos/bsl/bsl-peru-pro.webp");
-const BSL_CHILE_LOGO = require("../assets/logos/bsl/bsl-chile-pro.webp");
 const BSL_COLOMBIA_LOGO = require("../assets/logos/bsl/bsl-colombia-pro.webp");
 
 // Main HASHPASS Logo
 const LOGO_SLIDE_BACKGROUND = "#07111F";
 
+// "black" here is the file's historical name, not its rendered color -- see
+// the same naming gotcha documented in lib/hashpass-logo.ts. This is the
+// solid black-letters/red-mark mark, the same asset getHashpassFullLogo(false)
+// already uses for light mode everywhere else in the app (auth screen,
+// footer, etc.) -- keep it that way if you touch this.
+const HASHPASS_BLACK_RED_LOGO = require("../assets/logos/hashpass/logo-full-hashpass-black.webp");
+// A previous attempt swapped only the logo here and kept the dark background,
+// which made the black wordmark disappear against it (see git history). This
+// time the background is theme-aware too, so black-on-light and
+// white-cyan-on-dark both stay readable.
+const LOGO_SLIDE_BACKGROUND_LIGHT = "#FFFFFF";
+
 const MAIN_HASHPASS_LOGO = {
   id: "hashpass-main",
   name: "HASHPASS",
   darkSrc: HASHPASS_DARK_LOGO,
-  // The landing hero is intentionally a dark brand surface in both app
-  // themes. Its light-theme logo must therefore remain the white/cyan mark;
-  // using the black wordmark here made the logo disappear against the hero.
-  lightSrc: HASHPASS_DARK_LOGO,
-  backgroundColor: LOGO_SLIDE_BACKGROUND,
-  accentColor: "#6FDDFD",
+  lightSrc: HASHPASS_BLACK_RED_LOGO,
+  backgroundColorDark: LOGO_SLIDE_BACKGROUND,
+  backgroundColorLight: LOGO_SLIDE_BACKGROUND_LIGHT,
+  accentColorDark: "#6FDDFD",
+  accentColorLight: "#8B1538",
 };
 
-const BSL_PLAIN_LOGO = {
-  id: "bsl-plain",
-  name: "Blockchain Summit Latam",
-  darkSrc: BSL_WHITE_BRAND_LOGO,
-  lightSrc: BSL_WHITE_BRAND_LOGO,
-  backgroundColor: LOGO_SLIDE_BACKGROUND,
-  accentColor: "#6FDDFD",
+// BSL On Tour, Perú, and Chile were redundant/already-happened tour-stop
+// promos (Perú and Chile are done; Colombia is the only real upcoming stop),
+// so only the Colombia logo remains -- see the BSL On Tour hero subtitle:
+// "Peru and Chile are archived. Colombia is next."
+const BSL_COLOMBIA_LOGO_SLIDE = {
+  id: "bsl-colombia",
+  name: "BSL Colombia 2026",
+  logoSrc: BSL_COLOMBIA_LOGO,
+  accentColor: "#FFD700",
 };
-
-// BSL Event Logos with brand colors
-const BSL_LOGOS = [
-  {
-    id: "bsl-on-tour",
-    name: "BSL On Tour",
-    logoSrc: BSL_ONTOUR_LOGO,
-    accentColor: "#34D399",
-  },
-  {
-    id: "bsl-peru",
-    name: "BSL Perú 2026",
-    logoSrc: BSL_PERU_LOGO,
-    accentColor: "#E31C23",
-  },
-  {
-    id: "bsl-chile",
-    name: "BSL Chile 2026",
-    logoSrc: BSL_CHILE_LOGO,
-    accentColor: "#FF5B5B",
-  },
-  {
-    id: "bsl-colombia",
-    name: "BSL Colombia 2026",
-    logoSrc: BSL_COLOMBIA_LOGO,
-    accentColor: "#FFD700",
-  },
-];
 
 const hexToRgba = (hex: string, alpha: number) => {
   const normalized = hex.replace("#", "").trim();
@@ -206,53 +187,82 @@ export default function EventBannerCarousel({
   // on every whitelabel tenant's landing page regardless of context).
   const isGlobalTenant = isGlobalEventTenant() && !selectedEvent;
 
-  // Build slides: event banners + logo slides
+  // The global landing carousel should only promote what's actually
+  // happening or coming up. "bsl" is the tour-hub's own fallback banner
+  // ("BSL On Tour / Peru, Chile and Colombia 2026 roadshow") which just
+  // duplicates the BSL Colombia logo slide below; peru2026, chile2026, and
+  // bsl2025 are tour stops that have already happened. Only applies to the
+  // global carousel -- a whitelabel tenant's own page (selectedEvent set)
+  // must still show its own event regardless of this list.
+  const PAST_OR_REDUNDANT_EVENT_IDS = new Set([
+    "bsl",
+    "peru2026",
+    "chile2026",
+    "bsl2025",
+  ]);
+  const carouselEvents = selectedEvent
+    ? availableEvents
+    : availableEvents.filter(
+        (event) => !PAST_OR_REDUNDANT_EVENT_IDS.has(event.id),
+      );
+
+  // Real, currently-bookable event banner slides (Hash Poker Room, Colombia
+  // 2026, etc.) -- split out Hash Poker Room so it can be pinned right after
+  // the HASHPASS logo below, regardless of where getAvailableEvents() would
+  // otherwise place it.
+  const eventSlides = carouselEvents.flatMap((event) =>
+    getEventBannerSlides(event).map((banner: ResolvedEventBannerSlide) => ({
+      type: "event" as const,
+      event,
+      banner,
+      // Preserve the established global BSL brand treatment for events
+      // without campaign slides. A selected event always renders its own
+      // media so selection and banner content stay distinct.
+      useEventBranding: !selectedEvent && !event.bannerSlides?.length,
+    })),
+  );
+  const hashPokerSlides = eventSlides.filter(
+    (slide) => slide.event.id === "hash-poker",
+  );
+  const otherEventSlides = eventSlides.filter(
+    (slide) => slide.event.id !== "hash-poker",
+  );
+
+  // Build slides: HASHPASS logo, then BSL Colombia, then other real events,
+  // Hash Poker Room last.
   const slides: CarouselSlide[] = [
     // { type: 'download' }, // Temporarily hidden
     ...(isGlobalTenant
       ? [
-          // Add main HASHPASS logo first
+          // Main HASHPASS logo always leads the carousel. Background and
+          // logo mark are paired per theme (dark bg + white-cyan mark in
+          // dark mode, white bg + black-red mark in light mode) so the
+          // wordmark is always readable against its own slide.
           {
             type: "logo" as const,
             logoId: MAIN_HASHPASS_LOGO.id,
             logoSrcDark: MAIN_HASHPASS_LOGO.darkSrc,
             logoSrcLight: MAIN_HASHPASS_LOGO.lightSrc,
-            // This is a branded dark hero rather than a theme-colored content
-            // surface. Keep its background and logo contrast paired in light
-            // and dark mode, just like the BSL logo slides below.
-            backgroundColor: MAIN_HASHPASS_LOGO.backgroundColor,
-            accentColor: MAIN_HASHPASS_LOGO.accentColor,
+            backgroundColor: isDark
+              ? MAIN_HASHPASS_LOGO.backgroundColorDark
+              : MAIN_HASHPASS_LOGO.backgroundColorLight,
+            accentColor: isDark
+              ? MAIN_HASHPASS_LOGO.accentColorDark
+              : MAIN_HASHPASS_LOGO.accentColorLight,
           },
-          // Add BSL plain logo second
+          // BSL's own mark is white-on-dark only -- keep its slide on the
+          // dark brand surface regardless of app theme.
           {
             type: "logo" as const,
-            logoId: BSL_PLAIN_LOGO.id,
-            logoSrcDark: BSL_PLAIN_LOGO.darkSrc,
-            logoSrcLight: BSL_PLAIN_LOGO.lightSrc,
-            backgroundColor: BSL_PLAIN_LOGO.backgroundColor,
-            accentColor: BSL_PLAIN_LOGO.accentColor,
+            logoId: BSL_COLOMBIA_LOGO_SLIDE.id,
+            logoSrc: BSL_COLOMBIA_LOGO_SLIDE.logoSrc,
+            backgroundColor: LOGO_SLIDE_BACKGROUND,
+            accentColor: BSL_COLOMBIA_LOGO_SLIDE.accentColor,
           },
-          // Add BSL event logos with brand colors
-          ...BSL_LOGOS.map((logo) => ({
-            type: "logo" as const,
-            logoId: logo.id,
-            logoSrc: logo.logoSrc,
-            backgroundColor: MAIN_HASHPASS_LOGO.backgroundColor,
-            accentColor: logo.accentColor,
-          })),
         ]
       : []),
-    ...availableEvents.flatMap((event) =>
-      getEventBannerSlides(event).map((banner: ResolvedEventBannerSlide) => ({
-        type: "event" as const,
-        event,
-        banner,
-        // Preserve the established global BSL brand treatment for events
-        // without campaign slides. A selected event always renders its own
-        // media so selection and banner content stay distinct.
-        useEventBranding: !selectedEvent && !event.bannerSlides?.length,
-      })),
-    ),
+    ...otherEventSlides,
+    ...hashPokerSlides,
   ];
 
   const scrollToSlide = useCallback(
@@ -267,11 +277,17 @@ export default function EventBannerCarousel({
     [screenWidth],
   );
 
-  // Auto-play functionality
+  // Auto-play functionality. Pressing and holding the carousel pauses it
+  // (isAutoPlayPausedRef, toggled by onPressIn/onPressOut below) rather than
+  // stopping the interval outright, so it resumes on release without losing
+  // its cadence.
+  const isAutoPlayPausedRef = useRef(false);
+
   useEffect(() => {
     if (!autoPlay || slides.length <= 1) return;
 
     const interval = setInterval(() => {
+      if (isAutoPlayPausedRef.current) return;
       setCurrentIndex((prev) => {
         const next = (prev + 1) % slides.length;
         scrollToSlide(next);
@@ -281,6 +297,14 @@ export default function EventBannerCarousel({
 
     return () => clearInterval(interval);
   }, [autoPlay, autoPlayInterval, slides.length, scrollToSlide]);
+
+  const handleCarouselPressIn = useCallback(() => {
+    isAutoPlayPausedRef.current = true;
+  }, []);
+
+  const handleCarouselPressOut = useCallback(() => {
+    isAutoPlayPausedRef.current = false;
+  }, []);
 
   const handleScroll = (event: any) => {
     const offsetX = event.nativeEvent.contentOffset.x;
@@ -310,6 +334,9 @@ export default function EventBannerCarousel({
         scrollEventThrottle={16}
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
+        onTouchStart={handleCarouselPressIn}
+        onTouchEnd={handleCarouselPressOut}
+        onTouchCancel={handleCarouselPressOut}
       >
         {/* Mobile App Download Slide - Temporarily hidden */}
         {/* <View style={styles.slide}>
@@ -491,6 +518,8 @@ export default function EventBannerCarousel({
                 setCurrentIndex(index);
                 scrollToSlide(index);
               }}
+              onPressIn={handleCarouselPressIn}
+              onPressOut={handleCarouselPressOut}
             />
           ))}
         </View>

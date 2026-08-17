@@ -50,6 +50,9 @@ export const resolveExplorerIconName = (name: string) => {
     event: "event",
     people: "people",
     info: "info",
+    "confirmation-number": "ticket",
+    schedule: "schedule",
+    history: "history",
   } as const;
   return aliases[name as keyof typeof aliases] || "info";
 };
