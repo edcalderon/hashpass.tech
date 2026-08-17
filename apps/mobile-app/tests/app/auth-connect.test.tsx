@@ -3,6 +3,7 @@
 import React from 'react';
 import { Platform } from 'react-native';
 import AuthConnectScreen from '../../app/auth/connect/index';
+import { getCurrentLocale, setLocale } from '../../i18n/i18n';
 
 const mockRespondToLogin = jest.fn();
 const mockReplace = jest.fn();
@@ -85,7 +86,7 @@ describe('AuthConnectScreen', () => {
     mockAuthState = { user: { id: 'better-auth-user-1' }, isLoggedIn: true, isLoading: false, dbUserId: 'db-user-1' };
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     if (renderer) {
       act(() => {
         renderer?.unmount();
@@ -94,6 +95,10 @@ describe('AuthConnectScreen', () => {
     renderer = null;
     jest.useRealTimers();
     Object.defineProperty(Platform, 'OS', { value: originalPlatformOS });
+    // i18n is a global singleton -- reset it so a locale left active by one
+    // test (e.g. 'es' below) doesn't leak into unrelated suites that assert
+    // on the English fallback text.
+    await setLocale('en');
   });
 
   it('shows a checking state while auth is still loading', async () => {
@@ -172,5 +177,36 @@ describe('AuthConnectScreen', () => {
     renderer = await renderScreen();
 
     expect(findByText(renderer.root, 'This link is missing information')).toBeTruthy();
+  });
+
+  // hashpass.club passes its visitor's current locale (SignInModal's
+  // openWebApp()) so this screen matches -- rather than mocking i18n/i18n.ts
+  // and asserting on call args, this renders against the real module so a
+  // regression that silently no-ops setLocale() (e.g. a stale import path,
+  // a dropped useEffect dependency) would actually fail this test.
+  it('applies the locale param from the query string and renders translated text', async () => {
+    mockParams = { challengeId: 'chal_123', locale: 'es' };
+    renderer = await renderScreen();
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(getCurrentLocale()).toBe('es');
+    expect(findByText(renderer.root, 'Inicia sesión con HASHPASS Auth')).toBeTruthy();
+  });
+
+  it('ignores an unrecognized locale param and falls back to English', async () => {
+    mockParams = { challengeId: 'chal_123', locale: 'xx' };
+    renderer = await renderScreen();
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(getCurrentLocale()).toBe('en');
+    expect(findByText(renderer.root, 'Sign in with HASHPASS Auth')).toBeTruthy();
   });
 });
