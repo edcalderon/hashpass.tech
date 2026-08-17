@@ -73,8 +73,9 @@ const triggerPress = (node: any) => {
   });
 };
 
-// Reached by clicking "Open HASHPASS.TECH" on hashpass.club's sign-in modal
-// -- see apps/web-app/app/components/SignInModal.tsx's openHashpassApp().
+// Reached by clicking "Sign in using the web app" on hashpass.club's
+// sign-in modal -- see apps/web-app/app/components/SignInModal.tsx's
+// openWebApp().
 describe('AuthConnectScreen', () => {
   let renderer: ReturnType<typeof create> | null = null;
   const originalPlatformOS = Platform.OS;

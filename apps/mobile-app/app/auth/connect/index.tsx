@@ -11,8 +11,8 @@ import { setLocale, useTranslation } from '../../../i18n/i18n';
 // your session…" spinner on screen with no way out.
 const DB_SESSION_WAIT_TIMEOUT_MS = 6000;
 
-// Reached by clicking "Open HASHPASS.TECH" on hashpass.club's sign-in modal
-// (apps/web-app/app/components/SignInModal.tsx's openHashpassApp()), opened
+// Reached by clicking "Sign in using the web app" on hashpass.club's sign-in
+// modal (apps/web-app/app/components/SignInModal.tsx's openWebApp()), opened
 // in a new tab with the pending challenge's id in the query string. This is
 // the desktop-without-a-phone path: instead of scanning the QR with the app,
 // the browser that already has this app open (and, ideally, an existing
@@ -62,7 +62,7 @@ export default function AuthConnectScreen() {
   const closeOrLeave = () => {
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
       // Only actually closes if this tab was opened by script (true for the
-      // "Open HASHPASS.TECH" button, which uses window.open()) -- browsers
+      // "Sign in using the web app" button, which uses window.open()) -- browsers
       // silently no-op window.close() on tabs the user navigated to
       // directly, which is an acceptable, harmless fallback here.
       window.close();
@@ -90,7 +90,7 @@ export default function AuthConnectScreen() {
       invalidTitle={t('connectInvalidTitle', 'This link is missing information')}
       invalidSubtitle={t(
         'connectInvalidSubtitle',
-        "Go back to hashpass.club and click \"Open HASHPASS.TECH\" again to get a fresh link."
+        'Go back to hashpass.club and click "Sign in using the web app" again to get a fresh link.'
       )}
       invalidActionLabel={t('close', 'Close')}
       onInvalidAction={closeOrLeave}

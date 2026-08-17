@@ -236,7 +236,7 @@
       "cancel": "Cancel",
       "connectDoneLabel": "Done — Back to Club",
       "connectInvalidTitle": "This link is missing information",
-      "connectInvalidSubtitle": "Go back to hashpass.club and click \"Open HASHPASS.TECH\" again to get a fresh link."
+      "connectInvalidSubtitle": "Go back to hashpass.club and click \"Sign in using the web app\" again to get a fresh link."
     }
   },
   "pwaPrompt": {

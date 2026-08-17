@@ -235,7 +235,7 @@
       "cancel": "취소",
       "connectDoneLabel": "완료 — 클럽으로 돌아가기",
       "connectInvalidTitle": "이 링크에 정보가 누락되었습니다",
-      "connectInvalidSubtitle": "hashpass.club로 돌아가서 \"HASHPASS.TECH 열기\"를 다시 클릭해 새 링크를 받으세요."
+      "connectInvalidSubtitle": "hashpass.club로 돌아가서 \"웹 앱으로 로그인\"을 다시 클릭해 새 링크를 받으세요."
     }
   },
   "pwaPrompt": {

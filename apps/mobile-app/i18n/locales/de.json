@@ -232,7 +232,7 @@
       "cancel": "Abbrechen",
       "connectDoneLabel": "Fertig — Zurück zum Club",
       "connectInvalidTitle": "Diesem Link fehlen Informationen",
-      "connectInvalidSubtitle": "Gehe zurück zu hashpass.club und klicke erneut auf „HASHPASS.TECH öffnen“, um einen neuen Link zu erhalten."
+      "connectInvalidSubtitle": "Gehe zurück zu hashpass.club und klicke erneut auf „Über die Web-App anmelden“, um einen neuen Link zu erhalten."
     }
   },
   "pwaPrompt": {

@@ -64,10 +64,10 @@ export function DownloadShowcase() {
             </Button>
             {/* Goes to the main HASHPASS app (not the Play Store -- that's
                 the button above) -- env-aware the same way SignInModal's
-                "Open HASHPASS.TECH" button is: localhost -> local Expo web,
-                a dev host -> dev.hashpass.tech, otherwise -> hashpass.tech.
-                Static href is a safe no-JS/build-time fallback; the real
-                resolved target is set on click. */}
+                "Sign in using the web app" button is: localhost -> local
+                Expo web, a dev host -> dev.hashpass.tech, otherwise ->
+                hashpass.tech. Static href is a safe no-JS/build-time
+                fallback; the real resolved target is set on click. */}
             <Button asChild size="lg" variant="outline" className="h-14 rounded-2xl border-blue-500/25 bg-white/55 px-6 !text-slate-900 shadow-lg shadow-blue-950/5 backdrop-blur-md hover:bg-white/90 dark:border-white/15 dark:bg-slate-900/80 dark:!text-white dark:hover:bg-slate-900">
               <a
                 href="https://hashpass.tech"
