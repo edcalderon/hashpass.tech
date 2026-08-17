@@ -290,8 +290,11 @@ test('unauthenticated qr-links list is rejected', async () => {
 
 // hpass.id, hashpass.link, and hashp.link all front this same service --
 // a real visitor landing on the bare domain should get a friendly redirect,
-// not the generic JSON 404 every other unmatched route gets.
-test('a bare-domain GET redirects to hashpass.club instead of 404ing', async () => {
+// not the generic JSON 404 every other unmatched route gets. hashpass.link
+// is deliberately the odd one out (its bare domain is the designated
+// cosmetic/branding domain for the QR feature, so it sends visitors to the
+// QR showcase specifically) -- the others fall back to the generic target.
+test('hpass.id bare-domain GET redirects to hashpass.club instead of 404ing', async () => {
   const response = await handleRequest(new Request('https://hpass.id/', { redirect: 'manual' }));
   assert.equal(response.status, 302);
   // Response.redirect() runs the target through the URL parser, which
@@ -300,10 +303,16 @@ test('a bare-domain GET redirects to hashpass.club instead of 404ing', async () 
   assert.equal(response.headers.get('location'), 'https://hashpass.club/');
 });
 
-test('a bare-domain GET with no trailing slash also redirects', async () => {
-  const response = await handleRequest(new Request('https://hashpass.link', { redirect: 'manual' }));
+test('hashp.link bare-domain GET with no trailing slash also redirects to the generic target', async () => {
+  const response = await handleRequest(new Request('https://hashp.link', { redirect: 'manual' }));
   assert.equal(response.status, 302);
   assert.equal(response.headers.get('location'), 'https://hashpass.club/');
+});
+
+test('hashpass.link bare-domain GET redirects to the QR showcase specifically', async () => {
+  const response = await handleRequest(new Request('https://hashpass.link/', { redirect: 'manual' }));
+  assert.equal(response.status, 302);
+  assert.equal(response.headers.get('location'), 'https://hashpass.club/qr/');
 });
 
 test('an unmatched non-root path still 404s as JSON, not a redirect', async () => {

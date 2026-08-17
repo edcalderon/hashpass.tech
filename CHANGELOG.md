@@ -1,3 +1,22 @@
+## [1.9.12](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.11...v1.9.12) (2026-08-17)
+
+
+### Bug Fixes
+
+* **infra:** retry Lambda updates on ResourceConflictException ([c31468d](https://github.com/hashpass-tech/hashpass.tech/commit/c31468d5e65115353fac56a86ae64f13cda013e3))
+* **infra:** wire EXPO_PUBLIC_LINKS_API_BASE_URL into the hashpass-web build ([7b8caae](https://github.com/hashpass-tech/hashpass.tech/commit/7b8caae2b8d523ff22fea6d2a83a0984b0384727))
+### Release Highlights
+- wire EXPO_PUBLIC_LINKS_API_BASE_URL into the hashpass-web build; retry Lambda updates on ResourceConflictException
+
+### Release scope
+- Compared with: `v1.9.11` (the previous global release tag)
+
+### Affected products & packages
+- Club web
+- Infrastructure
+- Documentation
+- Release tooling
+
 ## [1.9.11](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.10...v1.9.11) (2026-08-17)
 
 

@@ -105,6 +105,20 @@ site. It does not create a global release PR, merge `develop` into `main`, or
 start an Android release. Never manually edit either release stream's version
 or changelog files.
 
+**The inverse trap (confirmed in production, 2026-08-17): merging an
+`apps/web-app` fix via the global `release:promote` → PR → merge flow does
+NOT deploy it to hashpass.club.** `deploy-club-docs.yml` triggers only on
+`club-v*` tag pushes (`on.push.tags: [club-v*]`), not on every push to
+`main`/`develop` — so a web-app fix that lands on `main` purely through a
+global release PR sits merged-but-undeployed indefinitely until someone
+separately runs `release:club:web:patch`. This exact gap shipped a real
+production bug (SignInModal's challenge-race fix landed in the v1.9.11
+global PR, not a club tag, and stayed live-broken on hashpass.club for
+hours until caught from a real screenshot and released again as
+`club-v1.0.26`). **Any `apps/web-app` change — even one that rode along in
+a global release PR for unrelated reasons — still needs its own
+`release:club:web:patch` to actually reach hashpass.club.**
+
 ### Mobile Android Release Workflow
 
 **Default-to-OTA posture (added 2026-07-28):** every release ships its JS via

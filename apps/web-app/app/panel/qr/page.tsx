@@ -30,12 +30,14 @@ import {
 // The QR creation/management section of the panel -- see
 // .agents/active/task-panel-web-club-events-qr.md, Phase B. Talks to
 // packages/hashpass-links-api's live qr-links routes via
-// hashpassSdk().qrLinks. `NEXT_PUBLIC_LINKS_API_BASE_URL` has no stable
-// default yet (hashpass.link DNS/infra pending, see that package's
-// README "hashpass.link cutover"), so the short link shown/copied here is
-// whatever invoke URL that env var currently resolves to.
+// hashpassSdk().qrLinks. hpass.id is the primary short-link/QR domain (see
+// packages/hashpass-links-api/README.md's "Multi-domain cutover" --
+// hashpass.link is kept as a trust-oriented alias, not the one shown here),
+// so the short link shown/copied here is whatever NEXT_PUBLIC_LINKS_API_BASE_URL
+// currently resolves to, falling back to the hpass.id label if that env var
+// is somehow unset.
 const LINKS_ORIGIN = (process.env.NEXT_PUBLIC_LINKS_API_BASE_URL || '').replace(/\/$/, '');
-const SHORT_LINK_PREFIX = LINKS_ORIGIN ? `${LINKS_ORIGIN}/q/` : 'hashpass.link/q/';
+const SHORT_LINK_PREFIX = LINKS_ORIGIN ? `${LINKS_ORIGIN}/q/` : 'hpass.id/q/';
 // Bot protection on link creation (see packages/hashpass-links-api/src/routes/qr-links.ts's
 // createQrLink) -- same Cap (proof-of-work, no third-party keys) flow the
 // newsletter signup uses, via the shared @hashpass/ui CaptchaWidget.

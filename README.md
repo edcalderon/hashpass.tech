@@ -20,27 +20,22 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.11)
+## 📋 Latest Changes (v1.9.12)
 
 ### Bug Fixes
 
-* **club:** "Sign in using the web app" could open /auth/connect with no challengeId ([6879fcf](https://github.com/hashpass-tech/hashpass.tech/commit/6879fcf0bd944b537df56c415ce319989da05ffd))
-* **mobile:** wire EXPO_PUBLIC_LINKS_API_BASE_URL into the Android release workflow ([bd4b87e](https://github.com/hashpass-tech/hashpass.tech/commit/bd4b87edc8df480025cfaa337e4324f18731599c))
-
-
-### Features
-
-* **infra:** wire hpass.id, hashpass.link, and hashp.link onto one QR redirect service ([99742a6](https://github.com/hashpass-tech/hashpass.tech/commit/99742a673e3f134fec56e5974ae70c8468630d34))
+* **infra:** retry Lambda updates on ResourceConflictException ([c31468d](https://github.com/hashpass-tech/hashpass.tech/commit/c31468d5e65115353fac56a86ae64f13cda013e3))
+* **infra:** wire EXPO_PUBLIC_LINKS_API_BASE_URL into the hashpass-web build ([7b8caae](https://github.com/hashpass-tech/hashpass.tech/commit/7b8caae2b8d523ff22fea6d2a83a0984b0384727))
 ### Release Highlights
-- wire hpass.id, hashpass.link, and hashp.link onto one QR redirect service; wire EXPO_PUBLIC_LINKS_API_BASE_URL into the Android release workflow; "Sign in using the web app" could open /auth/connect with no challengeId
+- wire EXPO_PUBLIC_LINKS_API_BASE_URL into the hashpass-web build; retry Lambda updates on ResourceConflictException
 
 ### Release scope
-- Compared with: `v1.9.10` (the previous global release tag)
+- Compared with: `v1.9.11` (the previous global release tag)
 
 ### Affected products & packages
 - Club web
-- QR links API
 - Infrastructure
+- Documentation
 - Release tooling
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)

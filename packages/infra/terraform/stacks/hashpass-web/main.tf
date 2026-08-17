@@ -104,6 +104,7 @@ locals {
       EXPO_PUBLIC_SUPABASE_KEY_PROD      = var.supabase_key
       EXPO_PUBLIC_SUPABASE_ANON_KEY      = var.supabase_key
       EXPO_PUBLIC_SUPABASE_ANON_KEY_PROD = var.supabase_key
+      EXPO_PUBLIC_LINKS_API_BASE_URL     = var.links_api_base_url
       NODE_MAX_OLD_SPACE_SIZE            = "6144"
       EXPO_EXPORT_MAX_WORKERS            = "1"
       SITE_LAMBDA_FUNCTION_NAME          = var.lambda_function_name
@@ -131,6 +132,7 @@ locals {
       EXPO_PUBLIC_SUPABASE_KEY_DEV      = trimspace(var.supabase_key_dev) != "" ? var.supabase_key_dev : var.supabase_key
       EXPO_PUBLIC_SUPABASE_ANON_KEY     = trimspace(var.supabase_key_dev) != "" ? var.supabase_key_dev : var.supabase_key
       EXPO_PUBLIC_SUPABASE_ANON_KEY_DEV = trimspace(var.supabase_key_dev) != "" ? var.supabase_key_dev : var.supabase_key
+      EXPO_PUBLIC_LINKS_API_BASE_URL    = trimspace(var.links_api_base_url_dev) != "" ? var.links_api_base_url_dev : var.links_api_base_url
       NODE_MAX_OLD_SPACE_SIZE           = "6144"
       EXPO_EXPORT_MAX_WORKERS           = "1"
       SITE_LAMBDA_FUNCTION_NAME         = var.dev_lambda_function_name

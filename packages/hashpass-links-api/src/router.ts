@@ -49,13 +49,25 @@ const ROUTES: Array<[string, RegExp, Handler]> = [
 // is a plausible, non-bot case worth a friendly redirect instead of the raw
 // JSON 404 every other unmatched route gets. hashpass.club, not
 // hashpass.tech, since that's where QR/link management actually lives.
-const BARE_DOMAIN_REDIRECT_TARGET = 'https://hashpass.club';
+//
+// hashpass.link is deliberately the odd one out: it's the designated
+// cosmetic/branding domain for the QR feature specifically (hpass.id is the
+// primary functional short-link domain actually embedded in generated
+// links; hashp.link is just a defensive alias) -- so its bare domain sends
+// visitors straight to the QR showcase/generator page instead of the
+// generic club homepage, reinforcing that association for anyone who types
+// or sees the domain on its own.
+const DEFAULT_BARE_DOMAIN_REDIRECT_TARGET = 'https://hashpass.club';
+const BARE_DOMAIN_REDIRECT_TARGETS_BY_HOST: Record<string, string> = {
+  'hashpass.link': 'https://hashpass.club/qr/',
+};
 
 export async function handleRequest(request: Request): Promise<Response> {
-  const { pathname } = new URL(request.url);
+  const { pathname, hostname } = new URL(request.url);
 
   if (request.method === 'GET' && (pathname === '/' || pathname === '')) {
-    return Response.redirect(BARE_DOMAIN_REDIRECT_TARGET, 302);
+    const target = BARE_DOMAIN_REDIRECT_TARGETS_BY_HOST[hostname] ?? DEFAULT_BARE_DOMAIN_REDIRECT_TARGET;
+    return Response.redirect(target, 302);
   }
 
   for (const [method, pattern, handler] of ROUTES) {

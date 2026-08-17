@@ -13,6 +13,20 @@ API_VERSION_VERIFY_RETRIES="${SITE_API_VERSION_VERIFY_RETRIES:-${API_VERSION_VER
 API_VERSION_VERIFY_SLEEP_SECONDS="${SITE_API_VERSION_VERIFY_SLEEP_SECONDS:-${API_VERSION_VERIFY_SLEEP_SECONDS:-10}}"
 API_VERSION_VERIFY_TIMEOUT_MS="${SITE_API_VERSION_VERIFY_TIMEOUT_MS:-${API_VERSION_VERIFY_TIMEOUT_MS:-15000}}"
 API_LAMBDA_ENV_UPDATE_MAX_BYTES="${SITE_API_LAMBDA_ENV_UPDATE_MAX_BYTES:-${API_LAMBDA_ENV_UPDATE_MAX_BYTES:-3900}}"
+# This same script runs concurrently from two independent deploy paths on
+# every push to main -- the GH Actions infra-deploy.yml workflow (the
+# "release safety net") and the target web CodePipeline's own CodeBuild job
+# -- both updating the SAME Lambda function around the same time by design
+# (see DEPLOYMENT_MAP.md). AWS rejects a second in-flight
+# UpdateFunctionCode/UpdateFunctionConfiguration on one function with
+# ResourceConflictException; this isn't hypothetical -- confirmed in
+# production 2026-08-17 (v1.9.11): the CodePipeline attempt failed outright
+# a few seconds after the GH Actions attempt won the race and succeeded.
+# AWS documents this as the transient/retryable case, so retry with a short
+# fixed backoff instead of failing an otherwise-successful deploy over a
+# lock a concurrent, equally-valid deploy already holds.
+LAMBDA_UPDATE_MAX_ATTEMPTS="${LAMBDA_UPDATE_MAX_ATTEMPTS:-6}"
+LAMBDA_UPDATE_RETRY_DELAY_SECONDS="${LAMBDA_UPDATE_RETRY_DELAY_SECONDS:-5}"
 
 read_expected_api_version() {
   if [[ -n "${API_EXPECTED_VERSION}" ]]; then
@@ -115,6 +129,60 @@ main().catch((error) => {
 NODE
 }
 
+# Reads the CURRENTLY live version from API_VERSION_URL, or prints nothing
+# on any failure (unreachable, malformed body, etc.) -- a hiccup here must
+# never block a legitimate deploy, only skip the staleness check that uses
+# it. Deliberately a plain read, unlike verify_api_version_once, which
+# asserts a match and exits non-zero.
+read_live_api_version() {
+  local version_url="$1"
+  node -e '
+    const versionUrl = process.argv[1];
+    (async () => {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
+      try {
+        const response = await fetch(versionUrl, {
+          headers: { accept: "application/json", "cache-control": "no-cache", pragma: "no-cache" },
+          signal: controller.signal,
+        });
+        const text = await response.text();
+        let body = {};
+        try { body = text ? JSON.parse(text) : {}; } catch { body = {}; }
+        const current = [
+          response.headers.get("x-current-version"),
+          body.currentVersion,
+          body.version,
+          body.backendVersion,
+          body.versionInfo?.backendVersion,
+        ]
+          .map((value) => (typeof value === "string" ? value.trim().replace(/^v/, "") : ""))
+          .find(Boolean);
+        if (current) process.stdout.write(current);
+      } catch {
+        // Swallow -- see function comment.
+      } finally {
+        clearTimeout(timeout);
+      }
+    })();
+  ' "${version_url}"
+}
+
+# True (exit 0) if semver $1 >= semver $2, comparing X.Y.Z numerically
+# (missing components treated as 0). Used to decide whether a currently-live
+# version already supersedes what this run is about to deploy.
+version_gte() {
+  node -e '
+    const parse = (v) => String(v).replace(/^v/, "").split(".").map((n) => Number.parseInt(n, 10) || 0);
+    const [a, b] = [parse(process.argv[1]), parse(process.argv[2])];
+    for (let i = 0; i < 3; i++) {
+      if ((a[i] || 0) > (b[i] || 0)) process.exit(0);
+      if ((a[i] || 0) < (b[i] || 0)) process.exit(1);
+    }
+    process.exit(0);
+  ' "$1" "$2"
+}
+
 sync_lambda_environment() {
   local current_config_file
   local environment_file
@@ -133,12 +201,22 @@ sync_lambda_environment() {
   }
   trap cleanup_lambda_environment_files RETURN
 
-  aws lambda get-function-configuration \
-    --function-name "${LAMBDA_FUNCTION_NAME}" \
-    --region "${LAMBDA_REGION}" \
-    --output json >"${current_config_file}"
+  # Fetches the CURRENT live config and rebuilds the merged environment
+  # payload from it, setting sync_action as a side effect. Called once
+  # before the first update attempt and again before every retry -- a
+  # retry must never resubmit a stale pre-conflict snapshot, since a
+  # competing deploy (the other of the two paths that run this same
+  # script concurrently -- see the LAMBDA_UPDATE_MAX_ATTEMPTS comment
+  # above) could have changed env vars itself (e.g. a rotated service-role
+  # key) in the window between our first attempt and the retry; blindly
+  # resubmitting the old snapshot would silently revert that change.
+  refresh_lambda_environment_payload() {
+    aws lambda get-function-configuration \
+      --function-name "${LAMBDA_FUNCTION_NAME}" \
+      --region "${LAMBDA_REGION}" \
+      --output json >"${current_config_file}"
 
-  node - "${current_config_file}" "${environment_file}" "${sync_status_file}" <<'NODE'
+    node - "${current_config_file}" "${environment_file}" "${sync_status_file}" <<'NODE'
 const fs = require('node:fs');
 
 const [configPath, environmentPath, statusPath] = process.argv.slice(2);
@@ -209,10 +287,9 @@ if (changed.length === 0) {
 }
 NODE
 
-  sync_action="$(node -e "process.stdout.write(JSON.parse(require('node:fs').readFileSync('${sync_status_file}', 'utf8')).action)")"
+    sync_action="$(node -e "process.stdout.write(JSON.parse(require('node:fs').readFileSync('${sync_status_file}', 'utf8')).action)")"
 
-  if [[ "${sync_action}" == "update" ]]; then
-    if [[ "${GITHUB_ACTIONS:-}" == "true" ]]; then
+    if [[ "${sync_action}" == "update" && "${GITHUB_ACTIONS:-}" == "true" ]]; then
       node - "${environment_file}" <<'NODE'
 const fs = require('node:fs');
 
@@ -229,14 +306,39 @@ for (const value of [...values].filter((item) => typeof item === 'string' && ite
 }
 NODE
     fi
+  }
 
+  refresh_lambda_environment_payload
+
+  if [[ "${sync_action}" == "update" ]]; then
     set +e
-    aws lambda update-function-configuration \
-      --function-name "${LAMBDA_FUNCTION_NAME}" \
-      --region "${LAMBDA_REGION}" \
-      --environment "file://${environment_file}" \
-      >/dev/null 2>"${aws_error_file}"
-    update_status=$?
+    for env_attempt in $(seq 1 "${LAMBDA_UPDATE_MAX_ATTEMPTS}"); do
+      aws lambda update-function-configuration \
+        --function-name "${LAMBDA_FUNCTION_NAME}" \
+        --region "${LAMBDA_REGION}" \
+        --environment "file://${environment_file}" \
+        >/dev/null 2>"${aws_error_file}"
+      update_status=$?
+      if [[ "${update_status}" -eq 0 ]]; then
+        break
+      fi
+      # See the identical retry around update-function-code below for why
+      # this specific error is retried instead of failing the deploy.
+      if grep -q "ResourceConflictException" "${aws_error_file}" && [[ "${env_attempt}" -lt "${LAMBDA_UPDATE_MAX_ATTEMPTS}" ]]; then
+        echo "Lambda environment update hit ResourceConflictException (another update in progress), retrying in ${LAMBDA_UPDATE_RETRY_DELAY_SECONDS}s (attempt ${env_attempt}/${LAMBDA_UPDATE_MAX_ATTEMPTS})..." >&2
+        sleep "${LAMBDA_UPDATE_RETRY_DELAY_SECONDS}"
+        # Re-fetch + rebuild from the NOW-current config before retrying --
+        # see refresh_lambda_environment_payload's comment.
+        refresh_lambda_environment_payload
+        if [[ "${sync_action}" != "update" ]]; then
+          echo "Lambda environment already matches after refresh (a concurrent deploy applied the same values); nothing left to sync." >&2
+          update_status=0
+          break
+        fi
+        continue
+      fi
+      break
+    done
     set -e
 
     if [[ "${update_status}" -ne 0 ]]; then
@@ -323,11 +425,62 @@ fi
 
 sync_lambda_environment
 
-aws lambda update-function-code \
-  --function-name "${LAMBDA_FUNCTION_NAME}" \
-  --region "${LAMBDA_REGION}" \
-  --zip-file "fileb://${PROJECT_ROOT}/${LAMBDA_ZIP_PATH}" \
-  >/dev/null
+code_update_error_file="$(mktemp /tmp/hashpass-lambda-code-aws-error.XXXXXX.log)"
+superseded="false"
+set +e
+for code_attempt in $(seq 1 "${LAMBDA_UPDATE_MAX_ATTEMPTS}"); do
+  # Checked before every attempt, including the first: this same script
+  # runs concurrently from two deploy paths (see LAMBDA_UPDATE_MAX_ATTEMPTS
+  # above), so a competing, newer run can win and complete in the window
+  # before our own attempt, or during our retry backoff. Without this
+  # check, an older run's retry could still succeed after the ZIP swap and
+  # verify its OWN (older) expected_version against the endpoint it just
+  # set, reporting green while production silently ends on the older
+  # release. If the live version already matches or supersedes what we're
+  # about to deploy, there is nothing left for this run to do.
+  live_version="$(read_live_api_version "${API_VERSION_URL}")"
+  if [[ -n "${live_version}" ]] && version_gte "${live_version}" "${expected_version}"; then
+    echo "Live API version (${live_version}) already >= this deploy's target (${expected_version}) -- a newer or equal deploy already won, skipping UpdateFunctionCode rather than overwriting it with an older release." >&2
+    code_update_status=0
+    superseded="true"
+    break
+  fi
+
+  aws lambda update-function-code \
+    --function-name "${LAMBDA_FUNCTION_NAME}" \
+    --region "${LAMBDA_REGION}" \
+    --zip-file "fileb://${PROJECT_ROOT}/${LAMBDA_ZIP_PATH}" \
+    >/dev/null 2>"${code_update_error_file}"
+  code_update_status=$?
+  if [[ "${code_update_status}" -eq 0 ]]; then
+    break
+  fi
+  if grep -q "ResourceConflictException" "${code_update_error_file}" && [[ "${code_attempt}" -lt "${LAMBDA_UPDATE_MAX_ATTEMPTS}" ]]; then
+    echo "UpdateFunctionCode hit ResourceConflictException (another update in progress), retrying in ${LAMBDA_UPDATE_RETRY_DELAY_SECONDS}s (attempt ${code_attempt}/${LAMBDA_UPDATE_MAX_ATTEMPTS})..." >&2
+    sleep "${LAMBDA_UPDATE_RETRY_DELAY_SECONDS}"
+    continue
+  fi
+  break
+done
+set -e
+
+if [[ "${code_update_status}" -ne 0 ]]; then
+  echo "ERROR: UpdateFunctionCode failed:" >&2
+  cat "${code_update_error_file}" >&2
+  rm -f "${code_update_error_file}"
+  exit "${code_update_status}"
+fi
+rm -f "${code_update_error_file}"
+
+if [[ "${superseded}" == "true" ]]; then
+  # A newer-or-equal deploy already won (see the staleness check above) --
+  # verifying the live version against OUR OWN expected_version here could
+  # spuriously fail if something even newer than that landed in the
+  # meantime, even though production is in a strictly better state than
+  # what this run wanted. Nothing this run did, nothing left to verify.
+  echo "API Lambda deployment skipped: superseded by a newer or equal live version."
+  exit 0
+fi
 
 aws lambda wait function-updated \
   --function-name "${LAMBDA_FUNCTION_NAME}" \
