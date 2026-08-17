@@ -49,6 +49,10 @@ const DEFAULT_CORS_ALLOWED_ORIGINS = [
   'https://hashpass.tech',
   'https://www.hashpass.tech',
   'https://hashpass.link',
+  // A club-dev tenant's resolveHashpassAppUrl() opens the approval screen
+  // at dev.hashpass.tech instead -- without this, the dev web sign-in flow
+  // fails preflight the same way prod would without the entries above.
+  'https://dev.hashpass.tech',
 ];
 
 function splitCsv(value: string | undefined): string[] {
