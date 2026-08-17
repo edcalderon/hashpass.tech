@@ -20,19 +20,18 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.13)
+## 📋 Latest Changes (v1.9.14)
 
-### Bug Fixes
-
-* **club:** the actual root cause of "This link is missing information" ([1706d42](https://github.com/hashpass-tech/hashpass.tech/commit/1706d42a677c353f25a94a8daf1b7bc3a5bc6fcb))
-### Release Highlights
-- the actual root cause of "This link is missing information"
+### Released
+- allow web approval requests
 
 ### Release scope
-- Compared with: `v1.9.12` (the previous global release tag)
+- Compared with: `v1.9.13` (the previous global release tag)
 
 ### Affected products & packages
-- Club web
+- Mobile app
+- QR links API
+- Infrastructure
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202608171737, // Updated to current timestamp
+  buildNumber: 202608171912, // Updated to current timestamp
   releaseDate: '2026-08-17',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,14 +30,29 @@ export const CURRENT_VERSION: VersionInfo = {
     // No new features
   ],
   bugfixes: [
-    'the actual root cause of "This link is missing information"'
+    'allow web approval requests'
   ],
   breakingChanges: [],
-  notes: 'the actual root cause of "This link is missing information"'
+  notes: 'allow web approval requests'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.14': {
+    version: '1.9.14',
+    buildNumber: 202608171912,
+    releaseDate: '2026-08-17',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'allow web approval requests'
+    ],
+    breakingChanges: [],
+    notes: 'allow web approval requests'
+  },
   '1.9.13': {
     version: '1.9.13',
     buildNumber: 202608171737,
