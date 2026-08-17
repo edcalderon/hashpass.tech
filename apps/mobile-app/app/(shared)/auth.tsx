@@ -35,6 +35,8 @@ import VersionDisplay from "../../components/VersionDisplay";
 import { useAuth } from "../../hooks/useAuth";
 import { getCurrentLocale, useTranslation } from "../../i18n/i18n";
 import { apiClient } from "../../lib/api-client";
+import { MorphIcon } from "../../lib/morph-icon";
+import { LoaderCircle, Check } from "lucide";
 import {
   authService,
   SUPABASE_OAUTH_CALLBACK_PATH,
@@ -543,6 +545,12 @@ export default function AuthScreen() {
   );
 
   const [busyAction, setBusyAction] = useState<BusyAction>(null);
+  // Pilot use of the morphicons library: briefly holds the primary button in
+  // a "verified" visual state so the spinner->checkmark morph is visible
+  // before the busy state clears. Purely additive -- navigation is still
+  // driven elsewhere (see the comment above markRecentAuthSuccess() below),
+  // so this pause never delays anything real.
+  const [otpVerifySucceeded, setOtpVerifySucceeded] = useState(false);
   const [emailAuthMethod, setEmailAuthMethod] =
     useState<EmailAuthMethod>("magic-link");
   const [email, setEmail] = useState("");
@@ -1189,6 +1197,12 @@ export default function AuthScreen() {
       // and immediate navigation from here can race the root auth redirect into
       // the authenticated native stack. The effect above owns the single route
       // replacement once authLoading is false.
+      setOtpVerifySucceeded(true);
+      setTimeout(() => {
+        setBusyAction(null);
+        setOtpVerifySucceeded(false);
+      }, 550);
+      return;
     } catch (error: any) {
       const rawMessage = extractApiError(
         error?.message,
@@ -1210,9 +1224,11 @@ export default function AuthScreen() {
 
       setOtpError(message);
       showError(t("authenticationError", "Authentication Error"), message);
-    } finally {
       setBusyAction(null);
     }
+    // No `finally` here: the success path above intentionally delays its own
+    // setBusyAction(null) by 550ms (via setTimeout) so the checkmark morph is
+    // visible; a finally would have cleared it immediately instead.
   }, [
     isBusy,
     isPasswordlessSupported,
@@ -2356,24 +2372,49 @@ export default function AuthScreen() {
                           <View style={styles.primaryButtonContent}>
                             {isBusy && busyAction !== "oauth" ? (
                               <View style={styles.primaryButtonIconGroup}>
-                                <ActivityIndicator
-                                  size="small"
-                                  color="#FFFFFF"
-                                />
+                                {busyAction === "otp-verify" ||
+                                otpVerifySucceeded ? (
+                                  // Pilot use of the morphicons library: the
+                                  // icon prop changing from LoaderCircle to
+                                  // Check (driven by otpVerifySucceeded)
+                                  // animates a real path morph rather than
+                                  // swapping two static glyphs.
+                                  <MorphIcon
+                                    icon={
+                                      otpVerifySucceeded ? Check : LoaderCircle
+                                    }
+                                    size={18}
+                                    color="#FFFFFF"
+                                    strokeWidth={2.5}
+                                    spring="snappy"
+                                    fallbackIconName={
+                                      otpVerifySucceeded
+                                        ? "checkmark"
+                                        : "sync"
+                                    }
+                                  />
+                                ) : (
+                                  <ActivityIndicator
+                                    size="small"
+                                    color="#FFFFFF"
+                                  />
+                                )}
                               </View>
                             ) : null}
                             <Text style={styles.primaryButtonText}>
-                              {busyAction === "magic-link"
-                                ? t("sendingEmail", "Sending email...")
-                                : busyAction === "otp-send"
-                                  ? t("sendingOtpCode", "Sending OTP code...")
-                                  : busyAction === "otp-verify"
-                                    ? t("verifyingCode", "Verifying code...")
-                                    : emailAuthMethod === "magic-link"
-                                      ? t("sendMagicLink", "Send Magic Link")
-                                      : otpSent
-                                        ? t("verifyCode", "Verify Code")
-                                        : t("sendCode", "Send Code")}
+                              {otpVerifySucceeded
+                                ? t("otpVerified", "Verified!")
+                                : busyAction === "magic-link"
+                                  ? t("sendingEmail", "Sending email...")
+                                  : busyAction === "otp-send"
+                                    ? t("sendingOtpCode", "Sending OTP code...")
+                                    : busyAction === "otp-verify"
+                                      ? t("verifyingCode", "Verifying code...")
+                                      : emailAuthMethod === "magic-link"
+                                        ? t("sendMagicLink", "Send Magic Link")
+                                        : otpSent
+                                          ? t("verifyCode", "Verify Code")
+                                          : t("sendCode", "Send Code")}
                             </Text>
                           </View>
                         </TouchableOpacity>
@@ -3282,8 +3323,13 @@ const getStyles = (
       borderRadius: 12,
       alignItems: "center",
       justifyContent: "center",
-      backgroundColor: "#c81000",
-      boxShadow: "0 4px 14px rgba(200, 16, 0, 0.35)",
+      // Light mode keeps the red brand tone; dark mode switches to the same
+      // cyan accent (colors.primary) already used for the theme toggle pill
+      // and Explorer's icon badges, matching the HASHPASS dark-mode mark.
+      backgroundColor: isDark ? colors.primary : "#c81000",
+      boxShadow: isDark
+        ? `0 4px 14px ${colors.primary}59`
+        : "0 4px 14px rgba(200, 16, 0, 0.35)",
       elevation: 4,
     },
     primaryButtonDisabled: {
@@ -3307,7 +3353,7 @@ const getStyles = (
     primaryButtonText: {
       fontSize: 20,
       fontWeight: "700",
-      color: "#fff",
+      color: isDark ? colors.primaryContrastText : "#fff",
     },
     secondaryActionButton: {
       alignSelf: "center",

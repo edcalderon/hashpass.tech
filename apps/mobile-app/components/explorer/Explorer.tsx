@@ -7,9 +7,11 @@ import React, {
 } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Image,
   Linking,
   Modal,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -20,6 +22,8 @@ import {
   type NativeSyntheticEvent,
 } from "react-native";
 import { NativeSafeIcon } from "../../lib/vector-icons";
+import { useAutoAdvanceProgress } from "../../lib/hooks/useAutoAdvanceProgress";
+import { SliderProgressBar } from "../banner/SliderProgressBar";
 import { useTheme } from "../../hooks/useTheme";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -193,9 +197,6 @@ export default function Explorer({
   const router = useRouter();
   const styles = getStyles(isDark, colors);
   const { t: translate } = useTranslation();
-  const [heroIndex, setHeroIndex] = useState(2);
-  const [selectedHeroSlideIndex, setSelectedHeroSlideIndex] = useState(0);
-  const [selectedHeroSlideProgress, setSelectedHeroSlideProgress] = useState(0);
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
@@ -460,54 +461,27 @@ export default function Explorer({
     () => (selectedEvent ? getEventBannerSlides(selectedEvent) : []),
     [selectedEvent],
   );
+
+  // The rotating hero slides (Colombia/BSL On Tour/etc.) only apply to the
+  // global explorer -- a single-tenant whitelabel domain renders one static
+  // hero built from its own event instead (see renderHero below), so there's
+  // nothing to rotate there. Starts on index 2 ("Discover what is next") to
+  // match the previous default.
+  const defaultHeroSlider = useAutoAdvanceProgress({
+    count: isGlobalExplorer ? HERO_SLIDES.length : 0,
+    durationMs: () => 5000,
+    initialIndex: 2,
+  });
+  const heroIndex = defaultHeroSlider.activeIndex;
+
+  const selectedHeroSlider = useAutoAdvanceProgress({
+    count: selectedEvent ? selectedHeroSlides.length : 0,
+    durationMs: (index) =>
+      selectedHeroSlides[index]?.durationMs || DEFAULT_EVENT_HERO_DURATION_MS,
+    resetKey: selectedEvent?.id,
+  });
+  const selectedHeroSlideIndex = selectedHeroSlider.activeIndex;
   const selectedHeroSlide = selectedHeroSlides[selectedHeroSlideIndex];
-
-  useEffect(() => {
-    // The rotating hero slides (Colombia/BSL On Tour/etc.) only apply to the
-    // global explorer -- a single-tenant whitelabel domain renders one
-    // static hero built from its own event instead (see renderHero below),
-    // so there's nothing to rotate there.
-    const timer = isGlobalExplorer
-      ? setInterval(() => {
-          setHeroIndex((current) => (current + 1) % HERO_SLIDES.length);
-        }, 5000)
-      : null;
-
-    return () => {
-      if (timer) clearInterval(timer);
-    };
-  }, [isGlobalExplorer]);
-
-  useEffect(() => {
-    setSelectedHeroSlideIndex(0);
-    setSelectedHeroSlideProgress(0);
-  }, [selectedEvent?.id]);
-
-  useEffect(() => {
-    if (
-      !selectedEvent ||
-      selectedHeroSlides.length <= 1 ||
-      !selectedHeroSlide
-    ) {
-      return;
-    }
-
-    const duration =
-      selectedHeroSlide.durationMs || DEFAULT_EVENT_HERO_DURATION_MS;
-    const startedAt = Date.now();
-    const timer = setInterval(() => {
-      const progress = Math.min(1, (Date.now() - startedAt) / duration);
-      setSelectedHeroSlideProgress(progress);
-      if (progress >= 1) {
-        setSelectedHeroSlideIndex(
-          (current) => (current + 1) % selectedHeroSlides.length,
-        );
-        setSelectedHeroSlideProgress(0);
-      }
-    }, 100);
-
-    return () => clearInterval(timer);
-  }, [selectedEvent, selectedHeroSlide, selectedHeroSlides.length]);
 
   useEffect(() => {
     setEventPage(0);
@@ -655,7 +629,7 @@ export default function Explorer({
           : null;
 
       return (
-        <View
+        <Pressable
           style={[
             styles.hero,
             {
@@ -663,6 +637,8 @@ export default function Explorer({
                 heroSlide.backgroundColor || selectedEvent.color || "#18212D",
             },
           ]}
+          onPressIn={selectedHeroSlider.pause}
+          onPressOut={selectedHeroSlider.resume}
         >
           {heroSlide.media.type === "video" ? (
             <EventBannerBackgroundVideo
@@ -716,43 +692,27 @@ export default function Explorer({
             </TouchableOpacity>
           )}
           {selectedHeroSlides.length > 1 && (
-            <View
-              style={styles.heroProgress}
+            <SliderProgressBar
+              count={selectedHeroSlides.length}
+              activeIndex={selectedHeroSlideIndex}
+              progress={selectedHeroSlider.progress}
+              onSegmentPress={selectedHeroSlider.goTo}
+              containerStyle={styles.heroProgress}
+              trackStyle={styles.heroProgressTrack}
               accessibilityLabel={translate(
                 "explore.rework.eventBannerSlides",
                 "Event banner slides",
               )}
-            >
-              {selectedHeroSlides.map(
-                (slide: ResolvedEventBannerSlide, index: number) => (
-                  <TouchableOpacity
-                    key={slide.id}
-                    accessibilityRole="button"
-                    accessibilityLabel={translate(
-                      "explore.rework.showEventBanner",
-                      "Show banner {number}",
-                      { number: index + 1 },
-                    )}
-                    style={styles.heroProgressTrack}
-                    onPress={() => {
-                      setSelectedHeroSlideIndex(index);
-                      setSelectedHeroSlideProgress(0);
-                    }}
-                  >
-                    <View
-                      style={[
-                        styles.heroProgressFill,
-                        index === selectedHeroSlideIndex && {
-                          width: `${Math.round(selectedHeroSlideProgress * 100)}%`,
-                        },
-                      ]}
-                    />
-                  </TouchableOpacity>
-                ),
-              )}
-            </View>
+              getSegmentAccessibilityLabel={(index) =>
+                translate(
+                  "explore.rework.showEventBanner",
+                  "Show banner {number}",
+                  { number: index + 1 },
+                )
+              }
+            />
           )}
-        </View>
+        </Pressable>
       );
     }
 
@@ -841,7 +801,11 @@ export default function Explorer({
     const localizedSlide = { ...hero, ...localizedHero };
 
     return (
-      <View style={[styles.hero, { backgroundColor: hero.tone }]}>
+      <Pressable
+        style={[styles.hero, { backgroundColor: hero.tone }]}
+        onPressIn={defaultHeroSlider.pause}
+        onPressOut={defaultHeroSlider.resume}
+      >
         <View style={styles.heroTexture} />
         <View style={styles.heroScrim} />
         <View style={styles.heroContent}>
@@ -866,31 +830,22 @@ export default function Explorer({
             <Text style={styles.heroActionText}>{localizedSlide.action}</Text>
           </TouchableOpacity>
         )}
-        <View
-          style={styles.heroProgress}
+        <SliderProgressBar
+          count={HERO_SLIDES.length}
+          activeIndex={heroIndex}
+          progress={defaultHeroSlider.progress}
+          onSegmentPress={defaultHeroSlider.goTo}
+          containerStyle={styles.heroProgress}
+          trackStyle={styles.heroProgressTrack}
           accessibilityLabel={translate(
             "explore.rework.heroSlides",
             "Hero slides",
           )}
-        >
-          {HERO_SLIDES.map((slide, index) => (
-            <TouchableOpacity
-              key={slide.eyebrow}
-              accessibilityRole="button"
-              accessibilityLabel={`${translate("explore.rework.show", "Show")} ${slide.eyebrow.toLowerCase()}`}
-              style={styles.heroProgressTrack}
-              onPress={() => setHeroIndex(index)}
-            >
-              <View
-                style={[
-                  styles.heroProgressFill,
-                  index === heroIndex && styles.heroProgressActive,
-                ]}
-              />
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
+          getSegmentAccessibilityLabel={(index) =>
+            `${translate("explore.rework.show", "Show")} ${HERO_SLIDES[index].eyebrow.toLowerCase()}`
+          }
+        />
+      </Pressable>
     );
   };
 
@@ -1024,7 +979,7 @@ export default function Explorer({
     <View style={styles.sectionHeader}>
       <View style={styles.sectionHeaderCopy}>
         <Text style={styles.sectionTitle}>
-          {translate("explore.rework.allEvents", "Explore All Events")}
+          {translate("explore.rework.allEvents", "Explorer Events")}
         </Text>
         <Text style={styles.sectionDescription}>
           {translate(
@@ -1127,6 +1082,51 @@ export default function Explorer({
       );
     }
 
+    const renderCard = (
+      key: string,
+      iconName: string,
+      value: React.ReactNode,
+      valueStyle: any,
+      label: string,
+      detail: React.ReactNode,
+      tooltip: string,
+    ) => (
+      <View key={key} style={styles.discoveryCounterCard}>
+        <View style={styles.discoveryCounterTopRow}>
+          <View style={styles.discoveryCounterValueRow}>
+            {typeof value === "number" || typeof value === "string" ? (
+              <Text style={valueStyle} numberOfLines={1}>
+                {value}
+              </Text>
+            ) : (
+              value
+            )}
+            <Text
+              style={styles.discoveryCounterLabel}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {label}
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={styles.discoveryCounterIconBadge}
+            onPress={() => Alert.alert(label, tooltip)}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityRole="button"
+            accessibilityLabel={translate(
+              "explore.rework.summaryCardInfo",
+              "What does {label} mean?",
+              { label },
+            )}
+          >
+            <Icon name={iconName} color={colors.primary} size={12} />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.discoveryCounterDetailSlot}>{detail}</View>
+      </View>
+    );
+
     return (
       <View
         style={styles.discoveryCounters}
@@ -1135,92 +1135,133 @@ export default function Explorer({
           "Event and pass summary",
         )}
       >
-        <View style={styles.discoveryCounterCard}>
-          <Text style={styles.discoveryCounterValue}>
-            {discoverySummary.totalEvents}
-          </Text>
-          <Text style={styles.discoveryCounterLabel}>
-            {translate("explore.rework.events", "Events")}
-          </Text>
-          {isLoggedIn &&
+        {renderCard(
+          "events",
+          "event",
+          discoverySummary.totalEvents,
+          styles.discoveryCounterValue,
+          translate("explore.rework.events", "Events"),
+          isLoggedIn &&
             (isRefreshingPasses ? (
               <View style={styles.discoveryCounterDetailSkeleton} />
             ) : (
-              <Text style={styles.discoveryCounterDetail}>
+              <Text
+                style={styles.discoveryCounterDetail}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
                 {translate(
                   "explore.rework.eventsAttending",
                   "{count} you're attending",
                   { count: discoverySummary.attendingEvents },
                 )}
               </Text>
-            ))}
-        </View>
+            )),
+          translate(
+            "explore.rework.eventsTooltip",
+            "There are {total} events on HASHPASS. You're attending {attending} of them.",
+            {
+              total: discoverySummary.totalEvents,
+              attending: discoverySummary.attendingEvents,
+            },
+          ),
+        )}
         {isLoggedIn && (
           <>
-            <View style={styles.discoveryCounterCard}>
-              {isRefreshingPasses ? (
+            {renderCard(
+              "passes",
+              "confirmation-number",
+              isRefreshingPasses ? (
                 <View style={styles.discoveryCounterValueSkeleton} />
               ) : (
-                <Text style={styles.discoveryCounterValue}>
-                  {discoverySummary.totalPasses}
-                </Text>
-              )}
-              <Text style={styles.discoveryCounterLabel}>
-                {translate("explore.rework.passes", "Passes")}
-              </Text>
-              {isRefreshingPasses ? (
+                discoverySummary.totalPasses
+              ),
+              styles.discoveryCounterValue,
+              translate("explore.rework.passes", "Passes"),
+              isRefreshingPasses ? (
                 <View style={styles.discoveryCounterDetailSkeleton} />
               ) : (
-                <Text style={styles.discoveryCounterDetail}>
-                  {translate("explore.rework.activePasses", "{count} active", {
-                    count: discoverySummary.activePasses,
-                  })}
+                <Text
+                  style={styles.discoveryCounterDetail}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {translate(
+                    "explore.rework.activePasses",
+                    "{count} active",
+                    { count: discoverySummary.activePasses },
+                  )}
                 </Text>
-              )}
-            </View>
-            <View style={styles.discoveryCounterCard}>
-              <Text
-                style={[
-                  styles.discoveryCounterValue,
-                  styles.discoveryCounterUpcoming,
-                ]}
-              >
-                {discoverySummary.upcomingEvents}
-              </Text>
-              <Text style={styles.discoveryCounterLabel}>
-                {translate("explore.rework.upcoming", "Upcoming")}
-              </Text>
-              {isRefreshingPasses ? (
+              ),
+              translate(
+                "explore.rework.passesTooltip",
+                "You hold {total} passes in total, {active} of which are currently active and ready to use.",
+                {
+                  total: discoverySummary.totalPasses,
+                  active: discoverySummary.activePasses,
+                },
+              ),
+            )}
+            {renderCard(
+              "upcoming",
+              "schedule",
+              discoverySummary.upcomingEvents,
+              [styles.discoveryCounterValue, styles.discoveryCounterUpcoming],
+              translate("explore.rework.upcoming", "Upcoming"),
+              isRefreshingPasses ? (
                 <View style={styles.discoveryCounterDetailSkeleton} />
               ) : (
-                <Text style={styles.discoveryCounterDetail}>
+                <Text
+                  style={styles.discoveryCounterDetail}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
                   {translate(
                     "explore.rework.eventsWithPass",
                     "{count} with your pass",
                     { count: discoverySummary.upcomingEventsWithPass },
                   )}
                 </Text>
-              )}
-            </View>
-            <View style={styles.discoveryCounterCard}>
-              <Text style={styles.discoveryCounterValue}>
-                {discoverySummary.pastEvents}
-              </Text>
-              <Text style={styles.discoveryCounterLabel}>
-                {translate("explore.rework.past", "Past")}
-              </Text>
-              {isRefreshingPasses ? (
+              ),
+              translate(
+                "explore.rework.upcomingTooltip",
+                "{total} events are coming up. You already have a pass for {withPass} of them.",
+                {
+                  total: discoverySummary.upcomingEvents,
+                  withPass: discoverySummary.upcomingEventsWithPass,
+                },
+              ),
+            )}
+            {renderCard(
+              "past",
+              "history",
+              discoverySummary.pastEvents,
+              styles.discoveryCounterValue,
+              translate("explore.rework.past", "Past"),
+              isRefreshingPasses ? (
                 <View style={styles.discoveryCounterDetailSkeleton} />
               ) : (
-                <Text style={styles.discoveryCounterDetail}>
+                <Text
+                  style={styles.discoveryCounterDetail}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
                   {translate(
                     "explore.rework.eventsWithPass",
                     "{count} with your pass",
                     { count: discoverySummary.pastEventsWithPass },
                   )}
                 </Text>
-              )}
-            </View>
+              ),
+              translate(
+                "explore.rework.pastTooltip",
+                "{total} events have already taken place. You had a pass for {withPass} of them.",
+                {
+                  total: discoverySummary.pastEvents,
+                  withPass: discoverySummary.pastEventsWithPass,
+                },
+              ),
+            )}
           </>
         )}
       </View>
@@ -1604,11 +1645,6 @@ export default function Explorer({
         {renderHero()}
         {renderSearchBar()}
         {renderDiscoveryCounters()}
-        <View style={styles.resultsSection}>
-          {renderModeSwitcher()}
-          {renderEvents()}
-          {renderPagination()}
-        </View>
         {isLoggedIn && (
           <View style={styles.passesSection}>
             <Text style={styles.sectionTitle}>
@@ -1631,6 +1667,11 @@ export default function Explorer({
             />
           </View>
         )}
+        <View style={styles.resultsSection}>
+          {renderModeSwitcher()}
+          {renderEvents()}
+          {renderPagination()}
+        </View>
         {renderQuickAccess()}
       </ScrollView>
 
@@ -2211,8 +2252,6 @@ const getStyles = (isDark: boolean, colors: any) =>
       overflow: "hidden",
       backgroundColor: "rgba(255,255,255,.28)",
     },
-    heroProgressFill: { height: "100%", width: "0%", backgroundColor: "#fff" },
-    heroProgressActive: { width: "100%" },
     toolbar: {
       paddingHorizontal: 16,
       paddingTop: 10,
@@ -2312,71 +2351,93 @@ const getStyles = (isDark: boolean, colors: any) =>
     discoveryCounters: {
       flexDirection: "row",
       flexWrap: "wrap",
-      gap: 8,
+      gap: 6,
       paddingHorizontal: 16,
       paddingTop: 14,
     },
     discoveryCounterCard: {
       flexGrow: 1,
       flexBasis: "22%",
-      minWidth: 76,
-      paddingVertical: 11,
-      paddingHorizontal: 12,
-      borderRadius: 14,
+      minWidth: 78,
+      paddingVertical: 7,
+      paddingHorizontal: 8,
+      borderRadius: 10,
       borderWidth: 1,
       borderColor: colors.divider,
       backgroundColor: colors.background.paper,
-      position: "relative",
+      justifyContent: "flex-start",
+    },
+    discoveryCounterTopRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 4,
+    },
+    discoveryCounterValueRow: {
+      flex: 1,
+      minWidth: 0,
+      flexDirection: "row",
+      alignItems: "baseline",
+      gap: 4,
+    },
+    discoveryCounterIconBadge: {
+      width: 18,
+      height: 18,
+      borderRadius: 6,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: isDark ? "rgba(255,255,255,.08)" : "rgba(15,23,42,.05)",
     },
     discoveryCounterValue: {
       color: colors.text.primary,
-      fontSize: 18,
+      fontSize: 16,
       fontWeight: "800",
+      flexShrink: 0,
     },
     discoveryCounterUpcoming: { color: "#34A853" },
     discoveryCounterLabel: {
+      flexShrink: 1,
       color: colors.text.secondary,
-      fontSize: 11,
-      fontWeight: "600",
-      marginTop: 2,
+      fontSize: 10,
+      fontWeight: "700",
+      textTransform: "uppercase",
+      letterSpacing: 0.2,
+    },
+    discoveryCounterDetailSlot: {
+      marginTop: 1,
+      minHeight: 12,
+      justifyContent: "center",
     },
     discoveryCounterDetail: {
       color: colors.text.secondary,
-      fontSize: 9,
-      fontWeight: "700",
+      fontSize: 10,
+      fontWeight: "600",
       lineHeight: 12,
-      position: "absolute",
-      bottom: 12,
-      right: 12,
-      textAlign: "right",
     },
     counterSkeletonValue: {
-      width: 24,
-      height: 18,
+      width: 28,
+      height: 22,
       borderRadius: 6,
       backgroundColor: isDark ? "rgba(255,255,255,.12)" : "#E5E7EB",
     },
     counterSkeletonLabel: {
       width: 54,
       height: 11,
-      marginTop: 6,
+      marginTop: 10,
       borderRadius: 5,
       backgroundColor: isDark ? "rgba(255,255,255,.08)" : "#EEF0F3",
     },
     discoveryCounterValueSkeleton: {
-      width: 24,
-      height: 18,
+      width: 28,
+      height: 22,
       borderRadius: 6,
       backgroundColor: isDark ? "rgba(255,255,255,.12)" : "#E5E7EB",
     },
     discoveryCounterDetailSkeleton: {
-      width: 48,
-      height: 10,
+      width: 64,
+      height: 11,
       borderRadius: 5,
       backgroundColor: isDark ? "rgba(255,255,255,.08)" : "#EEF0F3",
-      position: "absolute",
-      right: 12,
-      bottom: 13,
     },
     resultsSection: { paddingHorizontal: 16, paddingTop: 20 },
     sectionHeader: {
