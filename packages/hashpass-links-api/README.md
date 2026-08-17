@@ -25,8 +25,9 @@ no more Phase-2 stub routes.
 Still outstanding for Phase 2: real end-to-end verification against a live
 (non-fake) Supabase project and a deployed Lambda (this service's own tests
 only exercise the code against the in-memory fake Supabase client, see
-"Testing" below), and the `hashpass.link` domain cutover itself (see below —
-deliberately still deferred).
+"Testing" below), and the multi-domain cutover itself (see "Multi-domain
+cutover" below — Terraform is wired up, but each domain's `enable_*` flag
+is still deliberately deferred until its DNS is confirmed live).
 
 ## Why a separate service?
 
@@ -210,16 +211,31 @@ terraform init
 terraform plan
 ```
 
-### hashpass.link cutover
+### Multi-domain cutover: hpass.id, hashpass.link, hashp.link
 
-**`hashpass.link` uses `hashpass.link` for production and
-`dev.hashpass.link` for development. DNS/ACM must not be touched without an
-explicit go-ahead.** The stack
-defaults to `enable_custom_domain = false`: applying it creates real Lambda
-+ API Gateway resources reachable at their default
+Three public domains front this same service — one Lambda, one API Gateway,
+one `qr_links` table, no per-domain analytics split, since `/q/:slug`'s
+redirect logic never inspects which host a request arrived on:
+
+| Domain | Role | Wiring |
+|---|---|---|
+| `hpass.id` | Primary short-link/QR domain | `enable_hpass_id_domain` in `hashpass-links-api`, additive `aws_apigatewayv2_extra_domain` module |
+| `hashpass.link` | Explicit/trust-oriented alias | `enable_custom_domain` + `domain_name.prod`, the stack's own first-class `aws_expo_router_api` domain |
+| `hashp.link` | Defensive alias | `enable_hashp_link_domain`, same additive module as hpass.id |
+
+`hashpass.link`'s Route53 hosted zone is confirmed live and authoritative —
+its `enable_custom_domain` flag can be flipped `true` freely. `hpass.id` and
+`hashp.link` are both registered at Spaceship but need their nameservers
+manually pointed at the zones created in `packages/infra/terraform/stacks/hashpass-dns`
+(that stack's `name_servers` output has the 4 values for each) before their
+own `enable_*_domain` flags can be flipped — flipping either before that NS
+cutover has propagated will hang on ACM DNS validation and eventually time
+out (non-destructive; just re-apply once `dig NS <domain>` matches the
+zone's own NS set). Until a given domain's flag is `true`, this stack's
+Lambda + API Gateway are still reachable at their default
 `*.execute-api.<region>.amazonaws.com` invoke URL — enough to validate the
-whole flow end-to-end — without creating or modifying any DNS record. Point
-`apps/web-app`/`apps/mobile-app`'s `*_LINKS_API_BASE_URL` env vars at that
-invoke URL (see `links_api_base_urls` in the stack's outputs) for now. Only
-flip `enable_custom_domain` to `true` once the domain is confirmed owned and
-someone has explicitly signed off on the cutover.
+whole flow end-to-end without touching any DNS record. Point
+`apps/web-app`/`apps/mobile-app`'s `*_LINKS_API_BASE_URL` env vars at
+whichever origin (invoke URL or, once verified, `https://hpass.id`) should
+be the one new links/QR codes actually get generated against — see
+`links_api_base_urls` and `extra_domain_base_urls` in the stack's outputs.

@@ -30,6 +30,21 @@ data "aws_route53_zone" "link" {
   private_zone = false
 }
 
+# hpass.id and hashp.link, only evaluated once each domain's own enable_*
+# flag is true -- see those variables' comments for the Spaceship NS-cutover
+# precondition.
+data "aws_route53_zone" "hpass_id" {
+  count        = var.enable_hpass_id_domain ? 1 : 0
+  name         = "${trim(var.hpass_id_zone_name, ".")}."
+  private_zone = false
+}
+
+data "aws_route53_zone" "hashp_link" {
+  count        = var.enable_hashp_link_domain ? 1 : 0
+  name         = "${trim(var.hashp_link_zone_name, ".")}."
+  private_zone = false
+}
+
 module "links_api_dev" {
   source = "../../modules/aws_expo_router_api"
 
@@ -96,6 +111,41 @@ module "links_api_prod" {
 
   cors_allow_origins = lookup(var.cors_allow_origins, "prod", ["https://hashpass.club"])
   cors_allow_headers = local.cors_allow_headers
+
+  tags = merge(local.common_tags, {
+    Environment = "prod"
+  })
+}
+
+# Additional public domains fronting the SAME prod API/Lambda as
+# module.links_api_prod -- see that module's own custom-domain handling
+# above for hashpass.link itself. These two never create their own API, so
+# there is exactly one Lambda/qr_links table behind hpass.id, hashpass.link,
+# and hashp.link alike (no per-domain analytics split).
+module "links_extra_domain_hpass_id" {
+  count  = var.enable_hpass_id_domain ? 1 : 0
+  source = "../../modules/aws_apigatewayv2_extra_domain"
+
+  domain_name     = var.hpass_id_domain_name
+  api_id          = module.links_api_prod.api_id
+  stage_name      = "$default"
+  route53_zone_id = data.aws_route53_zone.hpass_id[0].zone_id
+  mapping_key     = ""
+
+  tags = merge(local.common_tags, {
+    Environment = "prod"
+  })
+}
+
+module "links_extra_domain_hashp_link" {
+  count  = var.enable_hashp_link_domain ? 1 : 0
+  source = "../../modules/aws_apigatewayv2_extra_domain"
+
+  domain_name     = var.hashp_link_domain_name
+  api_id          = module.links_api_prod.api_id
+  stage_name      = "$default"
+  route53_zone_id = data.aws_route53_zone.hashp_link[0].zone_id
+  mapping_key     = ""
 
   tags = merge(local.common_tags, {
     Environment = "prod"

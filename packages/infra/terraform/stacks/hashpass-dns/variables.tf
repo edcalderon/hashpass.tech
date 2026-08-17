@@ -34,6 +34,18 @@ variable "info_zone_name" {
   default     = "hashpass.info"
 }
 
+variable "hpass_id_zone_name" {
+  description = "Primary short-link/QR hosted zone name for the HashPass Links redirect service"
+  type        = string
+  default     = "hpass.id"
+}
+
+variable "hashp_link_zone_name" {
+  description = "Defensive-alias hosted zone name for the HashPass Links redirect service"
+  type        = string
+  default     = "hashp.link"
+}
+
 variable "tags" {
   description = "Tags applied to hosted zones"
   type        = map(string)
