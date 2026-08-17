@@ -44,6 +44,18 @@ jobs:
           # false stops the noisy regeneration; flip back to "true" only for
           # a deliberate disaster-recovery re-snapshot.
           EVENT_INGESTION_LEGACY_JSON_FALLBACK: "false"
+          # Force database mode explicitly rather than letting cli.ts infer
+          # it from whether the two secrets above happen to be non-empty.
+          # Without this, a secret-configuration regression (rotated,
+          # unset, renamed) would silently fall through to legacy-json
+          # mode -- which, combined with the fallback flag above being
+          # false, writes to neither Postgres nor the JSON snapshot. A
+          # successful PKRR fetch would then report "healthy" and exit 0
+          # while persisting nothing at all, so the feed goes stale with
+          # no visible failure anywhere. Forcing database mode makes
+          # cli.ts's own existing guard (mode === "database" with a
+          # missing secret throws) fail the workflow loudly instead.
+          EVENT_INGESTION_MODE: "database"
       - name: Open snapshot update PR
         uses: peter-evans/create-pull-request@c5a7806660adbe173f04e3e038b0ccdcd758773c # v6
         with:
