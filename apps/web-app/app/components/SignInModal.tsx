@@ -71,7 +71,16 @@ function openWebApp(challengeId?: string, locale?: string, targetWindow?: Window
   const connectParams = new URLSearchParams({ source: 'web', ref: 'landing' });
   if (challengeId) connectParams.set('challengeId', challengeId);
   if (locale) connectParams.set('locale', locale);
-  const target = `${appUrl}/auth/connect?${connectParams.toString()}`;
+  // The trailing slash is load-bearing: hashpass.tech is a static S3
+  // website-hosting export with no exact "auth/connect" object, only
+  // "auth/connect/index.html" -- requesting the no-slash path gets a real
+  // S3 302 to the slash-terminated path that DROPS the entire query
+  // string in the process (confirmed via a direct HEAD request), silently
+  // discarding challengeId/locale regardless of how correctly they were
+  // built here. This is the actual root cause behind the repeated "This
+  // link is missing information" bug -- requesting the slash-terminated
+  // path directly sidesteps the redirect (and the query loss) entirely.
+  const target = `${appUrl}/auth/connect/?${connectParams.toString()}`;
   if (targetWindow) {
     targetWindow.location.href = target;
   } else {
