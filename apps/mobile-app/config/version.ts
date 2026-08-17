@@ -22,24 +22,39 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202608170751, // Updated to current timestamp
+  buildNumber: 202608170914, // Updated to current timestamp
   releaseDate: '2026-08-17',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'match hashpass.club\'s locale when opening the connect flow',
-    'brand the sign-in QR code the same way as the /qr showcase'
+    'wire hpass.id, hashpass.link, and hashp.link onto one QR redirect service'
   ],
   bugfixes: [
-    'navbar logo/links washed out on light-mode pages without a hero',
-    'QR login broken in production (missing linksApiBaseUrl), replace ambiguous sign-in button with explicit web/Android choices'
+    'wire EXPO_PUBLIC_LINKS_API_BASE_URL into the Android release workflow',
+    '"Sign in using the web app" could open /auth/connect with no challengeId'
   ],
   breakingChanges: [],
-  notes: 'match hashpass.club\'s locale when opening the connect flow; brand the sign-in QR code the same way as the /qr showcase; navbar logo/links washed out on light-mode pages without a hero; QR login broken in production (missing linksApiBaseUrl), replace ambiguous sign-in button with explicit web/Android choices'
+  notes: 'wire hpass.id, hashpass.link, and hashp.link onto one QR redirect service; wire EXPO_PUBLIC_LINKS_API_BASE_URL into the Android release workflow; "Sign in using the web app" could open /auth/connect with no challengeId'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.11': {
+    version: '1.9.11',
+    buildNumber: 202608170914,
+    releaseDate: '2026-08-17',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'wire hpass.id, hashpass.link, and hashp.link onto one QR redirect service'
+    ],
+    bugfixes: [
+      'wire EXPO_PUBLIC_LINKS_API_BASE_URL into the Android release workflow',
+      '"Sign in using the web app" could open /auth/connect with no challengeId'
+    ],
+    breakingChanges: [],
+    notes: 'wire hpass.id, hashpass.link, and hashp.link onto one QR redirect service; wire EXPO_PUBLIC_LINKS_API_BASE_URL into the Android release workflow; "Sign in using the web app" could open /auth/connect with no challengeId'
+  },
   '1.9.10': {
     version: '1.9.10',
     buildNumber: 202608170751,

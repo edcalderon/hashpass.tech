@@ -1,3 +1,27 @@
+## [1.9.11](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.10...v1.9.11) (2026-08-17)
+
+
+### Bug Fixes
+
+* **club:** "Sign in using the web app" could open /auth/connect with no challengeId ([6879fcf](https://github.com/hashpass-tech/hashpass.tech/commit/6879fcf0bd944b537df56c415ce319989da05ffd))
+* **mobile:** wire EXPO_PUBLIC_LINKS_API_BASE_URL into the Android release workflow ([bd4b87e](https://github.com/hashpass-tech/hashpass.tech/commit/bd4b87edc8df480025cfaa337e4324f18731599c))
+
+
+### Features
+
+* **infra:** wire hpass.id, hashpass.link, and hashp.link onto one QR redirect service ([99742a6](https://github.com/hashpass-tech/hashpass.tech/commit/99742a673e3f134fec56e5974ae70c8468630d34))
+### Release Highlights
+- wire hpass.id, hashpass.link, and hashp.link onto one QR redirect service; wire EXPO_PUBLIC_LINKS_API_BASE_URL into the Android release workflow; "Sign in using the web app" could open /auth/connect with no challengeId
+
+### Release scope
+- Compared with: `v1.9.10` (the previous global release tag)
+
+### Affected products & packages
+- Club web
+- QR links API
+- Infrastructure
+- Release tooling
+
 ## [1.9.10](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.9...v1.9.10) (2026-08-17)
 
 
