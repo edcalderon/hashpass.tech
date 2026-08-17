@@ -361,6 +361,58 @@ the vars each specific Lambda actually uses, or turn a size-limit skip
 into a hard failure so a deploy can't quietly no-op the exact sync it was
 run for.
 
+## Third layer of the same bug found and fixed: the web site's own CodeBuild env vars (2026-08-16)
+
+A real production user reported `hashpass.tech`'s browser JS making a raw
+`GET https://mnnqryrdlhddorqsrtbn.supabase.co/auth/v1/user` request that
+403'd, plus Realtime "mismatch between server and client bindings" errors
+and passes not loading. Root cause: **`hashpass-prod-site-build`'s live
+CodeBuild environment variables had `EXPO_PUBLIC_SUPABASE_URL`/`_PROD`/
+`_KEY`/`_ANON_KEY_PROD` all set to BSL's project** (`mnnqryrdlhddorqsrtbn`)
+-- baked directly into the client-side JS bundle at build time, so every
+browser session on the live site was running a Supabase client pointed at
+the wrong project, while the server-side API (already fixed the same
+session) correctly used core-production. Client and server disagreeing on
+which project a session belongs to is exactly what produced the 403 and
+the Realtime binding mismatch.
+
+**`hashpass-dev-site-build` had the mirror-image bug**: its vars were set
+to core-**production**'s project (`fxgftanraszjjyeidvia`) instead of the
+shared dev project (`gsugeqozyeokncpbndna`) -- as if the three
+environments (BSL-prod, core-prod, shared-dev) had been rotated one
+position off across the two CodeBuild projects.
+
+**Actual root cause, not just a symptom**: `stacks/hashpass-web/terraform.tfvars.example`
+had these exact same two values swapped from day one (`supabase_url` =
+BSL's project, `supabase_url_dev` = core-production's project) -- whoever
+originally provisioned these CodeBuild projects via `terraform apply` very
+likely copied this example verbatim. Fixed the example file itself, not
+just the live AWS state, so a future apply of this stack (see the
+Terraform drift warning in
+`hashpass-api-target-terraform-env-drift.md` -- this stack has its own
+separate, unrelated apply-time drift risk) doesn't reintroduce this exact
+bug again.
+
+**Fixed live** via `aws codebuild update-project` on both
+`hashpass-prod-site-build` and `hashpass-dev-site-build`, followed by a
+real `aws codepipeline start-pipeline-execution` rebuild+redeploy of
+`hashpass-production-site`. Verified by downloading the newly-deployed
+live JS bundle directly and confirming zero occurrences of
+`mnnqryrdlhddorqsrtbn` and five occurrences of the correct
+`fxgftanraszjjyeidvia`, plus a real headless-browser load of
+`https://hashpass.tech` showing zero console errors.
+
+**This is now the third independent place this exact "BSL project under
+core's name" class of bug was found and fixed in the same investigation
+arc** (`.env` + GitHub Actions vars/secrets on 2026-08-15, the
+`hashpass-prod-expo-router-api` Lambda later that same session, and now
+this CodeBuild project). If this class of bug turns up a fourth time,
+audit every remaining place a Supabase URL/key can be configured
+end-to-end, don't assume any single layer's fix is the last one --- see
+the client-side call reduction note in
+`.agents/pending/task-reduce-direct-supabase-client-calls.md` for the
+follow-up this incident prompted.
+
 ## Practical checklist before touching `.env`
 
 1. Figure out which of the four profiles you're actually changing.

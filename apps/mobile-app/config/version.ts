@@ -22,22 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202608162310, // Updated to current timestamp
-  releaseDate: '2026-08-16',
+  buildNumber: 202608170030, // Updated to current timestamp
+  releaseDate: '2026-08-17',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'add database-first source ingestion'
+    // No new features
   ],
   bugfixes: [
-    'harden database ingestion rollout'
+    'correct BSL/core Supabase project swap in hashpass-web\'s tfvars example'
   ],
   breakingChanges: [],
-  notes: 'add database-first source ingestion; harden database ingestion rollout'
+  notes: 'correct BSL/core Supabase project swap in hashpass-web\'s tfvars example'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.7': {
+    version: '1.9.7',
+    buildNumber: 202608170030,
+    releaseDate: '2026-08-17',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'correct BSL/core Supabase project swap in hashpass-web\'s tfvars example'
+    ],
+    breakingChanges: [],
+    notes: 'correct BSL/core Supabase project swap in hashpass-web\'s tfvars example'
+  },
   '1.9.6': {
     version: '1.9.6',
     buildNumber: 202608162310,

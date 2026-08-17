@@ -1,9 +1,22 @@
 # Release Flow Automation — Security Hardening & Time-to-Ship KPI
 
-**Status:** 🕒 PENDING
+**Status:** ACTIVE — 1 of 6 acceptance criteria done, moved from pending 2026-08-16
 **Priority:** Medium
 **Created:** 2026-07-13
+**Updated:** 2026-08-16 (moved pending -> active; this file already tracked
+its own partial progress via the `[x]` on acceptance criterion 1, but was
+sitting in the pending/ queue as if untouched)
 **Depends on:** `.agents/done/task-release-flow-automation.md` (the automation this task audits and measures)
+
+## Status detail
+
+Item 1 of the Security Hardening Follow-Ups (PAT expiration policy) was
+resolved 2026-07-13 as an explicit accepted-risk decision, and is checked
+in the Acceptance Criteria below. Items 2-9 (GitHub App migration,
+emergency bypass policy, partial-failure runbook, etc.) and the KPI
+tracking-method decision are still open. The time-to-ship baseline
+measurement itself is done (real data in the table below); only the
+"keep measuring it going forward" mechanism is not yet chosen/implemented.
 
 ## Goal
 

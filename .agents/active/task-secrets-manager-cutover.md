@@ -1,8 +1,40 @@
 # Task: Adopt HASHPASS Secrets Management for new secrets
 
-**Status:** PENDING — provider integration and migration plan  
+**Status:** ACTIVE — partially implemented, moved from pending 2026-08-16  
 **Priority:** High (credential integrity and environment isolation)  
-**Created:** 2026-08-04
+**Created:** 2026-08-04  
+**Updated:** 2026-08-16 (moved pending -> active; found real, undocumented
+progress against this task's own phases while triaging the pending queue)
+
+## Progress found 2026-08-16 (not previously reflected in this file)
+
+`apps/mobile-app/lib/server/infisical-secrets.ts` exists and is actively
+wired in — confirmed via CLAUDE.md's own "Hybrid secrets policy" section
+(under "Mobile Android Release Workflow"): vital/runtime secrets stay as
+raw Lambda env vars, but new non-critical secrets (the
+`NODEMAILER_*_INFO` family, so far) are fetched from Infisical at runtime
+via a Universal Auth machine identity, project `d9ad5e75-da3b-4932-9bbd-9a1029c6732f`,
+domain `https://secrets.cig.technology`. This is Phase 1 (provider
+contract) and part of Phase 4 (runtime projection) from below, already
+done for at least one real secret family — just never linked back to this
+task file.
+
+**Not yet reconciled: this task's plan assumes a *different* provider**
+(`hashpass-6d6h` project, `hashpass-dev`/`hashpass-production`
+environments) than what's actually been adopted (Infisical, project
+`d9ad5e75...`). Either this task's plan is stale and should be rewritten
+to match the Infisical adoption that already happened, or there are
+genuinely two different secrets-management efforts in flight and that
+needs reconciling before continuing — this needs an explicit decision,
+not an assumption either way.
+
+Phase 2 (read-only inventory of `.env`/GitHub Actions/Lambda/SSM
+consumers) and Phase 3 (new-secret enforcement) do not appear to have
+happened — no inventory artifact found, and `.env`/GitHub Actions secrets
+are still the primary path for most credentials as of tonight's
+Supabase-credential-drift investigation (2026-08-15/16), which touched
+`.env`, GitHub Actions vars/secrets, and live Lambda env vars directly,
+not Infisical.
 
 ## Decision
 

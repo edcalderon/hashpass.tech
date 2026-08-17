@@ -13,15 +13,28 @@ branch_name  = "main"
 connection_arn = "arn:aws:codeconnections:us-east-2:123456789012:connection/example"
 
 # Production web build inputs. These are public values but should stay outside git.
-supabase_url      = "https://mnnqryrdlhddorqsrtbn.supabase.co"
+# FIXED 2026-08-16: this example previously showed BSL's project
+# (mnnqryrdlhddorqsrtbn) here -- core-production is fxgftanraszjjyeidvia.
+# Whoever originally provisioned hashpass-prod-site-build's live CodeBuild
+# environment variables via `terraform apply` almost certainly copied this
+# exact wrong value verbatim: the live project had BSL's URL/key baked in
+# under EXPO_PUBLIC_SUPABASE_URL/_PROD until fixed directly via
+# `aws codebuild update-project` the same day (see
+# apps/docs/docs/infra/supabase-project-map.md). This example must stay
+# correct so a future terraform apply of this stack doesn't reintroduce it.
+supabase_url      = "https://fxgftanraszjjyeidvia.supabase.co"
 supabase_key      = "<EXPO_PUBLIC_SUPABASE_KEY_PROD>"
 google_client_id  = "<GOOGLE_CLIENT_ID>"
 ga_measurement_id = "G-BY2BLQFHC9"
 sentry_dsn        = "<SENTRY_DSN>"
 
-# Development web build inputs. Use the dev Supabase project so the branch
-# pipeline tests against the development auth/database path.
-supabase_url_dev = "https://fxgftanraszjjyeidvia.supabase.co"
+# Development web build inputs. core-development and bsl-development
+# intentionally share one dev project (gsugeqozyeokncpbndna) -- see
+# apps/docs/docs/infra/supabase-project-map.md. FIXED 2026-08-16: this
+# previously showed core-production's project (fxgftanraszjjyeidvia), which
+# is wrong for a dev build for the same reason as the prod value above --
+# same live-drift incident, same day.
+supabase_url_dev = "https://gsugeqozyeokncpbndna.supabase.co"
 supabase_key_dev = "<EXPO_PUBLIC_SUPABASE_KEY_DEV>"
 
 build_action_provider_name = "hashpass-ec2-build"
