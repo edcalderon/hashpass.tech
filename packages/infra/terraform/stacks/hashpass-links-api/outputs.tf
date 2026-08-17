@@ -22,3 +22,11 @@ output "lambda_functions" {
     prod = module.links_api_prod.lambda_function_name
   }
 }
+
+output "extra_domain_base_urls" {
+  description = "Additional public origins mapped onto the prod links API (null until each domain's enable_* flag is true)"
+  value = {
+    hpass_id   = var.enable_hpass_id_domain ? "https://${module.links_extra_domain_hpass_id[0].domain_name}" : null
+    hashp_link = var.enable_hashp_link_domain ? "https://${module.links_extra_domain_hashp_link[0].domain_name}" : null
+  }
+}

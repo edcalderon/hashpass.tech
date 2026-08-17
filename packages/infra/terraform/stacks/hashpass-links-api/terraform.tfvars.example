@@ -10,19 +10,24 @@ lambda_zip_path         = "../../../../../hashpass-links-api-lambda.zip"
 lambda_source_code_hash = null
 qr_link_expiry_sweep_schedule = "rate(5 minutes)"
 
-# hashpass.link is NOT confirmed registered yet. Leave this false -- the
-# stack stands up real Lambda + API Gateway resources behind their default
-# execute-api.amazonaws.com invoke URL, which is enough to validate the
-# full challenge -> approve -> exchange flow end-to-end. Only flip this
-# once the domain is confirmed owned and a DNS/ACM cutover is explicitly
-# approved (see the README's "hashpass.link cutover" section).
-enable_custom_domain = false
+# hashpass.link's hosted zone is confirmed live and authoritative -- safe
+# to apply. This creates the ACM cert, custom domain mapping, and Route53
+# alias records for dev.hashpass.link / hashpass.link.
+enable_custom_domain = true
 
 domain_name = {
   dev  = "dev.hashpass.link"
   prod = "hashpass.link"
 }
 route53_zone_name = "hashpass.link"
+
+# hpass.id (primary short-link/QR domain) and hashp.link (defensive alias)
+# both map onto the SAME prod API as hashpass.link above, via the additive
+# aws_apigatewayv2_extra_domain module -- see those variables' comments in
+# variables.tf. Leave both false until each domain's Spaceship NS cutover to
+# the hashpass-dns stack's zones has propagated, then flip independently.
+enable_hpass_id_domain   = false
+enable_hashp_link_domain = false
 
 # Real values belong in a gitignored *.auto.tfvars or CI secret, never here.
 supabase_urls = {

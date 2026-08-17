@@ -10,10 +10,12 @@ variable "name_prefix" {
   default     = "hashpass-links"
 }
 
-# hashpass.link is not yet confirmed registered, and DNS/ACM for it must not
-# be touched without an explicit go-ahead (see packages/hashpass-links-api/README.md).
-# This value only matters once enable_custom_domain is flipped to true --
-# until then the module skips every ACM/Route53 resource that would read it.
+# hashpass.link's Route53 hosted zone is confirmed live and authoritative
+# (its registrar NS records match the zone's own NS set) -- unlike hpass.id
+# and hashp.link below, it needs no external registrar cutover before this
+# flips to true. This value only matters once enable_custom_domain is
+# flipped to true -- until then the module skips every ACM/Route53 resource
+# that would read it.
 variable "domain_name" {
   description = "Custom domain per environment, only used once enable_custom_domain = true"
   type = object({
@@ -33,7 +35,53 @@ variable "route53_zone_name" {
 }
 
 variable "enable_custom_domain" {
-  description = "Whether to create ACM, custom domain, and Route53 records for hashpass.link. Stays false until the domain is confirmed registered and DNS cutover is explicitly approved."
+  description = "Whether to create ACM, custom domain, and Route53 records for hashpass.link. Requires an explicit go-ahead before flipping (see packages/hashpass-links-api/README.md)."
+  type        = bool
+  default     = false
+}
+
+# hpass.id is the primary short-link/QR domain and hashp.link is a
+# defensive alias -- both map onto this SAME prod API (module.links_api_prod)
+# via the additive aws_apigatewayv2_extra_domain module rather than their own
+# aws_expo_router_api instance, so there is exactly one Lambda/qr_links table
+# behind every domain (no per-domain analytics split). No dev counterparts:
+# these are prod-only. Both domains are registered at Spaceship and, as of
+# this stack's last apply, still on Spaceship's default nameservers -- their
+# enable_* flags must stay false until the registrar NS cutover to the
+# hashpass-dns stack's zones has propagated (see that stack's name_servers
+# output), or aws_acm_certificate_validation will hang on DNS validation.
+variable "hpass_id_domain_name" {
+  description = "Primary short-link/QR domain, mapped onto the prod links API as an additional custom domain"
+  type        = string
+  default     = "hpass.id"
+}
+
+variable "hpass_id_zone_name" {
+  description = "Route53 hosted zone name for hpass.id (created in the hashpass-dns stack)"
+  type        = string
+  default     = "hpass.id"
+}
+
+variable "enable_hpass_id_domain" {
+  description = "Whether to wire hpass.id onto the prod links API. Stays false until Spaceship NS delegation for hpass.id has propagated."
+  type        = bool
+  default     = false
+}
+
+variable "hashp_link_domain_name" {
+  description = "Optional defensive-alias domain, mapped onto the prod links API as an additional custom domain"
+  type        = string
+  default     = "hashp.link"
+}
+
+variable "hashp_link_zone_name" {
+  description = "Route53 hosted zone name for hashp.link (created in the hashpass-dns stack)"
+  type        = string
+  default     = "hashp.link"
+}
+
+variable "enable_hashp_link_domain" {
+  description = "Whether to wire hashp.link onto the prod links API. Same NS-cutover caveat as enable_hpass_id_domain."
   type        = bool
   default     = false
 }

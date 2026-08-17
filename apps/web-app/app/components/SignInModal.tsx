@@ -57,12 +57,41 @@ const QR_BADGE_SIZE = QR_ICON_SIZE * 1.32;
 // hashpass.tech/auth/connect is exactly what happens when this path fires
 // without a real challengeId in flight -- letting the visitor pick
 // explicitly removes that whole class of guess-wrong failure.
-function openWebApp(challengeId?: string, locale?: string) {
+// `targetWindow`, when passed, is a tab already opened synchronously inside
+// the click handler (see the button below) -- navigating an existing tab
+// instead of calling window.open() here lets the caller open that tab
+// immediately, before any async challenge-creation work, so browsers still
+// attribute it to the user gesture instead of blocking it as a popup. The
+// caller must open that tab WITHOUT the noopener feature and sever opener
+// separately (tab.opener = null) -- window.open(..., 'noopener') returns
+// null in compliant browsers, which would silently defeat this whole
+// mechanism (see openPlaceholderTab() below).
+function openWebApp(challengeId?: string, locale?: string, targetWindow?: Window | null) {
   const appUrl = resolveHashpassAppUrl();
   const connectParams = new URLSearchParams({ source: 'web', ref: 'landing' });
   if (challengeId) connectParams.set('challengeId', challengeId);
   if (locale) connectParams.set('locale', locale);
-  window.open(`${appUrl}/auth/connect?${connectParams.toString()}`, '_blank', 'noopener,noreferrer');
+  const target = `${appUrl}/auth/connect?${connectParams.toString()}`;
+  if (targetWindow) {
+    targetWindow.location.href = target;
+  } else {
+    window.open(target, '_blank', 'noopener,noreferrer');
+  }
+}
+
+// Opens a blank tab synchronously (must be called directly inside a click
+// handler, before any await, so the browser attributes it to the user
+// gesture) and returns a live handle to it, for openWebApp() to navigate
+// once a challenge is confirmed. Deliberately does NOT pass 'noopener' to
+// window.open() -- that feature makes compliant browsers return null
+// instead of a window reference, which would make the returned handle
+// useless for the later navigation. Setting tab.opener = null immediately
+// after achieves the same "the new tab can't reach back into this one"
+// security property without losing the reference.
+function openPlaceholderTab(): Window | null {
+  const tab = window.open('', '_blank');
+  if (tab) tab.opener = null;
+  return tab;
 }
 
 // Tries the native Android app via its custom URI scheme, falling back to
@@ -107,6 +136,15 @@ export function SignInModal({ open, onClose }: SignInModalProps) {
   const [qrPhase, setQrPhase] = useState<QrAuthPhase>('connecting');
   const [qrLogin, setQrLogin] = useState<BeginQrLoginResult | null>(null);
   const qrAbortRef = useRef<AbortController | null>(null);
+  // Holds the SAME beginLogin() promise startQrLogin() below is itself
+  // awaiting -- the "sign in using the web app" button reads this instead
+  // of creating its own independent challenge when qrLogin hasn't resolved
+  // yet. Two challenges would mean two different pending logins: the
+  // browser tab approves one, but this modal's own waitForLogin() is
+  // (uselessly) polling the other, so the approval never reaches
+  // setSession() and the user stays signed out despite approving on their
+  // phone/other tab.
+  const pendingChallengeRef = useRef<Promise<BeginQrLoginResult> | null>(null);
 
   // startQrLogin below is intentionally a stable useCallback([]) -- the
   // effect that auto-starts it on modal open depends on it, and a
@@ -125,9 +163,12 @@ export function SignInModal({ open, onClose }: SignInModalProps) {
     setQrPhase('connecting');
     setQrLogin(null);
 
+    const challengePromise = hashpassSdk().authQr.beginLogin();
+    pendingChallengeRef.current = challengePromise;
+
     (async () => {
       try {
-        const result = await hashpassSdk().authQr.beginLogin();
+        const result = await challengePromise;
         if (controller.signal.aborted) return;
         setQrLogin(result);
         setQrPhase('waiting');
@@ -545,7 +586,35 @@ export function SignInModal({ open, onClose }: SignInModalProps) {
               href={QR_VALUE}
               onClick={(e) => {
                 e.preventDefault();
-                openWebApp(qrLogin?.challenge.id, locale);
+                // qrLogin is populated once the modal's own beginLogin()
+                // call resolves -- a fast click can land before it
+                // resolves (or after it failed), sending the visitor to
+                // /auth/connect with no challengeId at all, which is
+                // exactly the "This link is missing information" error.
+                // Open the tab synchronously, right here inside the click
+                // handler, so it's still attributed to the user gesture
+                // and not popup-blocked -- then navigate it once a
+                // challenge is confirmed. If qrLogin hasn't resolved yet,
+                // await the SAME pending promise startQrLogin() is already
+                // tracking rather than creating an independent challenge:
+                // this modal's own waitForLogin() polls whatever challenge
+                // qrLogin ends up holding, so a second, unrelated challenge
+                // would get approved on the phone/other tab while this
+                // modal keeps waiting on the first one (or nothing, if that
+                // one failed) and never reaches setSession().
+                const tab = openPlaceholderTab();
+                (async () => {
+                  let challengeId = qrLogin?.challenge.id;
+                  if (!challengeId) {
+                    try {
+                      const result = await pendingChallengeRef.current;
+                      challengeId = result?.challenge.id;
+                    } catch (err) {
+                      console.error('[HashPass Auth] Failed to start a login challenge for the web-app button:', err);
+                    }
+                  }
+                  openWebApp(challengeId, locale, tab);
+                })();
               }}
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,

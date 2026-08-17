@@ -43,8 +43,20 @@ const ROUTES: Array<[string, RegExp, Handler]> = [
   ['GET', /^\/api\/v1\/qr-links\/([^/]+)\/analytics$/, (request, match) => getQrLinkAnalytics(request, match[1])],
 ];
 
+// The public short-link domains (hpass.id, hashpass.link, hashp.link) all
+// front this same service -- a real visitor who lands on the bare domain
+// (mistyped/truncated a QR code, or just typed the domain out of curiosity)
+// is a plausible, non-bot case worth a friendly redirect instead of the raw
+// JSON 404 every other unmatched route gets. hashpass.club, not
+// hashpass.tech, since that's where QR/link management actually lives.
+const BARE_DOMAIN_REDIRECT_TARGET = 'https://hashpass.club';
+
 export async function handleRequest(request: Request): Promise<Response> {
   const { pathname } = new URL(request.url);
+
+  if (request.method === 'GET' && (pathname === '/' || pathname === '')) {
+    return Response.redirect(BARE_DOMAIN_REDIRECT_TARGET, 302);
+  }
 
   for (const [method, pattern, handler] of ROUTES) {
     if (request.method !== method) continue;
