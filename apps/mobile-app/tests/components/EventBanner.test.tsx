@@ -66,6 +66,7 @@ jest.mock("../../i18n/i18n", () => ({
 jest.mock("../../lib/event-detector", () => ({ isMainBranch: true }));
 jest.mock("../../lib/event-branding", () => ({
   getTourBrandAsset: () => null,
+  getEventBadgeAsset: () => null,
   resolveEventImageSource: (image?: string) =>
     image ? { uri: image } : undefined,
 }));

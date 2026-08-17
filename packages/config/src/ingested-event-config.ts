@@ -54,7 +54,7 @@ export function toHashPokerEventConfig(
     domain: "hash.poker",
     website: "https://hash.poker",
     title: event.title,
-    subtitle: `Weekly Poker Room • ${event.venueName}, ${event.city}`,
+    subtitle: `Poker Room • ${event.venueName}, ${event.city}`,
     image: event.coverImage || event.organizerLogo || "",
     color: "#8B1538",
     eventStartDate: selected.next,

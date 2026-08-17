@@ -35,30 +35,6 @@ interface Props {
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MotionDiv = motion.div as React.ComponentType<any>;
 
-// Real HASHPASS speakers (Chile 2026), re-hosted on our own S3 bucket -- same
-// source packages/config/src/events.ts uses for the Chile 2026 speaker list.
-// Two of the five avatars shown are always real speakers, picked at random
-// each time, so the social proof isn't 100% stock photography.
-const HASHPASS_SPEAKER_AVATAR_BASE =
-    'https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events/chile2026/speakers';
-const HASHPASS_SPEAKER_AVATAR_POOL: { name: string; url: string }[] = [
-    { name: 'Alberto Naudon', url: `${HASHPASS_SPEAKER_AVATAR_BASE}/alberto-naudon.webp` },
-    { name: 'Álvaro Clarke', url: `${HASHPASS_SPEAKER_AVATAR_BASE}/alvaro-clarke.webp` },
-    { name: 'Claudia Sotelo', url: `${HASHPASS_SPEAKER_AVATAR_BASE}/claudia-sotelo.webp` },
-    { name: 'Francisco Del Olmo', url: `${HASHPASS_SPEAKER_AVATAR_BASE}/francisco-del-olmo.webp` },
-    { name: 'Camila Santana', url: `${HASHPASS_SPEAKER_AVATAR_BASE}/camila-santana.webp` },
-    { name: 'Juan Carlos Reyes', url: `${HASHPASS_SPEAKER_AVATAR_BASE}/juan-carlos-reyes.webp` },
-    { name: 'Ximena Rojas', url: `${HASHPASS_SPEAKER_AVATAR_BASE}/ximena-rojas.webp` },
-    { name: 'José Manuel Mena', url: `${HASHPASS_SPEAKER_AVATAR_BASE}/jose-manuel-mena.webp` },
-    { name: 'Juan Pablo Córdoba', url: `${HASHPASS_SPEAKER_AVATAR_BASE}/juan-pablo-cordoba.webp` },
-    { name: 'Luisa Cárdenas', url: `${HASHPASS_SPEAKER_AVATAR_BASE}/luisa-cardenas.webp` },
-    { name: 'Antonio Sundas', url: `${HASHPASS_SPEAKER_AVATAR_BASE}/antonio-sundas.webp` },
-    { name: 'Regina Pedroso', url: `${HASHPASS_SPEAKER_AVATAR_BASE}/regina-pedroso.webp` },
-    { name: 'Guillermo Acuña', url: `${HASHPASS_SPEAKER_AVATAR_BASE}/guillermo-acuna.webp` },
-    { name: 'Erick Ortiz', url: `${HASHPASS_SPEAKER_AVATAR_BASE}/erick-ortiz.webp` },
-    { name: 'Ana Garcés', url: `${HASHPASS_SPEAKER_AVATAR_BASE}/ana-garces.webp` },
-];
-
 // Diverse pool: women, men, different ethnicities, plus a couple brand-style gradient avatars
 const AVATAR_POOL = [
     // Women
@@ -108,19 +84,8 @@ const Newsletter = ({ mode }: Props) => {
     const [capRetryKey, setCapRetryKey] = useState(0);
     const [countdown, setCountdown] = useState<number | null>(null);
 
-    // Randomly pick 5 avatars once on mount — stays stable across re-renders.
-    // Exactly 2 of the 5 are always real HASHPASS speakers, shuffled into
-    // random positions alongside 3 generic stock avatars.
-    const [avatarUrls] = useState(() => {
-        const speakerPicks = shuffleAndPick(HASHPASS_SPEAKER_AVATAR_POOL, 2).map(
-            (speaker) => ({ url: speaker.url, alt: speaker.name }),
-        );
-        const stockPicks = shuffleAndPick(AVATAR_POOL, 3).map((url) => ({
-            url,
-            alt: undefined as string | undefined,
-        }));
-        return shuffleAndPick([...speakerPicks, ...stockPicks], 5);
-    });
+    // Randomly pick 5 avatars once on mount — stays stable across re-renders
+    const [avatarUrls] = useState(() => shuffleAndPick(AVATAR_POOL, 5));
 
     // 15-second countdown that auto-resets the form after subscribing
     useEffect(() => {
@@ -348,7 +313,7 @@ const Newsletter = ({ mode }: Props) => {
                                 className='flex justify-center items-center mb-6 relative h-12 w-full'
                             >
                                 <div className='flex relative'>
-                                    {avatarUrls.map((avatar, index) => (
+                                    {avatarUrls.map((url, index) => (
                                         <MotionDiv
                                             key={index}
                                             className='relative rounded-full overflow-hidden border-2 border-white dark:border-gray-800'
@@ -368,8 +333,8 @@ const Newsletter = ({ mode }: Props) => {
                                             whileHover={{ scale: 1.15, y: -4, zIndex: 10 }}
                                         >
                                             <Image
-                                                source={{ uri: avatar.url }}
-                                                alt={avatar.alt || `Subscriber ${index + 1}`}
+                                                source={{ uri: url }}
+                                                alt={`Subscriber ${index + 1}`}
                                                 style={{ width: '100%', height: '100%' }}
                                                 resizeMode='cover'
                                             />

@@ -62,6 +62,7 @@ function loadExploreScreen(availableEvents: Record<string, unknown>[] = []) {
       Platform: {
         OS: "web",
       },
+      Pressable: "Pressable",
       ScrollView: "ScrollView",
       StatusBar: {
         currentHeight: 0,
@@ -94,12 +95,9 @@ function loadExploreScreen(availableEvents: Record<string, unknown>[] = []) {
       require("react/jsx-runtime"),
     );
 
-    jest.doMock("react-native-reanimated", () => ({
-      __esModule: true,
-      default: {
-        View: "Reanimated.View",
-      },
-    }));
+    // react-native-reanimated is mocked globally in jest.setup.cjs (covers
+    // useSharedValue, withTiming, etc. needed by Explorer's
+    // useAutoAdvanceProgress hero slider); no per-file override needed here.
     jest.doMock("react-native-safe-area-context", () => ({
       useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
     }));

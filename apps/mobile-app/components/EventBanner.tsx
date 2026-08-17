@@ -16,8 +16,18 @@ import { useTranslation } from "../i18n/i18n";
 import { isMainBranch } from "../lib/event-detector";
 import {
   getTourBrandAsset,
+  getEventBadgeAsset,
   resolveEventImageSource,
 } from "../lib/event-branding";
+
+// Hash Poker Room's per-tournament cover graphics are scraped from PKRR and
+// come in inconsistent (often square/portrait) aspect ratios, which crop
+// badly when force-fit into this wide banner via resizeMode="cover" -- the
+// numeral/wordmark ends up cropped differently depending on viewport width.
+// This is the club's own wide header image (downloaded from pkrr.io and
+// re-hosted, not hotlinked), composed for exactly this aspect ratio, so it
+// looks correct at any width instead of fighting each tournament's graphic.
+const HASH_POKER_BANNER = require("../assets/logos/hash-poker/hash-poker-room-banner.webp");
 import { MaterialIcons } from "../lib/vector-icons";
 import AgendaTracker from "./AgendaTracker";
 import EventBannerBackgroundVideo from "./EventBannerBackgroundVideo";
@@ -106,7 +116,11 @@ export default function EventBanner({
   const router = useRouter();
   const { t } = useTranslation("explore");
   const tourBrand = getTourBrandAsset(eventId);
-  const heroImageSource = resolveEventImageSource(eventImage);
+  const eventBadge = getEventBadgeAsset(eventId);
+  const heroImageSource =
+    eventId === "hash-poker"
+      ? HASH_POKER_BANNER
+      : resolveEventImageSource(eventImage);
   const hasVideoBackground = Boolean(eventVideo);
   const hasValidStartDate = Boolean(
     eventStartDate && !Number.isNaN(new Date(eventStartDate).getTime()),
@@ -301,7 +315,16 @@ export default function EventBanner({
             </View>
           ) : (
             <View style={styles.eventTitleRow}>
-              {eventShortName ? (
+              {eventBadge ? (
+                <Image
+                  source={eventBadge.logo}
+                  style={[
+                    styles.eventBadgeLogo,
+                    { width: 30 * eventBadge.aspectRatio },
+                  ]}
+                  resizeMode="contain"
+                />
+              ) : eventShortName ? (
                 <Text style={styles.eventShortName}>{eventShortName}</Text>
               ) : null}
               <Text style={styles.eventTitle}>{title}</Text>
@@ -482,6 +505,10 @@ const getStyles = (
       overflow: "hidden",
       paddingHorizontal: 9,
       paddingVertical: 3,
+    },
+    eventBadgeLogo: {
+      height: 30,
+      marginRight: 10,
     },
     heroBackgroundImage: {
       transform: [{ scale: 1.12 }],

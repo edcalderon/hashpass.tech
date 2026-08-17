@@ -74,16 +74,27 @@ const BSL_COLOMBIA_LOGO = require("../assets/logos/bsl/bsl-colombia-pro.webp");
 // Main HASHPASS Logo
 const LOGO_SLIDE_BACKGROUND = "#07111F";
 
+// "black" here is the file's historical name, not its rendered color -- see
+// the same naming gotcha documented in lib/hashpass-logo.ts. This is the
+// solid black-letters/red-mark mark, the same asset getHashpassFullLogo(false)
+// already uses for light mode everywhere else in the app (auth screen,
+// footer, etc.) -- keep it that way if you touch this.
+const HASHPASS_BLACK_RED_LOGO = require("../assets/logos/hashpass/logo-full-hashpass-black.webp");
+// A previous attempt swapped only the logo here and kept the dark background,
+// which made the black wordmark disappear against it (see git history). This
+// time the background is theme-aware too, so black-on-light and
+// white-cyan-on-dark both stay readable.
+const LOGO_SLIDE_BACKGROUND_LIGHT = "#FFFFFF";
+
 const MAIN_HASHPASS_LOGO = {
   id: "hashpass-main",
   name: "HASHPASS",
   darkSrc: HASHPASS_DARK_LOGO,
-  // The landing hero is intentionally a dark brand surface in both app
-  // themes. Its light-theme logo must therefore remain the white/cyan mark;
-  // using the black wordmark here made the logo disappear against the hero.
-  lightSrc: HASHPASS_DARK_LOGO,
-  backgroundColor: LOGO_SLIDE_BACKGROUND,
-  accentColor: "#6FDDFD",
+  lightSrc: HASHPASS_BLACK_RED_LOGO,
+  backgroundColorDark: LOGO_SLIDE_BACKGROUND,
+  backgroundColorLight: LOGO_SLIDE_BACKGROUND_LIGHT,
+  accentColorDark: "#6FDDFD",
+  accentColorLight: "#8B1538",
 };
 
 // BSL On Tour, Perú, and Chile were redundant/already-happened tour-stop
@@ -217,38 +228,41 @@ export default function EventBannerCarousel({
     (slide) => slide.event.id !== "hash-poker",
   );
 
-  // Build slides: HASHPASS logo, then Hash Poker Room, then the rest.
+  // Build slides: HASHPASS logo, then BSL Colombia, then other real events,
+  // Hash Poker Room last.
   const slides: CarouselSlide[] = [
     // { type: 'download' }, // Temporarily hidden
     ...(isGlobalTenant
       ? [
-          // Main HASHPASS logo always leads the carousel.
+          // Main HASHPASS logo always leads the carousel. Background and
+          // logo mark are paired per theme (dark bg + white-cyan mark in
+          // dark mode, white bg + black-red mark in light mode) so the
+          // wordmark is always readable against its own slide.
           {
             type: "logo" as const,
             logoId: MAIN_HASHPASS_LOGO.id,
             logoSrcDark: MAIN_HASHPASS_LOGO.darkSrc,
             logoSrcLight: MAIN_HASHPASS_LOGO.lightSrc,
-            // This is a branded dark hero rather than a theme-colored content
-            // surface. Keep its background and logo contrast paired in light
-            // and dark mode, just like the BSL logo slide below.
-            backgroundColor: MAIN_HASHPASS_LOGO.backgroundColor,
-            accentColor: MAIN_HASHPASS_LOGO.accentColor,
+            backgroundColor: isDark
+              ? MAIN_HASHPASS_LOGO.backgroundColorDark
+              : MAIN_HASHPASS_LOGO.backgroundColorLight,
+            accentColor: isDark
+              ? MAIN_HASHPASS_LOGO.accentColorDark
+              : MAIN_HASHPASS_LOGO.accentColorLight,
           },
-        ]
-      : []),
-    ...hashPokerSlides,
-    ...(isGlobalTenant
-      ? [
+          // BSL's own mark is white-on-dark only -- keep its slide on the
+          // dark brand surface regardless of app theme.
           {
             type: "logo" as const,
             logoId: BSL_COLOMBIA_LOGO_SLIDE.id,
             logoSrc: BSL_COLOMBIA_LOGO_SLIDE.logoSrc,
-            backgroundColor: MAIN_HASHPASS_LOGO.backgroundColor,
+            backgroundColor: LOGO_SLIDE_BACKGROUND,
             accentColor: BSL_COLOMBIA_LOGO_SLIDE.accentColor,
           },
         ]
       : []),
     ...otherEventSlides,
+    ...hashPokerSlides,
   ];
 
   const scrollToSlide = useCallback(
@@ -263,11 +277,17 @@ export default function EventBannerCarousel({
     [screenWidth],
   );
 
-  // Auto-play functionality
+  // Auto-play functionality. Pressing and holding the carousel pauses it
+  // (isAutoPlayPausedRef, toggled by onPressIn/onPressOut below) rather than
+  // stopping the interval outright, so it resumes on release without losing
+  // its cadence.
+  const isAutoPlayPausedRef = useRef(false);
+
   useEffect(() => {
     if (!autoPlay || slides.length <= 1) return;
 
     const interval = setInterval(() => {
+      if (isAutoPlayPausedRef.current) return;
       setCurrentIndex((prev) => {
         const next = (prev + 1) % slides.length;
         scrollToSlide(next);
@@ -277,6 +297,14 @@ export default function EventBannerCarousel({
 
     return () => clearInterval(interval);
   }, [autoPlay, autoPlayInterval, slides.length, scrollToSlide]);
+
+  const handleCarouselPressIn = useCallback(() => {
+    isAutoPlayPausedRef.current = true;
+  }, []);
+
+  const handleCarouselPressOut = useCallback(() => {
+    isAutoPlayPausedRef.current = false;
+  }, []);
 
   const handleScroll = (event: any) => {
     const offsetX = event.nativeEvent.contentOffset.x;
@@ -306,6 +334,9 @@ export default function EventBannerCarousel({
         scrollEventThrottle={16}
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
+        onTouchStart={handleCarouselPressIn}
+        onTouchEnd={handleCarouselPressOut}
+        onTouchCancel={handleCarouselPressOut}
       >
         {/* Mobile App Download Slide - Temporarily hidden */}
         {/* <View style={styles.slide}>
@@ -487,6 +518,8 @@ export default function EventBannerCarousel({
                 setCurrentIndex(index);
                 scrollToSlide(index);
               }}
+              onPressIn={handleCarouselPressIn}
+              onPressOut={handleCarouselPressOut}
             />
           ))}
         </View>

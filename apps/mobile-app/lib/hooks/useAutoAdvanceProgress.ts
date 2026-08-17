@@ -51,8 +51,12 @@ export function useAutoAdvanceProgress({
   const [activeIndex, setActiveIndex] = useState(initialIndex);
   const progress = useSharedValue(0);
   const pausedRef = useRef(false);
-  const activeIndexRef = useRef(0);
+  const activeIndexRef = useRef(initialIndex);
   activeIndexRef.current = activeIndex;
+  // The resetKey effect below must not stomp initialIndex on the very first
+  // run -- every effect runs once on mount regardless of its dependencies,
+  // and resetKey is often undefined on mount (see the bug this guards).
+  const isFirstResetRef = useRef(true);
 
   const advance = useCallback(() => {
     setActiveIndex((current) =>
@@ -93,9 +97,22 @@ export function useAutoAdvanceProgress({
 
   // resetKey changing (e.g. a different event selected) restarts from slide 0.
   useEffect(() => {
-    cancelAnimation(progress);
+    if (isFirstResetRef.current) {
+      // Mount: the effect above already started initialIndex's segment.
+      isFirstResetRef.current = false;
+      return;
+    }
     pausedRef.current = false;
-    setActiveIndex(0);
+    if (activeIndexRef.current === 0) {
+      // setActiveIndex(0) would be a no-op when already on slide 0, so the
+      // effect above would never rerun and the segment would stay frozen at
+      // whatever progress it had when resetKey changed. Restart explicitly.
+      cancelAnimation(progress);
+      startSegment(0);
+    } else {
+      cancelAnimation(progress);
+      setActiveIndex(0);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resetKey]);
 
@@ -113,11 +130,19 @@ export function useAutoAdvanceProgress({
 
   const goTo = useCallback(
     (index: number) => {
-      cancelAnimation(progress);
       pausedRef.current = false;
+      if (index === activeIndexRef.current) {
+        // setActiveIndex(index) would be a no-op for the already-active
+        // segment, so the start-segment effect above would never rerun and
+        // the fill would stay frozen wherever cancelAnimation left it.
+        // Restart explicitly instead.
+        startSegment(0);
+        return;
+      }
+      cancelAnimation(progress);
       setActiveIndex(index);
     },
-    [progress],
+    [progress, startSegment],
   );
 
   return { activeIndex, progress, pause, resume, goTo };
