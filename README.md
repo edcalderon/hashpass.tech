@@ -20,18 +20,16 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.7)
+## 📋 Latest Changes (v1.9.8)
 
 ### Released
-- correct BSL/core Supabase project swap in hashpass-web's tfvars example
+- explorer stats card fixes, morphicons pilot, unified slider progress bar; annotate QRScanner onRawScan param type
 
 ### Release scope
-- Compared with: `v1.9.6` (the previous global release tag)
+- Compared with: `v1.9.7` (the previous global release tag)
 
 ### Affected products & packages
-- Infrastructure
-- Documentation
-- Release tooling
+- Mobile app
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

@@ -1,3 +1,13 @@
+## [1.9.8](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.7...v1.9.8) (2026-08-17)
+### Released
+- explorer stats card fixes, morphicons pilot, unified slider progress bar; annotate QRScanner onRawScan param type
+
+### Release scope
+- Compared with: `v1.9.7` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+
 ## [1.9.7](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.6...v1.9.7) (2026-08-17)
 ### Released
 - correct BSL/core Supabase project swap in hashpass-web's tfvars example
