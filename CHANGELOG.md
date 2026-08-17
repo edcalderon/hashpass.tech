@@ -1,3 +1,15 @@
+## [1.9.7](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.6...v1.9.7) (2026-08-17)
+### Released
+- correct BSL/core Supabase project swap in hashpass-web's tfvars example
+
+### Release scope
+- Compared with: `v1.9.6` (the previous global release tag)
+
+### Affected products & packages
+- Infrastructure
+- Documentation
+- Release tooling
+
 ## [1.9.6](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.5...v1.9.6) (2026-08-16)
 
 

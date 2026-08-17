@@ -20,25 +20,16 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.6)
+## 📋 Latest Changes (v1.9.7)
 
-### Bug Fixes
-
-* **events:** harden database ingestion rollout ([fc8e049](https://github.com/hashpass-tech/hashpass.tech/commit/fc8e0496991703a8bb2a916ee97a4521569de766))
-
-
-### Features
-
-* **events:** add database-first source ingestion ([131075e](https://github.com/hashpass-tech/hashpass.tech/commit/131075e0a753f49fe2c8ca304fd6f9334d980d5e))
-### Release Highlights
-- add database-first source ingestion; harden database ingestion rollout
+### Released
+- correct BSL/core Supabase project swap in hashpass-web's tfvars example
 
 ### Release scope
-- Compared with: `v1.9.5` (the previous global release tag)
+- Compared with: `v1.9.6` (the previous global release tag)
 
 ### Affected products & packages
-- Mobile app
-- Database migrations
+- Infrastructure
 - Documentation
 - Release tooling
 
