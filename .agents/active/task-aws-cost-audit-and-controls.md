@@ -3,7 +3,25 @@
 **Status:** ACTIVE — high priority
 **Priority:** P0 (billing/credit risk)  
 **Created:** 2026-08-04
-**Last updated:** 2026-08-16
+**Last updated:** 2026-08-17
+
+> **Standing rule — no EC2 provisioning without explicit owner consent.**
+> This applies to Claude/agent sessions and human contributors alike, and
+> covers every form EC2 provisioning could take here: restoring
+> `AWS_RUNNER_ROLE_ARN`/`EC2_RUNNER_INSTANCE_ID` as repo variables, switching
+> any workflow dispatch back to `runner=aws-ec2` (see
+> `.github/workflows/mobile-android-release.yml`), launching a *new* EC2
+> instance for any purpose, or resizing/restarting the existing stopped
+> `hashpass-mobile-release` runner (`i-05628f925bb57e2f1`). If a manual
+> workflow dispatch fails validation because EC2 isn't configured, the fix is
+> to use `runner=github-hosted` (already the working default — see
+> `CLAUDE.md`'s Mobile Android Release Workflow section) and flag it here,
+> **not** to re-add the missing variables or provision new EC2 capacity ad
+> hoc to unblock the dispatch. Confirmed 2026-08-15: this account is under
+> active cost-audit review specifically because of prior EC2-driven spend
+> risk (see the Build-runner finding below) — provisioning more EC2 capacity
+> without going through Phase 3's owner-approval process would work directly
+> against the purpose of this task.
 
 ## Trigger and current signal
 
