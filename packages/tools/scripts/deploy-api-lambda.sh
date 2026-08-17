@@ -13,6 +13,20 @@ API_VERSION_VERIFY_RETRIES="${SITE_API_VERSION_VERIFY_RETRIES:-${API_VERSION_VER
 API_VERSION_VERIFY_SLEEP_SECONDS="${SITE_API_VERSION_VERIFY_SLEEP_SECONDS:-${API_VERSION_VERIFY_SLEEP_SECONDS:-10}}"
 API_VERSION_VERIFY_TIMEOUT_MS="${SITE_API_VERSION_VERIFY_TIMEOUT_MS:-${API_VERSION_VERIFY_TIMEOUT_MS:-15000}}"
 API_LAMBDA_ENV_UPDATE_MAX_BYTES="${SITE_API_LAMBDA_ENV_UPDATE_MAX_BYTES:-${API_LAMBDA_ENV_UPDATE_MAX_BYTES:-3900}}"
+# This same script runs concurrently from two independent deploy paths on
+# every push to main -- the GH Actions infra-deploy.yml workflow (the
+# "release safety net") and the target web CodePipeline's own CodeBuild job
+# -- both updating the SAME Lambda function around the same time by design
+# (see DEPLOYMENT_MAP.md). AWS rejects a second in-flight
+# UpdateFunctionCode/UpdateFunctionConfiguration on one function with
+# ResourceConflictException; this isn't hypothetical -- confirmed in
+# production 2026-08-17 (v1.9.11): the CodePipeline attempt failed outright
+# a few seconds after the GH Actions attempt won the race and succeeded.
+# AWS documents this as the transient/retryable case, so retry with a short
+# fixed backoff instead of failing an otherwise-successful deploy over a
+# lock a concurrent, equally-valid deploy already holds.
+LAMBDA_UPDATE_MAX_ATTEMPTS="${LAMBDA_UPDATE_MAX_ATTEMPTS:-6}"
+LAMBDA_UPDATE_RETRY_DELAY_SECONDS="${LAMBDA_UPDATE_RETRY_DELAY_SECONDS:-5}"
 
 read_expected_api_version() {
   if [[ -n "${API_EXPECTED_VERSION}" ]]; then
@@ -231,12 +245,25 @@ NODE
     fi
 
     set +e
-    aws lambda update-function-configuration \
-      --function-name "${LAMBDA_FUNCTION_NAME}" \
-      --region "${LAMBDA_REGION}" \
-      --environment "file://${environment_file}" \
-      >/dev/null 2>"${aws_error_file}"
-    update_status=$?
+    for env_attempt in $(seq 1 "${LAMBDA_UPDATE_MAX_ATTEMPTS}"); do
+      aws lambda update-function-configuration \
+        --function-name "${LAMBDA_FUNCTION_NAME}" \
+        --region "${LAMBDA_REGION}" \
+        --environment "file://${environment_file}" \
+        >/dev/null 2>"${aws_error_file}"
+      update_status=$?
+      if [[ "${update_status}" -eq 0 ]]; then
+        break
+      fi
+      # See the identical retry around update-function-code below for why
+      # this specific error is retried instead of failing the deploy.
+      if grep -q "ResourceConflictException" "${aws_error_file}" && [[ "${env_attempt}" -lt "${LAMBDA_UPDATE_MAX_ATTEMPTS}" ]]; then
+        echo "Lambda environment update hit ResourceConflictException (another update in progress), retrying in ${LAMBDA_UPDATE_RETRY_DELAY_SECONDS}s (attempt ${env_attempt}/${LAMBDA_UPDATE_MAX_ATTEMPTS})..." >&2
+        sleep "${LAMBDA_UPDATE_RETRY_DELAY_SECONDS}"
+        continue
+      fi
+      break
+    done
     set -e
 
     if [[ "${update_status}" -ne 0 ]]; then
@@ -323,11 +350,34 @@ fi
 
 sync_lambda_environment
 
-aws lambda update-function-code \
-  --function-name "${LAMBDA_FUNCTION_NAME}" \
-  --region "${LAMBDA_REGION}" \
-  --zip-file "fileb://${PROJECT_ROOT}/${LAMBDA_ZIP_PATH}" \
-  >/dev/null
+code_update_error_file="$(mktemp /tmp/hashpass-lambda-code-aws-error.XXXXXX.log)"
+set +e
+for code_attempt in $(seq 1 "${LAMBDA_UPDATE_MAX_ATTEMPTS}"); do
+  aws lambda update-function-code \
+    --function-name "${LAMBDA_FUNCTION_NAME}" \
+    --region "${LAMBDA_REGION}" \
+    --zip-file "fileb://${PROJECT_ROOT}/${LAMBDA_ZIP_PATH}" \
+    >/dev/null 2>"${code_update_error_file}"
+  code_update_status=$?
+  if [[ "${code_update_status}" -eq 0 ]]; then
+    break
+  fi
+  if grep -q "ResourceConflictException" "${code_update_error_file}" && [[ "${code_attempt}" -lt "${LAMBDA_UPDATE_MAX_ATTEMPTS}" ]]; then
+    echo "UpdateFunctionCode hit ResourceConflictException (another update in progress), retrying in ${LAMBDA_UPDATE_RETRY_DELAY_SECONDS}s (attempt ${code_attempt}/${LAMBDA_UPDATE_MAX_ATTEMPTS})..." >&2
+    sleep "${LAMBDA_UPDATE_RETRY_DELAY_SECONDS}"
+    continue
+  fi
+  break
+done
+set -e
+
+if [[ "${code_update_status}" -ne 0 ]]; then
+  echo "ERROR: UpdateFunctionCode failed:" >&2
+  cat "${code_update_error_file}" >&2
+  rm -f "${code_update_error_file}"
+  exit "${code_update_status}"
+fi
+rm -f "${code_update_error_file}"
 
 aws lambda wait function-updated \
   --function-name "${LAMBDA_FUNCTION_NAME}" \
