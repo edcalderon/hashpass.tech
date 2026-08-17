@@ -57,12 +57,22 @@ const QR_BADGE_SIZE = QR_ICON_SIZE * 1.32;
 // hashpass.tech/auth/connect is exactly what happens when this path fires
 // without a real challengeId in flight -- letting the visitor pick
 // explicitly removes that whole class of guess-wrong failure.
-function openWebApp(challengeId?: string, locale?: string) {
+// `targetWindow`, when passed, is a tab already opened synchronously inside
+// the click handler (see the button below) -- navigating an existing tab
+// instead of calling window.open() here lets the caller open that tab
+// immediately, before any async challenge-creation work, so browsers still
+// attribute it to the user gesture instead of blocking it as a popup.
+function openWebApp(challengeId?: string, locale?: string, targetWindow?: Window | null) {
   const appUrl = resolveHashpassAppUrl();
   const connectParams = new URLSearchParams({ source: 'web', ref: 'landing' });
   if (challengeId) connectParams.set('challengeId', challengeId);
   if (locale) connectParams.set('locale', locale);
-  window.open(`${appUrl}/auth/connect?${connectParams.toString()}`, '_blank', 'noopener,noreferrer');
+  const target = `${appUrl}/auth/connect?${connectParams.toString()}`;
+  if (targetWindow) {
+    targetWindow.location.href = target;
+  } else {
+    window.open(target, '_blank', 'noopener,noreferrer');
+  }
 }
 
 // Tries the native Android app via its custom URI scheme, falling back to
@@ -545,7 +555,30 @@ export function SignInModal({ open, onClose }: SignInModalProps) {
               href={QR_VALUE}
               onClick={(e) => {
                 e.preventDefault();
-                openWebApp(qrLogin?.challenge.id, locale);
+                // qrLogin is populated by an async beginLogin() call that
+                // auto-fires when the modal opens -- a fast click can land
+                // before it resolves (or after it failed), sending the
+                // visitor to /auth/connect with no challengeId at all,
+                // which is exactly the "This link is missing information"
+                // error. Open the tab synchronously, right here inside the
+                // click handler, so it's still attributed to the user
+                // gesture and not popup-blocked -- then navigate it once a
+                // challenge is confirmed, creating a fresh one on the spot
+                // if qrLogin hasn't resolved yet rather than trusting that
+                // state has settled.
+                const tab = window.open('', '_blank', 'noopener,noreferrer');
+                (async () => {
+                  let challengeId = qrLogin?.challenge.id;
+                  if (!challengeId) {
+                    try {
+                      const result = await hashpassSdk().authQr.beginLogin();
+                      challengeId = result.challenge.id;
+                    } catch (err) {
+                      console.error('[HashPass Auth] Failed to start a login challenge for the web-app button:', err);
+                    }
+                  }
+                  openWebApp(challengeId, locale, tab);
+                })();
               }}
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
