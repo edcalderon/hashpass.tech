@@ -11,6 +11,7 @@ import {
   Linking,
 } from "react-native";
 import { useTheme } from "../hooks/useTheme";
+import { useAuth } from "../hooks/useAuth";
 import { useRouter } from "expo-router";
 import { useTranslation } from "../i18n/i18n";
 import { isMainBranch } from "../lib/event-detector";
@@ -114,6 +115,7 @@ export default function EventBanner({
 }: EventBannerProps) {
   const { isDark, colors } = useTheme();
   const router = useRouter();
+  const { isLoggedIn } = useAuth();
   const { t } = useTranslation("explore");
   const tourBrand = getTourBrandAsset(eventId);
   const eventBadge = getEventBadgeAsset(eventId);
@@ -373,8 +375,15 @@ export default function EventBanner({
               </Text>
             </View>
             <TouchableOpacity
+              testID="event-banner-explore-more"
               style={styles.viewMoreEventsButton}
-              onPress={() => router.push("/(shared)/dashboard/explore" as any)}
+              onPress={() =>
+                router.push(
+                  (isLoggedIn
+                    ? "/(shared)/dashboard/explore"
+                    : `/events/${eventId || "bsl"}/event-info`) as any,
+                )
+              }
               activeOpacity={0.8}
             >
               <MaterialIcons name="explore" size={20} color="#FFFFFF" />

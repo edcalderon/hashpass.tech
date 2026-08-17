@@ -14,15 +14,19 @@ export default function BSL2025Layout() {
   // Some entry points into this stack (redirects, deep links, tab resets)
   // can leave a screen with no real navigation history to pop, at which
   // point the platform default just hides the back button and strands the
-  // user. Always render a back control; fall back to the event home screen
-  // when there's genuinely nothing to go back to.
+  // user. Always render a back control; fall back to the public landing
+  // page when there's genuinely nothing to go back to -- NOT
+  // /events/{id}/home, which is itself just a redirector (to dashboard or
+  // to event-info depending on auth state) and would bounce straight back
+  // to whichever screen the user is already on, making back a dead end for
+  // anyone who entered this stack via a deep link with no real history.
   const renderBackButton = () => (
     <TouchableOpacity
       onPress={() => {
         if (router.canGoBack()) {
           router.back();
         } else {
-          router.replace(`/events/${event?.id || 'bsl'}/home`);
+          router.replace('/home');
         }
       }}
       style={{ paddingHorizontal: 8, paddingVertical: 4 }}

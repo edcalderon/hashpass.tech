@@ -57,6 +57,11 @@ jest.mock("../../hooks/useTheme", () => ({
   }),
 }));
 
+let mockIsLoggedIn = false;
+jest.mock("../../hooks/useAuth", () => ({
+  useAuth: () => ({ isLoggedIn: mockIsLoggedIn }),
+}));
+
 jest.mock("expo-router", () => ({
   useRouter: () => ({ push: mockRouterPush }),
 }));
@@ -88,6 +93,59 @@ jest.mock("../../lib/banner-cta", () => ({
 describe("EventBanner", () => {
   beforeEach(() => {
     mockRouterPush.mockReset();
+    mockIsLoggedIn = false;
+  });
+
+  it("sends a logged-out visitor to the event's public info page, not the protected dashboard (regression)", () => {
+    // Regression: this button used to always push straight to
+    // /(shared)/dashboard/explore regardless of auth state -- a real
+    // protected-route leak reachable from a finished/archived event banner
+    // on the public landing page.
+    mockIsLoggedIn = false;
+    let renderer: ReturnType<typeof create>;
+    act(() => {
+      renderer = create(
+        <EventBanner
+          title="BSL 2025"
+          subtitle="Medellín"
+          date="November 2025"
+          eventId="bsl2025"
+          isEventFinished
+        />,
+      );
+    });
+
+    const button = renderer!.root.findByProps({
+      testID: "event-banner-explore-more",
+    });
+    act(() => button.props.onPress());
+
+    expect(mockRouterPush).toHaveBeenCalledWith("/events/bsl2025/event-info");
+    act(() => renderer!.unmount());
+  });
+
+  it("sends a logged-in visitor to the dashboard explorer", () => {
+    mockIsLoggedIn = true;
+    let renderer: ReturnType<typeof create>;
+    act(() => {
+      renderer = create(
+        <EventBanner
+          title="BSL 2025"
+          subtitle="Medellín"
+          date="November 2025"
+          eventId="bsl2025"
+          isEventFinished
+        />,
+      );
+    });
+
+    const button = renderer!.root.findByProps({
+      testID: "event-banner-explore-more",
+    });
+    act(() => button.props.onPress());
+
+    expect(mockRouterPush).toHaveBeenCalledWith("/(shared)/dashboard/explore");
+    act(() => renderer!.unmount());
   });
 
   it("shows film media while allowing a host to suppress its campaign CTA", () => {

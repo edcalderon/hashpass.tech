@@ -65,6 +65,7 @@ import {
 } from "../../../providers/AnimationProvider";
 import { DiscoveryScopeProvider } from "../../../providers/DiscoveryScopeProvider";
 import VersionDisplay from "../../../components/VersionDisplay";
+import LoadingScreen from "../../../components/LoadingScreen";
 import SafeBlurView from "../../../components/SafeBlurView";
 import QRScanner from "../../../components/QRScanner";
 import MiniNotificationDropdown from "../../../components/MiniNotificationDropdown";
@@ -1894,6 +1895,25 @@ export default function DashboardLayout() {
       ),
     };
   };
+
+  // Defense in depth: a definitively-unauthenticated visitor (auth has
+  // finished loading, isLoggedIn is false, and there's no recent-auth grace
+  // window that could mean this is just a transient provider flap on a real
+  // session -- see hasRecentAuthSuccess() above) must never see dashboard
+  // content rendered, even briefly. This intentionally does NOT change the
+  // redirect timer above: that delay exists to avoid force-unmounting mid
+  // render during a genuine transient flap (a real native Android crash),
+  // and still fires on its own schedule. This only swaps what's on screen
+  // while that timer is pending, for the case where there's nothing
+  // ambiguous to protect -- no real session was ever detected here.
+  if (
+    !authLoading &&
+    !isLoggedIn &&
+    !hasRecentAuthSuccess() &&
+    !isDevAuthBypassEnabled()
+  ) {
+    return <LoadingScreen fullScreen />;
+  }
 
   return (
     <AnimationProvider>

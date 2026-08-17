@@ -146,7 +146,7 @@ export default function EventInfoScreen() {
     >
       <EventBanner
         title={event?.title || 'Event Information'}
-        subtitle="Conference Details & Logistics"
+        subtitle={event?.subtitle || 'Event Details & Logistics'}
         date={eventDateLabel}
         showCountdown={!isEventFinished && Boolean(event?.eventStartDate)}
         showLiveIndicator={!isEventFinished && Boolean(event?.eventStartDate)}
