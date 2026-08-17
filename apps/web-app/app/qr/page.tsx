@@ -19,18 +19,20 @@ import { hashpassSdk } from '../../lib/hashpass-sdk';
 import { CaptchaWidget } from '@hashpass/ui/CaptchaWidget';
 
 // Public marketing showcase for the HashPass Links / QR system
-// (packages/hashpass-links-api, the hashpass.link service). Lives at
-// hashpass.club/qr rather than a new subdomain or on hashpass.link itself --
-// hashpass.link is a purely transactional redirect + auth-qr API (Lambda +
+// (packages/hashpass-links-api, fronted by hpass.id/hashpass.link/hashp.link
+// -- see that package's README "Multi-domain cutover"). Lives at
+// hashpass.club/qr rather than a new subdomain or on hpass.id itself --
+// hpass.id is a purely transactional redirect + auth-qr API (Lambda +
 // API Gateway, no HTML rendering), so this storefront stays on the existing
 // static apps/web-app export. See .agents/active/task-panel-web-club-events-qr.md.
 const LINKS_ORIGIN = (process.env.NEXT_PUBLIC_LINKS_API_BASE_URL || '').replace(/\/$/, '');
 const CAPTCHA_API_ENDPOINT = `${LINKS_ORIGIN}/api/captcha`;
-// The free tier always lives on the shared hashpass.link domain -- a
-// custom subdomain (your-club.hashpass.link) is an account-holder feature,
-// see the EngineSection's "coming soon" card below. Anonymous visitors can
-// only edit the slug, never this prefix.
-const FREE_LINK_PREFIX = 'hashpass.link/q/';
+// The free tier always lives on the shared hpass.id domain (the primary
+// short-link/QR domain) -- a custom subdomain (your-club.hashpass.link,
+// under the cosmetic/branding domain) is an account-holder feature, see the
+// EngineSection's "coming soon" card below. Anonymous visitors can only
+// edit the slug, never this prefix.
+const FREE_LINK_PREFIX = 'hpass.id/q/';
 // Rotates through the Destination field's empty-state placeholder -- real
 // domain shapes (with a TLD), since that field is validated as an actual
 // public domain via toHttpsDestination, not a free-text slug fragment.
@@ -278,7 +280,7 @@ function QrPlayground() {
   const [generatedSlug, setGeneratedSlug] = useState('');
   // The normalized destination generation was actually verified against --
   // resolved once at Generate-click time, same reasoning as generatedSlug.
-  // See qrValue below for why this (not a fake hashpass.link/q/ address) is
+  // See qrValue below for why this (not a fake hpass.id/q/ address) is
   // what the QR actually encodes.
   const [generatedDestination, setGeneratedDestination] = useState('');
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
@@ -327,12 +329,12 @@ function QrPlayground() {
   // anonymously). Not a real state value on purpose.
   const brandIcon = true;
 
-  // FIXED 2026-08-15: this used to encode a fake `hashpass.link/q/{slug}`
+  // FIXED 2026-08-15: this used to encode a fake `hpass.id/q/{slug}`
   // address that was never actually created server-side (createQrLink
   // requires an authenticated session, which this anonymous public page
   // deliberately never has -- see the captcha block below), so every scan
   // hit a real 404. The Short Link field above still *previews* the
-  // hashpass.link/q/ shape a signed-in member's real link would get, but
+  // hpass.id/q/ shape a signed-in member's real link would get, but
   // the QR itself must only ever encode something that actually resolves
   // -- the verified destination -- so a downloaded/shared/scanned code from
   // this anonymous demo is never dead.
@@ -977,14 +979,14 @@ function EngineSection() {
     return () => { cancelled = true; };
   }, []);
 
-  // Always the branded domain here, deliberately not derived from
-  // LINKS_ORIGIN/NEXT_PUBLIC_LINKS_API_BASE_URL -- that env var points at
-  // whatever's actually configured for this deploy (a local dev-server URL,
-  // a raw AWS invoke URL pre-cutover, etc.), which is correct for the real
-  // app to call but wrong to show a visitor as "the" HASHPASS short-link
-  // domain. The live reachability check below still uses the real
-  // LINKS_ORIGIN -- only this illustrative example is hardcoded.
-  const shortLinkExample = 'hashpass.link/q/your-club';
+  // Always the primary short-link domain here, deliberately not derived
+  // from LINKS_ORIGIN/NEXT_PUBLIC_LINKS_API_BASE_URL -- that env var points
+  // at whatever's actually configured for this deploy (a local dev-server
+  // URL, a raw AWS invoke URL pre-cutover, etc.), which is correct for the
+  // real app to call but wrong to show a visitor as "the" HASHPASS
+  // short-link domain. The live reachability check below still uses the
+  // real LINKS_ORIGIN -- only this illustrative example is hardcoded.
+  const shortLinkExample = 'hpass.id/q/your-club';
   // Custom-domain-per-club routing isn't built yet (no wildcard DNS/ACM, no
   // tenant-resolution-by-subdomain in packages/hashpass-links-api) -- shown
   // here as a labeled "coming soon" teaser only, never as a live example.
