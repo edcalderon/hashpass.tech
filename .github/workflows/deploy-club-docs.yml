@@ -64,6 +64,16 @@ jobs:
           # real club visitors must authenticate against the real database.
           NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          # Also required at build time, same inlining rule as above -- HashPass
+          # Auth (QR login) throws "requires linksApiBaseUrl to be configured"
+          # at runtime when this is missing, since the SDK client never had a
+          # value to inline. Points at the real deployed hashpass-links-api
+          # prod Lambda (qkbyffzzsf.execute-api.us-east-1.amazonaws.com,
+          # confirmed live via /api/health), not the hashpass.link custom
+          # domain -- enable_custom_domain is still false in
+          # packages/infra/terraform/stacks/hashpass-links-api/terraform.tfvars
+          # pending DNS ownership confirmation.
+          NEXT_PUBLIC_LINKS_API_BASE_URL: ${{ vars.NEXT_PUBLIC_LINKS_API_BASE_URL }}
         run: pnpm --filter @hashpass/infra run build:club-docs-site
 
       - name: Upload Pages artifact

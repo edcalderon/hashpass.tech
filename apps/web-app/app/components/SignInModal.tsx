@@ -33,45 +33,35 @@ const PLAY_STORE_URL =
   'https://play.google.com/store/apps/details?id=com.hashpass.tech&hl=en-US&ah=RlHQxhHQladajDZn9ZGTm7_ucMs';
 const APP_OPEN_FALLBACK_MS = 1400;
 
-type Platform = 'ios' | 'android' | 'desktop';
-
-function detectPlatform(): Platform {
-  if (typeof navigator === 'undefined') return 'desktop';
-  const ua = navigator.userAgent || '';
-  const isMSStream = Boolean((window as unknown as { MSStream?: unknown }).MSStream);
-  if (/iPad|iPhone|iPod/.test(ua) && !isMSStream) return 'ios';
-  // iPadOS 13+ Safari sends a desktop-class "Macintosh" UA with no "iPad"
-  // token at all, even though this app declares tablet support -- a real
-  // Mac reports maxTouchPoints 0, so touch-capable "MacIntel" is the
-  // standard way to tell an iPad apart from an actual desktop Mac here.
-  const isTouchMac = navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
-  if (isTouchMac && !isMSStream) return 'ios';
-  if (/Android/.test(ua)) return 'android';
-  return 'desktop';
+// Opens the main HASHPASS web app's /auth/connect screen in a new tab -- if
+// that browser already has an authenticated session, the app approves this
+// exact challenge directly (see apps/mobile-app/app/auth/connect), no phone
+// needed. `challengeId` is the same public id embedded in the QR code's own
+// URL, not the PKCE verifier or binding secret, so it's safe to pass in a
+// plain query string.
+//
+// This used to be folded into a single platform-detected button
+// (openHashpassApp) that guessed whether to open the web flow or the native
+// app based on the visiting device's user agent. Split into two explicit,
+// separately-labeled buttons instead: a platform guess is still just a
+// guess (desktop Chrome with Android devtools, an in-app browser reporting
+// a desktop UA, etc.), and the "missing information" error on
+// hashpass.tech/auth/connect is exactly what happens when this path fires
+// without a real challengeId in flight -- letting the visitor pick
+// explicitly removes that whole class of guess-wrong failure.
+function openWebApp(challengeId?: string) {
+  const appUrl = resolveHashpassAppUrl();
+  const connectParams = new URLSearchParams({ source: 'web', ref: 'landing' });
+  if (challengeId) connectParams.set('challengeId', challengeId);
+  window.open(`${appUrl}/auth/connect?${connectParams.toString()}`, '_blank', 'noopener,noreferrer');
 }
 
-// Tries the native app first (mobile only), falls back to the store if the
-// app isn't installed (page stays visible past the fallback window), and on
-// desktop opens the main HASHPASS app's /auth/connect screen in a new tab --
-// if that browser already has an authenticated session, the app approves
-// this exact challenge directly (see apps/mobile-app/app/auth/connect), no
-// phone needed. `challengeId` is the same public id embedded in the QR
-// code's own URL, not the PKCE verifier or binding secret, so it's safe to
-// pass in a plain query string.
-function openHashpassApp(challengeId?: string) {
-  const platform = detectPlatform();
-
-  if (platform === 'desktop') {
-    const appUrl = resolveHashpassAppUrl();
-    const connectParams = new URLSearchParams({ source: 'web', ref: 'landing' });
-    if (challengeId) connectParams.set('challengeId', challengeId);
-    window.open(`${appUrl}/auth/connect?${connectParams.toString()}`, '_blank', 'noopener,noreferrer');
-    return;
-  }
-
-  // Play Store only for now -- no iOS listing yet, so iOS also falls back
-  // to Play Store's own "not available" handling rather than a dead Apple
-  // link.
+// Tries the native Android app via its custom URI scheme, falling back to
+// the Play Store listing if the app isn't installed (page stays visible
+// past the fallback window -- if the app opened, the tab backgrounds and
+// this never fires). No iOS listing yet, so this button is Android-specific
+// by design rather than a generic "mobile app" button.
+function openAndroidApp() {
   const storeUrl = PLAY_STORE_URL;
   let fellBack = false;
 
@@ -521,12 +511,15 @@ export function SignInModal({ open, onClose }: SignInModalProps) {
           </Link>
         ) : (
           <>
-            {/* Open app button */}
+            {/* Sign in using web app -- always opens hashpass.tech/auth/connect
+                in a new tab, regardless of device. This is the reliable
+                universal path (works on any device with a browser), so it's
+                the primary button. */}
             <a
               href={QR_VALUE}
               onClick={(e) => {
                 e.preventDefault();
-                openHashpassApp(qrLogin?.challenge.id);
+                openWebApp(qrLogin?.challenge.id);
               }}
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
@@ -537,7 +530,7 @@ export function SignInModal({ open, onClose }: SignInModalProps) {
                 fontSize: 14, fontWeight: 700, textDecoration: 'none',
                 letterSpacing: -0.2,
                 transition: 'opacity 0.15s, transform 0.15s',
-                marginBottom: 12,
+                marginBottom: 10,
               }}
               onMouseEnter={(e) => {
                 (e.currentTarget as HTMLElement).style.opacity = '0.88';
@@ -548,34 +541,54 @@ export function SignInModal({ open, onClose }: SignInModalProps) {
                 (e.currentTarget as HTMLElement).style.transform = 'translateY(0)';
               }}
             >
-              {/* HASHPASS icon */}
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-                <rect x="3" y="3" width="18" height="18" rx="5" stroke="currentColor" strokeWidth="1.8"/>
-                <path d="M8 12h8M12 8v8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+              {/* Browser / web icon */}
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <circle cx="12" cy="12" r="9"/>
+                <path d="M3 12h18M12 3a14 14 0 0 1 0 18 14 14 0 0 1 0-18z"/>
               </svg>
-              {t('openApp')}
+              {t('signInWebApp')}
             </a>
 
-            {/* Divider */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', marginBottom: 12 }}>
-              <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
-              <span style={{ fontSize: 12, color: 'var(--text-faint)', whiteSpace: 'nowrap' }}>
-                {t('orDownload')}
-              </span>
-              <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
-            </div>
-
-            {/* App store links -- Play Store only for now, no iOS listing yet */}
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
-              <a href={PLAY_STORE_URL} target="_blank" rel="noopener noreferrer" style={{ opacity: 0.6, transition: 'opacity 0.15s', display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--text-faint)', textDecoration: 'none', fontFamily: 'var(--font-mono)', letterSpacing: 0.3 }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.opacity = '1'; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.opacity = '0.6'; }}
-              >
-                {/* Android */}
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M3 20.5v-17c0-.83.94-1.3 1.6-.8l14 8.5c.6.37.6 1.23 0 1.6l-14 8.5c-.66.5-1.6.03-1.6-.8z"/></svg>
-                Google Play
-              </a>
-            </div>
+            {/* Open the Android app -- explicit, separate from the web
+                button above (no platform guessing). Tries the native app's
+                deep link first, falls back to the Play Store listing if the
+                app isn't installed. No iOS listing yet, so this is
+                Android-specific by design rather than a generic "mobile
+                app" button. */}
+            <a
+              href={PLAY_STORE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => {
+                e.preventDefault();
+                openAndroidApp();
+              }}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                width: '100%', padding: '11px 20px',
+                borderRadius: 12,
+                background: 'transparent',
+                border: '1.5px solid #3DDC84',
+                color: isDark ? '#3DDC84' : '#0F9D58',
+                fontSize: 14, fontWeight: 700, textDecoration: 'none',
+                letterSpacing: -0.2,
+                transition: 'opacity 0.15s, transform 0.15s, background 0.15s',
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLElement).style.background = isDark ? 'rgba(61,220,132,0.10)' : 'rgba(15,157,88,0.06)';
+                (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)';
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLElement).style.background = 'transparent';
+                (e.currentTarget as HTMLElement).style.transform = 'translateY(0)';
+              }}
+            >
+              {/* Android robot */}
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                <path d="M3 20.5v-17c0-.83.94-1.3 1.6-.8l14 8.5c.6.37.6 1.23 0 1.6l-14 8.5c-.66.5-1.6.03-1.6-.8z"/>
+              </svg>
+              {t('openAndroidApp')}
+            </a>
           </>
         )}
       </div>

@@ -16,6 +16,8 @@ export const ko = {
     qrRetry: '새 코드 받기',
     qrRefresh: '새 코드',
     openApp: 'HASHPASS.TECH 열기',
+    signInWebApp: '웹 앱으로 로그인',
+    openAndroidApp: '안드로이드 앱 열기',
     orDownload: '또는 앱 다운로드',
     downloadApp: '앱 다운로드',
     exploreDashboard: '대시보드 열기',

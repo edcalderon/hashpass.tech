@@ -16,6 +16,8 @@ export const fr = {
     qrRetry: 'Obtenir un nouveau code',
     qrRefresh: 'Nouveau code',
     openApp: 'Ouvrir HASHPASS.TECH',
+    signInWebApp: "Se connecter via l'application web",
+    openAndroidApp: "Ouvrir l'application Android",
     orDownload: 'ou téléchargez l\'app',
     downloadApp: 'Télécharger l\'app',
     exploreDashboard: 'Explorer le tableau de bord',
