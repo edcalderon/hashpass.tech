@@ -69,10 +69,6 @@ export interface LampBrandingConfig {
 // arbitrary `/assets/...` paths, and SVG imports can be interpreted by Metro as
 // directory requests (`/logos/bsl`), producing ENOENT and blank carousel cards.
 const HASHPASS_DARK_LOGO = require("../assets/logos/hashpass/logo-full-hashpass-white-cyan.webp");
-const BSL_WHITE_BRAND_LOGO = require("../assets/logos/bsl/bsl-white.webp");
-const BSL_ONTOUR_LOGO = require("../assets/logos/bsl/bsl-ontour-pro.webp");
-const BSL_PERU_LOGO = require("../assets/logos/bsl/bsl-peru-pro.webp");
-const BSL_CHILE_LOGO = require("../assets/logos/bsl/bsl-chile-pro.webp");
 const BSL_COLOMBIA_LOGO = require("../assets/logos/bsl/bsl-colombia-pro.webp");
 
 // Main HASHPASS Logo
@@ -90,42 +86,16 @@ const MAIN_HASHPASS_LOGO = {
   accentColor: "#6FDDFD",
 };
 
-const BSL_PLAIN_LOGO = {
-  id: "bsl-plain",
-  name: "Blockchain Summit Latam",
-  darkSrc: BSL_WHITE_BRAND_LOGO,
-  lightSrc: BSL_WHITE_BRAND_LOGO,
-  backgroundColor: LOGO_SLIDE_BACKGROUND,
-  accentColor: "#6FDDFD",
+// BSL On Tour, Perú, and Chile were redundant/already-happened tour-stop
+// promos (Perú and Chile are done; Colombia is the only real upcoming stop),
+// so only the Colombia logo remains -- see the BSL On Tour hero subtitle:
+// "Peru and Chile are archived. Colombia is next."
+const BSL_COLOMBIA_LOGO_SLIDE = {
+  id: "bsl-colombia",
+  name: "BSL Colombia 2026",
+  logoSrc: BSL_COLOMBIA_LOGO,
+  accentColor: "#FFD700",
 };
-
-// BSL Event Logos with brand colors
-const BSL_LOGOS = [
-  {
-    id: "bsl-on-tour",
-    name: "BSL On Tour",
-    logoSrc: BSL_ONTOUR_LOGO,
-    accentColor: "#34D399",
-  },
-  {
-    id: "bsl-peru",
-    name: "BSL Perú 2026",
-    logoSrc: BSL_PERU_LOGO,
-    accentColor: "#E31C23",
-  },
-  {
-    id: "bsl-chile",
-    name: "BSL Chile 2026",
-    logoSrc: BSL_CHILE_LOGO,
-    accentColor: "#FF5B5B",
-  },
-  {
-    id: "bsl-colombia",
-    name: "BSL Colombia 2026",
-    logoSrc: BSL_COLOMBIA_LOGO,
-    accentColor: "#FFD700",
-  },
-];
 
 const hexToRgba = (hex: string, alpha: number) => {
   const normalized = hex.replace("#", "").trim();
@@ -206,12 +176,53 @@ export default function EventBannerCarousel({
   // on every whitelabel tenant's landing page regardless of context).
   const isGlobalTenant = isGlobalEventTenant() && !selectedEvent;
 
-  // Build slides: event banners + logo slides
+  // The global landing carousel should only promote what's actually
+  // happening or coming up. "bsl" is the tour-hub's own fallback banner
+  // ("BSL On Tour / Peru, Chile and Colombia 2026 roadshow") which just
+  // duplicates the BSL Colombia logo slide below; peru2026, chile2026, and
+  // bsl2025 are tour stops that have already happened. Only applies to the
+  // global carousel -- a whitelabel tenant's own page (selectedEvent set)
+  // must still show its own event regardless of this list.
+  const PAST_OR_REDUNDANT_EVENT_IDS = new Set([
+    "bsl",
+    "peru2026",
+    "chile2026",
+    "bsl2025",
+  ]);
+  const carouselEvents = selectedEvent
+    ? availableEvents
+    : availableEvents.filter(
+        (event) => !PAST_OR_REDUNDANT_EVENT_IDS.has(event.id),
+      );
+
+  // Real, currently-bookable event banner slides (Hash Poker Room, Colombia
+  // 2026, etc.) -- split out Hash Poker Room so it can be pinned right after
+  // the HASHPASS logo below, regardless of where getAvailableEvents() would
+  // otherwise place it.
+  const eventSlides = carouselEvents.flatMap((event) =>
+    getEventBannerSlides(event).map((banner: ResolvedEventBannerSlide) => ({
+      type: "event" as const,
+      event,
+      banner,
+      // Preserve the established global BSL brand treatment for events
+      // without campaign slides. A selected event always renders its own
+      // media so selection and banner content stay distinct.
+      useEventBranding: !selectedEvent && !event.bannerSlides?.length,
+    })),
+  );
+  const hashPokerSlides = eventSlides.filter(
+    (slide) => slide.event.id === "hash-poker",
+  );
+  const otherEventSlides = eventSlides.filter(
+    (slide) => slide.event.id !== "hash-poker",
+  );
+
+  // Build slides: HASHPASS logo, then Hash Poker Room, then the rest.
   const slides: CarouselSlide[] = [
     // { type: 'download' }, // Temporarily hidden
     ...(isGlobalTenant
       ? [
-          // Add main HASHPASS logo first
+          // Main HASHPASS logo always leads the carousel.
           {
             type: "logo" as const,
             logoId: MAIN_HASHPASS_LOGO.id,
@@ -219,40 +230,25 @@ export default function EventBannerCarousel({
             logoSrcLight: MAIN_HASHPASS_LOGO.lightSrc,
             // This is a branded dark hero rather than a theme-colored content
             // surface. Keep its background and logo contrast paired in light
-            // and dark mode, just like the BSL logo slides below.
+            // and dark mode, just like the BSL logo slide below.
             backgroundColor: MAIN_HASHPASS_LOGO.backgroundColor,
             accentColor: MAIN_HASHPASS_LOGO.accentColor,
           },
-          // Add BSL plain logo second
-          {
-            type: "logo" as const,
-            logoId: BSL_PLAIN_LOGO.id,
-            logoSrcDark: BSL_PLAIN_LOGO.darkSrc,
-            logoSrcLight: BSL_PLAIN_LOGO.lightSrc,
-            backgroundColor: BSL_PLAIN_LOGO.backgroundColor,
-            accentColor: BSL_PLAIN_LOGO.accentColor,
-          },
-          // Add BSL event logos with brand colors
-          ...BSL_LOGOS.map((logo) => ({
-            type: "logo" as const,
-            logoId: logo.id,
-            logoSrc: logo.logoSrc,
-            backgroundColor: MAIN_HASHPASS_LOGO.backgroundColor,
-            accentColor: logo.accentColor,
-          })),
         ]
       : []),
-    ...availableEvents.flatMap((event) =>
-      getEventBannerSlides(event).map((banner: ResolvedEventBannerSlide) => ({
-        type: "event" as const,
-        event,
-        banner,
-        // Preserve the established global BSL brand treatment for events
-        // without campaign slides. A selected event always renders its own
-        // media so selection and banner content stay distinct.
-        useEventBranding: !selectedEvent && !event.bannerSlides?.length,
-      })),
-    ),
+    ...hashPokerSlides,
+    ...(isGlobalTenant
+      ? [
+          {
+            type: "logo" as const,
+            logoId: BSL_COLOMBIA_LOGO_SLIDE.id,
+            logoSrc: BSL_COLOMBIA_LOGO_SLIDE.logoSrc,
+            backgroundColor: MAIN_HASHPASS_LOGO.backgroundColor,
+            accentColor: BSL_COLOMBIA_LOGO_SLIDE.accentColor,
+          },
+        ]
+      : []),
+    ...otherEventSlides,
   ];
 
   const scrollToSlide = useCallback(
