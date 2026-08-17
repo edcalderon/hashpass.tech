@@ -42,7 +42,17 @@ interface ScheduledEvent {
 const DEFAULT_CORS_ALLOWED_ORIGINS = [
   'http://localhost:3000',
   'https://hashpass.club',
+  // The Club opens this approval screen on the HashPass app domain. The
+  // browser then calls this API directly from hashpass.tech, so that origin
+  // must be allowed on both the Lambda response and API Gateway's preflight
+  // configuration (in packages/infra/terraform/stacks/hashpass-links-api).
+  'https://hashpass.tech',
+  'https://www.hashpass.tech',
   'https://hashpass.link',
+  // A club-dev tenant's resolveHashpassAppUrl() opens the approval screen
+  // at dev.hashpass.tech instead -- without this, the dev web sign-in flow
+  // fails preflight the same way prod would without the entries above.
+  'https://dev.hashpass.tech',
 ];
 
 function splitCsv(value: string | undefined): string[] {

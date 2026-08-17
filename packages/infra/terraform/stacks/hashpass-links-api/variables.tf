@@ -166,9 +166,17 @@ variable "cors_allow_origins" {
     dev = [
       "http://localhost:3000",
       "https://hashpass.club",
+      # club-dev's resolveHashpassAppUrl() opens the approval screen at
+      # dev.hashpass.tech -- API Gateway owns OPTIONS, so this must be
+      # listed here as well as in the Lambda's own default allowlist.
+      "https://dev.hashpass.tech",
     ]
     prod = [
       "https://hashpass.club",
+      # The Club's web-app approval link opens at hashpass.tech. API Gateway
+      # owns OPTIONS, so this must be listed here as well as in the Lambda.
+      "https://hashpass.tech",
+      "https://www.hashpass.tech",
     ]
   }
 }

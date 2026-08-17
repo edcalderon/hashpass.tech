@@ -25,6 +25,10 @@ export default function AuthConnectScreen() {
 
   const challengeId = typeof params.challengeId === 'string' ? params.challengeId : undefined;
   const requestedLocale = typeof params.locale === 'string' ? params.locale : undefined;
+  // setLocale mutates Lingui's singleton. Keep a local revision so this
+  // screen always renders again after that mutation, rather than relying on
+  // an unrelated provider render or the polling fallback in useTranslation.
+  const [, setLocaleRevision] = useState(0);
 
   // hashpass.club passes its visitor's current locale in the query string
   // (SignInModal's openWebApp()) so this screen matches the language they
@@ -32,7 +36,18 @@ export default function AuthConnectScreen() {
   // setLocale() itself validates against the known locale set and falls
   // back to 'en' for anything unrecognized, so no validation needed here.
   useEffect(() => {
-    if (requestedLocale) setLocale(requestedLocale).catch(() => {});
+    if (!requestedLocale) return;
+
+    let mounted = true;
+    setLocale(requestedLocale)
+      .catch(() => {})
+      .finally(() => {
+        if (mounted) setLocaleRevision((revision) => revision + 1);
+      });
+
+    return () => {
+      mounted = false;
+    };
   }, [requestedLocale]);
 
   const returnTo = useMemo(() => {
