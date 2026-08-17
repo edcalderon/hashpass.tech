@@ -20,13 +20,16 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.8)
+## 📋 Latest Changes (v1.9.9)
 
-### Released
-- explorer stats card fixes, morphicons pilot, unified slider progress bar; annotate QRScanner onRawScan param type
+### Bug Fixes
+
+* **mobile:** stop unauthenticated users from landing on the dashboard, rebuild event-info page ([a2a128a](https://github.com/hashpass-tech/hashpass.tech/commit/a2a128aeee378ce9e625725d225b49709420696c))
+### Release Highlights
+- stop unauthenticated users from landing on the dashboard, rebuild event-info page
 
 ### Release scope
-- Compared with: `v1.9.7` (the previous global release tag)
+- Compared with: `v1.9.8` (the previous global release tag)
 
 ### Affected products & packages
 - Mobile app
