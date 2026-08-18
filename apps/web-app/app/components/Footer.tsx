@@ -35,6 +35,7 @@ export function Footer() {
       links: [
         { label: t('privacy'), href: 'https://hashpass.tech/privacy' },
         { label: t('terms'), href: 'https://hashpass.tech/terms' },
+        { label: t('deleteAccount'), href: 'https://hashpass.tech/delete-account' },
       ],
     },
   ];

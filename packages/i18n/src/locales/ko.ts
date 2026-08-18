@@ -132,6 +132,7 @@ export const ko = {
     blog: '블로그',
     privacy: '개인정보',
     terms: '이용약관',
+    deleteAccount: '계정 삭제',
     copyright: '© {year} HASHPASS. All rights reserved.',
   },
   theme: { toggle: '테마 전환', dark: '다크', light: '라이트', system: '시스템' },
