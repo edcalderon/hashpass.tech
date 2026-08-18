@@ -1,3 +1,14 @@
+## [1.9.17](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.16...v1.9.17) (2026-08-18)
+### Released
+- add standalone, unauthenticated Delete Account page; migrate legal pages off broken i18n, fix delete-account access, fix hero logo contrast
+
+### Release scope
+- Compared with: `v1.9.16` (the previous global release tag)
+
+### Affected products & packages
+- Club web
+- Mobile app
+
 ## [1.9.16](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.15...v1.9.16) (2026-08-18)
 ### Released
 - 90s wait countdown + fix deny/cancel not reaching the browser
