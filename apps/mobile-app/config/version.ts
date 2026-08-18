@@ -22,22 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202608171912, // Updated to current timestamp
-  releaseDate: '2026-08-17',
+  buildNumber: 202608180015, // Updated to current timestamp
+  releaseDate: '2026-08-18',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
     // No new features
   ],
   bugfixes: [
-    'allow web approval requests'
+    'locale race, gateway-blip resilience, and club UX polish'
   ],
   breakingChanges: [],
-  notes: 'allow web approval requests'
+  notes: 'locale race, gateway-blip resilience, and club UX polish'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.15': {
+    version: '1.9.15',
+    buildNumber: 202608180015,
+    releaseDate: '2026-08-18',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'locale race, gateway-blip resilience, and club UX polish'
+    ],
+    breakingChanges: [],
+    notes: 'locale race, gateway-blip resilience, and club UX polish'
+  },
   '1.9.14': {
     version: '1.9.14',
     buildNumber: 202608171912,
