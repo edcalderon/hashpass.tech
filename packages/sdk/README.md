@@ -54,10 +54,21 @@ const session = await hashpass.authQr.waitForLogin(login, { signal });
 installSession(session); // { userId, accessToken, refreshToken }
 ```
 
-On the approving side (e.g. inside a native app that just scanned the code, or a browser tab that already has a Hashpass session), respond to the same challenge:
+On the approving side (e.g. inside a native app that just scanned the code, or a browser tab that already has a Hashpass session), `respondToLogin` is a bearer-authenticated call — it needs a client configured with the *approver's own* session, not the anonymous client used to start the challenge above:
 
 ```ts
-await hashpass.authQr.respondToLogin(challengeId, "approve"); // or "deny"
+import { createHashpass } from "@hashpass/sdk";
+
+const hashpassOnDevice = createHashpass({
+  appId: "your-public-app-id",
+  linksApiBaseUrl: "https://hashpass.link/",
+  // The already-signed-in user approving the login, e.g. your app's own
+  // token provider or a populated AuthSessionStore. Without this, the
+  // request has no Authorization header and the API returns 401.
+  auth: { getAccessToken: () => currentUserAccessToken },
+});
+
+await hashpassOnDevice.authQr.respondToLogin(challengeId, "approve"); // or "deny"
 ```
 
 `hashpass.qrLinks` manages a separate, unrelated feature on the same backing service ("Hashpass Links": custom trackable QR codes for campaigns) — `create`, `list`, `get`, `slugAvailability`, `update`, `delete`, and `analytics`. Both `authQr` and `qrLinks` require `linksApiBaseUrl` to be configured; they throw a `configuration_error` `HashpassError` otherwise.
