@@ -35,7 +35,7 @@ export default function TermsOfServiceScreen() {
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <Text style={styles.lastUpdated} selectable={false}>
-          {t({ id: 'terms.lastUpdated', message: 'Last Updated: November 4, 2025' })}
+          {t({ id: 'terms.lastUpdated', message: 'Last Updated: August 18, 2026' })}
         </Text>
 
         <Text style={styles.sectionTitle} selectable={false}>
@@ -62,9 +62,9 @@ export default function TermsOfServiceScreen() {
           {t({ id: 'terms.accounts.title', message: '3. User Accounts' })}
         </Text>
         <Text style={styles.sectionText} selectable={false}>
-          {t({ 
-            id: 'terms.accounts.text', 
-            message: 'You are responsible for maintaining the confidentiality of your account credentials. You agree to:\n\n• Provide accurate and complete information\n• Keep your account information updated\n• Not share your account with others\n• Notify us immediately of any unauthorized use\n• Accept responsibility for all activities under your account' 
+          {t({
+            id: 'terms.accounts.text',
+            message: 'You are responsible for maintaining the confidentiality of your account credentials. You agree to:\n\n• Provide accurate and complete information\n• Keep your account information updated\n• Not share your account with others\n• Notify us immediately of any unauthorized use\n• Accept responsibility for all activities under your account\n\nIf you choose to sign in by linking a cryptocurrency wallet, you are solely responsible for the security of your wallet, private keys, and seed phrase. We never request, collect, or have access to your private keys or seed phrase, and we cannot recover a wallet-linked account if you lose access to your wallet.'
           })}
         </Text>
 
@@ -82,9 +82,9 @@ export default function TermsOfServiceScreen() {
           {t({ id: 'terms.content.title', message: '5. User Content' })}
         </Text>
         <Text style={styles.sectionText} selectable={false}>
-          {t({ 
-            id: 'terms.content.text', 
-            message: 'You retain ownership of content you submit to the Service. By submitting content, you grant us a worldwide, non-exclusive, royalty-free license to use, reproduce, modify, and distribute your content for the purpose of providing and improving the Service.' 
+          {t({
+            id: 'terms.content.text',
+            message: 'You retain ownership of content you submit to the Service. By submitting content, you grant us a worldwide, non-exclusive, royalty-free license to use, reproduce, modify, and distribute your content for the purpose of providing and improving the Service.\n\nMessages you send through our in-app meeting chat feature are end-to-end encrypted and readable only by you and the recipient (see our Privacy Policy for details) — this license to message content is limited accordingly, since we cannot access or process encrypted message content ourselves.'
           })}
         </Text>
 

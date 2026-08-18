@@ -2,10 +2,16 @@
 
 import React from 'react';
 import { Platform } from 'react-native';
+import { HashpassError } from '@hashpass/sdk';
 import AuthConnectScreen from '../../app/auth/connect/index';
 import { getCurrentLocale, setLocale } from '../../i18n/i18n';
 import { LanguageProvider } from '../../providers/LanguageProvider';
 import { I18nProvider } from '../../providers/I18nProvider';
+
+const mockRefreshSession = jest.fn();
+jest.mock('../../lib/supabase', () => ({
+  supabase: { auth: { refreshSession: (...args: unknown[]) => mockRefreshSession(...args) } },
+}));
 
 // Real async storage read, deliberately controllable per-test -- used by the
 // LanguageProvider race test below to simulate it resolving AFTER this
@@ -104,6 +110,7 @@ describe('AuthConnectScreen', () => {
     mockParams = { challengeId: 'chal_123', source: 'web', ref: 'landing' };
     mockAuthState = { user: { id: 'better-auth-user-1' }, isLoggedIn: true, isLoading: false, dbUserId: 'db-user-1' };
     mockAsyncStorageGetItem.mockResolvedValue(null);
+    mockRefreshSession.mockResolvedValue({ data: { session: { access_token: 'refreshed-token' } }, error: null });
   });
 
   afterEach(async () => {
@@ -189,6 +196,49 @@ describe('AuthConnectScreen', () => {
     const doneButton = findByText(renderer.root, 'Done — Back to Club').parent;
     await triggerPress(doneButton);
 
+    expect(mockReplace).toHaveBeenCalledWith('/(shared)/dashboard/explore');
+  });
+
+  // Regression test for a real bug found live in production 2026-08-18:
+  // clicking Deny landed on "Sign in required" instead of "Login denied" --
+  // respondToLogin() 401'd even though the visitor had just been looking at
+  // the Approve/Deny screen (which only renders once sessionStatus is
+  // already 'ready'). Traced to a stale/not-yet-refreshed Supabase session
+  // in this freshly-opened tab. Fixed with a refresh-and-retry-once wrapper
+  // in AuthQrApprovalCard.tsx.
+  it('retries once after refreshing a stale session instead of treating a transient 401 as signed out', async () => {
+    Object.defineProperty(Platform, 'OS', { value: 'ios' });
+    mockRespondToLogin
+      .mockRejectedValueOnce(new HashpassError('Authenticated HashPass app session required', { code: 'unauthorized', status: 401 }))
+      .mockResolvedValueOnce({ status: 'denied' });
+    renderer = await renderScreen();
+
+    const denyButton = findByText(renderer.root, 'Deny').parent;
+    await triggerPress(denyButton);
+
+    expect(mockRefreshSession).toHaveBeenCalledTimes(1);
+    expect(mockRespondToLogin).toHaveBeenCalledTimes(2);
+    expect(mockRespondToLogin).toHaveBeenNthCalledWith(1, 'chal_123', 'deny');
+    expect(mockRespondToLogin).toHaveBeenNthCalledWith(2, 'chal_123', 'deny');
+    expect(findByText(renderer.root, 'Login denied')).toBeTruthy();
+    expect(findByText(renderer.root, 'Sign in required')).toBeFalsy();
+  });
+
+  // Regression test for a real gap found live in production 2026-08-18:
+  // clicking Cancel closed the tab but never told the server, so the
+  // browser side (SignInModal.tsx's waitForLogin poll) had no way to know
+  // and just kept waiting until the challenge's own server-side expiry,
+  // minutes later. Fixed by treating an idle-state Cancel as an implicit
+  // deny (best-effort, fire-and-forget) in the approval machine.
+  it('cancelling from idle notifies the server as an implicit deny before leaving', async () => {
+    Object.defineProperty(Platform, 'OS', { value: 'ios' });
+    mockRespondToLogin.mockResolvedValue({ status: 'denied' });
+    renderer = await renderScreen();
+
+    const cancelLink = findByText(renderer.root, 'Cancel').parent;
+    await triggerPress(cancelLink);
+
+    expect(mockRespondToLogin).toHaveBeenCalledWith('chal_123', 'deny');
     expect(mockReplace).toHaveBeenCalledWith('/(shared)/dashboard/explore');
   });
 

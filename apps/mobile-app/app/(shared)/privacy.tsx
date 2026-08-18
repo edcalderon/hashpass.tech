@@ -35,7 +35,7 @@ export default function PrivacyPolicyScreen() {
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <Text style={styles.lastUpdated} selectable={false}>
-          {t({ id: 'privacy.lastUpdated', message: 'Last Updated: July 8, 2026' })}
+          {t({ id: 'privacy.lastUpdated', message: 'Last Updated: August 18, 2026' })}
         </Text>
 
         <Text style={styles.sectionTitle} selectable={false}>
@@ -52,9 +52,9 @@ export default function PrivacyPolicyScreen() {
           {t({ id: 'privacy.collection.title', message: '2. Information We Collect' })}
         </Text>
         <Text style={styles.sectionText} selectable={false}>
-          {t({ 
-            id: 'privacy.collection.text', 
-            message: 'We collect information that you provide directly to us, including:\n\n• Account Information: When you sign in with Google, we collect your name, email address, and profile picture.\n• Event Data: Information about events you attend, passes you hold, and interactions within our platform.\n• Usage Data: Information about how you use our Service, including features accessed and actions taken.\n• Device Information: Technical information about your device, browser, and operating system.' 
+          {t({
+            id: 'privacy.collection.text',
+            message: 'We collect information that you provide directly to us, including:\n\n• Account Information: Your name and email address, whether you sign in with Google, with an email verification code, or with a linked cryptocurrency wallet.\n• Profile Photo: If you choose to upload a profile picture, we store and display it. This is optional.\n• Wallet Information: If you connect a cryptocurrency wallet (e.g. Solana or Ethereum) to sign in, we collect and store your public wallet address. We never collect or have access to your private keys or seed phrase.\n• Messages: If you use in-app messaging (e.g. event meeting chat), we store sender and recipient identifiers and timestamps so messages can be delivered. Message content sent through meeting chat is end-to-end encrypted — see Section 5 for details.\n• Event Data: Information about events you attend, passes you hold, and interactions within our platform.\n• Usage Data: Information about how you use our Service, including features accessed and actions taken.\n• Device Information: Technical information about your device, browser, and operating system.'
           })}
         </Text>
 
@@ -72,9 +72,9 @@ export default function PrivacyPolicyScreen() {
           {t({ id: 'privacy.sharing.title', message: '4. Information Sharing and Disclosure' })}
         </Text>
         <Text style={styles.sectionText} selectable={false}>
-          {t({ 
-            id: 'privacy.sharing.text', 
-            message: 'We do not sell your personal information. We may share your information only in the following circumstances:\n\n• With event organizers for events you register for\n• With service providers who assist us in operating our platform\n• When required by law or to protect our rights\n• In connection with a merger, acquisition, or sale of assets' 
+          {t({
+            id: 'privacy.sharing.text',
+            message: 'We do not sell your personal information, and we do not share it with third parties for their own independent purposes. We use a small number of service providers who process data solely on our behalf, under contract, to help us operate the Service:\n\n• Supabase, for authentication and database hosting\n• Brevo, to deliver transactional emails such as sign-in verification codes\n• Cloudinary, to host and optimize profile pictures you choose to upload\n\nWe may also share your information:\n\n• With event organizers for events you register for\n• When required by law or to protect our rights\n• In connection with a merger, acquisition, or sale of assets'
           })}
         </Text>
 
@@ -82,9 +82,9 @@ export default function PrivacyPolicyScreen() {
           {t({ id: 'privacy.security.title', message: '5. Data Security' })}
         </Text>
         <Text style={styles.sectionText} selectable={false}>
-          {t({ 
-            id: 'privacy.security.text', 
-            message: 'We implement appropriate technical and organizational security measures to protect your personal information. However, no method of transmission over the Internet or electronic storage is 100% secure, and we cannot guarantee absolute security.' 
+          {t({
+            id: 'privacy.security.text',
+            message: 'We implement appropriate technical and organizational security measures to protect your personal information:\n\n• Encryption in transit: All data sent between your device and our servers is encrypted using HTTPS/TLS.\n• End-to-end encrypted messaging: Messages you send through our in-app meeting chat feature are end-to-end encrypted (X25519 key exchange, HKDF-SHA256, and XChaCha20-Poly1305) directly on your device. Only you and the recipient can read message content — HASHPASS cannot access it.\n• Account deletion: You can permanently delete your account and associated personal data at any time from within the app.\n\nNo method of transmission over the Internet or electronic storage is 100% secure, and we cannot guarantee absolute security.'
           })}
         </Text>
 

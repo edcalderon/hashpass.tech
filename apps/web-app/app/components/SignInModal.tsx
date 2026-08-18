@@ -161,6 +161,15 @@ export function SignInModal({ open, onClose }: SignInModalProps) {
   // leaves 'waiting' (a fresh challenge, denial, expiry, error, or success),
   // so a retry always starts clickable again.
   const [webAppPending, setWebAppPending] = useState(false);
+  // Client-side countdown shown as a ring around the refresh button while
+  // waiting -- deliberately shorter than the server's own 180s challenge
+  // TTL (packages/backend/src/auth-qr/challenge.ts's QR_AUTH_TTL_SECONDS) so
+  // a real visitor sees active, honest progress instead of an indefinite
+  // spinner, and a proactive refresh at 0 keeps the flow feeling alive
+  // rather than ever actually hitting the hard server-side expiry during
+  // normal use.
+  const WAIT_TIMEOUT_SECONDS = 90;
+  const [waitSecondsLeft, setWaitSecondsLeft] = useState(WAIT_TIMEOUT_SECONDS);
 
   // startQrLogin below is intentionally a stable useCallback([]) -- the
   // effect that auto-starts it on modal open depends on it, and a
@@ -231,6 +240,29 @@ export function SignInModal({ open, onClose }: SignInModalProps) {
   useEffect(() => {
     if (qrPhase !== 'waiting') setWebAppPending(false);
   }, [qrPhase]);
+
+  // Reset the countdown for each new challenge, then tick it down once per
+  // second while waiting. Auto-refreshes (a whole new challenge, same as
+  // clicking the refresh button) once it reaches 0, rather than just
+  // freezing at 0 -- keeps the flow usable indefinitely without ever
+  // needing to reach the server's own hard 180s expiry.
+  useEffect(() => {
+    if (qrPhase !== 'waiting') return;
+    setWaitSecondsLeft(WAIT_TIMEOUT_SECONDS);
+
+    const interval = setInterval(() => {
+      setWaitSecondsLeft((seconds) => {
+        if (seconds <= 1) {
+          startQrLogin();
+          return WAIT_TIMEOUT_SECONDS;
+        }
+        return seconds - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [qrPhase, qrLogin?.challenge.id]);
 
   // Close on Escape
   useEffect(() => {
@@ -535,28 +567,52 @@ export function SignInModal({ open, onClose }: SignInModalProps) {
             {qrPhase === 'waiting' ? t('qrWaiting') : ' '}
           </p>
           {qrPhase === 'waiting' && (
-            <button
-              onClick={startQrLogin}
-              aria-label={t('qrRefresh')}
-              title={t('qrRefresh')}
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                width: 20, height: 20, padding: 0, borderRadius: '50%',
-                border: 'none', background: 'transparent', color: 'var(--text-faint)',
-                cursor: 'pointer', transition: 'color 0.15s, transform 0.15s',
-              }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--accent)'; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--text-faint)'; }}
-              onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'rotate(-90deg)'; }}
-              onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'rotate(0deg)'; }}
+            <div
+              style={{ position: 'relative', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              title={`${t('qrWaiting')} (${waitSecondsLeft}s)`}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
-                <path
-                  d="M20 11A8 8 0 0 0 6.34 6.34M4 13a8 8 0 0 0 13.66 4.66M4 4v5h5M20 20v-5h-5"
-                  stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+              {/* Countdown ring, WAIT_TIMEOUT_SECONDS-second sweep -- depletes
+                  as waitSecondsLeft counts down, giving honest progress
+                  instead of an indefinite spinner. Purely visual; the
+                  interval effect above is what actually drives the refresh
+                  at 0. */}
+              <svg
+                width="24" height="24" viewBox="0 0 24 24" aria-hidden
+                style={{ position: 'absolute', top: 0, left: 0, transform: 'rotate(-90deg)' }}
+              >
+                <circle cx="12" cy="12" r="10" fill="none" stroke="var(--border-strong)" strokeWidth="1.5" opacity="0.35" />
+                <circle
+                  cx="12" cy="12" r="10" fill="none" stroke="var(--accent)" strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeDasharray={2 * Math.PI * 10}
+                  strokeDashoffset={2 * Math.PI * 10 * (1 - waitSecondsLeft / WAIT_TIMEOUT_SECONDS)}
+                  style={{ transition: 'stroke-dashoffset 1s linear' }}
                 />
               </svg>
-            </button>
+              <button
+                onClick={startQrLogin}
+                aria-label={`${t('qrRefresh')} (${waitSecondsLeft}s)`}
+                title={t('qrRefresh')}
+                style={{
+                  position: 'relative', zIndex: 1,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  width: 20, height: 20, padding: 0, borderRadius: '50%',
+                  border: 'none', background: 'transparent', color: 'var(--text-faint)',
+                  cursor: 'pointer', transition: 'color 0.15s, transform 0.15s',
+                }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--accent)'; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--text-faint)'; }}
+                onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'rotate(-90deg)'; }}
+                onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'rotate(0deg)'; }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
+                  <path
+                    d="M20 11A8 8 0 0 0 6.34 6.34M4 13a8 8 0 0 0 13.66 4.66M4 4v5h5M20 20v-5h-5"
+                    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+            </div>
           )}
         </div>
 
@@ -668,8 +724,20 @@ export function SignInModal({ open, onClose }: SignInModalProps) {
               }}
             >
               {webAppPending ? (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden style={{ animation: 'qr-spin 0.9s linear infinite' }}>
-                  <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"/>
+                // Same WAIT_TIMEOUT_SECONDS countdown ring as the QR frame's
+                // refresh button below -- both surfaces share the one
+                // waitSecondsLeft tick, so a visitor sees consistent,
+                // honest progress regardless of which path (QR scan or this
+                // button) they're waiting on.
+                <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden style={{ transform: 'rotate(-90deg)' }}>
+                  <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="2.4" opacity="0.35" />
+                  <circle
+                    cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="2.4"
+                    strokeLinecap="round"
+                    strokeDasharray={2 * Math.PI * 10}
+                    strokeDashoffset={2 * Math.PI * 10 * (1 - waitSecondsLeft / WAIT_TIMEOUT_SECONDS)}
+                    style={{ transition: 'stroke-dashoffset 1s linear' }}
+                  />
                 </svg>
               ) : (
                 /* Browser / web icon */
