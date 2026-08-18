@@ -20,17 +20,20 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.17)
+## 📋 Latest Changes (v1.9.18)
 
-### Released
-- add standalone, unauthenticated Delete Account page; migrate legal pages off broken i18n, fix delete-account access, fix hero logo contrast
+### Bug Fixes
+
+* **mobile:** stuck QR-approve screen, cut-off dashboard stat cards, local CORS gap ([377e58e](https://github.com/hashpass-tech/hashpass.tech/commit/377e58e847c13e86fe9fb647d6f4143c4ecc45ca))
+### Release Highlights
+- stuck QR-approve screen, cut-off dashboard stat cards, local CORS gap
 
 ### Release scope
-- Compared with: `v1.9.16` (the previous global release tag)
+- Compared with: `v1.9.17` (the previous global release tag)
 
 ### Affected products & packages
-- Club web
 - Mobile app
+- QR links API
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
