@@ -17,6 +17,8 @@ export const ko = {
     qrRefresh: '새 코드',
     openApp: 'HASHPASS.TECH 열기',
     signInWebApp: '웹 앱으로 로그인',
+    signInWebAppPending: '다른 탭에서 승인을 기다리는 중…',
+    signInWebAppReset: '안 되나요? 다시 시도',
     openAndroidApp: '안드로이드 앱 열기',
     orDownload: '또는 앱 다운로드',
     downloadApp: '앱 다운로드',

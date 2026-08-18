@@ -1,6 +1,6 @@
 import { useCallback, useState, useEffect } from 'react';
 import * as Localization from 'expo-localization';
-import { setLocale } from '../i18n/i18n';
+import { setLocale, isLocaleOverrideActive } from '../i18n/i18n';
 import { AppState, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -31,6 +31,17 @@ export const useLanguageStore = (): LanguageStoreType => {
     const loadLocale = async () => {
       try {
         const savedLocale = await AsyncStorage.getItem('user_locale');
+        // A screen can request a specific locale that must win over this
+        // provider's own device/saved-preference detection (see
+        // i18n.ts's setLocaleOverride doc comment) -- this AsyncStorage read
+        // is real async I/O, so it can resolve after that screen's own
+        // effect already applied its locale. Re-check right before applying
+        // rather than only at effect start, since the override can be set
+        // at any point during this await.
+        if (isLocaleOverrideActive()) {
+          setIsInitialLoad(false);
+          return;
+        }
         if (savedLocale) {
           setLocale(savedLocale);
           setLocaleState(savedLocale);
@@ -48,6 +59,10 @@ export const useLanguageStore = (): LanguageStoreType => {
         setIsInitialLoad(false);
       } catch (error) {
         console.error('Failed to load locale', error);
+        if (isLocaleOverrideActive()) {
+          setIsInitialLoad(false);
+          return;
+        }
         // Fallback to English if loading fails
         await AsyncStorage.setItem('user_locale', 'en');
         setLocale('en');

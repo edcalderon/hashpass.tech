@@ -85,6 +85,25 @@ export async function setLocale(locale: string) {
   await loadMessages(locale);
 }
 
+// Set once a caller has requested a SPECIFIC locale that must win over the
+// app's own device/saved-preference detection (e.g. /auth/connect matching
+// the locale the visitor was already using on hashpass.club). LanguageProvider
+// (providers/LanguageProvider.tsx, mounted app-wide) loads its own locale
+// from AsyncStorage on every mount via a real async read -- if that resolves
+// AFTER a screen's own setLocale() call, it silently overwrites it back to
+// the device/saved locale with no coordination between the two. Checking
+// this flag in useLanguageStore's own load effect lets it defer instead.
+let localeOverrideActive = false;
+
+export function isLocaleOverrideActive(): boolean {
+  return localeOverrideActive;
+}
+
+export async function setLocaleOverride(locale: string) {
+  localeOverrideActive = true;
+  await loadMessages(locale);
+}
+
 // Initialize on import (will adjust from default 'en' to device language)
 initI18n().catch(() => {});
 

@@ -208,7 +208,40 @@ export function Navbar({ showMarketingLinks = true, hasHero = true }: NavbarProp
           {showMarketingLinks && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 2 }} className="nav-links-desktop">
             {navLinks.map(({ key, href }) => (
-              href.startsWith('/') ? (
+              // /documentation/ is a separately-built static site (Docusaurus)
+              // merged into the export at deploy time -- it has no entry in
+              // this app's own route manifest, so next/link's viewport
+              // prefetch fires an RSC tree fetch that always 404s
+              // (GET /documentation/__next.<tree>.txt?_rsc=...). A plain
+              // anchor navigates fine (full page load resolves the real
+              // static file) without ever attempting that prefetch.
+              href === '/documentation/' ? (
+                <a
+                  key={key}
+                  href={href}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: 8,
+                    fontSize: 14,
+                    fontWeight: 500,
+                    color: linkColor,
+                    transition: 'color 0.2s, background 0.2s',
+                    textDecoration: 'none',
+                  }}
+                  onMouseEnter={(e) => {
+                    const el = e.currentTarget as HTMLElement;
+                    el.style.color = linkHoverColor;
+                    el.style.background = overHero ? 'rgba(255,255,255,0.1)' : 'var(--bg-overlay)';
+                  }}
+                  onMouseLeave={(e) => {
+                    const el = e.currentTarget as HTMLElement;
+                    el.style.color = linkColor;
+                    el.style.background = 'transparent';
+                  }}
+                >
+                  {t(key)}
+                </a>
+              ) : href.startsWith('/') ? (
                 <Link
                   key={key}
                   href={href}
