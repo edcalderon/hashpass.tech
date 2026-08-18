@@ -5,6 +5,7 @@ import { Platform } from 'react-native';
 import AuthConnectScreen from '../../app/auth/connect/index';
 import { getCurrentLocale, setLocale } from '../../i18n/i18n';
 import { LanguageProvider } from '../../providers/LanguageProvider';
+import { I18nProvider } from '../../providers/I18nProvider';
 
 // Real async storage read, deliberately controllable per-test -- used by the
 // LanguageProvider race test below to simulate it resolving AFTER this
@@ -237,8 +238,19 @@ describe('AuthConnectScreen', () => {
   // silently overwrote the requested locale back to the device/saved one
   // with no coordination between the two -- confirmed live via
   // hashpass.tech/auth/connect?...&locale=es rendering fully in English.
-  // Fixed with setLocaleOverride()/isLocaleOverrideActive() in i18n.ts.
-  it('a delayed LanguageProvider locale load does not override the requested locale', async () => {
+  //
+  // Mounts the FULL provider chain in app/_layout.tsx's actual nesting
+  // order (LanguageProvider > I18nProvider > screen), not just
+  // LanguageProvider -- an earlier version of this test only wrapped
+  // LanguageProvider and missed a second, independent source of the same
+  // clobber: I18nProviderInner (providers/I18nProvider.tsx) separately
+  // forces the shared Lingui singleton to match LanguageProvider's own
+  // context value whenever they differ, which fires the moment it mounts
+  // (targetLocale starts at LanguageProvider's 'en' fallback before its
+  // AsyncStorage read ever resolves) -- independently of the timing this
+  // test controls below. Caught by code review; both call sites now check
+  // isLocaleOverrideActive() before overwriting an active override.
+  it('neither LanguageProvider nor I18nProviderInner overrides the requested locale', async () => {
     mockParams = { challengeId: 'chal_123', locale: 'es' };
     mockAsyncStorageGetItem.mockImplementation(
       () => new Promise((resolve) => setTimeout(() => resolve(null), 500))
@@ -247,21 +259,27 @@ describe('AuthConnectScreen', () => {
     await act(async () => {
       renderer = create(
         <LanguageProvider>
-          <AuthConnectScreen />
+          <I18nProvider>
+            <AuthConnectScreen />
+          </I18nProvider>
         </LanguageProvider>
       );
     });
 
-    // Let the screen's own setLocaleOverride() (no real I/O) resolve first.
+    // Let I18nProvider's own initI18n() and the screen's setLocaleOverride()
+    // (neither does real I/O) resolve and settle.
     await act(async () => {
+      await Promise.resolve();
       await Promise.resolve();
       await Promise.resolve();
     });
     expect(getCurrentLocale()).toBe('es');
 
     // Now let LanguageProvider's own delayed AsyncStorage read resolve --
-    // before the fix, this silently reset the locale back to 'en' (the
-    // mocked device locale) with no coordination between the two.
+    // before the fix, this (and/or I18nProviderInner reacting to
+    // LanguageProvider's still-stale context value) silently reset the
+    // locale back to 'en' (the mocked device locale) with no coordination
+    // between either path and the requested override.
     await act(async () => {
       jest.advanceTimersByTime(500);
       await Promise.resolve();

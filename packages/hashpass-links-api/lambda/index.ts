@@ -86,15 +86,16 @@ function applyCorsHeaders(headers: Record<string, string>, event: ApiGatewayEven
     headers['access-control-allow-methods'] = 'GET, POST, PATCH, OPTIONS';
   }
   if (!headers['access-control-allow-headers']) {
-    // x-hashpass-app-id (every request) and x-hashpass-binding (poll/exchange)
-    // are custom headers @hashpass/sdk's AuthQrClient sends -- see
+    // x-hashpass-app-id (every request), x-hashpass-binding (poll/exchange),
+    // and idempotency-key (respondToLogin's approve/deny POST) are custom
+    // headers @hashpass/sdk's AuthQrClient sends -- see
     // packages/sdk/src/auth-qr/client.ts and src/routes/auth-qr.ts. Must be
     // mirrored here AND in the Terraform stack's cors_allow_headers: API
     // Gateway's native CORS support answers preflight OPTIONS itself before
     // Lambda runs, so this app-level header only covers actual (non-OPTIONS)
     // responses -- the Terraform config is what the browser's preflight
     // actually checks.
-    headers['access-control-allow-headers'] = 'Content-Type, Authorization, Cache-Control, X-Hashpass-App-Id, X-Hashpass-Binding';
+    headers['access-control-allow-headers'] = 'Content-Type, Authorization, Cache-Control, X-Hashpass-App-Id, X-Hashpass-Binding, Idempotency-Key';
   }
   if (resolvedOrigin !== '*' && !headers['access-control-allow-credentials']) {
     headers['access-control-allow-credentials'] = 'true';

@@ -6,19 +6,24 @@ locals {
 
   # aws_expo_router_api's own cors_allow_headers default (Content-Type,
   # Authorization, Cache-Control, Pragma, Expires, X-Client-Version) doesn't
-  # include the two custom headers @hashpass/sdk's AuthQrClient sends
-  # (x-hashpass-app-id on every request, x-hashpass-binding on poll/exchange
-  # -- see packages/sdk/src/auth-qr/client.ts and
+  # include the custom headers @hashpass/sdk's AuthQrClient sends
+  # (x-hashpass-app-id on every request, x-hashpass-binding on poll/exchange,
+  # idempotency-key on respondToLogin's approve/deny POST -- see
+  # packages/sdk/src/auth-qr/client.ts and
   # packages/hashpass-links-api/src/routes/auth-qr.ts). API Gateway's native
   # CORS support answers the browser's preflight OPTIONS itself, before
   # Lambda ever runs, so an incomplete allowlist here rejects the preflight
-  # outright -- the request body never even leaves the browser.
+  # outright -- the request body never even leaves the browser. This matters
+  # for respondToLogin specifically because /auth/connect (the web approval
+  # path used when the mobile app's own web export runs in a browser) calls
+  # it cross-origin, same as poll/exchange.
   cors_allow_headers = [
     "Content-Type",
     "Authorization",
     "Cache-Control",
     "X-Hashpass-App-Id",
     "X-Hashpass-Binding",
+    "Idempotency-Key",
   ]
 }
 

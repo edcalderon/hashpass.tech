@@ -291,7 +291,7 @@ $550.19 (961%). Same day, `aws ce get-cost-and-usage` on the `hashpass`
 profile still reconciled to essentially $0 -- the 2026-08-15 reconciliation
 gap looked unresolved again. It is now **fully explained, not a bug**:
 
-- `aws budgets describe-budgets --account-id 952191196420` returned
+- `aws budgets describe-budgets --account-id "$(aws sts get-caller-identity --profile hashpass --query Account --output text)"` returned
   `ActualSpend: $142.392` / `ForecastedSpend: $550.186` for "My Monthly Cost
   Budget" -- an exact match to the console screenshot, confirming the
   console figure is real and belongs to this account.
@@ -366,7 +366,7 @@ confirmed live. The two real open items are (1) confirm/apply the
 cancelled build can't silently re-create the Aug 1-6 pattern, and (2)
 expect CodeBuild spend to fall back down once this session's unusually
 high commit/release cadence returns to normal -- track actual MTD via
-`aws budgets describe-budgets --account-id 952191196420`, not a plain
+`aws budgets describe-budgets --account-id "$(aws sts get-caller-identity --profile hashpass --query Account --output text)"`, not a plain
 `ce get-cost-and-usage`, to avoid re-triggering this same false alarm.
 
 ## Phase 2 — inventory likely drivers
