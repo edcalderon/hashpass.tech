@@ -23,15 +23,32 @@ export default function AuthQrApproveScreen() {
     return 'ready' as const;
   }, [authLoading, isLoggedIn, dbUserId]);
 
+  // Confirmed live: every exit path here used to be a bare router.back(),
+  // which silently no-ops if this screen has no navigation history to pop
+  // -- e.g. a cold-started deep link straight from a QR scan intent, with
+  // no prior screen on the stack. That left the user stuck on Approve/Deny
+  // with no way out (Cancel, Deny, and Approve's own "Done" all landed
+  // here). Falls back to a known-good destination (the dashboard) instead
+  // of a dead no-op whenever there's nothing to go back to -- same
+  // canGoBack()-guarded pattern already used by app/(shared)/privacy.tsx's
+  // handleBackPress and app/auth/connect/index.tsx's closeOrLeave.
+  const goHomeOrBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+    router.replace('/(shared)/dashboard/explore' as any);
+  };
+
   return (
     <AuthQrApprovalCard
       challengeId={challengeId}
       sessionStatus={sessionStatus}
-      onApproved={() => router.back()}
-      onDenied={() => router.back()}
-      onCancel={() => router.back()}
+      onApproved={goHomeOrBack}
+      onDenied={goHomeOrBack}
+      onCancel={goHomeOrBack}
       onSignInRequired={() => router.replace('/auth' as any)}
-      onInvalidAction={() => router.back()}
+      onInvalidAction={goHomeOrBack}
     />
   );
 }

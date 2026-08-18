@@ -476,7 +476,7 @@ export default function Explorer({
 
   const selectedHeroSlider = useAutoAdvanceProgress({
     count: selectedEvent ? selectedHeroSlides.length : 0,
-    durationMs: (index) =>
+    durationMs: (index: number) =>
       selectedHeroSlides[index]?.durationMs || DEFAULT_EVENT_HERO_DURATION_MS,
     resetKey: selectedEvent?.id,
   });
@@ -703,7 +703,7 @@ export default function Explorer({
                 "explore.rework.eventBannerSlides",
                 "Event banner slides",
               )}
-              getSegmentAccessibilityLabel={(index) =>
+              getSegmentAccessibilityLabel={(index: number) =>
                 translate(
                   "explore.rework.showEventBanner",
                   "Show banner {number}",
@@ -841,7 +841,7 @@ export default function Explorer({
             "explore.rework.heroSlides",
             "Hero slides",
           )}
-          getSegmentAccessibilityLabel={(index) =>
+          getSegmentAccessibilityLabel={(index: number) =>
             `${translate("explore.rework.show", "Show")} ${HERO_SLIDES[index].eyebrow.toLowerCase()}`
           }
         />
@@ -1091,7 +1091,29 @@ export default function Explorer({
       detail: React.ReactNode,
       tooltip: string,
     ) => (
-      <View key={key} style={styles.discoveryCounterCard}>
+      // The per-card info button used to be a small 18px badge sharing the
+      // top row with the value+label text, which is what was squeezing
+      // "2 you're attending" / "1 with your pass" down to a sliver of width
+      // on these already-narrow (~78px) cards. The stat icon now renders as
+      // a big, low-opacity watermark pinned to a back corner (decorative
+      // only, pointerEvents="none") so it no longer competes for layout
+      // width -- the whole card is tappable for the tooltip instead of just
+      // the old badge.
+      <TouchableOpacity
+        key={key}
+        style={styles.discoveryCounterCard}
+        activeOpacity={0.7}
+        onPress={() => Alert.alert(label, tooltip)}
+        accessibilityRole="button"
+        accessibilityLabel={translate(
+          "explore.rework.summaryCardInfo",
+          "What does {label} mean?",
+          { label },
+        )}
+      >
+        <View style={styles.discoveryCounterWatermark} pointerEvents="none">
+          <Icon name={iconName} color={colors.primary} size={40} />
+        </View>
         <View style={styles.discoveryCounterTopRow}>
           <View style={styles.discoveryCounterValueRow}>
             {typeof value === "number" || typeof value === "string" ? (
@@ -1109,22 +1131,9 @@ export default function Explorer({
               {label}
             </Text>
           </View>
-          <TouchableOpacity
-            style={styles.discoveryCounterIconBadge}
-            onPress={() => Alert.alert(label, tooltip)}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            accessibilityRole="button"
-            accessibilityLabel={translate(
-              "explore.rework.summaryCardInfo",
-              "What does {label} mean?",
-              { label },
-            )}
-          >
-            <Icon name={iconName} color={colors.primary} size={12} />
-          </TouchableOpacity>
         </View>
         <View style={styles.discoveryCounterDetailSlot}>{detail}</View>
-      </View>
+      </TouchableOpacity>
     );
 
     return (
@@ -2366,11 +2375,13 @@ const getStyles = (isDark: boolean, colors: any) =>
       borderColor: colors.divider,
       backgroundColor: colors.background.paper,
       justifyContent: "flex-start",
+      position: "relative",
+      overflow: "hidden",
     },
     discoveryCounterTopRow: {
       flexDirection: "row",
       alignItems: "center",
-      justifyContent: "space-between",
+      justifyContent: "flex-start",
       gap: 4,
     },
     discoveryCounterValueRow: {
@@ -2380,13 +2391,15 @@ const getStyles = (isDark: boolean, colors: any) =>
       alignItems: "baseline",
       gap: 4,
     },
-    discoveryCounterIconBadge: {
-      width: 18,
-      height: 18,
-      borderRadius: 6,
-      alignItems: "center",
-      justifyContent: "center",
-      backgroundColor: isDark ? "rgba(255,255,255,.08)" : "rgba(15,23,42,.05)",
+    // Big decorative stat icon, pinned behind the text in the card's back
+    // corner -- see renderCard's comment for why this replaced the old
+    // in-flow icon badge. pointerEvents="none" so it never steals the tap
+    // that opens the tooltip.
+    discoveryCounterWatermark: {
+      position: "absolute",
+      right: -8,
+      bottom: -10,
+      opacity: isDark ? 0.16 : 0.1,
     },
     discoveryCounterValue: {
       color: colors.text.primary,
