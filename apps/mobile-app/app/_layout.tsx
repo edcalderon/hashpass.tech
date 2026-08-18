@@ -357,6 +357,12 @@ function ThemedContent() {
     pathname === '/(shared)/privacy' ||
     pathname === '/terms' ||
     pathname === '/(shared)/terms' ||
+    // Required by Google Play's "Delete account" store-listing link: must
+    // work without installing the app or signing in. Without this, the
+    // redirect below would send an unauthenticated visitor straight to
+    // /auth, defeating the page's entire purpose.
+    pathname === '/delete-account' ||
+    pathname === '/(shared)/delete-account' ||
     pathname === '/status' ||
     pathname === '/demo';
 

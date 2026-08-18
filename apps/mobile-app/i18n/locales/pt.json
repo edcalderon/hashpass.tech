@@ -260,14 +260,14 @@
   },
   "privacy": {
     "title": "Política de Privacidade",
-    "lastUpdated": "Última atualização: 8 de julho de 2026",
+    "lastUpdated": "Última atualização: 18 de agosto de 2026",
     "introduction": {
       "title": "1. Introdução",
       "text": "HASHPASS (\"nós\", \"nosso\" ou \"nos\") está comprometido em proteger sua privacidade. Esta Política de Privacidade explica como coletamos, usamos, divulgamos e protegemos suas informações quando você usa nossa plataforma de eventos digitais e serviços (o \"Serviço\"). Por favor, leia esta política de privacidade com atenção. Se você não concordar com os termos desta política de privacidade, não acesse o Serviço."
     },
     "collection": {
       "title": "2. Informações que coletamos",
-      "text": "Coletamos informações que você nos fornece diretamente, incluindo:\n\n• Informações da conta: Quando você faz login com Google, coletamos seu nome, endereço de email e foto de perfil.\n• Dados de eventos: Informações sobre eventos que você participa, passes que possui e interações em nossa plataforma.\n• Dados de uso: Informações sobre como você usa nosso Serviço, incluindo recursos acessados e ações realizadas.\n• Informações do dispositivo: Informações técnicas sobre seu dispositivo, navegador e sistema operacional."
+      "text": "Coletamos informações que você nos fornece diretamente, incluindo:\n\n• Informações da conta: Seu nome e endereço de e-mail, seja ao entrar com o Google, com um código de verificação por e-mail, ou com uma carteira de criptomoedas vinculada.\n• Foto de perfil: Se você optar por enviar uma foto de perfil, nós a armazenamos e exibimos. Isso é opcional.\n• Informações da carteira: Se você conectar uma carteira de criptomoedas (por exemplo, Solana ou Ethereum) para entrar, coletamos e armazenamos seu endereço público de carteira. Nunca coletamos nem temos acesso às suas chaves privadas ou frase-semente.\n• Mensagens: Se você usar mensagens dentro do aplicativo (por exemplo, o chat de reuniões de eventos), armazenamos os identificadores de remetente e destinatário e os carimbos de data/hora para que as mensagens possam ser entregues. O conteúdo das mensagens enviadas pelo chat de reuniões é criptografado de ponta a ponta — veja a Seção 5 para detalhes.\n• Dados do evento: Informações sobre eventos que você participa, passes que possui e interações em nossa plataforma.\n• Dados de uso: Informações sobre como você usa nosso Serviço, incluindo recursos acessados e ações realizadas.\n• Informações do dispositivo: Informações técnicas sobre seu dispositivo, navegador e sistema operacional."
     },
     "use": {
       "title": "3. Como usamos suas informações",
@@ -275,15 +275,16 @@
     },
     "sharing": {
       "title": "4. Compartilhamento e divulgação de informações",
-      "text": "Não vendemos suas informações pessoais. Podemos compartilhar suas informações apenas nas seguintes circunstâncias:\n\n• Com organizadores de eventos para eventos em que você se registra\n• Com provedores de serviços que nos ajudam a operar nossa plataforma\n• Quando exigido por lei ou para proteger nossos direitos\n• Em conexão com uma fusão, aquisição ou venda de ativos"
+      "text": "Não vendemos suas informações pessoais, e não as compartilhamos com terceiros para seus próprios fins independentes. Usamos um pequeno número de provedores de serviços que processam dados exclusivamente em nosso nome, sob contrato, para nos ajudar a operar o Serviço:\n\n• Supabase, para autenticação e hospedagem de banco de dados\n• Brevo, para entregar e-mails transacionais, como códigos de verificação de login\n• Cloudinary, para hospedar e otimizar as fotos de perfil que você optar por enviar\n\nTambém podemos compartilhar suas informações:\n\n• Com organizadores de eventos para os eventos em que você se inscrever\n• Quando exigido por lei ou para proteger nossos direitos\n• Em conexão com uma fusão, aquisição ou venda de ativos"
     },
     "security": {
       "title": "5. Segurança de dados",
-      "text": "Implementamos medidas de segurança técnicas e organizacionais apropriadas para proteger suas informações pessoais. No entanto, nenhum método de transmissão pela Internet ou armazenamento eletrônico é 100% seguro, e não podemos garantir segurança absoluta."
+      "text": "Implementamos medidas de segurança técnicas e organizacionais apropriadas para proteger suas informações pessoais:\n\n• Criptografia em trânsito: Todos os dados enviados entre seu dispositivo e nossos servidores são criptografados usando HTTPS/TLS.\n• Mensagens criptografadas de ponta a ponta: As mensagens que você envia por meio de nosso recurso de chat de reuniões no aplicativo são criptografadas de ponta a ponta (troca de chaves X25519, HKDF-SHA256 e XChaCha20-Poly1305) diretamente no seu dispositivo. Somente você e o destinatário podem ler o conteúdo da mensagem — a HASHPASS não pode acessá-lo.\n• Exclusão de conta: Você pode excluir permanentemente sua conta e os dados pessoais associados a qualquer momento dentro do aplicativo.\n\nNenhum método de transmissão pela Internet ou armazenamento eletrônico é 100% seguro, e não podemos garantir segurança absoluta."
     },
     "rights": {
       "title": "6. Seus direitos",
-      "text": "Você tem o direito de:\n\n• Acessar suas informações pessoais\n• Corrigir informações inexatas\n• Solicitar a exclusão de suas informações\n• Opor-se ao processamento de suas informações\n• Portabilidade de dados\n• Retirar o consentimento a qualquer momento"
+      "text": "Você tem o direito de:\n\n• Acessar suas informações pessoais\n• Corrigir informações inexatas\n• Solicitar a exclusão de suas informações\n• Opor-se ao processamento de suas informações\n• Portabilidade de dados\n• Retirar o consentimento a qualquer momento",
+      "deleteAccountLink": "Você pode excluir sua conta e dados a qualquer momento — veja como →"
     },
     "cookies": {
       "title": "7. Cookies e rastreamento",
@@ -296,11 +297,15 @@
     "contact": {
       "title": "9. Entre em contato",
       "text": "Se você tiver alguma dúvida sobre esta Política de Privacidade, entre em contato conosco em:\n\nEmail: privacy@hashpass.tech\nSite: https://hashpass.tech"
+    },
+    "analytics": {
+      "title": "8. Serviços de análise (Google Analytics)",
+      "text": "Usamos o Google Analytics 4 (GA4), um serviço de análise da web fornecido pela Google LLC (\"Google\"), para nos ajudar a entender como os visitantes usam nosso site.\n\nO que o Google Analytics coleta:\n• Páginas visitadas e tempo gasto em cada página\n• Tipo de navegador, sistema operacional e tipo de dispositivo\n• Localização geográfica aproximada (nível de país/cidade)\n• Fonte de referência (como você chegou ao nosso site)\n• Eventos e interações (por exemplo, cliques em botões, envios de formulários)\n\nAnonimização de IP: Ativamos a anonimização de IP (anonymize_ip: true), portanto seu endereço IP completo nunca é armazenado ou processado pelo Google.\n\nTransferência de dados: O Google processa dados analíticos em servidores localizados nos Estados Unidos. A Google LLC é certificada sob o Data Privacy Framework UE-EUA, fornecendo salvaguardas adequadas para transferências de dados a partir do Espaço Econômico Europeu.\n\nRetenção de dados: Os dados analíticos são retidos por 14 meses, após os quais são excluídos automaticamente.\n\nSuas opções:\n• Exclusão pelo navegador: Instale o Complemento de Exclusão do Google Analytics em https://tools.google.com/dlpage/gaoptout\n• Não rastrear: Respeitamos os sinais de Não Rastrear do navegador — quando o DNT está ativado, nenhum dado analítico é coletado.\n\nA política de privacidade do Google está disponível em https://policies.google.com/privacy"
     }
   },
   "terms": {
     "title": "Termos de Serviço",
-    "lastUpdated": "Última atualização: 4 de novembro de 2025",
+    "lastUpdated": "Última atualização: 18 de agosto de 2026",
     "acceptance": {
       "title": "1. Aceitação dos termos",
       "text": "Ao acessar e usar HASHPASS (\"o Serviço\"), você aceita e concorda em estar vinculado aos termos e disposições deste acordo. Se você não concordar em cumprir o acima, não use este serviço."
@@ -311,7 +316,7 @@
     },
     "accounts": {
       "title": "3. Contas de usuário",
-      "text": "Você é responsável por manter a confidencialidade de suas credenciais de conta. Você concorda em:\n\n• Fornecer informações precisas e completas\n• Manter suas informações de conta atualizadas\n• Não compartilhar sua conta com outras pessoas\n• Notificar-nos imediatamente sobre qualquer uso não autorizado\n• Aceitar a responsabilidade por todas as atividades sob sua conta"
+      "text": "Você é responsável por manter a confidencialidade de suas credenciais de conta. Você concorda em:\n\n• Fornecer informações precisas e completas\n• Manter as informações da sua conta atualizadas\n• Não compartilhar sua conta com outras pessoas\n• Notificar-nos imediatamente sobre qualquer uso não autorizado\n• Aceitar a responsabilidade por todas as atividades em sua conta\n\nSe você optar por entrar vinculando uma carteira de criptomoedas, você é o único responsável pela segurança de sua carteira, chaves privadas e frase-semente. Nunca solicitamos, coletamos ou temos acesso às suas chaves privadas ou frase-semente, e não podemos recuperar uma conta vinculada a uma carteira se você perder o acesso a ela."
     },
     "conduct": {
       "title": "4. Conduta do usuário",
@@ -319,7 +324,7 @@
     },
     "content": {
       "title": "5. Conteúdo do usuário",
-      "text": "Você mantém a propriedade do conteúdo que envia ao Serviço. Ao enviar conteúdo, você nos concede uma licença mundial, não exclusiva e isenta de royalties para usar, reproduzir, modificar e distribuir seu conteúdo para fins de fornecer e melhorar o Serviço."
+      "text": "Você mantém a propriedade do conteúdo que envia ao Serviço. Ao enviar conteúdo, você nos concede uma licença mundial, não exclusiva e isenta de royalties para usar, reproduzir, modificar e distribuir seu conteúdo com o objetivo de fornecer e melhorar o Serviço.\n\nAs mensagens que você envia por meio de nosso recurso de chat de reuniões no aplicativo são criptografadas de ponta a ponta e legíveis apenas por você e pelo destinatário (consulte nossa Política de Privacidade para detalhes) — esta licença sobre o conteúdo das mensagens é limitada de acordo, já que não podemos acessar ou processar o conteúdo das mensagens criptografadas."
     },
     "intellectual": {
       "title": "6. Propriedade intelectual",
@@ -1082,5 +1087,30 @@
     "bslChapterEventLanding": "Página do evento e resgate do passe",
     "bslChapterAgendaBrowse": "Agenda e palestrantes",
     "bslChapterMeetingRequest": "Solicitação de reunião e agenda"
+  },
+  "deleteAccount": {
+    "title": "Excluir sua conta",
+    "lastUpdated": "Última atualização: 18 de agosto de 2026",
+    "intro": "Esta página explica como excluir permanentemente sua conta HASHPASS e o que acontece com seus dados quando você o faz. Funciona independentemente de você ter o aplicativo HASHPASS instalado ou estar conectado.",
+    "steps": {
+      "title": "Como excluir sua conta",
+      "text": "Se você tiver acesso à sua conta:\n\n1. Abra o aplicativo HASHPASS.\n2. Entre na sua conta.\n3. Vá para Painel → Configurações.\n4. Role para baixo e toque em \"Excluir conta\".\n5. Confirme que você entende que isso é permanente.\n6. Enviaremos um código de verificação para o e-mail associado à sua conta — insira-o para confirmar.\n7. Sua conta e dados são excluídos imediatamente."
+    },
+    "noAccess": {
+      "title": "Não consegue acessar sua conta?",
+      "text": "Se você perdeu o acesso ao aplicativo ou à sua conta, envie um e-mail para privacy@hashpass.tech a partir do endereço de e-mail associado à sua conta HASHPASS, com o assunto \"Solicitação de exclusão de conta\". Verificaremos sua identidade e excluíremos sua conta manualmente."
+    },
+    "deleted": {
+      "title": "Quais dados são excluídos",
+      "text": "Quando você exclui sua conta, excluímos imediata e permanentemente:\n\n• Seu nome, endereço de e-mail e foto de perfil\n• Seu endereço de carteira de criptomoedas vinculado, se houver\n• Seus passes de eventos e solicitações de passes\n• Suas solicitações de reunião, reuniões e mensagens que você enviou no chat do evento\n• Seu status de networking, agenda e progresso de tutoriais\n• Relações de usuários bloqueados\n• Suas credenciais de conta e capacidade de fazer login"
+    },
+    "retained": {
+      "title": "Quais dados podem ser retidos",
+      "text": "Uma quantidade limitada de dados pode ser retida após a exclusão da sua conta:\n\n• Registros que somos obrigados a manter por motivos legais, fiscais, contábeis ou de prevenção de fraudes, como o histórico de transações de tokens\n• Dados que podem persistir em backups de rotina por um período limitado antes de serem eliminados\n• Mensagens que você enviou a outros usuários podem permanecer na cópia da conversa do destinatário. O conteúdo das mensagens enviadas pelo chat do evento é criptografado de ponta a ponta, portanto a HASHPASS não pode lê-lo independentemente da retenção\n\nQuaisquer dados retidos são usados apenas para os fins listados acima e são tratados de acordo com nossa Política de Privacidade — não os usamos para continuar operando sua conta ou perfil."
+    },
+    "contact": {
+      "title": "Dúvidas",
+      "text": "Se você tiver dúvidas sobre como excluir sua conta ou seus dados, entre em contato conosco em:\n\nE-mail: privacy@hashpass.tech\nSite: https://hashpass.tech"
+    }
   }
 }

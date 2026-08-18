@@ -261,14 +261,14 @@
   },
   "privacy": {
     "title": "Politique de confidentialité",
-    "lastUpdated": "Dernière mise à jour : 8 juillet 2026",
+    "lastUpdated": "Dernière mise à jour : 18 août 2026",
     "introduction": {
       "title": "1. Introduction",
       "text": "HASHPASS (\"nous\", \"notre\" ou \"nos\") s'engage à protéger votre vie privée. Cette politique de confidentialité explique comment nous collectons, utilisons, divulguons et protégeons vos informations lorsque vous utilisez notre plateforme d'événements numériques et nos services (le \"Service\"). Veuillez lire attentivement cette politique de confidentialité. Si vous n'êtes pas d'accord avec les termes de cette politique de confidentialité, veuillez ne pas accéder au Service."
     },
     "collection": {
       "title": "2. Informations que nous collectons",
-      "text": "Nous collectons les informations que vous nous fournissez directement, notamment :\n\n• Informations de compte : Lorsque vous vous connectez avec Google, nous collectons votre nom, votre adresse e-mail et votre photo de profil.\n• Données d'événements : Informations sur les événements auxquels vous assistez, les passes que vous détenez et les interactions au sein de notre plateforme.\n• Données d'utilisation : Informations sur la façon dont vous utilisez notre Service, y compris les fonctionnalités consultées et les actions effectuées.\n• Informations sur l'appareil : Informations techniques sur votre appareil, navigateur et système d'exploitation."
+      "text": "Nous collectons les informations que vous nous fournissez directement, notamment :\n\n• Informations de compte : Votre nom et votre adresse e-mail, que vous vous connectiez avec Google, avec un code de vérification par e-mail, ou avec un portefeuille de cryptomonnaie lié.\n• Photo de profil : Si vous choisissez de télécharger une photo de profil, nous la stockons et l'affichons. Ceci est facultatif.\n• Informations de portefeuille : Si vous connectez un portefeuille de cryptomonnaie (par exemple Solana ou Ethereum) pour vous connecter, nous collectons et stockons votre adresse publique de portefeuille. Nous ne collectons jamais et n'avons jamais accès à vos clés privées ou à votre phrase de récupération.\n• Messages : Si vous utilisez la messagerie intégrée à l'application (par exemple le chat de réunion d'événement), nous stockons les identifiants d'expéditeur et de destinataire ainsi que les horodatages afin que les messages puissent être livrés. Le contenu des messages envoyés via le chat de réunion est chiffré de bout en bout — voir la Section 5 pour plus de détails.\n• Données d'événement : Informations sur les événements auxquels vous assistez, les pass que vous détenez, et les interactions au sein de notre plateforme.\n• Données d'utilisation : Informations sur la façon dont vous utilisez notre Service, y compris les fonctionnalités consultées et les actions effectuées.\n• Informations sur l'appareil : Informations techniques sur votre appareil, votre navigateur et votre système d'exploitation."
     },
     "use": {
       "title": "3. Comment nous utilisons vos informations",
@@ -276,15 +276,16 @@
     },
     "sharing": {
       "title": "4. Partage et divulgation d'informations",
-      "text": "Nous ne vendons pas vos informations personnelles. Nous ne pouvons partager vos informations que dans les circonstances suivantes :\n\n• Avec les organisateurs d'événements pour les événements auxquels vous vous inscrivez\n• Avec les prestataires de services qui nous aident à exploiter notre plateforme\n• Lorsque la loi l'exige ou pour protéger nos droits\n• Dans le cadre d'une fusion, acquisition ou vente d'actifs"
+      "text": "Nous ne vendons pas vos informations personnelles, et nous ne les partageons pas avec des tiers pour leurs propres finalités indépendantes. Nous utilisons un petit nombre de prestataires de services qui traitent les données uniquement en notre nom, sous contrat, pour nous aider à exploiter le Service :\n\n• Supabase, pour l'authentification et l'hébergement de base de données\n• Brevo, pour la livraison des e-mails transactionnels tels que les codes de vérification de connexion\n• Cloudinary, pour héberger et optimiser les photos de profil que vous choisissez de télécharger\n\nNous pouvons également partager vos informations :\n\n• Avec les organisateurs d'événements pour les événements auxquels vous vous inscrivez\n• Lorsque la loi l'exige ou pour protéger nos droits\n• Dans le cadre d'une fusion, d'une acquisition ou d'une vente d'actifs"
     },
     "security": {
       "title": "5. Sécurité des données",
-      "text": "Nous mettons en œuvre des mesures de sécurité techniques et organisationnelles appropriées pour protéger vos informations personnelles. Cependant, aucune méthode de transmission sur Internet ou de stockage électronique n'est sécurisée à 100%, et nous ne pouvons garantir une sécurité absolue."
+      "text": "Nous mettons en œuvre des mesures de sécurité techniques et organisationnelles appropriées pour protéger vos informations personnelles :\n\n• Chiffrement en transit : Toutes les données envoyées entre votre appareil et nos serveurs sont chiffrées via HTTPS/TLS.\n• Messagerie chiffrée de bout en bout : Les messages que vous envoyez via notre fonctionnalité de chat de réunion intégrée à l'application sont chiffrés de bout en bout (échange de clés X25519, HKDF-SHA256 et XChaCha20-Poly1305) directement sur votre appareil. Seuls vous et le destinataire pouvez lire le contenu du message — HASHPASS ne peut pas y accéder.\n• Suppression de compte : Vous pouvez supprimer définitivement votre compte et les données personnelles associées à tout moment depuis l'application.\n\nAucune méthode de transmission sur Internet ou de stockage électronique n'est sûre à 100 %, et nous ne pouvons garantir une sécurité absolue."
     },
     "rights": {
       "title": "6. Vos droits",
-      "text": "Vous avez le droit de :\n\n• Accéder à vos informations personnelles\n• Corriger les informations inexactes\n• Demander la suppression de vos informations\n• Vous opposer au traitement de vos informations\n• Portabilité des données\n• Retirer votre consentement à tout moment"
+      "text": "Vous avez le droit de :\n\n• Accéder à vos informations personnelles\n• Corriger les informations inexactes\n• Demander la suppression de vos informations\n• Vous opposer au traitement de vos informations\n• Portabilité des données\n• Retirer votre consentement à tout moment",
+      "deleteAccountLink": "Vous pouvez supprimer votre compte et vos données à tout moment — voir comment →"
     },
     "cookies": {
       "title": "7. Cookies et suivi",
@@ -297,11 +298,15 @@
     "contact": {
       "title": "9. Contactez-nous",
       "text": "Si vous avez des questions concernant cette politique de confidentialité, veuillez nous contacter à :\n\nEmail : privacy@hashpass.tech\nSite web : https://hashpass.tech"
+    },
+    "analytics": {
+      "title": "8. Services d'analyse (Google Analytics)",
+      "text": "Nous utilisons Google Analytics 4 (GA4), un service d'analyse web fourni par Google LLC (« Google »), pour nous aider à comprendre comment les visiteurs utilisent notre site web.\n\nCe que Google Analytics collecte :\n• Pages visitées et temps passé sur chaque page\n• Type de navigateur, système d'exploitation et type d'appareil\n• Localisation géographique approximative (au niveau du pays/de la ville)\n• Source de référence (comment vous êtes arrivé sur notre site)\n• Événements et interactions (par exemple, clics sur des boutons, soumissions de formulaires)\n\nAnonymisation IP : Nous avons activé l'anonymisation IP (anonymize_ip : true), de sorte que votre adresse IP complète n'est jamais stockée ni traitée par Google.\n\nTransfert de données : Google traite les données analytiques sur des serveurs situés aux États-Unis. Google LLC est certifié dans le cadre du Data Privacy Framework UE-États-Unis, offrant des garanties adéquates pour les transferts de données depuis l'Espace économique européen.\n\nConservation des données : Les données analytiques sont conservées pendant 14 mois, après quoi elles sont automatiquement supprimées.\n\nVos choix :\n• Désactivation via le navigateur : Installez le module complémentaire de désactivation de Google Analytics à l'adresse https://tools.google.com/dlpage/gaoptout\n• Ne pas suivre : Nous respectons les signaux Ne pas suivre du navigateur — lorsque le DNT est activé, aucune donnée analytique n'est collectée.\n\nLa politique de confidentialité de Google est disponible à l'adresse https://policies.google.com/privacy"
     }
   },
   "terms": {
     "title": "Conditions d'utilisation",
-    "lastUpdated": "Dernière mise à jour : 4 novembre 2025",
+    "lastUpdated": "Dernière mise à jour : 18 août 2026",
     "acceptance": {
       "title": "1. Acceptation des conditions",
       "text": "En accédant et en utilisant HASHPASS (\"le Service\"), vous acceptez et convenez d'être lié par les termes et dispositions de cet accord. Si vous n'acceptez pas de respecter ce qui précède, veuillez ne pas utiliser ce service."
@@ -312,7 +317,7 @@
     },
     "accounts": {
       "title": "3. Comptes utilisateur",
-      "text": "Vous êtes responsable de maintenir la confidentialité de vos identifiants de compte. Vous acceptez de :\n\n• Fournir des informations exactes et complètes\n• Maintenir vos informations de compte à jour\n• Ne pas partager votre compte avec d'autres\n• Nous notifier immédiatement de toute utilisation non autorisée\n• Accepter la responsabilité de toutes les activités sous votre compte"
+      "text": "Vous êtes responsable de maintenir la confidentialité de vos identifiants de compte. Vous acceptez de :\n\n• Fournir des informations exactes et complètes\n• Maintenir à jour les informations de votre compte\n• Ne pas partager votre compte avec d'autres personnes\n• Nous notifier immédiatement de toute utilisation non autorisée\n• Accepter la responsabilité de toutes les activités effectuées sous votre compte\n\nSi vous choisissez de vous connecter en liant un portefeuille de cryptomonnaie, vous êtes seul responsable de la sécurité de votre portefeuille, de vos clés privées et de votre phrase de récupération. Nous ne demandons, ne collectons ni n'avons jamais accès à vos clés privées ou à votre phrase de récupération, et nous ne pouvons pas récupérer un compte lié à un portefeuille si vous perdez l'accès à celui-ci."
     },
     "conduct": {
       "title": "4. Conduite de l'utilisateur",
@@ -320,7 +325,7 @@
     },
     "content": {
       "title": "5. Contenu utilisateur",
-      "text": "Vous conservez la propriété du contenu que vous soumettez au Service. En soumettant du contenu, vous nous accordez une licence mondiale, non exclusive et gratuite pour utiliser, reproduire, modifier et distribuer votre contenu dans le but de fournir et d'améliorer le Service."
+      "text": "Vous conservez la propriété du contenu que vous soumettez au Service. En soumettant du contenu, vous nous accordez une licence mondiale, non exclusive et libre de redevances pour utiliser, reproduire, modifier et distribuer votre contenu dans le but de fournir et d'améliorer le Service.\n\nLes messages que vous envoyez via notre fonctionnalité de chat de réunion intégrée à l'application sont chiffrés de bout en bout et lisibles uniquement par vous et le destinataire (voir notre Politique de Confidentialité pour plus de détails) — cette licence sur le contenu des messages est limitée en conséquence, car nous ne pouvons pas accéder au contenu des messages chiffrés ni le traiter nous-mêmes."
     },
     "intellectual": {
       "title": "6. Propriété intellectuelle",
@@ -1083,5 +1088,30 @@
     "bslChapterEventLanding": "Page de l'événement et réclamation du pass",
     "bslChapterAgendaBrowse": "Programme et intervenants",
     "bslChapterMeetingRequest": "Demande de réunion et planning"
+  },
+  "deleteAccount": {
+    "title": "Supprimer votre compte",
+    "lastUpdated": "Dernière mise à jour : 18 août 2026",
+    "intro": "Cette page explique comment supprimer définitivement votre compte HASHPASS et ce qui advient de vos données lorsque vous le faites. Elle fonctionne que vous ayez ou non l'application HASHPASS installée, et que vous soyez ou non connecté.",
+    "steps": {
+      "title": "Comment supprimer votre compte",
+      "text": "Si vous avez accès à votre compte :\n\n1. Ouvrez l'application HASHPASS.\n2. Connectez-vous à votre compte.\n3. Allez dans Tableau de bord → Paramètres.\n4. Faites défiler vers le bas et appuyez sur « Supprimer le compte ».\n5. Confirmez que vous comprenez que cette action est définitive.\n6. Nous enverrons un code de vérification à l'adresse e-mail associée à votre compte — saisissez-le pour confirmer.\n7. Votre compte et vos données sont supprimés immédiatement."
+    },
+    "noAccess": {
+      "title": "Vous ne pouvez pas accéder à votre compte ?",
+      "text": "Si vous avez perdu l'accès à l'application ou à votre compte, envoyez un e-mail à privacy@hashpass.tech depuis l'adresse e-mail associée à votre compte HASHPASS, avec l'objet « Demande de suppression de compte ». Nous vérifierons votre identité et supprimerons votre compte manuellement."
+    },
+    "deleted": {
+      "title": "Quelles données sont supprimées",
+      "text": "Lorsque vous supprimez votre compte, nous supprimons immédiatement et définitivement :\n\n• Votre nom, votre adresse e-mail et votre photo de profil\n• Votre adresse de portefeuille de cryptomonnaie liée, le cas échéant\n• Vos pass d'événements et demandes de pass\n• Vos demandes de réunion, réunions et messages que vous avez envoyés dans le chat d'événement\n• Votre statut de réseautage, agenda et progression des tutoriels\n• Les relations d'utilisateurs bloqués\n• Vos identifiants de compte et votre capacité à vous connecter"
+    },
+    "retained": {
+      "title": "Quelles données peuvent être conservées",
+      "text": "Une quantité limitée de données peut être conservée après la suppression de votre compte :\n\n• Les registres que nous sommes tenus de conserver à des fins légales, fiscales, comptables ou de prévention de la fraude, tels que l'historique des transactions de jetons\n• Les données pouvant subsister dans des sauvegardes de routine pendant une période limitée avant d'être purgées\n• Les messages que vous avez envoyés à d'autres utilisateurs peuvent rester dans la copie de la conversation du destinataire. Le contenu des messages envoyés via le chat d'événement est chiffré de bout en bout, de sorte que HASHPASS ne peut pas le lire, quelle que soit sa conservation\n\nToute donnée conservée est utilisée uniquement aux fins énumérées ci-dessus et est traitée conformément à notre Politique de Confidentialité — nous ne l'utilisons pas pour continuer à faire fonctionner votre compte ou votre profil."
+    },
+    "contact": {
+      "title": "Questions",
+      "text": "Si vous avez des questions sur la suppression de votre compte ou de vos données, contactez-nous à :\n\nE-mail : privacy@hashpass.tech\nSite web : https://hashpass.tech"
+    }
   }
 }
