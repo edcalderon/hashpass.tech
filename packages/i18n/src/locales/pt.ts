@@ -133,6 +133,7 @@ export const pt = {
     blog: 'Blog',
     privacy: 'Privacidade',
     terms: 'Termos',
+    deleteAccount: 'Excluir conta',
     copyright: '© {year} HASHPASS. Todos os direitos reservados.',
   },
   theme: { toggle: 'Alternar tema', dark: 'Escuro', light: 'Claro', system: 'Sistema' },

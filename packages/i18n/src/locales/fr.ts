@@ -133,6 +133,7 @@ export const fr = {
     blog: 'Blog',
     privacy: 'Confidentialité',
     terms: 'Conditions',
+    deleteAccount: 'Supprimer le compte',
     copyright: '© {year} HASHPASS. Tous droits réservés.',
   },
   theme: { toggle: 'Changer de thème', dark: 'Sombre', light: 'Clair', system: 'Système' },

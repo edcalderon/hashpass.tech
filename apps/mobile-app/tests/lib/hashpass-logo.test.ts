@@ -98,4 +98,35 @@ describe("getHashpassStaticHeroLogo", () => {
 
     expect(getHashpassStaticHeroLogo(false)).toBe("white-cyan-native-png");
   });
+
+  // Regression test for a real bug found live via screenshot: the hero
+  // container's own background is plain isDark ? '#121212' : '#FFFFFF'
+  // (see animatedBackground in app/home.tsx) -- it only reads as dark in
+  // light theme because CrystalForgeBackground (animationLevel === 'full'
+  // only) paints a dark overlay on top. With 'reduced'/'none' animation
+  // levels there's no overlay, so a white-letter logo was rendering as a
+  // barely-visible hollow outline on plain white.
+  it("switches to the dark-letter variant in light mode when there is no dark overlay to contrast against", () => {
+    mockPlatform.OS = "web";
+
+    expect(getHashpassStaticHeroLogo(false, false)).toBe("black-native-png");
+  });
+
+  it("switches to the dark-letter variant on native too when there is no dark overlay", () => {
+    mockPlatform.OS = "android";
+
+    expect(getHashpassStaticHeroLogo(false, false)).toBe("black-native-png");
+  });
+
+  it("keeps the white-letter variant in light mode when the dark overlay IS present (animationLevel 'full')", () => {
+    mockPlatform.OS = "web";
+
+    expect(getHashpassStaticHeroLogo(false, true)).toBe("black-svg");
+  });
+
+  it("ignores hasDarkOverlay in dark mode -- the cyan mark always applies regardless", () => {
+    mockPlatform.OS = "web";
+
+    expect(getHashpassStaticHeroLogo(true, false)).toBe("white-cyan-native-png");
+  });
 });

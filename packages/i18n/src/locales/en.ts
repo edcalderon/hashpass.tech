@@ -329,6 +329,7 @@ export const en = {
     blog: 'Blog',
     privacy: 'Privacy',
     terms: 'Terms',
+    deleteAccount: 'Delete account',
     copyright: '© {year} HASHPASS. All rights reserved.',
   },
   theme: {

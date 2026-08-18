@@ -30,14 +30,28 @@ export const getHashpassFooterLogo = (isDark: boolean): ImageSourcePropType => {
 
 export const getHashpassStaticHeroLogo = (
   isDark: boolean,
+  // Whether a dark animated background (CrystalForgeBackground, only
+  // rendered when animationLevel === 'full' -- see app/home.tsx) is
+  // actually painted behind this logo. The hero's own container background
+  // is a plain `isDark ? '#121212' : '#FFFFFF'` (see animatedBackground in
+  // home.tsx) -- it is NOT dark in light theme by itself. A white-letter
+  // logo only has contrast in light theme when that animated overlay is
+  // present; with 'reduced'/'none' animation levels there is no overlay,
+  // so light theme is a *plain white* background and needs the dark-letter
+  // variant instead. Confirmed live: reduced/none + light mode rendered the
+  // white-letter logo as a barely-visible hollow outline on white.
+  hasDarkOverlay: boolean = true,
 ): ImageSourcePropType => {
-  // The landing hero background is dark in every theme, but the mark itself
-  // still needs to follow the app theme: dark mode gets the cyan-accented
-  // mark (matching the carousel's dark-mode logo), light mode keeps the
-  // exact, verified white-letter red-mark SVG on web. Native Image cannot
-  // decode SVG, so it always receives the bundled cyan raster -- this was
-  // already theme-independent before this fix and dark-mode-native was
-  // already correct; only the web branch was ignoring the theme.
+  if (!isDark && !hasDarkOverlay) {
+    return HASHPASS_DARK_LETTER_RED_MARK_RASTER;
+  }
+
+  // Dark mode, or light mode with the animated dark overlay present: the
+  // mark still needs to follow the app theme -- dark mode gets the
+  // cyan-accented mark (matching the carousel's dark-mode logo), light mode
+  // (with the overlay) keeps the exact, verified white-letter red-mark SVG
+  // on web. Native Image cannot decode SVG, so it always receives the
+  // bundled cyan raster.
   if (Platform.OS === "web") {
     return isDark
       ? HASHPASS_WHITE_LETTER_CYAN_MARK_RASTER

@@ -7,6 +7,7 @@ import { MaterialIcons } from '../../lib/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { t } from '@lingui/macro';
 import { useLingui } from '@lingui/react';
+import { useTranslation } from '../../i18n/i18n';
 
 const DEFAULT_PROD_DOCS_URL = 'https://hashpass.tech/docs';
 const DEFAULT_LOCAL_DOCS_URL = 'http://localhost:3101/';
@@ -32,6 +33,17 @@ export default function DocsScreen() {
   const router = useRouter();
   const { i18n } = useLingui();
   const styles = getStyles(isDark, colors);
+  // Uses the app's real i18n system (useTranslation from i18n/i18n.ts)
+  // rather than this file's existing @lingui/macro t() calls above --
+  // those catalogs are never actually compiled in this repo (see
+  // app/(shared)/privacy.tsx's migration for the full story), so a new
+  // addition using the same macro would render just as broken as the rest
+  // of this screen currently does. Reuses the same 'privacy'/'terms'/
+  // 'deleteAccount' namespaces the legal pages themselves use, so the
+  // labels here can't drift out of sync with those pages' own titles.
+  const { t: tPrivacy } = useTranslation('privacy');
+  const { t: tTerms } = useTranslation('terms');
+  const { t: tDeleteAccount } = useTranslation('deleteAccount');
 
   const guides = [
     {
@@ -205,6 +217,20 @@ export default function DocsScreen() {
               {t({ id: 'index.docs.contactSupport', message: 'Contact Support' })}
             </Text>
           </TouchableOpacity>
+
+          <View style={styles.legalLinksRow}>
+            <TouchableOpacity onPress={() => router.push('/(shared)/privacy' as any)}>
+              <Text style={styles.legalLinkText} selectable={false}>{tPrivacy('title', 'Privacy Policy')}</Text>
+            </TouchableOpacity>
+            <Text style={styles.legalLinkSeparator} selectable={false}>·</Text>
+            <TouchableOpacity onPress={() => router.push('/(shared)/terms' as any)}>
+              <Text style={styles.legalLinkText} selectable={false}>{tTerms('title', 'Terms of Service')}</Text>
+            </TouchableOpacity>
+            <Text style={styles.legalLinkSeparator} selectable={false}>·</Text>
+            <TouchableOpacity onPress={() => router.push('/(shared)/delete-account' as any)}>
+              <Text style={styles.legalLinkText} selectable={false}>{tDeleteAccount('title', 'Delete Your Account')}</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -386,5 +412,22 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
+  },
+  legalLinksRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 20,
+    gap: 8,
+  },
+  legalLinkText: {
+    fontSize: 13,
+    color: colors.text.secondary,
+    textDecorationLine: 'underline',
+  },
+  legalLinkSeparator: {
+    fontSize: 13,
+    color: colors.text.faint || colors.text.secondary,
   },
 });

@@ -461,9 +461,15 @@ export default function HomeScreen() {
 
   const words: string[] = t("taglineFlipList").split(",");
   const staticTaglineWords: string[] = resolveHeroTaglineWords(words);
-  // The hero background remains dark/red in light theme too; keep the
-  // high-contrast white wordmark for both animated and static variants.
-  const heroLogoSource = getHashpassStaticHeroLogo(isDark);
+  // The hero container itself is plain white in light theme (see
+  // animatedBackground below) -- it only reads as dark/red once
+  // CrystalForgeBackground (animationLevel === 'full' only, rendered below)
+  // paints over it. Pass that along so the logo can switch to the
+  // dark-letter variant when there's no dark overlay to contrast against.
+  const heroLogoSource = getHashpassStaticHeroLogo(
+    isDark,
+    animationLevel === "full",
+  );
   const isSignOutPending = signOutStatus === "pending";
   const signOutStatusMessage =
     signOutStatus === "success"
