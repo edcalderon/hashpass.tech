@@ -17,6 +17,7 @@ import { useTutorialPreferences } from '../../../hooks/useTutorialPreferences';
 import { useAuth } from '../../../hooks/useAuth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiClient } from '../../../lib/api-client';
+import { getHashpassWebOrigin } from '../../../lib/hashpass-web-url';
 import { buildEventPath } from '../../../lib/event-path';
 import VersionDetailsModal from '../../../components/VersionDetailsModal';
 import { clearNativeGoogleAccount } from '../../../lib/native-google-signin';
@@ -42,6 +43,14 @@ export default function SettingsScreen() {
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [showVersionModal, setShowVersionModal] = useState(false);
   const [showDisclaimerModal, setShowDisclaimerModal] = useState(false);
+  // Explicit understanding gate on top of the existing OTP-based deletion
+  // flow: a destructive, irreversible action should require more than one
+  // tap to confirm. Both must be satisfied before "I Understand, Continue"
+  // is enabled -- the checkbox alone is too easy to click through without
+  // reading, and the typed word alone doesn't confirm they read the actual
+  // bullet points above it.
+  const [deleteUnderstoodChecked, setDeleteUnderstoodChecked] = useState(false);
+  const [deleteConfirmationInput, setDeleteConfirmationInput] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [otpCode, setOtpCode] = useState('');
   const [otpSent, setOtpSent] = useState(false);
@@ -207,11 +216,24 @@ export default function SettingsScreen() {
 
   const handleDeleteAccount = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setDeleteUnderstoodChecked(false);
+    setDeleteConfirmationInput('');
     setShowDisclaimerModal(true);
   };
 
+  // Localized so a Spanish-speaking user isn't asked to type an English
+  // word to prove they read a Spanish disclaimer -- matched case- and
+  // whitespace-insensitively.
+  const deleteConfirmationWord = tSettings('deleteDisclaimer.confirmWord', 'DELETE');
+  const canConfirmDeleteDisclaimer =
+    deleteUnderstoodChecked &&
+    deleteConfirmationInput.trim().toUpperCase() === deleteConfirmationWord.trim().toUpperCase();
+
   const handleDisclaimerConfirm = () => {
+    if (!canConfirmDeleteDisclaimer) return;
     setShowDisclaimerModal(false);
+    setDeleteUnderstoodChecked(false);
+    setDeleteConfirmationInput('');
     setShowDeleteConfirm(true);
     setOtpCode('');
     setOtpSent(false);
@@ -676,7 +698,11 @@ export default function SettingsScreen() {
         visible={showDisclaimerModal}
         transparent={true}
         animationType="fade"
-        onRequestClose={() => setShowDisclaimerModal(false)}
+        onRequestClose={() => {
+          setShowDisclaimerModal(false);
+          setDeleteUnderstoodChecked(false);
+          setDeleteConfirmationInput('');
+        }}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.disclaimerCard}>
@@ -715,22 +741,62 @@ export default function SettingsScreen() {
               {/* Divider */}
               <View style={styles.disclaimerDivider} />
 
-              {/* Legal links */}
+              {/* Legal links -- point at whichever environment (local dev /
+                  dev.hashpass.tech / hashpass.tech) this build is actually
+                  running against, not a hardcoded production URL. */}
               <View style={styles.disclaimerLinks}>
-                <TouchableOpacity onPress={() => Linking.openURL('https://hashpass.tech/terms')}>
+                <TouchableOpacity onPress={() => Linking.openURL(`${getHashpassWebOrigin()}/terms`)}>
                   <Text style={styles.disclaimerLink}>{tSettings('deleteDisclaimer.terms', 'Terms of Service')}</Text>
                 </TouchableOpacity>
                 <Text style={styles.disclaimerLinkSep}>·</Text>
-                <TouchableOpacity onPress={() => Linking.openURL('https://hashpass.tech/privacy')}>
+                <TouchableOpacity onPress={() => Linking.openURL(`${getHashpassWebOrigin()}/privacy`)}>
                   <Text style={styles.disclaimerLink}>{tSettings('deleteDisclaimer.privacy', 'Privacy Policy')}</Text>
                 </TouchableOpacity>
               </View>
 
+              {/* Explicit understanding gate: an irreversible, destructive
+                  action should take more than one accidental tap. Both the
+                  checkbox and the typed word are required -- see
+                  canConfirmDeleteDisclaimer above. */}
+              <TouchableOpacity
+                style={styles.disclaimerCheckboxRow}
+                onPress={() => setDeleteUnderstoodChecked((v) => !v)}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.disclaimerCheckbox, deleteUnderstoodChecked && styles.disclaimerCheckboxChecked]}>
+                  {deleteUnderstoodChecked && (
+                    <Svg width={12} height={12} viewBox="0 0 24 24" fill="none">
+                      <SvgPath d="M4 12l5 5L20 6" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                    </Svg>
+                  )}
+                </View>
+                <Text style={styles.disclaimerCheckboxLabel}>
+                  {tSettings('deleteDisclaimer.understoodCheckbox', 'I understand this deletes all my data and cannot be undone')}
+                </Text>
+              </TouchableOpacity>
+
+              <View style={styles.disclaimerConfirmInputWrap}>
+                <Text style={styles.disclaimerConfirmInputLabel}>
+                  {tSettings('deleteDisclaimer.typeToConfirm', 'Type {word} to confirm', { word: deleteConfirmationWord })}
+                </Text>
+                <TextInput
+                  style={styles.disclaimerConfirmInput}
+                  value={deleteConfirmationInput}
+                  onChangeText={setDeleteConfirmationInput}
+                  placeholder={deleteConfirmationWord}
+                  placeholderTextColor={colors.text.secondary}
+                  autoCapitalize="characters"
+                  autoCorrect={false}
+                  autoComplete="off"
+                />
+              </View>
+
               {/* Actions */}
               <TouchableOpacity
-                style={styles.disclaimerDeleteBtn}
+                style={[styles.disclaimerDeleteBtn, !canConfirmDeleteDisclaimer && { opacity: 0.5 }]}
                 onPress={handleDisclaimerConfirm}
                 activeOpacity={0.85}
+                disabled={!canConfirmDeleteDisclaimer}
               >
                 <View style={{ marginRight: 7 }}>
                   <Svg width={17} height={17} viewBox="0 0 24 24" fill="none">
@@ -743,7 +809,11 @@ export default function SettingsScreen() {
 
               <TouchableOpacity
                 style={styles.disclaimerCancelBtn}
-                onPress={() => setShowDisclaimerModal(false)}
+                onPress={() => {
+                  setShowDisclaimerModal(false);
+                  setDeleteUnderstoodChecked(false);
+                  setDeleteConfirmationInput('');
+                }}
                 activeOpacity={0.6}
               >
                 <Text style={styles.disclaimerCancelBtnText}>{tSettings('deleteDisclaimer.cancel', 'Cancel')}</Text>
@@ -1163,6 +1233,51 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   disclaimerLinkSep: {
     fontSize: 12,
     color: colors.text.disabled,
+  },
+  disclaimerCheckboxRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    marginBottom: 14,
+  },
+  disclaimerCheckbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 5,
+    borderWidth: 1.5,
+    borderColor: colors.divider,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 1,
+  },
+  disclaimerCheckboxChecked: {
+    backgroundColor: '#af0d01',
+    borderColor: '#af0d01',
+  },
+  disclaimerCheckboxLabel: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 18,
+    color: colors.text.primary,
+  },
+  disclaimerConfirmInputWrap: {
+    marginBottom: 18,
+  },
+  disclaimerConfirmInputLabel: {
+    fontSize: 12,
+    color: colors.text.secondary,
+    marginBottom: 6,
+  },
+  disclaimerConfirmInput: {
+    borderWidth: 1.5,
+    borderColor: colors.divider,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.text.primary,
+    letterSpacing: 1,
   },
   disclaimerDeleteBtn: {
     backgroundColor: '#af0d01',

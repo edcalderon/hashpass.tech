@@ -47,7 +47,7 @@ const REMOTE_API_BASE_BY_ENV = {
 
 const normalizeBaseUrl = (value: string) => value.trim().replace(/\/$/, '');
 
-const readBuildEnvironment = (): 'development' | 'production' | null => {
+export const readBuildEnvironment = (): 'development' | 'production' | null => {
   const candidates = [
     process.env.EXPO_PUBLIC_EAS_BUILD_PROFILE,
     process.env.EAS_BUILD_PROFILE,

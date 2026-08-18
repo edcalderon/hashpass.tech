@@ -268,7 +268,7 @@
     },
     "collection": {
       "title": "2. Informations que nous collectons",
-      "text": "Nous collectons les informations que vous nous fournissez directement, notamment :\n\n• Informations de compte : Votre nom et votre adresse e-mail, que vous vous connectiez avec Google, avec un code de vérification par e-mail, ou avec un portefeuille de cryptomonnaie lié.\n• Photo de profil : Si vous choisissez de télécharger une photo de profil, nous la stockons et l'affichons. Ceci est facultatif.\n• Informations de portefeuille : Si vous connectez un portefeuille de cryptomonnaie (par exemple Solana ou Ethereum) pour vous connecter, nous collectons et stockons votre adresse publique de portefeuille. Nous ne collectons jamais et n'avons jamais accès à vos clés privées ou à votre phrase de récupération.\n• Messages : Si vous utilisez la messagerie intégrée à l'application (par exemple le chat de réunion d'événement), nous stockons les identifiants d'expéditeur et de destinataire ainsi que les horodatages afin que les messages puissent être livrés. Le contenu des messages envoyés via le chat de réunion est chiffré de bout en bout — voir la Section 5 pour plus de détails.\n• Données d'événement : Informations sur les événements auxquels vous assistez, les pass que vous détenez, et les interactions au sein de notre plateforme.\n• Données d'utilisation : Informations sur la façon dont vous utilisez notre Service, y compris les fonctionnalités consultées et les actions effectuées.\n• Informations sur l'appareil : Informations techniques sur votre appareil, votre navigateur et votre système d'exploitation."
+      "text": "Nous collectons les informations que vous nous fournissez directement, notamment :\n\n• Informations de compte : Votre nom et votre adresse e-mail, que vous vous connectiez avec Google, avec un code de vérification par e-mail, ou avec un portefeuille de cryptomonnaie lié.\n• Photo de profil : Si vous choisissez de télécharger une photo de profil, nous la stockons et l'affichons. Ceci est facultatif.\n• Informations de portefeuille : Si vous connectez un portefeuille de cryptomonnaie (par exemple Solana ou Ethereum) pour vous connecter, nous collectons et stockons votre adresse publique de portefeuille. Nous ne collectons jamais et n'avons jamais accès à vos clés privées ou à votre phrase de récupération.\n• Messages : Si vous utilisez la messagerie intégrée à l'application, nous stockons les identifiants d'expéditeur et de destinataire, les horodatages et le contenu des messages afin qu'ils puissent être livrés et affichés. Le contenu envoyé via le chat d'une réunion planifiée est chiffré de bout en bout ; le contenu envoyé via le chat général de l'événement et les messages directs entre participants ne l'est pas — voir la Section 5 pour plus de détails.\n• Données d'événement : Informations sur les événements auxquels vous assistez, les pass que vous détenez, et les interactions au sein de notre plateforme.\n• Données d'utilisation : Informations sur la façon dont vous utilisez notre Service, y compris les fonctionnalités consultées et les actions effectuées.\n• Informations sur l'appareil : Informations techniques sur votre appareil, votre navigateur et votre système d'exploitation."
     },
     "use": {
       "title": "3. Comment nous utilisons vos informations",
@@ -280,7 +280,7 @@
     },
     "security": {
       "title": "5. Sécurité des données",
-      "text": "Nous mettons en œuvre des mesures de sécurité techniques et organisationnelles appropriées pour protéger vos informations personnelles :\n\n• Chiffrement en transit : Toutes les données envoyées entre votre appareil et nos serveurs sont chiffrées via HTTPS/TLS.\n• Messagerie chiffrée de bout en bout : Les messages que vous envoyez via notre fonctionnalité de chat de réunion intégrée à l'application sont chiffrés de bout en bout (échange de clés X25519, HKDF-SHA256 et XChaCha20-Poly1305) directement sur votre appareil. Seuls vous et le destinataire pouvez lire le contenu du message — HASHPASS ne peut pas y accéder.\n• Suppression de compte : Vous pouvez supprimer définitivement votre compte et les données personnelles associées à tout moment depuis l'application.\n\nAucune méthode de transmission sur Internet ou de stockage électronique n'est sûre à 100 %, et nous ne pouvons garantir une sécurité absolue."
+      "text": "Nous mettons en œuvre des mesures de sécurité techniques et organisationnelles appropriées pour protéger vos informations personnelles :\n\n• Chiffrement en transit : Toutes les données envoyées entre votre appareil et nos serveurs sont chiffrées via HTTPS/TLS.\n• Chat de réunion chiffré de bout en bout : Les messages que vous envoyez via le chat d'une réunion planifiée sont chiffrés de bout en bout (échange de clés X25519, HKDF-SHA256 et XChaCha20-Poly1305) directement sur votre appareil — seuls vous et le destinataire pouvez lire ce contenu, HASHPASS ne peut pas y accéder. Le chat général de l'événement et les messages directs entre participants ne sont pas chiffrés de bout en bout et sont stockés en texte normal.\n• Suppression de compte : Vous pouvez supprimer définitivement votre compte et les données personnelles associées à tout moment depuis l'application.\n\nAucune méthode de transmission sur Internet ou de stockage électronique n'est sûre à 100 %, et nous ne pouvons garantir une sécurité absolue."
     },
     "rights": {
       "title": "6. Vos droits",
@@ -366,6 +366,20 @@
     },
     "privacy": {
       "subtitle": "Découvrez comment nous protégeons vos données"
+    },
+    "deleteDisclaimer": {
+      "title": "Supprimer le compte",
+      "subtitle": "Cette action est définitive et ne peut pas être annulée",
+      "bullet1": "Toutes vos données seront définitivement supprimées de nos systèmes",
+      "bullet2": "Nous ne conservons aucune de vos informations personnelles après la suppression",
+      "bullet3": "Vos pass, connexions et historique seront perdus pour toujours",
+      "terms": "Conditions d'utilisation",
+      "privacy": "Politique de confidentialité",
+      "confirm": "Je comprends, continuer",
+      "cancel": "Annuler",
+      "confirmWord": "SUPPRIMER",
+      "understoodCheckbox": "Je comprends que cela supprime toutes mes données et ne peut pas être annulé",
+      "typeToConfirm": "Tapez {word} pour confirmer"
     }
   },
   "index": {
@@ -1103,11 +1117,11 @@
     },
     "deleted": {
       "title": "Quelles données sont supprimées",
-      "text": "Lorsque vous supprimez votre compte, nous supprimons immédiatement et définitivement :\n\n• Votre nom, votre adresse e-mail et votre photo de profil\n• Votre adresse de portefeuille de cryptomonnaie liée, le cas échéant\n• Vos pass d'événements et demandes de pass\n• Vos demandes de réunion, réunions et messages que vous avez envoyés dans le chat d'événement\n• Votre statut de réseautage, agenda et progression des tutoriels\n• Les relations d'utilisateurs bloqués\n• Vos identifiants de compte et votre capacité à vous connecter"
+      "text": "Lorsque vous supprimez votre compte, nous supprimons immédiatement et définitivement :\n\n• Votre nom, votre adresse e-mail et votre photo de profil\n• Votre adresse de portefeuille de cryptomonnaie liée, le cas échéant\n• Vos pass d'événements et demandes de pass\n• Vos demandes de réunion (envoyées et reçues), réunions et messages que vous avez envoyés ou reçus dans le chat de réunion, le chat d'événement et les messages directs\n• Votre statut de réseautage, agenda et progression des tutoriels\n• Les relations d'utilisateurs bloqués\n• Vos identifiants de compte et votre capacité à vous connecter"
     },
     "retained": {
       "title": "Quelles données peuvent être conservées",
-      "text": "Une quantité limitée de données peut être conservée après la suppression de votre compte :\n\n• Les registres que nous sommes tenus de conserver à des fins légales, fiscales, comptables ou de prévention de la fraude, tels que l'historique des transactions de jetons\n• Les données pouvant subsister dans des sauvegardes de routine pendant une période limitée avant d'être purgées\n• Les messages que vous avez envoyés à d'autres utilisateurs peuvent rester dans la copie de la conversation du destinataire. Le contenu des messages envoyés via le chat d'événement est chiffré de bout en bout, de sorte que HASHPASS ne peut pas le lire, quelle que soit sa conservation\n\nToute donnée conservée est utilisée uniquement aux fins énumérées ci-dessus et est traitée conformément à notre Politique de Confidentialité — nous ne l'utilisons pas pour continuer à faire fonctionner votre compte ou votre profil."
+      "text": "Une quantité limitée de données peut être conservée après la suppression de votre compte :\n\n• Les registres que nous sommes tenus de conserver à des fins légales, fiscales, comptables ou de prévention de la fraude, tels que l'historique des transactions de jetons\n• Les données pouvant subsister dans des sauvegardes de routine pendant une période limitée avant d'être purgées\n• Les messages que vous avez envoyés à d'autres utilisateurs peuvent rester dans la copie de la conversation du destinataire. Le contenu envoyé via le chat d'une réunion planifiée est chiffré de bout en bout, de sorte que HASHPASS ne peut pas le lire quelle que soit sa conservation ; le contenu envoyé via le chat général de l'événement ou les messages directs n'est pas chiffré\n\nToute donnée conservée est utilisée uniquement aux fins énumérées ci-dessus et est traitée conformément à notre Politique de Confidentialité — nous ne l'utilisons pas pour continuer à faire fonctionner votre compte ou votre profil."
     },
     "contact": {
       "title": "Questions",

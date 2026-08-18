@@ -267,7 +267,7 @@
     },
     "collection": {
       "title": "2. Informationen, die wir sammeln",
-      "text": "Wir sammeln Informationen, die Sie uns direkt zur Verfügung stellen, einschließlich:\n\n• Kontoinformationen: Ihr Name und Ihre E-Mail-Adresse, unabhängig davon, ob Sie sich mit Google, mit einem E-Mail-Bestätigungscode oder mit einer verknüpften Kryptowährungs-Wallet anmelden.\n• Profilfoto: Wenn Sie sich entscheiden, ein Profilfoto hochzuladen, speichern und zeigen wir es an. Dies ist optional.\n• Wallet-Informationen: Wenn Sie eine Kryptowährungs-Wallet (z. B. Solana oder Ethereum) zur Anmeldung verbinden, sammeln und speichern wir Ihre öffentliche Wallet-Adresse. Wir sammeln niemals Ihre privaten Schlüssel oder Ihre Seed-Phrase und haben keinen Zugriff darauf.\n• Nachrichten: Wenn Sie die In-App-Nachrichtenfunktion nutzen (z. B. den Event-Meeting-Chat), speichern wir Absender- und Empfängerkennungen sowie Zeitstempel, damit Nachrichten zugestellt werden können. Der Inhalt von Nachrichten, die über den Meeting-Chat gesendet werden, ist Ende-zu-Ende-verschlüsselt — siehe Abschnitt 5 für Details.\n• Veranstaltungsdaten: Informationen über Veranstaltungen, die Sie besuchen, Pässe, die Sie besitzen, und Interaktionen innerhalb unserer Plattform.\n• Nutzungsdaten: Informationen darüber, wie Sie unseren Dienst nutzen, einschließlich aufgerufener Funktionen und durchgeführter Aktionen.\n• Geräteinformationen: Technische Informationen über Ihr Gerät, Ihren Browser und Ihr Betriebssystem."
+      "text": "Wir sammeln Informationen, die Sie uns direkt zur Verfügung stellen, einschließlich:\n\n• Kontoinformationen: Ihr Name und Ihre E-Mail-Adresse, unabhängig davon, ob Sie sich mit Google, mit einem E-Mail-Bestätigungscode oder mit einer verknüpften Kryptowährungs-Wallet anmelden.\n• Profilfoto: Wenn Sie sich entscheiden, ein Profilfoto hochzuladen, speichern und zeigen wir es an. Dies ist optional.\n• Wallet-Informationen: Wenn Sie eine Kryptowährungs-Wallet (z. B. Solana oder Ethereum) zur Anmeldung verbinden, sammeln und speichern wir Ihre öffentliche Wallet-Adresse. Wir sammeln niemals Ihre privaten Schlüssel oder Ihre Seed-Phrase und haben keinen Zugriff darauf.\n• Nachrichten: Wenn Sie die In-App-Nachrichtenfunktion nutzen, speichern wir Absender- und Empfängerkennungen, Zeitstempel und den Nachrichteninhalt, damit Nachrichten zugestellt und angezeigt werden können. Inhalte, die über den Chat eines geplanten Meetings gesendet werden, sind Ende-zu-Ende-verschlüsselt; Inhalte, die über den allgemeinen Event-Chat und Direktnachrichten zwischen Teilnehmern gesendet werden, sind es nicht — siehe Abschnitt 5 für Details.\n• Veranstaltungsdaten: Informationen über Veranstaltungen, die Sie besuchen, Pässe, die Sie besitzen, und Interaktionen innerhalb unserer Plattform.\n• Nutzungsdaten: Informationen darüber, wie Sie unseren Dienst nutzen, einschließlich aufgerufener Funktionen und durchgeführter Aktionen.\n• Geräteinformationen: Technische Informationen über Ihr Gerät, Ihren Browser und Ihr Betriebssystem."
     },
     "use": {
       "title": "3. Wie wir Ihre Informationen verwenden",
@@ -279,7 +279,7 @@
     },
     "security": {
       "title": "5. Datensicherheit",
-      "text": "Wir setzen angemessene technische und organisatorische Sicherheitsmaßnahmen ein, um Ihre personenbezogenen Daten zu schützen:\n\n• Verschlüsselung bei der Übertragung: Alle Daten, die zwischen Ihrem Gerät und unseren Servern gesendet werden, sind über HTTPS/TLS verschlüsselt.\n• Ende-zu-Ende-verschlüsselte Nachrichten: Nachrichten, die Sie über unsere In-App-Meeting-Chat-Funktion senden, werden direkt auf Ihrem Gerät Ende-zu-Ende-verschlüsselt (X25519-Schlüsselaustausch, HKDF-SHA256 und XChaCha20-Poly1305). Nur Sie und der Empfänger können den Nachrichteninhalt lesen — HASHPASS hat keinen Zugriff darauf.\n• Kontolöschung: Sie können Ihr Konto und die zugehörigen personenbezogenen Daten jederzeit dauerhaft innerhalb der App löschen.\n\nKeine Methode der Übertragung über das Internet oder der elektronischen Speicherung ist zu 100 % sicher, und wir können keine absolute Sicherheit garantieren."
+      "text": "Wir setzen angemessene technische und organisatorische Sicherheitsmaßnahmen ein, um Ihre personenbezogenen Daten zu schützen:\n\n• Verschlüsselung bei der Übertragung: Alle Daten, die zwischen Ihrem Gerät und unseren Servern gesendet werden, sind über HTTPS/TLS verschlüsselt.\n• Ende-zu-Ende-verschlüsselter Meeting-Chat: Nachrichten, die Sie über den Chat eines geplanten Meetings senden, werden direkt auf Ihrem Gerät Ende-zu-Ende-verschlüsselt (X25519-Schlüsselaustausch, HKDF-SHA256 und XChaCha20-Poly1305) — nur Sie und der Empfänger können diesen Inhalt lesen, HASHPASS hat keinen Zugriff darauf. Der allgemeine Event-Chat und Direktnachrichten zwischen Teilnehmern sind nicht Ende-zu-Ende-verschlüsselt und werden als normaler Text gespeichert.\n• Kontolöschung: Sie können Ihr Konto und die zugehörigen personenbezogenen Daten jederzeit dauerhaft innerhalb der App löschen.\n\nKeine Methode der Übertragung über das Internet oder der elektronischen Speicherung ist zu 100 % sicher, und wir können keine absolute Sicherheit garantieren."
     },
     "rights": {
       "title": "6. Ihre Rechte",
@@ -365,6 +365,20 @@
     },
     "privacy": {
       "subtitle": "Erfahren Sie, wie wir Ihre Daten schützen"
+    },
+    "deleteDisclaimer": {
+      "title": "Konto löschen",
+      "subtitle": "Diese Aktion ist dauerhaft und kann nicht rückgängig gemacht werden",
+      "bullet1": "Alle Ihre Daten werden dauerhaft aus unseren Systemen gelöscht",
+      "bullet2": "Wir behalten keine Ihrer persönlichen Daten nach der Löschung",
+      "bullet3": "Ihre Pässe, Verbindungen und Ihr Verlauf gehen für immer verloren",
+      "terms": "Nutzungsbedingungen",
+      "privacy": "Datenschutzerklärung",
+      "confirm": "Ich verstehe, weiter",
+      "cancel": "Abbrechen",
+      "confirmWord": "LÖSCHEN",
+      "understoodCheckbox": "Ich verstehe, dass dadurch alle meine Daten gelöscht werden und dies nicht rückgängig gemacht werden kann",
+      "typeToConfirm": "Geben Sie {word} ein, um zu bestätigen"
     }
   },
   "index": {
@@ -1102,11 +1116,11 @@
     },
     "deleted": {
       "title": "Welche Daten gelöscht werden",
-      "text": "Wenn Sie Ihr Konto löschen, löschen wir sofort und dauerhaft:\n\n• Ihren Namen, Ihre E-Mail-Adresse und Ihr Profilfoto\n• Ihre verknüpfte Kryptowährungs-Wallet-Adresse, falls vorhanden\n• Ihre Veranstaltungspässe und Passanfragen\n• Ihre Meeting-Anfragen, Meetings und im Event-Chat gesendete Nachrichten\n• Ihren Networking-Status, Ihre Agenda und Ihren Tutorial-Fortschritt\n• Beziehungen zu blockierten Nutzern\n• Ihre Kontodaten und Anmeldemöglichkeit"
+      "text": "Wenn Sie Ihr Konto löschen, löschen wir sofort und dauerhaft:\n\n• Ihren Namen, Ihre E-Mail-Adresse und Ihr Profilfoto\n• Ihre verknüpfte Kryptowährungs-Wallet-Adresse, falls vorhanden\n• Ihre Veranstaltungspässe und Passanfragen\n• Ihre Meeting-Anfragen (gesendet und empfangen), Meetings und Nachrichten, die Sie im Meeting-Chat, Event-Chat und in Direktnachrichten gesendet oder empfangen haben\n• Ihren Networking-Status, Ihre Agenda und Ihren Tutorial-Fortschritt\n• Beziehungen zu blockierten Nutzern\n• Ihre Kontodaten und Anmeldemöglichkeit"
     },
     "retained": {
       "title": "Welche Daten aufbewahrt werden können",
-      "text": "Eine begrenzte Menge an Daten kann nach der Löschung Ihres Kontos aufbewahrt werden:\n\n• Aufzeichnungen, die wir aus rechtlichen, steuerlichen, buchhalterischen oder betrugspräventiven Gründen aufbewahren müssen, wie z. B. den Token-Transaktionsverlauf\n• Daten, die für einen begrenzten Zeitraum in routinemäßigen Backups verbleiben können, bevor sie gelöscht werden\n• Nachrichten, die Sie an andere Nutzer gesendet haben, können in der eigenen Kopie der Unterhaltung des Empfängers verbleiben. Der Inhalt von Nachrichten, die über den Event-Chat gesendet werden, ist Ende-zu-Ende-verschlüsselt, sodass HASHPASS sie unabhängig von der Aufbewahrung nicht lesen kann\n\nAlle aufbewahrten Daten werden nur für die oben genannten Zwecke verwendet und gemäß unserer Datenschutzerklärung behandelt — wir verwenden sie nicht, um Ihr Konto oder Profil weiter zu betreiben."
+      "text": "Eine begrenzte Menge an Daten kann nach der Löschung Ihres Kontos aufbewahrt werden:\n\n• Aufzeichnungen, die wir aus rechtlichen, steuerlichen, buchhalterischen oder betrugspräventiven Gründen aufbewahren müssen, wie z. B. den Token-Transaktionsverlauf\n• Daten, die für einen begrenzten Zeitraum in routinemäßigen Backups verbleiben können, bevor sie gelöscht werden\n• Nachrichten, die Sie an andere Nutzer gesendet haben, können in der eigenen Kopie der Unterhaltung des Empfängers verbleiben. Inhalte, die über den Chat eines geplanten Meetings gesendet werden, sind Ende-zu-Ende-verschlüsselt, sodass HASHPASS sie unabhängig von der Aufbewahrung nicht lesen kann; Inhalte, die über den allgemeinen Event-Chat oder Direktnachrichten gesendet werden, sind nicht verschlüsselt\n\nAlle aufbewahrten Daten werden nur für die oben genannten Zwecke verwendet und gemäß unserer Datenschutzerklärung behandelt — wir verwenden sie nicht, um Ihr Konto oder Profil weiter zu betreiben."
     },
     "contact": {
       "title": "Fragen",

@@ -267,7 +267,7 @@
     },
     "collection": {
       "title": "2. Informações que coletamos",
-      "text": "Coletamos informações que você nos fornece diretamente, incluindo:\n\n• Informações da conta: Seu nome e endereço de e-mail, seja ao entrar com o Google, com um código de verificação por e-mail, ou com uma carteira de criptomoedas vinculada.\n• Foto de perfil: Se você optar por enviar uma foto de perfil, nós a armazenamos e exibimos. Isso é opcional.\n• Informações da carteira: Se você conectar uma carteira de criptomoedas (por exemplo, Solana ou Ethereum) para entrar, coletamos e armazenamos seu endereço público de carteira. Nunca coletamos nem temos acesso às suas chaves privadas ou frase-semente.\n• Mensagens: Se você usar mensagens dentro do aplicativo (por exemplo, o chat de reuniões de eventos), armazenamos os identificadores de remetente e destinatário e os carimbos de data/hora para que as mensagens possam ser entregues. O conteúdo das mensagens enviadas pelo chat de reuniões é criptografado de ponta a ponta — veja a Seção 5 para detalhes.\n• Dados do evento: Informações sobre eventos que você participa, passes que possui e interações em nossa plataforma.\n• Dados de uso: Informações sobre como você usa nosso Serviço, incluindo recursos acessados e ações realizadas.\n• Informações do dispositivo: Informações técnicas sobre seu dispositivo, navegador e sistema operacional."
+      "text": "Coletamos informações que você nos fornece diretamente, incluindo:\n\n• Informações da conta: Seu nome e endereço de e-mail, seja ao entrar com o Google, com um código de verificação por e-mail, ou com uma carteira de criptomoedas vinculada.\n• Foto de perfil: Se você optar por enviar uma foto de perfil, nós a armazenamos e exibimos. Isso é opcional.\n• Informações da carteira: Se você conectar uma carteira de criptomoedas (por exemplo, Solana ou Ethereum) para entrar, coletamos e armazenamos seu endereço público de carteira. Nunca coletamos nem temos acesso às suas chaves privadas ou frase-semente.\n• Mensagens: Se você usar mensagens dentro do aplicativo, armazenamos os identificadores de remetente e destinatário, os carimbos de data/hora e o conteúdo da mensagem para que possam ser entregues e exibidas. O conteúdo enviado pelo chat de uma reunião agendada é criptografado de ponta a ponta; o conteúdo enviado pelo chat geral do evento e mensagens diretas entre participantes não é — veja a Seção 5 para detalhes.\n• Dados do evento: Informações sobre eventos que você participa, passes que possui e interações em nossa plataforma.\n• Dados de uso: Informações sobre como você usa nosso Serviço, incluindo recursos acessados e ações realizadas.\n• Informações do dispositivo: Informações técnicas sobre seu dispositivo, navegador e sistema operacional."
     },
     "use": {
       "title": "3. Como usamos suas informações",
@@ -279,7 +279,7 @@
     },
     "security": {
       "title": "5. Segurança de dados",
-      "text": "Implementamos medidas de segurança técnicas e organizacionais apropriadas para proteger suas informações pessoais:\n\n• Criptografia em trânsito: Todos os dados enviados entre seu dispositivo e nossos servidores são criptografados usando HTTPS/TLS.\n• Mensagens criptografadas de ponta a ponta: As mensagens que você envia por meio de nosso recurso de chat de reuniões no aplicativo são criptografadas de ponta a ponta (troca de chaves X25519, HKDF-SHA256 e XChaCha20-Poly1305) diretamente no seu dispositivo. Somente você e o destinatário podem ler o conteúdo da mensagem — a HASHPASS não pode acessá-lo.\n• Exclusão de conta: Você pode excluir permanentemente sua conta e os dados pessoais associados a qualquer momento dentro do aplicativo.\n\nNenhum método de transmissão pela Internet ou armazenamento eletrônico é 100% seguro, e não podemos garantir segurança absoluta."
+      "text": "Implementamos medidas de segurança técnicas e organizacionais apropriadas para proteger suas informações pessoais:\n\n• Criptografia em trânsito: Todos os dados enviados entre seu dispositivo e nossos servidores são criptografados usando HTTPS/TLS.\n• Chat de reunião criptografado de ponta a ponta: As mensagens que você envia pelo chat de uma reunião agendada são criptografadas de ponta a ponta (troca de chaves X25519, HKDF-SHA256 e XChaCha20-Poly1305) diretamente no seu dispositivo — somente você e o destinatário podem ler esse conteúdo, a HASHPASS não pode acessá-lo. O chat geral do evento e as mensagens diretas entre participantes não são criptografados de ponta a ponta e são armazenados como texto comum.\n• Exclusão de conta: Você pode excluir permanentemente sua conta e os dados pessoais associados a qualquer momento dentro do aplicativo.\n\nNenhum método de transmissão pela Internet ou armazenamento eletrônico é 100% seguro, e não podemos garantir segurança absoluta."
     },
     "rights": {
       "title": "6. Seus direitos",
@@ -365,6 +365,20 @@
     },
     "privacy": {
       "subtitle": "Saiba como protegemos seus dados"
+    },
+    "deleteDisclaimer": {
+      "title": "Excluir conta",
+      "subtitle": "Esta ação é permanente e não pode ser desfeita",
+      "bullet1": "Todos os seus dados serão excluídos permanentemente de nossos sistemas",
+      "bullet2": "Não retemos nenhuma de suas informações pessoais após a exclusão",
+      "bullet3": "Seus passes, conexões e histórico serão perdidos para sempre",
+      "terms": "Termos de Serviço",
+      "privacy": "Política de Privacidade",
+      "confirm": "Entendo, continuar",
+      "cancel": "Cancelar",
+      "confirmWord": "EXCLUIR",
+      "understoodCheckbox": "Entendo que isso exclui todos os meus dados e não pode ser desfeito",
+      "typeToConfirm": "Digite {word} para confirmar"
     }
   },
   "index": {
@@ -1102,11 +1116,11 @@
     },
     "deleted": {
       "title": "Quais dados são excluídos",
-      "text": "Quando você exclui sua conta, excluímos imediata e permanentemente:\n\n• Seu nome, endereço de e-mail e foto de perfil\n• Seu endereço de carteira de criptomoedas vinculado, se houver\n• Seus passes de eventos e solicitações de passes\n• Suas solicitações de reunião, reuniões e mensagens que você enviou no chat do evento\n• Seu status de networking, agenda e progresso de tutoriais\n• Relações de usuários bloqueados\n• Suas credenciais de conta e capacidade de fazer login"
+      "text": "Quando você exclui sua conta, excluímos imediata e permanentemente:\n\n• Seu nome, endereço de e-mail e foto de perfil\n• Seu endereço de carteira de criptomoedas vinculado, se houver\n• Seus passes de eventos e solicitações de passes\n• Suas solicitações de reunião (enviadas e recebidas), reuniões e mensagens que você enviou ou recebeu no chat de reuniões, chat do evento e mensagens diretas\n• Seu status de networking, agenda e progresso de tutoriais\n• Relações de usuários bloqueados\n• Suas credenciais de conta e capacidade de fazer login"
     },
     "retained": {
       "title": "Quais dados podem ser retidos",
-      "text": "Uma quantidade limitada de dados pode ser retida após a exclusão da sua conta:\n\n• Registros que somos obrigados a manter por motivos legais, fiscais, contábeis ou de prevenção de fraudes, como o histórico de transações de tokens\n• Dados que podem persistir em backups de rotina por um período limitado antes de serem eliminados\n• Mensagens que você enviou a outros usuários podem permanecer na cópia da conversa do destinatário. O conteúdo das mensagens enviadas pelo chat do evento é criptografado de ponta a ponta, portanto a HASHPASS não pode lê-lo independentemente da retenção\n\nQuaisquer dados retidos são usados apenas para os fins listados acima e são tratados de acordo com nossa Política de Privacidade — não os usamos para continuar operando sua conta ou perfil."
+      "text": "Uma quantidade limitada de dados pode ser retida após a exclusão da sua conta:\n\n• Registros que somos obrigados a manter por motivos legais, fiscais, contábeis ou de prevenção de fraudes, como o histórico de transações de tokens\n• Dados que podem persistir em backups de rotina por um período limitado antes de serem eliminados\n• Mensagens que você enviou a outros usuários podem permanecer na cópia da conversa do destinatário. O conteúdo enviado pelo chat de uma reunião agendada é criptografado de ponta a ponta, portanto a HASHPASS não pode lê-lo independentemente da retenção; o conteúdo enviado pelo chat geral do evento ou mensagens diretas não é criptografado\n\nQuaisquer dados retidos são usados apenas para os fins listados acima e são tratados de acordo com nossa Política de Privacidade — não os usamos para continuar operando sua conta ou perfil."
     },
     "contact": {
       "title": "Dúvidas",
