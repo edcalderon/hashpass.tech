@@ -2,7 +2,9 @@ import React, { useEffect, useRef, useState, type ReactNode } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Image, ScrollView } from 'react-native';
 import { Ionicons } from '../lib/vector-icons';
 import { useTheme } from '../hooks/useTheme';
+import { HashpassError } from '@hashpass/sdk';
 import { hashpassSdk } from '../lib/hashpass-sdk';
+import { supabase } from '../lib/supabase';
 import { getHashpassFullLogo } from '../lib/hashpass-logo';
 import { useTranslation } from '../i18n/i18n';
 import {
@@ -10,6 +12,34 @@ import {
   type AuthQrApprovalMachineSnapshot,
   type SessionStatus,
 } from '../hooks/auth-qr-approval-machine';
+
+// A freshly-opened tab/screen's Supabase client needs to rehydrate its
+// session from persisted storage before getAccessToken() (hashpass-sdk.ts's
+// supabase.auth.getSession()) is guaranteed to return a token that's
+// actually still valid -- a real 401 from respondToLogin() here was
+// confirmed live (approve/deny both use this same path) landing the machine
+// in its 'signedOut' state ("Sign in required") even though the visitor had
+// just been looking at the Approve/Deny screen, which only renders once
+// sessionStatus is already 'ready'. Force one explicit refreshSession() and
+// retry exactly once before letting a 401 fall through to the machine's own
+// isUnauthorized handling -- a genuinely signed-out visitor still ends up
+// there, just after this one extra chance.
+async function respondToLoginWithRefresh(
+  id: string,
+  decision: 'approve' | 'deny'
+): Promise<{ status: 'approved' | 'denied' }> {
+  try {
+    return await hashpassSdk().authQr.respondToLogin(id, decision);
+  } catch (error) {
+    const isUnauthorized = error instanceof HashpassError && error.code === 'unauthorized';
+    if (!isUnauthorized) throw error;
+
+    const { data } = await supabase.auth.refreshSession();
+    if (!data.session) throw error;
+
+    return hashpassSdk().authQr.respondToLogin(id, decision);
+  }
+}
 
 // Web's CookieConsentBanner (components/CookieConsentBanner.tsx) is
 // position:fixed, docked to the bottom of the viewport with zIndex 9998 --
@@ -88,8 +118,7 @@ export function AuthQrApprovalCard({
   const actorRef = useRef(
     createAuthQrApprovalActor({
       challengeId,
-      respondToLogin: (id: string, decision: 'approve' | 'deny') =>
-        hashpassSdk().authQr.respondToLogin(id, decision),
+      respondToLogin: respondToLoginWithRefresh,
       onApproved,
       onDenied,
       onCancel,

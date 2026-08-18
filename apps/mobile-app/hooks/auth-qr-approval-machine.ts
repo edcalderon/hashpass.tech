@@ -147,7 +147,23 @@ export const authQrApprovalMachine = createMachine(
     },
     actions: {
       requestSignIn: ({ context }) => context.onSignInRequired(),
-      callOnCancel: ({ context }) => context.onCancel(),
+      // Best-effort: without this, cancelling here (leaving without a
+      // decision) is invisible to the browser side -- the challenge stays
+      // 'pending' server-side, so waitForLogin()'s poll never sees a
+      // terminal status and the browser just keeps waiting until the
+      // challenge's own server-side expiry, minutes later, with no
+      // indication anything happened. Treating cancel as an implicit deny
+      // lets the browser's existing 'denied' handling (see
+      // SignInModal.tsx's waitForLogin catch) pick it up on the very next
+      // poll instead. Fire-and-forget: onCancel() below must still run even
+      // if this fails (already expired/handled, network error, etc.), and
+      // the caller isn't waiting on this screen's own network round trip.
+      callOnCancel: ({ context }) => {
+        if (context.challengeId) {
+          context.respondToLogin(context.challengeId, 'deny').catch(() => {});
+        }
+        context.onCancel();
+      },
       callOnInvalidAction: ({ context }) => context.onInvalidAction(),
       callOnApproved: ({ context }) => context.onApproved(),
       callOnDenied: ({ context }) => context.onDenied(),
