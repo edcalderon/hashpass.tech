@@ -1,3 +1,14 @@
+## [1.9.16](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.15...v1.9.16) (2026-08-18)
+### Released
+- 90s wait countdown + fix deny/cancel not reaching the browser
+
+### Release scope
+- Compared with: `v1.9.15` (the previous global release tag)
+
+### Affected products & packages
+- Club web
+- Mobile app
+
 ## [1.9.15](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.14...v1.9.15) (2026-08-18)
 ### Released
 - locale race, gateway-blip resilience, and club UX polish

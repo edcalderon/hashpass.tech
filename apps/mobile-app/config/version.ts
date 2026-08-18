@@ -22,22 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202608180015, // Updated to current timestamp
+  buildNumber: 202608180208, // Updated to current timestamp
   releaseDate: '2026-08-18',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    // No new features
+    '90s wait countdown + fix deny/cancel not reaching the browser'
   ],
   bugfixes: [
-    'locale race, gateway-blip resilience, and club UX polish'
+    // No bugfixes
   ],
   breakingChanges: [],
-  notes: 'locale race, gateway-blip resilience, and club UX polish'
+  notes: '90s wait countdown + fix deny/cancel not reaching the browser'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.16': {
+    version: '1.9.16',
+    buildNumber: 202608180208,
+    releaseDate: '2026-08-18',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      '90s wait countdown + fix deny/cancel not reaching the browser'
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: '90s wait countdown + fix deny/cancel not reaching the browser'
+  },
   '1.9.15': {
     version: '1.9.15',
     buildNumber: 202608180015,
