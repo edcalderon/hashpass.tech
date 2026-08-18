@@ -70,11 +70,15 @@ jobs:
       - name: Publish SDK
         if: startsWith(github.ref, 'refs/tags/') && inputs.dry_run != true
         working-directory: packages/sdk
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_HASHPASS_SDK_TOKEN }}
         run: pnpm publish --access public --provenance --no-git-checks
 
       - name: Publish CLI
         if: startsWith(github.ref, 'refs/tags/') && inputs.dry_run != true
         working-directory: packages/sdk-cli
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_HASHPASS_SDK_TOKEN }}
         run: pnpm publish --access public --provenance --no-git-checks
 
       - name: Create GitHub release
