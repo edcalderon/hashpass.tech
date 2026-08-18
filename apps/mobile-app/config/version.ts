@@ -22,22 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202608180457, // Updated to current timestamp
+  buildNumber: 202608180658, // Updated to current timestamp
   releaseDate: '2026-08-18',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'add standalone, unauthenticated Delete Account page'
+    // No new features
   ],
   bugfixes: [
-    'migrate legal pages off broken i18n, fix delete-account access, fix hero logo contrast'
+    'stuck QR-approve screen, cut-off dashboard stat cards, local CORS gap'
   ],
   breakingChanges: [],
-  notes: 'add standalone, unauthenticated Delete Account page; migrate legal pages off broken i18n, fix delete-account access, fix hero logo contrast'
+  notes: 'stuck QR-approve screen, cut-off dashboard stat cards, local CORS gap'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.18': {
+    version: '1.9.18',
+    buildNumber: 202608180658,
+    releaseDate: '2026-08-18',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'stuck QR-approve screen, cut-off dashboard stat cards, local CORS gap'
+    ],
+    breakingChanges: [],
+    notes: 'stuck QR-approve screen, cut-off dashboard stat cards, local CORS gap'
+  },
   '1.9.17': {
     version: '1.9.17',
     buildNumber: 202608180457,

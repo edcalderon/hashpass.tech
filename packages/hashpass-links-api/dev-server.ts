@@ -42,7 +42,7 @@ const server = createServer(async (req, res) => {
     }
     if (method === 'OPTIONS') {
       responseHeaders.set('access-control-allow-methods', 'GET, POST, PATCH, OPTIONS');
-      responseHeaders.set('access-control-allow-headers', 'Content-Type, Authorization, Cache-Control, X-Hashpass-App-Id, X-Hashpass-Binding');
+      responseHeaders.set('access-control-allow-headers', 'Content-Type, Authorization, Cache-Control, X-Hashpass-App-Id, X-Hashpass-Binding, Idempotency-Key');
       res.writeHead(204, Object.fromEntries(responseHeaders));
       res.end();
       return;

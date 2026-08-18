@@ -1,3 +1,19 @@
+## [1.9.18](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.17...v1.9.18) (2026-08-18)
+
+
+### Bug Fixes
+
+* **mobile:** stuck QR-approve screen, cut-off dashboard stat cards, local CORS gap ([377e58e](https://github.com/hashpass-tech/hashpass.tech/commit/377e58e847c13e86fe9fb647d6f4143c4ecc45ca))
+### Release Highlights
+- stuck QR-approve screen, cut-off dashboard stat cards, local CORS gap
+
+### Release scope
+- Compared with: `v1.9.17` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- QR links API
+
 ## [1.9.17](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.16...v1.9.17) (2026-08-18)
 ### Released
 - add standalone, unauthenticated Delete Account page; migrate legal pages off broken i18n, fix delete-account access, fix hero logo contrast

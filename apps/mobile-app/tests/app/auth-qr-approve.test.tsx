@@ -6,6 +6,10 @@ import AuthQrApproveScreen from '../../app/(shared)/dashboard/auth-qr-approve';
 const mockRespondToLogin = jest.fn();
 const mockBack = jest.fn();
 const mockReplace = jest.fn();
+// Defaults to true so the existing approve/deny/cancel assertions below
+// (which expect mockBack to be called) keep passing unchanged -- only the
+// dedicated "no navigation history" test overrides this to false.
+const mockCanGoBack = jest.fn(() => true);
 let mockParams: Record<string, string> = { challengeId: 'chal_123' };
 // Defaults to a fully-settled, signed-in session so the existing
 // approve/deny/error/cancel behavior below is reachable without every test
@@ -35,7 +39,7 @@ jest.mock('../../hooks/useAuth', () => ({
 }));
 
 jest.mock('expo-router', () => ({
-  useRouter: () => ({ back: mockBack, replace: mockReplace }),
+  useRouter: () => ({ back: mockBack, replace: mockReplace, canGoBack: mockCanGoBack }),
   useLocalSearchParams: () => mockParams,
 }));
 
@@ -81,6 +85,7 @@ describe('AuthQrApproveScreen', () => {
     jest.clearAllMocks();
     mockParams = { challengeId: 'chal_123' };
     mockAuthState = { isLoggedIn: true, isLoading: false, dbUserId: 'db-user-1' };
+    mockCanGoBack.mockReturnValue(true);
   });
 
   afterEach(() => {
@@ -143,6 +148,23 @@ describe('AuthQrApproveScreen', () => {
     await triggerPress(cancelButton);
 
     expect(mockBack).toHaveBeenCalled();
+  });
+
+  // Regression test for a real bug reported live: a cold-started deep link
+  // straight from a QR scan intent leaves this screen with no navigation
+  // history at all, so a bare router.back() silently no-ops -- Cancel,
+  // Deny, and Approve's own "Done" all landed here, with no way to
+  // actually leave the screen. Falls back to the dashboard instead.
+  it('falls back to the dashboard instead of a dead no-op when there is no navigation history to go back to', async () => {
+    mockCanGoBack.mockReturnValue(false);
+    mockRespondToLogin.mockResolvedValue({ status: 'denied' });
+    renderer = await renderScreen();
+
+    const cancelButton = findByText(renderer.root, 'Cancel').parent;
+    await triggerPress(cancelButton);
+
+    expect(mockBack).not.toHaveBeenCalled();
+    expect(mockReplace).toHaveBeenCalledWith('/(shared)/dashboard/explore');
   });
 
   it('shows a checking state while auth is still loading, not Approve/Deny', async () => {
