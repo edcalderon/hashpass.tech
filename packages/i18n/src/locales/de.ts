@@ -17,6 +17,8 @@ export const de = {
     qrRefresh: 'Neuer Code',
     openApp: 'HASHPASS.TECH öffnen',
     signInWebApp: 'Über die Web-App anmelden',
+    signInWebAppPending: 'Warten auf Bestätigung im anderen Tab…',
+    signInWebAppReset: 'Hat nicht geklappt? Erneut versuchen',
     openAndroidApp: 'Android-App öffnen',
     orDownload: 'oder App herunterladen',
     downloadApp: 'App herunterladen',

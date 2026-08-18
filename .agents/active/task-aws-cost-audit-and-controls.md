@@ -284,6 +284,91 @@ the month. Revisit only after observing a few days of the reduced
 (correctly-filtered) CodeBuild volume, and only with the stop-on-cancel
 path proven first, per the existing benchmark checklist below.
 
+### Console/API gap explained, real root cause found — 2026-08-17
+
+**New signal:** console showed MTD $142.39 (428% vs last month), forecast
+$550.19 (961%). Same day, `aws ce get-cost-and-usage` on the `hashpass`
+profile still reconciled to essentially $0 -- the 2026-08-15 reconciliation
+gap looked unresolved again. It is now **fully explained, not a bug**:
+
+- `aws budgets describe-budgets --account-id "$(aws sts get-caller-identity --profile hashpass --query Account --output text)"` returned
+  `ActualSpend: $142.392` / `ForecastedSpend: $550.186` for "My Monthly Cost
+  Budget" -- an exact match to the console screenshot, confirming the
+  console figure is real and belongs to this account.
+- The plain `get-cost-and-usage` call (no filter) nets to ~$0 because a
+  **-$137.82 Credit** record is being applied against **+$137.82 of real
+  Usage** for the same period -- `group-by RECORD_TYPE` shows both lines
+  explicitly. The Budget's own `FilterExpression` deliberately excludes
+  `Credit`/`Refund` from `ActualSpend`, which is why it (correctly) surfaces
+  the real usage number while a naive CE query hides it behind the credit.
+  **This is the actual explanation for the recurring "CLI shows ~$0"
+  finding in every prior entry in this file (2026-08-04, 2026-08-15)** --
+  not a permissions or data-lag issue as those entries speculated. Always
+  add `--filter '{"Dimensions":{"Key":"RECORD_TYPE","Values":["Usage"]}}'`
+  (or the Budget's own `Not(Credit,Refund)` shape) when reconciling this
+  account's Cost Explorer numbers going forward.
+- The credit absorbing the usage is finite (see the $200 credit noted
+  2026-08-04) -- it is currently masking real spend, not eliminating it.
+
+**Real usage MTD (Aug 1-17), `RECORD_TYPE=Usage` only, by service:**
+
+| Service | MTD | Note |
+|---|---|---|
+| EC2 - Compute | $56.58 | `m6i.xlarge` $50.54 (263 hrs), `m6i.large` $3.96 (41 hrs), `t3a.xlarge` $2.08 (14 hrs, mobile-release runner) |
+| CodeBuild | $49.12 | `g1.large` 1945 min ($38.90) + `g1.medium` 1022 min ($10.22) |
+| EC2 - Other | $15.32 | EBS/snapshots/data-transfer tied to the above |
+| CodePipeline | $7.07 | |
+| S3 | $3.87 | |
+| Route 53 | $2.50 | new zones from the hpass.id/hashp.link rollout |
+| everything else | ~$3.4 | API Gateway, Secrets Manager, KMS, VPC, Cost Explorer itself, Lambda -- all sub-$2 each |
+
+**EC2 Compute ($56.58) is historical, not active.** Daily breakdown shows it
+concentrated **Aug 1-6** ($5-12/day), then ~$0 from Aug 7 onward. Confirmed
+**zero running/pending EC2 instances** right now across us-east-1,
+us-east-2, us-west-2. This lines up with the already-diagnosed "zombie
+pipeline worker" bug documented under Build-runner finding above (a
+cancelled CodePipeline execution doesn't stop the EC2-backed worker's
+build process) -- the code-level `build_timeout_seconds` guard exists but
+**only takes effect via `user_data` on instance replacement, and per that
+same finding was not yet confirmed applied to the live instances** as of
+this account's last check. Nothing to stop today (nothing is running), but
+this remains the single highest-leverage *unresolved* fix: until the live
+workers are replaced (or the guard otherwise confirmed live), any future
+cancelled-mid-build pipeline run can silently re-create this exact spend
+pattern with no visible symptom until the next bill.
+
+**CodeBuild ($49.12) is real, ongoing, and mostly explained by this week's
+own commit volume, not a new bug.** The 2026-08-16 path-filter fix
+(criptolatinfest) is confirmed genuinely live
+(`aws codepipeline get-pipeline` shows `pipelineType: V2`, a real trigger
+with `filePaths.includes: [apps/mobile-app/**, packages/**, package.json,
+pnpm-lock.yaml, pnpm-workspace.yaml]`) -- but criptolatinfest's build volume
+barely dropped (21 builds Aug 14 -> 23 Aug 15 -> 20 Aug 16 -> 16 so far Aug
+17) because that filter is **correctly** broad: criptolatinfest's demo site
+is a build of `apps/mobile-app`'s web export for a specific event, so it
+legitimately depends on `apps/mobile-app/**` and `packages/**` -- and this
+session's own work (the hpass.id/hashpass.link/hashp.link multi-domain
+rollout, the SignInModal race-condition fixes, i18n additions, several
+`release:promote` cycles) touched exactly those paths dozens of times over
+the same 4 days. All 5 site-build CodePipelines correctly re-trigger on
+real, relevant changes -- this is real usage from a genuinely
+high-commit-velocity week, not a stuck loop. Confirmed: no build is
+currently hung (`aws codebuild list-builds` + `batch-get-builds` on the 5
+most recent builds across all 5 projects, all `SUCCEEDED` in normal
+7-12 minute durations).
+
+**Bottom line:** the forecast risk is real (real usage pace, if it held for
+the rest of the month, would land well past the $200 credit), but there is
+no active leak to stop right now -- no running EC2, no stuck builds, the
+one known bug (criptolatinfest's missing filter) is already fixed and
+confirmed live. The two real open items are (1) confirm/apply the
+`build_timeout_seconds` guard to the live pipeline EC2 workers so a
+cancelled build can't silently re-create the Aug 1-6 pattern, and (2)
+expect CodeBuild spend to fall back down once this session's unusually
+high commit/release cadence returns to normal -- track actual MTD via
+`aws budgets describe-budgets --account-id "$(aws sts get-caller-identity --profile hashpass --query Account --output text)"`, not a plain
+`ce get-cost-and-usage`, to avoid re-triggering this same false alarm.
+
 ## Phase 2 — inventory likely drivers
 
 Audit without deleting or stopping anything:

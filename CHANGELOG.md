@@ -1,3 +1,15 @@
+## [1.9.15](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.14...v1.9.15) (2026-08-18)
+### Released
+- locale race, gateway-blip resilience, and club UX polish
+
+### Release scope
+- Compared with: `v1.9.14` (the previous global release tag)
+
+### Affected products & packages
+- Club web
+- Mobile app
+- SDK
+
 ## [1.9.14](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.13...v1.9.14) (2026-08-17)
 ### Released
 - allow web approval requests

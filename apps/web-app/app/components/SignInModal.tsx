@@ -154,6 +154,13 @@ export function SignInModal({ open, onClose }: SignInModalProps) {
   // setSession() and the user stays signed out despite approving on their
   // phone/other tab.
   const pendingChallengeRef = useRef<Promise<BeginQrLoginResult> | null>(null);
+  // True once "Sign in using the web app" has been clicked for the current
+  // challenge -- guards against a second click opening a second blank tab
+  // (openPlaceholderTab()) while the first is still pending approval, and
+  // drives the button's own waiting state. Reset below whenever qrPhase
+  // leaves 'waiting' (a fresh challenge, denial, expiry, error, or success),
+  // so a retry always starts clickable again.
+  const [webAppPending, setWebAppPending] = useState(false);
 
   // startQrLogin below is intentionally a stable useCallback([]) -- the
   // effect that auto-starts it on modal open depends on it, and a
@@ -220,6 +227,10 @@ export function SignInModal({ open, onClose }: SignInModalProps) {
       }
     })();
   }, []);
+
+  useEffect(() => {
+    if (qrPhase !== 'waiting') setWebAppPending(false);
+  }, [qrPhase]);
 
   // Close on Escape
   useEffect(() => {
@@ -593,8 +604,14 @@ export function SignInModal({ open, onClose }: SignInModalProps) {
                 the primary button. */}
             <a
               href={QR_VALUE}
+              aria-disabled={webAppPending}
               onClick={(e) => {
                 e.preventDefault();
+                // Guard against a second click opening a second blank tab
+                // (and a second, unrelated challenge on the mobile side)
+                // while the first click's approval is still pending.
+                if (webAppPending) return;
+                setWebAppPending(true);
                 // qrLogin is populated once the modal's own beginLogin()
                 // call resolves -- a fast click can land before it
                 // resolves (or after it failed), sending the visitor to
@@ -634,24 +651,53 @@ export function SignInModal({ open, onClose }: SignInModalProps) {
                 fontSize: 14, fontWeight: 700, textDecoration: 'none',
                 letterSpacing: -0.2,
                 transition: 'opacity 0.15s, transform 0.15s',
-                marginBottom: 10,
+                marginBottom: webAppPending ? 6 : 10,
+                opacity: webAppPending ? 0.72 : 1,
+                cursor: webAppPending ? 'default' : 'pointer',
+                pointerEvents: webAppPending ? 'none' : 'auto',
               }}
               onMouseEnter={(e) => {
+                if (webAppPending) return;
                 (e.currentTarget as HTMLElement).style.opacity = '0.88';
                 (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)';
               }}
               onMouseLeave={(e) => {
+                if (webAppPending) return;
                 (e.currentTarget as HTMLElement).style.opacity = '1';
                 (e.currentTarget as HTMLElement).style.transform = 'translateY(0)';
               }}
             >
-              {/* Browser / web icon */}
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <circle cx="12" cy="12" r="9"/>
-                <path d="M3 12h18M12 3a14 14 0 0 1 0 18 14 14 0 0 1 0-18z"/>
-              </svg>
-              {t('signInWebApp')}
+              {webAppPending ? (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden style={{ animation: 'qr-spin 0.9s linear infinite' }}>
+                  <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"/>
+                </svg>
+              ) : (
+                /* Browser / web icon */
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <circle cx="12" cy="12" r="9"/>
+                  <path d="M3 12h18M12 3a14 14 0 0 1 0 18 14 14 0 0 1 0-18z"/>
+                </svg>
+              )}
+              {webAppPending ? t('signInWebAppPending') : t('signInWebApp')}
             </a>
+            {webAppPending && (
+              // Safe reset for a visitor who got stuck (closed the other tab,
+              // it failed to load, etc.) -- starts a whole fresh challenge
+              // rather than just clearing the pending flag, since the old
+              // challenge may already be in an unrecoverable state.
+              <button
+                onClick={startQrLogin}
+                style={{
+                  display: 'block', width: '100%', textAlign: 'center',
+                  margin: '0 0 10px', padding: '4px 0',
+                  border: 'none', background: 'transparent',
+                  color: 'var(--text-faint)', fontSize: 12, fontWeight: 600,
+                  cursor: 'pointer', textDecoration: 'underline',
+                }}
+              >
+                {t('signInWebAppReset')}
+              </button>
+            )}
 
             {/* Open the Android app -- explicit, separate from the web
                 button above (no platform guessing). Tries the native app's

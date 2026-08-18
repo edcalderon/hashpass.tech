@@ -220,3 +220,69 @@ test("authQr.respondToLogin sends the app's own bearer token, not the browser-bi
   assert.deepEqual(JSON.parse(captured.init.body), { decision: "approve" });
   assert.equal(result.status, "approved");
 });
+
+test("authQr.respondToLogin sends an idempotency key derived from the challenge and decision, so a retried POST is safe", async () => {
+  let captured;
+  const fetch = async (url, init) => {
+    captured = { url, init };
+    return Response.json({ status: "approved" });
+  };
+  const sdk = createHashpass({
+    appId: "app_test",
+    fetch,
+    linksApiBaseUrl: "https://links.example.test/",
+    auth: { getAccessToken: () => "mobile-session-token" },
+  });
+
+  await sdk.authQr.respondToLogin("chal_1", "approve");
+
+  assert.equal(captured.init.headers.get("idempotency-key"), "chal_1:approve");
+});
+
+test("authQr.waitForLogin absorbs a sustained run of gateway-level 503s (surviving HttpTransport's own internal retries) instead of surfacing a hard error for a transient blip", async () => {
+  let callCount = 0;
+  const fetch = async () => {
+    callCount += 1;
+    // The first poll cycle's underlying GET is retried 3x internally by
+    // HttpTransport before this pollLogin() call finally rejects -- all
+    // three of those attempts 503 here, simulating a real gateway-level
+    // blip (confirmed live: fast, clean 503s with no matching Lambda-side
+    // error). The second poll cycle gets a real "denied" response --
+    // proving waitForLogin polled again after the transient run rather
+    // than giving up on it.
+    if (callCount <= 3) return new Response(JSON.stringify({ message: "Service Unavailable" }), { status: 503 });
+    return Response.json({ status: "denied", expiresAt: "2099-01-01T00:00:00.000Z" });
+  };
+  const sdk = createHashpass({ appId: "app_test", fetch, linksApiBaseUrl: "https://links.example.test/" });
+
+  await assert.rejects(
+    sdk.authQr.waitForLogin(
+      { challenge: { id: "chal_1", qrUrl: "u", expiresAt: "e", state: "state_1" }, codeVerifier: "v", binding: "b" },
+      { pollIntervalMs: 0 },
+    ),
+    (error) => {
+      // 'unauthorized' (denied) only happens if the poll loop got PAST the
+      // transient 503 run to a real subsequent response, not 'api_error' /
+      // 'network_error' from giving up on the blip itself.
+      assert.equal(error.code, "unauthorized");
+      return true;
+    },
+  );
+  assert.equal(callCount, 4, "3 failed attempts on the first poll cycle, then 1 successful poll");
+});
+
+test("authQr.waitForLogin eventually gives up after too many consecutive failed poll cycles", async () => {
+  const fetch = async () => new Response(JSON.stringify({ message: "Service Unavailable" }), { status: 503 });
+  const sdk = createHashpass({ appId: "app_test", fetch, linksApiBaseUrl: "https://links.example.test/" });
+
+  await assert.rejects(
+    sdk.authQr.waitForLogin(
+      { challenge: { id: "chal_1", qrUrl: "u", expiresAt: "e", state: "state_1" }, codeVerifier: "v", binding: "b" },
+      { pollIntervalMs: 0 },
+    ),
+    (error) => {
+      assert.equal(error.code, "api_error");
+      return true;
+    },
+  );
+});

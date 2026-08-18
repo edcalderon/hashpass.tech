@@ -3,7 +3,7 @@ import { Platform } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../../../hooks/useAuth';
 import { AuthQrApprovalCard } from '../../../components/AuthQrApprovalCard';
-import { setLocale, useTranslation } from '../../../i18n/i18n';
+import { setLocaleOverride, useTranslation } from '../../../i18n/i18n';
 
 // Bounds how long to wait for the Supabase bridge session (dbUserId) before
 // treating the visitor as signed out -- the bridge can fail silently (see
@@ -35,11 +35,17 @@ export default function AuthConnectScreen() {
   // were already using there instead of falling back to device locale --
   // setLocale() itself validates against the known locale set and falls
   // back to 'en' for anything unrecognized, so no validation needed here.
+  // Uses setLocaleOverride() rather than plain setLocale(): LanguageProvider
+  // (mounted app-wide in app/_layout.tsx) loads its own locale from
+  // AsyncStorage on every mount via a real async read, and if that resolves
+  // AFTER this effect it silently overwrites the requested locale back to
+  // the device/saved one -- setLocaleOverride() flags this request so that
+  // provider's own load defers instead of racing it (see i18n.ts).
   useEffect(() => {
     if (!requestedLocale) return;
 
     let mounted = true;
-    setLocale(requestedLocale)
+    setLocaleOverride(requestedLocale)
       .catch(() => {})
       .finally(() => {
         if (mounted) setLocaleRevision((revision) => revision + 1);
