@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Platform } from 'react-native';
-import { HashpassError } from '@hashpass/sdk';
+import { HashpassError } from '@hashpass-tech/sdk';
 import AuthConnectScreen from '../../app/auth/connect/index';
 import { getCurrentLocale, setLocale } from '../../i18n/i18n';
 import { LanguageProvider } from '../../providers/LanguageProvider';

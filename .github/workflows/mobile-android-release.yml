@@ -673,7 +673,7 @@ jobs:
       EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ inputs.environment == 'development' && vars.EXPO_PUBLIC_SUPABASE_ANON_KEY_DEV || vars.EXPO_PUBLIC_SUPABASE_ANON_KEY_PROD }}
       EXPO_PUBLIC_DIRECTUS_URL: ${{ vars.EXPO_PUBLIC_DIRECTUS_URL }}
       # HashPass Auth (QR login) / HashPass Links -- see
-      # packages/hashpass-links-api/README.md. Without this, @hashpass/sdk's
+      # packages/hashpass-links-api/README.md. Without this, @hashpass-tech/sdk's
       # AuthQrClient/QrLinksClient throw "requires linksApiBaseUrl to be
       # configured" the moment a native flow (scan-to-approve, the
       # hashpass.club -> hashpass.tech web handoff) tries to call them.

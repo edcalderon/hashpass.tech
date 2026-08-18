@@ -1,4 +1,4 @@
-import type { AuthSession, AuthSessionStore } from "@hashpass/sdk/auth";
+import type { AuthSession, AuthSessionStore } from "@hashpass-tech/sdk/auth";
 import { chmod, mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { homedir } from "node:os";

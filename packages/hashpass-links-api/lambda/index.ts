@@ -88,7 +88,7 @@ function applyCorsHeaders(headers: Record<string, string>, event: ApiGatewayEven
   if (!headers['access-control-allow-headers']) {
     // x-hashpass-app-id (every request), x-hashpass-binding (poll/exchange),
     // and idempotency-key (respondToLogin's approve/deny POST) are custom
-    // headers @hashpass/sdk's AuthQrClient sends -- see
+    // headers @hashpass-tech/sdk's AuthQrClient sends -- see
     // packages/sdk/src/auth-qr/client.ts and src/routes/auth-qr.ts. Must be
     // mirrored here AND in the Terraform stack's cors_allow_headers: API
     // Gateway's native CORS support answers preflight OPTIONS itself before

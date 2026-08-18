@@ -483,7 +483,7 @@ function printUsage() {
   );
 }
 
-// Standalone workspace packages under packages/<name> (e.g. @hashpass/sdk,
+// Standalone workspace packages under packages/<name> (e.g. @hashpass-tech/sdk,
 // support-widget, support-kapso) are typechecked by delegating straight to
 // each package's own real tsconfig.json instead of the apps/mobile-app
 // stub-sandbox below. That sandbox only knows how to synthesize stubs for
@@ -491,7 +491,7 @@ function printUsage() {
 // relative imports (e.g. packages/sdk/src/auth/client.ts importing
 // ../transport.js) would get stubbed to `any` because the real sibling file
 // wasn't independently "changed", silently degrading generics to untyped
-// calls -- and a bare specifier like "@hashpass/sdk" resolves via that
+// calls -- and a bare specifier like "@hashpass-tech/sdk" resolves via that
 // package's OWN node_modules symlink, which the sandbox never sets up. Each
 // affected package's real tsconfig already resolves both correctly, so
 // there's no sandbox to build for this half of the changed files at all.

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import Link from 'next/link';
 import QRCode from 'react-qr-code';
-import { HashpassError, type QrLink, type QrLinkAnalytics, type QrVisualConfig } from '@hashpass/sdk';
+import { HashpassError, type QrLink, type QrLinkAnalytics, type QrVisualConfig } from '@hashpass-tech/sdk';
 import { useTranslation } from '@hashpass/i18n';
 // Direct subpath import, not the package's main barrel (@hashpass/ui) --
 // that barrel re-exports HeroCard.tsx, which pulls in expo-image (a

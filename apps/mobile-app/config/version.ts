@@ -22,22 +22,41 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202608180658, // Updated to current timestamp
+  buildNumber: 202608181949, // Updated to current timestamp
   releaseDate: '2026-08-18',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    // No new features
+    'add standalone CHANGELOG.md for sdk and sdk-cli, starting at 0.1.0'
   ],
   bugfixes: [
-    'stuck QR-approve screen, cut-off dashboard stat cards, local CORS gap'
+    'sdk-cli-release\'s package-contents check globbed both tarballs at once'
   ],
-  breakingChanges: [],
-  notes: 'stuck QR-approve screen, cut-off dashboard stat cards, local CORS gap'
+  breakingChanges: [
+    'rename @hashpass/sdk and @hashpass/sdk-cli to the @hashpass-tech scope'
+  ],
+  notes: 'add standalone CHANGELOG.md for sdk and sdk-cli, starting at 0.1.0; sdk-cli-release\'s package-contents check globbed both tarballs at once; rename @hashpass/sdk and @hashpass/sdk-cli to the @hashpass-tech scope'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.19': {
+    version: '1.9.19',
+    buildNumber: 202608181949,
+    releaseDate: '2026-08-18',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'add standalone CHANGELOG.md for sdk and sdk-cli, starting at 0.1.0'
+    ],
+    bugfixes: [
+      'sdk-cli-release\'s package-contents check globbed both tarballs at once'
+    ],
+    breakingChanges: [
+      'rename @hashpass/sdk and @hashpass/sdk-cli to the @hashpass-tech scope'
+    ],
+    notes: 'add standalone CHANGELOG.md for sdk and sdk-cli, starting at 0.1.0; sdk-cli-release\'s package-contents check globbed both tarballs at once; rename @hashpass/sdk and @hashpass/sdk-cli to the @hashpass-tech scope'
+  },
   '1.9.18': {
     version: '1.9.18',
     buildNumber: 202608180658,

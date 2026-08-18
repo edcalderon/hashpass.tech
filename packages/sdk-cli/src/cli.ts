@@ -1,4 +1,4 @@
-import { createHashpass, HashpassError, type HashpassClient } from "@hashpass/sdk";
+import { createHashpass, HashpassError, type HashpassClient } from "@hashpass-tech/sdk";
 import { parseArgs, stringFlag, type ParsedArgs } from "./args.js";
 import { FileSessionStore } from "./session-store.js";
 

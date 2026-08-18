@@ -84,7 +84,14 @@ describe('chat-encryption', () => {
       const alicePub = x25519.getPublicKey(alicePriv);
 
       const payload = encryptChatMessage('sensitive meeting notes', alicePriv, bobPub);
-      const tampered = { ...payload, ciphertext: payload.ciphertext.slice(0, -2) + 'ff' };
+      // XOR (not overwrite) the last tag byte: overwriting with a fixed value
+      // was flaky -- it silently no-ops (~1/256 of runs) whenever the real
+      // random tag byte already equals that value, since XChaCha20-Poly1305
+      // appends the auth tag at the end and hex-encodes it. XOR with a
+      // non-zero value is guaranteed to always change the byte.
+      const lastByte = parseInt(payload.ciphertext.slice(-2), 16);
+      const tamperedByte = (lastByte ^ 0xff).toString(16).padStart(2, '0');
+      const tampered = { ...payload, ciphertext: payload.ciphertext.slice(0, -2) + tamperedByte };
 
       expect(decryptChatMessage(tampered, bobPriv, alicePub)).toBeNull();
     });

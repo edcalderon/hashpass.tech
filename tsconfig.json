@@ -26,8 +26,8 @@
       "@hashpass/utils/*": ["./packages/utils/src/*"],
       "@hashpass/ui": ["./packages/ui/src"],
       "@hashpass/ui/*": ["./packages/ui/src/*"],
-      "@hashpass/sdk": ["./packages/sdk/src"],
-      "@hashpass/sdk/*": ["./packages/sdk/src/*"]
+      "@hashpass-tech/sdk": ["./packages/sdk/src"],
+      "@hashpass-tech/sdk/*": ["./packages/sdk/src/*"]
     }
   },
   "include": [

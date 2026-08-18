@@ -18,7 +18,7 @@ Phase 2 — "HashPass Links": custom/dynamic QR links an admin creates for an
 event or campaign, with full lifecycle administration (create, edit,
 pause/resume, archive) and scan tracking — is now live too (2026-08-15), as
 part of `.agents/active/task-panel-web-club-events-qr.md`. It's consumed by
-`apps/web-app`'s `/panel/qr` section via `@hashpass/sdk`'s `QrLinksClient`
+`apps/web-app`'s `/panel/qr` section via `@hashpass-tech/sdk`'s `QrLinksClient`
 (`client.qrLinks`). See "Routes" below for the live route table; there are
 no more Phase-2 stub routes.
 
@@ -39,7 +39,7 @@ infrastructure this repo doesn't have. Instead, this service is its own
 small Lambda + API Gateway pair, modeled on the existing
 `packages/infra/terraform/modules/aws_expo_router_api` pattern (the same
 module, actually — see the Terraform section below), and `apps/web-app`
-calls it over plain HTTP via `@hashpass/sdk`'s `AuthQrClient`. `apps/web-app`
+calls it over plain HTTP via `@hashpass-tech/sdk`'s `AuthQrClient`. `apps/web-app`
 itself stays 100% static.
 
 ## Architecture
@@ -47,7 +47,7 @@ itself stays 100% static.
 ```
 apps/web-app (hashpass.club, static)      apps/mobile-app
   SignInModal.tsx                            auth-qr-approve.tsx
-  @hashpass/sdk AuthQrClient                  @hashpass/sdk AuthQrClient
+  @hashpass-tech/sdk AuthQrClient                  @hashpass-tech/sdk AuthQrClient
         │  create / poll / exchange                 │  respond (approve/deny)
         ▼                                            ▼
   ┌─────────────────────────────────────────────────────────┐

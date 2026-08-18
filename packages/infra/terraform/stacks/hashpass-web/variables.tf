@@ -39,7 +39,7 @@ variable "supabase_url" {
 }
 
 # HashPass Auth (QR login) / HashPass Links -- see
-# packages/hashpass-links-api/README.md. Without this, @hashpass/sdk's
+# packages/hashpass-links-api/README.md. Without this, @hashpass-tech/sdk's
 # AuthQrClient/QrLinksClient are built with linksApiBaseUrl undefined and
 # throw "requires linksApiBaseUrl to be configured" the moment
 # hashpass.tech's own /auth/connect screen calls respondToLogin() -- this

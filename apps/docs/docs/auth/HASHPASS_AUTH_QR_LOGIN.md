@@ -23,7 +23,7 @@ HTTP.
 ## Flow
 
 1. **Browser starts a challenge.** `apps/web-app`'s `SignInModal` calls
-   `@hashpass/sdk`'s `AuthQrClient.beginLogin()`, which generates a PKCE
+   `@hashpass-tech/sdk`'s `AuthQrClient.beginLogin()`, which generates a PKCE
    pair and `POST`s `codeChallenge` to `/api/v1/auth/qr/challenges`. The API
    returns an opaque challenge id, a `qrUrl`, a `state` value, and a
    `binding` secret — derived from wherever the request actually reached

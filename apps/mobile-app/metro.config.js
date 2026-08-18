@@ -124,7 +124,7 @@ config.watchFolders = [
   path.resolve(workspaceRoot, 'node_modules'),
 ];
 
-// @hashpass/sdk is the one workspace package meant for real external npm
+// @hashpass-tech/sdk is the one workspace package meant for real external npm
 // publishing (publishConfig.access=public), so unlike every other
 // @hashpass/* package -- which points main/exports straight at raw .ts
 // source and is never actually published -- it has a real tsc build with
@@ -136,10 +136,10 @@ config.watchFolders = [
 // @hashpass/* package is already consumed at runtime.
 const sdkSourceDir = path.resolve(workspaceRoot, 'packages/sdk/src');
 const sdkSubpathEntryFiles = {
-  '@hashpass/sdk': 'index.ts',
-  '@hashpass/sdk/auth': 'auth/index.ts',
-  '@hashpass/sdk/auth-qr': 'auth-qr/index.ts',
-  '@hashpass/sdk/support': 'support/index.ts',
+  '@hashpass-tech/sdk': 'index.ts',
+  '@hashpass-tech/sdk/auth': 'auth/index.ts',
+  '@hashpass-tech/sdk/auth-qr': 'auth-qr/index.ts',
+  '@hashpass-tech/sdk/support': 'support/index.ts',
 };
 
 const metroResolveRequest = (context, moduleName, platform) => {

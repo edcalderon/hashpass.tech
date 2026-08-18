@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState, type ReactNode } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Image, ScrollView } from 'react-native';
 import { Ionicons } from '../lib/vector-icons';
 import { useTheme } from '../hooks/useTheme';
-import { HashpassError } from '@hashpass/sdk';
+import { HashpassError } from '@hashpass-tech/sdk';
 import { hashpassSdk } from '../lib/hashpass-sdk';
 import { supabase } from '../lib/supabase';
 import { getHashpassFullLogo } from '../lib/hashpass-logo';

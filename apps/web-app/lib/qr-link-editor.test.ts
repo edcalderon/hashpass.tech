@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import type { QrLink } from '@hashpass/sdk';
+import type { QrLink } from '@hashpass-tech/sdk';
 import {
   beginQrLinkEdit,
   deleteConfirmationMatches,

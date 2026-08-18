@@ -1,4 +1,4 @@
-// Jest, like Metro (see metro.config.js), can't resolve @hashpass/sdk out of
+// Jest, like Metro (see metro.config.js), can't resolve @hashpass-tech/sdk out of
 // the box: it's the one workspace package with a real published dist/
 // build ("type": "module", built via tsc) rather than pointing main/exports
 // straight at raw .ts source like every sibling @hashpass/* package. Worse
@@ -11,10 +11,10 @@ const fs = require('fs');
 
 const SDK_SRC = path.resolve(__dirname, '../../packages/sdk/src');
 const SDK_ENTRY_POINTS = {
-  '@hashpass/sdk': 'index.ts',
-  '@hashpass/sdk/auth': 'auth/index.ts',
-  '@hashpass/sdk/auth-qr': 'auth-qr/index.ts',
-  '@hashpass/sdk/support': 'support/index.ts',
+  '@hashpass-tech/sdk': 'index.ts',
+  '@hashpass-tech/sdk/auth': 'auth/index.ts',
+  '@hashpass-tech/sdk/auth-qr': 'auth-qr/index.ts',
+  '@hashpass-tech/sdk/support': 'support/index.ts',
 };
 
 module.exports = (request, options) => {
