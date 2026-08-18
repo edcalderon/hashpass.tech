@@ -1,9 +1,9 @@
-# `@hashpass/sdk-cli`
+# `@hashpass-tech/sdk-cli`
 
-The official Hashpass command-line adapter. It uses OAuth-style device authorization so terminals never collect passwords and exposes the same support ticket lifecycle as `@hashpass/sdk`.
+The official Hashpass command-line adapter. It uses OAuth-style device authorization so terminals never collect passwords and exposes the same support ticket lifecycle as `@hashpass-tech/sdk`.
 
 ```sh
-npm install --global @hashpass/sdk-cli
+npm install --global @hashpass-tech/sdk-cli
 export HASHPASS_APP_ID=your-public-app-id
 hashpass login
 hashpass support create --subject "Build failure" --message "Deployment 42 failed"

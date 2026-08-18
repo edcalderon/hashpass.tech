@@ -1,4 +1,4 @@
-import type { QrLink } from '@hashpass/sdk';
+import type { QrLink } from '@hashpass-tech/sdk';
 
 export type QrLinkAvailability = 'permanent' | 'expiring' | 'scheduled';
 

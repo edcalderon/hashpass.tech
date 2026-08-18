@@ -1,5 +1,5 @@
 import { assign, createActor, createMachine, fromPromise, type SnapshotFrom } from 'xstate';
-import { HashpassError } from '@hashpass/sdk';
+import { HashpassError } from '@hashpass-tech/sdk';
 
 export type SessionStatus = 'checking' | 'ready' | 'signed_out';
 type Decision = 'approve' | 'deny';

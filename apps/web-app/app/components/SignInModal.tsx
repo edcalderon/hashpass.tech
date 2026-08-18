@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import QRCode from 'react-qr-code';
-import { HashpassError, type BeginQrLoginResult } from '@hashpass/sdk';
+import { HashpassError, type BeginQrLoginResult } from '@hashpass-tech/sdk';
 import { useTranslation, useLocale, useSetLocale, useAvailableLocales } from '@hashpass/i18n';
 import type { SupportedLocale } from '@hashpass/i18n';
 import { hashpassSdk } from '../../lib/hashpass-sdk';

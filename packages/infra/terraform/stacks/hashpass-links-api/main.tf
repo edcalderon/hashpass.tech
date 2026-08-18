@@ -6,7 +6,7 @@ locals {
 
   # aws_expo_router_api's own cors_allow_headers default (Content-Type,
   # Authorization, Cache-Control, Pragma, Expires, X-Client-Version) doesn't
-  # include the custom headers @hashpass/sdk's AuthQrClient sends
+  # include the custom headers @hashpass-tech/sdk's AuthQrClient sends
   # (x-hashpass-app-id on every request, x-hashpass-binding on poll/exchange,
   # idempotency-key on respondToLogin's approve/deny POST -- see
   # packages/sdk/src/auth-qr/client.ts and

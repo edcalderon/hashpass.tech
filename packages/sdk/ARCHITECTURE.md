@@ -11,10 +11,10 @@
 
 | Package | Responsibility | Runtime dependencies |
 | --- | --- | --- |
-| `@hashpass/sdk` | HTTP policy, typed errors, auth contracts/device flow, support tickets and event stream | Web Platform APIs only |
-| `@hashpass/sdk-cli` | Terminal UX and permission-restricted session persistence | Node 20+ and `@hashpass/sdk` |
-| Future `@hashpass/sdk-react` | Hooks, provider, and a support messenger UI | React and `@hashpass/sdk` |
-| Future native adapters | Keychain/Keystore session store, deep links, push notifications | Platform SDK and `@hashpass/sdk` |
+| `@hashpass-tech/sdk` | HTTP policy, typed errors, auth contracts/device flow, support tickets and event stream | Web Platform APIs only |
+| `@hashpass-tech/sdk-cli` | Terminal UX and permission-restricted session persistence | Node 20+ and `@hashpass-tech/sdk` |
+| Future `@hashpass-tech/sdk-react` | Hooks, provider, and a support messenger UI | React and `@hashpass-tech/sdk` |
+| Future native adapters | Keychain/Keystore session store, deep links, push notifications | Platform SDK and `@hashpass-tech/sdk` |
 
 The SDK models capabilities rather than vendors. The backend may route conversations through an AI model, an internal agent console, or Zendesk without exposing that choice to applications.
 

@@ -54,7 +54,7 @@ jobs:
         run: pnpm --filter @hashpass/hashpass-links-api run test
 
       - name: Run sdk tests
-        run: pnpm --filter @hashpass/sdk run test
+        run: pnpm --filter @hashpass-tech/sdk run test
 
       - name: Upload coverage to Codecov
         if: ${{ env.CODECOV_TOKEN != '' }}

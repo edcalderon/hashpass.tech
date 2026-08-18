@@ -1,10 +1,10 @@
 # Changelog
 
-All notable changes to `@hashpass/sdk-cli` will be documented in this file.
+All notable changes to `@hashpass-tech/sdk-cli` will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
-`@hashpass/sdk-cli` and `@hashpass/sdk` intentionally share one version
+`@hashpass-tech/sdk-cli` and `@hashpass-tech/sdk` intentionally share one version
 number (see `../sdk/ARCHITECTURE.md`'s "Release contract") and are tagged
 together as `sdk-cli-v<version>`, but each package keeps its own changelog
 describing only what changed in that package.

@@ -1,17 +1,17 @@
-# `@hashpass/sdk`
+# `@hashpass-tech/sdk`
 
 The official, runtime-neutral Hashpass client. Its first stable domain is cross-app support: AI-assisted conversations, human handoff, and ticket lifecycle management. The authentication surface is intentionally provider- and storage-driven so the same client can later power global Hashpass sign-in.
 
 ## Install
 
 ```sh
-npm install @hashpass/sdk
+npm install @hashpass-tech/sdk
 ```
 
 ## Support from web or React Native
 
 ```ts
-import { createHashpass } from "@hashpass/sdk";
+import { createHashpass } from "@hashpass-tech/sdk";
 
 const hashpass = createHashpass({
   appId: "your-public-app-id",
@@ -37,7 +37,7 @@ The package uses only standard Fetch, URL, AbortSignal, and Web Platform types. 
 ## QR login ("Sign in with Hashpass")
 
 ```ts
-import { createHashpass } from "@hashpass/sdk";
+import { createHashpass } from "@hashpass-tech/sdk";
 
 const hashpass = createHashpass({
   appId: "your-public-app-id",
@@ -57,7 +57,7 @@ installSession(session); // { userId, accessToken, refreshToken }
 On the approving side (e.g. inside a native app that just scanned the code, or a browser tab that already has a Hashpass session), `respondToLogin` is a bearer-authenticated call — it needs a client configured with the *approver's own* session, not the anonymous client used to start the challenge above:
 
 ```ts
-import { createHashpass } from "@hashpass/sdk";
+import { createHashpass } from "@hashpass-tech/sdk";
 
 const hashpassOnDevice = createHashpass({
   appId: "your-public-app-id",
@@ -81,7 +81,7 @@ The device authorization flow used by headless clients is available through `has
 
 ## API guarantees
 
-- Public APIs are exported from `@hashpass/sdk`, `@hashpass/sdk/auth`, `@hashpass/sdk/auth-qr`, `@hashpass/sdk/qr-links`, and `@hashpass/sdk/support`.
+- Public APIs are exported from `@hashpass-tech/sdk`, `@hashpass-tech/sdk/auth`, `@hashpass-tech/sdk/auth-qr`, `@hashpass-tech/sdk/qr-links`, and `@hashpass-tech/sdk/support`.
 - Mutations accept idempotency keys; safe requests retry transient failures with bounded exponential backoff.
 - API failures use a typed `HashpassError` and may include HTTP status, request ID, and structured details.
 - Live support uses cursor-based polling for universal runtime support and can later be upgraded internally to SSE/WebSocket without changing event types.

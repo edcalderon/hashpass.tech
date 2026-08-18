@@ -19,7 +19,7 @@ for (const dir of packages) {
   if (!changelog.includes(`## [${version}]`)) missingChangelogEntry.push(changelogPath);
 }
 
-console.log(`Prepared @hashpass/sdk and @hashpass/sdk-cli v${version}.`);
+console.log(`Prepared @hashpass-tech/sdk and @hashpass-tech/sdk-cli v${version}.`);
 if (missingChangelogEntry.length > 0) {
   console.warn(`\nWARNING: no "## [${version}]" entry found in:`);
   for (const path of missingChangelogEntry) console.warn(`  ${path}`);

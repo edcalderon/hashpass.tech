@@ -31,7 +31,7 @@ module.exports = {
   // jest-preset.js), leaving everything else in node_modules as raw ESM.
   // @noble/ciphers, @noble/curves, and @noble/hashes (the chat-encryption
   // crypto libs) ship pure ESM with no CJS build, so this extends that same
-  // allow-list with @noble rather than replacing it outright. @hashpass/sdk
+  // allow-list with @noble rather than replacing it outright. @hashpass-tech/sdk
   // does NOT need to be here -- jest.sdk-resolver.cjs (below) redirects it
   // straight to source, which never resolves inside node_modules in the
   // first place.
@@ -39,7 +39,7 @@ module.exports = {
     '/node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|native-base|react-native-svg|@noble/.*)',
     '/node_modules/react-native-reanimated/plugin/',
   ],
-  // See jest.sdk-resolver.cjs for why @hashpass/sdk specifically needs this
+  // See jest.sdk-resolver.cjs for why @hashpass-tech/sdk specifically needs this
   // (unlike every other @hashpass/* workspace package).
   resolver: '<rootDir>/jest.sdk-resolver.cjs',
 };

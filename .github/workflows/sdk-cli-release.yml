@@ -64,10 +64,10 @@ jobs:
         run: |
           pnpm --dir packages/sdk pack --pack-destination "$RUNNER_TEMP"
           pnpm --dir packages/sdk-cli pack --pack-destination "$RUNNER_TEMP"
-          # hashpass-sdk-*.tgz also matches hashpass-sdk-cli-*.tgz -- anchor
-          # on the version's leading digit so each glob is unambiguous.
-          tar -tf "$RUNNER_TEMP/hashpass-sdk-"[0-9]*.tgz
-          tar -tf "$RUNNER_TEMP/hashpass-sdk-cli-"*.tgz
+          # hashpass-tech-sdk-*.tgz also matches hashpass-tech-sdk-cli-*.tgz --
+          # anchor on the version's leading digit so each glob is unambiguous.
+          tar -tf "$RUNNER_TEMP/hashpass-tech-sdk-"[0-9]*.tgz
+          tar -tf "$RUNNER_TEMP/hashpass-tech-sdk-cli-"*.tgz
 
       - name: Publish SDK
         if: startsWith(github.ref, 'refs/tags/') && inputs.dry_run != true

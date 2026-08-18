@@ -14,8 +14,8 @@
     "types": ["node"],
     "baseUrl": ".",
     "paths": {
-      "@hashpass/sdk": ["../sdk/dist/index.d.ts"],
-      "@hashpass/sdk/auth": ["../sdk/dist/auth/index.d.ts"]
+      "@hashpass-tech/sdk": ["../sdk/dist/index.d.ts"],
+      "@hashpass-tech/sdk/auth": ["../sdk/dist/auth/index.d.ts"]
     }
   },
   "include": ["src/**/*.ts"],

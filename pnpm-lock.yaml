@@ -508,6 +508,9 @@ importers:
       '@expo/webpack-config':
         specifier: ^19.0.1
         version: 19.0.1(@rspack/core@1.7.11(@swc/helpers@0.5.18))(bufferutil@4.1.0)(esbuild@0.25.12)(expo@53.0.27(@babel/core@7.29.0)(@expo/metro-runtime@5.0.5(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10)))(bufferutil@4.1.0)(react-native-webview@13.13.5(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)(utf-8-validate@5.0.10))(utf-8-validate@5.0.10)
+      '@hashpass-tech/sdk':
+        specifier: workspace:*
+        version: link:../../packages/sdk
       '@hashpass/auth':
         specifier: workspace:*
         version: link:../../packages/auth
@@ -520,9 +523,6 @@ importers:
       '@hashpass/emails':
         specifier: workspace:*
         version: link:../../packages/emails
-      '@hashpass/sdk':
-        specifier: workspace:*
-        version: link:../../packages/sdk
       '@hashpass/types':
         specifier: workspace:*
         version: link:../../packages/types
@@ -1041,15 +1041,15 @@ importers:
       '@fontsource/manrope':
         specifier: ^5.2.8
         version: 5.2.8
+      '@hashpass-tech/sdk':
+        specifier: workspace:*
+        version: link:../../packages/sdk
       '@hashpass/config':
         specifier: workspace:*
         version: link:../../packages/config
       '@hashpass/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
-      '@hashpass/sdk':
-        specifier: workspace:*
-        version: link:../../packages/sdk
       '@hashpass/types':
         specifier: workspace:*
         version: link:../../packages/types
@@ -1277,7 +1277,7 @@ importers:
 
   packages/sdk-cli:
     dependencies:
-      '@hashpass/sdk':
+      '@hashpass-tech/sdk':
         specifier: workspace:^
         version: link:../sdk
     devDependencies:

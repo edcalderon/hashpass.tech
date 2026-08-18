@@ -1,4 +1,4 @@
-import { createHashpass, type HashpassClient } from '@hashpass/sdk';
+import { createHashpass, type HashpassClient } from '@hashpass-tech/sdk';
 import { supabase } from './supabase';
 
 let cachedClient: HashpassClient | null = null;

@@ -1,8 +1,13 @@
 {
-  "name": "@hashpass/sdk",
+  "name": "@hashpass-tech/sdk",
   "version": "0.1.0",
   "description": "Cross-platform Hashpass SDK for support, AI-assisted conversations, and authentication",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hashpass-tech/hashpass.tech",
+    "directory": "packages/sdk"
+  },
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
