@@ -364,7 +364,7 @@ The last command must succeed without printing the account ID. Use `AWS_PROFILE=
 
 **Confirmed (2026-07-28): the `default` AWS CLI profile authenticates to the source account (`<source-account-id>`)** — that's what "may point at the source account" above actually resolves to on this machine. Useful for read-only audits of source-account resources (DNS/CloudFront/email/legacy Amplify/old EC2 runner), but never use it for target-account Terraform applies.
 
-**For the Android runner specifically**: use `packages/infra/terraform/stacks/mobile-release-target`, never `mobile-release-legacy-source-account` (renamed 2026-07-28 from `mobile-release` — it tracked the old source-account instance and is deprecated, do not apply). `pnpm run infra:mobile-release:*` already points at the correct one. See `.agents/active/task-aws-account-migration.md` for the full, verified account-by-account inventory and open items.
+**For the Android runner specifically**: use `packages/infra/terraform/stacks/mobile-release-target`, never `mobile-release-legacy-source-account` (renamed 2026-07-28 from `mobile-release` — it tracked the old source-account instance and is deprecated, do not apply). `pnpm run infra:mobile-release:*` already points at the correct one. See `.agents/done/task-aws-account-migration.md` for the full, verified account-by-account inventory and open items.
 
 ## Deployment Architecture
 
@@ -417,7 +417,7 @@ Two other things worth knowing: **don't `terraform apply` a pipeline while it ha
 `InProgress` executions queueing behind one worker inflates wall-clock time well past the ~10min real
 build. A `build_timeout_seconds` guard now bounds this automatically, but `user_data` only runs at boot,
 so it takes effect after an instance replacement. Full writeup: the "EC2 pipeline worker: operational
-gotchas" section of `.agents/active/task-aws-account-migration.md`.
+gotchas" section of `.agents/done/task-aws-account-migration.md`.
 
 ### Checking Deployment Status
 
