@@ -119,15 +119,6 @@
     },
     "plugins": [
       "expo-router",
-      [
-        "expo-build-properties",
-        {
-          "android": {
-            "compileSdkVersion": 36,
-            "targetSdkVersion": 36
-          }
-        }
-      ],
       "./plugins/withAndroidRemoveAdIdPermission",
       "./plugins/withAndroidReleaseMinification",
       "./plugins/withAndroidDisableRtl",
