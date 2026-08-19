@@ -1355,6 +1355,102 @@ jobs:
             pnpm run android:release
           fi
 
+      # nativeVersion in update-policy.json drives every installed client's
+      # "is a newer native build available" check (useNativeUpdateCheck.ts /
+      # ForceUpdateScreen). It was previously only advanced by a human running
+      # `npm run release:native` before triggering CI -- a step nobody actually
+      # ran once releases started auto-dispatching, so it silently went stale
+      # (found 2026-08-18: recorded nativeVersion was 1.8.339 while installed
+      # clients were already on 1.9.3, so the check never fired at all).
+      # Only production is the right trigger for this: it's the sole track
+      # with no access gating, so it's the only one where "a newer build
+      # exists" is true for every installed client, not just testers already
+      # enrolled in a track Play Store already prompts them about directly.
+      # Also gated on release_status == 'completed' -- a draft/halted/
+      # inProgress Play rollout means the artifact isn't actually available
+      # to every production user yet, so advertising it here would be
+      # premature (Codex review finding, 2026-08-18).
+      - name: Sync native version policy (production only)
+        if: inputs.track == 'production' && inputs.release_status == 'completed'
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_AUTOMATION_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${GH_TOKEN:-}" ]; then
+            echo "::warning::RELEASE_AUTOMATION_TOKEN not set -- skipping update-policy.json sync. Run 'npm run release:native' manually and push, or this release's clients won't be told about it."
+            exit 0
+          fi
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+
+          # Isolated clone of develop's actual current tip, not the tag's
+          # (detached-HEAD) checkout this job otherwise runs on -- develop has
+          # almost certainly moved since this tag was cut, so committing on
+          # top of the tag and pushing to develop would be a non-fast-forward
+          # push and fail. A fresh, separate clone right before pushing keeps
+          # this a plain fast-forward and never touches the tag checkout the
+          # rest of this job depends on.
+          SYNC_DIR="$(mktemp -d)"
+          git clone --depth 1 --branch develop \
+            "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" \
+            "$SYNC_DIR"
+          node packages/tools/scripts/set-native-version.js "$TAG_VERSION" \
+            --policy-path "$SYNC_DIR/apps/mobile-app/config/update-policy.json"
+
+          cd "$SYNC_DIR"
+          if git diff --quiet -- apps/mobile-app/config/update-policy.json; then
+            echo "update-policy.json already up to date, nothing to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add apps/mobile-app/config/update-policy.json
+          git commit -m "chore(mobile): sync nativeVersion to $TAG_VERSION [skip ci]"
+          git push origin HEAD:develop
+
+          # develop alone isn't enough: api.hashpass.tech (what production
+          # clients' useNativeUpdateCheck.ts actually queries) only redeploys
+          # on a push to main (infra-deploy.yml), and main is branch-protected
+          # -- this workflow cannot push to it directly. Without this, the
+          # corrected nativeVersion would sit on develop, invisible to
+          # production, until the next full app release PR happened to merge
+          # it days later (Codex review finding, 2026-08-18). Open a small,
+          # single-file PR straight to main instead, so a human can fast-track
+          # just this config fix through the required review/checks without
+          # waiting on an unrelated release.
+          #
+          # Deliberately non-fatal below: the develop push above is the more
+          # foundational half (keeps the next full release correct even if
+          # this fails) and the actual Android release this job just
+          # completed must not be reported as a CI failure over a follow-up
+          # bookkeeping step. RELEASE_AUTOMATION_TOKEN is documented
+          # (CLAUDE.md) as scoped to "Contents: Read and write" only --
+          # opening a PR also needs "Pull requests: Read and write" granted
+          # on that same fine-grained PAT, which may not be set yet.
+          set +e
+          SYNC_BRANCH="chore/sync-native-version-${TAG_VERSION}"
+          git checkout -b "$SYNC_BRANCH"
+          git push origin "HEAD:$SYNC_BRANCH"
+          PR_BODY_FILE="$(mktemp)"
+          {
+            printf 'Single-file config sync so api.hashpass.tech (production) starts reporting\n'
+            printf 'nativeVersion=%s to installed clients'"'"' update check\n' "$TAG_VERSION"
+            printf '(useNativeUpdateCheck.ts). Already pushed to develop as a fast-forward;\n'
+            printf 'this PR exists only because develop'"'"'s copy does not reach the production\n'
+            printf 'API until main redeploys, and main is branch-protected. Please review and\n'
+            printf 'merge promptly -- production clients under-report update availability\n'
+            printf 'until this lands.\n'
+            printf '\n'
+            printf 'Auto-opened by mobile-android-release.yml after a completed production\n'
+            printf 'release of v%s.\n' "$TAG_VERSION"
+          } > "$PR_BODY_FILE"
+          gh pr create \
+            --repo "${{ github.repository }}" \
+            --base main \
+            --head "$SYNC_BRANCH" \
+            --title "chore(mobile): sync nativeVersion to $TAG_VERSION on production API" \
+            --body-file "$PR_BODY_FILE" \
+            || echo "::warning::Could not open the main-targeted nativeVersion sync PR (branch pushed: $SYNC_BRANCH). Likely missing 'Pull requests: Read and write' on RELEASE_AUTOMATION_TOKEN's fine-grained PAT -- open it manually from that branch, or grant the permission for next time."
+
       - name: Show ccache stats
         if: inputs.runner != 'github-hosted' && always()
         run: ccache --show-stats || true

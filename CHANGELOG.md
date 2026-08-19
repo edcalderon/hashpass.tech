@@ -1,3 +1,24 @@
+## [1.9.20](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.19...v1.9.20) (2026-08-19)
+
+
+### Bug Fixes
+
+* **mobile:** stale nativeVersion silently disabled native update detection ([df73263](https://github.com/hashpass-tech/hashpass.tech/commit/df73263a7fec6e7c6488596f555b0fb85f54c59d))
+
+
+### Features
+
+* **mobile:** staged, narrated loading state for the passes wallet ([2176978](https://github.com/hashpass-tech/hashpass.tech/commit/217697894d06dcf42a117e5920818b81c6454fe5))
+### Release Highlights
+- staged, narrated loading state for the passes wallet; stale nativeVersion silently disabled native update detection
+
+### Release scope
+- Compared with: `v1.9.19` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Release tooling
+
 ## [1.9.19](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.18...v1.9.19) (2026-08-18)
 
 

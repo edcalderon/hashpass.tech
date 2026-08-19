@@ -716,6 +716,10 @@
     "title": "나의 이벤트 패스",
     "loading": "패스 정보를 불러오는 중...",
     "loadingSubtitle": "잠시만 기다려 주세요.",
+    "loadingSlow": "패스를 계속 불러오는 중...",
+    "loadingSlowSubtitle": "평소보다 시간이 걸리고 있어요. 잠시만 기다리거나 연결 상태를 확인해 주세요.",
+    "loadingRetrying": "다시 시도하는 중...",
+    "loadingRetryingSubtitle": "첫 번째 시도가 오래 걸렸어요. 지금 다시 시도하고 있습니다.",
     "showFullDetails": "전체 상세보기",
     "alert": {
       "createdTitle": "패스가 생성되었습니다! 🎉",

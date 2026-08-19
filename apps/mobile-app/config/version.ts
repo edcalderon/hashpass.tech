@@ -22,24 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202608181949, // Updated to current timestamp
-  releaseDate: '2026-08-18',
+  buildNumber: 202608190213, // Updated to current timestamp
+  releaseDate: '2026-08-19',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'add standalone CHANGELOG.md for sdk and sdk-cli, starting at 0.1.0'
+    'staged, narrated loading state for the passes wallet'
   ],
   bugfixes: [
-    'sdk-cli-release\'s package-contents check globbed both tarballs at once'
+    'stale nativeVersion silently disabled native update detection'
   ],
-  breakingChanges: [
-    'rename @hashpass/sdk and @hashpass/sdk-cli to the @hashpass-tech scope'
-  ],
-  notes: 'add standalone CHANGELOG.md for sdk and sdk-cli, starting at 0.1.0; sdk-cli-release\'s package-contents check globbed both tarballs at once; rename @hashpass/sdk and @hashpass/sdk-cli to the @hashpass-tech scope'
+  breakingChanges: [],
+  notes: 'staged, narrated loading state for the passes wallet; stale nativeVersion silently disabled native update detection'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.20': {
+    version: '1.9.20',
+    buildNumber: 202608190213,
+    releaseDate: '2026-08-19',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'staged, narrated loading state for the passes wallet'
+    ],
+    bugfixes: [
+      'stale nativeVersion silently disabled native update detection'
+    ],
+    breakingChanges: [],
+    notes: 'staged, narrated loading state for the passes wallet; stale nativeVersion silently disabled native update detection'
+  },
   '1.9.19': {
     version: '1.9.19',
     buildNumber: 202608181949,

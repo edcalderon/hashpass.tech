@@ -540,6 +540,10 @@
     "title": "Seus passes de evento",
     "loading": "Carregando informações do seu passe...",
     "loadingSubtitle": "Isso deve levar apenas um momento.",
+    "loadingSlow": "Ainda carregando seus passes…",
+    "loadingSlowSubtitle": "Isso está demorando mais do que o normal. Aguarde um momento ou verifique sua conexão.",
+    "loadingRetrying": "Tentando novamente…",
+    "loadingRetryingSubtitle": "A primeira tentativa demorou. Tentando novamente agora.",
     "showFullDetails": "Mostrar todos os detalhes",
     "alert": {
       "createdTitle": "Passe criado! 🎉",
