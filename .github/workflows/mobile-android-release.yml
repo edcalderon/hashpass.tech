@@ -1355,6 +1355,54 @@ jobs:
             pnpm run android:release
           fi
 
+      # nativeVersion in update-policy.json drives every installed client's
+      # "is a newer native build available" check (useNativeUpdateCheck.ts /
+      # ForceUpdateScreen). It was previously only advanced by a human running
+      # `npm run release:native` before triggering CI -- a step nobody actually
+      # ran once releases started auto-dispatching, so it silently went stale
+      # (found 2026-08-18: recorded nativeVersion was 1.8.339 while installed
+      # clients were already on 1.9.3, so the check never fired at all).
+      # Only production is the right trigger for this: it's the sole track
+      # with no access gating, so it's the only one where "a newer build
+      # exists" is true for every installed client, not just testers already
+      # enrolled in a track Play Store already prompts them about directly.
+      - name: Sync native version policy (production only)
+        if: inputs.track == 'production'
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_AUTOMATION_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${GH_TOKEN:-}" ]; then
+            echo "::warning::RELEASE_AUTOMATION_TOKEN not set -- skipping update-policy.json sync. Run 'npm run release:native' manually and push, or this release's clients won't be told about it."
+            exit 0
+          fi
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+
+          # Isolated clone of develop's actual current tip, not the tag's
+          # (detached-HEAD) checkout this job otherwise runs on -- develop has
+          # almost certainly moved since this tag was cut, so committing on
+          # top of the tag and pushing to develop would be a non-fast-forward
+          # push and fail. A fresh, separate clone right before pushing keeps
+          # this a plain fast-forward and never touches the tag checkout the
+          # rest of this job depends on.
+          SYNC_DIR="$(mktemp -d)"
+          git clone --depth 1 --branch develop \
+            "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" \
+            "$SYNC_DIR"
+          node packages/tools/scripts/set-native-version.js "$TAG_VERSION" \
+            --policy-path "$SYNC_DIR/apps/mobile-app/config/update-policy.json"
+
+          cd "$SYNC_DIR"
+          if git diff --quiet -- apps/mobile-app/config/update-policy.json; then
+            echo "update-policy.json already up to date, nothing to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add apps/mobile-app/config/update-policy.json
+          git commit -m "chore(mobile): sync nativeVersion to $TAG_VERSION [skip ci]"
+          git push origin HEAD:develop
+
       - name: Show ccache stats
         if: inputs.runner != 'github-hosted' && always()
         run: ccache --show-stats || true
