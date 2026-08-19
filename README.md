@@ -20,29 +20,24 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.19)
+## 📋 Latest Changes (v1.9.20)
 
 ### Bug Fixes
 
-* **ci:** sdk-cli-release's package-contents check globbed both tarballs at once ([1224beb](https://github.com/hashpass-tech/hashpass.tech/commit/1224beb1c5e8139766ea615104fa3113a14116c3))
+* **mobile:** stale nativeVersion silently disabled native update detection ([df73263](https://github.com/hashpass-tech/hashpass.tech/commit/df73263a7fec6e7c6488596f555b0fb85f54c59d))
 
 
 ### Features
 
-* **sdk:** add standalone CHANGELOG.md for sdk and sdk-cli, starting at 0.1.0 ([0970096](https://github.com/hashpass-tech/hashpass.tech/commit/0970096700b1cbb6fdf80dfe9c3afdd2ebcfdd52))
+* **mobile:** staged, narrated loading state for the passes wallet ([2176978](https://github.com/hashpass-tech/hashpass.tech/commit/217697894d06dcf42a117e5920818b81c6454fe5))
 ### Release Highlights
-- add standalone CHANGELOG.md for sdk and sdk-cli, starting at 0.1.0; sdk-cli-release's package-contents check globbed both tarballs at once; rename @hashpass/sdk and @hashpass/sdk-cli to the @hashpass-tech scope
+- staged, narrated loading state for the passes wallet; stale nativeVersion silently disabled native update detection
 
 ### Release scope
-- Compared with: `v1.9.18` (the previous global release tag)
+- Compared with: `v1.9.19` (the previous global release tag)
 
 ### Affected products & packages
-- Club web
 - Mobile app
-- QR links API
-- SDK
-- Infrastructure
-- Documentation
 - Release tooling
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
