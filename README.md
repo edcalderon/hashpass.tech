@@ -20,25 +20,19 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.20)
+## 📋 Latest Changes (v1.9.21)
 
 ### Bug Fixes
 
-* **mobile:** stale nativeVersion silently disabled native update detection ([df73263](https://github.com/hashpass-tech/hashpass.tech/commit/df73263a7fec6e7c6488596f555b0fb85f54c59d))
-
-
-### Features
-
-* **mobile:** staged, narrated loading state for the passes wallet ([2176978](https://github.com/hashpass-tech/hashpass.tech/commit/217697894d06dcf42a117e5920818b81c6454fe5))
+* **mobile:** target Android 16 (API 36) to meet Google Play's new requirement ([2341c58](https://github.com/hashpass-tech/hashpass.tech/commit/2341c5852329ecc65021255f27028ccdb3364b7c))
 ### Release Highlights
-- staged, narrated loading state for the passes wallet; stale nativeVersion silently disabled native update detection
+- target Android 16 (API 36) to meet Google Play's new requirement
 
 ### Release scope
-- Compared with: `v1.9.19` (the previous global release tag)
+- Compared with: `v1.9.20` (the previous global release tag)
 
 ### Affected products & packages
-- Mobile app
-- Release tooling
+- Shared repository changes only
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

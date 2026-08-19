@@ -22,22 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202608190213, // Updated to current timestamp
+  buildNumber: 202608190321, // Updated to current timestamp
   releaseDate: '2026-08-19',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'staged, narrated loading state for the passes wallet'
+    // No new features
   ],
   bugfixes: [
-    'stale nativeVersion silently disabled native update detection'
+    'target Android 16 (API 36) to meet Google Play\'s new requirement'
   ],
   breakingChanges: [],
-  notes: 'staged, narrated loading state for the passes wallet; stale nativeVersion silently disabled native update detection'
+  notes: 'target Android 16 (API 36) to meet Google Play\'s new requirement'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.21': {
+    version: '1.9.21',
+    buildNumber: 202608190321,
+    releaseDate: '2026-08-19',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'target Android 16 (API 36) to meet Google Play\'s new requirement'
+    ],
+    breakingChanges: [],
+    notes: 'target Android 16 (API 36) to meet Google Play\'s new requirement'
+  },
   '1.9.20': {
     version: '1.9.20',
     buildNumber: 202608190213,

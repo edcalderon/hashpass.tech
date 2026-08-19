@@ -1,3 +1,18 @@
+## [1.9.21](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.20...v1.9.21) (2026-08-19)
+
+
+### Bug Fixes
+
+* **mobile:** target Android 16 (API 36) to meet Google Play's new requirement ([2341c58](https://github.com/hashpass-tech/hashpass.tech/commit/2341c5852329ecc65021255f27028ccdb3364b7c))
+### Release Highlights
+- target Android 16 (API 36) to meet Google Play's new requirement
+
+### Release scope
+- Compared with: `v1.9.20` (the previous global release tag)
+
+### Affected products & packages
+- Shared repository changes only
+
 ## [1.9.20](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.19...v1.9.20) (2026-08-19)
 
 
