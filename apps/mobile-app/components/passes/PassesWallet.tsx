@@ -82,7 +82,17 @@ const STACK_SCALE_STEP = 0.04;
 // than a web request immediately after the app resumes.
 const PASS_LOAD_ATTEMPT_TIMEOUT_MS = 15_000;
 const PASS_LOAD_ATTEMPTS = 2;
+// A flat "loading… this should only take a moment" for up to
+// PASS_LOAD_ATTEMPT_TIMEOUT_MS * PASS_LOAD_ATTEMPTS (30s) reads as a stuck or
+// broken screen once the wait runs past what the copy promised — this is the
+// gap between "not actually hung" (the timeout/retry logic already handles
+// that) and "looks hung to the person watching it". Staged copy narrates
+// what's actually happening instead of leaving the same static message up
+// for the whole window.
+const PASS_LOAD_SLOW_HINT_MS = 6_000;
 const RESTORABLE_BSL_EVENT_IDS = ["chile2026", "colombia2026"] as const;
+
+type PassLoadStage = "connecting" | "slow" | "retrying";
 
 function PassCardsSkeleton({
   colors,
@@ -207,6 +217,7 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const [loadTimedOut, setLoadTimedOut] = useState(false);
+  const [loadStage, setLoadStage] = useState<PassLoadStage>("connecting");
   const [retryNonce, setRetryNonce] = useState(0);
   const [restoringIncludedPasses, setRestoringIncludedPasses] = useState(false);
   const [claimModalVisible, setClaimModalVisible] = useState(false);
@@ -232,10 +243,12 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
   useEffect(() => {
     let active = true;
     let identityTimeout: ReturnType<typeof setTimeout> | undefined;
+    let identitySlowHint: ReturnType<typeof setTimeout> | undefined;
 
     const load = async () => {
       setLoadError(false);
       setLoadTimedOut(false);
+      setLoadStage("connecting");
       if (!dbUserId) {
         // No Supabase identity yet (the Better Auth -> Supabase bridge may
         // still be in flight right after sign-in). Stay in the loading state
@@ -243,6 +256,9 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
         setPasses([]);
         setIsRefreshing(false);
         setLoading(true);
+        identitySlowHint = setTimeout(() => {
+          if (active) setLoadStage("slow");
+        }, PASS_LOAD_SLOW_HINT_MS);
         identityTimeout = setTimeout(() => {
           if (!active) return;
           setLoading(false);
@@ -266,6 +282,18 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
 
         for (let attempt = 0; attempt < PASS_LOAD_ATTEMPTS; attempt += 1) {
           let requestTimeout: ReturnType<typeof setTimeout> | undefined;
+          let slowHint: ReturnType<typeof setTimeout> | undefined;
+          // Narrate the wait instead of leaving the first attempt's copy up
+          // unchanged through a retry -- a silent identical screen across a
+          // 15s-timeout-then-retry reads as stuck, even though it's actually
+          // making progress.
+          if (attempt === 0) {
+            slowHint = setTimeout(() => {
+              if (active) setLoadStage("slow");
+            }, PASS_LOAD_SLOW_HINT_MS);
+          } else if (active) {
+            setLoadStage("retrying");
+          }
           try {
             const request = scopedIds?.length
               ? passSystemService.getUserPassesForEvents(dbUserId, scopedIds)
@@ -284,6 +312,7 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
             lastError = error;
           } finally {
             if (requestTimeout) clearTimeout(requestTimeout);
+            if (slowHint) clearTimeout(slowHint);
           }
         }
 
@@ -312,6 +341,7 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
     return () => {
       active = false;
       if (identityTimeout) clearTimeout(identityTimeout);
+      if (identitySlowHint) clearTimeout(identitySlowHint);
     };
     // onPassesLoaded is intentionally excluded: callers pass inline callbacks
     // and re-running the whole load on every parent render would thrash.
@@ -515,11 +545,32 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
   const canClaimPass = true;
 
   if (loading) {
+    const loadingCopy =
+      loadStage === "retrying"
+        ? {
+            label: t("loadingRetrying", "Retrying…"),
+            sublabel: t(
+              "loadingRetryingSubtitle",
+              "The first attempt took a while — trying again now.",
+            ),
+          }
+        : loadStage === "slow"
+          ? {
+              label: t("loadingSlow", "Still loading your passes…"),
+              sublabel: t(
+                "loadingSlowSubtitle",
+                "This is taking longer than usual. Hang tight, or check your connection.",
+              ),
+            }
+          : {
+              label: t("loading", "Loading your pass information..."),
+              sublabel: t("loadingSubtitle", "This should only take a moment."),
+            };
     return (
       <WalletSkeleton
         colors={colors}
-        label={t("loading", "Loading your pass information...")}
-        sublabel={t("loadingSubtitle", "This should only take a moment.")}
+        label={loadingCopy.label}
+        sublabel={loadingCopy.sublabel}
       />
     );
   }

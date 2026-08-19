@@ -508,6 +508,63 @@ describe('PassesWallet', () => {
     }
   });
 
+  it('narrates a hung lookup instead of leaving the initial loading copy up unchanged', async () => {
+    jest.useFakeTimers();
+    (passSystemService.getAllUserPasses as jest.Mock).mockImplementation(() => new Promise(() => {}));
+
+    try {
+      const renderer = await renderWallet();
+
+      // Before the 6s slow-hint, still the initial copy.
+      expect(renderer.root.findByProps({ children: 'Loading your pass information...' })).toBeTruthy();
+
+      await act(async () => {
+        jest.advanceTimersByTime(6_000);
+        await Promise.resolve();
+      });
+      expect(renderer.root.findByProps({ children: 'Still loading your passes…' })).toBeTruthy();
+
+      // The first attempt's own 15s timeout fires next, immediately starting
+      // a second attempt -- copy should switch to the retry-specific message.
+      await act(async () => {
+        jest.advanceTimersByTime(9_000);
+        await Promise.resolve();
+      });
+      expect(renderer.root.findByProps({ children: 'Retrying…' })).toBeTruthy();
+
+      await act(async () => {
+        renderer.unmount();
+        await Promise.resolve();
+      });
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('narrates a slow identity bridge the same way as a slow pass lookup', async () => {
+    jest.useFakeTimers();
+    mockDbUserId = null;
+
+    try {
+      const renderer = await renderWallet();
+
+      expect(renderer.root.findByProps({ children: 'Loading your pass information...' })).toBeTruthy();
+
+      await act(async () => {
+        jest.advanceTimersByTime(6_000);
+        await Promise.resolve();
+      });
+      expect(renderer.root.findByProps({ children: 'Still loading your passes…' })).toBeTruthy();
+
+      await act(async () => {
+        renderer.unmount();
+        await Promise.resolve();
+      });
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
   describe('deck navigation', () => {
     // Event ids deliberately absent from packages/config/src/events.ts: every
     // pass then falls back to the same 'upcoming' timeline with no start/end

@@ -540,6 +540,10 @@
     "title": "Ihre Event-Pässe",
     "loading": "Laden Ihrer Pass-Informationen...",
     "loadingSubtitle": "Dies sollte nur einen Moment dauern.",
+    "loadingSlow": "Deine Pässe werden noch geladen…",
+    "loadingSlowSubtitle": "Das dauert länger als gewöhnlich. Bitte warte kurz oder überprüfe deine Verbindung.",
+    "loadingRetrying": "Erneuter Versuch…",
+    "loadingRetryingSubtitle": "Der erste Versuch hat lange gedauert – wir versuchen es jetzt erneut.",
     "showFullDetails": "Alle Details anzeigen",
     "alert": {
       "createdTitle": "Pass erstellt! 🎉",

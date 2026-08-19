@@ -786,6 +786,10 @@
     "title": "Your Event Passes",
     "loading": "Loading your pass information...",
     "loadingSubtitle": "This should only take a moment.",
+    "loadingSlow": "Still loading your passes…",
+    "loadingSlowSubtitle": "This is taking longer than usual. Hang tight, or check your connection.",
+    "loadingRetrying": "Retrying…",
+    "loadingRetryingSubtitle": "The first attempt took a while — trying again now.",
     "showFullDetails": "Show Full Details",
     "alert": {
       "createdTitle": "Pass Created! 🎉",
