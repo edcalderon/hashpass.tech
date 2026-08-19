@@ -369,6 +369,75 @@ high commit/release cadence returns to normal -- track actual MTD via
 `aws budgets describe-budgets --account-id "$(aws sts get-caller-identity --profile hashpass --query Account --output text)"`, not a plain
 `ce get-cost-and-usage`, to avoid re-triggering this same false alarm.
 
+### Feature scoped, not implemented: per-commit skip flag for site-build pipelines — 2026-08-18
+
+**Trigger:** a real, unrelated SDK-publish session's `develop` push (the
+`@hashpass-tech/sdk` npm rename + workspace-to-published migration commits)
+fired `hashpass-dev-site`, `bsl-hashpass-dev`, and
+`hashpass-criptolatinfest-develop-site` simultaneously. **Verified this was
+correct, not a bug**: all three pipelines' Terraform-defined `file_paths`
+trigger filters (the 2026-08-16 fix above) already include
+`apps/mobile-app/**`, `packages/**`, `package.json`, `pnpm-lock.yaml` —
+exactly what that commit touched (it renamed a package `apps/mobile-app`
+imports and regenerated the lockfile). Confirmed by reading the actual
+`site_trigger_includes`/`bsl_trigger_includes` locals in
+`stacks/hashpass-web/main.tf` and `stacks/bsl-target/main.tf` directly, not
+just AWS console evidence.
+
+**The real ask, distinct from the path-filter work above:** a way to mark a
+specific commit as not needing a rebuild even though it touches a normally-
+watched path — e.g. a pure rename/refactor with no output-affecting change
+(this session's own SDK rename is exactly that case: `apps/mobile-app`'s
+compiled bundle is unaffected by an npm package's name changing, only its
+`package.json`/lockfile references do). Path-based filtering fundamentally
+cannot express this distinction; it needs either a commit-message marker or
+equivalent human/agent-asserted signal.
+
+**Why not implemented in this same session:** AWS CodePipeline's native
+`CodeStarSourceConnection` push trigger only supports branch and
+`file_paths` include/exclude glob filters — there is no commit-message or
+other content-based filtering capability in the trigger itself. Closing
+this gap needs a real architecture change, not a Terraform variable tweak,
+and touches live production pipeline Terraform in three separate stacks
+(`hashpass-web`, `bsl-target`, `demo-events`) — scoping it properly here
+rather than rushing a same-session change to production CI/CD trigger
+mechanics.
+
+**Two viable designs, not yet chosen between:**
+
+1. **Move to GitHub-Actions-mediated triggering** (mirrors the existing,
+   proven pattern in `.github/workflows/mobile-release-on-tag.yml`'s
+   `detect-mobile-native-change.js` gate exactly): disable each pipeline's
+   native `trigger { git_configuration { push { ... } } }` block, add a
+   GitHub Actions job on `develop`/`main` push that checks the commit
+   message for a skip marker (e.g. `[skip-aws-ci]`) and conditionally calls
+   `aws codepipeline start-pipeline-execution` per affected pipeline only
+   when not skipped. Clean (zero wasted spend on skipped commits), consistent
+   with an already-trusted pattern in this repo, but requires rewiring the
+   trigger mechanism itself on all three stacks, which needs care not to
+   create a window where neither the old nor new trigger is active.
+2. **Stop-after-start**: leave the native triggers exactly as they are, add
+   a small Lambda + EventBridge rule (per stack, or one shared one watching
+   all three pipelines) that reacts to a pipeline entering `InProgress`,
+   checks the triggering commit's message via the GitHub API, and calls
+   `stop-pipeline-execution` immediately if the skip marker is present.
+   Less invasive to the existing, working trigger config, but wastes a
+   small amount of setup/checkout time per skipped run (not full build
+   minutes) and needs new Lambda infra in three places instead of a
+   GitHub Actions job.
+
+Recommendation when this is picked up: Option 1, for consistency with the
+mobile-release precedent and zero wasted spend — but confirm with whoever
+implements it, since Option 2 is meaningfully less invasive to touch if the
+native trigger's current reliability is valued over the marginal spend of
+a stop-after-start round trip.
+
+**Not authorized by this entry alone** — matches this task's own acceptance
+criteria below: any actual trigger-mechanism change to `hashpass-web`,
+`bsl-target`, or `demo-events` needs a scoped `terraform plan`/`apply` per
+stack with room to verify each one individually, the same way the
+2026-08-16 criptolatinfest fix was applied.
+
 ## Phase 2 — inventory likely drivers
 
 Audit without deleting or stopping anything:

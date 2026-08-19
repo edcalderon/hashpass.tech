@@ -4,38 +4,47 @@
 
 | File | Description | Priority |
 |------|-------------|----------|
-| [active/task-hashpass-ai-assistant.md](active/task-hashpass-ai-assistant.md) | App-wide HashPass AI assistant with floating chat UI, standalone page, Bedrock RAG, and Aurora/RDS backing | 🔴 High |
-| [active/task-app-publish.md](active/task-app-publish.md) | Google Play Store closed testing upload in progress + production rollout (v1.8.148) | 🔴 High |
-| [../apps/mobile-app/docs/native-auth-dashboard-crash-handoff.md](../apps/mobile-app/docs/native-auth-dashboard-crash-handoff.md) | Native auth resumes to landing but crashes on dashboard entry after v1.8.234; includes XState session-machine state and release evidence | 🔴 High |
-| [active/task-native-google-signin.md](active/task-native-google-signin.md) | Replace browser OAuth with native Google Sign-In SDK (no-browser flow) | 🟡 Medium |
+| [active/task-admin-event-control-center.md](active/task-admin-event-control-center.md) | Event-scoped roles + full event admin surface (passes, staff/roles) for mobile `admin.tsx`; Phases 1-4 shipped, sub-event API/speaker/agenda CRUD/legacy FK validation outstanding | 🔴 High |
+| [active/task-android-target-sdk-36-compliance.md](active/task-android-target-sdk-36-compliance.md) | Play Console requires targeting API 36 (Android 16) by 2026-08-30 or Android releases stop being uploadable; `expo-build-properties` override tried and reverted same day (pinned AGP 8.8.2 caps at API 35) — real fix is the Expo SDK 54/RN 0.81 upgrade, not started | 🔴 Critical |
+| [active/task-aws-cost-audit-and-controls.md](active/task-aws-cost-audit-and-controls.md) | AWS billing spike investigation; root cause found and fixed, one open item (confirm EC2 build-timeout guard is live) | 🔴 P0 |
+| [active/task-bsl-database-cleanup.md](active/task-bsl-database-cleanup.md) | Audit/clean BSL DB schemas (Directus tables, case-duplicate tables); Phase 1 done, Phases 2-4 open | 🔴 High |
+| [active/task-forgejo-ci-fallback-onboarding.md](active/task-forgejo-ci-fallback-onboarding.md) | Onboard Hashpass onto CIG's shared Forgejo CI fallback; mirror pushed and verified reachable, blocked on runner registration from CIG-2 operator | 🟡 Medium |
+| [active/task-hashpass-sdk-npm-publish.md](active/task-hashpass-sdk-npm-publish.md) | First real npm publish of `@hashpass-tech/sdk` (+ `sdk-cli`); close TDD gaps, harden the auth/QR relying-party model, migrate remaining internal usage onto the SDK flow | 🔴 High |
+| [active/task-panel-web-club-events-qr.md](active/task-panel-web-club-events-qr.md) | hashpass.club panel: event control center + QR link system; Phase B (QR links) live, Phase A (event creation) not started | 🔴 High |
+| [active/task-release-flow-security-and-kpi.md](active/task-release-flow-security-and-kpi.md) | Security hardening + KPI follow-up to release-flow-automation; 1 of 6 acceptance criteria done | 🟡 Medium |
+| [active/task-secrets-manager-cutover.md](active/task-secrets-manager-cutover.md) | Adopt centralized secrets management (Infisical); a third undocumented org was found 2026-08-17, triage in progress | 🔴 High |
 
 ## Pending Tasks
 
 | File | Description | Priority |
 |------|-------------|----------|
-| [pending/task-release-flow-security-and-kpi.md](pending/task-release-flow-security-and-kpi.md) | Security hardening for release-flow-automation (PAT lifecycle, bypass policy, runbooks) + time-to-ship KPI: measured 2m25s/1m19s (old) vs 32s (new) | 🟡 Medium |
-| [pending/directus-usage-and-flow.md](pending/directus-usage-and-flow.md) | Organize Directus's actual role (auth vs CMS vs deprecate), document the real Better-Auth-first auth flow, evaluate self-hosted BaaS alternatives (PocketBase, self-hosted Supabase, etc.) | 🟢 Low |
-| [pending/email-proxy-balancer.md](pending/email-proxy-balancer.md) | Brevo primary + self-hosted SMTP fallback with daily budget tracking | 🟡 Medium |
-| [pending/typescript-7-safe-migration.md](pending/typescript-7-safe-migration.md) | Safe staged migration to TypeScript 7 with TS 6 compatibility tooling, config cleanup, and benchmark validation | 🟡 Medium |
+| [pending/task-cloud-provider-cost-comparison.md](pending/task-cloud-provider-cost-comparison.md) | AWS vs GCP vs Azure comparison for HASHPASS: real cost baseline, startup-credit programs (sourced 2026-08-18), always-free tiers, recommendation — read before executing the GCP migration task below | 🔴 Critical |
+| [pending/task-aws-to-gcp-migration.md](pending/task-aws-to-gcp-migration.md) | Full AWS→GCP infra migration: complete resource inventory + GCP-equivalent mapping + 8-phase plan (pilot → API → static sites → mobile runner → DNS cutover → decommission); no execution authorized without per-phase sign-off | 🔴 Critical |
 | [pending/task-bsl-cloudfront-distribution-migration.md](pending/task-bsl-cloudfront-distribution-migration.md) | Blocked on AWS Support target-account CloudFront verification; migrate BSL + main-site distributions once unblocked, plus a few small carried-over infra items | 🟢 Low |
+| [pending/directus-usage-and-flow.md](pending/directus-usage-and-flow.md) | Organize Directus's actual role (auth vs CMS vs deprecate), document the real Better-Auth-first auth flow, evaluate self-hosted BaaS alternatives | 🟢 Low |
+| [pending/email-proxy-balancer.md](pending/email-proxy-balancer.md) | Brevo primary + self-hosted SMTP fallback with daily budget tracking | 🟡 Medium |
+| [pending/task-build-system-cost-and-speed.md](pending/task-build-system-cost-and-speed.md) | CodeBuild vs EC2 cost comparison, future build-system improvements; deliberately paced follow-up to the cost-audit task | 🟡 Medium |
+| [pending/task-deep-technical-debt-review.md](pending/task-deep-technical-debt-review.md) | Type organization, `any` reduction, god-file breakup, perf baseline | 🟢 Low |
+| [pending/task-hashpass-ai-assistant.md](pending/task-hashpass-ai-assistant.md) | App-wide HashPass AI assistant (Bedrock RAG, floating chat, standalone page); planning only, no execution started since creation | 🔴 High |
+| [pending/task-play-console-operational-hygiene.md](pending/task-play-console-operational-hygiene.md) | Play Console hygiene follow-ups split out of the done app-publish task | 🟡 Medium |
+| [pending/task-reduce-direct-supabase-client-calls.md](pending/task-reduce-direct-supabase-client-calls.md) | Reduce/guard direct client-side Supabase calls; 14 call sites classified, needs scoping decision | 🟡 Medium |
+| [pending/typescript-7-safe-migration.md](pending/typescript-7-safe-migration.md) | Safe staged migration to TypeScript 7 with TS 6 compatibility tooling; concrete blockers documented, no work started | 🟡 Medium |
 
 ## Done / Archived
 
 | File | Description | Completed |
 |------|-------------|-----------|
-| [done/task-aws-account-migration.md](done/task-aws-account-migration.md) | Migrated HashPass AWS services from the source account to the target account (DNS zone hosting stays on source by decision); API/Lambda, Android runner, web compute, and both BSL environments (dev + prod) fully cut over to a source-CDN+target-compute hybrid; source account has zero remaining BSL resources | 2026-07-29 |
-| [done/task-release-flow-automation.md](done/task-release-flow-automation.md) | Merge-triggered tag & develop-sync replacing the manual release:promote/release:patch dance; validated live on v1.8.218 | 2026-07-13 |
+| [done/task-app-publish.md](done/task-app-publish.md) | Google Play Store closed testing → production rollout | 2026-07-26 |
+| [done/task-aws-account-migration.md](done/task-aws-account-migration.md) | Migrated HashPass AWS services from the source account to the target account (DNS zone hosting stays on source by decision); API/Lambda, Android runner, web compute, both BSL environments cut over; CloudFront distribution migration itself split out to the pending task above | 2026-07-29 |
+| [done/task-hostinger-autodiscover-cert-mismatch.md](done/task-hostinger-autodiscover-cert-mismatch.md) | Fixed TLS cert mismatch on `autodiscover.hashpass.tech`; self-hosted Autodiscover Lambda deployed and live-verified | 2026-08-16 |
 | [done/task-monorepo-migration.md](done/task-monorepo-migration.md) | Full monorepo migration (pnpm/turbo, packages, apps) | 2026-02-14 |
+| [done/task-native-google-signin.md](done/task-native-google-signin.md) | Replaced browser OAuth with native Google Sign-In SDK (no-browser flow) | 2026-06-23 |
+| [done/task-release-flow-automation.md](done/task-release-flow-automation.md) | Merge-triggered tag & develop-sync replacing the manual release:promote/release:patch dance; validated live on v1.8.218 | 2026-07-13 |
+| [done/task-self-hosted-ci-fallback.md](done/task-self-hosted-ci-fallback.md) | Self-hosted Forgejo CI fallback for GitHub outages; delegated to external CIG-2 repo, live thread now tracked via `active/task-forgejo-ci-fallback-onboarding.md` | 2026-08-06 (delegated) |
 
 ---
 
-## Recent Fixes (not tracked as tasks)
-
-| Version | Fix |
-|---------|-----|
-| v1.8.234 | Hardened native sign-out so local auth state clears even when Better Auth/Supabase provider cleanup reports errors; added native Better Auth trusted origin headers |
-| v1.8.233 | Stabilized native dashboard routing to `/(shared)/dashboard/explore` and kept Android layout-event protection in place |
-| v1.8.132 | Removed the black native light-mode auth panel, selected the correct HashPass logo asset, and added the auth screen `dataSet` typecheck augment |
-| v1.8.71 | `RNAnimated.View` for header `opacity` — mixed Animated API crash after Google auth |
-| v1.8.72 | `RNAnimated.View` for header outer container — `borderBottomWidth`/`shadowOpacity` crash |
-| v1.8.73 | `Platform.OS` guard on `window.addEventListener` in Wallet; avatar PNG fallback on profile |
+Note: this index is maintained by hand and can drift — the directory listings under
+`active/`, `pending/`, and `done/` are the ground truth. Regenerated 2026-08-18 after
+finding this file badly stale (referenced two tasks as active that had already moved to
+`done/`, and omitted roughly half of the real task files entirely).
