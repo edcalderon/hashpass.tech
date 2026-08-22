@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-15T18:50:12.048Z",
+  "generatedAt": "2026-08-22T13:02:58.217Z",
   "events": [
     {
       "id": "pkrr:30k-show-me-vjmxh",
@@ -96,7 +96,7 @@
           6
         ]
       },
-      "status": "upcoming",
+      "status": "stale",
       "tags": [
         "Weekly Poker Room",
         "Community Tournament",
@@ -137,7 +137,7 @@
         "time": "2 p. m."
       },
       "confidence": 0.95,
-      "needsReview": false
+      "needsReview": true
     },
     {
       "id": "pkrr:50k-turbo-m39tr",
@@ -165,7 +165,7 @@
           2
         ]
       },
-      "status": "upcoming",
+      "status": "stale",
       "tags": [
         "Weekly Poker Room",
         "Community Tournament",
@@ -206,7 +206,7 @@
         "time": "6:05 p. m."
       },
       "confidence": 0.95,
-      "needsReview": false
+      "needsReview": true
     },
     {
       "id": "pkrr:50k-turbo-bounty-50k-qwfvh",
@@ -234,7 +234,7 @@
           4
         ]
       },
-      "status": "upcoming",
+      "status": "stale",
       "tags": [
         "Weekly Poker Room",
         "Community Tournament",
@@ -273,6 +273,75 @@
         "path": "/reg/50k-turbo-bounty-50k-qwfvh",
         "date": "2026-08-20",
         "time": "6:05 p. m."
+      },
+      "confidence": 0.95,
+      "needsReview": true
+    },
+    {
+      "id": "pkrr:100k-main-event-135x6",
+      "sourceId": "pkrr-hash-poker",
+      "externalId": "100k-main-event-135x6",
+      "slug": "hash-poker-100k-main-event-2026-08-22",
+      "title": "100K MAIN EVENT",
+      "description": "Nuestro Torneo 150K es el Main Event de Hash: la mesa donde todo se define. Con una estructura profunda, un ritmo emocionante y premios que realmente hacen la diferencia, este torneo se ha convertido en el evento más importante de la semana para nuestra comunidad. Es el espacio donde se encuentran jugadores de todos los niveles para competir, mejorar su juego y poner a prueba sus habilidades en un ambiente competitivo, pero siempre acompañado de la mejor energía de Hash. Aquí se crean historias, se construyen rivalidades sanas y se viven esos momentos que seguimos comentando durante toda la semana. Si disfrutas del buen poker, de las decisiones importantes y de la emoción de llegar lejos en un torneo, este es el evento que no te puedes perder. ♠️ Bienvenido al Main Event de Hash. Nos vemos en las mesas. ♣️",
+      "eventType": "community_tournament",
+      "startsAt": "2026-08-22T13:00:00-05:00",
+      "endsAt": null,
+      "timezone": "America/Bogota",
+      "venueName": "Hash House Club",
+      "address": "Provenza, El Poblado",
+      "city": "Medellín",
+      "country": "Colombia",
+      "coverImage": "https://pkrr.io/event-covers/100k-main-event-135x6-1787159510316-868ec139.jpg",
+      "sourceUrl": "https://pkrr.io/reg/100k-main-event-135x6",
+      "organizerName": "Hash Poker Room",
+      "organizerLogo": "https://pkrr.io/club-headers/hash-poker-1780960689943.jpg",
+      "recurrence": {
+        "frequency": "weekly",
+        "interval": 1,
+        "weekdays": [
+          6
+        ]
+      },
+      "status": "upcoming",
+      "tags": [
+        "Weekly Poker Room",
+        "Community Tournament",
+        "Medellín"
+      ],
+      "agenda": [
+        {
+          "id": "100k-main-event-135x6-arrival",
+          "time": "1 p. m.",
+          "title": "Member arrival and QR check-in",
+          "type": "registration"
+        },
+        {
+          "id": "100k-main-event-135x6-start",
+          "time": "1 p. m.",
+          "title": "100K MAIN EVENT",
+          "type": "community_event"
+        }
+      ],
+      "speakers": [],
+      "sponsors": [],
+      "benefits": [
+        "Member smart pass",
+        "Attendance history",
+        "Community networking"
+      ],
+      "networkingEnabled": true,
+      "checkinEnabled": true,
+      "cta": {
+        "label": "Reserve seat",
+        "url": "https://pkrr.io/reg/100k-main-event-135x6"
+      },
+      "createdAt": "2026-08-22T13:02:58.217Z",
+      "updatedAt": "2026-08-22T13:02:58.217Z",
+      "rawPayload": {
+        "path": "/reg/100k-main-event-135x6",
+        "date": "2026-08-22",
+        "time": "1 p. m."
       },
       "confidence": 0.95,
       "needsReview": false
