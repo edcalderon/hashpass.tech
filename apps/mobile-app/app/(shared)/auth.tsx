@@ -2285,9 +2285,7 @@ export default function AuthScreen() {
                                     // rest out across the other cells (each capped
                                     // at 1, since they never receive autofill
                                     // directly).
-                                    maxLength={
-                                      index === 0 ? OTP_CODE_LENGTH : 1
-                                    }
+                                    maxLength={index === 0 ? OTP_CODE_LENGTH : 1}
                                     editable={!isBusy}
                                     textContentType={
                                       index === 0 ? "oneTimeCode" : undefined
