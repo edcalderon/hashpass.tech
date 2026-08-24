@@ -142,6 +142,23 @@
     "title": "Bienvenue sur",
     "welcomeHeading": "Bienvenue",
     "subtitle": "Connectez-vous pour débloquer votre vie numérique.",
+    "desktopHero": {
+      "eyebrow": "HASHPASS POUR LES {mode}",
+      "title": "Votre espace {mode}, partout.",
+      "modes": {
+        "events": "événements",
+        "clubs": "clubs",
+        "concerts": "concerts"
+      },
+      "descriptions": {
+        "events": "Un espace sécurisé pour les pass, les personnes et les moments qui donnent vie à un événement.",
+        "clubs": "Accès membre, identité partagée et une meilleure façon de garder chaque communauté proche.",
+        "concerts": "Un pass fluide, de la première annonce jusqu'au rappel final."
+      },
+      "alliesLabel": "ÉVÉNEMENTS ET ALLIÉS",
+      "alliesAccessibilityLabel": "Alliés événementiels utilisant HASHPASS",
+      "allyBadge": "ALLIÉ ÉVÉNEMENTIEL"
+    },
     "signInWithGoogle": "Se connecter avec Google",
     "emailPlaceholder": "Entrez votre email",
     "emailRequired": "L'adresse e-mail est requise",
