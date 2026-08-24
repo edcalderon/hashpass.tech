@@ -77,6 +77,24 @@ resource "aws_cloudfront_cache_policy" "demo_hpv_cache_key" {
   }
 }
 
+# Every demo hostname is provisional. Deliver this at the CDN boundary rather
+# than in the shared static bundle so a deploy to demo cannot accidentally be
+# indexed merely because hashpass.tech's normal SEO metadata is indexable.
+# X-Robots-Tag is understood by Google and other major crawlers on every
+# response type, including SPA fallback pages and assets.
+resource "aws_cloudfront_response_headers_policy" "demo_noindex" {
+  name    = "hashpass-demo-events-noindex"
+  comment = "Prevent search indexing of provisional HashPass demo event sites"
+
+  custom_headers_config {
+    items {
+      header   = "X-Robots-Tag"
+      override = true
+      value    = "noindex, nofollow, noarchive, nosnippet"
+    }
+  }
+}
+
 resource "aws_acm_certificate" "demo" {
   for_each = var.demo_events
   provider = aws.use1
@@ -137,12 +155,13 @@ resource "aws_cloudfront_distribution" "demo" {
   }
 
   default_cache_behavior {
-    target_origin_id       = "${each.key}-origin"
-    allowed_methods        = ["HEAD", "DELETE", "POST", "GET", "OPTIONS", "PUT", "PATCH"]
-    cached_methods         = ["HEAD", "GET"]
-    viewer_protocol_policy = "redirect-to-https"
-    compress               = true
-    cache_policy_id        = aws_cloudfront_cache_policy.demo_hpv_cache_key.id
+    target_origin_id           = "${each.key}-origin"
+    allowed_methods            = ["HEAD", "DELETE", "POST", "GET", "OPTIONS", "PUT", "PATCH"]
+    cached_methods             = ["HEAD", "GET"]
+    viewer_protocol_policy     = "redirect-to-https"
+    compress                   = true
+    cache_policy_id            = aws_cloudfront_cache_policy.demo_hpv_cache_key.id
+    response_headers_policy_id = aws_cloudfront_response_headers_policy.demo_noindex.id
   }
 
   custom_error_response {

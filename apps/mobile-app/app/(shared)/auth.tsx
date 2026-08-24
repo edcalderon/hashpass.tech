@@ -191,12 +191,39 @@ const resolveOAuthErrorMessage = (
 
 const DESKTOP_AUTH_BREAKPOINT = 1100;
 
-type HeroSlide = {
+type EventAlly = {
   id: string;
-  icon: string;
-  title: string;
-  description: string;
+  name: string;
+  mark: string;
+  detail: string;
 };
+
+const EVENT_ALLIES: EventAlly[] = [
+  {
+    id: "bsl",
+    name: "Blockchain Summit Latam",
+    mark: "BSL",
+    detail: "LATAM",
+  },
+  {
+    id: "hash-poker-room",
+    name: "Hash Poker Room",
+    mark: "HASH",
+    detail: "POKER ROOM",
+  },
+  {
+    id: "criptolatinfest",
+    name: "CriptoLatinFest",
+    mark: "CLF",
+    detail: "MEDELLÍN",
+  },
+  {
+    id: "bsl-on-tour",
+    name: "BSL On Tour",
+    mark: "BSL",
+    detail: "ON TOUR",
+  },
+];
 
 type AuthHeaderPalette = {
   titleColor: string;
@@ -204,7 +231,6 @@ type AuthHeaderPalette = {
 };
 
 type DesktopHeroPanelProps = {
-  slides: HeroSlide[];
   isDark: boolean;
   styles: any;
   animationLevel: "full" | "reduced" | "none";
@@ -254,7 +280,6 @@ const createFloatingLoop = (
   );
 
 const DesktopHeroPanel = ({
-  slides,
   isDark,
   styles,
   animationLevel,
@@ -263,10 +288,10 @@ const DesktopHeroPanel = ({
   const blobOne = useRef(new Animated.Value(0)).current;
   const blobTwo = useRef(new Animated.Value(0)).current;
   const blobThree = useRef(new Animated.Value(0)).current;
+  const allyRail = useRef(new Animated.Value(0)).current;
   const contentEntrance = useRef(
     new Animated.Value(animationLevel === "none" ? 1 : 0),
   ).current;
-  const [activeSlideIndex, setActiveSlideIndex] = useState(0);
   const heroGradientColors = isDark
     ? (["#030a12", "#0a1f31", "#13415e"] as const)
     : (["#ffffff", "#fff9f8", "#fff1ee"] as const);
@@ -319,6 +344,25 @@ const DesktopHeroPanel = ({
     animationLevel,
   ]);
 
+  useEffect(() => {
+    if (animationLevel !== "full") {
+      allyRail.setValue(0);
+      return;
+    }
+
+    const animation = Animated.loop(
+      Animated.timing(allyRail, {
+        toValue: 1,
+        duration: 18000,
+        easing: Easing.linear,
+        useNativeDriver,
+      }),
+    );
+    animation.start();
+
+    return () => animation.stop();
+  }, [allyRail, animationLevel, useNativeDriver]);
+
   const blobOneTranslateX = blobOne.interpolate({
     inputRange: [0, 1],
     outputRange: [-24, 18],
@@ -351,24 +395,11 @@ const DesktopHeroPanel = ({
     inputRange: [0, 1],
     outputRange: [22, 0],
   });
-  const safeSlideIndex = slides.length ? activeSlideIndex % slides.length : 0;
-  const currentSlide = slides[safeSlideIndex] || {
-    id: "secure",
-    icon: "shield-checkmark-outline",
-    title: "Secure & Private",
-    description:
-      "Your data is encrypted and protected with industry-leading security protocols. We prioritize your privacy above all else.",
-  };
-
-  useEffect(() => {
-    if (slides.length <= 1) return;
-    const rotationInterval = setInterval(() => {
-      setActiveSlideIndex(
-        (previousIndex) => (previousIndex + 1) % slides.length,
-      );
-    }, 4200);
-    return () => clearInterval(rotationInterval);
-  }, [slides.length]);
+  const allyRailTranslateX = allyRail.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -656],
+  });
+  const allyRailItems = [...EVENT_ALLIES, ...EVENT_ALLIES];
 
   return (
     <View style={styles.desktopHeroPane}>
@@ -428,38 +459,43 @@ const DesktopHeroPanel = ({
           },
         ]}
       >
-        <View style={styles.desktopHeroBadge}>
-          <Ionicons
-            name={currentSlide.icon as any}
-            size={32}
-            color={isDark ? "#ddf7fb" : "#af0d01"}
-          />
+        <View style={styles.desktopHeroIntro}>
+          <Text style={styles.desktopHeroEyebrow}>HASHPASS FOR EVENTS</Text>
+          <Text style={styles.desktopHeroTitle}>
+            Your event layer, everywhere.
+          </Text>
+          <Text style={styles.desktopHeroDescription}>
+            One secure home for passes, people, and the moments that bring a
+            community together.
+          </Text>
         </View>
-        <Text style={styles.desktopHeroTitle}>{currentSlide.title}</Text>
-        <Text style={styles.desktopHeroDescription}>
-          {currentSlide.description}
-        </Text>
 
-        <View style={styles.desktopHeroProgress}>
-          {slides.map((slide, index) => (
-            <TouchableOpacity
-              key={slide.id}
-              style={styles.desktopHeroProgressDotButton}
-              onPress={() => setActiveSlideIndex(index)}
-              activeOpacity={0.8}
-              accessibilityRole="button"
-              accessibilityLabel={`Show ${slide.title}`}
+        <View
+          style={styles.desktopHeroAllies}
+          accessibilityLabel="Event platforms using HashPass"
+        >
+          <Text style={styles.desktopHeroAlliesLabel}>EVENTS & ALLIES</Text>
+          <View style={styles.desktopHeroRailViewport}>
+            <Animated.View
+              style={[
+                styles.desktopHeroRail,
+                { transform: [{ translateX: allyRailTranslateX }] },
+              ]}
             >
-              <View
-                style={[
-                  styles.desktopHeroProgressDot,
-                  index === safeSlideIndex
-                    ? styles.desktopHeroProgressDotActive
-                    : null,
-                ]}
-              />
-            </TouchableOpacity>
-          ))}
+              {allyRailItems.map((ally, index) => (
+                <View
+                  key={`${ally.id}-${index}`}
+                  style={styles.desktopHeroAllyMark}
+                  accessibilityLabel={ally.name}
+                >
+                  <Text style={styles.desktopHeroAllyPrimary}>{ally.mark}</Text>
+                  <Text style={styles.desktopHeroAllyDetail}>
+                    {ally.detail}
+                  </Text>
+                </View>
+              ))}
+            </Animated.View>
+          </View>
         </View>
       </Animated.View>
     </View>
@@ -470,7 +506,6 @@ export default function AuthScreen() {
   const { width: windowWidth } = useWindowDimensions();
   const { colors, isDark } = useTheme();
   const { t } = useTranslation("auth");
-  const { t: tIndex } = useTranslation("index");
   const router = useRouter();
   const params = useLocalSearchParams();
   const { showError, showSuccess } = useToastHelpers();
@@ -510,35 +545,6 @@ export default function AuthScreen() {
   );
 
   const currentLocale = getCurrentLocale();
-  const heroSlides: HeroSlide[] = [
-    {
-      id: "secure",
-      icon: "shield-checkmark-outline",
-      title: tIndex("features.secure.title", "Secure & Private"),
-      description: tIndex(
-        "features.secure.description",
-        "Your data is encrypted and protected with industry-leading security protocols. We prioritize your privacy above all else.",
-      ),
-    },
-    {
-      id: "management",
-      icon: "wallet-outline",
-      title: tIndex("features.management.title", "Effortless Management"),
-      description: tIndex(
-        "features.management.description",
-        "Organize all your digital credentials, loyalty cards, and communities in one intuitive place.",
-      ),
-    },
-    {
-      id: "sync",
-      icon: "globe-outline",
-      title: tIndex("features.sync.title", "Cross-Platform Sync"),
-      description: tIndex(
-        "features.sync.description",
-        "Access your data across all your devices with our secure cloud sync.",
-      ),
-    },
-  ];
   const countryDialOptions = useMemo(
     () => buildCountryDialOptions(currentLocale),
     [currentLocale],
@@ -2279,7 +2285,9 @@ export default function AuthScreen() {
                                     // rest out across the other cells (each capped
                                     // at 1, since they never receive autofill
                                     // directly).
-                                    maxLength={index === 0 ? OTP_CODE_LENGTH : 1}
+                                    maxLength={
+                                      index === 0 ? OTP_CODE_LENGTH : 1
+                                    }
                                     editable={!isBusy}
                                     textContentType={
                                       index === 0 ? "oneTimeCode" : undefined
@@ -2388,9 +2396,7 @@ export default function AuthScreen() {
                                     strokeWidth={2.5}
                                     spring="snappy"
                                     fallbackIconName={
-                                      otpVerifySucceeded
-                                        ? "checkmark"
-                                        : "sync"
+                                      otpVerifySucceeded ? "checkmark" : "sync"
                                     }
                                   />
                                 ) : (
@@ -2508,7 +2514,6 @@ export default function AuthScreen() {
 
         {isDesktopLayout ? (
           <DesktopHeroPanel
-            slides={heroSlides}
             isDark={isDark}
             styles={styles}
             animationLevel={animationLevel}
@@ -3551,62 +3556,86 @@ const getStyles = (
     },
     desktopHeroBody: {
       width: "100%",
-      maxWidth: 360,
-      alignItems: "center",
-      justifyContent: "center",
+      maxWidth: 460,
+      alignItems: "flex-start",
+      justifyContent: "space-between",
+      minHeight: 420,
       paddingHorizontal: 4,
       zIndex: 2,
     },
-    desktopHeroBadge: {
-      width: 72,
-      height: 72,
-      borderRadius: 36,
-      borderWidth: 1,
-      borderColor: isDark ? "rgba(161,209,214,0.42)" : "rgba(175,13,1,0.32)",
-      backgroundColor: isDark ? "rgba(161,209,214,0.2)" : "rgba(175,13,1,0.1)",
-      alignItems: "center",
-      justifyContent: "center",
+    desktopHeroIntro: {
+      maxWidth: 390,
+      paddingTop: 8,
+    },
+    desktopHeroEyebrow: {
+      color: isDark ? "#a1d1d6" : "#af0d01",
+      fontSize: 11,
+      fontWeight: "800",
+      letterSpacing: 1.8,
       marginBottom: 14,
     },
     desktopHeroTitle: {
-      fontSize: 36,
-      lineHeight: 40,
+      fontSize: 38,
+      lineHeight: 42,
       fontWeight: "800",
       color: isDark ? "#f3f9ff" : "#111214",
-      textAlign: "center",
-      letterSpacing: -0.8,
+      letterSpacing: -1.1,
     },
     desktopHeroDescription: {
       marginTop: 12,
       fontSize: 16,
       lineHeight: 24,
       color: isDark ? "rgba(220,240,248,0.88)" : "rgba(17,18,20,0.86)",
-      textAlign: "center",
       maxWidth: 360,
     },
-    desktopHeroProgress: {
+    desktopHeroAllies: {
+      width: "100%",
+      paddingTop: 24,
+    },
+    desktopHeroAlliesLabel: {
+      color: isDark ? "rgba(220,240,248,0.7)" : "rgba(17,18,20,0.58)",
+      fontSize: 10,
+      fontWeight: "800",
+      letterSpacing: 1.6,
+      marginBottom: 12,
+    },
+    desktopHeroRailViewport: {
+      width: "100%",
+      overflow: "hidden",
+      paddingVertical: 2,
+    },
+    desktopHeroRail: {
       flexDirection: "row",
       alignItems: "center",
+      gap: 12,
+    },
+    desktopHeroAllyMark: {
+      width: 152,
+      height: 76,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: isDark ? "rgba(161,209,214,0.26)" : "rgba(17,18,20,0.12)",
+      backgroundColor: isDark ? "rgba(3,10,18,0.46)" : "rgba(255,255,255,0.72)",
+      paddingHorizontal: 16,
       justifyContent: "center",
-      marginTop: 18,
-      gap: 8,
+      ...(Platform.OS === "web"
+        ? { boxShadow: "0 10px 28px rgba(31,38,62,0.08)" }
+        : {}),
     },
-    desktopHeroProgressDotButton: {
-      width: 20,
-      height: 20,
-      alignItems: "center",
-      justifyContent: "center",
+    desktopHeroAllyPrimary: {
+      color: isDark ? "#f3f9ff" : "#15171b",
+      fontSize: 23,
+      fontWeight: "900",
+      letterSpacing: 1.2,
+      lineHeight: 26,
     },
-    desktopHeroProgressDot: {
-      width: 10,
-      height: 10,
-      borderRadius: 999,
-      backgroundColor: isDark
-        ? "rgba(161,209,214,0.42)"
-        : "rgba(175,13,1,0.24)",
-    },
-    desktopHeroProgressDotActive: {
-      backgroundColor: isDark ? "#a1d1d6" : "#af0d01",
+    desktopHeroAllyDetail: {
+      color: isDark ? "rgba(220,240,248,0.72)" : "rgba(17,18,20,0.56)",
+      fontSize: 9,
+      fontWeight: "800",
+      letterSpacing: 1.05,
+      lineHeight: 13,
+      marginTop: 2,
     },
     loadingText: {
       marginTop: 16,
