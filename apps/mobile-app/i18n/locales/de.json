@@ -142,6 +142,23 @@
     "title": "Willkommen bei",
     "welcomeHeading": "Willkommen",
     "subtitle": "Melden Sie sich an, um Ihr digitales Leben freizuschalten.",
+    "desktopHero": {
+      "eyebrow": "HASHPASS FÜR {mode}",
+      "title": "Ihre Ebene für {mode}, überall.",
+      "modes": {
+        "events": "Events",
+        "clubs": "Clubs",
+        "concerts": "Konzerte"
+      },
+      "descriptions": {
+        "events": "Ein sicherer Ort für Pässe, Menschen und die Momente, die ein Event zum Leben erwecken.",
+        "clubs": "Mitgliederzugang, gemeinsame Identität und eine bessere Art, jede Community nah zu halten.",
+        "concerts": "Ein nahtloser Pass von der ersten Ankündigung bis zur letzten Zugabe."
+      },
+      "alliesLabel": "EVENTS UND PARTNER",
+      "alliesAccessibilityLabel": "Event-Partner, die HASHPASS nutzen",
+      "allyBadge": "EVENT-PARTNER"
+    },
     "signInWithGoogle": "Mit Google anmelden",
     "emailPlaceholder": "Geben Sie Ihre E-Mail ein",
     "emailRequired": "E-Mail ist erforderlich",

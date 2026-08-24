@@ -145,6 +145,23 @@
     "title": "Bienvenido a",
     "welcomeHeading": "Bienvenido",
     "subtitle": "Inicia sesión para desbloquear tu vida digital.",
+    "desktopHero": {
+      "eyebrow": "HASHPASS PARA {mode}",
+      "title": "Tu capa para {mode}, en todas partes.",
+      "modes": {
+        "events": "eventos",
+        "clubs": "clubes",
+        "concerts": "conciertos"
+      },
+      "descriptions": {
+        "events": "Un hogar seguro para pases, personas y los momentos que dan vida a un evento.",
+        "clubs": "Acceso para miembros, identidad compartida y una mejor forma de mantener cerca a cada comunidad.",
+        "concerts": "Un pase fluido desde el primer anuncio hasta el último encore."
+      },
+      "alliesLabel": "EVENTOS Y ALIADOS",
+      "alliesAccessibilityLabel": "Aliados de eventos que usan HASHPASS",
+      "allyBadge": "ALIADO DEL EVENTO"
+    },
     "signInWithGoogle": "Iniciar sesión con Google",
     "emailPlaceholder": "Ingresa tu correo electrónico",
     "emailRequired": "El correo electrónico es obligatorio",

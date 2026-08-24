@@ -145,6 +145,23 @@
     "title": "Welcome to",
     "welcomeHeading": "Welcome",
     "subtitle": "Sign in to unlock your digital life.",
+    "desktopHero": {
+      "eyebrow": "HASHPASS FOR {mode}",
+      "title": "Your {mode} layer, everywhere.",
+      "modes": {
+        "events": "events",
+        "clubs": "clubs",
+        "concerts": "concerts"
+      },
+      "descriptions": {
+        "events": "One secure home for passes, people, and the moments that bring an event to life.",
+        "clubs": "Member access, shared identity, and a better way to keep every community close.",
+        "concerts": "A seamless pass from the first announcement to the final encore."
+      },
+      "alliesLabel": "EVENTS & ALLIES",
+      "alliesAccessibilityLabel": "Event allies using HASHPASS",
+      "allyBadge": "EVENT ALLY"
+    },
     "signInWithGoogle": "Sign in with Google",
     "emailPlaceholder": "Enter your email",
     "emailRequired": "Email is required",

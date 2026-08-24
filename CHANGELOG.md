@@ -1,3 +1,14 @@
+## [1.9.22](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.21...v1.9.22) (2026-08-24)
+### Released
+- protect demo crawlers and showcase event allies
+
+### Release scope
+- Compared with: `v1.9.21` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Infrastructure
+
 ## [1.9.21](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.20...v1.9.21) (2026-08-19)
 
 

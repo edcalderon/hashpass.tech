@@ -145,6 +145,23 @@
     "title": "환영합니다",
     "welcomeHeading": "환영합니다",
     "subtitle": "로그인하여 디지털 라이프를 시작하세요.",
+    "desktopHero": {
+      "eyebrow": "{mode}를 위한 HASHPASS",
+      "title": "어디서나 함께하는 {mode} 레이어.",
+      "modes": {
+        "events": "이벤트",
+        "clubs": "클럽",
+        "concerts": "콘서트"
+      },
+      "descriptions": {
+        "events": "패스, 사람, 그리고 이벤트를 생생하게 만드는 순간을 위한 안전한 하나의 공간입니다.",
+        "clubs": "회원 액세스, 함께하는 정체성, 모든 커뮤니티를 더 가깝게 연결하는 더 나은 방법입니다.",
+        "concerts": "첫 공지부터 마지막 앙코르까지 끊김 없이 이어지는 패스입니다."
+      },
+      "alliesLabel": "이벤트와 파트너",
+      "alliesAccessibilityLabel": "HASHPASS를 사용하는 이벤트 파트너",
+      "allyBadge": "이벤트 파트너"
+    },
     "signInWithGoogle": "Google로 로그인",
     "emailPlaceholder": "이메일을 입력하세요",
     "emailRequired": "이메일은 필수입니다",

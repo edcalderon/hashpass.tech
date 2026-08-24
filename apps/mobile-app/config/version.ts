@@ -22,22 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202608190321, // Updated to current timestamp
-  releaseDate: '2026-08-19',
+  buildNumber: 202608240157, // Updated to current timestamp
+  releaseDate: '2026-08-24',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    // No new features
+    'protect demo crawlers and showcase event allies'
   ],
   bugfixes: [
-    'target Android 16 (API 36) to meet Google Play\'s new requirement'
+    // No bugfixes
   ],
   breakingChanges: [],
-  notes: 'target Android 16 (API 36) to meet Google Play\'s new requirement'
+  notes: 'protect demo crawlers and showcase event allies'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.22': {
+    version: '1.9.22',
+    buildNumber: 202608240157,
+    releaseDate: '2026-08-24',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'protect demo crawlers and showcase event allies'
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'protect demo crawlers and showcase event allies'
+  },
   '1.9.21': {
     version: '1.9.21',
     buildNumber: 202608190321,
