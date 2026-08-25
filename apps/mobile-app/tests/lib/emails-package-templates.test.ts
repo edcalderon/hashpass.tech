@@ -1,6 +1,6 @@
 /// <reference types="jest" />
 
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 // Regression coverage for a real production bug: renderTemplate/
@@ -54,11 +54,23 @@ describe('@hashpass/emails templates', () => {
 
     expect(html.length).toBeGreaterThan(500);
     expect(html).toContain('href="{{ .ConfirmationURL }}"');
-    expect(html).toContain('https://hashpass.tech/assets/logos/hashpass/logo-full-hashpass-white-cyan.png');
+    expect(html).toContain('https://hashpass.tech/assets/email/logo-full-hashpass-white-cyan.png');
+    expect(html).not.toContain('/assets/logos/');
     expect(html).not.toContain('href="{{ .RedirectTo }}"');
     expect(html).not.toContain('href="{{ .SiteURL }}"');
     expect(html).not.toMatch(/\{\{[A-Z_]+\}\}/);
     expect(getSubject('auth-magic-link', locale)).toMatch(/HASHPASS/);
+  });
+
+  it('ships the auth magic-link logo as a public email asset', () => {
+    expect(
+      existsSync(
+        resolve(
+          REPOSITORY_ROOT,
+          'apps/mobile-app/public/assets/email/logo-full-hashpass-white-cyan.png',
+        ),
+      ),
+    ).toBe(true);
   });
 
   it('provides one Supabase-ready template that chooses locale from auth metadata', () => {
