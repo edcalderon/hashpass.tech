@@ -20,28 +20,20 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.23)
-
-### Bug Fixes
-
-* **auth:** repair legacy email identities ([e930e35](https://github.com/hashpass-tech/hashpass.tech/commit/e930e35cb6eb45e05ae505f8760b78d47bbbb131))
-* **club-web:** improve hero contrast and title response ([a798722](https://github.com/hashpass-tech/hashpass.tech/commit/a7987229dba91187d7f7e4196ade58791651ee19))
-
+## 📋 Latest Changes (v1.9.24)
 
 ### Features
 
-* **events:** configure auth allies and QR validation ([29617fc](https://github.com/hashpass-tech/hashpass.tech/commit/29617fcba4a0071212d02e9aed054116d664fb8f))
+* **agenda:** add calendar links for sessions ([1e5bfec](https://github.com/hashpass-tech/hashpass.tech/commit/1e5bfec79ef8000713a3e66d677ffbda6383e38d))
+* **email:** refresh Hashpass welcome experience ([1fce82a](https://github.com/hashpass-tech/hashpass.tech/commit/1fce82a954639e1ba9986cb082c9852823fbc96c))
 ### Release Highlights
-- configure auth allies and QR validation; repair legacy email identities; improve hero contrast and title response
+- refresh Hashpass welcome experience; add calendar links for sessions
 
 ### Release scope
-- Compared with: `v1.9.22` (the previous global release tag)
+- Compared with: `v1.9.23` (the previous global release tag)
 
 ### Affected products & packages
-- Club web
 - Mobile app
-- Database migrations
-- Release tooling
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

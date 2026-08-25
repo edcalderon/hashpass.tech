@@ -1,3 +1,19 @@
+## [1.9.24](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.23...v1.9.24) (2026-08-25)
+
+
+### Features
+
+* **agenda:** add calendar links for sessions ([1e5bfec](https://github.com/hashpass-tech/hashpass.tech/commit/1e5bfec79ef8000713a3e66d677ffbda6383e38d))
+* **email:** refresh Hashpass welcome experience ([1fce82a](https://github.com/hashpass-tech/hashpass.tech/commit/1fce82a954639e1ba9986cb082c9852823fbc96c))
+### Release Highlights
+- refresh Hashpass welcome experience; add calendar links for sessions
+
+### Release scope
+- Compared with: `v1.9.23` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+
 ## [1.9.23](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.22...v1.9.23) (2026-08-25)
 
 

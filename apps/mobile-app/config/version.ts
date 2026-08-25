@@ -22,23 +22,39 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202608250449, // Updated to current timestamp
+  buildNumber: 202608250709, // Updated to current timestamp
   releaseDate: '2026-08-25',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'configure auth allies and QR validation'
+    'refresh Hashpass welcome experience',
+    'add calendar links for sessions'
   ],
   bugfixes: [
-    'repair legacy email identities',
-    'improve hero contrast and title response'
+    // No bugfixes
   ],
   breakingChanges: [],
-  notes: 'configure auth allies and QR validation; repair legacy email identities; improve hero contrast and title response'
+  notes: 'refresh Hashpass welcome experience; add calendar links for sessions'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.24': {
+    version: '1.9.24',
+    buildNumber: 202608250709,
+    releaseDate: '2026-08-25',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'refresh Hashpass welcome experience',
+      'add calendar links for sessions'
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'refresh Hashpass welcome experience; add calendar links for sessions'
+  },
   '1.9.23': {
     version: '1.9.23',
     buildNumber: 202608250449,
