@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-15T18:50:12.048Z",
+  "generatedAt": "2026-08-25T07:10:29.439Z",
   "events": [
     {
       "id": "pkrr:30k-show-me-vjmxh",
@@ -96,7 +96,7 @@
           6
         ]
       },
-      "status": "upcoming",
+      "status": "stale",
       "tags": [
         "Weekly Poker Room",
         "Community Tournament",
@@ -137,7 +137,7 @@
         "time": "2 p. m."
       },
       "confidence": 0.95,
-      "needsReview": false
+      "needsReview": true
     },
     {
       "id": "pkrr:50k-turbo-m39tr",
@@ -165,7 +165,7 @@
           2
         ]
       },
-      "status": "upcoming",
+      "status": "stale",
       "tags": [
         "Weekly Poker Room",
         "Community Tournament",
@@ -206,7 +206,7 @@
         "time": "6:05 p. m."
       },
       "confidence": 0.95,
-      "needsReview": false
+      "needsReview": true
     },
     {
       "id": "pkrr:50k-turbo-bounty-50k-qwfvh",
@@ -234,7 +234,7 @@
           4
         ]
       },
-      "status": "upcoming",
+      "status": "stale",
       "tags": [
         "Weekly Poker Room",
         "Community Tournament",
@@ -273,6 +273,213 @@
         "path": "/reg/50k-turbo-bounty-50k-qwfvh",
         "date": "2026-08-20",
         "time": "6:05 p. m."
+      },
+      "confidence": 0.95,
+      "needsReview": true
+    },
+    {
+      "id": "pkrr:50k-turbo-ziov0",
+      "sourceId": "pkrr-hash-poker",
+      "externalId": "50k-turbo-ziov0",
+      "slug": "hash-poker-50k-turbo-2026-08-25",
+      "title": "50K TURBO",
+      "description": "Nuestro Torneo 50K es la opción más económica y accesible para disfrutar del poker en Hash. Perfecto para quienes quieren jugar más seguido, mejorar su nivel o simplemente pasar una gran noche con la comunidad. Con una estructura ágil y mesas llenas de buena vibra, el 50K se ha convertido en el punto de entrada ideal para nuevos jugadores y una oportunidad constante para quienes ya hacen parte de la familia Hash. Si buscas buen juego, ambiente relajado y un torneo que cuida el bolsillo… este es el tuyo. ¡Te esperamos en las mesas!",
+      "eventType": "poker_room_event",
+      "startsAt": "2026-08-25T18:05:00-05:00",
+      "endsAt": null,
+      "timezone": "America/Bogota",
+      "venueName": "Hash House Club",
+      "address": "Provenza, El Poblado",
+      "city": "Medellín",
+      "country": "Colombia",
+      "coverImage": "https://pkrr.io/event-covers/50k-turbo-ziov0-1787413167678-d18d1df0.jpg",
+      "sourceUrl": "https://pkrr.io/reg/50k-turbo-ziov0",
+      "organizerName": "Hash Poker Room",
+      "organizerLogo": "https://pkrr.io/club-headers/hash-poker-1780960689943.jpg",
+      "recurrence": {
+        "frequency": "weekly",
+        "interval": 1,
+        "weekdays": [
+          2
+        ]
+      },
+      "status": "upcoming",
+      "tags": [
+        "Weekly Poker Room",
+        "Community Tournament",
+        "Medellín"
+      ],
+      "agenda": [
+        {
+          "id": "50k-turbo-ziov0-arrival",
+          "time": "6:05 p. m.",
+          "title": "Member arrival and QR check-in",
+          "type": "registration"
+        },
+        {
+          "id": "50k-turbo-ziov0-start",
+          "time": "6:05 p. m.",
+          "title": "50K TURBO",
+          "type": "community_event"
+        }
+      ],
+      "speakers": [],
+      "sponsors": [],
+      "benefits": [
+        "Member smart pass",
+        "Attendance history",
+        "Community networking"
+      ],
+      "networkingEnabled": true,
+      "checkinEnabled": true,
+      "cta": {
+        "label": "Reserve seat",
+        "url": "https://pkrr.io/reg/50k-turbo-ziov0"
+      },
+      "createdAt": "2026-08-25T07:10:29.439Z",
+      "updatedAt": "2026-08-25T07:10:29.439Z",
+      "rawPayload": {
+        "path": "/reg/50k-turbo-ziov0",
+        "date": "2026-08-25",
+        "time": "6:05 p. m."
+      },
+      "confidence": 0.95,
+      "needsReview": false
+    },
+    {
+      "id": "pkrr:50k-turbo-bounty-50k-q4tk0",
+      "sourceId": "pkrr-hash-poker",
+      "externalId": "50k-turbo-bounty-50k-q4tk0",
+      "slug": "hash-poker-50k-turbo-bounty-50k-2026-08-27",
+      "title": "50K TURBO (Bounty 50k)",
+      "description": "Nuestro Torneo 50K es la opción más económica y accesible para disfrutar del poker en Hash. Perfecto para quienes quieren jugar más seguido, mejorar su nivel o simplemente pasar una gran noche con la comunidad. Con una estructura ágil y mesas llenas de buena vibra, el 50K se ha convertido en el punto de entrada ideal para nuevos jugadores y una oportunidad constante para quienes ya hacen parte de la familia Hash. Si buscas buen juego, ambiente relajado y un torneo que cuida el bolsillo… este es el tuyo. ¡Te esperamos en las mesas!",
+      "eventType": "poker_room_event",
+      "startsAt": "2026-08-27T18:05:00-05:00",
+      "endsAt": null,
+      "timezone": "America/Bogota",
+      "venueName": "Hash House Club",
+      "address": "Provenza, El Poblado",
+      "city": "Medellín",
+      "country": "Colombia",
+      "coverImage": "https://pkrr.io/event-covers/50k-turbo-bounty-50k-q4tk0-1787413298499-0f509ba1.jpg",
+      "sourceUrl": "https://pkrr.io/reg/50k-turbo-bounty-50k-q4tk0",
+      "organizerName": "Hash Poker Room",
+      "organizerLogo": "https://pkrr.io/club-headers/hash-poker-1780960689943.jpg",
+      "recurrence": {
+        "frequency": "weekly",
+        "interval": 1,
+        "weekdays": [
+          4
+        ]
+      },
+      "status": "upcoming",
+      "tags": [
+        "Weekly Poker Room",
+        "Community Tournament",
+        "Medellín"
+      ],
+      "agenda": [
+        {
+          "id": "50k-turbo-bounty-50k-q4tk0-arrival",
+          "time": "6:05 p. m.",
+          "title": "Member arrival and QR check-in",
+          "type": "registration"
+        },
+        {
+          "id": "50k-turbo-bounty-50k-q4tk0-start",
+          "time": "6:05 p. m.",
+          "title": "50K TURBO (Bounty 50k)",
+          "type": "community_event"
+        }
+      ],
+      "speakers": [],
+      "sponsors": [],
+      "benefits": [
+        "Member smart pass",
+        "Attendance history",
+        "Community networking"
+      ],
+      "networkingEnabled": true,
+      "checkinEnabled": true,
+      "cta": {
+        "label": "Reserve seat",
+        "url": "https://pkrr.io/reg/50k-turbo-bounty-50k-q4tk0"
+      },
+      "createdAt": "2026-08-25T07:10:29.439Z",
+      "updatedAt": "2026-08-25T07:10:29.439Z",
+      "rawPayload": {
+        "path": "/reg/50k-turbo-bounty-50k-q4tk0",
+        "date": "2026-08-27",
+        "time": "6:05 p. m."
+      },
+      "confidence": 0.95,
+      "needsReview": false
+    },
+    {
+      "id": "pkrr:100k-main-event-4vq1u",
+      "sourceId": "pkrr-hash-poker",
+      "externalId": "100k-main-event-4vq1u",
+      "slug": "hash-poker-100k-main-event-2026-08-29",
+      "title": "100K MAIN EVENT",
+      "description": "Nuestro Torneo 150K es el Main Event de Hash: la mesa donde todo se define. Con una estructura profunda, un ritmo emocionante y premios que realmente hacen la diferencia, este torneo se ha convertido en el evento más importante de la semana para nuestra comunidad. Es el espacio donde se encuentran jugadores de todos los niveles para competir, mejorar su juego y poner a prueba sus habilidades en un ambiente competitivo, pero siempre acompañado de la mejor energía de Hash. Aquí se crean historias, se construyen rivalidades sanas y se viven esos momentos que seguimos comentando durante toda la semana. Si disfrutas del buen poker, de las decisiones importantes y de la emoción de llegar lejos en un torneo, este es el evento que no te puedes perder. ♠️ Bienvenido al Main Event de Hash. Nos vemos en las mesas. ♣️",
+      "eventType": "community_tournament",
+      "startsAt": "2026-08-29T14:00:00-05:00",
+      "endsAt": null,
+      "timezone": "America/Bogota",
+      "venueName": "Hash House Club",
+      "address": "Provenza, El Poblado",
+      "city": "Medellín",
+      "country": "Colombia",
+      "coverImage": "https://pkrr.io/event-covers/100k-main-event-4vq1u-1787413341233-a2638e9e.jpg",
+      "sourceUrl": "https://pkrr.io/reg/100k-main-event-4vq1u",
+      "organizerName": "Hash Poker Room",
+      "organizerLogo": "https://pkrr.io/club-headers/hash-poker-1780960689943.jpg",
+      "recurrence": {
+        "frequency": "weekly",
+        "interval": 1,
+        "weekdays": [
+          6
+        ]
+      },
+      "status": "upcoming",
+      "tags": [
+        "Weekly Poker Room",
+        "Community Tournament",
+        "Medellín"
+      ],
+      "agenda": [
+        {
+          "id": "100k-main-event-4vq1u-arrival",
+          "time": "2 p. m.",
+          "title": "Member arrival and QR check-in",
+          "type": "registration"
+        },
+        {
+          "id": "100k-main-event-4vq1u-start",
+          "time": "2 p. m.",
+          "title": "100K MAIN EVENT",
+          "type": "community_event"
+        }
+      ],
+      "speakers": [],
+      "sponsors": [],
+      "benefits": [
+        "Member smart pass",
+        "Attendance history",
+        "Community networking"
+      ],
+      "networkingEnabled": true,
+      "checkinEnabled": true,
+      "cta": {
+        "label": "Reserve seat",
+        "url": "https://pkrr.io/reg/100k-main-event-4vq1u"
+      },
+      "createdAt": "2026-08-25T07:10:29.439Z",
+      "updatedAt": "2026-08-25T07:10:29.439Z",
+      "rawPayload": {
+        "path": "/reg/100k-main-event-4vq1u",
+        "date": "2026-08-29",
+        "time": "2 p. m."
       },
       "confidence": 0.95,
       "needsReview": false
