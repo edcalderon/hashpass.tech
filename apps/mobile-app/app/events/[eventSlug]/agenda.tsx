@@ -34,6 +34,7 @@ import {
   buildGoogleCalendarUrl,
   buildICalendarFile,
   createAgendaCalendarEvent,
+  resolveAgendaCalendarSpeakerNames,
 } from '../../../lib/agenda-calendar';
 
 // Custom filter logic for agenda items
@@ -167,7 +168,14 @@ export default function BSL2025AgendaScreen() {
       eventStartDate: event.eventStartDate,
       eventTimezoneOffset: eventTzOffset,
       agendaUrl: `${origin}/events/${encodeURIComponent(eventId)}/agenda?session=${encodeURIComponent(item.id)}`,
-      item: { ...item, location: itemLocation },
+      item: {
+        ...item,
+        location: itemLocation,
+        speakers: resolveAgendaCalendarSpeakerNames(
+          item.speakers,
+          (speakerReference) => resolveAgendaSpeaker(speakerReference).displayName,
+        ),
+      },
     });
   };
 

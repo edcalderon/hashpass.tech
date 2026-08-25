@@ -2,6 +2,7 @@ import {
   buildGoogleCalendarUrl,
   buildICalendarFile,
   createAgendaCalendarEvent,
+  resolveAgendaCalendarSpeakerNames,
 } from "../../lib/agenda-calendar";
 
 const source = {
@@ -30,6 +31,42 @@ describe("agenda calendar links", () => {
       location: "Main Stage",
       url: source.agendaUrl,
     }));
+  });
+
+  it.each([
+    ["panel", "2026-08-06T15:30:00.000Z"],
+    ["meal", "2026-08-06T15:30:00.000Z"],
+    ["break", "2026-08-06T14:45:00.000Z"],
+  ])("uses the agenda type fallback for a live %s session", (type, endTime) => {
+    const calendarEvent = createAgendaCalendarEvent({
+      ...source,
+      item: {
+        ...source.item,
+        time: "2026-08-06T09:30:00-05:00",
+        type,
+      },
+    });
+
+    expect(calendarEvent.end).toEqual(new Date(endTime));
+  });
+
+  it("uses resolved speaker names instead of agenda references in calendar details", () => {
+    const namesByReference = new Map([
+      ["paul-castillo", "Paul Castillo"],
+      ["a1b2c3d4", "Ada Lovelace"],
+    ]);
+    const speakers = resolveAgendaCalendarSpeakerNames(
+      ["paul-castillo", "a1b2c3d4"],
+      (reference) => namesByReference.get(reference) || reference,
+    );
+    const calendarEvent = createAgendaCalendarEvent({
+      ...source,
+      item: { ...source.item, speakers },
+    });
+
+    expect(calendarEvent.description).toContain("Speakers: Paul Castillo, Ada Lovelace");
+    expect(calendarEvent.description).not.toContain("paul-castillo");
+    expect(calendarEvent.description).not.toContain("a1b2c3d4");
   });
 
   it("creates a Google Calendar URL with session details and an iCalendar file for other calendar apps", () => {

@@ -1,3 +1,5 @@
+import { getDefaultDurationMinutes } from '../types/agenda';
+
 export type AgendaCalendarSource = {
   eventId: string;
   eventName: string;
@@ -13,6 +15,7 @@ export type AgendaCalendarSource = {
     speakers?: string[];
     location?: string;
     duration_minutes?: number;
+    type?: string;
   };
 };
 
@@ -60,6 +63,11 @@ const escapeIcsText = (value: string) => value
   .replace(/,/g, '\\,')
   .replace(/\r?\n/g, '\\n');
 
+export const resolveAgendaCalendarSpeakerNames = (
+  speakerReferences: string[] | undefined,
+  resolveSpeakerName: (reference: string) => string,
+): string[] | undefined => speakerReferences?.map(resolveSpeakerName);
+
 export const createAgendaCalendarEvent = (source: AgendaCalendarSource): AgendaCalendarEvent => {
   const isoTime = new Date(source.item.time);
   const range = source.item.time.trim().match(TIME_RANGE);
@@ -68,7 +76,7 @@ export const createAgendaCalendarEvent = (source: AgendaCalendarSource): AgendaC
 
   if (!Number.isNaN(isoTime.getTime()) && source.item.time.includes('T')) {
     start = isoTime;
-    end = new Date(start.getTime() + (source.item.duration_minutes || 30) * 60_000);
+    end = new Date(start.getTime() + (source.item.duration_minutes || getDefaultDurationMinutes(source.item.type)) * 60_000);
   } else if (range) {
     const date = eventDay(source.eventStartDate, source.item.day);
     start = atEventTime(date, Number(range[1]), Number(range[2]), source.eventTimezoneOffset);
