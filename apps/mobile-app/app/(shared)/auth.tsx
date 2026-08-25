@@ -600,7 +600,7 @@ const DesktopHeroPanel = ({
                 animationLevel === "full" ? null : styles.desktopHeroRailStatic,
               ]}
             >
-              {allyRailItems.map((ally, index) => (
+              {allyRailItems.map((ally: ReturnType<typeof getAuthAllies>[number], index: number) => (
                 <Pressable
                   key={`${ally.id}-${index}`}
                   style={[
@@ -1091,6 +1091,9 @@ export default function AuthScreen() {
         options: {
           emailRedirectTo: redirectTo,
           shouldCreateUser: true,
+          // Supabase exposes this in its email template as .Data.locale.
+          // The unified template uses it to select the recipient's language.
+          data: { locale: currentLocale },
         },
       });
 

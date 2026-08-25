@@ -28,6 +28,9 @@ const mockShowSuccess = jest.fn();
 const mockShowError = jest.fn();
 const mockShowWarning = jest.fn();
 const mockRetryDatabaseSession = jest.fn();
+const mockFileSystemWriteAsStringAsync = jest.fn();
+const mockSharingIsAvailableAsync = jest.fn();
+const mockSharingShareAsync = jest.fn();
 const mockT = (key: string) => key;
 
 const mockEvent: any = {
@@ -157,6 +160,16 @@ jest.mock('expo-haptics', () => ({
   impactAsync: (...args: unknown[]) => mockImpactAsync(...args),
 }));
 
+jest.mock('expo-file-system', () => ({
+  cacheDirectory: 'file:///cache/',
+  writeAsStringAsync: (...args: unknown[]) => mockFileSystemWriteAsStringAsync(...args),
+}));
+
+jest.mock('expo-sharing', () => ({
+  isAvailableAsync: (...args: unknown[]) => mockSharingIsAvailableAsync(...args),
+  shareAsync: (...args: unknown[]) => mockSharingShareAsync(...args),
+}));
+
 jest.mock('@contexts/EventContext', () => ({
   useEvent: () => ({
     event: mockActiveEvent,
@@ -223,6 +236,59 @@ import MyScheduleScreen from '../../app/events/[eventSlug]/networking/my-schedul
 const flushPromises = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
 
 describe('event schedule screens', () => {
+  const calendarAgendaItem = {
+    id: 'calendar-agenda-1',
+    day: '1',
+    time: '09:00-10:00',
+    title: 'Calendar-ready keynote',
+    type: 'keynote',
+  };
+
+  const renderCalendarAgenda = async () => {
+    // Calendar handoffs are native flows; iOS also avoids the web-only
+    // location.origin branch absent from this renderer harness.
+    mockPlatform = 'ios';
+    require('react-native').Platform.OS = mockPlatform;
+    mockActiveEvent = {
+      ...mockEvent,
+      id: 'calendar-event',
+      name: 'Calendar Event',
+      eventStartDate: '2026-08-05T09:00:00-04:00',
+      eventEndDate: '2026-08-05T18:00:00-04:00',
+      agenda: [],
+    };
+    mockApiRequest.mockImplementation((path: string) => Promise.resolve({
+      success: true,
+      data: { data: path === 'events/calendar-event/agenda' ? [calendarAgendaItem] : [] },
+    }));
+
+    let renderer: TestRenderer.ReactTestRenderer;
+    await act(async () => {
+      renderer = TestRenderer.create(<AgendaScreen />);
+      for (let index = 0; index < 4; index += 1) await flushPromises();
+    });
+    return renderer!;
+  };
+
+  const openCalendarPicker = async (renderer: TestRenderer.ReactTestRenderer) => {
+    const openPicker = renderer.root.findByProps({ accessibilityLabel: 'calendar.openPicker' });
+    await act(async () => {
+      openPicker.props.onPress();
+      await flushPromises();
+    });
+    const modal = renderer.root
+      .findAllByType('Modal' as any)
+      .find((node) => node.findAllByType(Text).some((text) => text.children.join('') === 'calendar.eyebrow'));
+    expect(modal).toBeDefined();
+    expect(modal!.props.visible).toBe(true);
+    expect(modal!.findAllByType(Text).some((node) => node.children.join('') === calendarAgendaItem.title)).toBe(true);
+    return modal!;
+  };
+
+  const calendarModal = (renderer: TestRenderer.ReactTestRenderer) => renderer.root
+    .findAllByType('Modal' as any)
+    .find((node) => node.findAllByType(Text).some((text) => text.children.join('') === 'calendar.eyebrow'))!;
+
   beforeEach(() => {
     mockWindowWidth = 1024;
     mockPlatform = 'web';
@@ -237,7 +303,13 @@ describe('event schedule screens', () => {
     mockShowError.mockReset();
     mockShowWarning.mockReset();
     mockRetryDatabaseSession.mockReset();
+    mockFileSystemWriteAsStringAsync.mockReset();
+    mockSharingIsAvailableAsync.mockReset();
+    mockSharingShareAsync.mockReset();
     mockRetryDatabaseSession.mockResolvedValue(undefined);
+    mockFileSystemWriteAsStringAsync.mockResolvedValue(undefined);
+    mockSharingIsAvailableAsync.mockResolvedValue(true);
+    mockSharingShareAsync.mockResolvedValue(undefined);
     mockAuthState = { user: null, dbUserId: 'auth-user-uuid', retryDatabaseSession: mockRetryDatabaseSession };
     mockSupabase.from.mockClear();
     mockUserTableMaybeSingle.mockReset();
@@ -248,6 +320,8 @@ describe('event schedule screens', () => {
 
     const rn = require('react-native');
     rn.Platform.OS = mockPlatform;
+    rn.Linking.openURL.mockReset();
+    rn.Linking.openURL.mockResolvedValue(undefined);
     rn.InteractionManager = {
       runAfterInteractions: jest.fn((callback: () => void) => {
         callback();
@@ -371,6 +445,127 @@ describe('event schedule screens', () => {
     await act(async () => {
       renderer!.unmount();
     });
+  });
+
+  it('opens the calendar picker and sends the selected session to Google Calendar', async () => {
+    const renderer = await renderCalendarAgenda();
+    await openCalendarPicker(renderer);
+
+    const googleCalendar = renderer.root.findByProps({ accessibilityLabel: 'calendar.google' });
+    await act(async () => {
+      googleCalendar.props.onPress();
+      await flushPromises();
+    });
+
+    expect(require('react-native').Linking.openURL).toHaveBeenCalledWith(
+      expect.stringMatching(/^https:\/\/calendar\.google\.com\/calendar\/render\?action=TEMPLATE/),
+    );
+    expect(calendarModal(renderer).props.visible).toBe(false);
+
+    await act(async () => renderer.unmount());
+  });
+
+  it('dismisses the top-right calendar picker control', async () => {
+    const renderer = await renderCalendarAgenda();
+    await openCalendarPicker(renderer);
+
+    const closePicker = renderer.root.findByProps({ accessibilityLabel: 'calendar.close' });
+    await act(async () => {
+      closePicker.props.onPress();
+      await flushPromises();
+    });
+
+    expect(calendarModal(renderer).props.visible).toBe(false);
+
+    await act(async () => renderer.unmount());
+  });
+
+  it('reports a rejected Google Calendar handoff after dismissing the picker', async () => {
+    require('react-native').Linking.openURL.mockRejectedValueOnce(new Error('Google Calendar unavailable'));
+    const renderer = await renderCalendarAgenda();
+    await openCalendarPicker(renderer);
+
+    const googleCalendar = renderer.root.findByProps({ accessibilityLabel: 'calendar.google' });
+    await act(async () => {
+      googleCalendar.props.onPress();
+      await flushPromises();
+    });
+
+    expect(mockShowError).toHaveBeenCalledWith('messages.error', 'calendar.googleError');
+    expect(calendarModal(renderer).props.visible).toBe(false);
+
+    await act(async () => renderer.unmount());
+  });
+
+  it('exports the selected calendar session through the iOS share sheet', async () => {
+    const renderer = await renderCalendarAgenda();
+    await openCalendarPicker(renderer);
+
+    const appleCalendar = renderer.root.findByProps({ accessibilityLabel: 'calendar.apple' });
+    await act(async () => {
+      appleCalendar.props.onPress();
+      await flushPromises();
+    });
+
+    expect(mockFileSystemWriteAsStringAsync).toHaveBeenCalledWith(
+      'file:///cache/hashpass-calendar-event-calendar-agenda-1.ics',
+      expect.stringContaining('BEGIN:VCALENDAR'),
+    );
+    expect(mockSharingShareAsync).toHaveBeenCalledWith(
+      'file:///cache/hashpass-calendar-event-calendar-agenda-1.ics',
+      {
+        mimeType: 'text/calendar',
+        UTI: 'com.apple.icalendar',
+        dialogTitle: 'calendar.shareTitle',
+      },
+    );
+    expect(calendarModal(renderer).props.visible).toBe(false);
+
+    await act(async () => renderer.unmount());
+  });
+
+  it('exports the selected calendar session from the iCalendar download action', async () => {
+    const renderer = await renderCalendarAgenda();
+    await openCalendarPicker(renderer);
+
+    const downloadCalendar = renderer.root.findByProps({ accessibilityLabel: 'calendar.download' });
+    await act(async () => {
+      downloadCalendar.props.onPress();
+      await flushPromises();
+    });
+
+    expect(mockFileSystemWriteAsStringAsync).toHaveBeenCalledWith(
+      'file:///cache/hashpass-calendar-event-calendar-agenda-1.ics',
+      expect.stringContaining('BEGIN:VCALENDAR'),
+    );
+    expect(mockSharingShareAsync).toHaveBeenCalledWith(
+      'file:///cache/hashpass-calendar-event-calendar-agenda-1.ics',
+      expect.objectContaining({
+        mimeType: 'text/calendar',
+        UTI: 'com.apple.icalendar',
+      }),
+    );
+    expect(calendarModal(renderer).props.visible).toBe(false);
+
+    await act(async () => renderer.unmount());
+  });
+
+  it('reports unavailable native calendar sharing after dismissing the picker', async () => {
+    mockSharingIsAvailableAsync.mockResolvedValueOnce(false);
+    const renderer = await renderCalendarAgenda();
+    await openCalendarPicker(renderer);
+
+    const appleCalendar = renderer.root.findByProps({ accessibilityLabel: 'calendar.apple' });
+    await act(async () => {
+      appleCalendar.props.onPress();
+      await flushPromises();
+    });
+
+    expect(mockFileSystemWriteAsStringAsync).not.toHaveBeenCalled();
+    expect(mockShowError).toHaveBeenCalledWith('messages.error', 'calendar.exportError');
+    expect(calendarModal(renderer).props.visible).toBe(false);
+
+    await act(async () => renderer.unmount());
   });
 
   it('keeps the latest event agenda when an earlier event request resolves late', async () => {

@@ -1,3 +1,18 @@
+## [1.9.25](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.24...v1.9.25) (2026-08-25)
+
+
+### Bug Fixes
+
+* **auth:** repair magic links and simplify calendar actions ([da21979](https://github.com/hashpass-tech/hashpass.tech/commit/da21979f57c473003d1abf14a2f764c62455a250))
+### Release Highlights
+- repair magic links and simplify calendar actions
+
+### Release scope
+- Compared with: `v1.9.24` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+
 ## [1.9.24](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.23...v1.9.24) (2026-08-25)
 
 

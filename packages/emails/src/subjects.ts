@@ -17,6 +17,14 @@ const SUBJECTS: Record<EmailTemplate, Record<EmailLocale, string>> = {
     pt: '🔐 Bem-vindo ao HASHPASS!',
     de: '🔐 Willkommen bei HASHPASS!',
   },
+  'auth-magic-link': {
+    en: 'Your secure HASHPASS sign-in link',
+    es: 'Tu enlace seguro de acceso a HASHPASS',
+    ko: '안전한 HASHPASS 로그인 링크',
+    fr: 'Votre lien de connexion sécurisé HASHPASS',
+    pt: 'Seu link seguro de acesso à HASHPASS',
+    de: 'Dein sicherer HASHPASS-Anmeldelink',
+  },
 };
 
 export function getSubject(template: EmailTemplate, locale: string): string {

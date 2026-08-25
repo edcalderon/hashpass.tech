@@ -20,17 +20,16 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.24)
+## 📋 Latest Changes (v1.9.25)
 
-### Features
+### Bug Fixes
 
-* **agenda:** add calendar links for sessions ([1e5bfec](https://github.com/hashpass-tech/hashpass.tech/commit/1e5bfec79ef8000713a3e66d677ffbda6383e38d))
-* **email:** refresh Hashpass welcome experience ([1fce82a](https://github.com/hashpass-tech/hashpass.tech/commit/1fce82a954639e1ba9986cb082c9852823fbc96c))
+* **auth:** repair magic links and simplify calendar actions ([da21979](https://github.com/hashpass-tech/hashpass.tech/commit/da21979f57c473003d1abf14a2f764c62455a250))
 ### Release Highlights
-- refresh Hashpass welcome experience; add calendar links for sessions
+- repair magic links and simplify calendar actions
 
 ### Release scope
-- Compared with: `v1.9.23` (the previous global release tag)
+- Compared with: `v1.9.24` (the previous global release tag)
 
 ### Affected products & packages
 - Mobile app

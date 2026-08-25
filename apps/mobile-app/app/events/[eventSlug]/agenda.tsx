@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, InteractionManager, Linking, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, InteractionManager, Linking, Modal, Platform, Pressable } from 'react-native';
 import { useEvent } from '@contexts/EventContext';
 import { useTheme } from '../../../hooks/useTheme';
 // lib/vector-icons routes web to SVG-based Lucide icons instead of the raw
@@ -140,6 +140,9 @@ export default function BSL2025AgendaScreen() {
     added: true,
     slotStartTime: null,
   });
+  // Calendar export is intentionally a secondary, per-session action. Keeping
+  // the choice in a modal preserves the agenda card's scan-friendly layout.
+  const [calendarPickerItem, setCalendarPickerItem] = useState<AgendaItem | null>(null);
   const [speakerMapRef, setSpeakerMapRef] = useState<Map<string, { id: string; name: string; image?: string }>>(new Map());
   const eventId = event?.id || 'bsl';
   const agendaApiPath = eventApiPath(eventId, 'agenda');
@@ -173,7 +176,7 @@ export default function BSL2025AgendaScreen() {
         location: itemLocation,
         speakers: resolveAgendaCalendarSpeakerNames(
           item.speakers,
-          (speakerReference) => resolveAgendaSpeaker(speakerReference).displayName,
+          (speakerReference: string) => resolveAgendaSpeaker(speakerReference).displayName,
         ),
       },
     });
@@ -231,6 +234,18 @@ export default function BSL2025AgendaScreen() {
       console.error('Unable to export calendar event:', error);
       showError(t('messages.error', 'Error'), t('calendar.exportError', 'Unable to create a calendar file. Please try again.'));
     }
+  };
+
+  const handleCalendarPickerAction = async (action: 'google' | 'ics') => {
+    const item = calendarPickerItem;
+    if (!item) return;
+
+    setCalendarPickerItem(null);
+    if (action === 'google') {
+      await handleAddToGoogleCalendar(item);
+      return;
+    }
+    await handleExportCalendarFile(item);
   };
 
   // Helper functions used in effects and render
@@ -1229,6 +1244,15 @@ export default function BSL2025AgendaScreen() {
               <View style={[styles.agendaTypeBadge, { backgroundColor: 'rgba(255, 255, 255, 0.25)' }]}>
                 <Text style={[styles.agendaTypeText, { color: '#FFFFFF' }]}>{t(`types.${item.type}`, item.type).toUpperCase()}</Text>
               </View>
+              <TouchableOpacity
+                onPress={() => setCalendarPickerItem(item)}
+                style={styles.calendarMenuButton}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                accessibilityRole="button"
+                accessibilityLabel={t('calendar.openPicker', 'Add this session to a calendar')}
+              >
+                <MaterialIcons name="event" size={17} color="#FFFFFF" />
+              </TouchableOpacity>
             </View>
           </View>
         </View>
@@ -1339,32 +1363,6 @@ export default function BSL2025AgendaScreen() {
               />
               <Text style={[styles.actionButtonLabel, { color: isConfirmed ? colors.success.main : colors.text.secondary }]}>
                 {isConfirmed ? t('actions.onAgenda', 'On agenda') : t('actions.addToAgenda', 'Add to agenda')}
-              </Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.calendarActions}>
-            <TouchableOpacity
-              onPress={() => handleAddToGoogleCalendar(item)}
-              style={styles.calendarButton}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              accessibilityRole="button"
-              accessibilityLabel={t('calendar.google', 'Add to Google Calendar')}
-            >
-              <MaterialIcons name="event" size={18} color={colors.primary} />
-              <Text style={[styles.actionButtonLabel, { color: colors.primary }]}>
-                {t('calendar.google', 'Google Calendar')}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => handleExportCalendarFile(item)}
-              style={styles.calendarButton}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              accessibilityRole="button"
-              accessibilityLabel={t('calendar.other', 'Add to another calendar with iCalendar')}
-            >
-              <MaterialIcons name="download" size={18} color={colors.primary} />
-              <Text style={[styles.actionButtonLabel, { color: colors.primary }]}>
-                {t('calendar.other', 'Other calendar (.ics)')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -1628,6 +1626,76 @@ export default function BSL2025AgendaScreen() {
           );
         }}
       />
+      <Modal
+        visible={Boolean(calendarPickerItem)}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setCalendarPickerItem(null)}
+      >
+        <View style={styles.calendarModalOverlay}>
+          <Pressable style={styles.calendarModalBackdrop} onPress={() => setCalendarPickerItem(null)} />
+          <View style={styles.calendarModalCard}>
+            <View style={styles.calendarModalHeading}>
+              <View>
+                <Text style={styles.calendarModalEyebrow}>{t('calendar.eyebrow', 'SESSION REMINDER')}</Text>
+                <Text style={styles.calendarModalTitle}>{t('calendar.title', 'Add to calendar')}</Text>
+              </View>
+              <TouchableOpacity
+                accessibilityRole="button"
+                accessibilityLabel={t('calendar.close', 'Close calendar options')}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                onPress={() => setCalendarPickerItem(null)}
+                style={styles.calendarModalClose}
+              >
+                <MaterialIcons name="close" size={20} color={colors.text.secondary} />
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.calendarModalSession} numberOfLines={2}>
+              {calendarPickerItem?.title || t('messages.untitledEvent')}
+            </Text>
+            <Text style={styles.calendarModalHint}>
+              {t('calendar.chooseHint', 'Choose where you want to save this session.')}
+            </Text>
+
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel={t('calendar.google', 'Add to Google Calendar')}
+              onPress={() => void handleCalendarPickerAction('google')}
+              style={[styles.calendarChoice, styles.calendarChoicePrimary]}
+            >
+              <MaterialIcons name="event" size={20} color="#FFFFFF" />
+              <View style={styles.calendarChoiceCopy}>
+                <Text style={styles.calendarChoiceTitlePrimary}>{t('calendar.google', 'Google Calendar')}</Text>
+                <Text style={styles.calendarChoiceDetailPrimary}>{t('calendar.googleDetail', 'Open a ready-to-save event')}</Text>
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel={t('calendar.apple', 'Apple Calendar (iCalendar)')}
+              onPress={() => void handleCalendarPickerAction('ics')}
+              style={styles.calendarChoice}
+            >
+              <MaterialIcons name="event" size={20} color={colors.primary} />
+              <View style={styles.calendarChoiceCopy}>
+                <Text style={styles.calendarChoiceTitle}>{t('calendar.apple', 'Apple Calendar')}</Text>
+                <Text style={styles.calendarChoiceDetail}>{t('calendar.appleDetail', 'Use the iCalendar file')}</Text>
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel={t('calendar.download', 'Download .ics file')}
+              onPress={() => void handleCalendarPickerAction('ics')}
+              style={styles.calendarChoice}
+            >
+              <MaterialIcons name="download" size={20} color={colors.text.secondary} />
+              <View style={styles.calendarChoiceCopy}>
+                <Text style={styles.calendarChoiceTitle}>{t('calendar.download', 'Download .ics')}</Text>
+                <Text style={styles.calendarChoiceDetail}>{t('calendar.downloadDetail', 'For Outlook and other calendar apps')}</Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   </View>
   );
@@ -1813,6 +1881,16 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 6,
   },
+  calendarMenuButton: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.16)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.28)',
+  },
   agendaTypeText: {
     fontSize: 10,
     fontWeight: '700',
@@ -1881,24 +1959,104 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     borderColor: colors.divider,
     backgroundColor: isDark ? 'rgba(255, 255, 255, 0.04)' : colors.background.paper,
   },
-  calendarActions: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 8,
-  },
-  calendarButton: {
+  calendarModalOverlay: {
     flex: 1,
+    justifyContent: 'flex-end',
+  },
+  calendarModalBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(3, 12, 24, 0.56)',
+  },
+  calendarModalCard: {
+    backgroundColor: colors.background.paper,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 28,
+    borderWidth: 1,
+    borderColor: isDark ? 'rgba(255,255,255,0.10)' : 'rgba(7,17,30,0.08)',
+  },
+  calendarModalHeading: {
     flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+  },
+  calendarModalEyebrow: {
+    color: colors.primary,
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 1.2,
+    marginBottom: 4,
+  },
+  calendarModalTitle: {
+    color: colors.text.primary,
+    fontSize: 22,
+    fontWeight: '800',
+    letterSpacing: -0.4,
+  },
+  calendarModalClose: {
+    width: 36,
+    height: 36,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 5,
-    minHeight: 38,
-    paddingHorizontal: 8,
-    paddingVertical: 8,
-    borderRadius: 8,
+    borderRadius: 18,
+    backgroundColor: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(7,17,30,0.05)',
+  },
+  calendarModalSession: {
+    color: colors.text.primary,
+    fontSize: 15,
+    fontWeight: '700',
+    lineHeight: 21,
+    marginTop: 18,
+  },
+  calendarModalHint: {
+    color: colors.text.secondary,
+    fontSize: 13,
+    lineHeight: 19,
+    marginTop: 4,
+    marginBottom: 18,
+  },
+  calendarChoice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 13,
+    minHeight: 64,
+    paddingHorizontal: 15,
+    paddingVertical: 12,
     borderWidth: 1,
+    borderColor: colors.divider,
+    borderRadius: 14,
+    marginTop: 9,
+    backgroundColor: isDark ? 'rgba(255,255,255,0.035)' : 'rgba(7,17,30,0.025)',
+  },
+  calendarChoicePrimary: {
+    backgroundColor: colors.primary,
     borderColor: colors.primary,
-    backgroundColor: isDark ? 'rgba(0, 122, 255, 0.12)' : 'rgba(0, 122, 255, 0.06)',
+    marginTop: 0,
+  },
+  calendarChoiceCopy: {
+    flex: 1,
+  },
+  calendarChoiceTitle: {
+    color: colors.text.primary,
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  calendarChoiceTitlePrimary: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  calendarChoiceDetail: {
+    color: colors.text.secondary,
+    fontSize: 12,
+    marginTop: 2,
+  },
+  calendarChoiceDetailPrimary: {
+    color: 'rgba(255,255,255,0.78)',
+    fontSize: 12,
+    marginTop: 2,
   },
   actionButtonLabel: {
     fontSize: 12,

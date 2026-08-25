@@ -22,23 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202608250709, // Updated to current timestamp
+  buildNumber: 202608250926, // Updated to current timestamp
   releaseDate: '2026-08-25',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'refresh Hashpass welcome experience',
-    'add calendar links for sessions'
+    // No new features
   ],
   bugfixes: [
-    // No bugfixes
+    'repair magic links and simplify calendar actions'
   ],
   breakingChanges: [],
-  notes: 'refresh Hashpass welcome experience; add calendar links for sessions'
+  notes: 'repair magic links and simplify calendar actions'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.25': {
+    version: '1.9.25',
+    buildNumber: 202608250926,
+    releaseDate: '2026-08-25',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'repair magic links and simplify calendar actions'
+    ],
+    breakingChanges: [],
+    notes: 'repair magic links and simplify calendar actions'
+  },
   '1.9.24': {
     version: '1.9.24',
     buildNumber: 202608250709,
