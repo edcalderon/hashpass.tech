@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, InteractionManager } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, InteractionManager, Linking, Platform } from 'react-native';
 import { useEvent } from '@contexts/EventContext';
 import { useTheme } from '../../../hooks/useTheme';
 // lib/vector-icons routes web to SVG-based Lucide icons instead of the raw
@@ -30,6 +30,11 @@ import * as Haptics from 'expo-haptics';
 import { parseISO } from 'date-fns';
 import LoadingScreen from '../../../components/LoadingScreen';
 import { useTranslation, getCurrentLocale } from '../../../i18n/i18n';
+import {
+  buildGoogleCalendarUrl,
+  buildICalendarFile,
+  createAgendaCalendarEvent,
+} from '../../../lib/agenda-calendar';
 
 // Custom filter logic for agenda items
 const customAgendaFilterLogic = (
@@ -143,6 +148,82 @@ export default function BSL2025AgendaScreen() {
     ? `${event.tour.city}, ${event.tour.country}`
     : event?.subtitle || 'Latin America';
   const eventVenueLabel = event?.tour?.venue || eventLocationLabel;
+
+  const createCalendarEvent = (item: AgendaItem) => {
+    if (!event?.eventStartDate) {
+      throw new Error(t('calendar.unavailable', 'This session does not have a calendar-ready event date yet.'));
+    }
+
+    const origin = Platform.OS === 'web' && typeof window !== 'undefined'
+      ? window.location.origin
+      : 'https://hashpass.tech';
+    const itemLocation = item.location ||
+      (item.type === 'keynote' ? t('locations.mainStage') :
+        item.type === 'registration' ? t('locations.registrationArea') : eventVenueLabel);
+
+    return createAgendaCalendarEvent({
+      eventId,
+      eventName: event.name,
+      eventStartDate: event.eventStartDate,
+      eventTimezoneOffset: eventTzOffset,
+      agendaUrl: `${origin}/events/${encodeURIComponent(eventId)}/agenda?session=${encodeURIComponent(item.id)}`,
+      item: { ...item, location: itemLocation },
+    });
+  };
+
+  const handleAddToGoogleCalendar = async (item: AgendaItem) => {
+    try {
+      await Linking.openURL(buildGoogleCalendarUrl(createCalendarEvent(item)));
+    } catch (error) {
+      console.error('Unable to open Google Calendar:', error);
+      showError(t('messages.error', 'Error'), t('calendar.googleError', 'Unable to open Google Calendar. Please try again.'));
+    }
+  };
+
+  const handleExportCalendarFile = async (item: AgendaItem) => {
+    try {
+      const calendarEvent = createCalendarEvent(item);
+      const contents = buildICalendarFile(calendarEvent);
+      const filename = `hashpass-${eventId}-${item.id}.ics`.replace(/[^a-z0-9._-]/gi, '-');
+
+      if (Platform.OS === 'web') {
+        const blob = new Blob([contents], { type: 'text/calendar;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = filename;
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+        URL.revokeObjectURL(url);
+        return;
+      }
+
+      // Native uses the operating system's share sheet. This lets the person
+      // choose Apple Calendar, Outlook, Samsung Calendar, or any installed
+      // app that supports the portable iCalendar standard.
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const FileSystem = require('expo-file-system');
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const Sharing = require('expo-sharing');
+      const canShare = await Sharing.isAvailableAsync();
+      const directory = FileSystem.cacheDirectory as string | null;
+      if (!canShare || !directory) {
+        throw new Error('Calendar file sharing is unavailable on this device.');
+      }
+
+      const fileUri = `${directory}${filename}`;
+      await FileSystem.writeAsStringAsync(fileUri, contents);
+      await Sharing.shareAsync(fileUri, {
+        mimeType: 'text/calendar',
+        UTI: 'com.apple.icalendar',
+        dialogTitle: t('calendar.shareTitle', 'Add to calendar'),
+      });
+    } catch (error) {
+      console.error('Unable to export calendar event:', error);
+      showError(t('messages.error', 'Error'), t('calendar.exportError', 'Unable to create a calendar file. Please try again.'));
+    }
+  };
 
   // Helper functions used in effects and render
   const checkEventPeriod = () => {
@@ -1253,6 +1334,32 @@ export default function BSL2025AgendaScreen() {
               </Text>
             </TouchableOpacity>
           </View>
+          <View style={styles.calendarActions}>
+            <TouchableOpacity
+              onPress={() => handleAddToGoogleCalendar(item)}
+              style={styles.calendarButton}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              accessibilityRole="button"
+              accessibilityLabel={t('calendar.google', 'Add to Google Calendar')}
+            >
+              <MaterialIcons name="event" size={18} color={colors.primary} />
+              <Text style={[styles.actionButtonLabel, { color: colors.primary }]}>
+                {t('calendar.google', 'Google Calendar')}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => handleExportCalendarFile(item)}
+              style={styles.calendarButton}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              accessibilityRole="button"
+              accessibilityLabel={t('calendar.other', 'Add to another calendar with iCalendar')}
+            >
+              <MaterialIcons name="download" size={18} color={colors.primary} />
+              <Text style={[styles.actionButtonLabel, { color: colors.primary }]}>
+                {t('calendar.other', 'Other calendar (.ics)')}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     );
@@ -1765,6 +1872,25 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.divider,
     backgroundColor: isDark ? 'rgba(255, 255, 255, 0.04)' : colors.background.paper,
+  },
+  calendarActions: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 8,
+  },
+  calendarButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    minHeight: 38,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    backgroundColor: isDark ? 'rgba(0, 122, 255, 0.12)' : 'rgba(0, 122, 255, 0.06)',
   },
   actionButtonLabel: {
     fontSize: 12,
