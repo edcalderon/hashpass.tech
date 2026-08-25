@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="x-apple-disable-message-reformatting">
+    <title>HASHPASS secure sign-in link</title>
+  </head>
+  <body style="margin:0;padding:0;background:#eef3f7;color:#0a1420;font-family:Arial,Helvetica,sans-serif;">
+    <span style="display:none!important;font-size:1px;color:#eef3f7;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">Your secure HASHPASS sign-in link.</span>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#eef3f7;">
+      <tr><td align="center" style="padding:32px 16px;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;background:#ffffff;border-radius:18px;overflow:hidden;">
+          <tr><td style="padding:30px 36px;background:#07111e;"><img src="https://hashpass.tech/assets/logos/hashpass/logo-full-hashpass-white-cyan.png" width="144" alt="HASHPASS" style="display:block;width:144px;height:auto;border:0;"></td></tr>
+          <tr><td style="padding:42px 36px 26px;">
+            {{ if eq .Data.locale "es" }}
+            <div style="display:inline-block;padding:7px 12px;border:1px solid #0bc8e8;border-radius:999px;color:#007e99;background:#e8faff;font-size:11px;font-weight:700;letter-spacing:1.4px;">ACCESO SEGURO</div>
+            <h1 style="margin:22px 0 14px;font-size:32px;line-height:38px;letter-spacing:-0.7px;color:#0a1420;">Accede a<br>HASHPASS.</h1>
+            <p style="margin:0;color:#4c5c6d;font-size:16px;line-height:25px;">Usa este enlace seguro de un solo uso para continuar a tus pases, planes de eventos y conexiones.</p>
+            {{ else if eq .Data.locale "pt" }}
+            <div style="display:inline-block;padding:7px 12px;border:1px solid #0bc8e8;border-radius:999px;color:#007e99;background:#e8faff;font-size:11px;font-weight:700;letter-spacing:1.4px;">ACESSO SEGURO</div>
+            <h1 style="margin:22px 0 14px;font-size:32px;line-height:38px;letter-spacing:-0.7px;color:#0a1420;">Entre na<br>HASHPASS.</h1>
+            <p style="margin:0;color:#4c5c6d;font-size:16px;line-height:25px;">Use este link seguro, válido uma única vez, para continuar para seus passes, planos de eventos e conexões.</p>
+            {{ else if eq .Data.locale "fr" }}
+            <div style="display:inline-block;padding:7px 12px;border:1px solid #0bc8e8;border-radius:999px;color:#007e99;background:#e8faff;font-size:11px;font-weight:700;letter-spacing:1.4px;">ACCÈS SÉCURISÉ</div>
+            <h1 style="margin:22px 0 14px;font-size:32px;line-height:38px;letter-spacing:-0.7px;color:#0a1420;">Connectez-vous à<br>HASHPASS.</h1>
+            <p style="margin:0;color:#4c5c6d;font-size:16px;line-height:25px;">Utilisez ce lien sécurisé à usage unique pour retrouver vos passes, programmes d’événements et connexions.</p>
+            {{ else if eq .Data.locale "de" }}
+            <div style="display:inline-block;padding:7px 12px;border:1px solid #0bc8e8;border-radius:999px;color:#007e99;background:#e8faff;font-size:11px;font-weight:700;letter-spacing:1.4px;">SICHERER ZUGANG</div>
+            <h1 style="margin:22px 0 14px;font-size:32px;line-height:38px;letter-spacing:-0.7px;color:#0a1420;">Bei HASHPASS<br>anmelden.</h1>
+            <p style="margin:0;color:#4c5c6d;font-size:16px;line-height:25px;">Nutze diesen sicheren Einmal-Link, um zu deinen Pässen, Eventplänen und Verbindungen zu gelangen.</p>
+            {{ else if eq .Data.locale "ko" }}
+            <div style="display:inline-block;padding:7px 12px;border:1px solid #0bc8e8;border-radius:999px;color:#007e99;background:#e8faff;font-size:11px;font-weight:700;letter-spacing:1.4px;">안전한 접속</div>
+            <h1 style="margin:22px 0 14px;font-size:32px;line-height:42px;letter-spacing:-0.7px;color:#0a1420;">HASHPASS에<br>로그인하세요.</h1>
+            <p style="margin:0;color:#4c5c6d;font-size:16px;line-height:25px;">이 안전한 일회용 링크로 패스, 이벤트 일정, 그리고 연결을 계속 이용하세요.</p>
+            {{ else }}
+            <div style="display:inline-block;padding:7px 12px;border:1px solid #0bc8e8;border-radius:999px;color:#007e99;background:#e8faff;font-size:11px;font-weight:700;letter-spacing:1.4px;">SECURE ACCESS</div>
+            <h1 style="margin:22px 0 14px;font-size:32px;line-height:38px;letter-spacing:-0.7px;color:#0a1420;">Sign in to<br>HASHPASS.</h1>
+            <p style="margin:0;color:#4c5c6d;font-size:16px;line-height:25px;">Use this secure, one-time link to continue to your passes, event plans, and connections.</p>
+            {{ end }}
+          </td></tr>
+          <tr><td style="padding:12px 36px 34px;">
+            {{ if eq .Data.locale "es" }}
+            <a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:15px 22px;background:#07111e;border-radius:8px;color:#ffffff;font-size:15px;font-weight:700;letter-spacing:0.2px;text-decoration:none;">Continuar a HASHPASS&nbsp;&nbsp;→</a>
+            {{ else if eq .Data.locale "pt" }}
+            <a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:15px 22px;background:#07111e;border-radius:8px;color:#ffffff;font-size:15px;font-weight:700;letter-spacing:0.2px;text-decoration:none;">Continuar para HASHPASS&nbsp;&nbsp;→</a>
+            {{ else if eq .Data.locale "fr" }}
+            <a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:15px 22px;background:#07111e;border-radius:8px;color:#ffffff;font-size:15px;font-weight:700;letter-spacing:0.2px;text-decoration:none;">Continuer vers HASHPASS&nbsp;&nbsp;→</a>
+            {{ else if eq .Data.locale "de" }}
+            <a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:15px 22px;background:#07111e;border-radius:8px;color:#ffffff;font-size:15px;font-weight:700;letter-spacing:0.2px;text-decoration:none;">Weiter zu HASHPASS&nbsp;&nbsp;→</a>
+            {{ else if eq .Data.locale "ko" }}
+            <a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:15px 22px;background:#07111e;border-radius:8px;color:#ffffff;font-size:15px;font-weight:700;letter-spacing:0.2px;text-decoration:none;">HASHPASS 계속하기&nbsp;&nbsp;→</a>
+            {{ else }}
+            <a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:15px 22px;background:#07111e;border-radius:8px;color:#ffffff;font-size:15px;font-weight:700;letter-spacing:0.2px;text-decoration:none;">Continue to HASHPASS&nbsp;&nbsp;→</a>
+            {{ end }}
+          </td></tr>
+          <tr><td style="padding:0 36px 34px;">
+            <div style="height:1px;background:#dbe5eb;"></div>
+            {{ if eq .Data.locale "es" }}
+            <p style="margin:24px 0 0;color:#68798a;font-size:13px;line-height:20px;">Este enlace solo puede usarse una vez. Si no lo solicitaste, puedes ignorar este correo con tranquilidad.</p><p style="margin:16px 0 0;color:#68798a;font-size:13px;line-height:20px;">¿El botón no funciona? <a href="{{ .ConfirmationURL }}" style="color:#007e99;text-decoration:underline;">Abre tu enlace seguro de acceso</a>.</p>
+            {{ else if eq .Data.locale "pt" }}
+            <p style="margin:24px 0 0;color:#68798a;font-size:13px;line-height:20px;">Este link só pode ser usado uma vez. Se você não o solicitou, pode ignorar este e-mail com segurança.</p><p style="margin:16px 0 0;color:#68798a;font-size:13px;line-height:20px;">O botão não funcionou? <a href="{{ .ConfirmationURL }}" style="color:#007e99;text-decoration:underline;">Abra seu link seguro de acesso</a>.</p>
+            {{ else if eq .Data.locale "fr" }}
+            <p style="margin:24px 0 0;color:#68798a;font-size:13px;line-height:20px;">Ce lien ne peut être utilisé qu’une fois. Si vous ne l’avez pas demandé, vous pouvez ignorer cet e-mail en toute sécurité.</p><p style="margin:16px 0 0;color:#68798a;font-size:13px;line-height:20px;">Le bouton ne fonctionne pas ? <a href="{{ .ConfirmationURL }}" style="color:#007e99;text-decoration:underline;">Ouvrez votre lien de connexion sécurisé</a>.</p>
+            {{ else if eq .Data.locale "de" }}
+            <p style="margin:24px 0 0;color:#68798a;font-size:13px;line-height:20px;">Dieser Link kann nur einmal verwendet werden. Wenn du ihn nicht angefordert hast, kannst du diese E-Mail bedenkenlos ignorieren.</p><p style="margin:16px 0 0;color:#68798a;font-size:13px;line-height:20px;">Der Button funktioniert nicht? <a href="{{ .ConfirmationURL }}" style="color:#007e99;text-decoration:underline;">Öffne deinen sicheren Anmeldelink</a>.</p>
+            {{ else if eq .Data.locale "ko" }}
+            <p style="margin:24px 0 0;color:#68798a;font-size:13px;line-height:20px;">이 링크는 한 번만 사용할 수 있습니다. 요청하지 않았다면 이 이메일을 무시하셔도 됩니다.</p><p style="margin:16px 0 0;color:#68798a;font-size:13px;line-height:20px;">버튼이 작동하지 않나요? <a href="{{ .ConfirmationURL }}" style="color:#007e99;text-decoration:underline;">안전한 로그인 링크 열기</a>.</p>
+            {{ else }}
+            <p style="margin:24px 0 0;color:#68798a;font-size:13px;line-height:20px;">This link can be used once. If you did not request it, you can safely ignore this email.</p><p style="margin:16px 0 0;color:#68798a;font-size:13px;line-height:20px;">Button not working? <a href="{{ .ConfirmationURL }}" style="color:#007e99;text-decoration:underline;">Open your secure sign-in link</a>.</p>
+            {{ end }}
+          </td></tr>
+          <tr><td style="padding:24px 36px;background:#f7fafc;border-top:1px solid #e5edf2;color:#7d8b98;font-size:12px;line-height:18px;">Your identity for every event, pass, and connection.<br>© HASHPASS</td></tr>
+        </table>
+      </td></tr>
+    </table>
+  </body>
+</html>

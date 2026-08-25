@@ -1,5 +1,8 @@
 /// <reference types="jest" />
 
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
 // Regression coverage for a real production bug: renderTemplate/
 // getEmailAssetDataUri used to read packages/emails/templates and
 // .../assets from disk at runtime via fs.readFileSync, relative to a
@@ -14,9 +17,10 @@
 // edit that isn't regenerated (or a template file that gets deleted) fails
 // CI instead of silently breaking email delivery again.
 
-import { renderTemplate, getEmailAssetDataUri } from '../../../../packages/emails/src';
+import { renderTemplate, getEmailAssetDataUri, getSubject } from '../../../../packages/emails/src';
 
 const SUPPORTED_LOCALES = ['en', 'es', 'ko', 'fr', 'pt', 'de'];
+const REPOSITORY_ROOT = resolve(__dirname, '../../../..');
 
 describe('@hashpass/emails templates', () => {
   it.each(SUPPORTED_LOCALES)('renders newsletter-welcome for locale %s without touching the filesystem', (locale) => {
@@ -40,6 +44,41 @@ describe('@hashpass/emails templates', () => {
 
     expect(html.length).toBeGreaterThan(500);
     expect(html).not.toMatch(/\{\{[A-Z_]+\}\}/);
+  });
+
+  it.each(SUPPORTED_LOCALES)('keeps the Supabase verification URL in auth-magic-link for locale %s', (locale) => {
+    // Supabase replaces this Go-template value with its one-time verification
+    // URL when it sends the message. It must never point only at RedirectTo
+    // or SiteURL, which produces a callback with no authentication payload.
+    const html = renderTemplate('auth-magic-link', locale);
+
+    expect(html.length).toBeGreaterThan(500);
+    expect(html).toContain('href="{{ .ConfirmationURL }}"');
+    expect(html).toContain('https://hashpass.tech/assets/logos/hashpass/logo-full-hashpass-white-cyan.png');
+    expect(html).not.toContain('href="{{ .RedirectTo }}"');
+    expect(html).not.toContain('href="{{ .SiteURL }}"');
+    expect(html).not.toMatch(/\{\{[A-Z_]+\}\}/);
+    expect(getSubject('auth-magic-link', locale)).toMatch(/HASHPASS/);
+  });
+
+  it('provides one Supabase-ready template that chooses locale from auth metadata', () => {
+    const html = readFileSync(
+      resolve(REPOSITORY_ROOT, 'packages/emails/templates/auth-magic-link/unified.html'),
+      'utf8',
+    );
+
+    for (const locale of ['es', 'pt', 'fr', 'de', 'ko']) {
+      expect(html).toContain(`eq .Data.locale "${locale}"`);
+    }
+    expect(html).toContain('{{ .ConfirmationURL }}');
+    expect(html).not.toContain('{{ .RedirectTo }}');
+    expect(html).not.toContain('{{ .SiteURL }}');
+
+    const authScreen = readFileSync(
+      resolve(REPOSITORY_ROOT, 'apps/mobile-app/app/(shared)/auth.tsx'),
+      'utf8',
+    );
+    expect(authScreen).toContain('data: { locale: currentLocale }');
   });
 
   it('renders the English welcome as a clear HASHPASS onboarding message', () => {
