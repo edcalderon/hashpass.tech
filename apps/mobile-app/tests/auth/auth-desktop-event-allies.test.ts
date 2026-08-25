@@ -13,16 +13,15 @@ const readAuthSource = () =>
   readFileSync(resolve(__dirname, "../../app/(shared)/auth.tsx"), "utf8");
 
 describe("desktop auth event-allies carousel", () => {
-  it("lists the current event allies in an infinitely repeating rail", () => {
+  it("lists only the current tenant's allowed allies in an infinitely repeating rail", () => {
     const source = readAuthSource();
 
-    expect(source).toContain('name: "Blockchain Summit Latam"');
-    expect(source).toContain('name: "Hash Poker Room"');
-    expect(source).not.toContain('name: "CriptoLatinFest"');
-    expect(source).toContain("BSL-Logo-fondo-oscuro-2024.webp");
-    expect(source).toContain("hash-poker-room-logo.webp");
-    expect(source).toContain(
-      "const allyRailItems = [...EVENT_ALLIES, ...EVENT_ALLIES];",
+    expect(source).toContain('eventApiPath(activeEventId, "auth-allies")');
+    expect(source).toContain("getConfiguredAuthAllyIds(EVENTS[activeEventId])");
+    expect(source).toContain("getAuthAllies(allowedAuthAllyIds)");
+    expect(source).toContain("normalizeAuthAllyIds(payload.allowedAllyIds)");
+    expect(source).toMatch(
+      /animationLevel === "full"\s*\? \[\.\.\.eventAllies, \.\.\.eventAllies\]\s*: eventAllies/,
     );
     expect(source).toContain("Animated.loop(");
   });
@@ -37,6 +36,19 @@ describe("desktop auth event-allies carousel", () => {
     expect(source).toContain("desktopHero.modes.clubs");
     expect(source).toContain("onHoverIn={() => {");
     expect(source).toContain("accessibilityLabel={ally.name}");
+  });
+
+  it("shows every ally once in a wrapping static rail when motion is reduced or disabled", () => {
+    const source = readAuthSource();
+
+    expect(source).toMatch(
+      /animationLevel === "full"\s*\? \[\.\.\.eventAllies, \.\.\.eventAllies\]\s*: eventAllies/,
+    );
+    expect(source).toContain(
+      'animationLevel === "full" ? null : styles.desktopHeroRailStatic',
+    );
+    expect(source).toContain("desktopHeroRailStatic: {");
+    expect(source).toContain('flexWrap: "wrap"');
   });
 
   it.each([

@@ -71,10 +71,10 @@ export function HeroSection() {
   // ── Hero text colors ────────────────────────────────────────────────────────
   const headlineColor = isDark ? '#ffffff'                 : '#0d1728';
   const subtitleColor = isDark ? 'rgba(245,247,251,0.78)' : 'rgba(13,23,40,0.72)';
-  const badgeBorder   = isDark ? 'rgba(41,121,255,0.45)'  : 'rgba(25,118,210,0.35)';
-  const badgeBg       = isDark ? 'rgba(41,121,255,0.14)'  : 'rgba(25,118,210,0.10)';
-  const badgeDot      = isDark ? '#2979ff'                : '#1976d2';
-  const badgeText     = isDark ? '#90caf9'                : '#1565c0';
+  const badgeBorder   = isDark ? 'rgba(41,121,255,0.45)'  : 'rgba(155,205,255,0.5)';
+  const badgeBg       = isDark ? 'rgba(41,121,255,0.14)'  : '#0b1f3a';
+  const badgeDot      = isDark ? '#2979ff'                : '#8ed0ff';
+  const badgeText     = isDark ? '#90caf9'                : '#f4f8ff';
   const scrollColor   = isDark ? 'rgba(255,255,255,0.42)' : 'rgba(13,23,40,0.32)';
   const scrollDot     = isDark ? '#ffffff'                : '#0d1728';
 
@@ -139,6 +139,12 @@ export function HeroSection() {
     '--club-liquid-deep': isDark ? '#b9ccff' : '#102a56',
     '--club-liquid-bright': isDark ? '#e4b8ff' : '#2979d8',
     '--club-liquid-warm': isDark ? '#ffb4d0' : '#a02e86',
+    '--club-letter-flare': isDark ? '#ffffff' : '#77baff',
+    '--club-letter-deep': isDark ? '#b9ccff' : '#102a56',
+    '--club-letter-bright': isDark ? '#e4b8ff' : '#245db0',
+    '--club-letter-stroke': isDark ? 'rgba(255,255,255,.48)' : 'rgba(8,27,58,.55)',
+    '--club-letter-shadow': isDark ? 'rgba(255,255,255,.68)' : 'rgba(10,33,72,.42)',
+    '--club-letter-blend': isDark ? 'screen' : 'normal',
   } as CSSProperties;
   const titleCharacters = t('title').split('');
 
@@ -212,6 +218,7 @@ export function HeroSection() {
                     data-active={activeTitleLetter === index || undefined}
                     onPointerEnter={(event) => moveTitleLetter(event, index)}
                     onPointerMove={(event) => moveTitleLetter(event, index)}
+                    onPointerDown={(event) => moveTitleLetter(event, index)}
                     onPointerLeave={(event) => clearTitleLetter(event, index)}
                   >
                     {character}
@@ -329,16 +336,16 @@ export function HeroSection() {
           .club-hero-title-letter[data-active=\"true\"] {
             color: transparent;
             background-image:
-              radial-gradient(circle 110% at var(--club-letter-x) var(--club-letter-y), rgba(255,255,255,1) 0%, rgba(255,255,255,.9) 32%, rgba(239,247,255,.54) 64%, rgba(224,240,255,.16) 100%),
-              linear-gradient(138deg, rgba(255,255,255,.84), rgba(236,247,255,.34) 48%, rgba(255,255,255,.10));
+              radial-gradient(circle 115% at var(--club-letter-x) var(--club-letter-y), var(--club-letter-flare) 0%, var(--club-letter-bright) 35%, var(--club-letter-deep) 84%),
+              linear-gradient(138deg, var(--club-letter-bright), var(--club-letter-deep) 68%, var(--club-liquid-warm));
             background-size: 230% 230%, 180% 180%;
             background-position: var(--club-letter-x) var(--club-letter-y), 50% 50%;
             -webkit-background-clip: text;
             background-clip: text;
             -webkit-text-fill-color: transparent;
-            -webkit-text-stroke: .45px rgba(255,255,255,.48);
-            mix-blend-mode: screen;
-            filter: brightness(1.2) drop-shadow(0 0 11px rgba(255,255,255,.68));
+            -webkit-text-stroke: .45px var(--club-letter-stroke);
+            mix-blend-mode: var(--club-letter-blend);
+            filter: brightness(1.08) drop-shadow(0 0 11px var(--club-letter-shadow));
             transform: translateY(-0.045em) scale(1.045);
             animation: club-letter-liquid 1.15s cubic-bezier(.22,1,.36,1) both;
           }

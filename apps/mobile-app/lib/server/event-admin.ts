@@ -1,21 +1,12 @@
 import { getSupabaseServerForRequest } from '@/lib/supabase-server';
-import { hostnameFromRequest } from '@/config/supabase-profiles';
 import {
   isResolveIdentityError,
   resolveNotificationIdentity,
 } from '@/lib/server/resolve-notification-identity';
+import { getEventSupabaseProfileId } from '@/lib/server/event-supabase-profile';
 
 export async function authorizeEventAdmin(request: Request, eventId: string) {
-  const bslEvent = /^(?:bsl|bsl2025|peru2026|chile2026|colombia2026)$/i.test(eventId);
-  const host = hostnameFromRequest(request);
-  const bslProfile = bslEvent
-    ? host === 'bsl-dev.hashpass.tech' ||
-        host === 'api-dev.hashpass.tech' ||
-        host === 'localhost' ||
-        host === '127.0.0.1'
-      ? 'bsl-development'
-      : 'bsl-production'
-    : undefined;
+  const bslProfile = getEventSupabaseProfileId(request, eventId);
 
   const identity = await resolveNotificationIdentity(request, bslProfile);
   if (isResolveIdentityError(identity)) {

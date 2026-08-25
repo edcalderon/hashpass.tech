@@ -5,6 +5,7 @@ import {
   beginQrLinkEdit,
   deleteConfirmationMatches,
   destinationInputFromUrl,
+  isValidQrLinkSlug,
   paginateQrLinks,
   resolveQrLinkAvailability,
   toHttpsDestination,
@@ -97,4 +98,14 @@ test('requires an explicit DELETE acknowledgement before a QR link can be remove
   assert.equal(deleteConfirmationMatches(' delete '), true);
   assert.equal(deleteConfirmationMatches('delete link'), false);
   assert.equal(deleteConfirmationMatches(''), false);
+});
+
+test('validates custom QR slugs before requesting availability or saving', () => {
+  assert.equal(isValidQrLinkSlug('hashpass'), true);
+  assert.equal(isValidQrLinkSlug('hashpass-2026'), true);
+  assert.equal(isValidQrLinkSlug(' hashpass '), true);
+  assert.equal(isValidQrLinkSlug('hashpass.'), false);
+  assert.equal(isValidQrLinkSlug('ab'), false);
+  assert.equal(isValidQrLinkSlug('-hashpass'), false);
+  assert.equal(isValidQrLinkSlug('hashpass-'), false);
 });

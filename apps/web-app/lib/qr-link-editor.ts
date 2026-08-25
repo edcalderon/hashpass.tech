@@ -44,6 +44,11 @@ export function deleteConfirmationMatches(value: string): boolean {
   return value.trim().toUpperCase() === 'DELETE';
 }
 
+/** Matches the custom QR-link format enforced by the links API. */
+export function isValidQrLinkSlug(value: string): boolean {
+  return /^[a-z0-9](?:[a-z0-9-]{1,46}[a-z0-9])?$/.test(value.trim().toLowerCase());
+}
+
 export function beginQrLinkEdit(link: QrLink): QrLinkEditSession {
   return {
     form: {

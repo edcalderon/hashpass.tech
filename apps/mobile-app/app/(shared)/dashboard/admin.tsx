@@ -31,6 +31,13 @@ import LoadingScreen from "../../../components/LoadingScreen";
 import { useRouter } from "expo-router";
 import { resolveActiveEventId } from "../../../lib/event-path";
 import { apiClient } from "../../../lib/api-client";
+import { EVENTS } from "../../../config/events";
+import {
+  AUTH_ALLIES,
+  DEFAULT_AUTH_ALLY_ID,
+  normalizeAuthAllyIds,
+  type AuthAllyId,
+} from "../../../lib/event-auth-allies";
 import {
   highestEventRole,
   EventRole,
@@ -41,6 +48,7 @@ import UnifiedSearchAndFilter from "../../../components/UnifiedSearchAndFilter";
 type TabType =
   | "passes"
   | "pass-settings"
+  | "auth-allies"
   | "pass-codes"
   | "qr-scanner"
   | "meetings"
@@ -206,6 +214,11 @@ export default function AdminPanel() {
   const [eventPassTiers, setEventPassTiers] = useState<EventPassTier[]>([]);
   const [passTiersLoading, setPassTiersLoading] = useState(false);
   const [savingPassTier, setSavingPassTier] = useState<PassType | null>(null);
+  const [authAllyIds, setAuthAllyIds] = useState<AuthAllyId[]>([
+    DEFAULT_AUTH_ALLY_ID,
+  ]);
+  const [authAlliesLoading, setAuthAlliesLoading] = useState(false);
+  const [savingAuthAllies, setSavingAuthAllies] = useState(false);
 
   // Pass-code campaigns are event scoped. Raw values are only held long
   // enough to create/display a code and are never returned by the list API.
@@ -388,6 +401,8 @@ export default function AdminPanel() {
       await Promise.all([loadPasses(), loadUsers()]);
     } else if (activeTab === "pass-settings") {
       await loadEventPassTiers();
+    } else if (activeTab === "auth-allies") {
+      await loadAuthAllies();
     } else if (activeTab === "pass-codes") {
       await loadPassClaimCodes();
     } else if (activeTab === "meetings") {
@@ -712,6 +727,60 @@ export default function AdminPanel() {
       );
     } finally {
       setSavingPassTier(null);
+    }
+  };
+
+  const loadAuthAllies = async () => {
+    setAuthAlliesLoading(true);
+    try {
+      const result = await apiClient.get(
+        `/admin/auth-allies?eventId=${encodeURIComponent(selectedEventId)}`,
+        { skipEventSegment: true },
+      );
+      if (!result.success) {
+        throw new Error(result.error || "Unable to load auth ally settings");
+      }
+      const payload = (result.data as {
+        data?: { allowedAllyIds?: unknown };
+      })?.data;
+      setAuthAllyIds(normalizeAuthAllyIds(payload?.allowedAllyIds));
+    } catch (error: any) {
+      Alert.alert(
+        "Error",
+        "Failed to load auth ally settings: " +
+          (error.message || "Unknown error"),
+      );
+    } finally {
+      setAuthAlliesLoading(false);
+    }
+  };
+
+  const saveAuthAllies = async () => {
+    setSavingAuthAllies(true);
+    try {
+      const result = await apiClient.post(
+        "/admin/auth-allies",
+        { eventId: selectedEventId, allowedAllyIds: authAllyIds },
+        { skipEventSegment: true },
+      );
+      if (!result.success) {
+        throw new Error(result.error || "Unable to update auth ally settings");
+      }
+      const payload = (result.data as {
+        data?: { allowedAllyIds?: unknown };
+      })?.data;
+      setAuthAllyIds(normalizeAuthAllyIds(payload?.allowedAllyIds));
+      Alert.alert(
+        "Auth allies updated",
+        "The desktop sign-in screen now shows only this event's allowed allies.",
+      );
+    } catch (error: any) {
+      Alert.alert(
+        "Auth allies not updated",
+        error.message || "Please try again.",
+      );
+    } finally {
+      setSavingAuthAllies(false);
     }
   };
 
@@ -1327,6 +1396,21 @@ export default function AdminPanel() {
           )}
           {canManagePasses && (
             <TouchableOpacity
+              style={[styles.tab, activeTab === "auth-allies" && styles.tabActive]}
+              onPress={() => setActiveTab("auth-allies")}
+            >
+              <MaterialIcons
+                name="group"
+                size={20}
+                color={activeTab === "auth-allies" ? "#fff" : colors.text.secondary}
+              />
+              <Text numberOfLines={1} style={[styles.tabText, activeTab === "auth-allies" && styles.tabTextActive]}>
+                Auth Allies
+              </Text>
+            </TouchableOpacity>
+          )}
+          {canManagePasses && (
+            <TouchableOpacity
               style={[
                 styles.tab,
                 activeTab === "pass-codes" && styles.tabActive,
@@ -1507,6 +1591,19 @@ export default function AdminPanel() {
               onSave={updateEventPassTier}
             />
           </View>
+        )}
+
+        {activeTab === "auth-allies" && (
+          <EventAuthAllySettings
+            styles={styles}
+            eventName={EVENTS[selectedEventId]?.name || selectedEventId}
+            allowedAllyIds={authAllyIds}
+            loading={authAlliesLoading}
+            saving={savingAuthAllies}
+            onChange={setAuthAllyIds}
+            onRefresh={loadAuthAllies}
+            onSave={saveAuthAllies}
+          />
         )}
 
         {activeTab === "pass-codes" && (
@@ -2427,6 +2524,117 @@ function PassManagementTab({
             <Text style={styles.emptyText}>No passes found</Text>
           )}
         </View>
+      )}
+    </View>
+  );
+}
+
+function EventAuthAllySettings({
+  styles,
+  eventName,
+  allowedAllyIds,
+  loading,
+  saving,
+  onChange,
+  onRefresh,
+  onSave,
+}: {
+  styles: any;
+  eventName: string;
+  allowedAllyIds: AuthAllyId[];
+  loading: boolean;
+  saving: boolean;
+  onChange: (ids: AuthAllyId[]) => void;
+  onRefresh: () => void;
+  onSave: () => void;
+}) {
+  const toggleAlly = (allyId: AuthAllyId) => {
+    if (allyId === DEFAULT_AUTH_ALLY_ID) return;
+    onChange(
+      normalizeAuthAllyIds(
+        allowedAllyIds.includes(allyId)
+          ? allowedAllyIds.filter((id) => id !== allyId)
+          : [...allowedAllyIds, allyId],
+      ),
+    );
+  };
+
+  return (
+    <View style={styles.tabContent}>
+      <View style={styles.passCard}>
+        <View style={styles.passCardHeader}>
+          <View style={{ flex: 1, paddingRight: 12 }}>
+            <Text style={styles.passNumber}>Desktop auth allies</Text>
+            <Text style={styles.passInfo}>
+              Choose the event brands visible beside the sign-in form for {eventName}.
+              This is an event-only setting and never inherits another tenant's allies.
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={onRefresh}
+            disabled={loading || saving}
+          >
+            <MaterialIcons name="refresh" size={16} color="#fff" />
+            <Text style={styles.actionButtonText}>Refresh</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {loading ? (
+        <ActivityIndicator size="large" color="#007AFF" style={styles.loader} />
+      ) : (
+        <>
+          {AUTH_ALLIES.map((ally) => {
+            const required = ally.id === DEFAULT_AUTH_ALLY_ID;
+            const enabled = allowedAllyIds.includes(ally.id);
+            return (
+              <TouchableOpacity
+                key={ally.id}
+                style={[
+                  styles.passCard,
+                  enabled && styles.passTypeButtonActive,
+                  required && { opacity: 0.82 },
+                ]}
+                onPress={() => toggleAlly(ally.id)}
+                disabled={required || saving}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: enabled, disabled: required || saving }}
+              >
+                <View style={styles.passCardHeader}>
+                  <View style={{ flex: 1, paddingRight: 12 }}>
+                    <Text style={[styles.passNumber, enabled && styles.passTypeButtonTextActive]}>
+                      {ally.name}
+                    </Text>
+                    <Text style={[styles.passInfo, enabled && styles.passTypeButtonTextActive]}>
+                      {required
+                        ? "Always included as the platform default ally."
+                        : enabled
+                          ? "Allowed on this event's desktop sign-in screen."
+                          : "Hidden from this event's desktop sign-in screen."}
+                    </Text>
+                  </View>
+                  <MaterialIcons
+                    name={enabled ? "check-circle" : "radio-button-unchecked"}
+                    size={24}
+                    color={enabled ? "#fff" : "#007AFF"}
+                  />
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+          <TouchableOpacity
+            style={[styles.actionButton, styles.actionButtonSuccess, { alignSelf: "flex-start" }]}
+            onPress={onSave}
+            disabled={saving}
+          >
+            {saving ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.actionButtonText}>Save auth allies</Text>
+            )}
+          </TouchableOpacity>
+        </>
       )}
     </View>
   );

@@ -22,22 +22,39 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202608240157, // Updated to current timestamp
-  releaseDate: '2026-08-24',
+  buildNumber: 202608250449, // Updated to current timestamp
+  releaseDate: '2026-08-25',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'protect demo crawlers and showcase event allies'
+    'configure auth allies and QR validation'
   ],
   bugfixes: [
-    // No bugfixes
+    'repair legacy email identities',
+    'improve hero contrast and title response'
   ],
   breakingChanges: [],
-  notes: 'protect demo crawlers and showcase event allies'
+  notes: 'configure auth allies and QR validation; repair legacy email identities; improve hero contrast and title response'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.23': {
+    version: '1.9.23',
+    buildNumber: 202608250449,
+    releaseDate: '2026-08-25',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'configure auth allies and QR validation'
+    ],
+    bugfixes: [
+      'repair legacy email identities',
+      'improve hero contrast and title response'
+    ],
+    breakingChanges: [],
+    notes: 'configure auth allies and QR validation; repair legacy email identities; improve hero contrast and title response'
+  },
   '1.9.22': {
     version: '1.9.22',
     buildNumber: 202608240157,

@@ -1,3 +1,27 @@
+## [1.9.23](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.22...v1.9.23) (2026-08-25)
+
+
+### Bug Fixes
+
+* **auth:** repair legacy email identities ([e930e35](https://github.com/hashpass-tech/hashpass.tech/commit/e930e35cb6eb45e05ae505f8760b78d47bbbb131))
+* **club-web:** improve hero contrast and title response ([a798722](https://github.com/hashpass-tech/hashpass.tech/commit/a7987229dba91187d7f7e4196ade58791651ee19))
+
+
+### Features
+
+* **events:** configure auth allies and QR validation ([29617fc](https://github.com/hashpass-tech/hashpass.tech/commit/29617fcba4a0071212d02e9aed054116d664fb8f))
+### Release Highlights
+- configure auth allies and QR validation; repair legacy email identities; improve hero contrast and title response
+
+### Release scope
+- Compared with: `v1.9.22` (the previous global release tag)
+
+### Affected products & packages
+- Club web
+- Mobile app
+- Database migrations
+- Release tooling
+
 ## [1.9.22](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.21...v1.9.22) (2026-08-24)
 ### Released
 - protect demo crawlers and showcase event allies

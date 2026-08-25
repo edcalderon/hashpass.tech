@@ -161,6 +161,11 @@ export interface EventConfig {
   dayThemes?: Record<string, { es: string; en: string }>;
   quickAccessItems?: QuickAccessItem[];
   eventType?: "hashpass" | "whitelabel";
+  /**
+   * Ally brand IDs allowed in this event's desktop sign-in panel. Hash Poker
+   * Room is added by the shared resolver even when it is omitted here.
+   */
+  authAllyIds?: string[];
   tour?: EventTourMeta;
   website?: string; // Event website URL for footer links
   /** Ingestion/community metadata; conference-only surfaces are feature-gated. */

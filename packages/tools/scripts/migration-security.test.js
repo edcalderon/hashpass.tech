@@ -79,6 +79,10 @@ const meetingChatRealtimeMigrationPath = path.join(
   root,
   'db/migrations/V054__meeting_chat_realtime_and_participant_profiles.sql',
 );
+const eventAuthAlliesMigrationPath = path.join(
+  root,
+  'db/migrations/V083__event_auth_allies.sql',
+);
 const legacyDirectusRlsMigrationPath = path.join(
   root,
   'db/migrations/V063__enable_rls_on_legacy_directus_tables.sql',
@@ -179,6 +183,20 @@ describe('event chat migration plan', () => {
       'db/migrations/V074__event_chat_presence.sql',
       'db/migrations/V075__event_chat_reply_throttle.sql',
     ]));
+  });
+});
+
+describe('event auth allies migration plan', () => {
+  it('ships per-event authentication settings through every tenant profile', () => {
+    const migration = fs.readFileSync(eventAuthAlliesMigrationPath, 'utf8');
+    const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+
+    expect(config.defaultGroups).toContain('event-auth-allies');
+    expect(config.groups['event-auth-allies']).toContain(
+      'db/migrations/V083__event_auth_allies.sql',
+    );
+    expect(migration).toMatch(/CREATE TABLE IF NOT EXISTS public\.event_auth_allies/i);
+    expect(migration).toMatch(/ENABLE ROW LEVEL SECURITY/i);
   });
 });
 
