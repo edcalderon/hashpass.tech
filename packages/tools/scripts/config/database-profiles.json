@@ -177,7 +177,10 @@
       "db/migrations/V059__admin_pass_registry_identity_fallback.sql"
     ],
     "hashpass-auth-qr": [
-      "db/migrations/V079__hashpass_links_dynamic_qr.sql"
+      "db/migrations/V079__hashpass_links_dynamic_qr.sql",
+      "db/migrations/V080__qr_link_availability_windows.sql",
+      "db/migrations/V081__qr_link_custom_slugs.sql",
+      "db/migrations/V084__repair_legacy_email_auth_identities.sql"
     ]
   }
 }
