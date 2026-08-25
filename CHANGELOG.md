@@ -1,3 +1,19 @@
+## [1.9.26](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.25...v1.9.26) (2026-08-25)
+
+
+### Bug Fixes
+
+* **auth:** route core through better auth ([4bc2d9c](https://github.com/hashpass-tech/hashpass.tech/commit/4bc2d9c4f16f45f2b8205796cfe7e63ed9abe5c8))
+### Release Highlights
+- route core through better auth
+
+### Release scope
+- Compared with: `v1.9.25` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Documentation
+
 ## [1.9.25](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.24...v1.9.25) (2026-08-25)
 
 

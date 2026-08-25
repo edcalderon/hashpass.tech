@@ -46,6 +46,14 @@ const restoreEnv = () => {
   }
 };
 
+const clearAuthProviderOverrides = () => {
+  setEnv('AUTH_PROVIDER', undefined);
+  setEnv('EXPO_PUBLIC_BETTER_AUTH_URL', undefined);
+  setEnv('BETTER_AUTH_URL', undefined);
+  setEnv('EXPO_PUBLIC_API_BASE_URL', undefined);
+  setEnv('NEXT_PUBLIC_API_BASE_URL', undefined);
+};
+
 afterEach(() => {
   restoreEnv();
 });
@@ -74,11 +82,7 @@ describe('resolveAuthProviderConfig', () => {
     ['bsl.hashpass.tech', 'https://api.hashpass.tech/api/auth'],
     ['bsl-dev.hashpass.tech', 'https://api-dev.hashpass.tech/api/auth'],
   ])('derives Better Auth from tenant config for %s', (hostname, expectedBaseURL) => {
-    delete process.env.AUTH_PROVIDER;
-    setEnv('EXPO_PUBLIC_BETTER_AUTH_URL', undefined);
-    setEnv('BETTER_AUTH_URL', undefined);
-    setEnv('EXPO_PUBLIC_API_BASE_URL', undefined);
-    setEnv('NEXT_PUBLIC_API_BASE_URL', undefined);
+    clearAuthProviderOverrides();
 
     const config = resolveAuthProviderConfig({ hostname });
 
@@ -87,14 +91,16 @@ describe('resolveAuthProviderConfig', () => {
     expect(config.betterAuth?.basePath).toBe('/api/auth');
   });
 
-  it('keeps hashpass.tech on Directus by default', () => {
-    delete process.env.AUTH_PROVIDER;
+  it('selects production Better Auth for hashpass.tech with no explicit provider', () => {
+    clearAuthProviderOverrides();
     setEnv('EXPO_PUBLIC_SUPABASE_URL_PROD', 'https://core-project.supabase.co');
     setEnv('EXPO_PUBLIC_SUPABASE_ANON_KEY', 'anon-core');
 
     const config = resolveAuthProviderConfig({ hostname: 'hashpass.tech' });
 
-    expect(config.provider).toBe('directus');
+    expect(config.provider).toBe('better-auth');
+    expect(config.provider).not.toBe('directus');
+    expect(config.betterAuth?.baseURL).toBe('https://api.hashpass.tech/api/auth');
   });
 
   it('prefers core production expo Supabase envs over NEXT_PUBLIC fallbacks', () => {
