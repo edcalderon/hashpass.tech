@@ -20,17 +20,28 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.22)
+## 📋 Latest Changes (v1.9.23)
 
-### Released
-- protect demo crawlers and showcase event allies
+### Bug Fixes
+
+* **auth:** repair legacy email identities ([e930e35](https://github.com/hashpass-tech/hashpass.tech/commit/e930e35cb6eb45e05ae505f8760b78d47bbbb131))
+* **club-web:** improve hero contrast and title response ([a798722](https://github.com/hashpass-tech/hashpass.tech/commit/a7987229dba91187d7f7e4196ade58791651ee19))
+
+
+### Features
+
+* **events:** configure auth allies and QR validation ([29617fc](https://github.com/hashpass-tech/hashpass.tech/commit/29617fcba4a0071212d02e9aed054116d664fb8f))
+### Release Highlights
+- configure auth allies and QR validation; repair legacy email identities; improve hero contrast and title response
 
 ### Release scope
-- Compared with: `v1.9.21` (the previous global release tag)
+- Compared with: `v1.9.22` (the previous global release tag)
 
 ### Affected products & packages
+- Club web
 - Mobile app
-- Infrastructure
+- Database migrations
+- Release tooling
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
