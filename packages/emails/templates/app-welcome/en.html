@@ -4,297 +4,66 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="color-scheme" content="light dark">
-  <meta name="supported-color-schemes" content="light dark">
+  <meta name="color-scheme" content="dark">
+  <meta name="supported-color-schemes" content="dark">
   <title>Welcome to HASHPASS</title>
   <!--[if mso]>
-  <noscript>
-    <xml>
-      <o:OfficeDocumentSettings>
-        <o:PixelsPerInch>96</o:PixelsPerInch>
-      </o:OfficeDocumentSettings>
-    </xml>
-  </noscript>
-  <style type="text/css">
-    body,table,td{font-family:Arial,Helvetica,sans-serif!important;}
-  </style>
+  <noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript>
+  <style type="text/css">body,table,td{font-family:Arial,Helvetica,sans-serif!important;}</style>
   <![endif]-->
   <style type="text/css">
-    body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
-    table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
-    img { -ms-interpolation-mode: bicubic; border: 0; line-height: 100%; outline: none; text-decoration: none; }
-    body { margin: 0; padding: 0; width: 100% !important; height: 100% !important; }
-
-    @media only screen and (max-width: 600px) {
-      .wrap { width: 100% !important; }
-      .px { padding-left: 22px !important; padding-right: 22px !important; }
-      .headline { font-size: 24px !important; }
-      .id-card { padding: 22px 20px !important; }
-      .stack { display: block !important; width: 100% !important; }
-    }
-
-    @media (prefers-color-scheme: dark) {
-      .paper-bg { background-color: #0e1116 !important; }
-      .paper-card { background-color: #171b21 !important; }
-      .ink-heading { color: #f4f6f8 !important; }
-      .ink-body { color: #b6c0cc !important; }
-      .hairline { border-top-color: #262c35 !important; }
-      .footer-bg { background-color: #0a0d11 !important; }
-      .footer-text { color: #6b7480 !important; }
-      .movement-card { background-color: #14232a !important; border-color: #1d3038 !important; }
-    }
+    body,table,td,a{-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;}
+    table,td{mso-table-lspace:0;mso-table-rspace:0;}
+    img{-ms-interpolation-mode:bicubic;border:0;line-height:100%;outline:none;text-decoration:none;}
+    body{margin:0;padding:0;width:100%!important;height:100%!important;}
+    @media only screen and (max-width:600px){.wrap{width:100%!important}.px{padding-left:24px!important;padding-right:24px!important}.hero{padding-top:34px!important;padding-bottom:34px!important}.headline{font-size:34px!important;line-height:1.04!important}.cta{display:block!important;text-align:center!important}}
   </style>
 </head>
-<body class="paper-bg" style="margin:0; padding:0; background-color:#f4f6f8; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-  <div style="display:none; max-height:0; overflow:hidden; opacity:0;">
-    Your HASHPASS account is provisioned. Initialize your digital pass to get started.
-    &nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;
-  </div>
-
-  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" class="paper-bg" style="background-color:#f4f6f8;">
-    <tr>
-      <td align="center" style="padding:0;">
-
-        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" class="wrap" style="width:600px; max-width:600px;">
-
-          <!-- ===================== CONSOLE / HERO ===================== -->
-          <tr>
-            <td style="background-color:#0a0e14; background:linear-gradient(160deg,#0a0e14 0%,#0d1420 62%,#0a1118 100%); padding:40px 40px 0;" class="px">
-
-              <!-- wordmark row -->
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-                <tr>
-                  <td>
-                    <img src="{{LOGO_URL}}" width="132" height="25" alt="HASHPASS" style="display:block; width:132px; height:auto; border:0;">
-                  </td>
-                  <td align="right" style="font-family:ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,monospace; font-size:10px; letter-spacing:1.5px; color:#5b6472; text-transform:uppercase;">
-                    id.init
-                  </td>
-                </tr>
-              </table>
-
-              <!-- eyebrow -->
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-top:34px;">
-                <tr>
-                  <td>
-                    <table role="presentation" cellspacing="0" cellpadding="0" border="0">
-                      <tr>
-                        <td style="background-color:rgba(34,211,238,0.12); border:1px solid rgba(34,211,238,0.35); border-radius:20px; padding:6px 14px 5px;">
-                          <span style="font-family:ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,monospace; font-size:11px; font-weight:600; letter-spacing:1.5px; color:#22d3ee; text-transform:uppercase;">&#9679;&nbsp; account provisioned</span>
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-              </table>
-
-              <!-- headline -->
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-                <tr>
-                  <td style="padding-top:22px; padding-bottom:14px;">
-                    <h1 class="headline" style="margin:0; color:#f7f9fb; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; font-size:32px; line-height:1.18; font-weight:800; letter-spacing:-0.4px;">
-                      Initialize your<br>digital pass life.
-                    </h1>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding-bottom:36px;">
-                    <p style="margin:0; color:#8b95a3; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; font-size:15px; line-height:1.65; max-width:420px;">
-                      Thanks for joining, {{USER_NAME}} &mdash; your account is live. One HASHPASS identity now carries every event, pass, and connection you make from here on.
-                    </p>
-                  </td>
-                </tr>
-              </table>
-
-              <!-- ============= digital ID card ============= -->
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-                <tr>
-                  <td align="center" style="padding-bottom:40px;">
-                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width:480px; background:linear-gradient(115deg,#22d3ee 0%,#0ea5c7 28%,#f5b94d 100%); border-radius:18px; padding:1.5px;">
-                      <tr>
-                        <td style="background-color:#0d131b; border-radius:17px;">
-                          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" class="id-card" style="padding:26px 28px;">
-                            <tr>
-                              <td>
-                                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-                                  <tr>
-                                    <td style="font-family:ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,monospace; font-size:10px; letter-spacing:2px; color:#7d8794; text-transform:uppercase;">
-                                      digital&nbsp;identity
-                                    </td>
-                                    <td align="right">
-                                      <span style="font-family:ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,monospace; font-size:10px; letter-spacing:1px; color:#f5b94d; font-weight:700;">&#9679; ACTIVE</span>
-                                    </td>
-                                  </tr>
-                                </table>
-                                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-top:22px;">
-                                  <tr>
-                                    <td width="52" valign="top">
-                                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="44" height="44" style="width:44px; height:44px; background:linear-gradient(135deg,#22d3ee,#0ea5c7); border-radius:50%;">
-                                        <tr>
-                                          <td align="center" valign="middle" style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif; font-size:17px; font-weight:800; color:#06131a;">
-                                            {{USER_INITIAL}}
-                                          </td>
-                                        </tr>
-                                      </table>
-                                    </td>
-                                    <td valign="middle" style="padding-left:6px;">
-                                      <p style="margin:0 0 3px; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; font-size:16px; font-weight:700; color:#f4f6f8;">{{USER_NAME}}</p>
-                                      <p style="margin:0; font-family:ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,monospace; font-size:11px; letter-spacing:0.5px; color:#5b6472;">member&nbsp;since&nbsp;{{YEAR}}</p>
-                                    </td>
-                                  </tr>
-                                </table>
-                                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-top:22px; border-top:1px solid #212933;">
-                                  <tr><td style="height:1px; line-height:1px; font-size:1px;">&nbsp;</td></tr>
-                                </table>
-                                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-top:18px;">
-                                  <tr>
-                                    <td style="font-family:ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,monospace; font-size:20px; letter-spacing:5px; color:#3a424d;">
-                                      &#9612;&#9611;&#9612;&#9613;&#9612;&#9611;&#9613;&#9612;&#9611;&#9612;&#9613;&#9611;
-                                    </td>
-                                  </tr>
-                                </table>
-                              </td>
-                            </tr>
-                          </table>
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-              </table>
-              <!-- ============= /digital ID card ============= -->
-
-            </td>
-          </tr>
-
-          <!-- ===================== BODY (paper) ===================== -->
-          <tr>
-            <td class="paper-card" style="background-color:#ffffff;">
-
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-                <tr>
-                  <td class="px" style="padding:40px 40px 8px;">
-                    <p style="margin:0 0 22px; font-family:ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,monospace; font-size:11px; font-weight:700; letter-spacing:2px; color:#0ea5c7; text-transform:uppercase;">
-                      what you can do now
-                    </p>
-                  </td>
-                </tr>
-              </table>
-
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-                <tr>
-                  <td class="px" style="padding:0 40px 22px;">
-                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-                      <tr>
-                        <td width="40" valign="top">
-                          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="32" height="32" style="width:32px; height:32px; background-color:#e7fafd; border-radius:9px;">
-                            <tr><td align="center" valign="middle" style="font-size:15px;">&#127915;</td></tr>
-                          </table>
-                        </td>
-                        <td valign="top" style="padding-left:14px;">
-                          <p class="ink-heading" style="margin:0 0 3px; color:#12181f; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; font-size:15px; font-weight:700;">Carry every pass in one place</p>
-                          <p class="ink-body" style="margin:0; color:#5b6472; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; font-size:13.5px; line-height:1.55;">Event tickets, credentials, and memberships live under a single HASHPASS identity &mdash; no separate logins per event.</p>
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-                <tr>
-                  <td class="px" style="padding:0 40px 22px;">
-                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-                      <tr>
-                        <td width="40" valign="top">
-                          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="32" height="32" style="width:32px; height:32px; background-color:#fdf3e0; border-radius:9px;">
-                            <tr><td align="center" valign="middle" style="font-size:15px;">&#127760;</td></tr>
-                          </table>
-                        </td>
-                        <td valign="top" style="padding-left:14px;">
-                          <p class="ink-heading" style="margin:0 0 3px; color:#12181f; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; font-size:15px; font-weight:700;">Find your people</p>
-                          <p class="ink-body" style="margin:0; color:#5b6472; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; font-size:13.5px; line-height:1.55;">Connect with speakers, attendees, and organizers across every HASHPASS-powered event you attend.</p>
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-                <tr>
-                  <td class="px" style="padding:0 40px 34px;">
-                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-                      <tr>
-                        <td width="40" valign="top">
-                          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="32" height="32" style="width:32px; height:32px; background-color:#e7fafd; border-radius:9px;">
-                            <tr><td align="center" valign="middle" style="font-size:15px;">&#128274;</td></tr>
-                          </table>
-                        </td>
-                        <td valign="top" style="padding-left:14px;">
-                          <p class="ink-heading" style="margin:0 0 3px; color:#12181f; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; font-size:15px; font-weight:700;">Own your data</p>
-                          <p class="ink-body" style="margin:0; color:#5b6472; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; font-size:13.5px; line-height:1.55;">Built on decentralized infrastructure, so your identity and history stay yours &mdash; not locked into one event's database.</p>
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-              </table>
-
-              <!-- Movement callout -->
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-                <tr>
-                  <td class="px" style="padding:0 40px 34px;">
-                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" class="movement-card" style="background-color:#f3fbfc; border:1px solid #d6f0f4; border-radius:14px;">
-                      <tr>
-                        <td style="padding:24px 26px;">
-                          <p style="margin:0 0 8px; font-family:ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,monospace; font-size:10.5px; font-weight:700; letter-spacing:1.5px; color:#0ea5c7; text-transform:uppercase;">what's coming next</p>
-                          <p class="ink-heading" style="margin:0 0 8px; color:#12181f; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; font-size:15.5px; font-weight:700; line-height:1.4;">More is on the way.</p>
-                          <p class="ink-body" style="margin:0; color:#5b6472; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; font-size:13.5px; line-height:1.6;">HASHPASS keeps evolving &mdash; wallet-native passes, LUKAS rewards, and more tech for the community. Thanks for joining.</p>
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-              </table>
-
-              <!-- CTA -->
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-                <tr>
-                  <td class="px" align="center" style="padding:4px 40px 44px;">
-                    <table role="presentation" cellspacing="0" cellpadding="0" border="0">
-                      <tr>
-                        <td style="border-radius:10px; background-color:#0d131b;">
-                          <a href="{{APP_URL}}" style="display:inline-block; padding:15px 34px; font-family:ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,monospace; font-size:14px; font-weight:700; letter-spacing:0.5px; color:#22d3ee; text-decoration:none;">
-                            &#8250;&nbsp; initialize_my_pass
-                          </a>
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-              </table>
-
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-                <tr>
-                  <td class="px hairline" style="padding:0 40px; border-top:1px solid #eceff2;">
-                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%"><tr><td style="height:1px; line-height:1px; font-size:1px;">&nbsp;</td></tr></table>
-                  </td>
-                </tr>
-              </table>
-
-            </td>
-          </tr>
-
-          <!-- ===================== FOOTER ===================== -->
-          <tr>
-            <td class="footer-bg" style="background-color:#f4f6f8; padding:26px 40px 40px;" class="px">
-              <p class="footer-text" style="margin:0 0 8px; color:#9aa3af; font-family:ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,monospace; font-size:11px; line-height:1.6; text-align:center;">&copy; {{YEAR}} HASHPASS &mdash; digital pass platform</p>
-              <p style="margin:0; text-align:center; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; font-size:12px; line-height:1.6;">
-                <a href="{{APP_URL}}" style="color:#0ea5c7; text-decoration:none;">hashpass.tech</a>
-                <span style="color:#c2c9d1;">&nbsp;&bull;&nbsp;</span>
-                <a href="mailto:{{SUPPORT_EMAIL}}" style="color:#0ea5c7; text-decoration:none;">{{SUPPORT_EMAIL}}</a>
-              </p>
-            </td>
-          </tr>
-
-        </table>
-      </td>
-    </tr>
+<body style="margin:0;padding:0;background-color:#050507;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;">Your HASHPASS account is ready. Your next event starts here.&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;</div>
+  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color:#050507;">
+    <tr><td align="center" style="padding:32px 16px;">
+      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" class="wrap" style="width:600px;max-width:600px;background-color:#0a0e14;border:1px solid #1b2835;border-radius:20px;overflow:hidden;">
+        <tr><td class="px" style="padding:30px 40px 0;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%"><tr>
+            <td valign="middle"><img src="{{LOGO_URL}}" width="146" height="28" alt="HASHPASS" style="display:block;width:146px;height:auto;border:0;"></td>
+            <td align="right" valign="middle" style="font-family:Arial,Helvetica,sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;color:#7e8d9c;text-transform:uppercase;">Welcome</td>
+          </tr></table>
+        </td></tr>
+        <tr><td class="px hero" style="padding:52px 40px 44px;background:radial-gradient(circle at 86% 12%,#103c4b 0,#0a0e14 38%),linear-gradient(145deg,#0a0e14 0%,#08141b 100%);border-bottom:1px solid #1b2835;">
+          <p style="margin:0 0 18px;font-family:Arial,Helvetica,sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;color:#27d9f5;text-transform:uppercase;">Your account is ready</p>
+          <h1 class="headline" style="margin:0;color:#f5f8fa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:42px;line-height:1.06;font-weight:750;letter-spacing:-1.2px;">Welcome to the<br>network.</h1>
+          <p style="margin:22px 0 0;max-width:440px;color:#a7b4c2;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:16px;line-height:1.65;">Hi {{USER_NAME}}, your HASHPASS account is ready. Keep your passes, event plans, and the people you meet in one place.</p>
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin-top:30px;"><tr><td style="border-radius:9px;background-color:#27d9f5;"><a class="cta" href="{{APP_URL}}" style="display:inline-block;padding:15px 24px;color:#061116;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:18px;font-weight:750;text-decoration:none;">Open HASHPASS&nbsp;&nbsp;&rarr;</a></td></tr></table>
+        </td></tr>
+        <tr><td class="px" style="padding:38px 40px 18px;background-color:#0a0e14;"><p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;color:#27d9f5;text-transform:uppercase;">Start here</p></td></tr>
+        <tr><td class="px" style="padding:0 40px 12px;background-color:#0a0e14;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="border-top:1px solid #1b2835;"><tr>
+            <td width="46" valign="top" style="padding:18px 0;color:#27d9f5;font-family:Arial,Helvetica,sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;">01</td>
+            <td valign="top" style="padding:18px 0;"><p style="margin:0 0 5px;color:#f5f8fa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:16px;font-weight:700;">Keep every pass together</p><p style="margin:0;color:#91a0af;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:14px;line-height:1.55;">Tickets, credentials, and memberships stay with your HASHPASS identity.</p></td>
+          </tr></table>
+        </td></tr>
+        <tr><td class="px" style="padding:0 40px 12px;background-color:#0a0e14;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="border-top:1px solid #1b2835;"><tr>
+            <td width="46" valign="top" style="padding:18px 0;color:#27d9f5;font-family:Arial,Helvetica,sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;">02</td>
+            <td valign="top" style="padding:18px 0;"><p style="margin:0 0 5px;color:#f5f8fa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:16px;font-weight:700;">Plan your event days</p><p style="margin:0;color:#91a0af;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:14px;line-height:1.55;">Follow the agenda, save the sessions that matter, and arrive prepared.</p></td>
+          </tr></table>
+        </td></tr>
+        <tr><td class="px" style="padding:0 40px 38px;background-color:#0a0e14;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="border-top:1px solid #1b2835;border-bottom:1px solid #1b2835;"><tr>
+            <td width="46" valign="top" style="padding:18px 0;color:#27d9f5;font-family:Arial,Helvetica,sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;">03</td>
+            <td valign="top" style="padding:18px 0;"><p style="margin:0 0 5px;color:#f5f8fa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:16px;font-weight:700;">Meet your people</p><p style="margin:0;color:#91a0af;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:14px;line-height:1.55;">Connect with speakers, attendees, and organizers across HASHPASS events.</p></td>
+          </tr></table>
+        </td></tr>
+        <tr><td class="px" style="padding:0 40px 42px;background-color:#0a0e14;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color:#0d1820;border:1px solid #20424e;border-radius:12px;"><tr><td style="padding:21px 22px;"><p style="margin:0 0 6px;color:#f5f8fa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;font-weight:700;">One identity. Every event.</p><p style="margin:0;color:#9aabb8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:13.5px;line-height:1.55;">HASHPASS is built so your event history travels with you, not a single event database.</p></td></tr></table>
+        </td></tr>
+        <tr><td class="px" style="padding:0 40px 34px;background-color:#05070b;border-top:1px solid #1b2835;">
+          <p style="margin:27px 0 8px;color:#71808e;font-family:Arial,Helvetica,sans-serif;font-size:11px;line-height:1.6;letter-spacing:1.2px;text-align:center;text-transform:uppercase;">&copy; {{YEAR}} HASHPASS</p>
+          <p style="margin:0;text-align:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:12px;line-height:1.6;"><a href="{{APP_URL}}" style="color:#27d9f5;text-decoration:none;">hashpass.tech</a><span style="color:#536170;">&nbsp;&bull;&nbsp;</span><a href="mailto:{{SUPPORT_EMAIL}}" style="color:#27d9f5;text-decoration:none;">{{SUPPORT_EMAIL}}</a></p>
+        </td></tr>
+      </table>
+    </td></tr>
   </table>
 </body>
 </html>

@@ -42,6 +42,22 @@ describe('@hashpass/emails templates', () => {
     expect(html).not.toMatch(/\{\{[A-Z_]+\}\}/);
   });
 
+  it('renders the English welcome as a clear HASHPASS onboarding message', () => {
+    const html = renderTemplate('app-welcome', 'en', {
+      userName: 'Edward Calderon',
+      userInitial: 'E',
+      logoUrl: 'data:image/png;base64,official-hashpass-wordmark',
+    });
+
+    // Keep the welcome experience human and product-led: the actual brand
+    // wordmark, a plain-language headline, and an unambiguous next step.
+    expect(html).toContain('data:image/png;base64,official-hashpass-wordmark');
+    expect(html).toContain('Welcome to the<br>network.');
+    expect(html).toContain('Open HASHPASS');
+    expect(html).not.toContain('id.init');
+    expect(html).not.toContain('initialize_my_pass');
+  });
+
   it('falls back to English for an unsupported locale instead of throwing', () => {
     const html = renderTemplate('newsletter-welcome', 'xx-not-a-real-locale');
     expect(html.length).toBeGreaterThan(500);
