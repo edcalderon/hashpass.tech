@@ -161,7 +161,7 @@ export const SSO_CONFIG = {
       domain: 'hashpass.tech',
       hostnames: ['dev.hashpass.tech', 'www.hashpass.tech', 'hashpass.co', 'www.hashpass.co'],
       slug: 'main',
-      authProvider: 'directus',
+      authProvider: 'better-auth',
       apiBaseUrl: 'https://api.hashpass.tech/api',
     } as TenantConfig
   }

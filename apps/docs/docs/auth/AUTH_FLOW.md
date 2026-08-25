@@ -29,11 +29,9 @@ two divergent Google identities for the same user (`ba_users` vs
 
 1. `useAuth.signInWithOAuth('google')` on web always constructs/reuses a
    `BetterAuthProvider` (from `@hashpass/auth`) and calls
-   `signInWithOAuth('google')` on it first — regardless of what
-   `authService.getProviderName()` resolves to for the tenant (which for core
-   is still the stale `'directus'` value; see below). If `authService` is
-   already Better Auth (BSL tenants), that same instance is reused instead of
-   constructing a second one.
+   `signInWithOAuth('google')` on it first. `authService` now resolves to
+   Better Auth for core and BSL tenants, so the same instance is reused where
+   available instead of constructing a second one.
 2. Better Auth's client calls `POST {apiBase}/api/auth/sign-in/social`, which
    returns a Google authorize URL with `redirect_uri=<apiBase>/api/auth/callback/google`.
    The browser is redirected there.
@@ -93,13 +91,10 @@ a real sign-in:
 - `apps/directus/README.md` describes it as "Directus for local auth/SSO
   **testing**... does not contain application code" — it was never meant to be
   the production auth backend long-term.
-- `SSO_CONFIG.tenants.core.authProvider: 'directus'` in
-  `packages/config/src/sso-config.ts` is a holdover from an abandoned
-  Supabase→Directus migration plan (see that file's own `MIGRATION_STATUS`
-  block, dated 2025-12-18, `migration_phase: 'in_progress'`, never completed).
-  It still affects `authService.getProviderName()` and a couple of debug/UI
-  branches, but no longer determines which backend actually handles a sign-in
-  for Google or OTP.
+- `SSO_CONFIG.tenants.core.authProvider` now selects Better Auth. This removes
+  the abandoned Supabase→Directus migration setting from core provider
+  resolution, so magic-link callbacks no longer attempt to use the retired
+  Directus SSO host.
 
 **Before fully removing it**, check whether any _existing_ users still carry
 Directus-issued sessions/tokens that would need a migration path, and whether
