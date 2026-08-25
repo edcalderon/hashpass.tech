@@ -3,7 +3,7 @@
 **Status:** ACTIVE — high priority
 **Priority:** P0 (billing/credit risk)  
 **Created:** 2026-08-04
-**Last updated:** 2026-08-17
+**Last updated:** 2026-08-24
 
 > **Standing rule — no EC2 provisioning without explicit owner consent.**
 > This applies to Claude/agent sessions and human contributors alike, and
@@ -437,6 +437,105 @@ criteria below: any actual trigger-mechanism change to `hashpass-web`,
 `bsl-target`, or `demo-events` needs a scoped `terraform plan`/`apply` per
 stack with room to verify each one individually, the same way the
 2026-08-16 criptolatinfest fix was applied.
+
+### Current cost and resource reconciliation — 2026-08-24
+
+**Scope corrected:** all figures in this section use the configured
+`hashpass` profile, payer account `952191196420`. The shell's `default`
+profile is a separate source/shared account (`058264267235`) and must not be
+used to assess HashPass spend. Cost Explorer data is estimated and covers
+2026-08-01 through 2026-08-24. To expose real consumption in this credited
+account, every Cost Explorer usage query filters to
+`RECORD_TYPE=Usage`; the unfiltered total hides spend behind credit records.
+
+| August MTD financial position | USD | Evidence |
+|---|---:|---|
+| Gross usage | $179.468 | Cost Explorer, `RECORD_TYPE=Usage` |
+| Credit applied | -$142.510 | Cost Explorer, `RECORD_TYPE=Credit` |
+| Net unblended cost so far | $36.958 | Gross usage less credit applied |
+| Remaining-August gross forecast | $24.207 | Cost Explorer forecast, Aug 25–31 |
+| Gross month-end forecast | $203.675 | `My Monthly Cost Budget` |
+| Monthly gross budget | $80.00 | `My Monthly Cost Budget` |
+
+The forecast is **$123.68 / 155% over** the approved monthly ceiling. The
+previous $200-credit figure and any remaining balance/expiry are still not
+verified by a payer-console credit export; do not infer a remaining credit
+balance from the applied-credit line above. At the current $203.675 gross
+forecast, a $200 credit would be insufficient even if it applied to every
+charge, but its scope and terms remain an owner action.
+
+**Gross MTD service drivers (top six = $175.41 / 97.7% of usage):**
+
+| Service | Gross MTD | Primary cost evidence | Optimization posture |
+|---|---:|---|---|
+| CodeBuild | $81.90 | `g1.large` $67.04; `g1.medium` $14.86 | Highest current controllable driver; benchmark before resizing and reduce avoidable executions. |
+| EC2 Compute | $56.58 | `m6i.xlarge` $50.54; `m6i.large` $3.96; `t3a.xlarge` $2.08 plus $0.16 CPU credits | Historical worker usage; keep EC2 fallback approval-gated. |
+| EC2 - Other | $15.32 | $12.41 gp3 in us-east-2 and $2.69 gp3 in us-east-1 | Historical worker-disk spend; no live volume is present to delete. |
+| CodePipeline | $11.31 | $10.31 V2 action-execution minutes, $1 active-pipeline fee | Retire only owner-approved obsolete pipelines; preserve release paths. |
+| S3 | $6.23 | $4.58 us-east-2 timed storage; $1.66 request tiers | Inspect artifact retention/lifecycle before deletion. |
+| Route 53 | $4.06 | $4 hosted zones, $0.06 DNS queries | Validate every zone is still required; DNS query cost is immaterial. |
+
+**Recent trend:** the Aug 18 $14.77 daily spike included $11.34 of CodeBuild;
+Aug 19 included $3.56 of CodeBuild. Daily usage then fell to about $0.31 on
+Aug 20–23 before Aug 24's $2.70, including $2.01 of CodeBuild. This confirms
+that build execution volume, rather than a continuously running runtime
+resource, is the practical lever after the historical EC2 spend.
+
+**Live setup checked read-only:**
+
+- No running, pending, or stopped EC2 instance; no EBS volume; no NAT gateway;
+  no unattached Elastic IP; and no RDS instance was returned in `us-east-1`
+  or `us-east-2` (and no running/pending EC2, NAT, unattached IP, or RDS in
+  `us-west-2`). There is no live worker or orphaned disk to stop/delete.
+- Five production/development deployment pipelines are present and V2:
+  `hashpass-dev-site`, `hashpass-production-site`,
+  `hashpass-criptolatinfest-develop-site`, `bsl-hashpass-dev`, and
+  `bsl-hashpass-prod`.
+- The five product CodeBuild projects remain: four `BUILD_GENERAL1_LARGE`
+  projects (the three HashPass site builds plus BSL production) and one
+  `BUILD_GENERAL1_MEDIUM` BSL development project. The three HashPass site
+  projects use `NO_CACHE`; BSL projects use an S3 cache. Two 15-minute probe
+  projects (`hashpass-arm-probe-*` and `hashpass-lambda-probe-*`) also remain
+  and should be time-bounded/removed once their experiment owner confirms
+  they are no longer needed.
+- Lambda, API Gateway, CloudFront, Secrets Manager, and data transfer are
+  collectively small contributors; do not trade runtime reliability for
+  negligible savings while the build drivers dominate.
+
+**Controls and audit gaps:**
+
+- The overall $80 budget already alerts on actual 50%, 75%, 85%, 90%, and
+  100%, and forecast 80% and 100%. The EC2-compute budget ($25) alerts on
+  actual 50%, 75%, and 90%, and forecast 80% and 100%. The overall budget's
+  $179.468 actual and $203.675 forecast confirm the threshold controls did
+  not constrain execution volume; verify notification destinations and add a
+  credit-burn/CodeBuild-specific response runbook rather than duplicating
+  thresholds.
+- Cost Anomaly Detection has a default daily service monitor plus an immediate
+  HashPass subscription at $5. Validate that both reach an accountable owner.
+- Cost Optimization Hub is not enrolled and EC2 rightsizing recommendations
+  are not enabled in Cost Explorer. Enroll/enable them after confirming the
+  payer preference; no recommendation was available for this audit.
+- Payer-level resource-level cost data and active cost-allocation tags are
+  still needed to attribute future build spend per worker/pipeline. Do not use
+  the shared-account `default` profile as a substitute for that attribution.
+
+**Updated priority order:**
+
+1. Obtain a Billing → Credits export (credit ID, eligible services, balance,
+   and expiry) and verify the budget/anomaly recipients; this is the only
+   blocker to a reliable net-cost and credit-burn forecast.
+2. Keep EC2 autostart disabled and complete the existing live-timeout/cleanup
+   verification before any incident-approved EC2 rollback. There is no
+   currently active EC2 resource to remediate.
+3. Make CodeBuild reduction the next approved change: audit the three
+   no-cache large site projects, add/reuse caching where reproducible, and
+   benchmark Medium only for development workloads. Preserve the proven path
+   filters and `SUPERSEDED` execution mode; do not lower production capacity
+   without a representative cold-cache build and rollback result.
+4. Review the five pipelines and two probes for ownership and last-use. Apply
+   S3 artifact/log lifecycle changes only after a documented rollback and
+   release-retention check.
 
 ## Phase 2 — inventory likely drivers
 

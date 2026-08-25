@@ -178,6 +178,7 @@ const makeTourStopConfig = (
   },
   features: [...BSL_TOUR_SHARED_FEATURES],
   eventType: "whitelabel",
+  authAllyIds: ["hash-poker-room", "bsl"],
   branding: {
     primaryColor: options.color,
     secondaryColor: "#06111F",
@@ -2645,6 +2646,7 @@ export const EVENTS: Record<string, EventConfig> = {
     },
     features: ["matchmaking", "speakers", "bookings", "admin", "wallet"],
     eventType: "whitelabel",
+    authAllyIds: ["hash-poker-room", "bsl"],
     branding: {
       ...BSL_HUB_BRANDING,
     },
@@ -4453,6 +4455,8 @@ export const EVENTS: Record<string, EventConfig> = {
     // currently used to gate any screen -- see hasFeature() call sites).
     features: ["speakers", "agenda"],
     eventType: "whitelabel",
+    // This tenant must never inherit BSL branding on its sign-in screen.
+    authAllyIds: ["hash-poker-room"],
     isDemo: true,
     branding: {
       primaryColor: "#046BD2",

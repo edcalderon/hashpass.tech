@@ -21,6 +21,7 @@ import {
   beginQrLinkEdit,
   deleteConfirmationMatches,
   destinationInputFromUrl,
+  isValidQrLinkSlug,
   paginateQrLinks,
   resolveQrLinkAvailability,
   toHttpsDestination,
@@ -144,6 +145,10 @@ export default function PanelQrPage() {
       setSlugAvailability('current');
       return;
     }
+    if (!isValidQrLinkSlug(slug)) {
+      setSlugAvailability('invalid');
+      return;
+    }
 
     setSlugAvailability('checking');
     let cancelled = false;
@@ -223,6 +228,11 @@ export default function PanelQrPage() {
     const changedSlug = form.publicSlug.trim() && form.publicSlug.trim() !== originalSlug
       ? form.publicSlug.trim()
       : undefined;
+    if (changedSlug && !isValidQrLinkSlug(changedSlug)) {
+      setSlugAvailability('invalid');
+      toast.error(t('formSlugInvalid'));
+      return;
+    }
     if (slugAvailability === 'taken') {
       toast.error(t('formSlugTaken'));
       return;

@@ -34,7 +34,7 @@ import PrivacyTermsModal from "../../components/PrivacyTermsModal";
 import VersionDisplay from "../../components/VersionDisplay";
 import { useAuth } from "../../hooks/useAuth";
 import { getCurrentLocale, useTranslation } from "../../i18n/i18n";
-import { apiClient } from "../../lib/api-client";
+import { apiClient, eventApiPath } from "../../lib/api-client";
 import { MorphIcon } from "../../lib/morph-icon";
 import { LoaderCircle, Check } from "lucide";
 import {
@@ -58,6 +58,14 @@ import * as Clipboard from "expo-clipboard";
 import { resolvePublicSupabaseConfig } from "../../config/supabase-profiles";
 import { getHashpassFullLogo } from "../../lib/hashpass-logo";
 import { useAnimationLevel } from "../../contexts/AnimationLevelContext";
+import { EVENTS } from "../../config/events";
+import { resolveActiveEventId } from "../../lib/event-path";
+import {
+  getAuthAllies,
+  getConfiguredAuthAllyIds,
+  normalizeAuthAllyIds,
+  type AuthAllyId,
+} from "../../lib/event-auth-allies";
 
 const HASHPASS_WEB_LIGHT_AUTH_LOGO = require("../../assets/logos/hashpass/logo-full-hashpass-white.svg");
 
@@ -191,31 +199,6 @@ const resolveOAuthErrorMessage = (
 
 const DESKTOP_AUTH_BREAKPOINT = 1100;
 
-type EventAlly = {
-  id: string;
-  name: string;
-  logo: any;
-  colors: [string, string, string];
-  accent: string;
-};
-
-const EVENT_ALLIES: EventAlly[] = [
-  {
-    id: "bsl",
-    name: "Blockchain Summit Latam",
-    logo: require("../../assets/logos/bsl/BSL-Logo-fondo-oscuro-2024.webp"),
-    colors: ["#071927", "#0b4267", "#129fc1"],
-    accent: "rgba(79, 209, 241, 0.5)",
-  },
-  {
-    id: "hash-poker-room",
-    name: "Hash Poker Room",
-    logo: require("../../assets/logos/hash-poker/hash-poker-room-logo.webp"),
-    colors: ["#10080c", "#4c0b0b", "#c52e26"],
-    accent: "rgba(255, 115, 91, 0.54)",
-  },
-];
-
 type AuthHeaderPalette = {
   titleColor: string;
   subtitleColor: string;
@@ -276,6 +259,14 @@ const DesktopHeroPanel = ({
   animationLevel,
 }: DesktopHeroPanelProps) => {
   const useNativeDriver = Platform.OS !== "web";
+  const activeEventId = useMemo(() => resolveActiveEventId(), []);
+  const configuredAuthAllyIds = useMemo(
+    () => getConfiguredAuthAllyIds(EVENTS[activeEventId]),
+    [activeEventId],
+  );
+  const [allowedAuthAllyIds, setAllowedAuthAllyIds] = useState<AuthAllyId[]>(
+    configuredAuthAllyIds,
+  );
   const blobOne = useRef(new Animated.Value(0)).current;
   const blobTwo = useRef(new Animated.Value(0)).current;
   const blobThree = useRef(new Animated.Value(0)).current;
@@ -316,6 +307,38 @@ const DesktopHeroPanel = ({
   const heroGradientColors = isDark
     ? (["#030a12", "#0a1f31", "#13415e"] as const)
     : (["#ffffff", "#fff9f8", "#fff1ee"] as const);
+
+  useEffect(() => {
+    setAllowedAuthAllyIds(configuredAuthAllyIds);
+  }, [configuredAuthAllyIds]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadAdminAllowedAllies = async () => {
+      try {
+        const result = await apiClient.get(
+          eventApiPath(activeEventId, "auth-allies"),
+          { skipAuth: true, skipEventSegment: true },
+        );
+        const payload = result.success
+          ? (result.data as { data?: { allowedAllyIds?: unknown } })?.data
+          : null;
+
+        if (!cancelled && payload?.allowedAllyIds) {
+          setAllowedAuthAllyIds(normalizeAuthAllyIds(payload.allowedAllyIds));
+        }
+      } catch {
+        // Static event configuration is intentionally the safe fallback for
+        // public auth when the remote settings service is unavailable.
+      }
+    };
+
+    void loadAdminAllowedAllies();
+    return () => {
+      cancelled = true;
+    };
+  }, [activeEventId]);
 
   useEffect(() => {
     if (animationLevel === "none") {
@@ -453,9 +476,13 @@ const DesktopHeroPanel = ({
     inputRange: [0, 1],
     outputRange: [22, 0],
   });
+  const eventAllies = useMemo(
+    () => getAuthAllies(allowedAuthAllyIds),
+    [allowedAuthAllyIds],
+  );
   const allyRailTranslateX = allyRail.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, -408],
+    outputRange: [0, -(eventAllies.length * 204)],
   });
   const heroModeOpacity = heroModeTransition.interpolate({
     inputRange: [0, 1],
@@ -466,7 +493,10 @@ const DesktopHeroPanel = ({
     outputRange: [10, 0],
   });
   const activeHeroMode = heroModes[activeHeroModeIndex] || heroModes[0];
-  const allyRailItems = [...EVENT_ALLIES, ...EVENT_ALLIES];
+  const allyRailItems =
+    animationLevel === "full"
+      ? [...eventAllies, ...eventAllies]
+      : eventAllies;
 
   return (
     <View style={styles.desktopHeroPane}>
@@ -564,7 +594,10 @@ const DesktopHeroPanel = ({
             <Animated.View
               style={[
                 styles.desktopHeroRail,
-                { transform: [{ translateX: allyRailTranslateX }] },
+                animationLevel === "full"
+                  ? { transform: [{ translateX: allyRailTranslateX }] }
+                  : null,
+                animationLevel === "full" ? null : styles.desktopHeroRailStatic,
               ]}
             >
               {allyRailItems.map((ally, index) => (
@@ -3725,6 +3758,9 @@ const getStyles = (
       flexDirection: "row",
       alignItems: "center",
       gap: 14,
+    },
+    desktopHeroRailStatic: {
+      flexWrap: "wrap",
     },
     desktopHeroAllyMark: {
       width: 190,
