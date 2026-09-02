@@ -26,6 +26,7 @@ import { getLampBrandConfig } from "../lib/event-branding";
 import {
   getEventBannerSlides,
   localizeEventBannerSlide,
+  shouldShowEventBannerCountdown,
   type ResolvedEventBannerSlide,
 } from "../lib/event-banners";
 import SafeLinearGradient from "./SafeLinearGradient";
@@ -421,11 +422,11 @@ export default function EventBannerCarousel({
                 subtitle={localizedBanner.subtitle}
                 date={localizedBanner.date}
                 backgroundColor={localizedBanner.backgroundColor}
-                // Campaign footage is its own visual story. Do not cover it
-                // with a countdown; static event slides retain the timer.
-                showCountdown={
-                  banner.media.type !== "video" && Boolean(event.eventStartDate)
-                }
+                // The countdown belongs to the event context, not its media.
+                // Clean video and approved image slides both retain it.
+                showCountdown={shouldShowEventBannerCountdown(
+                  event.eventStartDate,
+                )}
                 showLiveIndicator={
                   banner.media.type !== "video" && Boolean(event.eventStartDate)
                 }

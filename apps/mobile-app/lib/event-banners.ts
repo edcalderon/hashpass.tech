@@ -57,7 +57,7 @@ export const getEventBannerSlides = (
 
   if (!event.bannerSlides?.length) return [fallback];
 
-  return event.bannerSlides.map((slide) => ({
+  return event.bannerSlides.map((slide: EventBannerSlide) => ({
     ...fallback,
     ...slide,
     media: slide.media,
@@ -67,4 +67,17 @@ export const getEventBannerSlides = (
     backgroundColor: slide.backgroundColor || fallback.backgroundColor,
     cta: slide.cta || fallback.cta,
   }));
+};
+
+/**
+ * Landing heroes show a countdown for every upcoming event, regardless of
+ * whether the supporting media is a film or an approved static image.
+ */
+export const shouldShowEventBannerCountdown = (
+  eventStartDate?: string,
+  now: number = Date.now(),
+): boolean => {
+  if (!eventStartDate) return false;
+  const startTime = Date.parse(eventStartDate);
+  return Number.isFinite(startTime) && startTime > now;
 };

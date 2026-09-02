@@ -1,6 +1,7 @@
 import {
   getEventBannerSlides,
   localizeEventBannerSlide,
+  shouldShowEventBannerCountdown,
 } from "../../lib/event-banners";
 import {
   getEventBannerCtaLayout,
@@ -19,6 +20,18 @@ const event = {
 } as EventInfo;
 
 describe("event banner slides", () => {
+  it("keeps the landing countdown for upcoming campaign video and image slides", () => {
+    const now = Date.parse("2026-09-02T00:00:00Z");
+
+    expect(
+      shouldShowEventBannerCountdown("2026-12-11T09:00:00-05:00", now),
+    ).toBe(true);
+    expect(
+      shouldShowEventBannerCountdown("2026-09-01T09:00:00-05:00", now),
+    ).toBe(false);
+    expect(shouldShowEventBannerCountdown(undefined, now)).toBe(false);
+  });
+
   it("uses bottom-right as the default CTA placement with explicit overrides", () => {
     expect(resolveEventBannerCtaPosition()).toBe("bottom-right");
     expect(getEventBannerCtaLayout()).toEqual({
