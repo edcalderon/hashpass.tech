@@ -61,7 +61,7 @@ import { useAnimationLevel } from "../../contexts/AnimationLevelContext";
 import { EVENTS } from "../../config/events";
 import { resolveActiveEventId } from "../../lib/event-path";
 import {
-  getAuthAllies,
+  getEventAuthAllies,
   getConfiguredAuthAllyIds,
   normalizeAuthAllyIds,
   type AuthAllyId,
@@ -477,8 +477,8 @@ const DesktopHeroPanel = ({
     outputRange: [22, 0],
   });
   const eventAllies = useMemo(
-    () => getAuthAllies(allowedAuthAllyIds),
-    [allowedAuthAllyIds],
+    () => getEventAuthAllies(EVENTS[activeEventId], allowedAuthAllyIds),
+    [activeEventId, allowedAuthAllyIds],
   );
   const allyRailTranslateX = allyRail.interpolate({
     inputRange: [0, 1],
@@ -600,7 +600,7 @@ const DesktopHeroPanel = ({
                 animationLevel === "full" ? null : styles.desktopHeroRailStatic,
               ]}
             >
-              {allyRailItems.map((ally: ReturnType<typeof getAuthAllies>[number], index: number) => (
+              {allyRailItems.map((ally: ReturnType<typeof getEventAuthAllies>[number], index: number) => (
                 <Pressable
                   key={`${ally.id}-${index}`}
                   style={[

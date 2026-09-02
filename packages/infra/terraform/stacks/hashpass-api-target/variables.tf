@@ -107,7 +107,8 @@ variable "api_cors_origins" {
       "https://bsl-dev.hashpass.tech",
       "https://bsl.hashpass.tech",
       "https://blockchainsummit-dev.hashpass.lat",
-      "https://blockchainsummit.hashpass.lat"
+      "https://blockchainsummit.hashpass.lat",
+      "https://cbweek2026.hashpass.tech"
     ]
     prod = [
       "https://hashpass.tech",
@@ -115,7 +116,8 @@ variable "api_cors_origins" {
       "https://bsl.hashpass.tech",
       "https://bsl-dev.hashpass.tech",
       "https://blockchainsummit.hashpass.lat",
-      "https://blockchainsummit-dev.hashpass.lat"
+      "https://blockchainsummit-dev.hashpass.lat",
+      "https://cbweek2026.hashpass.tech"
     ]
   }
 }

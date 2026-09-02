@@ -58,6 +58,7 @@ describe("event tenant detection", () => {
       "colombia2026",
       "bsl2025",
       "hash-poker",
+      "cbweek2026",
     ]);
   });
 
@@ -129,46 +130,45 @@ describe("event tenant detection", () => {
     expect(getCurrentEvent("bsl2025", "localhost:8081")?.id).toBe("bsl2025");
   });
 
-  it("resolves CLF aliases and exposes the event short name", () => {
-    setEnv("EXPO_PUBLIC_EVENT_TENANT", "CLF");
+  it("resolves CBWeek aliases and exposes the event short name", () => {
+    setEnv("EXPO_PUBLIC_EVENT_TENANT", "CBWEEK");
 
-    expect(getEventTenantContext("localhost").id).toBe("criptolatinfest");
+    expect(getEventTenantContext("localhost").id).toBe("cbweek2026");
     expect(
       getAvailableEvents("localhost").map((event: { id: string }) => event.id),
-    ).toEqual(["criptolatinfest"]);
-    expect(EVENTS.criptolatinfest.shortName).toBe("CLF");
-    expect(EVENTS.criptolatinfest.aliases).toContain("CriptoLatinFest");
-    expect(EVENTS.criptolatinfest.bannerSlides).toHaveLength(2);
-    expect(EVENTS.criptolatinfest.bannerSlides?.[0]).toMatchObject({
-      media: { type: "video" },
-      durationMs: 30_000,
+    ).toEqual(["cbweek2026"]);
+    expect(EVENTS.cbweek2026.shortName).toBe("CBW");
+    expect(EVENTS.cbweek2026.aliases).toContain("Colombia Blockchain Week");
+    expect(EVENTS.cbweek2026.bannerSlides).toHaveLength(1);
+    expect(EVENTS.cbweek2026.bannerSlides?.[0]).toMatchObject({
+      media: { type: "image" },
     });
   });
 
-  it("keeps the CLF demo available only on its own tenant", () => {
-    const tenant = getEventTenantContext("demo-criptolatinfest.hashpass.tech");
+  it("scopes CBWeek to its own tenant and also lists the published event globally", () => {
+    const tenant = getEventTenantContext("cbweek2026.hashpass.tech");
 
-    expect(tenant.id).toBe("criptolatinfest");
+    expect(tenant.id).toBe("cbweek2026");
     expect(
-      getAvailableEvents("demo-criptolatinfest.hashpass.tech").map(
+      getAvailableEvents("cbweek2026.hashpass.tech").map(
         (event: { id: string }) => event.id,
       ),
-    ).toEqual(["criptolatinfest"]);
+    ).toEqual(["cbweek2026"]);
     expect(
       getAvailableEvents("hashpass.tech").some(
-        (event: { id: string }) => event.id === "criptolatinfest",
+        (event: { id: string }) => event.id === "cbweek2026",
       ),
-    ).toBe(false);
+    ).toBe(true);
   });
 
-  it("shows demo events in the global explorer only when SHOW_DEMO_EVENTS is enabled", () => {
+  it("does not restore the retired demo event when SHOW_DEMO_EVENTS is enabled", () => {
     setEnv("SHOW_DEMO_EVENTS", "true");
 
     expect(
       getAvailableEvents("hashpass.tech").some(
         (event: { id: string }) => event.id === "criptolatinfest",
       ),
-    ).toBe(true);
+    ).toBe(false);
   });
 
   it("resolves route slugs to event ids for route-aware event pages", () => {
@@ -189,12 +189,12 @@ describe("event tenant detection", () => {
       expect(events).toContain("hash-poker");
     });
 
-    it("keeps the requesting demo tenant's own event even though it is demo-flagged", () => {
-      const events = getAvailableEvents("demo-criptolatinfest.hashpass.tech", {
+    it("keeps the requesting CBWeek tenant's own event when all tenants are shown", () => {
+      const events = getAvailableEvents("cbweek2026.hashpass.tech", {
         includeAllTenants: true,
       }).map((event: { id: string }) => event.id);
 
-      expect(events).toContain("criptolatinfest");
+      expect(events).toContain("cbweek2026");
       expect(events).toContain("bsl");
     });
 
@@ -223,12 +223,12 @@ describe("event tenant detection", () => {
 
     it("resolves a foreign tenant's event via getCurrentEvent when opted in", () => {
       expect(
-        getCurrentEvent("bsl", "demo-criptolatinfest.hashpass.tech"),
+        getCurrentEvent("bsl", "cbweek2026.hashpass.tech"),
       ).toBeNull();
 
       const resolved = getCurrentEvent(
         "bsl",
-        "demo-criptolatinfest.hashpass.tech",
+        "cbweek2026.hashpass.tech",
         { includeAllTenants: true },
       );
       expect(resolved?.id).toBe("bsl");
@@ -237,7 +237,7 @@ describe("event tenant detection", () => {
     it("falls back to the global default event, not the narrow tenant, when opted in with no eventId", () => {
       const resolved = getCurrentEvent(
         undefined,
-        "demo-criptolatinfest.hashpass.tech",
+        "cbweek2026.hashpass.tech",
         { includeAllTenants: true },
       );
 

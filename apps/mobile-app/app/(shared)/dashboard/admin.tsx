@@ -2608,7 +2608,7 @@ function EventAuthAllySettings({
                     </Text>
                     <Text style={[styles.passInfo, enabled && styles.passTypeButtonTextActive]}>
                       {required
-                        ? "Always included as the platform default ally."
+                        ? "Always included as the platform sponsor and ally."
                         : enabled
                           ? "Allowed on this event's desktop sign-in screen."
                           : "Hidden from this event's desktop sign-in screen."}

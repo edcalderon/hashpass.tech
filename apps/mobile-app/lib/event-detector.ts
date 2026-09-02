@@ -41,11 +41,12 @@ const TENANT_ALIASES: Record<string, string> = {
   bsl2025: "bsl2025",
   pkrr: "hash-poker",
   "hash-poker": "hash-poker",
-  cbw: "cbw2026",
-  cbweek: "cbw2026",
-  cbw2026: "cbw2026",
-  "colombia-blockchain-week": "cbw2026",
-  "colombia-blockchain-week-2026": "cbw2026",
+  cbw: "cbweek2026",
+  cbweek: "cbweek2026",
+  cbw2026: "cbweek2026",
+  cbweek2026: "cbweek2026",
+  "colombia-blockchain-week": "cbweek2026",
+  "colombia-blockchain-week-2026": "cbweek2026",
 };
 
 const TENANT_HOSTNAME_ALIASES: Record<string, string> = {
@@ -70,7 +71,7 @@ const TENANT_HOSTNAME_ALIASES: Record<string, string> = {
   "colombia2026.hashpass.tech": "colombia2026",
   "hash.poker": "hash-poker",
   "www.hash.poker": "hash-poker",
-  "cbw2026.hashpass.tech": "cbw2026",
+  "cbweek2026.hashpass.tech": "cbweek2026",
 };
 
 const getEventTourHubId = (eventId: string): string | null => {

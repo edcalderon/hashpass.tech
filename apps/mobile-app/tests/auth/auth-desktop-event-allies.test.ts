@@ -18,7 +18,7 @@ describe("desktop auth event-allies carousel", () => {
 
     expect(source).toContain('eventApiPath(activeEventId, "auth-allies")');
     expect(source).toContain("getConfiguredAuthAllyIds(EVENTS[activeEventId])");
-    expect(source).toContain("getAuthAllies(allowedAuthAllyIds)");
+    expect(source).toContain("getEventAuthAllies(EVENTS[activeEventId], allowedAuthAllyIds)");
     expect(source).toContain("normalizeAuthAllyIds(payload.allowedAllyIds)");
     expect(source).toMatch(
       /animationLevel === "full"\s*\? \[\.\.\.eventAllies, \.\.\.eventAllies\]\s*: eventAllies/,

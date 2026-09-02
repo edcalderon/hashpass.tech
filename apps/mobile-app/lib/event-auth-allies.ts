@@ -3,15 +3,17 @@
  *
  * These ids deliberately stay separate from the event registry: an ally is a
  * reusable partner brand, while an event chooses which of those brands it is
- * permitted to display. Hash Poker Room is part of the platform default and
- * is therefore included for every event, including events without a saved
- * administrator override.
+ * permitted to display. The hosting event is always represented by its own
+ * official logo. Hash Poker Room is the platform's mandatory sponsor/ally and
+ * is included once for every event.
  */
+import type { ImageSourcePropType } from "react-native";
+
 export const DEFAULT_AUTH_ALLY_ID = "hash-poker-room" as const;
 
 export const AUTH_ALLIES = [
   {
-    id: DEFAULT_AUTH_ALLY_ID,
+    id: "hash-poker-room",
     name: "Hash Poker Room",
     logo: require("../assets/logos/hash-poker/hash-poker-room-logo.webp"),
     colors: ["#10080c", "#4c0b0b", "#c52e26"] as const,
@@ -27,18 +29,33 @@ export const AUTH_ALLIES = [
 ] as const;
 
 export type AuthAllyId = (typeof AUTH_ALLIES)[number]["id"];
-export type AuthAlly = (typeof AUTH_ALLIES)[number];
+export type AuthAlly = {
+  id: string;
+  name: string;
+  logo: ImageSourcePropType;
+  colors: readonly [string, string, string];
+  accent: string;
+};
 
 type EventAuthAllyConfig = {
+  id: string;
+  name: string;
+  shortName?: string;
+  branding: {
+    logo: string;
+    primaryColor: string;
+    secondaryColor?: string;
+  };
   authAllyIds?: readonly string[];
 };
 
 const AUTH_ALLY_IDS = new Set<string>(AUTH_ALLIES.map((ally) => ally.id));
 
 /**
- * Validates a stored admin allowlist and makes the platform default explicit.
- * Invalid/duplicate IDs are ignored so an old or malformed row cannot expose
- * a brand an event administrator did not choose.
+ * Validates a stored admin allowlist. Invalid/duplicate IDs are ignored so an
+ * old or malformed row cannot expose a brand an event administrator did not
+ * choose. Hash Poker Room and the event's own logo are resolved separately
+ * and cannot be removed.
  */
 export function normalizeAuthAllyIds(ids: unknown): AuthAllyId[] {
   const allowed = new Set<AuthAllyId>([DEFAULT_AUTH_ALLY_ID]);
@@ -66,4 +83,41 @@ export function getConfiguredAuthAllyIds(
 export function getAuthAllies(ids: unknown): AuthAlly[] {
   const allowed = new Set(normalizeAuthAllyIds(ids));
   return AUTH_ALLIES.filter((ally) => allowed.has(ally.id));
+}
+
+const colorWithAlpha = (hex: string, alpha: number): string => {
+  const normalized = hex.trim().replace(/^#/, "");
+  if (!/^[0-9a-f]{6}$/i.test(normalized)) return `rgba(252, 209, 22, ${alpha})`;
+  const value = Number.parseInt(normalized, 16);
+  const red = (value >> 16) & 255;
+  const green = (value >> 8) & 255;
+  const blue = value & 255;
+  return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+};
+
+/**
+ * Resolves the one brand that must be present on every event sign-in panel:
+ * the event itself. This keeps a CBW tenant from ever rendering a BSL, Hash
+ * Poker, or generic HashPass mark as its primary event card.
+ */
+export function getEventAuthAllies(
+  event?: EventAuthAllyConfig | null,
+  ids?: unknown,
+): AuthAlly[] {
+  if (!event?.id || !event.branding?.logo) return getAuthAllies(ids);
+
+  const primary = event.branding.primaryColor || "#FCD116";
+  const secondary = event.branding.secondaryColor || "#050507";
+  const eventAlly: AuthAlly = {
+    id: event.id,
+    name: event.shortName || event.name,
+    logo: { uri: event.branding.logo },
+    colors: [secondary, secondary, primary],
+    accent: colorWithAlpha(primary, 0.54),
+  };
+
+  return [
+    eventAlly,
+    ...getAuthAllies(ids).filter((ally) => ally.id !== event.id),
+  ];
 }

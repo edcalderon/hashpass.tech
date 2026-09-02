@@ -278,7 +278,7 @@ const PROFILES: SupabaseProfile[] = [
     environment: 'development',
     // The tenant pipeline intentionally uses the BSL development profile.
     // Its custom-domain build supplies this same profile explicitly.
-    hosts: ['bsl-dev.hashpass.tech', 'cbw2026.hashpass.tech'],
+    hosts: ['bsl-dev.hashpass.tech', 'cbweek2026.hashpass.tech'],
     publicUrlEnv: [
       'EXPO_PUBLIC_BSL_SUPABASE_URL_DEV',
       'EXPO_PUBLIC_SUPABASE_URL_BSL_DEV',

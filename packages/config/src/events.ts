@@ -4388,33 +4388,36 @@ export const EVENTS: Record<string, EventConfig> = {
     ],
   },
   ...(HASH_POKER_EVENT ? { "hash-poker": HASH_POKER_EVENT } : {}),
-  cbw2026: {
-    id: "cbw2026",
+  cbweek2026: {
+    id: "cbweek2026",
     name: "Colombia Blockchain Week 2026",
     shortName: "CBW",
     aliases: ["cbw", "Colombia Blockchain Week", "CB Week 2026"],
-    domain: "cbw2026.hashpass.tech",
+    domain: "cbweek2026.hashpass.tech",
     website: "https://colombiablockchainweek.com/",
     title: "Colombia Blockchain Week 2026",
     subtitle: "Hotel InterContinental Medellín • 1ª Edición",
-    // Compact mark keeps cards and countdowns readable; reserve the full
-    // lockup for headers/brand contexts where it has enough room to breathe.
-    image: "/assets/images/hashpass-banner.jpg",
+    // Official Colombia Blockchain Week assets, downloaded from the event's
+    // own published media library and re-hosted on HashPass event media.
+    image: "https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events/cbweek2026/branding/cbweek2026-hero.jpg",
     bannerSlides: [
       {
-        id: "cbw-2026",
-        media: { type: "image", url: "/assets/images/hashpass-banner.jpg" },
+        id: "cbweek-2026",
+        media: {
+          type: "image",
+          url: "https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events/cbweek2026/branding/cbweek2026-hero.jpg",
+        },
         eyebrow: "CBW 2026 · 1ª Edición",
         title: "Colombia Blockchain Week 2026",
         subtitle: "Hotel InterContinental Medellín · El Poblado",
         date: "December 11-12, 2026 · Medellín, Colombia",
         cta: {
           label: "Explore Colombia Blockchain Week",
-          url: "/events/cbw2026/home",
+          url: "/events/cbweek2026/home",
         },
       },
     ],
-    color: "#087C80",
+    color: "#FCD116",
     eventStartDate: "2026-12-12T08:30:00-05:00",
     eventEndDate: "2026-12-12T18:00:00-05:00",
     eventDateString: "December 11-12, 2026 • Medellín, Colombia",
@@ -4428,20 +4431,20 @@ export const EVENTS: Record<string, EventConfig> = {
     authAllyIds: ["hash-poker-room"],
     isDemo: false,
     branding: {
-      primaryColor: "#087C80",
-      secondaryColor: "#06111F",
-      logo: "/assets/logos/hashpass/logo-full-hashpass-white.svg",
+      primaryColor: "#FCD116",
+      secondaryColor: "#050507",
+      logo: "https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events/cbweek2026/branding/cbweek2026-logo.webp",
       favicon: "/favicon.ico",
     },
     api: {
-      basePath: "/api/cbw2026",
+      basePath: "/api/cbweek2026",
       endpoints: { ...BSL_SHARED_API_ENDPOINTS },
     },
     routes: {
-      home: "/events/cbw2026/home",
-      speakers: "/events/cbw2026/speakers",
-      bookings: "/events/cbw2026/my-bookings",
-      admin: "/events/cbw2026/admin",
+      home: "/events/cbweek2026/home",
+      speakers: "/events/cbweek2026/speakers",
+      bookings: "/events/cbweek2026/my-bookings",
+      admin: "/events/cbweek2026/admin",
     },
     // The official site has not announced 2026 speakers or a timed agenda.
     // Do not present the site's past-edition speakers as confirmed for CBW.
@@ -4454,7 +4457,7 @@ export const EVENTS: Record<string, EventConfig> = {
         subtitle: "Coming soon",
         icon: "event",
         color: "#34A853",
-        route: "/events/cbw2026/agenda",
+        route: "/events/cbweek2026/agenda",
       },
       {
         id: "speakers",
@@ -4462,7 +4465,7 @@ export const EVENTS: Record<string, EventConfig> = {
         subtitle: "To be announced",
         icon: "people",
         color: "#087C80",
-        route: "/events/cbw2026/speakers/calendar",
+        route: "/events/cbweek2026/speakers/calendar",
       },
       {
         id: "event-info",
@@ -4470,7 +4473,7 @@ export const EVENTS: Record<string, EventConfig> = {
         subtitle: "Details & Logistics",
         icon: "info",
         color: "#FF9500",
-        route: "/events/cbw2026/event-info",
+        route: "/events/cbweek2026/event-info",
       },
     ],
   },
