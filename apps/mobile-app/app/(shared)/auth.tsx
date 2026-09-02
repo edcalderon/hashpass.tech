@@ -270,7 +270,6 @@ const DesktopHeroPanel = ({
   const blobOne = useRef(new Animated.Value(0)).current;
   const blobTwo = useRef(new Animated.Value(0)).current;
   const blobThree = useRef(new Animated.Value(0)).current;
-  const allyRail = useRef(new Animated.Value(0)).current;
   const heroModeTransition = useRef(new Animated.Value(1)).current;
   const contentEntrance = useRef(
     new Animated.Value(animationLevel === "none" ? 1 : 0),
@@ -389,25 +388,6 @@ const DesktopHeroPanel = ({
   ]);
 
   useEffect(() => {
-    if (animationLevel !== "full") {
-      allyRail.setValue(0);
-      return;
-    }
-
-    const animation = Animated.loop(
-      Animated.timing(allyRail, {
-        toValue: 1,
-        duration: 18000,
-        easing: Easing.linear,
-        useNativeDriver,
-      }),
-    );
-    animation.start();
-
-    return () => animation.stop();
-  }, [allyRail, animationLevel, useNativeDriver]);
-
-  useEffect(() => {
     if (animationLevel === "none") {
       setActiveHeroModeIndex(0);
       heroModeTransition.setValue(1);
@@ -480,10 +460,6 @@ const DesktopHeroPanel = ({
     () => getEventAuthAllies(EVENTS[activeEventId], allowedAuthAllyIds),
     [activeEventId, allowedAuthAllyIds],
   );
-  const allyRailTranslateX = allyRail.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, -(eventAllies.length * 204)],
-  });
   const heroModeOpacity = heroModeTransition.interpolate({
     inputRange: [0, 1],
     outputRange: [0, 1],
@@ -493,10 +469,6 @@ const DesktopHeroPanel = ({
     outputRange: [10, 0],
   });
   const activeHeroMode = heroModes[activeHeroModeIndex] || heroModes[0];
-  const allyRailItems =
-    animationLevel === "full"
-      ? [...eventAllies, ...eventAllies]
-      : eventAllies;
 
   return (
     <View style={styles.desktopHeroPane}>
@@ -591,18 +563,10 @@ const DesktopHeroPanel = ({
             {t("desktopHero.alliesLabel", "EVENTS & ALLIES")}
           </Text>
           <View style={styles.desktopHeroRailViewport}>
-            <Animated.View
-              style={[
-                styles.desktopHeroRail,
-                animationLevel === "full"
-                  ? { transform: [{ translateX: allyRailTranslateX }] }
-                  : null,
-                animationLevel === "full" ? null : styles.desktopHeroRailStatic,
-              ]}
-            >
-              {allyRailItems.map((ally: ReturnType<typeof getEventAuthAllies>[number], index: number) => (
+            <View style={[styles.desktopHeroRail, styles.desktopHeroRailStatic]}>
+              {eventAllies.map((ally: ReturnType<typeof getEventAuthAllies>[number]) => (
                 <Pressable
-                  key={`${ally.id}-${index}`}
+                  key={ally.id}
                   style={[
                     styles.desktopHeroAllyMark,
                     hoveredAllyId === ally.id
@@ -644,7 +608,7 @@ const DesktopHeroPanel = ({
                   </Text>
                 </Pressable>
               ))}
-            </Animated.View>
+            </View>
           </View>
         </View>
       </Animated.View>

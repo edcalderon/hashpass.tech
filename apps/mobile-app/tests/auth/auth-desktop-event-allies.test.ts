@@ -12,24 +12,21 @@ import pt from "../../i18n/locales/pt.json";
 const readAuthSource = () =>
   readFileSync(resolve(__dirname, "../../app/(shared)/auth.tsx"), "utf8");
 
-describe("desktop auth event-allies carousel", () => {
-  it("lists only the current tenant's allowed allies in an infinitely repeating rail", () => {
+describe("desktop auth event allies", () => {
+  it("lists the current tenant and its allowed allies exactly once", () => {
     const source = readAuthSource();
 
     expect(source).toContain('eventApiPath(activeEventId, "auth-allies")');
     expect(source).toContain("getConfiguredAuthAllyIds(EVENTS[activeEventId])");
     expect(source).toContain("getEventAuthAllies(EVENTS[activeEventId], allowedAuthAllyIds)");
     expect(source).toContain("normalizeAuthAllyIds(payload.allowedAllyIds)");
-    expect(source).toMatch(
-      /animationLevel === "full"\s*\? \[\.\.\.eventAllies, \.\.\.eventAllies\]\s*: eventAllies/,
-    );
-    expect(source).toContain("Animated.loop(");
+    expect(source).toContain("eventAllies.map(");
+    expect(source).not.toContain("[...eventAllies, ...eventAllies]");
   });
 
   it("cycles the desktop value proposition, but starts with events when motion is disabled", () => {
     const source = readAuthSource();
 
-    expect(source).toContain('if (animationLevel !== "full")');
     expect(source).toContain('if (animationLevel === "none")');
     expect(source).toContain("setActiveHeroModeIndex(0);");
     expect(source).toContain("desktopHero.modes.concerts");
@@ -38,15 +35,10 @@ describe("desktop auth event-allies carousel", () => {
     expect(source).toContain("accessibilityLabel={ally.name}");
   });
 
-  it("shows every ally once in a wrapping static rail when motion is reduced or disabled", () => {
+  it("uses a wrapping static rail so every ally remains visible once", () => {
     const source = readAuthSource();
 
-    expect(source).toMatch(
-      /animationLevel === "full"\s*\? \[\.\.\.eventAllies, \.\.\.eventAllies\]\s*: eventAllies/,
-    );
-    expect(source).toContain(
-      'animationLevel === "full" ? null : styles.desktopHeroRailStatic',
-    );
+    expect(source).toContain("[styles.desktopHeroRail, styles.desktopHeroRailStatic]");
     expect(source).toContain("desktopHeroRailStatic: {");
     expect(source).toContain('flexWrap: "wrap"');
   });
