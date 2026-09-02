@@ -23,15 +23,6 @@ interface EventProviderProps {
 
 export function EventProvider({ children }: EventProviderProps) {
   const [, setRegistryRevision] = useState(0);
-  useEffect(() => {
-    let active = true;
-    refreshHashPokerRuntimeEvent()
-      .then((changed) => {
-        if (active && changed) setRegistryRevision((value) => value + 1);
-      })
-      .catch((error) => console.error('[HashPass] Event registry refresh failed', error));
-    return () => { active = false; };
-  }, []);
   const pathname = usePathname();
   const routeEventId = getRouteEventIdFromPathname(pathname);
   const hostname =
@@ -49,6 +40,24 @@ export function EventProvider({ children }: EventProviderProps) {
   const event: EventConfig | null = eventInfo
     ? (EVENTS[eventInfo.id as keyof typeof EVENTS] || null)
     : null;
+
+  // The live PKRR feed only changes Hash Poker's tournament schedule. Do not
+  // request it from a single-event tenant such as CBWeek: it adds unrelated
+  // network noise and turns a feed outage into a misleading auth-page error.
+  const shouldRefreshHashPoker =
+    eventInfo?.id === 'hash-poker' || tenant?.id === 'hash-poker';
+
+  useEffect(() => {
+    if (!shouldRefreshHashPoker) return;
+
+    let active = true;
+    refreshHashPokerRuntimeEvent()
+      .then((changed: boolean) => {
+        if (active && changed) setRegistryRevision((value) => value + 1);
+      })
+      .catch((error: unknown) => console.error('[HashPass] Event registry refresh failed', error));
+    return () => { active = false; };
+  }, [shouldRefreshHashPoker]);
 
   const hasFeature = (feature: string) => {
     return event?.features?.includes(feature) ?? false;

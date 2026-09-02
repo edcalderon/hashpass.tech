@@ -59,4 +59,15 @@ describe("EventProvider runtime registry refresh", () => {
     expect(consoleError).toHaveBeenCalledWith("[HashPass] Event registry refresh failed", error);
     consoleError.mockRestore();
   });
+
+  it("does not refresh the Hash Poker feed for another event tenant", async () => {
+    mockGetCurrentEvent.mockReturnValue({ id: "cbweek2026" });
+
+    await act(async () => {
+      TestRenderer.create(<EventProvider><Probe /></EventProvider>);
+      await Promise.resolve();
+    });
+
+    expect(mockRefreshHashPokerRuntimeEvent).not.toHaveBeenCalled();
+  });
 });
