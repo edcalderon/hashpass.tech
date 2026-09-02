@@ -8,18 +8,26 @@ function speakerIdFromRequest(request: Request) {
 }
 
 export async function GET(request: Request) {
-  if (!eventIdFromRequest(request)) {
+  const eventId = eventIdFromRequest(request);
+  if (!eventId) {
     return Response.json({ error: "A valid event id is required" }, { status: 400 });
   }
   const speakerId = speakerIdFromRequest(request);
   if (!speakerId) return Response.json({ error: "Missing speaker id" }, { status: 400 });
 
   const supabase = getSupabaseServerForRequest(request);
-  const { data, error } = await supabase
-    .from("bsl_speakers")
-    .select("id, name, title, company, bio, imageurl, linkedin, twitter, tags, availability, user_id, is_active")
-    .eq("id", speakerId)
-    .maybeSingle();
+  const usesLegacyBslDirectory = /^(?:bsl|bsl2025|peru2026|chile2026|colombia2026)$/i.test(eventId);
+  const query = usesLegacyBslDirectory
+    ? supabase
+      .from("bsl_speakers")
+      .select("id, name, title, company, bio, imageurl, linkedin, twitter, tags, availability, user_id, is_active")
+      .eq("id", speakerId)
+    : supabase
+      .from("speakers")
+      .select("id, event_id, name, title, company, bio, image_url, social_links, metadata, user_id, sort_order")
+      .eq("event_id", eventId)
+      .eq("id", speakerId);
+  const { data, error } = await query.maybeSingle();
   if (error) {
     console.error("[event-speaker] detail error:", error);
     return Response.json({ error: "Failed to load speaker" }, { status: 500 });

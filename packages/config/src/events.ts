@@ -4451,15 +4451,67 @@ export const EVENTS: Record<string, EventConfig> = {
       bookings: "/events/cbweek2026/my-bookings",
       admin: "/events/cbweek2026/admin",
     },
-    // The official site has not announced 2026 speakers or a timed agenda.
-    // Do not present the site's past-edition speakers as confirmed for CBW.
-    speakers: [],
-    agenda: [],
+    // CBWeek has not announced a timed 2026 programme or confirmed speakers.
+    // The following is a clearly labelled HashPass demo programme, created
+    // from CBWeek's ten published topic pillars (2026-09-02), not an
+    // organizer-announced schedule.
+    speakers: [
+      {
+        id: "90e7014d-0d4b-4ee0-a7bf-b5f3b8db6201",
+        name: "Bryan Aguilar",
+        title: "CEO",
+        company: "LATAM Blockchain Events LLC",
+        bio: "CEO of LATAM Blockchain Events LLC. Listed on the official CBWeek contact section; included in this HashPass demo programme at organizer direction, not as an officially announced CBWeek 2026 speaker.",
+        image: "https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events/cbweek2026/speakers/bryan-aguilar.png",
+        isActive: true,
+      },
+      {
+        id: "90e7014d-0d4b-4ee0-a7bf-b5f3b8db6202",
+        name: "Lucero Dextre",
+        title: "COO",
+        company: "LATAM Blockchain Events LLC",
+        bio: "COO of LATAM Blockchain Events LLC. Listed on the official CBWeek contact section; included in this HashPass demo programme at organizer direction, not as an officially announced CBWeek 2026 speaker.",
+        image: "https://hashpass-production-event-media-952191196420-us-east-2.amazonaws.com/events/cbweek2026/speakers/lucero-dextre.png",
+        isActive: true,
+      },
+      {
+        id: "90e7014d-0d4b-4ee0-a7bf-b5f3b8db6203",
+        name: "Edward Calderón",
+        title: "CEO",
+        company: "HASHPASS",
+        bio: "CEO of HashPass and blockchain technology leader. Included in this HashPass demo programme at organizer direction, not as an officially announced CBWeek 2026 speaker.",
+        image: "https://hashpass-production-event-media-952191196420-us-east-2.amazonaws.com/events/cbweek2026/speakers/edward-calderon.png",
+        isActive: true,
+      },
+    ],
+    dayThemes: {
+      "1": {
+        es: "Programa demo · Main Day basado en los temas oficiales",
+        en: "Demo programme · Main Day based on official topics",
+      },
+    },
+    agenda: [
+      { id: "cbweek2026-demo-01", time: "2026-12-12T08:30:00-05:00", title: "Acreditación y bienvenida", description: "Programa demo de HashPass para el Main Day (08:30–18:00).", type: "registration", location: "Registro · Hotel InterContinental Medellín", day: "1" },
+      { id: "cbweek2026-demo-02", time: "2026-12-12T09:00:00-05:00", title: "Apertura: Medellín entra al mapa cripto de LATAM", description: "Demo keynote de apertura del programa basado en los temas publicados por CBWeek.", speakers: ["90e7014d-0d4b-4ee0-a7bf-b5f3b8db6201"], type: "keynote", location: "Main Stage", day: "1" },
+      { id: "cbweek2026-demo-03", time: "2026-12-12T09:30:00-05:00", title: "Blockchain, Bitcoin, Criptomonedas & Trading", description: "Fundamentos, adopción y estrategias para entender y operar el ecosistema cripto global. Tema publicado por CBWeek; sesión demo.", speakers: ["90e7014d-0d4b-4ee0-a7bf-b5f3b8db6201"], type: "keynote", location: "Main Stage", day: "1" },
+      { id: "cbweek2026-demo-04", time: "2026-12-12T10:00:00-05:00", title: "Forex, Inversiones & Mercados Financieros · Exchanges & Brokers", description: "Análisis macroeconómico, gestión de riesgo, oportunidades, plataformas, liquidez y herramientas que conectan a inversionistas con mercados globales. Sesión demo.", speakers: ["90e7014d-0d4b-4ee0-a7bf-b5f3b8db6202", "90e7014d-0d4b-4ee0-a7bf-b5f3b8db6201"], type: "panel", location: "Main Stage", day: "1" },
+      { id: "cbweek2026-demo-05", time: "2026-12-12T11:00:00-05:00", title: "Coffee break y visitas a stands", description: "Espacio demo para networking y descubrimiento de soluciones.", type: "break", location: "Zona de Stands", day: "1" },
+      { id: "cbweek2026-demo-06", time: "2026-12-12T11:15:00-05:00", title: "Activos Digitales, Stablecoins, OTC, P2P, Liquidez, Wallets & Pagos Digitales", description: "Infraestructura y soluciones para custodiar, intercambiar y mover valor digital sin fronteras. Tema publicado por CBWeek; sesión demo.", speakers: ["90e7014d-0d4b-4ee0-a7bf-b5f3b8db6202"], type: "panel", location: "Main Stage", day: "1" },
+      { id: "cbweek2026-demo-07", time: "2026-12-12T12:15:00-05:00", title: "Tokenización, RWA, Web3, Fintech & Startups", description: "Casos de innovación que llevan activos, productos y nuevos negocios al entorno on-chain. Tema publicado por CBWeek; sesión demo.", speakers: ["90e7014d-0d4b-4ee0-a7bf-b5f3b8db6203"], type: "keynote", location: "Main Stage", day: "1" },
+      { id: "cbweek2026-demo-08", time: "2026-12-12T12:45:00-05:00", title: "Custodia, Servicios Institucionales & Soluciones B2B", description: "Servicios seguros y escalables para empresas e instituciones que adoptan activos digitales. Tema publicado por CBWeek; sesión demo.", speakers: ["90e7014d-0d4b-4ee0-a7bf-b5f3b8db6201", "90e7014d-0d4b-4ee0-a7bf-b5f3b8db6203"], type: "panel", location: "Main Stage", day: "1" },
+      { id: "cbweek2026-demo-09", time: "2026-12-12T13:45:00-05:00", title: "Almuerzo y networking", description: "Espacio demo de conexiones de negocio.", type: "meal", location: "Networking Zone", day: "1" },
+      { id: "cbweek2026-demo-10", time: "2026-12-12T14:45:00-05:00", title: "DeFi, Regulación & Marco Legal LATAM", description: "Protocolos descentralizados y marcos normativos que están definiendo el futuro financiero regional. Tema publicado por CBWeek; sesión demo.", speakers: ["90e7014d-0d4b-4ee0-a7bf-b5f3b8db6202", "90e7014d-0d4b-4ee0-a7bf-b5f3b8db6203"], type: "panel", location: "Main Stage", day: "1" },
+      { id: "cbweek2026-demo-11", time: "2026-12-12T15:45:00-05:00", title: "Educación Financiera & Web3", description: "Conocimiento práctico para tomar mejores decisiones y participar responsablemente en la economía digital. Tema publicado por CBWeek; taller demo.", speakers: ["90e7014d-0d4b-4ee0-a7bf-b5f3b8db6202"], type: "workshop", location: "Main Stage", day: "1" },
+      { id: "cbweek2026-demo-12", time: "2026-12-12T16:15:00-05:00", title: "Inteligencia Artificial & Tecnologías Emergentes", description: "Aplicaciones de IA y tecnologías emergentes que transforman productos, operaciones y experiencias digitales. Tema publicado por CBWeek; taller demo.", speakers: ["90e7014d-0d4b-4ee0-a7bf-b5f3b8db6203"], type: "workshop", location: "Main Stage", day: "1" },
+      { id: "cbweek2026-demo-13", time: "2026-12-12T16:45:00-05:00", title: "Security, Compliance & Blockchain Analytics", description: "Prevención de fraude, trazabilidad y cumplimiento para construir un ecosistema Web3 más confiable. Tema publicado por CBWeek; sesión demo.", speakers: ["90e7014d-0d4b-4ee0-a7bf-b5f3b8db6203"], type: "keynote", location: "Main Stage", day: "1" },
+      { id: "cbweek2026-demo-14", time: "2026-12-12T17:15:00-05:00", title: "Cierre: conexiones que impulsan el circuito LATAM", description: "Panel demo de cierre sobre educación, adopción, negocios y experiencias presenciales en la región.", speakers: ["90e7014d-0d4b-4ee0-a7bf-b5f3b8db6201", "90e7014d-0d4b-4ee0-a7bf-b5f3b8db6202"], type: "keynote", location: "Main Stage", day: "1" },
+      { id: "cbweek2026-demo-15", time: "2026-12-12T17:45:00-05:00", title: "Networking de cierre", description: "17:45–18:00 · Cierre del Main Day. Espacio demo de conexiones.", type: "break", location: "Networking Zone", day: "1" },
+    ],
     quickAccessItems: [
       {
         id: "agenda",
         title: "Event Agenda",
-        subtitle: "Coming soon",
+        subtitle: "Demo programme · Dec 12",
         icon: "event",
         color: "#34A853",
         route: "/events/cbweek2026/agenda",
@@ -4467,7 +4519,7 @@ export const EVENTS: Record<string, EventConfig> = {
       {
         id: "speakers",
         title: "Speakers",
-        subtitle: "To be announced",
+        subtitle: "Demo speaker directory",
         icon: "people",
         color: "#087C80",
         route: "/events/cbweek2026/speakers/calendar",

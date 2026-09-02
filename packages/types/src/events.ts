@@ -5,6 +5,8 @@ export interface Speaker {
   company: string;
   bio?: string;
   image?: string;
+  /** Whether this event-owned speaker should be shown as active in the directory. */
+  isActive?: boolean;
   social?: {
     linkedin?: string;
     twitter?: string;

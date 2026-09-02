@@ -35,7 +35,9 @@ interface EventSpeakerConfig {
   name: string;
   title?: string | null;
   company?: string | null;
+  bio?: string;
   image?: string;
+  isActive?: boolean;
 }
 
 function SpeakerCard({
@@ -129,18 +131,19 @@ export default function SpeakersCalendar() {
   // moments later, since nothing would re-trigger this effect.
   useEffect(() => {
     if (!event) return;
+    let cancelled = false;
 
     const loadSpeakers = async () => {
       try {
         setLoading(true);
 
-        // bsl_speakers is a legacy shared BSL directory, not a generic
-        // event-scoped speaker table. A new whitelabel event with no
-        // confirmed speakers must not accidentally show BSL speakers.
+        // bsl_speakers is a legacy shared BSL directory. Whitelabel events
+        // use the event-scoped speakers table so they never inherit the BSL
+        // directory by accident.
         const canUseLegacyBslDirectory = /^(?:bsl|bsl2025|peru2026|chile2026|colombia2026)$/i.test(event.id);
         const dbPromise = canUseLegacyBslDirectory
           ? supabase.from('bsl_speakers').select('*')
-          : Promise.resolve({ data: [], error: null });
+          : supabase.from('speakers').select('*').eq('event_id', event.id).order('sort_order');
 
         let timeoutId: ReturnType<typeof setTimeout> | undefined;
         const timeoutPromise = new Promise((_, reject) => {
@@ -157,9 +160,11 @@ export default function SpeakersCalendar() {
               title: s.title || null,
               company: s.company || null,
               bio: s.bio || (s.title ? `Experienced professional in ${s.title}.` : undefined),
-              image: s.imageurl || getSpeakerAvatarUrl(s.name),
+              image: s.imageurl || s.image_url || getSpeakerAvatarUrl(s.name),
               user_id: s.user_id || undefined,
-              isActive: isClaimedActiveSpeaker(s)
+              isActive: canUseLegacyBslDirectory
+                ? isClaimedActiveSpeaker(s)
+                : s.metadata?.is_active === true,
             }));
             
             // Remove duplicates based on ID
@@ -169,6 +174,7 @@ export default function SpeakersCalendar() {
             
             // Sort by priority order
             const sortedSpeakers: Speaker[] = sortSpeakersByPriority(uniqueSpeakers);
+            if (cancelled) return;
             setSpeakers(sortedSpeakers);
             setLoading(false);
             return;
@@ -186,10 +192,8 @@ export default function SpeakersCalendar() {
           name: s.name,
           title: s.title || null,
           company: s.company || null,
-          bio: (s.title && s.company) ? `Experienced professional in ${s.title} at ${s.company}.` : undefined,
-          // Event configuration does not contain claim state, so never expose
-          // a fallback record as networking-active.
-          isActive: false,
+          bio: s.bio || ((s.title && s.company) ? `Experienced professional in ${s.title} at ${s.company}.` : undefined),
+          isActive: Boolean(s.isActive),
           // s.image is our own hosted photo (see packages/config/src/events.ts).
           // Only fall back to the legacy Cloudinary/name-guessing lookup for
           // older speakers that were never given a real image field.
@@ -203,6 +207,7 @@ export default function SpeakersCalendar() {
 
         // Sort by priority order
         const sortedEventSpeakers: Speaker[] = sortSpeakersByPriority(uniqueEventSpeakers);
+        if (cancelled) return;
         setSpeakers(sortedEventSpeakers);
         setLoading(false);
       } catch (error) {
@@ -215,7 +220,7 @@ export default function SpeakersCalendar() {
           title: s.title || null,
           company: s.company || null,
           bio: (s.title && s.company) ? `Experienced professional in ${s.title} at ${s.company}.` : undefined,
-          isActive: false,
+          isActive: Boolean(s.isActive),
           image: resolveSpeakerImage(s.image, s.name)
         }));
 
@@ -226,12 +231,16 @@ export default function SpeakersCalendar() {
         
         // Sort by priority order
         const sortedEmergencySpeakers: Speaker[] = sortSpeakersByPriority(uniqueEmergencySpeakers);
+        if (cancelled) return;
         setSpeakers(sortedEmergencySpeakers);
         setLoading(false);
       }
     };
 
     loadSpeakers();
+    return () => {
+      cancelled = true;
+    };
   }, [event?.id]); // Re-run once `event` resolves (or the route's event changes)
 
   if (loading) {
