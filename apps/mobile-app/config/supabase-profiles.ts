@@ -276,14 +276,9 @@ const PROFILES: SupabaseProfile[] = [
     id: 'bsl-development',
     tenant: 'bsl',
     environment: 'development',
-    // demo-criptolatinfest.hashpass.tech piggybacks on the BSL dev DB/app
-    // bundle (see packages/config/src/events.ts's `criptolatinfest` entry,
-    // isDemo: true). Demo-mode tenants are guarded to development
-    // databases only -- see the isDemoHostname() check in
-    // resolveSupabaseProfile() below, which force-downgrades any demo
-    // hostname to its tenant's `-development` profile even if this host
-    // ever ends up listed on a `-production` profile by mistake.
-    hosts: ['bsl-dev.hashpass.tech', 'demo-criptolatinfest.hashpass.tech'],
+    // The tenant pipeline intentionally uses the BSL development profile.
+    // Its custom-domain build supplies this same profile explicitly.
+    hosts: ['bsl-dev.hashpass.tech', 'cbw2026.hashpass.tech'],
     publicUrlEnv: [
       'EXPO_PUBLIC_BSL_SUPABASE_URL_DEV',
       'EXPO_PUBLIC_SUPABASE_URL_BSL_DEV',

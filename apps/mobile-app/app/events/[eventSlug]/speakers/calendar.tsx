@@ -133,10 +133,14 @@ export default function SpeakersCalendar() {
     const loadSpeakers = async () => {
       try {
         setLoading(true);
-        
-        const dbPromise = supabase
-          .from('bsl_speakers')
-          .select('*');
+
+        // bsl_speakers is a legacy shared BSL directory, not a generic
+        // event-scoped speaker table. A new whitelabel event with no
+        // confirmed speakers must not accidentally show BSL speakers.
+        const canUseLegacyBslDirectory = /^(?:bsl|bsl2025|peru2026|chile2026|colombia2026)$/i.test(event.id);
+        const dbPromise = canUseLegacyBslDirectory
+          ? supabase.from('bsl_speakers').select('*')
+          : Promise.resolve({ data: [], error: null });
 
         let timeoutId: ReturnType<typeof setTimeout> | undefined;
         const timeoutPromise = new Promise((_, reject) => {

@@ -1,17 +1,15 @@
 # ============================================================================
-# Pipelines that populate each demo event's site bucket, one per event.
-# Source branch is always `develop` -- demo-mode tenants are guarded to
-# development databases only (see apps/mobile-app/config/supabase-profiles.ts),
-# so for now "develop" and "demo" are the same tag by design. Add another
-# module block here (plus a matching origin_domain_name in main.tf's locals)
-# for the next demo-mode event.
+# Pipelines that populate each event tenant's site bucket, one per event.
+# Source branch is currently `develop`, which uses the BSL development profile.
+# Add another module block here (plus a matching origin_domain_name in
+# main.tf's locals) for the next event tenant.
 # ============================================================================
 
 locals {
   # Mirrors hashpass-web's site_dev trigger lists (same apps/mobile-app +
   # packages/** dependency shape, same develop branch) -- see that stack's
   # main.tf locals block for the shared reasoning.
-  criptolatinfest_trigger_includes = [
+  cbw2026_trigger_includes = [
     "apps/mobile-app/**",
     "packages/**",
     "package.json",
@@ -22,7 +20,7 @@ locals {
   # AWS caps this list at 8 entries -- matches hashpass-dev-site's exact
   # list (proven, already live on that pipeline) rather than adding a 9th
   # (e.g. hashpass-web/**) and tripping the cap.
-  criptolatinfest_trigger_excludes = [
+  cbw2026_trigger_excludes = [
     "packages/infra/terraform/stacks/bsl-target/**",
     "packages/infra/sst.config.ts",
     "packages/infra/src/**",
@@ -34,10 +32,10 @@ locals {
   ]
 }
 
-module "criptolatinfest_pipeline" {
+module "cbw2026_pipeline" {
   source = "../../modules/aws_static_site_pipeline"
 
-  name_prefix    = "hashpass-criptolatinfest"
+  name_prefix    = "hashpass-cbw2026"
   environment    = "develop"
   aws_region     = var.aws_region
   account_id     = data.aws_caller_identity.current.account_id
@@ -54,14 +52,14 @@ module "criptolatinfest_pipeline" {
   # is also an Expo export build off apps/mobile-app), so mirrors that
   # pipeline's exact include/exclude lists rather than inventing a new one.
   enable_path_filtered_trigger = true
-  trigger_path_includes        = local.criptolatinfest_trigger_includes
-  trigger_path_excludes        = local.criptolatinfest_trigger_excludes
+  trigger_path_includes        = local.cbw2026_trigger_includes
+  trigger_path_excludes        = local.cbw2026_trigger_excludes
 
   # Explicit names (single source of truth: main.tf's locals, which the
   # CloudFront origin also reads) -- the module's own default naming for the
   # artifact bucket exceeds S3's 63-char limit once name_prefix is this long.
-  site_bucket_name     = local.criptolatinfest_site_bucket_name
-  artifact_bucket_name = local.criptolatinfest_artifact_bucket_name
+  site_bucket_name     = local.cbw2026_site_bucket_name
+  artifact_bucket_name = local.cbw2026_artifact_bucket_name
 
   # Public S3 website hosting, not an OAC-gated bucket -- CloudFront for this
   # event is provisioned separately in main.tf (needs a custom cache policy
@@ -79,8 +77,8 @@ module "criptolatinfest_pipeline" {
   # Invalidate the demo's own CloudFront distribution (main.tf) after every
   # deploy -- never bsl-dev's, this pipeline only ever writes to its own
   # dedicated bucket.
-  deploy_cloudfront_distribution_id = aws_cloudfront_distribution.demo["criptolatinfest"].id
-  deploy_cloudfront_domain_name     = var.demo_events["criptolatinfest"].subdomain
+  deploy_cloudfront_distribution_id = aws_cloudfront_distribution.demo["cbw2026"].id
+  deploy_cloudfront_domain_name     = var.demo_events["cbw2026"].subdomain
 
   build_environment = {
     AWS_DEFAULT_REGION = var.aws_region
@@ -114,5 +112,5 @@ module "criptolatinfest_pipeline" {
     SITE_API_VERSION_URL    = "https://api-dev.hashpass.tech/api/config/versions"
   }
 
-  tags = merge(var.tags, { Event = "criptolatinfest" })
+  tags = merge(var.tags, { Event = "cbw2026" })
 }

@@ -4388,114 +4388,81 @@ export const EVENTS: Record<string, EventConfig> = {
     ],
   },
   ...(HASH_POKER_EVENT ? { "hash-poker": HASH_POKER_EVENT } : {}),
-  criptolatinfest: {
-    id: "criptolatinfest",
-    name: "Cripto Latin Fest 2026",
-    shortName: "CLF",
-    aliases: ["clf", "CriptoLatinFest", "Cripto Latin Fest"],
-    domain: "demo-criptolatinfest.hashpass.tech",
-    website: "https://criptolatinfest.com/",
-    title: "Cripto Latin Fest 2026",
-    subtitle: "Maloka, Bogotá • 9ª Edición",
+  cbw2026: {
+    id: "cbw2026",
+    name: "Colombia Blockchain Week 2026",
+    shortName: "CBW",
+    aliases: ["cbw", "Colombia Blockchain Week", "CB Week 2026"],
+    domain: "cbw2026.hashpass.tech",
+    website: "https://colombiablockchainweek.com/",
+    title: "Colombia Blockchain Week 2026",
+    subtitle: "Hotel InterContinental Medellín • 1ª Edición",
     // Compact mark keeps cards and countdowns readable; reserve the full
     // lockup for headers/brand contexts where it has enough room to breathe.
-    image: CRIPTOLATINFEST_ICON,
-    heroVideo: CRIPTOLATINFEST_HERO_VIDEO,
+    image: "/assets/images/hashpass-banner.jpg",
     bannerSlides: [
       {
-        id: "clf-2026-film",
-        media: { type: "video", url: CRIPTOLATINFEST_HERO_VIDEO },
-        eyebrow: "CLF 2026 · Official film",
-        title: "Cripto Latin Fest 2026",
-        subtitle: "Maloka, Bogotá · 9ª Edición",
-        date: "August 27-28, 2026 · Bogotá, Colombia",
-        durationMs: 30_000,
-        i18n: {
-          eyebrow: "explore.rework.clfFilmEyebrow",
-          subtitle: "explore.rework.clfSubtitle",
-          date: "explore.rework.clfDate",
-          ctaLabel: "explore.rework.clfExplore",
-        },
+        id: "cbw-2026",
+        media: { type: "image", url: "/assets/images/hashpass-banner.jpg" },
+        eyebrow: "CBW 2026 · 1ª Edición",
+        title: "Colombia Blockchain Week 2026",
+        subtitle: "Hotel InterContinental Medellín · El Poblado",
+        date: "December 11-12, 2026 · Medellín, Colombia",
         cta: {
-          label: "Explore Cripto Latin Fest",
-          url: "/events/criptolatinfest/home",
-        },
-      },
-      {
-        id: "clf-2026-static",
-        media: { type: "image", url: CRIPTOLATINFEST_BANNER_COVER },
-        eyebrow: "CLF 2026",
-        title: "Cripto Latin Fest 2026",
-        subtitle: "Maloka, Bogotá · 9ª Edición",
-        date: "August 27-28, 2026 · Bogotá, Colombia",
-        i18n: {
-          subtitle: "explore.rework.clfSubtitle",
-          date: "explore.rework.clfDate",
-          ctaLabel: "explore.rework.clfExplore",
-        },
-        cta: {
-          label: "Explore Cripto Latin Fest",
-          url: "/events/criptolatinfest/home",
+          label: "Explore Colombia Blockchain Week",
+          url: "/events/cbw2026/home",
         },
       },
     ],
-    color: "#046BD2",
-    eventStartDate: "2026-08-27T09:00:00-05:00",
-    eventEndDate: "2026-08-28T18:00:00-05:00",
-    eventDateString: "August 27-28, 2026 • Bogotá, Colombia",
-    series: "Summit",
+    color: "#087C80",
+    eventStartDate: "2026-12-12T08:30:00-05:00",
+    eventEndDate: "2026-12-12T18:00:00-05:00",
+    eventDateString: "December 11-12, 2026 • Medellín, Colombia",
+    series: "Blockchain Week",
     geo: {
       country: "Colombia",
       continent: "South America",
     },
-    // Demo tenant for a prospective client (deal not yet signed) --
-    // see EventConfig.isDemo. Meeting-request/matchmaking flows are not
-    // wired to a non-BSL speaker/availability adapter yet, so they're
-    // intentionally left out of `features` (informational only; not
-    // currently used to gate any screen -- see hasFeature() call sites).
     features: ["speakers", "agenda"],
     eventType: "whitelabel",
-    // This tenant must never inherit BSL branding on its sign-in screen.
     authAllyIds: ["hash-poker-room"],
-    isDemo: true,
+    isDemo: false,
     branding: {
-      primaryColor: "#046BD2",
+      primaryColor: "#087C80",
       secondaryColor: "#06111F",
-      logo: CRIPTOLATINFEST_FULL_LOGO,
+      logo: "/assets/logos/hashpass/logo-full-hashpass-white.svg",
       favicon: "/favicon.ico",
     },
     api: {
-      // Deliberately not "/api/bsl" -- CriptoLatinFest has no backing
-      // rows in bsl_speakers/event_agenda, so API calls under this segment
-      // 404 cleanly and the UI falls back to the static speakers/agenda
-      // arrays below, instead of risking a collision with real BSL data.
-      basePath: "/api/criptolatinfest",
+      basePath: "/api/cbw2026",
       endpoints: { ...BSL_SHARED_API_ENDPOINTS },
     },
     routes: {
-      home: "/events/criptolatinfest/home",
-      speakers: "/events/criptolatinfest/speakers",
-      bookings: "/events/criptolatinfest/my-bookings",
-      admin: "/events/criptolatinfest/admin",
+      home: "/events/cbw2026/home",
+      speakers: "/events/cbw2026/speakers",
+      bookings: "/events/cbw2026/my-bookings",
+      admin: "/events/cbw2026/admin",
     },
-    speakers: CRIPTOLATINFEST_SPEAKERS,
-    agenda: CRIPTOLATINFEST_AGENDA,
+    // The official site has not announced 2026 speakers or a timed agenda.
+    // Do not present the site's past-edition speakers as confirmed for CBW.
+    speakers: [],
+    agenda: [],
     quickAccessItems: [
       {
         id: "agenda",
         title: "Event Agenda",
-        subtitle: "Aug 27-28 • Schedule",
+        subtitle: "Coming soon",
         icon: "event",
         color: "#34A853",
-        route: "/events/criptolatinfest/agenda",
+        route: "/events/cbw2026/agenda",
       },
       {
         id: "speakers",
-        title: "Featured Speakers",
-        subtitle: "Meet the experts",
+        title: "Speakers",
+        subtitle: "To be announced",
         icon: "people",
-        color: "#046BD2",
-        route: "/events/criptolatinfest/speakers/calendar",
+        color: "#087C80",
+        route: "/events/cbw2026/speakers/calendar",
       },
       {
         id: "event-info",
@@ -4503,7 +4470,7 @@ export const EVENTS: Record<string, EventConfig> = {
         subtitle: "Details & Logistics",
         icon: "info",
         color: "#FF9500",
-        route: "/events/criptolatinfest/event-info",
+        route: "/events/cbw2026/event-info",
       },
     ],
   },

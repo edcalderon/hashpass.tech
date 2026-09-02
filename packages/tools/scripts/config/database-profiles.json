@@ -74,7 +74,8 @@
     "demo-event-bootstrap": [
       "db/migrations/V076__add_event_demo_mode_flag.sql",
       "db/migrations/V077__provision_criptolatinfest_general_pass.sql",
-      "db/migrations/V078__align_dev_bsl_speakers_legacy_columns.sql"
+      "db/migrations/V078__align_dev_bsl_speakers_legacy_columns.sql",
+      "db/migrations/V085__provision_cbw2026_event_and_retire_criptolatinfest_passes.sql"
     ],
     "native-pass-test-codes": [
       "db/migrations/V062__seed_native_pass_redemption_test_codes.sql"

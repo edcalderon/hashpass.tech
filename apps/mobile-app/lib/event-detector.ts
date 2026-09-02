@@ -41,12 +41,11 @@ const TENANT_ALIASES: Record<string, string> = {
   bsl2025: "bsl2025",
   pkrr: "hash-poker",
   "hash-poker": "hash-poker",
-  criptolatinfest: "criptolatinfest",
-  clf: "criptolatinfest",
-  "cripto-latin-fest": "criptolatinfest",
-  "cripto-latin-fest-2026": "criptolatinfest",
-  "criptolatinfest-2026": "criptolatinfest",
-  clf2026: "criptolatinfest",
+  cbw: "cbw2026",
+  cbweek: "cbw2026",
+  cbw2026: "cbw2026",
+  "colombia-blockchain-week": "cbw2026",
+  "colombia-blockchain-week-2026": "cbw2026",
 };
 
 const TENANT_HOSTNAME_ALIASES: Record<string, string> = {
@@ -71,7 +70,7 @@ const TENANT_HOSTNAME_ALIASES: Record<string, string> = {
   "colombia2026.hashpass.tech": "colombia2026",
   "hash.poker": "hash-poker",
   "www.hash.poker": "hash-poker",
-  "demo-criptolatinfest.hashpass.tech": "criptolatinfest",
+  "cbw2026.hashpass.tech": "cbw2026",
 };
 
 const getEventTourHubId = (eventId: string): string | null => {
@@ -357,12 +356,9 @@ export const getAvailableEvents = (
 
   if (showAllEvents) {
     // Demo tenants remain addressable on their own host, but are not
-    // confirmed global events and must not appear in the HASHPASS catalog --
-    // EXCEPT the requesting tenant's own event(s): a demo tenant (e.g.
-    // demo-criptolatinfest.hashpass.tech) opting into includeAllTenants must
-    // not lose its own event out of the expanded catalogue just because that
-    // event happens to be demo-flagged. Only OTHER tenants' demo events stay
-    // hidden.
+    // confirmed global events and must not appear in the HASHPASS catalog.
+    // A requesting demo tenant opting into includeAllTenants must not lose
+    // its own event; only other tenants' demo events stay hidden.
     const ownTenantEventIds = new Set(tenantContext.eventIds || []);
     return sortEventInfos(
       availableEvents.filter(
