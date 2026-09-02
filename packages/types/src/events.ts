@@ -162,8 +162,8 @@ export interface EventConfig {
   quickAccessItems?: QuickAccessItem[];
   eventType?: "hashpass" | "whitelabel";
   /**
-   * Ally brand IDs allowed in this event's desktop sign-in panel. Hash Poker
-   * Room is added by the shared resolver even when it is omitted here.
+   * Optional additional partner brands allowed in this event's desktop
+   * sign-in panel. The event's own brand is always rendered first.
    */
   authAllyIds?: string[];
   tour?: EventTourMeta;

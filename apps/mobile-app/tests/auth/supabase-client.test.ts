@@ -51,6 +51,7 @@ const mockCreateClient = jest.fn(() => ({
 jest.mock('@supabase/supabase-js', () => ({
   __esModule: true,
   createClient: mockCreateClient,
+  navigatorLock: jest.fn(),
 }));
 
 /* eslint-disable @typescript-eslint/no-require-imports */
@@ -108,6 +109,7 @@ describe('web Supabase client initialization', () => {
           autoRefreshToken: true,
           persistSession: true,
           detectSessionInUrl: false,
+          lock: expect.any(Function),
         }),
       })
     );
@@ -148,6 +150,7 @@ describe('web Supabase client initialization', () => {
             autoRefreshToken: true,
             persistSession: true,
             detectSessionInUrl: false,
+            lock: expect.any(Function),
           }),
         })
       );
