@@ -141,7 +141,10 @@ describe("event tenant detection", () => {
     expect(EVENTS.cbweek2026.aliases).toContain("Colombia Blockchain Week");
     expect(EVENTS.cbweek2026.bannerSlides).toHaveLength(1);
     expect(EVENTS.cbweek2026.bannerSlides?.[0]).toMatchObject({
-      media: { type: "image" },
+      media: {
+        type: "video",
+        url: expect.stringContaining("/cbweek2026/branding/cbweek2026-hero.mp4"),
+      },
     });
   });
 

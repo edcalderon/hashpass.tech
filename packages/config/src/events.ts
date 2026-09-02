@@ -4404,8 +4404,10 @@ export const EVENTS: Record<string, EventConfig> = {
       {
         id: "cbweek-2026",
         media: {
-          type: "image",
-          url: "https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events/cbweek2026/branding/cbweek2026-hero.jpg",
+          // Official hero film published by Colombia Blockchain Week through
+          // its homepage embed, re-hosted as a muted MP4 for reliable app playback.
+          type: "video",
+          url: "https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events/cbweek2026/branding/cbweek2026-hero.mp4",
         },
         eyebrow: "CBW 2026 · 1ª Edición",
         title: "Colombia Blockchain Week 2026",
