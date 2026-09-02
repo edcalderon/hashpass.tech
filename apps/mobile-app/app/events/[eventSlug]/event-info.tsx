@@ -154,6 +154,7 @@ export default function EventInfoScreen() {
         eventStartDate={event?.eventStartDate}
         eventId={eventId}
         eventImage={event?.image}
+        eventVideo={event?.heroVideo}
       />
 
       {renderArchiveSummary()}

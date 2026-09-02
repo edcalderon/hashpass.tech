@@ -4400,6 +4400,9 @@ export const EVENTS: Record<string, EventConfig> = {
     // Official Colombia Blockchain Week assets, downloaded from the event's
     // own published media library and re-hosted on HashPass event media.
     image: "https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events/cbweek2026/branding/cbweek2026-hero.jpg",
+    // A clean city film is safe under live event copy; the official flyer is
+    // retained above as a standalone image asset, never a banner background.
+    heroVideo: "https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events/cbweek2026/branding/cbweek2026-hero.mp4",
     bannerSlides: [
       {
         id: "cbweek-2026",

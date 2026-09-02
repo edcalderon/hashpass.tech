@@ -49,6 +49,8 @@ interface EventBannerProps {
   usingJsonFallback?: boolean;
   eventId?: string; // Event ID to determine if logo should be shown
   eventImage?: string; // Optional event hero image
+  /** Explicit approval for imagery that can sit behind live banner copy. */
+  eventImageTextOverlaySafe?: boolean;
   isEventFinished?: boolean; // Whether the event has finished
   eventLabel?: string;
   eventShortName?: string;
@@ -104,6 +106,7 @@ export default function EventBanner({
   usingJsonFallback = false,
   eventId,
   eventImage,
+  eventImageTextOverlaySafe = false,
   isEventFinished = false,
   eventLabel,
   eventShortName,
@@ -124,6 +127,9 @@ export default function EventBanner({
       ? HASH_POKER_BANNER
       : resolveEventImageSource(eventImage);
   const hasVideoBackground = Boolean(eventVideo);
+  const hasApprovedImageBackground = Boolean(
+    heroImageSource && eventImageTextOverlaySafe,
+  );
   const hasValidStartDate = Boolean(
     eventStartDate && !Number.isNaN(new Date(eventStartDate).getTime()),
   );
@@ -247,7 +253,7 @@ export default function EventBanner({
             style={styles.heroOverlay}
           />
         </>
-      ) : heroImageSource ? (
+      ) : hasApprovedImageBackground ? (
         <ImageBackground
           source={heroImageSource}
           resizeMode="cover"

@@ -435,6 +435,10 @@ export default function EventBannerCarousel({
                 eventImage={
                   banner.media.type === "image" ? banner.media.url : undefined
                 }
+                eventImageTextOverlaySafe={
+                  banner.media.type === "image" &&
+                  banner.media.textOverlaySafe === true
+                }
                 eventShortName={event.shortName}
                 eventVideo={
                   banner.media.type === "video" ? banner.media.url : undefined

@@ -1407,6 +1407,7 @@ export default function BSL2025AgendaScreen() {
           eventStartDate={event?.eventStartDate}
           eventId={eventId}
           eventImage={event?.image}
+          eventVideo={event?.heroVideo}
         />
 
         {/* Tab Navigation - Centered with consistent sizing */}

@@ -262,6 +262,7 @@ export default function SpeakersCalendar() {
           eventStartDate={event?.eventStartDate}
           eventId={eventId}
           eventImage={event?.image}
+          eventVideo={event?.heroVideo}
         />
 
         {/* Search and Sort */}

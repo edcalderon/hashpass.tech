@@ -72,6 +72,13 @@ export interface EventBannerSlide {
   media: {
     type: "image" | "video";
     url: string;
+    /**
+     * Required opt-in for an image that appears behind live title, date, and
+     * countdown copy. Flyers, posters, wordmarks, and other artwork with
+     * readable text must leave this unset so the banner uses its plain brand
+     * surface instead.
+     */
+    textOverlaySafe?: boolean;
   };
   eyebrow?: string;
   title?: string;
