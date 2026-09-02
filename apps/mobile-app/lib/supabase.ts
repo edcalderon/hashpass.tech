@@ -13,8 +13,18 @@ const waitForSupabaseBrowserLock = async <T,>(
   name: string,
   acquireTimeout: number,
   fn: () => Promise<T>,
-): Promise<T> =>
-  navigatorLock(name, Math.max(acquireTimeout, SUPABASE_AUTH_LOCK_ACQUIRE_TIMEOUT_MS), fn);
+): Promise<T> => {
+  // Expo's server export exposes a navigator shim without LockManager. It is
+  // not a browser tab and must use the same no-op behavior as Supabase's
+  // default server path.
+  if (typeof globalThis.navigator?.locks?.request !== 'function') return fn();
+
+  return navigatorLock(
+    name,
+    Math.max(acquireTimeout, SUPABASE_AUTH_LOCK_ACQUIRE_TIMEOUT_MS),
+    fn,
+  );
+};
 
 let storage: any;
 

@@ -113,6 +113,15 @@ describe('web Supabase client initialization', () => {
         }),
       })
     );
+
+    const createClientCall = (mockCreateClient.mock.calls as unknown as unknown[][])[0];
+    const options = createClientCall?.[2] as {
+      auth: {
+        lock: (name: string, timeout: number, fn: () => Promise<string>) => Promise<string>;
+      };
+    };
+    expect(options.auth.lock).toBeDefined();
+    return expect(options.auth.lock('test-lock', 0, async () => 'server-safe')).resolves.toBe('server-safe');
   });
 
   it('falls back to the browser runtime profile map when generic env vars are absent', () => {
