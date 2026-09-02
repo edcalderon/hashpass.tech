@@ -76,7 +76,8 @@
       "db/migrations/V077__provision_criptolatinfest_general_pass.sql",
       "db/migrations/V078__align_dev_bsl_speakers_legacy_columns.sql",
       "db/migrations/V085__provision_cbw2026_event_and_retire_criptolatinfest_passes.sql",
-      "db/migrations/V087__rename_cbw2026_to_cbweek2026.sql"
+      "db/migrations/V087__rename_cbw2026_to_cbweek2026.sql",
+      "db/migrations/V088__provision_demo_event_courtesy_general_passes.sql"
     ],
     "native-pass-test-codes": [
       "db/migrations/V062__seed_native_pass_redemption_test_codes.sql"
