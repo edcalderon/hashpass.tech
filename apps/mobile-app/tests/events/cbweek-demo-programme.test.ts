@@ -45,4 +45,30 @@ describe('CBWeek 2026 demo programme', () => {
     const speakerIds = new Set(event.speakers?.map((speaker: { id: string }) => speaker.id));
     expect(event.agenda?.flatMap((item: AgendaItem) => item.speakers || []).every((speakerId: string) => speakerIds.has(speakerId))).toBe(true);
   });
+
+  it('keeps official past-edition speakers visibly separate from the three active demo speakers', () => {
+    const activeSpeakers = event.speakers?.filter((speaker) => speaker.isActive) || [];
+    const pastEditionSpeakers = event.speakers?.filter((speaker) => speaker.isPastEditionReference) || [];
+
+    expect(activeSpeakers.map((speaker) => speaker.name)).toEqual([
+      'Bryan Aguilar',
+      'Lucero Dextre',
+      'Edward Calderón',
+    ]);
+    expect(pastEditionSpeakers).toHaveLength(26);
+    expect(pastEditionSpeakers).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        name: 'Charles Hoskinson',
+        isActive: false,
+        isPastEditionReference: true,
+        image: expect.stringContaining('/cbweek2026/speakers/past-editions/charles-hoskinson.webp'),
+      }),
+      expect.objectContaining({
+        name: 'Patrick O’Neill',
+        isActive: false,
+        isPastEditionReference: true,
+        image: expect.stringContaining('/cbweek2026/speakers/past-editions/patrick-oneill.webp'),
+      }),
+    ]));
+  });
 });

@@ -33,6 +33,50 @@ const CRIPTOLATINFEST_BANNER_COVER =
   "https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events/criptolatinfest/branding/logo.webp";
 const CRIPTOLATINFEST_HERO_VIDEO =
   "https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events/criptolatinfest/branding/criptolatinfest-2026-hero.mp4";
+const CBWEEK2026_SPEAKER_IMAGE_BASE =
+  "https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events/cbweek2026/speakers";
+
+// CBWeek has not announced its 2026 speakers. These are the people explicitly
+// listed by CBWeek as speakers from past editions; keeping them in the
+// directory as references gives the demo real portraits without representing
+// them as confirmed for the 2026 event.
+const CBWEEK2026_PAST_EDITION_SPEAKERS: Speaker[] = [
+  ['4abf6fc1-98a6-4c13-9b9f-100000000001', 'Charles Hoskinson', 'Founder Cardano Blockchain', 'CARDANO', 'charles-hoskinson'],
+  ['4abf6fc1-98a6-4c13-9b9f-100000000002', 'Hernando de Soto', 'Presidente', 'ILD', 'hernando-de-soto'],
+  ['4abf6fc1-98a6-4c13-9b9f-100000000003', 'Hong Fang', 'Presidente de OKX', 'OKX', 'hong-fang'],
+  ['4abf6fc1-98a6-4c13-9b9f-100000000004', 'Daniel Acosta', 'Head of LATAM', 'BINANCE', 'daniel-acosta'],
+  ['4abf6fc1-98a6-4c13-9b9f-100000000005', 'Patricio Mesri', 'Latam Country Manager', 'BYBIT', 'patricio-mesri'],
+  ['4abf6fc1-98a6-4c13-9b9f-100000000006', 'Salvador Rivero', 'General Manager México', 'BINANCE', 'salvador-rivero'],
+  ['4abf6fc1-98a6-4c13-9b9f-100000000007', 'Carolina Gama', 'Country Manager & LATAM Marketing Head', 'BITGET', 'carolina-gama'],
+  ['4abf6fc1-98a6-4c13-9b9f-100000000008', 'Javier Gamboa', 'Business Developer Manager', 'BITUNIX', 'javier-gamboa'],
+  ['4abf6fc1-98a6-4c13-9b9f-100000000009', 'André Sprone', 'Head of Latam', 'MEXC', 'andre-sprone'],
+  ['4abf6fc1-98a6-4c13-9b9f-100000000010', 'Lesme Hernández', 'Brand Manager LATAM', 'BINGX', 'lesme-hernandez'],
+  ['4abf6fc1-98a6-4c13-9b9f-100000000011', 'Santiago Juarros', 'Sr. Manager & Partner Marketing', 'CIRCLE', 'santiago-juarros'],
+  ['4abf6fc1-98a6-4c13-9b9f-100000000012', 'Drey Dias', 'Sales Director', 'CHAINALYSIS', 'drey-dias'],
+  ['4abf6fc1-98a6-4c13-9b9f-100000000013', 'Valentino Ruiz', 'Institutional Sales Trader', 'BLOCKCHAIN.COM', 'valentino-ruiz'],
+  ['4abf6fc1-98a6-4c13-9b9f-100000000014', 'Lucas Macchiavelli', 'Operaciones Comerciales Global', 'INPUT OUTPUT', 'lucas-macchiavelli'],
+  ['4abf6fc1-98a6-4c13-9b9f-100000000015', 'Mauro Andreoli', 'Midnight & IOG Argentina Representative', 'MIDNIGHT', 'mauro-andreoli'],
+  ['4abf6fc1-98a6-4c13-9b9f-100000000016', 'Francisco Carvalho', 'CEO & Founder', 'BLOCKCHAIN RIO', 'francisco-carvalho'],
+  ['4abf6fc1-98a6-4c13-9b9f-100000000017', 'Andre Gejde', 'Regional Growth Manager', 'TANGEM', 'andre-gejde'],
+  ['4abf6fc1-98a6-4c13-9b9f-100000000018', 'Amilcar Erazo', 'Co-Founder & CEO', 'MERU', 'amilcar-erazo'],
+  ['4abf6fc1-98a6-4c13-9b9f-100000000019', 'Rubén Galindo Steckel', 'CEO', 'AIRTM', 'ruben-galindo-steckel'],
+  ['4abf6fc1-98a6-4c13-9b9f-100000000020', 'Rodrigo Martinez', 'Regional Manager LATAM', 'VANTAGE', 'rodrigo-martinez'],
+  ['4abf6fc1-98a6-4c13-9b9f-100000000021', 'Renato Palacios', 'Business Developer', 'EXNESS', 'renato-palacios'],
+  ['4abf6fc1-98a6-4c13-9b9f-100000000022', 'Efraín Barraza', 'Regional Expansion Manager LATAM', 'TETHER', 'efrain-barraza'],
+  ['4abf6fc1-98a6-4c13-9b9f-100000000023', 'Patrick O’Neill', 'Founder & Managing Partner', 'SHERLOCK COMMUNICATIONS', 'patrick-oneill'],
+  ['4abf6fc1-98a6-4c13-9b9f-100000000024', 'Alvaro Olivares', 'Country Manager', 'BITGO', 'alvaro-olivares'],
+  ['4abf6fc1-98a6-4c13-9b9f-100000000025', 'Pablo De Santis', 'Communications Lead South Cone', 'WORLD', 'pablo-de-santis'],
+  ['4abf6fc1-98a6-4c13-9b9f-100000000026', 'Valentín Popescu', 'Co-Founder & Director', 'MOTIV PERÚ', 'valentin-popescu'],
+].map(([id, name, title, company, imageSlug]) => ({
+  id,
+  name,
+  title,
+  company,
+  bio: `Official CBWeek past-edition speaker reference. ${name} is not announced as a CBWeek 2026 speaker.`,
+  image: `${CBWEEK2026_SPEAKER_IMAGE_BASE}/past-editions/${imageSlug}.webp`,
+  isActive: false,
+  isPastEditionReference: true,
+}));
 const BSL_DATABASE = {
   schema: "bsl",
   tables: {
@@ -4483,6 +4527,7 @@ export const EVENTS: Record<string, EventConfig> = {
         image: "https://hashpass-production-event-media-952191196420-us-east-2.amazonaws.com/events/cbweek2026/speakers/edward-calderon.png",
         isActive: true,
       },
+      ...CBWEEK2026_PAST_EDITION_SPEAKERS,
     ],
     dayThemes: {
       "1": {

@@ -23,6 +23,7 @@ interface Speaker {
   image?: string;
   user_id?: string;
   isActive?: boolean; // Claimed account with an active speaker profile
+  isPastEditionReference?: boolean;
 }
 
 // Shape of event?.speakers entries (from packages/config/src/events.ts's
@@ -38,6 +39,7 @@ interface EventSpeakerConfig {
   bio?: string;
   image?: string;
   isActive?: boolean;
+  isPastEditionReference?: boolean;
 }
 
 function SpeakerCard({
@@ -51,6 +53,11 @@ function SpeakerCard({
 }) {
   const router = useRouter();
   const isInteractive = Boolean(speaker.isActive);
+  const statusText = speaker.isActive
+    ? 'Active'
+    : speaker.isPastEditionReference
+      ? 'Past edition'
+      : 'Inactive';
 
   return (
     <TouchableOpacity
@@ -77,7 +84,7 @@ function SpeakerCard({
           <Text style={styles.speakerName}>{speaker.name}</Text>
           <View style={[styles.statusLabel, speaker.isActive ? styles.activeLabel : styles.inactiveLabel]}>
             <Text style={[styles.statusLabelText, speaker.isActive ? styles.activeLabelText : styles.inactiveLabelText]}>
-              {speaker.isActive ? 'Active' : 'Inactive'}
+              {statusText}
             </Text>
           </View>
         </View>
@@ -165,6 +172,8 @@ export default function SpeakersCalendar() {
               isActive: canUseLegacyBslDirectory
                 ? isClaimedActiveSpeaker(s)
                 : s.metadata?.is_active === true,
+              isPastEditionReference: !canUseLegacyBslDirectory
+                && s.metadata?.is_past_edition_reference === true,
             }));
             
             // Remove duplicates based on ID
@@ -194,6 +203,7 @@ export default function SpeakersCalendar() {
           company: s.company || null,
           bio: s.bio || ((s.title && s.company) ? `Experienced professional in ${s.title} at ${s.company}.` : undefined),
           isActive: Boolean(s.isActive),
+          isPastEditionReference: Boolean(s.isPastEditionReference),
           // s.image is our own hosted photo (see packages/config/src/events.ts).
           // Only fall back to the legacy Cloudinary/name-guessing lookup for
           // older speakers that were never given a real image field.
@@ -221,6 +231,7 @@ export default function SpeakersCalendar() {
           company: s.company || null,
           bio: (s.title && s.company) ? `Experienced professional in ${s.title} at ${s.company}.` : undefined,
           isActive: Boolean(s.isActive),
+          isPastEditionReference: Boolean(s.isPastEditionReference),
           image: resolveSpeakerImage(s.image, s.name)
         }));
 

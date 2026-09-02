@@ -5,6 +5,7 @@ import { resolve } from 'node:path';
 
 const repoRoot = resolve(__dirname, '../../../..');
 const migrationPath = resolve(repoRoot, 'db/migrations/V088__provision_demo_event_courtesy_general_passes.sql');
+const cbweekPastEditionSpeakersMigrationPath = resolve(repoRoot, 'db/migrations/V091__add_cbweek_past_edition_speaker_references.sql');
 const profilesPath = resolve(repoRoot, 'packages/tools/scripts/config/database-profiles.json');
 
 describe('demo-event courtesy General pass provisioning', () => {
@@ -26,6 +27,19 @@ describe('demo-event courtesy General pass provisioning', () => {
 
     expect(profiles.groups['demo-event-bootstrap']).toContain(
       'db/migrations/V088__provision_demo_event_courtesy_general_passes.sql',
+    );
+  });
+
+  it('applies the CBWeek past-edition speaker references to the demo-event bootstrap profile', () => {
+    const migration = readFileSync(cbweekPastEditionSpeakersMigrationPath, 'utf8');
+    const profiles = JSON.parse(readFileSync(profilesPath, 'utf8')) as {
+      groups: Record<string, string[]>;
+    };
+
+    expect(migration).toContain('is_past_edition_reference');
+    expect(migration).toContain("'cbweek2026'");
+    expect(profiles.groups['demo-event-bootstrap']).toContain(
+      'db/migrations/V091__add_cbweek_past_edition_speaker_references.sql',
     );
   });
 });

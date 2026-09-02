@@ -7,6 +7,8 @@ export interface Speaker {
   image?: string;
   /** Whether this event-owned speaker should be shown as active in the directory. */
   isActive?: boolean;
+  /** A speaker shown for historical context, rather than as a current-event announcement. */
+  isPastEditionReference?: boolean;
   social?: {
     linkedin?: string;
     twitter?: string;
