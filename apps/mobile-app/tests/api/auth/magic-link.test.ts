@@ -1,0 +1,114 @@
+/// <reference types="jest" />
+
+const mockGenerateLink = jest.fn();
+const mockSendAuthenticationMagicLink = jest.fn();
+
+jest.mock('../../../lib/supabase-server', () => ({
+  getSupabaseServerForRequest: jest.fn(() => ({
+    auth: { admin: { generateLink: mockGenerateLink } },
+  })),
+}));
+
+jest.mock('../../../lib/email', () => ({
+  sendAuthenticationMagicLink: mockSendAuthenticationMagicLink,
+}));
+
+const requestFor = (body: unknown) =>
+  new Request('https://api.hashpass.tech/api/auth/magic-link', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+
+describe('magic-link API', () => {
+  beforeEach(() => {
+    jest.resetModules();
+    mockGenerateLink.mockReset();
+    mockSendAuthenticationMagicLink.mockReset();
+  });
+
+  it('mints a signed Supabase action link and delivers it through the backend mailer', async () => {
+    mockGenerateLink.mockResolvedValue({
+      data: { properties: { action_link: 'https://project.supabase.co/auth/v1/verify?token=one-time' } },
+      error: null,
+    });
+    mockSendAuthenticationMagicLink.mockResolvedValue({ success: true });
+
+    const { POST } = require('../../../app/api/auth/magic-link+api');
+    const response = await POST(
+      requestFor({
+        email: 'User@Example.com',
+        redirectTo: 'https://hashpass.tech/auth/callback',
+        locale: 'es',
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(mockGenerateLink).toHaveBeenCalledWith({
+      type: 'magiclink',
+      email: 'user@example.com',
+      options: {
+        redirectTo: 'https://hashpass.tech/auth/callback',
+        data: { locale: 'es' },
+      },
+    });
+    expect(mockSendAuthenticationMagicLink).toHaveBeenCalledWith({
+      email: 'user@example.com',
+      actionLink: 'https://project.supabase.co/auth/v1/verify?token=one-time',
+      locale: 'es',
+    });
+  });
+
+  it('rejects a callback that cannot receive a passwordless payload', async () => {
+    const { POST } = require('../../../app/api/auth/magic-link+api');
+    const response = await POST(
+      requestFor({
+        email: 'user@example.com',
+        redirectTo: 'https://hashpass.tech/auth/callback/',
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    expect(mockGenerateLink).not.toHaveBeenCalled();
+  });
+
+  it('does not report delivery as successful when the mailer fails', async () => {
+    mockGenerateLink.mockResolvedValue({
+      data: { properties: { action_link: 'https://project.supabase.co/auth/v1/verify?token=one-time' } },
+      error: null,
+    });
+    mockSendAuthenticationMagicLink.mockResolvedValue({
+      success: false,
+      code: 'email_send_failed',
+    });
+
+    const { POST } = require('../../../app/api/auth/magic-link+api');
+    const response = await POST(
+      requestFor({
+        email: 'user@example.com',
+        redirectTo: 'https://hashpass.tech/auth/callback',
+      }),
+    );
+
+    expect(response.status).toBe(502);
+    await expect(response.json()).resolves.toMatchObject({ code: 'email_send_failed' });
+  });
+
+  it('preserves Supabase rate limiting instead of minting another link', async () => {
+    mockGenerateLink.mockResolvedValue({
+      data: null,
+      error: { status: 429 },
+    });
+
+    const { POST } = require('../../../app/api/auth/magic-link+api');
+    const response = await POST(
+      requestFor({
+        email: 'user@example.com',
+        redirectTo: 'https://hashpass.tech/auth/callback',
+      }),
+    );
+
+    expect(response.status).toBe(429);
+    expect(mockSendAuthenticationMagicLink).not.toHaveBeenCalled();
+  });
+});

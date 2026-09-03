@@ -1,0 +1,86 @@
+import { getSupabaseServerForRequest } from "../../../lib/supabase-server";
+import { normalizeMagicLinkRedirect } from "../../../lib/auth/magic-link-request";
+import { sendAuthenticationMagicLink } from "../../../lib/email";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+};
+
+const json = (body: Record<string, unknown>, status: number) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json", ...corsHeaders },
+  });
+
+export async function OPTIONS() {
+  return new Response(null, { status: 204, headers: corsHeaders });
+}
+
+/**
+ * Delivers passwordless sign-in links through the HashPass backend. The
+ * browser never contacts Supabase Auth directly: this route mints the
+ * single-use GoTrue verification URL and sends it through the configured
+ * transactional SMTP provider.
+ */
+export async function POST(request: Request) {
+  let body: Record<string, unknown>;
+  try {
+    body = await request.json();
+  } catch {
+    return json({ error: "Invalid request body", code: "invalid_json" }, 400);
+  }
+
+  const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
+  const redirectTo = normalizeMagicLinkRedirect(body.redirectTo);
+  const locale = typeof body.locale === "string" ? body.locale : "en";
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return json({ error: "A valid email is required", code: "invalid_email" }, 400);
+  }
+
+  if (!redirectTo) {
+    return json({ error: "Invalid sign-in callback", code: "invalid_redirect" }, 400);
+  }
+
+  try {
+    const supabase = getSupabaseServerForRequest(request);
+    const { data, error } = await supabase.auth.admin.generateLink({
+      type: "magiclink",
+      email,
+      options: {
+        redirectTo,
+        data: { locale },
+      },
+    });
+
+    const actionLink = data?.properties?.action_link;
+    if (error || !actionLink) {
+      const status = (error as { status?: number } | null)?.status === 429 ? 429 : 502;
+      return json(
+        {
+          error: status === 429 ? "Please wait before requesting another link" : "Could not create sign-in link",
+          code: status === 429 ? "rate_limited" : "magic_link_generation_failed",
+        },
+        status,
+      );
+    }
+
+    const delivery = await sendAuthenticationMagicLink({ email, actionLink, locale });
+    if (!delivery.success) {
+      return json(
+        { error: "Could not send sign-in email", code: delivery.code },
+        delivery.code === "email_not_configured" ? 503 : 502,
+      );
+    }
+
+    return json({ success: true, message: "Sign-in link sent" }, 200);
+  } catch (error) {
+    console.error(
+      "[auth] Magic link delivery failed:",
+      error instanceof Error ? error.message : String(error),
+    );
+    return json({ error: "Could not send sign-in email", code: "magic_link_send_failed" }, 502);
+  }
+}

@@ -90,7 +90,10 @@ describe('@hashpass/emails templates', () => {
       resolve(REPOSITORY_ROOT, 'apps/mobile-app/app/(shared)/auth.tsx'),
       'utf8',
     );
-    expect(authScreen).toContain('data: { locale: currentLocale }');
+    // Magic links are now minted and delivered by the backend; the client
+    // passes locale to that endpoint rather than calling Supabase directly.
+    expect(authScreen).toContain('locale: currentLocale');
+    expect(authScreen).toContain('"/auth/magic-link"');
   });
 
   it('renders the English welcome as a clear HASHPASS onboarding message', () => {
