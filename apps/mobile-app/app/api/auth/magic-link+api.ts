@@ -74,8 +74,9 @@ export async function POST(request: Request) {
       },
     });
 
-    const actionLink = data?.properties?.action_link;
-    if (error || !actionLink) {
+    const tokenHash = data?.properties?.hashed_token;
+    const verificationType = data?.properties?.verification_type || "magiclink";
+    if (error || !tokenHash) {
       const status = (error as { status?: number } | null)?.status === 429 ? 429 : 502;
       return json(
         {
@@ -86,7 +87,22 @@ export async function POST(request: Request) {
       );
     }
 
-    const delivery = await sendAuthenticationMagicLink({ email, actionLink, locale });
+    // Email GoTrue's raw `action_link` instead and an email security
+    // scanner/prefetcher (Outlook Safe Links, corporate mail gateways) that
+    // fetches it before the user opens the message would silently consume
+    // the single-use token, producing an otp_expired error for the real
+    // click. token_hash is only resolved into a session by client-side JS
+    // (createSessionFromUrl -> supabase.auth.verifyOtp), which a passive
+    // prefetch never runs.
+    const confirmationUrl = new URL(redirectTo);
+    confirmationUrl.searchParams.set("token_hash", tokenHash);
+    confirmationUrl.searchParams.set("type", verificationType);
+
+    const delivery = await sendAuthenticationMagicLink({
+      email,
+      actionLink: confirmationUrl.toString(),
+      locale,
+    });
     if (!delivery.success) {
       return json(
         { error: "Could not send sign-in email", code: delivery.code },
