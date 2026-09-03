@@ -166,10 +166,53 @@ if (missingVars.length > 0) {
 }
 
 const emailEnabled = missingVars.length === 0;
-console.log('[email] enabled:', emailEnabled, missingVars.length ? `(missing: ${missingVars.join(', ')})` : '');
 
 const smtpFrom = smtpConfig.from;
 const transporter = emailEnabled ? buildTransporter(smtpConfig) : null;
+
+const escapeHtmlAttribute = (value: string) =>
+  value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+export type AuthenticationMagicLinkDelivery = {
+  success: boolean;
+  code?: 'email_not_configured' | 'email_send_failed';
+};
+
+/**
+ * Sends an already minted, single-use Supabase verification link through the
+ * HashPass transactional mail provider. `actionLink` is server-generated and
+ * deliberately replaces the GoTrue template token before delivery.
+ */
+export async function sendAuthenticationMagicLink({
+  email,
+  actionLink,
+  locale = DEFAULT_LOCALE,
+}: {
+  email: string;
+  actionLink: string;
+  locale?: string;
+}): Promise<AuthenticationMagicLinkDelivery> {
+  if (!emailEnabled || !transporter || !smtpFrom) {
+    return { success: false, code: 'email_not_configured' };
+  }
+
+  const confirmationUrl = escapeHtmlAttribute(actionLink);
+  const html = renderTemplate('auth-magic-link', locale).split('{{ .ConfirmationURL }}').join(confirmationUrl);
+
+  try {
+    await transporter.sendMail({
+      from: `HASHPASS <${smtpFrom}>`,
+      to: email,
+      subject: getSubject('auth-magic-link', locale),
+      html,
+      text: ['Use this secure, one-time sign-in URL', actionLink].join(': '),
+    });
+    return { success: true };
+  } catch (error) {
+    console.error('[email] Authentication magic-link send failed:', error instanceof Error ? error.message : String(error));
+    return { success: false, code: 'email_send_failed' };
+  }
+}
 
 // Secondary sender (no-reply@hashpass.info). Only used where a call site
 // opts in explicitly (sendWelcomeEmail); every other function keeps using

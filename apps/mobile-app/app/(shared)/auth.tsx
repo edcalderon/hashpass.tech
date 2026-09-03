@@ -1054,19 +1054,19 @@ export default function AuthScreen() {
         relayToNative: nativeRelay,
       });
 
-      const { error } = await supabase.auth.signInWithOtp({
-        email: normalizedEmail,
-        options: {
-          emailRedirectTo: redirectTo,
-          shouldCreateUser: true,
-          // Supabase exposes this in its email template as .Data.locale.
-          // The unified template uses it to select the recipient's language.
-          data: { locale: currentLocale },
+      const response = await apiClient.post(
+        "/auth/magic-link",
+        { email: normalizedEmail, redirectTo, locale: currentLocale },
+        {
+          skipEventSegment: true,
+          skipAuth: true,
+          retries: 0,
+          timeout: OTP_API_TIMEOUT_MS,
         },
-      });
+      ) as { success?: boolean; error?: string };
 
-      if (error) {
-        throw error;
+      if (!response.success) {
+        throw new Error(response.error || "Could not send magic link");
       }
 
       setOtpSent(false);
