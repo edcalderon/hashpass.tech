@@ -60,7 +60,7 @@ function printUsage() {
       '  npm run release:bsl:prod',
       '  npm run release:club',
       '  npm run release:club-dev',
-      '  npm run release:pipeline -- --env development --tenant blockchainsummit --dry-run',
+      '  npm run release:pipeline -- --env development --tenant bsl --dry-run',
       '  npm run release:pipeline -- --env production --all-tenants --dry-run',
     ].join('\n')
   );

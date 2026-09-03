@@ -9,7 +9,7 @@
  *
  * Usage:
  *   node packages/tools/scripts/check-consistency.js --tenant core
- *   node packages/tools/scripts/check-consistency.js --tenant blockchainsummit --prod
+ *   node packages/tools/scripts/check-consistency.js --tenant bsl --prod
  *   node packages/tools/scripts/check-consistency.js --all-tenants --env development
  *   node packages/tools/scripts/check-consistency.js --list-tenants
  */
@@ -135,7 +135,7 @@ function printUsage() {
       '  node packages/tools/scripts/check-consistency.js --tenant core',
       '  node packages/tools/scripts/check-consistency.js --tenant club --prod',
       '  node packages/tools/scripts/check-consistency.js --tenant club-dev --env development',
-      '  node packages/tools/scripts/check-consistency.js --tenant blockchainsummit --prod',
+      '  node packages/tools/scripts/check-consistency.js --tenant bsl --prod',
       '  node packages/tools/scripts/check-consistency.js --all-tenants --env development',
     ].join('\n')
   );
@@ -251,12 +251,12 @@ async function auditTenant(tenantName, environment, configPath) {
   let warnings = 0;
   const suggestions = [];
 
-  if (runtime.hostingProvider !== 'amplify') {
-    log(`Skipping legacy Amplify audit for ${runtime.hostingProvider} hosting.`, 'info');
-    return { issues, warnings };
-  }
-
   if (runtime.appType === 'next') {
+    if (runtime.hostingProvider !== 'amplify') {
+      log(`Skipping legacy Amplify audit for ${runtime.hostingProvider} hosting.`, 'info');
+      return { issues, warnings };
+    }
+
     const appConfig = getAmplifyAppConfig(runtime.amplify.appId, runtime.amplify.region);
     const appEnv = appConfig && appConfig.environmentVariables ? appConfig.environmentVariables : null;
     const branchEnv = getAmplifyBranchEnv(runtime.amplify.appId, runtime.amplify.region, runtime.branchName);
@@ -488,81 +488,85 @@ async function auditTenant(tenantName, environment, configPath) {
   }
   console.log('');
 
-  log(`Auditing Amplify app: ${runtime.amplify.appId} (${runtime.amplify.region})`, 'info');
-  const appConfig = getAmplifyAppConfig(runtime.amplify.appId, runtime.amplify.region);
-  const appEnv = appConfig && appConfig.environmentVariables ? appConfig.environmentVariables : null;
-  const branchEnv = getAmplifyBranchEnv(runtime.amplify.appId, runtime.amplify.region, runtime.branchName);
-  const appRepository = appConfig && appConfig.repository ? String(appConfig.repository).trim() : '';
-
-  if (!appEnv) {
-    log(`Amplify app not found/readable: ${runtime.amplify.appId}`, 'error');
-    issues += 1;
-  } else if (!branchEnv) {
-    log(`Amplify branch not found/readable: ${runtime.branchName}`, 'error');
-    issues += 1;
+  if (runtime.hostingProvider !== 'amplify') {
+    log(`Skipping legacy Amplify audit for ${runtime.hostingProvider} hosting.`, 'info');
   } else {
-    const mergedAmplifyEnv = { ...appEnv, ...branchEnv };
+    log(`Auditing Amplify app: ${runtime.amplify.appId} (${runtime.amplify.region})`, 'info');
+    const appConfig = getAmplifyAppConfig(runtime.amplify.appId, runtime.amplify.region);
+    const appEnv = appConfig && appConfig.environmentVariables ? appConfig.environmentVariables : null;
+    const branchEnv = getAmplifyBranchEnv(runtime.amplify.appId, runtime.amplify.region, runtime.branchName);
+    const appRepository = appConfig && appConfig.repository ? String(appConfig.repository).trim() : '';
 
-    if (runtime.sourceRepository) {
-      if (!compareValue(appRepository, runtime.sourceRepository)) {
-        log('Amplify source repository differs from tenant config', 'error');
-        console.log(`    Actual:   ${appRepository || '(unset)'}`);
-        console.log(`    Expected: ${runtime.sourceRepository}`);
-        issues += 1;
-        suggestions.push(
-          `bash archive/amplify/scripts/update-amplify-source-repo.sh --tenant ${runtime.tenant} --repo ${runtime.sourceRepository}`
-        );
-      } else {
-        log(`Amplify source repository matches tenant config (${runtime.sourceRepository})`, 'success');
-      }
-    }
-
-    const requiredAmplifyChecks = [['EXPO_PUBLIC_API_BASE_URL', runtime.apiBaseUrl]];
-    const optionalAmplifyChecks = [
-      ['DIRECTUS_URL', runtime.directusUrl],
-      ['EXPO_PUBLIC_DIRECTUS_URL', runtime.directusUrl],
-      ['EXPO_PUBLIC_SUPABASE_URL', runtime.supabaseUrl],
-    ];
-
-    for (const [key, expected] of requiredAmplifyChecks) {
-      const actual = mergedAmplifyEnv[key] || '';
-      if (!compareValue(actual, expected)) {
-        log(`Amplify mismatch in ${key} (${runtime.branchName}):`, 'error');
-        console.log(`    Actual:   ${actual || '(unset)'}`);
-        console.log(`    Expected: ${expected}`);
-        issues += 1;
-      }
-    }
-
-    for (const [key, expected] of optionalAmplifyChecks) {
-      const actual = mergedAmplifyEnv[key] || '';
-      if (!actual) {
-        log(`Amplify variable not set (optional): ${key}`, 'warn');
-        warnings += 1;
-        continue;
-      }
-
-      if (!compareValue(actual, expected)) {
-        log(`Amplify variable differs from expected: ${key}`, 'warn');
-        console.log(`    Actual:   ${actual}`);
-        console.log(`    Expected: ${expected}`);
-        warnings += 1;
-      }
-    }
-
-    const frontendKeys = ['EXPO_PUBLIC_FRONTEND_URL', 'FRONTEND_URL'];
-    const frontendSet = frontendKeys.filter((key) => Boolean(mergedAmplifyEnv[key]));
-    if (frontendSet.length === 0) {
-      log(`Amplify frontend URL variables are unset (optional): ${frontendKeys.join(', ')}`, 'warn');
-      warnings += 1;
+    if (!appEnv) {
+      log(`Amplify app not found/readable: ${runtime.amplify.appId}`, 'error');
+      issues += 1;
+    } else if (!branchEnv) {
+      log(`Amplify branch not found/readable: ${runtime.branchName}`, 'error');
+      issues += 1;
     } else {
-      for (const key of frontendSet) {
-        const actual = mergedAmplifyEnv[key];
-        if (!compareValue(actual, runtime.frontendUrl)) {
-          log(`Amplify frontend URL differs from tenant domain in ${key}`, 'warn');
-          console.log(`    Actual:   ${actual}`);
-          console.log(`    Expected: ${runtime.frontendUrl}`);
+      const mergedAmplifyEnv = { ...appEnv, ...branchEnv };
+
+      if (runtime.sourceRepository) {
+        if (!compareValue(appRepository, runtime.sourceRepository)) {
+          log('Amplify source repository differs from tenant config', 'error');
+          console.log(`    Actual:   ${appRepository || '(unset)'}`);
+          console.log(`    Expected: ${runtime.sourceRepository}`);
+          issues += 1;
+          suggestions.push(
+            `bash archive/amplify/scripts/update-amplify-source-repo.sh --tenant ${runtime.tenant} --repo ${runtime.sourceRepository}`
+          );
+        } else {
+          log(`Amplify source repository matches tenant config (${runtime.sourceRepository})`, 'success');
+        }
+      }
+
+      const requiredAmplifyChecks = [['EXPO_PUBLIC_API_BASE_URL', runtime.apiBaseUrl]];
+      const optionalAmplifyChecks = [
+        ['DIRECTUS_URL', runtime.directusUrl],
+        ['EXPO_PUBLIC_DIRECTUS_URL', runtime.directusUrl],
+        ['EXPO_PUBLIC_SUPABASE_URL', runtime.supabaseUrl],
+      ];
+
+      for (const [key, expected] of requiredAmplifyChecks) {
+        const actual = mergedAmplifyEnv[key] || '';
+        if (!compareValue(actual, expected)) {
+          log(`Amplify mismatch in ${key} (${runtime.branchName}):`, 'error');
+          console.log(`    Actual:   ${actual || '(unset)'}`);
+          console.log(`    Expected: ${expected}`);
+          issues += 1;
+        }
+      }
+
+      for (const [key, expected] of optionalAmplifyChecks) {
+        const actual = mergedAmplifyEnv[key] || '';
+        if (!actual) {
+          log(`Amplify variable not set (optional): ${key}`, 'warn');
           warnings += 1;
+          continue;
+        }
+
+        if (!compareValue(actual, expected)) {
+          log(`Amplify variable differs from expected: ${key}`, 'warn');
+          console.log(`    Actual:   ${actual}`);
+          console.log(`    Expected: ${expected}`);
+          warnings += 1;
+        }
+      }
+
+      const frontendKeys = ['EXPO_PUBLIC_FRONTEND_URL', 'FRONTEND_URL'];
+      const frontendSet = frontendKeys.filter((key) => Boolean(mergedAmplifyEnv[key]));
+      if (frontendSet.length === 0) {
+        log(`Amplify frontend URL variables are unset (optional): ${frontendKeys.join(', ')}`, 'warn');
+        warnings += 1;
+      } else {
+        for (const key of frontendSet) {
+          const actual = mergedAmplifyEnv[key];
+          if (!compareValue(actual, runtime.frontendUrl)) {
+            log(`Amplify frontend URL differs from tenant domain in ${key}`, 'warn');
+            console.log(`    Actual:   ${actual}`);
+            console.log(`    Expected: ${runtime.frontendUrl}`);
+            warnings += 1;
+          }
         }
       }
     }
