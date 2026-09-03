@@ -22,22 +22,57 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202608251057, // Updated to current timestamp
-  releaseDate: '2026-08-25',
+  buildNumber: 202609030135, // Updated to current timestamp
+  releaseDate: '2026-09-03',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    // No new features
+    'add past-edition speaker directory',
+    'add demo programme and speakers',
+    'grant courtesy passes on signup',
+    'add CBWeek hero film',
+    'provision Colombia Blockchain Week 2026 tenant'
   ],
   bugfixes: [
-    'route core through better auth'
+    'show countdown on hero films',
+    'guard banner text contrast',
+    'guard Web Lock during server export',
+    'scope Poker feed refresh to Poker',
+    'render event allies without repeats',
+    'serialize Supabase session bootstrap',
+    'rename CBWeek tenant and brand auth'
   ],
   breakingChanges: [],
-  notes: 'route core through better auth'
+  notes: 'add past-edition speaker directory; add demo programme and speakers; grant courtesy passes on signup; add CBWeek hero film; provision Colombia Blockchain Week 2026 tenant; show countdown on hero films; guard banner text contrast; guard Web Lock during server export; scope Poker feed refresh to Poker; render event allies without repeats; serialize Supabase session bootstrap; rename CBWeek tenant and brand auth'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.27': {
+    version: '1.9.27',
+    buildNumber: 202609030135,
+    releaseDate: '2026-09-03',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'add past-edition speaker directory',
+      'add demo programme and speakers',
+      'grant courtesy passes on signup',
+      'add CBWeek hero film',
+      'provision Colombia Blockchain Week 2026 tenant'
+    ],
+    bugfixes: [
+      'show countdown on hero films',
+      'guard banner text contrast',
+      'guard Web Lock during server export',
+      'scope Poker feed refresh to Poker',
+      'render event allies without repeats',
+      'serialize Supabase session bootstrap',
+      'rename CBWeek tenant and brand auth'
+    ],
+    breakingChanges: [],
+    notes: 'add past-edition speaker directory; add demo programme and speakers; grant courtesy passes on signup; add CBWeek hero film; provision Colombia Blockchain Week 2026 tenant; show countdown on hero films; guard banner text contrast; guard Web Lock during server export; scope Poker feed refresh to Poker; render event allies without repeats; serialize Supabase session bootstrap; rename CBWeek tenant and brand auth'
+  },
   '1.9.26': {
     version: '1.9.26',
     buildNumber: 202608251057,
