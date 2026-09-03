@@ -61,14 +61,16 @@ locals {
   ]
 
   site_trigger_excludes = [
+    # Avoid rebuilding the core development site for BSL/event-only changes.
+    # Shared application changes still rebuild every deployment that needs it.
+    "apps/mobile-app/app/events/**",
+    "apps/mobile-app/app/api/bsl/**",
+    "apps/mobile-app/app/api/events/**",
+    "apps/mobile-app/lib/bsl/**",
+    "apps/mobile-app/assets/logos/bsl/**",
+    "apps/mobile-app/config/events.ts",
     "packages/infra/terraform/stacks/bsl-target/**",
-    "packages/infra/sst.config.ts",
-    "packages/infra/src/**",
-    "packages/infra/terraform/stacks/mobile-release-target/**",
-    "packages/infra/terraform/stacks/mobile-release-legacy-source-account/**",
-    "packages/infra/terraform/stacks/gcp/**",
     "packages/tools/scripts/build-bsl-infra.sh",
-    "packages/tools/scripts/check-infra-dns.sh",
   ]
 
   build_worker_lambda_function_names = distinct([

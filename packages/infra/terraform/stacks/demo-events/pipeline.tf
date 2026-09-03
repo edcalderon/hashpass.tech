@@ -6,22 +6,24 @@
 # ============================================================================
 
 locals {
-  # Mirrors hashpass-web's site_dev trigger lists (same apps/mobile-app +
-  # packages/** dependency shape, same develop branch) -- see that stack's
-  # main.tf locals block for the shared reasoning.
+  # This is a dedicated event tenant. Avoid rebuilding it for core HashPass
+  # routes or unrelated mobile-app changes.
   cbweek2026_trigger_includes = [
-    "apps/mobile-app/**",
+    "apps/mobile-app/app/events/**",
+    "apps/mobile-app/app/demo.tsx",
+    "apps/mobile-app/lib/bsl/**",
+    "apps/mobile-app/config/events.ts",
+    "apps/mobile-app/config/supabase-profiles.ts",
+    "apps/mobile-app/assets/logos/bsl/**",
     "packages/**",
-    "package.json",
     "pnpm-lock.yaml",
-    "pnpm-workspace.yaml",
   ]
 
-  # AWS caps this list at 8 entries -- matches hashpass-dev-site's exact
-  # list (proven, already live on that pipeline) rather than adding a 9th
-  # (e.g. hashpass-web/**) and tripping the cap.
+  # AWS caps this list at eight patterns. HashPass and BSL infrastructure
+  # updates must not launch the event-site build.
   cbweek2026_trigger_excludes = [
     "packages/infra/terraform/stacks/bsl-target/**",
+    "packages/infra/terraform/stacks/hashpass-web/**",
     "packages/infra/sst.config.ts",
     "packages/infra/src/**",
     "packages/infra/terraform/stacks/mobile-release-target/**",
