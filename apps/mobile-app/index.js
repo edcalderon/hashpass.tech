@@ -65,10 +65,8 @@ try {
 }
 
 // Load the router. Wrap in try-catch to surface synchronous module-eval errors.
-console.log('[HashPass][boot] requiring expo-router/entry');
 try {
   require('expo-router/entry');
-  console.log('[HashPass][boot] expo-router/entry evaluated OK');
 } catch (err) {
   // Log FIRST so the real error reaches logcat even when Alert can't render
   // this early in old-bridge startup (a swallowed error here means no app

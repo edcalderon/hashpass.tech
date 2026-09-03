@@ -224,22 +224,6 @@ export const createSessionFromUrl = async (url: string): Promise<{
       errorCode
     );
 
-    // Diagnostic only — log which auth-relevant keys were found, never the
-    // values (tokens/codes are live credentials; logging them would leak a
-    // usable session to anyone who can read the console/error-reporting
-    // output). This is the one signal that distinguishes "the magic link URL
-    // genuinely had no recognizable payload" (parsing bug, or a redirect that
-    // stripped the query string — e.g. the target `redirect_to` not matching
-    // Supabase's project Redirect URL allowlist) from "params were present but
-    // every exchange method still failed" (a real exchange error, which
-    // Methods 1-3 below already log individually).
-    if (!hasAuthParams) {
-      console.warn(
-        '⚠️ createSessionFromUrl: no recognizable auth params in callback URL.',
-        { presentParamKeys: Object.keys(params), errorCode }
-      );
-    }
-
     // If callback URL does not include auth payload, return existing session if available.
     // When tokens/code exist, we must process them explicitly to avoid stale auth state.
     if (!hasAuthParams) {
@@ -390,19 +374,6 @@ export const createSessionFromUrl = async (url: string): Promise<{
       const hydrated = await hydrateSessionUser(session);
       return { session: hydrated.session, user: hydrated.user, error: null };
     }
-
-    console.warn(
-      '⚠️ createSessionFromUrl: reached the end with no session and no error — none of the ' +
-      'access_token/token_hash+token/code exchange methods matched, and no existing session ' +
-      'was found.' +
-      (hasAuthParams
-        ? ' The URL DID contain recognized auth params, so this is a real payload that every ' +
-          'exchange method still rejected as unusable (e.g. a token without its matching email, ' +
-          'or a lone refresh_token) — not a missing-payload case.'
-        : ' If this followed a real magic-link click, check the Supabase project\'s "Redirect ' +
-          'URLs" allowlist: if the requested redirect_to was rejected, GoTrue silently falls ' +
-          'back to the Site URL without the auth payload, landing here with nothing to exchange.')
-    );
 
     // Surface this as a distinct, named error instead of `error: null` —
     // callback.tsx's caller falls back to a single generic "no session was

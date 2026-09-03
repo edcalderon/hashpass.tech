@@ -9,6 +9,10 @@ import { authService, SUPABASE_OAUTH_CALLBACK_PATH, SUPABASE_OAUTH_NATIVE_SCHEME
 import { createSessionFromUrl, supabase } from '../../../lib/supabase';
 import { resolvePublicSupabaseConfig } from '../../../config/supabase-profiles';
 import { markRecentAuthSuccess } from '../../../lib/auth/recent-auth';
+import {
+    isSupabasePasswordlessCallback,
+    PASSWORDLESS_CALLBACK_MARKER,
+} from '../../../lib/auth/passwordless-callback';
 
 type CallbackHashError = {
     code: string;
@@ -172,20 +176,6 @@ export default function AuthCallback() {
     );
     const nativeRelayValue = Array.isArray(params.nativeRelay) ? params.nativeRelay[0] : params.nativeRelay;
     const nativeRelayUrl = getNativeRelayUrl(nativeRelayValue);
-
-    const isTransientSessionError = (message: string) => {
-        const value = message.toLowerCase();
-        return (
-            value.includes('cross-origin restrictions') ||
-            value.includes('browser could not reach directus') ||
-            value.includes('session could not be established') ||
-            value.includes('did not establish a valid session') ||
-            value.includes('invalid_credentials') ||
-            value.includes('invalid user credentials') ||
-            value.includes('networkerror') ||
-            value.includes('failed to fetch')
-        );
-    };
 
     const getToastErrorContent = (rawError: string) => {
         const normalized = rawError.toLowerCase();
@@ -391,13 +381,19 @@ export default function AuthCallback() {
     
     // Provider-agnostic OAuth callback handler
     useEffect(() => {
+        const cleanup = () => {
+            if (!hasNavigatedRef.current) {
+                isProcessingRef.current = false;
+            }
+        };
+
         if (nativeRelayUrl) {
             // Guard: prevent auth processing if this effect re-fires after the relay
             // (Android Chrome may change the URL when handling a custom scheme, causing a re-render)
-            if (isProcessingRef.current) return;
+            if (isProcessingRef.current) return cleanup;
             isProcessingRef.current = true;
             window.location.replace(nativeRelayUrl);
-            return;
+            return cleanup;
         }
 
         // CRITICAL: Check sessionStorage first to prevent re-processing after navigation
@@ -410,13 +406,13 @@ export default function AuthCallback() {
             } else {
                 hasNavigatedRef.current = true;
                 safeNavigate(getRedirectPath());
-                return;
+                return cleanup;
             }
         }
         
         // CRITICAL: Prevent useEffect from running multiple times
         if (hasNavigatedRef.current || isProcessingRef.current) {
-            return;
+            return cleanup;
         }
         
         // CRITICAL: Store a flag to prevent re-execution even if params change
@@ -460,6 +456,10 @@ export default function AuthCallback() {
                     Platform.OS === 'web' && typeof window !== 'undefined'
                         ? window.localStorage.getItem('auth_signin_method')
                         : null;
+                const passwordlessRequestInProgress =
+                    Platform.OS === 'web' && typeof window !== 'undefined'
+                        ? window.localStorage.getItem(PASSWORDLESS_CALLBACK_MARKER) === 'true'
+                        : false;
                 // A 'code' param in the URL is always a Supabase PKCE auth code — never a
                 // Google/Directus OAuth token. Treat it as passwordless regardless of localStorage,
                 // which won't be set when the magic link was requested from the native app.
@@ -480,14 +480,15 @@ export default function AuthCallback() {
                     (!hashAuthType || SUPABASE_PASSWORDLESS_TYPES.has(hashAuthType))
                 );
 
-                const isPasswordlessMethod =
-                    signInMethod === 'magic_link' ||
-                    signInMethod === 'otp_code' ||
-                    isNativePasswordlessCode ||
-                    isWebPasswordlessCode ||
-                    isImplicitPasswordlessLink ||
-                    Boolean(params.token_hash) ||
-                    Boolean(params.token && params.email);
+                const isPasswordlessMethod = isSupabasePasswordlessCallback({
+                    signInMethod,
+                    passwordlessRequestInProgress,
+                    code: isNativePasswordlessCode || isWebPasswordlessCode,
+                    tokenHash: params.token_hash,
+                    token: params.token,
+                    email: params.email,
+                    hasImplicitAccessToken: isImplicitPasswordlessLink,
+                });
 
                 if (isPasswordlessMethod && !isPasswordlessSupported) {
                     console.warn('⚠️ Passwordless callback blocked due to provider mismatch:', {
@@ -501,6 +502,7 @@ export default function AuthCallback() {
                     if (Platform.OS === 'web' && typeof window !== 'undefined') {
                         window.localStorage.removeItem('oauth_in_progress');
                         window.localStorage.removeItem('auth_signin_method');
+                        window.localStorage.removeItem(PASSWORDLESS_CALLBACK_MARKER);
                     }
 
                     if (!hasNavigatedRef.current && !getHasNavigated()) {
@@ -575,6 +577,7 @@ export default function AuthCallback() {
                         window.history.replaceState({}, '', cleanUrl);
                         window.localStorage.removeItem('oauth_in_progress');
                         window.localStorage.removeItem('auth_signin_method');
+                        window.localStorage.removeItem(PASSWORDLESS_CALLBACK_MARKER);
                     }
 
                     markRecentAuthSuccess();
@@ -588,15 +591,7 @@ export default function AuthCallback() {
                 // Use provider-agnostic OAuth callback handler
                 let result = await handleOAuthCallback(params as Record<string, string>);
 
-                // Retry once for transient cookie/session propagation delays.
-                if (result.error && isTransientSessionError(result.error)) {
-                    console.warn('⚠️ Transient OAuth session error detected. Retrying once...');
-                    await new Promise(resolve => setTimeout(resolve, 700));
-                    result = await handleOAuthCallback(params as Record<string, string>);
-                }
-                
                 if (result.error) {
-                    console.error('❌ OAuth callback error:', result.error);
                     throw new Error(result.error);
                 }
                 
@@ -619,6 +614,7 @@ export default function AuthCallback() {
                         window.history.replaceState({}, '', cleanUrl);
                         window.localStorage.removeItem('oauth_in_progress');
                         window.localStorage.removeItem('auth_signin_method');
+                        window.localStorage.removeItem(PASSWORDLESS_CALLBACK_MARKER);
                     }
                     
                     markRecentAuthSuccess();
@@ -626,31 +622,12 @@ export default function AuthCallback() {
                     setHasNavigated(true);
                     isProcessingRef.current = false;
                     
-                    // Wait for auth state to update before navigating
-                    let attempts = 0;
-                    const waitForAuthState = () => {
-                        attempts++;
-                        
-                        // Try navigation after a reasonable wait or max attempts
-                        if (attempts >= 5) {
-                            safeNavigate(redirectPath);
-                            return;
-                        }
-                        
-                        setTimeout(() => {
-                            safeNavigate(redirectPath);
-                        }, attempts * 200); // Incremental delay
-                    };
-                    
-                    // Start the auth state check
-                    waitForAuthState();
+                    safeNavigate(redirectPath);
                 } else {
-                    console.error('❌ No user data in result:', result);
                     throw new Error('Authentication completed but no user data received');
                 }
                 
             } catch (error: any) {
-                console.error('❌ Auth callback error:', error);
                 setStatus('error');
                 const rawMessage = error?.message || t('authenticationFailed', 'Authentication failed. Please try again.');
                 const toastError = getToastErrorContent(rawMessage);
@@ -659,18 +636,16 @@ export default function AuthCallback() {
                 if (Platform.OS === 'web' && typeof window !== 'undefined') {
                     window.localStorage.removeItem('oauth_in_progress');
                     window.localStorage.removeItem('auth_signin_method');
+                    window.localStorage.removeItem(PASSWORDLESS_CALLBACK_MARKER);
                 }
                 
-                // After error, redirect back to auth page after a delay
-                setTimeout(() => {
-                    if (!hasNavigatedRef.current && !getHasNavigated()) {
-                        hasNavigatedRef.current = true;
-                        setHasNavigated(false); // Clear flag on error
-                        isProcessingRef.current = false;
-                        const authErrorPath = `/(shared)/auth?error=oauth_failed&message=${encodeURIComponent(toastError.message)}`;
-                        router.replace(authErrorPath as any);
-                    }
-                }, 800);
+                if (!hasNavigatedRef.current && !getHasNavigated()) {
+                    hasNavigatedRef.current = true;
+                    setHasNavigated(false); // Clear flag on error
+                    isProcessingRef.current = false;
+                    const authErrorPath = `/(shared)/auth?error=oauth_failed&message=${encodeURIComponent(toastError.message)}`;
+                    router.replace(authErrorPath as any);
+                }
             } finally {
                 isProcessingRef.current = false;
             }
@@ -680,11 +655,7 @@ export default function AuthCallback() {
         
         // Cleanup function to reset processing state if component unmounts
         return () => {
-            // Don't reset hasNavigatedRef - we want to keep that across re-renders
-            // Only reset isProcessingRef if we haven't navigated
-            if (!hasNavigatedRef.current) {
-                isProcessingRef.current = false;
-            }
+            cleanup();
         };
         // Intentionally run once on mount to prevent callback retry loops on re-render.
         // eslint-disable-next-line react-hooks/exhaustive-deps

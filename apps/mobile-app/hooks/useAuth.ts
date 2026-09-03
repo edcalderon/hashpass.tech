@@ -1529,7 +1529,8 @@ export const useAuth = () => {
 
       return result;
     } catch (error) {
-      console.error('Error handling OAuth callback:', error);
+      // The callback screen presents this failure to the user. Avoid logging
+      // it a second time with the same stack and message.
       throw error;
     }
   }, []);

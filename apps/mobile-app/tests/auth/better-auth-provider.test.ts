@@ -110,6 +110,28 @@ describe('BetterAuthProvider', () => {
     jest.useRealTimers();
   });
 
+  it('waits through the full Better Auth cookie propagation window', async () => {
+    jest.useFakeTimers();
+
+    mockGetSession
+      .mockResolvedValueOnce({ data: { user: null, session: null } })
+      .mockResolvedValueOnce({ data: { user: null, session: null } })
+      .mockResolvedValueOnce({ data: { user: null, session: null } })
+      .mockResolvedValueOnce({ data: createBetterAuthSession() });
+
+    const { BetterAuthProvider } = require('../../../../packages/auth/src/providers/better-auth');
+    const provider = new BetterAuthProvider({ baseURL: 'https://api.hashpass.tech/api/auth' });
+
+    const callbackPromise = provider.handleOAuthCallback();
+    await jest.advanceTimersByTimeAsync(2100);
+    const result = await callbackPromise;
+
+    expect(mockGetSession).toHaveBeenCalledTimes(4);
+    expect(result.session?.user.email).toBe('user@example.com');
+
+    jest.useRealTimers();
+  });
+
   it('retries session lookup after native Google sign-in before failing', async () => {
     jest.useFakeTimers();
 

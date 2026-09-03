@@ -223,13 +223,6 @@ function installNativeEventRegistryPatch() {
     }
   }
 
-  if (patched.length > 0) {
-    console.log('[HashPass][events] installed native direct event fallbacks', {
-      patched,
-      crashGuardInstalled,
-    });
-  }
-
   return { installed: true, patched, crashGuardInstalled };
 }
 

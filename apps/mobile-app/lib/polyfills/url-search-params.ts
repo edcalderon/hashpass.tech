@@ -516,17 +516,6 @@ export const installURLSearchParamsPolyfill = (): boolean => {
       urlParsesQuery = false;
     }
 
-    console.log('[HashPass][urlsp] install complete', {
-      hardenedStubPrototype,
-      patchedStubViaRequire,
-      installedWorkingGlobals,
-      patchedGlobalFull,
-      patchedGlobalHas,
-      lockedURLSearchParams,
-      lockedURL,
-      methodsDoNotThrow,
-      urlParsesQuery,
-    });
   } catch (diagError: any) {
     console.warn('[HashPass][urlsp] post-install verification threw', {
       message: diagError?.message || String(diagError),

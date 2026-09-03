@@ -21,6 +21,7 @@ type SecureStoreModule = typeof import('expo-secure-store');
 const DEFAULT_BASE_PATH = '/api/auth';
 const LEGACY_BETTER_AUTH_SEGMENT = ['bsl', 'auth'].join('-');
 const BETTER_AUTH_SESSION_CACHE_KEY = 'hashpass_better_auth_session';
+const PASSWORDLESS_CALLBACK_MARKER = 'supabase_passwordless_in_progress';
 
 let secureStoreModule: SecureStoreModule | null = null;
 
@@ -235,7 +236,10 @@ export class BetterAuthProvider implements IAuthProvider {
   private async readSessionWithRetry(
     options: { retries?: number; delayMs?: number } = {}
   ): Promise<AuthSession | null> {
-    const retries = Math.max(0, options.retries ?? 1);
+    // The social callback writes its cookie on the API origin before it sends
+    // the browser back to the web app. Allow for a short cross-origin cookie
+    // propagation window instead of failing after a single 700ms retry.
+    const retries = Math.max(0, options.retries ?? 3);
     const delayMs = Math.max(0, options.delayMs ?? 700);
 
     for (let attempt = 0; attempt <= retries; attempt += 1) {
@@ -285,6 +289,7 @@ export class BetterAuthProvider implements IAuthProvider {
       )}`;
 
       window.localStorage.setItem('oauth_return_url', window.location.pathname);
+      window.localStorage.removeItem(PASSWORDLESS_CALLBACK_MARKER);
       window.localStorage.setItem('oauth_in_progress', 'true');
       window.localStorage.setItem('auth_signin_method', 'google_oauth');
 
