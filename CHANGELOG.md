@@ -1,3 +1,18 @@
+## [1.9.33](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.32...v1.9.33) (2026-09-03)
+
+
+### Bug Fixes
+
+* **auth:** send magic-link token_hash in the hash fragment, not query string ([7ad24ad](https://github.com/hashpass-tech/hashpass.tech/commit/7ad24ad16779a21cac29f60590124393334f055d))
+### Release Highlights
+- send magic-link token_hash in the hash fragment, not query string
+
+### Release scope
+- Compared with: `v1.9.32` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+
 ## [1.9.32](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.31...v1.9.32) (2026-09-03)
 
 

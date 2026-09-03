@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202609031900, // Updated to current timestamp
+  buildNumber: 202609032013, // Updated to current timestamp
   releaseDate: '2026-09-03',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,14 +30,29 @@ export const CURRENT_VERSION: VersionInfo = {
     // No new features
   ],
   bugfixes: [
-    'stop emailing auto-consuming Supabase magic-link URLs'
+    'send magic-link token_hash in the hash fragment, not query string'
   ],
   breakingChanges: [],
-  notes: 'stop emailing auto-consuming Supabase magic-link URLs'
+  notes: 'send magic-link token_hash in the hash fragment, not query string'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.33': {
+    version: '1.9.33',
+    buildNumber: 202609032013,
+    releaseDate: '2026-09-03',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'send magic-link token_hash in the hash fragment, not query string'
+    ],
+    breakingChanges: [],
+    notes: 'send magic-link token_hash in the hash fragment, not query string'
+  },
   '1.9.32': {
     version: '1.9.32',
     buildNumber: 202609031900,
