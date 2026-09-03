@@ -47,6 +47,7 @@ function resolveTenant(tenantName, environment = 'development', configPath = DEF
 
   const defaults = config.defaults || {};
   const amplify = tenant.amplify || {};
+  const hostingProvider = tenant.hostingProvider || (amplify.appId || amplify.appIdEnv ? 'amplify' : 'external');
   const appType = tenant.appType || defaults.appType || 'expo';
   const appId =
     amplify.appId ||
@@ -60,7 +61,7 @@ function resolveTenant(tenantName, environment = 'development', configPath = DEF
   const appName = tenant.appName || defaults.appName || '';
   const supportEmail = tenant.supportEmail || defaults.supportEmail || '';
 
-  if (!appId || !region) {
+  if (hostingProvider === 'amplify' && (!appId || !region)) {
     const appIdHint = amplify.appIdEnv ? ` or set ${amplify.appIdEnv}` : '';
     const regionHint = amplify.regionEnv ? ` or set ${amplify.regionEnv}` : '';
     throw new Error(
@@ -91,6 +92,7 @@ function resolveTenant(tenantName, environment = 'development', configPath = DEF
     tenant: tenantName,
     label: tenant.label || tenantName,
     appType,
+    hostingProvider,
     environment: env,
     branchName,
     configPath: resolvedConfigPath,

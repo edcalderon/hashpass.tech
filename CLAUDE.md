@@ -340,9 +340,10 @@ Always push to origin for CI/CD. Push to upstream for backup after release scrip
 
 ## Target AWS Account Access
 
-The default local AWS profile may point at the source account. Target-account
-web/API infra uses the private account ID stored in `AWS_TARGET_ACCOUNT_ID`;
-use the local AWS CLI profile named `hashpass` for those operations.
+The production AWS CLI profile is `hashpass`. It owns every live HASHPASS
+resource, including Route 53, CloudFront, BSL, web/API infrastructure, and
+cost budgets. The `default` profile is a legacy LSTS account being retired;
+never use it for a HASHPASS deployment or Terraform apply.
 
 The profile is configured from private `.env` values:
 
@@ -362,7 +363,9 @@ The last command must succeed without printing the account ID. Use `AWS_PROFILE=
 `hashpass-dns`, and pass `--region us-east-1` for direct Lambda commands against
 `hashpass-prod-expo-router-api` or `hashpass-dev-expo-router-api`.
 
-**Confirmed (2026-07-28): the `default` AWS CLI profile authenticates to the source account (`<source-account-id>`)** — that's what "may point at the source account" above actually resolves to on this machine. Useful for read-only audits of source-account resources (DNS/CloudFront/email/legacy Amplify/old EC2 runner), but never use it for target-account Terraform applies.
+**Mandatory check:** keep account IDs private and verify the selected profile
+with a non-printing STS comparison before any mutation. The USD 50 monthly
+cost budget is configured only in the `hashpass` account.
 
 **For the Android runner specifically**: use `packages/infra/terraform/stacks/mobile-release-target`, never `mobile-release-legacy-source-account` (renamed 2026-07-28 from `mobile-release` — it tracked the old source-account instance and is deprecated, do not apply). `pnpm run infra:mobile-release:*` already points at the correct one. See `.agents/done/task-aws-account-migration.md` for the full, verified account-by-account inventory and open items.
 

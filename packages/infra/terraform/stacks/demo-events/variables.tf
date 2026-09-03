@@ -10,18 +10,6 @@ variable "aws_profile" {
   default     = "hashpass"
 }
 
-variable "aws_source_profile" {
-  description = <<-EOT
-    AWS CLI profile for the SOURCE account (058264267235) -- this is where
-    hashpass.tech's real, publicly-delegated Route53 zone actually lives
-    (confirmed via `dig NS hashpass.tech`), not the target account. Only
-    used for Route53 record writes; see versions.tf's aws.source_dns
-    provider. CLAUDE.md's `default` profile already authenticates here.
-  EOT
-  type        = string
-  default     = "default"
-}
-
 variable "route53_zone_name" {
   description = "Existing target-account Route53 hosted zone that owns every demo subdomain below."
   type        = string

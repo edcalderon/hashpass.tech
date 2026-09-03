@@ -2,8 +2,7 @@
 
 This workspace package now owns the live AWS/GCP delivery surfaces for the monorepo:
 
-- the source-account CloudFront front door for `hashpass.tech` and `dev.hashpass.tech`
-- the target-account `hashpass.tech` hosted zones, static site origin, and API stack
+- the production-account CloudFront front door, Route 53 zones, static site origin, and API stack
 - the BSL SST delivery path for `bsl.hashpass.tech` and `bsl-dev.hashpass.tech`
 - the GitHub Pages artifact and DNS aliases for `hashpass.club` and `hashpass.club/documentation`
 - the mobile Android self-hosted runner stack for `hashpass-mobile-release`
@@ -17,9 +16,9 @@ Set `HASHPASS_INFRA_TARGET=club-docs` only if you need to inspect the archived S
 
 - `bsl.hashpass.tech` for production
 - `bsl-dev.hashpass.tech` for development
-- `packages/infra/terraform/stacks/hashpass-dns` as the target-account hosted zone layer that keeps the migration reversible until registrar cutover, with `dev.hashpass.tech` living inside the parent `hashpass.tech` zone
+- `packages/infra/terraform/stacks/hashpass-dns` as the production-account hosted zone layer, with `dev.hashpass.tech` living inside the parent `hashpass.tech` zone
 - `packages/infra/terraform/stacks/hashpass-api-target` as the target-account API Gateway + Lambda layer for `api.hashpass.tech` and `api-dev.hashpass.tech`
-- `packages/infra/terraform/stacks/hashpass-web` as the target-account `hashpass.tech` and `dev.hashpass.tech` CodePipeline + EC2 worker stack that publishes the static origins consumed by the source CloudFront front door
+- `packages/infra/terraform/stacks/hashpass-web` as the production-account `hashpass.tech` and `dev.hashpass.tech` CodePipeline + EC2 worker stack
 - `hashpass.club` as the canonical club site, with `club.hashpass.tech` and `docs.hashpass.tech` as DNS aliases
 - `apps/web-app` and `apps/docs` assembled into a single combined static artifact for GitHub Pages
 - `packages/infra/terraform/stacks/mobile-release-target` as the real, active AWS EC2 GitHub Actions runner for mobile Android builds (account `<target-account-id>`), including its managed public VPC when the account has no default network

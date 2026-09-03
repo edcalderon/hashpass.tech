@@ -1,7 +1,7 @@
 {
   "name": "hashpass.tech",
   "main": "index.js",
-  "version": "1.9.30",
+  "version": "1.9.31",
   "packageManager": "pnpm@9.15.5",
   "pnpm": {
     "overrides": {
@@ -146,8 +146,8 @@
     "release:prod": "node packages/tools/scripts/release-pipeline.js --env production --tenant core",
     "release:core:dev": "node packages/tools/scripts/release-pipeline.js --env development --tenant core",
     "release:core:prod": "node packages/tools/scripts/release-pipeline.js --env production --tenant core",
-    "release:bsl:dev": "node packages/tools/scripts/release-pipeline.js --env development --tenant blockchainsummit",
-    "release:bsl:prod": "node packages/tools/scripts/release-pipeline.js --env production --tenant blockchainsummit",
+    "release:bsl:dev": "node packages/tools/scripts/release-pipeline.js --env development --tenant bsl",
+    "release:bsl:prod": "node packages/tools/scripts/release-pipeline.js --env production --tenant bsl",
     "release:club": "node packages/tools/scripts/release-pipeline.js --env production --tenant club",
     "release:club-dev": "node packages/tools/scripts/release-pipeline.js --env development --tenant club-dev",
     "version:club:web": "node packages/tools/scripts/update-club-web-version.mjs",

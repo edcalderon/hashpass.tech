@@ -1,3 +1,15 @@
+## [1.9.31](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.30...v1.9.31) (2026-09-03)
+### Released
+- Version 1.9.31 release
+
+### Release scope
+- Compared with: `v1.9.30` (the previous global release tag)
+
+### Affected products & packages
+- Infrastructure
+- Documentation
+- Release tooling
+
 ## [1.9.30](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.29...v1.9.30) (2026-09-03)
 ### Released
 - deliver magic links through backend

@@ -21,8 +21,6 @@
 data "aws_caller_identity" "current" {}
 
 data "aws_route53_zone" "this" {
-  provider = aws.source_dns
-
   name         = "${var.route53_zone_name}."
   private_zone = false
 }
@@ -110,9 +108,7 @@ resource "aws_acm_certificate" "demo" {
 }
 
 resource "aws_route53_record" "demo_cert_validation" {
-  for_each = var.demo_events
-  provider = aws.source_dns
-
+  for_each        = var.demo_events
   allow_overwrite = true
   zone_id         = data.aws_route53_zone.this.zone_id
   name            = one(aws_acm_certificate.demo[each.key].domain_validation_options).resource_record_name
@@ -188,9 +184,7 @@ resource "aws_cloudfront_distribution" "demo" {
 }
 
 resource "aws_route53_record" "demo" {
-  for_each = var.demo_events
-  provider = aws.source_dns
-
+  for_each        = var.demo_events
   allow_overwrite = true
   zone_id         = data.aws_route53_zone.this.zone_id
   name            = each.value.subdomain
@@ -204,9 +198,7 @@ resource "aws_route53_record" "demo" {
 }
 
 resource "aws_route53_record" "demo_ipv6" {
-  for_each = var.demo_events
-  provider = aws.source_dns
-
+  for_each        = var.demo_events
   allow_overwrite = true
   zone_id         = data.aws_route53_zone.this.zone_id
   name            = each.value.subdomain
