@@ -1,3 +1,13 @@
+## [1.9.30](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.29...v1.9.30) (2026-09-03)
+### Released
+- deliver magic links through backend
+
+### Release scope
+- Compared with: `v1.9.29` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+
 ## [1.9.29](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.28...v1.9.29) (2026-09-03)
 ### Released
 - route passwordless callbacks safely
