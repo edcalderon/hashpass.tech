@@ -36,7 +36,7 @@ describe('magic-link API', () => {
 
   it('mints a signed Supabase action link and delivers it through the backend mailer', async () => {
     mockGenerateLink.mockResolvedValue({
-      data: { properties: { action_link: 'https://project.supabase.co/auth/v1/verify?token=one-time' } },
+      data: { properties: { hashed_token: 'one-time-hash', verification_type: 'magiclink' } },
       error: null,
     });
     mockSendAuthenticationMagicLink.mockResolvedValue({ success: true });
@@ -61,7 +61,7 @@ describe('magic-link API', () => {
     });
     expect(mockSendAuthenticationMagicLink).toHaveBeenCalledWith({
       email: 'user@example.com',
-      actionLink: 'https://project.supabase.co/auth/v1/verify?token=one-time',
+      actionLink: 'https://hashpass.tech/auth/callback?token_hash=one-time-hash&type=magiclink',
       locale: 'es',
     });
   });
@@ -96,7 +96,7 @@ describe('magic-link API', () => {
 
   it('does not report delivery as successful when the mailer fails', async () => {
     mockGenerateLink.mockResolvedValue({
-      data: { properties: { action_link: 'https://project.supabase.co/auth/v1/verify?token=one-time' } },
+      data: { properties: { hashed_token: 'one-time-hash', verification_type: 'magiclink' } },
       error: null,
     });
     mockSendAuthenticationMagicLink.mockResolvedValue({
@@ -118,7 +118,7 @@ describe('magic-link API', () => {
 
   it('returns a configuration status when transactional mail is unavailable', async () => {
     mockGenerateLink.mockResolvedValue({
-      data: { properties: { action_link: 'https://project.supabase.co/auth/v1/verify?token=one-time' } },
+      data: { properties: { hashed_token: 'one-time-hash', verification_type: 'magiclink' } },
       error: null,
     });
     mockSendAuthenticationMagicLink.mockResolvedValue({

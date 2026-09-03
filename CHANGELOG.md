@@ -1,3 +1,18 @@
+## [1.9.32](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.31...v1.9.32) (2026-09-03)
+
+
+### Bug Fixes
+
+* **auth:** stop emailing auto-consuming Supabase magic-link URLs ([fccf7a0](https://github.com/hashpass-tech/hashpass.tech/commit/fccf7a080a2ad13a2775531e1f97120edce231e8))
+### Release Highlights
+- stop emailing auto-consuming Supabase magic-link URLs
+
+### Release scope
+- Compared with: `v1.9.31` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+
 ## [1.9.31](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.30...v1.9.31) (2026-09-03)
 ### Released
 - Version 1.9.31 release

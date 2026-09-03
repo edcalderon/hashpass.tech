@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202609031700, // Updated to current timestamp
+  buildNumber: 202609031900, // Updated to current timestamp
   releaseDate: '2026-09-03',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,14 +30,29 @@ export const CURRENT_VERSION: VersionInfo = {
     // No new features
   ],
   bugfixes: [
-    // No bugfixes
+    'stop emailing auto-consuming Supabase magic-link URLs'
   ],
   breakingChanges: [],
-  notes: 'Version 1.9.31 release'
+  notes: 'stop emailing auto-consuming Supabase magic-link URLs'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.32': {
+    version: '1.9.32',
+    buildNumber: 202609031900,
+    releaseDate: '2026-09-03',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'stop emailing auto-consuming Supabase magic-link URLs'
+    ],
+    breakingChanges: [],
+    notes: 'stop emailing auto-consuming Supabase magic-link URLs'
+  },
   '1.9.31': {
     version: '1.9.31',
     buildNumber: 202609031700,
