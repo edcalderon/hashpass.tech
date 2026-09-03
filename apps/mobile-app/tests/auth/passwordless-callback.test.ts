@@ -31,6 +31,7 @@ describe('isSupabasePasswordlessCallback', () => {
   it('requires Better Auth\'s active OAuth marker before choosing its cookie callback', () => {
     expect(isBetterAuthGoogleCallback({ signInMethod: 'google_oauth', oauthInProgress: true })).toBe(true);
     expect(isBetterAuthGoogleCallback({ signInMethod: 'google_oauth', oauthInProgress: false })).toBe(false);
+    expect(isBetterAuthGoogleCallback({ signInMethod: 'google_oauth' })).toBe(false);
     expect(isBetterAuthGoogleCallback({ signInMethod: 'magic_link', oauthInProgress: true })).toBe(false);
   });
 });
