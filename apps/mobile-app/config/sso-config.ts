@@ -40,6 +40,7 @@ export const SSO_CONFIG = {
       'https://bsl-dev.hashpass.tech',
       'https://blockchainsummit.hashpass.lat',
       'https://blockchainsummit-dev.hashpass.lat',
+      'https://cbweek2026.hashpass.tech',
       'https://api.hashpass.tech',
       'https://api-dev.hashpass.tech',
       'https://sso-dev.hashpass.co',

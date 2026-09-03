@@ -3,6 +3,10 @@ import { Platform } from 'react-native';
 export const SUPABASE_OAUTH_CALLBACK_PATH = '/auth/callback';
 export const SUPABASE_OAUTH_NATIVE_SCHEME = 'hashpass';
 
+type SupabaseMagicLinkCallbackOptions = {
+  returnTo?: string;
+};
+
 type SupabaseOAuthRedirectOptions = {
   callbackPath?: string;
   origin?: string;
@@ -125,6 +129,14 @@ const normalizeScheme = (scheme?: string) => {
   const trimmed = (scheme || SUPABASE_OAUTH_NATIVE_SCHEME).trim();
   return trimmed || SUPABASE_OAUTH_NATIVE_SCHEME;
 };
+
+/**
+ * Magic links must always land on the fixed web callback route. Any post-login
+ * destination is handled by the callback page rather than encoded in this path.
+ */
+export const getSupabaseMagicLinkCallbackPath = (
+  _options: SupabaseMagicLinkCallbackOptions = {},
+) => SUPABASE_OAUTH_CALLBACK_PATH;
 
 export const getSupabaseOAuthRedirectUrl = (options: SupabaseOAuthRedirectOptions = {}) => {
   const callbackPath = normalizeCallbackPath(options.callbackPath);

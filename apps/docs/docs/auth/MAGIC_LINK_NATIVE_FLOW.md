@@ -13,12 +13,17 @@ Both flows have distinct behavior depending on whether the request originates fr
 
 ## Magic Link — Web App
 
-1. `supabase.auth.signInWithOtp()` called with `emailRedirectTo: https://hashpass.tech/auth/callback?returnTo=<path>`
+1. `supabase.auth.signInWithOtp()` called with `emailRedirectTo: https://hashpass.tech/auth/callback`
 2. Supabase sends the magic link email
-3. User clicks link → browser opens `hashpass.tech/auth/callback?returnTo=<path>&code=<pkce_code>`
+3. User clicks link → browser opens `hashpass.tech/auth/callback?code=<pkce_code>`
 4. Callback detects `auth_signin_method=magic_link` in localStorage → runs `createSessionFromUrl()`
 5. Supabase PKCE exchange: `exchangeCodeForSession(code)` (code verifier in localStorage)
-6. Session established → redirect to `returnTo` path
+6. Session established → redirect to the safe dashboard default
+
+The web redirect must remain the exact approved callback URL. In particular,
+do not append a `returnTo` query parameter to `emailRedirectTo`: Supabase
+rejects a callback that does not exactly match its redirect allowlist and
+falls back to the Site URL without an auth payload.
 
 The callback parser reads auth payloads from normal query params, hash fragments, and encoded native relay fragments. This covers both PKCE links (`?code=...`) and older implicit links (`#access_token=...&type=email`) so a successful Supabase callback must establish a session before the app redirects to the dashboard.
 

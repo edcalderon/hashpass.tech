@@ -283,14 +283,16 @@ locals {
   # aws_static_site_pipeline module / hashpass-web stack) in sync when
   # adding a new terraform stack or tools script.
   bsl_trigger_excludes = [
+    # A CBWeek tenant configuration/developer landing-page change is deployed
+    # by its own event pipeline; it does not require a generic BSL rebuild.
+    "apps/mobile-app/config/events.ts",
+    "apps/mobile-app/app/demo.tsx",
     "packages/infra/terraform/stacks/hashpass-web/**",
     "packages/infra/terraform/stacks/hashpass-dns/**",
     "packages/infra/terraform/stacks/hashpass-api-target/**",
     "packages/infra/terraform/stacks/mobile-release-target/**",
     "packages/infra/terraform/stacks/mobile-release-legacy-source-account/**",
     "packages/infra/terraform/stacks/aws/**",
-    "packages/infra/terraform/stacks/gcp/**",
-    "packages/tools/scripts/build-static-site.sh",
   ]
 
   prod_build_environment = merge(
@@ -342,6 +344,31 @@ locals {
     },
     var.build_environment_overrides
   )
+}
+
+# The BSL pipelines use a pre-existing shared artifact bucket. CodePipeline
+# does not expire artifacts itself, so manage its short retention policy here.
+resource "aws_s3_bucket_lifecycle_configuration" "pipeline_artifacts" {
+  bucket = var.artifact_bucket_name
+
+  rule {
+    id     = "expire-ci-artifacts"
+    status = "Enabled"
+
+    filter {}
+
+    expiration {
+      days = 14
+    }
+
+    noncurrent_version_expiration {
+      noncurrent_days = 7
+    }
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 1
+    }
+  }
 }
 
 resource "aws_cloudwatch_log_group" "bsl_prod_codebuild" {

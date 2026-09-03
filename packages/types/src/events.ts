@@ -5,6 +5,10 @@ export interface Speaker {
   company: string;
   bio?: string;
   image?: string;
+  /** Whether this event-owned speaker should be shown as active in the directory. */
+  isActive?: boolean;
+  /** A speaker shown for historical context, rather than as a current-event announcement. */
+  isPastEditionReference?: boolean;
   social?: {
     linkedin?: string;
     twitter?: string;
@@ -72,6 +76,13 @@ export interface EventBannerSlide {
   media: {
     type: "image" | "video";
     url: string;
+    /**
+     * Required opt-in for an image that appears behind live title, date, and
+     * countdown copy. Flyers, posters, wordmarks, and other artwork with
+     * readable text must leave this unset so the banner uses its plain brand
+     * surface instead.
+     */
+    textOverlaySafe?: boolean;
   };
   eyebrow?: string;
   title?: string;
@@ -162,8 +173,8 @@ export interface EventConfig {
   quickAccessItems?: QuickAccessItem[];
   eventType?: "hashpass" | "whitelabel";
   /**
-   * Ally brand IDs allowed in this event's desktop sign-in panel. Hash Poker
-   * Room is added by the shared resolver even when it is omitted here.
+   * Optional additional partner brands allowed in this event's desktop
+   * sign-in panel. The event's own brand is always rendered first.
    */
   authAllyIds?: string[];
   tour?: EventTourMeta;

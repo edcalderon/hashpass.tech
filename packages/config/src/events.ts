@@ -33,6 +33,50 @@ const CRIPTOLATINFEST_BANNER_COVER =
   "https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events/criptolatinfest/branding/logo.webp";
 const CRIPTOLATINFEST_HERO_VIDEO =
   "https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events/criptolatinfest/branding/criptolatinfest-2026-hero.mp4";
+const CBWEEK2026_SPEAKER_IMAGE_BASE =
+  "https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events/cbweek2026/speakers";
+
+// CBWeek has not announced its 2026 speakers. These are the people explicitly
+// listed by CBWeek as speakers from past editions; keeping them in the
+// directory as references gives the demo real portraits without representing
+// them as confirmed for the 2026 event.
+const CBWEEK2026_PAST_EDITION_SPEAKERS: Speaker[] = [
+  ['4abf6fc1-98a6-4c13-9b9f-100000000001', 'Charles Hoskinson', 'Founder Cardano Blockchain', 'CARDANO', 'charles-hoskinson'],
+  ['4abf6fc1-98a6-4c13-9b9f-100000000002', 'Hernando de Soto', 'Presidente', 'ILD', 'hernando-de-soto'],
+  ['4abf6fc1-98a6-4c13-9b9f-100000000003', 'Hong Fang', 'Presidente de OKX', 'OKX', 'hong-fang'],
+  ['4abf6fc1-98a6-4c13-9b9f-100000000004', 'Daniel Acosta', 'Head of LATAM', 'BINANCE', 'daniel-acosta'],
+  ['4abf6fc1-98a6-4c13-9b9f-100000000005', 'Patricio Mesri', 'Latam Country Manager', 'BYBIT', 'patricio-mesri'],
+  ['4abf6fc1-98a6-4c13-9b9f-100000000006', 'Salvador Rivero', 'General Manager México', 'BINANCE', 'salvador-rivero'],
+  ['4abf6fc1-98a6-4c13-9b9f-100000000007', 'Carolina Gama', 'Country Manager & LATAM Marketing Head', 'BITGET', 'carolina-gama'],
+  ['4abf6fc1-98a6-4c13-9b9f-100000000008', 'Javier Gamboa', 'Business Developer Manager', 'BITUNIX', 'javier-gamboa'],
+  ['4abf6fc1-98a6-4c13-9b9f-100000000009', 'André Sprone', 'Head of Latam', 'MEXC', 'andre-sprone'],
+  ['4abf6fc1-98a6-4c13-9b9f-100000000010', 'Lesme Hernández', 'Brand Manager LATAM', 'BINGX', 'lesme-hernandez'],
+  ['4abf6fc1-98a6-4c13-9b9f-100000000011', 'Santiago Juarros', 'Sr. Manager & Partner Marketing', 'CIRCLE', 'santiago-juarros'],
+  ['4abf6fc1-98a6-4c13-9b9f-100000000012', 'Drey Dias', 'Sales Director', 'CHAINALYSIS', 'drey-dias'],
+  ['4abf6fc1-98a6-4c13-9b9f-100000000013', 'Valentino Ruiz', 'Institutional Sales Trader', 'BLOCKCHAIN.COM', 'valentino-ruiz'],
+  ['4abf6fc1-98a6-4c13-9b9f-100000000014', 'Lucas Macchiavelli', 'Operaciones Comerciales Global', 'INPUT OUTPUT', 'lucas-macchiavelli'],
+  ['4abf6fc1-98a6-4c13-9b9f-100000000015', 'Mauro Andreoli', 'Midnight & IOG Argentina Representative', 'MIDNIGHT', 'mauro-andreoli'],
+  ['4abf6fc1-98a6-4c13-9b9f-100000000016', 'Francisco Carvalho', 'CEO & Founder', 'BLOCKCHAIN RIO', 'francisco-carvalho'],
+  ['4abf6fc1-98a6-4c13-9b9f-100000000017', 'Andre Gejde', 'Regional Growth Manager', 'TANGEM', 'andre-gejde'],
+  ['4abf6fc1-98a6-4c13-9b9f-100000000018', 'Amilcar Erazo', 'Co-Founder & CEO', 'MERU', 'amilcar-erazo'],
+  ['4abf6fc1-98a6-4c13-9b9f-100000000019', 'Rubén Galindo Steckel', 'CEO', 'AIRTM', 'ruben-galindo-steckel'],
+  ['4abf6fc1-98a6-4c13-9b9f-100000000020', 'Rodrigo Martinez', 'Regional Manager LATAM', 'VANTAGE', 'rodrigo-martinez'],
+  ['4abf6fc1-98a6-4c13-9b9f-100000000021', 'Renato Palacios', 'Business Developer', 'EXNESS', 'renato-palacios'],
+  ['4abf6fc1-98a6-4c13-9b9f-100000000022', 'Efraín Barraza', 'Regional Expansion Manager LATAM', 'TETHER', 'efrain-barraza'],
+  ['4abf6fc1-98a6-4c13-9b9f-100000000023', 'Patrick O’Neill', 'Founder & Managing Partner', 'SHERLOCK COMMUNICATIONS', 'patrick-oneill'],
+  ['4abf6fc1-98a6-4c13-9b9f-100000000024', 'Alvaro Olivares', 'Country Manager', 'BITGO', 'alvaro-olivares'],
+  ['4abf6fc1-98a6-4c13-9b9f-100000000025', 'Pablo De Santis', 'Communications Lead South Cone', 'WORLD', 'pablo-de-santis'],
+  ['4abf6fc1-98a6-4c13-9b9f-100000000026', 'Valentín Popescu', 'Co-Founder & Director', 'MOTIV PERÚ', 'valentin-popescu'],
+].map(([id, name, title, company, imageSlug]) => ({
+  id,
+  name,
+  title,
+  company,
+  bio: `Official CBWeek past-edition speaker reference. ${name} is not announced as a CBWeek 2026 speaker.`,
+  image: `${CBWEEK2026_SPEAKER_IMAGE_BASE}/past-editions/${imageSlug}.webp`,
+  isActive: false,
+  isPastEditionReference: true,
+}));
 const BSL_DATABASE = {
   schema: "bsl",
   tables: {
@@ -4388,114 +4432,142 @@ export const EVENTS: Record<string, EventConfig> = {
     ],
   },
   ...(HASH_POKER_EVENT ? { "hash-poker": HASH_POKER_EVENT } : {}),
-  criptolatinfest: {
-    id: "criptolatinfest",
-    name: "Cripto Latin Fest 2026",
-    shortName: "CLF",
-    aliases: ["clf", "CriptoLatinFest", "Cripto Latin Fest"],
-    domain: "demo-criptolatinfest.hashpass.tech",
-    website: "https://criptolatinfest.com/",
-    title: "Cripto Latin Fest 2026",
-    subtitle: "Maloka, Bogotá • 9ª Edición",
-    // Compact mark keeps cards and countdowns readable; reserve the full
-    // lockup for headers/brand contexts where it has enough room to breathe.
-    image: CRIPTOLATINFEST_ICON,
-    heroVideo: CRIPTOLATINFEST_HERO_VIDEO,
+  cbweek2026: {
+    id: "cbweek2026",
+    name: "Colombia Blockchain Week 2026",
+    shortName: "CBW",
+    aliases: ["cbw", "Colombia Blockchain Week", "CB Week 2026"],
+    domain: "cbweek2026.hashpass.tech",
+    website: "https://colombiablockchainweek.com/",
+    title: "Colombia Blockchain Week 2026",
+    subtitle: "Hotel InterContinental Medellín • 1ª Edición",
+    // Official Colombia Blockchain Week assets, downloaded from the event's
+    // own published media library and re-hosted on HashPass event media.
+    image: "https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events/cbweek2026/branding/cbweek2026-hero.jpg",
+    // A clean city film is safe under live event copy; the official flyer is
+    // retained above as a standalone image asset, never a banner background.
+    heroVideo: "https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events/cbweek2026/branding/cbweek2026-hero.mp4",
     bannerSlides: [
       {
-        id: "clf-2026-film",
-        media: { type: "video", url: CRIPTOLATINFEST_HERO_VIDEO },
-        eyebrow: "CLF 2026 · Official film",
-        title: "Cripto Latin Fest 2026",
-        subtitle: "Maloka, Bogotá · 9ª Edición",
-        date: "August 27-28, 2026 · Bogotá, Colombia",
-        durationMs: 30_000,
-        i18n: {
-          eyebrow: "explore.rework.clfFilmEyebrow",
-          subtitle: "explore.rework.clfSubtitle",
-          date: "explore.rework.clfDate",
-          ctaLabel: "explore.rework.clfExplore",
+        id: "cbweek-2026",
+        media: {
+          // Official hero film published by Colombia Blockchain Week through
+          // its homepage embed, re-hosted as a muted MP4 for reliable app playback.
+          type: "video",
+          url: "https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events/cbweek2026/branding/cbweek2026-hero.mp4",
         },
+        eyebrow: "CBW 2026 · 1ª Edición",
+        title: "Colombia Blockchain Week 2026",
+        subtitle: "Hotel InterContinental Medellín · El Poblado",
+        date: "December 11-12, 2026 · Medellín, Colombia",
         cta: {
-          label: "Explore Cripto Latin Fest",
-          url: "/events/criptolatinfest/home",
-        },
-      },
-      {
-        id: "clf-2026-static",
-        media: { type: "image", url: CRIPTOLATINFEST_BANNER_COVER },
-        eyebrow: "CLF 2026",
-        title: "Cripto Latin Fest 2026",
-        subtitle: "Maloka, Bogotá · 9ª Edición",
-        date: "August 27-28, 2026 · Bogotá, Colombia",
-        i18n: {
-          subtitle: "explore.rework.clfSubtitle",
-          date: "explore.rework.clfDate",
-          ctaLabel: "explore.rework.clfExplore",
-        },
-        cta: {
-          label: "Explore Cripto Latin Fest",
-          url: "/events/criptolatinfest/home",
+          label: "Explore Colombia Blockchain Week",
+          url: "/events/cbweek2026/home",
         },
       },
     ],
-    color: "#046BD2",
-    eventStartDate: "2026-08-27T09:00:00-05:00",
-    eventEndDate: "2026-08-28T18:00:00-05:00",
-    eventDateString: "August 27-28, 2026 • Bogotá, Colombia",
-    series: "Summit",
+    color: "#FCD116",
+    eventStartDate: "2026-12-12T08:30:00-05:00",
+    eventEndDate: "2026-12-12T18:00:00-05:00",
+    eventDateString: "December 11-12, 2026 • Medellín, Colombia",
+    series: "Blockchain Week",
     geo: {
       country: "Colombia",
       continent: "South America",
     },
-    // Demo tenant for a prospective client (deal not yet signed) --
-    // see EventConfig.isDemo. Meeting-request/matchmaking flows are not
-    // wired to a non-BSL speaker/availability adapter yet, so they're
-    // intentionally left out of `features` (informational only; not
-    // currently used to gate any screen -- see hasFeature() call sites).
     features: ["speakers", "agenda"],
     eventType: "whitelabel",
-    // This tenant must never inherit BSL branding on its sign-in screen.
     authAllyIds: ["hash-poker-room"],
-    isDemo: true,
+    isDemo: false,
     branding: {
-      primaryColor: "#046BD2",
-      secondaryColor: "#06111F",
-      logo: CRIPTOLATINFEST_FULL_LOGO,
+      primaryColor: "#FCD116",
+      secondaryColor: "#050507",
+      logo: "https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events/cbweek2026/branding/cbweek2026-logo.webp",
       favicon: "/favicon.ico",
     },
     api: {
-      // Deliberately not "/api/bsl" -- CriptoLatinFest has no backing
-      // rows in bsl_speakers/event_agenda, so API calls under this segment
-      // 404 cleanly and the UI falls back to the static speakers/agenda
-      // arrays below, instead of risking a collision with real BSL data.
-      basePath: "/api/criptolatinfest",
+      basePath: "/api/cbweek2026",
       endpoints: { ...BSL_SHARED_API_ENDPOINTS },
     },
     routes: {
-      home: "/events/criptolatinfest/home",
-      speakers: "/events/criptolatinfest/speakers",
-      bookings: "/events/criptolatinfest/my-bookings",
-      admin: "/events/criptolatinfest/admin",
+      home: "/events/cbweek2026/home",
+      speakers: "/events/cbweek2026/speakers",
+      bookings: "/events/cbweek2026/my-bookings",
+      admin: "/events/cbweek2026/admin",
     },
-    speakers: CRIPTOLATINFEST_SPEAKERS,
-    agenda: CRIPTOLATINFEST_AGENDA,
+    // CBWeek has not announced a timed 2026 programme or confirmed speakers.
+    // The following is a clearly labelled HashPass demo programme, created
+    // from CBWeek's ten published topic pillars (2026-09-02), not an
+    // organizer-announced schedule.
+    speakers: [
+      {
+        id: "90e7014d-0d4b-4ee0-a7bf-b5f3b8db6201",
+        name: "Bryan Aguilar",
+        title: "CEO",
+        company: "LATAM Blockchain Events LLC",
+        bio: "CEO of LATAM Blockchain Events LLC. Listed on the official CBWeek contact section; included in this HashPass demo programme at organizer direction, not as an officially announced CBWeek 2026 speaker.",
+        image: "https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events/cbweek2026/speakers/bryan-aguilar.png",
+        isActive: true,
+      },
+      {
+        id: "90e7014d-0d4b-4ee0-a7bf-b5f3b8db6202",
+        name: "Lucero Dextre",
+        title: "COO",
+        company: "LATAM Blockchain Events LLC",
+        bio: "COO of LATAM Blockchain Events LLC. Listed on the official CBWeek contact section; included in this HashPass demo programme at organizer direction, not as an officially announced CBWeek 2026 speaker.",
+        image: "https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events/cbweek2026/speakers/lucero-dextre.png",
+        isActive: true,
+      },
+      {
+        id: "90e7014d-0d4b-4ee0-a7bf-b5f3b8db6203",
+        name: "Edward Calderón",
+        title: "CEO",
+        company: "HASHPASS",
+        bio: "CEO of HashPass and blockchain technology leader. Included in this HashPass demo programme at organizer direction, not as an officially announced CBWeek 2026 speaker.",
+        image: "https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events/cbweek2026/speakers/edward-calderon.png",
+        isActive: true,
+      },
+      ...CBWEEK2026_PAST_EDITION_SPEAKERS,
+    ],
+    dayThemes: {
+      "1": {
+        es: "Programa demo · Main Day basado en los temas oficiales",
+        en: "Demo programme · Main Day based on official topics",
+      },
+    },
+    agenda: [
+      { id: "cbweek2026-demo-01", time: "2026-12-12T08:30:00-05:00", title: "Acreditación y bienvenida", description: "Programa demo de HashPass para el Main Day (08:30–18:00).", type: "registration", location: "Registro · Hotel InterContinental Medellín", day: "1" },
+      { id: "cbweek2026-demo-02", time: "2026-12-12T09:00:00-05:00", title: "Apertura: Medellín entra al mapa cripto de LATAM", description: "Demo keynote de apertura del programa basado en los temas publicados por CBWeek.", speakers: ["90e7014d-0d4b-4ee0-a7bf-b5f3b8db6201"], type: "keynote", location: "Main Stage", day: "1" },
+      { id: "cbweek2026-demo-03", time: "2026-12-12T09:30:00-05:00", title: "Blockchain, Bitcoin, Criptomonedas & Trading", description: "Fundamentos, adopción y estrategias para entender y operar el ecosistema cripto global. Tema publicado por CBWeek; sesión demo.", speakers: ["90e7014d-0d4b-4ee0-a7bf-b5f3b8db6201"], type: "keynote", location: "Main Stage", day: "1" },
+      { id: "cbweek2026-demo-04", time: "2026-12-12T10:00:00-05:00", title: "Forex, Inversiones & Mercados Financieros · Exchanges & Brokers", description: "Análisis macroeconómico, gestión de riesgo, oportunidades, plataformas, liquidez y herramientas que conectan a inversionistas con mercados globales. Sesión demo.", speakers: ["90e7014d-0d4b-4ee0-a7bf-b5f3b8db6202", "90e7014d-0d4b-4ee0-a7bf-b5f3b8db6201"], type: "panel", location: "Main Stage", day: "1" },
+      { id: "cbweek2026-demo-05", time: "2026-12-12T11:00:00-05:00", title: "Coffee break y visitas a stands", description: "Espacio demo para networking y descubrimiento de soluciones.", type: "break", location: "Zona de Stands", day: "1" },
+      { id: "cbweek2026-demo-06", time: "2026-12-12T11:15:00-05:00", title: "Activos Digitales, Stablecoins, OTC, P2P, Liquidez, Wallets & Pagos Digitales", description: "Infraestructura y soluciones para custodiar, intercambiar y mover valor digital sin fronteras. Tema publicado por CBWeek; sesión demo.", speakers: ["90e7014d-0d4b-4ee0-a7bf-b5f3b8db6202"], type: "panel", location: "Main Stage", day: "1" },
+      { id: "cbweek2026-demo-07", time: "2026-12-12T12:15:00-05:00", title: "Tokenización, RWA, Web3, Fintech & Startups", description: "Casos de innovación que llevan activos, productos y nuevos negocios al entorno on-chain. Tema publicado por CBWeek; sesión demo.", speakers: ["90e7014d-0d4b-4ee0-a7bf-b5f3b8db6203"], type: "keynote", location: "Main Stage", day: "1" },
+      { id: "cbweek2026-demo-08", time: "2026-12-12T12:45:00-05:00", title: "Custodia, Servicios Institucionales & Soluciones B2B", description: "Servicios seguros y escalables para empresas e instituciones que adoptan activos digitales. Tema publicado por CBWeek; sesión demo.", speakers: ["90e7014d-0d4b-4ee0-a7bf-b5f3b8db6201", "90e7014d-0d4b-4ee0-a7bf-b5f3b8db6203"], type: "panel", location: "Main Stage", day: "1" },
+      { id: "cbweek2026-demo-09", time: "2026-12-12T13:45:00-05:00", title: "Almuerzo y networking", description: "Espacio demo de conexiones de negocio.", type: "meal", location: "Networking Zone", day: "1" },
+      { id: "cbweek2026-demo-10", time: "2026-12-12T14:45:00-05:00", title: "DeFi, Regulación & Marco Legal LATAM", description: "Protocolos descentralizados y marcos normativos que están definiendo el futuro financiero regional. Tema publicado por CBWeek; sesión demo.", speakers: ["90e7014d-0d4b-4ee0-a7bf-b5f3b8db6202", "90e7014d-0d4b-4ee0-a7bf-b5f3b8db6203"], type: "panel", location: "Main Stage", day: "1" },
+      { id: "cbweek2026-demo-11", time: "2026-12-12T15:45:00-05:00", title: "Educación Financiera & Web3", description: "Conocimiento práctico para tomar mejores decisiones y participar responsablemente en la economía digital. Tema publicado por CBWeek; taller demo.", speakers: ["90e7014d-0d4b-4ee0-a7bf-b5f3b8db6202"], type: "workshop", location: "Main Stage", day: "1" },
+      { id: "cbweek2026-demo-12", time: "2026-12-12T16:15:00-05:00", title: "Inteligencia Artificial & Tecnologías Emergentes", description: "Aplicaciones de IA y tecnologías emergentes que transforman productos, operaciones y experiencias digitales. Tema publicado por CBWeek; taller demo.", speakers: ["90e7014d-0d4b-4ee0-a7bf-b5f3b8db6203"], type: "workshop", location: "Main Stage", day: "1" },
+      { id: "cbweek2026-demo-13", time: "2026-12-12T16:45:00-05:00", title: "Security, Compliance & Blockchain Analytics", description: "Prevención de fraude, trazabilidad y cumplimiento para construir un ecosistema Web3 más confiable. Tema publicado por CBWeek; sesión demo.", speakers: ["90e7014d-0d4b-4ee0-a7bf-b5f3b8db6203"], type: "keynote", location: "Main Stage", day: "1" },
+      { id: "cbweek2026-demo-14", time: "2026-12-12T17:15:00-05:00", title: "Cierre: conexiones que impulsan el circuito LATAM", description: "Panel demo de cierre sobre educación, adopción, negocios y experiencias presenciales en la región.", speakers: ["90e7014d-0d4b-4ee0-a7bf-b5f3b8db6201", "90e7014d-0d4b-4ee0-a7bf-b5f3b8db6202"], type: "keynote", location: "Main Stage", day: "1" },
+      { id: "cbweek2026-demo-15", time: "2026-12-12T17:45:00-05:00", title: "Networking de cierre", description: "17:45–18:00 · Cierre del Main Day. Espacio demo de conexiones.", type: "break", location: "Networking Zone", day: "1" },
+    ],
     quickAccessItems: [
       {
         id: "agenda",
         title: "Event Agenda",
-        subtitle: "Aug 27-28 • Schedule",
+        subtitle: "Demo programme · Dec 12",
         icon: "event",
         color: "#34A853",
-        route: "/events/criptolatinfest/agenda",
+        route: "/events/cbweek2026/agenda",
       },
       {
         id: "speakers",
-        title: "Featured Speakers",
-        subtitle: "Meet the experts",
+        title: "Speakers",
+        subtitle: "Demo speaker directory",
         icon: "people",
-        color: "#046BD2",
-        route: "/events/criptolatinfest/speakers/calendar",
+        color: "#087C80",
+        route: "/events/cbweek2026/speakers/calendar",
       },
       {
         id: "event-info",
@@ -4503,7 +4575,7 @@ export const EVENTS: Record<string, EventConfig> = {
         subtitle: "Details & Logistics",
         icon: "info",
         color: "#FF9500",
-        route: "/events/criptolatinfest/event-info",
+        route: "/events/cbweek2026/event-info",
       },
     ],
   },

@@ -37,6 +37,7 @@ describe('resolvePublicSupabaseConfig', () => {
 
       expect(resolveSupabaseProfile({ hostname: 'bsl.hashpass.tech' }).id).toBe('bsl-production');
       expect(resolveSupabaseProfile({ hostname: 'bsl-dev.hashpass.tech' }).id).toBe('bsl-development');
+      expect(resolveSupabaseProfile({ hostname: 'cbweek2026.hashpass.tech' }).id).toBe('bsl-development');
       expect(resolveSupabaseProfile({
         hostname: 'bsl.hashpass.tech',
         profileId: 'core-production',

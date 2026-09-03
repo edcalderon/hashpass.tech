@@ -51,6 +51,7 @@ const mockCreateClient = jest.fn(() => ({
 jest.mock('@supabase/supabase-js', () => ({
   __esModule: true,
   createClient: mockCreateClient,
+  navigatorLock: jest.fn(),
 }));
 
 /* eslint-disable @typescript-eslint/no-require-imports */
@@ -108,9 +109,19 @@ describe('web Supabase client initialization', () => {
           autoRefreshToken: true,
           persistSession: true,
           detectSessionInUrl: false,
+          lock: expect.any(Function),
         }),
       })
     );
+
+    const createClientCall = (mockCreateClient.mock.calls as unknown as unknown[][])[0];
+    const options = createClientCall?.[2] as {
+      auth: {
+        lock: (name: string, timeout: number, fn: () => Promise<string>) => Promise<string>;
+      };
+    };
+    expect(options.auth.lock).toBeDefined();
+    return expect(options.auth.lock('test-lock', 0, async () => 'server-safe')).resolves.toBe('server-safe');
   });
 
   it('falls back to the browser runtime profile map when generic env vars are absent', () => {
@@ -148,6 +159,7 @@ describe('web Supabase client initialization', () => {
             autoRefreshToken: true,
             persistSession: true,
             detectSessionInUrl: false,
+            lock: expect.any(Function),
           }),
         })
       );

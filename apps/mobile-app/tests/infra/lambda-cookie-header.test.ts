@@ -66,4 +66,18 @@ describe("Expo Router Lambda adapter request headers", () => {
     );
     expect(headers["access-control-allow-credentials"]).toBe("true");
   });
+
+  it("allows credentialed CORS requests from the CBWeek tenant", () => {
+    const { applyCorsHeaders } = loadInternals();
+
+    const headers = applyCorsHeaders(
+      {},
+      { headers: { origin: "https://cbweek2026.hashpass.tech" } },
+    );
+
+    expect(headers["access-control-allow-origin"]).toBe(
+      "https://cbweek2026.hashpass.tech",
+    );
+    expect(headers["access-control-allow-credentials"]).toBe("true");
+  });
 });

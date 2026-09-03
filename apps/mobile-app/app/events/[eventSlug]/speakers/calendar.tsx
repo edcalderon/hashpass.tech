@@ -23,6 +23,7 @@ interface Speaker {
   image?: string;
   user_id?: string;
   isActive?: boolean; // Claimed account with an active speaker profile
+  isPastEditionReference?: boolean;
 }
 
 // Shape of event?.speakers entries (from packages/config/src/events.ts's
@@ -35,7 +36,10 @@ interface EventSpeakerConfig {
   name: string;
   title?: string | null;
   company?: string | null;
+  bio?: string;
   image?: string;
+  isActive?: boolean;
+  isPastEditionReference?: boolean;
 }
 
 function SpeakerCard({
@@ -49,6 +53,11 @@ function SpeakerCard({
 }) {
   const router = useRouter();
   const isInteractive = Boolean(speaker.isActive);
+  const statusText = speaker.isActive
+    ? 'Active'
+    : speaker.isPastEditionReference
+      ? 'Past edition'
+      : 'Inactive';
 
   return (
     <TouchableOpacity
@@ -75,7 +84,7 @@ function SpeakerCard({
           <Text style={styles.speakerName}>{speaker.name}</Text>
           <View style={[styles.statusLabel, speaker.isActive ? styles.activeLabel : styles.inactiveLabel]}>
             <Text style={[styles.statusLabelText, speaker.isActive ? styles.activeLabelText : styles.inactiveLabelText]}>
-              {speaker.isActive ? 'Active' : 'Inactive'}
+              {statusText}
             </Text>
           </View>
         </View>
@@ -129,14 +138,19 @@ export default function SpeakersCalendar() {
   // moments later, since nothing would re-trigger this effect.
   useEffect(() => {
     if (!event) return;
+    let cancelled = false;
 
     const loadSpeakers = async () => {
       try {
         setLoading(true);
-        
-        const dbPromise = supabase
-          .from('bsl_speakers')
-          .select('*');
+
+        // bsl_speakers is a legacy shared BSL directory. Whitelabel events
+        // use the event-scoped speakers table so they never inherit the BSL
+        // directory by accident.
+        const canUseLegacyBslDirectory = /^(?:bsl|bsl2025|peru2026|chile2026|colombia2026)$/i.test(event.id);
+        const dbPromise = canUseLegacyBslDirectory
+          ? supabase.from('bsl_speakers').select('*')
+          : supabase.from('speakers').select('*').eq('event_id', event.id).order('sort_order');
 
         let timeoutId: ReturnType<typeof setTimeout> | undefined;
         const timeoutPromise = new Promise((_, reject) => {
@@ -153,9 +167,13 @@ export default function SpeakersCalendar() {
               title: s.title || null,
               company: s.company || null,
               bio: s.bio || (s.title ? `Experienced professional in ${s.title}.` : undefined),
-              image: s.imageurl || getSpeakerAvatarUrl(s.name),
+              image: s.imageurl || s.image_url || getSpeakerAvatarUrl(s.name),
               user_id: s.user_id || undefined,
-              isActive: isClaimedActiveSpeaker(s)
+              isActive: canUseLegacyBslDirectory
+                ? isClaimedActiveSpeaker(s)
+                : s.metadata?.is_active === true,
+              isPastEditionReference: !canUseLegacyBslDirectory
+                && s.metadata?.is_past_edition_reference === true,
             }));
             
             // Remove duplicates based on ID
@@ -165,6 +183,7 @@ export default function SpeakersCalendar() {
             
             // Sort by priority order
             const sortedSpeakers: Speaker[] = sortSpeakersByPriority(uniqueSpeakers);
+            if (cancelled) return;
             setSpeakers(sortedSpeakers);
             setLoading(false);
             return;
@@ -182,10 +201,9 @@ export default function SpeakersCalendar() {
           name: s.name,
           title: s.title || null,
           company: s.company || null,
-          bio: (s.title && s.company) ? `Experienced professional in ${s.title} at ${s.company}.` : undefined,
-          // Event configuration does not contain claim state, so never expose
-          // a fallback record as networking-active.
-          isActive: false,
+          bio: s.bio || ((s.title && s.company) ? `Experienced professional in ${s.title} at ${s.company}.` : undefined),
+          isActive: Boolean(s.isActive),
+          isPastEditionReference: Boolean(s.isPastEditionReference),
           // s.image is our own hosted photo (see packages/config/src/events.ts).
           // Only fall back to the legacy Cloudinary/name-guessing lookup for
           // older speakers that were never given a real image field.
@@ -199,6 +217,7 @@ export default function SpeakersCalendar() {
 
         // Sort by priority order
         const sortedEventSpeakers: Speaker[] = sortSpeakersByPriority(uniqueEventSpeakers);
+        if (cancelled) return;
         setSpeakers(sortedEventSpeakers);
         setLoading(false);
       } catch (error) {
@@ -211,7 +230,8 @@ export default function SpeakersCalendar() {
           title: s.title || null,
           company: s.company || null,
           bio: (s.title && s.company) ? `Experienced professional in ${s.title} at ${s.company}.` : undefined,
-          isActive: false,
+          isActive: Boolean(s.isActive),
+          isPastEditionReference: Boolean(s.isPastEditionReference),
           image: resolveSpeakerImage(s.image, s.name)
         }));
 
@@ -222,12 +242,16 @@ export default function SpeakersCalendar() {
         
         // Sort by priority order
         const sortedEmergencySpeakers: Speaker[] = sortSpeakersByPriority(uniqueEmergencySpeakers);
+        if (cancelled) return;
         setSpeakers(sortedEmergencySpeakers);
         setLoading(false);
       }
     };
 
     loadSpeakers();
+    return () => {
+      cancelled = true;
+    };
   }, [event?.id]); // Re-run once `event` resolves (or the route's event changes)
 
   if (loading) {
@@ -258,6 +282,7 @@ export default function SpeakersCalendar() {
           eventStartDate={event?.eventStartDate}
           eventId={eventId}
           eventImage={event?.image}
+          eventVideo={event?.heroVideo}
         />
 
         {/* Search and Sort */}

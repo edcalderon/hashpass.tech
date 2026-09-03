@@ -21,6 +21,7 @@ const speaker = {
 };
 
 let mockResult: { data: unknown; error: unknown } = { data: speaker, error: null };
+const mockFrom = jest.fn(() => mockCreateQuery());
 
 function mockCreateQuery(): Record<string, unknown> {
   const query: Record<string, unknown> = {
@@ -42,7 +43,7 @@ function mockCreateQuery(): Record<string, unknown> {
 
 jest.mock("@/lib/supabase-server", () => ({
   getSupabaseServerForRequest: () => ({
-    from: jest.fn(() => mockCreateQuery()),
+    from: mockFrom,
     rpc: jest.fn(async () => mockResult),
   }),
 }));
@@ -91,6 +92,7 @@ describe("event-scoped speaker collection api", () => {
   beforeEach(() => {
     jest.resetModules();
     mockResult = { data: [speaker], error: null };
+    mockFrom.mockClear();
   });
 
   it("exposes a backend collection endpoint for agenda speaker lookups", () => {
@@ -109,9 +111,23 @@ describe("event-scoped speaker collection api", () => {
       );
 
       expect(response.status).toBe(200);
-      expect(await response.json()).toEqual({ data: [speaker] });
-    });
+    expect(await response.json()).toEqual({ data: [speaker] });
   });
+
+  it("uses the event-scoped directory for a CBWeek speaker lookup", async () => {
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    const { GET } = require("../../app/api/events/[eventId]/speakers+api");
+
+    const response = await GET(
+      new Request("https://api-dev.hashpass.tech/api/events/cbweek2026/speakers"),
+    );
+
+    expect(response.status).toBe(200);
+    expect(mockFrom).toHaveBeenCalledWith("speakers");
+    const query = mockFrom.mock.results.at(-1)?.value as ReturnType<typeof mockCreateQuery>;
+    expect(query.eq).toHaveBeenCalledWith("event_id", "cbweek2026");
+  });
+});
 });
 
 describe("speaker detail backend boundary", () => {

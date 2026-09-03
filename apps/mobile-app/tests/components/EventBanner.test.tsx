@@ -183,6 +183,25 @@ describe("EventBanner", () => {
     act(() => renderer!.unmount());
   });
 
+  it("never puts unapproved campaign artwork behind readable banner copy", () => {
+    let renderer: ReturnType<typeof create>;
+    act(() => {
+      renderer = create(
+        <EventBanner
+          title="Colombia Blockchain Week 2026"
+          subtitle="Hotel InterContinental Medellín"
+          date="December 11-12, 2026"
+          eventImage="https://cdn.example/cbw-flyer-with-title.jpg"
+        />,
+      );
+    });
+
+    expect(renderer!.root.findAllByType("ImageBackground" as any)).toHaveLength(
+      0,
+    );
+    act(() => renderer!.unmount());
+  });
+
   it("renders and follows an internal CTA when the owning surface enables it", () => {
     let renderer: ReturnType<typeof create>;
     act(() => {

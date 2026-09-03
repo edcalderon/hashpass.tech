@@ -28,18 +28,18 @@ data "aws_route53_zone" "this" {
 }
 
 locals {
-  # Hand-maintained per demo event -- see pipeline.tf for the pipeline that
+  # Hand-maintained per event tenant -- see pipeline.tf for the pipeline that
   # populates each bucket. Add a line here (and a matching module block in
-  # pipeline.tf) for the next demo-mode event.
-  criptolatinfest_site_bucket_name   = "hashpass-criptolatinfest-develop-site-${data.aws_caller_identity.current.account_id}-${var.aws_region}"
-  criptolatinfest_site_origin_domain = "${local.criptolatinfest_site_bucket_name}.s3-website.${var.aws_region}.amazonaws.com"
+  # pipeline.tf) for the next tenant.
+  cbweek2026_site_bucket_name   = "hashpass-cbweek2026-develop-site-${data.aws_caller_identity.current.account_id}-${var.aws_region}"
+  cbweek2026_site_origin_domain = "${local.cbweek2026_site_bucket_name}.s3-website.${var.aws_region}.amazonaws.com"
   # Shorter prefix than the site bucket -- "-pipelines" pushes the full
   # name past S3's 63-char bucket name limit otherwise (confirmed via a
   # real failed plan).
-  criptolatinfest_artifact_bucket_name = "hashpass-clf-demo-pipelines-${data.aws_caller_identity.current.account_id}-${var.aws_region}"
+  cbweek2026_artifact_bucket_name = "hashpass-cbweek2026-pipelines-${data.aws_caller_identity.current.account_id}-${var.aws_region}"
 
   demo_event_origin_domain_names = {
-    criptolatinfest = local.criptolatinfest_site_origin_domain
+    cbweek2026 = local.cbweek2026_site_origin_domain
   }
 }
 

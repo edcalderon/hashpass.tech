@@ -1,7 +1,7 @@
 import React, { createContext, useContext, ReactNode, useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import { EventConfig, EVENTS } from '../config/events';
-import { getCurrentEvent, getRouteEventIdFromPathname } from '../lib/event-detector';
+import { getAvailableEvents, getCurrentEvent, getRouteEventIdFromPathname } from '../lib/event-detector';
 import { ENV_CONFIG, TenantConfig } from '@hashpass/config';
 import { usePathname } from 'expo-router';
 import { refreshHashPokerRuntimeEvent } from '../lib/runtime-event-registry';
@@ -23,15 +23,6 @@ interface EventProviderProps {
 
 export function EventProvider({ children }: EventProviderProps) {
   const [, setRegistryRevision] = useState(0);
-  useEffect(() => {
-    let active = true;
-    refreshHashPokerRuntimeEvent()
-      .then((changed) => {
-        if (active && changed) setRegistryRevision((value) => value + 1);
-      })
-      .catch((error) => console.error('[HashPass] Event registry refresh failed', error));
-    return () => { active = false; };
-  }, []);
   const pathname = usePathname();
   const routeEventId = getRouteEventIdFromPathname(pathname);
   const hostname =
@@ -49,6 +40,30 @@ export function EventProvider({ children }: EventProviderProps) {
   const event: EventConfig | null = eventInfo
     ? (EVENTS[eventInfo.id as keyof typeof EVENTS] || null)
     : null;
+
+  // The live PKRR feed only changes Hash Poker's tournament schedule. Refresh
+  // when the active route or tenant catalogue can render Hash Poker; this
+  // includes the global explorer, which displays its slide without a Poker
+  // route. Keep unrelated single-event tenants quiet.
+  const tenantCanRenderHashPoker = getAvailableEvents(hostname).some(
+    (availableEvent: { id: string }) => availableEvent.id === 'hash-poker',
+  );
+  const shouldRefreshHashPoker =
+    eventInfo?.id === 'hash-poker' ||
+    tenant?.id === 'hash-poker' ||
+    tenantCanRenderHashPoker;
+
+  useEffect(() => {
+    if (!shouldRefreshHashPoker) return;
+
+    let active = true;
+    refreshHashPokerRuntimeEvent()
+      .then((changed: boolean) => {
+        if (active && changed) setRegistryRevision((value) => value + 1);
+      })
+      .catch((error: unknown) => console.error('[HashPass] Event registry refresh failed', error));
+    return () => { active = false; };
+  }, [shouldRefreshHashPoker]);
 
   const hasFeature = (feature: string) => {
     return event?.features?.includes(feature) ?? false;

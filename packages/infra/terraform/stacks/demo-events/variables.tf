@@ -39,9 +39,8 @@ variable "connection_arn" {
   type        = string
 }
 
-# CriptoLatinFest is guarded to the develop DB end-to-end (see the isDemo
-# guard in apps/mobile-app/config/supabase-profiles.ts) -- these are the
-# *real* bsl-development Supabase project's credentials
+# Event tenants in this stack use the real bsl-development Supabase project
+# while their dedicated production profile is provisioned. These are the
 # (BSL_SUPABASE_*_DEV in the repo-root .env), not bsl-target's
 # terraform.tfvars supabase_url_dev/supabase_key_dev, which actually point
 # at the core-development project (a pre-existing mismatch confirmed live on
@@ -82,8 +81,8 @@ variable "demo_events" {
     subdomain = string
   }))
   default = {
-    criptolatinfest = {
-      subdomain = "demo-criptolatinfest.hashpass.tech"
+    cbweek2026 = {
+      subdomain = "cbweek2026.hashpass.tech"
     }
   }
 }

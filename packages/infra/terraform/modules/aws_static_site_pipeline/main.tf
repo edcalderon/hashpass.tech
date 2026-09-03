@@ -259,6 +259,32 @@ resource "aws_s3_bucket_versioning" "artifacts" {
   }
 }
 
+# CodePipeline keeps source and build artifacts indefinitely by default. They
+# are only needed while an execution is in flight, so retain a short rollback
+# window and expire both current and noncurrent object versions afterwards.
+resource "aws_s3_bucket_lifecycle_configuration" "artifacts" {
+  bucket = aws_s3_bucket.artifacts.id
+
+  rule {
+    id     = "expire-ci-artifacts"
+    status = "Enabled"
+
+    filter {}
+
+    expiration {
+      days = 14
+    }
+
+    noncurrent_version_expiration {
+      noncurrent_days = 7
+    }
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 1
+    }
+  }
+}
+
 resource "aws_s3_bucket_server_side_encryption_configuration" "artifacts" {
   bucket = aws_s3_bucket.artifacts.id
 

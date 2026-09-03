@@ -1,7 +1,30 @@
-import { createClient, type Session, type User } from '@supabase/supabase-js';
+import { createClient, navigatorLock, type Session, type User } from '@supabase/supabase-js';
 import * as QueryParams from 'expo-auth-session/build/QueryParams';
 import { Platform } from 'react-native';
 import { resolvePublicSupabaseConfig } from '../config/supabase-profiles';
+
+// Retain the browser's cross-tab Supabase lock, but wait long enough for the
+// singleton's initial getSession/onAuthStateChange work to finish. Supabase's
+// internal refresh tick asks for an immediate (0ms) lock, which can otherwise
+// reject while this same client is initialising.
+const SUPABASE_AUTH_LOCK_ACQUIRE_TIMEOUT_MS = 30_000;
+
+const waitForSupabaseBrowserLock = async <T,>(
+  name: string,
+  acquireTimeout: number,
+  fn: () => Promise<T>,
+): Promise<T> => {
+  // Expo's server export exposes a navigator shim without LockManager. It is
+  // not a browser tab and must use the same no-op behavior as Supabase's
+  // default server path.
+  if (typeof globalThis.navigator?.locks?.request !== 'function') return fn();
+
+  return navigatorLock(
+    name,
+    Math.max(acquireTimeout, SUPABASE_AUTH_LOCK_ACQUIRE_TIMEOUT_MS),
+    fn,
+  );
+};
 
 let storage: any;
 
@@ -756,6 +779,7 @@ const initializeSupabase = () => {
           storage: storage,
           autoRefreshToken: true,
           persistSession: true,
+          lock: Platform.OS === 'web' ? waitForSupabaseBrowserLock : undefined,
           // Only auto-detect sessions on native. Web uses the explicit callback route.
           detectSessionInUrl: shouldDetectSessionInUrl,
           // PKCE ensures magic links return ?code=... (not #access_token=... implicit flow).
@@ -892,6 +916,7 @@ const initializeSupabase = () => {
             storage: storage,
             autoRefreshToken: true,
             persistSession: true,
+            lock: Platform.OS === 'web' ? waitForSupabaseBrowserLock : undefined,
             detectSessionInUrl: shouldDetectSessionInUrl,
             flowType: 'pkce',
           },
