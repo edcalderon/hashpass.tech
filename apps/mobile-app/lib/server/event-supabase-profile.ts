@@ -1,6 +1,6 @@
 import { hostnameFromRequest, type SupabaseProfileId } from "@/config/supabase-profiles";
 
-const BSL_EVENT_PATTERN = /^(?:bsl|bsl2025|peru2026|chile2026|colombia2026|cbweek2026)$/i;
+const BSL_EVENT_PATTERN = /^(?:bsl|bsl2025|peru2026|chile2026|colombia2026|cbweek2026|criptolatinfest)$/i;
 
 /**
  * Resolves a server database profile from the event identity, not merely the
