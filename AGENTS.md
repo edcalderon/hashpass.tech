@@ -25,6 +25,13 @@ Use the installed browser tools for page fetches, responsive checks, and browser
 
 Do not put credentials, cookies, auth tokens, AWS account IDs, or private `.env` values in prompts, docs, screenshots, recordings, or logs.
 
+## AWS Account Boundary
+
+- `hashpass` is the only production AWS CLI profile. Use it for all HASHPASS deploys, cost checks, budgets, Route 53, CloudFront, Lambda, S3, and Terraform.
+- `default` is a legacy LSTS account undergoing decommissioning. Do not deploy, create infrastructure, or place a HASHPASS budget there.
+- Before any AWS mutation, run a non-printing `sts get-caller-identity` check against the intended profile and compare it with the private expected account ID.
+- Production cost ceiling: USD 50/month. The budget is `hashpass-production-monthly-max-50-usd` in the `hashpass` account.
+
 ## Deployment Command Contract
 
 When the user says `deploy`, `release`, or `release patch`, complete the full production release unless the user limits the scope.

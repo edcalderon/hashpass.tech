@@ -34,10 +34,7 @@
     "core": {
       "label": "hashpass.tech",
       "appType": "expo",
-      "amplify": {
-        "appId": "dy8duury54wam",
-        "region": "us-east-2"
-      },
+      "hostingProvider": "codepipeline",
       "frontendUrls": {
         "development": "https://dev.hashpass.tech",
         "production": "https://hashpass.tech"
@@ -78,43 +75,10 @@
     "bsl": {
       "label": "bsl.hashpass.tech",
       "appType": "expo",
-      "amplify": {
-        "appId": "dy8duury54wam",
-        "region": "us-east-2"
-      },
+      "hostingProvider": "codepipeline",
       "frontendUrls": {
         "development": "https://bsl-dev.hashpass.tech",
         "production": "https://bsl.hashpass.tech"
-      },
-      "supabaseEnv": {
-        "development": {
-          "publicUrl": "EXPO_PUBLIC_BSL_SUPABASE_URL_DEV",
-          "publicKey": "EXPO_PUBLIC_BSL_SUPABASE_KEY_DEV",
-          "serviceRoleKey": "BSL_SUPABASE_SERVICE_ROLE_KEY_DEV",
-          "databaseUrl": "BSL_SUPABASE_DB_URL_DEV"
-        },
-        "production": {
-          "publicUrl": "EXPO_PUBLIC_BSL_SUPABASE_URL_PROD",
-          "publicKey": "EXPO_PUBLIC_BSL_SUPABASE_KEY_PROD",
-          "serviceRoleKey": "BSL_SUPABASE_SERVICE_ROLE_KEY_PROD",
-          "databaseUrl": "BSL_SUPABASE_DB_URL_PROD"
-        }
-      },
-      "supabaseRefs": {
-        "development": "gsugeqozyeokncpbndna",
-        "production": "mnnqryrdlhddorqsrtbn"
-      }
-    },
-    "blockchainsummit": {
-      "label": "blockchainsummit.hashpass.lat",
-      "appType": "expo",
-      "amplify": {
-        "appId": "d951nuj7hrqeg",
-        "region": "sa-east-1"
-      },
-      "frontendUrls": {
-        "development": "https://blockchainsummit-dev.hashpass.lat",
-        "production": "https://blockchainsummit.hashpass.lat"
       },
       "supabaseEnv": {
         "development": {

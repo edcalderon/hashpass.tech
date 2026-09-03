@@ -251,6 +251,11 @@ async function auditTenant(tenantName, environment, configPath) {
   let warnings = 0;
   const suggestions = [];
 
+  if (runtime.hostingProvider !== 'amplify') {
+    log(`Skipping legacy Amplify audit for ${runtime.hostingProvider} hosting.`, 'info');
+    return { issues, warnings };
+  }
+
   if (runtime.appType === 'next') {
     const appConfig = getAmplifyAppConfig(runtime.amplify.appId, runtime.amplify.region);
     const appEnv = appConfig && appConfig.environmentVariables ? appConfig.environmentVariables : null;

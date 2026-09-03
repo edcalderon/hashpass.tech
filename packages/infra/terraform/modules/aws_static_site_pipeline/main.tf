@@ -468,6 +468,11 @@ resource "aws_codebuild_project" "site" {
     type = "CODEPIPELINE"
   }
 
+  cache {
+    type     = "S3"
+    location = "${aws_s3_bucket.artifacts.id}/codebuild-cache"
+  }
+
   environment {
     compute_type                = var.codebuild_compute_type
     image                       = var.codebuild_image
