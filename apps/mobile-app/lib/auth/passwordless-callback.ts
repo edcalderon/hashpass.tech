@@ -49,3 +49,40 @@ export const isBetterAuthGoogleCallback = ({
   oauthInProgress = false,
 }: BetterAuthGoogleCallbackParams): boolean =>
   signInMethod === 'google_oauth' && oauthInProgress;
+
+type NativeRelayCallbackParams = {
+  ['#']?: string | string[];
+  _fragment?: string | string[];
+};
+
+const normalizeParamValue = (value?: string | string[]): string =>
+  Array.isArray(value) ? value[0] || '' : value || '';
+
+/**
+ * A magic link requested inside the native app (nativeRelay=1) is handed off
+ * from the web callback via getNativeRelayUrl(), which cannot carry a real
+ * URL hash fragment on Android (Intent URLs allow only the trailing
+ * `#Intent;...;end` fragment) and instead moves it into a `_fragment` query
+ * param. Expo Router itself exposes a real `#...` fragment (iOS) as the
+ * single param key `'#'` (see getStateFromPath-forks.js's parseQueryParams),
+ * never split into individual access_token/token_hash/type params. Resolve
+ * both native representations back into the same raw "key=value&..." string
+ * `window.location.hash` would have given us on web.
+ */
+export const extractNativeRelayFragment = (params: NativeRelayCallbackParams): string => {
+  const iosFragment = normalizeParamValue(params['#']);
+  if (iosFragment) {
+    return iosFragment;
+  }
+
+  const androidFragment = normalizeParamValue(params._fragment);
+  if (!androidFragment) {
+    return '';
+  }
+
+  try {
+    return decodeURIComponent(androidFragment);
+  } catch {
+    return androidFragment;
+  }
+};

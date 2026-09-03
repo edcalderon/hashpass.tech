@@ -10,6 +10,7 @@ import { createSessionFromUrl, supabase } from '../../../lib/supabase';
 import { resolvePublicSupabaseConfig } from '../../../config/supabase-profiles';
 import { markRecentAuthSuccess } from '../../../lib/auth/recent-auth';
 import {
+    extractNativeRelayFragment,
     isBetterAuthGoogleCallback,
     isSupabasePasswordlessCallback,
     PASSWORDLESS_CALLBACK_MARKER,
@@ -485,9 +486,17 @@ export default function AuthCallback() {
                 // is no `auth_signin_method` localStorage marker, e.g. the link
                 // was opened on a different device/browser or by an email
                 // security scanner's prefetch (no storage at all).
+                //
+                // A magic link requested inside the native app (nativeRelay=1) is
+                // forwarded here by getNativeRelayUrl() with the same fragment
+                // relayed as Expo Router's params['#'] (iOS) or params._fragment
+                // (Android, URL-encoded) -- neither is window.location.hash, so
+                // the web-only branch above must fall back to the native relay
+                // representations or a native magic-link callback never resolves
+                // a usable token and falls through to the generic OAuth handler.
                 const hashStr = Platform.OS === 'web' && typeof window !== 'undefined'
                     ? window.location.hash.replace(/^#/, '')
-                    : '';
+                    : extractNativeRelayFragment(params as Record<string, string | string[]>);
                 const hashUrlParams = hashStr ? new URLSearchParams(hashStr) : null;
                 const hashAuthType = hashUrlParams?.get('type')?.toLowerCase() || '';
                 const hashTokenHash = hashUrlParams?.get('token_hash') || '';
