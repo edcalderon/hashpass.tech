@@ -461,40 +461,45 @@ const sw = `
     return;
   }
 
-  navigator.serviceWorker.addEventListener('message', function (event) {
-    if (event.data && event.data.type === 'VERSION_UPDATE_AVAILABLE') {
-      window.dispatchEvent(
-        new CustomEvent('versionUpdateAvailable', {
-          detail: {
-            currentVersion: event.data.currentVersion,
-            latestVersion: event.data.latestVersion,
-          },
-        })
-      );
+  // The definitive "a new version just took over this tab" signal. sw.js's
+  // install handler calls self.skipWaiting() unconditionally, so a new
+  // worker never sits in registration.waiting -- it activates right away.
+  // controllerchange fires exactly when clients.claim() (sw.js's activate
+  // handler) hands control of this page to that new worker, which is a much
+  // more reliable signal than guessing from installed/statechange. The very
+  // first controllerchange on a fresh load (no prior controller) is not an
+  // update -- only a change from an existing controller counts.
+  var hadController = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener('controllerchange', function () {
+    if (!hadController) {
+      hadController = true;
+      return;
     }
+    window.dispatchEvent(new CustomEvent('hashpassServiceWorkerUpdate'));
   });
+
+  function checkForServiceWorkerUpdate(registration) {
+    registration.update().catch(function () {});
+  }
 
   window.addEventListener('load', function () {
     navigator.serviceWorker
       .register('/sw.js', { scope: '/', updateViaCache: 'none' })
       .then(function (registration) {
-        registration.update().catch(function () {});
+        checkForServiceWorkerUpdate(registration);
 
-        registration.addEventListener('updatefound', function () {
-          var worker = registration.installing;
-          if (!worker) {
-            return;
+        // Browsers only auto-check sw.js for a fresher copy on navigation.
+        // A long-lived SPA tab may never navigate again, so poll for a
+        // fresher worker on the same cadence as the REST version check, plus
+        // immediately whenever the tab regains focus.
+        setInterval(function () {
+          checkForServiceWorkerUpdate(registration);
+        }, 10 * 60 * 1000);
+
+        document.addEventListener('visibilitychange', function () {
+          if (!document.hidden) {
+            checkForServiceWorkerUpdate(registration);
           }
-
-          worker.addEventListener('statechange', function () {
-            if (worker.state === 'installed' && navigator.serviceWorker.controller) {
-              window.dispatchEvent(
-                new CustomEvent('hashpassServiceWorkerUpdate', {
-                  detail: { registration: registration },
-                })
-              );
-            }
-          });
         });
       })
       .catch(function (error) {

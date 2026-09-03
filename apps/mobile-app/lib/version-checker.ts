@@ -43,10 +43,12 @@ async function fetchLatestVersion(): Promise<{ version: string | null; needsUpda
 
 function isUserActive(): boolean {
   if (typeof window === 'undefined') return false;
-  const pathname = window.location.pathname;
-  const isOnActivePage = pathname.startsWith('/events/') || pathname.startsWith('/dashboard');
-  const isPageVisible = typeof document !== 'undefined' && !document.hidden;
-  return isOnActivePage && isPageVisible;
+  // Tab visibility, not route, decides whether an interruption is safe. A
+  // route allowlist here used to mean a visible, focused user on any page
+  // outside /events/ or /dashboard got silently hard-reloaded instead of
+  // ever seeing the soft update modal -- the modal has its own "Later"
+  // button, so it's safe to offer anywhere the user can actually see it.
+  return typeof document !== 'undefined' && !document.hidden;
 }
 
 export function performHardReload(): void {
@@ -170,6 +172,29 @@ export async function checkVersionAndClearCache(forceCheck: boolean = false): Pr
   }
 }
 
+// Driven by app/+html.tsx's `hashpassServiceWorkerUpdate` event, which fires
+// on navigator.serviceWorker's controllerchange -- a confirmed browser
+// signal that a new worker just took over, not a guess. Bypasses the poll
+// cooldown deliberately: it should never be suppressed by an unrelated
+// recent REST check.
+export async function notifyVersionUpdateFromServiceWorker(): Promise<void> {
+  if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+
+  try {
+    const currentVersion = await getCurrentVersion();
+    const { version: latestVersion } = await fetchLatestVersion();
+    if (!latestVersion) return;
+
+    window.dispatchEvent(
+      new CustomEvent('hashpass:version-update', {
+        detail: { currentVersion, latestVersion },
+      })
+    );
+  } catch (error) {
+    console.error('[VersionChecker] Error notifying update from service worker:', error);
+  }
+}
+
 export async function checkVersionOnStart(): Promise<void> {
   if (Platform.OS !== 'web' || typeof window === 'undefined') return;
 
@@ -204,6 +229,19 @@ export async function checkVersionOnStart(): Promise<void> {
           });
         }
       }, 10 * 60 * 1000);
+
+      // A tab left open in the background for a while shouldn't have to
+      // wait for the next 10-minute tick once the user comes back to it --
+      // recheck (still cooldown-gated) the moment it regains focus.
+      if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
+        document.addEventListener('visibilitychange', () => {
+          if (!document.hidden) {
+            checkVersionAndClearCache(false).catch((error) => {
+              console.warn('[VersionChecker] Visibility check failed:', error);
+            });
+          }
+        });
+      }
     } catch (error) {
       console.error('[VersionChecker] Version check on start failed:', error);
     }
