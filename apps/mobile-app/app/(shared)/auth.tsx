@@ -43,6 +43,7 @@ import {
   SUPABASE_OAUTH_CALLBACK_PATH,
   getSupabaseOAuthRedirectUrl,
 } from "@hashpass/auth";
+import { PASSWORDLESS_CALLBACK_MARKER } from "../../lib/auth/passwordless-callback";
 import ShaderAnimation from "../../components/ShaderAnimation";
 import SafeLinearGradient from "../../components/SafeLinearGradient";
 import { getEmailAutocompleteSuggestions } from "../../lib/email-autocomplete";
@@ -946,10 +947,6 @@ export default function AuthScreen() {
     }
 
     hasShownOAuthErrorRef.current = true;
-    console.error("[Auth] OAuth callback failed", {
-      error: rawAuthError,
-      message,
-    });
     showError(t("authenticationError", "Authentication Error"), message);
 
     if (Platform.OS === "web" && typeof window !== "undefined") {
@@ -1032,7 +1029,12 @@ export default function AuthScreen() {
 
     try {
       if (typeof window !== "undefined" && window.localStorage) {
+        // A user may have abandoned Google sign-in earlier in this tab. Mark
+        // this request explicitly so its callback never falls into Better
+        // Auth's cookie-only Google handler.
+        window.localStorage.removeItem("oauth_in_progress");
         window.localStorage.setItem("auth_signin_method", "magic_link");
+        window.localStorage.setItem(PASSWORDLESS_CALLBACK_MARKER, "true");
       }
 
       const nativeRelay = Platform.OS !== "web";
@@ -1084,6 +1086,7 @@ export default function AuthScreen() {
 
       if (typeof window !== "undefined" && window.localStorage) {
         window.localStorage.removeItem("auth_signin_method");
+        window.localStorage.removeItem(PASSWORDLESS_CALLBACK_MARKER);
       }
 
       showError(t("authenticationError", "Authentication Error"), message);
@@ -1488,6 +1491,7 @@ export default function AuthScreen() {
 
     try {
       if (typeof window !== "undefined" && window.localStorage) {
+        window.localStorage.removeItem(PASSWORDLESS_CALLBACK_MARKER);
         window.localStorage.setItem("auth_signin_method", "google_oauth");
       }
 

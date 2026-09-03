@@ -1,6 +1,6 @@
 {
   "name": "hashpass-mobile-app",
-  "version": "1.9.27",
+  "version": "1.9.28",
   "private": true,
   "packageManager": "pnpm@9.15.5",
   "main": "index.js",
@@ -33,8 +33,8 @@
     "build": "if [ \"${SKIP_ENV_PROPAGATE:-0}\" != \"1\" ]; then npm run env:propagate ${BUILD_ENV:-production}; fi && npm run prebuild && node ../../packages/tools/scripts/update-sw-version.mjs && node ../../packages/tools/scripts/patch-expo-api-route-sourcemaps.mjs && NODE_OPTIONS=\"--max-old-space-size=${NODE_MAX_OLD_SPACE_SIZE:-8192}\" expo export -p web --max-workers ${EXPO_EXPORT_MAX_WORKERS:-2} && if [ \"${SKIP_WEB_POSTBUILD:-0}\" != \"1\" ]; then npm run postbuild:web; fi",
     "build:static": "if [ \"${SKIP_ENV_PROPAGATE:-0}\" != \"1\" ]; then npm run env:propagate ${BUILD_ENV:-production}; fi && npm run prebuild && node ../../packages/tools/scripts/update-sw-version.mjs && node ../../packages/tools/scripts/patch-expo-api-route-sourcemaps.mjs && NODE_OPTIONS=\"--max-old-space-size=${NODE_MAX_OLD_SPACE_SIZE:-8192}\" expo export -p web --max-workers ${EXPO_EXPORT_MAX_WORKERS:-2} && if [ \"${SKIP_WEB_POSTBUILD:-0}\" != \"1\" ]; then npm run postbuild:static; fi",
     "prebuild": "rm -rf dist .expo .metro",
-    "postbuild:web": "mkdir -p dist/config && cp config/versions.json dist/config/versions.json 2>/dev/null || true && if [ -f dist/server/index.html ] && [ ! -f dist/client/index.html ]; then mkdir -p dist/client && cp dist/server/index.html dist/client/index.html; fi && cp public/sw.js dist/sw.js 2>/dev/null || true && node scripts/patch-web-seo.mjs",
-    "postbuild:static": "if [ -d dist/server ]; then cp -R dist/server/. dist/; fi && if [ -d dist/client/_expo ]; then mkdir -p dist/_expo && cp -R dist/client/_expo/. dist/_expo/; fi && if [ -d dist/client/assets ]; then mkdir -p dist/assets && cp -R dist/client/assets/. dist/assets/; fi && mkdir -p dist/config && cp config/versions.json dist/config/versions.json 2>/dev/null || true && if [ -f dist/server/index.html ] && [ ! -f dist/client/index.html ]; then mkdir -p dist/client && cp dist/server/index.html dist/client/index.html; fi && cp public/sw.js dist/sw.js 2>/dev/null || true && node scripts/patch-web-seo.mjs",
+    "postbuild:web": "mkdir -p dist/config dist/assets/logos/bsl && cp config/versions.json dist/config/versions.json 2>/dev/null || true && cp assets/logos/bsl/*.svg dist/assets/logos/bsl/ && if [ -f dist/server/index.html ] && [ ! -f dist/client/index.html ]; then mkdir -p dist/client && cp dist/server/index.html dist/client/index.html; fi && cp public/sw.js dist/sw.js 2>/dev/null || true && node scripts/patch-web-seo.mjs",
+    "postbuild:static": "if [ -d dist/server ]; then cp -R dist/server/. dist/; fi && if [ -d dist/client/_expo ]; then mkdir -p dist/_expo && cp -R dist/client/_expo/. dist/_expo/; fi && if [ -d dist/client/assets ]; then mkdir -p dist/assets && cp -R dist/client/assets/. dist/assets/; fi && mkdir -p dist/config dist/assets/logos/bsl && cp config/versions.json dist/config/versions.json 2>/dev/null || true && cp assets/logos/bsl/*.svg dist/assets/logos/bsl/ && if [ -f dist/server/index.html ] && [ ! -f dist/client/index.html ]; then mkdir -p dist/client && cp dist/server/index.html dist/client/index.html; fi && cp public/sw.js dist/sw.js 2>/dev/null || true && node scripts/patch-web-seo.mjs",
     "lint": "expo lint",
     "test": "jest --watchAll",
     "test:coverage": "jest --config jest.coverage.config.cjs --runInBand",
