@@ -1,6 +1,7 @@
 import { getSupabaseServerForRequest } from "../../../lib/supabase-server";
 import { normalizeMagicLinkRedirect } from "../../../lib/auth/magic-link-request";
 import { sendAuthenticationMagicLink } from "../../../lib/email";
+import { rateLimitOk } from "../../../lib/bsl/rateLimit";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,6 +14,11 @@ const json = (body: Record<string, unknown>, status: number) =>
     status,
     headers: { "Content-Type": "application/json", ...corsHeaders },
   });
+
+const clientIpFromRequest = (request: Request) =>
+  request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+  request.headers.get("x-real-ip")?.trim() ||
+  "unknown";
 
 export async function OPTIONS() {
   return new Response(null, { status: 204, headers: corsHeaders });
@@ -42,6 +48,19 @@ export async function POST(request: Request) {
 
   if (!redirectTo) {
     return json({ error: "Invalid sign-in callback", code: "invalid_redirect" }, 400);
+  }
+
+  // Guard both a sender and a recipient. The recipient guard also prevents a
+  // new request from continually invalidating a user's outstanding link.
+  const clientIp = clientIpFromRequest(request);
+  if (
+    !rateLimitOk(`magic-link:ip:${clientIp}`) ||
+    !rateLimitOk(`magic-link:email:${email}`)
+  ) {
+    return json(
+      { error: "Please wait before requesting another link", code: "rate_limited" },
+      429,
+    );
   }
 
   try {

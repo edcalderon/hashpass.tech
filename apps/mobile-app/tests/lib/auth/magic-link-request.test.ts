@@ -7,6 +7,14 @@ describe('normalizeMagicLinkRedirect', () => {
     );
   });
 
+  it.each([
+    'https://bsl2025.hashpass.co/auth/callback',
+    'https://blockchainsummit.hashpass.lat/auth/callback',
+    'http://localhost:8081/auth/callback',
+  ])('accepts supported frontend callback %s', (target) => {
+    expect(normalizeMagicLinkRedirect(target)).toBe(target);
+  });
+
   it('accepts the native relay only with a relative post-login path', () => {
     expect(
       normalizeMagicLinkRedirect(
@@ -16,10 +24,12 @@ describe('normalizeMagicLinkRedirect', () => {
   });
 
   it.each([
+    '',
     'not-a-url',
     'https://hashpass.tech/auth/callback/',
     'https://hashpass.tech/auth/other',
     'https://evil.example/auth/callback',
+    'https://api.hashpass.tech/auth/callback',
     'http://hashpass.tech/auth/callback',
     'https://hashpass.tech/auth/callback?returnTo=https%3A%2F%2Fevil.example&nativeRelay=1',
     'https://hashpass.tech/auth/callback?anything=1',

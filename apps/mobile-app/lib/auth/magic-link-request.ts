@@ -1,8 +1,6 @@
-const HASHPASS_HOST_SUFFIX = ".hashpass.tech";
-const CALLBACK_PATH = "/auth/callback";
+import { isLocalOrigin, isSupportedFrontendOrigin } from "./oauth/frontend-origin";
 
-const isHashpassHost = (hostname: string) =>
-  hostname === "hashpass.tech" || hostname.endsWith(HASHPASS_HOST_SUFFIX);
+const CALLBACK_PATH = "/auth/callback";
 
 const isSafeReturnTo = (value: string | null) =>
   Boolean(value) && value!.startsWith("/") && !value!.startsWith("//");
@@ -21,8 +19,9 @@ export const normalizeMagicLinkRedirect = (
   try {
     const redirect = new URL(value.trim());
     if (
-      redirect.protocol !== "https:" ||
-      !isHashpassHost(redirect.hostname.toLowerCase()) ||
+      !isSupportedFrontendOrigin(redirect.origin) ||
+      (redirect.protocol !== "https:" &&
+        !(redirect.protocol === "http:" && isLocalOrigin(redirect.origin))) ||
       redirect.pathname !== CALLBACK_PATH
     ) {
       return null;

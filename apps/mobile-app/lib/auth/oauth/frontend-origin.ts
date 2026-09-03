@@ -51,20 +51,28 @@ export const isApiHostname = (hostname: string): boolean => {
   );
 };
 
-export const isTrustedFrontendOrigin = (origin: string): boolean => {
+/**
+ * Domain policy shared by browser-origin resolution and server-side auth
+ * redirect validation. Local origins are intentionally supported here; an
+ * API deployment's NODE_ENV must not make a localhost callback invalid.
+ */
+export const isSupportedFrontendOrigin = (origin: string): boolean => {
   try {
     const hostname = new URL(origin).hostname.toLowerCase();
     if (isApiHostname(hostname)) return false;
 
-    if (isLocalDevRuntime()) {
-      return LOCAL_ORIGINS.has(hostname) || hostname.endsWith('.local');
-    }
+    if (LOCAL_ORIGINS.has(hostname) || hostname.endsWith('.local')) return true;
 
     if (TRUSTED_FRONTEND_HOSTS.has(hostname)) return true;
     return TRUSTED_FRONTEND_SUFFIXES.some((suffix) => hostname.endsWith(suffix));
   } catch {
     return false;
   }
+};
+
+export const isTrustedFrontendOrigin = (origin: string): boolean => {
+  if (isLocalDevRuntime()) return isLocalOrigin(origin);
+  return isSupportedFrontendOrigin(origin);
 };
 
 export const deriveFrontendOriginFromRequest = (request: Request): string | null => {
