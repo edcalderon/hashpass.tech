@@ -45,12 +45,17 @@ afterEach(() => {
 });
 
 import {
+  getSupabaseMagicLinkCallbackPath,
   getSupabaseOAuthRedirectUrl,
   SUPABASE_OAUTH_CALLBACK_PATH,
   SUPABASE_OAUTH_NATIVE_SCHEME,
 } from '../../../../packages/auth/src/supabase-oauth';
 
 describe('getSupabaseOAuthRedirectUrl', () => {
+  it('returns the exact web callback path for magic links even with returnTo', () => {
+    expect(getSupabaseMagicLinkCallbackPath({ returnTo: '/vault' })).toBe('/auth/callback');
+  });
+
   it('builds the web callback URL from the provided origin', () => {
     expect(
       getSupabaseOAuthRedirectUrl({

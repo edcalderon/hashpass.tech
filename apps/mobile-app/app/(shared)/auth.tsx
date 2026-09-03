@@ -39,6 +39,7 @@ import { MorphIcon } from "../../lib/morph-icon";
 import { LoaderCircle, Check } from "lucide";
 import {
   authService,
+  getSupabaseMagicLinkCallbackPath,
   SUPABASE_OAUTH_CALLBACK_PATH,
   getSupabaseOAuthRedirectUrl,
 } from "@hashpass/auth";
@@ -82,12 +83,13 @@ const OTP_RESEND_COOLDOWN_SECONDS = 45;
 const OTP_DIGIT_KEYS = ["d1", "d2", "d3", "d4", "d5", "d6"] as const;
 
 const buildSupabaseCallbackPath = (returnTo: string, nativeRelay = false) => {
+  if (!nativeRelay) {
+    return getSupabaseMagicLinkCallbackPath({ returnTo });
+  }
+
   const params = new URLSearchParams();
   params.set("returnTo", returnTo);
-
-  if (nativeRelay) {
-    params.set("nativeRelay", "1");
-  }
+  params.set("nativeRelay", "1");
 
   return `${SUPABASE_OAUTH_CALLBACK_PATH}?${params.toString()}`;
 };

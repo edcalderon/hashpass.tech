@@ -13,6 +13,7 @@ export {
 export type { AuthUser as DirectusUser, AuthSession as DirectusSession } from './types';
 export * from './directus-auth';
 export {
+  getSupabaseMagicLinkCallbackPath,
   getSupabaseOAuthRedirectUrl,
   SUPABASE_OAUTH_CALLBACK_PATH,
   SUPABASE_OAUTH_NATIVE_SCHEME,
