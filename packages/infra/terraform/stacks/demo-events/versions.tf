@@ -1,5 +1,7 @@
 terraform {
-  required_version = ">= 1.5.0"
+  # `removed` blocks protect populated legacy buckets during the CBWeek
+  # migration; they were introduced in Terraform 1.7.
+  required_version = ">= 1.7.0"
 
   required_providers {
     aws = {

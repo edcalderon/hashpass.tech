@@ -116,8 +116,13 @@ export function getEventAuthAllies(
     accent: colorWithAlpha(primary, 0.54),
   };
 
+  const hostAllyIds = new Set<string>([event.id]);
+  // Hash Poker's event record and its platform ally use distinct identifiers,
+  // but represent the same host brand in the sign-in panel.
+  if (event.id === "hash-poker") hostAllyIds.add(DEFAULT_AUTH_ALLY_ID);
+
   return [
     eventAlly,
-    ...getAuthAllies(ids).filter((ally) => ally.id !== event.id),
+    ...getAuthAllies(ids).filter((ally) => !hostAllyIds.has(ally.id)),
   ];
 }

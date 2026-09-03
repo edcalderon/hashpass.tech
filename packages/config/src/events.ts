@@ -4515,7 +4515,7 @@ export const EVENTS: Record<string, EventConfig> = {
         title: "COO",
         company: "LATAM Blockchain Events LLC",
         bio: "COO of LATAM Blockchain Events LLC. Listed on the official CBWeek contact section; included in this HashPass demo programme at organizer direction, not as an officially announced CBWeek 2026 speaker.",
-        image: "https://hashpass-production-event-media-952191196420-us-east-2.amazonaws.com/events/cbweek2026/speakers/lucero-dextre.png",
+        image: "https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events/cbweek2026/speakers/lucero-dextre.png",
         isActive: true,
       },
       {
@@ -4524,7 +4524,7 @@ export const EVENTS: Record<string, EventConfig> = {
         title: "CEO",
         company: "HASHPASS",
         bio: "CEO of HashPass and blockchain technology leader. Included in this HashPass demo programme at organizer direction, not as an officially announced CBWeek 2026 speaker.",
-        image: "https://hashpass-production-event-media-952191196420-us-east-2.amazonaws.com/events/cbweek2026/speakers/edward-calderon.png",
+        image: "https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events/cbweek2026/speakers/edward-calderon.png",
         isActive: true,
       },
       ...CBWEEK2026_PAST_EDITION_SPEAKERS,

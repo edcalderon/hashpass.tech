@@ -1,7 +1,7 @@
 import React, { createContext, useContext, ReactNode, useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import { EventConfig, EVENTS } from '../config/events';
-import { getCurrentEvent, getRouteEventIdFromPathname } from '../lib/event-detector';
+import { getAvailableEvents, getCurrentEvent, getRouteEventIdFromPathname } from '../lib/event-detector';
 import { ENV_CONFIG, TenantConfig } from '@hashpass/config';
 import { usePathname } from 'expo-router';
 import { refreshHashPokerRuntimeEvent } from '../lib/runtime-event-registry';
@@ -41,11 +41,17 @@ export function EventProvider({ children }: EventProviderProps) {
     ? (EVENTS[eventInfo.id as keyof typeof EVENTS] || null)
     : null;
 
-  // The live PKRR feed only changes Hash Poker's tournament schedule. Do not
-  // request it from a single-event tenant such as CBWeek: it adds unrelated
-  // network noise and turns a feed outage into a misleading auth-page error.
+  // The live PKRR feed only changes Hash Poker's tournament schedule. Refresh
+  // when the active route or tenant catalogue can render Hash Poker; this
+  // includes the global explorer, which displays its slide without a Poker
+  // route. Keep unrelated single-event tenants quiet.
+  const tenantCanRenderHashPoker = getAvailableEvents(hostname).some(
+    (availableEvent: { id: string }) => availableEvent.id === 'hash-poker',
+  );
   const shouldRefreshHashPoker =
-    eventInfo?.id === 'hash-poker' || tenant?.id === 'hash-poker';
+    eventInfo?.id === 'hash-poker' ||
+    tenant?.id === 'hash-poker' ||
+    tenantCanRenderHashPoker;
 
   useEffect(() => {
     if (!shouldRefreshHashPoker) return;

@@ -6,17 +6,14 @@
 # ============================================================================
 
 locals {
-  # This is a dedicated event tenant. Avoid rebuilding it for core HashPass
-  # routes or unrelated mobile-app changes.
+  # This is a full Expo web export, so any shared mobile-app source can affect
+  # its bundle. Exclusions below keep only unrelated infrastructure out.
   cbweek2026_trigger_includes = [
-    "apps/mobile-app/app/events/**",
-    "apps/mobile-app/app/demo.tsx",
-    "apps/mobile-app/lib/bsl/**",
-    "apps/mobile-app/config/events.ts",
-    "apps/mobile-app/config/supabase-profiles.ts",
-    "apps/mobile-app/assets/logos/bsl/**",
+    "apps/mobile-app/**",
     "packages/**",
+    "package.json",
     "pnpm-lock.yaml",
+    "pnpm-workspace.yaml",
   ]
 
   # AWS caps this list at eight patterns. HashPass and BSL infrastructure
@@ -30,7 +27,6 @@ locals {
     "packages/infra/terraform/stacks/mobile-release-legacy-source-account/**",
     "packages/infra/terraform/stacks/gcp/**",
     "packages/tools/scripts/build-bsl-infra.sh",
-    "packages/tools/scripts/check-infra-dns.sh",
   ]
 }
 

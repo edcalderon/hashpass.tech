@@ -3,6 +3,13 @@
 import { EVENTS } from '../../config/events';
 import type { AgendaItem } from '../../../types/agenda';
 
+type DemoSpeaker = {
+  id: string;
+  name: string;
+  isActive?: boolean;
+  isPastEditionReference?: boolean;
+};
+
 describe('CBWeek 2026 demo programme', () => {
   const event = EVENTS.cbweek2026;
 
@@ -38,8 +45,8 @@ describe('CBWeek 2026 demo programme', () => {
   it('shows the requested active CBWeek demo speakers with event-owned images', () => {
     expect(event.speakers).toEqual(expect.arrayContaining([
       expect.objectContaining({ name: 'Bryan Aguilar', title: 'CEO', company: 'LATAM Blockchain Events LLC', isActive: true, image: expect.stringContaining('/cbweek2026/speakers/bryan-aguilar.png') }),
-      expect.objectContaining({ name: 'Lucero Dextre', title: 'COO', company: 'LATAM Blockchain Events LLC', isActive: true, image: expect.stringContaining('/cbweek2026/speakers/lucero-dextre.png') }),
-      expect.objectContaining({ name: 'Edward Calderón', title: 'CEO', company: 'HASHPASS', isActive: true, image: expect.stringContaining('/cbweek2026/speakers/edward-calderon.png') }),
+      expect.objectContaining({ name: 'Lucero Dextre', title: 'COO', company: 'LATAM Blockchain Events LLC', isActive: true, image: expect.stringContaining('.s3.us-east-2.amazonaws.com/events/cbweek2026/speakers/lucero-dextre.png') }),
+      expect.objectContaining({ name: 'Edward Calderón', title: 'CEO', company: 'HASHPASS', isActive: true, image: expect.stringContaining('.s3.us-east-2.amazonaws.com/events/cbweek2026/speakers/edward-calderon.png') }),
     ]));
 
     const speakerIds = new Set(event.speakers?.map((speaker: { id: string }) => speaker.id));
@@ -47,8 +54,9 @@ describe('CBWeek 2026 demo programme', () => {
   });
 
   it('keeps official past-edition speakers visibly separate from the three active demo speakers', () => {
-    const activeSpeakers = event.speakers?.filter((speaker) => speaker.isActive) || [];
-    const pastEditionSpeakers = event.speakers?.filter((speaker) => speaker.isPastEditionReference) || [];
+    const speakers = (event.speakers || []) as DemoSpeaker[];
+    const activeSpeakers = speakers.filter((speaker) => speaker.isActive);
+    const pastEditionSpeakers = speakers.filter((speaker) => speaker.isPastEditionReference);
 
     expect(activeSpeakers.map((speaker) => speaker.name)).toEqual([
       'Bryan Aguilar',

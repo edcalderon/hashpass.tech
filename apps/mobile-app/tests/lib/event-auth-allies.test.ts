@@ -49,4 +49,11 @@ describe("event auth allies", () => {
     expect(cbw[0].logo).not.toEqual(bsl[0].logo);
     expect(cbw.filter((ally) => ally.id === DEFAULT_AUTH_ALLY_ID)).toHaveLength(1);
   });
+
+  it("does not repeat Hash Poker when it is also the default platform ally", () => {
+    const allies = getEventAuthAllies(EVENTS["hash-poker"], [DEFAULT_AUTH_ALLY_ID]);
+
+    expect(allies).toHaveLength(1);
+    expect(allies[0]).toMatchObject({ id: "hash-poker" });
+  });
 });

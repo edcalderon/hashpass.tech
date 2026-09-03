@@ -61,9 +61,8 @@ locals {
   ]
 
   site_trigger_excludes = [
-    # Avoid rebuilding the core development site for BSL/event-only changes.
-    # Shared application changes still rebuild every deployment that needs it.
-    "apps/mobile-app/app/events/**",
+    # Event pages are also served by the global explorer, so do not exclude
+    # their route tree from the core-site trigger.
     "apps/mobile-app/app/api/bsl/**",
     "apps/mobile-app/app/api/events/**",
     "apps/mobile-app/lib/bsl/**",
