@@ -472,16 +472,27 @@ export default function AuthCallback() {
                 const isWebPasswordlessCode = Platform.OS === 'web' && Boolean(params.code);
 
                 // Fallback: detect Supabase implicit-flow passwordless tokens
-                // (#access_token=...&type=magiclink/email/etc.). These appear when
-                // the client was not configured with flowType:'pkce', or when an
-                // older email link is opened after a deployment.
+                // (#access_token=... or #token_hash=...&type=magiclink/email/etc.).
+                // These appear when the client was not configured with
+                // flowType:'pkce', when an older email link is opened after a
+                // deployment, or -- the common case for our own magic-link
+                // endpoint -- because token_hash/type are deliberately sent as a
+                // hash fragment (see magic-link+api.ts) so they survive the
+                // hashpass.tech S3/CloudFront redirect that strips query strings
+                // from "/auth/callback" -> "/auth/callback/". `params.token_hash`
+                // (Expo Router's query-only params) never sees a hash-only value,
+                // so it must be checked here too -- this matters most when there
+                // is no `auth_signin_method` localStorage marker, e.g. the link
+                // was opened on a different device/browser or by an email
+                // security scanner's prefetch (no storage at all).
                 const hashStr = Platform.OS === 'web' && typeof window !== 'undefined'
                     ? window.location.hash.replace(/^#/, '')
                     : '';
                 const hashUrlParams = hashStr ? new URLSearchParams(hashStr) : null;
                 const hashAuthType = hashUrlParams?.get('type')?.toLowerCase() || '';
+                const hashTokenHash = hashUrlParams?.get('token_hash') || '';
                 const isImplicitPasswordlessLink = Boolean(
-                    hashUrlParams?.get('access_token') &&
+                    (hashUrlParams?.get('access_token') || hashTokenHash) &&
                     (!hashAuthType || SUPABASE_PASSWORDLESS_TYPES.has(hashAuthType))
                 );
 
@@ -489,7 +500,7 @@ export default function AuthCallback() {
                     signInMethod,
                     passwordlessRequestInProgress,
                     code: isNativePasswordlessCode || isWebPasswordlessCode,
-                    tokenHash: params.token_hash,
+                    tokenHash: params.token_hash || hashTokenHash || undefined,
                     token: params.token,
                     email: params.email,
                     hasImplicitAccessToken: isImplicitPasswordlessLink,

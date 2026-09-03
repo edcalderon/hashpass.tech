@@ -61,7 +61,7 @@ describe('magic-link API', () => {
     });
     expect(mockSendAuthenticationMagicLink).toHaveBeenCalledWith({
       email: 'user@example.com',
-      actionLink: 'https://hashpass.tech/auth/callback?token_hash=one-time-hash&type=magiclink',
+      actionLink: 'https://hashpass.tech/auth/callback#token_hash=one-time-hash&type=magiclink',
       locale: 'es',
     });
   });

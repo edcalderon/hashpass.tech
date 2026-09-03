@@ -20,16 +20,16 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.32)
+## 📋 Latest Changes (v1.9.33)
 
 ### Bug Fixes
 
-* **auth:** stop emailing auto-consuming Supabase magic-link URLs ([fccf7a0](https://github.com/hashpass-tech/hashpass.tech/commit/fccf7a080a2ad13a2775531e1f97120edce231e8))
+* **auth:** send magic-link token_hash in the hash fragment, not query string ([7ad24ad](https://github.com/hashpass-tech/hashpass.tech/commit/7ad24ad16779a21cac29f60590124393334f055d))
 ### Release Highlights
-- stop emailing auto-consuming Supabase magic-link URLs
+- send magic-link token_hash in the hash fragment, not query string
 
 ### Release scope
-- Compared with: `v1.9.31` (the previous global release tag)
+- Compared with: `v1.9.32` (the previous global release tag)
 
 ### Affected products & packages
 - Mobile app
