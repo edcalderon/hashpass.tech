@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202609031142, // Updated to current timestamp
+  buildNumber: 202609031240, // Updated to current timestamp
   releaseDate: '2026-09-03',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,14 +30,29 @@ export const CURRENT_VERSION: VersionInfo = {
     // No new features
   ],
   bugfixes: [
-    'route magic links around Better Auth'
+    'route passwordless callbacks safely'
   ],
   breakingChanges: [],
-  notes: 'route magic links around Better Auth'
+  notes: 'route passwordless callbacks safely'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.29': {
+    version: '1.9.29',
+    buildNumber: 202609031240,
+    releaseDate: '2026-09-03',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'route passwordless callbacks safely'
+    ],
+    breakingChanges: [],
+    notes: 'route passwordless callbacks safely'
+  },
   '1.9.28': {
     version: '1.9.28',
     buildNumber: 202609031142,

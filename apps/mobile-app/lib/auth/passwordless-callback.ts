@@ -15,6 +15,11 @@ type PasswordlessCallbackParams = {
   hasImplicitAccessToken?: boolean;
 };
 
+type BetterAuthGoogleCallbackParams = {
+  signInMethod?: string | null;
+  oauthInProgress?: boolean;
+};
+
 export const isSupabasePasswordlessCallback = ({
   signInMethod,
   passwordlessRequestInProgress = false,
@@ -31,3 +36,16 @@ export const isSupabasePasswordlessCallback = ({
   Boolean(tokenHash) ||
   Boolean(token && email) ||
   hasImplicitAccessToken;
+
+/**
+ * Better Auth's Google callback has no query payload because the backend has
+ * already consumed it and set a same-site session cookie. Do not select that
+ * path based solely on the historical sign-in-method marker: magic-link
+ * emails can be opened later or in another browser context where that marker
+ * is stale or absent.
+ */
+export const isBetterAuthGoogleCallback = ({
+  signInMethod,
+  oauthInProgress = false,
+}: BetterAuthGoogleCallbackParams): boolean =>
+  signInMethod === 'google_oauth' && oauthInProgress;

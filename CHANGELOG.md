@@ -1,3 +1,13 @@
+## [1.9.29](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.28...v1.9.29) (2026-09-03)
+### Released
+- route passwordless callbacks safely
+
+### Release scope
+- Compared with: `v1.9.28` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+
 ## [1.9.28](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.27...v1.9.28) (2026-09-03)
 ### Released
 - route magic links around Better Auth
