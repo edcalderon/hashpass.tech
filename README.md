@@ -20,37 +20,17 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.27)
+## 📋 Latest Changes (v1.9.28)
 
-### Bug Fixes
-
-* **auth:** guard Web Lock during server export ([bbaca2f](https://github.com/hashpass-tech/hashpass.tech/commit/bbaca2f1446226588f659184b6c4ce9c227ad755))
-* **auth:** render event allies without repeats ([85a8a52](https://github.com/hashpass-tech/hashpass.tech/commit/85a8a5230c644c085a699aa3ed30efcde8690b77))
-* **auth:** serialize Supabase session bootstrap ([7ea5843](https://github.com/hashpass-tech/hashpass.tech/commit/7ea584338a5ac0c03b094f91845ae49a010c6b97))
-* **events:** guard banner text contrast ([6380f64](https://github.com/hashpass-tech/hashpass.tech/commit/6380f64085cf70d22d3d06f5f2b070a8329a3c99))
-* **events:** rename CBWeek tenant and brand auth ([695739b](https://github.com/hashpass-tech/hashpass.tech/commit/695739bff2ff62905c78618541a0082c318d217a))
-* **events:** scope Poker feed refresh to Poker ([2067a18](https://github.com/hashpass-tech/hashpass.tech/commit/2067a18fb093baa5c2f5eb1ebaf618b93920b24b))
-* **events:** show countdown on hero films ([f1cf656](https://github.com/hashpass-tech/hashpass.tech/commit/f1cf656106ce9dbd2775b4d38d284e53f2a436ce))
-
-
-### Features
-
-* **cbweek:** add demo programme and speakers ([dd7688e](https://github.com/hashpass-tech/hashpass.tech/commit/dd7688e2e235a49f9140436751220a9848326852))
-* **cbweek:** add past-edition speaker directory ([ee84b46](https://github.com/hashpass-tech/hashpass.tech/commit/ee84b464fd04e7e013a1c03f65de56ae2732c682))
-* **demo:** grant courtesy passes on signup ([0cd1d06](https://github.com/hashpass-tech/hashpass.tech/commit/0cd1d06accc9ab1076a0203ee1b6170e41170f52))
-* **events:** add CBWeek hero film ([6dd7b16](https://github.com/hashpass-tech/hashpass.tech/commit/6dd7b162d4a1593866d0866aedf908642d0d12e7))
-* **events:** provision Colombia Blockchain Week 2026 tenant ([a0ee54f](https://github.com/hashpass-tech/hashpass.tech/commit/a0ee54ff9ee76a191bc2e0b7c563e55eaf49ade6))
-### Release Highlights
-- add past-edition speaker directory; add demo programme and speakers; grant courtesy passes on signup; add CBWeek hero film; provision Colombia Blockchain Week 2026 tenant; show countdown on hero films; guard banner text contrast; guard Web Lock during server export; scope Poker feed refresh to Poker; render event allies without repeats; serialize Supabase session bootstrap; rename CBWeek tenant and brand auth
+### Released
+- route magic links around Better Auth
 
 ### Release scope
-- Compared with: `v1.9.26` (the previous global release tag)
+- Compared with: `v1.9.27` (the previous global release tag)
 
 ### Affected products & packages
 - Mobile app
-- Database migrations
-- Infrastructure
-- Release tooling
+- Auth
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

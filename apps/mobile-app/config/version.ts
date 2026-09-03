@@ -22,32 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202609030135, // Updated to current timestamp
+  buildNumber: 202609031142, // Updated to current timestamp
   releaseDate: '2026-09-03',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'add past-edition speaker directory',
-    'add demo programme and speakers',
-    'grant courtesy passes on signup',
-    'add CBWeek hero film',
-    'provision Colombia Blockchain Week 2026 tenant'
+    // No new features
   ],
   bugfixes: [
-    'show countdown on hero films',
-    'guard banner text contrast',
-    'guard Web Lock during server export',
-    'scope Poker feed refresh to Poker',
-    'render event allies without repeats',
-    'serialize Supabase session bootstrap',
-    'rename CBWeek tenant and brand auth'
+    'route magic links around Better Auth'
   ],
   breakingChanges: [],
-  notes: 'add past-edition speaker directory; add demo programme and speakers; grant courtesy passes on signup; add CBWeek hero film; provision Colombia Blockchain Week 2026 tenant; show countdown on hero films; guard banner text contrast; guard Web Lock during server export; scope Poker feed refresh to Poker; render event allies without repeats; serialize Supabase session bootstrap; rename CBWeek tenant and brand auth'
+  notes: 'route magic links around Better Auth'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.28': {
+    version: '1.9.28',
+    buildNumber: 202609031142,
+    releaseDate: '2026-09-03',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'route magic links around Better Auth'
+    ],
+    breakingChanges: [],
+    notes: 'route magic links around Better Auth'
+  },
   '1.9.27': {
     version: '1.9.27',
     buildNumber: 202609030135,

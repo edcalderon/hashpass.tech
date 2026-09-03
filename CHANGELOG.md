@@ -1,3 +1,14 @@
+## [1.9.28](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.27...v1.9.28) (2026-09-03)
+### Released
+- route magic links around Better Auth
+
+### Release scope
+- Compared with: `v1.9.27` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Auth
+
 ## [1.9.27](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.26...v1.9.27) (2026-09-03)
 
 
