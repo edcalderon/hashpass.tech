@@ -94,9 +94,16 @@ export async function POST(request: Request) {
     // click. token_hash is only resolved into a session by client-side JS
     // (createSessionFromUrl -> supabase.auth.verifyOtp), which a passive
     // prefetch never runs.
+    //
+    // Must go in the hash fragment, not the query string: hashpass.tech's
+    // S3/CloudFront origin 302s bare "/auth/callback" to "/auth/callback/"
+    // and that redirect's Location header carries no query string at all
+    // (confirmed live), silently dropping any ?token_hash=...&type=... on
+    // the very first hop. A hash fragment is never sent to the server, so
+    // it survives the redirect intact -- the same reason GoTrue's own
+    // implicit-flow #access_token=... links already worked here.
     const confirmationUrl = new URL(redirectTo);
-    confirmationUrl.searchParams.set("token_hash", tokenHash);
-    confirmationUrl.searchParams.set("type", verificationType);
+    confirmationUrl.hash = `token_hash=${encodeURIComponent(tokenHash)}&type=${encodeURIComponent(verificationType)}`;
 
     const delivery = await sendAuthenticationMagicLink({
       email,
