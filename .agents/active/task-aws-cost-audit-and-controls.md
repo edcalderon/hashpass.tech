@@ -3,7 +3,14 @@
 **Status:** ACTIVE — high priority
 **Priority:** P0 (billing/credit risk)  
 **Created:** 2026-08-04
-**Last updated:** 2026-08-24
+**Last updated:** 2026-09-03
+
+> The actual CodeBuild/CodePipeline → GitHub Actions migration and the
+> recurring cost-monitoring workflow that grew out of this audit's CodeBuild
+> findings now live in their own task doc:
+> [`task-cicd-cost-optimization.md`](task-cicd-cost-optimization.md). This
+> doc stays the billing/credit-risk record; that one owns the migration
+> execution and phase tracking.
 
 > **Standing rule — no EC2 provisioning without explicit owner consent.**
 > This applies to Claude/agent sessions and human contributors alike, and
