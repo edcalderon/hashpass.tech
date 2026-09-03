@@ -16,6 +16,7 @@ import { clearPersistedNativeProviderSessions } from '../lib/auth/native-session
 import { resolveGoogleOAuthClientId } from '../lib/auth/oauth/google-credentials';
 import { resolvePublicSupabaseConfig } from '../config/supabase-profiles';
 import { markRecentAuthSuccess, clearRecentAuthSuccess } from '../lib/auth/recent-auth';
+import { isBetterAuthGoogleCallback } from '../lib/auth/passwordless-callback';
 import { withTimeout } from '../lib/with-timeout';
 import {
   createAuthSessionActor,
@@ -1489,6 +1490,10 @@ export const useAuth = () => {
         Platform.OS === 'web' && typeof window !== 'undefined'
           ? window.localStorage.getItem('auth_signin_method')
           : null;
+      const oauthInProgress =
+        Platform.OS === 'web' && typeof window !== 'undefined'
+          ? window.localStorage.getItem('oauth_in_progress') === 'true'
+          : false;
 
       // Web Google sign-in always goes through Better Auth first (see
       // signInWithOAuth above). Its callback is cookie-based — Better Auth's
@@ -1498,7 +1503,7 @@ export const useAuth = () => {
       // primary provider (e.g. 'directus' for core on web) and misread that
       // empty params object as a failed callback for a provider that was
       // never actually used. Check for a live Better Auth session instead.
-      if (Platform.OS === 'web' && signInMethod === 'google_oauth') {
+      if (Platform.OS === 'web' && isBetterAuthGoogleCallback({ signInMethod, oauthInProgress })) {
         const providerName = authService.getProviderName();
         const betterAuthGoogle: IAuthProvider =
           providerName === 'better-auth' ? authService : getGoogleBetterAuthProvider();

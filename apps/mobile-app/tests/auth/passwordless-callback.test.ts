@@ -1,6 +1,7 @@
 /// <reference types="jest" />
 
 import {
+  isBetterAuthGoogleCallback,
   isSupabasePasswordlessCallback,
 } from '../../lib/auth/passwordless-callback';
 
@@ -25,5 +26,11 @@ describe('isSupabasePasswordlessCallback', () => {
 
   it('does not misroute a normal Google callback', () => {
     expect(isSupabasePasswordlessCallback({ signInMethod: 'google_oauth' })).toBe(false);
+  });
+
+  it('requires Better Auth\'s active OAuth marker before choosing its cookie callback', () => {
+    expect(isBetterAuthGoogleCallback({ signInMethod: 'google_oauth', oauthInProgress: true })).toBe(true);
+    expect(isBetterAuthGoogleCallback({ signInMethod: 'google_oauth', oauthInProgress: false })).toBe(false);
+    expect(isBetterAuthGoogleCallback({ signInMethod: 'magic_link', oauthInProgress: true })).toBe(false);
   });
 });

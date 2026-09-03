@@ -10,6 +10,7 @@ import { createSessionFromUrl, supabase } from '../../../lib/supabase';
 import { resolvePublicSupabaseConfig } from '../../../config/supabase-profiles';
 import { markRecentAuthSuccess } from '../../../lib/auth/recent-auth';
 import {
+    isBetterAuthGoogleCallback,
     isSupabasePasswordlessCallback,
     PASSWORDLESS_CALLBACK_MARKER,
 } from '../../../lib/auth/passwordless-callback';
@@ -460,6 +461,10 @@ export default function AuthCallback() {
                     Platform.OS === 'web' && typeof window !== 'undefined'
                         ? window.localStorage.getItem(PASSWORDLESS_CALLBACK_MARKER) === 'true'
                         : false;
+                const oauthInProgress =
+                    Platform.OS === 'web' && typeof window !== 'undefined'
+                        ? window.localStorage.getItem('oauth_in_progress') === 'true'
+                        : false;
                 // A 'code' param in the URL is always a Supabase PKCE auth code — never a
                 // Google/Directus OAuth token. Treat it as passwordless regardless of localStorage,
                 // which won't be set when the magic link was requested from the native app.
@@ -488,6 +493,10 @@ export default function AuthCallback() {
                     token: params.token,
                     email: params.email,
                     hasImplicitAccessToken: isImplicitPasswordlessLink,
+                });
+                const isBetterAuthGoogle = isBetterAuthGoogleCallback({
+                    signInMethod,
+                    oauthInProgress,
                 });
 
                 if (isPasswordlessMethod && !isPasswordlessSupported) {
@@ -588,6 +597,16 @@ export default function AuthCallback() {
                     return;
                 }
                 
+                // A stale `google_oauth` marker must never route an otherwise
+                // empty magic-link return through Better Auth. Its callback is
+                // cookie-only and therefore cannot establish a Supabase
+                // passwordless session.
+                if (signInMethod === 'google_oauth' && !isBetterAuthGoogle && !hasOAuthPayloadInUrl()) {
+                    throw new Error(
+                        'This magic link did not include a usable Supabase authentication payload. Request a new magic link and try again.'
+                    );
+                }
+
                 // Use provider-agnostic OAuth callback handler
                 let result = await handleOAuthCallback(params as Record<string, string>);
 
