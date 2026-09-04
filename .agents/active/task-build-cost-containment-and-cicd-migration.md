@@ -60,22 +60,28 @@ external hosted builders, or self-hosted runners for this objective.
 - [x] Isolated build-only trials from deployment concurrency. Development
       deployments now serialize instead of cancelling an active S3/Lambda
       update, so a later build-only dispatch cannot leave a partial deployment.
-- [x] Added an un-applied Terraform definition for a **development-only**
-      GitHub OIDC role. Its subject is restricted to the `development` GitHub
-      environment and its policy is restricted to the development site bucket,
-      CloudFront distribution, and API Lambda. It has no EC2 or CodePipeline
-      permissions.
-- [ ] The workflow cannot yet be remotely dispatched from its feature branch:
-      GitHub registers `workflow_dispatch` only after a workflow reaches the
-      default branch. Do not merge merely to bypass that guard; use the normal
-      protected release/PR path when the rollout change is ready for review.
+- [x] Added a Terraform definition for a **development-only** GitHub OIDC
+      role. Its subject is restricted to the `development` GitHub environment
+      and its policy is restricted to the development site bucket, CloudFront
+      distribution, and API Lambda. It has no EC2 or CodePipeline permissions.
+      **Applied 2026-09-04** via a `-target`-scoped, owner-reviewed plan
+      (`plan: 2 to add, 0 to change, 0 to destroy`) — see
+      `apps/docs/docs/infra/hashpass-api-target-terraform-env-drift.md` for
+      the override values required to get a truthful plan on this stack.
+      Role ARN: `arn:aws:iam::<account>:role/hashpass-development-static-site-github-actions`.
+- [x] The workflow is registered on the default branch and was dispatched
+      successfully from `main` (`workflow_dispatch`, both build-only and
+      build+deploy runs).
 - [x] The status command was exercised against GitHub and correctly reports
       the expected pre-promotion state: the workflow is not registered on the
-      default branch, so no hosted run has occurred.
-- [ ] No AWS role, GitHub environment, repository variable, site, Lambda, or
-      CloudFront resource has been changed. `hashpass-web` still has documented
-      Terraform drift, so a full reviewed plan is required before enabling the
-      role or running the observed development deployment.
+      default branch, so no hosted run has occurred. (Superseded — the
+      workflow is now on the default branch and has real run history.)
+- [x] AWS role applied; `development` GitHub environment created
+      (branch-restricted to `main`/`develop`);
+      `AWS_STATIC_SITE_DEPLOY_ROLE_ARN` set on that environment. No production
+      resource touched. `hashpass-web`'s documented Terraform drift was
+      avoided by using `-target` plus the explicit variable overrides from
+      the drift doc, not a blind plan/apply.
 
 Production is explicitly out of scope until development has passed. It needs a
 separate least-privilege role, a protected `production` GitHub environment,
@@ -101,9 +107,20 @@ also automatically build every source push once GitHub Actions is primary.
       it sets `DetectChanges = false` **and removes the V2 webhook trigger**.
       It defaults to automatic detection, so current production behavior is
       unchanged until the migration gate is deliberately applied.
-- [ ] Add an independent availability monitor/alert for GitHub Actions and
+- [x] Add an independent availability monitor/alert for GitHub Actions and
       record the owner/on-call route. The monitor may alert on sustained loss
       of Actions availability; it must not automatically start AWS builds.
+      **Added 2026-09-04**: `.github/workflows/github-outage-monitor.yml`
+      (detect-and-alert only, does not call the recovery script) — polls
+      githubstatus.com's Actions component every 15 min and opens/updates a
+      `github-outage-alert`-labeled issue with the break-glass command
+      template on a real, non-`unknown` indicator; auto-closes when it
+      clears. Watched-workflow-run failures are reported for context but are
+      explicitly not a trigger by themselves, to avoid false-positiving on an
+      ordinary broken commit. Full design and self-detection limitation:
+      `apps/docs/docs/infra/github-outage-monitor.md`. Opened for review as
+      PR #234 — schedule/dispatch triggers only activate once it merges to
+      the default branch.
 - [ ] Exercise the development recovery command in a scheduled, owner-approved
       drill after the AWS source trigger is disabled. Verify the pinned revision,
       public site, CloudFront invalidation, API-version guard, and rollback.
@@ -175,19 +192,56 @@ feedback.
       duration and artifact parity before a deploy is allowed.
 - [x] Define a narrowly scoped, separate development OIDC deploy role/policy
       for the development bucket, CloudFront distribution, and Lambda only.
-      It remains un-applied. PR workflows stay credentialless; only a
+      **Applied 2026-09-04.** PR workflows stay credentialless; only a
       `development` environment deployment job can assume it.
-- [ ] Before an AWS apply or setting `AWS_STATIC_SITE_DEPLOY_ROLE_ARN`, create
+- [x] Before an AWS apply or setting `AWS_STATIC_SITE_DEPLOY_ROLE_ARN`, create
       the `development` GitHub environment, scope that variable to it, and
       restrict deployment branches to the intended protected source branch.
       The OIDC subject restriction is environment-specific, not branch-specific.
-- [ ] Show the complete `hashpass-web` Terraform plan to the owner and obtain
+      Done 2026-09-04: `development` environment created, branch-restricted to
+      `main`/`develop`, `AWS_STATIC_SITE_DEPLOY_ROLE_ARN` set on it.
+- [x] Show the complete `hashpass-web` Terraform plan to the owner and obtain
       explicit, real-time approval immediately before apply. The additive role
-      source does not bypass this stack's false-drift guard.
-- [ ] Run one observed manual development deploy; verify the public site,
+      source does not bypass this stack's false-drift guard. Done 2026-09-04
+      via a `-target`-scoped plan (2 to add, 0 to change, 0 to destroy),
+      shown and approved before `terraform apply`.
+- [~] Run one observed manual development deploy; verify the public site,
       CloudFront invalidation, and API-version guard before enabling any
       automatic trigger. This deployment updates both the development site and
       its API Lambda artifact; it is not a static-files-only operation.
+      First attempt 2026-09-04 (`workflow_dispatch`, run 33899558488):
+      static-site build/S3-sync/CloudFront-invalidation succeeded, but the
+      Lambda packaging step failed — `package-lambda.sh` prefers
+      `dist/server` (expo export's server output, where Better Auth's
+      `[...auth]+api` route and other API routes live) and only falls back
+      to `dist/client` when `dist/server` is absent; the workflow's
+      build→deploy artifact hand-off only carried `dist/client`, so the
+      deploy job silently packaged a client-only export with no API routes
+      at all. Fixed in the same PR (#234) by uploading/downloading the
+      whole `dist/` directory instead of `dist/client` alone. Re-dispatched
+      from the fix branch (run 33901760548) to validate before merge — build
+      job succeeded (confirms the artifact hand-off now carries `dist/server`),
+      but the deploy job failed instantly with zero steps executed. Root
+      cause is unrelated to the fix itself: the `development` GitHub
+      environment has a `deployment_branch_policy` restricting deploys to
+      `develop`/`main` only (added along with `environment: development` on
+      the deploy job itself), so GitHub refused to start the deploy job at
+      all from a PR branch — this workflow can never be validated end-to-end
+      pre-merge via `workflow_dispatch` on a feature branch, only after
+      merging to `develop` (or `main`). Also fixed two unrelated real bugs
+      an automated PR review bot found on `github-outage-monitor.yml` in the
+      same PR: the healthy-indicator comparison read the githubstatus.com
+      Actions component's per-component `.status` (`operational`) but
+      compared it against `"none"` (only ever a top-level-only value),
+      making `should_alert` always `true` and permanently defeating
+      auto-close; and several `${{ }}` step outputs (incident JSON, run
+      report) were interpolated directly into a `run:` block's shell text
+      instead of via `env:`, a script-injection risk from an apostrophe in
+      an incident name. Both fixed and pushed. Once merged, dispatch
+      `github-hosted-static-site-deploy.yml` with `deploy: true` on
+      `develop` for the real end-to-end validation (public site,
+      CloudFront invalidation, `/api/config/versions`) — do not mark this
+      item fully done until that real deploy is observed to succeed.
 - [ ] Enable exact `paths` filters plus a unique environment concurrency group
       with `cancel-in-progress: true`; retain the AWS pipeline only as a
       documented rollback during the observation period. Once GitHub Actions

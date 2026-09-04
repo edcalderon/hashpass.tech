@@ -7,8 +7,8 @@ the `hashpass` AWS profile; `default` is legacy LSTS cleanup-only.
 
 | Domain | Production service | AWS profile | Deployment path |
 | --- | --- | --- | --- |
-| `hashpass.tech`, `www.hashpass.tech` | CloudFront + S3 static site | `hashpass` | Production web pipeline on `main` |
-| `dev.hashpass.tech` | CloudFront + S3 static site | `hashpass` | Development web pipeline on `develop` |
+| `hashpass.tech`, `www.hashpass.tech` | CloudFront + S3 static site | `hashpass` | Production web pipeline on `main` (AWS CodePipeline/CodeBuild) |
+| `dev.hashpass.tech` | CloudFront + S3 static site | `hashpass` | **Migration in progress, started 2026-09-04:** [`github-hosted-static-site-deploy.yml`](../../../../.github/workflows/github-hosted-static-site-deploy.yml) (GitHub-hosted runner build + OIDC-scoped deploy), currently manual `workflow_dispatch` only. The AWS CodePipeline `hashpass-dev-site` is **still live and auto-triggers on every push to `develop`** (`DetectChanges` not yet disabled) — it stays the automatic path until the GitHub-hosted path completes an observation period, per the ordered plan in `.agents/active/task-build-cost-containment-and-cicd-migration.md`. See [github-outage-monitor.md](github-outage-monitor.md) for the eventual break-glass design. |
 | `api.hashpass.tech`, `api-dev.hashpass.tech` | Lambda + API Gateway, `us-east-1` | `hashpass` | Web/API deployment flow with version-endpoint guard |
 | `bsl.hashpass.tech`, `bsl-dev.hashpass.tech` | CloudFront + target-account static origins | `hashpass` | Dedicated BSL CodePipeline/EC2 worker |
 | `hashpass.club` | GitHub Pages | n/a | `club-v*` release workflow |
