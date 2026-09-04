@@ -71,24 +71,6 @@ interface TimeLeft {
 
 const ZERO_TIME_LEFT: TimeLeft = { days: 0, hours: 0, minutes: 0, seconds: 0 };
 
-// The video/image background branches below always layer a dark overlay
-// gradient under the (hardcoded white/light-blue) title and countdown text,
-// but the flat-color fallback branch used the raw event color with no
-// darkening at all -- fine for a saturated/dark brand color like blue or
-// red, unreadable for a light one like colombia2026's yellow (#F5C542).
-// Rather than hardcode a fix for that one event, treat any light brand
-// color the same way archived events are already treated: a dark-to-brand
-// diagonal gradient instead of a flat fill. Relative luminance per WCAG.
-const isLightColor = (hex: string): boolean => {
-  const match = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  if (!match) return false;
-
-  const [r, g, b] = match.slice(1).map((component) => parseInt(component, 16) / 255);
-  const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-
-  return luminance > 0.6;
-};
-
 // Pure function (no closure over component state) so it can compute the
 // real countdown synchronously as the timeLeft state's lazy initializer.
 // Previously timeLeft started at ZERO_TIME_LEFT and only got corrected by
@@ -145,8 +127,9 @@ export default function EventBanner({
       ? HASH_POKER_BANNER
       : resolveEventImageSource(eventImage);
   const hasVideoBackground = Boolean(eventVideo);
+  const [imageLoadFailed, setImageLoadFailed] = useState(false);
   const hasApprovedImageBackground = Boolean(
-    heroImageSource && eventImageTextOverlaySafe,
+    heroImageSource && eventImageTextOverlaySafe && !imageLoadFailed,
   );
   const hasValidStartDate = Boolean(
     eventStartDate && !Number.isNaN(new Date(eventStartDate).getTime()),
@@ -277,6 +260,7 @@ export default function EventBanner({
           resizeMode="cover"
           style={styles.heroBackground}
           imageStyle={styles.heroBackgroundImage}
+          onError={() => setImageLoadFailed(true)}
         >
           <SafeLinearGradient
             colors={
@@ -299,12 +283,13 @@ export default function EventBanner({
           />
         </ImageBackground>
       ) : (
+        // No video, no approved image (or it failed to load): always use the
+        // same dark-to-brand-color diagonal gradient BSL's own fallback
+        // cards use, never a flat fill of the raw event color -- keeps every
+        // event's solid-color fallback visually consistent and guarantees
+        // readable text contrast regardless of how light the brand color is.
         <SafeLinearGradient
-          colors={
-            isArchiveEvent || isLightColor(backgroundColor)
-              ? ["#07111F", "#0B1728", backgroundColor]
-              : [backgroundColor, backgroundColor, backgroundColor]
-          }
+          colors={["#07111F", "#0B1728", backgroundColor]}
           locations={[0, 0.52, 1]}
           start={{ x: 0.15, y: 0 }}
           end={{ x: 0.85, y: 1 }}
