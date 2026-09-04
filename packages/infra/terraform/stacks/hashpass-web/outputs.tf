@@ -93,6 +93,11 @@ output "github_actions_role_arn" {
   value       = var.enable_github_actions_worker_control ? aws_iam_role.github_actions[0].arn : ""
 }
 
+output "github_actions_development_static_site_deploy_role_arn" {
+  description = "IAM role ARN for the GitHub-hosted development static-site deployment workflow. Set it only as the development environment-scoped GitHub variable AWS_STATIC_SITE_DEPLOY_ROLE_ARN after the target resources and plan have been reviewed."
+  value       = var.enable_github_actions_development_static_site_deploy ? aws_iam_role.github_actions_development_static_site_deploy[0].arn : ""
+}
+
 output "ops_alerts_topic_arn" {
   description = "SNS topic for EC2 lifecycle, worker health, budget, and cost anomaly alerts. Confirm the support email subscription after apply."
   value       = aws_sns_topic.ops_alerts.arn
