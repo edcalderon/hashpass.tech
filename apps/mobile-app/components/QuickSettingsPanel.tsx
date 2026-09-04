@@ -115,8 +115,14 @@ function PillGroup<T extends string>({
             onPress={() => onChange(opt.value)}
             activeOpacity={0.72}
           >
-            <opt.Icon size={13} color={fg} strokeWidth={2} />
-            <Text style={[sheet.pillLabel, { color: fg }]}>{opt.label}</Text>
+            <opt.Icon size={12} color={fg} strokeWidth={2} />
+            <Text
+              style={[sheet.pillLabel, { color: fg }]}
+              numberOfLines={1}
+              allowFontScaling={false}
+            >
+              {opt.label}
+            </Text>
           </TouchableOpacity>
         );
       })}
@@ -184,7 +190,7 @@ export default function QuickSettingsPanel({
     return { opacity: withTiming(visible ? 1 : 0, { duration: 160 }), pointerEvents: visible ? 'auto' : 'none' } as const;
   }, [scrollY, hideAfterScrollY, forceVisible]);
 
-  const bg = isDark ? 'rgba(14,14,26,0.97)' : 'rgba(255,255,255,0.97)';
+  const bg = isDark ? 'rgb(14,14,26)' : 'rgb(255,255,255)';
   const borderCol = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)';
 
   const themeOptions: PillOption<ThemeMode>[] = [
@@ -432,7 +438,7 @@ const panelStyles = StyleSheet.create({
     position: 'absolute',
     top: 54,
     right: 0,
-    width: 244,
+    width: 264,
     maxHeight: 460,
     borderRadius: 18,
     borderWidth: 1,
@@ -489,21 +495,25 @@ const sheet = StyleSheet.create({
   pillRow: {
     flexDirection: 'row',
     gap: 6,
-    flexWrap: 'wrap',
+    flexWrap: 'nowrap',
     marginBottom: 2,
   },
   pill: {
+    flex: 1,
+    minWidth: 0,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    paddingVertical: 6,
-    paddingHorizontal: 11,
+    justifyContent: 'center',
+    gap: 4,
+    paddingVertical: 7,
+    paddingHorizontal: 4,
     borderRadius: 999,
     borderWidth: 1,
   },
   pillLabel: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
-    letterSpacing: 0.2,
+    letterSpacing: 0.1,
+    flexShrink: 1,
   },
 });
