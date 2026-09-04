@@ -202,6 +202,50 @@ describe("EventBanner", () => {
     act(() => renderer!.unmount());
   });
 
+  it("darkens a light flat-color fallback background so title/countdown text stays readable (regression)", () => {
+    // Regression: colombia2026's yellow (#F5C542) hero card rendered white
+    // countdown/title text directly on the flat brand color with no
+    // darkening at all -- unlike the video/image branches, which always
+    // layer a dark overlay. Any event with no video/image and a light brand
+    // color must fall back to the same dark-to-brand gradient archived
+    // events already use, not a flat fill of the light color.
+    let renderer: ReturnType<typeof create>;
+    act(() => {
+      renderer = create(
+        <EventBanner
+          title="BSL Colombia 2026"
+          subtitle="Bogotá, Colombia"
+          date="November 5-6, 2026"
+          eventId="colombia2026"
+          backgroundColor="#F5C542"
+        />,
+      );
+    });
+
+    const gradient = renderer!.root.findByType("SafeLinearGradient" as any);
+    expect(gradient.props.colors).toEqual(["#07111F", "#0B1728", "#F5C542"]);
+    act(() => renderer!.unmount());
+  });
+
+  it("keeps a flat brand-color fallback for a dark/saturated color (no unnecessary darkening)", () => {
+    let renderer: ReturnType<typeof create>;
+    act(() => {
+      renderer = create(
+        <EventBanner
+          title="BSL 2026"
+          subtitle="Lima, Peru"
+          date="October 2026"
+          eventId="peru2026"
+          backgroundColor="#007AFF"
+        />,
+      );
+    });
+
+    const gradient = renderer!.root.findByType("SafeLinearGradient" as any);
+    expect(gradient.props.colors).toEqual(["#007AFF", "#007AFF", "#007AFF"]);
+    act(() => renderer!.unmount());
+  });
+
   it("renders and follows an internal CTA when the owning surface enables it", () => {
     let renderer: ReturnType<typeof create>;
     act(() => {

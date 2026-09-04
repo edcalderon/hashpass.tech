@@ -71,6 +71,24 @@ interface TimeLeft {
 
 const ZERO_TIME_LEFT: TimeLeft = { days: 0, hours: 0, minutes: 0, seconds: 0 };
 
+// The video/image background branches below always layer a dark overlay
+// gradient under the (hardcoded white/light-blue) title and countdown text,
+// but the flat-color fallback branch used the raw event color with no
+// darkening at all -- fine for a saturated/dark brand color like blue or
+// red, unreadable for a light one like colombia2026's yellow (#F5C542).
+// Rather than hardcode a fix for that one event, treat any light brand
+// color the same way archived events are already treated: a dark-to-brand
+// diagonal gradient instead of a flat fill. Relative luminance per WCAG.
+const isLightColor = (hex: string): boolean => {
+  const match = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  if (!match) return false;
+
+  const [r, g, b] = match.slice(1).map((component) => parseInt(component, 16) / 255);
+  const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+
+  return luminance > 0.6;
+};
+
 // Pure function (no closure over component state) so it can compute the
 // real countdown synchronously as the timeLeft state's lazy initializer.
 // Previously timeLeft started at ZERO_TIME_LEFT and only got corrected by
@@ -283,7 +301,7 @@ export default function EventBanner({
       ) : (
         <SafeLinearGradient
           colors={
-            isArchiveEvent
+            isArchiveEvent || isLightColor(backgroundColor)
               ? ["#07111F", "#0B1728", backgroundColor]
               : [backgroundColor, backgroundColor, backgroundColor]
           }
