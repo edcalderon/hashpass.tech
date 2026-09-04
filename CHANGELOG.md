@@ -1,3 +1,19 @@
+## [1.9.34](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.33...v1.9.34) (2026-09-04)
+
+
+### Bug Fixes
+
+* **auth:** parse native-relayed magic-link fragment before classifying the callback ([8cfbc00](https://github.com/hashpass-tech/hashpass.tech/commit/8cfbc00de284303ffe46199f320a0c783a7dd97f))
+* **mobile-app:** drive PWA update modal off controllerchange, not dead SW postMessage wires ([a302387](https://github.com/hashpass-tech/hashpass.tech/commit/a3023872dc0b3332fe528cefd32414ad03606acc))
+### Release Highlights
+- parse native-relayed magic-link fragment before classifying the callback; drive PWA update modal off controllerchange, not dead SW postMessage wires
+
+### Release scope
+- Compared with: `v1.9.33` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+
 ## [1.9.33](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.32...v1.9.33) (2026-09-03)
 
 
