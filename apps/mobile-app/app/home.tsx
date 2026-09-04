@@ -298,14 +298,7 @@ export default function HomeScreen() {
       resetTimers.forEach(clearTimeout);
       clearTimeout(settleTimer);
     };
-  }, [
-    animationLevel,
-    initialScrollLock,
-    isNative,
-    resetScrollPosition,
-    windowHeight,
-    windowWidth,
-  ]);
+  }, [animationLevel, initialScrollLock, isNative, resetScrollPosition]);
 
   const handleInitialScrollLayout = React.useCallback(() => {
     if (isNative && !isNativeInitialScrollSettled) {
