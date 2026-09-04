@@ -32,6 +32,12 @@ variable "branch_name" {
   default     = "main"
 }
 
+variable "source_detect_changes" {
+  description = "Whether CodeConnections automatically starts this pipeline for source changes. Keep true until the GitHub-hosted replacement has passed its observed deployment and rollback gates."
+  type        = bool
+  default     = true
+}
+
 variable "connection_arn" {
   description = "AWS CodeConnections ARN for the GitHub source connection"
   type        = string

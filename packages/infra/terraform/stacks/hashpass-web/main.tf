@@ -171,6 +171,20 @@ check "required_inputs" {
   }
 }
 
+check "github_actions_development_static_site_deploy_targets" {
+  assert {
+    condition = (
+      !var.enable_github_actions_development_static_site_deploy ||
+      (
+        trimspace(var.github_actions_development_static_site_deploy_bucket_name) != "" &&
+        trimspace(var.github_actions_development_static_site_deploy_cloudfront_distribution_id) != "" &&
+        trimspace(var.github_actions_development_static_site_deploy_lambda_function_name) != ""
+      )
+    )
+    error_message = "github_actions_development_static_site_deploy requires an explicit development bucket, CloudFront distribution, and Lambda function."
+  }
+}
+
 check "site_cloudfront_inputs" {
   assert {
     condition = (
@@ -479,6 +493,7 @@ module "site_dev" {
   environment                       = var.dev_environment
   repository                        = var.repository
   branch_name                       = var.dev_branch_name
+  source_detect_changes             = var.dev_aws_pipeline_source_detect_changes
   connection_arn                    = var.connection_arn
   site_bucket_name                  = var.dev_site_bucket_name
   artifact_bucket_name              = var.dev_artifact_bucket_name
@@ -654,7 +669,11 @@ resource "aws_route53_record" "dev_site_ipv6" {
 }
 
 locals {
-  github_oidc_provider_arn = var.enable_github_actions_worker_control ? (
+  enable_github_actions_oidc = (
+    var.enable_github_actions_worker_control ||
+    var.enable_github_actions_development_static_site_deploy
+  )
+  github_oidc_provider_arn = local.enable_github_actions_oidc ? (
     var.create_github_oidc_provider
     ? aws_iam_openid_connect_provider.github[0].arn
     : data.aws_iam_openid_connect_provider.github[0].arn
@@ -666,7 +685,7 @@ locals {
 # After apply, copy the github_actions_role_arn output as GitHub variable AWS_WEB_PIPELINE_ROLE_ARN.
 
 resource "aws_iam_openid_connect_provider" "github" {
-  count = (var.enable_github_actions_worker_control && var.create_github_oidc_provider) ? 1 : 0
+  count = (local.enable_github_actions_oidc && var.create_github_oidc_provider) ? 1 : 0
 
   url            = "https://token.actions.githubusercontent.com"
   client_id_list = ["sts.amazonaws.com"]
@@ -678,7 +697,7 @@ resource "aws_iam_openid_connect_provider" "github" {
 }
 
 data "aws_iam_openid_connect_provider" "github" {
-  count = (var.enable_github_actions_worker_control && !var.create_github_oidc_provider) ? 1 : 0
+  count = (local.enable_github_actions_oidc && !var.create_github_oidc_provider) ? 1 : 0
   url   = "https://token.actions.githubusercontent.com"
 }
 
@@ -780,6 +799,98 @@ resource "aws_iam_role_policy" "github_actions_worker_control" {
           for function_name in local.build_worker_lambda_function_names :
           "arn:aws:lambda:${var.lambda_region}:${data.aws_caller_identity.current.account_id}:function:${function_name}"
         ]
+      },
+    ]
+  })
+}
+
+# GitHub-hosted builds use this separate role only during an explicitly selected
+# deployment environment. Keeping it separate from the legacy worker-control
+# role prevents a static-site deployment from starting EC2 or CodePipeline work.
+data "aws_iam_policy_document" "github_actions_development_static_site_deploy_assume_role" {
+  count = var.enable_github_actions_development_static_site_deploy ? 1 : 0
+
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+
+    principals {
+      type        = "Federated"
+      identifiers = [local.github_oidc_provider_arn]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "token.actions.githubusercontent.com:aud"
+      values   = ["sts.amazonaws.com"]
+    }
+
+    # The role is deliberately development-only. Production receives its own
+    # role only after the development migration and observation gate succeeds.
+    condition {
+      test     = "StringEquals"
+      variable = "token.actions.githubusercontent.com:sub"
+      values = [
+        "repo:${var.repository}:environment:development",
+      ]
+    }
+  }
+}
+
+resource "aws_iam_role" "github_actions_development_static_site_deploy" {
+  count = var.enable_github_actions_development_static_site_deploy ? 1 : 0
+
+  name               = var.github_actions_development_static_site_deploy_role_name
+  assume_role_policy = data.aws_iam_policy_document.github_actions_development_static_site_deploy_assume_role[0].json
+  tags               = merge(var.tags, { Service = "static-site-deployment" })
+}
+
+resource "aws_iam_role_policy" "github_actions_development_static_site_deploy" {
+  count = var.enable_github_actions_development_static_site_deploy ? 1 : 0
+
+  name = "${var.name_prefix}-development-static-site-deploy"
+  role = aws_iam_role.github_actions_development_static_site_deploy[0].id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "SyncOnlyApprovedStaticSiteBuckets"
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:DeleteObject",
+          "s3:AbortMultipartUpload",
+          "s3:ListMultipartUploadParts",
+        ]
+        Resource = "arn:aws:s3:::${var.github_actions_development_static_site_deploy_bucket_name}/*"
+      },
+      {
+        Sid    = "ListOnlyApprovedStaticSiteBuckets"
+        Effect = "Allow"
+        Action = [
+          "s3:GetBucketLocation",
+          "s3:ListBucket",
+          "s3:ListBucketMultipartUploads",
+        ]
+        Resource = "arn:aws:s3:::${var.github_actions_development_static_site_deploy_bucket_name}"
+      },
+      {
+        Sid      = "InvalidateOnlyApprovedDistributions"
+        Effect   = "Allow"
+        Action   = ["cloudfront:CreateInvalidation"]
+        Resource = "arn:aws:cloudfront::${data.aws_caller_identity.current.account_id}:distribution/${var.github_actions_development_static_site_deploy_cloudfront_distribution_id}"
+      },
+      {
+        Sid    = "DeployOnlyApprovedApiFunctions"
+        Effect = "Allow"
+        Action = [
+          "lambda:GetFunction",
+          "lambda:GetFunctionConfiguration",
+          "lambda:UpdateFunctionCode",
+        ]
+        Resource = "arn:aws:lambda:${var.lambda_region}:${data.aws_caller_identity.current.account_id}:function:${var.github_actions_development_static_site_deploy_lambda_function_name}"
       },
     ]
   })

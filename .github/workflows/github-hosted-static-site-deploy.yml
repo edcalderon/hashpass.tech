@@ -1,0 +1,192 @@
+name: GitHub-hosted static site build and deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: Deploy the development artifact (build-only by default)
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build static site (development)
+    runs-on: ubuntu-latest
+    env:
+      BUILD_ENV: dev
+      EXPO_PUBLIC_SUPABASE_URL: ${{ vars.EXPO_PUBLIC_SUPABASE_URL_DEV }}
+      EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.EXPO_PUBLIC_SUPABASE_ANON_KEY_DEV }}
+      EXPO_PUBLIC_SUPABASE_KEY: ${{ vars.EXPO_PUBLIC_SUPABASE_ANON_KEY_DEV }}
+      EXPO_PUBLIC_BSL_SUPABASE_URL: ${{ vars.EXPO_PUBLIC_BSL_SUPABASE_URL_DEV }}
+      EXPO_PUBLIC_BSL_SUPABASE_KEY: ${{ vars.EXPO_PUBLIC_BSL_SUPABASE_KEY_DEV }}
+      NODE_MAX_OLD_SPACE_SIZE: '12288'
+      EXPO_EXPORT_MAX_WORKERS: '1'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Record build start
+        id: build-start
+        run: echo "epoch=$(date +%s)" >> "$GITHUB_OUTPUT"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.5
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.22.2'
+          cache: pnpm
+
+      - name: Build the static site
+        id: build
+        run: bash packages/tools/scripts/build-static-site.sh
+
+      - name: Record build evidence
+        if: always()
+        env:
+          BUILD_OUTCOME: ${{ steps.build.outcome }}
+          BUILD_STARTED_AT: ${{ steps.build-start.outputs.epoch }}
+        run: |
+          set -euo pipefail
+          finished_at=$(date +%s)
+          duration_seconds=$((finished_at - BUILD_STARTED_AT))
+          artifact_bytes=0
+          artifact_sha256=""
+
+          if [[ -d dist/client ]]; then
+            artifact_bytes=$(du -sb dist/client | awk '{print $1}')
+            artifact_sha256=$(find dist/client -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum | awk '{print $1}')
+          fi
+
+          jq -n \
+            --arg workflow "${{ github.workflow }}" \
+            --arg run_url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --arg commit "${{ github.sha }}" \
+            --arg build_outcome "$BUILD_OUTCOME" \
+            --argjson duration_seconds "$duration_seconds" \
+            --argjson artifact_bytes "$artifact_bytes" \
+            --arg artifact_sha256 "$artifact_sha256" \
+            '{workflow: $workflow, runUrl: $run_url, commit: $commit, buildOutcome: $build_outcome, durationSeconds: $duration_seconds, artifactBytes: $artifact_bytes, artifactSha256: $artifact_sha256}' \
+            > static-site-build-evidence.json
+
+          {
+            echo "## GitHub-hosted static-site build"
+            echo
+            echo "- Run: [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+            echo "- Commit: \`${{ github.sha }}\`"
+            echo "- Build: \`$BUILD_OUTCOME\` in \`${duration_seconds}s\`"
+            echo "- Artifact: \`${artifact_bytes} bytes\`"
+            echo "- Artifact SHA-256: \`${artifact_sha256:-not-created}\`"
+            echo "- Deployment requested: \`${{ inputs.deploy }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload static site artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: static-site-development
+          path: dist/client
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Upload build evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: static-site-development-build-evidence
+          path: static-site-build-evidence.json
+          if-no-files-found: error
+          retention-days: 14
+
+  deploy:
+    name: Deploy static site (development)
+    needs: build
+    if: inputs.deploy == true
+    # Build-only trials must not interrupt an in-progress deployment. Queue
+    # deploy-capable runs instead of cancelling an active S3/Lambda update.
+    concurrency:
+      group: static-site-deploy-development
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    environment: development
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      AWS_REGION: us-east-2
+      SITE_BUILD_DIR: dist/client
+      SITE_BUCKET_NAME: dev.hashpass.tech
+      SITE_CLOUDFRONT_DISTRIBUTION_ID: E1Y06KG5U6MKCS
+      SITE_LAMBDA_FUNCTION_NAME: hashpass-dev-expo-router-api
+      SITE_LAMBDA_REGION: us-east-1
+      SITE_API_VERSION_URL: https://api-dev.hashpass.tech/api/config/versions
+    steps:
+      - name: Checkout deployment scripts
+        uses: actions/checkout@v4
+
+      - name: Download verified static site artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: static-site-development
+          path: dist/client
+
+      - name: Validate deployment role configuration
+        env:
+          ROLE_ARN: ${{ vars.AWS_STATIC_SITE_DEPLOY_ROLE_ARN }}
+        run: |
+          set -euo pipefail
+          test -n "$ROLE_ARN" || {
+            echo "AWS_STATIC_SITE_DEPLOY_ROLE_ARN is not configured for this repository."
+            exit 1
+          }
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_STATIC_SITE_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: hashpass-static-site-development
+
+      - name: Deploy the verified static site
+        id: deploy
+        run: bash packages/tools/scripts/deploy-static-site.sh
+
+      - name: Record deployment evidence
+        if: always()
+        env:
+          BUILD_RESULT: ${{ needs.build.result }}
+          DEPLOY_OUTCOME: ${{ steps.deploy.outcome }}
+        run: |
+          set -euo pipefail
+          jq -n \
+            --arg run_url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --arg commit "${{ github.sha }}" \
+            --arg build_result "$BUILD_RESULT" \
+            --arg deploy_outcome "$DEPLOY_OUTCOME" \
+            '{runUrl: $run_url, commit: $commit, buildResult: $build_result, deployOutcome: $deploy_outcome}' \
+            > static-site-deployment-evidence.json
+
+          {
+            echo "## GitHub-hosted static-site deployment"
+            echo
+            echo "- Run: [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+            echo "- Commit: \`${{ github.sha }}\`"
+            echo "- Build result: \`$BUILD_RESULT\`"
+            echo "- Deploy result: \`$DEPLOY_OUTCOME\`"
+            echo "- Target: \`development\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload deployment evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: static-site-development-deployment-evidence
+          path: static-site-deployment-evidence.json
+          if-no-files-found: error
+          retention-days: 14

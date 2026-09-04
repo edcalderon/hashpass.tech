@@ -199,6 +199,7 @@ const makeTourStopConfig = (
     stopOrder: number;
     image: string;
     brandingLogo: string;
+    heroVideo?: string;
     speakers: Speaker[];
     agenda: AgendaItem[];
     dayThemes?: Record<string, { es: string; en: string }>;
@@ -211,6 +212,7 @@ const makeTourStopConfig = (
   title: options.title,
   subtitle: options.subtitle,
   image: options.image,
+  heroVideo: options.heroVideo,
   color: options.color,
   eventStartDate: options.eventStartDate,
   eventEndDate: options.eventEndDate,
@@ -3714,6 +3716,12 @@ export const EVENTS: Record<string, EventConfig> = {
     stopOrder: 3,
     image: "/assets/logos/bsl/bsl-colombia-pro.svg",
     brandingLogo: "/assets/logos/bsl/bsl-colombia-pro.svg",
+    // No real venue footage exists yet (event hasn't happened, and
+    // blockchainsummit.la/colombia2026 has no video assets to re-host the
+    // way cbweek2026 does) -- rendered as a brand motion-graphics loop via
+    // apps/video-studio's BslColombiaHeroLoop composition instead.
+    heroVideo:
+      "https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events/colombia2026/branding/colombia2026-hero.mp4",
     speakers: [
       {
         id: "leonardo-villar",
