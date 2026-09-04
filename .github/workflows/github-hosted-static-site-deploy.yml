@@ -9,10 +9,6 @@ on:
         default: false
         type: boolean
 
-concurrency:
-  group: static-site-deploy-development
-  cancel-in-progress: true
-
 permissions:
   contents: read
 
@@ -120,6 +116,11 @@ jobs:
     name: Deploy static site (development)
     needs: build
     if: inputs.deploy == true
+    # Build-only trials must not interrupt an in-progress deployment. Queue
+    # deploy-capable runs instead of cancelling an active S3/Lambda update.
+    concurrency:
+      group: static-site-deploy-development
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     environment: development
     permissions:

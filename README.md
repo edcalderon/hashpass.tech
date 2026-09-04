@@ -20,20 +20,18 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.34)
+## 📋 Latest Changes (v1.9.35)
 
-### Bug Fixes
-
-* **auth:** parse native-relayed magic-link fragment before classifying the callback ([8cfbc00](https://github.com/hashpass-tech/hashpass.tech/commit/8cfbc00de284303ffe46199f320a0c783a7dd97f))
-* **mobile-app:** drive PWA update modal off controllerchange, not dead SW postMessage wires ([a302387](https://github.com/hashpass-tech/hashpass.tech/commit/a3023872dc0b3332fe528cefd32414ad03606acc))
-### Release Highlights
-- parse native-relayed magic-link fragment before classifying the callback; drive PWA update modal off controllerchange, not dead SW postMessage wires
+### Released
+- Version 1.9.35 release
 
 ### Release scope
-- Compared with: `v1.9.33` (the previous global release tag)
+- Compared with: `v1.9.34` (the previous global release tag)
 
 ### Affected products & packages
 - Mobile app
+- Infrastructure
+- Release tooling
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

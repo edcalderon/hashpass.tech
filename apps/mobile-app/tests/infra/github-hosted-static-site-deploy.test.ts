@@ -33,7 +33,11 @@ describe('GitHub-hosted static-site deployment workflow', () => {
     expect(workflow).toContain('packages/tools/scripts/build-static-site.sh');
     expect(workflow).toContain('packages/tools/scripts/deploy-static-site.sh');
     expect(workflow).toContain('SITE_API_VERSION_URL');
-    expect(workflow).toContain('cancel-in-progress: true');
+    expect(workflow).not.toMatch(/^concurrency:/m);
+    const deploymentJob = workflow.split('\n  deploy:\n')[1];
+    expect(deploymentJob).toBeDefined();
+    expect(deploymentJob).toContain('group: static-site-deploy-development');
+    expect(deploymentJob).toContain('cancel-in-progress: false');
     expect(workflow).toContain('Record build evidence');
     expect(workflow).toContain('static-site-build-evidence.json');
     expect(workflow).toContain('Record deployment evidence');
@@ -72,6 +76,9 @@ describe('GitHub-hosted static-site deployment workflow', () => {
     expect(recoveryScript).toContain('DetectChanges');
     expect(recoveryScript).toContain('start-pipeline-execution');
     expect(recoveryScript).toContain('revisionType=COMMIT_ID');
+    expect(recoveryScript).toContain('attempt_nonce=');
+    expect(recoveryScript).toContain('/dev/urandom');
+    expect(recoveryScript).not.toContain('request_token="hashpass-dr-${ENVIRONMENT}-${COMMIT:0:12}"');
     expect(terraformModule).toContain('source_detect_changes');
     expect(terraformModule).toContain('(var.enable_path_filtered_trigger && var.source_detect_changes)');
     expect(terraformModule).toContain('DetectChanges        = var.source_detect_changes ? "true" : "false"');

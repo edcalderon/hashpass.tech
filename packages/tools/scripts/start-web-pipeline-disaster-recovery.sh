@@ -114,9 +114,14 @@ if [[ "${active_executions}" != "0" ]]; then
   exit 1
 fi
 
-request_token="hashpass-dr-${ENVIRONMENT}-${COMMIT:0:12}"
+# CodePipeline treats this as an idempotency token. A retry for the same pinned
+# revision needs a distinct token so it starts a replacement execution rather
+# than returning a stopped or failed earlier execution.
+attempt_nonce="$(date -u +%Y%m%d%H%M%S)-$(od -An -N4 -tx4 /dev/urandom | tr -d '[:space:]')"
+request_token="hashpass-dr-${ENVIRONMENT}-${COMMIT:0:12}-${attempt_nonce}"
 echo "Break-glass request prepared for ${ENVIRONMENT} pipeline at commit ${COMMIT}."
 echo "Incident/change reference: ${INCIDENT}"
+echo "Recovery attempt: ${attempt_nonce}"
 
 if [[ "${EXECUTE}" != true ]]; then
   echo "Dry run only. Re-run with --execute after the incident owner confirms the fallback release."

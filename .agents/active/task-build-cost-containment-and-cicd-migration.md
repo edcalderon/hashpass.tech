@@ -57,6 +57,9 @@ external hosted builders, or self-hosted runners for this objective.
       summary, then retains structured build/deployment evidence artifacts for
       14 days. The read-only
       `inspect-github-hosted-static-site-deploy.sh` command lists recent runs.
+- [x] Isolated build-only trials from deployment concurrency. Development
+      deployments now serialize instead of cancelling an active S3/Lambda
+      update, so a later build-only dispatch cannot leave a partial deployment.
 - [x] Added a Terraform definition for a **development-only** GitHub OIDC
       role. Its subject is restricted to the `development` GitHub environment
       and its policy is restricted to the development site bucket, CloudFront
@@ -97,7 +100,9 @@ also automatically build every source push once GitHub Actions is primary.
       command that requires the intended environment, full commit SHA, incident
       reference, private expected AWS account ID, and an explicit `--execute`.
       It checks that no pipeline execution is active and starts the exact source
-      revision only after the normal AWS source trigger is disabled.
+      revision only after the normal AWS source trigger is disabled. Each
+      attempt adds a fresh random nonce to CodePipeline's idempotency token, so
+      a retry of a stopped or failed pinned revision starts a new execution.
 - [x] Added Terraform support for manual-only retained development recovery:
       it sets `DetectChanges = false` **and removes the V2 webhook trigger**.
       It defaults to automatic detection, so current production behavior is
@@ -113,8 +118,9 @@ also automatically build every source push once GitHub Actions is primary.
       clears. Watched-workflow-run failures are reported for context but are
       explicitly not a trigger by themselves, to avoid false-positiving on an
       ordinary broken commit. Full design and self-detection limitation:
-      `apps/docs/docs/infra/github-outage-monitor.md`. Not yet merged to the
-      default branch — schedule/dispatch triggers only activate once it is.
+      `apps/docs/docs/infra/github-outage-monitor.md`. Opened for review as
+      PR #234 — schedule/dispatch triggers only activate once it merges to
+      the default branch.
 - [ ] Exercise the development recovery command in a scheduled, owner-approved
       drill after the AWS source trigger is disabled. Verify the pinned revision,
       public site, CloudFront invalidation, API-version guard, and rollback.
@@ -136,8 +142,9 @@ deployment:
    they receive no AWS credentials and never deploy.
 2. The development deployment workflow runs only after a validated merge to
    `develop`, with exact build-input path filters and a per-environment
-   concurrency group using `cancel-in-progress: true`. Only the newest commit
-   may consume deployment capacity.
+   deployment concurrency group. Deployments serialize with
+   `cancel-in-progress: false` so no later run can interrupt an active
+   S3/Lambda update; build-only trials use no deployment concurrency group.
 3. Production deploys remain protected release/tag events, never normal PR or
    `develop` pushes. Security fixes keep their expedited path.
 4. If deployment frequency still needs an operational cap, use an explicit
@@ -198,14 +205,23 @@ feedback.
       source does not bypass this stack's false-drift guard. Done 2026-09-04
       via a `-target`-scoped plan (2 to add, 0 to change, 0 to destroy),
       shown and approved before `terraform apply`.
-- [x] Run one observed manual development deploy; verify the public site,
+- [~] Run one observed manual development deploy; verify the public site,
       CloudFront invalidation, and API-version guard before enabling any
       automatic trigger. This deployment updates both the development site and
       its API Lambda artifact; it is not a static-files-only operation.
-      Dispatched 2026-09-04 (`workflow_dispatch`, run 33899558488) —
-      confirm the run's terminal status and the live verification results
-      here once observed (do not mark the observation period itself complete
-      until this is confirmed).
+      First attempt 2026-09-04 (`workflow_dispatch`, run 33899558488):
+      static-site build/S3-sync/CloudFront-invalidation succeeded, but the
+      Lambda packaging step failed — `package-lambda.sh` prefers
+      `dist/server` (expo export's server output, where Better Auth's
+      `[...auth]+api` route and other API routes live) and only falls back
+      to `dist/client` when `dist/server` is absent; the workflow's
+      build→deploy artifact hand-off only carried `dist/client`, so the
+      deploy job silently packaged a client-only export with no API routes
+      at all. Fixed in the same PR (#234) by uploading/downloading the
+      whole `dist/` directory instead of `dist/client` alone. Re-dispatched
+      from the fix branch (run 33901760548) to validate before merge —
+      confirm its terminal status and the live `/api/config/versions` check
+      here once observed; do not mark this item fully done until then.
 - [ ] Enable exact `paths` filters plus a unique environment concurrency group
       with `cancel-in-progress: true`; retain the AWS pipeline only as a
       documented rollback during the observation period. Once GitHub Actions
