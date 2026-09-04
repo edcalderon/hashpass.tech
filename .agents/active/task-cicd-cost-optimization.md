@@ -1,9 +1,16 @@
 # Task: CI/CD cost migration (CodeBuild/CodePipeline → GitHub Actions) + continuous cost monitoring
 
-**Status:** ACTIVE
-**Priority:** P1 (recurring cost reduction, not an incident)
+**Status:** SUPERSEDED — execution merged 2026-09-04
+**Priority:** Historical implementation plan
 **Created:** 2026-09-03
 **Last updated:** 2026-09-03
+
+> **Canonical owner:**
+> [`task-build-cost-containment-and-cicd-migration.md`](task-build-cost-containment-and-cicd-migration.md)
+> is the single active P0 task for build containment, GitHub Actions migration,
+> deploy cadence, and cost monitoring. Its 2026-09-04 live snapshot changes
+> the urgency and order of this plan. This document remains a detailed phase
+> and drift-history reference; do not advance its phases independently.
 
 Companion to [`task-aws-cost-audit-and-controls.md`](task-aws-cost-audit-and-controls.md)
 (P0, billing/credit risk). That task diagnosed CodeBuild/CodePipeline as the
