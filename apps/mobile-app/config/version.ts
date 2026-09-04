@@ -22,22 +22,39 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202609041515, // Updated to current timestamp
+  buildNumber: 202609042349, // Updated to current timestamp
   releaseDate: '2026-09-04',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    // No new features
+    'add Hashpass email signature, fix wordmark contrast'
   ],
   bugfixes: [
-    // No bugfixes
+    'correct outage-monitor healthy-indicator check and shell injection risk',
+    'carry dist/server through the static-site artifact hand-off'
   ],
   breakingChanges: [],
-  notes: 'Version 1.9.35 release'
+  notes: 'add Hashpass email signature, fix wordmark contrast; correct outage-monitor healthy-indicator check and shell injection risk; carry dist/server through the static-site artifact hand-off'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.36': {
+    version: '1.9.36',
+    buildNumber: 202609042349,
+    releaseDate: '2026-09-04',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'add Hashpass email signature, fix wordmark contrast'
+    ],
+    bugfixes: [
+      'correct outage-monitor healthy-indicator check and shell injection risk',
+      'carry dist/server through the static-site artifact hand-off'
+    ],
+    breakingChanges: [],
+    notes: 'add Hashpass email signature, fix wordmark contrast; correct outage-monitor healthy-indicator check and shell injection risk; carry dist/server through the static-site artifact hand-off'
+  },
   '1.9.35': {
     version: '1.9.35',
     buildNumber: 202609041515,

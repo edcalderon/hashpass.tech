@@ -1,3 +1,26 @@
+## [1.9.36](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.35...v1.9.36) (2026-09-04)
+
+
+### Bug Fixes
+
+* **ci:** carry dist/server through the static-site artifact hand-off ([b01db84](https://github.com/hashpass-tech/hashpass.tech/commit/b01db844032b03506cce9493a5e43a1a7dadd833))
+* **ci:** correct outage-monitor healthy-indicator check and shell injection risk ([e00be2b](https://github.com/hashpass-tech/hashpass.tech/commit/e00be2b378a6c04f3dc43b148f6c7ee887259169))
+
+
+### Features
+
+* **emails:** add Hashpass email signature, fix wordmark contrast ([96b2859](https://github.com/hashpass-tech/hashpass.tech/commit/96b28592b4d6dd4b859fc72cdf2a9faf609fc7e5))
+### Release Highlights
+- add Hashpass email signature, fix wordmark contrast; correct outage-monitor healthy-indicator check and shell injection risk; carry dist/server through the static-site artifact hand-off
+
+### Release scope
+- Compared with: `v1.9.35` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Documentation
+- Release tooling
+
 ## [1.9.35](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.34...v1.9.35) (2026-09-04)
 ### Released
 - Version 1.9.35 release
