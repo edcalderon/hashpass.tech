@@ -1,0 +1,111 @@
+name: GitHub-hosted static site build and deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Deployment target
+        required: true
+        default: 'development'
+        type: choice
+        options:
+          - development
+          - production
+      deploy:
+        description: Deploy the verified artifact (build-only by default)
+        required: true
+        default: false
+        type: boolean
+
+concurrency:
+  group: static-site-deploy-${{ inputs.target }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build static site (${{ inputs.target }})
+    runs-on: ubuntu-latest
+    env:
+      BUILD_ENV: ${{ inputs.target == 'development' && 'dev' || 'production' }}
+      EXPO_PUBLIC_SUPABASE_URL: ${{ inputs.target == 'development' && vars.EXPO_PUBLIC_SUPABASE_URL_DEV || vars.EXPO_PUBLIC_SUPABASE_URL_PROD }}
+      EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ inputs.target == 'development' && vars.EXPO_PUBLIC_SUPABASE_ANON_KEY_DEV || vars.EXPO_PUBLIC_SUPABASE_ANON_KEY_PROD }}
+      EXPO_PUBLIC_SUPABASE_KEY: ${{ inputs.target == 'development' && vars.EXPO_PUBLIC_SUPABASE_ANON_KEY_DEV || vars.EXPO_PUBLIC_SUPABASE_ANON_KEY_PROD }}
+      EXPO_PUBLIC_BSL_SUPABASE_URL: ${{ inputs.target == 'development' && vars.EXPO_PUBLIC_BSL_SUPABASE_URL_DEV || vars.EXPO_PUBLIC_BSL_SUPABASE_URL_PROD }}
+      EXPO_PUBLIC_BSL_SUPABASE_KEY: ${{ inputs.target == 'development' && vars.EXPO_PUBLIC_BSL_SUPABASE_KEY_DEV || vars.EXPO_PUBLIC_BSL_SUPABASE_KEY_PROD }}
+      NODE_MAX_OLD_SPACE_SIZE: '12288'
+      EXPO_EXPORT_MAX_WORKERS: '1'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.5
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.22.2'
+          cache: pnpm
+
+      - name: Build the static site
+        run: bash packages/tools/scripts/build-static-site.sh
+
+      - name: Upload static site artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: static-site-${{ inputs.target }}
+          path: dist/client
+          if-no-files-found: error
+          retention-days: 1
+
+  deploy:
+    name: Deploy static site (${{ inputs.target }})
+    needs: build
+    if: inputs.deploy == true
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.target }}
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      AWS_REGION: us-east-2
+      SITE_BUILD_DIR: dist/client
+      SITE_BUCKET_NAME: ${{ inputs.target == 'development' && 'dev.hashpass.tech' || 'hashpass-production-site-952191196420-us-east-2' }}
+      SITE_CLOUDFRONT_DISTRIBUTION_ID: ${{ inputs.target == 'development' && 'E1Y06KG5U6MKCS' || 'E2BEOQYSV0EI0N' }}
+      SITE_LAMBDA_FUNCTION_NAME: ${{ inputs.target == 'development' && 'hashpass-dev-expo-router-api' || 'hashpass-prod-expo-router-api' }}
+      SITE_LAMBDA_REGION: us-east-1
+      SITE_API_VERSION_URL: ${{ inputs.target == 'development' && 'https://api-dev.hashpass.tech/api/config/versions' || 'https://api.hashpass.tech/api/config/versions' }}
+    steps:
+      - name: Checkout deployment scripts
+        uses: actions/checkout@v4
+
+      - name: Download verified static site artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: static-site-${{ inputs.target }}
+          path: dist/client
+
+      - name: Validate deployment role configuration
+        env:
+          ROLE_ARN: ${{ vars.AWS_STATIC_SITE_DEPLOY_ROLE_ARN }}
+        run: |
+          set -euo pipefail
+          test -n "$ROLE_ARN" || {
+            echo "AWS_STATIC_SITE_DEPLOY_ROLE_ARN is not configured for this repository."
+            exit 1
+          }
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_STATIC_SITE_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: hashpass-static-site-${{ inputs.target }}
+
+      - name: Deploy the verified static site
+        run: bash packages/tools/scripts/deploy-static-site.sh

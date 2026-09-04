@@ -5,12 +5,36 @@
 **Created:** 2026-08-04
 **Last updated:** 2026-09-03
 
-> The actual CodeBuild/CodePipeline → GitHub Actions migration and the
-> recurring cost-monitoring workflow that grew out of this audit's CodeBuild
-> findings now live in their own task doc:
-> [`task-cicd-cost-optimization.md`](task-cicd-cost-optimization.md). This
-> doc stays the billing/credit-risk record; that one owns the migration
-> execution and phase tracking.
+> The actual build containment, CodeBuild/CodePipeline → GitHub Actions
+> migration, and recurring cost-monitoring workflow now live in the canonical
+> P0 task:
+> [`task-build-cost-containment-and-cicd-migration.md`](task-build-cost-containment-and-cicd-migration.md).
+> This document stays the billing/credit-risk record; the canonical task owns
+> migration execution and phase tracking.
+
+### Current reconciliation update — 2026-09-04
+
+Read-only checks with the `hashpass` production profile confirm that the new
+console signal is from this billing account, not the legacy `default` profile:
+
+- the production $50 budget reports **$26.096 actual** and a **$383.252
+  forecast** (both its `UnblendedCost` metric, with credits/refunds excluded);
+- Cost Explorer's estimated Sep 1–4 service grouping (`UnblendedCost`) shows
+  CodeBuild **$18.45** from 1,058 minutes (787 Large / $15.74; 271 Medium /
+  $2.71), CodePipeline **$2.19**, Route 53 **$4.008**, and S3 **$0.965**;
+- only **$23.904** remains under the hard $50 budget, or roughly **$0.92/day**
+  for Sep 5–30 if the budget metric is used as the control metric;
+- `hashpass-cbweek2026-develop-site` ran 31 times from Sep 2 through Sep 4
+  (28 succeeded, two failed, one stopped), all from `develop` webhook pushes.
+  Its CodeBuild buildspec performs the direct S3/CloudFront deploy in the build
+  phase, so it must be treated as a live development deployment—not safely
+  disabled without a tested replacement and rollback path.
+
+These values are not comparable to the historical August **gross Usage** and
+credit figures elsewhere in this record. Continue to filter
+`RECORD_TYPE=Usage` when measuring gross credit burn; use the $50 budget's
+documented metric when judging the hard ceiling. The canonical P0 task now owns
+the immediate containment response. No resource was modified in this check.
 
 > **Standing rule — no EC2 provisioning without explicit owner consent.**
 > This applies to Claude/agent sessions and human contributors alike, and
