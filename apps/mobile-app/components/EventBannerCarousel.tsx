@@ -9,7 +9,7 @@ import {
   View,
   StyleSheet,
   ScrollView,
-  Dimensions,
+  useWindowDimensions,
   TouchableOpacity,
   Image,
   Platform,
@@ -142,8 +142,16 @@ export default function EventBannerCarousel({
   const isMobile = useIsMobile();
   const [currentIndex, setCurrentIndex] = useState(0);
   const scrollViewRef = useRef<ScrollView>(null);
-  const screenWidth = Dimensions.get("window").width;
-  const styles = getStyles(isDark, colors, isMobile);
+  // useWindowDimensions (unlike Dimensions.get, a one-time snapshot) re-renders
+  // this component on every resize -- required so the slide width tracks the
+  // real viewport on an ultra-wide monitor or a window resize after mount,
+  // instead of freezing at whatever width was current on the last render that
+  // happened to also change isDark/isMobile (confirmed live bug: a resize that
+  // stays on the same side of useIsMobile's 768px breakpoint never re-renders,
+  // so slides kept the initial narrower width and left a blank gap on the
+  // right at ultra-wide viewports).
+  const { width: screenWidth } = useWindowDimensions();
+  const styles = getStyles(isDark, colors, isMobile, screenWidth);
 
   // Get available events
   const availableEvents: EventInfo[] = selectedEvent
@@ -533,7 +541,12 @@ export default function EventBannerCarousel({
   );
 }
 
-const getStyles = (isDark: boolean, colors: any, isMobile: boolean) =>
+const getStyles = (
+  isDark: boolean,
+  colors: any,
+  isMobile: boolean,
+  screenWidth: number,
+) =>
   StyleSheet.create({
     // Keep logo-only and event-banner slides in one fixed viewport so swiping
     // between tour stops never changes the surrounding landing-page layout.
@@ -550,7 +563,7 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) =>
       height: isMobile ? 420 : 460,
     },
     slide: {
-      width: Dimensions.get("window").width,
+      width: screenWidth,
       paddingHorizontal: 16,
       justifyContent: "center",
       height: isMobile ? 420 : 460,

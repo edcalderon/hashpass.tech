@@ -97,8 +97,14 @@ function PillGroup<T extends string>({
             onPress={() => onChange(opt.value)}
             activeOpacity={0.72}
           >
-            <opt.Icon size={13} color={fg} strokeWidth={2} />
-            <Text style={[pStyles.pillLabel, { color: fg }]}>{opt.label}</Text>
+            <opt.Icon size={12} color={fg} strokeWidth={2} />
+            <Text
+              style={[pStyles.pillLabel, { color: fg }]}
+              numberOfLines={1}
+              allowFontScaling={false}
+            >
+              {opt.label}
+            </Text>
           </TouchableOpacity>
         );
       })}
@@ -171,7 +177,7 @@ const BackToTop: React.FC<Props> = ({ scrollY, scrollRef, colors, bottomOffset =
   const panelTranslateX = panelAnim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] });
   const panelScale = panelAnim.interpolate({ inputRange: [0, 1], outputRange: [0.94, 1] });
 
-  const bg = isDark ? 'rgba(14,14,26,0.97)' : 'rgba(255,255,255,0.97)';
+  const bg = isDark ? 'rgb(14,14,26)' : 'rgb(255,255,255)';
   const borderCol = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)';
   const btnBg = colors.surface;
 
@@ -397,7 +403,7 @@ const pStyles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     right: 62,
-    width: 228,
+    width: 248,
     maxHeight: 440,
     borderRadius: 18,
     borderWidth: 1,
@@ -420,22 +426,26 @@ const pStyles = StyleSheet.create({
   pillRow: {
     flexDirection: 'row',
     gap: 6,
-    flexWrap: 'wrap',
+    flexWrap: 'nowrap',
     marginBottom: 2,
   },
   pill: {
+    flex: 1,
+    minWidth: 0,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    paddingVertical: 6,
-    paddingHorizontal: 10,
+    justifyContent: 'center',
+    gap: 4,
+    paddingVertical: 7,
+    paddingHorizontal: 4,
     borderRadius: 999,
     borderWidth: 1,
   },
   pillLabel: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
-    letterSpacing: 0.2,
+    letterSpacing: 0.1,
+    flexShrink: 1,
   },
   langRow: {
     flexDirection: 'row',

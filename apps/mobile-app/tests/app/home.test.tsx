@@ -40,6 +40,11 @@ const loadHomeScreen = ({
 } = {}) => {
   let renderer: any;
   let actFn: any;
+  let ReactRef: any;
+  let HomeScreenRef: any;
+  // Mutable so a test can simulate a mobile-browser toolbar collapse/expand
+  // resize (useWindowDimensions changing) without remounting the screen.
+  const dims = { width, height };
 
   jest.isolateModules(() => {
     jest.resetModules();
@@ -111,7 +116,12 @@ const loadHomeScreen = ({
         addEventListener: jest.fn(() => ({ remove: jest.fn() })),
       },
       Dimensions: {
-        get: jest.fn(() => ({ width, height, scale: 1, fontScale: 1 })),
+        get: jest.fn(() => ({
+          width: dims.width,
+          height: dims.height,
+          scale: 1,
+          fontScale: 1,
+        })),
         addEventListener: jest.fn(() => ({ remove: jest.fn() })),
       },
       Image: "Image",
@@ -141,7 +151,12 @@ const loadHomeScreen = ({
       TouchableOpacity: "TouchableOpacity",
       TouchableWithoutFeedback: "TouchableWithoutFeedback",
       View: "View",
-      useWindowDimensions: () => ({ width, height, scale: 1, fontScale: 1 }),
+      useWindowDimensions: () => ({
+        width: dims.width,
+        height: dims.height,
+        scale: 1,
+        fontScale: 1,
+      }),
     }));
 
     jest.doMock(
@@ -180,7 +195,11 @@ const loadHomeScreen = ({
       useAnimatedReaction: jest.fn(),
       useAnimatedScrollHandler: (handlers: any) => handlers,
       useAnimatedStyle: (factory: () => any) => factory(),
-      useSharedValue: (value: unknown) => ({ value }),
+      // Real Reanimated shared values keep a stable object identity across
+      // re-renders (like useRef), which matters for effects that depend on a
+      // useCallback closing over one -- fake it with useRef instead of
+      // returning a fresh object on every render.
+      useSharedValue: (value: unknown) => React.useRef({ value }).current,
       withDelay: (_delay: number, value: unknown) => value,
       withRepeat: (value: unknown) => value,
       withSequence: (...values: unknown[]) => values[values.length - 1],
@@ -324,6 +343,8 @@ const loadHomeScreen = ({
 
     const TestRenderer = require("react-test-renderer");
     const HomeScreen = require("../../app/home").default;
+    ReactRef = React;
+    HomeScreenRef = HomeScreen;
 
     actFn = TestRenderer.act;
     actFn(() => {
@@ -331,7 +352,16 @@ const loadHomeScreen = ({
     });
   });
 
-  return { renderer, act: actFn };
+  return {
+    renderer,
+    act: actFn,
+    dims,
+    rerender: () => {
+      actFn(() => {
+        renderer.update(ReactRef.createElement(HomeScreenRef));
+      });
+    },
+  };
 };
 
 const styleArrayContains = (style: unknown, matcher: Record<string, unknown>) =>
@@ -531,5 +561,33 @@ describe("HomeScreen native tablet layout", () => {
       .findAllByType("Path")
       .find((node: any) => node.props.stroke);
     expect(arrowPath?.props.stroke).toBe(mockColors.text.primary);
+  });
+
+  it("does not snap the scroll position back to top when the mobile browser toolbar collapses (regression)", () => {
+    // Regression: the initial-scroll-reset effect used to list
+    // windowHeight/windowWidth in its dependency array even though it never
+    // reads either value. Mobile Chrome/Safari fire a resize (toolbar
+    // collapse/expand) while the user is actively scrolling, which retriggers
+    // the effect and calls resetScrollPosition() -- jumping the page back to
+    // the top mid-scroll. windowHeight/windowWidth must not be able to
+    // retrigger this effect on their own.
+    const { renderer, act, dims, rerender } = loadHomeScreen({
+      platform: "web",
+      width: 390,
+      height: 844,
+    });
+
+    act(() => {
+      jest.runOnlyPendingTimers();
+    });
+
+    mockScrollTo.mockClear();
+
+    dims.width = 390;
+    dims.height = 760; // simulates the browser toolbar collapsing mid-scroll
+    rerender();
+
+    expect(mockScrollTo).not.toHaveBeenCalled();
+    void renderer;
   });
 });

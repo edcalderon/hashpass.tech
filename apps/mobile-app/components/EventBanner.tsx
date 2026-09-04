@@ -127,8 +127,9 @@ export default function EventBanner({
       ? HASH_POKER_BANNER
       : resolveEventImageSource(eventImage);
   const hasVideoBackground = Boolean(eventVideo);
+  const [imageLoadFailed, setImageLoadFailed] = useState(false);
   const hasApprovedImageBackground = Boolean(
-    heroImageSource && eventImageTextOverlaySafe,
+    heroImageSource && eventImageTextOverlaySafe && !imageLoadFailed,
   );
   const hasValidStartDate = Boolean(
     eventStartDate && !Number.isNaN(new Date(eventStartDate).getTime()),
@@ -259,6 +260,7 @@ export default function EventBanner({
           resizeMode="cover"
           style={styles.heroBackground}
           imageStyle={styles.heroBackgroundImage}
+          onError={() => setImageLoadFailed(true)}
         >
           <SafeLinearGradient
             colors={
@@ -281,12 +283,13 @@ export default function EventBanner({
           />
         </ImageBackground>
       ) : (
+        // No video, no approved image (or it failed to load): always use the
+        // same dark-to-brand-color diagonal gradient BSL's own fallback
+        // cards use, never a flat fill of the raw event color -- keeps every
+        // event's solid-color fallback visually consistent and guarantees
+        // readable text contrast regardless of how light the brand color is.
         <SafeLinearGradient
-          colors={
-            isArchiveEvent
-              ? ["#07111F", "#0B1728", backgroundColor]
-              : [backgroundColor, backgroundColor, backgroundColor]
-          }
+          colors={["#07111F", "#0B1728", backgroundColor]}
           locations={[0, 0.52, 1]}
           start={{ x: 0.15, y: 0 }}
           end={{ x: 0.85, y: 1 }}

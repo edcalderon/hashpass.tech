@@ -30,7 +30,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { I18nProvider } from '../providers/I18nProvider';
 import { useTranslation } from '../i18n/i18n';
 import { CopilotProvider } from '@lib/copilot-shim';
-import { checkVersionOnStart } from '../lib/version-checker';
+import { checkVersionOnStart, notifyVersionUpdateFromServiceWorker } from '../lib/version-checker';
 import LoadingScreen from '../components/LoadingScreen';
 import { AppErrorBoundary, installGlobalErrorHandler } from '../components/AppErrorBoundary';
 import { configureNativeGoogleSignin } from '../lib/native-google-signin';
@@ -227,16 +227,6 @@ function ThemedContent() {
         console.error('Version check failed:', error);
       });
 
-      // Listen for version update messages from service worker
-      const handleServiceWorkerMessage = (event: MessageEvent) => {
-        if (event.data && event.data.type === 'VERSION_UPDATE_AVAILABLE') {
-          setVersionUpdate({
-            currentVersion: event.data.currentVersion,
-            latestVersion: event.data.latestVersion,
-          });
-        }
-      };
-
       // Listen for version update events dispatched by version-checker
       const handleVersionUpdateEvent = (event: Event) => {
         const e = event as CustomEvent<{ currentVersion: string; latestVersion: string }>;
@@ -248,12 +238,22 @@ function ThemedContent() {
         }
       };
 
-      navigator.serviceWorker.addEventListener('message', handleServiceWorkerMessage);
+      // app/+html.tsx dispatches this on navigator.serviceWorker's
+      // controllerchange -- a confirmed signal a new worker just took over,
+      // not a guess. Resolve real version strings and fold it into the same
+      // 'hashpass:version-update' path the REST poll already uses.
+      const handleServiceWorkerUpdate = () => {
+        notifyVersionUpdateFromServiceWorker().catch((error: unknown) => {
+          console.error('Service worker update notification failed:', error);
+        });
+      };
+
       window.addEventListener('hashpass:version-update', handleVersionUpdateEvent);
+      window.addEventListener('hashpassServiceWorkerUpdate', handleServiceWorkerUpdate);
 
       return () => {
-        navigator.serviceWorker.removeEventListener('message', handleServiceWorkerMessage);
         window.removeEventListener('hashpass:version-update', handleVersionUpdateEvent);
+        window.removeEventListener('hashpassServiceWorkerUpdate', handleServiceWorkerUpdate);
       };
     }
   }, []);

@@ -49,3 +49,69 @@ export const isBetterAuthGoogleCallback = ({
   oauthInProgress = false,
 }: BetterAuthGoogleCallbackParams): boolean =>
   signInMethod === 'google_oauth' && oauthInProgress;
+
+type NativeRelayCallbackParams = {
+  ['#']?: string | string[];
+  _fragment?: string | string[];
+};
+
+const normalizeParamValue = (value?: string | string[]): string =>
+  Array.isArray(value) ? value[0] || '' : value || '';
+
+/**
+ * A magic link requested inside the native app (nativeRelay=1) is handed off
+ * from the web callback via getNativeRelayUrl(), which cannot carry a real
+ * URL hash fragment on Android (Intent URLs allow only the trailing
+ * `#Intent;...;end` fragment) and instead moves it into a `_fragment` query
+ * param. Expo Router itself exposes a real `#...` fragment (iOS) as the
+ * single param key `'#'` (see getStateFromPath-forks.js's parseQueryParams),
+ * never split into individual access_token/token_hash/type params. Resolve
+ * both native representations back into the same raw "key=value&..." string
+ * `window.location.hash` would have given us on web.
+ */
+export const extractNativeRelayFragment = (params: NativeRelayCallbackParams): string => {
+  const iosFragment = normalizeParamValue(params['#']);
+  if (iosFragment) {
+    return iosFragment;
+  }
+
+  const androidFragment = normalizeParamValue(params._fragment);
+  if (!androidFragment) {
+    return '';
+  }
+
+  try {
+    return decodeURIComponent(androidFragment);
+  } catch {
+    return androidFragment;
+  }
+};
+
+/**
+ * Builds the URL createSessionFromUrl() consumes for a native passwordless
+ * callback. Drops the raw native relay keys ('#' on iOS, '_fragment' on
+ * Android) from the plain query serialization -- '#' would otherwise be
+ * percent-encoded into a useless '%23=...' query key that
+ * parseSupabaseAuthUrl (lib/supabase.ts) has no expansion rule for -- and
+ * re-emits the already-resolved fragment (from extractNativeRelayFragment)
+ * as `_fragment`, which parseSupabaseAuthUrl does know how to decode and
+ * merge. Without this, an iOS relay's token_hash/access_token never reaches
+ * createSessionFromUrl and the sign-in silently falls through.
+ */
+export const buildNativePasswordlessCallbackUrl = (
+  params: Record<string, string | string[] | undefined>,
+  fragment: string,
+): string => {
+  const query = Object.entries(params)
+    .filter(([key, value]) => key !== '#' && key !== '_fragment' && value !== undefined)
+    .map(
+      ([key, value]) =>
+        `${encodeURIComponent(key)}=${encodeURIComponent(
+          String(Array.isArray(value) ? value[0] : value),
+        )}`,
+    )
+    .join('&');
+  const fragmentParam = fragment ? `&_fragment=${encodeURIComponent(fragment)}` : '';
+
+  return `hashpass://auth/callback?${query}${fragmentParam}`;
+};

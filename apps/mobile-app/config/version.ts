@@ -22,22 +22,39 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202609032013, // Updated to current timestamp
-  releaseDate: '2026-09-03',
+  buildNumber: 202609040320, // Updated to current timestamp
+  releaseDate: '2026-09-04',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
     // No new features
   ],
   bugfixes: [
-    'send magic-link token_hash in the hash fragment, not query string'
+    'parse native-relayed magic-link fragment before classifying the callback',
+    'drive PWA update modal off controllerchange, not dead SW postMessage wires'
   ],
   breakingChanges: [],
-  notes: 'send magic-link token_hash in the hash fragment, not query string'
+  notes: 'parse native-relayed magic-link fragment before classifying the callback; drive PWA update modal off controllerchange, not dead SW postMessage wires'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.34': {
+    version: '1.9.34',
+    buildNumber: 202609040320,
+    releaseDate: '2026-09-04',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'parse native-relayed magic-link fragment before classifying the callback',
+      'drive PWA update modal off controllerchange, not dead SW postMessage wires'
+    ],
+    breakingChanges: [],
+    notes: 'parse native-relayed magic-link fragment before classifying the callback; drive PWA update modal off controllerchange, not dead SW postMessage wires'
+  },
   '1.9.33': {
     version: '1.9.33',
     buildNumber: 202609032013,

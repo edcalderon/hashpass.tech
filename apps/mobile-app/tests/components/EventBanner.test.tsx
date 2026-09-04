@@ -202,6 +202,88 @@ describe("EventBanner", () => {
     act(() => renderer!.unmount());
   });
 
+  it("darkens a light flat-color fallback background so title/countdown text stays readable (regression)", () => {
+    // Regression: colombia2026's yellow (#F5C542) hero card rendered white
+    // countdown/title text directly on the flat brand color with no
+    // darkening at all -- unlike the video/image branches, which always
+    // layer a dark overlay. Any event with no video/image and a light brand
+    // color must fall back to the same dark-to-brand gradient archived
+    // events already use, not a flat fill of the light color.
+    let renderer: ReturnType<typeof create>;
+    act(() => {
+      renderer = create(
+        <EventBanner
+          title="BSL Colombia 2026"
+          subtitle="Bogotá, Colombia"
+          date="November 5-6, 2026"
+          eventId="colombia2026"
+          backgroundColor="#F5C542"
+        />,
+      );
+    });
+
+    const gradient = renderer!.root.findByType("SafeLinearGradient" as any);
+    expect(gradient.props.colors).toEqual(["#07111F", "#0B1728", "#F5C542"]);
+    act(() => renderer!.unmount());
+  });
+
+  it("uses the same dark-to-brand gradient fallback for every event, not just light/archived ones", () => {
+    // The gradient fallback used to only apply to archived events or light
+    // brand colors, leaving a flat, undarkened fill for anything else --
+    // inconsistent with the BSL-style gradient look every other fallback
+    // card uses. Now applied unconditionally to every event's flat-color
+    // fallback.
+    let renderer: ReturnType<typeof create>;
+    act(() => {
+      renderer = create(
+        <EventBanner
+          title="BSL 2026"
+          subtitle="Lima, Peru"
+          date="October 2026"
+          eventId="peru2026"
+          backgroundColor="#007AFF"
+        />,
+      );
+    });
+
+    const gradient = renderer!.root.findByType("SafeLinearGradient" as any);
+    expect(gradient.props.colors).toEqual(["#07111F", "#0B1728", "#007AFF"]);
+    act(() => renderer!.unmount());
+  });
+
+  it("falls back to the gradient background when the approved hero image fails to load", () => {
+    let renderer: ReturnType<typeof create>;
+    act(() => {
+      renderer = create(
+        <EventBanner
+          title="Colombia Blockchain Week 2026"
+          subtitle="Hotel InterContinental Medellín"
+          date="December 11-12, 2026"
+          eventImage="https://cdn.example/cbw-flyer.jpg"
+          eventImageTextOverlaySafe
+          backgroundColor="#8B1538"
+        />,
+      );
+    });
+
+    expect(
+      renderer!.root.findAllByType("ImageBackground" as any),
+    ).toHaveLength(1);
+
+    act(() => {
+      renderer!.root
+        .findByType("ImageBackground" as any)
+        .props.onError();
+    });
+
+    expect(
+      renderer!.root.findAllByType("ImageBackground" as any),
+    ).toHaveLength(0);
+    const gradient = renderer!.root.findByType("SafeLinearGradient" as any);
+    expect(gradient.props.colors).toEqual(["#07111F", "#0B1728", "#8B1538"]);
+    act(() => renderer!.unmount());
+  });
+
   it("renders and follows an internal CTA when the owning surface enables it", () => {
     let renderer: ReturnType<typeof create>;
     act(() => {

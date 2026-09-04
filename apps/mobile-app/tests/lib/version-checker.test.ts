@@ -209,6 +209,68 @@ describe('version checker', () => {
     jest.useRealTimers();
   });
 
+  // Regression test for the isUserActive() route-allowlist bug: a visible,
+  // focused user on a page outside /events/ or /dashboard used to be
+  // silently hard-reloaded instead of ever seeing the soft update modal.
+  // Visibility alone should now be enough to take the soft path anywhere.
+  it('takes the soft path for a visible user on a route outside /events/ or /dashboard', async () => {
+    jest.useFakeTimers();
+    (global as any).window.location.pathname = '/settings';
+    (global as any).document = { hidden: false };
+    (global as any).window.dispatchEvent = jest.fn();
+
+    mockApiGet.mockResolvedValue({
+      success: true,
+      data: {
+        currentVersion: '1.8.156',
+        versionInfo: { needsUpdate: true },
+      },
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { checkVersionOnStart } = require('../../lib/version-checker');
+    checkVersionOnStart();
+
+    await jest.advanceTimersByTimeAsync(2000);
+    await jest.advanceTimersByTimeAsync(10 * 60 * 1000);
+
+    expect(mockReplace).not.toHaveBeenCalled();
+    expect(window.dispatchEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'hashpass:version-update' })
+    );
+
+    jest.useRealTimers();
+  });
+
+  // notifyVersionUpdateFromServiceWorker is driven by app/+html.tsx's
+  // controllerchange-based hashpassServiceWorkerUpdate event -- a confirmed
+  // signal, not a poll -- so it must resolve real version strings and
+  // dispatch regardless of the REST-poll cooldown.
+  it('notifies an update from the service worker signal without checking the poll cooldown', async () => {
+    (global as any).window.dispatchEvent = jest.fn();
+    (global as any).localStorage.getItem = jest.fn(() => String(Date.now()));
+
+    mockApiGet.mockResolvedValue({
+      success: true,
+      data: {
+        currentVersion: '1.8.156',
+        versionInfo: { needsUpdate: true },
+      },
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { notifyVersionUpdateFromServiceWorker } = require('../../lib/version-checker');
+    await notifyVersionUpdateFromServiceWorker();
+
+    expect(mockApiGet).toHaveBeenCalled();
+    expect(window.dispatchEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'hashpass:version-update',
+        detail: { currentVersion: '1.8.154', latestVersion: '1.8.156' },
+      })
+    );
+  });
+
   afterEach(() => {
     jest.restoreAllMocks();
   });

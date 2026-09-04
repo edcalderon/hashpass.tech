@@ -20,16 +20,17 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.33)
+## 📋 Latest Changes (v1.9.34)
 
 ### Bug Fixes
 
-* **auth:** send magic-link token_hash in the hash fragment, not query string ([7ad24ad](https://github.com/hashpass-tech/hashpass.tech/commit/7ad24ad16779a21cac29f60590124393334f055d))
+* **auth:** parse native-relayed magic-link fragment before classifying the callback ([8cfbc00](https://github.com/hashpass-tech/hashpass.tech/commit/8cfbc00de284303ffe46199f320a0c783a7dd97f))
+* **mobile-app:** drive PWA update modal off controllerchange, not dead SW postMessage wires ([a302387](https://github.com/hashpass-tech/hashpass.tech/commit/a3023872dc0b3332fe528cefd32414ad03606acc))
 ### Release Highlights
-- send magic-link token_hash in the hash fragment, not query string
+- parse native-relayed magic-link fragment before classifying the callback; drive PWA update modal off controllerchange, not dead SW postMessage wires
 
 ### Release scope
-- Compared with: `v1.9.32` (the previous global release tag)
+- Compared with: `v1.9.33` (the previous global release tag)
 
 ### Affected products & packages
 - Mobile app
