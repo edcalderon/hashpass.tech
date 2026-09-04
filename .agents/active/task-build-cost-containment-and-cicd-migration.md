@@ -219,9 +219,29 @@ feedback.
       deploy job silently packaged a client-only export with no API routes
       at all. Fixed in the same PR (#234) by uploading/downloading the
       whole `dist/` directory instead of `dist/client` alone. Re-dispatched
-      from the fix branch (run 33901760548) to validate before merge —
-      confirm its terminal status and the live `/api/config/versions` check
-      here once observed; do not mark this item fully done until then.
+      from the fix branch (run 33901760548) to validate before merge — build
+      job succeeded (confirms the artifact hand-off now carries `dist/server`),
+      but the deploy job failed instantly with zero steps executed. Root
+      cause is unrelated to the fix itself: the `development` GitHub
+      environment has a `deployment_branch_policy` restricting deploys to
+      `develop`/`main` only (added along with `environment: development` on
+      the deploy job itself), so GitHub refused to start the deploy job at
+      all from a PR branch — this workflow can never be validated end-to-end
+      pre-merge via `workflow_dispatch` on a feature branch, only after
+      merging to `develop` (or `main`). Also fixed two unrelated real bugs
+      an automated PR review bot found on `github-outage-monitor.yml` in the
+      same PR: the healthy-indicator comparison read the githubstatus.com
+      Actions component's per-component `.status` (`operational`) but
+      compared it against `"none"` (only ever a top-level-only value),
+      making `should_alert` always `true` and permanently defeating
+      auto-close; and several `${{ }}` step outputs (incident JSON, run
+      report) were interpolated directly into a `run:` block's shell text
+      instead of via `env:`, a script-injection risk from an apostrophe in
+      an incident name. Both fixed and pushed. Once merged, dispatch
+      `github-hosted-static-site-deploy.yml` with `deploy: true` on
+      `develop` for the real end-to-end validation (public site,
+      CloudFront invalidation, `/api/config/versions`) — do not mark this
+      item fully done until that real deploy is observed to succeed.
 - [ ] Enable exact `paths` filters plus a unique environment concurrency group
       with `cancel-in-progress: true`; retain the AWS pipeline only as a
       documented rollback during the observation period. Once GitHub Actions
