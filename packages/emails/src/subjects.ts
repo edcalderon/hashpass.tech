@@ -25,6 +25,14 @@ const SUBJECTS: Record<EmailTemplate, Record<EmailLocale, string>> = {
     pt: 'Seu link seguro de acesso à HASHPASS',
     de: 'Dein sicherer HASHPASS-Anmeldelink',
   },
+  'email-signature': {
+    en: 'Hashpass email signature test',
+    es: 'Prueba de firma de correo de Hashpass',
+    ko: 'Hashpass 이메일 서명 테스트',
+    fr: 'Test de signature e-mail Hashpass',
+    pt: 'Teste de assinatura de e-mail Hashpass',
+    de: 'Hashpass-E-Mail-Signaturtest',
+  },
 };
 
 export function getSubject(template: EmailTemplate, locale: string): string {

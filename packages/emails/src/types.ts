@@ -1,5 +1,9 @@
 export type EmailLocale = 'en' | 'es' | 'ko' | 'fr' | 'pt' | 'de';
-export type EmailTemplate = 'newsletter-welcome' | 'app-welcome' | 'auth-magic-link';
+export type EmailTemplate =
+  | 'newsletter-welcome'
+  | 'app-welcome'
+  | 'auth-magic-link'
+  | 'email-signature';
 
 export interface TemplateVars {
   year?: string;

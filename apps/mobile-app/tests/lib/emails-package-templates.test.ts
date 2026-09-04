@@ -17,7 +17,12 @@ import { resolve } from 'node:path';
 // edit that isn't regenerated (or a template file that gets deleted) fails
 // CI instead of silently breaking email delivery again.
 
-import { renderTemplate, getEmailAssetDataUri, getSubject } from '../../../../packages/emails/src';
+import {
+  renderEdwardCalderonHashpassEmailSignature,
+  renderTemplate,
+  getEmailAssetDataUri,
+  getSubject,
+} from '../../../../packages/emails/src';
 
 const SUPPORTED_LOCALES = ['en', 'es', 'ko', 'fr', 'pt', 'de'];
 const REPOSITORY_ROOT = resolve(__dirname, '../../../..');
@@ -127,5 +132,19 @@ describe('@hashpass/emails templates', () => {
     const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
     expect(getEmailAssetDataUri('does-not-exist.png', 'image/png')).toBe('');
     warnSpy.mockRestore();
+  });
+
+  it('ships Edward Calderón’s Hashpass signature with immutable CDN assets', () => {
+    const signature = renderEdwardCalderonHashpassEmailSignature();
+
+    expect(signature.html).toContain('<!doctype html>');
+    expect(signature.html).toContain('Edward Calderón');
+    expect(signature.html).toContain('Co-founder &amp; CEO');
+    expect(signature.portraitUrl).toBe(
+      'https://hashpass.tech/email-signature/edward-calderon-portrait.d9bcbc18d656.jpg',
+    );
+    expect(signature.logoUrl).toBe(
+      'https://hashpass.tech/email-signature/hashpass-wordmark.c3bcc34c86c.png',
+    );
   });
 });
