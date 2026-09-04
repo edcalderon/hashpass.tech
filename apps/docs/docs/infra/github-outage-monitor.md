@@ -27,11 +27,15 @@ runs on a 15-minute schedule (offset off the `:00`/`:30` marks) plus manual
 
 1. **Primary signal — githubstatus.com.** Fetches
    `https://www.githubstatus.com/api/v2/summary.json` and reads the
-   `Actions` component's indicator (`none` = operational). Any non-`none`,
-   non-`unknown` indicator is the trigger condition. This is GitHub's own
-   authoritative incident signal, not an inference from our own workflow
-   runs, so it doesn't confuse "someone pushed a broken commit" with "GitHub
-   Actions is degraded."
+   `Actions` component's own `.status` field (`operational` = healthy — this
+   is the per-component vocabulary: `operational`/`degraded_performance`/
+   `partial_outage`/`major_outage`; the unrelated top-level
+   `summary.status.indicator` field uses a different vocabulary,
+   `none`/`minor`/`major`/`critical`, and is not what this check reads). Any
+   non-`operational`, non-`unknown` indicator is the trigger condition. This
+   is GitHub's own authoritative incident signal, not an inference from our
+   own workflow runs, so it doesn't confuse "someone pushed a broken commit"
+   with "GitHub Actions is degraded."
 2. **Corroborating signal — recent watched-workflow runs.** Lists the last 5
    runs of `github-hosted-static-site-deploy.yml` and `infra-deploy.yml` and
    reports the last 3 conclusions. Three consecutive non-success runs is
@@ -52,7 +56,7 @@ runs on a 15-minute schedule (offset off the `:00`/`:30` marks) plus manual
 On a trip, it opens (or comments on an existing) issue labeled
 `github-outage-alert` with the githubstatus indicator, any open incidents,
 the recent-run report, and the exact break-glass command template. When the
-indicator returns to `none`, it comments and auto-closes that issue.
+indicator returns to `operational`, it comments and auto-closes that issue.
 
 ## Self-detection limitation
 

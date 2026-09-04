@@ -111,7 +111,13 @@ jobs:
           set -euo pipefail
           indicator="${{ steps.status.outputs.indicator }}"
           should_alert=false
-          if [[ "${indicator}" != "none" && "${indicator}" != "unknown" ]]; then
+          # githubstatus.com's per-component .status field (what "indicator" holds
+          # here) uses "operational"/"degraded_performance"/"partial_outage"/
+          # "major_outage" — it never reports "none". "none" is only ever a value
+          # of the separate top-level summary.status.indicator field. Comparing
+          # against "none" here meant every healthy run treated itself as
+          # degraded and alerted; "operational" is the actual healthy value.
+          if [[ "${indicator}" != "operational" && "${indicator}" != "unknown" ]]; then
             should_alert=true
           fi
           if [[ "${{ inputs.force_alert }}" == "true" ]]; then
@@ -128,19 +134,32 @@ jobs:
 
       - name: Open or update alert issue
         if: steps.decide.outputs.should_alert == 'true'
+        env:
+          # Templated into the script body via env: rather than directly into the
+          # run: block. These values (an incident name, a workflow run report) are
+          # externally-sourced content — GitHub's `${{ }}` substitution happens at
+          # the workflow-templating layer, before bash ever parses the script, so
+          # interpolating them straight into the heredoc/echo text below would let
+          # a stray apostrophe or other shell-special character in an incident name
+          # break out of its quoting and be interpreted as shell syntax.
+          STATUS_INDICATOR: ${{ steps.status.outputs.indicator }}
+          STATUS_DESCRIPTION: ${{ steps.status.outputs.description }}
+          STATUS_INCIDENTS: ${{ steps.status.outputs.incidents }}
+          RUNS_REPORT: ${{ steps.runs.outputs.report }}
+          EXISTING_ISSUE_NUMBER: ${{ steps.existing.outputs.number }}
         run: |
           set -euo pipefail
           body_file="$(mktemp)"
           {
-            echo "**githubstatus.com Actions component:** \`${{ steps.status.outputs.indicator }}\` — ${{ steps.status.outputs.description }}"
+            echo "**githubstatus.com Actions component:** \`${STATUS_INDICATOR}\` — ${STATUS_DESCRIPTION}"
             echo
             echo "**Open incidents (non-resolved):**"
             echo '```json'
-            echo '${{ steps.status.outputs.incidents }}'
+            echo "${STATUS_INCIDENTS}"
             echo '```'
             echo
             echo "**Recent watched workflow runs:**"
-            echo '${{ steps.runs.outputs.report }}'
+            echo "${RUNS_REPORT}"
             echo
             echo "**This is an alert only — nothing was triggered automatically.**"
             echo
@@ -171,12 +190,12 @@ jobs:
             echo "See apps/docs/docs/infra/github-outage-monitor.md for the full runbook."
           } > "${body_file}"
 
-          existing="${{ steps.existing.outputs.number }}"
+          existing="${EXISTING_ISSUE_NUMBER}"
           if [[ -n "${existing}" ]]; then
             gh issue comment "${existing}" --repo ${{ github.repository }} --body-file "${body_file}"
           else
             gh issue create --repo ${{ github.repository }} \
-              --title "GitHub Actions health alert: ${{ steps.status.outputs.indicator }}" \
+              --title "GitHub Actions health alert: ${STATUS_INDICATOR}" \
               --label "${ALERT_LABEL}" \
               --body-file "${body_file}"
           fi
