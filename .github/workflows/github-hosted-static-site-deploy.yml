@@ -95,7 +95,15 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: static-site-development
-          path: dist/client
+          # Must include dist/server, not just dist/client: package-lambda.sh
+          # prefers dist/server (the expo export server output, which is
+          # where Better Auth's [...auth]+api route and other API routes
+          # live) and only falls back to dist/client if it's absent. An
+          # earlier version of this workflow uploaded dist/client only,
+          # which made the Lambda packaging step silently fall back to a
+          # client-only export missing the API routes entirely (caught in
+          # the first real observed deploy, run 33899558488, 2026-09-04).
+          path: dist
           if-no-files-found: error
           retention-days: 1
 
@@ -133,7 +141,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: static-site-development
-          path: dist/client
+          path: dist
 
       - name: Validate deployment role configuration
         env:
