@@ -1,6 +1,7 @@
 /// <reference types="jest" />
 
 import {
+  buildNativePasswordlessCallbackUrl,
   extractNativeRelayFragment,
   isBetterAuthGoogleCallback,
   isSupabasePasswordlessCallback,
@@ -70,5 +71,42 @@ describe('extractNativeRelayFragment', () => {
 
   it('returns an empty string when neither native representation is present', () => {
     expect(extractNativeRelayFragment({})).toBe('');
+  });
+});
+
+// Regression test for a PR review finding on the extractNativeRelayFragment fix
+// above: resolving the fragment for callback *classification* is not enough --
+// it must also reach createSessionFromUrl's token_hash/access_token parsing, or
+// a native magic-link sign-in silently fails to establish a session even though
+// it was correctly routed to the passwordless handler.
+describe('buildNativePasswordlessCallbackUrl', () => {
+  it('normalizes an iOS "#" relay fragment into "_fragment" instead of a raw "%23" query key', () => {
+    const url = buildNativePasswordlessCallbackUrl(
+      { '#': 'token_hash=abc123&type=magiclink', nativeRelay: '1' },
+      'token_hash=abc123&type=magiclink',
+    );
+
+    expect(url).not.toContain('%23');
+    expect(url).toContain('nativeRelay=1');
+    expect(url).toContain(`_fragment=${encodeURIComponent('token_hash=abc123&type=magiclink')}`);
+  });
+
+  it('drops the raw Android "_fragment" param and re-emits the resolved value in its place', () => {
+    const raw = 'token_hash=abc123&type=magiclink';
+    const url = buildNativePasswordlessCallbackUrl(
+      { _fragment: encodeURIComponent(raw), signInMethod: 'magic_link' },
+      raw,
+    );
+
+    const fragmentOccurrences = url.split('_fragment=').length - 1;
+    expect(fragmentOccurrences).toBe(1);
+    expect(url).toContain(`_fragment=${encodeURIComponent(raw)}`);
+  });
+
+  it('omits the "_fragment" param entirely when no fragment was resolved', () => {
+    const url = buildNativePasswordlessCallbackUrl({ code: 'pkce-code' }, '');
+
+    expect(url).not.toContain('_fragment');
+    expect(url).toContain('code=pkce-code');
   });
 });

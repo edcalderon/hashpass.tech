@@ -10,6 +10,7 @@ import { createSessionFromUrl, supabase } from '../../../lib/supabase';
 import { resolvePublicSupabaseConfig } from '../../../config/supabase-profiles';
 import { markRecentAuthSuccess } from '../../../lib/auth/recent-auth';
 import {
+    buildNativePasswordlessCallbackUrl,
     extractNativeRelayFragment,
     isBetterAuthGoogleCallback,
     isSupabasePasswordlessCallback,
@@ -567,9 +568,10 @@ export default function AuthCallback() {
                     const currentUrl =
                         Platform.OS === 'web' && typeof window !== 'undefined'
                             ? window.location.href
-                            : `hashpass://auth/callback?${Object.entries(params as Record<string, string>)
-                                .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`)
-                                .join('&')}`;
+                            : buildNativePasswordlessCallbackUrl(
+                                params as Record<string, string | string[]>,
+                                hashStr,
+                            );
 
                     const sessionResult = await createSessionFromUrl(currentUrl);
                     const resolvedUser =

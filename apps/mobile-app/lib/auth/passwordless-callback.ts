@@ -86,3 +86,32 @@ export const extractNativeRelayFragment = (params: NativeRelayCallbackParams): s
     return androidFragment;
   }
 };
+
+/**
+ * Builds the URL createSessionFromUrl() consumes for a native passwordless
+ * callback. Drops the raw native relay keys ('#' on iOS, '_fragment' on
+ * Android) from the plain query serialization -- '#' would otherwise be
+ * percent-encoded into a useless '%23=...' query key that
+ * parseSupabaseAuthUrl (lib/supabase.ts) has no expansion rule for -- and
+ * re-emits the already-resolved fragment (from extractNativeRelayFragment)
+ * as `_fragment`, which parseSupabaseAuthUrl does know how to decode and
+ * merge. Without this, an iOS relay's token_hash/access_token never reaches
+ * createSessionFromUrl and the sign-in silently falls through.
+ */
+export const buildNativePasswordlessCallbackUrl = (
+  params: Record<string, string | string[] | undefined>,
+  fragment: string,
+): string => {
+  const query = Object.entries(params)
+    .filter(([key, value]) => key !== '#' && key !== '_fragment' && value !== undefined)
+    .map(
+      ([key, value]) =>
+        `${encodeURIComponent(key)}=${encodeURIComponent(
+          String(Array.isArray(value) ? value[0] : value),
+        )}`,
+    )
+    .join('&');
+  const fragmentParam = fragment ? `&_fragment=${encodeURIComponent(fragment)}` : '';
+
+  return `hashpass://auth/callback?${query}${fragmentParam}`;
+};
