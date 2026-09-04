@@ -205,7 +205,7 @@ feedback.
       source does not bypass this stack's false-drift guard. Done 2026-09-04
       via a `-target`-scoped plan (2 to add, 0 to change, 0 to destroy),
       shown and approved before `terraform apply`.
-- [~] Run one observed manual development deploy; verify the public site,
+- [x] Run one observed manual development deploy; verify the public site,
       CloudFront invalidation, and API-version guard before enabling any
       automatic trigger. This deployment updates both the development site and
       its API Lambda artifact; it is not a static-files-only operation.
@@ -222,10 +222,9 @@ feedback.
       from the fix branch (run 33901760548) to validate before merge — build
       job succeeded (confirms the artifact hand-off now carries `dist/server`),
       but the deploy job failed instantly with zero steps executed. Root
-      cause is unrelated to the fix itself: the `development` GitHub
+      cause was unrelated to the fix itself: the `development` GitHub
       environment has a `deployment_branch_policy` restricting deploys to
-      `develop`/`main` only (added along with `environment: development` on
-      the deploy job itself), so GitHub refused to start the deploy job at
+      `develop`/`main` only, so GitHub refused to start the deploy job at
       all from a PR branch — this workflow can never be validated end-to-end
       pre-merge via `workflow_dispatch` on a feature branch, only after
       merging to `develop` (or `main`). Also fixed two unrelated real bugs
@@ -237,11 +236,18 @@ feedback.
       auto-close; and several `${{ }}` step outputs (incident JSON, run
       report) were interpolated directly into a `run:` block's shell text
       instead of via `env:`, a script-injection risk from an apostrophe in
-      an incident name. Both fixed and pushed. Once merged, dispatch
-      `github-hosted-static-site-deploy.yml` with `deploy: true` on
-      `develop` for the real end-to-end validation (public site,
-      CloudFront invalidation, `/api/config/versions`) — do not mark this
-      item fully done until that real deploy is observed to succeed.
+      an incident name. Both fixed and merged in PR #234 (merge commit
+      `1982708a2`), and `origin/develop` fast-forwarded to match.
+      Re-dispatched on `develop` post-merge (run 33904472746) for the real
+      end-to-end validation, since `develop` satisfies the environment
+      branch policy: build succeeded, deploy succeeded (all steps green,
+      including "Deploy the verified static site" which performs the
+      S3 sync and CloudFront invalidation). Independently confirmed live:
+      `https://dev.hashpass.tech` returns HTTP 200, and
+      `https://api-dev.hashpass.tech/api/config/versions` returns real,
+      current version JSON (`currentVersion: "1.9.35"`) rather than a 404 —
+      proof the Lambda now has the API routes (`dist/server`) live, not a
+      client-only export. This item is fully done.
 - [ ] Enable exact `paths` filters plus a unique environment concurrency group
       with `cancel-in-progress: true`; retain the AWS pipeline only as a
       documented rollback during the observation period. Once GitHub Actions
