@@ -42,6 +42,36 @@ capacity premise, but every site target still requires its own artifact-parity
 and deployment trial. Do not use larger GitHub runners, new EC2 workers,
 external hosted builders, or self-hosted runners for this objective.
 
+### Development trial progress — 2026-09-04
+
+- [x] A clean, credentialless equivalent of the manual GitHub-hosted
+      development build completed with the existing `build-static-site.sh` and
+      produced `dist/client` (34 MB). This validates artifact generation, not
+      a deployment.
+- [x] Added a manual, build-only-by-default workflow at
+      `.github/workflows/github-hosted-static-site-deploy.yml`. Its build job
+      has no AWS credential permission; development deployment is a separate,
+      opt-in job. The workflow does not offer a production deployment yet.
+- [x] Added an un-applied Terraform definition for a **development-only**
+      GitHub OIDC role. Its subject is restricted to the `development` GitHub
+      environment and its policy is restricted to the development site bucket,
+      CloudFront distribution, and API Lambda. It has no EC2 or CodePipeline
+      permissions.
+- [ ] The workflow cannot yet be remotely dispatched from its feature branch:
+      GitHub registers `workflow_dispatch` only after a workflow reaches the
+      default branch. Do not merge merely to bypass that guard; use the normal
+      protected release/PR path when the rollout change is ready for review.
+- [ ] No AWS role, GitHub environment, repository variable, site, Lambda, or
+      CloudFront resource has been changed. `hashpass-web` still has documented
+      Terraform drift, so a full reviewed plan is required before enabling the
+      role or running the observed development deployment.
+
+Production is explicitly out of scope until development has passed. It needs a
+separate least-privilege role, a protected `production` GitHub environment,
+a reviewed/applied Terraform plan, an observed manual deployment, a rollback
+path, and an observation window. A development role must never be reused for
+production.
+
 ## Decision: optimize execution path first, not patch size
 
 Do **not** accumulate large risky patches merely to ship less often. Keep small,
@@ -92,19 +122,28 @@ feedback.
 
 ### 2. GitHub Actions replacement — preferred solution
 
-- [ ] Add a `workflow_dispatch`-only, build-only GitHub Actions trial for the
+- [x] Add a `workflow_dispatch`-only, build-only GitHub Actions trial for the
       first development site on `ubuntu-latest`; build with the existing
       `build-static-site.sh` and upload `dist/client`.
-- [ ] Compare artifact content, build duration, memory outcome, and version
-      metadata with a representative CodeBuild deployment. The current build
-      needs a 6 GB Node heap; the standard public runner has 16 GB RAM, but the
-      trial is the acceptance gate.
-- [ ] Add a narrowly scoped OIDC deploy role/policy for that development
-      bucket and CloudFront distribution only. PR workflows stay credentialless;
-      only protected `develop` deployment runs may assume the role.
+- [x] Compare artifact output and memory feasibility with the existing build:
+      the clean equivalent build produced a 34 MB artifact successfully. Run
+      the hosted workflow after normal protected promotion to record hosted-job
+      duration and artifact parity before a deploy is allowed.
+- [x] Define a narrowly scoped, separate development OIDC deploy role/policy
+      for the development bucket, CloudFront distribution, and Lambda only.
+      It remains un-applied. PR workflows stay credentialless; only a
+      `development` environment deployment job can assume it.
+- [ ] Before an AWS apply or setting `AWS_STATIC_SITE_DEPLOY_ROLE_ARN`, create
+      the `development` GitHub environment, scope that variable to it, and
+      restrict deployment branches to the intended protected source branch.
+      The OIDC subject restriction is environment-specific, not branch-specific.
+- [ ] Show the complete `hashpass-web` Terraform plan to the owner and obtain
+      explicit, real-time approval immediately before apply. The additive role
+      source does not bypass this stack's false-drift guard.
 - [ ] Run one observed manual development deploy; verify the public site,
       CloudFront invalidation, and API-version guard before enabling any
-      automatic trigger.
+      automatic trigger. This deployment updates both the development site and
+      its API Lambda artifact; it is not a static-files-only operation.
 - [ ] Enable exact `paths` filters plus a unique environment concurrency group
       with `cancel-in-progress: true`; retain the AWS pipeline only as a
       documented rollback during the observation period.

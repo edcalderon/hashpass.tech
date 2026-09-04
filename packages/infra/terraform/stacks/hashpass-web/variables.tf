@@ -390,6 +390,36 @@ variable "github_actions_role_name" {
   default     = "hashpass-web-github-actions"
 }
 
+variable "enable_github_actions_development_static_site_deploy" {
+  description = "Create the least-privilege GitHub OIDC role for the manual development static-site deployment workflow. Do not use this development-only role for production."
+  type        = bool
+  default     = false
+}
+
+variable "github_actions_development_static_site_deploy_role_name" {
+  description = "Name of the dedicated GitHub Actions OIDC role that can deploy only the development static-site target"
+  type        = string
+  default     = "hashpass-development-static-site-github-actions"
+}
+
+variable "github_actions_development_static_site_deploy_bucket_name" {
+  description = "Exact development static-site S3 bucket the dedicated GitHub deployment role may synchronize"
+  type        = string
+  default     = "dev.hashpass.tech"
+}
+
+variable "github_actions_development_static_site_deploy_cloudfront_distribution_id" {
+  description = "Exact development CloudFront distribution ID the dedicated GitHub deployment role may invalidate"
+  type        = string
+  default     = "E1Y06KG5U6MKCS"
+}
+
+variable "github_actions_development_static_site_deploy_lambda_function_name" {
+  description = "Exact development API Lambda function name the dedicated GitHub deployment role may update"
+  type        = string
+  default     = "hashpass-dev-expo-router-api"
+}
+
 variable "ops_alert_email" {
   description = "Confirmed support mailbox that receives EC2 lifecycle, budget, anomaly, and CloudWatch alarm notifications."
   type        = string
