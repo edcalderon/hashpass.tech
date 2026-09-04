@@ -528,7 +528,7 @@ resource "aws_codepipeline" "site" {
   }
 
   dynamic "trigger" {
-    for_each = var.enable_path_filtered_trigger ? [1] : []
+    for_each = (var.enable_path_filtered_trigger && var.source_detect_changes) ? [1] : []
 
     content {
       provider_type = "CodeStarSourceConnection"
@@ -565,6 +565,7 @@ resource "aws_codepipeline" "site" {
         ConnectionArn        = var.connection_arn
         FullRepositoryId     = var.repository
         BranchName           = var.branch_name
+        DetectChanges        = var.source_detect_changes ? "true" : "false"
         OutputArtifactFormat = "CODE_ZIP"
       }
     }
