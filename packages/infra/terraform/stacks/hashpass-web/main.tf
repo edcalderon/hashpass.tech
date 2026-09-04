@@ -493,6 +493,7 @@ module "site_dev" {
   environment                       = var.dev_environment
   repository                        = var.repository
   branch_name                       = var.dev_branch_name
+  source_detect_changes             = var.dev_aws_pipeline_source_detect_changes
   connection_arn                    = var.connection_arn
   site_bucket_name                  = var.dev_site_bucket_name
   artifact_bucket_name              = var.dev_artifact_bucket_name

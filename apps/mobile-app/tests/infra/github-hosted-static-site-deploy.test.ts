@@ -51,4 +51,25 @@ describe('GitHub-hosted static-site deployment workflow', () => {
     expect(deployRoleSection).toBeDefined();
     expect(deployRoleSection).not.toContain('StartStopWebWorker');
   });
+
+  it('keeps AWS build recovery manual after the migration gate', () => {
+    const repositoryRoot = path.resolve(__dirname, '../../../..');
+    const recoveryScript = fs.readFileSync(
+      path.join(repositoryRoot, 'packages/tools/scripts/start-web-pipeline-disaster-recovery.sh'),
+      'utf8',
+    );
+    const terraformModule = fs.readFileSync(
+      path.join(repositoryRoot, 'packages/infra/terraform/modules/aws_static_site_pipeline/main.tf'),
+      'utf8',
+    );
+
+    expect(recoveryScript).toContain('--execute');
+    expect(recoveryScript).toContain('EXPECTED_AWS_ACCOUNT_ID');
+    expect(recoveryScript).toContain('DetectChanges');
+    expect(recoveryScript).toContain('start-pipeline-execution');
+    expect(recoveryScript).toContain('revisionType=COMMIT_ID');
+    expect(terraformModule).toContain('source_detect_changes');
+    expect(terraformModule).toContain('(var.enable_path_filtered_trigger && var.source_detect_changes)');
+    expect(terraformModule).toContain('DetectChanges        = var.source_detect_changes ? "true" : "false"');
+  });
 });

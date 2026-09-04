@@ -72,6 +72,36 @@ a reviewed/applied Terraform plan, an observed manual deployment, a rollback
 path, and an observation window. A development role must never be reused for
 production.
 
+### Recovery design — GitHub-hosted primary, AWS break-glass fallback
+
+The public site and API remain available during a GitHub Actions outage because
+they are already served from AWS; build-system availability is a separate SLO.
+The retained AWS development pipeline is the recovery path, but it must not
+also automatically build every source push once GitHub Actions is primary.
+
+- [x] Added `start-web-pipeline-disaster-recovery.sh`, a guarded operator
+      command that requires the intended environment, full commit SHA, incident
+      reference, private expected AWS account ID, and an explicit `--execute`.
+      It checks that no pipeline execution is active and starts the exact source
+      revision only after the normal AWS source trigger is disabled.
+- [x] Added Terraform support for manual-only retained development recovery:
+      it sets `DetectChanges = false` **and removes the V2 webhook trigger**.
+      It defaults to automatic detection, so current production behavior is
+      unchanged until the migration gate is deliberately applied.
+- [ ] Add an independent availability monitor/alert for GitHub Actions and
+      record the owner/on-call route. The monitor may alert on sustained loss
+      of Actions availability; it must not automatically start AWS builds.
+- [ ] Exercise the development recovery command in a scheduled, owner-approved
+      drill after the AWS source trigger is disabled. Verify the pinned revision,
+      public site, CloudFront invalidation, API-version guard, and rollback.
+
+Do not auto-fail over on a single GitHub Actions failure: that can run two
+deployments for one revision and recreate the CodeBuild cost spike. An Actions
+outage where GitHub source delivery still works can use the AWS fallback. If
+GitHub itself or CodeConnections cannot fetch the requested source revision,
+the safe response is to keep the already deployed version serving; a new build
+cannot be recovered without a separately maintained source mirror.
+
 ## Decision: optimize execution path first, not patch size
 
 Do **not** accumulate large risky patches merely to ship less often. Keep small,
@@ -146,7 +176,10 @@ feedback.
       its API Lambda artifact; it is not a static-files-only operation.
 - [ ] Enable exact `paths` filters plus a unique environment concurrency group
       with `cancel-in-progress: true`; retain the AWS pipeline only as a
-      documented rollback during the observation period.
+      documented rollback during the observation period. Once GitHub Actions
+      is primary, set the retained development pipeline's
+      `dev_aws_pipeline_source_detect_changes` to `false`; manual
+      break-glass runs remain possible.
 
 ### 3. Retire AWS build execution one target at a time
 
@@ -197,3 +230,9 @@ feedback.
 - AWS CodePipeline supports branch and file-path trigger filters, but filters
   alone do not solve a high rate of relevant `develop` pushes:
   <https://docs.aws.amazon.com/codepipeline/latest/userguide/pipelines-filter.html>
+- For CodeConnections pipelines, manual-only recovery requires both no V2
+  trigger and `DetectChanges = false`:
+  <https://docs.aws.amazon.com/codepipeline/latest/userguide/connections-github.html>
+- CodePipeline can start a manually selected source revision with
+  `start-pipeline-execution --source-revisions`:
+  <https://docs.aws.amazon.com/cli/latest/reference/codepipeline/start-pipeline-execution.html>
