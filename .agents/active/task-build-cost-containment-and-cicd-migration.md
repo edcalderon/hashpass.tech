@@ -52,6 +52,11 @@ external hosted builders, or self-hosted runners for this objective.
       `.github/workflows/github-hosted-static-site-deploy.yml`. Its build job
       has no AWS credential permission; development deployment is a separate,
       opt-in job. The workflow does not offer a production deployment yet.
+- [x] Added Actions-native visibility: each run writes its commit, run URL,
+      outcome, duration, artifact byte size, and artifact checksum to the job
+      summary, then retains structured build/deployment evidence artifacts for
+      14 days. The read-only
+      `inspect-github-hosted-static-site-deploy.sh` command lists recent runs.
 - [x] Added an un-applied Terraform definition for a **development-only**
       GitHub OIDC role. Its subject is restricted to the `development` GitHub
       environment and its policy is restricted to the development site bucket,
@@ -61,6 +66,9 @@ external hosted builders, or self-hosted runners for this objective.
       GitHub registers `workflow_dispatch` only after a workflow reaches the
       default branch. Do not merge merely to bypass that guard; use the normal
       protected release/PR path when the rollout change is ready for review.
+- [x] The status command was exercised against GitHub and correctly reports
+      the expected pre-promotion state: the workflow is not registered on the
+      default branch, so no hosted run has occurred.
 - [ ] No AWS role, GitHub environment, repository variable, site, Lambda, or
       CloudFront resource has been changed. `hashpass-web` still has documented
       Terraform drift, so a full reviewed plan is required before enabling the

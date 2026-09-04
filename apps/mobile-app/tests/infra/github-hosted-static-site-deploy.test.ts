@@ -34,6 +34,10 @@ describe('GitHub-hosted static-site deployment workflow', () => {
     expect(workflow).toContain('packages/tools/scripts/deploy-static-site.sh');
     expect(workflow).toContain('SITE_API_VERSION_URL');
     expect(workflow).toContain('cancel-in-progress: true');
+    expect(workflow).toContain('Record build evidence');
+    expect(workflow).toContain('static-site-build-evidence.json');
+    expect(workflow).toContain('Record deployment evidence');
+    expect(workflow).toContain('static-site-deployment-evidence.json');
   });
 
   it('keeps the Terraform deploy role separate and resource-scoped', () => {
@@ -71,5 +75,18 @@ describe('GitHub-hosted static-site deployment workflow', () => {
     expect(terraformModule).toContain('source_detect_changes');
     expect(terraformModule).toContain('(var.enable_path_filtered_trigger && var.source_detect_changes)');
     expect(terraformModule).toContain('DetectChanges        = var.source_detect_changes ? "true" : "false"');
+  });
+
+  it('provides a read-only GitHub Actions status view', () => {
+    const repositoryRoot = path.resolve(__dirname, '../../../..');
+    const statusScript = fs.readFileSync(
+      path.join(repositoryRoot, 'packages/tools/scripts/inspect-github-hosted-static-site-deploy.sh'),
+      'utf8',
+    );
+
+    expect(statusScript).toContain('actions/workflows');
+    expect(statusScript).toContain('/runs?per_page=');
+    expect(statusScript).toContain('not registered');
+    expect(statusScript).not.toContain('aws ');
   });
 });

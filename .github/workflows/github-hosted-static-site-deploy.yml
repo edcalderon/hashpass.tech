@@ -33,6 +33,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Record build start
+        id: build-start
+        run: echo "epoch=$(date +%s)" >> "$GITHUB_OUTPUT"
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
@@ -45,7 +49,47 @@ jobs:
           cache: pnpm
 
       - name: Build the static site
+        id: build
         run: bash packages/tools/scripts/build-static-site.sh
+
+      - name: Record build evidence
+        if: always()
+        env:
+          BUILD_OUTCOME: ${{ steps.build.outcome }}
+          BUILD_STARTED_AT: ${{ steps.build-start.outputs.epoch }}
+        run: |
+          set -euo pipefail
+          finished_at=$(date +%s)
+          duration_seconds=$((finished_at - BUILD_STARTED_AT))
+          artifact_bytes=0
+          artifact_sha256=""
+
+          if [[ -d dist/client ]]; then
+            artifact_bytes=$(du -sb dist/client | awk '{print $1}')
+            artifact_sha256=$(find dist/client -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum | awk '{print $1}')
+          fi
+
+          jq -n \
+            --arg workflow "${{ github.workflow }}" \
+            --arg run_url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --arg commit "${{ github.sha }}" \
+            --arg build_outcome "$BUILD_OUTCOME" \
+            --argjson duration_seconds "$duration_seconds" \
+            --argjson artifact_bytes "$artifact_bytes" \
+            --arg artifact_sha256 "$artifact_sha256" \
+            '{workflow: $workflow, runUrl: $run_url, commit: $commit, buildOutcome: $build_outcome, durationSeconds: $duration_seconds, artifactBytes: $artifact_bytes, artifactSha256: $artifact_sha256}' \
+            > static-site-build-evidence.json
+
+          {
+            echo "## GitHub-hosted static-site build"
+            echo
+            echo "- Run: [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+            echo "- Commit: \`${{ github.sha }}\`"
+            echo "- Build: \`$BUILD_OUTCOME\` in \`${duration_seconds}s\`"
+            echo "- Artifact: \`${artifact_bytes} bytes\`"
+            echo "- Artifact SHA-256: \`${artifact_sha256:-not-created}\`"
+            echo "- Deployment requested: \`${{ inputs.deploy }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload static site artifact
         uses: actions/upload-artifact@v4
@@ -54,6 +98,15 @@ jobs:
           path: dist/client
           if-no-files-found: error
           retention-days: 1
+
+      - name: Upload build evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: static-site-development-build-evidence
+          path: static-site-build-evidence.json
+          if-no-files-found: error
+          retention-days: 14
 
   deploy:
     name: Deploy static site (development)
@@ -100,4 +153,39 @@ jobs:
           role-session-name: hashpass-static-site-development
 
       - name: Deploy the verified static site
+        id: deploy
         run: bash packages/tools/scripts/deploy-static-site.sh
+
+      - name: Record deployment evidence
+        if: always()
+        env:
+          BUILD_RESULT: ${{ needs.build.result }}
+          DEPLOY_OUTCOME: ${{ steps.deploy.outcome }}
+        run: |
+          set -euo pipefail
+          jq -n \
+            --arg run_url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --arg commit "${{ github.sha }}" \
+            --arg build_result "$BUILD_RESULT" \
+            --arg deploy_outcome "$DEPLOY_OUTCOME" \
+            '{runUrl: $run_url, commit: $commit, buildResult: $build_result, deployOutcome: $deploy_outcome}' \
+            > static-site-deployment-evidence.json
+
+          {
+            echo "## GitHub-hosted static-site deployment"
+            echo
+            echo "- Run: [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+            echo "- Commit: \`${{ github.sha }}\`"
+            echo "- Build result: \`$BUILD_RESULT\`"
+            echo "- Deploy result: \`$DEPLOY_OUTCOME\`"
+            echo "- Target: \`development\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload deployment evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: static-site-development-deployment-evidence
+          path: static-site-deployment-evidence.json
+          if-no-files-found: error
+          retention-days: 14
