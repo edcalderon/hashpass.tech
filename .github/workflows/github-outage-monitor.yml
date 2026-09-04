@@ -1,0 +1,190 @@
+name: GitHub outage / CI-health monitor
+
+# Detect-and-alert only. This workflow never triggers the AWS disaster-recovery
+# pipeline itself — packages/tools/scripts/start-web-pipeline-disaster-recovery.sh
+# requires a human to confirm the incident and run it manually. Auto-triggering
+# AWS from a single GitHub Actions failure is a documented non-goal: it can run
+# two deployments for one revision and recreate the CodeBuild cost spike this
+# migration exists to avoid. See:
+#   apps/docs/docs/infra/github-outage-monitor.md
+#   .agents/active/task-build-cost-containment-and-cicd-migration.md
+#
+# Self-detection caveat: this workflow itself runs on GitHub Actions, so a
+# *complete* GitHub outage (Actions fully down, not just degraded) means it
+# cannot run or alert either. It catches partial/regional degradation and
+# elevated failure rates, which is what most real GitHub incidents look like
+# historically — it is not a substitute for the human owner's own awareness
+# of a total GitHub outage via https://www.githubstatus.com directly.
+
+on:
+  schedule:
+    - cron: "7,22,37,52 * * * *"
+  workflow_dispatch:
+    inputs:
+      force_alert:
+        description: Open a test alert issue regardless of detected status
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: github-outage-monitor
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write
+  actions: read
+
+jobs:
+  check:
+    if: github.repository == 'hashpass-tech/hashpass.tech'
+    runs-on: ubuntu-latest
+    env:
+      ALERT_LABEL: github-outage-alert
+      WATCHED_WORKFLOWS: "github-hosted-static-site-deploy.yml,infra-deploy.yml"
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Check GitHub repo visibility (quota relevance)
+        id: visibility
+        run: |
+          set -euo pipefail
+          is_private="$(gh api repos/${{ github.repository }} --jq .private)"
+          echo "is_private=${is_private}" >> "$GITHUB_OUTPUT"
+          if [[ "${is_private}" == "true" ]]; then
+            echo "::warning::Repository is now private. Standard GitHub-hosted runner minutes are no longer unlimited/free — the free-tier-quota failover scenario this monitor's docs call 'likely moot' may now actually apply. See apps/docs/docs/infra/github-outage-monitor.md's 'Quota' section: this workflow does not check Actions minutes usage yet, that check needs to be added."
+          fi
+
+      - name: Check githubstatus.com Actions component
+        id: status
+        run: |
+          set -euo pipefail
+          summary="$(curl -fsSL --max-time 10 https://www.githubstatus.com/api/v2/summary.json)" || {
+            echo "indicator=unreachable" >> "$GITHUB_OUTPUT"
+            echo "description=Could not reach githubstatus.com" >> "$GITHUB_OUTPUT"
+            exit 0
+          }
+          actions_component="$(echo "${summary}" | jq -c '.components[] | select(.name == "Actions")')"
+          indicator="$(echo "${actions_component}" | jq -r '.status // "unknown"')"
+          description="$(echo "${summary}" | jq -r '.status.description // "unknown"')"
+          incidents="$(echo "${summary}" | jq -c '[.incidents[]? | select(.status != "resolved") | {name, status, shortlink}]')"
+          echo "indicator=${indicator}" >> "$GITHUB_OUTPUT"
+          echo "description=${description}" >> "$GITHUB_OUTPUT"
+          {
+            echo "incidents<<GHOUT_EOF"
+            echo "${incidents}"
+            echo "GHOUT_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Check recent runs of watched workflows
+        id: runs
+        run: |
+          set -euo pipefail
+          report=""
+          trip_on_runs=false
+          IFS=',' read -ra workflows <<< "${WATCHED_WORKFLOWS}"
+          for wf in "${workflows[@]}"; do
+            runs_json="$(gh run list --repo ${{ github.repository }} --workflow "${wf}" --limit 5 --json conclusion,createdAt,event,headBranch 2>/dev/null || echo '[]')"
+            recent_conclusions="$(echo "${runs_json}" | jq -r '[.[] | select(.event != "workflow_dispatch" or true)][:3] | map(.conclusion) | join(",")')"
+            failed_count="$(echo "${runs_json}" | jq '[.[0:3][] | select(.conclusion == "failure" or .conclusion == "cancelled" or .conclusion == "timed_out")] | length')"
+            report+="- \`${wf}\`: last 3 conclusions = [${recent_conclusions}]"$'\n'
+            if [[ "${failed_count}" -ge 3 ]]; then
+              trip_on_runs=true
+              report+="  - ⚠️ 3 consecutive non-success runs — informational corroboration only, not the sole trigger."$'\n'
+            fi
+          done
+          echo "trip_on_runs=${trip_on_runs}" >> "$GITHUB_OUTPUT"
+          {
+            echo "report<<GHOUT_EOF"
+            echo "${report}"
+            echo "GHOUT_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Decide alert state
+        id: decide
+        run: |
+          set -euo pipefail
+          indicator="${{ steps.status.outputs.indicator }}"
+          should_alert=false
+          if [[ "${indicator}" != "none" && "${indicator}" != "unknown" ]]; then
+            should_alert=true
+          fi
+          if [[ "${{ inputs.force_alert }}" == "true" ]]; then
+            should_alert=true
+          fi
+          echo "should_alert=${should_alert}" >> "$GITHUB_OUTPUT"
+
+      - name: Find existing open alert issue
+        id: existing
+        run: |
+          set -euo pipefail
+          number="$(gh issue list --repo ${{ github.repository }} --label "${ALERT_LABEL}" --state open --json number --jq '.[0].number // empty')"
+          echo "number=${number}" >> "$GITHUB_OUTPUT"
+
+      - name: Open or update alert issue
+        if: steps.decide.outputs.should_alert == 'true'
+        run: |
+          set -euo pipefail
+          body_file="$(mktemp)"
+          {
+            echo "**githubstatus.com Actions component:** \`${{ steps.status.outputs.indicator }}\` — ${{ steps.status.outputs.description }}"
+            echo
+            echo "**Open incidents (non-resolved):**"
+            echo '```json'
+            echo '${{ steps.status.outputs.incidents }}'
+            echo '```'
+            echo
+            echo "**Recent watched workflow runs:**"
+            echo '${{ steps.runs.outputs.report }}'
+            echo
+            echo "**This is an alert only — nothing was triggered automatically.**"
+            echo
+            echo "**Before using the break-glass path, confirm this is an Actions-only"
+            echo "outage.** The AWS fallback pipeline still fetches source through GitHub"
+            echo "CodeConnections — if GitHub itself (git hosting / API), not just the"
+            echo "Actions runner service, is unreachable, the fallback cannot fetch a new"
+            echo "revision either. In that case the correct response is to leave the"
+            echo "already-deployed version serving, not to force a build."
+            echo
+            echo "If this is a real, sustained GitHub Actions outage affecting a needed"
+            echo "deploy, and GitHub source delivery itself is confirmed still working,"
+            echo "the break-glass path is:"
+            echo
+            echo '```bash'
+            echo '# 1. Confirm this is really needed — check https://www.githubstatus.com yourself first.'
+            echo '# 2. Disable the affected pipeline'"'"'s normal CodeConnections trigger (see'
+            echo '#    apps/docs/docs/infra/github-outage-monitor.md for the exact console/CLI step).'
+            echo '# 3. Then, from a trusted operator machine with the `hashpass` AWS profile:'
+            echo 'EXPECTED_AWS_ACCOUNT_ID=<private, from .env> \'
+            echo '  packages/tools/scripts/start-web-pipeline-disaster-recovery.sh \'
+            echo '  --environment development|production \'
+            echo '  --commit <full-40-char-commit-sha> \'
+            echo '  --incident "githubstatus outage $(date -u +%Y-%m-%dT%H:%MZ)" \'
+            echo '  --execute'
+            echo '```'
+            echo
+            echo "See apps/docs/docs/infra/github-outage-monitor.md for the full runbook."
+          } > "${body_file}"
+
+          existing="${{ steps.existing.outputs.number }}"
+          if [[ -n "${existing}" ]]; then
+            gh issue comment "${existing}" --repo ${{ github.repository }} --body-file "${body_file}"
+          else
+            gh issue create --repo ${{ github.repository }} \
+              --title "GitHub Actions health alert: ${{ steps.status.outputs.indicator }}" \
+              --label "${ALERT_LABEL}" \
+              --body-file "${body_file}"
+          fi
+
+      - name: Auto-close resolved alert issue
+        if: steps.decide.outputs.should_alert == 'false' && steps.existing.outputs.number != ''
+        run: |
+          set -euo pipefail
+          gh issue comment "${{ steps.existing.outputs.number }}" --repo ${{ github.repository }} \
+            --body "githubstatus.com Actions component now reports \`${{ steps.status.outputs.indicator }}\` (operational). Auto-closing."
+          gh issue close "${{ steps.existing.outputs.number }}" --repo ${{ github.repository }}
