@@ -22,23 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202609042349, // Updated to current timestamp
-  releaseDate: '2026-09-04',
+  buildNumber: 202609052305, // Updated to current timestamp
+  releaseDate: '2026-09-05',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'add Hashpass email signature, fix wordmark contrast'
+    // No new features
   ],
   bugfixes: [
-    'correct outage-monitor healthy-indicator check and shell injection risk',
-    'carry dist/server through the static-site artifact hand-off'
+    // No bugfixes
   ],
   breakingChanges: [],
-  notes: 'add Hashpass email signature, fix wordmark contrast; correct outage-monitor healthy-indicator check and shell injection risk; carry dist/server through the static-site artifact hand-off'
+  notes: 'Version 1.9.37 release'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.37': {
+    version: '1.9.37',
+    buildNumber: 202609052305,
+    releaseDate: '2026-09-05',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'Version 1.9.37 release'
+  },
   '1.9.36': {
     version: '1.9.36',
     buildNumber: 202609042349,
