@@ -9,7 +9,7 @@ const workflowPath = path.resolve(
 );
 
 describe('GitHub-hosted static-site deployment workflow', () => {
-  it('keeps development builds manual and credentialless by default', () => {
+  it('builds without AWS credentials and keeps manual dispatch build-only by default', () => {
     expect(fs.existsSync(workflowPath)).toBe(true);
 
     const workflow = fs.readFileSync(workflowPath, 'utf8');
@@ -20,9 +20,33 @@ describe('GitHub-hosted static-site deployment workflow', () => {
     expect(workflow).toContain('runs-on: ubuntu-latest');
     expect(workflow).toContain('Build the static site');
     expect(workflow).toContain('id-token: write');
-    expect(workflow).toContain("if: inputs.deploy == true");
+    // Push to develop is the real, continuously-exercised replacement for the
+    // AWS pipeline and must deploy automatically; a manual workflow_dispatch
+    // keeps the opt-in `deploy` checkbox so a build-only trial stays free of
+    // AWS credentials by default.
+    expect(workflow).toContain("if: github.event_name == 'push' || inputs.deploy == true");
     expect(workflow).toContain('BUILD_ENV: dev');
     expect(workflow).not.toContain('production');
+  });
+
+  it('auto-triggers on develop pushes with the same path filters as the AWS pipeline', () => {
+    const workflow = fs.readFileSync(workflowPath, 'utf8');
+
+    expect(workflow).toContain('branches: [develop]');
+    expect(workflow).toContain("- 'apps/mobile-app/**'");
+    expect(workflow).toContain("- 'packages/**'");
+    expect(workflow).toContain("- 'package.json'");
+    expect(workflow).toContain("- 'pnpm-lock.yaml'");
+    expect(workflow).toContain("- 'pnpm-workspace.yaml'");
+    // The AWS pipeline is the documented rollback during the observation
+    // window, not a workflow this one should ever disable itself.
+    expect(workflow).toContain('hashpass-dev-site');
+    const buildJob = workflow.split('\n  build:\n')[1]?.split('\n  deploy:\n')[0];
+    expect(buildJob).toBeDefined();
+    expect(buildJob).toContain('group: static-site-build-development-${{ github.ref }}');
+    expect(buildJob).toContain('cancel-in-progress: true');
+    expect(workflow).toContain("--arg trigger \"${{ github.event_name }}\"");
+    expect(workflow).toContain('- Trigger: \\`${{ github.event_name }}\\`');
   });
 
   it('requires a protected environment and uses the existing deploy scripts', () => {

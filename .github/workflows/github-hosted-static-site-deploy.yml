@@ -1,6 +1,26 @@
 name: GitHub-hosted static site build and deploy
 
+# Primary build+deploy path for the HashPass development target (replaces the
+# AWS `hashpass-dev-site` CodePipeline as the day-to-day trigger -- see
+# .agents/active/task-build-cost-containment-and-cicd-migration.md). The AWS
+# pipeline is deliberately left auto-triggering in parallel during the
+# observation window; it is the documented rollback, not dead weight.
 on:
+  push:
+    branches: [develop]
+    # Mirrors local.site_trigger_includes in
+    # packages/infra/terraform/stacks/hashpass-web/main.tf (the AWS pipeline's
+    # own trigger include list) so this workflow watches the same inputs.
+    # GitHub Actions cannot combine `paths` with `paths-ignore` on one
+    # trigger, so the AWS side's narrower excludes aren't mirrored here --
+    # GitHub-hosted runners are free for this public repo, so an occasional
+    # extra build on an excluded path costs nothing.
+    paths:
+      - 'apps/mobile-app/**'
+      - 'packages/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
   workflow_dispatch:
     inputs:
       deploy:
@@ -16,6 +36,12 @@ jobs:
   build:
     name: Build static site (development)
     runs-on: ubuntu-latest
+    # A rapid follow-up push should cancel a stale in-flight build rather than
+    # waste runner time on both -- this is the free build-only path, unlike
+    # the deploy job below which must never be cancelled mid-flight.
+    concurrency:
+      group: static-site-build-development-${{ github.ref }}
+      cancel-in-progress: true
     env:
       BUILD_ENV: dev
       EXPO_PUBLIC_SUPABASE_URL: ${{ vars.EXPO_PUBLIC_SUPABASE_URL_DEV }}
@@ -69,11 +95,12 @@ jobs:
             --arg workflow "${{ github.workflow }}" \
             --arg run_url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
             --arg commit "${{ github.sha }}" \
+            --arg trigger "${{ github.event_name }}" \
             --arg build_outcome "$BUILD_OUTCOME" \
             --argjson duration_seconds "$duration_seconds" \
             --argjson artifact_bytes "$artifact_bytes" \
             --arg artifact_sha256 "$artifact_sha256" \
-            '{workflow: $workflow, runUrl: $run_url, commit: $commit, buildOutcome: $build_outcome, durationSeconds: $duration_seconds, artifactBytes: $artifact_bytes, artifactSha256: $artifact_sha256}' \
+            '{workflow: $workflow, runUrl: $run_url, commit: $commit, trigger: $trigger, buildOutcome: $build_outcome, durationSeconds: $duration_seconds, artifactBytes: $artifact_bytes, artifactSha256: $artifact_sha256}' \
             > static-site-build-evidence.json
 
           {
@@ -81,10 +108,11 @@ jobs:
             echo
             echo "- Run: [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
             echo "- Commit: \`${{ github.sha }}\`"
+            echo "- Trigger: \`${{ github.event_name }}\`"
             echo "- Build: \`$BUILD_OUTCOME\` in \`${duration_seconds}s\`"
             echo "- Artifact: \`${artifact_bytes} bytes\`"
             echo "- Artifact SHA-256: \`${artifact_sha256:-not-created}\`"
-            echo "- Deployment requested: \`${{ inputs.deploy }}\`"
+            echo "- Deployment requested: \`${{ inputs.deploy || (github.event_name == 'push') }}\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload static site artifact
@@ -115,7 +143,9 @@ jobs:
   deploy:
     name: Deploy static site (development)
     needs: build
-    if: inputs.deploy == true
+    # Automatic push runs are the real replacement for the AWS pipeline and
+    # must deploy, not just build. Manual dispatches keep the opt-in checkbox.
+    if: github.event_name == 'push' || inputs.deploy == true
     # Build-only trials must not interrupt an in-progress deployment. Queue
     # deploy-capable runs instead of cancelling an active S3/Lambda update.
     concurrency:
@@ -175,9 +205,10 @@ jobs:
           jq -n \
             --arg run_url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
             --arg commit "${{ github.sha }}" \
+            --arg trigger "${{ github.event_name }}" \
             --arg build_result "$BUILD_RESULT" \
             --arg deploy_outcome "$DEPLOY_OUTCOME" \
-            '{runUrl: $run_url, commit: $commit, buildResult: $build_result, deployOutcome: $deploy_outcome}' \
+            '{runUrl: $run_url, commit: $commit, trigger: $trigger, buildResult: $build_result, deployOutcome: $deploy_outcome}' \
             > static-site-deployment-evidence.json
 
           {
@@ -185,6 +216,7 @@ jobs:
             echo
             echo "- Run: [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
             echo "- Commit: \`${{ github.sha }}\`"
+            echo "- Trigger: \`${{ github.event_name }}\`"
             echo "- Build result: \`$BUILD_RESULT\`"
             echo "- Deploy result: \`$DEPLOY_OUTCOME\`"
             echo "- Target: \`development\`"

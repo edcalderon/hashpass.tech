@@ -248,12 +248,32 @@ feedback.
       current version JSON (`currentVersion: "1.9.35"`) rather than a 404 —
       proof the Lambda now has the API routes (`dist/server`) live, not a
       client-only export. This item is fully done.
-- [ ] Enable exact `paths` filters plus a unique environment concurrency group
-      with `cancel-in-progress: true`; retain the AWS pipeline only as a
-      documented rollback during the observation period. Once GitHub Actions
-      is primary, set the retained development pipeline's
-      `dev_aws_pipeline_source_detect_changes` to `false`; manual
-      break-glass runs remain possible.
+- [x] **2026-09-05**: `github-hosted-static-site-deploy.yml` now triggers
+      automatically on `push` to `develop`, path-filtered to mirror
+      `local.site_trigger_includes` in
+      `packages/infra/terraform/stacks/hashpass-web/main.tf` (the AWS
+      pipeline's own include list — GitHub Actions can't combine `paths` with
+      `paths-ignore`, so the AWS side's narrower excludes aren't mirrored;
+      free runners make an occasional extra build costless). The `build` job
+      got its own `cancel-in-progress: true` concurrency group keyed on
+      `github.ref` so a rapid follow-up push cancels a stale in-flight build;
+      the `deploy` job's existing serialized
+      `static-site-deploy-development` / `cancel-in-progress: false` group is
+      unchanged. The `deploy` job now also fires automatically on `push` (not
+      only on a manual `deploy=true` dispatch), so an automatic `develop`
+      push does a real build+deploy — this is what makes it the actual
+      continuously-exercised primary instead of a workflow only exercised by
+      hand. Both jobs' evidence JSON/step summaries now record
+      `github.event_name` so push-triggered runs are distinguishable from
+      manual ones in history.
+      **Deliberately NOT done in this change**: `dev_aws_pipeline_source_detect_changes`
+      is untouched (still `true` — confirmed live via
+      `aws codepipeline list-pipeline-executions --pipeline-name
+      hashpass-dev-site`, which shows it still auto-triggering on every
+      relevant `develop` push). The AWS pipeline is intentionally left running
+      in parallel as the documented rollback for an observation window before
+      anyone flips that variable — that Terraform apply is a separate,
+      explicit, owner-approved step, not part of this PR.
 
 ### 3. Retire AWS build execution one target at a time
 
