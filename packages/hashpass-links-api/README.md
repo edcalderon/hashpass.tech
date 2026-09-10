@@ -198,6 +198,51 @@ validation, and visitor-anonymization logic in isolation.
 
 ## Terraform
 
+### Legacy printed invite QR codes
+
+`https://invite.hashpass.app/?code=9899` routes through this service and
+returns an uncached 302 to `https://hashpass.club/?code=9899`. Only the
+validated code is forwarded; arbitrary redirect parameters are ignored.
+Other invite codes use the same route. This records URL opens, including
+shared-link clicks, not independently verified camera scans.
+
+Apply `db/migrations/V092__invite_scan_events.sql` to the database used by
+the production links Lambda, then deploy the tested Lambda bundle. Finally,
+enable `enable_invite_domain` in the links Terraform stack. The existing
+extra-domain module provisions the TLS certificate, API mapping and Route 53
+A/AAAA aliases in the `hashpass.app` zone. Use the `hashpass` AWS profile and
+the repository's private account identity check before applying changes.
+Do not point the domain directly at the static Club site: that bypasses tracking.
+
+Each coded GET waits for a database acknowledgement (up to three seconds).
+Database failures return an uncached 503 with Retry-After and emit the fixed
+`invite_scan_persistence_failed` log marker without private request data.
+HEAD, prefetch and requests without a code do not create events. Recognized
+bots are classified separately. No IPs, cookies, referrers or raw user agents
+are stored. Counts measure visits, not unique people; retries and repeated
+opens can produce multiple events. Human classification is a user-agent
+heuristic, not proof of a real person.
+
+The table is private: only backend/service-role access is granted, with RLS
+enabled and no end-user policies. Administrators can query counts in SQL:
+
+```sql
+SELECT invite_code,
+       count(*) AS total_opens,
+       count(*) FILTER (WHERE bot_classification = 'human') AS human_opens,
+       count(*) FILTER (WHERE bot_classification = 'bot') AS bot_opens,
+       min(scanned_at) AS first_recorded_open,
+       max(scanned_at) AS last_recorded_open
+FROM public.invite_scan_events
+WHERE invite_code = '9899'
+GROUP BY invite_code;
+```
+
+Tracking begins at deployment. Do not label a missing row as zero historical
+scans: earlier opens can only be recovered from retained historical logs.
+On 2026-09-10 the invite hostname returned NXDOMAIN, so requests during that
+DNS outage could not reach the HTTP service and cannot be recovered here.
+
 `packages/infra/terraform/stacks/hashpass-links-api` stands up dev + prod
 Lambda + API Gateway pairs, reusing the existing generic
 `packages/infra/terraform/modules/aws_expo_router_api` module (it's not

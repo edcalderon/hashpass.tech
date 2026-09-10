@@ -1,4 +1,5 @@
 import { health } from './routes/health';
+import { redirectInvite } from './routes/invite';
 import { approveChallenge, createChallenge, exchangeChallenge, pollChallenge } from './routes/auth-qr';
 import { createCaptchaChallenge, redeemCaptchaChallenge } from './routes/captcha';
 import {
@@ -64,6 +65,14 @@ const BARE_DOMAIN_REDIRECT_TARGETS_BY_HOST: Record<string, string> = {
 
 export async function handleRequest(request: Request): Promise<Response> {
   const { pathname, hostname } = new URL(request.url);
+
+  if (hostname === 'invite.hashpass.app') {
+    if (pathname !== '/') return apiError('Not found', 404);
+    if (request.method !== 'GET' && request.method !== 'HEAD') {
+      return new Response(null, { status: 405, headers: { allow: 'GET, HEAD' } });
+    }
+    return redirectInvite(request);
+  }
 
   if (request.method === 'GET' && (pathname === '/' || pathname === '')) {
     const target = BARE_DOMAIN_REDIRECT_TARGETS_BY_HOST[hostname] ?? DEFAULT_BARE_DOMAIN_REDIRECT_TARGET;

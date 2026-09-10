@@ -1,3 +1,14 @@
+## [1.9.37](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.36...v1.9.37) (2026-09-05)
+### Released
+- Version 1.9.37 release
+
+### Release scope
+- Compared with: `v1.9.36` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Release tooling
+
 ## [1.9.36](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.35...v1.9.36) (2026-09-04)
 
 
