@@ -59,8 +59,8 @@ describe('CBWeek 2026 demo programme', () => {
     const pastEditionSpeakers = speakers.filter((speaker) => speaker.isPastEditionReference);
 
     expect(activeSpeakers.map((speaker) => speaker.name)).toEqual([
-      'Bryan Aguilar',
       'Lucero Dextre',
+      'Bryan Aguilar',
       'Edward Calderón',
     ]);
     expect(pastEditionSpeakers).toHaveLength(26);

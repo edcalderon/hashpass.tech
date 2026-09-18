@@ -330,7 +330,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     if (!user || !resolvedUserId || backendDegraded) return;
 
     const channel = supabase
-      .channel('notifications')
+      .channel(`notifications:${resolvedUserId}`)
       .on(
         'postgres_changes',
         {

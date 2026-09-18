@@ -102,6 +102,7 @@ export default function AuthShaderScene() {
     renderer.domElement.style.display = 'block';
     renderer.domElement.style.width = '100%';
     renderer.domElement.style.height = '100%';
+    renderer.domElement.style.borderRadius = 'inherit';
     container.appendChild(renderer.domElement);
 
     const resize = () => {
@@ -136,11 +137,14 @@ export default function AuthShaderScene() {
     };
 
     resize();
+    const resizeObserver = new ResizeObserver(resize);
+    resizeObserver.observe(container);
     window.addEventListener('resize', resize);
     animate();
 
     return () => {
       disposed = true;
+      resizeObserver.disconnect();
       window.removeEventListener('resize', resize);
 
       if (sceneRef.current) {
@@ -167,6 +171,7 @@ export default function AuthShaderScene() {
         position: 'absolute',
         inset: 0,
         overflow: 'hidden',
+        borderRadius: 'inherit',
         pointerEvents: 'none',
       }}
     />

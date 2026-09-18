@@ -35,12 +35,11 @@ describe("desktop auth event allies", () => {
     expect(source).toContain("accessibilityLabel={ally.name}");
   });
 
-  it("uses a wrapping static rail so every ally remains visible once", () => {
+  it("enables the allies carousel only in full animation mode", () => {
     const source = readAuthSource();
 
-    expect(source).toContain("[styles.desktopHeroRail, styles.desktopHeroRailStatic]");
-    expect(source).toContain("desktopHeroRailStatic: {");
-    expect(source).toContain('flexWrap: "wrap"');
+    expect(source).toContain("<AuthAlliesCarousel");
+    expect(source).toContain('enabled={animationLevel === "full"}');
   });
 
   it.each([
@@ -51,6 +50,9 @@ describe("desktop auth event allies", () => {
     ["de", de],
     ["ko", ko],
   ])("localizes every desktop hero message in %s", (_locale, catalog) => {
+    expect(catalog.auth.useAnotherEmail).toEqual(expect.any(String));
+    expect(catalog.auth.pauseAllies).toEqual(expect.any(String));
+    expect(catalog.auth.resumeAllies).toEqual(expect.any(String));
     expect(catalog.auth.desktopHero).toEqual(
       expect.objectContaining({
         eyebrow: expect.any(String),

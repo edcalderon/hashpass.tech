@@ -9,7 +9,7 @@ import { getSupabaseServerForRequest } from "@/lib/supabase-server";
 // Chat URLs must use the canonical event identity. Aliases used by older
 // explorer routes are intentionally rejected here so one event can never be
 // reached through another event's link.
-const SUPPORTED_EVENTS = new Set(["bsl2025", "peru2026", "chile2026", "colombia2026"]);
+const SUPPORTED_EVENTS = new Set(["bsl2025", "peru2026", "chile2026", "colombia2026", "cbweek2026"]);
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MAX_MESSAGE_LENGTH = 2_000;
 const MAX_MESSAGES = 100;

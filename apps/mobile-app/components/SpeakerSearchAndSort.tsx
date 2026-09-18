@@ -12,6 +12,7 @@ interface Speaker {
   bio?: string;
   image?: string;
   isActive?: boolean;
+  sortOrder?: number;
 }
 
 interface SpeakerSearchAndSortProps {
@@ -69,7 +70,9 @@ export default function SpeakerSearchAndSort({
 
     // Use the curated event order for the default name view.
     if (!searchQuery.trim() && sortBy === 'name') {
-      orderedSpeakers = sortSpeakersByPriority(speakers);
+      orderedSpeakers = speakers.some((speaker) => Number.isFinite(speaker.sortOrder))
+        ? [...speakers].sort((a, b) => (a.sortOrder ?? Infinity) - (b.sortOrder ?? Infinity) || a.name.localeCompare(b.name))
+        : sortSpeakersByPriority(speakers);
     } else {
       orderedSpeakers = [...speakers].sort((a, b) => {
       let aValue = '';

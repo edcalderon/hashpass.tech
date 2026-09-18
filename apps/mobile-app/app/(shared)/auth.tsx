@@ -45,6 +45,7 @@ import {
 } from "@hashpass/auth";
 import { PASSWORDLESS_CALLBACK_MARKER } from "../../lib/auth/passwordless-callback";
 import ShaderAnimation from "../../components/ShaderAnimation";
+import AuthAlliesCarousel from "../../components/auth/AuthAlliesCarousel";
 import SafeLinearGradient from "../../components/SafeLinearGradient";
 import { getEmailAutocompleteSuggestions } from "../../lib/email-autocomplete";
 import {
@@ -81,6 +82,7 @@ const DASHBOARD_EXPLORE_ROUTER_PATH = "/(shared)/dashboard/explore";
 const OTP_CODE_LENGTH = 6;
 const MAGIC_LINK_RESEND_COOLDOWN_SECONDS = 45;
 const OTP_RESEND_COOLDOWN_SECONDS = 45;
+const AUTH_DESKTOP_PANEL_RADIUS = 32;
 const OTP_DIGIT_KEYS = ["d1", "d2", "d3", "d4", "d5", "d6"] as const;
 
 const buildSupabaseCallbackPath = (returnTo: string, nativeRelay = false) => {
@@ -565,8 +567,12 @@ const DesktopHeroPanel = ({
           <Text style={styles.desktopHeroAlliesLabel}>
             {t("desktopHero.alliesLabel", "EVENTS & ALLIES")}
           </Text>
-          <View style={styles.desktopHeroRailViewport}>
-            <View style={[styles.desktopHeroRail, styles.desktopHeroRailStatic]}>
+          <AuthAlliesCarousel
+            enabled={animationLevel === "full"}
+            pauseLabel={t("pauseAllies", "Pause carousel")}
+            resumeLabel={t("resumeAllies", "Resume carousel")}
+            color={isDark ? "#a1d1d6" : "#af0d01"}
+          >
               {eventAllies.map((ally: ReturnType<typeof getEventAuthAllies>[number]) => (
                 <Pressable
                   key={ally.id}
@@ -611,8 +617,7 @@ const DesktopHeroPanel = ({
                   </Text>
                 </Pressable>
               ))}
-            </View>
-          </View>
+          </AuthAlliesCarousel>
         </View>
       </Animated.View>
     </View>
@@ -1074,10 +1079,6 @@ export default function AuthScreen() {
       setMagicLinkSentAt(Date.now());
       setMagicLinkTimerNow(Date.now());
 
-      showSuccess(
-        t("magicLinkSentTitle", "Link sent"),
-        t("magicLinkSentMessage", "Please check your email to login."),
-      );
     } catch (error: any) {
       const message = extractApiError(
         error?.message,
@@ -1186,12 +1187,6 @@ export default function AuthScreen() {
       setMagicLinkTimerNow(Date.now());
       focusOtpInput(0);
 
-      showSuccess(
-        t("otpCodeSent", "Verification code sent"),
-        otpDeliveryMethod === "sms"
-          ? t("otpSmsSentMessage", "Check your phone for the 6-digit code.")
-          : t("otpCodeSentMessage", "Check your email for the 6-digit code."),
-      );
     } catch (error: any) {
       const message = extractApiError(
         error?.message,
@@ -1733,6 +1728,28 @@ export default function AuthScreen() {
     }, 0);
   };
 
+  const handleUseAnotherEmail = () => {
+    if (isBusy) return;
+    setEmail("");
+    setEmailError("");
+    setEmailSuggestionsDismissed(false);
+    setActiveEmailSuggestionIndex(0);
+    resetMagicLinkConfirmation();
+    setOtpSent(false);
+    setOtpCodeSentAt(null);
+    setOtpDigits(new Array(OTP_CODE_LENGTH).fill(""));
+    setOtpVerifySucceeded(false);
+    setFocusedDigitIndex(-1);
+    autoSubmittedCodeRef.current = "";
+    setOtpDeliveryMethod("email");
+    setPhone("");
+    setPhoneError("");
+    setCountryPickerVisible(false);
+    setCountrySearchQuery("");
+    activeSubmitFieldRef.current = "email";
+    requestAnimationFrame(() => emailInputRef.current?.focus());
+  };
+
   const handlePhoneInputSubmit = () => {
     if (isBusy) return;
     if (emailAuthMethod === "otp-code" && !otpSent) {
@@ -1846,6 +1863,7 @@ export default function AuthScreen() {
         ]}
       >
         <View
+          testID="auth-form-pane"
           style={[
             styles.formPane,
             isDesktopLayout ? styles.formPaneDesktop : null,
@@ -1996,12 +2014,13 @@ export default function AuthScreen() {
 
                         <TouchableOpacity
                           style={styles.magicLinkCloseButton}
-                          onPress={resetMagicLinkConfirmation}
+                          onPress={handleUseAnotherEmail}
                           disabled={isBusy}
+                          accessibilityRole="button"
                           dataSet={{ authEnterIgnore: "true" }}
                         >
                           <Text style={styles.magicLinkCloseText}>
-                            {t("magicLinkClose", "Close")}
+                            {t("useAnotherEmail", "Use another email")}
                           </Text>
                         </TouchableOpacity>
                       </View>
@@ -2487,6 +2506,17 @@ export default function AuthScreen() {
                                 </Text>
                               </TouchableOpacity>
                             )}
+                            <TouchableOpacity
+                              style={styles.secondaryActionButton}
+                              onPress={handleUseAnotherEmail}
+                              disabled={isBusy}
+                              accessibilityRole="button"
+                              dataSet={{ authEnterIgnore: "true" }}
+                            >
+                              <Text style={styles.secondaryActionText}>
+                                {t("useAnotherEmail", "Use another email")}
+                              </Text>
+                            </TouchableOpacity>
                           </View>
                         ) : null}
 
@@ -2813,7 +2843,7 @@ const getStyles = (
       flex: 0.95,
       minWidth: 480,
       maxWidth: 720,
-      borderRadius: 32,
+      borderRadius: AUTH_DESKTOP_PANEL_RADIUS,
       overflow: "hidden",
       backgroundColor: isDark
         ? "rgba(5, 8, 14, 0.94)"
@@ -2833,6 +2863,11 @@ const getStyles = (
     desktopFormShader: {
       ...StyleSheet.absoluteFillObject,
       zIndex: 0,
+      borderRadius: AUTH_DESKTOP_PANEL_RADIUS - 1,
+      overflow: "hidden",
+      ...(Platform.OS === "web"
+        ? { clipPath: `inset(0 round ${AUTH_DESKTOP_PANEL_RADIUS - 1}px)`, isolation: "isolate" as const }
+        : {}),
     },
     centered: {
       justifyContent: "center",
@@ -3720,24 +3755,10 @@ const getStyles = (
       letterSpacing: 1.6,
       marginBottom: 12,
     },
-    desktopHeroRailViewport: {
-      width: "100%",
-      overflow: "hidden",
-      paddingVertical: 8,
-      marginHorizontal: -8,
-      paddingHorizontal: 8,
-    },
-    desktopHeroRail: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 14,
-    },
-    desktopHeroRailStatic: {
-      flexWrap: "wrap",
-    },
     desktopHeroAllyMark: {
       width: 190,
       height: 112,
+      flexShrink: 0,
       borderRadius: 22,
       borderWidth: 1,
       borderColor: isDark ? "rgba(181,236,246,0.42)" : "rgba(17,18,20,0.15)",

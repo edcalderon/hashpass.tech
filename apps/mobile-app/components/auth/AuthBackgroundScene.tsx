@@ -141,6 +141,7 @@ const AuthBackgroundSceneInner: FC<{ amount: number; isMobile: boolean; isDark: 
     renderer.domElement.style.display = 'block';
     renderer.domElement.style.width = '100%';
     renderer.domElement.style.height = '100%';
+    renderer.domElement.style.borderRadius = 'inherit';
     mountNode.appendChild(renderer.domElement);
 
     const clock = new THREE.Clock();
@@ -201,11 +202,14 @@ const AuthBackgroundSceneInner: FC<{ amount: number; isMobile: boolean; isDark: 
 
     syncInitialOffsets();
     resize();
+    const resizeObserver = new ResizeObserver(resize);
+    resizeObserver.observe(mountNode);
     window.addEventListener('resize', resize);
     animate();
 
     return () => {
       disposed = true;
+      resizeObserver.disconnect();
       window.removeEventListener('resize', resize);
       window.cancelAnimationFrame(animationId);
 
@@ -229,6 +233,7 @@ const AuthBackgroundSceneInner: FC<{ amount: number; isMobile: boolean; isDark: 
         zIndex: 0,
         pointerEvents: 'none',
         overflow: 'hidden',
+        borderRadius: 'inherit',
       }}
     />
   );

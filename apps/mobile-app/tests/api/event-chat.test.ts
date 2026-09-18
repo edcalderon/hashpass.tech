@@ -56,6 +56,22 @@ jest.mock("@/lib/supabase-server", () => ({
 }));
 
 describe("event chat authorization api", () => {
+  it("loads CBWeek presence for a verified General pass holder", async () => {
+    const room = queryResult({ event_id: 'cbweek2026' });
+    const pass = queryResult([{ pass_type: 'general' }]);
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'event_chat_rooms') return room;
+      if (table === 'passes') return pass;
+      if (table === 'event_chat_presence') return queryResult([]);
+      throw new Error(`Unexpected table ${table}`);
+    });
+    const response = await get('cbweek2026', 'channel=presence');
+    expect(response.status).toBe(200);
+    expect(room.eq).toHaveBeenCalledWith('event_id', 'cbweek2026');
+    expect(pass.eq).toHaveBeenCalledWith('event_id', 'cbweek2026');
+    expect(await response.json()).toEqual({ data: { eventId: 'cbweek2026', presence: { peopleCount: 0, avatarUrls: [] } } });
+  });
+
   beforeEach(() => {
     jest.resetModules();
     mockResolveIdentity.mockReset();
