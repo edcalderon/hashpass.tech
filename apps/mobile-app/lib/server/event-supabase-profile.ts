@@ -13,6 +13,10 @@ export function getEventSupabaseProfileId(
 ): SupabaseProfileId | undefined {
   if (!BSL_EVENT_PATTERN.test(eventId)) return undefined;
 
+  // CBWeek's public tenant uses this database even through the shared
+  // production API host; keep admin checks on the tenant's actual identities.
+  if (eventId.toLowerCase() === "cbweek2026") return "bsl-development";
+
   const host = hostnameFromRequest(request);
   return host === "bsl-dev.hashpass.tech" ||
     host === "api-dev.hashpass.tech" ||
