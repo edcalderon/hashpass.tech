@@ -135,4 +135,21 @@ describe("/api/passes event wallet", () => {
       expect.objectContaining({ pass_id: "paid-pass", pass_type: passType, pass_number: "42" }),
     ]);
   });
+
+  it.each([
+    ["vip", "business", "active", "active", "first"],
+    ["business", "general", "active", "active", "first"],
+    ["general", "general", "active", "active", "first"],
+    ["vip", "general", "cancelled", "active", "second"],
+    ["business", "vip", "active", "active", "second"],
+  ])("compares %s and %s passes (%s, %s)", async (firstType, secondType, firstStatus, secondStatus, expectedId) => {
+    query.then.mockImplementation((resolve) => resolve({ data: [
+      { id: "first", event_id: "cbweek2026", pass_type: firstType, status: firstStatus },
+      { id: "second", event_id: "cbweek2026", pass_type: secondType, status: secondStatus },
+    ], error: null }));
+    const response = await get("");
+    expect((await response.json()).data).toEqual([
+      expect.objectContaining({ pass_id: expectedId }),
+    ]);
+  });
 });
