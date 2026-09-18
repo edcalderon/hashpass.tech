@@ -139,6 +139,7 @@ export default function SpeakersCalendar() {
   useEffect(() => {
     if (!event) return;
     let cancelled = false;
+    const canUseLegacyBslDirectory = /^(?:bsl|bsl2025|peru2026|chile2026|colombia2026)$/i.test(event.id);
 
     const loadSpeakers = async () => {
       try {
@@ -147,7 +148,6 @@ export default function SpeakersCalendar() {
         // bsl_speakers is a legacy shared BSL directory. Whitelabel events
         // use the event-scoped speakers table so they never inherit the BSL
         // directory by accident.
-        const canUseLegacyBslDirectory = /^(?:bsl|bsl2025|peru2026|chile2026|colombia2026)$/i.test(event.id);
         const dbPromise = canUseLegacyBslDirectory
           ? supabase.from('bsl_speakers').select('*')
           : supabase.from('speakers').select('*').eq('event_id', event.id).order('sort_order');
@@ -169,6 +169,7 @@ export default function SpeakersCalendar() {
               bio: s.bio || (s.title ? `Experienced professional in ${s.title}.` : undefined),
               image: s.imageurl || s.image_url || getSpeakerAvatarUrl(s.name),
               user_id: s.user_id || undefined,
+              sortOrder: canUseLegacyBslDirectory ? undefined : s.sort_order,
               isActive: canUseLegacyBslDirectory
                 ? isClaimedActiveSpeaker(s)
                 : s.metadata?.is_active === true,
@@ -196,13 +197,14 @@ export default function SpeakersCalendar() {
 
         // Fallback to event config (JSON)
         const eventSpeakers = event?.speakers || [];
-        const formattedEventSpeakers = eventSpeakers.map((s: EventSpeakerConfig) => ({
+        const formattedEventSpeakers = eventSpeakers.map((s: EventSpeakerConfig, index: number) => ({
           id: s.id,
           name: s.name,
           title: s.title || null,
           company: s.company || null,
           bio: s.bio || ((s.title && s.company) ? `Experienced professional in ${s.title} at ${s.company}.` : undefined),
           isActive: Boolean(s.isActive),
+          sortOrder: canUseLegacyBslDirectory ? undefined : index,
           isPastEditionReference: Boolean(s.isPastEditionReference),
           // s.image is our own hosted photo (see packages/config/src/events.ts).
           // Only fall back to the legacy Cloudinary/name-guessing lookup for
@@ -224,13 +226,14 @@ export default function SpeakersCalendar() {
         console.error('❌ Error loading speakers:', error);
         // Emergency fallback to event config
         const eventSpeakers = event?.speakers || [];
-        const formattedEventSpeakers = eventSpeakers.map((s: EventSpeakerConfig) => ({
+        const formattedEventSpeakers = eventSpeakers.map((s: EventSpeakerConfig, index: number) => ({
           id: s.id,
           name: s.name,
           title: s.title || null,
           company: s.company || null,
           bio: (s.title && s.company) ? `Experienced professional in ${s.title} at ${s.company}.` : undefined,
           isActive: Boolean(s.isActive),
+          sortOrder: canUseLegacyBslDirectory ? undefined : index,
           isPastEditionReference: Boolean(s.isPastEditionReference),
           image: resolveSpeakerImage(s.image, s.name)
         }));

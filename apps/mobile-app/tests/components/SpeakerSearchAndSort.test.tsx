@@ -18,6 +18,24 @@ jest.mock('../../hooks/useTheme', () => ({
 jest.mock('../../lib/vector-icons', () => ({ MaterialIcons: 'MaterialIcons' }));
 
 describe('SpeakerSearchAndSort', () => {
+  it('honors event speaker order ahead of legacy BSL priorities', async () => {
+    const onFilteredSpeakers = jest.fn();
+    const speakers = [
+      { id: 'edward', name: 'Edward Calderón', sortOrder: 30, isActive: true, title: null, company: null },
+      { id: 'bryan', name: 'Bryan Aguilar', sortOrder: 20, isActive: true, title: null, company: null },
+      { id: 'lucero', name: 'Lucero Dextre', sortOrder: 10, isActive: true, title: null, company: null },
+    ];
+    let renderer: ReturnType<typeof create>;
+    await act(async () => {
+      renderer = create(<SpeakerSearchAndSort speakers={speakers}
+        onFilteredSpeakers={onFilteredSpeakers} onGroupedSpeakers={jest.fn()}
+        onSearchChange={jest.fn()} onSortChange={jest.fn()} />);
+    });
+    expect(onFilteredSpeakers).toHaveBeenLastCalledWith([speakers[2], speakers[1], speakers[0]]);
+    expect(speakers[0].id).toBe('edward');
+    act(() => renderer!.unmount());
+  });
+
   it('returns every speaker while keeping claimed, active profiles first', async () => {
     const onFilteredSpeakers = jest.fn();
     const onGroupedSpeakers = jest.fn();

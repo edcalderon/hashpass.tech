@@ -4,6 +4,7 @@ import React from 'react';
 import TestRenderer, { act } from 'react-test-renderer';
 
 const mockWebglRendererCtor = jest.fn();
+const mockSetSize = jest.fn();
 
 jest.mock('three', () => {
   class FakeVector2 {
@@ -29,7 +30,7 @@ jest.mock('three', () => {
     domElement = { style: {} };
     setPixelRatio = jest.fn();
     setClearColor = jest.fn();
-    setSize = jest.fn();
+    setSize = mockSetSize;
     render = jest.fn();
     dispose = jest.fn();
     constructor(...args: unknown[]) {
@@ -51,15 +52,27 @@ import AuthShaderScene from '../../../components/auth/AuthShaderScene.web';
 
 describe('AuthShaderScene (web)', () => {
   const originalWindow = global.window;
+  const originalResizeObserver = global.ResizeObserver;
+  const observe = jest.fn();
+  const disconnect = jest.fn();
+  let resize: () => void;
   let consoleErrorSpy: jest.SpyInstance;
 
   beforeEach(() => {
     mockWebglRendererCtor.mockClear();
+    mockSetSize.mockClear();
+    observe.mockClear();
+    disconnect.mockClear();
+    global.ResizeObserver = jest.fn().mockImplementation((callback) => {
+      resize = callback;
+      return { observe, disconnect };
+    });
     consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
   });
 
   afterEach(() => {
     consoleErrorSpy.mockRestore();
+    global.ResizeObserver = originalResizeObserver;
     Object.defineProperty(global, 'window', { configurable: true, value: originalWindow });
   });
 
@@ -129,11 +142,17 @@ describe('AuthShaderScene (web)', () => {
 
     expect(mockWebglRendererCtor).toHaveBeenCalledTimes(1);
     expect(container.appendChild).toHaveBeenCalledTimes(1);
+    expect(observe).toHaveBeenCalledWith(container);
+    expect(container.appendChild.mock.calls[0][0].style.borderRadius).toBe('inherit');
+    container.clientWidth = 640;
+    act(() => resize());
+    expect(mockSetSize).toHaveBeenLastCalledWith(640, 600, false);
 
     await act(async () => {
       renderer.unmount();
     });
 
     expect(container.removeChild).toHaveBeenCalledTimes(1);
+    expect(disconnect).toHaveBeenCalledTimes(1);
   });
 });

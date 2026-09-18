@@ -5,7 +5,7 @@ import {
 } from "@/lib/server/resolve-notification-identity";
 
 const EVENT_ID_PATTERN = /^[a-z0-9][a-z0-9-]{0,63}$/i;
-const EVENT_IDS = new Set(["bsl2025", "peru2026", "chile2026", "colombia2026"]);
+const EVENT_IDS = new Set(["bsl2025", "peru2026", "chile2026", "colombia2026", "cbweek2026"]);
 
 type PassRow = Record<string, unknown> & {
   id: string;
@@ -25,6 +25,9 @@ const numberOr = (value: unknown, fallback: number): number => {
   const number = Number(value);
   return Number.isFinite(number) ? number : fallback;
 };
+
+const passPriority = (pass: PassRow): number =>
+  pass.pass_type === "vip" ? 2 : pass.pass_type === "business" ? 1 : 0;
 
 const toPassInfo = async (supabase: any, userId: string, pass: PassRow) => {
   const maxRequests = numberOr(pass.max_meeting_requests, 0);
@@ -129,7 +132,11 @@ export async function GET(request: Request) {
         return Response.json({ error: "Invalid event id" }, { status: 400 });
       }
       query = query.eq("event_id", validatedEventId).eq("status", "active");
-    } else if (eventIds?.length) {
+    } else if (url.searchParams.has("eventIds")) {
+      const requestedIds = url.searchParams.get("eventIds")!.split(",");
+      if (!eventIds?.length || eventIds.length !== requestedIds.length) {
+        return Response.json({ error: "Invalid event id" }, { status: 400 });
+      }
       query = query.in("event_id", eventIds).eq("status", "active");
     }
 
@@ -141,7 +148,9 @@ export async function GET(request: Request) {
       const current = latestByEvent.get(row.event_id);
       if (
         !current ||
-        (row.status === "active" && current.status !== "active")
+        (row.status === "active" && current.status !== "active") ||
+        (row.status === current.status &&
+          passPriority(row) > passPriority(current))
       ) {
         latestByEvent.set(row.event_id, row);
       }

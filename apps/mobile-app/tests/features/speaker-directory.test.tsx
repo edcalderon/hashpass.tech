@@ -2,6 +2,8 @@
 
 import React from 'react';
 import { act, create } from 'react-test-renderer';
+import SpeakersCalendar from '../../app/events/[eventSlug]/speakers/calendar';
+import SpeakerSearchAndSort from '../../components/SpeakerSearchAndSort';
 
 const mockRouterPush = jest.fn();
 type DbSpeaker = {
@@ -11,6 +13,8 @@ type DbSpeaker = {
   company: string;
   user_id: string | null;
   is_active: boolean;
+  sort_order?: number;
+  metadata?: { is_active: boolean };
 };
 
 type EventSpeaker = {
@@ -27,6 +31,8 @@ const defaultDbSpeakers = (): DbSpeaker[] => [
 ];
 let mockDbSpeakers: DbSpeaker[] = defaultDbSpeakers();
 let mockEventSpeakers: EventSpeaker[] = [];
+let mockEventId = 'chile2026';
+const mockConfiguredImage = jest.fn((image: string | undefined, name: string) => image || `avatar:${name}`);
 
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockRouterPush }),
@@ -35,7 +41,7 @@ jest.mock('expo-router', () => ({
 jest.mock('@contexts/EventContext', () => ({
   useEvent: () => ({
     event: {
-      id: 'chile2026',
+      id: mockEventId,
       eventDateString: 'BSL Chile 2026',
       eventStartDate: '2026-08-05T09:00:00-04:00',
       eventEndDate: '2026-08-07T23:59:59-04:00',
@@ -57,9 +63,15 @@ jest.mock('../../hooks/useTheme', () => ({
 
 jest.mock('../../lib/supabase', () => ({
   supabase: {
-    from: () => ({
-      select: () => Promise.resolve({ data: mockDbSpeakers, error: null }),
-    }),
+    from: () => {
+      const query = {
+        select: () => query,
+        eq: () => query,
+        order: () => query,
+        then: (resolve: (value: unknown) => unknown) => Promise.resolve({ data: mockDbSpeakers, error: null }).then(resolve),
+      };
+      return query;
+    },
   },
 }));
 
@@ -69,11 +81,9 @@ jest.mock('../../components/LoadingScreen', () => 'LoadingScreen');
 jest.mock('../../lib/vector-icons', () => ({ MaterialIcons: 'MaterialIcons' }));
 jest.mock('../../lib/string-utils', () => ({
   getSpeakerAvatarUrl: (name: string) => `avatar:${name}`,
-  resolveConfiguredSpeakerImage: (image: string | undefined, name: string) => image || `avatar:${name}`,
+  resolveConfiguredSpeakerImage: (image: string | undefined, name: string) => mockConfiguredImage(image, name),
   resolveSpeakerImage: (image: string | undefined, name: string) => image || `avatar:${name}`,
 }));
-
-import SpeakersCalendar from '../../app/events/[eventSlug]/speakers/calendar';
 
 const flushPromises = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
 
@@ -82,6 +92,42 @@ describe('speaker directory', () => {
     mockRouterPush.mockReset();
     mockDbSpeakers = defaultDbSpeakers();
     mockEventSpeakers = [];
+    mockEventId = 'chile2026';
+    mockConfiguredImage.mockReset().mockImplementation((image, name) => image || `avatar:${name}`);
+  });
+
+  it('preserves CBWeek database priorities in the rendered directory', async () => {
+    mockEventId = 'cbweek2026';
+    mockDbSpeakers = ['Edward', 'Bryan', 'Lucero'].map((name, index) => ({
+      id: name, name, title: 'Speaker', company: 'Event', user_id: null,
+      is_active: true, metadata: { is_active: true }, sort_order: 30 - index * 10,
+    }));
+    let renderer: ReturnType<typeof create>;
+    await act(async () => { renderer = create(<SpeakersCalendar />); await flushPromises(); });
+    const cards = renderer!.root.findAll((node) => node.props?.accessibilityState?.disabled !== undefined);
+    cards.forEach((card) => act(() => card.props.onPress()));
+    expect(mockRouterPush.mock.calls.map(([route]) => route.split('/').pop())).toEqual(['Lucero', 'Bryan', 'Edward']);
+    act(() => renderer!.unmount());
+  });
+
+  it.each([
+    ['cbweek2026', false], ['cbweek2026', true], ['chile2026', true],
+  ])('retains configured speakers for %s, emergency=%s', async (eventId, emergency) => {
+    mockEventId = eventId as string;
+    mockDbSpeakers = [];
+    mockEventSpeakers = [{ id: 'lucero', name: 'Lucero', title: 'COO', company: 'Event' }];
+    if (emergency) mockConfiguredImage.mockImplementationOnce(() => { throw new Error('Image lookup unavailable'); });
+    const consoleError = jest.spyOn(console, 'error').mockImplementation(() => {});
+    let renderer: ReturnType<typeof create>;
+    try {
+      await act(async () => { renderer = create(<SpeakersCalendar />); await flushPromises(); });
+      const search = renderer!.root.findByType(SpeakerSearchAndSort);
+      expect(search.props.speakers[0].sortOrder).toBe(eventId === 'cbweek2026' ? 0 : undefined);
+      expect(renderer!.root.findByProps({ children: 'Lucero' })).toBeTruthy();
+    } finally {
+      act(() => renderer!.unmount());
+      consoleError.mockRestore();
+    }
   });
 
   it('shows all speakers while disabling the unclaimed profiles', async () => {

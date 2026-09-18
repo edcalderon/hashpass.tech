@@ -4509,21 +4509,21 @@ export const EVENTS: Record<string, EventConfig> = {
     // organizer-announced schedule.
     speakers: [
       {
-        id: "90e7014d-0d4b-4ee0-a7bf-b5f3b8db6201",
-        name: "Bryan Aguilar",
-        title: "CEO",
-        company: "LATAM Blockchain Events LLC",
-        bio: "CEO of LATAM Blockchain Events LLC. Listed on the official CBWeek contact section; included in this HashPass demo programme at organizer direction, not as an officially announced CBWeek 2026 speaker.",
-        image: "https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events/cbweek2026/speakers/bryan-aguilar.png",
-        isActive: true,
-      },
-      {
         id: "90e7014d-0d4b-4ee0-a7bf-b5f3b8db6202",
         name: "Lucero Dextre",
         title: "COO",
         company: "LATAM Blockchain Events LLC",
         bio: "COO of LATAM Blockchain Events LLC. Listed on the official CBWeek contact section; included in this HashPass demo programme at organizer direction, not as an officially announced CBWeek 2026 speaker.",
         image: "https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events/cbweek2026/speakers/lucero-dextre.png",
+        isActive: true,
+      },
+      {
+        id: "90e7014d-0d4b-4ee0-a7bf-b5f3b8db6201",
+        name: "Bryan Aguilar",
+        title: "CEO",
+        company: "LATAM Blockchain Events LLC",
+        bio: "CEO of LATAM Blockchain Events LLC. Listed on the official CBWeek contact section; included in this HashPass demo programme at organizer direction, not as an officially announced CBWeek 2026 speaker.",
+        image: "https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events/cbweek2026/speakers/bryan-aguilar.png",
         isActive: true,
       },
       {
