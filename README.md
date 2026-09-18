@@ -20,16 +20,20 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.37)
+## 📋 Latest Changes (v1.9.38)
 
-### Released
-- Version 1.9.37 release
+### Bug Fixes
+
+* **passes:** provision CBWeek access and verified event grants ([e4ce98c](https://github.com/hashpass-tech/hashpass.tech/commit/e4ce98c021386c493640918fddb73a7effb50977))
+### Release Highlights
+- provision CBWeek access and verified event grants
 
 ### Release scope
-- Compared with: `v1.9.36` (the previous global release tag)
+- Compared with: `v1.9.37` (the previous global release tag)
 
 ### Affected products & packages
 - Mobile app
+- Database migrations
 - Release tooling
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
