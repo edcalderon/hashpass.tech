@@ -72,4 +72,18 @@ describe("auth allies carousel", () => {
     act(() => renderer.update(<AuthAlliesCarousel {...props}>{[cards[0]]}</AuthAlliesCarousel>));
     expect(renderer.root.findAllByType("button")).toHaveLength(0);
   });
+
+  it("keeps an unmounted viewport static without observing a missing node", () => {
+    act(() => {
+      renderer = create(<AuthAlliesCarousel {...props}>{cards}</AuthAlliesCarousel>, { createNodeMock: () => null });
+    });
+    expect(global.ResizeObserver).not.toHaveBeenCalled();
+    expect(renderer.root.findAllByType("button")).toHaveLength(0);
+  });
+
+  it("renders no desktop-only carousel on native", () => {
+    const NativeCarousel = jest.requireActual("../../components/auth/AuthAlliesCarousel.native.tsx").default;
+    act(() => { renderer = create(<NativeCarousel {...props}>{cards}</NativeCarousel>); });
+    expect(renderer.toJSON()).toBeNull();
+  });
 });
