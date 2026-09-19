@@ -14,6 +14,13 @@ interface DocSection {
 
 const SECTIONS: DocSection[] = [
   {
+    title: 'Brand and Media',
+    description: 'Download HASHPASS logos, read brand usage guidance, and prepare partner or press materials.',
+    href: '/media-kit',
+    icon: 'H',
+    meta: 'media-kit/',
+  },
+  {
     title: 'Authentication',
     description: 'OAuth, Better Auth, Supabase identity bridging, and how a session resolves across every HASHPASS surface.',
     href: '/auth/',

@@ -7,7 +7,8 @@
     "build": "docusaurus build",
     "serve": "docusaurus serve",
     "clear": "docusaurus clear",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:media-kit": "node --test scripts/media-kit.test.mjs"
   },
   "dependencies": {
     "@docusaurus/theme-common": "3.10.1",

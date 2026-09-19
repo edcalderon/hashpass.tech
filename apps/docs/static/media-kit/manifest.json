@@ -1,0 +1,47 @@
+[
+  {
+    "id": "hashpass-wordmark-dark-red",
+    "label": "Dark wordmark / red",
+    "svg": "hashpass-wordmark-dark-red.svg",
+    "png": "hashpass-wordmark-dark-red.png",
+    "pngWidth": 2400,
+    "pngHeight": 448,
+    "sourceSha256": "0fafc5fd3edd8415d5a9a57a04506bd34abf24b2a8c79b7018d5db153f21c3c7"
+  },
+  {
+    "id": "hashpass-wordmark-white-red",
+    "label": "White wordmark / red",
+    "svg": "hashpass-wordmark-white-red.svg",
+    "png": "hashpass-wordmark-white-red.png",
+    "pngWidth": 2400,
+    "pngHeight": 448,
+    "sourceSha256": "b7d8dcda9a5352b14c775fd542ab3dc228bb33df29c743fdabcdae9b1ab22481"
+  },
+  {
+    "id": "hashpass-wordmark-dark-mint",
+    "label": "Dark wordmark / mint",
+    "svg": "hashpass-wordmark-dark-mint.svg",
+    "png": "hashpass-wordmark-dark-mint.png",
+    "pngWidth": 2400,
+    "pngHeight": 448,
+    "sourceSha256": "3cc28b74f2404c3b1fb1f4e9136dfcf8d3f0c53497ee327e2554d3cd1123682c"
+  },
+  {
+    "id": "hashpass-wordmark-white-cyan",
+    "label": "White wordmark / soft cyan",
+    "svg": "hashpass-wordmark-white-cyan.svg",
+    "png": "hashpass-wordmark-white-cyan.png",
+    "pngWidth": 2400,
+    "pngHeight": 448,
+    "sourceSha256": "fa3b6a589083268e1f560fcade721bdcd78be875ee4dbc43c09b15e157b75297"
+  },
+  {
+    "id": "hashpass-symbol",
+    "label": "HASHPASS symbol",
+    "svg": "hashpass-symbol.svg",
+    "png": "hashpass-symbol.png",
+    "pngWidth": 1024,
+    "pngHeight": 1027,
+    "sourceSha256": "6b7cff44220ab829a1557cc7d0ea0107c5740e0951f83576bc822415cc7992c2"
+  }
+]

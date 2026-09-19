@@ -1,0 +1,42 @@
+[
+  {
+    "id": "hashpass-wordmark-dark-red",
+    "label": "Dark wordmark / red",
+    "description": "Dark lettering with the red mark. For white and light backgrounds.",
+    "source": "apps/mobile-app/assets/logos/hashpass/logo-full-hashpass-white.svg",
+    "surface": "light",
+    "kind": "wordmark"
+  },
+  {
+    "id": "hashpass-wordmark-white-red",
+    "label": "White wordmark / red",
+    "description": "White lettering with the red mark. For dark backgrounds.",
+    "source": "apps/mobile-app/assets/logos/hashpass/logo-full-hashpass-black.svg",
+    "surface": "dark",
+    "kind": "wordmark"
+  },
+  {
+    "id": "hashpass-wordmark-dark-mint",
+    "label": "Dark wordmark / mint",
+    "description": "Dark lettering with the vivid mint mark. For light backgrounds.",
+    "source": "apps/mobile-app/assets/logos/hashpass/logo-full-hashpass-black-cyan.svg",
+    "surface": "light",
+    "kind": "wordmark"
+  },
+  {
+    "id": "hashpass-wordmark-white-cyan",
+    "label": "White wordmark / soft cyan",
+    "description": "White lettering with the soft cyan mark. For dark backgrounds.",
+    "source": "apps/mobile-app/assets/logos/hashpass/logo-full-hashpass-white-cyan.svg",
+    "surface": "dark",
+    "kind": "wordmark"
+  },
+  {
+    "id": "hashpass-symbol",
+    "label": "HASHPASS symbol",
+    "description": "The standalone cyan ring and red arrow. Use with the HASHPASS name nearby.",
+    "source": "apps/mobile-app/assets/logo-hashpass.svg",
+    "surface": "dark",
+    "kind": "symbol"
+  }
+]

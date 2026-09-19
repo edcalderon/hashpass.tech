@@ -3,6 +3,11 @@ const sidebars = {
     'README',
     {
       type: 'category',
+      label: 'Brand and Media',
+      items: ['brand/media-kit', 'brand/brand-guidelines'],
+    },
+    {
+      type: 'category',
       label: 'Authentication',
       items: [
         'auth/README',
