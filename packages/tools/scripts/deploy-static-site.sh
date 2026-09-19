@@ -150,6 +150,17 @@ done < <(
     -print0
 )
 
+# S3 website origins return HTTP 301 for these objects, before the SPA fallback.
+if [[ -f "${BUILD_DIR}/mediakit.html" ]]; then
+  for key in mediakit mediakit/index.html mediakit.html; do
+    aws s3 cp "${BUILD_DIR}/mediakit.html" "s3://${SITE_BUCKET_NAME}/${key}" \
+      --website-redirect "https://hashpass.club/documentation/media-kit" \
+      --content-type "text/html" \
+      --cache-control "public,max-age=300" \
+      >/dev/null
+  done
+fi
+
 resolved_cloudfront_distribution_id="${CLOUDFRONT_DISTRIBUTION_ID}"
 
 if [[ -z "${resolved_cloudfront_distribution_id}" && -n "${CLOUDFRONT_DOMAIN_NAME}" ]]; then

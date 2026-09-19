@@ -50,6 +50,11 @@ const config = {
       },
       items: [
         {
+          to: '/media-kit',
+          label: 'Media Kit',
+          position: 'left',
+        },
+        {
           type: 'docSidebar',
           sidebarId: 'docsSidebar',
           position: 'left',
@@ -74,6 +79,7 @@ const config = {
           title: 'Docs',
           items: [
             { label: 'Overview', to: '/overview' },
+            { label: 'Media Kit', to: '/media-kit' },
             { label: 'Auth', to: '/auth/' },
             { label: 'Infra', to: '/infra/' },
             { label: 'Storybook', to: '/storybook/' },

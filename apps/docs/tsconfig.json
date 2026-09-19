@@ -4,6 +4,8 @@
     "jsx": "react-jsx",
     "module": "esnext",
     "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "types": ["node", "@docusaurus/module-type-aliases", "@docusaurus/theme-classic"],
     "noEmit": true,
     "skipLibCheck": true,
     "strict": true,
