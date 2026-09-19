@@ -152,7 +152,7 @@ done < <(
 
 # S3 website origins return HTTP 301 for these objects, before the SPA fallback.
 if [[ -f "${BUILD_DIR}/mediakit.html" ]]; then
-  for key in mediakit mediakit/ mediakit.html; do
+  for key in mediakit mediakit/index.html mediakit.html; do
     aws s3 cp "${BUILD_DIR}/mediakit.html" "s3://${SITE_BUCKET_NAME}/${key}" \
       --website-redirect "https://hashpass.club/documentation/media-kit" \
       --content-type "text/html" \

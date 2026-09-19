@@ -7,7 +7,18 @@ import { execFileSync } from 'node:child_process';
 const root = path.resolve(__dirname, '../../../..');
 const target = 'https://hashpass.club/documentation/media-kit';
 
+// Single-file aws s3 cp appends the source basename to prefix destinations.
+function effectiveObjectKey(source: string, destination: string) {
+  const key = new URL(destination).pathname.slice(1);
+  return key.endsWith('/') ? `${key}${path.basename(source)}` : key;
+}
+
 describe('media kit public redirect', () => {
+  it('models AWS CLI prefix destinations rather than treating them as literal keys', () => {
+    expect(effectiveObjectKey('/build/mediakit.html', 's3://test/mediakit/')).toBe('mediakit/mediakit.html');
+    expect(effectiveObjectKey('/build/mediakit.html', 's3://test/mediakit/index.html')).toBe('mediakit/index.html');
+  });
+
   it('provides a canonical destination and a no-JavaScript fallback', () => {
     const html = fs.readFileSync(path.join(root, 'apps/mobile-app/public/mediakit.html'), 'utf8');
     expect(html).toContain(`content="0;url=${target}"`);
@@ -36,7 +47,13 @@ describe('media kit public redirect', () => {
       const redirects = calls.filter(args => args.includes('--website-redirect'));
       expect(redirects).toHaveLength(includeKit ? 3 : 0);
       if (includeKit) {
-        expect(redirects.map(args => args[3])).toEqual(['mediakit', 'mediakit/', 'mediakit.html'].map(key => `s3://test-media-kit-bucket/${key}`));
+        const objectKeys = redirects.map(args => effectiveObjectKey(args[2], args[3]));
+        expect(objectKeys).toEqual(['mediakit', 'mediakit/index.html', 'mediakit.html']);
+        // S3 website hosting resolves a directory request using index.html.
+        for (const uri of ['/mediakit', '/mediakit/', '/mediakit.html']) {
+          const websiteKey = uri.slice(1) + (uri.endsWith('/') ? 'index.html' : '');
+          expect(objectKeys).toContain(websiteKey);
+        }
         for (const args of redirects) {
           expect(args[args.indexOf('--website-redirect') + 1]).toBe(target);
           expect(args[args.indexOf('--cache-control') + 1]).toBe('public,max-age=300');
