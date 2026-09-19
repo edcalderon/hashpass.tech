@@ -22,22 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202609182047, // Updated to current timestamp
-  releaseDate: '2026-09-18',
+  buildNumber: 202609190019, // Updated to current timestamp
+  releaseDate: '2026-09-19',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    // No new features
+    'add partner media kit and public redirect'
   ],
   bugfixes: [
-    'provision CBWeek access and verified event grants'
+    // No bugfixes
   ],
   breakingChanges: [],
-  notes: 'provision CBWeek access and verified event grants'
+  notes: 'add partner media kit and public redirect'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.39': {
+    version: '1.9.39',
+    buildNumber: 202609190019,
+    releaseDate: '2026-09-19',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'add partner media kit and public redirect'
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'add partner media kit and public redirect'
+  },
   '1.9.38': {
     version: '1.9.38',
     buildNumber: 202609182047,

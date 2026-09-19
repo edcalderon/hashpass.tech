@@ -1,3 +1,20 @@
+## [1.9.39](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.38...v1.9.39) (2026-09-19)
+
+
+### Features
+
+* add partner media kit and public redirect ([2ab2bff](https://github.com/hashpass-tech/hashpass.tech/commit/2ab2bff922ecb6159c74306baf58c546bcb53388))
+### Release Highlights
+- add partner media kit and public redirect
+
+### Release scope
+- Compared with: `v1.9.38` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Documentation
+- Release tooling
+
 ## [1.9.38](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.37...v1.9.38) (2026-09-18)
 
 
