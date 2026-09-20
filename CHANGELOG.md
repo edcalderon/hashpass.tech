@@ -1,3 +1,18 @@
+## [1.9.44](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.42...v1.9.44) (2026-09-20)
+
+
+### Features
+
+* **landing:** refine feature disclosures ([c64e462](https://github.com/hashpass-tech/hashpass.tech/commit/c64e462030e23b762a47ee9ab5f388c91989bf2e))
+### Release Highlights
+- refine feature disclosures
+
+### Release scope
+- Compared with: `v1.9.42` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+
 ## [1.9.43](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.42...v1.9.43) (2026-09-20)
 
 

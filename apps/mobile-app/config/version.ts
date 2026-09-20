@@ -38,6 +38,21 @@ export const CURRENT_VERSION: VersionInfo = {
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.44': {
+    version: '1.9.44',
+    buildNumber: 202609201744,
+    releaseDate: '2026-09-20',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'refine feature disclosures'
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'refine feature disclosures'
+  },
   '1.9.43': {
     version: '1.9.43',
     buildNumber: 202609201744,
