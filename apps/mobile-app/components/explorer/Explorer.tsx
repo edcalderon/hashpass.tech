@@ -1,3 +1,4 @@
+import { uiTokens } from '@hashpass/ui/tokens';
 import React, {
   useCallback,
   useEffect,
@@ -85,6 +86,8 @@ interface ExplorerProps {
   isLoading?: boolean;
   isGlobalExplorer: boolean;
   onRefreshEvents?: () => void | Promise<void>;
+  onAuthRequired?: () => void;
+  showcase?: React.ReactNode;
 }
 
 type HeroSlide = {
@@ -191,6 +194,8 @@ export default function Explorer({
   isLoading = false,
   isGlobalExplorer,
   onRefreshEvents,
+  onAuthRequired,
+  showcase,
 }: ExplorerProps) {
   const { isDark, colors } = useTheme();
   const safeAreaInsets = useSafeAreaInsets();
@@ -231,13 +236,14 @@ export default function Explorer({
 
   useEffect(() => {
     let mounted = true;
+    if (!isLoggedIn && onAuthRequired) { setBookmarkedEventIds([]); return; }
     loadExplorerBookmarks().then((ids: string[]) => {
       if (mounted) setBookmarkedEventIds(ids);
     });
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [isLoggedIn, onAuthRequired]);
 
   // The pass wallet owns the authenticated, retry-aware pass request. Keeping
   // this view fed from that one source prevents a second Explorer request from
@@ -468,14 +474,14 @@ export default function Explorer({
   // nothing to rotate there. Starts on index 2 ("Discover what is next") to
   // match the previous default.
   const defaultHeroSlider = useAutoAdvanceProgress({
-    count: isGlobalExplorer ? HERO_SLIDES.length : 0,
+    count: showcase === undefined && isGlobalExplorer ? HERO_SLIDES.length : 0,
     durationMs: () => 5000,
     initialIndex: 2,
   });
   const heroIndex = defaultHeroSlider.activeIndex;
 
   const selectedHeroSlider = useAutoAdvanceProgress({
-    count: selectedEvent ? selectedHeroSlides.length : 0,
+    count: showcase === undefined && selectedEvent ? selectedHeroSlides.length : 0,
     durationMs: (index: number) =>
       selectedHeroSlides[index]?.durationMs || DEFAULT_EVENT_HERO_DURATION_MS,
     resetKey: selectedEvent?.id,
@@ -579,7 +585,17 @@ export default function Explorer({
     onResetSelection();
   };
 
+  const requireAccount = () => {
+    if (!isLoggedIn && onAuthRequired) {
+      setFilterSheetOpen(false);
+      onAuthRequired();
+      return true;
+    }
+    return false;
+  };
+
   const toggleBookmark = (eventId: string) => {
+    if (requireAccount()) return;
     const nextIds = bookmarkedEventIds.includes(eventId)
       ? bookmarkedEventIds.filter((id) => id !== eventId)
       : [eventId, ...bookmarkedEventIds];
@@ -595,6 +611,7 @@ export default function Explorer({
   const handleHeroAction = (action: string) => {
     const target = getExplorerHeroActionTarget(action);
     if (!target) return;
+    if (requireAccount()) return;
     router.push(target.route as any);
     if (target.eventId) selectEvent(target.eventId);
   };
@@ -605,10 +622,12 @@ export default function Explorer({
       Linking.openURL(url).catch(() => {});
       return;
     }
+    if (!url.startsWith("/events/") && requireAccount()) return;
     router.push(url as any);
   };
 
   const openEventRoom = (event: ExplorerEvent) => {
+    if (requireAccount()) return;
     // Let the room screen show its rules/name modal before making the
     // protected entitlement request. The backend remains the source of truth
     // after the user explicitly chooses to enter.
@@ -1345,7 +1364,7 @@ export default function Explorer({
               styles.bookmarkButton,
               bookmarked && styles.bookmarkButtonActive,
             ]}
-            onPress={() => toggleBookmark(event.id)}
+            onPress={(pressEvent) => { pressEvent?.stopPropagation(); toggleBookmark(event.id); }}
             accessibilityRole="button"
             accessibilityLabel={`${
               bookmarkedEventIds.includes(event.id)
@@ -1373,7 +1392,7 @@ export default function Explorer({
           {mode !== "grid" && (
             <TouchableOpacity
               style={styles.eventFooter}
-              onPress={() => openEventRoom(event)}
+              onPress={(pressEvent) => { pressEvent?.stopPropagation(); openEventRoom(event); }}
               accessibilityRole="button"
               accessibilityLabel={`Join the room for ${event.title}`}
             >
@@ -1613,7 +1632,7 @@ export default function Explorer({
             <TouchableOpacity
               key={item.id}
               style={styles.quickCard}
-              onPress={() => router.push(item.route as any)}
+              onPress={() => { if (!requireAccount()) router.push(item.route as any); }}
               accessibilityRole="button"
               accessibilityLabel={item.title}
             >
@@ -1651,7 +1670,7 @@ export default function Explorer({
         onScroll={handleScroll}
         scrollEventThrottle={16}
       >
-        {renderHero()}
+        {showcase !== undefined ? showcase : renderHero()}
         {renderSearchBar()}
         {renderDiscoveryCounters()}
         {isLoggedIn && (
@@ -1836,7 +1855,7 @@ export default function Explorer({
                         styles.sheetMode,
                         active && styles.sheetModeActive,
                       ]}
-                      onPress={() => setFilterTab(value)}
+                      onPress={() => { if (value !== "passes" || !requireAccount()) setFilterTab(value); }}
                       accessibilityRole="tab"
                       accessibilityState={{ selected: active }}
                     >
@@ -1983,7 +2002,7 @@ export default function Explorer({
                   <View style={styles.accessRows}>
                     <TouchableOpacity
                       style={styles.accessRow}
-                      onPress={() => setOnlyPasses((value) => !value)}
+                      onPress={() => { if (!requireAccount()) setOnlyPasses((value) => !value); }}
                       accessibilityRole="switch"
                       accessibilityState={{ checked: onlyPasses }}
                     >
@@ -2214,10 +2233,10 @@ const getStyles = (isDark: boolean, colors: any) =>
       gap: 7,
       paddingHorizontal: 10,
       paddingVertical: 6,
-      borderRadius: 999,
+      borderRadius: uiTokens.radius.pill,
       backgroundColor: "rgba(239, 68, 68, .92)",
     },
-    liveDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: "#fff" },
+    liveDot: { width: 7, height: 7, borderRadius: uiTokens.radius.small, backgroundColor: "#fff" },
     heroEyebrowText: {
       color: "#fff",
       fontSize: 10,
@@ -2242,7 +2261,7 @@ const getStyles = (isDark: boolean, colors: any) =>
       minHeight: 44,
       justifyContent: "center",
       paddingHorizontal: 18,
-      borderRadius: 12,
+      borderRadius: uiTokens.radius.input,
       backgroundColor: colors.primary,
     },
     heroActionText: { color: "#fff", fontSize: 13, fontWeight: "800" },
@@ -2257,7 +2276,7 @@ const getStyles = (isDark: boolean, colors: any) =>
     heroProgressTrack: {
       flex: 1,
       height: 4,
-      borderRadius: 2,
+      borderRadius: uiTokens.radius.small,
       overflow: "hidden",
       backgroundColor: "rgba(255,255,255,.28)",
     },
@@ -2277,7 +2296,7 @@ const getStyles = (isDark: boolean, colors: any) =>
       alignItems: "center",
       gap: 9,
       paddingHorizontal: 13,
-      borderRadius: 14,
+      borderRadius: uiTokens.radius.media,
       backgroundColor: colors.background.paper,
       borderWidth: 1,
       borderColor: colors.divider,
@@ -2297,7 +2316,7 @@ const getStyles = (isDark: boolean, colors: any) =>
     filterButton: {
       width: 46,
       height: 46,
-      borderRadius: 14,
+      borderRadius: uiTokens.radius.media,
       alignItems: "center",
       justifyContent: "center",
       borderWidth: 1,
@@ -2310,7 +2329,7 @@ const getStyles = (isDark: boolean, colors: any) =>
       right: -5,
       minWidth: 18,
       height: 18,
-      borderRadius: 9,
+      borderRadius: uiTokens.radius.small,
       textAlign: "center",
       color: "#fff",
       backgroundColor: colors.primary,
@@ -2346,7 +2365,7 @@ const getStyles = (isDark: boolean, colors: any) =>
       height: 30,
       justifyContent: "center",
       paddingHorizontal: 10,
-      borderRadius: 999,
+      borderRadius: uiTokens.radius.pill,
       borderWidth: 1,
       borderColor: colors.divider,
       backgroundColor: "transparent",
@@ -2370,7 +2389,7 @@ const getStyles = (isDark: boolean, colors: any) =>
       minWidth: 78,
       paddingVertical: 7,
       paddingHorizontal: 8,
-      borderRadius: 10,
+      borderRadius: uiTokens.radius.input,
       borderWidth: 1,
       borderColor: colors.divider,
       backgroundColor: colors.background.paper,
@@ -2430,26 +2449,26 @@ const getStyles = (isDark: boolean, colors: any) =>
     counterSkeletonValue: {
       width: 28,
       height: 22,
-      borderRadius: 6,
+      borderRadius: uiTokens.radius.small,
       backgroundColor: isDark ? "rgba(255,255,255,.12)" : "#E5E7EB",
     },
     counterSkeletonLabel: {
       width: 54,
       height: 11,
       marginTop: 10,
-      borderRadius: 5,
+      borderRadius: uiTokens.radius.small,
       backgroundColor: isDark ? "rgba(255,255,255,.08)" : "#EEF0F3",
     },
     discoveryCounterValueSkeleton: {
       width: 28,
       height: 22,
-      borderRadius: 6,
+      borderRadius: uiTokens.radius.small,
       backgroundColor: isDark ? "rgba(255,255,255,.12)" : "#E5E7EB",
     },
     discoveryCounterDetailSkeleton: {
       width: 64,
       height: 11,
-      borderRadius: 5,
+      borderRadius: uiTokens.radius.small,
       backgroundColor: isDark ? "rgba(255,255,255,.08)" : "#EEF0F3",
     },
     resultsSection: { paddingHorizontal: 16, paddingTop: 20 },
@@ -2492,7 +2511,7 @@ const getStyles = (isDark: boolean, colors: any) =>
       flexDirection: "row",
       padding: 3,
       gap: 2,
-      borderRadius: 11,
+      borderRadius: uiTokens.radius.input,
       backgroundColor: colors.background.paper,
       borderWidth: 1,
       borderColor: colors.divider,
@@ -2500,7 +2519,7 @@ const getStyles = (isDark: boolean, colors: any) =>
     modeButton: {
       width: 32,
       height: 32,
-      borderRadius: 8,
+      borderRadius: uiTokens.radius.small,
       alignItems: "center",
       justifyContent: "center",
     },
@@ -2522,7 +2541,7 @@ const getStyles = (isDark: boolean, colors: any) =>
       justifyContent: "center",
       gap: 6,
       paddingHorizontal: 12,
-      borderRadius: 10,
+      borderRadius: uiTokens.radius.input,
       borderWidth: 1,
       borderColor: colors.primary,
     },
@@ -2542,7 +2561,7 @@ const getStyles = (isDark: boolean, colors: any) =>
     eventCard: {
       overflow: "hidden",
       flexDirection: "row",
-      borderRadius: 18,
+      borderRadius: uiTokens.radius.media,
       borderWidth: 1,
       backgroundColor: colors.background.paper,
       borderColor: colors.divider,
@@ -2559,13 +2578,13 @@ const getStyles = (isDark: boolean, colors: any) =>
       width: "31%",
       minHeight: 224,
       flexDirection: "column",
-      borderRadius: 14,
+      borderRadius: uiTokens.radius.media,
     },
     railCard: {
       width: 250,
       minHeight: 280,
       flexDirection: "column",
-      borderRadius: 20,
+      borderRadius: uiTokens.radius.card,
     },
     eventCover: {
       width: 132,
@@ -2597,7 +2616,7 @@ const getStyles = (isDark: boolean, colors: any) =>
       left: 9,
       paddingHorizontal: 7,
       paddingVertical: 5,
-      borderRadius: 7,
+      borderRadius: uiTokens.radius.small,
       maxWidth: "88%",
       backgroundColor: "rgba(10, 28, 42, .86)",
     },
@@ -2613,7 +2632,7 @@ const getStyles = (isDark: boolean, colors: any) =>
       right: 8,
       width: 30,
       height: 30,
-      borderRadius: 9,
+      borderRadius: uiTokens.radius.small,
       alignItems: "center",
       justifyContent: "center",
       backgroundColor: "rgba(10, 28, 42, .78)",
@@ -2652,7 +2671,7 @@ const getStyles = (isDark: boolean, colors: any) =>
     attendeeAvatar: {
       width: 16,
       height: 16,
-      borderRadius: 8,
+      borderRadius: uiTokens.radius.small,
       borderWidth: 1.5,
       borderColor: colors.background.paper,
       backgroundColor: colors.divider,
@@ -2665,7 +2684,7 @@ const getStyles = (isDark: boolean, colors: any) =>
     },
     skeletonCard: {
       height: 136,
-      borderRadius: 18,
+      borderRadius: uiTokens.radius.media,
       backgroundColor: colors.background.paper,
       borderWidth: 1,
       borderColor: colors.divider,
@@ -2676,7 +2695,7 @@ const getStyles = (isDark: boolean, colors: any) =>
       alignItems: "center",
       paddingHorizontal: 24,
       paddingVertical: 44,
-      borderRadius: 20,
+      borderRadius: uiTokens.radius.card,
       borderWidth: 1,
       borderStyle: "dashed",
       borderColor: colors.divider,
@@ -2685,7 +2704,7 @@ const getStyles = (isDark: boolean, colors: any) =>
     emptyMark: {
       width: 64,
       height: 64,
-      borderRadius: 20,
+      borderRadius: uiTokens.radius.card,
       alignItems: "center",
       justifyContent: "center",
       backgroundColor: isDark ? "#27232B" : "#FFF2F0",
@@ -2710,7 +2729,7 @@ const getStyles = (isDark: boolean, colors: any) =>
       minHeight: 44,
       justifyContent: "center",
       paddingHorizontal: 20,
-      borderRadius: 12,
+      borderRadius: uiTokens.radius.input,
       backgroundColor: colors.primary,
       marginTop: 16,
     },
@@ -2725,7 +2744,7 @@ const getStyles = (isDark: boolean, colors: any) =>
     loadingDot: {
       width: 8,
       height: 8,
-      borderRadius: 4,
+      borderRadius: uiTokens.radius.small,
       backgroundColor: colors.primary,
     },
     loadingMoreText: {
@@ -2754,7 +2773,7 @@ const getStyles = (isDark: boolean, colors: any) =>
       width: 142,
       minHeight: 126,
       padding: 13,
-      borderRadius: 16,
+      borderRadius: uiTokens.radius.media,
       borderWidth: 1,
       borderColor: colors.divider,
       backgroundColor: colors.background.paper,
@@ -2762,7 +2781,7 @@ const getStyles = (isDark: boolean, colors: any) =>
     quickIcon: {
       width: 38,
       height: 38,
-      borderRadius: 11,
+      borderRadius: uiTokens.radius.input,
       alignItems: "center",
       justifyContent: "center",
       marginBottom: 10,
@@ -2785,7 +2804,7 @@ const getStyles = (isDark: boolean, colors: any) =>
       bottom: 22,
       width: 48,
       height: 48,
-      borderRadius: 16,
+      borderRadius: uiTokens.radius.media,
       alignItems: "center",
       justifyContent: "center",
       backgroundColor: colors.primary,
@@ -2805,7 +2824,7 @@ const getStyles = (isDark: boolean, colors: any) =>
       flex: 1,
       height: 46,
       paddingHorizontal: 13,
-      borderRadius: 14,
+      borderRadius: uiTokens.radius.media,
       borderWidth: 1,
       borderColor: colors.primary,
       color: colors.text.primary,
@@ -2829,7 +2848,7 @@ const getStyles = (isDark: boolean, colors: any) =>
     searchPill: {
       paddingHorizontal: 13,
       paddingVertical: 9,
-      borderRadius: 999,
+      borderRadius: uiTokens.radius.pill,
       borderWidth: 1,
       borderColor: colors.divider,
       backgroundColor: colors.background.paper,
@@ -2888,7 +2907,7 @@ const getStyles = (isDark: boolean, colors: any) =>
       alignSelf: "center",
       width: 42,
       height: 5,
-      borderRadius: 3,
+      borderRadius: uiTokens.radius.small,
       backgroundColor: colors.divider,
       marginBottom: 18,
     },
@@ -2913,7 +2932,7 @@ const getStyles = (isDark: boolean, colors: any) =>
       paddingHorizontal: 18,
       alignItems: "center",
       justifyContent: "center",
-      borderRadius: 999,
+      borderRadius: uiTokens.radius.pill,
       borderWidth: 1,
       borderColor: colors.divider,
       backgroundColor: isDark ? "#252528" : "#F5F5F7",
@@ -2933,7 +2952,7 @@ const getStyles = (isDark: boolean, colors: any) =>
       flex: 1,
       height: 55,
       paddingHorizontal: 14,
-      borderRadius: 14,
+      borderRadius: uiTokens.radius.media,
       borderWidth: 1,
       borderColor: colors.divider,
       backgroundColor: isDark ? "#252528" : "#F5F5F7",
@@ -2946,7 +2965,7 @@ const getStyles = (isDark: boolean, colors: any) =>
       paddingHorizontal: 15,
       alignItems: "center",
       justifyContent: "center",
-      borderRadius: 999,
+      borderRadius: uiTokens.radius.pill,
       borderWidth: 1,
       borderColor: colors.divider,
       backgroundColor: isDark ? "#252528" : "#F5F5F7",
@@ -2994,7 +3013,7 @@ const getStyles = (isDark: boolean, colors: any) =>
     radio: {
       width: 24,
       height: 24,
-      borderRadius: 12,
+      borderRadius: uiTokens.radius.input,
       borderWidth: 2,
       borderColor: colors.divider,
       alignItems: "center",
@@ -3004,7 +3023,7 @@ const getStyles = (isDark: boolean, colors: any) =>
     radioDot: {
       width: 12,
       height: 12,
-      borderRadius: 6,
+      borderRadius: uiTokens.radius.small,
       backgroundColor: colors.primary,
     },
     toggleRow: {
@@ -3026,7 +3045,7 @@ const getStyles = (isDark: boolean, colors: any) =>
     toggle: {
       width: 48,
       height: 28,
-      borderRadius: 14,
+      borderRadius: uiTokens.radius.media,
       padding: 3,
       justifyContent: "center",
       backgroundColor: colors.divider,
@@ -3035,7 +3054,7 @@ const getStyles = (isDark: boolean, colors: any) =>
     toggleThumb: {
       width: 22,
       height: 22,
-      borderRadius: 11,
+      borderRadius: uiTokens.radius.input,
       backgroundColor: "#fff",
     },
     toggleThumbActive: { alignSelf: "flex-end" },
@@ -3045,7 +3064,7 @@ const getStyles = (isDark: boolean, colors: any) =>
       alignItems: "center",
       justifyContent: "center",
       minHeight: 42,
-      borderRadius: 12,
+      borderRadius: uiTokens.radius.input,
       borderWidth: 1,
       borderColor: colors.divider,
     },
@@ -3063,7 +3082,7 @@ const getStyles = (isDark: boolean, colors: any) =>
       minHeight: 48,
       alignItems: "center",
       justifyContent: "center",
-      borderRadius: 14,
+      borderRadius: uiTokens.radius.media,
       backgroundColor: colors.primary,
       marginTop: 28,
     },

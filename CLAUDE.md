@@ -2,6 +2,12 @@
 
 ## Critical Rules
 
+### Node runtime
+
+Use Node **24.21.0** from `.nvmrc` and the root `packageManager` pin. Run
+`nvm use` and `pnpm check:node` before installing or building. See
+`packages/tools/NODE_RUNTIME.md` for local, CI and managed-runtime details.
+
 ### Codebase Memory MCP
 `codebase-memory-mcp` is the first-pass discovery layer for this repo.
 Treat it as the fastest source of truth for symbol lookup, dependency tracing, and repo orientation before opening files or using grep.
@@ -190,7 +196,7 @@ By design, `track=beta` (open testing — publicly joinable via a Play link, any
    - Runs the version bump + changelog and commits it as its own `chore: release vX.Y.Z` commit
    - Pushes the release branch to `origin` and `upstream`
    - Opens the protected `develop -> main` PR instead of pushing to `main`
-3. **Wait for `@edcalderon` approval**, then make sure the PR passes the patch coverage gate (Codecov's coverage of the PR's own new/changed lines, minimum 33% as of 2026-07-29, lowered back from a same-day 69% raise for release velocity — the 69% gate blocked PR #121 at 53.73% patch coverage despite substantial added test coverage, and chasing full coverage on large pre-existing screen components proved too costly per-PR) and the GitHub security scans before merging. This is a patch-only gate -- project-wide coverage stays on Codecov's `auto` target since the codebase overall is nowhere near even 33% today
+3. **Wait for `@edcalderon` approval**, then require at least **69% patch coverage** (the PR's new/changed lines) and passing GitHub security scans before merging. This matches AGENTS.md, README.md and codecov.yml. Project-wide coverage keeps Codecov's `auto` target.
 4. **Merge the PR.** That's the last manual step. `release-tag-on-merge.yml` fires automatically on the merge and handles everything below — do not run `npm run release:patch` on `main` or manually sync `develop`; both now happen for you:
    - Tags `github.event.pull_request.merge_commit_sha` as `vX.Y.Z` and pushes the tag to `origin` (not `upstream` — see below)
    - Fast-forwards `develop` to the same commit and pushes it to `origin`
@@ -530,3 +536,19 @@ Provider-agnostic source of truth. All auth providers replicate here.
 
 Migration history: V004 (create), V005 (rename ba_users), V006 (singular rename + FKs).
 See `apps/docs/docs/auth/USER_REGISTRY.md` for full schema and sync paths.
+
+## Shared UI and Storybook contract
+
+Read `PRODUCT.md` and `DESIGN.md` before frontend changes. The shared system lives
+in `packages/ui/src/system`: import `@hashpass/ui/tokens` and
+`@hashpass/ui/primitives` for cards, badges, chips, buttons and fields. Existing
+application theme aliases use the same palette. Do not create screen-specific
+radius, border or pill families.
+
+Run `pnpm check:design-system`, relevant tests and typechecking. Changes to shared
+primitives also require the production-component Storybook catalog and a real
+Storybook build; never use a successful fallback after a failed build as proof.
+Cover light/dark, phone/tablet/desktop, keyboard/disabled/loading/error states,
+long translations and reduced motion. See `docs/design-system-storybook.md`.
+Keep the design-debt baseline as an explicit legacy migration inventory, not an
+allowance for new drift. Impeccable guidance supplements these local rules.

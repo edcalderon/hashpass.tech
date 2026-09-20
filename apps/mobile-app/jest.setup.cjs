@@ -32,6 +32,7 @@ jest.mock('react-native', () => ({
   Image: 'Image',
   ImageBackground: 'ImageBackground',
   Modal: 'Modal',
+  KeyboardAvoidingView: 'KeyboardAvoidingView',
   Linking: {
     openURL: jest.fn(),
   },

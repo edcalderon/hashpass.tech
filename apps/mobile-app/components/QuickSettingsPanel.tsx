@@ -1,3 +1,5 @@
+import { IconButton, ModalBackdrop } from '@hashpass/ui/primitives';
+import { uiTokens, uiPalette } from '@hashpass/ui/tokens';
 /**
  * QuickSettingsPanel
  *
@@ -51,6 +53,8 @@ interface Props {
   hideAfterScrollY?: number;
   forceVisible?: boolean;
   topOffset?: number;
+  inline?: boolean;
+  showSignIn?: boolean;
 }
 
 type LocaleOption = { code: string; name: string };
@@ -113,6 +117,9 @@ function PillGroup<T extends string>({
               },
             ]}
             onPress={() => onChange(opt.value)}
+            accessibilityRole="button"
+            accessibilityState={{ selected: active }}
+            accessibilityLabel={opt.label}
             activeOpacity={0.72}
           >
             <opt.Icon size={12} color={fg} strokeWidth={2} />
@@ -137,6 +144,8 @@ export default function QuickSettingsPanel({
   hideAfterScrollY = 30,
   forceVisible = false,
   topOffset,
+  inline = false,
+  showSignIn = true,
 }: Props) {
   const { theme, setTheme, colors, isDark } = useTheme();
   const { locale, setLocale } = useLanguage();
@@ -149,6 +158,7 @@ export default function QuickSettingsPanel({
   const isOnAuthPage = pathname?.includes('/auth') || pathname === '/(shared)/auth';
   const [open, setOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const useModalPanel = Platform.OS !== 'web' || (inline && isMobile);
 
   const panelAnim = useRef(new Animated.Value(0)).current;
   const btnRotate = useRef(new Animated.Value(0)).current;
@@ -190,8 +200,8 @@ export default function QuickSettingsPanel({
     return { opacity: withTiming(visible ? 1 : 0, { duration: 160 }), pointerEvents: visible ? 'auto' : 'none' } as const;
   }, [scrollY, hideAfterScrollY, forceVisible]);
 
-  const bg = isDark ? 'rgb(14,14,26)' : 'rgb(255,255,255)';
-  const borderCol = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)';
+  const bg = uiPalette(isDark).surface;
+  const borderCol = uiPalette(isDark).border;
 
   const themeOptions: PillOption<ThemeMode>[] = [
     { value: 'dark',   label: t('settings.themeDark')  || 'Dark',  Icon: MoonIcon },
@@ -209,6 +219,7 @@ export default function QuickSettingsPanel({
     <Animated.View
       style={[
         panelStyles.panel,
+        useModalPanel && { position: 'relative', top: 0, right: 0, alignSelf: 'center', width: 320, maxWidth: '100%', maxHeight: '90%' },
         {
           backgroundColor: bg,
           borderColor: borderCol,
@@ -247,10 +258,13 @@ export default function QuickSettingsPanel({
                 panelStyles.langRow,
                 active && {
                   backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
-                  borderRadius: 10,
+                  borderRadius: uiTokens.radius.input,
                 },
               ]}
               onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setLocale(lang.code); }}
+              accessibilityRole="button"
+              accessibilityState={{ selected: active }}
+              accessibilityLabel={t(`languages.${lang.name}`)}
               activeOpacity={0.7}
             >
               <Text style={panelStyles.flag}>{getFlagEmoji(lang.code)}</Text>
@@ -300,10 +314,11 @@ export default function QuickSettingsPanel({
         isMobile && styles.containerMobile,
         typeof topOffset === 'number' ? { top: topOffset } : null,
         containerStyle,
+        inline && { position: 'relative', top: 0, right: 0 },
       ]}
     >
       {/* Backdrop */}
-      {open && Platform.OS === 'web' && (
+      {open && !useModalPanel && (
         <TouchableWithoutFeedback onPress={closePanel}>
           <View style={styles.backdrop} />
         </TouchableWithoutFeedback>
@@ -312,7 +327,7 @@ export default function QuickSettingsPanel({
       {/* Button row: [Settings] [Sign In] */}
       <View style={styles.btnRow}>
         {/* Settings gear — first/left */}
-        <View
+        {inline ? <IconButton mode={isDark ? 'dark' : 'light'} label={t('settings.title', 'Quick Settings')} accessibilityState={{ expanded: open }} onPress={togglePanel}><SettingsIcon size={22} color={colors.primary} /></IconButton> : (        <View
           style={[
             styles.triggerWrap,
             createShadowStyle('#000', { width: 0, height: 3 }, isDark ? 0.35 : 0.15, 6, 8) as ViewStyle,
@@ -333,10 +348,11 @@ export default function QuickSettingsPanel({
               />
             </Animated.View>
           </TouchableOpacity>
-        </View>
+        </View>)}
+
 
         {/* Sign-in button — direct access, second/right */}
-        {!isOnAuthPage && (
+        {showSignIn && !isOnAuthPage && (
           <View
             style={[
               styles.triggerWrap,
@@ -361,8 +377,8 @@ export default function QuickSettingsPanel({
       </View>
 
       {/* Panel */}
-      {open && Platform.OS === 'web' && panel}
-      {open && Platform.OS !== 'web' && (
+      {open && !useModalPanel && panel}
+      {open && useModalPanel && (
         <Modal
           transparent
           visible={open}
@@ -371,12 +387,12 @@ export default function QuickSettingsPanel({
           statusBarTranslucent
           onRequestClose={closePanel}
         >
-          <View style={styles.modalRoot}>
+          <ModalBackdrop mode={isDark ? 'dark' : 'light'}>
             <TouchableWithoutFeedback onPress={closePanel}>
               <View style={styles.modalBackdrop} />
             </TouchableWithoutFeedback>
             {panel}
-          </View>
+          </ModalBackdrop>
         </Modal>
       )}
     </Reanimated.View>
@@ -420,13 +436,13 @@ const styles = StyleSheet.create({
   triggerWrap: {
     width: 46,
     height: 46,
-    borderRadius: 23,
+    borderRadius: uiTokens.radius.pill,
   },
   loginWrap: {},
   trigger: {
     width: 46,
     height: 46,
-    borderRadius: 23,
+    borderRadius: uiTokens.radius.pill,
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
@@ -440,7 +456,7 @@ const panelStyles = StyleSheet.create({
     right: 0,
     width: 264,
     maxHeight: 460,
-    borderRadius: 18,
+    borderRadius: uiTokens.radius.card,
     borderWidth: 1,
     paddingHorizontal: 14,
     paddingVertical: 14,
@@ -463,7 +479,7 @@ const panelStyles = StyleSheet.create({
   langBadge: {
     width: 26,
     height: 26,
-    borderRadius: 13,
+    borderRadius: uiTokens.radius.input,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
@@ -505,9 +521,10 @@ const sheet = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 4,
+    minHeight: uiTokens.control.compactHeight,
     paddingVertical: 7,
     paddingHorizontal: 4,
-    borderRadius: 999,
+    borderRadius: uiTokens.radius.pill,
     borderWidth: 1,
   },
   pillLabel: {

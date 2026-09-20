@@ -1,3 +1,5 @@
+import DesignSystemStyles from '../components/DesignSystemStyles';
+import { isPublicEventRoute } from '../lib/public-routes';
 import '../config/reanimated'; // CRITICAL: Ensure Reanimated is imported and configured first
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -105,6 +107,7 @@ function RootLayout() {
       <SafeAreaProvider>
         <GestureHandlerRootView style={{ flex: 1 }}>
           <ThemeProvider value={theme}>
+            <DesignSystemStyles />
             <View style={{ flex: 1, backgroundColor: theme.colors.background.default }}>
               <SystemBars style={theme.isDark ? 'light' : 'dark'} />
               <EventProvider>
@@ -347,7 +350,7 @@ function ThemedContent() {
 
   // Check if we're in the auth flow
   const isAuthFlow = (segments[0] === '(shared)' && (segments as string[])[1] === 'auth') || pathname.startsWith('/(shared)/auth') || pathname.startsWith('/auth');
-  const isEventPublic = pathname.startsWith('/events/');
+  const isEventPublic = isPublicEventRoute(pathname);
   const isHomePage = pathname === '/home' || pathname === '/' || pathname === '/index';
   // Public pages that don't require authentication
   const isPublicPage =
@@ -450,7 +453,7 @@ function ThemedContent() {
         return () => clearTimeout(redirectTimer);
       };
 
-      if (isDashboardRoute && !isLoggedIn) {
+      if (isDashboardRoute && !isEventPublic && !isLoggedIn) {
         if (shouldDelayRedirectForRecentAuth()) {
           triggerAuthRecheck();
           return;

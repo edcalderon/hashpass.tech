@@ -1,7 +1,7 @@
+import { uiTokens } from '@hashpass/ui/tokens';
 import React, { useRef } from 'react';
-import { View, Text, StyleSheet, Platform, Pressable, Dimensions, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Platform, Pressable, ScrollView, useWindowDimensions, TouchableOpacity } from 'react-native';
 import Animated, { useSharedValue } from 'react-native-reanimated';
-import { useTheme } from '@/hooks/useTheme';
 import { useTranslation } from '@/i18n/i18n';
 import { useRouter } from 'expo-router';
 import { GlowingEffect } from './GlowingEffect';
@@ -9,33 +9,30 @@ import FlipCard from './FlipCard';
 import FeatureFlipCard from './FeatureFlipCard';
 import { Ionicons } from '../lib/vector-icons';
 
-const CARD_SIZE = Math.min(280, Dimensions.get('window').width - 64);
-
-const getFeatureStyles = (isDark: boolean, colors: any) => StyleSheet.create({
+const getFeatureStyles = (isDark: boolean, cardWidth: number) => StyleSheet.create({
   feature: {
-    marginBottom: 24,
-    padding: 20,
-    borderRadius: 24,
+    padding: 16,
+    borderRadius: uiTokens.radius.card,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: isDark ? 0.45 : 0.08,
+    shadowOpacity: isDark ? 0.2 : 0.06,
     shadowRadius: 16,
     elevation: 4,
     borderWidth: 1,
     borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)',
     alignItems: 'center',
     backgroundColor: isDark ? '#07070a' : '#f8fafc',
-    width: CARD_SIZE + 40,
+    width: cardWidth,
   },
   cardInner: {
-    width: CARD_SIZE,
-    height: CARD_SIZE,
+    width: cardWidth - 32,
+    height: 188,
   },
   iconContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    marginBottom: 16,
+    width: 44,
+    height: 44,
+    borderRadius: uiTokens.radius.card,
+    marginBottom: 12,
     justifyContent: 'center',
     alignItems: 'center',
     alignSelf: 'center',
@@ -43,13 +40,13 @@ const getFeatureStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   iconContainerSmall: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: uiTokens.radius.media,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 0,
   },
   featureTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '800',
     marginBottom: 8,
     letterSpacing: -0.5,
@@ -57,6 +54,7 @@ const getFeatureStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     color: isDark ? '#ffffff' : '#09090b',
   },
   featureTitleSmall: {
+    flex: 1,
     fontSize: 16,
     fontWeight: '700',
     letterSpacing: -0.3,
@@ -71,8 +69,8 @@ const getFeatureStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     color: isDark ? '#71717a' : '#a1a1aa',
   },
   featureDescription: {
-    fontSize: 15,
-    lineHeight: 26,
+    fontSize: 13,
+    lineHeight: 20,
     textAlign: 'left',
     color: isDark ? '#d4d4d8' : '#3f3f46',
     flexShrink: 1,
@@ -80,7 +78,7 @@ const getFeatureStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   actionButton: {
     paddingVertical: 10,
     paddingHorizontal: 20,
-    borderRadius: 10,
+    borderRadius: uiTokens.radius.input,
     borderWidth: 1,
     alignItems: 'center',
     borderColor: 'rgba(6, 182, 212, 0.3)',
@@ -94,9 +92,8 @@ const getFeatureStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   webCardItem: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 30,
-    width: 320,
-    maxWidth: '92%' as any,
+    width: cardWidth,
+    flexShrink: 0,
   },
 });
 
@@ -117,10 +114,10 @@ const Features: React.FC<FeaturesProps> = ({
   feature3Style = {},
   isDark = false,
 }) => {
-  const { colors } = useTheme();
+  const { width } = useWindowDimensions();
   const { t } = useTranslation('index');
   const router = useRouter();
-  const featureStyles = getFeatureStyles(isDark, colors);
+  const featureStyles = getFeatureStyles(isDark, Math.max(220, Math.min(280, (width - 64) / 3)));
   const flipValues = useRef([
     useSharedValue(false),
     useSharedValue(false),
@@ -160,7 +157,7 @@ const Features: React.FC<FeaturesProps> = ({
   if (Platform.OS === 'web') {
     return (
       <Animated.View style={[containerStyles?.featuresContainer, featuresAnimatedStyle]}>
-        <View style={containerStyles?.featuresGrid}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={containerStyles?.featuresGrid}>
           {features.map((feature, index) => (
             <Animated.View key={feature.id} style={[featureStyles.webCardItem, [feature1Style, feature2Style, feature3Style][index]]}>
               <FeatureFlipCard
@@ -175,14 +172,14 @@ const Features: React.FC<FeaturesProps> = ({
               />
             </Animated.View>
           ))}
-        </View>
+        </ScrollView>
       </Animated.View>
     );
   }
 
   return (
     <Animated.View style={[containerStyles?.featuresContainer, featuresAnimatedStyle]}>
-      <View style={containerStyles?.featuresGrid}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={containerStyles?.featuresGrid}>
         {features.map((feature, index) => (
           <Pressable
             key={feature.id}
@@ -208,13 +205,13 @@ const Features: React.FC<FeaturesProps> = ({
                     flex: 1,
                     justifyContent: 'center',
                     alignItems: 'center',
-                    padding: 16,
+                    padding: 8,
                   }}>
                     <View style={[
                       featureStyles.iconContainer,
                       { borderWidth: 1, borderColor: `${feature.color}66`, backgroundColor: `${feature.color}1f` },
                     ]}>
-                      <Ionicons name={feature.icon as any} size={32} color={feature.color} />
+                      <Ionicons name={feature.icon as any} size={22} color={feature.color} />
                     </View>
                     <Text style={featureStyles.featureTitle}>{feature.title}</Text>
                     <Text style={featureStyles.featureHint}>{t('tapToRead', 'Tap to read more')}</Text>
@@ -223,7 +220,7 @@ const Features: React.FC<FeaturesProps> = ({
                 FlippedContent={
                   <View style={{
                     flex: 1,
-                    padding: 20,
+                    padding: 0,
                     justifyContent: 'space-between',
                   }}>
                     <View>
@@ -236,7 +233,9 @@ const Features: React.FC<FeaturesProps> = ({
                         </View>
                         <Text style={featureStyles.featureTitleSmall}>{feature.title}</Text>
                       </View>
-                      <Text style={featureStyles.featureDescription}>{feature.description}</Text>
+                      <ScrollView style={{ maxHeight: 88 }} nestedScrollEnabled>
+                        <Text style={featureStyles.featureDescription}>{feature.description}</Text>
+                      </ScrollView>
                     </View>
                     <TouchableOpacity
                       style={[featureStyles.actionButton, { borderColor: `${feature.color}4d`, backgroundColor: `${feature.color}12` }]}
@@ -251,7 +250,7 @@ const Features: React.FC<FeaturesProps> = ({
             </View>
           </Pressable>
         ))}
-      </View>
+      </ScrollView>
     </Animated.View>
   );
 };

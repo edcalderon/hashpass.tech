@@ -45,22 +45,25 @@ export default function FeatureFlipCard({
       style={
         {
           '--primary': color,
-          width: 'min(320px, 92vw)',
+          width: '100%',
+          height: 220,
         } as React.CSSProperties
       }
-      className="group relative h-[320px] [perspective:2000px]"
+      className="group relative [perspective:2000px]"
       onMouseEnter={() => setIsFlipped(true)}
       onMouseLeave={() => setIsFlipped(false)}
       onClick={() => setIsFlipped((value) => !value)}
       role="button"
       tabIndex={0}
       onKeyDown={(event) => {
+        if (event.target !== event.currentTarget) return;
         if (event.key === 'Enter' || event.key === ' ') {
           event.preventDefault();
           setIsFlipped((value) => !value);
         }
       }}
       aria-label={title}
+      aria-expanded={isFlipped}
     >
       <div
         className={cn(
@@ -71,66 +74,69 @@ export default function FeatureFlipCard({
         )}
       >
         <div
+          aria-hidden={isFlipped}
           className={cn(
             'absolute inset-0 h-full w-full',
             '[transform:rotateY(0deg)] [backface-visibility:hidden]',
             'overflow-hidden rounded-3xl',
             'border',
             isDark
-              ? 'bg-[#07070a] border-[#1d1d23] shadow-[0_14px_34px_rgba(0,0,0,0.55)]'
-              : 'bg-[#f8fafc] border-slate-200 shadow-[0_8px_24px_rgba(15,23,42,0.08)]'
+              ? 'bg-[#19191f] border-[#34343e]'
+              : 'bg-[#f7f9fa] border-[#dfe3e8]'
           )}
         >
-          <div className="relative z-10 flex h-full flex-col items-center justify-center gap-6 px-8 pb-5 text-center">
+          <div className="relative z-10 flex h-full flex-col items-center justify-center gap-3 px-5 py-4 text-center">
             <div
-              className="flex h-16 w-16 items-center justify-center rounded-full border transition-transform duration-300 group-hover:scale-105"
+              className="flex h-11 w-11 items-center justify-center rounded-full border transition-transform duration-300 group-hover:scale-105"
               style={{ borderColor: `${color}66`, backgroundColor: `${color}1f`, color }}
             >
-              <IconComponent className="h-7 w-7" />
+              <IconComponent className="h-5 w-5" />
             </div>
 
-            <h3 className={cn('text-[40px] font-extrabold leading-none tracking-tight', isDark ? 'text-white' : 'text-zinc-900')}>
+            <h3 className={cn('text-[22px] font-bold leading-tight tracking-tight', isDark ? 'text-white' : 'text-zinc-900')}>
               {title}
             </h3>
 
-            <p className={cn('text-xs font-semibold tracking-[0.2em] uppercase', isDark ? 'text-zinc-400' : 'text-zinc-500')}>
+            <p className={cn('text-[10px] font-semibold tracking-[0.16em] uppercase', isDark ? 'text-zinc-400' : 'text-zinc-500')}>
               {hintText}
             </p>
           </div>
         </div>
 
         <div
+          aria-hidden={!isFlipped}
           className={cn(
             'absolute inset-0 h-full w-full',
             '[transform:rotateY(180deg)] [backface-visibility:hidden]',
-            'rounded-3xl p-6',
+            'rounded-3xl p-4',
             'border',
             isDark
-              ? 'bg-[#07070a] border-[#1d1d23] shadow-[0_14px_34px_rgba(0,0,0,0.55)]'
-              : 'bg-[#f8fafc] border-slate-200 shadow-[0_8px_24px_rgba(15,23,42,0.08)]',
+              ? 'bg-[#19191f] border-[#34343e]'
+              : 'bg-[#f7f9fa] border-[#dfe3e8]',
             'flex flex-col'
           )}
         >
-          <div className="relative z-10 flex h-full flex-col">
-            <div className="mb-4 flex items-center gap-2">
+          <div className="relative z-10 flex h-full min-h-0 flex-col">
+            <div className="mb-2 flex items-center gap-2">
               <div
                 className="flex h-8 w-8 items-center justify-center rounded-full border"
                 style={{ borderColor: `${color}66`, backgroundColor: `${color}1f`, color }}
               >
                 <IconComponent className="h-4 w-4" />
               </div>
-              <h3 className={cn('text-lg font-semibold tracking-tight', isDark ? 'text-white' : 'text-zinc-900')}>{title}</h3>
+              <h3 className={cn('text-sm font-semibold tracking-tight', isDark ? 'text-white' : 'text-zinc-900')}>{title}</h3>
             </div>
 
-            <p className={cn('text-base leading-8', isDark ? 'text-zinc-200' : 'text-zinc-700')}>
+            <p className={cn('min-h-0 flex-1 overflow-y-auto text-[13px] leading-5', isDark ? 'text-zinc-200' : 'text-zinc-700')}>
               {description}
             </p>
 
-            <div className="mt-auto pt-5">
+            <div className="mt-auto shrink-0 pt-3">
               <InteractiveHoverButton
+                tabIndex={isFlipped ? 0 : -1}
                 text={actionText}
-                className="w-full !border-cyan-400/30 !bg-cyan-500/12 !py-2.5 !text-base"
-                onClick={(event) => {
+                className="w-full !border-cyan-400/30 !bg-cyan-500/12 !py-2 !text-sm"
+                onClick={(event: React.MouseEvent<HTMLElement>) => {
                   event.stopPropagation();
                   router.push(actionHref as any);
                 }}

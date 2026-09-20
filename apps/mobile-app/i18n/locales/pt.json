@@ -451,7 +451,34 @@
       "title": "Pronto para começar?",
       "subtitle": "Junte-se a milhares de usuários que confiam no HASHPASS com sua vida digital.",
       "startNow": "Começar agora"
-    }
+    },
+    "howItWorks": {
+      "badge": "Como funciona",
+      "title": "Como o HASHPASS funciona",
+      "subtitle": "Um passe, um login, todos os eventos — com rapidez e privacidade.",
+      "cards": {
+        "scan": {
+          "title": "Escaneie e entre",
+          "description": "Evite filas. Seu passe é um código QR dinâmico que permite entrar em um evento na hora, sem impressões nem burocracia."
+        },
+        "allies": {
+          "title": "Rede de parceiros",
+          "description": "Entre uma vez e acesse os espaços, clubes e eventos das comunidades parceiras da rede HASHPASS."
+        },
+        "meet": {
+          "title": "Conheça e conecte-se",
+          "description": "Agende encontros e converse com outros participantes com criptografia de ponta a ponta. Conexões reais, com privacidade."
+        },
+        "rewards": {
+          "title": "Carteira de recompensas",
+          "description": "Ganhe pontos LUKAS ao comparecer e participar dos eventos e troque-os por benefícios em toda a rede."
+        }
+      }
+    },
+    "exploreAllEvents": "Explorar todos os eventos",
+    "eventsExplorerSubtitle": "Descubra eventos pelo mundo e encontre o seu.",
+    "noEventsFound": "Nenhum evento encontrado.",
+    "tapToRead": "Toque para saber mais"
   },
   "walletDesc": "Acesse seus ingressos verificados por blockchain",
   "loyalty": "Painel de fidelidade",
@@ -1150,5 +1177,47 @@
       "title": "Dúvidas",
       "text": "Se você tiver dúvidas sobre como excluir sua conta ou seus dados, entre em contato conosco em:\n\nE-mail: privacy@hashpass.tech\nSite: https://hashpass.tech"
     }
+  },
+  "publicEvents": {
+    "back": "Voltar ao início",
+    "badge": "Descubra · Conecte-se · Faça parte",
+    "title": "Encontre sua próxima conexão.",
+    "subtitle": "Explore os próximos eventos, encontre sua comunidade e mantenha todos os passes em um só lugar.",
+    "loadingFilm": "Carregando vídeo do evento",
+    "featured": "EM DESTAQUE",
+    "viewEvent": "Explorar evento",
+    "previous": "Anterior",
+    "next": "Próximo",
+    "play": "Reproduzir destaques",
+    "pause": "Pausar destaques",
+    "search": "Buscar eventos, cidades, países ou séries",
+    "series": "SÉRIES DE EVENTOS",
+    "allSeries": "Todas as séries",
+    "regions": "REGIÕES",
+    "allRegions": "Todas as regiões",
+    "upcomingFirst": "Próximos primeiro",
+    "reset": "Limpar filtros",
+    "undated": "Data a confirmar",
+    "empty": "Nenhum evento corresponde à sua busca.",
+    "emptyHint": "Tente outro local ou limpe os filtros.",
+    "all": "Todos os eventos",
+    "upcoming": "Próximos",
+    "live": "Ao vivo",
+    "past": "Eventos anteriores",
+    "navEvents": "Explorar eventos",
+    "navPasses": "Meus passes",
+    "navWallet": "Carteira",
+    "navCommunity": "Comunidade",
+    "guest": "Modo convidado",
+    "openApp": "Abrir app",
+    "join": "Entrar no HASHPASS",
+    "guestHint": "Explore livremente. Cadastre-se para salvar eventos, gerenciar passes e se conectar.",
+    "authTitle": "Cadastre-se para usar todo o app",
+    "authHint": "Crie uma conta ou entre com um código de verificação. Sua busca de eventos será mantida.",
+    "close": "Fechar",
+    "navQr": "Meu QR",
+    "navNotifications": "Notificações",
+    "navProfile": "Perfil",
+    "guestDescription": "Você está explorando uma versão simplificada do HASHPASS. Cadastre-se e baixe o app para acessar a experiência completa, incluindo seus passes, eventos salvos e recursos da comunidade."
   }
 }

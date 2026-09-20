@@ -1,3 +1,4 @@
+import { uiTokens } from '@hashpass/ui/tokens';
 "use client";
 import React, { useState, useEffect, useMemo } from "react";
 import { motion } from "motion/react";
@@ -22,16 +23,16 @@ const isValidEthereumAddress = (address: string): boolean => {
 const getAvatarUrls = (address: string): string[] => {
   const normalizedAddress = address.toLowerCase();
   const urls: string[] = [];
-  
+
   // Only use effigy.im for valid Ethereum addresses to avoid 500 errors
   if (isValidEthereumAddress(address)) {
     urls.push(`https://effigy.im/a/${normalizedAddress}.svg`);
   }
-  
+
   // Add other fallbacks
   urls.push(`https://avatar.vercel.sh/${normalizedAddress}`);
   urls.push(`https://ui-avatars.com/api/?name=${encodeURIComponent(normalizedAddress)}&background=random&size=128`);
-  
+
   return urls;
 };
 
@@ -83,7 +84,7 @@ const TestimonialsColumn = (props: {
 }) => {
   // Use reduced motion if user prefers it
   const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  
+
   return (
     <div className={props.className}>
       <motion.div
@@ -102,15 +103,15 @@ const TestimonialsColumn = (props: {
         }}
         className="flex flex-col gap-6 pb-6 bg-background"
       >
-        
+
         {[
           ...new Array(2).fill(0).map((_, index) => (
             <React.Fragment key={index}>
               {props.testimonials.map(({ text, wallet, role }: any, i: any) => {
                 const walletAddress = wallet || "0x0000000000000000000000000000000000000000";
                 return (
-                  <div 
-                    className="p-10 rounded-3xl border shadow-lg shadow-primary/10 max-w-xs w-full" 
+                  <div
+                    className="p-6 rounded-3xl border max-w-xs w-full"
                     key={i}
                     style={{
                       willChange: 'auto', // Static content, no animation needed
@@ -118,9 +119,9 @@ const TestimonialsColumn = (props: {
                   >
                     <div>{text}</div>
                     <div className="flex items-center gap-2 mt-5">
-                      <AvatarImage 
-                        address={walletAddress} 
-                        alt={formatWalletAddress(walletAddress)} 
+                      <AvatarImage
+                        address={walletAddress}
+                        alt={formatWalletAddress(walletAddress)}
                       />
                       <div className="flex flex-col">
                         <div className="font-medium tracking-tight leading-5 font-mono text-sm">

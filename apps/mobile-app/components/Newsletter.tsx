@@ -1,3 +1,4 @@
+import { uiTokens, uiPalette } from '@hashpass/ui/tokens';
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
@@ -106,7 +107,7 @@ const Newsletter = ({ mode }: Props) => {
   };
 
   const textColor = mode === 'dark' ? '#fff' : '#111';
-  const btnBg = isDark ? '#0e7490' : '#b91c1c';
+  const btnBg = uiPalette(isDark).accentFill;
   const cardBg = mode === 'dark' ? 'transparent' : '#fff';
 
   if (subscribed) {
@@ -227,14 +228,14 @@ const Newsletter = ({ mode }: Props) => {
 
 const styles = StyleSheet.create({
   container: { paddingVertical: 24, paddingHorizontal: 16 },
-  card: { borderRadius: 16, padding: 20 },
+  card: { borderRadius: uiTokens.radius.media, padding: 20 },
   title: { fontSize: 22, fontWeight: '700', textAlign: 'center', marginBottom: 6 },
   subtitle: { fontSize: 14, textAlign: 'center', marginBottom: 16 },
   avatarRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
-  avatar: { width: 36, height: 36, borderRadius: 18, borderWidth: 2, borderColor: '#fff' },
+  avatar: { width: 36, height: 36, borderRadius: uiTokens.radius.circle, borderWidth: 2, borderColor: '#fff' },
   subscribersText: { marginLeft: 12, fontSize: 13, color: '#6b7280' },
   input: {
-    borderWidth: 1, borderRadius: 24, paddingVertical: 12, paddingHorizontal: 16,
+    borderWidth: 1, borderRadius: uiTokens.radius.input, paddingVertical: 12, paddingHorizontal: 16,
     fontSize: 15, marginBottom: 6,
   },
   msgRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 8, paddingHorizontal: 4 },
@@ -242,13 +243,13 @@ const styles = StyleSheet.create({
   errorText: { color: '#ef4444', fontSize: 12, flex: 1, lineHeight: 18 },
   infoIcon: { fontSize: 12, marginRight: 5, marginTop: 1, color: '#10b981' },
   infoText: { color: '#10b981', fontSize: 12, flex: 1, lineHeight: 18 },
-  btn: { borderRadius: 24, paddingVertical: 14, alignItems: 'center', marginTop: 4, marginBottom: 12 },
+  btn: { minHeight: uiTokens.control.minHeight, borderRadius: uiTokens.radius.pill, paddingVertical: 14, alignItems: 'center', marginTop: 4, marginBottom: 12 },
   btnText: { color: '#fff', fontWeight: '600', fontSize: 16 },
   privacy: { fontSize: 11, color: '#9ca3af', textAlign: 'center' },
   // Success screen
   successIconWrap: { alignItems: 'center', marginBottom: 16 },
   successIconCircle: {
-    width: 72, height: 72, borderRadius: 36,
+    width: 72, height: 72, borderRadius: uiTokens.radius.circle,
     backgroundColor: 'rgba(52,199,89,0.12)',
     borderWidth: 1.5, borderColor: 'rgba(52,199,89,0.35)',
     alignItems: 'center', justifyContent: 'center',
@@ -258,7 +259,7 @@ const styles = StyleSheet.create({
   successMsg: { fontSize: 14, textAlign: 'center', marginBottom: 20, lineHeight: 20 },
   countdownWrap: { alignItems: 'center', gap: 8 },
   ringOuter: {
-    width: 48, height: 48, borderRadius: 24,
+    width: 48, height: 48, borderRadius: uiTokens.radius.circle,
     borderWidth: 2.5, borderColor: '#3b82f6',
     alignItems: 'center', justifyContent: 'center',
     marginBottom: 4,

@@ -1,6 +1,7 @@
+import { uiTokens, uiPalette } from '@hashpass/ui/tokens';
 'use client'
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence, useInView } from 'framer-motion';
+import { motion, AnimatePresence, useInView } from 'motion/react';
 
 // Load cap-widget from CDN so Metro never tries to bundle the browser-only package.
 // Uses customElements.whenDefined so callers don't have to guess when it's ready.
@@ -348,7 +349,7 @@ const Newsletter = ({ mode }: Props) => {
 
                             <div className='w-full space-y-4 mt-6'>
                                 <div className='relative'>
-                                    <div className={`relative flex items-center rounded-full border ${error ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'} focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent transition-all duration-200 ${mode === "dark" ? 'bg-transparent' : 'bg-white'}`}>
+                                    <div style={{ borderRadius: uiTokens.radius.input, borderColor: error ? uiPalette(isDark).danger : uiPalette(isDark).border }} className={`relative flex items-center border ${error ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'} focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent transition-all duration-200 ${mode === "dark" ? 'bg-transparent' : 'bg-white'}`}>
                                         <svg className='h-5 w-5 text-gray-400 absolute left-3' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
                                             <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z' />
                                         </svg>
@@ -361,7 +362,7 @@ const Newsletter = ({ mode }: Props) => {
                                                 if (infoMessage) setInfoMessage('');
                                             }}
                                             placeholder={t('emailPlaceholder')}
-                                            className='w-full px-4 py-3 pl-10 text-sm sm:text-base rounded-full bg-transparent outline-none transition-all duration-200 placeholder-gray-400 dark:placeholder-white dark:text-white text-gray-600 dark:text-gray-300'
+                                            className='w-full px-4 py-3 pl-10 text-sm sm:text-base bg-transparent outline-none transition-all duration-200 placeholder-gray-400 dark:placeholder-white dark:text-white text-gray-600 dark:text-gray-300'
                                             disabled={isLoading}
                                             onKeyDown={(e) => {
                                                 if (e.key === 'Enter') {
@@ -422,10 +423,8 @@ const Newsletter = ({ mode }: Props) => {
                                         handleSubscribe();
                                     }}
                                     disabled={isLoading || (isEmailValid && !captchaToken)}
-                                    className={`w-full rounded-full font-medium py-3 px-6 transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl disabled:hover:shadow-none ${isDark
-                                            ? 'bg-cyan-700 hover:bg-cyan-700 text-white hover:shadow-cyan-900/50'
-                                            : 'bg-red-700 hover:bg-red-600 text-white hover:shadow-red-500/20'
-                                        }`}
+                                    style={{ minHeight: uiTokens.control.minHeight, borderRadius: uiTokens.radius.pill, backgroundColor: uiPalette(isDark).accentFill, color: uiPalette(isDark).onAccent }}
+                                    className="w-full font-semibold py-3 px-6 transition-opacity duration-200 hover:opacity-90 disabled:opacity-45 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                                 >
                                     {isLoading ? (
                                         <>

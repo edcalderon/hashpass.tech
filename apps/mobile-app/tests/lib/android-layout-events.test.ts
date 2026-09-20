@@ -55,12 +55,10 @@ describe("Android layout event crash guards", () => {
       "../../components/explorer/QuickAccessGrid.tsx",
     );
 
-    expect(hashPointsSource).toContain(
-      "onLayout={Platform.OS === 'android' ? undefined : handleLayout}",
-    );
-    expect(blockchainTokensSource).toContain(
-      "onLayout={Platform.OS === 'android' ? undefined : handleLayout}",
-    );
+    // The wallet refactor removes these carousels entirely, including their
+    // unsafe native layout callbacks.
+    expect(hashPointsSource).not.toContain("onLayout=");
+    expect(blockchainTokensSource).not.toContain("onLayout=");
     expect(quickAccessGridSource).toContain(
       "onLayout={Platform.OS === 'android' ? undefined : handleLayout}",
     );

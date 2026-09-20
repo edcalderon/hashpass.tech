@@ -1,3 +1,4 @@
+import { isPublicExplorerRoute } from "../../../lib/public-routes";
 import React, {
   useRef,
   useEffect,
@@ -34,6 +35,7 @@ import { Ionicons } from "../../../lib/vector-icons";
 import { MorphIcon, type MorphHandle } from "../../../lib/morph-icon";
 import { Menu as LucideMenu, X as LucideX } from "lucide";
 import {
+  Slot,
   useRouter,
   usePathname,
   useNavigation as useExpoNavigation,
@@ -1227,6 +1229,15 @@ function CustomDrawerContent({
 
 // Main Dashboard Layout
 export default function DashboardLayout() {
+  const { isLoggedIn } = useAuth();
+  const pathname = usePathname();
+  // Guest discovery must not mount account loaders, notifications or the
+  // authenticated drawer guard. Other dashboard routes keep their guard.
+  if (!isLoggedIn && isPublicExplorerRoute(pathname)) return <Slot />;
+  return <AuthenticatedDashboardLayout />;
+}
+
+function AuthenticatedDashboardLayout() {
   const { colors, isDark } = useTheme();
   const isMobile = useIsMobile();
   const insets = useSafeAreaInsets();

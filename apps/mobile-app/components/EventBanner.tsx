@@ -1,3 +1,5 @@
+import { Badge } from '@hashpass/ui/primitives';
+import { uiTokens } from '@hashpass/ui/tokens';
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -311,9 +313,7 @@ export default function EventBanner({
         {/* Main Event Info */}
         <View style={styles.mainInfo}>
           {eventLabel ? (
-            <View style={styles.communityLabel}>
-              <Text style={styles.communityLabelText}>{eventLabel}</Text>
-            </View>
+            <Badge tone="onMedia">{eventLabel}</Badge>
           ) : null}
           {tourBrand ? (
             <View style={styles.logoContainer}>
@@ -514,7 +514,7 @@ const getStyles = (
       color: "#FFFFFF",
       borderColor: "rgba(255, 255, 255, 0.72)",
       borderWidth: 1,
-      borderRadius: 999,
+      borderRadius: uiTokens.radius.pill,
       fontSize: 12,
       fontWeight: "800",
       letterSpacing: 1.2,
@@ -565,7 +565,7 @@ const getStyles = (
       borderWidth: 1,
       paddingHorizontal: 14,
       paddingVertical: 6,
-      borderRadius: 999,
+      borderRadius: uiTokens.radius.pill,
       marginBottom: 16,
     },
     archiveBadgeText: {
@@ -620,7 +620,7 @@ const getStyles = (
       backgroundColor: "rgba(255, 255, 255, 0.18)",
       borderColor: "rgba(255, 255, 255, 0.42)",
       borderWidth: 1,
-      borderRadius: 999,
+      borderRadius: uiTokens.radius.pill,
       paddingHorizontal: 12,
       paddingVertical: 5,
       marginBottom: 10,
@@ -638,11 +638,11 @@ const getStyles = (
       fontWeight: "700",
     },
     bannerCta: {
-      minHeight: 44,
+      minHeight: uiTokens.control.minHeight,
       alignItems: "center",
       justifyContent: "center",
       paddingHorizontal: 18,
-      borderRadius: 12,
+      borderRadius: uiTokens.radius.pill,
       backgroundColor: colors.primary,
       zIndex: 3,
     },

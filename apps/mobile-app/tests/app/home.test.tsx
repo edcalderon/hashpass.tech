@@ -171,6 +171,8 @@ const loadHomeScreen = ({
       { virtual: true },
     );
 
+    jest.doMock("../../lib/vector-icons", () => ({ Ionicons: "Ionicons" }));
+
     jest.doMock("react-native-reanimated", () => ({
       __esModule: true,
       default: {
@@ -180,6 +182,8 @@ const loadHomeScreen = ({
       Easing: {
         ease: "ease",
         inOut: (value: unknown) => value,
+        out: (value: unknown) => value,
+        cubic: "cubic",
       },
       Extrapolation: {
         CLAMP: "clamp",
@@ -200,6 +204,7 @@ const loadHomeScreen = ({
       // useCallback closing over one -- fake it with useRef instead of
       // returning a fresh object on every render.
       useSharedValue: (value: unknown) => React.useRef({ value }).current,
+      cancelAnimation: jest.fn(),
       withDelay: (_delay: number, value: unknown) => value,
       withRepeat: (value: unknown) => value,
       withSequence: (...values: unknown[]) => values[values.length - 1],
@@ -217,8 +222,7 @@ const loadHomeScreen = ({
     }));
 
     jest.doMock("react-native-svg", () => ({
-      Svg: "Svg",
-      Path: "Path",
+      __esModule: true, default: "Svg", Svg: "Svg", Circle: "Circle", Line: "Line", Path: "Path", Rect: "Rect",
     }));
 
     jest.doMock("expo-haptics", () => ({

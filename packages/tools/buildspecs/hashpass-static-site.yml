@@ -13,8 +13,10 @@ cache:
 phases:
   install:
     runtime-versions:
-      nodejs: 22
+      nodejs: 24
     commands:
+      - n "$(cat .nvmrc)"
+      - hash -r
       - corepack enable
       - export PNPM_VERSION="$(node packages/tools/scripts/resolve-pnpm-version.js)"
       - corepack prepare pnpm@${PNPM_VERSION} --activate

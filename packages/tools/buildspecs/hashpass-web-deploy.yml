@@ -6,6 +6,13 @@ env:
     PNPM_STORE_DIR: .pnpm-store
 
 phases:
+  install:
+    runtime-versions:
+      nodejs: 24
+    commands:
+      - n "$(cat .nvmrc)"
+      - hash -r
+      - corepack enable
   build:
     commands:
       - bash packages/tools/scripts/build-static-site.sh

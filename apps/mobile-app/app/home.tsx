@@ -1,3 +1,5 @@
+import { ActionButton } from '@hashpass/ui/primitives';
+import { uiTokens } from '@hashpass/ui/tokens';
 import React, { useCallback, useEffect, useState } from "react";
 import { useTranslation, getCurrentLocale } from "../i18n/i18n";
 import {
@@ -34,6 +36,7 @@ import Animated, {
 
 // Import components using relative paths
 import Features from "../components/Features";
+import HowItWorks from "../components/HowItWorks";
 import QuickSettingsPanel from "../components/QuickSettingsPanel";
 import BackToTop from "../components/BackToTop";
 import Testimonials from "../components/Testimonials";
@@ -45,6 +48,7 @@ import VersionStatusIndicator from "../components/VersionStatusIndicator";
 import CrystalForgeBackground from "../components/CrystalForgeBackground";
 import AnimatedGradientBackground from "../components/AnimatedGradientBackground";
 import { Svg, Path } from "react-native-svg";
+import { Ionicons } from "../lib/vector-icons";
 import {
   getHashpassFooterLogo,
   getHashpassStaticHeroLogo,
@@ -615,26 +619,9 @@ export default function HomeScreen() {
           </Animated.View>
         </View>
 
-        <View
-          ref={featuresRef}
-          onLayout={
-            Platform.OS === "android"
-              ? undefined
-              : (event) => {
-                  const { y } = event.nativeEvent.layout;
-                  featuresLayoutRef.current = { y };
-                }
-          }
-        >
-          <Features
-            styles={styles}
-            featuresAnimatedStyle={featuresAnimatedStyle}
-            feature1Style={feature1Style}
-            feature2Style={feature2Style}
-            feature3Style={feature3Style}
-            isDark={isDark}
-          />
-        </View>
+        <HowItWorks scrollY={scrollY} />
+
+
 
         {/* Generic HASHPASS testimonials aren't specific to any single
             whitelabel tenant's event -- only show them on the global
@@ -664,6 +651,45 @@ export default function HomeScreen() {
             }}
           />
         </Animated.View>
+
+        {isGlobalEventTenant() && !user && (
+          <View style={styles.exploreAllEventsRow}>
+            <TouchableOpacity
+              onPress={() => router.push("/dashboard/explore" as any)}
+              activeOpacity={0.7}
+              style={[
+                styles.exploreAllEventsBtn,
+                {
+                  borderColor: isDark
+                    ? "rgba(255, 255, 255, 0.12)"
+                    : "rgba(0, 0, 0, 0.08)",
+                  backgroundColor: isDark
+                    ? "rgba(255, 255, 255, 0.04)"
+                    : "rgba(0, 0, 0, 0.02)",
+                },
+              ]}
+            >
+              <Ionicons
+                name="compass-outline"
+                size={20}
+                color={isDark ? "#06b6d4" : "#0891b2"}
+              />
+              <Text
+                style={[
+                  styles.exploreAllEventsText,
+                  { color: isDark ? "#e4e4e7" : "#18181b" },
+                ]}
+              >
+                {t("exploreAllEvents", "Explore all events")}
+              </Text>
+              <Ionicons
+                name="chevron-forward"
+                size={16}
+                color={isDark ? "#71717a" : "#a1a1aa"}
+              />
+            </TouchableOpacity>
+          </View>
+        )}
 
         <Animated.View
           style={[styles.cta, styles.ctaCentered, ctaAnimatedStyle]}
@@ -721,26 +747,7 @@ export default function HomeScreen() {
                 </Text>
               ) : null}
               <Animated.View style={styles.ctaButton}>
-                <TouchableOpacity
-                  onPress={handleGoToAppPress}
-                  disabled={isSignOutPending}
-                  activeOpacity={isSignOutPending ? 1 : 0.9}
-                  style={isSignOutPending && styles.disabledAction}
-                  onPressIn={() => {
-                    if (!isSignOutPending) {
-                      buttonAnimation.value = withSpring(1);
-                    }
-                  }}
-                  onPressOut={() => {
-                    if (!isSignOutPending) {
-                      buttonAnimation.value = withSpring(0);
-                    }
-                  }}
-                >
-                  <Animated.View>
-                    <InteractiveHoverButton text={t("goToApp")} />
-                  </Animated.View>
-                </TouchableOpacity>
+                <ActionButton mode={isDark ? 'dark' : 'light'} label={t("goToApp")} onPress={handleGoToAppPress} disabled={isSignOutPending} />
               </Animated.View>
             </>
           ) : (
@@ -752,24 +759,32 @@ export default function HomeScreen() {
               ) : null}
               <Text style={styles.ctaHeadline}>{t("readyToSimplify")}</Text>
               <Animated.View style={styles.ctaButton}>
-                <TouchableOpacity
-                  onPress={() => router.push("/(shared)/auth" as any)}
-                  activeOpacity={0.9}
-                  onPressIn={() => {
-                    buttonAnimation.value = withSpring(1);
-                  }}
-                  onPressOut={() => {
-                    buttonAnimation.value = withSpring(0);
-                  }}
-                >
-                  <Animated.View>
-                    <InteractiveHoverButton text={t("getStartedNow")} />
-                  </Animated.View>
-                </TouchableOpacity>
+                <ActionButton mode={isDark ? 'dark' : 'light'} label={t("getStartedNow")} onPress={() => router.push("/(shared)/auth" as any)} />
               </Animated.View>
             </>
           )}
         </Animated.View>
+
+        <View
+          ref={featuresRef}
+          onLayout={
+            Platform.OS === "android"
+              ? undefined
+              : (event) => {
+                  const { y } = event.nativeEvent.layout;
+                  featuresLayoutRef.current = { y };
+                }
+          }
+        >
+          <Features
+            styles={styles}
+            featuresAnimatedStyle={featuresAnimatedStyle}
+            feature1Style={feature1Style}
+            feature2Style={feature2Style}
+            feature3Style={feature3Style}
+            isDark={isDark}
+          />
+        </View>
 
         <Animated.View style={[styles.socialProof, featuresAnimatedStyle]}>
           <Newsletter mode={isDark ? "dark" : "light"} />
@@ -1227,15 +1242,20 @@ const getStyles = (
       marginBottom: 32,
     },
     featuresContainer: {
-      marginTop: isMobile ? 40 : isNativeTablet ? 34 : 40,
+      marginTop: 0,
       marginBottom: 40,
+      width: "100%",
+      maxWidth: 960,
+      alignSelf: "center",
     },
     featuresGrid: {
       flexDirection: "row",
-      flexWrap: "wrap",
+      flexWrap: "nowrap",
+      flexGrow: 1,
       justifyContent: "center",
-      gap: 24,
+      gap: 16,
       paddingHorizontal: 16,
+      paddingBottom: 20,
     },
     cta: {
       padding: 32,
@@ -1264,7 +1284,7 @@ const getStyles = (
       lineHeight: 36,
     },
     ctaButton: {
-      transform: [{ scale: 1.3 }],
+      minHeight: uiTokens.control.minHeight,
       overflow: "hidden",
     },
     signOutLink: {
@@ -1458,6 +1478,23 @@ const getStyles = (
     carouselSection: {
       marginBottom: 32,
       marginHorizontal: 0,
+    },
+    exploreAllEventsRow: {
+      alignItems: "center",
+      paddingVertical: 12,
+    },
+    exploreAllEventsBtn: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      paddingHorizontal: 20,
+      paddingVertical: 12,
+      borderRadius: 999,
+      borderWidth: 1,
+    },
+    exploreAllEventsText: {
+      fontSize: 14,
+      fontWeight: "600",
     },
   });
 };

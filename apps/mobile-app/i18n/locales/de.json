@@ -451,7 +451,34 @@
       "title": "Bereit loszulegen?",
       "subtitle": "Schließen Sie sich Tausenden von Benutzern an, die HASHPASS mit ihrem digitalen Leben vertrauen.",
       "startNow": "Jetzt starten"
-    }
+    },
+    "howItWorks": {
+      "badge": "So funktioniert’s",
+      "title": "So funktioniert HASHPASS",
+      "subtitle": "Ein Pass, eine Anmeldung, alle Veranstaltungen — schnell und mit Schutz deiner Privatsphäre.",
+      "cards": {
+        "scan": {
+          "title": "Scannen und eintreten",
+          "description": "Keine Warteschlangen: Dein Pass ist ein dynamischer QR-Code, mit dem du direkt zur Veranstaltung gelangst — ohne Ausdrucke und Papierkram."
+        },
+        "allies": {
+          "title": "Unser Partnernetzwerk",
+          "description": "Melde dich einmal an und nutze alle teilnehmenden Veranstaltungsorte, Clubs und Community-Events im HASHPASS-Netzwerk."
+        },
+        "meet": {
+          "title": "Treffen und vernetzen",
+          "description": "Vereinbare Treffen und chatte mit anderen Teilnehmenden mit Ende-zu-Ende-Verschlüsselung. Echte Kontakte, vertrauliche Gespräche."
+        },
+        "rewards": {
+          "title": "Dein Prämien-Wallet",
+          "description": "Sammle LUKAS-Punkte durch deine Teilnahme und tausche sie gegen Vorteile im gesamten Netzwerk ein."
+        }
+      }
+    },
+    "exploreAllEvents": "Alle Veranstaltungen entdecken",
+    "eventsExplorerSubtitle": "Entdecke Veranstaltungen weltweit und finde die passende für dich.",
+    "noEventsFound": "Keine Veranstaltungen gefunden.",
+    "tapToRead": "Tippen, um mehr zu erfahren"
   },
   "walletDesc": "Greifen Sie auf Ihre sicheren, blockchain-verifizierten Tickets zu",
   "loyalty": "Treue-Dashboard",
@@ -1150,5 +1177,47 @@
       "title": "Fragen",
       "text": "Wenn Sie Fragen zur Löschung Ihres Kontos oder Ihrer Daten haben, kontaktieren Sie uns unter:\n\nE-Mail: privacy@hashpass.tech\nWebsite: https://hashpass.tech"
     }
+  },
+  "publicEvents": {
+    "back": "Zur Startseite",
+    "badge": "Entdecken · Vernetzen · Dazugehören",
+    "title": "Finde deinen nächsten Kontakt.",
+    "subtitle": "Entdecke kommende Veranstaltungen, triff deine Community und verwalte alle Pässe an einem Ort.",
+    "loadingFilm": "Veranstaltungsvideo wird geladen",
+    "featured": "IM FOKUS",
+    "viewEvent": "Veranstaltung ansehen",
+    "previous": "Zurück",
+    "next": "Weiter",
+    "play": "Präsentation abspielen",
+    "pause": "Präsentation pausieren",
+    "search": "Veranstaltungen, Städte, Länder oder Reihen suchen",
+    "series": "VERANSTALTUNGSREIHEN",
+    "allSeries": "Alle Reihen",
+    "regions": "REGIONEN",
+    "allRegions": "Alle Regionen",
+    "upcomingFirst": "Kommende zuerst",
+    "reset": "Filter zurücksetzen",
+    "undated": "Datum wird bekannt gegeben",
+    "empty": "Keine Veranstaltung passt zu deiner Suche.",
+    "emptyHint": "Versuche einen anderen Ort oder setze die Filter zurück.",
+    "all": "Alle Veranstaltungen",
+    "upcoming": "Demnächst",
+    "live": "Findet gerade statt",
+    "past": "Vergangene Veranstaltungen",
+    "navEvents": "Veranstaltungen entdecken",
+    "navPasses": "Meine Pässe",
+    "navWallet": "Wallet",
+    "navCommunity": "Community",
+    "guest": "Gastmodus",
+    "openApp": "App öffnen",
+    "join": "HASHPASS beitreten",
+    "guestHint": "Sieh dich in Ruhe um. Registriere dich, um Veranstaltungen zu speichern, Pässe zu verwalten und Kontakte zu knüpfen.",
+    "authTitle": "Registrieren und die ganze App nutzen",
+    "authHint": "Erstelle ein Konto oder melde dich mit einem Bestätigungscode an. Deine Veranstaltungssuche bleibt erhalten.",
+    "close": "Schließen",
+    "navQr": "Mein QR-Code",
+    "navNotifications": "Benachrichtigungen",
+    "navProfile": "Profil",
+    "guestDescription": "Du nutzt eine vereinfachte Version von HASHPASS. Registriere dich und lade die App herunter, um das volle Erlebnis mit deinen Pässen, gespeicherten Events und Community-Funktionen zu nutzen."
   }
 }

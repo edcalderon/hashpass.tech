@@ -154,7 +154,10 @@ export type NativeSafeIconName =
   | "info"
   | "ticket"
   | "schedule"
-  | "history";
+  | "history"
+  | "qr-code"
+  | "notifications"
+  | "person";
 
 const NATIVE_SAFE_ICONS: Record<NativeSafeIconName, WebIconComponent> = {
   search: Search,
@@ -176,6 +179,9 @@ const NATIVE_SAFE_ICONS: Record<NativeSafeIconName, WebIconComponent> = {
   ticket: Ticket,
   schedule: Clock,
   history: History,
+  "qr-code": QrCode,
+  notifications: Bell,
+  person: User,
 };
 
 export function NativeSafeIcon({
