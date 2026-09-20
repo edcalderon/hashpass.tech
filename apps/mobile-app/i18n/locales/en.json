@@ -561,6 +561,10 @@
       "badge": "How it works",
       "title": "How HASHPASS Works",
       "subtitle": "One pass, one login, every event — built for speed and privacy.",
+      "scenes": {
+        "eventPass": "EVENT PASS", "eventExplorer": "EVENT EXPLORER", "agenda": "AGENDA", "speakers": "SPEAKERS",
+        "findAttendees": "FIND ATTENDEES", "meet": "MEET", "lksWallet": "$LKS WALLET", "availableBalance": "AVAILABLE BALANCE"
+      },
       "cards": {
         "scan": {
           "title": "Scan & Enter",
@@ -575,8 +579,8 @@
           "description": "Book meetings and chat end-to-end encrypted with other attendees — real connections, kept private."
         },
         "rewards": {
-          "title": "Rewards Wallet",
-          "description": "Earn LUKAS points for showing up and engaging, then redeem them for perks across the network."
+          "title": "$LKS Wallet",
+          "description": "Use $LKS, the Blockchain Latam Foundation LATAM crypto-peso index, supported by HASHPASS as an incubator tech lab."
         }
       }
     },
@@ -588,7 +592,25 @@
     "readyToSimplify": "Ready to Simplify Your Digital Life?",
     "scroll": "Scroll",
     "getStartedNow": "Start Now",
-    "exploreAllEvents": "Explore all events",
+    "exploreAllEvents": "Public event explorer",
+    "eventProposal": {
+      "action": "Propose an event",
+      "title": "Propose an event",
+      "subtitle": "Tell us about an event you would like to see in the public explorer.",
+      "close": "Close",
+      "eventName": "Event name",
+      "eventNamePlaceholder": "Name of the event",
+      "contactName": "Your name",
+      "contactNamePlaceholder": "Contact name",
+      "email": "Contact email",
+      "emailPlaceholder": "you@example.com",
+      "details": "Event details",
+      "detailsPlaceholder": "Date, city, venue, event link, and a short description",
+      "disclosure": "Your email app will open with these details. Review and send the message there.",
+      "submit": "Prepare proposal email",
+      "openingMail": "Opening email…",
+      "mailError": "We could not open your email app. Send your proposal to support@hashpass.tech."
+    },
     "eventsExplorerSubtitle": "Discover events across the world — find yours.",
     "noEventsFound": "No events found.",
     "trustedByThousands": "Trusted by Thousands",

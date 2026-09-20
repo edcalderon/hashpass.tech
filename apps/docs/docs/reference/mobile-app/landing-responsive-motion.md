@@ -10,11 +10,20 @@ Each card needs at least two related moving objects:
 - Scan: scanner beam, QR cells, and confirmation mark.
 - Allies: network nodes and a traveling packet.
 - Meet: two message bubbles and the privacy lock.
-- Rewards: the LUKAS diamond, `$LKS`, `+5`, and `+10` rewards.
+- Rewards: the `$LKS` diamond, `$LKS`, `+5`, and `+10` rewards, with the
+  supported Ethereum, Solana, and Bitcoin marks.
 
 Web animations run only while their card is visible. Respect the user's reduced
 motion setting. Native uses the same visual story with static vectors and the
 existing lightweight section entrance.
+
+## `$LKS` notation and attribution
+
+Use `$LKS` in all customer-facing copy. `$LKS` is the Blockchain Latam
+Foundation LATAM crypto-peso index; HASHPASS supports it as an incubator tech
+lab and must not describe it as HASHPASS's own currency. Run
+`pnpm --dir apps/mobile-app run check:currency-notation` after changing this
+copy or its translations.
 
 ## Feature flip cards
 

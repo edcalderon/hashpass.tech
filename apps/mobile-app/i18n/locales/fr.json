@@ -460,6 +460,10 @@
       "badge": "Comment ça marche",
       "title": "Comment fonctionne HASHPASS",
       "subtitle": "Un pass, une connexion, tous vos événements — pour aller vite et préserver votre confidentialité.",
+      "scenes": {
+        "eventPass": "PASS ÉVÉNEMENT", "eventExplorer": "EXPLORATEUR D’ÉVÉNEMENTS", "agenda": "AGENDA", "speakers": "INTERVENANTS",
+        "findAttendees": "TROUVER DES PARTICIPANTS", "meet": "RENCONTRER", "lksWallet": "PORTEFEUILLE $LKS", "availableBalance": "SOLDE DISPONIBLE"
+      },
       "cards": {
         "scan": {
           "title": "Scannez et entrez",
@@ -474,12 +478,30 @@
           "description": "Organisez des rendez-vous et discutez avec les autres participants grâce au chiffrement de bout en bout. Des échanges authentiques et privés."
         },
         "rewards": {
-          "title": "Portefeuille de récompenses",
-          "description": "Gagnez des points LUKAS en participant aux événements, puis échangez-les contre des avantages dans tout le réseau."
+          "title": "Portefeuille $LKS",
+          "description": "Utilisez $LKS, l’indice crypto-peso LATAM de la Blockchain Latam Foundation, soutenu par HASHPASS comme laboratoire technologique incubateur."
         }
       }
     },
-    "exploreAllEvents": "Explorer tous les événements",
+    "exploreAllEvents": "Explorateur public d’événements",
+    "eventProposal": {
+      "action": "Proposer un événement",
+      "title": "Proposer un événement",
+      "subtitle": "Parlez-nous d’un événement que vous aimeriez voir dans l’explorateur public.",
+      "close": "Fermer",
+      "eventName": "Nom de l’événement",
+      "eventNamePlaceholder": "Nom de l’événement",
+      "contactName": "Votre nom",
+      "contactNamePlaceholder": "Nom du contact",
+      "email": "E-mail de contact",
+      "emailPlaceholder": "vous@exemple.com",
+      "details": "Détails de l’événement",
+      "detailsPlaceholder": "Date, ville, lieu, lien de l’événement et une brève description",
+      "disclosure": "Votre application e-mail s’ouvrira avec ces informations. Vérifiez puis envoyez le message.",
+      "submit": "Préparer l’e-mail de proposition",
+      "openingMail": "Ouverture de l’e-mail…",
+      "mailError": "Nous n’avons pas pu ouvrir votre application e-mail. Envoyez votre proposition à support@hashpass.tech."
+    },
     "eventsExplorerSubtitle": "Découvrez les événements du monde entier et trouvez le vôtre.",
     "noEventsFound": "Aucun événement trouvé.",
     "tapToRead": "Touchez pour en savoir plus"

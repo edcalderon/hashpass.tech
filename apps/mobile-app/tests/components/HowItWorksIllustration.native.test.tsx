@@ -19,12 +19,14 @@ let view: ReactTestRenderer;
 
 afterEach(() => act(() => view?.unmount()));
 
-it('keeps the LUKAS reward story in the lightweight native illustration', () => {
+it('keeps the $LKS wallet and supported-chain story in the lightweight native illustration', () => {
   act(() => {
     view = create(<HowItWorksIllustration kind="rewards" color="#f59e0b" />);
   });
 
   const labels = view.root.findAllByType('SvgText' as any).map(node => node.props.children);
-  expect(labels).toEqual(['+5', '+10', '$LKS']);
-  expect(view.root.findAllByType('Path' as any).some(node => node.props.d === 'M100 27 126 49 100 88 74 49Z')).toBe(true);
+  expect(labels).toEqual(expect.arrayContaining(['B', '$LKS WALLET', '+5', '+10', '$LKS']));
+  expect(view.root.findAllByType('Path' as any).some(node => node.props.d === 'M104 43 121 57 104 82 87 57Z')).toBe(true);
+  expect(view.root.findAllByProps({ fill: '#627EEA' })).not.toHaveLength(0);
+  expect(view.root.findAllByProps({ fill: '#F7931A' })).not.toHaveLength(0);
 });

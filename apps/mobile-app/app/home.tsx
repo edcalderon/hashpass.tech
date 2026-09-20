@@ -44,6 +44,7 @@ import { InteractiveHoverButton } from "../components/InteractiveHoverButton";
 import FlipWords from "../components/FlipWords";
 import Newsletter from "../components/Newsletter";
 import EventBannerCarousel from "../components/EventBannerCarousel";
+import EventProposalModal from "../components/EventProposalModal";
 import VersionStatusIndicator from "../components/VersionStatusIndicator";
 import CrystalForgeBackground from "../components/CrystalForgeBackground";
 import AnimatedGradientBackground from "../components/AnimatedGradientBackground";
@@ -72,6 +73,7 @@ export default function HomeScreen() {
   const [signOutStatus, setSignOutStatus] = useState<
     "idle" | "pending" | "success" | "error"
   >("idle");
+  const [isEventProposalVisible, setIsEventProposalVisible] = useState(false);
   const { t } = useTranslation("index");
   const { t: tNav } = useTranslation("nav");
   const isMobile = useIsMobile();
@@ -476,7 +478,8 @@ export default function HomeScreen() {
         : null;
 
   return (
-    <Animated.View style={[styles.container, animatedBackground]}>
+    <>
+      <Animated.View style={[styles.container, animatedBackground]}>
       <BackToTop
         scrollY={scrollY}
         scrollRef={scrollRef}
@@ -640,6 +643,63 @@ export default function HomeScreen() {
             autoPlay={true}
             autoPlayInterval={5000}
             showCtas={false}
+            footerLeadingAction={
+              isGlobalEventTenant() ? (
+                <TouchableOpacity
+                  onPress={() => setIsEventProposalVisible(true)}
+                  activeOpacity={0.7}
+                  style={styles.proposeEventBtn}
+                  accessibilityRole="button"
+                  accessibilityLabel={t("eventProposal.action", "Propose an event")}
+                >
+                  <Text
+                    accessible={false}
+                    style={[
+                      styles.proposeEventMark,
+                      { color: isDark ? "#fb7185" : "#e11d48" },
+                    ]}
+                  >
+                    +
+                  </Text>
+                  <Text
+                    style={[
+                      styles.carouselActionText,
+                      { color: isDark ? "#e4e4e7" : "#18181b" },
+                    ]}
+                  >
+                    {t("eventProposal.action", "Propose an event")}
+                  </Text>
+                </TouchableOpacity>
+              ) : null
+            }
+            footerAction={
+              isGlobalEventTenant() && !user ? (
+                <TouchableOpacity
+                  onPress={() => router.push("/dashboard/explore" as any)}
+                  activeOpacity={0.7}
+                  style={styles.exploreAllEventsBtn}
+                >
+                  <Ionicons
+                    name="compass-outline"
+                    size={20}
+                    color={isDark ? "#06b6d4" : "#0891b2"}
+                  />
+                  <Text
+                    style={[
+                      styles.carouselActionText,
+                      { color: isDark ? "#e4e4e7" : "#18181b" },
+                    ]}
+                  >
+                    {t("exploreAllEvents", "Explore all events")}
+                  </Text>
+                  <Ionicons
+                    name="chevron-forward"
+                    size={16}
+                    color={isDark ? "#71717a" : "#a1a1aa"}
+                  />
+                </TouchableOpacity>
+              ) : null
+            }
             onEventPress={(
               event: { routes?: { home?: string } } | null | undefined,
             ) => {
@@ -651,45 +711,6 @@ export default function HomeScreen() {
             }}
           />
         </Animated.View>
-
-        {isGlobalEventTenant() && !user && (
-          <View style={styles.exploreAllEventsRow}>
-            <TouchableOpacity
-              onPress={() => router.push("/dashboard/explore" as any)}
-              activeOpacity={0.7}
-              style={[
-                styles.exploreAllEventsBtn,
-                {
-                  borderColor: isDark
-                    ? "rgba(255, 255, 255, 0.12)"
-                    : "rgba(0, 0, 0, 0.08)",
-                  backgroundColor: isDark
-                    ? "rgba(255, 255, 255, 0.04)"
-                    : "rgba(0, 0, 0, 0.02)",
-                },
-              ]}
-            >
-              <Ionicons
-                name="compass-outline"
-                size={20}
-                color={isDark ? "#06b6d4" : "#0891b2"}
-              />
-              <Text
-                style={[
-                  styles.exploreAllEventsText,
-                  { color: isDark ? "#e4e4e7" : "#18181b" },
-                ]}
-              >
-                {t("exploreAllEvents", "Explore all events")}
-              </Text>
-              <Ionicons
-                name="chevron-forward"
-                size={16}
-                color={isDark ? "#71717a" : "#a1a1aa"}
-              />
-            </TouchableOpacity>
-          </View>
-        )}
 
         <Animated.View
           style={[styles.cta, styles.ctaCentered, ctaAnimatedStyle]}
@@ -955,7 +976,12 @@ export default function HomeScreen() {
           </View>
         </View>
       </Animated.ScrollView>
-    </Animated.View>
+      </Animated.View>
+      <EventProposalModal
+        visible={isEventProposalVisible}
+        onClose={() => setIsEventProposalVisible(false)}
+      />
+    </>
   );
 }
 
@@ -1479,22 +1505,34 @@ const getStyles = (
       marginBottom: 32,
       marginHorizontal: 0,
     },
-    exploreAllEventsRow: {
-      alignItems: "center",
-      paddingVertical: 12,
-    },
     exploreAllEventsBtn: {
       flexDirection: "row",
       alignItems: "center",
       gap: 10,
-      paddingHorizontal: 20,
-      paddingVertical: 12,
-      borderRadius: 999,
-      borderWidth: 1,
+      minHeight: 44,
+      paddingLeft: 8,
+      paddingRight: 0,
+      paddingVertical: 8,
     },
-    exploreAllEventsText: {
-      fontSize: 14,
-      fontWeight: "600",
+    proposeEventBtn: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      minHeight: 44,
+      paddingLeft: 0,
+      paddingRight: 8,
+      paddingVertical: 8,
+    },
+    proposeEventMark: {
+      fontSize: 23,
+      lineHeight: 23,
+      fontWeight: "400",
+      marginTop: -1,
+    },
+    carouselActionText: {
+      fontSize: 13,
+      fontWeight: "700",
+      letterSpacing: 0.1,
     },
   });
 };

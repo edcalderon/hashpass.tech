@@ -332,6 +332,7 @@ const loadHomeScreen = ({
       "../../components/EventBannerCarousel",
       () => "EventBannerCarousel",
     );
+    jest.doMock("../../components/EventProposalModal", () => "EventProposalModal");
     jest.doMock(
       "../../components/VersionStatusIndicator",
       () => "VersionStatusIndicator",
@@ -478,6 +479,8 @@ describe("HomeScreen native tablet layout", () => {
 
     const carousel = renderer.root.findByType("EventBannerCarousel");
     expect(carousel.props.showCtas).toBe(false);
+    expect(carousel.props.footerLeadingAction).toBeTruthy();
+    expect(carousel.props.footerAction).toBeTruthy();
   });
 
   it("renders the native landing first frame visibly without waiting for scroll", () => {
