@@ -4,7 +4,7 @@ import LandingBadge from './LandingBadge';
 import React, { useEffect, useState } from 'react';
 import { AccessibilityInfo, View, Text, StyleSheet, TouchableOpacity, useWindowDimensions } from 'react-native';
 import Animated, { FadeIn, useSharedValue, useAnimatedStyle, useAnimatedReaction, withTiming, withDelay, withRepeat, withSequence, cancelAnimation, type SharedValue } from 'react-native-reanimated';
-import { Info as LucideInfo, X as LucideX } from 'lucide';
+import { Maximize2 as LucideExpand, Minimize2 as LucideCollapse } from 'lucide';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../i18n/i18n';
 import { useAnimationLevel } from '../contexts/AnimationLevelContext';
@@ -43,17 +43,17 @@ function Card({ card, index, width, dark, animate, position }: { card: typeof ca
   const entrance = useAnimatedStyle(() => ({ opacity: animate ? reveal.value : 1, transform: [{ translateY: animate ? (1 - reveal.value) * 22 : 0 }] }));
   const illustration = useAnimatedStyle(() => ({ transform: [{ translateY: animate ? float.value : 0 }] }));
   return <Animated.View onLayout={event => { top.value = event.nativeEvent.layout.y; bottom.value = event.nativeEvent.layout.height; }}
-    style={[styles.card, { width, backgroundColor: uiPalette(dark).surface, borderColor: uiPalette(dark).border }, entrance]}>
+    style={[styles.card, { width, height: expanded ? undefined : 338, backgroundColor: uiPalette(dark).surface, borderColor: uiPalette(dark).border }, entrance]}>
     <View importantForAccessibility="no-hide-descendants" accessibilityElementsHidden style={[styles.illustration, { backgroundColor: `${card.accent}${dark ? '12' : '0d'}` }]}>
       <Animated.View style={illustration}><HowItWorksIllustration kind={card.id} color={card.accent} labels={labels} /></Animated.View>
     </View>
     <View style={styles.cardHeader}>
       <Text accessibilityRole="header" style={[styles.title, { color: uiPalette(dark).text }]}>{t(`howItWorks.cards.${card.id}.title`, english.index.howItWorks.cards[card.id].title)}</Text>
-      <TouchableOpacity accessibilityRole="button" accessibilityLabel={expanded ? t('howItWorks.closeInfo', 'Close information') : t('howItWorks.moreInfo', 'More information')} accessibilityState={{ expanded }} onPress={() => setExpanded(value => !value)} style={[styles.infoButton, { borderColor: uiPalette(dark).border, backgroundColor: uiPalette(dark).raised }]}>
-        <MorphIcon icon={expanded ? LucideX : LucideInfo} size={18} color={card.accent} strokeWidth={2} spring="snappy" fallbackIconName={expanded ? 'close' : 'information-circle-outline'} />
+      <TouchableOpacity accessibilityRole="button" accessibilityLabel={expanded ? t('howItWorks.closeInfo', 'Close information') : t('howItWorks.moreInfo', 'More information')} accessibilityState={{ expanded }} onPress={() => setExpanded(value => !value)} style={[styles.infoButton, { borderColor: uiPalette(dark).border, backgroundColor: 'transparent' }]}>
+        <MorphIcon icon={expanded ? LucideCollapse : LucideExpand} size={16} color={uiPalette(dark).muted} strokeWidth={1.8} spring="snappy" fallbackIconName={expanded ? 'contract-outline' : 'expand-outline'} />
       </TouchableOpacity>
     </View>
-    {expanded ? <Animated.View entering={animate ? FadeIn.duration(180) : undefined}><Text style={[styles.body, { color: uiPalette(dark).muted }]}>{t(`howItWorks.cards.${card.id}.description`, english.index.howItWorks.cards[card.id].description)}</Text></Animated.View> : null}
+    <View style={styles.detail}>{expanded ? <Animated.View entering={animate ? FadeIn.duration(220) : undefined} style={[styles.detailPanel, { backgroundColor: uiPalette(dark).raised }]}><Text style={[styles.body, { color: uiPalette(dark).muted }]}>{t(`howItWorks.cards.${card.id}.description`, english.index.howItWorks.cards[card.id].description)}</Text></Animated.View> : null}</View>
   </Animated.View>;
 }
 export default function HowItWorks({ scrollY }: { scrollY?: SharedValue<number> }) {
@@ -104,10 +104,12 @@ const styles = StyleSheet.create({
   heading: { fontSize: 32, fontWeight: '800', lineHeight: 38, letterSpacing: -1, textAlign: 'center', marginVertical: 16 },
   subtitle: { fontSize: 17, lineHeight: 27, textAlign: 'center', maxWidth: 760, marginBottom: 40 },
   grid: { width: '100%', maxWidth: 1340, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 22 },
-  card: { borderWidth: 1, borderRadius: uiTokens.radius.card, padding: 22 },
+  card: { borderWidth: 1, borderRadius: uiTokens.radius.card, padding: 22, minHeight: 338 },
   illustration: { height: 136, borderRadius: uiTokens.radius.card, alignItems: 'center', justifyContent: 'center', marginBottom: 20, overflow: 'hidden' },
-  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  title: { flex: 1, fontSize: 22, lineHeight: 28, fontWeight: '700', letterSpacing: -0.5 },
-  infoButton: { width: 32, height: 32, borderWidth: 1, borderRadius: uiTokens.radius.circle, alignItems: 'center', justifyContent: 'center' },
-  body: { fontSize: 16, lineHeight: 26 },
+  cardHeader: { minHeight: 32, justifyContent: 'center', alignItems: 'center' },
+  title: { fontSize: 22, lineHeight: 28, fontWeight: '700', letterSpacing: -0.5, textAlign: 'center' },
+  infoButton: { position: 'absolute', right: -8, width: 44, height: 44, borderWidth: 1, borderRadius: uiTokens.radius.circle, alignItems: 'center', justifyContent: 'center' },
+  detail: { minHeight: 104, paddingTop: 16 },
+  detailPanel: { padding: 12, borderRadius: uiTokens.radius.media },
+  body: { fontSize: 16, lineHeight: 26, textAlign: 'center' },
 });

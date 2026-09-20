@@ -539,21 +539,42 @@
     "learnMore": "Saber más",
     "taglineFlipList": "- TU EVENTO -,- TU COMUNIDAD -,- TUS BENEFICIOS -",
     "unlockPotential": "Desbloquea tu Potencial",
+    "featuresBadge": "Funciones clave",
     "features": {
+      "title": "Todo lo que tu evento necesita",
+      "subtitle": "Una identidad privada para acceso, conexiones, pases y beneficios.",
       "secure": {
         "title": "Seguro y Privado",
         "description": "Tus datos están cifrados y protegidos con protocolos de seguridad líderes.",
         "action": "Proteger mis datos"
+        ,"metric": "Conversaciones cifradas de extremo a extremo",
+        "metricLabel": "ponentes verificados"
       },
       "management": {
         "title": "Gestión Sencilla",
         "description": "Organiza credenciales, tarjetas y comunidades en un solo lugar.",
         "action": "Gestionar mis llaves"
+        ,"metric": "Un pase para tu red de eventos",
+        "metricLabel": "pases emitidos"
       },
       "sync": {
         "title": "Sincronización Multiplataforma",
         "description": "Accede a tus datos en todos tus dispositivos.",
         "action": "Activar sincronización"
+        ,"metric": "3 clientes: web, Android e iOS",
+        "metricLabel": "plataformas compatibles"
+      },
+      "entry": {
+        "title": "Acceso ágil",
+        "description": "Usa un pase QR en vivo para entrar a tus eventos de forma rápida y confiable.",
+        "metric": "Validación QR en vivo",
+        "metricLabel": "pases activos"
+      },
+      "network": {
+        "title": "Conexiones privadas",
+        "description": "Encuentra asistentes, agenda reuniones y mantén tus conversaciones privadas.",
+        "metric": "Reuniones y chat cifrado",
+        "metricLabel": "reuniones agendadas"
       }
     },
     "howItWorks": {

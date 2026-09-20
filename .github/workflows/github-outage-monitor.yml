@@ -54,10 +54,16 @@ jobs:
         id: visibility
         run: |
           set -euo pipefail
-          is_private="$(gh api repos/${{ github.repository }} --jq .private)"
+          repository="$(gh api repos/${{ github.repository }})"
+          is_private="$(jq -r .private <<< "${repository}")"
+          has_issues="$(jq -r .has_issues <<< "${repository}")"
           echo "is_private=${is_private}" >> "$GITHUB_OUTPUT"
+          echo "has_issues=${has_issues}" >> "$GITHUB_OUTPUT"
           if [[ "${is_private}" == "true" ]]; then
             echo "::warning::Repository is now private. Standard GitHub-hosted runner minutes are no longer unlimited/free — the free-tier-quota failover scenario this monitor's docs call 'likely moot' may now actually apply. See apps/docs/docs/infra/github-outage-monitor.md's 'Quota' section: this workflow does not check Actions minutes usage yet, that check needs to be added."
+          fi
+          if [[ "${has_issues}" != "true" ]]; then
+            echo "::warning::Repository Issues are disabled. CI-health alerts remain visible in this workflow's job summary, but no alert issue can be opened or updated."
           fi
 
       - name: Check githubstatus.com Actions component
@@ -127,13 +133,14 @@ jobs:
 
       - name: Find existing open alert issue
         id: existing
+        if: steps.visibility.outputs.has_issues == 'true'
         run: |
           set -euo pipefail
           number="$(gh issue list --repo ${{ github.repository }} --label "${ALERT_LABEL}" --state open --json number --jq '.[0].number // empty')"
           echo "number=${number}" >> "$GITHUB_OUTPUT"
 
       - name: Open or update alert issue
-        if: steps.decide.outputs.should_alert == 'true'
+        if: steps.decide.outputs.should_alert == 'true' && steps.visibility.outputs.has_issues == 'true'
         env:
           # Templated into the script body via env: rather than directly into the
           # run: block. These values (an incident name, a workflow run report) are
@@ -201,7 +208,7 @@ jobs:
           fi
 
       - name: Auto-close resolved alert issue
-        if: steps.decide.outputs.should_alert == 'false' && steps.existing.outputs.number != ''
+        if: steps.visibility.outputs.has_issues == 'true' && steps.decide.outputs.should_alert == 'false' && steps.existing.outputs.number != ''
         run: |
           set -euo pipefail
           gh issue comment "${{ steps.existing.outputs.number }}" --repo ${{ github.repository }} \

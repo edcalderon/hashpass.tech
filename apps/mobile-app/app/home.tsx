@@ -840,7 +840,7 @@ export default function HomeScreen() {
                 </Text>
               ) : null}
               <Animated.View style={styles.ctaButton}>
-                <ActionButton mode={isDark ? 'dark' : 'light'} label={t("goToApp")} onPress={handleGoToAppPress} disabled={isSignOutPending} />
+                {Platform.OS === 'web' ? <InteractiveHoverButton text={t("goToApp")} tone={isDark ? 'dark' : 'light'} onClick={handleGoToAppPress} disabled={isSignOutPending} /> : <ActionButton mode={isDark ? 'dark' : 'light'} label={t("goToApp")} onPress={handleGoToAppPress} disabled={isSignOutPending} />}
               </Animated.View>
             </>
           ) : (
@@ -852,7 +852,7 @@ export default function HomeScreen() {
               ) : null}
               <Text style={styles.ctaHeadline}>{t("readyToSimplify")}</Text>
               <Animated.View style={styles.ctaButton}>
-                <ActionButton mode={isDark ? 'dark' : 'light'} label={t("getStartedNow")} onPress={() => router.push("/(shared)/auth" as any)} />
+                {Platform.OS === 'web' ? <InteractiveHoverButton text={t("getStartedNow")} tone={isDark ? 'dark' : 'light'} onClick={() => router.push("/(shared)/auth" as any)} /> : <ActionButton mode={isDark ? 'dark' : 'light'} label={t("getStartedNow")} onPress={() => router.push("/(shared)/auth" as any)} />}
               </Animated.View>
             </>
           )}

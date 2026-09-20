@@ -1,21 +1,22 @@
 /* eslint-disable @typescript-eslint/no-require-imports, import/first */
 import React from 'react';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
-let mockLevel = 'full'; let mockReduced = false; let mockVisible = true;
-jest.mock('../../hooks/useTheme', () => ({ useTheme: () => ({ isDark: false }) }));
+let mockLevel = 'full'; let mockReduced = false; let mockVisible = true; let mockDark = false;
+jest.mock('../../hooks/useTheme', () => ({ useTheme: () => ({ isDark: mockDark }) }));
 jest.mock('../../i18n/i18n', () => ({ useTranslation: () => ({ t: (key: string, fallback: string) => fallback || key }) }));
 jest.mock('../../contexts/AnimationLevelContext', () => ({ useAnimationLevel: () => ({ animationLevel: mockLevel }) }));
 jest.mock('motion/react', () => ({ motion: { article: 'article', div: 'div', p: 'p' }, useReducedMotion: () => mockReduced, useInView: () => mockVisible }));
 jest.mock('../../components/HowItWorksIllustration', () => require('../../components/HowItWorksIllustration.web'));
 jest.mock('../../lib/morph-icon', () => ({ MorphIcon: 'MorphIcon' }));
-jest.mock('lucide', () => ({ Info: 'Info', X: 'X' }));
+jest.mock('lucide', () => ({ Maximize2: 'Maximize2', Minimize2: 'Minimize2', QrCode: 'QrCode', Network: 'Network', MessagesSquare: 'MessagesSquare', WalletCards: 'WalletCards' }));
 import HowItWorks from '../../components/HowItWorks.web';
 import HowItWorksIllustration from '../../components/HowItWorksIllustration.web';
 let view: ReactTestRenderer;
-afterEach(() => { act(() => view?.unmount()); mockLevel = 'full'; mockReduced = false; mockVisible = true; });
+afterEach(() => { act(() => view?.unmount()); mockLevel = 'full'; mockReduced = false; mockVisible = true; mockDark = false; });
 it('reveals the section as one composition and pauses all scene motion outside the viewport', async () => {
   await act(async () => { view = create(<HowItWorks />); });
   expect(view.root.findAllByType('article')).toHaveLength(4);
+  expect(view.root.findAllByType('article').every(card => card.props.style.height === 238)).toBe(true);
   expect(view.root.findAllByType('article').every(card => card.props.animate?.opacity === 1)).toBe(true);
   expect(view.root.findAllByType('svg').every(svg => svg.props.className.includes('active'))).toBe(true);
   expect(view.root.findAllByProps({ className: 'hp-detail hp-scan-beam' })).toHaveLength(1);
@@ -53,5 +54,44 @@ it('keeps card descriptions hidden until its morphing info control is requested'
   act(() => { view.root.findAllByType('button')[0].props.onClick(); });
 
   expect(view.root.findAllByType('button')[0].props['aria-expanded']).toBe(true);
+  expect(view.root.findAllByType('button')[0].props.style).toMatchObject({ width: 44, height: 44 });
   expect(view.root.findAllByType('p').map(node => node.props.children)).toContain('Skip the line. Your pass is a live QR code that gets you into any event instantly — no printouts, no paperwork.');
+
+  act(() => { view.root.findAllByType('button')[0].props.onClick(); });
+  expect(view.root.findAllByType('button')[0].props['aria-expanded']).toBe(false);
+  expect(view.root.findAllByType('article')[0].props.style.height).toBe(238);
+});
+
+it('replays entry direction when the section returns while scrolling upward', async () => {
+  const originalRaf = global.requestAnimationFrame;
+  const originalCancel = global.cancelAnimationFrame;
+  const originalAdd = window.addEventListener;
+  const originalRemove = window.removeEventListener;
+  let onScroll: (() => void) | undefined;
+  Object.defineProperty(window, 'scrollY', { configurable: true, writable: true, value: 120 });
+  Object.defineProperty(global, 'requestAnimationFrame', { configurable: true, value: (callback: FrameRequestCallback) => { callback(performance.now()); return 1; } });
+  Object.defineProperty(global, 'cancelAnimationFrame', { configurable: true, value: jest.fn() });
+  Object.defineProperty(window, 'addEventListener', { configurable: true, value: (_event: string, listener: () => void) => { onScroll = listener; } });
+  Object.defineProperty(window, 'removeEventListener', { configurable: true, value: jest.fn() });
+  try {
+    await act(async () => { view = create(<HowItWorks />); });
+    Object.defineProperty(window, 'scrollY', { configurable: true, writable: true, value: 20 });
+    await act(async () => { onScroll?.(); });
+    expect(view.root.findAllByType('article').every(card => card.props.initial.y === -22)).toBe(true);
+    act(() => { view.unmount(); });
+  } finally {
+    Object.defineProperty(global, 'requestAnimationFrame', { configurable: true, value: originalRaf });
+    Object.defineProperty(global, 'cancelAnimationFrame', { configurable: true, value: originalCancel });
+    Object.defineProperty(window, 'addEventListener', { configurable: true, value: originalAdd });
+    Object.defineProperty(window, 'removeEventListener', { configurable: true, value: originalRemove });
+  }
+});
+
+it('keeps the disclosure presentation token-driven in dark mode', async () => {
+  mockDark = true;
+  await act(async () => { view = create(<HowItWorks />); });
+  const button = view.root.findAllByType('button')[0];
+  expect(button.props.style.background).toBeDefined();
+  act(() => { button.props.onClick(); });
+  expect(view.root.findAllByType('article')[0].props.style.height).toBe('auto');
 });

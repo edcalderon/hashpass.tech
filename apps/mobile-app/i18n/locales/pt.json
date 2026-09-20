@@ -407,21 +407,42 @@
     "learnMore": "Saiba mais",
     "taglineFlipList": "- SEU EVENTO -,- SUA COMUNIDADE -,- SEUS BENEFÍCIOS -",
     "unlockPotential": "Desbloqueie seu potencial",
+    "featuresBadge": "Recursos principais",
     "features": {
+      "title": "Tudo que seu evento precisa",
+      "subtitle": "Uma identidade privada para acesso, conexões, passes e benefícios.",
       "secure": {
         "title": "Seguro e privado",
         "description": "Seus dados são criptografados e protegidos com protocolos de segurança líderes do setor. Priorizamos sua privacidade acima de tudo.",
         "action": "Proteger meus dados"
+        ,"metric": "Conversas criptografadas de ponta a ponta",
+        "metricLabel": "palestrantes verificados"
       },
       "management": {
         "title": "Gerenciamento sem esforço",
         "description": "Organize todas as suas credenciais digitais, cartões de fidelidade e comunidades em um lugar intuitivo.",
         "action": "Gerenciar minhas chaves"
+        ,"metric": "Um passe para sua rede de eventos",
+        "metricLabel": "passes emitidos"
       },
       "sync": {
         "title": "Sincronização multiplataforma",
         "description": "Acesse seus dados em todos os seus dispositivos com nossa sincronização em nuvem segura.",
         "action": "Ativar sincronização"
+        ,"metric": "3 clientes: web, Android e iOS",
+        "metricLabel": "plataformas compatíveis"
+      },
+      "entry": {
+        "title": "Entrada rápida",
+        "description": "Use um passe QR ao vivo para acessar seus eventos com rapidez e confiança.",
+        "metric": "Validação QR ao vivo",
+        "metricLabel": "passes ativos"
+      },
+      "network": {
+        "title": "Networking privado",
+        "description": "Encontre participantes, marque reuniões e mantenha suas conversas privadas.",
+        "metric": "Reuniões e chat criptografado",
+        "metricLabel": "reuniões marcadas"
       }
     },
     "welcomeBack": "Bem-vindo de volta!",

@@ -54,6 +54,7 @@ jest.mock('../../i18n/i18n', () => ({
   useTranslation: () => ({ t: (key: string, fallback?: string) => fallback || key }),
 }));
 jest.mock('../../components/FeatureFlipCard', () => 'FeatureFlipCard');
+jest.mock('../../components/LandingBadge', () => 'LandingBadge');
 jest.mock('../../components/FlipCard', () => 'FlipCard');
 jest.mock('../../components/GlowingEffect', () => ({ GlowingEffect: () => null }));
 jest.mock('../../lib/vector-icons', () => ({ Ionicons: 'Ionicons' }));
@@ -61,7 +62,7 @@ jest.mock('../../lib/vector-icons', () => ({ Ionicons: 'Ionicons' }));
 // The import stays after the mock declarations so the responsive hooks use the
 // controlled viewport above.
 // eslint-disable-next-line import/first
-import Features from '../../components/Features';
+import Features, { mergeLiveSystemMetrics, PUBLIC_METRICS_BASELINE } from '../../components/Features';
 
 const props = {
   styles: { featuresContainer: {}, featuresGrid: {} },
@@ -96,7 +97,7 @@ it('stacks full-width flip cards on phones without a horizontal scroller', () =>
   const cards = view.root.findAllByType('AnimatedView' as any).filter(node =>
     StyleSheet.flatten(node.props.style)?.flexShrink === 0
   );
-  expect(cards).toHaveLength(3);
+  expect(cards).toHaveLength(10);
   expect(cards.every(card => StyleSheet.flatten(card.props.style)?.width === 342)).toBe(true);
 });
 
@@ -127,4 +128,18 @@ it('keeps cards visible before a server-rendered viewport is measured', () => {
     StyleSheet.flatten(node.props.style)?.flexShrink === 0
   );
   expect(cards.every(card => StyleSheet.flatten(card.props.style)?.width === 272)).toBe(true);
+});
+
+it('uses the verified production snapshot until live metrics are available', () => {
+  expect(PUBLIC_METRICS_BASELINE).toEqual({ passes: 2, agenda: 0, speakers: 61, bookings: 4 });
+  expect(mergeLiveSystemMetrics(PUBLIC_METRICS_BASELINE, null)).toEqual(PUBLIC_METRICS_BASELINE);
+});
+
+it('preserves a known metric when a live health check is inaccessible or incomplete', () => {
+  expect(mergeLiveSystemMetrics(PUBLIC_METRICS_BASELINE, {
+    passes: { count: 18, accessible: true },
+    agenda: { itemCount: 7 },
+    speakers: { count: 0, accessible: false },
+    bookings: {},
+  })).toEqual({ passes: 18, agenda: 7, speakers: 61, bookings: 4 });
 });

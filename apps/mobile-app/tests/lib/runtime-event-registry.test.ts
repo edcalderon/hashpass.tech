@@ -53,11 +53,9 @@ describe("runtime event registry", () => {
     expect(fetchImpl).toHaveBeenCalledWith("/api/event-sources/hash-poker");
   });
 
-  it("rejects an unsuccessful event-feed response", async () => {
+  it("keeps the bundled event fallback when the feed is unavailable", async () => {
     const fetchImpl = async () => Response.json({ error: "offline" }, { status: 503 });
 
-    await expect(refreshHashPokerRuntimeEvent(fetchImpl as typeof fetch, mockEvents)).rejects.toThrow(
-      "Event feed responded 503",
-    );
+    await expect(refreshHashPokerRuntimeEvent(fetchImpl as typeof fetch, mockEvents)).resolves.toBe(false);
   });
 });
