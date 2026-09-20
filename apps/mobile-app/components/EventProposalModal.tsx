@@ -16,6 +16,7 @@ import {
 import { Ionicons } from "../lib/vector-icons";
 import { useTheme } from "../hooks/useTheme";
 import { useTranslation } from "../i18n/i18n";
+import { uiPalette, uiTokens } from "@hashpass/ui/tokens";
 
 type EventProposalModalProps = {
   visible: boolean;
@@ -31,6 +32,7 @@ export default function EventProposalModal({
   const { colors, isDark } = useTheme();
   const { t } = useTranslation("index");
   const { width } = useWindowDimensions();
+  const palette = uiPalette(isDark);
   const [eventName, setEventName] = useState("");
   const [contactName, setContactName] = useState("");
   const [email, setEmail] = useState("");
@@ -92,7 +94,7 @@ export default function EventProposalModal({
     }
   };
 
-  const styles = getStyles(isDark, colors, width);
+  const styles = getStyles(colors, palette, width);
 
   return (
     <Modal
@@ -192,9 +194,9 @@ export default function EventProposalModal({
               ]}
             >
               {isOpeningMail ? (
-                <ActivityIndicator color="#FFFFFF" />
+                <ActivityIndicator color={palette.onAccent} />
               ) : (
-                <Ionicons name="mail-outline" size={18} color="#FFFFFF" />
+                <Ionicons name="mail-outline" size={18} color={palette.onAccent} />
               )}
               <Text style={styles.submitText}>
                 {isOpeningMail
@@ -258,27 +260,31 @@ const fieldStyles = StyleSheet.create({
   input: {
     minHeight: 46,
     borderWidth: 1,
-    borderRadius: 12,
+  borderRadius: uiTokens.radius.input,
     paddingHorizontal: 13,
     fontSize: 15,
   },
   textArea: { minHeight: 104, paddingTop: 12, paddingBottom: 12 },
 });
 
-const getStyles = (isDark: boolean, colors: ReturnType<typeof useTheme>["colors"], width: number) =>
+const getStyles = (
+  colors: ReturnType<typeof useTheme>["colors"],
+  palette: ReturnType<typeof uiPalette>,
+  width: number,
+) =>
   StyleSheet.create({
     overlay: { flex: 1, alignItems: "center", justifyContent: "center", padding: 20 },
-    backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(2, 16, 31, 0.72)" },
+    backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: palette.overlay },
     dialog: {
       width: "100%",
       maxWidth: 560,
       maxHeight: width < 600 ? "88%" : "82%",
-      borderRadius: 20,
+      borderRadius: uiTokens.radius.card,
       overflow: "hidden",
-      backgroundColor: isDark ? "rgba(18, 24, 38, 0.96)" : "rgba(255, 255, 255, 0.98)",
+      backgroundColor: palette.raised,
       borderWidth: 1,
-      borderColor: isDark ? "rgba(103, 232, 249, 0.22)" : "rgba(8, 145, 178, 0.18)",
-      shadowColor: "#020617",
+      borderColor: palette.border,
+      shadowColor: palette.canvas,
       shadowOpacity: 0.35,
       shadowRadius: 32,
       shadowOffset: { width: 0, height: 16 },
@@ -293,7 +299,7 @@ const getStyles = (isDark: boolean, colors: ReturnType<typeof useTheme>["colors"
       paddingTop: 22,
       paddingBottom: 16,
       borderBottomWidth: 1,
-      borderBottomColor: isDark ? "rgba(255,255,255,0.10)" : "rgba(15,23,42,0.09)",
+      borderBottomColor: palette.border,
     },
     headerCopy: { flex: 1, gap: 5 },
     title: { color: colors.text.primary, fontSize: 21, fontWeight: "800" },
@@ -303,22 +309,22 @@ const getStyles = (isDark: boolean, colors: ReturnType<typeof useTheme>["colors"
       height: 38,
       alignItems: "center",
       justifyContent: "center",
-      borderRadius: 19,
-      backgroundColor: isDark ? "rgba(255,255,255,0.07)" : "rgba(15,23,42,0.05)",
+      borderRadius: uiTokens.radius.circle,
+      backgroundColor: palette.surface,
     },
     form: { gap: 16, padding: 22 },
     disclosure: { color: colors.text.secondary, fontSize: 12, lineHeight: 18 },
-    errorText: { color: isDark ? "#fda4af" : "#be123c", fontSize: 13, lineHeight: 18 },
+    errorText: { color: palette.danger, fontSize: 13, lineHeight: 18 },
     submitButton: {
       minHeight: 48,
-      borderRadius: 14,
+      borderRadius: uiTokens.radius.media,
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
       gap: 9,
-      backgroundColor: "#0891b2",
+      backgroundColor: palette.accentFill,
       paddingHorizontal: 18,
     },
     submitButtonDisabled: { opacity: 0.45 },
-    submitText: { color: "#FFFFFF", fontSize: 15, fontWeight: "800" },
+    submitText: { color: palette.onAccent, fontSize: 15, fontWeight: "800" },
   });
