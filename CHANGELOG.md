@@ -1,3 +1,22 @@
+## [1.9.45](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.42...v1.9.45) (2026-09-20)
+
+
+### Features
+
+* **landing:** animate feature detail expansion ([42eba97](https://github.com/hashpass-tech/hashpass.tech/commit/42eba973727810fbffadab124f2fe6afd018fb32))
+* **landing:** refine feature disclosures ([c64e462](https://github.com/hashpass-tech/hashpass.tech/commit/c64e462030e23b762a47ee9ab5f388c91989bf2e))
+* **landing:** strengthen interactive feature sections ([7defdb3](https://github.com/hashpass-tech/hashpass.tech/commit/7defdb3a8535223801181d96865ad71e7cc5005d))
+### Release Highlights
+- strengthen interactive feature sections; animate feature detail expansion; refine feature disclosures
+
+### Release scope
+- Compared with: `v1.9.42` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Shared UI
+- Release tooling
+
 ## [1.9.44](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.42...v1.9.44) (2026-09-20)
 
 
