@@ -652,15 +652,22 @@ export default function HomeScreen() {
                   accessibilityRole="button"
                   accessibilityLabel={t("eventProposal.action", "Propose an event")}
                 >
-                  <Text
+                  <View
                     accessible={false}
                     style={[
-                      styles.proposeEventMark,
-                      { color: isDark ? "#fb7185" : "#e11d48" },
+                      styles.proposeEventIcon,
+                      { borderColor: isDark ? "#fb7185" : "#e11d48" },
                     ]}
                   >
-                    +
-                  </Text>
+                    <Text
+                      style={[
+                        styles.proposeEventMark,
+                        { color: isDark ? "#fb7185" : "#e11d48" },
+                      ]}
+                    >
+                      +
+                    </Text>
+                  </View>
                   <Text
                     style={[
                       styles.carouselActionText,
@@ -668,6 +675,15 @@ export default function HomeScreen() {
                     ]}
                   >
                     {t("eventProposal.action", "Propose an event")}
+                  </Text>
+                  <Text
+                    accessible={false}
+                    style={[
+                      styles.proposeEventTrail,
+                      { color: isDark ? "#fb7185" : "#e11d48" },
+                    ]}
+                  >
+                    +
                   </Text>
                 </TouchableOpacity>
               ) : null
@@ -1523,10 +1539,25 @@ const getStyles = (
       paddingRight: 8,
       paddingVertical: 8,
     },
+    proposeEventIcon: {
+      width: 22,
+      height: 22,
+      borderWidth: 1.5,
+      borderRadius: uiTokens.radius.circle,
+      alignItems: "center",
+      justifyContent: "center",
+    },
     proposeEventMark: {
-      fontSize: 23,
-      lineHeight: 23,
-      fontWeight: "400",
+      fontSize: 16,
+      lineHeight: 18,
+      fontWeight: "700",
+      marginTop: -1.5,
+    },
+    proposeEventTrail: {
+      fontSize: 18,
+      lineHeight: 20,
+      fontWeight: "500",
+      marginLeft: -3,
       marginTop: -1,
     },
     carouselActionText: {
