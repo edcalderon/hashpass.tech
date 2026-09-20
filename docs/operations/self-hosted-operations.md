@@ -26,11 +26,15 @@ Customer -> Helpdesk portal/email -> ticket -> support triage
 
 Only Caddy publishes host ports. Both database families, queues, object storage, workers, admin internals, and MCP stdio processes remain private. Caddy terminates TLS and renews ACME certificates automatically. Native authentication is the phase-one choice; future SSO should use one OIDC provider for employee Plane and Helpdesk identities without merging customer identities into the employee directory.
 
-## Community Edition validation
+## Why Plane Community is the internal operations plane
 
-The pinned Plane CE source and official self-host compose contain Projects, Work Items, Cycles, Modules, Pages, Views, Intake, and the API used here. HASHFEST planning uses only those primitives. Roadmap presentation is treated as a view assembled from cycles/modules; this deployment does **not** rely on paid customer management, email intake, public forms, or Plane Wiki. Frappe Helpdesk's open-source app supplies the portal, tickets, contacts, assignment, priorities/statuses, SLA doctypes, email accounts, knowledge-base articles, and agent UI. Reporting is limited to what the open-source app exposes. There is no paid or per-agent critical dependency.
+Plane Community is the selected day-to-day workspace at `work.hashpass.tech`, not merely a ticket escalation target. It is self-hosted under AGPL-3.0 and its Community deployment does not impose per-seat licensing. The pinned Community source provides the primitives HASHPASS needs: Projects, Work Items, assignees, Cycles, Modules, Pages, Views, and Intake. Those primitives cover product delivery, releases, boards, deadlines, HASHFEST, BSL, partnerships, sponsorship work, engineering, and operations. Roadmap presentation is assembled from cycles and modules so the design does not depend on an enterprise-only roadmap view.
 
-Before each upgrade, repeat this validation against the candidate tags; never silently replace a CE primitive with an enterprise feature.
+Plane is also the preferred AI integration because Plane publishes an [official open-source MCP server](https://github.com/makeplane/plane-mcp-server) for ChatGPT, Claude, Cursor, and VS Code, backed by Plane's documented REST API. HASHPASS therefore uses that server directly with a least-privilege Plane service account; it does **not** build or maintain a custom Plane MCP compatibility layer. Intended workflows include creating a HASHFEST Sponsor Outreach cycle, updating and assigning a Stellar follow-up, and listing BSL blockers.
+
+This deployment does **not** rely on paid customer management, email intake, public forms, or Plane Wiki. Frappe Helpdesk's open-source app supplies the portal, tickets, contacts, assignment, priorities/statuses, SLA doctypes, email accounts, knowledge-base articles, and agent UI. Reporting is limited to what the open-source app exposes. There is no paid or per-agent critical dependency.
+
+Before each upgrade, repeat this validation against the candidate tags; never silently replace a Community primitive with an enterprise feature. Relevant upstream references are Plane's [Community Edition repository](https://github.com/makeplane/plane), [feature documentation](https://developers.plane.so/self-hosting/govern/feature-management), [API introduction](https://developers.plane.so/api-reference/introduction), and [official MCP repository](https://github.com/makeplane/plane-mcp-server).
 
 ## Source of truth and support lifecycle
 
