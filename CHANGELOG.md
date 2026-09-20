@@ -1,3 +1,19 @@
+## [1.9.42](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.41...v1.9.42) (2026-09-20)
+
+
+### Bug Fixes
+
+* **android:** target API 36 for Google Play submissions ([48520da](https://github.com/hashpass-tech/hashpass.tech/commit/48520daefd336932545627a402ce72fafb75d60e))
+### Release Highlights
+- target API 36 for Google Play submissions
+
+### Release scope
+- Compared with: `v1.9.41` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Documentation
+
 ## [1.9.41](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.40...v1.9.41) (2026-09-20)
 
 

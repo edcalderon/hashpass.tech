@@ -20,25 +20,20 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.41)
+## 📋 Latest Changes (v1.9.42)
 
-### Features
+### Bug Fixes
 
-* unify public explorer and wallet onboarding experience ([7706f55](https://github.com/hashpass-tech/hashpass.tech/commit/7706f550408e967affe422e293c0fade24bc3ab5))
+* **android:** target API 36 for Google Play submissions ([48520da](https://github.com/hashpass-tech/hashpass.tech/commit/48520daefd336932545627a402ce72fafb75d60e))
 ### Release Highlights
-- unify public explorer and wallet onboarding experience
+- target API 36 for Google Play submissions
 
 ### Release scope
-- Compared with: `v1.9.40` (the previous global release tag)
+- Compared with: `v1.9.41` (the previous global release tag)
 
 ### Affected products & packages
 - Mobile app
-- QR links API
-- Shared UI
-- Database migrations
-- Infrastructure
 - Documentation
-- Release tooling
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
