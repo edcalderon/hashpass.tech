@@ -13,27 +13,28 @@ type State = { status: 'loading' | 'error' } | { status: 'ready'; row: WalletEnr
 export default function WalletEnrollmentView() {
   const { dbUserId, user } = useAuth();
   // Remount before rendering a different account. Late responses are discarded.
-  return <Enrollment key={`${user?.id ?? 'signed-out'}:${dbUserId ?? ''}`} ownerId={dbUserId} />;
+  return <Enrollment key={`${user?.id ?? 'signed-out'}:${dbUserId ?? ''}`} accountId={user?.id} />;
 }
 
-function Enrollment({ ownerId }: { ownerId: string | null | undefined }) {
+function Enrollment({ accountId }: { accountId: string | null | undefined }) {
   const { colors } = useTheme();
   const { t } = useTranslation('wallet');
   const [state, setState] = useState<State>({ status: 'loading' });
   const request = useRef(0);
   const load = useCallback(async () => {
-    if (!ownerId) return;
+    if (!accountId) return;
     const current = ++request.current;
     setState({ status: 'loading' });
     try {
       const row = await walletEnrollmentClient.load();
       if (current !== request.current) return;
-      if (row.scope.ownerId !== ownerId) throw new Error('wallet_identity_changed');
+      // The authenticated API resolves public.user.id; auth/provider IDs are a separate namespace.
+      // Account remount and request invalidation prevent accepting an old account response.
       setState({ status: 'ready', row });
     } catch {
       if (current === request.current) setState({ status: 'error' });
     }
-  }, [ownerId]);
+  }, [accountId]);
   useEffect(() => { void load(); return () => { request.current++; }; }, [load]);
   const row = state.status === 'ready' ? state.row : null;
   const wallet = row?.wallet;
@@ -42,7 +43,7 @@ function Enrollment({ ownerId }: { ownerId: string | null | undefined }) {
     <Text style={[styles.badge, { color: colors.text.secondary }]}>{t('enrollment.readOnly', 'READ ONLY')}</Text>
     <Text accessibilityRole="header" style={[styles.title, { color: colors.text.primary }]}>{t('overview.ownershipTitle', 'Your wallet. Your control.')}</Text>
     <View accessibilityLiveRegion="polite" style={styles.stack}>
-      {!ownerId ? <Text style={body}>{t('enrollment.signIn', 'Sign in to see your wallet status.')}</Text>
+      {!accountId ? <Text style={body}>{t('enrollment.signIn', 'Sign in to see your wallet status.')}</Text>
         : state.status === 'loading' ? <ActivityIndicator color={colors.primary} accessibilityLabel={t('enrollment.loading', 'Loading wallet status')} />
         : state.status === 'error' ? <Text style={body}>{t('enrollment.unavailable', 'Wallet status unavailable. Please try again.')}</Text>
         : row?.state === 'enrolled' ? <>
@@ -59,7 +60,7 @@ function Enrollment({ ownerId }: { ownerId: string | null | undefined }) {
         </> : null}
     </View>
     {row && <WalletOnboarding enrollment={row} />}
-    {ownerId && state.status !== 'loading' && <Pressable accessibilityRole="button" onPress={() => { void load(); }} style={[styles.button, { borderColor: colors.divider }]}>
+    {accountId && state.status !== 'loading' && <Pressable accessibilityRole="button" onPress={() => { void load(); }} style={[styles.button, { borderColor: colors.divider }]}>
       <Text style={{ color: colors.text.primary }}>{t('enrollment.refresh', 'Refresh wallet status')}</Text>
     </Pressable>}
   </View>;

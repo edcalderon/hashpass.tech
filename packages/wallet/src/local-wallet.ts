@@ -20,6 +20,35 @@ export class LocalWallet {
   }
   async exists(): Promise<boolean> { return (await this.store.read(this.key)) !== null; }
 
+  /** Durable reservation intent, written before the server can commit. It is
+   * consumed BEFORE key generation, so missing keys after that point never
+   * silently become a replacement wallet. CAS also excludes competing tabs. */
+  async reservationOperation(candidate?: string): Promise<string | null> {
+    const epoch = this.epoch;
+    const key = `${this.key}.reservation`;
+    let value = await this.store.read(key); this.check(epoch);
+    if (value === null && candidate) {
+      await this.store.compareAndSwap(key, null, JSON.stringify({ operationId: candidate, phase: 'reserved' }));
+      this.check(epoch);
+      value = await this.store.read(key); this.check(epoch);
+    }
+    if (value === null) return null;
+    const marker = JSON.parse(value);
+    if (marker.phase !== 'reserved' || typeof marker.operationId !== 'string' || !marker.operationId) {
+      throw new Error('wallet_setup_interrupted');
+    }
+    return marker.operationId;
+  }
+
+  async claimReservation(operationId: string): Promise<void> {
+    const epoch = this.epoch;
+    const key = `${this.key}.reservation`;
+    const expected = JSON.stringify({ operationId, phase: 'reserved' });
+    const claimed = await this.store.compareAndSwap(key, expected, JSON.stringify({ operationId, phase: 'creating' }));
+    this.check(epoch);
+    if (!claimed) throw new Error('wallet_setup_interrupted');
+  }
+
   async createNew(network: WalletNetwork, password: string): Promise<PublicWallet> {
     const epoch = this.epoch;
     validateWalletPassword(password);

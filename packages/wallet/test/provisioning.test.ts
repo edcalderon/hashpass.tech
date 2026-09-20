@@ -8,8 +8,8 @@ const scope = { environment: 'development' as const, ownerId: 'owner', walletId:
 const fixture = derivePublicWallet('abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about', 'testnet');
 function setup() {
   let row: WalletEnrollment = { scope, state: 'enrolled', operationId: null, wallet: null, network: null, setupEnabled: true };
-  let blob: string | null = null; let failRegistration = false;
-  const local = new LocalWallet(scope, { async read() { return blob; }, async compareAndSwap(_k, expected, next) { if (blob !== expected) return false; blob = next; return true; } });
+  const blobs = new Map<string, string>(); let failRegistration = false;
+  const local = new LocalWallet(scope, { async read(key) { return blobs.get(key) ?? null; }, async compareAndSwap(key, expected, next) { if ((blobs.get(key) ?? null) !== expected) return false; blobs.set(key, next); return true; } });
   let registrations = 0;
   const api: EnrollmentTransport = {
     async load() { return row; },
@@ -48,5 +48,37 @@ test('changed account or cancelled load cannot reserve or generate', async () =>
   s.setRow(s.initial);
   const pending = flow.provision(password); flow.lock();
   await assert.rejects(pending, /wallet_locked/);
+  assert.equal(await s.local.exists(), false);
+});
+
+test('retries a committed reservation after response loss using durable intent', async () => {
+  const s = setup();
+  const reserve = s.api.reserve;
+  let lost = true;
+  const operations: string[] = [];
+  s.api.reserve = async (id, op) => {
+    operations.push(op);
+    const row = await reserve(id, op);
+    if (lost) { lost = false; throw new Error('response_lost'); }
+    return row;
+  };
+  await assert.rejects(new WalletProvisioning(s.initial, s.local, s.api, () => 'original').provision(password), /response_lost/);
+  assert.equal(await s.local.exists(), false);
+  const result = await new WalletProvisioning(await s.api.load(), s.local, s.api, () => 'replacement').provision(password);
+  assert.equal(result.state, 'registered');
+  assert.deepEqual(operations, ['original', 'original']);
+});
+test('another device cannot resume provisioning without the original intent', async () => {
+  const s = setup();
+  s.setRow({ ...s.initial, state: 'provisioning', network: 'testnet', operationId: 'another-device' });
+  await assert.rejects(new WalletProvisioning(s.initial, s.local, s.api, () => 'new').provision(password), /wallet_setup_interrupted/);
+  assert.equal(await s.local.exists(), false);
+});
+test('consumed intent cannot generate replacement keys if the vault is missing', async () => {
+  const s = setup();
+  await s.local.reservationOperation('original');
+  await s.api.reserve(scope.walletId, 'original');
+  await s.local.claimReservation('original');
+  await assert.rejects(new WalletProvisioning(await s.api.load(), s.local, s.api, () => 'new').provision(password), /wallet_setup_interrupted/);
   assert.equal(await s.local.exists(), false);
 });

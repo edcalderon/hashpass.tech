@@ -353,3 +353,12 @@ required owner approval and checks. Nothing has been deployed in this session.
   3/2/1-column layouts, viewport entrances and reduced-motion handling implemented.
 - Patch promotion and final full-suite/coverage validation are in progress. No
   production merge or deployment has occurred. Signing and Ledger remain pending.
+
+PR #245 review fixes: enrollment no longer conflates Supabase auth IDs with the
+canonical registry owner ID. Authenticated provider identity gates requests and
+account remounts invalidate old responses, including users awaiting a bridge.
+Reservation intent is persisted with CAS before the API call and consumed before
+key generation. Lost reserve responses can retry the original operation; missing
+or consumed intent fails closed. Core suite: 30 tests passed. Wallet UI: 42 tests
+passed, followed by 9 onboarding tests including the newly enabled resume action.
+Production remains disabled; no migration or signing rollout occurred.

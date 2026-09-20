@@ -97,13 +97,13 @@ function Setup({ initial }: { initial: WalletEnrollment }) {
       {text('passwordHelp', 'Use a separate wallet password: at least 16 characters and 8 distinct characters. HASHPASS cannot reset it or recover your phrase.')}
       {field('password', 'Wallet password', password, setPassword)}
       {(!exists) && field('confirm', 'Confirm wallet password', confirm, setConfirm)}
-      {row.state !== 'registered' && button(exists ? 'resume' : 'create', exists ? 'Resume wallet setup' : 'Create testnet wallet', () => {
+      {row.state !== 'registered' && button(exists || row.state === 'provisioning' ? 'resume' : 'create', exists || row.state === 'provisioning' ? 'Resume wallet setup' : 'Create testnet wallet', () => {
         if (!exists && password !== confirm) { setError(true); return; }
         run(async current => {
           const registered = await provision.current!.provision(password);
           if (current()) { setRow(registered); setExists(true); }
         });
-      }, row.state === 'provisioning' && !exists)}
+      })}
       {recovery && text('restoreTitle', 'Restore from encrypted backup')}
       {row.state === 'registered' && <>
         {exists && <>

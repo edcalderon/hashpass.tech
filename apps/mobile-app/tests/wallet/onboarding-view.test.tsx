@@ -93,3 +93,14 @@ it('requires a risk acknowledgement and fresh password for plaintext export', as
   expect(mockSaveFile).toHaveBeenCalledWith('public test fixture phrase', true);
   expect(content()).not.toContain('Download unencrypted recovery phrase');
 });
+
+it('allows a reservation retry when provisioning has no local vault yet', async () => {
+  mockProvision.mockResolvedValue({ ...row, state: 'registered', wallet: {} });
+  await act(async () => { view = create(<WalletOnboarding enrollment={{ ...row, state: 'provisioning' }} />); });
+  const resume = view.root.findAllByType(Pressable).find(button => button.props.accessibilityLabel === 'Resume wallet setup')!;
+  expect(resume.props.disabled).toBeFalsy();
+  input('Wallet password', 'separate-wallet-password');
+  input('Confirm wallet password', 'separate-wallet-password');
+  await press('Resume wallet setup');
+  expect(mockProvision).toHaveBeenCalledWith('separate-wallet-password');
+});

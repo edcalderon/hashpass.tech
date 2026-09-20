@@ -28,14 +28,17 @@ export class WalletProvisioning {
       let row = this.owned(await this.api.load()); this.check(epoch);
       if (!row.setupEnabled || row.scope.environment !== 'development') throw new Error('wallet_setup_disabled');
       const exists = await this.local.exists(); this.check(epoch);
-      if (!exists && row.state !== 'enrolled') throw new Error(row.state === 'registered' ? 'wallet_recovery_required' : 'wallet_setup_interrupted');
+      if (!exists && row.state === 'registered') throw new Error('wallet_recovery_required');
       if (exists && row.state === 'enrolled') throw new Error('wallet_metadata_conflict');
       let wallet;
       if (exists) {
         wallet = await this.local.unlock(password); this.check(epoch);
       } else {
-        row = this.owned(await this.api.reserve(this.scope.walletId, this.newOperationId())); this.check(epoch);
-        if (row.state !== 'provisioning' || row.network !== 'testnet' || !row.operationId) throw new Error('wallet_metadata_conflict');
+        const operationId = await this.local.reservationOperation(row.state === 'enrolled' ? this.newOperationId() : undefined); this.check(epoch);
+        if (!operationId || (row.state === 'provisioning' && row.operationId !== operationId)) throw new Error('wallet_setup_interrupted');
+        row = this.owned(await this.api.reserve(this.scope.walletId, operationId)); this.check(epoch);
+        if (row.state !== 'provisioning' || row.network !== 'testnet' || row.operationId !== operationId) throw new Error('wallet_metadata_conflict');
+        await this.local.claimReservation(operationId); this.check(epoch);
         wallet = await this.local.createNew(row.network, password); this.check(epoch);
       }
       if (row.wallet) {
