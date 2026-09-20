@@ -52,8 +52,9 @@ function Setup({ initial }: { initial: WalletEnrollment }) {
       setPhraseVerified(false); setFileVerified(false); setFile(null);
     };
     try {
-      local.current = createDeviceWallet(initial.scope);
-      provision.current = new WalletProvisioning(initial, local.current, walletEnrollmentClient, walletOperationId);
+      const deviceWallet: LocalWallet = createDeviceWallet(initial.scope);
+      local.current = deviceWallet;
+      provision.current = new WalletProvisioning(initial, deviceWallet, walletEnrollmentClient, walletOperationId);
       cleanupLifecycle = bindWalletLifecycle({ lock: clear });
       void (async () => {
         const release = await protectRecoveryScreen();
@@ -143,7 +144,7 @@ function Setup({ initial }: { initial: WalletEnrollment }) {
           // File pickers may background the app. A returned encrypted file may be
           // selected after that lock, but no password or verification survives it.
           const target = epoch.current;
-          void pickRecoveryFile().then(contents => { if (alive.current && contents) { setFile(contents); setFileVerified(false); } })
+          void pickRecoveryFile().then((contents: string | null) => { if (alive.current && contents) { setFile(contents); setFileVerified(false); } })
             .catch(() => { if (alive.current && target === epoch.current) setError(true); });
         })}
         {file && text('fileSelected', 'Encrypted file selected. Enter its password to verify or restore it locally.')}
