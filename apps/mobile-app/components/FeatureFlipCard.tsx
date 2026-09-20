@@ -15,6 +15,7 @@ export interface FeatureFlipCardProps {
   actionText?: string;
   isDark?: boolean;
   actionHref?: string;
+  metric?: string;
 }
 
 const iconMap = {
@@ -32,6 +33,7 @@ export default function FeatureFlipCard({
   actionText = 'Learn More',
   isDark = false,
   actionHref = '/(shared)/auth',
+  metric,
 }: FeatureFlipCardProps) {
   const [isFlipped, setIsFlipped] = useState(false);
   const router = useRouter();
@@ -127,9 +129,10 @@ export default function FeatureFlipCard({
               <h3 className={cn('text-sm font-semibold tracking-tight', isDark ? 'text-white' : 'text-zinc-900')}>{title}</h3>
             </div>
 
-            <p className={cn('min-h-0 flex-1 overflow-y-auto text-[13px] leading-5', isDark ? 'text-zinc-200' : 'text-zinc-700')}>
-              {description}
-            </p>
+            <div className="min-h-0 flex-1 overflow-y-auto">
+              {metric ? <p className={cn('mb-2 text-lg font-bold tracking-tight', isDark ? 'text-white' : 'text-zinc-900')}>{metric}</p> : null}
+              <p className={cn('text-[13px] leading-5', isDark ? 'text-zinc-200' : 'text-zinc-700')}>{description}</p>
+            </div>
 
             <div className="mt-auto shrink-0 pt-3">
               <InteractiveHoverButton

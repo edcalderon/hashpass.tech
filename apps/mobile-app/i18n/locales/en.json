@@ -540,21 +540,25 @@
     "learnMore": "Learn More",
     "taglineFlipList": "- YOUR EVENT -,- YOUR COMMUNITY -,- YOUR REWARDS -",
     "unlockPotential": "Unlock Your Potential",
+    "featuresBadge": "Key features",
     "features": {
       "secure": {
         "title": "Secure & Private",
         "description": "Your data is encrypted and protected with industry-leading security protocols. We prioritize your privacy above all else.",
         "action": "Secure my data"
+        ,"metric": "End-to-end encrypted conversations"
       },
       "management": {
         "title": "Effortless Management",
         "description": "Organize all your digital credentials, loyalty cards, and communities in one intuitive place.",
         "action": "Manage my keys"
+        ,"metric": "One pass for your event network"
       },
       "sync": {
         "title": "Cross-Platform Sync",
         "description": "Access your data across all your devices with our secure cloud sync.",
         "action": "Enable secure sync"
+        ,"metric": "3 clients: web, Android and iOS"
       }
     },
     "howItWorks": {

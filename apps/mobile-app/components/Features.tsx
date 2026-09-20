@@ -153,6 +153,7 @@ const Features: React.FC<FeaturesProps> = ({
       description: t('features.secure.description'),
       moreInfo: t('features.secure.moreInfo', t('features.secure.description')),
       actionText: t('features.secure.action', 'Secure my data'),
+      metric: t('features.secure.metric', 'End-to-end encrypted conversations'),
       color: '#06b6d4',
     },
     {
@@ -162,6 +163,7 @@ const Features: React.FC<FeaturesProps> = ({
       description: t('features.management.description'),
       moreInfo: t('features.management.moreInfo', t('features.management.description')),
       actionText: t('features.management.action', 'Manage my keys'),
+      metric: t('features.management.metric', 'One pass for your event network'),
       color: '#ef4444',
     },
     {
@@ -171,6 +173,7 @@ const Features: React.FC<FeaturesProps> = ({
       description: t('features.sync.description'),
       moreInfo: t('features.sync.moreInfo', t('features.sync.description')),
       actionText: t('features.sync.action', 'Enable secure sync'),
+      metric: t('features.sync.metric', '3 clients: web, Android and iOS'),
       color: '#22c55e',
     }
   ];
@@ -178,6 +181,7 @@ const Features: React.FC<FeaturesProps> = ({
   if (Platform.OS === 'web') {
     return (
       <Animated.View style={[containerStyles?.featuresContainer, featuresAnimatedStyle]}>
+        <View style={{ alignItems: 'center', marginBottom: 18 }}><View style={{ borderWidth: 1, borderColor: isDark ? '#34343e' : '#dfe3e8', backgroundColor: isDark ? '#19191f' : '#f7f9fa', borderRadius: uiTokens.radius.media, paddingHorizontal: 16, paddingVertical: 8 }}><Text style={{ color: isDark ? '#e4e4e7' : '#18181b', fontWeight: '700', fontSize: 12, letterSpacing: 1.2, textTransform: 'uppercase' }}>{t('featuresBadge', 'Key features')}</Text></View></View>
         <View nativeID="landing-feature-grid" style={[containerStyles?.featuresGrid, featureStyles.responsiveGrid, compactLayout && featureStyles.compactGrid]}>
           {features.map((feature, index) => (
             <Animated.View key={feature.id} style={[featureStyles.webCardItem, [feature1Style, feature2Style, feature3Style][index]]}>
@@ -190,6 +194,7 @@ const Features: React.FC<FeaturesProps> = ({
                 actionText={feature.actionText}
                 isDark={isDark}
                 actionHref="/(shared)/auth"
+                metric={feature.metric}
               />
             </Animated.View>
           ))}
@@ -200,6 +205,7 @@ const Features: React.FC<FeaturesProps> = ({
 
   return (
     <Animated.View style={[containerStyles?.featuresContainer, featuresAnimatedStyle]}>
+      <View style={{ alignItems: 'center', marginBottom: 18 }}><View style={{ borderWidth: 1, borderColor: isDark ? '#34343e' : '#dfe3e8', backgroundColor: isDark ? '#19191f' : '#f7f9fa', borderRadius: uiTokens.radius.media, paddingHorizontal: 16, paddingVertical: 8 }}><Text style={{ color: isDark ? '#e4e4e7' : '#18181b', fontWeight: '700', fontSize: 12, letterSpacing: 1.2, textTransform: 'uppercase' }}>{t('featuresBadge', 'Key features')}</Text></View></View>
       <View nativeID="landing-feature-grid" style={[containerStyles?.featuresGrid, featureStyles.responsiveGrid, compactLayout && featureStyles.compactGrid]}>
         {features.map((feature, index) => (
           <Pressable
@@ -255,6 +261,7 @@ const Features: React.FC<FeaturesProps> = ({
                         <Text style={featureStyles.featureTitleSmall}>{feature.title}</Text>
                       </View>
                       <ScrollView style={{ maxHeight: 88 }} nestedScrollEnabled>
+                        <Text style={[featureStyles.featureTitleSmall, { color: feature.color, marginBottom: 6 }]}>{feature.metric}</Text>
                         <Text style={featureStyles.featureDescription}>{feature.description}</Text>
                       </ScrollView>
                     </View>

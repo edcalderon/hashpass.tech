@@ -408,21 +408,25 @@
     "learnMore": "En savoir plus",
     "taglineFlipList": "- VOTRE ÉVÉNEMENT -,- VOTRE COMMUNAUTÉ -,- VOS AVANTAGES -",
     "unlockPotential": "Libérez votre potentiel",
+    "featuresBadge": "Fonctionnalités clés",
     "features": {
       "secure": {
         "title": "Sécurisé et privé",
         "description": "Vos données sont cryptées et protégées par des protocoles de sécurité de pointe. Nous accordons la priorité à votre vie privée avant tout.",
         "action": "Protéger mes données"
+        ,"metric": "Conversations chiffrées de bout en bout"
       },
       "management": {
         "title": "Gestion sans effort",
         "description": "Organisez toutes vos identifications numériques, cartes de fidélité et communautés en un seul endroit intuitif.",
         "action": "Gérer mes clés"
+        ,"metric": "Un pass pour votre réseau d'événements"
       },
       "sync": {
         "title": "Synchronisation multiplateforme",
         "description": "Accédez à vos données sur tous vos appareils avec notre synchronisation cloud sécurisée.",
         "action": "Activer la synchronisation"
+        ,"metric": "3 clients : web, Android et iOS"
       }
     },
     "welcomeBack": "Bon retour !",
