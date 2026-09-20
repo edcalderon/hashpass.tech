@@ -222,7 +222,7 @@ const loadHomeScreen = ({
     }));
 
     jest.doMock("react-native-svg", () => ({
-      __esModule: true, default: "Svg", Svg: "Svg", Circle: "Circle", Line: "Line", Path: "Path", Rect: "Rect",
+      __esModule: true, default: "Svg", Svg: "Svg", Circle: "Circle", Line: "Line", Path: "Path", Rect: "Rect", Text: "SvgText",
     }));
 
     jest.doMock("expo-haptics", () => ({
