@@ -542,21 +542,30 @@
     "features": {
       "secure": {
         "title": "Seguro y Privado",
-        "description": "Tus datos están cifrados y protegidos con protocolos de seguridad líderes."
+        "description": "Tus datos están cifrados y protegidos con protocolos de seguridad líderes.",
+        "action": "Proteger mis datos"
       },
       "management": {
         "title": "Gestión Sencilla",
-        "description": "Organiza credenciales, tarjetas y comunidades en un solo lugar."
+        "description": "Organiza credenciales, tarjetas y comunidades en un solo lugar.",
+        "action": "Gestionar mis llaves"
       },
       "sync": {
         "title": "Sincronización Multiplataforma",
-        "description": "Accede a tus datos en todos tus dispositivos."
+        "description": "Accede a tus datos en todos tus dispositivos.",
+        "action": "Activar sincronización"
       }
     },
     "howItWorks": {
       "badge": "Cómo funciona",
       "title": "Cómo Funciona HASHPASS",
       "subtitle": "Un solo pase, un solo inicio de sesión, todos los eventos: hecho para la velocidad y la privacidad.",
+      "moreInfo": "Más información",
+      "closeInfo": "Cerrar información",
+      "scenes": {
+        "eventPass": "PASE DEL EVENTO", "eventExplorer": "EXPLORADOR DE EVENTOS", "agenda": "AGENDA", "speakers": "PONENTES",
+        "findAttendees": "BUSCAR ASISTENTES", "meet": "REUNIRSE", "lksWallet": "BILLETERA $LKS", "availableBalance": "SALDO DISPONIBLE"
+      },
       "cards": {
         "scan": {
           "title": "Escanea y Entra",
@@ -571,8 +580,8 @@
           "description": "Agenda reuniones y chatea de forma cifrada de extremo a extremo con otros asistentes: conexiones reales, siempre privadas."
         },
         "rewards": {
-          "title": "Billetera de Recompensas",
-          "description": "Gana puntos LUKAS por participar y asistir, y canjéalos por beneficios en toda la red."
+          "title": "Billetera $LKS",
+          "description": "Usa $LKS, el índice cripto-peso LATAM de Blockchain Latam Foundation, respaldado por HASHPASS como laboratorio tecnológico incubador."
         }
       }
     },
@@ -584,7 +593,27 @@
     "readyToSimplify": "¿Listo para simplificar tu vida digital?",
     "scroll": "Desplázate",
     "getStartedNow": "Comenzar ahora",
-    "exploreAllEvents": "Explorar todos los eventos",
+    "exploreAllEvents": "Explorador público de eventos",
+    "exploreAllEventsCompact": "Eventos",
+    "eventProposal": {
+      "action": "Proponer evento",
+      "compactAction": "Proponer",
+      "title": "Propón un evento",
+      "subtitle": "Cuéntanos sobre un evento que te gustaría ver en el explorador público.",
+      "close": "Cerrar",
+      "eventName": "Nombre del evento",
+      "eventNamePlaceholder": "Nombre del evento",
+      "contactName": "Tu nombre",
+      "contactNamePlaceholder": "Nombre de contacto",
+      "email": "Correo de contacto",
+      "emailPlaceholder": "tu@correo.com",
+      "details": "Detalles del evento",
+      "detailsPlaceholder": "Fecha, ciudad, recinto, enlace del evento y una descripción breve",
+      "disclosure": "Se abrirá tu aplicación de correo con estos datos. Revisa y envía el mensaje allí.",
+      "submit": "Preparar correo de propuesta",
+      "openingMail": "Abriendo correo…",
+      "mailError": "No pudimos abrir tu aplicación de correo. Envía tu propuesta a support@hashpass.tech."
+    },
     "eventsExplorerSubtitle": "Descubre eventos en todo el mundo — encuentra el tuyo.",
     "noEventsFound": "No se encontraron eventos.",
     "trustedByThousands": "Confiado por miles",

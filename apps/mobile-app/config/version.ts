@@ -22,22 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202609200855, // Updated to current timestamp
+  buildNumber: 202609200945, // Updated to current timestamp
   releaseDate: '2026-09-20',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'unify public explorer and wallet onboarding experience'
+    // No new features
   ],
   bugfixes: [
-    // No bugfixes
+    'target API 36 for Google Play submissions'
   ],
   breakingChanges: [],
-  notes: 'unify public explorer and wallet onboarding experience'
+  notes: 'target API 36 for Google Play submissions'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.42': {
+    version: '1.9.42',
+    buildNumber: 202609200945,
+    releaseDate: '2026-09-20',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'target API 36 for Google Play submissions'
+    ],
+    breakingChanges: [],
+    notes: 'target API 36 for Google Play submissions'
+  },
   '1.9.41': {
     version: '1.9.41',
     buildNumber: 202609200855,

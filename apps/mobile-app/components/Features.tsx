@@ -10,6 +10,21 @@ import FeatureFlipCard from './FeatureFlipCard';
 import { Ionicons } from '../lib/vector-icons';
 
 const getFeatureStyles = (isDark: boolean, cardWidth: number) => StyleSheet.create({
+  responsiveGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    flexGrow: 1,
+    justifyContent: 'center',
+    gap: 16,
+    width: '100%',
+    paddingHorizontal: 16,
+    paddingBottom: 20,
+  },
+  compactGrid: {
+    flexDirection: 'column',
+    flexWrap: 'nowrap',
+    alignItems: 'center',
+  },
   feature: {
     padding: 16,
     borderRadius: uiTokens.radius.card,
@@ -117,7 +132,13 @@ const Features: React.FC<FeaturesProps> = ({
   const { width } = useWindowDimensions();
   const { t } = useTranslation('index');
   const router = useRouter();
-  const featureStyles = getFeatureStyles(isDark, Math.max(220, Math.min(280, (width - 64) / 3)));
+  const viewportWidth = width > 0 ? width : 320;
+  const compactLayout = viewportWidth < 700;
+  const availableWidth = Math.min(viewportWidth, 960);
+  const cardWidth = compactLayout
+    ? Math.max(0, Math.min(420, viewportWidth - 48))
+    : Math.max(220, Math.min(280, (availableWidth - 64) / 3));
+  const featureStyles = getFeatureStyles(isDark, cardWidth);
   const flipValues = useRef([
     useSharedValue(false),
     useSharedValue(false),
@@ -131,7 +152,7 @@ const Features: React.FC<FeaturesProps> = ({
       title: t('features.secure.title'),
       description: t('features.secure.description'),
       moreInfo: t('features.secure.moreInfo', t('features.secure.description')),
-      actionText: 'Secure data now',
+      actionText: t('features.secure.action', 'Secure my data'),
       color: '#06b6d4',
     },
     {
@@ -140,7 +161,7 @@ const Features: React.FC<FeaturesProps> = ({
       title: t('features.management.title'),
       description: t('features.management.description'),
       moreInfo: t('features.management.moreInfo', t('features.management.description')),
-      actionText: 'Manage your keys',
+      actionText: t('features.management.action', 'Manage my keys'),
       color: '#ef4444',
     },
     {
@@ -149,7 +170,7 @@ const Features: React.FC<FeaturesProps> = ({
       title: t('features.sync.title'),
       description: t('features.sync.description'),
       moreInfo: t('features.sync.moreInfo', t('features.sync.description')),
-      actionText: 'Start always sync',
+      actionText: t('features.sync.action', 'Enable secure sync'),
       color: '#22c55e',
     }
   ];
@@ -157,7 +178,7 @@ const Features: React.FC<FeaturesProps> = ({
   if (Platform.OS === 'web') {
     return (
       <Animated.View style={[containerStyles?.featuresContainer, featuresAnimatedStyle]}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={containerStyles?.featuresGrid}>
+        <View nativeID="landing-feature-grid" style={[containerStyles?.featuresGrid, featureStyles.responsiveGrid, compactLayout && featureStyles.compactGrid]}>
           {features.map((feature, index) => (
             <Animated.View key={feature.id} style={[featureStyles.webCardItem, [feature1Style, feature2Style, feature3Style][index]]}>
               <FeatureFlipCard
@@ -172,14 +193,14 @@ const Features: React.FC<FeaturesProps> = ({
               />
             </Animated.View>
           ))}
-        </ScrollView>
+        </View>
       </Animated.View>
     );
   }
 
   return (
     <Animated.View style={[containerStyles?.featuresContainer, featuresAnimatedStyle]}>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={containerStyles?.featuresGrid}>
+      <View nativeID="landing-feature-grid" style={[containerStyles?.featuresGrid, featureStyles.responsiveGrid, compactLayout && featureStyles.compactGrid]}>
         {features.map((feature, index) => (
           <Pressable
             key={feature.id}
@@ -250,7 +271,7 @@ const Features: React.FC<FeaturesProps> = ({
             </View>
           </Pressable>
         ))}
-      </ScrollView>
+      </View>
     </Animated.View>
   );
 };

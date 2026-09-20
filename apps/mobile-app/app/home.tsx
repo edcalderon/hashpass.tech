@@ -44,11 +44,21 @@ import { InteractiveHoverButton } from "../components/InteractiveHoverButton";
 import FlipWords from "../components/FlipWords";
 import Newsletter from "../components/Newsletter";
 import EventBannerCarousel from "../components/EventBannerCarousel";
+import EventProposalModal from "../components/EventProposalModal";
 import VersionStatusIndicator from "../components/VersionStatusIndicator";
 import CrystalForgeBackground from "../components/CrystalForgeBackground";
 import AnimatedGradientBackground from "../components/AnimatedGradientBackground";
+import { MorphIcon } from "../lib/morph-icon";
 import { Svg, Path } from "react-native-svg";
 import { Ionicons } from "../lib/vector-icons";
+import {
+  ArrowRight as LucideArrowRight,
+  ArrowUpRight as LucideArrowUpRight,
+  ArrowUpRightFromCircle as LucideArrowUpRightFromCircle,
+  ChevronRight as LucideChevronRight,
+  Compass as LucideCompass,
+  CirclePlus as LucideCirclePlus,
+} from "lucide";
 import {
   getHashpassFooterLogo,
   getHashpassStaticHeroLogo,
@@ -72,6 +82,9 @@ export default function HomeScreen() {
   const [signOutStatus, setSignOutStatus] = useState<
     "idle" | "pending" | "success" | "error"
   >("idle");
+  const [isEventProposalVisible, setIsEventProposalVisible] = useState(false);
+  const [isEventProposalHovered, setIsEventProposalHovered] = useState(false);
+  const [isEventExplorerHovered, setIsEventExplorerHovered] = useState(false);
   const { t } = useTranslation("index");
   const { t: tNav } = useTranslation("nav");
   const isMobile = useIsMobile();
@@ -162,6 +175,7 @@ export default function HomeScreen() {
   }));
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
   const isPhoneLayout = Platform.OS === "web" ? isMobile : windowWidth < 700;
+  const useCompactCarouselLabels = windowWidth < 680;
   const isTabletLayout = Platform.OS !== "web" && !isPhoneLayout;
   const nativeBottomInset = isNative ? Math.max(insets.bottom, 24) : 0;
   const floatingControlsBottom =
@@ -476,7 +490,8 @@ export default function HomeScreen() {
         : null;
 
   return (
-    <Animated.View style={[styles.container, animatedBackground]}>
+    <>
+      <Animated.View style={[styles.container, animatedBackground]}>
       <BackToTop
         scrollY={scrollY}
         scrollRef={scrollRef}
@@ -640,6 +655,123 @@ export default function HomeScreen() {
             autoPlay={true}
             autoPlayInterval={5000}
             showCtas={false}
+            footerLeadingAction={
+              isGlobalEventTenant() ? (
+                <TouchableOpacity
+                  onPress={() => {
+                    setIsEventProposalHovered(false);
+                    setIsEventProposalVisible(true);
+                  }}
+                  {...(Platform.OS === "web"
+                    ? ({
+                        onMouseEnter: () => setIsEventProposalHovered(true),
+                        onMouseLeave: () => setIsEventProposalHovered(false),
+                      } as any)
+                    : {})}
+                  activeOpacity={0.7}
+                  style={[
+                    styles.proposeEventBtn,
+                    useCompactCarouselLabels && styles.carouselActionBtnCompact,
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityLabel={t("eventProposal.action", "Propose an event")}
+                >
+                  <MorphIcon
+                    icon={
+                      isEventProposalHovered
+                        ? LucideArrowUpRightFromCircle
+                        : LucideCirclePlus
+                    }
+                    size={24}
+                    color={isDark ? "#fb7185" : "#e11d48"}
+                    strokeWidth={2}
+                    spring="snappy"
+                    fallbackIconName="add-circle-outline"
+                  />
+                  <Text
+                    style={[
+                      styles.carouselActionText,
+                      useCompactCarouselLabels && styles.carouselActionTextCompact,
+                      { color: isDark ? "#e4e4e7" : "#18181b" },
+                    ]}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                  >
+                    {useCompactCarouselLabels
+                      ? t("eventProposal.compactAction", "Propose")
+                      : t("eventProposal.action", "Propose an event")}
+                  </Text>
+                  <MorphIcon
+                    icon={
+                      isEventProposalHovered
+                        ? LucideArrowRight
+                        : LucideChevronRight
+                    }
+                    size={18}
+                    color={isDark ? "#71717a" : "#a1a1aa"}
+                    strokeWidth={2}
+                    spring="snappy"
+                    fallbackIconName="chevron-forward"
+                  />
+                </TouchableOpacity>
+              ) : null
+            }
+            footerAction={
+              isGlobalEventTenant() && !user ? (
+                <TouchableOpacity
+                  onPress={() => router.push("/dashboard/explore" as any)}
+                  {...(Platform.OS === "web"
+                    ? ({
+                        onMouseEnter: () => setIsEventExplorerHovered(true),
+                        onMouseLeave: () => setIsEventExplorerHovered(false),
+                      } as any)
+                    : {})}
+                  activeOpacity={0.7}
+                  style={[
+                    styles.exploreAllEventsBtn,
+                    useCompactCarouselLabels && styles.carouselActionBtnCompact,
+                  ]}
+                >
+                  <MorphIcon
+                    icon={
+                      isEventExplorerHovered
+                        ? LucideArrowUpRight
+                        : LucideCompass
+                    }
+                    size={24}
+                    color={isDark ? "#06b6d4" : "#0891b2"}
+                    strokeWidth={2}
+                    spring="snappy"
+                    fallbackIconName="compass-outline"
+                  />
+                  <Text
+                    style={[
+                      styles.carouselActionText,
+                      useCompactCarouselLabels && styles.carouselActionTextCompact,
+                      { color: isDark ? "#e4e4e7" : "#18181b" },
+                    ]}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                  >
+                    {useCompactCarouselLabels
+                      ? t("exploreAllEventsCompact", "Events")
+                      : t("exploreAllEvents", "Explore all events")}
+                  </Text>
+                  <MorphIcon
+                    icon={
+                      isEventExplorerHovered
+                        ? LucideArrowRight
+                        : LucideChevronRight
+                    }
+                    size={18}
+                    color={isDark ? "#71717a" : "#a1a1aa"}
+                    strokeWidth={2}
+                    spring="snappy"
+                    fallbackIconName="chevron-forward"
+                  />
+                </TouchableOpacity>
+              ) : null
+            }
             onEventPress={(
               event: { routes?: { home?: string } } | null | undefined,
             ) => {
@@ -651,45 +783,6 @@ export default function HomeScreen() {
             }}
           />
         </Animated.View>
-
-        {isGlobalEventTenant() && !user && (
-          <View style={styles.exploreAllEventsRow}>
-            <TouchableOpacity
-              onPress={() => router.push("/dashboard/explore" as any)}
-              activeOpacity={0.7}
-              style={[
-                styles.exploreAllEventsBtn,
-                {
-                  borderColor: isDark
-                    ? "rgba(255, 255, 255, 0.12)"
-                    : "rgba(0, 0, 0, 0.08)",
-                  backgroundColor: isDark
-                    ? "rgba(255, 255, 255, 0.04)"
-                    : "rgba(0, 0, 0, 0.02)",
-                },
-              ]}
-            >
-              <Ionicons
-                name="compass-outline"
-                size={20}
-                color={isDark ? "#06b6d4" : "#0891b2"}
-              />
-              <Text
-                style={[
-                  styles.exploreAllEventsText,
-                  { color: isDark ? "#e4e4e7" : "#18181b" },
-                ]}
-              >
-                {t("exploreAllEvents", "Explore all events")}
-              </Text>
-              <Ionicons
-                name="chevron-forward"
-                size={16}
-                color={isDark ? "#71717a" : "#a1a1aa"}
-              />
-            </TouchableOpacity>
-          </View>
-        )}
 
         <Animated.View
           style={[styles.cta, styles.ctaCentered, ctaAnimatedStyle]}
@@ -955,7 +1048,12 @@ export default function HomeScreen() {
           </View>
         </View>
       </Animated.ScrollView>
-    </Animated.View>
+      </Animated.View>
+      <EventProposalModal
+        visible={isEventProposalVisible}
+        onClose={() => setIsEventProposalVisible(false)}
+      />
+    </>
   );
 }
 
@@ -1479,22 +1577,37 @@ const getStyles = (
       marginBottom: 32,
       marginHorizontal: 0,
     },
-    exploreAllEventsRow: {
-      alignItems: "center",
-      paddingVertical: 12,
-    },
     exploreAllEventsBtn: {
       flexDirection: "row",
       alignItems: "center",
       gap: 10,
-      paddingHorizontal: 20,
-      paddingVertical: 12,
-      borderRadius: 999,
-      borderWidth: 1,
+      minHeight: 44,
+      paddingLeft: 8,
+      paddingRight: 0,
+      paddingVertical: 8,
     },
-    exploreAllEventsText: {
-      fontSize: 14,
-      fontWeight: "600",
+    proposeEventBtn: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      minHeight: 44,
+      paddingLeft: 0,
+      paddingRight: 8,
+      paddingVertical: 8,
+    },
+    carouselActionBtnCompact: {
+      gap: 6,
+      paddingHorizontal: 0,
+    },
+    carouselActionText: {
+      fontSize: 13,
+      fontWeight: "700",
+      letterSpacing: 0.1,
+      flexShrink: 1,
+    },
+    carouselActionTextCompact: {
+      fontSize: 12,
+      letterSpacing: 0,
     },
   });
 };

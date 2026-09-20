@@ -2,7 +2,7 @@
   "expo": {
     "name": "HASHPASS",
     "slug": "hash-pass-tech",
-    "version": "1.9.41",
+    "version": "1.9.42",
     "newArchEnabled": true,
     "orientation": "default",
     "icon": "./assets/images/icon.png",
@@ -29,7 +29,7 @@
         "backgroundColor": "#05070C"
       },
       "package": "com.hashpass.tech",
-      "versionCode": 11186,
+      "versionCode": 11187,
       "permissions": [
         "android.permission.CAMERA"
       ]
@@ -106,7 +106,7 @@
         "mobile-web-app-capable": "yes",
         "msapplication-TileColor": "#05070C",
         "msapplication-tap-highlight": "no",
-        "viewport": "width=device-width, initial-scale=1.0, viewport-fit=cover"
+        "viewport": "width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content"
       },
       "build": {
         "babel": {
@@ -121,6 +121,7 @@
       "expo-router",
       "./plugins/withAndroidRemoveAdIdPermission",
       "./plugins/withAndroidReleaseMinification",
+      "./plugins/withAndroidTargetSdk",
       "./plugins/withAndroidDisableRtl",
       "./plugins/withAndroidLargeScreenSupport",
       "./plugins/withAndroidPlayStoreQuery",

@@ -1,4 +1,5 @@
 import TestimonialsColumn from "./TestimonialsColumns";
+import LandingBadge from "./LandingBadge";
 import { motion } from "motion/react";
 import testimonials from "../i18n/locales/testimonials.json";
 import { useTranslation } from "../i18n/i18n";
@@ -48,9 +49,7 @@ const Testimonials: React.FC<{ locale: string }> = ({ locale }) => {
           viewport={{ once: true }}
           className="flex flex-col items-center justify-center max-w-[540px] mx-auto"
         >
-          <div className="flex justify-center">
-            <div className="border py-1 px-4 rounded-lg" style={{ color: colors.text.primary }}>{t('title')}</div>
-          </div>
+          <LandingBadge>{t('title')}</LandingBadge>
 
           <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold tracking-tighter mt-5" style={{ color: colors.text.primary }}>
            {t('subtitle')}

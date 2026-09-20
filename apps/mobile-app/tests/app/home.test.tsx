@@ -172,6 +172,15 @@ const loadHomeScreen = ({
     );
 
     jest.doMock("../../lib/vector-icons", () => ({ Ionicons: "Ionicons" }));
+    jest.doMock("../../lib/morph-icon", () => ({ MorphIcon: "MorphIcon" }));
+    jest.doMock("lucide", () => ({
+      ArrowRight: "ArrowRight",
+      ArrowUpRight: "ArrowUpRight",
+      ArrowUpRightFromCircle: "ArrowUpRightFromCircle",
+      ChevronRight: "ChevronRight",
+      CirclePlus: "CirclePlus",
+      Compass: "Compass",
+    }));
 
     jest.doMock("react-native-reanimated", () => ({
       __esModule: true,
@@ -222,7 +231,7 @@ const loadHomeScreen = ({
     }));
 
     jest.doMock("react-native-svg", () => ({
-      __esModule: true, default: "Svg", Svg: "Svg", Circle: "Circle", Line: "Line", Path: "Path", Rect: "Rect",
+      __esModule: true, default: "Svg", Svg: "Svg", Circle: "Circle", Line: "Line", Path: "Path", Rect: "Rect", Text: "SvgText",
     }));
 
     jest.doMock("expo-haptics", () => ({
@@ -332,6 +341,7 @@ const loadHomeScreen = ({
       "../../components/EventBannerCarousel",
       () => "EventBannerCarousel",
     );
+    jest.doMock("../../components/EventProposalModal", () => "EventProposalModal");
     jest.doMock(
       "../../components/VersionStatusIndicator",
       () => "VersionStatusIndicator",
@@ -474,10 +484,72 @@ describe("HomeScreen native tablet layout", () => {
   });
 
   it("keeps event banner calls to action inside the dashboard explorer", () => {
-    const { renderer } = loadHomeScreen({ platform: "web" });
+    const { renderer, act } = loadHomeScreen({ platform: "web" });
 
     const carousel = renderer.root.findByType("EventBannerCarousel");
     expect(carousel.props.showCtas).toBe(false);
+    expect(carousel.props.footerLeadingAction).toBeTruthy();
+    expect(carousel.props.footerAction).toBeTruthy();
+
+    const proposalAction = carousel.props.footerLeadingAction;
+    const explorerAction = carousel.props.footerAction;
+    expect(proposalAction.props.children[0].props.size).toBe(24);
+    expect(explorerAction.props.children[0].props.size).toBe(24);
+    expect(proposalAction.props.children[2].props.icon).toBe("ChevronRight");
+    expect(explorerAction.props.children[2].props.icon).toBe("ChevronRight");
+    expect(proposalAction.props.onMouseEnter).toEqual(expect.any(Function));
+
+    act(() => {
+      proposalAction.props.onMouseEnter();
+    });
+
+    const hoveredProposalAction = renderer.root.findByType(
+      "EventBannerCarousel",
+    ).props.footerLeadingAction;
+    expect(hoveredProposalAction.props.children[0].props.icon).toBe(
+      "ArrowUpRightFromCircle",
+    );
+    expect(hoveredProposalAction.props.children[2].props.icon).toBe(
+      "ArrowRight",
+    );
+
+    const hoveredExplorerActionSource = renderer.root.findByType(
+      "EventBannerCarousel",
+    ).props.footerAction;
+    expect(hoveredExplorerActionSource.props.onMouseEnter).toEqual(
+      expect.any(Function),
+    );
+
+    act(() => {
+      hoveredExplorerActionSource.props.onMouseEnter();
+    });
+
+    const hoveredExplorerAction = renderer.root.findByType(
+      "EventBannerCarousel",
+    ).props.footerAction;
+    expect(hoveredExplorerAction.props.children[0].props.icon).toBe(
+      "ArrowUpRight",
+    );
+    expect(hoveredExplorerAction.props.children[2].props.icon).toBe(
+      "ArrowRight",
+    );
+  });
+
+  it("uses compact single-line carousel actions on a phone viewport", () => {
+    const { renderer } = loadHomeScreen({
+      width: 390,
+      height: 844,
+      platform: "web",
+    });
+
+    const carousel = renderer.root.findByType("EventBannerCarousel");
+    const proposalLabel = carousel.props.footerLeadingAction.props.children[1];
+    const explorerLabel = carousel.props.footerAction.props.children[1];
+
+    expect(proposalLabel.props.children).toBe("Propose");
+    expect(explorerLabel.props.children).toBe("Events");
+    expect(proposalLabel.props.numberOfLines).toBe(1);
+    expect(explorerLabel.props.numberOfLines).toBe(1);
   });
 
   it("renders the native landing first frame visibly without waiting for scroll", () => {

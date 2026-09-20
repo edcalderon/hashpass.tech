@@ -36,8 +36,9 @@ export function Badge({
   mode = "light",
   children,
   tone = "accent",
+  radius,
 }: React.PropsWithChildren<
-  Themed & { tone?: "accent" | "neutral" | "onMedia" }
+  Themed & { tone?: "accent" | "neutral" | "onMedia"; radius?: number }
 >) {
   const palette = uiPalette(mode);
   const onMedia = tone === "onMedia";
@@ -45,6 +46,7 @@ export function Badge({
     <View
       style={[
         styles.badge,
+        radius === undefined ? undefined : { borderRadius: radius },
         {
           backgroundColor: onMedia
             ? "#111114e6"

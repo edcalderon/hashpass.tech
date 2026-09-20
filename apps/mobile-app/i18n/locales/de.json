@@ -410,15 +410,18 @@
     "features": {
       "secure": {
         "title": "Sicher und privat",
-        "description": "Ihre Daten sind verschlüsselt und mit branchenführenden Sicherheitsprotokollen geschützt. Wir priorisieren Ihre Privatsphäre über alles andere."
+        "description": "Ihre Daten sind verschlüsselt und mit branchenführenden Sicherheitsprotokollen geschützt. Wir priorisieren Ihre Privatsphäre über alles andere.",
+        "action": "Daten schützen"
       },
       "management": {
         "title": "Mühelose Verwaltung",
-        "description": "Organisieren Sie alle Ihre digitalen Anmeldedaten, Treuekarten und Gemeinschaften an einem intuitiven Ort."
+        "description": "Organisieren Sie alle Ihre digitalen Anmeldedaten, Treuekarten und Gemeinschaften an einem intuitiven Ort.",
+        "action": "Schlüssel verwalten"
       },
       "sync": {
         "title": "Plattformübergreifende Synchronisation",
-        "description": "Greifen Sie auf Ihre Daten auf allen Ihren Geräten mit unserer sicheren Cloud-Synchronisation zu."
+        "description": "Greifen Sie auf Ihre Daten auf allen Ihren Geräten mit unserer sicheren Cloud-Synchronisation zu.",
+        "action": "Synchronisierung aktivieren"
       }
     },
     "welcomeBack": "Willkommen zurück!",
@@ -456,6 +459,12 @@
       "badge": "So funktioniert’s",
       "title": "So funktioniert HASHPASS",
       "subtitle": "Ein Pass, eine Anmeldung, alle Veranstaltungen — schnell und mit Schutz deiner Privatsphäre.",
+      "moreInfo": "Weitere Informationen",
+      "closeInfo": "Informationen schließen",
+      "scenes": {
+        "eventPass": "EVENT-PASS", "eventExplorer": "EVENT-ENTDECKER", "agenda": "AGENDA", "speakers": "SPRECHER",
+        "findAttendees": "TEILNEHMENDE FINDEN", "meet": "TREFFEN", "lksWallet": "$LKS-WALLET", "availableBalance": "VERFÜGBARES GUTHABEN"
+      },
       "cards": {
         "scan": {
           "title": "Scannen und eintreten",
@@ -470,12 +479,32 @@
           "description": "Vereinbare Treffen und chatte mit anderen Teilnehmenden mit Ende-zu-Ende-Verschlüsselung. Echte Kontakte, vertrauliche Gespräche."
         },
         "rewards": {
-          "title": "Dein Prämien-Wallet",
-          "description": "Sammle LUKAS-Punkte durch deine Teilnahme und tausche sie gegen Vorteile im gesamten Netzwerk ein."
+          "title": "$LKS-Wallet",
+          "description": "Nutze $LKS, den LATAM-Krypto-Peso-Index der Blockchain Latam Foundation, unterstützt von HASHPASS als Tech-Inkubator."
         }
       }
     },
-    "exploreAllEvents": "Alle Veranstaltungen entdecken",
+    "exploreAllEvents": "Öffentlicher Event-Explorer",
+    "exploreAllEventsCompact": "Events",
+    "eventProposal": {
+      "action": "Event vorschlagen",
+      "compactAction": "Vorschlagen",
+      "title": "Event vorschlagen",
+      "subtitle": "Erzähle uns von einem Event, das du im öffentlichen Explorer sehen möchtest.",
+      "close": "Schließen",
+      "eventName": "Eventname",
+      "eventNamePlaceholder": "Name des Events",
+      "contactName": "Dein Name",
+      "contactNamePlaceholder": "Name der Kontaktperson",
+      "email": "Kontakt-E-Mail",
+      "emailPlaceholder": "du@beispiel.de",
+      "details": "Eventdetails",
+      "detailsPlaceholder": "Datum, Stadt, Veranstaltungsort, Eventlink und eine kurze Beschreibung",
+      "disclosure": "Deine E-Mail-App öffnet sich mit diesen Angaben. Prüfe und sende die Nachricht dort.",
+      "submit": "Vorschlags-E-Mail vorbereiten",
+      "openingMail": "E-Mail wird geöffnet…",
+      "mailError": "Deine E-Mail-App konnte nicht geöffnet werden. Sende deinen Vorschlag an support@hashpass.tech."
+    },
     "eventsExplorerSubtitle": "Entdecke Veranstaltungen weltweit und finde die passende für dich.",
     "noEventsFound": "Keine Veranstaltungen gefunden.",
     "tapToRead": "Tippen, um mehr zu erfahren"

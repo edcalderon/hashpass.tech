@@ -51,6 +51,10 @@ interface EventBannerCarouselProps {
   /** Whether campaign CTA buttons are rendered on event slides. */
   showCtas?: boolean;
   onEventPress?: (event: EventInfo) => void;
+  /** Optional landing-level action displayed at the start of the slider controls. */
+  footerLeadingAction?: React.ReactNode;
+  /** Optional landing-level action displayed with the slider controls. */
+  footerAction?: React.ReactNode;
   /** Restricts the carousel to one selected event and its own campaign slides. */
   event?: EventInfo | null;
   lampBrandingOverrides?: Record<string, LampBrandingConfig>;
@@ -134,6 +138,8 @@ export default function EventBannerCarousel({
   autoPlayInterval = 5000,
   showCtas = true,
   onEventPress,
+  footerLeadingAction,
+  footerAction,
   event: selectedEvent,
   lampBrandingOverrides,
 }: EventBannerCarouselProps) {
@@ -520,23 +526,30 @@ export default function EventBannerCarousel({
         })}
       </ScrollView>
 
-      {/* Dot Indicators */}
-      {showDotIndicators && slides.length > 1 && (
-        <View style={styles.indicatorsContainer}>
-          {slides.map((_, index) => (
-            <TouchableOpacity
-              key={index}
-              style={[styles.dot, index === currentIndex && styles.dotActive]}
-              onPress={() => {
-                setCurrentIndex(index);
-                scrollToSlide(index);
-              }}
-              onPressIn={handleCarouselPressIn}
-              onPressOut={handleCarouselPressOut}
-            />
-          ))}
+      {(showDotIndicators && slides.length > 1) || footerLeadingAction || footerAction ? (
+        <View style={styles.footer}>
+          {footerLeadingAction && (
+            <View style={styles.footerLeadingAction}>{footerLeadingAction}</View>
+          )}
+          {showDotIndicators && slides.length > 1 && (
+            <View style={styles.indicatorsContainer}>
+              {slides.map((_, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={[styles.dot, index === currentIndex && styles.dotActive]}
+                  onPress={() => {
+                    setCurrentIndex(index);
+                    scrollToSlide(index);
+                  }}
+                  onPressIn={handleCarouselPressIn}
+                  onPressOut={handleCarouselPressOut}
+                />
+              ))}
+            </View>
+          )}
+          {footerAction && <View style={styles.footerAction}>{footerAction}</View>}
         </View>
-      )}
+      ) : null}
     </View>
   );
 }
@@ -675,12 +688,32 @@ const getStyles = (
       borderRadius: 16,
       overflow: "hidden",
     },
+    footer: {
+      minHeight: 48,
+      marginTop: 16,
+      paddingHorizontal: isMobile ? 8 : 16,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "flex-end",
+      gap: isMobile ? 8 : 16,
+      position: "relative",
+    },
     indicatorsContainer: {
+      position: "absolute",
+      left: 0,
+      right: 0,
       flexDirection: "row",
       justifyContent: "center",
       alignItems: "center",
-      marginTop: 16,
       gap: 8,
+    },
+    footerLeadingAction: {
+      marginRight: "auto",
+      flexShrink: 1,
+    },
+    footerAction: {
+      marginLeft: "auto",
+      flexShrink: 1,
     },
     dot: {
       width: 8,
