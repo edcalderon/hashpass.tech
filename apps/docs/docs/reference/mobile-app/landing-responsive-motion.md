@@ -41,3 +41,13 @@ zoom; do not add `user-scalable=no` or `maximum-scale=1`.
 Check at 390px and 1440px before release. Confirm that the document and feature
 grid scroll widths equal their client widths, that offscreen scenes stop, and
 that reduced-motion mode removes looping effects.
+
+## Interactive icons
+
+Use the shared `MorphIcon` wrapper for hoverable action icons. It renders the
+Morphicons SVG morph on web and native, and has a static vector-icon fallback
+if the SVG renderer is unavailable. An action should morph only when its state
+or intent changes: for example, the landing event-proposal control changes from
+a circle-plus to a directional cue on hover. Keep the starting and ending icons
+from the standard Lucide set, preserve the action's semantic label, and do not
+use hand-drawn text glyphs as icons.

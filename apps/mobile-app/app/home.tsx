@@ -48,8 +48,15 @@ import EventProposalModal from "../components/EventProposalModal";
 import VersionStatusIndicator from "../components/VersionStatusIndicator";
 import CrystalForgeBackground from "../components/CrystalForgeBackground";
 import AnimatedGradientBackground from "../components/AnimatedGradientBackground";
+import { MorphIcon } from "../lib/morph-icon";
 import { Svg, Path } from "react-native-svg";
 import { Ionicons } from "../lib/vector-icons";
+import {
+  ArrowRight as LucideArrowRight,
+  ArrowUpRightFromCircle as LucideArrowUpRightFromCircle,
+  CirclePlus as LucideCirclePlus,
+  Plus as LucidePlus,
+} from "lucide";
 import {
   getHashpassFooterLogo,
   getHashpassStaticHeroLogo,
@@ -74,6 +81,7 @@ export default function HomeScreen() {
     "idle" | "pending" | "success" | "error"
   >("idle");
   const [isEventProposalVisible, setIsEventProposalVisible] = useState(false);
+  const [isEventProposalHovered, setIsEventProposalHovered] = useState(false);
   const { t } = useTranslation("index");
   const { t: tNav } = useTranslation("nav");
   const isMobile = useIsMobile();
@@ -646,28 +654,33 @@ export default function HomeScreen() {
             footerLeadingAction={
               isGlobalEventTenant() ? (
                 <TouchableOpacity
-                  onPress={() => setIsEventProposalVisible(true)}
+                  onPress={() => {
+                    setIsEventProposalHovered(false);
+                    setIsEventProposalVisible(true);
+                  }}
+                  {...(Platform.OS === "web"
+                    ? ({
+                        onMouseEnter: () => setIsEventProposalHovered(true),
+                        onMouseLeave: () => setIsEventProposalHovered(false),
+                      } as any)
+                    : {})}
                   activeOpacity={0.7}
                   style={styles.proposeEventBtn}
                   accessibilityRole="button"
                   accessibilityLabel={t("eventProposal.action", "Propose an event")}
                 >
-                  <View
-                    accessible={false}
-                    style={[
-                      styles.proposeEventIcon,
-                      { borderColor: isDark ? "#fb7185" : "#e11d48" },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.proposeEventMark,
-                        { color: isDark ? "#fb7185" : "#e11d48" },
-                      ]}
-                    >
-                      +
-                    </Text>
-                  </View>
+                  <MorphIcon
+                    icon={
+                      isEventProposalHovered
+                        ? LucideArrowUpRightFromCircle
+                        : LucideCirclePlus
+                    }
+                    size={28}
+                    color={isDark ? "#fb7185" : "#e11d48"}
+                    strokeWidth={2}
+                    spring="snappy"
+                    fallbackIconName="add-circle-outline"
+                  />
                   <Text
                     style={[
                       styles.carouselActionText,
@@ -676,15 +689,18 @@ export default function HomeScreen() {
                   >
                     {t("eventProposal.action", "Propose an event")}
                   </Text>
-                  <Text
-                    accessible={false}
-                    style={[
-                      styles.proposeEventTrail,
-                      { color: isDark ? "#71717a" : "#a1a1aa" },
-                    ]}
-                  >
-                    +
-                  </Text>
+                  <MorphIcon
+                    icon={
+                      isEventProposalHovered
+                        ? LucideArrowRight
+                        : LucidePlus
+                    }
+                    size={18}
+                    color={isDark ? "#71717a" : "#a1a1aa"}
+                    strokeWidth={2}
+                    spring="snappy"
+                    fallbackIconName="add"
+                  />
                 </TouchableOpacity>
               ) : null
             }
@@ -1538,25 +1554,6 @@ const getStyles = (
       paddingLeft: 0,
       paddingRight: 8,
       paddingVertical: 8,
-    },
-    proposeEventIcon: {
-      width: 28,
-      height: 28,
-      borderWidth: 2,
-      borderRadius: uiTokens.radius.circle,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    proposeEventMark: {
-      fontSize: 19,
-      lineHeight: 19,
-      fontWeight: "500",
-    },
-    proposeEventTrail: {
-      fontSize: 19,
-      lineHeight: 20,
-      fontWeight: "400",
-      marginLeft: -2,
     },
     carouselActionText: {
       fontSize: 13,

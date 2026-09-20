@@ -172,6 +172,13 @@ const loadHomeScreen = ({
     );
 
     jest.doMock("../../lib/vector-icons", () => ({ Ionicons: "Ionicons" }));
+    jest.doMock("../../lib/morph-icon", () => ({ MorphIcon: "MorphIcon" }));
+    jest.doMock("lucide", () => ({
+      ArrowRight: "ArrowRight",
+      ArrowUpRightFromCircle: "ArrowUpRightFromCircle",
+      CirclePlus: "CirclePlus",
+      Plus: "Plus",
+    }));
 
     jest.doMock("react-native-reanimated", () => ({
       __esModule: true,
@@ -475,12 +482,29 @@ describe("HomeScreen native tablet layout", () => {
   });
 
   it("keeps event banner calls to action inside the dashboard explorer", () => {
-    const { renderer } = loadHomeScreen({ platform: "web" });
+    const { renderer, act } = loadHomeScreen({ platform: "web" });
 
     const carousel = renderer.root.findByType("EventBannerCarousel");
     expect(carousel.props.showCtas).toBe(false);
     expect(carousel.props.footerLeadingAction).toBeTruthy();
     expect(carousel.props.footerAction).toBeTruthy();
+
+    const proposalAction = carousel.props.footerLeadingAction;
+    expect(proposalAction.props.onMouseEnter).toEqual(expect.any(Function));
+
+    act(() => {
+      proposalAction.props.onMouseEnter();
+    });
+
+    const hoveredProposalAction = renderer.root.findByType(
+      "EventBannerCarousel",
+    ).props.footerLeadingAction;
+    expect(hoveredProposalAction.props.children[0].props.icon).toBe(
+      "ArrowUpRightFromCircle",
+    );
+    expect(hoveredProposalAction.props.children[2].props.icon).toBe(
+      "ArrowRight",
+    );
   });
 
   it("renders the native landing first frame visibly without waiting for scroll", () => {
