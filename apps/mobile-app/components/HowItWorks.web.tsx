@@ -1,6 +1,7 @@
+"use client";
+
 import english from '../i18n/locales/en.json';
 import { uiTokens, uiPalette } from '@hashpass/ui/tokens';
-"use client";
 import LandingBadge from './LandingBadge';
 import React, { useRef } from 'react';
 import { motion, useInView, useReducedMotion } from 'motion/react';
@@ -20,14 +21,12 @@ function Card({ card, index, dark, animate }: { card: typeof cards[number]; inde
   return <motion.article ref={ref}
     className="hashpass-how-card"
     style={{ background: uiPalette(dark).surface, border: `1px solid ${uiPalette(dark).border}`, borderRadius: uiTokens.radius.card, padding: 'clamp(20px, 2.3vw, 28px)', minWidth: 0 }}
-    initial={animate ? { opacity: 0, y: 26, scale: 0.98 } : false}
-    whileInView={{ opacity: 1, y: 0, scale: 1 }} viewport={{ once: true, amount: 0.15 }}
+    initial={animate ? { opacity: 0.72, y: 22, scale: 0.985, filter: 'blur(5px)' } : false}
+    whileInView={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }} viewport={{ once: true, amount: 0.15 }}
     transition={{ duration: 0.65, delay: index % 3 * 0.08, ease: [0.22, 1, 0.36, 1] }}
-    whileHover={animate ? { y: -4, transition: { duration: 0.22 } } : undefined}>
+    whileHover={animate ? { scale: 1.006, transition: { duration: 0.18 } } : undefined}>
     <div aria-hidden="true" style={{ height: 152, borderRadius: uiTokens.radius.media, background: `${card.accent}${dark ? '12' : '0d'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 24, overflow: 'hidden' }}>
-      <motion.div animate={animate && visible ? { y: [0, -5, 0] } : { y: 0 }} transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut', delay: index * 0.3 }}>
-        <HowItWorksIllustration kind={card.id} color={card.accent} animated={animate && visible} />
-      </motion.div>
+      <HowItWorksIllustration kind={card.id} color={card.accent} animated={animate && visible} />
     </div>
     <h3 style={{ color: uiPalette(dark).text, fontSize: 22, lineHeight: 1.25, fontWeight: 700, letterSpacing: -0.5, margin: '0 0 12px' }}>{t(`howItWorks.cards.${card.id}.title`, english.index.howItWorks.cards[card.id].title)}</h3>
     <p style={{ color: uiPalette(dark).muted, fontSize: 16, lineHeight: 1.6, margin: 0 }}>{t(`howItWorks.cards.${card.id}.description`, english.index.howItWorks.cards[card.id].description)}</p>

@@ -410,15 +410,18 @@
     "features": {
       "secure": {
         "title": "Sicher und privat",
-        "description": "Ihre Daten sind verschlüsselt und mit branchenführenden Sicherheitsprotokollen geschützt. Wir priorisieren Ihre Privatsphäre über alles andere."
+        "description": "Ihre Daten sind verschlüsselt und mit branchenführenden Sicherheitsprotokollen geschützt. Wir priorisieren Ihre Privatsphäre über alles andere.",
+        "action": "Daten schützen"
       },
       "management": {
         "title": "Mühelose Verwaltung",
-        "description": "Organisieren Sie alle Ihre digitalen Anmeldedaten, Treuekarten und Gemeinschaften an einem intuitiven Ort."
+        "description": "Organisieren Sie alle Ihre digitalen Anmeldedaten, Treuekarten und Gemeinschaften an einem intuitiven Ort.",
+        "action": "Schlüssel verwalten"
       },
       "sync": {
         "title": "Plattformübergreifende Synchronisation",
-        "description": "Greifen Sie auf Ihre Daten auf allen Ihren Geräten mit unserer sicheren Cloud-Synchronisation zu."
+        "description": "Greifen Sie auf Ihre Daten auf allen Ihren Geräten mit unserer sicheren Cloud-Synchronisation zu.",
+        "action": "Synchronisierung aktivieren"
       }
     },
     "welcomeBack": "Willkommen zurück!",

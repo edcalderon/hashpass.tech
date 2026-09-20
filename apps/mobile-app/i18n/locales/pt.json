@@ -410,15 +410,18 @@
     "features": {
       "secure": {
         "title": "Seguro e privado",
-        "description": "Seus dados são criptografados e protegidos com protocolos de segurança líderes do setor. Priorizamos sua privacidade acima de tudo."
+        "description": "Seus dados são criptografados e protegidos com protocolos de segurança líderes do setor. Priorizamos sua privacidade acima de tudo.",
+        "action": "Proteger meus dados"
       },
       "management": {
         "title": "Gerenciamento sem esforço",
-        "description": "Organize todas as suas credenciais digitais, cartões de fidelidade e comunidades em um lugar intuitivo."
+        "description": "Organize todas as suas credenciais digitais, cartões de fidelidade e comunidades em um lugar intuitivo.",
+        "action": "Gerenciar minhas chaves"
       },
       "sync": {
         "title": "Sincronização multiplataforma",
-        "description": "Acesse seus dados em todos os seus dispositivos com nossa sincronização em nuvem segura."
+        "description": "Acesse seus dados em todos os seus dispositivos com nossa sincronização em nuvem segura.",
+        "action": "Ativar sincronização"
       }
     },
     "welcomeBack": "Bem-vindo de volta!",

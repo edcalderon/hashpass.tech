@@ -1,6 +1,6 @@
 # Unified design system and guest event discovery
 
-Priority: high. Status: implementing and validating; not released.
+Priority: high. Status: v1.9.41 released; v1.9.42 refinement in validation.
 
 ## Accepted scope
 
@@ -79,3 +79,11 @@ Google sign-in flow, loading/duplicate-request protection and OTP alternative.
 Web OAuth stores the canonical current path and event query before leaving for the
 provider. Auth/OTP regression suite: 4 tests passed; changed TypeScript passed.
 Real Google account authorization and native-device callback QA remain unverified.
+
+PR #245 shipped as v1.9.41. The follow-up v1.9.42 promotion is PR #246. Its
+landing refinement replaces phone-width flip-card scrolling with one centered
+card per row while retaining the desktop three-card row. How-it-works scenes now
+animate the relationship described by each card, pause offscreen, respect reduced
+motion, and show a LUKAS diamond with `$LKS`, `+5`, and `+10`. The six locales
+include translated flip-card actions. Browser measurements pass at 390px and
+1440px with no document or feature-grid overflow. PR checks and approval remain.

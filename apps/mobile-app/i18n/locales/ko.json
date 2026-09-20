@@ -542,15 +542,18 @@
     "features": {
       "secure": {
         "title": "안전하고 개인적",
-        "description": "업계 최고 수준의 보안으로 데이터를 보호합니다."
+        "description": "업계 최고 수준의 보안으로 데이터를 보호합니다.",
+        "action": "데이터 보호"
       },
       "management": {
         "title": "손쉬운 관리",
-        "description": "디지털 자격증, 멤버십, 커뮤니티를 한 곳에서 관리하세요."
+        "description": "디지털 자격증, 멤버십, 커뮤니티를 한 곳에서 관리하세요.",
+        "action": "키 관리"
       },
       "sync": {
         "title": "크로스 플랫폼 동기화",
-        "description": "모든 기기에서 안전하게 접근하세요."
+        "description": "모든 기기에서 안전하게 접근하세요.",
+        "action": "동기화 활성화"
       }
     },
     "welcomeBack": "다시 오신 것을 환영합니다!",

@@ -542,15 +542,18 @@
     "features": {
       "secure": {
         "title": "Seguro y Privado",
-        "description": "Tus datos están cifrados y protegidos con protocolos de seguridad líderes."
+        "description": "Tus datos están cifrados y protegidos con protocolos de seguridad líderes.",
+        "action": "Proteger mis datos"
       },
       "management": {
         "title": "Gestión Sencilla",
-        "description": "Organiza credenciales, tarjetas y comunidades en un solo lugar."
+        "description": "Organiza credenciales, tarjetas y comunidades en un solo lugar.",
+        "action": "Gestionar mis llaves"
       },
       "sync": {
         "title": "Sincronización Multiplataforma",
-        "description": "Accede a tus datos en todos tus dispositivos."
+        "description": "Accede a tus datos en todos tus dispositivos.",
+        "action": "Activar sincronización"
       }
     },
     "howItWorks": {

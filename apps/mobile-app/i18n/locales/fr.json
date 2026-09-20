@@ -411,15 +411,18 @@
     "features": {
       "secure": {
         "title": "Sécurisé et privé",
-        "description": "Vos données sont cryptées et protégées par des protocoles de sécurité de pointe. Nous accordons la priorité à votre vie privée avant tout."
+        "description": "Vos données sont cryptées et protégées par des protocoles de sécurité de pointe. Nous accordons la priorité à votre vie privée avant tout.",
+        "action": "Protéger mes données"
       },
       "management": {
         "title": "Gestion sans effort",
-        "description": "Organisez toutes vos identifications numériques, cartes de fidélité et communautés en un seul endroit intuitif."
+        "description": "Organisez toutes vos identifications numériques, cartes de fidélité et communautés en un seul endroit intuitif.",
+        "action": "Gérer mes clés"
       },
       "sync": {
         "title": "Synchronisation multiplateforme",
-        "description": "Accédez à vos données sur tous vos appareils avec notre synchronisation cloud sécurisée."
+        "description": "Accédez à vos données sur tous vos appareils avec notre synchronisation cloud sécurisée.",
+        "action": "Activer la synchronisation"
       }
     },
     "welcomeBack": "Bon retour !",

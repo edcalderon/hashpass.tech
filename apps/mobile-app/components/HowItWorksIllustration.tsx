@@ -1,5 +1,5 @@
 import React from 'react';
-import Svg, { Circle, Line, Path, Rect } from 'react-native-svg';
+import Svg, { Circle, Line, Path, Rect, Text as SvgText } from 'react-native-svg';
 export type HowItWorksCardId = 'scan' | 'allies' | 'meet' | 'rewards';
 /** Vector artwork avoids platform icon-font loading and missing-glyph fallbacks. */
 export default function HowItWorksIllustration({ kind, color }: { kind: HowItWorksCardId; color: string; animated?: boolean }) {
@@ -28,11 +28,14 @@ export default function HowItWorksIllustration({ kind, color }: { kind: HowItWor
       <Circle cx={107.5} cy={67} r={2} fill={color} />
     </>}
     {kind === 'rewards' && <>
-      <Circle cx={100} cy={58} r={36} fill={color} opacity={0.1} />
-      <Circle cx={100} cy={58} r={27} fill={color} />
-      <Circle cx={100} cy={58} r={20} fill="none" stroke="white" strokeWidth={1} opacity={0.45} />
-      <Path d="m100 44 4 9 10 1-7 7 2 10-9-5-9 5 2-10-7-7 10-1z" fill="white" opacity={0.95} />
-      <Path d="M147 32v10M142 37h10M54 78v8M50 82h8" stroke={color} strokeWidth={2} strokeLinecap="round" />
+      <Circle cx={100} cy={58} r={38} fill={color} opacity={0.1} />
+      <Path d="M100 27 126 49 100 88 74 49Z" fill={color} />
+      <Path d="m74 49 15 9 11-31 11 31 15-9" fill="none" stroke="white" strokeWidth={1.5} opacity={0.65} />
+      <Rect x={34} y={25} width={38} height={22} rx={11} fill={color} />
+      <Rect x={128} y={70} width={43} height={22} rx={11} fill={color} />
+      <SvgText x={53} y={40} fill="white" fontSize={12} fontWeight="700" textAnchor="middle">+5</SvgText>
+      <SvgText x={149.5} y={85} fill="white" fontSize={12} fontWeight="700" textAnchor="middle">+10</SvgText>
+      <SvgText x={100} y={108} fill={color} fontSize={12} fontWeight="800" letterSpacing={1.4} textAnchor="middle">$LKS</SvgText>
     </>}
   </Svg>;
 }
