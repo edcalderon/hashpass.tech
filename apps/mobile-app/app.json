@@ -121,6 +121,7 @@
       "expo-router",
       "./plugins/withAndroidRemoveAdIdPermission",
       "./plugins/withAndroidReleaseMinification",
+      "./plugins/withAndroidTargetSdk",
       "./plugins/withAndroidDisableRtl",
       "./plugins/withAndroidLargeScreenSupport",
       "./plugins/withAndroidPlayStoreQuery",

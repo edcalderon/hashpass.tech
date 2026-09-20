@@ -118,3 +118,19 @@ another "fixes X on platform Y" bump) could silently reintroduce this
 again. Consider adding the drift-check script as a CI step gated on
 `package.json` changes, so a mismatch fails the PR instead of shipping and
 waiting to be noticed on a real device.
+
+## Android target API for Google Play
+
+Google Play submissions from August 31, 2026 require Android 16 (API 36).
+`plugins/withAndroidTargetSdk.js` pins both `android.compileSdkVersion` and
+`android.targetSdkVersion` to 36 through Expo prebuild. Keep the plugin in
+`app.json` so local, EAS and Fastlane builds agree. The Expo introspection test
+in `tests/lib/android-target-sdk.test.ts` checks the generated Gradle properties.
+
+The v1.9.41 internal release compiled but Play rejected the API 35 artifact;
+alpha, beta and production were not published from that attempt. A new patch is
+required rather than moving its tag. Actual Android compilation and Play
+acceptance must still pass before promotion; Expo introspection alone does not
+verify runtime compatibility on Android 16.
+
+[Google Play target API requirements](https://support.google.com/googleplay/android-developer/answer/11926878)
