@@ -5,7 +5,7 @@ import { uiTokens, uiPalette } from '@hashpass/ui/tokens';
 import LandingBadge from './LandingBadge';
 import React, { useRef, useState } from 'react';
 import { motion, useInView, useReducedMotion } from 'motion/react';
-import { CircleHelp as LucideCircleHelp, X as LucideX } from 'lucide';
+import { Maximize2 as LucideExpand, Minimize2 as LucideCollapse } from 'lucide';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../i18n/i18n';
 import { useAnimationLevel } from '../contexts/AnimationLevelContext';
@@ -40,12 +40,12 @@ function Card({ card, index, dark, animate, sectionVisible }: { card: typeof car
     </div>
     <div style={{ position: 'relative', display: 'grid', alignItems: 'center', minHeight: 32 }}>
       <h3 style={{ color: uiPalette(dark).text, fontSize: 22, lineHeight: 1.25, fontWeight: 700, letterSpacing: -0.5, margin: 0, textAlign: 'center' }}>{t(`howItWorks.cards.${card.id}.title`, english.index.howItWorks.cards[card.id].title)}</h3>
-      <button type="button" className="hashpass-how-info" onClick={() => setExpanded(value => !value)} aria-expanded={expanded} aria-label={expanded ? t('howItWorks.closeInfo', 'Close information') : t('howItWorks.moreInfo', 'More information')} style={{ position: 'absolute', right: 0, width: 28, height: 28, padding: 0, borderRadius: uiTokens.radius.circle, border: `1px solid ${uiPalette(dark).border}`, background: 'transparent', color: uiPalette(dark).muted, cursor: 'pointer', display: 'grid', placeItems: 'center' }}>
-        <MorphIcon icon={expanded ? LucideX : LucideCircleHelp} size={17} color={uiPalette(dark).muted} strokeWidth={1.8} spring="snappy" fallbackIconName={expanded ? 'close' : 'help-circle-outline'} />
-        <span role="tooltip" className="hashpass-how-tooltip">{expanded ? t('howItWorks.closeInfo', 'Close information') : t('howItWorks.moreInfo', 'More information')}</span>
+      <button type="button" className="hashpass-how-info" onClick={() => setExpanded(value => !value)} aria-expanded={expanded} aria-label={expanded ? t('howItWorks.closeInfo', 'Collapse details') : t('howItWorks.moreInfo', 'Expand details')} style={{ position: 'absolute', right: 0, width: 28, height: 28, padding: 0, borderRadius: uiTokens.radius.circle, border: `1px solid ${uiPalette(dark).border}`, background: 'transparent', color: uiPalette(dark).muted, cursor: 'pointer', display: 'grid', placeItems: 'center' }}>
+        <MorphIcon icon={expanded ? LucideCollapse : LucideExpand} size={16} color={uiPalette(dark).muted} strokeWidth={1.8} spring="snappy" fallbackIconName={expanded ? 'contract-outline' : 'expand-outline'} />
+        <span role="tooltip" className="hashpass-how-tooltip">{expanded ? t('howItWorks.closeInfo', 'Collapse details') : t('howItWorks.moreInfo', 'Expand details')}</span>
       </button>
     </div>
-    <div style={{ minHeight: 104, paddingTop: 16 }}>{expanded ? <motion.p initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }} style={{ color: uiPalette(dark).muted, fontSize: 16, lineHeight: 1.6, margin: 0, textAlign: 'center' }}>{t(`howItWorks.cards.${card.id}.description`, english.index.howItWorks.cards[card.id].description)}</motion.p> : null}</div>
+    <div style={{ minHeight: 104, paddingTop: 16 }}>{expanded ? <motion.div initial={{ opacity: 0, y: 10, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }} style={{ padding: '12px 14px', borderRadius: uiTokens.radius.media, background: uiPalette(dark).raised }}><p style={{ color: uiPalette(dark).muted, fontSize: 16, lineHeight: 1.6, margin: 0, textAlign: 'center' }}>{t(`howItWorks.cards.${card.id}.description`, english.index.howItWorks.cards[card.id].description)}</p></motion.div> : null}</div>
   </motion.article>;
 }
 export default function HowItWorks(_props: { scrollY?: SharedValue<number> }) {

@@ -4,7 +4,7 @@ import LandingBadge from './LandingBadge';
 import React, { useEffect, useState } from 'react';
 import { AccessibilityInfo, View, Text, StyleSheet, TouchableOpacity, useWindowDimensions } from 'react-native';
 import Animated, { FadeIn, useSharedValue, useAnimatedStyle, useAnimatedReaction, withTiming, withDelay, withRepeat, withSequence, cancelAnimation, type SharedValue } from 'react-native-reanimated';
-import { CircleHelp as LucideCircleHelp, X as LucideX } from 'lucide';
+import { Maximize2 as LucideExpand, Minimize2 as LucideCollapse } from 'lucide';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../i18n/i18n';
 import { useAnimationLevel } from '../contexts/AnimationLevelContext';
@@ -50,10 +50,10 @@ function Card({ card, index, width, dark, animate, position }: { card: typeof ca
     <View style={styles.cardHeader}>
       <Text accessibilityRole="header" style={[styles.title, { color: uiPalette(dark).text }]}>{t(`howItWorks.cards.${card.id}.title`, english.index.howItWorks.cards[card.id].title)}</Text>
       <TouchableOpacity accessibilityRole="button" accessibilityLabel={expanded ? t('howItWorks.closeInfo', 'Close information') : t('howItWorks.moreInfo', 'More information')} accessibilityState={{ expanded }} onPress={() => setExpanded(value => !value)} style={[styles.infoButton, { borderColor: uiPalette(dark).border, backgroundColor: 'transparent' }]}>
-        <MorphIcon icon={expanded ? LucideX : LucideCircleHelp} size={17} color={uiPalette(dark).muted} strokeWidth={1.8} spring="snappy" fallbackIconName={expanded ? 'close' : 'help-circle-outline'} />
+        <MorphIcon icon={expanded ? LucideCollapse : LucideExpand} size={16} color={uiPalette(dark).muted} strokeWidth={1.8} spring="snappy" fallbackIconName={expanded ? 'contract-outline' : 'expand-outline'} />
       </TouchableOpacity>
     </View>
-    <View style={styles.detail}>{expanded ? <Animated.View entering={animate ? FadeIn.duration(180) : undefined}><Text style={[styles.body, { color: uiPalette(dark).muted }]}>{t(`howItWorks.cards.${card.id}.description`, english.index.howItWorks.cards[card.id].description)}</Text></Animated.View> : null}</View>
+    <View style={styles.detail}>{expanded ? <Animated.View entering={animate ? FadeIn.duration(220) : undefined} style={[styles.detailPanel, { backgroundColor: uiPalette(dark).raised }]}><Text style={[styles.body, { color: uiPalette(dark).muted }]}>{t(`howItWorks.cards.${card.id}.description`, english.index.howItWorks.cards[card.id].description)}</Text></Animated.View> : null}</View>
   </Animated.View>;
 }
 export default function HowItWorks({ scrollY }: { scrollY?: SharedValue<number> }) {
@@ -110,5 +110,6 @@ const styles = StyleSheet.create({
   title: { fontSize: 22, lineHeight: 28, fontWeight: '700', letterSpacing: -0.5, textAlign: 'center' },
   infoButton: { position: 'absolute', right: 0, width: 28, height: 28, borderWidth: 1, borderRadius: uiTokens.radius.circle, alignItems: 'center', justifyContent: 'center' },
   detail: { minHeight: 104, paddingTop: 16 },
+  detailPanel: { padding: 12, borderRadius: uiTokens.radius.media },
   body: { fontSize: 16, lineHeight: 26, textAlign: 'center' },
 });
