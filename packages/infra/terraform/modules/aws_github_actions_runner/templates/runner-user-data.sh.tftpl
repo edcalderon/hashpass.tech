@@ -59,10 +59,25 @@ install_packages() {
 }
 
 install_node() {
-  if ! command -v node >/dev/null 2>&1; then
-    log "Installing Node.js 22"
-    curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
-    apt-get install -y nodejs
+  # Pin bootstrap hosts too; setup-node and repository jobs use .nvmrc.
+  local node_version="24.21.0"
+  if [ "$(node --version 2>/dev/null || true)" != "v${node_version}" ]; then
+    local node_arch node_tmp node_archive
+    case "$(uname -m)" in
+      x86_64) node_arch=x64 ;;
+      aarch64|arm64) node_arch=arm64 ;;
+      *) log "Unsupported Node architecture"; exit 1 ;;
+    esac
+    node_archive="node-v${node_version}-linux-${node_arch}.tar.xz"
+    node_tmp="$(mktemp -d)"
+    log "Installing Node.js ${node_version}"
+    curl -4 -fsSL "https://nodejs.org/dist/v${node_version}/${node_archive}" -o "${node_tmp}/${node_archive}"
+    curl -4 -fsSL "https://nodejs.org/dist/v${node_version}/SHASUMS256.txt" -o "${node_tmp}/SHASUMS256.txt"
+    (cd "${node_tmp}" && awk -v name="${node_archive}" '$2 == name' SHASUMS256.txt | sha256sum --check --status)
+    tar -xJf "${node_tmp}/${node_archive}" --strip-components=1 -C /usr/local
+    rm -rf "${node_tmp}"
+    export PATH="/usr/local/bin:${PATH}"
+    hash -r
   fi
 
   log "Enabling corepack and pnpm ${PNPM_VERSION}"

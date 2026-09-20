@@ -161,6 +161,9 @@ function loadExploreScreen(availableEvents: Record<string, unknown>[] = []) {
     jest.doMock("../../hooks/useTheme", () => ({
       useTheme: () => ({ isDark: false, colors: noEventTheme }),
     }));
+    jest.doMock("expo-video", () => ({ VideoView: "VideoView", useVideoPlayer: () => ({ play: jest.fn(), pause: jest.fn() }) }));
+    jest.doMock("../../components/EventBannerBackgroundVideo.native", () => "EventVideo");
+    jest.doMock("../../components/events/GuestExplorer", () => () => null);
     jest.doMock("../../hooks/useAuth", () => ({
       useAuth: () => ({ isLoggedIn: true, isLoading: false }),
     }));

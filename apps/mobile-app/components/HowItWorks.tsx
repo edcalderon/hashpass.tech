@@ -1,0 +1,78 @@
+import english from '../i18n/locales/en.json';
+import { uiTokens, uiPalette } from '@hashpass/ui/tokens';
+import LandingBadge from './LandingBadge';
+import React, { useEffect, useState } from 'react';
+import { AccessibilityInfo, View, Text, StyleSheet, useWindowDimensions } from 'react-native';
+import Animated, { useSharedValue, useAnimatedStyle, useAnimatedReaction, withTiming, withDelay, withRepeat, withSequence, cancelAnimation, type SharedValue } from 'react-native-reanimated';
+import { useTheme } from '../hooks/useTheme';
+import { useTranslation } from '../i18n/i18n';
+import { useAnimationLevel } from '../contexts/AnimationLevelContext';
+import HowItWorksIllustration, { type HowItWorksCardId } from './HowItWorksIllustration';
+const cards: { id: HowItWorksCardId; accent: string }[] = [
+  { id: 'scan', accent: '#06b6d4' }, { id: 'allies', accent: '#a855f7' },
+  { id: 'meet', accent: '#22c55e' }, { id: 'rewards', accent: '#f59e0b' },
+];
+type Position = { scrollY: SharedValue<number>; sectionY: SharedValue<number>; gridY: SharedValue<number> };
+function Card({ card, index, width, dark, animate, position }: { card: typeof cards[number]; index: number; width: number; dark: boolean; animate: boolean; position: Position }) {
+  const { t } = useTranslation('index'); const { height } = useWindowDimensions();
+  const top = useSharedValue(-1); const bottom = useSharedValue(0); const entered = useSharedValue(false);
+  const reveal = useSharedValue(1); const float = useSharedValue(0);
+  useAnimatedReaction(() => {
+    const absolute = position.sectionY.value + position.gridY.value + top.value;
+    return position.sectionY.value >= 0 && position.gridY.value >= 0 && top.value >= 0 && absolute < position.scrollY.value + height - 32 && absolute + bottom.value > position.scrollY.value;
+  }, (visible, previous) => {
+    if (!animate) { reveal.value = 1; float.value = 0; return; }
+    if (visible && !entered.value) {
+      entered.value = true; reveal.value = 0;
+      reveal.value = withDelay(index % 3 * 70, withTiming(1, { duration: 520 }));
+    }
+    if (visible === previous) return;
+    cancelAnimation(float);
+    float.value = visible ? withRepeat(withSequence(withTiming(-4, { duration: 1900 }), withTiming(0, { duration: 1900 })), -1, false) : 0;
+  }, [animate, height, index]);
+  useEffect(() => () => { cancelAnimation(float); cancelAnimation(reveal); }, [float, reveal]);
+  const entrance = useAnimatedStyle(() => ({ opacity: animate ? reveal.value : 1, transform: [{ translateY: animate ? (1 - reveal.value) * 22 : 0 }] }));
+  const illustration = useAnimatedStyle(() => ({ transform: [{ translateY: animate ? float.value : 0 }] }));
+  return <Animated.View onLayout={event => { top.value = event.nativeEvent.layout.y; bottom.value = event.nativeEvent.layout.height; }}
+    style={[styles.card, { width, backgroundColor: uiPalette(dark).surface, borderColor: uiPalette(dark).border }, entrance]}>
+    <View importantForAccessibility="no-hide-descendants" accessibilityElementsHidden style={[styles.illustration, { backgroundColor: `${card.accent}${dark ? '12' : '0d'}` }]}>
+      <Animated.View style={illustration}><HowItWorksIllustration kind={card.id} color={card.accent} /></Animated.View>
+    </View>
+    <Text accessibilityRole="header" style={[styles.title, { color: uiPalette(dark).text }]}>{t(`howItWorks.cards.${card.id}.title`, english.index.howItWorks.cards[card.id].title)}</Text>
+    <Text style={[styles.body, { color: uiPalette(dark).muted }]}>{t(`howItWorks.cards.${card.id}.description`, english.index.howItWorks.cards[card.id].description)}</Text>
+  </Animated.View>;
+}
+export default function HowItWorks({ scrollY }: { scrollY?: SharedValue<number> }) {
+  const { isDark } = useTheme(); const { t } = useTranslation('index');
+  const { animationLevel } = useAnimationLevel(); const { width } = useWindowDimensions();
+  const [reduceMotion, setReduceMotion] = useState(true);
+  useEffect(() => {
+    let active = true;
+    void AccessibilityInfo.isReduceMotionEnabled().then(value => { if (active) setReduceMotion(value); }).catch(() => {});
+    const subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduceMotion);
+    return () => { active = false; subscription.remove(); };
+  }, []);
+  const fallbackScroll = useSharedValue(0); const sectionY = useSharedValue(-1); const gridY = useSharedValue(-1);
+  const available = Math.max(0, Math.min(width - 40, 1340));
+  const columns = width <= 600 ? 1 : width <= 1000 ? 2 : 3;
+  const cardWidth = Math.max(0, (available - (columns - 1) * 22) / columns);
+  const position = { scrollY: scrollY ?? fallbackScroll, sectionY, gridY };
+  return <View style={styles.section} onLayout={event => { sectionY.value = event.nativeEvent.layout.y; }}>
+    <LandingBadge>{t('howItWorks.badge', 'How it works')}</LandingBadge>
+    <Text accessibilityRole="header" style={[styles.heading, { color: uiPalette(isDark).text }]}>{t('howItWorks.title', 'How HASHPASS Works')}</Text>
+    <Text style={[styles.subtitle, { color: uiPalette(isDark).muted }]}>{t('howItWorks.subtitle', 'One pass, one login, every event — built for speed and privacy.')}</Text>
+    <View style={styles.grid} onLayout={event => { gridY.value = event.nativeEvent.layout.y; }}>
+      {cards.map((card, index) => <Card key={card.id} card={card} index={index} dark={isDark} animate={animationLevel === 'full' && !reduceMotion} position={position} width={columns === 3 && index === 3 ? Math.min(640, available) : cardWidth} />)}
+    </View>
+  </View>;
+}
+const styles = StyleSheet.create({
+  section: { paddingHorizontal: 20, paddingVertical: 64, alignItems: 'center' },
+  heading: { fontSize: 32, fontWeight: '800', lineHeight: 38, letterSpacing: -1, textAlign: 'center', marginVertical: 16 },
+  subtitle: { fontSize: 17, lineHeight: 27, textAlign: 'center', maxWidth: 760, marginBottom: 40 },
+  grid: { width: '100%', maxWidth: 1340, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 22 },
+  card: { borderWidth: 1, borderRadius: uiTokens.radius.card, padding: 22 },
+  illustration: { height: 152, borderRadius: uiTokens.radius.card, alignItems: 'center', justifyContent: 'center', marginBottom: 24, overflow: 'hidden' },
+  title: { fontSize: 22, lineHeight: 28, fontWeight: '700', letterSpacing: -0.5, marginBottom: 12 },
+  body: { fontSize: 16, lineHeight: 26 },
+});

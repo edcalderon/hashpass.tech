@@ -1,3 +1,4 @@
+import { uiTokens } from './system/tokens';
 import { Platform } from 'react-native';
 
 export const clubTheme = {
@@ -22,12 +23,12 @@ export const clubTheme = {
     overlay: 'rgba(255, 255, 255, 0.06)',
   },
   radius: {
-    xs: 10,
-    sm: 14,
-    md: 18,
-    lg: 24,
-    xl: 32,
-    pill: 999,
+    xs: uiTokens.radius.small,
+    sm: uiTokens.radius.input,
+    md: uiTokens.radius.media,
+    lg: uiTokens.radius.card,
+    xl: uiTokens.radius.card,
+    pill: uiTokens.radius.pill,
   },
   spacing: {
     2: 2,

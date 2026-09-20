@@ -36,7 +36,7 @@ module "autodiscover" {
   lambda_zip_path          = var.lambda_zip_path
   lambda_source_code_hash  = var.lambda_source_code_hash
   lambda_handler           = "index.handler"
-  lambda_runtime           = "nodejs22.x"
+  lambda_runtime           = "nodejs24.x"
   lambda_memory_size       = 128
   lambda_timeout           = 5
   api_throttle_rate_limit  = 20

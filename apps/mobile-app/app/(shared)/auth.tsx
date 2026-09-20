@@ -1,3 +1,4 @@
+import { uiPalette, uiTokens } from "@hashpass/ui/tokens";
 import React, {
   useCallback,
   useEffect,
@@ -658,7 +659,7 @@ const DesktopHeroPanel = ({
   );
 };
 
-export default function AuthScreen() {
+export default function AuthScreen({ embedded = false, onAuthenticated, onDismiss }: { embedded?: boolean; onAuthenticated?: () => void; onDismiss?: () => void } = {}) {
   const { width: windowWidth } = useWindowDimensions();
   const { colors, isDark } = useTheme();
   const { t } = useTranslation("auth");
@@ -672,7 +673,7 @@ export default function AuthScreen() {
     signInWithOAuth,
   } = useAuth();
   const isDesktopLayout =
-    Platform.OS === "web" && windowWidth >= DESKTOP_AUTH_BREAKPOINT;
+    !embedded && Platform.OS === "web" && windowWidth >= DESKTOP_AUTH_BREAKPOINT;
   const isCompactMobile = !isDesktopLayout && windowWidth <= 420;
   const isVeryCompactMobile = !isDesktopLayout && windowWidth <= 360;
   const useNativeDriver = Platform.OS !== "web";
@@ -714,7 +715,7 @@ export default function AuthScreen() {
   // so this pause never delays anything real.
   const [otpVerifySucceeded, setOtpVerifySucceeded] = useState(false);
   const [emailAuthMethod, setEmailAuthMethod] =
-    useState<EmailAuthMethod>("magic-link");
+    useState<EmailAuthMethod>(embedded ? "otp-code" : "magic-link");
   const [email, setEmail] = useState("");
   const [otpDigits, setOtpDigits] = useState<string[]>(
     new Array(OTP_CODE_LENGTH).fill(""),
@@ -784,7 +785,7 @@ export default function AuthScreen() {
   const oauthInFlightRef = useRef(false);
   const authProviderName = authService.getProviderName();
   const isNativeLightMode = !isDark;
-  const showAuthBackground = shouldShowAuthBackground(
+  const showAuthBackground = !embedded && shouldShowAuthBackground(
     Platform.OS,
     animationLevel,
   );
@@ -822,6 +823,7 @@ export default function AuthScreen() {
     isNativeLightMode,
     showGlobalAuthBackground,
     authHeaderPalette,
+    embedded,
   );
   const isBusy = busyAction !== null;
   const isOAuthRedirecting = busyAction === "oauth";
@@ -919,9 +921,10 @@ export default function AuthScreen() {
   useEffect(() => {
     if (isLoggedIn && user && !hasNavigatedRef.current && !authLoading) {
       hasNavigatedRef.current = true;
-      router.replace(routerRedirectPath as any);
+      if (embedded) onAuthenticated?.();
+      else router.replace(routerRedirectPath as any);
     }
-  }, [authLoading, isLoggedIn, router, routerRedirectPath, user]);
+  }, [authLoading, isLoggedIn, router, routerRedirectPath, user, embedded, onAuthenticated]);
 
   useEffect(() => {
     if (!shouldShowEmailSuggestions) {
@@ -1522,6 +1525,12 @@ export default function AuthScreen() {
       if (typeof window !== "undefined" && window.localStorage) {
         window.localStorage.removeItem(PASSWORDLESS_CALLBACK_MARKER);
         window.localStorage.setItem("auth_signin_method", "google_oauth");
+        if (embedded) {
+          window.localStorage.setItem(
+            "oauth_return_url",
+            normalizeReturnToPath(window.location.pathname + window.location.search),
+          );
+        }
       }
 
       const result = await signInWithOAuth("google");
@@ -1880,6 +1889,7 @@ export default function AuthScreen() {
   // return, so without this the effect would see the ref as still false
   // and fire its own router.replace() right behind this one.
   if (isLoggedIn && user) {
+    if (embedded) return null;
     hasNavigatedRef.current = true;
     return <Redirect href={routerRedirectPath as any} />;
   }
@@ -1908,14 +1918,14 @@ export default function AuthScreen() {
               <ShaderAnimation />
             </View>
           ) : null}
-          <QuickSettingsPanel />
+          {!embedded && <QuickSettingsPanel />}
 
-          <TouchableOpacity
+          {!embedded && <TouchableOpacity
             style={[
               styles.backButton,
               isDesktopLayout ? styles.backButtonDesktop : null,
             ]}
-            onPress={() => router.push("/home")}
+            onPress={() => embedded ? onDismiss?.() : router.push("/home")}
             accessibilityLabel={t("back", "Go Back")}
             accessibilityRole="button"
             activeOpacity={0.85}
@@ -1926,7 +1936,7 @@ export default function AuthScreen() {
               size={26}
               color={isDark ? "#f8f8fb" : "#121212"}
             />
-          </TouchableOpacity>
+          </TouchableOpacity>}
 
           <ScrollView
             style={styles.scrollView}
@@ -1945,7 +1955,7 @@ export default function AuthScreen() {
                 isDesktopLayout ? styles.contentDesktop : null,
               ]}
             >
-              <View
+              {!embedded && <View
                 style={[
                   styles.authHeaderBlock,
                   isDesktopLayout ? styles.authHeaderBlockDesktop : null,
@@ -1957,7 +1967,7 @@ export default function AuthScreen() {
                 <Text style={styles.authHeaderSubtitle}>
                   {t("subtitle", "Sign in to unlock your digital life.")}
                 </Text>
-              </View>
+              </View>}
 
               <Animated.View
                 style={
@@ -2165,7 +2175,7 @@ export default function AuthScreen() {
                           </View>
                         ) : null}
 
-                        <View style={styles.methodTabs}>
+                        {!embedded && <View style={styles.methodTabs}>
                           <TouchableOpacity
                             style={[
                               styles.methodTab,
@@ -2243,7 +2253,7 @@ export default function AuthScreen() {
                               {t("otpCode", "OTP Code")}
                             </Text>
                           </TouchableOpacity>
-                        </View>
+                        </View>}
 
                         {emailAuthMethod === "otp-code" ? (
                           <View style={styles.otpDeliveryContainer}>
@@ -2560,6 +2570,7 @@ export default function AuthScreen() {
                             isBusy ? styles.primaryButtonDisabled : null,
                           ]}
                           onPress={handlePrimaryEmailAction}
+                          accessibilityRole="button"
                           disabled={isBusy}
                         >
                           <View style={styles.primaryButtonContent}>
@@ -2689,7 +2700,7 @@ export default function AuthScreen() {
                   </View>
 
                   <View style={{ alignItems: "center", marginTop: 12 }}>
-                    <VersionDisplay compact={true} />
+                    {!embedded && <VersionDisplay compact={true} />}
                   </View>
                 </View>
               </Animated.View>
@@ -2838,17 +2849,18 @@ const getStyles = (
     titleColor: "#ffffff",
     subtitleColor: "rgba(255, 255, 255, 0.82)",
   },
+  embedded: boolean = false,
 ) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: isDark ? "#050507" : "#f3f4f8",
+      backgroundColor: embedded ? "transparent" : uiPalette(isDark).canvas,
     },
     containerWeb: {
       position: "relative",
       ...(Platform.OS === "web"
         ? {
-            backgroundColor: showAuthBackground
+            backgroundColor: embedded || showAuthBackground
               ? "transparent"
               : isDark
                 ? "#050507"
@@ -2955,7 +2967,7 @@ const getStyles = (
       flexGrow: 1,
       // Native: ThemeAndLanguageSwitcher sits at top:56 and is ~44px tall, so push
       // content below it. Web doesn't need as much clearance.
-      paddingTop: Platform.OS === "web" ? 70 : 112,
+      paddingTop: embedded ? 8 : Platform.OS === "web" ? 70 : 112,
       paddingHorizontal:
         Platform.OS === "web"
           ? isCompactMobile
@@ -2964,7 +2976,7 @@ const getStyles = (
           : isCompactMobile
             ? 18
             : 24,
-      paddingBottom: 40,
+      paddingBottom: embedded ? 16 : 40,
     },
     scrollContentDesktop: {
       paddingTop: 82,
@@ -2974,7 +2986,7 @@ const getStyles = (
     content: {
       flex: 1,
       alignItems: "center",
-      justifyContent: "center",
+      justifyContent: embedded ? "flex-start" : "center",
       position: "relative",
       zIndex: 1,
     },
@@ -2986,17 +2998,17 @@ const getStyles = (
       width: "100%",
       maxWidth: Platform.OS === "web" ? 420 : isCompactMobile ? 392 : 420,
       alignSelf: "center",
-      borderRadius: 18,
+      borderRadius: uiTokens.radius.card,
       paddingHorizontal: isCompactMobile ? 14 : 20,
       paddingVertical: isCompactMobile ? 20 : 24,
-      backgroundColor: isDark ? "#151515" : "#ffffff",
-      borderWidth: 1,
-      borderColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)",
+      backgroundColor: embedded ? "transparent" : uiPalette(isDark).surface,
+      borderWidth: embedded ? 0 : 1,
+      borderColor: uiPalette(isDark).border,
       overflow: "hidden",
-      boxShadow: isDark
+      boxShadow: embedded ? "none" : isDark
         ? "0 14px 36px rgba(0,0,0,0.45)"
         : "0 12px 34px rgba(0,0,0,0.12)",
-      elevation: 6,
+      elevation: embedded ? 0 : 6,
     },
     authCardDesktop: {
       maxWidth: 520,
@@ -3007,8 +3019,8 @@ const getStyles = (
       marginBottom: 18,
     },
     logo: {
-      width: isCompactMobile ? 272 : 302,
-      height: isCompactMobile ? 78 : 86,
+      width: embedded ? 220 : isCompactMobile ? 272 : 302,
+      height: embedded ? 60 : isCompactMobile ? 78 : 86,
     },
     authHeaderBlock: {
       width: "100%",
@@ -3514,18 +3526,14 @@ const getStyles = (
       letterSpacing: 0.2,
     },
     primaryButton: {
-      height: 52,
-      borderRadius: 12,
+      minHeight: uiTokens.control.minHeight,
+      paddingVertical: uiTokens.space.md,
+      borderRadius: uiTokens.radius.pill,
       alignItems: "center",
       justifyContent: "center",
-      // Light mode keeps the red brand tone; dark mode switches to the same
-      // cyan accent (colors.primary) already used for the theme toggle pill
-      // and Explorer's icon badges, matching the HASHPASS dark-mode mark.
-      backgroundColor: isDark ? colors.primary : "#c81000",
-      boxShadow: isDark
-        ? `0 4px 14px ${colors.primary}59`
-        : "0 4px 14px rgba(200, 16, 0, 0.35)",
-      elevation: 4,
+      backgroundColor: uiPalette(isDark).accentFill,
+      boxShadow: "none",
+      elevation: 0,
     },
     primaryButtonDisabled: {
       opacity: 0.6,
@@ -3546,9 +3554,9 @@ const getStyles = (
       minWidth: 20,
     },
     primaryButtonText: {
-      fontSize: 20,
+      fontSize: uiTokens.type.body,
       fontWeight: "700",
-      color: isDark ? colors.primaryContrastText : "#fff",
+      color: uiPalette(isDark).onAccent,
     },
     secondaryActionButton: {
       alignSelf: "center",

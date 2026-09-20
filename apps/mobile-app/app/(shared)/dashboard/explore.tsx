@@ -1,3 +1,4 @@
+import GuestExplorer from "../../../components/events/GuestExplorer";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useEvent } from "@contexts/EventContext";
 import { useAuth } from "../../../hooks/useAuth";
@@ -12,6 +13,11 @@ import { useDiscoveryScope } from "../../../providers/DiscoveryScopeProvider";
 import Explorer from "../../../components/explorer/Explorer";
 
 export default function ExploreScreen() {
+  const { isLoggedIn } = useAuth();
+  return isLoggedIn ? <AuthenticatedExploreScreen /> : <GuestExplorer />;
+}
+
+function AuthenticatedExploreScreen() {
   const { event: currentEventFromContext } = useEvent();
   const { isLoggedIn, isLoading: authLoading, dbUserId } = useAuth();
   const router = useRouter();

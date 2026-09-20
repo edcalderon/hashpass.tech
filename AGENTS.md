@@ -81,3 +81,17 @@ The Husky pre-commit hook runs the README sync guard, so a stale changelog/READM
 - `upstream` is the backup fork.
 - Do not skip the `develop` sync after a release.
 - A completed release leaves `origin/main`, `origin/develop`, `upstream/main`, and `upstream/develop` at the same release commit.
+
+## UI design system
+
+- Before UI work, read `DESIGN.md` and the relevant production Storybook story.
+- Reuse `@hashpass/ui/tokens` and `@hashpass/ui/primitives`; do not add local card,
+  badge, chip, button or field variants when a shared role already exists.
+- `pnpm check:design-system` must pass. Never regenerate the design-debt baseline
+  simply to approve new literals; document and review intentional exceptions.
+- Update production-component stories with variants, interaction states, long
+  translations, dark/light modes and mobile behavior when changing primitives.
+- Respect application and system reduced motion. Keep native effects simpler than
+  web effects, pause offscreen media, and preserve accessible names/touch targets.
+- Impeccable is design assistance; `PRODUCT.md`, `DESIGN.md`, actual product data,
+  and user instructions remain the authority. Do not install/approve hooks silently.

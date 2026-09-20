@@ -1,17 +1,10 @@
 import { StorybookConfig } from '@storybook/react-webpack5';
 
-// In production, only show guides (docs stories), not component stories
-const isProduction = process.env.NODE_ENV === 'production';
-const stories = isProduction
-  ? [
-      // Only guides in production
-      '../apps/docs/docs/**/*.stories.@(js|jsx|ts|tsx|mdx)',
-    ]
-  : [
-      // All stories in development
-      '../components/**/*.stories.@(js|jsx|ts|tsx|mdx)',
-      '../apps/docs/docs/**/*.stories.@(js|jsx|ts|tsx|mdx)',
-    ];
+// The public catalog renders the same primitives used by production screens.
+const stories = [
+  '../packages/ui/src/system/**/*.stories.@(js|jsx|ts|tsx|mdx)',
+  '../apps/docs/docs/**/*.stories.@(js|jsx|ts|tsx|mdx)',
+];
 
 const config: StorybookConfig = {
   stories,
@@ -44,17 +37,16 @@ const config: StorybookConfig = {
     config.resolve.alias = {
       ...config.resolve.alias,
       'react-native$': 'react-native-web',
-      'react-native-svg': 'react-native-svg-web',
-      '@': require('path').resolve(__dirname, '..'),
+      '@': require('path').resolve(__dirname, '../apps/mobile-app'),
     };
 
     // Add support for Expo
     config.resolve.extensions = [
-      ...(config.resolve.extensions || []),
       '.web.js',
       '.web.jsx',
       '.web.ts',
       '.web.tsx',
+      ...(config.resolve.extensions || []),
       '.mjs',
       '.cjs',
     ];

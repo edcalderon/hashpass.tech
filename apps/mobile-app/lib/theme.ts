@@ -1,3 +1,4 @@
+import { uiTokens, uiPalette } from '@hashpass/ui/tokens';
 import { DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { Platform } from 'react-native';
 
@@ -157,6 +158,19 @@ export const darkColors: ThemeColors = {
   surface: '#1E1E1E', // Add surface color for dark theme
 };
 
+// One semantic palette for existing theme consumers and new primitives.
+for (const [theme, dark] of [[lightColors, false], [darkColors, true]] as const) {
+  const palette = uiPalette(dark);
+  theme.primary = palette.accent;
+  theme.primaryLight = palette.accentSoft;
+  theme.primaryDark = palette.accentFill;
+  theme.primaryContrastText = dark ? palette.canvas : palette.onAccent;
+  theme.background = { primary: palette.canvas, default: palette.canvas, paper: palette.surface };
+  theme.text = { ...theme.text, primary: palette.text, secondary: palette.muted, textSecondary: palette.muted, onSurface: palette.text, onSurfaceVariant: palette.muted };
+  theme.divider = palette.border;
+  theme.surface = palette.surface;
+}
+
 // Helper to create shadow styles with web compatibility
 const createShadow = (
   shadowColor: string,
@@ -207,10 +221,11 @@ export const themeSpacing = {
   xxl: 48,
 };
 
+/** Legacy aliases. New components should use semantic uiTokens.radius roles. */
 export const themeBorderRadius = {
-  small: 4,
-  medium: 8,
-  large: 12,
-  xlarge: 16,
-  full: 9999,
+  small: uiTokens.radius.small,
+  medium: uiTokens.radius.input,
+  large: uiTokens.radius.media,
+  xlarge: uiTokens.radius.card,
+  full: uiTokens.radius.pill,
 };

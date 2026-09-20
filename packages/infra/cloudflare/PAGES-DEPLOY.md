@@ -99,7 +99,7 @@ Example routes:
 - Verify file paths in your code match the deployed structure
 
 ### Build fails
-- Check Node.js version (Cloudflare Pages uses Node.js 18+)
+- Set the Pages build Node version to 24.21.0, matching the repository `.node-version`; Workers runtime compatibility is configured separately.
 - Verify all dependencies are in `package.json`
 - Check build logs in Cloudflare Dashboard
 

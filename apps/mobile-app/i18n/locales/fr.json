@@ -452,7 +452,34 @@
       "title": "Prêt à commencer ?",
       "subtitle": "Rejoignez des milliers d'utilisateurs qui font confiance à HASHPASS pour leur vie numérique.",
       "startNow": "Commencer maintenant"
-    }
+    },
+    "howItWorks": {
+      "badge": "Comment ça marche",
+      "title": "Comment fonctionne HASHPASS",
+      "subtitle": "Un pass, une connexion, tous vos événements — pour aller vite et préserver votre confidentialité.",
+      "cards": {
+        "scan": {
+          "title": "Scannez et entrez",
+          "description": "Évitez les files d’attente. Votre pass est un code QR dynamique qui vous permet d’entrer à un événement en un instant, sans impression ni paperasse."
+        },
+        "allies": {
+          "title": "Réseau de partenaires",
+          "description": "Connectez-vous une seule fois pour accéder aux lieux, clubs et événements communautaires partenaires du réseau HASHPASS."
+        },
+        "meet": {
+          "title": "Rencontrez et échangez",
+          "description": "Organisez des rendez-vous et discutez avec les autres participants grâce au chiffrement de bout en bout. Des échanges authentiques et privés."
+        },
+        "rewards": {
+          "title": "Portefeuille de récompenses",
+          "description": "Gagnez des points LUKAS en participant aux événements, puis échangez-les contre des avantages dans tout le réseau."
+        }
+      }
+    },
+    "exploreAllEvents": "Explorer tous les événements",
+    "eventsExplorerSubtitle": "Découvrez les événements du monde entier et trouvez le vôtre.",
+    "noEventsFound": "Aucun événement trouvé.",
+    "tapToRead": "Touchez pour en savoir plus"
   },
   "walletDesc": "Accédez à vos billets vérifiés par blockchain",
   "loyalty": "Tableau de bord de fidélité",
@@ -1151,5 +1178,47 @@
       "title": "Questions",
       "text": "Si vous avez des questions sur la suppression de votre compte ou de vos données, contactez-nous à :\n\nE-mail : privacy@hashpass.tech\nSite web : https://hashpass.tech"
     }
+  },
+  "publicEvents": {
+    "back": "Accueil",
+    "badge": "Découvrir · Échanger · Se retrouver",
+    "title": "Trouvez votre prochaine rencontre.",
+    "subtitle": "Explorez les événements à venir, retrouvez votre communauté et gardez tous vos pass au même endroit.",
+    "loadingFilm": "Chargement de la vidéo",
+    "featured": "À LA UNE",
+    "viewEvent": "Découvrir l’événement",
+    "previous": "Précédent",
+    "next": "Suivant",
+    "play": "Lancer le défilement",
+    "pause": "Mettre en pause",
+    "search": "Rechercher un événement, une ville, un pays ou une série",
+    "series": "SÉRIES D’ÉVÉNEMENTS",
+    "allSeries": "Toutes les séries",
+    "regions": "RÉGIONS",
+    "allRegions": "Toutes les régions",
+    "upcomingFirst": "À venir en premier",
+    "reset": "Effacer les filtres",
+    "undated": "Date à confirmer",
+    "empty": "Aucun événement ne correspond à votre recherche.",
+    "emptyHint": "Essayez un autre lieu ou effacez les filtres.",
+    "all": "Tous les événements",
+    "upcoming": "À venir",
+    "live": "En cours",
+    "past": "Événements passés",
+    "navEvents": "Explorer les événements",
+    "navPasses": "Mes pass",
+    "navWallet": "Portefeuille",
+    "navCommunity": "Communauté",
+    "guest": "Mode invité",
+    "openApp": "Ouvrir l’application",
+    "join": "Rejoindre HASHPASS",
+    "guestHint": "Explorez librement. Inscrivez-vous pour enregistrer des événements, gérer vos pass et échanger.",
+    "authTitle": "Inscrivez-vous pour profiter de toute l’application",
+    "authHint": "Créez un compte ou connectez-vous avec un code de vérification. Votre recherche d’événements est conservée.",
+    "close": "Fermer",
+    "navQr": "Mon QR",
+    "navNotifications": "Notifications",
+    "navProfile": "Profil",
+    "guestDescription": "Vous explorez une version simplifiée de HASHPASS. Inscrivez-vous et téléchargez l’application pour profiter de l’expérience complète, avec vos pass, vos événements enregistrés et les fonctionnalités communautaires."
   }
 }

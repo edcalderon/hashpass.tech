@@ -8,7 +8,7 @@ Do not use this as the normal release flow. The active API deploy path is the ta
 
 1. **AWS Account** with appropriate permissions
 2. **AWS CLI** installed and configured
-3. **Node.js 18+** installed
+3. **Node.js 24.21.0** installed (the repository `.nvmrc` baseline)
 4. **Project built** (`npm run build:mobile`)
 
 ## Step 1: Create IAM Role for Lambda
@@ -52,7 +52,7 @@ cd ..
 # Replace ACCOUNT_ID and ROLE_NAME with your values
 aws lambda create-function \
   --function-name hashpass-api-handler \
-  --runtime nodejs20.x \
+  --runtime nodejs24.x \
   --role arn:aws:iam::ACCOUNT_ID:role/hashpass-lambda-execution-role \
   --handler index.handler \
   --zip-file fileb://lambda-deployment.zip \
@@ -64,7 +64,7 @@ aws lambda create-function \
 **Or use AWS Console:**
 1. Go to Lambda Console → Create Function
 2. Name: `hashpass-api-handler`
-3. Runtime: Node.js 20.x
+3. Runtime: Node.js 24.x
 4. Architecture: x86_64
 5. Execution role: Use existing role → Select `hashpass-lambda-execution-role`
 6. Upload deployment package: `lambda-deployment.zip`

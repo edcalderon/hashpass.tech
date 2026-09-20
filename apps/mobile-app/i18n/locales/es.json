@@ -24,6 +24,55 @@
     "capRetry": "Reintentar"
   },
   "wallet": {
+    "enrollment": {
+      "readOnly": "SOLO LECTURA",
+      "signIn": "Inicia sesión para ver el estado de tu billetera.",
+      "loading": "Cargando el estado de la billetera",
+      "unavailable": "El estado de la billetera no está disponible. Inténtalo de nuevo.",
+      "ready": "Inscripción lista",
+      "noKeys": "Tu cuenta está inscrita. No se han creado claves. La configuración del dispositivo y la verificación de recuperación aún no están disponibles en esta aplicación.",
+      "interrupted": "La configuración de la billetera está incompleta. Conserva el dispositivo original y su billetera guardada. No crees una billetera de reemplazo.",
+      "testnet": "Redes de prueba",
+      "mainnet": "Redes principales",
+      "registered": "Direcciones públicas registradas. El acceso desde este dispositivo y la recuperación no se han verificado en esta pantalla. Los saldos y la firma no están disponibles.",
+      "refresh": "Actualizar estado de la billetera",
+      "setupReady": "Tu cuenta está inscrita. Aún no se han creado claves. Configura este dispositivo a continuación."
+    },
+    "overview": {
+      "assets": "Activos",
+      "rewards": "Recompensas",
+      "passes": "Pases para eventos",
+      "eyebrow": "TU HASHPASS",
+      "title": "Billetera",
+      "subtitle": "Tus activos, recompensas y pases para eventos. Todo en un lugar, con propiedad clara.",
+      "setupPending": "CONFIGURACIÓN AÚN NO DISPONIBLE",
+      "ownershipTitle": "Tu billetera. Tu control.",
+      "setupDescription": "Estamos preparando las billeteras de Ethereum, Bitcoin y Solana. Esta pantalla no ha creado ninguna billetera cripto. Las transferencias y la firma no están disponibles.",
+      "hideSecurity": "Ocultar detalles de seguridad",
+      "showSecurity": "Cómo funcionará la protección de tu billetera",
+      "protectTitle": "01 / Protege tu billetera",
+      "protectBody": "Una contraseña independiente protegerá la firma. La firma permanecerá bloqueada hasta completar la configuración y las comprobaciones de recuperación.",
+      "backupTitle": "02 / Respalda y verifica",
+      "backupBody": "Guarda tu frase de recuperación y tu respaldo cifrado, y completa una prueba de recuperación antes de habilitar transacciones.",
+      "hardwareTitle": "03 / Elige cómo firmar",
+      "hardwareBody": "Se prevén conexiones con billeteras de hardware. Estas mantienen las claves en el dispositivo; nunca ingreses aquí su frase de recuperación.",
+      "networks": "Redes previstas",
+      "networksDescription": "Los saldos aparecerán después de configurar la billetera y conectarse correctamente a la red.",
+      "notConnected": "Sin conexión",
+      "balanceUnavailable": "Saldo no disponible",
+      "activity": "Actividad",
+      "activityUnavailable": "El historial de transacciones estará disponible cuando conectes tu billetera. No se ha cargado actividad de la cadena.",
+      "passesNote": "Tus pases de acceso a eventos. Son independientes de los activos en la cadena.",
+      "rewardsLabel": "RECOMPENSAS HASHPASS",
+      "rewardsSignIn": "Inicia sesión para ver tu saldo de recompensas.",
+      "loadingRewards": "Cargando recompensas",
+      "unavailable": "No disponible",
+      "rewardsError": "No se pudo cargar tu saldo. Inténtalo de nuevo.",
+      "rewardsNote": "Tu saldo de recompensas HASHPASS es independiente de tus activos en la cadena. No se presupone ningún valor monetario ni tipo de cambio.",
+      "refreshRewards": "Actualizar recompensas",
+      "pointsTitle": "Hash Points",
+      "pointsUnavailable": "Los saldos y los intercambios de puntos aún no están disponibles."
+    },
     "digitalWalletTitle": "Billetera de Boletos Digitales",
     "walletDesc": "Accede a tus boletos verificados en blockchain, tokens y puntos",
     "events": "Descubrir Eventos",
@@ -87,6 +136,37 @@
     "exchange": {
       "title": "Intercambio",
       "description": "Convierte puntos a criptomonedas."
+    },
+    "setup": {
+      "title": "Configuración del dispositivo · solo redes de prueba",
+      "readOnly": "La firma sigue deshabilitada. Verificar el respaldo no habilita transacciones.",
+      "error": "No se pudo completar este paso. Revisa las contraseñas, el respaldo y la conexión. Conserva el dispositivo original; no crees otra billetera.",
+      "passwordHelp": "Usa una contraseña de billetera diferente: mínimo 16 caracteres y 8 caracteres distintos. HASHPASS no puede restablecerla ni recuperar tu frase.",
+      "password": "Contraseña de la billetera",
+      "confirm": "Confirmar contraseña de la billetera",
+      "restoreTitle": "Restaurar desde un respaldo cifrado",
+      "reveal": "Mostrar frase de recuperación",
+      "phraseWarning": "Quien tenga estas palabras controla la billetera. Escríbelas en privado, en orden. Nunca las envíes a soporte.",
+      "hide": "Ocultar frase y verificar palabras",
+      "challenge": "Introduce las palabras solicitadas de tu frase guardada.",
+      "answer": "Palabra de recuperación",
+      "verifyWords": "Verificar palabras",
+      "backupHelp": "El archivo cifrado se restaura en HASHPASS. No es un archivo JSON de MetaMask. Guarda su contraseña por separado; la compatibilidad de importación aún está en pruebas.",
+      "backupPassword": "Contraseña del respaldo",
+      "backupConfirm": "Confirmar contraseña del respaldo",
+      "export": "Descargar respaldo cifrado",
+      "pick": "Elegir archivo de respaldo cifrado",
+      "fileSelected": "Archivo cifrado seleccionado. Introduce su contraseña para verificarlo o restaurarlo localmente.",
+      "verified": "Palabras y respaldo cifrado verificados en esta sesión. La firma sigue deshabilitada.",
+      "plaintextWarning": "Descarga opcional sin cifrar: quien abra este archivo puede tomar la billetera. Evita carpetas compartidas y sincronización en la nube.",
+      "plaintext": "Descargar frase de recuperación sin cifrar",
+      "create": "Crear billetera de prueba",
+      "resume": "Reanudar configuración",
+      "restore": "Restaurar billetera en este dispositivo",
+      "verifyFile": "Verificar respaldo guardado",
+      "word": "Palabra",
+      "acknowledge": "Entiendo el riesgo del archivo sin cifrar",
+      "cancelPlaintext": "Cancelar descarga sin cifrar"
     }
   },
   "digitalWallet": {
@@ -473,6 +553,29 @@
         "description": "Accede a tus datos en todos tus dispositivos."
       }
     },
+    "howItWorks": {
+      "badge": "Cómo funciona",
+      "title": "Cómo Funciona HASHPASS",
+      "subtitle": "Un solo pase, un solo inicio de sesión, todos los eventos: hecho para la velocidad y la privacidad.",
+      "cards": {
+        "scan": {
+          "title": "Escanea y Entra",
+          "description": "Olvídate de las filas. Tu pase es un código QR en vivo que te da acceso instantáneo a cualquier evento, sin impresiones ni papeleo."
+        },
+        "allies": {
+          "title": "Red de Aliados",
+          "description": "Inicia sesión una vez y accede a todos los recintos, clubes y comunidades aliadas dentro de la red HASHPASS."
+        },
+        "meet": {
+          "title": "Conecta en Privado",
+          "description": "Agenda reuniones y chatea de forma cifrada de extremo a extremo con otros asistentes: conexiones reales, siempre privadas."
+        },
+        "rewards": {
+          "title": "Billetera de Recompensas",
+          "description": "Gana puntos LUKAS por participar y asistir, y canjéalos por beneficios en toda la red."
+        }
+      }
+    },
     "welcomeBack": "¡Bienvenido de nuevo!",
     "goToApp": "Ir a la App",
     "signingOut": "Cerrando sesión...",
@@ -481,6 +584,9 @@
     "readyToSimplify": "¿Listo para simplificar tu vida digital?",
     "scroll": "Desplázate",
     "getStartedNow": "Comenzar ahora",
+    "exploreAllEvents": "Explorar todos los eventos",
+    "eventsExplorerSubtitle": "Descubre eventos en todo el mundo — encuentra el tuyo.",
+    "noEventsFound": "No se encontraron eventos.",
     "trustedByThousands": "Confiado por miles",
     "testimonials": {
       "title": "Testimonios",
@@ -572,7 +678,8 @@
       "title": "¿Listo para comenzar?",
       "subtitle": "Únete a miles que confían en HASHPASS.",
       "startNow": "Comenzar"
-    }
+    },
+    "tapToRead": "Toca para leer más"
   },
   "walletDesc": "Accede a tus boletos verificados en blockchain",
   "loyalty": "Panel de Lealtad",
@@ -1699,5 +1806,47 @@
       "title": "Preguntas",
       "text": "Si tiene preguntas sobre cómo eliminar su cuenta o sus datos, contáctenos en:\n\nCorreo electrónico: privacy@hashpass.tech\nSitio web: https://hashpass.tech"
     }
+  },
+  "publicEvents": {
+    "back": "Volver al inicio",
+    "badge": "Descubre · Conecta · Participa",
+    "title": "Encuentra tu próxima conexión.",
+    "subtitle": "Explora próximos eventos, conoce a tu comunidad y guarda cada pase en un solo lugar.",
+    "loadingFilm": "Cargando video del evento",
+    "featured": "DESTACADOS",
+    "viewEvent": "Explorar evento",
+    "previous": "Anterior",
+    "next": "Siguiente",
+    "play": "Reproducir destacados",
+    "pause": "Pausar destacados",
+    "search": "Buscar eventos, ciudades, países o series",
+    "series": "SERIES DE EVENTOS",
+    "allSeries": "Todas las series",
+    "regions": "REGIONES",
+    "allRegions": "Todas las regiones",
+    "upcomingFirst": "Próximos primero",
+    "reset": "Limpiar filtros",
+    "empty": "Ningún evento coincide con tu búsqueda.",
+    "emptyHint": "Prueba otra ubicación o limpia los filtros.",
+    "all": "Todos los eventos",
+    "upcoming": "Próximos",
+    "live": "En vivo",
+    "undated": "Fecha por anunciar",
+    "past": "Eventos pasados",
+    "navEvents": "Explorar eventos",
+    "navPasses": "Mis pases",
+    "navWallet": "Billetera",
+    "navCommunity": "Comunidad",
+    "guest": "Modo invitado",
+    "openApp": "Abrir app",
+    "join": "Únete a HASHPASS",
+    "guestHint": "Explora libremente. Únete para guardar eventos, gestionar pases y conectar.",
+    "authTitle": "Únete para usar toda la app",
+    "authHint": "Crea una cuenta o inicia sesión con un código de verificación. Tu búsqueda de eventos se conserva.",
+    "close": "Cerrar",
+    "navQr": "Mi QR",
+    "navNotifications": "Notificaciones",
+    "navProfile": "Perfil",
+    "guestDescription": "Estás explorando una versión simplificada de HASHPASS. Regístrate y descarga la app para acceder a la experiencia completa, incluidos tus pases, eventos guardados y funciones de comunidad."
   }
 }

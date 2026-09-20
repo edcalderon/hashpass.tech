@@ -15,7 +15,7 @@ echo ""
 
 FUNCTION_NAME="hashpass-api-handler"
 REGION="us-east-1"
-RUNTIME="nodejs20.x"
+RUNTIME="nodejs24.x"
 HANDLER="index.handler"
 TIMEOUT=30
 MEMORY=512

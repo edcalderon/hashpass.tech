@@ -1,3 +1,24 @@
+## [1.9.41](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.40...v1.9.41) (2026-09-20)
+
+
+### Features
+
+* unify public explorer and wallet onboarding experience ([7706f55](https://github.com/hashpass-tech/hashpass.tech/commit/7706f550408e967affe422e293c0fade24bc3ab5))
+### Release Highlights
+- unify public explorer and wallet onboarding experience
+
+### Release scope
+- Compared with: `v1.9.40` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- QR links API
+- Shared UI
+- Database migrations
+- Infrastructure
+- Documentation
+- Release tooling
+
 ## [1.9.40](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.39...v1.9.40) (2026-09-20)
 
 

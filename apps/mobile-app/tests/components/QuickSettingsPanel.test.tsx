@@ -7,6 +7,8 @@ const mockSetLocale = jest.fn();
 const mockSetAnimationLevel = jest.fn();
 
 type MockRenderOptions = {
+  inline?: boolean;
+  showSignIn?: boolean;
   width?: number;
   pathname?: string;
   platform?: 'android' | 'ios' | 'web';
@@ -43,6 +45,8 @@ const mockColors = {
 
 const loadQuickSettingsPanel = (options: MockRenderOptions = {}) => {
   const {
+    inline = false,
+    showSignIn = true,
     width = 1024,
     pathname = '/dashboard/explore',
     platform = 'web',
@@ -129,6 +133,7 @@ const loadQuickSettingsPanel = (options: MockRenderOptions = {}) => {
       Image: 'Image',
       ImageBackground: 'ImageBackground',
       Modal: 'Modal',
+      KeyboardAvoidingView: 'KeyboardAvoidingView',
       Easing: {
         cubic: 'cubic',
         out: (value: unknown) => value,
@@ -231,12 +236,12 @@ const loadQuickSettingsPanel = (options: MockRenderOptions = {}) => {
         { code: 'pt', name: 'portuguese' },
       ],
       useTranslation: () => ({
-        t: (key: string) => {
+        t: (key: string, fallback?: string) => {
           if (key.startsWith('languages.')) {
             return key.split('.').pop();
           }
 
-          return undefined;
+          return fallback;
         },
       }),
     }));
@@ -267,7 +272,7 @@ const loadQuickSettingsPanel = (options: MockRenderOptions = {}) => {
       renderer = TestRenderer.create(
         React.createElement(QuickSettingsPanel, {
           ...(scrollY ? { scrollY } : {}),
-          hideAfterScrollY,
+          hideAfterScrollY, inline, showSignIn,
         })
       );
     });
@@ -378,4 +383,18 @@ describe('QuickSettingsPanel', () => {
 
     expect(root.findAllByType('Modal')).toHaveLength(1);
   });
+  it('keeps inline guest settings on screen on mobile and changes shared preferences without auth', async () => {
+    const { renderer, act } = loadQuickSettingsPanel({ width: 390, inline: true, showSignIn: false });
+    const root = renderer.root;
+    await act(async () => root.findAllByType('Pressable').find((node: any) => node.props.accessibilityLabel === 'Quick Settings').props.onPress());
+    expect(root.findAllByType('Modal')).toHaveLength(1);
+    expect(root.findAllByProps({ accessibilityLabel: 'Sign in' })).toHaveLength(0);
+    await act(async () => root.findByProps({ accessibilityLabel: 'Dark' }).props.onPress());
+    await act(async () => root.findByProps({ accessibilityLabel: 'portuguese' }).props.onPress());
+    expect(mockSetTheme).toHaveBeenCalledWith('dark');
+    expect(mockSetLocale).toHaveBeenCalledWith('pt');
+    expect(mockRouterPush).not.toHaveBeenCalled();
+    act(() => renderer.unmount());
+  });
+
 });

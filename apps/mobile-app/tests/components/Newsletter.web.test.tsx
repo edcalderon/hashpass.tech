@@ -3,7 +3,7 @@
 import React from 'react';
 import TestRenderer, { act } from 'react-test-renderer';
 
-jest.mock('framer-motion', () => ({
+jest.mock('motion/react', () => ({
   AnimatePresence: ({ children }: { children: React.ReactNode }) => children,
   motion: { div: 'div' },
   useInView: () => false,

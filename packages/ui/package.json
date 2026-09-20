@@ -6,7 +6,9 @@
   "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./CaptchaWidget": "./src/CaptchaWidget.tsx"
+    "./CaptchaWidget": "./src/CaptchaWidget.tsx",
+    "./tokens": "./src/system/tokens.ts",
+    "./primitives": "./src/system/primitives.tsx"
   },
   "scripts": {
     "build": "tsc --noEmit",
@@ -27,9 +29,15 @@
     "three": ">=0.150.0"
   },
   "peerDependenciesMeta": {
-    "@react-three/drei": { "optional": true },
-    "@react-three/fiber": { "optional": true },
-    "three": { "optional": true }
+    "@react-three/drei": {
+      "optional": true
+    },
+    "@react-three/fiber": {
+      "optional": true
+    },
+    "three": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@types/three": "^0.183.1",
