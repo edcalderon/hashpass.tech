@@ -437,67 +437,14 @@ Historical Amplify build history is archived in `archive/amplify/README.md`. For
 - `packages/tools/scripts/release.js` — version script
 - `packages/tools/scripts/package-lambda.sh` — Lambda packaging script
 
-## Headroom MCP (Token Compression)
+## Context and Token Budget
 
-Headroom compresses long conversation context to save tokens. It's installed as a Claude Code MCP server.
-
-### Automatic usage (REQUIRED)
-
-**Always invoke `mcp__headroom__headroom_compress` proactively — do not wait to be asked:**
-
-- At the start of any long session (after reading multiple large files or accumulating significant context)
-- Whenever the conversation has gone through several back-and-forth turns on a complex task
-- Before starting a new major subtask within the same session
-- Any time you notice the system-reminder mentions context is being compressed/summarized
-
-After compressing, call `mcp__headroom__headroom_stats` once to confirm compression succeeded and log the token savings. Use `mcp__headroom__headroom_retrieve` if you need to recall something from earlier in the conversation that may have been compressed.
-
-### Installation (already done — for reference / re-setup)
-```bash
-# 1. Install into a permanent venv
-python3 -m venv ~/.headroom/venv
-~/.headroom/venv/bin/pip install "headroom-ai[mcp]"
-
-# 2. Register with Claude Code
-~/.headroom/venv/bin/headroom mcp install
-# → writes to ~/.claude.json mcpServers.headroom
-
-# 3. Fix command path to absolute (the installer writes "headroom" which won't be on PATH)
-python3 - <<'EOF'
-import json
-with open('/home/ed/.claude.json', 'r') as f:
-    data = json.load(f)
-data['mcpServers']['headroom']['command'] = '/home/ed/.headroom/venv/bin/headroom'
-with open('/home/ed/.claude.json', 'w') as f:
-    json.dump(data, f, indent=2)
-EOF
-
-# 4. Restart Claude Code
-```
-
-### MCP tools available after restart
-- `headroom_compress` — compress current context
-- `headroom_retrieve` — retrieve compressed segments
-- `headroom_stats` — show compression stats
-
-### Roll back / remove headroom
-```bash
-# Remove MCP registration from Claude Code config
-python3 - <<'EOF'
-import json
-with open('/home/ed/.claude.json', 'r') as f:
-    data = json.load(f)
-data.get('mcpServers', {}).pop('headroom', None)
-with open('/home/ed/.claude.json', 'w') as f:
-    json.dump(data, f, indent=2)
-print("Removed headroom from mcpServers")
-EOF
-
-# Delete the venv (optional)
-rm -rf ~/.headroom/venv
-
-# Restart Claude Code
-```
+- MCP tool discovery should be deferred when the gateway supports `tool_reference` (`ENABLE_TOOL_SEARCH=true` in local Claude settings). Use `/context` to check the actual baseline after restarting.
+- Prefer bounded graph queries (`limit: 10` initially) and symbol snippets. Read large files in focused ranges. Save verbose test/build output to a local temporary file and return a short result plus relevant failures.
+- Headroom's standalone MCP compresses explicitly supplied content. It does **not** remove messages already in Claude Code's conversation or replace native `/compact`. Do not invoke compression or statistics on every subtask or after native compaction.
+- Use Headroom only when a specific large payload benefits from compression, retaining a way to retrieve the original. Avoid copying an already-read payload into another tool just to claim token savings.
+- Use native `/compact` for a long active task; save a short handoff and use `/clear` when switching tasks. Repeated immediate recompaction calls for inspecting persistent instructions/tools and gateway usage accounting, not more compression calls.
+- Historical fixes are in `docs/agent-history.md`. Read only the relevant heading when needed; do not preload that document.
 
 ## OTP Authentication (Native Mobile)
 
@@ -583,23 +530,3 @@ Provider-agnostic source of truth. All auth providers replicate here.
 
 Migration history: V004 (create), V005 (rename ba_users), V006 (singular rename + FKs).
 See `apps/docs/docs/auth/USER_REGISTRY.md` for full schema and sync paths.
-
-## Recent Fixes
-- v1.9.11 (pending): (1) `hpass.id`, `hashpass.link`, and `hashp.link` now all front the same production `hashpass-links-api` Lambda/API Gateway — one `qr_links` table, no per-domain analytics split, since the redirect/`qr_links` logic was already fully host-agnostic. New additive `aws_apigatewayv2_extra_domain` Terraform module attaches extra custom domains onto an *existing* API Gateway instead of creating a new one, keeping the shared `aws_expo_router_api` module (also used by `hashpass-api-target`/`hashpass-autodiscover`) untouched; `hpass.id`/`hashp.link`'s hosted zones now live in `hashpass-dns` alongside `tech`/`lat`/`club`/`info`. `NEXT_PUBLIC_LINKS_API_BASE_URL`/`EXPO_PUBLIC_LINKS_API_BASE_URL_PROD` now point at `https://hpass.id` as the primary short-link/QR domain. See `packages/hashpass-links-api/README.md`'s "Multi-domain cutover" and `apps/docs/docs/infra/DEPLOYMENT_MAP.md`'s new section for the full architecture and rollout runbook. (2) Fixed a real production bug found during that rollout: hashpass.club's "Sign in using the web app" button relied on `qrLogin` state from an async `beginLogin()` call that auto-fires on modal open — a click landing before it resolved (or after it failed) opened `hashpass.tech/auth/connect` with no `challengeId`, exactly the "This link is missing information" error users were hitting. Now creates a fresh challenge inline on click if one isn't ready, opening the tab synchronously first so the fallback path isn't popup-blocked. (3) Also found and fixed: `mobile-android-release.yml`'s "Write mobile app env" step never wrote `EXPO_PUBLIC_LINKS_API_BASE_URL` at all, unlike every other `EXPO_PUBLIC_*` var it handles — meaning it's been undefined in every real internal/alpha/beta/production Android build shipped so far, silently breaking any native flow that calls `@hashpass/sdk`'s `AuthQrClient`/`QrLinksClient` (scan-to-approve, the hashpass.club → hashpass.tech web handoff). Fixed by splitting `EXPO_PUBLIC_LINKS_API_BASE_URL_DEV`/`_PROD` the same way `EXPO_PUBLIC_SUPABASE_URL` already does. **Not yet confirmed:** whether `mobile-eas-update.yml` (the OTA path, which has no local `.env` step at all) has the same gap or is already covered by EAS's own dashboard-configured environment variables — needs an EAS login to check.
-- v1.8.329 (pending): Root-caused "passes took too long to load" for real users on Play Store (confirmed via prod DB it was never a missing-data bug — an affected account's BSL/Colombia general passes existed, active, correctly provisioned by the `trg_auth_users_upcoming_bsl_general_passes` trigger). Actual cause: `ensureSupabaseAccountForEmail` (`lib/auth/supabase-admin-bridge.ts`), called on every Better Auth login and every manual pass-load retry, always tried `admin.createUser` first — guaranteed to fail for any already-bridged account — then fell back to `findSupabaseUserByEmail`'s paginated `admin.listUsers()` scan (up to 2000 users / 10 sequential admin API round trips). That scan only gets slower as the user base grows and was blowing through `PassesWallet`'s 10s (5s × 2 attempts) client-side timeout for returning users. Fixed by checking the `public.user` registry's `provider_ids.supabase` first and going straight to `getUserById` + `updateUserById` (two O(1) calls) when a known id is on file, falling back to the original create-then-scan path only for genuinely new/unlinked accounts. Also fixed a missing Lingui catalog entry: `index.docs.gettingStarted.seeDemo` (the in-app docs screen's "See the demo videos" button, `(shared)/docs.tsx` — not Docusaurus) was showing as a raw message id in every locale because the catalogs were never re-extracted/compiled after the line was added.
-- v1.8.311 (pending): (1) `V050`/`V051` migrations: reverted a same-session regression (`V046`) that wrongly pointed `user_agenda_status.user_id`'s FK at `auth.users` instead of the `public.user` registry, breaking `my-schedule.tsx`/`agenda/status+api.ts`'s agenda writes; while verifying that fix against prod, discovered and fixed an unrelated, previously-unknown bug — `meetings.speaker_id` is `uuid` on prod but `text` on dev, and the write side of `accept_meeting_request` had never been fixed for that divergence, meaning **no meeting had ever actually been created on production**. Both fixes verified end-to-end via rolled-back live transactions on dev and prod. (2) Meeting-request slot picker now groups slots into per-day tabs (mirroring My Schedule's day-pill pattern) instead of one flat scrollable list, for multi-day events. (3) Reworked meeting chat entirely: the previous implementation was Supabase Realtime `broadcast`-only (never persisted — 0 rows in `meeting_chat_messages` on prod, and the persistence path was actually unreachable on dev due to another registry-vs-auth FK bug) into an end-to-end encrypted (X25519 ECDH + HKDF-SHA256 + XChaCha20-Poly1305, single-device keys by design), `postgres_changes`-backed persistent/async chat. Also fixed two adjacent bugs found in the process: the `chat_message` notification tap target pointed at a screen (`meeting-detail`) that never read the `openChat` param it was given, and `meeting-chat.tsx` (the route, not the `MeetingChat.tsx` component) used `user.id` instead of `dbUserId`, missed in the original v1.8.273 audit. See [e2e-meeting-chat.md](apps/docs/docs/reference/mobile-app/e2e-meeting-chat.md) for the full design writeup, including why this PR triggers a native Android build despite shipping no native code (new `package.json` dependencies, all pure-JS).
-- v1.8.278 (pending): Several HASHPASS logo bugs fixed together. (1) BSL On Tour hero banner, event-list thumbnails, and carousel logo slides rendered blank on native (fine on web) — several BSL-only image assets were `require()`'d as raw `.svg` directly into React Native's `<Image>`, which has no SVG decoder on native (Android/iOS), unlike browsers. Rasterized the six affected SVGs to `.webp`/`.png` via `sharp`; kept the `.svg` string lookup keys unchanged since those are identifiers, not asset paths. See [svg-native-image-rendering-gotcha.md](apps/docs/docs/reference/mobile-app/svg-native-image-rendering-gotcha.md). (2) **Investigated and reverted, not a real bug**: `logo-full-hashpass-black.svg` briefly looked like it had swapped content with `white.svg` (rendered lighter-toned when composited on a gray test background), and was "fixed" by swapping `white.svg`/`white.webp`'s content with it — but `black.svg` is actually a hollow/outline-style logo (transparent fill, thin stroke only), not a solid white fill; on gray it can look deceptively like solid white-with-a-shadow, but on the app's real white backgrounds it renders as barely-visible outline text. Swapping it into `white.svg`/`white.webp` (used far more widely — auth screen, footer, landing hero, dashboard topbar) broke all of those screens at once. Reverted immediately (commit `901fd6d62`) once caught from real screenshots. Lesson: verify a logo asset's actual fill style against its real usage background, not a synthetic gray composite. (3) The dashboard drawer's/hero carousel's/static landing hero's light-mode logo selection also had a couple of copy-paste inconsistencies (`getHashpassStaticHeroLogo`'s web branch reused the footer's logo instead of the hero's; the hero carousel's HASHPASS slide switched logo color by theme but kept an always-dark background) — both fixed to pair the right logo with the right background. (4) `resolveWebOrigin()` (`packages/auth/src/supabase-oauth.ts`) only trusted a local browser origin when an env-var sniff also reported "local dev" — when that env check didn't recognize the running `NODE_ENV`/`EXPO_PUBLIC_ENV`, local Google sign-in's OAuth callback was built against the hardcoded `https://hashpass.tech` production fallback instead of `localhost`. Now trusts the browser's own origin unconditionally unless the caller explicitly opts out (native relay flows still do).
-- v1.8.273: Bridged Better Auth sign-ins to real Supabase `auth.users` accounts (root cause of missing BSL general passes + admin-role gap for Better-Auth-only accounts — see "Better Auth ↔ Supabase Identity Bridge" above); fixed the resulting `invalid input syntax for type uuid` crash (and ~13 files sharing the same anti-pattern) by introducing `dbUserId` in `useAuth.ts`; stripped the `AD_ID` permission (`plugins/withAndroidRemoveAdIdPermission.js`) that Firebase Analytics pulled in and that was rejected by Play Console's "no advertising ID" Data Safety declaration.
-- v1.8.239: **RESOLVED** the long-running native Android login/dashboard crash chain (open since ~v1.8.221). Root cause had three independent layers: (1) React Native 0.79.6's Fabric renderer fatally throws on any unregistered `top*` direct event (`topLayout`, `topAttached`, etc.) — fixed by patching RN itself (`patches/react-native@0.79.6.patch`) so `extractEvents()` synthesizes a direct event config instead of throwing; (2) the app's own `ErrorUtils` crash guard was silently overwritten by RN core's unconditional `setGlobalHandler` call during `expo-router/entry` init, so the guard was dead code from the moment it shipped — fixed by re-installing the guard in `app/_layout.tsx` after that import resolves; (3) Better Auth's native session was memory-only, so a cold-start `getSession()` network failure could look like a logout — fixed with SecureStore session caching (`packages/auth/src/providers/better-auth.ts`) plus redirect hysteresis in `app/_layout.tsx`. Confirmed fixed on a real Play-distributed device install (prior updates only had emulator/Play-parity confirmation). Full investigation log: [native-auth-dashboard-crash-handoff.md](apps/mobile-app/docs/native-auth-dashboard-crash-handoff.md).
-- v1.8.219: Fixed the real dashboard sidebar bug (drawerContent used `useNavigation()` instead of the `navigation` prop react-navigation passes it, silently dispatching to the wrong navigator) and its visual overlap (Header's zIndex couldn't out-stack the open drawer panel on Android — now hidden while open instead); re-pinned `react-native-svg` to 15.11.2 for the Android crash and added `patches/react-native-svg@15.11.2.patch` to also fix a real web startup crash that pin reintroduces, instead of trading one platform's crash for the other. See [drawer-navigation-gotchas.md](apps/docs/docs/reference/mobile-app/drawer-navigation-gotchas.md) and [native-module-version-pinning.md](apps/docs/docs/reference/mobile-app/native-module-version-pinning.md).
-- v1.8.114: V006 migration — renamed canonical `public.users` → `public.user` (SQL singular standard); added FK constraints from all `user_*` tables → `auth.users(id)` ON DELETE CASCADE; fixed `user_profiles.user_id` text→uuid; applied to both prod and dev
-- v1.8.113: V004+V005 migrations applied — created `public.user` canonical registry with `upsert_public_user_registry()` + auth.users sync triggers; renamed Better Auth `user` → `ba_users`; configured `modelName: 'ba_users'` in Better Auth
-- v1.8.112: Delete Account fix — resolve Supabase auth UUID by email (Directus OAuth path sends Directus UUID, not Supabase UUID)
-- v1.8.92: OTP verify: fixed body order (token_hash first) and break logic (only stop on expired); re-enabled infra-deploy push trigger after adding Route53+CloudFront+ACM to IAM role `hashpass-infra-deploy-sst`
-- v1.8.91: infra-deploy.yml converted to manual-only (temp fix; reverted in v1.8.92)
-- v1.8.90: Fixed gitleaks false positive (gitleaks README.md extracted into workspace by tar; now extracts binary only)
-- v1.8.89: OTP: store email_otp alongside token_hash; verify tries both GoTrue paths
-- v1.8.85: OTP digit inputs wrapped in View to fix web layout overflow (6 inputs were overflowing container)
-- v1.8.84: Bypassed Supabase JS client for OTP verify (GoTrue rejected extra PKCE fields); added individual digit editing, Clear button, auto-submit on 6th digit
-- v1.8.9: Fixed 5 Expo SDK 53 package mismatches (expo-image, expo-clipboard, expo-image-picker, expo-router, expo-web-browser) + downgraded framer-motion 12→11
-- v1.8.4+: All versions before v1.8.8 crashed on Android startup with `java.lang.NoSuchMethodError` in ExpoImageModule
