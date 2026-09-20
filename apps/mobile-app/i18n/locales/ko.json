@@ -615,8 +615,10 @@
       }
     },
     "exploreAllEvents": "공개 이벤트 탐색기",
+    "exploreAllEventsCompact": "이벤트",
     "eventProposal": {
       "action": "이벤트 제안",
+      "compactAction": "제안",
       "title": "이벤트 제안",
       "subtitle": "공개 탐색기에 추가하고 싶은 이벤트를 알려주세요.",
       "close": "닫기",

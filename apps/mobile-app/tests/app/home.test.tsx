@@ -175,9 +175,11 @@ const loadHomeScreen = ({
     jest.doMock("../../lib/morph-icon", () => ({ MorphIcon: "MorphIcon" }));
     jest.doMock("lucide", () => ({
       ArrowRight: "ArrowRight",
+      ArrowUpRight: "ArrowUpRight",
       ArrowUpRightFromCircle: "ArrowUpRightFromCircle",
+      ChevronRight: "ChevronRight",
       CirclePlus: "CirclePlus",
-      Plus: "Plus",
+      Compass: "Compass",
     }));
 
     jest.doMock("react-native-reanimated", () => ({
@@ -490,6 +492,11 @@ describe("HomeScreen native tablet layout", () => {
     expect(carousel.props.footerAction).toBeTruthy();
 
     const proposalAction = carousel.props.footerLeadingAction;
+    const explorerAction = carousel.props.footerAction;
+    expect(proposalAction.props.children[0].props.size).toBe(24);
+    expect(explorerAction.props.children[0].props.size).toBe(24);
+    expect(proposalAction.props.children[2].props.icon).toBe("ChevronRight");
+    expect(explorerAction.props.children[2].props.icon).toBe("ChevronRight");
     expect(proposalAction.props.onMouseEnter).toEqual(expect.any(Function));
 
     act(() => {
@@ -505,6 +512,44 @@ describe("HomeScreen native tablet layout", () => {
     expect(hoveredProposalAction.props.children[2].props.icon).toBe(
       "ArrowRight",
     );
+
+    const hoveredExplorerActionSource = renderer.root.findByType(
+      "EventBannerCarousel",
+    ).props.footerAction;
+    expect(hoveredExplorerActionSource.props.onMouseEnter).toEqual(
+      expect.any(Function),
+    );
+
+    act(() => {
+      hoveredExplorerActionSource.props.onMouseEnter();
+    });
+
+    const hoveredExplorerAction = renderer.root.findByType(
+      "EventBannerCarousel",
+    ).props.footerAction;
+    expect(hoveredExplorerAction.props.children[0].props.icon).toBe(
+      "ArrowUpRight",
+    );
+    expect(hoveredExplorerAction.props.children[2].props.icon).toBe(
+      "ArrowRight",
+    );
+  });
+
+  it("uses compact single-line carousel actions on a phone viewport", () => {
+    const { renderer } = loadHomeScreen({
+      width: 390,
+      height: 844,
+      platform: "web",
+    });
+
+    const carousel = renderer.root.findByType("EventBannerCarousel");
+    const proposalLabel = carousel.props.footerLeadingAction.props.children[1];
+    const explorerLabel = carousel.props.footerAction.props.children[1];
+
+    expect(proposalLabel.props.children).toBe("Propose");
+    expect(explorerLabel.props.children).toBe("Events");
+    expect(proposalLabel.props.numberOfLines).toBe(1);
+    expect(explorerLabel.props.numberOfLines).toBe(1);
   });
 
   it("renders the native landing first frame visibly without waiting for scroll", () => {

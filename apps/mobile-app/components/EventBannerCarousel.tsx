@@ -689,13 +689,13 @@ const getStyles = (
       overflow: "hidden",
     },
     footer: {
-      minHeight: isMobile ? 88 : 48,
+      minHeight: 48,
       marginTop: 16,
-      paddingHorizontal: 16,
+      paddingHorizontal: isMobile ? 8 : 16,
       flexDirection: "row",
-      alignItems: isMobile ? "flex-start" : "center",
+      alignItems: "center",
       justifyContent: "flex-end",
-      gap: 16,
+      gap: isMobile ? 8 : 16,
       position: "relative",
     },
     indicatorsContainer: {
@@ -706,13 +706,14 @@ const getStyles = (
       justifyContent: "center",
       alignItems: "center",
       gap: 8,
-      ...(isMobile ? { bottom: 8 } : null),
     },
     footerLeadingAction: {
       marginRight: "auto",
+      flexShrink: 1,
     },
     footerAction: {
       marginLeft: "auto",
+      flexShrink: 1,
     },
     dot: {
       width: 8,

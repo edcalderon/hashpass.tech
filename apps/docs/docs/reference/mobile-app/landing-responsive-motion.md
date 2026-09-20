@@ -51,3 +51,8 @@ or intent changes: for example, the landing event-proposal control changes from
 a circle-plus to a directional cue on hover. Keep the starting and ending icons
 from the standard Lucide set, preserve the action's semantic label, and do not
 use hand-drawn text glyphs as icons.
+
+`pnpm check:design-system` includes the Morphicons default guard. It verifies
+the landing carousel, dashboard menu, and authentication actions use the shared
+native-compatible wrapper; extend the guard when introducing a new primary
+interactive SVG action.

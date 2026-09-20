@@ -483,8 +483,10 @@
       }
     },
     "exploreAllEvents": "Öffentlicher Event-Explorer",
+    "exploreAllEventsCompact": "Events",
     "eventProposal": {
       "action": "Event vorschlagen",
+      "compactAction": "Vorschlagen",
       "title": "Event vorschlagen",
       "subtitle": "Erzähle uns von einem Event, das du im öffentlichen Explorer sehen möchtest.",
       "close": "Schließen",

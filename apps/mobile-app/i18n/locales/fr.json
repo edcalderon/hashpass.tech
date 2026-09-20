@@ -484,8 +484,10 @@
       }
     },
     "exploreAllEvents": "Explorateur public d’événements",
+    "exploreAllEventsCompact": "Événements",
     "eventProposal": {
       "action": "Proposer un événement",
+      "compactAction": "Proposer",
       "title": "Proposer un événement",
       "subtitle": "Parlez-nous d’un événement que vous aimeriez voir dans l’explorateur public.",
       "close": "Fermer",

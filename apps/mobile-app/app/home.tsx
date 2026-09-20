@@ -53,9 +53,11 @@ import { Svg, Path } from "react-native-svg";
 import { Ionicons } from "../lib/vector-icons";
 import {
   ArrowRight as LucideArrowRight,
+  ArrowUpRight as LucideArrowUpRight,
   ArrowUpRightFromCircle as LucideArrowUpRightFromCircle,
+  ChevronRight as LucideChevronRight,
+  Compass as LucideCompass,
   CirclePlus as LucideCirclePlus,
-  Plus as LucidePlus,
 } from "lucide";
 import {
   getHashpassFooterLogo,
@@ -82,6 +84,7 @@ export default function HomeScreen() {
   >("idle");
   const [isEventProposalVisible, setIsEventProposalVisible] = useState(false);
   const [isEventProposalHovered, setIsEventProposalHovered] = useState(false);
+  const [isEventExplorerHovered, setIsEventExplorerHovered] = useState(false);
   const { t } = useTranslation("index");
   const { t: tNav } = useTranslation("nav");
   const isMobile = useIsMobile();
@@ -172,6 +175,7 @@ export default function HomeScreen() {
   }));
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
   const isPhoneLayout = Platform.OS === "web" ? isMobile : windowWidth < 700;
+  const useCompactCarouselLabels = windowWidth < 680;
   const isTabletLayout = Platform.OS !== "web" && !isPhoneLayout;
   const nativeBottomInset = isNative ? Math.max(insets.bottom, 24) : 0;
   const floatingControlsBottom =
@@ -665,7 +669,10 @@ export default function HomeScreen() {
                       } as any)
                     : {})}
                   activeOpacity={0.7}
-                  style={styles.proposeEventBtn}
+                  style={[
+                    styles.proposeEventBtn,
+                    useCompactCarouselLabels && styles.carouselActionBtnCompact,
+                  ]}
                   accessibilityRole="button"
                   accessibilityLabel={t("eventProposal.action", "Propose an event")}
                 >
@@ -675,7 +682,7 @@ export default function HomeScreen() {
                         ? LucideArrowUpRightFromCircle
                         : LucideCirclePlus
                     }
-                    size={28}
+                    size={24}
                     color={isDark ? "#fb7185" : "#e11d48"}
                     strokeWidth={2}
                     spring="snappy"
@@ -684,22 +691,27 @@ export default function HomeScreen() {
                   <Text
                     style={[
                       styles.carouselActionText,
+                      useCompactCarouselLabels && styles.carouselActionTextCompact,
                       { color: isDark ? "#e4e4e7" : "#18181b" },
                     ]}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
                   >
-                    {t("eventProposal.action", "Propose an event")}
+                    {useCompactCarouselLabels
+                      ? t("eventProposal.compactAction", "Propose")
+                      : t("eventProposal.action", "Propose an event")}
                   </Text>
                   <MorphIcon
                     icon={
                       isEventProposalHovered
                         ? LucideArrowRight
-                        : LucidePlus
+                        : LucideChevronRight
                     }
                     size={18}
                     color={isDark ? "#71717a" : "#a1a1aa"}
                     strokeWidth={2}
                     spring="snappy"
-                    fallbackIconName="add"
+                    fallbackIconName="chevron-forward"
                   />
                 </TouchableOpacity>
               ) : null
@@ -708,26 +720,54 @@ export default function HomeScreen() {
               isGlobalEventTenant() && !user ? (
                 <TouchableOpacity
                   onPress={() => router.push("/dashboard/explore" as any)}
+                  {...(Platform.OS === "web"
+                    ? ({
+                        onMouseEnter: () => setIsEventExplorerHovered(true),
+                        onMouseLeave: () => setIsEventExplorerHovered(false),
+                      } as any)
+                    : {})}
                   activeOpacity={0.7}
-                  style={styles.exploreAllEventsBtn}
+                  style={[
+                    styles.exploreAllEventsBtn,
+                    useCompactCarouselLabels && styles.carouselActionBtnCompact,
+                  ]}
                 >
-                  <Ionicons
-                    name="compass-outline"
-                    size={20}
+                  <MorphIcon
+                    icon={
+                      isEventExplorerHovered
+                        ? LucideArrowUpRight
+                        : LucideCompass
+                    }
+                    size={24}
                     color={isDark ? "#06b6d4" : "#0891b2"}
+                    strokeWidth={2}
+                    spring="snappy"
+                    fallbackIconName="compass-outline"
                   />
                   <Text
                     style={[
                       styles.carouselActionText,
+                      useCompactCarouselLabels && styles.carouselActionTextCompact,
                       { color: isDark ? "#e4e4e7" : "#18181b" },
                     ]}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
                   >
-                    {t("exploreAllEvents", "Explore all events")}
+                    {useCompactCarouselLabels
+                      ? t("exploreAllEventsCompact", "Events")
+                      : t("exploreAllEvents", "Explore all events")}
                   </Text>
-                  <Ionicons
-                    name="chevron-forward"
-                    size={16}
+                  <MorphIcon
+                    icon={
+                      isEventExplorerHovered
+                        ? LucideArrowRight
+                        : LucideChevronRight
+                    }
+                    size={18}
                     color={isDark ? "#71717a" : "#a1a1aa"}
+                    strokeWidth={2}
+                    spring="snappy"
+                    fallbackIconName="chevron-forward"
                   />
                 </TouchableOpacity>
               ) : null
@@ -1555,10 +1595,19 @@ const getStyles = (
       paddingRight: 8,
       paddingVertical: 8,
     },
+    carouselActionBtnCompact: {
+      gap: 6,
+      paddingHorizontal: 0,
+    },
     carouselActionText: {
       fontSize: 13,
       fontWeight: "700",
       letterSpacing: 0.1,
+      flexShrink: 1,
+    },
+    carouselActionTextCompact: {
+      fontSize: 12,
+      letterSpacing: 0,
     },
   });
 };

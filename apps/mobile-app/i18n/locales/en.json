@@ -593,8 +593,10 @@
     "scroll": "Scroll",
     "getStartedNow": "Start Now",
     "exploreAllEvents": "Public event explorer",
+    "exploreAllEventsCompact": "Events",
     "eventProposal": {
       "action": "Propose an event",
+      "compactAction": "Propose",
       "title": "Propose an event",
       "subtitle": "Tell us about an event you would like to see in the public explorer.",
       "close": "Close",

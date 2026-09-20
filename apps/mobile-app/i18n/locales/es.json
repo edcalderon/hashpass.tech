@@ -592,8 +592,10 @@
     "scroll": "Desplázate",
     "getStartedNow": "Comenzar ahora",
     "exploreAllEvents": "Explorador público de eventos",
+    "exploreAllEventsCompact": "Eventos",
     "eventProposal": {
       "action": "Proponer evento",
+      "compactAction": "Proponer",
       "title": "Propón un evento",
       "subtitle": "Cuéntanos sobre un evento que te gustaría ver en el explorador público.",
       "close": "Cerrar",
