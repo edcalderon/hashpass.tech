@@ -680,7 +680,7 @@ export default function HomeScreen() {
                     accessible={false}
                     style={[
                       styles.proposeEventTrail,
-                      { color: isDark ? "#fb7185" : "#e11d48" },
+                      { color: isDark ? "#71717a" : "#a1a1aa" },
                     ]}
                   >
                     +
@@ -1533,32 +1533,30 @@ const getStyles = (
     proposeEventBtn: {
       flexDirection: "row",
       alignItems: "center",
-      gap: 8,
+      gap: 10,
       minHeight: 44,
       paddingLeft: 0,
       paddingRight: 8,
       paddingVertical: 8,
     },
     proposeEventIcon: {
-      width: 22,
-      height: 22,
-      borderWidth: 1.5,
+      width: 28,
+      height: 28,
+      borderWidth: 2,
       borderRadius: uiTokens.radius.circle,
       alignItems: "center",
       justifyContent: "center",
     },
     proposeEventMark: {
-      fontSize: 16,
-      lineHeight: 18,
-      fontWeight: "700",
-      marginTop: -1.5,
+      fontSize: 19,
+      lineHeight: 19,
+      fontWeight: "500",
     },
     proposeEventTrail: {
-      fontSize: 18,
+      fontSize: 19,
       lineHeight: 20,
-      fontWeight: "500",
-      marginLeft: -3,
-      marginTop: -1,
+      fontWeight: "400",
+      marginLeft: -2,
     },
     carouselActionText: {
       fontSize: 13,
