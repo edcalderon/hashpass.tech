@@ -20,20 +20,25 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.40)
+## 📋 Latest Changes (v1.9.41)
 
-### Bug Fixes
+### Features
 
-* **auth:** animate only the {mode} word in the desktop hero, not the full line ([cf6ad59](https://github.com/hashpass-tech/hashpass.tech/commit/cf6ad59a7322918c4673eee90eaa5fc5b067633c))
+* unify public explorer and wallet onboarding experience ([7706f55](https://github.com/hashpass-tech/hashpass.tech/commit/7706f550408e967affe422e293c0fade24bc3ab5))
 ### Release Highlights
-- animate only the {mode} word in the desktop hero, not the full line
+- unify public explorer and wallet onboarding experience
 
 ### Release scope
-- Compared with: `v1.9.39` (the previous global release tag)
+- Compared with: `v1.9.40` (the previous global release tag)
 
 ### Affected products & packages
 - Mobile app
+- QR links API
+- Shared UI
+- Database migrations
+- Infrastructure
 - Documentation
+- Release tooling
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

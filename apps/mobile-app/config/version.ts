@@ -22,22 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202609200450, // Updated to current timestamp
+  buildNumber: 202609200855, // Updated to current timestamp
   releaseDate: '2026-09-20',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    // No new features
+    'unify public explorer and wallet onboarding experience'
   ],
   bugfixes: [
-    'animate only the {mode} word in the desktop hero, not the full line'
+    // No bugfixes
   ],
   breakingChanges: [],
-  notes: 'animate only the {mode} word in the desktop hero, not the full line'
+  notes: 'unify public explorer and wallet onboarding experience'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.41': {
+    version: '1.9.41',
+    buildNumber: 202609200855,
+    releaseDate: '2026-09-20',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'unify public explorer and wallet onboarding experience'
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'unify public explorer and wallet onboarding experience'
+  },
   '1.9.40': {
     version: '1.9.40',
     buildNumber: 202609200450,
