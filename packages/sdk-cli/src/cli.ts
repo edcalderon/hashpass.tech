@@ -7,6 +7,18 @@ export interface CliIo {
   error(message: string): void;
 }
 
+// Commands that never touch the network and so must not require
+// HASHPASS_APP_ID or SDK construction -- otherwise a fresh environment can't
+// even run `hashpass support doctor` to find out *why* it's misconfigured,
+// or print the static widget snippet before an app-id has been provisioned.
+function noNetworkSupportResult(args: ParsedArgs): unknown | undefined {
+  if (args.command !== "support") return undefined;
+  const [subcommand, id] = args.positionals;
+  if (subcommand === "doctor") return supportDoctor(args);
+  if (subcommand === "widget" && id === "init") return supportWidgetInitSnippet();
+  return undefined;
+}
+
 export async function runCli(
   argv: string[],
   env: NodeJS.ProcessEnv = process.env,
@@ -16,6 +28,12 @@ export async function runCli(
   if (!args.command || args.command === "help" || args.flags.help) { io.out(HELP); return 0; }
 
   try {
+    const staticResult = noNetworkSupportResult(args);
+    if (staticResult !== undefined) {
+      print(staticResult, Boolean(args.flags.json), io);
+      return 0;
+    }
+
     const appId = stringFlag(args, "app-id") ?? env.HASHPASS_APP_ID;
     if (!appId) throw new Error("Set HASHPASS_APP_ID or pass --app-id <public-app-id>.");
     const sdk = createHashpass({
@@ -52,7 +70,7 @@ async function dispatch(sdk: HashpassClient, args: ParsedArgs, io: CliIo): Promi
       if (!session) throw new Error("Not logged in. Run `hashpass login` first.");
       return { user: session.user, scopes: session.scope, expiresAt: session.expiresAt };
     }
-    case "support": return dispatchSupport(sdk, subcommand, id, args);
+    case "support": return dispatchSupport(sdk, subcommand, id, args, io);
     default: throw new Error(`Unknown command: ${args.command}. Run \`hashpass help\`.`);
   }
 }
@@ -62,6 +80,7 @@ async function dispatchSupport(
   command: string | undefined,
   id: string | undefined,
   args: ParsedArgs,
+  io: CliIo,
 ): Promise<unknown> {
   switch (command) {
     case "create": {
@@ -88,9 +107,40 @@ async function dispatchSupport(
       idempotencyKey: stringFlag(args, "idempotency-key"),
     });
     case "handoff": return sdk.support.requestHuman(requireId(id, command));
+    case "widget": return dispatchSupportWidget(sdk, id, args);
+    case "doctor": return supportDoctor(args);
     case "resolve": return sdk.support.resolveTicket(requireId(id, command));
-    default: throw new Error("Use `hashpass support create|list|show|reply|handoff|resolve`.");
+    default: throw new Error("Use `hashpass support create|list|show|reply|handoff|resolve|widget|doctor`.");
   }
+}
+
+async function dispatchSupportWidget(sdk: HashpassClient, command: string | undefined, args: ParsedArgs): Promise<unknown> {
+  switch (command) {
+    case "show": return sdk.support.getWidgetConfiguration(stringFlag(args, "app-id"));
+    // "init" is handled earlier by noNetworkSupportResult() before the SDK
+    // is ever constructed -- this case only remains reachable if dispatch()
+    // is ever called directly by something other than runCli().
+    case "init": return supportWidgetInitSnippet();
+    default: throw new Error("Use `hashpass support widget init|show`.");
+  }
+}
+
+function supportWidgetInitSnippet(): unknown {
+  return {
+    element: "<hashpass-support app-id=\"PUBLIC_APP_ID\" locale=\"en\" position=\"bottom-right\"></hashpass-support>",
+    script: "https://cdn.hashpass.tech/support-widget/v1/index.js",
+  };
+}
+
+function supportDoctor(args: ParsedArgs): unknown {
+  return {
+    ok: true,
+    checks: [
+      { name: "HASHPASS_APP_ID", ok: Boolean(stringFlag(args, "app-id") ?? process.env.HASHPASS_APP_ID) },
+      { name: "secrets-on-cli", ok: true, note: "Do not pass API keys or tokens as flags." },
+      { name: "kapso-sandbox-default", ok: true },
+    ],
+  };
 }
 
 function requiredFlag(args: ParsedArgs, name: string): string {
@@ -132,6 +182,9 @@ Usage:
   hashpass support reply TICKET_ID --message TEXT
   hashpass support handoff TICKET_ID
   hashpass support resolve TICKET_ID
+  hashpass support widget init
+  hashpass support widget show [--app-id ID]
+  hashpass support doctor [--json]
 
 Configuration:
   HASHPASS_APP_ID       Public application identifier (required)

@@ -7,9 +7,9 @@ import { HttpTransport } from "./transport.js";
 import type { HashpassEnvironment, HashpassSdkOptions } from "./types.js";
 
 const ENVIRONMENT_URLS: Record<HashpassEnvironment, string> = {
-  production: "https://api.hashpass.tech/",
-  development: "https://api-dev.hashpass.tech/",
-  local: "http://localhost:8055/",
+  production: "https://api.hashpass.tech/api/",
+  development: "https://api-dev.hashpass.tech/api/",
+  local: "http://localhost:8055/api/",
 };
 
 export class HashpassClient {
@@ -47,7 +47,7 @@ export class HashpassClient {
     this.auth = new HashpassAuth(authTransport, options.sessionStore ?? new MemorySessionStore());
     const resolvedAuth = options.auth ?? this.auth;
     const transport = new HttpTransport({ ...shared, auth: resolvedAuth });
-    this.support = new SupportClient(transport);
+    this.support = new SupportClient(transport, this.auth);
     this.authQr = new AuthQrClient({
       baseUrl: options.linksApiBaseUrl,
       appId: options.appId,

@@ -47,6 +47,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "clean": "rm -rf dist",
+    "postinstall": "[ -f dist/index.js ] || tsc -p tsconfig.json",
     "prepack": "pnpm run clean && pnpm run build",
     "test": "pnpm run clean && pnpm run build && node --test tests/*.test.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"

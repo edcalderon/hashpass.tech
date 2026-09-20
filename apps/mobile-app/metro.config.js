@@ -40,6 +40,7 @@ const runtimeWorkspacePackages = [
   'emails',
   'i18n',
   'sdk',
+  'support-kapso',
   'types',
   'ui',
   'utils',

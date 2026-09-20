@@ -564,6 +564,10 @@ try {
     // The Infisical bootstrap credentials themselves live in AWS Secrets
     // Manager instead (hashpass/expo-router-api-<env>/infisical-bootstrap),
     // fetched via the Lambda's own IAM role -- see infisical-secrets.ts.
+    // HashPass Support: Kapso webhook verification + admin notification email
+    'KAPSO_WEBHOOK_SECRET',
+    'KAPSO_API_KEY',
+    'SUPPORT_ADMIN_NOTIFICATION_EMAIL',
   ];
 
   const tenantSupabaseKeys = Object.values(resolveTenantSupabaseBindings(runtime)).filter(Boolean);

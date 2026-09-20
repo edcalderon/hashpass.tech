@@ -1,0 +1,23 @@
+#!/usr/bin/env node
+import {McpServer} from "@modelcontextprotocol/sdk/server/mcp.js";
+import {StdioServerTransport} from "@modelcontextprotocol/sdk/server/stdio.js";
+import {z} from "zod";
+import {FrappeHelpdeskClient} from "./client.mjs";
+const client = new FrappeHelpdeskClient();
+const server = new McpServer({name: "hashpass-frappe-helpdesk", version: "0.1.0"});
+const result = async fn => { try { return {content: [{type: "text", text: JSON.stringify(await fn(), null, 2)}]}; } catch (error) { return {isError: true, content: [{type: "text", text: error.message}]}; } };
+server.tool("search_support_articles", {query:z.string(),limit:z.number().int().min(1).max(100).optional()}, a=>result(()=>client.searchSupportArticles(a.query,a.limit)));
+server.tool("get_support_article", {name:z.string()}, a=>result(()=>client.getSupportArticle(a.name)));
+server.tool("list_tickets", {status:z.string().optional(),limit:z.number().int().min(1).max(100).optional()}, a=>result(()=>client.listTickets(a)));
+server.tool("search_tickets", {query:z.string(),limit:z.number().int().min(1).max(100).optional()}, a=>result(()=>client.searchTickets(a.query,a.limit)));
+server.tool("get_ticket", {name:z.string()}, a=>result(()=>client.getTicket(a.name)));
+server.tool("create_ticket", {subject:z.string(),description:z.string(),priority:z.string().optional(),contact:z.string().optional()}, a=>result(()=>client.createTicket(a)));
+server.tool("update_ticket", {name:z.string(),fields:z.record(z.union([z.string(),z.number(),z.boolean(),z.null()]))}, a=>result(()=>client.updateTicket(a.name,a.fields)));
+server.tool("reply_to_ticket", {name:z.string(),content:z.string()}, a=>result(()=>client.replyToTicket(a.name,a.content)));
+server.tool("assign_ticket", {name:z.string(),agent:z.string()}, a=>result(()=>client.assignTicket(a.name,a.agent)));
+server.tool("set_ticket_priority", {name:z.string(),priority:z.string()}, a=>result(()=>client.setTicketPriority(a.name,a.priority)));
+server.tool("close_ticket", {name:z.string()}, a=>result(()=>client.closeTicket(a.name)));
+server.tool("reopen_ticket", {name:z.string()}, a=>result(()=>client.reopenTicket(a.name)));
+server.tool("get_customer", {name:z.string()}, a=>result(()=>client.getCustomer(a.name)));
+server.tool("search_customers", {query:z.string(),limit:z.number().int().min(1).max(100).optional()}, a=>result(()=>client.searchCustomers(a.query,a.limit)));
+await server.connect(new StdioServerTransport());

@@ -286,3 +286,51 @@ test("authQr.waitForLogin eventually gives up after too many consecutive failed 
     },
   );
 });
+
+test("exposes support MVP contract extensions", async () => {
+  const calls = [];
+  const sdk = createHashpass({
+    appId: "app_test",
+    fetch: async (url, init) => {
+      calls.push({ url, init });
+      if (String(url).includes("widget-config")) return Response.json({ appId: "app_test", locale: "en", position: "bottom-right", greeting: "Hi" });
+      if (String(url).includes("/messages") && init.method !== "POST") return Response.json({ items: [], nextCursor: "m_1" });
+      if (String(url).includes("/events")) return Response.json({ items: [], nextCursor: "e_1" });
+      return Response.json({ id: "ticket_1", subject: "Help", status: "open", priority: "normal" });
+    },
+  });
+  await sdk.support.getWidgetConfiguration("app_test");
+  await sdk.support.listMessages("ticket_1", { cursor: "m_0", limit: 20 });
+  await sdk.support.getTicketEvents("ticket_1", "e_0");
+  await sdk.support.markTicketRead("ticket_1", { cursor: "e_1" });
+  await sdk.support.reopenTicket("ticket_1");
+  assert.equal(calls[0].url, "https://api.hashpass.tech/api/v1/support/widget-config?appId=app_test");
+  assert.equal(calls[1].url, "https://api.hashpass.tech/api/v1/support/tickets/ticket_1/messages?cursor=m_0&limit=20");
+  assert.equal(calls[2].url, "https://api.hashpass.tech/api/v1/support/tickets/ticket_1/events?cursor=e_0");
+  assert.equal(calls[3].init.headers.get("idempotency-key"), "read:ticket_1:e_1");
+  assert.deepEqual(JSON.parse(calls[4].init.body), { status: "open" });
+});
+
+test("adopts a support session so later support calls carry its bearer token", async () => {
+  const calls = [];
+  const sdk = createHashpass({
+    appId: "app_test",
+    fetch: async (url, init) => {
+      calls.push({ url, init });
+      if (String(url).includes("/sessions")) {
+        return Response.json({
+          token: "visitor-token-1",
+          visitorId: "visitor_1",
+          applicationId: "app_test",
+          expiresAt: "2099-01-01T00:00:00.000Z",
+        });
+      }
+      return Response.json({ items: [], nextCursor: null });
+    },
+  });
+  await sdk.support.createSupportSession();
+  assert.equal(await sdk.auth.getAccessToken(), "visitor-token-1");
+
+  await sdk.support.listTickets();
+  assert.equal(calls[1].init.headers.get("authorization"), "Bearer visitor-token-1");
+});
