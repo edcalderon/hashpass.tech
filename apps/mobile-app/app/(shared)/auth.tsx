@@ -1525,6 +1525,12 @@ export default function AuthScreen({ embedded = false, onAuthenticated, onDismis
       if (typeof window !== "undefined" && window.localStorage) {
         window.localStorage.removeItem(PASSWORDLESS_CALLBACK_MARKER);
         window.localStorage.setItem("auth_signin_method", "google_oauth");
+        if (embedded) {
+          window.localStorage.setItem(
+            "oauth_return_url",
+            normalizeReturnToPath(window.location.pathname + window.location.search),
+          );
+        }
       }
 
       const result = await signInWithOAuth("google");
@@ -2618,7 +2624,7 @@ export default function AuthScreen({ embedded = false, onAuthenticated, onDismis
                     )}
                   </View>
 
-                  {!embedded && <><View style={styles.dividerContainer}>
+                  <View style={styles.dividerContainer}>
                     <View style={styles.dividerLine} />
                     <Text style={styles.dividerText}>
                       {t("orContinueWith", "Or continue with")}
@@ -2664,7 +2670,7 @@ export default function AuthScreen({ embedded = false, onAuthenticated, onDismis
                         </Text>
                       </View>
                     </TouchableOpacity>
-                  </View></>}
+                  </View>
 
                   {authActionMessage ? (
                     <View

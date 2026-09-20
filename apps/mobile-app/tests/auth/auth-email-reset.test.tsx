@@ -51,6 +51,18 @@ describe('passwordless email reset', () => {
   const button = (label: string) => renderer.root.findAllByType(TouchableOpacity).find((node) => node.findAllByType(Text).some((text) => text.props.children === label))!;
   const press = async (label: string) => { await act(async () => { button(label).props.onPress(); }); };
 
+  it('offers the existing Google flow inside the modal and prevents duplicate pending requests', async () => {
+    const signInWithOAuth = jest.fn().mockResolvedValue({ pending: true });
+    mockAuth = { ...mockAuth, signInWithOAuth };
+    await act(async () => renderer.update(<AuthScreen embedded />));
+    await press('Sign in with Google');
+    expect(signInWithOAuth).toHaveBeenCalledWith('google');
+    expect(button('Opening Google sign-in...').props.disabled).toBe(true);
+    await press('Opening Google sign-in...');
+    expect(signInWithOAuth).toHaveBeenCalledTimes(1);
+    expect(mockReplace).not.toHaveBeenCalled();
+  });
+
   it.each(['Magic Link', 'OTP Code'])('resets %s confirmation and permits a different address', async (method) => {
     await press(method);
     act(() => emailInput().props.onChangeText('first@example.com'));
@@ -78,7 +90,7 @@ describe('passwordless email reset', () => {
     const onAuthenticated = jest.fn();
     await act(async () => { renderer.update(<AuthScreen key="embedded" embedded onAuthenticated={onAuthenticated} />); });
     expect(button('Magic Link')).toBeUndefined();
-    expect(button('Sign in with Google')).toBeUndefined();
+    expect(button('Sign in with Google')).toBeDefined();
     act(() => emailInput().props.onChangeText('guest@example.com'));
     await press('Send Code');
     expect(mockPost.mock.calls.at(-1)[0]).toBe('/auth/otp');

@@ -73,3 +73,9 @@ focus, hover and press, with blur/pointer-leave/Escape dismissal on web. Latest
 focused guest/locale run: 19 tests passed; changed TypeScript, design-system guard,
 secret scan and production Storybook build passed. Preparing the patch promotion
 PR; owner approval, CI patch coverage and deployment verification remain pending.
+
+Social-auth refinement for PR #245: embedded registration now includes the existing
+Google sign-in flow, loading/duplicate-request protection and OTP alternative.
+Web OAuth stores the canonical current path and event query before leaving for the
+provider. Auth/OTP regression suite: 4 tests passed; changed TypeScript passed.
+Real Google account authorization and native-device callback QA remain unverified.
