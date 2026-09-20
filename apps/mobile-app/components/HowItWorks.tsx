@@ -2,12 +2,14 @@ import english from '../i18n/locales/en.json';
 import { uiTokens, uiPalette } from '@hashpass/ui/tokens';
 import LandingBadge from './LandingBadge';
 import React, { useEffect, useState } from 'react';
-import { AccessibilityInfo, View, Text, StyleSheet, useWindowDimensions } from 'react-native';
-import Animated, { useSharedValue, useAnimatedStyle, useAnimatedReaction, withTiming, withDelay, withRepeat, withSequence, cancelAnimation, type SharedValue } from 'react-native-reanimated';
+import { AccessibilityInfo, View, Text, StyleSheet, TouchableOpacity, useWindowDimensions } from 'react-native';
+import Animated, { FadeIn, useSharedValue, useAnimatedStyle, useAnimatedReaction, withTiming, withDelay, withRepeat, withSequence, cancelAnimation, type SharedValue } from 'react-native-reanimated';
+import { Info as LucideInfo, X as LucideX } from 'lucide';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../i18n/i18n';
 import { useAnimationLevel } from '../contexts/AnimationLevelContext';
 import HowItWorksIllustration, { type HowItWorksCardId, type HowItWorksSceneLabels } from './HowItWorksIllustration';
+import { MorphIcon } from '../lib/morph-icon';
 const cards: { id: HowItWorksCardId; accent: string }[] = [
   { id: 'scan', accent: '#06b6d4' }, { id: 'allies', accent: '#a855f7' },
   { id: 'meet', accent: '#22c55e' }, { id: 'rewards', accent: '#f59e0b' },
@@ -15,6 +17,7 @@ const cards: { id: HowItWorksCardId; accent: string }[] = [
 type Position = { scrollY: SharedValue<number>; sectionY: SharedValue<number>; gridY: SharedValue<number> };
 function Card({ card, index, width, dark, animate, position }: { card: typeof cards[number]; index: number; width: number; dark: boolean; animate: boolean; position: Position }) {
   const { t } = useTranslation('index'); const { height } = useWindowDimensions();
+  const [expanded, setExpanded] = useState(false);
   const labels: HowItWorksSceneLabels = {
     eventPass: t('howItWorks.scenes.eventPass', 'EVENT PASS'), eventExplorer: t('howItWorks.scenes.eventExplorer', 'EVENT EXPLORER'),
     agenda: t('howItWorks.scenes.agenda', 'AGENDA'), speakers: t('howItWorks.scenes.speakers', 'SPEAKERS'),
@@ -44,8 +47,13 @@ function Card({ card, index, width, dark, animate, position }: { card: typeof ca
     <View importantForAccessibility="no-hide-descendants" accessibilityElementsHidden style={[styles.illustration, { backgroundColor: `${card.accent}${dark ? '12' : '0d'}` }]}>
       <Animated.View style={illustration}><HowItWorksIllustration kind={card.id} color={card.accent} labels={labels} /></Animated.View>
     </View>
-    <Text accessibilityRole="header" style={[styles.title, { color: uiPalette(dark).text }]}>{t(`howItWorks.cards.${card.id}.title`, english.index.howItWorks.cards[card.id].title)}</Text>
-    <Text style={[styles.body, { color: uiPalette(dark).muted }]}>{t(`howItWorks.cards.${card.id}.description`, english.index.howItWorks.cards[card.id].description)}</Text>
+    <View style={styles.cardHeader}>
+      <Text accessibilityRole="header" style={[styles.title, { color: uiPalette(dark).text }]}>{t(`howItWorks.cards.${card.id}.title`, english.index.howItWorks.cards[card.id].title)}</Text>
+      <TouchableOpacity accessibilityRole="button" accessibilityLabel={expanded ? t('howItWorks.closeInfo', 'Close information') : t('howItWorks.moreInfo', 'More information')} accessibilityState={{ expanded }} onPress={() => setExpanded(value => !value)} style={[styles.infoButton, { borderColor: uiPalette(dark).border, backgroundColor: uiPalette(dark).raised }]}>
+        <MorphIcon icon={expanded ? LucideX : LucideInfo} size={18} color={card.accent} strokeWidth={2} spring="snappy" fallbackIconName={expanded ? 'close' : 'information-circle-outline'} />
+      </TouchableOpacity>
+    </View>
+    {expanded ? <Animated.View entering={animate ? FadeIn.duration(180) : undefined}><Text style={[styles.body, { color: uiPalette(dark).muted }]}>{t(`howItWorks.cards.${card.id}.description`, english.index.howItWorks.cards[card.id].description)}</Text></Animated.View> : null}
   </Animated.View>;
 }
 export default function HowItWorks({ scrollY }: { scrollY?: SharedValue<number> }) {
@@ -97,7 +105,9 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 17, lineHeight: 27, textAlign: 'center', maxWidth: 760, marginBottom: 40 },
   grid: { width: '100%', maxWidth: 1340, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 22 },
   card: { borderWidth: 1, borderRadius: uiTokens.radius.card, padding: 22 },
-  illustration: { height: 152, borderRadius: uiTokens.radius.card, alignItems: 'center', justifyContent: 'center', marginBottom: 24, overflow: 'hidden' },
-  title: { fontSize: 22, lineHeight: 28, fontWeight: '700', letterSpacing: -0.5, marginBottom: 12 },
+  illustration: { height: 136, borderRadius: uiTokens.radius.card, alignItems: 'center', justifyContent: 'center', marginBottom: 20, overflow: 'hidden' },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  title: { flex: 1, fontSize: 22, lineHeight: 28, fontWeight: '700', letterSpacing: -0.5 },
+  infoButton: { width: 32, height: 32, borderWidth: 1, borderRadius: uiTokens.radius.circle, alignItems: 'center', justifyContent: 'center' },
   body: { fontSize: 16, lineHeight: 26 },
 });

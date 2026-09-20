@@ -591,6 +591,8 @@
       "badge": "이용 방법",
       "title": "HASHPASS 이용 방법",
       "subtitle": "하나의 패스와 한 번의 로그인으로 모든 이벤트를 빠르고 안전하게 이용하세요.",
+      "moreInfo": "자세히 보기",
+      "closeInfo": "정보 닫기",
       "scenes": {
         "eventPass": "이벤트 패스", "eventExplorer": "이벤트 탐색기", "agenda": "일정", "speakers": "연사",
         "findAttendees": "참가자 찾기", "meet": "만나기", "lksWallet": "$LKS 지갑", "availableBalance": "사용 가능 잔액"

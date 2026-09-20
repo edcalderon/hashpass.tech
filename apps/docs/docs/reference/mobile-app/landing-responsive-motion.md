@@ -17,6 +17,10 @@ Web animations run only while their card is visible. Respect the user's reduced
 motion setting. Native uses the same visual story with static vectors and the
 existing lightweight section entrance.
 
+Cards start with the product scene, title, and a morphing information icon.
+Keep descriptive copy collapsed until that icon is activated; it morphs from
+information to close while the localized description enters beneath the title.
+
 ## `$LKS` notation and attribution
 
 Use `$LKS` in all customer-facing copy. `$LKS` is the Blockchain Latam

@@ -459,6 +459,8 @@
       "badge": "So funktioniert’s",
       "title": "So funktioniert HASHPASS",
       "subtitle": "Ein Pass, eine Anmeldung, alle Veranstaltungen — schnell und mit Schutz deiner Privatsphäre.",
+      "moreInfo": "Weitere Informationen",
+      "closeInfo": "Informationen schließen",
       "scenes": {
         "eventPass": "EVENT-PASS", "eventExplorer": "EVENT-ENTDECKER", "agenda": "AGENDA", "speakers": "SPRECHER",
         "findAttendees": "TEILNEHMENDE FINDEN", "meet": "TREFFEN", "lksWallet": "$LKS-WALLET", "availableBalance": "VERFÜGBARES GUTHABEN"

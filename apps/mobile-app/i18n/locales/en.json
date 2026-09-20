@@ -561,6 +561,8 @@
       "badge": "How it works",
       "title": "How HASHPASS Works",
       "subtitle": "One pass, one login, every event — built for speed and privacy.",
+      "moreInfo": "More information",
+      "closeInfo": "Close information",
       "scenes": {
         "eventPass": "EVENT PASS", "eventExplorer": "EVENT EXPLORER", "agenda": "AGENDA", "speakers": "SPEAKERS",
         "findAttendees": "FIND ATTENDEES", "meet": "MEET", "lksWallet": "$LKS WALLET", "availableBalance": "AVAILABLE BALANCE"

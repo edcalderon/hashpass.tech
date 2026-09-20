@@ -560,6 +560,8 @@
       "badge": "Cómo funciona",
       "title": "Cómo Funciona HASHPASS",
       "subtitle": "Un solo pase, un solo inicio de sesión, todos los eventos: hecho para la velocidad y la privacidad.",
+      "moreInfo": "Más información",
+      "closeInfo": "Cerrar información",
       "scenes": {
         "eventPass": "PASE DEL EVENTO", "eventExplorer": "EXPLORADOR DE EVENTOS", "agenda": "AGENDA", "speakers": "PONENTES",
         "findAttendees": "BUSCAR ASISTENTES", "meet": "REUNIRSE", "lksWallet": "BILLETERA $LKS", "availableBalance": "SALDO DISPONIBLE"

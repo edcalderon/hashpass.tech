@@ -93,3 +93,34 @@ it("shows the support address when an email client cannot be opened", async () =
   expect(view.root.findAllByType("Text" as any).map(node => node.props.children).join(" ")).toContain("support@hashpass.tech");
   expect(mockOpenURL).not.toHaveBeenCalled();
 });
+
+it("shows the fallback contact guidance when opening the email client fails", async () => {
+  mockCanOpenURL.mockResolvedValue(true);
+  mockOpenURL.mockRejectedValue(new Error("Email app unavailable"));
+  renderModal();
+  fillRequiredFields();
+
+  await act(async () => {
+    await view.root.findByProps({ accessibilityLabel: "Prepare proposal email" }).props.onPress();
+  });
+
+  expect(view.root.findAllByType("Text" as any).map(node => node.props.children).join(" ")).toContain("support@hashpass.tech");
+});
+
+it("closes from the close control after an email error", async () => {
+  const onClose = jest.fn();
+  mockCanOpenURL.mockResolvedValue(false);
+  act(() => {
+    view = create(<EventProposalModal visible onClose={onClose} />);
+  });
+  fillRequiredFields();
+
+  await act(async () => {
+    await view.root.findByProps({ accessibilityLabel: "Prepare proposal email" }).props.onPress();
+  });
+  act(() => {
+    view.root.findByProps({ accessibilityLabel: "Close" }).props.onPress();
+  });
+
+  expect(onClose).toHaveBeenCalledTimes(1);
+});
