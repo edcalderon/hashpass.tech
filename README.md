@@ -20,21 +20,20 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.39)
+## 📋 Latest Changes (v1.9.40)
 
-### Features
+### Bug Fixes
 
-* add partner media kit and public redirect ([2ab2bff](https://github.com/hashpass-tech/hashpass.tech/commit/2ab2bff922ecb6159c74306baf58c546bcb53388))
+* **auth:** animate only the {mode} word in the desktop hero, not the full line ([cf6ad59](https://github.com/hashpass-tech/hashpass.tech/commit/cf6ad59a7322918c4673eee90eaa5fc5b067633c))
 ### Release Highlights
-- add partner media kit and public redirect
+- animate only the {mode} word in the desktop hero, not the full line
 
 ### Release scope
-- Compared with: `v1.9.38` (the previous global release tag)
+- Compared with: `v1.9.39` (the previous global release tag)
 
 ### Affected products & packages
 - Mobile app
 - Documentation
-- Release tooling
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

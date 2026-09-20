@@ -258,6 +258,21 @@ const createFloatingLoop = (
     ]),
   );
 
+// Used to locate exactly where the interpolated {mode} word lands inside a
+// translated eyebrow/title sentence, so only that word can be animated in
+// place on each hero-mode cycle instead of crossfading the whole sentence.
+// Word order around {mode} varies by locale (e.g. Korean puts it first), so
+// this can't be hardcoded as a fixed prefix/suffix pair per string.
+const HERO_MODE_MARKER = "@@HERO_MODE@@";
+const splitAroundHeroModeToken = (text: string) => {
+  const index = text.indexOf(HERO_MODE_MARKER);
+  if (index === -1) return { prefix: text, suffix: "" };
+  return {
+    prefix: text.slice(0, index),
+    suffix: text.slice(index + HERO_MODE_MARKER.length),
+  };
+};
+
 const DesktopHeroPanel = ({
   isDark,
   styles,
@@ -474,6 +489,21 @@ const DesktopHeroPanel = ({
     outputRange: [10, 0],
   });
   const activeHeroMode = heroModes[activeHeroModeIndex] || heroModes[0];
+  // Split the translated eyebrow/title around the {mode} word so only that
+  // word crossfades on each cycle — the surrounding sentence stays put
+  // instead of the whole line flashing out and back in.
+  const { prefix: heroEyebrowPrefix, suffix: heroEyebrowSuffix } =
+    splitAroundHeroModeToken(
+      t("desktopHero.eyebrow", "HASHPASS FOR {mode}", {
+        mode: HERO_MODE_MARKER,
+      }),
+    );
+  const { prefix: heroTitlePrefix, suffix: heroTitleSuffix } =
+    splitAroundHeroModeToken(
+      t("desktopHero.title", "Your {mode} layer, everywhere.", {
+        mode: HERO_MODE_MARKER,
+      }),
+    );
 
   return (
     <View style={styles.desktopHeroPane}>
@@ -533,29 +563,33 @@ const DesktopHeroPanel = ({
           },
         ]}
       >
-        <Animated.View
-          style={[
-            styles.desktopHeroIntro,
-            {
-              opacity: heroModeOpacity,
-              transform: [{ translateY: heroModeTranslateY }],
-            },
-          ]}
-        >
+        <View style={styles.desktopHeroIntro}>
           <Text style={styles.desktopHeroEyebrow}>
-            {t("desktopHero.eyebrow", "HASHPASS FOR {mode}", {
-              mode: activeHeroMode.label,
-            })}
+            {heroEyebrowPrefix}
+            <Animated.Text style={{ opacity: heroModeOpacity }}>
+              {activeHeroMode.label}
+            </Animated.Text>
+            {heroEyebrowSuffix}
           </Text>
           <Text style={styles.desktopHeroTitle}>
-            {t("desktopHero.title", "Your {mode} layer, everywhere.", {
-              mode: activeHeroMode.label,
-            })}
+            {heroTitlePrefix}
+            <Animated.Text style={{ opacity: heroModeOpacity }}>
+              {activeHeroMode.label}
+            </Animated.Text>
+            {heroTitleSuffix}
           </Text>
-          <Text style={styles.desktopHeroDescription}>
+          <Animated.Text
+            style={[
+              styles.desktopHeroDescription,
+              {
+                opacity: heroModeOpacity,
+                transform: [{ translateY: heroModeTranslateY }],
+              },
+            ]}
+          >
             {activeHeroMode.description}
-          </Text>
-        </Animated.View>
+          </Animated.Text>
+        </View>
 
         <View
           style={styles.desktopHeroAllies}

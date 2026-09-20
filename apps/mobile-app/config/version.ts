@@ -22,22 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202609190019, // Updated to current timestamp
-  releaseDate: '2026-09-19',
+  buildNumber: 202609200450, // Updated to current timestamp
+  releaseDate: '2026-09-20',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'add partner media kit and public redirect'
+    // No new features
   ],
   bugfixes: [
-    // No bugfixes
+    'animate only the {mode} word in the desktop hero, not the full line'
   ],
   breakingChanges: [],
-  notes: 'add partner media kit and public redirect'
+  notes: 'animate only the {mode} word in the desktop hero, not the full line'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.40': {
+    version: '1.9.40',
+    buildNumber: 202609200450,
+    releaseDate: '2026-09-20',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'animate only the {mode} word in the desktop hero, not the full line'
+    ],
+    breakingChanges: [],
+    notes: 'animate only the {mode} word in the desktop hero, not the full line'
+  },
   '1.9.39': {
     version: '1.9.39',
     buildNumber: 202609190019,
