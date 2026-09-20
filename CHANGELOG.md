@@ -1,3 +1,19 @@
+## [1.9.40](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.39...v1.9.40) (2026-09-20)
+
+
+### Bug Fixes
+
+* **auth:** animate only the {mode} word in the desktop hero, not the full line ([cf6ad59](https://github.com/hashpass-tech/hashpass.tech/commit/cf6ad59a7322918c4673eee90eaa5fc5b067633c))
+### Release Highlights
+- animate only the {mode} word in the desktop hero, not the full line
+
+### Release scope
+- Compared with: `v1.9.39` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Documentation
+
 ## [1.9.39](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.38...v1.9.39) (2026-09-19)
 
 
