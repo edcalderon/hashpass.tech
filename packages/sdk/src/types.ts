@@ -15,7 +15,9 @@ export interface HashpassSdkOptions {
   retry?: Partial<RetryPolicy> | undefined;
   /** Persistent session storage supplied by the host (Keychain, local storage, etc.). */
   sessionStore?: AuthSessionStore | undefined;
-  /** Advanced token provider. Takes precedence over the built-in session provider. */
+  /** Persistent storage for the isolated support visitor credential. */
+  supportSessionStore?: AuthSessionStore | undefined;
+  /** Advanced primary token provider. Takes precedence over the built-in session provider. */
   auth?: AuthProvider | undefined;
 }
 

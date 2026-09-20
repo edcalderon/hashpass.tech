@@ -5,15 +5,29 @@ interface HandlerResult {
   body: unknown;
 }
 
+async function readReplay(
+  supabase: SupabaseClient,
+  appId: string,
+  route: string,
+  key: string,
+) {
+  return supabase
+    .from("support_idempotency_keys")
+    .select("response_status, response_body")
+    .eq("app_id", appId)
+    .eq("route", route)
+    .eq("key", key)
+    .maybeSingle();
+}
+
+function matchKey(query: any, appId: string, route: string, key: string) {
+  return query.eq("app_id", appId).eq("route", route).eq("key", key);
+}
+
 /**
- * Shared Idempotency-Key replay for /v1/support/* mutations (see
- * packages/sdk/src/transport.ts, which sends `idempotency-key` whenever a
- * caller supplies one and allows retries only in that case). A repeat
- * request with the same (appId, route, key) gets back the exact response
- * the first attempt produced instead of re-running the mutation.
- *
- * 5xx responses are deliberately NOT cached: a transient failure should be
- * retryable with the same key rather than permanently pinned to an error.
+ * Atomically claims an Idempotency-Key before running a mutation. A concurrent
+ * request can never execute the handler: the primary key insert either wins or
+ * returns 23505. Status 0 is a short-lived in-progress claim; clients retry it.
  */
 export async function withIdempotency(
   supabase: SupabaseClient,
@@ -28,35 +42,79 @@ export async function withIdempotency(
     return Response.json(result.body, { status: result.status });
   }
 
-  const { data: existing } = await supabase
+  const { error: claimError } = await supabase
     .from("support_idempotency_keys")
-    .select("response_status, response_body")
-    .eq("app_id", appId)
-    .eq("route", route)
-    .eq("key", key)
-    .maybeSingle();
-
-  if (existing) {
-    return Response.json(existing.response_body, { status: existing.response_status });
-  }
-
-  const result = await handler();
-
-  if (result.status < 500) {
-    const { error } = await supabase.from("support_idempotency_keys").insert({
+    .insert({
       app_id: appId,
       route,
       key,
-      response_status: result.status,
-      response_body: result.body as object,
+      response_status: 0,
+      response_body: null,
     });
-    // 23505 = unique_violation: a concurrent retry already persisted this key
-    // first. That request's own response already went out to its caller, so
-    // there is nothing to reconcile here -- just don't clobber it.
-    if (error && error.code !== "23505") {
-      console.warn(`[support-idempotency] failed to persist ${route}:`, error.message);
+
+  if (claimError) {
+    if (claimError.code !== "23505") {
+      console.warn(
+        `[support-idempotency] failed to claim ${route}:`,
+        claimError.message,
+      );
+      return Response.json(
+        { message: "Unable to reserve idempotency key" },
+        { status: 503 },
+      );
     }
+    const { data: existing, error } = await readReplay(
+      supabase,
+      appId,
+      route,
+      key,
+    );
+    if (error || !existing || existing.response_status === 0) {
+      return Response.json(
+        { message: "Request with this idempotency key is still processing" },
+        { status: 409, headers: { "retry-after": "1" } },
+      );
+    }
+    return Response.json(existing.response_body, {
+      status: existing.response_status,
+    });
   }
 
-  return Response.json(result.body, { status: result.status });
+  try {
+    const result = await handler();
+    if (result.status >= 500) {
+      await matchKey(
+        supabase.from("support_idempotency_keys").delete(),
+        appId,
+        route,
+        key,
+      );
+      return Response.json(result.body, { status: result.status });
+    }
+    const { error } = await matchKey(
+      supabase
+        .from("support_idempotency_keys")
+        .update({
+          response_status: result.status,
+          response_body: result.body as object,
+        }),
+      appId,
+      route,
+      key,
+    );
+    if (error)
+      console.warn(
+        `[support-idempotency] failed to finalize ${route}:`,
+        error.message,
+      );
+    return Response.json(result.body, { status: result.status });
+  } catch (error) {
+    await matchKey(
+      supabase.from("support_idempotency_keys").delete(),
+      appId,
+      route,
+      key,
+    );
+    throw error;
+  }
 }

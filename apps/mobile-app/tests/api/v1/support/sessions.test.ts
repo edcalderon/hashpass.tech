@@ -1,7 +1,8 @@
 /// <reference types="jest" />
 
 const mockRpc = jest.fn();
-const mockGetSupabaseServerForRequest = jest.fn((_request: Request) => ({ rpc: mockRpc }));
+const mockGetUser = jest.fn();
+const mockGetSupabaseServerForRequest = jest.fn((_request: Request) => ({ rpc: mockRpc, auth: { getUser: mockGetUser } }));
 
 jest.mock('@/lib/supabase-server', () => ({
   getSupabaseServerForRequest: (request: Request) => mockGetSupabaseServerForRequest(request),
@@ -20,6 +21,7 @@ describe('POST /api/v1/support/sessions', () => {
     jest.resetModules();
     mockRpc.mockReset();
     mockGetSupabaseServerForRequest.mockClear();
+    mockGetUser.mockReset();
     mockRpc.mockResolvedValue({
       data: [{ session_id: 'session-1', visitor_id: 'visitor-1' }],
       error: null,
@@ -64,13 +66,28 @@ describe('POST /api/v1/support/sessions', () => {
     );
   });
 
-  it('passes identity fields through to create_support_session for identify calls', async () => {
+  it('rejects unverified claimed identities', async () => {
     const { POST } = require('../../../../app/api/v1/support/sessions+api');
-    await POST(makeRequest({ identity: { email: 'visitor@example.com', name: 'Visitor' } }));
+    const response = await POST(makeRequest({ identity: { email: 'victim@example.com' } }));
+    expect(response.status).toBe(401);
+    expect(mockRpc).not.toHaveBeenCalled();
+  });
 
+  it('uses only the verified bearer identity when identifying a visitor', async () => {
+    mockGetUser.mockResolvedValue({
+      data: { user: { id: 'user-1', email: 'verified@example.com', user_metadata: { name: 'Verified' } } },
+      error: null,
+    });
+    const { POST } = require('../../../../app/api/v1/support/sessions+api');
+    const response = await POST(makeRequest(
+      { identity: { email: 'victim@example.com', externalId: 'victim', name: 'Display Name' } },
+      { authorization: 'Bearer primary-token' },
+    ));
+    expect(response.status).toBe(200);
+    expect(mockGetUser).toHaveBeenCalledWith('primary-token');
     expect(mockRpc).toHaveBeenCalledWith(
       'create_support_session',
-      expect.objectContaining({ p_email: 'visitor@example.com', p_name: 'Visitor' }),
+      expect.objectContaining({ p_external_id: 'user-1', p_email: 'verified@example.com', p_name: 'Display Name' }),
     );
   });
 });

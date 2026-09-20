@@ -31,12 +31,17 @@ export class HashpassClient {
     // test that passes its own mock `fetch` (a plain function has no such
     // receiver requirement) -- it only fires on the real default path,
     // i.e. exactly what every app not overriding `fetch` actually hits.
-    const fetchImplementation = options.fetch ?? globalThis.fetch?.bind(globalThis);
+    const fetchImplementation =
+      options.fetch ?? globalThis.fetch?.bind(globalThis);
     if (!fetchImplementation) {
-      throw new HashpassError("A Fetch API implementation is required", { code: "configuration_error" });
+      throw new HashpassError("A Fetch API implementation is required", {
+        code: "configuration_error",
+      });
     }
     const shared = {
-      baseUrl: options.baseUrl ?? ENVIRONMENT_URLS[options.environment ?? "production"],
+      baseUrl:
+        options.baseUrl ??
+        ENVIRONMENT_URLS[options.environment ?? "production"],
       appId: options.appId,
       fetch: fetchImplementation,
       headers: options.headers,
@@ -44,10 +49,28 @@ export class HashpassClient {
       retry: options.retry,
     };
     const authTransport = new HttpTransport(shared);
-    this.auth = new HashpassAuth(authTransport, options.sessionStore ?? new MemorySessionStore());
+    this.auth = new HashpassAuth(
+      authTransport,
+      options.sessionStore ?? new MemorySessionStore(),
+    );
     const resolvedAuth = options.auth ?? this.auth;
-    const transport = new HttpTransport({ ...shared, auth: resolvedAuth });
-    this.support = new SupportClient(transport, this.auth);
+    const supportAuth = new HashpassAuth(
+      authTransport,
+      options.supportSessionStore ?? new MemorySessionStore(),
+    );
+    const supportTransport = new HttpTransport({
+      ...shared,
+      auth: supportAuth,
+    });
+    const identityTransport = new HttpTransport({
+      ...shared,
+      auth: resolvedAuth,
+    });
+    this.support = new SupportClient(
+      supportTransport,
+      supportAuth,
+      identityTransport,
+    );
     this.authQr = new AuthQrClient({
       baseUrl: options.linksApiBaseUrl,
       appId: options.appId,
@@ -69,11 +92,18 @@ export class HashpassClient {
 
 function validateOptions(options: HashpassSdkOptions): void {
   if (!options.appId?.trim()) {
-    throw new HashpassError("appId is required", { code: "configuration_error" });
+    throw new HashpassError("appId is required", {
+      code: "configuration_error",
+    });
   }
   if (options.baseUrl) {
-    try { new URL(options.baseUrl); } catch (cause) {
-      throw new HashpassError("baseUrl must be an absolute URL", { code: "configuration_error", cause });
+    try {
+      new URL(options.baseUrl);
+    } catch (cause) {
+      throw new HashpassError("baseUrl must be an absolute URL", {
+        code: "configuration_error",
+        cause,
+      });
     }
   }
 }

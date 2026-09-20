@@ -10,8 +10,8 @@ import {
 
 // Serves both SupportClient.createSupportSession() (empty body) and
 // identifySupportVisitor(identity) (body: { identity }) -- see
-// packages/sdk/src/support/client.ts. Anonymous by design: this is the
-// widget's boot-time call, before any visitor identity is known.
+// packages/sdk/src/support/client.ts. Empty-body session creation is anonymous;
+// identity attachment requires a verified primary bearer token.
 export async function POST(request: Request) {
   const appId = appIdFromRequest(request);
   if (!appId || !isKnownSupportApp(appId)) {
@@ -24,13 +24,34 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json().catch(() => ({}));
-  const identity = body?.identity ?? {};
+  const claimedIdentity = body?.identity ?? {};
+  const identifiesVisitor = Object.keys(claimedIdentity).length > 0;
+
+  const supabase = getSupabaseServerForRequest(request);
+  let identity: Record<string, unknown> = {};
+  if (identifiesVisitor) {
+    const authorization = request.headers.get("authorization") ?? "";
+    const bearer = authorization.match(/^Bearer\s+(.+)$/i)?.[1];
+    if (!bearer) return Response.json({ message: "Authenticated identity required" }, { status: 401 });
+
+    const { data: authData, error: authError } = await supabase.auth.getUser(bearer);
+    const user = authData?.user;
+    if (authError || !user?.id || !user.email) {
+      return Response.json({ message: "Verified identity required" }, { status: 401 });
+    }
+    identity = {
+      externalId: user.id,
+      email: user.email,
+      name: claimedIdentity.name ?? user.user_metadata?.name ?? null,
+      locale: claimedIdentity.locale ?? null,
+      traits: claimedIdentity.traits ?? null,
+    };
+  }
 
   const token = generateSupportSessionToken();
   const tokenHash = hashSupportSessionToken(token);
   const expiresAt = new Date(Date.now() + SUPPORT_SESSION_TTL_MS).toISOString();
 
-  const supabase = getSupabaseServerForRequest(request);
   const { data, error } = await supabase.rpc("create_support_session", {
     p_app_id: appId,
     p_token_hash: tokenHash,

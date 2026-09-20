@@ -2,7 +2,7 @@
  * Static allow-list of app ids the support widget/SDK may be embedded under.
  *
  * There is no tenant/application registry table in this database (see
- * db/migrations/V065__support_system.sql's header comment) -- the closest
+ * db/migrations/V097__support_system.sql's header comment) -- the closest
  * existing concept is the hostname-keyed SSO_CONFIG.tenants map in
  * packages/config/src/sso-config.ts, whose slugs this list intentionally
  * mirrors so a new event tenant doesn't need two separate "which apps exist"
@@ -54,6 +54,13 @@ const SUPPORT_APPS: Record<string, SupportAppConfig> = {
     greeting: "Need help with your BSL pass or agenda?",
     theme: { color: "#f97316" },
   },
+  cbweek2026: {
+    appId: "cbweek2026",
+    locale: "es",
+    position: "bottom-right",
+    greeting: "¿En qué podemos ayudarte con Colombia Blockchain Week?",
+    theme: { color: "#FCD116" },
+  },
   "bsl-dev": {
     appId: "bsl-dev",
     locale: "en",
@@ -84,7 +91,9 @@ const SUPPORT_APPS: Record<string, SupportAppConfig> = {
   },
 };
 
-export function getSupportAppConfig(appId: string | null | undefined): SupportAppConfig | null {
+export function getSupportAppConfig(
+  appId: string | null | undefined,
+): SupportAppConfig | null {
   const normalized = (appId ?? "").trim();
   if (!normalized) return null;
   return SUPPORT_APPS[normalized] ?? null;

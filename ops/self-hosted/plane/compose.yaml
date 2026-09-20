@@ -244,28 +244,17 @@ services:
 
 volumes:
   pgdata:
-    env_file: ../.env
   redisdata:
-    env_file: ../.env
   uploads:
-    env_file: ../.env
   logs_api:
-    env_file: ../.env
   logs_worker:
-    env_file: ../.env
   logs_beat-worker:
-    env_file: ../.env
   logs_migrator:
-    env_file: ../.env
   rabbitmq_data:
-    env_file: ../.env
   proxy_config:
-    env_file: ../.env
   proxy_data:
-    env_file: ../.env
 
 networks:
   default:
-    env_file: ../.env
     name: hashpass-ops
     external: true

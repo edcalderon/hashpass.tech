@@ -102,8 +102,9 @@ CREATE TABLE IF NOT EXISTS public.support_idempotency_keys (
   app_id text NOT NULL,
   route text NOT NULL,
   key text NOT NULL,
-  response_status integer NOT NULL,
-  response_body jsonb NOT NULL,
+  -- 0/null is an in-progress atomic claim; completed responses are replayed.
+  response_status integer NOT NULL DEFAULT 0,
+  response_body jsonb,
   created_at timestamptz NOT NULL DEFAULT now(),
   PRIMARY KEY (app_id, route, key)
 );
