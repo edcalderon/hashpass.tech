@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Code2, KeyRound, RefreshCcw, ShieldCheck } from 'lucide-react';
 import { useRouter } from 'expo-router';
 import { cn } from '../lib/utils';
@@ -16,6 +16,8 @@ export interface FeatureFlipCardProps {
   isDark?: boolean;
   actionHref?: string;
   metric?: string;
+  metricValue?: number;
+  metricLabel?: string;
 }
 
 const iconMap = {
@@ -34,9 +36,19 @@ export default function FeatureFlipCard({
   isDark = false,
   actionHref = '/(shared)/auth',
   metric,
+  metricValue,
+  metricLabel,
 }: FeatureFlipCardProps) {
   const [isFlipped, setIsFlipped] = useState(false);
   const router = useRouter();
+  const [count, setCount] = useState<number | null>(null);
+  useEffect(() => {
+    setCount(null);
+    if (typeof metricValue !== 'number') return;
+    let frame = 0; const started = performance.now();
+    const tick = (now: number) => { const progress = Math.min(1, (now - started) / 520); setCount(Math.max(1, Math.round(metricValue * (1 - Math.pow(1 - progress, 3))))); if (progress < 1) frame = requestAnimationFrame(tick); };
+    frame = requestAnimationFrame(tick); return () => cancelAnimationFrame(frame);
+  }, [metricValue]);
 
   const IconComponent = useMemo(() => {
     return iconMap[icon as keyof typeof iconMap] || Code2;
@@ -129,16 +141,21 @@ export default function FeatureFlipCard({
               <h3 className={cn('text-sm font-semibold tracking-tight', isDark ? 'text-white' : 'text-zinc-900')}>{title}</h3>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto">
-              {metric ? <p className={cn('mb-2 text-lg font-bold tracking-tight', isDark ? 'text-white' : 'text-zinc-900')}>{metric}</p> : null}
-              <p className={cn('text-[13px] leading-5', isDark ? 'text-zinc-200' : 'text-zinc-700')}>{description}</p>
+            <div className="min-h-0 flex-1">
+              <p className={cn('text-[13px] leading-5', isDark ? 'text-zinc-200' : 'text-zinc-700')}>
+                {typeof metricValue === 'number' && count === null ? <span aria-label="Loading live metric" className={cn('mr-2 inline-block h-5 w-10 animate-pulse rounded', isDark ? 'bg-zinc-700' : 'bg-zinc-200')} /> : null}
+                {count !== null ? <strong className={cn('mr-1 text-xl leading-none tracking-tight', isDark ? 'text-white' : 'text-zinc-900')}>{count.toLocaleString()}</strong> : null}
+                {metricLabel ? <span className={cn('mr-1 font-semibold', isDark ? 'text-zinc-300' : 'text-zinc-800')}>{metricLabel}.</span> : null}
+                {description}
+              </p>
             </div>
 
             <div className="mt-auto shrink-0 pt-3">
               <InteractiveHoverButton
                 tabIndex={isFlipped ? 0 : -1}
                 text={actionText}
-                className="w-full !border-cyan-400/30 !bg-cyan-500/12 !py-2 !text-sm"
+                tone={isDark ? 'dark' : 'light'}
+                className="w-full !py-2 !text-sm"
                 onClick={(event: React.MouseEvent<HTMLElement>) => {
                   event.stopPropagation();
                   router.push(actionHref as any);

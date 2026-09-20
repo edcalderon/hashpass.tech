@@ -410,23 +410,40 @@
     "unlockPotential": "Libérez votre potentiel",
     "featuresBadge": "Fonctionnalités clés",
     "features": {
+      "title": "Tout ce dont votre événement a besoin",
+      "subtitle": "Une identité privée pour l'accès, les connexions, les pass et les avantages.",
       "secure": {
         "title": "Sécurisé et privé",
         "description": "Vos données sont cryptées et protégées par des protocoles de sécurité de pointe. Nous accordons la priorité à votre vie privée avant tout.",
         "action": "Protéger mes données"
-        ,"metric": "Conversations chiffrées de bout en bout"
+        ,"metric": "Conversations chiffrées de bout en bout",
+        "metricLabel": "intervenants vérifiés"
       },
       "management": {
         "title": "Gestion sans effort",
         "description": "Organisez toutes vos identifications numériques, cartes de fidélité et communautés en un seul endroit intuitif.",
         "action": "Gérer mes clés"
-        ,"metric": "Un pass pour votre réseau d'événements"
+        ,"metric": "Un pass pour votre réseau d'événements",
+        "metricLabel": "pass émis"
       },
       "sync": {
         "title": "Synchronisation multiplateforme",
         "description": "Accédez à vos données sur tous vos appareils avec notre synchronisation cloud sécurisée.",
         "action": "Activer la synchronisation"
-        ,"metric": "3 clients : web, Android et iOS"
+        ,"metric": "3 clients : web, Android et iOS",
+        "metricLabel": "plateformes prises en charge"
+      },
+      "entry": {
+        "title": "Accès rapide",
+        "description": "Utilisez un pass QR en direct pour accéder à vos événements rapidement et de façon fiable.",
+        "metric": "Validation QR en direct",
+        "metricLabel": "pass actifs"
+      },
+      "network": {
+        "title": "Réseautage privé",
+        "description": "Trouvez des participants, planifiez des rendez-vous et gardez vos conversations privées.",
+        "metric": "Rendez-vous et chat chiffré",
+        "metricLabel": "rendez-vous planifiés"
       }
     },
     "welcomeBack": "Bon retour !",

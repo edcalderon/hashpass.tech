@@ -542,23 +542,40 @@
     "unlockPotential": "Unlock Your Potential",
     "featuresBadge": "Key features",
     "features": {
+      "title": "Everything your event needs",
+      "subtitle": "One private identity for entry, connections, passes and rewards.",
       "secure": {
         "title": "Secure & Private",
         "description": "Your data is encrypted and protected with industry-leading security protocols. We prioritize your privacy above all else.",
         "action": "Secure my data"
-        ,"metric": "End-to-end encrypted conversations"
+        ,"metric": "End-to-end encrypted conversations",
+        "metricLabel": "verified speakers"
       },
       "management": {
         "title": "Effortless Management",
         "description": "Organize all your digital credentials, loyalty cards, and communities in one intuitive place.",
         "action": "Manage my keys"
-        ,"metric": "One pass for your event network"
+        ,"metric": "One pass for your event network",
+        "metricLabel": "passes issued"
       },
       "sync": {
         "title": "Cross-Platform Sync",
         "description": "Access your data across all your devices with our secure cloud sync.",
         "action": "Enable secure sync"
-        ,"metric": "3 clients: web, Android and iOS"
+        ,"metric": "3 clients: web, Android and iOS",
+        "metricLabel": "supported platforms"
+      },
+      "entry": {
+        "title": "Fast entry",
+        "description": "Use a live QR pass for quick, reliable event access.",
+        "metric": "Live QR validation",
+        "metricLabel": "live passes"
+      },
+      "network": {
+        "title": "Private networking",
+        "description": "Find attendees, book meetings and keep conversations private.",
+        "metric": "Meetings and encrypted chat",
+        "metricLabel": "meetings booked"
       }
     },
     "howItWorks": {

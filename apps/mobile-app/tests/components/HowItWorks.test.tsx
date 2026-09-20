@@ -16,6 +16,7 @@ afterEach(() => { act(() => view?.unmount()); mockLevel = 'full'; mockReduced = 
 it('reveals the section as one composition and pauses all scene motion outside the viewport', async () => {
   await act(async () => { view = create(<HowItWorks />); });
   expect(view.root.findAllByType('article')).toHaveLength(4);
+  expect(view.root.findAllByType('article').every(card => card.props.style.height === 238)).toBe(true);
   expect(view.root.findAllByType('article').every(card => card.props.animate?.opacity === 1)).toBe(true);
   expect(view.root.findAllByType('svg').every(svg => svg.props.className.includes('active'))).toBe(true);
   expect(view.root.findAllByProps({ className: 'hp-detail hp-scan-beam' })).toHaveLength(1);
@@ -53,5 +54,6 @@ it('keeps card descriptions hidden until its morphing info control is requested'
   act(() => { view.root.findAllByType('button')[0].props.onClick(); });
 
   expect(view.root.findAllByType('button')[0].props['aria-expanded']).toBe(true);
+  expect(view.root.findAllByType('button')[0].props.style).toMatchObject({ width: 44, height: 44 });
   expect(view.root.findAllByType('p').map(node => node.props.children)).toContain('Skip the line. Your pass is a live QR code that gets you into any event instantly — no printouts, no paperwork.');
 });

@@ -107,7 +107,9 @@ it("expands a native card only after its information control is pressed", async 
     "Skip the line. Your pass is a live QR code that gets you into any event instantly — no printouts, no paperwork.",
   );
   act(() => {
-    view.root.findAllByProps({ accessibilityRole: "button" })[0].props.onPress();
+    const control = view.root.findAllByProps({ accessibilityRole: "button" })[0];
+    expect(Object.assign({}, ...control.props.style)).toMatchObject({ width: 44, height: 44 });
+    control.props.onPress();
   });
 
   expect(view.root.findAllByType("Text" as any).map(node => node.props.children)).toContain(

@@ -43,7 +43,7 @@ function Card({ card, index, width, dark, animate, position }: { card: typeof ca
   const entrance = useAnimatedStyle(() => ({ opacity: animate ? reveal.value : 1, transform: [{ translateY: animate ? (1 - reveal.value) * 22 : 0 }] }));
   const illustration = useAnimatedStyle(() => ({ transform: [{ translateY: animate ? float.value : 0 }] }));
   return <Animated.View onLayout={event => { top.value = event.nativeEvent.layout.y; bottom.value = event.nativeEvent.layout.height; }}
-    style={[styles.card, { width, backgroundColor: uiPalette(dark).surface, borderColor: uiPalette(dark).border }, entrance]}>
+    style={[styles.card, { width, height: expanded ? undefined : 338, backgroundColor: uiPalette(dark).surface, borderColor: uiPalette(dark).border }, entrance]}>
     <View importantForAccessibility="no-hide-descendants" accessibilityElementsHidden style={[styles.illustration, { backgroundColor: `${card.accent}${dark ? '12' : '0d'}` }]}>
       <Animated.View style={illustration}><HowItWorksIllustration kind={card.id} color={card.accent} labels={labels} /></Animated.View>
     </View>
@@ -104,11 +104,11 @@ const styles = StyleSheet.create({
   heading: { fontSize: 32, fontWeight: '800', lineHeight: 38, letterSpacing: -1, textAlign: 'center', marginVertical: 16 },
   subtitle: { fontSize: 17, lineHeight: 27, textAlign: 'center', maxWidth: 760, marginBottom: 40 },
   grid: { width: '100%', maxWidth: 1340, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 22 },
-  card: { borderWidth: 1, borderRadius: uiTokens.radius.card, padding: 22, height: 338 },
+  card: { borderWidth: 1, borderRadius: uiTokens.radius.card, padding: 22, minHeight: 338 },
   illustration: { height: 136, borderRadius: uiTokens.radius.card, alignItems: 'center', justifyContent: 'center', marginBottom: 20, overflow: 'hidden' },
   cardHeader: { minHeight: 32, justifyContent: 'center', alignItems: 'center' },
   title: { fontSize: 22, lineHeight: 28, fontWeight: '700', letterSpacing: -0.5, textAlign: 'center' },
-  infoButton: { position: 'absolute', right: 0, width: 28, height: 28, borderWidth: 1, borderRadius: uiTokens.radius.circle, alignItems: 'center', justifyContent: 'center' },
+  infoButton: { position: 'absolute', right: -8, width: 44, height: 44, borderWidth: 1, borderRadius: uiTokens.radius.circle, alignItems: 'center', justifyContent: 'center' },
   detail: { minHeight: 104, paddingTop: 16 },
   detailPanel: { padding: 12, borderRadius: uiTokens.radius.media },
   body: { fontSize: 16, lineHeight: 26, textAlign: 'center' },
