@@ -1,3 +1,18 @@
+## [1.9.46](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.45...v1.9.46) (2026-09-21)
+
+
+### Bug Fixes
+
+* **landing:** polish mobile carousel feedback ([e30495b](https://github.com/hashpass-tech/hashpass.tech/commit/e30495b8994ac8e778e11997bee046a686d0d53b))
+### Release Highlights
+- polish mobile carousel feedback
+
+### Release scope
+- Compared with: `v1.9.45` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+
 ## [1.9.45](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.42...v1.9.45) (2026-09-20)
 
 
