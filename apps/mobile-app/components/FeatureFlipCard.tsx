@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from 'react';
-import { Code2, KeyRound, RefreshCcw, ShieldCheck } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { cn } from '../lib/utils';
 import { InteractiveHoverButton } from './InteractiveHoverButton';
+import FeatureIcon from './FeatureIcon';
 
 export interface FeatureFlipCardProps {
   title: string;
@@ -18,16 +18,11 @@ export interface FeatureFlipCardProps {
   metric?: string;
   metricValue?: number;
   metricLabel?: string;
+  reduceMotion?: boolean;
   /** Lets the carousel hold a flipped card in view while its details are read. */
   isFlipped?: boolean;
   onFlipChange?: (isFlipped: boolean, card: HTMLDivElement) => void;
 }
-
-const iconMap = {
-  'shield-checkmark': ShieldCheck,
-  key: KeyRound,
-  sync: RefreshCcw,
-} as const;
 
 export default function FeatureFlipCard({
   title,
@@ -41,6 +36,7 @@ export default function FeatureFlipCard({
   metric,
   metricValue,
   metricLabel,
+  reduceMotion = false,
   isFlipped: controlledIsFlipped,
   onFlipChange,
 }: FeatureFlipCardProps) {
@@ -54,10 +50,6 @@ export default function FeatureFlipCard({
     const tick = (now: number) => { const progress = Math.min(1, (now - started) / 520); setCount(Math.max(1, Math.round(metricValue * (1 - Math.pow(1 - progress, 3))))); if (progress < 1) frame = requestAnimationFrame(tick); };
     frame = requestAnimationFrame(tick); return () => cancelAnimationFrame(frame);
   }, [metricValue]);
-
-  const IconComponent = useMemo(() => {
-    return iconMap[icon as keyof typeof iconMap] || Code2;
-  }, [icon]);
 
   const isFlipped = controlledIsFlipped ?? uncontrolledIsFlipped;
   const setFlipped = (nextIsFlipped: boolean, card: HTMLDivElement) => {
@@ -113,12 +105,7 @@ export default function FeatureFlipCard({
           )}
         >
           <div className="relative z-10 flex h-full flex-col items-center justify-center gap-3 px-5 py-4 text-center">
-            <div
-              className="flex h-11 w-11 items-center justify-center rounded-full border transition-transform duration-300 group-hover:scale-105"
-              style={{ borderColor: `${color}66`, backgroundColor: `${color}1f`, color }}
-            >
-              <IconComponent className="h-5 w-5" />
-            </div>
+            <FeatureIcon name={icon} color={color} visible={!isFlipped} reduceMotion={reduceMotion} />
 
             <h3 className={cn('text-[22px] font-bold leading-tight tracking-tight', isDark ? 'text-white' : 'text-zinc-900')}>
               {title}
@@ -145,12 +132,7 @@ export default function FeatureFlipCard({
         >
           <div className="relative z-10 flex h-full min-h-0 flex-col">
             <div className="mb-2 flex items-center gap-2">
-              <div
-                className="flex h-8 w-8 items-center justify-center rounded-full border"
-                style={{ borderColor: `${color}66`, backgroundColor: `${color}1f`, color }}
-              >
-                <IconComponent className="h-4 w-4" />
-              </div>
+              <FeatureIcon name={icon} color={color} compact visible={isFlipped} reduceMotion={reduceMotion} />
               <h3 className={cn('text-sm font-semibold tracking-tight', isDark ? 'text-white' : 'text-zinc-900')}>{title}</h3>
             </div>
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
-import { StyleSheet } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
 
 let mockWidth = 390;
 
@@ -54,6 +54,7 @@ jest.mock('../../i18n/i18n', () => ({
   useTranslation: () => ({ t: (key: string, fallback?: string) => fallback || key }),
 }));
 jest.mock('../../components/FeatureFlipCard', () => 'FeatureFlipCard');
+jest.mock('../../components/FeatureIcon', () => 'FeatureIcon');
 jest.mock('../../components/LandingBadge', () => 'LandingBadge');
 jest.mock('../../components/FlipCard', () => 'FlipCard');
 jest.mock('../../components/GlowingEffect', () => ({ GlowingEffect: () => null }));
@@ -78,6 +79,7 @@ let view: ReactTestRenderer;
 afterEach(() => {
   act(() => view?.unmount());
   mockWidth = 390;
+  Platform.OS = 'web';
 });
 
 it('stacks full-width flip cards on phones without a horizontal scroller', () => {
@@ -185,12 +187,31 @@ it('centers an expanded card instantly when motion is reduced', () => {
       String(node.props.className).includes('hashpass-feature-viewport'),
     );
     expect(viewport?.props.className).toContain('has-reduced-motion');
+    expect(card.props.reduceMotion).toBe(true);
   } finally {
     Object.defineProperty(global, 'requestAnimationFrame', {
       configurable: true,
       value: originalRaf,
     });
   }
+});
+
+it('uses the shared circular artwork for every native feature and animates only the opened detail', () => {
+  Platform.OS = 'android';
+  act(() => { view = create(<Features {...props} reduceMotion />); });
+  const cards = view.root.findAllByType('FlipCard' as any);
+  expect(cards).toHaveLength(5);
+  const detailIcon = (index: number) => {
+    let rendered: ReactTestRenderer;
+    act(() => { rendered = create(cards[index].props.FlippedContent); });
+    const iconProps = rendered!.root.findByType('FeatureIcon' as any).props;
+    act(() => rendered!.unmount());
+    return iconProps;
+  };
+  expect(cards.map((_, index) => detailIcon(index).name)).toEqual(['shield-checkmark', 'key', 'sync', 'qr-code-outline', 'people-outline']);
+  expect(detailIcon(3)).toMatchObject({ compact: true, reduceMotion: true, active: false, visible: false });
+  act(() => view.root.findAllByType('Pressable' as any)[3].props.onPress());
+  expect(detailIcon(3)).toMatchObject({ active: true, visible: true });
 });
 
 it('keeps cards visible before a server-rendered viewport is measured', () => {

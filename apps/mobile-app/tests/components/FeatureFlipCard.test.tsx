@@ -1,20 +1,21 @@
 import React from 'react';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
+import { QrCode, UsersRound } from 'lucide-react-native';
+import FeatureFlipCard from '../../components/FeatureFlipCard';
 
 const mockPush = jest.fn();
 
+jest.mock('react-native-svg', () => ({
+  __esModule: true, default: 'Svg', Svg: 'Svg', Path: 'Path', Rect: 'Rect',
+  Circle: 'Circle', Line: 'Line', Polyline: 'Polyline', Polygon: 'Polygon', G: 'G',
+}));
 jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush }) }));
+jest.mock('../../contexts/AnimationLevelContext', () => ({ useAnimationLevel: () => ({ animationLevel: 'full' }) }));
 jest.mock('../../components/InteractiveHoverButton', () => {
-  const ReactRef = require('react');
+  const ReactRef = jest.requireActual('react');
   return { InteractiveHoverButton: (props: object) => ReactRef.createElement('InteractiveHoverButton', props) };
 });
-jest.mock('../../lib/utils', () => ({ cn: (...values: Array<string | false | undefined>) => values.filter(Boolean).join(' ') }));
-jest.mock('lucide-react', () => {
-  const Icon = () => null;
-  return { Code2: Icon, KeyRound: Icon, RefreshCcw: Icon, ShieldCheck: Icon };
-});
-
-import FeatureFlipCard from '../../components/FeatureFlipCard';
+jest.mock('../../lib/utils', () => ({ cn: (...values: (string | false | undefined)[]) => values.filter(Boolean).join(' ') }));
 
 let view: ReactTestRenderer;
 const originalRaf = global.requestAnimationFrame;
@@ -80,4 +81,12 @@ it('keeps the CTA isolated from the flip action and routes to its destination', 
 
   expect(stopPropagation).toHaveBeenCalledTimes(1);
   expect(mockPush).toHaveBeenCalledWith('/(shared)/auth');
+});
+
+it.each([
+  ['qr-code-outline', QrCode],
+  ['people-outline', UsersRound],
+])('renders a distinct native-safe %s icon on both faces', (icon, Icon) => {
+  act(() => { view = create(<FeatureFlipCard title="Feature" description="Details" icon={icon as string} />); });
+  expect(view.root.findAllByType(Icon as React.ComponentType)).toHaveLength(2);
 });
