@@ -43,10 +43,30 @@ it('animates a live metric after opening the compact card', () => {
   const card = view.root.findByProps({ role: 'button', 'aria-label': 'Secure' });
   expect(card.props['aria-expanded']).toBe(false);
 
-  act(() => { card.props.onClick(); });
+  act(() => { card.props.onClick({ currentTarget: {} }); });
 
   expect(card.props['aria-expanded']).toBe(true);
   expect(view.root.findAllByType('strong').map(node => node.props.children)).toContain('61');
+});
+
+it('reports the flipped card to its carousel owner', () => {
+  const onFlipChange = jest.fn();
+  act(() => {
+    view = create(
+      <FeatureFlipCard
+        title="Sync"
+        description="Private event data."
+        isFlipped={false}
+        onFlipChange={onFlipChange}
+      />,
+    );
+  });
+
+  const card = view.root.findByProps({ role: 'button', 'aria-label': 'Sync' });
+  const cardElement = {} as HTMLDivElement;
+  act(() => { card.props.onClick({ currentTarget: cardElement }); });
+
+  expect(onFlipChange).toHaveBeenCalledWith(true, cardElement);
 });
 
 it('keeps the CTA isolated from the flip action and routes to its destination', () => {

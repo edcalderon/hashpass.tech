@@ -120,6 +120,30 @@ it('uses a wrapping three-card row at desktop width', () => {
   expect(cards.every(card => StyleSheet.flatten(card.props.style)?.width === 280)).toBe(true);
 });
 
+it('pauses the feature marquee while the selected web card is open', () => {
+  act(() => { view = create(<Features {...props} />); });
+
+  const card = view.root.findAllByType('FeatureFlipCard' as any)[2];
+  const originalRaf = global.requestAnimationFrame;
+  Object.defineProperty(global, 'requestAnimationFrame', {
+    configurable: true,
+    value: (callback: FrameRequestCallback) => callback(0),
+  });
+
+  act(() => { card.props.onFlipChange(true, {}); });
+
+  const viewport = view.root.findAllByType('div' as any).find(node =>
+    String(node.props.className).includes('hashpass-feature-viewport'),
+  );
+  if (!viewport) throw new Error('Feature marquee viewport is missing');
+  expect(viewport.props.className).toContain('has-active-card');
+  expect(view.root.findAllByType('FeatureFlipCard' as any)[2].props.isFlipped).toBe(true);
+  Object.defineProperty(global, 'requestAnimationFrame', {
+    configurable: true,
+    value: originalRaf,
+  });
+});
+
 it('keeps cards visible before a server-rendered viewport is measured', () => {
   mockWidth = 0;
   act(() => { view = create(<Features {...props} />); });

@@ -13,6 +13,7 @@ import {
 import { useTranslation, getCurrentLocale } from '../i18n/i18n';
 import { useTheme } from '../hooks/useTheme';
 import { apiClient } from '../lib/api-client';
+import { Ionicons } from '../lib/vector-icons';
 
 type Mode = 'light' | 'dark';
 interface Props { mode: Mode; }
@@ -194,7 +195,9 @@ const Newsletter = ({ mode }: Props) => {
         {/* Error message */}
         {error ? (
           <View style={styles.msgRow}>
-            <Text style={styles.msgIcon}>⚠</Text>
+            <View style={styles.msgIcon} accessibilityElementsHidden importantForAccessibility="no">
+              <Ionicons name="alert-circle" size={16} color="#ef4444" />
+            </View>
             <Text style={styles.errorText}>{error}</Text>
           </View>
         ) : null}
@@ -239,7 +242,7 @@ const styles = StyleSheet.create({
     fontSize: 15, marginBottom: 6,
   },
   msgRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 8, paddingHorizontal: 4 },
-  msgIcon: { fontSize: 12, marginRight: 5, marginTop: 1, color: '#ef4444' },
+  msgIcon: { width: 16, height: 16, marginRight: 5, marginTop: 1, alignItems: 'center', justifyContent: 'center' },
   errorText: { color: '#ef4444', fontSize: 12, flex: 1, lineHeight: 18 },
   infoIcon: { fontSize: 12, marginRight: 5, marginTop: 1, color: '#10b981' },
   infoText: { color: '#10b981', fontSize: 12, flex: 1, lineHeight: 18 },

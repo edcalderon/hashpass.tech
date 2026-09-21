@@ -89,4 +89,21 @@ describe('Newsletter Cap widget', () => {
     );
     expect(capContainer.appendChild).toHaveBeenCalledWith(widget);
   });
+
+  it('uses an alert icon, rather than a question mark, for email validation feedback', async () => {
+    let renderer!: TestRenderer.ReactTestRenderer;
+    await act(async () => {
+      renderer = TestRenderer.create(<Newsletter mode="light" />);
+    });
+
+    await act(async () => {
+      renderer.root.findAllByType('button')[0].props.onClick({ preventDefault: jest.fn() });
+    });
+
+    const alertIcon = renderer.root.findAllByType('svg').find(icon =>
+      icon.props['aria-hidden'] === 'true',
+    );
+    expect(alertIcon?.findAllByType('circle')).toHaveLength(1);
+    expect(alertIcon?.findAllByType('path')).toHaveLength(1);
+  });
 });
