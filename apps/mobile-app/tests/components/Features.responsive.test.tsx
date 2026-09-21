@@ -144,6 +144,55 @@ it('pauses the feature marquee while the selected web card is open', () => {
   });
 });
 
+it('centers an expanded card instantly when motion is reduced', () => {
+  const scrollTo = jest.fn();
+  const originalRaf = global.requestAnimationFrame;
+  Object.defineProperty(global, 'requestAnimationFrame', {
+    configurable: true,
+    value: (callback: FrameRequestCallback) => callback(0),
+  });
+
+  try {
+    act(() => {
+      view = create(<Features {...props} reduceMotion />, {
+        createNodeMock: (element) => {
+          const hostElement = element as { type: unknown; props: { className?: unknown } };
+          if (
+            hostElement.type === 'div'
+            && String(hostElement.props.className).includes('hashpass-feature-viewport')
+          ) {
+            return {
+              scrollLeft: 60,
+              clientWidth: 300,
+              getBoundingClientRect: () => ({ left: 10 }),
+              scrollTo,
+            };
+          }
+          return {};
+        },
+      });
+    });
+
+    const card = view.root.findAllByType('FeatureFlipCard' as any)[2];
+    act(() => {
+      card.props.onFlipChange(true, {
+        getBoundingClientRect: () => ({ left: 120, width: 240 }),
+      });
+    });
+
+    expect(scrollTo).toHaveBeenCalledWith({ left: 140, behavior: 'auto' });
+    const viewport = view.root.findAllByType('div' as any).find(node =>
+      String(node.props.className).includes('hashpass-feature-viewport'),
+    );
+    expect(viewport?.props.className).toContain('has-reduced-motion');
+  } finally {
+    Object.defineProperty(global, 'requestAnimationFrame', {
+      configurable: true,
+      value: originalRaf,
+    });
+  }
+});
+
 it('keeps cards visible before a server-rendered viewport is measured', () => {
   mockWidth = 0;
   act(() => { view = create(<Features {...props} />); });

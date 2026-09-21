@@ -552,6 +552,20 @@ describe("HomeScreen native tablet layout", () => {
     expect(explorerLabel.props.numberOfLines).toBe(1);
   });
 
+  it("passes the selected motion preference into landing features", () => {
+    const { renderer: reducedRenderer } = loadHomeScreen({
+      platform: "web",
+      animationLevel: "reduced",
+    });
+    expect(reducedRenderer.root.findByType("Features").props.reduceMotion).toBe(true);
+
+    const { renderer: fullRenderer } = loadHomeScreen({
+      platform: "web",
+      animationLevel: "full",
+    });
+    expect(fullRenderer.root.findByType("Features").props.reduceMotion).toBe(false);
+  });
+
   it("renders the native landing first frame visibly without waiting for scroll", () => {
     const { renderer } = loadHomeScreen({
       width: 390,
