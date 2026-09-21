@@ -33,13 +33,14 @@ locals {
 module "cbweek2026_pipeline" {
   source = "../../modules/aws_static_site_pipeline"
 
-  name_prefix    = "hashpass-cbweek2026"
-  environment    = "develop"
-  aws_region     = var.aws_region
-  account_id     = data.aws_caller_identity.current.account_id
-  repository     = var.repository
-  branch_name    = "develop"
-  connection_arn = var.connection_arn
+  name_prefix           = "hashpass-cbweek2026"
+  environment           = "develop"
+  aws_region            = var.aws_region
+  account_id            = data.aws_caller_identity.current.account_id
+  repository            = var.repository
+  branch_name           = "develop"
+  connection_arn        = var.connection_arn
+  source_detect_changes = var.cbweek_aws_pipeline_source_detect_changes
 
   # FIXED 2026-08-16: this pipeline was the only one of the five hashpass.tech
   # dev/prod/BSL/demo site pipelines with no path filter at all -- V1, no

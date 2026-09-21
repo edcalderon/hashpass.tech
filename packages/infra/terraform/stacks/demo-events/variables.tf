@@ -22,6 +22,12 @@ variable "repository" {
   default     = "hashpass-tech/hashpass.tech"
 }
 
+variable "cbweek_aws_pipeline_source_detect_changes" {
+  description = "Keep false after the verified GitHub deployment cutover; the AWS pipeline remains available for manual recovery."
+  type        = bool
+  default     = false
+}
+
 variable "connection_arn" {
   description = "AWS CodeConnections ARN for the GitHub source connection (shared with bsl-target/hashpass-web -- see their terraform.tfvars)."
   type        = string

@@ -147,6 +147,12 @@ variable "dev_aws_pipeline_source_detect_changes" {
   default     = false
 }
 
+variable "prod_aws_pipeline_source_detect_changes" {
+  description = "Automatic production AWS builds. Disable only after a verified production GitHub deployment; manual recovery remains available."
+  type        = bool
+  default     = true
+}
+
 variable "dev_route53_zone_name" {
   description = "Route53 hosted zone name used to host the development web domain"
   type        = string

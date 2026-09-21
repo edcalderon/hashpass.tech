@@ -43,8 +43,17 @@ the production account identity or changed without auditing its consumers.
   pre-change pipeline snapshot was retained locally for rollback. The Terraform
   variable default now also records the manual-only posture; no broad apply of
   the drift-affected `hashpass-web` stack was performed.
-- Remaining AWS targets still auto-trigger until their own replacement passes:
-  CBWeek development, BSL development, core production, and BSL production.
+- **LIVE:** CBWeek development and BSL development also completed their
+  cutover in GitHub run **35613663531** (commit `3c6489b87`). Both builds and
+  deployments succeeded. Downloaded artifact `index.html` bytes match both the
+  deployed S3 objects and public CDN responses; both sites return HTTP 200.
+  No old AWS executions were active at cutover. Their V2 triggers are removed,
+  `DetectChanges=false`, and there are no EventBridge targets for either
+  pipeline. This emergency containment uses observed deployment/parity evidence
+  immediately; the longer observation period continues with manual recovery
+  available, rather than paying for both systems on every push.
+- Remaining automatic AWS targets: **core production and BSL production**,
+  pending their own successful deployment after protected promotion to `main`.
   New `.github/workflows/github-hosted-tenant-site-deploy.yml` preserves each
   target's public build configuration, builds without AWS credentials, retains
   artifacts for one day, and serializes deployments. Production targets require
@@ -56,11 +65,32 @@ the production account identity or changed without auditing its consumers.
   distribution where applicable, and update only its own API code where needed.
   No role can start EC2, CodeBuild, or CodePipeline, or change Lambda settings.
   Existing BSL cross-account CloudFront delivery remains unchanged.
+- **LIVE:** all four separate IAM-role stacks are `CREATE_COMPLETE`; each
+  GitHub environment permits only its intended branch. No Terraform apply was
+  performed against an existing serving stack.
+- **LIVE:** the $50 budget previously had **zero notifications**, while the
+  legacy $80 budget had seven. Added actual 50/75/90/100% and forecast 100%
+  alerts, reusing the existing billing email subscriber without exposing its
+  address. Rules/subscribers were verified; delivery itself was not simulated.
+- Added `.github/workflows/aws-cost-report.yml` and the read-only
+  `hashpass-github-cost-report` IAM role. It performs one Cost Explorer query
+  per daily run, reports the existing $50 budget's actual/forecast values, and
+  detects re-enabled automatic triggers for the three migrated pipelines.
+  It fails visibly on budget breach or trigger drift and never mutates AWS.
+  The daily schedule becomes active when the workflow reaches `main`; its
+  `develop` push trigger provides the initial hosted verification.
 
-Next verification: observe development tenant build+deploy runs, switch those
-AWS source triggers to manual-only, then promote and observe production through
-the protected release PR before disabling production AWS triggers. Record each
-actual cutover below; workflow source alone is not a completed migration.
+Next verification: promote and observe the production replacements through the
+protected release PR before disabling either production AWS trigger. Confirm
+the cost guard's hosted run and default-branch daily schedule. The remaining
+budget forecast will lag; accrued charges can still arrive after cutover.
+
+Validation: credentialless build/branch routing and environment-input rejection
+checks passed; six existing infrastructure tests passed; `hashpass-web` and
+`bsl-target` Terraform validation passed. `demo-events` validation is blocked by
+the installed Terraform 1.6.6 not supporting its existing `removed` blocks (not
+introduced here). Repository-wide lint reports 12 existing application errors;
+the cost-control change does not modify those application files.
 
 ## Historical verified state — 2026-09-04
 

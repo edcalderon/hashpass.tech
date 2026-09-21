@@ -33,6 +33,18 @@ variable "dev_branch_name" {
   default     = "develop"
 }
 
+variable "dev_aws_pipeline_source_detect_changes" {
+  description = "Automatic BSL development AWS builds. Keep false after the verified GitHub cutover; manual recovery remains available."
+  type        = bool
+  default     = false
+}
+
+variable "prod_aws_pipeline_source_detect_changes" {
+  description = "Automatic BSL production AWS builds. Disable only after a verified production GitHub deployment."
+  type        = bool
+  default     = true
+}
+
 variable "artifact_bucket_name" {
   description = "S3 bucket for CodePipeline artifacts (already exists in target: bsl-hashpass-pipelines-<target-account-id>-us-east-2)"
   type        = string
