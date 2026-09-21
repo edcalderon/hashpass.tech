@@ -46,12 +46,11 @@ import {
   resolveRootStackMotionOptions,
 } from '../lib/native-navigation-options';
 import packageJson from '../package.json';
+import { getStartupStamp } from '../lib/build-stamp';
 import * as Sentry from '@sentry/react-native';
 import * as Updates from 'expo-updates';
 
-const startupStamp = process.env.EXPO_PUBLIC_RELEASE_COMMIT
-  ? `v${packageJson.version} · ${process.env.EXPO_PUBLIC_RELEASE_COMMIT}`
-  : `v${packageJson.version} · local build`;
+const startupStamp = getStartupStamp();
 const ROOT_AUTH_REDIRECT_HYSTERESIS_MS = 2500;
 
 // Must run before installGlobalErrorHandler() below: Sentry's init installs its
