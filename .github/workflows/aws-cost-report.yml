@@ -1,0 +1,44 @@
+name: AWS cost and build-trigger guard
+
+on:
+  schedule:
+    - cron: '20 13 * * *'
+  workflow_dispatch: {}
+  push:
+    branches: [develop, main]
+    paths:
+      - '.github/workflows/aws-cost-report.yml'
+      - 'packages/tools/scripts/aws-cost-report.mjs'
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: aws-cost-report
+  cancel-in-progress: false
+
+jobs:
+  report:
+    if: github.repository == 'hashpass-tech/hashpass.tech'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      AWS_TARGET_ACCOUNT_ID: ${{ vars.AWS_COST_REPORT_ACCOUNT_ID }}
+      AWS_MANUAL_BUILD_PIPELINES: ${{ vars.AWS_MANUAL_BUILD_PIPELINES }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_COST_REPORT_ROLE_ARN }}
+          allowed-account-ids: ${{ vars.AWS_COST_REPORT_ACCOUNT_ID }}
+          aws-region: us-east-1
+          mask-aws-account-id: true
+      - name: Report spend and detect re-enabled paid builds
+        shell: bash
+        run: |
+          set -euo pipefail
+          node packages/tools/scripts/aws-cost-report.mjs | tee -a "$GITHUB_STEP_SUMMARY"

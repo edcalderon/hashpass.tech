@@ -452,6 +452,7 @@ resource "aws_codepipeline" "bsl_prod" {
         ConnectionArn        = var.connection_arn
         FullRepositoryId     = var.repository
         BranchName           = var.prod_branch_name
+        DetectChanges        = var.prod_aws_pipeline_source_detect_changes ? "true" : "false"
         OutputArtifactFormat = "CODE_ZIP"
       }
     }
@@ -478,20 +479,20 @@ resource "aws_codepipeline" "bsl_prod" {
     }
   }
 
-  trigger {
-    provider_type = "CodeStarSourceConnection"
-
-    git_configuration {
-      source_action_name = "Source"
-
-      push {
-        branches {
-          includes = [var.prod_branch_name]
-        }
-
-        file_paths {
-          includes = local.bsl_trigger_includes
-          excludes = local.bsl_trigger_excludes
+  dynamic "trigger" {
+    for_each = var.prod_aws_pipeline_source_detect_changes ? [1] : []
+    content {
+      provider_type = "CodeStarSourceConnection"
+      git_configuration {
+        source_action_name = "Source"
+        push {
+          branches {
+            includes = [var.prod_branch_name]
+          }
+          file_paths {
+            includes = local.bsl_trigger_includes
+            excludes = local.bsl_trigger_excludes
+          }
         }
       }
     }
@@ -527,6 +528,7 @@ resource "aws_codepipeline" "bsl_dev" {
         ConnectionArn        = var.connection_arn
         FullRepositoryId     = var.repository
         BranchName           = var.dev_branch_name
+        DetectChanges        = var.dev_aws_pipeline_source_detect_changes ? "true" : "false"
         OutputArtifactFormat = "CODE_ZIP"
       }
     }
@@ -563,20 +565,20 @@ resource "aws_codepipeline" "bsl_dev" {
     }
   }
 
-  trigger {
-    provider_type = "CodeStarSourceConnection"
-
-    git_configuration {
-      source_action_name = "Source"
-
-      push {
-        branches {
-          includes = [var.dev_branch_name]
-        }
-
-        file_paths {
-          includes = local.bsl_trigger_includes
-          excludes = local.bsl_trigger_excludes
+  dynamic "trigger" {
+    for_each = var.dev_aws_pipeline_source_detect_changes ? [1] : []
+    content {
+      provider_type = "CodeStarSourceConnection"
+      git_configuration {
+        source_action_name = "Source"
+        push {
+          branches {
+            includes = [var.dev_branch_name]
+          }
+          file_paths {
+            includes = local.bsl_trigger_includes
+            excludes = local.bsl_trigger_excludes
+          }
         }
       }
     }

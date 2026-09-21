@@ -20,8 +20,13 @@ credits/refunds. CodeBuild (**$43.47**) and CodePipeline (**$5.496**) account fo
 about 85% of the bill; there are no EC2 instances in the relevant regions.
 The prior GitHub migration never completed its trigger cutover, so paid AWS
 builds continued in parallel with successful free GitHub builds. The proven
-HashPass development AWS pipeline is now manual-only. Target-by-target migration
-and remaining production gates are recorded in the canonical containment task
+HashPass, CBWeek, and BSL development AWS pipelines, plus both production
+pipelines, are now manual-only after verified GitHub deployments. Production
+run **35615317532** passed; public responses match its artifacts and the
+production API reports **1.9.46**. The $50 budget's missing notification rules
+were restored using the existing billing recipient. A read-only hosted cost
+guard has also been verified; its daily schedule awaits protected promotion.
+Target-by-target migration and remaining monitoring gates are in the containment task
 linked above. These are accrued costs, not a recoverable monthly allowance;
 future savings cannot undo this month's $7.548 overrun.
 

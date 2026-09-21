@@ -43,8 +43,23 @@ the production account identity or changed without auditing its consumers.
   pre-change pipeline snapshot was retained locally for rollback. The Terraform
   variable default now also records the manual-only posture; no broad apply of
   the drift-affected `hashpass-web` stack was performed.
-- Remaining AWS targets still auto-trigger until their own replacement passes:
-  CBWeek development, BSL development, core production, and BSL production.
+- **LIVE:** CBWeek development and BSL development also completed their
+  cutover in GitHub run **35613663531** (commit `3c6489b87`). Both builds and
+  deployments succeeded. Downloaded artifact `index.html` bytes match both the
+  deployed S3 objects and public CDN responses; both sites return HTTP 200.
+  No old AWS executions were active at cutover. Their V2 triggers are removed,
+  `DetectChanges=false`, and there are no EventBridge targets for either
+  pipeline. This emergency containment uses observed deployment/parity evidence
+  immediately; the longer observation period continues with manual recovery
+  available, rather than paying for both systems on every push.
+- **LIVE:** core production and BSL production completed their cutover in
+  GitHub run **35615317532** on protected merge `de2bed5e4` (v1.9.46). All
+  build/deploy jobs passed. Each downloaded artifact's `index.html` matches
+  both S3 and the public CDN response (HTTP 200); the production API reports
+  **1.9.46**. Both old AWS executions had finished before cutover. Both
+  pipelines now have no V2 triggers, `DetectChanges=false`, and no EventBridge
+  targets. Private rollback snapshots were retained. **All five targets now
+  use GitHub-hosted builds; all five AWS pipelines are manual recovery only.**
   New `.github/workflows/github-hosted-tenant-site-deploy.yml` preserves each
   target's public build configuration, builds without AWS credentials, retains
   artifacts for one day, and serializes deployments. Production targets require
@@ -56,11 +71,40 @@ the production account identity or changed without auditing its consumers.
   distribution where applicable, and update only its own API code where needed.
   No role can start EC2, CodeBuild, or CodePipeline, or change Lambda settings.
   Existing BSL cross-account CloudFront delivery remains unchanged.
+- **LIVE:** all four separate IAM-role stacks are `CREATE_COMPLETE`; each
+  GitHub environment permits only its intended branch. No Terraform apply was
+  performed against an existing serving stack.
+- **LIVE:** the $50 budget previously had **zero notifications**, while the
+  legacy $80 budget had seven. Added actual 50/75/90/100% and forecast 100%
+  alerts, reusing the existing billing email subscriber without exposing its
+  address. Rules/subscribers were verified; delivery itself was not simulated.
+- Added `.github/workflows/aws-cost-report.yml` and the read-only
+  `hashpass-github-cost-report` IAM role. It performs one Cost Explorer query
+  per daily run, reports the existing $50 budget's actual/forecast values, and
+  detects re-enabled automatic triggers for all five migrated pipelines.
+  It fails visibly on budget breach or trigger drift and never mutates AWS.
+  The daily schedule becomes active when the workflow reaches `main`; its
+  `develop` push trigger provides the initial hosted verification. Hosted run
+  **35615672248** verified the account-scoped read-only role, live billing,
+  and the first three manual-only pipelines. Its failure is the expected
+  **budget alert**, not a deployment error: $57.55 actual / $172.77 forecast.
+  The guard configuration now includes both production pipelines as well and
+  defaults to all five if the repository variable is absent.
 
-Next verification: observe development tenant build+deploy runs, switch those
-AWS source triggers to manual-only, then promote and observe production through
-the protected release PR before disabling production AWS triggers. Record each
-actual cutover below; workflow source alone is not a completed migration.
+Next verification: promote the follow-up Terraform defaults, regression tests,
+and daily guard through the protected release PR. Confirm its default-branch
+schedule and observe post-cutover spend. The budget forecast will lag; accrued
+charges can still arrive after cutover. Do not start paid recovery builds just
+to turn the red budget alert green.
+
+Validation: credentialless build/branch routing and environment-input rejection
+checks passed; five infrastructure suites now cover account boundaries, budget
+alerts, pipeline drift, target routing, and public-config injection rejection;
+`hashpass-web` and
+`bsl-target` Terraform validation passed. `demo-events` validation is blocked by
+the installed Terraform 1.6.6 not supporting its existing `removed` blocks (not
+introduced here). Repository-wide lint reports 12 existing application errors;
+the cost-control change does not modify those application files.
 
 ## Historical verified state — 2026-09-04
 
@@ -216,16 +260,16 @@ feedback.
       Credits export (credit scope, remaining balance, and expiry). Budgets
       alert; they do not stop builds.
 
-### 1. Immediate execution containment — NEXT, approval-gated
+### 1. Immediate execution containment — COMPLETE, 2026-09-21
 
-- [ ] Map the CBWeek development deploy's required availability and rollback
+- [x] Map the CBWeek development deploy's required availability and rollback
       expectation, then prepare a reversible change that removes or gates its
       automatic `develop` webhook. Preserve a manual/dedicated-branch rollback
       path. Do not disable it before its replacement succeeds.
-- [ ] Inspect the other four build targets' executions and identify the
+- [x] Inspect the other four build targets' executions and identify the
       highest-minute non-production target next. Do not blanket-disable
       production paths.
-- [ ] Do not manually rerun CodePipeline/CodeBuild jobs while containment is
+- [x] Do not manually rerun CodePipeline/CodeBuild jobs while containment is
       active unless needed to restore a verified service.
 
 ### 2. GitHub Actions replacement — preferred solution

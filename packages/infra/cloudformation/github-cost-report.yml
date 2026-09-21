@@ -1,0 +1,44 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Read-only cost and build-trigger monitoring for GitHub Actions.
+Resources:
+  CostReportRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: hashpass-github-cost-report
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:oidc-provider/token.actions.githubusercontent.com
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                token.actions.githubusercontent.com:aud: sts.amazonaws.com
+                token.actions.githubusercontent.com:sub:
+                  - repo:hashpass-tech/hashpass.tech:ref:refs/heads/main
+                  - repo:hashpass-tech/hashpass.tech:ref:refs/heads/develop
+      Policies:
+        - PolicyName: ReadCostAndBuildTriggers
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: ce:GetCostAndUsage
+                Resource: '*'
+              - Effect: Allow
+                Action: budgets:ViewBudget
+                Resource: !Sub arn:${AWS::Partition}:budgets::${AWS::AccountId}:budget/hashpass-production-monthly-max-50-usd
+              - Effect: Allow
+                Action: codepipeline:GetPipeline
+                Resource:
+                  - !Sub arn:${AWS::Partition}:codepipeline:us-east-2:${AWS::AccountId}:hashpass-dev-site
+                  - !Sub arn:${AWS::Partition}:codepipeline:us-east-2:${AWS::AccountId}:hashpass-production-site
+                  - !Sub arn:${AWS::Partition}:codepipeline:us-east-2:${AWS::AccountId}:hashpass-cbweek2026-develop-site
+                  - !Sub arn:${AWS::Partition}:codepipeline:us-east-2:${AWS::AccountId}:bsl-hashpass-dev
+                  - !Sub arn:${AWS::Partition}:codepipeline:us-east-2:${AWS::AccountId}:bsl-hashpass-prod
+      Tags:
+        - Key: Project
+          Value: hashpass
+        - Key: Service
+          Value: cost-monitoring

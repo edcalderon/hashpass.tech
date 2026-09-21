@@ -344,6 +344,7 @@ module "site" {
   environment                       = var.environment
   repository                        = var.repository
   branch_name                       = var.branch_name
+  source_detect_changes             = var.prod_aws_pipeline_source_detect_changes
   connection_arn                    = var.connection_arn
   site_bucket_name                  = var.site_bucket_name
   artifact_bucket_name              = var.artifact_bucket_name

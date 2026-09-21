@@ -8,7 +8,7 @@ import { GlowingEffect } from './GlowingEffect';
 import FlipCard from './FlipCard';
 import FeatureFlipCard from './FeatureFlipCard';
 import LandingBadge from './LandingBadge';
-import { Ionicons } from '../lib/vector-icons';
+import FeatureIcon from './FeatureIcon';
 
 const getFeatureStyles = (isDark: boolean, cardWidth: number) => StyleSheet.create({
   responsiveGrid: {
@@ -45,21 +45,8 @@ const getFeatureStyles = (isDark: boolean, cardWidth: number) => StyleSheet.crea
     height: 188,
   },
   iconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: uiTokens.radius.card,
-    marginBottom: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
+    marginBottom: uiTokens.space.md,
     alignSelf: 'center',
-  },
-  iconContainerSmall: {
-    width: 32,
-    height: 32,
-    borderRadius: uiTokens.radius.media,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 0,
   },
   featureTitle: {
     fontSize: 20,
@@ -210,6 +197,7 @@ const Features: React.FC<FeaturesProps> = ({
   const carouselRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<{ x: number; scroll: number } | null>(null);
   const [activeWebCardIndex, setActiveWebCardIndex] = useState<number | null>(null);
+  const [nativeFlipped, setNativeFlipped] = useState<Record<string, boolean>>({});
   const handleWebFlipChange = useCallback((index: number, isFlipped: boolean, card: HTMLDivElement) => {
     setActiveWebCardIndex(isFlipped ? index : null);
     if (!isFlipped) return;
@@ -303,6 +291,7 @@ const Features: React.FC<FeaturesProps> = ({
                 hintText={t('learnMore', 'Learn More')}
                 actionText={feature.actionText}
                 isDark={isDark}
+                reduceMotion={reduceMotion}
                 actionHref="/(shared)/auth"
                 metric={feature.metric}
                 metricValue={feature.metricValue}
@@ -325,7 +314,9 @@ const Features: React.FC<FeaturesProps> = ({
           <Pressable
             key={feature.id}
             onPress={() => {
-              flipValues[index].value = !flipValues[index].value;
+              const next = !flipValues[index].value;
+              flipValues[index].value = next;
+              setNativeFlipped(current => ({ ...current, [feature.id]: next }));
             }}
             style={[featureStyles.feature, [feature1Style, feature2Style, feature3Style][index]]}
           >
@@ -348,11 +339,8 @@ const Features: React.FC<FeaturesProps> = ({
                     alignItems: 'center',
                     padding: 8,
                   }}>
-                    <View style={[
-                      featureStyles.iconContainer,
-                      { borderWidth: 1, borderColor: `${feature.color}66`, backgroundColor: `${feature.color}1f` },
-                    ]}>
-                      <Ionicons name={feature.icon as any} size={22} color={feature.color} />
+                    <View style={featureStyles.iconContainer}>
+                      <FeatureIcon name={feature.icon} color={feature.color} reduceMotion={reduceMotion} visible={!nativeFlipped[feature.id]} />
                     </View>
                     <Text style={featureStyles.featureTitle}>{feature.title}</Text>
                     <Text style={featureStyles.featureHint}>{t('tapToRead', 'Tap to read more')}</Text>
@@ -366,12 +354,7 @@ const Features: React.FC<FeaturesProps> = ({
                   }}>
                     <View>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-                        <View style={[
-                          featureStyles.iconContainerSmall,
-                          { borderWidth: 1, borderColor: `${feature.color}66`, backgroundColor: `${feature.color}1f` },
-                        ]}>
-                          <Ionicons name={feature.icon as any} size={16} color={feature.color} />
-                        </View>
+                        <FeatureIcon name={feature.icon} color={feature.color} compact reduceMotion={reduceMotion} active={!!nativeFlipped[feature.id]} visible={!!nativeFlipped[feature.id]} />
                         <Text style={featureStyles.featureTitleSmall}>{feature.title}</Text>
                       </View>
                       <View style={{ maxHeight: 88 }}>
