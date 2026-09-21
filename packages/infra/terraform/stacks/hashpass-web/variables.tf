@@ -144,7 +144,7 @@ variable "dev_branch_name" {
 variable "dev_aws_pipeline_source_detect_changes" {
   description = "Whether the retained development AWS CodePipeline starts automatically from CodeConnections. Set false only after the GitHub-hosted development deployment has passed its observation gate; false preserves a manual disaster-recovery path."
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "dev_route53_zone_name" {

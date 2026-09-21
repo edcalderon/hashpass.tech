@@ -876,6 +876,7 @@ export default function HomeScreen() {
             feature2Style={feature2Style}
             feature3Style={feature3Style}
             isDark={isDark}
+            reduceMotion={animationLevel !== "full"}
           />
         </View>
 

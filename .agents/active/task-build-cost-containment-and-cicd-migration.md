@@ -2,7 +2,8 @@
 
 **Status:** IN PROGRESS
 **Priority:** P0 — hard $50/month production ceiling at immediate risk
-**Created / last updated:** 2026-09-04
+**Created:** 2026-09-04
+**Last updated:** 2026-09-21
 **Owner:** HASHPASS production owner; approval is required for every AWS
 mutation or production cutover.
 
@@ -15,7 +16,53 @@ The separate
 [`task-aws-cost-audit-and-controls.md`](task-aws-cost-audit-and-controls.md)
 remains the canonical billing, credit, and no-EC2-provisioning record.
 
-## Verified current state — 2026-09-04
+## Current containment — 2026-09-21
+
+The owner requested immediate build-cost reduction and maximum use of standard
+GitHub-hosted compute. The private `AWS_TARGET_ACCOUNT_ID` matches the `hashpass`
+STS identity. The repository-level `AWS_ACCOUNT_ID` differs; it belongs to the
+older infrastructure workflow configuration and must not be used as proof of
+the production account identity or changed without auditing its consumers.
+
+- Budget actual: **$57.548**; forecast: **$172.772**; approved ceiling: **$50**.
+  September is already **$7.548 over budget** and cannot be brought back under
+  the ceiling by reducing future usage. Forecasts lag operational changes.
+- Cost Explorer Sep 1–21, estimated UnblendedCost excluding Credits/Refunds:
+  CodeBuild **$43.47**, CodePipeline **$5.496**, Route 53 **$4.052**, S3
+  **$3.174**, Secrets Manager **$0.795**, other services **$0.561**.
+  Build services account for about **85%** of the total.
+- No EC2 instances exist in the two relevant regions (`us-east-1`, `us-east-2`).
+- The development GitHub workflow is active. As checked, it had 21 successful
+  runs since Sep 4, plus superseded/cancelled builds and three earlier failures.
+  The observed build+deploy run **35610166639** passed on Sep 21; the next run
+  **35611630715** also succeeded. The development site returns HTTP 200 and the
+  API reports **1.9.46**. This is sufficient evidence to end duplicate execution.
+- **LIVE:** `hashpass-dev-site` is now manual-only: the V2 triggers are removed
+  and the CodeConnections source explicitly has `DetectChanges=false`.
+  The pipeline/project and manual recovery script remain available. A private
+  pre-change pipeline snapshot was retained locally for rollback. The Terraform
+  variable default now also records the manual-only posture; no broad apply of
+  the drift-affected `hashpass-web` stack was performed.
+- Remaining AWS targets still auto-trigger until their own replacement passes:
+  CBWeek development, BSL development, core production, and BSL production.
+  New `.github/workflows/github-hosted-tenant-site-deploy.yml` preserves each
+  target's public build configuration, builds without AWS credentials, retains
+  artifacts for one day, and serializes deployments. Production targets require
+  `main`; development targets require `develop`. Manual trials default to build
+  only. Do not disable an AWS target based only on a successful build.
+- Separate deployment roles are described by
+  `packages/infra/cloudformation/github-site-deploy.yml`, one isolated stack per
+  target. Each can write only its own site bucket, invalidate its own
+  distribution where applicable, and update only its own API code where needed.
+  No role can start EC2, CodeBuild, or CodePipeline, or change Lambda settings.
+  Existing BSL cross-account CloudFront delivery remains unchanged.
+
+Next verification: observe development tenant build+deploy runs, switch those
+AWS source triggers to manual-only, then promote and observe production through
+the protected release PR before disabling production AWS triggers. Record each
+actual cutover below; workflow source alone is not a completed migration.
+
+## Historical verified state — 2026-09-04
 
 Read-only AWS checks using the `hashpass` production profile found:
 

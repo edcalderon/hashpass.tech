@@ -691,7 +691,9 @@ const getStyles = (
     footer: {
       minHeight: 48,
       marginTop: 16,
-      paddingHorizontal: isMobile ? 8 : 16,
+      // Match the slide gutter so the landing actions align with both edges
+      // of the banner media, rather than sitting eight points wider on phones.
+      paddingHorizontal: 16,
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "flex-end",

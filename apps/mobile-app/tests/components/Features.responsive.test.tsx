@@ -120,6 +120,79 @@ it('uses a wrapping three-card row at desktop width', () => {
   expect(cards.every(card => StyleSheet.flatten(card.props.style)?.width === 280)).toBe(true);
 });
 
+it('pauses the feature marquee while the selected web card is open', () => {
+  act(() => { view = create(<Features {...props} />); });
+
+  const card = view.root.findAllByType('FeatureFlipCard' as any)[2];
+  const originalRaf = global.requestAnimationFrame;
+  Object.defineProperty(global, 'requestAnimationFrame', {
+    configurable: true,
+    value: (callback: FrameRequestCallback) => callback(0),
+  });
+
+  act(() => { card.props.onFlipChange(true, {}); });
+
+  const viewport = view.root.findAllByType('div' as any).find(node =>
+    String(node.props.className).includes('hashpass-feature-viewport'),
+  );
+  if (!viewport) throw new Error('Feature marquee viewport is missing');
+  expect(viewport.props.className).toContain('has-active-card');
+  expect(view.root.findAllByType('FeatureFlipCard' as any)[2].props.isFlipped).toBe(true);
+  Object.defineProperty(global, 'requestAnimationFrame', {
+    configurable: true,
+    value: originalRaf,
+  });
+});
+
+it('centers an expanded card instantly when motion is reduced', () => {
+  const scrollTo = jest.fn();
+  const originalRaf = global.requestAnimationFrame;
+  Object.defineProperty(global, 'requestAnimationFrame', {
+    configurable: true,
+    value: (callback: FrameRequestCallback) => callback(0),
+  });
+
+  try {
+    act(() => {
+      view = create(<Features {...props} reduceMotion />, {
+        createNodeMock: (element) => {
+          const hostElement = element as { type: unknown; props: { className?: unknown } };
+          if (
+            hostElement.type === 'div'
+            && String(hostElement.props.className).includes('hashpass-feature-viewport')
+          ) {
+            return {
+              scrollLeft: 60,
+              clientWidth: 300,
+              getBoundingClientRect: () => ({ left: 10 }),
+              scrollTo,
+            };
+          }
+          return {};
+        },
+      });
+    });
+
+    const card = view.root.findAllByType('FeatureFlipCard' as any)[2];
+    act(() => {
+      card.props.onFlipChange(true, {
+        getBoundingClientRect: () => ({ left: 120, width: 240 }),
+      });
+    });
+
+    expect(scrollTo).toHaveBeenCalledWith({ left: 140, behavior: 'auto' });
+    const viewport = view.root.findAllByType('div' as any).find(node =>
+      String(node.props.className).includes('hashpass-feature-viewport'),
+    );
+    expect(viewport?.props.className).toContain('has-reduced-motion');
+  } finally {
+    Object.defineProperty(global, 'requestAnimationFrame', {
+      configurable: true,
+      value: originalRaf,
+    });
+  }
+});
+
 it('keeps cards visible before a server-rendered viewport is measured', () => {
   mockWidth = 0;
   act(() => { view = create(<Features {...props} />); });

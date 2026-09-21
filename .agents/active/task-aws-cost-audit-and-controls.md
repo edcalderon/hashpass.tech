@@ -3,7 +3,7 @@
 **Status:** ACTIVE — high priority
 **Priority:** P0 (billing/credit risk)  
 **Created:** 2026-08-04
-**Last updated:** 2026-09-03
+**Last updated:** 2026-09-21
 
 > The actual build containment, CodeBuild/CodePipeline → GitHub Actions
 > migration, and recurring cost-monitoring workflow now live in the canonical
@@ -12,7 +12,20 @@
 > This document stays the billing/credit-risk record; the canonical task owns
 > migration execution and phase tracking.
 
-### Current reconciliation update — 2026-09-04
+### Current reconciliation update — 2026-09-21
+
+The production `hashpass` profile reconciles with the owner's new console
+signal: the $50 budget reports **$57.548 actual / $172.772 forecast**, excluding
+credits/refunds. CodeBuild (**$43.47**) and CodePipeline (**$5.496**) account for
+about 85% of the bill; there are no EC2 instances in the relevant regions.
+The prior GitHub migration never completed its trigger cutover, so paid AWS
+builds continued in parallel with successful free GitHub builds. The proven
+HashPass development AWS pipeline is now manual-only. Target-by-target migration
+and remaining production gates are recorded in the canonical containment task
+linked above. These are accrued costs, not a recoverable monthly allowance;
+future savings cannot undo this month's $7.548 overrun.
+
+### Historical reconciliation update — 2026-09-04
 
 Read-only checks with the `hashpass` production profile confirm that the new
 console signal is from this billing account, not the legacy `default` profile:

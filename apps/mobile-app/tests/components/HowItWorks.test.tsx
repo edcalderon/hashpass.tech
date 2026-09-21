@@ -54,11 +54,15 @@ it('keeps card descriptions hidden until its morphing info control is requested'
   act(() => { view.root.findAllByType('button')[0].props.onClick(); });
 
   expect(view.root.findAllByType('button')[0].props['aria-expanded']).toBe(true);
+  expect(view.root.findAllByType('button')[0].props['aria-label']).toBe('Collapse details');
+  expect(view.root.findAllByType('MorphIcon' as any)[0].props.icon).toBe('Minimize2');
   expect(view.root.findAllByType('button')[0].props.style).toMatchObject({ width: 44, height: 44 });
   expect(view.root.findAllByType('p').map(node => node.props.children)).toContain('Skip the line. Your pass is a live QR code that gets you into any event instantly — no printouts, no paperwork.');
 
   act(() => { view.root.findAllByType('button')[0].props.onClick(); });
   expect(view.root.findAllByType('button')[0].props['aria-expanded']).toBe(false);
+  expect(view.root.findAllByType('button')[0].props['aria-label']).toBe('Expand details');
+  expect(view.root.findAllByType('MorphIcon' as any)[0].props.icon).toBe('Maximize2');
   expect(view.root.findAllByType('article')[0].props.style.height).toBe(238);
 });
 

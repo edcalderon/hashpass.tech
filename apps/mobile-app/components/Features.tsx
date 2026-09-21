@@ -1,5 +1,5 @@
 import { uiTokens } from '@hashpass/ui/tokens';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Platform, Pressable, useWindowDimensions, TouchableOpacity } from 'react-native';
 import Animated, { useSharedValue } from 'react-native-reanimated';
 import { useTranslation } from '@/i18n/i18n';
@@ -120,6 +120,7 @@ interface FeaturesProps {
   feature2Style: Record<string, any>;
   feature3Style: Record<string, any>;
   isDark: boolean;
+  reduceMotion?: boolean;
 }
 
 export type SystemMetrics = {
@@ -171,6 +172,7 @@ const Features: React.FC<FeaturesProps> = ({
   feature2Style = {},
   feature3Style = {},
   isDark = false,
+  reduceMotion = false,
 }) => {
   const { width } = useWindowDimensions();
   const { t } = useTranslation('index');
@@ -207,6 +209,27 @@ const Features: React.FC<FeaturesProps> = ({
   const flipValues = [flipValue1, flipValue2, flipValue3, flipValue4, flipValue5];
   const carouselRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<{ x: number; scroll: number } | null>(null);
+  const [activeWebCardIndex, setActiveWebCardIndex] = useState<number | null>(null);
+  const handleWebFlipChange = useCallback((index: number, isFlipped: boolean, card: HTMLDivElement) => {
+    setActiveWebCardIndex(isFlipped ? index : null);
+    if (!isFlipped) return;
+
+    // The marquee otherwise keeps carrying a card toward an edge while its
+    // reverse face is open. Center the selected card before the reader takes
+    // in the detail and leave the track paused until it is closed.
+    requestAnimationFrame(() => {
+      const viewport = carouselRef.current;
+      if (!viewport) return;
+      const viewportBounds = viewport.getBoundingClientRect();
+      const cardBounds = card.getBoundingClientRect();
+      const targetLeft = viewport.scrollLeft + cardBounds.left - viewportBounds.left
+        - (viewport.clientWidth - cardBounds.width) / 2;
+      viewport.scrollTo({
+        left: Math.max(0, targetLeft),
+        behavior: reduceMotion ? 'auto' : 'smooth',
+      });
+    });
+  }, [reduceMotion]);
 
   const features = [
     {
@@ -270,7 +293,7 @@ const Features: React.FC<FeaturesProps> = ({
     return (
       <Animated.View style={[containerStyles?.featuresContainer, featuresAnimatedStyle]}>
         <View style={{ alignItems: 'center', marginBottom: 28 }}><LandingBadge>{t('featuresBadge', 'Key features')}</LandingBadge><Text style={{ color: isDark ? '#fff' : '#18181b', fontSize: 32, fontWeight: '800', marginTop: 16, textAlign: 'center' }}>{t('features.title', 'Everything your event needs')}</Text><Text style={{ color: isDark ? '#a1a1aa' : '#71717a', fontSize: 16, lineHeight: 24, marginTop: 8, textAlign: 'center', maxWidth: 640 }}>{t('features.subtitle', 'One private identity for entry, connections, passes and rewards.')}</Text></View>
-        <View nativeID="landing-feature-grid" style={[containerStyles?.featuresGrid, featureStyles.responsiveGrid, compactLayout && featureStyles.compactGrid]}><div ref={carouselRef} className="hashpass-feature-viewport" onWheel={(event) => { if (Math.abs(event.deltaY) > Math.abs(event.deltaX)) { event.preventDefault(); event.currentTarget.scrollLeft += event.deltaY; } }} onPointerDown={(event) => { dragRef.current = { x: event.clientX, scroll: event.currentTarget.scrollLeft }; event.currentTarget.classList.add('is-dragging'); event.currentTarget.setPointerCapture(event.pointerId); }} onPointerMove={(event) => { if (!dragRef.current) return; event.currentTarget.scrollLeft = dragRef.current.scroll - (event.clientX - dragRef.current.x); }} onPointerUp={(event) => { dragRef.current = null; event.currentTarget.classList.remove('is-dragging'); event.currentTarget.releasePointerCapture(event.pointerId); }} onPointerCancel={(event) => { dragRef.current = null; event.currentTarget.classList.remove('is-dragging'); }}><div className="hashpass-feature-track">{[...features, ...features].map((feature, index) => (
+        <View nativeID="landing-feature-grid" style={[containerStyles?.featuresGrid, featureStyles.responsiveGrid, compactLayout && featureStyles.compactGrid]}><div ref={carouselRef} className={`hashpass-feature-viewport${activeWebCardIndex !== null ? ' has-active-card' : ''}${reduceMotion ? ' has-reduced-motion' : ''}`} onWheel={(event) => { if (Math.abs(event.deltaY) > Math.abs(event.deltaX)) { event.preventDefault(); event.currentTarget.scrollLeft += event.deltaY; } }} onPointerDown={(event) => { dragRef.current = { x: event.clientX, scroll: event.currentTarget.scrollLeft }; event.currentTarget.classList.add('is-dragging'); event.currentTarget.setPointerCapture(event.pointerId); }} onPointerMove={(event) => { if (!dragRef.current) return; event.currentTarget.scrollLeft = dragRef.current.scroll - (event.clientX - dragRef.current.x); }} onPointerUp={(event) => { dragRef.current = null; event.currentTarget.classList.remove('is-dragging'); event.currentTarget.releasePointerCapture(event.pointerId); }} onPointerCancel={(event) => { dragRef.current = null; event.currentTarget.classList.remove('is-dragging'); }}><div className="hashpass-feature-track">{[...features, ...features].map((feature, index) => (
             <Animated.View key={`${feature.id}-${index}`} style={[featureStyles.webCardItem, { width: cardWidth }, [feature1Style, feature2Style, feature3Style][index % 3]]}>
               <FeatureFlipCard
                 title={feature.title}
@@ -284,10 +307,12 @@ const Features: React.FC<FeaturesProps> = ({
                 metric={feature.metric}
                 metricValue={feature.metricValue}
                 metricLabel={feature.metricLabel}
+                isFlipped={activeWebCardIndex === index}
+                onFlipChange={(isFlipped: boolean, card: HTMLDivElement) => handleWebFlipChange(index, isFlipped, card)}
               />
             </Animated.View>
           ))}</div></div></View>
-        <style>{`@keyframes hashpass-feature-marquee{to{transform:translateX(-50%)}}.hashpass-feature-viewport{overflow-x:auto;overflow-y:hidden;width:100%;scrollbar-width:none;cursor:grab;touch-action:pan-x}.hashpass-feature-viewport::-webkit-scrollbar{display:none}.hashpass-feature-viewport.is-dragging{cursor:grabbing}.hashpass-feature-track{display:flex;gap:16px;width:max-content;animation:hashpass-feature-marquee 34s linear infinite}.hashpass-feature-viewport:hover .hashpass-feature-track,.hashpass-feature-viewport.is-dragging .hashpass-feature-track{animation-play-state:paused}`}</style>
+        <style>{`@keyframes hashpass-feature-marquee{to{transform:translateX(-50%)}}.hashpass-feature-viewport{overflow-x:auto;overflow-y:hidden;width:100%;scrollbar-width:none;cursor:grab;touch-action:pan-x}.hashpass-feature-viewport::-webkit-scrollbar{display:none}.hashpass-feature-viewport.is-dragging{cursor:grabbing}.hashpass-feature-viewport.has-active-card{cursor:default;scroll-snap-type:x mandatory}.hashpass-feature-track{display:flex;gap:16px;width:max-content;animation:hashpass-feature-marquee 34s linear infinite}.hashpass-feature-track>*{scroll-snap-align:center}.hashpass-feature-viewport:hover .hashpass-feature-track,.hashpass-feature-viewport.is-dragging .hashpass-feature-track,.hashpass-feature-viewport.has-active-card .hashpass-feature-track{animation-play-state:paused}.hashpass-feature-viewport.has-reduced-motion .hashpass-feature-track{animation:none}@media (prefers-reduced-motion:reduce){.hashpass-feature-track{animation:none}}`}</style>
       </Animated.View>
     );
   }

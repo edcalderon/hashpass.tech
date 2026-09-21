@@ -374,8 +374,9 @@ const Newsletter = ({ mode }: Props) => {
                                     </div>
                                     {error && (
                                         <p className='mt-1.5 text-xs text-red-500 dark:text-red-400 flex items-center'>
-                                            <svg xmlns='http://www.w3.org/2000/svg' className='h-3.5 w-3.5 mr-1 shrink-0' viewBox='0 0 20 20' fill='currentColor'>
-                                                <path fillRule='evenodd' d='M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2z' clipRule='evenodd' />
+                                            <svg aria-hidden='true' className='h-3.5 w-3.5 mr-1 shrink-0' viewBox='0 0 20 20' fill='none' stroke='currentColor' strokeWidth='2'>
+                                                <circle cx='10' cy='10' r='8' />
+                                                <path strokeLinecap='round' d='M10 6v4m0 4h.01' />
                                             </svg>
                                             {error}
                                         </p>

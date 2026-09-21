@@ -18,6 +18,9 @@ export interface FeatureFlipCardProps {
   metric?: string;
   metricValue?: number;
   metricLabel?: string;
+  /** Lets the carousel hold a flipped card in view while its details are read. */
+  isFlipped?: boolean;
+  onFlipChange?: (isFlipped: boolean, card: HTMLDivElement) => void;
 }
 
 const iconMap = {
@@ -38,8 +41,10 @@ export default function FeatureFlipCard({
   metric,
   metricValue,
   metricLabel,
+  isFlipped: controlledIsFlipped,
+  onFlipChange,
 }: FeatureFlipCardProps) {
-  const [isFlipped, setIsFlipped] = useState(false);
+  const [uncontrolledIsFlipped, setUncontrolledIsFlipped] = useState(false);
   const router = useRouter();
   const [count, setCount] = useState<number | null>(null);
   useEffect(() => {
@@ -54,6 +59,14 @@ export default function FeatureFlipCard({
     return iconMap[icon as keyof typeof iconMap] || Code2;
   }, [icon]);
 
+  const isFlipped = controlledIsFlipped ?? uncontrolledIsFlipped;
+  const setFlipped = (nextIsFlipped: boolean, card: HTMLDivElement) => {
+    if (controlledIsFlipped === undefined) {
+      setUncontrolledIsFlipped(nextIsFlipped);
+    }
+    onFlipChange?.(nextIsFlipped, card);
+  };
+
   return (
     <div
       style={
@@ -64,16 +77,16 @@ export default function FeatureFlipCard({
         } as React.CSSProperties
       }
       className="group relative [perspective:2000px]"
-      onMouseEnter={() => setIsFlipped(true)}
-      onMouseLeave={() => setIsFlipped(false)}
-      onClick={() => setIsFlipped((value) => !value)}
+      onMouseEnter={(event) => setFlipped(true, event.currentTarget)}
+      onMouseLeave={(event) => setFlipped(false, event.currentTarget)}
+      onClick={(event) => setFlipped(!isFlipped, event.currentTarget)}
       role="button"
       tabIndex={0}
       onKeyDown={(event) => {
         if (event.target !== event.currentTarget) return;
         if (event.key === 'Enter' || event.key === ' ') {
           event.preventDefault();
-          setIsFlipped((value) => !value);
+          setFlipped(!isFlipped, event.currentTarget);
         }
       }}
       aria-label={title}
