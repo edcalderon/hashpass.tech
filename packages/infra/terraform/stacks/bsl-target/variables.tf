@@ -40,9 +40,9 @@ variable "dev_aws_pipeline_source_detect_changes" {
 }
 
 variable "prod_aws_pipeline_source_detect_changes" {
-  description = "Automatic BSL production AWS builds. Disable only after a verified production GitHub deployment."
+  description = "Automatic BSL production AWS builds. Disabled after verified GitHub deployment; manual recovery remains available."
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "artifact_bucket_name" {

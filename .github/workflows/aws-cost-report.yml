@@ -25,7 +25,7 @@ jobs:
     timeout-minutes: 5
     env:
       AWS_TARGET_ACCOUNT_ID: ${{ vars.AWS_COST_REPORT_ACCOUNT_ID }}
-      AWS_MANUAL_BUILD_PIPELINES: ${{ vars.AWS_MANUAL_BUILD_PIPELINES || 'hashpass-dev-site' }}
+      AWS_MANUAL_BUILD_PIPELINES: ${{ vars.AWS_MANUAL_BUILD_PIPELINES }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

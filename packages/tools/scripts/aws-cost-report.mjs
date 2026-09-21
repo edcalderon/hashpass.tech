@@ -47,8 +47,8 @@ try {
   for (const service of groups) console.log(`| ${service.name} | ${money(service.cost)} |`);
 
   let drift = false;
-  const pipelines = (process.env.AWS_MANUAL_BUILD_PIPELINES || 'hashpass-dev-site').split(',').filter(Boolean);
   const allowed = new Set(['hashpass-dev-site', 'hashpass-production-site', 'hashpass-cbweek2026-develop-site', 'bsl-hashpass-dev', 'bsl-hashpass-prod']);
+  const pipelines = (process.env.AWS_MANUAL_BUILD_PIPELINES || [...allowed].join(',')).split(',').filter(Boolean);
   console.log('\n### Migrated build trigger checks\n');
   for (const name of pipelines) {
     if (!allowed.has(name)) throw new Error('Unexpected pipeline in cost-control configuration.');

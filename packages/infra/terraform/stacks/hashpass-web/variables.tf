@@ -148,9 +148,9 @@ variable "dev_aws_pipeline_source_detect_changes" {
 }
 
 variable "prod_aws_pipeline_source_detect_changes" {
-  description = "Automatic production AWS builds. Disable only after a verified production GitHub deployment; manual recovery remains available."
+  description = "Automatic production AWS builds. Disabled after verified GitHub deployment; manual recovery remains available."
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "dev_route53_zone_name" {
