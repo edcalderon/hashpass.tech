@@ -197,3 +197,27 @@ jest.mock('react-native-reanimated', () => {
     FadeInUp: chainableEntranceExit(),
   };
 });
+
+// ---------------------------------------------------------------------------
+// Native fetch guard — mimics React Native's real fetch behavior in Jest.
+//
+// On web, fetch('/api/foo') resolves against document.location and works.
+// On React Native, the same call throws a synchronous TypeError because
+// there is no implicit base URL. Without this guard, a component that
+// accidentally uses a raw relative fetch() will pass tests on the mocked
+// web Platform and only crash on the real device.
+//
+// The correct cross-platform client is apiClient.request() from
+// lib/api-client.ts. If a test fails with this error, replace the raw
+// fetch() with apiClient.request() or mock it at the apiClient layer.
+// ---------------------------------------------------------------------------
+const _originalFetch = globalThis.fetch;
+globalThis.fetch = function _guardedFetch(input, init) {
+  if (typeof input === 'string' && input.startsWith('/') && !input.startsWith('//')) {
+    throw new TypeError(
+      `Invalid URL: "${input}" — raw relative fetch() crashes on React Native. ` +
+      `Use apiClient.request() from lib/api-client.ts instead.`,
+    );
+  }
+  return _originalFetch(input, init);
+};

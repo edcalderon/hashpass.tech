@@ -3,6 +3,8 @@
  * Sends security events and logs to Wazuh Manager
  */
 
+import { Platform } from 'react-native';
+
 interface WazuhEvent {
   timestamp: string;
   level: 'info' | 'warning' | 'error' | 'critical';
@@ -267,6 +269,10 @@ export async function logEventClient(event: {
   userId?: string;
   details?: Record<string, any>;
 }): Promise<void> {
+  // Expo Router API route — only served on web; no implicit base URL
+  // exists on native, and the route itself doesn't run there.
+  if (Platform.OS !== 'web') return;
+
   try {
     await fetch('/api/wazuh/log', {
       method: 'POST',
