@@ -41,6 +41,9 @@ jobs:
           pnpm check:design-system
           node --test packages/tools/test/design-system-guard.test.mjs
 
+      - name: Check native fetch safety
+        run: pnpm check:native-fetch
+
       - name: Run coverage tests
         run: pnpm --dir apps/mobile-app test:coverage
 

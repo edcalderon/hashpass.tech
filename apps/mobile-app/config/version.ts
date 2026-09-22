@@ -22,22 +22,39 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202609212137, // Updated to current timestamp
-  releaseDate: '2026-09-21',
+  buildNumber: 202609220532, // Updated to current timestamp
+  releaseDate: '2026-09-22',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
     // No new features
   ],
   bugfixes: [
-    // No bugfixes
+    'use branded HashpassLoader on remaining full-screen auth spinners',
+    'stop native startup crash from Features\' raw fetch(\'/api/status\')'
   ],
   breakingChanges: [],
-  notes: 'Version 1.9.48 release'
+  notes: 'use branded HashpassLoader on remaining full-screen auth spinners; stop native startup crash from Features\' raw fetch(\'/api/status\')'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.49': {
+    version: '1.9.49',
+    buildNumber: 202609220532,
+    releaseDate: '2026-09-22',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'use branded HashpassLoader on remaining full-screen auth spinners',
+      'stop native startup crash from Features\' raw fetch(\'/api/status\')'
+    ],
+    breakingChanges: [],
+    notes: 'use branded HashpassLoader on remaining full-screen auth spinners; stop native startup crash from Features\' raw fetch(\'/api/status\')'
+  },
   '1.9.48': {
     version: '1.9.48',
     buildNumber: 202609212137,

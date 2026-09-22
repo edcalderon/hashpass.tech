@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Platform, Pressable, useWindowDimensions, TouchableOpacity } from 'react-native';
 import Animated, { useSharedValue } from 'react-native-reanimated';
 import { useTranslation } from '@/i18n/i18n';
+import { apiClient } from '@/lib/api-client';
 import { useRouter } from 'expo-router';
 import { GlowingEffect } from './GlowingEffect';
 import FlipCard from './FlipCard';
@@ -167,16 +168,24 @@ const Features: React.FC<FeaturesProps> = ({
   useEffect(() => {
     let active = true;
 
-    fetch('/api/status')
-      .then((response) => response.ok ? response.json() : null)
-      .then((data) => {
-        if (!active || !data?.checks) return;
+    // A bare `fetch('/api/status')` resolves fine on web (relative to
+    // document origin) but throws a synchronous "Invalid URL" TypeError on
+    // native, since React Native's fetch has no implicit base to resolve
+    // a relative path against -- that throw escapes this effect and crashes
+    // the whole screen. apiClient already knows how to route this endpoint
+    // on both platforms (see app/status.tsx for the same pattern).
+    const loadMetrics = async () => {
+      try {
+        const result = await apiClient.request('status', { skipEventSegment: true, skipAuth: true });
+        if (!active || !result.success || !result.data?.checks) return;
 
-        setSystemMetrics((current) => mergeLiveSystemMetrics(current, data.checks));
-      })
-      .catch(() => {
+        setSystemMetrics((current) => mergeLiveSystemMetrics(current, result.data.checks));
+      } catch {
         // Keep the verified baseline (or the last successful live result).
-      });
+      }
+    };
+
+    loadMetrics();
 
     return () => { active = false; };
   }, []);
