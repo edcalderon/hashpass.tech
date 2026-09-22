@@ -5,8 +5,9 @@
 
 import { useEffect, useMemo } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { View, ActivityIndicator } from 'react-native';
+import { View } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
+import HashpassLoader from '../../components/HashpassLoader';
 
 export default function AuthIndexRedirect() {
   const router = useRouter();
@@ -43,7 +44,9 @@ export default function AuthIndexRedirect() {
 
   return (
     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background.default }}>
-      <ActivityIndicator size="large" color={colors.primary} />
+      {/* Same branded loader as the root app gate, instead of a plain
+          spinner, for this brief /auth -> /(shared)/auth redirect flash. */}
+      <HashpassLoader size={64} />
     </View>
   );
 }
