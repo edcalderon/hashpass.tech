@@ -1,3 +1,20 @@
+## [1.9.49](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.48...v1.9.49) (2026-09-22)
+
+
+### Bug Fixes
+
+* **mobile:** stop native startup crash from Features' raw fetch('/api/status') ([0bb39d0](https://github.com/hashpass-tech/hashpass.tech/commit/0bb39d0d46f9df44af24a3db25af8b5889f9d187))
+* **mobile:** use branded HashpassLoader on remaining full-screen auth spinners ([264d9d5](https://github.com/hashpass-tech/hashpass.tech/commit/264d9d5b2a8e1551c5856c1ed2c67bc31ed739a0))
+### Release Highlights
+- use branded HashpassLoader on remaining full-screen auth spinners; stop native startup crash from Features' raw fetch('/api/status')
+
+### Release scope
+- Compared with: `v1.9.48` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Release tooling
+
 ## [1.9.48](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.47...v1.9.48) (2026-09-21)
 ### Released
 - Version 1.9.48 release

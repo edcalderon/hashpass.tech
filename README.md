@@ -20,18 +20,21 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.48)
+## 📋 Latest Changes (v1.9.49)
 
-### Released
-- Version 1.9.48 release
+### Bug Fixes
+
+* **mobile:** stop native startup crash from Features' raw fetch('/api/status') ([0bb39d0](https://github.com/hashpass-tech/hashpass.tech/commit/0bb39d0d46f9df44af24a3db25af8b5889f9d187))
+* **mobile:** use branded HashpassLoader on remaining full-screen auth spinners ([264d9d5](https://github.com/hashpass-tech/hashpass.tech/commit/264d9d5b2a8e1551c5856c1ed2c67bc31ed739a0))
+### Release Highlights
+- use branded HashpassLoader on remaining full-screen auth spinners; stop native startup crash from Features' raw fetch('/api/status')
 
 ### Release scope
-- Compared with: `v1.9.47` (the previous global release tag)
+- Compared with: `v1.9.48` (the previous global release tag)
 
 ### Affected products & packages
 - Mobile app
-- Infrastructure
-- Documentation
+- Release tooling
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

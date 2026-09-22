@@ -53,7 +53,7 @@ function isRelativePath(value) {
 function scanFile(relativePath, source) {
   const errors = [];
   const lines = source.split('\n');
-  const WEB_GUARD_RE = /Platform\.OS\s*[!=]=\s*['"]web['"]/;
+  const WEB_GUARD_RE = /Platform\.OS\s*(?:!===|!==|!=|={2,3})\s*['"]web['"]/;
 
   for (const [lineIndex, line] of lines.entries()) {
     // Skip comment lines

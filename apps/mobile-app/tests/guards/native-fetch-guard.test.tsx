@@ -102,15 +102,18 @@ it('the Jest fetch guard allows absolute URLs', async () => {
 // ---------------------------------------------------------------------------
 // Test 3: The guard does NOT fire on protocol-relative URLs
 // ---------------------------------------------------------------------------
-it('the Jest fetch guard allows protocol-relative URLs', () => {
-  // //cdn.example.com is protocol-relative, not a native crash
-  // We just verify the guard doesn't throw on it.
+it('the Jest fetch guard allows protocol-relative URLs', async () => {
+  // //cdn.example.com is protocol-relative, not a native crash.
+  // Node's fetch rejects on this, but the guard must not intercept
+  // it synchronously — so we verify no TypeError from the guard.
+  let guardThrew = false;
   try {
-    fetch('//cdn.example.com/resource');
-  } catch {
-    // Network or other error is fine — not the guard.
+    await fetch('//cdn.example.com/resource');
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : '';
+    guardThrew = msg.includes('raw relative fetch');
   }
-  expect(true).toBe(true);
+  expect(guardThrew).toBe(false);
 });
 
 // ---------------------------------------------------------------------------
