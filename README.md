@@ -20,18 +20,18 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.47)
+## 📋 Latest Changes (v1.9.48)
 
 ### Released
-- Version 1.9.47 release
+- Version 1.9.48 release
 
 ### Release scope
-- Compared with: `v1.9.46` (the previous global release tag)
+- Compared with: `v1.9.47` (the previous global release tag)
 
 ### Affected products & packages
 - Mobile app
 - Infrastructure
-- Release tooling
+- Documentation
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
@@ -47,7 +47,7 @@ For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 - `main` now backs the production `hashpass.tech` web deployment while the archived Amplify helpers remain available under `archive/amplify/`.
 - `develop` is the integration branch for ongoing work across mobile, web, docs, and infra, and release promotion from `develop` to `main` now happens through a protected PR.
 - Code coverage is tracked with Codecov from the `apps/mobile-app` Jest coverage report. Release PRs currently require `@edcalderon` codeowner approval, a minimum 69% patch coverage gate (new/changed lines in the PR, not the whole project), and the GitHub security scans before merge. Each GitHub repository needs its own `CODECOV_TOKEN` secret unless Codecov has been configured to treat both repos as the same project.
-- `bsl.hashpass.tech` and `bsl-dev.hashpass.tech` stay on the SST/CodeBuild release path.
+- Core, CBWeek, and BSL sites build on GitHub-hosted runners and deploy to the existing AWS serving resources. All five AWS site pipelines are manual recovery paths only; see the [build-cost containment task](.agents/active/task-build-cost-containment-and-cicd-migration.md).
 - `hashpass.club` publishes through GitHub Pages from the `club-v*` release workflow.
 - `club.hashpass.tech` and `docs.hashpass.tech` are Route53 aliases for the canonical club site.
 
@@ -121,36 +121,30 @@ pnpm run dev:directus # run Directus Docker stack from apps/directus
 pnpm run dev:all      # run mobile app + club web app + docs + Directus (auto-picks free ports)
 pnpm run build:mobile # build the mobile app
 pnpm run build:club   # build the hashpass.club Next.js app
-pnpm run infra:deploy:dev  # deploy the BSL dev site to bsl-dev.hashpass.tech
-pnpm run infra:deploy:prod # deploy the BSL production site to bsl.hashpass.tech
-pnpm run infra:hashpass-web:plan   # preview the target-account hashpass.tech CodePipeline + EC2 worker stack
-pnpm run infra:hashpass-web:apply  # provision the target-account hashpass.tech replacement
-pnpm run infra:provision-connection # create the GitHub CodeConnections connection
-pnpm run infra:provision-pipelines # create the AWS CodePipeline/CodeBuild pipelines
-pnpm run deploy:web:s3       # build and sync the static site to S3/CloudFront
 pnpm run release:club:web # release the production club web app and publish the GitHub tag
 pnpm run release:club:web:patch # convenience patch release for the club web app
-pnpm run release:infra:patch # bump patch and release through the infra pipeline
-pnpm run release:infra:test # dry-run the infra release flow
 pnpm run build:all    # build the mobile app and the new club web app
 ```
 
 Historical Amplify configs and helper scripts now live under [`archive/amplify/`](archive/amplify/). They are deprecated reference material only and are not part of the active CLI surface.
 
-Set `TARGET_AWS_ACCOUNT_ID`, `AWS_ACCOUNT_ID`, or `EXPECTED_AWS_ACCOUNT_ID` in your local shell or GitHub repository variables when you want the infra helpers to verify the target AWS account without hardcoding it in the repo.
+Use the `hashpass` AWS CLI profile and verify its identity against the private `AWS_TARGET_ACCOUNT_ID` with a non-printing STS comparison before any AWS mutation, as documented in [CLAUDE.md](CLAUDE.md#target-aws-account-access). The repository-level `AWS_ACCOUNT_ID` variable belongs to legacy infrastructure and is not the production account; do not copy it into the current deploy workflows or change it without auditing its consumers.
 See [apps/docs/docs/infra/INFRA_NAMING_GUIDE.md](apps/docs/docs/infra/INFRA_NAMING_GUIDE.md) for the resource naming convention used by the new infra track.
 
-Deployment split:
-- `hashpass.tech` / `core` now uses the target-account web pipeline and source-account CloudFront front door. The old Amplify helpers are archived only.
-- The target-account `hashpass-web` Terraform stack provisions the replacement production and development pipelines plus the shared EC2 build worker in `packages/infra/terraform/stacks/hashpass-web`.
-- Routine worker control for that stack goes through `.github/workflows/hashpass-web-pipeline-monitor.yml`; copy the `github_actions_role_arn` output into the GitHub variable `AWS_WEB_PIPELINE_ROLE_ARN` and dispatch the workflow with `mode=monitor` or `mode=stop` instead of driving the target account worker directly with ad hoc AWS CLI calls.
-- The target DNS work also includes a dedicated `dev.hashpass.tech` hosted zone for the development surface.
+Deployment split (verified 2026-09-21):
+
+- `dev.hashpass.tech` uses [github-hosted-static-site-deploy.yml](.github/workflows/github-hosted-static-site-deploy.yml) on matching `develop` pushes.
+- CBWeek development and `bsl-dev.hashpass.tech` use [github-hosted-tenant-site-deploy.yml](.github/workflows/github-hosted-tenant-site-deploy.yml) on matching `develop` pushes; `hashpass.tech` and `bsl.hashpass.tech` use the same workflow on matching `main` pushes. Manual dispatch defaults to build-only; deployment requires `deploy=true` and the correct source branch for the selected target.
+- Builds run without AWS credentials on standard GitHub-hosted `ubuntu-latest` runners. Separate deploy jobs use scoped OIDC roles; the tenant workflow restricts each target through its GitHub deployment environment. Existing S3/CloudFront serving resources remain unchanged.
+- BSL uses `packages/tools/scripts/build-bsl-static-site.sh`, not an SST deployment. The old SST helpers are not the routine BSL release path.
+- All five AWS CodePipeline/CodeBuild paths are retained for explicit manual recovery only: source `DetectChanges=false`, with no V2 push triggers. Do not re-enable automatic AWS builds or run legacy provisioning commands as part of a normal release.
+- No EC2 instances were present in the production account in `us-east-1` or `us-east-2` at verification. Creating or restoring EC2 build capacity requires explicit owner approval; the retained Terraform/worker helpers are not routine setup steps.
 - `hashpass.club` is the new standalone Next.js app in `apps/web-app`. It publishes through GitHub Pages and the `club-v*` release tag flow.
 - `club.hashpass.tech` and `docs.hashpass.tech` are Route53 aliases that canonicalize to the GitHub Pages origin.
 - Configure the GitHub Pages custom domain in the repository settings before the first DNS cutover.
-- `bsl.hashpass.tech` / `bsl` deploys through the SST/CodeBuild pipeline. The live CodeBuild projects are `bsl-hashpass-dev-build` and `bsl-hashpass-prod-build`, and they use `packages/tools/buildspecs/infra-deploy.yml`.
 - `blockchainsummit.hashpass.lat` is historical only; the legacy Amplify helpers that referenced it are archived in `archive/amplify/`.
-- Use `pnpm run infra:deploy:dev` and `pnpm run infra:deploy:prod` for the BSL site, and `pnpm run infra:provision-pipelines` if you need to recreate the pipeline wiring.
+
+The [build-cost containment task](.agents/active/task-build-cost-containment-and-cicd-migration.md) records verified deployments, the USD 50/month budget, restored email alerts, and remaining release gates. Daily cost/trigger monitoring is prepared in [aws-cost-report.yml](.github/workflows/aws-cost-report.yml); its schedule becomes active only after the follow-up changes reach `main` through [PR #249](https://github.com/hashpass-tech/hashpass.tech/pull/249).
 
 - `pnpm run android:bundle` builds the Play Store artifact as an Android App Bundle (`.aab`) via the production EAS project.
 - `pnpm run android:publish` is the production-track EAS Submit path and is paused until the release freeze lifts.
@@ -160,22 +154,21 @@ Deployment split:
 - If you want one-step promotion, dispatch the Android workflow with `auto_promote_alpha=true` and keep `alpha_release_status=completed` so the alpha release publishes without manual draft review. Use `draft` only if Play Console rejects completed alpha releases because the app itself is still in draft.
 - `pnpm run android:bundle:dev` builds an internal preview bundle on the development EAS project.
 - `pnpm run android:publish:dev` submits the latest internal preview build through the development EAS project.
-- `pnpm run android:release:dev` now defaults to the self-hosted fastlane path and auto-submits an internal preview build in one step.
+- `pnpm run android:release:dev` defaults to the fastlane backend and auto-submits an internal preview build in one step.
 - `pnpm run android:release:eas` and `pnpm run android:release:eas:dev` are explicit fallback aliases for the managed Expo/EAS flow.
 - `pnpm run android:release:fastlane` and `pnpm run android:release:fastlane:dev` run a local Expo prebuild, build with fastlane, and upload to Google Play.
 - The generic release wrapper accepts `--env production|development`, `--backend eas|fastlane`, `--track production|alpha|beta|internal`, and `--release-status draft|completed|halted|inProgress` if you call `packages/tools/scripts/run-mobile-release.js` directly.
-- `pnpm run android:release` and `pnpm run android:release:dev` honor `MOBILE_RELEASE_BACKEND`, defaulting to fastlane so the same command can target the self-hosted runner without changing scripts.
-- The self-hosted GitHub Actions workflow `.github/workflows/mobile-android-release.yml` targets the `hashpass-mobile-release` runner label on AWS EC2, defaults to fastlane, and can be switched back to EAS through the workflow input.
+- `pnpm run android:release` and `pnpm run android:release:dev` honor `MOBILE_RELEASE_BACKEND`, defaulting to fastlane.
+- `.github/workflows/mobile-android-release.yml` uses `runner=github-hosted` as the current working default. Do not restore the unavailable `aws-ec2` runner path or its missing repository variables without explicit owner approval. Follow [CLAUDE.md](CLAUDE.md#mobile-android-release-workflow) for native-change gating, automatic tag dispatch, and manual retry rules.
 - Temporary release posture: keep Android publishing on the development profile for now. Use `pnpm run android:release:dev` for internal testing, then `pnpm run android:release:alpha` after the same tag succeeds internally. Leave production paused until the release freeze is lifted.
 - The workflow accepts `environment=development` with `track=internal` for the first pass and `track=alpha` after internal succeeds. If you want the workflow to auto-dispatch alpha after internal, set `auto_promote_alpha=true` and keep `alpha_release_status=completed`. Production dispatches are paused during the freeze.
 - The auto-dispatched alpha run uses the promote-only path (`promote_only=true`) so it reuses the internal Play release instead of uploading a second bundle.
 - The release promotion command `npm run release:promote` prepares the `develop -> main` PR, so do not direct-push release commits to `main`.
-- The target web pipeline deploys both the static site and the Expo Router API Lambda. It verifies `/api/config/versions` after each Lambda update so stale APIs fail the deploy instead of silently serving an old version.
+- The core GitHub-hosted deploy jobs publish both the static site and the Expo Router API Lambda. They verify `/api/config/versions` after each Lambda update so stale APIs fail the deploy instead of silently serving an old version.
 - Expo prebuild enables Android release minification, so Gradle emits a `mapping.txt` file for release builds.
 - The Fastlane release lane automatically uploads any Play deobfuscation files it finds in the Android build outputs (`mapping.txt` or `native-debug-symbols.zip`), so future crash traces stay readable in Play Console. This only applies to builds created after this change; the already-uploaded draft artifact will stay without deobfuscation until a new build is uploaded.
 - The full Play Console ladder and production publish checklist live in [apps/docs/docs/reference/release/PLAY_CONSOLE_RELEASE_FLOW.md](apps/docs/docs/reference/release/PLAY_CONSOLE_RELEASE_FLOW.md).
-- The reusable Terraform stack lives in `packages/infra/terraform/stacks/mobile-release-target` (the runner's real, active account), with convenience commands exposed as `pnpm run infra:mobile-release:plan` and `pnpm run infra:mobile-release:apply`. `stacks/mobile-release-legacy-source-account` is a deprecated, pre-migration stack — see its README before touching it.
-- If the AWS account has no default VPC, the mobile release stack now creates a small managed public VPC and subnet automatically so the runner can provision cleanly.
+- `packages/infra/terraform/stacks/mobile-release-target` is retained for owner-approved recovery only; applying it can create paid EC2/network resources. `stacks/mobile-release-legacy-source-account` is deprecated and must not be applied.
 - Fastlane expects `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`, `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, and `ANDROID_KEY_PASSWORD`; the workflow writes the JSON and keystore into `.runner-secrets/` before the release starts.
 - The repo-wide `packageManager` field is the source of truth for pnpm; legacy Amplify and infra buildspecs read it through `packages/tools/scripts/resolve-pnpm-version.js` so CI stays on the same pnpm version as local releases and EAS.
 - If you ever change pnpm again, update the `packageManager` field first and regenerate `pnpm-lock.yaml` with `corepack pnpm install` so the lockfile and release builders stay aligned.
@@ -188,7 +181,6 @@ Deployment split:
 - Both submit profiles point at `config/hashpass-eas.json` for the Google Play service account, so `eas submit` can authenticate on production and preview/internal tracks.
 - If the app already has a Play Store listing, run `eas build:version:set --platform android` once to seed the remote Android version counter before the first production build.
 - Fastlane requires Ruby, Bundler, the `fastlane` gem, a Java/Android SDK toolchain, and the Google Play service account JSON already used by EAS Submit.
-- After the stack is applied, seed the GitHub runner PAT secret with `gh auth token` or a repo-scoped PAT so the EC2 instance can register itself.
 - The fastlane path is built to clean up its generated `apps/mobile-app/android/` directory after each run so the repo can stay in managed Expo mode.
 
 1. **Clone the repo:**
@@ -249,9 +241,10 @@ Env vars (email via SES / Nodemailer):
 
 For a complete guide on our environment management strategy, see [apps/docs/docs/infra/env/ENVIRONMENT_STRATEGY.md](apps/docs/docs/infra/env/ENVIRONMENT_STRATEGY.md).
 
-For infrastructure deployment, use `pnpm run infra:deploy:dev` or
-`pnpm run infra:deploy:prod` through the documented release workflow. The
-archived Amplify helpers are reference material only.
+For routine site releases, use the GitHub-hosted deployment workflows above and
+the protected promotion flow in [CLAUDE.md](CLAUDE.md). Infrastructure changes
+require a reviewed, scoped plan; legacy SST, CodeBuild provisioning, and archived
+Amplify helpers are not the normal release path.
 
 ---
 

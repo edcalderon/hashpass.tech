@@ -1,12 +1,10 @@
 import { Redirect } from 'expo-router';
 import { useAuth } from '../hooks/useAuth';
 import LoadingScreen from '../components/LoadingScreen';
-import packageJson from '../package.json';
+import { getStartupStamp } from '../lib/build-stamp';
 import { useTranslation } from '../i18n/i18n';
 
-const startupStamp = process.env.EXPO_PUBLIC_RELEASE_COMMIT
-  ? `v${packageJson.version} · ${process.env.EXPO_PUBLIC_RELEASE_COMMIT}`
-  : `v${packageJson.version} · local build`;
+const startupStamp = getStartupStamp();
 
 const DASHBOARD_EXPLORE_ROUTER_PATH = '/(shared)/dashboard/explore';
 

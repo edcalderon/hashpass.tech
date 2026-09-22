@@ -1,6 +1,6 @@
 # Task: AWS cost audit and credit protection
 
-**Status:** ACTIVE — high priority
+**Status:** ACTIVE — build containment complete; monitoring and credit audit pending
 **Priority:** P0 (billing/credit risk)  
 **Created:** 2026-08-04
 **Last updated:** 2026-09-21
@@ -14,6 +14,9 @@
 
 ### Current reconciliation update — 2026-09-21
 
+Read-only AWS checkpoint: **2026-09-21 15:16 UTC**, using the `hashpass` profile
+after privately verifying the production account identity.
+
 The production `hashpass` profile reconciles with the owner's new console
 signal: the $50 budget reports **$57.548 actual / $172.772 forecast**, excluding
 credits/refunds. CodeBuild (**$43.47**) and CodePipeline (**$5.496**) account for
@@ -25,10 +28,46 @@ pipelines, are now manual-only after verified GitHub deployments. Production
 run **35615317532** passed; public responses match its artifacts and the
 production API reports **1.9.46**. The $50 budget's missing notification rules
 were restored using the existing billing recipient. A read-only hosted cost
-guard has also been verified; its daily schedule awaits protected promotion.
-Target-by-target migration and remaining monitoring gates are in the containment task
-linked above. These are accrued costs, not a recoverable monthly allowance;
-future savings cannot undo this month's $7.548 overrun.
+guard has also been verified. Latest hosted run
+[35617295918](https://github.com/hashpass-tech/hashpass.tech/actions/runs/35617295918)
+passed all five pipeline-state checks and exited red solely because actual or
+forecast spend exceeds $50. The live recheck returned zero active executions
+across those five pipelines and all five budget notification rules.
+
+Daily scheduling is **not yet active**: the v1.9.47 follow-up is in
+[PR #249](https://github.com/hashpass-tech/hashpass.tech/pull/249), still awaiting
+owner approval and remaining CI checks at this checkpoint. Gitleaks and CodeQL
+have passed. Production is on v1.9.46; do not describe the prepared v1.9.47 as
+released. Detailed target evidence and promotion steps are in the containment
+task linked above.
+
+These are accrued costs, not a recoverable monthly allowance; future savings
+cannot undo this month's $7.548 overrun. The $172.772 forecast is a lagging
+estimate, not the measured post-cutover run rate. No serving resource was
+deleted or stopped to reduce build costs.
+
+### Remaining billing work
+
+- [x] Reconcile September's owner-visible budget against the production account
+      and identify duplicate AWS build execution as the dominant cost driver.
+- [x] Restore actual 50/75/90/100% and forecast 100% notifications on the **$50**
+      budget using the existing billing recipient; configuration verified.
+- [ ] Confirm notification delivery and the anomaly-alert recipient/route.
+      Configuration checks are not evidence that a message was delivered.
+- [ ] Obtain the payer's Billing → Credits export to verify eligibility,
+      remaining balance, and expiry. Do not infer remaining credit from an
+      applied-credit line or treat the historical $200 credit as confirmed cash.
+- [ ] After PR #249 merges, verify the 13:20 UTC daily cost report and observe
+      subsequent billing ingestion. Track build spend/minutes separately from
+      unavoidable hosting spend; do not claim realized savings from a forecast
+      alone or raise the $50 ceiling to silence alerts.
+- [ ] Review retention and unused resources only with ownership, recovery, and
+      explicit change approval. No new EC2 capacity, benchmark builds, or
+      automatic AWS failover is authorized by the remaining audit.
+
+The older dated findings and pre-containment queues below are historical
+evidence. Their $80 budgets, EC2 benchmarks, and duplicate-build proposals do
+not override the current $50 ceiling, completed cutover, or no-EC2 rule.
 
 ### Historical reconciliation update — 2026-09-04
 
@@ -72,7 +111,7 @@ the immediate containment response. No resource was modified in this check.
 > without going through Phase 3's owner-approval process would work directly
 > against the purpose of this task.
 
-## Trigger and current signal
+## Historical trigger and signal — August 2026
 
 The AWS Cost Explorer dashboard reported:
 
@@ -140,7 +179,7 @@ The target account inventory currently shows:
 
 No resource was stopped, deleted, resized, or reconfigured during this audit.
 
-### Current reconciliation update — 2026-08-15
+### Historical reconciliation update — 2026-08-15
 
 Read-only follow-up work used the configured `hashpass` AWS profile (the
 HashPass billing account), not the unrelated `default` source account.
@@ -487,11 +526,11 @@ criteria below: any actual trigger-mechanism change to `hashpass-web`,
 stack with room to verify each one individually, the same way the
 2026-08-16 criptolatinfest fix was applied.
 
-### Current cost and resource reconciliation — 2026-08-24
+### Historical cost and resource reconciliation — 2026-08-24
 
 **Scope corrected:** all figures in this section use the configured
-`hashpass` profile, payer account `952191196420`. The shell's `default`
-profile is a separate source/shared account (`058264267235`) and must not be
+`hashpass` profile, payer account `[private account]`. The shell's `default`
+profile is a separate source/shared account (`[private account]`) and must not be
 used to assess HashPass spend. Cost Explorer data is estimated and covers
 2026-08-01 through 2026-08-24. To expose real consumption in this credited
 account, every Cost Explorer usage query filters to
@@ -623,7 +662,7 @@ After the facts are reconciled and owners approve the plan:
 7. Review NAT/data-transfer architecture and CloudFront/Amplify build
    frequency before changing routing or caching.
 
-### Immediate cost-improvement priorities
+### Historical pre-containment priorities — superseded by September 21 update
 
 1. **Reconcile the budget view first.** Export the $80 budget, forecast,
    account/linked-account scope, and credit ledger from the same payer account;
@@ -652,9 +691,11 @@ After the facts are reconciled and owners approve the plan:
    the stopped runner's EBS volume only after preserving required caches and a
    rollback image. Do not delete the current volume during this audit.
 
-### Safe optimization work queue
+### Historical optimization work queue — not current execution instructions
 
-These actions may begin without changing production infrastructure:
+This queue predates the GitHub cutover. The remaining billing work above is
+the current queue; do not resume these EC2 benchmarks or $80-budget proposals.
+Original proposed actions:
 
 - [ ] Verify the mobile runner's stop job runs on success, failure, and
       cancellation, and record any build minutes spent waiting for shutdown.

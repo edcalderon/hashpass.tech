@@ -379,64 +379,67 @@ cost budget is configured only in the `hashpass` account.
 
 ### How Each Domain Is Deployed
 
-Historical Amplify instructions now live under [`archive/amplify/README.md`](archive/amplify/README.md). The active deployment path is the target-account web pipeline plus the other systems below.
-
-On every push to `main`, **two independent auto-deploy systems** run in parallel:
+Verified 2026-09-21: site builds run on standard GitHub-hosted runners; the five
+AWS site pipelines are retained for manual recovery only. The cutover changed
+build execution, not the existing S3/CloudFront serving setup. Historical Amplify
+instructions remain in [`archive/amplify/README.md`](archive/amplify/README.md).
 
 | Domain | System | What triggers it |
 |--------|--------|-----------------|
-| `hashpass.tech` | Target-account web pipeline + source CloudFront front door | Push to `main` |
-| `api.hashpass.tech` | AWS Lambda `hashpass-prod-expo-router-api` (us-east-1) | Target web/API deployment flow |
-| `bsl.hashpass.tech` | Source-account `bsl-hashpass-prod` CodePipeline + EC2 worker, running `sst deploy` directly (not a separate "SST Console autodeploy") | Push to `main` |
-| `bsl-dev.hashpass.tech` | **Hybrid (2026-07-28):** unchanged source-account CloudFront + target-account `bsl-hashpass-dev` CodePipeline/EC2 worker running a plain static build + S3 sync, no SST | Push to `develop` |
-| Android | EC2 + Fastlane → Play Store | Auto-dispatched on `v*.*.*` tag push to `main` via `.github/workflows/mobile-release-on-tag.yml` (internal track); manual `gh workflow run` only for retries or non-default tracks (see workflow below) |
+| `hashpass.tech` | `github-hosted-tenant-site-deploy.yml` → existing static origin | Matching push to `main` |
+| `dev.hashpass.tech` | `github-hosted-static-site-deploy.yml` → existing static origin | Matching push to `develop` |
+| CBWeek development | `github-hosted-tenant-site-deploy.yml`, target `cbweek-development` | Matching push to `develop` |
+| `api.hashpass.tech`, `api-dev.hashpass.tech` | Expo Router API Lambdas in `us-east-1` | Corresponding core web deployment, with version-endpoint guard |
+| `bsl.hashpass.tech`, `bsl-dev.hashpass.tech` | `github-hosted-tenant-site-deploy.yml` → existing static origins and cross-account CloudFront delivery | Matching push to `main` / `develop`, respectively |
+| Android | GitHub-hosted Fastlane → Play Store; OTA for eligible JS-only changes | Existing native-change-gated tag flow; manual dispatch only as documented in Mobile Android Release Workflow above |
 
 **Critical facts:**
-- `api.hashpass.tech` Lambda is in **us-east-1**, deployed by the target web/API flow (NOT legacy Amplify)
-- The target web deploy helper packages the Expo Router API, updates the configured Lambda, and verifies `https://api.hashpass.tech/api/config/versions` or `https://api-dev.hashpass.tech/api/config/versions`; if the version endpoint is stale, the deploy must fail
-- `infra-deploy.yml` also runs `packages/tools/scripts/deploy-api-lambda.sh` after the SST static deploy attempt. This is the release safety net for patch releases: the workflow must switch to the target-account `AWS_WEB_PIPELINE_ROLE_ARN`, build a fresh Expo API bundle, update `hashpass-prod-expo-router-api` on `main` and `hashpass-dev-expo-router-api` on `develop`, then verify the public version endpoint before the release can be considered complete. The SST BSL static deploy is best-effort in this workflow; the API Lambda verification remains the hard release gate.
-- Because `deploy-api-lambda.sh` syncs Lambda environment variables before uploading code, the target-account `hashpass-web-github-actions` role must allow `lambda:UpdateFunctionConfiguration` on both Expo Router API Lambda functions, in addition to `lambda:UpdateFunctionCode`.
-- `bsl.hashpass.tech` (prod) is deployed by its own dedicated CodePipeline + EC2 worker, not `infra-deploy.yml` — see `apps/docs/docs/infra/DEPLOYMENT_MAP.md`'s BSL section for the full current split between prod (cutover in progress) and dev (hybrid, no SST).
-- `infra-deploy.yml` auto-triggers on push to `main`/`develop` when infra or API paths change (Route53 + CloudFront permissions added to IAM role in v1.8.92)
 
-### A "slow" BSL/web pipeline build is usually a hang or a queue, not a slow build
+- Builds have no AWS credentials; separate deploy jobs assume scoped OIDC roles. Tenant targets have branch-restricted GitHub environments. Manual workflow dispatch defaults to build-only and requires `deploy=true` to publish.
+- BSL uses `packages/tools/scripts/build-bsl-static-site.sh`, not SST. Its existing cross-account CloudFront front door is unchanged; the new BSL deploy roles only update their static origins.
+- The core deploy helper packages the Expo Router API, updates the configured Lambda, and verifies `https://api.hashpass.tech/api/config/versions` or `https://api-dev.hashpass.tech/api/config/versions`. A stale endpoint fails the deploy.
+- `hashpass-dev-site`, `hashpass-cbweek2026-develop-site`, `bsl-hashpass-dev`, `hashpass-production-site`, and `bsl-hashpass-prod` have no V2 triggers and explicitly set source `DetectChanges=false`. Their CodeBuild projects remain available for owner-approved recovery, not normal pushes.
+- **Separate legacy workflow still active:** `infra-deploy.yml` retains matching `main`/`develop` push triggers and manual dispatch. It attempts SST deployment and then uses `AWS_WEB_PIPELINE_ROLE_ARN` to run `deploy-api-lambda.sh`, including Lambda configuration sync and version verification. It is not the primary site build path, and the CodePipeline cutover did not disable it. Audit its remaining infrastructure/API responsibilities before changing or retiring it; do not copy its broader configuration-update permissions into the new scoped site roles.
+- The legacy workflow's repository-level `AWS_ACCOUNT_ID` differs from production. Use the `hashpass` profile and a non-printing comparison with private `AWS_TARGET_ACCOUNT_ID` before production mutations; `default` is not a production fallback.
+- The [canonical build-cost task](.agents/active/task-build-cost-containment-and-cicd-migration.md) records deployment evidence and recovery safeguards. Budget email alerts are live; the daily cost/trigger guard schedule awaits [PR #249](https://github.com/hashpass-tech/hashpass.tech/pull/249) reaching `main`.
 
-The EC2 pipeline workers (`modules/aws_pipeline_ec2_worker`, used by both `bsl-target` and
-`hashpass-web`) process jobs **one at a time**, and **a cancelled CodePipeline execution does not stop
-the worker's build process** — the control plane marks it `Cancelled` but nothing signals the worker, so
-the orphan keeps running and blocks every subsequent job indefinitely. Confirmed 2026-07-29: a
-`terraform apply` against a pipeline mid-execution left an orphaned `sst deploy` hung forever on an ACM
-DNS validation, blocking a real rebuild for 20+ minutes.
+### Historical EC2 worker incidents — not the current build path
 
-**The tell is CPU, not elapsed time**: a genuine build pegs the worker (~90%+); a hang or a queued job
-sits near-idle (~0.3%) while still reporting `InProgress`. Check that first:
-
-```bash
-aws cloudwatch get-metric-statistics --namespace AWS/EC2 --metric-name CPUUtilization \
-  --dimensions Name=InstanceId,Value=<worker-id> --start-time <t> --end-time <t> \
-  --period 300 --statistics Average --profile hashpass
-# then, if idle:
-aws ssm send-command --instance-ids <worker-id> --document-name AWS-RunShellScript \
-  --parameters 'commands=["ps -eo pid,etimes,pcpu,args | grep -v grep | head -20","sudo journalctl -u <name-prefix>-build-runner.service -n 40 --no-pager"]' \
-  --profile hashpass
-```
-
-Two other things worth knowing: **don't `terraform apply` a pipeline while it has a running execution**
-(that's what creates the orphan), and `instance_count = 1` means dev and prod **serialize** — several
-`InProgress` executions queueing behind one worker inflates wall-clock time well past the ~10min real
-build. A `build_timeout_seconds` guard now bounds this automatically, but `user_data` only runs at boot,
-so it takes effect after an instance replacement. Full writeup: the "EC2 pipeline worker: operational
-gotchas" section of `.agents/done/task-aws-account-migration.md`.
+No EC2 instances were present in the production account in `us-east-1` or
+`us-east-2` at the September 21 verification. Do not provision or restore workers
+without explicit owner approval. The July 29 incident, where cancelling a
+CodePipeline execution left an orphaned worker process blocking subsequent jobs,
+is historical evidence, not a reason to revive the EC2 path. Its diagnostic and
+recovery details remain in the "EC2 pipeline worker: operational gotchas" section
+of `.agents/done/task-aws-account-migration.md`. Never apply infrastructure changes
+over an active deployment without a separately reviewed plan.
 
 ### Checking Deployment Status
 
-Historical Amplify build history is archived in `archive/amplify/README.md`. For the active stack, check the target web pipeline and BSL's own CodePipelines (`bsl-hashpass-prod` on `bsl.hashpass.tech`'s account, `bsl-hashpass-dev` on the target account) — see `apps/docs/docs/infra/DEPLOYMENT_MAP.md`.
+Check the GitHub-hosted workflow runs, then the public site and relevant API
+version endpoint. A retained AWS pipeline's old execution is not the current
+deployment status.
+
+```bash
+gh run list --repo hashpass-tech/hashpass.tech --workflow github-hosted-static-site-deploy.yml --limit 5
+gh run list --repo hashpass-tech/hashpass.tech --workflow github-hosted-tenant-site-deploy.yml --limit 5
+gh run list --repo hashpass-tech/hashpass.tech --workflow infra-deploy.yml --limit 5
+gh run view <RUN_ID> --repo hashpass-tech/hashpass.tech
+```
+
+See [DEPLOYMENT_MAP.md](apps/docs/docs/infra/DEPLOYMENT_MAP.md) for domain routing
+and the canonical task for budget/trigger-guard results. The cost guard can be red
+because the month is already over budget even when all trigger checks pass.
 
 ### Key Files
+
+- `.github/workflows/github-hosted-static-site-deploy.yml` — primary core development build/deploy
+- `.github/workflows/github-hosted-tenant-site-deploy.yml` — primary CBWeek, BSL, and core production build/deploy
+- `.github/workflows/aws-cost-report.yml` — read-only budget and manual-trigger guard; schedule pending promotion
 - `.github/workflows/mobile-android-release.yml` — Android release CI
-- `.github/workflows/infra-deploy.yml` — SST deploy (manual-only)
+- `.github/workflows/infra-deploy.yml` — separate active legacy SST/API workflow; push-triggered and manual
 - `archive/amplify/config/amplify.yml` — archived Amplify build config (historical only)
-- `packages/infra/sst.config.ts` — SST config with autodeploy settings
+- `packages/infra/sst.config.ts` — legacy SST configuration, not the primary site build path
 - `packages/infra/lambda/index.js` — Lambda handler for API routes
 - `apps/mobile-app/package.json` — mobile version source of truth
 - `apps/mobile-app/app.json` — Expo config

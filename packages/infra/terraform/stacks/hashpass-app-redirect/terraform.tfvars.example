@@ -1,0 +1,10 @@
+# Copy to terraform.tfvars to apply. Defaults in variables.tf already match
+# the intended real config (hashpass.app + www.hashpass.app -> hashpass.tech),
+# so an empty terraform.tfvars is enough; this file exists to document the
+# knobs.
+
+# aws_region     = "us-east-2"
+# app_zone_name  = "hashpass.app"
+# redirect_domain_names = ["hashpass.app", "www.hashpass.app"]
+# redirect_target        = "https://hashpass.tech"
+# tags = {}
