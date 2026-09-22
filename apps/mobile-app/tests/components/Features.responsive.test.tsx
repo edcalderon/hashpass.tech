@@ -53,6 +53,12 @@ jest.mock('expo-router', () => ({ useRouter: () => ({ push: jest.fn() }) }));
 jest.mock('../../i18n/i18n', () => ({
   useTranslation: () => ({ t: (key: string, fallback?: string) => fallback || key }),
 }));
+// Features renders the verified baseline metrics synchronously and only
+// patches them in from a live /api/status call -- these tests exercise
+// layout/interaction, not the network path, so a resolved no-op is enough.
+jest.mock('@/lib/api-client', () => ({
+  apiClient: { request: () => Promise.resolve({ success: false, error: 'not mocked', data: null }) },
+}));
 jest.mock('../../components/FeatureFlipCard', () => 'FeatureFlipCard');
 jest.mock('../../components/FeatureIcon', () => 'FeatureIcon');
 jest.mock('../../components/LandingBadge', () => 'LandingBadge');
