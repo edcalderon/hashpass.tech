@@ -1092,6 +1092,10 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean, _screenWidth
       width: "100%",
       height: isMobile ? 154 : 180,
     },
+    // campaign* styles below render text/badges directly over real organizer
+    // campaign photography, not app chrome — colors/radii are fixed per DESIGN.md's
+    // "event artwork" exception (does not redefine app controls) rather than
+    // sourced from the theme palette. See packages/ui/design-debt.json.
     campaignLogoCompact: {
       width: isMobile ? 180 : 216,
       height: isMobile ? 88 : 106,

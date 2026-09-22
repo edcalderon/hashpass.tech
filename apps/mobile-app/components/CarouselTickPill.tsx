@@ -76,7 +76,13 @@ function TickMark({
     >
       <View style={styles.track}>
         {/* Inactive dot */}
-        <Animated.View style={[styles.inactive, inactiveStyle]} />
+        <Animated.View
+          style={[
+            styles.inactive,
+            { backgroundColor: isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.35)' },
+            inactiveStyle,
+          ]}
+        />
         {/* Active tick bar */}
         <Animated.View style={[styles.activeTick, activeTickStyle]} />
         {/* Progress fill overlay */}
@@ -120,7 +126,12 @@ export default function CarouselTickPill({
           <Play size={12} color={isDark ? '#FFFFFF' : '#000000'} fill={isDark ? '#FFFFFF' : '#000000'} />
         )}
       </TouchableOpacity>
-      <View style={styles.divider} />
+      <View
+        style={[
+          styles.divider,
+          { backgroundColor: isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)' },
+        ]}
+      />
       {ticks.map((i) => (
         <TickMark
           key={i}
@@ -164,7 +175,7 @@ const styles = StyleSheet.create({
   divider: {
     width: 1,
     height: 12,
-    backgroundColor: 'rgba(128,128,128,0.3)',
+    // Color is theme-derived inline (see usage) rather than a fixed literal here.
   },
   hit: {
     padding: 8,
@@ -183,7 +194,7 @@ const styles = StyleSheet.create({
   inactive: {
     height: TICK_H,
     borderRadius: TICK_H / 2,
-    backgroundColor: 'rgba(128,128,128,0.35)',
+    // Color is theme-derived inline (see usage) rather than a fixed literal here.
   },
   activeTick: {
     position: 'absolute',
