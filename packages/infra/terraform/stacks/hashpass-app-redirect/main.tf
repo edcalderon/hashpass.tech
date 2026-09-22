@@ -16,6 +16,7 @@ data "aws_route53_zone" "app" {
 module "app_redirect" {
   source = "../../modules/aws_domain_redirect"
   providers = {
+    aws      = aws
     aws.use1 = aws.use1
   }
 

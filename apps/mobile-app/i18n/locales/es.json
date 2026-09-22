@@ -23,6 +23,10 @@
     "capError": "Verificación de seguridad fallida. Reintenta.",
     "capRetry": "Reintentar"
   },
+  "landingCarousel": {
+    "memberOf": "Miembro de",
+    "supportedBy": "Apoyan"
+  },
   "wallet": {
     "enrollment": {
       "readOnly": "SOLO LECTURA",

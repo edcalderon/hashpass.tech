@@ -23,6 +23,10 @@
     "capError": "Security check failed. Please retry.",
     "capRetry": "Retry"
   },
+  "landingCarousel": {
+    "memberOf": "Member of",
+    "supportedBy": "Supported by"
+  },
   "wallet": {
     "enrollment": {
       "readOnly": "READ ONLY",
