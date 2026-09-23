@@ -1,3 +1,13 @@
+## [1.9.50](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.49...v1.9.50) (2026-09-23)
+### Released
+- fit landing carousel on phones
+
+### Release scope
+- Compared with: `v1.9.49` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+
 ## [1.9.49](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.48...v1.9.49) (2026-09-22)
 
 
