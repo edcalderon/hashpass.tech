@@ -285,7 +285,10 @@ export default function QuickSettingsPanel({
         <SectionLabel label={t('settings.language') || 'Language'} colors={colors} />
         {currentLanguage ? (
           <TouchableOpacity
-            style={panelStyles.languageSummary}
+            style={[
+              panelStyles.languageSummary,
+              { borderColor: isDark ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.1)' },
+            ]}
             onPress={toggleLanguageOptions}
             accessibilityRole="button"
             accessibilityState={{ expanded: languageExpanded }}
@@ -546,7 +549,6 @@ const panelStyles = StyleSheet.create({
     paddingHorizontal: 8,
     borderRadius: uiTokens.radius.input,
     borderWidth: 1,
-    borderColor: 'rgba(127,127,127,0.18)',
   },
   languageOptions: {
     overflow: 'hidden',
