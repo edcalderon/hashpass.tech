@@ -16,7 +16,7 @@ export const PWA_DRAG_SAFE_MARGIN = 12;
 // alone: mobile browsers' own bottom toolbar/gesture-nav chrome eats into
 // that space, and 12px wasn't enough to keep the button from visually
 // overlapping it.
-export const PWA_DRAG_BOTTOM_SAFE_MARGIN = 40;
+export const PWA_DRAG_BOTTOM_SAFE_MARGIN = 48;
 export const PWA_DRAG_START_THRESHOLD = 5;
 
 export type PwaDockPosition = (typeof PWA_DOCK_POSITIONS)[number];
@@ -31,10 +31,16 @@ export const getPwaDragViewport = (): PwaDragViewport => {
     return FALLBACK_VIEWPORT;
   }
 
-  const documentElement = typeof document !== 'undefined' ? document.documentElement : undefined;
+  // The layout viewport can remain taller than the visible viewport while a
+  // mobile browser's address/action bar is expanded. Prefer visualViewport
+  // so a fixed PWA control is clamped above that browser chrome instead of
+  // being rendered underneath it.
+  const visualViewport = window.visualViewport;
+  const width = visualViewport?.width ?? window.innerWidth;
+  const height = visualViewport?.height ?? window.innerHeight;
   return {
-    width: Math.max(documentElement?.clientWidth ?? 0, window.innerWidth ?? 0, FALLBACK_VIEWPORT.width),
-    height: Math.max(documentElement?.clientHeight ?? 0, window.innerHeight ?? 0, FALLBACK_VIEWPORT.height),
+    width: width > 0 ? width : FALLBACK_VIEWPORT.width,
+    height: height > 0 ? height : FALLBACK_VIEWPORT.height,
   };
 };
 

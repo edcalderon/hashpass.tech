@@ -2,6 +2,7 @@
 
 import {
   clampPwaDragPosition,
+  getPwaDragViewport,
   getPwaDockPositionCoordinates,
   PWA_DOCK_POSITIONS,
   PWA_DRAG_BOTTOM_SAFE_MARGIN,
@@ -39,6 +40,19 @@ describe('PWA drag positioning', () => {
       configurable: true,
     });
     window.localStorage.clear();
+    Object.defineProperty(window, 'innerWidth', { value: 390, configurable: true });
+    Object.defineProperty(window, 'innerHeight', { value: 800, configurable: true });
+    Object.defineProperty(window, 'visualViewport', { value: undefined, configurable: true });
+  });
+
+  it('uses the visible visual viewport instead of the taller layout viewport', () => {
+    Object.defineProperty(window, 'innerHeight', { value: 844, configurable: true });
+    Object.defineProperty(window, 'visualViewport', {
+      value: { width: 390, height: 690 },
+      configurable: true,
+    });
+
+    expect(getPwaDragViewport()).toEqual({ width: 390, height: 690 });
   });
 
   it('clamps the floating button inside the viewport', () => {

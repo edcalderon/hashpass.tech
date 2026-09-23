@@ -15,15 +15,10 @@ export const truncateBuildIdentifier = (value: string, headChars = 4, tailChars 
   return `${value.slice(0, headChars)}...${value.slice(-tailChars)}`;
 };
 
-const releaseCommit = process.env.EXPO_PUBLIC_RELEASE_COMMIT;
-
 /**
- * `v1.9.47 · a1b2...9f3d` (or `local build` outside CI). Single source for
- * the startup build stamp shown under the loading message on app boot and
- * on the `/` route -- was previously duplicated (and untruncated) in
- * app/_layout.tsx and app/index.tsx.
+ * The startup label intentionally exposes only the release version. Commit
+ * hashes are useful diagnostics in the version details sheet, but they make
+ * the first-run loader look like an internal build and are noisy on narrow
+ * mobile screens.
  */
-export const getStartupStamp = (): string =>
-  releaseCommit
-    ? `v${packageJson.version} · ${truncateBuildIdentifier(releaseCommit)}`
-    : `v${packageJson.version} · local build`;
+export const getStartupStamp = (): string => `v${packageJson.version}`;
