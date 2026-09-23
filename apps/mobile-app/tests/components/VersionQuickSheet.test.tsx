@@ -34,6 +34,11 @@ jest.mock('react-native-css-interop/src/runtime/native/appearance-observables', 
 }), { virtual: true });
 jest.mock('react-native-css-interop', () => ({ createInteropElement: require('react').createElement }), { virtual: true });
 
+jest.mock('expo-application', () => ({
+  __esModule: true,
+  nativeApplicationVersion: '1.8.313',
+}), { virtual: true });
+
 jest.mock('../../hooks/useTheme', () => ({
   useTheme: () => ({
     isDark: false,
