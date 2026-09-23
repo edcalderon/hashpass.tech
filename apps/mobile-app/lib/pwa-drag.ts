@@ -90,7 +90,7 @@ export const getPwaDockPositionCoordinates = (
       top: viewport.offsetTop + PWA_DRAG_SAFE_MARGIN,
     },
     'bottom-left': {
-      left: PWA_DRAG_SAFE_MARGIN,
+      left: viewport.offsetLeft + PWA_DRAG_SAFE_MARGIN,
       top: bottomTop,
     },
     'bottom-right': {

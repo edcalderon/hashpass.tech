@@ -319,6 +319,12 @@ describe('QuickSettingsPanel', () => {
     await act(async () => {
       root.findByProps({ accessibilityLabel: 'Language: english' }).props.onPress();
     });
+    await act(async () => {
+      root.findByProps({ accessibilityLabel: 'Language: english' }).props.onPress();
+    });
+    await act(async () => {
+      root.findByProps({ accessibilityLabel: 'Language: english' }).props.onPress();
+    });
 
     const pressLabel = async (label: string) => {
       const textNode = root.findAllByType('Text').find((node: any) => node.children.join('') === label);

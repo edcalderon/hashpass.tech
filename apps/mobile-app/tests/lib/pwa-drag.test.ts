@@ -62,6 +62,7 @@ describe('PWA drag positioning', () => {
       left: 30,
       top: 44,
     });
+    expect(getPwaDockPositionCoordinates('bottom-left', viewport).left).toBe(30);
     expect(getPwaDockPositionCoordinates('bottom-right', viewport)).toEqual({
       left: 256,
       top: 154,
