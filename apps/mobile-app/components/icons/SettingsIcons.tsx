@@ -159,6 +159,14 @@ export function CheckIcon({ size = 24, color = 'currentColor', strokeWidth = 2.5
   );
 }
 
+export function ChevronDownIcon({ size = 24, color = 'currentColor', strokeWidth = 2 }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path d="m6 9 6 6 6-6" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
 // ─── Flag emoji helper ────────────────────────────────────────────────────────
 // Flag emojis render natively on iOS, Android, and all modern browsers via
 // Unicode Regional Indicator pairs — no library or font needed.

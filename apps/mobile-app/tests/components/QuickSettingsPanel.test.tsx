@@ -260,6 +260,7 @@ const loadQuickSettingsPanel = (options: MockRenderOptions = {}) => {
       SliderIcon: 'SliderIcon',
       PauseIcon: 'PauseIcon',
       CheckIcon: 'CheckIcon',
+      ChevronDownIcon: 'ChevronDownIcon',
       getFlagEmoji: (code: string) => (code.toLowerCase() === 'pt' ? '🇧🇷' : '🇺🇸'),
     }));
 
@@ -314,6 +315,10 @@ describe('QuickSettingsPanel', () => {
 
     expect(mockImpactAsync).toHaveBeenCalledWith('Light');
     expect(root.findAllByType('Text').some((node: any) => node.children.join('') === 'Appearance')).toBe(true);
+    expect(root.findAllByProps({ accessibilityLabel: 'Language: english' })).toHaveLength(1);
+    await act(async () => {
+      root.findByProps({ accessibilityLabel: 'Language: english' }).props.onPress();
+    });
 
     const pressLabel = async (label: string) => {
       const textNode = root.findAllByType('Text').find((node: any) => node.children.join('') === label);
@@ -389,6 +394,7 @@ describe('QuickSettingsPanel', () => {
     await act(async () => root.findAllByType('Pressable').find((node: any) => node.props.accessibilityLabel === 'Quick Settings').props.onPress());
     expect(root.findAllByType('Modal')).toHaveLength(1);
     expect(root.findAllByProps({ accessibilityLabel: 'Sign in' })).toHaveLength(0);
+    await act(async () => root.findByProps({ accessibilityLabel: 'Language: english' }).props.onPress());
     await act(async () => root.findByProps({ accessibilityLabel: 'Dark' }).props.onPress());
     await act(async () => root.findByProps({ accessibilityLabel: 'portuguese' }).props.onPress());
     expect(mockSetTheme).toHaveBeenCalledWith('dark');
