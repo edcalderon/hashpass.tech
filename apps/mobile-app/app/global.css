@@ -78,6 +78,10 @@
   width: 70px !important;
   height: 70px !important;
   z-index: 1000 !important;
+  /* The JS dock margin protects browser chrome; this extra translation covers
+     iOS standalone/PWA gesture areas exposed through env(). */
+  --hp-pwa-safe-bottom-extra: max(0px, calc(env(safe-area-inset-bottom) - 48px));
+  transform: translateY(calc(-1 * var(--hp-pwa-safe-bottom-extra)));
   touch-action: manipulation;
   cursor: default;
   isolation: isolate;
