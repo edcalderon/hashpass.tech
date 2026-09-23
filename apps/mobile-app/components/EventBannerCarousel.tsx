@@ -37,9 +37,8 @@ import {
 import SafeLinearGradient from "./SafeLinearGradient";
 import CarouselTickPill from "./CarouselTickPill";
 
-// Apple-style peeking-card carousel constants.
-// Cards are wider than phone-size so event banners and logos have proper
-// breathing room. On wide screens the card grows and side padding is capped.
+// Wide-web peeking-card carousel constants. Native uses the paging layout
+// below so a phone never has to fit a desktop-width card.
 const BASE_CARD_WIDTH = 480;
 const CARD_GAP = 16;
 const CARD_BORDER_RADIUS = 20;
@@ -357,11 +356,12 @@ export default function EventBannerCarousel({
   ];
 
   const N = realSlides.length; // logical count
-  // Tenant-specific pages (selectedEvent set) or slides with too few items
-  // don't benefit from the peeking-card layout — fall back to the original
-  // full-width paging slider to avoid cutting-line and empty-space issues.
+  // Peeking cards are a wide-web treatment. On native they force the 480px
+  // minimum card into compact phone windows, clipping event information and
+  // detaching the controls from the visible slide. Native keeps every slide
+  // within its page width instead.
   const isSingleSlide = N <= 1;
-  const usePeekingCarousel = !selectedEvent && N >= 3;
+  const usePeekingCarousel = Platform.OS === "web" && !selectedEvent && N >= 3;
   const infiniteSlides = useMemo(() => withInfiniteClones(realSlides), [realSlides]);
   const CLONE_OFFSET = 1; // physical index 0 = clone of last, index 1 = first real
 
@@ -450,6 +450,10 @@ export default function EventBannerCarousel({
   const scrollToLogical = useCallback((logIdx: number) => {
     scrollToPhysical(logIdx + CLONE_OFFSET);
   }, [scrollToPhysical]);
+
+  const scrollToFallbackSlide = useCallback((index: number) => {
+    scrollViewRef.current?.scrollTo({ x: index * screenWidth, animated: true });
+  }, [screenWidth]);
 
   const handleEventPress = (event: EventInfo) => {
     if (onEventPress) onEventPress(event);
@@ -934,7 +938,7 @@ export default function EventBannerCarousel({
                       style={[styles.dot, index === currentIndex && styles.dotActive]}
                       onPress={() => {
                         setCurrentIndex(index);
-                        scrollToLogical(index);
+                        scrollToFallbackSlide(index);
                       }}
                       onPressIn={handleCarouselPressIn}
                       onPressOut={handleCarouselPressOut}

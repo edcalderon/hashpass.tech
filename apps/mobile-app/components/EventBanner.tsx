@@ -509,6 +509,7 @@ const getStyles = (
       alignItems: "center",
       justifyContent: "center",
       flexWrap: "wrap",
+      width: "100%",
     },
     eventShortName: {
       color: "#FFFFFF",
@@ -579,6 +580,7 @@ const getStyles = (
     mainInfo: {
       alignItems: "center",
       marginBottom: 16,
+      width: "100%",
     },
     eventTitle: {
       fontSize: 28,
@@ -586,6 +588,7 @@ const getStyles = (
       color: "#FFFFFF",
       marginBottom: 4,
       textAlign: "center",
+      flexShrink: 1,
     },
     logoContainer: {
       alignItems: "center",
