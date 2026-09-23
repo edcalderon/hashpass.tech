@@ -64,6 +64,18 @@ it('shows real media and advances the showcase manually', async () => {
   press('Explore event');
   expect(mockSetParams).toHaveBeenCalledWith({ eventId: 'two' });
 });
+it('keeps remote event films out of the native public explorer', async () => {
+  mockEvents[1].bannerSlides = [
+    {
+      id: 'event-film',
+      media: { type: 'video', url: 'https://cdn.example/event-film.mp4' },
+      title: 'Colombia conference',
+    },
+  ];
+  await act(async () => { view = create(<EventsScreen />); });
+  expect(view.root.findAllByType('EventVideo' as any)).toHaveLength(0);
+  expect(content()).toContain('/real-event.webp');
+});
 it('does not fabricate a showcase when the catalogue is empty', async () => {
   mockEvents = [];
   await act(async () => { view = create(<EventsScreen />); });

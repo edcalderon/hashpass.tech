@@ -1,4 +1,4 @@
-import { ActionButton } from "@hashpass/ui/primitives";
+import { ActionButton, Badge } from "@hashpass/ui/primitives";
 import { uiTokens, uiPalette } from "@hashpass/ui/tokens";
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -82,15 +82,15 @@ export default function EventShowcase({
     AppState.currentState !== "background",
   );
   const [reduceMotion, setReduceMotion] = useState(true);
-  const catalog = filterPublicEvents(events, {}, now);
-  const featured = catalog
+  const catalog: EventInfo[] = filterPublicEvents(events, {}, now);
+  const featured: EventInfo[] = catalog
     .filter(
       (event) =>
         includePast ||
         ["live", "upcoming"].includes(publicEventStatus(event, now)),
     )
     .slice(0, 5);
-  const slides = featured.flatMap((event) =>
+  const slides: Array<{ event: EventInfo; slide: ResolvedEventBannerSlide }> = featured.flatMap((event) =>
     getEventBannerSlides(event).map((slide: ResolvedEventBannerSlide) => ({
       event,
       slide,
@@ -103,6 +103,13 @@ export default function EventShowcase({
   const banner = selected
     ? localizeEventBannerSlide(selected.slide, translate)
     : null;
+  // Public discovery is often the first native screen opened after a cold
+  // launch. Keep it independent of the native video surface: a remote event
+  // film can fail while the player is allocating/decoding and take the whole
+  // Android activity with it. Web keeps the organizer film; native shows the
+  // event's supplied poster on the same slide instead.
+  const playBannerVideo =
+    Platform.OS === "web" && banner?.media.type === "video";
   const playing =
     visible &&
     active &&
@@ -193,7 +200,7 @@ export default function EventShowcase({
               },
             ]}
           >
-            {banner.media.type === "video" &&
+            {playBannerVideo &&
             visible &&
             active &&
             !paused &&
@@ -217,10 +224,9 @@ export default function EventShowcase({
             )}
           </View>
           <View style={styles.heroCopy}>
-            <Text style={[styles.eyebrow, { color: palette.accent }]}>
-              {t("featured", "IN THE SPOTLIGHT")} ·{" "}
+            <Badge mode={isDark ? "dark" : "light"}>
               {t(publicEventStatus(selected.event, now), "Upcoming")}
-            </Text>
+            </Badge>
             <Text
               accessibilityRole="header"
               style={[styles.heroTitle, { color: palette.text }]}
@@ -287,12 +293,5 @@ const styles = StyleSheet.create({
     lineHeight: 34,
     letterSpacing: -0.6,
     fontWeight: "700",
-  },
-  eyebrow: {
-    fontSize: 12,
-    lineHeight: 16,
-    letterSpacing: 1.2,
-    fontWeight: "700",
-    textTransform: "uppercase",
   },
 });
