@@ -496,26 +496,41 @@ export default function EventBannerCarousel({
 
     const interval = setInterval(() => {
       if (isAutoPlayPausedRef.current) return;
-      setLogicalIndex((prev) => {
-        // We're at the last real slide → advance to clone_first (N+1) for the wrap animation
-        if (prev === N - 1) {
-          scrollToPhysical(N + 1);
-          return 0; // logical wraps to 0
-        }
-        const nextPhys = prev + 1 + CLONE_OFFSET + 1; // prev logical + offset + 1
-        // Actually: current phys = prev + CLONE_OFFSET, next phys = prev + CLONE_OFFSET + 1
-        scrollToPhysical(prev + CLONE_OFFSET + 1);
-        return (prev + 1) % N;
-      });
+      if (usePeekingCarousel) {
+        setLogicalIndex((prev) => {
+          // We're at the last real slide → advance to clone_first (N+1) for the wrap animation.
+          if (prev === N - 1) {
+            scrollToPhysical(N + 1);
+            return 0;
+          }
+          scrollToPhysical(prev + CLONE_OFFSET + 1);
+          return (prev + 1) % N;
+        });
+      } else {
+        setCurrentIndex((prev) => {
+          const next = (prev + 1) % N;
+          scrollToFallbackSlide(next);
+          return next;
+        });
+      }
       timerStartRef.current = Date.now();
       progress.value = 0;
     }, autoPlayInterval);
 
     return () => clearInterval(interval);
-  }, [autoPlay, autoPlayInterval, N, scrollToPhysical, progress]);
+  }, [
+    autoPlay,
+    autoPlayInterval,
+    N,
+    progress,
+    scrollToFallbackSlide,
+    scrollToPhysical,
+    usePeekingCarousel,
+  ]);
 
   // Sync logical index from scroll position
   useEffect(() => {
+    if (!usePeekingCarousel) return;
     let raf: ReturnType<typeof requestAnimationFrame> | undefined;
     const tick = () => {
       const physIdx = Math.round(activeIndex.value);
@@ -528,7 +543,7 @@ export default function EventBannerCarousel({
     };
     raf = requestAnimationFrame(tick);
     return () => { if (raf) cancelAnimationFrame(raf); };
-  }, [activeIndex, N]);
+  }, [activeIndex, N, usePeekingCarousel]);
 
   const togglePlay = useCallback(() => {
     setIsPlaying((p) => {
@@ -906,11 +921,34 @@ export default function EventBannerCarousel({
             onPointerUp={handlePointerUp}
             onPointerCancel={handlePointerCancel}
           >
-          {realSlides.map((slide, idx) => (
-            <View key={slide.type === "logo" ? slide.logoId! : slide.type === "campaign" ? slide.campaignId! : `${slide.event?.id}:${slide.banner?.id}`} style={styles.slideFullWidth}>
-              {renderSlideContent(slide)}
-            </View>
-          ))}
+          {realSlides.map((slide) => {
+            const key = slide.type === "logo"
+              ? slide.logoId!
+              : slide.type === "campaign"
+                ? slide.campaignId!
+                : `${slide.event?.id}:${slide.banner?.id}`;
+
+            if (slide.type === "campaign" && slide.event) {
+              return (
+                <TouchableOpacity
+                  key={key}
+                  activeOpacity={0.85}
+                  accessibilityRole="button"
+                  accessibilityLabel={slide.campaignAccessibilityLabel}
+                  onPress={() => handleEventPress(slide.event!)}
+                  style={styles.slideFullWidth}
+                >
+                  {renderSlideContent(slide)}
+                </TouchableOpacity>
+              );
+            }
+
+            return (
+              <View key={key} style={styles.slideFullWidth}>
+                {renderSlideContent(slide)}
+              </View>
+            );
+          })}
         </ScrollView>
         </View>
       )}
