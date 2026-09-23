@@ -20,22 +20,19 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.52)
+## 📋 Latest Changes (v1.9.53)
 
 ### Bug Fixes
 
-* **ops:** install mail dependency in cost guard ([8baa05c](https://github.com/hashpass-tech/hashpass.tech/commit/8baa05c80fabb6e720ef1e238aee75d5745d3f7c))
-* **ops:** provision pnpm for cost alerts ([6a2737c](https://github.com/hashpass-tech/hashpass.tech/commit/6a2737c6d7a3e81d95bb7b18bb96e97d422e713e))
-* **ops:** send AWS cost alerts privately ([caab5cf](https://github.com/hashpass-tech/hashpass.tech/commit/caab5cfcc07af9b36537fdcd8c7cf6012bbdcf73))
+* prevent mobile carousel and PWA icon clipping ([cc45be3](https://github.com/hashpass-tech/hashpass.tech/commit/cc45be31fa1a7a2fc3da4cf2f9aaaafede7bf33e))
 ### Release Highlights
-- provision pnpm for cost alerts; install mail dependency in cost guard; send AWS cost alerts privately
+- prevent mobile carousel and PWA icon clipping
 
 ### Release scope
-- Compared with: `v1.9.51` (the previous global release tag)
+- Compared with: `v1.9.52` (the previous global release tag)
 
 ### Affected products & packages
 - Mobile app
-- Release tooling
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

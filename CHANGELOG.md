@@ -1,3 +1,18 @@
+## [1.9.53](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.52...v1.9.53) (2026-09-23)
+
+
+### Bug Fixes
+
+* prevent mobile carousel and PWA icon clipping ([cc45be3](https://github.com/hashpass-tech/hashpass.tech/commit/cc45be31fa1a7a2fc3da4cf2f9aaaafede7bf33e))
+### Release Highlights
+- prevent mobile carousel and PWA icon clipping
+
+### Release scope
+- Compared with: `v1.9.52` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+
 ## [1.9.52](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.51...v1.9.52) (2026-09-23)
 
 

@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202609231911, // Updated to current timestamp
+  buildNumber: 202609232034, // Updated to current timestamp
   releaseDate: '2026-09-23',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,16 +30,29 @@ export const CURRENT_VERSION: VersionInfo = {
     // No new features
   ],
   bugfixes: [
-    'provision pnpm for cost alerts',
-    'install mail dependency in cost guard',
-    'send AWS cost alerts privately'
+    'prevent mobile carousel and PWA icon clipping'
   ],
   breakingChanges: [],
-  notes: 'provision pnpm for cost alerts; install mail dependency in cost guard; send AWS cost alerts privately'
+  notes: 'prevent mobile carousel and PWA icon clipping'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.53': {
+    version: '1.9.53',
+    buildNumber: 202609232034,
+    releaseDate: '2026-09-23',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'prevent mobile carousel and PWA icon clipping'
+    ],
+    breakingChanges: [],
+    notes: 'prevent mobile carousel and PWA icon clipping'
+  },
   '1.9.52': {
     version: '1.9.52',
     buildNumber: 202609231911,
