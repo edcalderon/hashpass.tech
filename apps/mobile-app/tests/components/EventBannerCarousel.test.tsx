@@ -104,3 +104,26 @@ it("keeps native campaign slides accessible and connected to their event action"
   act(() => campaign.props.onPress());
   expect(onEventPress).toHaveBeenCalledWith(mockEvent);
 });
+
+it("keeps phone carousel actions visible in their own row", () => {
+  render({
+    event: mockEvent,
+    autoPlay: false,
+    showDotIndicators: true,
+    footerLeadingAction: <TouchableOpacity accessibilityLabel="Propose an event" />,
+    footerAction: <TouchableOpacity accessibilityLabel="Explore all events" />,
+  });
+
+  const actions = view.root.findByProps({ testID: "carousel-footer-actions" });
+  const footer = view.root.findByProps({ testID: "carousel-footer" });
+  expect(actions.props.style).toEqual(
+    expect.objectContaining({ flexDirection: "row", width: "100%" }),
+  );
+  expect(footer.props.style).toEqual(
+    expect.arrayContaining([expect.objectContaining({ flexDirection: "column" })]),
+  );
+  expect(actions.findAllByType(TouchableOpacity)).toHaveLength(2);
+  expect(
+    view.root.findByProps({ testID: "carousel-footer-indicators" }),
+  ).toBeTruthy();
+});

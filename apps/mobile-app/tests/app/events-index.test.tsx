@@ -1,12 +1,12 @@
 import React from 'react';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
-import { Pressable, TextInput, TouchableOpacity } from 'react-native';
-const mockPush = jest.fn(); const mockSetParams = jest.fn(); let mockParams: any = {}; const mockSaveBookmarks = jest.fn(); let mockEvents: any[]; let mockLoggedIn = false;
+import { Platform, Pressable, Text, TextInput, TouchableOpacity } from 'react-native';
+const mockPush = jest.fn(); const mockSetParams = jest.fn(); let mockParams: any = {}; const mockSaveBookmarks = jest.fn(); let mockEvents: any[]; let mockLoggedIn = false; let mockAnimationLevel = 'none';
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) }));
 jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush, setParams: mockSetParams }), useLocalSearchParams: () => mockParams }));
 jest.mock('../../hooks/useTheme', () => ({ useTheme: () => ({ isDark: true, colors: { primary: '#22d3ee', divider: '#333', background: { default: '#111', paper: '#19191f' }, text: { primary: '#fff', secondary: '#aaa', disabled: '#777' } } }) }));
 jest.mock('../../i18n/i18n', () => ({ useTranslation: () => ({ t: (_key: string, fallback: string) => fallback }) }));
-jest.mock('../../contexts/AnimationLevelContext', () => ({ useAnimationLevel: () => ({ animationLevel: 'none' }) }));
+jest.mock('../../contexts/AnimationLevelContext', () => ({ useAnimationLevel: () => ({ animationLevel: mockAnimationLevel }) }));
 jest.mock('../../contexts/EventContext', () => ({ useEvent: () => ({}) }));
 jest.mock('../../hooks/useAuth', () => ({ useAuth: () => ({ isLoggedIn: mockLoggedIn, dbUserId: null }) }));
 jest.mock('../../components/icons/SettingsIcons', () => ({ LogInIcon: () => null }));
@@ -26,7 +26,11 @@ import EventsScreen from '../../components/events/GuestExplorer';
 let view: ReactTestRenderer;
 const content = () => JSON.stringify(view.toJSON());
 const press = (label: string) => act(() => [...view.root.findAllByType(Pressable), ...view.root.findAllByType(TouchableOpacity)].find(button => button.props.accessibilityLabel === label)!.props.onPress());
-beforeEach(() => { mockPush.mockReset(); mockSetParams.mockReset(); mockParams = {}; mockSaveBookmarks.mockReset(); mockLoggedIn = false; mockEvents = [
+const setViewport = (width: number, height = 768) => {
+  jest.spyOn(require('react-native'), 'useWindowDimensions').mockReturnValue({ width, height, scale: 1, fontScale: 1 });
+};
+const setPlatform = (os: string) => Object.defineProperty(Platform, 'OS', { configurable: true, value: os });
+beforeEach(() => { setViewport(1024); setPlatform('ios'); mockAnimationLevel = 'none'; mockPush.mockReset(); mockSetParams.mockReset(); mockParams = {}; mockSaveBookmarks.mockReset(); mockLoggedIn = false; mockEvents = [
   { id: 'main', title: 'Hidden shell', color: '#000' },
   { id: 'one', title: 'Colombia conference', color: '#f00', series: 'Series A', geo: { continent: 'South America', country: 'Colombia' }, routes: { home: '/events//one' }, eventDateString: '2026', eventStartDate: '2099-01-01', image: '/real-event.webp' },
   { id: 'two', title: 'Europe conference', color: '#0f0', series: 'Series B', geo: { continent: 'Europe', country: 'France' }, routes: { home: '/events/two' }, eventStartDate: '2099-02-01' },
@@ -63,6 +67,31 @@ it('shows real media and advances the showcase manually', async () => {
   press('Next');
   press('Explore event');
   expect(mockSetParams).toHaveBeenCalledWith({ eventId: 'two' });
+});
+it('keeps remote event films out of the native public explorer', async () => {
+  mockEvents[1].bannerSlides = [
+    {
+      id: 'event-film',
+      media: { type: 'video', url: 'https://cdn.example/event-film.mp4' },
+      title: 'Colombia conference',
+    },
+  ];
+  await act(async () => { view = create(<EventsScreen />); });
+  expect(view.root.findAllByType('EventVideo' as any)).toHaveLength(0);
+  expect(content()).toContain('/real-event.webp');
+});
+it('plays organizer films on web while native keeps the poster fallback', async () => {
+  mockEvents[1].bannerSlides = [
+    {
+      id: 'event-film',
+      media: { type: 'video', url: 'https://cdn.example/event-film.mp4' },
+      title: 'Colombia conference',
+    },
+  ];
+  setPlatform('web');
+  mockAnimationLevel = 'full';
+  await act(async () => { view = create(<EventsScreen />); });
+  expect(view.root.findAllByType('EventVideo' as any)).toHaveLength(1);
 });
 it('does not fabricate a showcase when the catalogue is empty', async () => {
   mockEvents = [];
@@ -101,6 +130,19 @@ it('keeps the guest header minimal without redundant account icons', async () =>
   for (const label of ['Profile', 'My QR', 'Notifications']) {
     expect(view.root.findAllByType(Pressable).some(button => button.props.accessibilityLabel === label)).toBe(false);
   }
+});
+
+it('takes guests home from the full HASHPASS wordmark', async () => {
+  await act(async () => { view = create(<EventsScreen />); });
+  press('HASHPASS');
+  expect(mockPush).toHaveBeenCalledWith('/home');
+});
+
+it('keeps the Join action readable on narrow phones without changing its accessible name', async () => {
+  setViewport(375, 667);
+  await act(async () => { view = create(<EventsScreen />); });
+  expect(view.root.findAllByType(Pressable).some(button => button.props.accessibilityLabel === 'Join HASHPASS')).toBe(true);
+  expect(view.root.findAllByType(Text).some(text => text.children.join('') === 'Join')).toBe(true);
 });
 
 it('explains guest mode on focus and dismisses the tooltip on blur without opening auth', async () => {

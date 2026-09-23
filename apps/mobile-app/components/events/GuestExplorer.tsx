@@ -43,7 +43,7 @@ export default function GuestExplorer() {
   const guestDescription = t("guestDescription", "You’re browsing a simplified version of HASHPASS. Register and download the app to access the full experience, including your passes, saved events and community features.");
   const requestAuth = useCallback(() => setAuthOpen(true), []);
   const closeAuth = useCallback(() => setAuthOpen(false), []);
-  const events = filterPublicEvents(getAvailableEvents());
+  const events: EventInfo[] = filterPublicEvents(getAvailableEvents());
   const routeEventId =
     typeof params.eventId === "string" ? params.eventId : undefined;
   const routeEvent = events.find((event) => event.id === routeEventId) || null;
@@ -57,6 +57,7 @@ export default function GuestExplorer() {
   const palette = uiPalette(isDark);
   const mode = isDark ? "dark" : "light";
   const wide = width >= 1000;
+  const compactHeader = width < 390;
   const accountAction = (route: string) => {
     if (isLoggedIn) router.push(route as never);
     else requestAuth();
@@ -99,7 +100,7 @@ export default function GuestExplorer() {
         importantForAccessibility={authOpen ? "no-hide-descendants" : "auto"}
         style={[styles.topbar, { borderColor: palette.border }]}
       >
-        <HashpassBrand compact={width < 480} onPress={() => router.push("/home")} />
+        <HashpassBrand onPress={() => router.push("/home")} />
         <View style={styles.account}>
           {!isLoggedIn && width >= 1000 && (
             <View onPointerLeave={() => setGuestHelpOpen(false)}>
@@ -138,15 +139,23 @@ export default function GuestExplorer() {
           <QuickSettingsPanel inline showSignIn={false} forceVisible />
           <ActionButton
               mode={mode}
+              variant="primary"
+              accessibilityLabel={
+                isLoggedIn
+                  ? t("openApp", "Open app")
+                  : t("join", "Join HASHPASS")
+              }
               leadingIcon={<LogInIcon size={18} color={palette.onAccent} />}
               style={{
-                paddingHorizontal: width < 480 ? uiTokens.space.md : uiTokens.space.xl,
-                maxWidth: width < 480 ? Math.max(128, width - 212) : undefined,
+                paddingHorizontal: compactHeader ? uiTokens.space.md : uiTokens.space.xl,
+                flexShrink: 1,
               }}
               label={
                 isLoggedIn
                   ? t("openApp", "Open app")
-                  : t("join", "Join HASHPASS")
+                  : compactHeader
+                    ? t("joinShort", "Join")
+                    : t("join", "Join HASHPASS")
               }
               onPress={() => accountAction("/dashboard/explore")}
           />
@@ -263,7 +272,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    gap: 8,
+    gap: uiTokens.space.md,
   },
   guestTooltip: {
     position: "absolute",
@@ -278,7 +287,7 @@ const styles = StyleSheet.create({
   },
   account: {
     flexDirection: "row",
-    gap: 8,
+    gap: uiTokens.space.sm,
     alignItems: "center",
     flexShrink: 1,
   },
@@ -290,7 +299,7 @@ const styles = StyleSheet.create({
     flexWrap: "nowrap",
     paddingHorizontal: 12,
     paddingVertical: 8,
-    gap: 4,
+    gap: uiTokens.space.sm,
   },
   main: { flex: 1, minWidth: 0, minHeight: 0 },
   note: { fontSize: 14, lineHeight: 22 },
