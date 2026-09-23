@@ -22,23 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202609220532, // Updated to current timestamp
-  releaseDate: '2026-09-22',
+  buildNumber: 202609230441, // Updated to current timestamp
+  releaseDate: '2026-09-23',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
     // No new features
   ],
   bugfixes: [
-    'use branded HashpassLoader on remaining full-screen auth spinners',
-    'stop native startup crash from Features\' raw fetch(\'/api/status\')'
+    'fit landing carousel on phones'
   ],
   breakingChanges: [],
-  notes: 'use branded HashpassLoader on remaining full-screen auth spinners; stop native startup crash from Features\' raw fetch(\'/api/status\')'
+  notes: 'fit landing carousel on phones'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.50': {
+    version: '1.9.50',
+    buildNumber: 202609230441,
+    releaseDate: '2026-09-23',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'fit landing carousel on phones'
+    ],
+    breakingChanges: [],
+    notes: 'fit landing carousel on phones'
+  },
   '1.9.49': {
     version: '1.9.49',
     buildNumber: 202609220532,
