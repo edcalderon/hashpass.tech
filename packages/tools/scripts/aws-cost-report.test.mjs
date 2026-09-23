@@ -67,6 +67,7 @@ test("workflow privately mails budget alerts instead of publishing the report or
 
   assert.doesNotMatch(workflow, /tee\s+-a\s+"\$GITHUB_STEP_SUMMARY"/);
   assert.match(workflow, /send-aws-cost-alert\.mjs/);
+  assert.match(workflow, /pnpm install --frozen-lockfile --ignore-scripts/);
   assert.match(workflow, /if \[ "\$trigger_drift" = 'true' \]; then/);
   assert.doesNotMatch(workflow, /budgetAlert[\s\S]{0,120}exit 1/);
 });
