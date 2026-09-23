@@ -1,3 +1,21 @@
+## [1.9.52](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.51...v1.9.52) (2026-09-23)
+
+
+### Bug Fixes
+
+* **ops:** install mail dependency in cost guard ([8baa05c](https://github.com/hashpass-tech/hashpass.tech/commit/8baa05c80fabb6e720ef1e238aee75d5745d3f7c))
+* **ops:** provision pnpm for cost alerts ([6a2737c](https://github.com/hashpass-tech/hashpass.tech/commit/6a2737c6d7a3e81d95bb7b18bb96e97d422e713e))
+* **ops:** send AWS cost alerts privately ([caab5cf](https://github.com/hashpass-tech/hashpass.tech/commit/caab5cfcc07af9b36537fdcd8c7cf6012bbdcf73))
+### Release Highlights
+- provision pnpm for cost alerts; install mail dependency in cost guard; send AWS cost alerts privately
+
+### Release scope
+- Compared with: `v1.9.51` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Release tooling
+
 ## [1.9.51](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.50...v1.9.51) (2026-09-23)
 ### Released
 - detect installed native updates
