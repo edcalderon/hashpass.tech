@@ -55,6 +55,15 @@ describe('PWA drag positioning', () => {
     expect(getPwaDragViewport()).toEqual({ width: 390, height: 690, offsetLeft: 0, offsetTop: 0 });
   });
 
+  it('falls back to a usable viewport size when visual viewport dimensions are unavailable', () => {
+    Object.defineProperty(window, 'visualViewport', {
+      value: { width: 0, height: 0, offsetLeft: 12, offsetTop: 18 },
+      configurable: true,
+    });
+
+    expect(getPwaDragViewport()).toEqual({ width: 390, height: 800, offsetLeft: 12, offsetTop: 18 });
+  });
+
   it('keeps dock coordinates inside a panned visual viewport', () => {
     const viewport = { width: 320, height: 240, offsetLeft: 18, offsetTop: 32 };
 
