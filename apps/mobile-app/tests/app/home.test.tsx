@@ -535,7 +535,7 @@ describe("HomeScreen native tablet layout", () => {
     );
   });
 
-  it("uses compact single-line carousel actions on a phone viewport", () => {
+  it("keeps complete single-line carousel actions on a standard phone viewport", () => {
     const { renderer } = loadHomeScreen({
       width: 390,
       height: 844,
@@ -546,8 +546,8 @@ describe("HomeScreen native tablet layout", () => {
     const proposalLabel = carousel.props.footerLeadingAction.props.children[1];
     const explorerLabel = carousel.props.footerAction.props.children[1];
 
-    expect(proposalLabel.props.children).toBe("Propose");
-    expect(explorerLabel.props.children).toBe("Events");
+    expect(proposalLabel.props.children).toBe("Propose an event");
+    expect(explorerLabel.props.children).toBe("Explore all events");
     expect(proposalLabel.props.numberOfLines).toBe(1);
     expect(explorerLabel.props.numberOfLines).toBe(1);
   });

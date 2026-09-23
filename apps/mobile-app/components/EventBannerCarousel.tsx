@@ -842,6 +842,37 @@ export default function EventBannerCarousel({
 
   // Web-only wheel wrapper props (typed as `any` because RN's ViewProps omits onWheel)
   const wheelViewProps: any = { style: styles.carouselWrapper, onWheel: handleWheel };
+  const hasFooterActions = Boolean(footerLeadingAction || footerAction);
+  const renderIndicators = () => {
+    if (!showDotIndicators || N <= 1) return null;
+
+    return usePeekingCarousel && autoPlay ? (
+      <CarouselTickPill
+        count={N}
+        activeIndex={activeIndex}
+        progress={progress}
+        isPlaying={isPlaying}
+        onTogglePlay={togglePlay}
+        onIndexPress={handleTickPress}
+        onRestart={handleRestart}
+      />
+    ) : (
+      <View style={styles.dotsFallback}>
+        {realSlides.map((_, index) => (
+          <TouchableOpacity
+            key={index}
+            style={[styles.dot, index === currentIndex && styles.dotActive]}
+            onPress={() => {
+              setCurrentIndex(index);
+              scrollToFallbackSlide(index);
+            }}
+            onPressIn={handleCarouselPressIn}
+            onPressOut={handleCarouselPressOut}
+          />
+        ))}
+      </View>
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -960,40 +991,41 @@ export default function EventBannerCarousel({
         </View>
       )}
 
-      {((showDotIndicators && N > 1) || footerLeadingAction || footerAction) ? (
+      {((showDotIndicators && N > 1) || hasFooterActions) ? (
         <View style={styles.footer}>
-          <View style={styles.footerCenter}>
-            {footerLeadingAction && <View style={styles.footerLeadingAction}>{footerLeadingAction}</View>}
-            {showDotIndicators && N > 1 && (
-              usePeekingCarousel && autoPlay ? (
-                <CarouselTickPill
-                  count={N}
-                  activeIndex={activeIndex}
-                  progress={progress}
-                  isPlaying={isPlaying}
-                  onTogglePlay={togglePlay}
-                  onIndexPress={handleTickPress}
-                  onRestart={handleRestart}
-                />
-              ) : (
-                <View style={styles.dotsFallback}>
-                  {realSlides.map((_, index) => (
-                    <TouchableOpacity
-                      key={index}
-                      style={[styles.dot, index === currentIndex && styles.dotActive]}
-                      onPress={() => {
-                        setCurrentIndex(index);
-                        scrollToFallbackSlide(index);
-                      }}
-                      onPressIn={handleCarouselPressIn}
-                      onPressOut={handleCarouselPressOut}
-                    />
-                  ))}
+          {isMobile && hasFooterActions ? (
+            <>
+              <View
+                style={styles.footerActionsMobile}
+                testID="carousel-footer-actions"
+              >
+                {footerLeadingAction ? (
+                  <View style={styles.footerLeadingAction}>{footerLeadingAction}</View>
+                ) : null}
+                {footerAction ? (
+                  <View style={styles.footerAction}>{footerAction}</View>
+                ) : null}
+              </View>
+              {showDotIndicators && N > 1 ? (
+                <View
+                  style={styles.footerIndicatorMobile}
+                  testID="carousel-footer-indicators"
+                >
+                  {renderIndicators()}
                 </View>
-              )
-            )}
-            {footerAction && <View style={styles.footerAction}>{footerAction}</View>}
-          </View>
+              ) : null}
+            </>
+          ) : (
+            <View style={styles.footerCenter}>
+              {footerLeadingAction ? (
+                <View style={styles.footerLeadingAction}>{footerLeadingAction}</View>
+              ) : null}
+              {renderIndicators()}
+              {footerAction ? (
+                <View style={styles.footerAction}>{footerAction}</View>
+              ) : null}
+            </View>
+          )}
         </View>
       ) : null}
     </View>
@@ -1094,6 +1126,19 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean, _screenWidth
       gap: isMobile ? 8 : 16,
       maxWidth: 600,
       width: "100%",
+    },
+    footerActionsMobile: {
+      width: "100%",
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+    },
+    footerIndicatorMobile: {
+      minHeight: 44,
+      marginTop: 8,
+      alignItems: "center",
+      justifyContent: "center",
     },
     footerLeadingAction: {
       flexShrink: 1,

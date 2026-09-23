@@ -175,7 +175,10 @@ export default function HomeScreen() {
   }));
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
   const isPhoneLayout = Platform.OS === "web" ? isMobile : windowWidth < 700;
-  const useCompactCarouselLabels = windowWidth < 680;
+  // Phone controls use their own row in the carousel footer, so normal
+  // iPhone widths have room for the full action labels. Keep the compact
+  // copy only for the narrowest devices.
+  const useCompactCarouselLabels = windowWidth < 375;
   const isTabletLayout = Platform.OS !== "web" && !isPhoneLayout;
   const nativeBottomInset = isNative ? Math.max(insets.bottom, 24) : 0;
   const floatingControlsBottom =
@@ -731,6 +734,8 @@ export default function HomeScreen() {
                     styles.exploreAllEventsBtn,
                     useCompactCarouselLabels && styles.carouselActionBtnCompact,
                   ]}
+                  accessibilityRole="button"
+                  accessibilityLabel={t("exploreAllEvents", "Explore all events")}
                 >
                   <MorphIcon
                     icon={
