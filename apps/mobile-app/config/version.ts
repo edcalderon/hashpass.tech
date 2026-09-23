@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202609231540, // Updated to current timestamp
+  buildNumber: 202609231911, // Updated to current timestamp
   releaseDate: '2026-09-23',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,14 +30,33 @@ export const CURRENT_VERSION: VersionInfo = {
     // No new features
   ],
   bugfixes: [
-    'detect installed native updates'
+    'provision pnpm for cost alerts',
+    'install mail dependency in cost guard',
+    'send AWS cost alerts privately'
   ],
   breakingChanges: [],
-  notes: 'detect installed native updates'
+  notes: 'provision pnpm for cost alerts; install mail dependency in cost guard; send AWS cost alerts privately'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.52': {
+    version: '1.9.52',
+    buildNumber: 202609231911,
+    releaseDate: '2026-09-23',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'provision pnpm for cost alerts',
+      'install mail dependency in cost guard',
+      'send AWS cost alerts privately'
+    ],
+    breakingChanges: [],
+    notes: 'provision pnpm for cost alerts; install mail dependency in cost guard; send AWS cost alerts privately'
+  },
   '1.9.51': {
     version: '1.9.51',
     buildNumber: 202609231540,

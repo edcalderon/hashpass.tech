@@ -1,19 +1,20 @@
 /// <reference types="jest" />
 
-import React from 'react';
-import TestRenderer, { act } from 'react-test-renderer';
+import React from "react";
+import TestRenderer, { act } from "react-test-renderer";
+import packageJson from "../../package.json";
 
 const mockFetch = jest.fn();
-const mockInstalledVersion = jest.fn((_fallbackVersion: string) => '1.9.49');
+const mockInstalledVersion = jest.fn((_fallbackVersion: string) => "1.9.49");
 
-jest.mock('react-native', () => ({
+jest.mock("react-native", () => ({
   AppState: { addEventListener: jest.fn(() => ({ remove: jest.fn() })) },
   AccessibilityInfo: {
     addEventListener: jest.fn(() => ({ remove: jest.fn() })),
     isReduceMotionEnabled: jest.fn(() => Promise.resolve(false)),
   },
   Appearance: {
-    getColorScheme: () => 'light',
+    getColorScheme: () => "light",
     addChangeListener: jest.fn(),
     addEventListener: jest.fn(),
     removeChangeListener: jest.fn(),
@@ -25,19 +26,21 @@ jest.mock('react-native', () => ({
   },
   I18nManager: { isRTL: false },
   PixelRatio: { get: () => 1 },
-  Platform: { OS: 'android' },
+  Platform: { OS: "android" },
 }));
 
-jest.mock('react-native-css-interop', () => ({
-  createInteropElement: require('react').createElement,
+jest.mock("react-native-css-interop", () => ({
+  createInteropElement: require("react").createElement,
 }));
 
-jest.mock('../../config/runtime-version', () => ({
-  compareAppVersions: (left: string, right: string) => left.localeCompare(right),
-  getInstalledNativeAppVersion: (fallbackVersion: string) => mockInstalledVersion(fallbackVersion),
+jest.mock("../../config/runtime-version", () => ({
+  compareAppVersions: (left: string, right: string) =>
+    left.localeCompare(right),
+  getInstalledNativeAppVersion: (fallbackVersion: string) =>
+    mockInstalledVersion(fallbackVersion),
 }));
 
-import { useNativeUpdateCheck } from '../../hooks/useNativeUpdateCheck';
+import { useNativeUpdateCheck } from "../../hooks/useNativeUpdateCheck";
 
 let latest: ReturnType<typeof useNativeUpdateCheck> | null = null;
 
@@ -46,7 +49,7 @@ function CaptureNativeUpdateCheck() {
   return null;
 }
 
-describe('useNativeUpdateCheck', () => {
+describe("useNativeUpdateCheck", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     latest = null;
@@ -54,14 +57,14 @@ describe('useNativeUpdateCheck', () => {
     mockFetch.mockResolvedValue({
       ok: true,
       json: async () => ({
-        nativeVersion: '1.9.50',
-        minimumVersion: '1.8.9',
-        androidStoreUrl: 'market://details?id=tech.hashpass.app',
+        nativeVersion: "1.9.50",
+        minimumVersion: "1.8.9",
+        androidStoreUrl: "market://details?id=tech.hashpass.app",
       }),
     });
   });
 
-  it('checks native update status using the installed binary version, not the OTA bundle version', async () => {
+  it("checks native update status using the installed binary version, not the OTA bundle version", async () => {
     let renderer!: TestRenderer.ReactTestRenderer;
     await act(async () => {
       renderer = TestRenderer.create(<CaptureNativeUpdateCheck />);
@@ -69,12 +72,15 @@ describe('useNativeUpdateCheck', () => {
       await Promise.resolve();
     });
 
-    expect(mockInstalledVersion).toHaveBeenCalledWith('1.9.51');
+    expect(mockInstalledVersion).toHaveBeenCalledWith(packageJson.version);
     expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining('clientVersion=1.9.49'),
-      expect.objectContaining({ headers: { 'X-Client-Version': '1.9.49' } }),
+      expect.stringContaining("clientVersion=1.9.49"),
+      expect.objectContaining({ headers: { "X-Client-Version": "1.9.49" } }),
     );
-    expect(latest).toMatchObject({ needsSoftUpdate: true, latestVersion: '1.9.50' });
+    expect(latest).toMatchObject({
+      needsSoftUpdate: true,
+      latestVersion: "1.9.50",
+    });
 
     await act(async () => renderer.unmount());
   });
