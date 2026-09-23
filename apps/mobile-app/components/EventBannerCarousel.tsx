@@ -56,16 +56,9 @@ function resolveCardDimensions(screenWidth: number) {
   return { cardWidth, contentPaddingX, snapInterval: cardWidth + CARD_GAP };
 }
 
-/** Keep native phone slides comfortably scannable without using half the screen. */
-export function resolveCarouselCardHeight(
-  isMobile: boolean,
-  screenWidth: number,
-) {
+/** Keep native phone slides scannable without consuming half the viewport. */
+export function resolveCarouselCardHeight(isMobile: boolean, screenWidth: number) {
   if (!isMobile) return 540;
-
-  // The page has 16dp gutters on each side. A restrained portrait ratio keeps
-  // event information, the carousel controls, and the next landing section in
-  // one viewport while retaining enough space for countdown content.
   const availableWidth = Math.max(0, screenWidth - 32);
   return Math.min(480, Math.max(420, Math.round(availableWidth * 1.18)));
 }
@@ -107,11 +100,7 @@ function AnimatedCard({
     };
   }, [cardWidth]);
 
-  return (
-    <Animated.View style={[stylesBase.slide, animStyle]}>
-      {children}
-    </Animated.View>
-  );
+  return <Animated.View style={[stylesBase.slide, animStyle]}>{children}</Animated.View>;
 }
 
 interface CarouselSlide {
@@ -231,8 +220,7 @@ const EVENT_CAMPAIGN_SLIDES: Record<string, CampaignSlideAsset> = {
     logo: BSL_COLOMBIA_LOGO,
     location: "Bogotá, Colombia",
     date: "5–6 noviembre 2026",
-    accessibilityLabel:
-      "Explore Blockchain Summit Latam Colombia 2026 in Bogotá",
+    accessibilityLabel: "Explore Blockchain Summit Latam Colombia 2026 in Bogotá",
   },
   cbweek2026: {
     id: "cbweek2026-campaign",
@@ -278,9 +266,7 @@ export default function EventBannerCarousel({
   // Drag state for web mouse-grab on the carousel
   const dragRef = useRef<{ startX: number; scrollStart: number } | null>(null);
   const isDraggingRef = useRef(false);
-  const wheelResumeRef = useRef<ReturnType<typeof setTimeout> | undefined>(
-    undefined,
-  );
+  const wheelResumeRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   // Responsive card sizing: on wide screens, grow the card and cap the
   // padding so the carousel stays centered with peeking neighbors.
@@ -291,18 +277,12 @@ export default function EventBannerCarousel({
   const availableEvents: EventInfo[] = selectedEvent
     ? [selectedEvent]
     : getAvailableEvents();
-  const defaultLampBrandingByEvent = useMemo<
-    Record<string, LampBrandingConfig>
-  >(
+  const defaultLampBrandingByEvent = useMemo<Record<string, LampBrandingConfig>>(
     () => ({
       bsl: getLampBrandConfig("bsl") || { logoAlt: "BSL On Tour" },
       peru2026: getLampBrandConfig("peru2026") || { logoAlt: "BSL Perú 2026" },
-      chile2026: getLampBrandConfig("chile2026") || {
-        logoAlt: "BSL Chile 2026",
-      },
-      colombia2026: getLampBrandConfig("colombia2026") || {
-        logoAlt: "BSL Colombia 2026",
-      },
+      chile2026: getLampBrandConfig("chile2026") || { logoAlt: "BSL Chile 2026" },
+      colombia2026: getLampBrandConfig("colombia2026") || { logoAlt: "BSL Colombia 2026" },
       bsl2025: getLampBrandConfig("bsl2025") || { logoAlt: "BSL 2025 Archive" },
     }),
     [],
@@ -313,26 +293,15 @@ export default function EventBannerCarousel({
   );
 
   const isGlobalTenant = isGlobalEventTenant() && !selectedEvent;
-  const PAST_OR_REDUNDANT_EVENT_IDS = new Set([
-    "bsl",
-    "peru2026",
-    "chile2026",
-    "bsl2025",
-  ]);
+  const PAST_OR_REDUNDANT_EVENT_IDS = new Set(["bsl", "peru2026", "chile2026", "bsl2025"]);
   const carouselEvents = selectedEvent
     ? availableEvents
-    : availableEvents.filter(
-        (event) => !PAST_OR_REDUNDANT_EVENT_IDS.has(event.id),
-      );
+    : availableEvents.filter((event) => !PAST_OR_REDUNDANT_EVENT_IDS.has(event.id));
   const orderedCarouselEvents = selectedEvent
     ? carouselEvents
     : [
-        ...carouselEvents.filter((event) =>
-          UPCOMING_EVENT_PRIORITY.includes(event.id),
-        ),
-        ...carouselEvents.filter(
-          (event) => !UPCOMING_EVENT_PRIORITY.includes(event.id),
-        ),
+        ...carouselEvents.filter((event) => UPCOMING_EVENT_PRIORITY.includes(event.id)),
+        ...carouselEvents.filter((event) => !UPCOMING_EVENT_PRIORITY.includes(event.id)),
       ].sort((first, second) => {
         const firstPriority = UPCOMING_EVENT_PRIORITY.indexOf(first.id);
         const secondPriority = UPCOMING_EVENT_PRIORITY.indexOf(second.id);
@@ -351,53 +320,44 @@ export default function EventBannerCarousel({
     const campaign = isGlobalTenant
       ? EVENT_CAMPAIGN_SLIDES[event.id as keyof typeof EVENT_CAMPAIGN_SLIDES]
       : undefined;
-    const informationSlides = getEventBannerSlides(event).map(
-      (banner: ResolvedEventBannerSlide) => ({
-        type: "event" as const,
-        event,
-        banner,
-        useEventBranding: !selectedEvent && !event.bannerSlides?.length,
-      }),
-    );
+    const informationSlides = getEventBannerSlides(event).map((banner: ResolvedEventBannerSlide) => ({
+      type: "event" as const, event, banner,
+      useEventBranding: !selectedEvent && !event.bannerSlides?.length,
+    }));
     return campaign
-      ? [
-          {
-            type: "campaign" as const,
-            campaignId: campaign.id,
-            campaignSrc: campaign.image,
-            campaignFit: campaign.fit,
-            campaignLogoSrc: campaign.logo,
-            campaignCompactBranding: campaign.compactBranding,
-            campaignLocation: campaign.location,
-            campaignCity: campaign.city,
-            campaignFederationLogoSrc: campaign.federationLogo,
-            campaignMinDeporteLogoSrc: campaign.minDeporteLogo,
-            campaignInderLogoSrc: campaign.inderLogo,
-            campaignDate: campaign.date,
-            campaignAccessibilityLabel: campaign.accessibilityLabel,
-            event,
-          },
-          ...informationSlides,
-        ]
+      ? [{
+          type: "campaign" as const,
+          campaignId: campaign.id,
+          campaignSrc: campaign.image,
+          campaignFit: campaign.fit,
+          campaignLogoSrc: campaign.logo,
+          campaignCompactBranding: campaign.compactBranding,
+          campaignLocation: campaign.location,
+          campaignCity: campaign.city,
+          campaignFederationLogoSrc: campaign.federationLogo,
+          campaignMinDeporteLogoSrc: campaign.minDeporteLogo,
+          campaignInderLogoSrc: campaign.inderLogo,
+          campaignDate: campaign.date,
+          campaignAccessibilityLabel: campaign.accessibilityLabel,
+          event,
+        }, ...informationSlides]
       : informationSlides;
   });
 
   const realSlides: CarouselSlide[] = [
     ...(isGlobalTenant
-      ? [
-          {
-            type: "logo" as const,
-            logoId: PRIMARY_ENTRY_SLIDE.id,
-            logoSrcDark: PRIMARY_ENTRY_SLIDE.darkSrc,
-            logoSrcLight: PRIMARY_ENTRY_SLIDE.lightSrc,
-            backgroundColor: isDark
-              ? PRIMARY_ENTRY_SLIDE.backgroundColorDark
-              : PRIMARY_ENTRY_SLIDE.backgroundColorLight,
-            accentColor: isDark
-              ? PRIMARY_ENTRY_SLIDE.accentColorDark
-              : PRIMARY_ENTRY_SLIDE.accentColorLight,
-          },
-        ]
+      ? [{
+          type: "logo" as const,
+          logoId: PRIMARY_ENTRY_SLIDE.id,
+          logoSrcDark: PRIMARY_ENTRY_SLIDE.darkSrc,
+          logoSrcLight: PRIMARY_ENTRY_SLIDE.lightSrc,
+          backgroundColor: isDark
+            ? PRIMARY_ENTRY_SLIDE.backgroundColorDark
+            : PRIMARY_ENTRY_SLIDE.backgroundColorLight,
+          accentColor: isDark
+            ? PRIMARY_ENTRY_SLIDE.accentColorDark
+            : PRIMARY_ENTRY_SLIDE.accentColorLight,
+        }]
       : []),
     ...eventSlides,
   ];
@@ -409,10 +369,7 @@ export default function EventBannerCarousel({
   // within its page width instead.
   const isSingleSlide = N <= 1;
   const usePeekingCarousel = Platform.OS === "web" && !selectedEvent && N >= 3;
-  const infiniteSlides = useMemo(
-    () => withInfiniteClones(realSlides),
-    [realSlides],
-  );
+  const infiniteSlides = useMemo(() => withInfiniteClones(realSlides), [realSlides]);
   const CLONE_OFFSET = 1; // physical index 0 = clone of last, index 1 = first real
 
   // Scroll tracking
@@ -424,10 +381,7 @@ export default function EventBannerCarousel({
   const [currentIndex, setCurrentIndex] = useState(0); // fallback slider only
   const [wrapLock, setWrapLock] = useState(false); // debounce silent wrap-arounds
 
-  const physicalToOffset = useCallback(
-    (physIdx: number) => contentPaddingX + physIdx * snapInterval,
-    [contentPaddingX, snapInterval],
-  );
+  const physicalToOffset = useCallback((physIdx: number) => contentPaddingX + physIdx * snapInterval, [contentPaddingX, snapInterval]);
 
   // Center the first card on mount so it's the middle visible card on wide
   // screens instead of sitting at the far-left edge of the viewport.
@@ -436,10 +390,7 @@ export default function EventBannerCarousel({
       // Small delay so the layout is painted before we scroll
       requestAnimationFrame(() => {
         // Scroll to center the first real slide (physical index 1)
-        scrollViewRef.current?.scrollTo({
-          x: contentPaddingX,
-          animated: false,
-        });
+        scrollViewRef.current?.scrollTo({ x: contentPaddingX, animated: false });
         // Sync activeIndex immediately — onScroll may not fire synchronously
         // for the programmatic scroll, especially on web.
         activeIndex.value = CLONE_OFFSET; // = 1, first real slide
@@ -448,66 +399,44 @@ export default function EventBannerCarousel({
     }
   }, [usePeekingCarousel, N, contentPaddingX]);
 
-  const onScroll = useCallback(
-    (event: { nativeEvent: { contentOffset: { x: number } } }) => {
-      const x = event.nativeEvent.contentOffset.x;
-      scrollX.value = x;
-      // Derive physical index from scroll position
-      const physIdx = Math.round((x - contentPaddingX) / snapInterval);
-      activeIndex.value = physIdx;
+  const onScroll = useCallback((event: { nativeEvent: { contentOffset: { x: number } } }) => {
+    const x = event.nativeEvent.contentOffset.x;
+    scrollX.value = x;
+    // Derive physical index from scroll position
+    const physIdx = Math.round((x - contentPaddingX) / snapInterval);
+    activeIndex.value = physIdx;
 
-      // Silent wrap during scroll: if we're near a clone position, snap to the
-      // real slide without animation. This catches cases where momentumEnd
-      // doesn't fire reliably on web.
-      if (wrapLock) return;
-      if (physIdx === 0 && N > 1) {
-        setWrapLock(true);
-        // Snap to the real last slide (phys N) — same position visually
-        requestAnimationFrame(() => {
-          scrollViewRef.current?.scrollTo({
-            x: physicalToOffset(N),
-            animated: false,
-          });
-          // Release the lock after the scroll settles
-          setTimeout(() => setWrapLock(false), 100);
-        });
-      }
-      if (physIdx === N + 1 && N > 1) {
-        setWrapLock(true);
-        // Snap to the real first slide (phys 1) — same position visually
-        requestAnimationFrame(() => {
-          scrollViewRef.current?.scrollTo({
-            x: physicalToOffset(1),
-            animated: false,
-          });
-          setTimeout(() => setWrapLock(false), 100);
-        });
-      }
-    },
-    [
-      scrollX,
-      activeIndex,
-      contentPaddingX,
-      snapInterval,
-      N,
-      physicalToOffset,
-      wrapLock,
-    ],
-  );
+    // Silent wrap during scroll: if we're near a clone position, snap to the
+    // real slide without animation. This catches cases where momentumEnd
+    // doesn't fire reliably on web.
+    if (wrapLock) return;
+    if (physIdx === 0 && N > 1) {
+      setWrapLock(true);
+      // Snap to the real last slide (phys N) — same position visually
+      requestAnimationFrame(() => {
+        scrollViewRef.current?.scrollTo({ x: physicalToOffset(N), animated: false });
+        // Release the lock after the scroll settles
+        setTimeout(() => setWrapLock(false), 100);
+      });
+    }
+    if (physIdx === N + 1 && N > 1) {
+      setWrapLock(true);
+      // Snap to the real first slide (phys 1) — same position visually
+      requestAnimationFrame(() => {
+        scrollViewRef.current?.scrollTo({ x: physicalToOffset(1), animated: false });
+        setTimeout(() => setWrapLock(false), 100);
+      });
+    }
+  }, [scrollX, activeIndex, contentPaddingX, snapInterval, N, physicalToOffset, wrapLock]);
 
   const onMomentumScrollEnd = useCallback(() => {
     if (wrapLock) return;
-    const physIdx = Math.round(
-      (scrollX.value - contentPaddingX) / snapInterval,
-    );
+    const physIdx = Math.round((scrollX.value - contentPaddingX) / snapInterval);
     // Wrap: clone_last (phys 0) → real last (phys N)
     if (physIdx === 0 && N > 1) {
       setWrapLock(true);
       setTimeout(() => {
-        scrollViewRef.current?.scrollTo({
-          x: physicalToOffset(N),
-          animated: false,
-        });
+        scrollViewRef.current?.scrollTo({ x: physicalToOffset(N), animated: false });
         setWrapLock(false);
       }, 150);
     }
@@ -515,47 +444,28 @@ export default function EventBannerCarousel({
     if (physIdx === N + 1 && N > 1) {
       setWrapLock(true);
       setTimeout(() => {
-        scrollViewRef.current?.scrollTo({
-          x: physicalToOffset(1),
-          animated: false,
-        });
+        scrollViewRef.current?.scrollTo({ x: physicalToOffset(1), animated: false });
         setWrapLock(false);
       }, 150);
     }
   }, [scrollX, contentPaddingX, physicalToOffset, N, wrapLock]);
 
-  const scrollToPhysical = useCallback(
-    (physIdx: number, animated = true) => {
-      scrollViewRef.current?.scrollTo({
-        x: physicalToOffset(physIdx),
-        animated,
-      });
-    },
-    [physicalToOffset],
-  );
+  const scrollToPhysical = useCallback((physIdx: number, animated = true) => {
+    scrollViewRef.current?.scrollTo({ x: physicalToOffset(physIdx), animated });
+  }, [physicalToOffset]);
 
-  const scrollToLogical = useCallback(
-    (logIdx: number) => {
-      scrollToPhysical(logIdx + CLONE_OFFSET);
-    },
-    [scrollToPhysical],
-  );
+  const scrollToLogical = useCallback((logIdx: number) => {
+    scrollToPhysical(logIdx + CLONE_OFFSET);
+  }, [scrollToPhysical]);
 
-  const scrollToFallbackSlide = useCallback(
-    (index: number) => {
-      scrollViewRef.current?.scrollTo({
-        x: index * screenWidth,
-        animated: true,
-      });
-    },
-    [screenWidth],
-  );
+  const scrollToFallbackSlide = useCallback((index: number) => {
+    scrollViewRef.current?.scrollTo({ x: index * screenWidth, animated: true });
+  }, [screenWidth]);
 
   const handleEventPress = (event: EventInfo) => {
     if (onEventPress) onEventPress(event);
   };
-  const getEventStartDate = (event: EventInfo): string | undefined =>
-    event.eventStartDate;
+  const getEventStartDate = (event: EventInfo): string | undefined => event.eventStartDate;
 
   const styles = getStyles(isDark, colors, isMobile, screenWidth);
 
@@ -582,9 +492,7 @@ export default function EventBannerCarousel({
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
-    return () => {
-      if (raf) cancelAnimationFrame(raf);
-    };
+    return () => { if (raf) cancelAnimationFrame(raf); };
   }, [autoPlay, N, autoPlayInterval, progress]);
 
   // Auto-play advance timer
@@ -641,9 +549,7 @@ export default function EventBannerCarousel({
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
-    return () => {
-      if (raf) cancelAnimationFrame(raf);
-    };
+    return () => { if (raf) cancelAnimationFrame(raf); };
   }, [activeIndex, N, usePeekingCarousel]);
 
   const togglePlay = useCallback(() => {
@@ -666,15 +572,12 @@ export default function EventBannerCarousel({
     isAutoPlayPausedRef.current = false;
   }, []);
 
-  const handleTickPress = useCallback(
-    (idx: number) => {
-      setLogicalIndex(idx);
-      scrollToLogical(idx);
-      timerStartRef.current = Date.now();
-      progress.value = 0;
-    },
-    [scrollToLogical, progress],
-  );
+  const handleTickPress = useCallback((idx: number) => {
+    setLogicalIndex(idx);
+    scrollToLogical(idx);
+    timerStartRef.current = Date.now();
+    progress.value = 0;
+  }, [scrollToLogical, progress]);
 
   // Restart: jump back to the first slide with a pause so the user can
   // see the reset before auto-play kicks back in.
@@ -693,17 +596,14 @@ export default function EventBannerCarousel({
   }, [scrollToLogical, progress]);
 
   // --- Web-only: mouse drag to scroll ---
-  const handlePointerDown = useCallback(
-    (e: any) => {
-      if (e.pointerType === "touch") return;
-      dragRef.current = { startX: e.clientX, scrollStart: scrollX.value };
-      isDraggingRef.current = false;
-      if (e.currentTarget) e.currentTarget.style.cursor = "grabbing";
-      // Pause auto-play so dragging doesn't fight the carousel
-      isAutoPlayPausedRef.current = true;
-    },
-    [scrollX],
-  );
+  const handlePointerDown = useCallback((e: any) => {
+    if (e.pointerType === 'touch') return;
+    dragRef.current = { startX: e.clientX, scrollStart: scrollX.value };
+    isDraggingRef.current = false;
+    if (e.currentTarget) e.currentTarget.style.cursor = 'grabbing';
+    // Pause auto-play so dragging doesn't fight the carousel
+    isAutoPlayPausedRef.current = true;
+  }, [scrollX]);
 
   const handlePointerMove = useCallback((e: any) => {
     if (!dragRef.current) return;
@@ -714,294 +614,234 @@ export default function EventBannerCarousel({
   }, []);
 
   const handlePointerUp = useCallback((e: any) => {
-    if (e?.currentTarget) e.currentTarget.style.cursor = "grab";
+    if (e?.currentTarget) e.currentTarget.style.cursor = 'grab';
     dragRef.current = null;
     // Resume auto-play after a short delay so the snap animation finishes
-    setTimeout(() => {
-      isAutoPlayPausedRef.current = false;
-    }, 800);
+    setTimeout(() => { isAutoPlayPausedRef.current = false; }, 800);
   }, []);
 
   const handlePointerCancel = useCallback((e: any) => {
-    if (e?.currentTarget) e.currentTarget.style.cursor = "grab";
+    if (e?.currentTarget) e.currentTarget.style.cursor = 'grab';
     dragRef.current = null;
     isDraggingRef.current = false;
-    setTimeout(() => {
-      isAutoPlayPausedRef.current = false;
-    }, 800);
+    setTimeout(() => { isAutoPlayPausedRef.current = false; }, 800);
   }, []);
 
   // --- Web-only: vertical scroll wheel → horizontal scroll ---
-  const handleWheel = useCallback(
-    (e: any) => {
-      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
-        e.preventDefault();
-        // Pause auto-play while the user is wheeling through slides
-        isAutoPlayPausedRef.current = true;
-        const currentX = scrollX.value;
-        // Map vertical wheel to horizontal scroll — snap to nearest card
-        const delta = e.deltaY > 0 ? snapInterval : -snapInterval;
-        const targetX = Math.max(0, currentX + delta);
-        scrollViewRef.current?.scrollTo({ x: targetX, animated: true });
-        // Resume after snap settles (cancel any previous resume timer)
-        clearTimeout(wheelResumeRef.current);
-        wheelResumeRef.current = setTimeout(() => {
-          isAutoPlayPausedRef.current = false;
-        }, 1200);
-      }
-    },
-    [scrollX, snapInterval],
-  );
+  const handleWheel = useCallback((e: any) => {
+    if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+      e.preventDefault();
+      // Pause auto-play while the user is wheeling through slides
+      isAutoPlayPausedRef.current = true;
+      const currentX = scrollX.value;
+      // Map vertical wheel to horizontal scroll — snap to nearest card
+      const delta = e.deltaY > 0 ? snapInterval : -snapInterval;
+      const targetX = Math.max(0, currentX + delta);
+      scrollViewRef.current?.scrollTo({ x: targetX, animated: true });
+      // Resume after snap settles (cancel any previous resume timer)
+      clearTimeout(wheelResumeRef.current);
+      wheelResumeRef.current = setTimeout(() => { isAutoPlayPausedRef.current = false; }, 1200);
+    }
+  }, [scrollX, snapInterval]);
 
   // Render slide content
-  const renderSlideContent = useCallback(
-    (slide: CarouselSlide) => {
-      if (slide.type === "event") {
-        if (!slide.event || !slide.banner) return null;
-        const event = slide.event;
-        const banner = slide.banner;
-        const localizedBanner = localizeEventBannerSlide(banner, translate);
-        const lampBranding = lampBrandingByEvent[event.id];
-        const resolvedLampBrandLogo =
-          lampBranding?.logoSrcDark ||
-          lampBranding?.logoSrcLight ||
-          lampBranding?.logoFallbackSrc;
-        const shouldUseLampBanner =
-          Platform.OS === "web" &&
-          slide.useEventBranding &&
-          Boolean(resolvedLampBrandLogo);
+  const renderSlideContent = useCallback((slide: CarouselSlide) => {
+    if (slide.type === "event") {
+      if (!slide.event || !slide.banner) return null;
+      const event = slide.event;
+      const banner = slide.banner;
+      const localizedBanner = localizeEventBannerSlide(banner, translate);
+      const lampBranding = lampBrandingByEvent[event.id];
+      const resolvedLampBrandLogo = lampBranding?.logoSrcDark || lampBranding?.logoSrcLight || lampBranding?.logoFallbackSrc;
+      const shouldUseLampBanner = Platform.OS === "web" && slide.useEventBranding && Boolean(resolvedLampBrandLogo);
 
-        const bannerContent = shouldUseLampBanner ? (
-          <LampBrandBanner
-            isDarkMode={isDark}
-            logoSrcDark={lampBranding?.logoSrcDark}
-            logoSrcLight={lampBranding?.logoSrcLight}
-            logoFallbackSrc={lampBranding?.logoFallbackSrc}
-            logoAlt={lampBranding?.logoAlt}
-            backgroundColor={LOGO_SLIDE_BACKGROUND}
-            accentColor={event.color}
-          />
-        ) : (
-          <EventBanner
-            title={localizedBanner.title}
-            subtitle={localizedBanner.subtitle}
-            date={localizedBanner.date}
-            backgroundColor={localizedBanner.backgroundColor}
-            showCountdown={shouldShowEventBannerCountdown(event.eventStartDate)}
-            showLiveIndicator={
-              banner.media.type !== "video" && Boolean(event.eventStartDate)
-            }
-            eventStartDate={getEventStartDate(event)}
-            isLive={false}
-            eventId={event.id}
-            eventImage={
-              banner.media.type === "image" ? banner.media.url : undefined
-            }
-            eventImageTextOverlaySafe={
-              banner.media.type === "image" &&
-              banner.media.textOverlaySafe === true
-            }
-            eventShortName={event.shortName}
-            eventVideo={
-              banner.media.type === "video" ? banner.media.url : undefined
-            }
-            eventLabel={localizedBanner.eyebrow || event.recurrenceLabel}
-            ctaLabel={localizedBanner.cta?.label}
-            ctaUrl={localizedBanner.cta?.url}
-            ctaPosition={localizedBanner.cta?.position}
-            showCta={showCtas}
-          />
-        );
+      const bannerContent = shouldUseLampBanner ? (
+        <LampBrandBanner
+          isDarkMode={isDark}
+          logoSrcDark={lampBranding?.logoSrcDark}
+          logoSrcLight={lampBranding?.logoSrcLight}
+          logoFallbackSrc={lampBranding?.logoFallbackSrc}
+          logoAlt={lampBranding?.logoAlt}
+          backgroundColor={LOGO_SLIDE_BACKGROUND}
+          accentColor={event.color}
+        />
+      ) : (
+        <EventBanner
+          title={localizedBanner.title}
+          subtitle={localizedBanner.subtitle}
+          date={localizedBanner.date}
+          backgroundColor={localizedBanner.backgroundColor}
+          showCountdown={shouldShowEventBannerCountdown(event.eventStartDate)}
+          showLiveIndicator={banner.media.type !== "video" && Boolean(event.eventStartDate)}
+          eventStartDate={getEventStartDate(event)}
+          isLive={false}
+          eventId={event.id}
+          eventImage={banner.media.type === "image" ? banner.media.url : undefined}
+          eventImageTextOverlaySafe={banner.media.type === "image" && banner.media.textOverlaySafe === true}
+          eventShortName={event.shortName}
+          eventVideo={banner.media.type === "video" ? banner.media.url : undefined}
+          eventLabel={localizedBanner.eyebrow || event.recurrenceLabel}
+          ctaLabel={localizedBanner.cta?.label}
+          ctaUrl={localizedBanner.cta?.url}
+          ctaPosition={localizedBanner.cta?.position}
+          showCta={showCtas}
+        />
+      );
 
-        return (
-          <View style={styles.cardInner}>
-            <View style={styles.eventBannerWrapper}>{bannerContent}</View>
-            {/* Soft gradient fade at the bottom edge of the card — replaces the
-              hard straight-line cutoff with a smooth transparency transition. */}
-            <View style={styles.bottomFadeOverlay} pointerEvents="none">
-              <SafeLinearGradient
-                colors={[
-                  "transparent",
-                  isDark ? "rgba(7,7,10,0.3)" : "rgba(248,250,252,0.3)",
-                  isDark ? "rgba(7,7,10,0.6)" : "rgba(248,250,252,0.6)",
-                ]}
-                locations={[0, 0.4, 1]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 0, y: 1 }}
-                style={{ flex: 1 }}
-              />
-            </View>
+      return (
+        <View style={styles.cardInner}>
+          <View style={styles.eventBannerWrapper}>
+            {bannerContent}
           </View>
-        );
-      }
-
-      if (slide.type === "logo") {
-        return (
-          <View style={styles.cardInner}>
-            <View
-              style={[
-                styles.logoSlideContainer,
-                {
-                  backgroundColor:
-                    slide.backgroundColor || LOGO_SLIDE_BACKGROUND,
-                  shadowColor: "#000000",
-                },
+          {/* Soft gradient fade at the bottom edge of the card — replaces the
+              hard straight-line cutoff with a smooth transparency transition. */}
+          <View style={styles.bottomFadeOverlay} pointerEvents="none">
+            <SafeLinearGradient
+              colors={[
+                "transparent",
+                isDark ? "rgba(7,7,10,0.3)" : "rgba(248,250,252,0.3)",
+                isDark ? "rgba(7,7,10,0.6)" : "rgba(248,250,252,0.6)",
               ]}
-            >
-              <SafeLinearGradient
-                colors={[
-                  hexToRgba(slide.accentColor || "#6FDDFD", 0.48),
-                  hexToRgba(slide.accentColor || "#6FDDFD", 0.16),
-                  "transparent",
-                ]}
-                locations={[0, 0.34, 1]}
-                start={{ x: 0.5, y: 0 }}
-                end={{ x: 0.5, y: 1 }}
-                style={styles.lightBeamOverlay}
-              />
+              locations={[0, 0.4, 1]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 0, y: 1 }}
+              style={{ flex: 1 }}
+            />
+          </View>
+        </View>
+      );
+    }
+
+    if (slide.type === "logo") {
+      return (
+        <View style={styles.cardInner}>
+          <View style={[styles.logoSlideContainer, { backgroundColor: slide.backgroundColor || LOGO_SLIDE_BACKGROUND, shadowColor: "#000000" }]}>
+            <SafeLinearGradient
+              colors={[hexToRgba(slide.accentColor || "#6FDDFD", 0.48), hexToRgba(slide.accentColor || "#6FDDFD", 0.16), "transparent"]}
+              locations={[0, 0.34, 1]}
+              start={{ x: 0.5, y: 0 }}
+              end={{ x: 0.5, y: 1 }}
+              style={styles.lightBeamOverlay}
+            />
+            <Image
+              source={isDark && slide.logoSrcDark ? slide.logoSrcDark : slide.logoSrcLight || slide.logoSrc}
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
+          </View>
+          {/* Same soft bottom-edge gradient for logo slides. */}
+          <View style={styles.bottomFadeOverlay} pointerEvents="none">
+            <SafeLinearGradient
+              colors={[
+                "transparent",
+                isDark ? "rgba(7,7,10,0.3)" : "rgba(248,250,252,0.3)",
+                isDark ? "rgba(7,7,10,0.6)" : "rgba(248,250,252,0.6)",
+              ]}
+              locations={[0, 0.4, 1]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 0, y: 1 }}
+              style={{ flex: 1 }}
+            />
+          </View>
+        </View>
+      );
+    }
+    if (slide.type === "campaign" && slide.campaignSrc) {
+      return (
+        <View style={styles.cardInner}>
+          <Image
+            source={slide.campaignSrc}
+            accessible={false}
+            importantForAccessibility="no-hide-descendants"
+            style={styles.campaignImage}
+            resizeMode={slide.campaignFit || "cover"}
+          />
+          {slide.campaignLogoSrc && (
+            <View style={[
+              styles.campaignBranding,
+              slide.campaignCompactBranding && styles.campaignBrandingCompact,
+            ]}>
               <Image
-                source={
-                  isDark && slide.logoSrcDark
-                    ? slide.logoSrcDark
-                    : slide.logoSrcLight || slide.logoSrc
-                }
-                style={styles.logoImage}
+                source={slide.campaignLogoSrc}
+                accessible={false}
+                style={[
+                  styles.campaignLogo,
+                  slide.campaignCompactBranding && styles.campaignLogoCompact,
+                ]}
                 resizeMode="contain"
               />
-            </View>
-            {/* Same soft bottom-edge gradient for logo slides. */}
-            <View style={styles.bottomFadeOverlay} pointerEvents="none">
-              <SafeLinearGradient
-                colors={[
-                  "transparent",
-                  isDark ? "rgba(7,7,10,0.3)" : "rgba(248,250,252,0.3)",
-                  isDark ? "rgba(7,7,10,0.6)" : "rgba(248,250,252,0.6)",
-                ]}
-                locations={[0, 0.4, 1]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 0, y: 1 }}
-                style={{ flex: 1 }}
-              />
-            </View>
-          </View>
-        );
-      }
-      if (slide.type === "campaign" && slide.campaignSrc) {
-        return (
-          <View style={styles.cardInner}>
-            <Image
-              source={slide.campaignSrc}
-              accessible={false}
-              importantForAccessibility="no-hide-descendants"
-              style={styles.campaignImage}
-              resizeMode={slide.campaignFit || "cover"}
-            />
-            {slide.campaignLogoSrc && (
-              <View
-                style={[
-                  styles.campaignBranding,
-                  slide.campaignCompactBranding &&
-                    styles.campaignBrandingCompact,
-                ]}
-              >
-                <Image
-                  source={slide.campaignLogoSrc}
-                  accessible={false}
-                  style={[
-                    styles.campaignLogo,
-                    slide.campaignCompactBranding && styles.campaignLogoCompact,
-                  ]}
-                  resizeMode="contain"
-                />
-                {(slide.campaignLocation || slide.campaignDate) && (
-                  <View style={styles.campaignMetadata}>
-                    <Text style={styles.campaignLocation}>
-                      {slide.campaignLocation}
-                    </Text>
-                    <Text style={styles.campaignDate}>
-                      {slide.campaignDate}
-                    </Text>
-                  </View>
-                )}
-              </View>
-            )}
-            {slide.campaignCity && (
-              <Text style={styles.campaignCity}>{slide.campaignCity}</Text>
-            )}
-            {slide.campaignFederationLogoSrc &&
-              slide.campaignMinDeporteLogoSrc && (
-                <View style={styles.campaignAffiliations}>
-                  <View style={styles.campaignAffiliationLogos}>
-                    <View style={styles.campaignFederationMembership}>
-                      <Text style={styles.campaignAffiliationLabel}>
-                        {translate("landingCarousel.memberOf", "Member of")}
-                      </Text>
-                      <View style={styles.campaignFederationLogoSurface}>
-                        <Image
-                          source={slide.campaignFederationLogoSrc}
-                          accessible={false}
-                          style={styles.campaignFederationLogo}
-                          resizeMode="contain"
-                        />
-                      </View>
-                    </View>
-                    <View style={styles.campaignAffiliationDivider} />
-                    <View style={styles.campaignSupporters}>
-                      <Text style={styles.campaignAffiliationLabel}>
-                        {translate(
-                          "landingCarousel.supportedBy",
-                          "Supported by",
-                        )}
-                      </Text>
-                      <View style={styles.campaignSupporterLogos}>
-                        <Image
-                          source={slide.campaignMinDeporteLogoSrc}
-                          accessible={false}
-                          style={styles.campaignMinDeporteLogo}
-                          resizeMode="contain"
-                        />
-                        {slide.campaignInderLogoSrc && (
-                          <>
-                            <View style={styles.campaignSupporterDivider} />
-                            <Image
-                              source={slide.campaignInderLogoSrc}
-                              accessible={false}
-                              style={styles.campaignInderLogo}
-                              resizeMode="contain"
-                            />
-                          </>
-                        )}
-                      </View>
-                    </View>
-                  </View>
+              {(slide.campaignLocation || slide.campaignDate) && (
+                <View style={styles.campaignMetadata}>
+                  <Text style={styles.campaignLocation}>{slide.campaignLocation}</Text>
+                  <Text style={styles.campaignDate}>{slide.campaignDate}</Text>
                 </View>
               )}
-            <View style={styles.bottomFadeOverlay} pointerEvents="none">
-              <SafeLinearGradient
-                colors={[
-                  "transparent",
-                  "rgba(7,7,10,0.14)",
-                  "rgba(7,7,10,0.34)",
-                ]}
-                locations={[0, 0.4, 1]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 0, y: 1 }}
-                style={{ flex: 1 }}
-              />
             </View>
+          )}
+          {slide.campaignCity && (
+            <Text style={styles.campaignCity}>{slide.campaignCity}</Text>
+          )}
+          {slide.campaignFederationLogoSrc && slide.campaignMinDeporteLogoSrc && (
+            <View style={styles.campaignAffiliations}>
+              <View style={styles.campaignAffiliationLogos}>
+                <View style={styles.campaignFederationMembership}>
+                  <Text style={styles.campaignAffiliationLabel}>
+                    {translate("landingCarousel.memberOf", "Member of")}
+                  </Text>
+                  <View style={styles.campaignFederationLogoSurface}>
+                    <Image
+                      source={slide.campaignFederationLogoSrc}
+                      accessible={false}
+                      style={styles.campaignFederationLogo}
+                      resizeMode="contain"
+                    />
+                  </View>
+                </View>
+                <View style={styles.campaignAffiliationDivider} />
+                <View style={styles.campaignSupporters}>
+                  <Text style={styles.campaignAffiliationLabel}>
+                    {translate("landingCarousel.supportedBy", "Supported by")}
+                  </Text>
+                  <View style={styles.campaignSupporterLogos}>
+                    <Image
+                      source={slide.campaignMinDeporteLogoSrc}
+                      accessible={false}
+                      style={styles.campaignMinDeporteLogo}
+                      resizeMode="contain"
+                    />
+                    {slide.campaignInderLogoSrc && (
+                      <>
+                        <View style={styles.campaignSupporterDivider} />
+                        <Image
+                          source={slide.campaignInderLogoSrc}
+                          accessible={false}
+                          style={styles.campaignInderLogo}
+                          resizeMode="contain"
+                        />
+                      </>
+                    )}
+                  </View>
+                </View>
+              </View>
+            </View>
+          )}
+          <View style={styles.bottomFadeOverlay} pointerEvents="none">
+            <SafeLinearGradient
+              colors={["transparent", "rgba(7,7,10,0.14)", "rgba(7,7,10,0.34)"]}
+              locations={[0, 0.4, 1]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 0, y: 1 }}
+              style={{ flex: 1 }}
+            />
           </View>
-        );
-      }
-      return null;
-    },
-    [isDark, translate, lampBrandingByEvent, showCtas, onEventPress, styles],
-  );
+        </View>
+      );
+    }
+    return null;
+  }, [isDark, translate, lampBrandingByEvent, showCtas, onEventPress, styles]);
 
   // Web-only wheel wrapper props (typed as `any` because RN's ViewProps omits onWheel)
-  const wheelViewProps: any = {
-    style: styles.carouselWrapper,
-    onWheel: handleWheel,
-  };
+  const wheelViewProps: any = { style: styles.carouselWrapper, onWheel: handleWheel };
 
   return (
     <View style={styles.container}>
@@ -1018,10 +858,7 @@ export default function EventBannerCarousel({
             onMomentumScrollEnd={onMomentumScrollEnd}
             scrollEventThrottle={16}
             style={styles.scrollView}
-            contentContainerStyle={[
-              styles.scrollContent,
-              { paddingHorizontal: contentPaddingX },
-            ]}
+            contentContainerStyle={[styles.scrollContent, { paddingHorizontal: contentPaddingX }]}
             onTouchStart={handleCarouselPressIn}
             onTouchEnd={handleCarouselPressOut}
             onTouchCancel={handleCarouselPressOut}
@@ -1031,29 +868,17 @@ export default function EventBannerCarousel({
             onPointerCancel={handlePointerCancel}
           >
             {infiniteSlides.map((slide, physIdx) => {
-              const key =
-                slide.type === "logo"
-                  ? `clone-${slide.logoId}-${physIdx}`
-                  : slide.type === "campaign"
-                    ? `clone-${slide.campaignId}-${physIdx}`
-                    : `clone-${slide.event?.id}-${slide.banner?.id}-${physIdx}`;
+              const key = slide.type === "logo"
+                ? `clone-${slide.logoId}-${physIdx}`
+                : slide.type === "campaign"
+                  ? `clone-${slide.campaignId}-${physIdx}`
+                : `clone-${slide.event?.id}-${slide.banner?.id}-${physIdx}`;
               return (
-                <AnimatedCard
-                  key={key}
-                  activeIndex={activeIndex}
-                  index={physIdx}
-                  cardWidth={cardWidth}
-                >
+                <AnimatedCard key={key} activeIndex={activeIndex} index={physIdx} cardWidth={cardWidth}>
                   <TouchableOpacity
                     activeOpacity={0.85}
-                    accessibilityRole={
-                      slide.type === "campaign" ? "button" : undefined
-                    }
-                    accessibilityLabel={
-                      slide.type === "campaign"
-                        ? slide.campaignAccessibilityLabel
-                        : undefined
-                    }
+                    accessibilityRole={slide.type === "campaign" ? "button" : undefined}
+                    accessibilityLabel={slide.type === "campaign" ? slide.campaignAccessibilityLabel : undefined}
                     onPress={() => {
                       if (slide.type === "campaign" && slide.event) {
                         handleEventPress(slide.event);
@@ -1067,16 +892,10 @@ export default function EventBannerCarousel({
                       // First click: center this card and pause auto-play so the
                       // user can inspect it.
                       const physCenter = physIdx;
-                      const targetX =
-                        contentPaddingX + physCenter * snapInterval;
-                      scrollViewRef.current?.scrollTo({
-                        x: targetX,
-                        animated: true,
-                      });
+                      const targetX = contentPaddingX + physCenter * snapInterval;
+                      scrollViewRef.current?.scrollTo({ x: targetX, animated: true });
                       isAutoPlayPausedRef.current = true;
-                      setTimeout(() => {
-                        isAutoPlayPausedRef.current = false;
-                      }, 3000);
+                      setTimeout(() => { isAutoPlayPausedRef.current = false; }, 3000);
                     }}
                     style={{ flex: 1 }}
                   >
@@ -1095,9 +914,7 @@ export default function EventBannerCarousel({
             pagingEnabled
             showsHorizontalScrollIndicator={false}
             onScroll={(event: any) => {
-              const idx = Math.round(
-                event.nativeEvent.contentOffset.x / screenWidth,
-              );
+              const idx = Math.round(event.nativeEvent.contentOffset.x / screenWidth);
               setCurrentIndex(idx);
             }}
             scrollEventThrottle={16}
@@ -1111,50 +928,44 @@ export default function EventBannerCarousel({
             onPointerUp={handlePointerUp}
             onPointerCancel={handlePointerCancel}
           >
-            {realSlides.map((slide) => {
-              const key =
-                slide.type === "logo"
-                  ? slide.logoId!
-                  : slide.type === "campaign"
-                    ? slide.campaignId!
-                    : `${slide.event?.id}:${slide.banner?.id}`;
+          {realSlides.map((slide) => {
+            const key = slide.type === "logo"
+              ? slide.logoId!
+              : slide.type === "campaign"
+                ? slide.campaignId!
+                : `${slide.event?.id}:${slide.banner?.id}`;
 
-              if (slide.type === "campaign" && slide.event) {
-                return (
-                  <TouchableOpacity
-                    key={key}
-                    activeOpacity={0.85}
-                    accessibilityRole="button"
-                    accessibilityLabel={slide.campaignAccessibilityLabel}
-                    onPress={() => handleEventPress(slide.event!)}
-                    style={styles.slideFullWidth}
-                  >
-                    {renderSlideContent(slide)}
-                  </TouchableOpacity>
-                );
-              }
-
+            if (slide.type === "campaign" && slide.event) {
               return (
-                <View key={key} style={styles.slideFullWidth}>
+                <TouchableOpacity
+                  key={key}
+                  activeOpacity={0.85}
+                  accessibilityRole="button"
+                  accessibilityLabel={slide.campaignAccessibilityLabel}
+                  onPress={() => handleEventPress(slide.event!)}
+                  style={styles.slideFullWidth}
+                >
                   {renderSlideContent(slide)}
-                </View>
+                </TouchableOpacity>
               );
-            })}
-          </ScrollView>
+            }
+
+            return (
+              <View key={key} style={styles.slideFullWidth}>
+                {renderSlideContent(slide)}
+              </View>
+            );
+          })}
+        </ScrollView>
         </View>
       )}
 
-      {(showDotIndicators && N > 1) || footerLeadingAction || footerAction ? (
+      {((showDotIndicators && N > 1) || footerLeadingAction || footerAction) ? (
         <View style={styles.footer}>
           <View style={styles.footerCenter}>
-            {footerLeadingAction && (
-              <View style={styles.footerLeadingAction}>
-                {footerLeadingAction}
-              </View>
-            )}
-            {showDotIndicators &&
-              N > 1 &&
-              (usePeekingCarousel && autoPlay ? (
+            {footerLeadingAction && <View style={styles.footerLeadingAction}>{footerLeadingAction}</View>}
+            {showDotIndicators && N > 1 && (
+              usePeekingCarousel && autoPlay ? (
                 <CarouselTickPill
                   count={N}
                   activeIndex={activeIndex}
@@ -1169,10 +980,7 @@ export default function EventBannerCarousel({
                   {realSlides.map((_, index) => (
                     <TouchableOpacity
                       key={index}
-                      style={[
-                        styles.dot,
-                        index === currentIndex && styles.dotActive,
-                      ]}
+                      style={[styles.dot, index === currentIndex && styles.dotActive]}
                       onPress={() => {
                         setCurrentIndex(index);
                         scrollToFallbackSlide(index);
@@ -1182,10 +990,9 @@ export default function EventBannerCarousel({
                     />
                   ))}
                 </View>
-              ))}
-            {footerAction && (
-              <View style={styles.footerAction}>{footerAction}</View>
+              )
             )}
+            {footerAction && <View style={styles.footerAction}>{footerAction}</View>}
           </View>
         </View>
       ) : null}
@@ -1193,16 +1000,12 @@ export default function EventBannerCarousel({
   );
 }
 
-const getStyles = (
-  isDark: boolean,
-  colors: any,
-  isMobile: boolean,
-  _screenWidth: number,
-) => {
-  const cardHeight = resolveCarouselCardHeight(isMobile, _screenWidth);
-  const cardMediaHeight = cardHeight - 8;
+const getStyles = (isDark: boolean, colors: any, isMobile: boolean, _screenWidth: number) =>
+  {
+    const cardHeight = resolveCarouselCardHeight(isMobile, _screenWidth);
+    const cardMediaHeight = cardHeight - 8;
 
-  return StyleSheet.create({
+    return StyleSheet.create({
     container: {
       width: "100%",
       marginBottom: 32,
@@ -1239,9 +1042,7 @@ const getStyles = (
       width: 8,
       height: 8,
       borderRadius: 4,
-      backgroundColor: isDark
-        ? "rgba(255, 255, 255, 0.3)"
-        : "rgba(0, 0, 0, 0.3)",
+      backgroundColor: isDark ? "rgba(255, 255, 255, 0.3)" : "rgba(0, 0, 0, 0.3)",
     },
     dotActive: {
       width: 24,
@@ -1249,17 +1050,15 @@ const getStyles = (
     },
     cardInner: {
       width: "100%", // parent AnimatedCard sets the actual width
-      // A consistent inset keeps the media away from every rounded edge,
-      // including the lower corners that previously looked clipped on phones.
+      // The uniform inset keeps media clear of every rounded edge, including
+      // the lower corners that looked clipped on compact phones.
       height: cardHeight,
       borderRadius: CARD_BORDER_RADIUS,
       overflow: "hidden",
       padding: 4,
       // No shadow — the gradient overlay handles the bottom edge softly.
       // A box shadow would create a visible halo line around the rounded corners.
-      backgroundColor: isDark
-        ? "rgba(255, 255, 255, 0.03)"
-        : "rgba(0, 0, 0, 0.02)",
+      backgroundColor: isDark ? "rgba(255, 255, 255, 0.03)" : "rgba(0, 0, 0, 0.02)",
     },
     eventBannerWrapper: {
       width: "100%",
@@ -1465,5 +1264,5 @@ const getStyles = (
       zIndex: 1,
       pointerEvents: "none",
     },
-  });
-};
+    });
+  };

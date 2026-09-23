@@ -36,18 +36,14 @@ jest.mock("../../lib/event-detector", () => ({
   getAvailableEvents: () => [mockEvent],
   isGlobalEventTenant: () => true,
 }));
-jest.mock("../../lib/event-branding", () => ({
-  getLampBrandConfig: () => undefined,
-}));
+jest.mock("../../lib/event-branding", () => ({ getLampBrandConfig: () => undefined }));
 jest.mock("../../lib/event-banners", () => ({
   getEventBannerSlides: () => mockBanners,
   localizeEventBannerSlide: (banner: unknown) => banner,
   shouldShowEventBannerCountdown: () => false,
 }));
 
-import EventBannerCarousel, {
-  resolveCarouselCardHeight,
-} from "../../components/EventBannerCarousel";
+import EventBannerCarousel, { resolveCarouselCardHeight } from "../../components/EventBannerCarousel";
 
 let view: ReactTestRenderer;
 let scrollTo: jest.Mock;
@@ -73,8 +69,7 @@ afterEach(() => {
 function render(props: React.ComponentProps<typeof EventBannerCarousel>) {
   act(() => {
     view = create(<EventBannerCarousel {...props} />, {
-      createNodeMock: (node) =>
-        node.type === ScrollView ? { scrollTo } : null,
+      createNodeMock: (node) => (node.type === ScrollView ? { scrollTo } : null),
     });
   });
 }
@@ -89,14 +84,10 @@ it("advances the native pager by one viewport and wraps after the final slide", 
   jest.useFakeTimers();
   render({ event: mockEvent, autoPlay: true, autoPlayInterval: 100 });
 
-  act(() => {
-    jest.advanceTimersByTime(100);
-  });
+  act(() => { jest.advanceTimersByTime(100); });
   expect(scrollTo).toHaveBeenLastCalledWith({ x: 1024, animated: true });
 
-  act(() => {
-    jest.advanceTimersByTime(100);
-  });
+  act(() => { jest.advanceTimersByTime(100); });
   expect(scrollTo).toHaveBeenLastCalledWith({ x: 0, animated: true });
 });
 
