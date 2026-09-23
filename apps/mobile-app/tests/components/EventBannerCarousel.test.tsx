@@ -43,7 +43,7 @@ jest.mock("../../lib/event-banners", () => ({
   shouldShowEventBannerCountdown: () => false,
 }));
 
-import EventBannerCarousel from "../../components/EventBannerCarousel";
+import EventBannerCarousel, { resolveCarouselCardHeight } from "../../components/EventBannerCarousel";
 
 let view: ReactTestRenderer;
 let scrollTo: jest.Mock;
@@ -73,6 +73,12 @@ function render(props: React.ComponentProps<typeof EventBannerCarousel>) {
     });
   });
 }
+
+it("uses a compact, content-safe card height on native phone widths", () => {
+  expect(resolveCarouselCardHeight(true, 360)).toBe(420);
+  expect(resolveCarouselCardHeight(true, 412)).toBe(448);
+  expect(resolveCarouselCardHeight(false, 1024)).toBe(540);
+});
 
 it("advances the native pager by one viewport and wraps after the final slide", () => {
   jest.useFakeTimers();

@@ -4,7 +4,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useTheme } from '../hooks/useTheme';
 import { versionService } from '../lib/services/version-service';
 import { apiClient } from '../lib/api-client';
-import { compareAppVersions } from '../config/runtime-version';
+import { compareAppVersions, getInstalledNativeAppVersion } from '../config/runtime-version';
 import { clearAllCaches, performHardReload } from '../lib/version-checker';
 import packageJson from '../package.json';
 import { useOtaUpdate } from '../hooks/useOtaUpdate';
@@ -77,7 +77,12 @@ export default function VersionQuickSheet({
   const handleCheckForUpdates = async () => {
     setUpdateCheckState('checking');
     try {
-      const currentVersion = packageJson.version;
+      // Native store availability must be compared with the installed binary
+      // version. packageJson reflects an OTA-loaded JS bundle and may be newer
+      // than the Play/App Store app the person has installed.
+      const currentVersion = Platform.OS === 'web'
+        ? packageJson.version
+        : getInstalledNativeAppVersion(packageJson.version);
       const response = await apiClient.get('/config/versions', {
         skipAuth: true,
         skipEventSegment: true,

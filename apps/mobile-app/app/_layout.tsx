@@ -33,6 +33,7 @@ import { I18nProvider } from '../providers/I18nProvider';
 import { useTranslation } from '../i18n/i18n';
 import { CopilotProvider } from '@lib/copilot-shim';
 import { checkVersionOnStart, notifyVersionUpdateFromServiceWorker } from '../lib/version-checker';
+import { getInstalledNativeAppVersion } from '../config/runtime-version';
 import LoadingScreen from '../components/LoadingScreen';
 import { AppErrorBoundary, installGlobalErrorHandler } from '../components/AppErrorBoundary';
 import { configureNativeGoogleSignin } from '../lib/native-google-signin';
@@ -540,7 +541,7 @@ function ThemedContent() {
       )}
       {Platform.OS !== 'web' && showNativeSoftUpdate && nativeUpdate.latestVersion && (
         <VersionUpdateNotification
-          currentVersion={packageJson.version}
+          currentVersion={getInstalledNativeAppVersion(packageJson.version)}
           latestVersion={nativeUpdate.latestVersion}
           storeUrl={nativeUpdate.storeUrl}
           storeWebUrl={nativeUpdate.storeWebUrl}

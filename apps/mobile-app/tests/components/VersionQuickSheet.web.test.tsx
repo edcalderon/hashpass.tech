@@ -6,6 +6,7 @@ import TestRenderer, { act } from 'react-test-renderer';
 const mockApiGet = jest.fn();
 const mockClearAllCaches = jest.fn(async () => {});
 const mockPerformHardReload = jest.fn();
+const mockInstalledNativeAppVersion = jest.fn((fallback: string) => fallback);
 
 jest.mock('react-native', () => ({
   ActivityIndicator: 'ActivityIndicator',
@@ -57,6 +58,19 @@ jest.mock('../../lib/version-checker', () => ({
   clearAllCaches: () => mockClearAllCaches(),
   performHardReload: () => mockPerformHardReload(),
 }));
+jest.mock('../../config/runtime-version', () => ({
+  compareAppVersions: (left: string, right: string) => {
+    const leftParts = left.split('.').map(Number);
+    const rightParts = right.split('.').map(Number);
+    for (let index = 0; index < Math.max(leftParts.length, rightParts.length); index += 1) {
+      if ((leftParts[index] || 0) !== (rightParts[index] || 0)) {
+        return (leftParts[index] || 0) - (rightParts[index] || 0);
+      }
+    }
+    return 0;
+  },
+  getInstalledNativeAppVersion: (fallback: string) => mockInstalledNativeAppVersion(fallback),
+}));
 jest.mock('../../lib/services/version-service', () => ({
   versionService: {
     getCurrentVersion: () => ({ version: '1.8.313', releaseDate: '2026-08-03', releaseType: 'stable', notes: 'Test release' }),
@@ -98,6 +112,7 @@ async function pressText(renderer: TestRenderer.ReactTestRenderer, label: string
 describe('VersionQuickSheet on web', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockInstalledNativeAppVersion.mockImplementation((fallback: string) => fallback);
     mockApiGet.mockResolvedValue({ success: true, data: { nativeVersion: '1.8.314', currentVersion: '1.8.314' } });
   });
 
@@ -137,5 +152,36 @@ describe('VersionQuickSheet on web', () => {
     await pressText(renderer, 'Update');
     expect(mockClearAllCaches).toHaveBeenCalledTimes(1);
     expect(mockPerformHardReload).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('VersionQuickSheet on native', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (require('react-native').Platform as { OS: string }).OS = 'android';
+    // Reproduces the production failure: an OTA ships bundle 1.9.50 into an
+    // installed 1.9.49 Play binary. Store checks must use the binary version.
+    mockInstalledNativeAppVersion.mockReturnValue('1.9.49');
+    mockApiGet.mockResolvedValue({ success: true, data: {
+      nativeVersion: '1.9.50',
+      currentVersion: '1.9.50',
+      androidStoreUrl: 'market://details?id=com.hashpass.tech',
+      androidStoreWebUrl: 'https://play.google.com/store/apps/details?id=com.hashpass.tech',
+    } });
+  });
+
+  afterEach(() => {
+    (require('react-native').Platform as { OS: string }).OS = 'web';
+  });
+
+  it('offers the Play Store upgrade for an older installed binary after an OTA', async () => {
+    const renderer = renderSheet();
+    await pressLabel(renderer, 'Check for Play Store updates');
+
+    expect(mockApiGet).toHaveBeenCalledWith('/config/versions', expect.objectContaining({
+      params: { clientVersion: '1.9.49' },
+    }));
+    expect(textContent(renderer)).toContain('v1.9.50 is available');
+    expect(textContent(renderer)).not.toContain('latest native version');
   });
 });

@@ -56,6 +56,13 @@ function resolveCardDimensions(screenWidth: number) {
   return { cardWidth, contentPaddingX, snapInterval: cardWidth + CARD_GAP };
 }
 
+/** Keep native phone slides scannable without consuming half the viewport. */
+export function resolveCarouselCardHeight(isMobile: boolean, screenWidth: number) {
+  if (!isMobile) return 540;
+  const availableWidth = Math.max(0, screenWidth - 32);
+  return Math.min(480, Math.max(420, Math.round(availableWidth * 1.18)));
+}
+
 /** Infinite-loop wrapper: clones first and last slides for seamless wrapping. */
 function withInfiniteClones(slides: CarouselSlide[]): CarouselSlide[] {
   if (slides.length <= 1) return slides;
@@ -994,7 +1001,11 @@ export default function EventBannerCarousel({
 }
 
 const getStyles = (isDark: boolean, colors: any, isMobile: boolean, _screenWidth: number) =>
-  StyleSheet.create({
+  {
+    const cardHeight = resolveCarouselCardHeight(isMobile, _screenWidth);
+    const cardMediaHeight = cardHeight - 8;
+
+    return StyleSheet.create({
     container: {
       width: "100%",
       marginBottom: 32,
@@ -1004,20 +1015,20 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean, _screenWidth
     },
     scrollView: {
       flexGrow: 0,
-      height: isMobile ? 500 : 540,
+      height: cardHeight,
     },
     scrollContent: {
       alignItems: "center",
-      height: isMobile ? 500 : 540,
+      height: cardHeight,
     },
     // Fallback slider styles (full-width paging, no peeking)
     scrollContentFallback: {
       alignItems: "center",
-      height: isMobile ? 500 : 540,
+      height: cardHeight,
     },
     slideFullWidth: {
       width: _screenWidth,
-      height: isMobile ? 500 : 540,
+      height: cardHeight,
       paddingHorizontal: 16,
       justifyContent: "center",
     },
@@ -1039,22 +1050,19 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean, _screenWidth
     },
     cardInner: {
       width: "100%", // parent AnimatedCard sets the actual width
-      // Extra height so the EventBanner's bottom content (countdown, date row)
-      // has room and doesn't get clipped by the rounded bottom corners.
-      height: isMobile ? 500 : 540,
+      // The uniform inset keeps media clear of every rounded edge, including
+      // the lower corners that looked clipped on compact phones.
+      height: cardHeight,
       borderRadius: CARD_BORDER_RADIUS,
       overflow: "hidden",
-      // Small inner gap on sides so content doesn't touch the card curve.
-      paddingTop: 4,
-      paddingLeft: 4,
-      paddingRight: 4,
+      padding: 4,
       // No shadow — the gradient overlay handles the bottom edge softly.
       // A box shadow would create a visible halo line around the rounded corners.
       backgroundColor: isDark ? "rgba(255, 255, 255, 0.03)" : "rgba(0, 0, 0, 0.02)",
     },
     eventBannerWrapper: {
       width: "100%",
-      height: isMobile ? 496 : 536, // cardInner height minus 4px top padding
+      height: cardMediaHeight,
       borderRadius: CARD_BORDER_RADIUS - 2,
       overflow: "hidden",
       position: "relative",
@@ -1095,7 +1103,7 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean, _screenWidth
     },
     logoSlideContainer: {
       width: "100%",
-      height: isMobile ? 496 : 536, // matches cardInner minus 4px top padding
+      height: cardMediaHeight,
       justifyContent: "center",
       alignItems: "center",
       paddingHorizontal: 32,
@@ -1116,7 +1124,7 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean, _screenWidth
     },
     campaignImage: {
       width: "100%",
-      height: isMobile ? 496 : 536,
+      height: cardMediaHeight,
       borderRadius: CARD_BORDER_RADIUS - 2,
     },
     campaignBranding: {
@@ -1256,4 +1264,5 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean, _screenWidth
       zIndex: 1,
       pointerEvents: "none",
     },
-  });
+    });
+  };
