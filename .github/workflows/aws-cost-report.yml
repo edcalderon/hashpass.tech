@@ -9,6 +9,9 @@ on:
     paths:
       - ".github/workflows/aws-cost-report.yml"
       - "packages/tools/scripts/aws-cost-report.mjs"
+      - "packages/tools/scripts/send-aws-cost-alert.mjs"
+      - "package.json"
+      - "pnpm-lock.yaml"
 
 permissions:
   contents: read

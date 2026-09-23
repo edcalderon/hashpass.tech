@@ -72,3 +72,33 @@ test("workflow privately mails budget alerts instead of publishing the report or
   assert.match(workflow, /if \[ "\$trigger_drift" = 'true' \]; then/);
   assert.doesNotMatch(workflow, /budgetAlert[\s\S]{0,120}exit 1/);
 });
+
+test("cost-alert transport keeps SMTP TLS verification enabled and workflow watches alert dependencies", () => {
+  const sender = readFileSync(
+    join(import.meta.dirname, "send-aws-cost-alert.mjs"),
+    "utf8",
+  );
+  const workflow = readFileSync(
+    join(
+      import.meta.dirname,
+      "..",
+      "..",
+      "..",
+      ".github",
+      "workflows",
+      "aws-cost-report.yml",
+    ),
+    "utf8",
+  );
+
+  assert.doesNotMatch(sender, /rejectUnauthorized\s*:\s*false/i);
+  assert.match(sender, /rejectUnauthorized\s*:\s*true/i);
+  assert.doesNotMatch(sender, /checkServerIdentity\s*:/i);
+  assert.doesNotMatch(sender, /servername\s*:/i);
+  assert.doesNotMatch(sender, /includes\(\s*["'](?:brevo|sendinblue)\.com/i);
+  assert.doesNotMatch(sender, /NODE_TLS_REJECT_UNAUTHORIZED\s*=\s*["']?0/i);
+
+  assert.match(workflow, /packages\/tools\/scripts\/send-aws-cost-alert\.mjs/);
+  assert.match(workflow, /package\.json/);
+  assert.match(workflow, /pnpm-lock\.yaml/);
+});

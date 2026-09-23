@@ -71,18 +71,13 @@ async function main() {
   const pass = requireEnvironment("NODEMAILER_PASS");
   const from = requireEnvironment("NODEMAILER_FROM");
   const email = buildAlertEmail(report);
-  const isBrevo = host.includes("brevo.com") || host.includes("sendinblue.com");
   const transporter = nodemailer.createTransport({
     host,
     port,
     secure: false,
     auth: { user, pass },
     requireTLS: true,
-    tls: {
-      rejectUnauthorized: process.env.NODE_ENV === "production",
-      servername: isBrevo ? "smtp-relay.sendinblue.com" : undefined,
-      checkServerIdentity: isBrevo ? () => undefined : undefined,
-    },
+    tls: { rejectUnauthorized: true },
   });
   await transporter.sendMail({
     from: `HashPass Operations <${from}>`,
