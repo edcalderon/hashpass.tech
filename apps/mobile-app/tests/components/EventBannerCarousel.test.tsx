@@ -36,14 +36,18 @@ jest.mock("../../lib/event-detector", () => ({
   getAvailableEvents: () => [mockEvent],
   isGlobalEventTenant: () => true,
 }));
-jest.mock("../../lib/event-branding", () => ({ getLampBrandConfig: () => undefined }));
+jest.mock("../../lib/event-branding", () => ({
+  getLampBrandConfig: () => undefined,
+}));
 jest.mock("../../lib/event-banners", () => ({
   getEventBannerSlides: () => mockBanners,
   localizeEventBannerSlide: (banner: unknown) => banner,
   shouldShowEventBannerCountdown: () => false,
 }));
 
-import EventBannerCarousel from "../../components/EventBannerCarousel";
+import EventBannerCarousel, {
+  resolveCarouselCardHeight,
+} from "../../components/EventBannerCarousel";
 
 let view: ReactTestRenderer;
 let scrollTo: jest.Mock;
@@ -69,19 +73,30 @@ afterEach(() => {
 function render(props: React.ComponentProps<typeof EventBannerCarousel>) {
   act(() => {
     view = create(<EventBannerCarousel {...props} />, {
-      createNodeMock: (node) => (node.type === ScrollView ? { scrollTo } : null),
+      createNodeMock: (node) =>
+        node.type === ScrollView ? { scrollTo } : null,
     });
   });
 }
+
+it("uses a compact, content-safe card height on native phone widths", () => {
+  expect(resolveCarouselCardHeight(true, 360)).toBe(420);
+  expect(resolveCarouselCardHeight(true, 412)).toBe(448);
+  expect(resolveCarouselCardHeight(false, 1024)).toBe(540);
+});
 
 it("advances the native pager by one viewport and wraps after the final slide", () => {
   jest.useFakeTimers();
   render({ event: mockEvent, autoPlay: true, autoPlayInterval: 100 });
 
-  act(() => { jest.advanceTimersByTime(100); });
+  act(() => {
+    jest.advanceTimersByTime(100);
+  });
   expect(scrollTo).toHaveBeenLastCalledWith({ x: 1024, animated: true });
 
-  act(() => { jest.advanceTimersByTime(100); });
+  act(() => {
+    jest.advanceTimersByTime(100);
+  });
   expect(scrollTo).toHaveBeenLastCalledWith({ x: 0, animated: true });
 });
 

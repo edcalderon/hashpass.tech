@@ -1,29 +1,26 @@
-import React from 'react';
-import { Platform, UIManager, View, type ViewProps } from 'react-native';
-import type { LinearGradientProps } from 'expo-linear-gradient';
+import React from "react";
+import { Platform, UIManager, View, type ViewProps } from "react-native";
+import type { LinearGradientProps } from "expo-linear-gradient";
 
 type ExpoLinearGradientComponent = React.ComponentType<LinearGradientProps>;
 
 let cachedExpoLinearGradient: ExpoLinearGradientComponent | null | undefined;
 
 const hasNativeLinearGradient = (): boolean => {
-  if (Platform.OS === 'web') {
+  if (Platform.OS === "web") {
     return true;
   }
 
-  // Android release builds have been crashing on native gradient view manager
-  // resolution even when the module is installed. Use a plain View fallback
-  // there until the native bridge is confirmed stable.
-  if (Platform.OS === 'android') {
-    return false;
-  }
-
+  // Do not assume a native module is present: custom/dev clients can omit it.
+  // When Android does register ExpoLinearGradient, use it. Collapsing every
+  // Android gradient to a flat View removes the readable media overlays and
+  // makes event cards look visibly unfinished.
   const getViewManagerConfig = UIManager.getViewManagerConfig?.bind(UIManager);
-  if (typeof getViewManagerConfig !== 'function') {
+  if (typeof getViewManagerConfig !== "function") {
     return false;
   }
 
-  return Boolean(getViewManagerConfig('ExpoLinearGradient'));
+  return Boolean(getViewManagerConfig("ExpoLinearGradient"));
 };
 
 const getExpoLinearGradient = (): ExpoLinearGradientComponent | null => {
@@ -32,12 +29,13 @@ const getExpoLinearGradient = (): ExpoLinearGradientComponent | null => {
   }
 
   try {
-    const expoLinearGradient = require('expo-linear-gradient') as {
+    const expoLinearGradient = require("expo-linear-gradient") as {
       LinearGradient?: ExpoLinearGradientComponent;
       default?: ExpoLinearGradientComponent;
     };
 
-    cachedExpoLinearGradient = expoLinearGradient.LinearGradient || expoLinearGradient.default || null;
+    cachedExpoLinearGradient =
+      expoLinearGradient.LinearGradient || expoLinearGradient.default || null;
   } catch {
     cachedExpoLinearGradient = null;
   }
@@ -46,7 +44,9 @@ const getExpoLinearGradient = (): ExpoLinearGradientComponent | null => {
 };
 
 const SafeLinearGradient: React.FC<LinearGradientProps> = (props) => {
-  const ExpoLinearGradient = hasNativeLinearGradient() ? getExpoLinearGradient() : null;
+  const ExpoLinearGradient = hasNativeLinearGradient()
+    ? getExpoLinearGradient()
+    : null;
 
   if (ExpoLinearGradient) {
     return <ExpoLinearGradient {...props} />;
@@ -63,7 +63,8 @@ const SafeLinearGradient: React.FC<LinearGradientProps> = (props) => {
     ...viewProps
   } = props as LinearGradientProps & ViewProps;
 
-  const fallbackColor = Array.isArray(colors) && colors.length > 0 ? colors[0] : 'transparent';
+  const fallbackColor =
+    Array.isArray(colors) && colors.length > 0 ? colors[0] : "transparent";
 
   return (
     <View {...viewProps} style={[style, { backgroundColor: fallbackColor }]}>
