@@ -1119,7 +1119,7 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean, _screenWidth
     footer: {
       minHeight: 48,
       marginTop: 16,
-      paddingHorizontal: 16,
+      paddingHorizontal: isMobile ? 12 : 16,
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
@@ -1138,7 +1138,7 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean, _screenWidth
     },
     footerActionsMobile: {
       width: "100%",
-      flexDirection: "row",
+      flexDirection: isMobile && _screenWidth < 360 ? "column" : "row",
       alignItems: "center",
       justifyContent: "center",
       gap: 8,
@@ -1146,14 +1146,23 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean, _screenWidth
     footerIndicatorMobile: {
       minHeight: 44,
       marginTop: 8,
+      width: "100%",
+      maxWidth: "100%",
+      overflow: "hidden",
       alignItems: "center",
       justifyContent: "center",
     },
     footerLeadingAction: {
+      flex: isMobile ? 1 : undefined,
+      minWidth: 0,
       flexShrink: 1,
+      width: isMobile && _screenWidth < 360 ? "100%" : undefined,
     },
     footerAction: {
+      flex: isMobile ? 1 : undefined,
+      minWidth: 0,
       flexShrink: 1,
+      width: isMobile && _screenWidth < 360 ? "100%" : undefined,
     },
     logoSlideContainer: {
       width: "100%",

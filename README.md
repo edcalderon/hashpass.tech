@@ -20,16 +20,16 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.53)
+## 📋 Latest Changes (v1.9.54)
 
 ### Bug Fixes
 
-* prevent mobile carousel and PWA icon clipping ([cc45be3](https://github.com/hashpass-tech/hashpass.tech/commit/cc45be31fa1a7a2fc3da4cf2f9aaaafede7bf33e))
+* harden mobile landing safe areas ([18caef8](https://github.com/hashpass-tech/hashpass.tech/commit/18caef8ef5b445bc8365049c7d84ecd90b3317c3))
 ### Release Highlights
-- prevent mobile carousel and PWA icon clipping
+- harden mobile landing safe areas
 
 ### Release scope
-- Compared with: `v1.9.52` (the previous global release tag)
+- Compared with: `v1.9.53` (the previous global release tag)
 
 ### Affected products & packages
 - Mobile app

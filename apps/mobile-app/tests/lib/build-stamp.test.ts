@@ -39,18 +39,18 @@ describe('build-stamp', () => {
   });
 
   describe('getStartupStamp', () => {
-    it('includes the truncated release commit when EXPO_PUBLIC_RELEASE_COMMIT is set', () => {
+    it('shows only the release version when EXPO_PUBLIC_RELEASE_COMMIT is set', () => {
       process.env.EXPO_PUBLIC_RELEASE_COMMIT = 'a1b2c3d4e5f6789f3d';
       const { getStartupStamp } = loadBuildStamp();
       const packageJson = require('../../package.json');
-      expect(getStartupStamp()).toBe(`v${packageJson.version} · a1b2...9f3d`);
+      expect(getStartupStamp()).toBe(`v${packageJson.version}`);
     });
 
-    it('falls back to "local build" when EXPO_PUBLIC_RELEASE_COMMIT is unset', () => {
+    it('still shows the release version for local builds', () => {
       delete process.env.EXPO_PUBLIC_RELEASE_COMMIT;
       const { getStartupStamp } = loadBuildStamp();
       const packageJson = require('../../package.json');
-      expect(getStartupStamp()).toBe(`v${packageJson.version} · local build`);
+      expect(getStartupStamp()).toBe(`v${packageJson.version}`);
     });
   });
 });

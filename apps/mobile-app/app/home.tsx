@@ -674,6 +674,7 @@ export default function HomeScreen() {
                   activeOpacity={0.7}
                   style={[
                     styles.proposeEventBtn,
+                    isPhoneLayout && styles.carouselActionBtnMobile,
                     useCompactCarouselLabels && styles.carouselActionBtnCompact,
                   ]}
                   accessibilityRole="button"
@@ -732,6 +733,7 @@ export default function HomeScreen() {
                   activeOpacity={0.7}
                   style={[
                     styles.exploreAllEventsBtn,
+                    isPhoneLayout && styles.carouselActionBtnMobile,
                     useCompactCarouselLabels && styles.carouselActionBtnCompact,
                   ]}
                   accessibilityRole="button"
@@ -1604,6 +1606,14 @@ const getStyles = (
     carouselActionBtnCompact: {
       gap: 6,
       paddingHorizontal: 0,
+    },
+    carouselActionBtnMobile: {
+      width: "100%",
+      maxWidth: "100%",
+      minWidth: 0,
+      justifyContent: "center",
+      paddingHorizontal: 4,
+      overflow: "hidden",
     },
     carouselActionText: {
       fontSize: 13,

@@ -1,3 +1,18 @@
+## [1.9.54](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.53...v1.9.54) (2026-09-23)
+
+
+### Bug Fixes
+
+* harden mobile landing safe areas ([18caef8](https://github.com/hashpass-tech/hashpass.tech/commit/18caef8ef5b445bc8365049c7d84ecd90b3317c3))
+### Release Highlights
+- harden mobile landing safe areas
+
+### Release scope
+- Compared with: `v1.9.53` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+
 ## [1.9.53](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.52...v1.9.53) (2026-09-23)
 
 

@@ -2,6 +2,7 @@
 
 import {
   clampPwaDragPosition,
+  getPwaDragViewport,
   getPwaDockPositionCoordinates,
   PWA_DOCK_POSITIONS,
   PWA_DRAG_BOTTOM_SAFE_MARGIN,
@@ -39,10 +40,46 @@ describe('PWA drag positioning', () => {
       configurable: true,
     });
     window.localStorage.clear();
+    Object.defineProperty(window, 'innerWidth', { value: 390, configurable: true });
+    Object.defineProperty(window, 'innerHeight', { value: 800, configurable: true });
+    Object.defineProperty(window, 'visualViewport', { value: undefined, configurable: true });
+  });
+
+  it('uses the visible visual viewport instead of the taller layout viewport', () => {
+    Object.defineProperty(window, 'innerHeight', { value: 844, configurable: true });
+    Object.defineProperty(window, 'visualViewport', {
+      value: { width: 390, height: 690 },
+      configurable: true,
+    });
+
+    expect(getPwaDragViewport()).toEqual({ width: 390, height: 690, offsetLeft: 0, offsetTop: 0 });
+  });
+
+  it('falls back to a usable viewport size when visual viewport dimensions are unavailable', () => {
+    Object.defineProperty(window, 'visualViewport', {
+      value: { width: 0, height: 0, offsetLeft: 12, offsetTop: 18 },
+      configurable: true,
+    });
+
+    expect(getPwaDragViewport()).toEqual({ width: 390, height: 800, offsetLeft: 12, offsetTop: 18 });
+  });
+
+  it('keeps dock coordinates inside a panned visual viewport', () => {
+    const viewport = { width: 320, height: 240, offsetLeft: 18, offsetTop: 32 };
+
+    expect(getPwaDockPositionCoordinates('top-left', viewport)).toEqual({
+      left: 30,
+      top: 44,
+    });
+    expect(getPwaDockPositionCoordinates('bottom-left', viewport).left).toBe(30);
+    expect(getPwaDockPositionCoordinates('bottom-right', viewport)).toEqual({
+      left: 256,
+      top: 154,
+    });
   });
 
   it('clamps the floating button inside the viewport', () => {
-    const viewport = { width: 320, height: 240 };
+    const viewport = { width: 320, height: 240, offsetLeft: 0, offsetTop: 0 };
 
     expect(clampPwaDragPosition({ left: -100, top: -20 }, viewport)).toEqual({
       left: PWA_DRAG_SAFE_MARGIN,
@@ -56,7 +93,7 @@ describe('PWA drag positioning', () => {
   });
 
   it('limits dropped placement to top-left, bottom-left, and bottom-right docks', () => {
-    const viewport = { width: 320, height: 240 };
+    const viewport = { width: 320, height: 240, offsetLeft: 0, offsetTop: 0 };
 
     expect(PWA_DOCK_POSITIONS).toEqual(['top-left', 'bottom-left', 'bottom-right']);
     expect(getPwaDockPositionCoordinates('top-left', viewport)).toEqual({
@@ -74,7 +111,7 @@ describe('PWA drag positioning', () => {
   });
 
   it('snaps a dragged coordinate to the nearest allowed dock', () => {
-    const viewport = { width: 320, height: 240 };
+    const viewport = { width: 320, height: 240, offsetLeft: 0, offsetTop: 0 };
 
     expect(resolveNearestPwaDockPosition({ left: 20, top: 24 }, viewport)).toBe('top-left');
     expect(resolveNearestPwaDockPosition({ left: 18, top: 180 }, viewport)).toBe('bottom-left');

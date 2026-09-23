@@ -8,6 +8,8 @@ import {
   PWA_DOCK_POSITIONS,
   readStoredPwaDockPosition,
   storePwaDockPosition,
+  getPwaDragViewport,
+  type PwaDragViewport,
   type PwaDockPosition,
 } from '../lib/pwa-drag';
 import { useTranslation } from '../i18n/i18n';
@@ -36,6 +38,7 @@ const PWAPrompt = () => {
   const [dontShowAgain, setDontShowAgain] = useState(false);
   const [showInstallHelpModal, setShowInstallHelpModal] = useState(false);
   const [dockPosition, setDockPosition] = useState<PwaDockPosition | null>(null);
+  const [dockViewport, setDockViewport] = useState<PwaDragViewport>(() => getPwaDragViewport());
   const [showDockControls, setShowDockControls] = useState(false);
   const dockLayerRef = useRef<HTMLDivElement | null>(null);
 
@@ -152,6 +155,11 @@ const PWAPrompt = () => {
     }
 
     const handleResize = () => {
+      // Recalculate the inline dock coordinates whenever the visible mobile
+      // viewport changes (orientation and browser toolbar expand/collapse).
+      // Keeping the old coordinates is what allowed the icon to remain below
+      // the iOS/Android action bar after a resize.
+      setDockViewport(getPwaDragViewport());
       setDockPosition((currentDockPosition: PwaDockPosition | null) =>
         currentDockPosition ?? getDefaultPwaDockPosition()
       );
@@ -159,10 +167,14 @@ const PWAPrompt = () => {
 
     window.addEventListener('resize', handleResize);
     window.addEventListener('orientationchange', handleResize);
+    window.visualViewport?.addEventListener('resize', handleResize);
+    window.visualViewport?.addEventListener('scroll', handleResize);
 
     return () => {
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('orientationchange', handleResize);
+      window.visualViewport?.removeEventListener('resize', handleResize);
+      window.visualViewport?.removeEventListener('scroll', handleResize);
     };
   }, []);
 
@@ -441,7 +453,7 @@ const PWAPrompt = () => {
 
   if (isCollapsed) {
     const effectiveDockPosition = dockPosition ?? getDefaultPwaDockPosition();
-    const effectiveDragPosition = getPwaDockPositionCoordinates(effectiveDockPosition);
+    const effectiveDragPosition = getPwaDockPositionCoordinates(effectiveDockPosition, dockViewport);
 
     return (
       <div

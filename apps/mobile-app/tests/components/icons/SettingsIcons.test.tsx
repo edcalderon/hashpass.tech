@@ -12,6 +12,7 @@ import {
   AutoIcon,
   ArrowUpIcon,
   CheckIcon,
+  ChevronDownIcon,
   GlobeIcon,
   LogInIcon,
   MoonIcon,
@@ -57,6 +58,9 @@ describe('SettingsIcons', () => {
     });
     expect(CheckIcon({ size: 28, color: '#888888', strokeWidth: 2.5 })).toMatchObject({
       props: { width: 28, height: 28, viewBox: '0 0 24 24', fill: 'none' },
+    });
+    expect(ChevronDownIcon({ size: 18, color: '#999999', strokeWidth: 2 })).toMatchObject({
+      props: { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none' },
     });
   });
 

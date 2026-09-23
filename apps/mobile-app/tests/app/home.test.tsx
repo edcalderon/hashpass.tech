@@ -327,6 +327,7 @@ const loadHomeScreen = ({
       SliderIcon: "SliderIcon",
       PauseIcon: "PauseIcon",
       CheckIcon: "CheckIcon",
+      ChevronDownIcon: "ChevronDownIcon",
       getFlagEmoji: () => "US",
     }));
 

@@ -6,6 +6,8 @@ export type PwaDragPosition = {
 export type PwaDragViewport = {
   width: number;
   height: number;
+  offsetLeft: number;
+  offsetTop: number;
 };
 
 export const PWA_DRAG_POSITION_KEY = 'hashpass:pwa-install-position';
@@ -16,7 +18,7 @@ export const PWA_DRAG_SAFE_MARGIN = 12;
 // alone: mobile browsers' own bottom toolbar/gesture-nav chrome eats into
 // that space, and 12px wasn't enough to keep the button from visually
 // overlapping it.
-export const PWA_DRAG_BOTTOM_SAFE_MARGIN = 40;
+export const PWA_DRAG_BOTTOM_SAFE_MARGIN = 48;
 export const PWA_DRAG_START_THRESHOLD = 5;
 
 export type PwaDockPosition = (typeof PWA_DOCK_POSITIONS)[number];
@@ -24,6 +26,8 @@ export type PwaDockPosition = (typeof PWA_DOCK_POSITIONS)[number];
 const FALLBACK_VIEWPORT: PwaDragViewport = {
   width: 390,
   height: 800,
+  offsetLeft: 0,
+  offsetTop: 0,
 };
 
 export const getPwaDragViewport = (): PwaDragViewport => {
@@ -31,10 +35,18 @@ export const getPwaDragViewport = (): PwaDragViewport => {
     return FALLBACK_VIEWPORT;
   }
 
-  const documentElement = typeof document !== 'undefined' ? document.documentElement : undefined;
+  // The layout viewport can remain taller than the visible viewport while a
+  // mobile browser's address/action bar is expanded. Prefer visualViewport
+  // so a fixed PWA control is clamped above that browser chrome instead of
+  // being rendered underneath it.
+  const visualViewport = window.visualViewport;
+  const width = visualViewport?.width ?? window.innerWidth;
+  const height = visualViewport?.height ?? window.innerHeight;
   return {
-    width: Math.max(documentElement?.clientWidth ?? 0, window.innerWidth ?? 0, FALLBACK_VIEWPORT.width),
-    height: Math.max(documentElement?.clientHeight ?? 0, window.innerHeight ?? 0, FALLBACK_VIEWPORT.height),
+    width: width > 0 ? width : FALLBACK_VIEWPORT.width,
+    height: height > 0 ? height : FALLBACK_VIEWPORT.height,
+    offsetLeft: visualViewport?.offsetLeft ?? 0,
+    offsetTop: visualViewport?.offsetTop ?? 0,
   };
 };
 
@@ -42,12 +54,14 @@ export const clampPwaDragPosition = (
   position: PwaDragPosition,
   viewport: PwaDragViewport = getPwaDragViewport()
 ): PwaDragPosition => {
-  const maxLeft = Math.max(PWA_DRAG_SAFE_MARGIN, viewport.width - PWA_DRAG_BUTTON_SIZE - PWA_DRAG_SAFE_MARGIN);
-  const maxTop = Math.max(PWA_DRAG_SAFE_MARGIN, viewport.height - PWA_DRAG_BUTTON_SIZE - PWA_DRAG_SAFE_MARGIN);
+  const minLeft = viewport.offsetLeft + PWA_DRAG_SAFE_MARGIN;
+  const minTop = viewport.offsetTop + PWA_DRAG_SAFE_MARGIN;
+  const maxLeft = Math.max(minLeft, viewport.offsetLeft + viewport.width - PWA_DRAG_BUTTON_SIZE - PWA_DRAG_SAFE_MARGIN);
+  const maxTop = Math.max(minTop, viewport.offsetTop + viewport.height - PWA_DRAG_BUTTON_SIZE - PWA_DRAG_SAFE_MARGIN);
 
   return {
-    left: Math.min(Math.max(position.left, PWA_DRAG_SAFE_MARGIN), maxLeft),
-    top: Math.min(Math.max(position.top, PWA_DRAG_SAFE_MARGIN), maxTop),
+    left: Math.min(Math.max(position.left, minLeft), maxLeft),
+    top: Math.min(Math.max(position.top, minTop), maxTop),
   };
 };
 
@@ -67,16 +81,16 @@ export const getPwaDockPositionCoordinates = (
   dockPosition: PwaDockPosition,
   viewport: PwaDragViewport = getPwaDragViewport()
 ): PwaDragPosition => {
-  const bottomTop = viewport.height - PWA_DRAG_BUTTON_SIZE - PWA_DRAG_BOTTOM_SAFE_MARGIN;
-  const rightLeft = viewport.width - PWA_DRAG_BUTTON_SIZE - PWA_DRAG_SAFE_MARGIN;
+  const bottomTop = viewport.offsetTop + viewport.height - PWA_DRAG_BUTTON_SIZE - PWA_DRAG_BOTTOM_SAFE_MARGIN;
+  const rightLeft = viewport.offsetLeft + viewport.width - PWA_DRAG_BUTTON_SIZE - PWA_DRAG_SAFE_MARGIN;
 
   const coordinatesByDock: Record<PwaDockPosition, PwaDragPosition> = {
     'top-left': {
-      left: PWA_DRAG_SAFE_MARGIN,
-      top: PWA_DRAG_SAFE_MARGIN,
+      left: viewport.offsetLeft + PWA_DRAG_SAFE_MARGIN,
+      top: viewport.offsetTop + PWA_DRAG_SAFE_MARGIN,
     },
     'bottom-left': {
-      left: PWA_DRAG_SAFE_MARGIN,
+      left: viewport.offsetLeft + PWA_DRAG_SAFE_MARGIN,
       top: bottomTop,
     },
     'bottom-right': {
