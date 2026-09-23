@@ -992,7 +992,13 @@ export default function EventBannerCarousel({
       )}
 
       {((showDotIndicators && N > 1) || hasFooterActions) ? (
-        <View style={styles.footer}>
+        <View
+          style={[
+            styles.footer,
+            isMobile && hasFooterActions && styles.footerMobile,
+          ]}
+          testID="carousel-footer"
+        >
           {isMobile && hasFooterActions ? (
             <>
               <View
@@ -1118,6 +1124,9 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean, _screenWidth
       alignItems: "center",
       justifyContent: "center",
       position: "relative",
+    },
+    footerMobile: {
+      flexDirection: "column",
     },
     footerCenter: {
       flexDirection: "row",

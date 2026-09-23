@@ -115,8 +115,12 @@ it("keeps phone carousel actions visible in their own row", () => {
   });
 
   const actions = view.root.findByProps({ testID: "carousel-footer-actions" });
+  const footer = view.root.findByProps({ testID: "carousel-footer" });
   expect(actions.props.style).toEqual(
     expect.objectContaining({ flexDirection: "row", width: "100%" }),
+  );
+  expect(footer.props.style).toEqual(
+    expect.arrayContaining([expect.objectContaining({ flexDirection: "column" })]),
   );
   expect(actions.findAllByType(TouchableOpacity)).toHaveLength(2);
   expect(
