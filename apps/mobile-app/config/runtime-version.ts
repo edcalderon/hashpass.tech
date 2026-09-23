@@ -1,6 +1,7 @@
 import gitInfo from './git-info.json';
 import productionVersion from './version.production.json';
 import developmentVersion from './version.development.json';
+import Constants from 'expo-constants';
 import type { VersionInfo } from './version';
 
 type RuntimeBranch = 'production' | 'development';
@@ -91,6 +92,17 @@ export function getRuntimeVersionInfo(baseVersion: VersionInfo, branch: string =
     version: getRuntimeVersion(branch),
     environment: getRuntimeEnvironment(branch),
   };
+}
+
+/**
+ * Return the version of the installed native binary, rather than the version
+ * of the currently loaded JavaScript bundle. OTA updates replace the bundle
+ * but cannot replace the Play/App Store binary, so package.json is unsafe for
+ * deciding whether a store update is available on a native device.
+ */
+export function getInstalledNativeAppVersion(fallbackVersion: string): string {
+  const nativeVersion = Constants.nativeAppVersion?.trim();
+  return nativeVersion || fallbackVersion;
 }
 
 function stripVersionPrefix(version: string): string {
