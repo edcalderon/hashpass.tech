@@ -313,6 +313,11 @@ it("keeps search expanded and explorer labelled on phone-sized web", () => {
   expect(explorer.length).toBeGreaterThan(0);
   expect(explorer[0].props.label).toBe("Explore all");
   expect(explorer[0].props.accessibilityLabel).toBe("Explore all events");
+  expect(explorer[0].props.variant).toBe("secondary");
+  expect(explorer[0].props.style).toEqual(expect.objectContaining({
+    minHeight: 48,
+    alignSelf: "flex-end",
+  }));
 
   const footer = view.root.findByProps({ testID: "carousel-footer" });
   expect(footer.props.style).toEqual(

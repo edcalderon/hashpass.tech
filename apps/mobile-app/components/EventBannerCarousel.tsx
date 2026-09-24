@@ -1603,7 +1603,7 @@ export default function EventBannerCarousel({
                 <ActionButton
                   testID="carousel-explorer-expand-trigger"
                   mode={isDark ? "dark" : "light"}
-                  variant="ghost"
+                  variant="secondary"
                   label={translate("eventSearch.exploreAll", "Explore all")}
                   onPress={onExploreEvents}
                   accessibilityLabel={translate("eventSearch.exploreAllLabel", "Explore all events")}
@@ -1929,10 +1929,8 @@ const getStyles = (
     compactExplorerAction: {
       flexShrink: 0,
       paddingHorizontal: uiTokens.space.md,
-      backgroundColor: "transparent",
-      borderColor: "transparent",
-      shadowOpacity: 0,
-      elevation: 0,
+      minHeight: uiTokens.control.minHeight,
+      alignSelf: "flex-end",
     },
     compactDiscoveryIcon: {
       flexShrink: 0,
