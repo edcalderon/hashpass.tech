@@ -1093,7 +1093,8 @@ export default function EventBannerCarousel({
       return (
         <View style={styles.cardInner}>
           <SafeLinearGradient
-            colors={isDark ? ["#07111F", "#102A38", "#0D1724"] : ["#F7FBFC", "#E7F8FB", "#F8FAFC"]}
+            testID="carousel-proposal-card"
+            colors={isDark ? ["#07111F", "#102A38", "#0D1724"] : ["#FFF1F2", "#FECACA", "#FFE4E6"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.proposalCard}
@@ -1819,9 +1820,9 @@ const getStyles = (
       borderRadius: isMobile ? 90 : 140,
       right: isMobile ? -72 : -88,
       top: isMobile ? -72 : -96,
-      backgroundColor: isDark ? "rgba(34,211,238,0.2)" : "rgba(8,145,178,0.13)",
+      backgroundColor: isDark ? "rgba(34,211,238,0.2)" : "rgba(225,29,72,0.22)",
       borderWidth: 1,
-      borderColor: isDark ? "rgba(103,232,249,0.35)" : "rgba(8,145,178,0.24)",
+      borderColor: isDark ? "rgba(103,232,249,0.35)" : "rgba(190,24,93,0.36)",
     },
     proposalOrbTwo: {
       position: "absolute",
@@ -1830,9 +1831,9 @@ const getStyles = (
       borderRadius: isMobile ? 60 : 95,
       left: isMobile ? -42 : -58,
       bottom: isMobile ? -48 : -70,
-      backgroundColor: isDark ? "rgba(14,165,233,0.17)" : "rgba(103,232,249,0.28)",
+      backgroundColor: isDark ? "rgba(14,165,233,0.17)" : "rgba(239,68,68,0.2)",
       borderWidth: 1,
-      borderColor: isDark ? "rgba(125,211,252,0.28)" : "rgba(14,116,144,0.2)",
+      borderColor: isDark ? "rgba(125,211,252,0.28)" : "rgba(190,24,93,0.3)",
     },
     proposalGloss: {
       position: "absolute",
@@ -1843,14 +1844,14 @@ const getStyles = (
       transform: [{ rotate: "18deg" }],
     },
     proposalEyebrow: {
-      color: isDark ? "#67E8F9" : "#0E7490",
+      color: isDark ? "#67E8F9" : "#BE123C",
       fontSize: 12,
       fontWeight: "800",
       letterSpacing: 2,
       marginBottom: 14,
     },
     proposalTitle: {
-      color: isDark ? "#F8FAFC" : "#0F172A",
+      color: isDark ? "#F8FAFC" : "#450A0A",
       fontSize: isMobile ? 30 : 40,
       lineHeight: isMobile ? 36 : 46,
       fontWeight: "800",
@@ -1858,7 +1859,7 @@ const getStyles = (
       maxWidth: 520,
     },
     proposalBody: {
-      color: isDark ? "#B8C7D5" : "#475569",
+      color: isDark ? "#B8C7D5" : "#7F1D1D",
       fontSize: isMobile ? 15 : 17,
       lineHeight: isMobile ? 23 : 26,
       marginTop: 14,

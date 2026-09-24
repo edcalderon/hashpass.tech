@@ -27,13 +27,13 @@ import Reanimated, { SharedValue, useAnimatedStyle, useSharedValue, withSpring, 
 import { useRouter, usePathname } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../hooks/useTheme';
-import { useLanguage } from '../providers/LanguageProvider';
-import { getAvailableLocales, useTranslation } from '../i18n/i18n';
+import { useTranslation } from '../i18n/i18n';
 import { useAnimationLevel } from '../contexts/AnimationLevelContext';
 import type { AnimationLevel } from '../contexts/AnimationLevelContext';
 import { createShadowStyle } from '../lib/utils';
 import type { ThemeMode } from '../types/theme';
 import type { ViewStyle } from 'react-native';
+import { SettingsLanguagePicker } from './SettingsLanguagePicker';
 import {
   ArrowUpIcon,
   SettingsIcon,
@@ -44,8 +44,6 @@ import {
   ZapIcon,
   SliderIcon,
   PauseIcon,
-  CheckIcon,
-  getFlagEmoji,
 } from './icons/SettingsIcons';
 
 interface Props {
@@ -55,7 +53,6 @@ interface Props {
   bottomOffset?: number;
 }
 
-type LocaleOption = { code: string; name: string };
 type PillOption<T> = { value: T; label: string; Icon: React.ComponentType<any> };
 
 // ─── shared panel sub-components ─────────────────────────────────────────────
@@ -116,12 +113,10 @@ function PillGroup<T extends string>({
 
 const BackToTop: React.FC<Props> = ({ scrollY, scrollRef, colors, bottomOffset = 50 }) => {
   const { theme, setTheme, isDark } = useTheme();
-  const { locale, setLocale } = useLanguage();
   const { animationLevel, setAnimationLevel } = useAnimationLevel();
   const router = useRouter();
   const pathname = usePathname();
   const { t } = useTranslation('profile');
-  const availableLocales = getAvailableLocales();
   const isOnAuthPage = pathname?.includes('/auth');
 
   const [panelOpen, setPanelOpen] = useState(false);
@@ -226,42 +221,7 @@ const BackToTop: React.FC<Props> = ({ scrollY, scrollRef, colors, bottomOffset =
 
         {/* Language */}
         <SectionLabel label={t('settings.language') || 'Language'} isDark={isDark} colors={colors} />
-        {availableLocales.map((lang: LocaleOption) => {
-          const active = lang.code === locale;
-          return (
-            <TouchableOpacity
-              key={lang.code}
-              style={[
-                pStyles.langRow,
-                active && { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)', borderRadius: 10 },
-              ]}
-              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setLocale(lang.code); }}
-              activeOpacity={0.7}
-            >
-              <Text style={pStyles.flag}>{getFlagEmoji(lang.code)}</Text>
-              <Text style={[pStyles.langName, { color: colors.text.primary }]}>
-                {t(`languages.${lang.name}`)}
-              </Text>
-              <View
-                style={[
-                  pStyles.langBadge,
-                  {
-                    backgroundColor: active ? colors.primary : 'transparent',
-                    borderColor: active ? colors.primary : isDark ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.1)',
-                  },
-                ]}
-              >
-                {active ? (
-                  <CheckIcon size={12} color={colors.primaryContrastText} strokeWidth={2.5} />
-                ) : (
-                  <Text style={[pStyles.langCode, { color: colors.text.secondary }]}>
-                    {lang.code.toUpperCase()}
-                  </Text>
-                )}
-              </View>
-            </TouchableOpacity>
-          );
-        })}
+        <SettingsLanguagePicker visible={panelOpen} isDark={isDark} colors={colors} />
 
         <Divider isDark={isDark} />
 
@@ -446,36 +406,6 @@ const pStyles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: 0.1,
     flexShrink: 1,
-  },
-  langRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingVertical: 9,
-    paddingHorizontal: 8,
-    marginVertical: 1,
-  },
-  langName: {
-    fontSize: 13,
-    fontWeight: '500',
-    flex: 1,
-  },
-  langBadge: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  langCode: {
-    fontSize: 9,
-    fontWeight: '700',
-    letterSpacing: 0.6,
-  },
-  flag: {
-    fontSize: 16,
-    lineHeight: 20,
   },
 });
 

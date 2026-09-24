@@ -21,6 +21,7 @@ const mockWeekEvent = {
 
 const mockEvents = [mockEvent, mockWeekEvent];
 let mockIsMobile = true;
+let mockThemeIsDark = true;
 let mockTranslate = (
   _namespace: string | undefined,
   _key: string,
@@ -38,7 +39,7 @@ const mockBanners = ["first", "second"].map((id) => ({
 
 jest.mock("../../hooks/useTheme", () => ({
   useTheme: () => ({
-    isDark: true,
+    isDark: mockThemeIsDark,
     colors: { primary: "#00B8D4" },
   }),
 }));
@@ -87,6 +88,7 @@ const originalCancelRaf = global.cancelAnimationFrame;
 beforeEach(() => {
   (Platform as { OS: string }).OS = "android";
   mockIsMobile = true;
+  mockThemeIsDark = true;
   mockTranslate = (_namespace, _key, fallback) => fallback;
   scrollTo = jest.fn();
   global.requestAnimationFrame = jest.fn(() => 0);
@@ -157,6 +159,21 @@ it("adds an organizer proposal card with a working call to action", () => {
 
   act(() => proposal.props.onPress());
   expect(onProposeEvent).toHaveBeenCalledTimes(1);
+});
+
+it("uses a rich red light treatment without changing the cyan dark treatment", () => {
+  mockThemeIsDark = false;
+  render({ autoPlay: false, showProposalCard: true });
+
+  const lightCard = view.root.findByProps({ testID: "carousel-proposal-card" });
+  expect(lightCard.props.colors).toEqual(["#FFF1F2", "#FECACA", "#FFE4E6"]);
+
+  act(() => view.unmount());
+  mockThemeIsDark = true;
+  render({ autoPlay: false, showProposalCard: true });
+
+  const darkCard = view.root.findByProps({ testID: "carousel-proposal-card" });
+  expect(darkCard.props.colors).toEqual(["#07111F", "#102A38", "#0D1724"]);
 });
 
 it("does not open the proposal modal after a peeking-card drag", () => {

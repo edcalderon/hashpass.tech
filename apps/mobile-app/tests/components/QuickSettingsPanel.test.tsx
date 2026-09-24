@@ -351,6 +351,24 @@ describe('QuickSettingsPanel', () => {
     expect(root.findAllByType('Text').some((node: any) => node.children.join('') === 'Appearance')).toBe(false);
   });
 
+  it('starts with only the selected language and expands choices on demand', async () => {
+    const { renderer, act } = loadQuickSettingsPanel({ width: 1024, platform: 'web' });
+    const root = renderer.root;
+
+    await act(async () => {
+      root.findByProps({ accessibilityLabel: 'Quick Settings' }).props.onPress();
+    });
+
+    expect(root.findAllByProps({ accessibilityLabel: 'Language: english' })).toHaveLength(1);
+    expect(root.findAllByProps({ accessibilityLabel: 'portuguese' })).toHaveLength(0);
+
+    await act(async () => {
+      root.findByProps({ accessibilityLabel: 'Language: english' }).props.onPress();
+    });
+
+    expect(root.findAllByProps({ accessibilityLabel: 'portuguese' })).toHaveLength(1);
+  });
+
   it('hides the sign-in shortcut on the auth page and respects scroll-based visibility', () => {
     const { renderer } = loadQuickSettingsPanel({
       width: 375,
