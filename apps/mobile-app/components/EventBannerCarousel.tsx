@@ -197,7 +197,11 @@ interface EventBannerCarouselProps {
   lampBrandingOverrides?: Record<string, LampBrandingConfig>;
 }
 
-const normalizeSearchText = (value: string) => value.trim().toLocaleLowerCase();
+const normalizeSearchText = (value: string) => value
+  .normalize("NFD")
+  .replace(/[\u0300-\u036f]/g, "")
+  .trim()
+  .toLocaleLowerCase();
 
 /**
  * Keep all discovery cards visible while moving the best textual matches to

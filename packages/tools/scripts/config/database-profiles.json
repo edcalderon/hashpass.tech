@@ -51,6 +51,7 @@
     "event-pass-tiers",
     "event-chat",
     "event-auth-allies",
+    "event-search-aliases",
     "admin-pass-management",
     "admin-matchmaking-communications"
   ],
@@ -103,6 +104,9 @@
     ],
     "event-auth-allies": [
       "db/migrations/V083__event_auth_allies.sql"
+    ],
+    "event-search-aliases": [
+      "db/migrations/V097__add_event_search_aliases.sql"
     ],
     "admin-matchmaking-communications": [
       "db/migrations/V055__admin_matchmaking_and_email_audit.sql",

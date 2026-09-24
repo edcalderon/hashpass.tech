@@ -251,6 +251,27 @@ it("ranks the closest event first when a visitor searches", () => {
     .toEqual(["cbweek2026", "hash-poker"]);
 });
 
+it("ranks BSL and CBWeek cards from their canonical search aliases", () => {
+  const { rankEventsForCarousel } = require("../../components/EventBannerCarousel");
+  const { EVENTS } = require("../../config/events");
+  const discoveryEvents = [EVENTS.bsl, EVENTS.colombia2026, EVENTS.cbweek2026];
+
+  expect(EVENTS.cbweek2026.aliases).toEqual(expect.arrayContaining([
+    "cbweek2026",
+    "Medellin CBWeek",
+    "#cbweek2026",
+  ]));
+  expect(EVENTS.colombia2026.aliases).toEqual(expect.arrayContaining([
+    "BSL Bogotá",
+    "Blockchain Summit Latam Colombia",
+    "#bslcolombia2026",
+  ]));
+  expect(rankEventsForCarousel(discoveryEvents, "medellin cbweek2026")[0].id)
+    .toBe("cbweek2026");
+  expect(rankEventsForCarousel(discoveryEvents, "bsl bogota")[0].id)
+    .toBe("colombia2026");
+});
+
 it("uses a compact search trigger that expands only while searching", () => {
   (Platform as { OS: string }).OS = "web";
   mockIsMobile = false;
