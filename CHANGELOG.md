@@ -1,3 +1,13 @@
+## [1.9.56](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.55...v1.9.56) (2026-09-24)
+### Released
+- add landing event discovery card
+
+### Release scope
+- Compared with: `v1.9.55` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+
 ## [1.9.55](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.54...v1.9.55) (2026-09-24)
 ### Released
 - correct landing and email asset paths
