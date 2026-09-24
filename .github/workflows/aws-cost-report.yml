@@ -9,6 +9,7 @@ on:
     paths:
       - ".github/workflows/aws-cost-report.yml"
       - "packages/tools/scripts/aws-cost-report.mjs"
+      - "packages/tools/scripts/aws-cost-alert-policy.mjs"
       - "packages/tools/scripts/send-aws-cost-alert.mjs"
       - "package.json"
       - "pnpm-lock.yaml"
@@ -29,6 +30,7 @@ jobs:
     env:
       AWS_TARGET_ACCOUNT_ID: ${{ vars.AWS_COST_REPORT_ACCOUNT_ID }}
       AWS_MANUAL_BUILD_PIPELINES: ${{ vars.AWS_MANUAL_BUILD_PIPELINES }}
+      AWS_COST_ALERT_STATE_PARAMETER: /hashpass/operations/aws-cost-alert-state
       NODEMAILER_HOST: ${{ secrets.NODEMAILER_HOST }}
       NODEMAILER_PORT: ${{ secrets.NODEMAILER_PORT }}
       NODEMAILER_USER: ${{ secrets.NODEMAILER_USER }}
@@ -51,14 +53,61 @@ jobs:
         run: |
           set -euo pipefail
           report_file="$RUNNER_TEMP/aws-cost-control-report.json"
+          state_file="$RUNNER_TEMP/aws-cost-alert-state.json"
+          state_error_file="$RUNNER_TEMP/aws-cost-alert-state-error.txt"
+          decision_file="$RUNNER_TEMP/aws-cost-alert-decision.json"
           node packages/tools/scripts/aws-cost-report.mjs --output-file "$report_file"
 
-          needs_notification=$(node -e "const report=require(process.argv[1]); process.stdout.write(String(report.budgetAlert || report.triggerDrift))" "$report_file")
+          if ! aws ssm get-parameter \
+            --region us-east-2 \
+            --name "$AWS_COST_ALERT_STATE_PARAMETER" \
+            --with-decryption \
+            --query 'Parameter.Value' \
+            --output text > "$state_file" 2> "$state_error_file"; then
+            if ! grep -q 'ParameterNotFound' "$state_error_file"; then
+              echo 'AWS cost-alert state could not be read.' >&2
+              exit 1
+            fi
+            rm -f "$state_file"
+          fi
+
+          node packages/tools/scripts/aws-cost-alert-policy.mjs \
+            --report-file "$report_file" \
+            --state-file "$state_file" \
+            --decision-file "$decision_file"
+
+          needs_notification=$(node -e "const report=require(process.argv[1]); const decision=require(process.argv[2]); process.stdout.write(String(report.triggerDrift || decision.notify))" "$report_file" "$decision_file")
           if [ "$needs_notification" = 'true' ]; then
             pnpm install --frozen-lockfile --ignore-scripts
             node packages/tools/scripts/send-aws-cost-alert.mjs --report-file "$report_file"
+            should_persist_state=$(node -e "const decision=require(process.argv[1]); process.stdout.write(String(Boolean(decision.nextState)))" "$decision_file")
+            if [ "$should_persist_state" = 'true' ]; then
+              next_state_file="$RUNNER_TEMP/aws-cost-alert-next-state.json"
+              node -e "const {writeFileSync}=require('node:fs'); const decision=require(process.argv[1]); writeFileSync(process.argv[2], JSON.stringify(decision.nextState), {mode:0o600})" "$decision_file" "$next_state_file"
+              aws ssm put-parameter \
+                --region us-east-2 \
+                --name "$AWS_COST_ALERT_STATE_PARAMETER" \
+                --type SecureString \
+                --key-id alias/aws/ssm \
+                --overwrite \
+                --value "$(<"$next_state_file")" \
+                >/dev/null
+            fi
             printf '%s\n' '## AWS cost and build-trigger guard' 'A confidential internal alert was delivered to support.' >> "$GITHUB_STEP_SUMMARY"
           else
+            should_reset_state=$(node -e "const decision=require(process.argv[1]); process.stdout.write(String(Boolean(decision.nextState)))" "$decision_file")
+            if [ "$should_reset_state" = 'true' ]; then
+              next_state_file="$RUNNER_TEMP/aws-cost-alert-next-state.json"
+              node -e "const {writeFileSync}=require('node:fs'); const decision=require(process.argv[1]); writeFileSync(process.argv[2], JSON.stringify(decision.nextState), {mode:0o600})" "$decision_file" "$next_state_file"
+              aws ssm put-parameter \
+                --region us-east-2 \
+                --name "$AWS_COST_ALERT_STATE_PARAMETER" \
+                --type SecureString \
+                --key-id alias/aws/ssm \
+                --overwrite \
+                --value "$(<"$next_state_file")" \
+                >/dev/null
+            fi
             printf '%s\n' '## AWS cost and build-trigger guard' 'No internal alert was required.' >> "$GITHUB_STEP_SUMMARY"
           fi
 

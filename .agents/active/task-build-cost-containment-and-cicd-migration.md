@@ -88,11 +88,14 @@ the production account identity or changed without auditing its consumers.
   legacy $80 budget had seven. Added actual 50/75/90/100% and forecast 100%
   alerts, reusing the existing billing email subscriber without exposing its
   address. Rules/subscribers were verified; delivery itself was not simulated.
-- Added `.github/workflows/aws-cost-report.yml` and the read-only
+- Added `.github/workflows/aws-cost-report.yml` and the narrowly scoped
   `hashpass-github-cost-report` IAM role. It performs one Cost Explorer query
   per daily run, reports the existing $50 budget's actual/forecast values, and
   detects re-enabled automatic triggers for all five migrated pipelines.
-  It fails visibly on budget breach or trigger drift and never mutates AWS.
+  Cost and trigger observations are read-only; the role may only additionally
+  read/write one encrypted private SSM alert-state parameter so an already
+  breached budget sends its first alert immediately and repeats only after a
+  USD 5 actual-spend or forecast movement. Trigger drift still fails visibly.
   The daily schedule becomes active when the workflow reaches `main`; its
   `develop` push trigger provides hosted verification. Latest verified run
   [35617295918](https://github.com/hashpass-tech/hashpass.tech/actions/runs/35617295918)

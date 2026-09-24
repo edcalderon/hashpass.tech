@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Read-only cost and build-trigger monitoring for GitHub Actions.
+Description: Cost and build-trigger monitoring for GitHub Actions with private alert state.
 Resources:
   CostReportRole:
     Type: AWS::IAM::Role
@@ -37,6 +37,14 @@ Resources:
                   - !Sub arn:${AWS::Partition}:codepipeline:us-east-2:${AWS::AccountId}:hashpass-cbweek2026-develop-site
                   - !Sub arn:${AWS::Partition}:codepipeline:us-east-2:${AWS::AccountId}:bsl-hashpass-dev
                   - !Sub arn:${AWS::Partition}:codepipeline:us-east-2:${AWS::AccountId}:bsl-hashpass-prod
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                  - ssm:PutParameter
+                Resource: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/hashpass/operations/aws-cost-alert-state
+              - Effect: Allow
+                Action: kms:Decrypt
+                Resource: !Sub arn:${AWS::Partition}:kms:${AWS::Region}:${AWS::AccountId}:alias/aws/ssm
       Tags:
         - Key: Project
           Value: hashpass

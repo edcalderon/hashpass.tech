@@ -54,9 +54,7 @@ import { Ionicons } from "../lib/vector-icons";
 import {
   ArrowRight as LucideArrowRight,
   ArrowUpRight as LucideArrowUpRight,
-  ChevronRight as LucideChevronRight,
   Compass as LucideCompass,
-  Search as LucideSearch,
 } from "lucide";
 import {
   getHashpassFooterLogo,
@@ -177,7 +175,6 @@ export default function HomeScreen() {
   // Phone controls use their own row in the carousel footer, so normal
   // iPhone widths have room for the full action labels. Keep the compact
   // copy only for the narrowest devices.
-  const useCompactCarouselLabels = windowWidth < 375;
   const isTabletLayout = Platform.OS !== "web" && !isPhoneLayout;
   const nativeBottomInset = isNative ? Math.max(insets.bottom, 24) : 0;
   const floatingControlsBottom =
@@ -659,90 +656,32 @@ export default function HomeScreen() {
             showCtas={false}
             showProposalCard={isGlobalEventTenant()}
             onProposeEvent={() => {
-              setIsEventProposalHovered(false);
               setIsEventProposalVisible(true);
             }}
-            headerSearch={
-              isGlobalEventTenant() ? (
-                <TouchableOpacity
-                  onPress={() => router.push("/dashboard/explore" as any)}
-                  style={styles.carouselSearchBtn}
-                  accessibilityRole="button"
-                  accessibilityLabel={t("exploreAllEvents.search", "Search events")}
-                  activeOpacity={0.75}
-                >
-                  <MorphIcon
-                    icon={LucideSearch}
-                    size={18}
-                    color={isDark ? "#94A3B8" : "#64748B"}
-                    strokeWidth={2}
-                    fallbackIconName="search"
-                  />
-                  <Text style={styles.carouselSearchText} numberOfLines={1}>
-                    {t("exploreAllEvents.searchPlaceholder", "Search events")}
-                  </Text>
-                </TouchableOpacity>
-              ) : null
+            showEventSearch={isGlobalEventTenant()}
+            onExploreEvents={() => router.push("/dashboard/explore" as any)}
+            explorerActionIcon={
+              <MorphIcon
+                icon={isEventExplorerHovered ? LucideArrowUpRight : LucideCompass}
+                size={17}
+                color={isDark ? "#67E8F9" : "#0E7490"}
+                strokeWidth={2}
+                spring="snappy"
+                fallbackIconName="compass-outline"
+              />
             }
-            headerAction={
-              isGlobalEventTenant() ? (
-                <TouchableOpacity
-                  onPress={() => router.push("/dashboard/explore" as any)}
-                  {...(Platform.OS === "web"
-                    ? ({
-                        onMouseEnter: () => setIsEventExplorerHovered(true),
-                        onMouseLeave: () => setIsEventExplorerHovered(false),
-                      } as any)
-                    : {})}
-                  activeOpacity={0.7}
-                  style={[
-                    styles.exploreAllEventsBtn,
-                    isPhoneLayout && styles.carouselActionBtnMobile,
-                    useCompactCarouselLabels && styles.carouselActionBtnCompact,
-                  ]}
-                  accessibilityRole="button"
-                  accessibilityLabel={t("exploreAllEvents", "Explore all events")}
-                >
-                  <MorphIcon
-                    icon={
-                      isEventExplorerHovered
-                        ? LucideArrowUpRight
-                        : LucideCompass
-                    }
-                    size={24}
-                    color={isDark ? "#06b6d4" : "#0891b2"}
-                    strokeWidth={2}
-                    spring="snappy"
-                    fallbackIconName="compass-outline"
-                  />
-                  <Text
-                    style={[
-                      styles.carouselActionText,
-                      useCompactCarouselLabels && styles.carouselActionTextCompact,
-                      { color: isDark ? "#e4e4e7" : "#18181b" },
-                    ]}
-                    numberOfLines={1}
-                    ellipsizeMode="tail"
-                  >
-                    {useCompactCarouselLabels
-                      ? t("exploreAllEventsCompact", "Events")
-                      : t("exploreAllEvents", "Explore all events")}
-                  </Text>
-                  <MorphIcon
-                    icon={
-                      isEventExplorerHovered
-                        ? LucideArrowRight
-                        : LucideChevronRight
-                    }
-                    size={18}
-                    color={isDark ? "#71717a" : "#a1a1aa"}
-                    strokeWidth={2}
-                    spring="snappy"
-                    fallbackIconName="chevron-forward"
-                  />
-                </TouchableOpacity>
-              ) : null
+            onExplorerActionHoverChange={setIsEventExplorerHovered}
+            proposalActionIcon={
+              <MorphIcon
+                icon={isEventProposalHovered ? LucideArrowUpRight : LucideArrowRight}
+                size={18}
+                color={isDark ? "#06222A" : "#FFFFFF"}
+                strokeWidth={2}
+                spring="snappy"
+                fallbackIconName="add-circle-outline"
+              />
             }
+            onProposalActionHoverChange={setIsEventProposalHovered}
             onEventPress={(
               event: { routes?: { home?: string } } | null | undefined,
             ) => {
@@ -1548,64 +1487,6 @@ const getStyles = (
     carouselSection: {
       marginBottom: 32,
       marginHorizontal: 0,
-    },
-    carouselSearchBtn: {
-      minHeight: 44,
-      maxWidth: 280,
-      borderRadius: uiTokens.radius.pill,
-      borderWidth: 1,
-      borderColor: isDark ? "rgba(148,163,184,0.28)" : "rgba(100,116,139,0.24)",
-      backgroundColor: isDark ? "rgba(15,23,42,0.78)" : "rgba(248,250,252,0.92)",
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 9,
-      paddingHorizontal: 14,
-    },
-    carouselSearchText: {
-      color: isDark ? "#CBD5E1" : "#475569",
-      fontSize: 14,
-      fontWeight: "600",
-      flexShrink: 1,
-    },
-    exploreAllEventsBtn: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 10,
-      minHeight: 44,
-      paddingLeft: 8,
-      paddingRight: 0,
-      paddingVertical: 8,
-    },
-    proposeEventBtn: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 10,
-      minHeight: 44,
-      paddingLeft: 0,
-      paddingRight: 8,
-      paddingVertical: 8,
-    },
-    carouselActionBtnCompact: {
-      gap: 6,
-      paddingHorizontal: 0,
-    },
-    carouselActionBtnMobile: {
-      width: "100%",
-      maxWidth: "100%",
-      minWidth: 0,
-      justifyContent: "center",
-      paddingHorizontal: 4,
-      overflow: "hidden",
-    },
-    carouselActionText: {
-      fontSize: 13,
-      fontWeight: "700",
-      letterSpacing: 0.1,
-      flexShrink: 1,
-    },
-    carouselActionTextCompact: {
-      fontSize: 12,
-      letterSpacing: 0,
     },
   });
 };

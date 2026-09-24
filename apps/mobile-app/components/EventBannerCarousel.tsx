@@ -13,12 +13,19 @@ import {
   TouchableOpacity,
   Image,
   Text,
+  TextInput,
+  AccessibilityInfo,
   Platform,
   type ImageSourcePropType,
 } from "react-native";
 import Animated, {
+  cancelAnimation,
+  Easing,
+  interpolate,
   useAnimatedStyle,
   useSharedValue,
+  withRepeat,
+  withTiming,
 } from "react-native-reanimated";
 import { useTheme } from "../hooks/useTheme";
 import { useTranslation } from "../i18n/i18n";
@@ -38,6 +45,15 @@ import SafeLinearGradient from "./SafeLinearGradient";
 import CarouselTickPill from "./CarouselTickPill";
 import { shouldStackCarouselFooter } from "../lib/carousel-layout";
 import { uiTokens } from "@hashpass/ui/tokens";
+import { ActionButton, IconButton } from "@hashpass/ui/primitives";
+import {
+  ChevronLeft as LucideChevronLeft,
+  ChevronRight as LucideChevronRight,
+  Compass as LucideCompass,
+  Search as LucideSearch,
+} from "lucide";
+import { useAnimationLevel } from "../contexts/AnimationLevelContext";
+import { MorphIcon } from "../lib/morph-icon";
 
 // Wide-web peeking-card carousel constants. Native uses the paging layout
 // below so a phone never has to fit a desktop-width card.
@@ -156,16 +172,65 @@ interface EventBannerCarouselProps {
   footerLeadingAction?: React.ReactNode;
   /** Optional landing-level action displayed with the slider controls. */
   footerAction?: React.ReactNode;
-  /** Compact explorer action displayed above the cards. */
-  headerAction?: React.ReactNode;
-  /** Optional search affordance displayed above the cards on wide web. */
-  headerSearch?: React.ReactNode;
+  /** Enables the glass search field inside the wide-web carousel card. */
+  showEventSearch?: boolean;
+  /** Opens the full public event explorer from the carousel search field. */
+  onExploreEvents?: () => void;
+  /** Shared animated icon supplied by the landing for the explorer action. */
+  explorerActionIcon?: React.ReactNode;
+  onExplorerActionHoverChange?: (hovered: boolean) => void;
   /** Adds the final organizer call-to-action card to the global carousel. */
   showProposalCard?: boolean;
   onProposeEvent?: () => void;
+  /** Shared animated icon supplied by the landing for the proposal action. */
+  proposalActionIcon?: React.ReactNode;
+  onProposalActionHoverChange?: (hovered: boolean) => void;
   /** Restricts the carousel to one selected event and its own campaign slides. */
   event?: EventInfo | null;
   lampBrandingOverrides?: Record<string, LampBrandingConfig>;
+}
+
+const normalizeSearchText = (value: string) => value.trim().toLocaleLowerCase();
+
+/**
+ * Keep all discovery cards visible while moving the best textual matches to
+ * the front. Searching should refine the slider, not make it feel empty.
+ */
+export function rankEventsForCarousel(events: EventInfo[], query: string): EventInfo[] {
+  const normalizedQuery = normalizeSearchText(query);
+  if (!normalizedQuery) return events;
+
+  const terms = normalizedQuery.split(/\s+/).filter(Boolean);
+  return events
+    .map((event, index) => {
+      const title = normalizeSearchText(event.title || "");
+      const shortName = normalizeSearchText(event.shortName || "");
+      const rawAliases: unknown[] = Array.isArray(event.aliases) ? event.aliases : [];
+      const aliases = rawAliases
+        .filter((alias: unknown): alias is string => typeof alias === "string")
+        .map(normalizeSearchText);
+      const metadata = normalizeSearchText([
+        event.id,
+        event.subtitle,
+        event.series,
+        event.geo?.city,
+        event.geo?.country,
+        event.geo?.venue,
+      ].filter(Boolean).join(" "));
+      const haystack = [title, shortName, ...aliases, metadata].join(" ");
+      const score = terms.reduce((total, term) => {
+        if (title === normalizedQuery || shortName === normalizedQuery || aliases.includes(normalizedQuery)) {
+          return total + 100;
+        }
+        if (title.startsWith(term) || shortName.startsWith(term) || aliases.some((alias) => alias.startsWith(term))) {
+          return total + 24;
+        }
+        return haystack.includes(term) ? total + 8 : total;
+      }, 0);
+      return { event, index, score };
+    })
+    .sort((first, second) => second.score - first.score || first.index - second.index)
+    .map(({ event }) => event);
 }
 
 export interface LampBrandingConfig {
@@ -263,18 +328,28 @@ export default function EventBannerCarousel({
   onEventPress,
   footerLeadingAction,
   footerAction,
-  headerAction,
-  headerSearch,
+  showEventSearch = false,
+  onExploreEvents,
+  explorerActionIcon,
+  onExplorerActionHoverChange,
   showProposalCard = false,
   onProposeEvent,
+  proposalActionIcon,
+  onProposalActionHoverChange,
   event: selectedEvent,
   lampBrandingOverrides,
 }: EventBannerCarouselProps) {
   const { isDark, colors } = useTheme();
-  const { t: translate } = useTranslation();
+  const { t: translate } = useTranslation("index");
+  const { animationLevel } = useAnimationLevel();
   const isMobile = useIsMobile();
   const scrollViewRef = useRef<ScrollView>(null);
   const { width: screenWidth } = useWindowDimensions();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+  const [isExplorerExpanded, setIsExplorerExpanded] = useState(false);
+  const [reduceMotion, setReduceMotion] = useState(false);
+  const searchInputRef = useRef<TextInput>(null);
 
   // Drag state for web mouse-grab on the carousel
   const dragRef = useRef<{ startX: number; scrollStart: number } | null>(null);
@@ -285,6 +360,73 @@ export default function EventBannerCarousel({
   // padding so the carousel stays centered with peeking neighbors.
   const dims = resolveCardDimensions(screenWidth);
   const { cardWidth, contentPaddingX, snapInterval } = dims;
+  const hasSearchQuery = Boolean(normalizeSearchText(searchQuery));
+  const shouldExpandSearch = isSearchExpanded || hasSearchQuery;
+  const compactSearchWidth = uiTokens.control.minHeight;
+  const expandedSearchWidth = Math.min(270, Math.max(168, cardWidth * 0.32));
+  const compactExplorerWidth = uiTokens.control.minHeight;
+  const expandedExplorerWidth = Math.min(188, Math.max(148, cardWidth * 0.24));
+  const searchExpandProgress = useSharedValue(0);
+  const explorerExpandProgress = useSharedValue(0);
+
+  useEffect(() => {
+    const nextProgress = shouldExpandSearch ? 1 : 0;
+    searchExpandProgress.value = reduceMotion
+      ? nextProgress
+      : withTiming(nextProgress, { duration: 220, easing: Easing.out(Easing.cubic) });
+  }, [reduceMotion, searchExpandProgress, shouldExpandSearch]);
+
+  const searchShellAnimatedStyle = useAnimatedStyle(
+    () => ({
+      width: interpolate(searchExpandProgress.value, [0, 1], [compactSearchWidth, expandedSearchWidth]),
+    }),
+    [compactSearchWidth, expandedSearchWidth],
+  );
+  const searchInputAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: searchExpandProgress.value,
+    transform: [{ translateX: interpolate(searchExpandProgress.value, [0, 1], [-8, 0]) }],
+  }));
+
+  useEffect(() => {
+    explorerExpandProgress.value = reduceMotion
+      ? (isExplorerExpanded ? 1 : 0)
+      : withTiming(isExplorerExpanded ? 1 : 0, {
+          duration: 220,
+          easing: Easing.out(Easing.cubic),
+        });
+  }, [explorerExpandProgress, isExplorerExpanded, reduceMotion]);
+
+  const explorerShellAnimatedStyle = useAnimatedStyle(
+    () => ({
+      width: interpolate(
+        explorerExpandProgress.value,
+        [0, 1],
+        [compactExplorerWidth, expandedExplorerWidth],
+      ),
+    }),
+    [compactExplorerWidth, expandedExplorerWidth],
+  );
+  const explorerActionContentAnimatedStyle = useAnimatedStyle(() => ({
+    // Do not reveal the expanded action until the outer glass shell has room
+    // for it. Otherwise React Native Web briefly clips a second, pale pill
+    // inside the circular explorer affordance while the width is animating.
+    opacity: explorerExpandProgress.value < 0.98 ? 0 : 1,
+  }));
+
+  useEffect(() => {
+    let active = true;
+    void AccessibilityInfo.isReduceMotionEnabled()
+      .then((value) => { if (active && value) setReduceMotion(true); })
+      .catch(() => {});
+    const subscription = AccessibilityInfo.addEventListener(
+      "reduceMotionChanged",
+      setReduceMotion,
+    );
+    return () => {
+      active = false;
+      subscription.remove();
+    };
+  }, []);
 
   // Build real slides (logical, non-cloned)
   const availableEvents: EventInfo[] = selectedEvent
@@ -326,10 +468,15 @@ export default function EventBannerCarousel({
         return 0;
       });
 
+  const rankedCarouselEvents = useMemo(
+    () => rankEventsForCarousel(orderedCarouselEvents, searchQuery),
+    [orderedCarouselEvents, searchQuery],
+  );
+
   // The event registry is already sorted by start date. Keep every event's
   // poster immediately before its detail/countdown slide, so the carousel
   // never separates a campaign image from the information it introduces.
-  const eventSlides = orderedCarouselEvents.flatMap((event) => {
+  const eventSlides = rankedCarouselEvents.flatMap((event) => {
     const campaign = isGlobalTenant
       ? EVENT_CAMPAIGN_SLIDES[event.id as keyof typeof EVENT_CAMPAIGN_SLIDES]
       : undefined;
@@ -357,26 +504,26 @@ export default function EventBannerCarousel({
       : informationSlides;
   });
 
-  const realSlides: CarouselSlide[] = [
-    ...(isGlobalTenant
-      ? [{
-          type: "logo" as const,
-          logoId: PRIMARY_ENTRY_SLIDE.id,
-          logoSrcDark: PRIMARY_ENTRY_SLIDE.darkSrc,
-          logoSrcLight: PRIMARY_ENTRY_SLIDE.lightSrc,
-          backgroundColor: isDark
-            ? PRIMARY_ENTRY_SLIDE.backgroundColorDark
-            : PRIMARY_ENTRY_SLIDE.backgroundColorLight,
-          accentColor: isDark
-            ? PRIMARY_ENTRY_SLIDE.accentColorDark
-            : PRIMARY_ENTRY_SLIDE.accentColorLight,
-        }]
-      : []),
-    ...eventSlides,
-    ...(showProposalCard
-      ? [{ type: "proposal" as const, campaignId: "proposal-event" }]
-      : []),
-  ];
+  const identitySlide: CarouselSlide[] = isGlobalTenant
+    ? [{
+        type: "logo" as const,
+        logoId: PRIMARY_ENTRY_SLIDE.id,
+        logoSrcDark: PRIMARY_ENTRY_SLIDE.darkSrc,
+        logoSrcLight: PRIMARY_ENTRY_SLIDE.lightSrc,
+        backgroundColor: isDark
+          ? PRIMARY_ENTRY_SLIDE.backgroundColorDark
+          : PRIMARY_ENTRY_SLIDE.backgroundColorLight,
+        accentColor: isDark
+          ? PRIMARY_ENTRY_SLIDE.accentColorDark
+          : PRIMARY_ENTRY_SLIDE.accentColorLight,
+      }]
+    : [];
+  const proposalSlide: CarouselSlide[] = showProposalCard
+    ? [{ type: "proposal" as const, campaignId: "proposal-event" }]
+    : [];
+  const realSlides: CarouselSlide[] = hasSearchQuery
+    ? [...eventSlides, ...identitySlide, ...proposalSlide]
+    : [...identitySlide, ...eventSlides, ...proposalSlide];
 
   const N = realSlides.length; // logical count
   // Peeking cards are a wide-web treatment. On native they force the 480px
@@ -396,6 +543,61 @@ export default function EventBannerCarousel({
   const [logicalIndex, setLogicalIndex] = useState(0);
   const [currentIndex, setCurrentIndex] = useState(0); // fallback slider only
   const [wrapLock, setWrapLock] = useState(false); // debounce silent wrap-arounds
+  const proposalSlideIndex = realSlides.findIndex((slide) => slide.type === "proposal");
+  const activeSlideIndex = usePeekingCarousel ? logicalIndex : currentIndex;
+  const animateProposal = animationLevel === "full"
+    && !reduceMotion
+    && proposalSlideIndex >= 0
+    && activeSlideIndex === proposalSlideIndex;
+  const proposalDriftOne = useSharedValue(0);
+  const proposalDriftTwo = useSharedValue(0);
+  const proposalGlow = useSharedValue(0);
+
+  useEffect(() => {
+    const values = [proposalDriftOne, proposalDriftTwo, proposalGlow];
+    values.forEach(cancelAnimation);
+    if (!animateProposal) {
+      values.forEach((value) => { value.value = 0; });
+      return;
+    }
+    proposalDriftOne.value = withRepeat(
+      withTiming(1, { duration: 5800, easing: Easing.inOut(Easing.sin) }),
+      -1,
+      true,
+    );
+    proposalDriftTwo.value = withRepeat(
+      withTiming(1, { duration: 7400, easing: Easing.inOut(Easing.sin) }),
+      -1,
+      true,
+    );
+    proposalGlow.value = withRepeat(
+      withTiming(1, { duration: 3200, easing: Easing.inOut(Easing.quad) }),
+      -1,
+      true,
+    );
+    return () => values.forEach(cancelAnimation);
+  }, [animateProposal, proposalDriftOne, proposalDriftTwo, proposalGlow]);
+
+  const proposalOrbOneStyle = useAnimatedStyle(() => ({
+    opacity: 0.6 + proposalGlow.value * 0.3,
+    transform: [
+      { translateX: interpolate(proposalDriftOne.value, [0, 1], [-18, 22]) },
+      { translateY: interpolate(proposalDriftOne.value, [0, 1], [16, -18]) },
+      { scale: interpolate(proposalDriftOne.value, [0, 1], [0.94, 1.08]) },
+    ],
+  }));
+  const proposalOrbTwoStyle = useAnimatedStyle(() => ({
+    opacity: 0.46 + proposalGlow.value * 0.28,
+    transform: [
+      { translateX: interpolate(proposalDriftTwo.value, [0, 1], [22, -16]) },
+      { translateY: interpolate(proposalDriftTwo.value, [0, 1], [-10, 20]) },
+      { scale: interpolate(proposalDriftTwo.value, [0, 1], [1.06, 0.9]) },
+    ],
+  }));
+  const proposalGlossStyle = useAnimatedStyle(() => ({
+    opacity: 0.3 + proposalGlow.value * 0.38,
+    transform: [{ translateX: interpolate(proposalGlow.value, [0, 1], [-20, 20]) }],
+  }));
 
   const physicalToOffset = useCallback((physIdx: number) => contentPaddingX + physIdx * snapInterval, [contentPaddingX, snapInterval]);
 
@@ -478,12 +680,25 @@ export default function EventBannerCarousel({
     scrollViewRef.current?.scrollTo({ x: index * screenWidth, animated: true });
   }, [screenWidth]);
 
+  useEffect(() => {
+    if (!hasSearchQuery) return;
+    requestAnimationFrame(() => {
+      if (usePeekingCarousel) {
+        setLogicalIndex(0);
+        scrollToPhysical(CLONE_OFFSET, false);
+      } else {
+        setCurrentIndex(0);
+        scrollToFallbackSlide(0);
+      }
+    });
+  }, [hasSearchQuery, searchQuery, scrollToFallbackSlide, scrollToPhysical, usePeekingCarousel]);
+
   const handleEventPress = (event: EventInfo) => {
     if (onEventPress) onEventPress(event);
   };
   const getEventStartDate = (event: EventInfo): string | undefined => event.eventStartDate;
 
-  const styles = getStyles(isDark, colors, isMobile, screenWidth);
+  const styles = getStyles(isDark, colors, isMobile, screenWidth, cardWidth);
 
   // Auto-play with progress tracking
   const isAutoPlayPausedRef = useRef(false);
@@ -594,6 +809,27 @@ export default function EventBannerCarousel({
     timerStartRef.current = Date.now();
     progress.value = 0;
   }, [scrollToLogical, progress]);
+
+  const moveToSlide = useCallback((index: number) => {
+    if (usePeekingCarousel) {
+      setLogicalIndex(index);
+      scrollToLogical(index);
+    } else {
+      setCurrentIndex(index);
+      scrollToFallbackSlide(index);
+    }
+    timerStartRef.current = Date.now();
+    progress.value = 0;
+  }, [progress, scrollToFallbackSlide, scrollToLogical, usePeekingCarousel]);
+
+  const handlePrevious = useCallback(() => {
+    const next = (activeSlideIndex - 1 + N) % N;
+    moveToSlide(next);
+  }, [N, activeSlideIndex, moveToSlide]);
+
+  const handleNext = useCallback(() => {
+    moveToSlide((activeSlideIndex + 1) % N);
+  }, [N, activeSlideIndex, moveToSlide]);
 
   // Restart: jump back to the first slide with a pause so the user can
   // see the reset before auto-play kicks back in.
@@ -862,7 +1098,16 @@ export default function EventBannerCarousel({
             end={{ x: 1, y: 1 }}
             style={styles.proposalCard}
           >
-            <View style={styles.proposalOrb} />
+            <Animated.View style={[styles.proposalOrbOne, proposalOrbOneStyle]} pointerEvents="none" />
+            <Animated.View style={[styles.proposalOrbTwo, proposalOrbTwoStyle]} pointerEvents="none" />
+            <Animated.View style={[styles.proposalGloss, proposalGlossStyle]} pointerEvents="none">
+              <SafeLinearGradient
+                colors={["transparent", isDark ? "rgba(255,255,255,0.16)" : "rgba(255,255,255,0.7)", "transparent"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{ flex: 1 }}
+              />
+            </Animated.View>
             <Text style={styles.proposalEyebrow}>
               {translate("eventProposal.cardEyebrow", "MAKE IT YOURS")}
             </Text>
@@ -875,23 +1120,27 @@ export default function EventBannerCarousel({
                 "Bring your event, club or community to HASHPASS and give people one beautiful place to discover it.",
               )}
             </Text>
-            <TouchableOpacity
+            <ActionButton
               onPress={onProposeEvent}
-              style={styles.proposalButton}
-              accessibilityRole="button"
+              mode={isDark ? "dark" : "light"}
+              variant="primary"
+              label={translate("eventProposal.action", "Propose an event")}
+              leadingIcon={proposalActionIcon}
+              style={styles.proposalAction}
               accessibilityLabel={translate("eventProposal.action", "Propose an event")}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.proposalButtonText}>
-                {translate("eventProposal.action", "Propose an event")}
-              </Text>
-            </TouchableOpacity>
+              {...(Platform.OS === "web"
+                ? ({
+                    onMouseEnter: () => onProposalActionHoverChange?.(true),
+                    onMouseLeave: () => onProposalActionHoverChange?.(false),
+                  } as any)
+                : {})}
+            />
           </SafeLinearGradient>
         </View>
       );
     }
     return null;
-  }, [isDark, translate, lampBrandingByEvent, showCtas, onEventPress, onProposeEvent, styles]);
+  }, [isDark, translate, lampBrandingByEvent, showCtas, onEventPress, onProposeEvent, styles, proposalOrbOneStyle, proposalOrbTwoStyle, proposalGlossStyle]);
 
   // Web-only wheel wrapper props (typed as `any` because RN's ViewProps omits onWheel)
   const wheelViewProps: any = { style: styles.carouselWrapper, onWheel: handleWheel };
@@ -928,21 +1177,163 @@ export default function EventBannerCarousel({
     );
   };
 
+  const showWideSearch = showEventSearch && Platform.OS === "web" && !isMobile;
+  const renderDirectionControls = () => N > 1 ? (
+    <>
+      <IconButton
+        mode={isDark ? "dark" : "light"}
+        label={translate("eventSearch.previous", "Previous slide")}
+        onPress={handlePrevious}
+        style={styles.directionButton}
+      >
+        <MorphIcon
+          icon={LucideChevronLeft}
+          size={20}
+          color={isDark ? "#E2E8F0" : "#334155"}
+          strokeWidth={2}
+          fallbackIconName="chevron-back"
+        />
+      </IconButton>
+      {renderIndicators()}
+      <IconButton
+        mode={isDark ? "dark" : "light"}
+        label={translate("eventSearch.next", "Next slide")}
+        onPress={handleNext}
+        style={styles.directionButton}
+      >
+        <MorphIcon
+          icon={LucideChevronRight}
+          size={20}
+          color={isDark ? "#E2E8F0" : "#334155"}
+          strokeWidth={2}
+          fallbackIconName="chevron-forward"
+        />
+      </IconButton>
+    </>
+  ) : renderIndicators();
+
   return (
     <View style={styles.container}>
-      {(headerAction || (headerSearch && Platform.OS === "web" && !isMobile)) ? (
-        <View style={styles.carouselHeader}>
-          <View style={styles.carouselHeaderSearch}>
-            {headerSearch && Platform.OS === "web" && !isMobile ? headerSearch : null}
-          </View>
-          <View style={styles.carouselHeaderControls}>
-            {headerAction ? <View style={styles.carouselHeaderAction}>{headerAction}</View> : null}
-            {Platform.OS === "web" && !isMobile ? renderIndicators() : null}
-          </View>
-        </View>
-      ) : null}
       {usePeekingCarousel ? (
         <View {...wheelViewProps}>
+          {showWideSearch ? (
+            <View style={styles.searchOverlay}>
+              <Animated.View style={[styles.searchGlass, searchShellAnimatedStyle]}>
+                <TouchableOpacity
+                  testID="carousel-search-trigger"
+                  style={styles.searchTrigger}
+                  accessibilityRole="button"
+                  accessibilityLabel={translate("eventSearch.accessibilityLabel", "Search events in the carousel")}
+                  onPress={() => {
+                    setIsSearchExpanded(true);
+                    requestAnimationFrame(() => searchInputRef.current?.focus());
+                  }}
+                >
+                  <MorphIcon
+                    icon={LucideSearch}
+                    size={18}
+                    color={isDark ? "#A5F3FC" : "#0E7490"}
+                    strokeWidth={2}
+                    fallbackIconName="search"
+                  />
+                </TouchableOpacity>
+                <Animated.View
+                  style={[styles.searchInputWrap, searchInputAnimatedStyle]}
+                  pointerEvents={shouldExpandSearch ? "auto" : "none"}
+                >
+                  <TextInput
+                    ref={searchInputRef}
+                    testID="carousel-search-input"
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                    onFocus={() => setIsSearchExpanded(true)}
+                    onBlur={() => {
+                      if (!hasSearchQuery) setIsSearchExpanded(false);
+                    }}
+                    placeholder={translate("eventSearch.placeholder", "Search events")}
+                    placeholderTextColor={isDark ? "#94A3B8" : "#64748B"}
+                    style={styles.searchInput}
+                    className="hp-carousel-search-input"
+                    accessibilityLabel={translate("eventSearch.accessibilityLabel", "Search events in the carousel")}
+                    returnKeyType="search"
+                  />
+                </Animated.View>
+              </Animated.View>
+              {onExploreEvents ? (
+                <Animated.View
+                  style={[styles.searchGlass, styles.explorerGlass, explorerShellAnimatedStyle]}
+                  {...(Platform.OS === "web"
+                    ? ({
+                        onMouseLeave: () => {
+                          onExplorerActionHoverChange?.(false);
+                          setIsExplorerExpanded(false);
+                        },
+                      } as any)
+                    : {})}
+                >
+                  {isExplorerExpanded ? (
+                    <Animated.View
+                      style={[
+                        styles.explorerExpandedContent,
+                        { width: expandedExplorerWidth },
+                        explorerActionContentAnimatedStyle,
+                      ]}
+                    >
+                      <ActionButton
+                        testID="carousel-explorer-action"
+                        mode={isDark ? "dark" : "light"}
+                        variant="ghost"
+                        label={translate("eventSearch.exploreAll", "Explore all")}
+                        accessibilityState={{ expanded: true }}
+                        leadingIcon={explorerActionIcon || (
+                          <MorphIcon
+                            icon={LucideCompass}
+                            size={17}
+                            color={isDark ? "#67E8F9" : "#0E7490"}
+                            strokeWidth={2}
+                            fallbackIconName="compass-outline"
+                          />
+                        )}
+                        onPress={onExploreEvents}
+                        onBlur={() => setIsExplorerExpanded(false)}
+                        style={styles.explorerInlineAction}
+                        {...(Platform.OS === "web"
+                          ? ({ onMouseEnter: () => onExplorerActionHoverChange?.(true) } as any)
+                          : {})}
+                      />
+                    </Animated.View>
+                  ) : (
+                    <IconButton
+                      testID="carousel-explorer-expand-trigger"
+                      mode={isDark ? "dark" : "light"}
+                      label={translate("eventSearch.exploreAll", "Explore all events")}
+                      accessibilityState={{ expanded: false }}
+                      onPress={() => setIsExplorerExpanded(true)}
+                      style={styles.explorerCircularTrigger}
+                      {...(Platform.OS === "web"
+                        ? ({
+                            onMouseEnter: () => {
+                              onExplorerActionHoverChange?.(true);
+                              setIsExplorerExpanded(true);
+                            },
+                          } as any)
+                        : {})}
+                    >
+                      {explorerActionIcon || (
+                        <MorphIcon
+                          icon={LucideCompass}
+                          size={18}
+                          color={isDark ? "#67E8F9" : "#0E7490"}
+                          strokeWidth={2}
+                          fallbackIconName="compass-outline"
+                        />
+                      )}
+                    </IconButton>
+                  )}
+                </Animated.View>
+              ) : null}
+            </View>
+          ) : null}
           <ScrollView
             ref={scrollViewRef}
             horizontal
@@ -976,19 +1367,24 @@ export default function EventBannerCarousel({
                   <TouchableOpacity
                     activeOpacity={0.85}
                     accessibilityRole={slide.type === "campaign" ? "button" : undefined}
-                    accessibilityLabel={slide.type === "campaign" ? slide.campaignAccessibilityLabel : undefined}
+                    accessibilityLabel={slide.type === "campaign"
+                      ? slide.campaignAccessibilityLabel
+                      : slide.type === "proposal"
+                        ? translate("eventProposal.cardTitle", "Your event belongs here")
+                        : undefined}
                     onPress={() => {
+                      // A drag ends with a browser click. Always discard it
+                      // before dispatching any card action, including proposal.
+                      if (isDraggingRef.current) {
+                        isDraggingRef.current = false;
+                        return;
+                      }
                       if (slide.type === "campaign" && slide.event) {
                         handleEventPress(slide.event);
                         return;
                       }
                       if (slide.type === "proposal") {
                         onProposeEvent?.();
-                        return;
-                      }
-                      // Skip if the user was dragging (drag moved the card already)
-                      if (isDraggingRef.current) {
-                        isDraggingRef.current = false;
                         return;
                       }
                       // First click: center this card and pause auto-play so the
@@ -1055,18 +1451,7 @@ export default function EventBannerCarousel({
             }
 
             if (slide.type === "proposal") {
-              return (
-                <TouchableOpacity
-                  key={key}
-                  activeOpacity={0.85}
-                  accessibilityRole="button"
-                  accessibilityLabel={translate("eventProposal.cardTitle", "Your event belongs here")}
-                  onPress={onProposeEvent}
-                  style={styles.slideFullWidth}
-                >
-                  {renderSlideContent(slide)}
-                </TouchableOpacity>
-              );
+              return <View key={key} style={styles.slideFullWidth}>{renderSlideContent(slide)}</View>;
             }
 
             return (
@@ -1079,7 +1464,7 @@ export default function EventBannerCarousel({
         </View>
       )}
 
-      {(((showDotIndicators && N > 1) && !(Platform.OS === "web" && !isMobile && headerAction)) || hasFooterActions) ? (
+      {((showDotIndicators && N > 1) || hasFooterActions) ? (
         <View
           style={[
             styles.footer,
@@ -1114,7 +1499,7 @@ export default function EventBannerCarousel({
               {footerLeadingAction ? (
                 <View style={styles.footerLeadingAction}>{footerLeadingAction}</View>
               ) : null}
-              {renderIndicators()}
+              {renderDirectionControls()}
               {footerAction ? (
                 <View style={styles.footerAction}>{footerAction}</View>
               ) : null}
@@ -1126,7 +1511,13 @@ export default function EventBannerCarousel({
   );
 }
 
-const getStyles = (isDark: boolean, colors: any, isMobile: boolean, _screenWidth: number) =>
+const getStyles = (
+  isDark: boolean,
+  colors: any,
+  isMobile: boolean,
+  _screenWidth: number,
+  cardWidth: number,
+) =>
   {
     const cardHeight = resolveCarouselCardHeight(isMobile, _screenWidth);
     const cardMediaHeight = cardHeight - 8;
@@ -1136,34 +1527,96 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean, _screenWidth
       width: "100%",
       marginBottom: 32,
     },
-    carouselHeader: {
-      minHeight: 48,
-      marginBottom: 12,
-      paddingHorizontal: isMobile ? 16 : 24,
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      gap: 16,
-      zIndex: 4,
+    carouselWrapper: {
+      width: "100%",
+      position: "relative",
     },
-    carouselHeaderSearch: {
-      flex: 1,
-      minWidth: 0,
-    },
-    carouselHeaderAction: {
-      flexShrink: 0,
-      maxWidth: isMobile ? "52%" : undefined,
-    },
-    carouselHeaderControls: {
+    searchOverlay: {
+      position: "absolute",
+      zIndex: 8,
+      top: uiTokens.space.lg,
+      right: Math.max(uiTokens.space.sm, (_screenWidth - cardWidth) / 2 + uiTokens.space.xs),
+      maxWidth: Math.min(468, Math.max(236, cardWidth * 0.62)),
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "flex-end",
-      gap: 16,
-      flexShrink: 1,
-      minWidth: 0,
+      gap: uiTokens.space.xs,
     },
-    carouselWrapper: {
+    searchGlass: {
+      minHeight: uiTokens.control.minHeight,
+      borderRadius: uiTokens.radius.pill,
+      borderWidth: uiTokens.control.borderWidth,
+      borderColor: isDark ? "rgba(165,243,252,0.32)" : "rgba(14,116,144,0.24)",
+      backgroundColor: isDark ? "rgba(7,17,31,0.76)" : "rgba(255,255,255,0.78)",
+      alignItems: "center",
+      flexDirection: "row",
+      overflow: "hidden",
+      paddingRight: uiTokens.space.xs,
+      shadowColor: isDark ? "#000000" : "#0E7490",
+      shadowOffset: { width: 0, height: uiTokens.space.xs },
+      shadowOpacity: isDark ? 0.24 : 0.13,
+      shadowRadius: uiTokens.space.lg,
+      elevation: 7,
+      ...(Platform.OS === "web"
+        ? ({ backdropFilter: "blur(24px) saturate(1.2)", WebkitBackdropFilter: "blur(24px) saturate(1.2)" } as any)
+        : {}),
+    },
+    searchTrigger: {
+      width: uiTokens.control.minHeight,
+      minHeight: uiTokens.control.minHeight,
+      alignItems: "center",
+      justifyContent: "center",
+      flexShrink: 0,
+    },
+    searchInputWrap: {
+      flex: 1,
+      minWidth: 0,
+      minHeight: uiTokens.control.minHeight,
+      justifyContent: "center",
+      paddingRight: uiTokens.space.sm,
+    },
+    searchInput: {
+      minWidth: 0,
+      flex: 1,
+      minHeight: uiTokens.control.minHeight,
+      color: isDark ? "#F8FAFC" : "#0F172A",
+      caretColor: isDark ? "#A5F3FC" : "#0E7490",
+      fontSize: uiTokens.type.label,
+      fontWeight: "600",
+      paddingVertical: 0,
+      backgroundColor: "transparent",
+      borderWidth: 0,
+      borderColor: "transparent",
+      ...(Platform.OS === "web"
+        ? ({ outlineStyle: "none", outlineColor: "transparent", outlineWidth: 0, boxShadow: "none" } as any)
+        : {}),
+    },
+    explorerInlineAction: {
+      minHeight: uiTokens.control.minHeight,
+      paddingHorizontal: uiTokens.space.md,
+      flexShrink: 0,
       width: "100%",
+      // The glass shell is the only visible surface. Keeping the shared
+      // ActionButton transparent avoids a nested light ellipse on web.
+      backgroundColor: "transparent",
+      borderColor: "transparent",
+      borderWidth: 0,
+      borderRadius: 0,
+      shadowOpacity: 0,
+      elevation: 0,
+    },
+    explorerGlass: {
+      minHeight: uiTokens.control.minHeight,
+      paddingRight: 0,
+      flexShrink: 0,
+    },
+    explorerExpandedContent: {
+      minHeight: uiTokens.control.minHeight,
+    },
+    explorerCircularTrigger: {
+      width: "100%",
+      height: "100%",
+      borderWidth: 0,
     },
     scrollView: {
       flexGrow: 0,
@@ -1247,8 +1700,15 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean, _screenWidth
       alignItems: "center",
       justifyContent: "center",
       gap: isMobile ? 8 : 16,
-      maxWidth: 600,
+      maxWidth: 680,
       width: "100%",
+    },
+    directionButton: {
+      shadowColor: isDark ? "#000000" : "#0F172A",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: isDark ? 0.24 : 0.1,
+      shadowRadius: 7,
+      elevation: 3,
     },
     footerActionsMobile: {
       width: "100%",
@@ -1314,7 +1774,7 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean, _screenWidth
       justifyContent: "center",
       position: "relative",
     },
-    proposalOrb: {
+    proposalOrbOne: {
       position: "absolute",
       width: isMobile ? 180 : 280,
       height: isMobile ? 180 : 280,
@@ -1324,6 +1784,25 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean, _screenWidth
       backgroundColor: isDark ? "rgba(34,211,238,0.2)" : "rgba(8,145,178,0.13)",
       borderWidth: 1,
       borderColor: isDark ? "rgba(103,232,249,0.35)" : "rgba(8,145,178,0.24)",
+    },
+    proposalOrbTwo: {
+      position: "absolute",
+      width: isMobile ? 120 : 190,
+      height: isMobile ? 120 : 190,
+      borderRadius: isMobile ? 60 : 95,
+      left: isMobile ? -42 : -58,
+      bottom: isMobile ? -48 : -70,
+      backgroundColor: isDark ? "rgba(14,165,233,0.17)" : "rgba(103,232,249,0.28)",
+      borderWidth: 1,
+      borderColor: isDark ? "rgba(125,211,252,0.28)" : "rgba(14,116,144,0.2)",
+    },
+    proposalGloss: {
+      position: "absolute",
+      top: "-20%",
+      right: "20%",
+      width: "30%",
+      height: "145%",
+      transform: [{ rotate: "18deg" }],
     },
     proposalEyebrow: {
       color: isDark ? "#67E8F9" : "#0E7490",
@@ -1347,20 +1826,9 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean, _screenWidth
       marginTop: 14,
       maxWidth: 520,
     },
-    proposalButton: {
+    proposalAction: {
       alignSelf: "flex-start",
       marginTop: 24,
-      minHeight: 48,
-      borderRadius: uiTokens.radius.pill,
-      paddingHorizontal: 22,
-      justifyContent: "center",
-      backgroundColor: isDark ? "#22D3EE" : "#0891B2",
-    },
-    proposalButtonText: {
-      color: isDark ? "#06222A" : "#FFFFFF",
-      fontSize: 15,
-      fontWeight: "800",
-      letterSpacing: 0.15,
     },
     campaignBranding: {
       position: "absolute",

@@ -67,10 +67,37 @@ test("workflow privately mails budget alerts instead of publishing the report or
 
   assert.doesNotMatch(workflow, /tee\s+-a\s+"\$GITHUB_STEP_SUMMARY"/);
   assert.match(workflow, /send-aws-cost-alert\.mjs/);
+  assert.match(workflow, /aws-cost-alert-policy\.mjs/);
+  assert.match(workflow, /aws ssm get-parameter/);
+  assert.match(workflow, /aws ssm put-parameter/);
+  assert.match(workflow, /aws ssm get-parameter\s+\\\n\s+--region us-east-2/);
+  assert.match(workflow, /aws ssm put-parameter\s+\\\n\s+--region us-east-2/);
+  assert.match(workflow, /AWS_COST_ALERT_STATE_PARAMETER/);
   assert.match(workflow, /pnpm\/action-setup@v4/);
   assert.match(workflow, /pnpm install --frozen-lockfile --ignore-scripts/);
   assert.match(workflow, /if \[ "\$trigger_drift" = 'true' \]; then/);
   assert.doesNotMatch(workflow, /budgetAlert[\s\S]{0,120}exit 1/);
+});
+
+test("cost-report role can persist only the dedicated private alert state", () => {
+  const template = readFileSync(
+    join(
+      import.meta.dirname,
+      "..",
+      "..",
+      "infra",
+      "cloudformation",
+      "github-cost-report.yml",
+    ),
+    "utf8",
+  );
+
+  assert.match(template, /ssm:GetParameter/);
+  assert.match(template, /ssm:PutParameter/);
+  assert.match(template, /kms:Decrypt/);
+  assert.match(template, /alias\/aws\/ssm/);
+  assert.match(template, /parameter\/hashpass\/operations\/aws-cost-alert-state/);
+  assert.doesNotMatch(template, /ssm:\*/);
 });
 
 test("cost-alert transport keeps SMTP TLS verification enabled and workflow watches alert dependencies", () => {

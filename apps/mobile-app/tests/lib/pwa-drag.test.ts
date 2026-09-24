@@ -2,17 +2,13 @@
 
 import {
   clampPwaDragPosition,
+  getDefaultPwaDragPosition,
   getPwaDragViewport,
-  getPwaDockPositionCoordinates,
-  PWA_DOCK_POSITIONS,
   PWA_DRAG_BOTTOM_SAFE_MARGIN,
   PWA_DRAG_BUTTON_SIZE,
   PWA_DRAG_POSITION_KEY,
   PWA_DRAG_SAFE_MARGIN,
-  readStoredPwaDockPosition,
   readStoredPwaDragPosition,
-  resolveNearestPwaDockPosition,
-  storePwaDockPosition,
   storePwaDragPosition,
 } from '../../lib/pwa-drag';
 
@@ -64,17 +60,16 @@ describe('PWA drag positioning', () => {
     expect(getPwaDragViewport()).toEqual({ width: 390, height: 800, offsetLeft: 12, offsetTop: 18 });
   });
 
-  it('keeps dock coordinates inside a panned visual viewport', () => {
+  it('keeps a freely dropped position inside a panned visual viewport', () => {
     const viewport = { width: 320, height: 240, offsetLeft: 18, offsetTop: 32 };
 
-    expect(getPwaDockPositionCoordinates('top-left', viewport)).toEqual({
-      left: 30,
-      top: 44,
-    });
-    expect(getPwaDockPositionCoordinates('bottom-left', viewport).left).toBe(30);
-    expect(getPwaDockPositionCoordinates('bottom-right', viewport)).toEqual({
+    expect(clampPwaDragPosition({ left: 999, top: 999 }, viewport)).toEqual({
       left: 256,
       top: 154,
+    });
+    expect(clampPwaDragPosition({ left: -999, top: -999 }, viewport)).toEqual({
+      left: 30,
+      top: 44,
     });
   });
 
@@ -88,45 +83,32 @@ describe('PWA drag positioning', () => {
 
     expect(clampPwaDragPosition({ left: 400, top: 300 }, viewport)).toEqual({
       left: viewport.width - PWA_DRAG_BUTTON_SIZE - PWA_DRAG_SAFE_MARGIN,
-      top: viewport.height - PWA_DRAG_BUTTON_SIZE - PWA_DRAG_SAFE_MARGIN,
-    });
-  });
-
-  it('limits dropped placement to top-left, bottom-left, and bottom-right docks', () => {
-    const viewport = { width: 320, height: 240, offsetLeft: 0, offsetTop: 0 };
-
-    expect(PWA_DOCK_POSITIONS).toEqual(['top-left', 'bottom-left', 'bottom-right']);
-    expect(getPwaDockPositionCoordinates('top-left', viewport)).toEqual({
-      left: PWA_DRAG_SAFE_MARGIN,
-      top: PWA_DRAG_SAFE_MARGIN,
-    });
-    expect(getPwaDockPositionCoordinates('bottom-left', viewport)).toEqual({
-      left: PWA_DRAG_SAFE_MARGIN,
-      top: viewport.height - PWA_DRAG_BUTTON_SIZE - PWA_DRAG_BOTTOM_SAFE_MARGIN,
-    });
-    expect(getPwaDockPositionCoordinates('bottom-right', viewport)).toEqual({
-      left: viewport.width - PWA_DRAG_BUTTON_SIZE - PWA_DRAG_SAFE_MARGIN,
       top: viewport.height - PWA_DRAG_BUTTON_SIZE - PWA_DRAG_BOTTOM_SAFE_MARGIN,
     });
   });
 
-  it('snaps a dragged coordinate to the nearest allowed dock', () => {
+  it('uses a safe bottom-left starting position without restricting later drops', () => {
     const viewport = { width: 320, height: 240, offsetLeft: 0, offsetTop: 0 };
 
-    expect(resolveNearestPwaDockPosition({ left: 20, top: 24 }, viewport)).toBe('top-left');
-    expect(resolveNearestPwaDockPosition({ left: 18, top: 180 }, viewport)).toBe('bottom-left');
-    expect(resolveNearestPwaDockPosition({ left: 250, top: 170 }, viewport)).toBe('bottom-right');
+    expect(getDefaultPwaDragPosition(viewport)).toEqual({
+      left: PWA_DRAG_SAFE_MARGIN,
+      top: viewport.height - PWA_DRAG_BUTTON_SIZE - PWA_DRAG_BOTTOM_SAFE_MARGIN,
+    });
   });
 
-  it('persists dock placement and migrates legacy coordinates to the nearest dock', () => {
-    storePwaDockPosition('bottom-left');
+  it('preserves an arbitrary dropped coordinate instead of snapping it to a dock', () => {
+    const viewport = { width: 320, height: 240, offsetLeft: 0, offsetTop: 0 };
 
-    expect(window.localStorage.getItem(PWA_DRAG_POSITION_KEY)).toBe('"bottom-left"');
-    expect(readStoredPwaDockPosition()).toBe('bottom-left');
+    expect(clampPwaDragPosition({ left: 142, top: 78 }, viewport)).toEqual({ left: 142, top: 78 });
+  });
 
-    window.localStorage.setItem(PWA_DRAG_POSITION_KEY, '{"left":900,"top":700}');
+  it('migrates the legacy dock value into a free safe coordinate', () => {
+    window.localStorage.setItem(PWA_DRAG_POSITION_KEY, '"bottom-right"');
 
-    expect(readStoredPwaDockPosition()).toBe('bottom-right');
+    expect(readStoredPwaDragPosition()).toEqual({
+      left: 308,
+      top: 682,
+    });
   });
 
   it('persists and reads the last dropped position', () => {
