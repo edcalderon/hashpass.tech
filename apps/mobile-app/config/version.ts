@@ -22,22 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202609240352, // Updated to current timestamp
+  buildNumber: 202609240423, // Updated to current timestamp
   releaseDate: '2026-09-24',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'refine landing event discovery and PWA install'
+    // No new features
   ],
   bugfixes: [
-    // No bugfixes
+    'restore mobile event discovery controls'
   ],
   breakingChanges: [],
-  notes: 'refine landing event discovery and PWA install'
+  notes: 'restore mobile event discovery controls'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.58': {
+    version: '1.9.58',
+    buildNumber: 202609240423,
+    releaseDate: '2026-09-24',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'restore mobile event discovery controls'
+    ],
+    breakingChanges: [],
+    notes: 'restore mobile event discovery controls'
+  },
   '1.9.57': {
     version: '1.9.57',
     buildNumber: 202609240352,

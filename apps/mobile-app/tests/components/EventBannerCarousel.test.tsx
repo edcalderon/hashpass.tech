@@ -1,6 +1,6 @@
 import React from "react";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
-import { Platform, ScrollView, TouchableOpacity } from "react-native";
+import { Platform, ScrollView, TextInput, TouchableOpacity } from "react-native";
 
 const mockEvent = {
   id: "hash-poker",
@@ -21,6 +21,7 @@ const mockWeekEvent = {
 
 const mockEvents = [mockEvent, mockWeekEvent];
 let mockIsMobile = true;
+let mockThemeIsDark = true;
 let mockTranslate = (
   _namespace: string | undefined,
   _key: string,
@@ -38,7 +39,7 @@ const mockBanners = ["first", "second"].map((id) => ({
 
 jest.mock("../../hooks/useTheme", () => ({
   useTheme: () => ({
-    isDark: true,
+    isDark: mockThemeIsDark,
     colors: { primary: "#00B8D4" },
   }),
 }));
@@ -76,7 +77,7 @@ jest.mock("../../lib/event-banners", () => ({
 import EventBannerCarousel, {
   resolveCarouselCardHeight,
 } from "../../components/EventBannerCarousel";
-import { shouldStackCarouselFooter } from "../../lib/carousel-layout";
+import { getVisibleCarouselDotIndices, shouldStackCarouselFooter } from "../../lib/carousel-layout";
 
 let view: ReactTestRenderer;
 let scrollTo: jest.Mock;
@@ -87,6 +88,7 @@ const originalCancelRaf = global.cancelAnimationFrame;
 beforeEach(() => {
   (Platform as { OS: string }).OS = "android";
   mockIsMobile = true;
+  mockThemeIsDark = true;
   mockTranslate = (_namespace, _key, fallback) => fallback;
   scrollTo = jest.fn();
   global.requestAnimationFrame = jest.fn(() => 0);
@@ -119,6 +121,12 @@ it("stacks carousel actions before indicators on medium web widths", () => {
   expect(shouldStackCarouselFooter(false, 1024, "web")).toBe(true);
   expect(shouldStackCarouselFooter(false, 1200, "web")).toBe(false);
   expect(shouldStackCarouselFooter(true, 1200, "android")).toBe(true);
+});
+
+it("keeps mobile pagination bounded while retaining the active card in view", () => {
+  expect(getVisibleCarouselDotIndices(12, 0)).toEqual([0, 1, 2, 3, 4]);
+  expect(getVisibleCarouselDotIndices(12, 6)).toEqual([4, 5, 6, 7, 8]);
+  expect(getVisibleCarouselDotIndices(12, 11)).toEqual([7, 8, 9, 10, 11]);
 });
 
 it("advances the native pager by one viewport and wraps after the final slide", () => {
@@ -157,6 +165,21 @@ it("adds an organizer proposal card with a working call to action", () => {
 
   act(() => proposal.props.onPress());
   expect(onProposeEvent).toHaveBeenCalledTimes(1);
+});
+
+it("uses a rich red light treatment without changing the cyan dark treatment", () => {
+  mockThemeIsDark = false;
+  render({ autoPlay: false, showProposalCard: true });
+
+  const lightCard = view.root.findByProps({ testID: "carousel-proposal-card" });
+  expect(lightCard.props.colors).toEqual(["#FFF1F2", "#FECACA", "#FFE4E6"]);
+
+  act(() => view.unmount());
+  mockThemeIsDark = true;
+  render({ autoPlay: false, showProposalCard: true });
+
+  const darkCard = view.root.findByProps({ testID: "carousel-proposal-card" });
+  expect(darkCard.props.colors).toEqual(["#07111F", "#102A38", "#0D1724"]);
 });
 
 it("does not open the proposal modal after a peeking-card drag", () => {
@@ -233,6 +256,37 @@ it("expands the circular explorer action before opening all events", () => {
 
   const action = view.root.findByProps({ testID: "carousel-explorer-action" });
   act(() => action.props.onPress());
+  expect(onExploreEvents).toHaveBeenCalledTimes(1);
+});
+
+it("keeps compact search and explorer actions available on phone-sized web", () => {
+  (Platform as { OS: string }).OS = "web";
+  mockIsMobile = true;
+  const onExploreEvents = jest.fn();
+  render({ autoPlay: false, showEventSearch: true, onExploreEvents });
+
+  const searchTrigger = view.root.findByProps({ testID: "carousel-compact-search-trigger" });
+  const explorer = view.root.findAllByProps({
+    testID: "carousel-explorer-expand-trigger",
+  });
+
+  expect(searchTrigger.props.label).toBe("Search events in the carousel");
+  expect(explorer.length).toBeGreaterThan(0);
+
+  act(() => searchTrigger.props.onPress());
+  const search = view.root.findAllByProps({ testID: "carousel-search-input" });
+  const searchInput = search.find((node) => node.type === TextInput);
+  expect(searchInput).toBeTruthy();
+  expect(searchInput?.props.accessibilityLabel).toBe("Search events in the carousel");
+
+  const footer = view.root.findByProps({ testID: "carousel-footer" });
+  expect(footer.props.style).toEqual(
+    expect.arrayContaining([expect.objectContaining({ flexDirection: "column" })]),
+  );
+  expect(view.root.findByProps({ testID: "carousel-mobile-direction-controls" })).toBeTruthy();
+  expect(view.root.findByProps({ testID: "carousel-mobile-pager" })).toBeTruthy();
+
+  act(() => explorer[0].props.onPress());
   expect(onExploreEvents).toHaveBeenCalledTimes(1);
 });
 

@@ -28,13 +28,13 @@ import Reanimated, { SharedValue, useAnimatedStyle, withTiming } from 'react-nat
 import * as Haptics from 'expo-haptics';
 import { usePathname, useRouter } from 'expo-router';
 import { useTheme } from '../hooks/useTheme';
-import { useLanguage } from '../providers/LanguageProvider';
-import { getAvailableLocales, useTranslation } from '../i18n/i18n';
+import { useTranslation } from '../i18n/i18n';
 import { useAnimationLevel } from '../contexts/AnimationLevelContext';
 import type { AnimationLevel } from '../contexts/AnimationLevelContext';
 import { createShadowStyle } from '../lib/utils';
 import type { ThemeMode } from '../types/theme';
 import type { ViewStyle } from 'react-native';
+import { SettingsLanguagePicker } from './SettingsLanguagePicker';
 import {
   SettingsIcon,
   LogInIcon,
@@ -44,9 +44,6 @@ import {
   ZapIcon,
   SliderIcon,
   PauseIcon,
-  CheckIcon,
-  ChevronDownIcon,
-  getFlagEmoji,
 } from './icons/SettingsIcons';
 
 interface Props {
@@ -57,8 +54,6 @@ interface Props {
   inline?: boolean;
   showSignIn?: boolean;
 }
-
-type LocaleOption = { code: string; name: string };
 
 // ─── sub-components ──────────────────────────────────────────────────────────
 
@@ -149,23 +144,18 @@ export default function QuickSettingsPanel({
   showSignIn = true,
 }: Props) {
   const { theme, setTheme, colors, isDark } = useTheme();
-  const { locale, setLocale } = useLanguage();
   const { animationLevel, setAnimationLevel } = useAnimationLevel();
   const pathname = usePathname();
   const router = useRouter();
   const { t } = useTranslation('profile');
-  const availableLocales = getAvailableLocales();
 
   const isOnAuthPage = pathname?.includes('/auth') || pathname === '/(shared)/auth';
   const [open, setOpen] = useState(false);
-  const [languageExpanded, setLanguageExpanded] = useState(false);
-  const [languageOptionsMounted, setLanguageOptionsMounted] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const useModalPanel = Platform.OS !== 'web' || (inline && isMobile);
 
   const panelAnim = useRef(new Animated.Value(0)).current;
   const btnRotate = useRef(new Animated.Value(0)).current;
-  const languageAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     const update = () => setIsMobile(Dimensions.get('window').width < 768);
@@ -191,34 +181,6 @@ export default function QuickSettingsPanel({
   }, [panelAnim, btnRotate]);
 
   const togglePanel = useCallback(() => { if (open) closePanel(); else openPanel(); }, [open, openPanel, closePanel]);
-
-  const toggleLanguageOptions = useCallback(() => {
-    const nextExpanded = !languageExpanded;
-    setLanguageExpanded(nextExpanded);
-    if (nextExpanded) {
-      setLanguageOptionsMounted(true);
-    }
-    Animated.timing(languageAnim, {
-      toValue: nextExpanded ? 1 : 0,
-      duration: 220,
-      easing: nextExpanded ? Easing.out(Easing.cubic) : Easing.in(Easing.cubic),
-      useNativeDriver: false,
-    }).start(() => {
-      if (!nextExpanded) {
-        setLanguageOptionsMounted(false);
-      }
-    });
-  }, [languageAnim, languageExpanded]);
-
-  const closeLanguageOptions = useCallback(() => {
-    setLanguageExpanded(false);
-    Animated.timing(languageAnim, {
-      toValue: 0,
-      duration: 180,
-      easing: Easing.in(Easing.cubic),
-      useNativeDriver: false,
-    }).start(() => setLanguageOptionsMounted(false));
-  }, [languageAnim]);
 
   const panelOpacity = panelAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 1] });
   const panelTranslateY = panelAnim.interpolate({ inputRange: [0, 1], outputRange: [-14, 0] });
@@ -246,9 +208,6 @@ export default function QuickSettingsPanel({
     { value: 'reduced', label: t('settings.animationsReduced') || 'Low', Icon: SliderIcon },
     { value: 'none', label: t('settings.animationsNone') || 'Off', Icon: PauseIcon },
   ];
-  const currentLanguage = availableLocales.find((lang: LocaleOption) => lang.code === locale) ?? availableLocales[0];
-  const languageChevronRotation = languageAnim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '180deg'] });
-
   const panel = (
     <Animated.View
       style={[
@@ -283,84 +242,7 @@ export default function QuickSettingsPanel({
 
         {/* Language */}
         <SectionLabel label={t('settings.language') || 'Language'} colors={colors} />
-        {currentLanguage ? (
-          <TouchableOpacity
-            style={[
-              panelStyles.languageSummary,
-              { borderColor: isDark ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.1)' },
-            ]}
-            onPress={toggleLanguageOptions}
-            accessibilityRole="button"
-            accessibilityState={{ expanded: languageExpanded }}
-            accessibilityLabel={`${t('settings.language') || 'Language'}: ${t(`languages.${currentLanguage.name}`)}`}
-            activeOpacity={0.72}
-          >
-            <Text style={panelStyles.flag}>{getFlagEmoji(currentLanguage.code)}</Text>
-            <Text style={[panelStyles.langName, { color: colors.text.primary, marginLeft: 8 }]}>
-              {t(`languages.${currentLanguage.name}`)}
-            </Text>
-            <Animated.View style={{ transform: [{ rotate: languageChevronRotation }] }}>
-              <ChevronDownIcon size={18} color={colors.text.secondary} strokeWidth={2} />
-            </Animated.View>
-          </TouchableOpacity>
-        ) : null}
-        <Animated.View
-          style={[
-            panelStyles.languageOptions,
-            {
-              opacity: languageAnim,
-              maxHeight: languageAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 320] }),
-              transform: [{ translateY: languageAnim.interpolate({ inputRange: [0, 1], outputRange: [-4, 0] }) }],
-            },
-          ]}
-        >
-          {languageOptionsMounted ? availableLocales.map((lang: LocaleOption) => {
-            const active = lang.code === locale;
-            return (
-              <TouchableOpacity
-                key={lang.code}
-                style={[
-                  panelStyles.langRow,
-                  active && {
-                    backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
-                    borderRadius: uiTokens.radius.input,
-                  },
-                ]}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setLocale(lang.code);
-                  closeLanguageOptions();
-                }}
-                accessibilityRole="button"
-                accessibilityState={{ selected: active }}
-                accessibilityLabel={t(`languages.${lang.name}`)}
-                activeOpacity={0.7}
-              >
-                <Text style={panelStyles.flag}>{getFlagEmoji(lang.code)}</Text>
-                <Text style={[panelStyles.langName, { color: colors.text.primary, marginLeft: 8 }]}>
-                  {t(`languages.${lang.name}`)}
-                </Text>
-                <View
-                  style={[
-                    panelStyles.langBadge,
-                    {
-                      backgroundColor: active ? colors.primary : 'transparent',
-                      borderColor: active ? colors.primary : isDark ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.1)',
-                    },
-                  ]}
-                >
-                  {active ? (
-                    <CheckIcon size={12} color={colors.primaryContrastText} strokeWidth={2.5} />
-                  ) : (
-                    <Text style={[panelStyles.langCode, { color: colors.text.secondary }]}>
-                      {lang.code.toUpperCase()}
-                    </Text>
-                  )}
-                </View>
-              </TouchableOpacity>
-            );
-          }) : null}
-        </Animated.View>
+        <SettingsLanguagePicker isDark={isDark} colors={colors} />
 
         <Divider isDark={isDark} />
 
@@ -397,28 +279,40 @@ export default function QuickSettingsPanel({
       {/* Button row: [Settings] [Sign In] */}
       <View style={styles.btnRow}>
         {/* Settings gear — first/left */}
-        {inline ? <IconButton mode={isDark ? 'dark' : 'light'} label={t('settings.title', 'Quick Settings')} accessibilityState={{ expanded: open }} onPress={togglePanel}><SettingsIcon size={22} color={colors.primary} /></IconButton> : (        <View
-          style={[
-            styles.triggerWrap,
-            createShadowStyle('#000', { width: 0, height: 3 }, isDark ? 0.35 : 0.15, 6, 8) as ViewStyle,
-          ]}
-        >
-          <TouchableOpacity
-            style={[styles.trigger, { backgroundColor: open ? colors.primary : colors.surface }]}
+        {inline ? (
+          <IconButton
+            mode={isDark ? 'dark' : 'light'}
+            label={t('settings.title', 'Quick Settings')}
+            accessibilityState={{ expanded: open }}
             onPress={togglePanel}
-            activeOpacity={0.8}
-            accessibilityLabel="Quick Settings"
-            accessibilityRole="button"
+            style={open ? { backgroundColor: colors.primary, borderColor: colors.primary } : undefined}
           >
-            <Animated.View style={{ transform: [{ rotate: btnRotateDeg }] }}>
-              <SettingsIcon
-                size={20}
-                color={open ? colors.primaryContrastText : colors.text.primary}
-                strokeWidth={1.8}
-              />
-            </Animated.View>
-          </TouchableOpacity>
-        </View>)}
+            <SettingsIcon size={22} color={open ? colors.primaryContrastText : colors.text.primary} />
+          </IconButton>
+        ) : (
+          <View
+            style={[
+              styles.triggerWrap,
+              createShadowStyle('#000', { width: 0, height: 3 }, isDark ? 0.35 : 0.15, 6, 8) as ViewStyle,
+            ]}
+          >
+            <TouchableOpacity
+              style={[styles.trigger, { backgroundColor: open ? colors.primary : colors.surface }]}
+              onPress={togglePanel}
+              activeOpacity={0.8}
+              accessibilityLabel="Quick Settings"
+              accessibilityRole="button"
+            >
+              <Animated.View style={{ transform: [{ rotate: btnRotateDeg }] }}>
+                <SettingsIcon
+                  size={20}
+                  color={open ? colors.primaryContrastText : colors.text.primary}
+                  strokeWidth={1.8}
+                />
+              </Animated.View>
+            </TouchableOpacity>
+          </View>
+        )}
 
 
         {/* Sign-in button — direct access, second/right */}
@@ -533,48 +427,6 @@ const panelStyles = StyleSheet.create({
     zIndex: 1,
     // Aligns to the right edge of the gear button regardless of login btn
     alignSelf: 'flex-end',
-  },
-  langRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 9,
-    paddingHorizontal: 8,
-    marginVertical: 1,
-  },
-  languageSummary: {
-    minHeight: 44,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 8,
-    borderRadius: uiTokens.radius.input,
-    borderWidth: 1,
-  },
-  languageOptions: {
-    overflow: 'hidden',
-    paddingTop: 4,
-  },
-  langName: {
-    fontSize: 14,
-    fontWeight: '500',
-    flex: 1,
-  },
-  langBadge: {
-    width: 26,
-    height: 26,
-    borderRadius: uiTokens.radius.input,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  langCode: {
-    fontSize: 9,
-    fontWeight: '700',
-    letterSpacing: 0.6,
-  },
-  flag: {
-    fontSize: 16,
-    lineHeight: 20,
   },
 });
 

@@ -142,7 +142,7 @@ const PWAPrompt = () => {
       // the freshly reachable rectangle.
       const nextViewport = getPwaDragViewport();
       setDockViewport(nextViewport);
-      setDragPosition((currentPosition) =>
+      setDragPosition((currentPosition: PwaDragPosition | null) =>
         clampPwaDragPosition(currentPosition ?? getDefaultPwaDragPosition(nextViewport), nextViewport)
       );
     };
@@ -195,7 +195,7 @@ const PWAPrompt = () => {
       'instructions.default': 'To install: use the install icon in your browser address bar.',
     };
 
-    return getPwaInstallInstructionKeys(window.navigator.userAgent).map((key) => t(key, instructionFallbacks[key]));
+    return getPwaInstallInstructionKeys(window.navigator.userAgent).map((key: string) => t(key, instructionFallbacks[key]));
   };
 
   const handleDragPointerDown = (event: React.PointerEvent<HTMLButtonElement>) => {
@@ -214,6 +214,23 @@ const PWAPrompt = () => {
     event.currentTarget.setPointerCapture?.(event.pointerId);
     event.preventDefault();
     event.stopPropagation();
+  };
+
+  const handleDragKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
+    let offset: [number, number] | null = null;
+    if (event.key === 'ArrowUp') offset = [0, -24];
+    if (event.key === 'ArrowDown') offset = [0, 24];
+    if (event.key === 'ArrowLeft') offset = [-24, 0];
+    if (event.key === 'ArrowRight') offset = [24, 0];
+    if (!offset || Platform.OS !== 'web') return;
+    event.preventDefault();
+    const position = dragPosition ?? getDefaultPwaDragPosition();
+    const nextPosition = clampPwaDragPosition(
+      { left: position.left + offset[0], top: position.top + offset[1] },
+      getPwaDragViewport(),
+    );
+    setDragPosition(nextPosition);
+    storePwaDragPosition(nextPosition);
   };
 
   const handleDragPointerMove = (event: React.PointerEvent<HTMLButtonElement>) => {
@@ -514,6 +531,7 @@ const PWAPrompt = () => {
           onPointerMove={handleDragPointerMove}
           onPointerUp={finishPwaDrag}
           onPointerCancel={finishPwaDrag}
+          onKeyDown={handleDragKeyDown}
         >
           <svg viewBox="0 0 16 16" aria-hidden="true">
             <circle cx="5" cy="4" r="1" />

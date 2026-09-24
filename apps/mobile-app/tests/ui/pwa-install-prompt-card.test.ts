@@ -64,6 +64,20 @@ describe('PWA install prompt layout', () => {
     expect(promptSource).not.toContain('hp-pwa-dock-controls');
   });
 
+  it('gives the draggable launcher a keyboard fallback and a 44px touch target', () => {
+    const promptSource = readSource('../../../../apps/mobile-app/components/PWAPrompt.tsx');
+    const cssSource = readSource('../../../../apps/mobile-app/app/global.css');
+    const dragHandleRule = readCssRule(cssSource, '.hp-pwa-drag-handle');
+
+    expect(promptSource).toMatch(/onKeyDown=\{[^}]+\}/);
+    expect(promptSource).toContain("event.key === 'ArrowUp'");
+    expect(promptSource).toContain("event.key === 'ArrowDown'");
+    expect(promptSource).toContain("event.key === 'ArrowLeft'");
+    expect(promptSource).toContain("event.key === 'ArrowRight'");
+    expect(dragHandleRule).toContain('min-width: 44px;');
+    expect(dragHandleRule).toContain('min-height: 44px;');
+  });
+
   it('renders the dont-show-again action as an accessible secondary button', () => {
     const promptSource = readSource('../../../../apps/mobile-app/components/PWAPrompt.tsx');
     const cardSource = readSource('../../../../packages/ui/src/PwaInstallPromptCard.tsx');

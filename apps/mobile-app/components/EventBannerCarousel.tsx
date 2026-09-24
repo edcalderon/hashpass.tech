@@ -43,9 +43,9 @@ import {
 } from "../lib/event-banners";
 import SafeLinearGradient from "./SafeLinearGradient";
 import CarouselTickPill from "./CarouselTickPill";
-import { shouldStackCarouselFooter } from "../lib/carousel-layout";
+import { getVisibleCarouselDotIndices, shouldStackCarouselFooter } from "../lib/carousel-layout";
 import { uiTokens } from "@hashpass/ui/tokens";
-import { ActionButton, IconButton } from "@hashpass/ui/primitives";
+import { ActionButton, FormField, IconButton } from "@hashpass/ui/primitives";
 import {
   ChevronLeft as LucideChevronLeft,
   ChevronRight as LucideChevronRight,
@@ -1093,7 +1093,8 @@ export default function EventBannerCarousel({
       return (
         <View style={styles.cardInner}>
           <SafeLinearGradient
-            colors={isDark ? ["#07111F", "#102A38", "#0D1724"] : ["#F7FBFC", "#E7F8FB", "#F8FAFC"]}
+            testID="carousel-proposal-card"
+            colors={isDark ? ["#07111F", "#102A38", "#0D1724"] : ["#FFF1F2", "#FECACA", "#FFE4E6"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.proposalCard}
@@ -1178,7 +1179,58 @@ export default function EventBannerCarousel({
   };
 
   const showWideSearch = showEventSearch && Platform.OS === "web" && !isMobile;
-  const renderDirectionControls = () => N > 1 ? (
+  const showCompactWebDiscovery = showEventSearch && Platform.OS === "web" && isMobile;
+  const renderMobilePager = () => {
+    const visibleIndices = getVisibleCarouselDotIndices(N, activeSlideIndex);
+    return (
+      <View style={styles.mobilePager} testID="carousel-mobile-pager">
+        <View style={styles.mobileDots} accessibilityLabel={`${activeSlideIndex + 1} of ${N} slides`}>
+          {visibleIndices.map((index) => (
+            <View
+              key={index}
+              testID={`carousel-mobile-dot-${index}`}
+              accessibilityLabel={index === activeSlideIndex ? `${activeSlideIndex + 1} of ${N} slides` : undefined}
+              style={[styles.mobileDot, index === activeSlideIndex && styles.mobileDotActive]}
+            />
+          ))}
+        </View>
+        <Text style={styles.mobilePageCount}>{activeSlideIndex + 1} / {N}</Text>
+      </View>
+    );
+  };
+  const renderDirectionControls = () => N > 1 ? (isMobile ? (
+    <View style={styles.mobileDirectionControls} testID="carousel-mobile-direction-controls">
+      <IconButton
+        mode={isDark ? "dark" : "light"}
+        label={translate("eventSearch.previous", "Previous slide")}
+        onPress={handlePrevious}
+        style={[styles.directionButton, styles.mobileDirectionButton]}
+      >
+        <MorphIcon
+          icon={LucideChevronLeft}
+          size={20}
+          color={isDark ? "#E2E8F0" : "#334155"}
+          strokeWidth={2}
+          fallbackIconName="chevron-back"
+        />
+      </IconButton>
+      {renderMobilePager()}
+      <IconButton
+        mode={isDark ? "dark" : "light"}
+        label={translate("eventSearch.next", "Next slide")}
+        onPress={handleNext}
+        style={[styles.directionButton, styles.mobileDirectionButton]}
+      >
+        <MorphIcon
+          icon={LucideChevronRight}
+          size={20}
+          color={isDark ? "#E2E8F0" : "#334155"}
+          strokeWidth={2}
+          fallbackIconName="chevron-forward"
+        />
+      </IconButton>
+    </View>
+  ) : (
     <>
       <IconButton
         mode={isDark ? "dark" : "light"}
@@ -1210,7 +1262,7 @@ export default function EventBannerCarousel({
         />
       </IconButton>
     </>
-  ) : renderIndicators();
+  )) : renderIndicators();
 
   return (
     <View style={styles.container}>
@@ -1464,14 +1516,55 @@ export default function EventBannerCarousel({
         </View>
       )}
 
-      {((showDotIndicators && N > 1) || hasFooterActions) ? (
+      {((showDotIndicators && N > 1) || hasFooterActions || showCompactWebDiscovery) ? (
         <View
           style={[
             styles.footer,
-            stackFooter && hasFooterActions && styles.footerMobile,
+            ((stackFooter && hasFooterActions) || showCompactWebDiscovery) && styles.footerMobile,
           ]}
           testID="carousel-footer"
         >
+          {showCompactWebDiscovery ? (
+            <View style={styles.compactWebDiscovery}>
+              {shouldExpandSearch ? (
+                <View style={styles.compactWebField}>
+                  <FormField
+                    testID="carousel-search-input"
+                    mode={isDark ? "dark" : "light"}
+                    label={translate("eventSearch.placeholder", "Search events")}
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                    placeholder={translate("eventSearch.placeholder", "Search events")}
+                    autoFocus
+                    style={styles.compactWebSearchInput}
+                    className="hp-carousel-search-input"
+                    accessibilityLabel={translate("eventSearch.accessibilityLabel", "Search events in the carousel")}
+                  />
+                </View>
+              ) : (
+                <IconButton
+                  testID="carousel-compact-search-trigger"
+                  mode={isDark ? "dark" : "light"}
+                  label={translate("eventSearch.accessibilityLabel", "Search events in the carousel")}
+                  onPress={() => setIsSearchExpanded(true)}
+                  style={styles.compactDiscoveryIcon}
+                >
+                  <MorphIcon icon={LucideSearch} size={18} color={isDark ? "#67E8F9" : "#0E7490"} strokeWidth={2} fallbackIconName="search" />
+                </IconButton>
+              )}
+              {onExploreEvents ? (
+                <IconButton
+                  testID="carousel-explorer-expand-trigger"
+                  mode={isDark ? "dark" : "light"}
+                  label={translate("eventSearch.exploreAll", "Explore all events")}
+                  onPress={onExploreEvents}
+                  style={styles.compactDiscoveryIcon}
+                >
+                  {explorerActionIcon || <MorphIcon icon={LucideCompass} size={18} color={isDark ? "#67E8F9" : "#0E7490"} strokeWidth={2} fallbackIconName="compass-outline" />}
+                </IconButton>
+              ) : null}
+            </View>
+          ) : null}
           {stackFooter && hasFooterActions ? (
             <>
               <View
@@ -1710,12 +1803,72 @@ const getStyles = (
       shadowRadius: 7,
       elevation: 3,
     },
+    mobileDirectionControls: {
+      width: "100%",
+      minHeight: uiTokens.control.compactHeight,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: uiTokens.space.sm,
+      paddingHorizontal: uiTokens.space.xs,
+    },
+    mobileDirectionButton: {
+      flexShrink: 0,
+    },
+    mobilePager: {
+      flex: 1,
+      minWidth: 0,
+      minHeight: uiTokens.control.compactHeight,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: uiTokens.space.sm,
+    },
+    mobileDots: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: uiTokens.space.xs,
+      flexShrink: 1,
+    },
+    mobileDot: {
+      width: 6,
+      height: 6,
+      borderRadius: uiTokens.radius.circle,
+      backgroundColor: isDark ? "rgba(255,255,255,0.36)" : "rgba(15,23,42,0.34)",
+    },
+    mobileDotActive: {
+      width: 18,
+      backgroundColor: isDark ? "#FFFFFF" : "#0F172A",
+    },
+    mobilePageCount: {
+      minWidth: 38,
+      color: isDark ? "#C7D2DE" : "#475569",
+      fontSize: uiTokens.type.caption,
+      lineHeight: 16,
+      fontWeight: "700",
+      fontVariant: ["tabular-nums"],
+      textAlign: "center",
+    },
     footerActionsMobile: {
       width: "100%",
       flexDirection: isMobile && _screenWidth < 360 ? "column" : "row",
       alignItems: "center",
       justifyContent: "center",
       gap: 8,
+    },
+    compactWebDiscovery: {
+      width: "100%", minHeight: uiTokens.control.compactHeight, flexDirection: "row", alignItems: "center", justifyContent: "flex-end", gap: uiTokens.space.sm,
+      paddingHorizontal: uiTokens.space.md, marginBottom: uiTokens.space.sm,
+    },
+    compactWebSearchInput: {
+      minWidth: 0,
+    },
+    compactWebField: {
+      flex: 1, minWidth: 0,
+    },
+    compactDiscoveryIcon: {
+      flexShrink: 0,
     },
     footerIndicatorMobile: {
       minHeight: 44,
@@ -1781,9 +1934,9 @@ const getStyles = (
       borderRadius: isMobile ? 90 : 140,
       right: isMobile ? -72 : -88,
       top: isMobile ? -72 : -96,
-      backgroundColor: isDark ? "rgba(34,211,238,0.2)" : "rgba(8,145,178,0.13)",
+      backgroundColor: isDark ? "rgba(34,211,238,0.2)" : "rgba(225,29,72,0.22)",
       borderWidth: 1,
-      borderColor: isDark ? "rgba(103,232,249,0.35)" : "rgba(8,145,178,0.24)",
+      borderColor: isDark ? "rgba(103,232,249,0.35)" : "rgba(190,24,93,0.36)",
     },
     proposalOrbTwo: {
       position: "absolute",
@@ -1792,9 +1945,9 @@ const getStyles = (
       borderRadius: isMobile ? 60 : 95,
       left: isMobile ? -42 : -58,
       bottom: isMobile ? -48 : -70,
-      backgroundColor: isDark ? "rgba(14,165,233,0.17)" : "rgba(103,232,249,0.28)",
+      backgroundColor: isDark ? "rgba(14,165,233,0.17)" : "rgba(239,68,68,0.2)",
       borderWidth: 1,
-      borderColor: isDark ? "rgba(125,211,252,0.28)" : "rgba(14,116,144,0.2)",
+      borderColor: isDark ? "rgba(125,211,252,0.28)" : "rgba(190,24,93,0.3)",
     },
     proposalGloss: {
       position: "absolute",
@@ -1805,14 +1958,14 @@ const getStyles = (
       transform: [{ rotate: "18deg" }],
     },
     proposalEyebrow: {
-      color: isDark ? "#67E8F9" : "#0E7490",
+      color: isDark ? "#67E8F9" : "#BE123C",
       fontSize: 12,
       fontWeight: "800",
       letterSpacing: 2,
       marginBottom: 14,
     },
     proposalTitle: {
-      color: isDark ? "#F8FAFC" : "#0F172A",
+      color: isDark ? "#F8FAFC" : "#450A0A",
       fontSize: isMobile ? 30 : 40,
       lineHeight: isMobile ? 36 : 46,
       fontWeight: "800",
@@ -1820,7 +1973,7 @@ const getStyles = (
       maxWidth: 520,
     },
     proposalBody: {
-      color: isDark ? "#B8C7D5" : "#475569",
+      color: isDark ? "#B8C7D5" : "#7F1D1D",
       fontSize: isMobile ? 15 : 17,
       lineHeight: isMobile ? 23 : 26,
       marginTop: 14,

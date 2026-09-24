@@ -111,6 +111,17 @@ describe('PWA drag positioning', () => {
     });
   });
 
+  it('keeps the supported legacy top-left coordinate and ignores unknown saved values', () => {
+    window.localStorage.setItem(PWA_DRAG_POSITION_KEY, '"top-left"');
+    expect(readStoredPwaDragPosition()).toEqual({
+      left: PWA_DRAG_SAFE_MARGIN,
+      top: PWA_DRAG_SAFE_MARGIN,
+    });
+
+    window.localStorage.setItem(PWA_DRAG_POSITION_KEY, '"top-right"');
+    expect(readStoredPwaDragPosition()).toBeNull();
+  });
+
   it('persists and reads the last dropped position', () => {
     storePwaDragPosition({ left: 144, top: 92 });
 
@@ -121,6 +132,11 @@ describe('PWA drag positioning', () => {
   it('ignores malformed stored positions', () => {
     window.localStorage.setItem(PWA_DRAG_POSITION_KEY, '{"left":"bad","top":92}');
 
+    expect(readStoredPwaDragPosition()).toBeNull();
+  });
+
+  it('ignores corrupt JSON without breaking the launcher', () => {
+    window.localStorage.setItem(PWA_DRAG_POSITION_KEY, '{not-json');
     expect(readStoredPwaDragPosition()).toBeNull();
   });
 });
