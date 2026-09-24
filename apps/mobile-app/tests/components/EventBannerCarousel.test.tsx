@@ -77,7 +77,7 @@ jest.mock("../../lib/event-banners", () => ({
 import EventBannerCarousel, {
   resolveCarouselCardHeight,
 } from "../../components/EventBannerCarousel";
-import { shouldStackCarouselFooter } from "../../lib/carousel-layout";
+import { getVisibleCarouselDotIndices, shouldStackCarouselFooter } from "../../lib/carousel-layout";
 
 let view: ReactTestRenderer;
 let scrollTo: jest.Mock;
@@ -121,6 +121,12 @@ it("stacks carousel actions before indicators on medium web widths", () => {
   expect(shouldStackCarouselFooter(false, 1024, "web")).toBe(true);
   expect(shouldStackCarouselFooter(false, 1200, "web")).toBe(false);
   expect(shouldStackCarouselFooter(true, 1200, "android")).toBe(true);
+});
+
+it("keeps mobile pagination bounded while retaining the active card in view", () => {
+  expect(getVisibleCarouselDotIndices(12, 0)).toEqual([0, 1, 2, 3, 4]);
+  expect(getVisibleCarouselDotIndices(12, 6)).toEqual([4, 5, 6, 7, 8]);
+  expect(getVisibleCarouselDotIndices(12, 11)).toEqual([7, 8, 9, 10, 11]);
 });
 
 it("advances the native pager by one viewport and wraps after the final slide", () => {
@@ -259,22 +265,26 @@ it("keeps compact search and explorer actions available on phone-sized web", () 
   const onExploreEvents = jest.fn();
   render({ autoPlay: false, showEventSearch: true, onExploreEvents });
 
-  const search = view.root.findAllByProps({
-    testID: "carousel-search-input",
-  });
+  const searchTrigger = view.root.findByProps({ testID: "carousel-compact-search-trigger" });
   const explorer = view.root.findAllByProps({
     testID: "carousel-explorer-expand-trigger",
   });
 
+  expect(searchTrigger.props.label).toBe("Search events in the carousel");
+  expect(explorer.length).toBeGreaterThan(0);
+
+  act(() => searchTrigger.props.onPress());
+  const search = view.root.findAllByProps({ testID: "carousel-search-input" });
   const searchInput = search.find((node) => node.type === TextInput);
   expect(searchInput).toBeTruthy();
   expect(searchInput?.props.accessibilityLabel).toBe("Search events in the carousel");
-  expect(explorer.length).toBeGreaterThan(0);
 
   const footer = view.root.findByProps({ testID: "carousel-footer" });
   expect(footer.props.style).toEqual(
     expect.arrayContaining([expect.objectContaining({ flexDirection: "column" })]),
   );
+  expect(view.root.findByProps({ testID: "carousel-mobile-direction-controls" })).toBeTruthy();
+  expect(view.root.findByProps({ testID: "carousel-mobile-pager" })).toBeTruthy();
 
   act(() => explorer[0].props.onPress());
   expect(onExploreEvents).toHaveBeenCalledTimes(1);

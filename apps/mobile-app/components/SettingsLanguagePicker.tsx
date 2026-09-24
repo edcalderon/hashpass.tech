@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from "react";
+import React, { useState } from "react";
 import { Animated, Easing, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import * as Haptics from "expo-haptics";
 import { uiTokens } from "@hashpass/ui/tokens";
@@ -34,9 +34,9 @@ export function SettingsLanguagePicker({
   const currentLanguage = availableLocales.find((language) => language.code === locale) ?? availableLocales[0];
   const [expanded, setExpanded] = useState(false);
   const [optionsMounted, setOptionsMounted] = useState(false);
-  const progress = useRef(new Animated.Value(0)).current;
+  const [progress] = useState(() => new Animated.Value(0));
 
-  const collapse = useCallback(() => {
+  const collapse = () => {
     setExpanded(false);
     Animated.timing(progress, {
       toValue: 0,
@@ -44,9 +44,9 @@ export function SettingsLanguagePicker({
       easing: Easing.in(Easing.cubic),
       useNativeDriver: false,
     }).start(() => setOptionsMounted(false));
-  }, [progress]);
+  };
 
-  const toggleOptions = useCallback(() => {
+  const toggleOptions = () => {
     const nextExpanded = !expanded;
     setExpanded(nextExpanded);
     if (nextExpanded) setOptionsMounted(true);
@@ -58,13 +58,13 @@ export function SettingsLanguagePicker({
     }).start(() => {
       if (!nextExpanded) setOptionsMounted(false);
     });
-  }, [expanded, progress]);
+  };
 
-  const selectLanguage = useCallback((code: string) => {
+  const selectLanguage = (code: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setLocale(code);
     collapse();
-  }, [collapse, setLocale]);
+  };
 
   if (!currentLanguage) return null;
 

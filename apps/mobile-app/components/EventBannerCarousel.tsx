@@ -43,7 +43,7 @@ import {
 } from "../lib/event-banners";
 import SafeLinearGradient from "./SafeLinearGradient";
 import CarouselTickPill from "./CarouselTickPill";
-import { shouldStackCarouselFooter } from "../lib/carousel-layout";
+import { getVisibleCarouselDotIndices, shouldStackCarouselFooter } from "../lib/carousel-layout";
 import { uiTokens } from "@hashpass/ui/tokens";
 import { ActionButton, FormField, IconButton } from "@hashpass/ui/primitives";
 import {
@@ -1180,7 +1180,57 @@ export default function EventBannerCarousel({
 
   const showWideSearch = showEventSearch && Platform.OS === "web" && !isMobile;
   const showCompactWebDiscovery = showEventSearch && Platform.OS === "web" && isMobile;
-  const renderDirectionControls = () => N > 1 ? (
+  const renderMobilePager = () => {
+    const visibleIndices = getVisibleCarouselDotIndices(N, activeSlideIndex);
+    return (
+      <View style={styles.mobilePager} testID="carousel-mobile-pager">
+        <View style={styles.mobileDots} accessibilityLabel={`${activeSlideIndex + 1} of ${N} slides`}>
+          {visibleIndices.map((index) => (
+            <View
+              key={index}
+              testID={`carousel-mobile-dot-${index}`}
+              accessibilityLabel={index === activeSlideIndex ? `${activeSlideIndex + 1} of ${N} slides` : undefined}
+              style={[styles.mobileDot, index === activeSlideIndex && styles.mobileDotActive]}
+            />
+          ))}
+        </View>
+        <Text style={styles.mobilePageCount}>{activeSlideIndex + 1} / {N}</Text>
+      </View>
+    );
+  };
+  const renderDirectionControls = () => N > 1 ? (isMobile ? (
+    <View style={styles.mobileDirectionControls} testID="carousel-mobile-direction-controls">
+      <IconButton
+        mode={isDark ? "dark" : "light"}
+        label={translate("eventSearch.previous", "Previous slide")}
+        onPress={handlePrevious}
+        style={[styles.directionButton, styles.mobileDirectionButton]}
+      >
+        <MorphIcon
+          icon={LucideChevronLeft}
+          size={20}
+          color={isDark ? "#E2E8F0" : "#334155"}
+          strokeWidth={2}
+          fallbackIconName="chevron-back"
+        />
+      </IconButton>
+      {renderMobilePager()}
+      <IconButton
+        mode={isDark ? "dark" : "light"}
+        label={translate("eventSearch.next", "Next slide")}
+        onPress={handleNext}
+        style={[styles.directionButton, styles.mobileDirectionButton]}
+      >
+        <MorphIcon
+          icon={LucideChevronRight}
+          size={20}
+          color={isDark ? "#E2E8F0" : "#334155"}
+          strokeWidth={2}
+          fallbackIconName="chevron-forward"
+        />
+      </IconButton>
+    </View>
+  ) : (
     <>
       <IconButton
         mode={isDark ? "dark" : "light"}
@@ -1212,7 +1262,7 @@ export default function EventBannerCarousel({
         />
       </IconButton>
     </>
-  ) : renderIndicators();
+  )) : renderIndicators();
 
   return (
     <View style={styles.container}>
@@ -1466,7 +1516,7 @@ export default function EventBannerCarousel({
         </View>
       )}
 
-      {((showDotIndicators && N > 1) || hasFooterActions) ? (
+      {((showDotIndicators && N > 1) || hasFooterActions || showCompactWebDiscovery) ? (
         <View
           style={[
             styles.footer,
@@ -1476,25 +1526,39 @@ export default function EventBannerCarousel({
         >
           {showCompactWebDiscovery ? (
             <View style={styles.compactWebDiscovery}>
-              <View style={styles.compactWebField}>
-                <FormField
-                  testID="carousel-search-input"
+              {shouldExpandSearch ? (
+                <View style={styles.compactWebField}>
+                  <FormField
+                    testID="carousel-search-input"
+                    mode={isDark ? "dark" : "light"}
+                    label={translate("eventSearch.placeholder", "Search events")}
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                    placeholder={translate("eventSearch.placeholder", "Search events")}
+                    autoFocus
+                    style={styles.compactWebSearchInput}
+                    className="hp-carousel-search-input"
+                    accessibilityLabel={translate("eventSearch.accessibilityLabel", "Search events in the carousel")}
+                  />
+                </View>
+              ) : (
+                <IconButton
+                  testID="carousel-compact-search-trigger"
                   mode={isDark ? "dark" : "light"}
-                  label={translate("eventSearch.placeholder", "Search events")}
-                  value={searchQuery}
-                  onChangeText={setSearchQuery}
-                  placeholder={translate("eventSearch.placeholder", "Search events")}
-                  style={styles.compactWebSearchInput}
-                  className="hp-carousel-search-input"
-                  accessibilityLabel={translate("eventSearch.accessibilityLabel", "Search events in the carousel")}
-                />
-              </View>
+                  label={translate("eventSearch.accessibilityLabel", "Search events in the carousel")}
+                  onPress={() => setIsSearchExpanded(true)}
+                  style={styles.compactDiscoveryIcon}
+                >
+                  <MorphIcon icon={LucideSearch} size={18} color={isDark ? "#67E8F9" : "#0E7490"} strokeWidth={2} fallbackIconName="search" />
+                </IconButton>
+              )}
               {onExploreEvents ? (
                 <IconButton
                   testID="carousel-explorer-expand-trigger"
                   mode={isDark ? "dark" : "light"}
                   label={translate("eventSearch.exploreAll", "Explore all events")}
                   onPress={onExploreEvents}
+                  style={styles.compactDiscoveryIcon}
                 >
                   {explorerActionIcon || <MorphIcon icon={LucideCompass} size={18} color={isDark ? "#67E8F9" : "#0E7490"} strokeWidth={2} fallbackIconName="compass-outline" />}
                 </IconButton>
@@ -1739,6 +1803,53 @@ const getStyles = (
       shadowRadius: 7,
       elevation: 3,
     },
+    mobileDirectionControls: {
+      width: "100%",
+      minHeight: uiTokens.control.compactHeight,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: uiTokens.space.sm,
+      paddingHorizontal: uiTokens.space.xs,
+    },
+    mobileDirectionButton: {
+      flexShrink: 0,
+    },
+    mobilePager: {
+      flex: 1,
+      minWidth: 0,
+      minHeight: uiTokens.control.compactHeight,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: uiTokens.space.sm,
+    },
+    mobileDots: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: uiTokens.space.xs,
+      flexShrink: 1,
+    },
+    mobileDot: {
+      width: 6,
+      height: 6,
+      borderRadius: uiTokens.radius.circle,
+      backgroundColor: isDark ? "rgba(255,255,255,0.36)" : "rgba(15,23,42,0.34)",
+    },
+    mobileDotActive: {
+      width: 18,
+      backgroundColor: isDark ? "#FFFFFF" : "#0F172A",
+    },
+    mobilePageCount: {
+      minWidth: 38,
+      color: isDark ? "#C7D2DE" : "#475569",
+      fontSize: uiTokens.type.caption,
+      lineHeight: 16,
+      fontWeight: "700",
+      fontVariant: ["tabular-nums"],
+      textAlign: "center",
+    },
     footerActionsMobile: {
       width: "100%",
       flexDirection: isMobile && _screenWidth < 360 ? "column" : "row",
@@ -1747,7 +1858,7 @@ const getStyles = (
       gap: 8,
     },
     compactWebDiscovery: {
-      width: "100%", minHeight: 44, flexDirection: "row", alignItems: "center", gap: uiTokens.space.sm,
+      width: "100%", minHeight: uiTokens.control.compactHeight, flexDirection: "row", alignItems: "center", justifyContent: "flex-end", gap: uiTokens.space.sm,
       paddingHorizontal: uiTokens.space.md, marginBottom: uiTokens.space.sm,
     },
     compactWebSearchInput: {
@@ -1755,6 +1866,9 @@ const getStyles = (
     },
     compactWebField: {
       flex: 1, minWidth: 0,
+    },
+    compactDiscoveryIcon: {
+      flexShrink: 0,
     },
     footerIndicatorMobile: {
       minHeight: 44,
