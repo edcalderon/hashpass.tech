@@ -667,11 +667,16 @@
       "mailError": "이메일 앱을 열 수 없습니다. support@hashpass.tech로 제안을 보내주세요."
     },
     "eventSearch": {
-      "placeholder": "이벤트 검색",
-      "accessibilityLabel": "캐러셀에서 이벤트 검색",
-      "exploreAll": "전체 보기",
-      "previous": "이전 슬라이드",
-      "next": "다음 슬라이드"
+    "placeholder": "이벤트 검색",
+    "mobilePlaceholder": "이름, 참조 또는 #해시태그로 검색",
+    "accessibilityLabel": "캐러셀에서 이벤트 검색",
+    "exploreAll": "전체 보기",
+    "exploreAllLabel": "모든 이벤트 둘러보기",
+    "previous": "이전 슬라이드",
+    "next": "다음 슬라이드",
+    "pause": "캐러셀 일시 정지",
+    "play": "캐러셀 재생",
+    "restart": "첫 번째 슬라이드로 돌아가기"
     },
     "eventsExplorerSubtitle": "전 세계의 이벤트를 둘러보고 나에게 맞는 이벤트를 찾아보세요.",
     "noEventsFound": "이벤트를 찾을 수 없습니다.",

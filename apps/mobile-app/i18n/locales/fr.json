@@ -536,11 +536,16 @@
       "mailError": "Nous n’avons pas pu ouvrir votre application e-mail. Envoyez votre proposition à support@hashpass.tech."
     },
     "eventSearch": {
-      "placeholder": "Rechercher des événements",
-      "accessibilityLabel": "Rechercher des événements dans le carrousel",
-      "exploreAll": "Tout voir",
-      "previous": "Diapositive précédente",
-      "next": "Diapositive suivante"
+    "placeholder": "Rechercher des événements",
+    "mobilePlaceholder": "Nom, référence ou #hashtag",
+    "accessibilityLabel": "Rechercher des événements dans le carrousel",
+    "exploreAll": "Tout voir",
+    "exploreAllLabel": "Explorer tous les événements",
+    "previous": "Diapositive précédente",
+    "next": "Diapositive suivante",
+    "pause": "Mettre le carrousel en pause",
+    "play": "Lire le carrousel",
+    "restart": "Revenir à la première diapositive"
     },
     "eventsExplorerSubtitle": "Découvrez les événements du monde entier et trouvez le vôtre.",
     "noEventsFound": "Aucun événement trouvé.",

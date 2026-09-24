@@ -77,7 +77,11 @@ jest.mock("../../lib/event-banners", () => ({
 import EventBannerCarousel, {
   resolveCarouselCardHeight,
 } from "../../components/EventBannerCarousel";
-import { getVisibleCarouselDotIndices, shouldStackCarouselFooter } from "../../lib/carousel-layout";
+import {
+  getVisibleCarouselDotIndices,
+  resolveMobileCarouselCardWidth,
+  shouldStackCarouselFooter,
+} from "../../lib/carousel-layout";
 
 let view: ReactTestRenderer;
 let scrollTo: jest.Mock;
@@ -115,6 +119,12 @@ it("uses a compact, content-safe card height on native phone widths", () => {
   expect(resolveCarouselCardHeight(true, 360)).toBe(420);
   expect(resolveCarouselCardHeight(true, 412)).toBe(448);
   expect(resolveCarouselCardHeight(false, 1024)).toBe(540);
+});
+
+it("keeps each mobile card inside its exact-width paging page", () => {
+  expect(resolveMobileCarouselCardWidth(320)).toBe(288);
+  expect(resolveMobileCarouselCardWidth(360)).toBe(328);
+  expect(resolveMobileCarouselCardWidth(412)).toBe(380);
 });
 
 it("stacks carousel actions before indicators on medium web widths", () => {
@@ -259,25 +269,24 @@ it("expands the circular explorer action before opening all events", () => {
   expect(onExploreEvents).toHaveBeenCalledTimes(1);
 });
 
-it("keeps compact search and explorer actions available on phone-sized web", () => {
+it("keeps search expanded and explorer labelled on phone-sized web", () => {
   (Platform as { OS: string }).OS = "web";
   mockIsMobile = true;
   const onExploreEvents = jest.fn();
   render({ autoPlay: false, showEventSearch: true, onExploreEvents });
 
-  const searchTrigger = view.root.findByProps({ testID: "carousel-compact-search-trigger" });
+  const search = view.root.findAllByProps({ testID: "carousel-search-input" });
+  const searchInput = search.find((node) => node.type === TextInput);
   const explorer = view.root.findAllByProps({
     testID: "carousel-explorer-expand-trigger",
   });
 
-  expect(searchTrigger.props.label).toBe("Search events in the carousel");
-  expect(explorer.length).toBeGreaterThan(0);
-
-  act(() => searchTrigger.props.onPress());
-  const search = view.root.findAllByProps({ testID: "carousel-search-input" });
-  const searchInput = search.find((node) => node.type === TextInput);
   expect(searchInput).toBeTruthy();
+  expect(searchInput?.props.placeholder).toBe("Search by name, reference or #hashtag");
   expect(searchInput?.props.accessibilityLabel).toBe("Search events in the carousel");
+  expect(explorer.length).toBeGreaterThan(0);
+  expect(explorer[0].props.label).toBe("Explore all");
+  expect(explorer[0].props.accessibilityLabel).toBe("Explore all events");
 
   const footer = view.root.findByProps({ testID: "carousel-footer" });
   expect(footer.props.style).toEqual(
@@ -285,6 +294,13 @@ it("keeps compact search and explorer actions available on phone-sized web", () 
   );
   expect(view.root.findByProps({ testID: "carousel-mobile-direction-controls" })).toBeTruthy();
   expect(view.root.findByProps({ testID: "carousel-mobile-pager" })).toBeTruthy();
+
+  const playToggle = view.root.findByProps({ testID: "carousel-mobile-play-toggle" });
+  const restart = view.root.findByProps({ testID: "carousel-mobile-restart" });
+  expect(playToggle.props.label).toBe("Play carousel");
+  expect(restart.props.label).toBe("Return to first slide");
+  act(() => restart.props.onPress());
+  expect(scrollTo).toHaveBeenLastCalledWith({ x: 0, animated: true });
 
   act(() => explorer[0].props.onPress());
   expect(onExploreEvents).toHaveBeenCalledTimes(1);
@@ -297,8 +313,13 @@ it("ships proposal-card and carousel-search copy in every landing locale", () =>
     expect(messages.index.eventProposal.cardTitle).toEqual(expect.any(String));
     expect(messages.index.eventProposal.cardBody).toEqual(expect.any(String));
     expect(messages.index.eventSearch.placeholder).toEqual(expect.any(String));
+    expect(messages.index.eventSearch.mobilePlaceholder).toEqual(expect.any(String));
     expect(messages.index.eventSearch.accessibilityLabel).toEqual(expect.any(String));
     expect(messages.index.eventSearch.exploreAll).toEqual(expect.any(String));
+    expect(messages.index.eventSearch.exploreAllLabel).toEqual(expect.any(String));
+    expect(messages.index.eventSearch.pause).toEqual(expect.any(String));
+    expect(messages.index.eventSearch.play).toEqual(expect.any(String));
+    expect(messages.index.eventSearch.restart).toEqual(expect.any(String));
   }
 });
 

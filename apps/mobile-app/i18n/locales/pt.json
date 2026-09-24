@@ -535,11 +535,16 @@
       "mailError": "Não foi possível abrir seu aplicativo de e-mail. Envie sua proposta para support@hashpass.tech."
     },
     "eventSearch": {
-      "placeholder": "Pesquisar eventos",
-      "accessibilityLabel": "Pesquisar eventos no carrossel",
-      "exploreAll": "Ver todos",
-      "previous": "Slide anterior",
-      "next": "Próximo slide"
+    "placeholder": "Pesquisar eventos",
+    "mobilePlaceholder": "Nome, referência ou #hashtag",
+    "accessibilityLabel": "Pesquisar eventos no carrossel",
+    "exploreAll": "Ver todos",
+    "exploreAllLabel": "Explorar todos os eventos",
+    "previous": "Slide anterior",
+    "next": "Próximo slide",
+    "pause": "Pausar carrossel",
+    "play": "Reproduzir carrossel",
+    "restart": "Voltar ao primeiro slide"
     },
     "eventsExplorerSubtitle": "Descubra eventos pelo mundo e encontre o seu.",
     "noEventsFound": "Nenhum evento encontrado.",
