@@ -331,13 +331,16 @@ it("keeps search expanded and explorer labelled on phone-sized web", () => {
   expect(searchInput).toBeTruthy();
   expect(searchInput?.props.placeholder).toBe("Search by name, reference or #hashtag");
   expect(searchInput?.props.accessibilityLabel).toBe("Search events in the carousel");
+  const divider = view.root.findByProps({ testID: "carousel-discovery-or" });
+  expect(divider.props.children).toBe("or");
   expect(explorer.length).toBeGreaterThan(0);
   expect(explorer[0].props.label).toBe("Explore all");
   expect(explorer[0].props.accessibilityLabel).toBe("Explore all events");
   expect(explorer[0].props.variant).toBe("secondary");
   expect(explorer[0].props.style).toEqual(expect.objectContaining({
-    minHeight: 48,
+    minHeight: 56,
     alignSelf: "flex-end",
+    minWidth: 112,
   }));
 
   const footer = view.root.findByProps({ testID: "carousel-footer" });
@@ -369,6 +372,7 @@ it("ships proposal-card and carousel-search copy in every landing locale", () =>
     expect(messages.index.eventSearch.accessibilityLabel).toEqual(expect.any(String));
     expect(messages.index.eventSearch.exploreAll).toEqual(expect.any(String));
     expect(messages.index.eventSearch.exploreAllLabel).toEqual(expect.any(String));
+    expect(messages.index.eventSearch.or).toEqual(expect.any(String));
     expect(messages.index.eventSearch.pause).toEqual(expect.any(String));
     expect(messages.index.eventSearch.play).toEqual(expect.any(String));
     expect(messages.index.eventSearch.restart).toEqual(expect.any(String));

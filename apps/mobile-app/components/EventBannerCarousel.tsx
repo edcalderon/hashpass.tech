@@ -1604,16 +1604,21 @@ export default function EventBannerCarousel({
                 </IconButton>
               )}
               {onExploreEvents ? (
-                <ActionButton
-                  testID="carousel-explorer-expand-trigger"
-                  mode={isDark ? "dark" : "light"}
-                  variant="secondary"
-                  label={translate("eventSearch.exploreAll", "Explore all")}
-                  onPress={onExploreEvents}
-                  accessibilityLabel={translate("eventSearch.exploreAllLabel", "Explore all events")}
-                  leadingIcon={explorerActionIcon || <MorphIcon icon={LucideCompass} size={18} color={isDark ? "#67E8F9" : "#0E7490"} strokeWidth={2} fallbackIconName="compass-outline" />}
-                  style={styles.compactExplorerAction}
-                />
+                <>
+                  <Text testID="carousel-discovery-or" style={styles.compactDiscoveryOr}>
+                    {translate("eventSearch.or", "or")}
+                  </Text>
+                  <ActionButton
+                    testID="carousel-explorer-expand-trigger"
+                    mode={isDark ? "dark" : "light"}
+                    variant="secondary"
+                    label={translate("eventSearch.exploreAll", "Explore all")}
+                    onPress={onExploreEvents}
+                    accessibilityLabel={translate("eventSearch.exploreAllLabel", "Explore all events")}
+                    leadingIcon={explorerActionIcon || <MorphIcon icon={LucideCompass} size={22} color={isDark ? "#67E8F9" : "#0E7490"} strokeWidth={2} fallbackIconName="compass-outline" />}
+                    style={styles.compactExplorerAction}
+                  />
+                </>
               ) : null}
             </View>
           ) : null}
@@ -1932,9 +1937,22 @@ const getStyles = (
     },
     compactExplorerAction: {
       flexShrink: 0,
+      minWidth: 112,
+      minHeight: 56,
       paddingHorizontal: uiTokens.space.md,
-      minHeight: uiTokens.control.minHeight,
       alignSelf: "flex-end",
+    },
+    compactDiscoveryOr: {
+      alignSelf: "flex-end",
+      minWidth: 20,
+      marginBottom: uiTokens.space.md + uiTokens.space.xs,
+      color: isDark ? "#94A3B8" : "#64748B",
+      fontSize: uiTokens.type.caption,
+      lineHeight: 16,
+      fontWeight: "700",
+      letterSpacing: 0.8,
+      textAlign: "center",
+      textTransform: "uppercase",
     },
     compactDiscoveryIcon: {
       flexShrink: 0,
