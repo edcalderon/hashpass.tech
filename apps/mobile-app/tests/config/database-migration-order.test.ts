@@ -4,6 +4,17 @@ import path from "node:path";
 const root = path.resolve(__dirname, "../../../..");
 
 describe("CBWeek migration plans", () => {
+  it("runs event search aliases after the CBWeek bootstrap on BSL development", () => {
+    const plan = execFileSync(process.execPath, [
+      "packages/tools/scripts/migrate-tenant-db.mjs",
+      "--profile", "bsl-development", "--dry-run",
+    ], { cwd: root, encoding: "utf8" });
+    const files = plan.split("\n").filter((line) => line.trim().startsWith("- db/"));
+    const position = (version: string) => files.findIndex((line) => line.includes(`/${version}__`));
+
+    expect(position("V097")).toBeGreaterThan(position("V096"));
+  });
+
   it.each([[], ["--groups", "demo-event-bootstrap"]])(
     "runs the final backfill after event creation and pass provisioning: %j",
     (...args: string[]) => {

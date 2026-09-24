@@ -51,21 +51,26 @@
     "event-pass-tiers",
     "event-chat",
     "event-auth-allies",
-    "event-search-aliases",
     "admin-pass-management",
     "admin-matchmaking-communications"
   ],
   "profileGroups": {
     "bsl-development": [
-      "demo-event-bootstrap"
+      "demo-event-bootstrap",
+      "event-search-aliases"
     ],
     "core-development": [
       "hashpass-auth-qr",
-      "event-ingestion"
+      "event-ingestion",
+      "event-search-aliases"
     ],
     "core-production": [
       "hashpass-auth-qr",
-      "event-ingestion"
+      "event-ingestion",
+      "event-search-aliases"
+    ],
+    "bsl-production": [
+      "event-search-aliases"
     ]
   },
   "groups": {
