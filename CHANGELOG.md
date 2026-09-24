@@ -1,3 +1,17 @@
+## [1.9.57](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.56...v1.9.57) (2026-09-24)
+### Released
+- refine landing event discovery and PWA install
+
+### Release scope
+- Compared with: `v1.9.56` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Shared UI
+- Infrastructure
+- Documentation
+- Release tooling
+
 ## [1.9.56](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.55...v1.9.56) (2026-09-24)
 ### Released
 - add landing event discovery card
