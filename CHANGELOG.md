@@ -1,3 +1,13 @@
+## [1.9.58](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.57...v1.9.58) (2026-09-24)
+### Released
+- restore mobile event discovery controls
+
+### Release scope
+- Compared with: `v1.9.57` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+
 ## [1.9.57](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.56...v1.9.57) (2026-09-24)
 ### Released
 - refine landing event discovery and PWA install
