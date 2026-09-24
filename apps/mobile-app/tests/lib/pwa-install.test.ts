@@ -25,4 +25,18 @@ describe('PWA install browser guidance', () => {
       'instructions.firefoxAndroid',
     ]);
   });
+
+  it('keeps iPad Safari on the iOS share-sheet guidance path', () => {
+    const userAgent = 'Mozilla/5.0 (iPad; CPU OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Version/18.0 Mobile/15E148 Safari/604.1';
+
+    expect(getPwaInstallBrowser(userAgent)).toBe('safari-ios');
+    expect(getPwaInstallInstructionKeys(userAgent)).toEqual(['instructions.safariIos']);
+  });
+
+  it('uses the generic fallback without treating desktop browsers as install-capable mobile agents', () => {
+    const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/128.0.0.0 Safari/537.36';
+
+    expect(getPwaInstallBrowser(userAgent)).toBe('browser');
+    expect(getPwaInstallInstructionKeys(userAgent)).toEqual(['instructions.default']);
+  });
 });

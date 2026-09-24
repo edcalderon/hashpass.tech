@@ -121,9 +121,11 @@
   position: absolute;
   top: -5px;
   right: -5px;
-  width: 25px;
-  height: 25px;
-  padding: 4px;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 13px;
   border-radius: 999px;
   border: 1px solid rgba(210, 226, 255, 0.8);
   background: rgba(8, 18, 50, 0.88);

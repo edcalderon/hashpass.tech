@@ -236,6 +236,27 @@ it("expands the circular explorer action before opening all events", () => {
   expect(onExploreEvents).toHaveBeenCalledTimes(1);
 });
 
+it("keeps compact search and explorer actions available on phone-sized web", () => {
+  (Platform as { OS: string }).OS = "web";
+  mockIsMobile = true;
+  const onExploreEvents = jest.fn();
+  render({ autoPlay: false, showEventSearch: true, onExploreEvents });
+
+  const search = view.root.findAllByProps({
+    testID: "carousel-search-input",
+  });
+  const explorer = view.root.findAllByProps({
+    testID: "carousel-explorer-expand-trigger",
+  });
+
+  expect(search).toHaveLength(1);
+  expect(search[0].props.accessibilityLabel).toBe("Search events in the carousel");
+  expect(explorer.length).toBeGreaterThan(0);
+
+  act(() => explorer[0].props.onPress());
+  expect(onExploreEvents).toHaveBeenCalledTimes(1);
+});
+
 it("ships proposal-card and carousel-search copy in every landing locale", () => {
   for (const locale of ["en", "es", "ko", "fr", "pt", "de"]) {
     const messages = require(`../../i18n/locales/${locale}.json`);

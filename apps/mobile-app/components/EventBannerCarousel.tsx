@@ -1178,6 +1178,7 @@ export default function EventBannerCarousel({
   };
 
   const showWideSearch = showEventSearch && Platform.OS === "web" && !isMobile;
+  const showCompactWebDiscovery = showEventSearch && Platform.OS === "web" && isMobile;
   const renderDirectionControls = () => N > 1 ? (
     <>
       <IconButton
@@ -1472,6 +1473,30 @@ export default function EventBannerCarousel({
           ]}
           testID="carousel-footer"
         >
+          {showCompactWebDiscovery ? (
+            <View style={styles.compactWebDiscovery}>
+              <TextInput
+                testID="carousel-search-input"
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                placeholder={translate("eventSearch.placeholder", "Search events")}
+                placeholderTextColor={isDark ? "#94A3B8" : "#64748B"}
+                style={styles.compactWebSearchInput}
+                className="hp-carousel-search-input"
+                accessibilityLabel={translate("eventSearch.accessibilityLabel", "Search events in the carousel")}
+              />
+              {onExploreEvents ? (
+                <IconButton
+                  testID="carousel-explorer-expand-trigger"
+                  mode={isDark ? "dark" : "light"}
+                  label={translate("eventSearch.exploreAll", "Explore all events")}
+                  onPress={onExploreEvents}
+                >
+                  {explorerActionIcon || <MorphIcon icon={LucideCompass} size={18} color={isDark ? "#67E8F9" : "#0E7490"} strokeWidth={2} fallbackIconName="compass-outline" />}
+                </IconButton>
+              ) : null}
+            </View>
+          ) : null}
           {stackFooter && hasFooterActions ? (
             <>
               <View
@@ -1716,6 +1741,16 @@ const getStyles = (
       alignItems: "center",
       justifyContent: "center",
       gap: 8,
+    },
+    compactWebDiscovery: {
+      width: "100%", minHeight: 44, flexDirection: "row", alignItems: "center", gap: uiTokens.space.sm,
+      paddingHorizontal: uiTokens.space.md, marginBottom: uiTokens.space.sm,
+    },
+    compactWebSearchInput: {
+      flex: 1, minWidth: 0, minHeight: 44, borderRadius: uiTokens.radius.pill,
+      borderWidth: uiTokens.control.borderWidth, borderColor: isDark ? "rgba(165,243,252,0.32)" : "rgba(14,116,144,0.24)",
+      color: isDark ? "#F8FAFC" : "#0F172A", paddingHorizontal: uiTokens.space.md,
+      backgroundColor: isDark ? "rgba(7,17,31,0.76)" : "rgba(255,255,255,0.78)",
     },
     footerIndicatorMobile: {
       minHeight: 44,
