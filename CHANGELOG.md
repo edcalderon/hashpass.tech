@@ -1,3 +1,15 @@
+## [1.9.60](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.59...v1.9.60) (2026-09-24)
+### Released
+- organize mobile event discovery; add canonical event search aliases; align mobile explorer action
+
+### Release scope
+- Compared with: `v1.9.59` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Database migrations
+- Release tooling
+
 ## [1.9.59](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.58...v1.9.59) (2026-09-24)
 ### Released
 - refine mobile event discovery

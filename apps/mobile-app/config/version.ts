@@ -22,22 +22,41 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202609241730, // Updated to current timestamp
+  buildNumber: 202609242027, // Updated to current timestamp
   releaseDate: '2026-09-24',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    // No new features
+    'organize mobile event discovery',
+    'add canonical event search aliases',
+    'align mobile explorer action'
   ],
   bugfixes: [
-    'refine mobile event discovery'
+    // No bugfixes
   ],
   breakingChanges: [],
-  notes: 'refine mobile event discovery'
+  notes: 'organize mobile event discovery; add canonical event search aliases; align mobile explorer action'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.60': {
+    version: '1.9.60',
+    buildNumber: 202609242027,
+    releaseDate: '2026-09-24',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'organize mobile event discovery',
+      'add canonical event search aliases',
+      'align mobile explorer action'
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'organize mobile event discovery; add canonical event search aliases; align mobile explorer action'
+  },
   '1.9.59': {
     version: '1.9.59',
     buildNumber: 202609241730,
