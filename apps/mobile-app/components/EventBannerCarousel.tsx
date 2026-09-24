@@ -719,7 +719,7 @@ export default function EventBannerCarousel({
 
   // Progress ticker: updates progress 0→1 during each auto-play interval
   useEffect(() => {
-    if (!autoPlay || N <= 1) return;
+    if (!isPlaying || N <= 1) return;
     let raf: ReturnType<typeof requestAnimationFrame>;
     const tick = () => {
       if (isAutoPlayPausedRef.current) {
@@ -737,11 +737,11 @@ export default function EventBannerCarousel({
     };
     raf = requestAnimationFrame(tick);
     return () => { if (raf) cancelAnimationFrame(raf); };
-  }, [autoPlay, N, autoPlayInterval, progress]);
+  }, [isPlaying, N, autoPlayInterval, progress]);
 
   // Auto-play advance timer
   useEffect(() => {
-    if (!autoPlay || N <= 1) return;
+    if (!isPlaying || N <= 1) return;
     timerStartRef.current = Date.now();
     progress.value = 0;
 
@@ -770,7 +770,7 @@ export default function EventBannerCarousel({
 
     return () => clearInterval(interval);
   }, [
-    autoPlay,
+    isPlaying,
     autoPlayInterval,
     N,
     progress,
@@ -1156,7 +1156,12 @@ export default function EventBannerCarousel({
   }, [isDark, translate, lampBrandingByEvent, showCtas, onEventPress, onProposeEvent, styles, proposalOrbOneStyle, proposalOrbTwoStyle, proposalGlossStyle]);
 
   // Web-only wheel wrapper props (typed as `any` because RN's ViewProps omits onWheel)
-  const wheelViewProps: any = { style: styles.carouselWrapper, onWheel: handleWheel };
+  // Fallback paging is deliberately left in the normal vertical wheel path.
+  // Its scroll state is page-based rather than peeking-card based, and desktop
+  // wheel interception would otherwise target the wrong offset on phone web.
+  const wheelViewProps: any = usePeekingCarousel
+    ? { style: styles.carouselWrapper, onWheel: handleWheel }
+    : { style: styles.carouselWrapper };
   const hasFooterActions = Boolean(footerLeadingAction || footerAction);
   const stackFooter = shouldStackCarouselFooter(isMobile, screenWidth, Platform.OS);
   const renderIndicators = () => {

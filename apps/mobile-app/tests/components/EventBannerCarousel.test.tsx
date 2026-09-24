@@ -150,6 +150,27 @@ it("advances the native pager by one viewport and wraps after the final slide", 
   expect(scrollTo).toHaveBeenLastCalledWith({ x: 0, animated: true });
 });
 
+it("starts the fallback timer after the mobile Play control is pressed", () => {
+  jest.useFakeTimers();
+  render({ event: mockEvent, autoPlay: false, autoPlayInterval: 100 });
+
+  const play = view.root.findByProps({ testID: "carousel-mobile-play-toggle" });
+  expect(play.props.label).toBe("Play carousel");
+
+  act(() => play.props.onPress());
+  act(() => { jest.advanceTimersByTime(100); });
+
+  expect(scrollTo).toHaveBeenLastCalledWith({ x: 1024, animated: true });
+});
+
+it("keeps phone-web fallback paging out of the vertical wheel path", () => {
+  (Platform as { OS: string }).OS = "web";
+  mockIsMobile = true;
+  render({ event: mockEvent, autoPlay: false });
+
+  expect(view.root.findAll((node) => typeof node.props.onWheel === "function")).toHaveLength(0);
+});
+
 it("keeps native campaign slides accessible and connected to their event action", () => {
   const onEventPress = jest.fn();
   render({ autoPlay: false, onEventPress });
