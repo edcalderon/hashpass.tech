@@ -59,6 +59,7 @@ jobs:
           node packages/tools/scripts/aws-cost-report.mjs --output-file "$report_file"
 
           if ! aws ssm get-parameter \
+            --region us-east-2 \
             --name "$AWS_COST_ALERT_STATE_PARAMETER" \
             --with-decryption \
             --query 'Parameter.Value' \
@@ -84,6 +85,7 @@ jobs:
               next_state_file="$RUNNER_TEMP/aws-cost-alert-next-state.json"
               node -e "const {writeFileSync}=require('node:fs'); const decision=require(process.argv[1]); writeFileSync(process.argv[2], JSON.stringify(decision.nextState), {mode:0o600})" "$decision_file" "$next_state_file"
               aws ssm put-parameter \
+                --region us-east-2 \
                 --name "$AWS_COST_ALERT_STATE_PARAMETER" \
                 --type SecureString \
                 --key-id alias/aws/ssm \
@@ -98,6 +100,7 @@ jobs:
               next_state_file="$RUNNER_TEMP/aws-cost-alert-next-state.json"
               node -e "const {writeFileSync}=require('node:fs'); const decision=require(process.argv[1]); writeFileSync(process.argv[2], JSON.stringify(decision.nextState), {mode:0o600})" "$decision_file" "$next_state_file"
               aws ssm put-parameter \
+                --region us-east-2 \
                 --name "$AWS_COST_ALERT_STATE_PARAMETER" \
                 --type SecureString \
                 --key-id alias/aws/ssm \

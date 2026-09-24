@@ -70,6 +70,8 @@ test("workflow privately mails budget alerts instead of publishing the report or
   assert.match(workflow, /aws-cost-alert-policy\.mjs/);
   assert.match(workflow, /aws ssm get-parameter/);
   assert.match(workflow, /aws ssm put-parameter/);
+  assert.match(workflow, /aws ssm get-parameter\s+\\\n\s+--region us-east-2/);
+  assert.match(workflow, /aws ssm put-parameter\s+\\\n\s+--region us-east-2/);
   assert.match(workflow, /AWS_COST_ALERT_STATE_PARAMETER/);
   assert.match(workflow, /pnpm\/action-setup@v4/);
   assert.match(workflow, /pnpm install --frozen-lockfile --ignore-scripts/);
