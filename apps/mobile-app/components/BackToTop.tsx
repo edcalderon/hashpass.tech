@@ -221,7 +221,7 @@ const BackToTop: React.FC<Props> = ({ scrollY, scrollRef, colors, bottomOffset =
 
         {/* Language */}
         <SectionLabel label={t('settings.language') || 'Language'} isDark={isDark} colors={colors} />
-        <SettingsLanguagePicker visible={panelOpen} isDark={isDark} colors={colors} />
+        <SettingsLanguagePicker isDark={isDark} colors={colors} />
 
         <Divider isDark={isDark} />
 

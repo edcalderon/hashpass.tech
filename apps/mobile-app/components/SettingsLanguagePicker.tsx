@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import { Animated, Easing, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import * as Haptics from "expo-haptics";
 import { uiTokens } from "@hashpass/ui/tokens";
@@ -15,8 +15,6 @@ type SettingsColors = {
 };
 
 interface SettingsLanguagePickerProps {
-  /** Collapses the choice list as soon as its parent settings surface closes. */
-  visible: boolean;
   isDark: boolean;
   colors: SettingsColors;
 }
@@ -27,7 +25,6 @@ interface SettingsLanguagePickerProps {
  * an explicit tap—keeping floating settings surfaces compact on first open.
  */
 export function SettingsLanguagePicker({
-  visible,
   isDark,
   colors,
 }: SettingsLanguagePickerProps) {
@@ -39,13 +36,8 @@ export function SettingsLanguagePicker({
   const [optionsMounted, setOptionsMounted] = useState(false);
   const progress = useRef(new Animated.Value(0)).current;
 
-  const collapse = useCallback((immediate = false) => {
+  const collapse = useCallback(() => {
     setExpanded(false);
-    if (immediate) {
-      progress.setValue(0);
-      setOptionsMounted(false);
-      return;
-    }
     Animated.timing(progress, {
       toValue: 0,
       duration: 180,
@@ -53,10 +45,6 @@ export function SettingsLanguagePicker({
       useNativeDriver: false,
     }).start(() => setOptionsMounted(false));
   }, [progress]);
-
-  useEffect(() => {
-    if (!visible) collapse(true);
-  }, [collapse, visible]);
 
   const toggleOptions = useCallback(() => {
     const nextExpanded = !expanded;

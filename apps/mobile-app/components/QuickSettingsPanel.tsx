@@ -242,7 +242,7 @@ export default function QuickSettingsPanel({
 
         {/* Language */}
         <SectionLabel label={t('settings.language') || 'Language'} colors={colors} />
-        <SettingsLanguagePicker visible={open} isDark={isDark} colors={colors} />
+        <SettingsLanguagePicker isDark={isDark} colors={colors} />
 
         <Divider isDark={isDark} />
 
