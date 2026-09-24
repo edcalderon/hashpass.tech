@@ -486,35 +486,29 @@ describe("HomeScreen native tablet layout", () => {
     expect(topControls).toBeTruthy();
   });
 
-  it("keeps event banner calls to action inside the dashboard explorer", () => {
+  it("keeps carousel discovery actions inside the card experience", () => {
     const { renderer, act } = loadHomeScreen({ platform: "web" });
 
     const carousel = renderer.root.findByType("EventBannerCarousel");
     expect(carousel.props.showCtas).toBe(false);
     expect(carousel.props.showProposalCard).toBe(true);
     expect(carousel.props.onProposeEvent).toEqual(expect.any(Function));
-    expect(carousel.props.headerAction).toBeTruthy();
-    expect(carousel.props.headerSearch).toBeTruthy();
+    expect(carousel.props.showEventSearch).toBe(true);
+    expect(carousel.props.onExploreEvents).toEqual(expect.any(Function));
+    expect(carousel.props.explorerActionIcon).toBeTruthy();
+    expect(carousel.props.onExplorerActionHoverChange).toEqual(expect.any(Function));
 
-    const explorerAction = carousel.props.headerAction;
-    expect(explorerAction.props.children[0].props.size).toBe(24);
-    expect(explorerAction.props.children[2].props.icon).toBe("ChevronRight");
-    expect(explorerAction.props.onMouseEnter).toEqual(expect.any(Function));
+    expect(carousel.props.explorerActionIcon.props.icon).toBe("Compass");
 
     act(() => {
-      explorerAction.props.onMouseEnter();
+      carousel.props.onExplorerActionHoverChange(true);
     });
 
-    const hoveredExplorerAction = renderer.root.findByType("EventBannerCarousel").props.headerAction;
-    expect(hoveredExplorerAction.props.children[0].props.icon).toBe(
-      "ArrowUpRight",
-    );
-    expect(hoveredExplorerAction.props.children[2].props.icon).toBe(
-      "ArrowRight",
-    );
+    const hoveredCarousel = renderer.root.findByType("EventBannerCarousel");
+    expect(hoveredCarousel.props.explorerActionIcon.props.icon).toBe("ArrowUpRight");
   });
 
-  it("keeps complete single-line carousel actions on a standard phone viewport", () => {
+  it("enables in-card search on a standard phone-width web viewport", () => {
     const { renderer } = loadHomeScreen({
       width: 390,
       height: 844,
@@ -522,10 +516,8 @@ describe("HomeScreen native tablet layout", () => {
     });
 
     const carousel = renderer.root.findByType("EventBannerCarousel");
-    const explorerLabel = carousel.props.headerAction.props.children[1];
-
-    expect(explorerLabel.props.children).toBe("Explore all events");
-    expect(explorerLabel.props.numberOfLines).toBe(1);
+    expect(carousel.props.showEventSearch).toBe(true);
+    expect(carousel.props.onExploreEvents).toEqual(expect.any(Function));
   });
 
   it("keeps Explore all events available after a user signs in", () => {
@@ -535,10 +527,8 @@ describe("HomeScreen native tablet layout", () => {
     });
 
     const carousel = renderer.root.findByType("EventBannerCarousel");
-    expect(carousel.props.headerAction).toBeTruthy();
-    expect(carousel.props.headerAction.props.accessibilityLabel).toBe(
-      "Explore all events",
-    );
+    expect(carousel.props.showEventSearch).toBe(true);
+    expect(carousel.props.onExploreEvents).toEqual(expect.any(Function));
   });
 
   it("passes the selected motion preference into landing features", () => {

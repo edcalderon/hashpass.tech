@@ -266,6 +266,8 @@
     "close": "Fechar aviso de instalação",
     "dialogLabel": "Aviso de instalação do HASHPASS",
     "expandCollapsed": "Abrir opções de instalação",
+    "dragHandle": "Arrastar botão de instalação",
+    "playStoreAction": "Baixe o app completo no Google Play",
     "infoIntro": "Um PWA (Progressive Web App) permite que o HASHPASS se comporte como um app nativo no seu dispositivo.",
     "details": {
       "one": "PWA significa Progressive Web App: comportamento de app direto do navegador.",
@@ -273,8 +275,11 @@
       "three": "Ótimo para check-in de eventos, carteira e notificações com menos fricção."
     },
     "instructions": {
-      "ios": "Para instalar: toque em Compartilhar e depois em \"Adicionar à Tela de Início\".",
-      "android": "Para instalar: abra o menu do navegador e toque em \"Instalar app\".",
+      "safariIos": "No Safari: toque em Compartilhar, depois em Adicionar à Tela de Início e Adicionar.",
+      "chromeIos": "No Chrome para iPhone: abra o menu Compartilhar e escolha Adicionar à Tela de Início.",
+      "firefoxIos": "No Firefox para iPhone: use o menu Compartilhar e escolha Adicionar à Tela de Início.",
+      "chromeAndroid": "No Chrome: abra o menu de três pontos e toque em Instalar app.",
+      "firefoxAndroid": "No Firefox: abra o menu de três pontos e toque em Instalar.",
       "default": "Para instalar: use o ícone de instalação na barra de endereço do navegador."
     }
   },
@@ -510,6 +515,9 @@
     "eventProposal": {
       "action": "Propor evento",
       "compactAction": "Propor",
+      "cardEyebrow": "FAÇA DO SEU JEITO",
+      "cardTitle": "Seu evento pertence aqui",
+      "cardBody": "Traga seu evento, clube ou comunidade para a HASHPASS e dê às pessoas um belo lugar para descobri-lo.",
       "title": "Proponha um evento",
       "subtitle": "Conte-nos sobre um evento que você gostaria de ver no explorador público.",
       "close": "Fechar",
@@ -525,6 +533,13 @@
       "submit": "Preparar e-mail da proposta",
       "openingMail": "Abrindo e-mail…",
       "mailError": "Não foi possível abrir seu aplicativo de e-mail. Envie sua proposta para support@hashpass.tech."
+    },
+    "eventSearch": {
+      "placeholder": "Pesquisar eventos",
+      "accessibilityLabel": "Pesquisar eventos no carrossel",
+      "exploreAll": "Ver todos",
+      "previous": "Slide anterior",
+      "next": "Próximo slide"
     },
     "eventsExplorerSubtitle": "Descubra eventos pelo mundo e encontre o seu.",
     "noEventsFound": "Nenhum evento encontrado.",

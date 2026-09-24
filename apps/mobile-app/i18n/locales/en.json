@@ -354,6 +354,8 @@
     "close": "Close install prompt",
     "dialogLabel": "HASHPASS install prompt",
     "expandCollapsed": "Open install options",
+    "dragHandle": "Drag install button",
+    "playStoreAction": "Get the full app on Google Play",
     "infoIntro": "A PWA (Progressive Web App) lets HASHPASS behave like a native app on your device.",
     "details": {
       "one": "PWA means Progressive Web App: app-like behavior from your browser install.",
@@ -361,8 +363,11 @@
       "three": "Great for event check-in flows, wallets, and notifications with less friction."
     },
     "instructions": {
-      "ios": "To install: tap Share, then \"Add to Home Screen\".",
-      "android": "To install: open the browser menu and tap \"Install app\".",
+      "safariIos": "In Safari: tap Share, then Add to Home Screen and Add.",
+      "chromeIos": "In Chrome on iPhone: open the Share menu, then choose Add to Home Screen.",
+      "firefoxIos": "In Firefox on iPhone: use the Share menu and choose Add to Home Screen.",
+      "chromeAndroid": "In Chrome: open the three-dot menu, then tap Install app.",
+      "firefoxAndroid": "In Firefox: open the three-dot menu, then tap Install.",
       "default": "To install: use the install icon in your browser address bar."
     }
   },
@@ -624,6 +629,9 @@
     "eventProposal": {
       "action": "Propose an event",
       "compactAction": "Propose",
+      "cardEyebrow": "MAKE IT YOURS",
+      "cardTitle": "Your event belongs here",
+      "cardBody": "Bring your event, club or community to HASHPASS and give people one beautiful place to discover it.",
       "title": "Propose an event",
       "subtitle": "Tell us about an event you would like to see in the public explorer.",
       "close": "Close",
@@ -639,6 +647,13 @@
       "submit": "Prepare proposal email",
       "openingMail": "Opening email…",
       "mailError": "We could not open your email app. Send your proposal to support@hashpass.tech."
+    },
+    "eventSearch": {
+      "placeholder": "Search events",
+      "accessibilityLabel": "Search events in the carousel",
+      "exploreAll": "Explore all",
+      "previous": "Previous slide",
+      "next": "Next slide"
     },
     "eventsExplorerSubtitle": "Discover events across the world — find yours.",
     "noEventsFound": "No events found.",

@@ -1,17 +1,23 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Image, Platform } from 'react-native';
 import PwaInstallPromptCard from '../../../packages/ui/src/PwaInstallPromptCard';
-import { buildAndroidIntentUrl, getInstallationStatus, resolvePwaLaunchUrl } from '../lib/pwa-utils';
 import {
-  getDefaultPwaDockPosition,
-  getPwaDockPositionCoordinates,
-  PWA_DOCK_POSITIONS,
-  readStoredPwaDockPosition,
-  storePwaDockPosition,
+  buildAndroidIntentUrl,
+  getInstallationStatus,
+  resolvePwaLaunchUrl,
+  resolvePwaPromptVisibility,
+} from '../lib/pwa-utils';
+import {
+  clampPwaDragPosition,
+  getDefaultPwaDragPosition,
   getPwaDragViewport,
+  PWA_DRAG_START_THRESHOLD,
+  readStoredPwaDragPosition,
+  storePwaDragPosition,
+  type PwaDragPosition,
   type PwaDragViewport,
-  type PwaDockPosition,
 } from '../lib/pwa-drag';
+import { getPwaInstallInstructionKeys } from '../lib/pwa-install';
 import { useTranslation } from '../i18n/i18n';
 
 const ANDROID_CHROME_192 = require('../assets/android-chrome-192x192.webp');
@@ -19,6 +25,7 @@ const ANDROID_CHROME_512 = require('../assets/android-chrome-512x512.webp');
 
 const COLLAPSE_KEY = 'hashpass:pwa-install-collapsed';
 const DONT_SHOW_AGAIN_KEY = 'hashpass:pwa-dont-show-until-reload';
+const ANDROID_PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.hashpass.tech';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -37,10 +44,9 @@ const PWAPrompt = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [dontShowAgain, setDontShowAgain] = useState(false);
   const [showInstallHelpModal, setShowInstallHelpModal] = useState(false);
-  const [dockPosition, setDockPosition] = useState<PwaDockPosition | null>(null);
+  const [dragPosition, setDragPosition] = useState<PwaDragPosition | null>(null);
   const [dockViewport, setDockViewport] = useState<PwaDragViewport>(() => getPwaDragViewport());
-  const [showDockControls, setShowDockControls] = useState(false);
-  const dockLayerRef = useRef<HTMLDivElement | null>(null);
+  const dragStateRef = useRef<{ pointerId: number; startX: number; startY: number; position: PwaDragPosition; moved: boolean } | null>(null);
 
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof window === 'undefined') {
@@ -58,7 +64,7 @@ const PWAPrompt = () => {
     const storedCollapseValue = window.localStorage.getItem(COLLAPSE_KEY);
     const isStoredCollapsed = storedCollapseValue === null ? true : storedCollapseValue === 'true';
     setIsCollapsed(isStoredCollapsed);
-    setDockPosition(readStoredPwaDockPosition() ?? getDefaultPwaDockPosition());
+    setDragPosition(readStoredPwaDragPosition() ?? getDefaultPwaDragPosition());
 
     let cancelled = false;
 
@@ -71,9 +77,14 @@ const PWAPrompt = () => {
       setIsInstalled(status.installed);
       setIsStandaloneMode(status.isStandaloneMode);
 
-      const shouldShowInstall = !status.installed && status.canInstall;
-      const shouldShowOpenApp = status.installed && !status.isStandaloneMode;
-      setShowPrompt(shouldShowInstall || shouldShowOpenApp);
+      setShowPrompt((wasVisible) =>
+        resolvePwaPromptVisibility({
+          wasVisible,
+          installed: status.installed,
+          isStandaloneMode: status.isStandaloneMode,
+          canInstall: status.canInstall,
+        })
+      );
 
       if (status.installed && status.isStandaloneMode) {
         window.localStorage.removeItem(COLLAPSE_KEY);
@@ -121,47 +132,18 @@ const PWAPrompt = () => {
   }, []);
 
   useEffect(() => {
-    if (!isCollapsed || !showDockControls || Platform.OS !== 'web' || typeof document === 'undefined') {
-      return;
-    }
-
-    const handleOutsidePointerDown = (event: PointerEvent) => {
-      const dockLayer = dockLayerRef.current;
-      if (dockLayer && event.target instanceof Node && dockLayer.contains(event.target)) {
-        return;
-      }
-
-      setShowDockControls(false);
-    };
-
-    const handleDockKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setShowDockControls(false);
-      }
-    };
-
-    document.addEventListener('pointerdown', handleOutsidePointerDown);
-    document.addEventListener('keydown', handleDockKeyDown);
-
-    return () => {
-      document.removeEventListener('pointerdown', handleOutsidePointerDown);
-      document.removeEventListener('keydown', handleDockKeyDown);
-    };
-  }, [isCollapsed, showDockControls]);
-
-  useEffect(() => {
     if (Platform.OS !== 'web' || typeof window === 'undefined') {
       return;
     }
 
     const handleResize = () => {
-      // Recalculate the inline dock coordinates whenever the visible mobile
-      // viewport changes (orientation and browser toolbar expand/collapse).
-      // Keeping the old coordinates is what allowed the icon to remain below
-      // the iOS/Android action bar after a resize.
-      setDockViewport(getPwaDragViewport());
-      setDockPosition((currentDockPosition: PwaDockPosition | null) =>
-        currentDockPosition ?? getDefaultPwaDockPosition()
+      // The browser toolbar and pinch-zoom viewport can change independently
+      // of the layout viewport. Keep the chosen coordinate, but clamp it to
+      // the freshly reachable rectangle.
+      const nextViewport = getPwaDragViewport();
+      setDockViewport(nextViewport);
+      setDragPosition((currentPosition) =>
+        clampPwaDragPosition(currentPosition ?? getDefaultPwaDragPosition(nextViewport), nextViewport)
       );
     };
 
@@ -190,23 +172,13 @@ const PWAPrompt = () => {
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
       window.localStorage.removeItem(COLLAPSE_KEY);
     }
-    setShowDockControls(false);
     setIsCollapsed(false);
     setShowPrompt(true);
   };
 
   const closeInstallHelpModal = () => {
     setShowInstallHelpModal(false);
-  };
-
-  const movePwaDock = (nextDockPosition: PwaDockPosition) => {
-    setDockPosition(nextDockPosition);
-    setShowDockControls(false);
-    storePwaDockPosition(nextDockPosition);
-  };
-
-  const hidePwaDockControls = () => {
-    setShowDockControls(false);
+    collapsePrompt();
   };
 
   const getInstallInstructions = () => {
@@ -214,24 +186,83 @@ const PWAPrompt = () => {
       return [t('instructions.default', 'To install: use the install icon in your browser address bar.')];
     }
 
-    const userAgent = window.navigator.userAgent;
-    if (/Android/i.test(userAgent)) {
-      return [
-        t('instructions.android', 'To install: open the browser menu and tap "Install app".'),
-        t('instructions.default', 'To install: use the install icon in your browser address bar.'),
-      ];
+    const instructionFallbacks: Record<string, string> = {
+      'instructions.safariIos': 'In Safari: tap Share, then Add to Home Screen and Add.',
+      'instructions.chromeIos': 'In Chrome on iPhone: open the Share menu, then choose Add to Home Screen.',
+      'instructions.firefoxIos': 'In Firefox on iPhone: use the Share menu and choose Add to Home Screen.',
+      'instructions.chromeAndroid': 'In Chrome: open the three-dot menu, then tap Install app.',
+      'instructions.firefoxAndroid': 'In Firefox: open the three-dot menu, then tap Install.',
+      'instructions.default': 'To install: use the install icon in your browser address bar.',
+    };
+
+    return getPwaInstallInstructionKeys(window.navigator.userAgent).map((key) => t(key, instructionFallbacks[key]));
+  };
+
+  const handleDragPointerDown = (event: React.PointerEvent<HTMLButtonElement>) => {
+    if (event.button !== 0 || Platform.OS !== 'web') {
+      return;
     }
 
-    if (/iPhone|iPad|iPod/i.test(userAgent)) {
-      return [
-        t('instructions.ios', 'To install: tap Share, then "Add to Home Screen".'),
-        t('instructions.default', 'To install: use the install icon in your browser address bar.'),
-      ];
+    const currentPosition = clampPwaDragPosition(dragPosition ?? getDefaultPwaDragPosition(), getPwaDragViewport());
+    dragStateRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      position: currentPosition,
+      moved: false,
+    };
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+    event.preventDefault();
+    event.stopPropagation();
+  };
+
+  const handleDragPointerMove = (event: React.PointerEvent<HTMLButtonElement>) => {
+    const dragState = dragStateRef.current;
+    if (!dragState || dragState.pointerId !== event.pointerId) {
+      return;
     }
 
-    return [
-      t('instructions.default', 'To install: use the install icon in your browser address bar.'),
-    ];
+    const deltaX = event.clientX - dragState.startX;
+    const deltaY = event.clientY - dragState.startY;
+    if (!dragState.moved && Math.hypot(deltaX, deltaY) < PWA_DRAG_START_THRESHOLD) {
+      return;
+    }
+
+    dragState.moved = true;
+    const nextPosition = clampPwaDragPosition(
+      { left: dragState.position.left + deltaX, top: dragState.position.top + deltaY },
+      getPwaDragViewport()
+    );
+    setDragPosition(nextPosition);
+  };
+
+  const finishPwaDrag = (event: React.PointerEvent<HTMLButtonElement>) => {
+    const dragState = dragStateRef.current;
+    if (!dragState || dragState.pointerId !== event.pointerId) {
+      return;
+    }
+
+    const nextPosition = clampPwaDragPosition(
+      dragState.moved
+        ? { left: dragState.position.left + event.clientX - dragState.startX, top: dragState.position.top + event.clientY - dragState.startY }
+        : dragState.position,
+      getPwaDragViewport()
+    );
+    setDragPosition(nextPosition);
+    storePwaDragPosition(nextPosition);
+    dragStateRef.current = null;
+    event.currentTarget.releasePointerCapture?.(event.pointerId);
+  };
+
+  const openPlayStore = () => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined') {
+      return;
+    }
+
+    const openedWindow = window.open(ANDROID_PLAY_STORE_URL, '_blank', 'noopener,noreferrer');
+    if (!openedWindow) {
+      window.location.assign(ANDROID_PLAY_STORE_URL);
+    }
   };
 
   const installPWA = async () => {
@@ -298,6 +329,8 @@ const PWAPrompt = () => {
   if (dontShowAgain && !showInstallHelpModal) {
     return null;
   }
+
+  const isAndroidBrowser = typeof window !== 'undefined' && /Android/i.test(window.navigator.userAgent);
 
   const handleDontShowAgain = () => {
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
@@ -385,9 +418,11 @@ const PWAPrompt = () => {
             closeLabel={t('close', 'Close install prompt')}
             infoLabel={t('whatIsThis', 'What is this?')}
             infoIntro={t('infoIntro', 'A PWA (Progressive Web App) lets HASHPASS behave like a native app on your device.')}
-            showInfoToggle={false}
-            collapsed={false}
-            onPrimaryAction={closeInstallHelpModal}
+                showInfoToggle={false}
+                collapsed={false}
+                tertiaryLabel={isAndroidBrowser ? t('playStoreAction', 'Get the full app on Google Play') : undefined}
+                onTertiaryAction={isAndroidBrowser ? openPlayStore : undefined}
+                onPrimaryAction={closeInstallHelpModal}
             onClose={closeInstallHelpModal}
           />
         </div>
@@ -443,8 +478,10 @@ const PWAPrompt = () => {
         collapsed={isCollapsed}
         collapsedLabel={collapsedLabel}
         collapsedActionVariant={isOpenAppMode ? 'open' : 'install'}
-        secondaryLabel={!isCollapsed && !isOpenAppMode ? t('dontShowAgain', "Don't show again until reload") : undefined}
-        onSecondaryAction={!isCollapsed && !isOpenAppMode ? handleDontShowAgain : undefined}
+            secondaryLabel={!isCollapsed && !isOpenAppMode ? t('dontShowAgain', "Don't show again until reload") : undefined}
+            onSecondaryAction={!isCollapsed && !isOpenAppMode ? handleDontShowAgain : undefined}
+            tertiaryLabel={!isCollapsed && !isOpenAppMode && isAndroidBrowser ? t('playStoreAction', 'Get the full app on Google Play') : undefined}
+            onTertiaryAction={!isCollapsed && !isOpenAppMode && isAndroidBrowser ? openPlayStore : undefined}
         onExpand={expandPrompt}
         onPrimaryAction={isOpenAppMode ? openApp : installPWA}
         onClose={collapsePrompt}
@@ -452,52 +489,41 @@ const PWAPrompt = () => {
   );
 
   if (isCollapsed) {
-    const effectiveDockPosition = dockPosition ?? getDefaultPwaDockPosition();
-    const effectiveDragPosition = getPwaDockPositionCoordinates(effectiveDockPosition, dockViewport);
+    const effectiveDragPosition = clampPwaDragPosition(
+      dragPosition ?? getDefaultPwaDragPosition(dockViewport),
+      dockViewport
+    );
 
     return (
       <div
-        ref={dockLayerRef}
-        className={`hp-pwa-wrapper hp-pwa-dock-layer hp-pwa-dock-${effectiveDockPosition}${showDockControls ? ' hp-pwa-dock-controls-visible' : ''}`}
+        className="hp-pwa-wrapper hp-pwa-drag-layer"
         style={{
           left: `${Math.round(effectiveDragPosition.left)}px`,
           top: `${Math.round(effectiveDragPosition.top)}px`,
         }}
-        onPointerEnter={() => setShowDockControls(true)}
-        onPointerLeave={hidePwaDockControls}
-        onFocusCapture={() => setShowDockControls(true)}
-        onBlurCapture={(event) => {
-          if (!event.currentTarget.contains(event.relatedTarget)) {
-            hidePwaDockControls();
-          }
-        }}
       >
-        {promptCard}
-        <div className="hp-pwa-dock-controls" role="group" aria-label={t('dockControls', 'Move PWA button')}>
-          {PWA_DOCK_POSITIONS.map((position: PwaDockPosition) => {
-            const isActiveDock = position === effectiveDockPosition;
-            const dockLabel = t(`dock.${position}`, `Move PWA button to ${position.replace('-', ' ')}`);
-
-            return (
-              <button
-                key={position}
-                type="button"
-                className={`hp-pwa-dock-target hp-pwa-dock-target-${position}${isActiveDock ? ' hp-pwa-dock-target-active' : ''}`}
-                aria-label={dockLabel}
-                aria-pressed={isActiveDock}
-                title={dockLabel}
-                onClick={(event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  const nextDockPosition = position;
-                  movePwaDock(nextDockPosition);
-                }}
-              >
-                <span className="hp-pwa-dock-target-dot" aria-hidden="true" />
-              </button>
-            );
-          })}
+        <div onMouseEnter={expandPrompt}>
+          {promptCard}
         </div>
+        <button
+          type="button"
+          className="hp-pwa-drag-handle"
+          aria-label={t('dragHandle', 'Drag install button')}
+          title={t('dragHandle', 'Drag install button')}
+          onPointerDown={handleDragPointerDown}
+          onPointerMove={handleDragPointerMove}
+          onPointerUp={finishPwaDrag}
+          onPointerCancel={finishPwaDrag}
+        >
+          <svg viewBox="0 0 16 16" aria-hidden="true">
+            <circle cx="5" cy="4" r="1" />
+            <circle cx="11" cy="4" r="1" />
+            <circle cx="5" cy="8" r="1" />
+            <circle cx="11" cy="8" r="1" />
+            <circle cx="5" cy="12" r="1" />
+            <circle cx="11" cy="12" r="1" />
+          </svg>
+        </button>
       </div>
     );
   }

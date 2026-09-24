@@ -2,6 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
+/* The landing search field owns its focus treatment. Do not let a tenant
+   accent leak into its outline over media-backed carousel cards. */
+.hp-carousel-search-input,
+.hp-carousel-search-input:focus,
+.hp-carousel-search-input:focus-visible {
+  border: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+  outline-offset: 0 !important;
+}
+
 /* Bounce animation for icon */
 @keyframes pwa-bounce {
   0%, 100% {
@@ -73,53 +84,18 @@
   cursor: default;
 }
 
-.hp-pwa-dock-layer {
+.hp-pwa-drag-layer {
   position: fixed !important;
   width: 70px !important;
   height: 70px !important;
   z-index: 1000 !important;
-  /* The JS dock margin protects browser chrome; this extra translation covers
-     iOS standalone/PWA gesture areas exposed through env(). */
-  --hp-pwa-safe-bottom-extra: max(0px, calc(env(safe-area-inset-bottom) - 48px));
-  transform: translateY(calc(-1 * var(--hp-pwa-safe-bottom-extra)));
-  touch-action: manipulation;
+  touch-action: none;
   cursor: default;
   isolation: isolate;
 }
 
-.hp-pwa-dock-layer::before,
-.hp-pwa-dock-layer::after {
-  content: "";
-  position: absolute;
-  border-radius: 999px;
-  opacity: 0;
-  pointer-events: none;
-  transition:
-    opacity 160ms ease,
-    transform 160ms ease,
-    border-color 160ms ease;
-}
-
-.hp-pwa-dock-layer::before {
-  inset: -8px;
-  border: 1px dashed rgba(204, 217, 255, 0.82);
-  transform: scale(0.9);
-}
-
-.hp-pwa-dock-layer::after {
-  inset: -15px;
-  border: 1px solid rgba(72, 211, 255, 0.46);
-  transform: scale(0.82);
-}
-
-.hp-pwa-dock-layer.hp-pwa-dock-controls-visible::before,
-.hp-pwa-dock-layer.hp-pwa-dock-controls-visible::after {
-  opacity: 1;
-  transform: scale(1);
-}
-
-.hp-pwa-dock-layer .hp-pwa-floating,
-.hp-pwa-dock-layer .hp-pwa-floating.hp-pwa-collapsed-state {
+.hp-pwa-drag-layer .hp-pwa-floating,
+.hp-pwa-drag-layer .hp-pwa-floating.hp-pwa-collapsed-state {
   position: relative !important;
   top: auto !important;
   right: auto !important;
@@ -129,89 +105,57 @@
   z-index: auto !important;
 }
 
-.hp-pwa-dock-layer .hp-pwa-floating.hp-pwa-collapsed-state,
-.hp-pwa-dock-layer .hp-pwa-collapsed {
+.hp-pwa-drag-layer .hp-pwa-floating.hp-pwa-collapsed-state,
+.hp-pwa-drag-layer .hp-pwa-collapsed {
   cursor: pointer;
   touch-action: manipulation;
 }
 
-.hp-pwa-dock-layer .hp-pwa-collapsed {
+.hp-pwa-drag-layer .hp-pwa-collapsed {
   box-shadow:
     0 12px 30px rgba(6, 10, 30, 0.36),
     0 0 0 1px rgba(222, 232, 255, 0.18) !important;
 }
 
-.hp-pwa-dock-controls {
+.hp-pwa-drag-handle {
   position: absolute;
-  inset: -14px;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 160ms ease;
-}
-
-.hp-pwa-dock-layer.hp-pwa-dock-controls-visible .hp-pwa-dock-controls {
-  opacity: 1;
-}
-
-.hp-pwa-dock-target {
-  position: absolute;
-  width: 22px;
-  height: 22px;
-  padding: 0;
+  top: -5px;
+  right: -5px;
+  width: 25px;
+  height: 25px;
+  padding: 4px;
   border-radius: 999px;
-  border: 1px solid rgba(226, 235, 255, 0.72);
-  background: rgba(8, 12, 30, 0.9);
-  box-shadow: 0 6px 16px rgba(3, 8, 28, 0.32);
-  color: #ffffff;
+  border: 1px solid rgba(210, 226, 255, 0.8);
+  background: rgba(8, 18, 50, 0.88);
+  box-shadow: 0 5px 14px rgba(3, 8, 28, 0.4);
+  color: rgba(239, 246, 255, 0.96);
   display: grid;
   place-items: center;
-  cursor: pointer;
-  pointer-events: none;
-  touch-action: manipulation;
+  cursor: grab;
+  touch-action: none;
   transition:
     transform 160ms ease,
     background-color 160ms ease,
     border-color 160ms ease;
 }
 
-.hp-pwa-dock-layer.hp-pwa-dock-controls-visible .hp-pwa-dock-target {
-  pointer-events: auto;
-}
-
-.hp-pwa-dock-target:hover,
-.hp-pwa-dock-target:focus-visible {
+.hp-pwa-drag-handle:hover,
+.hp-pwa-drag-handle:focus-visible {
   border-color: rgba(72, 211, 255, 0.96);
   background: rgba(11, 30, 62, 0.96);
   transform: scale(1.08);
   outline: none;
 }
 
-.hp-pwa-dock-target-active {
-  border-color: rgba(72, 211, 255, 1);
-  background: rgba(24, 65, 112, 0.96);
+.hp-pwa-drag-handle:active {
+  cursor: grabbing;
 }
 
-.hp-pwa-dock-target-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 999px;
-  background: currentColor;
+.hp-pwa-drag-handle svg {
+  width: 100%;
+  height: 100%;
+  fill: currentColor;
   display: block;
-}
-
-.hp-pwa-dock-target-top-left {
-  top: -3px;
-  left: -3px;
-}
-
-.hp-pwa-dock-target-bottom-left {
-  bottom: -3px;
-  left: -3px;
-}
-
-.hp-pwa-dock-target-bottom-right {
-  right: -3px;
-  bottom: -3px;
 }
 
 /* Make details section interactive for checkbox */

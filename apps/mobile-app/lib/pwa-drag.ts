@@ -11,17 +11,13 @@ export type PwaDragViewport = {
 };
 
 export const PWA_DRAG_POSITION_KEY = 'hashpass:pwa-install-position';
-export const PWA_DOCK_POSITIONS = ['top-left', 'bottom-left', 'bottom-right'] as const;
 export const PWA_DRAG_BUTTON_SIZE = 70;
 export const PWA_DRAG_SAFE_MARGIN = 12;
-// Bottom-docked positions need more clearance than PWA_DRAG_SAFE_MARGIN
-// alone: mobile browsers' own bottom toolbar/gesture-nav chrome eats into
-// that space, and 12px wasn't enough to keep the button from visually
-// overlapping it.
+// Keep the control above mobile browser toolbars and gesture navigation. The
+// visual viewport supplies the visible browser area; this is extra breathing
+// room so the drag handle remains reachable at the lower edge.
 export const PWA_DRAG_BOTTOM_SAFE_MARGIN = 48;
 export const PWA_DRAG_START_THRESHOLD = 5;
-
-export type PwaDockPosition = (typeof PWA_DOCK_POSITIONS)[number];
 
 const FALLBACK_VIEWPORT: PwaDragViewport = {
   width: 390,
@@ -36,9 +32,8 @@ export const getPwaDragViewport = (): PwaDragViewport => {
   }
 
   // The layout viewport can remain taller than the visible viewport while a
-  // mobile browser's address/action bar is expanded. Prefer visualViewport
-  // so a fixed PWA control is clamped above that browser chrome instead of
-  // being rendered underneath it.
+  // mobile browser's address/action bar is expanded. Retain visual-viewport
+  // offsets too, so a panned or zoomed page uses the reachable screen bounds.
   const visualViewport = window.visualViewport;
   const width = visualViewport?.width ?? window.innerWidth;
   const height = visualViewport?.height ?? window.innerHeight;
@@ -57,7 +52,10 @@ export const clampPwaDragPosition = (
   const minLeft = viewport.offsetLeft + PWA_DRAG_SAFE_MARGIN;
   const minTop = viewport.offsetTop + PWA_DRAG_SAFE_MARGIN;
   const maxLeft = Math.max(minLeft, viewport.offsetLeft + viewport.width - PWA_DRAG_BUTTON_SIZE - PWA_DRAG_SAFE_MARGIN);
-  const maxTop = Math.max(minTop, viewport.offsetTop + viewport.height - PWA_DRAG_BUTTON_SIZE - PWA_DRAG_SAFE_MARGIN);
+  const maxTop = Math.max(
+    minTop,
+    viewport.offsetTop + viewport.height - PWA_DRAG_BUTTON_SIZE - PWA_DRAG_BOTTOM_SAFE_MARGIN
+  );
 
   return {
     left: Math.min(Math.max(position.left, minLeft), maxLeft),
@@ -65,8 +63,16 @@ export const clampPwaDragPosition = (
   };
 };
 
-const isPwaDockPosition = (value: unknown): value is PwaDockPosition =>
-  typeof value === 'string' && (PWA_DOCK_POSITIONS as readonly string[]).includes(value);
+export const getDefaultPwaDragPosition = (
+  viewport: PwaDragViewport = getPwaDragViewport()
+): PwaDragPosition =>
+  clampPwaDragPosition(
+    {
+      left: viewport.offsetLeft + PWA_DRAG_SAFE_MARGIN,
+      top: viewport.offsetTop + viewport.height - PWA_DRAG_BUTTON_SIZE - PWA_DRAG_BOTTOM_SAFE_MARGIN,
+    },
+    viewport
+  );
 
 const isPwaDragPosition = (value: unknown): value is PwaDragPosition => {
   if (typeof value !== 'object' || value === null) {
@@ -74,62 +80,23 @@ const isPwaDragPosition = (value: unknown): value is PwaDragPosition => {
   }
 
   const possiblePosition = value as Partial<PwaDragPosition>;
-  return typeof possiblePosition.left === 'number' && typeof possiblePosition.top === 'number';
+  return Number.isFinite(possiblePosition.left) && Number.isFinite(possiblePosition.top);
 };
 
-export const getPwaDockPositionCoordinates = (
-  dockPosition: PwaDockPosition,
-  viewport: PwaDragViewport = getPwaDragViewport()
-): PwaDragPosition => {
-  const bottomTop = viewport.offsetTop + viewport.height - PWA_DRAG_BUTTON_SIZE - PWA_DRAG_BOTTOM_SAFE_MARGIN;
-  const rightLeft = viewport.offsetLeft + viewport.width - PWA_DRAG_BUTTON_SIZE - PWA_DRAG_SAFE_MARGIN;
-
-  const coordinatesByDock: Record<PwaDockPosition, PwaDragPosition> = {
-    'top-left': {
-      left: viewport.offsetLeft + PWA_DRAG_SAFE_MARGIN,
-      top: viewport.offsetTop + PWA_DRAG_SAFE_MARGIN,
-    },
-    'bottom-left': {
-      left: viewport.offsetLeft + PWA_DRAG_SAFE_MARGIN,
-      top: bottomTop,
-    },
-    'bottom-right': {
-      left: rightLeft,
-      top: bottomTop,
-    },
-  };
-
-  return clampPwaDragPosition(coordinatesByDock[dockPosition], viewport);
-};
-
-// bottom-right is where the scroll-to-top/settings/notification floating
-// controls stack on web, so defaulting the PWA install button there means
-// it launches directly on top of them. bottom-left is empty screen space by
-// default; users can still drag it anywhere in PWA_DOCK_POSITIONS.
-export const getDefaultPwaDockPosition = (): PwaDockPosition => 'bottom-left';
-
-export const getDefaultPwaDragPosition = (): PwaDragPosition => {
-  return getPwaDockPositionCoordinates(getDefaultPwaDockPosition());
-};
-
-export const resolveNearestPwaDockPosition = (
-  position: PwaDragPosition,
-  viewport: PwaDragViewport = getPwaDragViewport()
-): PwaDockPosition => {
-  const clampedPosition = clampPwaDragPosition(position, viewport);
-  const [nearestDockPosition] = PWA_DOCK_POSITIONS.reduce(
-    ([currentDock, currentDistance], candidateDock) => {
-      const candidatePosition = getPwaDockPositionCoordinates(candidateDock, viewport);
-      const distance =
-        (candidatePosition.left - clampedPosition.left) ** 2 +
-        (candidatePosition.top - clampedPosition.top) ** 2;
-
-      return distance < currentDistance ? [candidateDock, distance] : [currentDock, currentDistance];
-    },
-    ['top-left', Number.POSITIVE_INFINITY] as [PwaDockPosition, number]
-  );
-
-  return nearestDockPosition;
+const legacyDockPosition = (position: string, viewport: PwaDragViewport): PwaDragPosition | null => {
+  switch (position) {
+    case 'top-left':
+      return { left: viewport.offsetLeft + PWA_DRAG_SAFE_MARGIN, top: viewport.offsetTop + PWA_DRAG_SAFE_MARGIN };
+    case 'bottom-left':
+      return getDefaultPwaDragPosition(viewport);
+    case 'bottom-right':
+      return {
+        left: viewport.offsetLeft + viewport.width - PWA_DRAG_BUTTON_SIZE - PWA_DRAG_SAFE_MARGIN,
+        top: viewport.offsetTop + viewport.height - PWA_DRAG_BUTTON_SIZE - PWA_DRAG_BOTTOM_SAFE_MARGIN,
+      };
+    default:
+      return null;
+  }
 };
 
 export const readStoredPwaDragPosition = (): PwaDragPosition | null => {
@@ -144,52 +111,16 @@ export const readStoredPwaDragPosition = (): PwaDragPosition | null => {
     }
 
     const parsedPosition = JSON.parse(storedPosition) as unknown;
-    if (isPwaDockPosition(parsedPosition)) {
-      return getPwaDockPositionCoordinates(parsedPosition);
+    const viewport = getPwaDragViewport();
+    if (typeof parsedPosition === 'string') {
+      const migrated = legacyDockPosition(parsedPosition, viewport);
+      return migrated ? clampPwaDragPosition(migrated, viewport) : null;
     }
 
-    if (!isPwaDragPosition(parsedPosition)) {
-      return null;
-    }
-
-    return clampPwaDragPosition(parsedPosition);
+    return isPwaDragPosition(parsedPosition) ? clampPwaDragPosition(parsedPosition, viewport) : null;
   } catch {
     return null;
   }
-};
-
-export const readStoredPwaDockPosition = (): PwaDockPosition | null => {
-  if (typeof window === 'undefined') {
-    return null;
-  }
-
-  try {
-    const storedPosition = window.localStorage.getItem(PWA_DRAG_POSITION_KEY);
-    if (!storedPosition) {
-      return null;
-    }
-
-    const parsedPosition = JSON.parse(storedPosition) as unknown;
-    if (isPwaDockPosition(parsedPosition)) {
-      return parsedPosition;
-    }
-
-    if (!isPwaDragPosition(parsedPosition)) {
-      return null;
-    }
-
-    return resolveNearestPwaDockPosition(parsedPosition);
-  } catch {
-    return null;
-  }
-};
-
-export const storePwaDockPosition = (dockPosition: PwaDockPosition) => {
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  window.localStorage.setItem(PWA_DRAG_POSITION_KEY, JSON.stringify(dockPosition));
 };
 
 export const storePwaDragPosition = (position: PwaDragPosition) => {
@@ -197,5 +128,5 @@ export const storePwaDragPosition = (position: PwaDragPosition) => {
     return;
   }
 
-  window.localStorage.setItem(PWA_DRAG_POSITION_KEY, JSON.stringify(position));
+  window.localStorage.setItem(PWA_DRAG_POSITION_KEY, JSON.stringify(clampPwaDragPosition(position)));
 };

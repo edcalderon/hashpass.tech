@@ -10,6 +10,31 @@ type InstalledRelatedApp = {
   id?: string;
 };
 
+export type PwaPromptVisibilityInput = {
+  wasVisible: boolean;
+  installed: boolean;
+  isStandaloneMode: boolean;
+  canInstall: boolean;
+};
+
+/**
+ * Status checks run on focus, visibility changes, and a short interval. They
+ * must not close an install surface a visitor explicitly opened just because
+ * Safari/iOS (or another browser) cannot expose a native install event.
+ */
+export const resolvePwaPromptVisibility = ({
+  wasVisible,
+  installed,
+  isStandaloneMode,
+  canInstall,
+}: PwaPromptVisibilityInput): boolean => {
+  if (installed && isStandaloneMode) {
+    return false;
+  }
+
+  return wasVisible || (!installed && canInstall) || (installed && !isStandaloneMode);
+};
+
 /**
  * Check if the app is running in standalone mode (installed as PWA)
  * This works for both iOS and Android PWAs

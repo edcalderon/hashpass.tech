@@ -349,6 +349,8 @@
     "close": "설치 안내 닫기",
     "dialogLabel": "HASHPASS 설치 안내",
     "expandCollapsed": "설치 옵션 열기",
+    "dragHandle": "설치 버튼 드래그",
+    "playStoreAction": "Google Play에서 전체 앱 받기",
     "infoIntro": "PWA(프로그레시브 웹 앱)는 HASHPASS를 기기에서 네이티브 앱처럼 동작하게 합니다.",
     "details": {
       "one": "PWA는 브라우저 기반이지만 앱처럼 동작하는 Progressive Web App입니다.",
@@ -356,8 +358,11 @@
       "three": "이벤트 체크인, 지갑, 알림을 더 적은 마찰로 사용할 수 있습니다."
     },
     "instructions": {
-      "ios": "설치 방법: 공유 버튼을 누른 다음 \"홈 화면에 추가\"를 선택하세요.",
-      "android": "설치 방법: 브라우저 메뉴를 열고 \"앱 설치\"를 선택하세요.",
+      "safariIos": "Safari에서 공유를 누른 뒤 홈 화면에 추가와 추가를 선택하세요.",
+      "chromeIos": "iPhone Chrome에서 공유 메뉴를 열고 홈 화면에 추가를 선택하세요.",
+      "firefoxIos": "iPhone Firefox에서 공유 메뉴를 열고 홈 화면에 추가를 선택하세요.",
+      "chromeAndroid": "Chrome에서 점 세 개 메뉴를 열고 앱 설치를 선택하세요.",
+      "firefoxAndroid": "Firefox에서 점 세 개 메뉴를 열고 설치를 선택하세요.",
       "default": "설치 방법: 브라우저 주소창의 설치 아이콘을 사용하세요."
     }
   },
@@ -642,6 +647,9 @@
     "eventProposal": {
       "action": "이벤트 제안",
       "compactAction": "제안",
+      "cardEyebrow": "나만의 이벤트로 만드세요",
+      "cardTitle": "당신의 이벤트가 이곳에 어울립니다",
+      "cardBody": "이벤트, 클럽 또는 커뮤니티를 HASHPASS에 소개하고 사람들이 아름답게 발견할 수 있는 공간을 만드세요.",
       "title": "이벤트 제안",
       "subtitle": "공개 탐색기에 추가하고 싶은 이벤트를 알려주세요.",
       "close": "닫기",
@@ -657,6 +665,13 @@
       "submit": "제안 이메일 준비",
       "openingMail": "이메일 여는 중…",
       "mailError": "이메일 앱을 열 수 없습니다. support@hashpass.tech로 제안을 보내주세요."
+    },
+    "eventSearch": {
+      "placeholder": "이벤트 검색",
+      "accessibilityLabel": "캐러셀에서 이벤트 검색",
+      "exploreAll": "전체 보기",
+      "previous": "이전 슬라이드",
+      "next": "다음 슬라이드"
     },
     "eventsExplorerSubtitle": "전 세계의 이벤트를 둘러보고 나에게 맞는 이벤트를 찾아보세요.",
     "noEventsFound": "이벤트를 찾을 수 없습니다.",
