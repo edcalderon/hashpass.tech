@@ -20,16 +20,13 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.54)
+## 📋 Latest Changes (v1.9.55)
 
-### Bug Fixes
-
-* harden mobile landing safe areas ([18caef8](https://github.com/hashpass-tech/hashpass.tech/commit/18caef8ef5b445bc8365049c7d84ecd90b3317c3))
-### Release Highlights
-- harden mobile landing safe areas
+### Released
+- correct landing and email asset paths
 
 ### Release scope
-- Compared with: `v1.9.53` (the previous global release tag)
+- Compared with: `v1.9.54` (the previous global release tag)
 
 ### Affected products & packages
 - Mobile app
