@@ -261,6 +261,11 @@ it("expands the circular explorer action before opening all events", () => {
     testID: "carousel-explorer-expand-trigger",
   });
   expect(trigger.props.label).toBe("Explore all events");
+  expect(trigger.props.style).toEqual(expect.objectContaining({
+    backgroundColor: "transparent",
+    borderColor: "transparent",
+    shadowOpacity: 0,
+  }));
 
   act(() => trigger.props.onMouseEnter());
 
