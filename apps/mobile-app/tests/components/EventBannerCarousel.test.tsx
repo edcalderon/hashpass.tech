@@ -251,6 +251,27 @@ it("ranks the closest event first when a visitor searches", () => {
     .toEqual(["cbweek2026", "hash-poker"]);
 });
 
+it("ranks BSL and CBWeek cards from their canonical search aliases", () => {
+  const { rankEventsForCarousel } = require("../../components/EventBannerCarousel");
+  const { EVENTS } = require("../../config/events");
+  const discoveryEvents = [EVENTS.bsl, EVENTS.colombia2026, EVENTS.cbweek2026];
+
+  expect(EVENTS.cbweek2026.aliases).toEqual(expect.arrayContaining([
+    "cbweek2026",
+    "Medellin CBWeek",
+    "#cbweek2026",
+  ]));
+  expect(EVENTS.colombia2026.aliases).toEqual(expect.arrayContaining([
+    "BSL Bogotá",
+    "Blockchain Summit Latam Colombia",
+    "#bslcolombia2026",
+  ]));
+  expect(rankEventsForCarousel(discoveryEvents, "medellin cbweek2026")[0].id)
+    .toBe("cbweek2026");
+  expect(rankEventsForCarousel(discoveryEvents, "bsl bogota")[0].id)
+    .toBe("colombia2026");
+});
+
 it("uses a compact search trigger that expands only while searching", () => {
   (Platform as { OS: string }).OS = "web";
   mockIsMobile = false;
@@ -310,9 +331,17 @@ it("keeps search expanded and explorer labelled on phone-sized web", () => {
   expect(searchInput).toBeTruthy();
   expect(searchInput?.props.placeholder).toBe("Search by name, reference or #hashtag");
   expect(searchInput?.props.accessibilityLabel).toBe("Search events in the carousel");
+  const divider = view.root.findByProps({ testID: "carousel-discovery-or" });
+  expect(divider.props.children).toBe("or");
   expect(explorer.length).toBeGreaterThan(0);
   expect(explorer[0].props.label).toBe("Explore all");
   expect(explorer[0].props.accessibilityLabel).toBe("Explore all events");
+  expect(explorer[0].props.variant).toBe("secondary");
+  expect(explorer[0].props.style).toEqual(expect.objectContaining({
+    minHeight: 56,
+    alignSelf: "flex-end",
+    minWidth: 112,
+  }));
 
   const footer = view.root.findByProps({ testID: "carousel-footer" });
   expect(footer.props.style).toEqual(
@@ -343,6 +372,7 @@ it("ships proposal-card and carousel-search copy in every landing locale", () =>
     expect(messages.index.eventSearch.accessibilityLabel).toEqual(expect.any(String));
     expect(messages.index.eventSearch.exploreAll).toEqual(expect.any(String));
     expect(messages.index.eventSearch.exploreAllLabel).toEqual(expect.any(String));
+    expect(messages.index.eventSearch.or).toEqual(expect.any(String));
     expect(messages.index.eventSearch.pause).toEqual(expect.any(String));
     expect(messages.index.eventSearch.play).toEqual(expect.any(String));
     expect(messages.index.eventSearch.restart).toEqual(expect.any(String));

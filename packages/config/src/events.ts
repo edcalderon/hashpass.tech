@@ -187,6 +187,7 @@ const makeTourStopConfig = (
     name: string;
     title: string;
     subtitle: string;
+    aliases?: string[];
     color: string;
     eventStartDate: string;
     eventEndDate: string;
@@ -207,6 +208,7 @@ const makeTourStopConfig = (
 ): EventConfig => ({
   id: eventId,
   name: options.name,
+  aliases: options.aliases,
   domain: `${eventId}.hashpass.tech`,
   website: `https://blockchainsummit.la/${eventId}/`,
   title: options.title,
@@ -2677,7 +2679,16 @@ export const EVENTS: Record<string, EventConfig> = {
     id: "bsl",
     name: "Blockchain Summit Latam On Tour",
     shortName: "BSL",
-    aliases: ["bsl", "Blockchain Summit Latam", "BSL On Tour"],
+    aliases: [
+      "bsl",
+      "BSL 2026",
+      "BSL On Tour",
+      "Blockchain Summit",
+      "Blockchain Summit Latam",
+      "Blockchain Summit Latam On Tour",
+      "#bsl",
+      "#bsl2026",
+    ],
     domain: "bsl.hashpass.tech",
     website: "https://blockchainsummit.la/",
     title: "BSL On Tour",
@@ -3703,6 +3714,19 @@ export const EVENTS: Record<string, EventConfig> = {
     name: "BSL Colombia 2026",
     title: "Blockchain Summit Latam Colombia 2026",
     subtitle: "Bogotá, Colombia",
+    aliases: [
+      "BSL Colombia",
+      "BSL Colombia 2026",
+      "BSL Bogotá",
+      "BSL Bogota",
+      "Blockchain Summit Colombia",
+      "Blockchain Summit Bogotá",
+      "Blockchain Summit Bogota",
+      "Blockchain Summit Latam Colombia",
+      "Blockchain Summit Latam Colombia 2026",
+      "#bsl2026",
+      "#bslcolombia2026",
+    ],
     color: "#F5C542",
     eventStartDate: "2026-11-05T09:00:00-05:00",
     eventEndDate: "2026-11-06T23:59:59-05:00",
@@ -4444,7 +4468,24 @@ export const EVENTS: Record<string, EventConfig> = {
     id: "cbweek2026",
     name: "Colombia Blockchain Week 2026",
     shortName: "CBW",
-    aliases: ["cbw", "Colombia Blockchain Week", "CB Week 2026"],
+    aliases: [
+      "cbw",
+      "cbweek",
+      "cbw2026",
+      "cbweek2026",
+      "CB Week",
+      "CB Week 2026",
+      "Colombia Blockchain Week",
+      "Colombia Blockchain Week 2026",
+      "Medellin CBWeek",
+      "Medellín CBWeek",
+      "Medellin Blockchain Week",
+      "Medellín Blockchain Week",
+      "Blockchain Week Medellin",
+      "Blockchain Week Medellín",
+      "#cbw2026",
+      "#cbweek2026",
+    ],
     domain: "cbweek2026.hashpass.tech",
     website: "https://colombiablockchainweek.com/",
     title: "Colombia Blockchain Week 2026",
