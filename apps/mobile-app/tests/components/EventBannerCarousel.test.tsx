@@ -114,6 +114,19 @@ it("keeps native campaign slides accessible and connected to their event action"
   expect(onEventPress).toHaveBeenCalledWith(mockEvent);
 });
 
+it("adds an organizer proposal card with a working call to action", () => {
+  const onProposeEvent = jest.fn();
+  render({ autoPlay: false, showProposalCard: true, onProposeEvent });
+
+  const proposal = view.root.findByProps({
+    accessibilityLabel: "Your event belongs here",
+  });
+  expect(proposal.props.accessibilityRole).toBe("button");
+
+  act(() => proposal.props.onPress());
+  expect(onProposeEvent).toHaveBeenCalledTimes(1);
+});
+
 it("keeps phone carousel actions visible in their own row", () => {
   render({
     event: mockEvent,

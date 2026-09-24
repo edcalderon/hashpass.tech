@@ -54,10 +54,9 @@ import { Ionicons } from "../lib/vector-icons";
 import {
   ArrowRight as LucideArrowRight,
   ArrowUpRight as LucideArrowUpRight,
-  ArrowUpRightFromCircle as LucideArrowUpRightFromCircle,
   ChevronRight as LucideChevronRight,
   Compass as LucideCompass,
-  CirclePlus as LucideCirclePlus,
+  Search as LucideSearch,
 } from "lucide";
 import {
   getHashpassFooterLogo,
@@ -658,69 +657,34 @@ export default function HomeScreen() {
             autoPlay={true}
             autoPlayInterval={5000}
             showCtas={false}
-            footerLeadingAction={
+            showProposalCard={isGlobalEventTenant()}
+            onProposeEvent={() => {
+              setIsEventProposalHovered(false);
+              setIsEventProposalVisible(true);
+            }}
+            headerSearch={
               isGlobalEventTenant() ? (
                 <TouchableOpacity
-                  onPress={() => {
-                    setIsEventProposalHovered(false);
-                    setIsEventProposalVisible(true);
-                  }}
-                  {...(Platform.OS === "web"
-                    ? ({
-                        onMouseEnter: () => setIsEventProposalHovered(true),
-                        onMouseLeave: () => setIsEventProposalHovered(false),
-                      } as any)
-                    : {})}
-                  activeOpacity={0.7}
-                  style={[
-                    styles.proposeEventBtn,
-                    isPhoneLayout && styles.carouselActionBtnMobile,
-                    useCompactCarouselLabels && styles.carouselActionBtnCompact,
-                  ]}
+                  onPress={() => router.push("/dashboard/explore" as any)}
+                  style={styles.carouselSearchBtn}
                   accessibilityRole="button"
-                  accessibilityLabel={t("eventProposal.action", "Propose an event")}
+                  accessibilityLabel={t("exploreAllEvents.search", "Search events")}
+                  activeOpacity={0.75}
                 >
                   <MorphIcon
-                    icon={
-                      isEventProposalHovered
-                        ? LucideArrowUpRightFromCircle
-                        : LucideCirclePlus
-                    }
-                    size={24}
-                    color={isDark ? "#fb7185" : "#e11d48"}
-                    strokeWidth={2}
-                    spring="snappy"
-                    fallbackIconName="add-circle-outline"
-                  />
-                  <Text
-                    style={[
-                      styles.carouselActionText,
-                      useCompactCarouselLabels && styles.carouselActionTextCompact,
-                      { color: isDark ? "#e4e4e7" : "#18181b" },
-                    ]}
-                    numberOfLines={1}
-                    ellipsizeMode="tail"
-                  >
-                    {useCompactCarouselLabels
-                      ? t("eventProposal.compactAction", "Propose")
-                      : t("eventProposal.action", "Propose an event")}
-                  </Text>
-                  <MorphIcon
-                    icon={
-                      isEventProposalHovered
-                        ? LucideArrowRight
-                        : LucideChevronRight
-                    }
+                    icon={LucideSearch}
                     size={18}
-                    color={isDark ? "#71717a" : "#a1a1aa"}
+                    color={isDark ? "#94A3B8" : "#64748B"}
                     strokeWidth={2}
-                    spring="snappy"
-                    fallbackIconName="chevron-forward"
+                    fallbackIconName="search"
                   />
+                  <Text style={styles.carouselSearchText} numberOfLines={1}>
+                    {t("exploreAllEvents.searchPlaceholder", "Search events")}
+                  </Text>
                 </TouchableOpacity>
               ) : null
             }
-            footerAction={
+            headerAction={
               isGlobalEventTenant() ? (
                 <TouchableOpacity
                   onPress={() => router.push("/dashboard/explore" as any)}
@@ -1584,6 +1548,24 @@ const getStyles = (
     carouselSection: {
       marginBottom: 32,
       marginHorizontal: 0,
+    },
+    carouselSearchBtn: {
+      minHeight: 44,
+      maxWidth: 280,
+      borderRadius: uiTokens.radius.pill,
+      borderWidth: 1,
+      borderColor: isDark ? "rgba(148,163,184,0.28)" : "rgba(100,116,139,0.24)",
+      backgroundColor: isDark ? "rgba(15,23,42,0.78)" : "rgba(248,250,252,0.92)",
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 9,
+      paddingHorizontal: 14,
+    },
+    carouselSearchText: {
+      color: isDark ? "#CBD5E1" : "#475569",
+      fontSize: 14,
+      fontWeight: "600",
+      flexShrink: 1,
     },
     exploreAllEventsBtn: {
       flexDirection: "row",
