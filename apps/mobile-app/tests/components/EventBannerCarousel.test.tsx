@@ -1,6 +1,6 @@
 import React from "react";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
-import { Platform, ScrollView, TouchableOpacity } from "react-native";
+import { Platform, ScrollView, TextInput, TouchableOpacity } from "react-native";
 
 const mockEvent = {
   id: "hash-poker",
@@ -249,9 +249,15 @@ it("keeps compact search and explorer actions available on phone-sized web", () 
     testID: "carousel-explorer-expand-trigger",
   });
 
-  expect(search).toHaveLength(1);
-  expect(search[0].props.accessibilityLabel).toBe("Search events in the carousel");
+  const searchInput = search.find((node) => node.type === TextInput);
+  expect(searchInput).toBeTruthy();
+  expect(searchInput?.props.accessibilityLabel).toBe("Search events in the carousel");
   expect(explorer.length).toBeGreaterThan(0);
+
+  const footer = view.root.findByProps({ testID: "carousel-footer" });
+  expect(footer.props.style).toEqual(
+    expect.arrayContaining([expect.objectContaining({ flexDirection: "column" })]),
+  );
 
   act(() => explorer[0].props.onPress());
   expect(onExploreEvents).toHaveBeenCalledTimes(1);

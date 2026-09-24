@@ -45,7 +45,7 @@ import SafeLinearGradient from "./SafeLinearGradient";
 import CarouselTickPill from "./CarouselTickPill";
 import { shouldStackCarouselFooter } from "../lib/carousel-layout";
 import { uiTokens } from "@hashpass/ui/tokens";
-import { ActionButton, IconButton } from "@hashpass/ui/primitives";
+import { ActionButton, FormField, IconButton } from "@hashpass/ui/primitives";
 import {
   ChevronLeft as LucideChevronLeft,
   ChevronRight as LucideChevronRight,
@@ -1469,22 +1469,25 @@ export default function EventBannerCarousel({
         <View
           style={[
             styles.footer,
-            stackFooter && hasFooterActions && styles.footerMobile,
+            ((stackFooter && hasFooterActions) || showCompactWebDiscovery) && styles.footerMobile,
           ]}
           testID="carousel-footer"
         >
           {showCompactWebDiscovery ? (
             <View style={styles.compactWebDiscovery}>
-              <TextInput
-                testID="carousel-search-input"
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                placeholder={translate("eventSearch.placeholder", "Search events")}
-                placeholderTextColor={isDark ? "#94A3B8" : "#64748B"}
-                style={styles.compactWebSearchInput}
-                className="hp-carousel-search-input"
-                accessibilityLabel={translate("eventSearch.accessibilityLabel", "Search events in the carousel")}
-              />
+              <View style={styles.compactWebField}>
+                <FormField
+                  testID="carousel-search-input"
+                  mode={isDark ? "dark" : "light"}
+                  label={translate("eventSearch.placeholder", "Search events")}
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  placeholder={translate("eventSearch.placeholder", "Search events")}
+                  style={styles.compactWebSearchInput}
+                  className="hp-carousel-search-input"
+                  accessibilityLabel={translate("eventSearch.accessibilityLabel", "Search events in the carousel")}
+                />
+              </View>
               {onExploreEvents ? (
                 <IconButton
                   testID="carousel-explorer-expand-trigger"
@@ -1747,10 +1750,10 @@ const getStyles = (
       paddingHorizontal: uiTokens.space.md, marginBottom: uiTokens.space.sm,
     },
     compactWebSearchInput: {
-      flex: 1, minWidth: 0, minHeight: 44, borderRadius: uiTokens.radius.pill,
-      borderWidth: uiTokens.control.borderWidth, borderColor: isDark ? "rgba(165,243,252,0.32)" : "rgba(14,116,144,0.24)",
-      color: isDark ? "#F8FAFC" : "#0F172A", paddingHorizontal: uiTokens.space.md,
-      backgroundColor: isDark ? "rgba(7,17,31,0.76)" : "rgba(255,255,255,0.78)",
+      minWidth: 0,
+    },
+    compactWebField: {
+      flex: 1, minWidth: 0,
     },
     footerIndicatorMobile: {
       minHeight: 44,
