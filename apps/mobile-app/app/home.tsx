@@ -721,7 +721,7 @@ export default function HomeScreen() {
               ) : null
             }
             footerAction={
-              isGlobalEventTenant() && !user ? (
+              isGlobalEventTenant() ? (
                 <TouchableOpacity
                   onPress={() => router.push("/dashboard/explore" as any)}
                   {...(Platform.OS === "web"

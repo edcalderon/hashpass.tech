@@ -27,6 +27,7 @@ const loadHomeScreen = ({
   bottomInset = 28,
   animationLevel = "reduced",
   isDark = false,
+  user = null,
   taglineFlipList = "- YOUR EVENT -,- YOUR COMMUNITY -,- YOUR REWARDS -",
 }: {
   width?: number;
@@ -36,6 +37,7 @@ const loadHomeScreen = ({
   bottomInset?: number;
   animationLevel?: "full" | "reduced" | "none";
   isDark?: boolean;
+  user?: { id: string; email?: string } | null;
   taglineFlipList?: string;
 } = {}) => {
   let renderer: any;
@@ -250,7 +252,7 @@ const loadHomeScreen = ({
     }));
 
     jest.doMock("../../hooks/useAuth", () => ({
-      useAuth: () => ({ user: null }),
+      useAuth: () => ({ user }),
     }));
 
     jest.doMock("../../hooks/useTheme", () => ({
@@ -551,6 +553,19 @@ describe("HomeScreen native tablet layout", () => {
     expect(explorerLabel.props.children).toBe("Explore all events");
     expect(proposalLabel.props.numberOfLines).toBe(1);
     expect(explorerLabel.props.numberOfLines).toBe(1);
+  });
+
+  it("keeps Explore all events available after a user signs in", () => {
+    const { renderer } = loadHomeScreen({
+      platform: "web",
+      user: { id: "user-1", email: "member@example.com" },
+    });
+
+    const carousel = renderer.root.findByType("EventBannerCarousel");
+    expect(carousel.props.footerAction).toBeTruthy();
+    expect(carousel.props.footerAction.props.accessibilityLabel).toBe(
+      "Explore all events",
+    );
   });
 
   it("passes the selected motion preference into landing features", () => {

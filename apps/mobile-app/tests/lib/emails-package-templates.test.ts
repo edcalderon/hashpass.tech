@@ -137,14 +137,23 @@ describe('@hashpass/emails templates', () => {
   it('ships Edward Calderón’s Hashpass signature with immutable CDN assets', () => {
     const signature = renderEdwardCalderonHashpassEmailSignature();
 
+    for (const assetPath of [
+      'apps/mobile-app/public/assets/email/signature/edward-calderon-portrait.jpg',
+      'apps/mobile-app/public/assets/email/signature/hashpass-wordmark.png',
+    ]) {
+      expect(existsSync(resolve(REPOSITORY_ROOT, assetPath))).toBe(true);
+    }
+
     expect(signature.html).toContain('<!doctype html>');
     expect(signature.html).toContain('Edward Calderón');
     expect(signature.html).toContain('Co-founder &amp; CEO');
     expect(signature.portraitUrl).toBe(
-      'https://hashpass.tech/email-signature/edward-calderon-portrait.d9bcbc18d656.jpg',
+      'https://hashpass.tech/assets/email/signature/edward-calderon-portrait.jpg',
     );
     expect(signature.logoUrl).toBe(
-      'https://hashpass.tech/email-signature/hashpass-wordmark.c3bcc34c86c.png',
+      'https://hashpass.tech/assets/email/signature/hashpass-wordmark.png',
     );
+    expect(signature.html).toContain('src="https://hashpass.tech/assets/email/signature/edward-calderon-portrait.jpg"');
+    expect(signature.html).not.toContain('[https://');
   });
 });

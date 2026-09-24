@@ -793,7 +793,7 @@ export default function AuthScreen({ embedded = false, onAuthenticated, onDismis
   const showDesktopFormBackground = showAuthBackground && isDesktopLayout;
   const authHeaderPalette = getAuthHeaderPalette(
     isDark,
-    showGlobalAuthBackground,
+    showAuthBackground,
   );
   const authLogoSource =
     Platform.OS === "web" && !isDark

@@ -43,7 +43,10 @@ jest.mock("../../lib/event-banners", () => ({
   shouldShowEventBannerCountdown: () => false,
 }));
 
-import EventBannerCarousel, { resolveCarouselCardHeight } from "../../components/EventBannerCarousel";
+import EventBannerCarousel, {
+  resolveCarouselCardHeight,
+} from "../../components/EventBannerCarousel";
+import { shouldStackCarouselFooter } from "../../lib/carousel-layout";
 
 let view: ReactTestRenderer;
 let scrollTo: jest.Mock;
@@ -78,6 +81,12 @@ it("uses a compact, content-safe card height on native phone widths", () => {
   expect(resolveCarouselCardHeight(true, 360)).toBe(420);
   expect(resolveCarouselCardHeight(true, 412)).toBe(448);
   expect(resolveCarouselCardHeight(false, 1024)).toBe(540);
+});
+
+it("stacks carousel actions before indicators on medium web widths", () => {
+  expect(shouldStackCarouselFooter(false, 1024, "web")).toBe(true);
+  expect(shouldStackCarouselFooter(false, 1200, "web")).toBe(false);
+  expect(shouldStackCarouselFooter(true, 1200, "android")).toBe(true);
 });
 
 it("advances the native pager by one viewport and wraps after the final slide", () => {

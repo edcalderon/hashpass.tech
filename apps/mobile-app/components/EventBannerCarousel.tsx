@@ -36,6 +36,7 @@ import {
 } from "../lib/event-banners";
 import SafeLinearGradient from "./SafeLinearGradient";
 import CarouselTickPill from "./CarouselTickPill";
+import { shouldStackCarouselFooter } from "../lib/carousel-layout";
 
 // Wide-web peeking-card carousel constants. Native uses the paging layout
 // below so a phone never has to fit a desktop-width card.
@@ -843,6 +844,7 @@ export default function EventBannerCarousel({
   // Web-only wheel wrapper props (typed as `any` because RN's ViewProps omits onWheel)
   const wheelViewProps: any = { style: styles.carouselWrapper, onWheel: handleWheel };
   const hasFooterActions = Boolean(footerLeadingAction || footerAction);
+  const stackFooter = shouldStackCarouselFooter(isMobile, screenWidth, Platform.OS);
   const renderIndicators = () => {
     if (!showDotIndicators || N <= 1) return null;
 
@@ -995,11 +997,11 @@ export default function EventBannerCarousel({
         <View
           style={[
             styles.footer,
-            isMobile && hasFooterActions && styles.footerMobile,
+            stackFooter && hasFooterActions && styles.footerMobile,
           ]}
           testID="carousel-footer"
         >
-          {isMobile && hasFooterActions ? (
+          {stackFooter && hasFooterActions ? (
             <>
               <View
                 style={styles.footerActionsMobile}
