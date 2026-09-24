@@ -491,45 +491,21 @@ describe("HomeScreen native tablet layout", () => {
 
     const carousel = renderer.root.findByType("EventBannerCarousel");
     expect(carousel.props.showCtas).toBe(false);
-    expect(carousel.props.footerLeadingAction).toBeTruthy();
-    expect(carousel.props.footerAction).toBeTruthy();
+    expect(carousel.props.showProposalCard).toBe(true);
+    expect(carousel.props.onProposeEvent).toEqual(expect.any(Function));
+    expect(carousel.props.headerAction).toBeTruthy();
+    expect(carousel.props.headerSearch).toBeTruthy();
 
-    const proposalAction = carousel.props.footerLeadingAction;
-    const explorerAction = carousel.props.footerAction;
-    expect(proposalAction.props.children[0].props.size).toBe(24);
+    const explorerAction = carousel.props.headerAction;
     expect(explorerAction.props.children[0].props.size).toBe(24);
-    expect(proposalAction.props.children[2].props.icon).toBe("ChevronRight");
     expect(explorerAction.props.children[2].props.icon).toBe("ChevronRight");
-    expect(proposalAction.props.onMouseEnter).toEqual(expect.any(Function));
+    expect(explorerAction.props.onMouseEnter).toEqual(expect.any(Function));
 
     act(() => {
-      proposalAction.props.onMouseEnter();
+      explorerAction.props.onMouseEnter();
     });
 
-    const hoveredProposalAction = renderer.root.findByType(
-      "EventBannerCarousel",
-    ).props.footerLeadingAction;
-    expect(hoveredProposalAction.props.children[0].props.icon).toBe(
-      "ArrowUpRightFromCircle",
-    );
-    expect(hoveredProposalAction.props.children[2].props.icon).toBe(
-      "ArrowRight",
-    );
-
-    const hoveredExplorerActionSource = renderer.root.findByType(
-      "EventBannerCarousel",
-    ).props.footerAction;
-    expect(hoveredExplorerActionSource.props.onMouseEnter).toEqual(
-      expect.any(Function),
-    );
-
-    act(() => {
-      hoveredExplorerActionSource.props.onMouseEnter();
-    });
-
-    const hoveredExplorerAction = renderer.root.findByType(
-      "EventBannerCarousel",
-    ).props.footerAction;
+    const hoveredExplorerAction = renderer.root.findByType("EventBannerCarousel").props.headerAction;
     expect(hoveredExplorerAction.props.children[0].props.icon).toBe(
       "ArrowUpRight",
     );
@@ -546,12 +522,9 @@ describe("HomeScreen native tablet layout", () => {
     });
 
     const carousel = renderer.root.findByType("EventBannerCarousel");
-    const proposalLabel = carousel.props.footerLeadingAction.props.children[1];
-    const explorerLabel = carousel.props.footerAction.props.children[1];
+    const explorerLabel = carousel.props.headerAction.props.children[1];
 
-    expect(proposalLabel.props.children).toBe("Propose an event");
     expect(explorerLabel.props.children).toBe("Explore all events");
-    expect(proposalLabel.props.numberOfLines).toBe(1);
     expect(explorerLabel.props.numberOfLines).toBe(1);
   });
 
@@ -562,8 +535,8 @@ describe("HomeScreen native tablet layout", () => {
     });
 
     const carousel = renderer.root.findByType("EventBannerCarousel");
-    expect(carousel.props.footerAction).toBeTruthy();
-    expect(carousel.props.footerAction.props.accessibilityLabel).toBe(
+    expect(carousel.props.headerAction).toBeTruthy();
+    expect(carousel.props.headerAction.props.accessibilityLabel).toBe(
       "Explore all events",
     );
   });

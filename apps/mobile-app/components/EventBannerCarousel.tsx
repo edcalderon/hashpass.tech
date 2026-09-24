@@ -37,6 +37,7 @@ import {
 import SafeLinearGradient from "./SafeLinearGradient";
 import CarouselTickPill from "./CarouselTickPill";
 import { shouldStackCarouselFooter } from "../lib/carousel-layout";
+import { uiTokens } from "@hashpass/ui/tokens";
 
 // Wide-web peeking-card carousel constants. Native uses the paging layout
 // below so a phone never has to fit a desktop-width card.
@@ -105,7 +106,7 @@ function AnimatedCard({
 }
 
 interface CarouselSlide {
-  type: "download" | "event" | "logo" | "campaign";
+  type: "download" | "event" | "logo" | "campaign" | "proposal";
   event?: EventInfo;
   banner?: ResolvedEventBannerSlide;
   useEventBranding?: boolean;
@@ -155,6 +156,13 @@ interface EventBannerCarouselProps {
   footerLeadingAction?: React.ReactNode;
   /** Optional landing-level action displayed with the slider controls. */
   footerAction?: React.ReactNode;
+  /** Compact explorer action displayed above the cards. */
+  headerAction?: React.ReactNode;
+  /** Optional search affordance displayed above the cards on wide web. */
+  headerSearch?: React.ReactNode;
+  /** Adds the final organizer call-to-action card to the global carousel. */
+  showProposalCard?: boolean;
+  onProposeEvent?: () => void;
   /** Restricts the carousel to one selected event and its own campaign slides. */
   event?: EventInfo | null;
   lampBrandingOverrides?: Record<string, LampBrandingConfig>;
@@ -255,6 +263,10 @@ export default function EventBannerCarousel({
   onEventPress,
   footerLeadingAction,
   footerAction,
+  headerAction,
+  headerSearch,
+  showProposalCard = false,
+  onProposeEvent,
   event: selectedEvent,
   lampBrandingOverrides,
 }: EventBannerCarouselProps) {
@@ -361,6 +373,9 @@ export default function EventBannerCarousel({
         }]
       : []),
     ...eventSlides,
+    ...(showProposalCard
+      ? [{ type: "proposal" as const, campaignId: "proposal-event" }]
+      : []),
   ];
 
   const N = realSlides.length; // logical count
@@ -838,8 +853,45 @@ export default function EventBannerCarousel({
         </View>
       );
     }
+    if (slide.type === "proposal") {
+      return (
+        <View style={styles.cardInner}>
+          <SafeLinearGradient
+            colors={isDark ? ["#07111F", "#102A38", "#0D1724"] : ["#F7FBFC", "#E7F8FB", "#F8FAFC"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.proposalCard}
+          >
+            <View style={styles.proposalOrb} />
+            <Text style={styles.proposalEyebrow}>
+              {translate("eventProposal.cardEyebrow", "MAKE IT YOURS")}
+            </Text>
+            <Text style={styles.proposalTitle}>
+              {translate("eventProposal.cardTitle", "Your event belongs here")}
+            </Text>
+            <Text style={styles.proposalBody}>
+              {translate(
+                "eventProposal.cardBody",
+                "Bring your event, club or community to HASHPASS and give people one beautiful place to discover it.",
+              )}
+            </Text>
+            <TouchableOpacity
+              onPress={onProposeEvent}
+              style={styles.proposalButton}
+              accessibilityRole="button"
+              accessibilityLabel={translate("eventProposal.action", "Propose an event")}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.proposalButtonText}>
+                {translate("eventProposal.action", "Propose an event")}
+              </Text>
+            </TouchableOpacity>
+          </SafeLinearGradient>
+        </View>
+      );
+    }
     return null;
-  }, [isDark, translate, lampBrandingByEvent, showCtas, onEventPress, styles]);
+  }, [isDark, translate, lampBrandingByEvent, showCtas, onEventPress, onProposeEvent, styles]);
 
   // Web-only wheel wrapper props (typed as `any` because RN's ViewProps omits onWheel)
   const wheelViewProps: any = { style: styles.carouselWrapper, onWheel: handleWheel };
@@ -878,6 +930,17 @@ export default function EventBannerCarousel({
 
   return (
     <View style={styles.container}>
+      {(headerAction || (headerSearch && Platform.OS === "web" && !isMobile)) ? (
+        <View style={styles.carouselHeader}>
+          <View style={styles.carouselHeaderSearch}>
+            {headerSearch && Platform.OS === "web" && !isMobile ? headerSearch : null}
+          </View>
+          <View style={styles.carouselHeaderControls}>
+            {headerAction ? <View style={styles.carouselHeaderAction}>{headerAction}</View> : null}
+            {Platform.OS === "web" && !isMobile ? renderIndicators() : null}
+          </View>
+        </View>
+      ) : null}
       {usePeekingCarousel ? (
         <View {...wheelViewProps}>
           <ScrollView
@@ -905,6 +968,8 @@ export default function EventBannerCarousel({
                 ? `clone-${slide.logoId}-${physIdx}`
                 : slide.type === "campaign"
                   ? `clone-${slide.campaignId}-${physIdx}`
+                  : slide.type === "proposal"
+                    ? `clone-${slide.campaignId}-${physIdx}`
                 : `clone-${slide.event?.id}-${slide.banner?.id}-${physIdx}`;
               return (
                 <AnimatedCard key={key} activeIndex={activeIndex} index={physIdx} cardWidth={cardWidth}>
@@ -915,6 +980,10 @@ export default function EventBannerCarousel({
                     onPress={() => {
                       if (slide.type === "campaign" && slide.event) {
                         handleEventPress(slide.event);
+                        return;
+                      }
+                      if (slide.type === "proposal") {
+                        onProposeEvent?.();
                         return;
                       }
                       // Skip if the user was dragging (drag moved the card already)
@@ -966,6 +1035,8 @@ export default function EventBannerCarousel({
               ? slide.logoId!
               : slide.type === "campaign"
                 ? slide.campaignId!
+                : slide.type === "proposal"
+                  ? slide.campaignId!
                 : `${slide.event?.id}:${slide.banner?.id}`;
 
             if (slide.type === "campaign" && slide.event) {
@@ -983,6 +1054,21 @@ export default function EventBannerCarousel({
               );
             }
 
+            if (slide.type === "proposal") {
+              return (
+                <TouchableOpacity
+                  key={key}
+                  activeOpacity={0.85}
+                  accessibilityRole="button"
+                  accessibilityLabel={translate("eventProposal.cardTitle", "Your event belongs here")}
+                  onPress={onProposeEvent}
+                  style={styles.slideFullWidth}
+                >
+                  {renderSlideContent(slide)}
+                </TouchableOpacity>
+              );
+            }
+
             return (
               <View key={key} style={styles.slideFullWidth}>
                 {renderSlideContent(slide)}
@@ -993,7 +1079,7 @@ export default function EventBannerCarousel({
         </View>
       )}
 
-      {((showDotIndicators && N > 1) || hasFooterActions) ? (
+      {(((showDotIndicators && N > 1) && !(Platform.OS === "web" && !isMobile && headerAction)) || hasFooterActions) ? (
         <View
           style={[
             styles.footer,
@@ -1049,6 +1135,32 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean, _screenWidth
     container: {
       width: "100%",
       marginBottom: 32,
+    },
+    carouselHeader: {
+      minHeight: 48,
+      marginBottom: 12,
+      paddingHorizontal: isMobile ? 16 : 24,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 16,
+      zIndex: 4,
+    },
+    carouselHeaderSearch: {
+      flex: 1,
+      minWidth: 0,
+    },
+    carouselHeaderAction: {
+      flexShrink: 0,
+      maxWidth: isMobile ? "52%" : undefined,
+    },
+    carouselHeaderControls: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "flex-end",
+      gap: 16,
+      flexShrink: 1,
+      minWidth: 0,
     },
     carouselWrapper: {
       width: "100%",
@@ -1191,6 +1303,64 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean, _screenWidth
       width: "100%",
       height: cardMediaHeight,
       borderRadius: CARD_BORDER_RADIUS - 2,
+    },
+    proposalCard: {
+      flex: 1,
+      minHeight: cardMediaHeight,
+      borderRadius: CARD_BORDER_RADIUS - 2,
+      overflow: "hidden",
+      paddingHorizontal: isMobile ? 28 : 56,
+      paddingVertical: isMobile ? 32 : 52,
+      justifyContent: "center",
+      position: "relative",
+    },
+    proposalOrb: {
+      position: "absolute",
+      width: isMobile ? 180 : 280,
+      height: isMobile ? 180 : 280,
+      borderRadius: isMobile ? 90 : 140,
+      right: isMobile ? -72 : -88,
+      top: isMobile ? -72 : -96,
+      backgroundColor: isDark ? "rgba(34,211,238,0.2)" : "rgba(8,145,178,0.13)",
+      borderWidth: 1,
+      borderColor: isDark ? "rgba(103,232,249,0.35)" : "rgba(8,145,178,0.24)",
+    },
+    proposalEyebrow: {
+      color: isDark ? "#67E8F9" : "#0E7490",
+      fontSize: 12,
+      fontWeight: "800",
+      letterSpacing: 2,
+      marginBottom: 14,
+    },
+    proposalTitle: {
+      color: isDark ? "#F8FAFC" : "#0F172A",
+      fontSize: isMobile ? 30 : 40,
+      lineHeight: isMobile ? 36 : 46,
+      fontWeight: "800",
+      letterSpacing: -0.8,
+      maxWidth: 520,
+    },
+    proposalBody: {
+      color: isDark ? "#B8C7D5" : "#475569",
+      fontSize: isMobile ? 15 : 17,
+      lineHeight: isMobile ? 23 : 26,
+      marginTop: 14,
+      maxWidth: 520,
+    },
+    proposalButton: {
+      alignSelf: "flex-start",
+      marginTop: 24,
+      minHeight: 48,
+      borderRadius: uiTokens.radius.pill,
+      paddingHorizontal: 22,
+      justifyContent: "center",
+      backgroundColor: isDark ? "#22D3EE" : "#0891B2",
+    },
+    proposalButtonText: {
+      color: isDark ? "#06222A" : "#FFFFFF",
+      fontSize: 15,
+      fontWeight: "800",
+      letterSpacing: 0.15,
     },
     campaignBranding: {
       position: "absolute",
