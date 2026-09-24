@@ -176,19 +176,25 @@ export default function QuickSettingsPanel({
 
   const openPanel = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setLanguageExpanded(false);
+    setLanguageOptionsMounted(false);
+    languageAnim.setValue(0);
     setOpen(true);
     Animated.parallel([
       Animated.spring(panelAnim, { toValue: 1, tension: 70, friction: 12, useNativeDriver: true }),
       Animated.timing(btnRotate, { toValue: 1, duration: 220, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
     ]).start();
-  }, [panelAnim, btnRotate]);
+  }, [panelAnim, btnRotate, languageAnim]);
 
   const closePanel = useCallback(() => {
+    setLanguageExpanded(false);
+    setLanguageOptionsMounted(false);
+    languageAnim.setValue(0);
     Animated.parallel([
       Animated.timing(panelAnim, { toValue: 0, duration: 180, easing: Easing.in(Easing.cubic), useNativeDriver: true }),
       Animated.timing(btnRotate, { toValue: 0, duration: 180, easing: Easing.in(Easing.cubic), useNativeDriver: true }),
     ]).start(() => setOpen(false));
-  }, [panelAnim, btnRotate]);
+  }, [panelAnim, btnRotate, languageAnim]);
 
   const togglePanel = useCallback(() => { if (open) closePanel(); else openPanel(); }, [open, openPanel, closePanel]);
 
