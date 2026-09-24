@@ -1753,6 +1753,13 @@ const getStyles = (
       width: "100%",
       height: "100%",
       borderWidth: 0,
+      // IconButton normally owns a surface and border. The surrounding glass
+      // shell is the control surface here, so make this hit target invisible
+      // to avoid a second white circle inside the explorer action.
+      backgroundColor: "transparent",
+      borderColor: "transparent",
+      shadowOpacity: 0,
+      elevation: 0,
     },
     scrollView: {
       flexGrow: 0,
@@ -1917,6 +1924,10 @@ const getStyles = (
     compactExplorerAction: {
       flexShrink: 0,
       paddingHorizontal: uiTokens.space.md,
+      backgroundColor: "transparent",
+      borderColor: "transparent",
+      shadowOpacity: 0,
+      elevation: 0,
     },
     compactDiscoveryIcon: {
       flexShrink: 0,
