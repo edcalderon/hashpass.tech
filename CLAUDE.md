@@ -435,7 +435,7 @@ because the month is already over budget even when all trigger checks pass.
 
 - `.github/workflows/github-hosted-static-site-deploy.yml` — primary core development build/deploy
 - `.github/workflows/github-hosted-tenant-site-deploy.yml` — primary CBWeek, BSL, and core production build/deploy
-- `.github/workflows/aws-cost-report.yml` — read-only budget and manual-trigger guard; schedule pending promotion
+- `.github/workflows/aws-cost-report.yml` — read-only budget/manual-trigger collector with encrypted, private cost-alert deduplication state; apply `github-cost-report.yml` before promoting a workflow change that uses that state
 - `.github/workflows/mobile-android-release.yml` — Android release CI
 - `.github/workflows/infra-deploy.yml` — separate active legacy SST/API workflow; push-triggered and manual
 - `archive/amplify/config/amplify.yml` — archived Amplify build config (historical only)

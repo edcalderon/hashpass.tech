@@ -80,11 +80,15 @@ gh run view <RUN_ID> --repo hashpass-tech/hashpass.tech
 ```
 
 Check the resulting public site and API version as well as the GitHub run.
-Budget email alerts are live. The daily read-only cost/trigger guard is prepared
-in [`aws-cost-report.yml`](../../../../.github/workflows/aws-cost-report.yml), but
-its 13:20 UTC schedule awaits [PR #249](https://github.com/hashpass-tech/hashpass.tech/pull/249)
-reaching `main`. An over-budget report can fail while every manual-trigger check
-passes; alerts do not stop spending or reverse accrued charges.
+Budget email alerts are live. The daily cost/trigger guard is prepared
+in [`aws-cost-report.yml`](../../../../.github/workflows/aws-cost-report.yml). It keeps
+the last sent cost values in one encrypted private SSM parameter, so an already
+breached budget sends its first alert immediately and only repeats after spend or
+forecast moves by at least USD 5; apply `github-cost-report.yml` before promoting
+the corresponding workflow change. Its 13:20 UTC schedule awaits
+[PR #249](https://github.com/hashpass-tech/hashpass.tech/pull/249) reaching `main`.
+A trigger-drift report can fail while every budget check passes; alerts do not
+stop spending or reverse accrued charges.
 
 ## Deployment guardrails
 
