@@ -43,13 +43,20 @@ import {
 } from "../lib/event-banners";
 import SafeLinearGradient from "./SafeLinearGradient";
 import CarouselTickPill from "./CarouselTickPill";
-import { getVisibleCarouselDotIndices, shouldStackCarouselFooter } from "../lib/carousel-layout";
+import {
+  getVisibleCarouselDotIndices,
+  resolveMobileCarouselCardWidth,
+  shouldStackCarouselFooter,
+} from "../lib/carousel-layout";
 import { uiTokens } from "@hashpass/ui/tokens";
 import { ActionButton, FormField, IconButton } from "@hashpass/ui/primitives";
 import {
   ChevronLeft as LucideChevronLeft,
   ChevronRight as LucideChevronRight,
   Compass as LucideCompass,
+  Pause as LucidePause,
+  Play as LucidePlay,
+  RotateCcw as LucideRotateCcw,
   Search as LucideSearch,
 } from "lucide";
 import { useAnimationLevel } from "../contexts/AnimationLevelContext";
@@ -346,7 +353,9 @@ export default function EventBannerCarousel({
   const scrollViewRef = useRef<ScrollView>(null);
   const { width: screenWidth } = useWindowDimensions();
   const [searchQuery, setSearchQuery] = useState("");
-  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+  const [isSearchExpanded, setIsSearchExpanded] = useState(
+    () => Platform.OS === "web" && isMobile,
+  );
   const [isExplorerExpanded, setIsExplorerExpanded] = useState(false);
   const [reduceMotion, setReduceMotion] = useState(false);
   const searchInputRef = useRef<TextInput>(null);
@@ -361,7 +370,11 @@ export default function EventBannerCarousel({
   const dims = resolveCardDimensions(screenWidth);
   const { cardWidth, contentPaddingX, snapInterval } = dims;
   const hasSearchQuery = Boolean(normalizeSearchText(searchQuery));
-  const shouldExpandSearch = isSearchExpanded || hasSearchQuery;
+  const showWideSearch = showEventSearch && Platform.OS === "web" && !isMobile;
+  const showCompactWebDiscovery = showEventSearch && Platform.OS === "web" && isMobile;
+  // Phone web visitors arrive with discovery ready to use. Keeping the field
+  // visible avoids hiding the primary search affordance behind an unlabeled icon.
+  const shouldExpandSearch = showCompactWebDiscovery || isSearchExpanded || hasSearchQuery;
   const compactSearchWidth = uiTokens.control.minHeight;
   const expandedSearchWidth = Math.min(270, Math.max(168, cardWidth * 0.32));
   const compactExplorerWidth = uiTokens.control.minHeight;
@@ -531,7 +544,7 @@ export default function EventBannerCarousel({
   // detaching the controls from the visible slide. Native keeps every slide
   // within its page width instead.
   const isSingleSlide = N <= 1;
-  const usePeekingCarousel = Platform.OS === "web" && !selectedEvent && N >= 3;
+  const usePeekingCarousel = Platform.OS === "web" && !isMobile && !selectedEvent && N >= 3;
   const infiniteSlides = useMemo(() => withInfiniteClones(realSlides), [realSlides]);
   const CLONE_OFFSET = 1; // physical index 0 = clone of last, index 1 = first real
 
@@ -706,7 +719,7 @@ export default function EventBannerCarousel({
 
   // Progress ticker: updates progress 0→1 during each auto-play interval
   useEffect(() => {
-    if (!autoPlay || N <= 1) return;
+    if (!isPlaying || N <= 1) return;
     let raf: ReturnType<typeof requestAnimationFrame>;
     const tick = () => {
       if (isAutoPlayPausedRef.current) {
@@ -724,11 +737,11 @@ export default function EventBannerCarousel({
     };
     raf = requestAnimationFrame(tick);
     return () => { if (raf) cancelAnimationFrame(raf); };
-  }, [autoPlay, N, autoPlayInterval, progress]);
+  }, [isPlaying, N, autoPlayInterval, progress]);
 
   // Auto-play advance timer
   useEffect(() => {
-    if (!autoPlay || N <= 1) return;
+    if (!isPlaying || N <= 1) return;
     timerStartRef.current = Date.now();
     progress.value = 0;
 
@@ -757,7 +770,7 @@ export default function EventBannerCarousel({
 
     return () => clearInterval(interval);
   }, [
-    autoPlay,
+    isPlaying,
     autoPlayInterval,
     N,
     progress,
@@ -835,8 +848,7 @@ export default function EventBannerCarousel({
   // see the reset before auto-play kicks back in.
   const handleRestart = useCallback(() => {
     isAutoPlayPausedRef.current = true;
-    setLogicalIndex(0);
-    scrollToLogical(0);
+    moveToSlide(0);
     timerStartRef.current = Date.now();
     progress.value = 0;
     // Wait ~1.5s before resuming auto-play so the reset is visible
@@ -845,7 +857,7 @@ export default function EventBannerCarousel({
       timerStartRef.current = Date.now();
       progress.value = 0;
     }, 1500);
-  }, [scrollToLogical, progress]);
+  }, [moveToSlide, progress]);
 
   // --- Web-only: mouse drag to scroll ---
   const handlePointerDown = useCallback((e: any) => {
@@ -1144,7 +1156,12 @@ export default function EventBannerCarousel({
   }, [isDark, translate, lampBrandingByEvent, showCtas, onEventPress, onProposeEvent, styles, proposalOrbOneStyle, proposalOrbTwoStyle, proposalGlossStyle]);
 
   // Web-only wheel wrapper props (typed as `any` because RN's ViewProps omits onWheel)
-  const wheelViewProps: any = { style: styles.carouselWrapper, onWheel: handleWheel };
+  // Fallback paging is deliberately left in the normal vertical wheel path.
+  // Its scroll state is page-based rather than peeking-card based, and desktop
+  // wheel interception would otherwise target the wrong offset on phone web.
+  const wheelViewProps: any = usePeekingCarousel
+    ? { style: styles.carouselWrapper, onWheel: handleWheel }
+    : { style: styles.carouselWrapper };
   const hasFooterActions = Boolean(footerLeadingAction || footerAction);
   const stackFooter = shouldStackCarouselFooter(isMobile, screenWidth, Platform.OS);
   const renderIndicators = () => {
@@ -1178,14 +1195,13 @@ export default function EventBannerCarousel({
     );
   };
 
-  const showWideSearch = showEventSearch && Platform.OS === "web" && !isMobile;
-  const showCompactWebDiscovery = showEventSearch && Platform.OS === "web" && isMobile;
   const renderMobilePager = () => {
-    const visibleIndices = getVisibleCarouselDotIndices(N, activeSlideIndex);
+    const maximumVisible = screenWidth < 360 ? 3 : 5;
+    const visibleIndices = getVisibleCarouselDotIndices(N, activeSlideIndex, maximumVisible);
     return (
       <View style={styles.mobilePager} testID="carousel-mobile-pager">
         <View style={styles.mobileDots} accessibilityLabel={`${activeSlideIndex + 1} of ${N} slides`}>
-          {visibleIndices.map((index) => (
+          {visibleIndices.map((index: number) => (
             <View
               key={index}
               testID={`carousel-mobile-dot-${index}`}
@@ -1214,7 +1230,39 @@ export default function EventBannerCarousel({
           fallbackIconName="chevron-back"
         />
       </IconButton>
+      <IconButton
+        testID="carousel-mobile-play-toggle"
+        mode={isDark ? "dark" : "light"}
+        label={isPlaying
+          ? translate("eventSearch.pause", "Pause carousel")
+          : translate("eventSearch.play", "Play carousel")}
+        onPress={togglePlay}
+        style={[styles.directionButton, styles.mobileDirectionButton]}
+      >
+        <MorphIcon
+          icon={isPlaying ? LucidePause : LucidePlay}
+          size={18}
+          color={isDark ? "#E2E8F0" : "#334155"}
+          strokeWidth={2}
+          fallbackIconName={isPlaying ? "pause" : "play"}
+        />
+      </IconButton>
       {renderMobilePager()}
+      <IconButton
+        testID="carousel-mobile-restart"
+        mode={isDark ? "dark" : "light"}
+        label={translate("eventSearch.restart", "Return to first slide")}
+        onPress={handleRestart}
+        style={[styles.directionButton, styles.mobileDirectionButton]}
+      >
+        <MorphIcon
+          icon={LucideRotateCcw}
+          size={18}
+          color={isDark ? "#E2E8F0" : "#334155"}
+          strokeWidth={2}
+          fallbackIconName="refresh"
+        />
+      </IconButton>
       <IconButton
         mode={isDark ? "dark" : "light"}
         label={translate("eventSearch.next", "Next slide")}
@@ -1534,8 +1582,7 @@ export default function EventBannerCarousel({
                     label={translate("eventSearch.placeholder", "Search events")}
                     value={searchQuery}
                     onChangeText={setSearchQuery}
-                    placeholder={translate("eventSearch.placeholder", "Search events")}
-                    autoFocus
+                    placeholder={translate("eventSearch.mobilePlaceholder", "Search by name, reference or #hashtag")}
                     style={styles.compactWebSearchInput}
                     className="hp-carousel-search-input"
                     accessibilityLabel={translate("eventSearch.accessibilityLabel", "Search events in the carousel")}
@@ -1553,15 +1600,16 @@ export default function EventBannerCarousel({
                 </IconButton>
               )}
               {onExploreEvents ? (
-                <IconButton
+                <ActionButton
                   testID="carousel-explorer-expand-trigger"
                   mode={isDark ? "dark" : "light"}
-                  label={translate("eventSearch.exploreAll", "Explore all events")}
+                  variant="ghost"
+                  label={translate("eventSearch.exploreAll", "Explore all")}
                   onPress={onExploreEvents}
-                  style={styles.compactDiscoveryIcon}
-                >
-                  {explorerActionIcon || <MorphIcon icon={LucideCompass} size={18} color={isDark ? "#67E8F9" : "#0E7490"} strokeWidth={2} fallbackIconName="compass-outline" />}
-                </IconButton>
+                  accessibilityLabel={translate("eventSearch.exploreAllLabel", "Explore all events")}
+                  leadingIcon={explorerActionIcon || <MorphIcon icon={LucideCompass} size={18} color={isDark ? "#67E8F9" : "#0E7490"} strokeWidth={2} fallbackIconName="compass-outline" />}
+                  style={styles.compactExplorerAction}
+                />
               ) : null}
             </View>
           ) : null}
@@ -1710,6 +1758,13 @@ const getStyles = (
       width: "100%",
       height: "100%",
       borderWidth: 0,
+      // IconButton normally owns a surface and border. The surrounding glass
+      // shell is the control surface here, so make this hit target invisible
+      // to avoid a second white circle inside the explorer action.
+      backgroundColor: "transparent",
+      borderColor: "transparent",
+      shadowOpacity: 0,
+      elevation: 0,
     },
     scrollView: {
       flexGrow: 0,
@@ -1727,8 +1782,12 @@ const getStyles = (
     slideFullWidth: {
       width: _screenWidth,
       height: cardHeight,
-      paddingHorizontal: 16,
+      // The page itself must stay exactly one viewport wide for paging. The
+      // card inset lives on cardInner; adding it here made mobile web pages
+      // wider than the visual viewport and clipped their right edge.
+      paddingHorizontal: 0,
       justifyContent: "center",
+      alignItems: "center",
     },
     dotsFallback: {
       flexDirection: "row",
@@ -1747,7 +1806,7 @@ const getStyles = (
       backgroundColor: isDark ? "#FFFFFF" : "#000000",
     },
     cardInner: {
-      width: "100%", // parent AnimatedCard sets the actual width
+      width: isMobile ? resolveMobileCarouselCardWidth(_screenWidth) : "100%",
       // The uniform inset keeps media clear of every rounded edge, including
       // the lower corners that looked clipped on compact phones.
       height: cardHeight,
@@ -1809,7 +1868,7 @@ const getStyles = (
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
-      gap: uiTokens.space.sm,
+      gap: uiTokens.space.xs,
       paddingHorizontal: uiTokens.space.xs,
     },
     mobileDirectionButton: {
@@ -1858,7 +1917,7 @@ const getStyles = (
       gap: 8,
     },
     compactWebDiscovery: {
-      width: "100%", minHeight: uiTokens.control.compactHeight, flexDirection: "row", alignItems: "center", justifyContent: "flex-end", gap: uiTokens.space.sm,
+      width: "100%", minHeight: uiTokens.control.compactHeight, flexDirection: "row", alignItems: "flex-end", justifyContent: "flex-end", gap: uiTokens.space.sm,
       paddingHorizontal: uiTokens.space.md, marginBottom: uiTokens.space.sm,
     },
     compactWebSearchInput: {
@@ -1866,6 +1925,14 @@ const getStyles = (
     },
     compactWebField: {
       flex: 1, minWidth: 0,
+    },
+    compactExplorerAction: {
+      flexShrink: 0,
+      paddingHorizontal: uiTokens.space.md,
+      backgroundColor: "transparent",
+      borderColor: "transparent",
+      shadowOpacity: 0,
+      elevation: 0,
     },
     compactDiscoveryIcon: {
       flexShrink: 0,

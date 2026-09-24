@@ -535,11 +535,16 @@
       "mailError": "Deine E-Mail-App konnte nicht geöffnet werden. Sende deinen Vorschlag an support@hashpass.tech."
     },
     "eventSearch": {
-      "placeholder": "Events suchen",
-      "accessibilityLabel": "Events im Karussell suchen",
-      "exploreAll": "Alle ansehen",
-      "previous": "Vorherige Folie",
-      "next": "Nächste Folie"
+    "placeholder": "Events suchen",
+    "mobilePlaceholder": "Nach Name, Referenz oder #Hashtag suchen",
+    "accessibilityLabel": "Events im Karussell suchen",
+    "exploreAll": "Alle ansehen",
+    "exploreAllLabel": "Alle Events entdecken",
+    "previous": "Vorherige Folie",
+    "next": "Nächste Folie",
+    "pause": "Karussell pausieren",
+    "play": "Karussell abspielen",
+    "restart": "Zur ersten Folie zurückkehren"
     },
     "eventsExplorerSubtitle": "Entdecke Veranstaltungen weltweit und finde die passende für dich.",
     "noEventsFound": "Keine Veranstaltungen gefunden.",

@@ -1,4 +1,5 @@
 const CAROUSEL_FOOTER_STACK_BREAKPOINT = 1100;
+const MOBILE_CARD_HORIZONTAL_INSET = 16;
 
 /** Keep carousel actions and pagination reachable on medium-width layouts. */
 export function shouldStackCarouselFooter(
@@ -29,4 +30,9 @@ export function getVisibleCarouselDotIndices(
     count - visibleCount,
   );
   return Array.from({ length: visibleCount }, (_, index) => start + index);
+}
+
+/** Keep a phone card inside a fixed-width paging page on React Native Web. */
+export function resolveMobileCarouselCardWidth(screenWidth: number): number {
+  return Math.max(0, screenWidth - MOBILE_CARD_HORIZONTAL_INSET * 2);
 }

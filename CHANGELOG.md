@@ -1,3 +1,13 @@
+## [1.9.59](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.58...v1.9.59) (2026-09-24)
+### Released
+- refine mobile event discovery
+
+### Release scope
+- Compared with: `v1.9.58` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+
 ## [1.9.58](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.57...v1.9.58) (2026-09-24)
 ### Released
 - restore mobile event discovery controls

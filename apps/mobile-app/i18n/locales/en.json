@@ -649,11 +649,16 @@
       "mailError": "We could not open your email app. Send your proposal to support@hashpass.tech."
     },
     "eventSearch": {
-      "placeholder": "Search events",
-      "accessibilityLabel": "Search events in the carousel",
-      "exploreAll": "Explore all",
-      "previous": "Previous slide",
-      "next": "Next slide"
+    "placeholder": "Search events",
+    "mobilePlaceholder": "Search by name, reference or #hashtag",
+    "accessibilityLabel": "Search events in the carousel",
+    "exploreAll": "Explore all",
+    "exploreAllLabel": "Explore all events",
+    "previous": "Previous slide",
+    "next": "Next slide",
+    "pause": "Pause carousel",
+    "play": "Play carousel",
+    "restart": "Return to first slide"
     },
     "eventsExplorerSubtitle": "Discover events across the world — find yours.",
     "noEventsFound": "No events found.",
