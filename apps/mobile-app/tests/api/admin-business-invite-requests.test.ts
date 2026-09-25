@@ -113,4 +113,105 @@ describe("business invite approval API", () => {
     expect(response.status).toBe(401);
     expect(mockRpc).not.toHaveBeenCalled();
   });
+
+  it("rejects invalid reviewer input and identities before a protected RPC", async () => {
+    const { GET, POST } = require("../../app/api/admin/business-invites+api");
+
+    expect(
+      (
+        await GET(
+          new Request(
+            "https://api.hashpass.tech/api/admin/business-invites?status=unknown",
+          ),
+        )
+      ).status,
+    ).toBe(400);
+    expect(
+      (
+        await POST(
+          new Request("https://api.hashpass.tech/api/admin/business-invites", {
+            method: "POST",
+            body: JSON.stringify({ requestId: "not-a-uuid", decision: "grant" }),
+          }),
+        )
+      ).status,
+    ).toBe(400);
+
+    mockResolveIdentity.mockResolvedValueOnce({ registryUserId: "registry-admin" });
+    expect(
+      (
+        await GET(
+          new Request("https://api.hashpass.tech/api/admin/business-invites"),
+        )
+      ).status,
+    ).toBe(403);
+    expect(mockRpc).not.toHaveBeenCalled();
+  });
+
+  it("preserves meaningful reviewer RPC failures without exposing request data", async () => {
+    const { GET, POST } = require("../../app/api/admin/business-invites+api");
+    const makeGet = () =>
+      new Request("https://api.hashpass.tech/api/admin/business-invites?status=pending&limit=12");
+    const makePost = () =>
+      new Request("https://api.hashpass.tech/api/admin/business-invites", {
+        method: "POST",
+        body: JSON.stringify({
+          requestId: "22222222-2222-2222-2222-222222222222",
+          decision: "approve",
+        }),
+      });
+
+    for (const [message, expectedStatus] of [
+      ["Business invitation approval is not authorized", 403],
+      ["Business invitation request was not found", 404],
+      ["Business invitation campaign is unavailable", 400],
+      ["database connection lost", 503],
+    ]) {
+      mockRpc.mockResolvedValueOnce({ data: null, error: { message } });
+      expect((await GET(makeGet())).status).toBe(expectedStatus);
+    }
+
+    mockRpc.mockResolvedValueOnce({ data: { status: "approved" }, error: null });
+    expect((await POST(makePost())).status).toBe(503);
+  });
+
+  it("emails rejection once but not an already reviewed request", async () => {
+    mockRpc
+      .mockResolvedValueOnce({
+        data: {
+          request_id: "22222222-2222-2222-2222-222222222222",
+          user_id: "11111111-1111-1111-1111-111111111111",
+          status: "rejected",
+          already_reviewed: false,
+        },
+        error: null,
+      })
+      .mockResolvedValueOnce({
+        data: {
+          request_id: "22222222-2222-2222-2222-222222222222",
+          user_id: "11111111-1111-1111-1111-111111111111",
+          status: "approved",
+          already_reviewed: true,
+        },
+        error: null,
+      });
+    mockSendEmail.mockResolvedValueOnce({ success: false });
+
+    const { POST } = require("../../app/api/admin/business-invites+api");
+    const makePost = () =>
+      new Request("https://api.hashpass.tech/api/admin/business-invites", {
+        method: "POST",
+        body: JSON.stringify({
+          requestId: "22222222-2222-2222-2222-222222222222",
+          decision: "reject",
+        }),
+      });
+
+    expect((await POST(makePost())).status).toBe(200);
+    expect(mockSendEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ notificationType: "business_invite_rejected" }),
+    );
+    expect((await POST(makePost())).status).toBe(200);
+    expect(mockSendEmail).toHaveBeenCalledTimes(1);
+  });
 });

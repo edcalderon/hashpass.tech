@@ -126,4 +126,72 @@ describe("POST /api/business-invites/requests", () => {
     expect(unauthorized.status).toBe(401);
     expect(mockRpc).not.toHaveBeenCalled();
   });
+
+  it("keeps account, invitation, and transient service failures distinguishable", async () => {
+    const { POST } = require("../../app/api/business-invites/requests+api");
+    const makeRequest = () =>
+      new Request("https://api.hashpass.tech/api/business-invites/requests", {
+        method: "POST",
+        body: JSON.stringify({ code: "9899" }),
+      });
+
+    mockResolveIdentity.mockResolvedValueOnce({ registryUserId: "registry-1" });
+    expect((await POST(makeRequest())).status).toBe(409);
+
+    for (const [message, expectedStatus] of [
+      ["Verify your email before requesting Business access", 403],
+      ["Invalid or expired Business invitation code", 400],
+      ["Database connection unavailable", 503],
+    ]) {
+      mockRpc.mockResolvedValueOnce({ data: null, error: { message } });
+      expect((await POST(makeRequest())).status).toBe(expectedStatus);
+    }
+
+    expect(
+      (
+        await POST(
+          new Request("https://api.hashpass.tech/api/business-invites/requests", {
+            method: "POST",
+            body: "not-json",
+          }),
+        )
+      ).status,
+    ).toBe(400);
+  });
+
+  it("keeps the pending request when approver delivery is best-effort", async () => {
+    const { POST } = require("../../app/api/business-invites/requests+api");
+    const makeRequest = () =>
+      new Request("https://api.hashpass.tech/api/business-invites/requests", {
+        method: "POST",
+        body: JSON.stringify({ code: "9899" }),
+      });
+    const pending = {
+      status: "pending",
+      request_id: "22222222-2222-2222-2222-222222222222",
+      created: true,
+    };
+
+    mockRpc
+      .mockResolvedValueOnce({ data: pending, error: null })
+      .mockResolvedValueOnce({ data: null, error: { message: "lookup unavailable" } });
+    expect((await POST(makeRequest())).status).toBe(201);
+
+    mockRpc
+      .mockResolvedValueOnce({ data: pending, error: null })
+      .mockResolvedValueOnce({
+        data: [null, { user_id: "33333333-3333-3333-3333-333333333333" }],
+        error: null,
+      });
+    mockSendEmail.mockResolvedValueOnce({ success: false });
+    expect((await POST(makeRequest())).status).toBe(201);
+    expect(mockSendEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        recipientUserId: "33333333-3333-3333-3333-333333333333",
+      }),
+    );
+
+    mockRpc.mockResolvedValueOnce({ data: { status: "unknown" }, error: null });
+    expect((await POST(makeRequest())).status).toBe(503);
+  });
 });

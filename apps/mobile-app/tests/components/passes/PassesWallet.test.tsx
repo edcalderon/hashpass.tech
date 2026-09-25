@@ -56,6 +56,15 @@ jest.mock('../../../components/passes/PassWalletCard', () => {
   };
 });
 
+jest.mock('../../../components/passes/BusinessInviteRequestModal', () => {
+  const ReactRuntime = require('react');
+  return {
+    __esModule: true,
+    default: ({ status, onRetry }: { status: string | null; onRetry: () => void }) =>
+      ReactRuntime.createElement('MockBusinessInviteRequestModal', { status, onRetry }),
+  };
+});
+
 jest.mock('../../../components/UnifiedSearchAndFilter', () => {
   const ReactRuntime = require('react');
   return ({ data, onFilteredData }: { data: unknown[]; onFilteredData: (value: unknown[]) => void }) => {
@@ -568,6 +577,57 @@ describe('PassesWallet', () => {
     } finally {
       jest.useRealTimers();
     }
+  });
+
+  it('submits a scanned Business invitation once and shows its pending confirmation', async () => {
+    (passSystemService.requestBusinessInvite as jest.Mock).mockResolvedValue({
+      status: 'pending',
+      request_id: 'request-1',
+      created: true,
+    });
+
+    const renderer = await renderWallet({ businessInviteCode: '9899' });
+
+    expect(passSystemService.requestBusinessInvite).toHaveBeenCalledWith('9899');
+    expect(
+      renderer.root.findByType('MockBusinessInviteRequestModal').props.status,
+    ).toBe('pending');
+  });
+
+  it('clears a failed invitation guard so the visible retry submits again', async () => {
+    (passSystemService.requestBusinessInvite as jest.Mock)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({
+        status: 'pending',
+        request_id: 'request-1',
+        created: true,
+      });
+    const renderer = await renderWallet({ businessInviteCode: '9899' });
+    const modal = renderer.root.findByType('MockBusinessInviteRequestModal');
+    expect(modal.props.status).toBe('error');
+
+    await act(async () => {
+      modal.props.onRetry();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(passSystemService.requestBusinessInvite).toHaveBeenCalledTimes(2);
+    expect(
+      renderer.root.findByType('MockBusinessInviteRequestModal').props.status,
+    ).toBe('pending');
+  });
+
+  it('refreshes passes immediately when a prior request is approved', async () => {
+    (passSystemService.requestBusinessInvite as jest.Mock).mockResolvedValue({
+      status: 'approved',
+      request_id: 'request-1',
+      created: false,
+    });
+
+    await renderWallet({ businessInviteCode: '9899' });
+
+    expect(mockRetryDatabaseSession).toHaveBeenCalled();
   });
 
   describe('deck navigation', () => {
