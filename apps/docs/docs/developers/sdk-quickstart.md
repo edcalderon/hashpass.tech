@@ -15,18 +15,17 @@ Create one client at the edge of your application. The client defaults to the pr
 ```ts
 import { createHashpass } from '@hashpass-tech/sdk';
 
+// Implement these with your platform's protected, durable storage.
+// Keep the credential namespaces separate: the support visitor token is not
+// the HASHPASS sign-in session.
+const primarySessionStore = createProtectedSessionStore('hashpass.primary');
+const supportSessionStore = createProtectedSessionStore('hashpass.support');
+
 const hashpass = createHashpass({
   appId: 'your-public-app-id',
   environment: 'production',
-  sessionStore: {
-    get: async () => null,
-    set: async (session) => {
-      // Persist with the platform's protected storage.
-    },
-    clear: async () => {
-      // Remove the protected session.
-    },
-  },
+  sessionStore: primarySessionStore,
+  supportSessionStore,
 });
 ```
 
@@ -35,6 +34,8 @@ const hashpass = createHashpass({
 ## First request: support
 
 The support API obtains and stores a separate visitor credential. This avoids mixing a customer-support conversation token with the primary HASHPASS sign-in session.
+
+`supportSessionStore` must be durable, not the SDK default in-memory store. On the next page load or application launch, `ensureSession()` restores this same support visitor identity so the customer can read and continue their existing conversations.
 
 ```ts
 await hashpass.support.ensureSession();
