@@ -21,9 +21,10 @@ describe("CBWeek migration plans", () => {
       "--profile", "bsl-development", "--dry-run",
     ], { cwd: root, encoding: "utf8" });
     const files = plan.split("\n").filter((line) => line.trim().startsWith("- db/"));
-    const position = (version: string) => files.findIndex((line) => line.includes(`/${version}__`));
+    const position = (migration: string) => files.findIndex((line) => line.includes(`/${migration}`));
 
-    expect(position("V097")).toBeGreaterThan(position("V096"));
+    expect(position("V097__add_event_search_aliases.sql"))
+      .toBeGreaterThan(position("V096__enable_cbweek_chat_and_speaker_order.sql"));
   });
 
   it.each([[], ["--groups", "demo-event-bootstrap"]])(
