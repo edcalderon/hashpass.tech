@@ -45,6 +45,42 @@ aws s3 sync "${BUILD_DIR}" "s3://${SITE_BUCKET_NAME}" \
   --delete \
   --cache-control "${ASSET_CACHE_CONTROL}"
 
+# Older copied email signatures used stable filenames before the assets were
+# fingerprinted. A missing static key otherwise falls through to the SPA
+# index document, which Gmail treats as a broken image. Keep those legacy
+# URLs serving image bytes so existing signatures remain usable. They are
+# deliberately short-lived: the fingerprinted URLs below are the canonical,
+# immutable URLs for all newly rendered email.
+declare -A LEGACY_EMAIL_SIGNATURE_ASSETS=(
+  ["assets/email/signature/edward-calderon-portrait.jpg"]="assets/email/signature/edward-calderon-portrait.d9bcbc18d656.jpg"
+  ["assets/email/signature/hashpass-wordmark.png"]="assets/email/signature/hashpass-wordmark.c3bcc34c86c.png"
+)
+
+echo "Publishing backward-compatible email signature assets..."
+for legacy_key in "${!LEGACY_EMAIL_SIGNATURE_ASSETS[@]}"; do
+  source_key="${LEGACY_EMAIL_SIGNATURE_ASSETS[$legacy_key]}"
+  source_file="${BUILD_DIR}/${source_key}"
+
+  if [[ ! -f "${source_file}" ]]; then
+    echo "ERROR: required email signature asset is missing from the static build: ${source_file}" >&2
+    exit 1
+  fi
+
+  case "${source_file}" in
+    *.jpg|*.jpeg) content_type="image/jpeg" ;;
+    *.png) content_type="image/png" ;;
+    *)
+      echo "ERROR: unsupported email signature asset type: ${source_file}" >&2
+      exit 1
+      ;;
+  esac
+
+  aws s3 cp "${source_file}" "s3://${SITE_BUCKET_NAME}/${legacy_key}" \
+    --content-type "${content_type}" \
+    --cache-control "public,max-age=300,must-revalidate" \
+    >/dev/null
+done
+
 resolve_cloudfront_distribution_id() {
   local domain_name="$1"
 
