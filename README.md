@@ -20,28 +20,21 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.62)
-
-### Bug Fixes
-
-* **support:** address PR security and integration review ([72dbd1b](https://github.com/hashpass-tech/hashpass.tech/commit/72dbd1b36b1ea67b10450b0b4a77e4618475f968))
-
+## 📋 Latest Changes (v1.9.63)
 
 ### Features
 
-* **operations:** add self-hosted Plane and Helpdesk stack ([1701b3b](https://github.com/hashpass-tech/hashpass.tech/commit/1701b3bb9bdbd4d3553e996237aff5ab3cab8c2c))
+* **video:** add branded event hero loops ([07476f2](https://github.com/hashpass-tech/hashpass.tech/commit/07476f28046a20367b41ff3a25d79690a53fea9b))
+* **video:** add Claude event brief workflow ([5eaf762](https://github.com/hashpass-tech/hashpass.tech/commit/5eaf76289e470abd4d81c7f6021dc90a0a2cd2b2))
+* **video:** add Diffusion Studio handoff ([f7b75e4](https://github.com/hashpass-tech/hashpass.tech/commit/f7b75e4b159fcd5abedd89fd8a466251c75f343a))
 ### Release Highlights
-- add self-hosted Plane and Helpdesk stack; target the alias migration in ordering test; apply support schema in tenant migrations; address PR security and integration review
+- add branded event hero loops; add Claude event brief workflow; add Diffusion Studio handoff
 
 ### Release scope
-- Compared with: `v1.9.61` (the previous global release tag)
+- Compared with: `v1.9.62` (the previous global release tag)
 
 ### Affected products & packages
 - Mobile app
-- SDK
-- Database migrations
-- Documentation
-- Release tooling
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

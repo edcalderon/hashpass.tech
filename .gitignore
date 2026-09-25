@@ -23,6 +23,7 @@ packages/infra/lambda/autodiscover/autodiscover-lambda.zip
 # Remotion video studio: rendered output and raw screen recordings are
 # large binaries that don't belong in git — keep only the folder structure.
 apps/video-studio/out/
+apps/video-studio/public/event-heroes/
 apps/video-studio/public/recordings/**
 !apps/video-studio/public/recordings/**/
 !apps/video-studio/public/recordings/**/.gitkeep

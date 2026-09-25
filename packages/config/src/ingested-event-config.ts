@@ -1,6 +1,9 @@
 import type { EventConfig } from "@hashpass/types";
 import snapshot from "./generated/ingested-events.json";
 
+const EVENT_MEDIA_BASE =
+  "https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events";
+
 export type IngestedEvent = (typeof snapshot.events)[number];
 
 export function isActiveIngestedEvent(event: {
@@ -56,6 +59,7 @@ export function toHashPokerEventConfig(
     title: event.title,
     subtitle: `Poker Room • ${event.venueName}, ${event.city}`,
     image: event.coverImage || event.organizerLogo || "",
+    heroVideo: `${EVENT_MEDIA_BASE}/hash-poker/branding/hashpass-event-hero-v1.mp4`,
     color: "#8B1538",
     eventStartDate: selected.next,
     eventDateString: `${formatted} • ${event.address}`,

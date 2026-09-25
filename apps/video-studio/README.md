@@ -37,6 +37,111 @@ Remotion Studio there alongside the other dev servers, so you can record a
 flow from the running mobile-app/web-app dev server and drop the capture
 straight into the studio without leaving the `dev:all` session.
 
+## Diffusion Studio handoff
+
+Remotion remains the canonical composition and final-render engine. Use
+[Diffusion Studio](https://diffusion.studio/download) for agent-assisted
+footage analysis, rough cuts, captions, and generated source media, then
+bring an explicitly approved cut into this studio rather than maintaining a
+second timeline here.
+
+In the Diffusion project directory, create `hashpass-handoff.json`:
+
+```json
+{
+  "version": 1,
+  "source": "diffusion-studio",
+  "imports": [{
+    "id": "event-discovery-v1",
+    "composition": "AppTutorialEN",
+    "source": "exports/event-discovery.mp4",
+    "title": "Discover events",
+    "caption": "Find your next event",
+    "trimStartSeconds": 0
+  }]
+}
+```
+
+Then import it:
+
+```bash
+pnpm --filter hashpass-video-studio diffusion:import -- \
+  --project /absolute/path/to/diffusion-project
+```
+
+The importer accepts only media inside that project (`.mp4`, `.mov`, or
+`.webm`), copies it under `public/recordings/diffusion/`, and updates
+`src/content/diffusion-imports.json`. Those entries are appended to the
+declared target composition and are rendered by Remotion like every other
+recording. The generated manifest is reviewable source of truth; do not
+commit Diffusion's editor cache or agent credentials.
+
+### Claude creative briefs
+
+Claude creates the prompt and review checklist; it is **not** the video
+generator. Create a local event-input file containing only verified public
+event facts:
+
+```json
+{
+  "id": "cbweek2026",
+  "title": "Colombia Blockchain Week 2026",
+  "city": "Medellín",
+  "country": "Colombia",
+  "startDate": "2026-12-11",
+  "endDate": "2026-12-12",
+  "themes": ["blockchain", "community", "technology"]
+}
+```
+
+Set `ANTHROPIC_API_KEY` and `ANTHROPIC_MODEL` in your ignored local
+environment (the placeholders live in the repository root `.env.example`),
+then generate a reviewable brief:
+
+```bash
+pnpm --filter hashpass-video-studio diffusion:brief -- \
+  --event /absolute/path/to/cbweek2026.json \
+  --output /absolute/path/to/diffusion-project/cbweek2026-brief.json
+```
+
+Review that brief in Diffusion Studio, generate or select the actual loop,
+export the approved media into the Diffusion project, and use the handoff
+import command above. Never put the API key in an `EXPO_PUBLIC_*` variable,
+the mobile app, or a client-side event-explorer request. Automated production
+brief batches will use Anthropic Workload Identity Federation rather than an
+API key.
+
+## Public event hero loops
+
+`src/content/event-hero-specs.json` is the reviewed inventory for every
+public discovery event. Each loop is a silent, eight-second HASHPASS-branded
+Remotion composition with the approved event lockup and an abstract city
+backdrop derived from its verified city and venue metadata. It deliberately
+does not fabricate people, speakers, dates, or venue footage; live banner
+copy and the existing poster image remain the accessible UI and failure
+fallback.
+
+```bash
+# Prepares the approved logo inputs and renders all hero MP4s locally.
+pnpm --filter hashpass-video-studio event-heroes:render
+
+# Lists the immutable CDN destinations without changing AWS.
+pnpm --filter hashpass-video-studio event-heroes:publish
+
+# Publishes only after the rendered loops and dry-run URLs are reviewed.
+pnpm --filter hashpass-video-studio run event-heroes:publish -- --publish
+```
+
+Set `EVENT_MEDIA_BUCKET`, `EVENT_MEDIA_REGION`, and
+`EVENT_MEDIA_PUBLIC_BASE_URL` only in ignored local environment files. The
+publisher only accepts the approved event-media bucket, verifies the `hashpass`
+AWS profile against `AWS_TARGET_ACCOUNT_ID`, writes immutable event-scoped
+keys, and requires the explicit `--publish` flag. It atomically refuses to
+replace an existing object, so revised media must use a newly reviewed asset
+version. Do not release
+the application configuration until that publish succeeds; otherwise its
+image fallback is preferable to a broken video URL.
+
 ## Layout
 
 ```

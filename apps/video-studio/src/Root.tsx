@@ -10,6 +10,8 @@ import {layoutClips} from './lib/clip-layout';
 import {OpenProof} from './compositions/OpenProof';
 import {ClfHeroLoop} from './compositions/ClfHeroLoop';
 import {BslColombiaHeroLoop} from './compositions/BslColombiaHeroLoop';
+import {EventHeroLoop} from './compositions/EventHeroLoop';
+import {EVENT_HERO_DURATION_IN_FRAMES, eventHeroSpecs} from './content/event-hero-specs';
 
 // Real recordings vary a lot in length (a landing scroll vs. a 30s OTP
 // sign-in with a manual-entry pause), so each composition's duration and
@@ -24,6 +26,18 @@ export const RemotionRoot: React.FC = () => {
       <Composition id="OpenProof" component={OpenProof} durationInFrames={2520} fps={30} width={1920} height={1080}/>
       <Composition id="ClfHeroLoop" component={ClfHeroLoop} durationInFrames={900} fps={FPS} width={WIDTH} height={HEIGHT}/>
       <Composition id="BslColombiaHeroLoop" component={BslColombiaHeroLoop} durationInFrames={300} fps={FPS} width={WIDTH} height={HEIGHT}/>
+      {eventHeroSpecs.map((hero) => (
+        <Composition
+          key={hero.id}
+          id={hero.compositionId}
+          component={EventHeroLoop}
+          durationInFrames={EVENT_HERO_DURATION_IN_FRAMES}
+          fps={FPS}
+          width={WIDTH}
+          height={HEIGHT}
+          defaultProps={hero}
+        />
+      ))}
       <Composition
         id="BslShowcase"
         component={BslShowcase}

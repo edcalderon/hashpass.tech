@@ -143,7 +143,7 @@ describe("event tenant detection", () => {
     expect(EVENTS.cbweek2026.bannerSlides?.[0]).toMatchObject({
       media: {
         type: "video",
-        url: expect.stringContaining("/cbweek2026/branding/cbweek2026-hero.mp4"),
+        url: expect.stringContaining("/cbweek2026/branding/hashpass-event-hero-v1.mp4"),
       },
     });
   });

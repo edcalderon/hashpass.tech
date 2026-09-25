@@ -1,3 +1,5 @@
+import diffusionImports from './diffusion-imports.json';
+
 export type ClipSlot = {
   /**
    * Filename inside public/recordings/, e.g. "landing/hero.webm". Leave
@@ -25,6 +27,17 @@ export type ClipSlot = {
    */
   titleCorner?: 'top-left' | 'top-right';
 };
+
+type DiffusionImport = ClipSlot & {
+  id: string;
+  composition: 'AppTutorialEN' | 'AppTutorialES' | 'BslShowcase';
+};
+
+function diffusionClipsFor(composition: DiffusionImport['composition']): ClipSlot[] {
+  return (diffusionImports.imports as DiffusionImport[])
+    .filter((clip) => clip.composition === composition)
+    .map(({id: _id, composition: _composition, ...clip}) => clip);
+}
 
 // HASHPASS app walkthrough / tutorial — core basics first: landing, sign up
 // (OTP or email magic link), into the dashboard, updating the attendee
@@ -62,6 +75,7 @@ export const appTutorialStepsEn: ClipSlot[] = [
     showPlayStoreBadge: true,
     titleCorner: 'top-right',
   },
+  ...diffusionClipsFor('AppTutorialEN'),
 ];
 
 // Same tutorial, recorded with the browser context locale set to es-ES (see
@@ -107,6 +121,7 @@ export const appTutorialStepsEs: ClipSlot[] = [
     showPlayStoreBadge: true,
     titleCorner: 'top-right',
   },
+  ...diffusionClipsFor('AppTutorialES'),
 ];
 
 // BSL On Tour showcase — fill in `src` as recordings land in
@@ -140,4 +155,5 @@ export const bslShowcaseClips: ClipSlot[] = [
     // pass/entitlement check before "Request Meeting" even appears.
     trimStartSeconds: 8,
   },
+  ...diffusionClipsFor('BslShowcase'),
 ];

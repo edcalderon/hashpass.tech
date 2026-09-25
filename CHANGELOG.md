@@ -1,3 +1,20 @@
+## [1.9.63](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.62...v1.9.63) (2026-09-25)
+
+
+### Features
+
+* **video:** add branded event hero loops ([07476f2](https://github.com/hashpass-tech/hashpass.tech/commit/07476f28046a20367b41ff3a25d79690a53fea9b))
+* **video:** add Claude event brief workflow ([5eaf762](https://github.com/hashpass-tech/hashpass.tech/commit/5eaf76289e470abd4d81c7f6021dc90a0a2cd2b2))
+* **video:** add Diffusion Studio handoff ([f7b75e4](https://github.com/hashpass-tech/hashpass.tech/commit/f7b75e4b159fcd5abedd89fd8a466251c75f343a))
+### Release Highlights
+- add branded event hero loops; add Claude event brief workflow; add Diffusion Studio handoff
+
+### Release scope
+- Compared with: `v1.9.62` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+
 ## [1.9.62](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.61...v1.9.62) (2026-09-25)
 
 

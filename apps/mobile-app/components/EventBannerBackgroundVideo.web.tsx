@@ -5,6 +5,7 @@ interface EventBannerBackgroundVideoProps {
   loadingLogo?: string;
   loadingLabel?: string;
   preferBundledSource?: boolean;
+  playbackEnabled?: boolean;
 }
 
 /**
@@ -16,6 +17,7 @@ export default function EventBannerBackgroundVideo({
   source,
   loadingLogo,
   loadingLabel = "Loading event film",
+  playbackEnabled = true,
 }: EventBannerBackgroundVideoProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [hasFirstFrame, setHasFirstFrame] = useState(false);
@@ -26,6 +28,7 @@ export default function EventBannerBackgroundVideo({
     setHasFirstFrame(false);
 
     const startPlayback = () => {
+      if (!playbackEnabled) return;
       video.muted = true;
       video.defaultMuted = true;
       const playback = video.play();
@@ -35,6 +38,11 @@ export default function EventBannerBackgroundVideo({
       startPlayback();
       setHasFirstFrame(true);
     };
+
+    if (!playbackEnabled) {
+      video.pause();
+      return;
+    }
 
     startPlayback();
     video.addEventListener("canplay", startPlayback);
@@ -47,18 +55,18 @@ export default function EventBannerBackgroundVideo({
       video.removeEventListener("canplay", startPlayback);
       video.removeEventListener("loadeddata", revealFirstFrame);
     };
-  }, [source]);
+  }, [source, playbackEnabled]);
 
   return (
     <>
       <video
         ref={videoRef}
         aria-hidden
-        autoPlay
+        autoPlay={playbackEnabled}
         loop
         muted
         playsInline
-        preload="auto"
+        preload={playbackEnabled ? "auto" : "metadata"}
         src={source}
         style={{
           position: "absolute",
@@ -92,7 +100,20 @@ export default function EventBannerBackgroundVideo({
             transition: "opacity 180ms ease-out",
           }}
         >
-          {loadingLogo ? (
+          {!playbackEnabled && loadingLogo ? (
+            <img
+              src={loadingLogo}
+              alt=""
+              style={{
+                position: "absolute",
+                inset: 0,
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                opacity: 0.62,
+              }}
+            />
+          ) : loadingLogo ? (
             <img
               src={loadingLogo}
               alt=""
@@ -106,17 +127,21 @@ export default function EventBannerBackgroundVideo({
               }}
             />
           ) : null}
-          <span
-            style={{
-              width: 22,
-              height: 22,
-              borderRadius: "50%",
-              border: "2px solid rgba(255,255,255,.25)",
-              borderTopColor: "#fff",
-              animation: "event-banner-loader-spin 750ms linear infinite",
-            }}
-          />
-          <style>{`@keyframes event-banner-loader-spin { to { transform: rotate(360deg); } }`}</style>
+          {playbackEnabled ? (
+            <>
+              <span
+                style={{
+                  width: 22,
+                  height: 22,
+                  borderRadius: "50%",
+                  border: "2px solid rgba(255,255,255,.25)",
+                  borderTopColor: "#fff",
+                  animation: "event-banner-loader-spin 750ms linear infinite",
+                }}
+              />
+              <style>{`@keyframes event-banner-loader-spin { to { transform: rotate(360deg); } }`}</style>
+            </>
+          ) : null}
         </div>
       )}
     </>

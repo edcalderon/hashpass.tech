@@ -5,11 +5,11 @@ import { act, create } from "react-test-renderer";
 import NativeEventBannerBackgroundVideo from "../../components/EventBannerBackgroundVideo.native";
 import WebEventBannerBackgroundVideo from "../../components/EventBannerBackgroundVideo.web";
 
-const mockNativePlayer = { loop: false, muted: false, play: jest.fn() };
+const mockNativePlayer = { loop: false, muted: false, pause: jest.fn(), play: jest.fn() };
 const mockUseVideoPlayer = jest.fn(
   (source: unknown, setup: (player: typeof mockNativePlayer) => void) => {
     setup(mockNativePlayer);
-    return { source };
+    return mockNativePlayer;
   },
 );
 
@@ -56,6 +56,7 @@ describe("EventBannerBackgroundVideo", () => {
   beforeEach(() => {
     mockNativePlayer.loop = false;
     mockNativePlayer.muted = false;
+    mockNativePlayer.pause.mockClear();
     mockNativePlayer.play.mockClear();
     mockUseVideoPlayer.mockClear();
     Object.defineProperty(global, "HTMLMediaElement", {
@@ -138,6 +139,32 @@ describe("EventBannerBackgroundVideo", () => {
     expect(mockUseVideoPlayer.mock.calls[0]?.[0]).not.toBe(
       "https://cdn.example/clf.mp4",
     );
+  });
+
+  it("keeps an inactive native hero film paused", () => {
+    render(
+      <NativeEventBannerBackgroundVideo
+        {...({ source: "https://cdn.example/clf.mp4", playbackEnabled: false } as any)}
+      />,
+    );
+
+    expect(mockNativePlayer.play).not.toHaveBeenCalled();
+    expect(mockNativePlayer.pause).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not start an inactive web hero film", () => {
+    const video = {...createWebVideo(), pause: jest.fn()};
+    render(
+      <WebEventBannerBackgroundVideo
+        {...({ source: "https://cdn.example/clf.mp4", playbackEnabled: false } as any)}
+      />,
+      {
+        createNodeMock: (element) => (element.type === "video" ? video : null),
+      },
+    );
+
+    expect(video.play).not.toHaveBeenCalled();
+    expect(video.pause).toHaveBeenCalledTimes(1);
   });
 
   it("reveals ready web video immediately when playback does not return a promise", () => {

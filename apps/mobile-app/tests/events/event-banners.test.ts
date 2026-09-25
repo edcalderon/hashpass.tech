@@ -71,6 +71,24 @@ describe("event banner slides", () => {
     ]);
   });
 
+  it("uses the approved hero film as the fallback slide while retaining the event image for loading", () => {
+    expect(
+      getEventBannerSlides({
+        ...event,
+        heroVideo: "https://media.example.test/events/clf/branding/hashpass-event-hero-v1.mp4",
+      }),
+    ).toEqual([
+      expect.objectContaining({
+        id: "default",
+        media: {
+          type: "video",
+          url: "https://media.example.test/events/clf/branding/hashpass-event-hero-v1.mp4",
+        },
+        title: "Cripto Latin Fest 2026",
+      }),
+    ]);
+  });
+
   it("keeps multiple organizer slides within the same event", () => {
     const slides = getEventBannerSlides({
       ...event,
