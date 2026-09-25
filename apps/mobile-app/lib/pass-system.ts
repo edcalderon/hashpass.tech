@@ -28,6 +28,16 @@ export const isSupabaseAuthUserId = (
 ): value is string =>
   typeof value === "string" && SUPABASE_AUTH_USER_ID_REGEX.test(value);
 
+export const normalizeBusinessInviteCode = (
+  value: string | null | undefined,
+): string | null => {
+  if (typeof value !== "string") return null;
+  const normalized = value.trim().toUpperCase();
+  return /^[A-Z0-9][A-Z0-9_-]{3,63}$/.test(normalized)
+    ? normalized
+    : null;
+};
+
 export const resolvePassStorageEventId = (eventId: string): string =>
   PASS_STORAGE_EVENT_ID_ALIASES[eventId] ?? eventId;
 
@@ -131,6 +141,13 @@ export interface PassClaimResult {
   status: "claimed" | "already_claimed";
   pass_id: string;
   event_id: string;
+}
+
+export interface BusinessInviteRequestResult {
+  status: "pending" | "approved" | "rejected";
+  request_id: string;
+  created: boolean;
+  event_ids?: string[];
 }
 
 export interface PassTypeLimits {
@@ -481,6 +498,33 @@ class PassSystemService {
 
       if (error || !data) return null;
       return data as PassClaimResult;
+    } catch {
+      return null;
+    }
+  }
+
+  async requestBusinessInvite(
+    code: string,
+  ): Promise<BusinessInviteRequestResult | null> {
+    const normalizedCode = normalizeBusinessInviteCode(code);
+    if (!normalizedCode) return null;
+
+    try {
+      const response: PassApiResponse<BusinessInviteRequestResult> = await apiClient.post(
+        "/business-invites/requests",
+        { code: normalizedCode },
+        { skipEventSegment: true },
+      );
+      const result = response.success ? response.data : null;
+      if (
+        !result ||
+        !["pending", "approved", "rejected"].includes(result.status) ||
+        typeof result.request_id !== "string" ||
+        typeof result.created !== "boolean"
+      ) {
+        return null;
+      }
+      return result;
     } catch {
       return null;
     }

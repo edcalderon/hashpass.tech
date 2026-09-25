@@ -23,6 +23,14 @@ describe('normalizeMagicLinkRedirect', () => {
     ).toBe('https://hashpass.tech/auth/callback?returnTo=%2Fvault&nativeRelay=1');
   });
 
+  it('accepts a web magic-link callback with a relative post-login path', () => {
+    expect(
+      normalizeMagicLinkRedirect(
+        'https://hashpass.tech/auth/callback?returnTo=%2Fdashboard%2Fwallet%3FinviteCode%3D9899',
+      ),
+    ).toBe('https://hashpass.tech/auth/callback?returnTo=%2Fdashboard%2Fwallet%3FinviteCode%3D9899');
+  });
+
   it.each([
     '',
     'not-a-url',

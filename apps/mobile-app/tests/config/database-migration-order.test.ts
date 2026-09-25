@@ -45,7 +45,9 @@ describe("CBWeek migration plans", () => {
       expect(position("V094")).toBeGreaterThan(position("V092"));
       expect(position("V094")).toBeGreaterThan(position("V093"));
       expect(position("V096")).toBeGreaterThan(position("V094"));
-      expect(files.filter((line) => line.includes("/V092__"))).toHaveLength(1);
+      expect(
+        files.filter((line) => line.includes("/V092__provision_cbweek_general_passes.sql")),
+      ).toHaveLength(1);
     },
   );
 });

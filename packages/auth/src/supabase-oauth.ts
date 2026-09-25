@@ -131,12 +131,21 @@ const normalizeScheme = (scheme?: string) => {
 };
 
 /**
- * Magic links must always land on the fixed web callback route. Any post-login
- * destination is handled by the callback page rather than encoded in this path.
+ * Magic links always land on the fixed web callback route, with an optional
+ * relative post-login destination carried through its query string. The
+ * callback validates and consumes this value after the passwordless session
+ * is established; allowing only local paths prevents an open redirect.
  */
 export const getSupabaseMagicLinkCallbackPath = (
-  _options: SupabaseMagicLinkCallbackOptions = {},
-) => SUPABASE_OAUTH_CALLBACK_PATH;
+  options: SupabaseMagicLinkCallbackOptions = {},
+) => {
+  const returnTo = options.returnTo;
+  if (!returnTo || !returnTo.startsWith('/') || returnTo.startsWith('//')) {
+    return SUPABASE_OAUTH_CALLBACK_PATH;
+  }
+
+  return `${SUPABASE_OAUTH_CALLBACK_PATH}?returnTo=${encodeURIComponent(returnTo)}`;
+};
 
 export const getSupabaseOAuthRedirectUrl = (options: SupabaseOAuthRedirectOptions = {}) => {
   const callbackPath = normalizeCallbackPath(options.callbackPath);

@@ -30,10 +30,12 @@ export const normalizeMagicLinkRedirect = (
     const keys = [...redirect.searchParams.keys()];
     if (keys.length === 0) return redirect.toString();
 
+    const returnTo = redirect.searchParams.get("returnTo");
+    const nativeRelay = redirect.searchParams.get("nativeRelay");
     if (
       keys.some((key) => key !== "nativeRelay" && key !== "returnTo") ||
-      redirect.searchParams.get("nativeRelay") !== "1" ||
-      !isSafeReturnTo(redirect.searchParams.get("returnTo"))
+      !isSafeReturnTo(returnTo) ||
+      (nativeRelay !== null && nativeRelay !== "1")
     ) {
       return null;
     }

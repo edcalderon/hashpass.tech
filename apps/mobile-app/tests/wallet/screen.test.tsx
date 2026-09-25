@@ -2,6 +2,7 @@ import React from 'react';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { Pressable } from 'react-native';
 
+jest.mock('expo-router', () => ({ useLocalSearchParams: () => ({}) }));
 jest.mock('../../hooks/useTheme', () => ({ useTheme: () => ({ colors: {
   primary: '#a00', primaryContrastText: '#fff', divider: '#ddd',
   background: { paper: '#fafafa', default: '#fff' }, text: { primary: '#111', secondary: '#555' },

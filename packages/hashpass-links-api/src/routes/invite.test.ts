@@ -28,11 +28,14 @@ function open(query = '?code=9899', init?: RequestInit) {
   return handleRequest(new Request(`https://invite.hashpass.app/${query}`, init));
 }
 
-test('printed invite redirects to Club, preserves code, and persists each open', async () => {
+test('printed invite redirects to registration with a verified business-pass return path', async () => {
   for (let i = 0; i < 2; i++) {
     const response = await open('?code=9899&redirect=https://evil.example');
     assert.equal(response.status, 302);
-    assert.equal(response.headers.get('location'), 'https://hashpass.club/?code=9899');
+    assert.equal(
+      response.headers.get('location'),
+      'https://hashpass.tech/auth?returnTo=%2Fdashboard%2Fwallet%3Fsection%3Dpasses%26inviteCode%3D9899',
+    );
     assert.match(response.headers.get('cache-control')!, /no-store/);
   }
   assert.equal(visits.length, 2);
@@ -70,7 +73,7 @@ test('HEAD, prefetch and bare-domain probes redirect without inflating counts', 
   for (const init of probes) {
     assert.equal((await open('?code=9899', init)).status, 302);
   }
-  assert.equal((await open('')).headers.get('location'), 'https://hashpass.club/');
+  assert.equal((await open('')).headers.get('location'), 'https://hashpass.tech/auth');
   assert.equal(visits.length, 0);
 });
 

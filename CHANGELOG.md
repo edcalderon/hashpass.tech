@@ -1,3 +1,17 @@
+## [1.9.64](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.63...v1.9.64) (2026-09-25)
+### Released
+- add verified business invitation flow
+
+### Release scope
+- Compared with: `v1.9.63` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- QR links API
+- Database migrations
+- Infrastructure
+- Release tooling
+
 ## [1.9.63](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.62...v1.9.63) (2026-09-25)
 
 

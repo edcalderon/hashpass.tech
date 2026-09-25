@@ -52,8 +52,8 @@ import {
 } from '../../../../packages/auth/src/supabase-oauth';
 
 describe('getSupabaseOAuthRedirectUrl', () => {
-  it('returns the exact web callback path for magic links even with returnTo', () => {
-    expect(getSupabaseMagicLinkCallbackPath({ returnTo: '/vault' })).toBe('/auth/callback');
+  it('carries a safe return path through the fixed web callback for magic links', () => {
+    expect(getSupabaseMagicLinkCallbackPath({ returnTo: '/vault' })).toBe('/auth/callback?returnTo=%2Fvault');
   });
 
   it('builds the web callback URL from the provided origin', () => {

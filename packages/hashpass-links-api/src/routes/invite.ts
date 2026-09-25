@@ -12,8 +12,16 @@ export async function redirectInvite(request: Request): Promise<Response> {
     return Response.json({ message: 'Invalid invite code' }, { status: 400, headers });
   }
 
-  const destination = new URL('https://hashpass.club/');
-  if (code) destination.searchParams.set('code', code);
+  // Invite codes reach registration first. The post-auth return path keeps the
+  // code local to HashPass, where the authenticated, verified user can claim
+  // the event-scoped entitlement without exposing it to a third-party origin.
+  const destination = new URL('https://hashpass.tech/auth');
+  if (code) {
+    const returnTo = new URL('https://hashpass.tech/dashboard/wallet');
+    returnTo.searchParams.set('section', 'passes');
+    returnTo.searchParams.set('inviteCode', code);
+    destination.searchParams.set('returnTo', `${returnTo.pathname}${returnTo.search}`);
+  }
 
   // HEAD probes and browser prefetches are not visits. A bare-domain visit
   // still redirects, but cannot be attributed to a printed invite.

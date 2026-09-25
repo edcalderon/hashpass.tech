@@ -2,9 +2,9 @@
 # A DNS CNAME to Club alone would neither supply HTTPS for this hostname
 # nor record visits. This reuses the existing API and Lambda.
 variable "enable_invite_domain" {
-  description = "Attach invite.hashpass.app after the invite migration and Lambda handler are deployed"
+  description = "Attach invite.hashpass.app after the invitation migration and Lambda handler are deployed"
   type        = bool
-  default     = false
+  default     = true
 }
 
 data "aws_route53_zone" "invite" {
