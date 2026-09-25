@@ -32,6 +32,16 @@ describe('media kit public redirect', () => {
       const build = path.join(temp, 'build');
       fs.mkdirSync(build);
       fs.writeFileSync(path.join(build, 'index.html'), '<html></html>');
+      const signatureDirectory = path.join(build, 'assets/email/signature');
+      fs.mkdirSync(signatureDirectory, { recursive: true });
+      fs.writeFileSync(
+        path.join(signatureDirectory, 'edward-calderon-portrait.d9bcbc18d656.jpg'),
+        'portrait',
+      );
+      fs.writeFileSync(
+        path.join(signatureDirectory, 'hashpass-wordmark.c3bcc34c86c.png'),
+        'wordmark',
+      );
       if (includeKit) fs.copyFileSync(path.join(root, 'apps/mobile-app/public/mediakit.html'), path.join(build, 'mediakit.html'));
       const log = path.join(temp, 'calls.jsonl');
       fs.writeFileSync(path.join(temp, 'aws'), `#!${process.execPath}\nrequire('node:fs').appendFileSync(process.env.TEST_AWS_LOG, JSON.stringify(process.argv.slice(2))+'\\n');\n`, { mode: 0o755 });
@@ -45,6 +55,25 @@ describe('media kit public redirect', () => {
       });
       const calls: string[][] = fs.readFileSync(log, 'utf8').trim().split('\n').map(line => JSON.parse(line));
       const redirects = calls.filter(args => args.includes('--website-redirect'));
+      const legacySignatureUploads = calls.filter(args =>
+        args[0] === 's3' &&
+        args[1] === 'cp' &&
+        args.includes('--cache-control') &&
+        args.includes('public,max-age=300,must-revalidate'),
+      );
+      expect(legacySignatureUploads).toHaveLength(2);
+      expect(legacySignatureUploads).toEqual(expect.arrayContaining([
+        expect.arrayContaining([
+          's3://test-media-kit-bucket/assets/email/signature/edward-calderon-portrait.jpg',
+          '--content-type',
+          'image/jpeg',
+        ]),
+        expect.arrayContaining([
+          's3://test-media-kit-bucket/assets/email/signature/hashpass-wordmark.png',
+          '--content-type',
+          'image/png',
+        ]),
+      ]));
       expect(redirects).toHaveLength(includeKit ? 3 : 0);
       if (includeKit) {
         const objectKeys = redirects.map(args => effectiveObjectKey(args[2], args[3]));

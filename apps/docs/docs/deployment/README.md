@@ -6,6 +6,7 @@ This page documents the current production delivery path for the club site and d
 
 - `https://hashpass.club` - canonical club web app on GitHub Pages
 - `https://hashpass.club/documentation/` - Docusaurus documentation on the same Pages artifact
+- `https://docs.hashpass.club/` - HTTPS redirect to the canonical documentation path
 - `https://club.hashpass.tech` - DNS alias that canonicalizes to `https://hashpass.club`
 - `https://docs.hashpass.tech` - DNS alias that canonicalizes to `https://hashpass.club/documentation/`
 

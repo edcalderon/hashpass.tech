@@ -23,6 +23,20 @@ variable "target_origin" {
   }
 }
 
+variable "target_path_prefix" {
+  description = "Optional path inserted before the incoming request path, e.g. /documentation. The incoming path and query string are then preserved."
+  type        = string
+  default     = ""
+
+  validation {
+    condition = var.target_path_prefix == "" || (
+      startswith(var.target_path_prefix, "/") &&
+      !can(regex("[?#]", var.target_path_prefix))
+    )
+    error_message = "target_path_prefix must be empty or an absolute path without query or fragment components."
+  }
+}
+
 variable "route53_zone_id" {
   description = "Route53 hosted zone id that all domain_names live in -- used for both ACM DNS validation and the alias records"
   type        = string
