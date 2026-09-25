@@ -1,3 +1,14 @@
+## [1.9.66](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.65...v1.9.66) (2026-09-25)
+### Released
+- protect carousel artwork from text overlays; serve legacy email signature assets
+
+### Release scope
+- Compared with: `v1.9.65` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Release tooling
+
 ## [1.9.65](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.64...v1.9.65) (2026-09-25)
 
 
