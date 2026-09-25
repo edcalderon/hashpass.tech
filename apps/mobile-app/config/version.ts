@@ -22,24 +22,41 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202609250614, // Updated to current timestamp
+  buildNumber: 202609250845, // Updated to current timestamp
   releaseDate: '2026-09-25',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'add self-hosted Plane and Helpdesk stack'
+    'add branded event hero loops',
+    'add Claude event brief workflow',
+    'add Diffusion Studio handoff'
   ],
   bugfixes: [
-    'target the alias migration in ordering test',
-    'apply support schema in tenant migrations',
-    'address PR security and integration review'
+    // No bugfixes
   ],
   breakingChanges: [],
-  notes: 'add self-hosted Plane and Helpdesk stack; target the alias migration in ordering test; apply support schema in tenant migrations; address PR security and integration review'
+  notes: 'add branded event hero loops; add Claude event brief workflow; add Diffusion Studio handoff'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.63': {
+    version: '1.9.63',
+    buildNumber: 202609250845,
+    releaseDate: '2026-09-25',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'add branded event hero loops',
+      'add Claude event brief workflow',
+      'add Diffusion Studio handoff'
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'add branded event hero loops; add Claude event brief workflow; add Diffusion Studio handoff'
+  },
   '1.9.62': {
     version: '1.9.62',
     buildNumber: 202609250614,
