@@ -52,7 +52,8 @@
     "event-chat",
     "event-auth-allies",
     "admin-pass-management",
-    "admin-matchmaking-communications"
+    "admin-matchmaking-communications",
+    "support-system"
   ],
   "profileGroups": {
     "bsl-development": [
@@ -112,6 +113,9 @@
     ],
     "event-search-aliases": [
       "db/migrations/V097__add_event_search_aliases.sql"
+    ],
+    "support-system": [
+      "db/migrations/V097__support_system.sql"
     ],
     "admin-matchmaking-communications": [
       "db/migrations/V055__admin_matchmaking_and_email_audit.sql",

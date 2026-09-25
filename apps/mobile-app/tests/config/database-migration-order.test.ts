@@ -4,6 +4,17 @@ import path from "node:path";
 const root = path.resolve(__dirname, "../../../..");
 
 describe("CBWeek migration plans", () => {
+  it("ships the support schema through every default tenant migration plan", () => {
+    for (const profile of ["core-development", "core-production", "bsl-development", "bsl-production"]) {
+      const plan = execFileSync(process.execPath, [
+        "packages/tools/scripts/migrate-tenant-db.mjs",
+        "--profile", profile, "--dry-run",
+      ], { cwd: root, encoding: "utf8" });
+
+      expect(plan).toContain("db/migrations/V097__support_system.sql");
+    }
+  });
+
   it("runs event search aliases after the CBWeek bootstrap on BSL development", () => {
     const plan = execFileSync(process.execPath, [
       "packages/tools/scripts/migrate-tenant-db.mjs",
