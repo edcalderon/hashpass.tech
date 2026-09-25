@@ -1,3 +1,27 @@
+## [1.9.62](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.61...v1.9.62) (2026-09-25)
+
+
+### Bug Fixes
+
+* **support:** address PR security and integration review ([72dbd1b](https://github.com/hashpass-tech/hashpass.tech/commit/72dbd1b36b1ea67b10450b0b4a77e4618475f968))
+
+
+### Features
+
+* **operations:** add self-hosted Plane and Helpdesk stack ([1701b3b](https://github.com/hashpass-tech/hashpass.tech/commit/1701b3bb9bdbd4d3553e996237aff5ab3cab8c2c))
+### Release Highlights
+- add self-hosted Plane and Helpdesk stack; target the alias migration in ordering test; apply support schema in tenant migrations; address PR security and integration review
+
+### Release scope
+- Compared with: `v1.9.61` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- SDK
+- Database migrations
+- Documentation
+- Release tooling
+
 ## [1.9.61](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.60...v1.9.61) (2026-09-25)
 ### Released
 - block untrusted SMS OTP sign-in

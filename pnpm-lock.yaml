@@ -523,6 +523,9 @@ importers:
       '@hashpass/emails':
         specifier: workspace:*
         version: link:../../packages/emails
+      '@hashpass/support-kapso':
+        specifier: workspace:*
+        version: link:../../packages/support-kapso
       '@hashpass/types':
         specifier: workspace:*
         version: link:../../packages/types
@@ -1233,6 +1236,15 @@ importers:
         specifier: ~5.8.3
         version: 5.8.3
 
+  packages/frappe-helpdesk-mcp:
+    dependencies:
+      '@modelcontextprotocol/sdk':
+        specifier: 1.6.1
+        version: 1.6.1
+      zod:
+        specifier: ^3.24.2
+        version: 3.25.76
+
   packages/hashpass-links-api:
     dependencies:
       '@hashpass/backend':
@@ -1302,6 +1314,61 @@ importers:
       '@types/node':
         specifier: ^22.10.2
         version: 22.20.1
+      typescript:
+        specifier: ~5.8.3
+        version: 5.8.3
+
+  packages/support-kapso:
+    dependencies:
+      '@kapso/whatsapp-cloud-api':
+        specifier: ^0.3.0
+        version: 0.3.0
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.2
+        version: 22.20.1
+      typescript:
+        specifier: ~5.8.3
+        version: 5.8.3
+
+  packages/support-react:
+    dependencies:
+      '@hashpass/support-widget':
+        specifier: workspace:^
+        version: link:../support-widget
+      react:
+        specifier: '>=18'
+        version: 19.0.0
+    devDependencies:
+      '@types/react':
+        specifier: ~19.0.10
+        version: 19.0.14
+      typescript:
+        specifier: ~5.8.3
+        version: 5.8.3
+
+  packages/support-react-native:
+    dependencies:
+      '@hashpass-tech/sdk':
+        specifier: workspace:^
+        version: link:../sdk
+      react:
+        specifier: '>=18'
+        version: 19.0.0
+      react-native:
+        specifier: 0.79.6
+        version: 0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10)
+    devDependencies:
+      typescript:
+        specifier: ~5.8.3
+        version: 5.8.3
+
+  packages/support-widget:
+    dependencies:
+      '@hashpass-tech/sdk':
+        specifier: workspace:^
+        version: link:../sdk
+    devDependencies:
       typescript:
         specifier: ~5.8.3
         version: 5.8.3
@@ -4579,6 +4646,10 @@ packages:
     engines: {node: '>=10.0'}
     peerDependencies:
       tslib: '2'
+
+  '@kapso/whatsapp-cloud-api@0.3.0':
+    resolution: {integrity: sha512-j4PBmpT+7tDpdmcBy7hRWkCfz2w7tvW5loGNgFBX4iCdVBKT2XNjfAUnjlx65tFToWV65AMPUTY5ztDKV31xhQ==}
+    engines: {node: '>=20.19'}
 
   '@kwsites/file-exists@1.1.1':
     resolution: {integrity: sha512-m9/5YGR18lIwxSFDwfE3oA7bWuq9kdau6ugN4H2rJeyhFQZcG9AgSHkQtSD15a8WvTgfz9aikZMrKPHvbpqFiw==}
@@ -21911,6 +21982,10 @@ snapshots:
       '@jsonjoy.com/buffers': 17.67.0(tslib@2.8.1)
       '@jsonjoy.com/codegen': 17.67.0(tslib@2.8.1)
       tslib: 2.8.1
+
+  '@kapso/whatsapp-cloud-api@0.3.0':
+    dependencies:
+      zod: 4.4.3
 
   '@kwsites/file-exists@1.1.1':
     dependencies:

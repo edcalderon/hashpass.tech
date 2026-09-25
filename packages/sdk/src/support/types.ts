@@ -3,6 +3,8 @@ import type { Page } from "../types.js";
 export type TicketStatus = "open" | "pending" | "resolved" | "closed";
 export type TicketPriority = "low" | "normal" | "high" | "urgent";
 export type MessageAuthor = "customer" | "ai" | "agent" | "system";
+export type SupportLocale = "en" | "es" | (string & {});
+export type WidgetPosition = "bottom-right" | "bottom-left" | "top-right" | "top-left";
 
 export interface SupportIdentity {
   externalId?: string;
@@ -27,7 +29,43 @@ export interface SupportMessage {
   body: string;
   createdAt: string;
   attachments?: SupportAttachment[];
+  deliveryStatus?: "queued" | "sent" | "delivered" | "failed";
 }
+
+export interface ListMessagesInput {
+  cursor?: string;
+  limit?: number;
+}
+
+export type MessagePage = Page<SupportMessage>;
+
+export interface SupportEventPage {
+  items: SupportEvent[];
+  nextCursor?: string;
+}
+
+export interface SupportSession {
+  token: string;
+  visitorId: string;
+  applicationId: string;
+  expiresAt: string;
+}
+
+export interface WidgetConfiguration {
+  appId: string;
+  locale: SupportLocale;
+  position: WidgetPosition;
+  greeting: string;
+  apiBaseUrl?: string;
+  theme?: {
+    color?: string;
+    logoUrl?: string;
+    launcherIconUrl?: string;
+  };
+  features?: Record<string, boolean>;
+}
+
+export interface MarkTicketReadInput { cursor?: string; idempotencyKey?: string }
 
 export interface SupportAttachment {
   id: string;
@@ -78,6 +116,10 @@ export type SupportEvent =
   | { type: "message.created"; cursor: string; message: SupportMessage }
   | { type: "agent.joined"; cursor: string; ticketId: string; agent: { id: string; name: string } }
   | { type: "typing.started" | "typing.stopped"; cursor: string; ticketId: string; author: MessageAuthor };
+
+export interface IdentifySupportVisitorInput extends SupportIdentity {
+  idempotencyKey?: string;
+}
 
 export interface WatchTicketOptions {
   cursor?: string;

@@ -1,0 +1,95 @@
+name: hashpass-helpdesk
+x-image: &image ${FRAPPE_IMAGE:-ghcr.io/frappe/helpdesk:v1.30.1}
+x-worker: &worker
+  image: *image
+  restart: unless-stopped
+  volumes: [sites:/home/frappe/frappe-bench/sites, logs:/home/frappe/frappe-bench/logs]
+  networks: [default]
+services:
+  frappe-db:
+    image: mariadb:11.8.3
+    restart: unless-stopped
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci", "--skip-character-set-client-handshake"]
+    env_file: ../.env
+    volumes: [db-data:/var/lib/mysql]
+    networks: [default]
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+  frappe-redis-cache:
+    image: redis:7.4.5-alpine
+    restart: unless-stopped
+    networks: [default]
+    healthcheck: {test: ["CMD", "redis-cli", "ping"], interval: 10s, timeout: 3s, retries: 10}
+  frappe-redis-queue:
+    image: redis:7.4.5-alpine
+    restart: unless-stopped
+    volumes: [redis-queue:/data]
+    networks: [default]
+    healthcheck: {test: ["CMD", "redis-cli", "ping"], interval: 10s, timeout: 3s, retries: 10}
+  frappe-configurator:
+    <<: *worker
+    restart: "no"
+    entrypoint: ["bash", "-c"]
+    command: >-
+      ls -1 apps > sites/apps.txt;
+      bench set-config -g db_host frappe-db;
+      bench set-config -gp db_port 3306;
+      bench set-config -g redis_cache redis://frappe-redis-cache:6379;
+      bench set-config -g redis_queue redis://frappe-redis-queue:6379;
+      bench set-config -g redis_socketio redis://frappe-redis-queue:6379;
+      bench set-config -gp socketio_port 9000;
+  frappe-create-site:
+    <<: *worker
+    restart: "no"
+    depends_on:
+      frappe-db: {condition: service_healthy}
+      frappe-configurator: {condition: service_completed_successfully}
+    entrypoint: ["bash", "-c"]
+    env_file: ../.env
+    command: >-
+      test -d "sites/$${FRAPPE_SITE_NAME}" ||
+      bench new-site "$${FRAPPE_SITE_NAME}" --mariadb-user-host-login-scope='%'
+      --admin-password "$${FRAPPE_ADMIN_PASSWORD}" --db-root-username root
+      --db-root-password "$${FRAPPE_DB_ROOT_PASSWORD}" --install-app helpdesk --set-default;
+      bench --site "$${FRAPPE_SITE_NAME}" enable-scheduler;
+  frappe-backend:
+    <<: *worker
+    depends_on: {frappe-create-site: {condition: service_completed_successfully}}
+  frappe-frontend:
+    <<: *worker
+    command: ["nginx-entrypoint.sh"]
+    environment:
+      BACKEND: frappe-backend:8000
+      FRAPPE_SITE_NAME_HEADER: ${FRAPPE_SITE_NAME:-support.hashpass.tech}
+      SOCKETIO: frappe-websocket:9000
+      UPSTREAM_REAL_IP_ADDRESS: 0.0.0.0/0
+      UPSTREAM_REAL_IP_HEADER: X-Forwarded-For
+      UPSTREAM_REAL_IP_RECURSIVE: "on"
+      CLIENT_MAX_BODY_SIZE: 25m
+    depends_on: [frappe-backend, frappe-websocket]
+    networks: [default, ops]
+    healthcheck: {test: ["CMD-SHELL", "curl -fsS http://localhost:8080/api/method/ping || exit 1"], interval: 30s, timeout: 5s, retries: 5}
+  frappe-websocket:
+    <<: *worker
+    command: ["node", "/home/frappe/frappe-bench/apps/frappe/socketio.js"]
+    environment: {FRAPPE_REDIS_CACHE: redis://frappe-redis-cache:6379, FRAPPE_REDIS_QUEUE: redis://frappe-redis-queue:6379}
+  frappe-worker-short:
+    <<: *worker
+    command: ["bench", "worker", "--queue", "short,default"]
+  frappe-worker-long:
+    <<: *worker
+    command: ["bench", "worker", "--queue", "long,default,short"]
+  frappe-scheduler:
+    <<: *worker
+    command: ["bench", "schedule"]
+volumes:
+  db-data:
+  redis-queue:
+  sites:
+  logs:
+networks:
+  default: {internal: true}
+  ops: {name: hashpass-ops, external: true}

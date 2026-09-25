@@ -20,16 +20,28 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.61)
+## 📋 Latest Changes (v1.9.62)
 
-### Released
-- block untrusted SMS OTP sign-in
+### Bug Fixes
+
+* **support:** address PR security and integration review ([72dbd1b](https://github.com/hashpass-tech/hashpass.tech/commit/72dbd1b36b1ea67b10450b0b4a77e4618475f968))
+
+
+### Features
+
+* **operations:** add self-hosted Plane and Helpdesk stack ([1701b3b](https://github.com/hashpass-tech/hashpass.tech/commit/1701b3bb9bdbd4d3553e996237aff5ab3cab8c2c))
+### Release Highlights
+- add self-hosted Plane and Helpdesk stack; target the alias migration in ordering test; apply support schema in tenant migrations; address PR security and integration review
 
 ### Release scope
-- Compared with: `v1.9.60` (the previous global release tag)
+- Compared with: `v1.9.61` (the previous global release tag)
 
 ### Affected products & packages
 - Mobile app
+- SDK
+- Database migrations
+- Documentation
+- Release tooling
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

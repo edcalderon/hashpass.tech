@@ -18,9 +18,16 @@ test("binds the default globalThis.fetch so it survives being invoked as a metho
   const originalFetch = globalThis.fetch;
   globalThis.fetch = function fakeNativeFetch() {
     if (this !== globalThis) {
-      throw new TypeError("Failed to execute 'fetch' on 'Window': Illegal invocation");
+      throw new TypeError(
+        "Failed to execute 'fetch' on 'Window': Illegal invocation",
+      );
     }
-    return Response.json({ id: "ticket_1", subject: "s", status: "open", priority: "normal" });
+    return Response.json({
+      id: "ticket_1",
+      subject: "s",
+      status: "open",
+      priority: "normal",
+    });
   };
   try {
     const sdk = createHashpass({ appId: "app_test" }); // no explicit fetch -- exercises the default path
@@ -32,17 +39,33 @@ test("binds the default globalThis.fetch so it survives being invoked as a metho
 });
 
 test("requires a public app id", () => {
-  assert.throws(() => createHashpass({ appId: "" }), (error) => {
-    assert.equal(error.code, "configuration_error");
-    return true;
-  });
+  assert.throws(
+    () => createHashpass({ appId: "" }),
+    (error) => {
+      assert.equal(error.code, "configuration_error");
+      return true;
+    },
+  );
 });
 
 test("creates an AI-assisted support ticket with app and auth headers", async () => {
   let captured;
   const fetch = async (url, init) => {
+    if (String(url).endsWith("/v1/support/sessions")) {
+      return Response.json({
+        token: "support-token",
+        visitorId: "visitor-1",
+        applicationId: "app_test",
+        expiresAt: "2099-01-01T00:00:00.000Z",
+      });
+    }
     captured = { url, init };
-    return Response.json({ id: "ticket_1", subject: "Help", status: "open", priority: "normal" });
+    return Response.json({
+      id: "ticket_1",
+      subject: "Help",
+      status: "open",
+      priority: "normal",
+    });
   };
   const sdk = createHashpass({
     appId: "app_test",
@@ -50,11 +73,22 @@ test("creates an AI-assisted support ticket with app and auth headers", async ()
     fetch,
     auth: { getAccessToken: () => "access-token" },
   });
-  await sdk.support.createTicket({ subject: "Help", message: "Something broke", idempotencyKey: "once" });
+  await sdk.support.createSupportSession();
+  await sdk.support.createTicket({
+    subject: "Help",
+    message: "Something broke",
+    idempotencyKey: "once",
+  });
 
-  assert.equal(captured.url, "https://support.example.test/api/v1/support/tickets");
+  assert.equal(
+    captured.url,
+    "https://support.example.test/api/v1/support/tickets",
+  );
   assert.equal(captured.init.headers.get("x-hashpass-app-id"), "app_test");
-  assert.equal(captured.init.headers.get("authorization"), "Bearer access-token");
+  assert.equal(
+    captured.init.headers.get("authorization"),
+    "Bearer support-token",
+  );
   assert.equal(captured.init.headers.get("idempotency-key"), "once");
   assert.deepEqual(JSON.parse(captured.init.body), {
     aiAssistance: true,
@@ -66,10 +100,11 @@ test("creates an AI-assisted support ticket with app and auth headers", async ()
 test("returns typed API errors with request correlation", async () => {
   const sdk = createHashpass({
     appId: "app_test",
-    fetch: async () => Response.json(
-      { message: "Ticket missing", details: { ticketId: "nope" } },
-      { status: 404, headers: { "x-request-id": "req_123" } },
-    ),
+    fetch: async () =>
+      Response.json(
+        { message: "Ticket missing", details: { ticketId: "nope" } },
+        { status: 404, headers: { "x-request-id": "req_123" } },
+      ),
   });
   await assert.rejects(sdk.support.getTicket("nope"), (error) => {
     assert.ok(error instanceof HashpassError);
@@ -82,19 +117,27 @@ test("returns typed API errors with request correlation", async () => {
 test("preserves caller cancellation instead of reporting a timeout", async () => {
   const controller = new AbortController();
   let fetchStarted;
-  const fetchReady = new Promise((resolve) => { fetchStarted = resolve; });
+  const fetchReady = new Promise((resolve) => {
+    fetchStarted = resolve;
+  });
   const sdk = createHashpass({
     appId: "app_test",
     fetch: async (_url, init) => {
       fetchStarted();
       await new Promise((_, reject) => {
-        init.signal.addEventListener("abort", () => reject(init.signal.reason), { once: true });
+        init.signal.addEventListener(
+          "abort",
+          () => reject(init.signal.reason),
+          { once: true },
+        );
       });
     },
     timeoutMs: 5_000,
   });
 
-  const request = sdk.support.watchTicket("ticket_1", { signal: controller.signal }).next();
+  const request = sdk.support
+    .watchTicket("ticket_1", { signal: controller.signal })
+    .next();
   await fetchReady;
   controller.abort(new Error("caller stopped watching"));
   await assert.rejects(request, (error) => {
@@ -114,21 +157,33 @@ test("session-backed auth refreshes an expired token", async () => {
   };
   const sdk = createHashpass({
     appId: "app_test",
-    sessionStore: { get: () => session, set: (next) => { session = next; }, clear: () => { session = null; } },
-    fetch: async () => Response.json({
-      accessToken: "fresh",
-      refreshToken: "refresh-2",
-      tokenType: "Bearer",
-      expiresAt: "2099-01-01T00:00:00.000Z",
-      scope: ["support"],
-    }),
+    sessionStore: {
+      get: () => session,
+      set: (next) => {
+        session = next;
+      },
+      clear: () => {
+        session = null;
+      },
+    },
+    fetch: async () =>
+      Response.json({
+        accessToken: "fresh",
+        refreshToken: "refresh-2",
+        tokenType: "Bearer",
+        expiresAt: "2099-01-01T00:00:00.000Z",
+        scope: ["support"],
+      }),
   });
   assert.equal(await sdk.auth.getAccessToken(), "fresh");
   assert.equal(session.refreshToken, "refresh-2");
 });
 
 test("authQr requires linksApiBaseUrl before it can be used", async () => {
-  const sdk = createHashpass({ appId: "app_test", fetch: async () => Response.json({}) });
+  const sdk = createHashpass({
+    appId: "app_test",
+    fetch: async () => Response.json({}),
+  });
   await assert.rejects(sdk.authQr.beginLogin(), (error) => {
     assert.ok(error instanceof HashpassError);
     assert.equal(error.code, "configuration_error");
@@ -141,21 +196,38 @@ test("authQr.beginLogin creates a PKCE challenge and returns the binding secret"
   const fetch = async (url, init) => {
     captured = { url, init };
     return Response.json(
-      { id: "chal_1", qrUrl: "https://hashpass.link/auth/chal_1", expiresAt: "2099-01-01T00:00:00.000Z", state: "state_1", binding: "binding_1" },
+      {
+        id: "chal_1",
+        qrUrl: "https://hashpass.link/auth/chal_1",
+        expiresAt: "2099-01-01T00:00:00.000Z",
+        state: "state_1",
+        binding: "binding_1",
+      },
       { status: 201 },
     );
   };
-  const sdk = createHashpass({ appId: "app_test", fetch, linksApiBaseUrl: "https://links.example.test/" });
+  const sdk = createHashpass({
+    appId: "app_test",
+    fetch,
+    linksApiBaseUrl: "https://links.example.test/",
+  });
 
   const result = await sdk.authQr.beginLogin();
 
-  assert.equal(captured.url, "https://links.example.test/api/v1/auth/qr/challenges");
+  assert.equal(
+    captured.url,
+    "https://links.example.test/api/v1/auth/qr/challenges",
+  );
   assert.equal(captured.init.headers.get("x-hashpass-app-id"), "app_test");
   assert.equal(captured.init.headers.has("authorization"), false);
   const body = JSON.parse(captured.init.body);
   assert.equal(body.codeChallenge.length > 0, true);
   assert.equal(result.challenge.id, "chal_1");
-  assert.equal(result.challenge.binding, undefined, "binding is not part of the QR-safe challenge payload");
+  assert.equal(
+    result.challenge.binding,
+    undefined,
+    "binding is not part of the QR-safe challenge payload",
+  );
   assert.equal(result.codeVerifier.length > 0, true);
   assert.equal(result.binding, "binding_1");
 });
@@ -163,35 +235,74 @@ test("authQr.beginLogin creates a PKCE challenge and returns the binding secret"
 test("authQr.waitForLogin sends the binding secret as a header, not a cookie, and exchanges for a session", async () => {
   const captured = [];
   const responses = [
-    () => Response.json({ status: "pending", expiresAt: "2099-01-01T00:00:00.000Z" }),
-    () => Response.json({ status: "approved", expiresAt: "2099-01-01T00:00:00.000Z", authorizationCode: "code_1" }),
-    () => Response.json({ status: "consumed", userId: "user_1", session: { accessToken: "access_1", refreshToken: "refresh_1" } }),
+    () =>
+      Response.json({
+        status: "pending",
+        expiresAt: "2099-01-01T00:00:00.000Z",
+      }),
+    () =>
+      Response.json({
+        status: "approved",
+        expiresAt: "2099-01-01T00:00:00.000Z",
+        authorizationCode: "code_1",
+      }),
+    () =>
+      Response.json({
+        status: "consumed",
+        userId: "user_1",
+        session: { accessToken: "access_1", refreshToken: "refresh_1" },
+      }),
   ];
   const fetch = async (url, init) => {
     captured.push({ url, init });
     return responses.shift()();
   };
-  const sdk = createHashpass({ appId: "app_test", fetch, linksApiBaseUrl: "https://links.example.test/" });
+  const sdk = createHashpass({
+    appId: "app_test",
+    fetch,
+    linksApiBaseUrl: "https://links.example.test/",
+  });
 
   const session = await sdk.authQr.waitForLogin(
-    { challenge: { id: "chal_1", qrUrl: "u", expiresAt: "e", state: "state_1" }, codeVerifier: "verifier_1", binding: "binding_1" },
+    {
+      challenge: { id: "chal_1", qrUrl: "u", expiresAt: "e", state: "state_1" },
+      codeVerifier: "verifier_1",
+      binding: "binding_1",
+    },
     { pollIntervalMs: 0 },
   );
 
-  assert.deepEqual(session, { userId: "user_1", accessToken: "access_1", refreshToken: "refresh_1" });
+  assert.deepEqual(session, {
+    userId: "user_1",
+    accessToken: "access_1",
+    refreshToken: "refresh_1",
+  });
   assert.equal(responses.length, 0);
   for (const { init } of captured) {
     assert.equal(init.headers.get("x-hashpass-binding"), "binding_1");
-    assert.equal(init.credentials, undefined, "no longer relies on cookies at all");
+    assert.equal(
+      init.credentials,
+      undefined,
+      "no longer relies on cookies at all",
+    );
   }
 });
 
 test("authQr.waitForLogin rejects when the login is denied", async () => {
-  const fetch = async () => Response.json({ status: "denied", expiresAt: "2099-01-01T00:00:00.000Z" });
-  const sdk = createHashpass({ appId: "app_test", fetch, linksApiBaseUrl: "https://links.example.test/" });
+  const fetch = async () =>
+    Response.json({ status: "denied", expiresAt: "2099-01-01T00:00:00.000Z" });
+  const sdk = createHashpass({
+    appId: "app_test",
+    fetch,
+    linksApiBaseUrl: "https://links.example.test/",
+  });
 
   await assert.rejects(
-    sdk.authQr.waitForLogin({ challenge: { id: "c", qrUrl: "u", expiresAt: "e", state: "s" }, codeVerifier: "v", binding: "b" }),
+    sdk.authQr.waitForLogin({
+      challenge: { id: "c", qrUrl: "u", expiresAt: "e", state: "s" },
+      codeVerifier: "v",
+      binding: "b",
+    }),
     (error) => {
       assert.equal(error.code, "unauthorized");
       return true;
@@ -214,8 +325,14 @@ test("authQr.respondToLogin sends the app's own bearer token, not the browser-bi
 
   const result = await sdk.authQr.respondToLogin("chal_1", "approve");
 
-  assert.equal(captured.url, "https://links.example.test/api/v1/auth/qr/challenges/chal_1/approve");
-  assert.equal(captured.init.headers.get("authorization"), "Bearer mobile-session-token");
+  assert.equal(
+    captured.url,
+    "https://links.example.test/api/v1/auth/qr/challenges/chal_1/approve",
+  );
+  assert.equal(
+    captured.init.headers.get("authorization"),
+    "Bearer mobile-session-token",
+  );
   assert.equal(captured.init.headers.has("x-hashpass-binding"), false);
   assert.deepEqual(JSON.parse(captured.init.body), { decision: "approve" });
   assert.equal(result.status, "approved");
@@ -250,14 +367,33 @@ test("authQr.waitForLogin absorbs a sustained run of gateway-level 503s (survivi
     // error). The second poll cycle gets a real "denied" response --
     // proving waitForLogin polled again after the transient run rather
     // than giving up on it.
-    if (callCount <= 3) return new Response(JSON.stringify({ message: "Service Unavailable" }), { status: 503 });
-    return Response.json({ status: "denied", expiresAt: "2099-01-01T00:00:00.000Z" });
+    if (callCount <= 3)
+      return new Response(JSON.stringify({ message: "Service Unavailable" }), {
+        status: 503,
+      });
+    return Response.json({
+      status: "denied",
+      expiresAt: "2099-01-01T00:00:00.000Z",
+    });
   };
-  const sdk = createHashpass({ appId: "app_test", fetch, linksApiBaseUrl: "https://links.example.test/" });
+  const sdk = createHashpass({
+    appId: "app_test",
+    fetch,
+    linksApiBaseUrl: "https://links.example.test/",
+  });
 
   await assert.rejects(
     sdk.authQr.waitForLogin(
-      { challenge: { id: "chal_1", qrUrl: "u", expiresAt: "e", state: "state_1" }, codeVerifier: "v", binding: "b" },
+      {
+        challenge: {
+          id: "chal_1",
+          qrUrl: "u",
+          expiresAt: "e",
+          state: "state_1",
+        },
+        codeVerifier: "v",
+        binding: "b",
+      },
       { pollIntervalMs: 0 },
     ),
     (error) => {
@@ -268,16 +404,36 @@ test("authQr.waitForLogin absorbs a sustained run of gateway-level 503s (survivi
       return true;
     },
   );
-  assert.equal(callCount, 4, "3 failed attempts on the first poll cycle, then 1 successful poll");
+  assert.equal(
+    callCount,
+    4,
+    "3 failed attempts on the first poll cycle, then 1 successful poll",
+  );
 });
 
 test("authQr.waitForLogin eventually gives up after too many consecutive failed poll cycles", async () => {
-  const fetch = async () => new Response(JSON.stringify({ message: "Service Unavailable" }), { status: 503 });
-  const sdk = createHashpass({ appId: "app_test", fetch, linksApiBaseUrl: "https://links.example.test/" });
+  const fetch = async () =>
+    new Response(JSON.stringify({ message: "Service Unavailable" }), {
+      status: 503,
+    });
+  const sdk = createHashpass({
+    appId: "app_test",
+    fetch,
+    linksApiBaseUrl: "https://links.example.test/",
+  });
 
   await assert.rejects(
     sdk.authQr.waitForLogin(
-      { challenge: { id: "chal_1", qrUrl: "u", expiresAt: "e", state: "state_1" }, codeVerifier: "v", binding: "b" },
+      {
+        challenge: {
+          id: "chal_1",
+          qrUrl: "u",
+          expiresAt: "e",
+          state: "state_1",
+        },
+        codeVerifier: "v",
+        binding: "b",
+      },
       { pollIntervalMs: 0 },
     ),
     (error) => {
@@ -285,4 +441,106 @@ test("authQr.waitForLogin eventually gives up after too many consecutive failed 
       return true;
     },
   );
+});
+
+test("exposes support MVP contract extensions", async () => {
+  const calls = [];
+  const sdk = createHashpass({
+    appId: "app_test",
+    fetch: async (url, init) => {
+      calls.push({ url, init });
+      if (String(url).includes("widget-config"))
+        return Response.json({
+          appId: "app_test",
+          locale: "en",
+          position: "bottom-right",
+          greeting: "Hi",
+        });
+      if (String(url).includes("/messages") && init.method !== "POST")
+        return Response.json({ items: [], nextCursor: "m_1" });
+      if (String(url).includes("/events"))
+        return Response.json({ items: [], nextCursor: "e_1" });
+      return Response.json({
+        id: "ticket_1",
+        subject: "Help",
+        status: "open",
+        priority: "normal",
+      });
+    },
+  });
+  await sdk.support.getWidgetConfiguration("app_test");
+  await sdk.support.listMessages("ticket_1", { cursor: "m_0", limit: 20 });
+  await sdk.support.getTicketEvents("ticket_1", "e_0");
+  await sdk.support.markTicketRead("ticket_1", { cursor: "e_1" });
+  await sdk.support.reopenTicket("ticket_1");
+  assert.equal(
+    calls[0].url,
+    "https://api.hashpass.tech/api/v1/support/widget-config?appId=app_test",
+  );
+  assert.equal(
+    calls[1].url,
+    "https://api.hashpass.tech/api/v1/support/tickets/ticket_1/messages?cursor=m_0&limit=20",
+  );
+  assert.equal(
+    calls[2].url,
+    "https://api.hashpass.tech/api/v1/support/tickets/ticket_1/events?cursor=e_0",
+  );
+  assert.equal(
+    calls[3].init.headers.get("idempotency-key"),
+    "read:ticket_1:e_1",
+  );
+  assert.deepEqual(JSON.parse(calls[4].init.body), { status: "open" });
+});
+
+test("adopts a support session so later support calls carry its bearer token", async () => {
+  const calls = [];
+  const sdk = createHashpass({
+    appId: "app_test",
+    fetch: async (url, init) => {
+      calls.push({ url, init });
+      if (String(url).includes("/sessions")) {
+        return Response.json({
+          token: "visitor-token-1",
+          visitorId: "visitor_1",
+          applicationId: "app_test",
+          expiresAt: "2099-01-01T00:00:00.000Z",
+        });
+      }
+      return Response.json({ items: [], nextCursor: null });
+    },
+  });
+  await sdk.support.createSupportSession();
+  assert.equal(
+    await sdk.auth.getAccessToken(),
+    null,
+    "support login must not replace primary auth",
+  );
+
+  await sdk.support.listTickets();
+  assert.equal(
+    calls[1].init.headers.get("authorization"),
+    "Bearer visitor-token-1",
+  );
+});
+
+test("restores a persisted support session without replacing primary auth", async () => {
+  const calls = [];
+  const sdk = createHashpass({
+    appId: "app_test",
+    fetch: async (url, init) => {
+      calls.push({ url, init });
+      return Response.json({ items: [], nextCursor: null });
+    },
+  });
+
+  await sdk.support.adoptSupportSession({
+    token: "restored-visitor-token",
+    visitorId: "visitor_1",
+    applicationId: "app_test",
+    expiresAt: "2099-01-01T00:00:00.000Z",
+  });
+
+  assert.equal(await sdk.auth.getAccessToken(), null);
+  await sdk.support.listTickets();
+  assert.equal(calls[0].init.headers.get("authorization"), "Bearer restored-visitor-token");
 });

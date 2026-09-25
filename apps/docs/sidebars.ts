@@ -79,6 +79,11 @@ const sidebars = {
     },
     {
       type: 'category',
+      label: 'Legal',
+      items: ['legal/terms-of-service', 'legal/privacy-policy'],
+    },
+    {
+      type: 'category',
       label: 'Reference',
       items: [
         'reference/README',

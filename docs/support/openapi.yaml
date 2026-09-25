@@ -1,0 +1,87 @@
+openapi: 3.1.0
+info:
+  title: HashPass Support API
+  version: 0.2.0
+  description: >
+    HashPass Support contract. Paths marked "Not implemented yet" below are
+    contract-only -- see docs/support/architecture.md's "What is still
+    deliberately not built" section for why. Every other path is a real,
+    tested route backed by db/migrations/V065__support_system.sql.
+paths:
+  /v1/support/sessions:
+    post:
+      summary: Create or identify a scoped support session
+      responses: { '200': { description: Support session } }
+  /v1/support/widget-config:
+    get:
+      summary: Return public widget configuration for an app ID
+      responses: { '200': { description: Widget configuration } }
+  /v1/support/tickets:
+    get:
+      summary: List support tickets visible to the caller
+      responses: { '200': { description: Cursor page of tickets } }
+    post:
+      summary: Create a support ticket; requires a support session and sends (not enqueues -- no queue exists) an admin notification email if SUPPORT_ADMIN_NOTIFICATION_EMAIL is configured
+      responses: { '201': { description: Created ticket } }
+  /v1/support/tickets/{ticketId}:
+    get:
+      summary: Get a support ticket
+      responses: { '200': { description: Ticket } }
+    patch:
+      summary: Update public ticket status such as resolved or reopened
+      responses: { '200': { description: Updated ticket } }
+  /v1/support/tickets/{ticketId}/messages:
+    get:
+      summary: List customer-visible ticket messages
+      responses: { '200': { description: Cursor page of messages } }
+    post:
+      summary: Create a customer message
+      responses: { '201': { description: Created message } }
+  /v1/support/tickets/{ticketId}/handoff:
+    post:
+      summary: Request human support
+      responses: { '200': { description: Updated ticket } }
+  /v1/support/tickets/{ticketId}/events:
+    get:
+      summary: Poll cursor-ordered support events
+      responses: { '200': { description: Event page } }
+  /v1/support/tickets/{ticketId}/read:
+    post:
+      summary: Mark ticket events read through a cursor
+      responses: { '200': { description: Updated ticket } }
+  /v1/integrations/kapso/webhook:
+    post:
+      summary: Receive Kapso webhooks with raw-body HMAC verification and idempotent persistence; does not process/reply (no worker exists yet)
+      responses: { '200': { description: Accepted or duplicate } }
+  /v1/integrations/kapso/health:
+    get:
+      summary: authorizeGlobalAdmin-gated Kapso integration health (secret configured?, unprocessed inbound event count)
+      responses: { '200': { description: Health status } }
+  /v1/integrations/kapso/test:
+    post:
+      summary: "Not implemented yet: privileged sandbox test send; disabled for production by default"
+      responses: { '202': { description: Test enqueued } }
+  /v1/admin/support/tickets:
+    get:
+      summary: Admin ticket list (authorizeGlobalAdmin-gated, keyset-paginated, optional appId/status filters)
+      responses: { '200': { description: Admin ticket page } }
+  /v1/admin/support/tickets/{ticketId}:
+    get:
+      summary: Admin ticket detail with its full message history and visitor identity
+      responses: { '200': { description: Admin ticket } }
+  /v1/admin/support/tickets/{ticketId}/assign:
+    post:
+      summary: "Not implemented yet: assign or claim a ticket"
+      responses: { '200': { description: Updated assignment } }
+  /v1/admin/support/tickets/{ticketId}/drafts:
+    post:
+      summary: "Not implemented yet: create an AI draft proposal for human approval"
+      responses: { '202': { description: Draft generation enqueued } }
+  /v1/admin/support/drafts/{draftId}/approve:
+    post:
+      summary: "Not implemented yet: approve current draft and create exactly one customer-visible agent message"
+      responses: { '200': { description: Approved draft } }
+  /v1/admin/support/drafts/{draftId}/reject:
+    post:
+      summary: "Not implemented yet: reject a draft without creating a customer-visible message"
+      responses: { '200': { description: Rejected draft } }

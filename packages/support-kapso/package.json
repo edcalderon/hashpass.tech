@@ -1,0 +1,21 @@
+{
+  "name": "@hashpass/support-kapso",
+  "version": "0.1.0",
+  "description": "Server-only Kapso WhatsApp adapter primitives for HashPass Support",
+  "license": "Apache-2.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": { ".": "./src/index.ts" },
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "clean": "rm -rf dist",
+    "test": "pnpm run clean && pnpm run build && node --test tests/*.test.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "engines": { "node": ">=20" },
+  "dependencies": { "@kapso/whatsapp-cloud-api": "^0.3.0" },
+  "devDependencies": { "@types/node": "^22.10.2", "typescript": "~5.8.3" }
+}

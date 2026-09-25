@@ -1,5 +1,6 @@
 import { HashpassError } from "../errors.js";
 import type { HttpTransport } from "../transport.js";
+import type { SupportSession } from "../support/types.js";
 import type {
   AuthSession,
   AuthSessionStore,
@@ -87,6 +88,23 @@ export class HashpassAuth implements SessionAuthProvider {
   }
 
   async onUnauthorized(): Promise<void> { await this.store.clear(); }
+
+  /**
+   * Support sessions (anonymous widget visitors) are a distinct, non-refreshable
+   * credential from the OAuth device-flow session above, but the transport only
+   * knows how to attach one bearer token. Adopting it into the same store is what
+   * makes `SupportClient` calls after `createSupportSession`/`identifySupportVisitor`
+   * actually carry the visitor's token instead of going out unauthenticated.
+   */
+  async adoptSupportSession(session: SupportSession): Promise<void> {
+    await this.store.set({
+      accessToken: session.token,
+      tokenType: "Bearer",
+      expiresAt: session.expiresAt,
+      scope: ["support"],
+      user: { id: session.visitorId },
+    });
+  }
 }
 
 function readReason(details: unknown): string | undefined {

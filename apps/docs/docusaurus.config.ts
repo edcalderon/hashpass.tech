@@ -8,6 +8,8 @@ function normalizeBaseUrl(value: string): string {
 
 const siteUrl = process.env.HASHPASS_DOCS_URL ?? 'https://hashpass.club';
 const baseUrl = normalizeBaseUrl(process.env.HASHPASS_DOCS_BASE_URL ?? '/');
+const legalTermsUrl = `${baseUrl}legal/terms-of-service`;
+const legalPrivacyUrl = `${baseUrl}legal/privacy-policy`;
 
 const config = {
   title: 'HASHPASS Docs',
@@ -98,12 +100,12 @@ const config = {
           title: 'HASHPASS',
           items: [
             { label: 'hashpass.tech', href: 'https://hashpass.tech' },
-            { label: 'Terms of Service', href: 'https://hashpass.tech/terms' },
-            { label: 'Privacy Policy', href: 'https://hashpass.tech/privacy' },
+            { label: 'Terms of Service', to: '/legal/terms-of-service' },
+            { label: 'Privacy Policy', to: '/legal/privacy-policy' },
           ],
         },
       ],
-      copyright: `© ${new Date().getFullYear()} HASHPASS. All rights reserved. · <a href="https://hashpass.tech/terms" style="color:inherit;">Terms</a> · <a href="https://hashpass.tech/privacy" style="color:inherit;">Privacy</a>`,
+      copyright: `© ${new Date().getFullYear()} HASHPASS. All rights reserved. · <a href="${legalTermsUrl}" style="color:inherit;">Terms</a> · <a href="${legalPrivacyUrl}" style="color:inherit;">Privacy</a>`,
     },
   },
 };
