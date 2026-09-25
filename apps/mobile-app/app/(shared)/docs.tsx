@@ -9,7 +9,9 @@ import { t } from '@lingui/macro';
 import { useLingui } from '@lingui/react';
 import { useTranslation } from '../../i18n/i18n';
 
-const DEFAULT_PROD_DOCS_URL = 'https://hashpass.tech/docs';
+// A dedicated HTTPS redirect keeps this short public link stable while the
+// documentation site remains published beneath the Club's canonical path.
+const DEFAULT_PROD_DOCS_URL = 'https://docs.hashpass.club/';
 const DEFAULT_LOCAL_DOCS_URL = 'http://localhost:3101/';
 
 function getDocumentationUrl() {

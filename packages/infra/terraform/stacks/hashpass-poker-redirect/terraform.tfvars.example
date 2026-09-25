@@ -1,0 +1,10 @@
+# The defaults create:
+# pkrr.hashpass.tech/* -> https://hashpass.tech/events/hash-poker/event-info/*
+# pkrr.io.hashpass.tech/* -> https://pkrr.io/*
+# while preserving paths and query strings.
+
+# aws_region = "us-east-2"
+# hashpass_zone_name = "hashpass.tech"
+# hash_poker_room_domain = "pkrr.hashpass.tech"
+# pkrr_io_domain = "pkrr.io.hashpass.tech"
+# tags = {}

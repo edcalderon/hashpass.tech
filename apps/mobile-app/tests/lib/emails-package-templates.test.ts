@@ -155,5 +155,17 @@ describe('@hashpass/emails templates', () => {
     );
     expect(signature.html).toContain('src="https://hashpass.tech/assets/email/signature/edward-calderon-portrait.d9bcbc18d656.jpg"');
     expect(signature.html).not.toContain('[https://');
+
+    // Legacy filenames are deliberately published as short-lived image
+    // objects during static-site deploys, so previously copied Gmail
+    // signatures cannot fall through to the SPA HTML document.
+    const staticDeployScript = readFileSync(
+      resolve(REPOSITORY_ROOT, 'packages/tools/scripts/deploy-static-site.sh'),
+      'utf8',
+    );
+    expect(staticDeployScript).toContain('Publishing backward-compatible email signature assets');
+    expect(staticDeployScript).toContain('assets/email/signature/edward-calderon-portrait.jpg');
+    expect(staticDeployScript).toContain('assets/email/signature/hashpass-wordmark.png');
+    expect(staticDeployScript).toContain('--content-type "${content_type}"');
   });
 });

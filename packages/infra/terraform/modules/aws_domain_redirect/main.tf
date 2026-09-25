@@ -9,9 +9,10 @@
 # no object in that bucket is ever actually read.
 
 locals {
-  bucket_name    = "${var.name_prefix}-unused-origin"
-  primary_domain = var.domain_names[0]
-  extra_domains  = slice(var.domain_names, 1, length(var.domain_names))
+  bucket_name        = "${var.name_prefix}-unused-origin"
+  primary_domain     = var.domain_names[0]
+  extra_domains      = slice(var.domain_names, 1, length(var.domain_names))
+  target_path_prefix = trimsuffix(var.target_path_prefix, "/")
   tags = merge(var.tags, {
     ManagedBy = "terraform"
     Service   = "domain-redirect"
@@ -113,7 +114,7 @@ resource "aws_cloudfront_function" "redirect" {
         statusCode: 301,
         statusDescription: 'Moved Permanently',
         headers: {
-          location: { value: '${var.target_origin}' + request.uri + query }
+          location: { value: '${var.target_origin}' + '${local.target_path_prefix}' + request.uri + query }
         }
       };
     }

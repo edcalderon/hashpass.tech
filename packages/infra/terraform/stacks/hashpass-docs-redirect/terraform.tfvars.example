@@ -1,0 +1,8 @@
+# The defaults create:
+# docs.hashpass.club/* -> https://hashpass.club/documentation/*
+# while preserving request paths and query strings.
+
+# aws_region = "us-east-2"
+# club_zone_name = "hashpass.club"
+# redirect_domain_names = ["docs.hashpass.club"]
+# tags = {}

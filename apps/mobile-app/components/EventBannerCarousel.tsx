@@ -142,6 +142,12 @@ interface CarouselSlide {
   campaignId?: string;
   campaignSrc?: ImageSourcePropType;
   campaignFit?: "cover" | "contain";
+  /**
+   * Explicit organizer approval to add app copy over campaign artwork. Most
+   * campaign images already include their event name, location and dates, so
+   * this stays opt-in to prevent duplicate, unreadable text.
+   */
+  campaignTextOverlaySafe?: boolean;
   campaignLogoSrc?: ImageSourcePropType;
   campaignCompactBranding?: boolean;
   campaignCity?: string;
@@ -157,6 +163,8 @@ interface CampaignSlideAsset {
   id: string;
   image: ImageSourcePropType;
   fit?: "cover" | "contain";
+  /** Only use for artwork with a deliberately clear copy-safe region. */
+  textOverlaySafe?: boolean;
   logo?: ImageSourcePropType;
   compactBranding?: boolean;
   city?: string;
@@ -291,6 +299,7 @@ const EVENT_CAMPAIGN_SLIDES: Record<string, CampaignSlideAsset> = {
     id: "hash-poker-room-campaign",
     image: HASH_POKER_ROOM_BANNER,
     logo: HASH_POKER_ROOM_LOGO,
+    textOverlaySafe: true,
     compactBranding: true,
     location: "Hash House Club",
     city: "Medellín",
@@ -303,6 +312,7 @@ const EVENT_CAMPAIGN_SLIDES: Record<string, CampaignSlideAsset> = {
     id: "bsl-colombia-2026-campaign",
     image: BSL_COLOMBIA_BOGOTA_BANNER,
     logo: BSL_COLOMBIA_LOGO,
+    textOverlaySafe: true,
     location: "Bogotá, Colombia",
     date: "5–6 noviembre 2026",
     accessibilityLabel: "Explore Blockchain Summit Latam Colombia 2026 in Bogotá",
@@ -330,6 +340,14 @@ const hexToRgba = (hex: string, alpha: number) => {
   }
   return hex;
 };
+
+/**
+ * Campaign artwork is organizer-owned and commonly carries its own event
+ * title, city, dates and partner marks. Extra app content may cover that
+ * information only after an explicit creative review approval.
+ */
+export const shouldOverlayCampaignText = (textOverlaySafe?: boolean): boolean =>
+  textOverlaySafe === true;
 
 export default function EventBannerCarousel({
   showDotIndicators = true,
@@ -509,6 +527,7 @@ export default function EventBannerCarousel({
           campaignId: campaign.id,
           campaignSrc: campaign.image,
           campaignFit: campaign.fit,
+          campaignTextOverlaySafe: campaign.textOverlaySafe,
           campaignLogoSrc: campaign.logo,
           campaignCompactBranding: campaign.compactBranding,
           campaignLocation: campaign.location,
@@ -1022,6 +1041,9 @@ export default function EventBannerCarousel({
       );
     }
     if (slide.type === "campaign" && slide.campaignSrc) {
+      const mayOverlayCampaignText = shouldOverlayCampaignText(
+        slide.campaignTextOverlaySafe,
+      );
       return (
         <View style={styles.cardInner}>
           <Image
@@ -1031,7 +1053,7 @@ export default function EventBannerCarousel({
             style={styles.campaignImage}
             resizeMode={slide.campaignFit || "cover"}
           />
-          {slide.campaignLogoSrc && (
+          {mayOverlayCampaignText && slide.campaignLogoSrc && (
             <View style={[
               styles.campaignBranding,
               slide.campaignCompactBranding && styles.campaignBrandingCompact,
@@ -1053,10 +1075,10 @@ export default function EventBannerCarousel({
               )}
             </View>
           )}
-          {slide.campaignCity && (
+          {mayOverlayCampaignText && slide.campaignCity && (
             <Text style={styles.campaignCity}>{slide.campaignCity}</Text>
           )}
-          {slide.campaignFederationLogoSrc && slide.campaignMinDeporteLogoSrc && (
+          {mayOverlayCampaignText && slide.campaignFederationLogoSrc && slide.campaignMinDeporteLogoSrc && (
             <View style={styles.campaignAffiliations}>
               <View style={styles.campaignAffiliationLogos}>
                 <View style={styles.campaignFederationMembership}>

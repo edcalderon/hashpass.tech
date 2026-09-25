@@ -4,6 +4,7 @@ import {
   AccessibilityInfo,
   Platform,
   ScrollView,
+  Text,
   TextInput,
   TouchableOpacity,
 } from "react-native";
@@ -86,6 +87,7 @@ jest.mock("../../lib/event-banners", () => ({
 
 import EventBannerCarousel, {
   resolveCarouselCardHeight,
+  shouldOverlayCampaignText,
 } from "../../components/EventBannerCarousel";
 import {
   getVisibleCarouselDotIndices,
@@ -160,6 +162,12 @@ it("keeps mobile pagination bounded while retaining the active card in view", ()
   expect(getVisibleCarouselDotIndices(12, 11)).toEqual([7, 8, 9, 10, 11]);
 });
 
+it("never layers app copy over campaign artwork without explicit approval", () => {
+  expect(shouldOverlayCampaignText()).toBe(false);
+  expect(shouldOverlayCampaignText(false)).toBe(false);
+  expect(shouldOverlayCampaignText(true)).toBe(true);
+});
+
 it("advances the native pager by one viewport and wraps after the final slide", () => {
   jest.useFakeTimers();
   render({ event: mockEvent, autoPlay: true, autoPlayInterval: 100 });
@@ -204,6 +212,11 @@ it("keeps native campaign slides accessible and connected to their event action"
 
   act(() => campaign.props.onPress());
   expect(onEventPress).toHaveBeenCalledWith(mockEvent);
+
+  // The poker campaign image is intentionally text-free. Its reviewed overlay
+  // supplies the club identity and must remain visible to sighted users too.
+  expect(view.root.findAllByType(Text).map((node) => node.children.join("")))
+    .toContain("Hash House Club");
 });
 
 it("keeps the approved event image as the loading poster for a hero film", () => {
