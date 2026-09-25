@@ -1,6 +1,10 @@
 import {readFile, writeFile} from 'node:fs/promises';
 import path from 'node:path';
-import {buildEventVideoBriefRequest, parseClaudeBrief} from './lib/event-video-brief.mjs';
+import {
+  buildClaudeMessagesFetchInit,
+  buildEventVideoBriefRequest,
+  parseClaudeBrief,
+} from './lib/event-video-brief.mjs';
 
 function parseArgs(args) {
   const result = {event: '', output: ''};
@@ -24,19 +28,10 @@ if (!apiKey || !model) {
 
 const event = JSON.parse(await readFile(path.resolve(eventPath), 'utf8'));
 const request = buildEventVideoBriefRequest(event);
-const response = await fetch('https://api.anthropic.com/v1/messages', {
-  method: 'POST',
-  headers: {
-    authorization: `Bearer ${apiKey}`,
-    'anthropic-version': '2023-06-01',
-    'content-type': 'application/json',
-  },
-  body: JSON.stringify({
-    model,
-    max_tokens: request.max_tokens,
-    messages: request.messages,
-  }),
-});
+const response = await fetch(
+  'https://api.anthropic.com/v1/messages',
+  buildClaudeMessagesFetchInit({apiKey, model, request}),
+);
 if (!response.ok) throw new Error(`Claude brief request failed with HTTP ${response.status}.`);
 
 const brief = parseClaudeBrief(await response.json());

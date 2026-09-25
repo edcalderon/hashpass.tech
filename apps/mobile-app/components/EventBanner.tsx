@@ -57,6 +57,8 @@ interface EventBannerProps {
   eventLabel?: string;
   eventShortName?: string;
   eventVideo?: string;
+  /** Only the visible carousel slide may decode and autoplay hero media. */
+  videoPlaybackEnabled?: boolean;
   ctaLabel?: string;
   ctaUrl?: string;
   ctaPosition?: EventBannerCtaPosition;
@@ -113,6 +115,7 @@ export default function EventBanner({
   eventLabel,
   eventShortName,
   eventVideo,
+  videoPlaybackEnabled = true,
   ctaLabel,
   ctaUrl,
   ctaPosition,
@@ -235,6 +238,7 @@ export default function EventBanner({
             loadingLogo={eventImage}
             loadingLabel={t("rework.loadingEventFilm", "Loading event film")}
             preferBundledSource={eventId === "criptolatinfest"}
+            playbackEnabled={videoPlaybackEnabled}
           />
           <SafeLinearGradient
             colors={

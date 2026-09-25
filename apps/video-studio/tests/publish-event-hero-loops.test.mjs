@@ -5,6 +5,12 @@ import path from 'node:path';
 import {spawnSync} from 'node:child_process';
 import test from 'node:test';
 
+import {
+  PRODUCTION_AWS_PROFILE,
+  createImmutableHeroUploadArgs,
+  verifyProductionAwsIdentity,
+} from '../scripts/lib/event-hero-publisher.mjs';
+
 const studio = path.resolve(import.meta.dirname, '..');
 const publisher = path.join(studio, 'scripts', 'publish-event-hero-loops.mjs');
 
@@ -44,4 +50,40 @@ test('prints the reviewed CDN publication plan without invoking AWS', async () =
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /Dry run only/);
   assert.match(result.stdout, /events\/cbweek2026\/branding\/hashpass-event-hero-v1\.mp4/);
+});
+
+test('pins hero uploads to the verified production AWS profile', () => {
+  const invocations = [];
+  verifyProductionAwsIdentity(
+    (args) => {
+      invocations.push(args);
+      return {status: 0, stdout: 'expected-production-account\n'};
+    },
+    'expected-production-account',
+  );
+
+  assert.deepEqual(invocations, [[
+    '--profile', PRODUCTION_AWS_PROFILE,
+    'sts', 'get-caller-identity', '--query', 'Account', '--output', 'text',
+  ]]);
+});
+
+test('uses an atomic non-overwrite request for immutable hero objects', () => {
+  const args = createImmutableHeroUploadArgs({
+    localPath: '/tmp/cbweek.mp4',
+    objectKey: 'events/cbweek2026/branding/hashpass-event-hero-v1.mp4',
+  }, 'hashpass-production-event-media-952191196420-us-east-2', 'us-east-2');
+
+  assert.deepEqual(args, [
+    '--profile', PRODUCTION_AWS_PROFILE,
+    's3api', 'put-object',
+    '--bucket', 'hashpass-production-event-media-952191196420-us-east-2',
+    '--key', 'events/cbweek2026/branding/hashpass-event-hero-v1.mp4',
+    '--body', '/tmp/cbweek.mp4',
+    '--region', 'us-east-2',
+    '--content-type', 'video/mp4',
+    '--cache-control', 'public,max-age=31536000,immutable',
+    '--if-none-match', '*',
+    '--only-show-errors',
+  ]);
 });

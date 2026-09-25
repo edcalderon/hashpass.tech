@@ -1,6 +1,12 @@
 import React from "react";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
-import { Platform, ScrollView, TextInput, TouchableOpacity } from "react-native";
+import {
+  AccessibilityInfo,
+  Platform,
+  ScrollView,
+  TextInput,
+  TouchableOpacity,
+} from "react-native";
 
 const mockEvent = {
   id: "hash-poker",
@@ -22,13 +28,16 @@ const mockWeekEvent = {
 const mockEvents = [mockEvent, mockWeekEvent];
 let mockIsMobile = true;
 let mockThemeIsDark = true;
+let mockAnimationLevel: "full" | "reduced" | "none" = "full";
+let mockGlobalTenant = true;
+let mockSystemReducedMotion = false;
 let mockTranslate = (
   _namespace: string | undefined,
   _key: string,
   fallback: string,
 ) => fallback;
 
-const mockBanners = ["first", "second"].map((id) => ({
+const initialMockBanners = ["first", "second"].map((id) => ({
   id,
   title: `Banner ${id}`,
   subtitle: "Hash House Club",
@@ -36,6 +45,7 @@ const mockBanners = ["first", "second"].map((id) => ({
   backgroundColor: "#07111F",
   media: { type: "image", url: "https://example.test/banner.jpg" },
 }));
+let mockBanners = initialMockBanners.map((banner) => ({ ...banner }));
 
 jest.mock("../../hooks/useTheme", () => ({
   useTheme: () => ({
@@ -54,7 +64,7 @@ jest.mock("../../components/LampBrandBanner", () => "LampBrandBanner");
 jest.mock("../../components/SafeLinearGradient", () => "SafeLinearGradient");
 jest.mock("../../components/CarouselTickPill", () => "CarouselTickPill");
 jest.mock("../../contexts/AnimationLevelContext", () => ({
-  useAnimationLevel: () => ({ animationLevel: "none" }),
+  useAnimationLevel: () => ({ animationLevel: mockAnimationLevel }),
 }));
 jest.mock("../../lib/morph-icon", () => ({ MorphIcon: "MorphIcon" }));
 jest.mock("lucide", () => ({
@@ -65,7 +75,7 @@ jest.mock("lucide", () => ({
 }));
 jest.mock("../../lib/event-detector", () => ({
   getAvailableEvents: () => mockEvents,
-  isGlobalEventTenant: () => true,
+  isGlobalEventTenant: () => mockGlobalTenant,
 }));
 jest.mock("../../lib/event-branding", () => ({ getLampBrandConfig: () => undefined }));
 jest.mock("../../lib/event-banners", () => ({
@@ -93,10 +103,20 @@ beforeEach(() => {
   (Platform as { OS: string }).OS = "android";
   mockIsMobile = true;
   mockThemeIsDark = true;
+  mockAnimationLevel = "full";
+  mockGlobalTenant = true;
+  mockSystemReducedMotion = false;
+  mockBanners = initialMockBanners.map((banner) => ({ ...banner }));
   mockTranslate = (_namespace, _key, fallback) => fallback;
   scrollTo = jest.fn();
   global.requestAnimationFrame = jest.fn(() => 0);
   global.cancelAnimationFrame = jest.fn();
+  jest.spyOn(AccessibilityInfo, "isReduceMotionEnabled").mockImplementation(() => ({
+    then: (resolve: (value: boolean) => unknown) => {
+      resolve(mockSystemReducedMotion);
+      return { catch: () => undefined };
+    },
+  }) as unknown as Promise<boolean>);
 });
 
 afterEach(() => {
@@ -105,6 +125,7 @@ afterEach(() => {
   global.requestAnimationFrame = originalRaf;
   global.cancelAnimationFrame = originalCancelRaf;
   jest.useRealTimers();
+  jest.restoreAllMocks();
 });
 
 function render(props: React.ComponentProps<typeof EventBannerCarousel>) {
@@ -204,6 +225,81 @@ it("keeps the approved event image as the loading poster for a hero film", () =>
     .toBe("https://example.test/hash-poker-poster.webp");
 
   mockBanners[0] = originalBanner;
+});
+
+it("plays only the active event hero film in the fallback carousel", async () => {
+  const originalBanners = [...mockBanners];
+  mockBanners[0] = {
+    ...mockBanners[0],
+    media: { type: "video", url: "https://example.test/first-hero.mp4" },
+  };
+  mockBanners[1] = {
+    ...mockBanners[1],
+    media: { type: "video", url: "https://example.test/second-hero.mp4" },
+  };
+
+  render({ event: mockEvent, autoPlay: false });
+  await act(async () => { await Promise.resolve(); });
+
+  const films = view.root.findAllByType("EventBanner" as any)
+    .filter((banner) => Boolean(banner.props.eventVideo));
+  expect(films.map((banner) => banner.props.videoPlaybackEnabled))
+    .toEqual([true, false]);
+
+  mockBanners.splice(0, mockBanners.length, ...originalBanners);
+});
+
+it("keeps event hero films stopped when the app animation setting disables motion", async () => {
+  const originalBanners = [...mockBanners];
+  mockAnimationLevel = "none";
+  mockBanners[0] = {
+    ...mockBanners[0],
+    media: { type: "video", url: "https://example.test/first-hero.mp4" },
+  };
+
+  render({ event: mockEvent, autoPlay: false });
+  await act(async () => { await Promise.resolve(); });
+
+  const films = view.root.findAllByType("EventBanner" as any)
+    .filter((banner) => Boolean(banner.props.eventVideo));
+  expect(films.map((banner) => banner.props.videoPlaybackEnabled))
+    .toEqual([false]);
+
+  mockBanners.splice(0, mockBanners.length, ...originalBanners);
+});
+
+it("keeps event hero films stopped for a system reduced-motion preference", async () => {
+  mockSystemReducedMotion = true;
+  mockBanners[0] = {
+    ...mockBanners[0],
+    media: { type: "video", url: "https://example.test/first-hero.mp4" },
+  };
+
+  render({ event: mockEvent, autoPlay: false });
+  await act(async () => { await Promise.resolve(); });
+
+  const films = view.root.findAllByType("EventBanner" as any)
+    .filter((banner) => Boolean(banner.props.eventVideo));
+  expect(films.map((banner) => banner.props.videoPlaybackEnabled))
+    .toEqual([false]);
+});
+
+it("keeps cloned peeking-carousel hero films paused offscreen", async () => {
+  (Platform as { OS: string }).OS = "web";
+  mockIsMobile = false;
+  mockGlobalTenant = false;
+  mockBanners = initialMockBanners.map((banner, index) => ({
+    ...banner,
+    media: { type: "video", url: `https://example.test/hero-${index}.mp4` },
+  }));
+
+  render({ autoPlay: false });
+  await act(async () => { await Promise.resolve(); });
+
+  const films = view.root.findAllByType("EventBanner" as any)
+    .filter((banner) => Boolean(banner.props.eventVideo));
+  expect(films.length).toBeGreaterThan(1);
+  expect(films.filter((banner) => banner.props.videoPlaybackEnabled)).toHaveLength(1);
 });
 
 it("adds an organizer proposal card with a working call to action", () => {

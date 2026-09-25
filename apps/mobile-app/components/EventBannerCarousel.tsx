@@ -361,7 +361,9 @@ export default function EventBannerCarousel({
     () => Platform.OS === "web" && isMobile,
   );
   const [isExplorerExpanded, setIsExplorerExpanded] = useState(false);
-  const [reduceMotion, setReduceMotion] = useState(false);
+  // Start motion-safe while the system preference is loading. This avoids an
+  // autoplay flash for people who have explicitly requested reduced motion.
+  const [reduceMotion, setReduceMotion] = useState(true);
   const searchInputRef = useRef<TextInput>(null);
 
   // Drag state for web mouse-grab on the carousel
@@ -433,8 +435,8 @@ export default function EventBannerCarousel({
   useEffect(() => {
     let active = true;
     void AccessibilityInfo.isReduceMotionEnabled()
-      .then((value) => { if (active && value) setReduceMotion(true); })
-      .catch(() => {});
+      .then((value) => { if (active) setReduceMotion(value); })
+      .catch(() => { if (active) setReduceMotion(true); });
     const subscription = AccessibilityInfo.addEventListener(
       "reduceMotionChanged",
       setReduceMotion,
@@ -559,9 +561,11 @@ export default function EventBannerCarousel({
   const [isPlaying, setIsPlaying] = useState(autoPlay);
   const [logicalIndex, setLogicalIndex] = useState(0);
   const [currentIndex, setCurrentIndex] = useState(0); // fallback slider only
+  const [activePhysicalIndex, setActivePhysicalIndex] = useState(1);
   const [wrapLock, setWrapLock] = useState(false); // debounce silent wrap-arounds
   const proposalSlideIndex = realSlides.findIndex((slide) => slide.type === "proposal");
   const activeSlideIndex = usePeekingCarousel ? logicalIndex : currentIndex;
+  const videoPlaybackAllowed = animationLevel === "full" && !reduceMotion;
   const animateProposal = animationLevel === "full"
     && !reduceMotion
     && proposalSlideIndex >= 0
@@ -630,6 +634,7 @@ export default function EventBannerCarousel({
         // for the programmatic scroll, especially on web.
         activeIndex.value = CLONE_OFFSET; // = 1, first real slide
         scrollX.value = contentPaddingX;
+        setActivePhysicalIndex(CLONE_OFFSET);
       });
     }
   }, [usePeekingCarousel, N, contentPaddingX]);
@@ -640,6 +645,7 @@ export default function EventBannerCarousel({
     // Derive physical index from scroll position
     const physIdx = Math.round((x - contentPaddingX) / snapInterval);
     activeIndex.value = physIdx;
+    setActivePhysicalIndex(physIdx);
 
     // Silent wrap during scroll: if we're near a clone position, snap to the
     // real slide without animation. This catches cases where momentumEnd
@@ -913,7 +919,7 @@ export default function EventBannerCarousel({
   }, [scrollX, snapInterval]);
 
   // Render slide content
-  const renderSlideContent = useCallback((slide: CarouselSlide) => {
+  const renderSlideContent = useCallback((slide: CarouselSlide, isActive = false) => {
     if (slide.type === "event") {
       if (!slide.event || !slide.banner) return null;
       const event = slide.event;
@@ -948,6 +954,7 @@ export default function EventBannerCarousel({
           eventImageTextOverlaySafe={banner.media.type === "image" && banner.media.textOverlaySafe === true}
           eventShortName={event.shortName}
           eventVideo={banner.media.type === "video" ? banner.media.url : undefined}
+          videoPlaybackEnabled={isActive && videoPlaybackAllowed}
           eventLabel={localizedBanner.eyebrow || event.recurrenceLabel}
           ctaLabel={localizedBanner.cta?.label}
           ctaUrl={localizedBanner.cta?.url}
@@ -1157,7 +1164,7 @@ export default function EventBannerCarousel({
       );
     }
     return null;
-  }, [isDark, translate, lampBrandingByEvent, showCtas, onEventPress, onProposeEvent, styles, proposalOrbOneStyle, proposalOrbTwoStyle, proposalGlossStyle]);
+  }, [isDark, translate, lampBrandingByEvent, showCtas, onEventPress, onProposeEvent, styles, proposalOrbOneStyle, proposalOrbTwoStyle, proposalGlossStyle, videoPlaybackAllowed]);
 
   // Web-only wheel wrapper props (typed as `any` because RN's ViewProps omits onWheel)
   // Fallback paging is deliberately left in the normal vertical wheel path.
@@ -1501,7 +1508,7 @@ export default function EventBannerCarousel({
                     }}
                     style={{ flex: 1 }}
                   >
-                    {renderSlideContent(slide)}
+                    {renderSlideContent(slide, physIdx === activePhysicalIndex)}
                   </TouchableOpacity>
                 </AnimatedCard>
               );
@@ -1530,7 +1537,7 @@ export default function EventBannerCarousel({
             onPointerUp={handlePointerUp}
             onPointerCancel={handlePointerCancel}
           >
-          {realSlides.map((slide) => {
+          {realSlides.map((slide, slideIndex) => {
             const key = slide.type === "logo"
               ? slide.logoId!
               : slide.type === "campaign"
@@ -1549,18 +1556,18 @@ export default function EventBannerCarousel({
                   onPress={() => handleEventPress(slide.event!)}
                   style={styles.slideFullWidth}
                 >
-                  {renderSlideContent(slide)}
+                  {renderSlideContent(slide, slideIndex === currentIndex)}
                 </TouchableOpacity>
               );
             }
 
             if (slide.type === "proposal") {
-              return <View key={key} style={styles.slideFullWidth}>{renderSlideContent(slide)}</View>;
+              return <View key={key} style={styles.slideFullWidth}>{renderSlideContent(slide, slideIndex === currentIndex)}</View>;
             }
 
             return (
               <View key={key} style={styles.slideFullWidth}>
-                {renderSlideContent(slide)}
+                {renderSlideContent(slide, slideIndex === currentIndex)}
               </View>
             );
           })}

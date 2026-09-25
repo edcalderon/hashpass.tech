@@ -38,6 +38,26 @@ export function buildEventVideoBriefRequest(event) {
   };
 }
 
+/** Build the raw Messages API request with Anthropic's API-key auth scheme. */
+export function buildClaudeMessagesFetchInit({apiKey, model, request}) {
+  if (typeof apiKey !== 'string' || !apiKey.trim()) throw new Error('Anthropic API key is required.');
+  if (typeof model !== 'string' || !model.trim()) throw new Error('Anthropic model is required.');
+
+  return {
+    method: 'POST',
+    headers: {
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: request.max_tokens,
+      messages: request.messages,
+    }),
+  };
+}
+
 export function parseClaudeBrief(response) {
   const text = response?.content?.find((block) => block.type === 'text')?.text;
   if (!text) throw new Error('Claude returned no text brief.');

@@ -4,6 +4,10 @@ import {access, readFile} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createHeroPublishPlan, validateEventHeroManifest} from './lib/event-hero-pipeline.mjs';
+import {
+  createImmutableHeroUploadArgs,
+  verifyProductionAwsIdentity,
+} from './lib/event-hero-publisher.mjs';
 
 const EXPECTED_EVENT_MEDIA_BUCKET = 'hashpass-production-event-media-952191196420-us-east-2';
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
@@ -53,18 +57,22 @@ async function main() {
     return;
   }
 
+  const expectedAccountId = requiredEnvironment('AWS_TARGET_ACCOUNT_ID');
+  verifyProductionAwsIdentity(
+    (args) => spawnSync('aws', args, {encoding: 'utf8', shell: false}),
+    expectedAccountId,
+  );
+
   for (const entry of plan) {
-    const result = spawnSync('aws', [
-      's3', 'cp', entry.localPath, `s3://${bucket}/${entry.objectKey}`,
-      '--region', region,
-      '--content-type', 'video/mp4',
-      '--cache-control', 'public,max-age=31536000,immutable',
-      '--only-show-errors',
-    ], {stdio: 'inherit', shell: false});
+    const result = spawnSync(
+      'aws',
+      createImmutableHeroUploadArgs(entry, bucket, region),
+      {stdio: 'inherit', shell: false},
+    );
     if (result.status !== 0) process.exit(result.status ?? 1);
   }
 
-  console.log(`Published ${plan.length} immutable event hero loop(s).`);
+  console.log(`Published ${plan.length} new immutable event hero loop(s).`);
 }
 
 main().catch((error) => {

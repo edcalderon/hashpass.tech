@@ -134,8 +134,11 @@ pnpm --filter hashpass-video-studio run event-heroes:publish -- --publish
 
 Set `EVENT_MEDIA_BUCKET`, `EVENT_MEDIA_REGION`, and
 `EVENT_MEDIA_PUBLIC_BASE_URL` only in ignored local environment files. The
-publisher only accepts the approved event-media bucket, writes immutable
-event-scoped keys, and requires the explicit `--publish` flag. Do not release
+publisher only accepts the approved event-media bucket, verifies the `hashpass`
+AWS profile against `AWS_TARGET_ACCOUNT_ID`, writes immutable event-scoped
+keys, and requires the explicit `--publish` flag. It atomically refuses to
+replace an existing object, so revised media must use a newly reviewed asset
+version. Do not release
 the application configuration until that publish succeeds; otherwise its
 image fallback is preferable to a broken video URL.
 

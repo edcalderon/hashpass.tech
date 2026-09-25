@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import {buildEventVideoBriefRequest} from '../scripts/lib/event-video-brief.mjs';
+import {
+  buildClaudeMessagesFetchInit,
+  buildEventVideoBriefRequest,
+} from '../scripts/lib/event-video-brief.mjs';
 
 test('builds a constrained Claude brief for a reviewed event background loop', () => {
   const request = buildEventVideoBriefRequest({
@@ -25,4 +28,19 @@ test('builds a constrained Claude brief for a reviewed event background loop', (
     'negativePrompt',
     'reviewChecklist',
   ]);
+});
+
+test('sends the configured Anthropic API key with the Messages API key header', () => {
+  const init = buildClaudeMessagesFetchInit({
+    apiKey: 'test-anthropic-key',
+    model: 'claude-opus-4-6',
+    request: buildEventVideoBriefRequest({
+      id: 'cbweek2026',
+      title: 'Colombia Blockchain Week 2026',
+    }),
+  });
+
+  assert.equal(init.headers['x-api-key'], 'test-anthropic-key');
+  assert.equal(init.headers['anthropic-version'], '2023-06-01');
+  assert.equal(init.headers.authorization, undefined);
 });
