@@ -19,6 +19,11 @@ tools, APIs, integrations, rewards, blockchain functionality, and
 related services (“Services”). By using the Services, you agree to these
 Terms. Mandatory rights under applicable law remain unaffected.
 
+> **25 September 2026 revision.** This version includes the $LKS additional
+> terms in Section 19. The [LKS LatAm Currency Index notice](lks-latam-currency-index.md)
+> is explanatory product documentation; it does not amend these Terms or any
+> binding issuer, custody, redemption, exchange, or protocol terms.
+
 ## 1. SERVICES
 
 HASHPASS provides event identity, credential, access,

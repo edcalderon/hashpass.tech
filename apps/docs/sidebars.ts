@@ -80,7 +80,11 @@ const sidebars = {
     {
       type: 'category',
       label: 'Legal',
-      items: ['legal/terms-of-service', 'legal/privacy-policy'],
+      items: [
+        'legal/terms-of-service',
+        'legal/privacy-policy',
+        'legal/lks-latam-currency-index',
+      ],
     },
     {
       type: 'category',

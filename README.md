@@ -20,19 +20,21 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.64)
+## 📋 Latest Changes (v1.9.65)
 
-### Released
-- add verified business invitation flow
+### Bug Fixes
+
+* **invites:** repair pending Business access requests ([25fcf75](https://github.com/hashpass-tech/hashpass.tech/commit/25fcf75f04c5bb00a5869c73b449d3e30e94a8ae))
+### Release Highlights
+- repair pending Business access requests
 
 ### Release scope
-- Compared with: `v1.9.63` (the previous global release tag)
+- Compared with: `v1.9.64` (the previous global release tag)
 
 ### Affected products & packages
 - Mobile app
-- QR links API
 - Database migrations
-- Infrastructure
+- Documentation
 - Release tooling
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)

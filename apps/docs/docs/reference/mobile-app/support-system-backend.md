@@ -5,10 +5,8 @@ foundations (SDK extensions, the `@hashpass/support-widget` Web Component,
 `@hashpass/support-kapso`, CLI commands, an OpenAPI draft) with **no backend
 behind them at all** — every `/v1/support/*` call would 404. A second pass
 on the same PR added the real backend so the widget/SDK/CLI actually work.
-The exhaustive, kept-current version of this document is
-[`docs/support/architecture.md`](../../../../../docs/support/architecture.md)
-at the repo root, alongside [`docs/support/openapi.yaml`](../../../../../docs/support/openapi.yaml) —
-this page is the pointer into the docs site.
+The exhaustive architecture report and OpenAPI source remain maintained in the
+repository alongside the implementation; this page is the public-docs summary.
 
 ## What's real
 

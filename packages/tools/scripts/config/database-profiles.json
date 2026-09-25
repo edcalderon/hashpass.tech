@@ -123,7 +123,10 @@
       "db/migrations/V099__business_invite_campaigns.sql",
       "db/migrations/V100__seed_bsl_colombia_business_invite.sql",
       "db/migrations/V101__multi_event_business_invite_campaign.sql",
-      "db/migrations/V102__business_invite_approval_workflow.sql"
+      "db/migrations/V102__business_invite_approval_workflow.sql",
+      "db/migrations/V103__correct_business_invite_colombia_event_scope.sql",
+      "db/migrations/V104__allow_business_invite_notification_types.sql",
+      "db/migrations/V105__cast_business_invite_pass_user_id.sql"
     ],
     "support-system": [
       "db/migrations/V097__support_system.sql",

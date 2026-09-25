@@ -7,6 +7,10 @@ const migrationPath = path.resolve(
   __dirname,
   "../../../../db/migrations/V102__business_invite_approval_workflow.sql",
 );
+const passUserIdMigrationPath = path.resolve(
+  __dirname,
+  "../../../../db/migrations/V105__cast_business_invite_pass_user_id.sql",
+);
 
 describe("business invite approval migration", () => {
   it("keeps the public code pending until an approved administrator grants both event entitlements", () => {
@@ -53,5 +57,18 @@ describe("business invite approval migration", () => {
     }
     expect(migration).toContain("TO service_role");
     expect(migration).not.toContain("edward@hashpass.app");
+  });
+
+  it("casts approval lookups to the production text pass-user identifier", () => {
+    expect(fs.existsSync(passUserIdMigrationPath)).toBe(true);
+
+    const migration = fs
+      .readFileSync(passUserIdMigrationPath, "utf8")
+      .replace(/\s+/g, " ");
+    expect(migration).toContain(
+      "CREATE OR REPLACE FUNCTION public.ensure_business_invite_event_pass",
+    );
+    expect(migration.match(/pass\.user_id = p_user_id::text/g)).toHaveLength(2);
+    expect(migration).toContain("USING v_pass_id, p_user_id::text, p_event_id");
   });
 });

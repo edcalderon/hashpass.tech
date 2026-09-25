@@ -56,11 +56,10 @@ The pipelines and CodeBuild projects remain available for owner-approved
 recovery; they are not normal release triggers. No EC2 instances were present
 in `us-east-1` or `us-east-2` at verification. Do not provision or re-enable
 workers without explicit owner approval. See [github-outage-monitor.md](github-outage-monitor.md)
-for outage detection and the
-[canonical build-cost task](../../../../.agents/active/task-build-cost-containment-and-cicd-migration.md)
-for verified deployment evidence, recovery safeguards, and remaining cost
-observation. Historical EC2 hang diagnostics are not instructions to restore
-that build path.
+for outage detection and the internal canonical build-cost record for verified
+deployment evidence, recovery safeguards, and remaining cost observation.
+Historical EC2 hang diagnostics are not instructions to restore that build
+path.
 
 **Separate legacy workflow:** [`infra-deploy.yml`](../../../../.github/workflows/infra-deploy.yml)
 remains active, with matching `main`/`develop` push triggers and manual dispatch.
