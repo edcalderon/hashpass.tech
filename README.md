@@ -20,17 +20,16 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.66)
+## 📋 Latest Changes (v1.9.67)
 
 ### Released
-- protect carousel artwork from text overlays; serve legacy email signature assets
+- add developer SDK documentation hub
 
 ### Release scope
-- Compared with: `v1.9.65` (the previous global release tag)
+- Compared with: `v1.9.66` (the previous global release tag)
 
 ### Affected products & packages
-- Mobile app
-- Release tooling
+- Documentation
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
