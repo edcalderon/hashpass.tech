@@ -22,23 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202609251719, // Updated to current timestamp
+  buildNumber: 202609252013, // Updated to current timestamp
   releaseDate: '2026-09-25',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    // No new features
+    'add developer SDK documentation hub'
   ],
   bugfixes: [
-    'protect carousel artwork from text overlays',
-    'serve legacy email signature assets'
+    // No bugfixes
   ],
   breakingChanges: [],
-  notes: 'protect carousel artwork from text overlays; serve legacy email signature assets'
+  notes: 'add developer SDK documentation hub'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.67': {
+    version: '1.9.67',
+    buildNumber: 202609252013,
+    releaseDate: '2026-09-25',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'add developer SDK documentation hub'
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'add developer SDK documentation hub'
+  },
   '1.9.66': {
     version: '1.9.66',
     buildNumber: 202609251719,

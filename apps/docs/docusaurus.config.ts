@@ -63,6 +63,11 @@ const config = {
           label: 'Docs',
         },
         {
+          to: '/developers/',
+          label: 'Developers',
+          position: 'left',
+        },
+        {
           href: 'https://hashpass.tech',
           label: 'HASHPASS',
           position: 'right',
@@ -78,13 +83,21 @@ const config = {
       style: 'dark',
       links: [
         {
-          title: 'Docs',
+          title: 'Platform',
           items: [
             { label: 'Overview', to: '/overview' },
-            { label: 'Media Kit', to: '/media-kit' },
             { label: 'Auth', to: '/auth/' },
             { label: 'Infra', to: '/infra/' },
-            { label: 'Storybook', to: '/storybook/' },
+            { label: 'Deployment', to: '/deployment/' },
+          ],
+        },
+        {
+          title: 'Developers',
+          items: [
+            { label: 'SDK overview', to: '/developers/' },
+            { label: 'Quickstart', to: '/developers/sdk-quickstart' },
+            { label: 'QR sign-in', to: '/developers/qr-sign-in' },
+            { label: 'Support API', to: '/developers/support' },
           ],
         },
         {

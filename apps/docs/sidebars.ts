@@ -3,6 +3,17 @@ const sidebars = {
     'README',
     {
       type: 'category',
+      label: 'Developer SDK',
+      items: [
+        'developers/README',
+        'developers/sdk-quickstart',
+        'developers/qr-sign-in',
+        'developers/support',
+        'developers/qr-links',
+      ],
+    },
+    {
+      type: 'category',
       label: 'Brand and Media',
       items: ['brand/media-kit', 'brand/brand-guidelines'],
     },

@@ -1,3 +1,13 @@
+## [1.9.67](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.66...v1.9.67) (2026-09-25)
+### Released
+- add developer SDK documentation hub
+
+### Release scope
+- Compared with: `v1.9.66` (the previous global release tag)
+
+### Affected products & packages
+- Documentation
+
 ## [1.9.66](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.65...v1.9.66) (2026-09-25)
 ### Released
 - protect carousel artwork from text overlays; serve legacy email signature assets
