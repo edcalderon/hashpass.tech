@@ -37,6 +37,45 @@ Remotion Studio there alongside the other dev servers, so you can record a
 flow from the running mobile-app/web-app dev server and drop the capture
 straight into the studio without leaving the `dev:all` session.
 
+## Diffusion Studio handoff
+
+Remotion remains the canonical composition and final-render engine. Use
+[Diffusion Studio](https://diffusion.studio/download) for agent-assisted
+footage analysis, rough cuts, captions, and generated source media, then
+bring an explicitly approved cut into this studio rather than maintaining a
+second timeline here.
+
+In the Diffusion project directory, create `hashpass-handoff.json`:
+
+```json
+{
+  "version": 1,
+  "source": "diffusion-studio",
+  "imports": [{
+    "id": "event-discovery-v1",
+    "composition": "AppTutorialEN",
+    "source": "exports/event-discovery.mp4",
+    "title": "Discover events",
+    "caption": "Find your next event",
+    "trimStartSeconds": 0
+  }]
+}
+```
+
+Then import it:
+
+```bash
+pnpm --filter hashpass-video-studio diffusion:import -- \
+  --project /absolute/path/to/diffusion-project
+```
+
+The importer accepts only media inside that project (`.mp4`, `.mov`, or
+`.webm`), copies it under `public/recordings/diffusion/`, and updates
+`src/content/diffusion-imports.json`. Those entries are appended to the
+declared target composition and are rendered by Remotion like every other
+recording. The generated manifest is reviewable source of truth; do not
+commit Diffusion's editor cache or agent credentials.
+
 ## Layout
 
 ```
