@@ -191,13 +191,29 @@ export async function POST(request: Request) {
         );
       }
 
+      // A 401 here means the service role is not accepted by the configured
+      // Supabase project, which is an upstream configuration outage. Other
+      // 4xx responses are request/policy rejections and must remain client
+      // errors for callers and monitoring, without exposing provider details.
+      const isClientAuthRejection =
+        errorStatus >= 400 && errorStatus < 500 && errorStatus !== 401;
+      const responseStatus = isClientAuthRejection ? errorStatus : 503;
+
       return new Response(
-        JSON.stringify({
-          error: 'Authentication service unavailable',
-          code: 'auth_service_unavailable',
-          message: 'We could not start your sign-in request. Please try again shortly.',
-        }),
-        { status: 503, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+        JSON.stringify(
+          isClientAuthRejection
+            ? {
+                error: 'Authentication request rejected',
+                code: 'auth_request_rejected',
+                message: 'This sign-in request cannot be processed. Check your email address or use another sign-in method.',
+              }
+            : {
+                error: 'Authentication service unavailable',
+                code: 'auth_service_unavailable',
+                message: 'We could not start your sign-in request. Please try again shortly.',
+              },
+        ),
+        { status: responseStatus, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
       );
     }
 

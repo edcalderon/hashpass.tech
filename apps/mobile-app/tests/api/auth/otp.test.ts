@@ -75,4 +75,23 @@ describe('otp send api', () => {
     expect(payload).toMatchObject({ code: 'auth_service_unavailable' });
     expect(JSON.stringify(payload)).not.toContain('Database error saving new user');
   });
+
+  it('keeps an identity-provider client rejection a client error while sanitizing it', async () => {
+    mockGenerateLink.mockResolvedValue({
+      data: null,
+      error: { message: 'email address is not allowed', status: 422 },
+    });
+    const { POST } = require('../../../app/api/auth/otp+api');
+
+    const response = await POST(new Request('https://api.hashpass.tech/api/auth/otp', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email: 'user@example.com', delivery: 'email' }),
+    }));
+    const payload = await response.json();
+
+    expect(response.status).toBe(422);
+    expect(payload).toMatchObject({ code: 'auth_request_rejected' });
+    expect(JSON.stringify(payload)).not.toContain('email address is not allowed');
+  });
 });
