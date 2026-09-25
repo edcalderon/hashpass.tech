@@ -1,3 +1,21 @@
+## [1.9.65](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.64...v1.9.65) (2026-09-25)
+
+
+### Bug Fixes
+
+* **invites:** repair pending Business access requests ([25fcf75](https://github.com/hashpass-tech/hashpass.tech/commit/25fcf75f04c5bb00a5869c73b449d3e30e94a8ae))
+### Release Highlights
+- repair pending Business access requests
+
+### Release scope
+- Compared with: `v1.9.64` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Database migrations
+- Documentation
+- Release tooling
+
 ## [1.9.64](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.63...v1.9.64) (2026-09-25)
 ### Released
 - add verified business invitation flow

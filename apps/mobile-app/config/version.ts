@@ -22,22 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202609250959, // Updated to current timestamp
+  buildNumber: 202609251622, // Updated to current timestamp
   releaseDate: '2026-09-25',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'add verified business invitation flow'
+    // No new features
   ],
   bugfixes: [
-    // No bugfixes
+    'repair pending Business access requests'
   ],
   breakingChanges: [],
-  notes: 'add verified business invitation flow'
+  notes: 'repair pending Business access requests'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.65': {
+    version: '1.9.65',
+    buildNumber: 202609251622,
+    releaseDate: '2026-09-25',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'repair pending Business access requests'
+    ],
+    breakingChanges: [],
+    notes: 'repair pending Business access requests'
+  },
   '1.9.64': {
     version: '1.9.64',
     buildNumber: 202609250959,
