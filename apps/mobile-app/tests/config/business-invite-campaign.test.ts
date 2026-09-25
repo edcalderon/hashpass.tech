@@ -49,6 +49,8 @@ describe("business invitation campaign migration", () => {
       "db/migrations/V100__seed_bsl_colombia_business_invite.sql",
       "db/migrations/V101__multi_event_business_invite_campaign.sql",
       "db/migrations/V102__business_invite_approval_workflow.sql",
+      "db/migrations/V103__correct_business_invite_colombia_event_scope.sql",
+      "db/migrations/V104__allow_business_invite_notification_types.sql",
     ];
     const primaryMigration = fs.readFileSync(migrationPath, "utf8");
 
@@ -69,7 +71,7 @@ describe("business invitation campaign migration", () => {
     expect(primaryMigration).toContain("'colombia2026'");
   });
 
-  it("upgrades an approved invite across the BSL and Colombia event passes", () => {
+  it("upgrades an approved invite across the Colombia BSL and Colombia event passes", () => {
     const migration = fs.existsSync(multiEventMigrationPath)
       ? fs.readFileSync(multiEventMigrationPath, "utf8").replace(/\s+/g, " ")
       : "";
@@ -77,7 +79,8 @@ describe("business invitation campaign migration", () => {
     expect(migration).toContain(
       "CREATE TABLE IF NOT EXISTS public.business_invite_campaign_events",
     );
-    expect(migration).toContain("'bsl'");
+    expect(migration).toContain("SET event_id = 'colombia2026'");
+    expect(migration).toContain("'colombia2026'");
     expect(migration).toContain("'cbweek2026'");
     expect(migration).toContain("FOR v_event IN");
     expect(migration).toContain("v_pass_ids := v_pass_ids || jsonb_build_object");
@@ -85,5 +88,34 @@ describe("business invitation campaign migration", () => {
     expect(migration).toContain(
       "REVOKE ALL ON FUNCTION public.claim_business_invite(text) FROM PUBLIC, anon, authenticated, service_role",
     );
+  });
+
+  it("provisions the CBWeek target on production schemas without requiring the development-only is_demo column", () => {
+    const migration = fs.existsSync(multiEventMigrationPath)
+      ? fs.readFileSync(multiEventMigrationPath, "utf8")
+      : "";
+
+    expect(migration).toContain("'cbweek2026'");
+    expect(migration).not.toMatch(/\bis_demo\b/);
+  });
+
+  it("allows the invite workflow notification types on the legacy notification schema", () => {
+    const notificationMigrationPath = path.join(
+      repoRoot,
+      "db/migrations/V104__allow_business_invite_notification_types.sql",
+    );
+    const migration = fs.existsSync(notificationMigrationPath)
+      ? fs.readFileSync(notificationMigrationPath, "utf8").replace(/\s+/g, " ")
+      : "";
+
+    expect(migration).toContain("DROP CONSTRAINT IF EXISTS notifications_type_check");
+    for (const type of [
+      "business_invite_pending",
+      "business_invite_review_required",
+      "business_invite_rejected",
+      "business_invite_approved",
+    ]) {
+      expect(migration).toContain(`'${type}'`);
+    }
   });
 });

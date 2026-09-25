@@ -14,7 +14,7 @@ BEGIN;
 -- and Business tier available in every profile that accepts this campaign.
 INSERT INTO public.events (
   id, name, slug, status, starts_at, ends_at, timezone,
-  venue_name, city, country, description, branding, metadata, is_demo
+  venue_name, city, country, description, branding, metadata
 )
 VALUES (
   'cbweek2026',
@@ -29,8 +29,7 @@ VALUES (
   'Colombia',
   'Colombia Blockchain Week, focused on blockchain, crypto, digital assets, tokenization, DeFi, regulation, AI, security, and compliance.',
   '{"primaryColor":"#FCD116","secondaryColor":"#050507","favicon":"/favicon.ico"}'::jsonb,
-  '{"domain":"cbweek2026.hashpass.tech","website":"https://colombiablockchainweek.com/","organizer":"LATAM Blockchain Events LLC","venueAddress":"Calle 16, Variante #28-51, Las Palmas, El Poblado, Medellín","welcomeDrink":{"date":"2026-12-11","access":"private"},"mainDay":{"date":"2026-12-12","startsAt":"08:30","endsAt":"18:00"},"sourceFactsVerifiedAt":"2026-09-02","speakerStatus":"not_announced","agendaStatus":"not_announced","features":["speakers","agenda"]}'::jsonb,
-  false
+  '{"domain":"cbweek2026.hashpass.tech","website":"https://colombiablockchainweek.com/","organizer":"LATAM Blockchain Events LLC","venueAddress":"Calle 16, Variante #28-51, Las Palmas, El Poblado, Medellín","welcomeDrink":{"date":"2026-12-11","access":"private"},"mainDay":{"date":"2026-12-12","startsAt":"08:30","endsAt":"18:00"},"sourceFactsVerifiedAt":"2026-09-02","speakerStatus":"not_announced","agendaStatus":"not_announced","features":["speakers","agenda"]}'::jsonb
 )
 ON CONFLICT (id) DO UPDATE SET
   name = EXCLUDED.name,
@@ -45,7 +44,6 @@ ON CONFLICT (id) DO UPDATE SET
   description = EXCLUDED.description,
   branding = public.events.branding || EXCLUDED.branding,
   metadata = public.events.metadata || EXCLUDED.metadata,
-  is_demo = false,
   updated_at = now();
 
 INSERT INTO public.event_pass_tiers (
@@ -79,7 +77,7 @@ GRANT ALL ON public.business_invite_campaign_events TO service_role;
 -- Retain campaign.event_id as the primary/legacy response field, but make the
 -- campaign scope explicit and limited to the two Business entitlements.
 UPDATE public.business_invite_campaigns
-SET event_id = 'bsl',
+SET event_id = 'colombia2026',
     label = 'BSL and Colombia Blockchain Week 2026 Business invitation',
     max_claims = NULL,
     expires_at = NULL,
@@ -91,12 +89,12 @@ DELETE FROM public.business_invite_campaign_events AS target
 USING public.business_invite_campaigns AS campaign
 WHERE target.campaign_id = campaign.id
   AND campaign.code_hash = encode(digest('9899', 'sha256'), 'hex')
-  AND target.event_id NOT IN ('bsl', 'cbweek2026');
+  AND target.event_id NOT IN ('colombia2026', 'cbweek2026');
 
 INSERT INTO public.business_invite_campaign_events (campaign_id, event_id)
 SELECT campaign.id, targets.event_id
 FROM public.business_invite_campaigns AS campaign
-CROSS JOIN (VALUES ('bsl'::text), ('cbweek2026'::text)) AS targets(event_id)
+CROSS JOIN (VALUES ('colombia2026'::text), ('cbweek2026'::text)) AS targets(event_id)
 WHERE campaign.code_hash = encode(digest('9899', 'sha256'), 'hex')
   AND EXISTS (
     SELECT 1 FROM public.events AS event
@@ -169,7 +167,7 @@ BEGIN
       ON tier.event_id = targets.event_id AND tier.pass_type = 'business'
     WHERE targets.campaign_id = v_campaign.id
       AND event.status = 'published'
-    ORDER BY CASE targets.event_id WHEN 'bsl' THEN 0 WHEN 'cbweek2026' THEN 1 ELSE 2 END
+    ORDER BY CASE targets.event_id WHEN 'colombia2026' THEN 0 WHEN 'cbweek2026' THEN 1 ELSE 2 END
   LOOP
     SELECT max_meeting_requests, max_boost_amount
     INTO v_max_requests, v_max_boost
