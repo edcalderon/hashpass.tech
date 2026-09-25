@@ -4,15 +4,27 @@ import path from "node:path";
 const root = path.resolve(__dirname, "../../../..");
 
 describe("CBWeek migration plans", () => {
+  it("ships the support schema through every default tenant migration plan", () => {
+    for (const profile of ["core-development", "core-production", "bsl-development", "bsl-production"]) {
+      const plan = execFileSync(process.execPath, [
+        "packages/tools/scripts/migrate-tenant-db.mjs",
+        "--profile", profile, "--dry-run",
+      ], { cwd: root, encoding: "utf8" });
+
+      expect(plan).toContain("db/migrations/V097__support_system.sql");
+    }
+  });
+
   it("runs event search aliases after the CBWeek bootstrap on BSL development", () => {
     const plan = execFileSync(process.execPath, [
       "packages/tools/scripts/migrate-tenant-db.mjs",
       "--profile", "bsl-development", "--dry-run",
     ], { cwd: root, encoding: "utf8" });
     const files = plan.split("\n").filter((line) => line.trim().startsWith("- db/"));
-    const position = (version: string) => files.findIndex((line) => line.includes(`/${version}__`));
+    const position = (migration: string) => files.findIndex((line) => line.includes(`/${migration}`));
 
-    expect(position("V097")).toBeGreaterThan(position("V096"));
+    expect(position("V097__add_event_search_aliases.sql"))
+      .toBeGreaterThan(position("V096__enable_cbweek_chat_and_speaker_order.sql"));
   });
 
   it.each([[], ["--groups", "demo-event-bootstrap"]])(

@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "plane": {"command":"docker","args":["run","--rm","-i","-e","PLANE_API_KEY","-e","PLANE_BASE_URL=https://work.hashpass.tech","makeplane/plane-mcp-server:v0.3.2"]},
+    "hashpass-helpdesk-read": {"command":"node","args":["packages/frappe-helpdesk-mcp/src/server.mjs"],"env":{"FRAPPE_MCP_MODE":"read"}},
+    "hashpass-helpdesk-write": {"command":"node","args":["packages/frappe-helpdesk-mcp/src/server.mjs"],"env":{"FRAPPE_MCP_MODE":"write","FRAPPE_MCP_ALLOW_WRITES":"true"}}
+  }
+}

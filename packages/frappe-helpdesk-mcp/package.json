@@ -1,0 +1,9 @@
+{
+  "name": "@hashpass-tech/frappe-helpdesk-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {"hashpass-frappe-mcp": "src/server.mjs"},
+  "scripts": {"test": "node --test tests/*.test.mjs"},
+  "dependencies": {"@modelcontextprotocol/sdk": "1.6.1", "zod": "^3.24.2"}
+}

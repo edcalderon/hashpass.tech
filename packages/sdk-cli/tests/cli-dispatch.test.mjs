@@ -8,7 +8,11 @@ import { runCli } from "../dist/index.js";
 function io() {
   const out = [];
   const errors = [];
-  return { out, errors, io: { out: (m) => out.push(m), error: (m) => errors.push(m) } };
+  return {
+    out,
+    errors,
+    io: { out: (m) => out.push(m), error: (m) => errors.push(m) },
+  };
 }
 
 async function baseEnv(extra = {}) {
@@ -46,9 +50,16 @@ test("--help flag prints help even alongside an otherwise-valid command", async 
 
 test("missing app id fails fast with a clear message, before any SDK call", async () => {
   const { errors, io: capture } = io();
-  const code = await runCli(["whoami"], await baseEnv({ HASHPASS_APP_ID: undefined }), capture);
+  const code = await runCli(
+    ["whoami"],
+    await baseEnv({ HASHPASS_APP_ID: undefined }),
+    capture,
+  );
   assert.equal(code, 1);
-  assert.equal(errors[0], "Set HASHPASS_APP_ID or pass --app-id <public-app-id>.");
+  assert.equal(
+    errors[0],
+    "Set HASHPASS_APP_ID or pass --app-id <public-app-id>.",
+  );
 });
 
 test("login drives the device-code flow and prints the verification URL and code before completing", async () => {
@@ -83,7 +94,11 @@ test("login drives the device-code flow and prints the verification URL and code
   assert.equal(out[0], "Open https://hashpass.tech/device?code=ABCD-EFGH");
   assert.equal(out[1], "Code: ABCD-EFGH");
   const result = JSON.parse(out[2]);
-  assert.deepEqual(result, { authenticated: true, user: { id: "user_1", email: "person@example.test" }, expiresAt: "2099-01-01T00:00:00.000Z" });
+  assert.deepEqual(result, {
+    authenticated: true,
+    user: { id: "user_1", email: "person@example.test" },
+    expiresAt: "2099-01-01T00:00:00.000Z",
+  });
 });
 
 test("whoami reports not-logged-in as a handled error, not a crash", async () => {
@@ -104,16 +119,34 @@ test("whoami reads the persisted session without making a network call", async (
     user: { id: "user_1" },
   });
   const { out, io: capture } = io();
-  const code = await withFetch(() => { throw new Error("whoami must not call fetch for a fresh, unexpired session"); }, () => runCli(["whoami"], env, capture));
+  const code = await withFetch(
+    () => {
+      throw new Error(
+        "whoami must not call fetch for a fresh, unexpired session",
+      );
+    },
+    () => runCli(["whoami"], env, capture),
+  );
 
   assert.equal(code, 0);
-  assert.deepEqual(JSON.parse(out[0]), { user: { id: "user_1" }, scopes: ["support"], expiresAt: "2099-01-01T00:00:00.000Z" });
+  assert.deepEqual(JSON.parse(out[0]), {
+    user: { id: "user_1" },
+    scopes: ["support"],
+    expiresAt: "2099-01-01T00:00:00.000Z",
+  });
 });
 
 test("logout clears the session without calling the API when there is nothing to revoke", async () => {
   const { out, io: capture } = io();
   const env = await baseEnv();
-  const code = await withFetch(() => { throw new Error("logout must not call fetch when there is no refresh token to revoke"); }, () => runCli(["logout"], env, capture));
+  const code = await withFetch(
+    () => {
+      throw new Error(
+        "logout must not call fetch when there is no refresh token to revoke",
+      );
+    },
+    () => runCli(["logout"], env, capture),
+  );
 
   assert.equal(code, 0);
   assert.deepEqual(JSON.parse(out[0]), { authenticated: false });
@@ -121,7 +154,11 @@ test("logout clears the session without calling the API when there is nothing to
 
 test("support create requires --subject", async () => {
   const { errors, io: capture } = io();
-  const code = await runCli(["support", "create", "--message", "hi"], await baseEnv(), capture);
+  const code = await runCli(
+    ["support", "create", "--message", "hi"],
+    await baseEnv(),
+    capture,
+  );
   assert.equal(code, 1);
   assert.equal(errors[0], "--subject is required.");
 });
@@ -129,16 +166,36 @@ test("support create requires --subject", async () => {
 test("support create sends platform: cli as ticket context", async () => {
   let captured;
   const fetch = async (url, init) => {
+    if (String(url).endsWith("/v1/support/sessions")) {
+      return Response.json({
+        token: "support-token",
+        visitorId: "visitor-1",
+        applicationId: "app_test",
+        expiresAt: "2099-01-01T00:00:00.000Z",
+      });
+    }
     captured = { url, init };
-    return Response.json({ id: "ticket_1", subject: "Help", status: "open", priority: "normal" }, { status: 201 });
+    return Response.json(
+      { id: "ticket_1", subject: "Help", status: "open", priority: "normal" },
+      { status: 201 },
+    );
   };
   const { out, io: capture } = io();
   const env = await baseEnv();
-  const code = await withFetch(fetch, () => runCli(
-    ["support", "create", "--subject", "Help", "--message", "Something broke"],
-    env,
-    capture,
-  ));
+  const code = await withFetch(fetch, () =>
+    runCli(
+      [
+        "support",
+        "create",
+        "--subject",
+        "Help",
+        "--message",
+        "Something broke",
+      ],
+      env,
+      capture,
+    ),
+  );
 
   assert.equal(code, 0);
   assert.deepEqual(JSON.parse(captured.init.body), {
@@ -147,7 +204,12 @@ test("support create sends platform: cli as ticket context", async () => {
     message: "Something broke",
     context: { platform: "cli" },
   });
-  assert.deepEqual(JSON.parse(out[0]), { id: "ticket_1", subject: "Help", status: "open", priority: "normal" });
+  assert.deepEqual(JSON.parse(out[0]), {
+    id: "ticket_1",
+    subject: "Help",
+    status: "open",
+    priority: "normal",
+  });
 });
 
 test("support show requires a ticket id", async () => {
@@ -165,14 +227,20 @@ test("unknown top-level command is a handled error, not a crash", async () => {
 });
 
 test("a typed HashpassError from the API is formatted with its code and request id, not a raw stack trace", async () => {
-  const fetch = async () => Response.json(
-    { message: "Ticket missing" },
-    { status: 404, headers: { "x-request-id": "req_123" } },
-  );
+  const fetch = async () =>
+    Response.json(
+      { message: "Ticket missing" },
+      { status: 404, headers: { "x-request-id": "req_123" } },
+    );
   const { errors, io: capture } = io();
   const env = await baseEnv();
-  const code = await withFetch(fetch, () => runCli(["support", "show", "ticket_1"], env, capture));
+  const code = await withFetch(fetch, () =>
+    runCli(["support", "show", "ticket_1"], env, capture),
+  );
 
   assert.equal(code, 1);
-  assert.equal(errors[0], "Hashpass error [not_found] (req_123): Ticket missing");
+  assert.equal(
+    errors[0],
+    "Hashpass error [not_found] (req_123): Ticket missing",
+  );
 });

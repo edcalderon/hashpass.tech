@@ -1,0 +1,7 @@
+{
+  "project": "HASHFEST",
+  "identifier": "HASHFEST",
+  "modules": ["Executive / Governance", "Finance & Break-even", "Anchor Sponsors", "Sponsorship Pipeline", "Venue", "Production & Logistics", "Program & Speakers", "HASHHACK", "Community", "Marketing & PR", "Ticketing / HASHPASS", "Partners", "Event Operations", "Post-event"],
+  "page_types": ["reference", "decision", "milestone", "risk"],
+  "rule": "Create a work item only when the source states an owner-worthy action."
+}
