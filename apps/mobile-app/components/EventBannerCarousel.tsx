@@ -944,7 +944,7 @@ export default function EventBannerCarousel({
           eventStartDate={getEventStartDate(event)}
           isLive={false}
           eventId={event.id}
-          eventImage={banner.media.type === "image" ? banner.media.url : undefined}
+          eventImage={banner.media.type === "image" ? banner.media.url : event.image}
           eventImageTextOverlaySafe={banner.media.type === "image" && banner.media.textOverlaySafe === true}
           eventShortName={event.shortName}
           eventVideo={banner.media.type === "video" ? banner.media.url : undefined}

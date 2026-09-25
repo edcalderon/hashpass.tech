@@ -111,6 +111,34 @@ the mobile app, or a client-side event-explorer request. Automated production
 brief batches will use Anthropic Workload Identity Federation rather than an
 API key.
 
+## Public event hero loops
+
+`src/content/event-hero-specs.json` is the reviewed inventory for every
+public discovery event. Each loop is a silent, eight-second HASHPASS-branded
+Remotion composition with the approved event lockup and an abstract city
+backdrop derived from its verified city and venue metadata. It deliberately
+does not fabricate people, speakers, dates, or venue footage; live banner
+copy and the existing poster image remain the accessible UI and failure
+fallback.
+
+```bash
+# Prepares the approved logo inputs and renders all hero MP4s locally.
+pnpm --filter hashpass-video-studio event-heroes:render
+
+# Lists the immutable CDN destinations without changing AWS.
+pnpm --filter hashpass-video-studio event-heroes:publish
+
+# Publishes only after the rendered loops and dry-run URLs are reviewed.
+pnpm --filter hashpass-video-studio run event-heroes:publish -- --publish
+```
+
+Set `EVENT_MEDIA_BUCKET`, `EVENT_MEDIA_REGION`, and
+`EVENT_MEDIA_PUBLIC_BASE_URL` only in ignored local environment files. The
+publisher only accepts the approved event-media bucket, writes immutable
+event-scoped keys, and requires the explicit `--publish` flag. Do not release
+the application configuration until that publish succeeds; otherwise its
+image fallback is preferable to a broken video URL.
+
 ## Layout
 
 ```

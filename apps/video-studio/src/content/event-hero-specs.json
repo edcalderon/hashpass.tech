@@ -1,0 +1,96 @@
+{
+  "version": 1,
+  "heroes": [
+    {
+      "id": "bsl",
+      "compositionId": "EventHeroBsl",
+      "title": "Blockchain Summit Latam On Tour",
+      "city": "Lima · Santiago · Bogotá",
+      "country": "Latin America",
+      "venue": "BSL On Tour regional roadshow",
+      "accentColor": "#00A9E0",
+      "eventLogo": {
+        "source": "../mobile-app/assets/logos/bsl/bsl-ontour-pro.webp",
+        "target": "event-heroes/bsl/event-logo.webp"
+      }
+    },
+    {
+      "id": "peru2026",
+      "compositionId": "EventHeroPeru2026",
+      "title": "Blockchain Summit Latam Perú 2026",
+      "city": "Lima",
+      "country": "Peru",
+      "venue": "Universidad del Pacífico",
+      "accentColor": "#D11A2A",
+      "eventLogo": {
+        "source": "../mobile-app/assets/logos/bsl/bsl-peru-pro.webp",
+        "target": "event-heroes/peru2026/event-logo.webp"
+      }
+    },
+    {
+      "id": "chile2026",
+      "compositionId": "EventHeroChile2026",
+      "title": "Blockchain Summit Latam Chile 2026",
+      "city": "Santiago",
+      "country": "Chile",
+      "venue": "Universidad de Chile · FEN",
+      "accentColor": "#FF5B5B",
+      "eventLogo": {
+        "source": "../mobile-app/assets/logos/bsl/bsl-chile-pro.webp",
+        "target": "event-heroes/chile2026/event-logo.webp"
+      }
+    },
+    {
+      "id": "colombia2026",
+      "compositionId": "EventHeroColombia2026",
+      "title": "Blockchain Summit Latam Colombia 2026",
+      "city": "Bogotá",
+      "country": "Colombia",
+      "venue": "Bogotá, Colombia",
+      "accentColor": "#F5C542",
+      "eventLogo": {
+        "source": "../mobile-app/assets/logos/bsl/bsl-colombia-pro.webp",
+        "target": "event-heroes/colombia2026/event-logo.webp"
+      }
+    },
+    {
+      "id": "bsl2025",
+      "compositionId": "EventHeroBsl2025",
+      "title": "Blockchain Summit Latam 2025",
+      "city": "Medellín",
+      "country": "Colombia",
+      "venue": "Universidad EAFIT",
+      "accentColor": "#2196F3",
+      "eventLogo": {
+        "source": "../mobile-app/assets/logos/bsl/BSL-Logo-fondo-oscuro-2024.webp",
+        "target": "event-heroes/bsl2025/event-logo.webp"
+      }
+    },
+    {
+      "id": "hash-poker",
+      "compositionId": "EventHeroHashPoker",
+      "title": "Hash Poker Room",
+      "city": "Medellín",
+      "country": "Colombia",
+      "venue": "Hash House Club",
+      "accentColor": "#E53B52",
+      "eventLogo": {
+        "source": "../mobile-app/assets/logos/hash-poker/hash-poker-room-logo.webp",
+        "target": "event-heroes/hash-poker/event-logo.webp"
+      }
+    },
+    {
+      "id": "cbweek2026",
+      "compositionId": "EventHeroCbweek2026",
+      "title": "Colombia Blockchain Week 2026",
+      "city": "Medellín",
+      "country": "Colombia",
+      "venue": "Hotel InterContinental Medellín",
+      "accentColor": "#FCD116",
+      "eventLogo": {
+        "source": "https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events/cbweek2026/branding/cbweek2026-logo.webp",
+        "target": "event-heroes/cbweek2026/event-logo.webp"
+      }
+    }
+  ]
+}

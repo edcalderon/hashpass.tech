@@ -185,6 +185,27 @@ it("keeps native campaign slides accessible and connected to their event action"
   expect(onEventPress).toHaveBeenCalledWith(mockEvent);
 });
 
+it("keeps the approved event image as the loading poster for a hero film", () => {
+  const videoEvent = {
+    ...mockEvent,
+    image: "https://example.test/hash-poker-poster.webp",
+  };
+  const originalBanner = mockBanners[0];
+  mockBanners[0] = {
+    ...originalBanner,
+    media: { type: "video", url: "https://example.test/hash-poker-hero.mp4" },
+  };
+
+  render({ event: videoEvent, autoPlay: false });
+
+  const heroFilm = view.root.findAllByType("EventBanner" as any)
+    .find((banner) => banner.props.eventVideo === "https://example.test/hash-poker-hero.mp4");
+  expect(heroFilm?.props.eventImage)
+    .toBe("https://example.test/hash-poker-poster.webp");
+
+  mockBanners[0] = originalBanner;
+});
+
 it("adds an organizer proposal card with a working call to action", () => {
   const onProposeEvent = jest.fn();
   render({ autoPlay: false, showProposalCard: true, onProposeEvent });

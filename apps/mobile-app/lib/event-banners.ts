@@ -47,7 +47,13 @@ export const getEventBannerSlides = (
 ): ResolvedEventBannerSlide[] => {
   const fallback: ResolvedEventBannerSlide = {
     id: "default",
-    media: { type: "image", url: event.image },
+    // A reviewed hero film takes precedence over the poster image for the
+    // default discovery slide. The image stays on EventInfo and is passed to
+    // EventBanner as its loading/failure fallback, so a video delivery issue
+    // never leaves the carousel without a usable visual.
+    media: event.heroVideo
+      ? { type: "video", url: event.heroVideo }
+      : { type: "image", url: event.image },
     title: event.title,
     subtitle: event.subtitle || "",
     date: event.eventDateString || event.subtitle || "Coming soon",
