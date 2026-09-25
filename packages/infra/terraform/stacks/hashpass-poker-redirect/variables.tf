@@ -13,7 +13,7 @@ variable "hashpass_zone_name" {
 variable "hash_poker_room_domain" {
   description = "Short public Hash Poker Room hostname"
   type        = string
-  default     = "pkkr.hashpass.tech"
+  default     = "pkrr.hashpass.tech"
 }
 
 variable "pkrr_io_domain" {

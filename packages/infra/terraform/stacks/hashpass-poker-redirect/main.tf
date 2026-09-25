@@ -20,10 +20,10 @@ module "hash_poker_room" {
     aws.use1 = aws.use1
   }
 
-  name_prefix        = "hashpass-pkkr-redirect"
+  name_prefix        = "hashpass-pkrr-redirect"
   domain_names       = [var.hash_poker_room_domain]
-  target_origin      = "https://pkrr.io"
-  target_path_prefix = "/c/hash-poker"
+  target_origin      = "https://hashpass.tech"
+  target_path_prefix = "/events/hash-poker/event-info"
   route53_zone_id    = data.aws_route53_zone.hashpass.zone_id
 
   tags = local.common_tags
