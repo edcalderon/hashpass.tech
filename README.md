@@ -20,21 +20,20 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.63)
+## 📋 Latest Changes (v1.9.64)
 
-### Features
-
-* **video:** add branded event hero loops ([07476f2](https://github.com/hashpass-tech/hashpass.tech/commit/07476f28046a20367b41ff3a25d79690a53fea9b))
-* **video:** add Claude event brief workflow ([5eaf762](https://github.com/hashpass-tech/hashpass.tech/commit/5eaf76289e470abd4d81c7f6021dc90a0a2cd2b2))
-* **video:** add Diffusion Studio handoff ([f7b75e4](https://github.com/hashpass-tech/hashpass.tech/commit/f7b75e4b159fcd5abedd89fd8a466251c75f343a))
-### Release Highlights
-- add branded event hero loops; add Claude event brief workflow; add Diffusion Studio handoff
+### Released
+- add verified business invitation flow
 
 ### Release scope
-- Compared with: `v1.9.62` (the previous global release tag)
+- Compared with: `v1.9.63` (the previous global release tag)
 
 ### Affected products & packages
 - Mobile app
+- QR links API
+- Database migrations
+- Infrastructure
+- Release tooling
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

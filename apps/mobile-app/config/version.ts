@@ -22,24 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202609250845, // Updated to current timestamp
+  buildNumber: 202609250959, // Updated to current timestamp
   releaseDate: '2026-09-25',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'add branded event hero loops',
-    'add Claude event brief workflow',
-    'add Diffusion Studio handoff'
+    'add verified business invitation flow'
   ],
   bugfixes: [
     // No bugfixes
   ],
   breakingChanges: [],
-  notes: 'add branded event hero loops; add Claude event brief workflow; add Diffusion Studio handoff'
+  notes: 'add verified business invitation flow'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.64': {
+    version: '1.9.64',
+    buildNumber: 202609250959,
+    releaseDate: '2026-09-25',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'add verified business invitation flow'
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'add verified business invitation flow'
+  },
   '1.9.63': {
     version: '1.9.63',
     buildNumber: 202609250845,
