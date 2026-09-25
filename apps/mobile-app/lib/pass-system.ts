@@ -28,6 +28,16 @@ export const isSupabaseAuthUserId = (
 ): value is string =>
   typeof value === "string" && SUPABASE_AUTH_USER_ID_REGEX.test(value);
 
+export const normalizeBusinessInviteCode = (
+  value: string | null | undefined,
+): string | null => {
+  if (typeof value !== "string") return null;
+  const normalized = value.trim().toUpperCase();
+  return /^[A-Z0-9][A-Z0-9_-]{3,63}$/.test(normalized)
+    ? normalized
+    : null;
+};
+
 export const resolvePassStorageEventId = (eventId: string): string =>
   PASS_STORAGE_EVENT_ID_ALIASES[eventId] ?? eventId;
 
@@ -477,6 +487,30 @@ class PassSystemService {
     try {
       const { data, error } = await supabase
         .rpc("claim_event_pass_code", { p_code: normalizedCode })
+        .single();
+
+      if (error || !data) return null;
+      return data as PassClaimResult;
+    } catch {
+      return null;
+    }
+  }
+
+  async claimBusinessInvite(
+    userId: string,
+    code: string,
+  ): Promise<PassClaimResult | null> {
+    if (!isSupabaseAuthUserId(userId)) {
+      warnInvalidSupabaseUserId("claimBusinessInvite", userId);
+      return null;
+    }
+
+    const normalizedCode = normalizeBusinessInviteCode(code);
+    if (!normalizedCode) return null;
+
+    try {
+      const { data, error } = await supabase
+        .rpc("claim_business_invite", { p_code: normalizedCode })
         .single();
 
       if (error || !data) return null;

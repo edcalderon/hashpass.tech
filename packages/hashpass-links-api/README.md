@@ -201,10 +201,19 @@ validation, and visitor-anonymization logic in isolation.
 ### Legacy printed invite QR codes
 
 `https://invite.hashpass.app/?code=9899` routes through this service and
-returns an uncached 302 to `https://hashpass.club/?code=9899`. Only the
-validated code is forwarded; arbitrary redirect parameters are ignored.
-Other invite codes use the same route. This records URL opens, including
-shared-link clicks, not independently verified camera scans.
+returns an uncached 302 to HashPass registration. After the email address is
+verified, the app returns to the pass wallet and redeems the code through an
+authenticated, event-scoped Business-invitation RPC. Only the validated code
+is forwarded; arbitrary redirect parameters are ignored. Other invite codes
+use the same route. This records URL opens, including shared-link clicks, not
+independently verified camera scans.
+
+`9899` is a public campaign entry code, not a login credential or proof of
+identity. It grants the Blockchain Summit Latam Colombia 2026 Business tier
+only to a verified HashPass account, only once per account, and never reduces
+an existing VIP entitlement.
+Use a long, individually issued code or an email-scoped event-account grant
+for a limited or high-value invitation.
 
 Apply `db/migrations/V092__invite_scan_events.sql` to the database used by
 the production links Lambda, then deploy the tested Lambda bundle. Finally,

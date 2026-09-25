@@ -93,7 +93,7 @@ variable "lambda_zip_path" {
 }
 
 variable "lambda_source_code_hash" {
-  description = "Optional base64-encoded SHA256 hash of the lambda ZIP"
+  description = "Deprecated compatibility input; the stack derives the deployment hash from lambda_zip_path."
   type        = string
   default     = null
 }
@@ -107,7 +107,7 @@ variable "lambda_handler" {
 variable "lambda_runtime" {
   description = "Lambda runtime"
   type        = string
-  default     = "nodejs24.x"
+  default     = "nodejs22.x"
 }
 
 variable "lambda_memory_size" {

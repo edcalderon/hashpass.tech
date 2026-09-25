@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../../hooks/useTheme';
 import { useScroll } from '@contexts/ScrollContext';
@@ -18,6 +19,7 @@ const NETWORKS = [
 ] as const;
 
 export default function WalletScreen() {
+  const params = useLocalSearchParams<{ section?: string; inviteCode?: string }>();
   const { colors } = useTheme();
   const { headerHeight } = useScroll();
   const insets = useSafeAreaInsets();
@@ -30,6 +32,11 @@ export default function WalletScreen() {
     { id: 'rewards', label: t('overview.rewards', 'Rewards') },
     { id: 'passes', label: t('overview.passes', 'Event passes') },
   ];
+  const inviteCode = typeof params.inviteCode === 'string' ? params.inviteCode : undefined;
+
+  useEffect(() => {
+    if (params.section === 'passes') setSection('passes');
+  }, [params.section]);
 
   return <ScrollView style={styles.page} contentContainerStyle={[
     styles.content, { paddingTop: Math.max(headerHeight, insets.top + 80) + 24, paddingBottom: insets.bottom + 40 },
@@ -81,7 +88,7 @@ export default function WalletScreen() {
     {section === 'rewards' && <View style={styles.stack}><BlockchainTokensView /><HashPointsView /></View>}
     {section === 'passes' && <View style={styles.stack}>
       <Text style={styles.body}>{t('overview.passesNote', 'Your event access passes. These are separate from on-chain assets.')}</Text>
-      <BlockchainTicketsView />
+      <BlockchainTicketsView businessInviteCode={inviteCode} />
     </View>}
   </ScrollView>;
 }

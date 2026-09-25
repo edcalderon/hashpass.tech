@@ -26,6 +26,7 @@ jest.mock("../../lib/api-client", () => ({
 // eslint-disable-next-line import/first
 import {
   isSupabaseAuthUserId,
+  normalizeBusinessInviteCode,
   passSystemService,
   resolvePassStorageEventId,
 } from "../../lib/pass-system";
@@ -98,6 +99,14 @@ describe("passSystemService Supabase user id guard", () => {
     expect(resolvePassStorageEventId("bsl")).toBe("colombia2026");
     expect(resolvePassStorageEventId("bsl-2025")).toBe("bsl2025");
     expect(resolvePassStorageEventId("peru2026")).toBe("peru2026");
+  });
+
+  it("accepts only safe public business-invite codes from a deep link", () => {
+    expect(normalizeBusinessInviteCode(" 9899 ")).toBe("9899");
+    expect(normalizeBusinessInviteCode("business-2026")).toBe("BUSINESS-2026");
+    expect(normalizeBusinessInviteCode("bad code")).toBeNull();
+    expect(normalizeBusinessInviteCode("abc")).toBeNull();
+    expect(normalizeBusinessInviteCode(undefined)).toBeNull();
   });
 
   it("uses event tier catalog values and keeps generic perk copy date-free", async () => {
@@ -429,6 +438,29 @@ describe("passSystemService Supabase user id guard", () => {
 
     expect(mockRpc).toHaveBeenCalledWith("claim_event_pass_code", {
       p_code: "BSL-2026-WELCOME",
+    });
+  });
+
+  it("redeems a normalized business invite only for the authenticated database user", async () => {
+    mockRpcSingle({
+      data: {
+        status: "claimed",
+        pass_id: "business-pass",
+        event_id: "cbweek2026",
+      },
+      error: null,
+    });
+
+    await expect(
+      passSystemService.claimBusinessInvite(supabaseUserId, " 9899 "),
+    ).resolves.toEqual({
+      status: "claimed",
+      pass_id: "business-pass",
+      event_id: "cbweek2026",
+    });
+
+    expect(mockRpc).toHaveBeenCalledWith("claim_business_invite", {
+      p_code: "9899",
     });
   });
 

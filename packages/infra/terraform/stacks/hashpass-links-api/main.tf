@@ -59,7 +59,10 @@ module "links_api_dev" {
   route53_zone_id          = var.enable_custom_domain ? data.aws_route53_zone.link[0].zone_id : null
   mapping_key              = ""
   lambda_zip_path          = var.lambda_zip_path
-  lambda_source_code_hash  = var.lambda_source_code_hash
+  # Package the bundle before planning/applying; derive the hash from the
+  # actual archive so a stale local tfvars value cannot leave an old handler
+  # live after a redirect or security fix.
+  lambda_source_code_hash  = filebase64sha256(var.lambda_zip_path)
   lambda_handler           = var.lambda_handler
   lambda_runtime           = var.lambda_runtime
   lambda_memory_size       = var.lambda_memory_size
@@ -95,7 +98,7 @@ module "links_api_prod" {
   route53_zone_id          = var.enable_custom_domain ? data.aws_route53_zone.link[0].zone_id : null
   mapping_key              = ""
   lambda_zip_path          = var.lambda_zip_path
-  lambda_source_code_hash  = var.lambda_source_code_hash
+  lambda_source_code_hash  = filebase64sha256(var.lambda_zip_path)
   lambda_handler           = var.lambda_handler
   lambda_runtime           = var.lambda_runtime
   lambda_memory_size       = var.lambda_memory_size

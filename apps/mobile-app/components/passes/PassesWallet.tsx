@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -21,7 +21,11 @@ import { MaterialIcons } from "../../lib/vector-icons";
 import { useTheme } from "../../hooks/useTheme";
 import { useAuth } from "../../hooks/useAuth";
 import { useTranslation } from "../../i18n/i18n";
-import { passSystemService, type PassInfo } from "../../lib/pass-system";
+import {
+  normalizeBusinessInviteCode,
+  passSystemService,
+  type PassInfo,
+} from "../../lib/pass-system";
 import {
   buildWalletPasses,
   countWalletPasses,
@@ -63,6 +67,8 @@ interface PassesWalletProps {
     passType?: PassTypeFilter;
   };
   hideWalletControls?: boolean;
+  /** Provided only by the authenticated invitation route after sign-in. */
+  businessInviteCode?: string;
 }
 
 // How far each card behind the front one peeks out to the right, and how much
@@ -206,6 +212,7 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
   layout = "stacked",
   explorerFilters,
   hideWalletControls = false,
+  businessInviteCode,
 }) => {
   const { colors, isDark } = useTheme();
   const { dbUserId, retryDatabaseSession } = useAuth();
@@ -377,6 +384,25 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
     if (passes.length > 0) setIsRefreshing(true);
     setRetryNonce((current) => current + 1);
   }, [passes.length, retryDatabaseSession]);
+
+  const claimedBusinessInviteRef = useRef<string | null>(null);
+  useEffect(() => {
+    const inviteCode = normalizeBusinessInviteCode(businessInviteCode);
+    if (!dbUserId || !inviteCode) return;
+
+    const claimKey = `${dbUserId}:${inviteCode}`;
+    if (claimedBusinessInviteRef.current === claimKey) return;
+    claimedBusinessInviteRef.current = claimKey;
+
+    let active = true;
+    void passSystemService.claimBusinessInvite(dbUserId, inviteCode).then((claim) => {
+      if (active && claim) handleRetry();
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [businessInviteCode, dbUserId, handleRetry]);
 
   const handleRestoreIncludedPasses =
     useCallback(async (): Promise<boolean> => {
