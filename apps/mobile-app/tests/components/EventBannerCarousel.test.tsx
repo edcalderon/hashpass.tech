@@ -213,11 +213,10 @@ it("keeps native campaign slides accessible and connected to their event action"
   act(() => campaign.props.onPress());
   expect(onEventPress).toHaveBeenCalledWith(mockEvent);
 
-  // The bundled campaign artwork already contains its title, location and
-  // partner branding. It must remain unobscured unless a future asset opts
-  // into a reviewed text-safe overlay region.
+  // The poker campaign image is intentionally text-free. Its reviewed overlay
+  // supplies the club identity and must remain visible to sighted users too.
   expect(view.root.findAllByType(Text).map((node) => node.children.join("")))
-    .not.toContain("Hash House Club");
+    .toContain("Hash House Club");
 });
 
 it("keeps the approved event image as the loading poster for a hero film", () => {
