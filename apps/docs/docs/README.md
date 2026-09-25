@@ -16,6 +16,7 @@ Active docs in this repo are organized by topic. Historical notes, one-off migra
 - [`reference/`](reference/README.md) - API architecture, mobile, QR, performance, and release references
 - [`storybook/`](storybook/README.md) - Storybook setup, deployment, and guides
 - [`guides/`](guides/README.md) - onboarding guides published in Docusaurus and mirrored in Storybook
+- [Terms of Service](legal/terms-of-service.md) and [Privacy Policy](legal/privacy-policy.md) - public legal notices for HASHPASS TECHNOLOGIES OÜ
 
 ## Archive
 
