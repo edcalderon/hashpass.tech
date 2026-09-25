@@ -7,6 +7,10 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
 
+function isSmsDeliveryRequested(delivery: string): boolean {
+  return delivery === 'sms';
+}
+
 // Handle CORS preflight requests
 export async function OPTIONS() {
   return new Response(null, {
@@ -21,8 +25,48 @@ export async function OPTIONS() {
  */
 export async function POST(request: Request) {
   try {
+    // Handle JSON parsing errors
+    let body;
+    try {
+      body = await request.json();
+    } catch (parseError: any) {
+      console.error('Error parsing request body:', parseError);
+      return new Response(
+        JSON.stringify({
+          error: 'Invalid JSON in request body',
+          code: 'invalid_json',
+          message: 'Please ensure the request body contains valid JSON with an email field.'
+        }),
+        { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      );
+    }
+
+    const { email, delivery: requestedDelivery, phone } = body || {};
+    const delivery = requestedDelivery === 'sms' ? 'sms' : 'email';
+
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return new Response(
+        JSON.stringify({ error: 'Valid email is required' }),
+        { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      );
+    }
+
+    // A phone number typed into a public form must never become a credential
+    // for the supplied email address. SMS sign-in will be restored only after
+    // trusted, account-bound phone enrollment is available.
+    if (isSmsDeliveryRequested(delivery)) {
+      return new Response(
+        JSON.stringify({
+          error: 'SMS sign-in requires a trusted phone.',
+          code: 'trusted_phone_required',
+          message: 'Sign in with email first, then add and verify a trusted phone in Security settings before using SMS sign-in.',
+        }),
+        { status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders } },
+      );
+    }
+
     const supabase = getSupabaseServerForRequest(request);
-    // Check Supabase configuration before proceeding
+    // Check Supabase configuration before proceeding.
     const { supabaseUrl, supabaseServiceKey, usingDevFallback, selectedProfile } = getSupabaseServerEnv(request);
 
     if (!supabaseUrl || !supabaseServiceKey) {
@@ -68,32 +112,6 @@ export async function POST(request: Request) {
         '| profile=', selectedProfile,
         '| hasServiceKey=', Boolean(supabaseServiceKey),
         '| origin=', request.headers.get('origin') || '(none)',
-      );
-    }
-
-    // Handle JSON parsing errors
-    let body;
-    try {
-      body = await request.json();
-    } catch (parseError: any) {
-      console.error('Error parsing request body:', parseError);
-      return new Response(
-        JSON.stringify({
-          error: 'Invalid JSON in request body',
-          code: 'invalid_json',
-          message: 'Please ensure the request body contains valid JSON with an email field.'
-        }),
-        { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
-      );
-    }
-
-    const { email, delivery: requestedDelivery, phone } = body || {};
-    const delivery = requestedDelivery === 'sms' ? 'sms' : 'email';
-
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return new Response(
-        JSON.stringify({ error: 'Valid email is required' }),
-        { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
       );
     }
 
@@ -173,16 +191,13 @@ export async function POST(request: Request) {
         );
       }
 
-      // Return appropriate status code based on error
-      const statusCode = errorStatus === 429 ? 429 : (errorStatus >= 400 && errorStatus < 500 ? errorStatus : 500);
-
       return new Response(
         JSON.stringify({
-          error: errorMessage || 'Failed to generate OTP code',
-          code: errorCode || 'unknown_error',
-          details: process.env.NODE_ENV === 'development' ? linkError : undefined
+          error: 'Authentication service unavailable',
+          code: 'auth_service_unavailable',
+          message: 'We could not start your sign-in request. Please try again shortly.',
         }),
-        { status: statusCode, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+        { status: 503, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
       );
     }
 

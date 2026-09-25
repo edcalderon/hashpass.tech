@@ -78,6 +78,8 @@ type BusyAction = "magic-link" | "otp-send" | "otp-verify" | "oauth" | null;
 type OtpDeliveryMethod = "email" | "sms";
 type ActiveSubmitField = "email" | "phone" | "otp" | null;
 
+const SMS_OTP_LOGIN_ENABLED = false;
+
 const DASHBOARD_EXPLORE_PUBLIC_PATH = "/dashboard/explore";
 const DASHBOARD_EXPLORE_ROUTER_PATH = "/(shared)/dashboard/explore";
 const OTP_CODE_LENGTH = 6;
@@ -2255,7 +2257,10 @@ export default function AuthScreen({ embedded = false, onAuthenticated, onDismis
                           </TouchableOpacity>
                         </View>}
 
-                        {emailAuthMethod === "otp-code" ? (
+                        {/* SMS sign-in is intentionally unavailable until phones are
+                            verified and account-bound in Security settings. */}
+                        {emailAuthMethod === "otp-code" &&
+                        SMS_OTP_LOGIN_ENABLED ? (
                           <View style={styles.otpDeliveryContainer}>
                             <TouchableOpacity
                               style={styles.deliverySwitchButton}
