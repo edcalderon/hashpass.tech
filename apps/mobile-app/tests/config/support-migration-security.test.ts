@@ -15,6 +15,7 @@ const rolloutMigrationPath = path.resolve(
 describe("support-system migration security contract", () => {
   it("revokes every SECURITY DEFINER support RPC from public roles before service-role grants", () => {
     const migration = fs.readFileSync(bootstrapMigrationPath, "utf8");
+    const normalizedMigration = migration.replace(/\s+/g, " ");
 
     for (const signature of [
       "create_support_session(text, text, timestamptz, text, text, text, text, jsonb)",
@@ -28,11 +29,8 @@ describe("support-system migration security contract", () => {
       "list_support_messages(uuid, uuid, uuid, integer)",
       "list_support_tickets_admin(text, text, uuid, integer)",
     ]) {
-      expect(migration).toMatch(
-        new RegExp(
-          `REVOKE ALL ON FUNCTION public\\.${signature.replace(/[()]/g, "\\$&")}\\s+FROM PUBLIC, anon, authenticated`,
-          "i",
-        ),
+      expect(normalizedMigration).toContain(
+        `REVOKE ALL ON FUNCTION public.${signature} FROM PUBLIC, anon, authenticated`,
       );
     }
   });
