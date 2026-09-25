@@ -50,6 +50,12 @@ Depending on how you use the Services, we may collect:
 - **Event and credential data:** registrations, passes, credentials,
   attendance and check-in records, event interactions, benefits, and related
   event information.
+- **Invitation and access-review data:** a campaign code submitted to request
+  Business access, the associated campaign and event, request and review
+  status, and the timestamps and account identifiers needed to prevent abuse
+  and operate the review workflow. A printed invitation-link visit may record
+  the code, time, device category, and bot classification. It does not record
+  an IP address, cookie, referrer, or raw user-agent for this visit ledger.
 - **Messages:** sender and recipient identifiers and timestamps needed to
   deliver in-app messages. Content sent through supported end-to-end encrypted
   meeting chat is encrypted on your device so that HASHPASS cannot read that
@@ -68,6 +74,8 @@ We process personal data to:
 - provide, secure, maintain, and personalize the Services;
 - create and authenticate accounts and deliver passes, credentials, event
   registrations, check-in, and support;
+- validate invitation campaigns, prevent shared-link abuse, and allow a
+  designated reviewer to approve or decline a requested Business entitlement;
 - communicate transactional, security, service, and legally required notices;
 - detect, investigate, and prevent fraud, abuse, security incidents, and
   misuse of credentials or APIs;
@@ -90,6 +98,8 @@ We do not sell personal information. We disclose data only as needed for the
 purposes above, including to:
 
 - event organizers for events for which you register or hold a credential;
+- designated Business-access reviewers, only for the request information
+  necessary to decide a submitted invitation request;
 - service providers acting on our behalf, including Supabase for
   authentication and database hosting, Brevo for transactional email, and
   Cloudinary for optional profile-image hosting and optimization;
@@ -122,6 +132,11 @@ or immutable blockchain that is outside our control.
 
 Google Analytics data is retained for 14 months and then automatically
 deleted. See [Cookies and analytics](#10-cookies-and-analytics).
+
+Invitation-link visit records and Business-access review records are retained
+only as needed to operate the invitation, prevent fraud or repeated misuse,
+maintain an audit trail, resolve disputes, and meet applicable legal
+obligations.
 
 ## 7. Security
 
