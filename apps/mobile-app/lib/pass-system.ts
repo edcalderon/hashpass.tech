@@ -143,6 +143,13 @@ export interface PassClaimResult {
   event_id: string;
 }
 
+export interface BusinessInviteRequestResult {
+  status: "pending" | "approved" | "rejected";
+  request_id: string;
+  created: boolean;
+  event_ids?: string[];
+}
+
 export interface PassTypeLimits {
   max_requests: number;
   max_boost: number;
@@ -496,25 +503,28 @@ class PassSystemService {
     }
   }
 
-  async claimBusinessInvite(
-    userId: string,
+  async requestBusinessInvite(
     code: string,
-  ): Promise<PassClaimResult | null> {
-    if (!isSupabaseAuthUserId(userId)) {
-      warnInvalidSupabaseUserId("claimBusinessInvite", userId);
-      return null;
-    }
-
+  ): Promise<BusinessInviteRequestResult | null> {
     const normalizedCode = normalizeBusinessInviteCode(code);
     if (!normalizedCode) return null;
 
     try {
-      const { data, error } = await supabase
-        .rpc("claim_business_invite", { p_code: normalizedCode })
-        .single();
-
-      if (error || !data) return null;
-      return data as PassClaimResult;
+      const response: PassApiResponse<BusinessInviteRequestResult> = await apiClient.post(
+        "/business-invites/requests",
+        { code: normalizedCode },
+        { skipEventSegment: true },
+      );
+      const result = response.success ? response.data : null;
+      if (
+        !result ||
+        !["pending", "approved", "rejected"].includes(result.status) ||
+        typeof result.request_id !== "string" ||
+        typeof result.created !== "boolean"
+      ) {
+        return null;
+      }
+      return result;
     } catch {
       return null;
     }

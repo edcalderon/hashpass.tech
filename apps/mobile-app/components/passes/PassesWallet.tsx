@@ -42,6 +42,9 @@ import PassWalletCard, {
   PASS_CARD_HEIGHT,
   PASS_CARD_WIDTH,
 } from "./PassWalletCard";
+import BusinessInviteRequestModal, {
+  type BusinessInviteRequestDialogStatus,
+} from "./BusinessInviteRequestModal";
 
 interface PassesWalletProps {
   /**
@@ -231,6 +234,8 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
   const [claimCode, setClaimCode] = useState("");
   const [claimingPass, setClaimingPass] = useState(false);
   const [claimError, setClaimError] = useState<string | null>(null);
+  const [businessInviteRequestStatus, setBusinessInviteRequestStatus] =
+    useState<BusinessInviteRequestDialogStatus | null>(null);
   const [filteredPasses, setFilteredPasses] = useState<WalletPass[]>([]);
   // UnifiedSearchAndFilter reports its result in an effect, so filteredPasses
   // is legitimately empty for one frame after mount. Without this flag that
@@ -385,24 +390,55 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
     setRetryNonce((current) => current + 1);
   }, [passes.length, retryDatabaseSession]);
 
-  const claimedBusinessInviteRef = useRef<string | null>(null);
+  const requestedBusinessInviteRef = useRef<string | null>(null);
+  const requestBusinessInvite = useCallback(async (isActive: () => boolean = () => true) => {
+    const inviteCode = normalizeBusinessInviteCode(businessInviteCode);
+    if (!dbUserId || !inviteCode) return;
+
+    const requestKey = `${dbUserId}:${inviteCode}`;
+    if (requestedBusinessInviteRef.current === requestKey) return;
+    requestedBusinessInviteRef.current = requestKey;
+
+    const request = await passSystemService.requestBusinessInvite(inviteCode);
+    if (!request) {
+      // A failed network/session request is not a completed attempt. Clear the
+      // guard so the visible retry can submit it once the bridge recovers.
+      requestedBusinessInviteRef.current = null;
+      if (isActive()) setBusinessInviteRequestStatus("error");
+      return;
+    }
+
+    if (isActive()) {
+      setBusinessInviteRequestStatus(request.status);
+      if (request.status === "approved") handleRetry();
+    }
+  }, [businessInviteCode, dbUserId, handleRetry]);
+
   useEffect(() => {
     const inviteCode = normalizeBusinessInviteCode(businessInviteCode);
     if (!dbUserId || !inviteCode) return;
 
-    const claimKey = `${dbUserId}:${inviteCode}`;
-    if (claimedBusinessInviteRef.current === claimKey) return;
-    claimedBusinessInviteRef.current = claimKey;
-
     let active = true;
-    void passSystemService.claimBusinessInvite(dbUserId, inviteCode).then((claim) => {
-      if (active && claim) handleRetry();
-    });
+    void requestBusinessInvite(() => active);
 
     return () => {
       active = false;
     };
-  }, [businessInviteCode, dbUserId, handleRetry]);
+  }, [businessInviteCode, dbUserId, requestBusinessInvite, retryNonce]);
+
+  const retryBusinessInviteRequest = useCallback(() => {
+    requestedBusinessInviteRef.current = null;
+    setBusinessInviteRequestStatus(null);
+    handleRetry();
+  }, [handleRetry]);
+
+  const businessInviteRequestModal = (
+    <BusinessInviteRequestModal
+      status={businessInviteRequestStatus}
+      onClose={() => setBusinessInviteRequestStatus(null)}
+      onRetry={retryBusinessInviteRequest}
+    />
+  );
 
   const handleRestoreIncludedPasses =
     useCallback(async (): Promise<boolean> => {
@@ -593,11 +629,14 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
               sublabel: t("loadingSubtitle", "This should only take a moment."),
             };
     return (
-      <WalletSkeleton
-        colors={colors}
-        label={loadingCopy.label}
-        sublabel={loadingCopy.sublabel}
-      />
+      <>
+        <WalletSkeleton
+          colors={colors}
+          label={loadingCopy.label}
+          sublabel={loadingCopy.sublabel}
+        />
+        {businessInviteRequestModal}
+      </>
     );
   }
 
@@ -890,6 +929,7 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
             </View>
           </View>
         </Modal>
+        {businessInviteRequestModal}
       </View>
     );
   }
@@ -958,6 +998,7 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
             )
           )}
         </ScrollView>
+        {businessInviteRequestModal}
       </View>
     );
   }
@@ -1159,6 +1200,7 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
           </Text>
         </View>
       )}
+      {businessInviteRequestModal}
     </View>
   );
 };

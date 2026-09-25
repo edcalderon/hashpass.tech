@@ -67,8 +67,13 @@ jest.mock('../../../components/UnifiedSearchAndFilter', () => {
 });
 
 jest.mock('../../../lib/pass-system', () => ({
+  normalizeBusinessInviteCode: (value: unknown) =>
+    typeof value === 'string' && /^[A-Z0-9][A-Z0-9_-]{3,63}$/.test(value.trim().toUpperCase())
+      ? value.trim().toUpperCase()
+      : null,
   passSystemService: {
     claimPassByCode: jest.fn(),
+    requestBusinessInvite: jest.fn(),
     createDefaultPass: jest.fn(),
     getAllUserPasses: jest.fn(),
     getUserPassesForEvents: jest.fn(),

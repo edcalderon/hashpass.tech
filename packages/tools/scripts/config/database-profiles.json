@@ -121,7 +121,9 @@
     "business-invite-campaigns": [
       "db/migrations/V092__invite_scan_events.sql",
       "db/migrations/V099__business_invite_campaigns.sql",
-      "db/migrations/V100__seed_bsl_colombia_business_invite.sql"
+      "db/migrations/V100__seed_bsl_colombia_business_invite.sql",
+      "db/migrations/V101__multi_event_business_invite_campaign.sql",
+      "db/migrations/V102__business_invite_approval_workflow.sql"
     ],
     "support-system": [
       "db/migrations/V097__support_system.sql",

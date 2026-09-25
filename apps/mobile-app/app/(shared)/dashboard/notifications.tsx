@@ -106,7 +106,14 @@ export default function NotificationsScreen() {
     }
     
     // Navigate based on notification type
-    if (notification.type === 'chat_message' && notification.meeting_id) {
+    if (notification.type === 'business_invite_review_required') {
+      router.push('/dashboard/business-invites' as any);
+    } else if (
+      notification.type === 'business_invite_approved' ||
+      notification.type === 'business_invite_rejected'
+    ) {
+      router.push('/dashboard/wallet?section=passes' as any);
+    } else if (notification.type === 'chat_message' && notification.meeting_id) {
       // Navigate straight to the dedicated chat screen -- meeting-detail
       // doesn't read openChat (that param was silently dropped), it just
       // shows the meeting detail with no way to open chat from there.
@@ -252,6 +259,13 @@ export default function NotificationsScreen() {
         return 'schedule';
       case 'boost_received':
         return 'trending-up';
+      case 'business_invite_review_required':
+        return 'verified-user';
+      case 'business_invite_approved':
+        return 'verified';
+      case 'business_invite_pending':
+      case 'business_invite_rejected':
+        return 'schedule';
       case 'system_alert':
         return 'info';
       default:

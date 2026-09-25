@@ -441,27 +441,31 @@ describe("passSystemService Supabase user id guard", () => {
     });
   });
 
-  it("redeems a normalized business invite only for the authenticated database user", async () => {
-    mockRpcSingle({
+  it("submits a normalized business invite through the protected request API", async () => {
+    mockApiPost.mockResolvedValue({
       data: {
-        status: "claimed",
-        pass_id: "business-pass",
-        event_id: "cbweek2026",
+        status: "pending",
+        request_id: "business-request",
+        created: true,
+        event_ids: ["bsl", "cbweek2026"],
       },
-      error: null,
+      success: true,
     });
 
     await expect(
-      passSystemService.claimBusinessInvite(supabaseUserId, " 9899 "),
+      passSystemService.requestBusinessInvite(" 9899 "),
     ).resolves.toEqual({
-      status: "claimed",
-      pass_id: "business-pass",
-      event_id: "cbweek2026",
+      status: "pending",
+      request_id: "business-request",
+      created: true,
+      event_ids: ["bsl", "cbweek2026"],
     });
 
-    expect(mockRpc).toHaveBeenCalledWith("claim_business_invite", {
-      p_code: "9899",
-    });
+    expect(mockApiPost).toHaveBeenCalledWith(
+      "/business-invites/requests",
+      { code: "9899" },
+      { skipEventSegment: true },
+    );
   });
 
   it("reuses an in-flight default-pass creation for concurrent bootstrap calls", async () => {

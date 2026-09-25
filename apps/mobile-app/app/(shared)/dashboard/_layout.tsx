@@ -1949,6 +1949,7 @@ function AuthenticatedDashboardLayout() {
             >
               <Drawer.Screen name="explore" />
               <Drawer.Screen name="notifications" />
+              <Drawer.Screen name="business-invites" />
               <Drawer.Screen name="wallet" />
               <Drawer.Screen name="profile" />
               <Drawer.Screen name="settings" />
