@@ -22,24 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202609242027, // Updated to current timestamp
-  releaseDate: '2026-09-24',
+  buildNumber: 202609250407, // Updated to current timestamp
+  releaseDate: '2026-09-25',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'organize mobile event discovery',
-    'add canonical event search aliases',
-    'align mobile explorer action'
+    // No new features
   ],
   bugfixes: [
-    // No bugfixes
+    'block untrusted SMS OTP sign-in'
   ],
   breakingChanges: [],
-  notes: 'organize mobile event discovery; add canonical event search aliases; align mobile explorer action'
+  notes: 'block untrusted SMS OTP sign-in'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.61': {
+    version: '1.9.61',
+    buildNumber: 202609250407,
+    releaseDate: '2026-09-25',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'block untrusted SMS OTP sign-in'
+    ],
+    breakingChanges: [],
+    notes: 'block untrusted SMS OTP sign-in'
+  },
   '1.9.60': {
     version: '1.9.60',
     buildNumber: 202609242027,
