@@ -20,18 +20,16 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.60)
+## 📋 Latest Changes (v1.9.61)
 
 ### Released
-- organize mobile event discovery; add canonical event search aliases; align mobile explorer action
+- block untrusted SMS OTP sign-in
 
 ### Release scope
-- Compared with: `v1.9.59` (the previous global release tag)
+- Compared with: `v1.9.60` (the previous global release tag)
 
 ### Affected products & packages
 - Mobile app
-- Database migrations
-- Release tooling
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

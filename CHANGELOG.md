@@ -1,3 +1,13 @@
+## [1.9.61](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.60...v1.9.61) (2026-09-25)
+### Released
+- block untrusted SMS OTP sign-in
+
+### Release scope
+- Compared with: `v1.9.60` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+
 ## [1.9.60](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.59...v1.9.60) (2026-09-24)
 ### Released
 - organize mobile event discovery; add canonical event search aliases; align mobile explorer action
