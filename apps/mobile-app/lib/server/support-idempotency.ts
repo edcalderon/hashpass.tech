@@ -8,6 +8,7 @@ interface HandlerResult {
 async function readReplay(
   supabase: SupabaseClient,
   appId: string,
+  visitorId: string,
   route: string,
   key: string,
 ) {
@@ -15,13 +16,24 @@ async function readReplay(
     .from("support_idempotency_keys")
     .select("response_status, response_body")
     .eq("app_id", appId)
+    .eq("visitor_id", visitorId)
     .eq("route", route)
     .eq("key", key)
     .maybeSingle();
 }
 
-function matchKey(query: any, appId: string, route: string, key: string) {
-  return query.eq("app_id", appId).eq("route", route).eq("key", key);
+function matchKey(
+  query: any,
+  appId: string,
+  visitorId: string,
+  route: string,
+  key: string,
+) {
+  return query
+    .eq("app_id", appId)
+    .eq("visitor_id", visitorId)
+    .eq("route", route)
+    .eq("key", key);
 }
 
 /**
@@ -33,6 +45,7 @@ export async function withIdempotency(
   supabase: SupabaseClient,
   request: Request,
   appId: string,
+  visitorId: string,
   route: string,
   handler: () => Promise<HandlerResult>,
 ): Promise<Response> {
@@ -46,6 +59,7 @@ export async function withIdempotency(
     .from("support_idempotency_keys")
     .insert({
       app_id: appId,
+      visitor_id: visitorId,
       route,
       key,
       response_status: 0,
@@ -66,6 +80,7 @@ export async function withIdempotency(
     const { data: existing, error } = await readReplay(
       supabase,
       appId,
+      visitorId,
       route,
       key,
     );
@@ -86,6 +101,7 @@ export async function withIdempotency(
       await matchKey(
         supabase.from("support_idempotency_keys").delete(),
         appId,
+        visitorId,
         route,
         key,
       );
@@ -98,10 +114,11 @@ export async function withIdempotency(
           response_status: result.status,
           response_body: result.body as object,
         }),
-      appId,
-      route,
-      key,
-    );
+        appId,
+        visitorId,
+        route,
+        key,
+      );
     if (error)
       console.warn(
         `[support-idempotency] failed to finalize ${route}:`,
@@ -112,6 +129,7 @@ export async function withIdempotency(
     await matchKey(
       supabase.from("support_idempotency_keys").delete(),
       appId,
+      visitorId,
       route,
       key,
     );

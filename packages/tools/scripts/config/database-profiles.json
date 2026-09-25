@@ -115,7 +115,8 @@
       "db/migrations/V097__add_event_search_aliases.sql"
     ],
     "support-system": [
-      "db/migrations/V097__support_system.sql"
+      "db/migrations/V097__support_system.sql",
+      "db/migrations/V098__harden_support_system.sql"
     ],
     "admin-matchmaking-communications": [
       "db/migrations/V055__admin_matchmaking_and_email_audit.sql",

@@ -13,7 +13,7 @@ export async function POST(request: Request) {
   const ticketId = ticketIdFromRequest(request);
   if (!ticketId) return Response.json({ message: "Invalid ticket id" }, { status: 400 });
 
-  return withIdempotency(supabase, request, session.appId, `tickets:${ticketId}:handoff`, async () => {
+  return withIdempotency(supabase, request, session.appId, session.visitorId, `tickets:${ticketId}:handoff`, async () => {
     const { data, error } = await supabase.rpc("request_ticket_handoff", {
       p_ticket_id: ticketId,
       p_visitor_id: session.visitorId,

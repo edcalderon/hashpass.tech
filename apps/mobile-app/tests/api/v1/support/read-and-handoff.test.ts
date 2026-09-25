@@ -7,6 +7,8 @@ const mockIdempotencyStore = new Map<
   string,
   { response_status: number; response_body: unknown }
 >();
+const idempotencyStoreKey = (visitorId: string, route: string, key: string) =>
+  `${visitorId}:${route}:${key}`;
 
 jest.mock("@/lib/supabase-server", () => ({
   getSupabaseServerForRequest: () => ({
@@ -19,36 +21,44 @@ jest.mock("@/lib/supabase-server", () => ({
         payload?: { response_status: number; response_body: unknown },
       ) => ({
         eq: () => ({
-          eq: () => ({
-            eq: (_col: string, key: string) => {
-              if (operation === "delete") mockIdempotencyStore.delete(key);
-              else if (payload) mockIdempotencyStore.set(key, payload);
-              return Promise.resolve({ error: null });
-            },
+          eq: (_visitorColumn: string, visitorId: string) => ({
+            eq: (_routeColumn: string, route: string) => ({
+              eq: (_keyColumn: string, key: string) => {
+                const storageKey = idempotencyStoreKey(visitorId, route, key);
+                if (operation === "delete") mockIdempotencyStore.delete(storageKey);
+                else if (payload) mockIdempotencyStore.set(storageKey, payload);
+                return Promise.resolve({ error: null });
+              },
+            }),
           }),
         }),
       });
       return {
         select: () => ({
           eq: () => ({
-            eq: () => ({
-              eq: (_col: string, key: string) => ({
-                maybeSingle: async () => ({
-                  data: mockIdempotencyStore.get(key) ?? null,
-                  error: null,
+            eq: (_visitorColumn: string, visitorId: string) => ({
+              eq: (_routeColumn: string, route: string) => ({
+                eq: (_keyColumn: string, key: string) => ({
+                  maybeSingle: async () => ({
+                    data: mockIdempotencyStore.get(idempotencyStoreKey(visitorId, route, key)) ?? null,
+                    error: null,
+                  }),
                 }),
               }),
             }),
           }),
         }),
         insert: async (row: {
+          visitor_id: string;
+          route: string;
           key: string;
           response_status: number;
           response_body: unknown;
         }) => {
-          if (mockIdempotencyStore.has(row.key))
+          const storageKey = idempotencyStoreKey(row.visitor_id, row.route, row.key);
+          if (mockIdempotencyStore.has(storageKey))
             return { error: { code: "23505", message: "duplicate" } };
-          mockIdempotencyStore.set(row.key, {
+          mockIdempotencyStore.set(storageKey, {
             response_status: row.response_status,
             response_body: row.response_body,
           });

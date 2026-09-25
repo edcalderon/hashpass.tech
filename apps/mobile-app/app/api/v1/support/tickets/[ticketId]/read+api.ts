@@ -12,7 +12,7 @@ export async function POST(request: Request) {
   const ticketId = ticketIdFromRequest(request);
   if (!ticketId) return Response.json({ message: "Invalid ticket id" }, { status: 400 });
 
-  return withIdempotency(supabase, request, session.appId, `tickets:${ticketId}:read`, async () => {
+  return withIdempotency(supabase, request, session.appId, session.visitorId, `tickets:${ticketId}:read`, async () => {
     const body = await request.json().catch(() => ({}));
     const cursor = typeof body?.cursor === "string" ? body.cursor : null;
 

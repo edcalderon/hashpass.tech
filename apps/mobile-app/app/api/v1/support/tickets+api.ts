@@ -56,7 +56,7 @@ export async function POST(request: Request) {
     return Response.json({ message: "Too many requests" }, { status: 429 });
   }
 
-  return withIdempotency(supabase, request, session.appId, "tickets:create", async () => {
+  return withIdempotency(supabase, request, session.appId, session.visitorId, "tickets:create", async () => {
     const body = await request.json().catch(() => ({}));
     const subject = typeof body?.subject === "string" ? body.subject : "";
     const message = typeof body?.message === "string" ? body.message : "";

@@ -100,13 +100,14 @@ ALTER TABLE public.support_ticket_reads ENABLE ROW LEVEL SECURITY;
 -- Idempotency-Key replay store, shared by all /v1/support/* mutating routes.
 CREATE TABLE IF NOT EXISTS public.support_idempotency_keys (
   app_id text NOT NULL,
+  visitor_id uuid NOT NULL,
   route text NOT NULL,
   key text NOT NULL,
   -- 0/null is an in-progress atomic claim; completed responses are replayed.
   response_status integer NOT NULL DEFAULT 0,
   response_body jsonb,
   created_at timestamptz NOT NULL DEFAULT now(),
-  PRIMARY KEY (app_id, route, key)
+  PRIMARY KEY (app_id, visitor_id, route, key)
 );
 
 ALTER TABLE public.support_idempotency_keys ENABLE ROW LEVEL SECURITY;
@@ -192,6 +193,8 @@ BEGIN
 END;
 $$;
 
+REVOKE ALL ON FUNCTION public.create_support_session(text, text, timestamptz, text, text, text, text, jsonb)
+  FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.create_support_session(text, text, timestamptz, text, text, text, text, jsonb)
   TO service_role;
 
@@ -244,6 +247,8 @@ BEGIN
 END;
 $$;
 
+REVOKE ALL ON FUNCTION public.create_support_ticket(text, uuid, text, text, text, jsonb)
+  FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.create_support_ticket(text, uuid, text, text, text, jsonb) TO service_role;
 
 CREATE OR REPLACE FUNCTION public.send_support_message(
@@ -284,6 +289,8 @@ BEGIN
 END;
 $$;
 
+REVOKE ALL ON FUNCTION public.send_support_message(uuid, uuid, text)
+  FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.send_support_message(uuid, uuid, text) TO service_role;
 
 CREATE OR REPLACE FUNCTION public.set_ticket_status(
@@ -319,6 +326,8 @@ BEGIN
 END;
 $$;
 
+REVOKE ALL ON FUNCTION public.set_ticket_status(uuid, uuid, text)
+  FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.set_ticket_status(uuid, uuid, text) TO service_role;
 
 CREATE OR REPLACE FUNCTION public.request_ticket_handoff(
@@ -355,6 +364,8 @@ BEGIN
 END;
 $$;
 
+REVOKE ALL ON FUNCTION public.request_ticket_handoff(uuid, uuid)
+  FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.request_ticket_handoff(uuid, uuid) TO service_role;
 
 CREATE OR REPLACE FUNCTION public.mark_ticket_read(
@@ -390,6 +401,8 @@ BEGIN
 END;
 $$;
 
+REVOKE ALL ON FUNCTION public.mark_ticket_read(uuid, uuid, text)
+  FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.mark_ticket_read(uuid, uuid, text) TO service_role;
 
 -- Derived, cursor-ordered event feed (message.created + ticket.updated) so we
@@ -453,6 +466,8 @@ BEGIN
 END;
 $$;
 
+REVOKE ALL ON FUNCTION public.list_support_events(uuid, uuid, text, integer)
+  FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.list_support_events(uuid, uuid, text, integer) TO service_role;
 
 -- Keyset-paginated reads (same fetch-limit+1/slice-in-route pattern as
@@ -477,7 +492,7 @@ SET search_path = public
 AS $$
 #variable_conflict use_column
 DECLARE
-  v_limit integer := LEAST(GREATEST(COALESCE(p_limit, 20), 1), 100);
+  v_limit integer := LEAST(GREATEST(COALESCE(p_limit, 20), 1), 101);
   v_cursor_updated_at timestamptz;
   v_cursor_id uuid;
 BEGIN
@@ -498,6 +513,8 @@ BEGIN
 END;
 $$;
 
+REVOKE ALL ON FUNCTION public.list_support_tickets_for_visitor(uuid, text, uuid, integer)
+  FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.list_support_tickets_for_visitor(uuid, text, uuid, integer) TO service_role;
 
 CREATE OR REPLACE FUNCTION public.list_support_messages(
@@ -514,7 +531,7 @@ SET search_path = public
 AS $$
 #variable_conflict use_column
 DECLARE
-  v_limit integer := LEAST(GREATEST(COALESCE(p_limit, 30), 1), 100);
+  v_limit integer := LEAST(GREATEST(COALESCE(p_limit, 30), 1), 101);
   v_cursor_created_at timestamptz;
   v_cursor_id uuid;
 BEGIN
@@ -539,6 +556,8 @@ BEGIN
 END;
 $$;
 
+REVOKE ALL ON FUNCTION public.list_support_messages(uuid, uuid, uuid, integer)
+  FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.list_support_messages(uuid, uuid, uuid, integer) TO service_role;
 
 -- Admin listing: intentionally a SEPARATE function from
@@ -563,7 +582,7 @@ SET search_path = public
 AS $$
 #variable_conflict use_column
 DECLARE
-  v_limit integer := LEAST(GREATEST(COALESCE(p_limit, 20), 1), 100);
+  v_limit integer := LEAST(GREATEST(COALESCE(p_limit, 20), 1), 101);
   v_cursor_updated_at timestamptz;
   v_cursor_id uuid;
 BEGIN
@@ -584,4 +603,6 @@ BEGIN
 END;
 $$;
 
+REVOKE ALL ON FUNCTION public.list_support_tickets_admin(text, text, uuid, integer)
+  FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.list_support_tickets_admin(text, text, uuid, integer) TO service_role;

@@ -6,6 +6,7 @@ import {
   type SupportSession,
   type SupportTicket,
 } from "@hashpass-tech/sdk";
+import { consumeExistingSupportEvents } from "./event-cursor.js";
 
 export type HashpassSupportEvent =
   | "ready" | "opened" | "closed" | "ticket.created" | "message.created" | "unread.changed" | "handoff.requested" | "error";
@@ -160,7 +161,7 @@ export class HashpassSupportElement extends HTMLElement {
     const stored = this.#readStoredSession(appId);
     try {
       if (stored) {
-        await client.auth.adoptSupportSession(stored);
+        await client.support.adoptSupportSession(stored);
       } else {
         const session = await client.support.createSupportSession();
         this.#persistSession(session);
@@ -190,17 +191,37 @@ export class HashpassSupportElement extends HTMLElement {
     }
   }
 
-  #startPolling(): void {
+  async #startPolling(): Promise<void> {
     this.#pollController?.abort();
     if (!this.#ticket) return;
     const controller = new AbortController();
     this.#pollController = controller;
-    void this.#pollLoop(this.#ticket.id, controller.signal);
+    const ticketId = this.#ticket.id;
+
+    try {
+      // The ticket and message history were loaded during bootstrap. Drain the
+      // matching event history silently, then poll only for subsequent events.
+      // Otherwise every reopen turns old agent replies into new notifications.
+      const cursor = await consumeExistingSupportEvents(
+        (eventCursor) => this.#getClient().support.getTicketEvents(ticketId, eventCursor, controller.signal),
+        controller.signal,
+      );
+      if (controller.signal.aborted || this.#pollController !== controller) return;
+      void this.#pollLoop(ticketId, cursor, controller.signal);
+    } catch {
+      // Do not fall back to an undefined cursor: that would replay history as
+      // fresh events. Retry the silent catch-up instead.
+      if (!controller.signal.aborted) {
+        setTimeout(() => {
+          if (this.#pollController === controller) void this.#startPolling();
+        }, 3_000);
+      }
+    }
   }
 
-  async #pollLoop(ticketId: string, signal: AbortSignal): Promise<void> {
+  async #pollLoop(ticketId: string, initialCursor: string | undefined, signal: AbortSignal): Promise<void> {
     const client = this.#getClient();
-    let cursor: string | undefined;
+    let cursor = initialCursor;
     while (!signal.aborted) {
       try {
         const page = await client.support.getTicketEvents(ticketId, cursor, signal);

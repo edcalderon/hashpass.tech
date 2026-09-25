@@ -8,6 +8,8 @@ const mockIdempotencyStore = new Map<
   string,
   { response_status: number; response_body: unknown }
 >();
+const idempotencyStoreKey = (visitorId: string, route: string, key: string) =>
+  `${visitorId}:${route}:${key}`;
 
 jest.mock("@/lib/supabase-server", () => ({
   getSupabaseServerForRequest: () => ({
@@ -20,36 +22,44 @@ jest.mock("@/lib/supabase-server", () => ({
         payload?: { response_status: number; response_body: unknown },
       ) => ({
         eq: () => ({
-          eq: () => ({
-            eq: (_col: string, key: string) => {
-              if (operation === "delete") mockIdempotencyStore.delete(key);
-              else if (payload) mockIdempotencyStore.set(key, payload);
-              return Promise.resolve({ error: null });
-            },
+          eq: (_visitorColumn: string, visitorId: string) => ({
+            eq: (_routeColumn: string, route: string) => ({
+              eq: (_keyColumn: string, key: string) => {
+                const storageKey = idempotencyStoreKey(visitorId, route, key);
+                if (operation === "delete") mockIdempotencyStore.delete(storageKey);
+                else if (payload) mockIdempotencyStore.set(storageKey, payload);
+                return Promise.resolve({ error: null });
+              },
+            }),
           }),
         }),
       });
       return {
         select: () => ({
           eq: () => ({
-            eq: () => ({
-              eq: (_col: string, key: string) => ({
-                maybeSingle: async () => ({
-                  data: mockIdempotencyStore.get(key) ?? null,
-                  error: null,
+            eq: (_visitorColumn: string, visitorId: string) => ({
+              eq: (_routeColumn: string, route: string) => ({
+                eq: (_keyColumn: string, key: string) => ({
+                  maybeSingle: async () => ({
+                    data: mockIdempotencyStore.get(idempotencyStoreKey(visitorId, route, key)) ?? null,
+                    error: null,
+                  }),
                 }),
               }),
             }),
           }),
         }),
         insert: async (row: {
+          visitor_id: string;
+          route: string;
           key: string;
           response_status: number;
           response_body: unknown;
         }) => {
-          if (mockIdempotencyStore.has(row.key))
+          const storageKey = idempotencyStoreKey(row.visitor_id, row.route, row.key);
+          if (mockIdempotencyStore.has(storageKey))
             return { error: { code: "23505", message: "duplicate" } };
-          mockIdempotencyStore.set(row.key, {
+          mockIdempotencyStore.set(storageKey, {
             response_status: row.response_status,
             response_body: row.response_body,
           });
@@ -175,7 +185,7 @@ describe("POST /api/v1/support/tickets", () => {
 
   it("does not run a concurrent mutation while its idempotency key is claimed", async () => {
     mockResolveSupportSession.mockResolvedValue(SESSION);
-    mockIdempotencyStore.set("in-flight", {
+    mockIdempotencyStore.set(idempotencyStoreKey("visitor-1", "tickets:create", "in-flight"), {
       response_status: 0,
       response_body: null,
     });
@@ -227,6 +237,34 @@ describe("POST /api/v1/support/tickets", () => {
     expect(second.status).toBe(201);
     expect(await first.json()).toEqual(await second.json());
     expect(mockRpc).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not replay one visitor's ticket when another visitor uses the same Idempotency-Key", async () => {
+    mockResolveSupportSession
+      .mockResolvedValueOnce(SESSION)
+      .mockResolvedValueOnce({ ...SESSION, visitorId: "visitor-2" });
+    mockRpc
+      .mockResolvedValueOnce({
+        data: [{ id: "ticket-1", subject: "First", status: "open", priority: "normal", created_at: "t1", updated_at: "t1" }],
+        error: null,
+      })
+      .mockResolvedValueOnce({
+        data: [{ id: "ticket-2", subject: "Second", status: "open", priority: "normal", created_at: "t2", updated_at: "t2" }],
+        error: null,
+      });
+
+    const { POST } = require("../../../../app/api/v1/support/tickets+api");
+    const first = await POST(
+      makeRequest({ subject: "First", message: "first visitor" }, { "idempotency-key": "shared-key" }),
+    );
+    const second = await POST(
+      makeRequest({ subject: "Second", message: "second visitor" }, { "idempotency-key": "shared-key" }),
+    );
+
+    expect(first.status).toBe(201);
+    expect(second.status).toBe(201);
+    expect((await second.json()).id).toBe("ticket-2");
+    expect(mockRpc).toHaveBeenCalledTimes(2);
   });
 });
 

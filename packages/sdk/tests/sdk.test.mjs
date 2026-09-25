@@ -522,3 +522,25 @@ test("adopts a support session so later support calls carry its bearer token", a
     "Bearer visitor-token-1",
   );
 });
+
+test("restores a persisted support session without replacing primary auth", async () => {
+  const calls = [];
+  const sdk = createHashpass({
+    appId: "app_test",
+    fetch: async (url, init) => {
+      calls.push({ url, init });
+      return Response.json({ items: [], nextCursor: null });
+    },
+  });
+
+  await sdk.support.adoptSupportSession({
+    token: "restored-visitor-token",
+    visitorId: "visitor_1",
+    applicationId: "app_test",
+    expiresAt: "2099-01-01T00:00:00.000Z",
+  });
+
+  assert.equal(await sdk.auth.getAccessToken(), null);
+  await sdk.support.listTickets();
+  assert.equal(calls[0].init.headers.get("authorization"), "Bearer restored-visitor-token");
+});

@@ -66,6 +66,11 @@ export class SupportClient {
     return session;
   }
 
+  /** Restores a previously issued visitor credential into the support-only store. */
+  async adoptSupportSession(session: SupportSession): Promise<void> {
+    await this.auth?.adoptSupportSession(session);
+  }
+
   getWidgetConfiguration(appId?: string): Promise<WidgetConfiguration> {
     return this.transport.request("v1/support/widget-config", {
       query: { appId },
