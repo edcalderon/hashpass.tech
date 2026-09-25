@@ -15,6 +15,7 @@
     "openproof:export": "node scripts/export-openproof-assets.mjs",
     "openproof:narration": "node scripts/generate-openproof-narration.mjs",
     "diffusion:import": "node scripts/import-diffusion-project.mjs",
+    "diffusion:brief": "node scripts/generate-event-video-brief.mjs",
     "test": "node --test tests/*.test.mjs"
   },
   "dependencies": {

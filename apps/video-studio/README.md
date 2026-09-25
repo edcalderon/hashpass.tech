@@ -76,6 +76,41 @@ declared target composition and are rendered by Remotion like every other
 recording. The generated manifest is reviewable source of truth; do not
 commit Diffusion's editor cache or agent credentials.
 
+### Claude creative briefs
+
+Claude creates the prompt and review checklist; it is **not** the video
+generator. Create a local event-input file containing only verified public
+event facts:
+
+```json
+{
+  "id": "cbweek2026",
+  "title": "Colombia Blockchain Week 2026",
+  "city": "Medellín",
+  "country": "Colombia",
+  "startDate": "2026-12-11",
+  "endDate": "2026-12-12",
+  "themes": ["blockchain", "community", "technology"]
+}
+```
+
+Set `ANTHROPIC_API_KEY` and `ANTHROPIC_MODEL` in your ignored local
+environment (the placeholders live in the repository root `.env.example`),
+then generate a reviewable brief:
+
+```bash
+pnpm --filter hashpass-video-studio diffusion:brief -- \
+  --event /absolute/path/to/cbweek2026.json \
+  --output /absolute/path/to/diffusion-project/cbweek2026-brief.json
+```
+
+Review that brief in Diffusion Studio, generate or select the actual loop,
+export the approved media into the Diffusion project, and use the handoff
+import command above. Never put the API key in an `EXPO_PUBLIC_*` variable,
+the mobile app, or a client-side event-explorer request. Automated production
+brief batches will use Anthropic Workload Identity Federation rather than an
+API key.
+
 ## Layout
 
 ```
