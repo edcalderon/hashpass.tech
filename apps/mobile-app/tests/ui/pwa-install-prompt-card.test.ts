@@ -40,30 +40,42 @@ describe('PWA install prompt layout', () => {
     expect(source).toContain("WebkitOverflowScrolling: 'touch'");
   });
 
-  it('keeps the collapsed PWA opener separate from the dock placement controls', () => {
+  it('returns to the collapsed launcher when install instructions are closed', () => {
+    const source = readSource('../../../../apps/mobile-app/components/PWAPrompt.tsx');
+
+    expect(source).toContain('const closeInstallHelpModal = () => {\n    setShowInstallHelpModal(false);\n    collapsePrompt();\n  };');
+    expect(source).toContain('onPrimaryAction={closeInstallHelpModal}');
+    expect(source).toContain('onClose={closeInstallHelpModal}');
+  });
+
+  it('keeps the collapsed PWA opener freely draggable through its dedicated handle', () => {
     const promptSource = readSource('../../../../apps/mobile-app/components/PWAPrompt.tsx');
     const dragSource = readSource('../../../../apps/mobile-app/lib/pwa-drag.ts');
 
     expect(dragSource).toContain("export const PWA_DRAG_POSITION_KEY = 'hashpass:pwa-install-position';");
-    expect(dragSource).toContain("export const PWA_DOCK_POSITIONS = ['top-left', 'bottom-left', 'bottom-right'] as const;");
     expect(dragSource).toContain('export const clampPwaDragPosition');
-    expect(dragSource).toContain('export const resolveNearestPwaDockPosition');
-    expect(promptSource).toContain("className=\"hp-pwa-dock-controls\"");
-    expect(promptSource).toContain('className={`hp-pwa-dock-target hp-pwa-dock-target-${position}');
-    expect(promptSource).toContain('const [showDockControls, setShowDockControls] = useState(false);');
-    expect(promptSource).toContain("document.addEventListener('pointerdown', handleOutsidePointerDown);");
-    expect(promptSource).toContain('setShowDockControls(false);');
-    expect(promptSource).toContain("event.key === 'Escape'");
-    expect(promptSource).toContain('onPointerEnter={() => setShowDockControls(true)}');
-    expect(promptSource).toContain('onPointerLeave={hidePwaDockControls}');
-    expect(promptSource).toContain('onBlurCapture={(event) => {');
-    expect(promptSource).toContain('storePwaDockPosition(nextDockPosition)');
+    expect(promptSource).toContain('const [dragPosition, setDragPosition] = useState<PwaDragPosition | null>(null);');
+    expect(promptSource).toContain('className="hp-pwa-drag-handle"');
+    expect(promptSource).toContain('onPointerDown={handleDragPointerDown}');
+    expect(promptSource).toContain('storePwaDragPosition(nextPosition)');
     expect(promptSource).toContain('onExpand={expandPrompt}');
-    expect(promptSource).not.toContain('onClickCapture=');
-    expect(promptSource).not.toContain('onPointerDown={handleDragPointerDown}');
-    expect(promptSource).not.toContain('suppressNextClickAfterDragRef');
-    expect(promptSource).not.toContain('DRAG_SYNTHETIC_CLICK_SUPPRESS_MS');
-    expect(promptSource).toContain('hp-pwa-dock-layer');
+    expect(promptSource).toContain('hp-pwa-drag-layer');
+    expect(promptSource).not.toContain('PWA_DOCK_POSITIONS');
+    expect(promptSource).not.toContain('hp-pwa-dock-controls');
+  });
+
+  it('gives the draggable launcher a keyboard fallback and a 44px touch target', () => {
+    const promptSource = readSource('../../../../apps/mobile-app/components/PWAPrompt.tsx');
+    const cssSource = readSource('../../../../apps/mobile-app/app/global.css');
+    const dragHandleRule = readCssRule(cssSource, '.hp-pwa-drag-handle');
+
+    expect(promptSource).toMatch(/onKeyDown=\{[^}]+\}/);
+    expect(promptSource).toContain("event.key === 'ArrowUp'");
+    expect(promptSource).toContain("event.key === 'ArrowDown'");
+    expect(promptSource).toContain("event.key === 'ArrowLeft'");
+    expect(promptSource).toContain("event.key === 'ArrowRight'");
+    expect(dragHandleRule).toContain('min-width: 44px;');
+    expect(dragHandleRule).toContain('min-height: 44px;');
   });
 
   it('renders the dont-show-again action as an accessible secondary button', () => {
@@ -78,25 +90,22 @@ describe('PWA install prompt layout', () => {
     expect(cardSource).toContain('className="hp-pwa-secondary-action"');
   });
 
-  it('shows hover dock indicators for the PWA button placement controls', () => {
+  it('uses a compact drag affordance instead of snap-position targets', () => {
     const source = readSource('../../../../apps/mobile-app/app/global.css');
-    const dockControlsRule = readCssRule(source, '.hp-pwa-dock-controls');
-    const dockTargetRule = readCssRule(source, '.hp-pwa-dock-target');
 
-    expect(source).toContain('.hp-pwa-dock-layer');
-    expect(source).toContain('.hp-pwa-dock-layer::before');
-    expect(source).toContain('.hp-pwa-dock-layer.hp-pwa-dock-controls-visible::before');
-    expect(source).toContain('.hp-pwa-dock-layer.hp-pwa-dock-controls-visible .hp-pwa-dock-controls');
-    expect(source).toContain('.hp-pwa-dock-controls');
-    expect(source).toContain('.hp-pwa-dock-target-top-left');
-    expect(source).toContain('.hp-pwa-dock-target-bottom-left');
-    expect(source).toContain('.hp-pwa-dock-target-bottom-right');
-    expect(source).toContain('cursor: pointer;');
-    expect(source).toContain('touch-action: manipulation;');
-    expect(dockControlsRule).toContain('pointer-events: none;');
-    expect(dockTargetRule).toContain('pointer-events: none;');
-    expect(source).toContain('.hp-pwa-dock-layer.hp-pwa-dock-controls-visible .hp-pwa-dock-target');
-    expect(source).toContain('pointer-events: auto;');
-    expect(source).not.toContain('cursor: grabbing;');
+    expect(source).toContain('.hp-pwa-drag-layer');
+    expect(source).toContain('.hp-pwa-drag-handle');
+    expect(source).toContain('cursor: grab;');
+    expect(source).toContain('touch-action: none;');
+    expect(source).not.toContain('.hp-pwa-dock-target-top-left');
+    expect(source).not.toContain('.hp-pwa-dock-target-bottom-left');
+    expect(source).not.toContain('.hp-pwa-dock-target-bottom-right');
+  });
+
+  it('expands the web launcher on hover while retaining its touch click path', () => {
+    const source = readSource('../../../../apps/mobile-app/components/PWAPrompt.tsx');
+
+    expect(source).toContain('onMouseEnter={expandPrompt}');
+    expect(source).toContain('onExpand={expandPrompt}');
   });
 });

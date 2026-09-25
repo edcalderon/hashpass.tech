@@ -2,16 +2,13 @@
 
 import {
   clampPwaDragPosition,
-  getPwaDockPositionCoordinates,
-  PWA_DOCK_POSITIONS,
+  getDefaultPwaDragPosition,
+  getPwaDragViewport,
   PWA_DRAG_BOTTOM_SAFE_MARGIN,
   PWA_DRAG_BUTTON_SIZE,
   PWA_DRAG_POSITION_KEY,
   PWA_DRAG_SAFE_MARGIN,
-  readStoredPwaDockPosition,
   readStoredPwaDragPosition,
-  resolveNearestPwaDockPosition,
-  storePwaDockPosition,
   storePwaDragPosition,
 } from '../../lib/pwa-drag';
 
@@ -39,10 +36,45 @@ describe('PWA drag positioning', () => {
       configurable: true,
     });
     window.localStorage.clear();
+    Object.defineProperty(window, 'innerWidth', { value: 390, configurable: true });
+    Object.defineProperty(window, 'innerHeight', { value: 800, configurable: true });
+    Object.defineProperty(window, 'visualViewport', { value: undefined, configurable: true });
+  });
+
+  it('uses the visible visual viewport instead of the taller layout viewport', () => {
+    Object.defineProperty(window, 'innerHeight', { value: 844, configurable: true });
+    Object.defineProperty(window, 'visualViewport', {
+      value: { width: 390, height: 690 },
+      configurable: true,
+    });
+
+    expect(getPwaDragViewport()).toEqual({ width: 390, height: 690, offsetLeft: 0, offsetTop: 0 });
+  });
+
+  it('falls back to a usable viewport size when visual viewport dimensions are unavailable', () => {
+    Object.defineProperty(window, 'visualViewport', {
+      value: { width: 0, height: 0, offsetLeft: 12, offsetTop: 18 },
+      configurable: true,
+    });
+
+    expect(getPwaDragViewport()).toEqual({ width: 390, height: 800, offsetLeft: 12, offsetTop: 18 });
+  });
+
+  it('keeps a freely dropped position inside a panned visual viewport', () => {
+    const viewport = { width: 320, height: 240, offsetLeft: 18, offsetTop: 32 };
+
+    expect(clampPwaDragPosition({ left: 999, top: 999 }, viewport)).toEqual({
+      left: 256,
+      top: 154,
+    });
+    expect(clampPwaDragPosition({ left: -999, top: -999 }, viewport)).toEqual({
+      left: 30,
+      top: 44,
+    });
   });
 
   it('clamps the floating button inside the viewport', () => {
-    const viewport = { width: 320, height: 240 };
+    const viewport = { width: 320, height: 240, offsetLeft: 0, offsetTop: 0 };
 
     expect(clampPwaDragPosition({ left: -100, top: -20 }, viewport)).toEqual({
       left: PWA_DRAG_SAFE_MARGIN,
@@ -51,45 +83,43 @@ describe('PWA drag positioning', () => {
 
     expect(clampPwaDragPosition({ left: 400, top: 300 }, viewport)).toEqual({
       left: viewport.width - PWA_DRAG_BUTTON_SIZE - PWA_DRAG_SAFE_MARGIN,
-      top: viewport.height - PWA_DRAG_BUTTON_SIZE - PWA_DRAG_SAFE_MARGIN,
+      top: viewport.height - PWA_DRAG_BUTTON_SIZE - PWA_DRAG_BOTTOM_SAFE_MARGIN,
     });
   });
 
-  it('limits dropped placement to top-left, bottom-left, and bottom-right docks', () => {
-    const viewport = { width: 320, height: 240 };
+  it('uses a safe bottom-left starting position without restricting later drops', () => {
+    const viewport = { width: 320, height: 240, offsetLeft: 0, offsetTop: 0 };
 
-    expect(PWA_DOCK_POSITIONS).toEqual(['top-left', 'bottom-left', 'bottom-right']);
-    expect(getPwaDockPositionCoordinates('top-left', viewport)).toEqual({
+    expect(getDefaultPwaDragPosition(viewport)).toEqual({
+      left: PWA_DRAG_SAFE_MARGIN,
+      top: viewport.height - PWA_DRAG_BUTTON_SIZE - PWA_DRAG_BOTTOM_SAFE_MARGIN,
+    });
+  });
+
+  it('preserves an arbitrary dropped coordinate instead of snapping it to a dock', () => {
+    const viewport = { width: 320, height: 240, offsetLeft: 0, offsetTop: 0 };
+
+    expect(clampPwaDragPosition({ left: 142, top: 78 }, viewport)).toEqual({ left: 142, top: 78 });
+  });
+
+  it('migrates the legacy dock value into a free safe coordinate', () => {
+    window.localStorage.setItem(PWA_DRAG_POSITION_KEY, '"bottom-right"');
+
+    expect(readStoredPwaDragPosition()).toEqual({
+      left: 308,
+      top: 682,
+    });
+  });
+
+  it('keeps the supported legacy top-left coordinate and ignores unknown saved values', () => {
+    window.localStorage.setItem(PWA_DRAG_POSITION_KEY, '"top-left"');
+    expect(readStoredPwaDragPosition()).toEqual({
       left: PWA_DRAG_SAFE_MARGIN,
       top: PWA_DRAG_SAFE_MARGIN,
     });
-    expect(getPwaDockPositionCoordinates('bottom-left', viewport)).toEqual({
-      left: PWA_DRAG_SAFE_MARGIN,
-      top: viewport.height - PWA_DRAG_BUTTON_SIZE - PWA_DRAG_BOTTOM_SAFE_MARGIN,
-    });
-    expect(getPwaDockPositionCoordinates('bottom-right', viewport)).toEqual({
-      left: viewport.width - PWA_DRAG_BUTTON_SIZE - PWA_DRAG_SAFE_MARGIN,
-      top: viewport.height - PWA_DRAG_BUTTON_SIZE - PWA_DRAG_BOTTOM_SAFE_MARGIN,
-    });
-  });
 
-  it('snaps a dragged coordinate to the nearest allowed dock', () => {
-    const viewport = { width: 320, height: 240 };
-
-    expect(resolveNearestPwaDockPosition({ left: 20, top: 24 }, viewport)).toBe('top-left');
-    expect(resolveNearestPwaDockPosition({ left: 18, top: 180 }, viewport)).toBe('bottom-left');
-    expect(resolveNearestPwaDockPosition({ left: 250, top: 170 }, viewport)).toBe('bottom-right');
-  });
-
-  it('persists dock placement and migrates legacy coordinates to the nearest dock', () => {
-    storePwaDockPosition('bottom-left');
-
-    expect(window.localStorage.getItem(PWA_DRAG_POSITION_KEY)).toBe('"bottom-left"');
-    expect(readStoredPwaDockPosition()).toBe('bottom-left');
-
-    window.localStorage.setItem(PWA_DRAG_POSITION_KEY, '{"left":900,"top":700}');
-
-    expect(readStoredPwaDockPosition()).toBe('bottom-right');
+    window.localStorage.setItem(PWA_DRAG_POSITION_KEY, '"top-right"');
+    expect(readStoredPwaDragPosition()).toBeNull();
   });
 
   it('persists and reads the last dropped position', () => {
@@ -102,6 +132,11 @@ describe('PWA drag positioning', () => {
   it('ignores malformed stored positions', () => {
     window.localStorage.setItem(PWA_DRAG_POSITION_KEY, '{"left":"bad","top":92}');
 
+    expect(readStoredPwaDragPosition()).toBeNull();
+  });
+
+  it('ignores corrupt JSON without breaking the launcher', () => {
+    window.localStorage.setItem(PWA_DRAG_POSITION_KEY, '{not-json');
     expect(readStoredPwaDragPosition()).toBeNull();
   });
 });

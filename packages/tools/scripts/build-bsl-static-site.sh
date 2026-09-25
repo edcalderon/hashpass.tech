@@ -25,7 +25,7 @@ if [ -z "${TARGET_STAGE:-}" ]; then
   exit 1
 fi
 
-if [ -z "${SITE_BUCKET_NAME:-}" ]; then
+if [[ "${BSL_BUILD_ONLY:-false}" != "true" && -z "${SITE_BUCKET_NAME:-}" ]]; then
   echo "SITE_BUCKET_NAME is required" >&2
   exit 1
 fi
@@ -42,7 +42,7 @@ esac
 echo "Building BSL static site (hybrid: target S3 + source CloudFront)"
 echo "  Root dir:      ${ROOT_DIR}"
 echo "  BSL stage:     ${BSL_STAGE}"
-echo "  Site bucket:   ${SITE_BUCKET_NAME}"
+echo "  Mode:          $([[ "${BSL_BUILD_ONLY:-false}" == "true" ]] && echo build-only || echo build-and-deploy)"
 
 # Each pipeline job runs in a fresh workspace directory. Metro's cache
 # defaults to a persistent, non-workspace-scoped location on this worker, so
@@ -115,6 +115,14 @@ cd apps/mobile-app
 export CI=1
 SKIP_ENV_PROPAGATE=1 BUILD_ENV="${BSL_STAGE}" npm run build:static
 cd "${ROOT_DIR}"
+
+# GitHub builds run without AWS credentials. The separate deployment job
+# downloads this artifact and assumes a bucket-scoped OIDC role only then.
+if [[ "${BSL_BUILD_ONLY:-false}" == "true" ]]; then
+  test -f apps/mobile-app/dist/index.html
+  echo "BSL build artifact ready at apps/mobile-app/dist"
+  exit 0
+fi
 
 # No CloudFront invalidation here: bsl-dev.hashpass.tech's distribution
 # lives in the SOURCE account, but this worker only has target-account

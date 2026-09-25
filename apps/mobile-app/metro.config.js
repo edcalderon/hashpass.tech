@@ -44,6 +44,7 @@ const runtimeWorkspacePackages = [
   'types',
   'ui',
   'utils',
+  'wallet',
 ];
 
 const runtimeWorkspacePackageFolders = runtimeWorkspacePackages.map((packageName) =>
@@ -274,12 +275,15 @@ const blockListPatterns = [
   // which lacks the .meta() API better-auth's server code calls), so blocking
   // it here made Metro fall back to the mismatched root zod and crash every
   // /api/auth/* request with "z.coerce.boolean(...).meta is not a function".
-  /.*\/node_modules\/(?!\.pnpm\/)(?!better-auth\/)(?!better-call\/)(?!@better-auth\/).*\/node_modules\/.*/,
-  // Build artefacts inside workspace packages
-  /.*\/packages\/.*\/dist\/.*/,
-  /.*\/packages\/.*\/build\/.*/,
-  /.*\/packages\/.*\/coverage\/.*/,
-  /.*\/packages\/.*\/\.turbo\/.*/,
+  // Crypto packages also intentionally retain incompatible major versions of
+  // @noble/hashes. They must not fall back to the root's newer major version.
+  /.*\/node_modules\/(?!\.pnpm\/)(?!better-auth\/)(?!better-call\/)(?!@better-auth\/)(?!ethers\/)(?!@noble\/).*\/node_modules\/.*/,
+  // Only workspace-owned outputs. A package's nested dependencies can have
+  // required dist/build entrypoints (e.g. wallet's pinned ethers dependencies).
+  /.*\/packages\/[^/]+\/dist\/.*/,
+  /.*\/packages\/[^/]+\/build\/.*/,
+  /.*\/packages\/[^/]+\/coverage\/.*/,
+  /.*\/packages\/[^/]+\/\.turbo\/.*/,
   // Local infra tooling can be multiple GB and is never needed by the mobile app.
   /.*\/packages\/infra\/\.sst\/.*/,
   /.*\/packages\/infra\/terraform\/.*\/\.terraform\/.*/,

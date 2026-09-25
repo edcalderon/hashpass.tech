@@ -23,7 +23,60 @@
     "capError": "Security check failed. Please retry.",
     "capRetry": "Retry"
   },
+  "landingCarousel": {
+    "memberOf": "Member of",
+    "supportedBy": "Supported by"
+  },
   "wallet": {
+    "enrollment": {
+      "readOnly": "READ ONLY",
+      "signIn": "Sign in to see your wallet status.",
+      "loading": "Loading wallet status",
+      "unavailable": "Wallet status unavailable. Please try again.",
+      "ready": "Enrollment ready",
+      "noKeys": "Your account is enrolled. No keys have been created. Device setup and recovery verification are not yet available in this app.",
+      "interrupted": "Wallet setup is incomplete. Keep the original device and its stored wallet. Do not create a replacement wallet.",
+      "testnet": "Test networks",
+      "mainnet": "Main networks",
+      "registered": "Registered public addresses. Device access and recovery have not been verified on this screen. Balances and signing are unavailable.",
+      "refresh": "Refresh wallet status",
+      "setupReady": "Your account is enrolled. No keys have been created. Set up this device below."
+    },
+    "overview": {
+      "assets": "Assets",
+      "rewards": "Rewards",
+      "passes": "Event passes",
+      "eyebrow": "YOUR HASHPASS",
+      "title": "Wallet",
+      "subtitle": "Your assets, rewards and event passes. One place, clear ownership.",
+      "setupPending": "SETUP NOT YET AVAILABLE",
+      "ownershipTitle": "Your wallet. Your control.",
+      "setupDescription": "Ethereum, Bitcoin and Solana wallet setup is being prepared. No crypto wallet has been created by this screen. Transfers and signing are unavailable.",
+      "hideSecurity": "Hide security details",
+      "showSecurity": "How wallet protection will work",
+      "protectTitle": "01 / Protect your wallet",
+      "protectBody": "A separate wallet password will protect signing. Signing stays locked until setup and recovery checks are complete.",
+      "backupTitle": "02 / Back up and verify",
+      "backupBody": "Save your recovery phrase and encrypted backup, then complete a recovery check before enabling transactions.",
+      "hardwareTitle": "03 / Choose how you sign",
+      "hardwareBody": "Hardware wallet connections are planned. A hardware wallet keeps its keys on the device; never enter its recovery phrase here.",
+      "networks": "Planned networks",
+      "networksDescription": "Balances will appear after wallet setup and a successful network connection.",
+      "notConnected": "Not connected",
+      "balanceUnavailable": "Balance unavailable",
+      "activity": "Activity",
+      "activityUnavailable": "Transaction history will be available when your wallet is connected. No on-chain activity has been loaded.",
+      "passesNote": "Your event access passes. These are separate from on-chain assets.",
+      "rewardsLabel": "HASHPASS REWARDS",
+      "rewardsSignIn": "Sign in to see your rewards balance.",
+      "loadingRewards": "Loading rewards",
+      "unavailable": "Unavailable",
+      "rewardsError": "Your balance could not be loaded. Please try again.",
+      "rewardsNote": "Your HASHPASS rewards balance is separate from your on-chain assets. No cash value or exchange rate is assumed.",
+      "refreshRewards": "Refresh rewards",
+      "pointsTitle": "Hash Points",
+      "pointsUnavailable": "Points balances and exchanges are not available yet."
+    },
     "digitalWalletTitle": "Digital Ticket Wallet",
     "walletDesc": "Access your secure blockchain-verified tickets, tokens, and points",
     "events": "Event Discovery",
@@ -87,6 +140,37 @@
     "exchange": {
       "title": "Token Exchange",
       "description": "Convert points to cryptocurrency."
+    },
+    "setup": {
+      "title": "Device setup · test networks only",
+      "readOnly": "Signing remains unavailable. Backup checks do not enable transactions.",
+      "error": "Unable to complete this step. Check your passwords, backup and connection. Keep your original device; never create a replacement wallet.",
+      "passwordHelp": "Use a separate wallet password: at least 16 characters and 8 distinct characters. HASHPASS cannot reset it or recover your phrase.",
+      "password": "Wallet password",
+      "confirm": "Confirm wallet password",
+      "restoreTitle": "Restore from encrypted backup",
+      "reveal": "Reveal recovery phrase",
+      "phraseWarning": "Anyone with these words controls the wallet. Write them down privately, in order. Never send them to support.",
+      "hide": "Hide phrase and verify words",
+      "challenge": "Enter the requested words from your saved recovery phrase.",
+      "answer": "Recovery word",
+      "verifyWords": "Verify recovery words",
+      "backupHelp": "The encrypted file restores into HASHPASS. It is not a MetaMask JSON keystore. Keep its separate password safely; wallet import compatibility is still being tested.",
+      "backupPassword": "Backup password",
+      "backupConfirm": "Confirm backup password",
+      "export": "Download encrypted backup",
+      "pick": "Choose encrypted backup file",
+      "fileSelected": "Encrypted file selected. Enter its password to verify or restore it locally.",
+      "verified": "Recovery words and encrypted backup verified for this session. Signing is still disabled.",
+      "plaintextWarning": "Optional unencrypted phrase download: anyone who can open this file can take the wallet. Avoid shared folders and cloud sync.",
+      "plaintext": "Download unencrypted recovery phrase",
+      "create": "Create testnet wallet",
+      "resume": "Resume wallet setup",
+      "restore": "Restore wallet on this device",
+      "verifyFile": "Verify saved backup",
+      "word": "Word",
+      "acknowledge": "I understand the unencrypted file risk",
+      "cancelPlaintext": "Cancel unencrypted download"
     }
   },
   "digitalWallet": {
@@ -270,6 +354,8 @@
     "close": "Close install prompt",
     "dialogLabel": "HASHPASS install prompt",
     "expandCollapsed": "Open install options",
+    "dragHandle": "Drag install button",
+    "playStoreAction": "Get the full app on Google Play",
     "infoIntro": "A PWA (Progressive Web App) lets HASHPASS behave like a native app on your device.",
     "details": {
       "one": "PWA means Progressive Web App: app-like behavior from your browser install.",
@@ -277,8 +363,11 @@
       "three": "Great for event check-in flows, wallets, and notifications with less friction."
     },
     "instructions": {
-      "ios": "To install: tap Share, then \"Add to Home Screen\".",
-      "android": "To install: open the browser menu and tap \"Install app\".",
+      "safariIos": "In Safari: tap Share, then Add to Home Screen and Add.",
+      "chromeIos": "In Chrome on iPhone: open the Share menu, then choose Add to Home Screen.",
+      "firefoxIos": "In Firefox on iPhone: use the Share menu and choose Add to Home Screen.",
+      "chromeAndroid": "In Chrome: open the three-dot menu, then tap Install app.",
+      "firefoxAndroid": "In Firefox: open the three-dot menu, then tap Install.",
       "default": "To install: use the install icon in your browser address bar."
     }
   },
@@ -460,18 +549,71 @@
     "learnMore": "Learn More",
     "taglineFlipList": "- YOUR EVENT -,- YOUR COMMUNITY -,- YOUR REWARDS -",
     "unlockPotential": "Unlock Your Potential",
+    "featuresBadge": "Key features",
     "features": {
+      "title": "Everything your event needs",
+      "subtitle": "One private identity for entry, connections, passes and rewards.",
       "secure": {
         "title": "Secure & Private",
-        "description": "Your data is encrypted and protected with industry-leading security protocols. We prioritize your privacy above all else."
+        "description": "Your data is encrypted and protected with industry-leading security protocols. We prioritize your privacy above all else.",
+        "action": "Secure my data"
+        ,"metric": "End-to-end encrypted conversations",
+        "metricLabel": "verified speakers"
       },
       "management": {
         "title": "Effortless Management",
-        "description": "Organize all your digital credentials, loyalty cards, and communities in one intuitive place."
+        "description": "Organize all your digital credentials, loyalty cards, and communities in one intuitive place.",
+        "action": "Manage my keys"
+        ,"metric": "One pass for your event network",
+        "metricLabel": "passes issued"
       },
       "sync": {
         "title": "Cross-Platform Sync",
-        "description": "Access your data across all your devices with our secure cloud sync."
+        "description": "Access your data across all your devices with our secure cloud sync.",
+        "action": "Enable secure sync"
+        ,"metric": "3 clients: web, Android and iOS",
+        "metricLabel": "supported platforms"
+      },
+      "entry": {
+        "title": "Fast entry",
+        "description": "Use a live QR pass for quick, reliable event access.",
+        "metric": "Live QR validation",
+        "metricLabel": "live passes"
+      },
+      "network": {
+        "title": "Private networking",
+        "description": "Find attendees, book meetings and keep conversations private.",
+        "metric": "Meetings and encrypted chat",
+        "metricLabel": "meetings booked"
+      }
+    },
+    "howItWorks": {
+      "badge": "How it works",
+      "title": "How HASHPASS Works",
+      "subtitle": "One pass, one login, every event — built for speed and privacy.",
+      "moreInfo": "More information",
+      "closeInfo": "Close information",
+      "scenes": {
+        "eventPass": "EVENT PASS", "eventExplorer": "EVENT EXPLORER", "agenda": "AGENDA", "speakers": "SPEAKERS",
+        "findAttendees": "FIND ATTENDEES", "meet": "MEET", "lksWallet": "$LKS WALLET", "availableBalance": "AVAILABLE BALANCE"
+      },
+      "cards": {
+        "scan": {
+          "title": "Scan & Enter",
+          "description": "Skip the line. Your pass is a live QR code that gets you into any event instantly — no printouts, no paperwork."
+        },
+        "allies": {
+          "title": "Event Allies Network",
+          "description": "Sign in once and move across every partner venue, club, and community event in the HASHPASS network."
+        },
+        "meet": {
+          "title": "Meet & Network",
+          "description": "Book meetings and chat end-to-end encrypted with other attendees — real connections, kept private."
+        },
+        "rewards": {
+          "title": "$LKS Wallet",
+          "description": "Use $LKS, the Blockchain Latam Foundation LATAM crypto-peso index, supported by HASHPASS as an incubator tech lab."
+        }
       }
     },
     "welcomeBack": "Welcome back!",
@@ -482,6 +624,45 @@
     "readyToSimplify": "Ready to Simplify Your Digital Life?",
     "scroll": "Scroll",
     "getStartedNow": "Start Now",
+    "exploreAllEvents": "Public event explorer",
+    "exploreAllEventsCompact": "Events",
+    "eventProposal": {
+      "action": "Propose an event",
+      "compactAction": "Propose",
+      "cardEyebrow": "MAKE IT YOURS",
+      "cardTitle": "Your event belongs here",
+      "cardBody": "Bring your event, club or community to HASHPASS and give people one beautiful place to discover it.",
+      "title": "Propose an event",
+      "subtitle": "Tell us about an event you would like to see in the public explorer.",
+      "close": "Close",
+      "eventName": "Event name",
+      "eventNamePlaceholder": "Name of the event",
+      "contactName": "Your name",
+      "contactNamePlaceholder": "Contact name",
+      "email": "Contact email",
+      "emailPlaceholder": "you@example.com",
+      "details": "Event details",
+      "detailsPlaceholder": "Date, city, venue, event link, and a short description",
+      "disclosure": "Your email app will open with these details. Review and send the message there.",
+      "submit": "Prepare proposal email",
+      "openingMail": "Opening email…",
+      "mailError": "We could not open your email app. Send your proposal to support@hashpass.tech."
+    },
+    "eventSearch": {
+    "placeholder": "Search events",
+    "mobilePlaceholder": "Search by name, reference or #hashtag",
+    "accessibilityLabel": "Search events in the carousel",
+    "exploreAll": "Explore all",
+    "exploreAllLabel": "Explore all events",
+    "or": "or",
+    "previous": "Previous slide",
+    "next": "Next slide",
+    "pause": "Pause carousel",
+    "play": "Play carousel",
+    "restart": "Return to first slide"
+    },
+    "eventsExplorerSubtitle": "Discover events across the world — find yours.",
+    "noEventsFound": "No events found.",
     "trustedByThousands": "Trusted by Thousands",
     "testimonials": {
       "title": "Testimonials",
@@ -573,7 +754,8 @@
       "title": "Ready to get started?",
       "subtitle": "Join thousands of users who trust HASHPASS with their digital life.",
       "startNow": "Start Now"
-    }
+    },
+    "tapToRead": "Tap to read more"
   },
   "walletDesc": "Access your secure blockchain-verified tickets",
   "loyalty": "Loyalty Dashboard",
@@ -1700,5 +1882,47 @@
       "title": "Questions",
       "text": "If you have questions about deleting your account or your data, contact us at:\n\nEmail: privacy@hashpass.tech\nWebsite: https://hashpass.tech"
     }
+  },
+  "publicEvents": {
+    "back": "Back to home",
+    "badge": "Discover · Connect · Belong",
+    "title": "Find your next connection.",
+    "subtitle": "Explore upcoming events, meet your community and keep every pass in one place.",
+    "loadingFilm": "Loading event film",
+    "featured": "IN THE SPOTLIGHT",
+    "viewEvent": "Explore event",
+    "previous": "Previous",
+    "next": "Next",
+    "play": "Play showcase",
+    "pause": "Pause showcase",
+    "search": "Search events, cities, countries or series",
+    "series": "EVENT SERIES",
+    "allSeries": "All series",
+    "regions": "REGIONS",
+    "allRegions": "All regions",
+    "upcomingFirst": "Upcoming first",
+    "reset": "Clear filters",
+    "undated": "Date to be announced",
+    "empty": "No events match your search.",
+    "emptyHint": "Try a different location or clear your filters.",
+    "all": "All events",
+    "upcoming": "Upcoming",
+    "live": "Live now",
+    "past": "Past events",
+    "navEvents": "Explore events",
+    "navPasses": "My passes",
+    "navWallet": "Wallet",
+    "navCommunity": "Community",
+    "guest": "Guest mode",
+    "openApp": "Open app",
+    "join": "Join HASHPASS",
+    "guestHint": "Browse freely. Join to save events, manage passes and connect.",
+    "authTitle": "Join to use the full app",
+    "authHint": "Create an account or sign in with a verification code. Your event search stays here.",
+    "close": "Close",
+    "navQr": "My QR",
+    "navNotifications": "Notifications",
+    "navProfile": "Profile",
+    "guestDescription": "You’re browsing a simplified version of HASHPASS. Register and download the app to access the full experience, including your passes, saved events and community features."
   }
 }

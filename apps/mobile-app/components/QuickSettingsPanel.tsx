@@ -1,3 +1,5 @@
+import { IconButton, ModalBackdrop } from '@hashpass/ui/primitives';
+import { uiTokens, uiPalette } from '@hashpass/ui/tokens';
 /**
  * QuickSettingsPanel
  *
@@ -26,13 +28,13 @@ import Reanimated, { SharedValue, useAnimatedStyle, withTiming } from 'react-nat
 import * as Haptics from 'expo-haptics';
 import { usePathname, useRouter } from 'expo-router';
 import { useTheme } from '../hooks/useTheme';
-import { useLanguage } from '../providers/LanguageProvider';
-import { getAvailableLocales, useTranslation } from '../i18n/i18n';
+import { useTranslation } from '../i18n/i18n';
 import { useAnimationLevel } from '../contexts/AnimationLevelContext';
 import type { AnimationLevel } from '../contexts/AnimationLevelContext';
 import { createShadowStyle } from '../lib/utils';
 import type { ThemeMode } from '../types/theme';
 import type { ViewStyle } from 'react-native';
+import { SettingsLanguagePicker } from './SettingsLanguagePicker';
 import {
   SettingsIcon,
   LogInIcon,
@@ -42,8 +44,6 @@ import {
   ZapIcon,
   SliderIcon,
   PauseIcon,
-  CheckIcon,
-  getFlagEmoji,
 } from './icons/SettingsIcons';
 
 interface Props {
@@ -51,9 +51,9 @@ interface Props {
   hideAfterScrollY?: number;
   forceVisible?: boolean;
   topOffset?: number;
+  inline?: boolean;
+  showSignIn?: boolean;
 }
-
-type LocaleOption = { code: string; name: string };
 
 // ─── sub-components ──────────────────────────────────────────────────────────
 
@@ -113,6 +113,9 @@ function PillGroup<T extends string>({
               },
             ]}
             onPress={() => onChange(opt.value)}
+            accessibilityRole="button"
+            accessibilityState={{ selected: active }}
+            accessibilityLabel={opt.label}
             activeOpacity={0.72}
           >
             <opt.Icon size={12} color={fg} strokeWidth={2} />
@@ -137,18 +140,19 @@ export default function QuickSettingsPanel({
   hideAfterScrollY = 30,
   forceVisible = false,
   topOffset,
+  inline = false,
+  showSignIn = true,
 }: Props) {
   const { theme, setTheme, colors, isDark } = useTheme();
-  const { locale, setLocale } = useLanguage();
   const { animationLevel, setAnimationLevel } = useAnimationLevel();
   const pathname = usePathname();
   const router = useRouter();
   const { t } = useTranslation('profile');
-  const availableLocales = getAvailableLocales();
 
   const isOnAuthPage = pathname?.includes('/auth') || pathname === '/(shared)/auth';
   const [open, setOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const useModalPanel = Platform.OS !== 'web' || (inline && isMobile);
 
   const panelAnim = useRef(new Animated.Value(0)).current;
   const btnRotate = useRef(new Animated.Value(0)).current;
@@ -190,8 +194,8 @@ export default function QuickSettingsPanel({
     return { opacity: withTiming(visible ? 1 : 0, { duration: 160 }), pointerEvents: visible ? 'auto' : 'none' } as const;
   }, [scrollY, hideAfterScrollY, forceVisible]);
 
-  const bg = isDark ? 'rgb(14,14,26)' : 'rgb(255,255,255)';
-  const borderCol = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)';
+  const bg = uiPalette(isDark).surface;
+  const borderCol = uiPalette(isDark).border;
 
   const themeOptions: PillOption<ThemeMode>[] = [
     { value: 'dark',   label: t('settings.themeDark')  || 'Dark',  Icon: MoonIcon },
@@ -204,11 +208,11 @@ export default function QuickSettingsPanel({
     { value: 'reduced', label: t('settings.animationsReduced') || 'Low', Icon: SliderIcon },
     { value: 'none', label: t('settings.animationsNone') || 'Off', Icon: PauseIcon },
   ];
-
   const panel = (
     <Animated.View
       style={[
         panelStyles.panel,
+        useModalPanel && { position: 'relative', top: 0, right: 0, alignSelf: 'center', width: 320, maxWidth: '100%', maxHeight: '90%' },
         {
           backgroundColor: bg,
           borderColor: borderCol,
@@ -238,45 +242,7 @@ export default function QuickSettingsPanel({
 
         {/* Language */}
         <SectionLabel label={t('settings.language') || 'Language'} colors={colors} />
-        {availableLocales.map((lang: LocaleOption) => {
-          const active = lang.code === locale;
-          return (
-            <TouchableOpacity
-              key={lang.code}
-              style={[
-                panelStyles.langRow,
-                active && {
-                  backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
-                  borderRadius: 10,
-                },
-              ]}
-              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setLocale(lang.code); }}
-              activeOpacity={0.7}
-            >
-              <Text style={panelStyles.flag}>{getFlagEmoji(lang.code)}</Text>
-              <Text style={[panelStyles.langName, { color: colors.text.primary, marginLeft: 8 }]}>
-                {t(`languages.${lang.name}`)}
-              </Text>
-              <View
-                style={[
-                  panelStyles.langBadge,
-                  {
-                    backgroundColor: active ? colors.primary : 'transparent',
-                    borderColor: active ? colors.primary : isDark ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.1)',
-                  },
-                ]}
-              >
-                {active ? (
-                  <CheckIcon size={12} color={colors.primaryContrastText} strokeWidth={2.5} />
-                ) : (
-                  <Text style={[panelStyles.langCode, { color: colors.text.secondary }]}>
-                    {lang.code.toUpperCase()}
-                  </Text>
-                )}
-              </View>
-            </TouchableOpacity>
-          );
-        })}
+        <SettingsLanguagePicker isDark={isDark} colors={colors} />
 
         <Divider isDark={isDark} />
 
@@ -300,10 +266,11 @@ export default function QuickSettingsPanel({
         isMobile && styles.containerMobile,
         typeof topOffset === 'number' ? { top: topOffset } : null,
         containerStyle,
+        inline && { position: 'relative', top: 0, right: 0 },
       ]}
     >
       {/* Backdrop */}
-      {open && Platform.OS === 'web' && (
+      {open && !useModalPanel && (
         <TouchableWithoutFeedback onPress={closePanel}>
           <View style={styles.backdrop} />
         </TouchableWithoutFeedback>
@@ -312,31 +279,44 @@ export default function QuickSettingsPanel({
       {/* Button row: [Settings] [Sign In] */}
       <View style={styles.btnRow}>
         {/* Settings gear — first/left */}
-        <View
-          style={[
-            styles.triggerWrap,
-            createShadowStyle('#000', { width: 0, height: 3 }, isDark ? 0.35 : 0.15, 6, 8) as ViewStyle,
-          ]}
-        >
-          <TouchableOpacity
-            style={[styles.trigger, { backgroundColor: open ? colors.primary : colors.surface }]}
+        {inline ? (
+          <IconButton
+            mode={isDark ? 'dark' : 'light'}
+            label={t('settings.title', 'Quick Settings')}
+            accessibilityState={{ expanded: open }}
             onPress={togglePanel}
-            activeOpacity={0.8}
-            accessibilityLabel="Quick Settings"
-            accessibilityRole="button"
+            style={open ? { backgroundColor: colors.primary, borderColor: colors.primary } : undefined}
           >
-            <Animated.View style={{ transform: [{ rotate: btnRotateDeg }] }}>
-              <SettingsIcon
-                size={20}
-                color={open ? colors.primaryContrastText : colors.text.primary}
-                strokeWidth={1.8}
-              />
-            </Animated.View>
-          </TouchableOpacity>
-        </View>
+            <SettingsIcon size={22} color={open ? colors.primaryContrastText : colors.text.primary} />
+          </IconButton>
+        ) : (
+          <View
+            style={[
+              styles.triggerWrap,
+              createShadowStyle('#000', { width: 0, height: 3 }, isDark ? 0.35 : 0.15, 6, 8) as ViewStyle,
+            ]}
+          >
+            <TouchableOpacity
+              style={[styles.trigger, { backgroundColor: open ? colors.primary : colors.surface }]}
+              onPress={togglePanel}
+              activeOpacity={0.8}
+              accessibilityLabel="Quick Settings"
+              accessibilityRole="button"
+            >
+              <Animated.View style={{ transform: [{ rotate: btnRotateDeg }] }}>
+                <SettingsIcon
+                  size={20}
+                  color={open ? colors.primaryContrastText : colors.text.primary}
+                  strokeWidth={1.8}
+                />
+              </Animated.View>
+            </TouchableOpacity>
+          </View>
+        )}
+
 
         {/* Sign-in button — direct access, second/right */}
-        {!isOnAuthPage && (
+        {showSignIn && !isOnAuthPage && (
           <View
             style={[
               styles.triggerWrap,
@@ -361,8 +341,8 @@ export default function QuickSettingsPanel({
       </View>
 
       {/* Panel */}
-      {open && Platform.OS === 'web' && panel}
-      {open && Platform.OS !== 'web' && (
+      {open && !useModalPanel && panel}
+      {open && useModalPanel && (
         <Modal
           transparent
           visible={open}
@@ -371,12 +351,12 @@ export default function QuickSettingsPanel({
           statusBarTranslucent
           onRequestClose={closePanel}
         >
-          <View style={styles.modalRoot}>
+          <ModalBackdrop mode={isDark ? 'dark' : 'light'}>
             <TouchableWithoutFeedback onPress={closePanel}>
               <View style={styles.modalBackdrop} />
             </TouchableWithoutFeedback>
             {panel}
-          </View>
+          </ModalBackdrop>
         </Modal>
       )}
     </Reanimated.View>
@@ -420,13 +400,13 @@ const styles = StyleSheet.create({
   triggerWrap: {
     width: 46,
     height: 46,
-    borderRadius: 23,
+    borderRadius: uiTokens.radius.pill,
   },
   loginWrap: {},
   trigger: {
     width: 46,
     height: 46,
-    borderRadius: 23,
+    borderRadius: uiTokens.radius.pill,
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
@@ -440,42 +420,13 @@ const panelStyles = StyleSheet.create({
     right: 0,
     width: 264,
     maxHeight: 460,
-    borderRadius: 18,
+    borderRadius: uiTokens.radius.card,
     borderWidth: 1,
     paddingHorizontal: 14,
     paddingVertical: 14,
     zIndex: 1,
     // Aligns to the right edge of the gear button regardless of login btn
     alignSelf: 'flex-end',
-  },
-  langRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 9,
-    paddingHorizontal: 8,
-    marginVertical: 1,
-  },
-  langName: {
-    fontSize: 14,
-    fontWeight: '500',
-    flex: 1,
-  },
-  langBadge: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  langCode: {
-    fontSize: 9,
-    fontWeight: '700',
-    letterSpacing: 0.6,
-  },
-  flag: {
-    fontSize: 16,
-    lineHeight: 20,
   },
 });
 
@@ -505,9 +456,10 @@ const sheet = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 4,
+    minHeight: uiTokens.control.compactHeight,
     paddingVertical: 7,
     paddingHorizontal: 4,
-    borderRadius: 999,
+    borderRadius: uiTokens.radius.pill,
     borderWidth: 1,
   },
   pillLabel: {

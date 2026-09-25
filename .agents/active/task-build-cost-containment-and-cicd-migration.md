@@ -1,8 +1,9 @@
 # Task: Critical build-cost containment and CI/CD migration
 
-**Status:** IN PROGRESS
-**Priority:** P0 — hard $50/month production ceiling at immediate risk
-**Created / last updated:** 2026-09-04
+**Status:** LIVE CONTAINMENT COMPLETE — promotion and cost observation pending
+**Priority:** P0 — September has exceeded the hard $50/month production ceiling
+**Created:** 2026-09-04
+**Last updated:** 2026-09-21
 **Owner:** HASHPASS production owner; approval is required for every AWS
 mutation or production cutover.
 
@@ -15,7 +16,149 @@ The separate
 [`task-aws-cost-audit-and-controls.md`](task-aws-cost-audit-and-controls.md)
 remains the canonical billing, credit, and no-EC2-provisioning record.
 
-## Verified current state — 2026-09-04
+## Current containment — 2026-09-21
+
+Read-only checkpoint: **2026-09-21 15:16 UTC**. All five pipelines returned
+manual-only source configuration and **zero active executions**. The $50 budget
+still returned $57.548 actual / $172.772 forecast and five notification rules.
+
+The owner requested immediate build-cost reduction and maximum use of standard
+GitHub-hosted compute. The private `AWS_TARGET_ACCOUNT_ID` matches the `hashpass`
+STS identity. The repository-level `AWS_ACCOUNT_ID` differs; it belongs to the
+older infrastructure workflow configuration and must not be used as proof of
+the production account identity or changed without auditing its consumers.
+
+- Budget actual: **$57.548**; forecast: **$172.772**; approved ceiling: **$50**.
+  September is already **$7.548 over budget** and cannot be brought back under
+  the ceiling by reducing future usage. Forecasts lag operational changes.
+- Cost Explorer Sep 1–21, estimated UnblendedCost excluding Credits/Refunds:
+  CodeBuild **$43.47**, CodePipeline **$5.496**, Route 53 **$4.052**, S3
+  **$3.174**, Secrets Manager **$0.795**, other services **$0.561**.
+  Build services account for about **85%** of the total.
+- No EC2 instances exist in the two relevant regions (`us-east-1`, `us-east-2`).
+- The development GitHub workflow is active. As checked, it had 21 successful
+  runs since Sep 4, plus superseded/cancelled builds and three earlier failures.
+  The observed build+deploy run **35610166639** passed on Sep 21; the next run
+  **35611630715** also succeeded. The development site returns HTTP 200 and the
+  API reported **1.9.46** at cutover. This is the recorded cutover evidence,
+  not a claim that later development deployments remain on that version.
+- **LIVE:** `hashpass-dev-site` is now manual-only: the V2 triggers are removed
+  and the CodeConnections source explicitly has `DetectChanges=false`.
+  The pipeline/project and manual recovery script remain available. A private
+  pre-change pipeline snapshot was retained locally for rollback. The Terraform
+  variable default now also records the manual-only posture; no broad apply of
+  the drift-affected `hashpass-web` stack was performed.
+- **LIVE:** CBWeek development and BSL development also completed their
+  cutover in GitHub run **35613663531** (commit `3c6489b87`). Both builds and
+  deployments succeeded. Downloaded artifact `index.html` bytes match both the
+  deployed S3 objects and public CDN responses; both sites return HTTP 200.
+  No old AWS executions were active at cutover. Their V2 triggers are removed,
+  `DetectChanges=false`, and there are no EventBridge targets for either
+  pipeline. This emergency containment uses observed deployment/parity evidence
+  immediately; the longer observation period continues with manual recovery
+  available, rather than paying for both systems on every push.
+- **LIVE:** core production and BSL production completed their cutover in
+  GitHub run **35615317532** on protected merge `de2bed5e4` (v1.9.46). All
+  build/deploy jobs passed. Each downloaded artifact's `index.html` matches
+  both S3 and the public CDN response (HTTP 200); the production API reports
+  **1.9.46**. Both old AWS executions had finished before cutover. Both
+  pipelines now have no V2 triggers, `DetectChanges=false`, and no EventBridge
+  targets. Private rollback snapshots were retained. **All five targets now
+  use GitHub-hosted builds; all five AWS pipelines are manual recovery only.**
+  New `.github/workflows/github-hosted-tenant-site-deploy.yml` preserves each
+  target's public build configuration, builds without AWS credentials, retains
+  artifacts for one day, and serializes deployments. Production targets require
+  `main`; development targets require `develop`. Manual trials default to build
+  only. Do not disable an AWS target based only on a successful build.
+- Separate deployment roles are described by
+  `packages/infra/cloudformation/github-site-deploy.yml`, one isolated stack per
+  target. Each can write only its own site bucket, invalidate its own
+  distribution where applicable, and update only its own API code where needed.
+  No role can start EC2, CodeBuild, or CodePipeline, or change Lambda settings.
+  Existing BSL cross-account CloudFront delivery remains unchanged.
+- **Separate legacy path:** `.github/workflows/infra-deploy.yml` is still active
+  and has its own `main`/`develop` push filters. It attempts legacy SST/API
+  deployment on GitHub runners; it is not one of the five disabled AWS
+  CodePipeline sources. Auditing or retiring this overlapping deployment path
+  remains separate work, not a completed part of the cutover.
+- **LIVE:** all four separate IAM-role stacks are `CREATE_COMPLETE`; each
+  GitHub environment permits only its intended branch. No Terraform apply was
+  performed against an existing serving stack.
+- **LIVE:** the $50 budget previously had **zero notifications**, while the
+  legacy $80 budget had seven. Added actual 50/75/90/100% and forecast 100%
+  alerts, reusing the existing billing email subscriber without exposing its
+  address. Rules/subscribers were verified; delivery itself was not simulated.
+- Added `.github/workflows/aws-cost-report.yml` and the narrowly scoped
+  `hashpass-github-cost-report` IAM role. It performs one Cost Explorer query
+  per daily run, reports the existing $50 budget's actual/forecast values, and
+  detects re-enabled automatic triggers for all five migrated pipelines.
+  Cost and trigger observations are read-only; the role may only additionally
+  read/write one encrypted private SSM alert-state parameter so an already
+  breached budget sends its first alert immediately and repeats only after a
+  USD 5 actual-spend or forecast movement. Trigger drift still fails visibly.
+  The daily schedule becomes active when the workflow reaches `main`; its
+  `develop` push trigger provides hosted verification. Latest verified run
+  [35617295918](https://github.com/hashpass-tech/hashpass.tech/actions/runs/35617295918)
+  checked the account-scoped read-only role, live billing, and **all five**
+  manual-only pipelines. Its failure is solely the expected **budget alert**,
+  not trigger drift or a deployment error: $57.55 actual / $172.77 forecast.
+  The guard defaults to all five if the repository variable is absent.
+
+### Current release and handoff
+
+- **Deployed:** v1.9.46, protected merge `de2bed5e4` from PR #248. The production
+  replacement workflow is already on `main` and its deployment was verified.
+- **Prepared, not released:** v1.9.47 in
+  [PR #249](https://github.com/hashpass-tech/hashpass.tech/pull/249), release
+  commit `b5d52685a`. It carries the manual-only Terraform defaults, regression
+  tests, and daily cost guard. Both remotes' `develop` branches were pushed;
+  their `main` branches remain at v1.9.46. This is intentionally pending, not a
+  completed release.
+- **PR checkpoint, 2026-09-21:** open, review required; Gitleaks and CodeQL
+  passed. One scanner-download failure passed on retry without changing the
+  security gate. Coverage and build/deployment checks were still running;
+  verify the latest PR checks before merge rather than relying on this snapshot.
+- **Schedule pending:** the daily guard is defined for **13:20 UTC / 08:20
+  Colombia time**, but is not scheduled until it reaches the default branch.
+  The AWS budget email rules are already live independently of this schedule.
+
+| Target | GitHub source branch | Retained manual AWS pipeline |
+|---|---|---|
+| Core development | `develop` | `hashpass-dev-site` |
+| CBWeek development | `develop` | `hashpass-cbweek2026-develop-site` |
+| BSL development | `develop` | `bsl-hashpass-dev` |
+| Core production | `main` | `hashpass-production-site` |
+| BSL production | `main` | `bsl-hashpass-prod` |
+
+Remaining work:
+
+1. Obtain the required owner approval and passing coverage/security gates for
+   PR #249; complete the normal protected release automation and verify branch
+   synchronization and deployment/version checks. Do not manually tag or
+   duplicate the tag-triggered Android workflow.
+2. Verify the first default-branch scheduled cost report after merge. A red
+   report remains expected while actual or forecast exceeds $50; inspect the
+   report to distinguish the budget alert from trigger drift or an AWS error.
+3. Observe subsequent billing ingestion and per-target build execution history.
+   Establish the post-cutover daily spend rate before claiming realized savings.
+   Accrued charges and forecasts can lag; September cannot return below $50.
+4. Schedule the owner-approved recovery drill separately. Preserve the retained
+   pipelines/projects and private rollback snapshots; do not run paid builds
+   merely to silence a budget alert or delete recovery resources now.
+5. Audit the separate legacy `infra-deploy.yml` workflow and its account-scoped
+   permissions before proposing retirement; do not disable it based only on
+   the five CodePipeline trigger checks.
+
+Validation: credentialless build/branch routing and environment-input rejection
+checks passed; **38 tests in five infrastructure suites** cover account
+boundaries, budget alerts, pipeline drift, target routing, and public-config
+injection rejection; `hashpass-web` and `bsl-target` Terraform validation passed.
+`demo-events` validation is blocked by
+the installed Terraform 1.6.6 not supporting its existing `removed` blocks (not
+introduced here). Repository-wide lint reports 12 existing application errors;
+the cost-control change does not modify those application files.
+
+## Historical verified state — 2026-09-04
 
 Read-only AWS checks using the `hashpass` production profile found:
 
@@ -83,11 +226,14 @@ external hosted builders, or self-hosted runners for this objective.
       avoided by using `-target` plus the explicit variable overrides from
       the drift doc, not a blind plan/apply.
 
-Production is explicitly out of scope until development has passed. It needs a
+At the September 4 trial, production was explicitly out of scope until
+development passed. Production subsequently passed its own September 21 gates
+as recorded above. The original gate required a
 separate least-privilege role, a protected `production` GitHub environment,
-a reviewed/applied Terraform plan, an observed manual deployment, a rollback
-path, and an observation window. A development role must never be reused for
-production.
+a scoped reviewed infrastructure change, an observed deployment, a rollback
+path, and an observation window. The final cutover used isolated IAM stacks
+and narrow pipeline API updates, not a broad serving-stack Terraform apply.
+A development role must never be reused for production.
 
 ### Recovery design — GitHub-hosted primary, AWS break-glass fallback
 
@@ -105,8 +251,9 @@ also automatically build every source push once GitHub Actions is primary.
       a retry of a stopped or failed pinned revision starts a new execution.
 - [x] Added Terraform support for manual-only retained development recovery:
       it sets `DetectChanges = false` **and removes the V2 webhook trigger**.
-      It defaults to automatic detection, so current production behavior is
-      unchanged until the migration gate is deliberately applied.
+      The September 21 follow-up defaults all five migrated targets to manual
+      recovery; those defaults await PR #249 promotion, while live AWS trigger
+      containment is already verified.
 - [x] Add an independent availability monitor/alert for GitHub Actions and
       record the owner/on-call route. The monitor may alert on sustained loss
       of Actions availability; it must not automatically start AWS builds.
@@ -119,8 +266,8 @@ also automatically build every source push once GitHub Actions is primary.
       explicitly not a trigger by themselves, to avoid false-positiving on an
       ordinary broken commit. Full design and self-detection limitation:
       `apps/docs/docs/infra/github-outage-monitor.md`. Opened for review as
-      PR #234 — schedule/dispatch triggers only activate once it merges to
-      the default branch.
+      PR #234, now merged; unlike the new daily cost guard, this outage monitor
+      is already on the default branch. It is not an automatic AWS failover.
 - [ ] Exercise the development recovery command in a scheduled, owner-approved
       drill after the AWS source trigger is disabled. Verify the pinned revision,
       public site, CloudFront invalidation, API-version guard, and rollback.
@@ -163,22 +310,26 @@ feedback.
 - [x] Reconcile the current production budget, forecast, primary services, and
       high-frequency CBWeek executions.
 - [ ] Record daily budget actual/forecast, CodeBuild minutes/cost, and
-      CodePipeline cost until the forecast is below $50 or the owner is warned
-      that the ceiling will be breached.
-- [ ] Verify budget and anomaly-alert recipients and obtain the Billing →
-      Credits export (credit scope, remaining balance, and expiry). Budgets
-      alert; they do not stop builds.
+      CodePipeline cost after cutover. The hosted guard reports service costs
+      and budget values; build minutes require separate usage/history evidence.
+      The owner has already been warned that September exceeds the ceiling.
+- [x] Restore and verify the $50 budget's five notification rules using the
+      existing billing recipient. Delivery has not been simulated.
+- [ ] Verify anomaly-alert delivery and obtain the Billing → Credits export
+      (credit scope, remaining balance, and expiry). Budgets alert; they do not
+      stop builds.
+- [ ] Merge PR #249 and verify the daily cost guard's scheduled execution.
 
-### 1. Immediate execution containment — NEXT, approval-gated
+### 1. Immediate execution containment — COMPLETE, 2026-09-21
 
-- [ ] Map the CBWeek development deploy's required availability and rollback
+- [x] Map the CBWeek development deploy's required availability and rollback
       expectation, then prepare a reversible change that removes or gates its
       automatic `develop` webhook. Preserve a manual/dedicated-branch rollback
       path. Do not disable it before its replacement succeeds.
-- [ ] Inspect the other four build targets' executions and identify the
+- [x] Inspect the other four build targets' executions and identify the
       highest-minute non-production target next. Do not blanket-disable
       production paths.
-- [ ] Do not manually rerun CodePipeline/CodeBuild jobs while containment is
+- [x] Do not manually rerun CodePipeline/CodeBuild jobs while containment is
       active unless needed to restore a verified service.
 
 ### 2. GitHub Actions replacement — preferred solution
@@ -274,21 +425,29 @@ feedback.
       in parallel as the documented rollback for an observation window before
       anyone flips that variable — that Terraform apply is a separate,
       explicit, owner-approved step, not part of this PR.
+      **Superseded on 2026-09-21:** the observation-only phase ended with the
+      verified cutover above; the live source is now manual-only. Do not restore
+      `true` from this historical entry.
 
-### 3. Retire AWS build execution one target at a time
+### 3. Automatic AWS build execution — COMPLETE; observation ongoing
 
-- [ ] After a full clean observation period, disable the migrated target's AWS
-      automatic trigger first, then observe Cost Explorer before deleting any
-      pipeline/project.
-- [ ] Migrate in this order: the CBWeek development target, HashPass
-      development, HashPass production, BSL development, then BSL production.
-      Each target needs separate artifact, deploy, rollback, and production
-      acceptance evidence.
-- [ ] Do not provision or re-enable EC2. The historical EC2 comparison is
-      archived evidence only; its zombie-worker failure mode remains a hard
-      exclusion.
+- [x] Disable all five automatic sources after their successful replacement
+      deployments and artifact/public-response verification. The owner's
+      September 21 containment request superseded the extended period of
+      duplicate paid execution; longer observation continues with manual
+      recovery retained.
+- [x] Migrate core development, CBWeek development, BSL development, core
+      production, and BSL production. Per-target evidence is recorded above.
+- [x] Keep EC2 unprovisioned and disabled. The historical EC2 comparison is
+      archived evidence only, not authorization to start a benchmark.
+- [ ] Observe near-zero normal AWS build execution after billing ingestion.
+      Do not delete the retained recovery resources as part of this cutover.
 
-### 4. Secondary savings after containment
+### 4. Secondary savings — deferred, not required for containment
+
+Normal builds now use standard GitHub-hosted compute. Do not spend on AWS
+benchmark builds or perform a drift-prone Terraform apply to optimize idle
+fallback capacity. Revisit these only if owner-approved recovery usage justifies it.
 
 - [ ] Apply/verify S3 dependency caching only where the Terraform stack can be
       planned safely. `hashpass-web` has documented false drift: no blind apply
@@ -301,17 +460,19 @@ feedback.
 
 ## Exit criteria
 
-- [ ] Daily evidence shows a credible month-end result at or below $50; if it
-      cannot, notify the owner immediately rather than treating the budget
-      alert as enforcement.
-- [ ] The first target's GitHub artifact, development deployment, API-version
-      guard, and rollback pass before its CodePipeline trigger is disabled.
+- [x] Notify the owner that September already exceeds $50 and accrued charges
+      cannot be reversed. Do not represent alerts as a hard spending cap.
+- [ ] Daily post-cutover evidence supports a sustainable future monthly run
+      rate within $50; September's already-breached total is not a valid target.
+- [x] Verify each replacement deployment and artifact, including the core API
+      version guards, before disabling its automatic AWS trigger.
+- [ ] Exercise the retained manual recovery path in an owner-approved drill.
 - [ ] Each migrated target has an independent observation period with its
       CodeBuild minutes near zero before the AWS resources are retired.
-- [ ] No new EC2, external build vendor, or self-hosted runner is introduced.
-- [ ] Every AWS change has a reviewed plan, named owner approval, and rollback
-      steps; `hashpass-web` Terraform remains subject to its documented drift
-      safeguards.
+- [x] No new EC2, external build vendor, or self-hosted runner was introduced.
+- [x] Preserve scoped cutover evidence and private rollback snapshots; no broad
+      Terraform apply was performed against the drift-affected serving stacks.
+- [ ] Complete PR #249 promotion and confirm the daily scheduled guard.
 
 ## References
 

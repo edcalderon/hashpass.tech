@@ -30,11 +30,19 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "22.22.2"
+          node-version-file: '.nvmrc'
           cache: pnpm
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --prefer-offline
+
+      - name: Check shared design system
+        run: |
+          pnpm check:design-system
+          node --test packages/tools/test/design-system-guard.test.mjs
+
+      - name: Check native fetch safety
+        run: pnpm check:native-fetch
 
       - name: Run coverage tests
         run: pnpm --dir apps/mobile-app test:coverage
@@ -47,6 +55,12 @@ jobs:
       # guarantee. No lcov/coverage reporting here (their tsx/node --test
       # runners don't produce it without extra tooling); this is just the
       # pass/fail gate.
+      - name: Run wallet crypto and storage coverage tests
+        run: pnpm --filter @hashpass/wallet test:coverage
+
+      - name: Run wallet database boundary tests
+        run: pnpm --filter @hashpass/wallet test:db
+
       - name: Run backend tests
         run: pnpm --filter @hashpass/backend run test
 
@@ -60,7 +74,7 @@ jobs:
         if: ${{ env.CODECOV_TOKEN != '' }}
         uses: codecov/codecov-action@v7
         with:
-          files: ./apps/mobile-app/coverage/lcov.info,./packages/event-ingestion/coverage/lcov.info
+          files: ./apps/mobile-app/coverage/lcov.info,./packages/event-ingestion/coverage/lcov.info,./packages/wallet/coverage/lcov.info
           # The coverage test command above remains the required gate. Upload
           # failures are external/transient (and push + PR runs can upload the
           # same report concurrently), so they must not block a valid release.

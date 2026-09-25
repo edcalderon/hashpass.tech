@@ -40,7 +40,7 @@ if [ -z "$EXISTING_FUNCTION" ]; then
     echo "📝 Step 2: Create Lambda function"
     echo "   Run: aws lambda create-function \\"
     echo "     --function-name $FUNCTION_NAME \\"
-    echo "     --runtime nodejs20.x \\"
+    echo "     --runtime nodejs24.x \\"
     echo "     --role arn:aws:iam::ACCOUNT_ID:role/lambda-execution-role \\"
     echo "     --handler index.handler \\"
     echo "     --zip-file fileb://lambda-deployment.zip \\"

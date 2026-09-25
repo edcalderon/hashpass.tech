@@ -3,8 +3,8 @@ name: GitHub-hosted static site build and deploy
 # Primary build+deploy path for the HashPass development target (replaces the
 # AWS `hashpass-dev-site` CodePipeline as the day-to-day trigger -- see
 # .agents/active/task-build-cost-containment-and-cicd-migration.md). The AWS
-# pipeline is deliberately left auto-triggering in parallel during the
-# observation window; it is the documented rollback, not dead weight.
+# pipeline is manual-only after the 2026-09-21 cost-containment cutover.
+# Use start-web-pipeline-disaster-recovery.sh for an explicit recovery build.
 on:
   push:
     branches: [develop]
@@ -44,6 +44,7 @@ jobs:
       cancel-in-progress: true
     env:
       BUILD_ENV: dev
+      PNPM_STORE_DIR: ${{ github.workspace }}/.pnpm-store
       EXPO_PUBLIC_SUPABASE_URL: ${{ vars.EXPO_PUBLIC_SUPABASE_URL_DEV }}
       EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.EXPO_PUBLIC_SUPABASE_ANON_KEY_DEV }}
       EXPO_PUBLIC_SUPABASE_KEY: ${{ vars.EXPO_PUBLIC_SUPABASE_ANON_KEY_DEV }}
@@ -64,10 +65,14 @@ jobs:
         with:
           version: 9.15.5
 
+      # setup-node must cache the same store used by build-static-site.sh.
+      - name: Configure pnpm store
+        run: pnpm config set store-dir "$PNPM_STORE_DIR"
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '22.22.2'
+          node-version-file: '.nvmrc'
           cache: pnpm
 
       - name: Build the static site

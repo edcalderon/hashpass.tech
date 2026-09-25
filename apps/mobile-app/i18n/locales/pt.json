@@ -266,6 +266,8 @@
     "close": "Fechar aviso de instalação",
     "dialogLabel": "Aviso de instalação do HASHPASS",
     "expandCollapsed": "Abrir opções de instalação",
+    "dragHandle": "Arrastar botão de instalação",
+    "playStoreAction": "Baixe o app completo no Google Play",
     "infoIntro": "Um PWA (Progressive Web App) permite que o HASHPASS se comporte como um app nativo no seu dispositivo.",
     "details": {
       "one": "PWA significa Progressive Web App: comportamento de app direto do navegador.",
@@ -273,8 +275,11 @@
       "three": "Ótimo para check-in de eventos, carteira e notificações com menos fricção."
     },
     "instructions": {
-      "ios": "Para instalar: toque em Compartilhar e depois em \"Adicionar à Tela de Início\".",
-      "android": "Para instalar: abra o menu do navegador e toque em \"Instalar app\".",
+      "safariIos": "No Safari: toque em Compartilhar, depois em Adicionar à Tela de Início e Adicionar.",
+      "chromeIos": "No Chrome para iPhone: abra o menu Compartilhar e escolha Adicionar à Tela de Início.",
+      "firefoxIos": "No Firefox para iPhone: use o menu Compartilhar e escolha Adicionar à Tela de Início.",
+      "chromeAndroid": "No Chrome: abra o menu de três pontos e toque em Instalar app.",
+      "firefoxAndroid": "No Firefox: abra o menu de três pontos e toque em Instalar.",
       "default": "Para instalar: use o ícone de instalação na barra de endereço do navegador."
     }
   },
@@ -407,18 +412,42 @@
     "learnMore": "Saiba mais",
     "taglineFlipList": "- SEU EVENTO -,- SUA COMUNIDADE -,- SEUS BENEFÍCIOS -",
     "unlockPotential": "Desbloqueie seu potencial",
+    "featuresBadge": "Recursos principais",
     "features": {
+      "title": "Tudo que seu evento precisa",
+      "subtitle": "Uma identidade privada para acesso, conexões, passes e benefícios.",
       "secure": {
         "title": "Seguro e privado",
-        "description": "Seus dados são criptografados e protegidos com protocolos de segurança líderes do setor. Priorizamos sua privacidade acima de tudo."
+        "description": "Seus dados são criptografados e protegidos com protocolos de segurança líderes do setor. Priorizamos sua privacidade acima de tudo.",
+        "action": "Proteger meus dados"
+        ,"metric": "Conversas criptografadas de ponta a ponta",
+        "metricLabel": "palestrantes verificados"
       },
       "management": {
         "title": "Gerenciamento sem esforço",
-        "description": "Organize todas as suas credenciais digitais, cartões de fidelidade e comunidades em um lugar intuitivo."
+        "description": "Organize todas as suas credenciais digitais, cartões de fidelidade e comunidades em um lugar intuitivo.",
+        "action": "Gerenciar minhas chaves"
+        ,"metric": "Um passe para sua rede de eventos",
+        "metricLabel": "passes emitidos"
       },
       "sync": {
         "title": "Sincronização multiplataforma",
-        "description": "Acesse seus dados em todos os seus dispositivos com nossa sincronização em nuvem segura."
+        "description": "Acesse seus dados em todos os seus dispositivos com nossa sincronização em nuvem segura.",
+        "action": "Ativar sincronização"
+        ,"metric": "3 clientes: web, Android e iOS",
+        "metricLabel": "plataformas compatíveis"
+      },
+      "entry": {
+        "title": "Entrada rápida",
+        "description": "Use um passe QR ao vivo para acessar seus eventos com rapidez e confiança.",
+        "metric": "Validação QR ao vivo",
+        "metricLabel": "passes ativos"
+      },
+      "network": {
+        "title": "Networking privado",
+        "description": "Encontre participantes, marque reuniões e mantenha suas conversas privadas.",
+        "metric": "Reuniões e chat criptografado",
+        "metricLabel": "reuniões marcadas"
       }
     },
     "welcomeBack": "Bem-vindo de volta!",
@@ -451,7 +480,76 @@
       "title": "Pronto para começar?",
       "subtitle": "Junte-se a milhares de usuários que confiam no HASHPASS com sua vida digital.",
       "startNow": "Começar agora"
-    }
+    },
+    "howItWorks": {
+      "badge": "Como funciona",
+      "title": "Como o HASHPASS funciona",
+      "subtitle": "Um passe, um login, todos os eventos — com rapidez e privacidade.",
+      "moreInfo": "Mais informações",
+      "closeInfo": "Fechar informações",
+      "scenes": {
+        "eventPass": "PASSE DO EVENTO", "eventExplorer": "EXPLORADOR DE EVENTOS", "agenda": "AGENDA", "speakers": "PALESTRANTES",
+        "findAttendees": "BUSCAR PARTICIPANTES", "meet": "ENCONTRAR", "lksWallet": "CARTEIRA $LKS", "availableBalance": "SALDO DISPONÍVEL"
+      },
+      "cards": {
+        "scan": {
+          "title": "Escaneie e entre",
+          "description": "Evite filas. Seu passe é um código QR dinâmico que permite entrar em um evento na hora, sem impressões nem burocracia."
+        },
+        "allies": {
+          "title": "Rede de parceiros",
+          "description": "Entre uma vez e acesse os espaços, clubes e eventos das comunidades parceiras da rede HASHPASS."
+        },
+        "meet": {
+          "title": "Conheça e conecte-se",
+          "description": "Agende encontros e converse com outros participantes com criptografia de ponta a ponta. Conexões reais, com privacidade."
+        },
+        "rewards": {
+          "title": "Carteira $LKS",
+          "description": "Use $LKS, o índice cripto-peso LATAM da Blockchain Latam Foundation, apoiado pela HASHPASS como laboratório de tecnologia incubadora."
+        }
+      }
+    },
+    "exploreAllEvents": "Explorador público de eventos",
+    "exploreAllEventsCompact": "Eventos",
+    "eventProposal": {
+      "action": "Propor evento",
+      "compactAction": "Propor",
+      "cardEyebrow": "FAÇA DO SEU JEITO",
+      "cardTitle": "Seu evento pertence aqui",
+      "cardBody": "Traga seu evento, clube ou comunidade para a HASHPASS e dê às pessoas um belo lugar para descobri-lo.",
+      "title": "Proponha um evento",
+      "subtitle": "Conte-nos sobre um evento que você gostaria de ver no explorador público.",
+      "close": "Fechar",
+      "eventName": "Nome do evento",
+      "eventNamePlaceholder": "Nome do evento",
+      "contactName": "Seu nome",
+      "contactNamePlaceholder": "Nome do contato",
+      "email": "E-mail de contato",
+      "emailPlaceholder": "voce@exemplo.com",
+      "details": "Detalhes do evento",
+      "detailsPlaceholder": "Data, cidade, local, link do evento e uma breve descrição",
+      "disclosure": "Seu aplicativo de e-mail abrirá com estes detalhes. Revise e envie a mensagem por lá.",
+      "submit": "Preparar e-mail da proposta",
+      "openingMail": "Abrindo e-mail…",
+      "mailError": "Não foi possível abrir seu aplicativo de e-mail. Envie sua proposta para support@hashpass.tech."
+    },
+    "eventSearch": {
+    "placeholder": "Pesquisar eventos",
+    "mobilePlaceholder": "Nome, referência ou #hashtag",
+    "accessibilityLabel": "Pesquisar eventos no carrossel",
+    "exploreAll": "Ver todos",
+    "exploreAllLabel": "Explorar todos os eventos",
+    "or": "ou",
+    "previous": "Slide anterior",
+    "next": "Próximo slide",
+    "pause": "Pausar carrossel",
+    "play": "Reproduzir carrossel",
+    "restart": "Voltar ao primeiro slide"
+    },
+    "eventsExplorerSubtitle": "Descubra eventos pelo mundo e encontre o seu.",
+    "noEventsFound": "Nenhum evento encontrado.",
+    "tapToRead": "Toque para saber mais"
   },
   "walletDesc": "Acesse seus ingressos verificados por blockchain",
   "loyalty": "Painel de fidelidade",
@@ -1150,5 +1248,47 @@
       "title": "Dúvidas",
       "text": "Se você tiver dúvidas sobre como excluir sua conta ou seus dados, entre em contato conosco em:\n\nE-mail: privacy@hashpass.tech\nSite: https://hashpass.tech"
     }
+  },
+  "publicEvents": {
+    "back": "Voltar ao início",
+    "badge": "Descubra · Conecte-se · Faça parte",
+    "title": "Encontre sua próxima conexão.",
+    "subtitle": "Explore os próximos eventos, encontre sua comunidade e mantenha todos os passes em um só lugar.",
+    "loadingFilm": "Carregando vídeo do evento",
+    "featured": "EM DESTAQUE",
+    "viewEvent": "Explorar evento",
+    "previous": "Anterior",
+    "next": "Próximo",
+    "play": "Reproduzir destaques",
+    "pause": "Pausar destaques",
+    "search": "Buscar eventos, cidades, países ou séries",
+    "series": "SÉRIES DE EVENTOS",
+    "allSeries": "Todas as séries",
+    "regions": "REGIÕES",
+    "allRegions": "Todas as regiões",
+    "upcomingFirst": "Próximos primeiro",
+    "reset": "Limpar filtros",
+    "undated": "Data a confirmar",
+    "empty": "Nenhum evento corresponde à sua busca.",
+    "emptyHint": "Tente outro local ou limpe os filtros.",
+    "all": "Todos os eventos",
+    "upcoming": "Próximos",
+    "live": "Ao vivo",
+    "past": "Eventos anteriores",
+    "navEvents": "Explorar eventos",
+    "navPasses": "Meus passes",
+    "navWallet": "Carteira",
+    "navCommunity": "Comunidade",
+    "guest": "Modo convidado",
+    "openApp": "Abrir app",
+    "join": "Entrar no HASHPASS",
+    "guestHint": "Explore livremente. Cadastre-se para salvar eventos, gerenciar passes e se conectar.",
+    "authTitle": "Cadastre-se para usar todo o app",
+    "authHint": "Crie uma conta ou entre com um código de verificação. Sua busca de eventos será mantida.",
+    "close": "Fechar",
+    "navQr": "Meu QR",
+    "navNotifications": "Notificações",
+    "navProfile": "Perfil",
+    "guestDescription": "Você está explorando uma versão simplificada do HASHPASS. Cadastre-se e baixe o app para acessar a experiência completa, incluindo seus passes, eventos salvos e recursos da comunidade."
   }
 }

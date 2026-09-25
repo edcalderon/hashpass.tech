@@ -1,10 +1,11 @@
 import React from 'react';
-import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 // lib/vector-icons routes web to SVG-based Lucide icons instead of the raw
 // font glyphs @expo/vector-icons renders directly; the raw font can show its
 // tofu/"?" fallback glyph for a window before the icon font loads on web --
 // worse here since LoadingScreen is often the very first thing rendered.
 import { MaterialIcons } from '../lib/vector-icons';
+import HashpassLoader from './HashpassLoader';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../i18n/i18n';
 
@@ -98,18 +99,25 @@ const LoadingScreen: React.FC<LoadingScreenProps> = ({
       <View style={styles.content}>
         {/* Icon or Spinner */}
         {icon ? (
-          <MaterialIcons 
-            name={icon as any} 
-            size={iconSize} 
-            color={finalIconColor} 
+          <MaterialIcons
+            name={icon as any}
+            size={iconSize}
+            color={finalIconColor}
             style={styles.icon}
           />
         ) : shouldShowSpinner ? (
-          <ActivityIndicator 
-            size={spinnerSize} 
-            color={finalIconColor} 
-            style={styles.spinner}
-          />
+          // The branded logo-in-ring loader replaces the plain
+          // ActivityIndicator for every generic loading state (no `icon`
+          // given) -- app startup, route resolution, etc. Screens that pass
+          // their own contextual `icon` are unaffected. Only tint the ring
+          // from `iconColor` when a caller explicitly set one; otherwise
+          // HashpassLoader keeps the logo's own cyan.
+          <View style={styles.spinner}>
+            <HashpassLoader
+              size={spinnerSize === 'small' ? 32 : 64}
+              {...(iconColor ? { color: iconColor } : null)}
+            />
+          </View>
         ) : null}
         
         {/* Main Message */}

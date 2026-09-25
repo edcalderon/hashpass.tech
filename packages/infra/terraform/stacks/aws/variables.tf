@@ -84,7 +84,7 @@ variable "lambda_handler" {
 variable "lambda_runtime" {
   description = "Lambda runtime"
   type        = string
-  default     = "nodejs22.x"
+  default     = "nodejs24.x"
 }
 
 variable "lambda_memory_size" {

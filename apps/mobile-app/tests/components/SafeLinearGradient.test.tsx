@@ -61,4 +61,25 @@ describe('SafeLinearGradient', () => {
       expect(element.type).toBe('View');
     });
   });
+
+  it('uses ExpoLinearGradient on Android when its native view manager is available', () => {
+    jest.isolateModules(() => {
+      jest.doMock('react-native', () => ({
+        AccessibilityInfo: { addEventListener: jest.fn(() => ({ remove: jest.fn() })), isReduceMotionEnabled: jest.fn(() => Promise.resolve(false)) },
+        AppState: { currentState: 'active', addEventListener: jest.fn(() => ({ remove: jest.fn() })), removeEventListener: jest.fn() },
+        Appearance: { getColorScheme: () => 'light', addEventListener: jest.fn(), removeEventListener: jest.fn(), addChangeListener: jest.fn(), removeChangeListener: jest.fn() },
+        Dimensions: { get: jest.fn(() => ({ width: 1024, height: 768, scale: 1, fontScale: 1 })), addEventListener: jest.fn(() => ({ remove: jest.fn() })), removeEventListener: jest.fn() },
+        I18nManager: { isRTL: false },
+        Platform: { OS: 'android' },
+        UIManager: { getViewManagerConfig: () => ({}) },
+        PixelRatio: { get: () => 1 },
+        View: 'View',
+      }));
+      jest.doMock('expo-linear-gradient', () => ({ LinearGradient: 'ExpoLinearGradient' }));
+
+      /* eslint-disable @typescript-eslint/no-require-imports */
+      const SafeLinearGradient = require('../../components/SafeLinearGradient').default as (props: Record<string, unknown>) => { type: string };
+      expect(SafeLinearGradient({ colors: ['#07111F', '#0B1728', '#00B8D4'] }).type).toBe('ExpoLinearGradient');
+    });
+  });
 });

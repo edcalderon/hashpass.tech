@@ -1,17 +1,11 @@
 import { StorybookConfig } from '@storybook/react-webpack5';
+import { DefinePlugin } from 'webpack';
 
-// In production, only show guides (docs stories), not component stories
-const isProduction = process.env.NODE_ENV === 'production';
-const stories = isProduction
-  ? [
-      // Only guides in production
-      '../apps/docs/docs/**/*.stories.@(js|jsx|ts|tsx|mdx)',
-    ]
-  : [
-      // All stories in development
-      '../components/**/*.stories.@(js|jsx|ts|tsx|mdx)',
-      '../apps/docs/docs/**/*.stories.@(js|jsx|ts|tsx|mdx)',
-    ];
+// The public catalog renders the same primitives used by production screens.
+const stories = [
+  '../packages/ui/src/system/**/*.stories.@(js|jsx|ts|tsx|mdx)',
+  '../apps/docs/docs/**/*.stories.@(js|jsx|ts|tsx|mdx)',
+];
 
 const config: StorybookConfig = {
   stories,
@@ -39,22 +33,22 @@ const config: StorybookConfig = {
     },
   },
   webpackFinal: async (config) => {
+    config.plugins = [...(config.plugins || []), new DefinePlugin({ __DEV__: JSON.stringify(config.mode !== 'production') })];
     // Add support for React Native Web
     config.resolve = config.resolve || {};
     config.resolve.alias = {
       ...config.resolve.alias,
       'react-native$': 'react-native-web',
-      'react-native-svg': 'react-native-svg-web',
-      '@': require('path').resolve(__dirname, '..'),
+      '@': require('path').resolve(__dirname, '../apps/mobile-app'),
     };
 
     // Add support for Expo
     config.resolve.extensions = [
-      ...(config.resolve.extensions || []),
       '.web.js',
       '.web.jsx',
       '.web.ts',
       '.web.tsx',
+      ...(config.resolve.extensions || []),
       '.mjs',
       '.cjs',
     ];
@@ -62,6 +56,21 @@ const config: StorybookConfig = {
     // Handle CSS and other assets
     config.module = config.module || {};
     config.module.rules = config.module.rules || [];
+
+    // Reanimated's published web modules retain JSX. Render the real production
+    // animation component in the catalog instead of substituting a static mock.
+    config.module.rules.push({
+      test: /\.js$/,
+      include: /node_modules[\\/]react-native-reanimated[\\/]/,
+      use: {
+        loader: 'babel-loader',
+        options: {
+          babelrc: false,
+          configFile: false,
+          presets: ['@babel/preset-react'],
+        },
+      },
+    });
     
     // Find and modify existing CSS rule or add new one with PostCSS and Tailwind support
     const cssRuleIndex = config.module.rules.findIndex((rule: any) => 

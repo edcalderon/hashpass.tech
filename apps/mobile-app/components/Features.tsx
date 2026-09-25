@@ -1,55 +1,56 @@
-import React, { useRef } from 'react';
-import { View, Text, StyleSheet, Platform, Pressable, Dimensions, TouchableOpacity } from 'react-native';
+import { uiTokens } from '@hashpass/ui/tokens';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { View, Text, StyleSheet, Platform, Pressable, useWindowDimensions, TouchableOpacity } from 'react-native';
 import Animated, { useSharedValue } from 'react-native-reanimated';
-import { useTheme } from '@/hooks/useTheme';
 import { useTranslation } from '@/i18n/i18n';
+import { apiClient } from '@/lib/api-client';
 import { useRouter } from 'expo-router';
 import { GlowingEffect } from './GlowingEffect';
 import FlipCard from './FlipCard';
 import FeatureFlipCard from './FeatureFlipCard';
-import { Ionicons } from '../lib/vector-icons';
+import LandingBadge from './LandingBadge';
+import FeatureIcon from './FeatureIcon';
 
-const CARD_SIZE = Math.min(280, Dimensions.get('window').width - 64);
-
-const getFeatureStyles = (isDark: boolean, colors: any) => StyleSheet.create({
+const getFeatureStyles = (isDark: boolean, cardWidth: number) => StyleSheet.create({
+  responsiveGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    flexGrow: 1,
+    justifyContent: 'center',
+    gap: 16,
+    width: '100%',
+    paddingHorizontal: 16,
+    paddingBottom: 20,
+  },
+  compactGrid: {
+    flexDirection: 'column',
+    flexWrap: 'nowrap',
+    alignItems: 'center',
+  },
   feature: {
-    marginBottom: 24,
-    padding: 20,
-    borderRadius: 24,
+    padding: 16,
+    borderRadius: uiTokens.radius.card,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: isDark ? 0.45 : 0.08,
+    shadowOpacity: isDark ? 0.2 : 0.06,
     shadowRadius: 16,
     elevation: 4,
     borderWidth: 1,
     borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)',
     alignItems: 'center',
     backgroundColor: isDark ? '#07070a' : '#f8fafc',
-    width: CARD_SIZE + 40,
+    width: cardWidth,
   },
   cardInner: {
-    width: CARD_SIZE,
-    height: CARD_SIZE,
+    width: cardWidth - 32,
+    height: 188,
   },
   iconContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    marginBottom: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
+    marginBottom: uiTokens.space.md,
     alignSelf: 'center',
   },
-  iconContainerSmall: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 0,
-  },
   featureTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '800',
     marginBottom: 8,
     letterSpacing: -0.5,
@@ -57,6 +58,7 @@ const getFeatureStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     color: isDark ? '#ffffff' : '#09090b',
   },
   featureTitleSmall: {
+    flex: 1,
     fontSize: 16,
     fontWeight: '700',
     letterSpacing: -0.3,
@@ -71,8 +73,8 @@ const getFeatureStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     color: isDark ? '#71717a' : '#a1a1aa',
   },
   featureDescription: {
-    fontSize: 15,
-    lineHeight: 26,
+    fontSize: 13,
+    lineHeight: 20,
     textAlign: 'left',
     color: isDark ? '#d4d4d8' : '#3f3f46',
     flexShrink: 1,
@@ -80,7 +82,7 @@ const getFeatureStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   actionButton: {
     paddingVertical: 10,
     paddingHorizontal: 20,
-    borderRadius: 10,
+    borderRadius: uiTokens.radius.input,
     borderWidth: 1,
     alignItems: 'center',
     borderColor: 'rgba(6, 182, 212, 0.3)',
@@ -94,9 +96,8 @@ const getFeatureStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   webCardItem: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 30,
-    width: 320,
-    maxWidth: '92%' as any,
+    width: cardWidth,
+    flexShrink: 0,
   },
 });
 
@@ -107,7 +108,50 @@ interface FeaturesProps {
   feature2Style: Record<string, any>;
   feature3Style: Record<string, any>;
   isDark: boolean;
+  reduceMotion?: boolean;
 }
+
+export type SystemMetrics = {
+  passes: number;
+  agenda: number;
+  speakers: number;
+  bookings: number;
+};
+
+// Verified against production /api/status on 2026-09-20. These values render
+// immediately and remain visible when the live status request is unavailable.
+export const PUBLIC_METRICS_BASELINE: SystemMetrics = {
+  passes: 2,
+  agenda: 0,
+  speakers: 61,
+  bookings: 4,
+};
+
+const validMetric = (value: unknown, fallback: number) => {
+  const numberValue = Number(value);
+  return Number.isFinite(numberValue) && numberValue >= 0 ? Math.floor(numberValue) : fallback;
+};
+
+type MetricCheck = {
+  accessible?: boolean;
+  count?: unknown;
+  itemCount?: unknown;
+};
+
+export const mergeLiveSystemMetrics = (current: SystemMetrics, checks: unknown): SystemMetrics => {
+  if (!checks || typeof checks !== 'object') return current;
+
+  const metrics = checks as Record<string, MetricCheck | undefined>;
+  const nextValue = (check: MetricCheck | undefined, key: 'count' | 'itemCount', fallback: number) =>
+    check?.accessible === false ? fallback : validMetric(check?.[key], fallback);
+
+  return {
+    passes: nextValue(metrics.passes, 'count', current.passes),
+    agenda: nextValue(metrics.agenda, 'itemCount', current.agenda),
+    speakers: nextValue(metrics.speakers, 'count', current.speakers),
+    bookings: nextValue(metrics.bookings, 'count', current.bookings),
+  };
+};
 
 const Features: React.FC<FeaturesProps> = ({
   styles: containerStyles = {},
@@ -116,16 +160,73 @@ const Features: React.FC<FeaturesProps> = ({
   feature2Style = {},
   feature3Style = {},
   isDark = false,
+  reduceMotion = false,
 }) => {
-  const { colors } = useTheme();
+  const { width } = useWindowDimensions();
   const { t } = useTranslation('index');
+  const [systemMetrics, setSystemMetrics] = useState<SystemMetrics>(PUBLIC_METRICS_BASELINE);
+  useEffect(() => {
+    let active = true;
+
+    // A bare `fetch('/api/status')` resolves fine on web (relative to
+    // document origin) but throws a synchronous "Invalid URL" TypeError on
+    // native, since React Native's fetch has no implicit base to resolve
+    // a relative path against -- that throw escapes this effect and crashes
+    // the whole screen. apiClient already knows how to route this endpoint
+    // on both platforms (see app/status.tsx for the same pattern).
+    const loadMetrics = async () => {
+      try {
+        const result = await apiClient.request('status', { skipEventSegment: true, skipAuth: true });
+        if (!active || !result.success || !result.data?.checks) return;
+
+        setSystemMetrics((current) => mergeLiveSystemMetrics(current, result.data.checks));
+      } catch {
+        // Keep the verified baseline (or the last successful live result).
+      }
+    };
+
+    loadMetrics();
+
+    return () => { active = false; };
+  }, []);
   const router = useRouter();
-  const featureStyles = getFeatureStyles(isDark, colors);
-  const flipValues = useRef([
-    useSharedValue(false),
-    useSharedValue(false),
-    useSharedValue(false)
-  ]).current;
+  const viewportWidth = width > 0 ? width : 320;
+  const compactLayout = viewportWidth < 700;
+  const availableWidth = Math.min(viewportWidth, 960);
+  const cardWidth = compactLayout
+    ? Math.max(0, Math.min(420, viewportWidth - 48))
+    : Math.max(220, Math.min(280, (availableWidth - 64) / 3));
+  const featureStyles = getFeatureStyles(isDark, cardWidth);
+  const flipValue1 = useSharedValue(false);
+  const flipValue2 = useSharedValue(false);
+  const flipValue3 = useSharedValue(false);
+  const flipValue4 = useSharedValue(false);
+  const flipValue5 = useSharedValue(false);
+  const flipValues = [flipValue1, flipValue2, flipValue3, flipValue4, flipValue5];
+  const carouselRef = useRef<HTMLDivElement>(null);
+  const dragRef = useRef<{ x: number; scroll: number } | null>(null);
+  const [activeWebCardIndex, setActiveWebCardIndex] = useState<number | null>(null);
+  const [nativeFlipped, setNativeFlipped] = useState<Record<string, boolean>>({});
+  const handleWebFlipChange = useCallback((index: number, isFlipped: boolean, card: HTMLDivElement) => {
+    setActiveWebCardIndex(isFlipped ? index : null);
+    if (!isFlipped) return;
+
+    // The marquee otherwise keeps carrying a card toward an edge while its
+    // reverse face is open. Center the selected card before the reader takes
+    // in the detail and leave the track paused until it is closed.
+    requestAnimationFrame(() => {
+      const viewport = carouselRef.current;
+      if (!viewport) return;
+      const viewportBounds = viewport.getBoundingClientRect();
+      const cardBounds = card.getBoundingClientRect();
+      const targetLeft = viewport.scrollLeft + cardBounds.left - viewportBounds.left
+        - (viewport.clientWidth - cardBounds.width) / 2;
+      viewport.scrollTo({
+        left: Math.max(0, targetLeft),
+        behavior: reduceMotion ? 'auto' : 'smooth',
+      });
+    });
+  }, [reduceMotion]);
 
   const features = [
     {
@@ -134,8 +235,10 @@ const Features: React.FC<FeaturesProps> = ({
       title: t('features.secure.title'),
       description: t('features.secure.description'),
       moreInfo: t('features.secure.moreInfo', t('features.secure.description')),
-      actionText: 'Secure data now',
-      color: '#06b6d4',
+      actionText: t('features.secure.action', 'Secure my data'),
+      metric: t('features.secure.metric', 'End-to-end encrypted conversations'),
+      metricValue: systemMetrics.speakers, metricLabel: t('features.secure.metricLabel', 'verified speakers'),
+      color: uiTokens.feature.cyan,
     },
     {
       id: 'management',
@@ -143,8 +246,10 @@ const Features: React.FC<FeaturesProps> = ({
       title: t('features.management.title'),
       description: t('features.management.description'),
       moreInfo: t('features.management.moreInfo', t('features.management.description')),
-      actionText: 'Manage your keys',
-      color: '#ef4444',
+      actionText: t('features.management.action', 'Manage my keys'),
+      metric: t('features.management.metric', 'One pass for your event network'),
+      metricValue: systemMetrics.passes, metricLabel: t('features.management.metricLabel', 'passes issued'),
+      color: uiTokens.feature.red,
     },
     {
       id: 'sync',
@@ -152,17 +257,41 @@ const Features: React.FC<FeaturesProps> = ({
       title: t('features.sync.title'),
       description: t('features.sync.description'),
       moreInfo: t('features.sync.moreInfo', t('features.sync.description')),
-      actionText: 'Start always sync',
-      color: '#22c55e',
+      actionText: t('features.sync.action', 'Enable secure sync'),
+      metric: t('features.sync.metric', '3 clients: web, Android and iOS'),
+      metricValue: 3, metricLabel: t('features.sync.metricLabel', 'supported platforms'),
+      color: uiTokens.feature.green,
+    },
+    {
+      id: 'entry',
+      icon: 'qr-code-outline',
+      title: t('features.entry.title', 'Fast entry'),
+      description: t('features.entry.description', 'Use a live QR pass for quick, reliable event access.'),
+      moreInfo: t('features.entry.description', 'Use a live QR pass for quick, reliable event access.'),
+      actionText: t('learnMore', 'Learn more'),
+      metric: t('features.entry.metric', 'Live QR validation'),
+      metricValue: systemMetrics.passes, metricLabel: t('features.entry.metricLabel', 'live passes'),
+      color: uiTokens.feature.violet,
+    },
+    {
+      id: 'network',
+      icon: 'people-outline',
+      title: t('features.network.title', 'Private networking'),
+      description: t('features.network.description', 'Find attendees, book meetings and keep conversations private.'),
+      moreInfo: t('features.network.description', 'Find attendees, book meetings and keep conversations private.'),
+      actionText: t('learnMore', 'Learn more'),
+      metric: t('features.network.metric', 'Meetings and encrypted chat'),
+      metricValue: systemMetrics.bookings, metricLabel: t('features.network.metricLabel', 'meetings booked'),
+      color: uiTokens.feature.amber,
     }
   ];
 
   if (Platform.OS === 'web') {
     return (
       <Animated.View style={[containerStyles?.featuresContainer, featuresAnimatedStyle]}>
-        <View style={containerStyles?.featuresGrid}>
-          {features.map((feature, index) => (
-            <Animated.View key={feature.id} style={[featureStyles.webCardItem, [feature1Style, feature2Style, feature3Style][index]]}>
+        <View style={{ alignItems: 'center', marginBottom: 28 }}><LandingBadge>{t('featuresBadge', 'Key features')}</LandingBadge><Text style={{ color: isDark ? '#fff' : '#18181b', fontSize: 32, fontWeight: '800', marginTop: 16, textAlign: 'center' }}>{t('features.title', 'Everything your event needs')}</Text><Text style={{ color: isDark ? '#a1a1aa' : '#71717a', fontSize: 16, lineHeight: 24, marginTop: 8, textAlign: 'center', maxWidth: 640 }}>{t('features.subtitle', 'One private identity for entry, connections, passes and rewards.')}</Text></View>
+        <View nativeID="landing-feature-grid" style={[containerStyles?.featuresGrid, featureStyles.responsiveGrid, compactLayout && featureStyles.compactGrid]}><div ref={carouselRef} className={`hashpass-feature-viewport${activeWebCardIndex !== null ? ' has-active-card' : ''}${reduceMotion ? ' has-reduced-motion' : ''}`} onWheel={(event) => { if (Math.abs(event.deltaY) > Math.abs(event.deltaX)) { event.preventDefault(); event.currentTarget.scrollLeft += event.deltaY; } }} onPointerDown={(event) => { dragRef.current = { x: event.clientX, scroll: event.currentTarget.scrollLeft }; event.currentTarget.classList.add('is-dragging'); event.currentTarget.setPointerCapture(event.pointerId); }} onPointerMove={(event) => { if (!dragRef.current) return; event.currentTarget.scrollLeft = dragRef.current.scroll - (event.clientX - dragRef.current.x); }} onPointerUp={(event) => { dragRef.current = null; event.currentTarget.classList.remove('is-dragging'); event.currentTarget.releasePointerCapture(event.pointerId); }} onPointerCancel={(event) => { dragRef.current = null; event.currentTarget.classList.remove('is-dragging'); }}><div className="hashpass-feature-track">{[...features, ...features].map((feature, index) => (
+            <Animated.View key={`${feature.id}-${index}`} style={[featureStyles.webCardItem, { width: cardWidth }, [feature1Style, feature2Style, feature3Style][index % 3]]}>
               <FeatureFlipCard
                 title={feature.title}
                 description={feature.moreInfo}
@@ -171,23 +300,32 @@ const Features: React.FC<FeaturesProps> = ({
                 hintText={t('learnMore', 'Learn More')}
                 actionText={feature.actionText}
                 isDark={isDark}
+                reduceMotion={reduceMotion}
                 actionHref="/(shared)/auth"
+                metric={feature.metric}
+                metricValue={feature.metricValue}
+                metricLabel={feature.metricLabel}
+                isFlipped={activeWebCardIndex === index}
+                onFlipChange={(isFlipped: boolean, card: HTMLDivElement) => handleWebFlipChange(index, isFlipped, card)}
               />
             </Animated.View>
-          ))}
-        </View>
+          ))}</div></div></View>
+        <style>{`@keyframes hashpass-feature-marquee{to{transform:translateX(-50%)}}.hashpass-feature-viewport{overflow-x:auto;overflow-y:hidden;width:100%;scrollbar-width:none;cursor:grab;touch-action:pan-x;-webkit-mask-image:linear-gradient(to right,transparent,black 48px,black calc(100% - 48px),transparent);mask-image:linear-gradient(to right,transparent,black 48px,black calc(100% - 48px),transparent)}.hashpass-feature-viewport::-webkit-scrollbar{display:none}.hashpass-feature-viewport.is-dragging{cursor:grabbing}.hashpass-feature-viewport.has-active-card{cursor:default;scroll-snap-type:x mandatory}.hashpass-feature-track{display:flex;gap:16px;width:max-content;animation:hashpass-feature-marquee 34s linear infinite}.hashpass-feature-track>*{scroll-snap-align:center}.hashpass-feature-viewport:hover .hashpass-feature-track,.hashpass-feature-viewport.is-dragging .hashpass-feature-track,.hashpass-feature-viewport.has-active-card .hashpass-feature-track{animation-play-state:paused}.hashpass-feature-viewport.has-reduced-motion .hashpass-feature-track{animation:none}@media (prefers-reduced-motion:reduce){.hashpass-feature-track{animation:none}}`}</style>
       </Animated.View>
     );
   }
 
   return (
     <Animated.View style={[containerStyles?.featuresContainer, featuresAnimatedStyle]}>
-      <View style={containerStyles?.featuresGrid}>
+      <View style={{ alignItems: 'center', marginBottom: 18 }}><LandingBadge>{t('featuresBadge', 'Key features')}</LandingBadge></View>
+      <View nativeID="landing-feature-grid" style={[containerStyles?.featuresGrid, featureStyles.responsiveGrid, compactLayout && featureStyles.compactGrid]}>
         {features.map((feature, index) => (
           <Pressable
             key={feature.id}
             onPress={() => {
-              flipValues[index].value = !flipValues[index].value;
+              const next = !flipValues[index].value;
+              flipValues[index].value = next;
+              setNativeFlipped(current => ({ ...current, [feature.id]: next }));
             }}
             style={[featureStyles.feature, [feature1Style, feature2Style, feature3Style][index]]}
           >
@@ -208,13 +346,10 @@ const Features: React.FC<FeaturesProps> = ({
                     flex: 1,
                     justifyContent: 'center',
                     alignItems: 'center',
-                    padding: 16,
+                    padding: 8,
                   }}>
-                    <View style={[
-                      featureStyles.iconContainer,
-                      { borderWidth: 1, borderColor: `${feature.color}66`, backgroundColor: `${feature.color}1f` },
-                    ]}>
-                      <Ionicons name={feature.icon as any} size={32} color={feature.color} />
+                    <View style={featureStyles.iconContainer}>
+                      <FeatureIcon name={feature.icon} color={feature.color} reduceMotion={reduceMotion} visible={!nativeFlipped[feature.id]} />
                     </View>
                     <Text style={featureStyles.featureTitle}>{feature.title}</Text>
                     <Text style={featureStyles.featureHint}>{t('tapToRead', 'Tap to read more')}</Text>
@@ -223,20 +358,21 @@ const Features: React.FC<FeaturesProps> = ({
                 FlippedContent={
                   <View style={{
                     flex: 1,
-                    padding: 20,
+                    padding: 0,
                     justifyContent: 'space-between',
                   }}>
                     <View>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-                        <View style={[
-                          featureStyles.iconContainerSmall,
-                          { borderWidth: 1, borderColor: `${feature.color}66`, backgroundColor: `${feature.color}1f` },
-                        ]}>
-                          <Ionicons name={feature.icon as any} size={16} color={feature.color} />
-                        </View>
+                        <FeatureIcon name={feature.icon} color={feature.color} compact reduceMotion={reduceMotion} active={!!nativeFlipped[feature.id]} visible={!!nativeFlipped[feature.id]} />
                         <Text style={featureStyles.featureTitleSmall}>{feature.title}</Text>
                       </View>
-                      <Text style={featureStyles.featureDescription}>{feature.description}</Text>
+                      <View style={{ maxHeight: 88 }}>
+                        <Text style={[featureStyles.featureDescription, { marginBottom: 6 }]}>
+                          <Text style={{ color: feature.color, fontWeight: '800' }}>{feature.metricValue.toLocaleString()}</Text>
+                          <Text style={{ fontWeight: '700' }}> {feature.metricLabel}. </Text>
+                          {feature.description}
+                        </Text>
+                      </View>
                     </View>
                     <TouchableOpacity
                       style={[featureStyles.actionButton, { borderColor: `${feature.color}4d`, backgroundColor: `${feature.color}12` }]}

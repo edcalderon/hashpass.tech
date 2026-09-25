@@ -87,6 +87,86 @@
     "exchange": {
       "title": "교환",
       "description": "포인트를 암호화폐로 교환하세요."
+    },
+    "enrollment": {
+      "readOnly": "읽기 전용",
+      "signIn": "지갑 상태를 확인하려면 로그인하세요.",
+      "loading": "지갑 상태 불러오는 중",
+      "unavailable": "지갑 상태를 확인할 수 없습니다. 다시 시도하세요.",
+      "ready": "등록 준비 완료",
+      "noKeys": "계정이 등록되었습니다. 키는 아직 생성되지 않았습니다. 이 앱에서는 기기 설정과 복구 확인을 아직 사용할 수 없습니다.",
+      "interrupted": "지갑 설정이 완료되지 않았습니다. 기존 기기와 저장된 지갑을 보관하세요. 대체 지갑을 만들지 마세요.",
+      "testnet": "테스트 네트워크",
+      "mainnet": "메인 네트워크",
+      "registered": "등록된 공개 주소입니다. 이 화면에서 기기 접근과 복구는 아직 확인되지 않았습니다. 잔액 조회와 서명을 사용할 수 없습니다.",
+      "refresh": "지갑 상태 새로고침",
+      "setupReady": "계정이 등록되었습니다. 키는 아직 생성되지 않았습니다. 아래에서 이 기기를 설정하세요."
+    },
+    "overview": {
+      "assets": "자산",
+      "rewards": "보상",
+      "passes": "이벤트 패스",
+      "eyebrow": "나의 HASHPASS",
+      "title": "지갑",
+      "subtitle": "자산, 보상, 이벤트 패스를 한곳에서 직접 관리하세요.",
+      "setupPending": "설정 준비 중",
+      "ownershipTitle": "나의 지갑, 나의 권한.",
+      "setupDescription": "Ethereum, Bitcoin, Solana 지갑 설정을 준비 중입니다. 이 화면에서는 암호화폐 지갑이 생성되지 않았습니다. 전송과 서명을 사용할 수 없습니다.",
+      "hideSecurity": "보안 정보 숨기기",
+      "showSecurity": "지갑 보호 방식 알아보기",
+      "protectTitle": "01 / 지갑 보호",
+      "protectBody": "별도의 지갑 비밀번호로 서명을 보호합니다. 설정과 복구 확인이 완료될 때까지 서명은 잠깁니다.",
+      "backupTitle": "02 / 백업 및 확인",
+      "backupBody": "복구 구문과 암호화된 백업을 저장하고 복구를 확인해야 거래를 활성화할 수 있습니다.",
+      "hardwareTitle": "03 / 서명 방식 선택",
+      "hardwareBody": "하드웨어 지갑 연결을 준비 중입니다. 하드웨어 지갑의 키는 기기에 보관됩니다. 해당 복구 구문을 여기에 입력하지 마세요.",
+      "networks": "지원 예정 네트워크",
+      "networksDescription": "지갑 설정과 네트워크 연결에 성공하면 잔액이 표시됩니다.",
+      "notConnected": "연결되지 않음",
+      "balanceUnavailable": "잔액 확인 불가",
+      "activity": "활동",
+      "activityUnavailable": "지갑이 연결되면 거래 내역을 확인할 수 있습니다. 온체인 활동은 아직 불러오지 않았습니다.",
+      "passesNote": "이벤트 입장 패스입니다. 온체인 자산과는 별개입니다.",
+      "rewardsLabel": "HASHPASS 보상",
+      "rewardsSignIn": "보상 잔액을 확인하려면 로그인하세요.",
+      "loadingRewards": "보상 불러오는 중",
+      "unavailable": "사용 불가",
+      "rewardsError": "잔액을 불러오지 못했습니다. 다시 시도하세요.",
+      "rewardsNote": "HASHPASS 보상 잔액은 온체인 자산과 별개입니다. 현금 가치나 환율을 가정하지 않습니다.",
+      "refreshRewards": "보상 새로고침",
+      "pointsTitle": "Hash 포인트",
+      "pointsUnavailable": "포인트 잔액과 교환은 아직 사용할 수 없습니다."
+    },
+    "setup": {
+      "title": "기기 설정 · 테스트 네트워크 전용",
+      "readOnly": "서명은 계속 비활성화됩니다. 백업을 확인해도 거래는 활성화되지 않습니다.",
+      "error": "단계를 완료할 수 없습니다. 비밀번호, 백업, 연결을 확인하세요. 기존 기기를 보관하고 대체 지갑을 만들지 마세요.",
+      "passwordHelp": "별도의 지갑 비밀번호를 사용하세요. 최소 16자이며 서로 다른 문자가 8개 이상이어야 합니다. HASHPASS는 비밀번호를 재설정하거나 복구 구문을 복원할 수 없습니다.",
+      "password": "지갑 비밀번호",
+      "confirm": "지갑 비밀번호 확인",
+      "restoreTitle": "암호화된 백업에서 복원",
+      "reveal": "복구 구문 표시",
+      "phraseWarning": "이 단어를 가진 사람은 지갑을 제어할 수 있습니다. 순서대로 안전하게 적어 두세요. 지원팀에도 보내지 마세요.",
+      "hide": "구문 숨기고 단어 확인",
+      "challenge": "저장한 복구 구문에서 요청된 단어를 입력하세요.",
+      "answer": "복구 단어",
+      "verifyWords": "복구 단어 확인",
+      "backupHelp": "암호화된 파일은 HASHPASS에서 복원합니다. MetaMask JSON 키 저장소가 아닙니다. 별도의 비밀번호를 안전하게 보관하세요. 지갑 가져오기 호환성은 아직 테스트 중입니다.",
+      "backupPassword": "백업 비밀번호",
+      "backupConfirm": "백업 비밀번호 확인",
+      "export": "암호화된 백업 다운로드",
+      "pick": "암호화된 백업 파일 선택",
+      "fileSelected": "암호화된 파일을 선택했습니다. 비밀번호를 입력하여 기기에서 확인하거나 복원하세요.",
+      "verified": "이 세션에서 복구 단어와 암호화된 백업을 확인했습니다. 서명은 계속 비활성화됩니다.",
+      "plaintextWarning": "선택 사항인 암호화되지 않은 구문 다운로드: 이 파일을 열 수 있는 사람은 지갑을 탈취할 수 있습니다. 공유 폴더와 클라우드 동기화를 피하세요.",
+      "plaintext": "암호화되지 않은 복구 구문 다운로드",
+      "create": "테스트 지갑 생성",
+      "resume": "지갑 설정 재개",
+      "restore": "이 기기에 지갑 복원",
+      "verifyFile": "저장한 백업 확인",
+      "word": "단어",
+      "acknowledge": "암호화되지 않은 파일의 위험을 이해했습니다",
+      "cancelPlaintext": "암호화되지 않은 다운로드 취소"
     }
   },
   "digitalWallet": {
@@ -269,6 +349,8 @@
     "close": "설치 안내 닫기",
     "dialogLabel": "HASHPASS 설치 안내",
     "expandCollapsed": "설치 옵션 열기",
+    "dragHandle": "설치 버튼 드래그",
+    "playStoreAction": "Google Play에서 전체 앱 받기",
     "infoIntro": "PWA(프로그레시브 웹 앱)는 HASHPASS를 기기에서 네이티브 앱처럼 동작하게 합니다.",
     "details": {
       "one": "PWA는 브라우저 기반이지만 앱처럼 동작하는 Progressive Web App입니다.",
@@ -276,8 +358,11 @@
       "three": "이벤트 체크인, 지갑, 알림을 더 적은 마찰로 사용할 수 있습니다."
     },
     "instructions": {
-      "ios": "설치 방법: 공유 버튼을 누른 다음 \"홈 화면에 추가\"를 선택하세요.",
-      "android": "설치 방법: 브라우저 메뉴를 열고 \"앱 설치\"를 선택하세요.",
+      "safariIos": "Safari에서 공유를 누른 뒤 홈 화면에 추가와 추가를 선택하세요.",
+      "chromeIos": "iPhone Chrome에서 공유 메뉴를 열고 홈 화면에 추가를 선택하세요.",
+      "firefoxIos": "iPhone Firefox에서 공유 메뉴를 열고 홈 화면에 추가를 선택하세요.",
+      "chromeAndroid": "Chrome에서 점 세 개 메뉴를 열고 앱 설치를 선택하세요.",
+      "firefoxAndroid": "Firefox에서 점 세 개 메뉴를 열고 설치를 선택하세요.",
       "default": "설치 방법: 브라우저 주소창의 설치 아이콘을 사용하세요."
     }
   },
@@ -459,18 +544,42 @@
     "learnMore": "자세히 알아보기",
     "taglineFlipList": "- 당신의 이벤트 -,- 당신의 커뮤니티 -,- 당신의 혜택 -",
     "unlockPotential": "잠재력을 발휘하세요",
+    "featuresBadge": "주요 기능",
     "features": {
+      "title": "이벤트에 필요한 모든 기능",
+      "subtitle": "입장, 연결, 패스, 혜택을 위한 하나의 개인 ID입니다.",
       "secure": {
         "title": "안전하고 개인적",
-        "description": "업계 최고 수준의 보안으로 데이터를 보호합니다."
+        "description": "업계 최고 수준의 보안으로 데이터를 보호합니다.",
+        "action": "데이터 보호"
+        ,"metric": "종단 간 암호화된 대화",
+        "metricLabel": "검증된 연사"
       },
       "management": {
         "title": "손쉬운 관리",
-        "description": "디지털 자격증, 멤버십, 커뮤니티를 한 곳에서 관리하세요."
+        "description": "디지털 자격증, 멤버십, 커뮤니티를 한 곳에서 관리하세요.",
+        "action": "키 관리"
+        ,"metric": "이벤트 네트워크를 위한 하나의 패스",
+        "metricLabel": "발급된 패스"
       },
       "sync": {
         "title": "크로스 플랫폼 동기화",
-        "description": "모든 기기에서 안전하게 접근하세요."
+        "description": "모든 기기에서 안전하게 접근하세요.",
+        "action": "동기화 활성화"
+        ,"metric": "3개 클라이언트: 웹, Android, iOS",
+        "metricLabel": "지원 플랫폼"
+      },
+      "entry": {
+        "title": "빠른 입장",
+        "description": "실시간 QR 패스로 빠르고 안정적으로 이벤트에 입장하세요.",
+        "metric": "실시간 QR 검증",
+        "metricLabel": "활성 패스"
+      },
+      "network": {
+        "title": "비공개 네트워킹",
+        "description": "참석자를 찾고, 미팅을 예약하고, 대화를 비공개로 유지하세요.",
+        "metric": "미팅 및 암호화 채팅",
+        "metricLabel": "예약된 미팅"
       }
     },
     "welcomeBack": "다시 오신 것을 환영합니다!",
@@ -503,7 +612,76 @@
       "title": "지금 시작할까요?",
       "subtitle": "수천 명의 사용자가 HASHPASS를 신뢰합니다.",
       "startNow": "지금 시작"
-    }
+    },
+    "howItWorks": {
+      "badge": "이용 방법",
+      "title": "HASHPASS 이용 방법",
+      "subtitle": "하나의 패스와 한 번의 로그인으로 모든 이벤트를 빠르고 안전하게 이용하세요.",
+      "moreInfo": "자세히 보기",
+      "closeInfo": "정보 닫기",
+      "scenes": {
+        "eventPass": "이벤트 패스", "eventExplorer": "이벤트 탐색기", "agenda": "일정", "speakers": "연사",
+        "findAttendees": "참가자 찾기", "meet": "만나기", "lksWallet": "$LKS 지갑", "availableBalance": "사용 가능 잔액"
+      },
+      "cards": {
+        "scan": {
+          "title": "스캔하고 입장하세요",
+          "description": "줄을 서거나 종이를 출력할 필요가 없습니다. 실시간 QR 코드로 된 패스를 스캔하면 이벤트에 바로 입장할 수 있습니다."
+        },
+        "allies": {
+          "title": "이벤트 파트너 네트워크",
+          "description": "한 번 로그인하고 HASHPASS 네트워크의 모든 제휴 행사장, 클럽, 커뮤니티 이벤트를 이용하세요."
+        },
+        "meet": {
+          "title": "만나고 소통하세요",
+          "description": "다른 참가자와 만남을 예약하고 종단 간 암호화 채팅으로 대화하세요. 소중한 인연과 개인적인 대화를 안전하게 지킬 수 있습니다."
+        },
+        "rewards": {
+          "title": "$LKS 지갑",
+          "description": "Blockchain Latam Foundation의 LATAM 크립토 페소 지수인 $LKS를 이용하세요. HASHPASS는 인큐베이터 테크 랩으로 이를 지원합니다."
+        }
+      }
+    },
+    "exploreAllEvents": "공개 이벤트 탐색기",
+    "exploreAllEventsCompact": "이벤트",
+    "eventProposal": {
+      "action": "이벤트 제안",
+      "compactAction": "제안",
+      "cardEyebrow": "나만의 이벤트로 만드세요",
+      "cardTitle": "당신의 이벤트가 이곳에 어울립니다",
+      "cardBody": "이벤트, 클럽 또는 커뮤니티를 HASHPASS에 소개하고 사람들이 아름답게 발견할 수 있는 공간을 만드세요.",
+      "title": "이벤트 제안",
+      "subtitle": "공개 탐색기에 추가하고 싶은 이벤트를 알려주세요.",
+      "close": "닫기",
+      "eventName": "이벤트 이름",
+      "eventNamePlaceholder": "이벤트 이름",
+      "contactName": "이름",
+      "contactNamePlaceholder": "담당자 이름",
+      "email": "연락처 이메일",
+      "emailPlaceholder": "you@example.com",
+      "details": "이벤트 세부 정보",
+      "detailsPlaceholder": "날짜, 도시, 장소, 이벤트 링크 및 간단한 설명",
+      "disclosure": "이 정보로 이메일 앱이 열립니다. 이메일 앱에서 검토 후 전송하세요.",
+      "submit": "제안 이메일 준비",
+      "openingMail": "이메일 여는 중…",
+      "mailError": "이메일 앱을 열 수 없습니다. support@hashpass.tech로 제안을 보내주세요."
+    },
+    "eventSearch": {
+    "placeholder": "이벤트 검색",
+    "mobilePlaceholder": "이름, 참조 또는 #해시태그로 검색",
+    "accessibilityLabel": "캐러셀에서 이벤트 검색",
+    "exploreAll": "전체 보기",
+    "exploreAllLabel": "모든 이벤트 둘러보기",
+    "or": "또는",
+    "previous": "이전 슬라이드",
+    "next": "다음 슬라이드",
+    "pause": "캐러셀 일시 정지",
+    "play": "캐러셀 재생",
+    "restart": "첫 번째 슬라이드로 돌아가기"
+    },
+    "eventsExplorerSubtitle": "전 세계의 이벤트를 둘러보고 나에게 맞는 이벤트를 찾아보세요.",
+    "noEventsFound": "이벤트를 찾을 수 없습니다.",
+    "tapToRead": "탭하여 자세히 보기"
   },
   "walletDesc": "블록체인 검증된 티켓에 접근",
   "loyalty": "리워드 대시보드",
@@ -1630,5 +1808,47 @@
       "title": "문의",
       "text": "계정 또는 데이터 삭제에 대한 질문이 있으시면 다음으로 문의하십시오:\n\n이메일: privacy@hashpass.tech\n웹사이트: https://hashpass.tech"
     }
+  },
+  "publicEvents": {
+    "back": "홈으로 돌아가기",
+    "badge": "발견 · 연결 · 참여",
+    "title": "새로운 만남을 찾아보세요.",
+    "subtitle": "예정된 이벤트를 둘러보고 커뮤니티를 만나세요. 모든 패스를 한곳에서 관리하세요.",
+    "loadingFilm": "이벤트 영상 불러오는 중",
+    "featured": "주목할 이벤트",
+    "viewEvent": "이벤트 살펴보기",
+    "previous": "이전",
+    "next": "다음",
+    "play": "이벤트 소개 재생",
+    "pause": "이벤트 소개 일시 정지",
+    "search": "이벤트, 도시, 국가 또는 시리즈 검색",
+    "series": "이벤트 시리즈",
+    "allSeries": "모든 시리즈",
+    "regions": "지역",
+    "allRegions": "모든 지역",
+    "upcomingFirst": "예정된 이벤트 우선",
+    "reset": "필터 지우기",
+    "empty": "검색 조건에 맞는 이벤트가 없습니다.",
+    "emptyHint": "다른 지역을 검색하거나 필터를 지워 보세요.",
+    "all": "모든 이벤트",
+    "upcoming": "예정된 이벤트",
+    "live": "진행 중",
+    "undated": "날짜 추후 공지",
+    "past": "지난 이벤트",
+    "navEvents": "이벤트 탐색",
+    "navPasses": "내 패스",
+    "navWallet": "지갑",
+    "navCommunity": "커뮤니티",
+    "guest": "게스트 모드",
+    "openApp": "앱 열기",
+    "join": "HASHPASS 가입",
+    "guestHint": "자유롭게 둘러보세요. 가입하면 이벤트 저장, 패스 관리 및 소통을 할 수 있습니다.",
+    "authTitle": "가입하고 모든 기능을 이용하세요",
+    "authHint": "인증 코드로 계정을 만들거나 로그인하세요. 이벤트 검색은 그대로 유지됩니다.",
+    "close": "닫기",
+    "navQr": "내 QR",
+    "navNotifications": "알림",
+    "navProfile": "프로필",
+    "guestDescription": "현재 HASHPASS의 간소화된 버전을 이용 중입니다. 가입하고 앱을 다운로드하면 패스, 저장한 이벤트, 커뮤니티 기능을 포함한 전체 서비스를 이용할 수 있습니다."
   }
 }

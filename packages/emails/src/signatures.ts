@@ -7,7 +7,12 @@ export type HashpassEmailSignature = {
   logoUrl: string;
 };
 
-const ASSET_BASE_URL = 'https://hashpass.tech/email-signature';
+// Canonical public email assets. Keep these under apps/mobile-app/public so
+// the static web deployment serves them with image content types. The content
+// hashes are intentional: production marks non-HTML assets immutable, so a
+// changed image must receive a new URL. Do not use the old /email-signature
+// SPA route or Markdown link syntax inside src.
+const ASSET_BASE_URL = 'https://hashpass.tech/assets/email/signature';
 
 /** Returns Edward Calderón's complete, email-safe Hashpass signature. */
 export function renderEdwardCalderonHashpassEmailSignature(): HashpassEmailSignature {

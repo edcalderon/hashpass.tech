@@ -1,10 +1,11 @@
 import { useEffect, useState, useRef } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, Platform, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Platform, Pressable } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../../../hooks/useAuth';
 import { useToastHelpers } from '@contexts/ToastContext';
 import { useTranslation } from '../../../i18n/i18n';
 import { Check, AlertCircle } from 'lucide-react-native';
+import HashpassLoader from '../../../components/HashpassLoader';
 import { authService, SUPABASE_OAUTH_CALLBACK_PATH, SUPABASE_OAUTH_NATIVE_SCHEME } from '@hashpass/auth';
 import { createSessionFromUrl, supabase } from '../../../lib/supabase';
 import { resolvePublicSupabaseConfig } from '../../../config/supabase-profiles';
@@ -709,7 +710,11 @@ export default function AuthCallback() {
             <View style={styles.content}>
                 {status === 'processing' && (
                     <>
-                        <ActivityIndicator size="large" color="#3B82F6" />
+                        {/* Branded logo-in-ring loader, same one the root app
+                            gate and dashboard use -- this full-screen OAuth
+                            handoff is a moment users compare against those,
+                            so it shouldn't fall back to a plain spinner. */}
+                        <HashpassLoader size={64} />
                         <Text style={styles.message}>{message}</Text>
                     </>
                 )}

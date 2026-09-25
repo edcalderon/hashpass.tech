@@ -18,6 +18,7 @@ export interface PwaInstallPromptCardProps {
   infoLabel?: string;
   closeLabel?: string;
   secondaryLabel?: string;
+  tertiaryLabel?: string;
   dialogLabel?: string;
   collapsed?: boolean;
   collapsedLabel?: string;
@@ -26,6 +27,7 @@ export interface PwaInstallPromptCardProps {
   showInfoToggle?: boolean;
   onPrimaryAction: () => void;
   onSecondaryAction?: () => void;
+  onTertiaryAction?: () => void;
   onClose?: () => void;
   onExpand?: () => void;
 }
@@ -56,6 +58,7 @@ export default function PwaInstallPromptCard({
   infoLabel = "What is this?",
   closeLabel = "Close install prompt",
   secondaryLabel,
+  tertiaryLabel,
   dialogLabel,
   collapsed = false,
   collapsedLabel = "Expand install prompt",
@@ -64,6 +67,7 @@ export default function PwaInstallPromptCard({
   showInfoToggle = true,
   onPrimaryAction,
   onSecondaryAction,
+  onTertiaryAction,
   onClose,
   onExpand,
 }: PwaInstallPromptCardProps) {
@@ -420,6 +424,25 @@ export default function PwaInstallPromptCard({
           color: #ffffff;
         }
 
+        .${scopeClass} .hp-pwa-tertiary-action {
+          width: 100%;
+          border: 1px solid rgba(147, 197, 253, 0.3);
+          background: rgba(255, 255, 255, 0.05);
+          color: rgba(238, 244, 255, 0.92);
+          cursor: pointer;
+          font-size: 0.78rem;
+          font-weight: 600;
+          line-height: 1.35;
+          padding: 0.52rem 0.72rem;
+          border-radius: 9px;
+          transition: background-color 160ms ease, border-color 160ms ease;
+        }
+
+        .${scopeClass} .hp-pwa-tertiary-action:hover {
+          background: rgba(96, 165, 250, 0.15);
+          border-color: rgba(147, 197, 253, 0.58);
+        }
+
         .${scopeClass} .hp-pwa-info-panel {
           margin-top: 0;
           padding: 10px 11px;
@@ -612,6 +635,11 @@ export default function PwaInstallPromptCard({
           {secondaryLabel && onSecondaryAction && (
             <button type="button" className="hp-pwa-secondary-action" onClick={onSecondaryAction}>
               {secondaryLabel}
+            </button>
+          )}
+          {tertiaryLabel && onTertiaryAction && (
+            <button type="button" className="hp-pwa-tertiary-action" onClick={onTertiaryAction}>
+              {tertiaryLabel}
             </button>
           )}
         </div>

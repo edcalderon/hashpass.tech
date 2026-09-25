@@ -28,7 +28,10 @@ export async function refreshHashPokerRuntimeEvent(
       ? `${configuredBase}/event-sources/hash-poker`
       : "/api/event-sources/hash-poker",
   );
-  if (!response.ok) throw new Error(`Event feed responded ${response.status}`);
+  // A scheduled feed outage must not remove the bundled tournament fallback or
+  // surface an unhandled error in the public explorer. Keep the last registry
+  // value and let the next refresh recover when the source returns.
+  if (!response.ok) return false;
   const body = (await response.json()) as { data?: unknown };
   if (!isHashPokerConfig(body.data)) throw new Error("Event feed returned an invalid Hash Poker configuration");
   const previous = registry["hash-poker"];

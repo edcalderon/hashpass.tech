@@ -1,16 +1,24 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { ArrowRight } from "lucide-react-native";
+import { uiPalette } from "@hashpass/ui/tokens";
 
 interface InteractiveHoverButtonProps {
   text?: string;
+  tone?: "light" | "dark";
+  className?: string;
+  tabIndex?: number;
+  disabled?: boolean;
+  onClick?: (event: React.MouseEvent<HTMLElement>) => void;
 }
 
-const InteractiveHoverButton = ({ text = "Button" }: InteractiveHoverButtonProps) => {
+const InteractiveHoverButton = ({ text = "Button", tone = "light" }: InteractiveHoverButtonProps) => {
+  const dark = tone === "dark";
+  const palette = uiPalette(dark);
   return (
-    <View style={styles.button}>
-      <Text style={styles.text}>{text}</Text>
-      <ArrowRight color="#22d3ee" size={18} />
+    <View style={[styles.button, { borderColor: `${palette.accent}44`, backgroundColor: palette.accentSoft }]}>
+      <Text style={[styles.text, { color: palette.accent }]}>{text}</Text>
+      <ArrowRight color={palette.accent} size={18} />
     </View>
   );
 };
@@ -27,11 +35,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 9999,
     borderWidth: 2,
-    borderColor: "rgba(34,211,238,0.2)",
-    backgroundColor: "rgba(34,211,238,0.1)",
   },
   text: {
-    color: "#22d3ee",
     fontWeight: "600",
     fontSize: 15,
   },

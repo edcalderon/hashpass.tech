@@ -45,7 +45,7 @@ The target web deploy helper updates these functions and verifies `/api/config/v
 
 1. **Go to AWS Lambda Console**
 2. **Create or update function `hashpass-prod-expo-router-api` or `hashpass-dev-expo-router-api`:**
-   - Runtime: Node.js 18.x or 20.x
+   - Runtime: Node.js 24.x (`nodejs24.x`)
    - Handler: `index.handler` or `handler.handler`
    - Timeout: 30 seconds (or more)
    - Memory: 512 MB (or more)

@@ -266,6 +266,8 @@
     "close": "Installationshinweis schließen",
     "dialogLabel": "HASHPASS-Installationshinweis",
     "expandCollapsed": "Installationsoptionen öffnen",
+    "dragHandle": "Installationsschaltfläche verschieben",
+    "playStoreAction": "Vollständige App bei Google Play holen",
     "infoIntro": "Eine PWA (Progressive Web App) lässt HASHPASS wie eine native App auf deinem Gerät laufen.",
     "details": {
       "one": "PWA bedeutet Progressive Web App: app-ähnliches Verhalten aus dem Browser heraus.",
@@ -273,8 +275,11 @@
       "three": "Ideal für Event-Check-ins, Wallets und Benachrichtigungen mit weniger Reibung."
     },
     "instructions": {
-      "ios": "Zum Installieren: Tippe auf Teilen und dann auf \"Zum Home-Bildschirm\".",
-      "android": "Zum Installieren: Öffne das Browser-Menü und tippe auf \"App installieren\".",
+      "safariIos": "In Safari: Tippe auf Teilen, dann auf Zum Home-Bildschirm und Hinzufügen.",
+      "chromeIos": "In Chrome auf dem iPhone: Öffne das Teilen-Menü und wähle Zum Home-Bildschirm.",
+      "firefoxIos": "In Firefox auf dem iPhone: Nutze das Teilen-Menü und wähle Zum Home-Bildschirm.",
+      "chromeAndroid": "In Chrome: Öffne das Drei-Punkte-Menü und tippe auf App installieren.",
+      "firefoxAndroid": "In Firefox: Öffne das Drei-Punkte-Menü und tippe auf Installieren.",
       "default": "Zum Installieren: Nutze das Installationssymbol in der Adressleiste deines Browsers."
     }
   },
@@ -407,18 +412,42 @@
     "learnMore": "Mehr erfahren",
     "taglineFlipList": "- IHR EVENT -,- IHRE GEMEINSCHAFT -,- IHRE VORTEILE -",
     "unlockPotential": "Entfalten Sie Ihr Potenzial",
+    "featuresBadge": "Kernfunktionen",
     "features": {
+      "title": "Alles, was Ihr Event braucht",
+      "subtitle": "Eine private Identität für Zugang, Verbindungen, Pässe und Vorteile.",
       "secure": {
         "title": "Sicher und privat",
-        "description": "Ihre Daten sind verschlüsselt und mit branchenführenden Sicherheitsprotokollen geschützt. Wir priorisieren Ihre Privatsphäre über alles andere."
+        "description": "Ihre Daten sind verschlüsselt und mit branchenführenden Sicherheitsprotokollen geschützt. Wir priorisieren Ihre Privatsphäre über alles andere.",
+        "action": "Daten schützen"
+        ,"metric": "Ende-zu-Ende-verschlüsselte Gespräche",
+        "metricLabel": "verifizierte Sprecher"
       },
       "management": {
         "title": "Mühelose Verwaltung",
-        "description": "Organisieren Sie alle Ihre digitalen Anmeldedaten, Treuekarten und Gemeinschaften an einem intuitiven Ort."
+        "description": "Organisieren Sie alle Ihre digitalen Anmeldedaten, Treuekarten und Gemeinschaften an einem intuitiven Ort.",
+        "action": "Schlüssel verwalten"
+        ,"metric": "Ein Pass für Ihr Event-Netzwerk",
+        "metricLabel": "ausgestellte Pässe"
       },
       "sync": {
         "title": "Plattformübergreifende Synchronisation",
-        "description": "Greifen Sie auf Ihre Daten auf allen Ihren Geräten mit unserer sicheren Cloud-Synchronisation zu."
+        "description": "Greifen Sie auf Ihre Daten auf allen Ihren Geräten mit unserer sicheren Cloud-Synchronisation zu.",
+        "action": "Synchronisierung aktivieren"
+        ,"metric": "3 Clients: Web, Android und iOS",
+        "metricLabel": "unterstützte Plattformen"
+      },
+      "entry": {
+        "title": "Schneller Einlass",
+        "description": "Nutzen Sie einen Live-QR-Pass für schnellen, zuverlässigen Zugang zu Ihren Events.",
+        "metric": "Live-QR-Validierung",
+        "metricLabel": "aktive Pässe"
+      },
+      "network": {
+        "title": "Privates Networking",
+        "description": "Finden Sie Teilnehmende, buchen Sie Meetings und halten Sie Gespräche privat.",
+        "metric": "Meetings und verschlüsselter Chat",
+        "metricLabel": "gebuchte Meetings"
       }
     },
     "welcomeBack": "Willkommen zurück!",
@@ -451,7 +480,76 @@
       "title": "Bereit loszulegen?",
       "subtitle": "Schließen Sie sich Tausenden von Benutzern an, die HASHPASS mit ihrem digitalen Leben vertrauen.",
       "startNow": "Jetzt starten"
-    }
+    },
+    "howItWorks": {
+      "badge": "So funktioniert’s",
+      "title": "So funktioniert HASHPASS",
+      "subtitle": "Ein Pass, eine Anmeldung, alle Veranstaltungen — schnell und mit Schutz deiner Privatsphäre.",
+      "moreInfo": "Weitere Informationen",
+      "closeInfo": "Informationen schließen",
+      "scenes": {
+        "eventPass": "EVENT-PASS", "eventExplorer": "EVENT-ENTDECKER", "agenda": "AGENDA", "speakers": "SPRECHER",
+        "findAttendees": "TEILNEHMENDE FINDEN", "meet": "TREFFEN", "lksWallet": "$LKS-WALLET", "availableBalance": "VERFÜGBARES GUTHABEN"
+      },
+      "cards": {
+        "scan": {
+          "title": "Scannen und eintreten",
+          "description": "Keine Warteschlangen: Dein Pass ist ein dynamischer QR-Code, mit dem du direkt zur Veranstaltung gelangst — ohne Ausdrucke und Papierkram."
+        },
+        "allies": {
+          "title": "Unser Partnernetzwerk",
+          "description": "Melde dich einmal an und nutze alle teilnehmenden Veranstaltungsorte, Clubs und Community-Events im HASHPASS-Netzwerk."
+        },
+        "meet": {
+          "title": "Treffen und vernetzen",
+          "description": "Vereinbare Treffen und chatte mit anderen Teilnehmenden mit Ende-zu-Ende-Verschlüsselung. Echte Kontakte, vertrauliche Gespräche."
+        },
+        "rewards": {
+          "title": "$LKS-Wallet",
+          "description": "Nutze $LKS, den LATAM-Krypto-Peso-Index der Blockchain Latam Foundation, unterstützt von HASHPASS als Tech-Inkubator."
+        }
+      }
+    },
+    "exploreAllEvents": "Öffentlicher Event-Explorer",
+    "exploreAllEventsCompact": "Events",
+    "eventProposal": {
+      "action": "Event vorschlagen",
+      "compactAction": "Vorschlagen",
+      "cardEyebrow": "MACH ES ZU DEINEM",
+      "cardTitle": "Dein Event gehört hierher",
+      "cardBody": "Bring dein Event, deinen Club oder deine Community zu HASHPASS und gib Menschen einen schönen Ort, es zu entdecken.",
+      "title": "Event vorschlagen",
+      "subtitle": "Erzähle uns von einem Event, das du im öffentlichen Explorer sehen möchtest.",
+      "close": "Schließen",
+      "eventName": "Eventname",
+      "eventNamePlaceholder": "Name des Events",
+      "contactName": "Dein Name",
+      "contactNamePlaceholder": "Name der Kontaktperson",
+      "email": "Kontakt-E-Mail",
+      "emailPlaceholder": "du@beispiel.de",
+      "details": "Eventdetails",
+      "detailsPlaceholder": "Datum, Stadt, Veranstaltungsort, Eventlink und eine kurze Beschreibung",
+      "disclosure": "Deine E-Mail-App öffnet sich mit diesen Angaben. Prüfe und sende die Nachricht dort.",
+      "submit": "Vorschlags-E-Mail vorbereiten",
+      "openingMail": "E-Mail wird geöffnet…",
+      "mailError": "Deine E-Mail-App konnte nicht geöffnet werden. Sende deinen Vorschlag an support@hashpass.tech."
+    },
+    "eventSearch": {
+    "placeholder": "Events suchen",
+    "mobilePlaceholder": "Nach Name, Referenz oder #Hashtag suchen",
+    "accessibilityLabel": "Events im Karussell suchen",
+    "exploreAll": "Alle ansehen",
+    "exploreAllLabel": "Alle Events entdecken",
+    "or": "oder",
+    "previous": "Vorherige Folie",
+    "next": "Nächste Folie",
+    "pause": "Karussell pausieren",
+    "play": "Karussell abspielen",
+    "restart": "Zur ersten Folie zurückkehren"
+    },
+    "eventsExplorerSubtitle": "Entdecke Veranstaltungen weltweit und finde die passende für dich.",
+    "noEventsFound": "Keine Veranstaltungen gefunden.",
+    "tapToRead": "Tippen, um mehr zu erfahren"
   },
   "walletDesc": "Greifen Sie auf Ihre sicheren, blockchain-verifizierten Tickets zu",
   "loyalty": "Treue-Dashboard",
@@ -1150,5 +1248,47 @@
       "title": "Fragen",
       "text": "Wenn Sie Fragen zur Löschung Ihres Kontos oder Ihrer Daten haben, kontaktieren Sie uns unter:\n\nE-Mail: privacy@hashpass.tech\nWebsite: https://hashpass.tech"
     }
+  },
+  "publicEvents": {
+    "back": "Zur Startseite",
+    "badge": "Entdecken · Vernetzen · Dazugehören",
+    "title": "Finde deinen nächsten Kontakt.",
+    "subtitle": "Entdecke kommende Veranstaltungen, triff deine Community und verwalte alle Pässe an einem Ort.",
+    "loadingFilm": "Veranstaltungsvideo wird geladen",
+    "featured": "IM FOKUS",
+    "viewEvent": "Veranstaltung ansehen",
+    "previous": "Zurück",
+    "next": "Weiter",
+    "play": "Präsentation abspielen",
+    "pause": "Präsentation pausieren",
+    "search": "Veranstaltungen, Städte, Länder oder Reihen suchen",
+    "series": "VERANSTALTUNGSREIHEN",
+    "allSeries": "Alle Reihen",
+    "regions": "REGIONEN",
+    "allRegions": "Alle Regionen",
+    "upcomingFirst": "Kommende zuerst",
+    "reset": "Filter zurücksetzen",
+    "undated": "Datum wird bekannt gegeben",
+    "empty": "Keine Veranstaltung passt zu deiner Suche.",
+    "emptyHint": "Versuche einen anderen Ort oder setze die Filter zurück.",
+    "all": "Alle Veranstaltungen",
+    "upcoming": "Demnächst",
+    "live": "Findet gerade statt",
+    "past": "Vergangene Veranstaltungen",
+    "navEvents": "Veranstaltungen entdecken",
+    "navPasses": "Meine Pässe",
+    "navWallet": "Wallet",
+    "navCommunity": "Community",
+    "guest": "Gastmodus",
+    "openApp": "App öffnen",
+    "join": "HASHPASS beitreten",
+    "guestHint": "Sieh dich in Ruhe um. Registriere dich, um Veranstaltungen zu speichern, Pässe zu verwalten und Kontakte zu knüpfen.",
+    "authTitle": "Registrieren und die ganze App nutzen",
+    "authHint": "Erstelle ein Konto oder melde dich mit einem Bestätigungscode an. Deine Veranstaltungssuche bleibt erhalten.",
+    "close": "Schließen",
+    "navQr": "Mein QR-Code",
+    "navNotifications": "Benachrichtigungen",
+    "navProfile": "Profil",
+    "guestDescription": "Du nutzt eine vereinfachte Version von HASHPASS. Registriere dich und lade die App herunter, um das volle Erlebnis mit deinen Pässen, gespeicherten Events und Community-Funktionen zu nutzen."
   }
 }

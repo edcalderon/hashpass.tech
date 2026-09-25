@@ -11,13 +11,9 @@ const hasNativeLinearGradient = (): boolean => {
     return true;
   }
 
-  // Android release builds have been crashing on native gradient view manager
-  // resolution even when the module is installed. Use a plain View fallback
-  // there until the native bridge is confirmed stable.
-  if (Platform.OS === 'android') {
-    return false;
-  }
-
+  // Keep the fallback for custom/dev clients that omit this view manager, but
+  // use the registered Android manager in production. A flat View removes the
+  // contrast gradient from every native event card.
   const getViewManagerConfig = UIManager.getViewManagerConfig?.bind(UIManager);
   if (typeof getViewManagerConfig !== 'function') {
     return false;

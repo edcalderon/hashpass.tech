@@ -42,6 +42,17 @@ describe("desktop auth event allies", () => {
     expect(source).toContain('enabled={animationLevel === "full"}');
   });
 
+  it("keeps desktop light-mode welcome copy readable over the shader backdrop", () => {
+    const source = readAuthSource();
+
+    expect(source).toContain(
+      `const authHeaderPalette = getAuthHeaderPalette(
+    isDark,
+    showAuthBackground,
+  );`,
+    );
+  });
+
   it.each([
     ["en", en],
     ["es", es],

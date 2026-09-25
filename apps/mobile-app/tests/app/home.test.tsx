@@ -27,6 +27,7 @@ const loadHomeScreen = ({
   bottomInset = 28,
   animationLevel = "reduced",
   isDark = false,
+  user = null,
   taglineFlipList = "- YOUR EVENT -,- YOUR COMMUNITY -,- YOUR REWARDS -",
 }: {
   width?: number;
@@ -36,6 +37,7 @@ const loadHomeScreen = ({
   bottomInset?: number;
   animationLevel?: "full" | "reduced" | "none";
   isDark?: boolean;
+  user?: { id: string; email?: string } | null;
   taglineFlipList?: string;
 } = {}) => {
   let renderer: any;
@@ -171,6 +173,17 @@ const loadHomeScreen = ({
       { virtual: true },
     );
 
+    jest.doMock("../../lib/vector-icons", () => ({ Ionicons: "Ionicons" }));
+    jest.doMock("../../lib/morph-icon", () => ({ MorphIcon: "MorphIcon" }));
+    jest.doMock("lucide", () => ({
+      ArrowRight: "ArrowRight",
+      ArrowUpRight: "ArrowUpRight",
+      ArrowUpRightFromCircle: "ArrowUpRightFromCircle",
+      ChevronRight: "ChevronRight",
+      CirclePlus: "CirclePlus",
+      Compass: "Compass",
+    }));
+
     jest.doMock("react-native-reanimated", () => ({
       __esModule: true,
       default: {
@@ -180,6 +193,8 @@ const loadHomeScreen = ({
       Easing: {
         ease: "ease",
         inOut: (value: unknown) => value,
+        out: (value: unknown) => value,
+        cubic: "cubic",
       },
       Extrapolation: {
         CLAMP: "clamp",
@@ -200,6 +215,7 @@ const loadHomeScreen = ({
       // useCallback closing over one -- fake it with useRef instead of
       // returning a fresh object on every render.
       useSharedValue: (value: unknown) => React.useRef({ value }).current,
+      cancelAnimation: jest.fn(),
       withDelay: (_delay: number, value: unknown) => value,
       withRepeat: (value: unknown) => value,
       withSequence: (...values: unknown[]) => values[values.length - 1],
@@ -217,8 +233,7 @@ const loadHomeScreen = ({
     }));
 
     jest.doMock("react-native-svg", () => ({
-      Svg: "Svg",
-      Path: "Path",
+      __esModule: true, default: "Svg", Svg: "Svg", Circle: "Circle", Line: "Line", Path: "Path", Rect: "Rect", Text: "SvgText",
     }));
 
     jest.doMock("expo-haptics", () => ({
@@ -237,7 +252,7 @@ const loadHomeScreen = ({
     }));
 
     jest.doMock("../../hooks/useAuth", () => ({
-      useAuth: () => ({ user: null }),
+      useAuth: () => ({ user }),
     }));
 
     jest.doMock("../../hooks/useTheme", () => ({
@@ -314,6 +329,7 @@ const loadHomeScreen = ({
       SliderIcon: "SliderIcon",
       PauseIcon: "PauseIcon",
       CheckIcon: "CheckIcon",
+      ChevronDownIcon: "ChevronDownIcon",
       getFlagEmoji: () => "US",
     }));
 
@@ -328,6 +344,7 @@ const loadHomeScreen = ({
       "../../components/EventBannerCarousel",
       () => "EventBannerCarousel",
     );
+    jest.doMock("../../components/EventProposalModal", () => "EventProposalModal");
     jest.doMock(
       "../../components/VersionStatusIndicator",
       () => "VersionStatusIndicator",
@@ -469,11 +486,63 @@ describe("HomeScreen native tablet layout", () => {
     expect(topControls).toBeTruthy();
   });
 
-  it("keeps event banner calls to action inside the dashboard explorer", () => {
-    const { renderer } = loadHomeScreen({ platform: "web" });
+  it("keeps carousel discovery actions inside the card experience", () => {
+    const { renderer, act } = loadHomeScreen({ platform: "web" });
 
     const carousel = renderer.root.findByType("EventBannerCarousel");
     expect(carousel.props.showCtas).toBe(false);
+    expect(carousel.props.showProposalCard).toBe(true);
+    expect(carousel.props.onProposeEvent).toEqual(expect.any(Function));
+    expect(carousel.props.showEventSearch).toBe(true);
+    expect(carousel.props.onExploreEvents).toEqual(expect.any(Function));
+    expect(carousel.props.explorerActionIcon).toBeTruthy();
+    expect(carousel.props.onExplorerActionHoverChange).toEqual(expect.any(Function));
+
+    expect(carousel.props.explorerActionIcon.props.icon).toBe("Compass");
+
+    act(() => {
+      carousel.props.onExplorerActionHoverChange(true);
+    });
+
+    const hoveredCarousel = renderer.root.findByType("EventBannerCarousel");
+    expect(hoveredCarousel.props.explorerActionIcon.props.icon).toBe("ArrowUpRight");
+  });
+
+  it("enables in-card search on a standard phone-width web viewport", () => {
+    const { renderer } = loadHomeScreen({
+      width: 390,
+      height: 844,
+      platform: "web",
+    });
+
+    const carousel = renderer.root.findByType("EventBannerCarousel");
+    expect(carousel.props.showEventSearch).toBe(true);
+    expect(carousel.props.onExploreEvents).toEqual(expect.any(Function));
+  });
+
+  it("keeps Explore all events available after a user signs in", () => {
+    const { renderer } = loadHomeScreen({
+      platform: "web",
+      user: { id: "user-1", email: "member@example.com" },
+    });
+
+    const carousel = renderer.root.findByType("EventBannerCarousel");
+    expect(carousel.props.showEventSearch).toBe(true);
+    expect(carousel.props.onExploreEvents).toEqual(expect.any(Function));
+  });
+
+  it("passes the selected motion preference into landing features", () => {
+    const { renderer: reducedRenderer } = loadHomeScreen({
+      platform: "web",
+      animationLevel: "reduced",
+    });
+    expect(reducedRenderer.root.findByType("Features").props.reduceMotion).toBe(true);
+
+    const { renderer: fullRenderer } = loadHomeScreen({
+      platform: "web",
+      animationLevel: "full",
+    });
+    expect(fullRenderer.root.findByType("Features").props.reduceMotion).toBe(false);
   });
 
   it("renders the native landing first frame visibly without waiting for scroll", () => {

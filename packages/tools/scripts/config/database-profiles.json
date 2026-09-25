@@ -56,15 +56,21 @@
   ],
   "profileGroups": {
     "bsl-development": [
-      "demo-event-bootstrap"
+      "demo-event-bootstrap",
+      "event-search-aliases"
     ],
     "core-development": [
       "hashpass-auth-qr",
-      "event-ingestion"
+      "event-ingestion",
+      "event-search-aliases"
     ],
     "core-production": [
       "hashpass-auth-qr",
-      "event-ingestion"
+      "event-ingestion",
+      "event-search-aliases"
+    ],
+    "bsl-production": [
+      "event-search-aliases"
     ]
   },
   "groups": {
@@ -103,6 +109,9 @@
     ],
     "event-auth-allies": [
       "db/migrations/V083__event_auth_allies.sql"
+    ],
+    "event-search-aliases": [
+      "db/migrations/V097__add_event_search_aliases.sql"
     ],
     "admin-matchmaking-communications": [
       "db/migrations/V055__admin_matchmaking_and_email_audit.sql",

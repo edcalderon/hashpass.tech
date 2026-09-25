@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Platform, AppState, AppStateStatus } from 'react-native';
-import { compareAppVersions } from '../config/runtime-version';
+import { compareAppVersions, getInstalledNativeAppVersion } from '../config/runtime-version';
 import packageJson from '../package.json';
 
 export type NativeUpdateStatus = {
@@ -30,7 +30,10 @@ function getVersionsApiUrl(): string {
 }
 
 async function fetchUpdateStatus(): Promise<NativeUpdateStatus> {
-  const currentVersion = packageJson.version;
+  // Do not use packageJson.version here. An OTA can ship newer JS to an older
+  // Play binary, and then packageJson would incorrectly suppress the store
+  // upgrade prompt (for example binary 1.9.49 running OTA bundle 1.9.50).
+  const currentVersion = getInstalledNativeAppVersion(packageJson.version);
   const url = `${getVersionsApiUrl()}?clientVersion=${encodeURIComponent(currentVersion)}`;
 
   const res = await fetch(url, {

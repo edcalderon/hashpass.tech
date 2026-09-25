@@ -1,3 +1,289 @@
+## [1.9.61](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.60...v1.9.61) (2026-09-25)
+### Released
+- block untrusted SMS OTP sign-in
+
+### Release scope
+- Compared with: `v1.9.60` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+
+## [1.9.60](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.59...v1.9.60) (2026-09-24)
+### Released
+- organize mobile event discovery; add canonical event search aliases; align mobile explorer action
+
+### Release scope
+- Compared with: `v1.9.59` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Database migrations
+- Release tooling
+
+## [1.9.59](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.58...v1.9.59) (2026-09-24)
+### Released
+- refine mobile event discovery
+
+### Release scope
+- Compared with: `v1.9.58` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+
+## [1.9.58](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.57...v1.9.58) (2026-09-24)
+### Released
+- restore mobile event discovery controls
+
+### Release scope
+- Compared with: `v1.9.57` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+
+## [1.9.57](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.56...v1.9.57) (2026-09-24)
+### Released
+- refine landing event discovery and PWA install
+
+### Release scope
+- Compared with: `v1.9.56` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Shared UI
+- Infrastructure
+- Documentation
+- Release tooling
+
+## [1.9.56](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.55...v1.9.56) (2026-09-24)
+### Released
+- add landing event discovery card
+
+### Release scope
+- Compared with: `v1.9.55` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+
+## [1.9.55](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.54...v1.9.55) (2026-09-24)
+### Released
+- correct landing and email asset paths
+
+### Release scope
+- Compared with: `v1.9.54` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+
+## [1.9.54](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.53...v1.9.54) (2026-09-23)
+
+
+### Bug Fixes
+
+* harden mobile landing safe areas ([18caef8](https://github.com/hashpass-tech/hashpass.tech/commit/18caef8ef5b445bc8365049c7d84ecd90b3317c3))
+### Release Highlights
+- harden mobile landing safe areas
+
+### Release scope
+- Compared with: `v1.9.53` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+
+## [1.9.53](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.52...v1.9.53) (2026-09-23)
+
+
+### Bug Fixes
+
+* prevent mobile carousel and PWA icon clipping ([cc45be3](https://github.com/hashpass-tech/hashpass.tech/commit/cc45be31fa1a7a2fc3da4cf2f9aaaafede7bf33e))
+### Release Highlights
+- prevent mobile carousel and PWA icon clipping
+
+### Release scope
+- Compared with: `v1.9.52` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+
+## [1.9.52](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.51...v1.9.52) (2026-09-23)
+
+
+### Bug Fixes
+
+* **ops:** install mail dependency in cost guard ([8baa05c](https://github.com/hashpass-tech/hashpass.tech/commit/8baa05c80fabb6e720ef1e238aee75d5745d3f7c))
+* **ops:** provision pnpm for cost alerts ([6a2737c](https://github.com/hashpass-tech/hashpass.tech/commit/6a2737c6d7a3e81d95bb7b18bb96e97d422e713e))
+* **ops:** send AWS cost alerts privately ([caab5cf](https://github.com/hashpass-tech/hashpass.tech/commit/caab5cfcc07af9b36537fdcd8c7cf6012bbdcf73))
+### Release Highlights
+- provision pnpm for cost alerts; install mail dependency in cost guard; send AWS cost alerts privately
+
+### Release scope
+- Compared with: `v1.9.51` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Release tooling
+
+## [1.9.51](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.50...v1.9.51) (2026-09-23)
+### Released
+- detect installed native updates
+
+### Release scope
+- Compared with: `v1.9.50` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+
+## [1.9.50](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.49...v1.9.50) (2026-09-23)
+### Released
+- fit landing carousel on phones
+
+### Release scope
+- Compared with: `v1.9.49` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+
+## [1.9.49](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.48...v1.9.49) (2026-09-22)
+
+
+### Bug Fixes
+
+* **mobile:** stop native startup crash from Features' raw fetch('/api/status') ([0bb39d0](https://github.com/hashpass-tech/hashpass.tech/commit/0bb39d0d46f9df44af24a3db25af8b5889f9d187))
+* **mobile:** use branded HashpassLoader on remaining full-screen auth spinners ([264d9d5](https://github.com/hashpass-tech/hashpass.tech/commit/264d9d5b2a8e1551c5856c1ed2c67bc31ed739a0))
+### Release Highlights
+- use branded HashpassLoader on remaining full-screen auth spinners; stop native startup crash from Features' raw fetch('/api/status')
+
+### Release scope
+- Compared with: `v1.9.48` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Release tooling
+
+## [1.9.48](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.47...v1.9.48) (2026-09-21)
+### Released
+- Version 1.9.48 release
+
+### Release scope
+- Compared with: `v1.9.47` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Infrastructure
+- Documentation
+
+## [1.9.47](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.46...v1.9.47) (2026-09-21)
+### Released
+- Version 1.9.47 release
+
+### Release scope
+- Compared with: `v1.9.46` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Infrastructure
+- Release tooling
+
+## [1.9.46](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.45...v1.9.46) (2026-09-21)
+
+
+### Bug Fixes
+
+* **landing:** polish mobile carousel feedback ([e30495b](https://github.com/hashpass-tech/hashpass.tech/commit/e30495b8994ac8e778e11997bee046a686d0d53b))
+### Release Highlights
+- polish mobile carousel feedback
+
+### Release scope
+- Compared with: `v1.9.45` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+
+## [1.9.45](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.42...v1.9.45) (2026-09-20)
+
+
+### Features
+
+* **landing:** animate feature detail expansion ([42eba97](https://github.com/hashpass-tech/hashpass.tech/commit/42eba973727810fbffadab124f2fe6afd018fb32))
+* **landing:** refine feature disclosures ([c64e462](https://github.com/hashpass-tech/hashpass.tech/commit/c64e462030e23b762a47ee9ab5f388c91989bf2e))
+* **landing:** strengthen interactive feature sections ([7defdb3](https://github.com/hashpass-tech/hashpass.tech/commit/7defdb3a8535223801181d96865ad71e7cc5005d))
+### Release Highlights
+- strengthen interactive feature sections; animate feature detail expansion; refine feature disclosures
+
+### Release scope
+- Compared with: `v1.9.42` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Shared UI
+- Release tooling
+
+## [1.9.44](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.42...v1.9.44) (2026-09-20)
+
+
+### Features
+
+* **landing:** refine feature disclosures ([c64e462](https://github.com/hashpass-tech/hashpass.tech/commit/c64e462030e23b762a47ee9ab5f388c91989bf2e))
+### Release Highlights
+- refine feature disclosures
+
+### Release scope
+- Compared with: `v1.9.42` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+
+## [1.9.43](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.42...v1.9.43) (2026-09-20)
+
+
+### Features
+
+* **landing:** refine feature disclosures ([c64e462](https://github.com/hashpass-tech/hashpass.tech/commit/c64e462030e23b762a47ee9ab5f388c91989bf2e))
+### Release Highlights
+- refine feature disclosures
+
+### Release scope
+- Compared with: `v1.9.42` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+
+## [1.9.42](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.41...v1.9.42) (2026-09-20)
+
+
+### Bug Fixes
+
+* **android:** target API 36 for Google Play submissions ([48520da](https://github.com/hashpass-tech/hashpass.tech/commit/48520daefd336932545627a402ce72fafb75d60e))
+### Release Highlights
+- target API 36 for Google Play submissions
+
+### Release scope
+- Compared with: `v1.9.41` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Documentation
+
+## [1.9.41](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.40...v1.9.41) (2026-09-20)
+
+
+### Features
+
+* unify public explorer and wallet onboarding experience ([7706f55](https://github.com/hashpass-tech/hashpass.tech/commit/7706f550408e967affe422e293c0fade24bc3ab5))
+### Release Highlights
+- unify public explorer and wallet onboarding experience
+
+### Release scope
+- Compared with: `v1.9.40` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- QR links API
+- Shared UI
+- Database migrations
+- Infrastructure
+- Documentation
+- Release tooling
+
 ## [1.9.40](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.39...v1.9.40) (2026-09-20)
 
 

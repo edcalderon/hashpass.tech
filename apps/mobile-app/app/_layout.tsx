@@ -1,3 +1,5 @@
+import DesignSystemStyles from '../components/DesignSystemStyles';
+import { isPublicEventRoute } from '../lib/public-routes';
 import '../config/reanimated'; // CRITICAL: Ensure Reanimated is imported and configured first
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -31,6 +33,7 @@ import { I18nProvider } from '../providers/I18nProvider';
 import { useTranslation } from '../i18n/i18n';
 import { CopilotProvider } from '@lib/copilot-shim';
 import { checkVersionOnStart, notifyVersionUpdateFromServiceWorker } from '../lib/version-checker';
+import { getInstalledNativeAppVersion } from '../config/runtime-version';
 import LoadingScreen from '../components/LoadingScreen';
 import { AppErrorBoundary, installGlobalErrorHandler } from '../components/AppErrorBoundary';
 import { configureNativeGoogleSignin } from '../lib/native-google-signin';
@@ -44,12 +47,11 @@ import {
   resolveRootStackMotionOptions,
 } from '../lib/native-navigation-options';
 import packageJson from '../package.json';
+import { getStartupStamp } from '../lib/build-stamp';
 import * as Sentry from '@sentry/react-native';
 import * as Updates from 'expo-updates';
 
-const startupStamp = process.env.EXPO_PUBLIC_RELEASE_COMMIT
-  ? `v${packageJson.version} · ${process.env.EXPO_PUBLIC_RELEASE_COMMIT}`
-  : `v${packageJson.version} · local build`;
+const startupStamp = getStartupStamp();
 const ROOT_AUTH_REDIRECT_HYSTERESIS_MS = 2500;
 
 // Must run before installGlobalErrorHandler() below: Sentry's init installs its
@@ -105,6 +107,7 @@ function RootLayout() {
       <SafeAreaProvider>
         <GestureHandlerRootView style={{ flex: 1 }}>
           <ThemeProvider value={theme}>
+            <DesignSystemStyles />
             <View style={{ flex: 1, backgroundColor: theme.colors.background.default }}>
               <SystemBars style={theme.isDark ? 'light' : 'dark'} />
               <EventProvider>
@@ -347,7 +350,7 @@ function ThemedContent() {
 
   // Check if we're in the auth flow
   const isAuthFlow = (segments[0] === '(shared)' && (segments as string[])[1] === 'auth') || pathname.startsWith('/(shared)/auth') || pathname.startsWith('/auth');
-  const isEventPublic = pathname.startsWith('/events/');
+  const isEventPublic = isPublicEventRoute(pathname);
   const isHomePage = pathname === '/home' || pathname === '/' || pathname === '/index';
   // Public pages that don't require authentication
   const isPublicPage =
@@ -450,7 +453,7 @@ function ThemedContent() {
         return () => clearTimeout(redirectTimer);
       };
 
-      if (isDashboardRoute && !isLoggedIn) {
+      if (isDashboardRoute && !isEventPublic && !isLoggedIn) {
         if (shouldDelayRedirectForRecentAuth()) {
           triggerAuthRecheck();
           return;
@@ -538,7 +541,7 @@ function ThemedContent() {
       )}
       {Platform.OS !== 'web' && showNativeSoftUpdate && nativeUpdate.latestVersion && (
         <VersionUpdateNotification
-          currentVersion={packageJson.version}
+          currentVersion={getInstalledNativeAppVersion(packageJson.version)}
           latestVersion={nativeUpdate.latestVersion}
           storeUrl={nativeUpdate.storeUrl}
           storeWebUrl={nativeUpdate.storeWebUrl}

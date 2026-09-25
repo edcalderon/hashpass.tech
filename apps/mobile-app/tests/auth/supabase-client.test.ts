@@ -96,7 +96,7 @@ afterEach(() => {
 });
 
 describe('web Supabase client initialization', () => {
-  it('disables detectSessionInUrl on web and keeps auth callback handling manual', () => {
+  it('disables detectSessionInUrl on web and keeps auth callback handling manual', async () => {
     // Import after env setup so the module initializes with the mocked client.
     require('../../lib/supabase');
 
@@ -121,7 +121,15 @@ describe('web Supabase client initialization', () => {
       };
     };
     expect(options.auth.lock).toBeDefined();
-    return expect(options.auth.lock('test-lock', 0, async () => 'server-safe')).resolves.toBe('server-safe');
+    // Node 24 supplies navigator.locks. Model the Expo server shim explicitly.
+    const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
+    Object.defineProperty(globalThis, 'navigator', { configurable: true, value: {} });
+    try {
+      await expect(options.auth.lock('test-lock', 0, async () => 'server-safe')).resolves.toBe('server-safe');
+    } finally {
+      if (descriptor) Object.defineProperty(globalThis, 'navigator', descriptor);
+      else Reflect.deleteProperty(globalThis, 'navigator');
+    }
   });
 
   it('falls back to the browser runtime profile map when generic env vars are absent', () => {

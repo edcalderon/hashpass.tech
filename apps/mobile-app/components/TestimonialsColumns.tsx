@@ -1,9 +1,10 @@
+import { uiTokens } from '@hashpass/ui/tokens';
 import React, { useState, useMemo } from "react";
 import { View, Text, Image, StyleSheet } from "react-native";
 import type { ThemeColors } from "../lib/theme";
 
 const avatarStyles = StyleSheet.create({
-  avatar: { width: 36, height: 36, borderRadius: 18 },
+  avatar: { width: 36, height: 36, borderRadius: uiTokens.radius.circle },
 });
 
 const formatWalletAddress = (address: string): string => {
@@ -94,7 +95,7 @@ const getStyles = (colors: ThemeColors, isDark: boolean) =>
     column: { flex: 1, gap: 12 },
     card: {
       backgroundColor: isDark ? "rgba(255,255,255,0.06)" : colors.background.paper,
-      borderRadius: 16,
+      borderRadius: uiTokens.radius.card,
       padding: 16,
       borderWidth: 1,
       borderColor: isDark ? "rgba(255,255,255,0.1)" : colors.divider,

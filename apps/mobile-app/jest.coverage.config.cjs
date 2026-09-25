@@ -22,6 +22,7 @@ module.exports = {
     'providers/**/*.{ts,tsx}',
     'navigation/**/*.{ts,tsx}',
     'config/**/*.{ts,tsx}',
+    'plugins/withAndroidTargetSdk.js',
     '!**/*.d.ts',
     '!**/*.test.{ts,tsx}',
     '!**/*.spec.{ts,tsx}',

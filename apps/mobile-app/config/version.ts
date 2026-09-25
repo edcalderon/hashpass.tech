@@ -22,22 +22,344 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202609200450, // Updated to current timestamp
-  releaseDate: '2026-09-20',
+  buildNumber: 202609250407, // Updated to current timestamp
+  releaseDate: '2026-09-25',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
     // No new features
   ],
   bugfixes: [
-    'animate only the {mode} word in the desktop hero, not the full line'
+    'block untrusted SMS OTP sign-in'
   ],
   breakingChanges: [],
-  notes: 'animate only the {mode} word in the desktop hero, not the full line'
+  notes: 'block untrusted SMS OTP sign-in'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.61': {
+    version: '1.9.61',
+    buildNumber: 202609250407,
+    releaseDate: '2026-09-25',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'block untrusted SMS OTP sign-in'
+    ],
+    breakingChanges: [],
+    notes: 'block untrusted SMS OTP sign-in'
+  },
+  '1.9.60': {
+    version: '1.9.60',
+    buildNumber: 202609242027,
+    releaseDate: '2026-09-24',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'organize mobile event discovery',
+      'add canonical event search aliases',
+      'align mobile explorer action'
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'organize mobile event discovery; add canonical event search aliases; align mobile explorer action'
+  },
+  '1.9.59': {
+    version: '1.9.59',
+    buildNumber: 202609241730,
+    releaseDate: '2026-09-24',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'refine mobile event discovery'
+    ],
+    breakingChanges: [],
+    notes: 'refine mobile event discovery'
+  },
+  '1.9.58': {
+    version: '1.9.58',
+    buildNumber: 202609240423,
+    releaseDate: '2026-09-24',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'restore mobile event discovery controls'
+    ],
+    breakingChanges: [],
+    notes: 'restore mobile event discovery controls'
+  },
+  '1.9.57': {
+    version: '1.9.57',
+    buildNumber: 202609240352,
+    releaseDate: '2026-09-24',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'refine landing event discovery and PWA install'
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'refine landing event discovery and PWA install'
+  },
+  '1.9.56': {
+    version: '1.9.56',
+    buildNumber: 202609240208,
+    releaseDate: '2026-09-24',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'add landing event discovery card'
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'add landing event discovery card'
+  },
+  '1.9.55': {
+    version: '1.9.55',
+    buildNumber: 202609240143,
+    releaseDate: '2026-09-24',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'correct landing and email asset paths'
+    ],
+    breakingChanges: [],
+    notes: 'correct landing and email asset paths'
+  },
+  '1.9.54': {
+    version: '1.9.54',
+    buildNumber: 202609232215,
+    releaseDate: '2026-09-23',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'harden mobile landing safe areas'
+    ],
+    breakingChanges: [],
+    notes: 'harden mobile landing safe areas'
+  },
+  '1.9.53': {
+    version: '1.9.53',
+    buildNumber: 202609232034,
+    releaseDate: '2026-09-23',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'prevent mobile carousel and PWA icon clipping'
+    ],
+    breakingChanges: [],
+    notes: 'prevent mobile carousel and PWA icon clipping'
+  },
+  '1.9.52': {
+    version: '1.9.52',
+    buildNumber: 202609231911,
+    releaseDate: '2026-09-23',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'provision pnpm for cost alerts',
+      'install mail dependency in cost guard',
+      'send AWS cost alerts privately'
+    ],
+    breakingChanges: [],
+    notes: 'provision pnpm for cost alerts; install mail dependency in cost guard; send AWS cost alerts privately'
+  },
+  '1.9.51': {
+    version: '1.9.51',
+    buildNumber: 202609231540,
+    releaseDate: '2026-09-23',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'detect installed native updates'
+    ],
+    breakingChanges: [],
+    notes: 'detect installed native updates'
+  },
+  '1.9.50': {
+    version: '1.9.50',
+    buildNumber: 202609230441,
+    releaseDate: '2026-09-23',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'fit landing carousel on phones'
+    ],
+    breakingChanges: [],
+    notes: 'fit landing carousel on phones'
+  },
+  '1.9.49': {
+    version: '1.9.49',
+    buildNumber: 202609220532,
+    releaseDate: '2026-09-22',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'use branded HashpassLoader on remaining full-screen auth spinners',
+      'stop native startup crash from Features\' raw fetch(\'/api/status\')'
+    ],
+    breakingChanges: [],
+    notes: 'use branded HashpassLoader on remaining full-screen auth spinners; stop native startup crash from Features\' raw fetch(\'/api/status\')'
+  },
+  '1.9.48': {
+    version: '1.9.48',
+    buildNumber: 202609212137,
+    releaseDate: '2026-09-21',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'Version 1.9.48 release'
+  },
+  '1.9.47': {
+    version: '1.9.47',
+    buildNumber: 202609211512,
+    releaseDate: '2026-09-21',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'Version 1.9.47 release'
+  },
+  '1.9.46': {
+    version: '1.9.46',
+    buildNumber: 202609211408,
+    releaseDate: '2026-09-21',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'polish mobile carousel feedback'
+    ],
+    breakingChanges: [],
+    notes: 'polish mobile carousel feedback'
+  },
+  '1.9.45': {
+    version: '1.9.45',
+    buildNumber: 202609201836,
+    releaseDate: '2026-09-20',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'strengthen interactive feature sections',
+      'animate feature detail expansion',
+      'refine feature disclosures'
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'strengthen interactive feature sections; animate feature detail expansion; refine feature disclosures'
+  },
+  '1.9.44': {
+    version: '1.9.44',
+    buildNumber: 202609201744,
+    releaseDate: '2026-09-20',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'refine feature disclosures'
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'refine feature disclosures'
+  },
+  '1.9.43': {
+    version: '1.9.43',
+    buildNumber: 202609201744,
+    releaseDate: '2026-09-20',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'refine feature disclosures'
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'refine feature disclosures'
+  },
+  '1.9.42': {
+    version: '1.9.42',
+    buildNumber: 202609200945,
+    releaseDate: '2026-09-20',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'target API 36 for Google Play submissions'
+    ],
+    breakingChanges: [],
+    notes: 'target API 36 for Google Play submissions'
+  },
+  '1.9.41': {
+    version: '1.9.41',
+    buildNumber: 202609200855,
+    releaseDate: '2026-09-20',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'unify public explorer and wallet onboarding experience'
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'unify public explorer and wallet onboarding experience'
+  },
   '1.9.40': {
     version: '1.9.40',
     buildNumber: 202609200450,

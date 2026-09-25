@@ -200,7 +200,7 @@ export default function Root({
           name="viewport"
           content={
             metadata?.viewport ||
-            'width=device-width, initial-scale=1, viewport-fit=cover'
+            'width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content'
           }
         />
         <meta name="description" content={description} />

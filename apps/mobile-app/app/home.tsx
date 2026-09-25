@@ -1,3 +1,5 @@
+import { ActionButton } from '@hashpass/ui/primitives';
+import { uiTokens } from '@hashpass/ui/tokens';
 import React, { useCallback, useEffect, useState } from "react";
 import { useTranslation, getCurrentLocale } from "../i18n/i18n";
 import {
@@ -34,6 +36,7 @@ import Animated, {
 
 // Import components using relative paths
 import Features from "../components/Features";
+import HowItWorks from "../components/HowItWorks";
 import QuickSettingsPanel from "../components/QuickSettingsPanel";
 import BackToTop from "../components/BackToTop";
 import Testimonials from "../components/Testimonials";
@@ -41,10 +44,18 @@ import { InteractiveHoverButton } from "../components/InteractiveHoverButton";
 import FlipWords from "../components/FlipWords";
 import Newsletter from "../components/Newsletter";
 import EventBannerCarousel from "../components/EventBannerCarousel";
+import EventProposalModal from "../components/EventProposalModal";
 import VersionStatusIndicator from "../components/VersionStatusIndicator";
 import CrystalForgeBackground from "../components/CrystalForgeBackground";
 import AnimatedGradientBackground from "../components/AnimatedGradientBackground";
+import { MorphIcon } from "../lib/morph-icon";
 import { Svg, Path } from "react-native-svg";
+import { Ionicons } from "../lib/vector-icons";
+import {
+  ArrowRight as LucideArrowRight,
+  ArrowUpRight as LucideArrowUpRight,
+  Compass as LucideCompass,
+} from "lucide";
 import {
   getHashpassFooterLogo,
   getHashpassStaticHeroLogo,
@@ -68,6 +79,9 @@ export default function HomeScreen() {
   const [signOutStatus, setSignOutStatus] = useState<
     "idle" | "pending" | "success" | "error"
   >("idle");
+  const [isEventProposalVisible, setIsEventProposalVisible] = useState(false);
+  const [isEventProposalHovered, setIsEventProposalHovered] = useState(false);
+  const [isEventExplorerHovered, setIsEventExplorerHovered] = useState(false);
   const { t } = useTranslation("index");
   const { t: tNav } = useTranslation("nav");
   const isMobile = useIsMobile();
@@ -158,6 +172,9 @@ export default function HomeScreen() {
   }));
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
   const isPhoneLayout = Platform.OS === "web" ? isMobile : windowWidth < 700;
+  // Phone controls use their own row in the carousel footer, so normal
+  // iPhone widths have room for the full action labels. Keep the compact
+  // copy only for the narrowest devices.
   const isTabletLayout = Platform.OS !== "web" && !isPhoneLayout;
   const nativeBottomInset = isNative ? Math.max(insets.bottom, 24) : 0;
   const floatingControlsBottom =
@@ -472,7 +489,8 @@ export default function HomeScreen() {
         : null;
 
   return (
-    <Animated.View style={[styles.container, animatedBackground]}>
+    <>
+      <Animated.View style={[styles.container, animatedBackground]}>
       <BackToTop
         scrollY={scrollY}
         scrollRef={scrollRef}
@@ -615,26 +633,9 @@ export default function HomeScreen() {
           </Animated.View>
         </View>
 
-        <View
-          ref={featuresRef}
-          onLayout={
-            Platform.OS === "android"
-              ? undefined
-              : (event) => {
-                  const { y } = event.nativeEvent.layout;
-                  featuresLayoutRef.current = { y };
-                }
-          }
-        >
-          <Features
-            styles={styles}
-            featuresAnimatedStyle={featuresAnimatedStyle}
-            feature1Style={feature1Style}
-            feature2Style={feature2Style}
-            feature3Style={feature3Style}
-            isDark={isDark}
-          />
-        </View>
+        <HowItWorks scrollY={scrollY} />
+
+
 
         {/* Generic HASHPASS testimonials aren't specific to any single
             whitelabel tenant's event -- only show them on the global
@@ -653,6 +654,34 @@ export default function HomeScreen() {
             autoPlay={true}
             autoPlayInterval={5000}
             showCtas={false}
+            showProposalCard={isGlobalEventTenant()}
+            onProposeEvent={() => {
+              setIsEventProposalVisible(true);
+            }}
+            showEventSearch={isGlobalEventTenant()}
+            onExploreEvents={() => router.push("/dashboard/explore" as any)}
+            explorerActionIcon={
+              <MorphIcon
+                icon={isEventExplorerHovered ? LucideArrowUpRight : LucideCompass}
+                size={17}
+                color={isDark ? "#67E8F9" : "#0E7490"}
+                strokeWidth={2}
+                spring="snappy"
+                fallbackIconName="compass-outline"
+              />
+            }
+            onExplorerActionHoverChange={setIsEventExplorerHovered}
+            proposalActionIcon={
+              <MorphIcon
+                icon={isEventProposalHovered ? LucideArrowUpRight : LucideArrowRight}
+                size={18}
+                color={isDark ? "#06222A" : "#FFFFFF"}
+                strokeWidth={2}
+                spring="snappy"
+                fallbackIconName="add-circle-outline"
+              />
+            }
+            onProposalActionHoverChange={setIsEventProposalHovered}
             onEventPress={(
               event: { routes?: { home?: string } } | null | undefined,
             ) => {
@@ -721,26 +750,7 @@ export default function HomeScreen() {
                 </Text>
               ) : null}
               <Animated.View style={styles.ctaButton}>
-                <TouchableOpacity
-                  onPress={handleGoToAppPress}
-                  disabled={isSignOutPending}
-                  activeOpacity={isSignOutPending ? 1 : 0.9}
-                  style={isSignOutPending && styles.disabledAction}
-                  onPressIn={() => {
-                    if (!isSignOutPending) {
-                      buttonAnimation.value = withSpring(1);
-                    }
-                  }}
-                  onPressOut={() => {
-                    if (!isSignOutPending) {
-                      buttonAnimation.value = withSpring(0);
-                    }
-                  }}
-                >
-                  <Animated.View>
-                    <InteractiveHoverButton text={t("goToApp")} />
-                  </Animated.View>
-                </TouchableOpacity>
+                {Platform.OS === 'web' ? <InteractiveHoverButton text={t("goToApp")} tone={isDark ? 'dark' : 'light'} onClick={handleGoToAppPress} disabled={isSignOutPending} /> : <ActionButton mode={isDark ? 'dark' : 'light'} label={t("goToApp")} onPress={handleGoToAppPress} disabled={isSignOutPending} />}
               </Animated.View>
             </>
           ) : (
@@ -752,24 +762,33 @@ export default function HomeScreen() {
               ) : null}
               <Text style={styles.ctaHeadline}>{t("readyToSimplify")}</Text>
               <Animated.View style={styles.ctaButton}>
-                <TouchableOpacity
-                  onPress={() => router.push("/(shared)/auth" as any)}
-                  activeOpacity={0.9}
-                  onPressIn={() => {
-                    buttonAnimation.value = withSpring(1);
-                  }}
-                  onPressOut={() => {
-                    buttonAnimation.value = withSpring(0);
-                  }}
-                >
-                  <Animated.View>
-                    <InteractiveHoverButton text={t("getStartedNow")} />
-                  </Animated.View>
-                </TouchableOpacity>
+                {Platform.OS === 'web' ? <InteractiveHoverButton text={t("getStartedNow")} tone={isDark ? 'dark' : 'light'} onClick={() => router.push("/(shared)/auth" as any)} /> : <ActionButton mode={isDark ? 'dark' : 'light'} label={t("getStartedNow")} onPress={() => router.push("/(shared)/auth" as any)} />}
               </Animated.View>
             </>
           )}
         </Animated.View>
+
+        <View
+          ref={featuresRef}
+          onLayout={
+            Platform.OS === "android"
+              ? undefined
+              : (event) => {
+                  const { y } = event.nativeEvent.layout;
+                  featuresLayoutRef.current = { y };
+                }
+          }
+        >
+          <Features
+            styles={styles}
+            featuresAnimatedStyle={featuresAnimatedStyle}
+            feature1Style={feature1Style}
+            feature2Style={feature2Style}
+            feature3Style={feature3Style}
+            isDark={isDark}
+            reduceMotion={animationLevel !== "full"}
+          />
+        </View>
 
         <Animated.View style={[styles.socialProof, featuresAnimatedStyle]}>
           <Newsletter mode={isDark ? "dark" : "light"} />
@@ -940,7 +959,12 @@ export default function HomeScreen() {
           </View>
         </View>
       </Animated.ScrollView>
-    </Animated.View>
+      </Animated.View>
+      <EventProposalModal
+        visible={isEventProposalVisible}
+        onClose={() => setIsEventProposalVisible(false)}
+      />
+    </>
   );
 }
 
@@ -1227,15 +1251,20 @@ const getStyles = (
       marginBottom: 32,
     },
     featuresContainer: {
-      marginTop: isMobile ? 40 : isNativeTablet ? 34 : 40,
+      marginTop: 0,
       marginBottom: 40,
+      width: "100%",
+      maxWidth: 960,
+      alignSelf: "center",
     },
     featuresGrid: {
       flexDirection: "row",
-      flexWrap: "wrap",
+      flexWrap: "nowrap",
+      flexGrow: 1,
       justifyContent: "center",
-      gap: 24,
+      gap: 16,
       paddingHorizontal: 16,
+      paddingBottom: 20,
     },
     cta: {
       padding: 32,
@@ -1264,7 +1293,7 @@ const getStyles = (
       lineHeight: 36,
     },
     ctaButton: {
-      transform: [{ scale: 1.3 }],
+      minHeight: uiTokens.control.minHeight,
       overflow: "hidden",
     },
     signOutLink: {
