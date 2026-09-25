@@ -16,6 +16,8 @@
   --hp-card-border: #e4e9ee;
   --hp-card-icon-bg: #e7fafd;
   --hp-callout-bg: #f6fafb;
+  --hp-footer-ink: #dce7ee;
+  --hp-footer-muted: #91a5b4;
 }
 
 [data-theme='dark'] {
@@ -27,6 +29,8 @@
   --hp-card-border: #1c2733;
   --hp-card-icon-bg: rgba(34, 211, 238, 0.12);
   --hp-callout-bg: #0d1620;
+  --hp-footer-ink: #e7fafd;
+  --hp-footer-muted: #9aaebe;
 }
 
 body {
@@ -80,5 +84,58 @@ body {
 }
 
 .footer {
-  border-top: 1px solid rgba(148, 163, 184, 0.18);
+  position: relative;
+  overflow: hidden;
+  padding-top: 4.5rem;
+  border-top: 1px solid rgba(103, 232, 249, 0.18);
+  background:
+    linear-gradient(90deg, rgba(34, 211, 238, 0.055) 1px, transparent 1px),
+    linear-gradient(rgba(34, 211, 238, 0.055) 1px, transparent 1px),
+    radial-gradient(circle at 86% 4%, rgba(34, 211, 238, 0.18), transparent 24rem),
+    #06101a;
+  background-size: 54px 54px, 54px 54px, auto, auto;
+}
+
+.footer::before {
+  position: absolute;
+  top: 2rem;
+  left: max(1.5rem, calc((100% - 1100px) / 2));
+  content: 'HASHPASS / DOCUMENTATION';
+  color: #67e8f9;
+  font-family: var(--hp-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+}
+
+.footer__links,
+.footer__bottom {
+  position: relative;
+  max-width: 1100px;
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.footer__links { padding-top: 2rem; }
+
+.footer__title {
+  color: var(--hp-footer-ink);
+  font-family: var(--hp-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.footer__link-item { color: var(--hp-footer-muted); }
+.footer__link-item:hover { color: #67e8f9; }
+
+.footer__copyright {
+  color: var(--hp-footer-muted);
+  font-size: 0.78rem;
+}
+
+@media (max-width: 996px) {
+  .footer::before { left: 1.5rem; }
+  .footer__links { padding: 2.2rem 1.5rem 0; }
+  .footer__bottom { padding-right: 1.5rem; padding-left: 1.5rem; }
 }

@@ -10,56 +10,65 @@ interface DocSection {
   href: string;
   icon: string;
   meta: string;
+  featured?: boolean;
 }
 
 const SECTIONS: DocSection[] = [
   {
+    title: 'Developer SDK',
+    description: 'Start a runtime-neutral integration for support, QR sign-in, and tracked links with the official client.',
+    href: '/developers/',
+    icon: 'SDK',
+    meta: 'developers/',
+    featured: true,
+  },
+  {
     title: 'Brand and Media',
     description: 'Download HASHPASS logos, read brand usage guidance, and prepare partner or press materials.',
     href: '/media-kit',
-    icon: 'H',
+    icon: 'BR',
     meta: 'media-kit/',
   },
   {
     title: 'Authentication',
     description: 'OAuth, Better Auth, Supabase identity bridging, and how a session resolves across every HASHPASS surface.',
     href: '/auth/',
-    icon: '\u{1F510}',
+    icon: 'ID',
     meta: 'auth/',
   },
   {
     title: 'Infrastructure',
     description: 'Environments, API Gateway, Lambda, storage, naming conventions, and the AWS account layout.',
     href: '/infra/',
-    icon: '\u{1F5A5}️',
+    icon: 'OP',
     meta: 'infra/',
   },
   {
     title: 'Deployment',
     description: 'How each domain actually ships — web, API, mobile — and exactly what triggers each pipeline.',
     href: '/deployment/',
-    icon: '\u{1F680}',
+    icon: 'RL',
     meta: 'deployment/',
   },
   {
     title: 'Reference',
     description: 'API architecture, mobile app internals, QR flows, performance notes, and release mechanics.',
     href: '/reference/',
-    icon: '\u{1F4D8}',
+    icon: 'RF',
     meta: 'reference/',
   },
   {
     title: 'Storybook',
     description: 'Component library setup, deployment, and how to contribute a new component.',
     href: '/storybook/',
-    icon: '\u{1F4DA}',
+    icon: 'UI',
     meta: 'storybook/',
   },
   {
     title: 'Guides',
     description: 'Onboarding walkthroughs published here and mirrored in Storybook for contributors.',
     href: '/guides/',
-    icon: '\u{1F9ED}',
+    icon: 'GD',
     meta: 'guides/',
   },
 ];
@@ -77,38 +86,60 @@ export default function Home(): React.ReactElement {
           <img src={logoSrc} alt="HASHPASS" className={styles.heroLogo} />
           <p className={styles.eyebrow}>
             <span className={styles.dot} />
-            docs.init
+            HASHPASS / Developer Hub
           </p>
           <h1 className={styles.title}>
-            Everything running <span className={styles.accent}>your digital pass.</span>
+            Build the trusted layer for <span className={styles.accent}>every pass.</span>
           </h1>
           <p className={styles.subtitle}>
-            Auth flows, infrastructure, deployment pipelines, and API references for the platform behind
-            HASHPASS — kept current by the people who ship it.
+            Integrate secure identity, QR journeys, and support into the experiences people carry with them.
+            Then run every HASHPASS surface with the same operational playbook.
           </p>
           <div className={styles.heroActions}>
-            <Link className={styles.btnPrimary} to="/overview">
-              Browse the docs &rarr;
+            <Link className={styles.btnPrimary} to="/developers/sdk-quickstart">
+              Start with the SDK <span aria-hidden="true">→</span>
             </Link>
-            <Link className={styles.btnSecondary} to="https://hashpass.tech">
-              hashpass.tech
+            <Link className={styles.btnSecondary} to="/overview">
+              Explore platform docs
             </Link>
           </div>
-          <p className={styles.heroCommand}>
-            <strong>$</strong> docs --scope=hashpass.tech --status=current
-          </p>
+          <div className={styles.signalRow} aria-label="Developer documentation focus areas">
+            <span><b>01</b> SDK</span>
+            <span><b>02</b> QR sign-in</span>
+            <span><b>03</b> Support APIs</span>
+          </div>
         </div>
+        <div className={styles.heroOrbit} aria-hidden="true" />
       </header>
 
       <main className={styles.main}>
+        <section className={styles.developerStrip} aria-labelledby="developer-path-title">
+          <div className={styles.developerIntro}>
+            <p className={styles.sectionEyebrow}>developer path</p>
+            <h2 id="developer-path-title">From one client to a real integration.</h2>
+            <p>Use the SDK in web, React Native, server, or CLI runtimes. Keep credentials in your host storage and let the SDK handle transport, typed errors, retries, and idempotency.</p>
+            <Link className={styles.inlineLink} to="/developers/">
+              View the developer guide <span aria-hidden="true">→</span>
+            </Link>
+          </div>
+          <div className={styles.codePanel} aria-label="SDK installation example">
+            <div className={styles.codeTopline}>
+              <span className={styles.codeDots}><i /><i /><i /></span>
+              <span>quickstart.ts</span>
+            </div>
+            <pre><code><span className={styles.codeMuted}>$</span> pnpm add @hashpass-tech/sdk{`\n\n`}<span className={styles.codeKeyword}>import</span> {'{ createHashpass }'} <span className={styles.codeKeyword}>from</span> <span className={styles.codeString}>'@hashpass-tech/sdk'</span>;{`\n\n`}<span className={styles.codeKeyword}>const</span> hashpass = createHashpass({'{'}{`\n`}  appId: <span className={styles.codeString}>'your-public-app-id'</span>,{`\n`}{'}'});</code></pre>
+            <Link className={styles.codeLink} to="/developers/sdk-quickstart">Open quickstart <span aria-hidden="true">↗</span></Link>
+          </div>
+        </section>
+
         <div className={styles.sectionWrap}>
           <div className={styles.sectionHead}>
-            <p className={styles.sectionEyebrow}>start here</p>
-            <h2 className={styles.sectionTitle}>Jump into a section</h2>
+            <p className={styles.sectionEyebrow}>documentation map</p>
+            <h2 className={styles.sectionTitle}>Choose the work in front of you.</h2>
           </div>
           <div className={styles.grid}>
             {SECTIONS.map((section) => (
-              <Link key={section.href} to={section.href} className={styles.card}>
+              <Link key={section.href} to={section.href} className={`${styles.card} ${section.featured ? styles.featuredCard : ''}`}>
                 <span className={styles.cardIcon}>{section.icon}</span>
                 <p className={styles.cardTitle}>{section.title}</p>
                 <p className={styles.cardDesc}>{section.description}</p>
@@ -121,8 +152,9 @@ export default function Home(): React.ReactElement {
         <div className={styles.callout}>
           <div className={styles.calloutCard}>
             <div className={styles.calloutText}>
-              <h3>Looking for the product, not the docs?</h3>
-              <p>hashpass.tech is where passes, events, and wallets actually live.</p>
+              <p className={styles.sectionEyebrow}>product experience</p>
+              <h3>Ready to see the platform in motion?</h3>
+              <p>Explore passes, events, and wallet journeys on the public HASHPASS app.</p>
             </div>
             <Link className={styles.btnPrimary} to="https://hashpass.tech">
               Go to HASHPASS &rarr;

@@ -9,6 +9,7 @@ Active docs in this repo are organized by topic. Historical notes, one-off migra
 
 ## Start Here
 
+- [`developers/`](developers/README.md) - SDK quickstart, QR sign-in, support, and managed QR links for product teams
 - [Media kit](brand/media-kit.mdx) - downloadable HASHPASS logos and publishing guidance for partners and press
 - [`auth/`](auth/README.md) - production auth and OAuth flows
 - [`infra/`](infra/README.md) - environment, API Gateway, Lambda, storage, and security docs
