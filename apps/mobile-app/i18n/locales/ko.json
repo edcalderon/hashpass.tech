@@ -343,14 +343,14 @@
     "openAction": "HASHPASS 앱 열기",
     "installTitle": "HASHPASS 설치",
     "openTitle": "설치된 앱 열기",
-    "installDescription": "HASHPASS를 PWA로 설치하면 홈 화면에서 앱처럼 바로 실행할 수 있습니다.",
+    "installDescription": "HASHPASS를 PWA로 설치하거나 선호하는 앱 스토어에서 앱을 다운로드하세요. 지금 Google Play에서 이용할 수 있습니다.",
     "openDescription": "HASHPASS가 이미 설치되어 있습니다. 최적의 모바일 경험을 위해 앱 모드로 열어 주세요.",
     "whatIsThis": "이게 무엇인가요?",
     "close": "설치 안내 닫기",
     "dialogLabel": "HASHPASS 설치 안내",
     "expandCollapsed": "설치 옵션 열기",
     "dragHandle": "설치 버튼 드래그",
-    "playStoreAction": "Google Play에서 전체 앱 받기",
+    "learnMore": "HASHPASS 설치 방법 자세히 알아보기",
     "infoIntro": "PWA(프로그레시브 웹 앱)는 HASHPASS를 기기에서 네이티브 앱처럼 동작하게 합니다.",
     "details": {
       "one": "PWA는 브라우저 기반이지만 앱처럼 동작하는 Progressive Web App입니다.",
@@ -542,6 +542,78 @@
     "tagline": "당신의 이벤트 - 당신의 커뮤니티 - 당신의 혜택",
     "taglineFlipText": "당신의",
     "learnMore": "자세히 알아보기",
+    "docs": {
+      "title": "문서",
+      "subtitle": "전체 가이드와 문제 해결 방법",
+      "back": "뒤로",
+      "needHelp": "도움이 더 필요하신가요?",
+      "contactSupport": "지원팀에 문의",
+      "viewStorybook": "전체 문서 보기",
+      "installPwaGuide": "HASHPASS PWA 설치 가이드",
+      "interactiveDocs": {
+        "title": "전체 문서",
+        "description": "가이드, 참고 자료, 예제가 있는 전체 문서 사이트를 엽니다"
+      },
+      "gettingStarted": {
+        "title": "시작하기",
+        "description": "로그인하고 앱을 둘러보는 방법을 알아보세요",
+        "seeDemo": "데모 동영상 보기",
+        "signIn": {
+          "title": "계정에 로그인",
+          "content": "HASHPASS 앱을 열고 이메일 주소를 입력하세요. 이메일로 받은 일회용 로그인 코드를 입력하면 계정에 접속할 수 있습니다."
+        },
+        "explore": {
+          "title": "연사와 이벤트 둘러보기",
+          "content": "로그인한 뒤 연사와 이벤트를 둘러볼 수 있습니다. 둘러보기에서 카테고리별로 찾거나 이름을 검색하고, 연사 프로필과 주제 및 가능한 시간을 확인하세요."
+        },
+        "requestMeeting": {
+          "title": "미팅 요청 보내기",
+          "content": "만나고 싶은 연사의 프로필을 열고 미팅 요청을 선택하세요. 날짜와 시간을 고르고 필요한 경우 메시지를 추가한 뒤 요청을 보내세요."
+        },
+        "trackRequests": {
+          "title": "요청 상태 확인",
+          "content": "알림에서 대기 중, 수락됨, 거절됨 상태를 확인하고 연사의 답변을 받아보세요."
+        }
+      },
+      "troubleshooting": {
+        "title": "문제 해결",
+        "description": "자주 발생하는 문제의 해결 방법",
+        "loadingIssues": {
+          "title": "웹 앱이 제대로 열리지 않나요?",
+          "content": "웹 앱이 정상적으로 로드되지 않으면 브라우저 캐시를 지우거나 강력 새로고침을 해보세요.",
+          "step1": "브라우저 캐시 지우기: 브라우저 설정에서 캐시된 이미지와 파일을 삭제하세요.",
+          "step2": "강력 새로고침: Windows 또는 Linux에서는 Ctrl+Shift+R, Mac에서는 Cmd+Shift+R을 누르세요."
+        },
+        "loginIssues": {
+          "title": "로그인 문제",
+          "content": "이메일 주소가 맞는지 확인하고 스팸함에서 로그인 코드를 찾아보세요. 코드가 만료되었다면 새 코드를 요청하세요."
+        },
+        "meetingIssues": {
+          "title": "미팅 요청 문제",
+          "content": "인터넷 연결과 로그인 상태를 확인하고 선택한 시간에 연사가 가능한지 확인하세요."
+        }
+      },
+      "tips": {
+        "title": "활용 팁",
+        "description": "HASHPASS를 효과적으로 사용하는 방법",
+        "specificRequests": {
+          "title": "미팅 요청을 구체적으로 작성하기",
+          "content": "논의하고 싶은 내용을 구체적으로 적어 주세요. 명확한 메시지는 요청이 수락될 가능성을 높여 줍니다."
+        },
+        "checkAvailability": {
+          "title": "연사 일정 확인하기",
+          "content": "요청을 보내기 전에 연사의 일정에서 원하는 시간에 가능한지 확인하세요."
+        },
+        "respondPromptly": {
+          "title": "빠르게 답변하기",
+          "content": "연사가 요청을 수락하면 빠르게 답변해 미팅을 확정하세요."
+        },
+        "useSearch": {
+          "title": "검색 활용하기",
+          "content": "주제, 회사 또는 이름으로 검색해 원하는 사람을 더 빠르게 찾으세요."
+        }
+      }
+    },
     "taglineFlipList": "- 당신의 이벤트 -,- 당신의 커뮤니티 -,- 당신의 혜택 -",
     "unlockPotential": "잠재력을 발휘하세요",
     "featuresBadge": "주요 기능",
@@ -662,9 +734,13 @@
       "details": "이벤트 세부 정보",
       "detailsPlaceholder": "날짜, 도시, 장소, 이벤트 링크 및 간단한 설명",
       "disclosure": "이 정보로 이메일 앱이 열립니다. 이메일 앱에서 검토 후 전송하세요.",
+      "webDisclosure": "제안은 HASHPASS 지원팀에 안전하게 전송됩니다.",
       "submit": "제안 이메일 준비",
+      "webSubmit": "제안 보내기",
       "openingMail": "이메일 여는 중…",
-      "mailError": "이메일 앱을 열 수 없습니다. support@hashpass.tech로 제안을 보내주세요."
+      "sendingProposal": "제안 보내는 중…",
+      "mailError": "이메일 앱을 열 수 없습니다. support@hashpass.tech로 제안을 보내주세요.",
+      "webSubmitError": "제안을 보낼 수 없습니다. 다시 시도하거나 support@hashpass.tech로 이메일을 보내주세요."
     },
     "eventSearch": {
     "placeholder": "이벤트 검색",
@@ -763,7 +839,9 @@
       "days": "일",
       "hours": "시간",
       "minutes": "분",
-      "seconds": "초"
+      "seconds": "초",
+      "playFilm": "배경 동영상 재생",
+      "pauseFilm": "배경 동영상 일시 정지"
     },
     "selectEvent": "이벤트 선택",
     "yourPasses": "나의 패스",

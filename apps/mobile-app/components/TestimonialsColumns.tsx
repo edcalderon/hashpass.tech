@@ -70,17 +70,23 @@ const TestimonialsColumn = (props: {
         const testimonialKey = `${walletAddress}-${role || "no-role"}-${text}`;
         return (
           <View key={testimonialKey} style={styles.card}>
-            <Text style={styles.cardText}>{text}</Text>
+            <Text selectable={false} style={styles.cardText}>
+              {text}
+            </Text>
             <View style={styles.authorRow}>
               <AvatarImage
                 address={walletAddress}
                 alt={formatWalletAddress(walletAddress)}
               />
               <View style={styles.authorInfo}>
-                <Text style={styles.walletText}>
+                <Text selectable={false} style={styles.walletText}>
                   {formatWalletAddress(walletAddress)}
                 </Text>
-                {role ? <Text style={styles.roleText}>{role}</Text> : null}
+                {role ? (
+                  <Text selectable={false} style={styles.roleText}>
+                    {role}
+                  </Text>
+                ) : null}
               </View>
             </View>
           </View>

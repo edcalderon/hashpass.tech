@@ -11,6 +11,7 @@ These guides document the current HASHPASS onboarding flows for users and speake
 
 - [User Onboarding Guide](./user-onboarding)
 - [Speaker Onboarding Guide](./speaker-onboarding)
+- [Install HASHPASS](./install-hashpass)
 
 ## Source Stories
 

@@ -1,0 +1,81 @@
+---
+title: Install HASHPASS
+sidebar_label: Install HASHPASS
+description: Install, update, troubleshoot, or remove the HASHPASS Progressive Web App.
+---
+
+# Install HASHPASS
+
+HASHPASS is available as a Progressive Web App (PWA) and as an Android app on Google Play. This guide explains the PWA option; the install prompt intentionally lets you choose your preferred app store without sending you directly to a store listing.
+
+## What a PWA is
+
+A PWA is a website that can be installed from a supported browser. A web app manifest supplies its name, icon, and launch behavior, while a service worker can cache selected resources. It still runs with the browser engine and the browser's security controls, but it opens from your home screen or app launcher in its own app-like window.
+
+HASHPASS uses a PWA so you can start quickly on Android, iOS, and desktop without waiting for an app-store install. The same web release can reach supported devices promptly, while the Google Play app remains available for people who prefer a store-managed installation.
+
+## PWA or store app?
+
+| PWA | Store app |
+| --- | --- |
+| Installed from the HASHPASS website | Installed and updated through an app store |
+| Uses your browser engine and site-data storage | Uses a native application package |
+| Web updates arrive when you reconnect and reopen | Updates follow the store and device settings |
+| Offline access is limited to content already cached | Offline behavior depends on the native release |
+
+Your HASHPASS account is the same choice either way. Installing or uninstalling an app does not delete the account.
+
+## Install on Android with Chrome
+
+1. Open `https://hashpass.tech` in Chrome. Avoid an in-app browser opened inside email or social media.
+2. Open the HASHPASS install prompt, or open Chrome's three-dot menu.
+3. Select **Install app** or **Add to Home screen**. The wording depends on your Chrome version.
+4. Confirm **Install**, then open HASHPASS from the new home-screen or app-drawer icon.
+
+## Install on iPhone or iPad with Safari
+
+1. Open `https://hashpass.tech` in Safari.
+2. Tap **Share**.
+3. Scroll to **Add to Home Screen**. If it is hidden, choose **Edit Actions** and add it.
+4. Confirm the name, tap **Add**, and launch HASHPASS from the Home Screen.
+
+Use Safari for this flow. Other iOS browsers or embedded browsers may not expose the Home Screen action consistently.
+
+## Install on desktop Chrome or Edge
+
+1. Open `https://hashpass.tech` in Chrome or Microsoft Edge.
+2. Select the install icon in the address bar. If it is not visible, open the browser menu and choose **Install HASHPASS** or **Apps > Install this site as an app**.
+3. Confirm the installation. HASHPASS opens in a separate window and appears in the browser's app list and your operating system's launcher.
+
+## Updates and offline limits
+
+The PWA checks for web updates when it has a network connection. If a release seems stale, close every HASHPASS window, reopen it, and refresh once. A newly downloaded update may activate only after the previous window closes.
+
+The service worker may cache the application shell and selected resources, but HASHPASS is not fully offline. Live event data, sign-in, notifications, wallet operations, and content that was not previously cached can require a connection. Reconnect before relying on current passes or event information.
+
+## Notifications and security
+
+Notifications require your permission and support from the browser and operating system. Install the PWA first on iPhone or iPad, then enable notifications when HASHPASS asks. If no prompt appears, check both the browser/site permission and the device notification settings. Availability can vary by platform and policy.
+
+Only install HASHPASS from `hashpass.tech`. The PWA uses HTTPS and remains inside the browser's security boundary. Installation does not bypass sign-in, device permissions, or HASHPASS security checks. Never share one-time sign-in codes.
+
+## Clear cache or site data
+
+Try a normal refresh before clearing anything. Browser settings usually place HASHPASS data under **Privacy**, **Site settings**, or **Website data**; search for `hashpass.tech` and remove only that site's data.
+
+> **Before you clear site data:** This signs you out and removes cached/offline content, local preferences, and stored permissions for that browser profile. You may need to sign in again, grant notification permission again, and reinstall the PWA. It does not delete your HASHPASS account.
+
+## Uninstall or reinstall
+
+Open the installed app's menu and choose **Uninstall** or **Remove app**, or remove it from your device's app settings. On iPhone or iPad, touch and hold the icon and choose **Remove App**. Uninstalling removes the launcher entry; browser site data may remain.
+
+To reinstall, remove the old icon, reopen `https://hashpass.tech` in the supported browser, and repeat the installation steps above. Clear site data only if a normal uninstall and reinstall did not resolve the issue.
+
+## Troubleshooting
+
+- **No install option:** Use HTTPS in Chrome, Edge, or Safari as described above; leave private browsing and embedded browsers; update the browser; and reload the page.
+- **Old content after an update:** Close all HASHPASS windows, reopen the app online, and refresh. Clear site data only as a last resort.
+- **Blank screen or missing live data:** Check the connection, disable a blocking extension for the site, and try the regular browser tab.
+- **Notifications do not arrive:** Confirm permission in HASHPASS, the browser's site settings, and the device settings. Battery-saving or focus modes can delay notifications.
+- **More than one icon:** Uninstall the older copy, then install once from your preferred browser profile.
+- **Still stuck:** Open the full documentation or contact HASHPASS support from the in-app Documentation screen.

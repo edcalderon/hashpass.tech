@@ -260,14 +260,14 @@
     "openAction": "HASHPASS-App öffnen",
     "installTitle": "HASHPASS installieren",
     "openTitle": "Installierte App öffnen",
-    "installDescription": "Installiere HASHPASS als PWA, um es wie eine App vom Startbildschirm zu starten.",
+    "installDescription": "Installiere HASHPASS als PWA oder lade die App aus deinem bevorzugten App-Store herunter. Jetzt bei Google Play verfügbar.",
     "openDescription": "HASHPASS ist bereits installiert. Öffne es im App-Modus für die beste mobile Nutzung.",
     "whatIsThis": "Was ist das?",
     "close": "Installationshinweis schließen",
     "dialogLabel": "HASHPASS-Installationshinweis",
     "expandCollapsed": "Installationsoptionen öffnen",
     "dragHandle": "Installationsschaltfläche verschieben",
-    "playStoreAction": "Vollständige App bei Google Play holen",
+    "learnMore": "Mehr über die Installation von HASHPASS erfahren",
     "infoIntro": "Eine PWA (Progressive Web App) lässt HASHPASS wie eine native App auf deinem Gerät laufen.",
     "details": {
       "one": "PWA bedeutet Progressive Web App: app-ähnliches Verhalten aus dem Browser heraus.",
@@ -410,6 +410,78 @@
     "tagline": "IHR EVENT - IHRE GEMEINSCHAFT - IHRE VORTEILE",
     "taglineFlipText": "IHR",
     "learnMore": "Mehr erfahren",
+    "docs": {
+      "title": "Dokumentation",
+      "subtitle": "Vollständige Anleitungen und Problemlösungen",
+      "back": "Zurück",
+      "needHelp": "Brauchen Sie weitere Hilfe?",
+      "contactSupport": "Support kontaktieren",
+      "viewStorybook": "Vollständige Dokumentation öffnen",
+      "installPwaGuide": "Anleitung zur Installation von HASHPASS als PWA",
+      "interactiveDocs": {
+        "title": "Vollständige Dokumentation",
+        "description": "Öffnen Sie die vollständige Dokumentation mit Anleitungen, Referenzen und Beispielen"
+      },
+      "gettingStarted": {
+        "title": "Erste Schritte",
+        "description": "Erfahren Sie, wie Sie sich anmelden und in der App navigieren",
+        "seeDemo": "Demovideos ansehen",
+        "signIn": {
+          "title": "Bei Ihrem Konto anmelden",
+          "content": "Öffnen Sie die HASHPASS-App, geben Sie Ihre E-Mail-Adresse ein und prüfen Sie Ihr Postfach auf den einmaligen Anmeldecode. Geben Sie den Code ein, um auf Ihr Konto zuzugreifen."
+        },
+        "explore": {
+          "title": "Sprecher und Events entdecken",
+          "content": "Nach der Anmeldung können Sie Sprecher und Events durchsuchen. Öffnen Sie den Bereich Entdecken, filtern Sie nach Kategorie oder suchen Sie nach einem Namen und sehen Sie sich Profile, Themen und Verfügbarkeiten an."
+        },
+        "requestMeeting": {
+          "title": "Meeting-Anfrage senden",
+          "content": "Öffnen Sie das Profil der gewünschten Person, wählen Sie Meeting anfragen, legen Sie Datum und Uhrzeit fest, ergänzen Sie bei Bedarf eine Nachricht und senden Sie die Anfrage."
+        },
+        "trackRequests": {
+          "title": "Anfragen verfolgen",
+          "content": "Unter Benachrichtigungen sehen Sie Aktualisierungen sowie ausstehende, angenommene oder abgelehnte Anfragen und erfahren, wenn ein Sprecher antwortet."
+        }
+      },
+      "troubleshooting": {
+        "title": "Problemlösung",
+        "description": "Lösungen für häufige Probleme",
+        "loadingIssues": {
+          "title": "Probleme beim Laden der Web-App?",
+          "content": "Wenn die Web-App nicht richtig lädt, leeren Sie den Browser-Cache oder führen Sie eine vollständige Aktualisierung durch.",
+          "step1": "Browser-Cache leeren: Öffnen Sie die Browser-Einstellungen und löschen Sie zwischengespeicherte Bilder und Dateien.",
+          "step2": "Vollständig aktualisieren: Drücken Sie unter Windows oder Linux Strg+Umschalt+R, auf dem Mac Cmd+Umschalt+R."
+        },
+        "loginIssues": {
+          "title": "Probleme bei der Anmeldung",
+          "content": "Prüfen Sie Ihre E-Mail-Adresse und den Spam-Ordner auf den Anmeldecode. Ist der Code abgelaufen, fordern Sie einen neuen an."
+        },
+        "meetingIssues": {
+          "title": "Probleme mit Meeting-Anfragen",
+          "content": "Prüfen Sie Ihre Internetverbindung, stellen Sie sicher, dass Sie angemeldet sind, und kontrollieren Sie, ob der Sprecher zum gewählten Zeitpunkt verfügbar ist."
+        }
+      },
+      "tips": {
+        "title": "Praktische Tipps",
+        "description": "Empfehlungen für die Nutzung von HASHPASS",
+        "specificRequests": {
+          "title": "Meeting-Anfragen konkret formulieren",
+          "content": "Beschreiben Sie, worüber Sie sprechen möchten. Eine konkrete Nachricht erhöht die Chance, dass Ihre Anfrage angenommen wird."
+        },
+        "checkAvailability": {
+          "title": "Verfügbarkeit des Sprechers prüfen",
+          "content": "Sehen Sie vor dem Senden im Kalender nach, ob der Sprecher zu Ihrem Wunschtermin verfügbar ist."
+        },
+        "respondPromptly": {
+          "title": "Zeitnah antworten",
+          "content": "Antworten Sie zeitnah, wenn ein Sprecher Ihre Anfrage annimmt, um das Meeting zu bestätigen."
+        },
+        "useSearch": {
+          "title": "Suche verwenden",
+          "content": "Suchen Sie nach Thema, Unternehmen oder Name, um schneller die richtigen Kontakte zu finden."
+        }
+      }
+    },
     "taglineFlipList": "- IHR EVENT -,- IHRE GEMEINSCHAFT -,- IHRE VORTEILE -",
     "unlockPotential": "Entfalten Sie Ihr Potenzial",
     "featuresBadge": "Kernfunktionen",
@@ -530,9 +602,13 @@
       "details": "Eventdetails",
       "detailsPlaceholder": "Datum, Stadt, Veranstaltungsort, Eventlink und eine kurze Beschreibung",
       "disclosure": "Deine E-Mail-App öffnet sich mit diesen Angaben. Prüfe und sende die Nachricht dort.",
+      "webDisclosure": "Dein Vorschlag wird sicher an das HASHPASS-Supportteam gesendet.",
       "submit": "Vorschlags-E-Mail vorbereiten",
+      "webSubmit": "Vorschlag senden",
       "openingMail": "E-Mail wird geöffnet…",
-      "mailError": "Deine E-Mail-App konnte nicht geöffnet werden. Sende deinen Vorschlag an support@hashpass.tech."
+      "sendingProposal": "Vorschlag wird gesendet…",
+      "mailError": "Deine E-Mail-App konnte nicht geöffnet werden. Sende deinen Vorschlag an support@hashpass.tech.",
+      "webSubmitError": "Dein Vorschlag konnte nicht gesendet werden. Versuche es erneut oder schreibe an support@hashpass.tech."
     },
     "eventSearch": {
     "placeholder": "Events suchen",
@@ -621,7 +697,9 @@
       "days": "TAGE",
       "hours": "STD",
       "minutes": "MIN",
-      "seconds": "SEK"
+      "seconds": "SEK",
+      "playFilm": "Hintergrundvideo abspielen",
+      "pauseFilm": "Hintergrundvideo pausieren"
     },
     "selectEvent": "Event auswählen",
     "yourPasses": "Ihre Pässe",

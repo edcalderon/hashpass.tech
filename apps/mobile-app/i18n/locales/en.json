@@ -348,14 +348,14 @@
     "openAction": "Open HASHPASS App",
     "installTitle": "Install HASHPASS",
     "openTitle": "Open your installed app",
-    "installDescription": "Install HASHPASS as a PWA to launch it like an app from your home screen.",
+    "installDescription": "Install HASHPASS as a PWA or download the app from your preferred app store. Available now on Google Play.",
     "openDescription": "HASHPASS is already installed. Open it in app mode for the best mobile experience.",
     "whatIsThis": "What is this?",
     "close": "Close install prompt",
     "dialogLabel": "HASHPASS install prompt",
     "expandCollapsed": "Open install options",
     "dragHandle": "Drag install button",
-    "playStoreAction": "Get the full app on Google Play",
+    "learnMore": "Learn more about installing HASHPASS",
     "infoIntro": "A PWA (Progressive Web App) lets HASHPASS behave like a native app on your device.",
     "details": {
       "one": "PWA means Progressive Web App: app-like behavior from your browser install.",
@@ -644,9 +644,13 @@
       "details": "Event details",
       "detailsPlaceholder": "Date, city, venue, event link, and a short description",
       "disclosure": "Your email app will open with these details. Review and send the message there.",
+      "webDisclosure": "Your proposal will be sent securely to the HASHPASS support team.",
       "submit": "Prepare proposal email",
+      "webSubmit": "Send proposal",
       "openingMail": "Opening email…",
-      "mailError": "We could not open your email app. Send your proposal to support@hashpass.tech."
+      "sendingProposal": "Sending proposal…",
+      "mailError": "We could not open your email app. Send your proposal to support@hashpass.tech.",
+      "webSubmitError": "We could not send your proposal. Please try again or email support@hashpass.tech."
     },
     "eventSearch": {
     "placeholder": "Search events",
@@ -682,18 +686,21 @@
       "bsl2025": "BSL 2025"
     },
     "docs": {
-      "title": "Documentation",
-      "subtitle": "Complete guides and troubleshooting",
-      "needHelp": "Need more help?",
-      "contactSupport": "Contact Support",
-      "viewStorybook": "See Full Documentation",
+    "title": "Documentation",
+    "subtitle": "Complete guides and troubleshooting",
+    "back": "Go back",
+    "needHelp": "Need more help?",
+    "contactSupport": "Contact Support",
+    "viewStorybook": "See Full Documentation",
+    "installPwaGuide": "Install HASHPASS PWA guide",
       "interactiveDocs": {
         "title": "Full Documentation",
         "description": "Open the full documentation site for guides, references, and examples"
       },
-      "gettingStarted": {
-        "title": "Getting Started",
-        "description": "Learn how to sign in and navigate the app",
+    "gettingStarted": {
+      "title": "Getting Started",
+      "description": "Learn how to sign in and navigate the app",
+      "seeDemo": "See the demo videos",
         "signIn": {
           "title": "Sign In to Your Account",
           "content": "To get started, you'll need to sign in to the HASHPASS app. Open the app, enter your email address, check your email for a one-time login code, and enter the code to access your account."
@@ -837,7 +844,9 @@
       "days": "DAYS",
       "hours": "HRS",
       "minutes": "MIN",
-      "seconds": "SEC"
+      "seconds": "SEC",
+      "playFilm": "Play background video",
+      "pauseFilm": "Pause background video"
     },
     "selectEvent": "Select Event",
     "yourPasses": "Your Passes",

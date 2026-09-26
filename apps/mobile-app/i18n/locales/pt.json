@@ -260,14 +260,14 @@
     "openAction": "Abrir app HASHPASS",
     "installTitle": "Instalar HASHPASS",
     "openTitle": "Abrir seu app instalado",
-    "installDescription": "Instale o HASHPASS como PWA para abrir como app na tela inicial.",
+    "installDescription": "Instale o HASHPASS como PWA ou baixe o aplicativo na sua loja de aplicativos preferida. Já disponível no Google Play.",
     "openDescription": "O HASHPASS já está instalado. Abra no modo app para a melhor experiência mobile.",
     "whatIsThis": "O que é isso?",
     "close": "Fechar aviso de instalação",
     "dialogLabel": "Aviso de instalação do HASHPASS",
     "expandCollapsed": "Abrir opções de instalação",
     "dragHandle": "Arrastar botão de instalação",
-    "playStoreAction": "Baixe o app completo no Google Play",
+    "learnMore": "Saiba mais sobre como instalar o HASHPASS",
     "infoIntro": "Um PWA (Progressive Web App) permite que o HASHPASS se comporte como um app nativo no seu dispositivo.",
     "details": {
       "one": "PWA significa Progressive Web App: comportamento de app direto do navegador.",
@@ -410,6 +410,78 @@
     "tagline": "SEU EVENTO - SUA COMUNIDADE - SEUS BENEFÍCIOS",
     "taglineFlipText": "SEU",
     "learnMore": "Saiba mais",
+    "docs": {
+      "title": "Documentação",
+      "subtitle": "Guias completos e solução de problemas",
+      "back": "Voltar",
+      "needHelp": "Precisa de mais ajuda?",
+      "contactSupport": "Falar com o suporte",
+      "viewStorybook": "Ver documentação completa",
+      "installPwaGuide": "Guia para instalar o HASHPASS como PWA",
+      "interactiveDocs": {
+        "title": "Documentação completa",
+        "description": "Abra o site completo de documentação para consultar guias, referências e exemplos"
+      },
+      "gettingStarted": {
+        "title": "Primeiros passos",
+        "description": "Aprenda a entrar na sua conta e navegar pelo aplicativo",
+        "seeDemo": "Ver vídeos de demonstração",
+        "signIn": {
+          "title": "Entrar na sua conta",
+          "content": "Abra o aplicativo HASHPASS, informe seu e-mail e procure na caixa de entrada o código de acesso de uso único. Digite o código para acessar sua conta."
+        },
+        "explore": {
+          "title": "Explorar palestrantes e eventos",
+          "content": "Depois de entrar, explore palestrantes e eventos. Abra a seção Explorar, navegue por categoria ou pesquise um nome e consulte perfis, temas e disponibilidade."
+        },
+        "requestMeeting": {
+          "title": "Enviar solicitação de reunião",
+          "content": "Abra o perfil da pessoa que deseja conhecer, selecione Solicitar reunião, escolha a data e o horário, acrescente uma mensagem se quiser e envie a solicitação."
+        },
+        "trackRequests": {
+          "title": "Acompanhar suas solicitações",
+          "content": "Confira as Notificações para acompanhar solicitações pendentes, aceitas ou recusadas e saber quando um palestrante responder."
+        }
+      },
+      "troubleshooting": {
+        "title": "Solução de problemas",
+        "description": "Soluções para problemas comuns",
+        "loadingIssues": {
+          "title": "O aplicativo web não está carregando?",
+          "content": "Se o aplicativo web não carregar corretamente, limpe o cache do navegador ou faça uma atualização forçada.",
+          "step1": "Limpar o cache: abra as configurações do navegador e apague imagens e arquivos armazenados em cache.",
+          "step2": "Atualização forçada: pressione Ctrl+Shift+R no Windows ou Linux, ou Cmd+Shift+R no Mac."
+        },
+        "loginIssues": {
+          "title": "Problemas para entrar",
+          "content": "Confira seu endereço de e-mail e procure o código de acesso na pasta de spam. Se o código expirou, solicite um novo."
+        },
+        "meetingIssues": {
+          "title": "Problemas com solicitações de reunião",
+          "content": "Verifique sua conexão com a internet, confirme que você entrou na conta e veja se o palestrante está disponível no horário escolhido."
+        }
+      },
+      "tips": {
+        "title": "Dicas práticas",
+        "description": "Boas práticas para usar o HASHPASS",
+        "specificRequests": {
+          "title": "Seja específico nas solicitações",
+          "content": "Explique o assunto que gostaria de discutir. Uma mensagem clara aumenta as chances de sua solicitação ser aceita."
+        },
+        "checkAvailability": {
+          "title": "Verifique a disponibilidade do palestrante",
+          "content": "Antes de enviar uma solicitação, consulte a agenda do palestrante e confirme se ele está livre no horário desejado."
+        },
+        "respondPromptly": {
+          "title": "Responda rapidamente",
+          "content": "Quando um palestrante aceitar sua solicitação, responda rapidamente para confirmar a reunião."
+        },
+        "useSearch": {
+          "title": "Use a busca",
+          "content": "Pesquise por tema, empresa ou nome para encontrar mais rápido as pessoas certas."
+        }
+      }
+    },
     "taglineFlipList": "- SEU EVENTO -,- SUA COMUNIDADE -,- SEUS BENEFÍCIOS -",
     "unlockPotential": "Desbloqueie seu potencial",
     "featuresBadge": "Recursos principais",
@@ -530,9 +602,13 @@
       "details": "Detalhes do evento",
       "detailsPlaceholder": "Data, cidade, local, link do evento e uma breve descrição",
       "disclosure": "Seu aplicativo de e-mail abrirá com estes detalhes. Revise e envie a mensagem por lá.",
+      "webDisclosure": "Sua proposta será enviada com segurança para a equipe de suporte da HASHPASS.",
       "submit": "Preparar e-mail da proposta",
+      "webSubmit": "Enviar proposta",
       "openingMail": "Abrindo e-mail…",
-      "mailError": "Não foi possível abrir seu aplicativo de e-mail. Envie sua proposta para support@hashpass.tech."
+      "sendingProposal": "Enviando proposta…",
+      "mailError": "Não foi possível abrir seu aplicativo de e-mail. Envie sua proposta para support@hashpass.tech.",
+      "webSubmitError": "Não foi possível enviar sua proposta. Tente novamente ou envie um e-mail para support@hashpass.tech."
     },
     "eventSearch": {
     "placeholder": "Pesquisar eventos",
@@ -621,7 +697,9 @@
       "days": "DIAS",
       "hours": "HRS",
       "minutes": "MIN",
-      "seconds": "SEG"
+      "seconds": "SEG",
+      "playFilm": "Reproduzir vídeo de fundo",
+      "pauseFilm": "Pausar vídeo de fundo"
     },
     "selectEvent": "Selecionar evento",
     "yourPasses": "Seus passes",

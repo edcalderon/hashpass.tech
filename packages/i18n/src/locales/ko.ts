@@ -61,6 +61,7 @@ export const ko = {
     downloadHashpass: 'HASHPASS 다운로드',
     downloadAriaLabel: 'Google Play에서 HASHPASS 앱 다운로드',
     webDisclaimer: '데스크톱에서는 앱을 다운로드하는 대신 웹에서 HASHPASS가 열립니다.',
+    pwaGuide: 'HASHPASS를 프로그레시브 웹 앱(PWA)으로 설치하는 방법',
   },
   stats: {
     activeMembers: '활성 회원',
