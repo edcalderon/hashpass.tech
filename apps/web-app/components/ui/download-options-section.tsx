@@ -2,6 +2,7 @@
 
 import { useTranslation } from '@hashpass/i18n';
 import { Download, Sparkles } from 'lucide-react';
+import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
 import { HashpassLogo } from '@/components/ui/hashpass-logo';
@@ -98,6 +99,12 @@ export function DownloadShowcase() {
           <p className="mx-auto mt-3 max-w-md text-[11px] leading-4 text-muted-foreground/70">
             * {t('webDisclaimer')}
           </p>
+          <Link
+            href="/documentation/guides/install-hashpass/"
+            className="mt-3 inline-flex text-sm font-semibold text-blue-700 underline decoration-blue-400/50 underline-offset-4 transition-colors hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-100"
+          >
+            {t('pwaGuide')}
+          </Link>
         </div>
       </div>
     </section>

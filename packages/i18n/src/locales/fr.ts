@@ -61,6 +61,7 @@ export const fr = {
     downloadHashpass: 'Télécharger HASHPASS',
     downloadAriaLabel: 'Télécharger HASHPASS depuis Google Play',
     webDisclaimer: 'Sur ordinateur, ce bouton ouvre HASHPASS sur le web au lieu de télécharger une app.',
+    pwaGuide: 'Installer HASHPASS en tant qu’application web progressive (PWA)',
   },
   stats: {
     activeMembers: 'Membres actifs',

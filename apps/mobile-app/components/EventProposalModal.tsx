@@ -16,7 +16,9 @@ import {
 import { Ionicons } from "../lib/vector-icons";
 import { useTheme } from "../hooks/useTheme";
 import { useTranslation } from "../i18n/i18n";
+import { apiClient, getCaptchaApiEndpoint } from "../lib/api-client";
 import { uiPalette, uiTokens } from "@hashpass/ui/tokens";
+import EventProposalCaptcha from "./EventProposalCaptcha";
 
 type EventProposalModalProps = {
   visible: boolean;
@@ -37,8 +39,11 @@ export default function EventProposalModal({
   const [contactName, setContactName] = useState("");
   const [email, setEmail] = useState("");
   const [eventDetails, setEventDetails] = useState("");
-  const [isOpeningMail, setIsOpeningMail] = useState(false);
-  const [mailError, setMailError] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [hasSubmissionError, setHasSubmissionError] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaResetKey, setCaptchaResetKey] = useState(0);
+  const isWeb = Platform.OS === "web";
 
   const canSubmit = useMemo(
     () =>
@@ -46,21 +51,57 @@ export default function EventProposalModal({
         eventName.trim() &&
           contactName.trim() &&
           /^\S+@\S+\.\S+$/.test(email.trim()) &&
-          eventDetails.trim(),
+          eventDetails.trim() &&
+          (!isWeb || captchaToken),
       ),
-    [contactName, email, eventDetails, eventName],
+    [captchaToken, contactName, email, eventDetails, eventName, isWeb],
   );
 
   const handleClose = () => {
-    setMailError(false);
+    setHasSubmissionError(false);
+    setCaptchaToken(null);
+    setCaptchaResetKey((key) => key + 1);
     onClose();
   };
 
   const handleSubmit = async () => {
-    if (!canSubmit || isOpeningMail) return;
+    if (!canSubmit || isSubmitting) return;
 
-    setIsOpeningMail(true);
-    setMailError(false);
+    setIsSubmitting(true);
+    setHasSubmissionError(false);
+
+    if (isWeb) {
+      try {
+        const result = await apiClient.post(
+          "/event-proposals",
+          {
+            eventName: eventName.trim(),
+            contactName: contactName.trim(),
+            email: email.trim(),
+            eventDetails: eventDetails.trim(),
+            captchaToken,
+          },
+          { skipEventSegment: true },
+        );
+        if (!result.success) {
+          setHasSubmissionError(true);
+          return;
+        }
+        setEventName("");
+        setContactName("");
+        setEmail("");
+        setEventDetails("");
+        onClose();
+      } catch {
+        setHasSubmissionError(true);
+      } finally {
+        setCaptchaToken(null);
+        setCaptchaResetKey((key) => key + 1);
+        setIsSubmitting(false);
+      }
+      return;
+    }
+
     const subject = encodeURIComponent(
       `[HASHPASS Event Proposal] ${eventName.trim()}`,
     );
@@ -82,15 +123,15 @@ export default function EventProposalModal({
     try {
       const supported = await Linking.canOpenURL(mailto);
       if (!supported) {
-        setMailError(true);
+        setHasSubmissionError(true);
         return;
       }
 
       await Linking.openURL(mailto);
     } catch {
-      setMailError(true);
+      setHasSubmissionError(true);
     } finally {
-      setIsOpeningMail(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -139,6 +180,7 @@ export default function EventProposalModal({
               placeholder={t("eventProposal.eventNamePlaceholder", "Name of the event")}
               colors={colors}
             />
+
             <Field
               label={t("eventProposal.contactName", "Your name")}
               value={contactName}
@@ -167,41 +209,80 @@ export default function EventProposalModal({
               colors={colors}
             />
 
-            {mailError ? (
-              <Text style={styles.errorText}>
-                {t(
-                  "eventProposal.mailError",
-                  "We could not open your email app. Send your proposal to support@hashpass.tech.",
-                )}
+            {isWeb ? (
+              <EventProposalCaptcha
+                apiEndpoint={getCaptchaApiEndpoint()}
+                onSolve={setCaptchaToken}
+                onReset={() => setCaptchaToken(null)}
+                onError={() => {
+                  setCaptchaToken(null);
+                  setHasSubmissionError(true);
+                }}
+                resetKey={captchaResetKey}
+              />
+            ) : null}
+
+            {hasSubmissionError ? (
+              <Text
+                accessibilityLiveRegion="polite"
+                accessibilityRole="alert"
+                style={styles.errorText}
+              >
+                {isWeb
+                  ? t(
+                      "eventProposal.webSubmitError",
+                      "We could not send your proposal. Please try again or email support@hashpass.tech.",
+                    )
+                  : t(
+                      "eventProposal.mailError",
+                      "We could not open your email app. Send your proposal to support@hashpass.tech.",
+                    )}
               </Text>
             ) : null}
 
             <Text style={styles.disclosure}>
-              {t(
-                "eventProposal.disclosure",
-                "Your email app will open with these details. Review and send the message there.",
-              )}
+              {isWeb
+                ? t(
+                    "eventProposal.webDisclosure",
+                    "Your proposal will be sent securely to the HASHPASS support team.",
+                  )
+                : t(
+                    "eventProposal.disclosure",
+                    "Your email app will open with these details. Review and send the message there.",
+                  )}
             </Text>
 
             <TouchableOpacity
               accessibilityRole="button"
-              accessibilityLabel={t("eventProposal.submit", "Prepare proposal email")}
-              disabled={!canSubmit || isOpeningMail}
+              accessibilityLabel={
+                isWeb
+                  ? t("eventProposal.webSubmit", "Send proposal")
+                  : t("eventProposal.submit", "Prepare proposal email")
+              }
+              accessibilityState={{
+                busy: isSubmitting,
+                disabled: !canSubmit || isSubmitting,
+              }}
+              disabled={!canSubmit || isSubmitting}
               onPress={handleSubmit}
               style={[
                 styles.submitButton,
-                (!canSubmit || isOpeningMail) && styles.submitButtonDisabled,
+                (!canSubmit || isSubmitting) && styles.submitButtonDisabled,
               ]}
             >
-              {isOpeningMail ? (
+              {isSubmitting ? (
                 <ActivityIndicator color={palette.onAccent} />
               ) : (
                 <Ionicons name="mail-outline" size={18} color={palette.onAccent} />
               )}
               <Text style={styles.submitText}>
-                {isOpeningMail
-                  ? t("eventProposal.openingMail", "Opening email…")
-                  : t("eventProposal.submit", "Prepare proposal email")}
+                {isWeb
+                  ? isSubmitting
+                    ? t("eventProposal.sendingProposal", "Sending proposal…")
+                    : t("eventProposal.webSubmit", "Send proposal")
+                  : isSubmitting
+                    ? t("eventProposal.openingMail", "Opening email…")
+                    : t("eventProposal.submit", "Prepare proposal email")}
               </Text>
             </TouchableOpacity>
           </ScrollView>

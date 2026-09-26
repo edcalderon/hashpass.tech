@@ -8,6 +8,8 @@ declare const EventBannerBackgroundVideo: ComponentType<{
   preferBundledSource?: boolean;
   /** Stops offscreen and reduced-motion media before it begins decoding. */
   playbackEnabled?: boolean;
+  contentFit?: "cover" | "contain";
+  focalPosition?: string;
 }>;
 
 export default EventBannerBackgroundVideo;

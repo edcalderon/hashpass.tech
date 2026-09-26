@@ -5,6 +5,7 @@
 // challenge/token storage isolated from other services (e.g.
 // packages/hashpass-links-api) that also call getCapInstance.
 import { getCapInstance } from '@hashpass/backend';
+import { createSupabaseCaptchaStorage } from './server/captcha-storage';
 
-const cap = getCapInstance('mobile-app');
+const cap = getCapInstance('mobile-app', createSupabaseCaptchaStorage('mobile-app'));
 export default cap;

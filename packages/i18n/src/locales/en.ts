@@ -246,6 +246,7 @@ export const en = {
     downloadHashpass: 'Download HASHPASS',
     downloadAriaLabel: 'Download HASHPASS from Google Play',
     webDisclaimer: 'On desktop, this opens HASHPASS on the web instead of downloading an app.',
+    pwaGuide: 'Learn how to install HASHPASS as a Progressive Web App (PWA)',
   },
   stats: {
     activeMembers: 'Active members',

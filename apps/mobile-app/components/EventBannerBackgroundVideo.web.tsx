@@ -6,6 +6,8 @@ interface EventBannerBackgroundVideoProps {
   loadingLabel?: string;
   preferBundledSource?: boolean;
   playbackEnabled?: boolean;
+  contentFit?: "cover" | "contain";
+  focalPosition?: string;
 }
 
 /**
@@ -18,6 +20,8 @@ export default function EventBannerBackgroundVideo({
   loadingLogo,
   loadingLabel = "Loading event film",
   playbackEnabled = true,
+  contentFit = "cover",
+  focalPosition = "center bottom",
 }: EventBannerBackgroundVideoProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [hasFirstFrame, setHasFirstFrame] = useState(false);
@@ -73,10 +77,10 @@ export default function EventBannerBackgroundVideo({
           inset: 0,
           width: "100%",
           height: "100%",
-          objectFit: "cover",
+          objectFit: contentFit,
           // The rendered CLF lower third sits near the bottom of frame. Keep
           // it in view when the 16:9 film fills the taller Explorer hero.
-          objectPosition: "center bottom",
+          objectPosition: focalPosition,
           opacity: hasFirstFrame ? 0.88 : 0,
           pointerEvents: "none",
           transition: "opacity 180ms ease-out",
@@ -109,7 +113,8 @@ export default function EventBannerBackgroundVideo({
                 inset: 0,
                 width: "100%",
                 height: "100%",
-                objectFit: "cover",
+                objectFit: contentFit,
+                objectPosition: focalPosition,
                 opacity: 0.62,
               }}
             />

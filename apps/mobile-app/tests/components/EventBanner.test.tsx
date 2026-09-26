@@ -6,6 +6,7 @@ import { act, create } from "react-test-renderer";
 import EventBanner from "../../components/EventBanner";
 
 const mockRouterPush = jest.fn();
+let mockViewportWidth = 390;
 
 jest.mock("react-native", () => {
   return {
@@ -37,6 +38,12 @@ jest.mock("react-native", () => {
     StyleSheet: { create: (styles: unknown) => styles },
     Text: "Text",
     TouchableOpacity: "TouchableOpacity",
+    useWindowDimensions: () => ({
+      width: mockViewportWidth,
+      height: 844,
+      scale: 1,
+      fontScale: 1,
+    }),
     View: "View",
   };
 });
@@ -76,6 +83,7 @@ jest.mock("../../lib/event-branding", () => ({
     image ? { uri: image } : undefined,
 }));
 jest.mock("../../lib/vector-icons", () => ({ MaterialIcons: "MaterialIcons" }));
+jest.mock("../../lib/morph-icon", () => ({ MorphIcon: "MorphIcon" }));
 jest.mock("../../components/AgendaTracker", () => "AgendaTracker");
 jest.mock(
   "../../components/EventBannerBackgroundVideo",
@@ -94,6 +102,7 @@ describe("EventBanner", () => {
   beforeEach(() => {
     mockRouterPush.mockReset();
     mockIsLoggedIn = false;
+    mockViewportWidth = 390;
   });
 
   it("sends a logged-out visitor to the event's public info page, not the protected dashboard (regression)", () => {
@@ -305,5 +314,132 @@ describe("EventBanner", () => {
 
     expect(mockRouterPush).toHaveBeenCalledWith("/events/criptolatinfest/home");
     act(() => renderer!.unmount());
+  });
+
+  it("scales the detail hero and title by viewport while giving video explicit fit and focal defaults", () => {
+    const renderAt = (width: number) => {
+      mockViewportWidth = width;
+      let renderer: ReturnType<typeof create>;
+      act(() => {
+        renderer = create(
+          <EventBanner
+            {...({ variant: "detail" } as any)}
+            title="A long public event title that must remain readable"
+            subtitle="Bogotá, Colombia"
+            date="November 5-6, 2026"
+            eventVideo="https://cdn.example/event-film.mp4"
+          />,
+        );
+      });
+      const heroStyle = renderer!.root.findAllByType("View" as any)[0].props.style;
+      const titleStyle = renderer!.root
+        .findAllByType("Text" as any)
+        .find((node) => node.children.join("") === "A long public event title that must remain readable")!
+        .props.style;
+      const videoProps = renderer!.root.findByType(
+        "EventBannerBackgroundVideo" as any,
+      ).props;
+      return { renderer: renderer!, heroStyle, titleStyle, videoProps };
+    };
+
+    const mobile = renderAt(390);
+    const desktop = renderAt(1280);
+
+    act(() => mobile.renderer.unmount());
+    act(() => desktop.renderer.unmount());
+
+    expect(desktop.heroStyle.minHeight).toBeGreaterThan(mobile.heroStyle.minHeight);
+    expect(desktop.titleStyle.fontSize).toBeGreaterThan(mobile.titleStyle.fontSize);
+    for (const props of [mobile.videoProps, desktop.videoProps]) {
+      expect(["cover", "contain"]).toContain(props.contentFit);
+      expect(props.focalPosition).toBeDefined();
+    }
+
+  });
+
+  it("keeps media controls detail-only and exposes a 48px pause/play target", () => {
+    let defaultRenderer: ReturnType<typeof create>;
+    let detailRenderer: ReturnType<typeof create>;
+    act(() => {
+      defaultRenderer = create(
+        <EventBanner
+          title="Public event"
+          subtitle="Bogotá, Colombia"
+          date="November 5-6, 2026"
+          eventVideo="https://cdn.example/event-film.mp4"
+        />,
+      );
+      detailRenderer = create(
+        <EventBanner
+          variant="detail"
+          title="Public event"
+          subtitle="Bogotá, Colombia"
+          date="November 5-6, 2026"
+          eventVideo="https://cdn.example/event-film.mp4"
+        />,
+      );
+    });
+
+    expect(
+      defaultRenderer!.root.findAllByProps({
+        accessibilityLabel: "Pause background video",
+      }),
+    ).toHaveLength(0);
+    expect(
+      defaultRenderer!.root.findByType("EventBannerBackgroundVideo" as any).props,
+    ).toMatchObject({
+      playbackEnabled: true,
+      focalPosition: "center bottom",
+    });
+
+    const pauseButton = detailRenderer!.root.findByProps({
+      accessibilityLabel: "Pause background video",
+    });
+    expect(pauseButton.props).toMatchObject({
+      accessibilityRole: "button",
+      style: expect.objectContaining({ width: 48, height: 48 }),
+    });
+    expect(pauseButton.findByType("MorphIcon" as any).props.fallbackIconName).toBe("pause");
+    expect(
+      detailRenderer!.root.findAll(
+        (node) => node.props.accessibilityRole === "header",
+      ),
+    ).toHaveLength(1);
+
+    act(() => pauseButton.props.onPress());
+
+    expect(
+      detailRenderer!.root.findByType("EventBannerBackgroundVideo" as any).props
+        .playbackEnabled,
+    ).toBe(false);
+    expect(
+      detailRenderer!.root.findByProps({
+        accessibilityLabel: "Play background video",
+      }).props.accessibilityRole,
+    ).toBe("button");
+    expect(
+      detailRenderer!.root
+        .findByProps({ accessibilityLabel: "Play background video" })
+        .findByType("MorphIcon" as any).props.fallbackIconName,
+    ).toBe("play");
+
+    act(() => defaultRenderer!.unmount());
+    act(() => detailRenderer!.unmount());
+  });
+
+  it("localizes both media controls under the explore banner namespace", () => {
+    const locales = [
+      require("../../i18n/locales/en.json"),
+      require("../../i18n/locales/es.json"),
+      require("../../i18n/locales/ko.json"),
+      require("../../i18n/locales/de.json"),
+      require("../../i18n/locales/fr.json"),
+      require("../../i18n/locales/pt.json"),
+    ];
+
+    for (const locale of locales) {
+      expect(locale.explore.banner.playFilm).toEqual(expect.any(String));
+      expect(locale.explore.banner.pauseFilm).toEqual(expect.any(String));
+    }
   });
 });

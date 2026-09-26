@@ -347,14 +347,14 @@
     "openAction": "Abrir app de HASHPASS",
     "installTitle": "Instalar HASHPASS",
     "openTitle": "Abrir tu app instalada",
-    "installDescription": "Instala HASHPASS como PWA para abrirla como una app desde tu pantalla de inicio.",
+    "installDescription": "Instala HASHPASS como PWA o descarga la aplicación desde tu tienda de aplicaciones preferida. Ya disponible en Google Play.",
     "openDescription": "HASHPASS ya está instalada. Ábrela en modo app para la mejor experiencia móvil.",
     "whatIsThis": "¿Qué es esto?",
     "close": "Cerrar aviso de instalación",
     "dialogLabel": "Aviso de instalación de HASHPASS",
     "expandCollapsed": "Abrir opciones de instalación",
     "dragHandle": "Arrastrar botón de instalación",
-    "playStoreAction": "Obtén la app completa en Google Play",
+    "learnMore": "Más información sobre cómo instalar HASHPASS",
     "infoIntro": "Una PWA (Aplicación Web Progresiva) permite que HASHPASS funcione como una app nativa en tu dispositivo.",
     "details": {
       "one": "PWA significa Progressive Web App: comportamiento de app desde la instalación del navegador.",
@@ -643,9 +643,13 @@
       "details": "Detalles del evento",
       "detailsPlaceholder": "Fecha, ciudad, recinto, enlace del evento y una descripción breve",
       "disclosure": "Se abrirá tu aplicación de correo con estos datos. Revisa y envía el mensaje allí.",
+      "webDisclosure": "Tu propuesta se enviará de forma segura al equipo de soporte de HASHPASS.",
       "submit": "Preparar correo de propuesta",
+      "webSubmit": "Enviar propuesta",
       "openingMail": "Abriendo correo…",
-      "mailError": "No pudimos abrir tu aplicación de correo. Envía tu propuesta a support@hashpass.tech."
+      "sendingProposal": "Enviando propuesta…",
+      "mailError": "No pudimos abrir tu aplicación de correo. Envía tu propuesta a support@hashpass.tech.",
+      "webSubmitError": "No pudimos enviar tu propuesta. Inténtalo de nuevo o escribe a support@hashpass.tech."
     },
     "eventSearch": {
     "placeholder": "Buscar eventos",
@@ -681,18 +685,21 @@
       "bsl2025": "BSL 2025"
     },
     "docs": {
-      "title": "Documentación",
-      "subtitle": "Guías completas y solución de problemas",
-      "needHelp": "¿Necesitas más ayuda?",
-      "contactSupport": "Contactar Soporte",
-      "viewStorybook": "Ver Documentación Completa",
+    "title": "Documentación",
+    "subtitle": "Guías completas y solución de problemas",
+    "back": "Volver",
+    "needHelp": "¿Necesitas más ayuda?",
+    "contactSupport": "Contactar Soporte",
+    "viewStorybook": "Ver Documentación Completa",
+    "installPwaGuide": "Guía para instalar HASHPASS como PWA",
       "interactiveDocs": {
         "title": "Documentación Completa",
         "description": "Abre el sitio completo de documentación con guías, referencias y ejemplos"
       },
-      "gettingStarted": {
-        "title": "Comenzar",
-        "description": "Aprende cómo iniciar sesión y navegar la app",
+    "gettingStarted": {
+      "title": "Comenzar",
+      "description": "Aprende cómo iniciar sesión y navegar la app",
+      "seeDemo": "Ver los videos de demostración",
         "signIn": {
           "title": "Iniciar Sesión en Tu Cuenta",
           "content": "Para comenzar, necesitarás iniciar sesión en la app HASHPASS. Abre la app, ingresa tu dirección de correo electrónico, revisa tu correo para un código de inicio de sesión de un solo uso, e ingresa el código para acceder a tu cuenta."
@@ -836,7 +843,9 @@
       "days": "DÍAS",
       "hours": "HRS",
       "minutes": "MIN",
-      "seconds": "SEG"
+      "seconds": "SEG",
+      "playFilm": "Reproducir video de fondo",
+      "pauseFilm": "Pausar video de fondo"
     },
     "selectEvent": "Seleccionar Evento",
     "yourPasses": "Tus Pases",

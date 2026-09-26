@@ -1,10 +1,13 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, ActivityIndicator } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { AccessibilityInfo, View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, ActivityIndicator, useWindowDimensions } from 'react-native';
 import { useEvent } from '@contexts/EventContext';
 import { useTheme } from '../../../hooks/useTheme';
 import { MaterialIcons } from '@expo/vector-icons';
 import EventBanner from '../../../components/EventBanner';
-import { getRuntimeApiBaseUrl } from '../../../lib/api-client';
+import { apiClient, eventApiPath } from '../../../lib/api-client';
+import { useAnimationLevel } from '../../../contexts/AnimationLevelContext';
+import { Surface } from '@hashpass/ui/primitives';
+import { uiPalette, uiTokens } from '@hashpass/ui/tokens';
 
 interface EventDetailsRow {
   description: string | null;
@@ -22,19 +25,48 @@ interface EventDetailsRow {
 // non-fabricated fallback rather than inventing details for gaps.
 export default function EventInfoScreen() {
   const { event } = useEvent();
-  const { isDark, colors } = useTheme();
-  const styles = getStyles(isDark, colors);
+  const { isDark } = useTheme();
+  const { animationLevel } = useAnimationLevel();
+  const { width: viewportWidth } = useWindowDimensions();
+  const isWide = viewportWidth >= 960;
+  const palette = uiPalette(isDark);
+  const styles = getStyles(palette, isWide, viewportWidth);
   const eventId = event?.id || 'bsl';
   const [details, setDetails] = useState<EventDetailsRow | null>(null);
+  const [systemReducedMotion, setSystemReducedMotion] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    void AccessibilityInfo.isReduceMotionEnabled()
+      .then((reduced) => {
+        if (active) setSystemReducedMotion(reduced);
+      })
+      .catch(() => {
+        if (active) setSystemReducedMotion(true);
+      });
+    const subscription = AccessibilityInfo.addEventListener(
+      'reduceMotionChanged',
+      setSystemReducedMotion,
+    );
+    return () => {
+      active = false;
+      subscription.remove();
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
     setDetails(null);
 
-    fetch(`${getRuntimeApiBaseUrl()}/events/${eventId}/details`)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((body) => {
-        if (!cancelled) setDetails(body?.data ?? null);
+    apiClient
+      .get(eventApiPath(eventId, 'details'), {
+        skipAuth: true,
+        skipEventSegment: true,
+      })
+      .then((response: { success: boolean; data?: { data: EventDetailsRow | null } | null }) => {
+        if (!cancelled) {
+          setDetails(response.success ? response.data?.data ?? null : null);
+        }
       })
       .catch(() => {
         if (!cancelled) setDetails(null);
@@ -101,25 +133,38 @@ export default function EventInfoScreen() {
       : null,
   ].filter((item): item is NonNullable<typeof item> => item !== null);
 
-  const renderItemRow = (item: { icon: string; label: string; value: string; action?: () => void }, index: number) => (
-    <TouchableOpacity
-      key={index}
-      style={styles.infoItem}
-      onPress={item.action}
-      disabled={!item.action}
-    >
-      <View style={styles.infoItemLeft}>
-        <View style={styles.infoIcon}>
-          <MaterialIcons name={item.icon as any} size={24} color={isDark ? '#60A5FA' : '#007AFF'} />
+  const renderItemRow = (item: { icon: string; label: string; value: string; action?: () => void }) => {
+    const content = (
+      <>
+        <View style={styles.infoItemLeft}>
+          <View style={styles.infoIcon}>
+            <MaterialIcons name={item.icon as any} size={24} color={palette.accent} />
+          </View>
+          <View style={styles.infoText}>
+            <Text style={styles.infoLabel}>{item.label}</Text>
+            <Text style={[styles.infoValue, item.action && styles.infoValueLink]}>{item.value}</Text>
+          </View>
         </View>
-        <View style={styles.infoText}>
-          <Text style={styles.infoLabel}>{item.label}</Text>
-          <Text style={[styles.infoValue, item.action && styles.infoValueLink]}>{item.value}</Text>
-        </View>
+        {item.action && <MaterialIcons name="chevron-right" size={20} color={palette.muted} />}
+      </>
+    );
+
+    return item.action ? (
+      <TouchableOpacity
+        key={item.label}
+        style={styles.infoItem}
+        onPress={item.action}
+        accessibilityRole="link"
+        accessibilityLabel={`${item.label}: ${item.value}`}
+      >
+        {content}
+      </TouchableOpacity>
+    ) : (
+      <View key={item.label} style={styles.infoItem}>
+        {content}
       </View>
-      {item.action && <MaterialIcons name="chevron-right" size={20} color={colors.text.secondary} />}
-    </TouchableOpacity>
-  );
+    );
+  };
 
   const renderArchiveSummary = () => {
     if (!isArchiveEvent) return null;
@@ -130,7 +175,9 @@ export default function EventInfoScreen() {
           <MaterialIcons name="history" size={16} color={isDark ? '#E0F2FE' : '#1D4ED8'} />
           <Text style={styles.archiveBadgeText}>Past Event</Text>
         </View>
-        <Text style={styles.archiveTitle}>Archived Edition</Text>
+        <Text accessibilityRole="header" style={styles.archiveTitle}>
+          Archived Edition
+        </Text>
         <Text style={styles.archiveDescription}>
           {event?.title || 'This event'} is preserved here as a reference archive.
         </Text>
@@ -138,147 +185,194 @@ export default function EventInfoScreen() {
     );
   };
 
+  const detailsSection = (
+    <View testID="event-info-details-section" style={styles.section}>
+      <Text accessibilityRole="header" style={styles.sectionTitle}>
+        Event Details
+      </Text>
+      <Surface mode={isDark ? 'dark' : 'light'} style={styles.sectionContent}>
+        {eventDetailItems.map(renderItemRow)}
+      </Surface>
+    </View>
+  );
+
+  const aboutSection = (
+    <View testID="event-info-about-section" style={styles.section}>
+      <Text accessibilityRole="header" style={styles.sectionTitle}>
+        About
+      </Text>
+      <Surface mode={isDark ? 'dark' : 'light'} style={styles.sectionContent}>
+        {details === null && !aboutText ? (
+          <View style={styles.aboutLoading}>
+            <ActivityIndicator size="small" color={palette.accent} />
+          </View>
+        ) : (
+          <Text style={styles.aboutText}>
+            {aboutText || `More details for ${event?.title || 'this event'} are coming soon.`}
+          </Text>
+        )}
+      </Surface>
+    </View>
+  );
+
+  const contactSection = contactItems.length > 0 ? (
+    <View testID="event-info-contact-section" style={styles.section}>
+      <Text accessibilityRole="header" style={styles.sectionTitle}>
+        Contact
+      </Text>
+      <Surface mode={isDark ? 'dark' : 'light'} style={styles.sectionContent}>
+        {contactItems.map(renderItemRow)}
+      </Surface>
+    </View>
+  ) : null;
+
   return (
     <ScrollView
       style={styles.scrollView}
       contentContainerStyle={styles.scrollContent}
+      contentInsetAdjustmentBehavior="automatic"
       showsVerticalScrollIndicator={false}
     >
-      <EventBanner
-        title={event?.title || 'Event Information'}
-        subtitle={event?.subtitle || 'Event Details & Logistics'}
-        date={eventDateLabel}
-        showCountdown={!isEventFinished && Boolean(event?.eventStartDate)}
-        showLiveIndicator={!isEventFinished && Boolean(event?.eventStartDate)}
-        isEventFinished={isEventFinished}
-        eventStartDate={event?.eventStartDate}
-        eventId={eventId}
-        eventImage={event?.image}
-        eventVideo={event?.heroVideo}
-      />
+      <View testID="event-info-content" style={styles.contentShell}>
+        <EventBanner
+          variant="detail"
+          title={event?.title || 'Event Information'}
+          subtitle={event?.subtitle || 'Event Details & Logistics'}
+          date={eventDateLabel}
+          showCountdown={!isEventFinished && Boolean(event?.eventStartDate)}
+          showLiveIndicator={!isEventFinished && Boolean(event?.eventStartDate)}
+          isEventFinished={isEventFinished}
+          eventStartDate={event?.eventStartDate}
+          eventId={eventId}
+          eventImage={event?.image}
+          eventVideo={event?.heroVideo}
+          videoPlaybackEnabled={animationLevel === 'full' && !systemReducedMotion}
+        />
 
-      {renderArchiveSummary()}
+        {renderArchiveSummary()}
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Event Details</Text>
-        <View style={styles.sectionContent}>
-          {eventDetailItems.map(renderItemRow)}
-        </View>
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>About</Text>
-        <View style={styles.sectionContent}>
-          {details === null && !aboutText ? (
-            <View style={styles.aboutLoading}>
-              <ActivityIndicator size="small" color={isDark ? '#60A5FA' : '#007AFF'} />
-            </View>
+        <View testID="event-info-sections" style={styles.sections}>
+          {isWide ? (
+            <>
+              <View testID="event-info-column" style={styles.mainColumn}>
+                {aboutSection}
+              </View>
+              <View testID="event-info-column" style={styles.supportColumn}>
+                {detailsSection}
+                {contactSection}
+              </View>
+            </>
           ) : (
-            <Text style={styles.aboutText}>
-              {aboutText || `More details for ${event?.title || 'this event'} are coming soon.`}
-            </Text>
+            <>
+              {detailsSection}
+              {aboutSection}
+              {contactSection}
+            </>
           )}
         </View>
       </View>
-
-      {contactItems.length > 0 && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Contact</Text>
-          <View style={styles.sectionContent}>
-            {contactItems.map(renderItemRow)}
-          </View>
-        </View>
-      )}
     </ScrollView>
   );
 }
 
-const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
+const getStyles = (
+  palette: ReturnType<typeof uiPalette>,
+  isWide: boolean,
+  viewportWidth: number,
+) => StyleSheet.create({
   scrollView: {
     flex: 1,
-    backgroundColor: colors.background.default,
+    backgroundColor: palette.canvas,
   },
   scrollContent: {
-    paddingBottom: 40,
+    paddingBottom: uiTokens.space.hero,
+    paddingHorizontal: viewportWidth >= 768 ? uiTokens.space.xl : uiTokens.space.lg,
+  },
+  contentShell: {
+    width: '100%',
+    maxWidth: 1200,
+    alignSelf: 'center',
   },
   archiveSummary: {
-    marginHorizontal: 20,
-    marginTop: 20,
-    marginBottom: 24,
-    padding: 18,
-    borderRadius: 22,
-    backgroundColor: isDark ? 'rgba(7, 17, 31, 0.92)' : 'rgba(255, 255, 255, 0.96)',
+    marginTop: uiTokens.space.xl,
+    padding: uiTokens.space.xl,
+    borderRadius: uiTokens.radius.card,
+    backgroundColor: palette.surface,
     borderWidth: 1,
-    borderColor: isDark ? 'rgba(96, 165, 250, 0.22)' : 'rgba(37, 99, 235, 0.14)',
-    shadowColor: isDark ? 'rgba(0, 0, 0, 0.35)' : 'rgba(15, 23, 42, 0.12)',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.18,
-    shadowRadius: 24,
-    elevation: 4,
+    borderColor: palette.border,
   },
   archiveBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-    backgroundColor: isDark ? 'rgba(96, 165, 250, 0.16)' : 'rgba(37, 99, 235, 0.10)',
+    paddingHorizontal: uiTokens.space.md,
+    paddingVertical: uiTokens.space.sm,
+    borderRadius: uiTokens.radius.pill,
+    backgroundColor: palette.accentSoft,
     borderWidth: 1,
-    borderColor: isDark ? 'rgba(96, 165, 250, 0.24)' : 'rgba(37, 99, 235, 0.16)',
-    marginBottom: 12,
+    borderColor: palette.border,
+    marginBottom: uiTokens.space.md,
   },
   archiveBadgeText: {
     marginLeft: 6,
-    color: isDark ? '#E0F2FE' : '#1D4ED8',
-    fontSize: 12,
+    color: palette.accent,
+    fontSize: uiTokens.type.caption,
     fontWeight: '800',
     letterSpacing: 0.8,
     textTransform: 'uppercase',
   },
   archiveTitle: {
-    fontSize: 22,
+    fontSize: uiTokens.type.title,
     fontWeight: '800',
-    color: colors.text.primary,
-    marginBottom: 8,
-    letterSpacing: -0.4,
+    color: palette.text,
+    marginBottom: uiTokens.space.sm,
   },
   archiveDescription: {
-    fontSize: 15,
-    color: colors.text.secondary,
-    lineHeight: 23,
+    fontSize: uiTokens.type.body,
+    color: palette.muted,
+    lineHeight: 24,
+  },
+  sections: {
+    flexDirection: isWide ? 'row' : 'column',
+    alignItems: 'flex-start',
+    gap: uiTokens.space.xl,
+    marginTop: isWide ? uiTokens.space.section : uiTokens.space.xxl,
+  },
+  mainColumn: {
+    flex: 2,
+    minWidth: 0,
+  },
+  supportColumn: {
+    flex: 1,
+    minWidth: 0,
   },
   section: {
-    marginHorizontal: 20,
-    marginBottom: 24,
+    width: '100%',
+    marginBottom: uiTokens.space.xl,
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: uiTokens.type.title,
     fontWeight: '800',
-    color: colors.text.primary,
-    marginBottom: 12,
-    letterSpacing: -0.3,
+    color: palette.text,
+    marginBottom: uiTokens.space.md,
   },
   sectionContent: {
-    backgroundColor: colors.background.paper,
-    borderRadius: 16,
+    padding: 0,
+    backgroundColor: palette.surface,
+    borderRadius: uiTokens.radius.card,
     borderWidth: 1,
-    borderColor: colors.divider,
+    borderColor: palette.border,
     overflow: 'hidden',
-    shadowColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
   },
   infoItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 18,
-    paddingHorizontal: 20,
+    minHeight: uiTokens.control.minHeight,
+    paddingVertical: uiTokens.space.lg,
+    paddingHorizontal: uiTokens.space.xl,
     borderBottomWidth: 1,
-    borderBottomColor: colors.divider,
+    borderBottomColor: palette.border,
   },
   infoItemLeft: {
     flexDirection: 'row',
@@ -289,39 +383,40 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: isDark ? 'rgba(0, 122, 255, 0.15)' : 'rgba(0, 122, 255, 0.1)',
+    backgroundColor: palette.accentSoft,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
     borderWidth: 1,
-    borderColor: isDark ? 'rgba(0, 122, 255, 0.3)' : 'rgba(0, 122, 255, 0.2)',
+    borderColor: palette.border,
   },
   infoText: {
     flex: 1,
+    minWidth: 0,
   },
   infoLabel: {
     fontSize: 13,
-    color: colors.text.secondary,
+    color: palette.muted,
     marginBottom: 4,
     fontWeight: '500',
   },
   infoValue: {
-    fontSize: 16,
-    color: colors.text.primary,
+    fontSize: uiTokens.type.body,
+    color: palette.text,
     fontWeight: '600',
     lineHeight: 22,
   },
   infoValueLink: {
-    color: isDark ? '#60A5FA' : '#007AFF',
+    color: palette.accent,
   },
   aboutLoading: {
     paddingVertical: 24,
     alignItems: 'center',
   },
   aboutText: {
-    fontSize: 15,
-    color: colors.text.primary,
-    lineHeight: 24,
-    padding: 20,
+    fontSize: uiTokens.type.body,
+    color: palette.text,
+    lineHeight: 26,
+    padding: uiTokens.space.xl,
   },
 });

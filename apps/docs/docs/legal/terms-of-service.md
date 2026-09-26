@@ -5,9 +5,9 @@ description: Terms governing HASHPASS services operated by HASHPASS TECHNOLOGIES
 
 # HASHPASS Terms of Service
 
-**Effective date:** 25 September 2026<br />
+**Effective date:** 25 September 2026.<br />
 **Operator:** HASHPASS TECHNOLOGIES OÜ (Registry Code 17603547)<br />
-**Registered office:** Narva mnt 5, Tallinn, Estonia<br />
+**Registered office:** Narva mnt 5, Tallinn, Estonia.<br />
 **Website:** [hashpass.tech](https://hashpass.tech)<br />
 **Contact:** [contact@hashpass.tech](mailto:contact@hashpass.tech)
 

@@ -144,7 +144,10 @@ export function parseLegalMarkdown({ id, markdown, sourcePath, sourceUrl }) {
   const dateBlock = blocks.find(
     (block) => block.type === 'paragraph' && /^(Effective date|Last updated):/i.test(block.text),
   );
-  const revision = dateBlock?.text.split('\n')[0].replace(/^[^:]+:\s*/, '') ?? '';
+  const revision = dateBlock?.text
+    .split('\n')[0]
+    .replace(/^[^:]+:\s*/, '')
+    .replace(/\.$/, '') ?? '';
 
   return {
     id,

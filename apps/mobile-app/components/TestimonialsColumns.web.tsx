@@ -115,6 +115,9 @@ const TestimonialsColumn = (props: {
                     key={i}
                     style={{
                       willChange: 'auto', // Static content, no animation needed
+                      userSelect: 'none',
+                      WebkitUserSelect: 'none',
+                      pointerEvents: 'none',
                     }}
                   >
                     <div>{text}</div>

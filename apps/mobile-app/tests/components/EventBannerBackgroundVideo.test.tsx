@@ -142,21 +142,35 @@ describe("EventBannerBackgroundVideo", () => {
   });
 
   it("keeps an inactive native hero film paused", () => {
-    render(
+    const renderer = render(
       <NativeEventBannerBackgroundVideo
-        {...({ source: "https://cdn.example/clf.mp4", playbackEnabled: false } as any)}
+        {...({
+          source: "https://cdn.example/clf.mp4",
+          playbackEnabled: false,
+          contentFit: "contain",
+        } as any)}
       />,
     );
 
     expect(mockNativePlayer.play).not.toHaveBeenCalled();
     expect(mockNativePlayer.pause).toHaveBeenCalledTimes(1);
+    expect(renderer.root.findByType("VideoView" as any).props).toMatchObject({
+      contentFit: "contain",
+      accessibilityElementsHidden: true,
+      importantForAccessibility: "no-hide-descendants",
+    });
   });
 
-  it("does not start an inactive web hero film", () => {
+  it("does not start an inactive web hero film and applies caller-controlled fit and focal position", () => {
     const video = {...createWebVideo(), pause: jest.fn()};
-    render(
+    const renderer = render(
       <WebEventBannerBackgroundVideo
-        {...({ source: "https://cdn.example/clf.mp4", playbackEnabled: false } as any)}
+        {...({
+          source: "https://cdn.example/clf.mp4",
+          playbackEnabled: false,
+          contentFit: "contain",
+          focalPosition: "center top",
+        } as any)}
       />,
       {
         createNodeMock: (element) => (element.type === "video" ? video : null),
@@ -165,6 +179,13 @@ describe("EventBannerBackgroundVideo", () => {
 
     expect(video.play).not.toHaveBeenCalled();
     expect(video.pause).toHaveBeenCalledTimes(1);
+    expect(renderer.root.findByType("video").props).toMatchObject({
+      "aria-hidden": true,
+      style: expect.objectContaining({
+        objectFit: "contain",
+        objectPosition: "center top",
+      }),
+    });
   });
 
   it("reveals ready web video immediately when playback does not return a promise", () => {

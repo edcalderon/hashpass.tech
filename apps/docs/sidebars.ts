@@ -86,7 +86,12 @@ const sidebars = {
     {
       type: 'category',
       label: 'Guides',
-      items: ['guides/README', 'guides/user-onboarding', 'guides/speaker-onboarding'],
+      items: [
+        'guides/README',
+        'guides/install-hashpass',
+        'guides/user-onboarding',
+        'guides/speaker-onboarding',
+      ],
     },
     {
       type: 'category',

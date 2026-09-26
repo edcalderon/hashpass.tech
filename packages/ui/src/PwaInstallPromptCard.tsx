@@ -18,6 +18,8 @@ export interface PwaInstallPromptCardProps {
   infoLabel?: string;
   closeLabel?: string;
   secondaryLabel?: string;
+  learnMoreLabel?: string;
+  learnMoreHref?: string;
   tertiaryLabel?: string;
   dialogLabel?: string;
   collapsed?: boolean;
@@ -58,6 +60,8 @@ export default function PwaInstallPromptCard({
   infoLabel = "What is this?",
   closeLabel = "Close install prompt",
   secondaryLabel,
+  learnMoreLabel,
+  learnMoreHref,
   tertiaryLabel,
   dialogLabel,
   collapsed = false,
@@ -424,6 +428,21 @@ export default function PwaInstallPromptCard({
           color: #ffffff;
         }
 
+        .${scopeClass} .hp-pwa-learn-more {
+          color: rgba(221, 230, 255, 0.86);
+          font-size: 0.8rem;
+          font-weight: 570;
+          line-height: 1.4;
+          text-align: center;
+          text-decoration: underline;
+          text-underline-offset: 3px;
+          transition: color 160ms ease;
+        }
+
+        .${scopeClass} .hp-pwa-learn-more:hover {
+          color: #ffffff;
+        }
+
         .${scopeClass} .hp-pwa-tertiary-action {
           width: 100%;
           border: 1px solid rgba(147, 197, 253, 0.3);
@@ -632,6 +651,16 @@ export default function PwaInstallPromptCard({
             )}
             <span>{primaryLabel}</span>
           </button>
+          {learnMoreLabel && learnMoreHref && (
+            <a
+              className="hp-pwa-learn-more"
+              href={learnMoreHref}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {learnMoreLabel}
+            </a>
+          )}
           {secondaryLabel && onSecondaryAction && (
             <button type="button" className="hp-pwa-secondary-action" onClick={onSecondaryAction}>
               {secondaryLabel}

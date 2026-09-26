@@ -686,6 +686,54 @@ const escapeEmailHtml = (value: unknown) => String(value ?? '')
   .replace(/"/g, '&quot;')
   .replace(/'/g, '&#39;');
 
+export interface EventProposalEmailDetails {
+  eventName: string;
+  contactName: string;
+  email: string;
+  eventDetails: string;
+}
+
+/** Delivers a public event proposal to the configured HASHPASS support inbox. */
+export async function sendEventProposalEmail(
+  details: EventProposalEmailDetails,
+): Promise<{ success: boolean; error?: string; messageId?: string }> {
+  if (!emailEnabled || !transporter) {
+    return { success: false, error: 'Email service is not configured' };
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(details.email) || details.email.length > 254) {
+    return { success: false, error: 'Invalid reply-to email address' };
+  }
+
+  const supportEmail = process.env.NODEMAILER_FROM_SUPPORT || 'support@hashpass.tech';
+  const safeEventName = details.eventName.replace(/[\r\n\u0000-\u001f\u007f]+/g, ' ').replace(/\s+/g, ' ').trim();
+  const subject = `[HASHPASS Event Proposal] ${safeEventName}`;
+  const text = [
+    'Event proposal',
+    '',
+    `Event: ${details.eventName}`,
+    `Contact: ${details.contactName}`,
+    `Email: ${details.email}`,
+    '',
+    'Event details:',
+    details.eventDetails,
+  ].join('\n');
+  const html = `<h1>Event proposal</h1><p><strong>Event:</strong> ${escapeEmailHtml(details.eventName)}</p><p><strong>Contact:</strong> ${escapeEmailHtml(details.contactName)}</p><p><strong>Email:</strong> ${escapeEmailHtml(details.email)}</p><h2>Event details</h2><div style="white-space:pre-wrap">${escapeEmailHtml(details.eventDetails)}</div>`;
+
+  try {
+    const info = await transporter.sendMail({
+      from: `HASHPASS <${smtpFrom}>`,
+      to: supportEmail,
+      replyTo: details.email,
+      subject,
+      text,
+      html,
+    });
+    return { success: true, messageId: info.messageId };
+  } catch (error: any) {
+    return { success: false, error: error?.message || 'Email delivery failed' };
+  }
+}
+
 export type AdminCampaignTemplate = 'branded' | 'raw';
 
 export interface AdminCampaignEmail {

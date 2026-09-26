@@ -5,14 +5,14 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { MaterialIcons } from '../../lib/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
-import { t } from '@lingui/macro';
-import { useLingui } from '@lingui/react';
 import { useTranslation } from '../../i18n/i18n';
 
 // A dedicated HTTPS redirect keeps this short public link stable while the
 // documentation site remains published beneath the Club's canonical path.
 const DEFAULT_PROD_DOCS_URL = 'https://docs.hashpass.club/';
 const DEFAULT_LOCAL_DOCS_URL = 'http://localhost:3101/';
+const PWA_GUIDE_URL = 'https://hashpass.club/documentation/guides/install-hashpass/';
+const PWA_GUIDE_COPY = { message: 'Install HASHPASS PWA guide' } as const;
 
 function getDocumentationUrl() {
   if (typeof window === 'undefined') {
@@ -33,16 +33,8 @@ function getDocumentationUrl() {
 export default function DocsScreen() {
   const { colors, isDark } = useTheme();
   const router = useRouter();
-  const { i18n } = useLingui();
   const styles = getStyles(isDark, colors);
-  // Uses the app's real i18n system (useTranslation from i18n/i18n.ts)
-  // rather than this file's existing @lingui/macro t() calls above --
-  // those catalogs are never actually compiled in this repo (see
-  // app/(shared)/privacy.tsx's migration for the full story), so a new
-  // addition using the same macro would render just as broken as the rest
-  // of this screen currently does. Reuses the same 'privacy'/'terms'/
-  // 'deleteAccount' namespaces the legal pages themselves use, so the
-  // labels here can't drift out of sync with those pages' own titles.
+  const { t: tDocs } = useTranslation('index.docs');
   const { t: tPrivacy } = useTranslation('privacy');
   const { t: tTerms } = useTranslation('terms');
   const { t: tDeleteAccount } = useTranslation('deleteAccount');
@@ -50,70 +42,70 @@ export default function DocsScreen() {
   const guides = [
     {
       id: 'getting-started',
-      title: t({ id: 'index.docs.gettingStarted.title', message: 'Getting Started' }),
-      description: t({ id: 'index.docs.gettingStarted.description', message: 'Learn how to sign in and navigate the app' }),
+      title: tDocs('gettingStarted.title', 'Getting Started'),
+      description: tDocs('gettingStarted.description', 'Learn how to sign in and navigate the app'),
       sections: [
         {
-          title: t({ id: 'index.docs.gettingStarted.signIn.title', message: 'Sign In to Your Account' }),
-          content: t({ id: 'index.docs.gettingStarted.signIn.content', message: 'To get started, you\'ll need to sign in to the HASHPASS app. Open the app, enter your email address, check your email for a one-time login code, and enter the code to access your account.' }),
+          title: tDocs('gettingStarted.signIn.title', 'Sign In to Your Account'),
+          content: tDocs('gettingStarted.signIn.content', 'To get started, you\'ll need to sign in to the HASHPASS app. Open the app, enter your email address, check your email for a one-time login code, and enter the code to access your account.'),
         },
         {
-          title: t({ id: 'index.docs.gettingStarted.explore.title', message: 'Explore Speakers & Events' }),
-          content: t({ id: 'index.docs.gettingStarted.explore.content', message: 'Once you\'re signed in, you can browse through the amazing speakers and events. Navigate to the Explore section, browse speakers by category or search for specific names, and view speaker profiles, topics, and availability.' }),
+          title: tDocs('gettingStarted.explore.title', 'Explore Speakers & Events'),
+          content: tDocs('gettingStarted.explore.content', 'Once you\'re signed in, you can browse speakers and events. Open Explore, browse by category or search for a name, then view speaker profiles, topics, and availability.'),
         },
         {
-          title: t({ id: 'index.docs.gettingStarted.requestMeeting.title', message: 'Send a Meeting Request' }),
-          content: t({ id: 'index.docs.gettingStarted.requestMeeting.content', message: 'Ready to connect with a speaker? Find a speaker you\'d like to meet, tap on their profile to view details, click the "Request Meeting" button, select your preferred date and time slot, add a message (optional), and submit your request.' }),
+          title: tDocs('gettingStarted.requestMeeting.title', 'Send a Meeting Request'),
+          content: tDocs('gettingStarted.requestMeeting.content', 'Find a speaker you would like to meet, open their profile, select Request Meeting, choose a date and time, add an optional message, and submit your request.'),
         },
         {
-          title: t({ id: 'index.docs.gettingStarted.trackRequests.title', message: 'Track Your Requests' }),
-          content: t({ id: 'index.docs.gettingStarted.trackRequests.content', message: 'Keep track of all your meeting requests. Check the Notifications section for updates, view pending, accepted, or declined requests, and receive notifications when speakers respond.' }),
+          title: tDocs('gettingStarted.trackRequests.title', 'Track Your Requests'),
+          content: tDocs('gettingStarted.trackRequests.content', 'Check Notifications for updates, review pending, accepted, or declined requests, and see when speakers respond.'),
         },
       ],
     },
     {
       id: 'troubleshooting',
-      title: t({ id: 'index.docs.troubleshooting.title', message: 'Troubleshooting' }),
-      description: t({ id: 'index.docs.troubleshooting.description', message: 'Solutions to common problems' }),
+      title: tDocs('troubleshooting.title', 'Troubleshooting'),
+      description: tDocs('troubleshooting.description', 'Solutions to common problems'),
       sections: [
         {
-          title: t({ id: 'index.docs.troubleshooting.loadingIssues.title', message: 'Having Issues Loading the Web App?' }),
-          content: t({ id: 'index.docs.troubleshooting.loadingIssues.content', message: 'If you\'re experiencing problems loading the web app, we recommend clearing your browser cache or performing a hard refresh.' }),
+          title: tDocs('troubleshooting.loadingIssues.title', 'Having Issues Loading the Web App?'),
+          content: tDocs('troubleshooting.loadingIssues.content', 'If the web app is not loading correctly, try clearing your browser cache or performing a hard refresh.'),
           steps: [
-            t({ id: 'index.docs.troubleshooting.loadingIssues.step1', message: 'Clear browser cache: Go to your browser settings and clear cached images and files' }),
-            t({ id: 'index.docs.troubleshooting.loadingIssues.step2', message: 'Hard refresh: Press Ctrl+Shift+R (Windows/Linux) or Cmd+Shift+R (Mac) to reload the page without cache' }),
+            tDocs('troubleshooting.loadingIssues.step1', 'Clear browser cache: Open your browser settings and clear cached images and files.'),
+            tDocs('troubleshooting.loadingIssues.step2', 'Hard refresh: Press Ctrl+Shift+R on Windows or Linux, or Cmd+Shift+R on Mac.'),
           ],
         },
         {
-          title: t({ id: 'index.docs.troubleshooting.loginIssues.title', message: 'Login Problems' }),
-          content: t({ id: 'index.docs.troubleshooting.loginIssues.content', message: 'If you\'re having trouble logging in, make sure you\'re using the correct email address and check your spam folder for the login code. If the code has expired, request a new one.' }),
+          title: tDocs('troubleshooting.loginIssues.title', 'Login Problems'),
+          content: tDocs('troubleshooting.loginIssues.content', 'Confirm your email address and check your spam folder for the login code. If the code expired, request a new one.'),
         },
         {
-          title: t({ id: 'index.docs.troubleshooting.meetingIssues.title', message: 'Meeting Request Issues' }),
-          content: t({ id: 'index.docs.troubleshooting.meetingIssues.content', message: 'If your meeting requests aren\'t being sent or received, check your internet connection, ensure you\'re signed in, and verify that the speaker has availability during your selected time slot.' }),
+          title: tDocs('troubleshooting.meetingIssues.title', 'Meeting Request Issues'),
+          content: tDocs('troubleshooting.meetingIssues.content', 'Check your internet connection, confirm that you are signed in, and verify that the speaker is available during the selected time.'),
         },
       ],
     },
     {
       id: 'tips',
-      title: t({ id: 'index.docs.tips.title', message: 'Pro Tips' }),
-      description: t({ id: 'index.docs.tips.description', message: 'Best practices for using HASHPASS' }),
+      title: tDocs('tips.title', 'Pro Tips'),
+      description: tDocs('tips.description', 'Best practices for using HASHPASS'),
       sections: [
         {
-          title: t({ id: 'index.docs.tips.specificRequests.title', message: 'Be Specific in Meeting Requests' }),
-          content: t({ id: 'index.docs.tips.specificRequests.content', message: 'Speakers appreciate knowing what you\'d like to discuss. Be specific in your meeting request message to increase the chances of acceptance.' }),
+          title: tDocs('tips.specificRequests.title', 'Be Specific in Meeting Requests'),
+          content: tDocs('tips.specificRequests.content', 'Tell the speaker what you would like to discuss. A specific message can improve the chance that your request is accepted.'),
         },
         {
-          title: t({ id: 'index.docs.tips.checkAvailability.title', message: 'Check Speaker Availability' }),
-          content: t({ id: 'index.docs.tips.checkAvailability.content', message: 'Before sending requests, check the speaker\'s availability calendar to ensure they\'re free during your preferred time slot.' }),
+          title: tDocs('tips.checkAvailability.title', 'Check Speaker Availability'),
+          content: tDocs('tips.checkAvailability.content', 'Before sending a request, check the speaker\'s calendar to confirm they are free at your preferred time.'),
         },
         {
-          title: t({ id: 'index.docs.tips.respondPromptly.title', message: 'Respond Promptly' }),
-          content: t({ id: 'index.docs.tips.respondPromptly.content', message: 'When a speaker accepts your meeting request, respond promptly to confirm your meeting and show your commitment.' }),
+          title: tDocs('tips.respondPromptly.title', 'Respond Promptly'),
+          content: tDocs('tips.respondPromptly.content', 'When a speaker accepts your request, respond promptly to confirm the meeting.'),
         },
         {
-          title: t({ id: 'index.docs.tips.useSearch.title', message: 'Use the Search Function' }),
-          content: t({ id: 'index.docs.tips.useSearch.content', message: 'Use the search function to find speakers by topic, company, or name. This will help you quickly find the right people to connect with.' }),
+          title: tDocs('tips.useSearch.title', 'Use Search'),
+          content: tDocs('tips.useSearch.content', 'Search by topic, company, or name to find the right people more quickly.'),
         },
       ],
     },
@@ -123,6 +115,8 @@ export default function DocsScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel={tDocs('back', 'Go back')}
           onPress={() => router.back()}
           style={styles.backButton}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
@@ -130,14 +124,14 @@ export default function DocsScreen() {
           <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle} selectable={false}>
-          {t({ id: 'index.docs.title', message: 'Documentation' })}
+          {tDocs('title', 'Documentation')}
         </Text>
         <View style={{ width: 40 }} />
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false} contentContainerStyle={styles.contentContainer}>
         <Text style={styles.subtitle} selectable={false}>
-          {t({ id: 'index.docs.subtitle', message: 'Complete guides and troubleshooting' })}
+          {tDocs('subtitle', 'Complete guides and troubleshooting')}
         </Text>
 
         {guides.map((guide) => (
@@ -164,29 +158,45 @@ export default function DocsScreen() {
 
             {guide.id === 'getting-started' && (
               <TouchableOpacity
+                accessibilityRole="button"
+                accessibilityLabel={tDocs('gettingStarted.seeDemo', 'See the demo videos')}
                 onPress={() => router.push('/demo')}
                 style={styles.demoLinkButton}
                 activeOpacity={0.8}
               >
                 <MaterialIcons name="play-circle-outline" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
                 <Text style={styles.demoLinkButtonText} selectable={false}>
-                  {t({ id: 'index.docs.gettingStarted.seeDemo', message: 'See the demo videos' })}
+                  {tDocs('gettingStarted.seeDemo', 'See the demo videos')}
                 </Text>
               </TouchableOpacity>
             )}
           </View>
         ))}
 
+        <TouchableOpacity
+          accessibilityRole="link"
+          accessibilityLabel={tDocs('installPwaGuide', PWA_GUIDE_COPY.message)}
+          onPress={() => Linking.openURL(PWA_GUIDE_URL)}
+          style={[styles.documentationButton, styles.pwaGuideButton]}
+        >
+          <Ionicons name="download-outline" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
+          <Text style={styles.documentationButtonText} selectable={false}>
+            {tDocs('installPwaGuide', PWA_GUIDE_COPY.message)}
+          </Text>
+        </TouchableOpacity>
+
         {/* Full Documentation Section */}
         {Platform.OS === 'web' && (
           <View style={styles.documentationSection}>
             <Text style={styles.documentationTitle} selectable={false}>
-              {t({ id: 'index.docs.interactiveDocs.title', message: 'Full Documentation' })}
+              {tDocs('interactiveDocs.title', 'Full Documentation')}
             </Text>
             <Text style={styles.documentationDescription} selectable={false}>
-              {t({ id: 'index.docs.interactiveDocs.description', message: 'Open the full documentation site for guides, references, and examples' })}
+              {tDocs('interactiveDocs.description', 'Open the full documentation site for guides, references, and examples')}
             </Text>
             <TouchableOpacity
+              accessibilityRole="link"
+              accessibilityLabel={tDocs('viewStorybook', 'See Full Documentation')}
               onPress={() => {
                 if (typeof window !== 'undefined') {
                   const docsUrl = getDocumentationUrl();
@@ -197,7 +207,7 @@ export default function DocsScreen() {
             >
               <Ionicons name="book-outline" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
               <Text style={styles.documentationButtonText} selectable={false}>
-                {t({ id: 'index.docs.viewStorybook', message: 'See Full Documentation' })}
+                {tDocs('viewStorybook', 'See Full Documentation')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -206,9 +216,11 @@ export default function DocsScreen() {
         {/* Contact Support Section */}
         <View style={styles.footer}>
           <Text style={styles.footerText} selectable={false}>
-            {t({ id: 'index.docs.needHelp', message: 'Need more help?' })}
+            {tDocs('needHelp', 'Need more help?')}
           </Text>
           <TouchableOpacity
+            accessibilityRole="link"
+            accessibilityLabel={tDocs('contactSupport', 'Contact Support')}
             onPress={() => {
               const supportEmail = process.env.NODEMAILER_FROM_SUPPORT || 'support@hashpass.tech';
               Linking.openURL(`mailto:${supportEmail}`);
@@ -216,7 +228,7 @@ export default function DocsScreen() {
             style={styles.supportButton}
           >
             <Text style={styles.supportButtonText} selectable={false}>
-              {t({ id: 'index.docs.contactSupport', message: 'Contact Support' })}
+              {tDocs('contactSupport', 'Contact Support')}
             </Text>
           </TouchableOpacity>
 
@@ -374,6 +386,10 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
+  },
+  pwaGuideButton: {
+    alignSelf: 'center',
+    marginBottom: 20,
   },
   demoLinkButton: {
     backgroundColor: colors.primary,

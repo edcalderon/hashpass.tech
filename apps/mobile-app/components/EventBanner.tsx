@@ -11,6 +11,7 @@ import {
   Image,
   ImageBackground,
   Linking,
+  useWindowDimensions,
 } from "react-native";
 import { useTheme } from "../hooks/useTheme";
 import { useAuth } from "../hooks/useAuth";
@@ -22,6 +23,14 @@ import {
   getEventBadgeAsset,
   resolveEventImageSource,
 } from "../lib/event-branding";
+import { MaterialIcons } from "../lib/vector-icons";
+import { Pause as LucidePause, Play as LucidePlay } from "lucide";
+import { MorphIcon } from "../lib/morph-icon";
+import AgendaTracker from "./AgendaTracker";
+import EventBannerBackgroundVideo from "./EventBannerBackgroundVideo";
+import SafeLinearGradient from "./SafeLinearGradient";
+import { getEventBannerCtaLayout } from "../lib/banner-cta";
+import type { EventBannerCtaPosition } from "@hashpass/types";
 
 // Hash Poker Room's per-tournament cover graphics are scraped from PKRR and
 // come in inconsistent (often square/portrait) aspect ratios, which crop
@@ -31,12 +40,6 @@ import {
 // re-hosted, not hotlinked), composed for exactly this aspect ratio, so it
 // looks correct at any width instead of fighting each tournament's graphic.
 const HASH_POKER_BANNER = require("../assets/logos/hash-poker/hash-poker-room-banner.webp");
-import { MaterialIcons } from "../lib/vector-icons";
-import AgendaTracker from "./AgendaTracker";
-import EventBannerBackgroundVideo from "./EventBannerBackgroundVideo";
-import SafeLinearGradient from "./SafeLinearGradient";
-import { getEventBannerCtaLayout } from "../lib/banner-cta";
-import type { EventBannerCtaPosition } from "@hashpass/types";
 
 interface EventBannerProps {
   title: string;
@@ -64,6 +67,8 @@ interface EventBannerProps {
   ctaPosition?: EventBannerCtaPosition;
   /** Lets hosts keep campaign media and copy while owning navigation elsewhere. */
   showCta?: boolean;
+  /** Responsive public detail presentation; default keeps carousel geometry. */
+  variant?: "default" | "detail";
 }
 
 interface TimeLeft {
@@ -120,11 +125,14 @@ export default function EventBanner({
   ctaUrl,
   ctaPosition,
   showCta = true,
+  variant = "default",
 }: EventBannerProps) {
   const { isDark, colors } = useTheme();
   const router = useRouter();
   const { isLoggedIn } = useAuth();
   const { t } = useTranslation("explore");
+  const { width: viewportWidth } = useWindowDimensions();
+  const isDetailVariant = variant === "detail";
   const tourBrand = getTourBrandAsset(eventId);
   const eventBadge = getEventBadgeAsset(eventId);
   const heroImageSource =
@@ -150,8 +158,16 @@ export default function EventBanner({
     calculateTimeLeft(eventStartDate),
   );
   const [isEventLive, setIsEventLive] = useState(false);
+  const [isDetailVideoPaused, setIsDetailVideoPaused] = useState(false);
   const [pulseAnim] = useState(new Animated.Value(1));
-  const styles = getStyles(isDark, colors, backgroundColor, isArchiveEvent);
+  const styles = getStyles(
+    isDark,
+    colors,
+    backgroundColor,
+    isArchiveEvent,
+    isDetailVariant,
+    viewportWidth,
+  );
 
   // Check if event has started based on eventStartDate
   useEffect(() => {
@@ -238,7 +254,9 @@ export default function EventBanner({
             loadingLogo={eventImage}
             loadingLabel={t("rework.loadingEventFilm", "Loading event film")}
             preferBundledSource={eventId === "criptolatinfest"}
-            playbackEnabled={videoPlaybackEnabled}
+            playbackEnabled={videoPlaybackEnabled && !isDetailVideoPaused}
+            contentFit="cover"
+            focalPosition={isDetailVariant ? "center center" : "center bottom"}
           />
           <SafeLinearGradient
             colors={
@@ -342,7 +360,9 @@ export default function EventBanner({
               ) : eventShortName ? (
                 <Text style={styles.eventShortName}>{eventShortName}</Text>
               ) : null}
-              <Text style={styles.eventTitle}>{title}</Text>
+              <Text accessibilityRole="header" style={styles.eventTitle}>
+                {title}
+              </Text>
             </View>
           )}
           <Text style={styles.eventSubtitle}>{subtitle}</Text>
@@ -465,6 +485,26 @@ export default function EventBanner({
           </>
         )}
       </View>
+      {isDetailVariant && hasVideoBackground && videoPlaybackEnabled ? (
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel={
+            isDetailVideoPaused
+              ? t("banner.playFilm", "Play background video")
+              : t("banner.pauseFilm", "Pause background video")
+          }
+          onPress={() => setIsDetailVideoPaused((paused) => !paused)}
+          style={styles.videoControl}
+        >
+          <MorphIcon
+            icon={isDetailVideoPaused ? LucidePlay : LucidePause}
+            size={20}
+            color={uiTokens.colors.dark.onAccent}
+            strokeWidth={2}
+            fallbackIconName={isDetailVideoPaused ? "play" : "pause"}
+          />
+        </TouchableOpacity>
+      ) : null}
       {showCta && ctaLabel ? (
         <TouchableOpacity
           disabled={!ctaUrl}
@@ -488,22 +528,33 @@ const getStyles = (
   colors: any,
   backgroundColor: string,
   isArchiveEvent: boolean,
+  isDetailVariant: boolean,
+  viewportWidth: number,
 ) =>
   StyleSheet.create({
     headerSection: {
-      padding: 20,
-      paddingTop: (StatusBar.currentHeight || 0) + 100, // Extra top padding to account for nav bar overlay
+      padding: isDetailVariant && viewportWidth >= 768 ? uiTokens.space.xxl : 20,
+      paddingTop: isDetailVariant
+        ? (StatusBar.currentHeight || 0) + (viewportWidth >= 768 ? 112 : 88)
+        : (StatusBar.currentHeight || 0) + 100,
       backgroundColor: isArchiveEvent
         ? isDark
           ? "#07111F"
           : "#F4F7FB"
         : backgroundColor,
       alignItems: "center",
-      minHeight: 390,
+      minHeight: isDetailVariant
+        ? viewportWidth >= 1024
+          ? 560
+          : viewportWidth >= 768
+            ? 480
+            : 360
+        : 390,
       justifyContent: "center",
       flex: 1,
       position: "relative",
       overflow: "hidden",
+      borderRadius: isDetailVariant ? uiTokens.radius.media : 0,
     },
     heroBackground: {
       ...StyleSheet.absoluteFillObject,
@@ -557,6 +608,7 @@ const getStyles = (
     },
     contentShell: {
       width: "100%",
+      maxWidth: isDetailVariant ? 860 : undefined,
       position: "relative",
       zIndex: 2,
       alignItems: "center",
@@ -587,7 +639,20 @@ const getStyles = (
       width: "100%",
     },
     eventTitle: {
-      fontSize: 28,
+      fontSize: isDetailVariant
+        ? viewportWidth >= 1024
+          ? uiTokens.type.display
+          : viewportWidth >= 768
+            ? uiTokens.type.heading
+            : 28
+        : 28,
+      lineHeight: isDetailVariant
+        ? viewportWidth >= 1024
+          ? 48
+          : viewportWidth >= 768
+            ? 40
+            : 34
+        : undefined,
       fontWeight: "bold",
       color: "#FFFFFF",
       marginBottom: 4,
@@ -600,8 +665,8 @@ const getStyles = (
       width: "100%",
     },
     eventLogo: {
-      width: 168,
-      height: 54,
+      width: isDetailVariant && viewportWidth >= 768 ? 224 : 168,
+      height: isDetailVariant && viewportWidth >= 768 ? 72 : 54,
       marginBottom: 6,
     },
     logoSubLabel: {
@@ -709,6 +774,8 @@ const getStyles = (
     countdownTimer: {
       flexDirection: "row",
       alignItems: "center",
+      flexWrap: "wrap",
+      justifyContent: "center",
     },
     timeUnit: {
       alignItems: "center",
@@ -716,7 +783,7 @@ const getStyles = (
       paddingHorizontal: 8,
       paddingVertical: 6,
       borderRadius: 8,
-      minWidth: 50,
+      minWidth: isDetailVariant && viewportWidth >= 768 ? 64 : 50,
     },
     timeValue: {
       color: "#FFFFFF",
@@ -734,7 +801,21 @@ const getStyles = (
       color: "#FFFFFF",
       fontSize: 16,
       fontWeight: "bold",
-      marginHorizontal: 4,
+      marginHorizontal: isDetailVariant && viewportWidth >= 768 ? 8 : 4,
+    },
+    videoControl: {
+      position: "absolute",
+      top: (StatusBar.currentHeight || 0) + uiTokens.space.lg,
+      right: uiTokens.space.lg,
+      width: uiTokens.control.minHeight,
+      height: uiTokens.control.minHeight,
+      borderRadius: uiTokens.radius.circle,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: uiTokens.colors.dark.overlay,
+      borderWidth: uiTokens.control.borderWidth,
+      borderColor: uiTokens.colors.dark.muted,
+      zIndex: 4,
     },
     // Finished Event Badge
     finishedBadge: {

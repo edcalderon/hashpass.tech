@@ -25,7 +25,9 @@ const ANDROID_CHROME_512 = require('../assets/android-chrome-512x512.webp');
 
 const COLLAPSE_KEY = 'hashpass:pwa-install-collapsed';
 const DONT_SHOW_AGAIN_KEY = 'hashpass:pwa-dont-show-until-reload';
-const ANDROID_PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.hashpass.tech';
+const PWA_GUIDE_URL = 'https://hashpass.club/documentation/guides/install-hashpass/';
+const DEFAULT_INSTALL_DESCRIPTION =
+  'Install HASHPASS as a PWA or download the app from your preferred app store. Available now on Google Play.';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -271,17 +273,6 @@ const PWAPrompt = () => {
     event.currentTarget.releasePointerCapture?.(event.pointerId);
   };
 
-  const openPlayStore = () => {
-    if (Platform.OS !== 'web' || typeof window === 'undefined') {
-      return;
-    }
-
-    const openedWindow = window.open(ANDROID_PLAY_STORE_URL, '_blank', 'noopener,noreferrer');
-    if (!openedWindow) {
-      window.location.assign(ANDROID_PLAY_STORE_URL);
-    }
-  };
-
   const installPWA = async () => {
     if (deferredPrompt) {
       try {
@@ -346,8 +337,6 @@ const PWAPrompt = () => {
   if (dontShowAgain && !showInstallHelpModal) {
     return null;
   }
-
-  const isAndroidBrowser = typeof window !== 'undefined' && /Android/i.test(window.navigator.userAgent);
 
   const handleDontShowAgain = () => {
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
@@ -426,20 +415,17 @@ const PWAPrompt = () => {
             primaryIconSrc={primaryIconSrc}
             primaryLabel={t('close', 'Close install prompt')}
             title={t('installTitle', 'Install HASHPASS')}
-            description={t(
-              'installDescription',
-              'Install HASHPASS as a PWA to launch it like an app from your home screen.'
-            )}
+            description={t('installDescription', DEFAULT_INSTALL_DESCRIPTION)}
             bodyItems={installInstructions}
             dialogLabel={t('dialogLabel', 'HASHPASS install prompt')}
             closeLabel={t('close', 'Close install prompt')}
+            learnMoreLabel={t('learnMore', 'Learn more about installing HASHPASS')}
+            learnMoreHref={PWA_GUIDE_URL}
             infoLabel={t('whatIsThis', 'What is this?')}
             infoIntro={t('infoIntro', 'A PWA (Progressive Web App) lets HASHPASS behave like a native app on your device.')}
-                showInfoToggle={false}
-                collapsed={false}
-                tertiaryLabel={isAndroidBrowser ? t('playStoreAction', 'Get the full app on Google Play') : undefined}
-                onTertiaryAction={isAndroidBrowser ? openPlayStore : undefined}
-                onPrimaryAction={closeInstallHelpModal}
+            showInfoToggle={false}
+            collapsed={false}
+            onPrimaryAction={closeInstallHelpModal}
             onClose={closeInstallHelpModal}
           />
         </div>
@@ -469,7 +455,7 @@ const PWAPrompt = () => {
       ];
 
   const promptCard = (
-      <PwaInstallPromptCard
+    <PwaInstallPromptCard
         className={`hp-pwa-floating${isCollapsed ? ' hp-pwa-collapsed-state' : ''}`}
         appName="HASHPASS"
         logoSrc={logoSrc}
@@ -480,7 +466,7 @@ const PWAPrompt = () => {
         description={
           isOpenAppMode
             ? t('openDescription', 'HASHPASS is already installed. Open it in app mode for the best mobile experience.')
-            : t('installDescription', 'Install HASHPASS as a PWA to launch it like an app from your home screen.')
+            : t('installDescription', DEFAULT_INSTALL_DESCRIPTION)
         }
         dialogLabel={
           isOpenAppMode
@@ -488,6 +474,8 @@ const PWAPrompt = () => {
             : t('dialogLabel', 'HASHPASS install prompt')
         }
         closeLabel={t('close', 'Close install prompt')}
+        learnMoreLabel={t('learnMore', 'Learn more about installing HASHPASS')}
+        learnMoreHref={PWA_GUIDE_URL}
         infoLabel={t('whatIsThis', 'What is this?')}
         infoIntro={t('infoIntro', 'A PWA (Progressive Web App) lets HASHPASS behave like a native app on your device.')}
         details={detailsWithCheckbox}
@@ -495,14 +483,12 @@ const PWAPrompt = () => {
         collapsed={isCollapsed}
         collapsedLabel={collapsedLabel}
         collapsedActionVariant={isOpenAppMode ? 'open' : 'install'}
-            secondaryLabel={!isCollapsed && !isOpenAppMode ? t('dontShowAgain', "Don't show again until reload") : undefined}
-            onSecondaryAction={!isCollapsed && !isOpenAppMode ? handleDontShowAgain : undefined}
-            tertiaryLabel={!isCollapsed && !isOpenAppMode && isAndroidBrowser ? t('playStoreAction', 'Get the full app on Google Play') : undefined}
-            onTertiaryAction={!isCollapsed && !isOpenAppMode && isAndroidBrowser ? openPlayStore : undefined}
+        secondaryLabel={!isCollapsed && !isOpenAppMode ? t('dontShowAgain', "Don't show again until reload") : undefined}
+        onSecondaryAction={!isCollapsed && !isOpenAppMode ? handleDontShowAgain : undefined}
         onExpand={expandPrompt}
         onPrimaryAction={isOpenAppMode ? openApp : installPWA}
         onClose={collapsePrompt}
-      />
+    />
   );
 
   if (isCollapsed) {
