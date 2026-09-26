@@ -3,6 +3,26 @@ import fs from 'node:fs';
 import fsPromises from 'node:fs/promises';
 import path from 'node:path';
 
+export interface CapChallengeData {
+  challenge: { c: number; s: number; d: number };
+  expires: number;
+}
+
+export interface CapStorageHooks {
+  challenges: {
+    store(token: string, data: unknown): Promise<void>;
+    read(token: string): Promise<CapChallengeData | null>;
+    delete(token: string): Promise<void>;
+    deleteExpired(): Promise<void>;
+  };
+  tokens: {
+    store(key: string, expires: number): Promise<void>;
+    get(key: string): Promise<number | null>;
+    delete(key: string): Promise<void>;
+    deleteExpired(): Promise<void>;
+  };
+}
+
 function resolveDataDir(namespace: string): string {
   const tmp = `/tmp/cap-data-${namespace}`;
   try {
@@ -32,7 +52,14 @@ async function writeJson(filePath: string, data: Record<string, unknown>): Promi
   await fsPromises.writeFile(filePath, JSON.stringify(data), 'utf8');
 }
 
-function buildCapInstance(namespace: string): Cap {
+function buildCapInstance(namespace: string, sharedStorage?: CapStorageHooks): Cap {
+  if (sharedStorage) {
+    return new Cap({
+      noFSState: true,
+      storage: sharedStorage,
+    });
+  }
+
   const dataDir = resolveDataDir(namespace);
   const challengesPath = path.join(dataDir, 'challengesList.json');
   const tokensPath = path.join(dataDir, 'tokensList.json');
@@ -120,21 +147,23 @@ declare global {
  * Returns a shared Cap (proof-of-work captcha, https://capjs.js.org) instance
  * for the given namespace -- one per service (e.g. 'mobile-app-newsletter',
  * 'hashpass-links-api') so each keeps isolated on-disk challenge/token
- * storage rather than colliding on the same files. Memoized on a global so
- * every route module in the same warm Lambda container reuses one instance
- * per namespace: without this, each route module would construct its own
- * Cap instance, and each one registers its own SIGINT/SIGTERM/SIGQUIT/
+ * storage rather than colliding on the same files. Callers running across
+ * multiple processes or serverless instances must provide shared storage;
+ * the filesystem adapter is only a local-development fallback. Memoized on a
+ * global so every route module in the same warm Lambda container reuses one
+ * instance per namespace: without this, each route module would construct its
+ * own Cap instance, and each one registers its own SIGINT/SIGTERM/SIGQUIT/
  * beforeExit listeners, eventually exceeding Node's MaxListeners warning
  * threshold. Extracted from the original single-service
  * apps/mobile-app/lib/cap-instance.ts so every service that needs Cap
  * shares one filesystem storage adapter instead of copy-pasting it.
  */
-export function getCapInstance(namespace: string): Cap {
+export function getCapInstance(namespace: string, sharedStorage?: CapStorageHooks): Cap {
   if (!globalThis.__hashpassCapInstances) {
     globalThis.__hashpassCapInstances = {};
   }
   if (!globalThis.__hashpassCapInstances[namespace]) {
-    globalThis.__hashpassCapInstances[namespace] = buildCapInstance(namespace);
+    globalThis.__hashpassCapInstances[namespace] = buildCapInstance(namespace, sharedStorage);
   }
   return globalThis.__hashpassCapInstances[namespace];
 }
