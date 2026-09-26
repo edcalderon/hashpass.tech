@@ -74,6 +74,12 @@ def is_allowed_email(email: str) -> bool:
     return False
 
 
+def emails_in_line(line: str) -> list[str]:
+    """Find emails without treating JSON escape markers as local-part text."""
+    normalized = re.sub(r"\\[nrt]", " ", line)
+    return EMAIL_RE.findall(normalized)
+
+
 def parse_added_lines(diff_text: str) -> list[tuple[int, str]]:
     """
     Parse email-bearing lines from added hunks only. Returns tuple of new-file
@@ -143,7 +149,7 @@ def main() -> int:
 
         diff = diff_for_file(file_path, base_sha, head_sha)
         for line_no, line in parse_added_lines(diff):
-            for match in EMAIL_RE.findall(line):
+            for match in emails_in_line(line):
                 lowered = match.lower()
                 if is_allowed_email(lowered):
                     continue
