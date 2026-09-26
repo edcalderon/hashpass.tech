@@ -17,7 +17,7 @@ const sampleDocument: LegalDocument = {
   id: 'privacy',
   title: 'Privacy Policy',
   description: 'Privacy details',
-  revision: '25 September 2026',
+  revision: '26 September 2026',
   sourcePath: 'apps/docs/docs/legal/privacy-policy.md',
   sourceUrl: 'https://hashpass.club/documentation/legal/privacy-policy/',
   blocks: [
@@ -25,6 +25,7 @@ const sampleDocument: LegalDocument = {
     { type: 'paragraph', text: 'Plain paragraph' },
     { type: 'quote', text: 'Important notice' },
     { type: 'list', items: ['First item', 'Second item'] },
+    { type: 'list', items: [] },
   ],
 };
 
@@ -116,6 +117,75 @@ it('renders every canonical block type and opens the source document', async () 
 
   act(() => view?.root.findByProps({ accessibilityRole: 'link' }).props.onPress());
   expect(Linking.openURL).toHaveBeenCalledWith(sampleDocument.sourceUrl);
+});
+
+it('keeps a newer bundled policy when the deployed Club artifact is stale', async () => {
+  const staleDocument: LegalDocument = {
+    ...sampleDocument,
+    revision: '24 September 2026',
+    blocks: [{ type: 'paragraph', text: 'Outdated binding copy' }],
+  };
+  jest.mocked(globalThis.fetch).mockResolvedValue(response(staleDocument));
+
+  await act(async () => {
+    view = create(<LegalDocumentContent type="privacy" />);
+    await Promise.resolve();
+  });
+
+  expect(rendered().root.findAllByProps({ children: 'Outdated binding copy' })).toHaveLength(0);
+  expect(JSON.stringify(rendered().toJSON())).toContain('25 September 2026');
+});
+
+it('keeps the bundled policy when equal revision labels contain different text', async () => {
+  const mismatchedDocument: LegalDocument = {
+    ...sampleDocument,
+    revision: '25 September 2026',
+    blocks: [{ type: 'paragraph', text: 'Same-date stale binding copy' }],
+  };
+  jest.mocked(globalThis.fetch).mockResolvedValue(response(mismatchedDocument));
+
+  await act(async () => {
+    view = create(<LegalDocumentContent type="privacy" />);
+    await Promise.resolve();
+  });
+
+  expect(rendered().root.findAllByProps({ children: 'Same-date stale binding copy' })).toHaveLength(0);
+});
+
+it('accepts a deployed Club policy with a newer revision', async () => {
+  const newerDocument: LegalDocument = {
+    ...sampleDocument,
+    revision: '26 September 2026',
+    blocks: [{ type: 'paragraph', text: 'Newer binding copy' }],
+  };
+  jest.mocked(globalThis.fetch).mockResolvedValue(response(newerDocument));
+
+  await act(async () => {
+    view = create(<LegalDocumentContent type="privacy" />);
+    await Promise.resolve();
+  });
+
+  expect(rendered().root.findByProps({ children: 'Newer binding copy' })).toBeTruthy();
+});
+
+it.each([
+  'not a revision',
+  '25 Smarch 2026',
+  '99 September 2026',
+])('ignores a deployed Club policy with invalid revision %s', async (revision) => {
+  const invalidDocument: LegalDocument = {
+    ...sampleDocument,
+    revision,
+    blocks: [{ type: 'paragraph', text: 'Invalid binding copy' }],
+  };
+  jest.mocked(globalThis.fetch).mockResolvedValue(response(invalidDocument));
+
+  await act(async () => {
+    view = create(<LegalDocumentContent type="privacy" />);
+    await Promise.resolve();
+  });
+
+  expect(rendered().root.findAllByProps({ children: 'Invalid binding copy' })).toHaveLength(0);
 });
 
 it('does not fetch while an inactive drawer uses its bundled fallback', async () => {

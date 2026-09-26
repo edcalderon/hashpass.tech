@@ -25,6 +25,58 @@ const bundledDocuments = GENERATED_LEGAL_DOCUMENTS as unknown as Record<
   LegalDocument
 >;
 
+const LEGAL_REVISION_MONTHS = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+] as const;
+
+function legalRevisionTimestamp(revision: string): number | null {
+  const match = /^(\d{1,2}) ([A-Za-z]+) (\d{4})$/.exec(revision);
+  if (!match) return null;
+
+  const month = LEGAL_REVISION_MONTHS.indexOf(
+    match[2] as (typeof LEGAL_REVISION_MONTHS)[number],
+  );
+  if (month < 0) return null;
+
+  const day = Number(match[1]);
+  const year = Number(match[3]);
+  const timestamp = Date.UTC(year, month, day);
+  const date = new Date(timestamp);
+  if (
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() !== month ||
+    date.getUTCDate() !== day
+  ) {
+    return null;
+  }
+
+  return timestamp;
+}
+
+function isNewerThan(
+  candidate: LegalDocument,
+  baseline: LegalDocument,
+): boolean {
+  const candidateRevision = legalRevisionTimestamp(candidate.revision);
+  const baselineRevision = legalRevisionTimestamp(baseline.revision);
+  return (
+    candidateRevision !== null &&
+    baselineRevision !== null &&
+    candidateRevision > baselineRevision
+  );
+}
+
 export function isLegalDocument(
   value: unknown,
   expectedType: LegalDocumentType,
@@ -90,12 +142,17 @@ export function useCanonicalLegalDocument(
   const [document, setDocument] = useState(() => getBundledLegalDocument(type));
 
   useEffect(() => {
-    setDocument(getBundledLegalDocument(type));
+    const bundledDocument = getBundledLegalDocument(type);
+    setDocument(bundledDocument);
     if (!active) return undefined;
 
     const controller = new AbortController();
     fetchCanonicalLegalDocument(type, controller.signal)
-      .then(setDocument)
+      .then((canonicalDocument) => {
+        if (isNewerThan(canonicalDocument, bundledDocument)) {
+          setDocument(canonicalDocument);
+        }
+      })
       .catch((error: unknown) => {
         if (error instanceof Error && error.name === 'AbortError') return;
         // The generated bundle is deliberately the offline/error fallback.
