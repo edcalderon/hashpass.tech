@@ -1,3 +1,22 @@
+## [1.9.71](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.70...v1.9.71) (2026-09-26)
+
+
+### Features
+
+* improve public event and install experiences ([6020c7c](https://github.com/hashpass-tech/hashpass.tech/commit/6020c7c7cbf2ddfcaeb5ad1a8440611ed961d240))
+### Release Highlights
+- improve public event and install experiences
+
+### Release scope
+- Compared with: `v1.9.70` (the previous global release tag)
+
+### Affected products & packages
+- Club web
+- Mobile app
+- Shared UI
+- Documentation
+- Release tooling
+
 ## [1.9.70](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.69...v1.9.70) (2026-09-26)
 
 

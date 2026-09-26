@@ -22,22 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202609262024, // Updated to current timestamp
+  buildNumber: 202609262318, // Updated to current timestamp
   releaseDate: '2026-09-26',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    // No new features
+    'improve public event and install experiences'
   ],
   bugfixes: [
-    'use DOM morph renderer on web'
+    // No bugfixes
   ],
   breakingChanges: [],
-  notes: 'use DOM morph renderer on web'
+  notes: 'improve public event and install experiences'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.71': {
+    version: '1.9.71',
+    buildNumber: 202609262318,
+    releaseDate: '2026-09-26',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'improve public event and install experiences'
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'improve public event and install experiences'
+  },
   '1.9.70': {
     version: '1.9.70',
     buildNumber: 202609262024,

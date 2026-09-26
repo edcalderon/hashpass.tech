@@ -20,19 +20,22 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.70)
+## 📋 Latest Changes (v1.9.71)
 
-### Bug Fixes
+### Features
 
-* use DOM morph renderer on web ([8713aec](https://github.com/hashpass-tech/hashpass.tech/commit/8713aec67ad18610bccbf7d36f509fda8157a082))
+* improve public event and install experiences ([6020c7c](https://github.com/hashpass-tech/hashpass.tech/commit/6020c7c7cbf2ddfcaeb5ad1a8440611ed961d240))
 ### Release Highlights
-- use DOM morph renderer on web
+- improve public event and install experiences
 
 ### Release scope
-- Compared with: `v1.9.69` (the previous global release tag)
+- Compared with: `v1.9.70` (the previous global release tag)
 
 ### Affected products & packages
+- Club web
 - Mobile app
+- Shared UI
+- Documentation
 - Release tooling
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
