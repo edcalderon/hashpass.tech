@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "docusaurus start",
-    "build": "docusaurus build",
+    "dev": "node ../../packages/tools/scripts/generate-legal-content.mjs && docusaurus start",
+    "build": "node ../../packages/tools/scripts/generate-legal-content.mjs && docusaurus build",
     "serve": "docusaurus serve",
     "clear": "docusaurus clear",
     "typecheck": "tsc --noEmit",

@@ -1,7 +1,7 @@
 {
   "name": "hashpass.tech",
   "main": "index.js",
-  "version": "1.9.67",
+  "version": "1.9.68",
   "packageManager": "pnpm@9.15.5",
   "pnpm": {
     "overrides": {
@@ -53,7 +53,10 @@
     "test:coverage": "pnpm --dir apps/mobile-app test:coverage",
     "env:propagate": "node packages/tools/scripts/propagate-env.js",
     "env:sync": "node packages/tools/scripts/sync-env.js",
-    "typecheck": "node packages/tools/scripts/typecheck-changed.mjs",
+    "typecheck": "pnpm legal:check && node packages/tools/scripts/typecheck-changed.mjs",
+    "legal:generate": "node packages/tools/scripts/generate-legal-content.mjs",
+    "legal:check": "node packages/tools/scripts/generate-legal-content.mjs --check",
+    "legal:test": "node --test packages/tools/scripts/legal-content.test.mjs",
     "check:node": "node packages/tools/scripts/check-node-baseline.mjs",
     "preinstall": "node packages/tools/scripts/check-node-baseline.mjs",
     "dev": "npm run env:propagate local && pnpm --filter hashpass-mobile-app dev",

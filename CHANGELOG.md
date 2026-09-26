@@ -1,3 +1,16 @@
+## [1.9.68](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.67...v1.9.68) (2026-09-26)
+### Released
+- normalize escaped lines in privacy scan; sync drawers from canonical docs
+
+### Release scope
+- Compared with: `v1.9.67` (the previous global release tag)
+
+### Affected products & packages
+- Club web
+- Mobile app
+- Documentation
+- Release tooling
+
 ## [1.9.67](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.66...v1.9.67) (2026-09-25)
 ### Released
 - add developer SDK documentation hub

@@ -22,22 +22,39 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202609252013, // Updated to current timestamp
-  releaseDate: '2026-09-25',
+  buildNumber: 202609260119, // Updated to current timestamp
+  releaseDate: '2026-09-26',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'add developer SDK documentation hub'
+    // No new features
   ],
   bugfixes: [
-    // No bugfixes
+    'normalize escaped lines in privacy scan',
+    'sync drawers from canonical docs'
   ],
   breakingChanges: [],
-  notes: 'add developer SDK documentation hub'
+  notes: 'normalize escaped lines in privacy scan; sync drawers from canonical docs'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.68': {
+    version: '1.9.68',
+    buildNumber: 202609260119,
+    releaseDate: '2026-09-26',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'normalize escaped lines in privacy scan',
+      'sync drawers from canonical docs'
+    ],
+    breakingChanges: [],
+    notes: 'normalize escaped lines in privacy scan; sync drawers from canonical docs'
+  },
   '1.9.67': {
     version: '1.9.67',
     buildNumber: 202609252013,
