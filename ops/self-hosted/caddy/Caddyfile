@@ -17,12 +17,12 @@
   }
 }
 
-{$PLANE_DOMAIN:work.hashpass.tech} {
+{$PLANE_DOMAIN:plane.example.invalid} {
   import common_security
   reverse_proxy proxy:80
 }
 
-{$HELPDESK_DOMAIN:support.hashpass.tech} {
+{$HELPDESK_DOMAIN:support.example.invalid} {
   import common_security
   reverse_proxy frappe-frontend:8080
 }

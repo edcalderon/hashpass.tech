@@ -133,3 +133,31 @@ assets/openproof/*.png
 assets/openproof/*.mp4
 apps/web-app/public/openproof/*.png
 apps/web-app/public/openproof/*.mp4
+
+# Operations are private by default. Track only portable, provider-neutral
+# templates required to reproduce the service contract; keep host access,
+# business configuration, tests, and operator automation outside the public
+# repository.
+/ops/*
+!/ops/self-hosted/
+/ops/self-hosted/*
+!/ops/self-hosted/.env.example
+!/ops/self-hosted/README.md
+!/ops/self-hosted/compose.yaml
+!/ops/self-hosted/deploy.sh
+!/ops/self-hosted/backups/
+/ops/self-hosted/backups/*
+!/ops/self-hosted/backups/backup.sh
+!/ops/self-hosted/backups/restore.sh
+!/ops/self-hosted/caddy/
+/ops/self-hosted/caddy/*
+!/ops/self-hosted/caddy/Caddyfile
+!/ops/self-hosted/frappe/
+/ops/self-hosted/frappe/*
+!/ops/self-hosted/frappe/compose.yaml
+!/ops/self-hosted/plane/
+/ops/self-hosted/plane/*
+!/ops/self-hosted/plane/compose.yaml
+!/ops/self-hosted/config/
+/ops/self-hosted/config/*
+!/ops/self-hosted/config/mcp.json.example

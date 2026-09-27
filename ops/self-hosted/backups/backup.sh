@@ -22,6 +22,6 @@ cp plane/compose.yaml "$out/config/plane-compose.yaml"
 cp frappe/compose.yaml "$out/config/frappe-compose.yaml"
 printf '%s  %s\n' "$(sha256sum "$out"/{plane/*,frappe/*,config/*} 2>/dev/null | sha256sum | cut -d' ' -f1)" "$stamp" > "$out/MANIFEST.sha256"
 # Off-server copy is mandatory in production. restic encrypts content and applies retention.
-export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID_BACKUP:?required} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY_BACKUP:?required}
+export AWS_ACCESS_KEY_ID=${BACKUP_S3_ACCESS_KEY_ID:?required} AWS_SECRET_ACCESS_KEY=${BACKUP_S3_SECRET_ACCESS_KEY:?required}
 restic backup "$out" --tag hashpass-ops
 restic forget --tag hashpass-ops --keep-daily "${BACKUP_RETENTION_DAYS:-14}" --keep-weekly 8 --keep-monthly 12 --prune
