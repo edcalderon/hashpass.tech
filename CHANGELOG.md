@@ -1,3 +1,13 @@
+## [1.9.72](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.71...v1.9.72) (2026-09-27)
+### Released
+- Version 1.9.72 release
+
+### Release scope
+- Compared with: `v1.9.71` (the previous global release tag)
+
+### Affected products & packages
+- Club web
+
 ## [1.9.71](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.70...v1.9.71) (2026-09-26)
 
 
