@@ -1,3 +1,20 @@
+## [1.9.73](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.71...v1.9.73) (2026-09-28)
+
+
+### Bug Fixes
+
+* **ops:** harden storage upgrade path ([2dd45f5](https://github.com/hashpass-tech/hashpass.tech/commit/2dd45f5826b83bf4179334a21d317e669ce9ccff))
+### Release Highlights
+- harden storage upgrade path
+
+### Release scope
+- Compared with: `v1.9.71` (the previous global release tag)
+
+### Affected products & packages
+- Club web
+- Self-hosted operations
+- Release tooling
+
 ## [1.9.72](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.71...v1.9.72) (2026-09-27)
 ### Released
 - Version 1.9.72 release

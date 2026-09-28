@@ -20,16 +20,21 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.72)
+## 📋 Latest Changes (v1.9.73)
 
-### Released
-- Version 1.9.72 release
+### Bug Fixes
+
+* **ops:** harden storage upgrade path ([2dd45f5](https://github.com/hashpass-tech/hashpass.tech/commit/2dd45f5826b83bf4179334a21d317e669ce9ccff))
+### Release Highlights
+- harden storage upgrade path
 
 ### Release scope
 - Compared with: `v1.9.71` (the previous global release tag)
 
 ### Affected products & packages
 - Club web
+- Self-hosted operations
+- Release tooling
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
