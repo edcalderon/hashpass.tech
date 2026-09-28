@@ -1,0 +1,297 @@
+name: Deploy self-hosted VPS services
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'ops/self-hosted/**'
+      - 'packages/plane-mcp-gateway/**'
+      - '.github/workflows/self-hosted-vps-deploy.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+  issues: write
+
+concurrency:
+  group: self-hosted-vps-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy and verify self-hosted services
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      AWS_REGION: ${{ vars.SELF_HOSTED_VPS_AWS_REGION }}
+      AWS_ROLE_ARN: ${{ vars.SELF_HOSTED_VPS_DEPLOY_ROLE_ARN }}
+      SSM_MANAGED_INSTANCE_ID: ${{ vars.SELF_HOSTED_VPS_SSM_MANAGED_INSTANCE_ID }}
+      RUNTIME_ROOT: ${{ vars.SELF_HOSTED_VPS_DEPLOY_ROOT }}
+      DEPLOY_USER: ${{ vars.SELF_HOSTED_VPS_DEPLOY_USER }}
+      PLANE_PROBE_URL: ${{ vars.SELF_HOSTED_VPS_PLANE_PROBE_URL }}
+      HELPDESK_PROBE_URL: ${{ vars.SELF_HOSTED_VPS_HELPDESK_PROBE_URL }}
+      MCP_PROBE_URL: ${{ vars.SELF_HOSTED_VPS_MCP_PROBE_URL }}
+
+    steps:
+      - name: Validate repository deployment variables
+        run: |
+          set -euo pipefail
+          for private_value in \
+            "$AWS_ROLE_ARN" \
+            "$SSM_MANAGED_INSTANCE_ID" \
+            "$RUNTIME_ROOT" \
+            "$DEPLOY_USER" \
+            "$PLANE_PROBE_URL" \
+            "$HELPDESK_PROBE_URL" \
+            "$MCP_PROBE_URL"
+          do
+            [[ -z "$private_value" ]] || echo "::add-mask::${private_value}"
+          done
+          for variable in \
+            AWS_REGION \
+            AWS_ROLE_ARN \
+            SSM_MANAGED_INSTANCE_ID \
+            RUNTIME_ROOT \
+            DEPLOY_USER \
+            PLANE_PROBE_URL \
+            HELPDESK_PROBE_URL \
+            MCP_PROBE_URL
+          do
+            if [[ -z "${!variable:-}" ]]; then
+              echo "::error::Required repository variable ${variable} is not configured."
+              exit 1
+            fi
+          done
+          [[ "$RUNTIME_ROOT" == /* && "$RUNTIME_ROOT" != / ]] || {
+            echo '::error::SELF_HOSTED_VPS_DEPLOY_ROOT must be a non-root absolute path.'
+            exit 1
+          }
+          [[ "$DEPLOY_USER" =~ ^[a-z_][a-z0-9_-]*$ ]] || {
+            echo '::error::SELF_HOSTED_VPS_DEPLOY_USER must be a valid local account name.'
+            exit 1
+          }
+          [[ "$GITHUB_SHA" =~ ^[0-9a-f]{40}$ ]] || {
+            echo '::error::The deployment revision is not a full commit SHA.'
+            exit 1
+          }
+
+      - name: Configure AWS credentials with OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ vars.SELF_HOSTED_VPS_AWS_REGION }}
+          role-to-assume: ${{ vars.SELF_HOSTED_VPS_DEPLOY_ROLE_ARN }}
+          role-session-name: hashpass-self-hosted-vps-deploy
+          mask-aws-account-id: true
+
+      - name: Send exact-revision deployment through SSM
+        id: dispatch
+        run: |
+          set -euo pipefail
+
+          repository_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git"
+          quoted_repository_url="$(jq -rn --arg value "$repository_url" '$value | @sh')"
+          quoted_root="$(jq -rn --arg value "$RUNTIME_ROOT" '$value | @sh')"
+          quoted_revision="$(jq -rn --arg value "$GITHUB_SHA" '$value | @sh')"
+          quoted_user="$(jq -rn --arg value "$DEPLOY_USER" '$value | @sh')"
+          read -r -d '' remote_script <<'REMOTE_SCRIPT' || true
+          set -Eeuo pipefail
+          repository_url="$1"
+          revision="$2"
+          runtime_root="$3"
+          deploy_user="$4"
+
+          [[ "$(id -u)" -eq 0 ]]
+          id "$deploy_user" >/dev/null
+          release_dir="$(sudo -n -u "$deploy_user" mktemp -d /tmp/hashpass-release.XXXXXX)"
+          [[ "$release_dir" == /tmp/hashpass-release.* ]]
+          cleanup() {
+            if [[ "$release_dir" == /tmp/hashpass-release.* ]]; then
+              rm -rf -- "$release_dir"
+            fi
+          }
+          trap cleanup EXIT
+
+          sudo -n -u "$deploy_user" git -C "$release_dir" init --quiet
+          sudo -n -u "$deploy_user" git -C "$release_dir" remote add origin "$repository_url"
+          sudo -n -u "$deploy_user" git -C "$release_dir" fetch --quiet --no-tags --depth=1 origin "$revision"
+          fetched_revision="$(sudo -n -u "$deploy_user" git -C "$release_dir" rev-parse FETCH_HEAD)"
+          [[ "$fetched_revision" == "$revision" ]]
+          sudo -n -u "$deploy_user" git -C "$release_dir" cat-file -e "${revision}^{commit}"
+          sudo -n -u "$deploy_user" git -C "$release_dir" checkout --force --quiet --detach "$revision"
+
+          install -d -o root -g root -m 0755 "$runtime_root"
+          copied_files=0
+          while IFS= read -r -d '' tracked_path; do
+            relative_path="${tracked_path#ops/self-hosted/}"
+            source_path="$release_dir/$tracked_path"
+            [[ -n "$relative_path" && "$relative_path" != "$tracked_path" ]]
+            [[ -f "$source_path" && ! -L "$source_path" ]]
+            file_mode="$(stat -c '%a' "$source_path")"
+            install -D -o root -g root -m "$file_mode" "$source_path" "$runtime_root/$relative_path"
+            copied_files=$((copied_files + 1))
+          done < <(sudo -n -u "$deploy_user" git -C "$release_dir" ls-files -z -- ops/self-hosted)
+          [[ "$copied_files" -gt 0 ]]
+
+          sudo -n -u "$deploy_user" env \
+            MCP_GATEWAY_BUILD_CONTEXT="$release_dir/packages/plane-mcp-gateway" \
+            bash "$runtime_root/deploy.sh"
+          REMOTE_SCRIPT
+          quoted_script="$(jq -rn --arg value "$remote_script" '$value | @sh')"
+          remote_command="sudo -n bash -lc ${quoted_script} -- ${quoted_repository_url} ${quoted_revision} ${quoted_root} ${quoted_user}"
+
+          parameters_file="$(mktemp)"
+          trap 'rm -f "$parameters_file"' EXIT
+          jq -n --arg command "$remote_command" '{commands: [$command]}' > "$parameters_file"
+
+          command_id="$(aws ssm send-command \
+            --region "$AWS_REGION" \
+            --instance-ids "$SSM_MANAGED_INSTANCE_ID" \
+            --document-name AWS-RunShellScript \
+            --comment "Deploy trusted Hashpass revision ${GITHUB_SHA}" \
+            --parameters "file://${parameters_file}" \
+            --query 'Command.CommandId' \
+            --output text)"
+
+          [[ -n "$command_id" && "$command_id" != None ]] || {
+            echo '::error::AWS Systems Manager did not return a command identifier.'
+            exit 1
+          }
+          echo "command_id=${command_id}" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for deployment and record sanitized status
+        id: deployment
+        env:
+          COMMAND_ID: ${{ steps.dispatch.outputs.command_id }}
+        run: |
+          set -euo pipefail
+          waiter_status=1
+          for _ in {1..12}; do
+            set +e
+            aws ssm wait command-executed \
+              --region "$AWS_REGION" \
+              --command-id "$COMMAND_ID" \
+              --instance-id "$SSM_MANAGED_INSTANCE_ID"
+            waiter_status=$?
+            set -e
+            [[ "$waiter_status" -eq 0 ]] && break
+
+            current_status="$(aws ssm get-command-invocation \
+              --region "$AWS_REGION" \
+              --command-id "$COMMAND_ID" \
+              --instance-id "$SSM_MANAGED_INSTANCE_ID" \
+              --query Status \
+              --output text)"
+            [[ "$current_status" == Pending || "$current_status" == InProgress || "$current_status" == Delayed ]] || break
+          done
+
+          invocation_file="$(mktemp)"
+          trap 'rm -f "$invocation_file"' EXIT
+          aws ssm get-command-invocation \
+            --region "$AWS_REGION" \
+            --command-id "$COMMAND_ID" \
+            --instance-id "$SSM_MANAGED_INSTANCE_ID" \
+            --query '{Status:Status,StatusDetails:StatusDetails,ResponseCode:ResponseCode}' \
+            --output json > "$invocation_file"
+
+          status="$(jq -r '.Status // "Unknown"' "$invocation_file")"
+          status_details="$(jq -r '.StatusDetails // "Unknown"' "$invocation_file")"
+          response_code="$(jq -r '.ResponseCode // -1' "$invocation_file")"
+          {
+            echo '## Self-hosted VPS deployment'
+            echo
+            echo '| Stage | Status |'
+            echo '| --- | --- |'
+            echo "| SSM deployment | ${status_details} |"
+            echo "| Remote response code | ${response_code} |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [[ "$waiter_status" -ne 0 || "$status" != Success || "$response_code" -ne 0 ]]; then
+            echo "::error::Remote deployment did not complete successfully (status=${status}, response=${response_code})."
+            exit 1
+          fi
+
+      - name: Plane health readiness check
+        run: curl --fail --silent --show-error --location --retry 5 --retry-delay 5 --max-time 20 "$PLANE_PROBE_URL" >/dev/null # Plane health
+
+      - name: Helpdesk health readiness check
+        run: curl --fail --silent --show-error --location --retry 5 --retry-delay 5 --max-time 20 "$HELPDESK_PROBE_URL" >/dev/null # Helpdesk health
+
+      - name: MCP health readiness check
+        run: curl --fail --silent --show-error --location --retry 5 --retry-delay 5 --max-time 20 "$MCP_PROBE_URL" >/dev/null # MCP health
+
+      - name: Record health-check evidence
+        run: |
+          {
+            echo '| Plane health check | Success |'
+            echo '| Helpdesk health check | Success |'
+            echo '| MCP health check | Success |'
+            echo
+            echo "Revision: \`${GITHUB_SHA}\`"
+            echo "Run: [${GITHUB_RUN_ID}](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Open or update deployment failure alert
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const title = 'Self-hosted VPS deployment failure';
+            const marker = '<!-- self-hosted-vps-deployment-alert -->';
+            const body = [
+              marker,
+              'The production self-hosted service deployment or a required health check failed.',
+              '',
+              `Revision: \`${context.sha}\``,
+              `Run: ${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`,
+              '',
+              'Review the sanitized workflow stage results. Remote environment contents and service output are intentionally not included.',
+            ].join('\n');
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
+              owner,
+              repo,
+              state: 'open',
+              per_page: 100,
+            });
+            const existing = issues.find(issue => issue.title === title && issue.body?.includes(marker));
+            if (existing) {
+              await github.rest.issues.update({
+                owner,
+                repo,
+                issue_number: existing.number,
+                title,
+                body,
+                state: 'open',
+              });
+            } else {
+              await github.rest.issues.create({ owner, repo, title, body });
+            }
+
+      - name: Close recovered deployment alert
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const title = 'Self-hosted VPS deployment failure';
+            const marker = '<!-- self-hosted-vps-deployment-alert -->';
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
+              owner,
+              repo,
+              state: 'open',
+              per_page: 100,
+            });
+            const existing = issues.find(issue => issue.title === title && issue.body?.includes(marker));
+            if (existing) {
+              await github.rest.issues.update({
+                owner,
+                repo,
+                issue_number: existing.number,
+                state: 'closed',
+                state_reason: 'completed',
+              });
+            }

@@ -36,7 +36,7 @@ services:
 
   plane-mcp-gateway:
     build:
-      context: ../../../packages/plane-mcp-gateway
+      context: ${MCP_GATEWAY_BUILD_CONTEXT:-../../../packages/plane-mcp-gateway}
     restart: unless-stopped
     env_file:
       - /opt/hashpass/mcp/secrets/plane.env
