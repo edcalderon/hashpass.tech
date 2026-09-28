@@ -117,9 +117,13 @@ npm ci --omit=dev --ignore-scripts --verbose
 # deterministically so metadata cannot push the function over the limit.
 echo "4b. Pruning non-runtime package files..."
 find "$PACKAGE_DIR/node_modules" -type f \
-  \( -name '*.map' -o -name '*.md' -o -name '*.markdown' \
+  \( -name '*.md' -o -name '*.markdown' \
      -o -name '*.ts' -o -name '*.mts' -o -name '*.cts' \
      -o -name '*.tsbuildinfo' \) -delete
+# Expo CI exports can include tens of megabytes of server source maps. ZIP's
+# exclusion below kept them out of the uploaded archive, but remove them before
+# measuring too so the guard reflects the bytes Lambda will actually expand.
+find "$PACKAGE_DIR" -type f -name '*.map' -delete
 find "$PACKAGE_DIR/server" -type f -name '*.html' -delete
 
 if [ ! -f "$PACKAGE_DIR/node_modules/pg/package.json" ]; then
