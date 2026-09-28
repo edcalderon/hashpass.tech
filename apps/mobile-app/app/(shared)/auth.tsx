@@ -1527,12 +1527,7 @@ export default function AuthScreen({ embedded = false, onAuthenticated, onDismis
       if (typeof window !== "undefined" && window.localStorage) {
         window.localStorage.removeItem(PASSWORDLESS_CALLBACK_MARKER);
         window.localStorage.setItem("auth_signin_method", "google_oauth");
-        if (embedded) {
-          window.localStorage.setItem(
-            "oauth_return_url",
-            normalizeReturnToPath(window.location.pathname + window.location.search),
-          );
-        }
+        window.localStorage.setItem("oauth_return_url", redirectPath);
       }
 
       const result = await signInWithOAuth("google");

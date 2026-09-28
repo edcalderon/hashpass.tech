@@ -7,6 +7,7 @@ const mockPost = jest.fn();
 const mockSetSession = jest.fn();
 const mockReplace = jest.fn();
 let mockAuth: any = { user: null, isLoggedIn: false, isLoading: false };
+let mockParams: Record<string, string> = {};
 const mockFocus = jest.fn();
 const mockT = (key: string, fallback: unknown) => typeof fallback === 'string' ? fallback : key;
 jest.mock('../../lib/api-client', () => ({ apiClient: { post: (...args: unknown[]) => mockPost(...args) }, eventApiPath: jest.fn() }));
@@ -15,7 +16,7 @@ jest.mock('../../hooks/useTheme', () => ({ useTheme: () => ({ isDark: false, col
 jest.mock('../../i18n/i18n', () => ({ useTranslation: () => ({ t: mockT }), getCurrentLocale: () => 'en' }));
 jest.mock('../../contexts/ToastContext', () => ({ useToastHelpers: () => ({ showError: jest.fn(), showSuccess: jest.fn() }) }));
 jest.mock('../../contexts/AnimationLevelContext', () => ({ useAnimationLevel: () => ({ animationLevel: 'none' }) }));
-jest.mock('expo-router', () => ({ useRouter: () => ({ replace: mockReplace }), useLocalSearchParams: () => ({}), Redirect: () => null }));
+jest.mock('expo-router', () => ({ useRouter: () => ({ replace: mockReplace }), useLocalSearchParams: () => mockParams, Redirect: () => null }));
 jest.mock('react-native-safe-area-context', () => ({ SafeAreaView: 'SafeAreaView' }));
 jest.mock('@hashpass/auth', () => ({ authService: { getProviderName: () => 'supabase' }, getSupabaseMagicLinkCallbackPath: () => '/auth/callback', getSupabaseOAuthRedirectUrl: () => 'https://example.com/auth/callback' }));
 jest.mock('../../config/supabase-profiles', () => ({ resolvePublicSupabaseConfig: () => ({}) }));
@@ -35,6 +36,7 @@ describe('passwordless email reset', () => {
   beforeEach(async () => {
     Platform.OS = 'ios';
     mockAuth = { user: null, isLoggedIn: false, isLoading: false };
+    mockParams = {};
     mockReplace.mockReset();
     mockSetSession.mockReset().mockResolvedValue({ error: null });
     Object.assign(Animated, { Value: class { interpolate() { return 1; } setValue() {} stopAnimation() {} } });
@@ -61,6 +63,37 @@ describe('passwordless email reset', () => {
     await press('Opening Google sign-in...');
     expect(signInWithOAuth).toHaveBeenCalledTimes(1);
     expect(mockReplace).not.toHaveBeenCalled();
+  });
+
+  it('preserves a web OAuth return path before opening Google sign-in', async () => {
+    Platform.OS = 'web';
+    const returnTo = '/mcp/login?client_id=chatgpt&sig=signed-value';
+    mockParams = { returnTo };
+    const signInWithOAuth = jest.fn().mockResolvedValue({ pending: true });
+    mockAuth = { ...mockAuth, signInWithOAuth };
+    const originalLocalStorage = window.localStorage;
+    const localStorage = {
+      clear: jest.fn(),
+      getItem: jest.fn(),
+      key: jest.fn(),
+      length: 0,
+      removeItem: jest.fn(),
+      setItem: jest.fn(),
+    };
+    const originalAddEventListener = window.addEventListener;
+    const originalRemoveEventListener = window.removeEventListener;
+    Object.defineProperty(window, 'localStorage', { configurable: true, value: localStorage });
+    Object.defineProperty(window, 'addEventListener', { configurable: true, value: jest.fn() });
+    Object.defineProperty(window, 'removeEventListener', { configurable: true, value: jest.fn() });
+
+    await act(async () => renderer.update(<AuthScreen key="mcp-login" />));
+    await press('Sign in with Google');
+
+    expect(localStorage.setItem).toHaveBeenCalledWith('oauth_return_url', returnTo);
+    act(() => renderer.unmount());
+    Object.defineProperty(window, 'localStorage', { configurable: true, value: originalLocalStorage });
+    Object.defineProperty(window, 'addEventListener', { configurable: true, value: originalAddEventListener });
+    Object.defineProperty(window, 'removeEventListener', { configurable: true, value: originalRemoveEventListener });
   });
 
   it.each(['Magic Link', 'OTP Code'])('resets %s confirmation and permits a different address', async (method) => {
