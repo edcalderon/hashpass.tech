@@ -30,6 +30,9 @@ describe('MCP consent query API', () => {
     expect(allowed.headers.get('Access-Control-Allow-Origin')).toBe('https://hashpass.tech');
     expect(allowed.headers.get('Access-Control-Allow-Headers')).toContain('Authorization');
 
+    const development = OPTIONS(request('', 'https://dev.hashpass.tech'));
+    expect(development.headers.get('Access-Control-Allow-Origin')).toBe('https://dev.hashpass.tech');
+
     const denied = OPTIONS(request('', 'https://evil.example'));
     expect(denied.headers.get('Access-Control-Allow-Origin')).toBeNull();
   });

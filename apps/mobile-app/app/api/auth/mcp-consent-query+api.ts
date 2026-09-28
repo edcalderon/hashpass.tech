@@ -4,6 +4,7 @@ import { verifySignedOAuthQuery } from '@/lib/server/verify-signed-oauth-query';
 const allowedOrigins = new Set([
   'https://hashpass.tech',
   'https://www.hashpass.tech',
+  'https://dev.hashpass.tech',
   'http://localhost:8081',
 ]);
 
