@@ -110,6 +110,7 @@ describe('release promotion PR body', () => {
       'packages/hashpass-links-api/src/routes/qr-links.ts',
       'packages/sdk/src/qr-links/client.ts',
       'db/migrations/V081__qr_link_custom_slugs.sql',
+      'ops/self-hosted/plane/compose.yaml',
       'packages/tools/scripts/release.js',
     ]);
 
@@ -119,6 +120,7 @@ describe('release promotion PR body', () => {
       'QR links API',
       'SDK',
       'Database migrations',
+      'Self-hosted operations',
       'Release tooling',
     ]);
   });
