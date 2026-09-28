@@ -113,6 +113,62 @@ const targetBslBootstrapPath = path.join(
 );
 const profilePath = path.join(__dirname, 'config/database-profiles.json');
 
+describe('Better Auth MCP OAuth migration plan', () => {
+  it('ships the OAuth migration to core profiles without applying it to BSL profiles', () => {
+    const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+    const migration = 'db/migrations/V106__better_auth_mcp_oauth.sql';
+    const migrationGroup = Object.entries(config.groups).find(([, migrations]) =>
+      migrations.includes(migration),
+    );
+
+    expect(migrationGroup).toBeDefined();
+
+    const [groupName] = migrationGroup;
+    expect(config.defaultGroups).not.toContain(groupName);
+    expect(config.profileGroups['core-development']).toContain(groupName);
+    expect(config.profileGroups['core-production']).toContain(groupName);
+    expect(config.profileGroups['bsl-development'] || []).not.toContain(groupName);
+    expect(config.profileGroups['bsl-production'] || []).not.toContain(groupName);
+  });
+
+  it('prefers profile-specific Better Auth URLs for core without changing BSL fallbacks', () => {
+    const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+
+    expect({
+      'core-development': config.profiles['core-development'].databaseUrlEnv,
+      'core-production': config.profiles['core-production'].databaseUrlEnv,
+      'bsl-development': config.profiles['bsl-development'].databaseUrlEnv,
+      'bsl-production': config.profiles['bsl-production'].databaseUrlEnv,
+    }).toEqual({
+      'core-development': [
+        'BETTER_AUTH_DATABASE_URL_DEV',
+        'SUPABASE_DB_URL_DEV',
+        'DATABASE_URL_DEV',
+        'DEV_DB_URL',
+      ],
+      'core-production': [
+        'BETTER_AUTH_DATABASE_URL_PROD',
+        'SUPABASE_DB_URL_PROD',
+        'DATABASE_URL_PROD',
+        'PROD_DB_URL',
+      ],
+      'bsl-development': [
+        'BSL_SUPABASE_DB_URL_DEV',
+        'SUPABASE_DB_URL_BSL_DEV',
+        'DATABASE_URL_BSL_DEV',
+        'DEV_BSL_DB_URL',
+        'SUPABASE_DB_URL_DEV',
+      ],
+      'bsl-production': [
+        'BSL_SUPABASE_DB_URL_PROD',
+        'SUPABASE_DB_URL_BSL_PROD',
+        'DATABASE_URL_BSL_PROD',
+        'PROD_BSL_DB_URL',
+      ],
+    });
+  });
+});
+
 describe('upcoming BSL pass provisioning migration', () => {
   it('uses UUID-compatible IDs and keeps privileged minting out of public RPC access', () => {
     const migration = fs.readFileSync(migrationPath, 'utf8');
@@ -277,6 +333,7 @@ describe('event-scoped meeting lifecycle migration contract', () => {
       'db/migrations/V050__resolve_agenda_status_registry_id.sql',
       'db/migrations/V051__fix_meetings_speaker_id_write_type_divergence.sql',
       'db/migrations/V052__notification_levels_and_critical_delivery.sql',
+      'db/migrations/V095__enable_notification_realtime.sql',
     ]);
   });
 
@@ -434,6 +491,16 @@ describe('development demo migration plan', () => {
       'db/migrations/V076__add_event_demo_mode_flag.sql',
       'db/migrations/V077__provision_criptolatinfest_general_pass.sql',
       'db/migrations/V078__align_dev_bsl_speakers_legacy_columns.sql',
+      'db/migrations/V085__provision_cbw2026_event_and_retire_criptolatinfest_passes.sql',
+      'db/migrations/V087__rename_cbw2026_to_cbweek2026.sql',
+      'db/migrations/V088__provision_demo_event_courtesy_general_passes.sql',
+      'db/migrations/V089__seed_cbweek2026_demo_programme.sql',
+      'db/migrations/V090__align_cbweek_demo_agenda_speaker_ids.sql',
+      'db/migrations/V091__add_cbweek_past_edition_speaker_references.sql',
+      'db/migrations/V092__provision_cbweek_general_passes.sql',
+      'db/migrations/V093__verified_event_account_grants.sql',
+      'db/migrations/V094__backfill_cbweek_passes_after_event_bootstrap.sql',
+      'db/migrations/V096__enable_cbweek_chat_and_speaker_order.sql',
     ]);
   });
 });
