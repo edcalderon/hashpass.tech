@@ -13,13 +13,15 @@ x-redis-env: &redis-env
   REDIS_URL: ${REDIS_URL:-redis://plane-redis:6379/}
 
 x-minio-env: &minio-env
-  MINIO_ROOT_USER: ${OBJECT_STORAGE_ACCESS_KEY_ID}
-  MINIO_ROOT_PASSWORD: ${OBJECT_STORAGE_SECRET_ACCESS_KEY}
+  # OBJECT_STORAGE_* is the current name. AWS_* keeps existing installations
+  # working while their private runtime environment is migrated.
+  MINIO_ROOT_USER: ${OBJECT_STORAGE_ACCESS_KEY_ID:-${AWS_ACCESS_KEY_ID:-}}
+  MINIO_ROOT_PASSWORD: ${OBJECT_STORAGE_SECRET_ACCESS_KEY:-${AWS_SECRET_ACCESS_KEY:-}}
 
 x-aws-s3-env: &aws-s3-env
   AWS_REGION: ${AWS_REGION:-}
-  AWS_ACCESS_KEY_ID: ${OBJECT_STORAGE_ACCESS_KEY_ID}
-  AWS_SECRET_ACCESS_KEY: ${OBJECT_STORAGE_SECRET_ACCESS_KEY}
+  AWS_ACCESS_KEY_ID: ${OBJECT_STORAGE_ACCESS_KEY_ID:-${AWS_ACCESS_KEY_ID:-}}
+  AWS_SECRET_ACCESS_KEY: ${OBJECT_STORAGE_SECRET_ACCESS_KEY:-${AWS_SECRET_ACCESS_KEY:-}}
   AWS_S3_ENDPOINT_URL: ${AWS_S3_ENDPOINT_URL:-http://plane-minio:9000}
   AWS_S3_BUCKET_NAME: ${AWS_S3_BUCKET_NAME:-uploads}
 
@@ -118,9 +120,14 @@ services:
     environment:
       <<: [*app-env, *db-env, *redis-env, *minio-env, *aws-s3-env, *proxy-env]
     depends_on:
-      - plane-db
-      - plane-redis
-      - plane-mq
+      plane-db:
+        condition: service_started
+      plane-redis:
+        condition: service_started
+      plane-mq:
+        condition: service_started
+      plane-minio-init:
+        condition: service_completed_successfully
 
   worker:
     env_file: ../.env
@@ -214,8 +221,8 @@ services:
   plane-minio:
     env_file: ../.env
     image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
-    entrypoint: >-
-      /bin/sh -c "mkdir -p /export/${AWS_S3_BUCKET_NAME} && minio server /export --console-address ':9090' & sleep 5 && mc alias set myminio http://localhost:9000 ${OBJECT_STORAGE_ACCESS_KEY_ID} ${OBJECT_STORAGE_SECRET_ACCESS_KEY} && mc mb myminio/${AWS_S3_BUCKET_NAME} -p || true && tail -f /dev/null"
+    command: ["server", "/export", "--console-address", ":9090"]
+    restart: unless-stopped
     deploy:
       replicas: 1
       restart_policy:
@@ -224,6 +231,22 @@ services:
       <<: *minio-env
     volumes:
       - uploads:/export
+
+  # Runs once after MinIO starts. Keeping initialization out of the server
+  # process means Docker can detect and restart a failed MinIO process.
+  plane-minio-init:
+    env_file: ../.env
+    image: minio/mc:RELEASE.2025-08-13T08-35-41Z
+    entrypoint: ["/bin/sh", "-ec"]
+    command:
+      - |
+        until mc alias set plane-minio http://plane-minio:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}"; do sleep 2; done
+        mc mb --ignore-existing "plane-minio/$${AWS_S3_BUCKET_NAME}"
+    restart: "no"
+    environment:
+      <<: [*minio-env, *aws-s3-env]
+    depends_on:
+      - plane-minio
 
   # Comment this if you already have a reverse proxy running
   proxy:

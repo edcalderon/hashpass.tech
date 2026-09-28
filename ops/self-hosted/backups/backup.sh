@@ -22,6 +22,13 @@ cp plane/compose.yaml "$out/config/plane-compose.yaml"
 cp frappe/compose.yaml "$out/config/frappe-compose.yaml"
 printf '%s  %s\n' "$(sha256sum "$out"/{plane/*,frappe/*,config/*} 2>/dev/null | sha256sum | cut -d' ' -f1)" "$stamp" > "$out/MANIFEST.sha256"
 # Off-server copy is mandatory in production. restic encrypts content and applies retention.
-export AWS_ACCESS_KEY_ID=${BACKUP_S3_ACCESS_KEY_ID:?required} AWS_SECRET_ACCESS_KEY=${BACKUP_S3_SECRET_ACCESS_KEY:?required}
+backup_access_key=${BACKUP_S3_ACCESS_KEY_ID:-${AWS_ACCESS_KEY_ID:-}}
+backup_secret_key=${BACKUP_S3_SECRET_ACCESS_KEY:-${AWS_SECRET_ACCESS_KEY:-}}
+: "${backup_access_key:?Set BACKUP_S3_ACCESS_KEY_ID or the legacy AWS_ACCESS_KEY_ID}"
+: "${backup_secret_key:?Set BACKUP_S3_SECRET_ACCESS_KEY or the legacy AWS_SECRET_ACCESS_KEY}"
+if [[ -z "${BACKUP_S3_ACCESS_KEY_ID:-}" || -z "${BACKUP_S3_SECRET_ACCESS_KEY:-}" ]]; then
+  echo "Deprecated legacy AWS backup credentials in use; migrate to BACKUP_S3_* before the next major upgrade." >&2
+fi
+export AWS_ACCESS_KEY_ID="$backup_access_key" AWS_SECRET_ACCESS_KEY="$backup_secret_key"
 restic backup "$out" --tag hashpass-ops
 restic forget --tag hashpass-ops --keep-daily "${BACKUP_RETENTION_DAYS:-14}" --keep-weekly 8 --keep-monthly 12 --prune

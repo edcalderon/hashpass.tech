@@ -7,6 +7,7 @@ const RELEASE_SCOPE_DEFINITIONS = [
   ['Auth', (file) => file.startsWith('packages/auth/') || file.startsWith('packages/hashpass-auth/')],
   ['Database migrations', (file) => file.startsWith('db/migrations/')],
   ['Infrastructure', (file) => file.startsWith('packages/infra/')],
+  ['Self-hosted operations', (file) => file.startsWith('ops/')],
   ['Documentation', (file) => file === 'README.md' || file === 'CLAUDE.md' || file.startsWith('apps/docs/')],
   ['Release tooling', (file) => file.startsWith('packages/tools/') || file.startsWith('.github/workflows/') || file.startsWith('.github/scripts/')],
 ];
