@@ -450,7 +450,16 @@ if (( lambda_zip_bytes > LAMBDA_DIRECT_UPLOAD_MAX_BYTES )); then
   fi
 
   lambda_revision="${GITHUB_SHA:-${expected_version}}"
-  lambda_s3_key="lambda-deployments/${LAMBDA_FUNCTION_NAME}/${lambda_revision}.zip"
+  if [[ -n "${GITHUB_RUN_ID:-}" ]]; then
+    # A commit can be deployed concurrently by infra-deploy and the static-site
+    # workflow. Keep their archives isolated so one run cannot overwrite or
+    # delete the object while the other is still updating Lambda.
+    lambda_upload_id="${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT:-1}-${GITHUB_JOB:-deploy}"
+  else
+    lambda_upload_id="local-${BASHPID}-${RANDOM}"
+  fi
+  lambda_upload_id="${lambda_upload_id//[^A-Za-z0-9._-]/-}"
+  lambda_s3_key="lambda-deployments/${LAMBDA_FUNCTION_NAME}/${lambda_revision}-${lambda_upload_id}.zip"
   echo "Lambda package is ${lambda_zip_bytes} bytes; uploading through the private deployment bucket."
   aws s3 cp "${lambda_zip_file}" "s3://${LAMBDA_DEPLOYMENT_BUCKET}/${lambda_s3_key}" \
     --region "${LAMBDA_DEPLOYMENT_BUCKET_REGION}" \
