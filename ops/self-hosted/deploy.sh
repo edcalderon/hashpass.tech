@@ -11,4 +11,6 @@ docker compose --env-file .env -f compose.yaml config --quiet
 docker compose --env-file .env -f frappe/compose.yaml up -d
 docker compose --env-file .env -f plane/compose.yaml up -d
 docker compose --env-file .env -f mcp/compose.yaml up -d --build
-docker compose --env-file .env -f compose.yaml up -d
+docker compose --env-file .env -f compose.yaml up -d --wait --wait-timeout 60
+docker compose --env-file .env -f compose.yaml exec -T caddy caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+docker compose --env-file .env -f compose.yaml exec -T caddy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile

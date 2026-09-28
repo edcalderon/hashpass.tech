@@ -51,4 +51,19 @@ describe('better-auth-route', () => {
       'https://hashpass.tech/auth?error=state_mismatch&message=Google+sign-in+expired+or+could+not+be+verified.+Please+try+again.'
     );
   });
+
+  it('rewrites RFC 8414 issuer-path discovery to the Better Auth base path', async () => {
+    mockBetterAuthHandler.mockResolvedValueOnce(Response.json({ issuer: 'https://api.hashpass.tech/api/auth' }));
+    const { GET } = require('../../../app/.well-known/oauth-authorization-server/api/auth+api');
+
+    const response = await GET(
+      new Request('https://api.hashpass.tech/.well-known/oauth-authorization-server/api/auth?client=chatgpt')
+    );
+
+    expect(response.status).toBe(200);
+    const forwarded = mockBetterAuthHandler.mock.calls[0][0] as Request;
+    expect(forwarded.url).toBe(
+      'https://api.hashpass.tech/api/auth/.well-known/oauth-authorization-server?client=chatgpt'
+    );
+  });
 });

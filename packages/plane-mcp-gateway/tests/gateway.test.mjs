@@ -151,3 +151,55 @@ test("returns 403 on policy denial without contacting Plane", async () => {
   assert.equal(response.status, 403);
   assert.equal(upstreamCalls, 0);
 });
+
+test("rejects a declared oversized body before token verification", async () => {
+  let verificationCalls = 0;
+  const handler = createGatewayHandler(createOptions({
+    maxBodyBytes: 8,
+    verifyRequest: async () => {
+      verificationCalls += 1;
+      return null;
+    },
+  }));
+
+  const response = await handler(new Request(resourceUrl, {
+    method: "POST",
+    headers: {"content-length": "9", "content-type": "application/json"},
+    body: "123456789",
+  }));
+
+  assert.equal(response.status, 413);
+  assert.equal(verificationCalls, 0);
+});
+
+test("stops reading a streamed body as soon as it exceeds the limit", async () => {
+  let cancelled = false;
+  let upstreamCalls = 0;
+  const body = new ReadableStream({
+    start(controller) {
+      controller.enqueue(new TextEncoder().encode("1234"));
+      controller.enqueue(new TextEncoder().encode("56789"));
+    },
+    cancel() {
+      cancelled = true;
+    },
+  });
+  const handler = createGatewayHandler(createOptions({
+    maxBodyBytes: 8,
+    fetch: async () => {
+      upstreamCalls += 1;
+      return Response.json({});
+    },
+  }));
+
+  const response = await handler(new Request(resourceUrl, {
+    method: "POST",
+    headers: {"content-type": "application/json"},
+    body,
+    duplex: "half",
+  }));
+
+  assert.equal(response.status, 413);
+  assert.equal(cancelled, true);
+  assert.equal(upstreamCalls, 0);
+});

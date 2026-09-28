@@ -1,4 +1,4 @@
-import {authorizePlaneRequest} from "./policy.mjs";
+import {authorizePlaneRequest, isPlaneIdentityAllowed} from "./policy.mjs";
 
 const jsonRpcError = (status, id, code, message, headers = {}) =>
   Response.json(
@@ -20,6 +20,38 @@ const copyResponse = (response) => {
   const headers = new Headers(response.headers);
   for (const [name, value] of Object.entries(corsHeaders)) headers.set(name, value);
   return new Response(response.body, {status: response.status, statusText: response.statusText, headers});
+};
+
+const requestDeclaresOversizedBody = (request, maxBodyBytes) => {
+  const value = request.headers.get("content-length");
+  return /^\d+$/.test(value ?? "") && Number(value) > maxBodyBytes;
+};
+
+const readBodyWithLimit = async (request, maxBodyBytes) => {
+  if (!request.body) return {body: "", tooLarge: false};
+
+  const reader = request.body.getReader();
+  const chunks = [];
+  let totalBytes = 0;
+
+  while (true) {
+    const {done, value} = await reader.read();
+    if (done) break;
+    totalBytes += value.byteLength;
+    if (totalBytes > maxBodyBytes) {
+      await reader.cancel("body_limit_exceeded");
+      return {body: "", tooLarge: true};
+    }
+    chunks.push(value);
+  }
+
+  const bytes = new Uint8Array(totalBytes);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return {body: new TextDecoder().decode(bytes), tooLarge: false};
 };
 
 export function createGatewayHandler(options) {
@@ -66,6 +98,9 @@ export function createGatewayHandler(options) {
     if (url.pathname !== resourceUrl.pathname) return new Response("Not Found", {status: 404});
     if (request.method === "OPTIONS") return new Response(null, {status: 204, headers: corsHeaders});
     if (request.method !== "POST") return new Response("Method Not Allowed", {status: 405, headers: {allow: "POST, OPTIONS"}});
+    if (requestDeclaresOversizedBody(request, maxBodyBytes)) {
+      return jsonRpcError(413, null, -32600, "MCP request is too large", corsHeaders);
+    }
 
     let identity;
     try {
@@ -80,8 +115,17 @@ export function createGatewayHandler(options) {
       });
     }
 
-    const rawBody = await request.text();
-    if (Buffer.byteLength(rawBody, "utf8") > maxBodyBytes) {
+    if (!isPlaneIdentityAllowed({
+      subject: identity.subject,
+      email: identity.email,
+      allowedSubjects,
+      allowedEmails,
+    })) {
+      return jsonRpcError(403, null, -32003, "Forbidden", corsHeaders);
+    }
+
+    const {body: rawBody, tooLarge} = await readBodyWithLimit(request, maxBodyBytes);
+    if (tooLarge) {
       return jsonRpcError(413, null, -32600, "MCP request is too large", corsHeaders);
     }
 

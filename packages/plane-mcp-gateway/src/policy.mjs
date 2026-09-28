@@ -132,6 +132,17 @@ export function classifyPlaneAction(action) {
   throw new Error(`Unsupported or unknown Plane action: ${normalized}`);
 }
 
+export function isPlaneIdentityAllowed({subject, email, allowedSubjects, allowedEmails} = {}) {
+  const subjects = normalizedSet(allowedSubjects);
+  const emails = normalizedSet(allowedEmails);
+  const normalizedSubject = typeof subject === "string" ? subject.trim().toLowerCase() : "";
+  const normalizedEmail = typeof email === "string" ? email.trim().toLowerCase() : "";
+  return Boolean(
+    (normalizedSubject && subjects.has(normalizedSubject)) ||
+    (normalizedEmail && emails.has(normalizedEmail)),
+  );
+}
+
 export function authorizePlaneRequest({
   body,
   scopes,
@@ -140,15 +151,9 @@ export function authorizePlaneRequest({
   allowedSubjects,
   allowedEmails,
 } = {}) {
-  const subjects = normalizedSet(allowedSubjects);
-  const emails = normalizedSet(allowedEmails);
-  const normalizedSubject = typeof subject === "string" ? subject.trim().toLowerCase() : "";
-  const normalizedEmail = typeof email === "string" ? email.trim().toLowerCase() : "";
-  const identityAllowed =
-    (normalizedSubject && subjects.has(normalizedSubject)) ||
-    (normalizedEmail && emails.has(normalizedEmail));
-
-  if (!identityAllowed) return {allowed: false, reason: "identity_not_allowed"};
+  if (!isPlaneIdentityAllowed({subject, email, allowedSubjects, allowedEmails})) {
+    return {allowed: false, reason: "identity_not_allowed"};
+  }
   if (!body || typeof body !== "object" || Array.isArray(body) || typeof body.method !== "string") {
     return {allowed: false, reason: "invalid_request"};
   }
