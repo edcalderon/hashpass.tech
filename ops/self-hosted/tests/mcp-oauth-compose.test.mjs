@@ -25,12 +25,13 @@ test("publishes only the OAuth gateway through Caddy", () => {
   assert.doesNotMatch(caddy, /reverse_proxy plane-mcp-http/);
 });
 
-test("validates and reloads Caddy after deploying mounted route changes", () => {
+test("validates and recreates Caddy after deploying mounted route changes", () => {
   const edgeUp = deploy.indexOf("-f compose.yaml up -d");
   const validate = deploy.indexOf("caddy validate --config /etc/caddy/Caddyfile");
-  const reload = deploy.indexOf("caddy reload --config /etc/caddy/Caddyfile");
+  const recreate = deploy.indexOf("up -d --force-recreate --wait --wait-timeout 60 caddy");
 
   assert.ok(edgeUp >= 0);
   assert.ok(validate > edgeUp);
-  assert.ok(reload > validate);
+  assert.ok(recreate > validate);
+  assert.doesNotMatch(deploy, /caddy reload/);
 });

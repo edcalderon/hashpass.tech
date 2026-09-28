@@ -67,7 +67,7 @@ describe('passwordless email reset', () => {
 
   it('preserves a web OAuth return path before opening Google sign-in', async () => {
     Platform.OS = 'web';
-    const returnTo = '/mcp/login?client_id=chatgpt&sig=signed-value';
+    const returnTo = '/mcp/login?client_id=chatgpt&redirect_uri=https%3A%2F%2Fchatgpt.com%2Fcallback%3Fsource%3Done%26mode%3Dmcp&sig=signed-value';
     mockParams = { returnTo };
     const signInWithOAuth = jest.fn().mockResolvedValue({ pending: true });
     mockAuth = { ...mockAuth, signInWithOAuth };

@@ -101,13 +101,11 @@ const buildSupabaseCallbackPath = (returnTo: string, nativeRelay = false) => {
 };
 
 const normalizeReturnToPath = (rawPath: string): string => {
+  // Expo Router has already decoded the outer `returnTo` query value. Do not
+  // decode it again: MCP authorization requests contain signed, percent-encoded
+  // nested values (notably redirect_uri), and changing those bytes invalidates
+  // the provider signature.
   let normalized = rawPath;
-
-  try {
-    normalized = decodeURIComponent(normalized);
-  } catch {
-    // Keep original value when decode fails.
-  }
 
   if (!normalized.startsWith("/")) {
     return DASHBOARD_EXPLORE_PUBLIC_PATH;
