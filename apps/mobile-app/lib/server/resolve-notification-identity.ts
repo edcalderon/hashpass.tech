@@ -1,6 +1,6 @@
 import { getSupabaseServerForRequest } from '../supabase-server';
 import { authenticateRequest, extractToken } from '@hashpass/auth';
-import { getBetterAuthSessionUser } from './better-auth';
+import { getBetterAuthSessionUser } from './better-auth-session-client';
 import { resolveSupabaseProfile, hostnameFromRequest } from '../../config/supabase-profiles';
 import { recordDbFailure, recordDbSuccess, shouldBackOff } from './db-health-guard';
 
@@ -265,11 +265,14 @@ export async function resolveNotificationIdentity(
     return resolveSupabaseIdentityForUser(supabase, user, guardContext);
   }
 
-  // 3. A Better Auth session is cookie-backed. Verify it directly after a
-  //    provider bearer could not be authenticated: core still advertises
+  // 3. A Better Auth session is cookie-backed. After a provider bearer could
+  //    not be authenticated, verify the cookie through the canonical Better
+  //    Auth session endpoint: core still advertises
   //    Directus in its tenant configuration, so authenticateRequest() alone
   //    would reject a valid Better Auth cookie while the asynchronous Supabase
-  //    bridge is still creating a JWT. This also keeps notification and
+  //    bridge is still creating a JWT. Keeping the full Better Auth runtime in
+  //    its own route avoids embedding it into every consuming API bundle. This
+  //    also keeps notification and
   //    admin-access requests usable if that bridge needs to retry.
   const betterAuthUser = await getBetterAuthSessionUser(request);
   if (betterAuthUser) {
