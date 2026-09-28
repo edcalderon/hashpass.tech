@@ -21,13 +21,16 @@
     "better-auth-development": {
       "tenant": "better-auth",
       "environment": "development",
+      "inheritDefaultGroups": false,
       "databaseUrlEnv": [
-        "BETTER_AUTH_DATABASE_URL_DEV"
+        "BETTER_AUTH_DATABASE_URL_DEV",
+        "BETTER_AUTH_DATABASE_URL"
       ]
     },
     "better-auth-production": {
       "tenant": "better-auth",
       "environment": "production",
+      "inheritDefaultGroups": false,
       "databaseUrlEnv": [
         "BETTER_AUTH_DATABASE_URL_PROD",
         "BETTER_AUTH_DATABASE_URL"

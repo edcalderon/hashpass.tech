@@ -110,4 +110,20 @@ describe('self-hosted VPS deployment workflow', () => {
     expect(workflow).not.toMatch(/AKIA[0-9A-Z]{16}|ASIA[0-9A-Z]{16}|aws-access-key-id|aws-secret-access-key/i);
     expect(workflow).not.toMatch(/\b(?:cat|head|tail|sed)\b[^\n]*(?:\.env\b|\/var\/log\/)|\b(?:printenv|journalctl|docker\s+logs)\b/i);
   });
+
+  it('synchronizes tracked operations files with deletion semantics while preserving private runtime files', () => {
+    expect(fs.existsSync(workflowPath)).toBe(true);
+    if (!fs.existsSync(workflowPath)) return;
+
+    const workflow = fs.readFileSync(workflowPath, 'utf8');
+    const dispatchStart = workflow.indexOf('- name: Send exact-revision deployment through SSM');
+    const waitStart = workflow.indexOf('- name: Wait for deployment', dispatchStart);
+    const dispatchStep = workflow.slice(dispatchStart, waitStart);
+
+    expect(dispatchStep).toMatch(/\brsync\b[^\n]*(?:--delete|--delete-delay)/);
+    expect(dispatchStep).toMatch(/--exclude=(?:['"])?\.env(?:['"])?/);
+    expect(dispatchStep).toMatch(/--exclude=(?:['"])?\*\.env(?:['"])?/);
+    expect(dispatchStep).toMatch(/--exclude=(?:['"])?secrets\/(?:['"])?/);
+    expect(dispatchStep).toMatch(/MCP_GATEWAY_BUILD_CONTEXT=.*release_dir/);
+  });
 });

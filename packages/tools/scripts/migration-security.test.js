@@ -112,6 +112,7 @@ const targetBslBootstrapPath = path.join(
   'packages/tools/scripts/sql/target-bsl-bootstrap.sql',
 );
 const profilePath = path.join(__dirname, 'config/database-profiles.json');
+const migrationRunnerPath = path.join(__dirname, 'migrate-tenant-db.mjs');
 
 describe('Better Auth MCP OAuth migration plan', () => {
   it('assigns the OAuth migration only to dedicated Better Auth profiles', () => {
@@ -142,7 +143,10 @@ describe('Better Auth MCP OAuth migration plan', () => {
       'core-development': config.profiles['core-development'].databaseUrlEnv,
       'core-production': config.profiles['core-production'].databaseUrlEnv,
     }).toEqual({
-      'better-auth-development': ['BETTER_AUTH_DATABASE_URL_DEV'],
+      'better-auth-development': [
+        'BETTER_AUTH_DATABASE_URL_DEV',
+        'BETTER_AUTH_DATABASE_URL',
+      ],
       'better-auth-production': [
         'BETTER_AUTH_DATABASE_URL_PROD',
         'BETTER_AUTH_DATABASE_URL',
@@ -164,6 +168,16 @@ describe('Better Auth MCP OAuth migration plan', () => {
     );
     expect(config.profiles['core-production'].databaseUrlEnv).not.toEqual(
       expect.arrayContaining([expect.stringMatching(/^BETTER_AUTH_DATABASE_URL/)]),
+    );
+  });
+
+  it('replaces tenant defaults with the isolated Better Auth migration plan', () => {
+    const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+    const runner = fs.readFileSync(migrationRunnerPath, 'utf8');
+    expect(config.profiles['better-auth-development']?.inheritDefaultGroups).toBe(false);
+    expect(config.profiles['better-auth-production']?.inheritDefaultGroups).toBe(false);
+    expect(runner).toMatch(
+      /profile\.inheritDefaultGroups\s*===\s*false\s*\?\s*\[\]\s*:\s*config\.defaultGroups/,
     );
   });
 });

@@ -143,17 +143,16 @@ jobs:
           sudo -n -u "$deploy_user" git -C "$release_dir" checkout --force --quiet --detach "$revision"
 
           install -d -o root -g root -m 0755 "$runtime_root"
-          copied_files=0
-          while IFS= read -r -d '' tracked_path; do
-            relative_path="${tracked_path#ops/self-hosted/}"
-            source_path="$release_dir/$tracked_path"
-            [[ -n "$relative_path" && "$relative_path" != "$tracked_path" ]]
-            [[ -f "$source_path" && ! -L "$source_path" ]]
-            file_mode="$(stat -c '%a' "$source_path")"
-            install -D -o root -g root -m "$file_mode" "$source_path" "$runtime_root/$relative_path"
-            copied_files=$((copied_files + 1))
-          done < <(sudo -n -u "$deploy_user" git -C "$release_dir" ls-files -z -- ops/self-hosted)
-          [[ "$copied_files" -gt 0 ]]
+          staged_ops_root="$release_dir/ops/self-hosted"
+          [[ -d "$staged_ops_root" ]]
+          [[ -z "$(find "$staged_ops_root" -type l -print -quit)" ]]
+          command -v rsync >/dev/null
+          rsync --archive --delete-delay --chown=root:root \
+            --exclude='.env' \
+            --exclude='*.env' \
+            --exclude='secrets/' \
+            "$staged_ops_root/" \
+            "$runtime_root/"
 
           sudo -n -u "$deploy_user" env \
             MCP_GATEWAY_BUILD_CONTEXT="$release_dir/packages/plane-mcp-gateway" \
