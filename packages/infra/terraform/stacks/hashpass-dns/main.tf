@@ -30,6 +30,16 @@ resource "aws_route53_zone" "info" {
   tags    = merge(local.common_tags, { Domain = trim(var.info_zone_name, ".") })
 }
 
+resource "aws_route53_record" "mcp" {
+  count = var.mcp_ipv4_address == null ? 0 : 1
+
+  zone_id = aws_route53_zone.tech.zone_id
+  name    = "mcp.${trim(var.tech_zone_name, ".")}"
+  type    = "A"
+  ttl     = 300
+  records = [var.mcp_ipv4_address]
+}
+
 # hpass.id and hashp.link back the multi-domain QR/short-link redirect
 # (see packages/infra/terraform/stacks/hashpass-links-api) -- both are
 # registered at Spaceship and, as of this stack's last apply, still on

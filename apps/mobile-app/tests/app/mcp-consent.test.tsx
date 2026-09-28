@@ -53,7 +53,13 @@ describe('MCP consent screen', () => {
   it('shows verified permissions and redirects after consent', async () => {
     mockGet.mockResolvedValue({
       success: true,
-      data: { clientId: 'chatgpt', scopes: ['openid', 'email', 'plane:read', 'unknown'] },
+      data: {
+        clientId: 'chatgpt-client-id',
+        clientName: 'ChatGPT',
+        clientUri: 'https://chatgpt.com',
+        redirectUri: 'https://chatgpt.com/oauth/callback',
+        scopes: ['openid', 'email', 'plane:read', 'unknown'],
+      },
     });
     mockConsent.mockResolvedValue({ data: { redirectURI: 'https://chatgpt.com/oauth/callback?code=one' } });
 
@@ -66,13 +72,20 @@ describe('MCP consent screen', () => {
       skipEventSegment: true,
     });
     expect(renderer?.root.findAllByType('ActionButton' as never)[0].props.disabled).toBe(false);
+    const renderedText = renderer?.root.findAllByType('Text' as never).flatMap((node) => node.props.children).join(' ');
+    expect(renderedText).toContain('ChatGPT');
+    expect(renderedText).toContain('chatgpt-client-id');
+    expect(renderedText).toContain('https://chatgpt.com/oauth/callback');
     await act(async () => renderer?.root.findAllByType('ActionButton' as never)[0].props.onPress());
     expect(mockConsent).toHaveBeenCalledWith({ accept: true });
     expect(mockAssign).toHaveBeenCalledWith('https://chatgpt.com/oauth/callback?code=one');
   });
 
   it('supports denial and displays verification failures', async () => {
-    mockGet.mockResolvedValue({ success: true, data: { clientId: 'chatgpt', scopes: ['plane:write'] } });
+    mockGet.mockResolvedValue({
+      success: true,
+      data: { clientId: 'chatgpt', clientName: '', clientUri: '', redirectUri: 'https://chatgpt.com/callback', scopes: ['plane:write'] },
+    });
     mockConsent.mockResolvedValue({ data: { redirectUri: 'https://chatgpt.com/oauth/callback?error=denied' } });
     await act(async () => {
       renderer = create(<McpConsentScreen />);
@@ -108,7 +121,10 @@ describe('MCP consent screen', () => {
       configurable: true,
       value: { location: { search: '?client_id=chatgpt&sig=signed', assign: mockAssign } },
     });
-    mockGet.mockResolvedValue({ success: true, data: { clientId: 'chatgpt', scopes: [] } });
+    mockGet.mockResolvedValue({
+      success: true,
+      data: { clientId: 'chatgpt', clientName: '', clientUri: '', redirectUri: 'https://chatgpt.com/callback', scopes: [] },
+    });
     mockConsent.mockResolvedValue({ error: { message: 'Consent failed' } });
     await act(async () => {
       renderer = create(<McpConsentScreen />);

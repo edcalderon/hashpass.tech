@@ -23,6 +23,12 @@ services:
       PLANE_OAUTH_PROVIDER_CLIENT_ID: internal-pat-only
       PLANE_OAUTH_PROVIDER_CLIENT_SECRET: REDACTED-not-used-by-private-pat-hop
       PLANE_OAUTH_PROVIDER_BASE_URL: https://oauth.invalid
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; s=socket.create_connection(('127.0.0.1',8211),2); s.close()"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 20s
     networks: [ops]
     logging:
       driver: json-file
@@ -50,7 +56,14 @@ services:
       MCP_ALLOWED_EMAILS: ${MCP_ALLOWED_EMAILS:?Set at least one approved Hashpass account}
       PLANE_MCP_UPSTREAM_URL: http://plane-mcp-http:8211/http/api-key/mcp
     depends_on:
-      - plane-mcp-http
+      plane-mcp-http:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8220/healthz').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
     networks: [ops]
     logging:
       driver: json-file

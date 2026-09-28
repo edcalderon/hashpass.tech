@@ -9,7 +9,13 @@ import { uiPalette, uiTokens } from '@hashpass/ui/tokens';
 import { useTheme } from '../../../hooks/useTheme';
 import { apiClient } from '@/lib/api-client';
 
-type ConsentDetails = { clientId: string; scopes: string[] };
+type ConsentDetails = {
+  clientId: string;
+  clientName: string;
+  clientUri: string;
+  redirectUri: string;
+  scopes: string[];
+};
 type ConsentResponse =
   | { data: ConsentDetails; success: true }
   | { data?: ConsentDetails | null; error: string; success: false };
@@ -72,14 +78,31 @@ export default function McpConsentScreen() {
   }, [authClient]);
 
   const displayedScopes = details?.scopes.filter((scope) => scopeLabels[scope]) || [];
+  const clientName = details?.clientName || 'Unnamed OAuth client';
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: palette.canvas }]}>
       <ScrollView contentContainerStyle={styles.content}>
         <Surface mode={mode} style={styles.surface}>
-          <Badge mode={mode}>Hashpass Plane</Badge>
-          <Text style={[styles.title, { color: palette.text }]}>Connect your planning workspace</Text>
-          <Text style={[styles.body, { color: palette.muted }]}>Only approved Hashpass team accounts can use this private MCP server. Your Plane service credential is never shared with the connected client.</Text>
+          <Badge mode={mode}>OAuth access request</Badge>
+          <Text style={[styles.title, { color: palette.text }]}>{clientName} wants to connect</Text>
+          <Text style={[styles.body, { color: palette.muted }]}>Only approved Hashpass team accounts can use this private MCP server. Review the exact client and redirect destination before allowing access. Your Plane service credential is never shared with the client.</Text>
+          {!!details && (
+            <View style={[styles.clientDetails, { borderColor: palette.border }]} accessibilityLabel="OAuth client identity">
+              <Text style={[styles.detailLabel, { color: palette.muted }]}>Client name (self-declared)</Text>
+              <Text selectable style={[styles.detailValue, { color: palette.text }]}>{clientName}</Text>
+              <Text style={[styles.detailLabel, { color: palette.muted }]}>Client ID</Text>
+              <Text selectable style={[styles.detailValue, { color: palette.text }]}>{details.clientId}</Text>
+              {!!details.clientUri && (
+                <>
+                  <Text style={[styles.detailLabel, { color: palette.muted }]}>Client website</Text>
+                  <Text selectable style={[styles.detailValue, { color: palette.text }]}>{details.clientUri}</Text>
+                </>
+              )}
+              <Text style={[styles.detailLabel, { color: palette.muted }]}>Redirect destination</Text>
+              <Text selectable style={[styles.detailValue, { color: palette.text }]}>{details.redirectUri}</Text>
+            </View>
+          )}
           <View style={styles.permissionList} accessibilityRole="list">
             {displayedScopes.map((scope) => (
               <View key={scope} style={[styles.permission, { borderColor: palette.border }]}>
@@ -104,6 +127,9 @@ const styles = StyleSheet.create({
   surface: { width: '100%', maxWidth: 640, gap: uiTokens.space.lg },
   title: { fontSize: uiTokens.type.heading, lineHeight: 40, fontWeight: '700' },
   body: { fontSize: uiTokens.type.body, lineHeight: 26 },
+  clientDetails: { borderWidth: uiTokens.control.borderWidth, borderRadius: uiTokens.radius.input, padding: uiTokens.space.lg, gap: uiTokens.space.xs },
+  detailLabel: { fontSize: uiTokens.type.caption, lineHeight: 18, fontWeight: '700', marginTop: uiTokens.space.sm },
+  detailValue: { fontSize: uiTokens.type.label, lineHeight: 20 },
   permissionList: { gap: uiTokens.space.sm },
   permission: { borderWidth: uiTokens.control.borderWidth, borderRadius: uiTokens.radius.input, padding: uiTokens.space.lg },
   permissionText: { fontSize: uiTokens.type.body, lineHeight: 24 },

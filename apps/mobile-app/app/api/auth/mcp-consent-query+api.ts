@@ -36,10 +36,29 @@ export async function GET(request: Request) {
   }
 
   const params = new URLSearchParams(signedQuery);
+  const clientId = params.get('client_id') || '';
+  const redirectUri = params.get('redirect_uri') || '';
+  if (!clientId || !redirectUri) {
+    return Response.json({ error: 'Authorization request is missing client details' }, { status: 400, headers: corsHeaders(request) });
+  }
+
+  let client: { client_name?: string; client_uri?: string };
+  try {
+    client = await auth.api.getOAuthClientPublic({
+      headers: request.headers,
+      query: { client_id: clientId },
+    });
+  } catch {
+    return Response.json({ error: 'OAuth client is unknown or disabled' }, { status: 400, headers: corsHeaders(request) });
+  }
+
   const scopes = (params.get('scope') || '').split(/\s+/).filter(Boolean);
   return Response.json(
     {
-      clientId: params.get('client_id') || '',
+      clientId,
+      clientName: client.client_name || '',
+      clientUri: client.client_uri || '',
+      redirectUri,
       scopes,
     },
     { headers: corsHeaders(request) },

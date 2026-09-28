@@ -18,6 +18,11 @@ output "dev_artifact_bucket_name" {
   value       = module.site_dev.artifact_bucket_name
 }
 
+output "lambda_deployment_bucket_name" {
+  description = "Private us-east-1 bucket used for Lambda packages above the direct-upload limit"
+  value       = aws_s3_bucket.lambda_deployments.bucket
+}
+
 output "cloudfront_distribution_id" {
   description = "CloudFront distribution ID"
   value       = module.site.cloudfront_distribution_id

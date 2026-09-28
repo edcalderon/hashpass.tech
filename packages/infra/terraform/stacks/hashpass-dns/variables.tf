@@ -16,6 +16,18 @@ variable "dev_zone_name" {
   default     = "dev.hashpass.tech"
 }
 
+variable "mcp_ipv4_address" {
+  description = "Optional public IPv4 address for the self-hosted MCP gateway. Leave null to omit the record."
+  type        = string
+  default     = null
+  nullable    = true
+
+  validation {
+    condition     = var.mcp_ipv4_address == null || can(cidrhost("${var.mcp_ipv4_address}/32", 0))
+    error_message = "mcp_ipv4_address must be a valid IPv4 address or null."
+  }
+}
+
 variable "lat_zone_name" {
   description = "Legacy HashPass LAT hosted zone name"
   type        = string

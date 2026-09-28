@@ -168,6 +168,8 @@ jobs:
       SITE_CLOUDFRONT_DISTRIBUTION_ID: E1Y06KG5U6MKCS
       SITE_LAMBDA_FUNCTION_NAME: hashpass-dev-expo-router-api
       SITE_LAMBDA_REGION: us-east-1
+      SITE_LAMBDA_DEPLOYMENT_ENVIRONMENT: dev
+      SITE_LAMBDA_DEPLOYMENT_BUCKET_REGION: us-east-1
       SITE_API_VERSION_URL: https://api-dev.hashpass.tech/api/config/versions
     steps:
       - name: Checkout deployment scripts

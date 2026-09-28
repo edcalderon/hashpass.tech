@@ -19,6 +19,12 @@ test("injects the Plane credential only into the OAuth gateway", () => {
   assert.match(gateway, /MCP_ALLOWED_EMAILS:/);
 });
 
+test("waits for both private MCP services to become healthy", () => {
+  assert.match(compose, /plane-mcp-http:[\s\S]*?healthcheck:[\s\S]*?socket\.create_connection/);
+  assert.match(compose, /plane-mcp-gateway:[\s\S]*?condition: service_healthy[\s\S]*?healthcheck:[\s\S]*?\/healthz/);
+  assert.match(deploy, /-f mcp\/compose\.yaml up -d --build --wait --wait-timeout 180/);
+});
+
 test("publishes only the OAuth gateway through Caddy", () => {
   assert.match(caddy, /\{\$MCP_DOMAIN:mcp\.example\.invalid\}/);
   assert.match(caddy, /reverse_proxy plane-mcp-gateway:8220/);

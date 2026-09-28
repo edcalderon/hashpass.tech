@@ -131,7 +131,11 @@ echo "5. Creating deployment zip..."
 # Zip contents of package directory, not the directory itself
 cd "$PACKAGE_DIR"
 rm -f "$PROJECT_ROOT/lambda-deployment.zip"
-zip -r "$PROJECT_ROOT/lambda-deployment.zip" . -x "*.git*" "*.DS_Store*" "*.map" > /dev/null
+# Better Auth adds several server-only routes to the Expo export. Use ZIP's
+# strongest portable compression so the package stays below Lambda's 50 MiB
+# direct-upload limit for as long as possible; deploy-api-lambda.sh uses its
+# S3 fallback when the archive eventually exceeds that ceiling.
+zip -9 -r "$PROJECT_ROOT/lambda-deployment.zip" . -x "*.git*" "*.DS_Store*" "*.map" > /dev/null
 cd "$PROJECT_ROOT"
 
 # Cleanup
