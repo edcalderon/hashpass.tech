@@ -3,6 +3,7 @@
  */
 
 import { createAuthClient } from 'better-auth/client';
+import { oauthProviderClient } from '@better-auth/oauth-provider/client';
 import { ENV_CONFIG } from '@hashpass/config';
 import { Platform } from 'react-native';
 import type {
@@ -100,6 +101,7 @@ export class BetterAuthProvider implements IAuthProvider {
       const nativeTrustedOriginHeaders = resolveNativeTrustedOriginHeaders();
       this.client = createAuthClient({
         baseURL,
+        plugins: [oauthProviderClient()],
         ...(nativeTrustedOriginHeaders
           ? {
               fetchOptions: {

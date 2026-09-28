@@ -6,7 +6,9 @@ if grep -Eq 'YOUR_|example\.invalid' .env; then echo "Refusing deployment with p
 docker network inspect hashpass-ops >/dev/null 2>&1 || docker network create hashpass-ops >/dev/null
 docker compose --env-file .env -f frappe/compose.yaml config --quiet
 docker compose --env-file .env -f plane/compose.yaml config --quiet
+docker compose --env-file .env -f mcp/compose.yaml config --quiet
 docker compose --env-file .env -f compose.yaml config --quiet
 docker compose --env-file .env -f frappe/compose.yaml up -d
 docker compose --env-file .env -f plane/compose.yaml up -d
+docker compose --env-file .env -f mcp/compose.yaml up -d --build
 docker compose --env-file .env -f compose.yaml up -d

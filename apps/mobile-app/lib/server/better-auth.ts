@@ -1,4 +1,6 @@
 import { betterAuth } from 'better-auth';
+import { jwt } from 'better-auth/plugins';
+import { mcp } from '@better-auth/mcp';
 import { ENV_CONFIG, SSO_CONFIG } from '@hashpass/config';
 import { syncPublicUserRegistry } from '../auth/public-user-registry';
 import { ensureSupabaseAccountForEmail } from '../auth/supabase-admin-bridge';
@@ -209,6 +211,9 @@ const googleClientId = readEnv('BETTER_AUTH_GOOGLE_CLIENT_ID') || readEnv('GOOGL
 const googleClientSecret =
   readEnv('BETTER_AUTH_GOOGLE_CLIENT_SECRET') || readEnv('GOOGLE_CLIENT_SECRET');
 const configuredBaseURL = normalizeAuthURL(readEnv('BETTER_AUTH_URL'));
+const mcpResource = readEnv('BETTER_AUTH_MCP_RESOURCE_URL') || 'https://mcp.hashpass.tech/mcp';
+const mcpLoginPage = readEnv('BETTER_AUTH_MCP_LOGIN_PAGE') || 'https://hashpass.tech/auth';
+const mcpConsentPage = readEnv('BETTER_AUTH_MCP_CONSENT_PAGE') || 'https://hashpass.tech/mcp/consent';
 
 const createAuthInstance = () =>
   betterAuth({
@@ -239,6 +244,22 @@ const createAuthInstance = () =>
           }
         : {}),
     },
+    plugins: [
+      jwt(),
+      mcp({
+        loginPage: mcpLoginPage,
+        consentPage: mcpConsentPage,
+        resource: mcpResource,
+        scopes: ['openid', 'profile', 'email', 'offline_access', 'plane:read', 'plane:write'],
+        allowDynamicClientRegistration: true,
+        allowUnauthenticatedClientRegistration: true,
+        accessTokenExpiresIn: 60 * 15,
+        refreshTokenExpiresIn: 60 * 60 * 24 * 30,
+        customAccessTokenClaims: ({ user }) => ({
+          'https://hashpass.tech/email': user?.email || '',
+        }),
+      }),
+    ],
     session: {
       expiresIn: 60 * 60 * 24 * 14,
       updateAge: 60 * 60 * 24,

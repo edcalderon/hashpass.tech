@@ -15,4 +15,6 @@ const handler: typeof betterAuthHandler = async (...args: Parameters<typeof bett
   return rewriteBetterAuthErrorRedirect(request, response);
 };
 
-export { handler as GET, handler as POST };
+// OAUTH_METADATA_GET is re-exported by the RFC 8414 issuer-path discovery
+// route; keeping one handler preserves identical host/origin validation.
+export { handler as GET, handler as POST, handler as OAUTH_METADATA_GET };

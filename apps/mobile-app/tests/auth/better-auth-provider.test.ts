@@ -73,6 +73,11 @@ describe('BetterAuthProvider', () => {
 
   beforeEach(() => {
     jest.resetModules();
+    // Better Auth 1.7 is ESM-only. resetModules clears the hoisted mock from
+    // Jest's module registry, so restore it before requiring the provider.
+    jest.doMock('better-auth/client', () => ({
+      createAuthClient: mockCreateAuthClient,
+    }));
     mockCreateAuthClient.mockClear();
     mockGetSession.mockReset();
     mockSignInSocial.mockReset();
@@ -215,6 +220,7 @@ describe('BetterAuthProvider', () => {
 
       expect(mockCreateAuthClient).toHaveBeenCalledWith({
         baseURL: 'https://api.hashpass.tech/api/auth',
+        plugins: [expect.objectContaining({ id: 'oauth-provider-client' })],
         fetchOptions: {
           headers: {
             Origin: 'https://hashpass.tech',

@@ -1,0 +1,62 @@
+name: hashpass-mcp
+
+services:
+  plane-mcp-http:
+    image: makeplane/plane-mcp-server:v0.3.3
+    command: http
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 128
+    mem_limit: 512m
+    cpus: 0.50
+    environment:
+      PLANE_BASE_URL: ${PLANE_BASE_URL:-https://${PLANE_DOMAIN}}
+      REDIS_URL: redis://plane-redis:6379/
+      LOG_PAYLOADS: "false"
+      LOG_USER_INFO: "false"
+      # Plane MCP v0.3.3 initializes its OAuth transport even though this
+      # private hop exclusively uses the PAT endpoint behind our gateway.
+      PLANE_OAUTH_PROVIDER_CLIENT_ID: internal-pat-only
+      PLANE_OAUTH_PROVIDER_CLIENT_SECRET: REDACTED-not-used-by-private-pat-hop
+      PLANE_OAUTH_PROVIDER_BASE_URL: https://oauth.invalid
+    networks: [ops]
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+
+  plane-mcp-gateway:
+    build:
+      context: ../../../packages/plane-mcp-gateway
+    restart: unless-stopped
+    env_file:
+      - /opt/hashpass/mcp/secrets/plane.env
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 128
+    mem_limit: 256m
+    cpus: 0.50
+    environment:
+      PORT: "8220"
+      MCP_RESOURCE_URL: https://${MCP_DOMAIN}/mcp
+      MCP_OAUTH_ISSUER: ${MCP_OAUTH_ISSUER:-https://api.hashpass.tech/api/auth}
+      MCP_ALLOWED_SUBJECTS: ${MCP_ALLOWED_SUBJECTS:-}
+      MCP_ALLOWED_EMAILS: ${MCP_ALLOWED_EMAILS:?Set at least one approved Hashpass account}
+      PLANE_MCP_UPSTREAM_URL: http://plane-mcp-http:8211/http/api-key/mcp
+    depends_on:
+      - plane-mcp-http
+    networks: [ops]
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+
+networks:
+  ops:
+    name: hashpass-ops
+    external: true
