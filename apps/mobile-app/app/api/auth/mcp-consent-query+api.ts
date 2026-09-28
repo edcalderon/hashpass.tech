@@ -13,7 +13,7 @@ const corsHeaders = (request: Request) => {
     ...(allowedOrigins.has(origin) ? { 'Access-Control-Allow-Origin': origin } : {}),
     'Access-Control-Allow-Credentials': 'true',
     'Access-Control-Allow-Methods': 'GET, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Headers': 'Authorization, Content-Type',
     'Cache-Control': 'no-store',
     Vary: 'Origin',
   };

@@ -70,6 +70,7 @@ import {
   normalizeAuthAllyIds,
   type AuthAllyId,
 } from "../../lib/event-auth-allies";
+import { normalizeSafeReturnToPath } from "../../lib/auth/return-to";
 
 const HASHPASS_WEB_LIGHT_AUTH_LOGO = require("../../assets/logos/hashpass/logo-full-hashpass-white.svg");
 
@@ -100,29 +101,7 @@ const buildSupabaseCallbackPath = (returnTo: string, nativeRelay = false) => {
   return `${SUPABASE_OAUTH_CALLBACK_PATH}?${params.toString()}`;
 };
 
-const normalizeReturnToPath = (rawPath: string): string => {
-  // Expo Router has already decoded the outer `returnTo` query value. Do not
-  // decode it again: MCP authorization requests contain signed, percent-encoded
-  // nested values (notably redirect_uri), and changing those bytes invalidates
-  // the provider signature.
-  let normalized = rawPath;
-
-  if (!normalized.startsWith("/")) {
-    return DASHBOARD_EXPLORE_PUBLIC_PATH;
-  }
-
-  normalized = normalized.replace(/\/\([^/]+\)/g, "");
-
-  if (
-    !normalized ||
-    normalized === "/auth" ||
-    normalized.includes(SUPABASE_OAUTH_CALLBACK_PATH)
-  ) {
-    return DASHBOARD_EXPLORE_PUBLIC_PATH;
-  }
-
-  return normalized;
-};
+const normalizeReturnToPath = normalizeSafeReturnToPath;
 
 const mapToRouterPath = (path: string): string => {
   if (path.startsWith("/dashboard") && !path.startsWith("/(shared)/dashboard")) {

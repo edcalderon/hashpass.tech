@@ -17,6 +17,7 @@ import {
     isSupabasePasswordlessCallback,
     PASSWORDLESS_CALLBACK_MARKER,
 } from '../../../lib/auth/passwordless-callback';
+import { normalizeSafeReturnToPath } from '../../../lib/auth/return-to';
 
 type CallbackHashError = {
     code: string;
@@ -228,42 +229,7 @@ export default function AuthCallback() {
         };
     };
 
-    const normalizeRedirectPath = (rawPath: string) => {
-        let normalized = rawPath;
-
-        try {
-            normalized = decodeURIComponent(normalized);
-        } catch {
-            // Keep original value if decoding fails.
-        }
-
-        // Browsers strip leading C0 control characters and spaces during
-        // URL parsing (WHATWG URL spec) -- a leading space or tab before
-        // '//evil.com' would still be parsed as protocol-relative once
-        // handed to window.location.replace(), even though the raw string
-        // here doesn't start with '/'. Strip the same way before validating.
-        normalized = normalized.replace(/^[\x00-\x20]+/, '');
-
-        // A single leading '/' is NOT sufficient to prove this is a
-        // same-origin relative path -- '//evil.com' and '/\evil.com' (and
-        // their backslash variants) both start with '/' but browsers treat
-        // them as protocol-relative URLs, redirecting to an entirely
-        // different origin when passed to window.location.replace(). Only
-        // exactly one leading '/' followed by something that is not
-        // another '/' or '\' is safe.
-        if (!/^\/[^/\\]/.test(normalized)) {
-            return '/dashboard/explore';
-        }
-
-        // Route groups are internal to Expo Router and should not be used in browser URLs.
-        normalized = normalized.replace(/\/\([^/]+\)/g, '');
-
-        if (!normalized || normalized === '/auth' || normalized.includes('/auth/callback')) {
-            return '/dashboard/explore';
-        }
-
-        return normalized;
-    };
+    const normalizeRedirectPath = normalizeSafeReturnToPath;
 
     const mapToRouterPath = (path: string) => {
         if (path.startsWith('/dashboard') && !path.startsWith('/(shared)/dashboard')) {
