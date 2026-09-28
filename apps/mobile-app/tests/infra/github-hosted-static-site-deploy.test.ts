@@ -51,6 +51,11 @@ describe('GitHub-hosted static-site deployment workflow', () => {
 
   it('requires a protected environment and uses the existing deploy scripts', () => {
     const workflow = fs.readFileSync(workflowPath, 'utf8');
+    const repositoryRoot = path.resolve(__dirname, '../../../..');
+    const lambdaDeployScript = fs.readFileSync(
+      path.join(repositoryRoot, 'packages/tools/scripts/deploy-api-lambda.sh'),
+      'utf8',
+    );
 
     expect(workflow).toContain('environment: development');
     expect(workflow).toContain('aws-actions/configure-aws-credentials@v4');
@@ -66,6 +71,10 @@ describe('GitHub-hosted static-site deployment workflow', () => {
     expect(workflow).toContain('static-site-build-evidence.json');
     expect(workflow).toContain('Record deployment evidence');
     expect(workflow).toContain('static-site-deployment-evidence.json');
+    expect(lambdaDeployScript).toContain('GITHUB_RUN_ID');
+    expect(lambdaDeployScript).toContain('GITHUB_RUN_ATTEMPT');
+    expect(lambdaDeployScript).toContain('${lambda_revision}-${lambda_upload_id}.zip');
+    expect(lambdaDeployScript).not.toContain('${lambda_revision}.zip');
   });
 
   it('keeps the Terraform deploy role separate and resource-scoped', () => {

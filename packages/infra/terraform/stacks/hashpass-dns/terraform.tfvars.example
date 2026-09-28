@@ -1,6 +1,9 @@
 # Target hosted zones for the HashPass AWS account migration
 aws_region = "us-east-2"
 
+# Set privately at apply time; do not commit the live VPS address.
+# mcp_ipv4_address = "192.0.2.10"
+
 tech_zone_name = "hashpass.tech"
 lat_zone_name  = "hashpass.lat"
 club_zone_name = "hashpass.club"

@@ -11,11 +11,12 @@
 data "aws_caller_identity" "current" {}
 
 locals {
-  build_site_bucket_name     = try(trimspace(var.site_bucket_name), "") != "" ? trimspace(var.site_bucket_name) : "${var.name_prefix}-${var.environment}-site-${data.aws_caller_identity.current.account_id}-${var.aws_region}"
-  build_dev_site_bucket_name = try(trimspace(var.dev_site_bucket_name), "") != "" ? trimspace(var.dev_site_bucket_name) : "${var.name_prefix}-${var.dev_environment}-site-${data.aws_caller_identity.current.account_id}-${var.aws_region}"
-  site_custom_domain_name    = trimspace(var.site_custom_domain_name)
-  site_acm_certificate_arn   = trimspace(var.site_acm_certificate_arn)
-  site_route53_zone_name     = trim(var.site_route53_zone_name, ".")
+  build_site_bucket_name        = try(trimspace(var.site_bucket_name), "") != "" ? trimspace(var.site_bucket_name) : "${var.name_prefix}-${var.environment}-site-${data.aws_caller_identity.current.account_id}-${var.aws_region}"
+  build_dev_site_bucket_name    = try(trimspace(var.dev_site_bucket_name), "") != "" ? trimspace(var.dev_site_bucket_name) : "${var.name_prefix}-${var.dev_environment}-site-${data.aws_caller_identity.current.account_id}-${var.aws_region}"
+  lambda_deployment_bucket_name = "${var.name_prefix}-lambda-deployments-${data.aws_caller_identity.current.account_id}-${var.lambda_region}"
+  site_custom_domain_name       = trimspace(var.site_custom_domain_name)
+  site_acm_certificate_arn      = trimspace(var.site_acm_certificate_arn)
+  site_route53_zone_name        = trim(var.site_route53_zone_name, ".")
   site_route53_a_records = [
     for ip_address in var.site_route53_a_records : trimspace(ip_address)
     if trimspace(ip_address) != ""
@@ -28,7 +29,7 @@ locals {
   ]
 
   build_worker_deploy_bucket_names = distinct([
-    for bucket_name in [local.build_site_bucket_name, local.build_dev_site_bucket_name] :
+    for bucket_name in [local.build_site_bucket_name, local.build_dev_site_bucket_name, local.lambda_deployment_bucket_name] :
     bucket_name if bucket_name != ""
   ])
   build_worker_artifact_bucket_names = distinct([
@@ -42,8 +43,8 @@ locals {
   }
   production_build_is_codebuild                  = lower(trimspace(var.production_build_execution_mode)) == "codebuild"
   development_build_is_codebuild                 = lower(trimspace(var.development_build_execution_mode)) == "codebuild"
-  production_build_worker_deploy_bucket_names    = [local.build_site_bucket_name]
-  development_build_worker_deploy_bucket_names   = [local.build_dev_site_bucket_name]
+  production_build_worker_deploy_bucket_names    = [local.build_site_bucket_name, local.lambda_deployment_bucket_name]
+  development_build_worker_deploy_bucket_names   = [local.build_dev_site_bucket_name, local.lambda_deployment_bucket_name]
   production_build_worker_artifact_bucket_names  = ["${var.name_prefix}-${var.environment}-pipelines-${data.aws_caller_identity.current.account_id}-${var.aws_region}"]
   development_build_worker_artifact_bucket_names = ["${var.name_prefix}-${var.dev_environment}-pipelines-${data.aws_caller_identity.current.account_id}-${var.aws_region}"]
   # Path-filtered trigger (2026-07-28), mirrors the identical design in
@@ -152,6 +153,66 @@ locals {
     } : {},
     var.build_environment_overrides
   )
+}
+
+resource "aws_s3_bucket" "lambda_deployments" {
+  provider = aws.lambda
+
+  bucket        = local.lambda_deployment_bucket_name
+  force_destroy = false
+  tags          = merge(var.tags, { Service = "lambda-deployments", Environment = "shared" })
+}
+
+resource "aws_s3_bucket_ownership_controls" "lambda_deployments" {
+  provider = aws.lambda
+  bucket   = aws_s3_bucket.lambda_deployments.id
+
+  rule {
+    object_ownership = "BucketOwnerEnforced"
+  }
+}
+
+resource "aws_s3_bucket_public_access_block" "lambda_deployments" {
+  provider = aws.lambda
+  bucket   = aws_s3_bucket.lambda_deployments.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "lambda_deployments" {
+  provider = aws.lambda
+  bucket   = aws_s3_bucket.lambda_deployments.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
+resource "aws_s3_bucket_lifecycle_configuration" "lambda_deployments" {
+  provider = aws.lambda
+  bucket   = aws_s3_bucket.lambda_deployments.id
+
+  rule {
+    id     = "expire-lambda-packages"
+    status = "Enabled"
+
+    filter {
+      prefix = "lambda-deployments/"
+    }
+
+    expiration {
+      days = 1
+    }
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 1
+    }
+  }
 }
 
 check "custom_pipeline_requires_workers" {
@@ -801,6 +862,22 @@ resource "aws_iam_role_policy" "github_actions_worker_control" {
           "arn:aws:lambda:${var.lambda_region}:${data.aws_caller_identity.current.account_id}:function:${function_name}"
         ]
       },
+      {
+        Sid    = "StageApiLambdaPackages"
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:DeleteObject",
+        ]
+        Resource = "${aws_s3_bucket.lambda_deployments.arn}/lambda-deployments/*"
+      },
+      {
+        Sid      = "LocateApiLambdaPackageBuckets"
+        Effect   = "Allow"
+        Action   = ["s3:GetBucketLocation"]
+        Resource = aws_s3_bucket.lambda_deployments.arn
+      },
     ]
   })
 }
@@ -892,6 +969,22 @@ resource "aws_iam_role_policy" "github_actions_development_static_site_deploy" {
           "lambda:UpdateFunctionCode",
         ]
         Resource = "arn:aws:lambda:${var.lambda_region}:${data.aws_caller_identity.current.account_id}:function:${var.github_actions_development_static_site_deploy_lambda_function_name}"
+      },
+      {
+        Sid    = "StageOnlyApprovedApiPackages"
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:DeleteObject",
+        ]
+        Resource = "${aws_s3_bucket.lambda_deployments.arn}/lambda-deployments/*"
+      },
+      {
+        Sid      = "LocateOnlyApprovedApiPackageBucket"
+        Effect   = "Allow"
+        Action   = ["s3:GetBucketLocation"]
+        Resource = aws_s3_bucket.lambda_deployments.arn
       },
     ]
   })

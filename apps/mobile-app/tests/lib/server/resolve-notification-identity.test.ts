@@ -12,7 +12,7 @@ jest.mock('@hashpass/auth', () => ({
 jest.mock('@/lib/supabase-server', () => ({
   getSupabaseServerForRequest: (...args: unknown[]) => mockGetSupabaseServerForRequest(...args),
 }));
-jest.mock('../../../lib/server/better-auth', () => ({
+jest.mock('../../../lib/server/better-auth-session-client', () => ({
   getBetterAuthSessionUser: (...args: unknown[]) => mockGetBetterAuthSessionUser(...args),
 }));
 

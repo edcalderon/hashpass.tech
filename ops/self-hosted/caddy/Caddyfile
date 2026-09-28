@@ -26,3 +26,10 @@
   import common_security
   reverse_proxy frappe-frontend:8080
 }
+
+{$MCP_DOMAIN:mcp.example.invalid} {
+  import common_security
+  reverse_proxy plane-mcp-gateway:8220 {
+    flush_interval -1
+  }
+}

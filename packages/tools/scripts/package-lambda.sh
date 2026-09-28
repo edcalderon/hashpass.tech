@@ -43,6 +43,7 @@ mkdir -p "$PACKAGE_DIR"
 echo "2. Copying Lambda handler..."
 cp "$PROJECT_ROOT/packages/infra/lambda/index.js" "$PACKAGE_DIR/"
 cp "$PROJECT_ROOT/packages/infra/lambda/package.json" "$PACKAGE_DIR/"
+cp "$PROJECT_ROOT/packages/infra/lambda/package-lock.json" "$PACKAGE_DIR/"
 
 # Copy the Expo server bundle into the Lambda server root.
 echo "3. Copying build output into Lambda server root..."
@@ -108,7 +109,22 @@ fi
 # Install dependencies
 echo "4. Installing dependencies..."
 cd "$PACKAGE_DIR"
-npm install --production --verbose
+npm ci --omit=dev --ignore-scripts --verbose
+
+# Lambda enforces a 250 MiB limit on the expanded archive, including layers.
+# Production dependencies often ship declarations, source maps, tests, and
+# prose that Node never reads at runtime. Remove that packaging-only material
+# deterministically so metadata cannot push the function over the limit.
+echo "4b. Pruning non-runtime package files..."
+find "$PACKAGE_DIR/node_modules" -type f \
+  \( -name '*.md' -o -name '*.markdown' \
+     -o -name '*.ts' -o -name '*.mts' -o -name '*.cts' \
+     -o -name '*.tsbuildinfo' \) -delete
+# Expo CI exports can include tens of megabytes of server source maps. ZIP's
+# exclusion below kept them out of the uploaded archive, but remove them before
+# measuring too so the guard reflects the bytes Lambda will actually expand.
+find "$PACKAGE_DIR" -type f -name '*.map' -delete
+find "$PACKAGE_DIR/server" -type f -name '*.html' -delete
 
 if [ ! -f "$PACKAGE_DIR/node_modules/pg/package.json" ]; then
   echo "❌ Lambda package is missing the pg dependency required by Better Auth."
@@ -126,12 +142,25 @@ if [ ! -f "$PACKAGE_DIR/node_modules/@sentry/aws-serverless/package.json" ]; the
   exit 1
 fi
 
+LAMBDA_UNZIPPED_MAX_BYTES=251658240
+LAMBDA_UNZIPPED_BYTES="$(find "$PACKAGE_DIR" -type f -printf '%s\n' | awk '{ total += $1 } END { printf "%.0f", total }')"
+if [ "$LAMBDA_UNZIPPED_BYTES" -gt "$LAMBDA_UNZIPPED_MAX_BYTES" ]; then
+  echo "❌ Lambda package expands to ${LAMBDA_UNZIPPED_BYTES} bytes; the release ceiling is ${LAMBDA_UNZIPPED_MAX_BYTES} bytes."
+  echo "   Split or remove runtime code before deploying; S3 upload does not bypass Lambda's expanded-size limit."
+  exit 1
+fi
+echo "   Expanded package size: ${LAMBDA_UNZIPPED_BYTES} bytes"
+
 # Create deployment package
 echo "5. Creating deployment zip..."
 # Zip contents of package directory, not the directory itself
 cd "$PACKAGE_DIR"
 rm -f "$PROJECT_ROOT/lambda-deployment.zip"
-zip -r "$PROJECT_ROOT/lambda-deployment.zip" . -x "*.git*" "*.DS_Store*" "*.map" > /dev/null
+# Better Auth adds several server-only routes to the Expo export. Use ZIP's
+# strongest portable compression so the package stays below Lambda's 50 MiB
+# direct-upload limit for as long as possible; deploy-api-lambda.sh uses its
+# S3 fallback when the archive eventually exceeds that ceiling.
+zip -9 -r "$PROJECT_ROOT/lambda-deployment.zip" . -x "*.git*" "*.DS_Store*" "*.map" > /dev/null
 cd "$PROJECT_ROOT"
 
 # Cleanup

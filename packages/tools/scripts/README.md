@@ -123,6 +123,12 @@ See `apps/docs/docs/infra/INFRA_NAMING_GUIDE.md` for the naming convention used 
 
 The static site deploy helper expects `SITE_BUCKET_NAME` and, optionally, `SITE_CLOUDFRONT_DISTRIBUTION_ID`. It syncs the built `dist/client` tree to S3, reapplies no-cache headers to HTML and manifest assets, and creates a CloudFront invalidation when a distribution ID is present.
 When `SITE_LAMBDA_FUNCTION_NAME`, `SITE_LAMBDA_REGION`, and `SITE_API_VERSION_URL` are set, the same helper packages the Expo Router API, updates the configured Lambda, waits for the Lambda update, and verifies that the public `/api/config/versions` response matches `package.json`. This is the guard that prevents `hashpass.tech` from deploying with stale API code.
+
+Lambda archives up to 50 MiB use the direct API. Larger archives are staged
+under `lambda-deployments/` in the private same-region Lambda deployment bucket
+and removed after Lambda accepts the update. The deployment roles have
+access only to that prefix; set `SITE_LAMBDA_DEPLOYMENT_BUCKET` only when a
+stack uses a nonstandard artifact-bucket name.
 If only `SITE_CLOUDFRONT_DOMAIN_NAME` is available, the helper resolves the distribution ID at runtime with `aws cloudfront list-distributions` and then invalidates the matching distribution. That keeps the target web pipeline usable without feeding Terraform a self-referential distribution ID.
 The static site build helper installs the project dependencies, resolves the pinned pnpm version from the repo root, and produces the `dist/client` tree that the deploy helper consumes. It also resets the workspace-local Expo / Metro cache before export so the EC2 worker cannot reuse stale absolute paths from a previous job. The shared EC2 CodePipeline worker now runs the build helper directly before invoking the deploy helper in direct mode.
 The worker also retries the source artifact download once the CodePipeline job starts, then verifies the archive exists before unzipping it. If the build helper is missing from a source archive, the worker falls back to the same inline pnpm build flow so the pipeline remains usable even when the archive is incomplete.

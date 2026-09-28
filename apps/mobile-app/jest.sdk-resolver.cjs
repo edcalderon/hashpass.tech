@@ -16,8 +16,20 @@ const SDK_ENTRY_POINTS = {
   '@hashpass-tech/sdk/auth-qr': 'auth-qr/index.ts',
   '@hashpass-tech/sdk/support': 'support/index.ts',
 };
+const BETTER_AUTH_CLIENT_MOCK = path.resolve(__dirname, 'tests/mocks/better-auth-client.cjs');
+const BETTER_AUTH_OAUTH_CLIENT_MOCK = path.resolve(__dirname, 'tests/mocks/better-auth-oauth-client.cjs');
+const BETTER_AUTH_PLUGINS_MOCK = path.resolve(__dirname, 'tests/mocks/better-auth-plugins.cjs');
+const BETTER_AUTH_MCP_MOCK = path.resolve(__dirname, 'tests/mocks/better-auth-mcp.cjs');
 
 module.exports = (request, options) => {
+  // Better Auth 1.7 publishes the client as ESM-only. Unit tests replace this
+  // module with per-test factories; resolving through a tiny CJS seam lets
+  // Jest register those mocks without parsing the production ESM graph first.
+  if (request === 'better-auth/client') return BETTER_AUTH_CLIENT_MOCK;
+  if (request === '@better-auth/oauth-provider/client') return BETTER_AUTH_OAUTH_CLIENT_MOCK;
+  if (request === 'better-auth/plugins') return BETTER_AUTH_PLUGINS_MOCK;
+  if (request === '@better-auth/mcp') return BETTER_AUTH_MCP_MOCK;
+
   const entryFile = SDK_ENTRY_POINTS[request];
   if (entryFile) {
     return path.resolve(SDK_SRC, entryFile);

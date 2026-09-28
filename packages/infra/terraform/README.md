@@ -15,6 +15,7 @@ This Terraform setup deploys the live HASHPASS infra surfaces:
   - `hashpass.tech`
   - `hashpass.lat`
   - `hashpass.club`
+  - optional `mcp.hashpass.tech` A record for the self-hosted OAuth gateway
 - Directus (GCP):
   - `sso.hashpass.co`
   - `sso-dev.hashpass.co`
@@ -249,6 +250,10 @@ Shortcut:
 ./packages/infra/terraform/scripts/stack.sh hashpass-dns plan
 ./packages/infra/terraform/scripts/stack.sh hashpass-dns apply
 ```
+
+Supply `mcp_ipv4_address` through a private `terraform.tfvars` file (or a
+`TF_VAR_mcp_ipv4_address` environment variable) to manage the production MCP
+gateway record without committing live topology to the repository.
 
 Outputs include:
 

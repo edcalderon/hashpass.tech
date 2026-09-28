@@ -31,6 +31,8 @@ apps/video-studio/public/recordings/**
 # recording authenticated flows (dashboard, speakers, meetings) — never commit.
 apps/video-studio/.recording-state/
 package-lock.json
+!packages/infra/lambda/package-lock.json
+!packages/plane-mcp-gateway/package-lock.json
 
 # Expo
 .expo/
@@ -158,6 +160,13 @@ apps/web-app/public/openproof/*.mp4
 !/ops/self-hosted/plane/
 /ops/self-hosted/plane/*
 !/ops/self-hosted/plane/compose.yaml
+!/ops/self-hosted/mcp/
+/ops/self-hosted/mcp/*
+!/ops/self-hosted/mcp/README.md
+!/ops/self-hosted/mcp/compose.yaml
+!/ops/self-hosted/tests/
+/ops/self-hosted/tests/*
+!/ops/self-hosted/tests/mcp-oauth-compose.test.mjs
 !/ops/self-hosted/config/
 /ops/self-hosted/config/*
 !/ops/self-hosted/config/mcp.json.example

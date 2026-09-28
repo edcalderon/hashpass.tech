@@ -95,6 +95,8 @@ jobs:
         env:
           SITE_LAMBDA_FUNCTION_NAME: hashpass-prod-expo-router-api
           SITE_LAMBDA_REGION: us-east-1
+          SITE_LAMBDA_DEPLOYMENT_ENVIRONMENT: production
+          SITE_LAMBDA_DEPLOYMENT_BUCKET_REGION: us-east-1
           SITE_API_VERSION_URL: https://api.hashpass.tech/api/config/versions
           EXPO_PUBLIC_SUPABASE_URL: ${{ vars.EXPO_PUBLIC_SUPABASE_URL_PROD }}
           EXPO_PUBLIC_SUPABASE_URL_DEV: ${{ vars.EXPO_PUBLIC_SUPABASE_URL_DEV }}
@@ -121,6 +123,8 @@ jobs:
         env:
           SITE_LAMBDA_FUNCTION_NAME: hashpass-dev-expo-router-api
           SITE_LAMBDA_REGION: us-east-1
+          SITE_LAMBDA_DEPLOYMENT_ENVIRONMENT: dev
+          SITE_LAMBDA_DEPLOYMENT_BUCKET_REGION: us-east-1
           SITE_API_VERSION_URL: https://api-dev.hashpass.tech/api/config/versions
           EXPO_PUBLIC_SUPABASE_URL: ${{ vars.EXPO_PUBLIC_SUPABASE_URL_DEV }}
           EXPO_PUBLIC_SUPABASE_URL_DEV: ${{ vars.EXPO_PUBLIC_SUPABASE_URL_DEV }}

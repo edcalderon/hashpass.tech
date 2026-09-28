@@ -37,7 +37,7 @@ module.exports = {
   // straight to source, which never resolves inside node_modules in the
   // first place.
   transformIgnorePatterns: [
-    '/node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|native-base|react-native-svg|@noble/.*)',
+    '/node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|native-base|react-native-svg|@noble/.*|jose)',
     '/node_modules/react-native-reanimated/plugin/',
   ],
   // See jest.sdk-resolver.cjs for why @hashpass-tech/sdk specifically needs this

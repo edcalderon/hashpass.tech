@@ -7,6 +7,10 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
 LAMBDA_FUNCTION_NAME="${SITE_LAMBDA_FUNCTION_NAME:-${API_LAMBDA_FUNCTION_NAME:-}}"
 LAMBDA_REGION="${SITE_LAMBDA_REGION:-${API_LAMBDA_REGION:-us-east-1}}"
 LAMBDA_ZIP_PATH="${SITE_LAMBDA_ZIP_PATH:-lambda-deployment.zip}"
+LAMBDA_DIRECT_UPLOAD_MAX_BYTES="${SITE_LAMBDA_DIRECT_UPLOAD_MAX_BYTES:-${LAMBDA_DIRECT_UPLOAD_MAX_BYTES:-52428800}}"
+LAMBDA_DEPLOYMENT_BUCKET="${SITE_LAMBDA_DEPLOYMENT_BUCKET:-${LAMBDA_DEPLOYMENT_BUCKET:-}}"
+LAMBDA_DEPLOYMENT_BUCKET_REGION="${SITE_LAMBDA_DEPLOYMENT_BUCKET_REGION:-${LAMBDA_DEPLOYMENT_BUCKET_REGION:-${LAMBDA_REGION}}}"
+LAMBDA_DEPLOYMENT_ENVIRONMENT="${SITE_LAMBDA_DEPLOYMENT_ENVIRONMENT:-${LAMBDA_DEPLOYMENT_ENVIRONMENT:-}}"
 API_VERSION_URL="${SITE_API_VERSION_URL:-${API_VERSION_URL:-}}"
 API_EXPECTED_VERSION="${SITE_EXPECTED_VERSION:-${API_EXPECTED_VERSION:-}}"
 API_VERSION_VERIFY_RETRIES="${SITE_API_VERSION_VERIFY_RETRIES:-${API_VERSION_VERIFY_RETRIES:-12}}"
@@ -427,6 +431,50 @@ sync_lambda_environment
 
 code_update_error_file="$(mktemp /tmp/hashpass-lambda-code-aws-error.XXXXXX.log)"
 superseded="false"
+lambda_zip_file="${PROJECT_ROOT}/${LAMBDA_ZIP_PATH}"
+lambda_zip_bytes="$(stat -c '%s' "${lambda_zip_file}")"
+lambda_s3_key=""
+
+if (( lambda_zip_bytes > LAMBDA_DIRECT_UPLOAD_MAX_BYTES )); then
+  if [[ -z "${LAMBDA_DEPLOYMENT_ENVIRONMENT}" ]]; then
+    if [[ "${LAMBDA_FUNCTION_NAME}" == *-dev-* ]]; then
+      LAMBDA_DEPLOYMENT_ENVIRONMENT="dev"
+    else
+      LAMBDA_DEPLOYMENT_ENVIRONMENT="production"
+    fi
+  fi
+
+  if [[ -z "${LAMBDA_DEPLOYMENT_BUCKET}" ]]; then
+    lambda_account_id="$(aws sts get-caller-identity --query Account --output text)"
+    LAMBDA_DEPLOYMENT_BUCKET="hashpass-lambda-deployments-${lambda_account_id}-${LAMBDA_DEPLOYMENT_BUCKET_REGION}"
+  fi
+
+  lambda_revision="${GITHUB_SHA:-${expected_version}}"
+  if [[ -n "${GITHUB_RUN_ID:-}" ]]; then
+    # A commit can be deployed concurrently by infra-deploy and the static-site
+    # workflow. Keep their archives isolated so one run cannot overwrite or
+    # delete the object while the other is still updating Lambda.
+    lambda_upload_id="${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT:-1}-${GITHUB_JOB:-deploy}"
+  else
+    lambda_upload_id="local-${BASHPID}-${RANDOM}"
+  fi
+  lambda_upload_id="${lambda_upload_id//[^A-Za-z0-9._-]/-}"
+  lambda_s3_key="lambda-deployments/${LAMBDA_FUNCTION_NAME}/${lambda_revision}-${lambda_upload_id}.zip"
+  echo "Lambda package is ${lambda_zip_bytes} bytes; uploading through the private deployment bucket."
+  aws s3 cp "${lambda_zip_file}" "s3://${LAMBDA_DEPLOYMENT_BUCKET}/${lambda_s3_key}" \
+    --region "${LAMBDA_DEPLOYMENT_BUCKET_REGION}" \
+    --only-show-errors
+fi
+
+cleanup_lambda_s3_artifact() {
+  if [[ -n "${lambda_s3_key}" ]]; then
+    aws s3 rm "s3://${LAMBDA_DEPLOYMENT_BUCKET}/${lambda_s3_key}" \
+      --region "${LAMBDA_DEPLOYMENT_BUCKET_REGION}" \
+      --only-show-errors >/dev/null 2>&1 || true
+  fi
+}
+trap cleanup_lambda_s3_artifact EXIT
+
 set +e
 for code_attempt in $(seq 1 "${LAMBDA_UPDATE_MAX_ATTEMPTS}"); do
   # Checked before every attempt, including the first: this same script
@@ -446,11 +494,20 @@ for code_attempt in $(seq 1 "${LAMBDA_UPDATE_MAX_ATTEMPTS}"); do
     break
   fi
 
-  aws lambda update-function-code \
-    --function-name "${LAMBDA_FUNCTION_NAME}" \
-    --region "${LAMBDA_REGION}" \
-    --zip-file "fileb://${PROJECT_ROOT}/${LAMBDA_ZIP_PATH}" \
-    >/dev/null 2>"${code_update_error_file}"
+  if [[ -n "${lambda_s3_key}" ]]; then
+    aws lambda update-function-code \
+      --function-name "${LAMBDA_FUNCTION_NAME}" \
+      --region "${LAMBDA_REGION}" \
+      --s3-bucket "${LAMBDA_DEPLOYMENT_BUCKET}" \
+      --s3-key "${lambda_s3_key}" \
+      >/dev/null 2>"${code_update_error_file}"
+  else
+    aws lambda update-function-code \
+      --function-name "${LAMBDA_FUNCTION_NAME}" \
+      --region "${LAMBDA_REGION}" \
+      --zip-file "fileb://${lambda_zip_file}" \
+      >/dev/null 2>"${code_update_error_file}"
+  fi
   code_update_status=$?
   if [[ "${code_update_status}" -eq 0 ]]; then
     break

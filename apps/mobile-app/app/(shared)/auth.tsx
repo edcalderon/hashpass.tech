@@ -70,6 +70,8 @@ import {
   normalizeAuthAllyIds,
   type AuthAllyId,
 } from "../../lib/event-auth-allies";
+import { normalizeSafeReturnToPath } from "../../lib/auth/return-to";
+import { isMcpLoginContinuation } from "../../lib/auth/mcp-login";
 
 const HASHPASS_WEB_LIGHT_AUTH_LOGO = require("../../assets/logos/hashpass/logo-full-hashpass-white.svg");
 
@@ -100,31 +102,7 @@ const buildSupabaseCallbackPath = (returnTo: string, nativeRelay = false) => {
   return `${SUPABASE_OAUTH_CALLBACK_PATH}?${params.toString()}`;
 };
 
-const normalizeReturnToPath = (rawPath: string): string => {
-  let normalized = rawPath;
-
-  try {
-    normalized = decodeURIComponent(normalized);
-  } catch {
-    // Keep original value when decode fails.
-  }
-
-  if (!normalized.startsWith("/")) {
-    return DASHBOARD_EXPLORE_PUBLIC_PATH;
-  }
-
-  normalized = normalized.replace(/\/\([^/]+\)/g, "");
-
-  if (
-    !normalized ||
-    normalized === "/auth" ||
-    normalized.includes(SUPABASE_OAUTH_CALLBACK_PATH)
-  ) {
-    return DASHBOARD_EXPLORE_PUBLIC_PATH;
-  }
-
-  return normalized;
-};
+const normalizeReturnToPath = normalizeSafeReturnToPath;
 
 const mapToRouterPath = (path: string): string => {
   if (path.startsWith("/dashboard") && !path.startsWith("/(shared)/dashboard")) {
@@ -702,6 +680,7 @@ export default function AuthScreen({ embedded = false, onAuthenticated, onDismis
     () => mapToRouterPath(redirectPath),
     [redirectPath],
   );
+  const isMcpAuthorizationContinuation = isMcpLoginContinuation(redirectPath);
 
   const currentLocale = getCurrentLocale();
   const countryDialOptions = useMemo(
@@ -1527,12 +1506,7 @@ export default function AuthScreen({ embedded = false, onAuthenticated, onDismis
       if (typeof window !== "undefined" && window.localStorage) {
         window.localStorage.removeItem(PASSWORDLESS_CALLBACK_MARKER);
         window.localStorage.setItem("auth_signin_method", "google_oauth");
-        if (embedded) {
-          window.localStorage.setItem(
-            "oauth_return_url",
-            normalizeReturnToPath(window.location.pathname + window.location.search),
-          );
-        }
+        window.localStorage.setItem("oauth_return_url", redirectPath);
       }
 
       const result = await signInWithOAuth("google");
@@ -1999,7 +1973,24 @@ export default function AuthScreen({ embedded = false, onAuthenticated, onDismis
                     style={styles.primaryAuthContainer}
                     dataSet={{ authEnterSubmit: "true" }}
                   >
-                    {!isPasswordlessSupported ? (
+                    {isMcpAuthorizationContinuation ? (
+                      <View style={styles.passwordlessInfoCard}>
+                        <Ionicons
+                          name="shield-checkmark-outline"
+                          size={28}
+                          color={isDark ? "#f5f5f5" : "#1f2125"}
+                        />
+                        <Text style={styles.passwordlessInfoTitle}>
+                          {t("mcpSignInTitle", "Secure app authorization")}
+                        </Text>
+                        <Text style={styles.passwordlessInfoMessage}>
+                          {t(
+                            "mcpSignInMessage",
+                            "Continue with Google to authorize this app with your Hashpass account.",
+                          )}
+                        </Text>
+                      </View>
+                    ) : !isPasswordlessSupported ? (
                       <View style={styles.passwordlessInfoCard}>
                         <Ionicons
                           name="information-circle-outline"

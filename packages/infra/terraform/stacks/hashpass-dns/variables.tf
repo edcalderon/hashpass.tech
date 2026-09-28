@@ -16,6 +16,23 @@ variable "dev_zone_name" {
   default     = "dev.hashpass.tech"
 }
 
+variable "mcp_ipv4_address" {
+  description = "Optional public IPv4 address for the self-hosted MCP gateway. Leave null to omit the record."
+  type        = string
+  default     = null
+  nullable    = true
+
+  validation {
+    condition = var.mcp_ipv4_address == null || (
+      can(regex("^([0-9]{1,3}\\.){3}[0-9]{1,3}$", var.mcp_ipv4_address)) &&
+      try(alltrue([
+        for octet in split(".", var.mcp_ipv4_address) : tonumber(octet) <= 255
+      ]), false)
+    )
+    error_message = "mcp_ipv4_address must be a valid IPv4 address or null."
+  }
+}
+
 variable "lat_zone_name" {
   description = "Legacy HashPass LAT hosted zone name"
   type        = string

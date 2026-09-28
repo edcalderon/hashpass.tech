@@ -33,3 +33,8 @@ output "hosted_zones" {
     hashp_link = aws_route53_zone.hashp_link.name
   }
 }
+
+output "mcp_record_fqdn" {
+  description = "Public hostname of the self-hosted MCP gateway when enabled"
+  value       = try(aws_route53_record.mcp[0].fqdn, null)
+}
