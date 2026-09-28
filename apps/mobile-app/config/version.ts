@@ -22,22 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202609281831, // Updated to current timestamp
+  buildNumber: 202609282323, // Updated to current timestamp
   releaseDate: '2026-09-28',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'add OAuth-protected Plane gateway'
+    // No new features
   ],
   bugfixes: [
     // No bugfixes
   ],
   breakingChanges: [],
-  notes: 'add OAuth-protected Plane gateway'
+  notes: 'Version 1.9.75 release'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.75': {
+    version: '1.9.75',
+    buildNumber: 202609282323,
+    releaseDate: '2026-09-28',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'Version 1.9.75 release'
+  },
   '1.9.74': {
     version: '1.9.74',
     buildNumber: 202609281831,

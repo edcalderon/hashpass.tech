@@ -1,3 +1,15 @@
+## [1.9.75](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.74...v1.9.75) (2026-09-28)
+### Released
+- Version 1.9.75 release
+
+### Release scope
+- Compared with: `v1.9.74` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Self-hosted operations
+- Release tooling
+
 ## [1.9.74](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.73...v1.9.74) (2026-09-28)
 ### Released
 - add OAuth-protected Plane gateway

@@ -20,19 +20,18 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.74)
+## 📋 Latest Changes (v1.9.75)
 
 ### Released
-- add OAuth-protected Plane gateway
+- Version 1.9.75 release
 
 ### Release scope
-- Compared with: `v1.9.73` (the previous global release tag)
+- Compared with: `v1.9.74` (the previous global release tag)
 
 ### Affected products & packages
 - Mobile app
-- Auth
-- Database migrations
 - Self-hosted operations
+- Release tooling
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
