@@ -156,7 +156,7 @@ locals {
 }
 
 resource "aws_s3_bucket" "lambda_deployments" {
-  provider = aws.use1
+  provider = aws.lambda
 
   bucket        = local.lambda_deployment_bucket_name
   force_destroy = false
@@ -164,7 +164,7 @@ resource "aws_s3_bucket" "lambda_deployments" {
 }
 
 resource "aws_s3_bucket_ownership_controls" "lambda_deployments" {
-  provider = aws.use1
+  provider = aws.lambda
   bucket   = aws_s3_bucket.lambda_deployments.id
 
   rule {
@@ -173,7 +173,7 @@ resource "aws_s3_bucket_ownership_controls" "lambda_deployments" {
 }
 
 resource "aws_s3_bucket_public_access_block" "lambda_deployments" {
-  provider = aws.use1
+  provider = aws.lambda
   bucket   = aws_s3_bucket.lambda_deployments.id
 
   block_public_acls       = true
@@ -183,7 +183,7 @@ resource "aws_s3_bucket_public_access_block" "lambda_deployments" {
 }
 
 resource "aws_s3_bucket_server_side_encryption_configuration" "lambda_deployments" {
-  provider = aws.use1
+  provider = aws.lambda
   bucket   = aws_s3_bucket.lambda_deployments.id
 
   rule {
@@ -194,7 +194,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "lambda_deployment
 }
 
 resource "aws_s3_bucket_lifecycle_configuration" "lambda_deployments" {
-  provider = aws.use1
+  provider = aws.lambda
   bucket   = aws_s3_bucket.lambda_deployments.id
 
   rule {

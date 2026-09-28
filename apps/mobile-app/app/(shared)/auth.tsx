@@ -71,6 +71,7 @@ import {
   type AuthAllyId,
 } from "../../lib/event-auth-allies";
 import { normalizeSafeReturnToPath } from "../../lib/auth/return-to";
+import { isMcpLoginContinuation } from "../../lib/auth/mcp-login";
 
 const HASHPASS_WEB_LIGHT_AUTH_LOGO = require("../../assets/logos/hashpass/logo-full-hashpass-white.svg");
 
@@ -679,6 +680,7 @@ export default function AuthScreen({ embedded = false, onAuthenticated, onDismis
     () => mapToRouterPath(redirectPath),
     [redirectPath],
   );
+  const isMcpAuthorizationContinuation = isMcpLoginContinuation(redirectPath);
 
   const currentLocale = getCurrentLocale();
   const countryDialOptions = useMemo(
@@ -1971,7 +1973,24 @@ export default function AuthScreen({ embedded = false, onAuthenticated, onDismis
                     style={styles.primaryAuthContainer}
                     dataSet={{ authEnterSubmit: "true" }}
                   >
-                    {!isPasswordlessSupported ? (
+                    {isMcpAuthorizationContinuation ? (
+                      <View style={styles.passwordlessInfoCard}>
+                        <Ionicons
+                          name="shield-checkmark-outline"
+                          size={28}
+                          color={isDark ? "#f5f5f5" : "#1f2125"}
+                        />
+                        <Text style={styles.passwordlessInfoTitle}>
+                          {t("mcpSignInTitle", "Secure app authorization")}
+                        </Text>
+                        <Text style={styles.passwordlessInfoMessage}>
+                          {t(
+                            "mcpSignInMessage",
+                            "Continue with Google to authorize this app with your Hashpass account.",
+                          )}
+                        </Text>
+                      </View>
+                    ) : !isPasswordlessSupported ? (
                       <View style={styles.passwordlessInfoCard}>
                         <Ionicons
                           name="information-circle-outline"

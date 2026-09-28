@@ -1,5 +1,10 @@
 export const MCP_LOGIN_PATH = '/mcp/login';
 
+export const isMcpLoginContinuation = (returnTo: string): boolean => {
+  const [path] = returnTo.split('?', 1);
+  return path === MCP_LOGIN_PATH;
+};
+
 type McpLoginContinuation = {
   authorizeUrl: string;
   returnTo: string;

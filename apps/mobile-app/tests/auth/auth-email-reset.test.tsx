@@ -96,6 +96,25 @@ describe('passwordless email reset', () => {
     Object.defineProperty(window, 'removeEventListener', { configurable: true, value: originalRemoveEventListener });
   });
 
+  it('offers only Better Auth Google sign-in during an MCP authorization continuation', async () => {
+    mockParams = {
+      returnTo: '/mcp/login?client_id=chatgpt&redirect_uri=https%3A%2F%2Fchatgpt.com%2Fcallback&sig=signed-value',
+    };
+
+    await act(async () => renderer.update(<AuthScreen key="mcp-passwordless-guard" />));
+
+    expect(button('Magic Link')).toBeUndefined();
+    expect(button('OTP Code')).toBeUndefined();
+    expect(button('Send Magic Link')).toBeUndefined();
+    expect(button('Send Code')).toBeUndefined();
+    expect(button('Sign in with Google')).toBeDefined();
+    expect(
+      renderer.root.findAllByType(Text).some(
+        (node) => node.props.children === 'Secure app authorization',
+      ),
+    ).toBe(true);
+  });
+
   it.each(['Magic Link', 'OTP Code'])('resets %s confirmation and permits a different address', async (method) => {
     await press(method);
     act(() => emailInput().props.onChangeText('first@example.com'));
