@@ -9,6 +9,47 @@ const workflowPath = path.resolve(
 );
 
 describe('self-hosted VPS deployment workflow', () => {
+  it('verifies the assumed AWS account against the private target before SSM deployment', () => {
+    expect(fs.existsSync(workflowPath)).toBe(true);
+    if (!fs.existsSync(workflowPath)) return;
+
+    const workflow = fs.readFileSync(workflowPath, 'utf8');
+    const credentialsStart = workflow.indexOf('aws-actions/configure-aws-credentials@v4');
+    const identityStart = workflow.indexOf('aws sts get-caller-identity');
+    const sendCommandStart = workflow.indexOf('aws ssm send-command');
+
+    expect(credentialsStart).toBeGreaterThan(-1);
+    expect(identityStart).toBeGreaterThan(credentialsStart);
+    expect(sendCommandStart).toBeGreaterThan(identityStart);
+
+    const identityStepStart = workflow.lastIndexOf('\n      - name:', identityStart);
+    const identityStepEnd = workflow.indexOf('\n      - name:', identityStart);
+    const identityStep = workflow.slice(
+      identityStepStart,
+      identityStepEnd === -1 ? workflow.length : identityStepEnd,
+    );
+    const targetEnvironment = identityStep.match(
+      /^\s*([A-Z][A-Z0-9_]*)\s*:\s*\$\{\{\s*vars\.AWS_ACCOUNT_ID\s*\}\}\s*$/m,
+    );
+    const callerIdentity = identityStep.match(
+      /([A-Za-z_][A-Za-z0-9_]*)\s*=\s*["']?\$\(aws sts get-caller-identity\s+--query\s+['"]?Account['"]?\s+--output\s+text[^)]*\)["']?/,
+    );
+
+    expect(targetEnvironment).not.toBeNull();
+    expect(callerIdentity).not.toBeNull();
+
+    const targetVariable = targetEnvironment?.[1] ?? '__missing_target_account__';
+    const callerVariable = callerIdentity?.[1] ?? '__missing_caller_account__';
+    const shellReference = (name: string) => `\\$\\{?${name}\\}?`;
+    expect(identityStep).toMatch(
+      new RegExp(
+        `(?:${shellReference(callerVariable)}[^\\n]*(?:==|=|!=)[^\\n]*${shellReference(targetVariable)}|` +
+          `${shellReference(targetVariable)}[^\\n]*(?:==|=|!=)[^\\n]*${shellReference(callerVariable)})`,
+      ),
+    );
+    expect(workflow).not.toMatch(/\b\d{12}\b/);
+  });
+
   it('deploys from trusted triggers with OIDC, sanitized evidence, health checks, and recoverable alerts', () => {
     expect(fs.existsSync(workflowPath)).toBe(true);
     if (!fs.existsSync(workflowPath)) return;

@@ -114,58 +114,57 @@ const targetBslBootstrapPath = path.join(
 const profilePath = path.join(__dirname, 'config/database-profiles.json');
 
 describe('Better Auth MCP OAuth migration plan', () => {
-  it('ships the OAuth migration to core profiles without applying it to BSL profiles', () => {
+  it('assigns the OAuth migration only to dedicated Better Auth profiles', () => {
     const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
     const migration = 'db/migrations/V106__better_auth_mcp_oauth.sql';
-    const migrationGroup = Object.entries(config.groups).find(([, migrations]) =>
+    const migrationGroups = Object.entries(config.groups).filter(([, migrations]) =>
       migrations.includes(migration),
     );
 
-    expect(migrationGroup).toBeDefined();
+    expect(migrationGroups).toHaveLength(1);
 
-    const [groupName] = migrationGroup;
+    const [groupName] = migrationGroups[0];
     expect(config.defaultGroups).not.toContain(groupName);
-    expect(config.profileGroups['core-development']).toContain(groupName);
-    expect(config.profileGroups['core-production']).toContain(groupName);
-    expect(config.profileGroups['bsl-development'] || []).not.toContain(groupName);
-    expect(config.profileGroups['bsl-production'] || []).not.toContain(groupName);
+    expect(
+      Object.entries(config.profileGroups)
+        .filter(([, groups]) => groups.includes(groupName))
+        .map(([profileName]) => profileName)
+        .sort(),
+    ).toEqual(['better-auth-development', 'better-auth-production']);
   });
 
-  it('prefers profile-specific Better Auth URLs for core without changing BSL fallbacks', () => {
+  it('isolates Better Auth database URLs from the shared core profiles', () => {
     const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
 
     expect({
+      'better-auth-development': config.profiles['better-auth-development']?.databaseUrlEnv,
+      'better-auth-production': config.profiles['better-auth-production']?.databaseUrlEnv,
       'core-development': config.profiles['core-development'].databaseUrlEnv,
       'core-production': config.profiles['core-production'].databaseUrlEnv,
-      'bsl-development': config.profiles['bsl-development'].databaseUrlEnv,
-      'bsl-production': config.profiles['bsl-production'].databaseUrlEnv,
     }).toEqual({
+      'better-auth-development': ['BETTER_AUTH_DATABASE_URL_DEV'],
+      'better-auth-production': [
+        'BETTER_AUTH_DATABASE_URL_PROD',
+        'BETTER_AUTH_DATABASE_URL',
+      ],
       'core-development': [
-        'BETTER_AUTH_DATABASE_URL_DEV',
         'SUPABASE_DB_URL_DEV',
         'DATABASE_URL_DEV',
         'DEV_DB_URL',
       ],
       'core-production': [
-        'BETTER_AUTH_DATABASE_URL_PROD',
         'SUPABASE_DB_URL_PROD',
         'DATABASE_URL_PROD',
         'PROD_DB_URL',
       ],
-      'bsl-development': [
-        'BSL_SUPABASE_DB_URL_DEV',
-        'SUPABASE_DB_URL_BSL_DEV',
-        'DATABASE_URL_BSL_DEV',
-        'DEV_BSL_DB_URL',
-        'SUPABASE_DB_URL_DEV',
-      ],
-      'bsl-production': [
-        'BSL_SUPABASE_DB_URL_PROD',
-        'SUPABASE_DB_URL_BSL_PROD',
-        'DATABASE_URL_BSL_PROD',
-        'PROD_BSL_DB_URL',
-      ],
     });
+
+    expect(config.profiles['core-development'].databaseUrlEnv).not.toEqual(
+      expect.arrayContaining([expect.stringMatching(/^BETTER_AUTH_DATABASE_URL/)]),
+    );
+    expect(config.profiles['core-production'].databaseUrlEnv).not.toEqual(
+      expect.arrayContaining([expect.stringMatching(/^BETTER_AUTH_DATABASE_URL/)]),
+    );
   });
 });
 

@@ -85,6 +85,27 @@ jobs:
           role-session-name: hashpass-self-hosted-vps-deploy
           mask-aws-account-id: true
 
+      - name: Verify assumed AWS account
+        env:
+          EXPECTED_AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          [[ -n "$EXPECTED_AWS_ACCOUNT_ID" ]] || {
+            echo '::error::AWS_ACCOUNT_ID is not configured.'
+            exit 1
+          }
+          echo "::add-mask::${EXPECTED_AWS_ACCOUNT_ID}"
+          caller_account="$(aws sts get-caller-identity --query 'Account' --output text)"
+          [[ -n "$caller_account" && "$caller_account" != None ]] || {
+            echo '::error::AWS STS did not return an account identity.'
+            exit 1
+          }
+          echo "::add-mask::${caller_account}"
+          [[ "$caller_account" == "$EXPECTED_AWS_ACCOUNT_ID" ]] || {
+            echo '::error::The assumed AWS account does not match the configured deployment target.'
+            exit 1
+          }
+
       - name: Send exact-revision deployment through SSM
         id: dispatch
         run: |
