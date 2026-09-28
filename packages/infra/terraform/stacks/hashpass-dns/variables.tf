@@ -25,9 +25,9 @@ variable "mcp_ipv4_address" {
   validation {
     condition = var.mcp_ipv4_address == null || (
       can(regex("^([0-9]{1,3}\\.){3}[0-9]{1,3}$", var.mcp_ipv4_address)) &&
-      can(alltrue([
-        for octet in split(".", var.mcp_ipv4_address) : tonumber(octet) >= 0 && tonumber(octet) <= 255
-      ]))
+      try(alltrue([
+        for octet in split(".", var.mcp_ipv4_address) : tonumber(octet) <= 255
+      ]), false)
     )
     error_message = "mcp_ipv4_address must be a valid IPv4 address or null."
   }

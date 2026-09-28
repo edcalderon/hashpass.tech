@@ -9,7 +9,6 @@ ASSET_CACHE_CONTROL="${SITE_ASSET_CACHE_CONTROL:-public,max-age=31536000,immutab
 HTML_CACHE_CONTROL="${SITE_HTML_CACHE_CONTROL:-no-cache,no-store,must-revalidate}"
 LAMBDA_FUNCTION_NAME="${SITE_LAMBDA_FUNCTION_NAME:-${API_LAMBDA_FUNCTION_NAME:-}}"
 LAMBDA_REGION="${SITE_LAMBDA_REGION:-${API_LAMBDA_REGION:-${AWS_REGION:-${AWS_DEFAULT_REGION:-}}}}"
-LAMBDA_ZIP_PATH="${SITE_LAMBDA_ZIP_PATH:-lambda-deployment.zip}"
 SKIP_LAMBDA_DEPLOY="${SITE_SKIP_LAMBDA_DEPLOY:-${API_SKIP_LAMBDA_DEPLOY:-false}}"
 API_VERSION_URL="${SITE_API_VERSION_URL:-${API_VERSION_URL:-}}"
 API_EXPECTED_VERSION="${SITE_EXPECTED_VERSION:-${API_EXPECTED_VERSION:-}}"
@@ -228,22 +227,17 @@ if [[ -n "${LAMBDA_FUNCTION_NAME}" && "${SKIP_LAMBDA_DEPLOY}" != "true" ]]; then
   echo "  Function: ${LAMBDA_FUNCTION_NAME}"
   echo "  Region:   ${LAMBDA_REGION}"
 
-  bash packages/tools/scripts/package-lambda.sh
+  # Keep every deployment path on the same Lambda updater. It owns package
+  # sizing, the private same-region S3 fallback, concurrent-update retries,
+  # environment preservation, and the live version guard. Calling the AWS
+  # CLI directly here previously bypassed the S3 fallback and failed once a
+  # compressed archive crossed Lambda's 50 MiB direct-upload limit.
+  API_LAMBDA_SKIP_BUILD=true bash packages/tools/scripts/deploy-api-lambda.sh
 
-  if [[ ! -f "${LAMBDA_ZIP_PATH}" ]]; then
-    echo "ERROR: Lambda package was not created: ${LAMBDA_ZIP_PATH}" 1>&2
-    exit 1
-  fi
-
-  aws lambda update-function-code \
-    --function-name "${LAMBDA_FUNCTION_NAME}" \
-    --region "${LAMBDA_REGION}" \
-    --zip-file "fileb://${LAMBDA_ZIP_PATH}" \
-    >/dev/null
-
-  aws lambda wait function-updated \
-    --function-name "${LAMBDA_FUNCTION_NAME}" \
-    --region "${LAMBDA_REGION}"
+  # deploy-api-lambda.sh already verified (or safely detected a superseding)
+  # live version. Avoid a second exact-version check that could reject a newer
+  # concurrent deployment.
+  SKIP_API_VERSION_VERIFY=true
 fi
 
 if [[ -n "${API_VERSION_URL}" && "${SKIP_API_VERSION_VERIFY}" != "true" ]]; then
