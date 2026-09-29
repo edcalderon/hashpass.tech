@@ -34,6 +34,17 @@ type ExplorerHeroActionProps = {
 const EXPANDED_WIDTH = 188;
 const EXPANSION_DURATION_MS = 220;
 
+/**
+ * Hides the expandable-shell testID on production web builds (Platform.OS
+ * === 'web' outside Jest) so it never ships in the real DOM, while still
+ * exposing it for test queries under Jest (NODE_ENV === 'test').
+ */
+export function explorerHeroActionTestId(testID?: string): { testID?: string } {
+  return Platform.OS === "web" && process.env.NODE_ENV !== "test"
+    ? {}
+    : { testID: testID || "explorer-hero-action-shell" };
+}
+
 export type ExplorerExpandableActionProps = {
   label: string;
   accessibilityLabel?: string;
@@ -127,7 +138,7 @@ export function ExplorerExpandableAction({
 
   return (
     <Animated.View
-      {...(Platform.OS === "web" && process.env.NODE_ENV !== "test" ? {} : { testID: testID || "explorer-hero-action-shell" })}
+      {...explorerHeroActionTestId(testID)}
       style={[
         styles.shell,
         {

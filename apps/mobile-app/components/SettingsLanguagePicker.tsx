@@ -20,6 +20,17 @@ interface SettingsLanguagePickerProps {
 }
 
 /**
+ * Hides the options-panel testID on production web builds (Platform.OS ===
+ * 'web' outside Jest) so it never ships in the real DOM, while still
+ * exposing it for test queries under Jest (NODE_ENV === 'test').
+ */
+export function settingsLanguageOptionsTestId(): { testID?: string } {
+  return Platform.OS === 'web' && process.env.NODE_ENV !== 'test'
+    ? {}
+    : { testID: 'settings-language-options' };
+}
+
+/**
  * Shared collapsed language chooser for every settings-wheel panel.
  * The selected locale stays visible, while the complete list mounts only after
  * an explicit tap—keeping floating settings surfaces compact on first open.
@@ -97,7 +108,7 @@ export function SettingsLanguagePicker({
       </TouchableOpacity>
 
       <Animated.View
-        {...(Platform.OS === 'web' && process.env.NODE_ENV !== 'test' ? {} : { testID: 'settings-language-options' })}
+        {...settingsLanguageOptionsTestId()}
         style={[
           styles.options,
           {
