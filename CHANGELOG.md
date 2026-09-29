@@ -1,3 +1,19 @@
+## [1.9.79](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.78...v1.9.79) (2026-09-29)
+
+
+### Bug Fixes
+
+* **mobile:** export testID helpers used by PR [#291](https://github.com/hashpass-tech/hashpass.tech/issues/291) coverage tests ([0856b45](https://github.com/hashpass-tech/hashpass.tech/commit/0856b456e40656e6fe2ac6022f46c25381be9383))
+* stabilize agenda controls and auth bridge ([65d99f6](https://github.com/hashpass-tech/hashpass.tech/commit/65d99f6123dfec973eb4e00820aede35e7f64a6f))
+### Release Highlights
+- stabilize agenda controls and auth bridge; export testID helpers used by PR #291 coverage tests
+
+### Release scope
+- Compared with: `v1.9.78` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+
 ## [1.9.78](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.77...v1.9.78) (2026-09-29)
 
 
