@@ -625,6 +625,7 @@ export default function Explorer({
         >
           <EventHeroBackground
             fallbackImage={fallbackImage}
+            focalPosition={selectedEvent.id === "hash-poker" ? "center top" : undefined}
             videoSource={heroSlide.media.type === "video" ? heroSlide.media.url : undefined}
             loadingLogo={selectedEvent.branding?.logo || selectedEvent.image}
             preferBundledSource={selectedEvent.id === "criptolatinfest"}
@@ -709,6 +710,7 @@ export default function Explorer({
         >
           <EventHeroBackground
             fallbackImage={singleTenantSlide?.fallbackImage}
+            focalPosition={heroEvent.id === "hash-poker" ? "center top" : undefined}
             videoSource={
               singleTenantSlide?.media?.type === "video"
                 ? singleTenantSlide.media.url
@@ -756,6 +758,7 @@ export default function Explorer({
       >
         <EventHeroBackground
           fallbackImage={globalHeroSlide.fallbackImage}
+          focalPosition={globalHeroSlide.eventId === "hash-poker" ? "center top" : undefined}
           videoSource={
             globalHeroSlide.media?.type === "video"
               ? globalHeroSlide.media.url

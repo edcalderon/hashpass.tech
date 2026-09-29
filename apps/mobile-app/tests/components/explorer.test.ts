@@ -108,6 +108,12 @@ describe("explorer rework behavior", () => {
       expect.objectContaining({
         id: "hashpass-events-discovery",
         title: "Discover what is next",
+        media: {
+          type: "video",
+          url: "https://media.example/events/colombia2026/hero.mp4",
+        },
+        fallbackImage:
+          "https://media.example/events/colombia2026/hero.jpg",
       }),
       expect.objectContaining({
         id: "hashpass-partners-discovery",
@@ -121,11 +127,11 @@ describe("explorer rework behavior", () => {
         { id: "colombia2026", title: "BSL Colombia", tourHubEventId: "bsl" },
         { id: "hash-poker", title: "Hash Poker" },
         { id: "cbweek2026", title: "CBWeek" },
-      ]).map((slide) => slide.id),
+    ]).map((slide) => slide.id),
     ).toEqual([
+      "hashpass-events-discovery",
       "bsl-default",
       "colombia2026-default",
-      "hashpass-events-discovery",
       "hash-poker-default",
       "hashpass-partners-discovery",
       "cbweek2026-default",
@@ -152,10 +158,67 @@ describe("explorer rework behavior", () => {
     );
 
     expect(slides.map((slide) => slide.eventId)).toEqual([
+      undefined,
       "colombia2026",
       undefined,
-      undefined,
     ]);
+  });
+
+  it("keeps the discovery card first and spotlights the next dated city", () => {
+    const events = [
+      {
+        id: "bogota-2026",
+        title: "Blockchain Summit Latam Colombia 2026",
+        city: "Bogotá",
+        country: "Colombia",
+        eventDateString: "November 5–6, 2026",
+        eventStartDate: "2026-11-05T09:00:00-05:00",
+        eventEndDate: "2026-11-06T23:59:59-05:00",
+      },
+      {
+        id: "medellin-2027",
+        title: "Hashpass Medellín 2027",
+        city: "Medellín",
+        country: "Colombia",
+        eventDateString: "February 10, 2027",
+        eventStartDate: "2027-02-10T09:00:00-05:00",
+        eventEndDate: "2027-02-10T23:59:59-05:00",
+        heroVideo: "https://media.example/events/medellin-2027/hero.mp4",
+        heroPoster: "https://media.example/events/medellin-2027/hero.jpg",
+      },
+    ];
+
+    const beforeBogota = getExplorerHeroSlides(
+      events,
+      Date.parse("2026-10-01T12:00:00-05:00"),
+    );
+    expect(beforeBogota[0]).toMatchObject({
+      id: "hashpass-events-discovery",
+      eyebrow: "HASHPASS EVENTS",
+      title: "Discover what is next",
+      subtitle: "Next location: Bogotá, Colombia · Blockchain Summit Latam Colombia 2026 · November 5–6, 2026",
+      route: "/events/bogota-2026/home",
+      media: {
+        type: "video",
+        url:
+          "https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events/hashpass-discovery/branding/hashpass-discovery-cover-v2.mp4",
+      },
+    });
+
+    const afterBogota = getExplorerHeroSlides(
+      events,
+      Date.parse("2026-11-07T12:00:00-05:00"),
+    );
+    expect(afterBogota[0]).toMatchObject({
+      id: "hashpass-events-discovery",
+      title: "Discover what is next",
+      subtitle: "Next location: Medellín, Colombia · Hashpass Medellín 2027 · February 10, 2027",
+      route: "/events/medellin-2027/home",
+      media: {
+        type: "video",
+        url: "https://media.example/events/medellin-2027/hero.mp4",
+      },
+    });
   });
 
   it("uses the refresh glyph for the compact event reload control", () => {

@@ -13,6 +13,8 @@ import EventBannerBackgroundVideo from "../EventBannerBackgroundVideo";
 
 type EventHeroBackgroundProps = {
   fallbackImage?: string;
+  /** Web video focal point for compositions with meaningful edge detail. */
+  focalPosition?: string;
   loadingLabel: string;
   loadingLogo?: string;
   mediaStyle: StyleProp<ImageStyle>;
@@ -113,6 +115,7 @@ const MovingStripeFallback = ({
  */
 export default function EventHeroBackground({
   fallbackImage,
+  focalPosition,
   loadingLabel,
   loadingLogo,
   mediaStyle,
@@ -145,6 +148,7 @@ export default function EventHeroBackground({
           preferBundledSource={preferBundledSource}
           showLoadingIndicator={!imageSource}
           loadingLabel={loadingLabel}
+          focalPosition={focalPosition}
         />
       ) : null}
       {shouldShowAnimatedTexture ? (
