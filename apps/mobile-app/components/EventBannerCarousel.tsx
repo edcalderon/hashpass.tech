@@ -1543,6 +1543,14 @@ export default function EventBannerCarousel({
             ref={scrollViewRef}
             horizontal
             pagingEnabled
+            // Paging alone is not consistently honoured by React Native Web
+            // on touch browsers. Declare the page geometry explicitly so a
+            // left/right swipe always settles on exactly one adjacent card.
+            snapToInterval={screenWidth}
+            snapToAlignment="start"
+            decelerationRate="fast"
+            directionalLockEnabled
+            disableIntervalMomentum
             showsHorizontalScrollIndicator={false}
             onScroll={(event: any) => {
               const idx = Math.round(event.nativeEvent.contentOffset.x / screenWidth);

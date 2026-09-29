@@ -417,12 +417,41 @@ describe('event schedule screens', () => {
         .props.accessibilityState.expanded,
     ).toBe(true);
     await act(async () => {
+      renderer!.root.findByProps({ testID: 'agenda-type-legend-keynote' }).props.onPress();
+    });
+    expect(
+      renderer!.root.findByProps({ testID: 'agenda-type-legend-keynote' })
+        .props.accessibilityState.expanded,
+    ).toBe(false);
+    await act(async () => {
       renderer!.root.findByProps({ testID: 'agenda-type-legend-keynote' }).props.onHoverOut();
     });
     expect(
       renderer!.root.findByProps({ testID: 'agenda-type-legend-keynote' })
         .props.accessibilityState.expanded,
     ).toBe(false);
+    jest.useFakeTimers();
+    try {
+      await act(async () => {
+        renderer!.root.findByProps({ testID: 'agenda-type-legend-keynote' }).props.onPress();
+      });
+      await act(async () => {
+        renderer!.root.findByProps({ testID: 'agenda-type-legend-keynote' }).props.onFocus();
+      });
+      expect(
+        renderer!.root.findByProps({ testID: 'agenda-type-legend-keynote' })
+          .props.accessibilityState.expanded,
+      ).toBe(true);
+      await act(async () => {
+        jest.advanceTimersByTime(3_000);
+      });
+      expect(
+        renderer!.root.findByProps({ testID: 'agenda-type-legend-keynote' })
+          .props.accessibilityState.expanded,
+      ).toBe(false);
+    } finally {
+      jest.useRealTimers();
+    }
     expect(agendaSource).not.toContain('isCompactLayout && styles.actionButtonsCompact');
 
     await act(async () => {
@@ -591,6 +620,20 @@ describe('event schedule screens', () => {
     ).toBe(false);
     jest.useFakeTimers();
     try {
+      await act(async () => {
+        renderer!.root.findByProps({ testID: 'agenda-card-type-watermark-networking-session' }).props.onPress();
+      });
+      expect(
+        renderer!.root.findByProps({ testID: 'agenda-card-type-watermark-networking-session' })
+          .props.accessibilityState.expanded,
+      ).toBe(true);
+      await act(async () => {
+        renderer!.root.findByProps({ testID: 'agenda-card-type-watermark-networking-session' }).props.onPress();
+      });
+      expect(
+        renderer!.root.findByProps({ testID: 'agenda-card-type-watermark-networking-session' })
+          .props.accessibilityState.expanded,
+      ).toBe(false);
       await act(async () => {
         renderer!.root.findByProps({ testID: 'agenda-card-type-watermark-networking-session' }).props.onPress();
       });

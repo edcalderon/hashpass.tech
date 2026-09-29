@@ -209,6 +209,14 @@ describe('PassesWallet', () => {
     expect(renderer.root.findByProps({ passId: 'colombia' })).toBeTruthy();
   });
 
+  it('lets Explorer own the pass reload action in its section header', async () => {
+    (passSystemService.getAllUserPasses as jest.Mock).mockResolvedValue([makePass()]);
+
+    const renderer = await renderWallet({ hideWalletReload: true });
+
+    expect(renderer.root.findAllByProps({ accessibilityLabel: 'Reload passes' })).toHaveLength(0);
+  });
+
   it('reloads already-loaded passes from both BSL and HashPass wallet layouts', async () => {
     (passSystemService.getAllUserPasses as jest.Mock).mockResolvedValue([makePass()]);
 

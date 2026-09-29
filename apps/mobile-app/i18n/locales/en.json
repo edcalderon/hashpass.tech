@@ -930,6 +930,8 @@
       "pastTooltip": "{total} events have already taken place. You had a pass for {withPass} of them.",
       "reloadEvents": "Reload events",
       "reloadingEvents": "Reloading events…",
+      "reloadPasses": "Reload passes",
+      "reloadingPasses": "Reloading passes…",
       "allEvents": "Explorer Events",
       "showing": "Showing {visible} of {total}",
       "eventsAcross": "events across {scope}",
