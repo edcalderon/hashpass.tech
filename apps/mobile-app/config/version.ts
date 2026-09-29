@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202609290652, // Updated to current timestamp
+  buildNumber: 202609291010, // Updated to current timestamp
   releaseDate: '2026-09-29',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,14 +30,31 @@ export const CURRENT_VERSION: VersionInfo = {
     // No new features
   ],
   bugfixes: [
-    'polish agenda and PWA interactions'
+    'stabilize agenda controls and auth bridge',
+    'export testID helpers used by PR #291 coverage tests'
   ],
   breakingChanges: [],
-  notes: 'polish agenda and PWA interactions'
+  notes: 'stabilize agenda controls and auth bridge; export testID helpers used by PR #291 coverage tests'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.79': {
+    version: '1.9.79',
+    buildNumber: 202609291010,
+    releaseDate: '2026-09-29',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'stabilize agenda controls and auth bridge',
+      'export testID helpers used by PR #291 coverage tests'
+    ],
+    breakingChanges: [],
+    notes: 'stabilize agenda controls and auth bridge; export testID helpers used by PR #291 coverage tests'
+  },
   '1.9.78': {
     version: '1.9.78',
     buildNumber: 202609290652,

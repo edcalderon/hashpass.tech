@@ -5,6 +5,7 @@ import TestRenderer, { act } from 'react-test-renderer';
 import { Text, TouchableOpacity } from 'react-native';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { uiTokens } from '@hashpass/ui/tokens';
 
 const myScheduleSource = readFileSync(
   resolve(__dirname, '../../app/events/[eventSlug]/networking/my-schedule.tsx'),
@@ -235,11 +236,23 @@ jest.mock('../../lib/supabase', () => ({
   },
 }));
 
-import AgendaScreen from '../../app/events/[eventSlug]/agenda';
+import AgendaScreen, { agendaTypeRevealTestId } from '../../app/events/[eventSlug]/agenda';
 import MyScheduleScreen from '../../app/events/[eventSlug]/networking/my-schedule';
 import { getDisplayAgendaDescription } from '../../lib/agenda-description';
 
 const flushPromises = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
+
+// process.env.NODE_ENV is typed read-only in this repo's TS config, even
+// though Jest's Node runtime allows the mutation fine. Object.defineProperty
+// sidesteps the type error without an `as any` cast at every call site.
+function setNodeEnv(value: string | undefined) {
+  Object.defineProperty(process.env, 'NODE_ENV', {
+    value,
+    configurable: true,
+    enumerable: true,
+    writable: true,
+  });
+}
 
 describe('event schedule screens', () => {
   it('keeps ingestion metadata out of user-facing agenda descriptions', () => {
@@ -630,6 +643,98 @@ describe('event schedule screens', () => {
     ]));
 
     await act(async () => renderer!.unmount());
+  });
+
+  it('debounces agenda action hover/focus expansion and clears a pending collapse timeout', async () => {
+    const renderer = await renderCalendarAgenda();
+    const calendarAction = () => renderer.root.findByProps({ accessibilityLabel: 'calendar.openPicker' });
+    const favoriteAction = () => renderer.root.findByProps({ accessibilityLabel: 'actions.addToFavorites' });
+    const isExpanded = (label: string) => renderer.root.findAllByProps({ children: label }).length > 0;
+
+    await act(async () => {
+      calendarAction().props.onHoverIn();
+    });
+    expect(isExpanded('calendar.openPicker')).toBe(true);
+
+    jest.useFakeTimers();
+    try {
+      // Letting the debounce timer run to completion collapses the action
+      // (covers the scheduled collapse callback itself, not just the
+      // scheduling call).
+      await act(async () => {
+        calendarAction().props.onHoverOut();
+      });
+      expect(isExpanded('calendar.openPicker')).toBe(true);
+      await act(async () => {
+        jest.advanceTimersByTime(uiTokens.motion.fast);
+      });
+      expect(isExpanded('calendar.openPicker')).toBe(false);
+
+      // Re-focusing before the debounce timer fires must clear the pending
+      // collapse instead of leaving a stale timeout to run later.
+      await act(async () => {
+        calendarAction().props.onFocus();
+      });
+      await act(async () => {
+        calendarAction().props.onHoverOut();
+      });
+      await act(async () => {
+        calendarAction().props.onFocus();
+      });
+      await act(async () => {
+        jest.advanceTimersByTime(uiTokens.motion.fast);
+      });
+      expect(isExpanded('calendar.openPicker')).toBe(true);
+
+      // A different action's collapse timeout firing later must not clobber
+      // an unrelated action that is currently expanded.
+      await act(async () => {
+        favoriteAction().props.onHoverOut();
+      });
+      await act(async () => {
+        jest.advanceTimersByTime(uiTokens.motion.fast);
+      });
+      expect(isExpanded('calendar.openPicker')).toBe(true);
+
+      await act(async () => {
+        calendarAction().props.onBlur();
+      });
+      expect(isExpanded('calendar.openPicker')).toBe(false);
+    } finally {
+      jest.useRealTimers();
+    }
+
+    await act(async () => renderer.unmount());
+  });
+
+  it('omits agenda type-reveal testIDs on production web builds', () => {
+    // Rendering the full screen under a mutated NODE_ENV would also flip
+    // unrelated dev/prod branching deep in react-native-css-interop's
+    // render runtime, so exercise the extracted, pure decision directly
+    // instead of round-tripping it through a component tree.
+    const rn = require('react-native');
+    const originalPlatformOs = rn.Platform.OS;
+    const originalNodeEnv = process.env.NODE_ENV;
+    try {
+      rn.Platform.OS = 'web';
+
+      setNodeEnv('test');
+      expect(agendaTypeRevealTestId('agenda-card-type-shell-item')).toEqual({
+        testID: 'agenda-card-type-shell-item',
+      });
+
+      setNodeEnv('production');
+      expect(agendaTypeRevealTestId('agenda-card-type-shell-item')).toEqual({});
+
+      // Native platforms always keep the testID, regardless of NODE_ENV.
+      rn.Platform.OS = 'ios';
+      expect(agendaTypeRevealTestId('agenda-card-type-shell-item')).toEqual({
+        testID: 'agenda-card-type-shell-item',
+      });
+    } finally {
+      rn.Platform.OS = originalPlatformOs;
+      setNodeEnv(originalNodeEnv);
+    }
   });
 
   it('keeps a configured speaker portrait when the directory record has no image', async () => {

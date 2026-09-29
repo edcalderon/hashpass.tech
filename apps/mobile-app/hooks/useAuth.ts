@@ -434,6 +434,22 @@ let betterAuthSupabaseBootstrapPromise:
 // native sign-in. Its callback is installed by the active auth bootstrap so
 // a wallet retry recovers identity as well as reloading pass rows.
 let retryDatabaseSessionBridge: (() => Promise<void>) | null = null;
+// retryDatabaseSession() is called independently by several unconnected
+// screens (agenda, passes wallet/display, speaker detail, networking
+// schedule) whenever they each find dbUserId still null -- commonly several
+// at once on the same mount, since they all react to the same missing
+// identity. Without sharing the in-flight bridge attempt the same way the
+// initial bootstrap does (betterAuthSupabaseBootstrapPromise above), every
+// one of those calls independently POSTs /api/auth/supabase-bridge for the
+// same user at nearly the same instant. Those duplicate requests contend for
+// the same auth.users/public.user rows server-side, and it only takes one of
+// them landing behind that contention to exceed
+// SUPABASE_BRIDGE_BOOTSTRAP_TIMEOUT_MS -- surfacing as a
+// "supabaseBridgeWalletRetry timed out" error here, and, once the
+// already-abandoned fetch finally settles, an unrelated-looking 500 in the
+// network tab. Sharing one in-flight promise collapses concurrent callers
+// into a single request, same as the bootstrap path already does.
+let retryDatabaseSessionInFlight: Promise<void> | null = null;
 // dbUserId is a module-level store rather than per-instance state, read
 // through useSyncExternalStore below. That's React's purpose-built API for
 // subscribing to an external mutable store, and it's what keeps a broadcast
@@ -728,11 +744,26 @@ export const useAuth = () => {
 
       let result = await supabase.auth.getSession();
       if (!result.data?.session) {
-        await withTimeout(
-          ensureSupabaseBridgeSession(betterAuthProvider),
-          SUPABASE_BRIDGE_BOOTSTRAP_TIMEOUT_MS,
-          'supabaseBridgeWalletRetry',
-        );
+        // See retryDatabaseSessionInFlight's declaration above: share one
+        // in-flight bridge attempt across every concurrent caller instead of
+        // each starting its own POST /api/auth/supabase-bridge.
+        const bridgeAttempt =
+          retryDatabaseSessionInFlight ??
+          withTimeout(
+            ensureSupabaseBridgeSession(betterAuthProvider),
+            SUPABASE_BRIDGE_BOOTSTRAP_TIMEOUT_MS,
+            'supabaseBridgeWalletRetry',
+          );
+        retryDatabaseSessionInFlight = bridgeAttempt;
+
+        try {
+          await bridgeAttempt;
+        } finally {
+          if (retryDatabaseSessionInFlight === bridgeAttempt) {
+            retryDatabaseSessionInFlight = null;
+          }
+        }
+
         result = await supabase.auth.getSession();
       }
 
