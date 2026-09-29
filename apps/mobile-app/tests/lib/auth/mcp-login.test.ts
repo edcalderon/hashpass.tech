@@ -1,5 +1,6 @@
 import {
   buildMcpLoginContinuation,
+  extractSignedOAuthQuery,
   isMcpLoginContinuation,
   MCP_LOGIN_PATH,
 } from '../../../lib/auth/mcp-login';
@@ -20,6 +21,16 @@ describe('MCP OAuth login continuation', () => {
       authorizeUrl: `https://api.hashpass.tech/api/auth/oauth2/authorize${signedQuery}`,
       returnTo: `${MCP_LOGIN_PATH}${signedQuery}`,
     });
+  });
+
+  it('keeps only provider-signed parameters for browser-to-API OAuth requests', () => {
+    const query = '?client_id=chatgpt&state=state-123&ba_iat=1790619400000&exp=1790620000&ba_param=ba_iat&ba_param=client_id&ba_param=exp&ba_param=state&sig=signed-value&router=ignored';
+
+    expect(extractSignedOAuthQuery(query)).toBe(
+      'client_id=chatgpt&state=state-123&ba_iat=1790619400000&exp=1790620000&ba_param=ba_iat&ba_param=client_id&ba_param=exp&ba_param=state&sig=signed-value',
+    );
+    expect(extractSignedOAuthQuery('?client_id=chatgpt&sig=signed-value')).toBe('');
+    expect(extractSignedOAuthQuery('?client_id=chatgpt')).toBe('');
   });
 
   it('normalizes a trailing slash on the trusted API base URL', () => {

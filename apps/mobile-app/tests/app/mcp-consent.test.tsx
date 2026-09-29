@@ -5,6 +5,7 @@ import McpConsentScreen from '../../app/(shared)/mcp/consent';
 const mockGet = jest.fn();
 const mockConsent = jest.fn();
 const mockAssign = jest.fn();
+const signedQuery = 'client_id=chatgpt&sig=signed&ba_param=client_id';
 
 function mockActionButton(props: Record<string, unknown>) {
   return React.createElement('ActionButton', props);
@@ -40,7 +41,7 @@ describe('MCP consent screen', () => {
     jest.clearAllMocks();
     Object.defineProperty(global, 'window', {
       configurable: true,
-      value: { location: { search: '?client_id=chatgpt&sig=signed', assign: mockAssign } },
+      value: { location: { search: `?${signedQuery}`, assign: mockAssign } },
     });
   });
 
@@ -68,7 +69,7 @@ describe('MCP consent screen', () => {
       await Promise.resolve();
     });
 
-    expect(mockGet).toHaveBeenCalledWith('/auth/mcp-consent-query?client_id=chatgpt&sig=signed', {
+    expect(mockGet).toHaveBeenCalledWith(`/auth/mcp-consent-query?${signedQuery}`, {
       skipEventSegment: true,
     });
     expect(renderer?.root.findAllByType('ActionButton' as never)[0].props.disabled).toBe(false);
@@ -77,10 +78,10 @@ describe('MCP consent screen', () => {
     expect(renderedText).toContain('chatgpt-client-id');
     expect(renderedText).toContain('https://chatgpt.com/oauth/callback');
     await act(async () => renderer?.root.findAllByType('ActionButton' as never)[0].props.onPress());
-    expect(mockConsent).toHaveBeenCalledWith({
-      accept: true,
-      oauth_query: 'client_id=chatgpt&sig=signed',
-    });
+    // oauthProviderClient derives the signed subset from location.search.
+    // Passing the whole query here would allow unsiged router parameters to
+    // invalidate the authorization request at the provider.
+    expect(mockConsent).toHaveBeenCalledWith({ accept: true });
     expect(mockAssign).toHaveBeenCalledWith('https://chatgpt.com/oauth/callback?code=one');
   });
 
@@ -95,10 +96,7 @@ describe('MCP consent screen', () => {
       await Promise.resolve();
     });
     await act(async () => renderer?.root.findAllByType('ActionButton' as never)[1].props.onPress());
-    expect(mockConsent).toHaveBeenCalledWith({
-      accept: false,
-      oauth_query: 'client_id=chatgpt&sig=signed',
-    });
+    expect(mockConsent).toHaveBeenCalledWith({ accept: false });
 
     act(() => renderer?.unmount());
     renderer = null;
@@ -125,7 +123,7 @@ describe('MCP consent screen', () => {
     renderer = null;
     Object.defineProperty(global, 'window', {
       configurable: true,
-      value: { location: { search: '?client_id=chatgpt&sig=signed', assign: mockAssign } },
+      value: { location: { search: `?${signedQuery}`, assign: mockAssign } },
     });
     mockGet.mockResolvedValue({
       success: true,
