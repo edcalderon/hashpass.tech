@@ -5,6 +5,7 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView } from 
 // tofu/"?" fallback glyph for a window before the icon font loads on web.
 import { MaterialIcons } from '../lib/vector-icons';
 import { useTheme } from '../hooks/useTheme';
+import { uiTokens } from '@hashpass/ui/tokens';
 
 // Generic interfaces for different data types
 interface BaseItem {
@@ -16,6 +17,8 @@ interface FilterOption {
   key: string;
   label: string;
   icon?: string;
+  /** Optional semantic marker used by contextual filter menus. */
+  color?: string;
   type?: 'single' | 'multiple';
 }
 
@@ -216,6 +219,12 @@ export default function UnifiedSearchAndFilter<T extends BaseItem>({
             ]}
             onPress={() => handleFilterChange(group.key, activeFilters[group.key] === option.key ? '' : option.key)}
           >
+            {option.color ? (
+              <View
+                accessible={false}
+                style={[styles.filterOptionColor, { backgroundColor: option.color }]}
+              />
+            ) : null}
             {option.icon && (
               <MaterialIcons 
                 name={option.icon as any} 
@@ -489,6 +498,12 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 8,
     marginBottom: 4,
+  },
+  filterOptionColor: {
+    width: 10,
+    height: 10,
+    borderRadius: uiTokens.radius.circle,
+    marginRight: 2,
   },
   filterOptionSelected: {
     backgroundColor: 'rgba(0, 122, 255, 0.1)',

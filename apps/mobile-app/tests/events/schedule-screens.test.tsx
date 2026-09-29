@@ -368,11 +368,78 @@ describe('event schedule screens', () => {
     const agendaFilter = renderer!.root.findByType('UnifiedSearchAndFilter' as any);
     expect(agendaFilter.props.filterGroups).toHaveLength(1);
     expect(agendaFilter.props.filterGroups[0].key).toBe('type');
+    expect(agendaFilter.props.filterGroups[0].options).toEqual(expect.arrayContaining([
+      expect.objectContaining({ key: 'keynote', color: '#007AFF' }),
+      expect.objectContaining({ key: 'panel', color: '#34A853' }),
+      expect.objectContaining({ key: 'registration', color: '#8E8E93' }),
+    ]));
     expect(agendaSource).not.toContain('isCompactLayout && styles.actionButtonsCompact');
 
     await act(async () => {
       renderer!.unmount();
     });
+  });
+
+  it('shows programme context on day cards and lets attendees switch agenda presentation', async () => {
+    mockApiRequest.mockImplementation((path: string) => Promise.resolve({
+      success: true,
+      data: {
+        data: path === 'events/custom/agenda'
+          ? [
+            { id: 'day-one', day: '1', time: '09:00', title: 'Opening', type: 'keynote' },
+            { id: 'day-two', day: '2', time: '10:00', title: 'Workshop', type: 'panel' },
+          ]
+          : [],
+      },
+    }));
+
+    let renderer: TestRenderer.ReactTestRenderer;
+    await act(async () => {
+      renderer = TestRenderer.create(<AgendaScreen />);
+      await flushPromises();
+      await flushPromises();
+    });
+
+    const dayTabs = renderer!.root.findAll((node) => node.props.accessibilityRole === 'tab');
+    expect(dayTabs).toHaveLength(2);
+    expect(dayTabs[0].props.accessibilityLabel).toContain('1 tabs.sessions');
+
+    const gridButton = renderer!.root.findByProps({ accessibilityLabel: 'viewMode.grid' });
+    await act(async () => {
+      gridButton.props.onPress();
+      await flushPromises();
+    });
+    expect(renderer!.root.findByProps({ accessibilityLabel: 'viewMode.grid' }).props.accessibilityState.selected).toBe(true);
+
+    await act(async () => renderer!.unmount());
+  });
+
+  it('keeps a configured speaker portrait when the directory record has no image', async () => {
+    mockActiveEvent = {
+      ...mockEvent,
+      speakers: [{ id: 'speaker-a', name: 'Ada Lovelace', image: 'https://images.example.test/ada.jpg' }],
+    };
+    mockApiRequest.mockImplementation((path: string) => Promise.resolve({
+      success: true,
+      data: {
+        data: path === 'events/custom/agenda'
+          ? [{ id: 'speaker-session', day: '1', time: '09:00', title: 'Opening', type: 'keynote', speakers: ['speaker-a'] }]
+          : [{ id: 'speaker-a', name: 'Ada Lovelace', image_url: null }],
+      },
+    }));
+
+    let renderer: TestRenderer.ReactTestRenderer;
+    await act(async () => {
+      renderer = TestRenderer.create(<AgendaScreen />);
+      await flushPromises();
+      await flushPromises();
+    });
+
+    const avatarImage = renderer!.root.findAllByType('Image' as any)
+      .find((node) => node.props.source?.uri === 'https://images.example.test/ada.jpg');
+    expect(avatarImage).toBeDefined();
+
+    await act(async () => renderer!.unmount());
   });
 
   it('bridges the native database session before favoriting or adding an agenda session', async () => {
@@ -398,10 +465,9 @@ describe('event schedule screens', () => {
       await flushPromises();
     });
 
-    const favoriteText = renderer!.root.findAllByType(Text).find((node) => node.children.join('') === 'actions.favorite');
-    expect(favoriteText).toBeTruthy();
-    let favoriteButton: any = favoriteText!.parent;
-    while (favoriteButton && typeof favoriteButton.props?.onPress !== 'function') favoriteButton = favoriteButton.parent;
+    const favoriteButton = renderer!.root.findByProps({
+      accessibilityLabel: 'actions.addToFavorites',
+    });
     await act(async () => {
       await favoriteButton.props.onPress();
       await flushPromises();

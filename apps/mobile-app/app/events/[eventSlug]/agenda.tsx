@@ -30,6 +30,8 @@ import * as Haptics from 'expo-haptics';
 import { parseISO } from 'date-fns';
 import LoadingScreen from '../../../components/LoadingScreen';
 import { useTranslation, getCurrentLocale } from '../../../i18n/i18n';
+import { Badge, IconButton, Surface } from '@hashpass/ui/primitives';
+import { uiTokens } from '@hashpass/ui/tokens';
 import {
   buildGoogleCalendarUrl,
   buildICalendarFile,
@@ -96,6 +98,7 @@ const customAgendaFilterLogic = (
 export default function BSL2025AgendaScreen() {
   const { event } = useEvent();
   const { isDark, colors } = useTheme();
+  const interfaceMode = isDark ? 'dark' : 'light';
   const router = useRouter();
   const params = useLocalSearchParams<{ session?: string; scrollTo?: string; day?: string }>();
   const styles = getStyles(isDark, colors);
@@ -121,6 +124,9 @@ export default function BSL2025AgendaScreen() {
   const [isLive, setIsLive] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<AgendaType | 'all'>('all');
+  const [agendaLayout, setAgendaLayout] = useState<'list' | 'grid'>('list');
+  const [expandedAgendaAction, setExpandedAgendaAction] = useState<string | null>(null);
+  const isAgendaGrid = agendaLayout === 'grid';
   const [usingJsonFallback, setUsingJsonFallback] = useState(false);
   const [serviceStatus, setServiceStatus] = useState<'running' | 'stopped' | 'unknown'>('unknown');
   const [isEventPeriod, setIsEventPeriod] = useState(false);
@@ -293,11 +299,11 @@ export default function BSL2025AgendaScreen() {
       label: t('filter.type'),
       type: 'single' as const,
       options: [
-        { key: 'keynote', label: t('filter.keynote'), icon: 'mic' },
-        { key: 'panel', label: t('filter.panel'), icon: 'group' },
-        { key: 'break', label: t('filter.break'), icon: 'free-breakfast' },
-        { key: 'meal', label: t('filter.meal'), icon: 'restaurant' },
-        { key: 'registration', label: t('filter.registration'), icon: 'person-add' },
+        { key: 'keynote', label: t('filter.keynote'), icon: 'mic', color: getAgendaTypeColor('keynote') },
+        { key: 'panel', label: t('filter.panel'), icon: 'group', color: getAgendaTypeColor('panel') },
+        { key: 'break', label: t('filter.break'), icon: 'free-breakfast', color: getAgendaTypeColor('break') },
+        { key: 'meal', label: t('filter.meal'), icon: 'restaurant', color: getAgendaTypeColor('meal') },
+        { key: 'registration', label: t('filter.registration'), icon: 'person-add', color: getAgendaTypeColor('registration') },
       ],
     },
   ];
@@ -403,11 +409,13 @@ export default function BSL2025AgendaScreen() {
         if (event?.speakers && Array.isArray(event.speakers)) {
           event.speakers.forEach((speaker: any) => {
             if (speaker.id) {
-              map.set(speaker.id, {
+              const speakerRecord = {
                 id: speaker.id,
                 name: speaker.name,
                 image: speaker.image,
-              });
+              };
+              map.set(speaker.id, speakerRecord);
+              if (speaker.name) map.set(speaker.name, speakerRecord);
             }
           });
         }
@@ -423,11 +431,15 @@ export default function BSL2025AgendaScreen() {
           if (Array.isArray(dbSpeakers)) {
             dbSpeakers.forEach((speaker: any) => {
               if (speaker.id) {
-                map.set(speaker.id, {
+                const existingSpeaker = map.get(speaker.id) || map.get(speaker.name);
+                const speakerRecord = {
                   id: speaker.id,
                   name: speaker.name,
-                  image: speaker.imageurl || speaker.image_url,
-                });
+                  // Keep the configured portrait until the directory owns a real one.
+                  image: speaker.imageurl || speaker.image_url || speaker.image || existingSpeaker?.image,
+                };
+                map.set(speaker.id, speakerRecord);
+                if (speaker.name) map.set(speaker.name, speakerRecord);
               }
             });
           }
@@ -1211,113 +1223,147 @@ export default function BSL2025AgendaScreen() {
     const isConfirmed = userStatus === 'confirmed';
     const isFavorite = favoriteStatus[item.id] || false;
     const isPast = isEventPast(item);
-    
-    // Parse start time from item
     const startTime = parseEventISO((item as any).time || '');
-    
     const typeColor = getAgendaTypeColor(item.type);
+    const isBreak = item.type === 'meal' || item.type === 'break';
+    const location = item.type === 'keynote'
+      ? t('locations.mainStage')
+      : item.type === 'registration'
+        ? t('locations.registrationArea')
+        : isBreak
+          ? ''
+          : item.location || '';
+    const renderAgendaAction = (
+      action: 'calendar' | 'favorite' | 'schedule',
+      label: string,
+      icon: React.ReactNode,
+      onPress: () => void,
+    ) => {
+      const actionId = `${item.id}:${action}`;
+      const isExpanded = expandedAgendaAction === actionId;
+
+      return (
+        <Pressable
+          key={action}
+          accessibilityRole="button"
+          accessibilityLabel={label}
+          accessibilityHint={t('actions.actionHint', 'Opens this session action')}
+          onPress={onPress}
+          onHoverIn={() => setExpandedAgendaAction(actionId)}
+          onHoverOut={() => setExpandedAgendaAction((current) => current === actionId ? null : current)}
+          onFocus={() => setExpandedAgendaAction(actionId)}
+          onBlur={() => setExpandedAgendaAction((current) => current === actionId ? null : current)}
+          style={({ pressed }) => [
+            styles.agendaTool,
+            isExpanded && styles.agendaToolExpanded,
+            pressed && styles.agendaToolPressed,
+          ]}
+        >
+          {icon}
+          {isExpanded ? <Text style={styles.agendaToolLabel}>{label}</Text> : null}
+        </Pressable>
+      );
+    };
     
     return (
-      <View 
-        key={item.id} 
+      <View
+        key={item.id}
         ref={(ref) => {
           sessionItemRefs.current[item.id] = ref;
         }}
-        style={[
-          styles.agendaItem,
-          isPast && styles.agendaItemPast
-        ]}
+        style={isAgendaGrid ? styles.agendaGridCell : undefined}
       >
-        <View style={[
-          styles.agendaItemHeader, 
-          { backgroundColor: typeColor },
-          isPast && styles.agendaItemHeaderPast
-        ]}>
-          <View style={styles.timeContainer}>
-            <Text style={[styles.agendaTime, { color: '#FFFFFF' }]}>{formatTimeRange(item, eventTzOffset)}</Text>
-            <View style={styles.badgeContainer}>
-              {isPast && (
-                <View style={styles.pastBadge}>
-                  <Text style={styles.pastBadgeText}>{t('badges.past')}</Text>
-                </View>
-              )}
-              <View style={[styles.agendaTypeBadge, { backgroundColor: 'rgba(255, 255, 255, 0.25)' }]}>
-                <Text style={[styles.agendaTypeText, { color: '#FFFFFF' }]}>{t(`types.${item.type}`, item.type).toUpperCase()}</Text>
-              </View>
-              <TouchableOpacity
-                onPress={() => setCalendarPickerItem(item)}
-                style={styles.calendarMenuButton}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                accessibilityRole="button"
-                accessibilityLabel={t('calendar.openPicker', 'Add this session to a calendar')}
-              >
-                <MaterialIcons name="event" size={17} color="#FFFFFF" />
-              </TouchableOpacity>
+        <Surface
+          mode={interfaceMode}
+          style={[
+            styles.agendaItem,
+            isAgendaGrid && styles.agendaItemGrid,
+            { borderLeftColor: typeColor },
+            isPast && styles.agendaItemPast,
+          ]}
+        >
+          <View style={[styles.agendaItemLayout, isAgendaGrid && styles.agendaItemLayoutGrid]}>
+            <View style={[styles.agendaTimeRail, isAgendaGrid && styles.agendaTimeRailGrid]}>
+              <Text style={styles.agendaTime}>
+                {formatTimeRange(item, eventTzOffset)}
+              </Text>
             </View>
-          </View>
-        </View>
 
-        <View style={styles.agendaItemContent}>
-          <View style={styles.agendaTitleRow}>
-            <Text style={styles.agendaTitle}>{cleanSessionTitle(item.title)}</Text>
-          </View>
-          
-          {item.description && (
-            <Text style={styles.agendaDescription}>{item.description}</Text>
-          )}
+            <View style={styles.agendaItemContent}>
+              <View style={styles.agendaTitleRow}>
+                <View style={styles.agendaTitleMeta}>
+                  <Text style={styles.agendaTitle}>{cleanSessionTitle(item.title)}</Text>
+                  <Badge mode={interfaceMode} tone={isBreak ? 'neutral' : 'accent'}>
+                    {t(`types.${item.type}`, item.type).toUpperCase()}
+                  </Badge>
+                  {isPast ? (
+                    <Badge mode={interfaceMode} tone="neutral">
+                      {t('badges.past')}
+                    </Badge>
+                  ) : null}
+                </View>
+              </View>
+              <View style={styles.agendaItemTools}>
+                {renderAgendaAction(
+                  'calendar',
+                  t('calendar.openPicker', 'Add this session to a calendar'),
+                  <MaterialIcons name="event" size={18} color={colors.primary} />,
+                  () => setCalendarPickerItem(item),
+                )}
+                {renderAgendaAction(
+                  'favorite',
+                  isFavorite ? t('actions.removeFromFavorites', 'Remove from favorites') : t('actions.addToFavorites', 'Add to favorites'),
+                  <MaterialIcons name={isFavorite ? 'star' : 'star-border'} size={18} color={isFavorite ? colors.primary : colors.text.secondary} />,
+                  () => { void handleToggleFavorite(item); },
+                )}
+                {renderAgendaAction(
+                  'schedule',
+                  isConfirmed ? t('actions.removeFromAgenda', 'Remove from agenda') : t('actions.addToAgenda', 'Add to agenda'),
+                  <MaterialIcons name={isConfirmed ? 'check-circle' : 'add-circle-outline'} size={19} color={isConfirmed ? colors.success.main : colors.primary} />,
+                  () => { void handleAgendaAction(item, startTime); },
+                )}
+              </View>
 
-          {item.speakers && item.speakers.length > 0 && (
-            <View style={styles.speakersContainer}>
-              <MaterialIcons
-                name="people"
-                size={16}
-                color={colors.text.secondary}
-                accessibilityLabel={t('labels.speakers')}
-              />
-              <View style={styles.speakersList}>
-                {item.speakers.map((speaker: string, index: number) => {
-                  const { id: speakerId, displayName, image } = resolveAgendaSpeaker(speaker);
-                  const isClickable = speakerId !== null;
-                  const chipContent = (
-                    <>
-                      <SpeakerAvatar name={displayName} imageUrl={image} size={22} />
-                      <Text
-                        style={[styles.agendaSpeakers, isClickable && styles.clickableSpeaker]}
-                        numberOfLines={1}
-                      >
-                        {displayName}
-                      </Text>
-                    </>
-                  );
-                  return (
-                    <React.Fragment key={index}>
-                      {isClickable ? (
-                        <TouchableOpacity onPress={() => handleSpeakerPress(speaker)} style={styles.speakerChip}>
+              {item.description ? (
+                <Text style={styles.agendaDescription}>{item.description}</Text>
+              ) : null}
+
+              {item.speakers && item.speakers.length > 0 ? (
+                <View style={styles.speakersContainer}>
+                  <MaterialIcons
+                    name="people"
+                    size={16}
+                    color={colors.text.secondary}
+                    accessibilityLabel={t('labels.speakers')}
+                  />
+                  <View style={styles.speakersList}>
+                    {item.speakers.map((speaker: string) => {
+                      const { id: speakerId, displayName, image } = resolveAgendaSpeaker(speaker);
+                      const isClickable = speakerId !== null;
+                      const chipContent = (
+                        <>
+                          <SpeakerAvatar name={displayName} imageUrl={image} size={36} showBorder />
+                          <Text
+                            style={[styles.agendaSpeakers, isClickable && styles.clickableSpeaker]}
+                            numberOfLines={1}
+                          >
+                            {displayName}
+                          </Text>
+                        </>
+                      );
+                      return isClickable ? (
+                        <TouchableOpacity key={speaker} onPress={() => handleSpeakerPress(speaker)} style={styles.speakerChip}>
                           {chipContent}
                         </TouchableOpacity>
                       ) : (
-                        <View style={styles.speakerChip}>{chipContent}</View>
-                      )}
-                    </React.Fragment>
-                  );
-                })}
-              </View>
-            </View>
-          )}
+                        <View key={speaker} style={styles.speakerChip}>{chipContent}</View>
+                      );
+                    })}
+                  </View>
+                </View>
+              ) : null}
 
-          {(() => {
-            let location = '';
-            if (item.type === 'keynote') {
-              location = t('locations.mainStage');
-            } else if (item.type === 'registration') {
-              location = t('locations.registrationArea');
-            } else if (item.type === 'meal' || item.type === 'break') {
-              return null;
-            } else if (item.location) {
-              location = item.location;
-            }
-            if (location) {
-              return (
+              {location ? (
                 <View style={styles.locationContainer}>
                   <MaterialIcons
                     name="location-on"
@@ -1327,46 +1373,10 @@ export default function BSL2025AgendaScreen() {
                   />
                   <Text style={styles.agendaLocation}>{location}</Text>
                 </View>
-              );
-            }
-            return null;
-          })()}
-
-          <View style={styles.actionButtons}>
-            <TouchableOpacity
-              onPress={() => handleToggleFavorite(item)}
-              style={styles.actionButton}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              accessibilityRole="button"
-              accessibilityLabel={isFavorite ? t('actions.removeFromFavorites', 'Remove from favorites') : t('actions.addToFavorites', 'Add to favorites')}
-            >
-              <MaterialIcons
-                name={isFavorite ? 'star' : 'star-border'}
-                size={18}
-                color={isFavorite ? '#FFD700' : colors.text.secondary}
-              />
-              <Text style={[styles.actionButtonLabel, { color: isFavorite ? '#B8860B' : colors.text.secondary }]}>
-                {isFavorite ? t('actions.favorited', 'Favorited') : t('actions.favorite', 'Favorite')}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => handleAgendaAction(item, startTime)}
-              style={styles.actionButton}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              accessibilityRole="button"
-              accessibilityLabel={isConfirmed ? t('actions.removeFromAgenda', 'Remove from agenda') : t('actions.addToAgenda', 'Add to agenda')}
-            >
-              <MaterialIcons
-                name={isConfirmed ? 'check-circle' : 'radio-button-unchecked'}
-                size={18}
-                color={isConfirmed ? colors.success.main : colors.text.secondary}
-              />
-              <Text style={[styles.actionButtonLabel, { color: isConfirmed ? colors.success.main : colors.text.secondary }]}>
-                {isConfirmed ? t('actions.onAgenda', 'On agenda') : t('actions.addToAgenda', 'Add to agenda')}
-              </Text>
-            </TouchableOpacity>
+              ) : null}
+            </View>
           </View>
-        </View>
+        </Surface>
       </View>
     );
   };
@@ -1410,28 +1420,25 @@ export default function BSL2025AgendaScreen() {
           eventVideo={event?.heroVideo}
         />
 
-        {/* Tab Navigation - Centered with consistent sizing */}
+        {/* Day selection exposes the programme context before a session is chosen. */}
         {Object.keys(agendaByDay).length > 0 && (
           <View style={styles.tabContainer}>
-            <View style={{ flex: 1, alignItems: 'center' }}>
-              <ScrollView 
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.tabScrollContent}
-                contentInset={{ left: 0, right: 0 }}
-                contentOffset={{ x: 0, y: 0 }}
-                snapToInterval={128} // 120 (width) + 8 (margin)
-                decelerationRate="fast"
-                snapToAlignment="center"
-              >
-              {Object.keys(agendaByDay).map((dayKey) => (
-                <TouchableOpacity
-                  key={dayKey}
-                  style={[
-                    styles.tab,
-                    activeTab === dayKey && styles.activeTab
-                  ]}
-                  onPress={() => {
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.tabScrollContent}
+            >
+              {Object.keys(agendaByDay).map((dayKey) => {
+                const selected = activeTab === dayKey;
+                const sessionCount = agendaByDay[dayKey].length;
+                return (
+                  <TouchableOpacity
+                    key={dayKey}
+                    accessibilityRole="tab"
+                    accessibilityLabel={`${getTabLabel(dayKey)} · ${sessionCount} ${t('tabs.sessions', 'sessions')}`}
+                    accessibilityState={{ selected }}
+                    style={[styles.dayTab, selected && styles.dayTabSelected]}
+                    onPress={() => {
                     userSelectedTabRef.current = true; // Mark as user-selected
                     // Clear URL query parameters when user manually switches tabs
                     // This prevents the scrolling effect from interfering with manual tab selection
@@ -1441,41 +1448,22 @@ export default function BSL2025AgendaScreen() {
                     }
                     setActiveTab(dayKey);
                   }}
-                >
-                  <Text style={[
-                    styles.tabLabel,
-                    activeTab === dayKey && styles.activeTabLabel
-                  ]}>
-                    {getTabLabel(dayKey)}
-                  </Text>
-                  <Text style={[
-                    styles.tabTheme,
-                    activeTab === dayKey && styles.activeTabTheme
-                  ]}>
-                    {getTabTheme(dayKey)}
-                  </Text>
-                  <Text style={[
-                    styles.tabCount,
-                    activeTab === dayKey && styles.activeTabCount
-                  ]}>
-                    {agendaByDay[dayKey].length} {t('tabs.sessions')}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-              </ScrollView>
-            </View>
-          </View>
-        )}
-
-        {/* Session type color legend -- same colors as each card's type badge (getAgendaTypeColor), so people know what blue/red/green/etc. mean at a glance. */}
-        {agenda.length > 0 && (
-          <View style={styles.typeLegend}>
-            {(['keynote', 'panel', 'registration', 'meal', 'break'] as const).map((type) => (
-              <View key={type} style={styles.typeLegendItem}>
-                <View style={[styles.typeLegendDot, { backgroundColor: getAgendaTypeColor(type) }]} />
-                <Text style={styles.typeLegendText}>{t(`types.${type}`, type)}</Text>
-              </View>
-            ))}
+                  >
+                    <Text style={[styles.dayTabLabel, selected && styles.dayTabLabelSelected]}>{getTabLabel(dayKey)}</Text>
+                    {!!getTabTheme(dayKey) && (
+                      <Text style={[styles.dayTabTheme, selected && styles.dayTabThemeSelected]} numberOfLines={2}>
+                        {getTabTheme(dayKey)}
+                      </Text>
+                    )}
+                    <View style={[styles.dayTabCount, selected && styles.dayTabCountSelected]}>
+                      <Text style={[styles.dayTabCountText, selected && styles.dayTabCountTextSelected]}>
+                        {sessionCount} {t('tabs.sessions', 'sessions')}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
           </View>
         )}
 
@@ -1493,40 +1481,50 @@ export default function BSL2025AgendaScreen() {
         />
       )}
 
-      {agenda.length > 0 && (
-        <View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 16, paddingTop: 8 }}>
-          <TouchableOpacity
-            onPress={() => { void loadAgenda(); }}
-            disabled={loading}
-            accessibilityLabel={t('refreshAgenda', 'Refresh agenda')}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 4, padding: 6 }}
-          >
-            <MaterialIcons name="refresh" size={18} color={colors.primary} style={loading ? { opacity: 0.5 } : undefined} />
-            <Text style={{ fontSize: 12, fontWeight: '600', color: colors.primary }}>
-              {t('refresh', 'Refresh')}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {/* Full day title -- the tab card itself truncates the theme text to
-          fit its fixed small size (see tabTheme style), so this shows the
-          complete, untruncated day name + theme once a day is selected. */}
+      {/* The full day theme is kept out of the compact day chip so translated
+          copy can wrap naturally here. */}
       {activeTab && Object.keys(agendaByDay).length > 0 && (
         <View style={styles.dayHeader}>
-          <Text style={styles.dayHeaderLabel} numberOfLines={1}>
-            {getTabLabel(activeTab)}
+          <View style={styles.dayHeaderCopy}>
+            <Text style={styles.dayHeaderLabel}>{getTabLabel(activeTab)}</Text>
             {!!getTabTheme(activeTab) && (
-              <Text style={styles.dayHeaderTheme}>: {getTabTheme(activeTab)}</Text>
+              <Text style={styles.dayHeaderTheme}>{getTabTheme(activeTab)}</Text>
             )}
-          </Text>
+          </View>
+          <View style={styles.dayHeaderControls}>
+            <View accessibilityLabel={t('viewMode.label', 'Agenda display')} style={styles.agendaModeSwitcher}>
+              {([
+                { key: 'list' as const, icon: 'view_agenda', label: t('viewMode.list', 'List view') },
+                { key: 'grid' as const, icon: 'apps', label: t('viewMode.grid', 'Grid view') },
+              ]).map((mode) => (
+                <IconButton
+                  key={mode.key}
+                  mode={interfaceMode}
+                  label={mode.label}
+                  accessibilityState={{ selected: agendaLayout === mode.key }}
+                  onPress={() => setAgendaLayout(mode.key)}
+                  style={[styles.agendaModeButton, agendaLayout === mode.key && styles.agendaModeButtonSelected]}
+                >
+                  <MaterialIcons name={mode.icon as any} size={18} color={agendaLayout === mode.key ? '#FFFFFF' : colors.primary} />
+                </IconButton>
+              ))}
+            </View>
+            <IconButton
+              mode={interfaceMode}
+              label={t('refreshAgenda', 'Refresh agenda')}
+              disabled={loading}
+              onPress={() => { void loadAgenda(); }}
+            >
+              <MaterialIcons name="refresh" size={18} color={colors.primary} />
+            </IconButton>
+          </View>
         </View>
       )}
 
       {/* Tab Content */}
       <View style={styles.contentContainer}>
         {activeTab && agendaByDay[activeTab] ? (
-          <View style={styles.agendaList}>
+          <View style={[styles.agendaList, isAgendaGrid && styles.agendaGridList]}>
             {(() => {
               // Get filtered items for the active tab
               const filteredItems = filteredAgenda.filter(item => {
@@ -1718,247 +1716,220 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   contentContainer: {
     paddingBottom: 40,
   },
-  // Tab Styles - Consistent sizing and centering
+  // Programme-day cards keep the date, theme, and session count readable.
   tabContainer: {
     backgroundColor: colors.background.default,
-    paddingTop: 8,
-    paddingBottom: 8,
+    paddingTop: uiTokens.space.lg,
+    paddingBottom: uiTokens.space.sm,
     width: '100%',
-  },
-  typeLegend: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: 14,
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-  },
-  typeLegendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-  },
-  typeLegendDot: {
-    width: 9,
-    height: 9,
-    borderRadius: 4.5,
-  },
-  typeLegendText: {
-    fontSize: 12,
-    color: colors.text.secondary,
   },
   tabScrollContent: {
     flexDirection: 'row',
-    justifyContent: 'flex-start',
     alignItems: 'center',
-    height: 100, // Slightly reduced height for mobile
-    paddingHorizontal: 8,
+    gap: uiTokens.space.sm,
+    paddingHorizontal: uiTokens.space.lg,
   },
-  tab: {
-    width: 120, // Reduced width for mobile
-    height: 80, // Reduced height for mobile
-    paddingHorizontal: 4,
-    paddingTop: 6,
-    paddingBottom: 6,
-    marginHorizontal: 4,
-    borderRadius: 8,
+  dayTab: {
+    width: 148,
+    minHeight: 104,
+    borderWidth: 1,
+    borderRadius: uiTokens.radius.card,
+    borderColor: colors.divider,
     backgroundColor: colors.background.paper,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-    minWidth: 100, // Minimum width for touch targets
+    padding: uiTokens.space.md,
+    justifyContent: 'space-between',
+    gap: uiTokens.space.xs,
   },
-  activeTab: {
-    backgroundColor: '#007AFF',
-    shadowColor: '#007AFF',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+  dayTabSelected: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  dayTabLabel: {
+    color: colors.text.primary,
+    fontSize: uiTokens.type.label,
+    fontWeight: '800',
+  },
+  dayTabLabelSelected: {
+    color: '#FFFFFF',
+  },
+  dayTabTheme: {
+    color: colors.text.secondary,
+    fontSize: uiTokens.type.caption,
+    lineHeight: 16,
+  },
+  dayTabThemeSelected: {
+    color: colors.primaryContrastText,
+  },
+  dayTabCount: {
+    alignSelf: 'flex-start',
+    borderRadius: uiTokens.radius.pill,
+    backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(7,17,30,0.06)',
+    paddingHorizontal: uiTokens.space.sm,
+    paddingVertical: 3,
+  },
+  dayTabCountSelected: {
+    backgroundColor: colors.background.paper,
+  },
+  dayTabCountText: {
+    color: colors.text.secondary,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  dayTabCountTextSelected: {
+    color: colors.primary,
   },
   dayHeader: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 6,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: uiTokens.space.md,
+    paddingHorizontal: uiTokens.space.xl,
+    paddingTop: uiTokens.space.lg,
+    paddingBottom: uiTokens.space.sm,
   },
-  dayHeaderLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: colors.text.primary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
+  dayHeaderCopy: {
+    flex: 1,
+    gap: uiTokens.space.xs,
   },
-  dayHeaderTheme: {
-    fontSize: 12,
-    fontWeight: '400',
-    color: colors.text.secondary,
-    textTransform: 'none',
+  dayHeaderControls: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: uiTokens.space.sm,
   },
-  tabLabel: {
-    fontSize: 12, // Slightly smaller font for mobile
-    fontWeight: '600',
-    color: colors.text.primary,
-    textAlign: 'center',
-    width: '100%',
-    overflow: 'hidden',
-    paddingHorizontal: 2, // Reduced padding
-    height: 16, // Reduced height
-    lineHeight: 14, // Adjusted line height
-  },
-  activeTabLabel: {
-    color: '#FFFFFF',
-  },
-  tabTheme: {
-    fontSize: 9, // Slightly smaller font for mobile
-    color: colors.text.secondary,
-    fontWeight: '500',
-    textAlign: 'center',
-    width: '100%',
-    height: 12, // Reduced height
-    lineHeight: 11,
-    marginBottom: 3, // Reduced margin
-    overflow: 'hidden',
-  },
-  activeTabTheme: {
-    color: 'rgba(255, 255, 255, 0.9)',
-  },
-  tabCount: {
-    fontSize: 9, // Slightly smaller font for mobile
-    color: colors.text.secondary,
-    fontWeight: '600',
-    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.05)',
-    paddingHorizontal: 4, // Reduced padding
-    paddingVertical: 1,
-    borderRadius: 4,
-    overflow: 'hidden',
-    marginTop: 2,
-    minWidth: 50, // Reduced minimum width
-    textAlign: 'center',
-    height: 14, // Reduced height
-    lineHeight: 12, // Adjusted line height
-  },
-  activeTabCount: {
-    color: 'rgba(255, 255, 255, 0.8)',
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-  },
-  agendaList: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-  },
-  agendaItem: {
-    backgroundColor: colors.background.paper,
-    borderRadius: 12,
-    marginBottom: 12,
-    shadowColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 2,
+  agendaModeSwitcher: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 2,
+    padding: 2,
     borderWidth: 1,
     borderColor: colors.divider,
-    overflow: 'hidden',
+    borderRadius: uiTokens.radius.input,
+    backgroundColor: colors.background.paper,
   },
-  agendaItemHeader: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 0,
+  agendaModeButton: {
+    width: 34,
+    height: 34,
   },
-  timeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  agendaModeButtonSelected: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
-  agendaTime: {
-    fontSize: 15,
+  dayHeaderLabel: {
+    fontSize: uiTokens.type.title,
     fontWeight: '700',
     color: colors.text.primary,
+    letterSpacing: -0.25,
   },
-  agendaTypeBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
+  dayHeaderTheme: {
+    fontSize: uiTokens.type.label,
+    fontWeight: '400',
+    color: colors.text.secondary,
+    lineHeight: 20,
   },
-  calendarMenuButton: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.16)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.28)',
+  agendaList: {
+    paddingHorizontal: uiTokens.space.xl,
+    paddingTop: uiTokens.space.sm,
   },
-  agendaTypeText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#fff',
-    letterSpacing: 0.5,
-  },
-  badgeContainer: {
+  agendaGridList: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
+    flexWrap: 'wrap',
+    gap: uiTokens.space.md,
   },
-  pastBadge: {
-    backgroundColor: 'rgba(128, 128, 128, 0.8)',
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    borderRadius: 4,
+  agendaGridCell: {
+    width: '48.8%',
   },
-  pastBadgeText: {
-    fontSize: 9,
+  agendaItem: {
+    borderLeftWidth: 3,
+    marginBottom: uiTokens.space.md,
+  },
+  agendaItemGrid: {
+    height: '100%',
+    marginBottom: 0,
+  },
+  agendaItemLayout: {
+    flexDirection: 'row',
+    gap: uiTokens.space.lg,
+  },
+  agendaTimeRail: {
+    borderRightWidth: 1,
+    borderRightColor: colors.divider,
+    flexShrink: 0,
+    gap: uiTokens.space.sm,
+    paddingRight: uiTokens.space.lg,
+    width: 94,
+  },
+  agendaItemLayoutGrid: {
+    flexDirection: 'column',
+    gap: uiTokens.space.md,
+  },
+  agendaTimeRailGrid: {
+    borderBottomWidth: 1,
+    borderBottomColor: colors.divider,
+    borderRightWidth: 0,
+    paddingBottom: uiTokens.space.sm,
+    paddingRight: 0,
+    width: '100%',
+  },
+  agendaTime: {
+    fontSize: uiTokens.type.caption,
     fontWeight: '700',
-    color: '#FFFFFF',
-    letterSpacing: 0.5,
+    color: colors.text.secondary,
+    lineHeight: 17,
   },
   agendaItemPast: {
-    opacity: 0.6,
-  },
-  agendaItemHeaderPast: {
-    opacity: 0.7,
+    opacity: 0.62,
   },
   agendaItemContent: {
-    padding: 16,
+    flex: 1,
   },
   agendaTitleRow: {
+    marginBottom: uiTokens.space.sm,
+  },
+  agendaTitleMeta: {
+    alignItems: 'center',
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 12,
+    flexWrap: 'wrap',
+    gap: uiTokens.space.xs,
+    width: '100%',
   },
   agendaTitle: {
-    fontSize: 16,
+    fontSize: uiTokens.type.body,
     fontWeight: '600',
     color: colors.text.primary,
     flex: 1,
     lineHeight: 22,
   },
-  actionButtons: {
+  agendaItemTools: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
-    marginTop: 16,
-    paddingTop: 14,
-    borderTopWidth: 1,
-    borderTopColor: colors.divider,
+    gap: uiTokens.space.xs,
+    flexWrap: 'wrap',
+    marginBottom: uiTokens.space.md,
   },
-  actionButton: {
-    flex: 1,
-    flexDirection: 'row',
+  agendaTool: {
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    minHeight: 38,
-    paddingHorizontal: 8,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
+    backgroundColor: colors.background.paper,
     borderColor: colors.divider,
-    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.04)' : colors.background.paper,
+    borderRadius: uiTokens.radius.pill,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: uiTokens.space.xs,
+    height: uiTokens.control.compactHeight,
+    justifyContent: 'center',
+    minWidth: uiTokens.control.compactHeight,
+    paddingHorizontal: 9,
+  },
+  agendaToolExpanded: {
+    borderColor: colors.primary,
+  },
+  agendaToolPressed: {
+    opacity: 0.72,
+  },
+  agendaToolLabel: {
+    color: colors.text.primary,
+    fontSize: uiTokens.type.caption,
+    fontWeight: '700',
+    maxWidth: 132,
   },
   calendarModalOverlay: {
     flex: 1,
@@ -2086,8 +2057,15 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   speakerChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    maxWidth: 200,
+    backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(7,17,30,0.04)',
+    borderColor: colors.divider,
+    borderRadius: uiTokens.radius.pill,
+    borderWidth: 1,
+    gap: 8,
+    maxWidth: 240,
+    minHeight: 44,
+    paddingHorizontal: 5,
+    paddingRight: uiTokens.space.sm,
   },
   agendaSpeakers: {
     fontSize: 13,
