@@ -33,14 +33,16 @@ services:
     <<: *worker
     restart: "no"
     entrypoint: ["bash", "-c"]
-    command: >-
-      ls -1 apps > sites/apps.txt;
-      bench set-config -g db_host frappe-db;
-      bench set-config -gp db_port 3306;
-      bench set-config -g redis_cache redis://frappe-redis-cache:6379;
-      bench set-config -g redis_queue redis://frappe-redis-queue:6379;
-      bench set-config -g redis_socketio redis://frappe-redis-queue:6379;
-      bench set-config -gp socketio_port 9000;
+    command:
+      - |-
+        set -Eeuo pipefail
+        ls -1 apps > sites/apps.txt
+        bench set-config -g db_host frappe-db
+        bench set-config -gp db_port 3306
+        bench set-config -g redis_cache redis://frappe-redis-cache:6379
+        bench set-config -g redis_queue redis://frappe-redis-queue:6379
+        bench set-config -g redis_socketio redis://frappe-redis-queue:6379
+        bench set-config -gp socketio_port 9000
   frappe-create-site:
     <<: *worker
     restart: "no"
@@ -49,12 +51,15 @@ services:
       frappe-configurator: {condition: service_completed_successfully}
     entrypoint: ["bash", "-c"]
     env_file: ../.env
-    command: >-
-      test -d "sites/$${FRAPPE_SITE_NAME}" ||
-      bench new-site "$${FRAPPE_SITE_NAME}" --mariadb-user-host-login-scope='%'
-      --admin-password "$${FRAPPE_ADMIN_PASSWORD}" --db-root-username root
-      --db-root-password "$${FRAPPE_DB_ROOT_PASSWORD}" --install-app helpdesk --set-default;
-      bench --site "$${FRAPPE_SITE_NAME}" enable-scheduler;
+    command:
+      - |-
+        set -Eeuo pipefail
+        if [[ ! -d "sites/$${FRAPPE_SITE_NAME}" ]]; then
+          bench new-site "$${FRAPPE_SITE_NAME}" --mariadb-user-host-login-scope='%' \
+            --admin-password "$${FRAPPE_ADMIN_PASSWORD}" --db-root-username root \
+            --db-root-password "$${FRAPPE_DB_ROOT_PASSWORD}" --install-app helpdesk --set-default
+        fi
+        bench --site "$${FRAPPE_SITE_NAME}" enable-scheduler
   frappe-backend:
     <<: *worker
     depends_on: {frappe-create-site: {condition: service_completed_successfully}}

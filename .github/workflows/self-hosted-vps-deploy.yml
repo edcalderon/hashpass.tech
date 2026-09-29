@@ -87,11 +87,11 @@ jobs:
 
       - name: Verify assumed AWS account
         env:
-          EXPECTED_AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+          EXPECTED_AWS_ACCOUNT_ID: ${{ vars.SELF_HOSTED_VPS_AWS_ACCOUNT_ID }}
         run: |
           set -euo pipefail
           [[ -n "$EXPECTED_AWS_ACCOUNT_ID" ]] || {
-            echo '::error::AWS_ACCOUNT_ID is not configured.'
+            echo '::error::SELF_HOSTED_VPS_AWS_ACCOUNT_ID is not configured.'
             exit 1
           }
           echo "::add-mask::${EXPECTED_AWS_ACCOUNT_ID}"
@@ -105,6 +105,23 @@ jobs:
             echo '::error::The assumed AWS account does not match the configured deployment target.'
             exit 1
           }
+
+      - name: Wait for the SSM managed node
+        run: |
+          set -euo pipefail
+          for attempt in {1..12}; do
+            ping_status="$(aws ssm describe-instance-information \
+              --region "$AWS_REGION" \
+              --filters "Key=InstanceIds,Values=${SSM_MANAGED_INSTANCE_ID}" \
+              --query 'InstanceInformationList[0].PingStatus' \
+              --output text)"
+            if [[ "$ping_status" == Online ]]; then
+              exit 0
+            fi
+            [[ "$attempt" -lt 12 ]] && sleep 10
+          done
+          echo '::error::The SSM managed VPS did not become online before deployment.'
+          exit 1
 
       - name: Send exact-revision deployment through SSM
         id: dispatch

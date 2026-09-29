@@ -7,6 +7,10 @@ const workflowPath = path.resolve(
   __dirname,
   '../../../../.github/workflows/self-hosted-vps-deploy.yml',
 );
+const frappeComposePath = path.resolve(
+  __dirname,
+  '../../../../ops/self-hosted/frappe/compose.yaml',
+);
 
 describe('self-hosted VPS deployment workflow', () => {
   it('verifies the assumed AWS account against the private target before SSM deployment', () => {
@@ -29,7 +33,7 @@ describe('self-hosted VPS deployment workflow', () => {
       identityStepEnd === -1 ? workflow.length : identityStepEnd,
     );
     const targetEnvironment = identityStep.match(
-      /^\s*([A-Z][A-Z0-9_]*)\s*:\s*\$\{\{\s*vars\.AWS_ACCOUNT_ID\s*\}\}\s*$/m,
+      /^\s*([A-Z][A-Z0-9_]*)\s*:\s*\$\{\{\s*vars\.SELF_HOSTED_VPS_AWS_ACCOUNT_ID\s*\}\}\s*$/m,
     );
     const callerIdentity = identityStep.match(
       /([A-Za-z_][A-Za-z0-9_]*)\s*=\s*["']?\$\(aws sts get-caller-identity\s+--query\s+['"]?Account['"]?\s+--output\s+text[^)]*\)["']?/,
@@ -48,6 +52,44 @@ describe('self-hosted VPS deployment workflow', () => {
       ),
     );
     expect(workflow).not.toMatch(/\b\d{12}\b/);
+    expect(identityStep).not.toContain('vars.AWS_ACCOUNT_ID');
+  });
+
+  it('defines a dedicated least-privilege GitHub OIDC role for the production VPS node', () => {
+    const terraformRoot = path.resolve(
+      __dirname,
+      '../../../../packages/infra/terraform/stacks/hashpass-vps-deploy-role',
+    );
+    const mainPath = path.join(terraformRoot, 'main.tf');
+    const variablesPath = path.join(terraformRoot, 'variables.tf');
+    const outputsPath = path.join(terraformRoot, 'outputs.tf');
+
+    for (const file of [mainPath, variablesPath, outputsPath]) {
+      expect(fs.existsSync(file)).toBe(true);
+    }
+    if (![mainPath, variablesPath, outputsPath].every(fs.existsSync)) return;
+
+    const main = fs.readFileSync(mainPath, 'utf8');
+    const variables = fs.readFileSync(variablesPath, 'utf8');
+    const outputs = fs.readFileSync(outputsPath, 'utf8');
+
+    expect(main).toContain('token.actions.githubusercontent.com');
+    expect(main).toContain('repo:${var.github_repository}:environment:${var.github_environment}');
+    expect(variables).toMatch(
+      /variable "github_repository"[\s\S]*?default\s*=\s*"hashpass-tech\/hashpass\.tech"/,
+    );
+    expect(variables).toMatch(
+      /variable "github_environment"[\s\S]*?default\s*=\s*"production"/,
+    );
+    expect(main).toContain('ssm:SendCommand');
+    expect(main).toContain('ssm:GetCommandInvocation');
+    expect(main).toContain('managed-instance/${var.ssm_managed_instance_id}');
+    expect(main).toContain('document/AWS-RunShellScript');
+    expect(main).not.toContain('ssm:*');
+    expect(main).not.toMatch(/\bmi-[0-9a-f]{8,}\b/i);
+    expect(main).not.toMatch(/\b\d{12}\b/);
+    expect(variables).toContain('variable "ssm_managed_instance_id"');
+    expect(outputs).toContain('output "github_actions_role_arn"');
   });
 
   it('deploys from trusted triggers with OIDC, sanitized evidence, health checks, and recoverable alerts', () => {
@@ -125,5 +167,19 @@ describe('self-hosted VPS deployment workflow', () => {
     expect(dispatchStep).toMatch(/--exclude=(?:['"])?\*\.env(?:['"])?/);
     expect(dispatchStep).toMatch(/--exclude=(?:['"])?secrets\/(?:['"])?/);
     expect(dispatchStep).toMatch(/MCP_GATEWAY_BUILD_CONTEXT=.*release_dir/);
+  });
+
+  it('passes each Frappe bootstrap script to bash as one command argument', () => {
+    const compose = fs.readFileSync(frappeComposePath, 'utf8');
+
+    for (const service of ['frappe-configurator', 'frappe-create-site']) {
+      const serviceStart = compose.indexOf(`  ${service}:`);
+      const nextService = compose.indexOf('\n  frappe-', serviceStart + 3);
+      const block = compose.slice(serviceStart, nextService === -1 ? compose.length : nextService);
+
+      expect(serviceStart).toBeGreaterThan(-1);
+      expect(block).toContain('entrypoint: ["bash", "-c"]');
+      expect(block).toMatch(/command:\s*\n\s+- \|-\s*\n/);
+    }
   });
 });
