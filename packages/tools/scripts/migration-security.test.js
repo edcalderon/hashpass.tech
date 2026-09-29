@@ -175,10 +175,20 @@ describe('Better Auth MCP OAuth migration plan', () => {
       'better-auth-development': [
         'BETTER_AUTH_DATABASE_URL_DEV',
         'BETTER_AUTH_DATABASE_URL',
+        'SUPABASE_DB_URL_DEV',
+        'DATABASE_URL_DEV',
+        'DEV_DB_URL',
+        'SUPABASE_DB_URL',
+        'DATABASE_URL',
       ],
       'better-auth-production': [
         'BETTER_AUTH_DATABASE_URL_PROD',
         'BETTER_AUTH_DATABASE_URL',
+        'SUPABASE_DB_URL_PROD',
+        'DATABASE_URL_PROD',
+        'PROD_DB_URL',
+        'SUPABASE_DB_URL',
+        'DATABASE_URL',
       ],
       'core-development': [
         'SUPABASE_DB_URL_DEV',

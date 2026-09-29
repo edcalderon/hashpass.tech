@@ -75,7 +75,7 @@ import {
   type ResolvedEventBannerSlide,
 } from "../../lib/event-banners";
 import { getEventBannerCtaLayout } from "../../lib/banner-cta";
-import EventBannerBackgroundVideo from "../EventBannerBackgroundVideo";
+import EventHeroBackground from "./EventHeroBackground";
 
 interface ExplorerProps {
   events: EventInfo[];
@@ -124,6 +124,7 @@ const toExplorerEvent = (event: EventInfo): ExplorerEvent => ({
     event.tour?.city?.toLocaleLowerCase().replace(/[^a-z]+/g, "-") || "all",
   series: event.series || (event.id === "bsl" ? "BSL On Tour" : "Summit"),
   continent: event.geo?.continent,
+  tourHubEventId: event.tour?.hubEventId,
   color: event.color,
   heroVideo: event.heroVideo,
   heroPoster: event.heroPoster,
@@ -605,10 +606,10 @@ export default function Explorer({
       const heroSlide = selectedHeroSlide || selectedHeroSlides[0];
       if (!heroSlide) return null;
       const localizedHeroSlide = localizeEventBannerSlide(heroSlide, translate);
-      const imageSource =
+      const fallbackImage =
         heroSlide.media.type === "image"
-          ? resolveEventImageSource(heroSlide.media.url)
-          : resolveEventImageSource(selectedEvent.heroPoster || selectedEvent.image);
+          ? heroSlide.media.url
+          : selectedEvent.heroPoster || selectedEvent.image;
 
       return (
         <Pressable
@@ -622,30 +623,18 @@ export default function Explorer({
           onPressIn={selectedHeroSlider.pause}
           onPressOut={selectedHeroSlider.resume}
         >
-          {imageSource ? (
-            <Image
-              source={imageSource}
-              style={styles.heroBackgroundMedia}
-              resizeMode="cover"
-              accessibilityElementsHidden
-              importantForAccessibility="no-hide-descendants"
-            />
-          ) : null}
-          {heroSlide.media.type === "video" ? (
-            <EventBannerBackgroundVideo
-              source={heroSlide.media.url}
-              loadingLogo={selectedEvent.branding?.logo || selectedEvent.image}
-              preferBundledSource={selectedEvent.id === "criptolatinfest"}
-              showLoadingIndicator={!imageSource}
-              loadingLabel={translate(
-                "explore.rework.loadingEventFilm",
-                "Loading event film",
-              )}
-            />
-          ) : null}
-          {!imageSource && (
-            <View style={styles.heroTexture} />
-          )}
+          <EventHeroBackground
+            fallbackImage={fallbackImage}
+            videoSource={heroSlide.media.type === "video" ? heroSlide.media.url : undefined}
+            loadingLogo={selectedEvent.branding?.logo || selectedEvent.image}
+            preferBundledSource={selectedEvent.id === "criptolatinfest"}
+            loadingLabel={translate(
+              "explore.rework.loadingEventFilm",
+              "Loading event film",
+            )}
+            mediaStyle={styles.heroBackgroundMedia}
+            textureStyle={styles.heroTexture}
+          />
           <View style={styles.heroScrim} />
           <View style={styles.heroContent}>
             <View style={styles.heroEyebrow}>
@@ -710,9 +699,6 @@ export default function Explorer({
       const [singleTenantSlide] = getExplorerHeroSlides([
         toExplorerEvent(heroEvent),
       ]);
-      const imageSource = resolveEventImageSource(
-        singleTenantSlide?.fallbackImage,
-      );
 
       return (
         <View
@@ -721,28 +707,22 @@ export default function Explorer({
             { backgroundColor: heroEvent.color || "#18212D" },
           ]}
         >
-          {imageSource ? (
-            <Image
-              source={imageSource}
-              style={styles.heroBackgroundMedia}
-              resizeMode="cover"
-              accessibilityElementsHidden
-              importantForAccessibility="no-hide-descendants"
-            />
-          ) : null}
-          {singleTenantSlide?.media?.type === "video" ? (
-            <EventBannerBackgroundVideo
-              source={singleTenantSlide.media.url}
-              loadingLogo={heroEvent.branding?.logo || heroEvent.image}
-              preferBundledSource={heroEvent.id === "criptolatinfest"}
-              showLoadingIndicator={!imageSource}
-              loadingLabel={translate(
-                "explore.rework.loadingEventFilm",
-                "Loading event film",
-              )}
-            />
-          ) : null}
-          {!imageSource && <View style={styles.heroTexture} />}
+          <EventHeroBackground
+            fallbackImage={singleTenantSlide?.fallbackImage}
+            videoSource={
+              singleTenantSlide?.media?.type === "video"
+                ? singleTenantSlide.media.url
+                : undefined
+            }
+            loadingLogo={heroEvent.branding?.logo || heroEvent.image}
+            preferBundledSource={heroEvent.id === "criptolatinfest"}
+            loadingLabel={translate(
+              "explore.rework.loadingEventFilm",
+              "Loading event film",
+            )}
+            mediaStyle={styles.heroBackgroundMedia}
+            textureStyle={styles.heroTexture}
+          />
           <View style={styles.heroScrim} />
           <View style={styles.heroContent}>
             <View style={styles.heroEyebrow}>
@@ -764,7 +744,6 @@ export default function Explorer({
     const globalEvent = events.find(
       (event) => event.id === globalHeroSlide.eventId,
     );
-    const imageSource = resolveEventImageSource(globalHeroSlide.fallbackImage);
 
     return (
       <Pressable
@@ -775,28 +754,22 @@ export default function Explorer({
         onPressIn={defaultHeroSlider.pause}
         onPressOut={defaultHeroSlider.resume}
       >
-        {imageSource ? (
-          <Image
-            source={imageSource}
-            style={styles.heroBackgroundMedia}
-            resizeMode="cover"
-            accessibilityElementsHidden
-            importantForAccessibility="no-hide-descendants"
-          />
-        ) : null}
-        {globalHeroSlide.media?.type === "video" ? (
-          <EventBannerBackgroundVideo
-            source={globalHeroSlide.media.url}
-            loadingLogo={globalEvent?.branding?.logo || globalHeroSlide.fallbackImage}
-            preferBundledSource={globalHeroSlide.eventId === "criptolatinfest"}
-            showLoadingIndicator={!imageSource}
-            loadingLabel={translate(
-              "explore.rework.loadingEventFilm",
-              "Loading event film",
-            )}
-          />
-        ) : null}
-        {!imageSource && <View style={styles.heroTexture} />}
+        <EventHeroBackground
+          fallbackImage={globalHeroSlide.fallbackImage}
+          videoSource={
+            globalHeroSlide.media?.type === "video"
+              ? globalHeroSlide.media.url
+              : undefined
+          }
+          loadingLogo={globalEvent?.branding?.logo || globalHeroSlide.fallbackImage}
+          preferBundledSource={globalHeroSlide.eventId === "criptolatinfest"}
+          loadingLabel={translate(
+            "explore.rework.loadingEventFilm",
+            "Loading event film",
+          )}
+          mediaStyle={styles.heroBackgroundMedia}
+          textureStyle={styles.heroTexture}
+        />
         <View style={styles.heroScrim} />
         <View style={styles.heroContent}>
           <View style={styles.heroEyebrow}>
@@ -808,20 +781,22 @@ export default function Explorer({
           <Text style={styles.heroTitle}>{globalHeroSlide.title}</Text>
           <Text style={styles.heroSubtitle}>{globalHeroSlide.subtitle}</Text>
         </View>
-        <TouchableOpacity
-          style={[
-            styles.heroAction,
-            getEventBannerCtaLayout(undefined, {
-              bottom: EXPLORER_HERO_LAYOUT.progressBottomInset + 12,
-            }),
-          ]}
-          onPress={() => handleSelectedHeroCta(globalHeroSlide.route)}
-          accessibilityRole="button"
-        >
-          <Text style={styles.heroActionText}>
-            {translate("explore.rework.exploreEvent", "Explore event")}
-          </Text>
-        </TouchableOpacity>
+        {globalHeroSlide.route ? (
+          <TouchableOpacity
+            style={[
+              styles.heroAction,
+              getEventBannerCtaLayout(undefined, {
+                bottom: EXPLORER_HERO_LAYOUT.progressBottomInset + 12,
+              }),
+            ]}
+            onPress={() => handleSelectedHeroCta(globalHeroSlide.route)}
+            accessibilityRole="button"
+          >
+            <Text style={styles.heroActionText}>
+              {translate("explore.rework.exploreEvent", "Explore event")}
+            </Text>
+          </TouchableOpacity>
+        ) : null}
         <SliderProgressBar
           count={globalHeroSlides.length}
           activeIndex={heroIndex}

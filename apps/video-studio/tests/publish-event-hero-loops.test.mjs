@@ -19,8 +19,8 @@ test('prints the reviewed CDN publication plan without invoking AWS', async (t) 
   const output = path.join(fixture, 'out', 'event-heroes');
   await mkdir(path.join(fixture, 'src', 'content'), {recursive: true});
   await mkdir(path.join(output, 'cbweek2026'), {recursive: true});
-  await writeFile(path.join(output, 'cbweek2026', 'hashpass-event-hero-v1.mp4'), 'video');
-  await writeFile(path.join(output, 'cbweek2026', 'hashpass-event-hero-v1.jpg'), 'poster');
+  await writeFile(path.join(output, 'cbweek2026', 'hashpass-event-hero-v3.mp4'), 'video');
+  await writeFile(path.join(output, 'cbweek2026', 'hashpass-event-hero-v3.jpg'), 'poster');
   await writeFile(
     path.join(fixture, 'src', 'content', 'event-hero-specs.json'),
     JSON.stringify({
@@ -55,7 +55,7 @@ test('prints the reviewed CDN publication plan without invoking AWS', async (t) 
   assert.equal(result.status, 0, result.stderr);
   const outputText = `${result.stdout}${result.stderr}`;
   assert.match(outputText, /Dry run only/);
-  assert.match(outputText, /events\/cbweek2026\/branding\/hashpass-event-hero-v1\.mp4/);
+  assert.match(outputText, /events\/cbweek2026\/branding\/hashpass-event-hero-v3\.mp4/);
 });
 
 test('pins hero uploads to the verified production AWS profile', () => {
@@ -77,14 +77,14 @@ test('pins hero uploads to the verified production AWS profile', () => {
 test('uses an atomic non-overwrite request for immutable hero objects', () => {
   const args = createImmutableHeroUploadArgs({
     localPath: '/tmp/cbweek.mp4',
-    objectKey: 'events/cbweek2026/branding/hashpass-event-hero-v1.mp4',
+    objectKey: 'events/cbweek2026/branding/hashpass-event-hero-v3.mp4',
   }, 'hashpass-production-event-media-952191196420-us-east-2', 'us-east-2');
 
   assert.deepEqual(args, [
     '--profile', PRODUCTION_AWS_PROFILE,
     's3api', 'put-object',
     '--bucket', 'hashpass-production-event-media-952191196420-us-east-2',
-    '--key', 'events/cbweek2026/branding/hashpass-event-hero-v1.mp4',
+    '--key', 'events/cbweek2026/branding/hashpass-event-hero-v3.mp4',
     '--body', '/tmp/cbweek.mp4',
     '--region', 'us-east-2',
     '--content-type', 'video/mp4',
@@ -96,7 +96,7 @@ test('uses an atomic non-overwrite request for immutable hero objects', () => {
 test('marks hero posters with the image content type', () => {
   const args = createImmutableHeroUploadArgs({
     localPath: '/tmp/cbweek.jpg',
-    objectKey: 'events/cbweek2026/branding/hashpass-event-hero-v1.jpg',
+    objectKey: 'events/cbweek2026/branding/hashpass-event-hero-v3.jpg',
     contentType: 'image/jpeg',
   }, 'hashpass-production-event-media-952191196420-us-east-2', 'us-east-2');
 

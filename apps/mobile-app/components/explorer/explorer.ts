@@ -111,6 +111,8 @@ export interface ExplorerEvent {
   cityKey?: string;
   series?: string;
   continent?: EventContinent;
+  /** Event-family key: BSL's hub and each of its stops share one chapter. */
+  tourHubEventId?: string;
   hasPass?: boolean;
   color?: string;
   tourRole?: "hub" | "stop" | "archive" | string;
@@ -124,12 +126,12 @@ export interface ExplorerEvent {
 
 export interface ExplorerHeroSlide {
   id: string;
-  eventId: string;
+  eventId?: string;
   eyebrow: string;
   title: string;
   subtitle: string;
   backgroundColor: string;
-  route: string;
+  route?: string;
   media?: { type: "image" | "video"; url: string };
   /** Render underneath video so a transport or decode failure stays useful. */
   fallbackImage?: string;
@@ -142,27 +144,73 @@ export interface ExplorerHeroSlide {
  */
 export const getExplorerHeroSlides = (
   events: ExplorerEvent[],
-): ExplorerHeroSlide[] =>
-  events.map((event) => {
-    const fallbackImage = event.heroPoster || event.image;
-    const media = event.heroVideo
-      ? { type: "video" as const, url: event.heroVideo }
-      : fallbackImage
-        ? { type: "image" as const, url: fallbackImage }
-        : undefined;
+  now: number = Date.now(),
+): ExplorerHeroSlide[] => {
+  // Past events stay in the catalogue for discovery and history, but never
+  // occupy the main dashboard hero's limited attention.
+  const eventSlides = events
+    .filter((event) => getExplorerEventStatus(event, now) !== "past")
+    .map((event) => {
+      const fallbackImage = event.heroPoster || event.image;
+      const media = event.heroVideo
+        ? { type: "video" as const, url: event.heroVideo }
+        : fallbackImage
+          ? { type: "image" as const, url: fallbackImage }
+          : undefined;
 
-    return {
-      id: `${event.id}-default`,
-      eventId: event.id,
-      eyebrow: event.shortName || event.series || "HASHPASS EVENT",
-      title: event.title,
-      subtitle: event.eventDateString || event.subtitle || "Coming soon",
-      backgroundColor: event.color || "#18212D",
-      route: `/events/${event.id}/home`,
-      media,
-      fallbackImage,
-    };
-  });
+      return {
+        familyId: event.tourHubEventId || event.id,
+        slide: {
+          id: `${event.id}-default`,
+          eventId: event.id,
+          eyebrow: event.shortName || event.series || "HASHPASS EVENT",
+          title: event.title,
+          subtitle: event.eventDateString || event.subtitle || "Coming soon",
+          backgroundColor: event.color || "#18212D",
+          route: `/events/${event.id}/home`,
+          media,
+          fallbackImage,
+        },
+      };
+    });
+
+  // These intentional discovery cards make the Explorer useful even when
+  // there are no upcoming events, without promoting an archived event.
+  const discoverySlides: ExplorerHeroSlide[] = [
+    {
+      id: "hashpass-events-discovery",
+      eyebrow: "HASHPASS EVENTS",
+      title: "Discover what is next",
+      subtitle: "One explorer for every summit, stop, and community moment.",
+      backgroundColor: "#5552E8",
+    },
+    {
+      id: "hashpass-partners-discovery",
+      eyebrow: "OFFICIAL PARTNERS",
+      title: "Built with the people moving the ecosystem forward.",
+      subtitle: "Sponsors and community partners make every stop possible.",
+      backgroundColor: "#18212D",
+    },
+  ];
+
+  // Use the general cards as chapter breaks between event families, rather
+  // than splitting a hub from the stops that belong to that same event.
+  const familySlides = Array.from(
+    eventSlides.reduce((families, entry) => {
+      const slides = families.get(entry.familyId) || [];
+      slides.push(entry.slide);
+      families.set(entry.familyId, slides);
+      return families;
+    }, new Map<string, ExplorerHeroSlide[]>()),
+    ([, slides]) => slides,
+  );
+
+  return familySlides.flatMap((slides, index) =>
+    index < discoverySlides.length
+      ? [...slides, discoverySlides[index]]
+      : slides,
+  ).concat(familySlides.length ? [] : discoverySlides);
+};
 
 export interface ExplorerFilters {
   query?: string;

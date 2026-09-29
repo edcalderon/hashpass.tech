@@ -36,11 +36,32 @@ test('creates immutable, event-scoped CDN destinations for every approved hero l
     [
       {
         eventId: 'cbweek2026',
-        localPath: '/tmp/event-hero-output/cbweek2026/hashpass-event-hero-v1.mp4',
-        objectKey: 'events/cbweek2026/branding/hashpass-event-hero-v1.mp4',
-        publicUrl: 'https://media.example.test/events/cbweek2026/branding/hashpass-event-hero-v1.mp4',
+        localPath: '/tmp/event-hero-output/cbweek2026/hashpass-event-hero-v3.mp4',
+        objectKey: 'events/cbweek2026/branding/hashpass-event-hero-v3.mp4',
+        publicUrl: 'https://media.example.test/events/cbweek2026/branding/hashpass-event-hero-v3.mp4',
       },
     ],
+  );
+  assert.equal(heroes[0].visualTheme, 'city-columns');
+});
+
+test('rejects an unreviewed visual language instead of silently using a generic theme', () => {
+  assert.throws(
+    () => validateEventHeroManifest({
+      version: 1,
+      heroes: [{
+        id: 'hash-poker',
+        compositionId: 'EventHeroHashPoker',
+        eventLogo: {target: 'event-heroes/hash-poker/event-logo.webp'},
+        title: 'Hash Poker Room',
+        city: 'Medellín',
+        country: 'Colombia',
+        venue: 'Hash House Club',
+        accentColor: '#E53B52',
+        visualTheme: 'generic-tech-lines',
+      }],
+    }),
+    /visualTheme is invalid/,
   );
 });
 
@@ -65,9 +86,9 @@ test('creates an event-scoped poster beside every hero loop', () => {
   }), [
     {
       eventId: 'colombia2026',
-      localPath: '/tmp/event-hero-output/colombia2026/hashpass-event-hero-v1.jpg',
-      objectKey: 'events/colombia2026/branding/hashpass-event-hero-v1.jpg',
-      publicUrl: 'https://media.example.test/events/colombia2026/branding/hashpass-event-hero-v1.jpg',
+      localPath: '/tmp/event-hero-output/colombia2026/hashpass-event-hero-v3.jpg',
+      objectKey: 'events/colombia2026/branding/hashpass-event-hero-v3.jpg',
+      publicUrl: 'https://media.example.test/events/colombia2026/branding/hashpass-event-hero-v3.jpg',
       contentType: 'image/jpeg',
     },
   ]);

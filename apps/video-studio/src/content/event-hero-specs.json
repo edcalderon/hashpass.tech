@@ -74,6 +74,7 @@
       "country": "Colombia",
       "venue": "Hash House Club",
       "accentColor": "#E53B52",
+      "visualTheme": "poker-table",
       "eventLogo": {
         "source": "../mobile-app/assets/logos/hash-poker/hash-poker-room-logo.webp",
         "target": "event-heroes/hash-poker/event-logo.webp"

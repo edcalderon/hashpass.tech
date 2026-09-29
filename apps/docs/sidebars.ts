@@ -95,6 +95,11 @@ const sidebars = {
     },
     {
       type: 'category',
+      label: 'Authentication',
+      items: ['auth/plane-mcp-authorization'],
+    },
+    {
+      type: 'category',
       label: 'Legal',
       items: [
         'legal/terms-of-service',

@@ -80,7 +80,7 @@ describe("explorer rework behavior", () => {
           subtitle: "No media",
         },
       ]),
-    ).toEqual([
+    ).toEqual(expect.arrayContaining([
       expect.objectContaining({
         id: "colombia2026-default",
         eventId: "colombia2026",
@@ -105,6 +105,56 @@ describe("explorer rework behavior", () => {
         media: undefined,
         fallbackImage: undefined,
       }),
+      expect.objectContaining({
+        id: "hashpass-events-discovery",
+        title: "Discover what is next",
+      }),
+      expect.objectContaining({
+        id: "hashpass-partners-discovery",
+        title: "Built with the people moving the ecosystem forward.",
+      }),
+    ]));
+
+    expect(
+      getExplorerHeroSlides([
+        { id: "bsl", title: "BSL", tourHubEventId: "bsl" },
+        { id: "colombia2026", title: "BSL Colombia", tourHubEventId: "bsl" },
+        { id: "hash-poker", title: "Hash Poker" },
+        { id: "cbweek2026", title: "CBWeek" },
+      ]).map((slide) => slide.id),
+    ).toEqual([
+      "bsl-default",
+      "colombia2026-default",
+      "hashpass-events-discovery",
+      "hash-poker-default",
+      "hashpass-partners-discovery",
+      "cbweek2026-default",
+    ]);
+  });
+
+  it("keeps past events in Explorer cards but out of the limited hero carousel", () => {
+    const slides = getExplorerHeroSlides(
+      [
+        {
+          id: "peru2026",
+          title: "Blockchain Summit Latam Perú 2026",
+          tourRole: "stop",
+          eventEndDate: "2026-05-15T23:59:59-05:00",
+        },
+        {
+          id: "colombia2026",
+          title: "Blockchain Summit Latam Colombia 2026",
+          tourRole: "stop",
+          eventStartDate: "2026-11-05T09:00:00-05:00",
+        },
+      ],
+      Date.parse("2026-09-29T12:00:00Z"),
+    );
+
+    expect(slides.map((slide) => slide.eventId)).toEqual([
+      "colombia2026",
+      undefined,
+      undefined,
     ]);
   });
 

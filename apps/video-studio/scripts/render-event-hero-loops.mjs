@@ -37,8 +37,8 @@ async function main() {
   const manifest = JSON.parse(await readFile(path.join(studio, 'src', 'content', 'event-hero-specs.json'), 'utf8'));
   const heroes = validateEventHeroManifest(manifest);
   for (const hero of heroes) {
-    const destination = path.join(output, hero.id, 'hashpass-event-hero-v1.mp4');
-    const poster = path.join(output, hero.id, 'hashpass-event-hero-v1.jpg');
+    const destination = path.join(output, hero.id, 'hashpass-event-hero-v3.mp4');
+    const poster = path.join(output, hero.id, 'hashpass-event-hero-v3.jpg');
     await mkdir(path.dirname(destination), {recursive: true});
     console.log(`Rendering ${hero.id} hero loop...`);
     run('npx', ['remotion', 'render', 'src/index.ts', hero.compositionId, destination], {cwd: studio});

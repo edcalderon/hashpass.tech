@@ -38,9 +38,9 @@ const CBWEEK2026_SPEAKER_IMAGE_BASE =
 const EVENT_MEDIA_BASE =
   "https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events";
 const eventHeroVideo = (eventId: string): string =>
-  `${EVENT_MEDIA_BASE}/${eventId}/branding/hashpass-event-hero-v1.mp4`;
+  `${EVENT_MEDIA_BASE}/${eventId}/branding/hashpass-event-hero-v3.mp4`;
 const eventHeroPoster = (eventId: string): string =>
-  `${EVENT_MEDIA_BASE}/${eventId}/branding/hashpass-event-hero-v1.jpg`;
+  `${EVENT_MEDIA_BASE}/${eventId}/branding/hashpass-event-hero-v3.jpg`;
 
 // CBWeek has not announced its 2026 speakers. These are the people explicitly
 // listed by CBWeek as speakers from past editions; keeping them in the

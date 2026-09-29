@@ -81,7 +81,7 @@ export default function McpConsentScreen() {
       setError(reason instanceof Error ? reason.message : 'Authorization failed.');
       setBusy(false);
     }
-  }, [authClient, authorizationQuery]);
+  }, [authClient]);
 
   const displayedScopes = details?.scopes.filter((scope) => scopeLabels[scope]) || [];
   const clientName = details?.clientName || 'Unnamed OAuth client';

@@ -62,10 +62,10 @@ describe("event tenant detection", () => {
     ]);
     for (const eventId of events) {
       expect(EVENTS[eventId]?.heroVideo).toContain(
-        `events/${eventId}/branding/hashpass-event-hero-v1.mp4`,
+        `events/${eventId}/branding/hashpass-event-hero-v3.mp4`,
       );
       expect(EVENTS[eventId]?.heroPoster).toContain(
-        `events/${eventId}/branding/hashpass-event-hero-v1.jpg`,
+        `events/${eventId}/branding/hashpass-event-hero-v3.jpg`,
       );
     }
   });
@@ -151,11 +151,11 @@ describe("event tenant detection", () => {
     expect(EVENTS.cbweek2026.bannerSlides?.[0]).toMatchObject({
       media: {
         type: "video",
-        url: expect.stringContaining("/cbweek2026/branding/hashpass-event-hero-v1.mp4"),
+        url: expect.stringContaining("/cbweek2026/branding/hashpass-event-hero-v3.mp4"),
       },
     });
     expect(EVENTS.cbweek2026.heroPoster).toContain(
-      "/cbweek2026/branding/hashpass-event-hero-v1.jpg",
+      "/cbweek2026/branding/hashpass-event-hero-v3.jpg",
     );
   });
 

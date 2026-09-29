@@ -24,7 +24,12 @@
       "inheritDefaultGroups": false,
       "databaseUrlEnv": [
         "BETTER_AUTH_DATABASE_URL_DEV",
-        "BETTER_AUTH_DATABASE_URL"
+        "BETTER_AUTH_DATABASE_URL",
+        "SUPABASE_DB_URL_DEV",
+        "DATABASE_URL_DEV",
+        "DEV_DB_URL",
+        "SUPABASE_DB_URL",
+        "DATABASE_URL"
       ]
     },
     "better-auth-production": {
@@ -33,7 +38,12 @@
       "inheritDefaultGroups": false,
       "databaseUrlEnv": [
         "BETTER_AUTH_DATABASE_URL_PROD",
-        "BETTER_AUTH_DATABASE_URL"
+        "BETTER_AUTH_DATABASE_URL",
+        "SUPABASE_DB_URL_PROD",
+        "DATABASE_URL_PROD",
+        "PROD_DB_URL",
+        "SUPABASE_DB_URL",
+        "DATABASE_URL"
       ]
     },
     "bsl-development": {
@@ -108,7 +118,8 @@
       "db/migrations/V106__better_auth_mcp_oauth.sql"
     ],
     "event-scoped-speakers": [
-      "db/migrations/V106__scope_legacy_speakers_by_event.sql"
+      "db/migrations/V107__scope_legacy_speakers_by_event.sql",
+      "db/migrations/V108__enforce_event_scoped_speaker_admin_roles.sql"
     ],
     "event-ingestion": [
       "db/migrations/V082__database_event_source_ingestion.sql"

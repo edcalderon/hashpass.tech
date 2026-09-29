@@ -22,6 +22,93 @@ const seededUnit = (source: string, index: number): number => {
   return ((hash >>> 0) % 1000) / 1000;
 };
 
+const PokerTable: React.FC<{
+  accentColor: string;
+  cycle: number;
+}> = ({accentColor, cycle}) => {
+  const chipPulse = interpolate(Math.sin(cycle), [-1, 1], [0.9, 1.08]);
+  const cardLift = Math.sin(cycle) * 18;
+
+  return (
+    <>
+      <AbsoluteFill
+        style={{
+          background: `radial-gradient(ellipse at 64% 58%, ${hexToRgba(accentColor, 0.38)} 0%, rgba(50, 6, 19, 0.8) 38%, ${MIDNIGHT} 75%)`,
+        }}
+      />
+      <div
+        style={{
+          background: 'radial-gradient(ellipse, rgba(79, 10, 27, 0.98) 0%, rgba(42, 5, 18, 0.96) 63%, rgba(6, 17, 31, 0.98) 100%)',
+          border: `4px solid ${hexToRgba(accentColor, 0.62)}`,
+          borderRadius: '50%',
+          boxShadow: `0 0 0 24px rgba(17, 5, 12, 0.48), 0 36px 90px rgba(0, 0, 0, 0.5), inset 0 0 72px ${hexToRgba(accentColor, 0.22)}`,
+          height: 760,
+          left: '38%',
+          position: 'absolute',
+          top: '49%',
+          transform: 'translate(-50%, -50%) rotate(-11deg)',
+          width: 1240,
+        }}
+      />
+      {[0, 1, 2, 3, 4].map((index) => {
+        const angle = -20 + index * 13;
+        const drift = Math.sin(cycle + index * 0.82) * 15;
+        return (
+          <div
+            key={index}
+            style={{
+              alignItems: 'center',
+              background: 'linear-gradient(135deg, #FFF9EF 0%, #E7D8BF 100%)',
+              border: `2px solid ${hexToRgba(accentColor, 0.65)}`,
+              borderRadius: 15,
+              boxShadow: '0 18px 34px rgba(0, 0, 0, 0.34)',
+              color: accentColor,
+              display: 'flex',
+              fontFamily: 'Georgia, serif',
+              fontSize: 68,
+              fontWeight: 700,
+              height: 210,
+              justifyContent: 'center',
+              left: 940 + index * 84,
+              position: 'absolute',
+              top: 340 + cardLift + drift,
+              transform: `rotate(${angle}deg)`,
+              width: 142,
+            }}
+          >
+            {index % 2 === 0 ? '♠' : '♦'}
+          </div>
+        );
+      })}
+      {[0, 1, 2].map((index) => {
+        const orbit = cycle + index * ((Math.PI * 2) / 3);
+        return (
+          <div
+            key={index}
+            style={{
+              alignItems: 'center',
+              background: `repeating-conic-gradient(${accentColor} 0deg 18deg, #F7E6C8 18deg 36deg)`,
+              border: '8px solid #F7E6C8',
+              borderRadius: '50%',
+              boxShadow: `0 12px 30px rgba(0, 0, 0, 0.4), inset 0 0 0 6px ${hexToRgba(accentColor, 0.72)}`,
+              display: 'flex',
+              height: 104,
+              justifyContent: 'center',
+              left: 1240 + Math.cos(orbit) * 120,
+              position: 'absolute',
+              top: 610 + Math.sin(orbit) * 62,
+              transform: `scale(${chipPulse})`,
+              width: 104,
+            }}
+          >
+            <div style={{background: '#7D1024', borderRadius: '50%', height: 48, width: 48}} />
+          </div>
+        );
+      })}
+    </>
+  );
+};
+
 /**
  * A silent, seamless hero loop for use below live EventBanner copy. It uses
  * only approved HASHPASS/event lockups and abstract city architecture, so it
@@ -33,6 +120,7 @@ export const EventHeroLoop: React.FC<EventHeroSpec> = ({
   venue,
   accentColor,
   eventLogo,
+  visualTheme = 'city-columns',
 }) => {
   const frame = useCurrentFrame();
   const cycle = (frame / EVENT_HERO_DURATION_IN_FRAMES) * Math.PI * 2;
@@ -57,7 +145,7 @@ export const EventHeroLoop: React.FC<EventHeroSpec> = ({
           background: 'linear-gradient(180deg, rgba(6,17,31,0.02) 0%, rgba(6,17,31,0.08) 46%, rgba(6,17,31,0.42) 100%)',
         }}
       />
-      <svg
+      {visualTheme === 'poker-table' ? <PokerTable accentColor={accentColor} cycle={cycle} /> : <svg
         viewBox="0 0 1920 570"
         preserveAspectRatio="none"
         style={{bottom: 0, height: '53%', left: 0, position: 'absolute', width: '100%'}}
@@ -70,7 +158,12 @@ export const EventHeroLoop: React.FC<EventHeroSpec> = ({
         </defs>
         {Array.from({length: 20}, (_, index) => {
           const width = 70 + seededUnit(cityKey, index) * 90;
-          const height = 90 + seededUnit(cityKey, index + 50) * 360;
+          const baseHeight = 90 + seededUnit(cityKey, index + 50) * 360;
+          // A phase-shifted pulse makes the skyline read as a growing column
+          // field, while returning to exactly the same frame at loop end.
+          const columnPhase = cycle - index * 0.43 + seededUnit(cityKey, index + 150) * Math.PI;
+          const columnScale = interpolate(Math.sin(columnPhase), [-1, 1], [0.9, 1.06]);
+          const height = baseHeight * columnScale;
           const left = index * 104 - 60;
           const top = 570 - height;
           const windowAlpha = 0.26 + seededUnit(cityKey, index + 100) * 0.4;
@@ -101,7 +194,7 @@ export const EventHeroLoop: React.FC<EventHeroSpec> = ({
             </g>
           );
         })}
-      </svg>
+      </svg>}
       <div
         style={{
           background: `linear-gradient(90deg, transparent, ${hexToRgba(accentColor, 0.48)}, transparent)`,
