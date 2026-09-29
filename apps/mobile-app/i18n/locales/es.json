@@ -929,6 +929,8 @@
       "pastTooltip": "Ya se realizaron {total} eventos. Tenías un pase para {withPass} de ellos.",
       "reloadEvents": "Recargar eventos",
       "reloadingEvents": "Recargando eventos…",
+      "reloadPasses": "Recargar pases",
+      "reloadingPasses": "Recargando pases…",
       "allEvents": "Eventos del Explorador",
       "showing": "Mostrando {visible} de {total}",
       "eventsAcross": "eventos en {scope}",

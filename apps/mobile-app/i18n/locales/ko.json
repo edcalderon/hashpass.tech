@@ -925,6 +925,8 @@
       "eventsWithPass": "내 패스 포함 {count}개",
       "reloadEvents": "이벤트 새로고침",
       "reloadingEvents": "이벤트를 새로고침하는 중…",
+      "reloadPasses": "패스 새로고침",
+      "reloadingPasses": "패스를 새로고침하는 중…",
       "allEvents": "탐색기 이벤트",
       "showing": "전체 {total}개 중 {visible}개",
       "eventsAcross": "{scope}의 이벤트",

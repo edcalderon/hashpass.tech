@@ -20,17 +20,16 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.79)
+## 📋 Latest Changes (v1.9.80)
 
 ### Bug Fixes
 
-* **mobile:** export testID helpers used by PR [#291](https://github.com/hashpass-tech/hashpass.tech/issues/291) coverage tests ([0856b45](https://github.com/hashpass-tech/hashpass.tech/commit/0856b456e40656e6fe2ac6022f46c25381be9383))
-* stabilize agenda controls and auth bridge ([65d99f6](https://github.com/hashpass-tech/hashpass.tech/commit/65d99f6123dfec973eb4e00820aede35e7f64a6f))
+* improve mobile dashboard and agenda controls ([d87e0de](https://github.com/hashpass-tech/hashpass.tech/commit/d87e0de28b661ec6322b529a82bbefbaede85525))
 ### Release Highlights
-- stabilize agenda controls and auth bridge; export testID helpers used by PR #291 coverage tests
+- improve mobile dashboard and agenda controls
 
 ### Release scope
-- Compared with: `v1.9.78` (the previous global release tag)
+- Compared with: `v1.9.79` (the previous global release tag)
 
 ### Affected products & packages
 - Mobile app

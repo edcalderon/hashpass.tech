@@ -30,6 +30,11 @@ export const getExplorerReloadFeedbackDelay = (
 export const getExplorerFloatingBottomInset = (safeAreaBottom = 0): number =>
   Math.max(safeAreaBottom + 16, 40);
 
+/** Sticky content needs an opaque canvas so cards never show through the toolbar. */
+export const getExplorerToolbarBackgroundColor = (colors: {
+  background: { default: string };
+}): string => colors.background.default;
+
 export const resolveExplorerIconName = (name: string) => {
   const aliases = {
     search: "search",

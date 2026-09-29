@@ -9,6 +9,7 @@ import {
   getExplorerPageCount,
   getExplorerPageEvents,
   getExplorerReloadFeedbackDelay,
+  getExplorerToolbarBackgroundColor,
   EXPLORER_HERO_LAYOUT,
   getExplorerScopeLabel,
   getEventRoomTarget,
@@ -243,6 +244,12 @@ describe("explorer rework behavior", () => {
     expect(getExplorerFloatingBottomInset(0)).toBe(40);
     expect(getExplorerFloatingBottomInset(24)).toBe(40);
     expect(getExplorerFloatingBottomInset(48)).toBe(64);
+  });
+
+  it("uses an opaque canvas color behind the docked discovery toolbar", () => {
+    expect(
+      getExplorerToolbarBackgroundColor({ background: { default: "#121212" } }),
+    ).toBe("#121212");
   });
 
   it("searches across event titles, locations, and dates without mutating the source list", () => {

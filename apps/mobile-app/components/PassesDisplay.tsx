@@ -69,6 +69,7 @@ interface PassesDisplayProps {
     passType?: PassTypeFilter;
   };
   hideWalletControls?: boolean;
+  hideWalletReload?: boolean;
   /** A verified invite route can redeem an event-scoped Business pass. */
   businessInviteCode?: string;
   onPassesLoaded?: (passes: PassInfo[]) => void;
@@ -1970,6 +1971,7 @@ class PassesDisplayBoundary extends React.Component<
           layout={this.props.walletLayout}
           explorerFilters={this.props.explorerFilters}
           hideWalletControls={this.props.hideWalletControls}
+          hideWalletReload={this.props.hideWalletReload}
           businessInviteCode={this.props.businessInviteCode}
           onPassesLoaded={(passes: PassInfo[]) => {
             this.props.onPassInfoLoaded?.(passes[0] ?? null);

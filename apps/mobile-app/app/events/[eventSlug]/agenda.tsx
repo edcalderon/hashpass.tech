@@ -166,7 +166,8 @@ type AgendaTypeRevealProps = {
   accessibilityHint: string;
 };
 
-const AGENDA_TYPE_REVEAL_DURATION_MS = 180;
+const AGENDA_TYPE_REVEAL_EXPAND_DURATION_MS = 240;
+const AGENDA_TYPE_REVEAL_COLLAPSE_DURATION_MS = 520;
 const AGENDA_TYPE_REVEAL_COLLAPSED_WIDTH = 68;
 const AGENDA_TYPE_REVEAL_EXPANDED_WIDTH = 276;
 const AGENDA_TYPE_REVEAL_AUTO_COLLAPSE_MS = 3_000;
@@ -194,6 +195,58 @@ const useReducedMotionPreference = (): boolean => {
   }, []);
 
   return reduceMotion;
+};
+
+/**
+ * Keeps temporary type labels readable without leaving the agenda crowded.
+ * A direct second tap always wins over hover/focus and retracts immediately.
+ */
+const useAutoRetractingTypeReveal = () => {
+  const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const [pinned, setPinned] = useState(false);
+  const [interactionSuppressed, setInteractionSuppressed] = useState(false);
+  const expanded = pinned || (!interactionSuppressed && (hovered || focused));
+
+  useEffect(() => {
+    if (!pinned) return undefined;
+    const collapseTimeout = setTimeout(
+      () => {
+        setPinned(false);
+        // A click may also leave focus/hover on web. Keep that stale state
+        // from reopening the pill after its timed retraction.
+        setInteractionSuppressed(true);
+      },
+      AGENDA_TYPE_REVEAL_AUTO_COLLAPSE_MS,
+    );
+    return () => clearTimeout(collapseTimeout);
+  }, [pinned]);
+
+  const handlePress = useCallback(() => {
+    const interactionExpanded = !interactionSuppressed && (hovered || focused);
+    if (pinned || interactionExpanded) {
+      setPinned(false);
+      setInteractionSuppressed(true);
+      return;
+    }
+    setInteractionSuppressed(false);
+    setPinned(true);
+  }, [focused, hovered, interactionSuppressed, pinned]);
+
+  return {
+    expanded,
+    handlePress,
+    handleBlur: () => {
+      setFocused(false);
+      setInteractionSuppressed(false);
+    },
+    handleFocus: () => setFocused(true),
+    handleHoverIn: () => setHovered(true),
+    handleHoverOut: () => {
+      setHovered(false);
+      setInteractionSuppressed(false);
+    },
+  };
 };
 
 const agendaTypeRevealStyles = StyleSheet.create({
@@ -299,32 +352,30 @@ function AgendaTypeReveal({
   accessibilityLabel,
   accessibilityHint,
 }: AgendaTypeRevealProps) {
-  const [hovered, setHovered] = useState(false);
-  const [focused, setFocused] = useState(false);
-  const [pinned, setPinned] = useState(false);
   const reduceMotion = useReducedMotionPreference();
   const revealProgress = useSharedValue(0);
-  const revealed = hovered || focused || pinned;
+  const {
+    expanded: revealed,
+    handleBlur,
+    handleFocus,
+    handleHoverIn,
+    handleHoverOut,
+    handlePress,
+  } = useAutoRetractingTypeReveal();
 
   useEffect(() => {
     const nextProgress = revealed ? 1 : 0;
     revealProgress.value = reduceMotion
       ? nextProgress
       : withTiming(nextProgress, {
-          duration: AGENDA_TYPE_REVEAL_DURATION_MS,
-          easing: Easing.out(Easing.cubic),
+          duration: nextProgress
+            ? AGENDA_TYPE_REVEAL_EXPAND_DURATION_MS
+            : AGENDA_TYPE_REVEAL_COLLAPSE_DURATION_MS,
+          // A retract begins gently, then clears the label quickly so the
+          // compact card affordance feels intentional instead of abrupt.
+          easing: nextProgress ? Easing.out(Easing.cubic) : Easing.in(Easing.cubic),
         });
   }, [reduceMotion, revealProgress, revealed]);
-
-  useEffect(() => {
-    if (!pinned) return undefined;
-
-    const collapseTimeout = setTimeout(
-      () => setPinned(false),
-      AGENDA_TYPE_REVEAL_AUTO_COLLAPSE_MS,
-    );
-    return () => clearTimeout(collapseTimeout);
-  }, [pinned]);
 
   const contentStyle = useAnimatedStyle(() => ({
     opacity: revealProgress.value,
@@ -375,11 +426,11 @@ function AgendaTypeReveal({
         accessibilityLabel={accessibilityLabel}
         accessibilityHint={accessibilityHint}
         accessibilityState={{ expanded: revealed }}
-        onBlur={() => setFocused(false)}
-        onFocus={() => setFocused(true)}
-        onHoverIn={() => setHovered(true)}
-        onHoverOut={() => setHovered(false)}
-        onPress={() => setPinned((current) => !current)}
+        onBlur={handleBlur}
+        onFocus={handleFocus}
+        onHoverIn={handleHoverIn}
+        onHoverOut={handleHoverOut}
+        onPress={handlePress}
         style={agendaTypeRevealStyles.pressable}
       >
         <Animated.View
@@ -498,20 +549,26 @@ function AgendaTypeLegendControl({
   borderColor,
   textColor,
 }: AgendaTypeLegendControlProps) {
-  const [hovered, setHovered] = useState(false);
-  const [focused, setFocused] = useState(false);
-  const [pinned, setPinned] = useState(false);
   const reduceMotion = useReducedMotionPreference();
   const expansion = useSharedValue(0);
-  const expanded = hovered || focused || pinned;
+  const {
+    expanded,
+    handleBlur,
+    handleFocus,
+    handleHoverIn,
+    handleHoverOut,
+    handlePress,
+  } = useAutoRetractingTypeReveal();
 
   useEffect(() => {
     const nextProgress = expanded ? 1 : 0;
     expansion.value = reduceMotion
       ? nextProgress
       : withTiming(nextProgress, {
-          duration: uiTokens.motion.fast,
-          easing: Easing.out(Easing.cubic),
+          duration: nextProgress
+            ? AGENDA_TYPE_REVEAL_EXPAND_DURATION_MS
+            : AGENDA_TYPE_REVEAL_COLLAPSE_DURATION_MS,
+          easing: nextProgress ? Easing.out(Easing.cubic) : Easing.in(Easing.cubic),
         });
   }, [expanded, expansion, reduceMotion]);
 
@@ -540,11 +597,11 @@ function AgendaTypeLegendControl({
         accessibilityRole="button"
         accessibilityLabel={label}
         accessibilityState={{ expanded }}
-        onBlur={() => setFocused(false)}
-        onFocus={() => setFocused(true)}
-        onHoverIn={() => setHovered(true)}
-        onHoverOut={() => setHovered(false)}
-        onPress={() => setPinned((current) => !current)}
+        onBlur={handleBlur}
+        onFocus={handleFocus}
+        onHoverIn={handleHoverIn}
+        onHoverOut={handleHoverOut}
+        onPress={handlePress}
         style={agendaTypeLegendControlStyles.pressable}
       >
         <View style={agendaTypeLegendControlStyles.icon}>

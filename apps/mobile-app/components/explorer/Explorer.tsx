@@ -27,6 +27,7 @@ import { IconButton } from "@hashpass/ui/primitives";
 import { useAutoAdvanceProgress } from "../../lib/hooks/useAutoAdvanceProgress";
 import { SliderProgressBar } from "../banner/SliderProgressBar";
 import { useTheme } from "../../hooks/useTheme";
+import { useAuth } from "../../hooks/useAuth";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "../../i18n/i18n";
@@ -58,6 +59,7 @@ import {
   getExplorerPageCount,
   getExplorerPageEvents,
   getExplorerReloadFeedbackDelay,
+  getExplorerToolbarBackgroundColor,
   getEventRoomTarget,
   getExplorerEventStatus,
   getExplorerFloatingBottomInset,
@@ -169,6 +171,7 @@ export default function Explorer({
   showcase,
 }: ExplorerProps) {
   const { isDark, colors } = useTheme();
+  const { retryDatabaseSession } = useAuth();
   const safeAreaInsets = useSafeAreaInsets();
   const router = useRouter();
   const styles = getStyles(isDark, colors);
@@ -195,6 +198,7 @@ export default function Explorer({
   const [walletPasses, setWalletPasses] = useState<PassInfo[]>([]);
   const [isRefreshingEvents, setIsRefreshingEvents] = useState(false);
   const [isRefreshingPasses, setIsRefreshingPasses] = useState(false);
+  const [passesRefreshTrigger, setPassesRefreshTrigger] = useState(0);
   const [roomPresenceByEventId, setRoomPresenceByEventId] = useState<
     Record<string, EventChatPresence>
   >({});
@@ -231,6 +235,17 @@ export default function Explorer({
       ),
     );
   }, []);
+
+  // Mirrors PassesWallet's own handleRetry: a native Better Auth session can
+  // survive an interrupted companion Supabase bridge, so simply bumping the
+  // refresh trigger would re-run the pass request with the same unusable
+  // database identity and time out again. This is the only reload control
+  // rendered here (the wallet's own is hidden via hideWalletReload), so it
+  // must drive the same recovery path.
+  const handleReloadPasses = useCallback(() => {
+    void retryDatabaseSession?.();
+    setPassesRefreshTrigger((current) => current + 1);
+  }, [retryDatabaseSession]);
 
   useEffect(() => {
     if (dbUserId) return;
@@ -1589,14 +1604,29 @@ export default function Explorer({
         {renderDiscoveryCounters()}
         {isLoggedIn && (
           <View style={styles.passesSection}>
-            <Text style={styles.sectionTitle}>
-              {translate("explore.rework.yourPasses", "Your Passes")}
-            </Text>
+            <View style={styles.passesHeader}>
+              <Text style={styles.sectionTitle}>
+                {translate("explore.rework.yourPasses", "Your Passes")}
+              </Text>
+              <IconButton
+                testID="explorer-reload-passes"
+                mode={isDark ? "dark" : "light"}
+                accentColor={colors.primary}
+                label={translate("explore.rework.reloadPasses", "Reload passes")}
+                loadingLabel={translate("explore.rework.reloadingPasses", "Reloading passes…")}
+                disabled={isRefreshingPasses}
+                loading={isRefreshingPasses}
+                onPress={handleReloadPasses}
+              >
+                <Icon name="refresh" color={colors.primary} size={18} />
+              </IconButton>
+            </View>
             <PassesDisplay
               mode="dashboard"
               showTitle={false}
               showPassComparison={false}
               walletLayout={isGlobalExplorer ? "stacked" : "plain"}
+              refreshTrigger={passesRefreshTrigger}
               explorerFilters={{
                 query,
                 eventIds: passFilterEventIds,
@@ -1604,6 +1634,7 @@ export default function Explorer({
                 passType,
               }}
               hideWalletControls
+              hideWalletReload
               onPassesLoaded={handleWalletPassesLoaded}
               onPassesLoadingChange={setIsRefreshingPasses}
             />
@@ -2192,7 +2223,7 @@ const getStyles = (isDark: boolean, colors: any) =>
       paddingHorizontal: 16,
       paddingTop: 10,
       paddingBottom: 12,
-      backgroundColor: isDark ? "rgba(18,18,18,.94)" : "rgba(255,255,255,.94)",
+      backgroundColor: getExplorerToolbarBackgroundColor(colors),
       borderBottomWidth: 1,
       borderBottomColor: colors.divider,
     },
@@ -2635,6 +2666,12 @@ const getStyles = (isDark: boolean, colors: any) =>
       paddingBottom: 4,
     },
     passesSection: { paddingHorizontal: 16, paddingTop: 28 },
+    passesHeader: {
+      alignItems: "center",
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginBottom: 8,
+    },
     quickSection: { paddingTop: 28, paddingBottom: 12 },
     quickHeader: {
       paddingHorizontal: 16,

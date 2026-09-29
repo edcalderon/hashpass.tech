@@ -179,6 +179,18 @@ it("advances the native pager by one viewport and wraps after the final slide", 
   expect(scrollTo).toHaveBeenLastCalledWith({ x: 0, animated: true });
 });
 
+it("snaps every phone swipe to one complete carousel page", () => {
+  render({ event: mockEvent, autoPlay: false });
+
+  const pager = view.root.findByType(ScrollView);
+  expect(pager.props.pagingEnabled).toBe(true);
+  expect(pager.props.snapToInterval).toBe(1024);
+  expect(pager.props.snapToAlignment).toBe("start");
+  expect(pager.props.decelerationRate).toBe("fast");
+  expect(pager.props.directionalLockEnabled).toBe(true);
+  expect(pager.props.disableIntervalMomentum).toBe(true);
+});
+
 it("starts the fallback timer after the mobile Play control is pressed", () => {
   jest.useFakeTimers();
   render({ event: mockEvent, autoPlay: false, autoPlayInterval: 100 });

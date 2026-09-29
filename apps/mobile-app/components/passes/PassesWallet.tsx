@@ -71,6 +71,8 @@ interface PassesWalletProps {
     passType?: PassTypeFilter;
   };
   hideWalletControls?: boolean;
+  /** Explorer places this action next to its section title. */
+  hideWalletReload?: boolean;
   /** Provided only by the authenticated invitation route after sign-in. */
   businessInviteCode?: string;
 }
@@ -216,6 +218,7 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
   layout = "stacked",
   explorerFilters,
   hideWalletControls = false,
+  hideWalletReload = false,
   businessInviteCode,
 }) => {
   const { colors, isDark } = useTheme();
@@ -942,20 +945,22 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
   if (layout === "plain") {
     return (
       <View>
-        <View style={{ alignItems: "flex-end", marginBottom: 10 }}>
-          <IconButton
-            testID="passes-reload"
-            label={t("wallet.reload", "Reload passes")}
-            mode={isDark ? "dark" : "light"}
-            accentColor={colors.primary}
-            revealLabel
-            disabled={isRefreshing}
-            loading={isRefreshing}
-            onPress={handleRetry}
-          >
-            <MaterialIcons name="refresh" size={18} color={colors.primary} />
-          </IconButton>
-        </View>
+        {!hideWalletReload && (
+          <View style={{ alignItems: "flex-end", marginBottom: 10 }}>
+            <IconButton
+              testID="passes-reload"
+              label={t("wallet.reload", "Reload passes")}
+              mode={isDark ? "dark" : "light"}
+              accentColor={colors.primary}
+              revealLabel
+              disabled={isRefreshing}
+              loading={isRefreshing}
+              onPress={handleRetry}
+            >
+              <MaterialIcons name="refresh" size={18} color={colors.primary} />
+            </IconButton>
+          </View>
+        )}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -1042,20 +1047,22 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
         </>
       )}
 
-      <View style={{ alignItems: "flex-end", marginBottom: 10 }}>
-        <IconButton
-          testID="passes-reload"
-          label={t("wallet.reload", "Reload passes")}
-          mode={isDark ? "dark" : "light"}
-          accentColor={colors.primary}
-          revealLabel
-          disabled={isRefreshing}
-          loading={isRefreshing}
-          onPress={handleRetry}
-        >
-          <MaterialIcons name="refresh" size={18} color={colors.primary} />
-        </IconButton>
-      </View>
+      {!hideWalletReload && (
+        <View style={{ alignItems: "flex-end", marginBottom: 10 }}>
+          <IconButton
+            testID="passes-reload"
+            label={t("wallet.reload", "Reload passes")}
+            mode={isDark ? "dark" : "light"}
+            accentColor={colors.primary}
+            revealLabel
+            disabled={isRefreshing}
+            loading={isRefreshing}
+            onPress={handleRetry}
+          >
+            <MaterialIcons name="refresh" size={18} color={colors.primary} />
+          </IconButton>
+        </View>
+      )}
 
       {isRefreshing ? (
         <PassCardsSkeleton
