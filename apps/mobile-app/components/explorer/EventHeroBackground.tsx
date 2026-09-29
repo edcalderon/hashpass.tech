@@ -24,15 +24,20 @@ type EventHeroBackgroundProps = {
 };
 
 const useReducedMotionPreference = (): boolean => {
-  const [reducedMotion, setReducedMotion] = useState(false);
+  // Start static until the operating-system preference resolves. This avoids a
+  // brief autoplay flash for people who explicitly requested reduced motion.
+  const [reducedMotion, setReducedMotion] = useState(true);
 
   useEffect(() => {
     let mounted = true;
-    void AccessibilityInfo.isReduceMotionEnabled()
-      .then((enabled) => {
-        if (mounted) setReducedMotion(enabled);
-      })
-      .catch(() => undefined);
+    const preference = AccessibilityInfo.isReduceMotionEnabled?.();
+    if (preference && typeof preference.then === "function") {
+      void preference
+        .then((enabled) => {
+          if (mounted) setReducedMotion(enabled);
+        })
+        .catch(() => undefined);
+    }
     const subscription = AccessibilityInfo.addEventListener(
       "reduceMotionChanged",
       setReducedMotion,
@@ -47,11 +52,12 @@ const useReducedMotionPreference = (): boolean => {
 };
 
 const MovingStripeFallback = ({
+  reducedMotion,
   textureStyle,
 }: {
+  reducedMotion: boolean;
   textureStyle: StyleProp<ViewStyle>;
 }) => {
-  const reducedMotion = useReducedMotionPreference();
   // Jest's minimal React Native renderer deliberately omits Animated. The
   // static texture remains the correct visual fallback there and on any
   // constrained platform without the animation implementation.
@@ -121,6 +127,7 @@ export default function EventHeroBackground({
   textureStyle,
   videoSource,
 }: EventHeroBackgroundProps) {
+  const reducedMotion = useReducedMotionPreference();
   const imageSource = resolveEventImageSource(fallbackImage);
   // A still poster has no motion of its own. Keep the Explorer's subtle
   // diagonal texture alive over image-only banners, while video-backed
@@ -147,10 +154,14 @@ export default function EventHeroBackground({
           showLoadingIndicator={!imageSource}
           loadingLabel={loadingLabel}
           focalPosition={focalPosition}
+          playbackEnabled={!reducedMotion}
         />
       ) : null}
       {shouldShowAnimatedTexture ? (
-        <MovingStripeFallback textureStyle={textureStyle} />
+        <MovingStripeFallback
+          reducedMotion={reducedMotion}
+          textureStyle={textureStyle}
+        />
       ) : null}
     </>
   );

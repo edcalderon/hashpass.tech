@@ -4,6 +4,7 @@ import {
   getExplorerFloatingBottomInset,
   getExplorerHeroActionTarget,
   getExplorerHeroSlides,
+  getExplorerTenantHeroSlide,
   getExplorerLayout,
   getExplorerPageCount,
   getExplorerPageEvents,
@@ -158,6 +159,25 @@ describe("explorer rework behavior", () => {
       "colombia2026",
       undefined,
     ]);
+  });
+
+  it("keeps a tenant's own hero media after that event has ended", () => {
+    expect(
+      getExplorerTenantHeroSlide({
+        id: "peru2026",
+        title: "Blockchain Summit Latam Perú 2026",
+        eventEndDate: "2026-05-15T23:59:59-05:00",
+        heroVideo: "https://media.example/events/peru2026/hero.mp4",
+        heroPoster: "https://media.example/events/peru2026/hero.jpg",
+      }),
+    ).toMatchObject({
+      eventId: "peru2026",
+      media: {
+        type: "video",
+        url: "https://media.example/events/peru2026/hero.mp4",
+      },
+      fallbackImage: "https://media.example/events/peru2026/hero.jpg",
+    });
   });
 
   it("puts the Partners chapter first and preserves the actual community event type", () => {

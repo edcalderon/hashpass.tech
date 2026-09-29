@@ -155,6 +155,33 @@ const getExplorerEventEyebrow = (event: ExplorerEvent): string => {
 };
 
 /**
+ * A tenant page represents exactly one configured event. Unlike the global
+ * carousel, it retains that event's poster/film after the event becomes
+ * historical because its archive remains the tenant's own home surface.
+ */
+export const getExplorerTenantHeroSlide = (
+  event: ExplorerEvent,
+): ExplorerHeroSlide => {
+  const fallbackImage = event.heroPoster || event.image;
+
+  return {
+    id: `${event.id}-default`,
+    eventId: event.id,
+    eyebrow: getExplorerEventEyebrow(event),
+    title: event.title,
+    subtitle: event.eventDateString || event.subtitle || "Coming soon",
+    backgroundColor: event.color || "#18212D",
+    route: `/events/${event.id}/home`,
+    media: event.heroVideo
+      ? { type: "video", url: event.heroVideo }
+      : fallbackImage
+        ? { type: "image", url: fallbackImage }
+        : undefined,
+    fallbackImage,
+  };
+};
+
+/**
  * The Explorer's global hero is event data, never campaign-copy data. Every
  * event may ship an optional muted hero film and an independently loadable
  * poster; without either, callers can use their neutral visual fallback.
@@ -167,29 +194,10 @@ export const getExplorerHeroSlides = (
   // occupy the main dashboard hero's limited attention.
   const eventSlides = events
     .filter((event) => getExplorerEventStatus(event, now) !== "past")
-    .map((event) => {
-      const fallbackImage = event.heroPoster || event.image;
-      const media = event.heroVideo
-        ? { type: "video" as const, url: event.heroVideo }
-        : fallbackImage
-          ? { type: "image" as const, url: fallbackImage }
-          : undefined;
-
-      return {
+    .map((event) => ({
         familyId: event.tourHubEventId || event.id,
-        slide: {
-          id: `${event.id}-default`,
-          eventId: event.id,
-          eyebrow: getExplorerEventEyebrow(event),
-          title: event.title,
-          subtitle: event.eventDateString || event.subtitle || "Coming soon",
-          backgroundColor: event.color || "#18212D",
-          route: `/events/${event.id}/home`,
-          media,
-          fallbackImage,
-        },
-      };
-    });
+        slide: getExplorerTenantHeroSlide(event),
+      }));
 
   const partnersSlide: ExplorerHeroSlide = {
       id: "hashpass-partners-discovery",

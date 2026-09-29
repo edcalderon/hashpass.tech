@@ -2,6 +2,7 @@
 
 import React from "react";
 import { act, create } from "react-test-renderer";
+import { AccessibilityInfo } from "react-native";
 import EventHeroBackground from "../../components/explorer/EventHeroBackground";
 
 jest.mock("../../components/EventBannerBackgroundVideo", () => "EventBannerBackgroundVideo");
@@ -17,6 +18,19 @@ const render = (element: React.ReactElement) => {
 describe("EventHeroBackground", () => {
   const textureStyle = { opacity: 0.32 };
   const mediaStyle = { opacity: 0.84 };
+  let reducedMotionPreference: jest.SpyInstance;
+
+  beforeEach(() => {
+    // Most assertions inspect the synchronous shell. Keep the asynchronous OS
+    // preference pending unless a test intentionally resolves it inside act().
+    reducedMotionPreference = jest
+      .spyOn(AccessibilityInfo, "isReduceMotionEnabled")
+      .mockImplementation(() => new Promise<boolean>(() => {}));
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
 
   it("keeps the event poster visible behind a hero film", () => {
     const renderer = render(
@@ -39,6 +53,28 @@ describe("EventHeroBackground", () => {
       loadingLabel: "Loading event film",
     });
     expect(renderer.root.findAllByProps({ testID: "event-hero-stripe-fallback" })).toHaveLength(0);
+  });
+
+  it("disables hero-film playback when reduced motion is enabled", async () => {
+    reducedMotionPreference.mockResolvedValue(true);
+    const renderer = render(
+      <EventHeroBackground
+        fallbackImage="https://media.example/events/colombia2026/hero.jpg"
+        videoSource="https://media.example/events/colombia2026/hero.mp4"
+        loadingLabel="Loading event film"
+        mediaStyle={mediaStyle}
+        textureStyle={textureStyle}
+      />,
+    );
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(
+      renderer.root.findByType("EventBannerBackgroundVideo" as any).props
+        .playbackEnabled,
+    ).toBe(false);
   });
 
   it("keeps the stripe fallback when an event has no usable poster", () => {

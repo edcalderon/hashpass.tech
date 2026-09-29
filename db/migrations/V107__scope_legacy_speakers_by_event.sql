@@ -21,6 +21,16 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_bsl_speakers_event_slug
 CREATE INDEX IF NOT EXISTS idx_bsl_speakers_event_active
   ON public.bsl_speakers (event_id, is_active, name);
 
+-- Agenda rows can also be created by organizers and other integrations. Keep
+-- the programme source on the rows this function owns so reconciliation never
+-- deletes a row merely because it shares the event's ID prefix.
+ALTER TABLE public.event_agenda
+  ADD COLUMN IF NOT EXISTS source_id text;
+
+CREATE INDEX IF NOT EXISTS idx_event_agenda_event_source
+  ON public.event_agenda (event_id, source_id)
+  WHERE source_id IS NOT NULL;
+
 CREATE OR REPLACE FUNCTION public.sync_bsl_public_programme(
   p_event_id text,
   p_source_id text,
@@ -70,22 +80,23 @@ BEGIN
     );
 
   INSERT INTO public.event_agenda
-    (id, event_id, time, title, description, speakers, type, location, day, day_name, updated_at)
-  SELECT x.id, p_event_id, x.time, x.title, x.description, x.speakers,
+    (id, event_id, source_id, time, title, description, speakers, type, location, day, day_name, updated_at)
+  SELECT x.id, p_event_id, p_source_id, x.time, x.title, x.description, x.speakers,
     x.type, x.location, x.day, x.day_name, x.updated_at
   FROM jsonb_to_recordset(p_agenda) AS x(
     id text, time timestamptz, title text, description text, speakers text[],
     type text, location text, day text, day_name text, updated_at timestamptz
   )
   ON CONFLICT (id) DO UPDATE SET
-    event_id = EXCLUDED.event_id, time = EXCLUDED.time, title = EXCLUDED.title,
+    event_id = EXCLUDED.event_id, source_id = EXCLUDED.source_id,
+    time = EXCLUDED.time, title = EXCLUDED.title,
     description = EXCLUDED.description, speakers = EXCLUDED.speakers,
     type = EXCLUDED.type, location = EXCLUDED.location, day = EXCLUDED.day,
     day_name = EXCLUDED.day_name, updated_at = EXCLUDED.updated_at;
 
   DELETE FROM public.event_agenda agenda
   WHERE agenda.event_id = p_event_id
-    AND agenda.id LIKE p_event_id || '-%'
+    AND agenda.source_id = p_source_id
     AND NOT EXISTS (
       SELECT 1 FROM jsonb_array_elements(p_agenda) item
       WHERE item ->> 'id' = agenda.id

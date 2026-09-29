@@ -132,6 +132,21 @@ describe('event-scoped speaker administration migrations', () => {
       'db/migrations/V107__scope_legacy_speakers_by_event.sql',
       'db/migrations/V108__enforce_event_scoped_speaker_admin_roles.sql',
     ]);
+    expect(config.defaultGroups).not.toContain('event-scoped-speakers');
+    expect(
+      Object.entries(config.profileGroups)
+        .filter(([, groups]) => groups.includes('event-scoped-speakers'))
+        .map(([profile]) => profile)
+        .sort(),
+    ).toEqual(['bsl-development', 'bsl-production']);
+  });
+
+  it('only reconciles agenda rows owned by the active programme source', () => {
+    const migration = fs.readFileSync(eventScopedSpeakersMigrationPath, 'utf8');
+
+    expect(migration).toMatch(/ALTER TABLE public\.event_agenda\s+ADD COLUMN IF NOT EXISTS source_id text/i);
+    expect(migration).toMatch(/\(id, event_id, source_id,[\s\S]*?\)\s+SELECT x\.id, p_event_id, p_source_id/i);
+    expect(migration).toMatch(/agenda\.event_id = p_event_id[\s\S]*?agenda\.source_id = p_source_id[\s\S]*?NOT EXISTS/i);
   });
 
   it('matches every speaker role read and mutation to the authorized event', () => {

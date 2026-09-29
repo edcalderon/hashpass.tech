@@ -81,14 +81,14 @@
     "event-auth-allies",
     "admin-pass-management",
     "admin-matchmaking-communications",
-    "event-scoped-speakers",
     "support-system"
   ],
   "profileGroups": {
     "bsl-development": [
       "demo-event-bootstrap",
       "event-search-aliases",
-      "business-invite-campaigns"
+      "business-invite-campaigns",
+      "event-scoped-speakers"
     ],
     "core-development": [
       "hashpass-auth-qr",
@@ -110,7 +110,8 @@
     ],
     "bsl-production": [
       "event-search-aliases",
-      "business-invite-campaigns"
+      "business-invite-campaigns",
+      "event-scoped-speakers"
     ]
   },
   "groups": {

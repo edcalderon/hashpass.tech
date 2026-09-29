@@ -61,6 +61,7 @@ import {
   getExplorerEventStatus,
   getExplorerFloatingBottomInset,
   getExplorerHeroSlides,
+  getExplorerTenantHeroSlide,
   getExplorerLayout,
   getExplorerScopeLabel,
   resolveExplorerIconName,
@@ -698,9 +699,9 @@ export default function Explorer({
     if (!isGlobalExplorer) {
       const heroEvent = selectedEvent || events[0];
       if (!heroEvent) return null;
-      const [singleTenantSlide] = getExplorerHeroSlides([
+      const singleTenantSlide = getExplorerTenantHeroSlide(
         toExplorerEvent(heroEvent),
-      ]);
+      );
 
       return (
         <View
