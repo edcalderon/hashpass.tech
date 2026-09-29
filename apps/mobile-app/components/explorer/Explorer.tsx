@@ -77,6 +77,7 @@ import {
 } from "../../lib/event-banners";
 import { getEventBannerCtaLayout } from "../../lib/banner-cta";
 import EventHeroBackground from "./EventHeroBackground";
+import ExplorerHeroAction from "./ExplorerHeroAction";
 
 interface ExplorerProps {
   events: EventInfo[];
@@ -654,7 +655,7 @@ export default function Explorer({
             </Text>
           </View>
           {localizedHeroSlide.cta && (
-            <TouchableOpacity
+            <ExplorerHeroAction
               style={[
                 styles.heroAction,
                 getEventBannerCtaLayout(localizedHeroSlide.cta.position, {
@@ -662,12 +663,8 @@ export default function Explorer({
                 }),
               ]}
               onPress={() => handleSelectedHeroCta(localizedHeroSlide.cta?.url)}
-              accessibilityRole="button"
-            >
-              <Text style={styles.heroActionText}>
-                {localizedHeroSlide.cta.label}
-              </Text>
-            </TouchableOpacity>
+              label={localizedHeroSlide.cta.label}
+            />
           )}
           {selectedHeroSlides.length > 1 && (
             <SliderProgressBar
@@ -787,7 +784,7 @@ export default function Explorer({
           <Text style={styles.heroSubtitle}>{globalHeroSlide.subtitle}</Text>
         </View>
         {globalHeroSlide.route ? (
-          <TouchableOpacity
+          <ExplorerHeroAction
             style={[
               styles.heroAction,
               getEventBannerCtaLayout(undefined, {
@@ -795,12 +792,8 @@ export default function Explorer({
               }),
             ]}
             onPress={() => handleSelectedHeroCta(globalHeroSlide.route)}
-            accessibilityRole="button"
-          >
-            <Text style={styles.heroActionText}>
-              {translate("explore.rework.exploreEvent", "Explore event")}
-            </Text>
-          </TouchableOpacity>
+            label={translate("explore.rework.exploreEvent", "Explore event")}
+          />
         ) : null}
         <SliderProgressBar
           count={globalHeroSlides.length}
@@ -2211,13 +2204,8 @@ const getStyles = (isDark: boolean, colors: any) =>
     },
     heroAction: {
       alignSelf: "flex-start",
-      minHeight: 44,
-      justifyContent: "center",
-      paddingHorizontal: 18,
-      borderRadius: uiTokens.radius.input,
-      backgroundColor: colors.primary,
+      boxShadow: uiTokens.effects.cardShadow,
     },
-    heroActionText: { color: "#fff", fontSize: 13, fontWeight: "800" },
     heroProgress: {
       position: "absolute",
       left: 20,

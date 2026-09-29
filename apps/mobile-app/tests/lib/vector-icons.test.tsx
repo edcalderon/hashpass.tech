@@ -46,6 +46,7 @@ describe("NativeSafeIcon", () => {
     "bookmark",
     "search",
     "arrow-up",
+    "arrow-up-right",
   ] as const)("has a concrete SVG mapping for %s", (name) => {
     const element = NativeSafeIcon({ name, size: 18, color: "#111827" });
     expect(element.type).toBeDefined();

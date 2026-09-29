@@ -8,6 +8,7 @@ import {
   ArrowLeft,
   ArrowRight,
   ArrowUp,
+  ArrowUpRight,
   Bell,
   BellOff,
   Bookmark,
@@ -146,6 +147,7 @@ export type NativeSafeIconName =
   | "bookmark-filled"
   | "search-off"
   | "arrow-up"
+  | "arrow-up-right"
   | "arrow-left"
   | "arrow-right"
   | "refresh"
@@ -175,6 +177,7 @@ const NATIVE_SAFE_ICONS: Record<NativeSafeIconName, WebIconComponent> = {
   "bookmark-filled": BookmarkCheck,
   "search-off": SearchX,
   "arrow-up": ArrowUp,
+  "arrow-up-right": ArrowUpRight,
   "arrow-left": ArrowLeft,
   "arrow-right": ArrowRight,
   refresh: RefreshCw,
