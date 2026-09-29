@@ -1612,6 +1612,7 @@ export default function Explorer({
                 testID="explorer-reload-passes"
                 mode={isDark ? "dark" : "light"}
                 accentColor={colors.primary}
+                revealLabel
                 label={translate("explore.rework.reloadPasses", "Reload passes")}
                 loadingLabel={translate("explore.rework.reloadingPasses", "Reloading passes…")}
                 disabled={isRefreshingPasses}

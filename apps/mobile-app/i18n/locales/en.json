@@ -1644,6 +1644,7 @@
     },
     "refresh": "Refresh",
     "refreshAgenda": "Refresh agenda",
+    "refreshingAgenda": "Refreshing agenda…",
     "types": {
       "keynote": "Keynote",
       "panel": "Panel",
