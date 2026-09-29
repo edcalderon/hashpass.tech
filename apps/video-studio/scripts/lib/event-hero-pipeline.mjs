@@ -3,6 +3,7 @@ import path from 'node:path';
 const eventIdPattern = /^[a-z0-9][a-z0-9-]{0,63}$/;
 const compositionIdPattern = /^EventHero[A-Z][A-Za-z0-9]*$/;
 const hexColorPattern = /^#[0-9a-fA-F]{6}$/;
+const visualThemes = new Set(['city-columns', 'poker-table']);
 
 function requireString(value, field) {
   if (typeof value !== 'string' || !value.trim()) {
@@ -36,6 +37,10 @@ function validateHero(hero) {
   if (!hexColorPattern.test(accentColor)) {
     throw new Error(`Event hero ${id} accentColor must be a six-digit hex color.`);
   }
+  const visualTheme = hero.visualTheme ?? 'city-columns';
+  if (!visualThemes.has(visualTheme)) {
+    throw new Error(`Event hero ${id} visualTheme is invalid: ${visualTheme}`);
+  }
 
   return {
     ...hero,
@@ -46,6 +51,7 @@ function validateHero(hero) {
     country: requireString(hero.country, 'country'),
     venue: requireString(hero.venue, 'venue'),
     accentColor,
+    visualTheme,
     eventLogo: {...hero.eventLogo, target: logoTarget},
   };
 }
@@ -76,13 +82,31 @@ export function createHeroPublishPlan(heroes, {mediaBaseUrl, outputDirectory}) {
   const outputRoot = requireString(outputDirectory, 'outputDirectory');
 
   return heroes.map((hero) => {
-    const filename = 'hashpass-event-hero-v1.mp4';
+    const filename = 'hashpass-event-hero-v3.mp4';
     const suffix = `${hero.id}/branding/${filename}`;
     return {
       eventId: hero.id,
       localPath: path.join(outputRoot, hero.id, filename),
       objectKey: `events/${suffix}`,
       publicUrl: `${baseUrl}/${suffix}`,
+    };
+  });
+}
+
+/** Build static fallback destinations beside every immutable hero film. */
+export function createHeroPosterPublishPlan(heroes, {mediaBaseUrl, outputDirectory}) {
+  const baseUrl = requireString(mediaBaseUrl, 'mediaBaseUrl').replace(/\/+$/, '');
+  const outputRoot = requireString(outputDirectory, 'outputDirectory');
+
+  return heroes.map((hero) => {
+    const filename = 'hashpass-event-hero-v3.jpg';
+    const suffix = `${hero.id}/branding/${filename}`;
+    return {
+      eventId: hero.id,
+      localPath: path.join(outputRoot, hero.id, filename),
+      objectKey: `events/${suffix}`,
+      publicUrl: `${baseUrl}/${suffix}`,
+      contentType: 'image/jpeg',
     };
   });
 }

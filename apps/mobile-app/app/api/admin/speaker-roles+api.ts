@@ -35,6 +35,7 @@ export async function GET(request: Request) {
   const { data: speakers, error: speakersError } = await authorization.supabase
     .from('bsl_speakers')
     .select('id, name, title, company, imageurl, user_id, is_active, is_accepting_meetings')
+    .eq('event_id', eventId)
     .order('name')
     .limit(500);
   if (speakersError) {

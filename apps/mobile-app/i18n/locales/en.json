@@ -903,6 +903,7 @@
       "eventBannerSlides": "Event banner slides",
       "showEventBanner": "Show banner {number}",
       "loadingEventFilm": "Loading event film",
+      "exploreEvent": "Explore event",
       "clfFilmEyebrow": "CLF 2026 · Official film",
       "clfSubtitle": "Maloka, Bogotá · 9th Edition",
       "clfDate": "August 27–28, 2026 · Bogotá, Colombia",
@@ -1562,6 +1563,8 @@
       "speakers": "Speakers",
       "keynote": "Keynote",
       "panel": "Panel",
+      "workshop": "Workshop",
+      "networking": "Networking",
       "break": "Break",
       "meal": "Meal",
       "registration": "Registration"
@@ -1630,11 +1633,19 @@
       "speakers": "Speakers",
       "location": "Location"
     },
+    "viewMode": {
+      "label": "Agenda display",
+      "compact": "Compact view",
+      "list": "List view",
+      "grid": "Grid view"
+    },
     "refresh": "Refresh",
     "refreshAgenda": "Refresh agenda",
     "types": {
       "keynote": "Keynote",
       "panel": "Panel",
+      "workshop": "Workshop",
+      "networking": "Networking",
       "break": "Break",
       "meal": "Meal",
       "registration": "Registration"

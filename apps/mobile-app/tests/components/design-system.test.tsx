@@ -1,6 +1,6 @@
 import React from 'react';
 import { act, create } from 'react-test-renderer';
-import { Pressable, TextInput } from 'react-native';
+import { Pressable, Text, TextInput } from 'react-native';
 import { ActionButton, Badge, FilterChip, FormField, Surface } from '@hashpass/ui/primitives';
 import { uiPalette } from '@hashpass/ui/tokens';
 it('exposes loading and selected states while preserving accessible names', () => {
@@ -11,11 +11,60 @@ it('exposes loading and selected states while preserving accessible names', () =
   expect(button.props.accessibilityLabel).toBe('Save'); expect(chip.props.accessibilityState.selected).toBe(true);
   act(() => view!.unmount());
 });
+it('supports a trailing action icon without changing the button name', () => {
+  let view: ReturnType<typeof create>;
+  act(() => {
+    view = create(
+      <ActionButton
+        label="Next"
+        trailingIcon={<Text testID="action-trailing-icon">→</Text>}
+      />,
+    );
+  });
+  expect(view!.root.findByType(Pressable).props.accessibilityLabel).toBe('Next');
+  expect(view!.root.findByProps({ testID: 'action-trailing-icon' }).parent?.props.accessible).toBe(false);
+  act(() => view!.unmount());
+});
 it('keeps field errors and labels available to assistive technology', () => {
   let view: ReturnType<typeof create>;
   act(() => { view = create(<Surface mode="dark"><FormField label="Email" error="Enter a valid email" /></Surface>); });
   expect(view!.root.findByType(TextInput).props.accessibilityLabel).toBe('Email');
   expect(view!.root.findAll(node => node.props.accessibilityRole === 'alert').length).toBeGreaterThan(0);
+  act(() => view!.unmount());
+});
+it('keeps compact category badges semantic while showing their category color', () => {
+  let view: ReturnType<typeof create>;
+  act(() => { view = create(<Badge tone="neutral" compact markerColor="#34A853">Panel</Badge>); });
+  const marker = view!.root.find(node => node.props.accessible === false);
+  expect(marker.props.style).toEqual(expect.arrayContaining([
+    expect.objectContaining({ width: 8, height: 8 }),
+    expect.objectContaining({ backgroundColor: '#34A853' }),
+  ]));
+  expect(view!.root.findByType(Text).children.join('')).toBe('Panel');
+  act(() => view!.unmount());
+});
+it('supports a decorative type icon inside the shared badge', () => {
+  let view: ReturnType<typeof create>;
+  act(() => {
+    view = create(
+      <Badge
+        tone="neutral"
+        compact
+        markerColor="#06b6d4"
+        leadingIcon={<Text testID="badge-type-icon">icon</Text>}
+      >
+        Networking
+      </Badge>,
+    );
+  });
+  const icon = view!.root.findByProps({ testID: 'badge-type-icon' });
+  expect(icon.parent?.props.accessible).toBe(false);
+  expect(view!.root.findAll((node) => (
+    node.props.accessible === false
+    && Array.isArray(node.props.style)
+    && node.props.style.some((style: { backgroundColor?: string }) => style?.backgroundColor === '#06b6d4')
+  ))).toHaveLength(1);
+  expect(view!.root.findAllByType(Text).some((node) => node.children.join('') === 'Networking')).toBe(true);
   act(() => view!.unmount());
 });
 function luminance(hex: string) {

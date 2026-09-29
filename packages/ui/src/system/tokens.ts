@@ -7,7 +7,16 @@ const hashpassBrand = {
 export const uiTokens = {
   radius: { card: 24, media: 16, input: 12, small: 8, pill: 999, circle: 999 },
   space: { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32, section: 48, hero: 64 },
-  effects: { modalBlur: 16, dialogShadow: "0 24px 80px rgba(0, 12, 32, 0.28)" },
+  effects: {
+    modalBlur: 16,
+    cardShadow: "0 8px 24px rgba(0, 12, 32, 0.08)",
+    dialogShadow: "0 24px 80px rgba(0, 12, 32, 0.28)",
+    mediaOverlayStrong: "rgba(3, 12, 24, 0.82)",
+    mediaOverlayGlass: "rgba(3, 12, 24, 0.42)",
+    mediaOverlayBlur: 16,
+    mediaBorder: "rgba(255, 255, 255, 0.45)",
+    mediaVenueScrim: "rgba(3, 12, 24, 0.48)",
+  },
   control: { minHeight: 48, compactHeight: 44, badgeHeight: 32, borderWidth: 1 },
   type: { caption: 12, label: 14, body: 16, title: 24, heading: 32, display: 40 },
   motion: { fast: 160, normal: 240, entrance: 520, stagger: 70, easeOut: [0.22, 1, 0.36, 1] as const },

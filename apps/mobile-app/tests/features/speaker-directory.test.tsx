@@ -6,6 +6,7 @@ import SpeakersCalendar from '../../app/events/[eventSlug]/speakers/calendar';
 import SpeakerSearchAndSort from '../../components/SpeakerSearchAndSort';
 
 const mockRouterPush = jest.fn();
+const mockEq = jest.fn();
 type DbSpeaker = {
   id: string;
   name: string;
@@ -66,7 +67,10 @@ jest.mock('../../lib/supabase', () => ({
     from: () => {
       const query = {
         select: () => query,
-        eq: () => query,
+        eq: (...args: unknown[]) => {
+          mockEq(...args);
+          return query;
+        },
         order: () => query,
         then: (resolve: (value: unknown) => unknown) => Promise.resolve({ data: mockDbSpeakers, error: null }).then(resolve),
       };
@@ -90,6 +94,7 @@ const flushPromises = () => new Promise<void>((resolve) => setTimeout(resolve, 0
 describe('speaker directory', () => {
   beforeEach(() => {
     mockRouterPush.mockReset();
+    mockEq.mockReset();
     mockDbSpeakers = defaultDbSpeakers();
     mockEventSpeakers = [];
     mockEventId = 'chile2026';
@@ -128,6 +133,23 @@ describe('speaker directory', () => {
       act(() => renderer!.unmount());
       consoleError.mockRestore();
     }
+  });
+
+  it.each([
+    ['bsl', 'bsl2025'],
+    ['colombia2026', 'colombia2026'],
+  ])('scopes the legacy BSL directory to %s', async (eventId, expectedEventId) => {
+    mockEventId = eventId;
+    let renderer: ReturnType<typeof create>;
+
+    await act(async () => {
+      renderer = create(<SpeakersCalendar />);
+      await flushPromises();
+    });
+
+    expect(mockEq).toHaveBeenCalledWith('event_id', expectedEventId);
+    expect(mockEq).toHaveBeenCalledWith('is_active', true);
+    act(() => renderer!.unmount());
   });
 
   it('shows all speakers while disabling the unclaimed profiles', async () => {

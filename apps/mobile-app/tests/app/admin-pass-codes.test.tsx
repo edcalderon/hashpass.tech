@@ -39,7 +39,10 @@ jest.mock('../../lib/event-path', () => ({ resolveActiveEventId: () => 'chile202
 jest.mock('expo-router', () => ({ useRouter: () => ({ replace: jest.fn() }) }));
 jest.mock('../../components/AdminQRScanner', () => 'AdminQRScanner');
 jest.mock('../../components/LoadingScreen', () => 'LoadingScreen');
-jest.mock('../../lib/vector-icons', () => ({ MaterialIcons: 'MaterialIcons' }));
+jest.mock('../../lib/vector-icons', () => ({
+  MaterialIcons: 'MaterialIcons',
+  NativeSafeIcon: 'NativeSafeIcon',
+}));
 
 const { act, create } = require('react-test-renderer');
 

@@ -5,6 +5,27 @@ export const isMcpLoginContinuation = (returnTo: string): boolean => {
   return path === MCP_LOGIN_PATH;
 };
 
+/**
+ * Better Auth signs the OAuth parameters it emits and lists their names in
+ * `ba_param`. Browser routers may append their own query parameters; forwarding
+ * those to the API would invalidate the provider signature.
+ */
+export const extractSignedOAuthQuery = (rawSearch: string): string => {
+  const source = new URLSearchParams(rawSearch.startsWith('?') ? rawSearch.slice(1) : rawSearch);
+  if (!source.has('sig')) return '';
+
+  const signedNames = new Set(source.getAll('ba_param'));
+  if (signedNames.size === 0) return '';
+
+  const signed = new URLSearchParams();
+  for (const [key, value] of source.entries()) {
+    if (key === 'sig' || key === 'ba_param' || signedNames.has(key)) {
+      signed.append(key, value);
+    }
+  }
+  return signed.toString();
+};
+
 type McpLoginContinuation = {
   authorizeUrl: string;
   returnTo: string;

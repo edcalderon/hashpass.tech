@@ -8,6 +8,8 @@ interface EventBannerBackgroundVideoProps {
   loadingLabel?: string;
   preferBundledSource?: boolean;
   playbackEnabled?: boolean;
+  /** A poster is already visible behind the video, so avoid obscuring it. */
+  showLoadingIndicator?: boolean;
   contentFit?: "cover" | "contain";
   focalPosition?: string;
 }
@@ -21,6 +23,7 @@ export default function EventBannerBackgroundVideo({
   loadingLabel = "Loading event film",
   preferBundledSource = false,
   playbackEnabled = true,
+  showLoadingIndicator = true,
   contentFit = "cover",
 }: EventBannerBackgroundVideoProps) {
   const [hasFirstFrame, setHasFirstFrame] = useState(false);
@@ -62,7 +65,7 @@ export default function EventBannerBackgroundVideo({
           importantForAccessibility="no-hide-descendants"
         />
       ) : null}
-      {playbackEnabled && !hasFirstFrame && (
+      {playbackEnabled && !hasFirstFrame && showLoadingIndicator && (
         <View
           style={styles.loader}
           pointerEvents="none"

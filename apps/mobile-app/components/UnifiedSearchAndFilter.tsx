@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, useWindowDimensions } from 'react-native';
 // lib/vector-icons routes web to SVG-based Lucide icons instead of the raw
 // font glyphs @expo/vector-icons renders directly; the raw font can show its
 // tofu/"?" fallback glyph for a window before the icon font loads on web.
-import { MaterialIcons } from '../lib/vector-icons';
+import { MaterialIcons, NativeSafeIcon } from '../lib/vector-icons';
 import { useTheme } from '../hooks/useTheme';
+import { uiTokens } from '@hashpass/ui/tokens';
 
 // Generic interfaces for different data types
 interface BaseItem {
@@ -16,6 +17,8 @@ interface FilterOption {
   key: string;
   label: string;
   icon?: string;
+  /** Optional semantic marker used by contextual filter menus. */
+  color?: string;
   type?: 'single' | 'multiple';
 }
 
@@ -50,6 +53,8 @@ export default function UnifiedSearchAndFilter<T extends BaseItem>({
   customFilterLogic
 }: UnifiedSearchAndFilterProps<T>) {
   const { isDark, colors } = useTheme();
+  const { width: viewportWidth } = useWindowDimensions();
+  const useSingleColumnFilters = viewportWidth < 640;
   const [searchQuery, setSearchQuery] = useState('');
   const [showFiltersDropdown, setShowFiltersDropdown] = useState(false);
   const [activeFilters, setActiveFilters] = useState<{ [key: string]: any }>({});
@@ -207,33 +212,54 @@ export default function UnifiedSearchAndFilter<T extends BaseItem>({
     return (
       <View key={group.key} style={styles.filterGroup}>
         <Text style={styles.filterLabel}>{group.label}</Text>
-        {group.options.map((option) => (
-          <TouchableOpacity
-            key={option.key}
-            style={[
-              styles.filterOption,
-              activeFilters[group.key] === option.key && styles.filterOptionSelected
-            ]}
-            onPress={() => handleFilterChange(group.key, activeFilters[group.key] === option.key ? '' : option.key)}
-          >
-            {option.icon && (
-              <MaterialIcons 
-                name={option.icon as any} 
-                size={20} 
-                color={activeFilters[group.key] === option.key ? '#007AFF' : colors.text.primary} 
-              />
-            )}
-            <Text style={[
-              styles.filterOptionText,
-              activeFilters[group.key] === option.key && styles.filterOptionTextSelected
-            ]}>
-              {option.label}
-            </Text>
-            {activeFilters[group.key] === option.key && (
-              <MaterialIcons name="check" size={20} color="#007AFF" />
-            )}
-          </TouchableOpacity>
-        ))}
+        <View style={styles.filterOptionsGrid}>
+          {group.options.map((option) => {
+            const selected = activeFilters[group.key] === option.key;
+            const optionColor = option.color || colors.primary;
+            return (
+              <TouchableOpacity
+                key={option.key}
+                accessibilityRole="radio"
+                accessibilityState={{ checked: selected }}
+                style={[
+                  styles.filterOption,
+                  { width: useSingleColumnFilters ? '100%' : '48.5%' },
+                  selected && styles.filterOptionSelected,
+                  selected && { borderColor: optionColor, backgroundColor: `${optionColor}14` },
+                ]}
+                onPress={() => handleFilterChange(group.key, selected ? '' : option.key)}
+              >
+                <View style={styles.filterOptionLeading}>
+                  {option.color ? (
+                    <View
+                      accessible={false}
+                      style={[styles.filterOptionColor, { backgroundColor: option.color }]}
+                    />
+                  ) : null}
+                  {option.icon ? (
+                    <MaterialIcons
+                      name={option.icon as any}
+                      size={19}
+                      color={selected ? optionColor : colors.text.secondary}
+                    />
+                  ) : null}
+                </View>
+                <Text style={[
+                  styles.filterOptionText,
+                  selected && styles.filterOptionTextSelected,
+                  selected && { color: optionColor },
+                ]}>
+                  {option.label}
+                </Text>
+                {selected ? (
+                  <View style={[styles.filterOptionCheck, { backgroundColor: optionColor }]}>
+                    <MaterialIcons name="check" size={14} color={colors.primaryContrastText || '#FFFFFF'} />
+                  </View>
+                ) : null}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
       </View>
     );
   };
@@ -272,11 +298,14 @@ export default function UnifiedSearchAndFilter<T extends BaseItem>({
           <TouchableOpacity 
             style={[styles.filterButton, hasActiveFilters && styles.filterButtonActive]}
             onPress={() => setShowFiltersDropdown(!showFiltersDropdown)}
+            accessibilityRole="button"
+            accessibilityLabel={showFiltersDropdown ? 'Close filters' : 'Open filters'}
+            accessibilityState={{ expanded: showFiltersDropdown }}
           >
-            <MaterialIcons 
-              name="tune" 
-              size={24} 
-              color={hasActiveFilters ? '#fff' : '#007AFF'} 
+            <NativeSafeIcon
+              name="filter"
+              size={21}
+              color={hasActiveFilters ? colors.primaryContrastText : colors.primary}
             />
             {hasActiveFilters && (
               <View style={styles.filterBadge}>
@@ -292,7 +321,13 @@ export default function UnifiedSearchAndFilter<T extends BaseItem>({
       {/* Filters Dropdown */}
       {showFiltersDropdown && filterGroups.length > 0 && (
         <View style={styles.filtersDropdown}>
-          <Text style={styles.filtersTitle}>Filters</Text>
+          <View style={styles.filtersHeader}>
+            <View style={styles.filtersHeadingCopy}>
+              <NativeSafeIcon name="filter" size={18} color={colors.primary} />
+              <Text style={styles.filtersTitle}>Filters</Text>
+            </View>
+            <Text style={styles.filtersSubtitle}>Choose a session type</Text>
+          </View>
           
           <ScrollView 
             style={styles.filtersScrollView}
@@ -361,7 +396,7 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.background.paper,
-    borderRadius: 12,
+    borderRadius: uiTokens.radius.media,
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderWidth: 1,
@@ -381,24 +416,19 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   },
   // Filter Button - top right corner
   filterButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 46,
+    height: 46,
+    borderRadius: uiTokens.radius.media,
     backgroundColor: colors.background.paper,
     borderWidth: 1,
-    borderColor: '#007AFF',
+    borderColor: colors.divider,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
     position: 'relative',
   },
   filterButtonActive: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   filterBadge: {
     position: 'absolute',
@@ -423,24 +453,32 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     left: 20,
     right: 20,
     backgroundColor: colors.background.paper,
-    borderRadius: 12,
+    borderRadius: uiTokens.radius.card,
     marginTop: 8,
-    padding: 16,
+    padding: uiTokens.space.xl,
     borderWidth: 1,
     borderColor: colors.divider,
-    shadowColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 24,
+    boxShadow: uiTokens.effects.dialogShadow,
     zIndex: 40,
     maxHeight: 400, // Maximum height before scrolling
   },
   filtersTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: uiTokens.type.body,
+    fontWeight: '800',
     color: colors.text.primary,
-    marginBottom: 16,
+  },
+  filtersHeader: {
+    gap: uiTokens.space.xs,
+    marginBottom: uiTokens.space.lg,
+  },
+  filtersHeadingCopy: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: uiTokens.space.sm,
+  },
+  filtersSubtitle: {
+    color: colors.text.secondary,
+    fontSize: uiTokens.type.caption,
   },
   filtersScrollView: {
     maxHeight: 320, // Max height for scrollable area (leaving room for title and clear button)
@@ -449,13 +487,18 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     paddingBottom: 8,
   },
   filterGroup: {
-    marginBottom: 16,
+    marginBottom: uiTokens.space.md,
   },
   filterLabel: {
     fontSize: 14,
     fontWeight: '600',
     color: colors.text.primary,
-    marginBottom: 8,
+    marginBottom: uiTokens.space.sm,
+  },
+  filterOptionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: uiTokens.space.sm,
   },
   filterScroll: {
     flexDirection: 'row',
@@ -485,23 +528,42 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   filterOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    marginBottom: 4,
+    minHeight: uiTokens.control.compactHeight,
+    paddingVertical: uiTokens.space.sm,
+    paddingHorizontal: uiTokens.space.md,
+    borderRadius: uiTokens.radius.input,
+    borderWidth: 1,
+    borderColor: colors.divider,
+    backgroundColor: isDark ? 'rgba(255,255,255,0.025)' : 'rgba(7,17,30,0.018)',
+  },
+  filterOptionLeading: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: uiTokens.space.sm,
+  },
+  filterOptionColor: {
+    width: 9,
+    height: 9,
+    borderRadius: uiTokens.radius.circle,
   },
   filterOptionSelected: {
-    backgroundColor: 'rgba(0, 122, 255, 0.1)',
+    borderWidth: 1,
   },
   filterOptionText: {
-    fontSize: 16,
+    fontSize: uiTokens.type.label,
     color: colors.text.primary,
-    marginLeft: 12,
+    marginLeft: uiTokens.space.sm,
     flex: 1,
   },
   filterOptionTextSelected: {
-    color: '#007AFF',
-    fontWeight: '600',
+    fontWeight: '800',
+  },
+  filterOptionCheck: {
+    alignItems: 'center',
+    borderRadius: uiTokens.radius.circle,
+    height: 22,
+    justifyContent: 'center',
+    width: 22,
   },
   clearAllFilters: {
     flexDirection: 'row',

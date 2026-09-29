@@ -149,7 +149,16 @@ export default function SpeakersCalendar() {
         // use the event-scoped speakers table so they never inherit the BSL
         // directory by accident.
         const dbPromise = canUseLegacyBslDirectory
-          ? supabase.from('bsl_speakers').select('*')
+          ? supabase
+              .from('bsl_speakers')
+              .select('*')
+              .eq(
+                'event_id',
+                event.id.toLowerCase() === 'bsl'
+                  ? 'bsl2025'
+                  : event.id.toLowerCase(),
+              )
+              .eq('is_active', true)
           : supabase.from('speakers').select('*').eq('event_id', event.id).order('sort_order');
 
         let timeoutId: ReturnType<typeof setTimeout> | undefined;

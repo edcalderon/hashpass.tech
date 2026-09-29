@@ -22,24 +22,43 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202609290116, // Updated to current timestamp
+  buildNumber: 202609290303, // Updated to current timestamp
   releaseDate: '2026-09-29',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    // No new features
+    'add event hero video fallbacks',
+    'sync BSL Colombia programme'
   ],
   bugfixes: [
-    'refresh Helpdesk proxy after deploy',
-    'use external Plane object storage',
-    'restore self-hosted deployment path'
+    'complete consolidated release safeguards',
+    'preserve signed MCP consent query',
+    'harden Colombia programme sync'
   ],
   breakingChanges: [],
-  notes: 'refresh Helpdesk proxy after deploy; use external Plane object storage; restore self-hosted deployment path'
+  notes: 'add event hero video fallbacks; sync BSL Colombia programme; complete consolidated release safeguards; preserve signed MCP consent query; harden Colombia programme sync'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.77': {
+    version: '1.9.77',
+    buildNumber: 202609290303,
+    releaseDate: '2026-09-29',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'add event hero video fallbacks',
+      'sync BSL Colombia programme'
+    ],
+    bugfixes: [
+      'complete consolidated release safeguards',
+      'preserve signed MCP consent query',
+      'harden Colombia programme sync'
+    ],
+    breakingChanges: [],
+    notes: 'add event hero video fallbacks; sync BSL Colombia programme; complete consolidated release safeguards; preserve signed MCP consent query; harden Colombia programme sync'
+  },
   '1.9.76': {
     version: '1.9.76',
     buildNumber: 202609290116,

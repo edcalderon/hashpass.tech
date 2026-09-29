@@ -118,7 +118,8 @@ describe('/api/admin/speaker-roles', () => {
       error: null,
     });
     const speakerOrder = jest.fn(() => ({ limit: speakerLimit }));
-    const speakerSelect = jest.fn(() => ({ order: speakerOrder }));
+    const speakerEq = jest.fn(() => ({ order: speakerOrder }));
+    const speakerSelect = jest.fn(() => ({ eq: speakerEq }));
     mockFrom.mockImplementation((table: string) => table === 'bsl_speakers'
       ? { select: speakerSelect }
       : { select: claimSelect });
@@ -135,6 +136,7 @@ describe('/api/admin/speaker-roles', () => {
       })],
     });
     expect(mockFrom).toHaveBeenCalledWith('speaker_identity_claims');
+    expect(speakerEq).toHaveBeenCalledWith('event_id', 'chile2026');
     expect(claimIn).toHaveBeenCalledWith('speaker_id', ['edward-calderon']);
   });
 });

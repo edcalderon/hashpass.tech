@@ -21,7 +21,14 @@ export interface AgendaItem {
   title: string;
   description?: string;
   speakers?: string[];
-  type: "keynote" | "panel" | "workshop" | "break" | "meal" | "registration";
+  type:
+    | "keynote"
+    | "panel"
+    | "workshop"
+    | "networking"
+    | "break"
+    | "meal"
+    | "registration";
   location?: string;
   // Explicit day number ('1' | '2' | '3', see app/events/[eventSlug]/agenda.tsx)
   // for multi-day events. Without it, the agenda screen falls back to
@@ -127,6 +134,8 @@ export interface EventConfig {
   image: string;
   /** Optional autoplaying hero footage for event discovery surfaces. */
   heroVideo?: string;
+  /** Static poster used behind hero footage while it loads or cannot play. */
+  heroPoster?: string;
   /**
    * Ordered promotional slides owned by this event. When omitted, discovery
    * falls back to one static slide using `image` and the event's core details.

@@ -110,13 +110,123 @@ export interface ExplorerEvent {
   city?: string;
   cityKey?: string;
   series?: string;
+  communityEventType?:
+    | "poker_room_event"
+    | "community_tournament"
+    | "community_event";
   continent?: EventContinent;
+  /** Event-family key: BSL's hub and each of its stops share one chapter. */
+  tourHubEventId?: string;
   hasPass?: boolean;
   color?: string;
   tourRole?: "hub" | "stop" | "archive" | string;
   image?: string;
+  /** Silent event hero film for the discovery carousel. */
+  heroVideo?: string;
+  /** Static poster shown while a hero film is loading or unavailable. */
+  heroPoster?: string;
   shortName?: string;
 }
+
+export interface ExplorerHeroSlide {
+  id: string;
+  eventId?: string;
+  eyebrow: string;
+  title: string;
+  subtitle: string;
+  backgroundColor: string;
+  route?: string;
+  media?: { type: "image" | "video"; url: string };
+  /** Render underneath video so a transport or decode failure stays useful. */
+  fallbackImage?: string;
+}
+
+const getExplorerEventEyebrow = (event: ExplorerEvent): string => {
+  switch (event.communityEventType) {
+    case "poker_room_event":
+      return "POKER ROOM";
+    case "community_tournament":
+      return "POKER TOURNAMENT";
+    case "community_event":
+      return "COMMUNITY EVENT";
+    default:
+      return event.shortName || event.series || "HASHPASS EVENT";
+  }
+};
+
+/**
+ * A tenant page represents exactly one configured event. Unlike the global
+ * carousel, it retains that event's poster/film after the event becomes
+ * historical because its archive remains the tenant's own home surface.
+ */
+export const getExplorerTenantHeroSlide = (
+  event: ExplorerEvent,
+): ExplorerHeroSlide => {
+  const fallbackImage = event.heroPoster || event.image;
+
+  return {
+    id: `${event.id}-default`,
+    eventId: event.id,
+    eyebrow: getExplorerEventEyebrow(event),
+    title: event.title,
+    subtitle: event.eventDateString || event.subtitle || "Coming soon",
+    backgroundColor: event.color || "#18212D",
+    route: `/events/${event.id}/home`,
+    media: event.heroVideo
+      ? { type: "video", url: event.heroVideo }
+      : fallbackImage
+        ? { type: "image", url: fallbackImage }
+        : undefined,
+    fallbackImage,
+  };
+};
+
+/**
+ * The Explorer's global hero is event data, never campaign-copy data. Every
+ * event may ship an optional muted hero film and an independently loadable
+ * poster; without either, callers can use their neutral visual fallback.
+ */
+export const getExplorerHeroSlides = (
+  events: ExplorerEvent[],
+  now: number = Date.now(),
+): ExplorerHeroSlide[] => {
+  // Past events stay in the catalogue for discovery and history, but never
+  // occupy the main dashboard hero's limited attention.
+  const eventSlides = events
+    .filter((event) => getExplorerEventStatus(event, now) !== "past")
+    .map((event) => ({
+        familyId: event.tourHubEventId || event.id,
+        slide: getExplorerTenantHeroSlide(event),
+      }));
+
+  const partnersSlide: ExplorerHeroSlide = {
+      id: "hashpass-partners-discovery",
+      eyebrow: "OFFICIAL PARTNERS",
+      title: "Built with the people moving the ecosystem forward.",
+      subtitle: "Sponsors and community partners make every stop possible.",
+      backgroundColor: "#18212D",
+      media: {
+        type: "video",
+        url: "https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events/hashpass-partners/branding/hashpass-partners-cover-v1.mp4",
+      },
+      fallbackImage:
+        "https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events/hashpass-partners/branding/hashpass-partners-cover-v1.jpg",
+  };
+
+  // Partners lead the global Explorer, then each event family remains intact
+  // so a BSL hub is never split from its tour stops.
+  const familySlides = Array.from(
+    eventSlides.reduce((families, entry) => {
+      const slides = families.get(entry.familyId) || [];
+      slides.push(entry.slide);
+      families.set(entry.familyId, slides);
+      return families;
+    }, new Map<string, ExplorerHeroSlide[]>()),
+    ([, slides]) => slides,
+  );
+
+  return [partnersSlide, ...familySlides.flat()];
+};
 
 export interface ExplorerFilters {
   query?: string;

@@ -898,6 +898,7 @@
       "eventBannerSlides": "이벤트 배너 슬라이드",
       "showEventBanner": "배너 {number} 보기",
       "loadingEventFilm": "이벤트 영상 불러오는 중",
+      "exploreEvent": "이벤트 둘러보기",
       "clfFilmEyebrow": "CLF 2026 · 공식 필름",
       "clfSubtitle": "말로카, 보고타 · 제9회",
       "clfDate": "2026년 8월 27–28일 · 콜롬비아 보고타",
@@ -1557,6 +1558,8 @@
       "speakers": "연사",
       "keynote": "기조 연설",
       "panel": "패널",
+      "workshop": "워크숍",
+      "networking": "네트워킹",
       "break": "휴식",
       "meal": "식사",
       "registration": "등록"
@@ -1625,11 +1628,19 @@
       "speakers": "연사",
       "location": "장소"
     },
+    "viewMode": {
+      "label": "일정 표시",
+      "compact": "압축 보기",
+      "list": "목록 보기",
+      "grid": "격자 보기"
+    },
     "refresh": "새로고침",
     "refreshAgenda": "일정 새로고침",
     "types": {
       "keynote": "기조연설",
       "panel": "패널",
+      "workshop": "워크숍",
+      "networking": "네트워킹",
       "break": "휴식",
       "meal": "식사",
       "registration": "등록"

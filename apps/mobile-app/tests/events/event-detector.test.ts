@@ -60,6 +60,14 @@ describe("event tenant detection", () => {
       "hash-poker",
       "cbweek2026",
     ]);
+    for (const eventId of events) {
+      expect(EVENTS[eventId]?.heroVideo).toMatch(
+        new RegExp(`events/${eventId}/branding/hashpass-event-hero-v\\d+\\.mp4$`),
+      );
+      expect(EVENTS[eventId]?.heroPoster).toMatch(
+        new RegExp(`events/${eventId}/branding/hashpass-event-hero-v\\d+\\.jpg$`),
+      );
+    }
   });
 
   it("scopes bsl.hashpass.tech to the BSL event family via shared tenant config", () => {
@@ -143,9 +151,12 @@ describe("event tenant detection", () => {
     expect(EVENTS.cbweek2026.bannerSlides?.[0]).toMatchObject({
       media: {
         type: "video",
-        url: expect.stringContaining("/cbweek2026/branding/hashpass-event-hero-v1.mp4"),
+        url: expect.stringContaining("/cbweek2026/branding/hashpass-event-hero-v3.mp4"),
       },
     });
+    expect(EVENTS.cbweek2026.heroPoster).toContain(
+      "/cbweek2026/branding/hashpass-event-hero-v3.jpg",
+    );
   });
 
   it("scopes CBWeek to its own tenant and also lists the published event globally", () => {

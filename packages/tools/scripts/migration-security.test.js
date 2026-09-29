@@ -113,6 +113,50 @@ const targetBslBootstrapPath = path.join(
 );
 const profilePath = path.join(__dirname, 'config/database-profiles.json');
 const migrationRunnerPath = path.join(__dirname, 'migrate-tenant-db.mjs');
+const eventScopedSpeakersMigrationPath = path.join(
+  root,
+  'db/migrations/V107__scope_legacy_speakers_by_event.sql',
+);
+const eventScopedSpeakerAdminMigrationPath = path.join(
+  root,
+  'db/migrations/V108__enforce_event_scoped_speaker_admin_roles.sql',
+);
+
+describe('event-scoped speaker administration migrations', () => {
+  it('ships speaker schema and role enforcement migrations after the Better Auth V106 migration', () => {
+    const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+
+    expect(fs.existsSync(eventScopedSpeakersMigrationPath)).toBe(true);
+    expect(fs.existsSync(eventScopedSpeakerAdminMigrationPath)).toBe(true);
+    expect(config.groups['event-scoped-speakers']).toEqual([
+      'db/migrations/V107__scope_legacy_speakers_by_event.sql',
+      'db/migrations/V108__enforce_event_scoped_speaker_admin_roles.sql',
+    ]);
+    expect(config.defaultGroups).not.toContain('event-scoped-speakers');
+    expect(
+      Object.entries(config.profileGroups)
+        .filter(([, groups]) => groups.includes('event-scoped-speakers'))
+        .map(([profile]) => profile)
+        .sort(),
+    ).toEqual(['bsl-development', 'bsl-production']);
+  });
+
+  it('only reconciles agenda rows owned by the active programme source', () => {
+    const migration = fs.readFileSync(eventScopedSpeakersMigrationPath, 'utf8');
+
+    expect(migration).toMatch(/ALTER TABLE public\.event_agenda\s+ADD COLUMN IF NOT EXISTS source_id text/i);
+    expect(migration).toMatch(/\(id, event_id, source_id,[\s\S]*?\)\s+SELECT x\.id, p_event_id, p_source_id/i);
+    expect(migration).toMatch(/agenda\.event_id = p_event_id[\s\S]*?agenda\.source_id = p_source_id[\s\S]*?NOT EXISTS/i);
+  });
+
+  it('matches every speaker role read and mutation to the authorized event', () => {
+    const migration = fs.readFileSync(eventScopedSpeakerAdminMigrationPath, 'utf8');
+
+    expect(migration).toMatch(/FROM public\.bsl_speakers[\s\S]*WHERE id::text = p_speaker_id[\s\S]*AND event_id = p_event_id[\s\S]*FOR UPDATE/i);
+    expect(migration).toMatch(/UPDATE public\.bsl_speakers[\s\S]*WHERE id::text = p_speaker_id[\s\S]*AND event_id = p_event_id/gi);
+    expect(migration).toMatch(/FROM public\.bsl_speakers[\s\S]*WHERE id::text = p_speaker_id[\s\S]*AND event_id = p_event_id/i);
+  });
+});
 
 describe('Better Auth MCP OAuth migration plan', () => {
   it('assigns the OAuth migration only to dedicated Better Auth profiles', () => {
@@ -146,10 +190,20 @@ describe('Better Auth MCP OAuth migration plan', () => {
       'better-auth-development': [
         'BETTER_AUTH_DATABASE_URL_DEV',
         'BETTER_AUTH_DATABASE_URL',
+        'SUPABASE_DB_URL_DEV',
+        'DATABASE_URL_DEV',
+        'DEV_DB_URL',
+        'SUPABASE_DB_URL',
+        'DATABASE_URL',
       ],
       'better-auth-production': [
         'BETTER_AUTH_DATABASE_URL_PROD',
         'BETTER_AUTH_DATABASE_URL',
+        'SUPABASE_DB_URL_PROD',
+        'DATABASE_URL_PROD',
+        'PROD_DB_URL',
+        'SUPABASE_DB_URL',
+        'DATABASE_URL',
       ],
       'core-development': [
         'SUPABASE_DB_URL_DEV',

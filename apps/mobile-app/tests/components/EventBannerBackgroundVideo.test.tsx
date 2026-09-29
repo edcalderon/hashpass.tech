@@ -89,6 +89,20 @@ describe("EventBannerBackgroundVideo", () => {
     ).toHaveLength(0);
   });
 
+  it("does not cover a caller-rendered native poster with a video loader", () => {
+    const renderer = render(
+      <NativeEventBannerBackgroundVideo
+        source="https://cdn.example/clf.mp4"
+        loadingLabel="Loading CLF film"
+        showLoadingIndicator={false}
+      />,
+    );
+
+    expect(
+      renderer.root.findAllByProps({ accessibilityLabel: "Loading CLF film" }),
+    ).toHaveLength(0);
+  });
+
   it("autoplays web video and swaps the branded loader after loaded data", () => {
     const video = createWebVideo();
     const renderer = render(
@@ -126,6 +140,24 @@ describe("EventBannerBackgroundVideo", () => {
       "loadeddata",
       expect.any(Function),
     );
+  });
+
+  it("does not cover a caller-rendered web poster with a video loader", () => {
+    const video = createWebVideo();
+    const renderer = render(
+      <WebEventBannerBackgroundVideo
+        source="https://cdn.example/clf.mp4"
+        loadingLabel="Loading CLF film"
+        showLoadingIndicator={false}
+      />,
+      {
+        createNodeMock: (element) => (element.type === "video" ? video : null),
+      },
+    );
+
+    expect(
+      renderer.root.findAllByProps({ "aria-label": "Loading CLF film" }),
+    ).toHaveLength(0);
   });
 
   it("uses the bundled CLF film on native instead of relying on the remote URL", () => {

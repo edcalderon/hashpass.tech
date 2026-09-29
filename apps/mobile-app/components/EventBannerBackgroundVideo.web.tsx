@@ -6,6 +6,8 @@ interface EventBannerBackgroundVideoProps {
   loadingLabel?: string;
   preferBundledSource?: boolean;
   playbackEnabled?: boolean;
+  /** A poster is already visible behind the video, so avoid obscuring it. */
+  showLoadingIndicator?: boolean;
   contentFit?: "cover" | "contain";
   focalPosition?: string;
 }
@@ -20,6 +22,7 @@ export default function EventBannerBackgroundVideo({
   loadingLogo,
   loadingLabel = "Loading event film",
   playbackEnabled = true,
+  showLoadingIndicator = true,
   contentFit = "cover",
   focalPosition = "center bottom",
 }: EventBannerBackgroundVideoProps) {
@@ -86,7 +89,7 @@ export default function EventBannerBackgroundVideo({
           transition: "opacity 180ms ease-out",
         }}
       />
-      {!hasFirstFrame && (
+      {!hasFirstFrame && showLoadingIndicator && (
         <div
           aria-label={loadingLabel}
           style={{

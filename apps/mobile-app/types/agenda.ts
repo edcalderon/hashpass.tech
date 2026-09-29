@@ -1,5 +1,12 @@
 // Agenda related types
-export type AgendaType = 'keynote' | 'panel' | 'break' | 'meal' | 'registration';
+export type AgendaType =
+  | 'keynote'
+  | 'panel'
+  | 'workshop'
+  | 'networking'
+  | 'break'
+  | 'meal'
+  | 'registration';
 
 export interface AgendaItem {
   id: string;
@@ -22,6 +29,8 @@ export const getAgendaTypeColor = (type: string): string => {
   switch (type) {
     case 'keynote': return '#007AFF';
     case 'panel': return '#34A853';
+    case 'workshop': return '#AF52DE';
+    case 'networking': return '#00A6C7';
     case 'break': return '#FF9500';
     case 'meal': return '#FF3B30';
     case 'registration': return '#8E8E93';
@@ -33,7 +42,9 @@ export const getAgendaTypeColor = (type: string): string => {
 export const getAgendaTypeIcon = (type: string): string => {
   switch (type) {
     case 'keynote': return 'mic';
-    case 'panel': return 'group';
+    case 'panel': return 'people';
+    case 'workshop': return 'build';
+    case 'networking': return 'people';
     case 'break': return 'coffee';
     case 'meal': return 'restaurant';
     case 'registration': return 'person-add';

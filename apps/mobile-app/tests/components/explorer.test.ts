@@ -3,6 +3,8 @@ import {
   getExplorerEventStatus,
   getExplorerFloatingBottomInset,
   getExplorerHeroActionTarget,
+  getExplorerHeroSlides,
+  getExplorerTenantHeroSlide,
   getExplorerLayout,
   getExplorerPageCount,
   getExplorerPageEvents,
@@ -53,6 +55,180 @@ const events: ExplorerEvent[] = [
 ];
 
 describe("explorer rework behavior", () => {
+  it("builds one media-backed hero slide per event and keeps an image fallback behind video", () => {
+    expect(
+      getExplorerHeroSlides([
+        {
+          id: "colombia2026",
+          title: "Blockchain Summit Latam Colombia 2026",
+          subtitle: "Bogotá, Colombia",
+          eventDateString: "November 5–6, 2026",
+          shortName: "BSL",
+          color: "#F5C542",
+          heroVideo: "https://media.example/events/colombia2026/hero.mp4",
+          heroPoster: "https://media.example/events/colombia2026/hero.jpg",
+          image: "https://media.example/events/colombia2026/logo.webp",
+        },
+        {
+          id: "offline-event",
+          title: "Offline event",
+          subtitle: "Poster only",
+          image: "https://media.example/events/offline-event/poster.jpg",
+        },
+        {
+          id: "legacy-event",
+          title: "Legacy event",
+          subtitle: "No media",
+        },
+      ]),
+    ).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        id: "colombia2026-default",
+        eventId: "colombia2026",
+        eyebrow: "BSL",
+        media: {
+          type: "video",
+          url: "https://media.example/events/colombia2026/hero.mp4",
+        },
+        fallbackImage: "https://media.example/events/colombia2026/hero.jpg",
+        route: "/events/colombia2026/home",
+      }),
+      expect.objectContaining({
+        id: "offline-event-default",
+        media: {
+          type: "image",
+          url: "https://media.example/events/offline-event/poster.jpg",
+        },
+        fallbackImage: "https://media.example/events/offline-event/poster.jpg",
+      }),
+      expect.objectContaining({
+        id: "legacy-event-default",
+        media: undefined,
+        fallbackImage: undefined,
+      }),
+      expect.objectContaining({
+        id: "hashpass-partners-discovery",
+        title: "Built with the people moving the ecosystem forward.",
+        media: {
+          type: "video",
+          url:
+            "https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events/hashpass-partners/branding/hashpass-partners-cover-v1.mp4",
+        },
+        fallbackImage:
+          "https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events/hashpass-partners/branding/hashpass-partners-cover-v1.jpg",
+      }),
+    ]));
+
+    expect(
+      getExplorerHeroSlides([
+        { id: "bsl", title: "BSL", tourHubEventId: "bsl" },
+        { id: "colombia2026", title: "BSL Colombia", tourHubEventId: "bsl" },
+        { id: "hash-poker", title: "Hash Poker" },
+        { id: "cbweek2026", title: "CBWeek" },
+    ]).map((slide) => slide.id),
+    ).toEqual([
+      "hashpass-partners-discovery",
+      "bsl-default",
+      "colombia2026-default",
+      "hash-poker-default",
+      "cbweek2026-default",
+    ]);
+  });
+
+  it("keeps past events in Explorer cards but out of the limited hero carousel", () => {
+    const slides = getExplorerHeroSlides(
+      [
+        {
+          id: "peru2026",
+          title: "Blockchain Summit Latam Perú 2026",
+          tourRole: "stop",
+          eventEndDate: "2026-05-15T23:59:59-05:00",
+        },
+        {
+          id: "colombia2026",
+          title: "Blockchain Summit Latam Colombia 2026",
+          tourRole: "stop",
+          eventStartDate: "2026-11-05T09:00:00-05:00",
+        },
+      ],
+      Date.parse("2026-09-29T12:00:00Z"),
+    );
+
+    expect(slides.map((slide) => slide.eventId)).toEqual([
+      undefined,
+      "colombia2026",
+      undefined,
+    ]);
+  });
+
+  it("keeps a tenant's own hero media after that event has ended", () => {
+    expect(
+      getExplorerTenantHeroSlide({
+        id: "peru2026",
+        title: "Blockchain Summit Latam Perú 2026",
+        eventEndDate: "2026-05-15T23:59:59-05:00",
+        heroVideo: "https://media.example/events/peru2026/hero.mp4",
+        heroPoster: "https://media.example/events/peru2026/hero.jpg",
+      }),
+    ).toMatchObject({
+      eventId: "peru2026",
+      media: {
+        type: "video",
+        url: "https://media.example/events/peru2026/hero.mp4",
+      },
+      fallbackImage: "https://media.example/events/peru2026/hero.jpg",
+    });
+  });
+
+  it("puts the Partners chapter first and preserves the actual community event type", () => {
+    const events = [
+      {
+        id: "bogota-2026",
+        title: "Blockchain Summit Latam Colombia 2026",
+        city: "Bogotá",
+        country: "Colombia",
+        eventDateString: "November 5–6, 2026",
+        eventStartDate: "2026-11-05T09:00:00-05:00",
+        eventEndDate: "2026-11-06T23:59:59-05:00",
+      },
+      {
+        id: "medellin-2027",
+        title: "Hashpass Medellín 2027",
+        city: "Medellín",
+        country: "Colombia",
+        eventDateString: "February 10, 2027",
+        eventStartDate: "2027-02-10T09:00:00-05:00",
+        eventEndDate: "2027-02-10T23:59:59-05:00",
+        heroVideo: "https://media.example/events/medellin-2027/hero.mp4",
+        heroPoster: "https://media.example/events/medellin-2027/hero.jpg",
+      },
+    ];
+
+    const beforeBogota = getExplorerHeroSlides(
+      events,
+      Date.parse("2026-10-01T12:00:00-05:00"),
+    );
+    expect(beforeBogota[0]).toMatchObject({
+      id: "hashpass-partners-discovery",
+      eyebrow: "OFFICIAL PARTNERS",
+      media: {
+        type: "video",
+        url:
+            "https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events/hashpass-partners/branding/hashpass-partners-cover-v1.mp4",
+      },
+    });
+
+    expect(
+      getExplorerHeroSlides([
+        {
+          id: "hash-poker",
+          title: "50K Turbo",
+          communityEventType: "poker_room_event",
+        },
+      ])[1],
+    ).toMatchObject({eyebrow: "POKER ROOM"});
+  });
+
   it("uses the refresh glyph for the compact event reload control", () => {
     expect(resolveExplorerIconName("refresh")).toBe("refresh");
   });

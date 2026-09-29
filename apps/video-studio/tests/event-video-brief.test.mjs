@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import {readFile} from 'node:fs/promises';
 
 import {
   buildClaudeMessagesFetchInit,
@@ -28,6 +29,23 @@ test('builds a constrained Claude brief for a reviewed event background loop', (
     'negativePrompt',
     'reviewChecklist',
   ]);
+});
+
+test('animates the event hero skyline as a seamless growing column field', async () => {
+  const source = await readFile(new URL('../src/compositions/EventHeroLoop.tsx', import.meta.url), 'utf8');
+
+  assert.match(source, /columnPhase/);
+  assert.match(source, /columnScale/);
+  assert.match(source, /\[0\.9, 1\.06\]/);
+});
+
+test('uses the dedicated poker-table language for Hash Poker rather than city columns', async () => {
+  const manifest = await readFile(new URL('../src/content/event-hero-specs.json', import.meta.url), 'utf8');
+  const source = await readFile(new URL('../src/compositions/EventHeroLoop.tsx', import.meta.url), 'utf8');
+
+  assert.match(manifest, /"id": "hash-poker"[\s\S]*?"visualTheme": "poker-table"/);
+  assert.match(source, /PokerTable/);
+  assert.match(source, /visualTheme === 'poker-table'/);
 });
 
 test('sends the configured Anthropic API key with the Messages API key header', () => {

@@ -8,6 +8,7 @@ import { ActionButton, Badge, Surface } from '@hashpass/ui/primitives';
 import { uiPalette, uiTokens } from '@hashpass/ui/tokens';
 import { useTheme } from '../../../hooks/useTheme';
 import { apiClient } from '@/lib/api-client';
+import { extractSignedOAuthQuery } from '@/lib/auth/mcp-login';
 
 type ConsentDetails = {
   clientId: string;
@@ -41,7 +42,7 @@ export default function McpConsentScreen() {
     [authBaseUrl],
   );
   const authorizationQuery = useMemo(
-    () => (typeof window === 'undefined' ? '' : window.location.search.replace(/^\?/, '')),
+    () => (typeof window === 'undefined' ? '' : extractSignedOAuthQuery(window.location.search)),
     [],
   );
 
@@ -72,7 +73,6 @@ export default function McpConsentScreen() {
     try {
       const result = await (authClient as any).oauth2.consent({
         accept,
-        oauth_query: authorizationQuery,
       });
       if (result?.error) throw new Error(result.error.message || 'Authorization failed.');
       const redirect = result?.data?.redirectURI || result?.data?.redirectUri || result?.data?.url;
@@ -81,7 +81,7 @@ export default function McpConsentScreen() {
       setError(reason instanceof Error ? reason.message : 'Authorization failed.');
       setBusy(false);
     }
-  }, [authClient, authorizationQuery]);
+  }, [authClient]);
 
   const displayedScopes = details?.scopes.filter((scope) => scopeLabels[scope]) || [];
   const clientName = details?.clientName || 'Unnamed OAuth client';

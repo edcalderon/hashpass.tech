@@ -278,6 +278,11 @@ function applyLocalDirectusDatabaseOverrides(targetConfig, rootConfig) {
   if (databaseConnectionString) {
     targetConfig.DB_CONNECTION_STRING = databaseConnectionString;
     targetConfig.DATABASE_URL = databaseConnectionString;
+    // Better Auth uses this same local development database when a dedicated
+    // URL has not been configured. Keep the generated app environment and
+    // the dedicated migration profile pointed at the same schema.
+    targetConfig.BETTER_AUTH_DATABASE_URL = databaseConnectionString;
+    targetConfig.BSL_BETTER_AUTH_DATABASE_URL = databaseConnectionString;
   }
 }
 

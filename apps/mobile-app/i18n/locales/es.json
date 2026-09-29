@@ -902,6 +902,7 @@
       "eventBannerSlides": "Diapositivas del banner del evento",
       "showEventBanner": "Mostrar banner {number}",
       "loadingEventFilm": "Cargando video del evento",
+      "exploreEvent": "Explorar evento",
       "clfFilmEyebrow": "CLF 2026 · Película oficial",
       "clfSubtitle": "Maloka, Bogotá · 9.ª edición",
       "clfDate": "27–28 de agosto de 2026 · Bogotá, Colombia",
@@ -1561,6 +1562,8 @@
       "speakers": "Oradores",
       "keynote": "Conferencia Principal",
       "panel": "Panel",
+      "workshop": "Taller",
+      "networking": "Networking",
       "break": "Descanso",
       "meal": "Comida",
       "registration": "Registro"
@@ -1629,11 +1632,19 @@
       "speakers": "Oradores",
       "location": "Ubicación"
     },
+    "viewMode": {
+      "label": "Vista de agenda",
+      "compact": "Vista compacta",
+      "list": "Vista de lista",
+      "grid": "Vista en cuadrícula"
+    },
     "refresh": "Actualizar",
     "refreshAgenda": "Actualizar agenda",
     "types": {
       "keynote": "Keynote",
       "panel": "Panel",
+      "workshop": "Taller",
+      "networking": "Networking",
       "break": "Descanso",
       "meal": "Comida",
       "registration": "Registro"

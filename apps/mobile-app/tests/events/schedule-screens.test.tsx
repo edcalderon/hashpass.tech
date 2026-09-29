@@ -125,6 +125,7 @@ jest.mock('@expo/vector-icons', () => ({
 
 jest.mock('../../lib/vector-icons', () => ({
   MaterialIcons: 'MaterialIcons',
+  NativeSafeIcon: 'NativeSafeIcon',
 }));
 
 jest.mock('expo-router', () => ({
@@ -168,6 +169,10 @@ jest.mock('expo-file-system', () => ({
 jest.mock('expo-sharing', () => ({
   isAvailableAsync: (...args: unknown[]) => mockSharingIsAvailableAsync(...args),
   shareAsync: (...args: unknown[]) => mockSharingShareAsync(...args),
+}));
+
+jest.mock('expo-linear-gradient', () => ({
+  LinearGradient: 'LinearGradient',
 }));
 
 jest.mock('@contexts/EventContext', () => ({
@@ -232,10 +237,20 @@ jest.mock('../../lib/supabase', () => ({
 
 import AgendaScreen from '../../app/events/[eventSlug]/agenda';
 import MyScheduleScreen from '../../app/events/[eventSlug]/networking/my-schedule';
+import { getDisplayAgendaDescription } from '../../lib/agenda-description';
 
 const flushPromises = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
 
 describe('event schedule screens', () => {
+  it('keeps ingestion metadata out of user-facing agenda descriptions', () => {
+    expect(getDisplayAgendaDescription(
+      '{"ends_at":"2026-11-04T10:00:00-05:00","source":"blockchainsummit-colombia2026","source_fingerprint":"abc123"}',
+    )).toBeNull();
+    expect(getDisplayAgendaDescription('A human-readable programme summary.')).toBe(
+      'A human-readable programme summary.',
+    );
+  });
+
   const calendarAgendaItem = {
     id: 'calendar-agenda-1',
     day: '1',
@@ -368,11 +383,269 @@ describe('event schedule screens', () => {
     const agendaFilter = renderer!.root.findByType('UnifiedSearchAndFilter' as any);
     expect(agendaFilter.props.filterGroups).toHaveLength(1);
     expect(agendaFilter.props.filterGroups[0].key).toBe('type');
+    expect(agendaFilter.props.filterGroups[0].options).toEqual(expect.arrayContaining([
+      expect.objectContaining({ key: 'keynote', color: '#007AFF' }),
+      expect.objectContaining({ key: 'panel', color: '#34A853' }),
+      expect.objectContaining({ key: 'workshop', color: '#AF52DE' }),
+      expect.objectContaining({ key: 'networking', color: '#00A6C7' }),
+      expect.objectContaining({ key: 'registration', color: '#8E8E93' }),
+    ]));
+    const typeLegend = renderer!.root.findByProps({ testID: 'agenda-type-legend' });
+    expect(typeLegend.findAll((node) => String(node.props.testID || '').startsWith('agenda-type-legend-'))).toHaveLength(7);
+    const keynoteLegend = typeLegend.findByProps({ testID: 'agenda-type-legend-keynote' });
+    expect(keynoteLegend.findByType('NativeSafeIcon' as any).props.name).toBe('mic');
+    expect(keynoteLegend.findByType('NativeSafeIcon' as any).props.color).toBe('#007AFF');
+    expect(keynoteLegend.props.accessibilityState.expanded).toBe(false);
+    await act(async () => {
+      keynoteLegend.props.onHoverIn();
+    });
+    expect(
+      renderer!.root.findByProps({ testID: 'agenda-type-legend-keynote' })
+        .props.accessibilityState.expanded,
+    ).toBe(true);
+    await act(async () => {
+      renderer!.root.findByProps({ testID: 'agenda-type-legend-keynote' }).props.onHoverOut();
+    });
+    expect(
+      renderer!.root.findByProps({ testID: 'agenda-type-legend-keynote' })
+        .props.accessibilityState.expanded,
+    ).toBe(false);
     expect(agendaSource).not.toContain('isCompactLayout && styles.actionButtonsCompact');
 
     await act(async () => {
       renderer!.unmount();
     });
+  });
+
+  it('shows programme context on day cards and lets attendees switch agenda presentation', async () => {
+    mockApiRequest.mockImplementation((path: string) => Promise.resolve({
+      success: true,
+      data: {
+        data: path === 'events/custom/agenda'
+          ? [
+            { id: 'day-one-late', day: '1', time: '11:00', title: 'Later panel', type: 'panel' },
+            { id: 'day-one-early', day: '1', time: '09:00', title: 'Opening keynote', type: 'keynote' },
+            { id: 'day-two', day: '2', time: '10:00', title: 'Workshop', type: 'panel' },
+          ]
+          : [],
+      },
+    }));
+
+    let renderer: TestRenderer.ReactTestRenderer;
+    await act(async () => {
+      renderer = TestRenderer.create(<AgendaScreen />);
+      await flushPromises();
+      await flushPromises();
+    });
+
+    const dayTabs = renderer!.root.findAll((node) => node.props.accessibilityRole === 'tab');
+    expect(dayTabs).toHaveLength(2);
+    expect(dayTabs[0].props.accessibilityLabel).toContain('2 tabs.sessions');
+
+    expect(renderer!.root.findByProps({ accessibilityLabel: 'viewMode.compact' }).props.accessibilityState.selected).toBe(true);
+    expect(renderer!.root.findAllByProps({ accessibilityLabel: 'viewMode.grid' })).toHaveLength(1);
+
+    const titles = renderer!.root.findAllByType(Text).map((node) => node.children.join(''));
+    expect(titles.indexOf('Opening keynote')).toBeLessThan(titles.indexOf('Later panel'));
+
+    const listButton = renderer!.root.findByProps({ accessibilityLabel: 'viewMode.list' });
+    await act(async () => {
+      listButton.props.onPress();
+      await flushPromises();
+    });
+    expect(renderer!.root.findByProps({ accessibilityLabel: 'viewMode.list' }).props.accessibilityState.selected).toBe(true);
+
+    const gridButton = renderer!.root.findByProps({ accessibilityLabel: 'viewMode.grid' });
+    await act(async () => {
+      gridButton.props.onPress();
+      await flushPromises();
+    });
+    expect(renderer!.root.findByProps({ accessibilityLabel: 'viewMode.grid' }).props.accessibilityState.selected).toBe(true);
+    expect(renderer!.root.findByProps({ testID: 'agenda-grid' })).toBeTruthy();
+
+    await act(async () => renderer!.unmount());
+  });
+
+  it('uses speaker media, time footer, and the published venue in agenda cards', async () => {
+    mockActiveEvent = {
+      ...mockEvent,
+      id: 'colombia2026',
+      tour: {
+        city: 'Bogotá',
+        country: 'Colombia',
+        venue: 'Universidad Externado de Colombia, Bogotá',
+      },
+      speakers: [{ id: 'speaker-a', name: 'Ada Lovelace', image: 'https://images.example.test/ada.jpg' }],
+    };
+    mockApiRequest.mockImplementation((path: string) => Promise.resolve({
+      success: true,
+      data: {
+        data: path === 'events/colombia2026/agenda'
+          ? [
+            {
+              id: 'keynote-session',
+              day: '1',
+              time: '08:00 - 09:00',
+              title: 'Opening keynote',
+              description: 'A human-readable programme summary.',
+              type: 'keynote',
+              speakers: ['speaker-a'],
+              location: 'Auditorio Principal',
+            },
+            {
+              id: 'networking-session',
+              day: '1',
+              time: '09:30',
+              title: 'Community connections',
+              description: '{"ends_at":"2026-11-04T10:00:00-05:00","source":"blockchainsummit-colombia2026","source_fingerprint":"abc123"}',
+              type: 'networking',
+              speakers: ['speaker-a'],
+              location: 'Hall principal',
+            },
+            {
+              id: 'panel-session',
+              day: '1',
+              time: '09:45',
+              title: 'Financial infrastructure panel',
+              type: 'panel',
+              location: 'Panel central',
+            },
+            {
+              id: 'workshop-session',
+              day: '1',
+              time: '10:00',
+              title: 'Builder workshop',
+              type: 'workshop',
+              location: 'Sala Taller',
+            },
+          ]
+          : [{ id: 'speaker-a', name: 'Ada Lovelace', image_url: null }],
+      },
+    }));
+
+    let renderer: TestRenderer.ReactTestRenderer;
+    await act(async () => {
+      renderer = TestRenderer.create(<AgendaScreen />);
+      await flushPromises();
+      await flushPromises();
+    });
+
+    const media = renderer!.root.findByProps({ testID: 'agenda-card-media-keynote-session' });
+    expect(media.findAllByType('Image' as any).some((node) => (
+      node.props.source?.uri === 'https://images.example.test/ada.jpg'
+    ))).toBe(true);
+    expect(media.findByProps({ accessibilityLabel: 'Ada Lovelace avatar' })).toBeTruthy();
+    expect(media.findByProps({ testID: 'agenda-card-venue-keynote-session' })).toBeTruthy();
+    const timeFooterStyles = renderer!.root
+      .findByProps({ testID: 'agenda-card-time-footer-keynote-session' })
+      .props.style;
+    expect(timeFooterStyles).toEqual(expect.objectContaining({
+      backgroundColor: 'rgba(3, 12, 24, 0.42)',
+      borderTopWidth: 1,
+    }));
+    expect(renderer!.root.findByProps({ testID: 'agenda-card-time-keynote-session' }).children.join('')).toBe('8:00 – 9:00 AM');
+    expect(renderer!.root.findAll((node) => (
+      node.type === Text && node.children.join('').includes('source_fingerprint')
+    ))).toHaveLength(0);
+    expect(renderer!.root.findByProps({ children: 'Auditorio Principal' })).toBeTruthy();
+    const networkingMedia = renderer!.root.findByProps({ testID: 'agenda-card-media-networking-session' });
+    expect(networkingMedia.findAllByType('NativeSafeIcon' as any).some((node) => node.props.name === 'people')).toBe(false);
+    const networkingWatermark = renderer!.root.findByProps({ testID: 'agenda-card-type-watermark-networking-session' });
+    const networkingShell = renderer!.root.findByProps({ testID: 'agenda-card-type-shell-networking-session' });
+    const networkingCollapsedIcon = renderer!.root
+      .findByProps({ testID: 'agenda-card-type-collapsed-icon-networking-session' });
+    expect(networkingWatermark.props.accessibilityState.expanded).toBe(false);
+    expect(networkingCollapsedIcon.findByType('NativeSafeIcon' as any).props.name).toBe('people');
+    expect(networkingCollapsedIcon.findByType('NativeSafeIcon' as any).props.color).toBe('#00A6C752');
+    expect(networkingShell.props.style).toEqual(expect.arrayContaining([
+      expect.objectContaining({ backgroundColor: '#00A6C71A' }),
+    ]));
+    expect(networkingWatermark.findByProps({ testID: 'agenda-card-type-layer-networking-session' })).toBeTruthy();
+    expect(networkingWatermark.findByProps({ children: 'TYPES.NETWORKING' })).toBeTruthy();
+    await act(async () => {
+      networkingWatermark.props.onHoverIn();
+    });
+    expect(
+      renderer!.root.findByProps({ testID: 'agenda-card-type-watermark-networking-session' })
+        .props.accessibilityState.expanded,
+    ).toBe(true);
+    await act(async () => {
+      renderer!.root.findByProps({ testID: 'agenda-card-type-watermark-networking-session' }).props.onHoverOut();
+    });
+    expect(
+      renderer!.root.findByProps({ testID: 'agenda-card-type-watermark-networking-session' })
+        .props.accessibilityState.expanded,
+    ).toBe(false);
+    await act(async () => {
+      renderer!.root.findByProps({ testID: 'agenda-card-type-watermark-networking-session' }).props.onPress();
+    });
+    expect(
+      renderer!.root.findByProps({ testID: 'agenda-card-type-watermark-networking-session' })
+        .props.accessibilityState.expanded,
+    ).toBe(true);
+    expect(networkingMedia.findByProps({ testID: 'agenda-card-venue-networking-session' })).toBeTruthy();
+    const panelMedia = renderer!.root.findByProps({ testID: 'agenda-card-media-panel-session' });
+    expect(panelMedia.findByProps({ testID: 'agenda-card-venue-panel-session' })).toBeTruthy();
+    const workshopMedia = renderer!.root.findByProps({ testID: 'agenda-card-media-workshop-session' });
+    expect(workshopMedia.findAllByType('NativeSafeIcon' as any).some((node) => node.props.name === 'build')).toBe(false);
+    expect(
+      renderer!.root
+        .findByProps({ testID: 'agenda-card-type-collapsed-icon-workshop-session' })
+        .findByType('NativeSafeIcon' as any).props.name,
+    ).toBe('build');
+    expect(workshopMedia.findAllByProps({ testID: 'agenda-card-venue-workshop-session' })).toHaveLength(0);
+
+    const gridButton = renderer!.root.findByProps({ accessibilityLabel: 'viewMode.grid' });
+    await act(async () => {
+      gridButton.props.onPress();
+      await flushPromises();
+    });
+    expect(renderer!.root.findByProps({ accessibilityLabel: 'viewMode.grid' }).props.accessibilityState.selected).toBe(true);
+    const gridCards = renderer!.root.findAll((node) => String(node.props.testID || '').startsWith('agenda-card-'));
+    expect(gridCards.some((node) => node.props.testID === 'agenda-card-networking-session')).toBe(true);
+    expect(gridCards.some((node) => node.props.testID === 'agenda-card-workshop-session')).toBe(true);
+    const cardLayoutStyles = renderer!.root
+      .findByProps({ testID: 'agenda-card-layout-keynote-session' })
+      .props.style.flat(Infinity).filter(Boolean);
+    expect(cardLayoutStyles).toEqual(expect.arrayContaining([
+      expect.objectContaining({ flexDirection: 'column' }),
+    ]));
+    const cardMediaStyles = renderer!.root
+      .findByProps({ testID: 'agenda-card-media-keynote-session' })
+      .props.style.flat(Infinity).filter(Boolean);
+    expect(cardMediaStyles).toEqual(expect.arrayContaining([
+      expect.objectContaining({ width: '100%' }),
+    ]));
+
+    await act(async () => renderer!.unmount());
+  });
+
+  it('keeps a configured speaker portrait when the directory record has no image', async () => {
+    mockActiveEvent = {
+      ...mockEvent,
+      speakers: [{ id: 'speaker-a', name: 'Ada Lovelace', image: 'https://images.example.test/ada.jpg' }],
+    };
+    mockApiRequest.mockImplementation((path: string) => Promise.resolve({
+      success: true,
+      data: {
+        data: path === 'events/custom/agenda'
+          ? [{ id: 'speaker-session', day: '1', time: '09:00', title: 'Opening', type: 'keynote', speakers: ['speaker-a'] }]
+          : [{ id: 'speaker-a', name: 'Ada Lovelace', image_url: null }],
+      },
+    }));
+
+    let renderer: TestRenderer.ReactTestRenderer;
+    await act(async () => {
+      renderer = TestRenderer.create(<AgendaScreen />);
+      await flushPromises();
+      await flushPromises();
+    });
+
+    const avatarImage = renderer!.root.findAllByType('Image' as any)
+      .find((node) => node.props.source?.uri === 'https://images.example.test/ada.jpg');
+    expect(avatarImage).toBeDefined();
+
+    await act(async () => renderer!.unmount());
   });
 
   it('bridges the native database session before favoriting or adding an agenda session', async () => {
@@ -398,10 +671,9 @@ describe('event schedule screens', () => {
       await flushPromises();
     });
 
-    const favoriteText = renderer!.root.findAllByType(Text).find((node) => node.children.join('') === 'actions.favorite');
-    expect(favoriteText).toBeTruthy();
-    let favoriteButton: any = favoriteText!.parent;
-    while (favoriteButton && typeof favoriteButton.props?.onPress !== 'function') favoriteButton = favoriteButton.parent;
+    const favoriteButton = renderer!.root.findByProps({
+      accessibilityLabel: 'actions.addToFavorites',
+    });
     await act(async () => {
       await favoriteButton.props.onPress();
       await flushPromises();

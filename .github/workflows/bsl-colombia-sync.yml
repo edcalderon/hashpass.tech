@@ -1,0 +1,64 @@
+name: BSL Colombia programme sync
+
+on:
+  schedule:
+    - cron: "17 * * * *"
+    - cron: "*/5 * 4-6 11 *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: bsl-colombia-programme-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [development, production]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - id: gate
+        name: Restrict five-minute polling to the live event
+        env:
+          SCHEDULE: ${{ github.event.schedule }}
+        run: |
+          if [[ "$SCHEDULE" == "*/5 * 4-6 11 *" && "$(date -u +%Y-%m-%d)" != 2026-11-0[4-6] ]]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.gate.outputs.run == 'true'
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - if: steps.gate.outputs.run == 'true'
+        uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa # v4
+        with:
+          version: 9.15.5
+      - if: steps.gate.outputs.run == 'true'
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - if: steps.gate.outputs.run == 'true'
+        run: pnpm install --frozen-lockfile
+      - if: steps.gate.outputs.run == 'true'
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+      - name: Scrape, validate, upload, and synchronize
+        if: steps.gate.outputs.run == 'true'
+        run: pnpm exec tsx packages/tools/scripts/sync-bsl-colombia.mjs --profile=${{ matrix.profile }}
+        env:
+          EXPECTED_AWS_ACCOUNT_ID: ${{ secrets.HASHPASS_AWS_ACCOUNT_ID }}
+          BSL_SPEAKER_ASSETS_BUCKET: ${{ vars.BSL_SPEAKER_ASSETS_BUCKET }}
+          BSL_SPEAKER_CDN_URL: ${{ vars.BSL_SPEAKER_CDN_URL }}
+          BSL_SUPABASE_URL_DEV: ${{ secrets.BSL_SUPABASE_URL_DEV }}
+          BSL_SUPABASE_SERVICE_ROLE_KEY_DEV: ${{ secrets.BSL_SUPABASE_SERVICE_ROLE_KEY_DEV }}
+          BSL_SUPABASE_URL_PROD: ${{ secrets.BSL_SUPABASE_URL_PROD }}
+          BSL_SUPABASE_SERVICE_ROLE_KEY_PROD: ${{ secrets.BSL_SUPABASE_SERVICE_ROLE_KEY_PROD }}

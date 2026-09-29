@@ -27,9 +27,8 @@ export function createImmutableHeroUploadArgs(entry, bucket, region) {
     '--key', entry.objectKey,
     '--body', entry.localPath,
     '--region', region,
-    '--content-type', 'video/mp4',
+    '--content-type', entry.contentType || 'video/mp4',
     '--cache-control', 'public,max-age=31536000,immutable',
     '--if-none-match', '*',
-    '--only-show-errors',
   ];
 }

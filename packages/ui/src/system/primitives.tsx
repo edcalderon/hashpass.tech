@@ -37,8 +37,17 @@ export function Badge({
   children,
   tone = "accent",
   radius,
+  markerColor,
+  leadingIcon,
+  compact = false,
 }: React.PropsWithChildren<
-  Themed & { tone?: "accent" | "neutral" | "onMedia"; radius?: number }
+  Themed & {
+    tone?: "accent" | "neutral" | "onMedia";
+    radius?: number;
+    markerColor?: string;
+    leadingIcon?: React.ReactNode;
+    compact?: boolean;
+  }
 >) {
   const palette = uiPalette(mode);
   const onMedia = tone === "onMedia";
@@ -46,6 +55,7 @@ export function Badge({
     <View
       style={[
         styles.badge,
+        compact && styles.badgeCompact,
         radius === undefined ? undefined : { borderRadius: radius },
         {
           backgroundColor: onMedia
@@ -57,20 +67,34 @@ export function Badge({
         },
       ]}
     >
-      <Text
-        style={[
-          styles.badgeLabel,
-          {
-            color: onMedia
-              ? "#ffffff"
-              : tone === "accent"
-                ? palette.accent
-                : palette.muted,
-          },
-        ]}
-      >
-        {children}
-      </Text>
+      <View style={styles.badgeContent}>
+        {markerColor ? (
+          <View
+            accessible={false}
+            style={[styles.badgeMarker, { backgroundColor: markerColor }]}
+          />
+        ) : null}
+        {leadingIcon ? (
+          <View accessible={false} pointerEvents="none">
+            {leadingIcon}
+          </View>
+        ) : null}
+        <Text
+          style={[
+            styles.badgeLabel,
+            compact && styles.badgeLabelCompact,
+            {
+              color: onMedia
+                ? "#ffffff"
+                : tone === "accent"
+                  ? palette.accent
+                  : palette.muted,
+            },
+          ]}
+        >
+          {children}
+        </Text>
+      </View>
     </View>
   );
 }
@@ -78,6 +102,7 @@ export type ActionButtonProps = Omit<PressableProps, "children"> &
   Themed & {
     label: string;
     leadingIcon?: React.ReactNode;
+    trailingIcon?: React.ReactNode;
     variant?: "primary" | "secondary" | "ghost";
     loading?: boolean;
   };
@@ -85,6 +110,7 @@ export function ActionButton({
   mode = "light",
   label,
   leadingIcon,
+  trailingIcon,
   variant = "primary",
   loading = false,
   disabled,
@@ -129,6 +155,7 @@ export function ActionButton({
     >
       {loading ? <ActivityIndicator size="small" color={foreground} /> : leadingIcon && <View accessible={false} pointerEvents="none">{leadingIcon}</View>}
       <Text style={[styles.buttonLabel, { color: foreground }]}>{label}</Text>
+      {!loading && trailingIcon ? <View accessible={false} pointerEvents="none">{trailingIcon}</View> : null}
     </Pressable>
   );
 }
@@ -273,6 +300,20 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     maxWidth: "100%",
   },
+  badgeCompact: {
+    paddingHorizontal: uiTokens.space.sm,
+    paddingVertical: uiTokens.space.xs,
+  },
+  badgeContent: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: uiTokens.space.xs,
+  },
+  badgeMarker: {
+    width: uiTokens.space.sm,
+    height: uiTokens.space.sm,
+    borderRadius: uiTokens.radius.circle,
+  },
   badgeLabel: {
     fontSize: uiTokens.type.caption,
     lineHeight: 16,
@@ -280,6 +321,9 @@ const styles = StyleSheet.create({
     textAlign: "center",
     textTransform: "uppercase",
     letterSpacing: 1,
+  },
+  badgeLabelCompact: {
+    letterSpacing: 0.4,
   },
   button: {
     minHeight: uiTokens.control.minHeight,
