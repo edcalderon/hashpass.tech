@@ -77,7 +77,10 @@ describe('MCP consent screen', () => {
     expect(renderedText).toContain('chatgpt-client-id');
     expect(renderedText).toContain('https://chatgpt.com/oauth/callback');
     await act(async () => renderer?.root.findAllByType('ActionButton' as never)[0].props.onPress());
-    expect(mockConsent).toHaveBeenCalledWith({ accept: true });
+    expect(mockConsent).toHaveBeenCalledWith({
+      accept: true,
+      oauth_query: 'client_id=chatgpt&sig=signed',
+    });
     expect(mockAssign).toHaveBeenCalledWith('https://chatgpt.com/oauth/callback?code=one');
   });
 
@@ -92,7 +95,10 @@ describe('MCP consent screen', () => {
       await Promise.resolve();
     });
     await act(async () => renderer?.root.findAllByType('ActionButton' as never)[1].props.onPress());
-    expect(mockConsent).toHaveBeenCalledWith({ accept: false });
+    expect(mockConsent).toHaveBeenCalledWith({
+      accept: false,
+      oauth_query: 'client_id=chatgpt&sig=signed',
+    });
 
     act(() => renderer?.unmount());
     renderer = null;

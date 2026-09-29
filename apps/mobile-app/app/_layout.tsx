@@ -12,8 +12,6 @@ import { LanguageProvider } from '../providers/LanguageProvider';
 import { EventProvider } from '@contexts/EventContext';
 import { ToastProvider } from '@contexts/ToastContext';
 import { ScrollProvider } from '@contexts/ScrollContext';
-import { NotificationProvider } from '@contexts/NotificationContext';
-import { BalanceProvider } from '@contexts/BalanceContext';
 import { AnimationLevelProvider } from '@contexts/AnimationLevelContext';
 import { useTheme, useThemeProvider } from '../hooks/useTheme';
 import { useAuth } from '../hooks/useAuth';
@@ -26,6 +24,7 @@ import VersionUpdateNotification from '../components/VersionUpdateNotification';
 import ForceUpdateScreen from '../components/ForceUpdateScreen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import OtaUpdateBanner from '../components/OtaUpdateBanner';
+import { RootUserDataProviders } from '../components/RootUserDataProviders';
 import { useNativeUpdateCheck } from '../hooks/useNativeUpdateCheck';
 import { useOtaUpdate } from '../hooks/useOtaUpdate';
 import * as SplashScreen from 'expo-splash-screen';
@@ -113,19 +112,17 @@ function RootLayout() {
               <EventProvider>
                 <LanguageProvider>
                   <I18nProvider>
-                    <NotificationProvider>
-                      <BalanceProvider>
-                        <AnimationLevelProvider>
-                          <ToastProvider>
-                            <ScrollProvider>
-                              <CopilotProvider overlay="view">
-                                <ThemedContent />
-                              </CopilotProvider>
-                            </ScrollProvider>
-                          </ToastProvider>
-                        </AnimationLevelProvider>
-                      </BalanceProvider>
-                    </NotificationProvider>
+                    <RootUserDataProviders>
+                      <AnimationLevelProvider>
+                        <ToastProvider>
+                          <ScrollProvider>
+                            <CopilotProvider overlay="view">
+                              <ThemedContent />
+                            </CopilotProvider>
+                          </ScrollProvider>
+                        </ToastProvider>
+                      </AnimationLevelProvider>
+                    </RootUserDataProviders>
                   </I18nProvider>
                 </LanguageProvider>
               </EventProvider>
