@@ -985,6 +985,13 @@ export default function BSL2025AgendaScreen() {
       setIsRefreshingAgenda(true);
     } else {
       setLoading(true);
+      // A non-silent load supersedes any in-flight silent refresh
+      // (event/tenant change mid-refresh, for example), so clear the
+      // skeleton flag now -- otherwise the superseded silent request's
+      // finally never runs (isCurrentRequest becomes false) and
+      // isRefreshingAgenda stays true, leaving the agenda stuck on its
+      // skeleton even after the non-silent load completes.
+      setIsRefreshingAgenda(false);
     }
     setUsingJsonFallback(false);
     setServiceStatus('unknown');

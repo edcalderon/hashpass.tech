@@ -21,17 +21,27 @@ import { uiPalette, uiTokens, type ColorMode } from "./tokens";
 type Themed = { mode?: ColorMode };
 
 // Android needs this opt-in once per process before LayoutAnimation calls
-// have any effect; iOS and web ignore it. Doing this at module scope (not
-// per-render) keeps every IconButton reveal/retract animation in the app
-// on the same switch instead of each consumer remembering to flip it.
-// `UIManager?.` guards against test harnesses that hand-roll a partial
-// react-native mock without a UIManager export at all (e.g. a bespoke
-// jest.doMock in a screen test) -- a real RN environment always has it.
-if (
-  Platform.OS === "android" &&
-  UIManager?.setLayoutAnimationEnabledExperimental
-) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
+// have any effect; iOS and web ignore it. This used to run eagerly at
+// module scope, but reading `Platform.OS` (and `UIManager`) at import time
+// throws under several of this repo's hand-rolled per-test react-native
+// mocks that only partially shape the module -- some omit `UIManager`,
+// others omit `Platform` entirely -- which crashed every consumer of this
+// file under Jest before any component even rendered. Running it lazily,
+// the first time an IconButton actually animates, means it only ever runs
+// against whatever Platform/UIManager shape is in use at that point; the
+// try/catch keeps a still-incomplete test mock from taking down a real
+// render even then.
+let androidLayoutAnimationEnabled = false;
+function ensureAndroidLayoutAnimationEnabled() {
+  if (androidLayoutAnimationEnabled) return;
+  androidLayoutAnimationEnabled = true;
+  try {
+    if (Platform.OS === "android" && UIManager?.setLayoutAnimationEnabledExperimental) {
+      UIManager.setLayoutAnimationEnabledExperimental(true);
+    }
+  } catch {
+    // Best-effort opt-in only; never let this block a real render.
+  }
 }
 
 // Built lazily inside animateExpandChange (not as a module-scope constant)
@@ -261,9 +271,16 @@ export function IconButton({
     // animate smoothly on native -- without it, the expand/retract is an
     // instant snap on Android/iOS (the CSS transition below only covers
     // web). Android needs setLayoutAnimationEnabledExperimental, flipped
-    // once at module scope above.
-    if (Platform.OS !== "web" && !reduceMotion) {
-      LayoutAnimation.configureNext(buildRevealLayoutAnimation());
+    // once lazily on first use (see ensureAndroidLayoutAnimationEnabled).
+    try {
+      if (Platform.OS !== "web" && !reduceMotion) {
+        ensureAndroidLayoutAnimationEnabled();
+        LayoutAnimation.configureNext(buildRevealLayoutAnimation());
+      }
+    } catch {
+      // A test harness's partial react-native mock (missing Platform,
+      // LayoutAnimation, etc.) should never crash a real interaction --
+      // worst case the expand/retract just isn't animated that time.
     }
   };
 
@@ -316,7 +333,14 @@ export function IconButton({
           accessibilityState={{ ...props.accessibilityState, disabled: !!disabled, expanded, busy: loading }}
           disabled={disabled || loading}
           onBlur={(event) => {
-            clearHoverOutTimeout();
+            // Don't clear the pending hover-out timeout here -- a focused
+            // web button that receives onHoverOut and then loses focus
+            // before the debounce expires (e.g. the user clicks elsewhere)
+            // has only that timeout to clear hovered=false; clearing it
+            // from onBlur leaves hovered=true with no scheduled reset,
+            // and every revealLabel button stays expanded until the next
+            // hover cycle. Let the timeout finish naturally so both
+            // states collapse together.
             animateExpandChange();
             setFocused(false);
             onBlur?.(event);

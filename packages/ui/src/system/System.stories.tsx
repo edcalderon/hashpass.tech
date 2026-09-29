@@ -167,6 +167,79 @@ function Catalog({ mode = "light" }: { mode?: ColorMode }) {
     </View>
   );
 }
+
+function IconButtonShowcase({ mode = "light" }: { mode?: ColorMode }) {
+  const palette = uiPalette(mode);
+  return (
+    <View
+      style={{
+        backgroundColor: palette.canvas,
+        padding: uiTokens.space.xl,
+        gap: uiTokens.space.xl,
+        width: "100%",
+        maxWidth: 900,
+      }}
+    >
+      <Text
+        style={{
+          color: palette.text,
+          fontSize: uiTokens.type.heading,
+          fontWeight: "700",
+        }}
+      >
+        IconButton interaction states
+      </Text>
+      <Text
+        style={{
+          color: palette.muted,
+          fontSize: uiTokens.type.body,
+          lineHeight: 24,
+        }}
+      >
+        Hover or focus the reveal buttons to expand the label (debounced on
+        leave). On native, the width animates via LayoutAnimation; on web, a
+        CSS transition handles it. Reduced motion is honored from the system
+        setting.
+      </Text>
+
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: uiTokens.space.sm }}>
+        <IconButton mode={mode} label="Reload events" revealLabel>
+          <Text style={{ color: palette.accent }}>↻</Text>
+        </IconButton>
+        <IconButton
+          mode={mode}
+          label="A longer translated label that still fits the expanded pill"
+          revealLabel
+        >
+          <Text style={{ color: palette.accent }}>↻</Text>
+        </IconButton>
+        <IconButton
+          mode={mode}
+          label="Reload events"
+          revealLabel
+          loading
+          loadingLabel="Refreshing"
+        >
+          <Text style={{ color: palette.accent }}>↻</Text>
+        </IconButton>
+        <IconButton mode={mode} label="Disabled action" revealLabel disabled>
+          <Text style={{ color: palette.accent }}>↻</Text>
+        </IconButton>
+        <IconButton mode={mode} label="Plain action">
+          <Text style={{ color: palette.accent }}>↻</Text>
+        </IconButton>
+        <IconButton
+          mode={mode}
+          label="Accent override"
+          revealLabel
+          accentColor={uiTokens.feature.cyan}
+        >
+          <Text style={{ color: uiTokens.feature.cyan }}>◎</Text>
+        </IconButton>
+      </View>
+    </View>
+  );
+}
 const meta = {
   title: "Design System/Foundations and Controls",
   component: Catalog,
@@ -180,4 +253,23 @@ export const Dark: Story = { args: { mode: "dark" } };
 export const Mobile: Story = {
   args: { mode: "light" },
   parameters: { viewport: { defaultViewport: "mobile1" } },
+};
+
+const iconButtonMeta = {
+  title: "Design System/IconButton interactions",
+  component: IconButtonShowcase,
+  parameters: { layout: "fullscreen" },
+} satisfies Meta<typeof IconButtonShowcase>;
+export const IconButtonLight: StoryObj<typeof iconButtonMeta> = {
+  args: { mode: "light" },
+  render: (args) => <IconButtonShowcase mode={args.mode} />,
+};
+export const IconButtonDark: StoryObj<typeof iconButtonMeta> = {
+  args: { mode: "dark" },
+  render: (args) => <IconButtonShowcase mode={args.mode} />,
+};
+export const IconButtonMobile: StoryObj<typeof iconButtonMeta> = {
+  args: { mode: "light" },
+  parameters: { viewport: { defaultViewport: "mobile1" } },
+  render: (args) => <IconButtonShowcase mode={args.mode} />,
 };
