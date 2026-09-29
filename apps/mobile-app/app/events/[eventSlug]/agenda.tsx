@@ -168,6 +168,7 @@ type AgendaTypeRevealProps = {
 const AGENDA_TYPE_REVEAL_DURATION_MS = 180;
 const AGENDA_TYPE_REVEAL_COLLAPSED_WIDTH = 68;
 const AGENDA_TYPE_REVEAL_EXPANDED_WIDTH = 276;
+const AGENDA_TYPE_REVEAL_AUTO_COLLAPSE_MS = 3_000;
 
 const useReducedMotionPreference = (): boolean => {
   const [reduceMotion, setReduceMotion] = useState(true);
@@ -304,6 +305,16 @@ function AgendaTypeReveal({
         });
   }, [reduceMotion, revealProgress, revealed]);
 
+  useEffect(() => {
+    if (!pinned) return undefined;
+
+    const collapseTimeout = setTimeout(
+      () => setPinned(false),
+      AGENDA_TYPE_REVEAL_AUTO_COLLAPSE_MS,
+    );
+    return () => clearTimeout(collapseTimeout);
+  }, [pinned]);
+
   const contentStyle = useAnimatedStyle(() => ({
     opacity: revealProgress.value,
     transform: [
@@ -422,9 +433,9 @@ type AgendaTypeLegendControlProps = {
   textColor: string;
 };
 
-const AGENDA_TYPE_LEGEND_SIZE = uiTokens.control.compactHeight - uiTokens.space.sm;
+const AGENDA_TYPE_LEGEND_SIZE = uiTokens.control.compactHeight - uiTokens.space.sm - uiTokens.space.xs;
 const AGENDA_TYPE_LEGEND_COLLAPSED_WIDTH = AGENDA_TYPE_LEGEND_SIZE;
-const AGENDA_TYPE_LEGEND_LABEL_WIDTH = 116;
+const AGENDA_TYPE_LEGEND_LABEL_WIDTH = 76;
 
 const agendaTypeLegendControlStyles = StyleSheet.create({
   shell: {
@@ -449,9 +460,9 @@ const agendaTypeLegendControlStyles = StyleSheet.create({
     overflow: 'hidden',
   },
   label: {
-    fontSize: uiTokens.type.label,
+    fontSize: uiTokens.type.caption,
     fontWeight: '700',
-    paddingRight: uiTokens.space.lg,
+    paddingRight: uiTokens.space.xs,
   },
 });
 
@@ -516,7 +527,7 @@ function AgendaTypeLegendControl({
         <View style={agendaTypeLegendControlStyles.icon}>
           <NativeSafeIcon
             name={iconName}
-            size={18}
+            size={16}
             color={color}
             strokeWidth={2.2}
           />
@@ -2005,7 +2016,12 @@ export default function BSL2025AgendaScreen() {
               <Text style={styles.agendaTypeLegendTitle}>
                 {t('legend.title', 'Session types')}
               </Text>
-              <View style={styles.agendaTypeLegendItems}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.agendaTypeLegendItems}
+                style={styles.agendaTypeLegendScroll}
+              >
                 {filterGroups[0].options.map((option) => (
                   <AgendaTypeLegendControl
                     key={option.key}
@@ -2018,7 +2034,7 @@ export default function BSL2025AgendaScreen() {
                     textColor={colors.text.primary}
                   />
                 ))}
-              </View>
+              </ScrollView>
             </View>
           </View>
         )}
@@ -2293,7 +2309,7 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   },
   agendaTypeLegend: {
     alignItems: 'center',
-    paddingHorizontal: uiTokens.space.xl,
+    paddingHorizontal: uiTokens.space.md,
     paddingTop: uiTokens.space.md,
   },
   agendaTypeLegendTitle: {
@@ -2306,9 +2322,12 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   },
   agendaTypeLegendItems: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexGrow: 1,
     gap: uiTokens.space.xs,
     justifyContent: 'center',
+    paddingHorizontal: uiTokens.space.xs,
+  },
+  agendaTypeLegendScroll: {
     width: '100%',
   },
   dayTab: {
@@ -2557,11 +2576,13 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     flex: 1,
     overflow: 'hidden',
     padding: uiTokens.space.xl,
+    paddingBottom: uiTokens.space.xl + AGENDA_TYPE_REVEAL_COLLAPSED_WIDTH + uiTokens.space.sm,
     position: 'relative',
   },
   agendaItemContentCompact: {
     paddingHorizontal: uiTokens.space.md,
     paddingVertical: uiTokens.space.sm,
+    paddingBottom: AGENDA_TYPE_REVEAL_COLLAPSED_WIDTH + uiTokens.space.md,
   },
   agendaTitleRow: {
     marginBottom: uiTokens.space.sm,
