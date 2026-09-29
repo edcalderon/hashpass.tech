@@ -1,3 +1,18 @@
+## [1.9.80](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.79...v1.9.80) (2026-09-29)
+
+
+### Bug Fixes
+
+* improve mobile dashboard and agenda controls ([d87e0de](https://github.com/hashpass-tech/hashpass.tech/commit/d87e0de28b661ec6322b529a82bbefbaede85525))
+### Release Highlights
+- improve mobile dashboard and agenda controls
+
+### Release scope
+- Compared with: `v1.9.79` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+
 ## [1.9.79](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.78...v1.9.79) (2026-09-29)
 
 
