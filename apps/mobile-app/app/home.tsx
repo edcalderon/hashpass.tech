@@ -640,7 +640,7 @@ export default function HomeScreen() {
         {/* Generic HASHPASS testimonials aren't specific to any single
             whitelabel tenant's event -- only show them on the global
             explorer (hashpass.tech), never on a single-tenant domain like
-            demo-criptolatinfest.hashpass.tech. */}
+            bsl.hashpass.tech. */}
         {isGlobalEventTenant() && (
           <Animated.View style={[styles.socialProof, featuresAnimatedStyle]}>
             <Testimonials locale={getCurrentLocale()} />

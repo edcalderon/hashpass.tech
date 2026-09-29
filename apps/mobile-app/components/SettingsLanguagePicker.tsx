@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Animated, Easing, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Animated, Easing, Platform, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import * as Haptics from "expo-haptics";
 import { uiTokens } from "@hashpass/ui/tokens";
 import { getAvailableLocales, useTranslation } from "../i18n/i18n";
@@ -97,7 +97,7 @@ export function SettingsLanguagePicker({
       </TouchableOpacity>
 
       <Animated.View
-        testID="settings-language-options"
+        {...(Platform.OS === 'web' && process.env.NODE_ENV !== 'test' ? {} : { testID: 'settings-language-options' })}
         style={[
           styles.options,
           {

@@ -18,6 +18,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { MaterialIcons } from "../../lib/vector-icons";
+import { IconButton } from "@hashpass/ui/primitives";
 import { useTheme } from "../../hooks/useTheme";
 import { useAuth } from "../../hooks/useAuth";
 import { useTranslation } from "../../i18n/i18n";
@@ -942,33 +943,18 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
     return (
       <View>
         <View style={{ alignItems: "flex-end", marginBottom: 10 }}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t("wallet.reload", "Reload passes")}
+          <IconButton
+            testID="passes-reload"
+            label={t("wallet.reload", "Reload passes")}
+            mode={isDark ? "dark" : "light"}
+            accentColor={colors.primary}
+            revealLabel
             disabled={isRefreshing}
+            loading={isRefreshing}
             onPress={handleRetry}
-            style={{
-              alignItems: "center",
-              flexDirection: "row",
-              gap: 6,
-              opacity: isRefreshing ? 0.7 : 1,
-              paddingHorizontal: 8,
-              paddingVertical: 5,
-            }}
           >
-            {isRefreshing ? (
-              <ActivityIndicator size="small" color={colors.primary} />
-            ) : (
-              <MaterialIcons name="refresh" size={18} color={colors.primary} />
-            )}
-            <Text
-              style={{ color: colors.primary, fontSize: 12, fontWeight: "700" }}
-            >
-              {isRefreshing
-                ? t("wallet.refreshing", "Refreshing passes…")
-                : t("wallet.reload", "Reload passes")}
-            </Text>
-          </Pressable>
+            <MaterialIcons name="refresh" size={18} color={colors.primary} />
+          </IconButton>
         </View>
         <ScrollView
           horizontal
@@ -983,7 +969,7 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
             />
           ) : (
             // Respect the Explorer's event scope here too: without this, a
-            // single-tenant explorer (BSL, criptolatinfest, ...) rendered
+            // single-tenant explorer (BSL, CBWeek, ...) rendered
             // every pass the signed-in user holds across every tenant --
             // including ones for events that tenant never mentions.
             (explorerFilters ? explorerFilteredPasses : walletPasses).map(
@@ -1057,33 +1043,18 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
       )}
 
       <View style={{ alignItems: "flex-end", marginBottom: 10 }}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t("wallet.reload", "Reload passes")}
+        <IconButton
+          testID="passes-reload"
+          label={t("wallet.reload", "Reload passes")}
+          mode={isDark ? "dark" : "light"}
+          accentColor={colors.primary}
+          revealLabel
           disabled={isRefreshing}
+          loading={isRefreshing}
           onPress={handleRetry}
-          style={{
-            alignItems: "center",
-            flexDirection: "row",
-            gap: 6,
-            opacity: isRefreshing ? 0.7 : 1,
-            paddingHorizontal: 8,
-            paddingVertical: 5,
-          }}
         >
-          {isRefreshing ? (
-            <ActivityIndicator size="small" color={colors.primary} />
-          ) : (
-            <MaterialIcons name="refresh" size={18} color={colors.primary} />
-          )}
-          <Text
-            style={{ color: colors.primary, fontSize: 12, fontWeight: "700" }}
-          >
-            {isRefreshing
-              ? t("wallet.refreshing", "Refreshing passes…")
-              : t("wallet.reload", "Reload passes")}
-          </Text>
-        </Pressable>
+          <MaterialIcons name="refresh" size={18} color={colors.primary} />
+        </IconButton>
       </View>
 
       {isRefreshing ? (

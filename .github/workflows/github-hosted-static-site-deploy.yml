@@ -50,6 +50,9 @@ jobs:
       EXPO_PUBLIC_SUPABASE_KEY: ${{ vars.EXPO_PUBLIC_SUPABASE_ANON_KEY_DEV }}
       EXPO_PUBLIC_BSL_SUPABASE_URL: ${{ vars.EXPO_PUBLIC_BSL_SUPABASE_URL_DEV }}
       EXPO_PUBLIC_BSL_SUPABASE_KEY: ${{ vars.EXPO_PUBLIC_BSL_SUPABASE_KEY_DEV }}
+      # Same site id everywhere (see apps/mobile-app/app/+html.tsx) -- no _DEV
+      # suffix needed, unlike the Supabase vars above.
+      EXPO_PUBLIC_CIG_ANALYTICS_SITE_ID: ${{ vars.EXPO_PUBLIC_CIG_ANALYTICS_SITE_ID }}
       NODE_MAX_OLD_SPACE_SIZE: '12288'
       EXPO_EXPORT_MAX_WORKERS: '1'
     steps:

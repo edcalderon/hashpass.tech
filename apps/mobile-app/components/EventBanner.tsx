@@ -253,7 +253,6 @@ export default function EventBanner({
             source={eventVideo!}
             loadingLogo={eventImage}
             loadingLabel={t("rework.loadingEventFilm", "Loading event film")}
-            preferBundledSource={eventId === "criptolatinfest"}
             playbackEnabled={videoPlaybackEnabled && !isDetailVideoPaused}
             contentFit="cover"
             focalPosition={isDetailVariant ? "center center" : "center bottom"}

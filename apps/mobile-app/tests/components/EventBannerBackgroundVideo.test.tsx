@@ -160,19 +160,6 @@ describe("EventBannerBackgroundVideo", () => {
     ).toHaveLength(0);
   });
 
-  it("uses the bundled CLF film on native instead of relying on the remote URL", () => {
-    render(
-      <NativeEventBannerBackgroundVideo
-        source="https://cdn.example/clf.mp4"
-        preferBundledSource
-      />,
-    );
-
-    expect(mockUseVideoPlayer.mock.calls[0]?.[0]).not.toBe(
-      "https://cdn.example/clf.mp4",
-    );
-  });
-
   it("keeps an inactive native hero film paused", () => {
     const renderer = render(
       <NativeEventBannerBackgroundVideo

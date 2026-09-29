@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  AccessibilityInfo,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -177,16 +178,114 @@ export function FilterChip({
   );
 }
 /** Compact account/tool action; consumers supply the shared icon renderer. */
+export type IconButtonProps = Omit<PressableProps, "children"> &
+  Themed & {
+    label: string;
+    children: React.ReactNode;
+    /** Reveals the accessible label on hover or keyboard focus. */
+    revealLabel?: boolean;
+    /** Lets contextual tools retain their semantic accent while sharing this role. */
+    accentColor?: string;
+    loading?: boolean;
+    loadingLabel?: string;
+  };
+
 export function IconButton({
   mode = "light",
   label,
   children,
   disabled,
   style,
+  revealLabel = false,
+  accentColor,
+  loading = false,
+  loadingLabel,
+  onHoverIn,
+  onHoverOut,
+  onFocus,
+  onBlur,
   ...props
-}: Omit<PressableProps, "children"> &
-  Themed & { label: string; children: React.ReactNode }) {
+}: IconButtonProps) {
   const palette = uiPalette(mode);
+  const color = accentColor || palette.accent;
+  const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const [reduceMotion, setReduceMotion] = useState(true);
+  const expanded = revealLabel && (hovered || focused);
+
+  useEffect(() => {
+    let active = true;
+    void AccessibilityInfo.isReduceMotionEnabled()
+      .then((value) => {
+        if (active) setReduceMotion(value);
+      })
+      .catch(() => {
+        if (active) setReduceMotion(true);
+      });
+    const subscription = AccessibilityInfo.addEventListener("reduceMotionChanged", setReduceMotion);
+    return () => {
+      active = false;
+      subscription?.remove?.();
+    };
+  }, []);
+
+  const content = loading
+    ? <ActivityIndicator size="small" color={color} />
+    : children;
+
+  if (revealLabel) {
+    const transitionStyle = Platform.OS === "web" && !reduceMotion
+      ? ({
+          transitionDuration: `${uiTokens.motion.fast}ms`,
+          transitionProperty: "width, background-color, border-color, opacity",
+          transitionTimingFunction: "ease-out",
+        } as ViewStyle)
+      : undefined;
+    return (
+      <View
+        style={[
+          styles.revealIconButton,
+          {
+            width: expanded ? uiTokens.control.compactHeight + 104 : uiTokens.control.compactHeight,
+            backgroundColor: expanded ? `${color}14` : palette.surface,
+            borderColor: expanded ? `${color}52` : palette.border,
+          },
+          transitionStyle,
+        ]}
+      >
+        <Pressable
+          {...props}
+          accessibilityRole="button"
+          accessibilityLabel={label}
+          accessibilityState={{ ...props.accessibilityState, disabled: !!disabled, expanded, busy: loading }}
+          disabled={disabled || loading}
+          onBlur={(event) => {
+            setFocused(false);
+            onBlur?.(event);
+          }}
+          onFocus={(event) => {
+            setFocused(true);
+            onFocus?.(event);
+          }}
+          onHoverIn={(event) => {
+            setHovered(true);
+            onHoverIn?.(event);
+          }}
+          onHoverOut={(event) => {
+            setHovered(false);
+            onHoverOut?.(event);
+          }}
+          style={styles.revealIconButtonPressable}
+        >
+          <View accessible={false} pointerEvents="none" style={styles.revealIcon}>{content}</View>
+          <View style={[styles.revealLabelClip, { opacity: expanded ? 1 : 0 }, transitionStyle]}>
+            <Text numberOfLines={1} style={[styles.revealLabel, { color }]}>{loading && loadingLabel ? loadingLabel : label}</Text>
+          </View>
+        </Pressable>
+      </View>
+    );
+  }
+
   return (
     <Pressable
       {...props}
@@ -271,6 +370,34 @@ export function FormField({
   );
 }
 const styles = StyleSheet.create({
+  revealIconButton: {
+    borderRadius: uiTokens.radius.pill,
+    borderWidth: uiTokens.control.borderWidth,
+    height: uiTokens.control.compactHeight,
+    overflow: "hidden",
+  },
+  revealIconButtonPressable: {
+    alignItems: "center",
+    flexDirection: "row",
+    height: "100%",
+  },
+  revealIcon: {
+    alignItems: "center",
+    height: uiTokens.control.compactHeight,
+    justifyContent: "center",
+    width: uiTokens.control.compactHeight,
+  },
+  revealLabelClip: {
+    alignItems: "center",
+    flex: 1,
+    justifyContent: "center",
+    overflow: "hidden",
+  },
+  revealLabel: {
+    fontSize: uiTokens.type.caption,
+    fontWeight: "700",
+    paddingRight: uiTokens.space.md,
+  },
   iconButton: {
     width: uiTokens.control.compactHeight,
     height: uiTokens.control.compactHeight,

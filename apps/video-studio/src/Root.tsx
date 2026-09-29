@@ -8,7 +8,6 @@ import {appTutorialStepsEn, appTutorialStepsEs, bslShowcaseClips} from './conten
 import {bslNarrationEn, bslNarrationEs, narrationEn, narrationEs} from './content/narration';
 import {layoutClips} from './lib/clip-layout';
 import {OpenProof} from './compositions/OpenProof';
-import {ClfHeroLoop} from './compositions/ClfHeroLoop';
 import {BslColombiaHeroLoop} from './compositions/BslColombiaHeroLoop';
 import {EventHeroLoop} from './compositions/EventHeroLoop';
 import {DiscoveryCoverLoop} from './compositions/DiscoveryCoverLoop';
@@ -30,7 +29,6 @@ export const RemotionRoot: React.FC = () => {
   return (
     <>
       <Composition id="OpenProof" component={OpenProof} durationInFrames={2520} fps={30} width={1920} height={1080}/>
-      <Composition id="ClfHeroLoop" component={ClfHeroLoop} durationInFrames={900} fps={FPS} width={WIDTH} height={HEIGHT}/>
       <Composition id="BslColombiaHeroLoop" component={BslColombiaHeroLoop} durationInFrames={300} fps={FPS} width={WIDTH} height={HEIGHT}/>
       <Composition id="HashpassDiscoveryCoverLoop" component={DiscoveryCoverLoop} durationInFrames={360} fps={FPS} width={WIDTH} height={HEIGHT}/>
       <Composition id="HashpassPartnersCoverLoop" component={PartnersCoverLoop} durationInFrames={360} fps={FPS} width={WIDTH} height={HEIGHT}/>

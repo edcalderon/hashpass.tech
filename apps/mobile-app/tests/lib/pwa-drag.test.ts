@@ -4,6 +4,8 @@ import {
   clampPwaDragPosition,
   getDefaultPwaDragPosition,
   getPwaDragViewport,
+  isPwaDragPositionInDismissZone,
+  PWA_DISMISS_ZONE_HEIGHT,
   PWA_DRAG_BOTTOM_SAFE_MARGIN,
   PWA_DRAG_BUTTON_SIZE,
   PWA_DRAG_POSITION_KEY,
@@ -100,6 +102,30 @@ describe('PWA drag positioning', () => {
     const viewport = { width: 320, height: 240, offsetLeft: 0, offsetTop: 0 };
 
     expect(clampPwaDragPosition({ left: 142, top: 78 }, viewport)).toEqual({ left: 142, top: 78 });
+  });
+
+  it('recognizes the lower dismissal zone by the launcher center point', () => {
+    const viewport = { width: 390, height: 800, offsetLeft: 0, offsetTop: 0 };
+
+    expect(isPwaDragPositionInDismissZone({ left: 160, top: 680 }, viewport)).toBe(true);
+    expect(isPwaDragPositionInDismissZone({ left: 160, top: 600 }, viewport)).toBe(false);
+    // Horizontally outside the zone (center X left of zoneLeft=12).
+    expect(isPwaDragPositionInDismissZone({ left: -30, top: 720 }, viewport)).toBe(false);
+    // Horizontally outside the zone (center X right of zoneRight=378).
+    expect(isPwaDragPositionInDismissZone({ left: 360, top: 720 }, viewport)).toBe(false);
+    // Vertically below the zone (center Y past zoneBottom=788).
+    expect(isPwaDragPositionInDismissZone({ left: 160, top: 800 }, viewport)).toBe(false);
+  });
+
+  it('honours the exported dismiss-zone height constant', () => {
+    expect(PWA_DISMISS_ZONE_HEIGHT).toBe(80);
+  });
+
+  it('falls back to the live viewport when no explicit viewport is supplied', () => {
+    // Matches the beforeEach window size (390x800, no offsets), so the same
+    // center points as the explicit-viewport case above land the same way.
+    expect(isPwaDragPositionInDismissZone({ left: 160, top: 680 })).toBe(true);
+    expect(isPwaDragPositionInDismissZone({ left: 160, top: 600 })).toBe(false);
   });
 
   it('migrates the legacy dock value into a free safe coordinate', () => {

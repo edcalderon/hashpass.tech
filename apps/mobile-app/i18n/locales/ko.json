@@ -350,6 +350,7 @@
     "dialogLabel": "HASHPASS 설치 안내",
     "expandCollapsed": "설치 옵션 열기",
     "dragHandle": "설치 버튼 드래그",
+    "dismissDropZone": "놓으면 새로고침 전까지 숨깁니다",
     "learnMore": "HASHPASS 설치 방법 자세히 알아보기",
     "infoIntro": "PWA(프로그레시브 웹 앱)는 HASHPASS를 기기에서 네이티브 앱처럼 동작하게 합니다.",
     "details": {

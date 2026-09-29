@@ -18,7 +18,6 @@ type EventHeroBackgroundProps = {
   loadingLabel: string;
   loadingLogo?: string;
   mediaStyle: StyleProp<ImageStyle>;
-  preferBundledSource?: boolean;
   textureStyle: StyleProp<ViewStyle>;
   videoSource?: string;
 };
@@ -123,7 +122,6 @@ export default function EventHeroBackground({
   loadingLabel,
   loadingLogo,
   mediaStyle,
-  preferBundledSource = false,
   textureStyle,
   videoSource,
 }: EventHeroBackgroundProps) {
@@ -150,7 +148,6 @@ export default function EventHeroBackground({
         <EventBannerBackgroundVideo
           source={videoSource}
           loadingLogo={loadingLogo}
-          preferBundledSource={preferBundledSource}
           showLoadingIndicator={!imageSource}
           loadingLabel={loadingLabel}
           focalPosition={focalPosition}

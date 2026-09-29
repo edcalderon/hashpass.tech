@@ -73,6 +73,10 @@ export default function Root({
     readBuildEnv('EXPO_PUBLIC_GA_MEASUREMENT_ID') ||
     readBuildEnv('G_TAG_KEY') ||
     '';
+  // cig.technology's site-level tracker. Same convention as
+  // EXPO_PUBLIC_GA_MEASUREMENT_ID above: empty (and the tag omitted
+  // entirely) in local dev, populated from the build environment in CI.
+  const cigAnalyticsSiteId = readBuildEnv('EXPO_PUBLIC_CIG_ANALYTICS_SITE_ID') || '';
   const activeSupabaseConfig = buildSupabaseConfig(activeSupabaseProfileId);
 
   // Guard: this file runs at static-export build time (Node.js), not in the
@@ -191,6 +195,16 @@ export default function Root({
               }}
             />
           </>
+        ) : null}
+
+        {/* cig.technology analytics — only injected when
+            EXPO_PUBLIC_CIG_ANALYTICS_SITE_ID is set. Empty in local dev. */}
+        {cigAnalyticsSiteId ? (
+          <script
+            defer
+            src={`https://api.cig.technology/api/v1/analytics/tracker.js?site=${cigAnalyticsSiteId}`}
+            data-site={cigAnalyticsSiteId}
+          />
         ) : null}
 
         <meta charSet="utf-8" />

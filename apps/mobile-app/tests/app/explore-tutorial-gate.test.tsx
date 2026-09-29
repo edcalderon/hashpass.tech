@@ -311,7 +311,7 @@ describe("ExploreScreen disabled tutorial gate", () => {
       });
 
       const reloadButton = renderer!.root
-        .findAllByType("TouchableOpacity" as any)
+        .findAll((node) => node.props.testID === "explorer-reload-events")
         .find((node) => node.props.accessibilityLabel === "Reload events");
       expect(reloadButton).toBeTruthy();
 

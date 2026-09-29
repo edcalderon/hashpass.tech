@@ -1,3 +1,18 @@
+## [1.9.78](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.77...v1.9.78) (2026-09-29)
+
+
+### Bug Fixes
+
+* **mobile:** polish agenda and PWA interactions ([b2c44c3](https://github.com/hashpass-tech/hashpass.tech/commit/b2c44c34d721e5e561aba04d777e1ae229d288d9))
+### Release Highlights
+- polish agenda and PWA interactions
+
+### Release scope
+- Compared with: `v1.9.77` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+
 ## [1.9.77](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.76...v1.9.77) (2026-09-29)
 
 

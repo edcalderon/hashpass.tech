@@ -11,7 +11,10 @@ beforeEach(() => {
   process.env.EXPO_PUBLIC_SUPABASE_PROFILE = 'core-development';
 });
 
-afterEach(() => act(() => view?.unmount()));
+afterEach(() => {
+  act(() => view?.unmount());
+  delete process.env.EXPO_PUBLIC_CIG_ANALYTICS_SITE_ID;
+});
 
 it('publishes a mobile PWA viewport without disabling browser zoom', () => {
   act(() => {
@@ -37,4 +40,31 @@ it('allows route metadata to override the fallback viewport', () => {
   const viewport = view.root.findAllByType('meta').find(node => node.props.name === 'viewport');
   expect(viewport?.props.content).toBe('width=720');
   expect(view.root.findByType('title').props.children).toBe('Event');
+});
+
+it('omits the cig.technology tracker when EXPO_PUBLIC_CIG_ANALYTICS_SITE_ID is unset', () => {
+  act(() => {
+    view = create(<Root><main>HASHPASS</main></Root>);
+  });
+
+  const scripts = view.root.findAllByType('script');
+  expect(scripts.some(node => typeof node.props.src === 'string' && node.props.src.includes('cig.technology'))).toBe(false);
+});
+
+it('injects the cig.technology tracker when EXPO_PUBLIC_CIG_ANALYTICS_SITE_ID is set', () => {
+  process.env.EXPO_PUBLIC_CIG_ANALYTICS_SITE_ID = 'site_-dCPyOHCCE8im_ht';
+
+  act(() => {
+    view = create(<Root><main>HASHPASS</main></Root>);
+  });
+
+  const tracker = view.root
+    .findAllByType('script')
+    .find(node => typeof node.props.src === 'string' && node.props.src.includes('cig.technology'));
+
+  expect(tracker?.props.src).toBe(
+    'https://api.cig.technology/api/v1/analytics/tracker.js?site=site_-dCPyOHCCE8im_ht'
+  );
+  expect(tracker?.props['data-site']).toBe('site_-dCPyOHCCE8im_ht');
+  expect(tracker?.props.defer).toBe(true);
 });

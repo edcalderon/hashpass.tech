@@ -23,6 +23,7 @@ import {
   type NativeSyntheticEvent,
 } from "react-native";
 import { NativeSafeIcon } from "../../lib/vector-icons";
+import { IconButton } from "@hashpass/ui/primitives";
 import { useAutoAdvanceProgress } from "../../lib/hooks/useAutoAdvanceProgress";
 import { SliderProgressBar } from "../banner/SliderProgressBar";
 import { useTheme } from "../../hooks/useTheme";
@@ -633,7 +634,6 @@ export default function Explorer({
             focalPosition={selectedEvent.id === "hash-poker" ? "center top" : undefined}
             videoSource={heroSlide.media.type === "video" ? heroSlide.media.url : undefined}
             loadingLogo={selectedEvent.branding?.logo || selectedEvent.image}
-            preferBundledSource={selectedEvent.id === "criptolatinfest"}
             loadingLabel={translate(
               "explore.rework.loadingEventFilm",
               "Loading event film",
@@ -694,8 +694,8 @@ export default function Explorer({
       );
     }
 
-    // Single-tenant whitelabel domains (e.g. demo-criptolatinfest.hashpass.tech)
-    // get one hero built from their own event, never another tenant's media.
+    // Single-tenant whitelabel domains (e.g. bsl.hashpass.tech) get one hero
+    // built from their own event, never another tenant's media.
     if (!isGlobalExplorer) {
       const heroEvent = selectedEvent || events[0];
       if (!heroEvent) return null;
@@ -719,7 +719,6 @@ export default function Explorer({
                 : undefined
             }
             loadingLogo={heroEvent.branding?.logo || heroEvent.image}
-            preferBundledSource={heroEvent.id === "criptolatinfest"}
             loadingLabel={translate(
               "explore.rework.loadingEventFilm",
               "Loading event film",
@@ -767,7 +766,6 @@ export default function Explorer({
               : undefined
           }
           loadingLogo={globalEvent?.branding?.logo || globalHeroSlide.fallbackImage}
-          preferBundledSource={globalHeroSlide.eventId === "criptolatinfest"}
           loadingLabel={translate(
             "explore.rework.loadingEventFilm",
             "Loading event film",
@@ -919,27 +917,19 @@ export default function Explorer({
             </TouchableOpacity>
           ))}
         </ScrollView>
-        <TouchableOpacity
-          style={styles.reloadEventsButton}
+        <IconButton
+          testID="explorer-reload-events"
+          mode={isDark ? "dark" : "light"}
+          accentColor={colors.primary}
+          revealLabel
           onPress={handleEventsReload}
           disabled={isRefreshingEvents}
-          accessibilityRole="button"
-          accessibilityLabel={translate(
-            "explore.rework.reloadEvents",
-            "Reload events",
-          )}
+          loading={isRefreshingEvents}
+          label={translate("explore.rework.reloadEvents", "Reload events")}
+          loadingLabel={translate("explore.rework.reloadingEvents", "Reloading events…")}
         >
-          {isRefreshingEvents ? (
-            <ActivityIndicator size="small" color={colors.primary} />
-          ) : (
-            <Icon name="refresh" color={colors.primary} size={18} />
-          )}
-          <Text style={styles.reloadEventsText}>
-            {isRefreshingEvents
-              ? translate("explore.rework.reloadingEvents", "Reloading events…")
-              : translate("explore.rework.reloadEvents", "Reload events")}
-          </Text>
-        </TouchableOpacity>
+          <Icon name="refresh" color={colors.primary} size={18} />
+        </IconButton>
       </View>
     </View>
   );
@@ -2265,20 +2255,6 @@ const getStyles = (isDark: boolean, colors: any) =>
       flex: 1,
     },
     chipRow: { gap: 6, paddingVertical: 3, paddingRight: 4 },
-    reloadEventsButton: {
-      alignItems: "center",
-      flexDirection: "row",
-      flexShrink: 0,
-      gap: 4,
-      minHeight: 30,
-      paddingHorizontal: 4,
-      paddingVertical: 3,
-    },
-    reloadEventsText: {
-      color: colors.primary,
-      fontSize: 11,
-      fontWeight: "700",
-    },
     chip: {
       height: 30,
       justifyContent: "center",

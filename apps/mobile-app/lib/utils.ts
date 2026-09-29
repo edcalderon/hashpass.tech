@@ -48,6 +48,9 @@ export function createShadowStyle(
 function hexToRgba(hex: string, opacity: number): string {
   // Remove # if present
   hex = hex.replace('#', '');
+  if (hex.length === 3) {
+    hex = hex.split('').map((channel) => channel + channel).join('');
+  }
   
   // Parse hex values
   const r = parseInt(hex.substring(0, 2), 16);

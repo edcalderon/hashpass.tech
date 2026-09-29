@@ -127,7 +127,7 @@ export function ExplorerExpandableAction({
 
   return (
     <Animated.View
-      testID={testID || "explorer-hero-action-shell"}
+      {...(Platform.OS === "web" && process.env.NODE_ENV !== "test" ? {} : { testID: testID || "explorer-hero-action-shell" })}
       style={[
         styles.shell,
         {

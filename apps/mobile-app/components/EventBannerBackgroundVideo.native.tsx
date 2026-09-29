@@ -6,7 +6,6 @@ interface EventBannerBackgroundVideoProps {
   source: string;
   loadingLogo?: string;
   loadingLabel?: string;
-  preferBundledSource?: boolean;
   playbackEnabled?: boolean;
   /** A poster is already visible behind the video, so avoid obscuring it. */
   showLoadingIndicator?: boolean;
@@ -14,23 +13,16 @@ interface EventBannerBackgroundVideoProps {
   focalPosition?: string;
 }
 
-const CLF_HERO_VIDEO = require("../assets/videos/demos/clf/CriptoLatinFest2026Hero.mp4");
-
-/** Muted local footage keeps the CLF hero available offline on native apps. */
 export default function EventBannerBackgroundVideo({
   source,
   loadingLogo,
   loadingLabel = "Loading event film",
-  preferBundledSource = false,
   playbackEnabled = true,
   showLoadingIndicator = true,
   contentFit = "cover",
 }: EventBannerBackgroundVideoProps) {
   const [hasFirstFrame, setHasFirstFrame] = useState(false);
-  // CLF ships its final film inside the app. Prefer that packaged asset on
-  // native so first use and offline devices do not wait forever for S3.
-  const videoSource = preferBundledSource ? CLF_HERO_VIDEO : source || CLF_HERO_VIDEO;
-  const player = useVideoPlayer(videoSource, (player) => {
+  const player = useVideoPlayer(source, (player) => {
     player.loop = true;
     player.muted = true;
   });
@@ -42,7 +34,7 @@ export default function EventBannerBackgroundVideo({
 
   useEffect(() => {
     setHasFirstFrame(false);
-  }, [source, preferBundledSource]);
+  }, [source]);
 
   return (
     <>

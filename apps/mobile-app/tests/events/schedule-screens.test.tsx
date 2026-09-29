@@ -576,13 +576,25 @@ describe('event schedule screens', () => {
       renderer!.root.findByProps({ testID: 'agenda-card-type-watermark-networking-session' })
         .props.accessibilityState.expanded,
     ).toBe(false);
-    await act(async () => {
-      renderer!.root.findByProps({ testID: 'agenda-card-type-watermark-networking-session' }).props.onPress();
-    });
-    expect(
-      renderer!.root.findByProps({ testID: 'agenda-card-type-watermark-networking-session' })
-        .props.accessibilityState.expanded,
-    ).toBe(true);
+    jest.useFakeTimers();
+    try {
+      await act(async () => {
+        renderer!.root.findByProps({ testID: 'agenda-card-type-watermark-networking-session' }).props.onPress();
+      });
+      expect(
+        renderer!.root.findByProps({ testID: 'agenda-card-type-watermark-networking-session' })
+          .props.accessibilityState.expanded,
+      ).toBe(true);
+      await act(async () => {
+        jest.advanceTimersByTime(3_000);
+      });
+      expect(
+        renderer!.root.findByProps({ testID: 'agenda-card-type-watermark-networking-session' })
+          .props.accessibilityState.expanded,
+      ).toBe(false);
+    } finally {
+      jest.useRealTimers();
+    }
     expect(networkingMedia.findByProps({ testID: 'agenda-card-venue-networking-session' })).toBeTruthy();
     const panelMedia = renderer!.root.findByProps({ testID: 'agenda-card-media-panel-session' });
     expect(panelMedia.findByProps({ testID: 'agenda-card-venue-panel-session' })).toBeTruthy();
