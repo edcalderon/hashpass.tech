@@ -37,7 +37,7 @@ const useReducedMotionPreference = (): boolean => {
     );
     return () => {
       mounted = false;
-      subscription.remove();
+      subscription?.remove?.();
     };
   }, []);
 

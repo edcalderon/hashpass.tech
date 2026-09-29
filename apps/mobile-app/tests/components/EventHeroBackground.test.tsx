@@ -76,4 +76,19 @@ describe("EventHeroBackground", () => {
       renderer.root.findAllByProps({ testID: "event-hero-stripe-fallback" }),
     ).toHaveLength(1);
   });
+
+  it("cleans up safely when a renderer has no motion subscription", () => {
+    const renderer = render(
+      <EventHeroBackground
+        fallbackImage="https://media.example/events/legacy/hero.jpg"
+        loadingLabel="Loading event film"
+        mediaStyle={mediaStyle}
+        textureStyle={textureStyle}
+      />,
+    );
+
+    expect(() => {
+      act(() => renderer.unmount());
+    }).not.toThrow();
+  });
 });
