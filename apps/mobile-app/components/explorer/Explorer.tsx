@@ -27,6 +27,7 @@ import { IconButton } from "@hashpass/ui/primitives";
 import { useAutoAdvanceProgress } from "../../lib/hooks/useAutoAdvanceProgress";
 import { SliderProgressBar } from "../banner/SliderProgressBar";
 import { useTheme } from "../../hooks/useTheme";
+import { useAuth } from "../../hooks/useAuth";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "../../i18n/i18n";
@@ -170,6 +171,7 @@ export default function Explorer({
   showcase,
 }: ExplorerProps) {
   const { isDark, colors } = useTheme();
+  const { retryDatabaseSession } = useAuth();
   const safeAreaInsets = useSafeAreaInsets();
   const router = useRouter();
   const styles = getStyles(isDark, colors);
@@ -233,6 +235,17 @@ export default function Explorer({
       ),
     );
   }, []);
+
+  // Mirrors PassesWallet's own handleRetry: a native Better Auth session can
+  // survive an interrupted companion Supabase bridge, so simply bumping the
+  // refresh trigger would re-run the pass request with the same unusable
+  // database identity and time out again. This is the only reload control
+  // rendered here (the wallet's own is hidden via hideWalletReload), so it
+  // must drive the same recovery path.
+  const handleReloadPasses = useCallback(() => {
+    void retryDatabaseSession?.();
+    setPassesRefreshTrigger((current) => current + 1);
+  }, [retryDatabaseSession]);
 
   useEffect(() => {
     if (dbUserId) return;
@@ -1603,7 +1616,7 @@ export default function Explorer({
                 loadingLabel={translate("explore.rework.reloadingPasses", "Reloading passes…")}
                 disabled={isRefreshingPasses}
                 loading={isRefreshingPasses}
-                onPress={() => setPassesRefreshTrigger((current) => current + 1)}
+                onPress={handleReloadPasses}
               >
                 <Icon name="refresh" color={colors.primary} size={18} />
               </IconButton>
