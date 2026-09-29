@@ -18,3 +18,12 @@ The workflow:
 - opens or updates a GitHub issue when deployment or readiness fails, then closes that issue after a successful recovery.
 
 Host identity, runtime paths, deployment identity, role ARN, region, and probe URLs are repository variables prefixed with `SELF_HOSTED_VPS_`. Do not put their values, remote output, container logs, or environment contents in tracked files or workflow summaries.
+
+## Plane object storage
+
+The bundled MinIO server and initializer are optional and run only with the
+`local-object-storage` Compose profile. The example environment enables that
+profile for a self-contained installation. When using an external S3-compatible
+service, leave `COMPOSE_PROFILES` unset and configure Plane's private S3 endpoint,
+region, bucket, and credentials instead; deployment will not pull or wait for
+the local MinIO containers.

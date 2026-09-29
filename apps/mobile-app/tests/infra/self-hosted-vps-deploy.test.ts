@@ -11,6 +11,10 @@ const frappeComposePath = path.resolve(
   __dirname,
   '../../../../ops/self-hosted/frappe/compose.yaml',
 );
+const planeComposePath = path.resolve(
+  __dirname,
+  '../../../../ops/self-hosted/plane/compose.yaml',
+);
 
 describe('self-hosted VPS deployment workflow', () => {
   it('verifies the assumed AWS account against the private target before SSM deployment', () => {
@@ -181,5 +185,15 @@ describe('self-hosted VPS deployment workflow', () => {
       expect(block).toContain('entrypoint: ["bash", "-c"]');
       expect(block).toMatch(/command:\s*\n\s+- \|-\s*\n/);
     }
+  });
+
+  it('keeps local MinIO optional when production uses external object storage', () => {
+    const compose = fs.readFileSync(planeComposePath, 'utf8');
+    const profileMatches = compose.match(/profiles:\s*\[local-object-storage\]/g) ?? [];
+
+    expect(profileMatches).toHaveLength(2);
+    expect(compose).toMatch(
+      /plane-minio-init:\s*\n\s+condition:\s*service_completed_successfully\s*\n\s+required:\s*false/,
+    );
   });
 });
