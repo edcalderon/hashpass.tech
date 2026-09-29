@@ -25,7 +25,6 @@ const ANDROID_CHROME_192 = require('../assets/android-chrome-192x192.webp');
 const ANDROID_CHROME_512 = require('../assets/android-chrome-512x512.webp');
 
 const COLLAPSE_KEY = 'hashpass:pwa-install-collapsed';
-const DONT_SHOW_AGAIN_KEY = 'hashpass:pwa-dont-show-until-reload';
 const PWA_GUIDE_URL = 'https://hashpass.club/documentation/guides/install-hashpass/';
 const DEFAULT_INSTALL_DESCRIPTION =
   'Install HASHPASS as a PWA or download the app from your preferred app store. Available now on Google Play.';
@@ -56,9 +55,6 @@ const PWAPrompt = () => {
     if (Platform.OS !== 'web' || typeof window === 'undefined') {
       return;
     }
-
-    const isDontShowAgain = window.sessionStorage.getItem(DONT_SHOW_AGAIN_KEY) === 'true';
-    setDontShowAgain(isDontShowAgain);
 
     // No stored preference (COLLAPSE_KEY unset) means this is a first-ever
     // visit -- default to collapsed rather than auto-expanding the full
@@ -186,9 +182,6 @@ const PWAPrompt = () => {
   };
 
   const dismissPromptUntilReload = () => {
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      window.sessionStorage.setItem(DONT_SHOW_AGAIN_KEY, 'true');
-    }
     setDontShowAgain(true);
     setShowPrompt(false);
     setIsDragging(false);

@@ -14,7 +14,6 @@ import { useTheme } from '../../../hooks/useTheme';
 // tofu/"?" fallback glyph for a window before the icon font loads on web.
 import { MaterialIcons, NativeSafeIcon } from '../../../lib/vector-icons';
 import type { NativeSafeIconName } from '../../../lib/vector-icons';
-import { IconLabelRevealButton } from '../../../components/ui/IconLabelRevealButton';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import EventBanner from '../../../components/EventBanner';
@@ -2103,15 +2102,17 @@ export default function BSL2025AgendaScreen() {
             )}
           </View>
           <View style={styles.dayHeaderControls}>
-            <IconLabelRevealButton
+            <IconButton
               label={t('refreshAgenda', 'Refresh agenda')}
-              color={colors.primary}
-              surfaceColor={colors.background.paper}
-              borderColor={colors.divider}
+              mode={interfaceMode}
+              accentColor={colors.primary}
+              revealLabel
               disabled={loading}
               onPress={() => { void loadAgenda(); }}
               testID="agenda-refresh-control"
-            />
+            >
+              <NativeSafeIcon name="refresh" size={18} color={colors.primary} />
+            </IconButton>
             <View accessibilityLabel={t('viewMode.label', 'Agenda display')} style={styles.agendaModeSwitcher}>
               {([
                 { key: 'compact' as const, icon: 'rail' as const, label: t('viewMode.compact', 'Compact view') },

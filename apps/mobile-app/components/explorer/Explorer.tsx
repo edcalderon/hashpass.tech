@@ -23,7 +23,7 @@ import {
   type NativeSyntheticEvent,
 } from "react-native";
 import { NativeSafeIcon } from "../../lib/vector-icons";
-import { IconLabelRevealButton } from "../ui/IconLabelRevealButton";
+import { IconButton } from "@hashpass/ui/primitives";
 import { useAutoAdvanceProgress } from "../../lib/hooks/useAutoAdvanceProgress";
 import { SliderProgressBar } from "../banner/SliderProgressBar";
 import { useTheme } from "../../hooks/useTheme";
@@ -920,17 +920,19 @@ export default function Explorer({
             </TouchableOpacity>
           ))}
         </ScrollView>
-        <IconLabelRevealButton
+        <IconButton
           testID="explorer-reload-events"
-          color={colors.primary}
-          surfaceColor={colors.background.paper}
-          borderColor={colors.divider}
+          mode={isDark ? "dark" : "light"}
+          accentColor={colors.primary}
+          revealLabel
           onPress={handleEventsReload}
           disabled={isRefreshingEvents}
           loading={isRefreshingEvents}
           label={translate("explore.rework.reloadEvents", "Reload events")}
           loadingLabel={translate("explore.rework.reloadingEvents", "Reloading events…")}
-        />
+        >
+          <Icon name="refresh" color={colors.primary} size={18} />
+        </IconButton>
       </View>
     </View>
   );

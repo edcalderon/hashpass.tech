@@ -30,7 +30,7 @@ export async function GET(request: Request) {
 
   const hostname = new URL(request.url).hostname;
   const isLocalDevelopmentRequest = process.env.NODE_ENV === "development"
-    && (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1");
+    && (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1" || hostname === "[::1]");
   const useLegacyFallback = process.env.EVENT_INGESTION_LEGACY_JSON_FALLBACK === "true"
     || isLocalDevelopmentRequest;
 

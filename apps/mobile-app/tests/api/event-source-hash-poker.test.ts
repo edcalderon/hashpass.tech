@@ -97,6 +97,25 @@ describe("/api/event-sources/hash-poker", () => {
     });
   });
 
+  it("uses the checked-in snapshot for an IPv6 loopback development request", async () => {
+    Object.defineProperty(process.env, "NODE_ENV", {
+      configurable: true,
+      value: "development",
+      writable: true,
+    });
+    queryResult({ data: null, error: { message: "local database offline" } });
+    mockGetHashPokerEventConfig.mockReturnValue({ id: "hash-poker", title: "IPv6 snapshot" });
+
+    const { GET } = require("../../app/api/event-sources/hash-poker+api");
+    const response = await GET(new Request("http://[::1]:8081/api/event-sources/hash-poker"));
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      data: { id: "hash-poker", title: "IPv6 snapshot" },
+      source: "local-legacy-fallback",
+    });
+  });
+
   it("fails closed without fallback when the database feed is unavailable", async () => {
     const error = { message: "database offline" };
     queryResult({ data: null, error });

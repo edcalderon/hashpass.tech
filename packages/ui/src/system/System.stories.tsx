@@ -113,6 +113,14 @@ function Catalog({ mode = "light" }: { mode?: ColorMode }) {
           label="A longer translated filter that wraps without clipping"
         />
       </View>
+      <View style={{ flexDirection: "row", gap: uiTokens.space.sm }}>
+        <IconButton mode={mode} label="Reload events">
+          <Text style={{ color: palette.accent }}>↻</Text>
+        </IconButton>
+        <IconButton mode={mode} label="Reload events" revealLabel>
+          <Text style={{ color: palette.accent }}>↻</Text>
+        </IconButton>
+      </View>
       <View
         style={{
           height: 280,

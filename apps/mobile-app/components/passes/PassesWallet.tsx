@@ -18,7 +18,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { MaterialIcons } from "../../lib/vector-icons";
-import { IconLabelRevealButton } from "../ui/IconLabelRevealButton";
+import { IconButton } from "@hashpass/ui/primitives";
 import { useTheme } from "../../hooks/useTheme";
 import { useAuth } from "../../hooks/useAuth";
 import { useTranslation } from "../../i18n/i18n";
@@ -943,17 +943,18 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
     return (
       <View>
         <View style={{ alignItems: "flex-end", marginBottom: 10 }}>
-          <IconLabelRevealButton
+          <IconButton
             testID="passes-reload"
             label={t("wallet.reload", "Reload passes")}
-            loadingLabel={t("wallet.refreshing", "Refreshing passes…")}
-            color={colors.primary}
-            surfaceColor={colors.background.paper}
-            borderColor={colors.divider}
+            mode={isDark ? "dark" : "light"}
+            accentColor={colors.primary}
+            revealLabel
             disabled={isRefreshing}
             loading={isRefreshing}
             onPress={handleRetry}
-          />
+          >
+            <MaterialIcons name="refresh" size={18} color={colors.primary} />
+          </IconButton>
         </View>
         <ScrollView
           horizontal
@@ -1042,17 +1043,18 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
       )}
 
       <View style={{ alignItems: "flex-end", marginBottom: 10 }}>
-        <IconLabelRevealButton
+        <IconButton
           testID="passes-reload"
           label={t("wallet.reload", "Reload passes")}
-          loadingLabel={t("wallet.refreshing", "Refreshing passes…")}
-          color={colors.primary}
-          surfaceColor={colors.background.paper}
-          borderColor={colors.divider}
+          mode={isDark ? "dark" : "light"}
+          accentColor={colors.primary}
+          revealLabel
           disabled={isRefreshing}
           loading={isRefreshing}
           onPress={handleRetry}
-        />
+        >
+          <MaterialIcons name="refresh" size={18} color={colors.primary} />
+        </IconButton>
       </View>
 
       {isRefreshing ? (

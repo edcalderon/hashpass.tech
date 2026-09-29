@@ -70,6 +70,14 @@ describe('PWA install prompt layout', () => {
     expect(promptSource).not.toContain('hp-pwa-dock-controls');
   });
 
+  it('keeps a drag dismissal in memory so the launcher returns after a reload', () => {
+    const promptSource = readSource('../../../../apps/mobile-app/components/PWAPrompt.tsx');
+
+    expect(promptSource).toContain('const dismissPromptUntilReload = () => {\n    setDontShowAgain(true);');
+    expect(promptSource).not.toContain('hashpass:pwa-dont-show-until-reload');
+    expect(promptSource).not.toContain('sessionStorage.setItem');
+  });
+
   it('gives the draggable launcher a keyboard fallback and a 44px touch target', () => {
     const promptSource = readSource('../../../../apps/mobile-app/components/PWAPrompt.tsx');
     const cssSource = readSource('../../../../apps/mobile-app/app/global.css');
