@@ -20,7 +20,8 @@ The Colombia 2026 programme adapter additionally parses the official BSL
 speaker cards and three-day agenda. `npm run sync:bsl-colombia` performs a
 read-only validation; the environment-specific commands upload content-hashed
 portraits to the HashPass CDN and atomically reconcile one event's speaker and
-agenda rows. The database event scope is mandatory, so a future event can reuse
+agenda rows. Every expected agenda day must pass its own safety bound, and
+source payloads are streamed with byte limits before buffering. The database event scope is mandatory, so a future event can reuse
 the same speaker slug without leaking records into another event directory.
 
 The database-backed `published_external_events` feed is the primary runtime source. The checked-in snapshot at `packages/config/src/generated/ingested-events.json` is now a **legacy fallback** and is used only when `EVENT_INGESTION_LEGACY_JSON_FALLBACK=true`. At runtime the helper rolls a recurring source date forward by whole weeks and chooses the nearest occurrence.

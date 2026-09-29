@@ -21,8 +21,10 @@ PKRR remains responsible for poker identity and player profiles. HashPass suppli
 
 The official Colombia page is parsed as static semantic HTML. Speaker names,
 roles, organizations, categories, portraits, and all three agenda days are
-validated before any write. Portrait downloads accept only bounded PNG, JPEG,
-or WebP payloads from the allow-listed source host and are stored under
+validated before any write. Each day must stay within its expected item bounds,
+so a partial upstream page cannot reconcile away a missing day. Page and
+portrait downloads are streamed with a byte limit before they are buffered;
+portraits accept only bounded PNG, JPEG, or WebP payloads from the allow-listed source host and are stored under
 content-hashed CDN keys. Database reconciliation runs through one
 service-role-only transaction, is scoped by `event_id`, deactivates only
 source-managed speakers that disappear, and removes only source-managed agenda

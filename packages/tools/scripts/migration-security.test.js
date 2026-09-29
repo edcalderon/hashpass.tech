@@ -113,6 +113,35 @@ const targetBslBootstrapPath = path.join(
 );
 const profilePath = path.join(__dirname, 'config/database-profiles.json');
 const migrationRunnerPath = path.join(__dirname, 'migrate-tenant-db.mjs');
+const eventScopedSpeakersMigrationPath = path.join(
+  root,
+  'db/migrations/V107__scope_legacy_speakers_by_event.sql',
+);
+const eventScopedSpeakerAdminMigrationPath = path.join(
+  root,
+  'db/migrations/V108__enforce_event_scoped_speaker_admin_roles.sql',
+);
+
+describe('event-scoped speaker administration migrations', () => {
+  it('ships speaker schema and role enforcement migrations after the Better Auth V106 migration', () => {
+    const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+
+    expect(fs.existsSync(eventScopedSpeakersMigrationPath)).toBe(true);
+    expect(fs.existsSync(eventScopedSpeakerAdminMigrationPath)).toBe(true);
+    expect(config.groups['event-scoped-speakers']).toEqual([
+      'db/migrations/V107__scope_legacy_speakers_by_event.sql',
+      'db/migrations/V108__enforce_event_scoped_speaker_admin_roles.sql',
+    ]);
+  });
+
+  it('matches every speaker role read and mutation to the authorized event', () => {
+    const migration = fs.readFileSync(eventScopedSpeakerAdminMigrationPath, 'utf8');
+
+    expect(migration).toMatch(/FROM public\.bsl_speakers[\s\S]*WHERE id::text = p_speaker_id[\s\S]*AND event_id = p_event_id[\s\S]*FOR UPDATE/i);
+    expect(migration).toMatch(/UPDATE public\.bsl_speakers[\s\S]*WHERE id::text = p_speaker_id[\s\S]*AND event_id = p_event_id/gi);
+    expect(migration).toMatch(/FROM public\.bsl_speakers[\s\S]*WHERE id::text = p_speaker_id[\s\S]*AND event_id = p_event_id/i);
+  });
+});
 
 describe('Better Auth MCP OAuth migration plan', () => {
   it('assigns the OAuth migration only to dedicated Better Auth profiles', () => {

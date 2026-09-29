@@ -10,6 +10,7 @@ import {
   BSL_COLOMBIA_SOURCE_URL,
   parseBslColombiaProgramme,
 } from "../../event-ingestion/src/bsl-colombia.ts";
+import { readLimitedResponse } from "../../event-ingestion/src/bounded-response.ts";
 
 const SOURCE_ID = "blockchainsummit-colombia2026";
 const MAX_PAGE_BYTES = 2_000_000;
@@ -38,17 +39,6 @@ const firstEnv = (names) =>
   names.map((name) => process.env[name]).find(Boolean);
 const timeoutSignal = () => AbortSignal.timeout(TIMEOUT_MS);
 
-async function boundedResponse(response, maxBytes, label) {
-  if (!response.ok) throw new Error(`${label} responded ${response.status}`);
-  const declared = Number(response.headers.get("content-length") || 0);
-  if (declared > maxBytes)
-    throw new Error(`${label} exceeds ${maxBytes} bytes`);
-  const bytes = new Uint8Array(await response.arrayBuffer());
-  if (bytes.byteLength > maxBytes)
-    throw new Error(`${label} exceeds ${maxBytes} bytes`);
-  return { bytes, contentType: response.headers.get("content-type") || "" };
-}
-
 async function fetchProgramme() {
   if (inputFile)
     return parseBslColombiaProgramme(await readFile(inputFile, "utf8"));
@@ -68,7 +58,7 @@ async function fetchProgramme() {
     redirect: "error",
     signal: timeoutSignal(),
   });
-  const { bytes } = await boundedResponse(
+  const { bytes } = await readLimitedResponse(
     response,
     MAX_PAGE_BYTES,
     "BSL Colombia page",
@@ -140,7 +130,7 @@ async function uploadImages(programme) {
         redirect: "error",
         signal: timeoutSignal(),
       });
-      const { bytes, contentType } = await boundedResponse(
+      const { bytes, contentType } = await readLimitedResponse(
         response,
         MAX_IMAGE_BYTES,
         `Image for ${speaker.name}`,

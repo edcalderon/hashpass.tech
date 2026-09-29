@@ -19,6 +19,7 @@ import {
   parsePkrrHtml,
   PostgrestEventStore,
   quotedPathCandidates,
+  readLimitedResponse,
   syncEventSources,
   textContent,
   type EventIngestionStore,
@@ -34,13 +35,18 @@ describe("event ingestion", () => {
       (_, index) =>
         `<article class="person wp-team-item"><img data-remote-src="assets/imgs/speaker-${index}.png"><span class="speaker-category">Banca</span><h4>Speaker ${index}</h4><p>Director · Company ${index}</p></article>`,
     ).join("");
-    const slots = Array.from(
-      { length: 20 },
+    const slots = (count: number) => Array.from(
+      { length: count },
       (_, index) =>
         `<div class="slot wp-agenda-item"><div class="time">${String(8 + Math.floor(index / 2)).padStart(2, "0")}:${index % 2 ? "30" : "00"}–${String(8 + Math.floor(index / 2)).padStart(2, "0")}:${index % 2 ? "55" : "25"}</div><div class="kind">${index % 2 ? "Panel" : "Keynote"}</div><h4>Session ${index}</h4><div class="room">Auditorio</div></div>`,
     ).join("");
+    const agenda = [
+      `<section class="agenda-schedule" data-wp-agenda-day="1">${slots(13)}</section>`,
+      `<section class="agenda-schedule" data-wp-agenda-day="2">${slots(12)}</section>`,
+      `<section class="agenda-schedule" data-wp-agenda-day="3">${slots(12)}</section>`,
+    ].join("");
     const programme = parseBslColombiaProgramme(
-      `<section id="speaker">${speakers}</section><section class="agenda-schedule" data-wp-agenda-day="1">${slots}</section>`,
+      `<section id="speaker">${speakers}</section>${agenda}`,
     );
 
     assert.equal(programme.speakers.length, 10);
@@ -49,7 +55,7 @@ describe("event ingestion", () => {
       programme.speakers[0].imageSourceUrl,
       "https://blockchainsummit.la/colombia2026/assets/imgs/speaker-0.png",
     );
-    assert.equal(programme.agenda.length, 20);
+    assert.equal(programme.agenda.length, 37);
     assert.equal(programme.agenda[1].type, "panel");
     assert.equal(programme.agenda[0].startsAt, "2026-11-04T08:00:00-05:00");
     assert.throws(
@@ -59,6 +65,58 @@ describe("event ingestion", () => {
         ),
       /Incomplete BSL speaker/,
     );
+    assert.throws(
+      () => parseBslColombiaProgramme(
+        `<section id="speaker">${speakers}</section><section class="agenda-schedule" data-wp-agenda-day="1">${slots(13)}</section><section class="agenda-schedule" data-wp-agenda-day="2">${slots(12)}</section>`,
+      ),
+      /agenda day 3/i,
+    );
+    assert.throws(
+      () => parseBslColombiaProgramme(
+        `<section id="speaker">${speakers}</section><section class="agenda-schedule" data-wp-agenda-day="1">${slots(13)}</section><section class="agenda-schedule" data-wp-agenda-day="2">${slots(12)}</section><section class="agenda-schedule" data-wp-agenda-day="3">${slots(7)}</section>`,
+      ),
+      /agenda day 3 has an unexpected item count/i,
+    );
+  });
+
+  it("reads bounded BSL source streams in chunks and retains content metadata", async () => {
+    const response = new Response(new ReadableStream({
+      start(controller) {
+        controller.enqueue(new Uint8Array([1, 2]));
+        controller.enqueue(new Uint8Array([3, 4]));
+        controller.close();
+      },
+    }), { headers: { "content-type": "text/html" } });
+
+    await assert.doesNotReject(async () => {
+      const result = await readLimitedResponse(response, 4, "BSL Colombia page");
+      assert.deepEqual([...result.bytes], [1, 2, 3, 4]);
+      assert.equal(result.contentType, "text/html");
+    });
+  });
+
+  it("rejects BSL source responses that are oversized or unsuccessful", async () => {
+    const response = new Response(new ReadableStream({
+      start(controller) {
+        controller.enqueue(new Uint8Array(65));
+      },
+    }));
+
+    await assert.rejects(
+      () => readLimitedResponse(response, 64, "BSL Colombia page"),
+      /BSL Colombia page exceeds 64 bytes/,
+    );
+    await assert.rejects(
+      () => readLimitedResponse(new Response("x", { status: 503 }), 64, "BSL Colombia page"),
+      /BSL Colombia page responded 503/,
+    );
+    await assert.rejects(
+      () => readLimitedResponse(new Response("x", { headers: { "content-length": "65" } }), 64, "BSL Colombia page"),
+      /BSL Colombia page exceeds 64 bytes/,
+    );
+    const empty = await readLimitedResponse(new Response(null, { headers: { "content-type": "text/plain" } }), 64, "BSL Colombia page");
+    assert.equal(empty.bytes.byteLength, 0);
+    assert.equal(empty.contentType, "text/plain");
   });
   it("reads public HTML safely through the shared DOM helpers", () => {
     const root = parseHtml(

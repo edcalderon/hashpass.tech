@@ -19,6 +19,9 @@ const DAY_DATES: Record<string, string> = {
   "2": "2026-11-05",
   "3": "2026-11-06",
 };
+const REQUIRED_AGENDA_DAYS = ["1", "2", "3"] as const;
+const MIN_AGENDA_ITEMS_PER_DAY = 8;
+const MAX_AGENDA_ITEMS_PER_DAY = 20;
 
 export interface BslSpeaker {
   externalId: string;
@@ -196,8 +199,13 @@ export function parseBslColombiaProgramme(html: string): BslColombiaProgramme {
     throw new Error(
       `BSL speaker count dropped unexpectedly (${speakers.length})`,
     );
-  if (agenda.length < 20)
-    throw new Error(`BSL agenda count dropped unexpectedly (${agenda.length})`);
+  for (const day of REQUIRED_AGENDA_DAYS) {
+    const count = agenda.filter((item) => item.day === day).length;
+    if (count === 0) throw new Error(`BSL agenda day ${day} is missing`);
+    if (count < MIN_AGENDA_ITEMS_PER_DAY || count > MAX_AGENDA_ITEMS_PER_DAY) {
+      throw new Error(`BSL agenda day ${day} has an unexpected item count (${count})`);
+    }
+  }
   if (new Set(speakers.map((speaker) => speaker.slug)).size !== speakers.length)
     throw new Error("Duplicate BSL speaker slugs detected");
   if (new Set(agenda.map((item) => item.externalId)).size !== agenda.length)
