@@ -40,7 +40,7 @@ import * as Haptics from 'expo-haptics';
 import { parseISO } from 'date-fns';
 import LoadingScreen from '../../../components/LoadingScreen';
 import { useTranslation, getCurrentLocale } from '../../../i18n/i18n';
-import { Badge, IconButton, Surface } from '@hashpass/ui/primitives';
+import { ActionButton, Badge, HoverText, IconButton, Surface } from '@hashpass/ui/primitives';
 import { uiTokens } from '@hashpass/ui/tokens';
 import {
   buildGoogleCalendarUrl,
@@ -505,6 +505,8 @@ type AgendaTypeLegendControlProps = {
   surfaceColor: string;
   borderColor: string;
   textColor: string;
+  onPress?: () => void;
+  selected?: boolean;
 };
 
 const AGENDA_TYPE_LEGEND_SIZE = uiTokens.control.compactHeight - uiTokens.space.sm - uiTokens.space.xs;
@@ -548,6 +550,8 @@ function AgendaTypeLegendControl({
   surfaceColor,
   borderColor,
   textColor,
+  onPress,
+  selected,
 }: AgendaTypeLegendControlProps) {
   const reduceMotion = useReducedMotionPreference();
   const expansion = useSharedValue(0);
@@ -557,8 +561,13 @@ function AgendaTypeLegendControl({
     handleFocus,
     handleHoverIn,
     handleHoverOut,
-    handlePress,
+    handlePress: handleRevealPress,
   } = useAutoRetractingTypeReveal();
+
+  const handlePress = () => {
+    handleRevealPress();
+    onPress?.();
+  };
 
   useEffect(() => {
     const nextProgress = expanded ? 1 : 0;
@@ -586,8 +595,8 @@ function AgendaTypeLegendControl({
       style={[
         agendaTypeLegendControlStyles.shell,
         {
-          backgroundColor: expanded ? `${color}14` : surfaceColor,
-          borderColor: expanded ? `${color}52` : borderColor,
+          backgroundColor: selected ? `${color}24` : expanded ? `${color}14` : surfaceColor,
+          borderColor: selected ? color : expanded ? `${color}52` : borderColor,
         },
         shellStyle,
       ]}
@@ -596,7 +605,7 @@ function AgendaTypeLegendControl({
         testID={`agenda-type-legend-${itemKey}`}
         accessibilityRole="button"
         accessibilityLabel={label}
-        accessibilityState={{ expanded }}
+        accessibilityState={{ expanded, selected }}
         onBlur={handleBlur}
         onFocus={handleFocus}
         onHoverIn={handleHoverIn}
@@ -809,9 +818,15 @@ export default function BSL2025AgendaScreen() {
     const origin = Platform.OS === 'web' && typeof window !== 'undefined'
       ? window.location.origin
       : 'https://hashpass.tech';
-    const itemLocation = item.location ||
+    // Build full location: room/hall + venue address
+    // item.location is just the room (e.g., "Hall principal")
+    // eventVenueLabel is the venue (e.g., "Universidad Externado de Colombia, Bogotá")
+    const roomName = item.location ||
       (item.type === 'keynote' ? t('locations.mainStage') :
-        item.type === 'registration' ? t('locations.registrationArea') : eventVenueLabel);
+        item.type === 'registration' ? t('locations.registrationArea') : null);
+    const itemLocation = roomName && eventVenueLabel
+      ? `${roomName}, ${eventVenueLabel}`
+      : roomName || eventVenueLabel;
 
     return createAgendaCalendarEvent({
       eventId,
@@ -1925,17 +1940,16 @@ export default function BSL2025AgendaScreen() {
       icon: React.ReactNode,
       onPress: () => void,
     ) => (
-      <IconButton
+      <ActionButton
         key={action}
         mode={interfaceMode}
-        accentColor={colors.primary}
-        revealLabel
         label={label}
+        variant="ghost"
+        leadingIcon={icon}
         accessibilityHint={t('actions.actionHint', 'Opens this session action')}
         onPress={onPress}
-      >
-        {icon}
-      </IconButton>
+        style={styles.agendaActionButton}
+      />
     );
 
     return (
@@ -2032,12 +2046,13 @@ export default function BSL2025AgendaScreen() {
               />
               <View style={styles.agendaTitleRow}>
                 <View style={styles.agendaTitleMeta}>
-                  <Text
+                  <HoverText
+                    mode={interfaceMode}
                     style={[styles.agendaTitle, isCompactAgenda && styles.agendaTitleCompact]}
                     numberOfLines={isCompactAgenda ? 2 : 3}
                   >
                     {cleanSessionTitle(item.title)}
-                  </Text>
+                  </HoverText>
                   {isPast ? (
                     <Badge mode={interfaceMode} tone="neutral">
                       {t('badges.past')}
@@ -2053,7 +2068,7 @@ export default function BSL2025AgendaScreen() {
                   color={typeColor}
                   accessibilityLabel={t('labels.location')}
                 />
-                <Text style={styles.agendaLocation} numberOfLines={1}>{location}</Text>
+                <HoverText mode={interfaceMode} style={styles.agendaLocation} numberOfLines={1}>{location}</HoverText>
               </View>
 
               <View style={[styles.agendaItemTools, isCompactAgenda && styles.agendaItemToolsCompact]}>
@@ -2097,12 +2112,13 @@ export default function BSL2025AgendaScreen() {
                           {!isCompactAgenda ? (
                             <SpeakerAvatar name={displayName} imageUrl={image} size={32} showBorder />
                           ) : null}
-                          <Text
+                          <HoverText
+                            mode={interfaceMode}
                             style={[styles.agendaSpeakers, isClickable && styles.clickableSpeaker]}
                             numberOfLines={1}
                           >
                             {displayName}
-                          </Text>
+                          </HoverText>
                         </>
                       );
                       return isClickable ? (
@@ -2222,34 +2238,6 @@ export default function BSL2025AgendaScreen() {
               })}
             </ScrollView>
             )}
-            <View
-              testID="agenda-type-legend"
-              accessibilityLabel={t('legend.label', 'Session type legend')}
-              style={styles.agendaTypeLegend}
-            >
-              <Text style={styles.agendaTypeLegendTitle}>
-                {t('legend.title', 'Session types')}
-              </Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.agendaTypeLegendItems}
-                style={styles.agendaTypeLegendScroll}
-              >
-                {filterGroups[0].options.map((option) => (
-                  <AgendaTypeLegendControl
-                    key={option.key}
-                    itemKey={option.key}
-                    label={option.label}
-                    color={option.color}
-                    iconName={getAgendaTypeIcon(option.key) as NativeSafeIconName}
-                    surfaceColor={colors.background.paper}
-                    borderColor={colors.divider}
-                    textColor={colors.text.primary}
-                  />
-                ))}
-              </ScrollView>
-            </View>
           </View>
         )}
 
@@ -2265,6 +2253,41 @@ export default function BSL2025AgendaScreen() {
           customFilterLogic={customAgendaFilterLogic}
           showResultsCount={true}
         />
+      )}
+
+      {/* Compact session type legend: single row below the search input */}
+      {agenda.length > 0 && filterGroups[0]?.options?.length > 0 && (
+        <View
+          testID="agenda-type-legend"
+          accessibilityLabel={t('legend.label', 'Session type legend')}
+          style={styles.agendaTypeLegendCompact}
+        >
+          <Text style={styles.agendaTypeLegendCompactLabel}>
+            {t('legend.title', 'Session types').toUpperCase()}
+          </Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.agendaTypeLegendCompactItems}
+          >
+            {filterGroups[0].options.map((option) => (
+              <AgendaTypeLegendControl
+                key={option.key}
+                itemKey={option.key}
+                label={option.label}
+                color={option.color}
+                iconName={getAgendaTypeIcon(option.key) as NativeSafeIconName}
+                surfaceColor={colors.background.paper}
+                borderColor={colors.divider}
+                textColor={colors.text.primary}
+                selected={selectedFilter === option.key}
+                onPress={() => {
+                  setSelectedFilter(selectedFilter === option.key ? 'all' : option.key as AgendaType);
+                }}
+              />
+            ))}
+          </ScrollView>
+        </View>
       )}
 
       {/* The full day theme is kept out of the compact day chip so translated
@@ -2554,6 +2577,27 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   agendaTypeLegendScroll: {
     width: '100%',
   },
+  // Compact single-row legend below the search input
+  agendaTypeLegendCompact: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: uiTokens.space.sm,
+    paddingHorizontal: uiTokens.space.lg,
+    paddingVertical: uiTokens.space.xs,
+  },
+  agendaTypeLegendCompactLabel: {
+    color: colors.text.secondary,
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+    flexShrink: 0,
+  },
+  agendaTypeLegendCompactItems: {
+    flexDirection: 'row',
+    flexGrow: 1,
+    gap: uiTokens.space.xs,
+    alignItems: 'center',
+  },
   dayTab: {
     width: 148,
     minHeight: 104,
@@ -2816,19 +2860,20 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     lineHeight: 18,
   },
   agendaItemTools: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'column',
+    alignItems: 'stretch',
     gap: uiTokens.space.xs,
-    flexWrap: 'wrap',
     marginBottom: uiTokens.space.md,
   },
   agendaItemToolsCompact: {
     marginBottom: uiTokens.space.sm,
   },
-  // agendaTool/agendaToolExpanded/agendaToolPressed/agendaToolLabel used to
-  // hand-roll the expand-to-reveal-label pill here; renderAgendaAction now
-  // renders the shared IconButton (revealLabel) from @hashpass/ui/primitives
-  // instead, so this screen no longer owns its own copy of that chrome.
+  agendaActionButton: {
+    alignSelf: 'flex-start',
+    minHeight: uiTokens.control.compactHeight,
+    paddingHorizontal: uiTokens.space.md,
+    paddingVertical: uiTokens.space.xs,
+  },
   calendarModalOverlay: {
     flex: 1,
     justifyContent: 'flex-end',

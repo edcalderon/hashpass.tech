@@ -23,7 +23,7 @@ import {
   type NativeSyntheticEvent,
 } from "react-native";
 import { NativeSafeIcon } from "../../lib/vector-icons";
-import { IconButton } from "@hashpass/ui/primitives";
+import { HoverText, IconButton } from "@hashpass/ui/primitives";
 import { useAutoAdvanceProgress } from "../../lib/hooks/useAutoAdvanceProgress";
 import { SliderProgressBar } from "../banner/SliderProgressBar";
 import { useTheme } from "../../hooks/useTheme";
@@ -1097,13 +1097,12 @@ export default function Explorer({
             ) : (
               value
             )}
-            <Text
+            <HoverText
               style={styles.discoveryCounterLabel}
               numberOfLines={1}
-              ellipsizeMode="tail"
             >
               {label}
-            </Text>
+            </HoverText>
           </View>
         </View>
         <View style={styles.discoveryCounterDetailSlot}>{detail}</View>
@@ -1128,17 +1127,16 @@ export default function Explorer({
             (isRefreshingPasses ? (
               <View style={styles.discoveryCounterDetailSkeleton} />
             ) : (
-              <Text
+              <HoverText
                 style={styles.discoveryCounterDetail}
                 numberOfLines={1}
-                ellipsizeMode="tail"
               >
                 {translate(
                   "explore.rework.eventsAttending",
                   "{count} you're attending",
                   { count: discoverySummary.attendingEvents },
                 )}
-              </Text>
+              </HoverText>
             )),
           translate(
             "explore.rework.eventsTooltip",
@@ -1164,17 +1162,16 @@ export default function Explorer({
               isRefreshingPasses ? (
                 <View style={styles.discoveryCounterDetailSkeleton} />
               ) : (
-                <Text
+              <HoverText
                   style={styles.discoveryCounterDetail}
                   numberOfLines={1}
-                  ellipsizeMode="tail"
                 >
                   {translate(
                     "explore.rework.activePasses",
                     "{count} active",
                     { count: discoverySummary.activePasses },
                   )}
-                </Text>
+                </HoverText>
               ),
               translate(
                 "explore.rework.passesTooltip",
@@ -1194,17 +1191,16 @@ export default function Explorer({
               isRefreshingPasses ? (
                 <View style={styles.discoveryCounterDetailSkeleton} />
               ) : (
-                <Text
+              <HoverText
                   style={styles.discoveryCounterDetail}
                   numberOfLines={1}
-                  ellipsizeMode="tail"
                 >
                   {translate(
                     "explore.rework.eventsWithPass",
                     "{count} with your pass",
                     { count: discoverySummary.upcomingEventsWithPass },
                   )}
-                </Text>
+                </HoverText>
               ),
               translate(
                 "explore.rework.upcomingTooltip",
@@ -1224,17 +1220,16 @@ export default function Explorer({
               isRefreshingPasses ? (
                 <View style={styles.discoveryCounterDetailSkeleton} />
               ) : (
-                <Text
+              <HoverText
                   style={styles.discoveryCounterDetail}
                   numberOfLines={1}
-                  ellipsizeMode="tail"
                 >
                   {translate(
                     "explore.rework.eventsWithPass",
                     "{count} with your pass",
                     { count: discoverySummary.pastEventsWithPass },
                   )}
-                </Text>
+                </HoverText>
               ),
               translate(
                 "explore.rework.pastTooltip",
@@ -1335,15 +1330,15 @@ export default function Explorer({
           </TouchableOpacity>
         </View>
         <View style={styles.eventBody}>
-          <Text style={styles.eventTitle} numberOfLines={2}>
+          <HoverText style={styles.eventTitle} numberOfLines={2}>
             {event.title}
-          </Text>
-          <Text style={styles.eventMeta} numberOfLines={1}>
+          </HoverText>
+          <HoverText style={styles.eventMeta} numberOfLines={1}>
             {dateLabel}
-          </Text>
-          <Text style={styles.eventCity} numberOfLines={1}>
+          </HoverText>
+          <HoverText style={styles.eventCity} numberOfLines={1}>
             {event.subtitle}
-          </Text>
+          </HoverText>
           {mode !== "grid" && (
             <TouchableOpacity
               style={styles.eventFooter}
@@ -1573,12 +1568,12 @@ export default function Explorer({
               >
                 <Icon name={item.icon} color={item.color} size={22} />
               </View>
-              <Text style={styles.quickTitle} numberOfLines={1}>
+              <HoverText style={styles.quickTitle} numberOfLines={1}>
                 {item.title}
-              </Text>
-              <Text style={styles.quickBody} numberOfLines={2}>
+              </HoverText>
+              <HoverText style={styles.quickBody} numberOfLines={2}>
                 {item.subtitle}
-              </Text>
+              </HoverText>
             </TouchableOpacity>
           ))}
         </ScrollView>

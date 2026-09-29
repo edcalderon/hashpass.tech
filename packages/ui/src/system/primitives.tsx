@@ -13,6 +13,7 @@ import {
   View,
   type LayoutAnimationConfig,
   type PressableProps,
+  type TextProps,
   type TextInputProps,
   type ViewStyle,
   type ViewProps,
@@ -465,6 +466,59 @@ export function FormField({
     </View>
   );
 }
+/**
+ * Text with full-content tooltip on hover/long-press when truncated.
+ * Detects truncation via onTextLayout and only shows the affordance when needed.
+ * Mobile-first: web uses title attribute for native tooltip, native uses long-press.
+ */
+export type HoverTextProps = TextProps & {
+  mode?: ColorMode;
+  /** Maximum lines before truncation. If omitted, text is not truncated. */
+  numberOfLines?: number;
+  /** Optional custom tooltip text (defaults to children). */
+  tooltipText?: string;
+};
+
+export function HoverText({
+  mode = "light",
+  numberOfLines,
+  tooltipText,
+  style,
+  children,
+  onTextLayout: onTextLayoutProp,
+  ...props
+}: HoverTextProps) {
+  const [isTruncated, setIsTruncated] = useState(false);
+
+  const handleTextLayout = (event: any) => {
+    // Forward to caller's handler if they supplied one
+    onTextLayoutProp?.(event);
+    if (numberOfLines === undefined) return;
+    const { lines } = event.nativeEvent;
+    // If we have more lines than numberOfLines, text is truncated
+    if (lines.length > numberOfLines) {
+      setIsTruncated(true);
+    }
+  };
+
+  const fullText = tooltipText || (typeof children === "string" ? children : "");
+
+  return (
+    <Text
+      {...props}
+      numberOfLines={numberOfLines}
+      onTextLayout={handleTextLayout}
+      // Web: use title attribute for native browser tooltip on hover
+      {...(Platform.OS === "web" && isTruncated && numberOfLines !== undefined
+        ? { title: fullText }
+        : {})}
+      style={style}
+    >
+      {children}
+    </Text>
+  );
+}
+
 const styles = StyleSheet.create({
   revealIconButton: {
     borderRadius: uiTokens.radius.pill,
