@@ -128,6 +128,7 @@ services:
         condition: service_started
       plane-minio-init:
         condition: service_completed_successfully
+        required: false
 
   worker:
     env_file: ../.env
@@ -219,6 +220,7 @@ services:
 
   # Comment this if you using any external s3 compatible storage
   plane-minio:
+    profiles: [local-object-storage]
     env_file: ../.env
     image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
     command: ["server", "/export", "--console-address", ":9090"]
@@ -235,6 +237,7 @@ services:
   # Runs once after MinIO starts. Keeping initialization out of the server
   # process means Docker can detect and restart a failed MinIO process.
   plane-minio-init:
+    profiles: [local-object-storage]
     env_file: ../.env
     image: minio/mc:RELEASE.2025-08-13T08-35-41Z
     entrypoint: ["/bin/sh", "-ec"]

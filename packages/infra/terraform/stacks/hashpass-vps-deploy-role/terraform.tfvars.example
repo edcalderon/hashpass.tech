@@ -1,0 +1,9 @@
+aws_region = "us-east-2"
+
+# Supply the live value privately at plan/apply time. Never commit it.
+# ssm_managed_instance_id = "mi-example"
+
+tags = {
+  Environment = "production"
+  Project     = "hashpass"
+}
