@@ -215,6 +215,14 @@ const mcpResource = readEnv('BETTER_AUTH_MCP_RESOURCE_URL') || 'https://mcp.hash
 const mcpLoginPage = readEnv('BETTER_AUTH_MCP_LOGIN_PAGE') || 'https://hashpass.tech/mcp/login';
 const mcpConsentPage = readEnv('BETTER_AUTH_MCP_CONSENT_PAGE') || 'https://hashpass.tech/mcp/consent';
 
+export const buildMcpAccessTokenClaims = (user?: {
+  email?: string | null;
+  emailVerified?: boolean | null;
+} | null) => ({
+  'https://hashpass.tech/email': user?.email || '',
+  'https://hashpass.tech/email_verified': user?.emailVerified === true,
+});
+
 const createAuthInstance = () =>
   betterAuth({
     appName: 'HASHPASS Auth',
@@ -255,9 +263,7 @@ const createAuthInstance = () =>
         allowUnauthenticatedClientRegistration: true,
         accessTokenExpiresIn: 60 * 15,
         refreshTokenExpiresIn: 60 * 60 * 24 * 30,
-        customAccessTokenClaims: ({ user }) => ({
-          'https://hashpass.tech/email': user?.email || '',
-        }),
+        customAccessTokenClaims: ({ user }) => buildMcpAccessTokenClaims(user),
       }),
     ],
     session: {

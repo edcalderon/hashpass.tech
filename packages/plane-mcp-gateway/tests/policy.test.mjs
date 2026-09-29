@@ -9,6 +9,7 @@ import {
 const allowlist = {
   allowedSubjects: ["auth0|operator-123"],
   allowedEmails: ["operator@example.com"],
+  allowedEmailDomains: ["hashpass.tech", "hashpass.app"],
 };
 
 function request(overrides = {}) {
@@ -22,6 +23,7 @@ function request(overrides = {}) {
     scopes: ["plane:read"],
     subject: "auth0|operator-123",
     email: "operator@example.com",
+    emailVerified: true,
     ...allowlist,
     ...overrides,
   };
@@ -85,10 +87,37 @@ test("accepts an allowlisted email even when the subject is not allowlisted", ()
   assert.equal(decision.allowed, true);
 });
 
+test("accepts verified users from approved Hashpass email domains", () => {
+  for (const email of ["member@hashpass.tech", "EDWARD@HASHPASS.APP"]) {
+    const decision = authorizePlaneRequest(request({
+      subject: "auth0|domain-member",
+      email,
+      emailVerified: true,
+    }));
+    assert.equal(decision.allowed, true, `${email} should be authorized`);
+  }
+});
+
+test("rejects unverified and look-alike Hashpass email domains", () => {
+  for (const identity of [
+    {email: "member@hashpass.tech", emailVerified: false},
+    {email: "member@hashpass.app", emailVerified: undefined},
+    {email: "member@hashpass.tech.evil.example", emailVerified: true},
+    {email: "member@not-hashpass.app", emailVerified: true},
+  ]) {
+    const decision = authorizePlaneRequest(request({
+      subject: "auth0|not-allowlisted",
+      ...identity,
+    }));
+    assert.equal(decision.allowed, false, `${identity.email} should be rejected`);
+  }
+});
+
 test("an empty allowlist rejects every caller", () => {
   const decision = authorizePlaneRequest(request({
     allowedSubjects: [],
     allowedEmails: [],
+    allowedEmailDomains: [],
   }));
 
   assert.equal(decision.allowed, false);

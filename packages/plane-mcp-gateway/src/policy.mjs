@@ -132,15 +132,26 @@ export function classifyPlaneAction(action) {
   throw new Error(`Unsupported or unknown Plane action: ${normalized}`);
 }
 
-export function isPlaneIdentityAllowed({subject, email, allowedSubjects, allowedEmails} = {}) {
+export function isPlaneIdentityAllowed({
+  subject,
+  email,
+  emailVerified,
+  allowedSubjects,
+  allowedEmails,
+  allowedEmailDomains,
+} = {}) {
   const subjects = normalizedSet(allowedSubjects);
   const emails = normalizedSet(allowedEmails);
+  const emailDomains = normalizedSet(allowedEmailDomains);
   const normalizedSubject = typeof subject === "string" ? subject.trim().toLowerCase() : "";
   const normalizedEmail = typeof email === "string" ? email.trim().toLowerCase() : "";
-  return Boolean(
-    (normalizedSubject && subjects.has(normalizedSubject)) ||
-    (normalizedEmail && emails.has(normalizedEmail)),
-  );
+  if (normalizedSubject && subjects.has(normalizedSubject)) return true;
+  if (!normalizedEmail || emailVerified !== true) return false;
+  if (emails.has(normalizedEmail)) return true;
+
+  const separator = normalizedEmail.lastIndexOf("@");
+  if (separator <= 0 || separator === normalizedEmail.length - 1) return false;
+  return emailDomains.has(normalizedEmail.slice(separator + 1));
 }
 
 export function authorizePlaneRequest({
@@ -148,10 +159,19 @@ export function authorizePlaneRequest({
   scopes,
   subject,
   email,
+  emailVerified,
   allowedSubjects,
   allowedEmails,
+  allowedEmailDomains,
 } = {}) {
-  if (!isPlaneIdentityAllowed({subject, email, allowedSubjects, allowedEmails})) {
+  if (!isPlaneIdentityAllowed({
+    subject,
+    email,
+    emailVerified,
+    allowedSubjects,
+    allowedEmails,
+    allowedEmailDomains,
+  })) {
     return {allowed: false, reason: "identity_not_allowed"};
   }
   if (!body || typeof body !== "object" || Array.isArray(body) || typeof body.method !== "string") {

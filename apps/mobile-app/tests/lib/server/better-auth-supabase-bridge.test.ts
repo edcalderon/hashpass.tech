@@ -39,6 +39,23 @@ describe('syncBetterAuthUser (Supabase account bridge)', () => {
     mockGetSupabaseServerForRequest.mockReturnValue({ auth: { admin: {} } });
   });
 
+  it('issues explicit verified-email claims for MCP domain authorization', () => {
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    const { buildMcpAccessTokenClaims } = require('../../../lib/server/better-auth');
+
+    expect(buildMcpAccessTokenClaims({
+      email: 'member@hashpass.tech',
+      emailVerified: true,
+    })).toEqual({
+      'https://hashpass.tech/email': 'member@hashpass.tech',
+      'https://hashpass.tech/email_verified': true,
+    });
+    expect(buildMcpAccessTokenClaims({
+      email: 'member@hashpass.app',
+      emailVerified: false,
+    })['https://hashpass.tech/email_verified']).toBe(false);
+  });
+
   it('does nothing when context has no real Request', async () => {
     /* eslint-disable @typescript-eslint/no-require-imports */
     const { syncBetterAuthUser } = require('../../../lib/server/better-auth');
