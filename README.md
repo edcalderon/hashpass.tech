@@ -20,28 +20,19 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.77)
+## 📋 Latest Changes (v1.9.78)
 
 ### Bug Fixes
 
-* complete consolidated release safeguards ([4fa7616](https://github.com/hashpass-tech/hashpass.tech/commit/4fa761618b1078bfd0b84909e57aec3a7aaa6a1a))
-* **events:** harden Colombia programme sync ([1b301ad](https://github.com/hashpass-tech/hashpass.tech/commit/1b301ad2c6d962957631e685b1a1d7b8b31c248e))
-
-
-### Features
-
-* **events:** sync BSL Colombia programme ([37140a9](https://github.com/hashpass-tech/hashpass.tech/commit/37140a93739416018a36f8d209b2be3c8adb3263))
+* **mobile:** polish agenda and PWA interactions ([b2c44c3](https://github.com/hashpass-tech/hashpass.tech/commit/b2c44c34d721e5e561aba04d777e1ae229d288d9))
 ### Release Highlights
-- add event hero video fallbacks; sync BSL Colombia programme; complete consolidated release safeguards; preserve signed MCP consent query; harden Colombia programme sync
+- polish agenda and PWA interactions
 
 ### Release scope
-- Compared with: `v1.9.76` (the previous global release tag)
+- Compared with: `v1.9.77` (the previous global release tag)
 
 ### Affected products & packages
 - Mobile app
-- Database migrations
-- Documentation
-- Release tooling
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

@@ -22,25 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202609290303, // Updated to current timestamp
+  buildNumber: 202609290652, // Updated to current timestamp
   releaseDate: '2026-09-29',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'add event hero video fallbacks',
-    'sync BSL Colombia programme'
+    // No new features
   ],
   bugfixes: [
-    'complete consolidated release safeguards',
-    'preserve signed MCP consent query',
-    'harden Colombia programme sync'
+    'polish agenda and PWA interactions'
   ],
   breakingChanges: [],
-  notes: 'add event hero video fallbacks; sync BSL Colombia programme; complete consolidated release safeguards; preserve signed MCP consent query; harden Colombia programme sync'
+  notes: 'polish agenda and PWA interactions'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.78': {
+    version: '1.9.78',
+    buildNumber: 202609290652,
+    releaseDate: '2026-09-29',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'polish agenda and PWA interactions'
+    ],
+    breakingChanges: [],
+    notes: 'polish agenda and PWA interactions'
+  },
   '1.9.77': {
     version: '1.9.77',
     buildNumber: 202609290303,
