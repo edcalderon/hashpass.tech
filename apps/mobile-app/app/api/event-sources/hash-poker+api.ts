@@ -11,12 +11,24 @@ const headers = {
 };
 
 export async function GET(request: Request) {
-  const supabase = getSupabaseServerForRequest(request);
-  const { data, error } = await supabase
-    .from("published_external_events")
-    .select("normalized_payload")
-    .eq("source_id", "pkrr-hash-poker")
-    .order("last_seen_at", { ascending: false });
+  let data: Array<{ normalized_payload: unknown }> | null = null;
+  let error: unknown = null;
+
+  try {
+    const supabase = getSupabaseServerForRequest(request);
+    const result = await supabase
+      .from("published_external_events")
+      .select("normalized_payload")
+      .eq("source_id", "pkrr-hash-poker")
+      .order("last_seen_at", { ascending: false });
+    data = result.data as Array<{ normalized_payload: unknown }> | null;
+    error = result.error;
+  } catch (cause) {
+    // A connection-level failure can reject before Supabase returns its usual
+    // `{ data, error }` result. Treat it like any other unavailable feed so
+    // local callers can still use the bundled snapshot.
+    error = cause;
+  }
 
   if (!error && data?.length) {
     const config = toHashPokerEventConfig(
@@ -29,21 +41,23 @@ export async function GET(request: Request) {
   }
 
   const hostname = new URL(request.url).hostname;
-  const isLocalDevelopmentRequest = process.env.NODE_ENV === "development"
-    && (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1" || hostname === "[::1]");
+  const isLocalRequest = hostname === "localhost"
+    || hostname === "127.0.0.1"
+    || hostname === "::1"
+    || hostname === "[::1]";
   const useLegacyFallback = process.env.EVENT_INGESTION_LEGACY_JSON_FALLBACK === "true"
-    || isLocalDevelopmentRequest;
+    || isLocalRequest;
 
   if (useLegacyFallback) {
     return Response.json(
       {
         data: getHashPokerEventConfig(),
-        source: isLocalDevelopmentRequest ? "local-legacy-fallback" : "legacy-json-fallback",
+        source: isLocalRequest ? "local-legacy-fallback" : "legacy-json-fallback",
       },
       {
         headers: {
           ...headers,
-          Warning: isLocalDevelopmentRequest
+          Warning: isLocalRequest
             ? '299 - "Local event snapshot fallback active"'
             : '299 - "Legacy event snapshot fallback active"',
         },

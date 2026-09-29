@@ -116,6 +116,46 @@ describe("/api/event-sources/hash-poker", () => {
     });
   });
 
+  it("uses the checked-in snapshot for a loopback request even when the runtime env is production", async () => {
+    Object.defineProperty(process.env, "NODE_ENV", {
+      configurable: true,
+      value: "production",
+      writable: true,
+    });
+    queryResult({ data: null, error: { message: "local database offline" } });
+    mockGetHashPokerEventConfig.mockReturnValue({ id: "hash-poker", title: "Local production-mode snapshot" });
+
+    const { GET } = require("../../app/api/event-sources/hash-poker+api");
+    const response = await GET(new Request("http://127.0.0.1:8081/api/event-sources/hash-poker"));
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      data: { id: "hash-poker", title: "Local production-mode snapshot" },
+      source: "local-legacy-fallback",
+    });
+  });
+
+  it("falls back when the database client throws a connection error", async () => {
+    Object.defineProperty(process.env, "NODE_ENV", {
+      configurable: true,
+      value: "development",
+      writable: true,
+    });
+    mockGetSupabaseServerForRequest.mockImplementation(() => {
+      throw new Error("database connection refused");
+    });
+    mockGetHashPokerEventConfig.mockReturnValue({ id: "hash-poker", title: "Connection fallback" });
+
+    const { GET } = require("../../app/api/event-sources/hash-poker+api");
+    const response = await GET(new Request("http://localhost:8081/api/event-sources/hash-poker"));
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      data: { id: "hash-poker", title: "Connection fallback" },
+      source: "local-legacy-fallback",
+    });
+  });
+
   it("fails closed without fallback when the database feed is unavailable", async () => {
     const error = { message: "database offline" };
     queryResult({ data: null, error });
