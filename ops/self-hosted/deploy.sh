@@ -9,6 +9,11 @@ docker compose --env-file .env -f plane/compose.yaml config --quiet
 docker compose --env-file .env -f mcp/compose.yaml config --quiet
 docker compose --env-file .env -f compose.yaml config --quiet
 docker compose --env-file .env -f frappe/compose.yaml up -d
+# The Frappe nginx template resolves the backend service when it starts. A
+# backend replacement can therefore leave an unchanged frontend pointing at a
+# stale container address until nginx is recreated.
+docker compose --env-file .env -f frappe/compose.yaml up -d \
+  --no-deps --force-recreate --wait --wait-timeout 90 frappe-frontend
 docker compose --env-file .env -f plane/compose.yaml up -d
 docker compose --env-file .env -f mcp/compose.yaml up -d --build --wait --wait-timeout 180
 docker compose --env-file .env -f compose.yaml up -d --wait --wait-timeout 60

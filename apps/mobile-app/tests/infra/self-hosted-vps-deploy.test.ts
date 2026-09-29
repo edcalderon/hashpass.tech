@@ -15,6 +15,10 @@ const planeComposePath = path.resolve(
   __dirname,
   '../../../../ops/self-hosted/plane/compose.yaml',
 );
+const deployScriptPath = path.resolve(
+  __dirname,
+  '../../../../ops/self-hosted/deploy.sh',
+);
 
 describe('self-hosted VPS deployment workflow', () => {
   it('verifies the assumed AWS account against the private target before SSM deployment', () => {
@@ -195,5 +199,18 @@ describe('self-hosted VPS deployment workflow', () => {
     expect(compose).toMatch(
       /plane-minio-init:\s*\n\s+condition:\s*service_completed_successfully\s*\n\s+required:\s*false/,
     );
+  });
+
+  it('recreates and waits for the Helpdesk frontend after replacing its backend', () => {
+    const deployScript = fs.readFileSync(deployScriptPath, 'utf8');
+    const frappeUp = deployScript.indexOf('-f frappe/compose.yaml up -d');
+    const frontendRecreate = deployScript.indexOf(
+      '--no-deps --force-recreate --wait --wait-timeout 90 frappe-frontend',
+    );
+    const planeUp = deployScript.indexOf('-f plane/compose.yaml up -d');
+
+    expect(frappeUp).toBeGreaterThan(-1);
+    expect(frontendRecreate).toBeGreaterThan(frappeUp);
+    expect(planeUp).toBeGreaterThan(frontendRecreate);
   });
 });
