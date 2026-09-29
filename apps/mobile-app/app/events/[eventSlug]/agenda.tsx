@@ -159,6 +159,7 @@ type AgendaTypeRevealProps = {
   itemId: string;
   typeColor: string;
   foregroundColor: string;
+  surfaceColor: string;
   iconName: NativeSafeIconName;
   label: string;
   accessibilityLabel: string;
@@ -283,6 +284,7 @@ function AgendaTypeReveal({
   itemId,
   typeColor,
   foregroundColor,
+  surfaceColor,
   iconName,
   label,
   accessibilityLabel,
@@ -383,7 +385,13 @@ function AgendaTypeReveal({
               { backgroundColor: typeColor },
             ]}
           />
-          <View style={[agendaTypeRevealStyles.layerRing, agendaTypeRevealStyles.layerRingWhite]} />
+          <View
+            style={[
+              agendaTypeRevealStyles.layerRing,
+              agendaTypeRevealStyles.layerRingWhite,
+              { backgroundColor: surfaceColor },
+            ]}
+          />
           <View
             style={[
               agendaTypeRevealStyles.layerRing,
@@ -391,7 +399,13 @@ function AgendaTypeReveal({
               { backgroundColor: typeColor },
             ]}
           />
-          <View style={[agendaTypeRevealStyles.layerRing, agendaTypeRevealStyles.layerRingCenter]} />
+          <View
+            style={[
+              agendaTypeRevealStyles.layerRing,
+              agendaTypeRevealStyles.layerRingCenter,
+              { backgroundColor: surfaceColor },
+            ]}
+          />
         </Animated.View>
         <Animated.View
           testID={`agenda-card-type-collapsed-icon-${itemId}`}
@@ -542,6 +556,111 @@ function AgendaTypeLegendControl({
   );
 }
 
+type AgendaRefreshControlProps = {
+  label: string;
+  color: string;
+  surfaceColor: string;
+  borderColor: string;
+  disabled: boolean;
+  onPress: () => void;
+};
+
+const AGENDA_REFRESH_CONTROL_SIZE = uiTokens.control.compactHeight;
+const AGENDA_REFRESH_CONTROL_LABEL_WIDTH = 104;
+
+const agendaRefreshControlStyles = StyleSheet.create({
+  shell: {
+    borderRadius: uiTokens.radius.pill,
+    borderWidth: uiTokens.control.borderWidth,
+    height: AGENDA_REFRESH_CONTROL_SIZE,
+    overflow: 'hidden',
+  },
+  pressable: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    height: '100%',
+  },
+  icon: {
+    alignItems: 'center',
+    height: AGENDA_REFRESH_CONTROL_SIZE,
+    justifyContent: 'center',
+    width: AGENDA_REFRESH_CONTROL_SIZE - uiTokens.control.borderWidth * 2,
+  },
+  labelClip: {
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  label: {
+    fontSize: uiTokens.type.caption,
+    fontWeight: '700',
+    paddingRight: uiTokens.space.sm,
+  },
+});
+
+function AgendaRefreshControl({
+  label,
+  color,
+  surfaceColor,
+  borderColor,
+  disabled,
+  onPress,
+}: AgendaRefreshControlProps) {
+  const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const reduceMotion = useReducedMotionPreference();
+  const expansion = useSharedValue(0);
+  const expanded = hovered || focused;
+
+  useEffect(() => {
+    const nextProgress = expanded ? 1 : 0;
+    expansion.value = reduceMotion
+      ? nextProgress
+      : withTiming(nextProgress, {
+          duration: uiTokens.motion.fast,
+          easing: Easing.out(Easing.cubic),
+        });
+  }, [expanded, expansion, reduceMotion]);
+
+  const shellStyle = useAnimatedStyle(() => ({
+    width: AGENDA_REFRESH_CONTROL_SIZE + expansion.value * AGENDA_REFRESH_CONTROL_LABEL_WIDTH,
+  }));
+  const labelStyle = useAnimatedStyle(() => ({
+    opacity: expansion.value,
+    width: expansion.value * AGENDA_REFRESH_CONTROL_LABEL_WIDTH,
+  }));
+
+  return (
+    <Animated.View
+      style={[
+        agendaRefreshControlStyles.shell,
+        { backgroundColor: expanded ? `${color}14` : surfaceColor, borderColor: expanded ? `${color}52` : borderColor },
+        shellStyle,
+      ]}
+    >
+      <Pressable
+        testID="agenda-refresh-control"
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        accessibilityState={{ disabled, expanded }}
+        disabled={disabled}
+        onBlur={() => setFocused(false)}
+        onFocus={() => setFocused(true)}
+        onHoverIn={() => setHovered(true)}
+        onHoverOut={() => setHovered(false)}
+        onPress={onPress}
+        style={agendaRefreshControlStyles.pressable}
+      >
+        <View style={agendaRefreshControlStyles.icon}>
+          <NativeSafeIcon name="refresh" size={18} color={color} />
+        </View>
+        <Animated.View style={[agendaRefreshControlStyles.labelClip, labelStyle]}>
+          <Text numberOfLines={1} style={[agendaRefreshControlStyles.label, { color }]}>{label}</Text>
+        </Animated.View>
+      </Pressable>
+    </Animated.View>
+  );
+}
+
 export default function BSL2025AgendaScreen() {
   const { event } = useEvent();
   const { isDark, colors } = useTheme();
@@ -573,6 +692,7 @@ export default function BSL2025AgendaScreen() {
   const [selectedFilter, setSelectedFilter] = useState<AgendaType | 'all'>('all');
   const [agendaLayout, setAgendaLayout] = useState<'compact' | 'list' | 'grid'>('compact');
   const [expandedAgendaAction, setExpandedAgendaAction] = useState<string | null>(null);
+  const agendaActionHoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isCompactAgenda = agendaLayout === 'compact';
   const isAgendaGrid = agendaLayout === 'grid';
   const [usingJsonFallback, setUsingJsonFallback] = useState(false);
@@ -594,6 +714,28 @@ export default function BSL2025AgendaScreen() {
     added: true,
     slotStartTime: null,
   });
+
+  const clearAgendaActionHoverTimeout = useCallback(() => {
+    if (agendaActionHoverTimeoutRef.current) {
+      clearTimeout(agendaActionHoverTimeoutRef.current);
+      agendaActionHoverTimeoutRef.current = null;
+    }
+  }, []);
+
+  const handleAgendaActionHoverIn = useCallback((actionId: string) => {
+    clearAgendaActionHoverTimeout();
+    setExpandedAgendaAction(actionId);
+  }, [clearAgendaActionHoverTimeout]);
+
+  const handleAgendaActionHoverOut = useCallback((actionId: string) => {
+    clearAgendaActionHoverTimeout();
+    agendaActionHoverTimeoutRef.current = setTimeout(() => {
+      setExpandedAgendaAction((current) => current === actionId ? null : current);
+      agendaActionHoverTimeoutRef.current = null;
+    }, uiTokens.motion.fast);
+  }, [clearAgendaActionHoverTimeout]);
+
+  useEffect(() => clearAgendaActionHoverTimeout, [clearAgendaActionHoverTimeout]);
   // Calendar export is intentionally a secondary, per-session action. Keeping
   // the choice in a modal preserves the agenda card's scan-friendly layout.
   const [calendarPickerItem, setCalendarPickerItem] = useState<AgendaItem | null>(null);
@@ -1716,9 +1858,9 @@ export default function BSL2025AgendaScreen() {
           accessibilityLabel={label}
           accessibilityHint={t('actions.actionHint', 'Opens this session action')}
           onPress={onPress}
-          onHoverIn={() => setExpandedAgendaAction(actionId)}
-          onHoverOut={() => setExpandedAgendaAction((current) => current === actionId ? null : current)}
-          onFocus={() => setExpandedAgendaAction(actionId)}
+          onHoverIn={() => handleAgendaActionHoverIn(actionId)}
+          onHoverOut={() => handleAgendaActionHoverOut(actionId)}
+          onFocus={() => handleAgendaActionHoverIn(actionId)}
           onBlur={() => setExpandedAgendaAction((current) => current === actionId ? null : current)}
           style={({ pressed }) => [
             styles.agendaTool,
@@ -1727,7 +1869,7 @@ export default function BSL2025AgendaScreen() {
           ]}
         >
           {icon}
-          {isExpanded ? <Text style={styles.agendaToolLabel}>{label}</Text> : null}
+          {isExpanded ? <Text pointerEvents="none" style={styles.agendaToolLabel}>{label}</Text> : null}
         </Pressable>
       );
     };
@@ -1818,6 +1960,7 @@ export default function BSL2025AgendaScreen() {
                 itemId={item.id}
                 typeColor={typeColor}
                 foregroundColor={isDark ? uiTokens.colors.dark.onAccent : uiTokens.colors.light.text}
+                surfaceColor={colors.background.paper}
                 iconName={getAgendaTypeIcon(item.type) as NativeSafeIconName}
                 label={typeLabel}
                 accessibilityLabel={t('types.revealLabel', `Session type: ${typeLabel}`)}
@@ -2064,16 +2207,14 @@ export default function BSL2025AgendaScreen() {
             )}
           </View>
           <View style={styles.dayHeaderControls}>
-            <TouchableOpacity
-              accessibilityRole="button"
-              accessibilityLabel={t('refreshAgenda', 'Refresh agenda')}
+            <AgendaRefreshControl
+              label={t('refreshAgenda', 'Refresh agenda')}
+              color={colors.primary}
+              surfaceColor={colors.background.paper}
+              borderColor={colors.divider}
               disabled={loading}
               onPress={() => { void loadAgenda(); }}
-              style={styles.reloadAgendaButton}
-            >
-              <NativeSafeIcon name="refresh" size={18} color={colors.primary} />
-              <Text style={styles.reloadAgendaText}>{t('refreshAgenda', 'Refresh agenda')}</Text>
-            </TouchableOpacity>
+            />
             <View accessibilityLabel={t('viewMode.label', 'Agenda display')} style={styles.agendaModeSwitcher}>
               {([
                 { key: 'compact' as const, icon: 'rail' as const, label: t('viewMode.compact', 'Compact view') },
@@ -2420,20 +2561,6 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   agendaModeButtonSelected: {
     backgroundColor: colors.primary,
     borderColor: colors.primary,
-  },
-  reloadAgendaButton: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    flexShrink: 0,
-    gap: uiTokens.space.xs,
-    minHeight: 34,
-    paddingHorizontal: uiTokens.space.xs,
-    paddingVertical: uiTokens.space.xs,
-  },
-  reloadAgendaText: {
-    color: colors.primary,
-    fontSize: 11,
-    fontWeight: '700',
   },
   dayHeaderLabel: {
     fontSize: uiTokens.type.title,
