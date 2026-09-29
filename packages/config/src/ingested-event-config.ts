@@ -60,6 +60,7 @@ export function toHashPokerEventConfig(
     subtitle: `Poker Room • ${event.venueName}, ${event.city}`,
     image: event.coverImage || event.organizerLogo || "",
     heroVideo: `${EVENT_MEDIA_BASE}/hash-poker/branding/hashpass-event-hero-v1.mp4`,
+    heroPoster: `${EVENT_MEDIA_BASE}/hash-poker/branding/hashpass-event-hero-v1.jpg`,
     color: "#8B1538",
     eventStartDate: selected.next,
     eventDateString: `${formatted} • ${event.address}`,

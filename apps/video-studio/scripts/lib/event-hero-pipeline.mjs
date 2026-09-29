@@ -86,3 +86,21 @@ export function createHeroPublishPlan(heroes, {mediaBaseUrl, outputDirectory}) {
     };
   });
 }
+
+/** Build static fallback destinations beside every immutable hero film. */
+export function createHeroPosterPublishPlan(heroes, {mediaBaseUrl, outputDirectory}) {
+  const baseUrl = requireString(mediaBaseUrl, 'mediaBaseUrl').replace(/\/+$/, '');
+  const outputRoot = requireString(outputDirectory, 'outputDirectory');
+
+  return heroes.map((hero) => {
+    const filename = 'hashpass-event-hero-v1.jpg';
+    const suffix = `${hero.id}/branding/${filename}`;
+    return {
+      eventId: hero.id,
+      localPath: path.join(outputRoot, hero.id, filename),
+      objectKey: `events/${suffix}`,
+      publicUrl: `${baseUrl}/${suffix}`,
+      contentType: 'image/jpeg',
+    };
+  });
+}

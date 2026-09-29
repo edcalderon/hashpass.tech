@@ -115,8 +115,54 @@ export interface ExplorerEvent {
   color?: string;
   tourRole?: "hub" | "stop" | "archive" | string;
   image?: string;
+  /** Silent event hero film for the discovery carousel. */
+  heroVideo?: string;
+  /** Static poster shown while a hero film is loading or unavailable. */
+  heroPoster?: string;
   shortName?: string;
 }
+
+export interface ExplorerHeroSlide {
+  id: string;
+  eventId: string;
+  eyebrow: string;
+  title: string;
+  subtitle: string;
+  backgroundColor: string;
+  route: string;
+  media?: { type: "image" | "video"; url: string };
+  /** Render underneath video so a transport or decode failure stays useful. */
+  fallbackImage?: string;
+}
+
+/**
+ * The Explorer's global hero is event data, never campaign-copy data. Every
+ * event may ship an optional muted hero film and an independently loadable
+ * poster; without either, callers can use their neutral visual fallback.
+ */
+export const getExplorerHeroSlides = (
+  events: ExplorerEvent[],
+): ExplorerHeroSlide[] =>
+  events.map((event) => {
+    const fallbackImage = event.heroPoster || event.image;
+    const media = event.heroVideo
+      ? { type: "video" as const, url: event.heroVideo }
+      : fallbackImage
+        ? { type: "image" as const, url: fallbackImage }
+        : undefined;
+
+    return {
+      id: `${event.id}-default`,
+      eventId: event.id,
+      eyebrow: event.shortName || event.series || "HASHPASS EVENT",
+      title: event.title,
+      subtitle: event.eventDateString || event.subtitle || "Coming soon",
+      backgroundColor: event.color || "#18212D",
+      route: `/events/${event.id}/home`,
+      media,
+      fallbackImage,
+    };
+  });
 
 export interface ExplorerFilters {
   query?: string;

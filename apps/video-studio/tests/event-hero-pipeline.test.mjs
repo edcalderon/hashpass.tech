@@ -5,6 +5,7 @@ import test from 'node:test';
 
 import {
   createHeroPublishPlan,
+  createHeroPosterPublishPlan,
   validateEventHeroManifest,
 } from '../scripts/lib/event-hero-pipeline.mjs';
 
@@ -41,6 +42,35 @@ test('creates immutable, event-scoped CDN destinations for every approved hero l
       },
     ],
   );
+});
+
+test('creates an event-scoped poster beside every hero loop', () => {
+  const heroes = validateEventHeroManifest({
+    version: 1,
+    heroes: [{
+      id: 'colombia2026',
+      compositionId: 'EventHeroColombia2026',
+      eventLogo: {target: 'event-heroes/colombia2026/event-logo.webp'},
+      title: 'Blockchain Summit Latam Colombia 2026',
+      city: 'Bogotá',
+      country: 'Colombia',
+      venue: 'Bogotá',
+      accentColor: '#F5C542',
+    }],
+  });
+
+  assert.deepEqual(createHeroPosterPublishPlan(heroes, {
+    mediaBaseUrl: 'https://media.example.test/events',
+    outputDirectory: '/tmp/event-hero-output',
+  }), [
+    {
+      eventId: 'colombia2026',
+      localPath: '/tmp/event-hero-output/colombia2026/hashpass-event-hero-v1.jpg',
+      objectKey: 'events/colombia2026/branding/hashpass-event-hero-v1.jpg',
+      publicUrl: 'https://media.example.test/events/colombia2026/branding/hashpass-event-hero-v1.jpg',
+      contentType: 'image/jpeg',
+    },
+  ]);
 });
 
 test('rejects a hero manifest that would publish an event without its verified venue', () => {

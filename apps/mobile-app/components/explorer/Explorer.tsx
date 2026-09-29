@@ -60,12 +60,13 @@ import {
   getEventRoomTarget,
   getExplorerEventStatus,
   getExplorerFloatingBottomInset,
-  getExplorerHeroActionTarget,
+  getExplorerHeroSlides,
   getExplorerLayout,
   getExplorerScopeLabel,
   resolveExplorerIconName,
   sortExplorerEvents,
   type ExplorerEvent,
+  type ExplorerHeroSlide,
   type ExplorerLayoutMode,
 } from "./explorer";
 import {
@@ -89,45 +90,6 @@ interface ExplorerProps {
   onAuthRequired?: () => void;
   showcase?: React.ReactNode;
 }
-
-type HeroSlide = {
-  eyebrow: string;
-  title: string;
-  subtitle: string;
-  tone: string;
-  action?: string;
-  actionPosition?: import("@hashpass/types").EventBannerCtaPosition;
-};
-
-const HERO_SLIDES: HeroSlide[] = [
-  {
-    eyebrow: "NEXT UP",
-    title: "Blockchain Summit Latam Colombia 2026",
-    subtitle: "November 5–6, 2026 · Bogotá, Colombia",
-    tone: "#B88A14",
-    action: "Get your pass",
-  },
-  {
-    eyebrow: "BSL ON TOUR",
-    title: "Three cities. One connected community.",
-    subtitle: "Peru and Chile are archived. Colombia is next.",
-    tone: "#4B3B5D",
-    action: "Explore the tour",
-  },
-  {
-    eyebrow: "HASHPASS EVENTS",
-    title: "Discover what is next",
-    subtitle:
-      "One global explorer for every summit, stop, and community moment.",
-    tone: "#5552E8",
-  },
-  {
-    eyebrow: "OFFICIAL PARTNERS",
-    title: "Built with the people moving the ecosystem forward.",
-    subtitle: "Sponsors and community partners make every stop possible.",
-    tone: "#18212D",
-  },
-];
 
 const DEFAULT_EVENT_HERO_DURATION_MS = 5_000;
 
@@ -163,6 +125,8 @@ const toExplorerEvent = (event: EventInfo): ExplorerEvent => ({
   series: event.series || (event.id === "bsl" ? "BSL On Tour" : "Summit"),
   continent: event.geo?.continent,
   color: event.color,
+  heroVideo: event.heroVideo,
+  heroPoster: event.heroPoster,
   tourRole: event.tour?.role,
   image: event.image,
   shortName: event.shortName,
@@ -468,17 +432,24 @@ export default function Explorer({
     [selectedEvent],
   );
 
-  // The rotating hero slides (Colombia/BSL On Tour/etc.) only apply to the
-  // global explorer -- a single-tenant whitelabel domain renders one static
-  // hero built from its own event instead (see renderHero below), so there's
-  // nothing to rotate there. Starts on index 2 ("Discover what is next") to
-  // match the previous default.
+  // The global dashboard carousel is a projection of the event registry.
+  // Keeping the media contract here means a new event automatically gains a
+  // video/poster capable slide rather than another hard-coded campaign card.
+  const globalHeroSlides = useMemo<ExplorerHeroSlide[]>(
+    () => getExplorerHeroSlides(explorerEvents),
+    [explorerEvents],
+  );
+
+  // A global dashboard may show every event, while a single-tenant surface
+  // owns one static hero. Active media pauses whenever the user holds the
+  // slide, and platform components handle their own reduced-motion behavior.
   const defaultHeroSlider = useAutoAdvanceProgress({
-    count: showcase === undefined && isGlobalExplorer ? HERO_SLIDES.length : 0,
-    durationMs: () => 5000,
-    initialIndex: 2,
+    count:
+      showcase === undefined && isGlobalExplorer ? globalHeroSlides.length : 0,
+    durationMs: () => DEFAULT_EVENT_HERO_DURATION_MS,
   });
   const heroIndex = defaultHeroSlider.activeIndex;
+  const globalHeroSlide = globalHeroSlides[heroIndex] || globalHeroSlides[0];
 
   const selectedHeroSlider = useAutoAdvanceProgress({
     count: showcase === undefined && selectedEvent ? selectedHeroSlides.length : 0,
@@ -608,14 +579,6 @@ export default function Explorer({
     if (event) onSelectEvent(event);
   };
 
-  const handleHeroAction = (action: string) => {
-    const target = getExplorerHeroActionTarget(action);
-    if (!target) return;
-    if (requireAccount()) return;
-    router.push(target.route as any);
-    if (target.eventId) selectEvent(target.eventId);
-  };
-
   const handleSelectedHeroCta = (url?: string) => {
     if (!url) return;
     if (/^https?:\/\//i.test(url)) {
@@ -645,7 +608,7 @@ export default function Explorer({
       const imageSource =
         heroSlide.media.type === "image"
           ? resolveEventImageSource(heroSlide.media.url)
-          : null;
+          : resolveEventImageSource(selectedEvent.heroPoster || selectedEvent.image);
 
       return (
         <Pressable
@@ -659,24 +622,28 @@ export default function Explorer({
           onPressIn={selectedHeroSlider.pause}
           onPressOut={selectedHeroSlider.resume}
         >
+          {imageSource ? (
+            <Image
+              source={imageSource}
+              style={styles.heroBackgroundMedia}
+              resizeMode="cover"
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants"
+            />
+          ) : null}
           {heroSlide.media.type === "video" ? (
             <EventBannerBackgroundVideo
               source={heroSlide.media.url}
               loadingLogo={selectedEvent.branding?.logo || selectedEvent.image}
               preferBundledSource={selectedEvent.id === "criptolatinfest"}
+              showLoadingIndicator={!imageSource}
               loadingLabel={translate(
                 "explore.rework.loadingEventFilm",
                 "Loading event film",
               )}
             />
-          ) : imageSource ? (
-            <Image
-              source={imageSource}
-              style={styles.heroBackgroundMedia}
-              resizeMode="cover"
-            />
           ) : null}
-          {heroSlide.media.type !== "video" && (
+          {!imageSource && (
             <View style={styles.heroTexture} />
           )}
           <View style={styles.heroScrim} />
@@ -736,12 +703,16 @@ export default function Explorer({
     }
 
     // Single-tenant whitelabel domains (e.g. demo-criptolatinfest.hashpass.tech)
-    // get a static hero built from their own event -- never the hardcoded
-    // Colombia/BSL On Tour/partners slides below, which are global-explorer
-    // only (confirmed live bug: those rendered on every tenant regardless).
+    // get one hero built from their own event, never another tenant's media.
     if (!isGlobalExplorer) {
       const heroEvent = selectedEvent || events[0];
       if (!heroEvent) return null;
+      const [singleTenantSlide] = getExplorerHeroSlides([
+        toExplorerEvent(heroEvent),
+      ]);
+      const imageSource = resolveEventImageSource(
+        singleTenantSlide?.fallbackImage,
+      );
 
       return (
         <View
@@ -750,7 +721,28 @@ export default function Explorer({
             { backgroundColor: heroEvent.color || "#18212D" },
           ]}
         >
-          <View style={styles.heroTexture} />
+          {imageSource ? (
+            <Image
+              source={imageSource}
+              style={styles.heroBackgroundMedia}
+              resizeMode="cover"
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants"
+            />
+          ) : null}
+          {singleTenantSlide?.media?.type === "video" ? (
+            <EventBannerBackgroundVideo
+              source={singleTenantSlide.media.url}
+              loadingLogo={heroEvent.branding?.logo || heroEvent.image}
+              preferBundledSource={heroEvent.id === "criptolatinfest"}
+              showLoadingIndicator={!imageSource}
+              loadingLabel={translate(
+                "explore.rework.loadingEventFilm",
+                "Loading event film",
+              )}
+            />
+          ) : null}
+          {!imageSource && <View style={styles.heroTexture} />}
           <View style={styles.heroScrim} />
           <View style={styles.heroContent}>
             <View style={styles.heroEyebrow}>
@@ -768,89 +760,70 @@ export default function Explorer({
       );
     }
 
-    const hero = HERO_SLIDES[heroIndex];
-    const localizedHero = [
-      {
-        eyebrow: translate("explore.rework.heroNextUp", "NEXT UP"),
-        title: translate(
-          "explore.rework.heroNextTitle",
-          "Blockchain Summit Latam Colombia 2026",
-        ),
-        subtitle: translate(
-          "explore.rework.heroNextSubtitle",
-          "November 5–6, 2026 · Bogotá, Colombia",
-        ),
-        action: translate("explore.rework.heroGetPass", "Get your pass"),
-      },
-      {
-        eyebrow: translate("explore.rework.heroTour", "BSL ON TOUR"),
-        title: translate(
-          "explore.rework.heroTourTitle",
-          "Three cities. One connected community.",
-        ),
-        subtitle: translate(
-          "explore.rework.heroTourSubtitle",
-          "Peru and Chile are archived. Colombia is next.",
-        ),
-        action: translate("explore.rework.heroExploreTour", "Explore the tour"),
-      },
-      {
-        eyebrow: translate("explore.rework.heroEvents", "HASHPASS EVENTS"),
-        title: translate(
-          "explore.rework.heroEventsTitle",
-          "Discover what is next",
-        ),
-        subtitle: translate(
-          "explore.rework.heroEventsSubtitle",
-          "One global explorer for every summit, stop, and community moment.",
-        ),
-      },
-      {
-        eyebrow: translate("explore.rework.heroPartners", "OFFICIAL PARTNERS"),
-        title: translate(
-          "explore.rework.heroPartnersTitle",
-          "Built with the people moving the ecosystem forward.",
-        ),
-        subtitle: translate(
-          "explore.rework.heroPartnersSubtitle",
-          "Sponsors and community partners make every stop possible.",
-        ),
-      },
-    ][heroIndex];
-    const localizedSlide = { ...hero, ...localizedHero };
+    if (!globalHeroSlide) return null;
+    const globalEvent = events.find(
+      (event) => event.id === globalHeroSlide.eventId,
+    );
+    const imageSource = resolveEventImageSource(globalHeroSlide.fallbackImage);
 
     return (
       <Pressable
-        style={[styles.hero, { backgroundColor: hero.tone }]}
+        style={[
+          styles.hero,
+          { backgroundColor: globalHeroSlide.backgroundColor },
+        ]}
         onPressIn={defaultHeroSlider.pause}
         onPressOut={defaultHeroSlider.resume}
       >
-        <View style={styles.heroTexture} />
+        {imageSource ? (
+          <Image
+            source={imageSource}
+            style={styles.heroBackgroundMedia}
+            resizeMode="cover"
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
+          />
+        ) : null}
+        {globalHeroSlide.media?.type === "video" ? (
+          <EventBannerBackgroundVideo
+            source={globalHeroSlide.media.url}
+            loadingLogo={globalEvent?.branding?.logo || globalHeroSlide.fallbackImage}
+            preferBundledSource={globalHeroSlide.eventId === "criptolatinfest"}
+            showLoadingIndicator={!imageSource}
+            loadingLabel={translate(
+              "explore.rework.loadingEventFilm",
+              "Loading event film",
+            )}
+          />
+        ) : null}
+        {!imageSource && <View style={styles.heroTexture} />}
         <View style={styles.heroScrim} />
         <View style={styles.heroContent}>
           <View style={styles.heroEyebrow}>
             <View style={styles.liveDot} />
-            <Text style={styles.heroEyebrowText}>{localizedSlide.eyebrow}</Text>
+            <Text style={styles.heroEyebrowText}>
+              {globalHeroSlide.eyebrow}
+            </Text>
           </View>
-          <Text style={styles.heroTitle}>{localizedSlide.title}</Text>
-          <Text style={styles.heroSubtitle}>{localizedSlide.subtitle}</Text>
+          <Text style={styles.heroTitle}>{globalHeroSlide.title}</Text>
+          <Text style={styles.heroSubtitle}>{globalHeroSlide.subtitle}</Text>
         </View>
-        {localizedSlide.action && (
-          <TouchableOpacity
-            style={[
-              styles.heroAction,
-              getEventBannerCtaLayout(localizedSlide.actionPosition, {
-                bottom: EXPLORER_HERO_LAYOUT.progressBottomInset + 12,
-              }),
-            ]}
-            onPress={() => handleHeroAction(hero.action || "")}
-            accessibilityRole="button"
-          >
-            <Text style={styles.heroActionText}>{localizedSlide.action}</Text>
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity
+          style={[
+            styles.heroAction,
+            getEventBannerCtaLayout(undefined, {
+              bottom: EXPLORER_HERO_LAYOUT.progressBottomInset + 12,
+            }),
+          ]}
+          onPress={() => handleSelectedHeroCta(globalHeroSlide.route)}
+          accessibilityRole="button"
+        >
+          <Text style={styles.heroActionText}>
+            {translate("explore.rework.exploreEvent", "Explore event")}
+          </Text>
+        </TouchableOpacity>
         <SliderProgressBar
-          count={HERO_SLIDES.length}
+          count={globalHeroSlides.length}
           activeIndex={heroIndex}
           progress={defaultHeroSlider.progress}
           onSegmentPress={defaultHeroSlider.goTo}
@@ -861,7 +834,7 @@ export default function Explorer({
             "Hero slides",
           )}
           getSegmentAccessibilityLabel={(index: number) =>
-            `${translate("explore.rework.show", "Show")} ${HERO_SLIDES[index].eyebrow.toLowerCase()}`
+            `${translate("explore.rework.show", "Show")} ${globalHeroSlides[index]?.title || "event"}`
           }
         />
       </Pressable>

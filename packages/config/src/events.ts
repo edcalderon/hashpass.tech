@@ -39,6 +39,8 @@ const EVENT_MEDIA_BASE =
   "https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events";
 const eventHeroVideo = (eventId: string): string =>
   `${EVENT_MEDIA_BASE}/${eventId}/branding/hashpass-event-hero-v1.mp4`;
+const eventHeroPoster = (eventId: string): string =>
+  `${EVENT_MEDIA_BASE}/${eventId}/branding/hashpass-event-hero-v1.jpg`;
 
 // CBWeek has not announced its 2026 speakers. These are the people explicitly
 // listed by CBWeek as speakers from past editions; keeping them in the
@@ -205,6 +207,7 @@ const makeTourStopConfig = (
     image: string;
     brandingLogo: string;
     heroVideo?: string;
+    heroPoster?: string;
     speakers: Speaker[];
     agenda: AgendaItem[];
     dayThemes?: Record<string, { es: string; en: string }>;
@@ -219,6 +222,7 @@ const makeTourStopConfig = (
   subtitle: options.subtitle,
   image: options.image,
   heroVideo: options.heroVideo || eventHeroVideo(eventId),
+  heroPoster: options.heroPoster || eventHeroPoster(eventId),
   color: options.color,
   eventStartDate: options.eventStartDate,
   eventEndDate: options.eventEndDate,
@@ -2699,6 +2703,7 @@ export const EVENTS: Record<string, EventConfig> = {
     subtitle: "Peru, Chile and Colombia 2026 roadshow",
     image: "/assets/logos/bsl/bsl-ontour-pro.svg",
     heroVideo: eventHeroVideo("bsl"),
+    heroPoster: eventHeroPoster("bsl"),
     color: "#00A9E0",
     eventDateString: "BSL On Tour • 2026",
     series: "BSL On Tour",
@@ -4193,6 +4198,7 @@ export const EVENTS: Record<string, EventConfig> = {
     subtitle: "Universidad EAFIT, Medellín",
     image: "/assets/images/bsl2025-hero.svg",
     heroVideo: eventHeroVideo("bsl2025"),
+    heroPoster: eventHeroPoster("bsl2025"),
     color: "#2196F3",
     eventStartDate: "2025-11-12T09:00:00-05:00",
     eventEndDate: "2025-11-14T23:59:59-05:00",
@@ -4796,6 +4802,7 @@ export const EVENTS: Record<string, EventConfig> = {
     // A clean city film is safe under live event copy; the official flyer is
     // retained above as a standalone image asset, never a banner background.
     heroVideo: eventHeroVideo("cbweek2026"),
+    heroPoster: eventHeroPoster("cbweek2026"),
     bannerSlides: [
       {
         id: "cbweek-2026",

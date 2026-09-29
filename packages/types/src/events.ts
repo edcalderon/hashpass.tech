@@ -134,6 +134,8 @@ export interface EventConfig {
   image: string;
   /** Optional autoplaying hero footage for event discovery surfaces. */
   heroVideo?: string;
+  /** Static poster used behind hero footage while it loads or cannot play. */
+  heroPoster?: string;
   /**
    * Ordered promotional slides owned by this event. When omitted, discovery
    * falls back to one static slide using `image` and the event's core details.

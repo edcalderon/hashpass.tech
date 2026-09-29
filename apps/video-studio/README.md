@@ -116,10 +116,10 @@ API key.
 `src/content/event-hero-specs.json` is the reviewed inventory for every
 public discovery event. Each loop is a silent, eight-second HASHPASS-branded
 Remotion composition with the approved event lockup and an abstract city
-backdrop derived from its verified city and venue metadata. It deliberately
+backdrop derived from its verified city and venue metadata. The render also
+emits an event-scoped JPEG poster from the same composition. It deliberately
 does not fabricate people, speakers, dates, or venue footage; live banner
-copy and the existing poster image remain the accessible UI and failure
-fallback.
+copy and that poster remain the accessible UI and failure fallback.
 
 ```bash
 # Prepares the approved logo inputs and renders all hero MP4s locally.
@@ -130,6 +130,9 @@ pnpm --filter hashpass-video-studio event-heroes:publish
 
 # Publishes only after the rendered loops and dry-run URLs are reviewed.
 pnpm --filter hashpass-video-studio run event-heroes:publish -- --publish
+
+# Publish only the static fallbacks when the immutable MP4s already exist.
+pnpm --filter hashpass-video-studio run event-heroes:publish -- --posters-only --publish
 ```
 
 Set `EVENT_MEDIA_BUCKET`, `EVENT_MEDIA_REGION`, and

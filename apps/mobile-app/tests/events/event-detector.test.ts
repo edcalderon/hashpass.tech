@@ -60,6 +60,14 @@ describe("event tenant detection", () => {
       "hash-poker",
       "cbweek2026",
     ]);
+    for (const eventId of events) {
+      expect(EVENTS[eventId]?.heroVideo).toContain(
+        `events/${eventId}/branding/hashpass-event-hero-v1.mp4`,
+      );
+      expect(EVENTS[eventId]?.heroPoster).toContain(
+        `events/${eventId}/branding/hashpass-event-hero-v1.jpg`,
+      );
+    }
   });
 
   it("scopes bsl.hashpass.tech to the BSL event family via shared tenant config", () => {
@@ -146,6 +154,9 @@ describe("event tenant detection", () => {
         url: expect.stringContaining("/cbweek2026/branding/hashpass-event-hero-v1.mp4"),
       },
     });
+    expect(EVENTS.cbweek2026.heroPoster).toContain(
+      "/cbweek2026/branding/hashpass-event-hero-v1.jpg",
+    );
   });
 
   it("scopes CBWeek to its own tenant and also lists the published event globally", () => {

@@ -3,6 +3,7 @@ import {
   getExplorerEventStatus,
   getExplorerFloatingBottomInset,
   getExplorerHeroActionTarget,
+  getExplorerHeroSlides,
   getExplorerLayout,
   getExplorerPageCount,
   getExplorerPageEvents,
@@ -53,6 +54,60 @@ const events: ExplorerEvent[] = [
 ];
 
 describe("explorer rework behavior", () => {
+  it("builds one media-backed hero slide per event and keeps an image fallback behind video", () => {
+    expect(
+      getExplorerHeroSlides([
+        {
+          id: "colombia2026",
+          title: "Blockchain Summit Latam Colombia 2026",
+          subtitle: "Bogotá, Colombia",
+          eventDateString: "November 5–6, 2026",
+          shortName: "BSL",
+          color: "#F5C542",
+          heroVideo: "https://media.example/events/colombia2026/hero.mp4",
+          heroPoster: "https://media.example/events/colombia2026/hero.jpg",
+          image: "https://media.example/events/colombia2026/logo.webp",
+        },
+        {
+          id: "offline-event",
+          title: "Offline event",
+          subtitle: "Poster only",
+          image: "https://media.example/events/offline-event/poster.jpg",
+        },
+        {
+          id: "legacy-event",
+          title: "Legacy event",
+          subtitle: "No media",
+        },
+      ]),
+    ).toEqual([
+      expect.objectContaining({
+        id: "colombia2026-default",
+        eventId: "colombia2026",
+        eyebrow: "BSL",
+        media: {
+          type: "video",
+          url: "https://media.example/events/colombia2026/hero.mp4",
+        },
+        fallbackImage: "https://media.example/events/colombia2026/hero.jpg",
+        route: "/events/colombia2026/home",
+      }),
+      expect.objectContaining({
+        id: "offline-event-default",
+        media: {
+          type: "image",
+          url: "https://media.example/events/offline-event/poster.jpg",
+        },
+        fallbackImage: "https://media.example/events/offline-event/poster.jpg",
+      }),
+      expect.objectContaining({
+        id: "legacy-event-default",
+        media: undefined,
+        fallbackImage: undefined,
+      }),
+    ]);
+  });
+
   it("uses the refresh glyph for the compact event reload control", () => {
     expect(resolveExplorerIconName("refresh")).toBe("refresh");
   });
