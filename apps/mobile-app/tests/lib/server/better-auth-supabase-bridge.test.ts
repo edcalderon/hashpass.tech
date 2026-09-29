@@ -13,6 +13,11 @@ jest.mock('better-auth', () => ({
   betterAuth: jest.fn(() => ({ handler: jest.fn() })),
 }));
 
+jest.mock('../../../lib/server/database-pool', () => ({
+  getDatabasePool: jest.fn(() => ({})),
+  hasDatabaseConnectionString: () => true,
+}));
+
 const mockSyncPublicUserRegistry = jest.fn();
 const mockEnsureSupabaseAccountForEmail = jest.fn();
 const mockGetSupabaseServerForRequest = jest.fn();
@@ -54,6 +59,27 @@ describe('syncBetterAuthUser (Supabase account bridge)', () => {
       email: 'member@hashpass.app',
       emailVerified: false,
     })['https://hashpass.tech/email_verified']).toBe(false);
+    expect(buildMcpAccessTokenClaims(null)).toEqual({
+      'https://hashpass.tech/email': '',
+      'https://hashpass.tech/email_verified': false,
+    });
+  });
+
+  it('wires verified-email claims into the MCP OAuth plugin', () => {
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    const { betterAuth } = require('better-auth');
+    const { getAuth } = require('../../../lib/server/better-auth');
+
+    getAuth();
+
+    const authConfig = betterAuth.mock.calls[0][0];
+    const mcpPlugin = authConfig.plugins.find((plugin: { id?: string }) => plugin.id === 'mcp');
+    expect(mcpPlugin.options.customAccessTokenClaims({
+      user: { email: 'operator@hashpass.tech', emailVerified: true },
+    })).toEqual({
+      'https://hashpass.tech/email': 'operator@hashpass.tech',
+      'https://hashpass.tech/email_verified': true,
+    });
   });
 
   it('does nothing when context has no real Request', async () => {
