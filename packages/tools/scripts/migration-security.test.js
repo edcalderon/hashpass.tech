@@ -112,6 +112,75 @@ const targetBslBootstrapPath = path.join(
   'packages/tools/scripts/sql/target-bsl-bootstrap.sql',
 );
 const profilePath = path.join(__dirname, 'config/database-profiles.json');
+const migrationRunnerPath = path.join(__dirname, 'migrate-tenant-db.mjs');
+
+describe('Better Auth MCP OAuth migration plan', () => {
+  it('assigns the OAuth migration only to dedicated Better Auth profiles', () => {
+    const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+    const migration = 'db/migrations/V106__better_auth_mcp_oauth.sql';
+    const migrationGroups = Object.entries(config.groups).filter(([, migrations]) =>
+      migrations.includes(migration),
+    );
+
+    expect(migrationGroups).toHaveLength(1);
+
+    const [groupName] = migrationGroups[0];
+    expect(config.defaultGroups).not.toContain(groupName);
+    expect(
+      Object.entries(config.profileGroups)
+        .filter(([, groups]) => groups.includes(groupName))
+        .map(([profileName]) => profileName)
+        .sort(),
+    ).toEqual(['better-auth-development', 'better-auth-production']);
+  });
+
+  it('isolates Better Auth database URLs from the shared core profiles', () => {
+    const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+
+    expect({
+      'better-auth-development': config.profiles['better-auth-development']?.databaseUrlEnv,
+      'better-auth-production': config.profiles['better-auth-production']?.databaseUrlEnv,
+      'core-development': config.profiles['core-development'].databaseUrlEnv,
+      'core-production': config.profiles['core-production'].databaseUrlEnv,
+    }).toEqual({
+      'better-auth-development': [
+        'BETTER_AUTH_DATABASE_URL_DEV',
+        'BETTER_AUTH_DATABASE_URL',
+      ],
+      'better-auth-production': [
+        'BETTER_AUTH_DATABASE_URL_PROD',
+        'BETTER_AUTH_DATABASE_URL',
+      ],
+      'core-development': [
+        'SUPABASE_DB_URL_DEV',
+        'DATABASE_URL_DEV',
+        'DEV_DB_URL',
+      ],
+      'core-production': [
+        'SUPABASE_DB_URL_PROD',
+        'DATABASE_URL_PROD',
+        'PROD_DB_URL',
+      ],
+    });
+
+    expect(config.profiles['core-development'].databaseUrlEnv).not.toEqual(
+      expect.arrayContaining([expect.stringMatching(/^BETTER_AUTH_DATABASE_URL/)]),
+    );
+    expect(config.profiles['core-production'].databaseUrlEnv).not.toEqual(
+      expect.arrayContaining([expect.stringMatching(/^BETTER_AUTH_DATABASE_URL/)]),
+    );
+  });
+
+  it('replaces tenant defaults with the isolated Better Auth migration plan', () => {
+    const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+    const runner = fs.readFileSync(migrationRunnerPath, 'utf8');
+    expect(config.profiles['better-auth-development']?.inheritDefaultGroups).toBe(false);
+    expect(config.profiles['better-auth-production']?.inheritDefaultGroups).toBe(false);
+    expect(runner).toMatch(
+      /profile\.inheritDefaultGroups\s*===\s*false\s*\?\s*\[\]\s*:\s*config\.defaultGroups/,
+    );
+  });
+});
 
 describe('upcoming BSL pass provisioning migration', () => {
   it('uses UUID-compatible IDs and keeps privileged minting out of public RPC access', () => {
@@ -277,6 +346,7 @@ describe('event-scoped meeting lifecycle migration contract', () => {
       'db/migrations/V050__resolve_agenda_status_registry_id.sql',
       'db/migrations/V051__fix_meetings_speaker_id_write_type_divergence.sql',
       'db/migrations/V052__notification_levels_and_critical_delivery.sql',
+      'db/migrations/V095__enable_notification_realtime.sql',
     ]);
   });
 
@@ -434,6 +504,16 @@ describe('development demo migration plan', () => {
       'db/migrations/V076__add_event_demo_mode_flag.sql',
       'db/migrations/V077__provision_criptolatinfest_general_pass.sql',
       'db/migrations/V078__align_dev_bsl_speakers_legacy_columns.sql',
+      'db/migrations/V085__provision_cbw2026_event_and_retire_criptolatinfest_passes.sql',
+      'db/migrations/V087__rename_cbw2026_to_cbweek2026.sql',
+      'db/migrations/V088__provision_demo_event_courtesy_general_passes.sql',
+      'db/migrations/V089__seed_cbweek2026_demo_programme.sql',
+      'db/migrations/V090__align_cbweek_demo_agenda_speaker_ids.sql',
+      'db/migrations/V091__add_cbweek_past_edition_speaker_references.sql',
+      'db/migrations/V092__provision_cbweek_general_passes.sql',
+      'db/migrations/V093__verified_event_account_grants.sql',
+      'db/migrations/V094__backfill_cbweek_passes_after_event_bootstrap.sql',
+      'db/migrations/V096__enable_cbweek_chat_and_speaker_order.sql',
     ]);
   });
 });

@@ -17,6 +17,7 @@ test("injects the Plane credential only into the OAuth gateway", () => {
   assert.doesNotMatch(upstream, /secrets\/plane\.env/);
   assert.match(gateway, /\/opt\/hashpass\/mcp\/secrets\/plane\.env/);
   assert.match(gateway, /MCP_ALLOWED_EMAILS:/);
+  assert.match(gateway, /MCP_ALLOWED_EMAIL_DOMAINS:/);
 });
 
 test("waits for both private MCP services to become healthy", () => {

@@ -150,7 +150,7 @@ function main() {
   }
 
   const defaultGroups = [
-    ...config.defaultGroups,
+    ...(profile.inheritDefaultGroups === false ? [] : config.defaultGroups),
     ...(config.profileGroups?.[args.profile] || []),
   ];
   const groupNames = (args.groups ? args.groups.split(',') : defaultGroups)

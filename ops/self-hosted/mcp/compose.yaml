@@ -36,7 +36,7 @@ services:
 
   plane-mcp-gateway:
     build:
-      context: ../../../packages/plane-mcp-gateway
+      context: ${MCP_GATEWAY_BUILD_CONTEXT:-../../../packages/plane-mcp-gateway}
     restart: unless-stopped
     env_file:
       - /opt/hashpass/mcp/secrets/plane.env
@@ -53,7 +53,8 @@ services:
       MCP_RESOURCE_URL: https://${MCP_DOMAIN}/mcp
       MCP_OAUTH_ISSUER: ${MCP_OAUTH_ISSUER:-https://api.hashpass.tech/api/auth}
       MCP_ALLOWED_SUBJECTS: ${MCP_ALLOWED_SUBJECTS:-}
-      MCP_ALLOWED_EMAILS: ${MCP_ALLOWED_EMAILS:?Set at least one approved Hashpass account}
+      MCP_ALLOWED_EMAILS: ${MCP_ALLOWED_EMAILS:-}
+      MCP_ALLOWED_EMAIL_DOMAINS: ${MCP_ALLOWED_EMAIL_DOMAINS:?Set approved Hashpass email domains}
       PLANE_MCP_UPSTREAM_URL: http://plane-mcp-http:8211/http/api-key/mcp
     depends_on:
       plane-mcp-http:

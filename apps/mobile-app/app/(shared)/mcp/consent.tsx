@@ -40,15 +40,18 @@ export default function McpConsentScreen() {
     () => createAuthClient({ baseURL: authBaseUrl, plugins: [oauthProviderClient()] }),
     [authBaseUrl],
   );
+  const authorizationQuery = useMemo(
+    () => (typeof window === 'undefined' ? '' : window.location.search.replace(/^\?/, '')),
+    [],
+  );
 
   useEffect(() => {
-    const query = typeof window === 'undefined' ? '' : window.location.search;
-    if (!query) {
+    if (!authorizationQuery) {
       setError('This authorization request is missing or has expired.');
       return;
     }
 
-    const request = apiClient.get(`/auth/mcp-consent-query${query}`, {
+    const request = apiClient.get(`/auth/mcp-consent-query?${authorizationQuery}`, {
       skipEventSegment: true,
     }) as Promise<ConsentResponse>;
 
@@ -61,13 +64,16 @@ export default function McpConsentScreen() {
         setDetails(response.data);
       })
       .catch((reason: unknown) => setError(reason instanceof Error ? reason.message : 'Could not verify this request.'));
-  }, []);
+  }, [authorizationQuery]);
 
   const decide = useCallback(async (accept: boolean) => {
     setBusy(true);
     setError('');
     try {
-      const result = await (authClient as any).oauth2.consent({ accept });
+      const result = await (authClient as any).oauth2.consent({
+        accept,
+        oauth_query: authorizationQuery,
+      });
       if (result?.error) throw new Error(result.error.message || 'Authorization failed.');
       const redirect = result?.data?.redirectURI || result?.data?.redirectUri || result?.data?.url;
       if (redirect && typeof window !== 'undefined') window.location.assign(redirect);
@@ -75,7 +81,7 @@ export default function McpConsentScreen() {
       setError(reason instanceof Error ? reason.message : 'Authorization failed.');
       setBusy(false);
     }
-  }, [authClient]);
+  }, [authClient, authorizationQuery]);
 
   const displayedScopes = details?.scopes.filter((scope) => scopeLabels[scope]) || [];
   const clientName = details?.clientName || 'Unnamed OAuth client';

@@ -64,6 +64,7 @@ export function createGatewayHandler(options) {
     workspaceSlug,
     allowedSubjects,
     allowedEmails,
+    allowedEmailDomains,
     verifyRequest,
     fetch: fetchImpl = globalThis.fetch,
     maxBodyBytes = 1024 * 1024,
@@ -118,8 +119,10 @@ export function createGatewayHandler(options) {
     if (!isPlaneIdentityAllowed({
       subject: identity.subject,
       email: identity.email,
+      emailVerified: identity.emailVerified,
       allowedSubjects,
       allowedEmails,
+      allowedEmailDomains,
     })) {
       return jsonRpcError(403, null, -32003, "Forbidden", corsHeaders);
     }
@@ -141,8 +144,10 @@ export function createGatewayHandler(options) {
       scopes: identity.scopes,
       subject: identity.subject,
       email: identity.email,
+      emailVerified: identity.emailVerified,
       allowedSubjects,
       allowedEmails,
+      allowedEmailDomains,
     });
     if (!decision.allowed) {
       const challenge = decision.requiredScope

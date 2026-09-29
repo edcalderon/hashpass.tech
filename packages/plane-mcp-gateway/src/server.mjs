@@ -22,6 +22,7 @@ const handler = createGatewayHandler({
   workspaceSlug: required("PLANE_WORKSPACE_SLUG"),
   allowedSubjects: csv("MCP_ALLOWED_SUBJECTS"),
   allowedEmails: csv("MCP_ALLOWED_EMAILS"),
+  allowedEmailDomains: csv("MCP_ALLOWED_EMAIL_DOMAINS"),
   verifyRequest: createTokenVerifier({
     issuer,
     audience: resource,
