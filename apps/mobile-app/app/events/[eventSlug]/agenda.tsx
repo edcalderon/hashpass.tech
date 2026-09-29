@@ -157,6 +157,7 @@ const resolveAgendaVenueImage = (
 type AgendaTypeRevealProps = {
   itemId: string;
   typeColor: string;
+  foregroundColor: string;
   iconName: NativeSafeIconName;
   label: string;
   accessibilityLabel: string;
@@ -164,6 +165,8 @@ type AgendaTypeRevealProps = {
 };
 
 const AGENDA_TYPE_REVEAL_DURATION_MS = 180;
+const AGENDA_TYPE_REVEAL_COLLAPSED_WIDTH = 68;
+const AGENDA_TYPE_REVEAL_EXPANDED_WIDTH = 276;
 
 const useReducedMotionPreference = (): boolean => {
   const [reduceMotion, setReduceMotion] = useState(true);
@@ -198,13 +201,9 @@ const agendaTypeRevealStyles = StyleSheet.create({
     borderWidth: 1,
     bottom: -1,
     justifyContent: 'center',
-    minHeight: 72,
-    minWidth: 220,
-    paddingHorizontal: uiTokens.space.lg,
-    paddingVertical: uiTokens.space.lg,
+    height: 68,
     position: 'absolute',
     right: -1,
-    width: '58%',
     boxShadow: '8px 8px 0 rgba(3, 12, 24, 0.42)',
     overflow: 'hidden',
   },
@@ -219,6 +218,7 @@ const agendaTypeRevealStyles = StyleSheet.create({
     borderRadius: uiTokens.radius.circle,
     position: 'absolute',
     top: '50%',
+    zIndex: 0,
   },
   layerRing: {
     borderRadius: uiTokens.radius.circle,
@@ -257,8 +257,15 @@ const agendaTypeRevealStyles = StyleSheet.create({
     justifyContent: 'center',
     zIndex: 1,
   },
+  collapsedIcon: {
+    alignItems: 'center',
+    bottom: -8,
+    justifyContent: 'center',
+    position: 'absolute',
+    right: -4,
+    zIndex: 0,
+  },
   label: {
-    color: uiTokens.colors.light.canvas,
     fontSize: 18,
     fontWeight: '800',
     letterSpacing: 0.7,
@@ -271,6 +278,7 @@ const agendaTypeRevealStyles = StyleSheet.create({
 function AgendaTypeReveal({
   itemId,
   typeColor,
+  foregroundColor,
   iconName,
   label,
   accessibilityLabel,
@@ -300,15 +308,22 @@ function AgendaTypeReveal({
       { scale: 0.96 + revealProgress.value * 0.04 },
     ],
   }));
+  const collapsedIconStyle = useAnimatedStyle(() => ({
+    opacity: 1 - revealProgress.value,
+    transform: [{ scale: 0.92 + (1 - revealProgress.value) * 0.08 }],
+  }));
   const shellStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: revealProgress.value * 5 }],
+    width: AGENDA_TYPE_REVEAL_COLLAPSED_WIDTH
+      + revealProgress.value * (AGENDA_TYPE_REVEAL_EXPANDED_WIDTH - AGENDA_TYPE_REVEAL_COLLAPSED_WIDTH),
   }));
   const layerStyle = useAnimatedStyle(() => {
-    const diameter = 60 + revealProgress.value * 660;
+    const diameter = 52 + revealProgress.value * 660;
     return {
       height: diameter,
-      left: -30 - revealProgress.value * 150,
+      left: -26 - revealProgress.value * 150,
       marginTop: -diameter / 2,
+      opacity: revealProgress.value,
       transform: [{ rotate: `${revealProgress.value * 360}deg` }],
       width: diameter,
     };
@@ -365,6 +380,18 @@ function AgendaTypeReveal({
           <View style={[agendaTypeRevealStyles.layerRing, agendaTypeRevealStyles.layerRingCenter]} />
         </Animated.View>
         <Animated.View
+          testID={`agenda-card-type-collapsed-icon-${itemId}`}
+          pointerEvents="none"
+          style={[agendaTypeRevealStyles.collapsedIcon, collapsedIconStyle]}
+        >
+          <NativeSafeIcon
+            name={iconName}
+            size={48}
+            color={`${typeColor}52`}
+            strokeWidth={2.2}
+          />
+        </Animated.View>
+        <Animated.View
           testID={`agenda-card-type-content-${itemId}`}
           pointerEvents="none"
           style={[agendaTypeRevealStyles.content, contentStyle]}
@@ -372,10 +399,10 @@ function AgendaTypeReveal({
           <NativeSafeIcon
             name={iconName}
             size={24}
-            color={uiTokens.colors.light.canvas}
+            color={foregroundColor}
             strokeWidth={2.2}
           />
-          <Text style={agendaTypeRevealStyles.label}>{label}</Text>
+          <Text style={[agendaTypeRevealStyles.label, { color: foregroundColor }]}>{label}</Text>
         </Animated.View>
       </Pressable>
     </Animated.View>
@@ -1775,6 +1802,7 @@ export default function BSL2025AgendaScreen() {
               <AgendaTypeReveal
                 itemId={item.id}
                 typeColor={typeColor}
+                foregroundColor={isDark ? uiTokens.colors.dark.onAccent : uiTokens.colors.light.text}
                 iconName={getAgendaTypeIcon(item.type) as NativeSafeIconName}
                 label={typeLabel}
                 accessibilityLabel={t('types.revealLabel', `Session type: ${typeLabel}`)}

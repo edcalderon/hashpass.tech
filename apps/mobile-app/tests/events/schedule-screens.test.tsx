@@ -548,9 +548,11 @@ describe('event schedule screens', () => {
     expect(networkingMedia.findAllByType('NativeSafeIcon' as any).some((node) => node.props.name === 'people')).toBe(false);
     const networkingWatermark = renderer!.root.findByProps({ testID: 'agenda-card-type-watermark-networking-session' });
     const networkingShell = renderer!.root.findByProps({ testID: 'agenda-card-type-shell-networking-session' });
+    const networkingCollapsedIcon = renderer!.root
+      .findByProps({ testID: 'agenda-card-type-collapsed-icon-networking-session' });
     expect(networkingWatermark.props.accessibilityState.expanded).toBe(false);
-    expect(networkingWatermark.findByType('NativeSafeIcon' as any).props.name).toBe('people');
-    expect(networkingWatermark.findByType('NativeSafeIcon' as any).props.color).toBe('#ffffff');
+    expect(networkingCollapsedIcon.findByType('NativeSafeIcon' as any).props.name).toBe('people');
+    expect(networkingCollapsedIcon.findByType('NativeSafeIcon' as any).props.color).toBe('#00A6C752');
     expect(networkingShell.props.style).toEqual(expect.arrayContaining([
       expect.objectContaining({ backgroundColor: '#00A6C71A' }),
     ]));
@@ -584,7 +586,7 @@ describe('event schedule screens', () => {
     expect(workshopMedia.findAllByType('NativeSafeIcon' as any).some((node) => node.props.name === 'build')).toBe(false);
     expect(
       renderer!.root
-        .findByProps({ testID: 'agenda-card-type-watermark-workshop-session' })
+        .findByProps({ testID: 'agenda-card-type-collapsed-icon-workshop-session' })
         .findByType('NativeSafeIcon' as any).props.name,
     ).toBe('build');
     expect(workshopMedia.findAllByProps({ testID: 'agenda-card-venue-workshop-session' })).toHaveLength(0);
