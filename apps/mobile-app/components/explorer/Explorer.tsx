@@ -634,7 +634,6 @@ export default function Explorer({
             focalPosition={selectedEvent.id === "hash-poker" ? "center top" : undefined}
             videoSource={heroSlide.media.type === "video" ? heroSlide.media.url : undefined}
             loadingLogo={selectedEvent.branding?.logo || selectedEvent.image}
-            preferBundledSource={selectedEvent.id === "criptolatinfest"}
             loadingLabel={translate(
               "explore.rework.loadingEventFilm",
               "Loading event film",
@@ -695,8 +694,8 @@ export default function Explorer({
       );
     }
 
-    // Single-tenant whitelabel domains (e.g. demo-criptolatinfest.hashpass.tech)
-    // get one hero built from their own event, never another tenant's media.
+    // Single-tenant whitelabel domains (e.g. bsl.hashpass.tech) get one hero
+    // built from their own event, never another tenant's media.
     if (!isGlobalExplorer) {
       const heroEvent = selectedEvent || events[0];
       if (!heroEvent) return null;
@@ -720,7 +719,6 @@ export default function Explorer({
                 : undefined
             }
             loadingLogo={heroEvent.branding?.logo || heroEvent.image}
-            preferBundledSource={heroEvent.id === "criptolatinfest"}
             loadingLabel={translate(
               "explore.rework.loadingEventFilm",
               "Loading event film",
@@ -768,7 +766,6 @@ export default function Explorer({
               : undefined
           }
           loadingLogo={globalEvent?.branding?.logo || globalHeroSlide.fallbackImage}
-          preferBundledSource={globalHeroSlide.eventId === "criptolatinfest"}
           loadingLabel={translate(
             "explore.rework.loadingEventFilm",
             "Loading event film",

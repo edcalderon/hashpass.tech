@@ -969,7 +969,7 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
             />
           ) : (
             // Respect the Explorer's event scope here too: without this, a
-            // single-tenant explorer (BSL, criptolatinfest, ...) rendered
+            // single-tenant explorer (BSL, CBWeek, ...) rendered
             // every pass the signed-in user holds across every tenant --
             // including ones for events that tenant never mentions.
             (explorerFilters ? explorerFilteredPasses : walletPasses).map(

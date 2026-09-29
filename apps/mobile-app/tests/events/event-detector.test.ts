@@ -175,16 +175,6 @@ describe("event tenant detection", () => {
     ).toBe(true);
   });
 
-  it("does not restore the retired demo event when SHOW_DEMO_EVENTS is enabled", () => {
-    setEnv("SHOW_DEMO_EVENTS", "true");
-
-    expect(
-      getAvailableEvents("hashpass.tech").some(
-        (event: { id: string }) => event.id === "criptolatinfest",
-      ),
-    ).toBe(false);
-  });
-
   it("resolves route slugs to event ids for route-aware event pages", () => {
     expect(getRouteEventIdFromPathname("/events/peru2026/agenda")).toBe(
       "peru2026",
@@ -212,17 +202,6 @@ describe("event tenant detection", () => {
       expect(events).toContain("bsl");
     });
 
-    it("still hides other tenants' demo events when SHOW_DEMO_EVENTS is unset", () => {
-      // criptolatinfest is the only demo event today; assert the general
-      // policy holds by checking a non-owning tenant's expanded catalogue
-      // never leaks a foreign demo event without SHOW_DEMO_EVENTS.
-      const events = getAvailableEvents("bsl.hashpass.tech", {
-        includeAllTenants: true,
-      }).map((event: { id: string }) => event.id);
-
-      expect(events).not.toContain("criptolatinfest");
-    });
-
     it("has no effect on the already-global main tenant", () => {
       const withOption = getAvailableEvents("hashpass.tech", {
         includeAllTenants: true,
@@ -232,7 +211,6 @@ describe("event tenant detection", () => {
       );
 
       expect(withOption).toEqual(withoutOption);
-      expect(withOption).not.toContain("criptolatinfest");
     });
 
     it("resolves a foreign tenant's event via getCurrentEvent when opted in", () => {

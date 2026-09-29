@@ -4,7 +4,6 @@ interface EventBannerBackgroundVideoProps {
   source: string;
   loadingLogo?: string;
   loadingLabel?: string;
-  preferBundledSource?: boolean;
   playbackEnabled?: boolean;
   /** A poster is already visible behind the video, so avoid obscuring it. */
   showLoadingIndicator?: boolean;
@@ -81,8 +80,9 @@ export default function EventBannerBackgroundVideo({
           width: "100%",
           height: "100%",
           objectFit: contentFit,
-          // The rendered CLF lower third sits near the bottom of frame. Keep
-          // it in view when the 16:9 film fills the taller Explorer hero.
+          // Some hero films render a lower-third caption near the bottom of
+          // frame. Keep it in view when the 16:9 film fills the taller
+          // Explorer hero.
           objectPosition: focalPosition,
           opacity: hasFirstFrame ? 0.88 : 0,
           pointerEvents: "none",

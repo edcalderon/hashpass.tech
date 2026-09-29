@@ -5,8 +5,8 @@ const GOLD = '#F5C542';
 const MIDNIGHT = '#06111F';
 
 /**
- * BSL Colombia 2026 hero loop. Unlike ClfHeroLoop, there is no real venue
- * footage to composite — the event (Nov 5-6 2026) hasn't happened yet and
+ * BSL Colombia 2026 hero loop. There is no real venue footage to composite
+ * — the event (Nov 5-6 2026) hasn't happened yet and
  * Blockchain Summit Latam's own colombia2026 page has no video assets to
  * re-host either. Same brand-graphics approach as OpenProof: pure
  * spring/interpolate motion over the shared BSL midnight background, using

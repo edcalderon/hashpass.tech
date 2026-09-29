@@ -162,16 +162,16 @@ describe("EventBanner", () => {
     act(() => {
       renderer = create(
         <EventBanner
-          title="Cripto Latin Fest 2026"
-          subtitle="Maloka, Bogotá · 9th Edition"
+          title="Example Fest 2026"
+          subtitle="Example City · 9th Edition"
           date="August 27–28, 2026"
-          eventId="criptolatinfest"
-          eventLabel="CLF 2026 · Official film"
-          eventShortName="CLF"
-          eventImage="https://cdn.example/clf-logo.webp"
-          eventVideo="https://cdn.example/clf-film.mp4"
-          ctaLabel="Explore Cripto Latin Fest"
-          ctaUrl="/events/criptolatinfest/home"
+          eventId="example-fest"
+          eventLabel="Example Fest 2026 · Official film"
+          eventShortName="EF"
+          eventImage="https://cdn.example/event-logo.webp"
+          eventVideo="https://cdn.example/event-film.mp4"
+          ctaLabel="Explore Example Fest"
+          ctaUrl="/events/example-fest/home"
           showCta={false}
         />,
       );
@@ -180,13 +180,13 @@ describe("EventBanner", () => {
     expect(
       renderer!.root.findByType("EventBannerBackgroundVideo" as any).props,
     ).toMatchObject({
-      source: "https://cdn.example/clf-film.mp4",
-      loadingLogo: "https://cdn.example/clf-logo.webp",
+      source: "https://cdn.example/event-film.mp4",
+      loadingLogo: "https://cdn.example/event-logo.webp",
       loadingLabel: "Loading event film",
     });
     expect(
       renderer!.root.findAllByProps({
-        accessibilityLabel: "Explore Cripto Latin Fest",
+        accessibilityLabel: "Explore Example Fest",
       }),
     ).toHaveLength(0);
     act(() => renderer!.unmount());
@@ -298,21 +298,21 @@ describe("EventBanner", () => {
     act(() => {
       renderer = create(
         <EventBanner
-          title="Cripto Latin Fest 2026"
-          subtitle="Maloka, Bogotá"
+          title="Example Fest 2026"
+          subtitle="Example City"
           date="August 27–28, 2026"
-          ctaLabel="Explore Cripto Latin Fest"
-          ctaUrl="/events/criptolatinfest/home"
+          ctaLabel="Explore Example Fest"
+          ctaUrl="/events/example-fest/home"
         />,
       );
     });
 
     const cta = renderer!.root.findByProps({
-      accessibilityLabel: "Explore Cripto Latin Fest",
+      accessibilityLabel: "Explore Example Fest",
     });
     act(() => cta.props.onPress());
 
-    expect(mockRouterPush).toHaveBeenCalledWith("/events/criptolatinfest/home");
+    expect(mockRouterPush).toHaveBeenCalledWith("/events/example-fest/home");
     act(() => renderer!.unmount());
   });
 
