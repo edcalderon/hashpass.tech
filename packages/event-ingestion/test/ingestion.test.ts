@@ -2,32 +2,107 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { afterEach, describe, it } from "node:test";
 import { join } from "node:path";
-import { attribute, deduplicateEvents, elements, firstElement, hasClass, inspectPublicHtml, isElement, isoDateCandidates, nextWeeklyOccurrence, normalizedEventSchema, parseHtml, parseJsonLdEvents, parsePkrrHtml, PostgrestEventStore, quotedPathCandidates, syncEventSources, textContent, type EventIngestionStore } from "../src/index.js";
+import {
+  attribute,
+  deduplicateEvents,
+  elements,
+  firstElement,
+  hasClass,
+  inspectPublicHtml,
+  isElement,
+  isoDateCandidates,
+  nextWeeklyOccurrence,
+  normalizedEventSchema,
+  parseBslColombiaProgramme,
+  parseHtml,
+  parseJsonLdEvents,
+  parsePkrrHtml,
+  PostgrestEventStore,
+  quotedPathCandidates,
+  syncEventSources,
+  textContent,
+  type EventIngestionStore,
+} from "../src/index.js";
 
-const fixture = (name: string) => readFile(join(import.meta.dirname, "fixtures", name), "utf8");
+const fixture = (name: string) =>
+  readFile(join(import.meta.dirname, "fixtures", name), "utf8");
 
 describe("event ingestion", () => {
+  it("parses and validates the Colombia 2026 speaker and agenda contract", () => {
+    const speakers = Array.from(
+      { length: 10 },
+      (_, index) =>
+        `<article class="person wp-team-item"><img data-remote-src="assets/imgs/speaker-${index}.png"><span class="speaker-category">Banca</span><h4>Speaker ${index}</h4><p>Director · Company ${index}</p></article>`,
+    ).join("");
+    const slots = Array.from(
+      { length: 20 },
+      (_, index) =>
+        `<div class="slot wp-agenda-item"><div class="time">${String(8 + Math.floor(index / 2)).padStart(2, "0")}:${index % 2 ? "30" : "00"}–${String(8 + Math.floor(index / 2)).padStart(2, "0")}:${index % 2 ? "55" : "25"}</div><div class="kind">${index % 2 ? "Panel" : "Keynote"}</div><h4>Session ${index}</h4><div class="room">Auditorio</div></div>`,
+    ).join("");
+    const programme = parseBslColombiaProgramme(
+      `<section id="speaker">${speakers}</section><section class="agenda-schedule" data-wp-agenda-day="1">${slots}</section>`,
+    );
+
+    assert.equal(programme.speakers.length, 10);
+    assert.equal(programme.speakers[0].company, "Company 0");
+    assert.equal(
+      programme.speakers[0].imageSourceUrl,
+      "https://blockchainsummit.la/colombia2026/assets/imgs/speaker-0.png",
+    );
+    assert.equal(programme.agenda.length, 20);
+    assert.equal(programme.agenda[1].type, "panel");
+    assert.equal(programme.agenda[0].startsAt, "2026-11-04T08:00:00-05:00");
+    assert.throws(
+      () =>
+        parseBslColombiaProgramme(
+          `<article class="wp-team-item"><h4>Incomplete</h4></article>`,
+        ),
+      /Incomplete BSL speaker/,
+    );
+  });
   it("reads public HTML safely through the shared DOM helpers", () => {
-    const root = parseHtml('<main><article class="event featured"><a HREF="/rsvp">Join <strong>now</strong></a></article></main>');
-    const article = firstElement(root, element => element.tagName === "article");
+    const root = parseHtml(
+      '<main><article class="event featured"><a HREF="/rsvp">Join <strong>now</strong></a></article></main>',
+    );
+    const article = firstElement(
+      root,
+      (element) => element.tagName === "article",
+    );
     assert.ok(article && isElement(article));
     assert.equal(attribute(article, "CLASS"), "event featured");
     assert.equal(hasClass(article, "featured"), true);
     assert.equal(textContent(article), "Join now");
-    assert.equal(elements(root, element => element.tagName === "a").length, 1);
-    assert.deepEqual(quotedPathCandidates('fetch("/api/events"); query("/graphql/events?event=clf")'), ["/api/events", "/graphql/events?event=clf"]);
-    assert.deepEqual(isoDateCandidates("2026-08-14 and 2026-08-14, but not 2026-99-99"), ["2026-08-14"]);
+    assert.equal(
+      elements(root, (element) => element.tagName === "a").length,
+      1,
+    );
+    assert.deepEqual(
+      quotedPathCandidates(
+        'fetch("/api/events"); query("/graphql/events?event=clf")',
+      ),
+      ["/api/events", "/graphql/events?event=clf"],
+    );
+    assert.deepEqual(
+      isoDateCandidates("2026-08-14 and 2026-08-14, but not 2026-99-99"),
+      ["2026-08-14"],
+    );
   });
 
   it("normalizes PKRR as a no-speaker community event", async () => {
-    const [event] = parsePkrrHtml(await fixture("pkrr.html"), new Date("2026-08-14T00:00:00Z"));
+    const [event] = parsePkrrHtml(
+      await fixture("pkrr.html"),
+      new Date("2026-08-14T00:00:00Z"),
+    );
     assert.equal(event.startsAt, "2026-08-18T18:05:00-05:00");
-    assert.equal(event.organizerName, "Hash Poker Room"); assert.deepEqual(event.speakers, []);
-    assert.equal(event.networkingEnabled, true); assert.equal(event.cta?.label, "Reserve seat");
+    assert.equal(event.organizerName, "Hash Poker Room");
+    assert.deepEqual(event.speakers, []);
+    assert.equal(event.networkingEnabled, true);
+    assert.equal(event.cta?.label, "Reserve seat");
     assert.doesNotThrow(() => normalizedEventSchema.parse(event));
   });
   it("parses PKRR card variants and discards incomplete cards", () => {
-    const [event] = parsePkrrHtml(`<div class="wp-day-row" data-date="2026-08-20">
+    const [event] = parsePkrrHtml(
+      `<div class="wp-day-row" data-date="2026-08-20">
       <a class="wp-ev" href="/event/main-event">
         <span class="wp-ev-title">Main Event</span>
         <span class="wp-ev-time"><span>12:30 p.m.</span></span>
@@ -36,148 +111,367 @@ describe("event ingestion", () => {
         <img src="/covers/main.jpg" />
       </a>
       <a class="wp-ev" href="/event/incomplete"><span class="wp-ev-title">No time</span></a>
-    </div>`, new Date("2026-08-14T00:00:00Z"));
+    </div>`,
+      new Date("2026-08-14T00:00:00Z"),
+    );
 
     assert.equal(event.startsAt, "2026-08-20T12:30:00-05:00");
     assert.equal(event.eventType, "community_tournament");
     assert.equal(event.coverImage, "https://pkrr.io/covers/main.jpg");
     assert.equal(event.confidence, 0.95);
     assert.equal(event.needsReview, false);
-    assert.throws(() => parsePkrrHtml('<div class="wp-day-row" data-date="2026-08-20"><a class="wp-ev" href="/event/bad"><span class="wp-ev-title">Bad time</span><span class="wp-ev-time">noonish</span></a></div>'), /Invalid PKRR time/);
+    assert.throws(
+      () =>
+        parsePkrrHtml(
+          '<div class="wp-day-row" data-date="2026-08-20"><a class="wp-ev" href="/event/bad"><span class="wp-ev-title">Bad time</span><span class="wp-ev-time">noonish</span></a></div>',
+        ),
+      /Invalid PKRR time/,
+    );
   });
   it("advances recurrence, rejects invalid dates, and deduplicates", async () => {
-    assert.equal(nextWeeklyOccurrence("2026-08-04T23:05:00.000Z", new Date("2026-08-14T00:00:00Z")), "2026-08-18T23:05:00.000Z");
+    assert.equal(
+      nextWeeklyOccurrence(
+        "2026-08-04T23:05:00.000Z",
+        new Date("2026-08-14T00:00:00Z"),
+      ),
+      "2026-08-18T23:05:00.000Z",
+    );
     assert.throws(() => nextWeeklyOccurrence("not-a-date"));
-    const [event] = parsePkrrHtml(await fixture("pkrr.html"), new Date("2026-08-14T00:00:00Z"));
-    assert.equal(deduplicateEvents([event, { ...event, updatedAt: "2026-08-15T00:00:00.000Z", title: "Changed" }])[0].title, "Changed");
+    const [event] = parsePkrrHtml(
+      await fixture("pkrr.html"),
+      new Date("2026-08-14T00:00:00Z"),
+    );
+    assert.equal(
+      deduplicateEvents([
+        event,
+        { ...event, updatedAt: "2026-08-15T00:00:00.000Z", title: "Changed" },
+      ])[0].title,
+      "Changed",
+    );
   });
   it("parses generic JSON-LD and detects public source signals", async () => {
     const html = await fixture("generic-jsonld.html");
-    assert.equal(parseJsonLdEvents(html, "generic", "https://example.com")[0].title, "Community Night");
-    const signals = inspectPublicHtml(`${html}<script>fetch('/api/events')</script>`, "https://example.com/events");
-    assert.equal(signals.jsonLd, true); assert.deepEqual(signals.apiCandidates, ["https://example.com/api/events"]);
+    assert.equal(
+      parseJsonLdEvents(html, "generic", "https://example.com")[0].title,
+      "Community Night",
+    );
+    const signals = inspectPublicHtml(
+      `${html}<script>fetch('/api/events')</script>`,
+      "https://example.com/events",
+    );
+    assert.equal(signals.jsonLd, true);
+    assert.deepEqual(signals.apiCandidates, ["https://example.com/api/events"]);
   });
   it("requires title and a valid date", () => {
     assert.throws(() => normalizedEventSchema.parse({ title: "" }));
-    assert.throws(() => normalizedEventSchema.parse({ title: "Event", startsAt: "soon" }));
+    assert.throws(() =>
+      normalizedEventSchema.parse({ title: "Event", startsAt: "soon" }),
+    );
   });
   it("parses adversarial HTML without regex backtracking or comment leakage", () => {
-    const repeated = "<script".repeat(20_000) + "<a href=!".repeat(20_000) + "<div".repeat(20_000);
+    const repeated =
+      "<script".repeat(20_000) +
+      "<a href=!".repeat(20_000) +
+      "<div".repeat(20_000);
     const started = Date.now();
     const hostileHtml = `<script type="application/ld+json"><!--not-json--></script>${repeated}`;
     const signals = inspectPublicHtml(hostileHtml, "https://example.com");
     assert.equal(signals.jsonLd, true);
-    assert.deepEqual(parseJsonLdEvents(hostileHtml, "generic", "https://example.com"), []);
+    assert.deepEqual(
+      parseJsonLdEvents(hostileHtml, "generic", "https://example.com"),
+      [],
+    );
     assert.ok(Date.now() - started < 2_000);
   });
 });
 
 describe("sync failure", () => {
   const files: string[] = [];
-  afterEach(async () => { const { rm } = await import("node:fs/promises"); await Promise.all(files.splice(0).map(file => rm(file, { force: true }))); });
+  afterEach(async () => {
+    const { rm } = await import("node:fs/promises");
+    await Promise.all(files.splice(0).map((file) => rm(file, { force: true })));
+  });
   it("retains prior data and exposes degraded health", async () => {
-    const outputFile = `/tmp/hashpass-events-${process.pid}.json`; const healthFile = `/tmp/hashpass-health-${process.pid}.json`; files.push(outputFile, healthFile);
-    const { writeFile } = await import("node:fs/promises"); await writeFile(outputFile, JSON.stringify({ events: [{ sourceId: "existing" }] }));
-    const fetchImpl = async () => { throw new Error("offline"); };
-    const result = await syncEventSources({ outputFile, healthFile, fetchImpl: fetchImpl as typeof fetch });
-    assert.equal(result.health.status, "degraded"); assert.equal(result.events.length, 1);
+    const outputFile = `/tmp/hashpass-events-${process.pid}.json`;
+    const healthFile = `/tmp/hashpass-health-${process.pid}.json`;
+    files.push(outputFile, healthFile);
+    const { writeFile } = await import("node:fs/promises");
+    await writeFile(
+      outputFile,
+      JSON.stringify({ events: [{ sourceId: "existing" }] }),
+    );
+    const fetchImpl = async () => {
+      throw new Error("offline");
+    };
+    const result = await syncEventSources({
+      outputFile,
+      healthFile,
+      fetchImpl: fetchImpl as typeof fetch,
+    });
+    assert.equal(result.health.status, "degraded");
+    assert.equal(result.events.length, 1);
   });
   it("bounds source bodies while streaming instead of buffering them", async () => {
-    const outputFile = `/tmp/hashpass-events-large-${process.pid}.json`; const healthFile = `/tmp/hashpass-health-large-${process.pid}.json`; files.push(outputFile, healthFile);
-    const fetchImpl = async (input: string | URL | Request) => new Response(String(input).includes("robots.txt") ? "User-agent: *\nAllow: /" : "x".repeat(256));
-    const result = await syncEventSources({ outputFile, healthFile, fetchImpl: fetchImpl as typeof fetch, maxResponseBytes: 64 });
+    const outputFile = `/tmp/hashpass-events-large-${process.pid}.json`;
+    const healthFile = `/tmp/hashpass-health-large-${process.pid}.json`;
+    files.push(outputFile, healthFile);
+    const fetchImpl = async (input: string | URL | Request) =>
+      new Response(
+        String(input).includes("robots.txt")
+          ? "User-agent: *\nAllow: /"
+          : "x".repeat(256),
+      );
+    const result = await syncEventSources({
+      outputFile,
+      healthFile,
+      fetchImpl: fetchImpl as typeof fetch,
+      maxResponseBytes: 64,
+    });
     assert.equal(result.health.status, "failed");
     assert.match(result.health.error || "", /size limit/);
   });
   it("does not churn the persisted snapshot when public event content is unchanged", async () => {
-    const outputFile = `/tmp/hashpass-events-stable-${process.pid}.json`; const healthFile = `/tmp/hashpass-health-stable-${process.pid}.json`; files.push(outputFile, healthFile);
+    const outputFile = `/tmp/hashpass-events-stable-${process.pid}.json`;
+    const healthFile = `/tmp/hashpass-health-stable-${process.pid}.json`;
+    files.push(outputFile, healthFile);
     const html = await fixture("pkrr.html");
-    const fetchImpl = async (input: string | URL | Request) => new Response(String(input).includes("robots.txt") ? "User-agent: *\nAllow: /" : html, { status: 200 });
-    await syncEventSources({ outputFile, healthFile, fetchImpl: fetchImpl as typeof fetch, now: new Date("2026-08-14T00:00:00Z") });
+    const fetchImpl = async (input: string | URL | Request) =>
+      new Response(
+        String(input).includes("robots.txt") ? "User-agent: *\nAllow: /" : html,
+        { status: 200 },
+      );
+    await syncEventSources({
+      outputFile,
+      healthFile,
+      fetchImpl: fetchImpl as typeof fetch,
+      now: new Date("2026-08-14T00:00:00Z"),
+    });
     const first = await readFile(outputFile, "utf8");
-    await syncEventSources({ outputFile, healthFile, fetchImpl: fetchImpl as typeof fetch, now: new Date("2026-08-14T01:00:00Z") });
+    await syncEventSources({
+      outputFile,
+      healthFile,
+      fetchImpl: fetchImpl as typeof fetch,
+      now: new Date("2026-08-14T01:00:00Z"),
+    });
     assert.equal(await readFile(outputFile, "utf8"), first);
   });
   it("retires PKRR rows that disappear from a successful source sync", async () => {
-    const outputFile = `/tmp/hashpass-events-retired-${process.pid}.json`; const healthFile = `/tmp/hashpass-health-retired-${process.pid}.json`; files.push(outputFile, healthFile);
+    const outputFile = `/tmp/hashpass-events-retired-${process.pid}.json`;
+    const healthFile = `/tmp/hashpass-health-retired-${process.pid}.json`;
+    files.push(outputFile, healthFile);
     const { writeFile } = await import("node:fs/promises");
-    const [published] = parsePkrrHtml(await fixture("pkrr.html"), new Date("2026-08-14T00:00:00Z"));
-    await writeFile(outputFile, JSON.stringify({ events: [{ ...published, id: "pkrr-hash-poker:retired", externalId: "retired", status: "past" }] }));
+    const [published] = parsePkrrHtml(
+      await fixture("pkrr.html"),
+      new Date("2026-08-14T00:00:00Z"),
+    );
+    await writeFile(
+      outputFile,
+      JSON.stringify({
+        events: [
+          {
+            ...published,
+            id: "pkrr-hash-poker:retired",
+            externalId: "retired",
+            status: "past",
+          },
+        ],
+      }),
+    );
     const html = await fixture("pkrr.html");
-    const fetchImpl = async (input: string | URL | Request) => new Response(String(input).includes("robots.txt") ? "User-agent: *\nAllow: /" : html, { status: 200 });
-    const result = await syncEventSources({ outputFile, healthFile, fetchImpl: fetchImpl as typeof fetch, now: new Date("2026-08-14T00:00:00Z") });
+    const fetchImpl = async (input: string | URL | Request) =>
+      new Response(
+        String(input).includes("robots.txt") ? "User-agent: *\nAllow: /" : html,
+        { status: 200 },
+      );
+    const result = await syncEventSources({
+      outputFile,
+      healthFile,
+      fetchImpl: fetchImpl as typeof fetch,
+      now: new Date("2026-08-14T00:00:00Z"),
+    });
 
     assert.equal(result.health.status, "healthy");
-    const retired = result.events.find(event => event.externalId === "retired");
+    const retired = result.events.find(
+      (event) => event.externalId === "retired",
+    );
     assert.equal(retired?.status, "stale");
     assert.equal(retired?.needsReview, true);
   });
   it("retains cancelled rows and applies changed source content", async () => {
-    const outputFile = `/tmp/hashpass-events-changed-${process.pid}.json`; const healthFile = `/tmp/hashpass-health-changed-${process.pid}.json`; files.push(outputFile, healthFile);
+    const outputFile = `/tmp/hashpass-events-changed-${process.pid}.json`;
+    const healthFile = `/tmp/hashpass-health-changed-${process.pid}.json`;
+    files.push(outputFile, healthFile);
     const { writeFile } = await import("node:fs/promises");
-    const [event] = parsePkrrHtml(await fixture("pkrr.html"), new Date("2026-08-14T00:00:00Z"));
-    const cancelled = { ...event, id: "pkrr-hash-poker:cancelled", externalId: "cancelled", status: "cancelled" as const };
-    await writeFile(outputFile, JSON.stringify({ events: [{ ...event, title: "Old title" }, cancelled] }));
+    const [event] = parsePkrrHtml(
+      await fixture("pkrr.html"),
+      new Date("2026-08-14T00:00:00Z"),
+    );
+    const cancelled = {
+      ...event,
+      id: "pkrr-hash-poker:cancelled",
+      externalId: "cancelled",
+      status: "cancelled" as const,
+    };
+    await writeFile(
+      outputFile,
+      JSON.stringify({ events: [{ ...event, title: "Old title" }, cancelled] }),
+    );
     const html = await fixture("pkrr.html");
-    const fetchImpl = async (input: string | URL | Request) => new Response(String(input).includes("robots.txt") ? "User-agent: *\nAllow: /" : html);
+    const fetchImpl = async (input: string | URL | Request) =>
+      new Response(
+        String(input).includes("robots.txt") ? "User-agent: *\nAllow: /" : html,
+      );
 
-    const result = await syncEventSources({ outputFile, healthFile, fetchImpl: fetchImpl as typeof fetch, now: new Date("2026-08-14T00:00:00Z") });
+    const result = await syncEventSources({
+      outputFile,
+      healthFile,
+      fetchImpl: fetchImpl as typeof fetch,
+      now: new Date("2026-08-14T00:00:00Z"),
+    });
 
-    assert.equal(result.events.find(item => item.id === event.id)?.title, event.title);
-    assert.equal(result.events.find(item => item.id === cancelled.id)?.status, "cancelled");
+    assert.equal(
+      result.events.find((item) => item.id === event.id)?.title,
+      event.title,
+    );
+    assert.equal(
+      result.events.find((item) => item.id === cancelled.id)?.status,
+      "cancelled",
+    );
   });
 });
 
-
 describe("database event store", () => {
   const files: string[] = [];
-  afterEach(async () => { const { rm } = await import("node:fs/promises"); await Promise.all(files.splice(0).map(file => rm(file, { force: true }))); });
+  afterEach(async () => {
+    const { rm } = await import("node:fs/promises");
+    await Promise.all(files.splice(0).map((file) => rm(file, { force: true })));
+  });
   it("loads normalized events and persists a transactional sync RPC", async () => {
-    const event = parsePkrrHtml(await fixture("pkrr.html"), new Date("2026-08-14T00:00:00Z"))[0];
+    const event = parsePkrrHtml(
+      await fixture("pkrr.html"),
+      new Date("2026-08-14T00:00:00Z"),
+    )[0];
     const requests: Array<{ url: string; init?: RequestInit }> = [];
-    const fetchImpl = async (input: string | URL | Request, init?: RequestInit) => {
+    const fetchImpl = async (
+      input: string | URL | Request,
+      init?: RequestInit,
+    ) => {
       requests.push({ url: String(input), init });
-      return new Response(requests.length === 1 ? JSON.stringify([{ normalized_payload: event }]) : null, { status: requests.length === 1 ? 200 : 204 });
+      return new Response(
+        requests.length === 1
+          ? JSON.stringify([{ normalized_payload: event }])
+          : null,
+        { status: requests.length === 1 ? 200 : 204 },
+      );
     };
-    const store = new PostgrestEventStore({ baseUrl: "https://db.example.test/", serviceRoleKey: "test-service-key", fetchImpl: fetchImpl as typeof fetch });
-    assert.equal((await store.loadEvents("pkrr-hash-poker"))[0].externalId, event.externalId);
-    await store.persistSync({ sourceId: "pkrr-hash-poker", attemptedAt: event.updatedAt, events: [event], health: { sourceId: "pkrr-hash-poker", status: "healthy", lastSuccessfulSync: event.updatedAt, lastAttempt: event.updatedAt, eventCount: 1 } });
+    const store = new PostgrestEventStore({
+      baseUrl: "https://db.example.test/",
+      serviceRoleKey: "test-service-key",
+      fetchImpl: fetchImpl as typeof fetch,
+    });
+    assert.equal(
+      (await store.loadEvents("pkrr-hash-poker"))[0].externalId,
+      event.externalId,
+    );
+    await store.persistSync({
+      sourceId: "pkrr-hash-poker",
+      attemptedAt: event.updatedAt,
+      events: [event],
+      health: {
+        sourceId: "pkrr-hash-poker",
+        status: "healthy",
+        lastSuccessfulSync: event.updatedAt,
+        lastAttempt: event.updatedAt,
+        eventCount: 1,
+      },
+    });
     assert.match(requests[0].url, /external_events/);
     assert.match(requests[1].url, /rpc\/ingest_event_source_sync/);
     assert.equal(requests[1].init?.method, "POST");
-    assert.equal(new Headers(requests[1].init?.headers).get("authorization"), "Bearer test-service-key");
+    assert.equal(
+      new Headers(requests[1].init?.headers).get("authorization"),
+      "Bearer test-service-key",
+    );
   });
 
   it("rejects incomplete credentials and reports bounded PostgREST errors", async () => {
-    assert.throws(() => new PostgrestEventStore({ baseUrl: "", serviceRoleKey: "" }), /requires a base URL/);
-    const fetchImpl = async () => new Response("database denied ".repeat(100), { status: 403 });
-    const store = new PostgrestEventStore({ baseUrl: "https://db.example.test///", serviceRoleKey: "test-key", fetchImpl: fetchImpl as typeof fetch });
+    assert.throws(
+      () => new PostgrestEventStore({ baseUrl: "", serviceRoleKey: "" }),
+      /requires a base URL/,
+    );
+    const fetchImpl = async () =>
+      new Response("database denied ".repeat(100), { status: 403 });
+    const store = new PostgrestEventStore({
+      baseUrl: "https://db.example.test///",
+      serviceRoleKey: "test-key",
+      fetchImpl: fetchImpl as typeof fetch,
+    });
 
-    await assert.rejects(store.loadEvents("pkrr-hash-poker"), error => {
+    await assert.rejects(store.loadEvents("pkrr-hash-poker"), (error) => {
       assert.ok(error instanceof Error);
-      assert.match(error.message, /^Event storage responded 403: database denied/);
+      assert.match(
+        error.message,
+        /^Event storage responded 403: database denied/,
+      );
       assert.ok(error.message.length < 550);
       return true;
     });
   });
 
   it("uses database history and can disable the legacy snapshot write", async () => {
-    const outputFile = `/tmp/hashpass-events-db-${process.pid}.json`; const healthFile = `/tmp/hashpass-health-db-${process.pid}.json`; files.push(outputFile, healthFile);
-    const html = await fixture("pkrr.html"); const persisted: unknown[] = [];
-    const store: EventIngestionStore = { loadEvents: async () => [], persistSync: async input => { persisted.push(input); } };
-    const fetchImpl = async (input: string | URL | Request) => new Response(String(input).includes("robots.txt") ? "User-agent: *\nAllow: /" : html, { status: 200 });
-    const result = await syncEventSources({ outputFile, healthFile, store, legacySnapshotFallback: false, fetchImpl: fetchImpl as typeof fetch, now: new Date("2026-08-14T00:00:00Z") });
-    assert.equal(result.health.status, "healthy"); assert.equal(persisted.length, 1);
+    const outputFile = `/tmp/hashpass-events-db-${process.pid}.json`;
+    const healthFile = `/tmp/hashpass-health-db-${process.pid}.json`;
+    files.push(outputFile, healthFile);
+    const html = await fixture("pkrr.html");
+    const persisted: unknown[] = [];
+    const store: EventIngestionStore = {
+      loadEvents: async () => [],
+      persistSync: async (input) => {
+        persisted.push(input);
+      },
+    };
+    const fetchImpl = async (input: string | URL | Request) =>
+      new Response(
+        String(input).includes("robots.txt") ? "User-agent: *\nAllow: /" : html,
+        { status: 200 },
+      );
+    const result = await syncEventSources({
+      outputFile,
+      healthFile,
+      store,
+      legacySnapshotFallback: false,
+      fetchImpl: fetchImpl as typeof fetch,
+      now: new Date("2026-08-14T00:00:00Z"),
+    });
+    assert.equal(result.health.status, "healthy");
+    assert.equal(persisted.length, 1);
     await assert.rejects(readFile(outputFile, "utf8"));
   });
   it("writes failure health and uses legacy continuity when the store read fails", async () => {
-    const outputFile = `/tmp/hashpass-events-store-failure-${process.pid}.json`; const healthFile = `/tmp/hashpass-health-store-failure-${process.pid}.json`; files.push(outputFile, healthFile);
+    const outputFile = `/tmp/hashpass-events-store-failure-${process.pid}.json`;
+    const healthFile = `/tmp/hashpass-health-store-failure-${process.pid}.json`;
+    files.push(outputFile, healthFile);
     const { writeFile } = await import("node:fs/promises");
-    const event = parsePkrrHtml(await fixture("pkrr.html"), new Date("2026-08-14T00:00:00Z"))[0];
+    const event = parsePkrrHtml(
+      await fixture("pkrr.html"),
+      new Date("2026-08-14T00:00:00Z"),
+    )[0];
     await writeFile(outputFile, JSON.stringify({ events: [event] }));
     let persisted = false;
-    const store: EventIngestionStore = { loadEvents: async () => { throw new Error("database offline"); }, persistSync: async () => { persisted = true; } };
-    const result = await syncEventSources({ outputFile, healthFile, store, legacySnapshotFallback: true });
+    const store: EventIngestionStore = {
+      loadEvents: async () => {
+        throw new Error("database offline");
+      },
+      persistSync: async () => {
+        persisted = true;
+      },
+    };
+    const result = await syncEventSources({
+      outputFile,
+      healthFile,
+      store,
+      legacySnapshotFallback: true,
+    });
     assert.equal(result.health.status, "degraded");
     assert.match(result.health.error || "", /storage read failed/);
     assert.equal(result.events[0].externalId, event.externalId);

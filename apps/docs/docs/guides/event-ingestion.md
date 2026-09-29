@@ -17,10 +17,30 @@ PKRR remains responsible for poker identity and player profiles. HashPass suppli
 5. A scheduled workflow persists observations and safe normalized updates to PostgreSQL; risky changes enter a review queue.
 6. The API reads the RLS-filtered published-event view. The checked-in snapshot and automation PR are explicitly retained as a legacy fallback during migration only.
 
+## BSL Colombia 2026 programme
+
+The official Colombia page is parsed as static semantic HTML. Speaker names,
+roles, organizations, categories, portraits, and all three agenda days are
+validated before any write. Portrait downloads accept only bounded PNG, JPEG,
+or WebP payloads from the allow-listed source host and are stored under
+content-hashed CDN keys. Database reconciliation runs through one
+service-role-only transaction, is scoped by `event_id`, deactivates only
+source-managed speakers that disappear, and removes only source-managed agenda
+rows that disappear.
+
+The scheduled workflow polls hourly before the event and every five minutes
+during November 4–6, 2026. Development and production are independent matrix
+targets; one failure cannot silently select the other database. AWS uploads
+also require the caller account to match `EXPECTED_AWS_ACCOUNT_ID` before the
+first mutation.
+
 ## Operator commands
 
 ```bash
 npm run sync:events
+npm run sync:bsl-colombia
+npm run sync:bsl-colombia:dev
+npm run sync:bsl-colombia:prod
 npm run test:event-ingestion
 pnpm --filter @hashpass/event-ingestion typecheck
 ```

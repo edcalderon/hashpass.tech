@@ -21,7 +21,14 @@ export interface AgendaItem {
   title: string;
   description?: string;
   speakers?: string[];
-  type: "keynote" | "panel" | "workshop" | "break" | "meal" | "registration";
+  type:
+    | "keynote"
+    | "panel"
+    | "workshop"
+    | "networking"
+    | "break"
+    | "meal"
+    | "registration";
   location?: string;
   // Explicit day number ('1' | '2' | '3', see app/events/[eventSlug]/agenda.tsx)
   // for multi-day events. Without it, the agenda screen falls back to
