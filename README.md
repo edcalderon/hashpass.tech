@@ -20,25 +20,20 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.81)
+## 📋 Latest Changes (v1.9.82)
 
 ### Features
 
-* **agenda:** skeleton-based reload instead of full splash, consolidate icon reveal buttons ([b3b103b](https://github.com/hashpass-tech/hashpass.tech/commit/b3b103bf8032d57b3bae0db27eda55a838c21941))
-* **release:** auto-chain production after beta on native mobile release ([ae96637](https://github.com/hashpass-tech/hashpass.tech/commit/ae96637a39c11a97062ab2565f919e4479ba2cd5))
-* **web-app:** add CIG analytics tracker script to hashpass.club ([a66d66c](https://github.com/hashpass-tech/hashpass.tech/commit/a66d66ca6713e7c99cc5985deb4657f8f0b6960f))
+* **ui:** vertical action buttons, super-index type filter, HoverText, full venue location ([18a400f](https://github.com/hashpass-tech/hashpass.tech/commit/18a400f599ec0f53060b1d8092024a6b77a78179))
 ### Release Highlights
-- skeleton-based reload instead of full splash, consolidate icon reveal buttons; add CIG analytics tracker script to hashpass.club; auto-chain production after beta on native mobile release
+- vertical action buttons, super-index type filter, HoverText, full venue location
 
 ### Release scope
-- Compared with: `v1.9.80` (the previous global release tag)
+- Compared with: `v1.9.81` (the previous global release tag)
 
 ### Affected products & packages
-- Club web
 - Mobile app
 - Shared UI
-- Documentation
-- Release tooling
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

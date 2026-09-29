@@ -1,4 +1,18 @@
+## [1.9.82](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.81...v1.9.82) (2026-09-29)
 
+
+### Features
+
+* **ui:** vertical action buttons, super-index type filter, HoverText, full venue location ([18a400f](https://github.com/hashpass-tech/hashpass.tech/commit/18a400f599ec0f53060b1d8092024a6b77a78179))
+### Release Highlights
+- vertical action buttons, super-index type filter, HoverText, full venue location
+
+### Release scope
+- Compared with: `v1.9.81` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Shared UI
 
 ## [1.9.81](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.80...v1.9.81) (2026-09-29)
 
