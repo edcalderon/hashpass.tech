@@ -121,6 +121,11 @@ export default function EventHeroBackground({
   videoSource,
 }: EventHeroBackgroundProps) {
   const imageSource = resolveEventImageSource(fallbackImage);
+  // A still poster has no motion of its own. Keep the Explorer's subtle
+  // diagonal texture alive over image-only banners, while video-backed
+  // banners remain clean once their film is available. If a video has no
+  // poster, retain the texture as the decode/loading fallback.
+  const shouldShowAnimatedTexture = !imageSource || !videoSource;
 
   return (
     <>
@@ -142,7 +147,9 @@ export default function EventHeroBackground({
           loadingLabel={loadingLabel}
         />
       ) : null}
-      {!imageSource ? <MovingStripeFallback textureStyle={textureStyle} /> : null}
+      {shouldShowAnimatedTexture ? (
+        <MovingStripeFallback textureStyle={textureStyle} />
+      ) : null}
     </>
   );
 }

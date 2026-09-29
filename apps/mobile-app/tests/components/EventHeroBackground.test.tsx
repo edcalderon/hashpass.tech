@@ -41,7 +41,7 @@ describe("EventHeroBackground", () => {
     expect(renderer.root.findAllByProps({ testID: "event-hero-stripe-fallback" })).toHaveLength(0);
   });
 
-  it("keeps the stripe fallback only when an event has no usable poster", () => {
+  it("keeps the stripe fallback when an event has no usable poster", () => {
     const renderer = render(
       <EventHeroBackground
         videoSource="https://media.example/events/legacy/hero.mp4"
@@ -54,5 +54,26 @@ describe("EventHeroBackground", () => {
     expect(renderer.root.findAllByType("Image" as any)).toHaveLength(0);
     expect(renderer.root.findByType("EventBannerBackgroundVideo" as any).props.showLoadingIndicator).toBe(true);
     expect(renderer.root.findAllByProps({ testID: "event-hero-stripe-fallback" })).toHaveLength(1);
+  });
+
+  it("adds the subtle moving texture to an image-only hero", () => {
+    const renderer = render(
+      <EventHeroBackground
+        fallbackImage="https://media.example/events/legacy/hero.jpg"
+        loadingLabel="Loading event film"
+        mediaStyle={mediaStyle}
+        textureStyle={textureStyle}
+      />,
+    );
+
+    expect(renderer.root.findByType("Image" as any).props.source).toEqual({
+      uri: "https://media.example/events/legacy/hero.jpg",
+    });
+    expect(
+      renderer.root.findAllByType("EventBannerBackgroundVideo" as any),
+    ).toHaveLength(0);
+    expect(
+      renderer.root.findAllByProps({ testID: "event-hero-stripe-fallback" }),
+    ).toHaveLength(1);
   });
 });
