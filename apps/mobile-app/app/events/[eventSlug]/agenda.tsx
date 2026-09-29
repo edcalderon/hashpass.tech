@@ -1,6 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, InteractionManager, Linking, Modal, Platform, Pressable, Image } from 'react-native';
+import { AccessibilityInfo, View, Text, StyleSheet, ScrollView, TouchableOpacity, InteractionManager, Linking, Modal, Platform, Pressable, Image } from 'react-native';
 import type { ImageSourcePropType } from 'react-native';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import { useEvent } from '@contexts/EventContext';
 import { useTheme } from '../../../hooks/useTheme';
 // lib/vector-icons routes web to SVG-based Lucide icons instead of the raw
@@ -42,6 +48,7 @@ import {
   resolveAgendaCalendarSpeakerNames,
 } from '../../../lib/agenda-calendar';
 import { parseAgendaTime } from '../../../lib/event-time';
+import { getDisplayAgendaDescription } from '../../../lib/agenda-description';
 
 // Custom filter logic for agenda items
 const customAgendaFilterLogic = (
@@ -83,7 +90,7 @@ const customAgendaFilterLogic = (
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       const matchesTitle = item.title?.toLowerCase().includes(query) ?? false;
-      const matchesDescription = item.description?.toLowerCase().includes(query) ?? false;
+      const matchesDescription = getDisplayAgendaDescription(item.description)?.toLowerCase().includes(query) ?? false;
       
       // Since we only have speaker IDs, we can only match against the ID itself
       const matchesSpeaker = item.speakers?.some((speakerId: string) =>
@@ -146,6 +153,352 @@ const resolveAgendaVenueImage = (
   if (normalizedLocation.includes('auditorio')) return EXTERNADO_VENUE_IMAGES.auditorium;
   return null;
 };
+
+type AgendaTypeRevealProps = {
+  itemId: string;
+  typeColor: string;
+  iconName: NativeSafeIconName;
+  label: string;
+  accessibilityLabel: string;
+  accessibilityHint: string;
+};
+
+const AGENDA_TYPE_REVEAL_DURATION_MS = 180;
+
+const useReducedMotionPreference = (): boolean => {
+  const [reduceMotion, setReduceMotion] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    void AccessibilityInfo.isReduceMotionEnabled()
+      .then((value) => {
+        if (active) setReduceMotion(value);
+      })
+      .catch(() => {
+        if (active) setReduceMotion(true);
+      });
+    const subscription = AccessibilityInfo.addEventListener(
+      'reduceMotionChanged',
+      setReduceMotion,
+    );
+    return () => {
+      active = false;
+      subscription.remove();
+    };
+  }, []);
+
+  return reduceMotion;
+};
+
+const agendaTypeRevealStyles = StyleSheet.create({
+  container: {
+    alignItems: 'center',
+    borderBottomLeftRadius: uiTokens.radius.pill,
+    borderTopLeftRadius: uiTokens.radius.pill,
+    borderWidth: 1,
+    bottom: -1,
+    justifyContent: 'center',
+    minHeight: 72,
+    minWidth: 220,
+    paddingHorizontal: uiTokens.space.lg,
+    paddingVertical: uiTokens.space.lg,
+    position: 'absolute',
+    right: -1,
+    width: '58%',
+    boxShadow: '8px 8px 0 rgba(3, 12, 24, 0.42)',
+    overflow: 'hidden',
+  },
+  pressable: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  layer: {
+    backgroundColor: uiTokens.colors.light.text,
+    borderRadius: uiTokens.radius.circle,
+    position: 'absolute',
+    top: '50%',
+  },
+  layerRing: {
+    borderRadius: uiTokens.radius.circle,
+    position: 'absolute',
+  },
+  layerRingOuter: {
+    bottom: '5%',
+    left: '5%',
+    right: '5%',
+    top: '5%',
+  },
+  layerRingWhite: {
+    backgroundColor: uiTokens.colors.light.canvas,
+    bottom: '16%',
+    left: '16%',
+    right: '16%',
+    top: '16%',
+  },
+  layerRingAccent: {
+    bottom: '28%',
+    left: '28%',
+    right: '28%',
+    top: '28%',
+  },
+  layerRingCenter: {
+    backgroundColor: uiTokens.colors.light.canvas,
+    bottom: '40%',
+    left: '40%',
+    right: '40%',
+    top: '40%',
+  },
+  content: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: uiTokens.space.md,
+    justifyContent: 'center',
+    zIndex: 1,
+  },
+  label: {
+    color: uiTokens.colors.light.canvas,
+    fontSize: 18,
+    fontWeight: '800',
+    letterSpacing: 0.7,
+    textShadowColor: 'rgba(3, 12, 24, 0.42)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+  },
+});
+
+function AgendaTypeReveal({
+  itemId,
+  typeColor,
+  iconName,
+  label,
+  accessibilityLabel,
+  accessibilityHint,
+}: AgendaTypeRevealProps) {
+  const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const [pinned, setPinned] = useState(false);
+  const reduceMotion = useReducedMotionPreference();
+  const revealProgress = useSharedValue(0);
+  const revealed = hovered || focused || pinned;
+
+  useEffect(() => {
+    const nextProgress = revealed ? 1 : 0;
+    revealProgress.value = reduceMotion
+      ? nextProgress
+      : withTiming(nextProgress, {
+          duration: AGENDA_TYPE_REVEAL_DURATION_MS,
+          easing: Easing.out(Easing.cubic),
+        });
+  }, [reduceMotion, revealProgress, revealed]);
+
+  const contentStyle = useAnimatedStyle(() => ({
+    opacity: revealProgress.value,
+    transform: [
+      { translateX: (1 - revealProgress.value) * 8 },
+      { scale: 0.96 + revealProgress.value * 0.04 },
+    ],
+  }));
+  const shellStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: revealProgress.value * 5 }],
+  }));
+  const layerStyle = useAnimatedStyle(() => {
+    const diameter = 60 + revealProgress.value * 660;
+    return {
+      height: diameter,
+      left: -30 - revealProgress.value * 150,
+      marginTop: -diameter / 2,
+      transform: [{ rotate: `${revealProgress.value * 360}deg` }],
+      width: diameter,
+    };
+  });
+
+  return (
+    <Animated.View
+      testID={`agenda-card-type-shell-${itemId}`}
+      style={[
+        agendaTypeRevealStyles.container,
+        {
+          borderColor: `${typeColor}24`,
+          backgroundColor: `${typeColor}1A`,
+          boxShadow: revealed
+            ? '3px 3px 0 rgba(3, 12, 24, 0.42)'
+            : '8px 8px 0 rgba(3, 12, 24, 0.42)',
+        },
+        shellStyle,
+      ]}
+    >
+      <Pressable
+        testID={`agenda-card-type-watermark-${itemId}`}
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel}
+        accessibilityHint={accessibilityHint}
+        accessibilityState={{ expanded: revealed }}
+        onBlur={() => setFocused(false)}
+        onFocus={() => setFocused(true)}
+        onHoverIn={() => setHovered(true)}
+        onHoverOut={() => setHovered(false)}
+        onPress={() => setPinned((current) => !current)}
+        style={agendaTypeRevealStyles.pressable}
+      >
+        <Animated.View
+          testID={`agenda-card-type-layer-${itemId}`}
+          pointerEvents="none"
+          style={[agendaTypeRevealStyles.layer, layerStyle]}
+        >
+          <View
+            style={[
+              agendaTypeRevealStyles.layerRing,
+              agendaTypeRevealStyles.layerRingOuter,
+              { backgroundColor: typeColor },
+            ]}
+          />
+          <View style={[agendaTypeRevealStyles.layerRing, agendaTypeRevealStyles.layerRingWhite]} />
+          <View
+            style={[
+              agendaTypeRevealStyles.layerRing,
+              agendaTypeRevealStyles.layerRingAccent,
+              { backgroundColor: typeColor },
+            ]}
+          />
+          <View style={[agendaTypeRevealStyles.layerRing, agendaTypeRevealStyles.layerRingCenter]} />
+        </Animated.View>
+        <Animated.View
+          testID={`agenda-card-type-content-${itemId}`}
+          pointerEvents="none"
+          style={[agendaTypeRevealStyles.content, contentStyle]}
+        >
+          <NativeSafeIcon
+            name={iconName}
+            size={24}
+            color={uiTokens.colors.light.canvas}
+            strokeWidth={2.2}
+          />
+          <Text style={agendaTypeRevealStyles.label}>{label}</Text>
+        </Animated.View>
+      </Pressable>
+    </Animated.View>
+  );
+}
+
+type AgendaTypeLegendControlProps = {
+  itemKey: string;
+  label: string;
+  color: string;
+  iconName: NativeSafeIconName;
+  surfaceColor: string;
+  borderColor: string;
+  textColor: string;
+};
+
+const AGENDA_TYPE_LEGEND_COLLAPSED_WIDTH = 44;
+const AGENDA_TYPE_LEGEND_LABEL_WIDTH = 132;
+
+const agendaTypeLegendControlStyles = StyleSheet.create({
+  shell: {
+    borderRadius: uiTokens.radius.pill,
+    borderWidth: uiTokens.control.borderWidth,
+    height: uiTokens.control.compactHeight,
+    overflow: 'hidden',
+  },
+  pressable: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    height: '100%',
+  },
+  icon: {
+    alignItems: 'center',
+    height: uiTokens.control.compactHeight,
+    justifyContent: 'center',
+    width: AGENDA_TYPE_LEGEND_COLLAPSED_WIDTH - uiTokens.control.borderWidth * 2,
+  },
+  labelClip: {
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  label: {
+    fontSize: uiTokens.type.label,
+    fontWeight: '700',
+    paddingRight: uiTokens.space.lg,
+  },
+});
+
+function AgendaTypeLegendControl({
+  itemKey,
+  label,
+  color,
+  iconName,
+  surfaceColor,
+  borderColor,
+  textColor,
+}: AgendaTypeLegendControlProps) {
+  const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const [pinned, setPinned] = useState(false);
+  const reduceMotion = useReducedMotionPreference();
+  const expansion = useSharedValue(0);
+  const expanded = hovered || focused || pinned;
+
+  useEffect(() => {
+    const nextProgress = expanded ? 1 : 0;
+    expansion.value = reduceMotion
+      ? nextProgress
+      : withTiming(nextProgress, {
+          duration: uiTokens.motion.fast,
+          easing: Easing.out(Easing.cubic),
+        });
+  }, [expanded, expansion, reduceMotion]);
+
+  const shellStyle = useAnimatedStyle(() => ({
+    width: AGENDA_TYPE_LEGEND_COLLAPSED_WIDTH
+      + expansion.value * AGENDA_TYPE_LEGEND_LABEL_WIDTH,
+  }));
+  const labelStyle = useAnimatedStyle(() => ({
+    opacity: expansion.value,
+    width: expansion.value * AGENDA_TYPE_LEGEND_LABEL_WIDTH,
+  }));
+
+  return (
+    <Animated.View
+      style={[
+        agendaTypeLegendControlStyles.shell,
+        {
+          backgroundColor: expanded ? `${color}14` : surfaceColor,
+          borderColor: expanded ? `${color}52` : borderColor,
+        },
+        shellStyle,
+      ]}
+    >
+      <Pressable
+        testID={`agenda-type-legend-${itemKey}`}
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        accessibilityState={{ expanded }}
+        onBlur={() => setFocused(false)}
+        onFocus={() => setFocused(true)}
+        onHoverIn={() => setHovered(true)}
+        onHoverOut={() => setHovered(false)}
+        onPress={() => setPinned((current) => !current)}
+        style={agendaTypeLegendControlStyles.pressable}
+      >
+        <View style={agendaTypeLegendControlStyles.icon}>
+          <NativeSafeIcon
+            name={iconName}
+            size={20}
+            color={color}
+            strokeWidth={2.2}
+          />
+        </View>
+        <Animated.View style={[agendaTypeLegendControlStyles.labelClip, labelStyle]}>
+          <Text numberOfLines={1} style={[agendaTypeLegendControlStyles.label, { color: textColor }]}>
+            {label}
+          </Text>
+        </Animated.View>
+      </Pressable>
+    </Animated.View>
+  );
+}
 
 export default function BSL2025AgendaScreen() {
   const { event } = useEvent();
@@ -1285,6 +1638,8 @@ export default function BSL2025AgendaScreen() {
     const isPast = isEventPast(item);
     const startTime = parseEventISO((item as any).time || '');
     const typeColor = getAgendaTypeColor(item.type);
+    const typeLabel = t(`types.${item.type}`, item.type).toUpperCase();
+    const displayDescription = getDisplayAgendaDescription(item.description);
     const location = item.location?.trim()
       || (item.type === 'keynote'
         ? t('locations.mainStage')
@@ -1292,7 +1647,12 @@ export default function BSL2025AgendaScreen() {
           ? t('locations.registrationArea')
           : eventVenueLabel);
     const venueImage = resolveAgendaVenueImage(event?.id, eventVenueLabel, location);
-    const resolvedSpeakers = (item.speakers || []).map((speaker) => ({
+    const resolvedSpeakers: {
+      reference: string;
+      id: string | null;
+      displayName: string;
+      image?: string;
+    }[] = (item.speakers || []).map((speaker: string) => ({
       reference: speaker,
       ...resolveAgendaSpeaker(speaker),
     }));
@@ -1380,8 +1740,8 @@ export default function BSL2025AgendaScreen() {
                   <View pointerEvents="none" style={styles.agendaVenueScrim} />
                 </>
               ) : null}
-              <View style={styles.agendaMediaFallback}>
-                {usesSpeakerPortrait && featuredSpeaker ? (
+              {usesSpeakerPortrait && featuredSpeaker ? (
+                <View style={styles.agendaMediaFallback}>
                   <SpeakerAvatar
                     name={featuredSpeaker.displayName}
                     imageUrl={featuredSpeaker.image}
@@ -1389,28 +1749,17 @@ export default function BSL2025AgendaScreen() {
                     showBorder
                     style={styles.agendaFeaturedAvatar}
                   />
-                ) : (
-                  <View style={[
-                    styles.agendaTypeIconCircle,
-                    isCompactAgenda && styles.agendaTypeIconCircleCompact,
-                    isAgendaGrid && styles.agendaTypeIconCircleGrid,
-                    { borderColor: `${typeColor}66` },
-                  ]}>
-                    <NativeSafeIcon
-                      name={getAgendaTypeIcon(item.type) as NativeSafeIconName}
-                      size={isAgendaGrid ? 54 : isCompactAgenda ? 30 : 40}
-                      color={typeColor}
-                      strokeWidth={1.8}
-                    />
-                  </View>
-                )}
-              </View>
+                </View>
+              ) : null}
               {usesSpeakerPortrait && resolvedSpeakers.length > 1 ? (
                 <View style={styles.agendaMediaCount}>
                   <Text style={styles.agendaMediaCountText}>+{resolvedSpeakers.length - 1}</Text>
                 </View>
               ) : null}
-              <View style={styles.agendaMediaFooter}>
+              <View
+                testID={`agenda-card-time-footer-${item.id}`}
+                style={styles.agendaMediaFooter}
+              >
                 <NativeSafeIcon name="schedule" size={14} color="#FFFFFF" />
                 <Text
                   testID={`agenda-card-time-${item.id}`}
@@ -1423,6 +1772,14 @@ export default function BSL2025AgendaScreen() {
             </View>
 
             <View style={[styles.agendaItemContent, isCompactAgenda && styles.agendaItemContentCompact]}>
+              <AgendaTypeReveal
+                itemId={item.id}
+                typeColor={typeColor}
+                iconName={getAgendaTypeIcon(item.type) as NativeSafeIconName}
+                label={typeLabel}
+                accessibilityLabel={t('types.revealLabel', `Session type: ${typeLabel}`)}
+                accessibilityHint={t('types.revealHint', 'Reveals this session type')}
+              />
               <View style={styles.agendaTitleRow}>
                 <View style={styles.agendaTitleMeta}>
                   <Text
@@ -1431,9 +1788,6 @@ export default function BSL2025AgendaScreen() {
                   >
                     {cleanSessionTitle(item.title)}
                   </Text>
-                  <Badge mode={interfaceMode} tone="neutral" markerColor={typeColor} compact>
-                    {t(`types.${item.type}`, item.type).toUpperCase()}
-                  </Badge>
                   {isPast ? (
                     <Badge mode={interfaceMode} tone="neutral">
                       {t('badges.past')}
@@ -1473,8 +1827,8 @@ export default function BSL2025AgendaScreen() {
                 )}
               </View>
 
-              {!isCompactAgenda && item.description ? (
-                <Text style={styles.agendaDescription}>{item.description}</Text>
+              {!isCompactAgenda && displayDescription ? (
+                <Text style={styles.agendaDescription}>{displayDescription}</Text>
               ) : null}
 
               {resolvedSpeakers.length > 0 ? (
@@ -1602,6 +1956,29 @@ export default function BSL2025AgendaScreen() {
                 );
               })}
             </ScrollView>
+            <View
+              testID="agenda-type-legend"
+              accessibilityLabel={t('legend.label', 'Session type legend')}
+              style={styles.agendaTypeLegend}
+            >
+              <Text style={styles.agendaTypeLegendTitle}>
+                {t('legend.title', 'Session types')}
+              </Text>
+              <View style={styles.agendaTypeLegendItems}>
+                {filterGroups[0].options.map((option) => (
+                  <AgendaTypeLegendControl
+                    key={option.key}
+                    itemKey={option.key}
+                    label={option.label}
+                    color={option.color}
+                    iconName={getAgendaTypeIcon(option.key) as NativeSafeIconName}
+                    surfaceColor={colors.background.paper}
+                    borderColor={colors.divider}
+                    textColor={colors.text.primary}
+                  />
+                ))}
+              </View>
+            </View>
           </View>
         )}
 
@@ -1873,6 +2250,26 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     gap: uiTokens.space.sm,
     paddingHorizontal: uiTokens.space.lg,
   },
+  agendaTypeLegend: {
+    alignItems: 'center',
+    paddingHorizontal: uiTokens.space.xl,
+    paddingTop: uiTokens.space.lg,
+  },
+  agendaTypeLegendTitle: {
+    color: colors.text.secondary,
+    fontSize: uiTokens.type.caption,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    marginBottom: uiTokens.space.sm,
+    textTransform: 'uppercase',
+  },
+  agendaTypeLegendItems: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: uiTokens.space.sm,
+    justifyContent: 'center',
+    width: '100%',
+  },
   dayTab: {
     width: 148,
     minHeight: 104,
@@ -2052,23 +2449,6 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     borderWidth: 4,
     boxShadow: uiTokens.effects.cardShadow,
   },
-  agendaTypeIconCircle: {
-    alignItems: 'center',
-    backgroundColor: colors.background.paper,
-    borderRadius: uiTokens.radius.circle,
-    borderWidth: 1,
-    height: 88,
-    justifyContent: 'center',
-    width: 88,
-  },
-  agendaTypeIconCircleCompact: {
-    height: 56,
-    width: 56,
-  },
-  agendaTypeIconCircleGrid: {
-    height: 132,
-    width: 132,
-  },
   agendaMediaCount: {
     alignItems: 'center',
     backgroundColor: uiTokens.effects.mediaOverlayStrong,
@@ -2089,7 +2469,9 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   },
   agendaMediaFooter: {
     alignItems: 'center',
-    backgroundColor: uiTokens.effects.mediaOverlayStrong,
+    backgroundColor: uiTokens.effects.mediaOverlayGlass,
+    borderTopColor: uiTokens.effects.mediaBorder,
+    borderTopWidth: 1,
     bottom: 0,
     flexDirection: 'row',
     gap: uiTokens.space.xs,
@@ -2099,6 +2481,13 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     paddingVertical: uiTokens.space.xs,
     position: 'absolute',
     right: 0,
+    boxShadow: '0 -8px 24px rgba(3, 12, 24, 0.16)',
+    ...(Platform.OS === 'web'
+      ? ({
+          backdropFilter: `blur(${uiTokens.effects.mediaOverlayBlur}px) saturate(1.25)`,
+          WebkitBackdropFilter: `blur(${uiTokens.effects.mediaOverlayBlur}px) saturate(1.25)`,
+        } as any)
+      : {}),
   },
   agendaItemLayoutCompact: {
     minHeight: 118,
@@ -2112,13 +2501,18 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     color: '#FFFFFF',
     flexShrink: 1,
     lineHeight: 15,
+    textShadowColor: 'rgba(3, 12, 24, 0.62)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
   agendaItemPast: {
     opacity: 0.62,
   },
   agendaItemContent: {
     flex: 1,
+    overflow: 'hidden',
     padding: uiTokens.space.xl,
+    position: 'relative',
   },
   agendaItemContentCompact: {
     paddingHorizontal: uiTokens.space.md,

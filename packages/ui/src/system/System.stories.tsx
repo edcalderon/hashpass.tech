@@ -46,6 +46,15 @@ function Catalog({ mode = "light" }: { mode?: ColorMode }) {
         <Badge mode={mode} tone="neutral" markerColor={uiTokens.feature.green} compact>
           Panel
         </Badge>
+        <Badge
+          mode={mode}
+          tone="neutral"
+          compact
+          markerColor={uiTokens.feature.cyan}
+          leadingIcon={<Text style={{ color: palette.accent }}>◎</Text>}
+        >
+          Networking
+        </Badge>
         <Badge mode={mode} tone="onMedia">
           Organizer media
         </Badge>
@@ -80,6 +89,11 @@ function Catalog({ mode = "light" }: { mode?: ColorMode }) {
         }}
       >
         <ActionButton mode={mode} label="Explore events" />
+        <ActionButton
+          mode={mode}
+          label="Next"
+          trailingIcon={<Text style={{ color: palette.onAccent }}>→</Text>}
+        />
         <ActionButton mode={mode} label="Learn more" variant="secondary" />
         <ActionButton mode={mode} label="Cancel" variant="ghost" />
         <ActionButton mode={mode} label="Saving" loading />

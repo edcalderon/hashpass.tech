@@ -77,7 +77,9 @@ import {
 } from "../../lib/event-banners";
 import { getEventBannerCtaLayout } from "../../lib/banner-cta";
 import EventHeroBackground from "./EventHeroBackground";
-import ExplorerHeroAction from "./ExplorerHeroAction";
+import ExplorerHeroAction, {
+  ExplorerExpandableAction,
+} from "./ExplorerHeroAction";
 
 interface ExplorerProps {
   events: EventInfo[];
@@ -656,6 +658,7 @@ export default function Explorer({
           </View>
           {localizedHeroSlide.cta && (
             <ExplorerHeroAction
+              mode={isDark ? "dark" : "light"}
               style={[
                 styles.heroAction,
                 getEventBannerCtaLayout(localizedHeroSlide.cta.position, {
@@ -785,6 +788,7 @@ export default function Explorer({
         </View>
         {globalHeroSlide.route ? (
           <ExplorerHeroAction
+            mode={isDark ? "dark" : "light"}
             style={[
               styles.heroAction,
               getEventBannerCtaLayout(undefined, {
@@ -1479,68 +1483,42 @@ export default function Explorer({
           "Event pagination",
         )}
       >
-        <TouchableOpacity
-          style={[
-            styles.pageButton,
-            eventPage === 0 && styles.pageButtonDisabled,
-          ]}
-          onPress={() => changeEventPage(eventPage - 1)}
-          disabled={eventPage === 0}
-          accessibilityRole="button"
+        <ExplorerExpandableAction
+          testID="explorer-pagination-previous"
+          mode={isDark ? "dark" : "light"}
+          variant="ghost"
+          iconName="arrow-left"
+          iconPosition="leading"
+          expandedWidth={148}
+          label={translate("explore.rework.previous", "Previous")}
           accessibilityLabel={translate(
             "explore.rework.previousEventsPage",
             "Previous events page",
           )}
-        >
-          <Icon
-            name="arrow-back"
-            color={eventPage === 0 ? colors.text.secondary : colors.primary}
-            size={18}
-          />
-          <Text
-            style={[
-              styles.pageButtonText,
-              eventPage === 0 && styles.pageButtonTextDisabled,
-            ]}
-          >
-            {translate("explore.rework.previous", "Previous")}
-          </Text>
-        </TouchableOpacity>
+          onPress={() => changeEventPage(eventPage - 1)}
+          disabled={eventPage === 0}
+        />
         <Text style={styles.pageStatus}>
           {translate("explore.rework.pageOf", "Page {page} of {total}", {
             page: eventPage + 1,
             total: pageCount,
           })}
         </Text>
-        <TouchableOpacity
-          style={[
-            styles.pageButton,
-            styles.pageButtonNext,
-            eventPage === pageCount - 1 && styles.pageButtonDisabled,
-          ]}
-          onPress={() => changeEventPage(eventPage + 1)}
-          disabled={eventPage === pageCount - 1}
-          accessibilityRole="button"
+        <ExplorerExpandableAction
+          testID="explorer-pagination-next"
+          mode={isDark ? "dark" : "light"}
+          variant="primary"
+          iconName="arrow-right"
+          iconPosition="trailing"
+          expandedWidth={128}
+          label={translate("explore.rework.next", "Next")}
           accessibilityLabel={translate(
             "explore.rework.nextEventsPage",
             "Next events page",
           )}
-        >
-          <Text
-            style={[
-              styles.pageButtonText,
-              styles.pageButtonTextNext,
-              eventPage === pageCount - 1 && styles.pageButtonTextDisabled,
-            ]}
-          >
-            {translate("explore.rework.next", "Next")}
-          </Text>
-          <Icon
-            name="arrow-forward"
-            color={eventPage === pageCount - 1 ? colors.text.secondary : "#fff"}
-            size={18}
-          />
-        </TouchableOpacity>
+          onPress={() => changeEventPage(eventPage + 1)}
+          disabled={eventPage === pageCount - 1}
+        />
       </View>
     );
   };
@@ -2204,7 +2182,6 @@ const getStyles = (isDark: boolean, colors: any) =>
     },
     heroAction: {
       alignSelf: "flex-start",
-      boxShadow: uiTokens.effects.cardShadow,
     },
     heroProgress: {
       position: "absolute",
@@ -2475,25 +2452,6 @@ const getStyles = (isDark: boolean, colors: any) =>
       gap: 10,
       marginTop: 18,
     },
-    pageButton: {
-      minHeight: 36,
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 6,
-      paddingHorizontal: 12,
-      borderRadius: uiTokens.radius.input,
-      borderWidth: 1,
-      borderColor: colors.primary,
-    },
-    pageButtonNext: { backgroundColor: colors.primary },
-    pageButtonDisabled: {
-      borderColor: colors.divider,
-      backgroundColor: "transparent",
-    },
-    pageButtonText: { color: colors.primary, fontSize: 12, fontWeight: "800" },
-    pageButtonTextNext: { color: "#fff" },
-    pageButtonTextDisabled: { color: colors.text.secondary },
     pageStatus: {
       color: colors.text.secondary,
       fontSize: 12,

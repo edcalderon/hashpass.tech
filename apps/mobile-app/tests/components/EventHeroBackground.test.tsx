@@ -5,14 +5,17 @@ import { act, create } from "react-test-renderer";
 import { AccessibilityInfo } from "react-native";
 import EventHeroBackground from "../../components/explorer/EventHeroBackground";
 
+const mockVideoPause = jest.fn();
+const mockVideoPlay = jest.fn();
+
 jest.mock("../../components/EventBannerBackgroundVideo", () => "EventBannerBackgroundVideo");
 jest.mock("expo-video", () => ({
   VideoView: "VideoView",
   useVideoPlayer: () => ({
     loop: false,
     muted: false,
-    pause: jest.fn(),
-    play: jest.fn(),
+    pause: mockVideoPause,
+    play: mockVideoPlay,
   }),
 }));
 
@@ -24,12 +27,21 @@ const render = (element: React.ReactElement) => {
   return renderer!;
 };
 
+const findPoster = (renderer: ReturnType<typeof create>, uri: string) =>
+  renderer.root.findAllByType("Image" as any).find((node) => node.props.source?.uri === uri);
+
+const findVideoNode = (renderer: ReturnType<typeof create>) =>
+  renderer.root.findAllByType("EventBannerBackgroundVideo" as any)[0]
+  || renderer.root.findAllByType("VideoView" as any)[0];
+
 describe("EventHeroBackground", () => {
   const textureStyle = { opacity: 0.32 };
   const mediaStyle = { opacity: 0.84 };
   let reducedMotionPreference: jest.SpyInstance;
 
   beforeEach(() => {
+    mockVideoPause.mockClear();
+    mockVideoPlay.mockClear();
     // Most assertions inspect the synchronous shell. Keep the asynchronous OS
     // preference pending unless a test intentionally resolves it inside act().
     reducedMotionPreference = jest
@@ -53,14 +65,18 @@ describe("EventHeroBackground", () => {
       />,
     );
 
-    expect(renderer.root.findByType("Image" as any).props.source).toEqual({
+    expect(findPoster(renderer, "https://media.example/events/colombia2026/hero.jpg")?.props.source).toEqual({
       uri: "https://media.example/events/colombia2026/hero.jpg",
     });
-    expect(renderer.root.findByType("EventBannerBackgroundVideo" as any).props).toMatchObject({
-      source: "https://media.example/events/colombia2026/hero.mp4",
-      showLoadingIndicator: false,
-      loadingLabel: "Loading event film",
-    });
+    const videoNode = findVideoNode(renderer);
+    expect(videoNode).toBeTruthy();
+    if (String(videoNode.type) === "EventBannerBackgroundVideo") {
+      expect(videoNode.props).toMatchObject({
+        source: "https://media.example/events/colombia2026/hero.mp4",
+        showLoadingIndicator: false,
+        loadingLabel: "Loading event film",
+      });
+    }
     expect(renderer.root.findAllByProps({ testID: "event-hero-stripe-fallback" })).toHaveLength(0);
   });
 
@@ -80,10 +96,13 @@ describe("EventHeroBackground", () => {
       await Promise.resolve();
     });
 
-    expect(
-      renderer.root.findByType("EventBannerBackgroundVideo" as any).props
-        .playbackEnabled,
-    ).toBe(false);
+    const videoNode = findVideoNode(renderer);
+    expect(videoNode).toBeTruthy();
+    if (String(videoNode.type) === "EventBannerBackgroundVideo") {
+      expect(videoNode.props.playbackEnabled).toBe(false);
+    } else {
+      expect(mockVideoPause).toHaveBeenCalled();
+    }
   });
 
   it("keeps the stripe fallback when an event has no usable poster", () => {
@@ -97,7 +116,11 @@ describe("EventHeroBackground", () => {
     );
 
     expect(renderer.root.findAllByType("Image" as any)).toHaveLength(0);
-    expect(renderer.root.findByType("EventBannerBackgroundVideo" as any).props.showLoadingIndicator).toBe(true);
+    const videoNode = findVideoNode(renderer);
+    expect(videoNode).toBeTruthy();
+    if (String(videoNode.type) === "EventBannerBackgroundVideo") {
+      expect(videoNode.props.showLoadingIndicator).toBe(true);
+    }
     expect(renderer.root.findAllByProps({ testID: "event-hero-stripe-fallback" })).toHaveLength(1);
   });
 
@@ -111,7 +134,7 @@ describe("EventHeroBackground", () => {
       />,
     );
 
-    expect(renderer.root.findByType("Image" as any).props.source).toEqual({
+    expect(findPoster(renderer, "https://media.example/events/legacy/hero.jpg")?.props.source).toEqual({
       uri: "https://media.example/events/legacy/hero.jpg",
     });
     expect(

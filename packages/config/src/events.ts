@@ -3746,7 +3746,8 @@ export const EVENTS: Record<string, EventConfig> = {
     city: "Bogotá",
     country: "Colombia",
     continent: "South America",
-    venue: "Universidad Externado de Colombia, Bogotá",
+    venue:
+      "Edificios H e I · Universidad Externado de Colombia, La Candelaria, Bogotá",
     summary:
       "Institutional and regulatory summit for the Andean region with Banco de la República.",
     stopOrder: 3,
@@ -3936,7 +3937,7 @@ export const EVENTS: Record<string, EventConfig> = {
         bio: "Founder & CEO · Blockchain Summit Latam",
       },
     ],
-    agenda: [
+    agenda: ([
       {
         id: "colombia2026-day1-01-welcome-coffee-acreditacion-networking-y-apertura-de-stands",
         day: "1",
@@ -4189,7 +4190,17 @@ export const EVENTS: Record<string, EventConfig> = {
         title: "Coffee final + networking + stands",
         type: "networking",
       },
-    ],
+    ] satisfies AgendaItem[]).map((item): AgendaItem => ({
+      ...item,
+      // These are the room labels published on the official Colombia 2026
+      // programme. Keeping them on every fallback row also selects the
+      // matching bundled Externado image in the agenda card.
+      location: item.type === "panel"
+        ? "Panel central"
+        : item.type === "networking" || item.type === "meal"
+          ? "Hall principal"
+          : "Auditorio",
+    })),
   }),
   bsl2025: {
     id: "bsl2025",

@@ -12,6 +12,8 @@ export const uiTokens = {
     cardShadow: "0 8px 24px rgba(0, 12, 32, 0.08)",
     dialogShadow: "0 24px 80px rgba(0, 12, 32, 0.28)",
     mediaOverlayStrong: "rgba(3, 12, 24, 0.82)",
+    mediaOverlayGlass: "rgba(3, 12, 24, 0.42)",
+    mediaOverlayBlur: 16,
     mediaBorder: "rgba(255, 255, 255, 0.45)",
     mediaVenueScrim: "rgba(3, 12, 24, 0.48)",
   },

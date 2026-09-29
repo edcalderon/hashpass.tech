@@ -211,11 +211,9 @@ async function syncDatabase(programme, speakers) {
     event_id: BSL_COLOMBIA_EVENT_ID,
     time: item.startsAt,
     title: item.title,
-    description: JSON.stringify({
-      ends_at: item.endsAt,
-      source: SOURCE_ID,
-      source_fingerprint: item.sourceFingerprint,
-    }),
+    // Reconciliation ownership lives in event_agenda.source_id. Operational
+    // metadata must not occupy the user-facing session description field.
+    description: null,
     speakers: [],
     type: item.type,
     location: item.location,

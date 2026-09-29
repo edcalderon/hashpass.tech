@@ -57,6 +57,7 @@ describe("event ingestion", () => {
     );
     assert.equal(programme.agenda.length, 37);
     assert.equal(programme.agenda[1].type, "panel");
+    assert.equal(programme.agenda[0].location, "Auditorio");
     assert.equal(programme.agenda[0].startsAt, "2026-11-04T08:00:00-05:00");
     assert.throws(
       () =>

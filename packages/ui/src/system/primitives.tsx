@@ -38,12 +38,14 @@ export function Badge({
   tone = "accent",
   radius,
   markerColor,
+  leadingIcon,
   compact = false,
 }: React.PropsWithChildren<
   Themed & {
     tone?: "accent" | "neutral" | "onMedia";
     radius?: number;
     markerColor?: string;
+    leadingIcon?: React.ReactNode;
     compact?: boolean;
   }
 >) {
@@ -72,6 +74,11 @@ export function Badge({
             style={[styles.badgeMarker, { backgroundColor: markerColor }]}
           />
         ) : null}
+        {leadingIcon ? (
+          <View accessible={false} pointerEvents="none">
+            {leadingIcon}
+          </View>
+        ) : null}
         <Text
           style={[
             styles.badgeLabel,
@@ -95,6 +102,7 @@ export type ActionButtonProps = Omit<PressableProps, "children"> &
   Themed & {
     label: string;
     leadingIcon?: React.ReactNode;
+    trailingIcon?: React.ReactNode;
     variant?: "primary" | "secondary" | "ghost";
     loading?: boolean;
   };
@@ -102,6 +110,7 @@ export function ActionButton({
   mode = "light",
   label,
   leadingIcon,
+  trailingIcon,
   variant = "primary",
   loading = false,
   disabled,
@@ -146,6 +155,7 @@ export function ActionButton({
     >
       {loading ? <ActivityIndicator size="small" color={foreground} /> : leadingIcon && <View accessible={false} pointerEvents="none">{leadingIcon}</View>}
       <Text style={[styles.buttonLabel, { color: foreground }]}>{label}</Text>
+      {!loading && trailingIcon ? <View accessible={false} pointerEvents="none">{trailingIcon}</View> : null}
     </Pressable>
   );
 }
