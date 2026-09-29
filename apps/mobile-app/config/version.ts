@@ -22,22 +22,41 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202609282323, // Updated to current timestamp
-  releaseDate: '2026-09-28',
+  buildNumber: 202609290116, // Updated to current timestamp
+  releaseDate: '2026-09-29',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
     // No new features
   ],
   bugfixes: [
-    // No bugfixes
+    'refresh Helpdesk proxy after deploy',
+    'use external Plane object storage',
+    'restore self-hosted deployment path'
   ],
   breakingChanges: [],
-  notes: 'Version 1.9.75 release'
+  notes: 'refresh Helpdesk proxy after deploy; use external Plane object storage; restore self-hosted deployment path'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.76': {
+    version: '1.9.76',
+    buildNumber: 202609290116,
+    releaseDate: '2026-09-29',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'refresh Helpdesk proxy after deploy',
+      'use external Plane object storage',
+      'restore self-hosted deployment path'
+    ],
+    breakingChanges: [],
+    notes: 'refresh Helpdesk proxy after deploy; use external Plane object storage; restore self-hosted deployment path'
+  },
   '1.9.75': {
     version: '1.9.75',
     buildNumber: 202609282323,

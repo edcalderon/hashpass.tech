@@ -1,3 +1,16 @@
+## [1.9.76](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.75...v1.9.76) (2026-09-29)
+### Released
+- refresh Helpdesk proxy after deploy; use external Plane object storage; restore self-hosted deployment path
+
+### Release scope
+- Compared with: `v1.9.75` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Infrastructure
+- Self-hosted operations
+- Release tooling
+
 ## [1.9.75](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.74...v1.9.75) (2026-09-28)
 ### Released
 - Version 1.9.75 release
