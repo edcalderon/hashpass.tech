@@ -33,6 +33,8 @@ export const getAgendaTypeColor = (type: string): string => {
       return "#34A853";
     case "workshop":
       return "#AF52DE";
+    case "networking":
+      return "#00A6C7";
     case "break":
       return "#FF9500";
     case "meal":
@@ -50,9 +52,11 @@ export const getAgendaTypeIcon = (type: string): string => {
     case "keynote":
       return "mic";
     case "panel":
-      return "group";
+      return "people";
     case "workshop":
       return "build";
+    case "networking":
+      return "people";
     case "break":
       return "coffee";
     case "meal":

@@ -1563,6 +1563,8 @@
       "speakers": "Speakers",
       "keynote": "Keynote",
       "panel": "Panel",
+      "workshop": "Workshop",
+      "networking": "Networking",
       "break": "Break",
       "meal": "Meal",
       "registration": "Registration"
@@ -1633,14 +1635,17 @@
     },
     "viewMode": {
       "label": "Agenda display",
-      "full": "Full view",
-      "list": "List view"
+      "compact": "Compact view",
+      "list": "List view",
+      "grid": "Grid view"
     },
     "refresh": "Refresh",
     "refreshAgenda": "Refresh agenda",
     "types": {
       "keynote": "Keynote",
       "panel": "Panel",
+      "workshop": "Workshop",
+      "networking": "Networking",
       "break": "Break",
       "meal": "Meal",
       "registration": "Registration"

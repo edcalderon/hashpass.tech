@@ -150,7 +150,12 @@ export type NativeSafeIconName =
   | "arrow-right"
   | "refresh"
   | "event"
+  | "mic"
   | "people"
+  | "build"
+  | "coffee"
+  | "restaurant"
+  | "person-add"
   | "info"
   | "ticket"
   | "schedule"
@@ -174,7 +179,12 @@ const NATIVE_SAFE_ICONS: Record<NativeSafeIconName, WebIconComponent> = {
   "arrow-right": ArrowRight,
   refresh: RefreshCw,
   event: CalendarDays,
+  mic: Mic,
   people: Users,
+  build: Cog,
+  coffee: Coffee,
+  restaurant: Utensils,
+  "person-add": UserPlus,
   info: Info,
   ticket: Ticket,
   schedule: Clock,

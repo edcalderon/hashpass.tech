@@ -6,6 +6,15 @@ import { AccessibilityInfo } from "react-native";
 import EventHeroBackground from "../../components/explorer/EventHeroBackground";
 
 jest.mock("../../components/EventBannerBackgroundVideo", () => "EventBannerBackgroundVideo");
+jest.mock("expo-video", () => ({
+  VideoView: "VideoView",
+  useVideoPlayer: () => ({
+    loop: false,
+    muted: false,
+    pause: jest.fn(),
+    play: jest.fn(),
+  }),
+}));
 
 const render = (element: React.ReactElement) => {
   let renderer: ReturnType<typeof create>;

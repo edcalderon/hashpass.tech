@@ -26,6 +26,8 @@
 // Registry fallback changes should include this shared parser in validation.
 // Keep this dependency in the changed-file typecheck set for schedule actions.
 // Social sharing changes also consume the shared event-time parser.
+// Agenda card media footers use the same parser so full, compact, and grid
+// presentations never format a session against different timezone rules.
 export const DEFAULT_EVENT_TZ_OFFSET = '-05:00';
 // Re-exported by this shared module for agenda and schedule consumers; keep
 // it colocated with parseEventISO so incremental native typechecks retain

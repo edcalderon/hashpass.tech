@@ -372,6 +372,8 @@ describe('event schedule screens', () => {
     expect(agendaFilter.props.filterGroups[0].options).toEqual(expect.arrayContaining([
       expect.objectContaining({ key: 'keynote', color: '#007AFF' }),
       expect.objectContaining({ key: 'panel', color: '#34A853' }),
+      expect.objectContaining({ key: 'workshop', color: '#AF52DE' }),
+      expect.objectContaining({ key: 'networking', color: '#00A6C7' }),
       expect.objectContaining({ key: 'registration', color: '#8E8E93' }),
     ]));
     expect(agendaSource).not.toContain('isCompactLayout && styles.actionButtonsCompact');
@@ -406,8 +408,8 @@ describe('event schedule screens', () => {
     expect(dayTabs).toHaveLength(2);
     expect(dayTabs[0].props.accessibilityLabel).toContain('2 tabs.sessions');
 
-    expect(renderer!.root.findByProps({ accessibilityLabel: 'viewMode.full' }).props.accessibilityState.selected).toBe(true);
-    expect(renderer!.root.findAllByProps({ accessibilityLabel: 'viewMode.grid' })).toHaveLength(0);
+    expect(renderer!.root.findByProps({ accessibilityLabel: 'viewMode.compact' }).props.accessibilityState.selected).toBe(true);
+    expect(renderer!.root.findAllByProps({ accessibilityLabel: 'viewMode.grid' })).toHaveLength(1);
 
     const titles = renderer!.root.findAllByType(Text).map((node) => node.children.join(''));
     expect(titles.indexOf('Opening keynote')).toBeLessThan(titles.indexOf('Later panel'));
@@ -418,6 +420,118 @@ describe('event schedule screens', () => {
       await flushPromises();
     });
     expect(renderer!.root.findByProps({ accessibilityLabel: 'viewMode.list' }).props.accessibilityState.selected).toBe(true);
+
+    const gridButton = renderer!.root.findByProps({ accessibilityLabel: 'viewMode.grid' });
+    await act(async () => {
+      gridButton.props.onPress();
+      await flushPromises();
+    });
+    expect(renderer!.root.findByProps({ accessibilityLabel: 'viewMode.grid' }).props.accessibilityState.selected).toBe(true);
+    expect(renderer!.root.findByProps({ testID: 'agenda-grid' })).toBeTruthy();
+
+    await act(async () => renderer!.unmount());
+  });
+
+  it('uses speaker media, time footer, and the published venue in agenda cards', async () => {
+    mockActiveEvent = {
+      ...mockEvent,
+      id: 'colombia2026',
+      tour: {
+        city: 'Bogotá',
+        country: 'Colombia',
+        venue: 'Universidad Externado de Colombia, Bogotá',
+      },
+      speakers: [{ id: 'speaker-a', name: 'Ada Lovelace', image: 'https://images.example.test/ada.jpg' }],
+    };
+    mockApiRequest.mockImplementation((path: string) => Promise.resolve({
+      success: true,
+      data: {
+        data: path === 'events/colombia2026/agenda'
+          ? [
+            {
+              id: 'keynote-session',
+              day: '1',
+              time: '08:00 - 09:00',
+              title: 'Opening keynote',
+              type: 'keynote',
+              speakers: ['speaker-a'],
+              location: 'Auditorio Principal',
+            },
+            {
+              id: 'networking-session',
+              day: '1',
+              time: '09:30',
+              title: 'Community connections',
+              type: 'networking',
+              speakers: ['speaker-a'],
+              location: 'Hall principal',
+            },
+            {
+              id: 'panel-session',
+              day: '1',
+              time: '09:45',
+              title: 'Financial infrastructure panel',
+              type: 'panel',
+              location: 'Panel central',
+            },
+            {
+              id: 'workshop-session',
+              day: '1',
+              time: '10:00',
+              title: 'Builder workshop',
+              type: 'workshop',
+              location: 'Sala Taller',
+            },
+          ]
+          : [{ id: 'speaker-a', name: 'Ada Lovelace', image_url: null }],
+      },
+    }));
+
+    let renderer: TestRenderer.ReactTestRenderer;
+    await act(async () => {
+      renderer = TestRenderer.create(<AgendaScreen />);
+      await flushPromises();
+      await flushPromises();
+    });
+
+    const media = renderer!.root.findByProps({ testID: 'agenda-card-media-keynote-session' });
+    expect(media.findAllByType('Image' as any).some((node) => (
+      node.props.source?.uri === 'https://images.example.test/ada.jpg'
+    ))).toBe(true);
+    expect(media.findByProps({ accessibilityLabel: 'Ada Lovelace avatar' })).toBeTruthy();
+    expect(media.findByProps({ testID: 'agenda-card-venue-keynote-session' })).toBeTruthy();
+    expect(renderer!.root.findByProps({ testID: 'agenda-card-time-keynote-session' }).children.join('')).toBe('8:00 – 9:00 AM');
+    expect(renderer!.root.findByProps({ children: 'Auditorio Principal' })).toBeTruthy();
+    const networkingMedia = renderer!.root.findByProps({ testID: 'agenda-card-media-networking-session' });
+    expect(networkingMedia.findAllByType('NativeSafeIcon' as any).some((node) => node.props.name === 'people')).toBe(true);
+    expect(networkingMedia.findByProps({ testID: 'agenda-card-venue-networking-session' })).toBeTruthy();
+    const panelMedia = renderer!.root.findByProps({ testID: 'agenda-card-media-panel-session' });
+    expect(panelMedia.findByProps({ testID: 'agenda-card-venue-panel-session' })).toBeTruthy();
+    const workshopMedia = renderer!.root.findByProps({ testID: 'agenda-card-media-workshop-session' });
+    expect(workshopMedia.findAllByType('NativeSafeIcon' as any).some((node) => node.props.name === 'build')).toBe(true);
+    expect(workshopMedia.findAllByProps({ testID: 'agenda-card-venue-workshop-session' })).toHaveLength(0);
+
+    const gridButton = renderer!.root.findByProps({ accessibilityLabel: 'viewMode.grid' });
+    await act(async () => {
+      gridButton.props.onPress();
+      await flushPromises();
+    });
+    expect(renderer!.root.findByProps({ accessibilityLabel: 'viewMode.grid' }).props.accessibilityState.selected).toBe(true);
+    const gridCards = renderer!.root.findAll((node) => String(node.props.testID || '').startsWith('agenda-card-'));
+    expect(gridCards.some((node) => node.props.testID === 'agenda-card-networking-session')).toBe(true);
+    expect(gridCards.some((node) => node.props.testID === 'agenda-card-workshop-session')).toBe(true);
+    const cardLayoutStyles = renderer!.root
+      .findByProps({ testID: 'agenda-card-layout-keynote-session' })
+      .props.style.flat(Infinity).filter(Boolean);
+    expect(cardLayoutStyles).toEqual(expect.arrayContaining([
+      expect.objectContaining({ flexDirection: 'column' }),
+    ]));
+    const cardMediaStyles = renderer!.root
+      .findByProps({ testID: 'agenda-card-media-keynote-session' })
+      .props.style.flat(Infinity).filter(Boolean);
+    expect(cardMediaStyles).toEqual(expect.arrayContaining([
+      expect.objectContaining({ width: '100%' }),
+    ]));
 
     await act(async () => renderer!.unmount());
   });

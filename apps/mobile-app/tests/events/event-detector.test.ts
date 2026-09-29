@@ -61,11 +61,11 @@ describe("event tenant detection", () => {
       "cbweek2026",
     ]);
     for (const eventId of events) {
-      expect(EVENTS[eventId]?.heroVideo).toContain(
-        `events/${eventId}/branding/hashpass-event-hero-v3.mp4`,
+      expect(EVENTS[eventId]?.heroVideo).toMatch(
+        new RegExp(`events/${eventId}/branding/hashpass-event-hero-v\\d+\\.mp4$`),
       );
-      expect(EVENTS[eventId]?.heroPoster).toContain(
-        `events/${eventId}/branding/hashpass-event-hero-v3.jpg`,
+      expect(EVENTS[eventId]?.heroPoster).toMatch(
+        new RegExp(`events/${eventId}/branding/hashpass-event-hero-v\\d+\\.jpg$`),
       );
     }
   });

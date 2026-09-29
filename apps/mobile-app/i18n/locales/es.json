@@ -1562,6 +1562,8 @@
       "speakers": "Oradores",
       "keynote": "Conferencia Principal",
       "panel": "Panel",
+      "workshop": "Taller",
+      "networking": "Networking",
       "break": "Descanso",
       "meal": "Comida",
       "registration": "Registro"
@@ -1632,14 +1634,17 @@
     },
     "viewMode": {
       "label": "Vista de agenda",
-      "full": "Vista completa",
-      "list": "Vista de lista"
+      "compact": "Vista compacta",
+      "list": "Vista de lista",
+      "grid": "Vista en cuadrícula"
     },
     "refresh": "Actualizar",
     "refreshAgenda": "Actualizar agenda",
     "types": {
       "keynote": "Keynote",
       "panel": "Panel",
+      "workshop": "Taller",
+      "networking": "Networking",
       "break": "Descanso",
       "meal": "Comida",
       "registration": "Registro"
