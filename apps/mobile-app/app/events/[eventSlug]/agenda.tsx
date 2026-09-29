@@ -204,7 +204,7 @@ const agendaTypeRevealStyles = StyleSheet.create({
     height: 68,
     position: 'absolute',
     right: -1,
-    boxShadow: '8px 8px 0 rgba(3, 12, 24, 0.42)',
+    boxShadow: '0 8px 18px rgba(3, 12, 24, 0.18)',
     overflow: 'hidden',
   },
   pressable: {
@@ -251,10 +251,12 @@ const agendaTypeRevealStyles = StyleSheet.create({
     top: '40%',
   },
   content: {
+    ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
     flexDirection: 'row',
     gap: uiTokens.space.md,
     justifyContent: 'center',
+    paddingHorizontal: uiTokens.space.lg,
     zIndex: 1,
   },
   collapsedIcon: {
@@ -338,8 +340,8 @@ function AgendaTypeReveal({
           borderColor: `${typeColor}24`,
           backgroundColor: `${typeColor}1A`,
           boxShadow: revealed
-            ? '3px 3px 0 rgba(3, 12, 24, 0.42)'
-            : '8px 8px 0 rgba(3, 12, 24, 0.42)',
+            ? '0 5px 14px rgba(3, 12, 24, 0.16)'
+            : '0 8px 18px rgba(3, 12, 24, 0.18)',
         },
         shellStyle,
       ]}
