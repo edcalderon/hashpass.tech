@@ -1,3 +1,24 @@
+## [1.9.81](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.80...v1.9.81) (2026-09-29)
+
+
+### Features
+
+* **agenda:** skeleton-based reload instead of full splash, consolidate icon reveal buttons ([b3b103b](https://github.com/hashpass-tech/hashpass.tech/commit/b3b103bf8032d57b3bae0db27eda55a838c21941))
+* **release:** auto-chain production after beta on native mobile release ([ae96637](https://github.com/hashpass-tech/hashpass.tech/commit/ae96637a39c11a97062ab2565f919e4479ba2cd5))
+* **web-app:** add CIG analytics tracker script to hashpass.club ([a66d66c](https://github.com/hashpass-tech/hashpass.tech/commit/a66d66ca6713e7c99cc5985deb4657f8f0b6960f))
+### Release Highlights
+- skeleton-based reload instead of full splash, consolidate icon reveal buttons; add CIG analytics tracker script to hashpass.club; auto-chain production after beta on native mobile release
+
+### Release scope
+- Compared with: `v1.9.80` (the previous global release tag)
+
+### Affected products & packages
+- Club web
+- Mobile app
+- Shared UI
+- Documentation
+- Release tooling
+
 ## [1.9.80](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.79...v1.9.80) (2026-09-29)
 
 
