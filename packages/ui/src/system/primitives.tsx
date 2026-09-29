@@ -37,8 +37,15 @@ export function Badge({
   children,
   tone = "accent",
   radius,
+  markerColor,
+  compact = false,
 }: React.PropsWithChildren<
-  Themed & { tone?: "accent" | "neutral" | "onMedia"; radius?: number }
+  Themed & {
+    tone?: "accent" | "neutral" | "onMedia";
+    radius?: number;
+    markerColor?: string;
+    compact?: boolean;
+  }
 >) {
   const palette = uiPalette(mode);
   const onMedia = tone === "onMedia";
@@ -46,6 +53,7 @@ export function Badge({
     <View
       style={[
         styles.badge,
+        compact && styles.badgeCompact,
         radius === undefined ? undefined : { borderRadius: radius },
         {
           backgroundColor: onMedia
@@ -57,20 +65,29 @@ export function Badge({
         },
       ]}
     >
-      <Text
-        style={[
-          styles.badgeLabel,
-          {
-            color: onMedia
-              ? "#ffffff"
-              : tone === "accent"
-                ? palette.accent
-                : palette.muted,
-          },
-        ]}
-      >
-        {children}
-      </Text>
+      <View style={styles.badgeContent}>
+        {markerColor ? (
+          <View
+            accessible={false}
+            style={[styles.badgeMarker, { backgroundColor: markerColor }]}
+          />
+        ) : null}
+        <Text
+          style={[
+            styles.badgeLabel,
+            compact && styles.badgeLabelCompact,
+            {
+              color: onMedia
+                ? "#ffffff"
+                : tone === "accent"
+                  ? palette.accent
+                  : palette.muted,
+            },
+          ]}
+        >
+          {children}
+        </Text>
+      </View>
     </View>
   );
 }
@@ -273,6 +290,20 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     maxWidth: "100%",
   },
+  badgeCompact: {
+    paddingHorizontal: uiTokens.space.sm,
+    paddingVertical: uiTokens.space.xs,
+  },
+  badgeContent: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: uiTokens.space.xs,
+  },
+  badgeMarker: {
+    width: uiTokens.space.sm,
+    height: uiTokens.space.sm,
+    borderRadius: uiTokens.radius.circle,
+  },
   badgeLabel: {
     fontSize: uiTokens.type.caption,
     lineHeight: 16,
@@ -280,6 +311,9 @@ const styles = StyleSheet.create({
     textAlign: "center",
     textTransform: "uppercase",
     letterSpacing: 1,
+  },
+  badgeLabelCompact: {
+    letterSpacing: 0.4,
   },
   button: {
     minHeight: uiTokens.control.minHeight,

@@ -1631,6 +1631,11 @@
       "speakers": "Speakers",
       "location": "Location"
     },
+    "viewMode": {
+      "label": "Agenda display",
+      "full": "Full view",
+      "list": "List view"
+    },
     "refresh": "Refresh",
     "refreshAgenda": "Refresh agenda",
     "types": {

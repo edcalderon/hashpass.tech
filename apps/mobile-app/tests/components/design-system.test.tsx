@@ -1,6 +1,6 @@
 import React from 'react';
 import { act, create } from 'react-test-renderer';
-import { Pressable, TextInput } from 'react-native';
+import { Pressable, Text, TextInput } from 'react-native';
 import { ActionButton, Badge, FilterChip, FormField, Surface } from '@hashpass/ui/primitives';
 import { uiPalette } from '@hashpass/ui/tokens';
 it('exposes loading and selected states while preserving accessible names', () => {
@@ -16,6 +16,17 @@ it('keeps field errors and labels available to assistive technology', () => {
   act(() => { view = create(<Surface mode="dark"><FormField label="Email" error="Enter a valid email" /></Surface>); });
   expect(view!.root.findByType(TextInput).props.accessibilityLabel).toBe('Email');
   expect(view!.root.findAll(node => node.props.accessibilityRole === 'alert').length).toBeGreaterThan(0);
+  act(() => view!.unmount());
+});
+it('keeps compact category badges semantic while showing their category color', () => {
+  let view: ReturnType<typeof create>;
+  act(() => { view = create(<Badge tone="neutral" compact markerColor="#34A853">Panel</Badge>); });
+  const marker = view!.root.find(node => node.props.accessible === false);
+  expect(marker.props.style).toEqual(expect.arrayContaining([
+    expect.objectContaining({ width: 8, height: 8 }),
+    expect.objectContaining({ backgroundColor: '#34A853' }),
+  ]));
+  expect(view!.root.findByType(Text).children.join('')).toBe('Panel');
   act(() => view!.unmount());
 });
 function luminance(hex: string) {

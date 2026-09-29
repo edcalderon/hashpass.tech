@@ -125,6 +125,7 @@ jest.mock('@expo/vector-icons', () => ({
 
 jest.mock('../../lib/vector-icons', () => ({
   MaterialIcons: 'MaterialIcons',
+  NativeSafeIcon: 'NativeSafeIcon',
 }));
 
 jest.mock('expo-router', () => ({
@@ -386,7 +387,8 @@ describe('event schedule screens', () => {
       data: {
         data: path === 'events/custom/agenda'
           ? [
-            { id: 'day-one', day: '1', time: '09:00', title: 'Opening', type: 'keynote' },
+            { id: 'day-one-late', day: '1', time: '11:00', title: 'Later panel', type: 'panel' },
+            { id: 'day-one-early', day: '1', time: '09:00', title: 'Opening keynote', type: 'keynote' },
             { id: 'day-two', day: '2', time: '10:00', title: 'Workshop', type: 'panel' },
           ]
           : [],
@@ -402,14 +404,20 @@ describe('event schedule screens', () => {
 
     const dayTabs = renderer!.root.findAll((node) => node.props.accessibilityRole === 'tab');
     expect(dayTabs).toHaveLength(2);
-    expect(dayTabs[0].props.accessibilityLabel).toContain('1 tabs.sessions');
+    expect(dayTabs[0].props.accessibilityLabel).toContain('2 tabs.sessions');
 
-    const gridButton = renderer!.root.findByProps({ accessibilityLabel: 'viewMode.grid' });
+    expect(renderer!.root.findByProps({ accessibilityLabel: 'viewMode.full' }).props.accessibilityState.selected).toBe(true);
+    expect(renderer!.root.findAllByProps({ accessibilityLabel: 'viewMode.grid' })).toHaveLength(0);
+
+    const titles = renderer!.root.findAllByType(Text).map((node) => node.children.join(''));
+    expect(titles.indexOf('Opening keynote')).toBeLessThan(titles.indexOf('Later panel'));
+
+    const listButton = renderer!.root.findByProps({ accessibilityLabel: 'viewMode.list' });
     await act(async () => {
-      gridButton.props.onPress();
+      listButton.props.onPress();
       await flushPromises();
     });
-    expect(renderer!.root.findByProps({ accessibilityLabel: 'viewMode.grid' }).props.accessibilityState.selected).toBe(true);
+    expect(renderer!.root.findByProps({ accessibilityLabel: 'viewMode.list' }).props.accessibilityState.selected).toBe(true);
 
     await act(async () => renderer!.unmount());
   });

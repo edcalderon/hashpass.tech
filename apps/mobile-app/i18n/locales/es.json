@@ -1630,6 +1630,11 @@
       "speakers": "Oradores",
       "location": "Ubicación"
     },
+    "viewMode": {
+      "label": "Vista de agenda",
+      "full": "Vista completa",
+      "list": "Vista de lista"
+    },
     "refresh": "Actualizar",
     "refreshAgenda": "Actualizar agenda",
     "types": {

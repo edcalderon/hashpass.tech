@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView } from 
 // lib/vector-icons routes web to SVG-based Lucide icons instead of the raw
 // font glyphs @expo/vector-icons renders directly; the raw font can show its
 // tofu/"?" fallback glyph for a window before the icon font loads on web.
-import { MaterialIcons } from '../lib/vector-icons';
+import { MaterialIcons, NativeSafeIcon } from '../lib/vector-icons';
 import { useTheme } from '../hooks/useTheme';
 import { uiTokens } from '@hashpass/ui/tokens';
 
@@ -281,11 +281,14 @@ export default function UnifiedSearchAndFilter<T extends BaseItem>({
           <TouchableOpacity 
             style={[styles.filterButton, hasActiveFilters && styles.filterButtonActive]}
             onPress={() => setShowFiltersDropdown(!showFiltersDropdown)}
+            accessibilityRole="button"
+            accessibilityLabel={showFiltersDropdown ? 'Close filters' : 'Open filters'}
+            accessibilityState={{ expanded: showFiltersDropdown }}
           >
-            <MaterialIcons 
-              name="tune" 
-              size={24} 
-              color={hasActiveFilters ? '#fff' : '#007AFF'} 
+            <NativeSafeIcon
+              name="filter"
+              size={21}
+              color={hasActiveFilters ? colors.primaryContrastText : colors.primary}
             />
             {hasActiveFilters && (
               <View style={styles.filterBadge}>
@@ -370,7 +373,7 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.background.paper,
-    borderRadius: 12,
+    borderRadius: uiTokens.radius.media,
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderWidth: 1,
@@ -390,24 +393,19 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   },
   // Filter Button - top right corner
   filterButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 46,
+    height: 46,
+    borderRadius: uiTokens.radius.media,
     backgroundColor: colors.background.paper,
     borderWidth: 1,
-    borderColor: '#007AFF',
+    borderColor: colors.divider,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
     position: 'relative',
   },
   filterButtonActive: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   filterBadge: {
     position: 'absolute',

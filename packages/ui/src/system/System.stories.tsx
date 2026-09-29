@@ -43,6 +43,9 @@ function Catalog({ mode = "light" }: { mode?: ColorMode }) {
         <Badge mode={mode} tone="neutral">
           Upcoming
         </Badge>
+        <Badge mode={mode} tone="neutral" markerColor={uiTokens.feature.green} compact>
+          Panel
+        </Badge>
         <Badge mode={mode} tone="onMedia">
           Organizer media
         </Badge>
