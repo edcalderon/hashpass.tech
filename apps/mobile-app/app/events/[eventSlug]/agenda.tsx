@@ -421,14 +421,15 @@ type AgendaTypeLegendControlProps = {
   textColor: string;
 };
 
-const AGENDA_TYPE_LEGEND_COLLAPSED_WIDTH = 44;
-const AGENDA_TYPE_LEGEND_LABEL_WIDTH = 132;
+const AGENDA_TYPE_LEGEND_SIZE = uiTokens.control.compactHeight - uiTokens.space.sm;
+const AGENDA_TYPE_LEGEND_COLLAPSED_WIDTH = AGENDA_TYPE_LEGEND_SIZE;
+const AGENDA_TYPE_LEGEND_LABEL_WIDTH = 116;
 
 const agendaTypeLegendControlStyles = StyleSheet.create({
   shell: {
     borderRadius: uiTokens.radius.pill,
     borderWidth: uiTokens.control.borderWidth,
-    height: uiTokens.control.compactHeight,
+    height: AGENDA_TYPE_LEGEND_SIZE,
     overflow: 'hidden',
   },
   pressable: {
@@ -438,7 +439,7 @@ const agendaTypeLegendControlStyles = StyleSheet.create({
   },
   icon: {
     alignItems: 'center',
-    height: uiTokens.control.compactHeight,
+    height: AGENDA_TYPE_LEGEND_SIZE,
     justifyContent: 'center',
     width: AGENDA_TYPE_LEGEND_COLLAPSED_WIDTH - uiTokens.control.borderWidth * 2,
   },
@@ -514,7 +515,7 @@ function AgendaTypeLegendControl({
         <View style={agendaTypeLegendControlStyles.icon}>
           <NativeSafeIcon
             name={iconName}
-            size={20}
+            size={18}
             color={color}
             strokeWidth={2.2}
           />
@@ -2283,20 +2284,20 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   agendaTypeLegend: {
     alignItems: 'center',
     paddingHorizontal: uiTokens.space.xl,
-    paddingTop: uiTokens.space.lg,
+    paddingTop: uiTokens.space.md,
   },
   agendaTypeLegendTitle: {
     color: colors.text.secondary,
     fontSize: uiTokens.type.caption,
     fontWeight: '700',
     letterSpacing: 0.5,
-    marginBottom: uiTokens.space.sm,
+    marginBottom: uiTokens.space.xs,
     textTransform: 'uppercase',
   },
   agendaTypeLegendItems: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: uiTokens.space.sm,
+    gap: uiTokens.space.xs,
     justifyContent: 'center',
     width: '100%',
   },
