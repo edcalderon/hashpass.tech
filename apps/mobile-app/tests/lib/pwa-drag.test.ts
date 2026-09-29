@@ -4,6 +4,7 @@ import {
   clampPwaDragPosition,
   getDefaultPwaDragPosition,
   getPwaDragViewport,
+  isPwaDragPositionInDismissZone,
   PWA_DRAG_BOTTOM_SAFE_MARGIN,
   PWA_DRAG_BUTTON_SIZE,
   PWA_DRAG_POSITION_KEY,
@@ -100,6 +101,13 @@ describe('PWA drag positioning', () => {
     const viewport = { width: 320, height: 240, offsetLeft: 0, offsetTop: 0 };
 
     expect(clampPwaDragPosition({ left: 142, top: 78 }, viewport)).toEqual({ left: 142, top: 78 });
+  });
+
+  it('recognizes the lower dismissal zone by the launcher center point', () => {
+    const viewport = { width: 390, height: 800, offsetLeft: 0, offsetTop: 0 };
+
+    expect(isPwaDragPositionInDismissZone({ left: 160, top: 680 }, viewport)).toBe(true);
+    expect(isPwaDragPositionInDismissZone({ left: 160, top: 600 }, viewport)).toBe(false);
   });
 
   it('migrates the legacy dock value into a free safe coordinate', () => {

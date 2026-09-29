@@ -11,6 +11,7 @@ import {
   clampPwaDragPosition,
   getDefaultPwaDragPosition,
   getPwaDragViewport,
+  isPwaDragPositionInDismissZone,
   PWA_DRAG_START_THRESHOLD,
   readStoredPwaDragPosition,
   storePwaDragPosition,
@@ -47,6 +48,7 @@ const PWAPrompt = () => {
   const [dontShowAgain, setDontShowAgain] = useState(false);
   const [showInstallHelpModal, setShowInstallHelpModal] = useState(false);
   const [dragPosition, setDragPosition] = useState<PwaDragPosition | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const [dockViewport, setDockViewport] = useState<PwaDragViewport>(() => getPwaDragViewport());
   const dragStateRef = useRef<{ pointerId: number; startX: number; startY: number; position: PwaDragPosition; moved: boolean } | null>(null);
 
@@ -183,6 +185,15 @@ const PWAPrompt = () => {
     collapsePrompt();
   };
 
+  const dismissPromptUntilReload = () => {
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      window.sessionStorage.setItem(DONT_SHOW_AGAIN_KEY, 'true');
+    }
+    setDontShowAgain(true);
+    setShowPrompt(false);
+    setIsDragging(false);
+  };
+
   const getInstallInstructions = () => {
     if (Platform.OS !== 'web' || typeof window === 'undefined') {
       return [t('instructions.default', 'To install: use the install icon in your browser address bar.')];
@@ -213,6 +224,7 @@ const PWAPrompt = () => {
       position: currentPosition,
       moved: false,
     };
+    setIsDragging(false);
     event.currentTarget.setPointerCapture?.(event.pointerId);
     event.preventDefault();
     event.stopPropagation();
@@ -248,6 +260,7 @@ const PWAPrompt = () => {
     }
 
     dragState.moved = true;
+    setIsDragging(true);
     const nextPosition = clampPwaDragPosition(
       { left: dragState.position.left + deltaX, top: dragState.position.top + deltaY },
       getPwaDragViewport()
@@ -267,8 +280,26 @@ const PWAPrompt = () => {
         : dragState.position,
       getPwaDragViewport()
     );
-    setDragPosition(nextPosition);
-    storePwaDragPosition(nextPosition);
+    const viewport = getPwaDragViewport();
+    if (dragState.moved && isPwaDragPositionInDismissZone(nextPosition, viewport)) {
+      dismissPromptUntilReload();
+    } else {
+      setDragPosition(nextPosition);
+      storePwaDragPosition(nextPosition);
+      setIsDragging(false);
+    }
+    dragStateRef.current = null;
+    event.currentTarget.releasePointerCapture?.(event.pointerId);
+  };
+
+  const cancelPwaDrag = (event: React.PointerEvent<HTMLButtonElement>) => {
+    const dragState = dragStateRef.current;
+    if (!dragState || dragState.pointerId !== event.pointerId) {
+      return;
+    }
+
+    setDragPosition(dragState.position);
+    setIsDragging(false);
     dragStateRef.current = null;
     event.currentTarget.releasePointerCapture?.(event.pointerId);
   };
@@ -339,11 +370,7 @@ const PWAPrompt = () => {
   }
 
   const handleDontShowAgain = () => {
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      window.sessionStorage.setItem(DONT_SHOW_AGAIN_KEY, 'true');
-      setDontShowAgain(true);
-      setShowPrompt(false);
-    }
+    dismissPromptUntilReload();
   };
 
   const logoSrc = (() => {
@@ -499,12 +526,18 @@ const PWAPrompt = () => {
 
     return (
       <div
-        className="hp-pwa-wrapper hp-pwa-drag-layer"
+        className={`hp-pwa-wrapper hp-pwa-drag-layer${isDragging ? ' hp-pwa-dragging' : ''}`}
         style={{
           left: `${Math.round(effectiveDragPosition.left)}px`,
           top: `${Math.round(effectiveDragPosition.top)}px`,
         }}
       >
+        {isDragging ? (
+          <div className="hp-pwa-dismiss-zone" aria-hidden="true">
+            <span className="hp-pwa-dismiss-zone-icon">×</span>
+            <span>{t('dismissDropZone', 'Release to hide until reload')}</span>
+          </div>
+        ) : null}
         <div onMouseEnter={expandPrompt}>
           {promptCard}
         </div>
@@ -516,7 +549,7 @@ const PWAPrompt = () => {
           onPointerDown={handleDragPointerDown}
           onPointerMove={handleDragPointerMove}
           onPointerUp={finishPwaDrag}
-          onPointerCancel={finishPwaDrag}
+          onPointerCancel={cancelPwaDrag}
           onKeyDown={handleDragKeyDown}
         >
           <svg viewBox="0 0 16 16" aria-hidden="true">

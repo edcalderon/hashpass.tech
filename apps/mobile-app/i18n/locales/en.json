@@ -355,6 +355,7 @@
     "dialogLabel": "HASHPASS install prompt",
     "expandCollapsed": "Open install options",
     "dragHandle": "Drag install button",
+    "dismissDropZone": "Release to hide until reload",
     "learnMore": "Learn more about installing HASHPASS",
     "infoIntro": "A PWA (Progressive Web App) lets HASHPASS behave like a native app on your device.",
     "details": {

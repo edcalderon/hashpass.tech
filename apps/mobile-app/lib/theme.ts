@@ -185,8 +185,12 @@ const createShadow = (
     const blur = shadowRadius || 0;
     const opacity = shadowOpacity || 0;
     
-    // Convert hex to rgba
-    const hex = shadowColor.replace('#', '');
+    // Expand shorthand CSS colors (#000 -> #000000) before parsing. Without
+    // this, the blue channel becomes NaN and React Native Web drops the shadow.
+    const rawHex = shadowColor.replace('#', '');
+    const hex = rawHex.length === 3
+      ? rawHex.split('').map((channel) => channel + channel).join('')
+      : rawHex;
     const r = parseInt(hex.substring(0, 2), 16);
     const g = parseInt(hex.substring(2, 4), 16);
     const b = parseInt(hex.substring(4, 6), 16);

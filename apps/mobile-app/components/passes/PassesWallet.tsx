@@ -18,6 +18,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { MaterialIcons } from "../../lib/vector-icons";
+import { IconLabelRevealButton } from "../ui/IconLabelRevealButton";
 import { useTheme } from "../../hooks/useTheme";
 import { useAuth } from "../../hooks/useAuth";
 import { useTranslation } from "../../i18n/i18n";
@@ -942,33 +943,17 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
     return (
       <View>
         <View style={{ alignItems: "flex-end", marginBottom: 10 }}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t("wallet.reload", "Reload passes")}
+          <IconLabelRevealButton
+            testID="passes-reload"
+            label={t("wallet.reload", "Reload passes")}
+            loadingLabel={t("wallet.refreshing", "Refreshing passes…")}
+            color={colors.primary}
+            surfaceColor={colors.background.paper}
+            borderColor={colors.divider}
             disabled={isRefreshing}
+            loading={isRefreshing}
             onPress={handleRetry}
-            style={{
-              alignItems: "center",
-              flexDirection: "row",
-              gap: 6,
-              opacity: isRefreshing ? 0.7 : 1,
-              paddingHorizontal: 8,
-              paddingVertical: 5,
-            }}
-          >
-            {isRefreshing ? (
-              <ActivityIndicator size="small" color={colors.primary} />
-            ) : (
-              <MaterialIcons name="refresh" size={18} color={colors.primary} />
-            )}
-            <Text
-              style={{ color: colors.primary, fontSize: 12, fontWeight: "700" }}
-            >
-              {isRefreshing
-                ? t("wallet.refreshing", "Refreshing passes…")
-                : t("wallet.reload", "Reload passes")}
-            </Text>
-          </Pressable>
+          />
         </View>
         <ScrollView
           horizontal
@@ -1057,33 +1042,17 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
       )}
 
       <View style={{ alignItems: "flex-end", marginBottom: 10 }}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t("wallet.reload", "Reload passes")}
+        <IconLabelRevealButton
+          testID="passes-reload"
+          label={t("wallet.reload", "Reload passes")}
+          loadingLabel={t("wallet.refreshing", "Refreshing passes…")}
+          color={colors.primary}
+          surfaceColor={colors.background.paper}
+          borderColor={colors.divider}
           disabled={isRefreshing}
+          loading={isRefreshing}
           onPress={handleRetry}
-          style={{
-            alignItems: "center",
-            flexDirection: "row",
-            gap: 6,
-            opacity: isRefreshing ? 0.7 : 1,
-            paddingHorizontal: 8,
-            paddingVertical: 5,
-          }}
-        >
-          {isRefreshing ? (
-            <ActivityIndicator size="small" color={colors.primary} />
-          ) : (
-            <MaterialIcons name="refresh" size={18} color={colors.primary} />
-          )}
-          <Text
-            style={{ color: colors.primary, fontSize: 12, fontWeight: "700" }}
-          >
-            {isRefreshing
-              ? t("wallet.refreshing", "Refreshing passes…")
-              : t("wallet.reload", "Reload passes")}
-          </Text>
-        </Pressable>
+        />
       </View>
 
       {isRefreshing ? (

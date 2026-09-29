@@ -24,6 +24,7 @@ const queryResult = (result: { data: unknown; error: unknown }) => {
 
 describe("/api/event-sources/hash-poker", () => {
   const originalFallback = process.env.EVENT_INGESTION_LEGACY_JSON_FALLBACK;
+  const originalNodeEnvDescriptor = Object.getOwnPropertyDescriptor(process.env, "NODE_ENV");
 
   beforeEach(() => {
     jest.resetModules();
@@ -33,6 +34,11 @@ describe("/api/event-sources/hash-poker", () => {
 
   afterAll(() => {
     process.env.EVENT_INGESTION_LEGACY_JSON_FALLBACK = originalFallback;
+    if (originalNodeEnvDescriptor) {
+      Object.defineProperty(process.env, "NODE_ENV", originalNodeEnvDescriptor);
+    } else {
+      delete process.env.NODE_ENV;
+    }
   });
 
   const get = async () => {
@@ -69,6 +75,26 @@ describe("/api/event-sources/hash-poker", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("warning")).toContain("Legacy event snapshot");
     await expect(response.json()).resolves.toMatchObject({ source: "legacy-json-fallback" });
+  });
+
+  it("uses the checked-in snapshot for a local development request when the feed is unavailable", async () => {
+    Object.defineProperty(process.env, "NODE_ENV", {
+      configurable: true,
+      value: "development",
+      writable: true,
+    });
+    queryResult({ data: null, error: { message: "local database offline" } });
+    mockGetHashPokerEventConfig.mockReturnValue({ id: "hash-poker", title: "Local snapshot" });
+
+    const { GET } = require("../../app/api/event-sources/hash-poker+api");
+    const response = await GET(new Request("http://localhost:8081/api/event-sources/hash-poker"));
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("warning")).toContain("Local event snapshot");
+    await expect(response.json()).resolves.toEqual({
+      data: { id: "hash-poker", title: "Local snapshot" },
+      source: "local-legacy-fallback",
+    });
   });
 
   it("fails closed without fallback when the database feed is unavailable", async () => {

@@ -28,13 +28,24 @@ export async function GET(request: Request) {
       return Response.json({ data: config, source: "database" }, { headers });
   }
 
-  if (process.env.EVENT_INGESTION_LEGACY_JSON_FALLBACK === "true") {
+  const hostname = new URL(request.url).hostname;
+  const isLocalDevelopmentRequest = process.env.NODE_ENV === "development"
+    && (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1");
+  const useLegacyFallback = process.env.EVENT_INGESTION_LEGACY_JSON_FALLBACK === "true"
+    || isLocalDevelopmentRequest;
+
+  if (useLegacyFallback) {
     return Response.json(
-      { data: getHashPokerEventConfig(), source: "legacy-json-fallback" },
+      {
+        data: getHashPokerEventConfig(),
+        source: isLocalDevelopmentRequest ? "local-legacy-fallback" : "legacy-json-fallback",
+      },
       {
         headers: {
           ...headers,
-          Warning: '299 - "Legacy event snapshot fallback active"',
+          Warning: isLocalDevelopmentRequest
+            ? '299 - "Local event snapshot fallback active"'
+            : '299 - "Legacy event snapshot fallback active"',
         },
       },
     );

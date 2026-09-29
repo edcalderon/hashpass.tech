@@ -63,6 +63,9 @@ describe('PWA install prompt layout', () => {
     expect(promptSource).toContain('storePwaDragPosition(nextPosition)');
     expect(promptSource).toContain('onExpand={expandPrompt}');
     expect(promptSource).toContain('hp-pwa-drag-layer');
+    expect(promptSource).toContain('hp-pwa-dismiss-zone');
+    expect(promptSource).toContain('isPwaDragPositionInDismissZone');
+    expect(promptSource).toContain('dismissPromptUntilReload();');
     expect(promptSource).not.toContain('PWA_DOCK_POSITIONS');
     expect(promptSource).not.toContain('hp-pwa-dock-controls');
   });
@@ -100,6 +103,7 @@ describe('PWA install prompt layout', () => {
     expect(source).toContain('.hp-pwa-drag-handle');
     expect(source).toContain('cursor: grab;');
     expect(source).toContain('touch-action: none;');
+    expect(source).toContain('.hp-pwa-dismiss-zone');
     expect(source).not.toContain('.hp-pwa-dock-target-top-left');
     expect(source).not.toContain('.hp-pwa-dock-target-bottom-left');
     expect(source).not.toContain('.hp-pwa-dock-target-bottom-right');

@@ -23,6 +23,7 @@ import {
   type NativeSyntheticEvent,
 } from "react-native";
 import { NativeSafeIcon } from "../../lib/vector-icons";
+import { IconLabelRevealButton } from "../ui/IconLabelRevealButton";
 import { useAutoAdvanceProgress } from "../../lib/hooks/useAutoAdvanceProgress";
 import { SliderProgressBar } from "../banner/SliderProgressBar";
 import { useTheme } from "../../hooks/useTheme";
@@ -919,27 +920,17 @@ export default function Explorer({
             </TouchableOpacity>
           ))}
         </ScrollView>
-        <TouchableOpacity
-          style={styles.reloadEventsButton}
+        <IconLabelRevealButton
+          testID="explorer-reload-events"
+          color={colors.primary}
+          surfaceColor={colors.background.paper}
+          borderColor={colors.divider}
           onPress={handleEventsReload}
           disabled={isRefreshingEvents}
-          accessibilityRole="button"
-          accessibilityLabel={translate(
-            "explore.rework.reloadEvents",
-            "Reload events",
-          )}
-        >
-          {isRefreshingEvents ? (
-            <ActivityIndicator size="small" color={colors.primary} />
-          ) : (
-            <Icon name="refresh" color={colors.primary} size={18} />
-          )}
-          <Text style={styles.reloadEventsText}>
-            {isRefreshingEvents
-              ? translate("explore.rework.reloadingEvents", "Reloading events…")
-              : translate("explore.rework.reloadEvents", "Reload events")}
-          </Text>
-        </TouchableOpacity>
+          loading={isRefreshingEvents}
+          label={translate("explore.rework.reloadEvents", "Reload events")}
+          loadingLabel={translate("explore.rework.reloadingEvents", "Reloading events…")}
+        />
       </View>
     </View>
   );
@@ -2265,20 +2256,6 @@ const getStyles = (isDark: boolean, colors: any) =>
       flex: 1,
     },
     chipRow: { gap: 6, paddingVertical: 3, paddingRight: 4 },
-    reloadEventsButton: {
-      alignItems: "center",
-      flexDirection: "row",
-      flexShrink: 0,
-      gap: 4,
-      minHeight: 30,
-      paddingHorizontal: 4,
-      paddingVertical: 3,
-    },
-    reloadEventsText: {
-      color: colors.primary,
-      fontSize: 11,
-      fontWeight: "700",
-    },
     chip: {
       height: 30,
       justifyContent: "center",

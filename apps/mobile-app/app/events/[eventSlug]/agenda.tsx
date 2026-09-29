@@ -14,6 +14,7 @@ import { useTheme } from '../../../hooks/useTheme';
 // tofu/"?" fallback glyph for a window before the icon font loads on web.
 import { MaterialIcons, NativeSafeIcon } from '../../../lib/vector-icons';
 import type { NativeSafeIconName } from '../../../lib/vector-icons';
+import { IconLabelRevealButton } from '../../../components/ui/IconLabelRevealButton';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import EventBanner from '../../../components/EventBanner';
@@ -347,7 +348,7 @@ function AgendaTypeReveal({
 
   return (
     <Animated.View
-      testID={`agenda-card-type-shell-${itemId}`}
+      {...(Platform.OS === 'web' && process.env.NODE_ENV !== 'test' ? {} : { testID: `agenda-card-type-shell-${itemId}` })}
       style={[
         agendaTypeRevealStyles.container,
         {
@@ -374,7 +375,7 @@ function AgendaTypeReveal({
         style={agendaTypeRevealStyles.pressable}
       >
         <Animated.View
-          testID={`agenda-card-type-layer-${itemId}`}
+          {...(Platform.OS === 'web' && process.env.NODE_ENV !== 'test' ? {} : { testID: `agenda-card-type-layer-${itemId}` })}
           pointerEvents="none"
           style={[agendaTypeRevealStyles.layer, layerStyle]}
         >
@@ -408,7 +409,7 @@ function AgendaTypeReveal({
           />
         </Animated.View>
         <Animated.View
-          testID={`agenda-card-type-collapsed-icon-${itemId}`}
+          {...(Platform.OS === 'web' && process.env.NODE_ENV !== 'test' ? {} : { testID: `agenda-card-type-collapsed-icon-${itemId}` })}
           pointerEvents="none"
           style={[agendaTypeRevealStyles.collapsedIcon, collapsedIconStyle]}
         >
@@ -420,7 +421,7 @@ function AgendaTypeReveal({
           />
         </Animated.View>
         <Animated.View
-          testID={`agenda-card-type-content-${itemId}`}
+          {...(Platform.OS === 'web' && process.env.NODE_ENV !== 'test' ? {} : { testID: `agenda-card-type-content-${itemId}` })}
           pointerEvents="none"
           style={[agendaTypeRevealStyles.content, contentStyle]}
         >
@@ -550,111 +551,6 @@ function AgendaTypeLegendControl({
           <Text numberOfLines={1} style={[agendaTypeLegendControlStyles.label, { color: textColor }]}>
             {label}
           </Text>
-        </Animated.View>
-      </Pressable>
-    </Animated.View>
-  );
-}
-
-type AgendaRefreshControlProps = {
-  label: string;
-  color: string;
-  surfaceColor: string;
-  borderColor: string;
-  disabled: boolean;
-  onPress: () => void;
-};
-
-const AGENDA_REFRESH_CONTROL_SIZE = uiTokens.control.compactHeight;
-const AGENDA_REFRESH_CONTROL_LABEL_WIDTH = 104;
-
-const agendaRefreshControlStyles = StyleSheet.create({
-  shell: {
-    borderRadius: uiTokens.radius.pill,
-    borderWidth: uiTokens.control.borderWidth,
-    height: AGENDA_REFRESH_CONTROL_SIZE,
-    overflow: 'hidden',
-  },
-  pressable: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    height: '100%',
-  },
-  icon: {
-    alignItems: 'center',
-    height: AGENDA_REFRESH_CONTROL_SIZE,
-    justifyContent: 'center',
-    width: AGENDA_REFRESH_CONTROL_SIZE - uiTokens.control.borderWidth * 2,
-  },
-  labelClip: {
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  label: {
-    fontSize: uiTokens.type.caption,
-    fontWeight: '700',
-    paddingRight: uiTokens.space.sm,
-  },
-});
-
-function AgendaRefreshControl({
-  label,
-  color,
-  surfaceColor,
-  borderColor,
-  disabled,
-  onPress,
-}: AgendaRefreshControlProps) {
-  const [hovered, setHovered] = useState(false);
-  const [focused, setFocused] = useState(false);
-  const reduceMotion = useReducedMotionPreference();
-  const expansion = useSharedValue(0);
-  const expanded = hovered || focused;
-
-  useEffect(() => {
-    const nextProgress = expanded ? 1 : 0;
-    expansion.value = reduceMotion
-      ? nextProgress
-      : withTiming(nextProgress, {
-          duration: uiTokens.motion.fast,
-          easing: Easing.out(Easing.cubic),
-        });
-  }, [expanded, expansion, reduceMotion]);
-
-  const shellStyle = useAnimatedStyle(() => ({
-    width: AGENDA_REFRESH_CONTROL_SIZE + expansion.value * AGENDA_REFRESH_CONTROL_LABEL_WIDTH,
-  }));
-  const labelStyle = useAnimatedStyle(() => ({
-    opacity: expansion.value,
-    width: expansion.value * AGENDA_REFRESH_CONTROL_LABEL_WIDTH,
-  }));
-
-  return (
-    <Animated.View
-      style={[
-        agendaRefreshControlStyles.shell,
-        { backgroundColor: expanded ? `${color}14` : surfaceColor, borderColor: expanded ? `${color}52` : borderColor },
-        shellStyle,
-      ]}
-    >
-      <Pressable
-        testID="agenda-refresh-control"
-        accessibilityRole="button"
-        accessibilityLabel={label}
-        accessibilityState={{ disabled, expanded }}
-        disabled={disabled}
-        onBlur={() => setFocused(false)}
-        onFocus={() => setFocused(true)}
-        onHoverIn={() => setHovered(true)}
-        onHoverOut={() => setHovered(false)}
-        onPress={onPress}
-        style={agendaRefreshControlStyles.pressable}
-      >
-        <View style={agendaRefreshControlStyles.icon}>
-          <NativeSafeIcon name="refresh" size={18} color={color} />
-        </View>
-        <Animated.View style={[agendaRefreshControlStyles.labelClip, labelStyle]}>
-          <Text numberOfLines={1} style={[agendaRefreshControlStyles.label, { color }]}>{label}</Text>
         </Animated.View>
       </Pressable>
     </Animated.View>
@@ -2207,13 +2103,14 @@ export default function BSL2025AgendaScreen() {
             )}
           </View>
           <View style={styles.dayHeaderControls}>
-            <AgendaRefreshControl
+            <IconLabelRevealButton
               label={t('refreshAgenda', 'Refresh agenda')}
               color={colors.primary}
               surfaceColor={colors.background.paper}
               borderColor={colors.divider}
               disabled={loading}
               onPress={() => { void loadAgenda(); }}
+              testID="agenda-refresh-control"
             />
             <View accessibilityLabel={t('viewMode.label', 'Agenda display')} style={styles.agendaModeSwitcher}>
               {([

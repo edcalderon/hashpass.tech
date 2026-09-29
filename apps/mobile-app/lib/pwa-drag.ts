@@ -13,6 +13,7 @@ export type PwaDragViewport = {
 export const PWA_DRAG_POSITION_KEY = 'hashpass:pwa-install-position';
 export const PWA_DRAG_BUTTON_SIZE = 70;
 export const PWA_DRAG_SAFE_MARGIN = 12;
+export const PWA_DISMISS_ZONE_HEIGHT = 80;
 // Keep the control above mobile browser toolbars and gesture navigation. The
 // visual viewport supplies the visible browser area; this is extra breathing
 // room so the drag handle remains reachable at the lower edge.
@@ -73,6 +74,26 @@ export const getDefaultPwaDragPosition = (
     },
     viewport
   );
+
+export const isPwaDragPositionInDismissZone = (
+  position: PwaDragPosition,
+  viewport: PwaDragViewport = getPwaDragViewport(),
+): boolean => {
+  const centerX = position.left + PWA_DRAG_BUTTON_SIZE / 2;
+  const centerY = position.top + PWA_DRAG_BUTTON_SIZE / 2;
+  const zoneLeft = viewport.offsetLeft + PWA_DRAG_SAFE_MARGIN;
+  const zoneRight = viewport.offsetLeft + viewport.width - PWA_DRAG_SAFE_MARGIN;
+  const zoneTop = viewport.offsetTop
+    + viewport.height
+    - PWA_DRAG_SAFE_MARGIN
+    - PWA_DISMISS_ZONE_HEIGHT;
+  const zoneBottom = viewport.offsetTop + viewport.height - PWA_DRAG_SAFE_MARGIN;
+
+  return centerX >= zoneLeft
+    && centerX <= zoneRight
+    && centerY >= zoneTop
+    && centerY <= zoneBottom;
+};
 
 const isPwaDragPosition = (value: unknown): value is PwaDragPosition => {
   if (typeof value !== 'object' || value === null) {
