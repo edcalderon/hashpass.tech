@@ -280,6 +280,15 @@ const agendaTypeRevealStyles = StyleSheet.create({
   },
 });
 
+/**
+ * Hides diagnostic testIDs on production web builds (Platform.OS === 'web'
+ * outside Jest) so they never ship in the real DOM, while still exposing
+ * them for test queries under Jest (NODE_ENV === 'test').
+ */
+export function agendaTypeRevealTestId(id: string): { testID?: string } {
+  return Platform.OS === 'web' && process.env.NODE_ENV !== 'test' ? {} : { testID: id };
+}
+
 function AgendaTypeReveal({
   itemId,
   typeColor,
@@ -347,7 +356,7 @@ function AgendaTypeReveal({
 
   return (
     <Animated.View
-      {...(Platform.OS === 'web' && process.env.NODE_ENV !== 'test' ? {} : { testID: `agenda-card-type-shell-${itemId}` })}
+      {...agendaTypeRevealTestId(`agenda-card-type-shell-${itemId}`)}
       style={[
         agendaTypeRevealStyles.container,
         {
@@ -374,7 +383,7 @@ function AgendaTypeReveal({
         style={agendaTypeRevealStyles.pressable}
       >
         <Animated.View
-          {...(Platform.OS === 'web' && process.env.NODE_ENV !== 'test' ? {} : { testID: `agenda-card-type-layer-${itemId}` })}
+          {...agendaTypeRevealTestId(`agenda-card-type-layer-${itemId}`)}
           pointerEvents="none"
           style={[agendaTypeRevealStyles.layer, layerStyle]}
         >
@@ -408,7 +417,7 @@ function AgendaTypeReveal({
           />
         </Animated.View>
         <Animated.View
-          {...(Platform.OS === 'web' && process.env.NODE_ENV !== 'test' ? {} : { testID: `agenda-card-type-collapsed-icon-${itemId}` })}
+          {...agendaTypeRevealTestId(`agenda-card-type-collapsed-icon-${itemId}`)}
           pointerEvents="none"
           style={[agendaTypeRevealStyles.collapsedIcon, collapsedIconStyle]}
         >
@@ -420,7 +429,7 @@ function AgendaTypeReveal({
           />
         </Animated.View>
         <Animated.View
-          {...(Platform.OS === 'web' && process.env.NODE_ENV !== 'test' ? {} : { testID: `agenda-card-type-content-${itemId}` })}
+          {...agendaTypeRevealTestId(`agenda-card-type-content-${itemId}`)}
           pointerEvents="none"
           style={[agendaTypeRevealStyles.content, contentStyle]}
         >

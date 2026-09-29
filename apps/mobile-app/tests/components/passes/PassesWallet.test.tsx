@@ -5,9 +5,11 @@ import React from 'react';
 import PassesWallet from '../../../components/passes/PassesWallet';
 import { passSystemService } from '../../../lib/pass-system';
 import type { PassInfo } from '../../../lib/pass-system';
+import { IconButton } from '@hashpass/ui/primitives';
 
 let mockDbUserId: string | null = 'supabase-user-id';
 let mockFilterOverride: unknown[] | null = null;
+let mockIsDark = false;
 const mockRetryDatabaseSession = jest.fn();
 
 jest.mock('react-native-reanimated', () => ({
@@ -28,7 +30,7 @@ jest.mock('../../../hooks/useAuth', () => ({
 
 jest.mock('../../../hooks/useTheme', () => ({
   useTheme: () => ({
-    isDark: false,
+    isDark: mockIsDark,
     colors: {
       primary: '#2563eb',
       background: { paper: '#fff' },
@@ -140,6 +142,7 @@ describe('PassesWallet', () => {
   beforeEach(() => {
     mockDbUserId = 'supabase-user-id';
     mockFilterOverride = null;
+    mockIsDark = false;
     jest.clearAllMocks();
     (passSystemService.claimPassByCode as jest.Mock).mockResolvedValue(null);
     (passSystemService.createDefaultPass as jest.Mock).mockResolvedValue('restored-pass');
@@ -225,6 +228,17 @@ describe('PassesWallet', () => {
     expect(passSystemService.getAllUserPasses).toHaveBeenCalledTimes(4);
     expect(hashpassWallet.root.findAllByType('MockPassWalletCard')).toHaveLength(1);
     expect(bslWallet.root.findAllByType('MockPassWalletCard')).toHaveLength(1);
+  });
+
+  it('switches the reload icon button to dark mode on both the stacked and plain wallet layouts', async () => {
+    mockIsDark = true;
+    (passSystemService.getAllUserPasses as jest.Mock).mockResolvedValue([makePass()]);
+
+    const hashpassWallet = await renderWallet();
+    const bslWallet = await renderWallet({ layout: 'plain' });
+
+    expect(hashpassWallet.root.findByType(IconButton).props.mode).toBe('dark');
+    expect(bslWallet.root.findByType(IconButton).props.mode).toBe('dark');
   });
 
   it('keeps loaded wallet controls visible while a reload shows a pass-card skeleton', async () => {
