@@ -12,6 +12,7 @@ import {ClfHeroLoop} from './compositions/ClfHeroLoop';
 import {BslColombiaHeroLoop} from './compositions/BslColombiaHeroLoop';
 import {EventHeroLoop} from './compositions/EventHeroLoop';
 import {DiscoveryCoverLoop} from './compositions/DiscoveryCoverLoop';
+import {PartnersCoverLoop} from './compositions/PartnersCoverLoop';
 import {
   EVENT_HERO_DURATION_IN_FRAMES,
   eventHeroSpecs,
@@ -32,6 +33,7 @@ export const RemotionRoot: React.FC = () => {
       <Composition id="ClfHeroLoop" component={ClfHeroLoop} durationInFrames={900} fps={FPS} width={WIDTH} height={HEIGHT}/>
       <Composition id="BslColombiaHeroLoop" component={BslColombiaHeroLoop} durationInFrames={300} fps={FPS} width={WIDTH} height={HEIGHT}/>
       <Composition id="HashpassDiscoveryCoverLoop" component={DiscoveryCoverLoop} durationInFrames={360} fps={FPS} width={WIDTH} height={HEIGHT}/>
+      <Composition id="HashpassPartnersCoverLoop" component={PartnersCoverLoop} durationInFrames={360} fps={FPS} width={WIDTH} height={HEIGHT}/>
       {eventHeroSpecs.map((hero: EventHeroSpec) => (
         <Composition
           key={hero.id}

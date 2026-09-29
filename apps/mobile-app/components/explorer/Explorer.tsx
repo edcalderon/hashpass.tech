@@ -124,6 +124,7 @@ const toExplorerEvent = (event: EventInfo): ExplorerEvent => ({
     event.tour?.city?.toLocaleLowerCase().replace(/[^a-z]+/g, "-") || "all",
   series: event.series || (event.id === "bsl" ? "BSL On Tour" : "Summit"),
   continent: event.geo?.continent,
+  communityEventType: event.communityEventType,
   tourHubEventId: event.tour?.hubEventId,
   color: event.color,
   heroVideo: event.heroVideo,

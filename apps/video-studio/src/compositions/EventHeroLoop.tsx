@@ -28,6 +28,13 @@ const PokerTable: React.FC<{
 }> = ({accentColor, cycle}) => {
   const chipPulse = interpolate(Math.sin(cycle), [-1, 1], [0.9, 1.08]);
   const cardLift = Math.sin(cycle) * 18;
+  const cards = [
+    {rank: 'A', suit: '♠'},
+    {rank: 'K', suit: '♦'},
+    {rank: 'Q', suit: '♠'},
+    {rank: 'J', suit: '♦'},
+    {rank: '10', suit: '♠'},
+  ];
 
   return (
     <>
@@ -50,19 +57,20 @@ const PokerTable: React.FC<{
           width: 1240,
         }}
       />
-      {[0, 1, 2, 3, 4].map((index) => {
+      {cards.map((card, index) => {
         const angle = -20 + index * 13;
         const drift = Math.sin(cycle + index * 0.82) * 15;
+        const isRedSuit = card.suit === '♦';
         return (
           <div
-            key={index}
+            key={`${card.rank}-${card.suit}`}
             style={{
               alignItems: 'center',
               background: 'linear-gradient(135deg, #FFF9EF 0%, #E7D8BF 100%)',
               border: `2px solid ${hexToRgba(accentColor, 0.65)}`,
               borderRadius: 15,
               boxShadow: '0 18px 34px rgba(0, 0, 0, 0.34)',
-              color: accentColor,
+              color: isRedSuit ? '#B91C3A' : '#111827',
               display: 'flex',
               fontFamily: 'Georgia, serif',
               fontSize: 68,
@@ -76,7 +84,26 @@ const PokerTable: React.FC<{
               width: 142,
             }}
           >
-            {index % 2 === 0 ? '♠' : '♦'}
+            <>
+              <div
+                style={{
+                  alignItems: 'center',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  fontFamily: 'Arial, sans-serif',
+                  fontSize: card.rank === '10' ? 30 : 38,
+                  fontWeight: 800,
+                  left: 14,
+                  lineHeight: 0.9,
+                  position: 'absolute',
+                  top: 14,
+                }}
+              >
+                <span>{card.rank}</span>
+                <span style={{fontSize: 25}}>{card.suit}</span>
+              </div>
+              <span style={{fontSize: 78, lineHeight: 1}}>{card.suit}</span>
+            </>
           </div>
         );
       })}

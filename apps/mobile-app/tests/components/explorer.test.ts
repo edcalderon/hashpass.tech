@@ -106,18 +106,15 @@ describe("explorer rework behavior", () => {
         fallbackImage: undefined,
       }),
       expect.objectContaining({
-        id: "hashpass-events-discovery",
-        title: "Discover what is next",
-        media: {
-          type: "video",
-          url: "https://media.example/events/colombia2026/hero.mp4",
-        },
-        fallbackImage:
-          "https://media.example/events/colombia2026/hero.jpg",
-      }),
-      expect.objectContaining({
         id: "hashpass-partners-discovery",
         title: "Built with the people moving the ecosystem forward.",
+        media: {
+          type: "video",
+          url:
+            "https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events/hashpass-partners/branding/hashpass-partners-cover-v1.mp4",
+        },
+        fallbackImage:
+          "https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events/hashpass-partners/branding/hashpass-partners-cover-v1.jpg",
       }),
     ]));
 
@@ -129,11 +126,10 @@ describe("explorer rework behavior", () => {
         { id: "cbweek2026", title: "CBWeek" },
     ]).map((slide) => slide.id),
     ).toEqual([
-      "hashpass-events-discovery",
+      "hashpass-partners-discovery",
       "bsl-default",
       "colombia2026-default",
       "hash-poker-default",
-      "hashpass-partners-discovery",
       "cbweek2026-default",
     ]);
   });
@@ -164,7 +160,7 @@ describe("explorer rework behavior", () => {
     ]);
   });
 
-  it("keeps the discovery card first and spotlights the next dated city", () => {
+  it("puts the Partners chapter first and preserves the actual community event type", () => {
     const events = [
       {
         id: "bogota-2026",
@@ -193,32 +189,24 @@ describe("explorer rework behavior", () => {
       Date.parse("2026-10-01T12:00:00-05:00"),
     );
     expect(beforeBogota[0]).toMatchObject({
-      id: "hashpass-events-discovery",
-      eyebrow: "HASHPASS EVENTS",
-      title: "Discover what is next",
-      subtitle: "Next location: Bogotá, Colombia · Blockchain Summit Latam Colombia 2026 · November 5–6, 2026",
-      route: "/events/bogota-2026/home",
+      id: "hashpass-partners-discovery",
+      eyebrow: "OFFICIAL PARTNERS",
       media: {
         type: "video",
         url:
-          "https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events/hashpass-discovery/branding/hashpass-discovery-cover-v2.mp4",
+            "https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events/hashpass-partners/branding/hashpass-partners-cover-v1.mp4",
       },
     });
 
-    const afterBogota = getExplorerHeroSlides(
-      events,
-      Date.parse("2026-11-07T12:00:00-05:00"),
-    );
-    expect(afterBogota[0]).toMatchObject({
-      id: "hashpass-events-discovery",
-      title: "Discover what is next",
-      subtitle: "Next location: Medellín, Colombia · Hashpass Medellín 2027 · February 10, 2027",
-      route: "/events/medellin-2027/home",
-      media: {
-        type: "video",
-        url: "https://media.example/events/medellin-2027/hero.mp4",
-      },
-    });
+    expect(
+      getExplorerHeroSlides([
+        {
+          id: "hash-poker",
+          title: "50K Turbo",
+          communityEventType: "poker_room_event",
+        },
+      ])[1],
+    ).toMatchObject({eyebrow: "POKER ROOM"});
   });
 
   it("uses the refresh glyph for the compact event reload control", () => {

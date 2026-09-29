@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   AccessibilityInfo,
   Animated,
@@ -52,14 +52,12 @@ const MovingStripeFallback = ({
   textureStyle: StyleProp<ViewStyle>;
 }) => {
   const reducedMotion = useReducedMotionPreference();
-  const textureOffsetRef = useRef<Animated.Value | null>(null);
   // Jest's minimal React Native renderer deliberately omits Animated. The
   // static texture remains the correct visual fallback there and on any
   // constrained platform without the animation implementation.
-  if (!textureOffsetRef.current && typeof Animated.Value === "function") {
-    textureOffsetRef.current = new Animated.Value(0);
-  }
-  const textureOffset = textureOffsetRef.current;
+  const [textureOffset] = useState<Animated.Value | null>(() =>
+    typeof Animated.Value === "function" ? new Animated.Value(0) : null,
+  );
 
   useEffect(() => {
     if (!textureOffset) return;

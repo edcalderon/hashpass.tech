@@ -110,6 +110,10 @@ export interface ExplorerEvent {
   city?: string;
   cityKey?: string;
   series?: string;
+  communityEventType?:
+    | "poker_room_event"
+    | "community_tournament"
+    | "community_event";
   continent?: EventContinent;
   /** Event-family key: BSL's hub and each of its stops share one chapter. */
   tourHubEventId?: string;
@@ -137,28 +141,18 @@ export interface ExplorerHeroSlide {
   fallbackImage?: string;
 }
 
-const DISCOVERY_MEDIA_BASE =
-  "https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events/hashpass-discovery/branding";
-
-// City films are distinct from an event's own hero: they establish the next
-// destination before its family cards begin. Add a city asset here when it is
-// produced; without one, the next event's already-curated hero remains a
-// truthful moving backdrop rather than showing an unrelated place.
-const DISCOVERY_CITY_MEDIA: Record<string, { video: string; poster: string }> = {
-  bogota: {
-    video: `${DISCOVERY_MEDIA_BASE}/hashpass-discovery-cover-v2.mp4`,
-    poster: `${DISCOVERY_MEDIA_BASE}/hashpass-discovery-cover-v2.jpg`,
-  },
+const getExplorerEventEyebrow = (event: ExplorerEvent): string => {
+  switch (event.communityEventType) {
+    case "poker_room_event":
+      return "POKER ROOM";
+    case "community_tournament":
+      return "POKER TOURNAMENT";
+    case "community_event":
+      return "COMMUNITY EVENT";
+    default:
+      return event.shortName || event.series || "HASHPASS EVENT";
+  }
 };
-
-const getDiscoveryCityKey = (event?: ExplorerEvent): string | undefined =>
-  event?.cityKey ||
-  event?.city
-    ?.normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLocaleLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
 
 /**
  * The Explorer's global hero is event data, never campaign-copy data. Every
@@ -186,7 +180,7 @@ export const getExplorerHeroSlides = (
         slide: {
           id: `${event.id}-default`,
           eventId: event.id,
-          eyebrow: event.shortName || event.series || "HASHPASS EVENT",
+          eyebrow: getExplorerEventEyebrow(event),
           title: event.title,
           subtitle: event.eventDateString || event.subtitle || "Coming soon",
           backgroundColor: event.color || "#18212D",
@@ -197,63 +191,22 @@ export const getExplorerHeroSlides = (
       };
     });
 
-  // The opening discovery card is a living city spotlight. Prefer the next
-  // dated, non-archived event so it naturally advances from Bogotá to the
-  // following stop once an event ends; retain the catalogue order as a safe
-  // fallback for entries that have not published dates yet.
-  const upcomingEvents = events.filter(
-    (event) => getExplorerEventStatus(event, now) !== "past",
-  );
-  const nextEvent = [...upcomingEvents].sort((a, b) => {
-    const aStart = a.eventStartDate ? Date.parse(a.eventStartDate) : NaN;
-    const bStart = b.eventStartDate ? Date.parse(b.eventStartDate) : NaN;
-    const aSortable = Number.isFinite(aStart) ? aStart : Number.MAX_SAFE_INTEGER;
-    const bSortable = Number.isFinite(bStart) ? bStart : Number.MAX_SAFE_INTEGER;
-    return aSortable - bSortable;
-  })[0];
-  const nextLocation = [nextEvent?.city, nextEvent?.country]
-    .filter((part): part is string => Boolean(part?.trim()))
-    .join(", ");
-
-  // These intentional discovery cards make the Explorer useful even when
-  // there are no upcoming events, without promoting an archived event.
-  const cityMedia = DISCOVERY_CITY_MEDIA[getDiscoveryCityKey(nextEvent) || ""];
-  const discoveryMedia = cityMedia ||
-    (nextEvent?.heroVideo
-      ? {
-          video: nextEvent.heroVideo,
-          poster: nextEvent.heroPoster || nextEvent.image || "",
-        }
-      : undefined);
-  const discoverySlides: ExplorerHeroSlide[] = [
-    {
-      id: "hashpass-events-discovery",
-      eyebrow: "HASHPASS EVENTS",
-      title: "Discover what is next",
-      subtitle: nextEvent
-        ? `${nextLocation ? `Next location: ${nextLocation} · ` : ""}${nextEvent.title}${nextEvent.eventDateString ? ` · ${nextEvent.eventDateString}` : ""}`
-        : "One explorer for every summit, stop, and community moment.",
-      backgroundColor: "#5552E8",
-      media: {
-        type: "video",
-        url: discoveryMedia?.video || `${DISCOVERY_MEDIA_BASE}/hashpass-discovery-cover-v1.mp4`,
-      },
-      fallbackImage:
-        discoveryMedia?.poster || `${DISCOVERY_MEDIA_BASE}/hashpass-discovery-cover-v1.jpg`,
-      route: nextEvent ? `/events/${nextEvent.id}/home` : undefined,
-    },
-    {
+  const partnersSlide: ExplorerHeroSlide = {
       id: "hashpass-partners-discovery",
       eyebrow: "OFFICIAL PARTNERS",
       title: "Built with the people moving the ecosystem forward.",
       subtitle: "Sponsors and community partners make every stop possible.",
       backgroundColor: "#18212D",
-    },
-  ];
+      media: {
+        type: "video",
+        url: "https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events/hashpass-partners/branding/hashpass-partners-cover-v1.mp4",
+      },
+      fallbackImage:
+        "https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events/hashpass-partners/branding/hashpass-partners-cover-v1.jpg",
+  };
 
-  // The discovery film always opens the Explorer. The partner card remains a
-  // later chapter break, so it never splits a hub from the tour stops that
-  // belong to the same event family.
+  // Partners lead the global Explorer, then each event family remains intact
+  // so a BSL hub is never split from its tour stops.
   const familySlides = Array.from(
     eventSlides.reduce((families, entry) => {
       const slides = families.get(entry.familyId) || [];
@@ -264,14 +217,7 @@ export const getExplorerHeroSlides = (
     ([, slides]) => slides,
   );
 
-  if (!familySlides.length) return discoverySlides;
-
-  return [
-    discoverySlides[0],
-    ...familySlides.flatMap((slides, index) =>
-      index === 1 ? [...slides, discoverySlides[1]] : slides,
-    ),
-  ];
+  return [partnersSlide, ...familySlides.flat()];
 };
 
 export interface ExplorerFilters {
