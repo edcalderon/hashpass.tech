@@ -120,6 +120,12 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
           src="/sw-register.js"
           strategy="afterInteractive"
         />
+        <Script
+          id="cig-analytics-tracker"
+          src="https://api.cig.technology/api/v1/analytics/tracker.js?site=site_U4aGmj3o3hdzQ0ja"
+          data-site="site_U4aGmj3o3hdzQ0ja"
+          strategy="afterInteractive"
+        />
       </head>
       <body>
         <ThemeProvider>

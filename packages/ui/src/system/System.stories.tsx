@@ -121,6 +121,56 @@ function Catalog({ mode = "light" }: { mode?: ColorMode }) {
           <Text style={{ color: palette.accent }}>↻</Text>
         </IconButton>
       </View>
+      <View style={{ gap: uiTokens.space.md }}>
+        <Text
+          style={{
+            color: palette.muted,
+            fontSize: uiTokens.type.label,
+            fontWeight: "700",
+            textTransform: "uppercase",
+            letterSpacing: 1,
+          }}
+        >
+          IconButton interactions
+        </Text>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: uiTokens.space.sm }}>
+          <IconButton mode={mode} label="Refresh agenda" revealLabel>
+            <Text style={{ color: palette.accent }}>↻</Text>
+          </IconButton>
+          <IconButton
+            mode={mode}
+            label="A longer translated label that still fits the expanded pill"
+            revealLabel
+          >
+            <Text style={{ color: palette.accent }}>↻</Text>
+          </IconButton>
+          <IconButton
+            mode={mode}
+            label="Refresh agenda"
+            revealLabel
+            loading
+            loadingLabel="Refreshing"
+          >
+            <Text style={{ color: palette.accent }}>↻</Text>
+          </IconButton>
+          <IconButton mode={mode} label="Disabled action" revealLabel disabled>
+            <Text style={{ color: palette.accent }}>↻</Text>
+          </IconButton>
+          <IconButton
+            mode={mode}
+            label="Accent override"
+            revealLabel
+            accentColor={uiTokens.feature.cyan}
+          >
+            <Text style={{ color: uiTokens.feature.cyan }}>◎</Text>
+          </IconButton>
+        </View>
+        <Text style={{ color: palette.muted, fontSize: uiTokens.type.caption, lineHeight: 18 }}>
+          Hover or focus a reveal button to expand its label (debounced on leave).
+          Native: LayoutAnimation-driven width. Web: CSS transition. Reduced motion
+          is honored from the system setting.
+        </Text>
+      </View>
       <View
         style={{
           height: 280,
@@ -167,6 +217,7 @@ function Catalog({ mode = "light" }: { mode?: ColorMode }) {
     </View>
   );
 }
+
 const meta = {
   title: "Design System/Foundations and Controls",
   component: Catalog,

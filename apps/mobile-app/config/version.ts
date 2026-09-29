@@ -22,22 +22,41 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202609291430, // Updated to current timestamp
+  buildNumber: 202609291615, // Updated to current timestamp
   releaseDate: '2026-09-29',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    // No new features
+    'skeleton-based reload instead of full splash, consolidate icon reveal buttons',
+    'add CIG analytics tracker script to hashpass.club',
+    'auto-chain production after beta on native mobile release'
   ],
   bugfixes: [
-    'improve mobile dashboard and agenda controls'
+    // No bugfixes
   ],
   breakingChanges: [],
-  notes: 'improve mobile dashboard and agenda controls'
+  notes: 'skeleton-based reload instead of full splash, consolidate icon reveal buttons; add CIG analytics tracker script to hashpass.club; auto-chain production after beta on native mobile release'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.81': {
+    version: '1.9.81',
+    buildNumber: 202609291615,
+    releaseDate: '2026-09-29',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'skeleton-based reload instead of full splash, consolidate icon reveal buttons',
+      'add CIG analytics tracker script to hashpass.club',
+      'auto-chain production after beta on native mobile release'
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'skeleton-based reload instead of full splash, consolidate icon reveal buttons; add CIG analytics tracker script to hashpass.club; auto-chain production after beta on native mobile release'
+  },
   '1.9.80': {
     version: '1.9.80',
     buildNumber: 202609291430,

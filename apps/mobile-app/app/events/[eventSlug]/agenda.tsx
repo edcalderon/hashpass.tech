@@ -622,6 +622,114 @@ function AgendaTypeLegendControl({
   );
 }
 
+// Same one-shot fade-in pulse PassCardsSkeleton (components/passes/PassesWallet.tsx)
+// already uses for its own skeleton cards -- kept identical here rather than
+// inventing a second skeleton-animation convention for the app.
+const AGENDA_SKELETON_PULSE_DURATION_MS = 700;
+
+function useAgendaSkeletonPulse() {
+  const pulse = useSharedValue(0.45);
+  useEffect(() => {
+    pulse.value = withTiming(0.9, { duration: AGENDA_SKELETON_PULSE_DURATION_MS });
+  }, [pulse]);
+  return useAnimatedStyle(() => ({ opacity: pulse.value }));
+}
+
+// Stands in for the real day-tab row (see the `dayTab` style below) while a
+// manual "Refresh agenda" reload is in flight, so the reload reads as an
+// update to the existing page instead of the old full-screen splash.
+function AgendaDayTabsSkeleton({ colors, count }: { colors: any; count: number }) {
+  const pulseStyle = useAgendaSkeletonPulse();
+  return (
+    <View
+      accessibilityLabel="Refreshing agenda days"
+      style={{
+        flexDirection: 'row',
+        justifyContent: 'center',
+        gap: uiTokens.space.sm,
+        paddingHorizontal: uiTokens.space.lg,
+      }}
+    >
+      {Array.from({ length: count }).map((_, index) => (
+        <Animated.View
+          key={index}
+          style={[
+            pulseStyle,
+            {
+              width: 148,
+              minHeight: 104,
+              borderRadius: uiTokens.radius.card,
+              borderWidth: 1,
+              borderColor: colors.divider,
+              backgroundColor: colors.background.paper,
+              padding: uiTokens.space.md,
+              justifyContent: 'space-between',
+            },
+          ]}
+        >
+          <View style={{ height: 14, width: '70%', borderRadius: uiTokens.radius.small, backgroundColor: colors.divider }} />
+          <View style={{ height: 10, width: '90%', borderRadius: uiTokens.radius.small, backgroundColor: colors.divider }} />
+          <View style={{ height: 18, width: 64, borderRadius: uiTokens.radius.pill, backgroundColor: colors.divider }} />
+        </Animated.View>
+      ))}
+    </View>
+  );
+}
+
+// Stands in for the real session cards (see `agendaItem`/`agendaMedia` below)
+// while a manual "Refresh agenda" reload is in flight. Approximates the
+// media + text layout rather than mirroring it exactly -- a skeleton only
+// needs to read as "this area is updating", not reproduce the real content.
+function AgendaItemCardsSkeleton({
+  colors,
+  isCompact,
+  isGrid,
+  count,
+}: {
+  colors: any;
+  isCompact: boolean;
+  isGrid: boolean;
+  count: number;
+}) {
+  const pulseStyle = useAgendaSkeletonPulse();
+  const mediaSize = isGrid
+    ? { width: '100%' as const, height: 200 }
+    : { width: isCompact ? 116 : 168, height: isCompact ? 118 : 184 };
+
+  return (
+    <View
+      accessibilityLabel="Refreshing agenda sessions"
+      style={{ gap: isCompact ? uiTokens.space.sm : uiTokens.space.md }}
+    >
+      {Array.from({ length: count }).map((_, index) => (
+        <Animated.View
+          key={index}
+          style={[
+            pulseStyle,
+            {
+              flexDirection: isGrid ? 'column' : 'row',
+              backgroundColor: colors.background.paper,
+              borderLeftWidth: isGrid ? 0 : 4,
+              borderColor: colors.divider,
+              borderRadius: uiTokens.radius.card,
+              overflow: 'hidden',
+              boxShadow: uiTokens.effects.cardShadow,
+            },
+          ]}
+        >
+          <View style={[{ backgroundColor: colors.background.default }, mediaSize]} />
+          <View style={{ flex: 1, padding: uiTokens.space.md, gap: uiTokens.space.sm }}>
+            <View style={{ height: 12, width: '40%', borderRadius: uiTokens.radius.small, backgroundColor: colors.divider }} />
+            <View style={{ height: 16, width: '85%', borderRadius: uiTokens.radius.small, backgroundColor: colors.divider }} />
+            <View style={{ height: 12, width: '95%', borderRadius: uiTokens.radius.small, backgroundColor: colors.divider }} />
+            <View style={{ height: 12, width: '60%', borderRadius: uiTokens.radius.small, backgroundColor: colors.divider }} />
+          </View>
+        </Animated.View>
+      ))}
+    </View>
+  );
+}
+
 export default function BSL2025AgendaScreen() {
   const { event } = useEvent();
   const { isDark, colors } = useTheme();
@@ -646,14 +754,18 @@ export default function BSL2025AgendaScreen() {
   const [activeTab, setActiveTab] = useState<string>('Day 1 - November 12'); // Default to Day 1
   const [agenda, setAgenda] = useState<AgendaItem[]>([]);
   const [loading, setLoading] = useState(true);
+  // Manual "Refresh agenda" reload used to reuse `loading`, which trips the
+  // top-level `if (loading) return <LoadingScreen fullScreen />` gate below
+  // and swaps the whole page (banner, tabs, cards) for a full splash. This
+  // tracks a background refresh instead so the page shell stays mounted and
+  // only the day tabs / item cards swap to a skeleton while it's in flight.
+  const [isRefreshingAgenda, setIsRefreshingAgenda] = useState(false);
   const hasSetInitialTabRef = useRef(false); // Track if we've set initial tab
   const userSelectedTabRef = useRef(false); // Track if user manually selected a tab
   const [isLive, setIsLive] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<AgendaType | 'all'>('all');
   const [agendaLayout, setAgendaLayout] = useState<'compact' | 'list' | 'grid'>('compact');
-  const [expandedAgendaAction, setExpandedAgendaAction] = useState<string | null>(null);
-  const agendaActionHoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isCompactAgenda = agendaLayout === 'compact';
   const isAgendaGrid = agendaLayout === 'grid';
   const [usingJsonFallback, setUsingJsonFallback] = useState(false);
@@ -676,27 +788,6 @@ export default function BSL2025AgendaScreen() {
     slotStartTime: null,
   });
 
-  const clearAgendaActionHoverTimeout = useCallback(() => {
-    if (agendaActionHoverTimeoutRef.current) {
-      clearTimeout(agendaActionHoverTimeoutRef.current);
-      agendaActionHoverTimeoutRef.current = null;
-    }
-  }, []);
-
-  const handleAgendaActionHoverIn = useCallback((actionId: string) => {
-    clearAgendaActionHoverTimeout();
-    setExpandedAgendaAction(actionId);
-  }, [clearAgendaActionHoverTimeout]);
-
-  const handleAgendaActionHoverOut = useCallback((actionId: string) => {
-    clearAgendaActionHoverTimeout();
-    agendaActionHoverTimeoutRef.current = setTimeout(() => {
-      setExpandedAgendaAction((current) => current === actionId ? null : current);
-      agendaActionHoverTimeoutRef.current = null;
-    }, uiTokens.motion.fast);
-  }, [clearAgendaActionHoverTimeout]);
-
-  useEffect(() => clearAgendaActionHoverTimeout, [clearAgendaActionHoverTimeout]);
   // Calendar export is intentionally a secondary, per-session action. Keeping
   // the choice in a modal preserves the agenda card's scan-friendly layout.
   const [calendarPickerItem, setCalendarPickerItem] = useState<AgendaItem | null>(null);
@@ -880,13 +971,28 @@ export default function BSL2025AgendaScreen() {
   // Load agenda from the database, with the published event schedule as a
   // fallback. A route/tenant transition can briefly issue two requests; only
   // the latest response may update the screen.
-  const loadAgenda = useCallback(async () => {
+  const loadAgenda = useCallback(async (options?: { silent?: boolean }) => {
     if (!event) return;
 
     const requestId = ++agendaLoadRequestRef.current;
     const isCurrentRequest = () => agendaLoadRequestRef.current === requestId;
+    // Silent = a manual "Refresh agenda" reload: the page shell (banner,
+    // tabs, cards) is already up, so only the skeleton-covered areas should
+    // change, not the full-screen loader used for the very first load.
+    const silent = options?.silent ?? false;
 
-    setLoading(true);
+    if (silent) {
+      setIsRefreshingAgenda(true);
+    } else {
+      setLoading(true);
+      // A non-silent load supersedes any in-flight silent refresh
+      // (event/tenant change mid-refresh, for example), so clear the
+      // skeleton flag now -- otherwise the superseded silent request's
+      // finally never runs (isCurrentRequest becomes false) and
+      // isRefreshingAgenda stays true, leaving the agenda stuck on its
+      // skeleton even after the non-silent load completes.
+      setIsRefreshingAgenda(false);
+    }
     setUsingJsonFallback(false);
     setServiceStatus('unknown');
 
@@ -927,7 +1033,11 @@ export default function BSL2025AgendaScreen() {
       setServiceStatus('stopped');
     } finally {
       if (isCurrentRequest()) {
-        setLoading(false);
+        if (silent) {
+          setIsRefreshingAgenda(false);
+        } else {
+          setLoading(false);
+        }
       }
     }
   }, [agendaApiPath, event, eventId]);
@@ -1803,38 +1913,31 @@ export default function BSL2025AgendaScreen() {
     }));
     const featuredSpeaker = resolvedSpeakers.find((speaker) => speaker.image) || resolvedSpeakers[0];
     const usesSpeakerPortrait = item.type === 'keynote' && Boolean(featuredSpeaker);
+    // Shared IconButton (revealLabel) owns the expand-on-hover/focus,
+    // debounced retract-on-hover-out, and native LayoutAnimation now --
+    // this used to hand-roll the same mechanism locally with its own
+    // expandedAgendaAction state, which is exactly the kind of
+    // screen-specific pill/duplication the design system contract asks us
+    // to avoid (see CLAUDE.md's Shared UI and Storybook contract).
     const renderAgendaAction = (
       action: 'calendar' | 'favorite' | 'schedule',
       label: string,
       icon: React.ReactNode,
       onPress: () => void,
-    ) => {
-      const actionId = `${item.id}:${action}`;
-      const isExpanded = expandedAgendaAction === actionId;
+    ) => (
+      <IconButton
+        key={action}
+        mode={interfaceMode}
+        accentColor={colors.primary}
+        revealLabel
+        label={label}
+        accessibilityHint={t('actions.actionHint', 'Opens this session action')}
+        onPress={onPress}
+      >
+        {icon}
+      </IconButton>
+    );
 
-      return (
-        <Pressable
-          key={action}
-          accessibilityRole="button"
-          accessibilityLabel={label}
-          accessibilityHint={t('actions.actionHint', 'Opens this session action')}
-          onPress={onPress}
-          onHoverIn={() => handleAgendaActionHoverIn(actionId)}
-          onHoverOut={() => handleAgendaActionHoverOut(actionId)}
-          onFocus={() => handleAgendaActionHoverIn(actionId)}
-          onBlur={() => setExpandedAgendaAction((current) => current === actionId ? null : current)}
-          style={({ pressed }) => [
-            styles.agendaTool,
-            isExpanded && styles.agendaToolExpanded,
-            pressed && styles.agendaToolPressed,
-          ]}
-        >
-          {icon}
-          {isExpanded ? <Text pointerEvents="none" style={styles.agendaToolLabel}>{label}</Text> : null}
-        </Pressable>
-      );
-    };
-    
     return (
       <View
         key={item.id}
@@ -2062,6 +2165,12 @@ export default function BSL2025AgendaScreen() {
         {/* Day selection exposes the programme context before a session is chosen. */}
         {Object.keys(agendaByDay).length > 0 && (
           <View style={styles.tabContainer}>
+            {isRefreshingAgenda ? (
+              <AgendaDayTabsSkeleton
+                colors={colors}
+                count={Math.min(Object.keys(agendaByDay).length, 3)}
+              />
+            ) : (
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -2112,6 +2221,7 @@ export default function BSL2025AgendaScreen() {
                 );
               })}
             </ScrollView>
+            )}
             <View
               testID="agenda-type-legend"
               accessibilityLabel={t('legend.label', 'Session type legend')}
@@ -2170,11 +2280,13 @@ export default function BSL2025AgendaScreen() {
           <View style={styles.dayHeaderControls}>
             <IconButton
               label={t('refreshAgenda', 'Refresh agenda')}
+              loadingLabel={t('refreshingAgenda', 'Refreshing agenda…')}
               mode={interfaceMode}
               accentColor={colors.primary}
               revealLabel
-              disabled={loading}
-              onPress={() => { void loadAgenda(); }}
+              disabled={loading || isRefreshingAgenda}
+              loading={isRefreshingAgenda}
+              onPress={() => { void loadAgenda({ silent: true }); }}
               testID="agenda-refresh-control"
             >
               <NativeSafeIcon name="refresh" size={18} color={colors.primary} />
@@ -2208,7 +2320,14 @@ export default function BSL2025AgendaScreen() {
             testID={isAgendaGrid ? 'agenda-grid' : 'agenda-list'}
             style={[styles.agendaList, isAgendaGrid && styles.agendaGridList]}
           >
-            {(() => {
+            {isRefreshingAgenda ? (
+              <AgendaItemCardsSkeleton
+                colors={colors}
+                isCompact={isCompactAgenda}
+                isGrid={isAgendaGrid}
+                count={Math.min(Math.max((agendaByDay[activeTab] || []).length, 3), 5)}
+              />
+            ) : (() => {
               // Filter the already time-sorted day sequence so both views remain chronological.
               const filteredIds = new Set(filteredAgenda.map((item) => String(item.id)));
               const filteredItems = (agendaByDay[activeTab] || []).filter((item) => filteredIds.has(String(item.id)));
@@ -2706,31 +2825,10 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   agendaItemToolsCompact: {
     marginBottom: uiTokens.space.sm,
   },
-  agendaTool: {
-    alignItems: 'center',
-    backgroundColor: colors.background.paper,
-    borderColor: colors.divider,
-    borderRadius: uiTokens.radius.pill,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: uiTokens.space.xs,
-    height: uiTokens.control.compactHeight,
-    justifyContent: 'center',
-    minWidth: uiTokens.control.compactHeight,
-    paddingHorizontal: 9,
-  },
-  agendaToolExpanded: {
-    borderColor: colors.primary,
-  },
-  agendaToolPressed: {
-    opacity: 0.72,
-  },
-  agendaToolLabel: {
-    color: colors.text.primary,
-    fontSize: uiTokens.type.caption,
-    fontWeight: '700',
-    maxWidth: 132,
-  },
+  // agendaTool/agendaToolExpanded/agendaToolPressed/agendaToolLabel used to
+  // hand-roll the expand-to-reveal-label pill here; renderAgendaAction now
+  // renders the shared IconButton (revealLabel) from @hashpass/ui/primitives
+  // instead, so this screen no longer owns its own copy of that chrome.
   calendarModalOverlay: {
     flex: 1,
     justifyContent: 'flex-end',

@@ -1,14 +1,17 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   AccessibilityInfo,
   KeyboardAvoidingView,
+  LayoutAnimation,
   Platform,
   Pressable,
   StyleSheet,
   Text,
   TextInput,
+  UIManager,
   View,
+  type LayoutAnimationConfig,
   type PressableProps,
   type TextInputProps,
   type ViewStyle,
@@ -16,6 +19,44 @@ import {
 } from "react-native";
 import { uiPalette, uiTokens, type ColorMode } from "./tokens";
 type Themed = { mode?: ColorMode };
+
+// Android needs this opt-in once per process before LayoutAnimation calls
+// have any effect; iOS and web ignore it. This used to run eagerly at
+// module scope, but reading `Platform.OS` (and `UIManager`) at import time
+// throws under several of this repo's hand-rolled per-test react-native
+// mocks that only partially shape the module -- some omit `UIManager`,
+// others omit `Platform` entirely -- which crashed every consumer of this
+// file under Jest before any component even rendered. Running it lazily,
+// the first time an IconButton actually animates, means it only ever runs
+// against whatever Platform/UIManager shape is in use at that point; the
+// try/catch keeps a still-incomplete test mock from taking down a real
+// render even then.
+let androidLayoutAnimationEnabled = false;
+function ensureAndroidLayoutAnimationEnabled() {
+  if (androidLayoutAnimationEnabled) return;
+  androidLayoutAnimationEnabled = true;
+  try {
+    if (Platform.OS === "android" && UIManager?.setLayoutAnimationEnabledExperimental) {
+      UIManager.setLayoutAnimationEnabledExperimental(true);
+    }
+  } catch {
+    // Best-effort opt-in only; never let this block a real render.
+  }
+}
+
+// Built lazily inside animateExpandChange (not as a module-scope constant)
+// because RN's jest preset mocks LayoutAnimation without its `Types`/
+// `Properties` statics -- reading them at import time throws
+// "Cannot read properties of undefined (reading 'Types')" for every consumer
+// of this module under test, before any component even renders.
+function buildRevealLayoutAnimation(): LayoutAnimationConfig {
+  return {
+    duration: uiTokens.motion.fast,
+    update: { type: LayoutAnimation.Types.easeInEaseOut, property: LayoutAnimation.Properties.scaleXY },
+    create: { type: LayoutAnimation.Types.easeInEaseOut, property: LayoutAnimation.Properties.opacity },
+    delete: { type: LayoutAnimation.Types.easeInEaseOut, property: LayoutAnimation.Properties.opacity },
+  };
+}
 export function Surface({
   mode = "light",
   style,
@@ -212,6 +253,36 @@ export function IconButton({
   const [focused, setFocused] = useState(false);
   const [reduceMotion, setReduceMotion] = useState(true);
   const expanded = revealLabel && (hovered || focused);
+  // Retracting immediately on the first onHoverOut/onBlur is jarring when the
+  // pointer only grazes past the control -- give it one beat to settle
+  // before collapsing back, same debounce the agenda action icons used to
+  // hand-roll for themselves before this became the shared implementation.
+  const hoverOutTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearHoverOutTimeout = () => {
+    if (hoverOutTimeoutRef.current) {
+      clearTimeout(hoverOutTimeoutRef.current);
+      hoverOutTimeoutRef.current = null;
+    }
+  };
+
+  const animateExpandChange = () => {
+    // LayoutAnimation is what actually makes the width/opacity change
+    // animate smoothly on native -- without it, the expand/retract is an
+    // instant snap on Android/iOS (the CSS transition below only covers
+    // web). Android needs setLayoutAnimationEnabledExperimental, flipped
+    // once lazily on first use (see ensureAndroidLayoutAnimationEnabled).
+    try {
+      if (Platform.OS !== "web" && !reduceMotion) {
+        ensureAndroidLayoutAnimationEnabled();
+        LayoutAnimation.configureNext(buildRevealLayoutAnimation());
+      }
+    } catch {
+      // A test harness's partial react-native mock (missing Platform,
+      // LayoutAnimation, etc.) should never crash a real interaction --
+      // worst case the expand/retract just isn't animated that time.
+    }
+  };
 
   useEffect(() => {
     let active = true;
@@ -228,6 +299,8 @@ export function IconButton({
       subscription?.remove?.();
     };
   }, []);
+
+  useEffect(() => clearHoverOutTimeout, []);
 
   const content = loading
     ? <ActivityIndicator size="small" color={color} />
@@ -260,27 +333,50 @@ export function IconButton({
           accessibilityState={{ ...props.accessibilityState, disabled: !!disabled, expanded, busy: loading }}
           disabled={disabled || loading}
           onBlur={(event) => {
+            // Don't clear the pending hover-out timeout here -- a focused
+            // web button that receives onHoverOut and then loses focus
+            // before the debounce expires (e.g. the user clicks elsewhere)
+            // has only that timeout to clear hovered=false; clearing it
+            // from onBlur leaves hovered=true with no scheduled reset,
+            // and every revealLabel button stays expanded until the next
+            // hover cycle. Let the timeout finish naturally so both
+            // states collapse together.
+            animateExpandChange();
             setFocused(false);
             onBlur?.(event);
           }}
           onFocus={(event) => {
+            clearHoverOutTimeout();
+            animateExpandChange();
             setFocused(true);
             onFocus?.(event);
           }}
           onHoverIn={(event) => {
+            clearHoverOutTimeout();
+            animateExpandChange();
             setHovered(true);
             onHoverIn?.(event);
           }}
           onHoverOut={(event) => {
-            setHovered(false);
+            clearHoverOutTimeout();
+            hoverOutTimeoutRef.current = setTimeout(() => {
+              animateExpandChange();
+              setHovered(false);
+              hoverOutTimeoutRef.current = null;
+            }, uiTokens.motion.fast);
             onHoverOut?.(event);
           }}
-          style={styles.revealIconButtonPressable}
+          style={(state) => [
+            styles.revealIconButtonPressable,
+            { opacity: state.pressed ? 0.72 : 1 },
+          ]}
         >
           <View accessible={false} pointerEvents="none" style={styles.revealIcon}>{content}</View>
-          <View style={[styles.revealLabelClip, { opacity: expanded ? 1 : 0 }, transitionStyle]}>
-            <Text numberOfLines={1} style={[styles.revealLabel, { color }]}>{loading && loadingLabel ? loadingLabel : label}</Text>
-          </View>
+          {expanded ? (
+            <View style={[styles.revealLabelClip, transitionStyle]}>
+              <Text numberOfLines={1} style={[styles.revealLabel, { color }]}>{loading && loadingLabel ? loadingLabel : label}</Text>
+            </View>
+          ) : null}
         </Pressable>
       </View>
     );

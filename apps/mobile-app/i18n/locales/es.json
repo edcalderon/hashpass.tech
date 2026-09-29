@@ -1643,6 +1643,7 @@
     },
     "refresh": "Actualizar",
     "refreshAgenda": "Actualizar agenda",
+    "refreshingAgenda": "Actualizando agenda…",
     "types": {
       "keynote": "Keynote",
       "panel": "Panel",

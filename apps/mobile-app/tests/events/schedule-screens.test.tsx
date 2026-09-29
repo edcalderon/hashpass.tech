@@ -508,6 +508,71 @@ describe('event schedule screens', () => {
     await act(async () => renderer!.unmount());
   });
 
+  it('shows the day-tab and session-card skeletons for a manual reload, then clears them', async () => {
+    const initialAgenda = [
+      { id: 'session-1', day: '1', time: '09:00', title: 'Opening', type: 'keynote' },
+      { id: 'session-2', day: '1', time: '11:00', title: 'Panel', type: 'panel' },
+    ];
+    // The initial (non-silent) load and the speakers-map fetch resolve
+    // immediately; the manual reload's agenda fetch is held open via this
+    // deferred promise so the test can observe the skeleton mid-flight
+    // before resolving it, same as a real slow network response would.
+    let resolveReload: (value: unknown) => void;
+    const reloadPromise = new Promise((resolve) => {
+      resolveReload = resolve;
+    });
+    let agendaFetchCount = 0;
+    mockApiRequest.mockImplementation((path: string) => {
+      if (path === 'events/custom/agenda') {
+        agendaFetchCount += 1;
+        if (agendaFetchCount === 1) {
+          return Promise.resolve({ success: true, data: { data: initialAgenda } });
+        }
+        return reloadPromise;
+      }
+      return Promise.resolve({ success: true, data: { data: [] } });
+    });
+
+    let renderer: TestRenderer.ReactTestRenderer;
+    await act(async () => {
+      renderer = TestRenderer.create(<AgendaScreen />);
+      await flushPromises();
+      await flushPromises();
+    });
+
+    expect(renderer!.root.findAllByProps({ accessibilityLabel: 'Refreshing agenda days' })).toHaveLength(0);
+    const refreshButton = renderer!.root.findByProps({ testID: 'agenda-refresh-control' });
+    expect(refreshButton.props.disabled).toBe(false);
+    expect(refreshButton.props.loading).toBe(false);
+
+    await act(async () => {
+      refreshButton.props.onPress();
+      await flushPromises();
+    });
+
+    // The reload's own fetch is still pending: the real day tabs and session
+    // cards are replaced by their skeleton stand-ins, and the refresh
+    // control itself reflects the in-flight state.
+    expect(renderer!.root.findByProps({ accessibilityLabel: 'Refreshing agenda days' })).toBeTruthy();
+    expect(renderer!.root.findByProps({ accessibilityLabel: 'Refreshing agenda sessions' })).toBeTruthy();
+    expect(renderer!.root.findByProps({ testID: 'agenda-refresh-control' }).props.disabled).toBe(true);
+    expect(renderer!.root.findByProps({ testID: 'agenda-refresh-control' }).props.loading).toBe(true);
+
+    await act(async () => {
+      resolveReload!({ success: true, data: { data: initialAgenda } });
+      await flushPromises();
+    });
+
+    // Once the reload resolves, the skeletons are gone and the real content
+    // (plus the refresh control) is back to its resting state.
+    expect(renderer!.root.findAllByProps({ accessibilityLabel: 'Refreshing agenda days' })).toHaveLength(0);
+    expect(renderer!.root.findAllByProps({ accessibilityLabel: 'Refreshing agenda sessions' })).toHaveLength(0);
+    expect(renderer!.root.findByProps({ testID: 'agenda-refresh-control' }).props.disabled).toBe(false);
+    expect(renderer!.root.findByProps({ testID: 'agenda-refresh-control' }).props.loading).toBe(false);
+
+    await act(async () => renderer!.unmount());
+  });
+
   it('uses speaker media, time footer, and the published venue in agenda cards', async () => {
     mockActiveEvent = {
       ...mockEvent,

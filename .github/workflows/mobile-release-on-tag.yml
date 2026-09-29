@@ -23,14 +23,17 @@ name: Trigger mobile release on version tag
 # applies the same way regardless of which one created it.
 #
 # When a native release IS needed, it dispatches internal track with
-# auto_promote_alpha and auto_promote_beta — per the release posture in
-# CLAUDE.md, internal -> alpha -> beta (open testing) all fire automatically
-# in sequence from a single dispatch. Production is deliberately excluded
-# from this chain and always requires a separate, deliberate
-# `gh workflow run` dispatch: it's the only track that builds against the
-# real backend (environment=production) and ships to real users, so it
-# keeps a manual checkpoint after beta has been validated by real external
-# testers (decided 2026-07-27).
+# auto_promote_alpha, auto_promote_beta, and auto_promote_production — per
+# the release posture in CLAUDE.md (revised 2026-09-29), internal -> alpha ->
+# beta (open testing) -> production all fire automatically in sequence from a
+# single dispatch, with no manual `gh workflow run` checkpoint in between.
+# Production still always builds fresh (never promote_only, since it's the
+# only track built against environment=production) and is still gated by
+# require-beta-before-production in mobile-android-release.yml, exactly as a
+# manual production dispatch always was — that gate re-checks the ref's run
+# history for a successful beta release regardless of whether this workflow
+# or a human triggered it, so the safety check is unchanged even though the
+# checkpoint is no longer manual (decided 2026-07-27, revised 2026-09-29).
 #
 # To force a native build even when the guard says OTA-only is sufficient
 # (e.g. you want fresh store visibility, or you don't trust the guard for
@@ -140,5 +143,7 @@ jobs:
             --field alpha_release_status=completed \
             --field auto_promote_beta=true \
             --field beta_release_status=completed \
+            --field auto_promote_production=true \
+            --field production_release_status=completed \
             --field backend=fastlane \
             --field runner=github-hosted
