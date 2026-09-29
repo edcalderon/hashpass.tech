@@ -15,6 +15,7 @@ import { useTheme } from '../../../hooks/useTheme';
 import { MaterialIcons, NativeSafeIcon } from '../../../lib/vector-icons';
 import type { NativeSafeIconName } from '../../../lib/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import EventBanner from '../../../components/EventBanner';
 import SpeakerAvatar from '../../../components/SpeakerAvatar';
 import UnifiedSearchAndFilter from '../../../components/UnifiedSearchAndFilter';
@@ -1960,7 +1961,7 @@ export default function BSL2025AgendaScreen() {
                     accessibilityRole="tab"
                     accessibilityLabel={`${getTabLabel(dayKey)} · ${sessionCount} ${t('tabs.sessions', 'sessions')}`}
                     accessibilityState={{ selected }}
-                    style={[styles.dayTab, selected && styles.dayTabSelected]}
+                    style={styles.dayTabTouchable}
                     onPress={() => {
                     userSelectedTabRef.current = true; // Mark as user-selected
                     // Clear URL query parameters when user manually switches tabs
@@ -1972,17 +1973,26 @@ export default function BSL2025AgendaScreen() {
                     setActiveTab(dayKey);
                   }}
                   >
-                    <Text style={[styles.dayTabLabel, selected && styles.dayTabLabelSelected]}>{getTabLabel(dayKey)}</Text>
-                    {!!getTabTheme(dayKey) && (
-                      <Text style={[styles.dayTabTheme, selected && styles.dayTabThemeSelected]} numberOfLines={2}>
-                        {getTabTheme(dayKey)}
-                      </Text>
-                    )}
-                    <View style={[styles.dayTabCount, selected && styles.dayTabCountSelected]}>
-                      <Text style={[styles.dayTabCountText, selected && styles.dayTabCountTextSelected]}>
-                        {sessionCount} {t('tabs.sessions', 'sessions')}
-                      </Text>
-                    </View>
+                    <LinearGradient
+                      colors={selected
+                        ? [colors.primaryLight, colors.background.paper]
+                        : [colors.background.default, colors.background.paper]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={[styles.dayTab, selected && styles.dayTabSelected]}
+                    >
+                      <Text style={[styles.dayTabLabel, selected && styles.dayTabLabelSelected]}>{getTabLabel(dayKey)}</Text>
+                      {!!getTabTheme(dayKey) && (
+                        <Text style={[styles.dayTabTheme, selected && styles.dayTabThemeSelected]} numberOfLines={2}>
+                          {getTabTheme(dayKey)}
+                        </Text>
+                      )}
+                      <View style={[styles.dayTabCount, selected && styles.dayTabCountSelected]}>
+                        <Text style={[styles.dayTabCountText, selected && styles.dayTabCountTextSelected]}>
+                          {sessionCount} {t('tabs.sessions', 'sessions')}
+                        </Text>
+                      </View>
+                    </LinearGradient>
                   </TouchableOpacity>
                 );
               })}
@@ -2307,13 +2317,15 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     borderWidth: 1,
     borderRadius: uiTokens.radius.card,
     borderColor: colors.divider,
-    backgroundColor: colors.background.paper,
+    overflow: 'hidden',
     padding: uiTokens.space.md,
     justifyContent: 'space-between',
     gap: uiTokens.space.xs,
   },
+  dayTabTouchable: {
+    borderRadius: uiTokens.radius.card,
+  },
   dayTabSelected: {
-    backgroundColor: colors.primary,
     borderColor: colors.primary,
   },
   dayTabLabel: {
@@ -2322,7 +2334,7 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     fontWeight: '800',
   },
   dayTabLabelSelected: {
-    color: '#FFFFFF',
+    color: colors.primary,
   },
   dayTabTheme: {
     color: colors.text.secondary,
@@ -2330,7 +2342,7 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     lineHeight: 16,
   },
   dayTabThemeSelected: {
-    color: colors.primaryContrastText,
+    color: colors.text.primary,
   },
   dayTabCount: {
     alignSelf: 'flex-start',
@@ -2340,7 +2352,9 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     paddingVertical: 3,
   },
   dayTabCountSelected: {
-    backgroundColor: colors.background.paper,
+    backgroundColor: `${colors.primary}14`,
+    borderColor: `${colors.primary}40`,
+    borderWidth: uiTokens.control.borderWidth,
   },
   dayTabCountText: {
     color: colors.text.secondary,

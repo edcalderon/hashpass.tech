@@ -171,6 +171,10 @@ jest.mock('expo-sharing', () => ({
   shareAsync: (...args: unknown[]) => mockSharingShareAsync(...args),
 }));
 
+jest.mock('expo-linear-gradient', () => ({
+  LinearGradient: 'LinearGradient',
+}));
+
 jest.mock('@contexts/EventContext', () => ({
   useEvent: () => ({
     event: mockActiveEvent,
