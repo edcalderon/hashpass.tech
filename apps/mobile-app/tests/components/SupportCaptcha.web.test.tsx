@@ -3,7 +3,7 @@
 import React from 'react';
 import TestRenderer, { act } from 'react-test-renderer';
 
-const mockCaptchaWidget = jest.fn(() => null);
+const mockCaptchaWidget = jest.fn((_props: Record<string, unknown>) => null);
 jest.mock('@hashpass/ui/CaptchaWidget', () => ({
   CaptchaWidget: (props: Record<string, unknown>) => mockCaptchaWidget(props),
 }));
