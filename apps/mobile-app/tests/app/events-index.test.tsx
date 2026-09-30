@@ -25,7 +25,21 @@ jest.mock('../../components/EventBannerBackgroundVideo', () => 'EventVideo', { v
 import EventsScreen from '../../components/events/GuestExplorer';
 let view: ReactTestRenderer;
 const content = () => JSON.stringify(view.toJSON());
-const press = (label: string) => act(() => [...view.root.findAllByType(Pressable), ...view.root.findAllByType(TouchableOpacity)].find(button => button.props.accessibilityLabel === label)!.props.onPress());
+// Some cards' inner controls (e.g. Explorer's bookmark/footer buttons) are
+// plain Views with onTouchEnd + accessibilityRole="button" rather than
+// Pressable/TouchableOpacity -- an intentional web-hydration fix (avoids a
+// pressable nested inside the outer card's own pressable). Fall back to
+// searching those by accessibilityLabel + onTouchEnd when no typed
+// Pressable/TouchableOpacity match is found.
+const press = (label: string) => act(() => {
+  const typed = [...view.root.findAllByType(Pressable), ...view.root.findAllByType(TouchableOpacity)]
+    .find(button => button.props.accessibilityLabel === label);
+  if (typed) { typed.props.onPress(); return; }
+  const touchTarget = view.root.findAll(
+    node => node.props?.accessibilityLabel === label && typeof node.props?.onTouchEnd === 'function',
+  )[0];
+  touchTarget.props.onTouchEnd({ stopPropagation: () => {} });
+});
 const setViewport = (width: number, height = 768) => {
   jest.spyOn(require('react-native'), 'useWindowDimensions').mockReturnValue({ width, height, scale: 1, fontScale: 1 });
 };

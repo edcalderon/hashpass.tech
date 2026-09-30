@@ -551,6 +551,17 @@ export default function Explorer({
     });
   };
 
+  // RN's ScrollView type has no `onWheel` prop (native never fires wheel
+  // events), so this -- like handleRailWheel/handleFilterChipWheel above --
+  // is only ever invoked on web, via the `{...({ onWheel } as any)}` spread
+  // at the call site rather than a typed prop.
+  const handleQuickAccessWheel = (event: any) => {
+    const container = event?.currentTarget;
+    const delta = event?.deltaY ?? 0;
+    if (!container || !delta) return;
+    container.scrollLeft += delta;
+  };
+
   const changeEventPage = (nextPage: number) => {
     setEventPage(Math.min(Math.max(nextPage, 0), pageCount - 1));
     railScrollOffsetRef.current = 0;
@@ -1091,9 +1102,9 @@ export default function Explorer({
         <View style={styles.discoveryCounterTopRow}>
           <View style={styles.discoveryCounterValueRow}>
             {typeof value === "number" || typeof value === "string" ? (
-              <Text style={valueStyle} numberOfLines={1}>
+              <HoverText style={valueStyle} numberOfLines={1}>
                 {value}
-              </Text>
+              </HoverText>
             ) : (
               value
             )}
@@ -1309,12 +1320,12 @@ export default function Explorer({
           <View style={styles.eventBadge}>
             <Text style={styles.eventBadgeText}>{eventBadgeLabel}</Text>
           </View>
-          <TouchableOpacity
+          <View
             style={[
               styles.bookmarkButton,
               bookmarked && styles.bookmarkButtonActive,
             ]}
-            onPress={(pressEvent) => { pressEvent?.stopPropagation(); toggleBookmark(event.id); }}
+            onTouchEnd={(pressEvent) => { pressEvent?.stopPropagation(); toggleBookmark(event.id); }}
             accessibilityRole="button"
             accessibilityLabel={`${
               bookmarkedEventIds.includes(event.id)
@@ -1327,7 +1338,7 @@ export default function Explorer({
               color="#fff"
               size={19}
             />
-          </TouchableOpacity>
+          </View>
         </View>
         <View style={styles.eventBody}>
           <HoverText style={styles.eventTitle} numberOfLines={2}>
@@ -1340,9 +1351,9 @@ export default function Explorer({
             {event.subtitle}
           </HoverText>
           {mode !== "grid" && (
-            <TouchableOpacity
+            <View
               style={styles.eventFooter}
-              onPress={(pressEvent) => { pressEvent?.stopPropagation(); openEventRoom(event); }}
+              onTouchEnd={(pressEvent) => { pressEvent?.stopPropagation(); openEventRoom(event); }}
               accessibilityRole="button"
               accessibilityLabel={`Join the room for ${event.title}`}
             >
@@ -1384,7 +1395,7 @@ export default function Explorer({
                       )
                   : translate("eventChat.joinRoom", "Join the room")}
               </Text>
-            </TouchableOpacity>
+            </View>
           )}
         </View>
       </TouchableOpacity>
@@ -1549,8 +1560,15 @@ export default function Explorer({
         </View>
         <ScrollView
           horizontal
+          nestedScrollEnabled
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.quickRail}
+          decelerationRate="fast"
+          snapToInterval={152} // card width (142) + gap (10)
+          snapToAlignment="start"
+          bounces
+          overScrollMode="always"
+          {...({ onWheel: handleQuickAccessWheel } as any)}
         >
           {items.map((item) => (
             <TouchableOpacity

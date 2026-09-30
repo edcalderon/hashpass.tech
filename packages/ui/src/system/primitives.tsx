@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   AccessibilityInfo,
+  Alert,
   KeyboardAvoidingView,
   LayoutAnimation,
   Platform,
@@ -470,6 +471,15 @@ export function FormField({
  * Text with full-content tooltip on hover/long-press when truncated.
  * Detects truncation via onTextLayout and only shows the affordance when needed.
  * Mobile-first: web uses title attribute for native tooltip, native uses long-press.
+ *
+ * React Native Web's Text implementation never fires `onTextLayout` and
+ * silently strips an unsupported `title` prop (neither is in its forwarded
+ * props allowlist), so the web path can't rely on either -- truncation is
+ * instead measured from the rendered DOM node via `ref`, and the tooltip is
+ * applied by mutating that node's `title` attribute directly. Native keeps
+ * the `onTextLayout` line-count check and reveals the full text via
+ * `onLongPress`, which React Native's Text supports natively without needing
+ * a wrapping Pressable.
  */
 export type HoverTextProps = TextProps & {
   mode?: ColorMode;
@@ -489,6 +499,7 @@ export function HoverText({
   ...props
 }: HoverTextProps) {
   const [isTruncated, setIsTruncated] = useState(false);
+  const textRef = useRef<Text>(null);
 
   const handleTextLayout = (event: any) => {
     // Forward to caller's handler if they supplied one
@@ -496,22 +507,48 @@ export function HoverText({
     if (numberOfLines === undefined) return;
     const { lines } = event.nativeEvent;
     // If we have more lines than numberOfLines, text is truncated
-    if (lines.length > numberOfLines) {
-      setIsTruncated(true);
-    }
+    setIsTruncated(lines.length > numberOfLines);
   };
 
   const fullText = tooltipText || (typeof children === "string" ? children : "");
 
+  useEffect(() => {
+    if (Platform.OS !== "web" || numberOfLines === undefined) return;
+    const node = textRef.current as unknown as HTMLElement | null;
+    if (!node || typeof node.getBoundingClientRect !== "function") return;
+    const measure = () => {
+      const truncated =
+        numberOfLines === 1
+          ? node.scrollWidth > node.clientWidth
+          : node.scrollHeight > node.clientHeight;
+      setIsTruncated(truncated);
+      if (truncated && fullText) {
+        node.setAttribute("title", fullText);
+      } else {
+        node.removeAttribute("title");
+      }
+    };
+    measure();
+    if (typeof ResizeObserver === "undefined") return undefined;
+    const observer = new ResizeObserver(measure);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [fullText, numberOfLines, children]);
+
   return (
     <Text
       {...props}
+      ref={textRef}
       numberOfLines={numberOfLines}
       onTextLayout={handleTextLayout}
-      // Web: use title attribute for native browser tooltip on hover
-      {...(Platform.OS === "web" && isTruncated && numberOfLines !== undefined
-        ? { title: fullText }
-        : {})}
+      // Native: long-press reveals the full text since there is no hover
+      // state; Text supports onLongPress directly there. React Native Web
+      // drops unrecognized handlers like this one, so it's a no-op on web.
+      onLongPress={
+        Platform.OS !== "web" && isTruncated && fullText
+          ? () => Alert.alert("", fullText)
+          : undefined
+      }
       style={style}
     >
       {children}

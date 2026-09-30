@@ -8,6 +8,7 @@ import {
   Badge,
   FilterChip,
   FormField,
+  HoverText,
   Surface,
 } from "./primitives";
 import { uiPalette, uiTokens, type ColorMode } from "./tokens";
@@ -214,6 +215,48 @@ function Catalog({ mode = "light" }: { mode?: ColorMode }) {
         editable={false}
         value="Read only"
       />
+      <View style={{ gap: uiTokens.space.md }}>
+        <Text
+          style={{
+            color: palette.muted,
+            fontSize: uiTokens.type.label,
+            fontWeight: "700",
+            textTransform: "uppercase",
+            letterSpacing: 1,
+          }}
+        >
+          HoverText truncation
+        </Text>
+        <View style={{ gap: uiTokens.space.sm, maxWidth: 260 }}>
+          <HoverText
+            mode={mode}
+            numberOfLines={1}
+            style={{ color: palette.text, fontSize: uiTokens.type.body }}
+          >
+            Short title fits
+          </HoverText>
+          <HoverText
+            mode={mode}
+            numberOfLines={1}
+            style={{ color: palette.text, fontSize: uiTokens.type.body }}
+          >
+            A much longer translated event title that has to be clipped on one line
+          </HoverText>
+          <HoverText
+            mode={mode}
+            numberOfLines={2}
+            style={{ color: palette.text, fontSize: uiTokens.type.body }}
+          >
+            A long translated description that wraps across two lines before it
+            gets clipped and needs the full-content tooltip affordance to be
+            readable in full
+          </HoverText>
+        </View>
+        <Text style={{ color: palette.muted, fontSize: uiTokens.type.caption, lineHeight: 18 }}>
+          Web: hover a clipped line for the native browser tooltip. Native:
+          long-press a clipped line to reveal the full text.
+        </Text>
+      </View>
     </View>
   );
 }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { AccessibilityInfo, View, Text, StyleSheet, ScrollView, TouchableOpacity, InteractionManager, Linking, Modal, Platform, Pressable, Image } from 'react-native';
 import type { ImageSourcePropType } from 'react-native';
 import Animated, {
@@ -505,6 +505,7 @@ type AgendaTypeLegendControlProps = {
   surfaceColor: string;
   borderColor: string;
   textColor: string;
+  mode: 'light' | 'dark';
   onPress?: () => void;
   selected?: boolean;
 };
@@ -550,6 +551,7 @@ function AgendaTypeLegendControl({
   surfaceColor,
   borderColor,
   textColor,
+  mode,
   onPress,
   selected,
 }: AgendaTypeLegendControlProps) {
@@ -622,9 +624,9 @@ function AgendaTypeLegendControl({
           />
         </View>
         <Animated.View style={[agendaTypeLegendControlStyles.labelClip, labelStyle]}>
-          <Text numberOfLines={1} style={[agendaTypeLegendControlStyles.label, { color: textColor }]}>
+          <HoverText mode={mode} numberOfLines={1} style={[agendaTypeLegendControlStyles.label, { color: textColor }]}>
             {label}
-          </Text>
+          </HoverText>
         </Animated.View>
       </Pressable>
     </Animated.View>
@@ -773,7 +775,11 @@ export default function BSL2025AgendaScreen() {
   const userSelectedTabRef = useRef(false); // Track if user manually selected a tab
   const [isLive, setIsLive] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedFilter, setSelectedFilter] = useState<AgendaType | 'all'>('all');
+  // Stackable, multi-select legend filters: clicking a session-type icon
+  // toggles it into/out of this set rather than replacing a single active
+  // choice, so a viewer can e.g. show keynotes + panels together and the
+  // filter badge counts every active type ("1 2 3 4...").
+  const [selectedFilters, setSelectedFilters] = useState<AgendaType[]>([]);
   const [agendaLayout, setAgendaLayout] = useState<'compact' | 'list' | 'grid'>('compact');
   const isCompactAgenda = agendaLayout === 'compact';
   const isAgendaGrid = agendaLayout === 'grid';
@@ -782,6 +788,20 @@ export default function BSL2025AgendaScreen() {
   const [isEventPeriod, setIsEventPeriod] = useState(false);
   const [isEventFinished, setIsEventFinished] = useState(false);
   const [filteredAgenda, setFilteredAgenda] = useState<AgendaItem[]>([]);
+  // Drives UnifiedSearchAndFilter's own internal filter state so pressing a
+  // legend icon actually narrows filteredAgenda instead of only toggling the
+  // legend's own visual "selected" style. Memoized so the reference only
+  // changes when selectedFilters itself changes -- UnifiedSearchAndFilter
+  // reacts to this via a useEffect keyed on identity, and a fresh object on
+  // every render would otherwise re-trigger that effect (and the resulting
+  // setFilteredAgenda call) on every unrelated re-render. customAgendaFilterLogic's
+  // 'type' case already matches an array of types with .includes(item.type),
+  // so passing the whole stacked selection through as one array gives OR
+  // semantics across every selected type for free.
+  const legendExternalFilters = useMemo(
+    () => (selectedFilters.length === 0 ? {} : { type: selectedFilters }),
+    [selectedFilters],
+  );
   const [showNotLiveDetails, setShowNotLiveDetails] = useState(false);
   const [userAgendaStatus, setUserAgendaStatus] = useState<Record<string, 'tentative' | 'confirmed'>>({});
   const [favoriteStatus, setFavoriteStatus] = useState<Record<string, boolean>>({});
@@ -820,13 +840,20 @@ export default function BSL2025AgendaScreen() {
       : 'https://hashpass.tech';
     // Build full location: room/hall + venue address
     // item.location is just the room (e.g., "Hall principal")
-    // eventVenueLabel is the venue (e.g., "Universidad Externado de Colombia, Bogotá")
+    // eventVenueLabel is used for on-screen display and falls back to
+    // event.subtitle when there's no real event.tour.venue -- appending that
+    // fallback here would fabricate a venue that was never actually verified
+    // (e.g. producing "Registro, 1ª Edición" for events with no tour
+    // object). Only a real, separately-sourced venue belongs in the export,
+    // and only when it isn't already folded into roomName by the data
+    // itself (avoids "Hotel X, Hotel X" duplication).
+    const verifiedVenue = event?.tour?.venue;
     const roomName = item.location ||
       (item.type === 'keynote' ? t('locations.mainStage') :
         item.type === 'registration' ? t('locations.registrationArea') : null);
-    const itemLocation = roomName && eventVenueLabel
-      ? `${roomName}, ${eventVenueLabel}`
-      : roomName || eventVenueLabel;
+    const itemLocation = roomName && verifiedVenue && !roomName.toLowerCase().includes(verifiedVenue.toLowerCase())
+      ? `${roomName}, ${verifiedVenue}`
+      : roomName || verifiedVenue || '';
 
     return createAgendaCalendarEvent({
       eventId,
@@ -2252,6 +2279,7 @@ export default function BSL2025AgendaScreen() {
           filterGroups={filterGroups}
           customFilterLogic={customAgendaFilterLogic}
           showResultsCount={true}
+          externalFilters={legendExternalFilters}
         />
       )}
 
@@ -2280,9 +2308,14 @@ export default function BSL2025AgendaScreen() {
                 surfaceColor={colors.background.paper}
                 borderColor={colors.divider}
                 textColor={colors.text.primary}
-                selected={selectedFilter === option.key}
+                mode={interfaceMode}
+                selected={selectedFilters.includes(option.key as AgendaType)}
                 onPress={() => {
-                  setSelectedFilter(selectedFilter === option.key ? 'all' : option.key as AgendaType);
+                  setSelectedFilters((prev) =>
+                    prev.includes(option.key as AgendaType)
+                      ? prev.filter((key) => key !== option.key)
+                      : [...prev, option.key as AgendaType],
+                  );
                 }}
               />
             ))}
@@ -2870,7 +2903,6 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   },
   agendaActionButton: {
     alignSelf: 'flex-start',
-    minHeight: uiTokens.control.compactHeight,
     paddingHorizontal: uiTokens.space.md,
     paddingVertical: uiTokens.space.xs,
   },
