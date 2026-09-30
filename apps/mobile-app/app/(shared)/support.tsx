@@ -507,10 +507,14 @@ export default function SupportScreen() {
               messages.map((item) => {
                 // Never surface which real staff/agent account replied --
                 // the visitor only ever needs to know it was "them" or
-                // "HASHPASS Support", never admin@hashpass.tech or whichever
-                // agent email Frappe reports as the commenter.
-                const isYou =
-                  !item.commentedBy || item.commentedBy.trim().toLowerCase() === activeTicketRef.email.trim().toLowerCase();
+                // "HASHPASS Support". `commentedBy` can't answer that: every
+                // reply sent through this API authenticates as the shared
+                // Frappe service account, never the visitor's own email, so
+                // comparing it against activeTicketRef.email always missed.
+                // isVisitorReply (lib/server/frappe-helpdesk.ts) is the real
+                // signal -- it survives independently of which Frappe user
+                // identity the write API key happens to resolve to.
+                const isYou = item.isVisitorReply === true;
                 const authorLabel = isYou ? 'You' : 'HASHPASS Support';
                 const time = item.createdAt ? formatMessageTime(item.createdAt) : '';
                 return (

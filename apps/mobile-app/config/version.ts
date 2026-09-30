@@ -22,25 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202609301537, // Updated to current timestamp
+  buildNumber: 202609301710, // Updated to current timestamp
   releaseDate: '2026-09-30',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'add iOS Fastlane/TestFlight release pipeline',
-    'public anonymous ticket submission gated by web CAPTCHA',
-    'wire local Frappe Helpdesk into dev:all for Contact Support simulation'
+    // No new features
   ],
   bugfixes: [
-    'make local Frappe Helpdesk startup in dev:all non-fatal and idempotent',
-    'use distinct icons for venue and city/country rows'
+    'use registered App Store bundle identifier'
   ],
   breakingChanges: [],
-  notes: 'add iOS Fastlane/TestFlight release pipeline; public anonymous ticket submission gated by web CAPTCHA; wire local Frappe Helpdesk into dev:all for Contact Support simulation; make local Frappe Helpdesk startup in dev:all non-fatal and idempotent; use distinct icons for venue and city/country rows'
+  notes: 'use registered App Store bundle identifier'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.85': {
+    version: '1.9.85',
+    buildNumber: 202609301710,
+    releaseDate: '2026-09-30',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'use registered App Store bundle identifier'
+    ],
+    breakingChanges: [],
+    notes: 'use registered App Store bundle identifier'
+  },
   '1.9.84': {
     version: '1.9.84',
     buildNumber: 202609301537,

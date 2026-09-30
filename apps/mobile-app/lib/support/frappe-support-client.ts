@@ -23,6 +23,11 @@ export interface SupportMessage {
   content: string;
   commentedBy: string | null;
   createdAt: string;
+  // See FrappeHelpdeskComment.isVisitorReply in lib/server/frappe-helpdesk.ts
+  // -- the authoritative signal for "was this the visitor's own message",
+  // since `commentedBy` is always the shared service account, never the
+  // visitor's email, for anything sent through this API.
+  isVisitorReply: boolean;
 }
 
 const BASE_PATH = '/v1/support/frappe/tickets';

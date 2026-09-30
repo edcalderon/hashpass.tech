@@ -43,7 +43,16 @@ export async function POST(request: Request) {
   // fields for this, and we deliberately didn't ask Frappe ops to add any.
   const context = typeof body?.context === "string" ? body.context.trim() : "";
   const captchaToken = typeof body?.captchaToken === "string" ? body.captchaToken.trim() : "";
-  const isNative = body?.source === "native" || !captchaToken;
+  // `source` is caller-supplied and therefore not a strong signal on its own,
+  // but it's the same declaration the real native client always sends (see
+  // frappe-support-client.ts) and native has no captcha solver to produce a
+  // token with anyway. What this must NOT do is treat an absent captchaToken
+  // as an implicit "native" declaration -- that let a web-labeled (or
+  // unlabeled) request skip the captcha entirely just by omitting the token,
+  // which is a straight bypass of the one anti-spam gate this public,
+  // unauthenticated endpoint has. A request that doesn't explicitly claim
+  // `source: "native"` is always treated as needing a valid token.
+  const isNative = body?.source === "native";
 
   if (!EMAIL_PATTERN.test(email)) {
     return Response.json({ message: "A valid email is required" }, { status: 400 });
@@ -57,11 +66,13 @@ export async function POST(request: Request) {
 
   if (!isNative) {
     let captchaValid = false;
-    try {
-      captchaValid = (await cap.validateToken(captchaToken)).success;
-    } catch (err) {
-      console.error("[support/frappe/tickets] captcha validateToken threw:", err);
-      captchaValid = false;
+    if (captchaToken) {
+      try {
+        captchaValid = (await cap.validateToken(captchaToken)).success;
+      } catch (err) {
+        console.error("[support/frappe/tickets] captcha validateToken threw:", err);
+        captchaValid = false;
+      }
     }
     if (!captchaValid) {
       return Response.json(

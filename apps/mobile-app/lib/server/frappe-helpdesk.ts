@@ -116,7 +116,29 @@ export interface FrappeHelpdeskComment {
   content: string;
   commentedBy: string | null;
   createdAt: string;
+  // True when this comment was written by the visitor through our own API
+  // (see addHelpdeskTicketComment below), never inferred from `commentedBy`.
+  // Every comment this module creates authenticates to Frappe with the
+  // shared FRAPPE_SUPPORT_WRITE_API_KEY service credential, not a per-visitor
+  // identity, so Frappe always records `commented_by` as that service
+  // account -- never the visitor's own email -- regardless of who actually
+  // typed the message. Comparing `commentedBy` against the visitor's email
+  // (as the client used to) therefore always classifies the visitor's own
+  // replies as staff. This flag is derived instead from a marker embedded in
+  // (and stripped back out of) the comment body -- see VISITOR_REPLY_MARKER.
+  isVisitorReply: boolean;
 }
+
+// Invisible (HTML comment) marker appended to every comment body this module
+// writes to Frappe, so a later read can tell "we wrote this on the visitor's
+// behalf" apart from "a real agent typed this in the Frappe Helpdesk UI"
+// without depending on which Frappe user identity the write API key resolves
+// to. Renders as nothing in Frappe's own rich-text comment view (which
+// renders real HTML) and is dropped silently by render-html-content.tsx's
+// tokenizer (unrecognized tag) on our side, then stripped from `content`
+// before it's ever returned to a client. Comments created before this marker
+// existed have no way to be retroactively attributed and will read as staff.
+const VISITOR_REPLY_MARKER = "<!--hashpass:visitor-reply-->";
 
 function serializeTicket(raw: Record<string, unknown>): FrappeHelpdeskTicket {
   return {
@@ -131,11 +153,14 @@ function serializeTicket(raw: Record<string, unknown>): FrappeHelpdeskTicket {
 }
 
 function serializeComment(raw: Record<string, unknown>): FrappeHelpdeskComment {
+  const rawContent = String(raw.content ?? "");
+  const isVisitorReply = rawContent.includes(VISITOR_REPLY_MARKER);
   return {
     id: String(raw.name ?? ""),
-    content: String(raw.content ?? ""),
+    content: isVisitorReply ? rawContent.split(VISITOR_REPLY_MARKER).join("") : rawContent,
     commentedBy: raw.commented_by ? String(raw.commented_by) : null,
     createdAt: String(raw.creation ?? ""),
+    isVisitorReply,
   };
 }
 
@@ -186,9 +211,16 @@ export async function addHelpdeskTicketComment(ticketId: string, content: string
   const raw = await request<Record<string, unknown>>("resource/HD Ticket Comment", {
     method: "POST",
     write: true,
-    body: { reference_ticket: ticketId, content },
+    body: { reference_ticket: ticketId, content: `${content}${VISITOR_REPLY_MARKER}` },
   });
-  return serializeComment(raw);
+  // Every call to this function is a visitor-authored write (it's only ever
+  // invoked from the ticket-reply/attachment routes, after loadAuthorizedTicket
+  // has confirmed the caller owns the ticket) -- so isVisitorReply is known
+  // true here directly, rather than depending on Frappe echoing the marker
+  // back in its create response. `content` is likewise restored to what the
+  // caller passed in, not whatever Frappe's response happens to contain.
+  const comment = serializeComment(raw);
+  return { ...comment, content, isVisitorReply: true };
 }
 
 // "Cancel ticket" in the app maps to Frappe's standard Closed status -- HD

@@ -41,11 +41,14 @@ const ENTITY_MAP: Record<string, string> = {
 };
 
 function decodeEntities(input: string): string {
-  return input.replace(/&(#x?[0-9a-fA-F]+|[a-zA-Z]+);/g, (match, code: string) => {
+  return input.replace(/&(#([xX][0-9a-fA-F]+|[0-9]+)|[a-zA-Z]+);/g, (match, code: string) => {
     if (code[0] === '#') {
       const isHex = code[1] === 'x' || code[1] === 'X';
       const num = parseInt(code.slice(isHex ? 2 : 1), isHex ? 16 : 10);
-      return Number.isFinite(num) ? String.fromCodePoint(num) : match;
+      // A finite-but-out-of-range value (e.g. &#999999999;) would crash
+      // String.fromCodePoint with a RangeError; the valid Unicode range is
+      // 0..0x10FFFF. Fall back to the original match in either case.
+      return Number.isFinite(num) && num >= 0 && num <= 0x10ffff ? String.fromCodePoint(num) : match;
     }
     return code in ENTITY_MAP ? ENTITY_MAP[code] : match;
   });

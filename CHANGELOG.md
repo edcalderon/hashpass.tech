@@ -1,3 +1,18 @@
+## [1.9.85](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.84...v1.9.85) (2026-09-30)
+
+
+### Bug Fixes
+
+* **ios:** use registered App Store bundle identifier ([56c22f0](https://github.com/hashpass-tech/hashpass.tech/commit/56c22f07047d65b42d5776750159fc2acdc0f9b8))
+### Release Highlights
+- use registered App Store bundle identifier
+
+### Release scope
+- Compared with: `v1.9.84` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+
 ## [1.9.84](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.83...v1.9.84) (2026-09-30)
 
 
