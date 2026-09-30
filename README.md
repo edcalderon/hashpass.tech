@@ -20,13 +20,14 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.82)
+## 📋 Latest Changes (v1.9.83)
 
 ### Features
 
+* **support:** Frappe Helpdesk integration + design-system drift fixes ([68e18a5](https://github.com/hashpass-tech/hashpass.tech/commit/68e18a5081a8cbce757b1a672563580e4d125ffb))
 * **ui:** vertical action buttons, super-index type filter, HoverText, full venue location ([18a400f](https://github.com/hashpass-tech/hashpass.tech/commit/18a400f599ec0f53060b1d8092024a6b77a78179))
 ### Release Highlights
-- vertical action buttons, super-index type filter, HoverText, full venue location
+- Frappe Helpdesk integration + design-system drift fixes; vertical action buttons, super-index type filter, HoverText, full venue location
 
 ### Release scope
 - Compared with: `v1.9.81` (the previous global release tag)
