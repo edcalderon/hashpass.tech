@@ -1,0 +1,14 @@
+# Local-only override merged on top of ops/self-hosted/frappe/compose.yaml
+# (the same pinned Frappe Helpdesk v1.30.1 stack the real self-hosted
+# runbook deploys -- see ops/self-hosted/README.md and docs/operations/
+# self-hosted-*.md). That base file has no host port mapping and no TLS: in
+# production Caddy terminates HTTPS on the `hashpass-ops` network and proxies
+# to frappe-frontend. Locally there is no Caddy, no DNS, and no certificate,
+# so this override just publishes frappe-frontend's internal nginx port
+# (8080, see its healthcheck in the base file) straight to the host over
+# plain HTTP -- fine for a throwaway local dev instance, never acceptable
+# for the real deployment.
+services:
+  frappe-frontend:
+    ports:
+      - "${FRAPPE_LOCAL_HTTP_PORT:-8083}:8080"
