@@ -173,15 +173,17 @@ def ios_workspace
   workspace
 end
 
-def build_ios_ipa
-  api_key = app_store_connect_api_key_from_env
-
+def sync_ios_signing(readonly:)
   match(
     type: 'appstore',
     app_identifier: APP_STORE_BUNDLE_ID,
-    api_key: api_key,
-    readonly: ENV.fetch('MATCH_READONLY', 'true') == 'true',
+    api_key: app_store_connect_api_key_from_env,
+    readonly: readonly,
   )
+end
+
+def build_ios_ipa
+  sync_ios_signing(readonly: ENV.fetch('MATCH_READONLY', 'true') == 'true')
 
   build_app(
     workspace: ios_workspace,
@@ -209,5 +211,10 @@ platform :ios do
       distribute_external: false,
       skip_waiting_for_build_processing: false,
     )
+  end
+
+  desc 'Create and encrypt App Store signing assets in Match without building an IPA.'
+  lane :bootstrap_signing do |_options|
+    sync_ios_signing(readonly: false)
   end
 end

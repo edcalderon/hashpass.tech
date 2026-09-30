@@ -24,4 +24,21 @@ describe('mobile release tag workflow', () => {
     expect(workflow).toContain('secrets.MATCH_GIT_BASIC_AUTHORIZATION');
     expect(workflow).toContain('Missing required GitHub Actions secret: $name');
   });
+
+  it('supplies and materializes the production public runtime config before bundling', () => {
+    const workflow = fs.readFileSync(
+      path.resolve(__dirname, '../../../../.github/workflows/mobile-ios-release.yml'),
+      'utf8',
+    );
+
+    expect(workflow).toContain('EAS_PROJECT_ID: ${{ vars.EAS_PROJECT_ID }}');
+    expect(workflow).toContain('EXPO_OWNER: hashpasss-team');
+    expect(workflow).toContain('EXPO_PUBLIC_SUPABASE_PROFILE: core-production');
+    expect(workflow).toContain('EXPO_PUBLIC_SUPABASE_URL: ${{ vars.EXPO_PUBLIC_SUPABASE_URL_PROD }}');
+    expect(workflow).toContain('EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.EXPO_PUBLIC_SUPABASE_ANON_KEY_PROD }}');
+    expect(workflow).toContain('EXPO_PUBLIC_LINKS_API_BASE_URL: ${{ vars.EXPO_PUBLIC_LINKS_API_BASE_URL_PROD }}');
+    expect(workflow).toContain('EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID: ${{ vars.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID }}');
+    expect(workflow).toContain('- name: Write mobile app env');
+    expect(workflow).toContain("printf 'EXPO_PUBLIC_SUPABASE_URL=%s\\n'");
+  });
 });

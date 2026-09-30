@@ -24,6 +24,21 @@ jobs:
   testflight:
     runs-on: macos-15
     environment: production
+    env:
+      EAS_PROJECT_ID: ${{ vars.EAS_PROJECT_ID }}
+      EXPO_OWNER: hashpasss-team
+      # Public values below are embedded in the Metro bundle. Keep production iOS
+      # aligned with the Android production release workflow.
+      EXPO_PUBLIC_SUPABASE_PROFILE: core-production
+      EXPO_PUBLIC_SUPABASE_URL: ${{ vars.EXPO_PUBLIC_SUPABASE_URL_PROD }}
+      EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.EXPO_PUBLIC_SUPABASE_ANON_KEY_PROD }}
+      EXPO_PUBLIC_DIRECTUS_URL: ${{ vars.EXPO_PUBLIC_DIRECTUS_URL }}
+      EXPO_PUBLIC_LINKS_API_BASE_URL: ${{ vars.EXPO_PUBLIC_LINKS_API_BASE_URL_PROD }}
+      EXPO_PUBLIC_SITE_URL: https://hashpass.tech
+      EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN: 'true'
+      EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID: ${{ vars.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID }}
+      EXPO_PUBLIC_SENTRY_DSN: ${{ vars.EXPO_PUBLIC_SENTRY_DSN }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
     steps:
       - name: Checkout release ref
         uses: actions/checkout@v4
@@ -47,6 +62,40 @@ jobs:
       - name: Install Fastlane dependencies
         working-directory: apps/mobile-app
         run: bundle install
+
+      - name: Verify iOS public runtime configuration
+        run: |
+          set -euo pipefail
+          for name in EAS_PROJECT_ID EXPO_OWNER EXPO_PUBLIC_SUPABASE_PROFILE EXPO_PUBLIC_SUPABASE_URL EXPO_PUBLIC_SUPABASE_ANON_KEY EXPO_PUBLIC_LINKS_API_BASE_URL EXPO_PUBLIC_SITE_URL EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID; do
+            if [ -z "${!name}" ]; then
+              echo "Missing required GitHub Actions variable: $name" >&2
+              exit 1
+            fi
+            if [[ "${!name}" == *$'\n'* || "${!name}" == *$'\r'* ]]; then
+              echo "Invalid multi-line GitHub Actions variable: $name" >&2
+              exit 1
+            fi
+          done
+
+      # Metro reads this file during the prebuild/archive process. Job-level env
+      # alone is insufficient on a clean macOS runner because dotenv resolution
+      # can otherwise fall back to an empty runtime configuration.
+      - name: Write mobile app env
+        run: |
+          set -euo pipefail
+          umask 077
+          env_file="apps/mobile-app/.env"
+          : > "$env_file"
+          [ -n "${EXPO_PUBLIC_SUPABASE_PROFILE:-}" ]   && printf 'EXPO_PUBLIC_SUPABASE_PROFILE=%s\n'   "$EXPO_PUBLIC_SUPABASE_PROFILE"   >> "$env_file"
+          [ -n "${EXPO_PUBLIC_SUPABASE_URL:-}" ]        && printf 'EXPO_PUBLIC_SUPABASE_URL=%s\n'        "$EXPO_PUBLIC_SUPABASE_URL"        >> "$env_file"
+          [ -n "${EXPO_PUBLIC_SUPABASE_ANON_KEY:-}" ]   && printf 'EXPO_PUBLIC_SUPABASE_ANON_KEY=%s\n'   "$EXPO_PUBLIC_SUPABASE_ANON_KEY"   >> "$env_file"
+          [ -n "${EXPO_PUBLIC_DIRECTUS_URL:-}" ]        && printf 'EXPO_PUBLIC_DIRECTUS_URL=%s\n'        "$EXPO_PUBLIC_DIRECTUS_URL"        >> "$env_file"
+          [ -n "${EXPO_PUBLIC_LINKS_API_BASE_URL:-}" ]  && printf 'EXPO_PUBLIC_LINKS_API_BASE_URL=%s\n'  "$EXPO_PUBLIC_LINKS_API_BASE_URL"  >> "$env_file"
+          [ -n "${EXPO_PUBLIC_SITE_URL:-}" ]            && printf 'EXPO_PUBLIC_SITE_URL=%s\n'            "$EXPO_PUBLIC_SITE_URL"            >> "$env_file"
+          [ -n "${EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN:-}" ] && printf 'EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN=%s\n' "$EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN" >> "$env_file"
+          [ -n "${EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID:-}" ] && printf 'EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=%s\n' "$EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID" >> "$env_file"
+          [ -n "${EXPO_PUBLIC_SENTRY_DSN:-}" ]           && printf 'EXPO_PUBLIC_SENTRY_DSN=%s\n'           "$EXPO_PUBLIC_SENTRY_DSN"           >> "$env_file"
+          echo "Wrote $(grep -c '.' "$env_file" || true) public runtime setting(s) to $env_file"
 
       - name: Verify iOS release credentials are configured
         env:
@@ -77,7 +126,6 @@ jobs:
           GITHUB_RUN_NUMBER: ${{ github.run_number }}
           IOS_BUILD_NUMBER: ${{ github.run_number }}
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-          EXPO_OWNER: hashpasss-team
           EAS_BUILD_PROFILE: production
         run: |
           if [ "${{ inputs.submit }}" = "true" ]; then
