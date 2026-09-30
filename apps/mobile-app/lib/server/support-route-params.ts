@@ -1,3 +1,5 @@
+import { getHelpdeskTicket, type FrappeHelpdeskTicket } from "./frappe-helpdesk";
+
 // Expo Router API routes here don't receive a params object (see
 // apps/mobile-app/lib/server/event-api.ts's eventIdFromRequest for the same
 // pattern) -- dynamic segments are parsed back out of the request URL.
@@ -22,4 +24,20 @@ export function frappeTicketIdFromRequest(request: Request): string | null {
   const ticketsIndex = segments.indexOf("tickets");
   const ticketId = ticketsIndex >= 0 ? segments[ticketsIndex + 1] : undefined;
   return ticketId && FRAPPE_TICKET_ID_PATTERN.test(ticketId) ? ticketId : null;
+}
+
+// Shared by every route under tickets/[ticketId]/** (thread read/reply,
+// close, attachment upload/download) -- see tickets/[ticketId]+api.ts's own
+// original comment for why "ticket id + the email that raised it" is this
+// route family's whole access-control model: this Frappe instance has no
+// public/guest auth of its own for the app to piggy-back on.
+export async function loadAuthorizedTicket(
+  ticketId: string,
+  email: string,
+): Promise<{ ticket: FrappeHelpdeskTicket; response: null } | { ticket: null; response: Response }> {
+  const ticket = await getHelpdeskTicket(ticketId);
+  const notFound = { ticket: null, response: Response.json({ message: "Ticket not found" }, { status: 404 }) } as const;
+  if (!ticket) return notFound;
+  if (ticket.raisedBy.trim().toLowerCase() !== email.trim().toLowerCase()) return notFound;
+  return { ticket, response: null };
 }

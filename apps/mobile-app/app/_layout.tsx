@@ -363,6 +363,13 @@ function ThemedContent() {
     // /auth, defeating the page's entire purpose.
     pathname === '/delete-account' ||
     pathname === '/(shared)/delete-account' ||
+    // hashpass.tech/support must work for a visitor who isn't signed in and
+    // never will be (e.g. someone locked out of their account) -- ticket
+    // creation already requires no session server-side (see
+    // app/api/v1/support/frappe/tickets+api.ts), so the only thing making it
+    // non-public was this redirect gate.
+    pathname === '/support' ||
+    pathname === '/(shared)/support' ||
     pathname === '/status' ||
     pathname === '/demo';
 

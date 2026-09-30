@@ -10,6 +10,7 @@ jest.mock('../../../lib/api-client', () => ({
   },
 }));
 
+import { Platform } from 'react-native';
 import {
   createSupportTicket,
   getSupportTicket,
@@ -19,13 +20,20 @@ import {
 const BASE_PATH = '/v1/support/frappe/tickets';
 
 describe('lib/support/frappe-support-client', () => {
+  const originalPlatformOs = Platform.OS;
+
   beforeEach(() => {
     mockGet.mockReset();
     mockPost.mockReset();
   });
 
+  afterEach(() => {
+    Platform.OS = originalPlatformOs;
+  });
+
   describe('createSupportTicket', () => {
-    it('posts the ticket fields and returns the created ticket on success', async () => {
+    it('posts the ticket fields plus a web captcha token and source on web', async () => {
+      Platform.OS = 'web';
       const ticket = { id: 'HD-0001', subject: 'Help', status: 'Open', priority: 'Medium', raisedBy: 'a@example.com', createdAt: 't1', updatedAt: 't1' };
       mockPost.mockResolvedValue({ success: true, data: { ticket } });
 
@@ -34,12 +42,41 @@ describe('lib/support/frappe-support-client', () => {
         subject: 'Help',
         message: 'I need help',
         context: 'agenda screen',
+        captchaToken: 'solved-token',
       });
 
       expect(result).toEqual(ticket);
       expect(mockPost).toHaveBeenCalledWith(
         BASE_PATH,
-        { email: 'a@example.com', subject: 'Help', message: 'I need help', context: 'agenda screen' },
+        {
+          email: 'a@example.com',
+          subject: 'Help',
+          message: 'I need help',
+          context: 'agenda screen',
+          captchaToken: 'solved-token',
+          source: 'web',
+        },
+        { skipEventSegment: true },
+      );
+    });
+
+    it('omits the captcha token and declares itself native on non-web platforms', async () => {
+      Platform.OS = 'ios';
+      const ticket = { id: 'HD-0001', subject: 'Help', status: 'Open', priority: 'Medium', raisedBy: 'a@example.com', createdAt: 't1', updatedAt: 't1' };
+      mockPost.mockResolvedValue({ success: true, data: { ticket } });
+
+      await createSupportTicket({ email: 'a@example.com', subject: 'Help', message: 'I need help' });
+
+      expect(mockPost).toHaveBeenCalledWith(
+        BASE_PATH,
+        {
+          email: 'a@example.com',
+          subject: 'Help',
+          message: 'I need help',
+          context: undefined,
+          captchaToken: undefined,
+          source: 'native',
+        },
         { skipEventSegment: true },
       );
     });

@@ -1,6 +1,7 @@
 /// <reference types="jest" />
 
 const mockCreateHelpdeskTicket = jest.fn();
+const mockValidateToken = jest.fn();
 
 jest.mock('@/lib/server/frappe-helpdesk', () => {
   const actual = jest.requireActual('@/lib/server/frappe-helpdesk');
@@ -9,6 +10,11 @@ jest.mock('@/lib/server/frappe-helpdesk', () => {
     createHelpdeskTicket: (...args: unknown[]) => mockCreateHelpdeskTicket(...args),
   };
 });
+
+jest.mock('@/lib/cap-instance', () => ({
+  __esModule: true,
+  default: { validateToken: (...args: unknown[]) => mockValidateToken(...args) },
+}));
 
 function makeRequest(body: unknown) {
   return new Request('https://api.hashpass.tech/api/v1/support/frappe/tickets', {
@@ -22,6 +28,7 @@ describe('POST /api/v1/support/frappe/tickets', () => {
   beforeEach(() => {
     jest.resetModules();
     mockCreateHelpdeskTicket.mockReset();
+    mockValidateToken.mockReset();
   });
 
   it('rejects an invalid email before calling Frappe', async () => {
@@ -90,6 +97,88 @@ describe('POST /api/v1/support/frappe/tickets', () => {
     const response = await POST(makeRequest({ email: 'a@example.com', subject: 'Help', message: 'hi' }));
 
     expect(response.status).toBe(502);
+  });
+
+  it('does not require a captcha token from a native request', async () => {
+    mockCreateHelpdeskTicket.mockResolvedValue({
+      id: 'HD-0001',
+      subject: 'Help',
+      status: 'Open',
+      priority: 'Medium',
+      raisedBy: 'a@example.com',
+      createdAt: 't1',
+      updatedAt: 't1',
+    });
+
+    const { POST } = require('../../../../../app/api/v1/support/frappe/tickets+api');
+    const response = await POST(
+      makeRequest({ email: 'a@example.com', subject: 'Help', message: 'hi', source: 'native' }),
+    );
+
+    expect(response.status).toBe(201);
+    expect(mockValidateToken).not.toHaveBeenCalled();
+  });
+
+  it('treats a web-labeled request with no captcha token as native (nothing to validate)', async () => {
+    mockCreateHelpdeskTicket.mockResolvedValue({
+      id: 'HD-0001',
+      subject: 'Help',
+      status: 'Open',
+      priority: 'Medium',
+      raisedBy: 'a@example.com',
+      createdAt: 't1',
+      updatedAt: 't1',
+    });
+
+    // `source: 'web'` alone isn't the gate -- an absent captchaToken means
+    // isNative stays true (see the route's `source === 'native' ||
+    // !captchaToken` check), same as subscribe+api.ts's identical pattern.
+    // The real gate is exercised by the next two tests, once a token is
+    // actually present.
+    const { POST } = require('../../../../../app/api/v1/support/frappe/tickets+api');
+    const response = await POST(
+      makeRequest({ email: 'a@example.com', subject: 'Help', message: 'hi', source: 'web' }),
+    );
+
+    expect(response.status).toBe(201);
+    expect(mockValidateToken).not.toHaveBeenCalled();
+    expect(mockCreateHelpdeskTicket).toHaveBeenCalled();
+  });
+
+  it('rejects a web request with an invalid or expired captcha token', async () => {
+    mockValidateToken.mockResolvedValue({ success: false });
+
+    const { POST } = require('../../../../../app/api/v1/support/frappe/tickets+api');
+    const response = await POST(
+      makeRequest({ email: 'a@example.com', subject: 'Help', message: 'hi', source: 'web', captchaToken: 'bad-token' }),
+    );
+
+    expect(response.status).toBe(400);
+    const body = await response.json();
+    expect(body.captchaExpired).toBe(true);
+    expect(mockCreateHelpdeskTicket).not.toHaveBeenCalled();
+  });
+
+  it('creates the ticket once a web request presents a valid captcha token', async () => {
+    mockValidateToken.mockResolvedValue({ success: true });
+    mockCreateHelpdeskTicket.mockResolvedValue({
+      id: 'HD-0001',
+      subject: 'Help',
+      status: 'Open',
+      priority: 'Medium',
+      raisedBy: 'a@example.com',
+      createdAt: 't1',
+      updatedAt: 't1',
+    });
+
+    const { POST } = require('../../../../../app/api/v1/support/frappe/tickets+api');
+    const response = await POST(
+      makeRequest({ email: 'a@example.com', subject: 'Help', message: 'hi', source: 'web', captchaToken: 'good-token' }),
+    );
+
+    expect(response.status).toBe(201);
+    expect(mockValidateToken).toHaveBeenCalledWith('good-token');
+    expect(mockCreateHelpdeskTicket).toHaveBeenCalled();
   });
 
   it('rate limits repeated requests from the same email', async () => {

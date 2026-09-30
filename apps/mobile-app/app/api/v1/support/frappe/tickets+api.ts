@@ -1,4 +1,5 @@
 import { rateLimitOk } from "@/lib/bsl/rateLimit";
+import cap from "@/lib/cap-instance";
 import {
   createHelpdeskTicket,
   FrappeHelpdeskConfigError,
@@ -17,6 +18,16 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 // [ticketId] route below) -- a deliberately lightweight, non-cryptographic
 // check, the same trust level as most "track my order by email" flows. This
 // is a documented tradeoff, not a silent gap.
+//
+// hashpass.tech/support is a public page reachable without signing in (see
+// app/_layout.tsx's isPublicPage), by design -- someone locked out of their
+// account still needs to be able to reach support. That also makes this
+// route the abuse surface for scripted spam, so web submissions are gated on
+// a solved Cap proof-of-work challenge (see SupportCaptcha.web.tsx), the same
+// `source: 'native' || !captchaToken` convention app/api/subscribe+api.ts
+// already uses: the native app has no captcha solver (Cap's widget is a
+// browser-only custom element -- see packages/ui/src/CaptchaWidget.tsx), so
+// native calls stay ungated and rely on IP + email rate limiting instead.
 export async function POST(request: Request) {
   const ip = request.headers.get("x-forwarded-for") || "unknown";
   if (!rateLimitOk(`support-frappe-ticket-create:${ip}`)) {
@@ -31,6 +42,8 @@ export async function POST(request: Request) {
   // the ticket description for traceability -- HD Ticket has no custom
   // fields for this, and we deliberately didn't ask Frappe ops to add any.
   const context = typeof body?.context === "string" ? body.context.trim() : "";
+  const captchaToken = typeof body?.captchaToken === "string" ? body.captchaToken.trim() : "";
+  const isNative = body?.source === "native" || !captchaToken;
 
   if (!EMAIL_PATTERN.test(email)) {
     return Response.json({ message: "A valid email is required" }, { status: 400 });
@@ -40,6 +53,22 @@ export async function POST(request: Request) {
   }
   if (!rateLimitOk(`support-frappe-ticket-create:${email.toLowerCase()}`)) {
     return Response.json({ message: "Too many requests" }, { status: 429 });
+  }
+
+  if (!isNative) {
+    let captchaValid = false;
+    try {
+      captchaValid = (await cap.validateToken(captchaToken)).success;
+    } catch (err) {
+      console.error("[support/frappe/tickets] captcha validateToken threw:", err);
+      captchaValid = false;
+    }
+    if (!captchaValid) {
+      return Response.json(
+        { message: "Security check expired. Please try again.", captchaExpired: true },
+        { status: 400 },
+      );
+    }
   }
 
   const description = context ? `${message}\n\n---\n${context}` : message;
