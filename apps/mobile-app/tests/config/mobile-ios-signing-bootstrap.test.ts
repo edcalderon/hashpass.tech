@@ -33,7 +33,7 @@ describe('iOS signing bootstrap', () => {
     const appConfig = JSON.parse(fs.readFileSync(appConfigPath, 'utf8'));
 
     expect(fastfile).toContain("APP_STORE_BUNDLE_ID = 'tech.hashpass.app'");
-    expect(appfile).toContain("package_name('tech.hashpass.app')");
+    expect(appfile).toContain("package_name('com.hashpass.tech')");
     expect(appConfig.expo.ios.bundleIdentifier).toBe('tech.hashpass.app');
     // Android retains its already-published Google Play identity.
     expect(appConfig.expo.android.package).toBe('com.hashpass.tech');
