@@ -4,9 +4,18 @@
 let mockEvent: Record<string, unknown> | null = null;
 let mockAnimationLevel: "full" | "reduced" | "none" = "full";
 const mockGetEventDetails = jest.fn();
+const mockRouterPush = jest.fn();
 
 jest.mock("@contexts/EventContext", () => ({
   useEvent: () => ({ event: mockEvent }),
+}));
+
+// Avoids pulling in the real expo-router/@react-navigation/native-stack
+// machinery, which the RN test environment here can't fully mock (fails
+// with "Animated.createAnimatedComponent is not a function") -- see the
+// "Get Tickets" CTA's router.push usage below.
+jest.mock("expo-router", () => ({
+  useRouter: () => ({ push: mockRouterPush }),
 }));
 
 jest.mock("../../../hooks/useTheme", () => ({
@@ -85,6 +94,7 @@ describe("EventInfoScreen", () => {
   beforeEach(() => {
     mockEvent = null;
     mockGetEventDetails.mockReset();
+    mockRouterPush.mockReset();
     setViewportWidth(390);
     mockAnimationLevel = "full";
   });

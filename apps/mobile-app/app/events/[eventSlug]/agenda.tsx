@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { AccessibilityInfo, View, Text, StyleSheet, ScrollView, TouchableOpacity, InteractionManager, Linking, Modal, Platform, Pressable, Image } from 'react-native';
 import type { ImageSourcePropType } from 'react-native';
 import Animated, {
@@ -40,7 +40,7 @@ import * as Haptics from 'expo-haptics';
 import { parseISO } from 'date-fns';
 import LoadingScreen from '../../../components/LoadingScreen';
 import { useTranslation, getCurrentLocale } from '../../../i18n/i18n';
-import { Badge, IconButton, Surface } from '@hashpass/ui/primitives';
+import { ActionButton, Badge, HoverText, IconButton, Surface } from '@hashpass/ui/primitives';
 import { uiTokens } from '@hashpass/ui/tokens';
 import {
   buildGoogleCalendarUrl,
@@ -505,6 +505,9 @@ type AgendaTypeLegendControlProps = {
   surfaceColor: string;
   borderColor: string;
   textColor: string;
+  mode: 'light' | 'dark';
+  onPress?: () => void;
+  selected?: boolean;
 };
 
 const AGENDA_TYPE_LEGEND_SIZE = uiTokens.control.compactHeight - uiTokens.space.sm - uiTokens.space.xs;
@@ -548,6 +551,9 @@ function AgendaTypeLegendControl({
   surfaceColor,
   borderColor,
   textColor,
+  mode,
+  onPress,
+  selected,
 }: AgendaTypeLegendControlProps) {
   const reduceMotion = useReducedMotionPreference();
   const expansion = useSharedValue(0);
@@ -557,8 +563,13 @@ function AgendaTypeLegendControl({
     handleFocus,
     handleHoverIn,
     handleHoverOut,
-    handlePress,
+    handlePress: handleRevealPress,
   } = useAutoRetractingTypeReveal();
+
+  const handlePress = () => {
+    handleRevealPress();
+    onPress?.();
+  };
 
   useEffect(() => {
     const nextProgress = expanded ? 1 : 0;
@@ -586,8 +597,8 @@ function AgendaTypeLegendControl({
       style={[
         agendaTypeLegendControlStyles.shell,
         {
-          backgroundColor: expanded ? `${color}14` : surfaceColor,
-          borderColor: expanded ? `${color}52` : borderColor,
+          backgroundColor: selected ? `${color}24` : expanded ? `${color}14` : surfaceColor,
+          borderColor: selected ? color : expanded ? `${color}52` : borderColor,
         },
         shellStyle,
       ]}
@@ -596,7 +607,7 @@ function AgendaTypeLegendControl({
         testID={`agenda-type-legend-${itemKey}`}
         accessibilityRole="button"
         accessibilityLabel={label}
-        accessibilityState={{ expanded }}
+        accessibilityState={{ expanded, selected }}
         onBlur={handleBlur}
         onFocus={handleFocus}
         onHoverIn={handleHoverIn}
@@ -613,9 +624,9 @@ function AgendaTypeLegendControl({
           />
         </View>
         <Animated.View style={[agendaTypeLegendControlStyles.labelClip, labelStyle]}>
-          <Text numberOfLines={1} style={[agendaTypeLegendControlStyles.label, { color: textColor }]}>
+          <HoverText mode={mode} numberOfLines={1} style={[agendaTypeLegendControlStyles.label, { color: textColor }]}>
             {label}
-          </Text>
+          </HoverText>
         </Animated.View>
       </Pressable>
     </Animated.View>
@@ -764,7 +775,11 @@ export default function BSL2025AgendaScreen() {
   const userSelectedTabRef = useRef(false); // Track if user manually selected a tab
   const [isLive, setIsLive] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedFilter, setSelectedFilter] = useState<AgendaType | 'all'>('all');
+  // Stackable, multi-select legend filters: clicking a session-type icon
+  // toggles it into/out of this set rather than replacing a single active
+  // choice, so a viewer can e.g. show keynotes + panels together and the
+  // filter badge counts every active type ("1 2 3 4...").
+  const [selectedFilters, setSelectedFilters] = useState<AgendaType[]>([]);
   const [agendaLayout, setAgendaLayout] = useState<'compact' | 'list' | 'grid'>('compact');
   const isCompactAgenda = agendaLayout === 'compact';
   const isAgendaGrid = agendaLayout === 'grid';
@@ -773,6 +788,20 @@ export default function BSL2025AgendaScreen() {
   const [isEventPeriod, setIsEventPeriod] = useState(false);
   const [isEventFinished, setIsEventFinished] = useState(false);
   const [filteredAgenda, setFilteredAgenda] = useState<AgendaItem[]>([]);
+  // Drives UnifiedSearchAndFilter's own internal filter state so pressing a
+  // legend icon actually narrows filteredAgenda instead of only toggling the
+  // legend's own visual "selected" style. Memoized so the reference only
+  // changes when selectedFilters itself changes -- UnifiedSearchAndFilter
+  // reacts to this via a useEffect keyed on identity, and a fresh object on
+  // every render would otherwise re-trigger that effect (and the resulting
+  // setFilteredAgenda call) on every unrelated re-render. customAgendaFilterLogic's
+  // 'type' case already matches an array of types with .includes(item.type),
+  // so passing the whole stacked selection through as one array gives OR
+  // semantics across every selected type for free.
+  const legendExternalFilters = useMemo(
+    () => (selectedFilters.length === 0 ? {} : { type: selectedFilters }),
+    [selectedFilters],
+  );
   const [showNotLiveDetails, setShowNotLiveDetails] = useState(false);
   const [userAgendaStatus, setUserAgendaStatus] = useState<Record<string, 'tentative' | 'confirmed'>>({});
   const [favoriteStatus, setFavoriteStatus] = useState<Record<string, boolean>>({});
@@ -809,9 +838,22 @@ export default function BSL2025AgendaScreen() {
     const origin = Platform.OS === 'web' && typeof window !== 'undefined'
       ? window.location.origin
       : 'https://hashpass.tech';
-    const itemLocation = item.location ||
+    // Build full location: room/hall + venue address
+    // item.location is just the room (e.g., "Hall principal")
+    // eventVenueLabel is used for on-screen display and falls back to
+    // event.subtitle when there's no real event.tour.venue -- appending that
+    // fallback here would fabricate a venue that was never actually verified
+    // (e.g. producing "Registro, 1ª Edición" for events with no tour
+    // object). Only a real, separately-sourced venue belongs in the export,
+    // and only when it isn't already folded into roomName by the data
+    // itself (avoids "Hotel X, Hotel X" duplication).
+    const verifiedVenue = event?.tour?.venue;
+    const roomName = item.location ||
       (item.type === 'keynote' ? t('locations.mainStage') :
-        item.type === 'registration' ? t('locations.registrationArea') : eventVenueLabel);
+        item.type === 'registration' ? t('locations.registrationArea') : null);
+    const itemLocation = roomName && verifiedVenue && !roomName.toLowerCase().includes(verifiedVenue.toLowerCase())
+      ? `${roomName}, ${verifiedVenue}`
+      : roomName || verifiedVenue || '';
 
     return createAgendaCalendarEvent({
       eventId,
@@ -1925,17 +1967,16 @@ export default function BSL2025AgendaScreen() {
       icon: React.ReactNode,
       onPress: () => void,
     ) => (
-      <IconButton
+      <ActionButton
         key={action}
         mode={interfaceMode}
-        accentColor={colors.primary}
-        revealLabel
         label={label}
+        variant="ghost"
+        leadingIcon={icon}
         accessibilityHint={t('actions.actionHint', 'Opens this session action')}
         onPress={onPress}
-      >
-        {icon}
-      </IconButton>
+        style={styles.agendaActionButton}
+      />
     );
 
     return (
@@ -2032,12 +2073,13 @@ export default function BSL2025AgendaScreen() {
               />
               <View style={styles.agendaTitleRow}>
                 <View style={styles.agendaTitleMeta}>
-                  <Text
+                  <HoverText
+                    mode={interfaceMode}
                     style={[styles.agendaTitle, isCompactAgenda && styles.agendaTitleCompact]}
                     numberOfLines={isCompactAgenda ? 2 : 3}
                   >
                     {cleanSessionTitle(item.title)}
-                  </Text>
+                  </HoverText>
                   {isPast ? (
                     <Badge mode={interfaceMode} tone="neutral">
                       {t('badges.past')}
@@ -2053,7 +2095,7 @@ export default function BSL2025AgendaScreen() {
                   color={typeColor}
                   accessibilityLabel={t('labels.location')}
                 />
-                <Text style={styles.agendaLocation} numberOfLines={1}>{location}</Text>
+                <HoverText mode={interfaceMode} style={styles.agendaLocation} numberOfLines={1}>{location}</HoverText>
               </View>
 
               <View style={[styles.agendaItemTools, isCompactAgenda && styles.agendaItemToolsCompact]}>
@@ -2097,12 +2139,13 @@ export default function BSL2025AgendaScreen() {
                           {!isCompactAgenda ? (
                             <SpeakerAvatar name={displayName} imageUrl={image} size={32} showBorder />
                           ) : null}
-                          <Text
+                          <HoverText
+                            mode={interfaceMode}
                             style={[styles.agendaSpeakers, isClickable && styles.clickableSpeaker]}
                             numberOfLines={1}
                           >
                             {displayName}
-                          </Text>
+                          </HoverText>
                         </>
                       );
                       return isClickable ? (
@@ -2222,34 +2265,6 @@ export default function BSL2025AgendaScreen() {
               })}
             </ScrollView>
             )}
-            <View
-              testID="agenda-type-legend"
-              accessibilityLabel={t('legend.label', 'Session type legend')}
-              style={styles.agendaTypeLegend}
-            >
-              <Text style={styles.agendaTypeLegendTitle}>
-                {t('legend.title', 'Session types')}
-              </Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.agendaTypeLegendItems}
-                style={styles.agendaTypeLegendScroll}
-              >
-                {filterGroups[0].options.map((option) => (
-                  <AgendaTypeLegendControl
-                    key={option.key}
-                    itemKey={option.key}
-                    label={option.label}
-                    color={option.color}
-                    iconName={getAgendaTypeIcon(option.key) as NativeSafeIconName}
-                    surfaceColor={colors.background.paper}
-                    borderColor={colors.divider}
-                    textColor={colors.text.primary}
-                  />
-                ))}
-              </ScrollView>
-            </View>
           </View>
         )}
 
@@ -2264,7 +2279,48 @@ export default function BSL2025AgendaScreen() {
           filterGroups={filterGroups}
           customFilterLogic={customAgendaFilterLogic}
           showResultsCount={true}
+          externalFilters={legendExternalFilters}
         />
+      )}
+
+      {/* Compact session type legend: single row below the search input */}
+      {agenda.length > 0 && filterGroups[0]?.options?.length > 0 && (
+        <View
+          testID="agenda-type-legend"
+          accessibilityLabel={t('legend.label', 'Session type legend')}
+          style={styles.agendaTypeLegendCompact}
+        >
+          <Text style={styles.agendaTypeLegendCompactLabel}>
+            {t('legend.title', 'Session types').toUpperCase()}
+          </Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.agendaTypeLegendCompactItems}
+          >
+            {filterGroups[0].options.map((option) => (
+              <AgendaTypeLegendControl
+                key={option.key}
+                itemKey={option.key}
+                label={option.label}
+                color={option.color}
+                iconName={getAgendaTypeIcon(option.key) as NativeSafeIconName}
+                surfaceColor={colors.background.paper}
+                borderColor={colors.divider}
+                textColor={colors.text.primary}
+                mode={interfaceMode}
+                selected={selectedFilters.includes(option.key as AgendaType)}
+                onPress={() => {
+                  setSelectedFilters((prev) =>
+                    prev.includes(option.key as AgendaType)
+                      ? prev.filter((key) => key !== option.key)
+                      : [...prev, option.key as AgendaType],
+                  );
+                }}
+              />
+            ))}
+          </ScrollView>
+        </View>
       )}
 
       {/* The full day theme is kept out of the compact day chip so translated
@@ -2554,6 +2610,27 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   agendaTypeLegendScroll: {
     width: '100%',
   },
+  // Compact single-row legend below the search input
+  agendaTypeLegendCompact: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: uiTokens.space.sm,
+    paddingHorizontal: uiTokens.space.lg,
+    paddingVertical: uiTokens.space.xs,
+  },
+  agendaTypeLegendCompactLabel: {
+    color: colors.text.secondary,
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+    flexShrink: 0,
+  },
+  agendaTypeLegendCompactItems: {
+    flexDirection: 'row',
+    flexGrow: 1,
+    gap: uiTokens.space.xs,
+    alignItems: 'center',
+  },
   dayTab: {
     width: 148,
     minHeight: 104,
@@ -2816,19 +2893,19 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     lineHeight: 18,
   },
   agendaItemTools: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'column',
+    alignItems: 'stretch',
     gap: uiTokens.space.xs,
-    flexWrap: 'wrap',
     marginBottom: uiTokens.space.md,
   },
   agendaItemToolsCompact: {
     marginBottom: uiTokens.space.sm,
   },
-  // agendaTool/agendaToolExpanded/agendaToolPressed/agendaToolLabel used to
-  // hand-roll the expand-to-reveal-label pill here; renderAgendaAction now
-  // renders the shared IconButton (revealLabel) from @hashpass/ui/primitives
-  // instead, so this screen no longer owns its own copy of that chrome.
+  agendaActionButton: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: uiTokens.space.md,
+    paddingVertical: uiTokens.space.xs,
+  },
   calendarModalOverlay: {
     flex: 1,
     justifyContent: 'flex-end',

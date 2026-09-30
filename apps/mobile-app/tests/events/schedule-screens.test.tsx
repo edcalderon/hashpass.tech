@@ -753,64 +753,16 @@ describe('event schedule screens', () => {
     await act(async () => renderer!.unmount());
   });
 
-  it('debounces agenda action hover/focus expansion and clears a pending collapse timeout', async () => {
+  it('renders agenda action buttons as always-visible vertical labels without collapse behaviour', async () => {
     const renderer = await renderCalendarAgenda();
-    const calendarAction = () => renderer.root.findByProps({ accessibilityLabel: 'calendar.openPicker' });
-    const favoriteAction = () => renderer.root.findByProps({ accessibilityLabel: 'actions.addToFavorites' });
-    const isExpanded = (label: string) => renderer.root.findAllByProps({ children: label }).length > 0;
-
-    await act(async () => {
-      calendarAction().props.onHoverIn();
-    });
-    expect(isExpanded('calendar.openPicker')).toBe(true);
-
-    jest.useFakeTimers();
-    try {
-      // Letting the debounce timer run to completion collapses the action
-      // (covers the scheduled collapse callback itself, not just the
-      // scheduling call).
-      await act(async () => {
-        calendarAction().props.onHoverOut();
-      });
-      expect(isExpanded('calendar.openPicker')).toBe(true);
-      await act(async () => {
-        jest.advanceTimersByTime(uiTokens.motion.fast);
-      });
-      expect(isExpanded('calendar.openPicker')).toBe(false);
-
-      // Re-focusing before the debounce timer fires must clear the pending
-      // collapse instead of leaving a stale timeout to run later.
-      await act(async () => {
-        calendarAction().props.onFocus();
-      });
-      await act(async () => {
-        calendarAction().props.onHoverOut();
-      });
-      await act(async () => {
-        calendarAction().props.onFocus();
-      });
-      await act(async () => {
-        jest.advanceTimersByTime(uiTokens.motion.fast);
-      });
-      expect(isExpanded('calendar.openPicker')).toBe(true);
-
-      // A different action's collapse timeout firing later must not clobber
-      // an unrelated action that is currently expanded.
-      await act(async () => {
-        favoriteAction().props.onHoverOut();
-      });
-      await act(async () => {
-        jest.advanceTimersByTime(uiTokens.motion.fast);
-      });
-      expect(isExpanded('calendar.openPicker')).toBe(true);
-
-      await act(async () => {
-        calendarAction().props.onBlur();
-      });
-      expect(isExpanded('calendar.openPicker')).toBe(false);
-    } finally {
-      jest.useRealTimers();
-    }
+    // ActionButton always renders its label as a child; unlike the old
+    // revealLabel IconButton, the label is present without any hover/focus.
+    const calendarLabel = renderer.root.findAllByProps({ children: 'calendar.openPicker' });
+    expect(calendarLabel.length).toBeGreaterThan(0);
+    const favoriteLabel = renderer.root.findAllByProps({ children: 'actions.addToFavorites' });
+    expect(favoriteLabel.length).toBeGreaterThan(0);
+    const scheduleLabel = renderer.root.findAllByProps({ children: 'actions.addToAgenda' });
+    expect(scheduleLabel.length).toBeGreaterThan(0);
 
     await act(async () => renderer.unmount());
   });

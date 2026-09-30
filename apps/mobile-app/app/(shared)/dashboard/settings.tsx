@@ -660,7 +660,7 @@ export default function SettingsScreen() {
             title: tSettings('helpSupport', 'Help & Support'),
             subtitle: tSettings('helpSupportSubtitle', 'Get help and contact support'),
             onPress: () => {
-              Alert.alert('Help & Support', 'Contact us at support@hashpass.tech');
+              router.push('/(shared)/support');
             },
             showChevron: true,
           })}

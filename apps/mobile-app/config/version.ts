@@ -22,24 +22,54 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202609291615, // Updated to current timestamp
-  releaseDate: '2026-09-29',
+  buildNumber: 202609300157, // Updated to current timestamp
+  releaseDate: '2026-09-30',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'skeleton-based reload instead of full splash, consolidate icon reveal buttons',
-    'add CIG analytics tracker script to hashpass.club',
-    'auto-chain production after beta on native mobile release'
+    'Frappe Helpdesk integration + design-system drift fixes',
+    'vertical action buttons, super-index type filter, HoverText, full venue location'
   ],
   bugfixes: [
     // No bugfixes
   ],
   breakingChanges: [],
-  notes: 'skeleton-based reload instead of full splash, consolidate icon reveal buttons; add CIG analytics tracker script to hashpass.club; auto-chain production after beta on native mobile release'
+  notes: 'Frappe Helpdesk integration + design-system drift fixes; vertical action buttons, super-index type filter, HoverText, full venue location'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.83': {
+    version: '1.9.83',
+    buildNumber: 202609300157,
+    releaseDate: '2026-09-30',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'Frappe Helpdesk integration + design-system drift fixes',
+      'vertical action buttons, super-index type filter, HoverText, full venue location'
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'Frappe Helpdesk integration + design-system drift fixes; vertical action buttons, super-index type filter, HoverText, full venue location'
+  },
+  '1.9.82': {
+    version: '1.9.82',
+    buildNumber: 202609291930,
+    releaseDate: '2026-09-29',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'vertical action buttons, super-index type filter, HoverText, full venue location'
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'vertical action buttons, super-index type filter, HoverText, full venue location'
+  },
   '1.9.81': {
     version: '1.9.81',
     buildNumber: 202609291615,

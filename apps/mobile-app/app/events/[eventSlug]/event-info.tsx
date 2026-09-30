@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { AccessibilityInfo, View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, ActivityIndicator, useWindowDimensions } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useEvent } from '@contexts/EventContext';
 import { useTheme } from '../../../hooks/useTheme';
 import { MaterialIcons } from '@expo/vector-icons';
 import EventBanner from '../../../components/EventBanner';
 import { apiClient, eventApiPath } from '../../../lib/api-client';
 import { useAnimationLevel } from '../../../contexts/AnimationLevelContext';
-import { Surface } from '@hashpass/ui/primitives';
+import { Surface, ActionButton, HoverText } from '@hashpass/ui/primitives';
 import { uiPalette, uiTokens } from '@hashpass/ui/tokens';
 
 interface EventDetailsRow {
@@ -25,6 +26,7 @@ interface EventDetailsRow {
 // non-fabricated fallback rather than inventing details for gaps.
 export default function EventInfoScreen() {
   const { event } = useEvent();
+  const router = useRouter();
   const { isDark } = useTheme();
   const { animationLevel } = useAnimationLevel();
   const { width: viewportWidth } = useWindowDimensions();
@@ -85,6 +87,21 @@ export default function EventInfoScreen() {
       : event?.subtitle || 'Location to be announced';
   const venueLabel = details?.venue_name || event?.tour?.venue || 'Venue to be announced';
   const addressLabel = details?.venue_address || venueLabel;
+  // Some events' DB rows put the same full "building, university, neighborhood,
+  // city" string in both venue_name and venue_address -- showing both the
+  // Venue detail row and the Contact "Address" row then duplicates the exact
+  // same location line twice. Only surface Address as its own row when it
+  // actually adds information beyond the Venue row (case-insensitive,
+  // either-contains-the-other check, since one is often a superset of the
+  // other rather than a verbatim match).
+  const normalizedVenue = venueLabel.trim().toLowerCase();
+  const normalizedAddress = (details?.venue_address || '').trim().toLowerCase();
+  const hasDistinctAddress = Boolean(
+    details?.venue_address &&
+    normalizedAddress !== normalizedVenue &&
+    !normalizedAddress.includes(normalizedVenue) &&
+    !normalizedVenue.includes(normalizedAddress)
+  );
   const isArchiveEvent = event?.tour?.role === 'archive' || eventId === 'bsl2025';
 
   const [isEventFinished, setIsEventFinished] = useState(false);
@@ -123,7 +140,7 @@ export default function EventInfoScreen() {
           action: () => handleOpenLink(event.website!),
         }
       : null,
-    details?.venue_address
+    hasDistinctAddress
       ? {
           icon: 'location-on',
           label: 'Address',
@@ -251,6 +268,35 @@ export default function EventInfoScreen() {
 
         {renderArchiveSummary()}
 
+        {/* Get Tickets CTA -- lives only here now (no longer duplicated on
+            the Quick Access rail) as a proper, integrated card rather than
+            a bare button, so it reads as part of the page instead of a
+            floating control. */}
+        {!isArchiveEvent && (
+          <Surface mode={isDark ? 'dark' : 'light'} style={styles.ticketCta}>
+            <View style={styles.ticketCtaRow}>
+              <View style={styles.ticketCtaIcon}>
+                <MaterialIcons name="confirmation-number" size={26} color={palette.accent} />
+              </View>
+              <View style={styles.ticketCtaCopy}>
+                <Text style={styles.ticketCtaTitle}>Get your tickets</Text>
+                <HoverText mode={isDark ? 'dark' : 'light'} style={styles.ticketCtaSubtitle} numberOfLines={2}>
+                  Secure your spot at {event?.title || 'this event'} · {eventDateLabel}
+                </HoverText>
+              </View>
+            </View>
+            <ActionButton
+              mode={isDark ? 'dark' : 'light'}
+              label="Get Tickets"
+              trailingIcon={
+                <MaterialIcons name="arrow-forward" size={18} color={palette.onAccent} />
+              }
+              onPress={() => router.push(`/events/${eventId}/tickets`)}
+              style={styles.ticketCtaButton}
+            />
+          </Surface>
+        )}
+
         <View testID="event-info-sections" style={styles.sections}>
           {isWide ? (
             <>
@@ -331,6 +377,47 @@ const getStyles = (
     fontSize: uiTokens.type.body,
     color: palette.muted,
     lineHeight: 24,
+  },
+  ticketCta: {
+    marginTop: uiTokens.space.xl,
+    marginBottom: uiTokens.space.md,
+    gap: uiTokens.space.lg,
+    borderWidth: 1.5,
+    borderColor: palette.accent,
+    backgroundColor: palette.accentSoft,
+  },
+  ticketCtaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: uiTokens.space.md,
+  },
+  ticketCtaIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: uiTokens.radius.circle,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: palette.surface,
+    borderWidth: 1,
+    borderColor: palette.border,
+  },
+  ticketCtaCopy: {
+    flex: 1,
+    minWidth: 0,
+    gap: 2,
+  },
+  ticketCtaTitle: {
+    fontSize: uiTokens.type.title,
+    fontWeight: '800',
+    color: palette.text,
+  },
+  ticketCtaSubtitle: {
+    fontSize: uiTokens.type.caption,
+    color: palette.muted,
+    lineHeight: 18,
+  },
+  ticketCtaButton: {
+    alignSelf: 'stretch',
   },
   sections: {
     flexDirection: isWide ? 'row' : 'column',

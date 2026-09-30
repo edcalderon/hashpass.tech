@@ -39,6 +39,16 @@ interface UnifiedSearchAndFilterProps<T extends BaseItem> {
   onFilterChange?: (filters: { [key: string]: any }) => void;
   showResultsCount?: boolean;
   customFilterLogic?: (data: T[], filters: { [key: string]: any }, searchQuery: string) => T[];
+  /**
+   * Lets a caller drive this component's filters from outside its own
+   * dropdown UI (e.g. a quick-filter legend rendered alongside it). When
+   * provided, it replaces the internal `activeFilters` state and is
+   * re-applied whenever its identity changes -- callers must memoize it
+   * (e.g. `useMemo`) so an unrelated re-render doesn't create a new object
+   * and re-trigger filtering on every render. Omit entirely for the default,
+   * dropdown-only filtering behavior.
+   */
+  externalFilters?: { [key: string]: any };
 }
 
 export default function UnifiedSearchAndFilter<T extends BaseItem>({
@@ -50,7 +60,8 @@ export default function UnifiedSearchAndFilter<T extends BaseItem>({
   filterGroups = [],
   onFilterChange,
   showResultsCount = true,
-  customFilterLogic
+  customFilterLogic,
+  externalFilters
 }: UnifiedSearchAndFilterProps<T>) {
   const { isDark, colors } = useTheme();
   const { width: viewportWidth } = useWindowDimensions();
@@ -164,6 +175,15 @@ export default function UnifiedSearchAndFilter<T extends BaseItem>({
   // Check if any filters are active
   const hasActiveFilters = searchQuery.length > 0 || Object.keys(activeFilters).length > 0;
 
+  // Counts individual selected values, not filter groups, so a stacked
+  // multi-select (e.g. an externally-driven legend passing
+  // `{ type: ['keynote', 'panel'] }`) shows "2" on the badge rather than "1"
+  // for the whole "type" group.
+  const activeFilterCount = Object.values(activeFilters).reduce<number>(
+    (total, value) => total + (Array.isArray(value) ? value.length : value ? 1 : 0),
+    0,
+  ) + (searchQuery ? 1 : 0);
+
   // Get unique values for a field
   const getUniqueValues = (field: string): string[] => {
     const values = new Set<string>();
@@ -269,6 +289,16 @@ export default function UnifiedSearchAndFilter<T extends BaseItem>({
     onFilteredData(data);
   }, [data, onFilteredData]);
 
+  // Apply externally-driven filters (e.g. a quick-filter legend rendered by
+  // the caller alongside this component). Runs after the "initialize" effect
+  // above, so it takes precedence for the initial render too.
+  useEffect(() => {
+    if (externalFilters === undefined) return;
+    setActiveFilters(externalFilters);
+    if (onFilterChange) onFilterChange(externalFilters);
+    applyFiltersAndSearch(externalFilters, undefined);
+  }, [externalFilters]);
+
   return (
     <View style={[styles.container, showFiltersDropdown && styles.containerWithFloatingFilters]}>
       {/* Top Row: Search Input + Filter Button */}
@@ -310,7 +340,7 @@ export default function UnifiedSearchAndFilter<T extends BaseItem>({
             {hasActiveFilters && (
               <View style={styles.filterBadge}>
                 <Text style={styles.filterBadgeText}>
-                  {Object.keys(activeFilters).length + (searchQuery ? 1 : 0)}
+                  {activeFilterCount}
                 </Text>
               </View>
             )}

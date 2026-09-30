@@ -17,6 +17,7 @@ import Animated, {
 import * as Clipboard from 'expo-clipboard';
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '../../lib/vector-icons';
+import { HoverText } from '@hashpass/ui/primitives';
 import { useTheme } from '../../hooks/useTheme';
 import { useTranslation } from '../../i18n/i18n';
 import { useToastHelpers } from '../../contexts/ToastContext';
@@ -245,7 +246,7 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
           marginBottom: 8
         }}>
           <View style={{ flex: 1, marginRight: 8, minWidth: 0 }}>
-            <Text
+            <HoverText
               style={{
                 fontSize: 12,
                 fontWeight: '700',
@@ -257,12 +258,9 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
                 marginBottom: 1
               }}
               numberOfLines={1}
-              ellipsizeMode="middle"
-              minimumFontScale={0.8}
-              adjustsFontSizeToFit
             >
               {passEventShortName ? `${passEventShortName} • ` : ''}{getPassTypeLabel(pass.pass_type)} {t({ id: 'passes.pass', message: 'Pass' })}
-            </Text>
+            </HoverText>
             <Text style={{
               fontSize: 9,
               color: colors.text.secondary,
