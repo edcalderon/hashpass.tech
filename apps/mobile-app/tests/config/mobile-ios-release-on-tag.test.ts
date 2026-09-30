@@ -13,4 +13,15 @@ describe('mobile release tag workflow', () => {
     expect(workflow).toContain("vars.IOS_RELEASE_ENABLED == 'true'");
     expect(workflow).toContain('gh workflow run mobile-ios-release.yml');
   });
+
+  it('requires private Match repository credentials without exposing them in logs', () => {
+    const workflow = fs.readFileSync(
+      path.resolve(__dirname, '../../../../.github/workflows/mobile-ios-release.yml'),
+      'utf8',
+    );
+
+    expect(workflow).toContain('MATCH_GIT_BASIC_AUTHORIZATION');
+    expect(workflow).toContain('secrets.MATCH_GIT_BASIC_AUTHORIZATION');
+    expect(workflow).toContain('Missing required GitHub Actions secret: $name');
+  });
 });
