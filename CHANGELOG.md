@@ -1,3 +1,28 @@
+## [1.9.84](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.83...v1.9.84) (2026-09-30)
+
+
+### Bug Fixes
+
+* **dev:** make local Frappe Helpdesk startup in dev:all non-fatal and idempotent ([e87f77f](https://github.com/hashpass-tech/hashpass.tech/commit/e87f77fa7671f1ee39064f8cefb6f11e1c9a6d1c))
+* **mobile:** use distinct icons for venue and city/country rows ([40b0eb0](https://github.com/hashpass-tech/hashpass.tech/commit/40b0eb0a982c401b86c36e746eff433ac57070a6))
+
+
+### Features
+
+* **dev:** wire local Frappe Helpdesk into dev:all for Contact Support simulation ([2510216](https://github.com/hashpass-tech/hashpass.tech/commit/2510216c193ef475c616b69f009bd42a1cb13c90)), closes [#3800](https://github.com/hashpass-tech/hashpass.tech/issues/3800)
+* **mobile:** add iOS Fastlane/TestFlight release pipeline ([a3aaf82](https://github.com/hashpass-tech/hashpass.tech/commit/a3aaf8203523b73c53b509a7533d47c179471b2c))
+* **support:** public anonymous ticket submission gated by web CAPTCHA ([cab6b1e](https://github.com/hashpass-tech/hashpass.tech/commit/cab6b1efbab69ffd00ca2537a18218619a2ca703))
+### Release Highlights
+- add iOS Fastlane/TestFlight release pipeline; public anonymous ticket submission gated by web CAPTCHA; wire local Frappe Helpdesk into dev:all for Contact Support simulation; make local Frappe Helpdesk startup in dev:all non-fatal and idempotent; use distinct icons for venue and city/country rows
+
+### Release scope
+- Compared with: `v1.9.83` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Documentation
+- Release tooling
+
 ## [1.9.83](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.81...v1.9.83) (2026-09-30)
 
 
