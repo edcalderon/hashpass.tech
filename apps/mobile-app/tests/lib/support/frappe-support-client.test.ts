@@ -3,7 +3,7 @@
 const mockGet = jest.fn();
 const mockPost = jest.fn();
 const mockPatch = jest.fn();
-const mockRuntimeApiBaseUrl = jest.fn();
+const mockGetRuntimeApiBaseUrl = jest.fn();
 
 jest.mock('../../../lib/api-client', () => ({
   apiClient: {
@@ -11,17 +11,17 @@ jest.mock('../../../lib/api-client', () => ({
     post: (...args: unknown[]) => mockPost(...args),
     patch: (...args: unknown[]) => mockPatch(...args),
   },
-  getRuntimeApiBaseUrl: (...args: unknown[]) => mockRuntimeApiBaseUrl(...args),
+  getRuntimeApiBaseUrl: () => mockGetRuntimeApiBaseUrl(),
 }));
 
 import { Platform } from 'react-native';
 import {
   createSupportTicket,
+  getSupportTicket,
+  sendSupportMessage,
+  sendSupportAttachment,
   closeSupportTicket,
   getSupportAttachmentUrl,
-  getSupportTicket,
-  sendSupportAttachment,
-  sendSupportMessage,
 } from '../../../lib/support/frappe-support-client';
 
 const BASE_PATH = '/v1/support/frappe/tickets';
@@ -33,7 +33,7 @@ describe('lib/support/frappe-support-client', () => {
     mockGet.mockReset();
     mockPost.mockReset();
     mockPatch.mockReset();
-    mockRuntimeApiBaseUrl.mockReset();
+    mockGetRuntimeApiBaseUrl.mockReset();
   });
 
   afterEach(() => {
@@ -162,46 +162,123 @@ describe('lib/support/frappe-support-client', () => {
   });
 
   describe('sendSupportAttachment', () => {
-    it('posts the email and File as multipart data without JSON serialization', async () => {
+    it('posts a multipart form with the email and file, and returns the created message', async () => {
+      const message = { id: 'c3', content: 'attachment', commentedBy: null, createdAt: 't3', isVisitorReply: true };
+      mockPost.mockResolvedValue({ success: true, data: { message } });
+      const file = new File(['x'], 'photo.png', { type: 'image/png' });
+
+      const result = await sendSupportAttachment({ ticketId: 'HD-0001', email: 'a@example.com', file });
+
+      expect(result).toEqual(message);
+      expect(mockPost).toHaveBeenCalledWith(
+        `${BASE_PATH}/HD-0001`,
+        expect.any(FormData),
+        { skipEventSegment: true },
+      );
+      const form = mockPost.mock.calls[0][1] as FormData;
+      expect(form.get('email')).toBe('a@example.com');
+      expect(form.get('file')).toBeInstanceOf(File);
+    });
+
+    // A ticket id containing a "/" (Frappe's naming series can include one)
+    // must be percent-encoded into the path, never left to split the URL
+    // into an unintended extra path segment.
+    it('percent-encodes a ticket id containing a slash into the multipart upload path', async () => {
       const message = { id: 'c3', content: 'attachment', commentedBy: null, createdAt: 't3' };
       mockPost.mockResolvedValue({ success: true, data: { message } });
       const file = new File(['png'], 'receipt.png', { type: 'image/png' });
+
       await expect(sendSupportAttachment({ ticketId: 'HD/0001', email: 'a@example.com', file })).resolves.toEqual(message);
+
       const [path, form, options] = mockPost.mock.calls[0];
       expect(path).toBe(`${BASE_PATH}/HD%2F0001`);
       expect(form).toBeInstanceOf(FormData);
-      expect(form.get('email')).toBe('a@example.com');
-      expect(form.get('file')).toEqual(expect.objectContaining({ name: 'receipt.png', type: 'image/png', size: 3 }));
       expect(options).toEqual({ skipEventSegment: true });
     });
 
-    it('uses the server error or safe fallback when an attachment upload fails', async () => {
+    it('rejects when the attachment cannot be sent', async () => {
+      mockPost.mockResolvedValue({ success: false, error: 'File too large' });
+      const file = new File(['x'], 'photo.png', { type: 'image/png' });
+
+      await expect(
+        sendSupportAttachment({ ticketId: 'HD-0001', email: 'a@example.com', file }),
+      ).rejects.toThrow('File too large');
+    });
+
+    it('falls back to the server data.message, then a generic message, when no error string is given', async () => {
       mockPost.mockResolvedValue({ success: false, data: { message: 'Attachment rejected' } });
-      await expect(sendSupportAttachment({ ticketId: 'HD-0001', email: 'a@example.com', file: new File(['x'], 'x.png') })).rejects.toThrow('Attachment rejected');
+      await expect(
+        sendSupportAttachment({ ticketId: 'HD-0001', email: 'a@example.com', file: new File(['x'], 'x.png') }),
+      ).rejects.toThrow('Attachment rejected');
+
       mockPost.mockResolvedValue({ success: false });
-      await expect(sendSupportAttachment({ ticketId: 'HD-0001', email: 'a@example.com', file: new File(['x'], 'x.png') })).rejects.toThrow('Unable to send attachment');
+      await expect(
+        sendSupportAttachment({ ticketId: 'HD-0001', email: 'a@example.com', file: new File(['x'], 'x.png') }),
+      ).rejects.toThrow('Unable to send attachment');
     });
   });
 
   describe('closeSupportTicket', () => {
-    it('patches a ticket and returns the closed result', async () => {
+    it('patches the ticket with the email and returns the closed ticket', async () => {
       const ticket = { id: 'HD-0001', subject: 'Help', status: 'Closed', priority: 'Medium', raisedBy: 'a@example.com', createdAt: 't1', updatedAt: 't2' };
       mockPatch.mockResolvedValue({ success: true, data: { ticket } });
+
+      const result = await closeSupportTicket('HD-0001', 'a@example.com');
+
+      expect(result).toEqual(ticket);
+      expect(mockPatch).toHaveBeenCalledWith(
+        `${BASE_PATH}/HD-0001`,
+        { email: 'a@example.com' },
+        { skipEventSegment: true },
+      );
+    });
+
+    // Same slash-in-ticket-id encoding concern as the attachment upload path.
+    it('percent-encodes a ticket id containing a slash into the patch path', async () => {
+      const ticket = { id: 'HD-0001', subject: 'Help', status: 'Closed', priority: 'Medium', raisedBy: 'a@example.com', createdAt: 't1', updatedAt: 't2' };
+      mockPatch.mockResolvedValue({ success: true, data: { ticket } });
+
       await expect(closeSupportTicket('HD/0001', 'a@example.com')).resolves.toEqual(ticket);
       expect(mockPatch).toHaveBeenCalledWith(`${BASE_PATH}/HD%2F0001`, { email: 'a@example.com' }, { skipEventSegment: true });
     });
 
-    it('uses the generic error when a close request has no detail', async () => {
+    it('rejects when the ticket cannot be cancelled', async () => {
       mockPatch.mockResolvedValue({ success: false });
-      await expect(closeSupportTicket('HD-0001', 'a@example.com')).rejects.toThrow('Unable to cancel ticket');
+      await expect(closeSupportTicket('HD-0001', 'a@example.com')).rejects.toThrow(
+        'Unable to cancel ticket',
+      );
     });
   });
 
-  it('builds an encoded, backend-relative attachment proxy URL', () => {
-    mockRuntimeApiBaseUrl.mockReturnValue('https://api.hashpass.tech/');
-    expect(getSupportAttachmentUrl('HD/0001', 'a+b@example.com', 'FILE/123'))
-      .toBe('https://api.hashpass.tech/v1/support/frappe/tickets/HD%2F0001/attachment?email=a%2Bb%40example.com&file=FILE%2F123');
-    mockRuntimeApiBaseUrl.mockReturnValue('');
-    expect(getSupportAttachmentUrl('HD-0001', 'a@example.com', 'FILE-1')).toContain('/api/v1/support/frappe/tickets/HD-0001/attachment?');
+  describe('getSupportAttachmentUrl', () => {
+    it('builds the download URL against the resolved runtime base, encoding email and file as query params', () => {
+      mockGetRuntimeApiBaseUrl.mockReturnValue('https://api.hashpass.tech/api');
+
+      const url = getSupportAttachmentUrl('HD-0001', 'a@example.com', 'file-1');
+
+      expect(url).toBe(
+        'https://api.hashpass.tech/api/v1/support/frappe/tickets/HD-0001/attachment?email=a%40example.com&file=file-1',
+      );
+    });
+
+    // Covers three separately-encoded pieces at once: a "/" in the ticket id
+    // (path segment), a "+" in the email, and a "/" in the file id (both
+    // query params) -- each must come out correctly escaped and distinct
+    // from the others, not just "some" encoding applied somewhere.
+    it('percent-encodes a slash in the ticket id and special characters in the email/file query params', () => {
+      mockGetRuntimeApiBaseUrl.mockReturnValue('https://api.hashpass.tech/');
+
+      expect(getSupportAttachmentUrl('HD/0001', 'a+b@example.com', 'FILE/123')).toBe(
+        'https://api.hashpass.tech/v1/support/frappe/tickets/HD%2F0001/attachment?email=a%2Bb%40example.com&file=FILE%2F123',
+      );
+    });
+
+    it('falls back to /api when no runtime base URL is resolved', () => {
+      mockGetRuntimeApiBaseUrl.mockReturnValue('');
+
+      const url = getSupportAttachmentUrl('HD-0001', 'a@example.com', 'file-1');
+
+      expect(url.startsWith('/api/v1/support/frappe/tickets/HD-0001/attachment?')).toBe(true);
+    });
   });
 });

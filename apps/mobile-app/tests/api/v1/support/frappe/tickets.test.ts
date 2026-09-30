@@ -62,7 +62,7 @@ describe('POST /api/v1/support/frappe/tickets', () => {
 
     const { POST } = require('../../../../../app/api/v1/support/frappe/tickets+api');
     const response = await POST(
-      makeRequest({ email: 'a@example.com', subject: 'Help', message: 'I need help', context: 'app v1.9.82' }),
+      makeRequest({ email: 'a@example.com', subject: 'Help', message: 'I need help', context: 'app v1.9.82', source: 'native' }),
     );
 
     expect(response.status).toBe(201);
@@ -82,7 +82,7 @@ describe('POST /api/v1/support/frappe/tickets', () => {
     mockCreateHelpdeskTicket.mockRejectedValue(new FrappeHelpdeskConfigError('FRAPPE_BASE_URL is not configured'));
 
     const { POST } = require('../../../../../app/api/v1/support/frappe/tickets+api');
-    const response = await POST(makeRequest({ email: 'a@example.com', subject: 'Help', message: 'hi' }));
+    const response = await POST(makeRequest({ email: 'a@example.com', subject: 'Help', message: 'hi', source: 'native' }));
 
     expect(response.status).toBe(500);
     const body = await response.json();
@@ -94,7 +94,7 @@ describe('POST /api/v1/support/frappe/tickets', () => {
     mockCreateHelpdeskTicket.mockRejectedValue(new FrappeHelpdeskRequestError('boom', 500));
 
     const { POST } = require('../../../../../app/api/v1/support/frappe/tickets+api');
-    const response = await POST(makeRequest({ email: 'a@example.com', subject: 'Help', message: 'hi' }));
+    const response = await POST(makeRequest({ email: 'a@example.com', subject: 'Help', message: 'hi', source: 'native' }));
 
     expect(response.status).toBe(502);
   });
@@ -119,30 +119,31 @@ describe('POST /api/v1/support/frappe/tickets', () => {
     expect(mockValidateToken).not.toHaveBeenCalled();
   });
 
-  it('treats a web-labeled request with no captcha token as native (nothing to validate)', async () => {
-    mockCreateHelpdeskTicket.mockResolvedValue({
-      id: 'HD-0001',
-      subject: 'Help',
-      status: 'Open',
-      priority: 'Medium',
-      raisedBy: 'a@example.com',
-      createdAt: 't1',
-      updatedAt: 't1',
-    });
-
-    // `source: 'web'` alone isn't the gate -- an absent captchaToken means
-    // isNative stays true (see the route's `source === 'native' ||
-    // !captchaToken` check), same as subscribe+api.ts's identical pattern.
-    // The real gate is exercised by the next two tests, once a token is
-    // actually present.
+  it('rejects a web-labeled request with no captcha token instead of treating it as native', async () => {
+    // A missing captchaToken must never be an implicit native signal --
+    // that would let a scripted, web-labeled (or unlabeled) request skip
+    // the captcha gate entirely just by omitting the token. Only an
+    // explicit `source: "native"` (the next test) exempts a request.
     const { POST } = require('../../../../../app/api/v1/support/frappe/tickets+api');
     const response = await POST(
       makeRequest({ email: 'a@example.com', subject: 'Help', message: 'hi', source: 'web' }),
     );
 
-    expect(response.status).toBe(201);
+    expect(response.status).toBe(400);
+    const body = await response.json();
+    expect(body.captchaExpired).toBe(true);
     expect(mockValidateToken).not.toHaveBeenCalled();
-    expect(mockCreateHelpdeskTicket).toHaveBeenCalled();
+    expect(mockCreateHelpdeskTicket).not.toHaveBeenCalled();
+  });
+
+  it('rejects a request with no source and no captcha token the same way', async () => {
+    const { POST } = require('../../../../../app/api/v1/support/frappe/tickets+api');
+    const response = await POST(makeRequest({ email: 'a@example.com', subject: 'Help', message: 'hi' }));
+
+    expect(response.status).toBe(400);
+    const body = await response.json();
+    expect(body.captchaExpired).toBe(true);
+    expect(mockCreateHelpdeskTicket).not.toHaveBeenCalled();
   });
 
   it('rejects a web request with an invalid or expired captcha token', async () => {

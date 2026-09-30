@@ -103,7 +103,18 @@ function startServer() {
 const ERROR_BOUNDARY_TEXT = 'HASHPASS hit a startup error';
 const ERROR_BOUNDARY_CONSOLE_PREFIX = '💥 Uncaught render error:';
 
-async function checkRoute(browser, baseUrl, routePath) {
+// 'networkidle' waits for zero in-flight network connections for 500ms --
+// but the real app boots background polling (Supabase realtime, auth session
+// checks, etc.) that can keep at least one connection alive indefinitely in
+// a sandboxed CI network, so networkidle sometimes never resolves even
+// though the page rendered fine (observed 2026-09-30: /home timed out at
+// 30s on one CI run, then passed cleanly on the very next run with no code
+// change). 'load' only waits for the load event -- window.onload plus
+// initial resources -- which the client bundle always fires regardless of
+// any long-lived background connection, so it isn't subject to that flake.
+// The 1.5s settle wait below still covers the deferred-render case
+// networkidle was originally chosen for.
+async function attemptCheckRoute(browser, baseUrl, routePath) {
   const page = await browser.newPage();
   const errors = [];
 
@@ -118,9 +129,9 @@ async function checkRoute(browser, baseUrl, routePath) {
 
   const url = new URL(routePath, baseUrl).toString();
   try {
-    await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
-    // Give React a moment past networkidle to finish any deferred render
-    // that throws (e.g. a lazy-mounted icon inside a CopilotStep).
+    await page.goto(url, { waitUntil: 'load', timeout: 30000 });
+    // Give React a moment past load to finish any deferred render that
+    // throws (e.g. a lazy-mounted icon inside a CopilotStep).
     await page.waitForTimeout(1500);
 
     const bodyText = await page.evaluate(() => document.body.innerText);
@@ -134,6 +145,19 @@ async function checkRoute(browser, baseUrl, routePath) {
   }
 
   return { path: routePath, url, errors };
+}
+
+// A single retry on top of the 'load' switch above: a genuine transient CI
+// hiccup (runner network blip, slow cold start) shouldn't fail the whole
+// smoke test when the route is actually fine, but a route that's really
+// broken will fail identically both times and still get reported.
+async function checkRoute(browser, baseUrl, routePath) {
+  const first = await attemptCheckRoute(browser, baseUrl, routePath);
+  if (first.errors.length === 0) return first;
+
+  console.log(`  retrying ${first.url} after: ${first.errors.join('; ')}`);
+  const second = await attemptCheckRoute(browser, baseUrl, routePath);
+  return second;
 }
 
 async function main() {

@@ -3,8 +3,8 @@
 const mockGetHelpdeskTicket = jest.fn();
 const mockListHelpdeskTicketComments = jest.fn();
 const mockAddHelpdeskTicketComment = jest.fn();
-const mockUploadHelpdeskAttachment = jest.fn();
 const mockCloseHelpdeskTicket = jest.fn();
+const mockUploadHelpdeskAttachment = jest.fn();
 
 jest.mock('@/lib/server/frappe-helpdesk', () => {
   const actual = jest.requireActual('@/lib/server/frappe-helpdesk');
@@ -13,12 +13,12 @@ jest.mock('@/lib/server/frappe-helpdesk', () => {
     getHelpdeskTicket: (...args: unknown[]) => mockGetHelpdeskTicket(...args),
     listHelpdeskTicketComments: (...args: unknown[]) => mockListHelpdeskTicketComments(...args),
     addHelpdeskTicketComment: (...args: unknown[]) => mockAddHelpdeskTicketComment(...args),
-    uploadHelpdeskAttachment: (...args: unknown[]) => mockUploadHelpdeskAttachment(...args),
     closeHelpdeskTicket: (...args: unknown[]) => mockCloseHelpdeskTicket(...args),
+    uploadHelpdeskAttachment: (...args: unknown[]) => mockUploadHelpdeskAttachment(...args),
   };
 });
 
-const TICKET = {
+const TICKET: import('../../../../../lib/server/frappe-helpdesk').FrappeHelpdeskTicket = {
   id: 'HD-0001',
   subject: 'Help',
   status: 'Open',
@@ -42,21 +42,22 @@ function postRequest(ticketId: string, body: unknown) {
   });
 }
 
-function attachmentRequest(ticketId: string, email: string, file: File | Blob, ip: string) {
+function multipartRequest(ticketId: string, fields: Record<string, unknown>) {
   const form = new FormData();
-  form.append('email', email);
-  form.append('file', file, 'untrusted<name>.png');
+  for (const [key, value] of Object.entries(fields)) {
+    if (value instanceof Blob) form.append(key, value, (value as File).name);
+    else form.append(key, String(value));
+  }
   return new Request(`https://api.hashpass.tech/api/v1/support/frappe/tickets/${ticketId}`, {
     method: 'POST',
-    headers: { 'x-forwarded-for': ip },
     body: form,
   });
 }
 
-function patchRequest(ticketId: string, body: unknown, ip: string) {
+function patchRequest(ticketId: string, body: unknown) {
   return new Request(`https://api.hashpass.tech/api/v1/support/frappe/tickets/${ticketId}`, {
     method: 'PATCH',
-    headers: { 'content-type': 'application/json', 'x-forwarded-for': ip },
+    headers: { 'content-type': 'application/json' },
     body: JSON.stringify(body),
   });
 }
@@ -66,6 +67,47 @@ describe('GET /api/v1/support/frappe/tickets/:ticketId', () => {
     jest.resetModules();
     mockGetHelpdeskTicket.mockReset();
     mockListHelpdeskTicketComments.mockReset();
+  });
+
+  it('rejects an invalid ticket id', async () => {
+    const { GET } = require('../../../../../app/api/v1/support/frappe/tickets/[ticketId]+api');
+    const response = await GET(getRequest('not valid!', 'a@example.com'));
+    expect(response.status).toBe(400);
+  });
+
+  it('maps a config error to a 500 without leaking details', async () => {
+    const { FrappeHelpdeskConfigError } = jest.requireActual('../../../../../lib/server/frappe-helpdesk');
+    mockGetHelpdeskTicket.mockRejectedValue(new FrappeHelpdeskConfigError('FRAPPE_BASE_URL is not configured'));
+    const { GET } = require('../../../../../app/api/v1/support/frappe/tickets/[ticketId]+api');
+
+    const response = await GET(getRequest('HD-0001', 'a@example.com'));
+
+    expect(response.status).toBe(500);
+    const body = await response.json();
+    expect(body.message).not.toMatch(/FRAPPE_BASE_URL/);
+  });
+
+  it('maps a Frappe request error to a 502', async () => {
+    const { FrappeHelpdeskRequestError } = jest.requireActual('../../../../../lib/server/frappe-helpdesk');
+    mockGetHelpdeskTicket.mockRejectedValue(new FrappeHelpdeskRequestError('boom', 500));
+    const { GET } = require('../../../../../app/api/v1/support/frappe/tickets/[ticketId]+api');
+
+    const response = await GET(getRequest('HD-0001', 'a@example.com'));
+
+    expect(response.status).toBe(502);
+  });
+
+  it('rate limits repeated reads from the same IP', async () => {
+    mockGetHelpdeskTicket.mockResolvedValue(TICKET);
+    mockListHelpdeskTicketComments.mockResolvedValue([]);
+    const { GET } = require('../../../../../app/api/v1/support/frappe/tickets/[ticketId]+api');
+
+    let lastResponse;
+    for (let i = 0; i < 6; i += 1) {
+      lastResponse = await GET(getRequest('HD-0001', 'a@example.com'));
+    }
+
+    expect(lastResponse!.status).toBe(429);
   });
 
   it('requires an email query param', async () => {
@@ -117,7 +159,6 @@ describe('POST /api/v1/support/frappe/tickets/:ticketId', () => {
     mockGetHelpdeskTicket.mockReset();
     mockAddHelpdeskTicketComment.mockReset();
     mockUploadHelpdeskAttachment.mockReset();
-    mockCloseHelpdeskTicket.mockReset();
   });
 
   it('requires email and content', async () => {
@@ -166,61 +207,162 @@ describe('POST /api/v1/support/frappe/tickets/:ticketId', () => {
     expect(response.status).toBe(500);
   });
 
-  it('uploads an authorized attachment and escapes its untrusted display name in the comment', async () => {
-    mockGetHelpdeskTicket.mockResolvedValue(TICKET);
-    mockUploadHelpdeskAttachment.mockResolvedValue({ fileId: 'FILE-0001', fileName: 'untrusted<name>.png' });
-    mockAddHelpdeskTicketComment.mockResolvedValue({ id: 'c3', content: 'attachment', commentedBy: null, createdAt: 't3' });
-    const { POST } = require('../../../../../app/api/v1/support/frappe/tickets/[ticketId]+api');
-    const response = await POST(attachmentRequest('HD-0001', 'a@example.com', new Blob(['png'], { type: 'image/png' }), 'attachment-success'));
+  describe('multipart attachment upload branch', () => {
+    it('rejects an invalid multipart body', async () => {
+      const { POST } = require('../../../../../app/api/v1/support/frappe/tickets/[ticketId]+api');
+      const badRequest = new Request('https://api.hashpass.tech/api/v1/support/frappe/tickets/HD-0001', {
+        method: 'POST',
+        headers: { 'content-type': 'multipart/form-data; boundary=x' },
+        body: 'not actually multipart',
+      });
 
-    expect(response.status).toBe(201);
-    expect(mockUploadHelpdeskAttachment).toHaveBeenCalledWith('HD-0001', expect.objectContaining({ fileName: 'untrusted<name>.png' }));
-    expect(mockAddHelpdeskTicketComment).toHaveBeenCalledWith('HD-0001', expect.stringContaining('untrusted&lt;name&gt;.png'));
-    await expect(response.json()).resolves.toEqual({ message: expect.objectContaining({ id: 'c3' }) });
-  });
+      const response = await POST(badRequest);
+      expect(response.status).toBe(400);
+    });
 
-  it.each([
-    ['no uploaded file', new FormData(), 400],
-    ['unsupported MIME type', (() => { const form = new FormData(); form.append('email', 'a@example.com'); form.append('file', new Blob(['html'], { type: 'text/html' }), 'bad.html'); return form; })(), 415],
-  ])('rejects a multipart request with %s', async (_name, form, expectedStatus) => {
-    const { POST } = require('../../../../../app/api/v1/support/frappe/tickets/[ticketId]+api');
-    const response = await POST(new Request('https://api.hashpass.tech/api/v1/support/frappe/tickets/HD-0001', {
-      method: 'POST', headers: { 'x-forwarded-for': `multipart-${_name}` }, body: form,
-    }));
-    expect(response.status).toBe(expectedStatus);
-    expect(mockUploadHelpdeskAttachment).not.toHaveBeenCalled();
+    it('requires email and a non-empty file', async () => {
+      const { POST } = require('../../../../../app/api/v1/support/frappe/tickets/[ticketId]+api');
+
+      const noEmail = await POST(multipartRequest('HD-0001', { file: new Blob(['x'], { type: 'image/png' }) }));
+      expect(noEmail.status).toBe(400);
+
+      const noFile = await POST(multipartRequest('HD-0001', { email: 'a@example.com' }));
+      expect(noFile.status).toBe(400);
+
+      const emptyFile = await POST(
+        multipartRequest('HD-0001', { email: 'a@example.com', file: new Blob([], { type: 'image/png' }) }),
+      );
+      expect(emptyFile.status).toBe(400);
+    });
+
+    it('rejects a file over the size limit', async () => {
+      const { MAX_ATTACHMENT_BYTES } = jest.requireActual('../../../../../lib/server/frappe-helpdesk');
+      const { POST } = require('../../../../../app/api/v1/support/frappe/tickets/[ticketId]+api');
+      const oversized = new Blob([new Uint8Array(MAX_ATTACHMENT_BYTES + 1)], { type: 'image/png' });
+
+      const response = await POST(multipartRequest('HD-0001', { email: 'a@example.com', file: oversized }));
+
+      expect(response.status).toBe(413);
+      expect(mockGetHelpdeskTicket).not.toHaveBeenCalled();
+    });
+
+    it('rejects a disallowed content type', async () => {
+      const { POST } = require('../../../../../app/api/v1/support/frappe/tickets/[ticketId]+api');
+      const file = new Blob(['x'], { type: 'application/zip' });
+
+      const response = await POST(multipartRequest('HD-0001', { email: 'a@example.com', file }));
+
+      expect(response.status).toBe(415);
+      expect(mockGetHelpdeskTicket).not.toHaveBeenCalled();
+    });
+
+    it('returns 404 when the email does not match raised_by, without uploading', async () => {
+      mockGetHelpdeskTicket.mockResolvedValue(TICKET);
+      const { POST } = require('../../../../../app/api/v1/support/frappe/tickets/[ticketId]+api');
+      const file = new Blob(['x'], { type: 'image/png' });
+
+      const response = await POST(multipartRequest('HD-0001', { email: 'wrong@example.com', file }));
+
+      expect(response.status).toBe(404);
+      expect(mockUploadHelpdeskAttachment).not.toHaveBeenCalled();
+    });
+
+    it('uploads the attachment, strips a path from the reported file name, and posts an escaped attachment-link comment', async () => {
+      mockGetHelpdeskTicket.mockResolvedValue(TICKET);
+      mockUploadHelpdeskAttachment.mockResolvedValue({ fileId: 'file-1', fileName: '<evil>.png' });
+      mockAddHelpdeskTicketComment.mockResolvedValue({
+        id: 'c3',
+        content: '<p>📎 <a href="hashpass-attachment://file-1">&lt;evil&gt;.png</a></p>',
+        commentedBy: null,
+        createdAt: 't3',
+        isVisitorReply: true,
+      });
+      const { POST } = require('../../../../../app/api/v1/support/frappe/tickets/[ticketId]+api');
+      const file = new File(['x'], 'C:\\fakepath\\photo.png', { type: 'image/png' });
+
+      const response = await POST(multipartRequest('HD-0001', { email: 'a@example.com', file }));
+
+      expect(response.status).toBe(201);
+      expect(mockUploadHelpdeskAttachment).toHaveBeenCalledWith('HD-0001', {
+        data: expect.anything(),
+        fileName: 'photo.png',
+      });
+      const [, content] = mockAddHelpdeskTicketComment.mock.calls[0];
+      expect(content).toContain('hashpass-attachment://file-1');
+      expect(content).not.toContain('<evil>');
+      expect(content).toContain('&lt;evil&gt;');
+    });
+
+    it('maps an upload failure through the same Frappe error mapping', async () => {
+      const { FrappeHelpdeskRequestError } = jest.requireActual('../../../../../lib/server/frappe-helpdesk');
+      mockGetHelpdeskTicket.mockResolvedValue(TICKET);
+      mockUploadHelpdeskAttachment.mockRejectedValue(new FrappeHelpdeskRequestError('boom', 500));
+      const { POST } = require('../../../../../app/api/v1/support/frappe/tickets/[ticketId]+api');
+      const file = new Blob(['x'], { type: 'image/png' });
+
+      const response = await POST(multipartRequest('HD-0001', { email: 'a@example.com', file }));
+
+      expect(response.status).toBe(502);
+    });
   });
 });
 
-describe('PATCH /api/v1/support/frappe/tickets/:ticketId', () => {
+describe('PATCH /api/v1/support/frappe/tickets/:ticketId (cancel ticket)', () => {
   beforeEach(() => {
     jest.resetModules();
     mockGetHelpdeskTicket.mockReset();
     mockCloseHelpdeskTicket.mockReset();
   });
 
-  it('requires an email before attempting to close a ticket', async () => {
+  it('requires an email', async () => {
     const { PATCH } = require('../../../../../app/api/v1/support/frappe/tickets/[ticketId]+api');
-    const response = await PATCH(patchRequest('HD-0001', {}, 'close-no-email'));
+    const response = await PATCH(patchRequest('HD-0001', {}));
     expect(response.status).toBe(400);
     expect(mockGetHelpdeskTicket).not.toHaveBeenCalled();
   });
 
-  it('closes only the ticket owned by the requesting email', async () => {
+  it('returns 404 when the email does not match raised_by, without closing the ticket', async () => {
+    mockGetHelpdeskTicket.mockResolvedValue(TICKET);
+    const { PATCH } = require('../../../../../app/api/v1/support/frappe/tickets/[ticketId]+api');
+
+    const response = await PATCH(patchRequest('HD-0001', { email: 'wrong@example.com' }));
+
+    expect(response.status).toBe(404);
+    expect(mockCloseHelpdeskTicket).not.toHaveBeenCalled();
+  });
+
+  it('closes the ticket for the authorized owner', async () => {
     mockGetHelpdeskTicket.mockResolvedValue(TICKET);
     mockCloseHelpdeskTicket.mockResolvedValue({ ...TICKET, status: 'Closed' });
     const { PATCH } = require('../../../../../app/api/v1/support/frappe/tickets/[ticketId]+api');
-    const response = await PATCH(patchRequest('HD-0001', { email: 'A@EXAMPLE.COM' }, 'close-success'));
+
+    const response = await PATCH(patchRequest('HD-0001', { email: 'a@example.com' }));
+
     expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.ticket).toEqual(expect.objectContaining({ status: 'Closed' }));
     expect(mockCloseHelpdeskTicket).toHaveBeenCalledWith('HD-0001');
-    await expect(response.json()).resolves.toEqual({ ticket: expect.objectContaining({ status: 'Closed' }) });
   });
 
-  it('does not close a ticket when ownership is not proven', async () => {
-    mockGetHelpdeskTicket.mockResolvedValue(TICKET);
+  it('maps an unexpected error to a 500', async () => {
+    mockGetHelpdeskTicket.mockRejectedValue(new Error('unexpected'));
     const { PATCH } = require('../../../../../app/api/v1/support/frappe/tickets/[ticketId]+api');
-    const response = await PATCH(patchRequest('HD-0001', { email: 'other@example.com' }, 'close-denied'));
-    expect(response.status).toBe(404);
-    expect(mockCloseHelpdeskTicket).not.toHaveBeenCalled();
+
+    const response = await PATCH(patchRequest('HD-0001', { email: 'a@example.com' }));
+
+    expect(response.status).toBe(500);
+  });
+
+  it('rate limits repeated cancel attempts from the same IP', async () => {
+    mockGetHelpdeskTicket.mockResolvedValue(TICKET);
+    mockCloseHelpdeskTicket.mockResolvedValue({ ...TICKET, status: 'Closed' });
+    const { PATCH } = require('../../../../../app/api/v1/support/frappe/tickets/[ticketId]+api');
+
+    let lastResponse;
+    for (let i = 0; i < 6; i += 1) {
+      lastResponse = await PATCH(patchRequest('HD-0001', { email: 'a@example.com' }));
+    }
+
+    expect(lastResponse!.status).toBe(429);
   });
 });
