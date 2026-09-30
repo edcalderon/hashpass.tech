@@ -3,6 +3,8 @@
 const mockGetHelpdeskTicket = jest.fn();
 const mockListHelpdeskTicketComments = jest.fn();
 const mockAddHelpdeskTicketComment = jest.fn();
+const mockUploadHelpdeskAttachment = jest.fn();
+const mockCloseHelpdeskTicket = jest.fn();
 
 jest.mock('@/lib/server/frappe-helpdesk', () => {
   const actual = jest.requireActual('@/lib/server/frappe-helpdesk');
@@ -11,10 +13,12 @@ jest.mock('@/lib/server/frappe-helpdesk', () => {
     getHelpdeskTicket: (...args: unknown[]) => mockGetHelpdeskTicket(...args),
     listHelpdeskTicketComments: (...args: unknown[]) => mockListHelpdeskTicketComments(...args),
     addHelpdeskTicketComment: (...args: unknown[]) => mockAddHelpdeskTicketComment(...args),
+    uploadHelpdeskAttachment: (...args: unknown[]) => mockUploadHelpdeskAttachment(...args),
+    closeHelpdeskTicket: (...args: unknown[]) => mockCloseHelpdeskTicket(...args),
   };
 });
 
-const TICKET: import('../../../../../lib/server/frappe-helpdesk').FrappeHelpdeskTicket = {
+const TICKET = {
   id: 'HD-0001',
   subject: 'Help',
   status: 'Open',
@@ -34,6 +38,25 @@ function postRequest(ticketId: string, body: unknown) {
   return new Request(`https://api.hashpass.tech/api/v1/support/frappe/tickets/${ticketId}`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+}
+
+function attachmentRequest(ticketId: string, email: string, file: File | Blob, ip: string) {
+  const form = new FormData();
+  form.append('email', email);
+  form.append('file', file, 'untrusted<name>.png');
+  return new Request(`https://api.hashpass.tech/api/v1/support/frappe/tickets/${ticketId}`, {
+    method: 'POST',
+    headers: { 'x-forwarded-for': ip },
+    body: form,
+  });
+}
+
+function patchRequest(ticketId: string, body: unknown, ip: string) {
+  return new Request(`https://api.hashpass.tech/api/v1/support/frappe/tickets/${ticketId}`, {
+    method: 'PATCH',
+    headers: { 'content-type': 'application/json', 'x-forwarded-for': ip },
     body: JSON.stringify(body),
   });
 }
@@ -93,6 +116,8 @@ describe('POST /api/v1/support/frappe/tickets/:ticketId', () => {
     jest.resetModules();
     mockGetHelpdeskTicket.mockReset();
     mockAddHelpdeskTicketComment.mockReset();
+    mockUploadHelpdeskAttachment.mockReset();
+    mockCloseHelpdeskTicket.mockReset();
   });
 
   it('requires email and content', async () => {
@@ -139,5 +164,63 @@ describe('POST /api/v1/support/frappe/tickets/:ticketId', () => {
     const response = await POST(postRequest('HD-0001', { email: 'a@example.com', content: 'hi' }));
 
     expect(response.status).toBe(500);
+  });
+
+  it('uploads an authorized attachment and escapes its untrusted display name in the comment', async () => {
+    mockGetHelpdeskTicket.mockResolvedValue(TICKET);
+    mockUploadHelpdeskAttachment.mockResolvedValue({ fileId: 'FILE-0001', fileName: 'untrusted<name>.png' });
+    mockAddHelpdeskTicketComment.mockResolvedValue({ id: 'c3', content: 'attachment', commentedBy: null, createdAt: 't3' });
+    const { POST } = require('../../../../../app/api/v1/support/frappe/tickets/[ticketId]+api');
+    const response = await POST(attachmentRequest('HD-0001', 'a@example.com', new Blob(['png'], { type: 'image/png' }), 'attachment-success'));
+
+    expect(response.status).toBe(201);
+    expect(mockUploadHelpdeskAttachment).toHaveBeenCalledWith('HD-0001', expect.objectContaining({ fileName: 'untrusted<name>.png' }));
+    expect(mockAddHelpdeskTicketComment).toHaveBeenCalledWith('HD-0001', expect.stringContaining('untrusted&lt;name&gt;.png'));
+    await expect(response.json()).resolves.toEqual({ message: expect.objectContaining({ id: 'c3' }) });
+  });
+
+  it.each([
+    ['no uploaded file', new FormData(), 400],
+    ['unsupported MIME type', (() => { const form = new FormData(); form.append('email', 'a@example.com'); form.append('file', new Blob(['html'], { type: 'text/html' }), 'bad.html'); return form; })(), 415],
+  ])('rejects a multipart request with %s', async (_name, form, expectedStatus) => {
+    const { POST } = require('../../../../../app/api/v1/support/frappe/tickets/[ticketId]+api');
+    const response = await POST(new Request('https://api.hashpass.tech/api/v1/support/frappe/tickets/HD-0001', {
+      method: 'POST', headers: { 'x-forwarded-for': `multipart-${_name}` }, body: form,
+    }));
+    expect(response.status).toBe(expectedStatus);
+    expect(mockUploadHelpdeskAttachment).not.toHaveBeenCalled();
+  });
+});
+
+describe('PATCH /api/v1/support/frappe/tickets/:ticketId', () => {
+  beforeEach(() => {
+    jest.resetModules();
+    mockGetHelpdeskTicket.mockReset();
+    mockCloseHelpdeskTicket.mockReset();
+  });
+
+  it('requires an email before attempting to close a ticket', async () => {
+    const { PATCH } = require('../../../../../app/api/v1/support/frappe/tickets/[ticketId]+api');
+    const response = await PATCH(patchRequest('HD-0001', {}, 'close-no-email'));
+    expect(response.status).toBe(400);
+    expect(mockGetHelpdeskTicket).not.toHaveBeenCalled();
+  });
+
+  it('closes only the ticket owned by the requesting email', async () => {
+    mockGetHelpdeskTicket.mockResolvedValue(TICKET);
+    mockCloseHelpdeskTicket.mockResolvedValue({ ...TICKET, status: 'Closed' });
+    const { PATCH } = require('../../../../../app/api/v1/support/frappe/tickets/[ticketId]+api');
+    const response = await PATCH(patchRequest('HD-0001', { email: 'A@EXAMPLE.COM' }, 'close-success'));
+    expect(response.status).toBe(200);
+    expect(mockCloseHelpdeskTicket).toHaveBeenCalledWith('HD-0001');
+    await expect(response.json()).resolves.toEqual({ ticket: expect.objectContaining({ status: 'Closed' }) });
+  });
+
+  it('does not close a ticket when ownership is not proven', async () => {
+    mockGetHelpdeskTicket.mockResolvedValue(TICKET);
+    const { PATCH } = require('../../../../../app/api/v1/support/frappe/tickets/[ticketId]+api');
+    const response = await PATCH(patchRequest('HD-0001', { email: 'other@example.com' }, 'close-denied'));
+    expect(response.status).toBe(404);
+    expect(mockCloseHelpdeskTicket).not.toHaveBeenCalled();
   });
 });

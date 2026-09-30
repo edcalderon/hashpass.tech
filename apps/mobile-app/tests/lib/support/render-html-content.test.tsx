@@ -1,7 +1,7 @@
 /// <reference types="jest" />
 import React from 'react';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
-import { Text } from 'react-native';
+import { Linking, Text } from 'react-native';
 
 import { SupportRichText } from '../../../lib/support/render-html-content';
 
@@ -40,5 +40,34 @@ describe('SupportRichText', () => {
 
   it('strips <style> blocks the same way', () => {
     expect(renderedText('<p>a</p><style>body{color:red}</style><p>b</p>')).toBe('ab');
+  });
+
+  it('renders only text from allowed formatting and block tags, decoding entities and list markers', () => {
+    expect(renderedText('<p><strong>Bold</strong> &amp; <em>italic</em><br><code>const x = 1</code></p><ul><li>First&nbsp;item</li><li><u>Second</u></li></ul><img src="https://untrusted.example/image.png">'))
+      .toBe('Bold & italicconst x = 1•  First item•  Second');
+  });
+
+  it('opens ordinary links through Linking without interpreting unrecognized markup', async () => {
+    const openURL = jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined);
+    act(() => { view = create(<SupportRichText html={'<span>safe</span> <a href="https://hashpass.tech/docs?x=1&amp;y=2">docs</a>'} />); });
+    const link = view.root.findAllByType(Text).find((node) => typeof node.props.onPress === 'function');
+    expect(link).toBeDefined();
+    await act(async () => { await link!.props.onPress(); });
+    expect(openURL).toHaveBeenCalledWith('https://hashpass.tech/docs?x=1&y=2');
+    openURL.mockRestore();
+  });
+
+  it('sends opaque attachment tokens to the supplied handler instead of opening them as URLs', () => {
+    const onAttachmentPress = jest.fn();
+    act(() => { view = create(<SupportRichText html={'<p><a href="hashpass-attachment://FILE-123">invoice.pdf</a></p>'} onAttachmentPress={onAttachmentPress} />); });
+    const attachment = view.root.findAllByType(Text).find((node) => typeof node.props.onPress === 'function');
+    expect(attachment).toBeDefined();
+    act(() => attachment!.props.onPress());
+    expect(onAttachmentPress).toHaveBeenCalledWith('FILE-123', 'invoice.pdf');
+  });
+
+  it('returns nothing for empty or entirely dangerous content', () => {
+    act(() => { view = create(<SupportRichText html={'<script>alert(1)</script><style>p{display:none}</style>'} />); });
+    expect(view.toJSON()).toBeNull();
   });
 });

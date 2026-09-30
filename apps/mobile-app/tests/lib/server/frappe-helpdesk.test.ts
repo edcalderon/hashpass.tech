@@ -167,4 +167,80 @@ describe('lib/server/frappe-helpdesk', () => {
     });
     await expect(getHelpdeskTicket('HD-0001')).rejects.toBeInstanceOf(FrappeHelpdeskRequestError);
   });
+
+  it('closes a ticket through the write API and serializes the updated ticket', async () => {
+    setConfigured();
+    const fetchMock = jest.fn().mockResolvedValue(Response.json({
+      data: { name: 'HD-0001', subject: 'Help', status: 'Closed', priority: 'Medium', raised_by: 'a@example.com', creation: 't1', modified: 't2' },
+    }));
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    const { closeHelpdeskTicket } = require('../../../lib/server/frappe-helpdesk');
+    await expect(closeHelpdeskTicket('HD-0001')).resolves.toEqual(expect.objectContaining({ id: 'HD-0001', status: 'Closed', updatedAt: 't2' }));
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(String(url)).toBe('https://helpdesk.example.com/api/resource/HD%20Ticket/HD-0001');
+    expect(init).toEqual(expect.objectContaining({ method: 'PUT' }));
+    expect(JSON.parse(init.body)).toEqual({ status: 'Closed' });
+  });
+
+  it('allows only the declared image and PDF attachment content types', () => {
+    const { isAllowedAttachmentType } = require('../../../lib/server/frappe-helpdesk');
+    expect(isAllowedAttachmentType('IMAGE/PNG')).toBe(true);
+    expect(isAllowedAttachmentType('application/pdf')).toBe(true);
+    expect(isAllowedAttachmentType('text/html')).toBe(false);
+  });
+
+  it('uploads a private attachment associated with the ticket', async () => {
+    setConfigured();
+    const fetchMock = jest.fn().mockResolvedValue(Response.json({ message: { name: 'FILE-0001', file_name: 'receipt.png' } }));
+    global.fetch = fetchMock as unknown as typeof fetch;
+    const { uploadHelpdeskAttachment } = require('../../../lib/server/frappe-helpdesk');
+
+    await expect(uploadHelpdeskAttachment('HD-0001', { data: new Blob(['png'], { type: 'image/png' }), fileName: 'receipt.png' }))
+      .resolves.toEqual({ fileId: 'FILE-0001', fileName: 'receipt.png' });
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(String(url)).toBe('https://helpdesk.example.com/api/method/upload_file');
+    expect(init.headers.Authorization).toBe('token example-write-key:example-write-secret');
+    expect(init.body.get('is_private')).toBe('1');
+    expect(init.body.get('doctype')).toBe('HD Ticket');
+    expect(init.body.get('docname')).toBe('HD-0001');
+  });
+
+  it('rejects attachment uploads without write credentials and wraps upstream failures', async () => {
+    process.env.FRAPPE_BASE_URL = 'https://helpdesk.example.com';
+    const { uploadHelpdeskAttachment, FrappeHelpdeskConfigError, FrappeHelpdeskRequestError } = require('../../../lib/server/frappe-helpdesk');
+    const input = { data: new Blob(['png'], { type: 'image/png' }), fileName: 'receipt.png' };
+    await expect(uploadHelpdeskAttachment('HD-0001', input)).rejects.toBeInstanceOf(FrappeHelpdeskConfigError);
+
+    setConfigured();
+    global.fetch = jest.fn().mockRejectedValue(new Error('offline')) as unknown as typeof fetch;
+    await expect(uploadHelpdeskAttachment('HD-0001', input)).rejects.toMatchObject({ status: 502 });
+    global.fetch = jest.fn().mockResolvedValue(Response.json({ message: 'bad upload' }, { status: 400 })) as unknown as typeof fetch;
+    await expect(uploadHelpdeskAttachment('HD-0001', input)).rejects.toBeInstanceOf(FrappeHelpdeskRequestError);
+  });
+
+  it('downloads an attachment only after confirming it belongs to the requested ticket', async () => {
+    setConfigured();
+    const fetchMock = jest.fn()
+      .mockResolvedValueOnce(Response.json({ data: { attached_to_doctype: 'HD Ticket', attached_to_name: 'HD-0001', file_url: '/private/files/receipt.png', file_name: 'receipt.png' } }))
+      .mockResolvedValueOnce(new Response(new Uint8Array([4, 5, 6]), { headers: { 'content-type': 'image/png' } }));
+    global.fetch = fetchMock as unknown as typeof fetch;
+    const { fetchHelpdeskAttachment } = require('../../../lib/server/frappe-helpdesk');
+    const attachment = await fetchHelpdeskAttachment('HD-0001', 'FILE-0001');
+    expect(new Uint8Array(attachment.body)).toEqual(new Uint8Array([4, 5, 6]));
+    expect(attachment).toEqual(expect.objectContaining({ contentType: 'image/png', fileName: 'receipt.png' }));
+    expect(String(fetchMock.mock.calls[1][0])).toBe('https://helpdesk.example.com/private/files/receipt.png');
+  });
+
+  it('rejects attachment records that do not belong to the ticket and wraps download failures', async () => {
+    setConfigured();
+    const { fetchHelpdeskAttachment, FrappeHelpdeskRequestError } = require('../../../lib/server/frappe-helpdesk');
+    global.fetch = jest.fn().mockResolvedValue(Response.json({ data: { attached_to_doctype: 'HD Ticket', attached_to_name: 'HD-other', file_url: '/private/files/nope.png' } })) as unknown as typeof fetch;
+    await expect(fetchHelpdeskAttachment('HD-0001', 'FILE-0001')).rejects.toMatchObject({ status: 404 });
+
+    global.fetch = jest.fn()
+      .mockResolvedValueOnce(Response.json({ data: { attached_to_doctype: 'HD Ticket', attached_to_name: 'HD-0001', file_url: '/private/files/receipt.png' } }))
+      .mockResolvedValueOnce(new Response('bad', { status: 502 })) as unknown as typeof fetch;
+    await expect(fetchHelpdeskAttachment('HD-0001', 'FILE-0001')).rejects.toBeInstanceOf(FrappeHelpdeskRequestError);
+  });
 });
