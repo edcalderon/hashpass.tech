@@ -135,3 +135,12 @@ jobs:
           else
             pnpm --dir apps/mobile-app run ios:build
           fi
+
+      - name: Upload signed IPA artifact
+        if: ${{ inputs.submit == false }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: HASHPASS-ios-${{ github.run_number }}
+          path: apps/mobile-app/build/ios/HASHPASS.ipa
+          if-no-files-found: error
+          retention-days: 7

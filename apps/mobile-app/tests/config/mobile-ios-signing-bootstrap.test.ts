@@ -46,4 +46,12 @@ describe('iOS signing bootstrap', () => {
     expect(workflow.indexOf('name: Set up pnpm')).toBeLessThan(workflow.indexOf('name: Set up Node'));
     expect(workflow).toContain('cache: pnpm');
   });
+
+  it('retains the signed IPA when a build-only run does not submit to TestFlight', () => {
+    const workflow = fs.readFileSync(releaseWorkflowPath, 'utf8');
+
+    expect(workflow).toContain('name: Upload signed IPA artifact');
+    expect(workflow).toContain("if: ${{ inputs.submit == false }}");
+    expect(workflow).toContain('apps/mobile-app/build/ios/HASHPASS.ipa');
+  });
 });
