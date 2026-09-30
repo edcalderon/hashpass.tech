@@ -595,6 +595,29 @@ if (options.isLocal) {
   applyLocalDirectusDatabaseOverrides(targetConfig, rootConfig);
 }
 
+// Write to targets
+const mobileAppEnvPath = path.join(MOBILE_APP_DIR, '.env');
+const mobileAppEnvLocalPath = path.join(MOBILE_APP_DIR, `.env.${options.envArg}`);
+fs.mkdirSync(path.dirname(mobileAppEnvPath), { recursive: true });
+
+// apps/frappe-helpdesk-dev/scripts/seed-support-users.js writes FRAPPE_* keys
+// straight into apps/mobile-app/.env.local -- they're generated per-machine
+// (a local Frappe Docker stack's own service-user API keys) and never live in
+// the root .env, so this script has no source of truth for them at all. A
+// blind overwrite of .env.local here (which this script always did before)
+// silently wiped that block on every `env:propagate local` run, including the
+// one dev-all.sh runs immediately after seeding -- reintroducing "FRAPPE_BASE_URL
+// is not configured" even right after a successful seed. Preserve any
+// existing FRAPPE_* lines from the file we're about to overwrite instead.
+if (options.isLocal && fs.existsSync(mobileAppEnvLocalPath)) {
+  const existingLocalConfig = dotenv.parse(fs.readFileSync(mobileAppEnvLocalPath));
+  for (const [key, value] of Object.entries(existingLocalConfig)) {
+    if (key.startsWith('FRAPPE_') && value) {
+      targetConfig[key] = value;
+    }
+  }
+}
+
 // Generate .env file content
 const DISCLAIMER = `# ==============================================================================
 # ⚠️ AUTO-GENERATED FILE - DO NOT EDIT MANUALLY
@@ -609,11 +632,6 @@ const envContent = DISCLAIMER + Object.entries(targetConfig)
   .sort(([a], [b]) => a.localeCompare(b))
   .map(([key, value]) => `${key}=${value}`)
   .join('\n');
-
-// Write to targets
-const mobileAppEnvPath = path.join(MOBILE_APP_DIR, '.env');
-const mobileAppEnvLocalPath = path.join(MOBILE_APP_DIR, `.env.${options.envArg}`);
-fs.mkdirSync(path.dirname(mobileAppEnvPath), { recursive: true });
 
 console.log(`📝 Writing to ${mobileAppEnvPath}...`);
 fs.writeFileSync(mobileAppEnvPath, envContent);

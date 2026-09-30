@@ -303,6 +303,17 @@ stop_background_apps() {
 cleanup() {
   local exit_code=$?
 
+  # Disable the trap immediately, before doing anything else. Without this,
+  # a `return` from a function invoked as an EXIT/INT/TERM trap handler (not
+  # a normal call) can corrupt bash's call-stack bookkeeping on some builds
+  # -- observed as `pop_var_context: head of shell_variables not a function
+  # context` -- and/or cause this same handler to re-fire a second time
+  # (visible as "Stopping Directus..."/"Stopping local Frappe Helpdesk..."
+  # each printing twice). Clearing the trap first, and using `exit` instead
+  # of `return` below, makes this handler safe to run exactly once no matter
+  # which signal triggered it.
+  trap - EXIT INT TERM
+
   stop_background_apps
 
   if [[ "${HASHPASS_KEEP_DIRECTUS_ON_EXIT:-false}" == "true" ]]; then
@@ -325,7 +336,7 @@ cleanup() {
     fi
   fi
 
-  return "$exit_code"
+  exit "$exit_code"
 }
 
 trap cleanup EXIT INT TERM
@@ -414,8 +425,19 @@ VIDEO_STUDIO_PID=$!
 wait_for_directus
 
 if [[ "${SKIP_FRAPPE_HELPDESK}" != "true" ]]; then
-  wait_for_frappe_helpdesk
+  # Non-fatal on timeout, same posture as the `up` step above: this is
+  # optional local infra for one feature, and under `set -e` a bare failed
+  # call here would tear down the whole session (Directus, club, docs,
+  # video-studio, links-api -- all unrelated and otherwise healthy) just
+  # because Frappe Helpdesk took too long to report ready. Falls back to
+  # SKIP_FRAPPE_HELPDESK so the seed step below is skipped too.
+  if ! wait_for_frappe_helpdesk; then
+    echo "WARNING: local Frappe Helpdesk did not become ready in time -- continuing dev:all without it. Contact Support / ticket chat will show its config error locally. Check logs (pnpm --filter hashpass-frappe-helpdesk-dev run logs) and re-run 'pnpm --filter hashpass-frappe-helpdesk-dev run up' once it's healthy -- the mobile app will pick it up on the next request, no restart needed." >&2
+    SKIP_FRAPPE_HELPDESK=true
+  fi
+fi
 
+if [[ "${SKIP_FRAPPE_HELPDESK}" != "true" ]]; then
   if frappe_helpdesk_needs_seed; then
     echo "Seeding local Frappe Helpdesk service users (apps/mobile-app/.env.local is missing or incomplete)..."
     FRAPPE_LOCAL_HTTP_PORT="${FRAPPE_HELPDESK_PORT}" pnpm --filter hashpass-frappe-helpdesk-dev run seed
