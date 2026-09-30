@@ -147,3 +147,21 @@ jobs:
             --field production_release_status=completed \
             --field backend=fastlane \
             --field runner=github-hosted
+
+  trigger-ios-release:
+    needs: [detect-native-change]
+    if: >-
+      github.repository == 'hashpass-tech/hashpass.tech' &&
+      needs.detect-native-change.outputs.needs_native == 'true' &&
+      vars.IOS_RELEASE_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch mobile-ios-release.yml for ${{ github.ref_name }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh workflow run mobile-ios-release.yml \
+            --repo hashpass-tech/hashpass.tech \
+            --ref "${{ github.ref_name }}" \
+            --field ref="${{ github.ref_name }}" \
+            --field submit=true

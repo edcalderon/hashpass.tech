@@ -1,0 +1,85 @@
+name: Upload iOS build to TestFlight
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Git ref to build and upload
+        required: true
+        type: string
+      submit:
+        description: Upload the signed IPA to internal TestFlight
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mobile-ios-release-${{ inputs.ref }}
+  cancel-in-progress: false
+
+jobs:
+  testflight:
+    runs-on: macos-15
+    environment: production
+    steps:
+      - name: Checkout release ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.5
+
+      - name: Install JavaScript dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Fastlane dependencies
+        working-directory: apps/mobile-app
+        run: bundle install
+
+      - name: Verify iOS release credentials are configured
+        env:
+          APP_STORE_CONNECT_API_KEY_P8: ${{ secrets.APP_STORE_CONNECT_API_KEY_P8 }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+        run: |
+          set -euo pipefail
+          for name in APP_STORE_CONNECT_API_KEY_P8 APP_STORE_CONNECT_KEY_ID APP_STORE_CONNECT_ISSUER_ID MATCH_GIT_URL MATCH_PASSWORD; do
+            if [ -z "${!name}" ]; then
+              echo "Missing required GitHub Actions secret: $name" >&2
+              exit 1
+            fi
+          done
+
+      - name: Build and upload to TestFlight
+        env:
+          APP_STORE_CONNECT_API_KEY_P8: ${{ secrets.APP_STORE_CONNECT_API_KEY_P8 }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          MATCH_READONLY: 'true'
+          GITHUB_RUN_NUMBER: ${{ github.run_number }}
+          IOS_BUILD_NUMBER: ${{ github.run_number }}
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          EXPO_OWNER: hashpasss-team
+          EAS_BUILD_PROFILE: production
+        run: |
+          if [ "${{ inputs.submit }}" = "true" ]; then
+            pnpm --dir apps/mobile-app run ios:release
+          else
+            pnpm --dir apps/mobile-app run ios:build
+          fi

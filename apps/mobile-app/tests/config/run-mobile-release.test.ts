@@ -9,10 +9,15 @@ jest.mock('../../../../packages/tools/scripts/run-mobile-fastlane.js', () => ({
   runFastlanePromote: jest.fn(),
 }));
 
+jest.mock('../../../../packages/tools/scripts/run-mobile-ios-fastlane.js', () => ({
+  runIosFastlane: jest.fn(),
+}));
+
 const {
   buildReleaseArgs,
   normalizeReleaseEnvironment,
   normalizeReleaseBackend,
+  normalizeReleasePlatform,
   parseReleaseArgs,
   resolveReleaseProfile,
   runRelease,
@@ -24,6 +29,7 @@ const {
   }) => string[];
   normalizeReleaseEnvironment: (value?: string) => string;
   normalizeReleaseBackend: (value?: string) => string;
+  normalizeReleasePlatform: (value?: string) => string;
   parseReleaseArgs: (argv?: string[]) => {
     env: string;
     profile: string | null;
@@ -32,6 +38,7 @@ const {
     track: string | null;
     promoteTo: string | null;
     releaseStatus: string | null;
+    platform: string;
   };
   resolveReleaseProfile: (options?: {
     env?: string;
@@ -45,6 +52,7 @@ const {
     track?: string | null;
     promoteTo?: string | null;
     releaseStatus?: string | null;
+    platform?: string;
   }) => unknown;
 };
 
@@ -94,6 +102,12 @@ describe('run-mobile-release', () => {
     expect(normalizeReleaseBackend('local')).toBe('fastlane');
   });
 
+  it('normalizes release platforms', () => {
+    expect(normalizeReleasePlatform()).toBe('android');
+    expect(normalizeReleasePlatform('ios')).toBe('ios');
+    expect(() => normalizeReleasePlatform('web')).toThrow('Unsupported mobile release platform: web');
+  });
+
   it('parses env, backend, and submit flags', () => {
     expect(parseReleaseArgs(['--env', 'development', '--backend', 'fastlane', '--no-submit'])).toEqual({
       env: 'development',
@@ -103,6 +117,7 @@ describe('run-mobile-release', () => {
       track: null,
       promoteTo: null,
       releaseStatus: null,
+      platform: 'android',
     });
     expect(parseReleaseArgs(['--track', 'alpha'])).toMatchObject({
       track: 'alpha',
@@ -115,7 +130,28 @@ describe('run-mobile-release', () => {
       track: null,
       promoteTo: null,
       releaseStatus: null,
+      platform: 'android',
     });
+  });
+
+  it('dispatches iOS Fastlane releases to the TestFlight runner', () => {
+    const { runIosFastlane } = require('../../../../packages/tools/scripts/run-mobile-ios-fastlane.js') as {
+      runIosFastlane: jest.Mock;
+    };
+
+    runRelease({
+      env: 'production',
+      backend: 'fastlane',
+      platform: 'ios',
+      submit: true,
+    });
+
+    expect(runIosFastlane).toHaveBeenCalledWith(
+      expect.objectContaining({
+        profile: 'production',
+        submit: true,
+      }),
+    );
   });
 
   it('parses the promote-only track target', () => {
@@ -127,6 +163,7 @@ describe('run-mobile-release', () => {
       track: 'internal',
       promoteTo: 'alpha',
       releaseStatus: null,
+      platform: 'android',
     });
   });
 

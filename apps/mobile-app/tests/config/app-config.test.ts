@@ -12,6 +12,7 @@ const originalOwner = process.env.EXPO_OWNER;
 const originalDevOwner = process.env.EXPO_OWNER_DEV;
 const originalReleaseBackend = process.env.MOBILE_RELEASE_BACKEND;
 const originalAndroidVersionCode = process.env.MOBILE_ANDROID_VERSION_CODE;
+const originalIosBuildNumber = process.env.IOS_BUILD_NUMBER;
 const originalExpoUseLocalVersioning = process.env.EXPO_USE_LOCAL_VERSIONING;
 const originalRouterOrigin = process.env.EXPO_PUBLIC_ROUTER_ORIGIN;
 const originalRouterHeadOrigin = process.env.EXPO_PUBLIC_ROUTER_HEAD_ORIGIN;
@@ -59,6 +60,12 @@ afterEach(() => {
     delete process.env.MOBILE_ANDROID_VERSION_CODE;
   } else {
     process.env.MOBILE_ANDROID_VERSION_CODE = originalAndroidVersionCode;
+  }
+
+  if (typeof originalIosBuildNumber === 'undefined') {
+    delete process.env.IOS_BUILD_NUMBER;
+  } else {
+    process.env.IOS_BUILD_NUMBER = originalIosBuildNumber;
   }
 
   if (typeof originalExpoUseLocalVersioning === 'undefined') {
@@ -124,6 +131,17 @@ describe('app.config', () => {
 
     expect(resolvedConfig.android.versionCode).toBe(123456);
     expect(resolvedConfig.owner).toBe('hashpasss-team');
+  });
+
+  it('injects a local iOS build number for Fastlane archives', () => {
+    process.env.EAS_BUILD_PROFILE = 'production';
+    process.env.MOBILE_RELEASE_BACKEND = 'fastlane';
+    process.env.IOS_BUILD_NUMBER = '481';
+
+    const appConfigFactory = require('../../app.config.js');
+    const resolvedConfig = appConfigFactory({ config: {} });
+
+    expect(resolvedConfig.ios.buildNumber).toBe('481');
   });
 
   it('passes through a local router origin allowlist for Expo dev server CORS', () => {

@@ -3,12 +3,14 @@
 
 const { runEas } = require('./run-mobile-eas');
 const { runFastlane, runFastlanePromote } = require('./run-mobile-fastlane');
+const { runIosFastlane } = require('./run-mobile-ios-fastlane');
 
 const DEFAULT_RELEASE_ENV = 'production';
 const DEFAULT_RELEASE_BACKEND = 'fastlane';
 const PRODUCTION_PROFILE = 'production';
 const DEVELOPMENT_PROFILE = 'preview';
 const VALID_RELEASE_BACKENDS = new Set(['eas', 'fastlane']);
+const VALID_RELEASE_PLATFORMS = new Set(['android', 'ios']);
 
 function normalizeReleaseEnvironment(value) {
   const normalized = String(value || '').trim().toLowerCase();
@@ -50,6 +52,17 @@ function normalizeReleaseBackend(value) {
   return normalized;
 }
 
+function normalizeReleasePlatform(value) {
+  const normalized = String(value || '').trim().toLowerCase();
+
+  if (!normalized) return 'android';
+  if (!VALID_RELEASE_PLATFORMS.has(normalized)) {
+    throw new Error(`Unsupported mobile release platform: ${value}`);
+  }
+
+  return normalized;
+}
+
 function parseReleaseArgs(argv = []) {
   const options = {
     env:
@@ -73,6 +86,7 @@ function parseReleaseArgs(argv = []) {
       process.env.FASTLANE_RELEASE_STATUS ||
       process.env.MOBILE_RELEASE_RELEASE_STATUS ||
       null,
+    platform: process.env.MOBILE_RELEASE_PLATFORM || 'android',
   };
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -155,6 +169,17 @@ function parseReleaseArgs(argv = []) {
       continue;
     }
 
+    if (arg === '--platform' && argv[i + 1]) {
+      options.platform = argv[i + 1];
+      i += 1;
+      continue;
+    }
+
+    if (arg.startsWith('--platform=')) {
+      options.platform = arg.split('=')[1];
+      continue;
+    }
+
     if (arg === '--no-submit') {
       options.submit = false;
       continue;
@@ -173,6 +198,7 @@ function parseReleaseArgs(argv = []) {
     track: options.track ? String(options.track).trim().toLowerCase() : null,
     promoteTo: options.promoteTo ? String(options.promoteTo).trim().toLowerCase() : null,
     releaseStatus: options.releaseStatus ? String(options.releaseStatus).trim().toLowerCase() : null,
+    platform: normalizeReleasePlatform(options.platform),
   };
 }
 
@@ -187,7 +213,8 @@ function resolveReleaseProfile({ env = DEFAULT_RELEASE_ENV, profile } = {}) {
 function buildReleaseArgs(options = {}) {
   const env = normalizeReleaseEnvironment(options.env);
   const profile = resolveReleaseProfile({ env, profile: options.profile });
-  const args = ['build', '--platform', 'android', '--profile', profile];
+  const platform = normalizeReleasePlatform(options.platform);
+  const args = ['build', '--platform', platform, '--profile', profile];
 
   if (options.submit !== false) {
     args.push('--auto-submit');
@@ -199,8 +226,20 @@ function buildReleaseArgs(options = {}) {
 function runRelease(options = {}) {
   const backend = normalizeReleaseBackend(options.backend);
   const profile = resolveReleaseProfile({ env: options.env, profile: options.profile });
+  const platform = normalizeReleasePlatform(options.platform);
 
   if (backend === 'fastlane') {
+    if (platform === 'ios') {
+      if (options.promoteTo) {
+        throw new Error('Promotion-only releases are only supported on Android.');
+      }
+
+      return runIosFastlane({
+        profile,
+        submit: options.submit !== false,
+      });
+    }
+
     if (options.promoteTo) {
       return runFastlanePromote({
         profile,
@@ -222,14 +261,14 @@ function runRelease(options = {}) {
     throw new Error('Promotion-only releases are only supported with the fastlane backend.');
   }
 
-  return runEas(buildReleaseArgs({ ...options, profile }), { profile });
+  return runEas(buildReleaseArgs({ ...options, profile, platform }), { profile });
 }
 
 function main(argv = process.argv.slice(2)) {
   if (argv.includes('--help') || argv.includes('-h')) {
     console.log(
       [
-        'Usage: node packages/tools/scripts/run-mobile-release.js [--env production|development] [--profile eas-profile] [--backend eas|fastlane] [--track play-track] [--promote-to play-track] [--release-status draft|completed|halted|inProgress] [--no-submit]',
+        'Usage: node packages/tools/scripts/run-mobile-release.js [--platform android|ios] [--env production|development] [--profile eas-profile] [--backend eas|fastlane] [--track play-track] [--promote-to play-track] [--release-status draft|completed|halted|inProgress] [--no-submit]',
         '',
         'Release path: --env development covers track=internal (build), track=alpha (closed testing), and track=beta (open testing) -- all the same backend, promoted through Play tracks via --promote-to. --env production is reserved for track=production, the only track built against the real backend.',
         'Use --backend fastlane with --promote-to alpha, --env development, and --track internal to promote the internal Play release into closed testing.',
@@ -276,8 +315,10 @@ module.exports = {
   PRODUCTION_PROFILE,
   DEVELOPMENT_PROFILE,
   VALID_RELEASE_BACKENDS,
+  VALID_RELEASE_PLATFORMS,
   normalizeReleaseEnvironment,
   normalizeReleaseBackend,
+  normalizeReleasePlatform,
   parseReleaseArgs,
   resolveReleaseProfile,
   buildReleaseArgs,
