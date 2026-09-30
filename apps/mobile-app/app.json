@@ -18,7 +18,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.hashpass.tech",
+      "bundleIdentifier": "tech.hashpass.app",
       "infoPlist": {
         "NSCameraUsageDescription": "This app needs camera access to scan QR codes for tickets and wallet addresses."
       }

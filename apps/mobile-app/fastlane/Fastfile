@@ -155,7 +155,7 @@ platform :android do
   end
 end
 
-APP_STORE_BUNDLE_ID = 'com.hashpass.tech'.freeze
+APP_STORE_BUNDLE_ID = 'tech.hashpass.app'.freeze
 
 def app_store_connect_api_key_from_env
   app_store_connect_api_key(
