@@ -52,8 +52,19 @@ function decodeEntities(input: string): string {
 }
 
 // script/style content must never reach the text stream -- strip tag + body.
+// Looped to a fixed point rather than a single pass: a single replace can
+// leave a reconstituted tag behind when the input nests/overlaps markers
+// (e.g. "<scr<script>ipt>"), which CodeQL flags as incomplete multi-character
+// sanitization -- repeating until nothing more changes closes that gap.
 function stripDangerousBlocks(html: string): string {
-  return html.replace(/<(script|style)[^>]*>[\s\S]*?<\/\1>/gi, '');
+  const dangerousBlockPattern = /<(script|style)[^>]*>[\s\S]*?<\/\1>/gi;
+  let current = html;
+  let previous: string;
+  do {
+    previous = current;
+    current = current.replace(dangerousBlockPattern, '');
+  } while (current !== previous);
+  return current;
 }
 
 const BLOCK_TAGS = new Set(['p', 'div', 'li', 'ul', 'ol', 'br', 'blockquote']);
