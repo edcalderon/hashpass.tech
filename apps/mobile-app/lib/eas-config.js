@@ -68,6 +68,11 @@ function resolveUpdateChannel({ env = process.env, profile } = {}) {
   return !selectedProfile || selectedProfile === PRODUCTION_PROFILE ? PRODUCTION_CHANNEL : DEVELOPMENT_CHANNEL;
 }
 
+function resolveIosBuildNumber({ env = process.env } = {}) {
+  const value = String(env.IOS_BUILD_NUMBER || '').trim();
+  return /^\d+$/.test(value) && Number(value) > 0 ? value : null;
+}
+
 function buildExpoConfig({ baseConfig = {}, env = process.env } = {}) {
   const owner = resolveOwner({
     env,
@@ -83,11 +88,20 @@ function buildExpoConfig({ baseConfig = {}, env = process.env } = {}) {
   });
   const updateChannel = resolveUpdateChannel({ env });
   const androidVersionCode = resolveAndroidVersionCode({ env });
+  const iosBuildNumber = resolveIosBuildNumber({ env });
   const android = {
     ...(baseConfig.android || {}),
     ...(androidVersionCode
       ? {
           versionCode: androidVersionCode,
+        }
+      : {}),
+  };
+  const ios = {
+    ...(baseConfig.ios || {}),
+    ...(iosBuildNumber
+      ? {
+          buildNumber: iosBuildNumber,
         }
       : {}),
   };
@@ -115,6 +129,7 @@ function buildExpoConfig({ baseConfig = {}, env = process.env } = {}) {
     ...(slug ? { slug } : {}),
     ...(owner ? { owner } : {}),
     ...(Object.keys(android).length ? { android } : {}),
+    ...(Object.keys(ios).length ? { ios } : {}),
     ...(projectId
       ? {
           updates: {
@@ -156,5 +171,6 @@ module.exports = {
   resolveOwner,
   resolveSlug,
   resolveUpdateChannel,
+  resolveIosBuildNumber,
   buildExpoConfig,
 };

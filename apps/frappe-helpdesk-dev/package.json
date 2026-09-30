@@ -1,0 +1,16 @@
+{
+  "name": "hashpass-frappe-helpdesk-dev",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Local-only Frappe Helpdesk stack for simulating the Contact Support / live ticket flow in dev:all -- never the production instance, see README.md",
+  "scripts": {
+    "dev": "bash ./scripts/compose.sh dev",
+    "up": "bash ./scripts/compose.sh up",
+    "down": "bash ./scripts/compose.sh down",
+    "logs": "bash ./scripts/compose.sh logs",
+    "restart": "bash ./scripts/compose.sh restart",
+    "reset": "bash ./scripts/compose.sh reset",
+    "doctor": "bash ./scripts/compose.sh doctor",
+    "seed": "node ./scripts/seed-support-users.js"
+  }
+}

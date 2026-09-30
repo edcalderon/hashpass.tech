@@ -154,3 +154,67 @@ platform :android do
     )
   end
 end
+
+APP_STORE_BUNDLE_ID = 'com.hashpass.tech'.freeze
+
+def app_store_connect_api_key_from_env
+  app_store_connect_api_key(
+    key_id: ENV.fetch('APP_STORE_CONNECT_KEY_ID'),
+    issuer_id: ENV.fetch('APP_STORE_CONNECT_ISSUER_ID'),
+    key_content: ENV.fetch('APP_STORE_CONNECT_API_KEY_P8'),
+    is_key_content_base64: false,
+  )
+end
+
+def ios_workspace
+  workspace = Dir.glob(File.join('ios', '*.xcworkspace')).sort.first
+  UI.user_error!('No iOS workspace found. Run Expo prebuild before Fastlane.') unless workspace
+
+  workspace
+end
+
+def sync_ios_signing(readonly:)
+  match(
+    type: 'appstore',
+    app_identifier: APP_STORE_BUNDLE_ID,
+    api_key: app_store_connect_api_key_from_env,
+    readonly: readonly,
+  )
+end
+
+def build_ios_ipa
+  sync_ios_signing(readonly: ENV.fetch('MATCH_READONLY', 'true') == 'true')
+
+  build_app(
+    workspace: ios_workspace,
+    scheme: ENV.fetch('IOS_SCHEME', 'HASHPASS'),
+    export_method: 'app-store',
+    output_directory: File.join('build', 'ios'),
+    output_name: 'HASHPASS.ipa',
+    clean: true,
+  )
+end
+
+platform :ios do
+  desc 'Build a signed iOS IPA without uploading it.'
+  lane :build do |_options|
+    build_ios_ipa
+  end
+
+  desc 'Build a signed iOS IPA and upload it to internal TestFlight.'
+  lane :testflight do |_options|
+    ipa_path = build_ios_ipa
+
+    upload_to_testflight(
+      api_key: app_store_connect_api_key_from_env,
+      ipa: ipa_path,
+      distribute_external: false,
+      skip_waiting_for_build_processing: false,
+    )
+  end
+
+  desc 'Create and encrypt App Store signing assets in Match without building an IPA.'
+  lane :bootstrap_signing do |_options|
+    sync_ios_signing(readonly: false)
+  end
+end

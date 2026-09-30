@@ -155,7 +155,14 @@
         "directus_secret=replace-with-random-secret-min-32-chars",
         "key: \\$\\{directus_key:-replace-with-random-key\\}",
         "secret: \\$\\{directus_secret:-replace-with-random-secret\\}",
-        "process.env.EXPO_PUBLIC_DEV_AUTH_BYPASS = originalEnv;"
+        "process.env.EXPO_PUBLIC_DEV_AUTH_BYPASS = originalEnv;",
+        "FRAPPE_DB_ROOT_PASSWORD=${DB_PW}",
+        "MARIADB_ROOT_PASSWORD=${DB_PW}",
+        "FRAPPE_ADMIN_PASSWORD=${ADMIN_PW}",
+        "FRAPPE_SUPPORT_READ_API_KEY: readCreds.apiKey,",
+        "FRAPPE_SUPPORT_READ_API_SECRET: readCreds.apiSecret,",
+        "FRAPPE_SUPPORT_WRITE_API_KEY: writeCreds.apiKey,",
+        "FRAPPE_SUPPORT_WRITE_API_SECRET: writeCreds.apiSecret,"
       ]
     },
     "lifecycle-hooks": {

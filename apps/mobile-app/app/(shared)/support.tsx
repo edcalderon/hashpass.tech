@@ -10,6 +10,7 @@ import {
   Platform,
   ActivityIndicator,
   KeyboardAvoidingView,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -17,14 +18,23 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialIcons } from '../../lib/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../hooks/useAuth';
+import { getCaptchaApiEndpoint } from '../../lib/api-client';
+import SupportCaptcha from '../../components/SupportCaptcha';
 import { Surface, ActionButton, FormField, Badge, HoverText } from '@hashpass/ui/primitives';
 import { uiPalette, uiTokens } from '@hashpass/ui/tokens';
 import {
+  closeSupportTicket,
   createSupportTicket,
+  getSupportAttachmentUrl,
   getSupportTicket,
+  sendSupportAttachment,
   sendSupportMessage,
+  SUPPORT_ATTACHMENT_ALLOWED_TYPES,
+  SUPPORT_ATTACHMENT_MAX_BYTES,
 } from '../../lib/support/frappe-support-client';
 import type { SupportMessage, SupportTicket } from '../../lib/support/frappe-support-client';
+import { SupportRichText } from '../../lib/support/render-html-content';
+import { isPickedAttachmentError, pickAttachmentNative } from '../../lib/support/pick-attachment';
 
 const SUPPORT_EMAIL = 'support@hashpass.tech';
 const SUPPORT_WEBSITE = 'https://hashpass.tech/support';
@@ -32,7 +42,12 @@ const SUPPORT_WEBSITE = 'https://hashpass.tech/support';
 // staff-only instance (see lib/server/frappe-helpdesk.ts) -- "resuming" a
 // ticket or live chat is purely a local convenience, keyed on the ticket id
 // + the email that raised it, the same pair the server checks on every read.
-const ACTIVE_TICKET_STORAGE_KEY = '@hashpass_support_frappe_ticket';
+// A list, not a single ref, so the landing panel can show every ticket
+// the visitor has started on this device, not just the most recent one.
+const TICKETS_STORAGE_KEY = '@hashpass_support_frappe_tickets';
+// Superseded by TICKETS_STORAGE_KEY -- read once for a one-time migration,
+// then removed. See the restore effect below.
+const LEGACY_ACTIVE_TICKET_STORAGE_KEY = '@hashpass_support_frappe_ticket';
 const POLL_INTERVAL_MS = 8000;
 
 type ScreenView = 'landing' | 'form' | 'thread';
@@ -41,6 +56,27 @@ type FormIntent = 'ticket' | 'chat';
 interface StoredTicketRef {
   ticketId: string;
   email: string;
+  subject: string;
+  status: string;
+  createdAt: string;
+}
+
+function confirmAsync(title: string, message: string): Promise<boolean> {
+  if (Platform.OS === 'web') {
+    return Promise.resolve(typeof window !== 'undefined' ? window.confirm(`${title}\n\n${message}`) : false);
+  }
+  return new Promise((resolve) => {
+    Alert.alert(title, message, [
+      { text: 'Keep ticket', style: 'cancel', onPress: () => resolve(false) },
+      { text: 'Cancel ticket', style: 'destructive', onPress: () => resolve(true) },
+    ]);
+  });
+}
+
+function formatMessageTime(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
 export default function SupportScreen() {
@@ -60,7 +96,15 @@ export default function SupportScreen() {
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  // Only required on web -- see SupportCaptcha.web.tsx / .tsx and the server
+  // gate in app/api/v1/support/frappe/tickets+api.ts. Native has no solver
+  // for Cap's browser-only widget, so the form's canSubmit below never
+  // requires a token off web.
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaResetKey, setCaptchaResetKey] = useState(0);
+  const isWeb = Platform.OS === 'web';
 
+  const [trackedTickets, setTrackedTickets] = useState<StoredTicketRef[]>([]);
   const [activeTicketRef, setActiveTicketRef] = useState<StoredTicketRef | null>(null);
   const [ticket, setTicket] = useState<SupportTicket | null>(null);
   const [messages, setMessages] = useState<SupportMessage[]>([]);
@@ -68,7 +112,14 @@ export default function SupportScreen() {
   const [threadError, setThreadError] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
   const [sendingReply, setSendingReply] = useState(false);
+  const [attaching, setAttaching] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const webFileInputRef = useRef<HTMLInputElement>(null);
+
+  const persistTickets = useCallback(async (list: StoredTicketRef[]) => {
+    setTrackedTickets(list);
+    await AsyncStorage.setItem(TICKETS_STORAGE_KEY, JSON.stringify(list)).catch(() => null);
+  }, []);
 
   // Prefill from the signed-in user once we know it -- Contact Support stays
   // reachable while logged out (see events/[eventSlug]/tickets.tsx), so this
@@ -77,22 +128,48 @@ export default function SupportScreen() {
     if (user?.email && !email) setEmail(user.email);
   }, [user?.email]);
 
-  // Resume a previously started ticket/chat on load, if we have one saved locally.
+  // Load every ticket tracked locally so the landing panel can list them --
+  // it always shows first (see the view === 'landing' fallthrough below),
+  // never auto-jumps into a thread, matching how a visitor actually expects
+  // "Support" to open even when they already have something in flight.
   useEffect(() => {
     let cancelled = false;
-    AsyncStorage.getItem(ACTIVE_TICKET_STORAGE_KEY)
-      .then((raw) => {
-        if (cancelled || !raw) return;
-        const parsed = JSON.parse(raw) as StoredTicketRef;
-        if (parsed?.ticketId && parsed?.email) {
-          setActiveTicketRef(parsed);
-          setView('thread');
+    (async () => {
+      try {
+        const raw = await AsyncStorage.getItem(TICKETS_STORAGE_KEY);
+        let list: StoredTicketRef[] = raw ? JSON.parse(raw) : [];
+
+        // One-time migration from the old single-ticket key.
+        const legacyRaw = await AsyncStorage.getItem(LEGACY_ACTIVE_TICKET_STORAGE_KEY);
+        if (legacyRaw) {
+          try {
+            const legacy = JSON.parse(legacyRaw);
+            if (legacy?.ticketId && legacy?.email && !list.some((t) => t.ticketId === legacy.ticketId)) {
+              list = [
+                {
+                  ticketId: legacy.ticketId,
+                  email: legacy.email,
+                  subject: 'Your support ticket',
+                  status: '',
+                  createdAt: new Date().toISOString(),
+                },
+                ...list,
+              ];
+            }
+          } catch {
+            // Ignore a malformed legacy entry -- nothing to migrate.
+          }
+          await AsyncStorage.removeItem(LEGACY_ACTIVE_TICKET_STORAGE_KEY).catch(() => null);
+          await AsyncStorage.setItem(TICKETS_STORAGE_KEY, JSON.stringify(list)).catch(() => null);
         }
-      })
-      .catch(() => null)
-      .finally(() => {
+
+        if (!cancelled) setTrackedTickets(list);
+      } catch {
+        // Ignore -- treat as no tracked tickets.
+      } finally {
         if (!cancelled) setRestoring(false);
-      });
+      }
+    })();
     return () => {
       cancelled = true;
     };
@@ -105,6 +182,15 @@ export default function SupportScreen() {
       const result = await getSupportTicket(ref.ticketId, ref.email);
       setTicket(result.ticket);
       setMessages(result.messages);
+      // Keep the locally cached subject/status fresh so the landing list's
+      // ticket cards reflect reality next time it's shown.
+      setTrackedTickets((prev) => {
+        const next = prev.map((t) =>
+          t.ticketId === ref.ticketId ? { ...t, subject: result.ticket.subject, status: result.ticket.status } : t,
+        );
+        AsyncStorage.setItem(TICKETS_STORAGE_KEY, JSON.stringify(next)).catch(() => null);
+        return next;
+      });
     } catch (err) {
       setThreadError(err instanceof Error ? err.message : 'Unable to load ticket');
     } finally {
@@ -136,6 +222,8 @@ export default function SupportScreen() {
     setFormError(null);
     setSubject(intent === 'chat' ? 'Live chat conversation' : '');
     setMessage('');
+    setCaptchaToken(null);
+    setCaptchaResetKey((key) => key + 1);
     setView('form');
   };
 
@@ -147,6 +235,10 @@ export default function SupportScreen() {
       setFormError('Please fill in your email, subject, and message.');
       return;
     }
+    if (isWeb && !captchaToken) {
+      setFormError('Please complete the security check.');
+      return;
+    }
 
     setSubmitting(true);
     setFormError(null);
@@ -156,9 +248,16 @@ export default function SupportScreen() {
         subject: trimmedSubject,
         message: trimmedMessage,
         context: `Platform: ${Platform.OS} - Source: ${formIntent === 'chat' ? 'Live Chat' : 'Contact form'}`,
+        captchaToken,
       });
-      const ref: StoredTicketRef = { ticketId: created.id, email: trimmedEmail };
-      await AsyncStorage.setItem(ACTIVE_TICKET_STORAGE_KEY, JSON.stringify(ref));
+      const ref: StoredTicketRef = {
+        ticketId: created.id,
+        email: trimmedEmail,
+        subject: created.subject || trimmedSubject,
+        status: created.status,
+        createdAt: created.createdAt || new Date().toISOString(),
+      };
+      await persistTickets([ref, ...trackedTickets.filter((t) => t.ticketId !== ref.ticketId)]);
       setActiveTicketRef(ref);
       setTicket(created);
       setMessages([]);
@@ -166,6 +265,8 @@ export default function SupportScreen() {
     } catch (err) {
       setFormError(err instanceof Error ? err.message : 'Unable to send this right now. Please try again.');
     } finally {
+      setCaptchaToken(null);
+      setCaptchaResetKey((key) => key + 1);
       setSubmitting(false);
     }
   };
@@ -191,8 +292,7 @@ export default function SupportScreen() {
     }
   };
 
-  const handleStartNewTicket = async () => {
-    await AsyncStorage.removeItem(ACTIVE_TICKET_STORAGE_KEY).catch(() => null);
+  const handleStartNewTicket = () => {
     if (pollRef.current) {
       clearInterval(pollRef.current);
       pollRef.current = null;
@@ -201,7 +301,114 @@ export default function SupportScreen() {
     setTicket(null);
     setMessages([]);
     setThreadError(null);
+    // Tracked tickets stay in the list -- this only clears which one is
+    // currently open, so the landing panel (always shown first now) is
+    // where the visitor picks a ticket back up or starts a fresh one.
     setView('landing');
+  };
+
+  const openTrackedTicket = (ref: StoredTicketRef) => {
+    setActiveTicketRef(ref);
+    setTicket(null);
+    setMessages([]);
+    setThreadError(null);
+    setView('thread');
+  };
+
+  const handleCancelTicket = async (ref: StoredTicketRef) => {
+    const confirmed = await confirmAsync(
+      'Cancel this ticket?',
+      `This closes ticket #${ref.ticketId} and removes it from your list. This can't be undone.`,
+    );
+    if (!confirmed) return;
+
+    try {
+      await closeSupportTicket(ref.ticketId, ref.email);
+    } catch {
+      // Best-effort -- still forget it locally even if Frappe is
+      // unreachable or it was already closed. The visitor removing a
+      // ticket from their own list matters more here than a hard failure
+      // blocking that removal.
+    }
+
+    await persistTickets(trackedTickets.filter((t) => t.ticketId !== ref.ticketId));
+
+    if (activeTicketRef?.ticketId === ref.ticketId) {
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+      setActiveTicketRef(null);
+      setTicket(null);
+      setMessages([]);
+      setView('landing');
+    }
+  };
+
+  const handleOpenAttachment = (fileId: string) => {
+    if (!activeTicketRef) return;
+    const url = getSupportAttachmentUrl(activeTicketRef.ticketId, activeTicketRef.email, fileId);
+    if (Platform.OS === 'web') {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } else {
+      Linking.openURL(url).catch(() => null);
+    }
+  };
+
+  const uploadAttachment = async (file: File) => {
+    if (!activeTicketRef) return;
+    setAttaching(true);
+    setThreadError(null);
+    try {
+      const sent = await sendSupportAttachment({
+        ticketId: activeTicketRef.ticketId,
+        email: activeTicketRef.email,
+        file,
+      });
+      setMessages((prev) => [...prev, sent]);
+    } catch (err) {
+      setThreadError(err instanceof Error ? err.message : 'Unable to send attachment');
+    } finally {
+      setAttaching(false);
+    }
+  };
+
+  const handleNativeAttach = async () => {
+    try {
+      const picked = await pickAttachmentNative();
+      if (!picked) return;
+      if (isPickedAttachmentError(picked)) {
+        setThreadError(picked.message);
+        return;
+      }
+      await uploadAttachment(picked);
+    } catch (err) {
+      setThreadError(err instanceof Error ? err.message : 'Unable to attach file');
+    }
+  };
+
+  const handleWebFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    if (!SUPPORT_ATTACHMENT_ALLOWED_TYPES.includes(file.type)) {
+      setThreadError('Only images and PDF files can be attached.');
+      return;
+    }
+    if (file.size > SUPPORT_ATTACHMENT_MAX_BYTES) {
+      setThreadError('File is too large (10MB max).');
+      return;
+    }
+    uploadAttachment(file);
+  };
+
+  const handleAttachPress = () => {
+    if (attaching || !activeTicketRef) return;
+    if (Platform.OS === 'web') {
+      webFileInputRef.current?.click();
+    } else {
+      handleNativeAttach();
+    }
   };
 
   const handleEmailSupport = () => {
@@ -216,7 +423,7 @@ export default function SupportScreen() {
     }
   };
 
-  const renderHeader = (title: string, onBack: () => void) => (
+  const renderHeader = (title: string, onBack: () => void, rightAction?: React.ReactNode) => (
     <View style={styles.header}>
       <TouchableOpacity
         style={styles.backButton}
@@ -227,8 +434,14 @@ export default function SupportScreen() {
       >
         <MaterialIcons name="arrow-back" size={22} color={palette.text} />
       </TouchableOpacity>
-      <Text style={styles.headerTitle}>{title}</Text>
-      <View style={styles.headerSpacer} />
+      <Text style={styles.headerTitle} numberOfLines={1}>
+        {title}
+      </Text>
+      {rightAction ? (
+        <View style={styles.headerAction}>{rightAction}</View>
+      ) : (
+        <View style={styles.headerSpacer} />
+      )}
     </View>
   );
 
@@ -245,7 +458,18 @@ export default function SupportScreen() {
   if (view === 'thread' && activeTicketRef) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
-        {renderHeader('Support Chat', () => router.back())}
+        {renderHeader(
+          'Support Chat',
+          () => setView('landing'),
+          <TouchableOpacity
+            onPress={() => handleCancelTicket(activeTicketRef)}
+            accessibilityRole="button"
+            accessibilityLabel="Cancel ticket"
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <MaterialIcons name="delete-outline" size={20} color={palette.danger} />
+          </TouchableOpacity>,
+        )}
         <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <ScrollView contentContainerStyle={styles.threadContent}>
             <Surface mode={mode} style={styles.ticketSummary}>
@@ -280,16 +504,49 @@ export default function SupportScreen() {
                 Your message is with our support team. Replies will show up here.
               </Text>
             ) : (
-              messages.map((item) => (
-                <View key={item.id} style={styles.messageBubble}>
-                  <Text style={styles.messageAuthor}>{item.commentedBy || 'You'}</Text>
-                  <Text style={styles.messageContent}>{item.content}</Text>
-                </View>
-              ))
+              messages.map((item) => {
+                // Never surface which real staff/agent account replied --
+                // the visitor only ever needs to know it was "them" or
+                // "HASHPASS Support", never admin@hashpass.tech or whichever
+                // agent email Frappe reports as the commenter.
+                const isYou =
+                  !item.commentedBy || item.commentedBy.trim().toLowerCase() === activeTicketRef.email.trim().toLowerCase();
+                const authorLabel = isYou ? 'You' : 'HASHPASS Support';
+                const time = item.createdAt ? formatMessageTime(item.createdAt) : '';
+                return (
+                  <View key={item.id} style={[styles.messageRow, isYou ? styles.messageRowYou : styles.messageRowSupport]}>
+                    <View style={[styles.messageBubble, isYou ? styles.messageBubbleYou : styles.messageBubbleSupport]}>
+                      <Text style={[styles.messageAuthor, isYou && styles.messageAuthorYou]}>{authorLabel}</Text>
+                      <SupportRichText
+                        html={item.content}
+                        style={[styles.messageContent, isYou && styles.messageContentYou]}
+                        linkColor={isYou ? palette.onAccent : palette.accent}
+                        onAttachmentPress={(fileId) => handleOpenAttachment(fileId)}
+                      />
+                      {time ? (
+                        <Text style={[styles.messageTime, isYou && styles.messageTimeYou]}>{time}</Text>
+                      ) : null}
+                    </View>
+                  </View>
+                );
+              })
             )}
           </ScrollView>
 
           <View style={styles.replyRow}>
+            <TouchableOpacity
+              style={styles.attachButton}
+              onPress={handleAttachPress}
+              disabled={attaching || sendingReply}
+              accessibilityRole="button"
+              accessibilityLabel="Attach a file"
+            >
+              {attaching ? (
+                <ActivityIndicator size="small" color={palette.accent} />
+              ) : (
+                <MaterialIcons name="attach-file" size={20} color={palette.accent} />
+              )}
+            </TouchableOpacity>
             <TextInput
               style={styles.replyInput}
               placeholder="Write a message..."
@@ -313,10 +570,19 @@ export default function SupportScreen() {
               )}
             </TouchableOpacity>
           </View>
+          {Platform.OS === 'web' && (
+            <input
+              ref={webFileInputRef}
+              type="file"
+              accept={SUPPORT_ATTACHMENT_ALLOWED_TYPES.join(',')}
+              onChange={handleWebFileChange}
+              style={{ display: 'none' }}
+            />
+          )}
 
           <TouchableOpacity onPress={handleStartNewTicket} style={styles.newTicketLink}>
             <MaterialIcons name="add-circle-outline" size={16} color={palette.accent} />
-            <Text style={styles.newTicketLinkText}>Start a new ticket</Text>
+            <Text style={styles.newTicketLinkText}>Back to Support home</Text>
           </TouchableOpacity>
         </KeyboardAvoidingView>
       </SafeAreaView>
@@ -362,13 +628,22 @@ export default function SupportScreen() {
                 style={styles.textArea}
                 editable={!submitting}
               />
+              {isWeb ? (
+                <SupportCaptcha
+                  apiEndpoint={getCaptchaApiEndpoint()}
+                  onSolve={setCaptchaToken}
+                  onReset={() => setCaptchaToken(null)}
+                  onError={() => setCaptchaToken(null)}
+                  resetKey={captchaResetKey}
+                />
+              ) : null}
               {formError ? <Text style={styles.formErrorText}>{formError}</Text> : null}
               <ActionButton
                 mode={mode}
                 label={isChat ? 'Start Chat' : 'Submit Ticket'}
                 onPress={handleSubmitTicket}
                 loading={submitting}
-                disabled={submitting}
+                disabled={submitting || (isWeb && !captchaToken)}
                 trailingIcon={<MaterialIcons name={isChat ? 'chat' : 'send'} size={18} color={palette.onAccent} />}
               />
             </Surface>
@@ -389,6 +664,45 @@ export default function SupportScreen() {
             Open a support ticket or start a live chat with our team -- both go straight to the HASHPASS support desk.
           </Text>
         </View>
+
+        {trackedTickets.length > 0 ? (
+          <View style={styles.ticketListSection}>
+            <Text style={styles.contactTitle}>Your Tickets</Text>
+            {trackedTickets.map((t) => (
+              <Surface key={t.ticketId} mode={mode} style={styles.ticketListItem}>
+                <TouchableOpacity
+                  style={styles.ticketListItemMain}
+                  onPress={() => openTrackedTicket(t)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Open ticket ${t.subject || t.ticketId}`}
+                >
+                  <View style={styles.actionCardIcon}>
+                    <MaterialIcons name="confirmation-number" size={20} color={palette.accent} />
+                  </View>
+                  <View style={styles.actionCardCopy}>
+                    <Text style={styles.actionCardTitle} numberOfLines={1}>
+                      {t.subject || 'Support ticket'}
+                    </Text>
+                    <Text style={styles.actionCardSubtitle} numberOfLines={1}>
+                      {`#${t.ticketId}${t.status ? ' · ' + t.status : ''}`}
+                    </Text>
+                  </View>
+                  <MaterialIcons name="chevron-right" size={20} color={palette.muted} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.ticketListItemCancel}
+                  onPress={() => handleCancelTicket(t)}
+                  accessibilityRole="button"
+                  accessibilityLabel="Cancel ticket"
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <MaterialIcons name="delete-outline" size={20} color={palette.danger} />
+                </TouchableOpacity>
+              </Surface>
+            ))}
+            <View style={styles.divider} />
+          </View>
+        ) : null}
 
         <TouchableOpacity onPress={() => openForm('chat')} accessibilityRole="button" accessibilityLabel="Live Chat">
           <Surface mode={mode} style={styles.actionCard}>
@@ -491,6 +805,10 @@ const getStyles = (palette: ReturnType<typeof uiPalette>) =>
     headerSpacer: {
       width: 32,
     },
+    headerAction: {
+      minWidth: 32,
+      alignItems: 'flex-end',
+    },
     content: {
       padding: uiTokens.space.lg,
       paddingBottom: uiTokens.space.xxl,
@@ -549,6 +867,24 @@ const getStyles = (palette: ReturnType<typeof uiPalette>) =>
       height: 1,
       backgroundColor: palette.border,
       marginVertical: uiTokens.space.md,
+    },
+    ticketListSection: {
+      gap: uiTokens.space.sm,
+    },
+    ticketListItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: uiTokens.space.sm,
+      gap: uiTokens.space.xs,
+    },
+    ticketListItemMain: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: uiTokens.space.md,
+    },
+    ticketListItemCancel: {
+      padding: uiTokens.space.sm,
     },
     contactTitle: {
       fontSize: uiTokens.type.label,
@@ -625,7 +961,17 @@ const getStyles = (palette: ReturnType<typeof uiPalette>) =>
       textAlign: 'center',
       paddingVertical: uiTokens.space.xl,
     },
+    messageRow: {
+      flexDirection: 'row',
+    },
+    messageRowYou: {
+      justifyContent: 'flex-end',
+    },
+    messageRowSupport: {
+      justifyContent: 'flex-start',
+    },
     messageBubble: {
+      maxWidth: '86%',
       backgroundColor: palette.surface,
       borderWidth: 1,
       borderColor: palette.border,
@@ -633,15 +979,41 @@ const getStyles = (palette: ReturnType<typeof uiPalette>) =>
       padding: uiTokens.space.md,
       gap: 2,
     },
+    messageBubbleYou: {
+      backgroundColor: palette.accentFill,
+      borderColor: palette.accentFill,
+      borderBottomRightRadius: uiTokens.radius.small,
+    },
+    messageBubbleSupport: {
+      backgroundColor: palette.raised,
+      borderBottomLeftRadius: uiTokens.radius.small,
+    },
     messageAuthor: {
       fontSize: uiTokens.type.caption,
       fontWeight: '700',
       color: palette.muted,
     },
+    messageAuthorYou: {
+      color: palette.onAccent,
+      opacity: 0.85,
+    },
     messageContent: {
       fontSize: uiTokens.type.body,
       color: palette.text,
       lineHeight: 21,
+    },
+    messageContentYou: {
+      color: palette.onAccent,
+    },
+    messageTime: {
+      fontSize: uiTokens.type.caption,
+      color: palette.muted,
+      marginTop: 2,
+      alignSelf: 'flex-end',
+    },
+    messageTimeYou: {
+      color: palette.onAccent,
+      opacity: 0.75,
     },
     replyRow: {
       flexDirection: 'row',
@@ -651,6 +1023,16 @@ const getStyles = (palette: ReturnType<typeof uiPalette>) =>
       paddingVertical: uiTokens.space.md,
       borderTopWidth: 1,
       borderTopColor: palette.border,
+    },
+    attachButton: {
+      width: 44,
+      height: 44,
+      borderRadius: uiTokens.radius.circle,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: palette.accentSoft,
+      borderWidth: 1,
+      borderColor: palette.border,
     },
     replyInput: {
       flex: 1,

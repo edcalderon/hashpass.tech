@@ -190,3 +190,127 @@ export async function addHelpdeskTicketComment(ticketId: string, content: string
   });
   return serializeComment(raw);
 }
+
+// "Cancel ticket" in the app maps to Frappe's standard Closed status -- HD
+// Ticket has no delete-by-visitor capability (nor should it; that would
+// destroy real support history), so this is the closest honest equivalent.
+export async function closeHelpdeskTicket(ticketId: string): Promise<FrappeHelpdeskTicket> {
+  const raw = await request<Record<string, unknown>>(`resource/HD Ticket/${encodeURIComponent(ticketId)}`, {
+    method: "PUT",
+    write: true,
+    body: { status: "Closed" },
+  });
+  return serializeTicket(raw);
+}
+
+export interface FrappeHelpdeskAttachment {
+  fileId: string;
+  fileName: string;
+}
+
+const ALLOWED_ATTACHMENT_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "application/pdf",
+]);
+export const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024; // 10MB
+
+export function isAllowedAttachmentType(contentType: string): boolean {
+  return ALLOWED_ATTACHMENT_TYPES.has(contentType.toLowerCase());
+}
+
+// Uploads a file attached directly to the HD Ticket doctype (not to a
+// specific comment -- HD Ticket Comment has no first-class attachment field
+// exposed over the REST API), as a private Frappe file. "Private" here means
+// Frappe requires an authenticated request (our own service credentials) to
+// read it back -- never a bare public URL -- which is why every download
+// goes through fetchHelpdeskAttachment below instead of returning file_url
+// to the client directly.
+export async function uploadHelpdeskAttachment(
+  ticketId: string,
+  file: { data: Blob; fileName: string },
+): Promise<FrappeHelpdeskAttachment> {
+  const creds = readCredentials();
+  if (!creds.writeToken) {
+    throw new FrappeHelpdeskConfigError(
+      "FRAPPE_SUPPORT_WRITE_API_KEY/FRAPPE_SUPPORT_WRITE_API_SECRET is not configured",
+    );
+  }
+
+  const form = new FormData();
+  form.append("is_private", "1");
+  form.append("doctype", "HD Ticket");
+  form.append("docname", ticketId);
+  form.append("file", file.data, file.fileName);
+
+  const url = new URL("/api/method/upload_file", `${creds.baseUrl}/`);
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: "POST",
+      headers: { Authorization: creds.writeToken },
+      body: form,
+    });
+  } catch (err) {
+    throw new FrappeHelpdeskRequestError(
+      err instanceof Error ? err.message : "Frappe Helpdesk upload failed",
+      502,
+    );
+  }
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const message = payload?.message ?? payload?.exception ?? `Frappe Helpdesk returned ${response.status}`;
+    throw new FrappeHelpdeskRequestError(String(message), response.status);
+  }
+  const data = (payload?.message ?? payload?.data ?? payload) as Record<string, unknown>;
+  return {
+    fileId: String(data?.name ?? ""),
+    fileName: String(data?.file_name ?? file.fileName),
+  };
+}
+
+// Re-verifies the File doc is actually attached to this ticket before ever
+// touching its bytes -- a client-supplied fileId that doesn't belong to this
+// ticket (guessed, or from a different ticket the same visitor also owns)
+// is rejected here rather than trusted, even though the caller already
+// passed the ticket id + email ownership check.
+export async function fetchHelpdeskAttachment(
+  ticketId: string,
+  fileId: string,
+): Promise<{ body: ArrayBuffer; contentType: string; fileName: string }> {
+  const creds = readCredentials();
+  if (!creds.readToken) {
+    throw new FrappeHelpdeskConfigError("FRAPPE_SUPPORT_READ_API_KEY/FRAPPE_SUPPORT_READ_API_SECRET is not configured");
+  }
+
+  const fileDoc = await request<Record<string, unknown>>(`resource/File/${encodeURIComponent(fileId)}`);
+  const attachedDoctype = String(fileDoc?.attached_to_doctype ?? "");
+  const attachedName = String(fileDoc?.attached_to_name ?? "");
+  const fileUrl = String(fileDoc?.file_url ?? "");
+  if (attachedDoctype !== "HD Ticket" || attachedName !== ticketId || !fileUrl) {
+    throw new FrappeHelpdeskRequestError("Attachment not found on this ticket", 404);
+  }
+
+  const downloadUrl = new URL(fileUrl.replace(/^\//, ""), `${creds.baseUrl}/`);
+  let response: Response;
+  try {
+    response = await fetch(downloadUrl, { headers: { Authorization: creds.readToken } });
+  } catch (err) {
+    throw new FrappeHelpdeskRequestError(
+      err instanceof Error ? err.message : "Frappe Helpdesk attachment download failed",
+      502,
+    );
+  }
+  if (!response.ok) {
+    throw new FrappeHelpdeskRequestError(`Frappe Helpdesk returned ${response.status}`, response.status);
+  }
+
+  return {
+    body: await response.arrayBuffer(),
+    contentType: response.headers.get("content-type") || "application/octet-stream",
+    fileName: String(fileDoc?.file_name ?? "attachment"),
+  };
+}

@@ -20,6 +20,13 @@ NODE_MAX_OLD_SPACE_SIZE="${NODE_MAX_OLD_SPACE_SIZE:-12288}"
 EXPO_WEB_MAX_WORKERS="${EXPO_WEB_MAX_WORKERS:-2}"
 DIRECTUS_PING_URL="${DIRECTUS_PING_URL:-http://127.0.0.1:8055/server/ping}"
 DIRECTUS_READY_TIMEOUT_SECONDS="${DIRECTUS_READY_TIMEOUT_SECONDS:-90}"
+# Matches apps/frappe-helpdesk-dev's own FRAPPE_LOCAL_HTTP_PORT default --
+# kept as a separate var name here since it's what every other port in this
+# script is called (claim_port's label), while FRAPPE_LOCAL_HTTP_PORT is the
+# name the compose override and its wrapper script already read.
+FRAPPE_HELPDESK_PORT="${FRAPPE_HELPDESK_PORT:-8083}"
+FRAPPE_HELPDESK_PING_URL="${FRAPPE_HELPDESK_PING_URL:-http://127.0.0.1:${FRAPPE_HELPDESK_PORT}/api/method/ping}"
+FRAPPE_HELPDESK_READY_TIMEOUT_SECONDS="${FRAPPE_HELPDESK_READY_TIMEOUT_SECONDS:-180}"
 # Opt-in: when a reserved port is already busy, kill whatever holds it and
 # reuse the SAME port -- dev:all never silently falls back to a different
 # port (that's what caused hours of "why is my browser talking to a stale
@@ -29,19 +36,33 @@ DIRECTUS_READY_TIMEOUT_SECONDS="${DIRECTUS_READY_TIMEOUT_SECONDS:-90}"
 # a CLI flag (npm run dev:all -- --kill-allowed) -- the flag wins if both are
 # given, since it's the more explicit, harder-to-leave-on-by-accident form.
 KILL_BUSY_PORTS="${KILL_BUSY_PORTS:-false}"
+# On by default -- the point of wiring this in is so `npm run dev:all`
+# actually simulates the real Contact Support / live ticket chat flow
+# end-to-end without any extra step. Skip it (e.g. for unrelated work, or to
+# avoid the Docker/image overhead) with SKIP_FRAPPE_HELPDESK=true or
+# --skip-frappe-helpdesk.
+SKIP_FRAPPE_HELPDESK="${SKIP_FRAPPE_HELPDESK:-false}"
 
 for arg in "$@"; do
   case "${arg}" in
     --kill-allowed|--kill-busy-ports)
       KILL_BUSY_PORTS=true
       ;;
+    --skip-frappe-helpdesk)
+      SKIP_FRAPPE_HELPDESK=true
+      ;;
     *)
       echo "Unknown argument: ${arg}" >&2
-      echo "Usage: dev-all.sh [--kill-allowed]" >&2
+      echo "Usage: dev-all.sh [--kill-allowed] [--skip-frappe-helpdesk]" >&2
       exit 1
       ;;
   esac
 done
+
+# Snapshot of the user's actual request, before a failed startup below can
+# flip SKIP_FRAPPE_HELPDESK for the rest of this run -- see cleanup()'s use
+# of this vs. the mutable flag.
+readonly SKIP_FRAPPE_HELPDESK_REQUESTED="${SKIP_FRAPPE_HELPDESK}"
 
 port_is_busy() {
   local port="$1"
@@ -203,6 +224,55 @@ wait_for_directus() {
   return 1
 }
 
+wait_for_frappe_helpdesk() {
+  local deadline=$((SECONDS + FRAPPE_HELPDESK_READY_TIMEOUT_SECONDS))
+  local ping_url="$FRAPPE_HELPDESK_PING_URL"
+
+  echo "Waiting for local Frappe Helpdesk at ${ping_url}..."
+
+  while (( SECONDS < deadline )); do
+    if command -v curl >/dev/null 2>&1; then
+      if curl -fsS --max-time 2 "${ping_url}" >/dev/null 2>&1; then
+        echo "Local Frappe Helpdesk is ready."
+        return 0
+      fi
+    elif command -v wget >/dev/null 2>&1; then
+      if wget --quiet --tries=1 --spider "${ping_url}" >/dev/null 2>&1; then
+        echo "Local Frappe Helpdesk is ready."
+        return 0
+      fi
+    else
+      echo "Neither curl nor wget is available; skipping Frappe Helpdesk readiness check."
+      return 0
+    fi
+
+    sleep 3
+  done
+
+  echo "Local Frappe Helpdesk did not become ready within ${FRAPPE_HELPDESK_READY_TIMEOUT_SECONDS}s." >&2
+  echo "Check logs: pnpm --filter hashpass-frappe-helpdesk-dev run logs" >&2
+  return 1
+}
+
+# True when apps/mobile-app/.env.local is still missing working Frappe
+# credentials -- used to skip re-running seed (which hits a real Frappe REST
+# API a few times) once a previous dev:all run already populated it.
+frappe_helpdesk_needs_seed() {
+  local env_local="apps/mobile-app/.env.local"
+
+  if [[ ! -f "${env_local}" ]]; then
+    return 0
+  fi
+
+  if grep -q '^FRAPPE_BASE_URL=.\+' "${env_local}" 2>/dev/null \
+    && grep -q '^FRAPPE_SUPPORT_READ_API_KEY=.\+' "${env_local}" 2>/dev/null \
+    && grep -q '^FRAPPE_SUPPORT_WRITE_API_KEY=.\+' "${env_local}" 2>/dev/null; then
+    return 1
+  fi
+
+  return 0
+}
+
 stop_background_apps() {
   if [[ -n "${CLUB_PID}" ]]; then
     kill "${CLUB_PID}" >/dev/null 2>&1 || true
@@ -233,16 +303,40 @@ stop_background_apps() {
 cleanup() {
   local exit_code=$?
 
+  # Disable the trap immediately, before doing anything else. Without this,
+  # a `return` from a function invoked as an EXIT/INT/TERM trap handler (not
+  # a normal call) can corrupt bash's call-stack bookkeeping on some builds
+  # -- observed as `pop_var_context: head of shell_variables not a function
+  # context` -- and/or cause this same handler to re-fire a second time
+  # (visible as "Stopping Directus..."/"Stopping local Frappe Helpdesk..."
+  # each printing twice). Clearing the trap first, and using `exit` instead
+  # of `return` below, makes this handler safe to run exactly once no matter
+  # which signal triggered it.
+  trap - EXIT INT TERM
+
   stop_background_apps
 
   if [[ "${HASHPASS_KEEP_DIRECTUS_ON_EXIT:-false}" == "true" ]]; then
     echo "Keeping Directus running (HASHPASS_KEEP_DIRECTUS_ON_EXIT=true)."
-    return "$exit_code"
+  else
+    echo "Stopping Directus..."
+    pnpm --filter hashpass-directus run down >/dev/null 2>&1 || true
   fi
 
-  echo "Stopping Directus..."
-  pnpm --filter hashpass-directus run down >/dev/null 2>&1 || true
-  return "$exit_code"
+  # Uses the ORIGINAL flag (before a failed startup flips SKIP_FRAPPE_HELPDESK
+  # for the rest of the run, below) so a partially-started stack -- e.g.
+  # mariadb came up but frontend didn't -- still gets torn down. `down` on
+  # containers that never came up at all is a harmless no-op.
+  if [[ "${SKIP_FRAPPE_HELPDESK_REQUESTED}" != "true" ]]; then
+    if [[ "${HASHPASS_KEEP_FRAPPE_ON_EXIT:-false}" == "true" ]]; then
+      echo "Keeping local Frappe Helpdesk running (HASHPASS_KEEP_FRAPPE_ON_EXIT=true)."
+    else
+      echo "Stopping local Frappe Helpdesk..."
+      pnpm --filter hashpass-frappe-helpdesk-dev run down >/dev/null 2>&1 || true
+    fi
+  fi
+
+  exit "$exit_code"
 }
 
 trap cleanup EXIT INT TERM
@@ -253,10 +347,34 @@ DOCS_PORT="$(claim_port "docs app" "${DOCS_PORT}")"
 VIDEO_STUDIO_PORT="$(claim_port "video studio" "${VIDEO_STUDIO_PORT}")"
 LINKS_API_PORT="$(claim_port "hashpass-links-api" "${LINKS_API_PORT}")"
 
-echo "Using ports: mobile=${MOBILE_PORT}, club=${CLUB_PORT}, docs=${DOCS_PORT}, video-studio=${VIDEO_STUDIO_PORT}, links-api=${LINKS_API_PORT}"
+if [[ "${SKIP_FRAPPE_HELPDESK}" != "true" ]]; then
+  echo "Using ports: mobile=${MOBILE_PORT}, club=${CLUB_PORT}, docs=${DOCS_PORT}, video-studio=${VIDEO_STUDIO_PORT}, links-api=${LINKS_API_PORT}, frappe-helpdesk=${FRAPPE_HELPDESK_PORT}"
+else
+  echo "Using ports: mobile=${MOBILE_PORT}, club=${CLUB_PORT}, docs=${DOCS_PORT}, video-studio=${VIDEO_STUDIO_PORT}, links-api=${LINKS_API_PORT} (Frappe Helpdesk skipped)"
+fi
 
 echo "Starting Directus (detached)..."
 pnpm --filter hashpass-directus run up
+
+if [[ "${SKIP_FRAPPE_HELPDESK}" != "true" ]]; then
+  echo "Starting local Frappe Helpdesk (detached) on port ${FRAPPE_HELPDESK_PORT}..."
+  # FRAPPE_LOCAL_HTTP_PORT is the name apps/frappe-helpdesk-dev's own compose
+  # override and compose.sh already read (see that package's README) --
+  # exporting it here is what makes docker compose's own port interpolation
+  # and this script's FRAPPE_HELPDESK_PORT agree on the same port.
+  #
+  # Non-fatal on failure (missing ops/self-hosted/.env, Docker not running,
+  # etc.): this is genuinely optional local infra for one feature (Contact
+  # Support / ticket chat simulation), and the mobile app's own
+  # frappe-support-client already degrades to a clear per-request config
+  # error rather than crashing -- dev:all shouldn't take down club/docs/mobile
+  # over it. Falls back to SKIP_FRAPPE_HELPDESK for the rest of this run so
+  # the later wait/seed steps don't also try and fail.
+  if ! FRAPPE_LOCAL_HTTP_PORT="${FRAPPE_HELPDESK_PORT}" pnpm --filter hashpass-frappe-helpdesk-dev run up; then
+    echo "WARNING: failed to start local Frappe Helpdesk -- Contact Support / ticket chat will show its config error locally. See apps/frappe-helpdesk-dev/README.md." >&2
+    SKIP_FRAPPE_HELPDESK=true
+  fi
+fi
 
 echo "Starting club web app on port ${CLUB_PORT}..."
 CLUB_RUNTIME_DIR="$(node packages/tools/scripts/prepare-club-dev-runtime.mjs "${CLUB_PORT}")"
@@ -305,6 +423,28 @@ echo "Starting video studio (Remotion) on port ${VIDEO_STUDIO_PORT}..."
 VIDEO_STUDIO_PID=$!
 
 wait_for_directus
+
+if [[ "${SKIP_FRAPPE_HELPDESK}" != "true" ]]; then
+  # Non-fatal on timeout, same posture as the `up` step above: this is
+  # optional local infra for one feature, and under `set -e` a bare failed
+  # call here would tear down the whole session (Directus, club, docs,
+  # video-studio, links-api -- all unrelated and otherwise healthy) just
+  # because Frappe Helpdesk took too long to report ready. Falls back to
+  # SKIP_FRAPPE_HELPDESK so the seed step below is skipped too.
+  if ! wait_for_frappe_helpdesk; then
+    echo "WARNING: local Frappe Helpdesk did not become ready in time -- continuing dev:all without it. Contact Support / ticket chat will show its config error locally. Check logs (pnpm --filter hashpass-frappe-helpdesk-dev run logs) and re-run 'pnpm --filter hashpass-frappe-helpdesk-dev run up' once it's healthy -- the mobile app will pick it up on the next request, no restart needed." >&2
+    SKIP_FRAPPE_HELPDESK=true
+  fi
+fi
+
+if [[ "${SKIP_FRAPPE_HELPDESK}" != "true" ]]; then
+  if frappe_helpdesk_needs_seed; then
+    echo "Seeding local Frappe Helpdesk service users (apps/mobile-app/.env.local is missing or incomplete)..."
+    FRAPPE_LOCAL_HTTP_PORT="${FRAPPE_HELPDESK_PORT}" pnpm --filter hashpass-frappe-helpdesk-dev run seed
+  else
+    echo "apps/mobile-app/.env.local already has Frappe Helpdesk credentials -- skipping seed."
+  fi
+fi
 
 echo "Starting mobile app..."
 (

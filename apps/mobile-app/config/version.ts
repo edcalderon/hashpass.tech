@@ -22,23 +22,43 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202609300157, // Updated to current timestamp
+  buildNumber: 202609301537, // Updated to current timestamp
   releaseDate: '2026-09-30',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'Frappe Helpdesk integration + design-system drift fixes',
-    'vertical action buttons, super-index type filter, HoverText, full venue location'
+    'add iOS Fastlane/TestFlight release pipeline',
+    'public anonymous ticket submission gated by web CAPTCHA',
+    'wire local Frappe Helpdesk into dev:all for Contact Support simulation'
   ],
   bugfixes: [
-    // No bugfixes
+    'make local Frappe Helpdesk startup in dev:all non-fatal and idempotent',
+    'use distinct icons for venue and city/country rows'
   ],
   breakingChanges: [],
-  notes: 'Frappe Helpdesk integration + design-system drift fixes; vertical action buttons, super-index type filter, HoverText, full venue location'
+  notes: 'add iOS Fastlane/TestFlight release pipeline; public anonymous ticket submission gated by web CAPTCHA; wire local Frappe Helpdesk into dev:all for Contact Support simulation; make local Frappe Helpdesk startup in dev:all non-fatal and idempotent; use distinct icons for venue and city/country rows'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.84': {
+    version: '1.9.84',
+    buildNumber: 202609301537,
+    releaseDate: '2026-09-30',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'add iOS Fastlane/TestFlight release pipeline',
+      'public anonymous ticket submission gated by web CAPTCHA',
+      'wire local Frappe Helpdesk into dev:all for Contact Support simulation'
+    ],
+    bugfixes: [
+      'make local Frappe Helpdesk startup in dev:all non-fatal and idempotent',
+      'use distinct icons for venue and city/country rows'
+    ],
+    breakingChanges: [],
+    notes: 'add iOS Fastlane/TestFlight release pipeline; public anonymous ticket submission gated by web CAPTCHA; wire local Frappe Helpdesk into dev:all for Contact Support simulation; make local Frappe Helpdesk startup in dev:all non-fatal and idempotent; use distinct icons for venue and city/country rows'
+  },
   '1.9.83': {
     version: '1.9.83',
     buildNumber: 202609300157,

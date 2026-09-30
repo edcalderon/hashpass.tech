@@ -106,13 +106,13 @@ export default function TicketsScreen() {
               </View>
               {event?.tour?.venue && (
                 <View style={styles.infoRow}>
-                  <MaterialIcons name="location-on" size={20} color={palette.muted} />
+                  <MaterialIcons name="business" size={20} color={palette.muted} />
                   <Text style={styles.infoText}>{event.tour.venue}</Text>
                 </View>
               )}
               {event?.tour?.city && event?.tour?.country && (
                 <View style={styles.infoRow}>
-                  <MaterialIcons name="place" size={20} color={palette.muted} />
+                  <MaterialIcons name="location-on" size={20} color={palette.muted} />
                   <Text style={styles.infoText}>
                     {event.tour.city}, {event.tour.country}
                   </Text>

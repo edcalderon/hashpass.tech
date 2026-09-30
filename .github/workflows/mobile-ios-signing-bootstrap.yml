@@ -1,0 +1,70 @@
+name: Initialize iOS Match Signing
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Git ref containing the Fastlane signing bootstrap lane
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mobile-ios-signing-bootstrap
+  cancel-in-progress: false
+
+jobs:
+  bootstrap:
+    runs-on: macos-15
+    environment: production
+    steps:
+      - name: Checkout bootstrap ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Install Fastlane dependencies
+        working-directory: apps/mobile-app
+        run: bundle install
+
+      - name: Verify signing bootstrap credentials are configured
+        env:
+          APP_STORE_CONNECT_API_KEY_P8: ${{ secrets.APP_STORE_CONNECT_API_KEY_P8 }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          MATCH_GIT_SSH_PRIVATE_KEY: ${{ secrets.MATCH_GIT_SSH_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          for name in APP_STORE_CONNECT_API_KEY_P8 APP_STORE_CONNECT_KEY_ID APP_STORE_CONNECT_ISSUER_ID MATCH_PASSWORD MATCH_GIT_SSH_PRIVATE_KEY; do
+            if [ -z "${!name}" ]; then
+              echo "Missing required temporary GitHub Actions secret: $name" >&2
+              exit 1
+            fi
+          done
+
+      - name: Configure temporary Match repository access
+        env:
+          MATCH_GIT_SSH_PRIVATE_KEY: ${{ secrets.MATCH_GIT_SSH_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          umask 077
+          key_path="$RUNNER_TEMP/hashpass-ios-match-bootstrap"
+          printf '%s\n' "$MATCH_GIT_SSH_PRIVATE_KEY" > "$key_path"
+          chmod 600 "$key_path"
+          mkdir -p "$HOME/.ssh"
+          ssh-keyscan -t ed25519 github.com >> "$HOME/.ssh/known_hosts"
+
+      - name: Initialize encrypted iOS signing assets
+        working-directory: apps/mobile-app
+        env:
+          APP_STORE_CONNECT_API_KEY_P8: ${{ secrets.APP_STORE_CONNECT_API_KEY_P8 }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          MATCH_GIT_URL: git@github.com:hashpass-tech/hashpass-ios-signing.git
+          MATCH_READONLY: 'false'
+          GIT_SSH_COMMAND: ssh -i ${{ runner.temp }}/hashpass-ios-match-bootstrap -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes
+        run: bundle exec fastlane ios bootstrap_signing
