@@ -1,12 +1,14 @@
 import { betterAuth } from 'better-auth';
 import { jwt } from 'better-auth/plugins';
 import { mcp } from '@better-auth/mcp';
+import { importPKCS8, SignJWT } from 'jose';
 import { ENV_CONFIG, SSO_CONFIG } from '@hashpass/config';
 import { syncPublicUserRegistry } from '../auth/public-user-registry';
 import { ensureSupabaseAccountForEmail } from '../auth/supabase-admin-bridge';
 import { getSupabaseServerForRequest } from '../supabase-server';
 import { sendWelcomeEmailToNewUser } from '../email';
 import { getDatabasePool, hasDatabaseConnectionString } from './database-pool';
+import { getInfisicalSecret } from './infisical-secrets';
 
 const normalizeAuthPath = (value?: string | null): string => {
   const trimmed = (value || '/api/auth').trim();
@@ -210,6 +212,7 @@ export const syncBetterAuthUser = async (
 const googleClientId = readEnv('BETTER_AUTH_GOOGLE_CLIENT_ID') || readEnv('GOOGLE_CLIENT_ID');
 const googleClientSecret =
   readEnv('BETTER_AUTH_GOOGLE_CLIENT_SECRET') || readEnv('GOOGLE_CLIENT_SECRET');
+const DEFAULT_APPLE_BUNDLE_IDENTIFIER = 'tech.hashpass.app';
 const configuredBaseURL = normalizeAuthURL(readEnv('BETTER_AUTH_URL'));
 const mcpResource = readEnv('BETTER_AUTH_MCP_RESOURCE_URL') || 'https://mcp.hashpass.tech/mcp';
 const mcpLoginPage = readEnv('BETTER_AUTH_MCP_LOGIN_PAGE') || 'https://hashpass.tech/mcp/login';
@@ -222,6 +225,70 @@ export const buildMcpAccessTokenClaims = (user?: {
   'https://hashpass.tech/email': user?.email || '',
   'https://hashpass.tech/email_verified': user?.emailVerified === true,
 });
+
+const readAppleSetting = async (...names: string[]): Promise<string | undefined> => {
+  for (const name of names) {
+    const value = readEnv(name);
+    if (value) return value;
+  }
+
+  // Apple credentials include a private P8 key. New raw Lambda environment
+  // variables would exceed the platform's 4 KB limit, so retrieve them from
+  // the encrypted runtime secret tier only when the provider is used.
+  for (const name of names) {
+    const value = (await getInfisicalSecret(name))?.trim();
+    if (value) return value;
+  }
+
+  return undefined;
+};
+
+interface AppleProviderCredentials {
+  serviceId: string;
+  teamId: string;
+  keyId: string;
+  privateKey: string;
+}
+
+const resolveAppleProviderCredentials = async (): Promise<AppleProviderCredentials> => {
+  // `getInfisicalSecret` fills a per-runtime cache on its first call. Resolve
+  // sequentially so this cold path performs one secret-store fetch, not four.
+  const serviceId = await readAppleSetting(
+    'BETTER_AUTH_APPLE_CLIENT_ID',
+    'APPLE_SERVICE_ID',
+    'APPLE_CLIENT_ID',
+  );
+  const teamId = await readAppleSetting('BETTER_AUTH_APPLE_TEAM_ID', 'APPLE_TEAM_ID');
+  const keyId = await readAppleSetting('BETTER_AUTH_APPLE_KEY_ID', 'APPLE_KEY_ID');
+  const privateKey = await readAppleSetting('BETTER_AUTH_APPLE_PRIVATE_KEY', 'APPLE_PRIVATE_KEY');
+
+  if (!serviceId || !teamId || !keyId || !privateKey) {
+    throw new Error('Sign in with Apple is not fully configured.');
+  }
+
+  return { serviceId, teamId, keyId, privateKey };
+};
+
+const createAppleClientSecret = async ({
+  serviceId,
+  teamId,
+  keyId,
+  privateKey: privateKeyPem,
+}: AppleProviderCredentials): Promise<string> => {
+  const privateKey = await importPKCS8(privateKeyPem.replace(/\\n/g, '\n'), 'ES256');
+  const now = Math.floor(Date.now() / 1000);
+
+  // Apple permits a client-secret JWT lifetime of at most six months. Generate
+  // one when an Apple sign-in starts instead of storing an expiring JWT.
+  return new SignJWT({})
+    .setProtectedHeader({ alg: 'ES256', kid: keyId })
+    .setIssuer(teamId)
+    .setSubject(serviceId)
+    .setAudience('https://appleid.apple.com')
+    .setIssuedAt(now)
+    .setExpirationTime(now + 180 * 24 * 60 * 60)
+    .sign(privateKey);
+};
 
 const createAuthInstance = () =>
   betterAuth({
@@ -241,6 +308,7 @@ const createAuthInstance = () =>
     trustedOrigins: [
       ...DEFAULT_TRUSTED_ORIGINS,
       ...readListEnv('BETTER_AUTH_TRUSTED_ORIGINS'),
+      'https://appleid.apple.com',
     ],
     socialProviders: {
       ...(googleClientId && googleClientSecret
@@ -251,6 +319,34 @@ const createAuthInstance = () =>
             },
           }
         : {}),
+      apple: async () => {
+        try {
+          const credentials = await resolveAppleProviderCredentials();
+          const bundleIdentifier =
+            (await readAppleSetting('BETTER_AUTH_APPLE_BUNDLE_ID', 'APPLE_APP_BUNDLE_IDENTIFIER')) ||
+            DEFAULT_APPLE_BUNDLE_IDENTIFIER;
+          return {
+            // Web authorization codes are issued to the Service ID. Native
+            // iOS identity tokens are issued to the bundle identifier, so
+            // Better Auth must accept both audiences.
+            clientId: [credentials.serviceId, bundleIdentifier],
+            clientSecret: await createAppleClientSecret(credentials),
+            appBundleIdentifier: bundleIdentifier,
+          };
+        } catch (error) {
+          // Better Auth resolves every configured social provider as it builds
+          // its route context. Missing optional Apple credentials must not take
+          // down local web rendering or unrelated providers such as Google.
+          console.warn(
+            '[Better Auth] Sign in with Apple is disabled until its server credentials are configured.',
+            error instanceof Error ? error.message : String(error),
+          );
+          // Better Auth's provider factory removes `enabled: false` before it
+          // validates clientId/clientSecret, so this keeps the type contract
+          // while omitting Apple from the active provider list.
+          return { clientId: '', enabled: false };
+        }
+      },
     },
     plugins: [
       jwt(),

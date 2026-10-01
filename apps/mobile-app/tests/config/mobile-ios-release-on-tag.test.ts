@@ -11,6 +11,8 @@ describe('mobile release tag workflow', () => {
 
     expect(workflow).toContain('trigger-ios-release:');
     expect(workflow).toContain("vars.IOS_RELEASE_ENABLED == 'true'");
+    expect(workflow).toContain('needs_ios_release: ${{ steps.guard.outputs.needs_ios_release }}');
+    expect(workflow).toContain("needs.detect-native-change.outputs.needs_ios_release == 'true'");
     expect(workflow).toContain('gh workflow run mobile-ios-release.yml');
   });
 

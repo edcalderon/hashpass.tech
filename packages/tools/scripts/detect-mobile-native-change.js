@@ -76,6 +76,10 @@ const NATIVE_SENSITIVE_EXACT_FILES = [
 const DEPENDENCY_FILES = ['package.json', 'apps/mobile-app/package.json'];
 const APP_JSON_PATH = 'apps/mobile-app/app.json';
 const APP_JSON_IGNORED_KEYS = ['expo.version', 'expo.android.versionCode'];
+// A repair to the TestFlight workflow needs a retry even when the app diff is
+// correctly classified as OTA-only. Keep this separate from `needsNative` so
+// it does not unnecessarily dispatch the Android native release chain.
+const IOS_RELEASE_WORKFLOW_PATH = '.github/workflows/mobile-ios-release.yml';
 
 function refExists(ref) {
   try {
@@ -226,6 +230,7 @@ function detectBetweenRefs(fromRef, toRef) {
   return {
     resolvable: true,
     needsNative: reasons.length > 0,
+    iosReleaseWorkflowChanged: changedPaths.includes(IOS_RELEASE_WORKFLOW_PATH),
     reasons,
   };
 }
@@ -240,6 +245,7 @@ function detectForTagRelease(currentTag) {
     return {
       resolvable: false,
       needsNative: true,
+      iosReleaseWorkflowChanged: true,
       previousTag: null,
       reasons: ['No previous release tag found to diff against -- defaulting to a full native release.'],
     };

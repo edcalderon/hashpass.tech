@@ -148,6 +148,59 @@ The Directus bridge (`/api/auth/oauth/login` → Directus → `/api/auth/oauth/c
 still exists in the tree for compatibility but is not reachable from the
 Google sign-in button anymore — see ["Do we still need Directus?"](#do-we-still-need-directus).
 
+## Sign in with Apple (web and iOS)
+
+Apple sign-in is a single Better Auth identity flow across the web app and the
+native iOS app:
+
+- **Web:** the Apple button starts Better Auth's normal OAuth redirect and
+  returns through `/api/auth/callback/apple`.
+- **iOS:** the system Apple sheet supplies an identity token, which the app
+  exchanges with Better Auth at `/api/auth/sign-in/social`. The server accepts
+  both the web Service ID and `tech.hashpass.app` as valid token audiences.
+- **Android:** Apple does not provide a native Android authentication SDK. The
+  native Apple button is therefore intentionally iOS-only; users can use Apple
+  sign-in in the web app. Do not show a non-functional Android button.
+
+### Apple Developer configuration
+
+1. In the Apple Developer account, enable **Sign in with Apple** on the App ID
+   whose bundle identifier is `tech.hashpass.app`.
+2. Create a **Service ID** for the web flow, configure the production domain,
+   and add this Return URL:
+
+   ```text
+   https://api.hashpass.tech/api/auth/callback/apple
+   ```
+
+   Add a distinct HTTPS callback for each non-production environment that
+   offers Apple sign-in. Apple does not accept a `localhost` return URL.
+3. Create a dedicated **Sign in with Apple** key in the Apple Developer
+   portal. This is not the App Store Connect API key used by Fastlane/TestFlight
+   uploads, and those keys must never be interchanged.
+4. Store the following production values in Infisical, not in a mobile
+   `EXPO_PUBLIC_*` variable and not as new raw Lambda environment variables:
+
+   ```text
+   BETTER_AUTH_APPLE_CLIENT_ID=<Apple Service ID>
+   BETTER_AUTH_APPLE_TEAM_ID=<Apple Team ID>
+   BETTER_AUTH_APPLE_KEY_ID=<Sign in with Apple key ID>
+   BETTER_AUTH_APPLE_PRIVATE_KEY=<entire Apple .p8 private key>
+   # Optional when the bundle identifier differs from the default:
+   BETTER_AUTH_APPLE_BUNDLE_ID=tech.hashpass.app
+   ```
+
+   The API generates the required ES256 Apple client-secret JWT at sign-in
+   time, with a 180-day lifetime. Do not manually create or store that JWT.
+
+### Release verification
+
+After credentials are configured and a new signed iOS build is installed,
+test a first-time Apple sign-in (email/name consent), a repeat sign-in (Apple
+may not supply those fields again), cancellation, and **Hide My Email**. Also
+verify that the account gets the same Better Auth session and Supabase bridge
+as Google sign-in.
+
 ## Relevant Routes
 
 - `apps/mobile-app/hooks/useAuth.ts` — `signInWithOAuth('google')` and `handleOAuthCallback` (Better-Auth-first routing)

@@ -1,6 +1,6 @@
 {
   "name": "hashpass-mobile-app",
-  "version": "1.9.85",
+  "version": "1.9.87",
   "private": true,
   "packageManager": "pnpm@9.15.5",
   "main": "index.js",
@@ -116,6 +116,7 @@
     "ethers": "^6.15.0",
     "events": "^3.3.0",
     "expo": "^53.0.0",
+    "expo-apple-authentication": "~7.2.4",
     "expo-application": "~6.1.5",
     "expo-atlas": "^0.4.0",
     "expo-auth-session": "^6.2.1",

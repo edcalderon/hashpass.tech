@@ -42,6 +42,14 @@ describe('getInfisicalSecret', () => {
       });
   }
 
+  it('does not create an AWS Secrets Manager client when the module is imported', () => {
+    const { SecretsManagerClient } = require('@aws-sdk/client-secrets-manager');
+
+    require('../../lib/server/infisical-secrets');
+
+    expect(SecretsManagerClient).not.toHaveBeenCalled();
+  });
+
   it('resolves credentials from env vars without touching Secrets Manager', async () => {
     process.env.INFISICAL_DOMAIN = 'https://secrets.example.com';
     process.env.INFISICAL_PROJECT_ID = 'proj-123';
@@ -131,6 +139,20 @@ describe('getInfisicalSecret', () => {
     const value = await getInfisicalSecret('NODEMAILER_FROM_INFO');
 
     expect(value).toBeUndefined();
+  });
+
+  it('briefly caches a failed Infisical login instead of retrying each secret lookup', async () => {
+    process.env.INFISICAL_DOMAIN = 'https://secrets.example.com';
+    process.env.INFISICAL_PROJECT_ID = 'proj-123';
+    process.env.INFISICAL_CLIENT_ID = 'client-id';
+    process.env.INFISICAL_CLIENT_SECRET = '<test-invalid-credential>';
+    (global.fetch as jest.Mock).mockResolvedValueOnce({ ok: false, status: 401, text: async () => 'unauthorized' });
+
+    const { getInfisicalSecret } = require('../../lib/server/infisical-secrets');
+    await getInfisicalSecret('BETTER_AUTH_APPLE_CLIENT_ID');
+    await getInfisicalSecret('BETTER_AUTH_APPLE_TEAM_ID');
+
+    expect(global.fetch).toHaveBeenCalledTimes(1);
   });
 
   it('caches secrets for the process lifetime instead of refetching on every call', async () => {

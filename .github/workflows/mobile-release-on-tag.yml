@@ -11,8 +11,11 @@ name: Trigger mobile release on version tag
 # internal->alpha->beta chain below is only actually needed -- and only
 # dispatched -- when that diff touches something OTA genuinely can't cover
 # (native code, permissions, a dependency that might be a native module,
-# etc). Otherwise this run intentionally does nothing further: the release
-# already shipped, OTA-only, with no store review and no EC2 build.
+# etc). An edit to mobile-ios-release.yml is also an explicit TestFlight retry
+# trigger: it does not make Android native-sensitive, but it must cause iOS to
+# retry the corrected workflow. Otherwise this run intentionally does nothing
+# further: the release already shipped, OTA-only, with no store review and no
+# EC2 build.
 #
 # Tags are created by release-tag-on-merge.yml (fires when a develop -> main
 # promotion PR merges, tags that exact merge commit) rather than by
@@ -65,6 +68,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       needs_native: ${{ steps.guard.outputs.needs_native }}
+      needs_ios_release: ${{ steps.guard.outputs.needs_ios_release }}
       reasons: ${{ steps.guard.outputs.reasons }}
     steps:
       - name: Checkout with full tag history
@@ -80,6 +84,7 @@ jobs:
 
           if [ "${{ inputs.force_native_release }}" = "true" ]; then
             echo "needs_native=true" >> "$GITHUB_OUTPUT"
+            echo "needs_ios_release=true" >> "$GITHUB_OUTPUT"
             echo "reasons=force_native_release input was set to true" >> "$GITHUB_OUTPUT"
             {
               echo "## Mobile native-change guard"
@@ -92,10 +97,12 @@ jobs:
           echo "$RESULT"
 
           NEEDS_NATIVE=$(node -e "console.log(JSON.parse(process.argv[1]).needsNative)" "$RESULT")
+          NEEDS_IOS_RELEASE=$(node -e "console.log(JSON.parse(process.argv[1]).iosReleaseWorkflowChanged)" "$RESULT")
           PREVIOUS_TAG=$(node -e "console.log(JSON.parse(process.argv[1]).previousTag || 'none')" "$RESULT")
           REASONS=$(node -e "const r = JSON.parse(process.argv[1]).reasons || []; console.log(r.join('; ') || 'none')" "$RESULT")
 
           echo "needs_native=$NEEDS_NATIVE" >> "$GITHUB_OUTPUT"
+          echo "needs_ios_release=$NEEDS_IOS_RELEASE" >> "$GITHUB_OUTPUT"
           {
             echo "reasons<<EOF_REASONS"
             echo "$REASONS"
@@ -152,7 +159,10 @@ jobs:
     needs: [detect-native-change]
     if: >-
       github.repository == 'hashpass-tech/hashpass.tech' &&
-      needs.detect-native-change.outputs.needs_native == 'true' &&
+      (
+        needs.detect-native-change.outputs.needs_native == 'true' ||
+        needs.detect-native-change.outputs.needs_ios_release == 'true'
+      ) &&
       vars.IOS_RELEASE_ENABLED == 'true'
     runs-on: ubuntu-latest
     steps:

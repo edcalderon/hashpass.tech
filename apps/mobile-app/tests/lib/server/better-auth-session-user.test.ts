@@ -22,6 +22,13 @@ jest.mock('../../../lib/server/database-pool', () => ({
   hasDatabaseConnectionString: () => true,
 }));
 
+// This suite exercises the in-process Better Auth handler. Loading the real
+// runtime secret adapter would pull the AWS SDK into Jest even though no secret
+// lookup occurs in these scenarios.
+jest.mock('../../../lib/server/infisical-secrets', () => ({
+  getInfisicalSecret: jest.fn(),
+}));
+
 describe('getBetterAuthSessionUser', () => {
   beforeEach(() => {
     jest.resetModules();

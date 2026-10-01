@@ -2,7 +2,7 @@
   "expo": {
     "name": "HASHPASS",
     "slug": "hash-pass-tech",
-    "version": "1.9.85",
+    "version": "1.9.87",
     "newArchEnabled": true,
     "orientation": "default",
     "icon": "./assets/images/icon.png",
@@ -19,6 +19,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "tech.hashpass.app",
+      "usesAppleSignIn": true,
       "infoPlist": {
         "NSCameraUsageDescription": "This app needs camera access to scan QR codes for tickets and wallet addresses."
       }
@@ -29,7 +30,7 @@
         "backgroundColor": "#05070C"
       },
       "package": "com.hashpass.tech",
-      "versionCode": 11230,
+      "versionCode": 11232,
       "permissions": [
         "android.permission.CAMERA"
       ]
@@ -131,6 +132,7 @@
           "iosUrlScheme": "com.googleusercontent.apps.576459188181-r65kt04nh0m4q86jbo1ohm12di9v3mjq"
         }
       ],
+      "expo-apple-authentication",
       "react-native-edge-to-edge"
     ],
     "experiments": {

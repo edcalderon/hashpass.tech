@@ -4,6 +4,7 @@ import React from 'react';
 import { act, create } from 'react-test-renderer';
 
 import PassTiltCard, { PassDepthLayer } from '../../../components/passes/PassTiltCard.web';
+import { resolveWebPassMotionPreferences } from '../../../components/passes/pass-motion-preferences';
 
 const render = (element: React.ReactElement) => {
   let renderer: ReturnType<typeof create>;
@@ -43,6 +44,99 @@ const renderWithDomRefs = (element: React.ReactElement) => {
 };
 
 describe('PassTiltCard.web', () => {
+  const originalMatchMedia = window.matchMedia;
+
+  beforeEach(() => {
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      value: jest.fn((query: string) => ({
+        matches: query === '(hover: hover) and (pointer: fine)',
+        addEventListener: jest.fn(),
+        removeEventListener: jest.fn(),
+      })),
+    });
+  });
+
+  afterEach(() => {
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      value: originalMatchMedia,
+    });
+  });
+
+  it('uses a 2D fallback for touch WebKit/PWA environments', () => {
+    const matchMedia = jest.fn((query: string) => ({
+      matches: query === '(hover: hover) and (pointer: fine)' ? false : false,
+    })) as unknown as (query: string) => MediaQueryList;
+
+    expect(resolveWebPassMotionPreferences(matchMedia)).toEqual({
+      supports3d: false,
+      reducedMotion: false,
+    });
+  });
+
+  it('enables the optional 3D treatment only for fine-pointer desktops', () => {
+    const matchMedia = jest.fn((query: string) => ({
+      matches: query === '(hover: hover) and (pointer: fine)',
+    })) as unknown as (query: string) => MediaQueryList;
+
+    expect(resolveWebPassMotionPreferences(matchMedia)).toEqual({
+      supports3d: true,
+      reducedMotion: false,
+    });
+  });
+
+  it('honors system reduced motion even on a fine-pointer desktop', () => {
+    const matchMedia = jest.fn((query: string) => ({
+      matches: true,
+    })) as unknown as (query: string) => MediaQueryList;
+
+    expect(resolveWebPassMotionPreferences(matchMedia)).toEqual({
+      supports3d: false,
+      reducedMotion: true,
+    });
+  });
+
+  it('renders the stable 2D shell for touch PWA browsers', () => {
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      value: jest.fn(() => ({
+        matches: false,
+        addEventListener: jest.fn(),
+        removeEventListener: jest.fn(),
+      })),
+    });
+
+    const renderer = render(<PassTiltCard>Pass face</PassTiltCard>);
+    const [outer, inner] = renderer.root.findAllByType('div');
+
+    expect(outer.props.onPointerMove).toBeUndefined();
+    expect(inner.props.style.transformStyle).toBeUndefined();
+    expect(inner.props.style.transform).toBeUndefined();
+    expect(inner.props.style.willChange).toBeUndefined();
+  });
+
+  it('does not leave translateZ layers active in the touch fallback', () => {
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      value: jest.fn(() => ({
+        matches: false,
+        addEventListener: jest.fn(),
+        removeEventListener: jest.fn(),
+      })),
+    });
+
+    const renderer = render(
+      <PassDepthLayer depth={12}>
+        <div>Layer content</div>
+      </PassDepthLayer>,
+    );
+    const layer = renderer.root.findByType('div');
+
+    expect(layer.props.style.transform).toBeUndefined();
+    expect(layer.props.style.transformStyle).toBeUndefined();
+  });
+
   it('keeps depth layers in the card 3D context', () => {
     const renderer = render(
       <PassDepthLayer depth={12} pointerEvents="none" style={{ opacity: 0.8 }}>

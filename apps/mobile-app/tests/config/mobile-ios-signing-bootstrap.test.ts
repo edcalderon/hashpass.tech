@@ -5,6 +5,7 @@ import path from 'path';
 
 describe('iOS signing bootstrap', () => {
   const workflowPath = path.resolve(__dirname, '../../../../.github/workflows/mobile-ios-signing-bootstrap.yml');
+  const releaseWorkflowPath = path.resolve(__dirname, '../../../../.github/workflows/mobile-ios-release.yml');
   const fastfilePath = path.resolve(__dirname, '../../fastlane/Fastfile');
   const appfilePath = path.resolve(__dirname, '../../fastlane/Appfile');
   const appConfigPath = path.resolve(__dirname, '../../app.json');
@@ -35,7 +36,23 @@ describe('iOS signing bootstrap', () => {
     expect(fastfile).toContain("APP_STORE_BUNDLE_ID = 'tech.hashpass.app'");
     expect(appfile).toContain("package_name('com.hashpass.tech')");
     expect(appConfig.expo.ios.bundleIdentifier).toBe('tech.hashpass.app');
+    expect(appConfig.expo.ios.usesAppleSignIn).toBe(true);
     // Android retains its already-published Google Play identity.
     expect(appConfig.expo.android.package).toBe('com.hashpass.tech');
+  });
+
+  it('sets up pnpm before Node enables the pnpm cache on hosted macOS', () => {
+    const workflow = fs.readFileSync(releaseWorkflowPath, 'utf8');
+
+    expect(workflow.indexOf('name: Set up pnpm')).toBeLessThan(workflow.indexOf('name: Set up Node'));
+    expect(workflow).toContain('cache: pnpm');
+  });
+
+  it('retains the signed IPA when a build-only run does not submit to TestFlight', () => {
+    const workflow = fs.readFileSync(releaseWorkflowPath, 'utf8');
+
+    expect(workflow).toContain('name: Upload signed IPA artifact');
+    expect(workflow).toContain("if: ${{ inputs.submit == false }}");
+    expect(workflow).toContain('apps/mobile-app/build/ios/HASHPASS.ipa');
   });
 });

@@ -13,6 +13,7 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
+  withTiming,
 } from 'react-native-reanimated';
 import * as Clipboard from 'expo-clipboard';
 import { useRouter } from 'expo-router';
@@ -27,6 +28,7 @@ import { normalizePassNumber } from '../../lib/pass-wallet';
 import DynamicQRDisplay from '../DynamicQRDisplay';
 import PassTiltCard from './PassTiltCard';
 import NotchMaskedCard from './NotchMaskedCard';
+import { usePassMotionPreferences } from './pass-motion-preferences';
 
 // The original ticket proportions. Kept exact: the layout below positions the
 // perforation, notches and stats block as percentages of this height, so
@@ -47,6 +49,7 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
   const router = useRouter();
   const [showQRModal, setShowQRModal] = useState(false);
   const [isFlipped, setIsFlipped] = useState(false);
+  const { supports3d, reducedMotion } = usePassMotionPreferences();
   const passNumber = normalizePassNumber(pass.pass_number);
 
   // A card behind the front one is already non-interactive (disabled via
@@ -79,13 +82,20 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
 
   const handleFlip = () => {
     setIsFlipped(!isFlipped);
-    flipRotation.value = withSpring(isFlipped ? 0 : 180, {
-      damping: 15,
-      stiffness: 100,
-    });
+    const nextRotation = isFlipped ? 0 : 180;
+    flipRotation.value = reducedMotion
+      ? nextRotation
+      : supports3d
+        ? withSpring(nextRotation, { damping: 15, stiffness: 100 })
+        : withTiming(nextRotation, { duration: 160 });
   };
 
   const frontAnimatedStyle = useAnimatedStyle(() => {
+    if (!supports3d) {
+      return {
+        opacity: interpolate(flipRotation.value, [0, 72, 108, 180], [1, 1, 0, 0]),
+      };
+    }
     const rotateY = interpolate(flipRotation.value, [0, 180], [0, 180]);
     return {
       transform: [{ rotateY: `${rotateY}deg` }],
@@ -94,6 +104,11 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
   });
 
   const backAnimatedStyle = useAnimatedStyle(() => {
+    if (!supports3d) {
+      return {
+        opacity: interpolate(flipRotation.value, [0, 72, 108, 180], [0, 0, 1, 1]),
+      };
+    }
     const rotateY = interpolate(flipRotation.value, [0, 180], [180, 360]);
     return {
       transform: [{ rotateY: `${rotateY}deg` }],

@@ -163,6 +163,29 @@ describe('BetterAuthProvider', () => {
     jest.useRealTimers();
   });
 
+  it('exchanges a native Apple identity token through Better Auth', async () => {
+    jest.useFakeTimers();
+
+    mockSignInSocial.mockResolvedValueOnce({});
+    mockGetSession.mockResolvedValueOnce({ data: createBetterAuthSession() });
+
+    const { BetterAuthProvider } = require('../../../../packages/auth/src/providers/better-auth');
+    const provider = new BetterAuthProvider({ baseURL: 'https://api.hashpass.tech/api/auth' });
+
+    const signInPromise = provider.signInWithIdToken('apple', 'apple-id-token-123');
+    await jest.runAllTimersAsync();
+    const result = await signInPromise;
+
+    expect(mockSignInSocial).toHaveBeenCalledWith({
+      provider: 'apple',
+      idToken: { token: 'apple-id-token-123' },
+    });
+    expect(result.error).toBeUndefined();
+    expect(result.session?.user.email).toBe('user@example.com');
+
+    jest.useRealTimers();
+  });
+
   it('marks web Google sign-in in localStorage before redirecting', async () => {
     const localStorageSetItem = jest.fn();
     const localStorageGetItem = jest.fn(() => '/dashboard/explore');
@@ -200,6 +223,38 @@ describe('BetterAuthProvider', () => {
         provider: 'google',
         callbackURL: 'https://hashpass.tech/auth/callback?returnTo=%2Fdashboard%2Fexplore',
       })
+    );
+    expect(result.pending).toBe(true);
+  });
+
+  it('starts web Apple sign-in through the Better Auth social endpoint', async () => {
+    const mockLocalStorage = {
+      getItem: jest.fn(() => '/dashboard/explore'),
+      setItem: jest.fn(),
+      removeItem: jest.fn(),
+      clear: jest.fn(),
+      key: jest.fn(),
+      get length() {
+        return 0;
+      },
+    } as unknown as Storage;
+
+    setTestWindow({
+      location: {
+        origin: 'https://hashpass.tech',
+        pathname: '/dashboard/explore',
+      } as Window['location'],
+      localStorage: mockLocalStorage,
+    } as Window);
+    mockSignInSocial.mockResolvedValueOnce({});
+
+    const { BetterAuthProvider } = require('../../../../packages/auth/src/providers/better-auth');
+    const provider = new BetterAuthProvider({ baseURL: 'https://api.hashpass.tech/api/auth' });
+
+    const result = await provider.signInWithOAuth('apple');
+
+    expect(mockSignInSocial).toHaveBeenCalledWith(
+      expect.objectContaining({ provider: 'apple' })
     );
     expect(result.pending).toBe(true);
   });

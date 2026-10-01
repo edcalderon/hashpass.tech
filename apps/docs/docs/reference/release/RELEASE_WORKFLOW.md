@@ -84,6 +84,45 @@ For the Play Console track ladder and the future production publishing checklist
 
 Temporary release posture: while the app is under active development, keep Android releases on the development profile. Use the internal preview step first, then alpha on the same tag after internal succeeds. Closed testing can go out with `release_status=completed`; only the first alpha upload needs `draft` if Play still treats the app as a draft. Production dispatches are paused until the release freeze is lifted.
 
+## iOS TestFlight Release
+
+iOS builds run on GitHub-hosted `macos-15`; do not provision an AWS Mac for this
+workflow. The `production` GitHub Environment is intentionally restricted to a
+protected release ref, so a build from `develop` is rejected before a runner can
+access production configuration or signing credentials.
+
+After the promotion PR has merged and the automatic tag exists, verify the
+signed IPA first without publishing it:
+
+```bash
+gh workflow run mobile-ios-release.yml \
+  --repo hashpass-tech/hashpass.tech \
+  --ref main \
+  -f ref=v<NEW_VERSION> \
+  -f submit=false
+```
+
+The `Upload iOS build to TestFlight` run creates `HASHPASS.ipa` with read-only
+Match signing and retains it as an Actions artifact for seven days. Download it
+from the successful run to keep the signed build output. An App Store
+distribution IPA is not a substitute for TestFlight device installation.
+
+After that build succeeds, publish the same tagged source to internal
+TestFlight:
+
+```bash
+gh workflow run mobile-ios-release.yml \
+  --repo hashpass-tech/hashpass.tech \
+  --ref main \
+  -f ref=v<NEW_VERSION> \
+  -f submit=true
+```
+
+Wait for Apple to process the upload before installing it through TestFlight
+on physical devices. The workflow requires the production public-runtime
+variables plus App Store Connect and Match secrets; GitHub masks their values
+in logs. The Match repository remains read-only during every release build.
+
 Follow this sequence exactly. Order matters.
 
 ### Step 1 — Work on `develop`

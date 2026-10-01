@@ -11,6 +11,7 @@ import {
   signInWithNativeGoogleAccount,
 } from '../lib/native-google-signin';
 import { shouldUseNativeGoogleSignin } from '../lib/native-google-signin-config';
+import { signInWithNativeAppleAccount } from '../lib/native-apple-signin';
 import { mergeOAuthFragmentParams } from '../lib/auth/oauth/callback-params';
 import { clearPersistedNativeProviderSessions } from '../lib/auth/native-session-clear';
 import { resolveGoogleOAuthClientId } from '../lib/auth/oauth/google-credentials';
@@ -1150,7 +1151,7 @@ export const useAuth = () => {
     }
   }, []);
 
-  const signInWithOAuth = useCallback(async (provider: 'google' | 'github' | 'facebook' | 'twitter') => {
+  const signInWithOAuth = useCallback(async (provider: 'google' | 'apple' | 'github' | 'facebook' | 'twitter') => {
     try {
       const googleWebClientId = resolveGoogleOAuthClientId();
       const providerName = authService.getProviderName();
@@ -1176,24 +1177,77 @@ export const useAuth = () => {
         }
       };
 
-      // ── Web Google Sign-In: Better Auth only ───────────────────────────────────
+      // ── Web social sign-in: Better Auth only ───────────────────────────────────
       // Better Auth is the canonical social-login backend for both core
       // (hashpass.tech) and BSL tenants. Never call Supabase's OAuth directly as
-      // the primary path — that produced two divergent Google identities for the
-      // same user (one under Better Auth's ba_users, one under Supabase auth.users)
-      // depending on which host happened to be resolved.
-      if (Platform.OS === 'web' && provider === 'google') {
+      // the primary path — that produced divergent identities depending on which
+      // host happened to be resolved.
+      if (Platform.OS === 'web' && (provider === 'google' || provider === 'apple')) {
         await clearStaleProviderSession('better-auth');
 
-        const betterAuthGoogle: IAuthProvider =
+        const betterAuthSocial: IAuthProvider =
           providerName === 'better-auth' ? authService : getGoogleBetterAuthProvider();
 
-        const result = await betterAuthGoogle.signInWithOAuth!('google');
+        const result = await betterAuthSocial.signInWithOAuth!(provider);
         if (result.error) {
           throw new Error(result.error);
         }
 
         return result;
+      }
+
+      // ── Native iOS Apple Sign-In (identity-token path) ─────────────────────────
+      // Apple returns an iOS identity token directly from the system sheet. Exchange
+      // it with Better Auth so it produces the same session and Supabase bridge as
+      // web Apple OAuth; do not create a second provider-specific mobile account.
+      if (provider === 'apple' && Platform.OS === 'ios') {
+        try {
+          const { identityToken } = await signInWithNativeAppleAccount();
+          await clearStaleProviderSession('better-auth');
+
+          const betterAuthApple =
+            providerName === 'better-auth'
+              ? (authService as unknown as BetterAuthProvider)
+              : getGoogleBetterAuthProvider();
+          const betterAuthResult = await betterAuthApple.signInWithIdToken('apple', identityToken);
+          if (betterAuthResult.error) {
+            throw new Error(betterAuthResult.error);
+          }
+
+          const session =
+            betterAuthResult.session ??
+            (betterAuthResult.user
+              ? {
+                  user: betterAuthResult.user,
+                  access_token: 'better_auth_session',
+                  provider: 'better-auth',
+                }
+              : null);
+          if (!session?.user) {
+            throw new Error('Apple sign-in completed, but no Better Auth session was created.');
+          }
+
+          sessionBootstrapPromise = Promise.resolve(session);
+          markRecentAuthSuccess();
+          applyAuthenticatedSession(session);
+          void ensureSupabaseBridgeSession(betterAuthApple);
+          return {
+            ...betterAuthResult,
+            user: betterAuthResult.user ?? session.user,
+            session,
+          };
+        } catch (error: any) {
+          if (error?.code === 'ERR_REQUEST_CANCELED') {
+            return { pending: false };
+          }
+          return {
+            error: getAuthErrorMessage(error, 'Apple sign-in failed. Please try again.'),
+          };
+        }
+      }
+
+      if (provider === 'apple') {
+        return { error: 'Sign in with Apple is available on the web and iOS.' };
       }
 
       // ── Native Google Sign-In (SDK path, feature-flagged) ──────────────────────

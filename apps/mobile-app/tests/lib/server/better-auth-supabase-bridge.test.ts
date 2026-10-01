@@ -13,6 +13,21 @@ jest.mock('better-auth', () => ({
   betterAuth: jest.fn(() => ({ handler: jest.fn() })),
 }));
 
+const mockImportPKCS8 = jest.fn(async () => ({ key: 'apple-private-key' }));
+const mockAppleClientSecretSign = jest.fn(async () => 'apple-client-secret');
+jest.mock('jose', () => ({
+  importPKCS8: mockImportPKCS8,
+  SignJWT: jest.fn(() => ({
+    setProtectedHeader: jest.fn().mockReturnThis(),
+    setIssuer: jest.fn().mockReturnThis(),
+    setSubject: jest.fn().mockReturnThis(),
+    setAudience: jest.fn().mockReturnThis(),
+    setIssuedAt: jest.fn().mockReturnThis(),
+    setExpirationTime: jest.fn().mockReturnThis(),
+    sign: mockAppleClientSecretSign,
+  })),
+}));
+
 jest.mock('../../../lib/server/database-pool', () => ({
   getDatabasePool: jest.fn(() => ({})),
   hasDatabaseConnectionString: () => true,
@@ -21,6 +36,7 @@ jest.mock('../../../lib/server/database-pool', () => ({
 const mockSyncPublicUserRegistry = jest.fn();
 const mockEnsureSupabaseAccountForEmail = jest.fn();
 const mockGetSupabaseServerForRequest = jest.fn();
+const mockGetInfisicalSecret = jest.fn();
 
 jest.mock('../../../lib/auth/public-user-registry', () => ({
   syncPublicUserRegistry: (...args: unknown[]) => mockSyncPublicUserRegistry(...args),
@@ -34,12 +50,17 @@ jest.mock('../../../lib/supabase-server', () => ({
   getSupabaseServerForRequest: (...args: unknown[]) => mockGetSupabaseServerForRequest(...args),
 }));
 
+jest.mock('../../../lib/server/infisical-secrets', () => ({
+  getInfisicalSecret: (...args: unknown[]) => mockGetInfisicalSecret(...args),
+}));
+
 describe('syncBetterAuthUser (Supabase account bridge)', () => {
   beforeEach(() => {
     jest.resetModules();
     mockSyncPublicUserRegistry.mockReset();
     mockEnsureSupabaseAccountForEmail.mockReset();
     mockGetSupabaseServerForRequest.mockReset();
+    mockGetInfisicalSecret.mockReset();
     mockSyncPublicUserRegistry.mockResolvedValue({ id: 'registry-id-123' });
     mockGetSupabaseServerForRequest.mockReturnValue({ auth: { admin: {} } });
   });
@@ -80,6 +101,125 @@ describe('syncBetterAuthUser (Supabase account bridge)', () => {
       'https://hashpass.tech/email': 'operator@hashpass.tech',
       'https://hashpass.tech/email_verified': true,
     });
+  });
+
+  it('configures Apple for both web Service ID and native bundle audiences', async () => {
+    const previous = {
+      serviceId: process.env.BETTER_AUTH_APPLE_CLIENT_ID,
+      teamId: process.env.BETTER_AUTH_APPLE_TEAM_ID,
+      keyId: process.env.BETTER_AUTH_APPLE_KEY_ID,
+      privateKey: process.env.BETTER_AUTH_APPLE_PRIVATE_KEY,
+    };
+    process.env.BETTER_AUTH_APPLE_CLIENT_ID = 'tech.hashpass.signin';
+    process.env.BETTER_AUTH_APPLE_TEAM_ID = 'TEAM123456';
+    process.env.BETTER_AUTH_APPLE_KEY_ID = 'KEY1234567';
+    process.env.BETTER_AUTH_APPLE_PRIVATE_KEY = '-----BEGIN PRIVATE KEY-----\\nkey-data\\n-----END PRIVATE KEY-----';
+
+    try {
+      /* eslint-disable @typescript-eslint/no-require-imports */
+      const { betterAuth } = require('better-auth');
+      const { getAuth } = require('../../../lib/server/better-auth');
+
+      getAuth();
+
+      const authConfig = betterAuth.mock.calls[0][0];
+      expect(authConfig.trustedOrigins).toContain('https://appleid.apple.com');
+      const apple = await authConfig.socialProviders.apple();
+
+      expect(apple.clientId).toEqual(['tech.hashpass.signin', 'tech.hashpass.app']);
+      expect(apple.appBundleIdentifier).toBe('tech.hashpass.app');
+      expect(apple.clientSecret).toBe('apple-client-secret');
+      expect(mockImportPKCS8).toHaveBeenCalledWith(
+        '-----BEGIN PRIVATE KEY-----\nkey-data\n-----END PRIVATE KEY-----',
+        'ES256',
+      );
+    } finally {
+      if (previous.serviceId === undefined) delete process.env.BETTER_AUTH_APPLE_CLIENT_ID;
+      else process.env.BETTER_AUTH_APPLE_CLIENT_ID = previous.serviceId;
+      if (previous.teamId === undefined) delete process.env.BETTER_AUTH_APPLE_TEAM_ID;
+      else process.env.BETTER_AUTH_APPLE_TEAM_ID = previous.teamId;
+      if (previous.keyId === undefined) delete process.env.BETTER_AUTH_APPLE_KEY_ID;
+      else process.env.BETTER_AUTH_APPLE_KEY_ID = previous.keyId;
+      if (previous.privateKey === undefined) delete process.env.BETTER_AUTH_APPLE_PRIVATE_KEY;
+      else process.env['BETTER_AUTH_APPLE_PRIVATE_KEY'] = previous.privateKey;
+    }
+  });
+
+  it('loads Sign in with Apple credentials from Infisical when they are not Lambda environment values', async () => {
+    const names = [
+      'BETTER_AUTH_APPLE_CLIENT_ID',
+      'BETTER_AUTH_APPLE_TEAM_ID',
+      'BETTER_AUTH_APPLE_KEY_ID',
+      'BETTER_AUTH_APPLE_PRIVATE_KEY',
+    ] as const;
+    const previous = Object.fromEntries(names.map((name) => [name, process.env[name]]));
+    for (const name of names) delete process.env[name];
+    mockGetInfisicalSecret.mockImplementation(async (name: string) => ({
+      BETTER_AUTH_APPLE_CLIENT_ID: 'tech.hashpass.signin',
+      BETTER_AUTH_APPLE_TEAM_ID: 'TEAM123456',
+      BETTER_AUTH_APPLE_KEY_ID: 'KEY1234567',
+      BETTER_AUTH_APPLE_PRIVATE_KEY: '-----BEGIN PRIVATE KEY-----\\nkey-data\\n-----END PRIVATE KEY-----',
+    })[name]);
+
+    try {
+      /* eslint-disable @typescript-eslint/no-require-imports */
+      const { betterAuth } = require('better-auth');
+      const { getAuth } = require('../../../lib/server/better-auth');
+
+      getAuth();
+      const authConfig = betterAuth.mock.calls[0][0];
+      const apple = await authConfig.socialProviders.apple();
+
+      expect(apple.clientSecret).toBe('apple-client-secret');
+      expect(mockGetInfisicalSecret).toHaveBeenCalledWith('BETTER_AUTH_APPLE_PRIVATE_KEY');
+    } finally {
+      for (const name of names) {
+        if (previous[name] === undefined) delete process.env[name];
+        else process.env[name] = previous[name];
+      }
+    }
+  });
+
+  it('omits Apple when required credentials are unavailable', async () => {
+    const names = [
+      'BETTER_AUTH_APPLE_CLIENT_ID',
+      'APPLE_SERVICE_ID',
+      'APPLE_CLIENT_ID',
+      'BETTER_AUTH_APPLE_TEAM_ID',
+      'APPLE_TEAM_ID',
+      'BETTER_AUTH_APPLE_KEY_ID',
+      'APPLE_KEY_ID',
+      'BETTER_AUTH_APPLE_PRIVATE_KEY',
+      'APPLE_PRIVATE_KEY',
+    ] as const;
+    const previous = Object.fromEntries(names.map((name) => [name, process.env[name]]));
+    for (const name of names) delete process.env[name];
+    mockGetInfisicalSecret.mockResolvedValue(undefined);
+
+    try {
+      /* eslint-disable @typescript-eslint/no-require-imports */
+      const { betterAuth } = require('better-auth');
+      const { getAuth } = require('../../../lib/server/better-auth');
+
+      getAuth();
+      const authConfig = betterAuth.mock.calls[0][0];
+
+      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+      await expect(authConfig.socialProviders.apple()).resolves.toEqual({
+        clientId: '',
+        enabled: false,
+      });
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        '[Better Auth] Sign in with Apple is disabled until its server credentials are configured.',
+        'Sign in with Apple is not fully configured.',
+      );
+      consoleWarnSpy.mockRestore();
+    } finally {
+      for (const name of names) {
+        if (previous[name] === undefined) delete process.env[name];
+        else process.env[name] = previous[name];
+      }
+    }
   });
 
   it('does nothing when context has no real Request', async () => {
