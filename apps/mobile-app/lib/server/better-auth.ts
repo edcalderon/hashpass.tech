@@ -320,18 +320,32 @@ const createAuthInstance = () =>
           }
         : {}),
       apple: async () => {
-        const credentials = await resolveAppleProviderCredentials();
-        const bundleIdentifier =
-          (await readAppleSetting('BETTER_AUTH_APPLE_BUNDLE_ID', 'APPLE_APP_BUNDLE_IDENTIFIER')) ||
-          DEFAULT_APPLE_BUNDLE_IDENTIFIER;
-        return {
-          // Web authorization codes are issued to the Service ID. Native
-          // iOS identity tokens are issued to the bundle identifier, so
-          // Better Auth must accept both audiences.
-          clientId: [credentials.serviceId, bundleIdentifier],
-          clientSecret: await createAppleClientSecret(credentials),
-          appBundleIdentifier: bundleIdentifier,
-        };
+        try {
+          const credentials = await resolveAppleProviderCredentials();
+          const bundleIdentifier =
+            (await readAppleSetting('BETTER_AUTH_APPLE_BUNDLE_ID', 'APPLE_APP_BUNDLE_IDENTIFIER')) ||
+            DEFAULT_APPLE_BUNDLE_IDENTIFIER;
+          return {
+            // Web authorization codes are issued to the Service ID. Native
+            // iOS identity tokens are issued to the bundle identifier, so
+            // Better Auth must accept both audiences.
+            clientId: [credentials.serviceId, bundleIdentifier],
+            clientSecret: await createAppleClientSecret(credentials),
+            appBundleIdentifier: bundleIdentifier,
+          };
+        } catch (error) {
+          // Better Auth resolves every configured social provider as it builds
+          // its route context. Missing optional Apple credentials must not take
+          // down local web rendering or unrelated providers such as Google.
+          console.warn(
+            '[Better Auth] Sign in with Apple is disabled until its server credentials are configured.',
+            error instanceof Error ? error.message : String(error),
+          );
+          // Better Auth's provider factory removes `enabled: false` before it
+          // validates clientId/clientSecret, so this keeps the type contract
+          // while omitting Apple from the active provider list.
+          return { clientId: '', enabled: false };
+        }
       },
     },
     plugins: [

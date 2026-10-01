@@ -135,6 +135,7 @@ async function getAccessToken(bootstrap: BootstrapCredentials): Promise<string |
 interface CachedSecrets {
   values: Record<string, string>;
   fetchedAt: number;
+  ttlMs: number;
 }
 
 // Cached per Lambda execution context (reused across warm invocations) with
@@ -142,19 +143,32 @@ interface CachedSecrets {
 // requiring a redeploy.
 const secretsCacheByEnvironment = new Map<string, CachedSecrets>();
 const CACHE_TTL_MS = 5 * 60 * 1000;
+// A bad local Universal Auth credential must not trigger one failed login for
+// every secret lookup during a render. Keep the failure window short so a
+// corrected credential is picked up promptly without restarting the runtime.
+const FAILED_FETCH_TTL_MS = 60 * 1000;
+
+function cacheSecrets(environment: string, values: Record<string, string>, ttlMs: number): Record<string, string> {
+  secretsCacheByEnvironment.set(environment, { values, fetchedAt: Date.now(), ttlMs });
+  return values;
+}
 
 async function fetchAllSecrets(): Promise<Record<string, string>> {
   const environment = resolveEnvironmentSlug();
   const cached = secretsCacheByEnvironment.get(environment);
-  if (cached && Date.now() - cached.fetchedAt < CACHE_TTL_MS) {
+  if (cached && Date.now() - cached.fetchedAt < cached.ttlMs) {
     return cached.values;
   }
 
   const bootstrap = await getBootstrapCredentials();
-  if (!bootstrap) return cached?.values || {};
+  if (!bootstrap) {
+    return cacheSecrets(environment, cached?.values || {}, cached ? CACHE_TTL_MS : FAILED_FETCH_TTL_MS);
+  }
 
   const token = await getAccessToken(bootstrap);
-  if (!token) return cached?.values || {};
+  if (!token) {
+    return cacheSecrets(environment, cached?.values || {}, cached ? CACHE_TTL_MS : FAILED_FETCH_TTL_MS);
+  }
 
   try {
     const url = `${bootstrap.domain}/api/v4/secrets?projectId=${encodeURIComponent(bootstrap.projectId)}&environment=${encodeURIComponent(environment)}`;
@@ -168,11 +182,10 @@ async function fetchAllSecrets(): Promise<Record<string, string>> {
     for (const secret of data?.secrets || []) {
       if (secret?.secretKey) values[secret.secretKey] = secret.secretValue ?? '';
     }
-    secretsCacheByEnvironment.set(environment, { values, fetchedAt: Date.now() });
-    return values;
+    return cacheSecrets(environment, values, CACHE_TTL_MS);
   } catch (error) {
     console.error('[infisical] secrets fetch error:', error instanceof Error ? error.message : String(error));
-    return cached?.values || {};
+    return cacheSecrets(environment, cached?.values || {}, cached ? CACHE_TTL_MS : FAILED_FETCH_TTL_MS);
   }
 }
 

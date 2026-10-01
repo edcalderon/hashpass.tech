@@ -141,7 +141,7 @@ describe('syncBetterAuthUser (Supabase account bridge)', () => {
       if (previous.keyId === undefined) delete process.env.BETTER_AUTH_APPLE_KEY_ID;
       else process.env.BETTER_AUTH_APPLE_KEY_ID = previous.keyId;
       if (previous.privateKey === undefined) delete process.env.BETTER_AUTH_APPLE_PRIVATE_KEY;
-      else process.env.BETTER_AUTH_APPLE_PRIVATE_KEY = previous.privateKey;
+      else process.env['BETTER_AUTH_APPLE_PRIVATE_KEY'] = previous.privateKey;
     }
   });
 
@@ -172,6 +172,48 @@ describe('syncBetterAuthUser (Supabase account bridge)', () => {
 
       expect(apple.clientSecret).toBe('apple-client-secret');
       expect(mockGetInfisicalSecret).toHaveBeenCalledWith('BETTER_AUTH_APPLE_PRIVATE_KEY');
+    } finally {
+      for (const name of names) {
+        if (previous[name] === undefined) delete process.env[name];
+        else process.env[name] = previous[name];
+      }
+    }
+  });
+
+  it('omits Apple when required credentials are unavailable', async () => {
+    const names = [
+      'BETTER_AUTH_APPLE_CLIENT_ID',
+      'APPLE_SERVICE_ID',
+      'APPLE_CLIENT_ID',
+      'BETTER_AUTH_APPLE_TEAM_ID',
+      'APPLE_TEAM_ID',
+      'BETTER_AUTH_APPLE_KEY_ID',
+      'APPLE_KEY_ID',
+      'BETTER_AUTH_APPLE_PRIVATE_KEY',
+      'APPLE_PRIVATE_KEY',
+    ] as const;
+    const previous = Object.fromEntries(names.map((name) => [name, process.env[name]]));
+    for (const name of names) delete process.env[name];
+    mockGetInfisicalSecret.mockResolvedValue(undefined);
+
+    try {
+      /* eslint-disable @typescript-eslint/no-require-imports */
+      const { betterAuth } = require('better-auth');
+      const { getAuth } = require('../../../lib/server/better-auth');
+
+      getAuth();
+      const authConfig = betterAuth.mock.calls[0][0];
+
+      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+      await expect(authConfig.socialProviders.apple()).resolves.toEqual({
+        clientId: '',
+        enabled: false,
+      });
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        '[Better Auth] Sign in with Apple is disabled until its server credentials are configured.',
+        'Sign in with Apple is not fully configured.',
+      );
+      consoleWarnSpy.mockRestore();
     } finally {
       for (const name of names) {
         if (previous[name] === undefined) delete process.env[name];

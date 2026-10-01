@@ -36,4 +36,27 @@ describe('signInWithNativeAppleAccount', () => {
     });
     expect(mockSignInAsync).not.toHaveBeenCalled();
   });
+
+  it('fails clearly when Apple does not return an identity token', async () => {
+    mockSignInAsync.mockResolvedValueOnce({ identityToken: null });
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { signInWithNativeAppleAccount } = require('../../lib/native-apple-signin.ios');
+
+    await expect(signInWithNativeAppleAccount()).rejects.toMatchObject({
+      code: 'APPLE_ID_TOKEN_MISSING',
+    });
+  });
+
+  it.each([
+    ['Android', '../../lib/native-apple-signin.native'],
+    ['web', '../../lib/native-apple-signin.web'],
+    ['fallback', '../../lib/native-apple-signin.ts'],
+  ])('reports Apple as unavailable on %s', async (_platform, modulePath) => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { signInWithNativeAppleAccount } = require(modulePath);
+
+    await expect(signInWithNativeAppleAccount()).rejects.toMatchObject({
+      code: 'APPLE_SIGN_IN_UNAVAILABLE',
+    });
+  });
 });
