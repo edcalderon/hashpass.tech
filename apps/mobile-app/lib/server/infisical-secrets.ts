@@ -51,7 +51,12 @@ function bootstrapSecretName(): string {
   return `hashpass/expo-router-api-${resolveEnvironmentSlug()}/infisical-bootstrap`;
 }
 
+function appleSignInSecretName(): string {
+  return `hashpass/expo-router-api-${resolveEnvironmentSlug()}/apple-sign-in`;
+}
+
 let cachedBootstrap: BootstrapCredentials | null | undefined;
+let cachedAppleSignInSecrets: Record<string, string> | null | undefined;
 
 async function getBootstrapCredentials(): Promise<BootstrapCredentials | null> {
   if (cachedBootstrap !== undefined) return cachedBootstrap;
@@ -193,4 +198,30 @@ async function fetchAllSecrets(): Promise<Record<string, string>> {
 export async function getInfisicalSecret(key: string): Promise<string | undefined> {
   const secrets = await fetchAllSecrets();
   return secrets[key];
+}
+
+/**
+ * Retrieves Sign in with Apple provider fields from a dedicated AWS Secrets
+ * Manager record. This keeps the P8 key out of Lambda environment variables
+ * and preserves Apple sign-in while an Infisical machine identity is rotated.
+ */
+export async function getAppleSignInSecret(key: string): Promise<string | undefined> {
+  if (cachedAppleSignInSecrets === undefined) {
+    try {
+      const response = await getSecretsManagerClient().send(
+        new GetSecretValueCommand({ SecretId: appleSignInSecretName() })
+      );
+      const parsed = response.SecretString ? JSON.parse(response.SecretString) : null;
+      cachedAppleSignInSecrets = Object.fromEntries(
+        Object.entries(parsed || {}).filter((entry): entry is [string, string] =>
+          typeof entry[1] === 'string' && entry[1].trim().length > 0
+        )
+      );
+    } catch (error) {
+      console.error('[apple-sign-in] Secrets Manager fetch failed:', error instanceof Error ? error.message : String(error));
+      cachedAppleSignInSecrets = null;
+    }
+  }
+
+  return cachedAppleSignInSecrets?.[key];
 }

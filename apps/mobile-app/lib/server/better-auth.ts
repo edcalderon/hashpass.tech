@@ -8,7 +8,7 @@ import { ensureSupabaseAccountForEmail } from '../auth/supabase-admin-bridge';
 import { getSupabaseServerForRequest } from '../supabase-server';
 import { sendWelcomeEmailToNewUser } from '../email';
 import { getDatabasePool, hasDatabaseConnectionString } from './database-pool';
-import { getInfisicalSecret } from './infisical-secrets';
+import { getAppleSignInSecret, getInfisicalSecret } from './infisical-secrets';
 
 const normalizeAuthPath = (value?: string | null): string => {
   const trimmed = (value || '/api/auth').trim();
@@ -232,9 +232,16 @@ const readAppleSetting = async (...names: string[]): Promise<string | undefined>
     if (value) return value;
   }
 
-  // Apple credentials include a private P8 key. New raw Lambda environment
-  // variables would exceed the platform's 4 KB limit, so retrieve them from
-  // the encrypted runtime secret tier only when the provider is used.
+  // Apple is an iOS sign-in requirement. Prefer its dedicated encrypted
+  // record so a separate Infisical machine-identity outage cannot disable the
+  // provider or generate repeated 401s on the auth route.
+  for (const name of names) {
+    const value = (await getAppleSignInSecret(name))?.trim();
+    if (value) return value;
+  }
+
+  // Preserve Infisical as a backwards-compatible fallback while its machine
+  // identity is repaired or a prior environment has not been migrated yet.
   for (const name of names) {
     const value = (await getInfisicalSecret(name))?.trim();
     if (value) return value;

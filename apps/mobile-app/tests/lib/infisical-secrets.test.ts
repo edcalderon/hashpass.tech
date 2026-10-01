@@ -109,6 +109,21 @@ describe('getInfisicalSecret', () => {
     );
   });
 
+  it('reads the dedicated Apple provider secret from Secrets Manager without using Infisical', async () => {
+    mockSend.mockResolvedValue({
+      SecretString: JSON.stringify({
+        BETTER_AUTH_APPLE_CLIENT_ID: 'com.example.signin',
+      }),
+    });
+
+    const { getAppleSignInSecret } = require('../../lib/server/infisical-secrets');
+    await expect(getAppleSignInSecret('BETTER_AUTH_APPLE_CLIENT_ID')).resolves.toBe('com.example.signin');
+    expect(mockSend).toHaveBeenCalledWith(
+      expect.objectContaining({ SecretId: 'hashpass/expo-router-api-dev/apple-sign-in' })
+    );
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
   it('returns undefined without throwing when Secrets Manager has no bootstrap secret', async () => {
     mockSend.mockResolvedValue({ SecretString: undefined });
 
