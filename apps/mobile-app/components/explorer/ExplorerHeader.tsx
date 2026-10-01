@@ -5,7 +5,10 @@ import { useTheme } from '../../hooks/useTheme';
 
 // Keep web SVGs as concrete public URLs. Resolving a bundled SVG through
 // Metro can produce `/logos/bsl`, which is a directory and triggers ENOENT.
-const DEFAULT_LOGO_URI = '/assets/logos/bsl/BSL-Logo-fondo-oscuro-2024.svg';
+// This file is present under public/ for Expo development as well as copied to
+// the static export. Do not point this at a source-only asset: Metro treats a
+// missing public SVG request as a bundled asset and attempts to read /logos/bsl.
+const DEFAULT_LOGO_URI = '/assets/logos/bsl/bsl-colombia-pro.svg';
 
 interface ExplorerHeaderProps {
   title: string;

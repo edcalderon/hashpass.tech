@@ -1,5 +1,7 @@
 /// <reference types="jest" />
 
+import fs from 'node:fs';
+import path from 'node:path';
 import appPackage from '../../package.json';
 
 describe('static BSL asset publishing', () => {
@@ -10,4 +12,15 @@ describe('static BSL asset publishing', () => {
       expect(appPackage.scripts[scriptName]).toContain('cp assets/logos/bsl/*.svg dist/client/assets/logos/bsl/');
     },
   );
+
+  it('uses a BSL logo that exists in Expo public assets during development', () => {
+    const explorerHeader = fs.readFileSync(
+      path.resolve(__dirname, '../../components/explorer/ExplorerHeader.tsx'),
+      'utf8',
+    );
+    const publicLogo = path.resolve(__dirname, '../../public/assets/logos/bsl/bsl-colombia-pro.svg');
+
+    expect(explorerHeader).toContain('/assets/logos/bsl/bsl-colombia-pro.svg');
+    expect(fs.existsSync(publicLogo)).toBe(true);
+  });
 });
