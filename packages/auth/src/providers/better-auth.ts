@@ -269,12 +269,12 @@ export class BetterAuthProvider implements IAuthProvider {
     };
   }
 
-  async signInWithOAuth(provider: 'google' | 'github' | 'facebook' | 'twitter'): Promise<AuthResponse> {
+  async signInWithOAuth(provider: 'google' | 'apple' | 'github' | 'facebook' | 'twitter'): Promise<AuthResponse> {
     if (typeof window === 'undefined') {
       return { error: 'OAuth authentication is only available in web browsers.' };
     }
 
-    if (provider !== 'google') {
+    if (provider !== 'google' && provider !== 'apple') {
       return { error: `${provider} social sign-in is not configured for this Better Auth flow.` };
     }
 
@@ -286,24 +286,25 @@ export class BetterAuthProvider implements IAuthProvider {
       const returnTo = storedReturnTo.replace(/\/\([^/]+\)/g, '') || '/dashboard/explore';
       const frontendOrigin = resolveWebOrigin();
       const callbackURL = `${frontendOrigin}/auth/callback?returnTo=${encodeURIComponent(returnTo)}`;
+      const providerLabel = provider === 'apple' ? 'Apple' : 'Google';
       const errorCallbackURL = `${frontendOrigin}/auth?error=oauth_failed&message=${encodeURIComponent(
-        'Google sign-in failed. Please try again.'
+        `${providerLabel} sign-in failed. Please try again.`
       )}`;
 
       window.localStorage.setItem('oauth_return_url', window.location.pathname);
       window.localStorage.removeItem(PASSWORDLESS_CALLBACK_MARKER);
       window.localStorage.setItem('oauth_in_progress', 'true');
-      window.localStorage.setItem('auth_signin_method', 'google_oauth');
+      window.localStorage.setItem('auth_signin_method', `${provider}_oauth`);
 
       const result = await (this.getClient() as any).signIn.social({
-        provider: 'google',
+        provider,
         callbackURL,
         errorCallbackURL,
         newUserCallbackURL: callbackURL,
       });
 
       if (result?.error) {
-        return { error: result.error.message || result.error.statusText || 'Google sign-in failed.' };
+        return { error: result.error.message || result.error.statusText || `${providerLabel} sign-in failed.` };
       }
 
       return { pending: true };
@@ -319,7 +320,7 @@ export class BetterAuthProvider implements IAuthProvider {
    * its configured provider client ID — see
    * https://www.better-auth.com/docs/concepts/oauth#sign-in-with-id-token
    */
-  async signInWithIdToken(provider: 'google', idToken: string): Promise<AuthResponse> {
+  async signInWithIdToken(provider: 'google' | 'apple', idToken: string): Promise<AuthResponse> {
     try {
       this.currentSession = null;
       this.notifyStateChange(null);
@@ -330,7 +331,8 @@ export class BetterAuthProvider implements IAuthProvider {
       });
 
       if (result?.error) {
-        return { error: result.error.message || result.error.statusText || 'Google sign-in failed.' };
+        const providerLabel = provider === 'apple' ? 'Apple' : 'Google';
+        return { error: result.error.message || result.error.statusText || `${providerLabel} sign-in failed.` };
       }
 
       const session = await this.readSessionWithRetry();

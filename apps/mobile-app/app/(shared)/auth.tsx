@@ -689,6 +689,7 @@ export default function AuthScreen({ embedded = false, onAuthenticated, onDismis
   );
 
   const [busyAction, setBusyAction] = useState<BusyAction>(null);
+  const [oauthProvider, setOauthProvider] = useState<"google" | "apple" | null>(null);
   // Pilot use of the morphicons library: briefly holds the primary button in
   // a "verified" visual state so the spinner->checkmark morph is visible
   // before the busy state clears. Purely additive -- navigation is still
@@ -807,17 +808,23 @@ export default function AuthScreen({ embedded = false, onAuthenticated, onDismis
     embedded,
   );
   const isBusy = busyAction !== null;
-  const isOAuthRedirecting = busyAction === "oauth";
+  const isGoogleOAuthRedirecting = busyAction === "oauth" && oauthProvider === "google";
+  const isAppleOAuthRedirecting = busyAction === "oauth" && oauthProvider === "apple";
   const signInWithGoogleLabel = t("signInWithGoogle", "Sign in with Google");
   const openingGoogleSignInLabel = t(
     "openingGoogleSignIn",
     "Opening Google sign-in...",
   );
-  const oauthButtonLabel = isOAuthRedirecting
+  const oauthButtonLabel = isGoogleOAuthRedirecting
     ? Platform.OS === "web"
       ? t("redirectingToGoogle", "Redirecting to Google...")
       : openingGoogleSignInLabel
     : signInWithGoogleLabel;
+  const appleOAuthButtonLabel = isAppleOAuthRedirecting
+    ? Platform.OS === "web"
+      ? t("redirectingToApple", "Redirecting to Apple...")
+      : t("openingAppleSignIn", "Opening Apple sign-in...")
+    : t("signInWithApple", "Sign in with Apple");
   const authActionMessage = useMemo(() => {
     switch (busyAction) {
       case "magic-link":
@@ -828,8 +835,8 @@ export default function AuthScreen({ embedded = false, onAuthenticated, onDismis
         return t("verifyingCode", "Verifying code...");
       case "oauth":
         return t(
-          "googleAuthHint",
-          "Please wait while your browser finishes the Google sign-in.",
+          "socialAuthHint",
+          "Please wait while your sign-in finishes.",
         );
       default:
         return "";
@@ -1498,6 +1505,7 @@ export default function AuthScreen({ embedded = false, onAuthenticated, onDismis
     if (isBusy || oauthInFlightRef.current) return;
     hapticLight();
 
+    setOauthProvider("google");
     oauthInFlightRef.current = true;
     setBusyAction("oauth");
     let keepOAuthBusy = false;
@@ -1555,6 +1563,54 @@ export default function AuthScreen({ embedded = false, onAuthenticated, onDismis
     } finally {
       if (!keepOAuthBusy) {
         oauthInFlightRef.current = false;
+        setOauthProvider(null);
+        setBusyAction(null);
+      }
+    }
+  };
+
+  const handleAppleSignIn = async () => {
+    if (isBusy || oauthInFlightRef.current) return;
+    hapticLight();
+
+    setOauthProvider("apple");
+    oauthInFlightRef.current = true;
+    setBusyAction("oauth");
+    let keepOAuthBusy = false;
+
+    try {
+      if (typeof window !== "undefined" && window.localStorage) {
+        window.localStorage.removeItem(PASSWORDLESS_CALLBACK_MARKER);
+        window.localStorage.setItem("auth_signin_method", "apple_oauth");
+        window.localStorage.setItem("oauth_return_url", redirectPath);
+      }
+
+      const result = await signInWithOAuth("apple");
+      if (result.error) {
+        throw new Error(result.error);
+      }
+      if (result.pending) {
+        keepOAuthBusy = true;
+        return;
+      }
+
+      showSuccess(
+        t("loginSuccess", "Login successful"),
+        t("welcomeBack", "Welcome back!"),
+      );
+    } catch (error: any) {
+      const message = extractApiError(
+        error?.message,
+        t("appleOauthError", "Apple sign-in failed. Please try again."),
+      );
+      if (typeof window !== "undefined" && window.localStorage) {
+        window.localStorage.removeItem("auth_signin_method");
+      }
+      showError(t("authenticationError", "Authentication Error"), message);
+    } finally {
+      if (!keepOAuthBusy) {
+        oauthInFlightRef.current = false;
+        setOauthProvider(null);
         setBusyAction(null);
       }
     }
@@ -2637,12 +2693,12 @@ export default function AuthScreen({ embedded = false, onAuthenticated, onDismis
                       accessibilityLabel={oauthButtonLabel}
                       accessibilityState={{
                         disabled: isBusy,
-                        busy: isOAuthRedirecting,
+                        busy: isGoogleOAuthRedirecting,
                       }}
                     >
                       <View style={styles.oauthButtonContent}>
                         <View style={styles.oauthButtonIconGroup}>
-                          {isOAuthRedirecting ? (
+                          {isGoogleOAuthRedirecting ? (
                             <ActivityIndicator size="small" color="#4285F4" />
                           ) : (
                             <Ionicons
@@ -2655,7 +2711,7 @@ export default function AuthScreen({ embedded = false, onAuthenticated, onDismis
                         <Text
                           style={[
                             styles.oauthButtonText,
-                            isOAuthRedirecting
+                            isGoogleOAuthRedirecting
                               ? styles.oauthButtonTextBusy
                               : null,
                           ]}
@@ -2667,6 +2723,47 @@ export default function AuthScreen({ embedded = false, onAuthenticated, onDismis
                       </View>
                     </TouchableOpacity>
                   </View>
+
+                  {Platform.OS !== "android" ? (
+                    <View style={styles.oauthContainer}>
+                      <TouchableOpacity
+                        style={[
+                          styles.oauthButton,
+                          styles.oauthButtonNative,
+                          styles.appleOauthButton,
+                        ]}
+                        onPress={() => void handleAppleSignIn()}
+                        disabled={isBusy}
+                        accessibilityRole="button"
+                        accessibilityLabel={appleOAuthButtonLabel}
+                        accessibilityState={{
+                          disabled: isBusy,
+                          busy: isAppleOAuthRedirecting,
+                        }}
+                      >
+                        <View style={styles.oauthButtonContent}>
+                          <View style={styles.oauthButtonIconGroup}>
+                            {isAppleOAuthRedirecting ? (
+                              <ActivityIndicator size="small" color={uiPalette(isDark).canvas} />
+                            ) : (
+                              <Ionicons name="logo-apple" size={24} color={uiPalette(isDark).canvas} />
+                            )}
+                          </View>
+                          <Text
+                            style={[
+                              styles.oauthButtonText,
+                              styles.appleOauthButtonText,
+                              isAppleOAuthRedirecting ? styles.oauthButtonTextBusy : null,
+                            ]}
+                            numberOfLines={1}
+                            ellipsizeMode="tail"
+                          >
+                            {appleOAuthButtonLabel}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    </View>
+                  ) : null}
 
                   {authActionMessage ? (
                     <View
@@ -3618,6 +3715,10 @@ const getStyles = (
       paddingHorizontal: isVeryCompactMobile ? 12 : 16,
       overflow: "hidden",
     },
+    appleOauthButton: {
+      backgroundColor: uiPalette(isDark).text,
+      borderColor: uiPalette(isDark).text,
+    },
     oauthButtonContent: {
       flex: 1,
       minWidth: 0,
@@ -3642,6 +3743,9 @@ const getStyles = (
       color: colors.text.primary,
       textAlign: "center",
       lineHeight: isVeryCompactMobile ? 18 : 20,
+    },
+    appleOauthButtonText: {
+      color: uiPalette(isDark).canvas,
     },
     oauthButtonTextBusy: {
       letterSpacing: 0.1,

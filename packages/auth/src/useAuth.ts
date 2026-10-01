@@ -84,7 +84,7 @@ export const useAuth = () => {
     }
   };
 
-  const signInWithOAuth = async (provider: 'google' | 'github' | 'facebook' | 'twitter') => {
+  const signInWithOAuth = async (provider: 'google' | 'apple' | 'github' | 'facebook' | 'twitter') => {
     try {
       if (!authService.signInWithOAuth) {
         throw new Error('OAuth not supported by current auth provider');

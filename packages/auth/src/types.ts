@@ -41,7 +41,7 @@ export type AuthProvider = 'supabase' | 'directus' | 'keycloak' | 'better-auth';
 export interface IAuthProvider {
   // Authentication methods
   signInWithEmailAndPassword(email: string, password: string): Promise<AuthResponse>;
-  signInWithOAuth?(provider: 'google' | 'github' | 'facebook' | 'twitter'): Promise<AuthResponse>;
+  signInWithOAuth?(provider: 'google' | 'apple' | 'github' | 'facebook' | 'twitter'): Promise<AuthResponse>;
   handleOAuthCallback?(codeOrParams: string | Record<string, string>, state?: string): Promise<AuthResponse>;
   signOut(): Promise<{ error?: string }>;
   
