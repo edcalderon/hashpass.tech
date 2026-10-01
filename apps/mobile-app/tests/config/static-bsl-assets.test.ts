@@ -13,14 +13,14 @@ describe('static BSL asset publishing', () => {
     },
   );
 
-  it('uses a BSL logo that exists in Expo public assets during development', () => {
+  it('uses a bundled BSL logo by default so Metro never resolves a logo directory request', () => {
     const explorerHeader = fs.readFileSync(
       path.resolve(__dirname, '../../components/explorer/ExplorerHeader.tsx'),
       'utf8',
     );
-    const publicLogo = path.resolve(__dirname, '../../public/assets/logos/bsl/bsl-colombia-pro.svg');
+    const bundledLogo = path.resolve(__dirname, '../../assets/logos/bsl/bsl-colombia-pro.webp');
 
-    expect(explorerHeader).toContain('/assets/logos/bsl/bsl-colombia-pro.svg');
-    expect(fs.existsSync(publicLogo)).toBe(true);
+    expect(explorerHeader).toContain("require('../../assets/logos/bsl/bsl-colombia-pro.webp')");
+    expect(fs.existsSync(bundledLogo)).toBe(true);
   });
 });

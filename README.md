@@ -20,27 +20,17 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.87)
+## 📋 Latest Changes (v1.9.88)
 
-### Bug Fixes
-
-* **ios:** initialize pnpm before caching ([e2db54d](https://github.com/hashpass-tech/hashpass.tech/commit/e2db54dfc56be1de18eb7674fe788f90dc8e4660))
-
-
-### Features
-
-* **ios:** retain signed build artifact ([ea97e74](https://github.com/hashpass-tech/hashpass.tech/commit/ea97e74802237bbee777f76482be02b237db583c))
-### Release Highlights
-- add Sign in with Apple; retain signed build artifact; initialize pnpm before caching
+### Released
+- Version 1.9.88 release
 
 ### Release scope
-- Compared with: `v1.9.85` (the previous global release tag)
+- Compared with: `v1.9.87` (the previous global release tag)
 
 ### Affected products & packages
 - Mobile app
-- Auth
 - Documentation
-- Release tooling
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

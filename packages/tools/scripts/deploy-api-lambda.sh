@@ -42,19 +42,15 @@ read_expected_api_version() {
 }
 
 ensure_fresh_api_bundle() {
-  local expected_version="$1"
-  local version_route="${PROJECT_ROOT}/apps/mobile-app/dist/server/_expo/functions/api/config/versions+api.js"
-
   if [[ "${API_LAMBDA_SKIP_BUILD:-false}" == "true" ]]; then
     echo "Skipping API bundle build because API_LAMBDA_SKIP_BUILD=true."
     return 0
   fi
 
-  if [[ -f "${version_route}" ]] && grep -Fq -- "${expected_version}" "${version_route}"; then
-    echo "Using existing Expo API bundle for ${expected_version}."
-    return 0
-  fi
-
+  # A semantic version is not a source-artifact fingerprint: release patch
+  # commits deliberately retain the version while changing API behavior.
+  # Reusing dist/server merely because it embeds that version can upload an
+  # older Lambda bundle, so direct deploys always produce a fresh export.
   echo "Building fresh Expo API bundle for Lambda."
   env \
     CI="${CI:-1}" \
@@ -172,10 +168,11 @@ read_live_api_version() {
   ' "${version_url}"
 }
 
-# True (exit 0) if semver $1 >= semver $2, comparing X.Y.Z numerically
-# (missing components treated as 0). Used to decide whether a currently-live
-# version already supersedes what this run is about to deploy.
-version_gte() {
+# True (exit 0) only if semver $1 is strictly newer than semver $2, comparing
+# X.Y.Z numerically (missing components treated as 0). Equal versions still
+# need an UpdateFunctionCode: patch commits commonly keep the released
+# semantic version while changing the API bundle.
+version_gt() {
   node -e '
     const parse = (v) => String(v).replace(/^v/, "").split(".").map((n) => Number.parseInt(n, 10) || 0);
     const [a, b] = [parse(process.argv[1]), parse(process.argv[2])];
@@ -183,7 +180,7 @@ version_gte() {
       if ((a[i] || 0) > (b[i] || 0)) process.exit(0);
       if ((a[i] || 0) < (b[i] || 0)) process.exit(1);
     }
-    process.exit(0);
+    process.exit(1);
   ' "$1" "$2"
 }
 
@@ -484,11 +481,11 @@ for code_attempt in $(seq 1 "${LAMBDA_UPDATE_MAX_ATTEMPTS}"); do
   # check, an older run's retry could still succeed after the ZIP swap and
   # verify its OWN (older) expected_version against the endpoint it just
   # set, reporting green while production silently ends on the older
-  # release. If the live version already matches or supersedes what we're
-  # about to deploy, there is nothing left for this run to do.
+  # release. Equal versions must still deploy their code, so only a strictly
+  # newer version means there is nothing left for this run to do.
   live_version="$(read_live_api_version "${API_VERSION_URL}")"
-  if [[ -n "${live_version}" ]] && version_gte "${live_version}" "${expected_version}"; then
-    echo "Live API version (${live_version}) already >= this deploy's target (${expected_version}) -- a newer or equal deploy already won, skipping UpdateFunctionCode rather than overwriting it with an older release." >&2
+  if [[ -n "${live_version}" ]] && version_gt "${live_version}" "${expected_version}"; then
+    echo "Live API version (${live_version}) is newer than this deploy's target (${expected_version}) -- skipping UpdateFunctionCode rather than overwriting it with an older release." >&2
     code_update_status=0
     superseded="true"
     break
@@ -530,12 +527,12 @@ fi
 rm -f "${code_update_error_file}"
 
 if [[ "${superseded}" == "true" ]]; then
-  # A newer-or-equal deploy already won (see the staleness check above) --
+  # A newer deploy already won (see the staleness check above) --
   # verifying the live version against OUR OWN expected_version here could
   # spuriously fail if something even newer than that landed in the
   # meantime, even though production is in a strictly better state than
   # what this run wanted. Nothing this run did, nothing left to verify.
-  echo "API Lambda deployment skipped: superseded by a newer or equal live version."
+  echo "API Lambda deployment skipped: superseded by a newer live version."
   exit 0
 fi
 

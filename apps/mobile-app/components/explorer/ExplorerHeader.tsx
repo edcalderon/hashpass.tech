@@ -1,14 +1,12 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Image } from 'react-native';
 import { SvgUri } from 'react-native-svg';
 import { useTheme } from '../../hooks/useTheme';
 
-// Keep web SVGs as concrete public URLs. Resolving a bundled SVG through
-// Metro can produce `/logos/bsl`, which is a directory and triggers ENOENT.
-// This file is present under public/ for Expo development as well as copied to
-// the static export. Do not point this at a source-only asset: Metro treats a
-// missing public SVG request as a bundled asset and attempts to read /logos/bsl.
-const DEFAULT_LOGO_URI = '/assets/logos/bsl/bsl-colombia-pro.svg';
+// A bundled raster is intentional here. Passing a public SVG URI through
+// SvgUri makes Metro treat part of its directory as an asset request in web
+// development (`/logos/bsl`), yielding an ENOENT response loop.
+const DEFAULT_BSL_LOGO = require('../../assets/logos/bsl/bsl-colombia-pro.webp');
 
 interface ExplorerHeaderProps {
   title: string;
@@ -22,8 +20,8 @@ interface ExplorerHeaderProps {
 export default function ExplorerHeader({ 
   title, 
   subtitle, 
-  date, 
-  logoUri = DEFAULT_LOGO_URI,
+  date,
+  logoUri,
   showEventSelector = false,
   children 
 }: ExplorerHeaderProps) {
@@ -35,11 +33,11 @@ export default function ExplorerHeader({
       <View style={styles.headerContent}>
         <View style={styles.headerTop}>
           <View style={styles.logoContainer}>
-            <SvgUri
-              uri={logoUri}
-              width={40}
-              height={40}
-            />
+            {logoUri ? (
+              <SvgUri uri={logoUri} width={40} height={40} />
+            ) : (
+              <Image source={DEFAULT_BSL_LOGO} style={styles.logo} resizeMode="contain" />
+            )}
           </View>
           <View style={styles.headerText}>
             <Text style={styles.headerTitle}>{title}</Text>
@@ -70,6 +68,10 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   logoContainer: {
     marginRight: 12,
+  },
+  logo: {
+    width: 40,
+    height: 40,
   },
   headerText: {
     flex: 1,

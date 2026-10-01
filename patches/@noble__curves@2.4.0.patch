@@ -1,0 +1,17 @@
+diff --git a/package.json b/package.json
+index 5c342e939dea80827b5f3780fa3d66ad4231574f..ea311c4453cb76480b8ac265e2a2c99dc3827d0f 100644
+--- a/package.json
++++ b/package.json
+@@ -48,10 +48,12 @@
+     "./abstract/weierstrass.js": "./abstract/weierstrass.js",
+     "./bls12-381.js": "./bls12-381.js",
+     "./bn254.js": "./bn254.js",
++    "./ed25519": "./ed25519.js",
+     "./ed448.js": "./ed448.js",
+     "./ed25519.js": "./ed25519.js",
+     "./misc.js": "./misc.js",
+     "./nist.js": "./nist.js",
++    "./secp256k1": "./secp256k1.js",
+     "./secp256k1.js": "./secp256k1.js",
+     "./utils.js": "./utils.js",
+     "./webcrypto.js": "./webcrypto.js"
