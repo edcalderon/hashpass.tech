@@ -40,6 +40,12 @@ interface BootstrapCredentials {
 }
 
 function resolveEnvironmentSlug(): string {
+  // Lambda bundles run with NODE_ENV=production in every stage. AWS provides
+  // the function name at runtime, which is the authoritative stage signal
+  // for the separately named dev/prod Secrets Manager records.
+  const lambdaName = (process.env.AWS_LAMBDA_FUNCTION_NAME || '').trim();
+  if (lambdaName) return lambdaName.includes('-dev-') ? 'dev' : 'prod';
+
   return process.env.NODE_ENV === 'production' ? 'prod' : 'dev';
 }
 

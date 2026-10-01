@@ -16,6 +16,7 @@ const ENV_KEYS = [
   'AWS_SECRET_ACCESS_KEY',
   'AWS_SESSION_TOKEN',
   'AWS_REGION',
+  'AWS_LAMBDA_FUNCTION_NAME',
   'NODE_ENV',
 ];
 
@@ -116,6 +117,23 @@ describe('getInfisicalSecret', () => {
 
     expect(mockSend).toHaveBeenCalledWith(
       expect.objectContaining({ SecretId: 'hashpass/expo-router-api-prod/infisical-bootstrap' })
+    );
+  });
+
+  it('uses the development secret name in a dev Lambda even though NODE_ENV is production', async () => {
+    Object.assign(process.env, {
+      NODE_ENV: 'production',
+      AWS_LAMBDA_FUNCTION_NAME: 'hashpass-dev-expo-router-api',
+    });
+    mockSend.mockResolvedValue({
+      SecretString: JSON.stringify({ BETTER_AUTH_APPLE_CLIENT_ID: 'com.example.signin' }),
+    });
+
+    const { getAppleSignInSecret } = require('../../lib/server/infisical-secrets');
+    await getAppleSignInSecret('BETTER_AUTH_APPLE_CLIENT_ID');
+
+    expect(mockSend).toHaveBeenCalledWith(
+      expect.objectContaining({ SecretId: 'hashpass/expo-router-api-dev/apple-sign-in' })
     );
   });
 
