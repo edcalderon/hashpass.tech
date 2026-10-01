@@ -22,25 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202609302154, // Updated to current timestamp
-  releaseDate: '2026-09-30',
+  buildNumber: 202610010635, // Updated to current timestamp
+  releaseDate: '2026-10-01',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
     // No new features
   ],
   bugfixes: [
-    'initialize pnpm before caching',
-    'type the CaptchaWidget test mock to accept its props arg',
-    'preserve Android Fastlane package ID',
-    'use registered App Store bundle identifier'
+    // No bugfixes
   ],
   breakingChanges: [],
-  notes: 'initialize pnpm before caching; type the CaptchaWidget test mock to accept its props arg; preserve Android Fastlane package ID; use registered App Store bundle identifier'
+  notes: 'Version 1.9.87 release'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.87': {
+    version: '1.9.87',
+    buildNumber: 202610010635,
+    releaseDate: '2026-10-01',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'Version 1.9.87 release'
+  },
   '1.9.86': {
     version: '1.9.86',
     buildNumber: 202609302154,
