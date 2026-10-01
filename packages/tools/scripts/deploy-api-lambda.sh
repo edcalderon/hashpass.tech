@@ -42,19 +42,15 @@ read_expected_api_version() {
 }
 
 ensure_fresh_api_bundle() {
-  local expected_version="$1"
-  local version_route="${PROJECT_ROOT}/apps/mobile-app/dist/server/_expo/functions/api/config/versions+api.js"
-
   if [[ "${API_LAMBDA_SKIP_BUILD:-false}" == "true" ]]; then
     echo "Skipping API bundle build because API_LAMBDA_SKIP_BUILD=true."
     return 0
   fi
 
-  if [[ -f "${version_route}" ]] && grep -Fq -- "${expected_version}" "${version_route}"; then
-    echo "Using existing Expo API bundle for ${expected_version}."
-    return 0
-  fi
-
+  # A semantic version is not a source-artifact fingerprint: release patch
+  # commits deliberately retain the version while changing API behavior.
+  # Reusing dist/server merely because it embeds that version can upload an
+  # older Lambda bundle, so direct deploys always produce a fresh export.
   echo "Building fresh Expo API bundle for Lambda."
   env \
     CI="${CI:-1}" \

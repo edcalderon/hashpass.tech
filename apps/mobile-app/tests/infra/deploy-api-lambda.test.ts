@@ -28,4 +28,15 @@ describe('deploy-api-lambda same-version guard', () => {
     expect(runVersionGuard('1.9.89', '1.9.88')).toBe(0);
     expect(runVersionGuard('1.9.87', '1.9.88')).toBe(1);
   });
+
+  it('rebuilds the Expo server bundle instead of trusting a matching version string in dist', () => {
+    const source = fs.readFileSync(scriptPath, 'utf8');
+    const match = source.match(/ensure_fresh_api_bundle\(\) \{[\s\S]*?\n\}\n\nverify_api_version_once/);
+    if (!match) throw new Error('ensure_fresh_api_bundle helper was not found');
+
+    const helper = match[0];
+    expect(helper).toContain('npm --prefix "${PROJECT_ROOT}/apps/mobile-app" run build:static');
+    expect(helper).not.toContain('Using existing Expo API bundle');
+    expect(helper).not.toContain('grep -Fq');
+  });
 });
