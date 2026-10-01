@@ -14,6 +14,18 @@ patchedDependencies:
   '@expo/cli@0.24.24':
     hash: ffibvfh36h4padud3ubutgsnee
     path: patches/mobile-app/@expo__cli@0.24.24.patch
+  '@noble/curves@2.4.0':
+    hash: 6h7clp4cslkviiy6dxsuftgsyu
+    path: patches/@noble__curves@2.4.0.patch
+  '@noble/hashes@1.3.2':
+    hash: inf6jsepiwaoc5uzdmsi6r6yey
+    path: patches/@noble__hashes@1.3.2.patch
+  '@noble/hashes@1.8.0':
+    hash: u2h36mnxmtoosnf2ppl7wsnovq
+    path: patches/@noble__hashes@1.8.0.patch
+  '@noble/hashes@2.4.0':
+    hash: jakp7tf6exr42yjp5ji7lc33qm
+    path: patches/@noble__hashes@2.4.0.patch
   '@react-navigation/drawer@7.8.1':
     hash: etvz77fxixlntrvchtlblyedli
     path: patches/mobile-app/@react-navigation__drawer@7.8.1.patch
@@ -585,7 +597,7 @@ importers:
         version: 3.0.0
       '@noble/hashes':
         specifier: ^1.8.0
-        version: 1.8.0
+        version: 1.8.0(patch_hash=u2h36mnxmtoosnf2ppl7wsnovq)
       '@radix-ui/react-avatar':
         specifier: ^1.1.10
         version: 1.1.11(@types/react-dom@19.2.3(@types/react@19.0.14))(@types/react@19.0.14)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
@@ -1497,7 +1509,7 @@ importers:
         version: 2.4.0
       '@noble/hashes':
         specifier: 2.4.0
-        version: 2.4.0
+        version: 2.4.0(patch_hash=jakp7tf6exr42yjp5ji7lc33qm)
       '@scure/base':
         specifier: 2.4.0
         version: 2.4.0
@@ -19132,11 +19144,11 @@ snapshots:
 
   '@better-auth/utils@0.4.2':
     dependencies:
-      '@noble/hashes': 2.4.0
+      '@noble/hashes': 2.4.0(patch_hash=jakp7tf6exr42yjp5ji7lc33qm)
 
   '@better-auth/utils@0.5.0':
     dependencies:
-      '@noble/hashes': 2.4.0
+      '@noble/hashes': 2.4.0(patch_hash=jakp7tf6exr42yjp5ji7lc33qm)
 
   '@better-fetch/fetch@1.1.21': {}
 
@@ -22339,25 +22351,25 @@ snapshots:
 
   '@noble/curves@1.2.0':
     dependencies:
-      '@noble/hashes': 1.3.2
+      '@noble/hashes': 1.3.2(patch_hash=inf6jsepiwaoc5uzdmsi6r6yey)
 
   '@noble/curves@1.9.7':
     dependencies:
-      '@noble/hashes': 1.8.0
+      '@noble/hashes': 1.8.0(patch_hash=u2h36mnxmtoosnf2ppl7wsnovq)
 
-  '@noble/curves@2.4.0':
+  '@noble/curves@2.4.0(patch_hash=6h7clp4cslkviiy6dxsuftgsyu)':
     dependencies:
-      '@noble/hashes': 2.4.0
+      '@noble/hashes': 2.4.0(patch_hash=jakp7tf6exr42yjp5ji7lc33qm)
 
   '@noble/ed25519@3.0.0': {}
 
-  '@noble/hashes@1.3.2': {}
+  '@noble/hashes@1.3.2(patch_hash=inf6jsepiwaoc5uzdmsi6r6yey)': {}
 
   '@noble/hashes@1.4.0': {}
 
-  '@noble/hashes@1.8.0': {}
+  '@noble/hashes@1.8.0(patch_hash=u2h36mnxmtoosnf2ppl7wsnovq)': {}
 
-  '@noble/hashes@2.4.0': {}
+  '@noble/hashes@2.4.0(patch_hash=jakp7tf6exr42yjp5ji7lc33qm)': {}
 
   '@nodelib/fs.scandir@2.1.5':
     dependencies:
@@ -23521,18 +23533,18 @@ snapshots:
 
   '@scure/bip32@2.4.0':
     dependencies:
-      '@noble/curves': 2.4.0
-      '@noble/hashes': 2.4.0
+      '@noble/curves': 2.4.0(patch_hash=6h7clp4cslkviiy6dxsuftgsyu)
+      '@noble/hashes': 2.4.0(patch_hash=jakp7tf6exr42yjp5ji7lc33qm)
       '@scure/base': 2.4.0
 
   '@scure/bip39@2.4.0':
     dependencies:
-      '@noble/hashes': 2.4.0
+      '@noble/hashes': 2.4.0(patch_hash=jakp7tf6exr42yjp5ji7lc33qm)
 
   '@scure/btc-signer@2.4.1':
     dependencies:
-      '@noble/curves': 2.4.0
-      '@noble/hashes': 2.4.0
+      '@noble/curves': 2.4.0(patch_hash=6h7clp4cslkviiy6dxsuftgsyu)
+      '@noble/hashes': 2.4.0(patch_hash=jakp7tf6exr42yjp5ji7lc33qm)
       '@scure/base': 2.4.0
       micro-packed: 0.11.1
 
@@ -24110,7 +24122,7 @@ snapshots:
     dependencies:
       '@babel/runtime': 7.28.6
       '@noble/curves': 1.9.7
-      '@noble/hashes': 1.8.0
+      '@noble/hashes': 1.8.0(patch_hash=u2h36mnxmtoosnf2ppl7wsnovq)
       '@solana/buffer-layout': 4.0.1
       '@solana/codecs-numbers': 2.3.0(typescript@5.8.3)
       agentkeepalive: 4.6.0
@@ -24131,7 +24143,7 @@ snapshots:
 
   '@spruceid/siwe-parser@3.0.0':
     dependencies:
-      '@noble/hashes': 1.8.0
+      '@noble/hashes': 1.8.0(patch_hash=u2h36mnxmtoosnf2ppl7wsnovq)
       apg-js: 4.4.0
 
   '@stablelib/binary@1.0.1':
@@ -26251,7 +26263,7 @@ snapshots:
       '@better-auth/utils': 0.3.0
       '@better-fetch/fetch': 1.1.21
       '@noble/ciphers': 2.4.0
-      '@noble/hashes': 2.4.0
+      '@noble/hashes': 2.4.0(patch_hash=jakp7tf6exr42yjp5ji7lc33qm)
       better-call: 1.1.8(zod@4.4.3)
       defu: 6.1.7
       jose: 6.2.3
@@ -26279,7 +26291,7 @@ snapshots:
       '@better-auth/utils': 0.4.2
       '@better-fetch/fetch': 1.3.2
       '@noble/ciphers': 2.4.0
-      '@noble/hashes': 2.4.0
+      '@noble/hashes': 2.4.0(patch_hash=jakp7tf6exr42yjp5ji7lc33qm)
       better-call: 1.4.0(zod@4.6.5)
       defu: 6.1.7
       jose: 6.2.3
@@ -28783,7 +28795,7 @@ snapshots:
     dependencies:
       '@adraffy/ens-normalize': 1.10.1
       '@noble/curves': 1.2.0
-      '@noble/hashes': 1.3.2
+      '@noble/hashes': 1.3.2(patch_hash=inf6jsepiwaoc5uzdmsi6r6yey)
       '@types/node': 22.7.5
       aes-js: 4.0.0-beta.5
       tslib: 2.7.0
@@ -28796,7 +28808,7 @@ snapshots:
     dependencies:
       '@adraffy/ens-normalize': 1.10.1
       '@noble/curves': 1.2.0
-      '@noble/hashes': 1.3.2
+      '@noble/hashes': 1.3.2(patch_hash=inf6jsepiwaoc5uzdmsi6r6yey)
       '@types/node': 22.7.5
       aes-js: 4.0.0-beta.5
       tslib: 2.7.0
@@ -32206,8 +32218,8 @@ snapshots:
   micro-key-producer@0.10.2:
     dependencies:
       '@noble/ciphers': 2.4.0
-      '@noble/curves': 2.4.0
-      '@noble/hashes': 2.4.0
+      '@noble/curves': 2.4.0(patch_hash=6h7clp4cslkviiy6dxsuftgsyu)
+      '@noble/hashes': 2.4.0(patch_hash=jakp7tf6exr42yjp5ji7lc33qm)
       '@scure/base': 2.4.0
       micro-packed: 0.11.1
 

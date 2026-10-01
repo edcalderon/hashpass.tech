@@ -1,0 +1,17 @@
+diff --git a/package.json b/package.json
+index 3ac73d10fa0a20d8bfe145fa0433f81ac276928d..c0e07a0ce9755416371e0274b0c3a3769adb22c6 100644
+--- a/package.json
++++ b/package.json
+@@ -45,9 +45,12 @@
+     "./legacy.js": "./legacy.js",
+     "./pbkdf2.js": "./pbkdf2.js",
+     "./scrypt.js": "./scrypt.js",
++    "./sha256": "./sha2.js",
+     "./sha2.js": "./sha2.js",
++    "./sha3": "./sha3.js",
+     "./sha3-addons.js": "./sha3-addons.js",
+     "./sha3.js": "./sha3.js",
++    "./utils": "./utils.js",
+     "./webcrypto.js": "./webcrypto.js",
+     "./utils.js": "./utils.js"
+   },
