@@ -22,36 +22,38 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610010635, // Updated to current timestamp
+  buildNumber: 202610010740, // Updated to current timestamp
   releaseDate: '2026-10-01',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    // No new features
+    'add Sign in with Apple',
+    'retain signed build artifact'
   ],
   bugfixes: [
-    // No bugfixes
+    'initialize pnpm before caching'
   ],
   breakingChanges: [],
-  notes: 'Version 1.9.87 release'
+  notes: 'add Sign in with Apple; retain signed build artifact; initialize pnpm before caching'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
   '1.9.87': {
     version: '1.9.87',
-    buildNumber: 202610010635,
+    buildNumber: 202610010740,
     releaseDate: '2026-10-01',
     releaseType: 'stable',
     environment: 'development',
     features: [
-      // No new features
+      'add Sign in with Apple',
+      'retain signed build artifact'
     ],
     bugfixes: [
-      // No bugfixes
+      'initialize pnpm before caching'
     ],
     breakingChanges: [],
-    notes: 'Version 1.9.87 release'
+    notes: 'add Sign in with Apple; retain signed build artifact; initialize pnpm before caching'
   },
   '1.9.86': {
     version: '1.9.86',

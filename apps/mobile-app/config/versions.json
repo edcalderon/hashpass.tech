@@ -6,14 +6,19 @@
   "versions": [
     {
       "version": "1.9.87",
-      "buildNumber": 202610010635,
+      "buildNumber": 202610010740,
       "releaseDate": "2026-10-01",
       "releaseType": "stable",
       "environment": "development",
-      "features": [],
-      "bugfixes": [],
+      "features": [
+        "add Sign in with Apple",
+        "retain signed build artifact"
+      ],
+      "bugfixes": [
+        "initialize pnpm before caching"
+      ],
       "breakingChanges": [],
-      "notes": "Version 1.9.87 release"
+      "notes": "add Sign in with Apple; retain signed build artifact; initialize pnpm before caching"
     },
     {
       "version": "1.9.86",

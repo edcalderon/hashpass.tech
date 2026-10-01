@@ -69,6 +69,12 @@ Both modes share the same `detectBetweenRefs()` core, so the two workflows
 can never disagree about what counts as "native" — there's exactly one
 definition, applied at two different scopes.
 
+`mobile-release-on-tag.yml` has one narrow iOS-only exception: changing
+`.github/workflows/mobile-ios-release.yml` sets `needs_ios_release` and
+retries the TestFlight workflow when `IOS_RELEASE_ENABLED=true`, even if
+`needsNative` is false. This lets a corrected iOS release workflow retry the
+same tag without incorrectly starting the Android native-release chain.
+
 **Known limitation:** `pnpm-lock.yaml` is intentionally not diffed. A
 dependency bump that changes only the lockfile's resolved transitive
 versions (without touching `apps/mobile-app/package.json`'s own

@@ -1,20 +1,19 @@
-## [1.9.87](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.84...v1.9.87) (2026-10-01)
+## [1.9.87](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.85...v1.9.87) (2026-10-01)
 
 
 ### Bug Fixes
 
 * **ios:** initialize pnpm before caching ([e2db54d](https://github.com/hashpass-tech/hashpass.tech/commit/e2db54dfc56be1de18eb7674fe788f90dc8e4660))
-* **ios:** use registered App Store bundle identifier ([56c22f0](https://github.com/hashpass-tech/hashpass.tech/commit/56c22f07047d65b42d5776750159fc2acdc0f9b8))
-* **mobile:** preserve Android Fastlane package ID ([ebc0b2d](https://github.com/hashpass-tech/hashpass.tech/commit/ebc0b2d4fc50e6f5401393410e195e6a4b2aa486))
-* **mobile:** type the CaptchaWidget test mock to accept its props arg ([858cf20](https://github.com/hashpass-tech/hashpass.tech/commit/858cf205dd966ea96cfaf25c0d88ca13a78ddbce))
 
 
 ### Features
 
 * **ios:** retain signed build artifact ([ea97e74](https://github.com/hashpass-tech/hashpass.tech/commit/ea97e74802237bbee777f76482be02b237db583c))
+### Release Highlights
+- add Sign in with Apple; retain signed build artifact; initialize pnpm before caching
 
 ### Release scope
-- Compared with: `v1.9.84` (the previous global release tag)
+- Compared with: `v1.9.85` (the previous global release tag)
 
 ### Affected products & packages
 - Mobile app
