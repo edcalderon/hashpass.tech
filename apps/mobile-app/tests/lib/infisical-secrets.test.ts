@@ -42,6 +42,14 @@ describe('getInfisicalSecret', () => {
       });
   }
 
+  it('does not create an AWS Secrets Manager client when the module is imported', () => {
+    const { SecretsManagerClient } = require('@aws-sdk/client-secrets-manager');
+
+    require('../../lib/server/infisical-secrets');
+
+    expect(SecretsManagerClient).not.toHaveBeenCalled();
+  });
+
   it('resolves credentials from env vars without touching Secrets Manager', async () => {
     process.env.INFISICAL_DOMAIN = 'https://secrets.example.com';
     process.env.INFISICAL_PROJECT_ID = 'proj-123';

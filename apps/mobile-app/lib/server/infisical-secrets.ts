@@ -21,13 +21,20 @@ import { SecretsManagerClient, GetSecretValueCommand } from '@aws-sdk/client-sec
 
 const SECRETS_MANAGER_REGION = (process.env.AWS_REGION || 'us-east-1').trim();
 
-const secretsManagerClient = new SecretsManagerClient({
-  region: SECRETS_MANAGER_REGION,
-  credentials: process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY ? {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  } : undefined,
-});
+let secretsManagerClient: SecretsManagerClient | undefined;
+
+function getSecretsManagerClient(): SecretsManagerClient {
+  if (!secretsManagerClient) {
+    secretsManagerClient = new SecretsManagerClient({
+      region: SECRETS_MANAGER_REGION,
+      credentials: process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY ? {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+      } : undefined,
+    });
+  }
+  return secretsManagerClient;
+}
 
 interface BootstrapCredentials {
   domain: string;
@@ -65,7 +72,7 @@ async function getBootstrapCredentials(): Promise<BootstrapCredentials | null> {
   }
 
   try {
-    const response = await secretsManagerClient.send(
+    const response = await getSecretsManagerClient().send(
       new GetSecretValueCommand({ SecretId: bootstrapSecretName() })
     );
     if (!response.SecretString) {
