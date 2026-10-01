@@ -152,6 +152,58 @@ describe('getInfisicalSecret', () => {
     expect(global.fetch).not.toHaveBeenCalled();
   });
 
+  it('uses the production Apple secret for a production Lambda function', async () => {
+    Object.assign(process.env, {
+      NODE_ENV: 'production',
+      AWS_LAMBDA_FUNCTION_NAME: 'hashpass-prod-expo-router-api',
+    });
+    mockSend.mockResolvedValue({ SecretString: JSON.stringify({}) });
+
+    const { getAppleSignInSecret } = require('../../lib/server/infisical-secrets');
+    await expect(getAppleSignInSecret('BETTER_AUTH_APPLE_CLIENT_ID')).resolves.toBeUndefined();
+
+    expect(mockSend).toHaveBeenCalledWith(
+      expect.objectContaining({ SecretId: 'hashpass/expo-router-api-prod/apple-sign-in' })
+    );
+  });
+
+  it('treats an empty Apple secret record as unavailable', async () => {
+    mockSend.mockResolvedValue({ SecretString: undefined });
+
+    const { getAppleSignInSecret } = require('../../lib/server/infisical-secrets');
+    await expect(getAppleSignInSecret('BETTER_AUTH_APPLE_CLIENT_ID')).resolves.toBeUndefined();
+  });
+
+  it('keeps Apple sign-in unavailable after a Secrets Manager failure instead of retrying per field', async () => {
+    const consoleError = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    mockSend.mockRejectedValue(new Error('access denied'));
+
+    const { getAppleSignInSecret } = require('../../lib/server/infisical-secrets');
+    await expect(getAppleSignInSecret('BETTER_AUTH_APPLE_CLIENT_ID')).resolves.toBeUndefined();
+    await expect(getAppleSignInSecret('BETTER_AUTH_APPLE_TEAM_ID')).resolves.toBeUndefined();
+
+    expect(mockSend).toHaveBeenCalledTimes(1);
+    expect(consoleError).toHaveBeenCalledWith(
+      '[apple-sign-in] Secrets Manager fetch failed:',
+      'access denied'
+    );
+    consoleError.mockRestore();
+  });
+
+  it('logs a non-Error Apple secret failure without throwing', async () => {
+    const consoleError = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    mockSend.mockRejectedValue('request cancelled');
+
+    const { getAppleSignInSecret } = require('../../lib/server/infisical-secrets');
+    await expect(getAppleSignInSecret('BETTER_AUTH_APPLE_CLIENT_ID')).resolves.toBeUndefined();
+
+    expect(consoleError).toHaveBeenCalledWith(
+      '[apple-sign-in] Secrets Manager fetch failed:',
+      'request cancelled'
+    );
+    consoleError.mockRestore();
+  });
+
   it('uses the AWS default credential chain when temporary Lambda credentials are present', async () => {
     process.env.AWS_ACCESS_KEY_ID = '<test-aws-access-key>';
     process.env.AWS_SECRET_ACCESS_KEY = '<test-aws-secret-key>';
