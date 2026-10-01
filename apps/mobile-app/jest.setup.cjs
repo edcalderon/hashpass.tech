@@ -86,6 +86,21 @@ jest.mock('expo-apple-authentication', () => ({
   signInAsync: jest.fn(async () => ({ identityToken: 'apple-id-token' })),
 }));
 
+// The email module uses S3 for asset URLs. The mobile Jest preset resolves
+// AWS SDK export conditions to a native ESM entry point that Jest cannot
+// parse, and unit tests must never construct a real AWS client anyway. Keep
+// the transport at this boundary; tests that exercise email behavior can
+// still assert their own Supabase/template work without an AWS dependency.
+jest.mock('@aws-sdk/client-s3', () => ({
+  S3Client: jest.fn(() => ({ send: jest.fn() })),
+  PutObjectCommand: jest.fn(),
+  GetObjectCommand: jest.fn(),
+  HeadObjectCommand: jest.fn(),
+}));
+jest.mock('@aws-sdk/s3-request-presigner', () => ({
+  getSignedUrl: jest.fn(),
+}));
+
 jest.mock(
   'react-native-css-interop/src/runtime/native/appearance-observables',
   () => ({

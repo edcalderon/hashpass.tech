@@ -7,7 +7,17 @@ jest.mock('@aws-sdk/client-secrets-manager', () => ({
   GetSecretValueCommand: jest.fn().mockImplementation((input) => input),
 }));
 
-const ENV_KEYS = ['INFISICAL_DOMAIN', 'INFISICAL_PROJECT_ID', 'INFISICAL_CLIENT_ID', 'INFISICAL_CLIENT_SECRET', 'NODE_ENV'];
+const ENV_KEYS = [
+  'INFISICAL_DOMAIN',
+  'INFISICAL_PROJECT_ID',
+  'INFISICAL_CLIENT_ID',
+  'INFISICAL_CLIENT_SECRET',
+  'AWS_ACCESS_KEY_ID',
+  'AWS_SECRET_ACCESS_KEY',
+  'AWS_SESSION_TOKEN',
+  'AWS_REGION',
+  'NODE_ENV',
+];
 
 describe('getInfisicalSecret', () => {
   const originalEnv: Record<string, string | undefined> = {};
@@ -122,6 +132,21 @@ describe('getInfisicalSecret', () => {
       expect.objectContaining({ SecretId: 'hashpass/expo-router-api-dev/apple-sign-in' })
     );
     expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  it('uses the AWS default credential chain when temporary Lambda credentials are present', async () => {
+    process.env.AWS_ACCESS_KEY_ID = '<test-aws-access-key>';
+    process.env.AWS_SECRET_ACCESS_KEY = '<test-aws-secret-key>';
+    process.env.AWS_SESSION_TOKEN = '<test-aws-session-token>';
+    mockSend.mockResolvedValue({
+      SecretString: JSON.stringify({ BETTER_AUTH_APPLE_CLIENT_ID: 'com.example.signin' }),
+    });
+
+    const { getAppleSignInSecret } = require('../../lib/server/infisical-secrets');
+    await expect(getAppleSignInSecret('BETTER_AUTH_APPLE_CLIENT_ID')).resolves.toBe('com.example.signin');
+
+    const { SecretsManagerClient } = require('@aws-sdk/client-secrets-manager');
+    expect(SecretsManagerClient).toHaveBeenCalledWith({ region: 'us-east-1' });
   });
 
   it('returns undefined without throwing when Secrets Manager has no bootstrap secret', async () => {
