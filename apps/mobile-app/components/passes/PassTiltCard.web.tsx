@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef } from 'react';
 import { StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
+import { usePassMotionPreferences } from './pass-motion-preferences';
 
 export interface PassTiltCardProps {
   children: React.ReactNode;
@@ -38,14 +39,15 @@ export const PassDepthLayer: React.FC<PassDepthLayerProps> = ({
   style,
   pointerEvents,
 }) => {
+  const { supports3d } = usePassMotionPreferences();
   const flattened = StyleSheet.flatten(style) as Record<string, any> | undefined;
 
   return (
     <div
       style={{
         ...(flattened as React.CSSProperties),
-        transform: `translateZ(${depth}px)`,
-        transformStyle: 'preserve-3d',
+        transform: supports3d ? `translateZ(${depth}px)` : undefined,
+        transformStyle: supports3d ? 'preserve-3d' : undefined,
         pointerEvents: pointerEvents === 'none' ? 'none' : undefined,
       }}
     >
@@ -76,6 +78,7 @@ const PassTiltCard: React.FC<PassTiltCardProps> = ({
   const innerRef = useRef<HTMLDivElement | null>(null);
   const sheenRef = useRef<HTMLDivElement | null>(null);
   const frameRef = useRef<number | null>(null);
+  const { supports3d } = usePassMotionPreferences();
 
   const reset = useCallback(() => {
     if (frameRef.current !== null) {
@@ -94,7 +97,7 @@ const PassTiltCard: React.FC<PassTiltCardProps> = ({
 
   const handleMove = useCallback(
     (event: React.PointerEvent<HTMLDivElement>) => {
-      if (disabled) return;
+      if (disabled || !supports3d) return;
       const outer = outerRef.current;
       if (!outer) return;
 
@@ -132,7 +135,7 @@ const PassTiltCard: React.FC<PassTiltCardProps> = ({
         }
       });
     },
-    [disabled, isDark]
+    [disabled, isDark, supports3d]
   );
 
   useEffect(
@@ -148,13 +151,13 @@ const PassTiltCard: React.FC<PassTiltCardProps> = ({
   return (
     <div
       ref={outerRef}
-      onPointerMove={handleMove}
-      onPointerLeave={reset}
-      onPointerCancel={reset}
+      onPointerMove={supports3d ? handleMove : undefined}
+      onPointerLeave={supports3d ? reset : undefined}
+      onPointerCancel={supports3d ? reset : undefined}
       onClick={onPress}
       style={{
         ...(flattened as React.CSSProperties),
-        perspective: `${PERSPECTIVE_PX}px`,
+        perspective: supports3d ? `${PERSPECTIVE_PX}px` : undefined,
         cursor: onPress ? 'pointer' : undefined,
       }}
     >
@@ -164,28 +167,30 @@ const PassTiltCard: React.FC<PassTiltCardProps> = ({
           position: 'relative',
           width: '100%',
           borderRadius,
-          transformStyle: 'preserve-3d',
-          transform: REST_TRANSFORM,
-          willChange: 'transform',
+          transformStyle: supports3d ? 'preserve-3d' : undefined,
+          transform: supports3d ? REST_TRANSFORM : undefined,
+          willChange: supports3d ? 'transform' : undefined,
           boxShadow: isDark
             ? `0 18px 40px -18px ${accentColor}66, 0 8px 24px -12px rgba(0,0,0,0.8)`
             : `0 18px 40px -20px ${accentColor}55, 0 8px 20px -14px rgba(0,0,0,0.35)`,
         }}
       >
         {children}
-        <div
-          ref={sheenRef}
-          aria-hidden
-          style={{
-            position: 'absolute',
-            inset: 0,
-            borderRadius,
-            opacity: 0,
-            pointerEvents: 'none',
-            mixBlendMode: isDark ? 'soft-light' : 'overlay',
-            transform: 'translateZ(1px)',
-          }}
-        />
+        {supports3d ? (
+          <div
+            ref={sheenRef}
+            aria-hidden
+            style={{
+              position: 'absolute',
+              inset: 0,
+              borderRadius,
+              opacity: 0,
+              pointerEvents: 'none',
+              mixBlendMode: isDark ? 'soft-light' : 'overlay',
+              transform: 'translateZ(1px)',
+            }}
+          />
+        ) : null}
       </div>
     </div>
   );
