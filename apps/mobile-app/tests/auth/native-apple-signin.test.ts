@@ -1,20 +1,17 @@
 /// <reference types="jest" />
 
-const mockIsAvailableAsync = jest.fn();
-const mockSignInAsync = jest.fn();
-
-jest.mock('expo-apple-authentication', () => ({
-  AppleAuthenticationScope: {
-    FULL_NAME: 'FULL_NAME',
-    EMAIL: 'EMAIL',
-  },
-  isAvailableAsync: (...args: unknown[]) => mockIsAvailableAsync(...args),
-  signInAsync: (...args: unknown[]) => mockSignInAsync(...args),
-}), { virtual: true });
+let mockIsAvailableAsync: jest.Mock;
+let mockSignInAsync: jest.Mock;
 
 describe('signInWithNativeAppleAccount', () => {
   beforeEach(() => {
     jest.resetModules();
+    // Re-read the shared native-module mock after resetModules(). Keeping the
+    // references current makes this test deterministic in coverage runs.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const appleAuthentication = require('expo-apple-authentication');
+    mockIsAvailableAsync = appleAuthentication.isAvailableAsync;
+    mockSignInAsync = appleAuthentication.signInAsync;
     mockIsAvailableAsync.mockReset().mockResolvedValue(true);
     mockSignInAsync.mockReset().mockResolvedValue({ identityToken: 'apple-id-token-123' });
   });

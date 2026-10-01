@@ -65,6 +65,48 @@ describe('passwordless email reset', () => {
     expect(mockReplace).not.toHaveBeenCalled();
   });
 
+  it('places Sign in with Apple below Google on iOS and starts only one Apple request', async () => {
+    const signInWithOAuth = jest.fn().mockResolvedValue({ pending: true });
+    mockAuth = { ...mockAuth, signInWithOAuth };
+    await act(async () => renderer.update(<AuthScreen key="ios-apple" />));
+
+    const oauthLabels = renderer.root.findAllByType(TouchableOpacity).map((node) =>
+      node.findAllByType(Text).map((text) => text.props.children).find((label) =>
+        label === 'Sign in with Google' || label === 'Sign in with Apple',
+      ),
+    );
+
+    expect(oauthLabels.indexOf('Sign in with Apple')).toBeGreaterThan(
+      oauthLabels.indexOf('Sign in with Google'),
+    );
+
+    await press('Sign in with Apple');
+    expect(signInWithOAuth).toHaveBeenCalledWith('apple');
+    expect(button('Opening Apple sign-in...').props.disabled).toBe(true);
+    await press('Opening Apple sign-in...');
+    expect(signInWithOAuth).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows Sign in with Apple on web and omits the iOS-only entry point on Android', async () => {
+    const originalAddEventListener = window.addEventListener;
+    const originalRemoveEventListener = window.removeEventListener;
+    Object.defineProperty(window, 'addEventListener', { configurable: true, value: jest.fn() });
+    Object.defineProperty(window, 'removeEventListener', { configurable: true, value: jest.fn() });
+
+    try {
+      Platform.OS = 'web';
+      await act(async () => renderer.update(<AuthScreen key="web-apple" />));
+      expect(button('Sign in with Apple')).toBeDefined();
+
+      Platform.OS = 'android';
+      await act(async () => renderer.update(<AuthScreen key="android-no-apple" />));
+      expect(button('Sign in with Apple')).toBeUndefined();
+    } finally {
+      Object.defineProperty(window, 'addEventListener', { configurable: true, value: originalAddEventListener });
+      Object.defineProperty(window, 'removeEventListener', { configurable: true, value: originalRemoveEventListener });
+    }
+  });
+
   it('preserves a web OAuth return path before opening Google sign-in', async () => {
     Platform.OS = 'web';
     const returnTo = '/mcp/login?client_id=chatgpt&redirect_uri=https%3A%2F%2Fchatgpt.com%2Fcallback%3Fsource%3Done%26mode%3Dmcp&sig=signed-value';

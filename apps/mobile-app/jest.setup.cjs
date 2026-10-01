@@ -74,6 +74,18 @@ jest.mock('react-native', () => ({
   useWindowDimensions: () => ({ width: 1024, height: 768, scale: 1, fontScale: 1 }),
 }));
 
+// The native Apple module reaches Expo view-manager internals while loading.
+// Keep it mocked for every Jest suite so adding the iOS-only authentication
+// helper cannot make unrelated web or Android tests require native bindings.
+jest.mock('expo-apple-authentication', () => ({
+  AppleAuthenticationScope: {
+    FULL_NAME: 'FULL_NAME',
+    EMAIL: 'EMAIL',
+  },
+  isAvailableAsync: jest.fn(async () => true),
+  signInAsync: jest.fn(async () => ({ identityToken: 'apple-id-token' })),
+}));
+
 jest.mock(
   'react-native-css-interop/src/runtime/native/appearance-observables',
   () => ({
