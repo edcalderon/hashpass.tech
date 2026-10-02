@@ -3,6 +3,7 @@
 
 let mockEvent: Record<string, unknown> | null = null;
 let mockAnimationLevel: "full" | "reduced" | "none" = "full";
+let mockIsDark = false;
 const mockGetEventDetails = jest.fn();
 const mockRouterPush = jest.fn();
 
@@ -20,7 +21,7 @@ jest.mock("expo-router", () => ({
 
 jest.mock("../../../hooks/useTheme", () => ({
   useTheme: () => ({
-    isDark: false,
+    isDark: mockIsDark,
     colors: {
       background: { default: "#FFFFFF", paper: "#F5F5F5" },
       text: { primary: "#111111", secondary: "#666666" },
@@ -97,6 +98,7 @@ describe("EventInfoScreen", () => {
     mockRouterPush.mockReset();
     setViewportWidth(390);
     mockAnimationLevel = "full";
+    mockIsDark = false;
   });
 
   it("shows the real DB description, venue, and website for an event with a details row", async () => {
@@ -263,6 +265,138 @@ describe("EventInfoScreen", () => {
       expect(
         renderer.root.findAllByProps({ testID: "event-info-column" }),
       ).toHaveLength(2);
+    } finally {
+      act(() => renderer.unmount());
+    }
+  });
+
+  it("renders a Become a Speaker CTA that opens the event's call-for-speakers link", async () => {
+    mockEvent = {
+      ...COLOMBIA_EVENT,
+      speakerApplicationUrl: "https://colombiablockchainweek.com/ser-speaker#postulacion",
+    };
+    const renderer = await renderScreen({ success: true, data: { data: null } });
+
+    try {
+      const text = findAllText(renderer).join(" | ");
+      expect(text).toContain("Become a speaker");
+
+      const { Linking } = require("react-native");
+      Linking.openURL.mockReturnValue(Promise.resolve());
+      const button = renderer.root.find(
+        (node) =>
+          node.props.accessibilityRole === "button" &&
+          node.props.accessibilityLabel === "Apply to Speak",
+      );
+      act(() => button.props.onPress());
+      expect(Linking.openURL).toHaveBeenCalledWith(
+        "https://colombiablockchainweek.com/ser-speaker#postulacion",
+      );
+    } finally {
+      act(() => renderer.unmount());
+    }
+  });
+
+  it("does not render a Become a Speaker CTA when the event has no call-for-speakers link", async () => {
+    mockEvent = COLOMBIA_EVENT;
+    const renderer = await renderScreen({ success: true, data: { data: null } });
+
+    try {
+      const text = findAllText(renderer).join(" | ");
+      expect(text).not.toContain("Become a speaker");
+    } finally {
+      act(() => renderer.unmount());
+    }
+  });
+
+  it("names the actual CFP host, not this event's own title, when the CFP is cross-promoted from a different organizer", async () => {
+    // colombia2026 (BSL Colombia, organizer Blockchain Summit Latam)
+    // cross-promotes cbweek2026's (Colombia Blockchain Week) CFP -- the
+    // copy must say who actually reviews the application, not imply this
+    // event's own organizer runs it.
+    mockEvent = {
+      ...COLOMBIA_EVENT,
+      speakerApplicationUrl: "https://colombiablockchainweek.com/ser-speaker#postulacion",
+      speakerApplicationLabel: "Colombia Blockchain Week",
+    };
+    const renderer = await renderScreen({ success: true, data: { data: null } });
+
+    try {
+      // The CTA's copy is split across adjacent <Text> children
+      // ("Apply to speak at " + the name), so assert on the sequence
+      // rather than a single concatenated string.
+      const textArr = findAllText(renderer);
+      const idx = textArr.findIndex((t) => t.trim() === "Apply to speak at");
+      expect(idx).toBeGreaterThanOrEqual(0);
+      expect(textArr[idx + 1]).toBe("Colombia Blockchain Week");
+      expect(textArr[idx + 1]).not.toBe(COLOMBIA_EVENT.title);
+    } finally {
+      act(() => renderer.unmount());
+    }
+  });
+
+  it("falls back to the event's own title when no speakerApplicationLabel is configured", async () => {
+    mockEvent = {
+      ...COLOMBIA_EVENT,
+      speakerApplicationUrl: "https://colombiablockchainweek.com/ser-speaker#postulacion",
+    };
+    const renderer = await renderScreen({ success: true, data: { data: null } });
+
+    try {
+      const textArr = findAllText(renderer);
+      const idx = textArr.findIndex((t) => t.trim() === "Apply to speak at");
+      expect(idx).toBeGreaterThanOrEqual(0);
+      expect(textArr[idx + 1]).toBe(COLOMBIA_EVENT.title);
+    } finally {
+      act(() => renderer.unmount());
+    }
+  });
+
+  it("falls back to 'this event' when the CFP event has neither a speakerApplicationLabel nor a title", async () => {
+    mockEvent = {
+      id: "no-title-event",
+      speakerApplicationUrl: "https://colombiablockchainweek.com/ser-speaker#postulacion",
+    };
+    const renderer = await renderScreen({ success: true, data: { data: null } });
+
+    try {
+      const textArr = findAllText(renderer);
+      const idx = textArr.findIndex((t) => t.trim() === "Apply to speak at");
+      expect(idx).toBeGreaterThanOrEqual(0);
+      expect(textArr[idx + 1]).toBe("this event");
+    } finally {
+      act(() => renderer.unmount());
+    }
+  });
+
+  it("renders the Become a Speaker CTA in dark mode without crashing", async () => {
+    mockIsDark = true;
+    mockEvent = {
+      ...COLOMBIA_EVENT,
+      speakerApplicationUrl: "https://colombiablockchainweek.com/ser-speaker#postulacion",
+    };
+    const renderer = await renderScreen({ success: true, data: { data: null } });
+
+    try {
+      const text = findAllText(renderer).join(" | ");
+      expect(text).toContain("Become a speaker");
+    } finally {
+      act(() => renderer.unmount());
+    }
+  });
+
+  it("hides both the Get Tickets and Become a Speaker CTAs on an archived event even with a CFP link configured", async () => {
+    mockEvent = {
+      ...COLOMBIA_EVENT,
+      id: "bsl2025",
+      speakerApplicationUrl: "https://colombiablockchainweek.com/ser-speaker#postulacion",
+    };
+    const renderer = await renderScreen({ success: true, data: { data: null } });
+
+    try {
+      const text = findAllText(renderer).join(" | ");
+      expect(text).not.toContain("Become a speaker");
+      expect(text).not.toContain("Get your tickets");
     } finally {
       act(() => renderer.unmount());
     }

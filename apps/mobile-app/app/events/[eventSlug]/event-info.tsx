@@ -297,6 +297,41 @@ export default function EventInfoScreen() {
           </Surface>
         )}
 
+        {/* Become a Speaker CTA -- only rendered for events with an actual
+            open call for speakers configured (see `speakerApplicationUrl` on
+            EventConfig); most events don't run one, so this never shows a
+            dead/placeholder link. */}
+        {!isArchiveEvent && event?.speakerApplicationUrl && (
+          <Surface mode={isDark ? 'dark' : 'light'} style={styles.speakerCta}>
+            <View style={styles.ticketCtaRow}>
+              <View style={styles.ticketCtaIcon}>
+                <MaterialIcons name="campaign" size={26} color={palette.accent} />
+              </View>
+              <View style={styles.ticketCtaCopy}>
+                <Text style={styles.ticketCtaTitle}>Become a speaker</Text>
+                <HoverText mode={isDark ? 'dark' : 'light'} style={styles.ticketCtaSubtitle} numberOfLines={2}>
+                  {/* speakerApplicationLabel names whoever actually reviews
+                      applications at speakerApplicationUrl. Some events
+                      (e.g. colombia2026) cross-promote a *different*
+                      conference/organizer's CFP -- for those, falling back
+                      to this event's own title would misname who the
+                      application actually goes to. */}
+                  Apply to speak at {event?.speakerApplicationLabel || event?.title || 'this event'}
+                </HoverText>
+              </View>
+            </View>
+            <ActionButton
+              mode={isDark ? 'dark' : 'light'}
+              label="Apply to Speak"
+              trailingIcon={
+                <MaterialIcons name="open-in-new" size={18} color={palette.onAccent} />
+              }
+              onPress={() => handleOpenLink(event.speakerApplicationUrl!)}
+              style={styles.ticketCtaButton}
+            />
+          </Surface>
+        )}
+
         <View testID="event-info-sections" style={styles.sections}>
           {isWide ? (
             <>
@@ -418,6 +453,14 @@ const getStyles = (
   },
   ticketCtaButton: {
     alignSelf: 'stretch',
+  },
+  speakerCta: {
+    marginTop: uiTokens.space.md,
+    marginBottom: uiTokens.space.md,
+    gap: uiTokens.space.lg,
+    borderWidth: 1.5,
+    borderColor: palette.border,
+    backgroundColor: palette.surface,
   },
   sections: {
     flexDirection: isWide ? 'row' : 'column',

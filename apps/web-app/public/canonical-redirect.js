@@ -6,7 +6,9 @@
     var hash = window.location.hash || '';
     var target = null;
 
-    if (host === 'club.hashpass.tech') {
+    if (host === 'events.hashpass.tech' && (path === '/' || path === '')) {
+      target = 'https://events.hashpass.tech/events/' + search + hash;
+    } else if (host === 'club.hashpass.tech') {
       target = 'https://hashpass.club' + path + search + hash;
     } else if (host === 'docs.hashpass.tech') {
       if (path === '/' || path === '/documentation' || path === '/documentation/') {
