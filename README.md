@@ -20,17 +20,17 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.88)
+## 📋 Latest Changes (v1.9.89)
 
 ### Released
-- Version 1.9.88 release
+- replace embedded ticket checkout with an explicit organizer handoff; pin BSL Colombia sync uploads to the speaker assets bucket region; keep Apple sign-in state cookie alive across its form_post callback
 
 ### Release scope
-- Compared with: `v1.9.87` (the previous global release tag)
+- Compared with: `v1.9.88` (the previous global release tag)
 
 ### Affected products & packages
 - Mobile app
-- Documentation
+- Release tooling
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

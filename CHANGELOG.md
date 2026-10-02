@@ -1,3 +1,14 @@
+## [1.9.89](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.88...v1.9.89) (2026-10-02)
+### Released
+- replace embedded ticket checkout with an explicit organizer handoff; pin BSL Colombia sync uploads to the speaker assets bucket region; keep Apple sign-in state cookie alive across its form_post callback
+
+### Release scope
+- Compared with: `v1.9.88` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Release tooling
+
 ## [1.9.88](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.87...v1.9.88) (2026-10-01)
 ### Released
 - Version 1.9.88 release

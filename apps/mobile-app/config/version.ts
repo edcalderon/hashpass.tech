@@ -22,22 +22,41 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610011119, // Updated to current timestamp
-  releaseDate: '2026-10-01',
+  buildNumber: 202610020306, // Updated to current timestamp
+  releaseDate: '2026-10-02',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
     // No new features
   ],
   bugfixes: [
-    // No bugfixes
+    'replace embedded ticket checkout with an explicit organizer handoff',
+    'pin BSL Colombia sync uploads to the speaker assets bucket region',
+    'keep Apple sign-in state cookie alive across its form_post callback'
   ],
   breakingChanges: [],
-  notes: 'Version 1.9.88 release'
+  notes: 'replace embedded ticket checkout with an explicit organizer handoff; pin BSL Colombia sync uploads to the speaker assets bucket region; keep Apple sign-in state cookie alive across its form_post callback'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.89': {
+    version: '1.9.89',
+    buildNumber: 202610020306,
+    releaseDate: '2026-10-02',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'replace embedded ticket checkout with an explicit organizer handoff',
+      'pin BSL Colombia sync uploads to the speaker assets bucket region',
+      'keep Apple sign-in state cookie alive across its form_post callback'
+    ],
+    breakingChanges: [],
+    notes: 'replace embedded ticket checkout with an explicit organizer handoff; pin BSL Colombia sync uploads to the speaker assets bucket region; keep Apple sign-in state cookie alive across its form_post callback'
+  },
   '1.9.88': {
     version: '1.9.88',
     buildNumber: 202610011119,
