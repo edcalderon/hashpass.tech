@@ -51,12 +51,16 @@ export default function TicketsScreen() {
 
   const [showTicketModal, setShowTicketModal] = useState(false);
 
-  // BSL ticket purchase URL
-  const ticketUrl = eventId === 'colombia2026'
-    ? 'https://bsl.blckchn.xyz/e/bsl-colombia-2026#tickets'
-    : event?.website
-      ? `${event.website.replace(/\/$/, '')}/tickets/`
-      : `https://bsl.blckchn.xyz/e/${eventId}#tickets`;
+  // Hash Poker's ingested event carries the current PKRR registration URL in
+  // its CTA. Do not derive a `/tickets/` route from the organizer website:
+  // hash.poker is the club site, while PKRR is the actual ticket provider.
+  const ticketUrl = eventId === 'hash-poker'
+    ? event?.cta?.url || 'https://pkrr.io'
+    : eventId === 'colombia2026'
+      ? 'https://bsl.blckchn.xyz/e/bsl-colombia-2026#tickets'
+      : event?.website
+        ? `${event.website.replace(/\/$/, '')}/tickets/`
+        : `https://bsl.blckchn.xyz/e/${eventId}#tickets`;
   const ticketHostname = getHostname(ticketUrl);
 
   // Opens the real external ticket page directly -- on web as a proper new

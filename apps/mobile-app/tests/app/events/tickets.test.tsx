@@ -178,16 +178,40 @@ describe("TicketsScreen", () => {
     );
   });
 
-  it("builds the ticket URL from event.website for non-colombia2026 events", () => {
-    mockEvent = { id: "hash-poker", website: "https://hashpoker.example.com/" };
+  it("loads the Hash Poker Room PKRR registration URL instead of deriving one from its website", () => {
+    Platform.OS = "web";
+    mockEvent = {
+      id: "hash-poker",
+      website: "https://hash.poker",
+      cta: { label: "Register", url: "https://pkrr.io/reg/friday-tournament" },
+    };
     const view = renderScreen();
     const text = collectText(view.toJSON());
 
-    expect(text).toContain("Tickets provided by hashpoker.example.com");
+    expect(text).toContain("Tickets provided by pkrr.io");
+
+    act(() => findButton(view, "Purchase Tickets").props.onPress());
+    expect(view.root.findByType("iframe" as any).props.src).toBe(
+      "https://pkrr.io/reg/friday-tournament",
+    );
+  });
+
+  it("falls back to the PKRR app for Hash Poker Room when no registration CTA is available", () => {
+    mockEvent = { id: "hash-poker", website: "https://hash.poker" };
+    const view = renderScreen();
+
+    expect(collectText(view.toJSON())).toContain("Tickets provided by pkrr.io");
+  });
+
+  it("builds the ticket URL from event.website for other non-colombia2026 events", () => {
+    mockEvent = { id: "another-event", website: "https://tickets.example.com/" };
+    const view = renderScreen();
+
+    expect(collectText(view.toJSON())).toContain("Tickets provided by tickets.example.com");
   });
 
   it("falls back to the bsl.blckchn.xyz ticket URL by event id when there is no website", () => {
-    mockEvent = { id: "hash-poker" };
+    mockEvent = { id: "another-event" };
     const view = renderScreen();
     const text = collectText(view.toJSON());
 
@@ -195,7 +219,7 @@ describe("TicketsScreen", () => {
   });
 
   it("hides the hostname link and falls back to a generic dialog title when the ticket URL is unparsable", () => {
-    mockEvent = { id: "hash-poker", website: "not a valid url" };
+    mockEvent = { id: "another-event", website: "not a valid url" };
     const view = renderScreen();
     const text = collectText(view.toJSON());
 
