@@ -268,6 +268,45 @@ describe("EventInfoScreen", () => {
     }
   });
 
+  it("renders a Become a Speaker CTA that opens the event's call-for-speakers link", async () => {
+    mockEvent = {
+      ...COLOMBIA_EVENT,
+      speakerApplicationUrl: "https://colombiablockchainweek.com/ser-speaker#postulacion",
+    };
+    const renderer = await renderScreen({ success: true, data: { data: null } });
+
+    try {
+      const text = findAllText(renderer).join(" | ");
+      expect(text).toContain("Become a speaker");
+
+      const { Linking } = require("react-native");
+      Linking.openURL.mockReturnValue(Promise.resolve());
+      const button = renderer.root.find(
+        (node) =>
+          node.props.accessibilityRole === "button" &&
+          node.props.accessibilityLabel === "Apply to Speak",
+      );
+      act(() => button.props.onPress());
+      expect(Linking.openURL).toHaveBeenCalledWith(
+        "https://colombiablockchainweek.com/ser-speaker#postulacion",
+      );
+    } finally {
+      act(() => renderer.unmount());
+    }
+  });
+
+  it("does not render a Become a Speaker CTA when the event has no call-for-speakers link", async () => {
+    mockEvent = COLOMBIA_EVENT;
+    const renderer = await renderScreen({ success: true, data: { data: null } });
+
+    try {
+      const text = findAllText(renderer).join(" | ");
+      expect(text).not.toContain("Become a speaker");
+    } finally {
+      act(() => renderer.unmount());
+    }
+  });
+
   it("keeps detail hero video disabled when the app motion preference is reduced", async () => {
     mockEvent = COLOMBIA_EVENT;
     mockAnimationLevel = "reduced";

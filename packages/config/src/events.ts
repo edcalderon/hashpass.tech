@@ -199,6 +199,7 @@ const makeTourStopConfig = (
     speakers: Speaker[];
     agenda: AgendaItem[];
     dayThemes?: Record<string, { es: string; en: string }>;
+    speakerApplicationUrl?: string;
   },
 ): EventConfig => ({
   id: eventId,
@@ -243,6 +244,7 @@ const makeTourStopConfig = (
   speakers: options.speakers,
   agenda: options.agenda,
   dayThemes: options.dayThemes,
+  speakerApplicationUrl: options.speakerApplicationUrl,
   tour: {
     hubEventId: "bsl",
     role: "stop",
@@ -1299,6 +1301,10 @@ export const EVENTS: Record<string, EventConfig> = {
     name: "BSL Colombia 2026",
     title: "Blockchain Summit Latam Colombia 2026",
     subtitle: "Bogotá, Colombia",
+    // Shared regional call for speakers (Colombia Blockchain Week's own form,
+    // not a BSL-run CFP) -- surfaced here per explicit request to cross-promote
+    // it on this event's page too, alongside its organizer's own cbweek2026 page.
+    speakerApplicationUrl: "https://colombiablockchainweek.com/ser-speaker#postulacion",
     aliases: [
       "BSL Colombia",
       "BSL Colombia 2026",
@@ -2380,6 +2386,7 @@ export const EVENTS: Record<string, EventConfig> = {
     ],
     domain: "cbweek2026.hashpass.tech",
     website: "https://colombiablockchainweek.com/",
+    speakerApplicationUrl: "https://colombiablockchainweek.com/ser-speaker#postulacion",
     title: "Colombia Blockchain Week 2026",
     subtitle: "Hotel InterContinental Medellín • 1ª Edición",
     // Official Colombia Blockchain Week assets, downloaded from the event's

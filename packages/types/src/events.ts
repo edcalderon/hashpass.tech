@@ -195,6 +195,12 @@ export interface EventConfig {
     "poker_room_event" | "community_tournament" | "community_event";
   recurrenceLabel?: string;
   cta?: { label: string; url: string };
+  /**
+   * Public call-for-speakers / "apply to speak" form for this event, when the
+   * organizer runs one. Surfaced as its own CTA (distinct from `website`)
+   * on event-info screens; omitted entirely for events with no open CFP.
+   */
+  speakerApplicationUrl?: string;
   networkingEnabled?: boolean;
   checkinEnabled?: boolean;
   /**
