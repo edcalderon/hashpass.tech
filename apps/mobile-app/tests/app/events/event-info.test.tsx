@@ -350,6 +350,23 @@ describe("EventInfoScreen", () => {
     }
   });
 
+  it("falls back to 'this event' when the CFP event has neither a speakerApplicationLabel nor a title", async () => {
+    mockEvent = {
+      id: "no-title-event",
+      speakerApplicationUrl: "https://colombiablockchainweek.com/ser-speaker#postulacion",
+    };
+    const renderer = await renderScreen({ success: true, data: { data: null } });
+
+    try {
+      const textArr = findAllText(renderer);
+      const idx = textArr.findIndex((t) => t.trim() === "Apply to speak at");
+      expect(idx).toBeGreaterThanOrEqual(0);
+      expect(textArr[idx + 1]).toBe("this event");
+    } finally {
+      act(() => renderer.unmount());
+    }
+  });
+
   it("hides both the Get Tickets and Become a Speaker CTAs on an archived event even with a CFP link configured", async () => {
     mockEvent = {
       ...COLOMBIA_EVENT,
