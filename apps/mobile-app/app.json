@@ -126,6 +126,7 @@
       "./plugins/withAndroidDisableRtl",
       "./plugins/withAndroidLargeScreenSupport",
       "./plugins/withAndroidPlayStoreQuery",
+      "./plugins/withIosModularHeaders",
       [
         "@react-native-google-signin/google-signin",
         {
