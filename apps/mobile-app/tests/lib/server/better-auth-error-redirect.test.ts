@@ -85,7 +85,7 @@ describe('better-auth-error-redirect', () => {
 
     expect(redirect?.status).toBe(302);
     expect(redirect?.headers.get('location')).toBe(
-      'https://hashpass.tech/auth?error=state_mismatch&message=Google+sign-in+expired+or+could+not+be+verified.+Please+try+again.'
+      'https://hashpass.tech/auth?error=state_mismatch&message=Sign-in+expired+or+could+not+be+verified.+Please+try+again.'
     );
   });
 
@@ -99,7 +99,26 @@ describe('better-auth-error-redirect', () => {
     );
 
     expect(buildBetterAuthErrorRedirectURL(request)).toBe(
-      'http://localhost:8081/auth?error=state_mismatch&message=Google+sign-in+expired+or+could+not+be+verified.+Please+try+again.'
+      'http://localhost:8081/auth?error=state_mismatch&message=Sign-in+expired+or+could+not+be+verified.+Please+try+again.'
+    );
+  });
+
+  it('attributes the error to the actual failing provider from the callback path, not a hardcoded one', () => {
+    const {
+      buildBetterAuthErrorRedirectURL,
+    } = require('../../../lib/server/better-auth-error-redirect');
+
+    const request = new Request(
+      'https://api.hashpass.tech/api/auth/callback/apple?state=bad'
+    );
+
+    expect(
+      buildBetterAuthErrorRedirectURL(
+        request,
+        'https://api.hashpass.tech/api/auth/error?error=state_mismatch'
+      )
+    ).toBe(
+      'https://hashpass.tech/auth?error=state_mismatch&message=Apple+sign-in+expired+or+could+not+be+verified.+Please+try+again.'
     );
   });
 
@@ -131,7 +150,7 @@ describe('better-auth-error-redirect', () => {
         new Request('https://api-dev.hashpass.tech/api/auth/error?state=state_not_found')
       )
     ).toBe(
-      'https://dev.hashpass.tech/auth?error=state_not_found&message=Google+sign-in+expired+or+could+not+be+verified.+Please+try+again.'
+      'https://dev.hashpass.tech/auth?error=state_not_found&message=Sign-in+expired+or+could+not+be+verified.+Please+try+again.'
     );
   });
 
@@ -148,7 +167,7 @@ describe('better-auth-error-redirect', () => {
         'http://[invalid-url'
       )
     ).toBe(
-      'https://hashpass.tech/auth?error=oauth_provider_not_found&message=Google+sign-in+is+not+configured.+Please+contact+support.'
+      'https://hashpass.tech/auth?error=oauth_provider_not_found&message=Sign-in+is+not+configured.+Please+contact+support.'
     );
   });
 

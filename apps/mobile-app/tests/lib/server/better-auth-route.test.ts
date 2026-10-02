@@ -48,7 +48,7 @@ describe('better-auth-route', () => {
     expect(mockBetterAuthHandler).not.toHaveBeenCalled();
     expect(response.status).toBe(302);
     expect(response.headers.get('location')).toBe(
-      'https://hashpass.tech/auth?error=state_mismatch&message=Google+sign-in+expired+or+could+not+be+verified.+Please+try+again.'
+      'https://hashpass.tech/auth?error=state_mismatch&message=Sign-in+expired+or+could+not+be+verified.+Please+try+again.'
     );
   });
 

@@ -317,6 +317,41 @@ const createAuthInstance = () =>
       ...readListEnv('BETTER_AUTH_TRUSTED_ORIGINS'),
       'https://appleid.apple.com',
     ],
+    advanced: {
+      // Apple's authorization response uses response_mode=form_post, so the
+      // browser lands back on our /callback/apple route via a cross-site
+      // top-level POST, not a GET. Better Auth's default OAuth state cookie is
+      // SameSite=Lax, and SameSite=Lax cookies are never sent on a cross-site
+      // POST navigation (only top-level GET) — so the state cookie never
+      // round-trips, Better Auth can't validate it, and it bounces the user
+      // back to the sign-in page instead of the post-login callbackURL. Apple
+      // itself has already completed successfully by this point (the email
+      // exchange "works"); this is purely the state cookie getting dropped.
+      // Same root cause for every Apple sign-in, new user or one linking onto
+      // an existing Google-created account — the callback fails before
+      // account-linking logic ever runs. Upstream tracking:
+      // https://github.com/better-auth/better-auth/issues/5243
+      // Scoped to deployed (https) origins only: `secure` cookies are dropped
+      // by browsers over plain HTTP, which would break local dev on
+      // http://localhost. `configuredBaseURL` is only ever set (to an
+      // https://api[-dev].hashpass.tech URL) in deployed environments.
+      ...(configuredBaseURL?.startsWith('https://')
+        ? { defaultCookieAttributes: { sameSite: 'none', secure: true } }
+        : {}),
+    },
+    account: {
+      accountLinking: {
+        // Explicit, not relying on Better Auth's implicit default: a user who
+        // already has a Google-created account can sign in with Apple using
+        // the same email and have it appended as a second provider on the
+        // same account instead of failing or creating a duplicate user.
+        // `trustedProviders` additionally auto-links even if a provider's
+        // token doesn't come through as email-verified for some reason, since
+        // both Google and Apple accounts are first-party-verified identities.
+        enabled: true,
+        trustedProviders: ['google', 'apple'],
+      },
+    },
     socialProviders: {
       ...(googleClientId && googleClientSecret
         ? {
