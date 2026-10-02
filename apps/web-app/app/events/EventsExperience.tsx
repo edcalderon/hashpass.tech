@@ -10,10 +10,15 @@ import styles from './events.module.css';
 
 type View = 'discover' | 'calendar' | 'host' | 'profile';
 
+// href values are each tour stop's real organizer site (same
+// `blockchainsummit.la/<eventId>/` pattern the shared BSL event config in
+// packages/config/src/events.ts already derives `website` from) -- never a
+// fabricated/placeholder route, since no events.hashpass.tech event-detail
+// page exists yet for these cards to link to internally.
 const upcomingEvents = [
-  { month: 'MAY', day: '13', title: 'Blockchain Summit Latam · Perú', meta: 'Lima, Peru · May 13–15', tone: 'sunset' },
-  { month: 'AUG', day: '05', title: 'Blockchain Summit Latam · Chile', meta: 'Santiago, Chile · Aug 5–7', tone: 'violet' },
-  { month: 'NOV', day: '04', title: 'Blockchain Summit Latam · Colombia', meta: 'Bogotá, Colombia · Nov 4–6', tone: 'cyan' },
+  { month: 'MAY', day: '13', title: 'Blockchain Summit Latam · Perú', meta: 'Lima, Peru · May 13–15', tone: 'sunset', href: 'https://blockchainsummit.la/peru2026/' },
+  { month: 'AUG', day: '05', title: 'Blockchain Summit Latam · Chile', meta: 'Santiago, Chile · Aug 5–7', tone: 'violet', href: 'https://blockchainsummit.la/chile2026/' },
+  { month: 'NOV', day: '04', title: 'Blockchain Summit Latam · Colombia', meta: 'Bogotá, Colombia · Nov 4–6', tone: 'cyan', href: 'https://blockchainsummit.la/colombia2026/' },
 ] as const;
 
 const benefits = [
@@ -89,10 +94,17 @@ function Discover({ title, onCreate, onCalendar }: { title: string; onCreate: ()
 
     <section className={styles.content}>
       <div className={styles.sectionHead}><div><span className={styles.kicker}>COMING UP</span><h2>Events with momentum</h2></div><button className={styles.textButton}>View all <ArrowRight /></button></div>
-      <div className={styles.eventGrid}>{upcomingEvents.map((event) => <article className={styles.eventCard} key={event.title}>
+      <div className={styles.eventGrid}>{upcomingEvents.map((event) => <a
+        className={styles.eventCard}
+        key={event.title}
+        href={event.href}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={`${event.title} — opens the event page in a new tab`}
+      >
         <div className={`${styles.eventArt} ${styles[event.tone]}`}><div className={styles.artGrid}/><span>BSL<br/>2026</span><b>LATAM<br/>TOUR</b></div>
         <div className={styles.eventInfo}><div className={styles.dateTile}><span>{event.month}</span><strong>{event.day}</strong></div><div><h3>{event.title}</h3><p><MapPin /> {event.meta}</p><small>By Blockchain Summit Latam</small></div></div>
-      </article>)}</div>
+      </a>)}</div>
     </section>
 
     {/* Standalone call-for-speakers banner -- Colombia Blockchain Week (Medellín,
@@ -154,8 +166,12 @@ function Onboarding({ step, onStep, onClose }: { step: number; onStep: (step: nu
   return <div className={styles.backdrop} role="dialog" aria-modal="true" aria-labelledby="onboarding-title">
     <div className={styles.modal}>
       <button className={styles.close} onClick={onClose} aria-label="Close"><X/></button>
-      <div className={styles.modalAside}><div className={styles.brandMark}>H</div><p>ORGANIZER SETUP</p><h2>{complete ? 'You’re ready to gather.' : 'A thoughtful event starts with a few details.'}</h2><ol>{['Your organization','Event basics','Public page'].map((label,i)=><li className={step > i+1 ? styles.done : step === i+1 ? styles.current : ''} key={label}><span>{step > i+1 ? <Check/> : i+1}</span>{label}</li>)}</ol></div>
-      <div className={styles.modalMain}>{complete ? <div className={styles.success}><div><Check/></div><span className={styles.kicker}>DRAFT CREATED</span><h2 id="onboarding-title">Your event workspace is ready.</h2><p>Add the finishing touches, invite your team, then publish when it feels right.</p><button className={styles.primary} onClick={onClose}>Open event studio <ArrowRight/></button></div> : <>
+      <div className={styles.modalAside}><div className={styles.brandMark}>H</div><p>ORGANIZER SETUP</p><h2>{complete ? 'Here’s a preview of the setup.' : 'A thoughtful event starts with a few details.'}</h2><ol>{['Your organization','Event basics','Public page'].map((label,i)=><li className={step > i+1 ? styles.done : step === i+1 ? styles.current : ''} key={label}><span>{step > i+1 ? <Check/> : i+1}</span>{label}</li>)}</ol></div>
+      {/* This closing step is a preview of the organizer onboarding flow --
+          nothing entered above is collected or persisted. Copy here must
+          never claim a real draft/workspace was created until this is
+          wired to an actual event-creation backend. */}
+      <div className={styles.modalMain}>{complete ? <div className={styles.success}><div><Check/></div><span className={styles.kicker}>PREVIEW</span><h2 id="onboarding-title">That’s a preview of event setup.</h2><p>Nothing you entered was saved — full event creation is coming soon. We’ll let you know when it’s ready.</p><button className={styles.primary} onClick={onClose}>Back to Discover <ArrowRight/></button></div> : <>
         <div className={styles.stepCount}>STEP {step} OF 3</div><h2 id="onboarding-title">{step === 1 ? 'Tell us about the organizer.' : step === 2 ? 'What are you planning?' : 'Shape your public page.'}</h2><p className={styles.modalLead}>{step === 1 ? 'This becomes the public identity behind your events.' : step === 2 ? 'You can change every detail before publishing.' : 'Choose the link guests will remember.'}</p>
         {step === 1 && <div className={styles.form}><label>Organization name<input autoFocus placeholder="e.g. Your community"/></label><label>Your role<select defaultValue=""><option value="" disabled>Select your role</option><option>Founder</option><option>Event manager</option><option>Community lead</option></select><ChevronDown/></label><label>Organization type<div className={styles.choiceRow}>{['Community','Company','Independent'].map((x,i)=><button className={i===0 ? styles.choiceActive : ''} key={x}>{x}</button>)}</div></label></div>}
         {step === 2 && <div className={styles.form}><label>Event name<input autoFocus placeholder="Give your event a clear name"/></label><div className={styles.formRow}><label>Date<input type="date"/></label><label>Start time<input type="time"/></label></div><label>Location<input placeholder="Venue, city, or online"/></label></div>}
