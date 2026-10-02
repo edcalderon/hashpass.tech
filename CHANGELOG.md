@@ -1,3 +1,18 @@
+## [1.9.91](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.90...v1.9.91) (2026-10-02)
+
+
+### Bug Fixes
+
+* **events:** load Hash Poker tickets from PKRR ([8f6c0ae](https://github.com/hashpass-tech/hashpass.tech/commit/8f6c0ae9ac22d50b96d5c15db2f019ac4068f6b7))
+### Release Highlights
+- load Hash Poker tickets from PKRR
+
+### Release scope
+- Compared with: `v1.9.90` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+
 ## [1.9.90](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.89...v1.9.90) (2026-10-02)
 
 

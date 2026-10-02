@@ -20,19 +20,18 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.90)
+## 📋 Latest Changes (v1.9.91)
 
-### Features
+### Bug Fixes
 
-* **events:** add organizer and discovery experience ([2691f8b](https://github.com/hashpass-tech/hashpass.tech/commit/2691f8b9021d694d191b6cafa746e72f4e06170d))
+* **events:** load Hash Poker tickets from PKRR ([8f6c0ae](https://github.com/hashpass-tech/hashpass.tech/commit/8f6c0ae9ac22d50b96d5c15db2f019ac4068f6b7))
 ### Release Highlights
-- add Colombia Blockchain Week speaker banner (web); add Colombia Blockchain Week speaker-application CTA (mobile); add organizer and discovery experience
+- load Hash Poker tickets from PKRR
 
 ### Release scope
-- Compared with: `v1.9.89` (the previous global release tag)
+- Compared with: `v1.9.90` (the previous global release tag)
 
 ### Affected products & packages
-- Club web
 - Mobile app
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
