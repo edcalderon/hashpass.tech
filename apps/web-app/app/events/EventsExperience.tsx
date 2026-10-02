@@ -95,6 +95,28 @@ function Discover({ title, onCreate, onCalendar }: { title: string; onCreate: ()
       </article>)}</div>
     </section>
 
+    {/* Standalone call-for-speakers banner -- Colombia Blockchain Week (Medellín,
+        Dec 11-12) runs its own CFP and is a different event/organizer than the
+        "Blockchain Summit Latam · Colombia" card above, so this is kept as its
+        own clearly-labeled section rather than attached to that card. */}
+    <section className={styles.speakerBanner}>
+      <div className={styles.speakerBannerCard}>
+        <div className={styles.speakerBannerText}>
+          <span className={styles.kicker}>CALL FOR SPEAKERS</span>
+          <h2>Become a speaker at Colombia Blockchain Week.</h2>
+          <p>Share your work with Medellín’s blockchain community — applications for Colombia Blockchain Week 2026 are open now.</p>
+        </div>
+        <a
+          className={styles.primary}
+          href="https://colombiablockchainweek.com/ser-speaker#postulacion"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Apply to speak <ArrowRight />
+        </a>
+      </div>
+    </section>
+
     <section className={styles.hostStory}>
       <div><span className={styles.kicker}>FOR ORGANIZERS</span><h2>Your community deserves more than a signup form.</h2><p>Give every gathering a beautiful home and every guest a reason to stay connected.</p><button className={styles.primary} onClick={onCreate}>Start hosting <ArrowRight /></button></div>
       <div className={styles.benefitList}>{benefits.map(([heading, body], index) => <div key={heading}><span>0{index + 1}</span><div><h3>{heading}</h3><p>{body}</p></div></div>)}</div>
