@@ -178,7 +178,14 @@ describe("TicketsScreen", () => {
     );
   });
 
-  it("uses Hash Poker's current PKRR registration URL instead of the legacy venue website", () => {
+  it("uses Hash Poker's current PKRR registration URL for the external handoff", () => {
+    Platform.OS = "web";
+    const openMock = jest.fn();
+    const originalWindow = (global as any).window;
+    Object.defineProperty(global, "window", {
+      configurable: true,
+      value: { open: openMock },
+    });
     mockEvent = {
       id: "hash-poker",
       website: "https://hash.poker",
@@ -189,14 +196,37 @@ describe("TicketsScreen", () => {
 
     expect(text).toContain("Tickets provided by pkrr.io");
     expect(text).not.toContain("Tickets provided by hash.poker");
+
+    act(() => findTicketHostnameLink(view).props.onPress());
+    expect(openMock).toHaveBeenCalledWith(
+      "https://pkrr.io/reg/current-tournament",
+      "_blank",
+      "noopener,noreferrer",
+    );
+
+    Object.defineProperty(global, "window", { configurable: true, value: originalWindow });
   });
 
   it("falls back to the PKRR club page when there is no current Hash Poker registration", () => {
-    mockEvent = { id: "hash-poker" };
+    mockEvent = { id: "hash-poker", website: "https://hash.poker" };
+    const view = renderScreen();
+
+    expect(collectText(view.toJSON())).toContain("Tickets provided by pkrr.io");
+  });
+
+  it("builds the ticket URL from event.website for other non-colombia2026 events", () => {
+    mockEvent = { id: "another-event", website: "https://tickets.example.com/" };
+    const view = renderScreen();
+
+    expect(collectText(view.toJSON())).toContain("Tickets provided by tickets.example.com");
+  });
+
+  it("falls back to the bsl.blckchn.xyz ticket URL by event id when there is no website", () => {
+    mockEvent = { id: "another-event" };
     const view = renderScreen();
     const text = collectText(view.toJSON());
 
-    expect(text).toContain("Tickets provided by pkrr.io");
+    expect(text).toContain("Tickets provided by bsl.blckchn.xyz");
   });
 
   it("directs Hash Poker ticket questions to the PKRR tournament team", () => {

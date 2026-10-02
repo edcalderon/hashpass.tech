@@ -22,24 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610020359, // Updated to current timestamp
+  buildNumber: 202610022055, // Updated to current timestamp
   releaseDate: '2026-10-02',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'add Colombia Blockchain Week speaker banner (web)',
-    'add Colombia Blockchain Week speaker-application CTA (mobile)',
-    'add organizer and discovery experience'
+    // No new features
   ],
   bugfixes: [
-    // No bugfixes
+    'load Hash Poker tickets from PKRR'
   ],
   breakingChanges: [],
-  notes: 'add Colombia Blockchain Week speaker banner (web); add Colombia Blockchain Week speaker-application CTA (mobile); add organizer and discovery experience'
+  notes: 'load Hash Poker tickets from PKRR'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.91': {
+    version: '1.9.91',
+    buildNumber: 202610022055,
+    releaseDate: '2026-10-02',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'load Hash Poker tickets from PKRR'
+    ],
+    breakingChanges: [],
+    notes: 'load Hash Poker tickets from PKRR'
+  },
   '1.9.90': {
     version: '1.9.90',
     buildNumber: 202610020359,
