@@ -307,6 +307,66 @@ describe("EventInfoScreen", () => {
     }
   });
 
+  it("names the actual CFP host, not this event's own title, when the CFP is cross-promoted from a different organizer", async () => {
+    // colombia2026 (BSL Colombia, organizer Blockchain Summit Latam)
+    // cross-promotes cbweek2026's (Colombia Blockchain Week) CFP -- the
+    // copy must say who actually reviews the application, not imply this
+    // event's own organizer runs it.
+    mockEvent = {
+      ...COLOMBIA_EVENT,
+      speakerApplicationUrl: "https://colombiablockchainweek.com/ser-speaker#postulacion",
+      speakerApplicationLabel: "Colombia Blockchain Week",
+    };
+    const renderer = await renderScreen({ success: true, data: { data: null } });
+
+    try {
+      // The CTA's copy is split across adjacent <Text> children
+      // ("Apply to speak at " + the name), so assert on the sequence
+      // rather than a single concatenated string.
+      const textArr = findAllText(renderer);
+      const idx = textArr.findIndex((t) => t.trim() === "Apply to speak at");
+      expect(idx).toBeGreaterThanOrEqual(0);
+      expect(textArr[idx + 1]).toBe("Colombia Blockchain Week");
+      expect(textArr[idx + 1]).not.toBe(COLOMBIA_EVENT.title);
+    } finally {
+      act(() => renderer.unmount());
+    }
+  });
+
+  it("falls back to the event's own title when no speakerApplicationLabel is configured", async () => {
+    mockEvent = {
+      ...COLOMBIA_EVENT,
+      speakerApplicationUrl: "https://colombiablockchainweek.com/ser-speaker#postulacion",
+    };
+    const renderer = await renderScreen({ success: true, data: { data: null } });
+
+    try {
+      const textArr = findAllText(renderer);
+      const idx = textArr.findIndex((t) => t.trim() === "Apply to speak at");
+      expect(idx).toBeGreaterThanOrEqual(0);
+      expect(textArr[idx + 1]).toBe(COLOMBIA_EVENT.title);
+    } finally {
+      act(() => renderer.unmount());
+    }
+  });
+
+  it("hides both the Get Tickets and Become a Speaker CTAs on an archived event even with a CFP link configured", async () => {
+    mockEvent = {
+      ...COLOMBIA_EVENT,
+      id: "bsl2025",
+      speakerApplicationUrl: "https://colombiablockchainweek.com/ser-speaker#postulacion",
+    };
+    const renderer = await renderScreen({ success: true, data: { data: null } });
+
+    try {
+      const text = findAllText(renderer).join(" | ");
+      expect(text).not.toContain("Become a speaker");
+      expect(text).not.toContain("Get your tickets");
+    } finally {
+      act(() => renderer.unmount());
+    }
+  });
+
   it("keeps detail hero video disabled when the app motion preference is reduced", async () => {
     mockEvent = COLOMBIA_EVENT;
     mockAnimationLevel = "reduced";

@@ -201,6 +201,18 @@ export interface EventConfig {
    * on event-info screens; omitted entirely for events with no open CFP.
    */
   speakerApplicationUrl?: string;
+  /**
+   * Human-readable name of whoever actually runs the CFP at
+   * `speakerApplicationUrl`. Required whenever that URL is a *cross-promoted*
+   * form belonging to a different conference/organizer than this event's own
+   * `title` -- e.g. colombia2026 (BSL Colombia, organizer Blockchain Summit
+   * Latam) cross-promotes cbweek2026's (Colombia Blockchain Week) CFP. The
+   * event-info CTA copy must name the actual CFP host here, never fall back
+   * to this event's own `title`, or a visitor applying "to" colombia2026
+   * would be misled about which conference/organizer is reviewing their
+   * application.
+   */
+  speakerApplicationLabel?: string;
   networkingEnabled?: boolean;
   checkinEnabled?: boolean;
   /**

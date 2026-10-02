@@ -310,7 +310,13 @@ export default function EventInfoScreen() {
               <View style={styles.ticketCtaCopy}>
                 <Text style={styles.ticketCtaTitle}>Become a speaker</Text>
                 <HoverText mode={isDark ? 'dark' : 'light'} style={styles.ticketCtaSubtitle} numberOfLines={2}>
-                  Apply to speak at {event?.title || 'this event'}
+                  {/* speakerApplicationLabel names whoever actually reviews
+                      applications at speakerApplicationUrl. Some events
+                      (e.g. colombia2026) cross-promote a *different*
+                      conference/organizer's CFP -- for those, falling back
+                      to this event's own title would misname who the
+                      application actually goes to. */}
+                  Apply to speak at {event?.speakerApplicationLabel || event?.title || 'this event'}
                 </HoverText>
               </View>
             </View>
