@@ -1,3 +1,19 @@
+## [1.9.90](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.89...v1.9.90) (2026-10-02)
+
+
+### Features
+
+* **events:** add organizer and discovery experience ([2691f8b](https://github.com/hashpass-tech/hashpass.tech/commit/2691f8b9021d694d191b6cafa746e72f4e06170d))
+### Release Highlights
+- add Colombia Blockchain Week speaker banner (web); add Colombia Blockchain Week speaker-application CTA (mobile); add organizer and discovery experience
+
+### Release scope
+- Compared with: `v1.9.89` (the previous global release tag)
+
+### Affected products & packages
+- Club web
+- Mobile app
+
 ## [1.9.89](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.88...v1.9.89) (2026-10-02)
 ### Released
 - replace embedded ticket checkout with an explicit organizer handoff; pin BSL Colombia sync uploads to the speaker assets bucket region; keep Apple sign-in state cookie alive across its form_post callback

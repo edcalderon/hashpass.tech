@@ -22,24 +22,41 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610020306, // Updated to current timestamp
+  buildNumber: 202610020359, // Updated to current timestamp
   releaseDate: '2026-10-02',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    // No new features
+    'add Colombia Blockchain Week speaker banner (web)',
+    'add Colombia Blockchain Week speaker-application CTA (mobile)',
+    'add organizer and discovery experience'
   ],
   bugfixes: [
-    'replace embedded ticket checkout with an explicit organizer handoff',
-    'pin BSL Colombia sync uploads to the speaker assets bucket region',
-    'keep Apple sign-in state cookie alive across its form_post callback'
+    // No bugfixes
   ],
   breakingChanges: [],
-  notes: 'replace embedded ticket checkout with an explicit organizer handoff; pin BSL Colombia sync uploads to the speaker assets bucket region; keep Apple sign-in state cookie alive across its form_post callback'
+  notes: 'add Colombia Blockchain Week speaker banner (web); add Colombia Blockchain Week speaker-application CTA (mobile); add organizer and discovery experience'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.90': {
+    version: '1.9.90',
+    buildNumber: 202610020359,
+    releaseDate: '2026-10-02',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'add Colombia Blockchain Week speaker banner (web)',
+      'add Colombia Blockchain Week speaker-application CTA (mobile)',
+      'add organizer and discovery experience'
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'add Colombia Blockchain Week speaker banner (web); add Colombia Blockchain Week speaker-application CTA (mobile); add organizer and discovery experience'
+  },
   '1.9.89': {
     version: '1.9.89',
     buildNumber: 202610020306,
