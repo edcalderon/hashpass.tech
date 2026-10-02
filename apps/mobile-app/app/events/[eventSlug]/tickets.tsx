@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Modal, ActivityIndicator, useWindowDimensions, Platform, TouchableOpacity, ScrollView, Linking } from 'react-native';
-import { WebView } from 'react-native-webview';
+import { View, Text, StyleSheet, Modal, useWindowDimensions, Platform, TouchableOpacity, ScrollView, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useEvent } from '@contexts/EventContext';
 import { useTheme } from '../../../hooks/useTheme';
@@ -8,17 +7,6 @@ import EventBanner from '../../../components/EventBanner';
 import { Surface, ActionButton, ModalBackdrop, HoverText } from '@hashpass/ui/primitives';
 import { uiPalette, uiTokens } from '@hashpass/ui/tokens';
 import { MaterialIcons } from '@expo/vector-icons';
-
-// The web-only <iframe> below is a raw DOM element, not an RN component, so
-// its style is real CSS (e.g. `border: 'none'`) and must stay out of
-// StyleSheet.create -- RN's ViewStyle/TextStyle/ImageStyle union has no
-// `border` shorthand property, so mixing it into the shared RN styles object
-// fails typechecking even though it's only ever rendered on web.
-const webIframeStyle: React.CSSProperties = {
-  flex: 1,
-  width: '100%',
-  border: 'none',
-};
 
 // Best-effort hostname for the disclaimer copy / dialog header. ticketUrl is
 // always a real https URL from config today, but event data isn't schema
@@ -32,10 +20,10 @@ const getHostname = (url: string): string | null => {
   }
 };
 
-// BSL events use external ticketing. Shows a purchase button that opens a floating
-// dialog with the ticketing iframe/WebView -- styled and labeled as a distinct,
-// externally-operated page (not another in-app screen) so it's clear tickets are
-// sold and fulfilled directly by the event organizer, not HASHPASS.
+// Events use organizer-managed ticketing. The app makes a clear handoff rather
+// than embedding a third-party checkout: external CSS, assets, payment flows,
+// and frame-ancestor policies cannot be reliably or safely reproduced in an
+// iframe/WebView.
 export default function TicketsScreen() {
   const { event } = useEvent();
   const { isDark } = useTheme();
@@ -46,18 +34,24 @@ export default function TicketsScreen() {
   const styles = getStyles(palette, isWide, viewportWidth);
 
   const eventId = event?.id || 'colombia2026';
+  const isHashPoker = eventId === 'hash-poker';
   const eventTitle = event?.title || 'Event';
   const eventDate = event?.eventDateString || event?.subtitle || 'Date TBA';
 
   const [showTicketModal, setShowTicketModal] = useState(false);
 
-  // BSL ticket purchase URL
+  // PKRR owns the current Hash Poker tournament registration pages. Prefer
+  // the live ingested CTA so each tournament opens its exact registration
+  // page; fall back to the public club calendar between tournaments.
   const ticketUrl = eventId === 'colombia2026'
     ? 'https://bsl.blckchn.xyz/e/bsl-colombia-2026#tickets'
-    : event?.website
-      ? `${event.website.replace(/\/$/, '')}/tickets/`
-      : `https://bsl.blckchn.xyz/e/${eventId}#tickets`;
+    : isHashPoker
+      ? event?.cta?.url || 'https://pkrr.io/c/hash-poker'
+      : event?.cta?.url || (event?.website
+          ? `${event.website.replace(/\/$/, '')}/tickets/`
+          : `https://bsl.blckchn.xyz/e/${eventId}#tickets`);
   const ticketHostname = getHostname(ticketUrl);
+  const organizerSupportEmail = isHashPoker ? 'torneos@pkrr.io' : null;
 
   // Opens the real external ticket page directly -- on web as a proper new
   // tab (target="_blank" equivalent) rather than only inside the in-app
@@ -71,6 +65,11 @@ export default function TicketsScreen() {
     } else {
       Linking.openURL(ticketUrl).catch(() => null);
     }
+  };
+
+  const openOrganizerSupport = () => {
+    if (!organizerSupportEmail) return;
+    Linking.openURL(`mailto:${organizerSupportEmail}`).catch(() => null);
   };
 
   return (
@@ -160,21 +159,22 @@ export default function TicketsScreen() {
               <Text style={styles.cardTitle}>Need Help?</Text>
             </View>
             <Text style={styles.description}>
-              If you have questions about tickets, pricing, or group discounts, please contact our support team.
+              {organizerSupportEmail
+                ? `For tournament registration, ticket, or seating questions, contact the PKRR tournament team at ${organizerSupportEmail}.`
+                : 'If you have questions about tickets, pricing, or group discounts, please contact our support team.'}
             </Text>
             <ActionButton
               mode={isDark ? 'dark' : 'light'}
-              label="Contact Support"
+              label={organizerSupportEmail ? 'Email PKRR Tournaments' : 'Contact Support'}
               variant="secondary"
-              onPress={() => router.push('/(shared)/support')}
+              onPress={organizerSupportEmail ? openOrganizerSupport : () => router.push('/(shared)/support')}
             />
           </Surface>
         </View>
       </ScrollView>
 
-      {/* Ticket Purchase Dialog -- a floating, card-style overlay (not an
-          edge-to-edge in-app sheet) so it visually reads as a distinct,
-          externally-hosted page rather than another app screen. */}
+      {/* Ticket Purchase Dialog -- a short disclosure before the explicit
+          organizer-site handoff. Never render third-party checkout HTML here. */}
       <Modal
         visible={showTicketModal}
         transparent
@@ -222,30 +222,22 @@ export default function TicketsScreen() {
             </View>
 
             <View style={styles.dialogBody}>
-              {Platform.OS === 'web' ? (
-                <iframe
-                  src={ticketUrl}
-                  style={webIframeStyle}
-                  title="Ticket purchase"
-                  allow="payment"
+              <View style={styles.handoffContent}>
+                <MaterialIcons name="open-in-new" size={30} color={palette.accent} />
+                <Text style={styles.handoffTitle}>Continue to {ticketHostname || 'ticketing'}</Text>
+                <Text style={styles.handoffText}>
+                  Ticket purchase and organizer support are handled securely on the organizer's site.
+                </Text>
+                <ActionButton
+                  mode={isDark ? 'dark' : 'light'}
+                  label={`Open ${ticketHostname || 'ticket site'}`}
+                  onPress={() => {
+                    setShowTicketModal(false);
+                    openTicketLink();
+                  }}
+                  trailingIcon={<MaterialIcons name="open-in-new" size={18} color={palette.onAccent} />}
                 />
-              ) : (
-                <WebView
-                  source={{ uri: ticketUrl }}
-                  style={styles.webView}
-                  startInLoadingState
-                  renderLoading={() => (
-                    <View style={styles.loadingContainer}>
-                      <ActivityIndicator size="large" color={palette.accent} />
-                      <Text style={styles.loadingText}>Loading tickets...</Text>
-                    </View>
-                  )}
-                  javaScriptEnabled
-                  domStorageEnabled
-                  allowsInlineMediaPlayback
-                  mediaPlaybackRequiresUserAction={false}
-                />
-              )}
+              </View>
             </View>
           </View>
         </ModalBackdrop>
@@ -352,9 +344,7 @@ const getStyles = (palette: ReturnType<typeof uiPalette>, isWide: boolean, viewp
     // page rather than another in-app screen.
     dialogCard: {
       width: '100%',
-      maxWidth: 640,
-      height: '82%',
-      maxHeight: 760,
+      maxWidth: 480,
       borderRadius: uiTokens.radius.card,
       overflow: 'hidden',
       backgroundColor: palette.surface,
@@ -421,26 +411,23 @@ const getStyles = (palette: ReturnType<typeof uiPalette>, isWide: boolean, viewp
       color: palette.muted,
     },
     dialogBody: {
-      flex: 1,
-      minHeight: 0,
       backgroundColor: palette.canvas,
+      padding: uiTokens.space.xl,
     },
-    webView: {
-      flex: 1,
-    },
-    loadingContainer: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      justifyContent: 'center',
+    handoffContent: {
       alignItems: 'center',
-      backgroundColor: palette.canvas,
+      gap: uiTokens.space.md,
     },
-    loadingText: {
-      marginTop: uiTokens.space.md,
+    handoffTitle: {
+      fontSize: uiTokens.type.title,
+      fontWeight: '700',
+      color: palette.text,
+      textAlign: 'center',
+    },
+    handoffText: {
       fontSize: uiTokens.type.body,
+      lineHeight: 22,
       color: palette.muted,
+      textAlign: 'center',
     },
   });

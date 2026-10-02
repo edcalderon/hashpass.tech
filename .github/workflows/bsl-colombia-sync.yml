@@ -56,6 +56,9 @@ jobs:
         run: pnpm exec tsx packages/tools/scripts/sync-bsl-colombia.mjs --profile=${{ matrix.profile }}
         env:
           EXPECTED_AWS_ACCOUNT_ID: ${{ secrets.HASHPASS_AWS_ACCOUNT_ID }}
+          # The speaker-asset bucket lives in us-east-2; without this the SDK falls
+          # back to us-east-1 and every PutObject fails with PermanentRedirect.
+          AWS_REGION: us-east-2
           BSL_SPEAKER_ASSETS_BUCKET: ${{ vars.BSL_SPEAKER_ASSETS_BUCKET }}
           BSL_SPEAKER_CDN_URL: ${{ vars.BSL_SPEAKER_CDN_URL }}
           BSL_SUPABASE_URL_DEV: ${{ secrets.BSL_SUPABASE_URL_DEV }}

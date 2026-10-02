@@ -178,24 +178,36 @@ describe("TicketsScreen", () => {
     );
   });
 
-  it("builds the ticket URL from event.website for non-colombia2026 events", () => {
-    mockEvent = { id: "hash-poker", website: "https://hashpoker.example.com/" };
+  it("uses Hash Poker's current PKRR registration URL instead of the legacy venue website", () => {
+    mockEvent = {
+      id: "hash-poker",
+      website: "https://hash.poker",
+      cta: { label: "Reserve seat", url: "https://pkrr.io/reg/current-tournament" },
+    };
     const view = renderScreen();
     const text = collectText(view.toJSON());
 
-    expect(text).toContain("Tickets provided by hashpoker.example.com");
+    expect(text).toContain("Tickets provided by pkrr.io");
+    expect(text).not.toContain("Tickets provided by hash.poker");
   });
 
-  it("falls back to the bsl.blckchn.xyz ticket URL by event id when there is no website", () => {
+  it("falls back to the PKRR club page when there is no current Hash Poker registration", () => {
     mockEvent = { id: "hash-poker" };
     const view = renderScreen();
     const text = collectText(view.toJSON());
 
-    expect(text).toContain("Tickets provided by bsl.blckchn.xyz");
+    expect(text).toContain("Tickets provided by pkrr.io");
+  });
+
+  it("directs Hash Poker ticket questions to the PKRR tournament team", () => {
+    mockEvent = { id: "hash-poker" };
+    const view = renderScreen();
+
+    expect(collectText(view.toJSON())).toContain("torneos@pkrr.io");
   });
 
   it("hides the hostname link and falls back to a generic dialog title when the ticket URL is unparsable", () => {
-    mockEvent = { id: "hash-poker", website: "not a valid url" };
+    mockEvent = { id: "community-test", website: "not a valid url" };
     const view = renderScreen();
     const text = collectText(view.toJSON());
 
@@ -203,23 +215,21 @@ describe("TicketsScreen", () => {
     expect(text).toContain("External ticketing");
   });
 
-  it("renders the native WebView inside the purchase dialog", () => {
+  it("keeps third-party ticket pages out of the native app WebView", () => {
     Platform.OS = "ios";
     const view = renderScreen();
     act(() => findButton(view, "Purchase Tickets").props.onPress());
 
-    expect(view.root.findAllByType("WebView" as any)).toHaveLength(1);
+    expect(view.root.findAllByType("WebView" as any)).toHaveLength(0);
     expect(view.root.findAllByType("iframe" as any)).toHaveLength(0);
   });
 
-  it("renders a raw iframe instead of a WebView inside the purchase dialog on web", () => {
+  it("keeps third-party ticket pages out of a web iframe", () => {
     Platform.OS = "web";
     const view = renderScreen();
     act(() => findButton(view, "Purchase Tickets").props.onPress());
 
     expect(view.root.findAllByType("WebView" as any)).toHaveLength(0);
-    const iframes = view.root.findAllByType("iframe" as any);
-    expect(iframes).toHaveLength(1);
-    expect(iframes[0].props.title).toBe("Ticket purchase");
+    expect(view.root.findAllByType("iframe" as any)).toHaveLength(0);
   });
 });

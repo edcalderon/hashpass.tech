@@ -1,13 +1,31 @@
 const API_HOSTS = new Set(['api.hashpass.tech', 'api-dev.hashpass.tech']);
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '0.0.0.0']);
 
-const AUTH_ERROR_MESSAGES: Record<string, string> = {
-  state_mismatch: 'Google sign-in expired or could not be verified. Please try again.',
-  state_not_found: 'Google sign-in expired or could not be verified. Please try again.',
-  please_restart_the_process: 'Google sign-in expired or could not be verified. Please try again.',
-  invalid_code: 'Google sign-in could not be verified. Please try again.',
-  no_code: 'Google sign-in did not return a verification code. Please try again.',
-  oauth_provider_not_found: 'Google sign-in is not configured. Please contact support.',
+// Provider-aware so an Apple sign-in failure doesn't get reported to the user
+// as a "Google sign-in" error — the previous hardcoded copy blamed Google
+// unconditionally for every provider's failure, which is actively misleading
+// when e.g. Apple's form_post callback fails state validation (see the
+// `advanced.defaultCookieAttributes` comment in `better-auth.ts`). Falls back
+// to the generic "Sign-in" label when the provider can't be determined from
+// the request (e.g. a direct hit on Better Auth's own /auth/error route).
+const PROVIDER_LABELS: Record<string, string> = {
+  google: 'Google',
+  apple: 'Apple',
+};
+
+// `providerLabel` is null when the provider can't be determined (sentences
+// below start with a capitalized "Sign-in" in that case); otherwise it's
+// "Google"/"Apple" and sentences read "Google sign-in"/"Apple sign-in".
+const withSubject = (providerLabel: string | null): string =>
+  providerLabel ? `${providerLabel} sign-in` : 'Sign-in';
+
+const AUTH_ERROR_MESSAGE_TEMPLATES: Record<string, (providerLabel: string | null) => string> = {
+  state_mismatch: (p) => `${withSubject(p)} expired or could not be verified. Please try again.`,
+  state_not_found: (p) => `${withSubject(p)} expired or could not be verified. Please try again.`,
+  please_restart_the_process: (p) => `${withSubject(p)} expired or could not be verified. Please try again.`,
+  invalid_code: (p) => `${withSubject(p)} could not be verified. Please try again.`,
+  no_code: (p) => `${withSubject(p)} did not return a verification code. Please try again.`,
+  oauth_provider_not_found: (p) => `${withSubject(p)} is not configured. Please contact support.`,
 };
 
 const parseUrl = (value?: string | null, base?: string): URL | null => {
@@ -107,12 +125,24 @@ const getAuthErrorCode = (sourceUrl: URL): string => {
   );
 };
 
-const getAuthErrorMessage = (sourceUrl: URL, code: string): string => {
+// The provider only ever appears in a /callback/<provider> path segment — the
+// error itself happens while handling that callback request, before Better
+// Auth's own /auth/error redirect (which carries no provider info) is built.
+const getProviderLabel = (...urls: Array<URL | null>): string | null => {
+  for (const url of urls) {
+    const match = url?.pathname.match(/\/callback\/([a-z0-9_-]+)/i);
+    const label = match?.[1] ? PROVIDER_LABELS[match[1].toLowerCase()] : undefined;
+    if (label) return label;
+  }
+  return null;
+};
+
+const getAuthErrorMessage = (sourceUrl: URL, code: string, providerLabel: string | null): string => {
   return (
     sourceUrl.searchParams.get('message') ||
     sourceUrl.searchParams.get('error_description') ||
-    AUTH_ERROR_MESSAGES[code] ||
-    'Google sign-in failed. Please try again.'
+    AUTH_ERROR_MESSAGE_TEMPLATES[code]?.(providerLabel) ||
+    `${withSubject(providerLabel)} failed. Please try again.`
   );
 };
 
@@ -131,7 +161,8 @@ export const buildBetterAuthErrorRedirectURL = (
   const requestUrl = parseUrl(request.url) || new URL('https://hashpass.tech/');
   const sourceUrl = parseUrl(sourceLocation, requestUrl.href) || requestUrl;
   const code = getAuthErrorCode(sourceUrl);
-  const message = getAuthErrorMessage(sourceUrl, code);
+  const providerLabel = getProviderLabel(requestUrl, sourceUrl);
+  const message = getAuthErrorMessage(sourceUrl, code, providerLabel);
   const redirectUrl = new URL('/auth', resolveBetterAuthErrorFrontendOrigin(request));
 
   redirectUrl.searchParams.set('error', code);

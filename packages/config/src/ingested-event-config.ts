@@ -55,7 +55,7 @@ export function toHashPokerEventConfig(
     name: "Hash Poker Room",
     shortName: "HASH",
     domain: "hash.poker",
-    website: "https://hash.poker",
+    website: "https://pkrr.io/c/hash-poker",
     title: event.title,
     subtitle: `Poker Room • ${event.venueName}, ${event.city}`,
     image: event.coverImage || event.organizerLogo || "",
