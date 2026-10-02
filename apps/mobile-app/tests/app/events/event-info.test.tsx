@@ -3,6 +3,7 @@
 
 let mockEvent: Record<string, unknown> | null = null;
 let mockAnimationLevel: "full" | "reduced" | "none" = "full";
+let mockIsDark = false;
 const mockGetEventDetails = jest.fn();
 const mockRouterPush = jest.fn();
 
@@ -20,7 +21,7 @@ jest.mock("expo-router", () => ({
 
 jest.mock("../../../hooks/useTheme", () => ({
   useTheme: () => ({
-    isDark: false,
+    isDark: mockIsDark,
     colors: {
       background: { default: "#FFFFFF", paper: "#F5F5F5" },
       text: { primary: "#111111", secondary: "#666666" },
@@ -97,6 +98,7 @@ describe("EventInfoScreen", () => {
     mockRouterPush.mockReset();
     setViewportWidth(390);
     mockAnimationLevel = "full";
+    mockIsDark = false;
   });
 
   it("shows the real DB description, venue, and website for an event with a details row", async () => {
@@ -362,6 +364,22 @@ describe("EventInfoScreen", () => {
       const idx = textArr.findIndex((t) => t.trim() === "Apply to speak at");
       expect(idx).toBeGreaterThanOrEqual(0);
       expect(textArr[idx + 1]).toBe("this event");
+    } finally {
+      act(() => renderer.unmount());
+    }
+  });
+
+  it("renders the Become a Speaker CTA in dark mode without crashing", async () => {
+    mockIsDark = true;
+    mockEvent = {
+      ...COLOMBIA_EVENT,
+      speakerApplicationUrl: "https://colombiablockchainweek.com/ser-speaker#postulacion",
+    };
+    const renderer = await renderScreen({ success: true, data: { data: null } });
+
+    try {
+      const text = findAllText(renderer).join(" | ");
+      expect(text).toContain("Become a speaker");
     } finally {
       act(() => renderer.unmount());
     }
