@@ -1,6 +1,20 @@
 codecov:
   require_ci_to_pass: yes
 
+# The mobile Jest command runs from apps/mobile-app, so its LCOV entries are
+# relative to that package (for example, components/RealtimeChat.tsx). Map
+# those report paths back to the repository paths used by the PR diff.
+fixes:
+  - "app/::apps/mobile-app/app/"
+  - "components/::apps/mobile-app/components/"
+  - "contexts/::apps/mobile-app/contexts/"
+  - "hooks/::apps/mobile-app/hooks/"
+  - "lib/::apps/mobile-app/lib/"
+  - "providers/::apps/mobile-app/providers/"
+  - "navigation/::apps/mobile-app/navigation/"
+  - "config/::apps/mobile-app/config/"
+  - "plugins/::apps/mobile-app/plugins/"
+
 coverage:
   status:
     project:
