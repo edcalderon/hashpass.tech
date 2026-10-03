@@ -5,11 +5,11 @@ import { Check } from "lucide-react-native";
 
 interface LanguageSelectorProps {
   isVisible?: boolean;
-  onSelectLanguage?: (language: 'en' | 'es' | 'ko' | 'fr' | 'pt' | 'de') => void;
+  onSelectLanguage?: (language: 'en' | 'es' | 'ko' | 'fr' | 'pt' | 'de' | 'et') => void;
   onClose?: () => void;
 }
 
-const languages: { code: 'en' | 'es' | 'ko' | 'fr' | 'pt' | 'de'; name: string; nativeName: string; flag: string }[] = [
+const languages: { code: 'en' | 'es' | 'ko' | 'fr' | 'pt' | 'de' | 'et'; name: string; nativeName: string; flag: string }[] = [
   {
     code: "en",
     name: "English",
@@ -46,6 +46,12 @@ const languages: { code: 'en' | 'es' | 'ko' | 'fr' | 'pt' | 'de'; name: string; 
     nativeName: "Deutsch",
     flag: "https://api.dicebear.com/7.x/avataaars/svg?seed=germany-flag",
   },
+  {
+    code: "et",
+    name: "Estonian",
+    nativeName: "Eesti",
+    flag: "https://api.dicebear.com/7.x/avataaars/svg?seed=estonia-flag",
+  },
 ];
 
 export default function LanguageSelector({
@@ -53,7 +59,7 @@ export default function LanguageSelector({
   onSelectLanguage = () => {},
   onClose = () => {},
 }: LanguageSelectorProps) {
-  const [selectedLanguage, setSelectedLanguage] = useState<'en' | 'es' | 'ko' | 'fr' | 'pt' | 'de'>("en");
+  const [selectedLanguage, setSelectedLanguage] = useState<'en' | 'es' | 'ko' | 'fr' | 'pt' | 'de' | 'et'>("en");
   const router = useRouter();
 
   const handleConfirm = () => {
@@ -75,6 +81,8 @@ export default function LanguageSelector({
         return "Bem-vindo ao HASHPASS";
       case "de":
         return "Willkommen bei HASHPASS";
+      case "et":
+        return "Tere tulemast HASHPASSi";
       default:
         return "Welcome to HASHPASS";
     }

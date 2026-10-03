@@ -28,7 +28,7 @@ if (typeof ErrorUtils !== 'undefined') {
   });
 }
 
-// This app only ships LTR locales (en/es/ko) and none of its layouts were
+// This app only ships LTR locales and none of its layouts were
 // built to mirror. Android's I18nManager auto-detects RTL from the device's
 // system language before any JS runs, and React Native's Yoga layout engine
 // silently mirrors every `flexDirection: 'row'` style once that's set — no

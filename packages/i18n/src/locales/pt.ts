@@ -138,7 +138,7 @@ export const pt = {
     copyright: '© {year} HASHPASS. Todos os direitos reservados.',
   },
   theme: { toggle: 'Alternar tema', dark: 'Escuro', light: 'Claro', system: 'Sistema' },
-  lang: { select: 'Idioma', en: 'English', es: 'Español', ko: '한국어', fr: 'Français', pt: 'Português', de: 'Deutsch' },
+  lang: { select: 'Idioma', en: 'English', es: 'Español', ko: '한국어', fr: 'Français', pt: 'Português', de: 'Deutsch', et: 'Eesti' },
   // Apenas a prosa é traduzida: nomes de entidades, atributos e filtros do
   // Arkiv são identificadores de esquema partilhados com o vídeo Remotion.
   openproof: {

@@ -2,7 +2,7 @@
  * Expo config plugin: set android:supportsRtl="false" on <application> in the
  * generated AndroidManifest.xml.
  *
- * This app only ships LTR locales (en/es/ko) and has no screens designed to
+ * This app only ships LTR locales and has no screens designed to
  * mirror. Android's I18nManager auto-detects RTL from the device's system
  * language before any JS runs, and calling I18nManager.allowRTL(false) /
  * forceRTL(false) from JS (see index.js) only persists the preference for the

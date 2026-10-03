@@ -128,13 +128,13 @@ export default function SettingsScreen() {
     { code: 'fr', name: 'French', nativeName: 'Français' },
     { code: 'pt', name: 'Portuguese', nativeName: 'Português' },
     { code: 'de', name: 'German', nativeName: 'Deutsch' },
+    { code: 'et', name: 'Estonian', nativeName: 'Eesti' },
   ];
 
-  // Main languages shown in UI (only these 3 can be selected)
-  const mainLocales = ['en', 'es', 'ko'];
+  const mainLocales = ['en', 'es', 'ko', 'fr', 'pt', 'de', 'et'];
 
   const handleLanguageChange = async () => {
-    // Only cycle through the 3 main languages in the UI
+    // Cycle through every supported language in the dashboard UI.
     const currentIndex = mainLocales.indexOf(locale);
     const nextIndex = (currentIndex + 1) % mainLocales.length;
     await setLocale(mainLocales[nextIndex]);
