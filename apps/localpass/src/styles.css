@@ -2,7 +2,7 @@
 body { margin: 0; }
 .app { min-height: 100vh; font-family: system-ui, sans-serif; font-size: var(--type-body); color: var(--text); background: var(--canvas); line-height: 1.5; }
 header { padding: var(--space-lg) max(var(--space-xl), calc((100vw - 1180px) / 2)); display: flex; flex-wrap: wrap; gap: var(--space-lg); align-items: center; justify-content: space-between; background: var(--surface); border-bottom: 1px solid var(--border); }
-.brand { color: var(--text); text-decoration: none; font-weight: 700; font-size: var(--type-title); display: flex; align-items: center; gap: var(--space-sm); }
+.brand { color: var(--text); text-decoration: none; font-weight: 800; font-size: var(--type-title); display: flex; align-items: center; gap: var(--space-sm); letter-spacing: -.03em; }\n.brand img { width: 40px; height: 40px; display: block; }\n.brand span { color: #06384A; }
 .header-actions, .suggestions, nav { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-sm); }
 main { max-width: 1180px; margin: auto; padding: 0 var(--space-xl); }
 .hero { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-hero); align-items: center; padding: var(--space-section) 0; }
