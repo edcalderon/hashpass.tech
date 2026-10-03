@@ -1,1 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#12372a"/><circle cx="256" cy="256" r="170" fill="#d8f36a"/><path d="M180 130v252h170v-65H250V130z" fill="#12372a"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
+  <title id="title">LocalPass</title>
+  <desc id="desc">A destination mark combining mountains, water and a warm sun.</desc>
+  <rect width="128" height="128" rx="28" fill="#06384A"/>
+  <path d="M17 68 43 48c4-3 9-3 13 1l15 15 11-9c4-3 8-3 12 0l16 14" fill="none" stroke="#F7F2E8" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M19 82c14-8 29-8 44-1 14 7 29 7 45-1" fill="none" stroke="#F7F2E8" stroke-width="6" stroke-linecap="round"/>
+  <path d="M21 94c14-7 28-6 42 0 14 6 28 6 42-1" fill="none" stroke="#1BA6A8" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="99" cy="27" r="10" fill="#FDBA2D"/>
+</svg>
