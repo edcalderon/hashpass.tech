@@ -889,12 +889,7 @@ export default function HomeScreen() {
                       </Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                      onPress={() => {
-                        const supportEmail =
-                          process.env.NODEMAILER_FROM_SUPPORT ||
-                          "support@hashpass.tech";
-                        Linking.openURL(`mailto:${supportEmail}`);
-                      }}
+                      onPress={() => router.push("/(shared)/support")}
                       style={styles.footerLink}
                     >
                       <Text style={styles.footerLinkText}>
