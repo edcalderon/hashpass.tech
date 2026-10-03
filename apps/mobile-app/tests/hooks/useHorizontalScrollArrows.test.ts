@@ -132,10 +132,7 @@ describe('useHorizontalScrollArrows', () => {
 
     const scrollTo = jest.fn();
     hook.current.scrollRef.current = { scrollTo };
-    const preventDefault = jest.fn();
-
-    hook.act(() => hook.current.handleWheel({ deltaX: 0, deltaY: 120, preventDefault }));
-    expect(preventDefault).toHaveBeenCalled();
+    hook.act(() => hook.current.handleWheel({ deltaX: 0, deltaY: 120 }));
     expect(scrollTo).toHaveBeenCalledWith({ x: 120, animated: false });
 
     // nativeEvent-wrapped shape (native platforms) is read the same way

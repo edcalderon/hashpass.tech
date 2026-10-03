@@ -945,7 +945,6 @@ export default function EventBannerCarousel({
   // --- Web-only: vertical scroll wheel → horizontal scroll ---
   const handleWheel = useCallback((e: any) => {
     if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
-      e.preventDefault();
       // Pause auto-play while the user is wheeling through slides
       isAutoPlayPausedRef.current = true;
       const currentX = scrollX.value;

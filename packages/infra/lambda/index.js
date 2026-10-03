@@ -49,6 +49,7 @@ const DEFAULT_CORS_ALLOWED_ORIGINS = [
   "http://127.0.0.1:8081",
   "https://hashpass.tech",
   "https://www.hashpass.tech",
+  "https://events.hashpass.tech",
   "https://dev.hashpass.tech",
   "https://bsl.hashpass.tech",
   "https://bsl-dev.hashpass.tech",

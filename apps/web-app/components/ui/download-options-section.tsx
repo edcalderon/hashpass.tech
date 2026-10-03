@@ -101,6 +101,8 @@ export function DownloadShowcase() {
           </p>
           <Link
             href="/documentation/guides/install-hashpass/"
+            target="_blank"
+            rel="noopener noreferrer"
             className="mt-3 inline-flex text-sm font-semibold text-blue-700 underline decoration-blue-400/50 underline-offset-4 transition-colors hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-100"
           >
             {t('pwaGuide')}
