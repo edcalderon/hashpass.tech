@@ -122,8 +122,6 @@ describe("TicketsScreen", () => {
 
   it('opens the ticket purchase modal from "Purchase Tickets" and closes it again via the close button and onRequestClose', () => {
     const view = renderScreen();
-    expect(view.root.findByType("Modal" as any).props.visible).toBe(false);
-
     act(() => findButton(view, "Purchase Tickets").props.onPress());
     expect(view.root.findByType("Modal" as any).props.visible).toBe(true);
 
@@ -131,12 +129,12 @@ describe("TicketsScreen", () => {
       .findAllByProps({ accessibilityLabel: "Close ticket modal" })
       .find((node) => typeof node.props.onPress === "function")!;
     act(() => closeButton.props.onPress());
-    expect(view.root.findByType("Modal" as any).props.visible).toBe(false);
+    expect(view.root.findAllByType("Modal" as any)).toHaveLength(0);
 
     // onRequestClose (hardware back / swipe-down dismiss) drives the same setter.
     act(() => findButton(view, "Purchase Tickets").props.onPress());
     act(() => view.root.findByType("Modal" as any).props.onRequestClose());
-    expect(view.root.findByType("Modal" as any).props.visible).toBe(false);
+    expect(view.root.findAllByType("Modal" as any)).toHaveLength(0);
   });
 
   it('navigates to Contact Support from the "Need Help?" card', () => {
@@ -239,6 +237,7 @@ describe("TicketsScreen", () => {
   it("hides the hostname link and falls back to a generic dialog title when the ticket URL is unparsable", () => {
     mockEvent = { id: "community-test", website: "not a valid url" };
     const view = renderScreen();
+    act(() => findButton(view, "Purchase Tickets").props.onPress());
     const text = collectText(view.toJSON());
 
     expect(text).not.toContain("Tickets provided by");
@@ -254,12 +253,18 @@ describe("TicketsScreen", () => {
     expect(view.root.findAllByType("iframe" as any)).toHaveLength(0);
   });
 
-  it("keeps third-party ticket pages out of a web iframe", () => {
+  it("embeds the PKRR ticket page in the web modal with a direct-link fallback", () => {
     Platform.OS = "web";
+    mockEvent = {
+      id: "hash-poker",
+      cta: { label: "Reserve seat", url: "https://pkrr.io/reg/current-tournament" },
+    };
     const view = renderScreen();
     act(() => findButton(view, "Purchase Tickets").props.onPress());
 
     expect(view.root.findAllByType("WebView" as any)).toHaveLength(0);
-    expect(view.root.findAllByType("iframe" as any)).toHaveLength(0);
+    const iframe = view.root.findByType("iframe" as any);
+    expect(iframe.props.src).toBe("https://pkrr.io/reg/current-tournament");
+    expect(collectText(view.toJSON())).toContain("If PKRR blocks embedded viewing");
   });
 });
