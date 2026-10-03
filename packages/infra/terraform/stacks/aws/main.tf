@@ -5,10 +5,17 @@ locals {
   site_custom_domain_name = trimspace(var.site_custom_domain_name)
   site_www_domain_name    = trimspace(var.site_www_domain_name)
   site_origin_domain_name = trimspace(var.site_origin_domain_name)
-  site_cloudfront_aliases = distinct([
+  site_additional_domain_names = distinct([
+    for domain_name in var.site_additional_domain_names :
+    trimspace(trim(domain_name, "."))
+    if trimspace(trim(domain_name, ".")) != "" &&
+    trimspace(trim(domain_name, ".")) != local.site_custom_domain_name &&
+    trimspace(trim(domain_name, ".")) != local.site_www_domain_name
+  ])
+  site_cloudfront_aliases = distinct(concat([
     for domain_name in [local.site_custom_domain_name, local.site_www_domain_name] :
     domain_name if domain_name != ""
-  ])
+  ], local.site_additional_domain_names))
 
   github_pages_domain = trim(var.github_pages_domain, ".")
   github_pages_a_records = [
@@ -91,7 +98,7 @@ locals {
 
 resource "aws_acm_certificate" "site" {
   domain_name               = local.site_custom_domain_name
-  subject_alternative_names = [local.site_www_domain_name]
+  subject_alternative_names = concat([local.site_www_domain_name], local.site_additional_domain_names)
   validation_method         = "DNS"
 
   lifecycle {
@@ -228,6 +235,39 @@ resource "aws_route53_record" "site_www" {
   records = [local.site_custom_domain_name]
 
   allow_overwrite = true
+}
+
+resource "aws_route53_record" "site_additional" {
+  for_each = toset(local.site_additional_domain_names)
+
+  zone_id = data.aws_route53_zone.site.zone_id
+  name    = each.value
+  type    = "A"
+  ttl     = null
+
+  allow_overwrite = true
+
+  alias {
+    evaluate_target_health = false
+    name                   = aws_cloudfront_distribution.site.domain_name
+    zone_id                = aws_cloudfront_distribution.site.hosted_zone_id
+  }
+}
+
+resource "aws_route53_record" "site_additional_ipv6" {
+  for_each = toset(local.site_additional_domain_names)
+
+  zone_id = data.aws_route53_zone.site.zone_id
+  name    = each.value
+  type    = "AAAA"
+
+  allow_overwrite = true
+
+  alias {
+    evaluate_target_health = false
+    name                   = aws_cloudfront_distribution.site.domain_name
+    zone_id                = aws_cloudfront_distribution.site.hosted_zone_id
+  }
 }
 
 module "frontend_domain_association" {

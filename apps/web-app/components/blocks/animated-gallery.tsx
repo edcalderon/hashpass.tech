@@ -26,8 +26,11 @@ const SPRING_CONFIG = {
 } as const;
 
 const blurVariants: Variants = {
-  hidden: { filter: 'blur(10px)', opacity: 0 },
-  visible: { filter: 'blur(0px)', opacity: 1 },
+  // Keep this transition opacity-only. Motion's spring interpolation can
+  // overshoot a zero-radius blur and emit invalid values such as
+  // `blur(-0.03181px)` in Firefox.
+  hidden: { opacity: 0 },
+  visible: { opacity: 1 },
 };
 
 const ContainerScrollContext = React.createContext<ContainerScrollContextValue | undefined>(undefined);

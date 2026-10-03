@@ -60,10 +60,6 @@ export function useHorizontalScrollArrows({
     const delta = Math.abs(dx) > Math.abs(dy) ? dx : dy;
     const nextX = Math.max(0, Math.min(scrollXRef.current + delta, maxScrollXRef.current));
 
-    if (typeof e?.preventDefault === 'function') {
-      e.preventDefault();
-    }
-
     scrollRef.current?.scrollTo({ x: nextX, animated: false });
   }, []);
 

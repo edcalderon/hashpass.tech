@@ -204,11 +204,15 @@ describe('BetterAuthProvider', () => {
       location: {
         origin: 'https://hashpass.tech',
         pathname: '/dashboard/explore',
-      } as Window['location'],
+        replace: jest.fn(),
+      } as unknown as Window['location'],
       localStorage: mockLocalStorage,
     } as Window);
 
-    mockSignInSocial.mockResolvedValueOnce({});
+    const locationReplace = (window.location.replace as jest.Mock);
+    mockSignInSocial.mockResolvedValueOnce({
+      data: { url: 'https://accounts.google.com/o/oauth2/v2/auth?state=test' },
+    });
 
     const { BetterAuthProvider } = require('../../../../packages/auth/src/providers/better-auth');
     const provider = new BetterAuthProvider({ baseURL: 'https://api.hashpass.tech/api/auth' });
@@ -222,8 +226,10 @@ describe('BetterAuthProvider', () => {
       expect.objectContaining({
         provider: 'google',
         callbackURL: 'https://hashpass.tech/auth/callback?returnTo=%2Fdashboard%2Fexplore',
+        disableRedirect: true,
       })
     );
+    expect(locationReplace).toHaveBeenCalledWith('https://accounts.google.com/o/oauth2/v2/auth?state=test');
     expect(result.pending).toBe(true);
   });
 
@@ -243,10 +249,13 @@ describe('BetterAuthProvider', () => {
       location: {
         origin: 'https://hashpass.tech',
         pathname: '/dashboard/explore',
-      } as Window['location'],
+        replace: jest.fn(),
+      } as unknown as Window['location'],
       localStorage: mockLocalStorage,
     } as Window);
-    mockSignInSocial.mockResolvedValueOnce({});
+    mockSignInSocial.mockResolvedValueOnce({
+      data: { url: 'https://appleid.apple.com/auth/authorize?state=test' },
+    });
 
     const { BetterAuthProvider } = require('../../../../packages/auth/src/providers/better-auth');
     const provider = new BetterAuthProvider({ baseURL: 'https://api.hashpass.tech/api/auth' });
@@ -254,8 +263,9 @@ describe('BetterAuthProvider', () => {
     const result = await provider.signInWithOAuth('apple');
 
     expect(mockSignInSocial).toHaveBeenCalledWith(
-      expect.objectContaining({ provider: 'apple' })
+      expect.objectContaining({ provider: 'apple', disableRedirect: true })
     );
+    expect(window.location.replace).toHaveBeenCalledWith('https://appleid.apple.com/auth/authorize?state=test');
     expect(result.pending).toBe(true);
   });
 

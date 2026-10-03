@@ -22,12 +22,37 @@ const WEB_FALLBACK_PREFERENCES: PassMotionPreferences = {
 
 type MediaQueryReader = (query: string) => MediaQueryList;
 
-export const resolveWebPassMotionPreferences = (matchMedia: MediaQueryReader): PassMotionPreferences => {
+/**
+ * Some browsers expose the hover media query but flatten nested 3D
+ * transforms. Keep the desktop treatment opt-in only when the CSS engine
+ * advertises the primitives the card needs; the 2D face crossfade remains the
+ * safe presentation everywhere else.
+ */
+export const hasCss3dSupport = (): boolean => {
+  if (typeof CSS === 'undefined' || typeof CSS.supports !== 'function') {
+    // Older test environments and browsers without CSS.supports do not give
+    // us a reliable negative signal. The pointer media query still gates the
+    // optional effect in that case.
+    return true;
+  }
+
+  return (
+    CSS.supports('transform-style', 'preserve-3d') &&
+    CSS.supports('backface-visibility', 'hidden') &&
+    CSS.supports('transform', 'perspective(1px) rotateY(1deg)')
+  );
+};
+
+export const resolveWebPassMotionPreferences = (
+  matchMedia: MediaQueryReader,
+  css3dSupported = true,
+): PassMotionPreferences => {
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   // WebKit PWA/touch environments frequently flatten nested preserve-3d and
   // backface layers. A hoverable fine pointer is the useful, standards-based
   // signal that the optional desktop tilt can be rendered safely.
-  const supports3d = !reducedMotion && matchMedia('(hover: hover) and (pointer: fine)').matches;
+  const supports3d =
+    css3dSupported && !reducedMotion && matchMedia('(hover: hover) and (pointer: fine)').matches;
 
   return { supports3d, reducedMotion };
 };
@@ -35,7 +60,7 @@ export const resolveWebPassMotionPreferences = (matchMedia: MediaQueryReader): P
 const getInitialPreferences = (): PassMotionPreferences => {
   if (Platform.OS !== 'web') return NATIVE_PREFERENCES;
   if (typeof window === 'undefined' || !window.matchMedia) return WEB_FALLBACK_PREFERENCES;
-  return resolveWebPassMotionPreferences(window.matchMedia);
+  return resolveWebPassMotionPreferences(window.matchMedia, hasCss3dSupport());
 };
 
 const subscribe = (query: MediaQueryList, listener: () => void) => {
@@ -62,7 +87,7 @@ export const usePassMotionPreferences = (): PassMotionPreferences => {
 
     const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
     const pointerQuery = window.matchMedia('(hover: hover) and (pointer: fine)');
-    const update = () => setPreferences(resolveWebPassMotionPreferences(window.matchMedia));
+    const update = () => setPreferences(resolveWebPassMotionPreferences(window.matchMedia, hasCss3dSupport()));
 
     update();
     const unsubscribeReducedMotion = subscribe(reducedMotionQuery, update);

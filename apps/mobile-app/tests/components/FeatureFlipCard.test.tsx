@@ -90,3 +90,14 @@ it.each([
   act(() => { view = create(<FeatureFlipCard title="Feature" description="Details" icon={icon as string} />); });
   expect(view.root.findAllByType(Icon as React.ComponentType)).toHaveLength(2);
 });
+
+it('keeps both faces inside a bounded shell for 2D browser fallbacks', () => {
+  act(() => { view = create(<FeatureFlipCard title="Bounded" description="Details" />); });
+
+  const shell = view.root.findByProps({ role: 'button', 'aria-label': 'Bounded' });
+  const faces = view.root.findAll((node) => Object.prototype.hasOwnProperty.call(node.props, 'data-active'));
+
+  expect(shell.props.className).toContain('overflow-hidden');
+  expect(faces).toHaveLength(2);
+  expect(faces.map((face) => face.props['data-active'])).toEqual([true, false]);
+});

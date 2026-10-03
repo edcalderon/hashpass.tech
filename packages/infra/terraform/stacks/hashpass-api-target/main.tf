@@ -56,7 +56,10 @@ module "api_dev" {
     lookup(var.lambda_environment_overrides, "dev", {})
   )
 
-  cors_allow_origins = lookup(var.api_cors_origins, "dev", ["http://localhost:8081"])
+  cors_allow_origins = lookup(var.api_cors_origins, "dev", [
+    "http://localhost:8081",
+    "https://events.hashpass.tech",
+  ])
 
   tags = merge(local.common_tags, {
     Environment = "dev"
@@ -93,6 +96,7 @@ module "api_prod" {
   cors_allow_origins = lookup(var.api_cors_origins, "prod", [
     "https://hashpass.tech",
     "https://www.hashpass.tech",
+    "https://events.hashpass.tech",
     "https://bsl.hashpass.tech",
     "https://bsl-dev.hashpass.tech",
     "https://blockchainsummit.hashpass.lat",

@@ -20,19 +20,21 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.91)
+## 📋 Latest Changes (v1.9.92)
 
 ### Bug Fixes
 
-* **events:** load Hash Poker tickets from PKRR ([8f6c0ae](https://github.com/hashpass-tech/hashpass.tech/commit/8f6c0ae9ac22d50b96d5c15db2f019ac4068f6b7))
+* harden landing motion and carousel behavior ([bb1959c](https://github.com/hashpass-tech/hashpass.tech/commit/bb1959cc629ba62911c781de74b581320ed255ed))
 ### Release Highlights
-- load Hash Poker tickets from PKRR
+- harden landing motion and carousel behavior
 
 ### Release scope
-- Compared with: `v1.9.90` (the previous global release tag)
+- Compared with: `v1.9.91` (the previous global release tag)
 
 ### Affected products & packages
 - Mobile app
+- Auth
+- Infrastructure
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

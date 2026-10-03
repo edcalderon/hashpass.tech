@@ -162,35 +162,46 @@ const PassTiltCard: React.FC<PassTiltCardProps> = ({
       }}
     >
       <div
-        ref={innerRef}
         style={{
           position: 'relative',
           width: '100%',
           borderRadius,
-          transformStyle: supports3d ? 'preserve-3d' : undefined,
-          transform: supports3d ? REST_TRANSFORM : undefined,
-          willChange: supports3d ? 'transform' : undefined,
-          boxShadow: isDark
-            ? `0 18px 40px -18px ${accentColor}66, 0 8px 24px -12px rgba(0,0,0,0.8)`
-            : `0 18px 40px -20px ${accentColor}55, 0 8px 20px -14px rgba(0,0,0,0.35)`,
+          overflow: 'hidden',
         }}
       >
-        {children}
-        {supports3d ? (
-          <div
-            ref={sheenRef}
-            aria-hidden
-            style={{
-              position: 'absolute',
-              inset: 0,
-              borderRadius,
-              opacity: 0,
-              pointerEvents: 'none',
-              mixBlendMode: isDark ? 'soft-light' : 'overlay',
-              transform: 'translateZ(1px)',
-            }}
-          />
-        ) : null}
+        <div
+          ref={innerRef}
+          style={{
+            position: 'relative',
+            width: '100%',
+            borderRadius,
+            // Keep the preserve-3d context unclipped. The wrapper above is
+            // the separate clipping layer for both the fallback and 3D card.
+            transformStyle: supports3d ? 'preserve-3d' : undefined,
+            transform: supports3d ? REST_TRANSFORM : undefined,
+            willChange: supports3d ? 'transform' : undefined,
+            boxShadow: isDark
+              ? `0 18px 40px -18px ${accentColor}66, 0 8px 24px -12px rgba(0,0,0,0.8)`
+              : `0 18px 40px -20px ${accentColor}55, 0 8px 20px -14px rgba(0,0,0,0.35)`,
+          }}
+        >
+          {children}
+          {supports3d ? (
+            <div
+              ref={sheenRef}
+              aria-hidden
+              style={{
+                position: 'absolute',
+                inset: 0,
+                borderRadius,
+                opacity: 0,
+                pointerEvents: 'none',
+                mixBlendMode: isDark ? 'soft-light' : 'overlay',
+                transform: 'translateZ(1px)',
+              }}
+            />
+          ) : null}
+        </div>
       </div>
     </div>
   );

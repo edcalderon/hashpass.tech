@@ -13,4 +13,8 @@ test('links the download choices to the contextual PWA installation guide', () =
     /<(?:a|Link)\b[^>]*href=["']\/documentation\/guides\/install-hashpass\/["'][^>]*>/s,
   );
   assert.match(source, /(?:Progressive Web App|\bPWA\b|t\(['"]pwaGuide['"]\))/);
+  assert.match(
+    source,
+    /href=["']\/documentation\/guides\/install-hashpass\/["'][\s\S]*target=["']_blank["'][\s\S]*rel=["']noopener noreferrer["']/,
+  );
 });
