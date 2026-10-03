@@ -16,6 +16,7 @@ existing S3 origins or CloudFront delivery.
 | `bsl.hashpass.tech`, `bsl-dev.hashpass.tech` | Existing cross-account CloudFront + production-account static origins | `hashpass` for origin deployment | Tenant workflow, targets `bsl-production` / `bsl-development`, matching `main` / `develop` pushes |
 | `hashpass.club` | GitHub Pages | n/a | `club-v*` release workflow |
 | `hashpass.link`, `hpass.id`, `hashp.link` | Shared Lambda + API Gateway | `hashpass` | Terraform-managed links API |
+| `localproof.org`, `www.localproof.org` | CloudFront + private OAC-protected S3 (LocalPass offline-tourism MVP, `apps/localpass`) | `hashpass` | `packages/infra/terraform/stacks/localproof` provisions the infra; deploy is a manual `pnpm --filter @hashpass/localpass build` + `aws s3 sync` + CloudFront invalidation (no GitHub Actions deploy workflow yet — hackathon MVP). Source also mirrors to [`hashpass-tech/localproof.org`](https://github.com/hashpass-tech/localproof.org) via `.github/workflows/localpass-mirror.yml` for independent packaging. |
 
 ## Account boundary
 
