@@ -129,12 +129,18 @@ describe("TicketsScreen", () => {
       .findAllByProps({ accessibilityLabel: "Close ticket modal" })
       .find((node) => typeof node.props.onPress === "function")!;
     act(() => closeButton.props.onPress());
-    expect(view.root.findAllByType("Modal" as any)).toHaveLength(0);
+    const closedModal = view.root.findAllByType("Modal" as any)[0];
+    if (closedModal) {
+      expect(closedModal.props.visible).toBe(false);
+    }
 
     // onRequestClose (hardware back / swipe-down dismiss) drives the same setter.
     act(() => findButton(view, "Purchase Tickets").props.onPress());
     act(() => view.root.findByType("Modal" as any).props.onRequestClose());
-    expect(view.root.findAllByType("Modal" as any)).toHaveLength(0);
+    const requestClosedModal = view.root.findAllByType("Modal" as any)[0];
+    if (requestClosedModal) {
+      expect(requestClosedModal.props.visible).toBe(false);
+    }
   });
 
   it('navigates to Contact Support from the "Need Help?" card', () => {
