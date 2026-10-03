@@ -2,6 +2,46 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * 3D face transforms are optional decoration. WebKit PWA and lightweight
+ * browser engines can expose transform properties while flattening the
+ * preserve-3d context, which makes a transformed image escape its card. Keep
+ * the faces in a clipped, accessible 2D crossfade whenever the full 3D stack
+ * is not available.
+ */
+.hp-feature-flip-card {
+  isolation: isolate;
+  overflow: hidden;
+}
+
+@supports not ((transform-style: preserve-3d) and (backface-visibility: hidden)) {
+  .hp-feature-flip-card__inner {
+    transform: none !important;
+    transition: none !important;
+  }
+
+  .hp-feature-flip-card__face {
+    transform: none !important;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 160ms ease-out, visibility 160ms ease-out;
+  }
+
+  .hp-feature-flip-card__face[data-active="true"] {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hp-feature-flip-card__inner,
+  .hp-feature-flip-card__face {
+    transition: none !important;
+  }
+}
+
 /* The landing search field owns its focus treatment. Do not let a tenant
    accent leak into its outline over media-backed carousel cards. */
 .hp-carousel-search-input,

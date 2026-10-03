@@ -88,9 +88,12 @@ cost_anomaly_threshold_usd    = 5
 # cost_anomaly_monitor_arn = "arn:aws:ce::<account-id>:anomalymonitor/<monitor-id>"
 
 # Production CloudFront for hashpass.tech. Request/validate the ACM certificate
-# in us-east-1, then paste the issued ARN here before enabling the cutover.
+# in us-east-1, ensure it covers hashpass.tech, www.hashpass.tech, and the
+# additional aliases below, then paste the issued ARN here before enabling the
+# cutover.
 site_route53_zone_name   = "hashpass.tech"
 site_custom_domain_name  = "hashpass.tech"
+site_additional_domain_names = ["events.hashpass.tech"]
 site_acm_certificate_arn = ""
 
 enable_cloudfront = true

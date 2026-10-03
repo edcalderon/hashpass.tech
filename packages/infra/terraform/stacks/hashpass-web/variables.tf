@@ -189,6 +189,12 @@ variable "site_custom_domain_name" {
   default     = "hashpass.tech"
 }
 
+variable "site_additional_domain_names" {
+  description = "Additional production CloudFront aliases served by the same site origin"
+  type        = list(string)
+  default     = ["events.hashpass.tech"]
+}
+
 variable "site_acm_certificate_arn" {
   description = "ACM certificate ARN in us-east-1 for the production site CloudFront distribution"
   type        = string

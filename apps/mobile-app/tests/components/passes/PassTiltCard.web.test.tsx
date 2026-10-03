@@ -86,6 +86,17 @@ describe('PassTiltCard.web', () => {
     });
   });
 
+  it('forces the bounded 2D presentation when CSS 3D primitives are unavailable', () => {
+    const matchMedia = jest.fn((query: string) => ({
+      matches: query === '(hover: hover) and (pointer: fine)',
+    })) as unknown as (query: string) => MediaQueryList;
+
+    expect(resolveWebPassMotionPreferences(matchMedia, false)).toEqual({
+      supports3d: false,
+      reducedMotion: false,
+    });
+  });
+
   it('honors system reduced motion even on a fine-pointer desktop', () => {
     const matchMedia = jest.fn((query: string) => ({
       matches: true,
@@ -114,6 +125,7 @@ describe('PassTiltCard.web', () => {
     expect(inner.props.style.transformStyle).toBeUndefined();
     expect(inner.props.style.transform).toBeUndefined();
     expect(inner.props.style.willChange).toBeUndefined();
+    expect(inner.props.style.overflow).toBe('hidden');
   });
 
   it('does not leave translateZ layers active in the touch fallback', () => {

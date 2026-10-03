@@ -91,6 +91,7 @@ import EventBannerCarousel, {
 } from "../../components/EventBannerCarousel";
 import {
   getVisibleCarouselDotIndices,
+  resolveInfiniteWrapTarget,
   resolveMobileCarouselCardWidth,
   shouldStackCarouselFooter,
 } from "../../lib/carousel-layout";
@@ -177,6 +178,64 @@ it("advances the native pager by one viewport and wraps after the final slide", 
 
   act(() => { jest.advanceTimersByTime(100); });
   expect(scrollTo).toHaveBeenLastCalledWith({ x: 0, animated: true });
+});
+
+it("maps cloned wide-carousel endpoints back to their real slides", () => {
+  expect(resolveInfiniteWrapTarget(0, 4)).toBe(4);
+  expect(resolveInfiniteWrapTarget(5, 4)).toBe(1);
+  expect(resolveInfiniteWrapTarget(2, 4)).toBeNull();
+  expect(resolveInfiniteWrapTarget(0, 1)).toBeNull();
+});
+
+it("restarts the wide carousel when the terminal clone is reached", () => {
+  (Platform as { OS: string }).OS = "web";
+  mockIsMobile = false;
+  mockGlobalTenant = false;
+  render({ autoPlay: false });
+
+  const pager = view.root.findByType(ScrollView);
+  const screenWidth = 1024;
+  const cardWidth = Math.max(480, Math.min(screenWidth * 0.6, 900));
+  const contentPadding = (screenWidth - cardWidth) / 2;
+  const snapInterval = cardWidth + 16;
+  const slideCount = 4;
+
+  scrollTo.mockClear();
+  act(() => pager.props.onScroll({
+    nativeEvent: {
+      contentOffset: { x: contentPadding + (slideCount + 1) * snapInterval },
+    },
+  }));
+
+  expect(scrollTo).toHaveBeenLastCalledWith({
+    x: contentPadding + snapInterval,
+    animated: false,
+  });
+});
+
+it("uses a fallback reset when autoplay reaches the terminal clone without a scroll event", () => {
+  jest.useFakeTimers();
+  (Platform as { OS: string }).OS = "web";
+  mockIsMobile = false;
+  mockGlobalTenant = false;
+  render({ autoPlay: true, autoPlayInterval: 1000 });
+
+  const screenWidth = 1024;
+  const cardWidth = Math.max(480, Math.min(screenWidth * 0.6, 900));
+  const contentPadding = (screenWidth - cardWidth) / 2;
+  const snapInterval = cardWidth + 16;
+  scrollTo.mockClear();
+  act(() => { jest.advanceTimersByTime(4000); });
+  expect(scrollTo).toHaveBeenLastCalledWith({
+    x: contentPadding + 5 * snapInterval,
+    animated: true,
+  });
+
+  act(() => { jest.advanceTimersByTime(400); });
+  expect(scrollTo).toHaveBeenLastCalledWith({
+    x: contentPadding + snapInterval,
+    animated: false,
+  });
 });
 
 it("snaps every phone swipe to one complete carousel page", () => {

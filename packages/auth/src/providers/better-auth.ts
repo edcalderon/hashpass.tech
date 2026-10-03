@@ -296,16 +296,30 @@ export class BetterAuthProvider implements IAuthProvider {
       window.localStorage.setItem('oauth_in_progress', 'true');
       window.localStorage.setItem('auth_signin_method', `${provider}_oauth`);
 
+      // Ask Better Auth for the provider URL instead of letting the client
+      // choose its own browsing-context navigation. Installed WebKit and
+      // WebKit-like PWAs can promote an automatic cross-origin redirect into
+      // a separate browser window, which loses the handoff back to the app.
+      // An explicit same-window replace keeps the OAuth journey attached to
+      // the window that started it (and never uses window.open).
       const result = await (this.getClient() as any).signIn.social({
         provider,
         callbackURL,
         errorCallbackURL,
         newUserCallbackURL: callbackURL,
+        disableRedirect: true,
       });
 
       if (result?.error) {
         return { error: result.error.message || result.error.statusText || `${providerLabel} sign-in failed.` };
       }
+
+      const authorizationUrl = result?.data?.url;
+      if (typeof authorizationUrl !== 'string' || authorizationUrl.length === 0) {
+        return { error: `${providerLabel} sign-in did not return an authorization URL.` };
+      }
+
+      window.location.replace(authorizationUrl);
 
       return { pending: true };
     } catch (error) {

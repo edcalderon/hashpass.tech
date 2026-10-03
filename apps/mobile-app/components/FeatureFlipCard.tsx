@@ -68,7 +68,7 @@ export default function FeatureFlipCard({
           height: 220,
         } as React.CSSProperties
       }
-      className="group relative [perspective:2000px]"
+      className="hp-feature-flip-card group relative overflow-hidden [perspective:2000px]"
       onMouseEnter={(event) => setFlipped(true, event.currentTarget)}
       onMouseLeave={(event) => setFlipped(false, event.currentTarget)}
       onClick={(event) => setFlipped(!isFlipped, event.currentTarget)}
@@ -86,7 +86,7 @@ export default function FeatureFlipCard({
     >
       <div
         className={cn(
-          'relative h-full w-full',
+          'hp-feature-flip-card__inner relative h-full w-full',
           '[transform-style:preserve-3d]',
           'transition-all duration-700',
           isFlipped ? '[transform:rotateY(180deg)]' : '[transform:rotateY(0deg)]'
@@ -95,7 +95,7 @@ export default function FeatureFlipCard({
         <div
           aria-hidden={isFlipped}
           className={cn(
-            'absolute inset-0 h-full w-full',
+            'hp-feature-flip-card__face absolute inset-0 h-full w-full',
             '[transform:rotateY(0deg)] [backface-visibility:hidden]',
             'overflow-hidden rounded-3xl',
             'border',
@@ -103,6 +103,7 @@ export default function FeatureFlipCard({
               ? 'bg-[#19191f] border-[#34343e]'
               : 'bg-[#f7f9fa] border-[#dfe3e8]'
           )}
+          data-active={!isFlipped}
         >
           <div className="relative z-10 flex h-full flex-col items-center justify-center gap-3 px-5 py-4 text-center">
             <FeatureIcon name={icon} color={color} visible={!isFlipped} reduceMotion={reduceMotion} />
@@ -120,7 +121,7 @@ export default function FeatureFlipCard({
         <div
           aria-hidden={!isFlipped}
           className={cn(
-            'absolute inset-0 h-full w-full',
+            'hp-feature-flip-card__face absolute inset-0 h-full w-full',
             '[transform:rotateY(180deg)] [backface-visibility:hidden]',
             'rounded-3xl p-4',
             'border',
@@ -129,6 +130,7 @@ export default function FeatureFlipCard({
               : 'bg-[#f7f9fa] border-[#dfe3e8]',
             'flex flex-col'
           )}
+          data-active={isFlipped}
         >
           <div className="relative z-10 flex h-full min-h-0 flex-col">
             <div className="mb-2 flex items-center gap-2">

@@ -167,6 +167,10 @@ const PassTiltCard: React.FC<PassTiltCardProps> = ({
           position: 'relative',
           width: '100%',
           borderRadius,
+          // The 2D fallback deliberately keeps both faces in the same
+          // bounded shell. This also contains media when a browser reports
+          // partial 3D support but cannot clip transformed descendants.
+          overflow: 'hidden',
           transformStyle: supports3d ? 'preserve-3d' : undefined,
           transform: supports3d ? REST_TRANSFORM : undefined,
           willChange: supports3d ? 'transform' : undefined,

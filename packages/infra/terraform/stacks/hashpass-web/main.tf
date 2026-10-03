@@ -16,7 +16,12 @@ locals {
   lambda_deployment_bucket_name = "${var.name_prefix}-lambda-deployments-${data.aws_caller_identity.current.account_id}-${var.lambda_region}"
   site_custom_domain_name       = trimspace(var.site_custom_domain_name)
   site_acm_certificate_arn      = trimspace(var.site_acm_certificate_arn)
-  site_route53_zone_name        = trim(var.site_route53_zone_name, ".")
+  site_additional_domain_names = distinct([
+    for domain_name in var.site_additional_domain_names :
+    trimspace(trim(domain_name, "."))
+    if trimspace(trim(domain_name, ".")) != "" && trimspace(trim(domain_name, ".")) != local.site_custom_domain_name
+  ])
+  site_route53_zone_name = trim(var.site_route53_zone_name, ".")
   site_route53_a_records = [
     for ip_address in var.site_route53_a_records : trimspace(ip_address)
     if trimspace(ip_address) != ""
@@ -448,7 +453,7 @@ resource "aws_cloudfront_distribution" "site" {
   enabled             = true
   comment             = "${var.name_prefix} ${var.environment} static site"
   default_root_object = "index.html"
-  aliases             = [local.site_custom_domain_name]
+  aliases             = concat([local.site_custom_domain_name], local.site_additional_domain_names)
   price_class         = "PriceClass_100"
   is_ipv6_enabled     = true
   wait_for_deployment = true
@@ -537,6 +542,34 @@ resource "aws_route53_record" "site_ipv6" {
 
   zone_id = data.aws_route53_zone.tech.zone_id
   name    = local.site_custom_domain_name
+  type    = "AAAA"
+
+  alias {
+    evaluate_target_health = false
+    name                   = local.site_alias_name
+    zone_id                = local.site_alias_zone
+  }
+}
+
+resource "aws_route53_record" "site_additional" {
+  for_each = var.enable_cloudfront ? toset(local.site_additional_domain_names) : toset([])
+
+  zone_id = data.aws_route53_zone.tech.zone_id
+  name    = each.value
+  type    = "A"
+
+  alias {
+    evaluate_target_health = false
+    name                   = local.site_alias_name
+    zone_id                = local.site_alias_zone
+  }
+}
+
+resource "aws_route53_record" "site_additional_ipv6" {
+  for_each = var.enable_cloudfront ? toset(local.site_additional_domain_names) : toset([])
+
+  zone_id = data.aws_route53_zone.tech.zone_id
+  name    = each.value
   type    = "AAAA"
 
   alias {

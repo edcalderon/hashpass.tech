@@ -1,6 +1,14 @@
 const CAROUSEL_FOOTER_STACK_BREAKPOINT = 1100;
 const MOBILE_CARD_HORIZONTAL_INSET = 16;
 
+/** Map a cloned edge back to its real slide after the wrap animation. */
+export function resolveInfiniteWrapTarget(physicalIndex: number, slideCount: number) {
+  if (slideCount <= 1) return null;
+  if (physicalIndex === 0) return slideCount;
+  if (physicalIndex === slideCount + 1) return 1;
+  return null;
+}
+
 /** Keep carousel actions and pagination reachable on medium-width layouts. */
 export function shouldStackCarouselFooter(
   isMobile: boolean,

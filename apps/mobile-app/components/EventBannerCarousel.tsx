@@ -22,6 +22,7 @@ import Animated, {
   cancelAnimation,
   Easing,
   interpolate,
+  useDerivedValue,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
@@ -46,6 +47,7 @@ import CarouselTickPill from "./CarouselTickPill";
 import {
   getVisibleCarouselDotIndices,
   resolveMobileCarouselCardWidth,
+  resolveInfiniteWrapTarget,
   shouldStackCarouselFooter,
 } from "../lib/carousel-layout";
 import { uiTokens } from "@hashpass/ui/tokens";
@@ -67,6 +69,7 @@ import { MorphIcon } from "../lib/morph-icon";
 const BASE_CARD_WIDTH = 480;
 const CARD_GAP = 16;
 const CARD_BORDER_RADIUS = 20;
+const INFINITE_WRAP_FALLBACK_DELAY = 400;
 
 /** Compute card dimensions for the current viewport. */
 function resolveCardDimensions(screenWidth: number) {
@@ -577,11 +580,27 @@ export default function EventBannerCarousel({
   const scrollX = useSharedValue(0);
   const activeIndex = useSharedValue(0);
   const progress = useSharedValue(0); // auto-play countdown 0→1
+  const logicalActiveIndex = useDerivedValue(() => {
+    const physicalIndex = Math.round(activeIndex.value);
+    if (physicalIndex <= 0) return N - 1;
+    if (physicalIndex >= N + 1) return 0;
+    return physicalIndex - CLONE_OFFSET;
+  }, [N]);
   const [isPlaying, setIsPlaying] = useState(autoPlay);
   const [logicalIndex, setLogicalIndex] = useState(0);
+  const logicalIndexRef = useRef(0);
   const [currentIndex, setCurrentIndex] = useState(0); // fallback slider only
+  const currentIndexRef = useRef(0);
   const [activePhysicalIndex, setActivePhysicalIndex] = useState(1);
-  const [wrapLock, setWrapLock] = useState(false); // debounce silent wrap-arounds
+  const wrapTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const setLogicalSlide = useCallback((index: number) => {
+    logicalIndexRef.current = index;
+    setLogicalIndex(index);
+  }, []);
+  const setCurrentSlide = useCallback((index: number) => {
+    currentIndexRef.current = index;
+    setCurrentIndex(index);
+  }, []);
   const proposalSlideIndex = realSlides.findIndex((slide) => slide.type === "proposal");
   const activeSlideIndex = usePeekingCarousel ? logicalIndex : currentIndex;
   const videoPlaybackAllowed = animationLevel === "full" && !reduceMotion;
@@ -641,6 +660,38 @@ export default function EventBannerCarousel({
 
   const physicalToOffset = useCallback((physIdx: number) => contentPaddingX + physIdx * snapInterval, [contentPaddingX, snapInterval]);
 
+  const clearPendingWrap = useCallback(() => {
+    clearTimeout(wrapTimerRef.current);
+    wrapTimerRef.current = undefined;
+  }, []);
+
+  const wrapToRealSlide = useCallback((physicalIndex: number, immediate = false) => {
+    const targetIndex = resolveInfiniteWrapTarget(physicalIndex, N);
+    if (targetIndex === null) return false;
+
+    clearPendingWrap();
+    const applyWrap = () => {
+      const targetX = physicalToOffset(targetIndex);
+      scrollViewRef.current?.scrollTo({ x: targetX, animated: false });
+      scrollX.value = targetX;
+      activeIndex.value = targetIndex;
+      setActivePhysicalIndex(targetIndex);
+      wrapTimerRef.current = undefined;
+    };
+
+    if (immediate) {
+      applyWrap();
+    } else {
+      // React Native Web can omit both the terminal onScroll event and
+      // momentum-end for a programmatic snap. Keep a fallback timer so the
+      // clone can never remain visible at the end of the track.
+      wrapTimerRef.current = setTimeout(applyWrap, INFINITE_WRAP_FALLBACK_DELAY);
+    }
+    return true;
+  }, [N, activeIndex, clearPendingWrap, physicalToOffset, scrollX]);
+
+  useEffect(() => () => clearPendingWrap(), [clearPendingWrap]);
+
   // Center the first card on mount so it's the middle visible card on wide
   // screens instead of sitting at the far-left edge of the viewport.
   useEffect(() => {
@@ -663,56 +714,23 @@ export default function EventBannerCarousel({
     scrollX.value = x;
     // Derive physical index from scroll position
     const physIdx = Math.round((x - contentPaddingX) / snapInterval);
+    if (wrapToRealSlide(physIdx, true)) return;
     activeIndex.value = physIdx;
     setActivePhysicalIndex(physIdx);
-
-    // Silent wrap during scroll: if we're near a clone position, snap to the
-    // real slide without animation. This catches cases where momentumEnd
-    // doesn't fire reliably on web.
-    if (wrapLock) return;
-    if (physIdx === 0 && N > 1) {
-      setWrapLock(true);
-      // Snap to the real last slide (phys N) — same position visually
-      requestAnimationFrame(() => {
-        scrollViewRef.current?.scrollTo({ x: physicalToOffset(N), animated: false });
-        // Release the lock after the scroll settles
-        setTimeout(() => setWrapLock(false), 100);
-      });
-    }
-    if (physIdx === N + 1 && N > 1) {
-      setWrapLock(true);
-      // Snap to the real first slide (phys 1) — same position visually
-      requestAnimationFrame(() => {
-        scrollViewRef.current?.scrollTo({ x: physicalToOffset(1), animated: false });
-        setTimeout(() => setWrapLock(false), 100);
-      });
-    }
-  }, [scrollX, activeIndex, contentPaddingX, snapInterval, N, physicalToOffset, wrapLock]);
+  }, [activeIndex, contentPaddingX, snapInterval, scrollX, wrapToRealSlide]);
 
   const onMomentumScrollEnd = useCallback(() => {
-    if (wrapLock) return;
     const physIdx = Math.round((scrollX.value - contentPaddingX) / snapInterval);
-    // Wrap: clone_last (phys 0) → real last (phys N)
-    if (physIdx === 0 && N > 1) {
-      setWrapLock(true);
-      setTimeout(() => {
-        scrollViewRef.current?.scrollTo({ x: physicalToOffset(N), animated: false });
-        setWrapLock(false);
-      }, 150);
-    }
-    // Wrap: clone_first (phys N+1) → real first (phys 1)
-    if (physIdx === N + 1 && N > 1) {
-      setWrapLock(true);
-      setTimeout(() => {
-        scrollViewRef.current?.scrollTo({ x: physicalToOffset(1), animated: false });
-        setWrapLock(false);
-      }, 150);
-    }
-  }, [scrollX, contentPaddingX, physicalToOffset, N, wrapLock]);
+    if (wrapToRealSlide(physIdx, true)) return;
+    activeIndex.value = physIdx;
+    setActivePhysicalIndex(physIdx);
+  }, [activeIndex, contentPaddingX, snapInterval, scrollX, wrapToRealSlide]);
 
   const scrollToPhysical = useCallback((physIdx: number, animated = true) => {
+    clearPendingWrap();
     scrollViewRef.current?.scrollTo({ x: physicalToOffset(physIdx), animated });
-  }, [physicalToOffset]);
+    if (animated) wrapToRealSlide(physIdx);
+  }, [clearPendingWrap, physicalToOffset, wrapToRealSlide]);
 
   const scrollToLogical = useCallback((logIdx: number) => {
     scrollToPhysical(logIdx + CLONE_OFFSET);
@@ -726,14 +744,14 @@ export default function EventBannerCarousel({
     if (!hasSearchQuery) return;
     requestAnimationFrame(() => {
       if (usePeekingCarousel) {
-        setLogicalIndex(0);
+        setLogicalSlide(0);
         scrollToPhysical(CLONE_OFFSET, false);
       } else {
-        setCurrentIndex(0);
+        setCurrentSlide(0);
         scrollToFallbackSlide(0);
       }
     });
-  }, [hasSearchQuery, searchQuery, scrollToFallbackSlide, scrollToPhysical, usePeekingCarousel]);
+  }, [hasSearchQuery, searchQuery, scrollToFallbackSlide, scrollToPhysical, setCurrentSlide, setLogicalSlide, usePeekingCarousel]);
 
   const handleEventPress = (event: EventInfo) => {
     if (onEventPress) onEventPress(event);
@@ -777,21 +795,15 @@ export default function EventBannerCarousel({
     const interval = setInterval(() => {
       if (isAutoPlayPausedRef.current) return;
       if (usePeekingCarousel) {
-        setLogicalIndex((prev) => {
-          // We're at the last real slide → advance to clone_first (N+1) for the wrap animation.
-          if (prev === N - 1) {
-            scrollToPhysical(N + 1);
-            return 0;
-          }
-          scrollToPhysical(prev + CLONE_OFFSET + 1);
-          return (prev + 1) % N;
-        });
+        const next = (logicalIndexRef.current + 1) % N;
+        // We're at the last real slide → advance to clone_first (N+1) for
+        // the wrap animation, then silently reposition to physical index 1.
+        scrollToPhysical(next === 0 ? N + 1 : next + CLONE_OFFSET);
+        setLogicalSlide(next);
       } else {
-        setCurrentIndex((prev) => {
-          const next = (prev + 1) % N;
-          scrollToFallbackSlide(next);
-          return next;
-        });
+        const next = (currentIndexRef.current + 1) % N;
+        scrollToFallbackSlide(next);
+        setCurrentSlide(next);
       }
       timerStartRef.current = Date.now();
       progress.value = 0;
@@ -805,6 +817,8 @@ export default function EventBannerCarousel({
     progress,
     scrollToFallbackSlide,
     scrollToPhysical,
+    setCurrentSlide,
+    setLogicalSlide,
     usePeekingCarousel,
   ]);
 
@@ -818,12 +832,12 @@ export default function EventBannerCarousel({
       let log = physIdx - CLONE_OFFSET;
       if (log < 0) log = N - 1; // clone of last
       if (log >= N) log = 0; // clone of first
-      setLogicalIndex((prev) => (prev === log ? prev : log));
+      if (logicalIndexRef.current !== log) setLogicalSlide(log);
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => { if (raf) cancelAnimationFrame(raf); };
-  }, [activeIndex, N, usePeekingCarousel]);
+  }, [activeIndex, N, setLogicalSlide, usePeekingCarousel]);
 
   const togglePlay = useCallback(() => {
     setIsPlaying((p) => {
@@ -846,23 +860,31 @@ export default function EventBannerCarousel({
   }, []);
 
   const handleTickPress = useCallback((idx: number) => {
-    setLogicalIndex(idx);
+    setLogicalSlide(idx);
     scrollToLogical(idx);
     timerStartRef.current = Date.now();
     progress.value = 0;
-  }, [scrollToLogical, progress]);
+  }, [progress, scrollToLogical, setLogicalSlide]);
 
   const moveToSlide = useCallback((index: number) => {
     if (usePeekingCarousel) {
-      setLogicalIndex(index);
-      scrollToLogical(index);
+      setLogicalSlide(index);
+      const isForwardWrap = activeSlideIndex === N - 1 && index === 0;
+      const isBackwardWrap = activeSlideIndex === 0 && index === N - 1;
+      if (isForwardWrap) {
+        scrollToPhysical(N + 1);
+      } else if (isBackwardWrap) {
+        scrollToPhysical(0);
+      } else {
+        scrollToLogical(index);
+      }
     } else {
-      setCurrentIndex(index);
+      setCurrentSlide(index);
       scrollToFallbackSlide(index);
     }
     timerStartRef.current = Date.now();
     progress.value = 0;
-  }, [progress, scrollToFallbackSlide, scrollToLogical, usePeekingCarousel]);
+  }, [N, activeSlideIndex, progress, scrollToFallbackSlide, scrollToLogical, scrollToPhysical, setCurrentSlide, setLogicalSlide, usePeekingCarousel]);
 
   const handlePrevious = useCallback(() => {
     const next = (activeSlideIndex - 1 + N) % N;
@@ -1203,7 +1225,7 @@ export default function EventBannerCarousel({
     return usePeekingCarousel && autoPlay ? (
       <CarouselTickPill
         count={N}
-        activeIndex={activeIndex}
+        activeIndex={logicalActiveIndex}
         progress={progress}
         isPlaying={isPlaying}
         onTogglePlay={togglePlay}
@@ -1217,7 +1239,7 @@ export default function EventBannerCarousel({
             key={index}
             style={[styles.dot, index === currentIndex && styles.dotActive]}
             onPress={() => {
-              setCurrentIndex(index);
+              setCurrentSlide(index);
               scrollToFallbackSlide(index);
             }}
             onPressIn={handleCarouselPressIn}
@@ -1554,7 +1576,7 @@ export default function EventBannerCarousel({
             showsHorizontalScrollIndicator={false}
             onScroll={(event: any) => {
               const idx = Math.round(event.nativeEvent.contentOffset.x / screenWidth);
-              setCurrentIndex(idx);
+              setCurrentSlide(idx);
             }}
             scrollEventThrottle={16}
             style={styles.scrollView}
