@@ -1,0 +1,474 @@
+{
+  "version": "1.0.0",
+  "updated_at": "2026-10-03",
+  "destination": {
+    "id": "guatape",
+    "name": "Guatapé",
+    "country": "Colombia",
+    "region": "Antioquia",
+    "languages": [
+      "es",
+      "en"
+    ],
+    "currency": "COP",
+    "timezone": "America/Bogota",
+    "description_en": "A colorful reservoir town in eastern Antioquia, about 75 km from Medellín.",
+    "description_es": "Un pueblo colorido junto al embalse en el oriente antioqueño, a unos 75 km de Medellín."
+  },
+  "places": [
+    {
+      "id": "plazoleta-zocalos",
+      "name": "Plazoleta de los Zócalos",
+      "category": "culture",
+      "location": "Historic center",
+      "description_en": "A colorful public square celebrating Guatapé’s painted baseboards and local stories.",
+      "description_es": "Una plazoleta colorida que celebra los zócalos pintados y las historias locales.",
+      "latitude": 6.232,
+      "longitude": -75.16,
+      "estimated_duration": 60,
+      "estimated_cost": 0,
+      "opening_hours": "Daily, public space",
+      "languages": [
+        "es",
+        "en"
+      ],
+      "offline_contact": "Not applicable",
+      "accepted_payments": [
+        "cash",
+        "card"
+      ],
+      "tags": [
+        "culture",
+        "walk",
+        "rain"
+      ],
+      "local_business": false,
+      "offline_safe": true
+    },
+    {
+      "id": "malecon",
+      "name": "Malecón de Guatapé",
+      "category": "nature",
+      "location": "Reservoir waterfront",
+      "description_en": "A level waterfront promenade with reservoir views and nearby family-run kiosks.",
+      "description_es": "Un paseo junto al embalse con vistas y quioscos familiares cercanos.",
+      "latitude": 6.234,
+      "longitude": -75.158,
+      "estimated_duration": 50,
+      "estimated_cost": 0,
+      "opening_hours": "Daily, public space",
+      "languages": [
+        "es"
+      ],
+      "offline_contact": "Not applicable",
+      "accepted_payments": [
+        "cash",
+        "card"
+      ],
+      "tags": [
+        "nature",
+        "walk"
+      ],
+      "local_business": false,
+      "offline_safe": true
+    },
+    {
+      "id": "calle-recuerdo",
+      "name": "Calle del Recuerdo",
+      "category": "culture",
+      "location": "Historic center",
+      "description_en": "A short heritage street whose façades and zócalos preserve local memory.",
+      "description_es": "Una calle patrimonial cuyos zócalos y fachadas preservan la memoria local.",
+      "latitude": 6.236,
+      "longitude": -75.15599999999999,
+      "estimated_duration": 35,
+      "estimated_cost": 0,
+      "opening_hours": "Daily, public space",
+      "languages": [
+        "es"
+      ],
+      "offline_contact": "Not applicable",
+      "accepted_payments": [
+        "cash",
+        "card"
+      ],
+      "tags": [
+        "culture",
+        "walk"
+      ],
+      "local_business": false,
+      "offline_safe": true
+    },
+    {
+      "id": "cafe-la-vina",
+      "name": "Café La Viña",
+      "category": "food",
+      "location": "Near the main square",
+      "description_en": "A small café stop for Colombian coffee, arepa and a relaxed start to the day.",
+      "description_es": "Una pequeña parada para café colombiano, arepa y un comienzo tranquilo.",
+      "latitude": 6.238,
+      "longitude": -75.16,
+      "estimated_duration": 45,
+      "estimated_cost": 18000,
+      "opening_hours": "7:30–19:00",
+      "languages": [
+        "es",
+        "en"
+      ],
+      "offline_contact": "In person",
+      "accepted_payments": [
+        "cash"
+      ],
+      "tags": [
+        "food",
+        "coffee",
+        "rain"
+      ],
+      "local_business": true,
+      "offline_safe": true
+    },
+    {
+      "id": "panaderia-zocalo",
+      "name": "Panadería El Zócalo",
+      "category": "food",
+      "location": "Historic center",
+      "description_en": "Locally baked pastries and simple breakfasts that travel well.",
+      "description_es": "Panadería local con pasteles y desayunos sencillos para llevar.",
+      "latitude": 6.232,
+      "longitude": -75.158,
+      "estimated_duration": 35,
+      "estimated_cost": 14000,
+      "opening_hours": "7:00–20:00",
+      "languages": [
+        "es"
+      ],
+      "offline_contact": "In person",
+      "accepted_payments": [
+        "cash"
+      ],
+      "tags": [
+        "food",
+        "breakfast",
+        "rain"
+      ],
+      "local_business": true,
+      "offline_safe": true
+    },
+    {
+      "id": "cocina-antioquena",
+      "name": "Cocina de Doña Luz",
+      "category": "food",
+      "location": "Two blocks from main square",
+      "description_en": "A family-style demo listing highlighting a traditional Antioquian set lunch.",
+      "description_es": "Entrada demostrativa de cocina familiar con almuerzo tradicional antioqueño.",
+      "latitude": 6.234,
+      "longitude": -75.15599999999999,
+      "estimated_duration": 60,
+      "estimated_cost": 32000,
+      "opening_hours": "11:30–16:00",
+      "languages": [
+        "es"
+      ],
+      "offline_contact": "In person",
+      "accepted_payments": [
+        "cash"
+      ],
+      "tags": [
+        "food",
+        "local",
+        "rain"
+      ],
+      "local_business": true,
+      "offline_safe": true
+    },
+    {
+      "id": "taller-zocalos",
+      "name": "Taller de Zócalos",
+      "category": "artisan",
+      "location": "Calle del Recuerdo area",
+      "description_en": "Meet local craft traditions through small hand-painted souvenirs and stories.",
+      "description_es": "Conoce tradiciones artesanales con recuerdos pintados a mano e historias.",
+      "latitude": 6.236,
+      "longitude": -75.16,
+      "estimated_duration": 45,
+      "estimated_cost": 25000,
+      "opening_hours": "9:00–18:00",
+      "languages": [
+        "es",
+        "en"
+      ],
+      "offline_contact": "In person",
+      "accepted_payments": [
+        "cash"
+      ],
+      "tags": [
+        "culture",
+        "artisan",
+        "rain"
+      ],
+      "local_business": true,
+      "offline_safe": true
+    },
+    {
+      "id": "artesanias-embalse",
+      "name": "Artesanías del Embalse",
+      "category": "artisan",
+      "location": "Malecón",
+      "description_en": "A compact artisan stall featuring work inspired by the reservoir and colorful homes.",
+      "description_es": "Un puesto artesanal con obras inspiradas en el embalse y las casas coloridas.",
+      "latitude": 6.238,
+      "longitude": -75.158,
+      "estimated_duration": 30,
+      "estimated_cost": 20000,
+      "opening_hours": "9:00–19:00",
+      "languages": [
+        "es"
+      ],
+      "offline_contact": "In person",
+      "accepted_payments": [
+        "cash"
+      ],
+      "tags": [
+        "culture",
+        "artisan",
+        "walk"
+      ],
+      "local_business": true,
+      "offline_safe": true
+    },
+    {
+      "id": "helados-parque",
+      "name": "Helados del Parque",
+      "category": "food",
+      "location": "Main square",
+      "description_en": "A locally owned ice-cream stop convenient for a short, low-cost break.",
+      "description_es": "Heladería local ideal para una pausa corta y económica.",
+      "latitude": 6.232,
+      "longitude": -75.15599999999999,
+      "estimated_duration": 25,
+      "estimated_cost": 9000,
+      "opening_hours": "10:00–20:00",
+      "languages": [
+        "es"
+      ],
+      "offline_contact": "In person",
+      "accepted_payments": [
+        "cash"
+      ],
+      "tags": [
+        "food",
+        "family"
+      ],
+      "local_business": true,
+      "offline_safe": true
+    },
+    {
+      "id": "kayak-familiar",
+      "name": "Kayak Familiar Guatapé",
+      "category": "experience",
+      "location": "Malecón meeting point",
+      "description_en": "A small-operator paddling experience; confirm conditions and wear the supplied life jacket.",
+      "description_es": "Experiencia de remo con operador pequeño; confirma condiciones y usa el chaleco.",
+      "latitude": 6.234,
+      "longitude": -75.16,
+      "estimated_duration": 90,
+      "estimated_cost": 55000,
+      "opening_hours": "8:00–16:00, weather dependent",
+      "languages": [
+        "es",
+        "en"
+      ],
+      "offline_contact": "In person",
+      "accepted_payments": [
+        "cash"
+      ],
+      "tags": [
+        "nature",
+        "water"
+      ],
+      "local_business": true,
+      "offline_safe": true
+    },
+    {
+      "id": "guia-local",
+      "name": "Historias con Don Julián",
+      "category": "experience",
+      "location": "Main square meeting point",
+      "description_en": "A demo walking tour listing focused on zócalos, town history and community stories.",
+      "description_es": "Recorrido demostrativo sobre zócalos, historia del pueblo y relatos comunitarios.",
+      "latitude": 6.236,
+      "longitude": -75.158,
+      "estimated_duration": 75,
+      "estimated_cost": 30000,
+      "opening_hours": "10:00 and 14:00",
+      "languages": [
+        "es"
+      ],
+      "offline_contact": "In person",
+      "accepted_payments": [
+        "cash"
+      ],
+      "tags": [
+        "culture",
+        "walk",
+        "local"
+      ],
+      "local_business": true,
+      "offline_safe": true
+    },
+    {
+      "id": "mercado-campesino",
+      "name": "Mercado Campesino",
+      "category": "food",
+      "location": "Municipal market area",
+      "description_en": "Seasonal fruit, snacks and produce from nearby growers; availability varies.",
+      "description_es": "Frutas, pasabocas y productos de agricultores cercanos; la oferta varía.",
+      "latitude": 6.238,
+      "longitude": -75.15599999999999,
+      "estimated_duration": 35,
+      "estimated_cost": 15000,
+      "opening_hours": "Morning hours; verify locally",
+      "languages": [
+        "es"
+      ],
+      "offline_contact": "Cash",
+      "accepted_payments": [
+        "cash"
+      ],
+      "tags": [
+        "food",
+        "local",
+        "culture"
+      ],
+      "local_business": true,
+      "offline_safe": true
+    },
+    {
+      "id": "mirador-sendero",
+      "name": "Sendero Mirador Local",
+      "category": "nature",
+      "location": "Town edge",
+      "description_en": "A short uphill walk with reservoir views; avoid during storms and after dark.",
+      "description_es": "Caminata corta en subida con vistas al embalse; evítala durante tormentas y de noche.",
+      "latitude": 6.232,
+      "longitude": -75.16,
+      "estimated_duration": 60,
+      "estimated_cost": 0,
+      "opening_hours": "Daylight, weather dependent",
+      "languages": [
+        "es",
+        "en"
+      ],
+      "offline_contact": "Not applicable",
+      "accepted_payments": [
+        "cash",
+        "card"
+      ],
+      "tags": [
+        "nature",
+        "walk"
+      ],
+      "local_business": false,
+      "offline_safe": true
+    },
+    {
+      "id": "piedra-penol",
+      "name": "Piedra del Peñol",
+      "category": "nature",
+      "location": "El Peñol–Guatapé road",
+      "description_en": "The well-known monolith viewpoint outside town; transport and admission should be reconfirmed locally.",
+      "description_es": "El conocido mirador del monolito fuera del pueblo; confirma transporte y entrada.",
+      "latitude": 6.234,
+      "longitude": -75.158,
+      "estimated_duration": 120,
+      "estimated_cost": 30000,
+      "opening_hours": "Daytime; verify before travel",
+      "languages": [
+        "es"
+      ],
+      "offline_contact": "Ticket office",
+      "accepted_payments": [
+        "cash",
+        "card"
+      ],
+      "tags": [
+        "nature",
+        "walk"
+      ],
+      "local_business": false,
+      "offline_safe": true
+    }
+  ],
+  "transport": [
+    {
+      "origin": "Guatapé",
+      "destination": "Medellín",
+      "mode": "Intermunicipal bus",
+      "estimated_duration": 120,
+      "estimated_cost": 22000,
+      "instructions_en": "Confirm the current departure point and fare at the Guatapé terminal. Services generally arrive at Medellín’s Terminal del Norte. Buy from an authorized counter.",
+      "instructions_es": "Confirma el punto de salida y la tarifa en la terminal de Guatapé. Los servicios suelen llegar a la Terminal del Norte de Medellín. Compra en una taquilla autorizada."
+    }
+  ],
+  "essential": [
+    {
+      "type": "transport",
+      "title_en": "Return to Medellín",
+      "title_es": "Regreso a Medellín",
+      "content_en": "Go to the Guatapé bus terminal and ask: “¿A qué hora sale el próximo bus para Medellín?” Confirm the fare and destination before boarding. Allow about 2 hours; road conditions vary.",
+      "content_es": "Ve a la terminal de Guatapé y pregunta: “¿A qué hora sale el próximo bus para Medellín?”. Confirma tarifa y destino antes de abordar. Reserva unas 2 horas; la vía puede variar.",
+      "priority": 1
+    },
+    {
+      "type": "emergency",
+      "title_en": "Emergency numbers",
+      "title_es": "Números de emergencia",
+      "content_en": "Colombia national emergency line: 123. Give your location, what happened, and a callback number.",
+      "content_es": "Línea nacional de emergencias de Colombia: 123. Indica tu ubicación, qué ocurrió y un número de contacto.",
+      "priority": 0
+    },
+    {
+      "type": "health",
+      "title_en": "Healthcare",
+      "title_es": "Atención médica",
+      "content_en": "For urgent help call 123. Ask a local authority for the nearest open health facility; hours can change.",
+      "content_es": "Para ayuda urgente llama al 123. Pregunta a una autoridad local por el centro de salud abierto más cercano; los horarios pueden cambiar.",
+      "priority": 2
+    },
+    {
+      "type": "phrases",
+      "title_en": "Useful Spanish",
+      "title_es": "Español útil",
+      "content_en": "“Necesito ayuda” — I need help\n“¿Dónde queda la terminal?” — Where is the bus station?\n“No hablo español” — I do not speak Spanish",
+      "content_es": "“I need help” — Necesito ayuda\n“Where is the bus station?” — ¿Dónde queda la terminal?\n“I do not speak Spanish” — No hablo español",
+      "priority": 3
+    },
+    {
+      "type": "safety",
+      "title_en": "Destination notes",
+      "title_es": "Notas del destino",
+      "content_en": "Keep valuables discreet, use authorized transport, carry some cash, and verify water activities and weather in person. Avoid isolated paths after dark.",
+      "content_es": "Mantén objetos de valor discretos, usa transporte autorizado, lleva efectivo y verifica actividades acuáticas y clima en persona. Evita senderos aislados de noche.",
+      "priority": 4
+    },
+    {
+      "type": "accommodation",
+      "title_en": "Saved accommodation",
+      "title_es": "Alojamiento guardado",
+      "content_en": "No accommodation saved yet. Write the name and address down before you lose connectivity.",
+      "content_es": "Aún no hay alojamiento guardado. Anota el nombre y la dirección antes de perder conexión.",
+      "priority": 5
+    }
+  ],
+  "culture": [
+    {
+      "type": "etiquette",
+      "title_en": "Respect the living town",
+      "title_es": "Respeta el pueblo vivo",
+      "content_en": "Ask before photographing people or private homes, keep noise low, and buy directly from local makers when possible.",
+      "content_es": "Pide permiso antes de fotografiar personas o casas privadas, modera el ruido y compra directamente a artesanos locales.",
+      "priority": 1
+    }
+  ],
+  "faq": []
+}
