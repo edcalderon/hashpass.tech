@@ -21,10 +21,11 @@ const render = (element: React.ReactElement) => {
 // PassTiltCard attaches exactly three refs (outer, inner, sheen). Fiber's
 // "complete work" phase creates host instances bottom-up (children before
 // parents), so createNodeMock fires for the sheen div first, then inner,
-// then outer last -- createdNodes ends up in that same [sheen, inner, outer]
-// order. getBoundingClientRect is handed to every mock (not just outer's)
-// since only the real outer node ever calls it, and guessing which index
-// is "last" would be fragile if the component's ref count ever changes.
+// then outer last. The clipping wrapper has no ref, so createdNodes remains
+// in that same [sheen, inner, outer] order. getBoundingClientRect is handed
+// to every mock (not just outer's) since only the real outer node ever calls
+// it, and guessing which index is "last" would be fragile if the component's
+// ref count ever changes.
 const renderWithDomRefs = (element: React.ReactElement) => {
   const createdNodes: Array<{ style: Record<string, string>; getBoundingClientRect: () => DOMRect }> = [];
   const createNodeMock = () => {
@@ -119,13 +120,24 @@ describe('PassTiltCard.web', () => {
     });
 
     const renderer = render(<PassTiltCard>Pass face</PassTiltCard>);
-    const [outer, inner] = renderer.root.findAllByType('div');
+    const [outer, clippingShell, inner] = renderer.root.findAllByType('div');
 
     expect(outer.props.onPointerMove).toBeUndefined();
+    expect(clippingShell.props.style.overflow).toBe('hidden');
     expect(inner.props.style.transformStyle).toBeUndefined();
     expect(inner.props.style.transform).toBeUndefined();
     expect(inner.props.style.willChange).toBeUndefined();
-    expect(inner.props.style.overflow).toBe('hidden');
+    expect(inner.props.style.overflow).toBeUndefined();
+  });
+
+  it('keeps the 3D context unclipped behind a separate clipping shell', () => {
+    const renderer = render(<PassTiltCard>Pass face</PassTiltCard>);
+    const [outer, clippingShell, inner] = renderer.root.findAllByType('div');
+
+    expect(outer.props.style.perspective).toBe('1100px');
+    expect(clippingShell.props.style.overflow).toBe('hidden');
+    expect(inner.props.style.transformStyle).toBe('preserve-3d');
+    expect(inner.props.style.overflow).toBeUndefined();
   });
 
   it('does not leave translateZ layers active in the touch fallback', () => {
