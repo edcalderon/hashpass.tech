@@ -273,4 +273,32 @@ describe("TicketsScreen", () => {
     expect(iframe.props.src).toBe("https://pkrr.io/reg/current-tournament");
     expect(collectText(view.toJSON())).toContain("If PKRR blocks embedded viewing");
   });
+
+  it("opens the PKRR tournament support email from the Need Help card on Hash Poker", () => {
+    Platform.OS = "ios";
+    mockEvent = { id: "hash-poker" };
+    const openURLSpy = jest.spyOn(Linking, "openURL").mockResolvedValue(true);
+
+    const view = renderScreen();
+    act(() => findButton(view, "Email PKRR Tournaments").props.onPress());
+
+    expect(openURLSpy).toHaveBeenCalledWith("mailto:torneos@pkrr.io");
+  });
+
+  it("closes the modal and opens the external ticket link from the handoff button", () => {
+    Platform.OS = "ios";
+    mockEvent = { id: "another-event", website: "https://tickets.example.com" };
+    const openURLSpy = jest.spyOn(Linking, "openURL").mockResolvedValue(true);
+
+    const view = renderScreen();
+    act(() => findButton(view, "Purchase Tickets").props.onPress());
+    expect(view.root.findByType("Modal" as any).props.visible).toBe(true);
+
+    act(() => findButton(view, "Open tickets.example.com").props.onPress());
+
+    expect(view.root.findByType("Modal" as any).props.visible).toBe(false);
+    expect(openURLSpy).toHaveBeenCalledWith(
+      "https://tickets.example.com/tickets/",
+    );
+  });
 });
