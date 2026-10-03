@@ -119,7 +119,7 @@ function App() {
 
   return <div className="app" style={theme}>
     <header>
-      <a className="brand" href="#top">LocalPass <Badge mode={mode}>AI</Badge></a>
+      <a className="brand" href="#top"><img src="/brand/localpass-mark.svg" alt="" /><span>LocalPass</span></a>
       <div className="header-actions">
         <ActionButton mode={mode} variant="ghost" label={language === 'en' ? 'Español' : 'English'} onPress={() => setLanguage(language === 'en' ? 'es' : 'en')} />
         <div role="status"><Badge mode={mode} tone={offline ? 'accent' : 'neutral'}>{offline ? t.offline : t.online}</Badge></div>
@@ -185,7 +185,7 @@ function App() {
         </Surface>)}</div>
       </section>}
     </main>
-    <footer><strong>LocalPass AI</strong><span>{t.footer}</span><span>Guatapé · {pack.places.filter(place => place.local_business).length} {t.operators} · EN / ES</span></footer>
+    <footer><strong>LocalPass</strong><span>{t.footer}</span><span>Guatapé · {pack.places.filter(place => place.local_business).length} {t.operators} · EN / ES</span></footer>
   </div>;
 }
 
