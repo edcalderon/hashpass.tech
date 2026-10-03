@@ -1,21 +1,28 @@
 /**
  * End-to-end encryption for meeting chat.
  *
- * Design: each user holds a device-local X25519 keypair (private key never
- * leaves the device -- SecureStore on native, localStorage on web, mirroring
- * the pattern in lib/auth/providers/directus.ts). Only the public key is
+ * Design: each user holds a device-local X25519 keypair (private key stored
+ * in SecureStore on native, localStorage on web). Only the public key is
  * published (via publish_user_chat_public_key) so the other participant can
  * derive the same shared secret. A message is encrypted with
  * XChaCha20-Poly1305 using a key derived via HKDF-SHA256 from the X25519
  * ECDH shared secret between the two participants -- the server only ever
  * sees/stores ciphertext + nonce.
  *
- * Single-device by deliberate product decision: a new device or reinstall
- * generates a fresh keypair and publishing it replaces the old public key,
- * permanently losing the ability to decrypt prior messages on that device.
- * No cross-device key backup/escrow is built. See
- * apps/docs/docs/reference/mobile-app/e2e-meeting-chat.md for the full
- * design writeup and rationale.
+ * Key backup/restore: users can optionally back up their private key,
+ * encrypted with a password they provide. The encrypted backup is stored
+ * server-side in user_chat_keys.encrypted_private_key_backup. The encryption
+ * uses XChaCha20-Poly1305 with a key derived from the password via HKDF-SHA256
+ * (32-byte key, 16-byte salt stored alongside). The server never sees the
+ * plaintext private key or the password. On a new device, users restore by
+ * entering their backup password. If the user forgets their backup password,
+ * the backup is unrecoverable (by design -- no password reset for E2E keys).
+ *
+ * Publishing a new public key (key rotation) clears the encrypted backup,
+ * forcing the user to create a new one if they want backup again.
+ *
+ * See apps/docs/docs/reference/mobile-app/e2e-meeting-chat.md for the full
+ * design writeup.
  */
 import { Platform } from 'react-native';
 import { x25519 } from '@noble/curves/ed25519.js';
@@ -145,4 +152,177 @@ export function decryptChatMessage(
     console.error('[chat-encryption] Failed to decrypt message:', error);
     return null;
   }
+}
+
+// ============================================================================
+// Key backup/restore: encrypt the private key with a user-provided password
+// and store it server-side so it can be restored on a new device.
+// ============================================================================
+
+const BACKUP_KDF_INFO = 'hashpass-chat-key-backup-v1';
+const BACKUP_SALT_BYTES = 16;
+
+/** Derives a 32-byte encryption key from a password + salt using HKDF-SHA256. */
+function deriveBackupKey(password: string, salt: Uint8Array): Uint8Array {
+  const passwordBytes = utf8ToBytes(password);
+  // HKDF extract: salt the password to produce a pseudo-random key (PRK)
+  // HKDF expand: stretch the PRK to 32 bytes using the info string
+  return hkdf(sha256, passwordBytes, salt, BACKUP_KDF_INFO, 32);
+}
+
+/** Encrypts a private key with a user-provided password. Returns the
+ * encrypted key (hex) and the salt (hex) -- both must be stored server-side. */
+export function encryptPrivateKeyForBackup(
+  privateKey: Uint8Array,
+  password: string
+): { encryptedKey: string; salt: string } {
+  ensureCryptoPolyfill();
+  const salt = randomBytes(BACKUP_SALT_BYTES);
+  const backupKey = deriveBackupKey(password, salt);
+  const nonce = randomBytes(24); // XChaCha20-Poly1305 needs a 24-byte nonce
+  const ciphertext = xchacha20poly1305(backupKey, nonce).encrypt(privateKey);
+  // Pack as nonce:ciphertext so we can decrypt later
+  const packed = bytesToHex(nonce) + ':' + bytesToHex(ciphertext);
+  return { encryptedKey: packed, salt: bytesToHex(salt) };
+}
+
+/** Decrypts a private key from a backup using the user's password. Returns
+ * null on failure (wrong password, tampered data, etc.) rather than throwing. */
+export function decryptPrivateKeyFromBackup(
+  encryptedKeyHex: string,
+  saltHex: string,
+  password: string
+): Uint8Array | null {
+  try {
+    const salt = hexToBytes(saltHex);
+    const backupKey = deriveBackupKey(password, salt);
+    // Unpack nonce:ciphertext
+    const parts = encryptedKeyHex.split(':');
+    if (parts.length !== 2) return null;
+    const nonce = hexToBytes(parts[0]);
+    const ciphertext = hexToBytes(parts[1]);
+    return xchacha20poly1305(backupKey, nonce).decrypt(ciphertext);
+  } catch (error) {
+    console.error('[chat-encryption] Failed to decrypt private key backup:', error);
+    return null;
+  }
+}
+
+/** Backs up the user's private key to the server, encrypted with their
+ * password. The server never sees the plaintext key or the password. */
+export async function backupChatKeyPair(
+  userId: string,
+  password: string
+): Promise<{ success: boolean; error?: string }> {
+  const privateKeyHex = await readPrivateKeyHex(userId);
+  if (!privateKeyHex) {
+    return { success: false, error: 'no_key_pair' };
+  }
+
+  const privateKey = hexToBytes(privateKeyHex);
+  const { encryptedKey, salt } = encryptPrivateKeyForBackup(privateKey, password);
+
+  const { error } = await supabase.rpc('store_chat_key_backup', {
+    p_user_id: userId,
+    p_encrypted_private_key: encryptedKey,
+    p_salt: salt,
+  });
+
+  if (error) {
+    console.error('[chat-encryption] Failed to store key backup:', error);
+    return { success: false, error: error.message };
+  }
+
+  return { success: true };
+}
+
+/** Checks whether the user has an encrypted key backup on the server. */
+export async function hasChatKeyBackup(
+  userId: string
+): Promise<{ hasBackup: boolean; createdAt?: string; error?: string }> {
+  const { data, error } = await supabase.rpc('get_chat_key_backup', {
+    p_user_id: userId,
+  });
+
+  if (error) {
+    if (error.message?.includes('no_backup') || error.details?.includes('no_backup')) {
+      return { hasBackup: false };
+    }
+    console.error('[chat-encryption] Failed to check for key backup:', error);
+    return { hasBackup: false, error: error.message };
+  }
+
+  if (!data?.success || !data?.encrypted_private_key) {
+    return { hasBackup: false };
+  }
+
+  return { hasBackup: true, createdAt: data.created_at };
+}
+
+/** Restores the user's private key from a server-side encrypted backup.
+ * Returns true on success, false if the password is wrong or no backup exists.
+ * On success, the decrypted key is written to SecureStore/localStorage and
+ * the public key is re-published (so other participants can find it). */
+export async function restoreChatKeyPair(
+  userId: string,
+  password: string
+): Promise<{ success: boolean; error?: string }> {
+  // Fetch the encrypted backup from the server
+  const { data, error } = await supabase.rpc('get_chat_key_backup', {
+    p_user_id: userId,
+  });
+
+  if (error || !data?.success) {
+    return { success: false, error: error?.message || 'no_backup' };
+  }
+
+  if (!data?.encrypted_private_key || !data?.salt) {
+    return { success: false, error: 'no_backup' };
+  }
+
+  // Try to decrypt with the user's password
+  const privateKey = decryptPrivateKeyFromBackup(
+    data.encrypted_private_key,
+    data.salt,
+    password
+  );
+
+  if (!privateKey) {
+    return { success: false, error: 'wrong_password' };
+  }
+
+  // Write the decrypted key to device storage
+  await writePrivateKeyHex(userId, bytesToHex(privateKey));
+
+  // Re-publish the public key so other participants can find it
+  const publicKey = x25519.getPublicKey(privateKey);
+  const { error: publishError } = await supabase.rpc('publish_user_chat_public_key', {
+    p_user_id: userId,
+    p_public_key: bytesToHex(publicKey),
+  });
+
+  if (publishError) {
+    console.error('[chat-encryption] Failed to re-publish public key after restore:', publishError);
+    // Key is restored locally, but other participants won't see the public key
+    return { success: false, error: publishError.message };
+  }
+
+  return { success: true };
+}
+
+/** Deletes the encrypted key backup from the server. Call this when the user
+ * rotates their keypair or opts out of backup. */
+export async function deleteChatKeyBackup(
+  userId: string
+): Promise<{ success: boolean; error?: string }> {
+  const { error } = await supabase.rpc('delete_chat_key_backup', {
+    p_user_id: userId,
+  });
+
+  if (error) {
+    console.error('[chat-encryption] Failed to delete key backup:', error);
+    return { success: false, error: error.message };
+  }
+
+  return { success: true };
 }

@@ -7,6 +7,9 @@ import {
   fetchParticipantPublicKey,
   encryptChatMessage,
   decryptChatMessage,
+  hasChatKeyBackup,
+  restoreChatKeyPair,
+  backupChatKeyPair,
 } from '../lib/chat-encryption';
 
 interface UseRealtimeChatProps {
@@ -52,6 +55,10 @@ export function useRealtimeChat({ meetingId, roomName, username, userId, otherPa
   const [presence, setPresence] = useState<{ [userId: string]: { isOnline: boolean; lastSeen: Date } }>({});
   const [keysReady, setKeysReady] = useState(false);
   const [otherKeyMissing, setOtherKeyMissing] = useState(false);
+  // True when the device has no local private key but a server-side encrypted
+  // backup exists -- the UI should prompt the user to enter their backup
+  // password to restore chat history before proceeding.
+  const [needsKeyRestore, setNeedsKeyRestore] = useState(false);
 
   const myPrivateKeyRef = useRef<Uint8Array | null>(null);
   const otherPublicKeyRef = useRef<Uint8Array | null>(null);
@@ -84,7 +91,25 @@ export function useRealtimeChat({ meetingId, roomName, username, userId, otherPa
   const setupKeys = useCallback(async () => {
     if (!userId) return;
     try {
-      myPrivateKeyRef.current = await ensureChatKeyPair(userId);
+      // Check if we already have a local keypair
+      let privateKey = myPrivateKeyRef.current;
+      if (!privateKey) {
+        // Try to load from SecureStore/localStorage
+        privateKey = await ensureChatKeyPair(userId);
+        myPrivateKeyRef.current = privateKey;
+      }
+
+      // If we just generated a new key (no local key existed), check if there's
+      // a server-side backup that should be restored instead
+      const { hasBackup } = await hasChatKeyBackup(userId);
+      if (hasBackup) {
+        // A backup exists but we're using a freshly generated key. This means
+        // the user reinstalled or is on a new device. Prompt them to restore.
+        // Don't set keysReady yet -- wait for them to decide whether to restore
+        // or continue with the new key (which means losing old messages).
+        setNeedsKeyRestore(true);
+      }
+
       if (otherParticipantId) {
         const theirKey = await fetchParticipantPublicKey(otherParticipantId);
         otherPublicKeyRef.current = theirKey;
@@ -98,6 +123,44 @@ export function useRealtimeChat({ meetingId, roomName, username, userId, otherPa
       setError(err instanceof Error ? err.message : 'Failed to set up secure chat');
     }
   }, [userId, otherParticipantId]);
+
+  // Restore the private key from a server-side encrypted backup. Call this
+  // when needsKeyRestore is true and the user provides their backup password.
+  // On success, the decrypted key is written to device storage and messages
+  // will be re-decrypted with it.
+  const restoreKeyFromBackup = useCallback(async (password: string): Promise<{ success: boolean; error?: string }> => {
+    if (!userId) return { success: false, error: 'no_user' };
+
+    const result = await restoreChatKeyPair(userId, password);
+    if (!result.success) {
+      return result;
+    }
+
+    // Reload the private key from storage now that it's been restored
+    const restoredKey = await ensureChatKeyPair(userId);
+    myPrivateKeyRef.current = restoredKey;
+    setNeedsKeyRestore(false);
+    setKeysReady(true);
+
+    // Refresh messages so they can be decrypted with the restored key
+    refreshMessagesRef.current();
+
+    return { success: true };
+  }, [userId]);
+
+  // Skip restore and continue with the current (newly generated) key.
+  // This means old messages will show as "[Unable to decrypt this message]".
+  const skipKeyRestore = useCallback(() => {
+    setNeedsKeyRestore(false);
+  }, []);
+
+  // Create a backup of the current private key, encrypted with the user's
+  // password. Call this after successful setup if the user wants to enable
+  // backup for future device restores.
+  const createKeyBackup = useCallback(async (password: string): Promise<{ success: boolean; error?: string }> => {
+    if (!userId) return { success: false, error: 'no_user' };
+    return backupChatKeyPair(userId, password);
+  }, [userId]);
 
   useEffect(() => {
     setupKeys();
@@ -332,5 +395,9 @@ export function useRealtimeChat({ meetingId, roomName, username, userId, otherPa
     error,
     keysReady,
     otherKeyMissing,
+    needsKeyRestore,
+    restoreKeyFromBackup,
+    skipKeyRestore,
+    createKeyBackup,
   };
 }

@@ -26,6 +26,12 @@ import {
   fetchParticipantPublicKey,
   encryptChatMessage,
   decryptChatMessage,
+  encryptPrivateKeyForBackup,
+  decryptPrivateKeyFromBackup,
+  backupChatKeyPair,
+  hasChatKeyBackup,
+  restoreChatKeyPair,
+  deleteChatKeyBackup,
 } from '../../lib/chat-encryption';
 // eslint-disable-next-line import/first
 import { x25519 } from '@noble/curves/ed25519';
@@ -208,6 +214,111 @@ describe('chat-encryption', () => {
 
       const result = await fetchParticipantPublicKey('other-user');
       expect(result).toBeNull();
+    });
+  });
+
+  describe('key backup and restore', () => {
+    it('round-trips a private key through password encryption', () => {
+      const privateKey = x25519.utils.randomSecretKey();
+      const backup = encryptPrivateKeyForBackup(privateKey, 'correct horse battery staple');
+
+      expect(backup.encryptedKey).toContain(':');
+      expect(backup.salt).toHaveLength(32);
+      expect(decryptPrivateKeyFromBackup(
+        backup.encryptedKey,
+        backup.salt,
+        'correct horse battery staple',
+      )).toEqual(privateKey);
+    });
+
+    it('rejects malformed, tampered, and incorrectly passworded backups', () => {
+      const privateKey = x25519.utils.randomSecretKey();
+      const backup = encryptPrivateKeyForBackup(privateKey, 'backup-password');
+      const lastByte = parseInt(backup.encryptedKey.slice(-2), 16);
+      const tampered = `${backup.encryptedKey.slice(0, -2)}${(lastByte ^ 0xff).toString(16).padStart(2, '0')}`;
+
+      expect(decryptPrivateKeyFromBackup('malformed', backup.salt, 'backup-password')).toBeNull();
+      expect(decryptPrivateKeyFromBackup(tampered, backup.salt, 'backup-password')).toBeNull();
+      expect(decryptPrivateKeyFromBackup(backup.encryptedKey, backup.salt, 'wrong-password')).toBeNull();
+    });
+
+    it('stores an encrypted backup and reports a missing local key', async () => {
+      mockGetItemAsync.mockResolvedValue(bytesToHex(x25519.utils.randomSecretKey()));
+      mockRpc.mockResolvedValue({ data: { success: true }, error: null });
+
+      await expect(backupChatKeyPair('user-123', 'backup-password')).resolves.toEqual({ success: true });
+      expect(mockRpc).toHaveBeenCalledWith('store_chat_key_backup', expect.objectContaining({
+        p_user_id: 'user-123',
+        p_encrypted_private_key: expect.stringContaining(':'),
+        p_salt: expect.any(String),
+      }));
+
+      mockGetItemAsync.mockResolvedValue(null);
+      await expect(backupChatKeyPair('user-123', 'backup-password')).resolves.toEqual({
+        success: false,
+        error: 'no_key_pair',
+      });
+    });
+
+    it('handles backup lookup success, absence, and RPC errors', async () => {
+      mockRpc.mockResolvedValue({
+        data: { success: true, encrypted_private_key: 'nonce:ciphertext', created_at: '2026-08-05T10:00:00Z' },
+        error: null,
+      });
+      await expect(hasChatKeyBackup('user-123')).resolves.toEqual({
+        hasBackup: true,
+        createdAt: '2026-08-05T10:00:00Z',
+      });
+
+      mockRpc.mockResolvedValue({ data: null, error: { message: 'no_backup' } });
+      await expect(hasChatKeyBackup('user-123')).resolves.toEqual({ hasBackup: false });
+
+      mockRpc.mockResolvedValue({ data: null, error: { message: 'network error' } });
+      await expect(hasChatKeyBackup('user-123')).resolves.toEqual({ hasBackup: false, error: 'network error' });
+    });
+
+    it('restores the private key, persists it, and republishes the public key', async () => {
+      const privateKey = x25519.utils.randomSecretKey();
+      const backup = encryptPrivateKeyForBackup(privateKey, 'backup-password');
+      mockRpc
+        .mockResolvedValueOnce({
+          data: { success: true, encrypted_private_key: backup.encryptedKey, salt: backup.salt },
+          error: null,
+        })
+        .mockResolvedValueOnce({ data: { success: true }, error: null });
+
+      await expect(restoreChatKeyPair('user-123', 'backup-password')).resolves.toEqual({ success: true });
+      expect(mockSetItemAsync).toHaveBeenCalledWith('hashpass_chat_privkey_v1_user-123', bytesToHex(privateKey));
+      expect(mockRpc).toHaveBeenLastCalledWith('publish_user_chat_public_key', expect.objectContaining({
+        p_user_id: 'user-123',
+        p_public_key: bytesToHex(x25519.getPublicKey(privateKey)),
+      }));
+    });
+
+    it('returns a wrong-password error without publishing when decryption fails', async () => {
+      const backup = encryptPrivateKeyForBackup(x25519.utils.randomSecretKey(), 'backup-password');
+      mockRpc.mockResolvedValue({
+        data: { success: true, encrypted_private_key: backup.encryptedKey, salt: backup.salt },
+        error: null,
+      });
+
+      await expect(restoreChatKeyPair('user-123', 'wrong-password')).resolves.toEqual({
+        success: false,
+        error: 'wrong_password',
+      });
+      expect(mockSetItemAsync).not.toHaveBeenCalled();
+    });
+
+    it('returns server and delete failures from restore and delete operations', async () => {
+      mockRpc.mockResolvedValueOnce({ data: null, error: { message: 'backup unavailable' } });
+      await expect(restoreChatKeyPair('user-123', 'backup-password')).resolves.toEqual({
+        success: false,
+        error: 'backup unavailable',
+      });
+
+      mockRpc.mockResolvedValue({ data: { success: true }, error: { message: 'delete failed' } });
+      await expect(deleteChatKeyBackup('user-123')).resolves.toEqual({ success: false, error: 'delete failed' });
+      expect(mockRpc).toHaveBeenLastCalledWith('delete_chat_key_backup', { p_user_id: 'user-123' });
     });
   });
 });

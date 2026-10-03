@@ -42,12 +42,18 @@ const mockEnsureChatKeyPair = jest.fn();
 const mockFetchParticipantPublicKey = jest.fn();
 const mockEncryptChatMessage = jest.fn();
 const mockDecryptChatMessage = jest.fn();
+const mockHasChatKeyBackup = jest.fn();
+const mockRestoreChatKeyPair = jest.fn();
+const mockBackupChatKeyPair = jest.fn();
 
 jest.mock('../../lib/chat-encryption', () => ({
   ensureChatKeyPair: (...args: unknown[]) => mockEnsureChatKeyPair(...args),
   fetchParticipantPublicKey: (...args: unknown[]) => mockFetchParticipantPublicKey(...args),
   encryptChatMessage: (...args: unknown[]) => mockEncryptChatMessage(...args),
   decryptChatMessage: (...args: unknown[]) => mockDecryptChatMessage(...args),
+  hasChatKeyBackup: (...args: unknown[]) => mockHasChatKeyBackup(...args),
+  restoreChatKeyPair: (...args: unknown[]) => mockRestoreChatKeyPair(...args),
+  backupChatKeyPair: (...args: unknown[]) => mockBackupChatKeyPair(...args),
 }));
 
 const mockRpc = jest.fn();
@@ -137,6 +143,9 @@ describe('useRealtimeChat', () => {
     latest = null;
     mockEnsureChatKeyPair.mockResolvedValue(myPriv);
     mockFetchParticipantPublicKey.mockResolvedValue(theirPub);
+    mockHasChatKeyBackup.mockResolvedValue({ hasBackup: false });
+    mockRestoreChatKeyPair.mockResolvedValue({ success: true });
+    mockBackupChatKeyPair.mockResolvedValue({ success: true });
     mockRpc.mockImplementation((fn: string) => {
       if (fn === 'get_meeting_chat_messages') {
         return Promise.resolve({ data: { success: true, messages: [] }, error: null });
@@ -184,6 +193,63 @@ describe('useRealtimeChat', () => {
     ]);
 
     await act(async () => renderer.unmount());
+  });
+
+  it('flags an available server backup and restores it through the hook actions', async () => {
+    mockHasChatKeyBackup.mockResolvedValue({ hasBackup: true });
+    const restoredPriv = new Uint8Array([7, 8, 9]);
+    mockRestoreChatKeyPair.mockResolvedValue({ success: true });
+    mockEnsureChatKeyPair.mockResolvedValue(restoredPriv);
+
+    const renderer = await renderHook({
+      meetingId: 'meeting-1',
+      roomName: 'room-1',
+      username: 'Me',
+      userId: 'my-user-id',
+      otherParticipantId: 'other-user',
+    });
+
+    expect(latest!.needsKeyRestore).toBe(true);
+    await act(async () => {
+      await expect(latest!.restoreKeyFromBackup('backup-password')).resolves.toEqual({ success: true });
+    });
+    expect(mockRestoreChatKeyPair).toHaveBeenCalledWith('my-user-id', 'backup-password');
+    expect(latest!.needsKeyRestore).toBe(false);
+    expect(latest!.keysReady).toBe(true);
+
+    await act(async () => {
+      latest!.skipKeyRestore();
+      await flushPromises();
+    });
+    await act(async () => renderer.unmount());
+  });
+
+  it('delegates backup creation and reports missing-user actions', async () => {
+    const renderer = await renderHook({
+      meetingId: 'meeting-1',
+      roomName: 'room-1',
+      username: 'Me',
+      userId: 'my-user-id',
+      otherParticipantId: 'other-user',
+    });
+
+    await act(async () => {
+      await expect(latest!.createKeyBackup('backup-password')).resolves.toEqual({ success: true });
+    });
+    expect(mockBackupChatKeyPair).toHaveBeenCalledWith('my-user-id', 'backup-password');
+    await act(async () => renderer.unmount());
+
+    const noUserRenderer = await renderHook({
+      meetingId: 'meeting-1',
+      roomName: 'room-1',
+      username: 'Me',
+      userId: '',
+    });
+    await act(async () => {
+      await expect(latest!.restoreKeyFromBackup('backup-password')).resolves.toEqual({ success: false, error: 'no_user' });
+      await expect(latest!.createKeyBackup('backup-password')).resolves.toEqual({ success: false, error: 'no_user' });
+    });
+    await act(async () => noUserRenderer.unmount());
   });
 
   it('flags otherKeyMissing when the other participant has not set up chat yet, and disallows sending until they have', async () => {

@@ -266,7 +266,7 @@ describe("TicketsScreen", () => {
     expect(view.root.findAllByType("iframe" as any)).toHaveLength(0);
   });
 
-  it("embeds the PKRR ticket page in the web modal with a direct-link fallback", () => {
+  it("embeds the PKRR ticket page in the full-screen web drawer", () => {
     Platform.OS = "web";
     mockEvent = {
       id: "hash-poker",
@@ -278,7 +278,8 @@ describe("TicketsScreen", () => {
     expect(view.root.findAllByType("WebView" as any)).toHaveLength(0);
     const iframe = view.root.findByType("iframe" as any);
     expect(iframe.props.src).toBe("https://pkrr.io/reg/current-tournament");
-    expect(collectText(view.toJSON())).toContain("If PKRR blocks embedded viewing");
+    expect(iframe.props.style.height).toBe("100%");
+    expect(collectText(view.toJSON())).not.toContain("Open pkrr.io in new tab");
   });
 
   it("opens the PKRR tournament support email from the Need Help card on Hash Poker", () => {
@@ -312,78 +313,38 @@ describe("TicketsScreen", () => {
     );
   });
 
-  // The PKRR embed branch (canEmbedTicket=true on web with pkrr.io) is already
-  // exercised by the iframe test above; what's NOT covered is the web+non-PKRR
-  // path, where the modal falls through to the explicit organizer-site
-  // handoff UI ("Continue to <hostname>", "Ticket purchase and organizer
-  // support are handled securely...", and the "Open <hostname>" button).
-  it("renders the explicit handoff UI in the web modal when the organizer is not PKRR", () => {
+  it("uses the same full-screen web drawer for every event organizer", () => {
     Platform.OS = "web";
     mockEvent = { id: "another-event", website: "https://tickets.example.com" };
-    const openMock = jest.fn();
-    const originalWindow = (global as any).window;
-    Object.defineProperty(global, "window", {
-      configurable: true,
-      value: { open: openMock },
-    });
-
-    const view = renderScreen();
-    act(() => findButton(view, "Purchase Tickets").props.onPress());
-    const text = collectText(view.toJSON());
-
-    // Embed path must NOT render; the handoff block must.
-    expect(view.root.findAllByType("iframe" as any)).toHaveLength(0);
-    expect(text).toContain("Continue to tickets.example.com");
-    expect(text).toContain("Ticket purchase and organizer support are handled securely");
-
-    // Handoff button closes the modal and opens the organizer's ticket page
-    // in a real new tab (web path uses window.open, not Linking.openURL).
-    act(() => findButton(view, "Open tickets.example.com").props.onPress());
-    expect(openMock).toHaveBeenCalledWith(
-      "https://tickets.example.com/tickets/",
-      "_blank",
-      "noopener,noreferrer",
-    );
-
-    Object.defineProperty(global, "window", { configurable: true, value: originalWindow });
-  });
-
-  // The "Open pkrr.io in new tab" fallback button only renders inside the
-  // canEmbedTicket=true branch on web. The existing iframe test renders the
-  // embed but never presses this button -- exercise its onPress so the
-  // fallback ActionButton's handler is also covered.
-  it("opens PKRR in a new tab from the embed fallback button when framing fails", () => {
-    Platform.OS = "web";
-    mockEvent = {
-      id: "hash-poker",
-      cta: { label: "Reserve seat", url: "https://pkrr.io/reg/current-tournament" },
-    };
-    const openMock = jest.fn();
-    const originalWindow = (global as any).window;
-    Object.defineProperty(global, "window", {
-      configurable: true,
-      value: { open: openMock },
-    });
 
     const view = renderScreen();
     act(() => findButton(view, "Purchase Tickets").props.onPress());
 
-    act(() => findButton(view, "Open pkrr.io in new tab").props.onPress());
-
-    expect(openMock).toHaveBeenCalledWith(
-      "https://pkrr.io/reg/current-tournament",
-      "_blank",
-      "noopener,noreferrer",
+    const iframe = view.root.findByType("iframe" as any);
+    expect(iframe.props.src).toBe("https://tickets.example.com/tickets/");
+    expect(iframe.props.style.height).toBe("100%");
+    const dialogCard = view.root.findByProps({ accessibilityViewIsModal: true });
+    expect(dialogCard.props.style).toEqual(
+      expect.objectContaining({
+        width: "100%",
+        height: "100%",
+        maxWidth: "100%",
+        maxHeight: "100%",
+        alignSelf: "stretch",
+        borderRadius: 0,
+      }),
     );
-
-    Object.defineProperty(global, "window", { configurable: true, value: originalWindow });
+    expect(view.root.findByType("ModalBackdrop" as any).props.style).toEqual(
+      expect.objectContaining({
+        flex: 1,
+        alignItems: "stretch",
+        justifyContent: "flex-start",
+        padding: 0,
+      }),
+    );
   });
 
-  // The style function's isWide=true branches (dialogCard height/maxWidth/
-  // maxHeight/alignSelf/borderRadius, drawerBackdrop alignItems, etc.) are
-  // only reachable when the viewport is >= 960px. Widen the mock viewport
-  // and render the PKRR web embed to exercise those branches.
-  it("lays out the ticket dialog as a wide-side panel when the viewport is >= 960px", () => {
+  it("keeps the full-screen drawer layout at wide web viewports", () => {
     Platform.OS = "web";
     mockUseWindowDimensions.mockReturnValue({ width: 1280, height: 800, scale: 1, fontScale: 1 });
     mockEvent = {
@@ -397,24 +358,18 @@ describe("TicketsScreen", () => {
     act(() => findButton(view, "Purchase Tickets").props.onPress());
 
     const iframe = view.root.findByType("iframe" as any);
-    // isWide=true: iframeHeight uses the 720/190 constants (vs. 520/260 for
-    // narrow viewports). With viewportHeight=800 the clamped value is
-    // min(720, max(320, 800-190)) = 610 -- distinct from the 320 the narrow
-    // path would produce for the same viewport height.
-    expect(iframe.props.style.height).toBe(610);
+    expect(iframe.props.style.height).toBe("100%");
 
     const dialogCard = view.root.findByProps({ accessibilityViewIsModal: true });
-    // isWide=true dialogCard styles: height '100%', alignSelf 'flex-end',
-    // borderTopLeftRadius 0 (flush against the right edge).
     expect(dialogCard.props.style).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          height: "100%",
-          alignSelf: "flex-end",
-          borderTopLeftRadius: 0,
-          borderTopRightRadius: 0,
-        }),
-      ]),
+      expect.objectContaining({
+        width: "100%",
+        height: "100%",
+        maxWidth: "100%",
+        maxHeight: "100%",
+        alignSelf: "stretch",
+        borderRadius: 0,
+      }),
     );
   });
 });

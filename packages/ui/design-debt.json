@@ -305,11 +305,15 @@
       "radius:4": 2,
       "radius:20": 3,
       "radius:18": 1,
-      "shadowColor:#000": 1,
-      "color:#ffffff": 1,
+      "shadowColor:#000": 3,
+      "color:#ffffff": 3,
       "radius:9": 1,
-      "radius:8": 1,
-      "radius:22": 1
+      "radius:8": 5,
+      "radius:22": 1,
+      "backgroundColor:rgba(0, 0, 0, 0.5)": 1,
+      "radius:16": 1,
+      "color:#f44336": 1,
+      "borderColor:rgba(0, 0, 0, 0.1)": 1
     },
     "apps/mobile-app/components/ScheduleConfirmationModal.tsx": {
       "backgroundColor:rgba(0, 0, 0, 0.5)": 1,

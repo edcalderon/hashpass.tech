@@ -22,22 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610030719, // Updated to current timestamp
+  buildNumber: 202610031314, // Updated to current timestamp
   releaseDate: '2026-10-03',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    // No new features
+    'E2E chat encryption key backup and restore'
   ],
   bugfixes: [
     // No bugfixes
   ],
   breakingChanges: [],
-  notes: 'Version 1.9.93 release'
+  notes: 'E2E chat encryption key backup and restore'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.94': {
+    version: '1.9.94',
+    buildNumber: 202610031314,
+    releaseDate: '2026-10-03',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'E2E chat encryption key backup and restore'
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'E2E chat encryption key backup and restore'
+  },
   '1.9.93': {
     version: '1.9.93',
     buildNumber: 202610030719,

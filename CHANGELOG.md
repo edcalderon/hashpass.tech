@@ -1,3 +1,19 @@
+## [1.9.94](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.93...v1.9.94) (2026-10-03)
+
+
+### Features
+
+* E2E chat encryption key backup and restore ([3373dbc](https://github.com/hashpass-tech/hashpass.tech/commit/3373dbc4d0775def938a632868cf7b999fd65850))
+### Release Highlights
+- E2E chat encryption key backup and restore
+
+### Release scope
+- Compared with: `v1.9.93` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Database migrations
+
 ## [1.9.93](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.92...v1.9.93) (2026-10-03)
 ### Released
 - Version 1.9.93 release
