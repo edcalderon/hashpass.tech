@@ -22,22 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610022055, // Updated to current timestamp
-  releaseDate: '2026-10-02',
+  buildNumber: 202610030556, // Updated to current timestamp
+  releaseDate: '2026-10-03',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
     // No new features
   ],
   bugfixes: [
-    'load Hash Poker tickets from PKRR'
+    'harden landing motion and carousel behavior'
   ],
   breakingChanges: [],
-  notes: 'load Hash Poker tickets from PKRR'
+  notes: 'harden landing motion and carousel behavior'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.92': {
+    version: '1.9.92',
+    buildNumber: 202610030556,
+    releaseDate: '2026-10-03',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'harden landing motion and carousel behavior'
+    ],
+    breakingChanges: [],
+    notes: 'harden landing motion and carousel behavior'
+  },
   '1.9.91': {
     version: '1.9.91',
     buildNumber: 202610022055,

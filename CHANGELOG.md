@@ -1,3 +1,20 @@
+## [1.9.92](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.91...v1.9.92) (2026-10-03)
+
+
+### Bug Fixes
+
+* harden landing motion and carousel behavior ([bb1959c](https://github.com/hashpass-tech/hashpass.tech/commit/bb1959cc629ba62911c781de74b581320ed255ed))
+### Release Highlights
+- harden landing motion and carousel behavior
+
+### Release scope
+- Compared with: `v1.9.91` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Auth
+- Infrastructure
+
 ## [1.9.91](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.90...v1.9.91) (2026-10-02)
 
 
