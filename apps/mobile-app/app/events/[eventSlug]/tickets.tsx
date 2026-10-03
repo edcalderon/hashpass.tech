@@ -20,15 +20,14 @@ const getHostname = (url: string): string | null => {
   }
 };
 
-// Events use organizer-managed ticketing. The app makes a clear handoff rather
-// than embedding a third-party checkout: external CSS, assets, payment flows,
-// and frame-ancestor policies cannot be reliably or safely reproduced in an
-// iframe/WebView.
+// Events use organizer-managed ticketing. PKRR can be shown in the web modal
+// when its page permits framing; every other organizer keeps the explicit
+// external handoff so payment and support remain on the organizer's site.
 export default function TicketsScreen() {
   const { event } = useEvent();
   const { isDark } = useTheme();
   const router = useRouter();
-  const { width: viewportWidth } = useWindowDimensions();
+  const { width: viewportWidth, height: viewportHeight } = useWindowDimensions();
   const isWide = viewportWidth >= 960;
   const palette = uiPalette(isDark);
   const styles = getStyles(palette, isWide, viewportWidth);
@@ -53,12 +52,14 @@ export default function TicketsScreen() {
   const ticketHostname = getHostname(ticketUrl);
   const organizerSupportEmail = isHashPoker ? 'torneos@pkrr.io' : null;
 
-  // Opens the real external ticket page directly -- on web as a proper new
-  // tab (target="_blank" equivalent) rather than only inside the in-app
-  // iframe, since payment/ticketing providers commonly refuse to be framed
-  // at all (X-Frame-Options/CSP frame-ancestors), and the disclaimer copy
-  // ("you're leaving the HASHPASS app") implies a real navigation, not just
-  // an embed.
+  const canEmbedTicket = Platform.OS === 'web' && ticketHostname === 'pkrr.io';
+  const iframeHeight = Math.min(
+    isWide ? 720 : 520,
+    Math.max(320, viewportHeight - (isWide ? 190 : 260)),
+  );
+
+  // Opens the real external ticket page directly as the fallback for pages
+  // that refuse framing and for native platforms.
   const openTicketLink = () => {
     if (Platform.OS === 'web') {
       window.open(ticketUrl, '_blank', 'noopener,noreferrer');
@@ -173,17 +174,23 @@ export default function TicketsScreen() {
         </View>
       </ScrollView>
 
-      {/* Ticket Purchase Dialog -- a short disclosure before the explicit
-          organizer-site handoff. Never render third-party checkout HTML here. */}
+      {/* Ticket Purchase Dialog -- embed the supported PKRR page on web and
+          retain a direct organizer-site fallback for frame-blocked pages. */}
       <Modal
         visible={showTicketModal}
         transparent
-        animationType="fade"
+        animationType="slide"
         onRequestClose={() => setShowTicketModal(false)}
         statusBarTranslucent
       >
-        <ModalBackdrop mode={isDark ? 'dark' : 'light'}>
-          <View accessibilityViewIsModal style={styles.dialogCard}>
+        <ModalBackdrop
+          mode={isDark ? 'dark' : 'light'}
+          style={styles.drawerBackdrop}
+        >
+          <View
+            accessibilityViewIsModal
+            style={[styles.dialogCard, canEmbedTicket && styles.embeddedDialogCard]}
+          >
             <View style={styles.dialogHeader}>
               <TouchableOpacity
                 style={styles.dialogHeaderTap}
@@ -221,23 +228,54 @@ export default function TicketsScreen() {
               </Text>
             </View>
 
-            <View style={styles.dialogBody}>
-              <View style={styles.handoffContent}>
-                <MaterialIcons name="open-in-new" size={30} color={palette.accent} />
-                <Text style={styles.handoffTitle}>Continue to {ticketHostname || 'ticketing'}</Text>
-                <Text style={styles.handoffText}>
-                  Ticket purchase and organizer support are handled securely on the organizer's site.
-                </Text>
-                <ActionButton
-                  mode={isDark ? 'dark' : 'light'}
-                  label={`Open ${ticketHostname || 'ticket site'}`}
-                  onPress={() => {
-                    setShowTicketModal(false);
-                    openTicketLink();
-                  }}
-                  trailingIcon={<MaterialIcons name="open-in-new" size={18} color={palette.onAccent} />}
-                />
-              </View>
+            <View style={[styles.dialogBody, canEmbedTicket && styles.embeddedDialogBody]}>
+              {canEmbedTicket ? (
+                <View>
+                  {React.createElement('iframe', {
+                    title: 'PKRR ticket page',
+                    src: ticketUrl,
+                    loading: 'eager',
+                    referrerPolicy: 'strict-origin-when-cross-origin',
+                    allow: 'payment',
+                    style: {
+                      width: '100%',
+                      height: iframeHeight,
+                      border: 0,
+                      display: 'block',
+                      backgroundColor: palette.surface,
+                    },
+                  })}
+                  <View style={styles.embedFallback}>
+                    <Text style={styles.embedFallbackText}>
+                      If PKRR blocks embedded viewing, open the page in a new tab.
+                    </Text>
+                    <ActionButton
+                      mode={isDark ? 'dark' : 'light'}
+                      label="Open pkrr.io in new tab"
+                      onPress={openTicketLink}
+                      variant="secondary"
+                      trailingIcon={<MaterialIcons name="open-in-new" size={18} color={palette.accent} />}
+                    />
+                  </View>
+                </View>
+              ) : (
+                <View style={styles.handoffContent}>
+                  <MaterialIcons name="open-in-new" size={30} color={palette.accent} />
+                  <Text style={styles.handoffTitle}>Continue to {ticketHostname || 'ticketing'}</Text>
+                  <Text style={styles.handoffText}>
+                    Ticket purchase and organizer support are handled securely on the organizer's site.
+                  </Text>
+                  <ActionButton
+                    mode={isDark ? 'dark' : 'light'}
+                    label={`Open ${ticketHostname || 'ticket site'}`}
+                    onPress={() => {
+                      setShowTicketModal(false);
+                      openTicketLink();
+                    }}
+                    trailingIcon={<MaterialIcons name="open-in-new" size={18} color={palette.onAccent} />}
+                  />
+                </View>
+              )}
             </View>
           </View>
         </ModalBackdrop>
@@ -344,13 +382,27 @@ const getStyles = (palette: ReturnType<typeof uiPalette>, isWide: boolean, viewp
     // page rather than another in-app screen.
     dialogCard: {
       width: '100%',
-      maxWidth: 480,
-      borderRadius: uiTokens.radius.card,
+      height: isWide ? '100%' : undefined,
+      maxWidth: isWide ? Math.min(720, viewportWidth * 0.78) : '100%',
+      maxHeight: isWide ? '100%' : '92%',
+      alignSelf: isWide ? 'flex-end' : 'stretch',
+      borderTopLeftRadius: isWide ? 0 : uiTokens.radius.card,
+      borderTopRightRadius: isWide ? 0 : uiTokens.radius.card,
+      borderBottomLeftRadius: isWide ? uiTokens.radius.card : 0,
+      borderBottomRightRadius: 0,
       overflow: 'hidden',
       backgroundColor: palette.surface,
       borderWidth: 1,
       borderColor: palette.border,
       boxShadow: uiTokens.effects.dialogShadow,
+    },
+    embeddedDialogCard: {
+      maxWidth: isWide ? Math.min(960, viewportWidth * 0.9) : '100%',
+    },
+    drawerBackdrop: {
+      alignItems: isWide ? 'flex-end' : 'stretch',
+      justifyContent: 'flex-end',
+      padding: 0,
     },
     dialogHeader: {
       flexDirection: 'row',
@@ -413,6 +465,23 @@ const getStyles = (palette: ReturnType<typeof uiPalette>, isWide: boolean, viewp
     dialogBody: {
       backgroundColor: palette.canvas,
       padding: uiTokens.space.xl,
+    },
+    embeddedDialogBody: {
+      padding: 0,
+    },
+    embedFallback: {
+      alignItems: 'center',
+      gap: uiTokens.space.sm,
+      paddingHorizontal: uiTokens.space.lg,
+      paddingVertical: uiTokens.space.md,
+      borderTopWidth: 1,
+      borderTopColor: palette.border,
+      backgroundColor: palette.surface,
+    },
+    embedFallbackText: {
+      fontSize: uiTokens.type.caption,
+      color: palette.muted,
+      textAlign: 'center',
     },
     handoffContent: {
       alignItems: 'center',

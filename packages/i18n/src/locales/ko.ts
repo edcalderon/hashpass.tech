@@ -137,7 +137,7 @@ export const ko = {
     copyright: '© {year} HASHPASS. All rights reserved.',
   },
   theme: { toggle: '테마 전환', dark: '다크', light: '라이트', system: '시스템' },
-  lang: { select: '언어', en: 'English', es: 'Español', ko: '한국어', fr: 'Français', pt: 'Português', de: 'Deutsch' },
+  lang: { select: '언어', en: 'English', es: 'Español', ko: '한국어', fr: 'Français', pt: 'Português', de: 'Deutsch', et: 'Eesti' },
   // 산문만 번역합니다. Arkiv 엔티티·속성·필터 이름은 Remotion 영상과
   // 공유되는 스키마 식별자이므로 영어 그대로 둡니다.
   openproof: {

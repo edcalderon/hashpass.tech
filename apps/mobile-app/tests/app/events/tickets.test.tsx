@@ -36,7 +36,7 @@ jest.mock("@hashpass/ui/primitives", () => ({
 jest.mock("react-native-webview", () => ({ WebView: "WebView" }));
 
 import React from "react";
-import { Linking, Platform } from "react-native";
+import { Linking, Platform, useWindowDimensions } from "react-native";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import TicketsScreen from "../../../app/events/[eventSlug]/tickets";
 
@@ -90,14 +90,21 @@ function collectText(node: unknown): string {
 
 describe("TicketsScreen", () => {
   const originalPlatformOs = Platform.OS;
+  let mockUseWindowDimensions: jest.SpyInstance;
 
   beforeEach(() => {
     mockEvent = null;
     jest.clearAllMocks();
+    // Default to a narrow viewport (phone portrait) so the existing tests
+    // exercise the same isWide=false path they always have; individual tests
+    // override via mockUseWindowDimensions.mockReturnValue(...) before render.
+    mockUseWindowDimensions = jest.spyOn(require("react-native"), "useWindowDimensions")
+      .mockReturnValue({ width: 390, height: 844, scale: 1, fontScale: 1 });
   });
 
   afterEach(() => {
     Platform.OS = originalPlatformOs;
+    mockUseWindowDimensions.mockRestore();
   });
 
   it('renders the default colombia2026 event with a "Date TBA" fallback and no venue/city rows', () => {
@@ -122,8 +129,6 @@ describe("TicketsScreen", () => {
 
   it('opens the ticket purchase modal from "Purchase Tickets" and closes it again via the close button and onRequestClose', () => {
     const view = renderScreen();
-    expect(view.root.findByType("Modal" as any).props.visible).toBe(false);
-
     act(() => findButton(view, "Purchase Tickets").props.onPress());
     expect(view.root.findByType("Modal" as any).props.visible).toBe(true);
 
@@ -131,12 +136,18 @@ describe("TicketsScreen", () => {
       .findAllByProps({ accessibilityLabel: "Close ticket modal" })
       .find((node) => typeof node.props.onPress === "function")!;
     act(() => closeButton.props.onPress());
-    expect(view.root.findByType("Modal" as any).props.visible).toBe(false);
+    const closedModal = view.root.findAllByType("Modal" as any)[0];
+    if (closedModal) {
+      expect(closedModal.props.visible).toBe(false);
+    }
 
     // onRequestClose (hardware back / swipe-down dismiss) drives the same setter.
     act(() => findButton(view, "Purchase Tickets").props.onPress());
     act(() => view.root.findByType("Modal" as any).props.onRequestClose());
-    expect(view.root.findByType("Modal" as any).props.visible).toBe(false);
+    const requestClosedModal = view.root.findAllByType("Modal" as any)[0];
+    if (requestClosedModal) {
+      expect(requestClosedModal.props.visible).toBe(false);
+    }
   });
 
   it('navigates to Contact Support from the "Need Help?" card', () => {
@@ -239,6 +250,7 @@ describe("TicketsScreen", () => {
   it("hides the hostname link and falls back to a generic dialog title when the ticket URL is unparsable", () => {
     mockEvent = { id: "community-test", website: "not a valid url" };
     const view = renderScreen();
+    act(() => findButton(view, "Purchase Tickets").props.onPress());
     const text = collectText(view.toJSON());
 
     expect(text).not.toContain("Tickets provided by");
@@ -254,12 +266,155 @@ describe("TicketsScreen", () => {
     expect(view.root.findAllByType("iframe" as any)).toHaveLength(0);
   });
 
-  it("keeps third-party ticket pages out of a web iframe", () => {
+  it("embeds the PKRR ticket page in the web modal with a direct-link fallback", () => {
     Platform.OS = "web";
+    mockEvent = {
+      id: "hash-poker",
+      cta: { label: "Reserve seat", url: "https://pkrr.io/reg/current-tournament" },
+    };
     const view = renderScreen();
     act(() => findButton(view, "Purchase Tickets").props.onPress());
 
     expect(view.root.findAllByType("WebView" as any)).toHaveLength(0);
+    const iframe = view.root.findByType("iframe" as any);
+    expect(iframe.props.src).toBe("https://pkrr.io/reg/current-tournament");
+    expect(collectText(view.toJSON())).toContain("If PKRR blocks embedded viewing");
+  });
+
+  it("opens the PKRR tournament support email from the Need Help card on Hash Poker", () => {
+    Platform.OS = "ios";
+    mockEvent = { id: "hash-poker" };
+    const openURLSpy = jest.spyOn(Linking, "openURL").mockResolvedValue(true);
+
+    const view = renderScreen();
+    act(() => findButton(view, "Email PKRR Tournaments").props.onPress());
+
+    expect(openURLSpy).toHaveBeenCalledWith("mailto:torneos@pkrr.io");
+  });
+
+  it("closes the modal and opens the external ticket link from the handoff button", () => {
+    Platform.OS = "ios";
+    mockEvent = { id: "another-event", website: "https://tickets.example.com" };
+    const openURLSpy = jest.spyOn(Linking, "openURL").mockResolvedValue(true);
+
+    const view = renderScreen();
+    act(() => findButton(view, "Purchase Tickets").props.onPress());
+    expect(view.root.findByType("Modal" as any).props.visible).toBe(true);
+
+    act(() => findButton(view, "Open tickets.example.com").props.onPress());
+
+    const modals = view.root.findAllByType("Modal" as any);
+    if (modals.length > 0) {
+      expect(modals[0].props.visible).toBe(false);
+    }
+    expect(openURLSpy).toHaveBeenCalledWith(
+      "https://tickets.example.com/tickets/",
+    );
+  });
+
+  // The PKRR embed branch (canEmbedTicket=true on web with pkrr.io) is already
+  // exercised by the iframe test above; what's NOT covered is the web+non-PKRR
+  // path, where the modal falls through to the explicit organizer-site
+  // handoff UI ("Continue to <hostname>", "Ticket purchase and organizer
+  // support are handled securely...", and the "Open <hostname>" button).
+  it("renders the explicit handoff UI in the web modal when the organizer is not PKRR", () => {
+    Platform.OS = "web";
+    mockEvent = { id: "another-event", website: "https://tickets.example.com" };
+    const openMock = jest.fn();
+    const originalWindow = (global as any).window;
+    Object.defineProperty(global, "window", {
+      configurable: true,
+      value: { open: openMock },
+    });
+
+    const view = renderScreen();
+    act(() => findButton(view, "Purchase Tickets").props.onPress());
+    const text = collectText(view.toJSON());
+
+    // Embed path must NOT render; the handoff block must.
     expect(view.root.findAllByType("iframe" as any)).toHaveLength(0);
+    expect(text).toContain("Continue to tickets.example.com");
+    expect(text).toContain("Ticket purchase and organizer support are handled securely");
+
+    // Handoff button closes the modal and opens the organizer's ticket page
+    // in a real new tab (web path uses window.open, not Linking.openURL).
+    act(() => findButton(view, "Open tickets.example.com").props.onPress());
+    expect(openMock).toHaveBeenCalledWith(
+      "https://tickets.example.com/tickets/",
+      "_blank",
+      "noopener,noreferrer",
+    );
+
+    Object.defineProperty(global, "window", { configurable: true, value: originalWindow });
+  });
+
+  // The "Open pkrr.io in new tab" fallback button only renders inside the
+  // canEmbedTicket=true branch on web. The existing iframe test renders the
+  // embed but never presses this button -- exercise its onPress so the
+  // fallback ActionButton's handler is also covered.
+  it("opens PKRR in a new tab from the embed fallback button when framing fails", () => {
+    Platform.OS = "web";
+    mockEvent = {
+      id: "hash-poker",
+      cta: { label: "Reserve seat", url: "https://pkrr.io/reg/current-tournament" },
+    };
+    const openMock = jest.fn();
+    const originalWindow = (global as any).window;
+    Object.defineProperty(global, "window", {
+      configurable: true,
+      value: { open: openMock },
+    });
+
+    const view = renderScreen();
+    act(() => findButton(view, "Purchase Tickets").props.onPress());
+
+    act(() => findButton(view, "Open pkrr.io in new tab").props.onPress());
+
+    expect(openMock).toHaveBeenCalledWith(
+      "https://pkrr.io/reg/current-tournament",
+      "_blank",
+      "noopener,noreferrer",
+    );
+
+    Object.defineProperty(global, "window", { configurable: true, value: originalWindow });
+  });
+
+  // The style function's isWide=true branches (dialogCard height/maxWidth/
+  // maxHeight/alignSelf/borderRadius, drawerBackdrop alignItems, etc.) are
+  // only reachable when the viewport is >= 960px. Widen the mock viewport
+  // and render the PKRR web embed to exercise those branches.
+  it("lays out the ticket dialog as a wide-side panel when the viewport is >= 960px", () => {
+    Platform.OS = "web";
+    mockUseWindowDimensions.mockReturnValue({ width: 1280, height: 800, scale: 1, fontScale: 1 });
+    mockEvent = {
+      id: "hash-poker",
+      title: "Hash Poker",
+      eventDateString: "TBD",
+      cta: { label: "Reserve seat", url: "https://pkrr.io/reg/current-tournament" },
+    };
+
+    const view = renderScreen();
+    act(() => findButton(view, "Purchase Tickets").props.onPress());
+
+    const iframe = view.root.findByType("iframe" as any);
+    // isWide=true: iframeHeight uses the 720/190 constants (vs. 520/260 for
+    // narrow viewports). With viewportHeight=800 the clamped value is
+    // min(720, max(320, 800-190)) = 610 -- distinct from the 320 the narrow
+    // path would produce for the same viewport height.
+    expect(iframe.props.style.height).toBe(610);
+
+    const dialogCard = view.root.findByProps({ accessibilityViewIsModal: true });
+    // isWide=true dialogCard styles: height '100%', alignSelf 'flex-end',
+    // borderTopLeftRadius 0 (flush against the right edge).
+    expect(dialogCard.props.style).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          height: "100%",
+          alignSelf: "flex-end",
+          borderTopLeftRadius: 0,
+          borderTopRightRadius: 0,
+        }),
+      ]),
+    );
   });
 });

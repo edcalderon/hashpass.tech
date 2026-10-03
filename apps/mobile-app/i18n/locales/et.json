@@ -1,0 +1,115 @@
+{
+  "common": {
+    "back": "Tagasi",
+    "loading": "Laadimine…",
+    "undo": "Võta tagasi",
+    "cancel": "Tühista",
+    "remove": "Eemalda"
+  },
+  "newsletter": {
+    "title": "Telli meie uudiskiri",
+    "subtitle": "Liitu uudiskirjaga ja saa uusimad uudised",
+    "emailPlaceholder": "Sisesta e-post",
+    "subscribe": "Telli",
+    "processing": "Töötleme…",
+    "successTitle": "E-kiri saadetud!",
+    "sendAnother": "Saada veel üks"
+  },
+  "landingCarousel": {
+    "memberOf": "Liige",
+    "supportedBy": "Toetaja"
+  },
+  "auth": {
+    "title": "Logi sisse",
+    "welcomeHeading": "Tere tulemast tagasi",
+    "subtitle": "Logi sisse, et jätkata HASHPASSiga",
+    "signInWithGoogle": "Logi sisse Google'iga",
+    "emailPlaceholder": "Sinu e-posti aadress",
+    "emailRequired": "E-post on nõutud",
+    "magicLink": "Saada sisselogimislink",
+    "sendCode": "Saada kood",
+    "processing": "Töötleme…",
+    "authenticationSuccessful": "Autentimine õnnestus",
+    "authenticationFailed": "Autentimine ebaõnnestus",
+    "back": "Tagasi"
+  },
+  "pwaPrompt": {
+    "installAction": "Paigalda",
+    "openAction": "Ava rakendus",
+    "installTitle": "Paigalda HASHPASS",
+    "openTitle": "Ava HASHPASS",
+    "close": "Sulge",
+    "learnMore": "Loe lähemalt"
+  },
+  "settings": {
+    "languages": {
+      "en": "Inglise",
+      "es": "Hispaania",
+      "ko": "Korea",
+      "fr": "Prantsuse",
+      "pt": "Portugali",
+      "de": "Saksa",
+      "et": "Eesti"
+    },
+    "appSettings": "Rakenduse seaded",
+    "darkMode": "Tume režiim",
+    "language": "Keel",
+    "helpSupport": "Abi ja tugi",
+    "deleteAccount": "Kustuta konto"
+  },
+  "profile": {
+    "languages": {
+      "english": "Inglise",
+      "spanish": "Hispaania",
+      "korean": "Korea",
+      "french": "Prantsuse",
+      "portuguese": "Portugali",
+      "german": "Saksa",
+      "estonian": "Eesti"
+    }
+  },
+  "nav": {
+    "explore": "Avasta",
+    "wallet": "Rahakott",
+    "notifications": "Teavitused",
+    "profile": "Profiil",
+    "settings": "Seaded",
+    "backToLanding": "Tagasi avalehele",
+    "light": "Hele",
+    "dark": "Tume",
+    "logout": "Logi välja"
+  },
+  "index": {
+    "tagline": "Sinu sündmus kuulub siia",
+    "taglineFlipText": "Sinu sündmus. Sinu kogukond. Sinu preemiad.",
+    "taglineFlipList": "- SINU SÜNDMUS -,- SINU KOGUKOND -,- SINU PREEMIAD -",
+    "learnMore": "Loe lähemalt",
+    "featuresBadge": "FUNKTSIOONID",
+    "unlockPotential": "Ava oma potentsiaal",
+    "getStartedNow": "Alusta kohe",
+    "exploreAllEvents": "Avasta kõik sündmused",
+    "copyright": "© {year} HASHPASS. Kõik õigused kaitstud.",
+    "footer": {
+      "resources": "Ressursid",
+      "docs": "Dokumentatsioon",
+      "guides": "Juhendid",
+      "support": "Tugi",
+      "legal": "Juriidiline",
+      "privacy": "Privaatsus",
+      "terms": "Kasutustingimused"
+    }
+  },
+  "publicEvents": {
+    "back": "Tagasi",
+    "title": "HASHPASSi sündmused",
+    "subtitle": "Avasta ja osale tulevastes sündmustes",
+    "loadingFilm": "Sündmuse laadimine…",
+    "viewEvent": "Vaata sündmust",
+    "previous": "Eelmine",
+    "next": "Järgmine",
+    "search": "Otsi",
+    "upcoming": "Tulevased",
+    "past": "Varasemad",
+    "empty": "Sündmusi ei leitud"
+  }
+}

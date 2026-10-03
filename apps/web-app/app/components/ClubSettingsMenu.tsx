@@ -14,6 +14,7 @@ const LOCALE_FLAGS: Record<string, string> = {
   fr: '🇫🇷',
   pt: '🇧🇷',
   de: '🇩🇪',
+  et: '🇪🇪',
 };
 
 type ClubSettingsMenuProps = {

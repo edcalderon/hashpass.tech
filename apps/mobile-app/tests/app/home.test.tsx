@@ -508,6 +508,21 @@ describe("HomeScreen native tablet layout", () => {
     expect(hoveredCarousel.props.explorerActionIcon.props.icon).toBe("ArrowUpRight");
   });
 
+  it("routes the landing-page Support link to the dedicated support page", () => {
+    const { renderer, act } = loadHomeScreen({ platform: "web" });
+    const supportLink = renderer.root
+      .findAllByType("TouchableOpacity")
+      .find((node: any) =>
+        node
+          .findAllByType("Text")
+          .some((textNode: any) => textNode.props.children === "footer.support"),
+      );
+
+    expect(supportLink).toBeTruthy();
+    act(() => supportLink!.props.onPress());
+    expect(mockRouterPush).toHaveBeenCalledWith("/(shared)/support");
+  });
+
   it("enables in-card search on a standard phone-width web viewport", () => {
     const { renderer } = loadHomeScreen({
       width: 390,

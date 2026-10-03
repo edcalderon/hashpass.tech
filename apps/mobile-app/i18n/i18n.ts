@@ -10,6 +10,7 @@ import koMessages from './locales/ko.json';
 import frMessages from './locales/fr.json';
 import ptMessages from './locales/pt.json';
 import deMessages from './locales/de.json';
+import etMessages from './locales/et.json';
 
 // If your messages are nested under keys, map them here, otherwise export as-is
 function transformMessages(nested: any): Record<string, string> {
@@ -40,6 +41,11 @@ const messagesByLocale: Record<string, Record<string, string>> = {
   fr: transformMessages(frMessages as any),
   pt: transformMessages(ptMessages as any),
   de: transformMessages(deMessages as any),
+  // Keep every screen readable while long-form Estonian copy is expanded.
+  et: {
+    ...transformMessages(enMessages as any),
+    ...transformMessages(etMessages as any),
+  },
 };
 
 // Use the global singleton so @lingui/macro can see current locale
@@ -60,6 +66,7 @@ export function getAvailableLocales() {
     { code: 'fr', name: 'french' },
     { code: 'pt', name: 'portuguese' },
     { code: 'de', name: 'german' },
+    { code: 'et', name: 'estonian' },
   ];
 }
 

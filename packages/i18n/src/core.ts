@@ -7,6 +7,7 @@ export const AVAILABLE_LOCALES = [
   { code: 'pt' as const, name: 'Portuguese', nativeName: 'Português', dir: 'ltr' as const },
   { code: 'de' as const, name: 'German', nativeName: 'Deutsch', dir: 'ltr' as const },
   { code: 'ko' as const, name: 'Korean', nativeName: '한국어', dir: 'ltr' as const },
+  { code: 'et' as const, name: 'Estonian', nativeName: 'Eesti', dir: 'ltr' as const },
 ];
 
 export const STORAGE_KEY = 'hashpass_locale';

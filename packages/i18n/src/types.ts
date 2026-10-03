@@ -1,4 +1,4 @@
-export type SupportedLocale = 'en' | 'es' | 'ko' | 'fr' | 'pt' | 'de';
+export type SupportedLocale = 'en' | 'es' | 'ko' | 'fr' | 'pt' | 'de' | 'et';
 
 export type MessageValue = string | Record<string, unknown>;
 

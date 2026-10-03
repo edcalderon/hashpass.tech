@@ -138,7 +138,7 @@ export const de = {
     copyright: '© {year} HASHPASS. Alle Rechte vorbehalten.',
   },
   theme: { toggle: 'Design umschalten', dark: 'Dunkel', light: 'Hell', system: 'System' },
-  lang: { select: 'Sprache', en: 'English', es: 'Español', ko: '한국어', fr: 'Français', pt: 'Português', de: 'Deutsch' },
+  lang: { select: 'Sprache', en: 'English', es: 'Español', ko: '한국어', fr: 'Français', pt: 'Português', de: 'Deutsch', et: 'Eesti' },
   // Nur Fließtext wird übersetzt: Arkiv-Entitäts-, Attribut- und Filternamen
   // sind Schema-Bezeichner, die mit dem Remotion-Video geteilt werden.
   openproof: {

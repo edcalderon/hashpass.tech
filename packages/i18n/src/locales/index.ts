@@ -4,9 +4,10 @@ import { fr } from './fr';
 import { pt } from './pt';
 import { de } from './de';
 import { ko } from './ko';
+import { et } from './et';
 import type { SupportedLocale, Messages } from '../types';
 
-export { en, es, fr, pt, de, ko };
+export { en, es, fr, pt, de, ko, et };
 
 export const catalogs: Record<SupportedLocale, Messages> = {
   en: en as unknown as Messages,
@@ -15,4 +16,5 @@ export const catalogs: Record<SupportedLocale, Messages> = {
   pt: pt as unknown as Messages,
   de: de as unknown as Messages,
   ko: ko as unknown as Messages,
+  et: et as unknown as Messages,
 };

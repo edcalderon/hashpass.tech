@@ -138,7 +138,7 @@ export const fr = {
     copyright: '© {year} HASHPASS. Tous droits réservés.',
   },
   theme: { toggle: 'Changer de thème', dark: 'Sombre', light: 'Clair', system: 'Système' },
-  lang: { select: 'Langue', en: 'English', es: 'Español', ko: '한국어', fr: 'Français', pt: 'Português', de: 'Deutsch' },
+  lang: { select: 'Langue', en: 'English', es: 'Español', ko: '한국어', fr: 'Français', pt: 'Português', de: 'Deutsch', et: 'Eesti' },
   // Seule la prose est traduite : les noms d'entités, d'attributs et les
   // filtres Arkiv sont des identifiants de schéma partagés avec la vidéo.
   openproof: {

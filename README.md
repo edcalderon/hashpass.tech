@@ -20,21 +20,16 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.92)
+## 📋 Latest Changes (v1.9.93)
 
-### Bug Fixes
-
-* harden landing motion and carousel behavior ([bb1959c](https://github.com/hashpass-tech/hashpass.tech/commit/bb1959cc629ba62911c781de74b581320ed255ed))
-### Release Highlights
-- harden landing motion and carousel behavior
+### Released
+- Version 1.9.93 release
 
 ### Release scope
-- Compared with: `v1.9.91` (the previous global release tag)
+- Compared with: `v1.9.92` (the previous global release tag)
 
 ### Affected products & packages
-- Mobile app
-- Auth
-- Infrastructure
+- Shared repository changes only
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

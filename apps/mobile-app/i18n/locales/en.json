@@ -472,7 +472,8 @@
       "ko": "Korean",
       "fr": "French",
       "pt": "Portuguese",
-      "de": "German"
+      "de": "German",
+      "et": "Estonian"
     },
     "terms": {
       "subtitle": "Read our terms and conditions"
@@ -780,7 +781,8 @@
       "korean": "Korean",
       "french": "French",
       "portuguese": "Portuguese",
-      "german": "German"
+      "german": "German",
+      "estonian": "Estonian"
     },
     "biometric": {
       "title": "Biometric Authentication",

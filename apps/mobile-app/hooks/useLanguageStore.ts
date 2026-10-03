@@ -1,6 +1,6 @@
 import { useCallback, useState, useEffect } from 'react';
 import * as Localization from 'expo-localization';
-import { setLocale, isLocaleOverrideActive } from '../i18n/i18n';
+import { getAvailableLocales, setLocale, isLocaleOverrideActive } from '../i18n/i18n';
 import { AppState, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -8,6 +8,8 @@ export type LanguageStoreType = {
   locale: string | null;
   setLocale: (locale: string) => Promise<void>;
 };
+
+const SUPPORTED_LOCALES = getAvailableLocales().map(({ code }) => code);
 
 export const useLanguageStore = (): LanguageStoreType => {
   const [locale, setLocaleState] = useState<string | null>(null);
@@ -48,7 +50,7 @@ export const useLanguageStore = (): LanguageStoreType => {
         } else {
           // If no saved preference, use device locale
           const deviceLocale = Localization.getLocales()[0].languageCode || 'en';
-          if (['en', 'es', 'ko'].includes(deviceLocale)) {
+          if (SUPPORTED_LOCALES.includes(deviceLocale)) {
             setLocale(deviceLocale);
             setLocaleState(deviceLocale);
           } else {
@@ -81,7 +83,7 @@ export const useLanguageStore = (): LanguageStoreType => {
         const currentLocale = await AsyncStorage.getItem('user_locale');
         if (!currentLocale) { // Only auto-update if user hasn't set a preference
           const deviceLocale = Localization.getLocales()[0].languageCode || 'en';
-          if (['en', 'es', 'ko'].includes(deviceLocale) && deviceLocale !== locale) {
+          if (SUPPORTED_LOCALES.includes(deviceLocale) && deviceLocale !== locale) {
             await updateLocale(deviceLocale);
           }
         }

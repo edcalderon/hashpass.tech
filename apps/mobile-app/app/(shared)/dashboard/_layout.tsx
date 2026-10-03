@@ -695,7 +695,7 @@ function CustomDrawerContent({
 
   const handleLanguageToggle = async () => {
     hapticLight();
-    const locales = ["en", "es", "ko"];
+    const locales = ["en", "es", "ko", "fr", "pt", "de", "et"];
     const currentIndex = locales.indexOf(locale);
     const nextIndex = (currentIndex + 1) % locales.length;
     await setLocale(locales[nextIndex]);
@@ -709,6 +709,14 @@ function CustomDrawerContent({
         return "🇪🇸";
       case "ko":
         return "🇰🇷";
+      case "fr":
+        return "🇫🇷";
+      case "pt":
+        return "🇵🇹";
+      case "de":
+        return "🇩🇪";
+      case "et":
+        return "🇪🇪";
       default:
         return "🇺🇸";
     }

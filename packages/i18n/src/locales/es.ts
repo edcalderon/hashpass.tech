@@ -347,6 +347,7 @@ export const es = {
     fr: 'Français',
     pt: 'Português',
     de: 'Deutsch',
+    et: 'Eesti',
   },
   // Solo se traduce la prosa: los nombres de entidades, atributos y filtros de
   // Arkiv son identificadores de esquema compartidos con el vídeo de Remotion.

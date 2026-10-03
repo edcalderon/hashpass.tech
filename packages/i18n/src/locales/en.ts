@@ -347,6 +347,7 @@ export const en = {
     fr: 'Français',
     pt: 'Português',
     de: 'Deutsch',
+    et: 'Eesti',
   },
   // OpenProof concept page. Only prose is translated here — Arkiv entity
   // names, attribute names and query filter strings stay in English because
