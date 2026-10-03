@@ -20,16 +20,20 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.93)
+## 📋 Latest Changes (v1.9.94)
 
-### Released
-- Version 1.9.93 release
+### Features
+
+* E2E chat encryption key backup and restore ([3373dbc](https://github.com/hashpass-tech/hashpass.tech/commit/3373dbc4d0775def938a632868cf7b999fd65850))
+### Release Highlights
+- E2E chat encryption key backup and restore
 
 ### Release scope
-- Compared with: `v1.9.92` (the previous global release tag)
+- Compared with: `v1.9.93` (the previous global release tag)
 
 ### Affected products & packages
-- Shared repository changes only
+- Mobile app
+- Database migrations
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
