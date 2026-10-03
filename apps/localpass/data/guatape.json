@@ -43,7 +43,10 @@
         "rain"
       ],
       "local_business": false,
-      "offline_safe": true
+      "offline_safe": true,
+      "category_es": "Cultura",
+      "location_es": "Centro histórico",
+      "opening_hours_es": "Todos los días, espacio público"
     },
     {
       "id": "malecon",
@@ -70,7 +73,10 @@
         "walk"
       ],
       "local_business": false,
-      "offline_safe": true
+      "offline_safe": true,
+      "category_es": "Naturaleza",
+      "location_es": "Orilla del embalse",
+      "opening_hours_es": "Todos los días, espacio público"
     },
     {
       "id": "calle-recuerdo",
@@ -97,7 +103,10 @@
         "walk"
       ],
       "local_business": false,
-      "offline_safe": true
+      "offline_safe": true,
+      "category_es": "Cultura",
+      "location_es": "Centro histórico",
+      "opening_hours_es": "Todos los días, espacio público"
     },
     {
       "id": "cafe-la-vina",
@@ -125,7 +134,10 @@
         "rain"
       ],
       "local_business": true,
-      "offline_safe": true
+      "offline_safe": true,
+      "category_es": "Comida",
+      "location_es": "Cerca de la plaza principal",
+      "opening_hours_es": "7:30–19:00"
     },
     {
       "id": "panaderia-zocalo",
@@ -152,7 +164,10 @@
         "rain"
       ],
       "local_business": true,
-      "offline_safe": true
+      "offline_safe": true,
+      "category_es": "Comida",
+      "location_es": "Centro histórico",
+      "opening_hours_es": "7:00–20:00"
     },
     {
       "id": "cocina-antioquena",
@@ -179,7 +194,10 @@
         "rain"
       ],
       "local_business": true,
-      "offline_safe": true
+      "offline_safe": true,
+      "category_es": "Comida",
+      "location_es": "A dos cuadras de la plaza principal",
+      "opening_hours_es": "11:30–16:00"
     },
     {
       "id": "taller-zocalos",
@@ -207,7 +225,10 @@
         "rain"
       ],
       "local_business": true,
-      "offline_safe": true
+      "offline_safe": true,
+      "category_es": "Artesanías",
+      "location_es": "Sector de la Calle del Recuerdo",
+      "opening_hours_es": "9:00–18:00"
     },
     {
       "id": "artesanias-embalse",
@@ -234,7 +255,10 @@
         "walk"
       ],
       "local_business": true,
-      "offline_safe": true
+      "offline_safe": true,
+      "category_es": "Artesanías",
+      "location_es": "Malecón",
+      "opening_hours_es": "9:00–19:00"
     },
     {
       "id": "helados-parque",
@@ -260,7 +284,10 @@
         "family"
       ],
       "local_business": true,
-      "offline_safe": true
+      "offline_safe": true,
+      "category_es": "Comida",
+      "location_es": "Plaza principal",
+      "opening_hours_es": "10:00–20:00"
     },
     {
       "id": "kayak-familiar",
@@ -287,7 +314,10 @@
         "water"
       ],
       "local_business": true,
-      "offline_safe": true
+      "offline_safe": true,
+      "category_es": "Experiencia",
+      "location_es": "Punto de encuentro en el Malecón",
+      "opening_hours_es": "8:00–16:00, según el clima"
     },
     {
       "id": "guia-local",
@@ -314,7 +344,10 @@
         "local"
       ],
       "local_business": true,
-      "offline_safe": true
+      "offline_safe": true,
+      "category_es": "Experiencia",
+      "location_es": "Punto de encuentro en la plaza principal",
+      "opening_hours_es": "10:00 y 14:00"
     },
     {
       "id": "mercado-campesino",
@@ -341,7 +374,10 @@
         "culture"
       ],
       "local_business": true,
-      "offline_safe": true
+      "offline_safe": true,
+      "category_es": "Comida",
+      "location_es": "Sector del mercado municipal",
+      "opening_hours_es": "En la mañana; confirma localmente"
     },
     {
       "id": "mirador-sendero",
@@ -369,7 +405,10 @@
         "walk"
       ],
       "local_business": false,
-      "offline_safe": true
+      "offline_safe": true,
+      "category_es": "Naturaleza",
+      "location_es": "Afueras del pueblo",
+      "opening_hours_es": "Con luz del día, según el clima"
     },
     {
       "id": "piedra-penol",
@@ -396,7 +435,10 @@
         "walk"
       ],
       "local_business": false,
-      "offline_safe": true
+      "offline_safe": true,
+      "category_es": "Naturaleza",
+      "location_es": "Carretera El Peñol–Guatapé",
+      "opening_hours_es": "Durante el día; confirma antes de viajar"
     }
   ],
   "transport": [
