@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Modal,
 } from 'react-native';
 import { useTheme } from '../hooks/useTheme';
 import { useAuth } from '../hooks/useAuth';
@@ -118,6 +119,10 @@ export default function RealtimeChat({
     loading,
     error,
     otherKeyMissing,
+    needsKeyRestore,
+    restoreKeyFromBackup,
+    skipKeyRestore,
+    createKeyBackup,
   } = useRealtimeChat({
     meetingId,
     roomName,
@@ -125,6 +130,16 @@ export default function RealtimeChat({
     userId: dbUserId || '',
     otherParticipantId,
   });
+
+  // Key backup/restore UI state
+  const [showRestoreModal, setShowRestoreModal] = useState(false);
+  const [restorePassword, setRestorePassword] = useState('');
+  const [restoreError, setRestoreError] = useState<string | null>(null);
+  const [restoreLoading, setRestoreLoading] = useState(false);
+  const [showSetupBackupModal, setShowSetupBackupModal] = useState(false);
+  const [setupBackupPassword, setSetupBackupPassword] = useState('');
+  const [setupBackupLoading, setSetupBackupLoading] = useState(false);
+  const [hasPromptedForBackup, setHasPromptedForBackup] = useState(false);
 
   // Update presence state from hook
   useEffect(() => {
@@ -252,6 +267,76 @@ export default function RealtimeChat({
     setNewMessage((message) => `${message}${emoji}`);
     setShowEmojiPicker(false);
     setTimeout(() => messageInputRef.current?.focus(), 0);
+  };
+
+  // Handle key backup restore when needsKeyRestore is true
+  useEffect(() => {
+    if (needsKeyRestore && !showRestoreModal) {
+      setShowRestoreModal(true);
+    }
+  }, [needsKeyRestore, showRestoreModal]);
+
+  // Handle restore submit
+  const handleRestore = async () => {
+    if (!restorePassword.trim()) {
+      setRestoreError('Please enter your backup password');
+      return;
+    }
+
+    setRestoreLoading(true);
+    setRestoreError(null);
+
+    const result = await restoreKeyFromBackup(restorePassword);
+    setRestoreLoading(false);
+
+    if (result.success) {
+      setShowRestoreModal(false);
+      setRestorePassword('');
+      // After restoring, prompt to set up a new backup (optional)
+      if (!hasPromptedForBackup) {
+        setHasPromptedForBackup(true);
+        // Give the UI a moment to update, then show the setup prompt
+        setTimeout(() => setShowSetupBackupModal(true), 500);
+      }
+    } else {
+      if (result.error === 'wrong_password') {
+        setRestoreError('Incorrect password. Please try again.');
+      } else {
+        setRestoreError(result.error || 'Failed to restore chat key');
+      }
+    }
+  };
+
+  const handleSkipRestore = () => {
+    setShowRestoreModal(false);
+    setRestorePassword('');
+    setRestoreError(null);
+    skipKeyRestore();
+  };
+
+  // Handle setup backup submit
+  const handleSetupBackup = async () => {
+    if (!setupBackupPassword.trim()) {
+      return;
+    }
+
+    setSetupBackupLoading(true);
+    const result = await createKeyBackup(setupBackupPassword);
+    setSetupBackupLoading(false);
+
+    if (result.success) {
+      setShowSetupBackupModal(false);
+      setSetupBackupPassword('');
+    } else {
+      // Silently fail -- backup is optional, don't block the user
+      console.error('Failed to create key backup:', result.error);
+      setShowSetupBackupModal(false);
+    }
+  };
+
+  const handleSkipSetupBackup = () => {
+    setShowSetupBackupModal(false);
+    setSetupBackupPassword('');
   };
 
   const formatTime = (timestamp: string) => {
@@ -579,6 +664,133 @@ export default function RealtimeChat({
           )}
         </TouchableOpacity>
       </View>
+
+      {/* Key Backup Restore Modal - shown when user has no local key but a
+          server-side encrypted backup exists (new device or reinstall) */}
+      <Modal
+        visible={showRestoreModal}
+        transparent
+        animationType="fade"
+        onRequestClose={handleSkipRestore}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.modalCard, { backgroundColor: isDark ? '#2a2a2a' : '#ffffff' }]}>
+            <MaterialIcons
+              name="lock-reset"
+              size={48}
+              color={colors.primary || '#007AFF'}
+              style={{ marginBottom: 16 }}
+            />
+            <Text style={[styles.modalTitle, { color: isDark ? '#ffffff' : '#1a1a1a' }]}>
+              Restore Chat History?
+            </Text>
+            <Text style={[styles.modalText, { color: isDark ? '#cccccc' : '#666666' }]}>
+              You have an encrypted backup of your chat history. Enter your backup password to restore it and decrypt your previous messages.
+            </Text>
+            <TextInput
+              style={[styles.modalInput, {
+                backgroundColor: isDark ? '#1a1a1a' : '#f5f5f5',
+                color: isDark ? '#ffffff' : '#1a1a1a',
+                borderColor: restoreError ? '#F44336' : (isDark ? '#444444' : '#e0e0e0'),
+              }]}
+              value={restorePassword}
+              onChangeText={setRestorePassword}
+              placeholder="Backup password"
+              placeholderTextColor={isDark ? '#888888' : '#999999'}
+              secureTextEntry
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            {restoreError && (
+              <Text style={styles.modalError}>{restoreError}</Text>
+            )}
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={styles.modalButtonSecondary}
+                onPress={handleSkipRestore}
+                disabled={restoreLoading}
+              >
+                <Text style={[styles.modalButtonTextSecondary, { color: isDark ? '#cccccc' : '#666666' }]}>
+                  Skip
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButtonPrimary, { backgroundColor: colors.primary || '#007AFF' }]}
+                onPress={handleRestore}
+                disabled={restoreLoading}
+              >
+                {restoreLoading ? (
+                  <ActivityIndicator size="small" color="white" />
+                ) : (
+                  <Text style={styles.modalButtonTextPrimary}>Restore</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Key Backup Setup Modal - optional prompt after restore to set up
+          a new backup for future device restores */}
+      <Modal
+        visible={showSetupBackupModal}
+        transparent
+        animationType="fade"
+        onRequestClose={handleSkipSetupBackup}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.modalCard, { backgroundColor: isDark ? '#2a2a2a' : '#ffffff' }]}>
+            <MaterialIcons
+              name="cloud-upload"
+              size={48}
+              color={colors.primary || '#007AFF'}
+              style={{ marginBottom: 16 }}
+            />
+            <Text style={[styles.modalTitle, { color: isDark ? '#ffffff' : '#1a1a1a' }]}>
+              Set Up Chat Backup?
+            </Text>
+            <Text style={[styles.modalText, { color: isDark ? '#cccccc' : '#666666' }]}>
+              Create an encrypted backup of your chat key so you can restore your messages on a new device. Choose a password to encrypt the backup — if you forget it, the backup cannot be recovered.
+            </Text>
+            <TextInput
+              style={[styles.modalInput, {
+                backgroundColor: isDark ? '#1a1a1a' : '#f5f5f5',
+                color: isDark ? '#ffffff' : '#1a1a1a',
+                borderColor: isDark ? '#444444' : '#e0e0e0',
+              }]}
+              value={setupBackupPassword}
+              onChangeText={setSetupBackupPassword}
+              placeholder="Choose a backup password"
+              placeholderTextColor={isDark ? '#888888' : '#999999'}
+              secureTextEntry
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={styles.modalButtonSecondary}
+                onPress={handleSkipSetupBackup}
+                disabled={setupBackupLoading}
+              >
+                <Text style={[styles.modalButtonTextSecondary, { color: isDark ? '#cccccc' : '#666666' }]}>
+                  Not Now
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButtonPrimary, { backgroundColor: colors.primary || '#007AFF' }]}
+                onPress={handleSetupBackup}
+                disabled={setupBackupLoading || !setupBackupPassword.trim()}
+              >
+                {setupBackupLoading ? (
+                  <ActivityIndicator size="small" color="white" />
+                ) : (
+                  <Text style={styles.modalButtonTextPrimary}>Create Backup</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -970,5 +1182,81 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   },
   sendButtonDisabled: {
     backgroundColor: isDark ? '#333333' : '#e0e0e0',
+  },
+  // Key backup/restore modals
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: 400,
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  modalText: {
+    fontSize: 14,
+    lineHeight: 20,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  modalInput: {
+    width: '100%',
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 16,
+    marginBottom: 12,
+  },
+  modalError: {
+    color: '#F44336',
+    fontSize: 13,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+    marginTop: 8,
+  },
+  modalButtonSecondary: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  modalButtonPrimary: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  modalButtonTextSecondary: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  modalButtonTextPrimary: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '600',
   },
 });
