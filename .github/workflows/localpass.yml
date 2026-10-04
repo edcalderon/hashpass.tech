@@ -1,0 +1,36 @@
+name: LocalPass MVP
+
+on:
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'apps/localpass/**'
+      - 'packages/ui/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/localpass.yml'
+  push:
+    branches: [main, develop]
+    paths:
+      - 'apps/localpass/**'
+      - 'packages/ui/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/localpass.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  localpass:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --prefer-offline
+      - run: pnpm --filter @hashpass/localpass test
+      - run: pnpm --filter @hashpass/localpass build
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm --filter @hashpass/localpass test:browser

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 128" role="img" aria-labelledby="title desc">
+  <title id="title">LocalPass</title>
+  <desc id="desc">LocalPass global brand logo.</desc>
+  <g transform="translate(0 0)">
+    <path d="M24 64C24 35 42 16 68 16c11 0 21 3 29 9l-9 10c-6-4-12-6-20-6-18 0-31 11-34 28l19-16c5-4 11-4 16 1l17 17 11-9c4-3 9-3 13 0l8 7c-6 24-23 42-50 58C41 99 24 82 24 64Z" fill="#06384A"/>
+    <path d="M32 74c12-8 25-9 38-2 12 6 25 7 38 1-4 7-10 13-18 19-11 0-21-3-31-7-9-4-18-5-27-3Z" fill="#1BA6A8"/>
+    <path d="M35 89c9-4 18-4 28 0 8 4 17 6 27 6-6 5-13 10-22 15-14-8-25-15-33-21Z" fill="#0B5E70"/>
+    <circle cx="91" cy="42" r="11" fill="#FDBA2D"/>
+  </g>
+  <text x="142" y="78" fill="#06384A" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="58" font-weight="800" letter-spacing="-2.5">LocalPass</text>
+</svg>
