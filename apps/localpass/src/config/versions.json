@@ -1,0 +1,29 @@
+{
+  "_comment": "⚠️ AUTO-GENERATED FILE - DO NOT EDIT MANUALLY ⚠️",
+  "_source": "This file is generated from apps/localpass/package.json",
+  "_instructions": "Run npm run version:localpass or npm run release:localpass:patch from the repo root to update it.",
+  "currentVersion": {
+    "version": "0.1.0",
+    "buildNumber": 0,
+    "releaseDate": "2026-10-03",
+    "releaseType": "stable",
+    "environment": "production",
+    "features": [],
+    "bugfixes": [],
+    "breakingChanges": [],
+    "notes": "Initial LocalPass MVP release"
+  },
+  "versions": [
+    {
+      "version": "0.1.0",
+      "buildNumber": 0,
+      "releaseDate": "2026-10-03",
+      "releaseType": "stable",
+      "environment": "production",
+      "features": [],
+      "bugfixes": [],
+      "breakingChanges": [],
+      "notes": "Initial LocalPass MVP release"
+    }
+  ]
+}
