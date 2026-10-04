@@ -22,22 +22,63 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610031314, // Updated to current timestamp
-  releaseDate: '2026-10-03',
+  buildNumber: 202610041827, // Updated to current timestamp
+  releaseDate: '2026-10-04',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'E2E chat encryption key backup and restore'
+    'add demo/tech videos, demo page, one-page PDF report, and source zip',
+    'add --local-proof flag to dev:all for the LocalProof site',
+    'add version tracker, release script, and footer display',
+    'add apex_target toggle for GitHub Pages cutover',
+    'redesign LocalProof public website',
+    'add lightweight offline portal',
+    'add captive portal firmware',
+    'add ESP8266 PlatformIO config',
+    'add LocalPass offline tourism MVP'
   ],
   bugfixes: [
-    // No bugfixes
+    'resolve claim_port subshell bug that broke duplicate-port detection',
+    'give the labeled illustration and trust-strip a nameable role',
+    'honor reduced motion and contrast',
+    'address PR review findings (subtree history, release push/guard)',
+    'exclude apps/localpass from typecheck-changed\'s mobile sandbox',
+    'regenerate lockfile, adopt shared UI, add real coverage'
   ],
   breakingChanges: [],
-  notes: 'E2E chat encryption key backup and restore'
+  notes: 'add demo/tech videos, demo page, one-page PDF report, and source zip; add --local-proof flag to dev:all for the LocalProof site; add version tracker, release script, and footer display; add apex_target toggle for GitHub Pages cutover; redesign LocalProof public website; add lightweight offline portal; add captive portal firmware; add ESP8266 PlatformIO config; add LocalPass offline tourism MVP; resolve claim_port subshell bug that broke duplicate-port detection; give the labeled illustration and trust-strip a nameable role; honor reduced motion and contrast; address PR review findings (subtree history, release push/guard); exclude apps/localpass from typecheck-changed\'s mobile sandbox; regenerate lockfile, adopt shared UI, add real coverage'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.95': {
+    version: '1.9.95',
+    buildNumber: 202610041827,
+    releaseDate: '2026-10-04',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'add demo/tech videos, demo page, one-page PDF report, and source zip',
+      'add --local-proof flag to dev:all for the LocalProof site',
+      'add version tracker, release script, and footer display',
+      'add apex_target toggle for GitHub Pages cutover',
+      'redesign LocalProof public website',
+      'add lightweight offline portal',
+      'add captive portal firmware',
+      'add ESP8266 PlatformIO config',
+      'add LocalPass offline tourism MVP'
+    ],
+    bugfixes: [
+      'resolve claim_port subshell bug that broke duplicate-port detection',
+      'give the labeled illustration and trust-strip a nameable role',
+      'honor reduced motion and contrast',
+      'address PR review findings (subtree history, release push/guard)',
+      'exclude apps/localpass from typecheck-changed\'s mobile sandbox',
+      'regenerate lockfile, adopt shared UI, add real coverage'
+    ],
+    breakingChanges: [],
+    notes: 'add demo/tech videos, demo page, one-page PDF report, and source zip; add --local-proof flag to dev:all for the LocalProof site; add version tracker, release script, and footer display; add apex_target toggle for GitHub Pages cutover; redesign LocalProof public website; add lightweight offline portal; add captive portal firmware; add ESP8266 PlatformIO config; add LocalPass offline tourism MVP; resolve claim_port subshell bug that broke duplicate-port detection; give the labeled illustration and trust-strip a nameable role; honor reduced motion and contrast; address PR review findings (subtree history, release push/guard); exclude apps/localpass from typecheck-changed\'s mobile sandbox; regenerate lockfile, adopt shared UI, add real coverage'
+  },
   '1.9.94': {
     version: '1.9.94',
     buildNumber: 202610031314,
