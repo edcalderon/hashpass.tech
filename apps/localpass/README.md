@@ -34,3 +34,23 @@ For the core demo: load the app, download the pack, create a three-hour COP 100,
 ## Prototype boundaries
 
 Costs, opening hours, availability, and demo operator names must be confirmed locally. This is not an emergency service or booking platform. Cloud AI is intentionally optional; no arbitrary generated markup enters the UI. See [data sources](./docs/data-sources.md) and [architecture](./ARCHITECTURE.md).
+
+
+## Commercialization and guide network
+
+The MVP now includes a documented commercialization path for turning LocalPass into a physical-to-digital destination network.
+
+- [Commercial model](./docs/commercial/README.md)
+- [Business model](./docs/commercial/business-model.md)
+- [Unit economics](./docs/commercial/unit-economics.md)
+- [Operator rewards](./docs/commercial/operator-rewards.md)
+- [Go-to-market](./docs/commercial/go-to-market.md)
+- [Economic and network diagrams](./docs/commercial/system-diagrams.md)
+- [Dynamic QR protocol](./docs/trust/qr-protocol.md)
+- [Guide verification and certification](./docs/trust/guide-certification.md)
+- [Draft Terms of Service](./docs/legal/TERMS_OF_SERVICE_DRAFT.md)
+- [Hardware pilot terms](./docs/legal/HARDWARE_PILOT_TERMS_DRAFT.md)
+- [Privacy and data principles](./docs/legal/PRIVACY_AND_DATA_PRINCIPLES.md)
+- [LocalPass Guide wearable concept](../../hardware/localpass-guide/README.md)
+
+The core commercial principle is: **software/QR access can be open, trust is independently verifiable, and hardware remains optional infrastructure rather than a gate to participation.**
