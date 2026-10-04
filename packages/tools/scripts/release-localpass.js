@@ -159,6 +159,9 @@ function printUsage() {
       '  --no-tag              Skip the release tag',
       '  --notes "<text>"      Release notes for the changelog entry',
       '  -h, --help            Show this help',
+      '',
+      'Releases must run from "develop". Set',
+      'LOCALPASS_RELEASE_SKIP_BRANCH_GUARD=1 to override in an emergency.',
     ].join('\n')
   );
 }
@@ -252,8 +255,35 @@ function runGitTag(options, version) {
   runInherit('git', ['tag', '-a', `${TAG_PREFIX}${version}`, '-m', `LocalPass v${version}`], options);
 }
 
-function runGitPublish(options, version) {
+function ensureReleaseBranch(branch, options) {
+  const requiredBranch = 'develop';
+  if (branch === requiredBranch || options.dryRun) return;
+
+  if (process.env.LOCALPASS_RELEASE_SKIP_BRANCH_GUARD === '1') {
+    console.warn(
+      `⚠️  LOCALPASS_RELEASE_SKIP_BRANCH_GUARD=1 set -- releasing "${TAG_PREFIX}*" from "${branch}" instead of "${requiredBranch}".`
+    );
+    return;
+  }
+
+  throw new Error(
+    `LocalPass releases must run from "${requiredBranch}" (current branch: "${branch}"). ` +
+    `A localpass-v* tag from another branch can ship unmerged or unintended code. ` +
+    `Set LOCALPASS_RELEASE_SKIP_BRANCH_GUARD=1 to override in an emergency.`
+  );
+}
+
+function runGitPublish(options, version, branch) {
   if (options.noCommit || !options.publish || options.dryRun) return;
+
+  // The release commit only reaches origin/develop via this branch push --
+  // pushing just the tag transfers the tag object (and the commit objects
+  // it points at) without advancing any branch, so the branch-triggered
+  // LocalPass CI never fires and a fresh checkout of develop never sees the
+  // version bump.
+  runInherit('git', ['push', 'origin', branch], options);
+
+  if (options.noTag) return;
 
   runInherit('git', ['push', 'origin', `${TAG_PREFIX}${version}`], options);
 }
@@ -269,6 +299,7 @@ function main() {
 
     const branch = getCurrentBranch();
 
+    ensureReleaseBranch(branch, options);
     ensureCleanGitState(options);
 
     const currentVersion = readPackageVersion();
@@ -299,7 +330,7 @@ function main() {
     runVersioningValidate(options);
     runGitCommit(options, nextVersion);
     runGitTag(options, nextVersion);
-    runGitPublish(options, nextVersion);
+    runGitPublish(options, nextVersion, branch);
 
     console.log('');
     console.log('LocalPass release completed successfully.');
