@@ -24,6 +24,15 @@
 # publicly. Same situation, same reasoning, as hpass.id/hashp.link in
 # hashpass-dns/main.tf. See variables.tf's enable_custom_domain for how this
 # stack sequences around that external, unavoidable wait.
+#
+# var.apex_target (added once hashpass-tech/localproof.org grew its own
+# hand-authored static marketing/docs site) decides who answers for the
+# apex + www: this stack's own CloudFront+S3 (the original, still-default
+# "cloudfront"), or GitHub Pages serving that separate standalone repo
+# ("github_pages"). Either way this stack keeps existing -- apps/localpass's
+# actual PWA build always has a home at var.app_subdomain_name, which only
+# matters once the apex moves off CloudFront. See the apex_target variable
+# for the full reasoning and DEPLOYMENT_MAP.md for the resulting domain map.
 
 data "aws_caller_identity" "current" {}
 
@@ -33,7 +42,16 @@ data "aws_route53_zone" "this" {
 }
 
 locals {
-  aliases     = [var.domain_name, "www.${var.domain_name}"]
+  apex_target_is_cloudfront   = var.apex_target == "cloudfront"
+  apex_target_is_github_pages = var.apex_target == "github_pages"
+
+  # CloudFront only carries the apex+www aliases while it's also what DNS
+  # actually points at. Once GitHub Pages owns the apex, the distribution's
+  # aliases/cert narrow to just the app subdomain -- it never stops existing.
+  cloudfront_aliases     = local.apex_target_is_cloudfront ? [var.domain_name, "www.${var.domain_name}"] : [var.app_subdomain_name]
+  cloudfront_cert_domain = local.apex_target_is_cloudfront ? var.domain_name : var.app_subdomain_name
+  cloudfront_cert_sans   = local.apex_target_is_cloudfront ? ["www.${var.domain_name}"] : []
+
   bucket_name = "hashpass-localproof-site-${data.aws_caller_identity.current.account_id}-${var.aws_region}"
 }
 
@@ -84,8 +102,8 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "site" {
 resource "aws_acm_certificate" "site" {
   provider = aws.use1
 
-  domain_name               = var.domain_name
-  subject_alternative_names = ["www.${var.domain_name}"]
+  domain_name               = local.cloudfront_cert_domain
+  subject_alternative_names = local.cloudfront_cert_sans
   validation_method         = "DNS"
 
   lifecycle {
@@ -136,7 +154,7 @@ resource "aws_cloudfront_distribution" "site" {
   enabled             = true
   comment             = "LocalPass MVP: ${var.domain_name}"
   default_root_object = "index.html"
-  aliases             = var.enable_custom_domain ? local.aliases : []
+  aliases             = var.enable_custom_domain ? local.cloudfront_aliases : []
   price_class         = "PriceClass_100"
   is_ipv6_enabled     = true
   wait_for_deployment = true
@@ -218,7 +236,7 @@ resource "aws_s3_bucket_policy" "site" {
 }
 
 resource "aws_route53_record" "apex_a" {
-  count           = var.enable_custom_domain ? 1 : 0
+  count           = var.enable_custom_domain && local.apex_target_is_cloudfront ? 1 : 0
   allow_overwrite = true
   zone_id         = data.aws_route53_zone.this.zone_id
   name            = var.domain_name
@@ -232,7 +250,7 @@ resource "aws_route53_record" "apex_a" {
 }
 
 resource "aws_route53_record" "apex_aaaa" {
-  count           = var.enable_custom_domain ? 1 : 0
+  count           = var.enable_custom_domain && local.apex_target_is_cloudfront ? 1 : 0
   allow_overwrite = true
   zone_id         = data.aws_route53_zone.this.zone_id
   name            = var.domain_name
@@ -246,7 +264,7 @@ resource "aws_route53_record" "apex_aaaa" {
 }
 
 resource "aws_route53_record" "www_a" {
-  count           = var.enable_custom_domain ? 1 : 0
+  count           = var.enable_custom_domain && local.apex_target_is_cloudfront ? 1 : 0
   allow_overwrite = true
   zone_id         = data.aws_route53_zone.this.zone_id
   name            = "www.${var.domain_name}"
@@ -260,10 +278,78 @@ resource "aws_route53_record" "www_a" {
 }
 
 resource "aws_route53_record" "www_aaaa" {
-  count           = var.enable_custom_domain ? 1 : 0
+  count           = var.enable_custom_domain && local.apex_target_is_cloudfront ? 1 : 0
   allow_overwrite = true
   zone_id         = data.aws_route53_zone.this.zone_id
   name            = "www.${var.domain_name}"
+  type            = "AAAA"
+
+  alias {
+    evaluate_target_health = true
+    name                   = aws_cloudfront_distribution.site.domain_name
+    zone_id                = aws_cloudfront_distribution.site.hosted_zone_id
+  }
+}
+
+# ---- apex_target = "github_pages" -----------------------------------------
+# GitHub's own documented, stable apex IPs for Pages (not an alias target --
+# Pages doesn't offer one, so these are plain A/AAAA records). www is a
+# CNAME per GitHub's own recommended shape. Source:
+# https://docs.github.com/en/pages/configuring-a-custom-domain-for-your-github-pages-site/managing-a-custom-domain-for-your-github-pages-site
+resource "aws_route53_record" "apex_a_github_pages" {
+  count           = var.enable_custom_domain && local.apex_target_is_github_pages ? 1 : 0
+  allow_overwrite = true
+  zone_id         = data.aws_route53_zone.this.zone_id
+  name            = var.domain_name
+  type            = "A"
+  ttl             = 300
+  records         = var.github_pages_apex_ipv4
+}
+
+resource "aws_route53_record" "apex_aaaa_github_pages" {
+  count           = var.enable_custom_domain && local.apex_target_is_github_pages ? 1 : 0
+  allow_overwrite = true
+  zone_id         = data.aws_route53_zone.this.zone_id
+  name            = var.domain_name
+  type            = "AAAA"
+  ttl             = 300
+  records         = var.github_pages_apex_ipv6
+}
+
+resource "aws_route53_record" "www_cname_github_pages" {
+  count           = var.enable_custom_domain && local.apex_target_is_github_pages ? 1 : 0
+  allow_overwrite = true
+  zone_id         = data.aws_route53_zone.this.zone_id
+  name            = "www.${var.domain_name}"
+  type            = "CNAME"
+  ttl             = 300
+  records         = [var.github_pages_cname_target]
+}
+
+# apps/localpass's PWA build keeps a stable home at the app subdomain once
+# the apex moves to GitHub Pages -- same CloudFront distribution as always,
+# just no longer aliased to the apex. This is how AWS stays scoped to the
+# app/API role per CLAUDE.md's Target AWS Account Access guidance instead of
+# fighting GitHub Pages for the same hostname.
+resource "aws_route53_record" "app_a" {
+  count           = var.enable_custom_domain && local.apex_target_is_github_pages ? 1 : 0
+  allow_overwrite = true
+  zone_id         = data.aws_route53_zone.this.zone_id
+  name            = var.app_subdomain_name
+  type            = "A"
+
+  alias {
+    evaluate_target_health = true
+    name                   = aws_cloudfront_distribution.site.domain_name
+    zone_id                = aws_cloudfront_distribution.site.hosted_zone_id
+  }
+}
+
+resource "aws_route53_record" "app_aaaa" {
+  count           = var.enable_custom_domain && local.apex_target_is_github_pages ? 1 : 0
+  allow_overwrite = true
+  zone_id         = data.aws_route53_zone.this.zone_id
+  name            = var.app_subdomain_name
   type            = "AAAA"
 
   alias {
