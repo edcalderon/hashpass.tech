@@ -6,7 +6,7 @@
   --teal: #087d7c;
   --aqua: #2aa9a4;
   --gold: #f6b928;
-  --orange: #e97937;
+  --orange: #a94816;
   --cream: #f5eee3;
   --paper: #fffaf3;
   --sand: #ead5b5;
@@ -141,6 +141,12 @@ body .docs-list { gap: 18px; }
 body .docs-list a { background: rgba(255, 255, 255, .78); border-radius: 23px; box-shadow: var(--shadow-soft); padding: 27px; transition: transform .2s ease, box-shadow .2s ease; }
 body .docs-list a:hover { box-shadow: 0 20px 42px rgba(5, 47, 64, .14); transform: translateY(-3px); }
 body .docs-list b { color: var(--ink); font-family: "Fraunces", Georgia, serif; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .button, .doc-card, body .docs-list a { transition: none; }
+  .button:hover, .doc-card:hover, body .docs-list a:hover { transform: none; }
+}
 
 @media (max-width: 900px) { .site-header { grid-template-columns: auto auto; }.site-header nav { display: none; }.hero, .intro-grid, .split, .reverse, .deploy-grid { grid-template-columns: 1fr; }.hero { gap: 45px; padding-top: 56px; }.hero-visual { min-height: 480px; }.card-grid.three, .docs-grid, .timeline { grid-template-columns: repeat(2, 1fr); }.node-shell { width: min(402px, 90vw); } }
 @media (max-width: 600px) { :root { --wrap: min(100vw - 28px, 1180px); }.site-header .button-small { display: none; }.hero { gap: 35px; padding-bottom: 63px; }.hero-visual { border-radius: 32px; min-height: 465px; }.hero-place-right { right: 12px; top: 168px; }.hero-place-left { left: 13px; top: 24px; }.field-node { bottom: 35px; height: 330px; padding: 17px; width: 280px; }.node-panel { height: 205px; padding: 13px; }.node-panel > strong { font-size: 20px; }.node-qr { height: 92px; width: 92px; }.node-landscape { bottom: 17px; left: 17px; right: 17px; top: 231px; }.hero-caption { font-size: 7px; left: 15px; }.trust-strip { gap: 10px; }.trust-strip span { border: 0; padding: 0; width: 100%; }.card-grid.three, .docs-grid, .timeline, .deployment-plan, .footer-grid, body .docs-list { grid-template-columns: 1fr; }.section { padding: 70px 0; }.media-card { min-height: 430px; }.badge-screen { height: 270px; width: 220px; }.flow { align-items: stretch; }.flow i { display: none; }.flow span { text-align: center; width: 100%; }.node-shell { height: 315px; padding: 20px; }.node-face { border-radius: 29px; padding: 20px; }.node-face strong { font-size: 24px; }.node-face .qr { height: 110px; width: 110px; }.prose { padding-left: 18px; } body .doc, body .docs-page { padding: 56px 0 80px; } }

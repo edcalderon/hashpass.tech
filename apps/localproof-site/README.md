@@ -1,15 +1,35 @@
 # LocalProof.org
 
-Public website and documentation for **LocalProof** — a trust and deployment layer for verified local guides, venues, and offline tourism infrastructure.
+Public website and documentation for **LocalProof** — a trust and deployment
+layer for verified local guides, trusted venues, and offline tourism
+infrastructure, built for destinations where mobile signal can't be assumed.
+LocalProof separates identity, professional credentials, venue trust, and
+device ownership: a guide isn't "certified" because they bought hardware, and
+a venue isn't trusted because it paid for placement.
 
 ## Product model
 
-- **Guides** — community, verified, and certified trust layers.
-- **Venues** — trusted local participation, operator rewards, and hosted tourism access.
-- **Local Nodes** — fixed offline information distribution points.
-- **LocalProof Guide** — roadmap for a wearable dynamic-QR guide badge.
-- **Issuer registry** — OpenProof and other approved credential issuers.
-- **Destination deployment** — dense pilot model for municipalities, DMOs, associations, and sponsors.
+- **Guides** — community, verified, and certified trust layers, carried as
+  one portable identity across attractions rather than reprinted per venue.
+- **Venues** — trusted local participation, operator rewards for keeping
+  information fresh, and hosted tourism access without becoming a tech
+  company.
+- **Local Nodes** — fixed, offline-first information distribution points
+  (local Wi‑Fi / captive portal) that put a destination pack and essential
+  guidance in reach even when mobile data is limited or unavailable.
+- **LocalProof Guide** — roadmap for a wearable dynamic-QR guide badge whose
+  active attraction, route, and credential status can change without
+  reprinting codes.
+- **Issuer registry** — OpenProof as an initial issuer, with municipalities,
+  tourism authorities, associations, and training institutions able to join
+  through a common, auditable issuer model.
+- **Destination deployment** — dense pilot model (10–20 venue nodes, 10–30
+  active guides, one maintained destination pack, one issuer/tourism
+  partner) for municipalities, DMOs, associations, and sponsors — start
+  dense in one destination, not broad across many.
+- **Hardware roadmap** — prototype-to-production path from 3D-printed/
+  off-the-shelf hackathon units to standardized enclosures, production
+  e-ink Guide devices, and managed fleet operations at scale.
 
 ## Run locally
 

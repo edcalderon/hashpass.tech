@@ -6,10 +6,12 @@ CLUB_PID=""
 DOCS_PID=""
 VIDEO_STUDIO_PID=""
 LINKS_API_PID=""
+LOCALPROOF_PID=""
 declare -a RESERVED_PORTS=()
 CLUB_PORT="${CLUB_PORT:-3000}"
 DOCS_PORT="${DOCS_PORT:-3101}"
 VIDEO_STUDIO_PORT="${VIDEO_STUDIO_PORT:-3105}"
+LOCALPROOF_PORT="${LOCALPROOF_PORT:-3200}"
 # Keep the Expo web app on 8081 so it stays out of the club app's 3000 slot.
 MOBILE_PORT="${MOBILE_PORT:-8081}"
 # Matches NEXT_PUBLIC_LINKS_API_BASE_URL / EXPO_PUBLIC_LINKS_API_BASE_URL's
@@ -42,6 +44,10 @@ KILL_BUSY_PORTS="${KILL_BUSY_PORTS:-false}"
 # avoid the Docker/image overhead) with SKIP_FRAPPE_HELPDESK=true or
 # --skip-frappe-helpdesk.
 SKIP_FRAPPE_HELPDESK="${SKIP_FRAPPE_HELPDESK:-false}"
+# Opt-in: the LocalProof site (apps/localproof-site) is a static marketing/
+# docs page unrelated to most dev work. Start it with --local-proof (or
+# INCLUDE_LOCALPROOF=true) to serve it on LOCALPROOF_PORT (default 3200).
+INCLUDE_LOCALPROOF="${INCLUDE_LOCALPROOF:-false}"
 
 for arg in "$@"; do
   case "${arg}" in
@@ -51,9 +57,12 @@ for arg in "$@"; do
     --skip-frappe-helpdesk)
       SKIP_FRAPPE_HELPDESK=true
       ;;
+    --local-proof|--localproof)
+      INCLUDE_LOCALPROOF=true
+      ;;
     *)
       echo "Unknown argument: ${arg}" >&2
-      echo "Usage: dev-all.sh [--kill-allowed] [--skip-frappe-helpdesk]" >&2
+      echo "Usage: dev-all.sh [--kill-allowed] [--skip-frappe-helpdesk] [--local-proof]" >&2
       exit 1
       ;;
   esac
@@ -298,6 +307,11 @@ stop_background_apps() {
     kill "${LINKS_API_PID}" >/dev/null 2>&1 || true
     wait "${LINKS_API_PID}" >/dev/null 2>&1 || true
   fi
+
+  if [[ -n "${LOCALPROOF_PID}" ]]; then
+    kill "${LOCALPROOF_PID}" >/dev/null 2>&1 || true
+    wait "${LOCALPROOF_PID}" >/dev/null 2>&1 || true
+  fi
 }
 
 cleanup() {
@@ -347,8 +361,16 @@ DOCS_PORT="$(claim_port "docs app" "${DOCS_PORT}")"
 VIDEO_STUDIO_PORT="$(claim_port "video studio" "${VIDEO_STUDIO_PORT}")"
 LINKS_API_PORT="$(claim_port "hashpass-links-api" "${LINKS_API_PORT}")"
 
-if [[ "${SKIP_FRAPPE_HELPDESK}" != "true" ]]; then
+if [[ "${INCLUDE_LOCALPROOF}" == "true" ]]; then
+  LOCALPROOF_PORT="$(claim_port "localproof site" "${LOCALPROOF_PORT}")"
+fi
+
+if [[ "${SKIP_FRAPPE_HELPDESK}" != "true" && "${INCLUDE_LOCALPROOF}" == "true" ]]; then
+  echo "Using ports: mobile=${MOBILE_PORT}, club=${CLUB_PORT}, docs=${DOCS_PORT}, video-studio=${VIDEO_STUDIO_PORT}, links-api=${LINKS_API_PORT}, frappe-helpdesk=${FRAPPE_HELPDESK_PORT}, localproof=${LOCALPROOF_PORT}"
+elif [[ "${SKIP_FRAPPE_HELPDESK}" != "true" ]]; then
   echo "Using ports: mobile=${MOBILE_PORT}, club=${CLUB_PORT}, docs=${DOCS_PORT}, video-studio=${VIDEO_STUDIO_PORT}, links-api=${LINKS_API_PORT}, frappe-helpdesk=${FRAPPE_HELPDESK_PORT}"
+elif [[ "${INCLUDE_LOCALPROOF}" == "true" ]]; then
+  echo "Using ports: mobile=${MOBILE_PORT}, club=${CLUB_PORT}, docs=${DOCS_PORT}, video-studio=${VIDEO_STUDIO_PORT}, links-api=${LINKS_API_PORT}, localproof=${LOCALPROOF_PORT} (Frappe Helpdesk skipped)"
 else
   echo "Using ports: mobile=${MOBILE_PORT}, club=${CLUB_PORT}, docs=${DOCS_PORT}, video-studio=${VIDEO_STUDIO_PORT}, links-api=${LINKS_API_PORT} (Frappe Helpdesk skipped)"
 fi
@@ -422,6 +444,15 @@ echo "Starting video studio (Remotion) on port ${VIDEO_STUDIO_PORT}..."
 ) &
 VIDEO_STUDIO_PID=$!
 
+if [[ "${INCLUDE_LOCALPROOF}" == "true" ]]; then
+  echo "Starting LocalProof site on port ${LOCALPROOF_PORT}..."
+  (
+    cd apps/localproof-site
+    python3 -m http.server "${LOCALPROOF_PORT}"
+  ) &
+  LOCALPROOF_PID=$!
+fi
+
 wait_for_directus
 
 if [[ "${SKIP_FRAPPE_HELPDESK}" != "true" ]]; then
@@ -455,7 +486,11 @@ echo "Starting mobile app..."
 MOBILE_PID=$!
 
 set +e
-wait -n "$MOBILE_PID" "$CLUB_PID" "$DOCS_PID" "$VIDEO_STUDIO_PID" "$LINKS_API_PID"
+WAIT_PIDS=("$MOBILE_PID" "$CLUB_PID" "$DOCS_PID" "$VIDEO_STUDIO_PID" "$LINKS_API_PID")
+if [[ -n "${LOCALPROOF_PID}" ]]; then
+  WAIT_PIDS+=("${LOCALPROOF_PID}")
+fi
+wait -n "${WAIT_PIDS[@]}"
 status=$?
 set -e
 
