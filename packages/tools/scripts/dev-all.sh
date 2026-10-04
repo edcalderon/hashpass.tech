@@ -6,10 +6,12 @@ CLUB_PID=""
 DOCS_PID=""
 VIDEO_STUDIO_PID=""
 LINKS_API_PID=""
+LOCALPROOF_PID=""
 declare -a RESERVED_PORTS=()
 CLUB_PORT="${CLUB_PORT:-3000}"
 DOCS_PORT="${DOCS_PORT:-3101}"
 VIDEO_STUDIO_PORT="${VIDEO_STUDIO_PORT:-3105}"
+LOCALPROOF_PORT="${LOCALPROOF_PORT:-3200}"
 # Keep the Expo web app on 8081 so it stays out of the club app's 3000 slot.
 MOBILE_PORT="${MOBILE_PORT:-8081}"
 # Matches NEXT_PUBLIC_LINKS_API_BASE_URL / EXPO_PUBLIC_LINKS_API_BASE_URL's
@@ -42,6 +44,10 @@ KILL_BUSY_PORTS="${KILL_BUSY_PORTS:-false}"
 # avoid the Docker/image overhead) with SKIP_FRAPPE_HELPDESK=true or
 # --skip-frappe-helpdesk.
 SKIP_FRAPPE_HELPDESK="${SKIP_FRAPPE_HELPDESK:-false}"
+# Opt-in: the LocalProof site (apps/localproof-site) is a static marketing/
+# docs page unrelated to most dev work. Start it with --local-proof (or
+# INCLUDE_LOCALPROOF=true) to serve it on LOCALPROOF_PORT (default 3200).
+INCLUDE_LOCALPROOF="${INCLUDE_LOCALPROOF:-false}"
 
 for arg in "$@"; do
   case "${arg}" in
@@ -51,9 +57,12 @@ for arg in "$@"; do
     --skip-frappe-helpdesk)
       SKIP_FRAPPE_HELPDESK=true
       ;;
+    --local-proof|--localproof)
+      INCLUDE_LOCALPROOF=true
+      ;;
     *)
       echo "Unknown argument: ${arg}" >&2
-      echo "Usage: dev-all.sh [--kill-allowed] [--skip-frappe-helpdesk]" >&2
+      echo "Usage: dev-all.sh [--kill-allowed] [--skip-frappe-helpdesk] [--local-proof]" >&2
       exit 1
       ;;
   esac
@@ -148,6 +157,14 @@ kill_port_holder() {
 # Reserves exactly the requested port -- never a different one. A busy port
 # is either a hard failure (default) or, with KILL_BUSY_PORTS=true, gets its
 # holder killed so the same port can still be used.
+#
+# IMPORTANT: this function MUST NOT be called inside command substitution
+# ($(claim_port ...)) because RESERVED_PORTS is a global array and the
+# mutation on the success path below happens in a subshell when called that
+# way -- the duplicate-port check (port_is_reserved) would then always see
+# an empty list, and two services configured with the same port would both
+# "claim" it, only for the second to fail at bind time with address-in-use.
+# The caller reads the resolved port from REPLY_PORT instead.
 claim_port() {
   local label="$1"
   local port="$2"
@@ -180,7 +197,7 @@ claim_port() {
 
   RESERVED_PORTS+=("${port}")
   echo "${label}: using port ${port}" >&2
-  printf '%s\n' "${port}"
+  REPLY_PORT="${port}"
 }
 
 # Reads a single value out of the root .env without sourcing the whole
@@ -298,6 +315,11 @@ stop_background_apps() {
     kill "${LINKS_API_PID}" >/dev/null 2>&1 || true
     wait "${LINKS_API_PID}" >/dev/null 2>&1 || true
   fi
+
+  if [[ -n "${LOCALPROOF_PID}" ]]; then
+    kill "${LOCALPROOF_PID}" >/dev/null 2>&1 || true
+    wait "${LOCALPROOF_PID}" >/dev/null 2>&1 || true
+  fi
 }
 
 cleanup() {
@@ -341,14 +363,56 @@ cleanup() {
 
 trap cleanup EXIT INT TERM
 
-MOBILE_PORT="$(claim_port "mobile app" "${MOBILE_PORT}")"
-CLUB_PORT="$(claim_port "club web app" "${CLUB_PORT}")"
-DOCS_PORT="$(claim_port "docs app" "${DOCS_PORT}")"
-VIDEO_STUDIO_PORT="$(claim_port "video studio" "${VIDEO_STUDIO_PORT}")"
-LINKS_API_PORT="$(claim_port "hashpass-links-api" "${LINKS_API_PORT}")"
+claim_port "mobile app" "${MOBILE_PORT}" || exit 1
+MOBILE_PORT="${REPLY_PORT}"
+claim_port "club web app" "${CLUB_PORT}" || exit 1
+CLUB_PORT="${REPLY_PORT}"
+claim_port "docs app" "${DOCS_PORT}" || exit 1
+DOCS_PORT="${REPLY_PORT}"
+claim_port "video studio" "${VIDEO_STUDIO_PORT}" || exit 1
+VIDEO_STUDIO_PORT="${REPLY_PORT}"
+claim_port "hashpass-links-api" "${LINKS_API_PORT}" || exit 1
+LINKS_API_PORT="${REPLY_PORT}"
 
+# Reserve the Frappe Helpdesk port before claiming LocalProof, so a
+# LOCALPROOF_PORT that collides with FRAPPE_HELPDESK_PORT is caught by
+# claim_port's duplicate-port check rather than surfacing as an
+# address-in-use error when Python tries to bind later. Frappe itself
+# still starts later (after Directus) -- this just marks the port as
+# taken in RESERVED_PORTS so the check works.
 if [[ "${SKIP_FRAPPE_HELPDESK}" != "true" ]]; then
+  if port_is_reserved "${FRAPPE_HELPDESK_PORT}"; then
+    echo "Port ${FRAPPE_HELPDESK_PORT} (frappe-helpdesk) was already claimed by another service -- set FRAPPE_HELPDESK_PORT to a free port or --skip-frappe-helpdesk." >&2
+    exit 1
+  fi
+  RESERVED_PORTS+=("${FRAPPE_HELPDESK_PORT}")
+fi
+
+# Reserve the Directus port for the same reason: Directus starts via
+# Docker Compose (not through claim_port), so its port isn't in
+# RESERVED_PORTS otherwise. A FRAPPE_HELPDESK_PORT or LOCALPROOF_PORT
+# that collides with DIRECTUS_PORT would otherwise surface as a
+# Docker Compose bind failure instead of the intended diagnostic.
+# Directus port comes from the root .env or defaults to 8055.
+DIRECTUS_PORT="$(read_root_env_value DIRECTUS_PORT)"
+DIRECTUS_PORT="${DIRECTUS_PORT:-8055}"
+if port_is_reserved "${DIRECTUS_PORT}"; then
+  echo "Port ${DIRECTUS_PORT} (directus) was already claimed by another service -- set DIRECTUS_PORT in .env to a free port." >&2
+  exit 1
+fi
+RESERVED_PORTS+=("${DIRECTUS_PORT}")
+
+if [[ "${INCLUDE_LOCALPROOF}" == "true" ]]; then
+  claim_port "localproof site" "${LOCALPROOF_PORT}" || exit 1
+  LOCALPROOF_PORT="${REPLY_PORT}"
+fi
+
+if [[ "${SKIP_FRAPPE_HELPDESK}" != "true" && "${INCLUDE_LOCALPROOF}" == "true" ]]; then
+  echo "Using ports: mobile=${MOBILE_PORT}, club=${CLUB_PORT}, docs=${DOCS_PORT}, video-studio=${VIDEO_STUDIO_PORT}, links-api=${LINKS_API_PORT}, frappe-helpdesk=${FRAPPE_HELPDESK_PORT}, localproof=${LOCALPROOF_PORT}"
+elif [[ "${SKIP_FRAPPE_HELPDESK}" != "true" ]]; then
   echo "Using ports: mobile=${MOBILE_PORT}, club=${CLUB_PORT}, docs=${DOCS_PORT}, video-studio=${VIDEO_STUDIO_PORT}, links-api=${LINKS_API_PORT}, frappe-helpdesk=${FRAPPE_HELPDESK_PORT}"
+elif [[ "${INCLUDE_LOCALPROOF}" == "true" ]]; then
+  echo "Using ports: mobile=${MOBILE_PORT}, club=${CLUB_PORT}, docs=${DOCS_PORT}, video-studio=${VIDEO_STUDIO_PORT}, links-api=${LINKS_API_PORT}, localproof=${LOCALPROOF_PORT} (Frappe Helpdesk skipped)"
 else
   echo "Using ports: mobile=${MOBILE_PORT}, club=${CLUB_PORT}, docs=${DOCS_PORT}, video-studio=${VIDEO_STUDIO_PORT}, links-api=${LINKS_API_PORT} (Frappe Helpdesk skipped)"
 fi
@@ -422,6 +486,15 @@ echo "Starting video studio (Remotion) on port ${VIDEO_STUDIO_PORT}..."
 ) &
 VIDEO_STUDIO_PID=$!
 
+if [[ "${INCLUDE_LOCALPROOF}" == "true" ]]; then
+  echo "Starting LocalProof site on port ${LOCALPROOF_PORT}..."
+  (
+    cd apps/localproof-site
+    python3 -m http.server "${LOCALPROOF_PORT}"
+  ) &
+  LOCALPROOF_PID=$!
+fi
+
 wait_for_directus
 
 if [[ "${SKIP_FRAPPE_HELPDESK}" != "true" ]]; then
@@ -455,7 +528,11 @@ echo "Starting mobile app..."
 MOBILE_PID=$!
 
 set +e
-wait -n "$MOBILE_PID" "$CLUB_PID" "$DOCS_PID" "$VIDEO_STUDIO_PID" "$LINKS_API_PID"
+WAIT_PIDS=("$MOBILE_PID" "$CLUB_PID" "$DOCS_PID" "$VIDEO_STUDIO_PID" "$LINKS_API_PID")
+if [[ -n "${LOCALPROOF_PID}" ]]; then
+  WAIT_PIDS+=("${LOCALPROOF_PID}")
+fi
+wait -n "${WAIT_PIDS[@]}"
 status=$?
 set -e
 
