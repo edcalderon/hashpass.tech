@@ -1,0 +1,111 @@
+name: Sync site back to monorepo
+
+# Two-way sync, standalone -> monorepo direction. The other direction
+# (monorepo -> standalone) lives in hashpass-tech/hashpass.tech's
+# .github/workflows/localproof-site-sync.yml, which pushes
+# apps/localproof-site's changes here via `git subtree split` whenever
+# that directory changes on the monorepo's main.
+#
+# This is the direction that was missing before: a push straight to this
+# repo's main (e.g. PR #1, "redesign LocalProof site and publish
+# deployment docs") had no path back into the monorepo at all, so
+# hashpass-tech/hashpass.tech silently fell behind this repo's own
+# history until someone noticed and imported it by hand.
+#
+# Opens a PR against the monorepo's develop branch (never pushes straight
+# to main -- that's branch-protected there) so a human reviews the diff
+# through the monorepo's normal develop -> main promotion flow.
+#
+# Requires a MONOREPO_SYNC_TOKEN repo secret here: a fine-grained PAT
+# scoped only to hashpass-tech/hashpass.tech, with Contents and Pull
+# requests permissions set to read/write. Without it, this job fails
+# loudly at a preflight step instead of silently doing nothing -- same
+# posture as hashpass.tech's own RELEASE_AUTOMATION_TOKEN requirement
+# (see that repo's CLAUDE.md, Mobile Android Release Workflow section).
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sync-to-monorepo
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check required secret
+        run: |
+          if [ -z "${{ secrets.MONOREPO_SYNC_TOKEN }}" ]; then
+            echo "::error::MONOREPO_SYNC_TOKEN is not set. Add a fine-grained PAT scoped only to hashpass-tech/hashpass.tech (Contents + Pull requests, read/write) as a repo secret, then re-run this workflow." >&2
+            exit 1
+          fi
+
+      - name: Checkout this site repo
+        uses: actions/checkout@v4
+        with:
+          path: site
+
+      - name: Checkout monorepo
+        uses: actions/checkout@v4
+        with:
+          repository: hashpass-tech/hashpass.tech
+          ref: develop
+          fetch-depth: 0
+          token: ${{ secrets.MONOREPO_SYNC_TOKEN }}
+          path: monorepo
+
+      - name: Pull this repo's history into apps/localproof-site
+        id: sync
+        run: |
+          set -eu
+          cd monorepo
+          git config user.name "hashpass-bot"
+          git config user.email "bot@hashpass.tech"
+
+          BEFORE_TREE="$(git rev-parse HEAD:apps/localproof-site 2>/dev/null || echo none)"
+
+          BRANCH="sync/localproof-site-$(date +%Y%m%d%H%M%S)"
+          git checkout -b "$BRANCH"
+          git remote add standalone ../site
+          git fetch standalone main
+          git subtree pull --prefix=apps/localproof-site standalone main --squash \
+            -m "chore(localproof-site): sync from hashpass-tech/localproof.org"
+
+          AFTER_TREE="$(git rev-parse HEAD:apps/localproof-site)"
+
+          if [ "$BEFORE_TREE" = "$AFTER_TREE" ]; then
+            echo "No content changes to sync."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+
+      - name: Push sync branch
+        if: steps.sync.outputs.changed == 'true'
+        working-directory: monorepo
+        env:
+          SYNC_TOKEN: ${{ secrets.MONOREPO_SYNC_TOKEN }}
+        run: |
+          echo "::add-mask::$SYNC_TOKEN"
+          git push "https://x-access-token:${SYNC_TOKEN}@github.com/hashpass-tech/hashpass.tech.git" "${{ steps.sync.outputs.branch }}"
+
+      - name: Open pull request
+        if: steps.sync.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.MONOREPO_SYNC_TOKEN }}
+        run: |
+          gh pr create \
+            --repo hashpass-tech/hashpass.tech \
+            --base develop \
+            --head "${{ steps.sync.outputs.branch }}" \
+            --title "chore(localproof-site): sync from hashpass-tech/localproof.org" \
+            --body "Automated sync of \`apps/localproof-site\` from the latest push to [hashpass-tech/localproof.org](https://github.com/hashpass-tech/localproof.org)'s \`main\` branch. Review the diff, then merge normally through the monorepo's usual \`develop -> main\` promotion flow."
