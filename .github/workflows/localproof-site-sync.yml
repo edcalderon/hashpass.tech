@@ -1,0 +1,68 @@
+name: Sync LocalProof site to standalone repo
+
+# Two-way sync, monorepo -> standalone direction.
+#
+# apps/localproof-site is a `git subtree add`-imported copy of
+# https://github.com/hashpass-tech/localproof.org's own hand-authored
+# static marketing/docs site (NOT apps/localpass -- that's the separate
+# Vite/React LocalPass MVP app; see localproof-site-sync-from-standalone.yml
+# in that repo for the other direction). This replaces the old
+# localpass-mirror.yml, which mirrored the wrong directory (apps/localpass)
+# onto a repo that had already diverged into independently-authored content
+# -- running it would have overwritten that content with app source code.
+#
+# This workflow instead keeps the subtree's own history in sync going the
+# other way: a merge to main that touches apps/localproof-site/** gets
+# split back out and pushed to the standalone repo's main, using
+# `git subtree split` + plain (non-force) push so a diverged standalone
+# `main` fails loudly instead of being silently overwritten -- reconcile
+# that by hand (pull the standalone changes back into apps/localproof-site
+# here first; see the sibling pull direction below) rather than forcing.
+#
+# Manual local equivalent, if this workflow is ever down or you need to
+# sync ad hoc:
+#   git subtree pull --prefix=apps/localproof-site localproof-site main
+#   git subtree push --prefix=apps/localproof-site localproof-site main
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/localproof-site/**'
+      - '.github/workflows/localproof-site-sync.yml'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: localproof-site-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout monorepo with full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Split apps/localproof-site into its own branch
+        run: |
+          git config user.name "hashpass-bot"
+          git config user.email "bot@hashpass.tech"
+          git subtree split --prefix=apps/localproof-site --branch site-export
+
+      - name: Push split history to the standalone repo
+        env:
+          SYNC_TOKEN: ${{ secrets.LOCALPROOF_SITE_SYNC_TOKEN }}
+        run: |
+          if [ -z "$SYNC_TOKEN" ]; then
+            echo "::error::LOCALPROOF_SITE_SYNC_TOKEN is not set. Add a fine-grained PAT scoped only to hashpass-tech/localproof.org (Contents read/write) as a repo secret, then re-run this workflow." >&2
+            exit 1
+          fi
+          echo "::add-mask::$SYNC_TOKEN"
+          git remote add standalone "https://x-access-token:${SYNC_TOKEN}@github.com/hashpass-tech/localproof.org.git"
+          git push standalone site-export:main
