@@ -49,8 +49,12 @@ two divergent Google identities for the same user (`ba_users` vs
    empty params object and fail with a misleading "Directus did not create a
    valid session" error.
 5. If Better Auth cannot start or complete the flow, the app reports the
-   Better Auth error and returns to the login screen. It does not redirect to
-   Supabase's `/auth/v1/authorize` endpoint.
+   Better Auth error and returns to the login screen. The error callback must
+   not pre-fill a generic `error` or `message`: Better Auth appends the actual
+   provider `error` and `error_description` to that URL, and the login screen
+   displays that description so a local configuration or consent failure can
+   be diagnosed. It does not redirect to Supabase's `/auth/v1/authorize`
+   endpoint.
 
 ### Native: Better Auth first, Supabase ID-token fallback
 
@@ -118,9 +122,14 @@ For the Better Auth Google flow (now the default for every tenant on web):
   `<apiBase>/api/auth/callback/google` registered as an authorized redirect
   URI for **every** environment that uses it — e.g.
   `https://api.hashpass.tech/api/auth/callback/google` for production and
-  `http://localhost:8081/api/auth/callback/google` for local web dev. This is
-  separate from any legacy Supabase redirect URI; the web Google flow no longer
-  depends on Supabase's Google provider being enabled.
+  `https://api-dev.hashpass.tech/api/auth/callback/google` for Expo web local
+  development when `EXPO_PUBLIC_API_BASE_URL` targets the shared dev API. The
+  local browser callback remains `http://localhost:8081/auth/callback`, but
+  Google always returns to the Better Auth API callback first. Register
+  `http://localhost:8081/api/auth/callback/google` only when a local API is
+  actually serving Better Auth. This is separate from any legacy Supabase
+  redirect URI; the web Google flow no longer depends on Supabase's Google
+  provider being enabled.
 - `packages/config/src/sso-config.ts`'s `SSO_CONFIG.cors.origins` (Better
   Auth's `trustedOrigins`) must include the actual frontend origin(s) —
   `https://hashpass.tech`, `https://www.hashpass.tech`, `https://dev.hashpass.tech`

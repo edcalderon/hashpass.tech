@@ -85,6 +85,15 @@ are lookup identifiers matched against whatever path string the event
 data supplies, independent of which file the corresponding
 `require()` actually resolves to.
 
+### Legacy event paths and Metro web development
+
+Some historical event records use `/logos/bsl/...` without the `/assets`
+prefix. `EVENT_IMAGE_ASSETS` maps both forms to the same bundled WebP asset.
+Do not pass an unmatched `/logos/bsl/*.svg` string through as `{ uri }` on
+web: Metro treats it as a local asset request under `apps/mobile-app/logos/bsl`
+and logs an `Asset not found` error. Add the legacy string to the mapping
+instead of creating an empty runtime directory or copying SVGs into it.
+
 Verified via a real `expo export --platform web` that the built bundle
 resolves the new `.webp` assets (confirmed the hashed output filename
 matches, e.g. `bsl-ontour-pro.8fc2f93c785298ed1a7ed070649b0939.webp`) —
