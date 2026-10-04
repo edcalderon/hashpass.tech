@@ -388,6 +388,20 @@ if [[ "${SKIP_FRAPPE_HELPDESK}" != "true" ]]; then
   RESERVED_PORTS+=("${FRAPPE_HELPDESK_PORT}")
 fi
 
+# Reserve the Directus port for the same reason: Directus starts via
+# Docker Compose (not through claim_port), so its port isn't in
+# RESERVED_PORTS otherwise. A FRAPPE_HELPDESK_PORT or LOCALPROOF_PORT
+# that collides with DIRECTUS_PORT would otherwise surface as a
+# Docker Compose bind failure instead of the intended diagnostic.
+# Directus port comes from the root .env or defaults to 8055.
+DIRECTUS_PORT="$(read_root_env_value DIRECTUS_PORT)"
+DIRECTUS_PORT="${DIRECTUS_PORT:-8055}"
+if port_is_reserved "${DIRECTUS_PORT}"; then
+  echo "Port ${DIRECTUS_PORT} (directus) was already claimed by another service -- set DIRECTUS_PORT in .env to a free port." >&2
+  exit 1
+fi
+RESERVED_PORTS+=("${DIRECTUS_PORT}")
+
 if [[ "${INCLUDE_LOCALPROOF}" == "true" ]]; then
   claim_port "localproof site" "${LOCALPROOF_PORT}" || exit 1
   LOCALPROOF_PORT="${REPLY_PORT}"
