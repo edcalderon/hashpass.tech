@@ -20,39 +20,22 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.95)
+## 📋 Latest Changes (v1.9.96)
 
 ### Bug Fixes
 
-* **dev-tools:** resolve claim_port subshell bug that broke duplicate-port detection ([397aaf4](https://github.com/hashpass-tech/hashpass.tech/commit/397aaf4c58cb52789a59770a5c5cf151ffa36614))
-* **localpass:** regenerate lockfile, adopt shared UI, add real coverage ([2860b2b](https://github.com/hashpass-tech/hashpass.tech/commit/2860b2b32c6554850dfe70dcb3b50810576566ed))
-* **localproof:** address PR review findings (subtree history, release push/guard) ([c8212b9](https://github.com/hashpass-tech/hashpass.tech/commit/c8212b9b6fa7ea626d79e92a0ab3cae37dff725e)), closes [#324](https://github.com/hashpass-tech/hashpass.tech/issues/324)
-* **localproof:** give the labeled illustration and trust-strip a nameable role ([b2310f2](https://github.com/hashpass-tech/hashpass.tech/commit/b2310f20e410315f7574b17f82fb012e2cc358e4))
-* **localproof:** honor reduced motion and contrast ([f5a3f30](https://github.com/hashpass-tech/hashpass.tech/commit/f5a3f300663e6b938ccececfef367b65c50c340f))
-* **tools:** exclude apps/localpass from typecheck-changed's mobile sandbox ([ae0fc9d](https://github.com/hashpass-tech/hashpass.tech/commit/ae0fc9dfb8eab749ae6e1825bbe938483c9da48d))
-
-
-### Features
-
-* add LocalPass offline tourism MVP ([8f3c632](https://github.com/hashpass-tech/hashpass.tech/commit/8f3c63294ab8a2b59873fc5a575748e14271cca7))
-* **dev-tools:** add --local-proof flag to dev:all for the LocalProof site ([1818ed6](https://github.com/hashpass-tech/hashpass.tech/commit/1818ed6359dd01011943f393e072f92030c1c3ee))
-* **localpass-node:** add captive portal firmware ([9020d77](https://github.com/hashpass-tech/hashpass.tech/commit/9020d77c88685a51c62132c5f261c420ffc56564))
-* **localpass-node:** add ESP8266 PlatformIO config ([05f171c](https://github.com/hashpass-tech/hashpass.tech/commit/05f171ca35c0c4a34d8907432021567cdcd9e253))
-* **localpass-node:** add lightweight offline portal ([799b0bb](https://github.com/hashpass-tech/hashpass.tech/commit/799b0bbe72eac43cad6ad37337695eae674c1a8c))
-* **localpass:** add demo/tech videos, demo page, one-page PDF report, and source zip ([514a507](https://github.com/hashpass-tech/hashpass.tech/commit/514a507d94680fbdb72a71000bf50969bc41f635))
-* **localpass:** add version tracker, release script, and footer display ([f04e83d](https://github.com/hashpass-tech/hashpass.tech/commit/f04e83d8ca9469b4fbae89553740b05092367a82))
-* **localproof:** add apex_target toggle for GitHub Pages cutover ([863d532](https://github.com/hashpass-tech/hashpass.tech/commit/863d532da04f699fed73c498b84cd44f04c4a805))
-* redesign LocalProof public website ([b70cd09](https://github.com/hashpass-tech/hashpass.tech/commit/b70cd093b83fbb5844039bd0f2caa0abfa0bde87))
+* **mobile:** create logos/bsl directory to stop Metro ENOENT error loop ([0fcd207](https://github.com/hashpass-tech/hashpass.tech/commit/0fcd207534e689dfb0e43925e49e0239f581df9b))
+* **mobile:** resolve local BSL assets and OAuth errors ([30521bb](https://github.com/hashpass-tech/hashpass.tech/commit/30521bb14cb5397b84a36ef5e3afdebd71957a77))
 ### Release Highlights
-- add demo/tech videos, demo page, one-page PDF report, and source zip; add --local-proof flag to dev:all for the LocalProof site; add version tracker, release script, and footer display; add apex_target toggle for GitHub Pages cutover; redesign LocalProof public website; add lightweight offline portal; add captive portal firmware; add ESP8266 PlatformIO config; add LocalPass offline tourism MVP; resolve claim_port subshell bug that broke duplicate-port detection; give the labeled illustration and trust-strip a nameable role; honor reduced motion and contrast; address PR review findings (subtree history, release push/guard); exclude apps/localpass from typecheck-changed's mobile sandbox; regenerate lockfile, adopt shared UI, add real coverage
+- resolve local BSL assets and OAuth errors; create logos/bsl directory to stop Metro ENOENT error loop
 
 ### Release scope
-- Compared with: `v1.9.94` (the previous global release tag)
+- Compared with: `v1.9.95` (the previous global release tag)
 
 ### Affected products & packages
-- Infrastructure
+- Mobile app
+- Auth
 - Documentation
-- Release tooling
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

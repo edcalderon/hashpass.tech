@@ -1,3 +1,21 @@
+## [1.9.96](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.95...v1.9.96) (2026-10-04)
+
+
+### Bug Fixes
+
+* **mobile:** create logos/bsl directory to stop Metro ENOENT error loop ([0fcd207](https://github.com/hashpass-tech/hashpass.tech/commit/0fcd207534e689dfb0e43925e49e0239f581df9b))
+* **mobile:** resolve local BSL assets and OAuth errors ([30521bb](https://github.com/hashpass-tech/hashpass.tech/commit/30521bb14cb5397b84a36ef5e3afdebd71957a77))
+### Release Highlights
+- resolve local BSL assets and OAuth errors; create logos/bsl directory to stop Metro ENOENT error loop
+
+### Release scope
+- Compared with: `v1.9.95` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Auth
+- Documentation
+
 ## [1.9.95](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.94...v1.9.95) (2026-10-04)
 
 
