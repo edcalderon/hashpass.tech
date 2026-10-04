@@ -1,0 +1,66 @@
+{
+  "rootPackageJson": "package.json",
+  "packages": [
+    "."
+  ],
+  "changelogFile": "CHANGELOG.md",
+  "conventionalCommits": true,
+  "syncDependencies": false,
+  "ignorePackages": [],
+  "extensions": [],
+  "extensionConfig": {
+    "cleanup-repo": {
+      "enabled": false,
+      "defaultDestination": "docs",
+      "allowlist": [
+        "CHANGELOG.md",
+        "README.md",
+        "src/config/git-info.json",
+        "src/config/version.ts",
+        "src/config/versions.json",
+        "package.json",
+        "versioning.config.json"
+      ],
+      "routes": {
+        ".json": "src/config",
+        ".md": "docs",
+        ".ts": "src/config",
+        ".tsx": "src"
+      }
+    },
+    "secrets-check": {
+      "enabled": false,
+      "patterns": [],
+      "allowlist": []
+    },
+    "lifecycle-hooks": {
+      "enabled": false,
+      "hooks": {}
+    }
+  },
+  "branchAwareness": {
+    "enabled": false,
+    "defaultBranch": "develop",
+    "branches": {
+      "develop": {
+        "versionFormat": "semantic",
+        "tagFormat": "localpass-v{version}",
+        "syncFiles": [
+          "package.json",
+          "src/config/versions.json"
+        ],
+        "environment": "production",
+        "bumpStrategy": "semantic"
+      }
+    }
+  },
+  "releaseGuard": {
+    "enabled": true,
+    "tagPrefix": "localpass-v",
+    "allowBuildMetadata": true,
+    "checkReleaseFloor": true,
+    "metadataFiles": [
+      "src/config/versions.json"
+    ]
+  }
+}

@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="description" content="LocalProof is a trust and deployment layer for verified local guides, venues, and offline tourism infrastructure." />
+  <meta name="theme-color" content="#073b4c" />
+  <title>LocalProof — Trusted local tourism infrastructure</title>
+  <link rel="icon" href="/assets/localproof-mark.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="#top" aria-label="LocalProof home">
+      <img src="/assets/localproof-mark.svg" alt="" />
+      <span>LocalProof</span>
+    </a>
+    <nav aria-label="Primary navigation">
+      <a href="#guides">Guides</a>
+      <a href="#venues">Venues</a>
+      <a href="#nodes">Nodes</a>
+      <a href="#roadmap">Roadmap</a>
+      <a href="/docs/">Docs</a>
+    </nav>
+    <a class="button button-small" href="#deploy">Deploy LocalProof</a>
+  </header>
+
+  <main id="top">
+    <section class="hero wrap">
+      <div class="hero-copy">
+        <span class="eyebrow eyebrow-sun"><span></span> TRUSTED LOCAL TOURISM INFRASTRUCTURE</span>
+        <h1>A warmer welcome for journeys with <em>weak signal.</em></h1>
+        <p class="lead">LocalProof helps destinations verify guides, recognize trusted venues, and place useful local guidance within reach—even when mobile data is limited.</p>
+        <div class="hero-actions">
+          <a class="button" href="#deploy">Start a destination pilot</a>
+          <a class="button button-secondary" href="/docs/">Read the documentation</a>
+        </div>
+        <div class="trust-strip" role="group" aria-label="LocalProof principles">
+          <span><i>01</i> Open issuer model</span><span><i>02</i> Portable credentials</span><span><i>03</i> Hardware optional</span>
+        </div>
+      </div>
+      <div class="hero-visual" role="img" aria-label="Illustration of a LocalProof offline guide node">
+        <div class="hero-sun"></div>
+        <div class="route route-one"></div><div class="route route-two"></div>
+        <div class="hero-place hero-place-left"><span>01</span><b>Connect</b><small>Nearby local Wi-Fi</small></div>
+        <div class="hero-place hero-place-right"><span>02</span><b>Scan</b><small>Guide &amp; trusted places</small></div>
+        <div class="field-node">
+          <div class="node-handle"></div>
+          <div class="node-panel">
+            <div class="node-panel-heading"><img src="/assets/localproof-mark.svg" alt="" /><span>LOCALPROOF<br>NODE</span></div>
+            <strong>Local guide.<br>Right here.</strong>
+            <div class="node-qr" aria-hidden="true"></div>
+            <div class="node-status"><i></i><span>LOCAL WI-FI READY</span></div>
+            <small>SCAN · CONNECT · EXPLORE</small>
+          </div>
+          <div class="node-landscape"><span></span><i></i><b></b></div>
+        </div>
+        <div class="hero-caption"><span>LOCAL PLACES</span><b>BRIGHTER JOURNEYS</b></div>
+      </div>
+    </section>
+
+    <section class="section wrap intro-grid">
+      <div>
+        <span class="eyebrow">WHAT LOCALPROOF IS</span>
+        <h2>A trust layer, not a closed marketplace.</h2>
+      </div>
+      <div class="prose">
+        <p>LocalProof separates identity, professional credentials, venue trust, and device ownership. A guide does not become “certified” because they paid for hardware, and a venue does not become trusted because it purchased placement.</p>
+        <p>OpenProof can be an initial credential issuer, while municipalities, tourism authorities, associations, training institutions, and other approved organizations can participate through a common issuer model.</p>
+      </div>
+    </section>
+
+    <section id="guides" class="section section-soft">
+      <div class="wrap split">
+        <div class="media-card guide-art">
+          <div class="badge-device">
+            <div class="lanyard"></div>
+            <div class="badge-screen">
+              <span>LocalProof Guide</span>
+              <div class="qr"></div>
+              <strong>Peñol Rock</strong>
+              <small>Verified guide · Dynamic route</small>
+            </div>
+          </div>
+        </div>
+        <div>
+          <span class="eyebrow">FOR LOCAL GUIDES</span>
+          <h2>One portable identity. Many attractions.</h2>
+          <p class="lead-sm">A guide can carry a digital badge or simply use a phone-based QR profile. The active attraction, route, destination pack, and credential status can change without reprinting codes.</p>
+          <div class="feature-list">
+            <article><b>Community</b><p>Free basic profile and destination QR access.</p></article>
+            <article><b>Verified Guide</b><p>Identity/profile evidence checked and status displayed.</p></article>
+            <article><b>Certified / Trusted Local</b><p>Professional credential from an approved issuer with visible provenance.</p></article>
+          </div>
+          <a class="text-link" href="/docs/guides.html">Guide model and certification →</a>
+        </div>
+      </div>
+    </section>
+
+    <section id="venues" class="section wrap">
+      <div class="section-heading section-heading-wide">
+        <span class="eyebrow">FOR VENUES</span>
+        <h2>Turn trusted local knowledge into a visible service.</h2>
+        <p>Hotels, cafés, attractions, tourism offices, terminals, and community businesses can host LocalProof experiences without becoming technology companies.</p>
+      </div>
+      <div class="card-grid three">
+        <article class="feature-card">
+          <div class="icon icon-signal" aria-hidden="true">⌁</div>
+          <h3>Trusted Local profile</h3>
+          <p>Show verified identity, venue details, freshness, and source provenance without confusing paid placement with certification.</p>
+        </article>
+        <article class="feature-card">
+          <div class="icon icon-pin" aria-hidden="true">◎</div>
+          <h3>Local discovery</h3>
+          <p>Surface useful businesses and services in destination packs, including places that are poorly represented on global platforms.</p>
+        </article>
+        <article class="feature-card">
+          <div class="icon icon-loop" aria-hidden="true">↻</div>
+          <h3>Operator rewards</h3>
+          <p>Reward useful maintenance: fresh information, verified updates, healthy nodes, translations, and real traveler feedback.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="nodes" class="section section-dark">
+      <div class="wrap split reverse">
+        <div>
+          <span class="eyebrow eyebrow-light">LOCAL NODES</span>
+          <h2>Offline access where mobile data fails.</h2>
+          <p class="lead-sm">A Local Node is a small destination access point that distributes a lightweight local guide and destination pack over nearby Wi‑Fi. The node is infrastructure—not the AI brain.</p>
+          <ul class="check-list">
+            <li>Local Wi‑Fi / captive portal</li>
+            <li>Destination pack distribution</li>
+            <li>Essential information fallback</li>
+            <li>Health and freshness status</li>
+            <li>Works with fixed venues or temporary deployments</li>
+          </ul>
+          <a class="button button-light" href="/docs/nodes.html">Local Node deployment guide</a>
+        </div>
+        <div class="node-product">
+          <div class="node-shell">
+            <div class="node-face">
+              <img src="/assets/localproof-mark.svg" alt="" />
+              <strong>Local Node</strong>
+              <span>Free local guide</span>
+              <div class="qr big"></div>
+              <small>SCAN · CONNECT · EXPLORE</small>
+            </div>
+          </div>
+          <div class="node-caption">Premium venue shell · standardized electronics core</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="roadmap" class="section wrap">
+      <div class="section-heading">
+        <span class="eyebrow">HARDWARE ROADMAP</span>
+        <h2>Prototype beautifully. Manufacture simply.</h2>
+        <p>The industrial strategy keeps the visible product warm and destination-friendly while standardizing the electronics underneath.</p>
+      </div>
+      <div class="timeline">
+        <article><span>01</span><b>Hackathon / prototype</b><p>3D-printed shell, off-the-shelf boards, laser-cut bamboo accents, simple captive portal.</p></article>
+        <article><span>02</span><b>20–100 unit pilot</b><p>Custom PCB, small-run molded shell, replaceable faceplate, field analytics, deployment playbook.</p></article>
+        <article><span>03</span><b>100–1,000 units</b><p>Standardized enclosure, production e-ink Guide device, controlled provisioning, repeatable destination kits.</p></article>
+        <article><span>04</span><b>1,000+ deployment</b><p>Injection molding, regulatory certification by target market, secure device identity, managed fleet operations.</p></article>
+      </div>
+    </section>
+
+    <section id="deploy" class="section section-accent">
+      <div class="wrap deploy-grid">
+        <div>
+          <span class="eyebrow">DESTINATION DEPLOYMENT</span>
+          <h2>Start dense, not broad.</h2>
+          <p class="lead-sm">A useful pilot is one destination where a traveler repeatedly encounters LocalProof during a real trip.</p>
+        </div>
+        <div class="deployment-plan">
+          <div><b>10–20</b><span>venue nodes</span></div>
+          <div><b>10–30</b><span>active guides</span></div>
+          <div><b>1</b><span>maintained destination pack</span></div>
+          <div><b>1+</b><span>issuer / tourism partner</span></div>
+        </div>
+      </div>
+      <div class="wrap flow">
+        <span>Recruit guides + venues</span><i>→</i><span>Verify + provision</span><i>→</i><span>Deploy nodes</span><i>→</i><span>Observe traveler usage</span><i>→</i><span>Improve destination data</span>
+      </div>
+    </section>
+
+    <section class="section wrap">
+      <div class="section-heading">
+        <span class="eyebrow">DOCUMENTATION</span>
+        <h2>Open the operating model.</h2>
+      </div>
+      <div class="card-grid docs-grid">
+        <a class="doc-card" href="/docs/guides.html"><span>Guides</span><b>Verification, certification & wearable guide model</b></a>
+        <a class="doc-card" href="/docs/venues.html"><span>Venues</span><b>Trusted venue model & operator incentives</b></a>
+        <a class="doc-card" href="/docs/nodes.html"><span>Nodes</span><b>Hardware, offline delivery & deployment</b></a>
+        <a class="doc-card" href="/docs/hardware-roadmap.html"><span>Hardware</span><b>Manufacturing and product roadmap</b></a>
+        <a class="doc-card" href="/docs/deployment.html"><span>Deployment</span><b>Pilot design and destination rollout</b></a>
+        <a class="doc-card" href="/docs/trust-model.html"><span>Trust</span><b>Issuer registry, provenance & policy</b></a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-grid">
+      <div><div class="brand footer-brand"><img src="/assets/localproof-mark.svg" alt="" /><span>LocalProof</span></div><p>Trusted local people. Trusted local places. Better journeys.</p></div>
+      <div><b>Explore</b><a href="#guides">Guides</a><a href="#venues">Venues</a><a href="#nodes">Nodes</a></div>
+      <div><b>Docs</b><a href="/docs/">Documentation</a><a href="/docs/terms.html">Terms draft</a><a href="/docs/privacy.html">Privacy principles</a></div>
+    </div>
+  </footer>
+</body>
+</html>

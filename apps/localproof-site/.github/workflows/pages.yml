@@ -1,0 +1,55 @@
+name: Deploy GitHub Pages
+
+# This repo is a plain static site (no build step -- see DEPLOYMENT.md).
+# GitHub Pages is already configured for this repo with build_type=workflow
+# and custom domain localproof.org (confirmed via the Pages API), but it had
+# no deploy workflow at all, so nothing had ever actually published and the
+# custom-domain DNS check had nothing live to check against. This workflow
+# is that missing piece.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Only one Pages deployment at a time; let an in-flight one finish rather
+# than cancel it mid-publish.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Stage publishable files only
+        run: |
+          mkdir -p _site
+          cp -r index.html styles.css assets docs CNAME _site/
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
