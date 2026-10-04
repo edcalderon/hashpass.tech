@@ -157,6 +157,14 @@ kill_port_holder() {
 # Reserves exactly the requested port -- never a different one. A busy port
 # is either a hard failure (default) or, with KILL_BUSY_PORTS=true, gets its
 # holder killed so the same port can still be used.
+#
+# IMPORTANT: this function MUST NOT be called inside command substitution
+# ($(claim_port ...)) because RESERVED_PORTS is a global array and the
+# mutation on the success path below happens in a subshell when called that
+# way -- the duplicate-port check (port_is_reserved) would then always see
+# an empty list, and two services configured with the same port would both
+# "claim" it, only for the second to fail at bind time with address-in-use.
+# The caller reads the resolved port from REPLY_PORT instead.
 claim_port() {
   local label="$1"
   local port="$2"
@@ -189,7 +197,7 @@ claim_port() {
 
   RESERVED_PORTS+=("${port}")
   echo "${label}: using port ${port}" >&2
-  printf '%s\n' "${port}"
+  REPLY_PORT="${port}"
 }
 
 # Reads a single value out of the root .env without sourcing the whole
@@ -355,14 +363,20 @@ cleanup() {
 
 trap cleanup EXIT INT TERM
 
-MOBILE_PORT="$(claim_port "mobile app" "${MOBILE_PORT}")"
-CLUB_PORT="$(claim_port "club web app" "${CLUB_PORT}")"
-DOCS_PORT="$(claim_port "docs app" "${DOCS_PORT}")"
-VIDEO_STUDIO_PORT="$(claim_port "video studio" "${VIDEO_STUDIO_PORT}")"
-LINKS_API_PORT="$(claim_port "hashpass-links-api" "${LINKS_API_PORT}")"
+claim_port "mobile app" "${MOBILE_PORT}" || exit 1
+MOBILE_PORT="${REPLY_PORT}"
+claim_port "club web app" "${CLUB_PORT}" || exit 1
+CLUB_PORT="${REPLY_PORT}"
+claim_port "docs app" "${DOCS_PORT}" || exit 1
+DOCS_PORT="${REPLY_PORT}"
+claim_port "video studio" "${VIDEO_STUDIO_PORT}" || exit 1
+VIDEO_STUDIO_PORT="${REPLY_PORT}"
+claim_port "hashpass-links-api" "${LINKS_API_PORT}" || exit 1
+LINKS_API_PORT="${REPLY_PORT}"
 
 if [[ "${INCLUDE_LOCALPROOF}" == "true" ]]; then
-  LOCALPROOF_PORT="$(claim_port "localproof site" "${LOCALPROOF_PORT}")"
+  claim_port "localproof site" "${LOCALPROOF_PORT}" || exit 1
+  LOCALPROOF_PORT="${REPLY_PORT}"
 fi
 
 if [[ "${SKIP_FRAPPE_HELPDESK}" != "true" && "${INCLUDE_LOCALPROOF}" == "true" ]]; then
