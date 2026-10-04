@@ -44,6 +44,70 @@ variable "enable_custom_domain" {
   default = false
 }
 
+variable "apex_target" {
+  description = <<-EOT
+    What serves the apex (var.domain_name) and its www subdomain.
+
+    - "cloudfront" (default): this stack's original and current live state --
+      the CloudFront distribution's aliases cover both the apex and www, and
+      the apex/www Route53 records alias straight to it. Picking this is a
+      no-op against today's deployed infrastructure.
+    - "github_pages": moves apex + www to GitHub Pages (A/AAAA records at
+      GitHub's documented Pages IPs, www as a CNAME to
+      github_pages_cname_target) so they can serve
+      hashpass-tech/localproof.org's own hand-authored static marketing/docs
+      site instead. This stack's CloudFront distribution keeps existing --
+      it narrows to app_subdomain_name and keeps serving apps/localpass's
+      actual PWA build there, so AWS stays scoped to the app/API role per
+      CLAUDE.md's Target AWS Account Access guidance instead of fighting
+      GitHub Pages for the same hostname. Switching this re-requests the ACM
+      certificate for the new domain (create_before_destroy avoids a gap)
+      and rewrites the apex/www records; it does not touch the S3
+      bucket/CloudFront distribution identity.
+  EOT
+  type    = string
+  default = "cloudfront"
+
+  validation {
+    condition     = contains(["cloudfront", "github_pages"], var.apex_target)
+    error_message = "apex_target must be cloudfront or github_pages."
+  }
+}
+
+variable "app_subdomain_name" {
+  description = "Subdomain that keeps serving apps/localpass's PWA build via this stack's CloudFront distribution once apex_target = \"github_pages\" frees the apex for the marketing/docs site. Unused when apex_target = \"cloudfront\"."
+  type        = string
+  default     = "app.localproof.org"
+}
+
+variable "github_pages_apex_ipv4" {
+  description = "GitHub Pages' documented apex A records. Only used when apex_target = \"github_pages\". See https://docs.github.com/en/pages/configuring-a-custom-domain-for-your-github-pages-site/managing-a-custom-domain-for-your-github-pages-site"
+  type        = list(string)
+  default = [
+    "185.199.108.153",
+    "185.199.109.153",
+    "185.199.110.153",
+    "185.199.111.153",
+  ]
+}
+
+variable "github_pages_apex_ipv6" {
+  description = "GitHub Pages' documented apex AAAA records. Only used when apex_target = \"github_pages\"."
+  type        = list(string)
+  default = [
+    "2606:50c0:8000::153",
+    "2606:50c0:8001::153",
+    "2606:50c0:8002::153",
+    "2606:50c0:8003::153",
+  ]
+}
+
+variable "github_pages_cname_target" {
+  description = "Hostname the www subdomain CNAMEs to when apex_target = \"github_pages\". hashpass-tech/localproof.org resolves under hashpass-tech.github.io because Pages is served from the GitHub org account, not a personal one."
+  type        = string
+  default     = "hashpass-tech.github.io"
+}
+
 variable "tags" {
   description = "Common resource tags."
   type        = map(string)

@@ -30,3 +30,13 @@ output "name_servers" {
   description = "Set these as localproof.org's NS records at the registrar (Spaceship) -- required for public resolution and for ACM DNS validation to ever succeed."
   value       = data.aws_route53_zone.this.name_servers
 }
+
+output "apex_target" {
+  description = "What currently serves the apex + www: this stack's own CloudFront (\"cloudfront\") or GitHub Pages (\"github_pages\")."
+  value       = var.apex_target
+}
+
+output "app_site_url" {
+  description = "apps/localpass's PWA URL once apex_target = \"github_pages\" moves the apex to GitHub Pages. Same value as site_url while apex_target = \"cloudfront\", since the app is still reachable at the apex in that mode."
+  value       = var.apex_target == "github_pages" ? "https://${var.app_subdomain_name}" : "https://${var.domain_name}"
+}

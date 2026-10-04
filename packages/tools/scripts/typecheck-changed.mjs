@@ -547,9 +547,19 @@ function main() {
   // when web-app files are untracked or changed alongside mobile/packages work.
   // Archive trees are historical reference material and are intentionally excluded
   // so they do not block active app release preflight.
+  // apps/localpass is a separate Vite app with its own tsconfig.json and
+  // vite-env.d.ts (for import.meta.env). Sandboxing it against
+  // MOBILE_APP_TSCONFIG below loses both: `ImportMeta.env` doesn't exist
+  // there, and any of localpass's own unchanged local imports get stubbed to
+  // `any`, collapsing array element types and producing cascading
+  // noImplicitAny false positives on perfectly-typed callbacks (same lossy-
+  // stub failure mode already documented above for @hashpass/* packages).
+  // It already gets real, correct coverage from its own `build` script
+  // (`tsc --noEmit && vite build`) via .github/workflows/localpass.yml, so
+  // skip it here the same way apps/web-app and apps/docs are skipped.
   const allChangedFiles = getChangedFiles(baseCommit)
     .filter(isTypeScriptFile)
-    .filter(f => !f.startsWith('apps/web-app/') && !f.startsWith('apps/docs/') && !f.startsWith('archive/'));
+    .filter(f => !f.startsWith('apps/web-app/') && !f.startsWith('apps/docs/') && !f.startsWith('apps/localpass/') && !f.startsWith('archive/'));
 
   // packages/* files are checked separately below (see typecheckPackageFiles);
   // everything else keeps the original single-sandbox behavior unchanged.

@@ -6,6 +6,7 @@ import seedPack from '../data/guatape.json';
 import { buildItinerary } from './engine';
 import { getPack, getSavedItinerary, getSimulatedOffline, saveItinerary, savePack, saveSimulatedOffline } from './storage';
 import type { DestinationPack, ItineraryItem, Language } from './types';
+import { BUILD_INFO, CURRENT_VERSION, getLocalPassVersionLabel } from './config/version';
 import './styles.css';
 
 const fallback = seedPack as DestinationPack;
@@ -185,7 +186,7 @@ function App() {
         </Surface>)}</div>
       </section>}
     </main>
-    <footer><strong>LocalPass</strong><span>{t.footer}</span><span>Guatapé · {pack.places.filter(place => place.local_business).length} {t.operators} · EN / ES</span></footer>
+    <footer><strong>LocalPass</strong><span>{t.footer}</span><span>Guatapé · {pack.places.filter(place => place.local_business).length} {t.operators} · EN / ES</span><span title={`Build ${BUILD_INFO.gitCommit} · Released ${CURRENT_VERSION.releaseDate}`}>{getLocalPassVersionLabel()}</span></footer>
   </div>;
 }
 

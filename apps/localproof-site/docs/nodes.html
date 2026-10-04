@@ -1,0 +1,19 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Local Nodes — LocalProof</title><link rel="icon" href="/assets/localproof-mark.svg"><link rel="stylesheet" href="/styles.css"><style>.doc{padding:70px 0 110px;max-width:900px}.doc h1{font-size:clamp(42px,6vw,66px)}.doc h2{font-size:32px;margin-top:52px}.doc h3{margin-top:32px}.doc p,.doc li{font-size:17px;color:#51676e}.doc table{width:100%;border-collapse:collapse;margin:24px 0}.doc th,.doc td{text-align:left;padding:14px;border-bottom:1px solid var(--line);vertical-align:top}.callout{padding:22px;border-radius:20px;background:var(--cream);margin:26px 0}.doc pre{white-space:pre-wrap;background:var(--dark);color:white;padding:22px;border-radius:20px;overflow:auto}.breadcrumbs{font-size:13px;color:var(--muted);margin-bottom:20px}.breadcrumbs a{text-decoration:none}.doc ul{padding-left:22px}</style></head><body><header class="site-header"><a class="brand" href="/"><img src="/assets/localproof-mark.svg" alt=""><span>LocalProof</span></a><nav><a href="/">Overview</a><a href="/docs/">Docs</a></nav><a class="button button-small" href="/docs/">All docs</a></header><main class="doc wrap"><div class="breadcrumbs"><a href="/docs/">Docs</a> / Local Nodes</div><span class="eyebrow">OFFLINE TOURISM INFRASTRUCTURE</span><h1>Local Nodes</h1><p class="lead">Local Nodes distribute useful destination information over nearby Wi‑Fi when mobile data is weak, unavailable, or too expensive. They are distribution infrastructure, not miniature cloud servers.</p>
+<h2>Node responsibilities</h2><ul><li>Create a local Wi‑Fi access point.</li><li>Serve a lightweight captive portal.</li><li>Distribute a compact destination pack.</li><li>Expose essential information during zero-connectivity periods.</li><li>Report device health and content freshness when upstream connectivity returns.</li></ul>
+<h2>Recommended deployment locations</h2><p>Tourism offices, hotels, hostels, cafés, attractions, transport terminals, trailheads, rural community venues, and temporary events.</p>
+<h2>Deployment flow</h2><pre>Provision device
+  ↓
+assign destination + venue
+  ↓
+load destination pack
+  ↓
+install + power
+  ↓
+verify local portal
+  ↓
+place QR / signage
+  ↓
+monitor health + freshness</pre>
+<h2>Hardware design principle</h2><p>The visible product can feel premium and local—wood veneer, warm materials, destination artwork—while the electronics and structural carrier remain standardized for scalable manufacturing.</p>
+<h2>Offline limitations</h2><p>A captive portal on a local HTTP origin should not be presented as if it can securely install a full HTTPS PWA. LocalProof should be explicit about what works locally and what requires prior installation or secure connectivity.</p>
+</main></body></html>
