@@ -16,7 +16,7 @@ import { t } from '@lingui/macro';
 import { useTutorialPreferences } from '../../../hooks/useTutorialPreferences';
 import { useAuth } from '../../../hooks/useAuth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { apiClient } from '../../../lib/api-client';
+import { apiClient, getRuntimeApiBaseUrl } from '../../../lib/api-client';
 import { getHashpassWebOrigin } from '../../../lib/hashpass-web-url';
 import { buildEventPath } from '../../../lib/event-path';
 import VersionDetailsModal from '../../../components/VersionDetailsModal';
@@ -158,7 +158,7 @@ export default function SettingsScreen() {
   };
 
   const connectCalendar = async (provider: CalendarProvider) => {
-    const feedUrl = buildCalendarFeedUrl(getHashpassWebOrigin());
+    const feedUrl = buildCalendarFeedUrl(getRuntimeApiBaseUrl());
     const providerUrl = buildCalendarProviderUrl(provider, feedUrl);
 
     try {

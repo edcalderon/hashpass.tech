@@ -5,7 +5,7 @@ const GOOGLE_CALENDAR_SUBSCRIBE_URL =
 export const NOTION_CALENDAR_URL = 'https://calendar.notion.so/';
 
 export const buildCalendarFeedUrl = (webOrigin: string): string => {
-  const origin = webOrigin.replace(/\/+$/, '');
+  const origin = webOrigin.replace(/\/+$/, '').replace(/\/api$/, '');
   return `${origin}/api/calendar`;
 };
 

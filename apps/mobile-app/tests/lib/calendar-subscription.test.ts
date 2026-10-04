@@ -7,16 +7,22 @@ import {
 
 describe('calendar subscriptions', () => {
   it('builds provider-safe subscription URLs', () => {
-    const feed = buildCalendarFeedUrl('https://hashpass.tech/');
+    const feed = buildCalendarFeedUrl('https://api.hashpass.tech/api/');
 
-    expect(feed).toBe('https://hashpass.tech/api/calendar');
+    expect(feed).toBe('https://api.hashpass.tech/api/calendar');
     expect(buildAppleCalendarSubscriptionUrl(feed)).toBe(
-      'webcal://hashpass.tech/api/calendar',
+      'webcal://api.hashpass.tech/api/calendar',
     );
 
     const google = new URL(buildGoogleCalendarSubscriptionUrl(feed));
     expect(google.origin).toBe('https://calendar.google.com');
     expect(google.searchParams.get('cid')).toBe(feed);
+  });
+
+  it('preserves the development API origin for calendar feeds', () => {
+    expect(buildCalendarFeedUrl('https://api-dev.hashpass.tech/api')).toBe(
+      'https://api-dev.hashpass.tech/api/calendar',
+    );
   });
 
   it('serializes valid, escaped calendar events with stable identifiers', () => {

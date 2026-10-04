@@ -6,6 +6,7 @@ describe('public calendar API', () => {
       demo: {
         id: 'demo',
         name: 'Demo Event',
+        eventStartDate: '2026-12-12T09:00:00-05:00',
         agenda: [
           {
             id: 'opening',
@@ -31,6 +32,39 @@ describe('public calendar API', () => {
     });
     expect(items[0].end.toISOString()).toBe('2026-12-12T15:00:00.000Z');
     expect(items[1].end.toISOString()).toBe('2026-12-12T15:45:00.000Z');
+  });
+
+  it('resolves local agenda ranges against the event date and agenda day', () => {
+    const items = buildPublicCalendarItems({
+      colombia: {
+        id: 'colombia',
+        name: 'Colombia Summit',
+        eventStartDate: '2026-08-05T09:00:00-05:00',
+        agenda: [
+          { id: 'welcome', title: 'Welcome', time: '08:00 - 09:00', day: '1' },
+          {
+            id: 'keynote',
+            title: 'Keynote',
+            time: '10:00',
+            day: '1',
+            end_time: '2026-08-05T11:30:00-05:00',
+          },
+          { id: 'night', title: 'Night session', time: '23:30 - 00:30', day: '2' },
+          { id: 'draft', title: 'Draft', time: '08:00 - 09:00' },
+        ],
+      },
+    } as any);
+
+    expect(items).toHaveLength(4);
+    const welcome = items.find((item) => item.uid === 'colombia-welcome@hashpass.tech');
+    const keynote = items.find((item) => item.uid === 'colombia-keynote@hashpass.tech');
+    const night = items.find((item) => item.uid === 'colombia-night@hashpass.tech');
+
+    expect(welcome?.start.toISOString()).toBe('2026-08-05T13:00:00.000Z');
+    expect(welcome?.end.toISOString()).toBe('2026-08-05T14:00:00.000Z');
+    expect(keynote?.end.toISOString()).toBe('2026-08-05T16:30:00.000Z');
+    expect(night?.start.toISOString()).toBe('2026-08-07T04:30:00.000Z');
+    expect(night?.end.toISOString()).toBe('2026-08-07T05:30:00.000Z');
   });
 
   it('serves a subscribable iCalendar response', async () => {
