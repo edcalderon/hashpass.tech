@@ -168,11 +168,11 @@ Deployment split (verified 2026-09-21):
 The [build-cost containment task](.agents/active/task-build-cost-containment-and-cicd-migration.md) records verified deployments, the USD 50/month budget, restored email alerts, and remaining release gates. Daily cost/trigger monitoring is prepared in [aws-cost-report.yml](.github/workflows/aws-cost-report.yml); its schedule becomes active only after the follow-up changes reach `main` through [PR #249](https://github.com/hashpass-tech/hashpass.tech/pull/249).
 
 - `pnpm run android:bundle` builds the Play Store artifact as an Android App Bundle (`.aab`) via the production EAS project.
-- `pnpm run android:publish` is the production-track EAS Submit path and is paused until the release freeze lifts.
-- Android production publishing is paused for the current release freeze. Use the development/internal path and the alpha closed-testing path instead.
-- `pnpm run android:release` is the production-track fastlane path and should stay paused until the freeze lifts.
+- `pnpm run android:publish` is the production-track EAS Submit path.
+- A release tag automatically progresses through internal, alpha, beta, and production after each preceding track succeeds for the same ref. The production build is fresh and uses the production backend; earlier tracks use the development backend.
+- `pnpm run android:release` is the production-track fastlane path for an explicit retry or a non-default release target.
 - `pnpm run android:release:alpha` uses the same fastlane path, runs against the development profile, and submits to the Play Console alpha closed-testing track after the matching internal release succeeds for the same tag.
-- If you want one-step promotion, dispatch the Android workflow with `auto_promote_alpha=true` and keep `alpha_release_status=completed` so the alpha release publishes without manual draft review. Use `draft` only if Play Console rejects completed alpha releases because the app itself is still in draft.
+- The automatic tag flow uses `auto_promote_alpha=true`, `auto_promote_beta=true`, and `auto_promote_production=true`; only dispatch the Android workflow manually to retry an already-tagged version or use a non-default target.
 - `pnpm run android:bundle:dev` builds an internal preview bundle on the development EAS project.
 - `pnpm run android:publish:dev` submits the latest internal preview build through the development EAS project.
 - `pnpm run android:release:dev` defaults to the fastlane backend and auto-submits an internal preview build in one step.
@@ -181,9 +181,6 @@ The [build-cost containment task](.agents/active/task-build-cost-containment-and
 - The generic release wrapper accepts `--env production|development`, `--backend eas|fastlane`, `--track production|alpha|beta|internal`, and `--release-status draft|completed|halted|inProgress` if you call `packages/tools/scripts/run-mobile-release.js` directly.
 - `pnpm run android:release` and `pnpm run android:release:dev` honor `MOBILE_RELEASE_BACKEND`, defaulting to fastlane.
 - `.github/workflows/mobile-android-release.yml` uses `runner=github-hosted` as the current working default. Do not restore the unavailable `aws-ec2` runner path or its missing repository variables without explicit owner approval. Follow [CLAUDE.md](CLAUDE.md#mobile-android-release-workflow) for native-change gating, automatic tag dispatch, and manual retry rules.
-- Temporary release posture: keep Android publishing on the development profile for now. Use `pnpm run android:release:dev` for internal testing, then `pnpm run android:release:alpha` after the same tag succeeds internally. Leave production paused until the release freeze is lifted.
-- The workflow accepts `environment=development` with `track=internal` for the first pass and `track=alpha` after internal succeeds. If you want the workflow to auto-dispatch alpha after internal, set `auto_promote_alpha=true` and keep `alpha_release_status=completed`. Production dispatches are paused during the freeze.
-- The auto-dispatched alpha run uses the promote-only path (`promote_only=true`) so it reuses the internal Play release instead of uploading a second bundle.
 - The release promotion command `npm run release:promote` prepares the `develop -> main` PR, so do not direct-push release commits to `main`.
 - The core GitHub-hosted deploy jobs publish both the static site and the Expo Router API Lambda. They verify `/api/config/versions` after each Lambda update so stale APIs fail the deploy instead of silently serving an old version.
 - Expo prebuild enables Android release minification, so Gradle emits a `mapping.txt` file for release builds.
