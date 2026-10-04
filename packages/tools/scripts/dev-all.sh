@@ -374,6 +374,20 @@ VIDEO_STUDIO_PORT="${REPLY_PORT}"
 claim_port "hashpass-links-api" "${LINKS_API_PORT}" || exit 1
 LINKS_API_PORT="${REPLY_PORT}"
 
+# Reserve the Frappe Helpdesk port before claiming LocalProof, so a
+# LOCALPROOF_PORT that collides with FRAPPE_HELPDESK_PORT is caught by
+# claim_port's duplicate-port check rather than surfacing as an
+# address-in-use error when Python tries to bind later. Frappe itself
+# still starts later (after Directus) -- this just marks the port as
+# taken in RESERVED_PORTS so the check works.
+if [[ "${SKIP_FRAPPE_HELPDESK}" != "true" ]]; then
+  if port_is_reserved "${FRAPPE_HELPDESK_PORT}"; then
+    echo "Port ${FRAPPE_HELPDESK_PORT} (frappe-helpdesk) was already claimed by another service -- set FRAPPE_HELPDESK_PORT to a free port or --skip-frappe-helpdesk." >&2
+    exit 1
+  fi
+  RESERVED_PORTS+=("${FRAPPE_HELPDESK_PORT}")
+fi
+
 if [[ "${INCLUDE_LOCALPROOF}" == "true" ]]; then
   claim_port "localproof site" "${LOCALPROOF_PORT}" || exit 1
   LOCALPROOF_PORT="${REPLY_PORT}"
