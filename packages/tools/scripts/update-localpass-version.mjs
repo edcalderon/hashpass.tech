@@ -11,6 +11,7 @@ const projectRoot = path.join(__dirname, '..', '..', '..');
 const localpassRoot = path.join(projectRoot, 'apps', 'localpass');
 const packageJsonPath = path.join(localpassRoot, 'package.json');
 const changelogPath = path.join(localpassRoot, 'CHANGELOG.md');
+const readmePath = path.join(localpassRoot, 'README.md');
 const versionsJsonPath = path.join(localpassRoot, 'src', 'config', 'versions.json');
 const gitInfoPath = path.join(localpassRoot, 'src', 'config', 'git-info.json');
 
@@ -154,6 +155,25 @@ function updateChangelog(entry) {
   fs.writeFileSync(changelogPath, `${nextContent.trimEnd()}\n`);
 }
 
+function updateReadmeReleaseBlock(entry) {
+  if (!fs.existsSync(readmePath)) return;
+
+  const start = '<!-- LOCALPASS_RELEASE:START -->';
+  const end = '<!-- LOCALPASS_RELEASE:END -->';
+  const block = [
+    start,
+    `> **Current MVP release:** [v${entry.version}](./CHANGELOG.md) · ${entry.releaseType} · ${entry.releaseDate}`,
+    end,
+  ].join('\n');
+  const current = fs.readFileSync(readmePath, 'utf8');
+  const pattern = new RegExp(`${start}[\\s\\S]*?${end}`);
+  const next = pattern.test(current)
+    ? current.replace(pattern, block)
+    : `${current.trimEnd()}\n\n${block}\n`;
+
+  fs.writeFileSync(readmePath, next);
+}
+
 function updateGitInfo() {
   const gitInfo = {
     gitCommit: 'unknown',
@@ -274,6 +294,7 @@ function main() {
   updatePackageJson(nextVersion);
   updateVersionsJson(versionEntry);
   updateChangelog(versionEntry);
+  updateReadmeReleaseBlock(versionEntry);
   updateGitInfo();
 
   console.log(`✅ Updated LocalPass version to ${nextVersion}`);
@@ -281,6 +302,7 @@ function main() {
   console.log('✅ Synced apps/localpass/src/config/versions.json');
   console.log('✅ Synced apps/localpass/src/config/git-info.json');
   console.log('✅ Updated apps/localpass/CHANGELOG.md');
+  console.log('✅ Synced apps/localpass/README.md release block');
 }
 
 main();

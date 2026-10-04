@@ -23,6 +23,7 @@ const VALID_BUMPS = new Set(['patch', 'minor', 'major']);
 const TAG_PREFIX = 'localpass-v';
 const STAGED_FILES = [
   'apps/localpass/package.json',
+  'apps/localpass/README.md',
   'apps/localpass/CHANGELOG.md',
   'apps/localpass/src/config/version.ts',
   'apps/localpass/src/config/versions.json',

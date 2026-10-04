@@ -1,56 +1,68 @@
-# LocalPass AI
+<p align="center">
+  <img src="./public/brand/localpass-logo.svg" width="360" alt="LocalPass">
+</p>
 
-**Offline destination intelligence for Guatapé, Colombia.** This hackathon MVP addresses a development gap: most AI products assume cloud access, capable hardware, stable bandwidth, and digitally sophisticated suppliers. Tourism communities and travelers cannot always rely on those conditions.
+<p align="center"><strong>Offline tourism intelligence for real-world destinations.</strong></p>
 
-LocalPass separates **AI preparation** from **offline execution**. A compact bilingual destination pack is downloaded once to IndexedDB; local intent extraction, retrieval, constraint scoring, and itinerary generation then run on the device. Offline operation is part of the architecture—not an error condition.
+<!-- LOCALPASS_RELEASE:START -->
+> **Current MVP release:** Preparing the next LocalPass release. See [CHANGELOG.md](./CHANGELOG.md).
+<!-- LOCALPASS_RELEASE:END -->
 
-## Who benefits
+LocalPass is a bilingual, offline-first tourism MVP for Guatapé, Colombia. It keeps practical destination guidance useful when connectivity is unreliable: the traveler downloads a compact local pack once, then searches, plans, switches language, and accesses essentials entirely on their device.
 
-- **Travelers** retain practical, bilingual guidance when mobile data disappears.
-- **Small local operators** stay discoverable without building an app, paying marketplace commission, or remaining online.
-- **Destination communities** gain a reusable, low-bandwidth knowledge layer for ordinary phones.
+## Why it matters
 
-## What works offline
+Most travel and AI products assume stable connectivity, capable hardware, and digitally mature suppliers. LocalPass is designed around the conditions that make those assumptions fail. Its local planning engine works without an API after the pack and app shell are stored, while independent local operators remain discoverable without a marketplace account or continuous connection.
 
-- Guatapé destination content and weighted local search
-- time- and budget-constrained itinerary generation
-- local business directory and offline contact guidance
-- essential transport, emergency, health, safety, and phrase information
-- saved itineraries, language switching, and the complete cached application shell
+## MVP at a glance
 
-The prototype includes one destination, two languages, 14 places/experiences, and 9 local-operator demo entries. The directory is explicitly a demonstration, not an exhaustive or booking-ready source. Core flows make zero network requests after the pack and shell are cached.
+| Capability | What judges can verify |
+| --- | --- |
+| Offline-first PWA | Download the Guatapé pack, reload in simulated or browser-offline mode, and continue planning. |
+| Practical local planning | Enter a time limit, a COP budget, and terms such as `kayak`, `coffee`, or `Piedra del Peñol`. |
+| Bilingual experience | Switch between English and Spanish across the plan, directory, and essential information. |
+| Local economic inclusion | Local operators receive a transparent ranking boost and a visible support-local marker. |
+| Trusted local data | The app uses a compact, inspectable destination pack instead of invented listings or cloud-generated results. |
 
-## Run it
+The current pack contains 14 places and experiences, including 9 local-operator demo entries. It is a demonstrated Guatapé pilot, not a booking system or an exhaustive directory.
+
+## Demo flow
+
+1. Open LocalPass and choose **Download for offline use**.
+2. Ask: `I have 3 hours, COP 100,000. I like nature and local food.`
+3. Review the time- and budget-constrained itinerary and its local-operator markers.
+4. Enable **Simulate offline**, refresh, and build another plan.
+5. Open **Local businesses** and **Essential** while offline.
+
+Use [DEMO.md](./DEMO.md) for the presenter script and [CHALLENGE.md](./CHALLENGE.md) for the development-impact framing.
+
+## Run and verify
 
 ```bash
 pnpm install
-pnpm --filter @hashpass/localpass dev
 pnpm --filter @hashpass/localpass test
 pnpm --filter @hashpass/localpass build
+pnpm --filter @hashpass/localpass test:browser
 ```
 
-For the core demo: load the app, download the pack, create a three-hour COP 100,000 plan, enable **Simulate offline**, refresh, and create another plan. See [DEMO.md](./DEMO.md).
+The browser suite exercises desktop and narrow mobile layouts in light and dark mode, including COP parsing, requested-place ranking, language switching, simulated-offline persistence, cached reloads, and horizontal-overflow checks.
 
-## Prototype boundaries
+## How it works
 
-Costs, opening hours, availability, and demo operator names must be confirmed locally. This is not an emergency service or booking platform. Cloud AI is intentionally optional; no arbitrary generated markup enters the UI. See [data sources](./docs/data-sources.md) and [architecture](./ARCHITECTURE.md).
+The bundled destination pack makes first use helpful. When downloaded, the pack is stored in IndexedDB and the service worker caches the app shell and destination data. The on-device engine extracts hours and COP budgets, ranks place names, locations, descriptions, and tags, then only includes options that fit the stated time and budget.
 
+Read the [architecture](./ARCHITECTURE.md), [offline design](./docs/offline-design.md), and [data sources](./docs/data-sources.md) for implementation details and evidence boundaries.
 
-## Commercialization and guide network
+## Beyond the pilot
 
-The MVP now includes a documented commercialization path for turning LocalPass into a physical-to-digital destination network.
+LocalPass has a documented path from this software MVP to a physical-to-digital destination network. The proposed **LocalPass Node** can distribute versioned destination packs without mobile data; the **LocalPass Guide** concept supports dynamic QR experiences for local guides and operators. Hardware remains optional infrastructure, never a gate to basic participation.
 
 - [Commercial model](./docs/commercial/README.md)
-- [Business model](./docs/commercial/business-model.md)
-- [Unit economics](./docs/commercial/unit-economics.md)
-- [Operator rewards](./docs/commercial/operator-rewards.md)
-- [Go-to-market](./docs/commercial/go-to-market.md)
-- [Economic and network diagrams](./docs/commercial/system-diagrams.md)
-- [Dynamic QR protocol](./docs/trust/qr-protocol.md)
-- [Guide verification and certification](./docs/trust/guide-certification.md)
-- [Draft Terms of Service](./docs/legal/TERMS_OF_SERVICE_DRAFT.md)
-- [Hardware pilot terms](./docs/legal/HARDWARE_PILOT_TERMS_DRAFT.md)
-- [Privacy and data principles](./docs/legal/PRIVACY_AND_DATA_PRINCIPLES.md)
-- [LocalPass Guide wearable concept](../../hardware/localpass-guide/README.md)
+- [Go-to-market plan](./docs/commercial/go-to-market.md)
+- [Dynamic QR compatibility protocol](./docs/trust/qr-protocol.md)
+- [Guide verification model](./docs/trust/guide-certification.md)
+- [Hardware companion](./docs/hardware-companion.md)
 
-The core commercial principle is: **software/QR access can be open, trust is independently verifiable, and hardware remains optional infrastructure rather than a gate to participation.**
+## Product boundaries
+
+Costs, opening hours, availability, and demo operator names require local confirmation. LocalPass is not an emergency service, a booking platform, or a certification authority. Cloud enrichment is optional; it does not replace the local data contract or inject generated content into the experience.
