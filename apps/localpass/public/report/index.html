@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<meta name="theme-color" content="#06384A" />
+<link rel="icon" href="/icons/icon.svg" />
+<title>LocalPass — One-Page Submission Report</title>
+<meta name="description" content="LocalPass one-page submission report: problem, solution, architecture, impact and honest limits for the World Bank Small AI for Development challenge." />
+<style>
+  :root {
+    --teal: #06384A;
+    --teal-2: #0B5E70;
+    --aqua: #1BA6A8;
+    --gold: #FDBA2D;
+    --cream: #F7F2E8;
+    --ink: #0E2430;
+    --muted: #4C6673;
+    --border: #E2E7E2;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--cream);
+    color: var(--ink);
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--teal-2); }
+
+  .page {
+    max-width: 920px; margin: 0 auto;
+    padding: 28px 30px 36px;
+  }
+
+  .toolbar {
+    display: flex; justify-content: space-between; align-items: center;
+    max-width: 920px; margin: 0 auto; padding: 14px 30px 0;
+  }
+  .toolbar a {
+    font-size: 13px; font-weight: 700; text-decoration: none; color: var(--teal-2);
+    border: 1px solid var(--border); background: #fff; border-radius: 8px; padding: 7px 12px;
+  }
+  .toolbar .print-btn { background: var(--teal); color: #fff; border-color: var(--teal); cursor: pointer; }
+
+  .sheet {
+    background: #fff; border: 1px solid var(--border); border-radius: 10px;
+    box-shadow: 0 20px 48px -28px rgba(6,56,74,0.35);
+    padding: 34px 38px 28px;
+  }
+
+  header.doc { display: flex; align-items: center; justify-content: space-between; gap: 18px; border-bottom: 3px solid var(--teal); padding-bottom: 14px; margin-bottom: 16px; }
+  header.doc .brand-row { display: flex; align-items: center; gap: 12px; }
+  header.doc img { height: 30px; }
+  header.doc .title-block h1 { font-size: 19px; margin: 0; color: var(--teal); font-weight: 800; }
+  header.doc .title-block p { margin: 2px 0 0; font-size: 12px; color: var(--muted); }
+  header.doc .right { text-align: right; font-size: 11.5px; color: var(--muted); line-height: 1.5; }
+  header.doc .right strong { color: var(--teal-2); }
+
+  .lede { font-size: 13.5px; color: var(--ink); line-height: 1.5; margin: 0 0 16px; }
+  .lede strong { color: var(--teal); }
+
+  .cols { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 22px; }
+
+  h2.sec {
+    font-size: 12px; text-transform: uppercase; letter-spacing: 1.2px; font-weight: 800;
+    color: var(--teal-2); margin: 0 0 6px; padding-bottom: 4px; border-bottom: 1px solid var(--border);
+  }
+  .block { margin-bottom: 14px; }
+  .block p { font-size: 12.3px; line-height: 1.48; color: var(--ink); margin: 0 0 6px; }
+  .block ul { margin: 4px 0 0; padding-left: 16px; }
+  .block li { font-size: 12.3px; line-height: 1.45; color: var(--ink); margin-bottom: 3px; }
+
+  .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+  .metric { background: var(--cream); border: 1px solid var(--border); border-radius: 8px; padding: 9px 10px; }
+  .metric .num { font-size: 15px; font-weight: 800; color: var(--teal); line-height: 1.1; }
+  .metric .lbl { font-size: 10px; color: var(--muted); margin-top: 2px; line-height: 1.25; }
+
+  .arch {
+    background: var(--teal); color: #fff; border-radius: 8px; padding: 10px 12px;
+    font-size: 10.8px; line-height: 1.55; margin-bottom: 14px;
+  }
+  .arch .row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .arch .step { background: rgba(255,255,255,0.14); border: 1px solid rgba(255,255,255,0.3); border-radius: 999px; padding: 3px 9px; font-weight: 700; }
+  .arch .arrow { color: var(--gold); font-weight: 800; }
+  .arch .note { margin-top: 7px; color: rgba(255,255,255,0.85); }
+
+  .stack-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 14px; }
+  .stack-grid div { font-size: 11.8px; line-height: 1.4; }
+  .stack-grid b { color: var(--teal-2); }
+
+  .boundary {
+    background: #FBF4E4; border: 1px solid #F0DDB0; border-radius: 8px; padding: 9px 11px;
+    font-size: 11.3px; line-height: 1.45; color: var(--ink); margin-bottom: 0;
+  }
+  .boundary strong { color: #8a5a06; }
+
+  footer.doc {
+    margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;
+  }
+  footer.doc .quote { font-size: 11.5px; font-weight: 700; color: var(--teal); }
+  footer.doc .links { font-size: 10.8px; color: var(--muted); }
+  footer.doc .links a { color: var(--teal-2); font-weight: 600; margin-left: 10px; }
+
+  @media (max-width: 760px) {
+    .cols { grid-template-columns: 1fr; }
+    .metrics { grid-template-columns: repeat(2, 1fr); }
+    .stack-grid { grid-template-columns: 1fr; }
+    header.doc { flex-direction: column; align-items: flex-start; }
+    header.doc .right { text-align: left; }
+  }
+
+  @media print {
+    @page { size: A4 portrait; margin: 10mm; }
+    html, body { background: #fff; }
+    .toolbar { display: none; }
+    .page { padding: 0; max-width: none; }
+    .sheet { box-shadow: none; border: none; padding: 0; }
+    /* A4's printable width falls inside the @media(max-width:760px) phone
+       breakpoint below, which would otherwise collapse these grids to a
+       single column on paper. Force the intended multi-column layout. */
+    .cols { grid-template-columns: 1.15fr 0.85fr; }
+    .metrics { grid-template-columns: repeat(3, 1fr); margin-bottom: 10px; }
+    .stack-grid { grid-template-columns: 1fr 1fr; }
+    header.doc { flex-direction: row; align-items: center; padding-bottom: 8px; margin-bottom: 10px; }
+    header.doc .right { text-align: right; }
+    /* Trim vertical rhythm just enough to keep this on one printed page. */
+    .lede { margin: 0 0 10px; font-size: 13px; }
+    .metrics { gap: 6px; }
+    .metric { padding: 7px 9px; }
+    .block { margin-bottom: 7px; }
+    .block p, .block li { font-size: 11.6px; line-height: 1.4; margin-bottom: 4px; }
+    h2.sec { margin: 0 0 4px; padding-bottom: 3px; }
+    .arch { padding: 7px 11px; margin-bottom: 8px; font-size: 10.3px; }
+    .boundary { padding: 7px 10px; font-size: 10.6px; line-height: 1.38; }
+    footer.doc { margin-top: 8px; padding-top: 6px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <a href="/demo/">&larr; Back to demo page</a>
+  <span>
+    <a href="/report/LocalPass_OnePager.pdf" download style="margin-right:8px;">Download PDF</a>
+    <a href="#" class="print-btn" onclick="window.print(); return false;">Print / Save as PDF</a>
+  </span>
+</div>
+
+<div class="page">
+  <div class="sheet">
+
+    <header class="doc">
+      <div class="brand-row">
+        <img src="/brand/localpass-logo.svg" alt="LocalPass" />
+      </div>
+      <div class="title-block">
+        <h1>One-Page Submission Report</h1>
+        <p>World Bank · Small AI for Development · Guatapé, Colombia</p>
+      </div>
+      <div class="right">
+        <div><strong>LocalPass v0.1.1</strong> · stable · 2026-10-04</div>
+        <div>github.com/hashpass-tech/hashpass.tech/tree/main/apps/localpass</div>
+      </div>
+    </header>
+
+    <p class="lede">
+      <strong>LocalPass</strong> is a bilingual, offline-first tourism MVP for Guatapé, Colombia.
+      A traveler downloads a compact local pack once, then searches, plans, switches language, and
+      accesses essentials entirely on their device — with zero network calls for any core flow.
+    </p>
+
+    <div class="metrics">
+      <div class="metric"><div class="num">100%</div><div class="lbl">essential content offline after download</div></div>
+      <div class="metric"><div class="num">0</div><div class="lbl">network calls for core flows</div></div>
+      <div class="metric"><div class="num">EN / ES</div><div class="lbl">bilingual throughout</div></div>
+      <div class="metric"><div class="num">9 / 14</div><div class="lbl">local-operator / total pack entries</div></div>
+      <div class="metric"><div class="num">&lt;1s</div><div class="lbl">offline itinerary runtime target</div></div>
+      <div class="metric"><div class="num">84</div><div class="lbl">lines in the deterministic planning engine</div></div>
+    </div>
+
+    <div class="cols">
+      <div>
+        <div class="block">
+          <h2 class="sec">Challenge tackled</h2>
+          <p>Most travel and AI products assume stable connectivity, capable hardware, and digitally mature suppliers. In Guatapé, Colombia, that leaves two users underserved: travelers with unreliable data, and small, independently owned operators invisible to discovery that depends on global platforms, paid placement, and continuous connectivity. LocalPass separates <strong>connected preparation</strong> from <strong>offline execution</strong>: a destination pack is curated once while connected, downloaded by the traveler in one tap, and used entirely on-device from then on — with locally owned listings getting a transparent ranking boost and a visible "Support local" marker.</p>
+        </div>
+
+        <div class="block">
+          <h2 class="sec">Tools / models used</h2>
+          <div class="stack-grid">
+            <div><b>React 19 + TS</b> UI &amp; state</div>
+            <div><b>Vite</b> build tooling</div>
+            <div><b>IndexedDB</b> offline pack store</div>
+            <div><b>Service worker</b> cache-first shell + data</div>
+            <div><b>Rules engine (84 lines)</b> itinerary planning — no LLM call</div>
+            <div><b>Bilingual JSON pack</b> curated data, not generated</div>
+          </div>
+        </div>
+
+        <div class="block">
+          <h2 class="sec">Architecture</h2>
+          <div class="arch">
+            <div class="row">
+              <span class="step">Connected prep</span><span class="arrow">&rarr;</span>
+              <span class="step">AI enrichment / curation</span><span class="arrow">&rarr;</span>
+              <span class="step">Guatapé destination pack</span>
+            </div>
+            <div class="row" style="margin-top:6px;">
+              <span class="step">Download once</span><span class="arrow">&rarr;</span>
+              <span class="step">IndexedDB + cache-first service worker</span><span class="arrow">&rarr;</span>
+              <span class="step">Local rules engine on an ordinary phone</span>
+            </div>
+            <div class="note">No core action calls an API. Once the shell and pack are stored, search, planning, business discovery, essentials, language switching, and itinerary persistence all run locally.</div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="block">
+          <h2 class="sec">What worked well</h2>
+          <p>The offline contract held end-to-end: 100% of essential content stayed reachable after one download, with zero network calls across search, planning, discovery, and essentials. The 84-line planning engine runs in under a second and is fully auditable — no invented prices, no hallucinated listings. The browser test suite verifies COP parsing, place ranking, language switching, and cached reloads across desktop/narrow-mobile and light/dark mode.</p>
+        </div>
+
+        <div class="block">
+          <h2 class="sec">What was challenging</h2>
+          <p>Proving "true offline" without a network kill switch: the in-app <strong>Simulate offline</strong> toggle changes only capability messaging, not the real browser network, so it has to exercise the same service-worker and IndexedDB code paths a real offline device would use, not a mocked shortcut. A related first-load gap — a blank screen before IndexedDB finishes initializing — is solved with a bundled seed pack so the app is useful immediately, not just after a round trip.</p>
+        </div>
+
+        <div class="block">
+          <h2 class="sec">How we spent our time</h2>
+          <p><strong>Early:</strong> curate and verify the Guatapé destination pack against its source boundaries. <strong>Mid-build:</strong> the deterministic planning engine, IndexedDB storage, and the cache-first service worker. <strong>Later:</strong> the bilingual UI (search, plan, directory, essentials), the browser test suite, and the simulated-offline toggle. <strong>Final stretch:</strong> documentation, the demo/tech videos, and this report.</p>
+        </div>
+
+        <div class="block">
+          <h2 class="sec">Honest limits</h2>
+          <div class="boundary">
+            <strong>Single destination, 9 demo operators.</strong> Costs, hours, and operator names require local confirmation. LocalPass is not an emergency service, a booking platform, or a certification authority. Cloud enrichment is optional and never replaces the local data contract or injects generated content into the experience.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="doc">
+      <div class="quote">&ldquo;Local places. Brighter journeys.&rdquo; — LocalPass, built with Claude Code</div>
+      <div class="links">
+        Demo video, tech video &amp; source
+        <a href="/demo/">demo page</a>
+        <a href="/LocalPass_source.zip">source .zip</a>
+        <a href="https://github.com/hashpass-tech/hashpass.tech/tree/main/apps/localpass">repo</a>
+        <a href="https://github.com/hashpass-tech/hashpass.tech/blob/main/apps/localpass/README.md">README</a>
+      </div>
+    </footer>
+
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,28 @@
+WEBVTT
+
+00:00:00.000 --> 00:00:03.200
+LocalPass: small AI for offline development.
+
+00:00:03.200 --> 00:00:07.100
+Most AI assumes stable bandwidth. Not everyone has that.
+
+00:00:07.100 --> 00:00:11.900
+We split AI preparation from offline execution. Prepare once, run anywhere.
+
+00:00:11.900 --> 00:00:25.100
+Built with React 19, TypeScript, and Vite. IndexedDB stores the destination pack. A cache-first service worker keeps the app itself offline, using shared design tokens from our UI package.
+
+00:00:25.100 --> 00:00:38.700
+The core is 84 lines of deterministic rules, no LLM calls. It extracts hours, budget, and interests from text, scores places, and boosts local businesses. Auditable, instant, zero cost.
+
+00:00:38.700 --> 00:00:44.000
+Offline-first from day one paid off: zero network calls, no hallucinated prices.
+
+00:00:44.000 --> 00:00:52.700
+Honest limits: one destination, nine demo operators. Prices still need local confirmation. No cloud layer, by design.
+
+00:00:52.700 --> 00:00:54.700
+Shipped with real release discipline.
+
+00:00:54.700 --> 00:01:00.000
+LocalPass: useful AI, for the devices and connectivity people actually have.

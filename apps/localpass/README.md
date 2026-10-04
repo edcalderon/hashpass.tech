@@ -10,6 +10,29 @@
 
 LocalPass is a bilingual, offline-first tourism MVP for Guatapé, Colombia. It keeps practical destination guidance useful when connectivity is unreliable: the traveler downloads a compact local pack once, then searches, plans, switches language, and accesses essentials entirely on their device.
 
+## Project Summary
+
+Most travel and AI products assume stable connectivity, capable hardware, and digitally mature local suppliers — assumptions that break down exactly where small destinations and small operators need the most help. In Guatapé, Colombia, a traveler with patchy signal can't easily find, plan around, or support the local businesses actually worth visiting.
+
+**LocalPass** is a bilingual (English/Spanish), offline-first tourism MVP built for that gap. During this hackathon we built a working pipeline: a destination pack is curated once while connected, downloaded by the traveler in one tap, and stored on-device. From there, a deterministic 84-line planning engine — no LLM calls, no invented prices — reads a traveler's time limit, COP budget, and interests, and returns a ranked itinerary entirely offline. Local, independently owned operators get a transparent ranking boost and a visible "Support local" marker, giving them a discovery channel that needs no marketplace account and no continuous connection.
+
+**Who benefits:** travelers who lose signal mid-trip, and the small Guatapé operators who are normally invisible to algorithm-driven discovery.
+
+**What works today:** download → plan → go offline → keep planning, searching, and finding essentials, verified with zero network calls after the initial download. The itinerary engine runs in under a second, is fully auditable (it's 84 lines, not a model), and the whole experience — search, planning, language switching, essentials — works identically with the network off.
+
+## Submission materials
+
+| Deliverable | Link |
+| --- | --- |
+| Demo video (≤60s) | [public/videos/localpass-demo.mp4](./public/videos/localpass-demo.mp4) · [watch on the demo page](./public/demo/index.html) |
+| Tech video (≤60s) | [public/videos/localpass-tech.mp4](./public/videos/localpass-tech.mp4) · [watch on the demo page](./public/demo/index.html) |
+| 1-page report (PDF) | [LocalPass_OnePager.pdf](./public/report/LocalPass_OnePager.pdf) · [view as a web page](./public/report/index.html) |
+| GitHub repository | [hashpass-tech/hashpass.tech, apps/localpass](https://github.com/hashpass-tech/hashpass.tech/tree/main/apps/localpass) |
+| Zipped code | [LocalPass_source.zip](./public/LocalPass_source.zip) (source only — demo/tech `.mp4` files are linked above instead of duplicated in the archive) |
+| Dataset | N/A — no training dataset. The app ships a small, hand-curated, cited destination pack; see [data sources](./docs/data-sources.md). |
+
+The demo page and report are also served from the running app itself at `/demo/` and `/report/` once LocalPass is deployed or run locally (`pnpm --filter @hashpass/localpass build && pnpm --filter @hashpass/localpass preview`).
+
 ## Why it matters
 
 Most travel and AI products assume stable connectivity, capable hardware, and digitally mature suppliers. LocalPass is designed around the conditions that make those assumptions fail. Its local planning engine works without an API after the pack and app shell are stored, while independent local operators remain discoverable without a marketplace account or continuous connection.
