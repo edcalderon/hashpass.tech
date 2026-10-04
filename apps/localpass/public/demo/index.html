@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<meta name="theme-color" content="#06384A" />
+<link rel="icon" href="/icons/icon.svg" />
+<title>LocalPass — Submission Demo</title>
+<meta name="description" content="LocalPass: offline tourism intelligence for Guatapé, Colombia. Demo and tech videos for the World Bank Small AI for Development challenge." />
+<style>
+  :root {
+    --teal: #06384A;
+    --teal-2: #0B5E70;
+    --aqua: #1BA6A8;
+    --gold: #FDBA2D;
+    --cream: #F7F2E8;
+    --ink: #0E2430;
+    --muted: #4C6673;
+    --card: #FFFFFF;
+    --border: #E2E7E2;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--cream);
+    color: var(--ink);
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--teal-2); }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 0 24px; }
+
+  header.top {
+    background: linear-gradient(135deg, var(--teal) 0%, var(--teal-2) 100%);
+    color: #fff;
+    padding: 56px 0 64px;
+  }
+  header.top .wrap { display: flex; flex-direction: column; align-items: flex-start; gap: 18px; }
+  .logo-row { display: flex; align-items: center; gap: 14px; }
+  .logo-row img { height: 40px; filter: brightness(0) invert(1); }
+  .kicker {
+    text-transform: uppercase; letter-spacing: 2.5px; font-size: 13px; font-weight: 700;
+    color: var(--gold); margin: 0;
+  }
+  h1 { font-size: 34px; line-height: 1.25; margin: 4px 0 0; max-width: 680px; font-weight: 800; }
+  .tagline { font-size: 18px; color: rgba(255,255,255,0.88); max-width: 620px; margin: 0; }
+  .badges { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; }
+  .badge {
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.28);
+    border-radius: 999px; padding: 6px 14px; font-size: 13px; font-weight: 600;
+  }
+
+  main { padding: 48px 0 72px; }
+
+  .stats {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px;
+    margin: -40px 0 48px;
+  }
+  .stat {
+    background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 18px 16px; box-shadow: 0 10px 30px -18px rgba(6,56,74,0.35);
+  }
+  .stat .num { font-size: 22px; font-weight: 800; color: var(--teal); }
+  .stat .label { font-size: 12.5px; color: var(--muted); margin-top: 4px; line-height: 1.35; }
+
+  section.video-block { margin-bottom: 56px; }
+  .video-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 14px; }
+  .video-head h2 { font-size: 22px; margin: 0; color: var(--teal); }
+  .video-head .dur {
+    font-size: 13px; font-weight: 700; color: var(--teal-2);
+    background: #E9F6F5; border: 1px solid #CDEAE8; padding: 4px 11px; border-radius: 999px;
+  }
+  .video-desc { color: var(--muted); font-size: 15.5px; line-height: 1.55; margin: 0 0 18px; max-width: 760px; }
+
+  .player {
+    border-radius: 16px; overflow: hidden; border: 1px solid var(--border);
+    box-shadow: 0 20px 48px -28px rgba(6,56,74,0.45);
+    background: #000;
+  }
+  video { display: block; width: 100%; height: auto; max-height: 580px; background: #000; }
+
+  .cc-note { font-size: 12.5px; color: var(--muted); margin-top: 8px; }
+  .cc-note code { background: #ECEAE0; padding: 1px 6px; border-radius: 5px; font-size: 11.5px; }
+
+  .links-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 44px; }
+  .links-row a {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 10px 16px; font-size: 14px; font-weight: 600; text-decoration: none; color: var(--teal);
+  }
+  .links-row a:hover { border-color: var(--aqua); }
+
+  .promise {
+    margin-top: 56px; padding: 28px 30px; border-radius: 16px;
+    background: var(--teal); color: #fff; text-align: center;
+  }
+  .promise .line { font-size: 19px; font-weight: 700; }
+  .promise .sub { font-size: 13.5px; color: rgba(255,255,255,0.75); margin-top: 6px; }
+
+  footer { padding: 28px 0 48px; text-align: center; color: var(--muted); font-size: 13px; }
+
+  @media (max-width: 720px) {
+    .stats { grid-template-columns: repeat(2, 1fr); margin-top: -24px; }
+    h1 { font-size: 27px; }
+    header.top { padding: 44px 0 56px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <div class="logo-row">
+      <img src="/brand/localpass-logo.svg" alt="LocalPass" />
+    </div>
+    <p class="kicker">World Bank · Small AI for Development · Submission Demo</p>
+    <h1>Offline tourism intelligence for real-world destinations.</h1>
+    <p class="tagline">LocalPass is a bilingual, offline-first MVP for Guatapé, Colombia — two 60-second videos below cover the product in action and how it was built.</p>
+    <div class="badges">
+      <span class="badge">Local places. Brighter journeys.</span>
+      <span class="badge">v0.1.1</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <div class="stats">
+    <div class="stat"><div class="num">100%</div><div class="label">essential content offline after download</div></div>
+    <div class="stat"><div class="num">0</div><div class="label">network calls for core flows</div></div>
+    <div class="stat"><div class="num">EN / ES</div><div class="label">bilingual throughout</div></div>
+    <div class="stat"><div class="num">9</div><div class="label">indexed local demo operators</div></div>
+    <div class="stat"><div class="num">&lt;1s</div><div class="label">offline itinerary runtime</div></div>
+  </div>
+
+  <section class="video-block">
+    <div class="video-head">
+      <h2>Demo video — the app in action</h2>
+      <span class="dur">0:51</span>
+    </div>
+    <p class="video-desc">
+      A real, screen-captured run of the live app: downloading the Guatapé pack, asking for a
+      time- and budget-constrained plan, going fully offline mid-session, and still planning,
+      discovering local businesses, and reaching essential info with zero network calls.
+    </p>
+    <div class="player">
+      <video controls preload="metadata" poster="/videos/localpass-demo-poster.jpg" crossorigin="anonymous">
+        <source src="/videos/localpass-demo.mp4" type="video/mp4" />
+        <track label="English" kind="subtitles" srclang="en" src="/videos/localpass-demo.vtt" default />
+      </video>
+    </div>
+    <p class="cc-note">Captions burned in + a toggleable <code>CC</code> track · voice narration · background music.</p>
+  </section>
+
+  <section class="video-block">
+    <div class="video-head">
+      <h2>Tech video — how it was built</h2>
+      <span class="dur">1:00</span>
+    </div>
+    <p class="video-desc">
+      Tech stack, the 84-line deterministic planning engine (no LLM calls), what worked,
+      and the honest trade-offs of a single-destination MVP.
+    </p>
+    <div class="player">
+      <video controls preload="metadata" poster="/videos/localpass-tech-poster.jpg" crossorigin="anonymous">
+        <source src="/videos/localpass-tech.mp4" type="video/mp4" />
+        <track label="English" kind="subtitles" srclang="en" src="/videos/localpass-tech.vtt" default />
+      </video>
+    </div>
+    <p class="cc-note">Captions burned in + a toggleable <code>CC</code> track · voice narration · background music.</p>
+  </section>
+
+  <div class="links-row">
+    <a href="/">↳ Open the live app</a>
+    <a href="/report/">↳ One-page report</a>
+    <a href="/report/LocalPass_OnePager.pdf">↳ Report (PDF)</a>
+    <a href="/LocalPass_source.zip">↳ Zipped source (.zip)</a>
+    <a href="https://github.com/hashpass-tech/hashpass.tech/tree/main/apps/localpass">↳ Source (apps/localpass)</a>
+    <a href="https://github.com/hashpass-tech/hashpass.tech/blob/main/apps/localpass/README.md">↳ README</a>
+    <a href="https://github.com/hashpass-tech/hashpass.tech/blob/main/apps/localpass/CHALLENGE.md">↳ Challenge fit</a>
+    <a href="https://github.com/hashpass-tech/hashpass.tech/blob/main/apps/localpass/DEMO.md">↳ Presenter script</a>
+  </div>
+
+  <div class="promise">
+    <div class="line">“LocalPass brings useful AI to the devices and connectivity people actually have.”</div>
+    <div class="sub">Local places. Brighter journeys. — LocalPass, built with Claude Code</div>
+  </div>
+
+</main>
+
+<footer>LocalPass · offline tourism intelligence for Guatapé, Colombia · hashpass-tech</footer>
+
+</body>
+</html>
