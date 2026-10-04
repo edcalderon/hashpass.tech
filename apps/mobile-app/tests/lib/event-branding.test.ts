@@ -13,6 +13,11 @@ jest.mock('../../assets/logos/hashpass/logo-full-hashpass-white-cyan.webp', () =
 jest.mock('../../assets/logos/hashpass/logo-full-hashpass-black.webp', () => 'hashpass-light-svg');
 
 describe('resolveEventImageSource', () => {
+  it('maps legacy BSL logo paths to bundled raster assets', () => {
+    expect(resolveEventImageSource('/logos/bsl/bsl-colombia-pro.svg')).toBe('bsl-colombia-svg');
+    expect(resolveEventImageSource('/logos/bsl/bsl-ontour-pro.svg')).toBe('bsl-ontour-svg');
+  });
+
   it('maps the dead BSL 2025 banner URL to a local banner asset', () => {
     expect(
       resolveEventImageSource('https://blockchainsummit.la/wp-content/uploads/2025/09/bsl2025-banner.jpg')

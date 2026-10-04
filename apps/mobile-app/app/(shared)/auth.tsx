@@ -671,6 +671,9 @@ export default function AuthScreen({ embedded = false, onAuthenticated, onDismis
   const rawAuthMessage = Array.isArray(params.message)
     ? params.message[0]
     : params.message;
+  const rawAuthDescription = Array.isArray(params.error_description)
+    ? params.error_description[0]
+    : params.error_description;
 
   const redirectPath =
     typeof rawReturnTo === "string" && rawReturnTo.trim()
@@ -968,7 +971,11 @@ export default function AuthScreen({ embedded = false, onAuthenticated, onDismis
 
     let message = resolveOAuthErrorMessage(
       typeof rawAuthError === "string" ? rawAuthError : undefined,
-      typeof rawAuthMessage === "string" ? rawAuthMessage : undefined,
+      typeof rawAuthDescription === "string"
+        ? rawAuthDescription
+        : typeof rawAuthMessage === "string"
+          ? rawAuthMessage
+          : undefined,
       t("oauthError", "Google sign-in failed. Please try again."),
     );
 
@@ -983,6 +990,7 @@ export default function AuthScreen({ embedded = false, onAuthenticated, onDismis
       const cleanUrl = new URL(window.location.href);
       cleanUrl.searchParams.delete("error");
       cleanUrl.searchParams.delete("message");
+      cleanUrl.searchParams.delete("error_description");
       window.history.replaceState(
         {},
         "",
@@ -994,6 +1002,7 @@ export default function AuthScreen({ embedded = false, onAuthenticated, onDismis
     isPasswordlessSupported,
     passwordlessUnavailableMessage,
     rawAuthError,
+    rawAuthDescription,
     rawAuthMessage,
     showError,
     t,

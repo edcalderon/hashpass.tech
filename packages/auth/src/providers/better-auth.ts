@@ -287,9 +287,10 @@ export class BetterAuthProvider implements IAuthProvider {
       const frontendOrigin = resolveWebOrigin();
       const callbackURL = `${frontendOrigin}/auth/callback?returnTo=${encodeURIComponent(returnTo)}`;
       const providerLabel = provider === 'apple' ? 'Apple' : 'Google';
-      const errorCallbackURL = `${frontendOrigin}/auth?error=oauth_failed&message=${encodeURIComponent(
-        `${providerLabel} sign-in failed. Please try again.`
-      )}`;
+      // Better Auth appends the provider's `error` and `error_description`
+      // when it returns here. Do not pre-populate those parameters: duplicate
+      // generic values hide the actual local configuration or consent error.
+      const errorCallbackURL = `${frontendOrigin}/auth`;
 
       window.localStorage.setItem('oauth_return_url', window.location.pathname);
       window.localStorage.removeItem(PASSWORDLESS_CALLBACK_MARKER);
