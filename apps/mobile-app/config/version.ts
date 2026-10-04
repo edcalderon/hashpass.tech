@@ -22,35 +22,57 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610041827, // Updated to current timestamp
+  buildNumber: 202610042332, // Updated to current timestamp
   releaseDate: '2026-10-04',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'add demo/tech videos, demo page, one-page PDF report, and source zip',
-    'add --local-proof flag to dev:all for the LocalProof site',
-    'add version tracker, release script, and footer display',
-    'add apex_target toggle for GitHub Pages cutover',
-    'redesign LocalProof public website',
-    'add lightweight offline portal',
-    'add captive portal firmware',
-    'add ESP8266 PlatformIO config',
-    'add LocalPass offline tourism MVP'
+    'add calendar subscriptions in settings'
   ],
   bugfixes: [
-    'resolve claim_port subshell bug that broke duplicate-port detection',
-    'give the labeled illustration and trust-strip a nameable role',
-    'honor reduced motion and contrast',
-    'address PR review findings (subtree history, release push/guard)',
-    'exclude apps/localpass from typecheck-changed\'s mobile sandbox',
-    'regenerate lockfile, adopt shared UI, add real coverage'
+    'publish complete agenda subscriptions',
+    'resolve local BSL assets and OAuth errors',
+    'create logos/bsl directory to stop Metro ENOENT error loop'
   ],
   breakingChanges: [],
-  notes: 'add demo/tech videos, demo page, one-page PDF report, and source zip; add --local-proof flag to dev:all for the LocalProof site; add version tracker, release script, and footer display; add apex_target toggle for GitHub Pages cutover; redesign LocalProof public website; add lightweight offline portal; add captive portal firmware; add ESP8266 PlatformIO config; add LocalPass offline tourism MVP; resolve claim_port subshell bug that broke duplicate-port detection; give the labeled illustration and trust-strip a nameable role; honor reduced motion and contrast; address PR review findings (subtree history, release push/guard); exclude apps/localpass from typecheck-changed\'s mobile sandbox; regenerate lockfile, adopt shared UI, add real coverage'
+  notes: 'add calendar subscriptions in settings; publish complete agenda subscriptions; resolve local BSL assets and OAuth errors; create logos/bsl directory to stop Metro ENOENT error loop'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.97': {
+    version: '1.9.97',
+    buildNumber: 202610042332,
+    releaseDate: '2026-10-04',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'add calendar subscriptions in settings'
+    ],
+    bugfixes: [
+      'publish complete agenda subscriptions',
+      'resolve local BSL assets and OAuth errors',
+      'create logos/bsl directory to stop Metro ENOENT error loop'
+    ],
+    breakingChanges: [],
+    notes: 'add calendar subscriptions in settings; publish complete agenda subscriptions; resolve local BSL assets and OAuth errors; create logos/bsl directory to stop Metro ENOENT error loop'
+  },
+  '1.9.96': {
+    version: '1.9.96',
+    buildNumber: 202610042325,
+    releaseDate: '2026-10-04',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'resolve local BSL assets and OAuth errors',
+      'create logos/bsl directory to stop Metro ENOENT error loop'
+    ],
+    breakingChanges: [],
+    notes: 'resolve local BSL assets and OAuth errors; create logos/bsl directory to stop Metro ENOENT error loop'
+  },
   '1.9.95': {
     version: '1.9.95',
     buildNumber: 202610041827,

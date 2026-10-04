@@ -72,6 +72,15 @@ const TOUR_BRAND_ASSETS: Record<string, TourBrandAsset> = {
 };
 
 const EVENT_IMAGE_ASSETS: Record<string, ImageSourcePropType> = {
+  // Event records created before the public-asset prefix was standardized
+  // still contain `/logos/...`. Treat those legacy URLs as bundled assets so
+  // Metro never attempts to resolve a filesystem path under `logos/bsl`.
+  '/logos/bsl/bsl-ontour-pro.svg': BSL_ONTOUR_LOGO,
+  '/logos/bsl/bsl-peru-pro.svg': BSL_PERU_LOGO,
+  '/logos/bsl/bsl-chile-pro.svg': BSL_CHILE_LOGO,
+  '/logos/bsl/bsl-colombia-pro.svg': BSL_COLOMBIA_LOGO,
+  '/logos/bsl/BSL-Logo-fondo-oscuro-2024.svg': BSL_ARCHIVE_LOGO,
+  '/logos/bsl/bsl-white.png': BSL_PLAIN_LOGO,
   '/assets/logos/bsl/bsl-ontour-pro.svg': BSL_ONTOUR_LOGO,
   '/assets/logos/bsl/bsl-peru-pro.svg': BSL_PERU_LOGO,
   '/assets/logos/bsl/bsl-chile-pro.svg': BSL_CHILE_LOGO,

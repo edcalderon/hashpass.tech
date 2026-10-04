@@ -16,13 +16,18 @@ import { t } from '@lingui/macro';
 import { useTutorialPreferences } from '../../../hooks/useTutorialPreferences';
 import { useAuth } from '../../../hooks/useAuth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { apiClient } from '../../../lib/api-client';
+import { apiClient, getRuntimeApiBaseUrl } from '../../../lib/api-client';
 import { getHashpassWebOrigin } from '../../../lib/hashpass-web-url';
 import { buildEventPath } from '../../../lib/event-path';
 import VersionDetailsModal from '../../../components/VersionDetailsModal';
 import { clearNativeGoogleAccount } from '../../../lib/native-google-signin';
 import { shouldUseNativeGoogleSignin } from '../../../lib/native-google-signin-config';
 import { resolveGoogleOAuthClientId } from '../../../lib/auth/oauth/google-credentials';
+import {
+  buildCalendarFeedUrl,
+  buildCalendarProviderUrl,
+  type CalendarProvider,
+} from '../../../lib/calendar-subscription';
 
 export default function SettingsScreen() {
   const [notifications, setNotifications] = useState(true);
@@ -150,6 +155,35 @@ export default function SettingsScreen() {
   const clearGoogleAccount = async () => {
     if (!isNativeGoogleSigninActive) return;
     await clearNativeGoogleAccount();
+  };
+
+  const connectCalendar = async (provider: CalendarProvider) => {
+    const feedUrl = buildCalendarFeedUrl(getRuntimeApiBaseUrl());
+    const providerUrl = buildCalendarProviderUrl(provider, feedUrl);
+
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      await Linking.openURL(providerUrl);
+
+      if (provider === 'notion') {
+        showInfo(
+          tSettings('calendarConnections.notionHelpTitle', 'Finish in Notion Calendar'),
+          tSettings(
+            'calendarConnections.notionHelpBody',
+            'Notion Calendar cannot subscribe to a calendar URL directly. Add HASHPASS to Google Calendar first, then connect that Google account in Notion Calendar.',
+          ),
+        );
+      }
+    } catch (error) {
+      console.error(`Failed to open ${provider} calendar:`, error);
+      showError(
+        tSettings('calendarConnections.openFailedTitle', 'Calendar could not open'),
+        tSettings(
+          'calendarConnections.openFailedBody',
+          'Install the calendar app or try again from a supported browser.',
+        ),
+      );
+    }
   };
 
   const handleClearCache = async () => {
@@ -502,6 +536,46 @@ export default function SettingsScreen() {
                 thumbColor={showAllTenants ? '#4f46e5' : '#f3f4f6'}
               />
             ),
+          })}
+        </View>
+
+        {/* Calendar Connections */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>
+            {tSettings('calendarConnections.title', 'Calendar Connections')}
+          </Text>
+
+          {renderSettingItem({
+            icon: 'logo-google',
+            title: tSettings('calendarConnections.googleTitle', 'Google Calendar'),
+            subtitle: tSettings(
+              'calendarConnections.googleSubtitle',
+              'Subscribe to live HASHPASS event schedules',
+            ),
+            onPress: () => connectCalendar('google'),
+            showChevron: true,
+          })}
+
+          {renderSettingItem({
+            icon: 'logo-apple',
+            title: tSettings('calendarConnections.appleTitle', 'Apple Calendar'),
+            subtitle: tSettings(
+              'calendarConnections.appleSubtitle',
+              'Add the HASHPASS schedule as a subscribed calendar',
+            ),
+            onPress: () => connectCalendar('apple'),
+            showChevron: true,
+          })}
+
+          {renderSettingItem({
+            icon: 'calendar-outline',
+            title: tSettings('calendarConnections.notionTitle', 'Notion Calendar'),
+            subtitle: tSettings(
+              'calendarConnections.notionSubtitle',
+              'Use the connected Google calendar in Notion Calendar',
+            ),
+            onPress: () => connectCalendar('notion'),
+            showChevron: true,
           })}
         </View>
 

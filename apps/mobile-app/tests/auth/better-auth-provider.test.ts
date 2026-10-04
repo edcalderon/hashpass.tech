@@ -226,6 +226,7 @@ describe('BetterAuthProvider', () => {
       expect.objectContaining({
         provider: 'google',
         callbackURL: 'https://hashpass.tech/auth/callback?returnTo=%2Fdashboard%2Fexplore',
+        errorCallbackURL: 'https://hashpass.tech/auth',
         disableRedirect: true,
       })
     );
