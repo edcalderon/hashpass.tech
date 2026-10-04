@@ -5,7 +5,7 @@
 <p align="center"><strong>Offline tourism intelligence for real-world destinations.</strong></p>
 
 <!-- LOCALPASS_RELEASE:START -->
-> **Current MVP release:** Preparing the next LocalPass release. See [CHANGELOG.md](./CHANGELOG.md).
+> **Current MVP release:** [v0.1.1](./CHANGELOG.md) · stable · 2026-10-04
 <!-- LOCALPASS_RELEASE:END -->
 
 LocalPass is a bilingual, offline-first tourism MVP for Guatapé, Colombia. It keeps practical destination guidance useful when connectivity is unreliable: the traveler downloads a compact local pack once, then searches, plans, switches language, and accesses essentials entirely on their device.
