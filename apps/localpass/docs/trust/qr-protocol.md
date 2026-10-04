@@ -43,8 +43,18 @@ The QR should carry only a compact opaque token or resolver reference, not the e
 Example online resolver:
 
 ```text
-https://localpass.link/q/7KmQ2
+https://localproof.org/q/7KmQ2
 ```
+
+`localproof.org` is this app's own live, project-controlled domain (see
+`packages/infra/terraform/stacks/localproof` and
+[DEPLOYMENT_MAP.md](../../../docs/docs/infra/DEPLOYMENT_MAP.md)), not an
+unreserved third-party-ownable name — a device encoding this domain in a QR
+code cannot be redirected to an unrelated registrant the way an unprovisioned
+domain could. The `/q/<token>` resolver endpoint itself is not implemented
+yet (the domain currently serves the static offline-tourism web app only);
+building it is a prerequisite for shipping connected mode, not an assumption
+this protocol gets to skip.
 
 ## Online and offline modes
 
@@ -57,7 +67,7 @@ Therefore LocalPass Guide should intentionally support two QR presentation modes
 Display:
 
 ```text
-https://localpass.link/q/<token>
+https://localproof.org/q/<token>
 ```
 
 The cloud resolver returns the active guide/place context.
