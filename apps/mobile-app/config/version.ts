@@ -22,23 +22,41 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610042325, // Updated to current timestamp
+  buildNumber: 202610042332, // Updated to current timestamp
   releaseDate: '2026-10-04',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    // No new features
+    'add calendar subscriptions in settings'
   ],
   bugfixes: [
+    'publish complete agenda subscriptions',
     'resolve local BSL assets and OAuth errors',
     'create logos/bsl directory to stop Metro ENOENT error loop'
   ],
   breakingChanges: [],
-  notes: 'resolve local BSL assets and OAuth errors; create logos/bsl directory to stop Metro ENOENT error loop'
+  notes: 'add calendar subscriptions in settings; publish complete agenda subscriptions; resolve local BSL assets and OAuth errors; create logos/bsl directory to stop Metro ENOENT error loop'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.97': {
+    version: '1.9.97',
+    buildNumber: 202610042332,
+    releaseDate: '2026-10-04',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'add calendar subscriptions in settings'
+    ],
+    bugfixes: [
+      'publish complete agenda subscriptions',
+      'resolve local BSL assets and OAuth errors',
+      'create logos/bsl directory to stop Metro ENOENT error loop'
+    ],
+    breakingChanges: [],
+    notes: 'add calendar subscriptions in settings; publish complete agenda subscriptions; resolve local BSL assets and OAuth errors; create logos/bsl directory to stop Metro ENOENT error loop'
+  },
   '1.9.96': {
     version: '1.9.96',
     buildNumber: 202610042325,

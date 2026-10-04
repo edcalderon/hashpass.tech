@@ -20,14 +20,20 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.96)
+## 📋 Latest Changes (v1.9.97)
 
 ### Bug Fixes
 
+* **calendar:** publish complete agenda subscriptions ([2220ae0](https://github.com/hashpass-tech/hashpass.tech/commit/2220ae08e9ed451ba911bb152ff23f805e27a61b))
 * **mobile:** create logos/bsl directory to stop Metro ENOENT error loop ([0fcd207](https://github.com/hashpass-tech/hashpass.tech/commit/0fcd207534e689dfb0e43925e49e0239f581df9b))
 * **mobile:** resolve local BSL assets and OAuth errors ([30521bb](https://github.com/hashpass-tech/hashpass.tech/commit/30521bb14cb5397b84a36ef5e3afdebd71957a77))
+
+
+### Features
+
+* add calendar subscriptions in settings ([48ae613](https://github.com/hashpass-tech/hashpass.tech/commit/48ae61320f5ba95883c1621e847790bced84a0e7))
 ### Release Highlights
-- resolve local BSL assets and OAuth errors; create logos/bsl directory to stop Metro ENOENT error loop
+- add calendar subscriptions in settings; publish complete agenda subscriptions; resolve local BSL assets and OAuth errors; create logos/bsl directory to stop Metro ENOENT error loop
 
 ### Release scope
 - Compared with: `v1.9.95` (the previous global release tag)
