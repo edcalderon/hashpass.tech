@@ -215,6 +215,59 @@ describe("EventInfoScreen", () => {
     }
   });
 
+  it("hides the Explore entry points whose section is gated private (agenda_public/speakers_public=false, db/migrations/V109)", async () => {
+    mockEvent = COLOMBIA_EVENT;
+    const renderer = await renderScreen(
+      {
+        success: true,
+        data: {
+          data: {
+            description: "The real Colombia 2026 description from the DB.",
+            venue_name: "Corferias",
+            agenda_public: false,
+            speakers_public: false,
+          },
+        },
+      },
+    );
+
+    try {
+      const text = findAllText(renderer).join(" | ");
+      expect(text).not.toContain("Agenda");
+      expect(text).not.toContain("Speakers");
+      expect(
+        renderer.root.findAllByProps({ testID: "event-info-explore-section" }),
+      ).toHaveLength(0);
+    } finally {
+      act(() => renderer.unmount());
+    }
+  });
+
+  it("shows only the open Explore entry point when just one of agenda_public/speakers_public is false", async () => {
+    mockEvent = COLOMBIA_EVENT;
+    const renderer = await renderScreen(
+      {
+        success: true,
+        data: {
+          data: {
+            description: "The real Colombia 2026 description from the DB.",
+            venue_name: "Corferias",
+            agenda_public: false,
+            speakers_public: true,
+          },
+        },
+      },
+    );
+
+    try {
+      const text = findAllText(renderer).join(" | ");
+      expect(text).not.toContain("Agenda");
+      expect(text).toContain("Speakers");
+    } finally {
+      act(() => renderer.unmount());
+    }
+  });
+
   it("bounds the content width and reflows from a linear mobile order into two desktop columns", async () => {
     mockEvent = COLOMBIA_EVENT;
     const detailsResponse = {

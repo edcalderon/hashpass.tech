@@ -756,6 +756,32 @@ describe('event schedule screens', () => {
     });
   });
 
+  it('shows the private-directory state instead of falling back to the bundled schedule when agenda_public=false (db/migrations/V109)', async () => {
+    mockActiveEvent = {
+      ...mockEvent,
+      agenda: [{ id: 'bundled-session', day: '1', time: '09:00', title: 'Bundled fallback session', type: 'keynote' }],
+    };
+    mockApiRequest.mockResolvedValue({ success: true, data: { public: false } });
+
+    let renderer: TestRenderer.ReactTestRenderer;
+    await act(async () => {
+      renderer = TestRenderer.create(<AgendaScreen />);
+      await flushPromises();
+      await flushPromises();
+    });
+
+    expect(renderer!.root.findByProps({ children: 'empty.privateTitle' })).toBeTruthy();
+    expect(renderer!.root.findByProps({ children: 'empty.privateSubtitle' })).toBeTruthy();
+    // Never falls back to the event's bundled static schedule just because
+    // the real agenda came back empty -- that would defeat the gate.
+    expect(JSON.stringify(renderer!.toJSON())).not.toContain('Bundled fallback session');
+    // No retry affordance -- retrying can't change the organizer's
+    // visibility setting.
+    expect(renderer!.root.findAllByProps({ accessibilityLabel: 'empty.retry' })).toHaveLength(0);
+
+    await act(async () => renderer!.unmount());
+  });
+
   it('opens the calendar picker and sends the selected session to Google Calendar', async () => {
     const renderer = await renderCalendarAgenda();
     await openCalendarPicker(renderer);

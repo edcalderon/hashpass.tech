@@ -297,6 +297,31 @@ describe('speaker detail screen', () => {
     await act(async () => renderer.unmount());
   });
 
+  it('does not fall back to the configured speaker when speakers_public=false (db/migrations/V109)', async () => {
+    mockEventSpeakers = [{ ...speaker, image: 'ada.png' }];
+    mockApiRequest.mockImplementation((path: string, options?: { method?: string }) =>
+      path === 'events/bsl/speakers/speaker-1'
+        ? Promise.resolve({ success: true, data: { public: false } })
+        : defaultApiResponse(path, options),
+    );
+
+    let renderer: any;
+    await act(async () => {
+      renderer = create(<SpeakerDetail />);
+      await flushPromises();
+    });
+
+    expect(mockShowError).toHaveBeenCalledWith(
+      'Speaker Not Available',
+      'This event has not made its speaker directory public yet.',
+    );
+    // Never falls back to the event's bundled speaker config just because
+    // the real speaker lookup came back empty -- that would defeat the gate.
+    expect(() => renderer.root.findByProps({ children: 'Ada Lovelace' })).toThrow();
+
+    await act(async () => renderer.unmount());
+  });
+
   it('validates request capacity with the event limits API before submitting a meeting request', async () => {
     let renderer: any;
     await act(async () => {

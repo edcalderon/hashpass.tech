@@ -175,6 +175,25 @@ describe('speaker directory', () => {
     await act(async () => renderer!.unmount());
   });
 
+  it('shows the directory-not-public state instead of falling back to configured speakers when speakers_public=false (db/migrations/V109)', async () => {
+    mockEventSpeakers = [{ id: 'configured-speaker', name: 'Configured Speaker', title: 'Moderator', company: 'Hashpass' }];
+    mockApiRequest.mockReset().mockResolvedValue({ success: true, data: { public: false } });
+
+    let renderer: ReturnType<typeof create>;
+    await act(async () => {
+      renderer = create(<SpeakersCalendar />);
+      await flushPromises();
+    });
+
+    expect(renderer!.root.findByProps({ children: 'Speaker directory not public yet' })).toBeTruthy();
+    // Never falls back to the event's bundled speaker config just because
+    // the real directory came back empty -- that would defeat the gate.
+    expect(JSON.stringify(renderer!.toJSON())).not.toContain('Configured Speaker');
+    expect(mockRouterPush).not.toHaveBeenCalled();
+
+    await act(async () => renderer!.unmount());
+  });
+
   it('uses non-interactive fallback speakers when the database returns no records', async () => {
     mockDbSpeakers = [];
     mockEventSpeakers = [{
