@@ -1250,7 +1250,9 @@
       "title": "Aucun programme disponible",
       "subtitle": "Revenez plus tard pour consulter le programme de l'événement",
       "noLiveData": "Aucune donnée de programme en direct",
-      "retry": "Recharger le programme"
+      "retry": "Recharger le programme",
+      "privateTitle": "Programme pas encore public",
+      "privateSubtitle": "L'organisateur n'a pas encore rendu public le programme de cet événement"
     },
     "badges": {
       "past": "PASSÉ"

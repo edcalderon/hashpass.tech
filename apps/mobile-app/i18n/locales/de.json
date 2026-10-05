@@ -1249,7 +1249,9 @@
       "title": "Keine Agenda verfügbar",
       "subtitle": "Schauen Sie später für den Veranstaltungsplan wieder vorbei",
       "noLiveData": "Keine Live-Agendadaten",
-      "retry": "Agenda neu laden"
+      "retry": "Agenda neu laden",
+      "privateTitle": "Agenda noch nicht öffentlich",
+      "privateSubtitle": "Der Veranstalter hat den Zeitplan dieser Veranstaltung noch nicht veröffentlicht"
     },
     "badges": {
       "past": "VERGANGEN"

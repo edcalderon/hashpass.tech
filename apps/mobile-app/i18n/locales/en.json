@@ -1607,7 +1607,9 @@
       "title": "No agenda available",
       "subtitle": "Check back later for the event schedule",
       "noLiveData": "No live agenda data",
-      "retry": "Reload agenda"
+      "retry": "Reload agenda",
+      "privateTitle": "Agenda not public yet",
+      "privateSubtitle": "The organizer hasn't made this event's schedule public"
     },
     "badges": {
       "past": "PAST"
