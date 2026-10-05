@@ -230,6 +230,9 @@ describe('BetterAuthProvider', () => {
         disableRedirect: true,
       })
     );
+    expect(mockCreateAuthClient).toHaveBeenCalledWith(expect.objectContaining({
+      fetchOptions: { credentials: 'include' },
+    }));
     expect(locationReplace).toHaveBeenCalledWith('https://accounts.google.com/o/oauth2/v2/auth?state=test');
     expect(result.pending).toBe(true);
   });
@@ -288,6 +291,7 @@ describe('BetterAuthProvider', () => {
         baseURL: 'https://api.hashpass.tech/api/auth',
         plugins: [expect.objectContaining({ id: 'oauth-provider-client' })],
         fetchOptions: {
+          credentials: 'include',
           headers: {
             Origin: 'https://hashpass.tech',
             Referer: 'https://hashpass.tech/',

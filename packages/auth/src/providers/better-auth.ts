@@ -102,13 +102,14 @@ export class BetterAuthProvider implements IAuthProvider {
       this.client = createAuthClient({
         baseURL,
         plugins: [oauthProviderClient()],
-        ...(nativeTrustedOriginHeaders
-          ? {
-              fetchOptions: {
-                headers: nativeTrustedOriginHeaders,
-              },
-            }
-          : {}),
+        // Local Expo web runs on localhost while Better Auth lives on the
+        // environment API origin. Explicit credentials are required for both
+        // the OAuth state cookie on sign-in and the session cookie on the
+        // callback session probe; the browser's default is same-origin.
+        fetchOptions: {
+          credentials: 'include',
+          ...(nativeTrustedOriginHeaders ? { headers: nativeTrustedOriginHeaders } : {}),
+        },
       });
       this.clientBaseURL = baseURL;
     }
