@@ -33,7 +33,7 @@ const mockFrom = jest.fn((table: string) =>
   table === "events" ? mockCreateEventsQuery() : mockCreateQuery(),
 );
 const mockResolveNotificationIdentity = jest.fn();
-const mockIsResolveIdentityError = jest.fn(() => false);
+const mockIsResolveIdentityError = jest.fn();
 
 function mockCreateQuery(): Record<string, unknown> {
   const query: Record<string, unknown> = {
