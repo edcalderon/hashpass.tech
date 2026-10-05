@@ -236,23 +236,11 @@ jest.mock('../../lib/supabase', () => ({
   },
 }));
 
-import AgendaScreen, { agendaTypeRevealTestId } from '../../app/events/[eventSlug]/agenda';
+import AgendaScreen from '../../app/events/[eventSlug]/agenda';
 import MyScheduleScreen from '../../app/events/[eventSlug]/networking/my-schedule';
 import { getDisplayAgendaDescription } from '../../lib/agenda-description';
 
 const flushPromises = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
-
-// process.env.NODE_ENV is typed read-only in this repo's TS config, even
-// though Jest's Node runtime allows the mutation fine. Object.defineProperty
-// sidesteps the type error without an `as any` cast at every call site.
-function setNodeEnv(value: string | undefined) {
-  Object.defineProperty(process.env, 'NODE_ENV', {
-    value,
-    configurable: true,
-    enumerable: true,
-    writable: true,
-  });
-}
 
 describe('event schedule screens', () => {
   it('keeps ingestion metadata out of user-facing agenda descriptions', () => {
@@ -403,55 +391,7 @@ describe('event schedule screens', () => {
       expect.objectContaining({ key: 'networking', color: '#00A6C7' }),
       expect.objectContaining({ key: 'registration', color: '#8E8E93' }),
     ]));
-    const typeLegend = renderer!.root.findByProps({ testID: 'agenda-type-legend' });
-    expect(typeLegend.findAll((node) => String(node.props.testID || '').startsWith('agenda-type-legend-'))).toHaveLength(7);
-    const keynoteLegend = typeLegend.findByProps({ testID: 'agenda-type-legend-keynote' });
-    expect(keynoteLegend.findByType('NativeSafeIcon' as any).props.name).toBe('mic');
-    expect(keynoteLegend.findByType('NativeSafeIcon' as any).props.color).toBe('#007AFF');
-    expect(keynoteLegend.props.accessibilityState.expanded).toBe(false);
-    await act(async () => {
-      keynoteLegend.props.onHoverIn();
-    });
-    expect(
-      renderer!.root.findByProps({ testID: 'agenda-type-legend-keynote' })
-        .props.accessibilityState.expanded,
-    ).toBe(true);
-    await act(async () => {
-      renderer!.root.findByProps({ testID: 'agenda-type-legend-keynote' }).props.onPress();
-    });
-    expect(
-      renderer!.root.findByProps({ testID: 'agenda-type-legend-keynote' })
-        .props.accessibilityState.expanded,
-    ).toBe(false);
-    await act(async () => {
-      renderer!.root.findByProps({ testID: 'agenda-type-legend-keynote' }).props.onHoverOut();
-    });
-    expect(
-      renderer!.root.findByProps({ testID: 'agenda-type-legend-keynote' })
-        .props.accessibilityState.expanded,
-    ).toBe(false);
-    jest.useFakeTimers();
-    try {
-      await act(async () => {
-        renderer!.root.findByProps({ testID: 'agenda-type-legend-keynote' }).props.onPress();
-      });
-      await act(async () => {
-        renderer!.root.findByProps({ testID: 'agenda-type-legend-keynote' }).props.onFocus();
-      });
-      expect(
-        renderer!.root.findByProps({ testID: 'agenda-type-legend-keynote' })
-          .props.accessibilityState.expanded,
-      ).toBe(true);
-      await act(async () => {
-        jest.advanceTimersByTime(3_000);
-      });
-      expect(
-        renderer!.root.findByProps({ testID: 'agenda-type-legend-keynote' })
-          .props.accessibilityState.expanded,
-      ).toBe(false);
-    } finally {
-      jest.useRealTimers();
-    }
+    expect(renderer!.root.findAllByProps({ testID: 'agenda-type-legend' })).toHaveLength(0);
     expect(agendaSource).not.toContain('isCompactLayout && styles.actionButtonsCompact');
 
     await act(async () => {
@@ -657,75 +597,14 @@ describe('event schedule screens', () => {
     expect(renderer!.root.findByProps({ children: 'Auditorio Principal' })).toBeTruthy();
     const networkingMedia = renderer!.root.findByProps({ testID: 'agenda-card-media-networking-session' });
     expect(networkingMedia.findAllByType('NativeSafeIcon' as any).some((node) => node.props.name === 'people')).toBe(false);
-    const networkingWatermark = renderer!.root.findByProps({ testID: 'agenda-card-type-watermark-networking-session' });
-    const networkingShell = renderer!.root.findByProps({ testID: 'agenda-card-type-shell-networking-session' });
-    const networkingCollapsedIcon = renderer!.root
-      .findByProps({ testID: 'agenda-card-type-collapsed-icon-networking-session' });
-    expect(networkingWatermark.props.accessibilityState.expanded).toBe(false);
-    expect(networkingCollapsedIcon.findByType('NativeSafeIcon' as any).props.name).toBe('people');
-    expect(networkingCollapsedIcon.findByType('NativeSafeIcon' as any).props.color).toBe('#00A6C752');
-    expect(networkingShell.props.style).toEqual(expect.arrayContaining([
-      expect.objectContaining({ backgroundColor: '#00A6C71A' }),
-    ]));
-    expect(networkingWatermark.findByProps({ testID: 'agenda-card-type-layer-networking-session' })).toBeTruthy();
-    expect(networkingWatermark.findByProps({ children: 'TYPES.NETWORKING' })).toBeTruthy();
-    await act(async () => {
-      networkingWatermark.props.onHoverIn();
-    });
-    expect(
-      renderer!.root.findByProps({ testID: 'agenda-card-type-watermark-networking-session' })
-        .props.accessibilityState.expanded,
-    ).toBe(true);
-    await act(async () => {
-      renderer!.root.findByProps({ testID: 'agenda-card-type-watermark-networking-session' }).props.onHoverOut();
-    });
-    expect(
-      renderer!.root.findByProps({ testID: 'agenda-card-type-watermark-networking-session' })
-        .props.accessibilityState.expanded,
-    ).toBe(false);
-    jest.useFakeTimers();
-    try {
-      await act(async () => {
-        renderer!.root.findByProps({ testID: 'agenda-card-type-watermark-networking-session' }).props.onPress();
-      });
-      expect(
-        renderer!.root.findByProps({ testID: 'agenda-card-type-watermark-networking-session' })
-          .props.accessibilityState.expanded,
-      ).toBe(true);
-      await act(async () => {
-        renderer!.root.findByProps({ testID: 'agenda-card-type-watermark-networking-session' }).props.onPress();
-      });
-      expect(
-        renderer!.root.findByProps({ testID: 'agenda-card-type-watermark-networking-session' })
-          .props.accessibilityState.expanded,
-      ).toBe(false);
-      await act(async () => {
-        renderer!.root.findByProps({ testID: 'agenda-card-type-watermark-networking-session' }).props.onPress();
-      });
-      expect(
-        renderer!.root.findByProps({ testID: 'agenda-card-type-watermark-networking-session' })
-          .props.accessibilityState.expanded,
-      ).toBe(true);
-      await act(async () => {
-        jest.advanceTimersByTime(3_000);
-      });
-      expect(
-        renderer!.root.findByProps({ testID: 'agenda-card-type-watermark-networking-session' })
-          .props.accessibilityState.expanded,
-      ).toBe(false);
-    } finally {
-      jest.useRealTimers();
-    }
+    const networkingCard = renderer!.root.findByProps({ testID: 'agenda-card-networking-session' });
+    expect(networkingCard.findAllByProps({ children: 'TYPES.NETWORKING' }).length).toBeGreaterThan(0);
+    expect(networkingCard.findAllByProps({ accessibilityLabel: 'types.revealLabel' })).toHaveLength(0);
     expect(networkingMedia.findByProps({ testID: 'agenda-card-venue-networking-session' })).toBeTruthy();
     const panelMedia = renderer!.root.findByProps({ testID: 'agenda-card-media-panel-session' });
     expect(panelMedia.findByProps({ testID: 'agenda-card-venue-panel-session' })).toBeTruthy();
     const workshopMedia = renderer!.root.findByProps({ testID: 'agenda-card-media-workshop-session' });
     expect(workshopMedia.findAllByType('NativeSafeIcon' as any).some((node) => node.props.name === 'build')).toBe(false);
-    expect(
-      renderer!.root
-        .findByProps({ testID: 'agenda-card-type-collapsed-icon-workshop-session' })
-        .findByType('NativeSafeIcon' as any).props.name,
-    ).toBe('build');
     expect(workshopMedia.findAllByProps({ testID: 'agenda-card-venue-workshop-session' })).toHaveLength(0);
 
     const gridButton = renderer!.root.findByProps({ accessibilityLabel: 'viewMode.grid' });
@@ -765,36 +644,6 @@ describe('event schedule screens', () => {
     expect(scheduleLabel.length).toBeGreaterThan(0);
 
     await act(async () => renderer.unmount());
-  });
-
-  it('omits agenda type-reveal testIDs on production web builds', () => {
-    // Rendering the full screen under a mutated NODE_ENV would also flip
-    // unrelated dev/prod branching deep in react-native-css-interop's
-    // render runtime, so exercise the extracted, pure decision directly
-    // instead of round-tripping it through a component tree.
-    const rn = require('react-native');
-    const originalPlatformOs = rn.Platform.OS;
-    const originalNodeEnv = process.env.NODE_ENV;
-    try {
-      rn.Platform.OS = 'web';
-
-      setNodeEnv('test');
-      expect(agendaTypeRevealTestId('agenda-card-type-shell-item')).toEqual({
-        testID: 'agenda-card-type-shell-item',
-      });
-
-      setNodeEnv('production');
-      expect(agendaTypeRevealTestId('agenda-card-type-shell-item')).toEqual({});
-
-      // Native platforms always keep the testID, regardless of NODE_ENV.
-      rn.Platform.OS = 'ios';
-      expect(agendaTypeRevealTestId('agenda-card-type-shell-item')).toEqual({
-        testID: 'agenda-card-type-shell-item',
-      });
-    } finally {
-      rn.Platform.OS = originalPlatformOs;
-      setNodeEnv(originalNodeEnv);
-    }
   });
 
   it('keeps a configured speaker portrait when the directory record has no image', async () => {
