@@ -1,0 +1,87 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Outer coin gradient -->
+    <radialGradient id="outerCoin" cx="30%" cy="20%" r="90%">
+      <stop offset="0%" stop-color="#FFE9A6"/>
+      <stop offset="45%" stop-color="#F4BD48"/>
+      <stop offset="70%" stop-color="#E39A24"/>
+      <stop offset="100%" stop-color="#8A4B0F"/>
+    </radialGradient>
+
+    <!-- Inner coin gradient -->
+    <radialGradient id="innerCoin" cx="30%" cy="20%" r="90%">
+      <stop offset="0%" stop-color="#111827"/>
+      <stop offset="45%" stop-color="#020617"/>
+      <stop offset="100%" stop-color="#000000"/>
+    </radialGradient>
+
+    <!-- LUKAS text gradient -->
+    <linearGradient id="lukasGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FFF7E6"/>
+      <stop offset="50%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#BEE3F8"/>
+    </linearGradient>
+
+    <!-- Five-asset arc colors -->
+    <linearGradient id="arcBRL" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00A64F"/>
+      <stop offset="100%" stop-color="#FCD116"/>
+    </linearGradient>
+    <linearGradient id="arcMXN" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#006847"/>
+      <stop offset="50%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#CE1126"/>
+    </linearGradient>
+    <linearGradient id="arcCOP" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FCD116"/>
+      <stop offset="50%" stop-color="#003893"/>
+      <stop offset="100%" stop-color="#CE1126"/>
+    </linearGradient>
+    <linearGradient id="arcCLP" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0039A6"/>
+      <stop offset="50%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#D52B1E"/>
+    </linearGradient>
+    <linearGradient id="arcARS" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#75AADB"/>
+      <stop offset="50%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#75AADB"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Coin base -->
+  <circle cx="256" cy="256" r="180" fill="url(#outerCoin)" stroke="#422006" stroke-width="8"/>
+  <!-- Inner rim -->
+  <circle cx="256" cy="256" r="152" fill="none" stroke="#FACC15" stroke-width="8" opacity="0.9"/>
+  <circle cx="256" cy="256" r="140" fill="url(#innerCoin)" stroke="#0F172A" stroke-width="4"/>
+
+  <!-- LatAm basket arcs -->
+  <g transform="translate(256 256)">
+    <!-- BRL 40% -->
+    <path d="M0 -128 A128 128 0 0 1 102 75 L84 62 A104 104 0 0 0 0 -104 Z"
+          fill="url(#arcBRL)" opacity="0.95"/>
+    <!-- MXN 30% -->
+    <path d="M102 75 A128 128 0 0 1 0 128 L0 104 A104 104 0 0 0 84 62 Z"
+          fill="url(#arcMXN)" opacity="0.95"/>
+    <!-- COP 15% -->
+    <path d="M0 128 A128 128 0 0 1 -80 98 L-66 79 A104 104 0 0 0 0 104 Z"
+          fill="url(#arcCOP)" opacity="0.95"/>
+    <!-- CLP 10% -->
+    <path d="M-80 98 A128 128 0 0 1 -118 30 L-95 24 A104 104 0 0 0 -66 79 Z"
+          fill="url(#arcCLP)" opacity="0.95"/>
+    <!-- ARS 5% -->
+    <path d="M-118 30 A128 128 0 0 1 -96 -92 L-77 -74 A104 104 0 0 0 -95 24 Z"
+          fill="url(#arcARS)" opacity="0.95"/>
+  </g>
+
+  <!-- Inner shield -->
+  <circle cx="256" cy="256" r="82" fill="#020617" stroke="#FACC15" stroke-width="2" opacity="0.96"/>
+
+  <!-- LUKAS wordmark -->
+  <text x="256" y="265" text-anchor="middle"
+        font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+        font-size="36" font-weight="900"
+        fill="url(#lukasGrad)" letter-spacing="4">
+    $LUKAS
+  </text>
+</svg>

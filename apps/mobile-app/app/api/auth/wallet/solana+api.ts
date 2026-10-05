@@ -1,10 +1,20 @@
 import { getSupabaseServerForRequest } from '../../../../lib/supabase-server';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': 'https://lukas.hashpass.tech',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
+
+export function OPTIONS() {
+  return new Response(null, { status: 204, headers: corsHeaders });
+}
 import { PublicKey } from '@solana/web3.js';
 import bs58 from 'bs58';
 import { syncPublicUserRegistry } from '../../../../lib/auth/public-user-registry';
 
 function badRequest(message: string) {
-  return new Response(JSON.stringify({ error: message }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+  return new Response(JSON.stringify({ error: message }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
 }
 
 /**
@@ -41,7 +51,7 @@ export async function POST(request: Request) {
 
     if (rateLimitError) {
       console.error('Rate limit check error:', rateLimitError);
-      return new Response(JSON.stringify({ error: 'Rate limit check failed' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+      return new Response(JSON.stringify({ error: 'Rate limit check failed' }), { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
     }
 
     if (rateLimitData && rateLimitData.length > 0) {
@@ -50,7 +60,7 @@ export async function POST(request: Request) {
         return new Response(JSON.stringify({
           error: 'Too many authentication attempts. Please try again later.',
           blockedUntil: rateLimit.blocked_until
-        }), { status: 429, headers: { 'Content-Type': 'application/json' } });
+        }), { status: 429, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
       }
     }
 
@@ -82,6 +92,18 @@ export async function POST(request: Request) {
       return badRequest('Challenge expired. Please request a new one.');
     }
 
+    // An authenticated HashPass user may attach another wallet. A wallet that
+    // is already linked to a different user is never reassigned.
+    const accessToken = request.headers.get('authorization')?.match(/^Bearer\s+(.+)$/i)?.[1];
+    let authenticatedUserId: string | null = null;
+    if (accessToken) {
+      const { data: authenticated } = await supabase.auth.getUser(accessToken);
+      authenticatedUserId = authenticated.user?.id ?? null;
+    }
+    if (authenticatedUserId && walletAuth.user_id && walletAuth.user_id !== authenticatedUserId) {
+      return new Response(JSON.stringify({ error: 'This wallet is already linked to another user.' }), { status: 409, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+    }
+
     // Verify signature
     try {
       const publicKey = new PublicKey(walletAddress);
@@ -94,15 +116,15 @@ export async function POST(request: Request) {
       const isValid = await verify(signatureBytes, messageBytes, publicKeyBytes);
 
       if (!isValid) {
-        return new Response(JSON.stringify({ error: 'Invalid signature' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
+        return new Response(JSON.stringify({ error: 'Invalid signature' }), { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
       }
     } catch (error: any) {
       console.error('Signature verification error:', error);
-      return new Response(JSON.stringify({ error: 'Signature verification failed: ' + error.message }), { status: 401, headers: { 'Content-Type': 'application/json' } });
+      return new Response(JSON.stringify({ error: 'Signature verification failed: ' + error.message }), { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
     }
 
     // Get or create user
-    let userId = walletAuth.user_id;
+    let userId = walletAuth.user_id || authenticatedUserId;
     const walletEmail = `${walletAddress}@wallet.solana`;
 
     if (!userId) {
@@ -119,7 +141,7 @@ export async function POST(request: Request) {
 
       if (createError || !newUser.user) {
         console.error('User creation error:', createError);
-        return new Response(JSON.stringify({ error: 'Failed to create user account' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+        return new Response(JSON.stringify({ error: 'Failed to create user account' }), { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
       }
 
       userId = newUser.user.id;
@@ -161,6 +183,17 @@ export async function POST(request: Request) {
         .eq('wallet_address', walletAddress);
     }
 
+    // A HashPass session already exists when this is a wallet-linking flow.
+    // Do not mint a second magic-link session for the same account.
+    if (authenticatedUserId) {
+      return new Response(JSON.stringify({
+        success: true,
+        userId,
+        walletAddress,
+        linkedToExistingUser: true,
+      }), { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+    }
+
     // Generate a session for the user using admin API
     // Get the callback URL for redirect
     const origin = new URL(request.url).origin;
@@ -179,7 +212,7 @@ export async function POST(request: Request) {
       console.error('Link generation error:', linkError);
       return new Response(JSON.stringify({ 
         error: 'Failed to create session: ' + linkError.message 
-      }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+      }), { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
     }
 
     // The magic link contains the token we need
@@ -205,9 +238,9 @@ export async function POST(request: Request) {
       magicLink: magicLink,
       // Also return the full redirect URL for fallback
       redirectUrl: magicLink
-    }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    }), { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
   } catch (error: any) {
     console.error('Solana auth error:', error);
-    return new Response(JSON.stringify({ error: 'Internal server error: ' + error.message }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify({ error: 'Internal server error: ' + error.message }), { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
   }
 }
