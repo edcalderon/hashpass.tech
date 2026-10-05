@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, Image } from 'react-native';
 import { SvgUri } from 'react-native-svg';
 import { useTheme } from '../../hooks/useTheme';
+import { resolveEventImageSource } from '../../lib/event-branding';
 
 // A bundled raster is intentional here. Passing a public SVG URI through
 // SvgUri makes Metro treat part of its directory as an asset request in web
@@ -27,13 +28,16 @@ export default function ExplorerHeader({
 }: ExplorerHeaderProps) {
   const { colors } = useTheme();
   const styles = getStyles(colors);
+  const resolvedLogo = logoUri ? resolveEventImageSource(logoUri) : undefined;
 
   return (
     <View style={styles.header}>
       <View style={styles.headerContent}>
         <View style={styles.headerTop}>
           <View style={styles.logoContainer}>
-            {logoUri ? (
+            {resolvedLogo ? (
+              <Image source={resolvedLogo} style={styles.logo} resizeMode="contain" />
+            ) : logoUri ? (
               <SvgUri uri={logoUri} width={40} height={40} />
             ) : (
               <Image source={DEFAULT_BSL_LOGO} style={styles.logo} resizeMode="contain" />

@@ -96,6 +96,14 @@ function Catalog({ mode = "light" }: { mode?: ColorMode }) {
           trailingIcon={<Text style={{ color: palette.onAccent }}>→</Text>}
         />
         <ActionButton mode={mode} label="Learn more" variant="secondary" />
+        <ActionButton
+          mode={mode}
+          label="A longer translated action label"
+          labelNumberOfLines={1}
+          tooltipText="A longer translated action label"
+          variant="secondary"
+          style={{ maxWidth: 180 }}
+        />
         <ActionButton mode={mode} label="Cancel" variant="ghost" />
         <ActionButton mode={mode} label="Saving" loading />
         <ActionButton mode={mode} label="Unavailable" disabled />

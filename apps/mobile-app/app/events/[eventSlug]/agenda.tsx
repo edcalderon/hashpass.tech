@@ -1,8 +1,7 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { AccessibilityInfo, View, Text, StyleSheet, ScrollView, TouchableOpacity, InteractionManager, Linking, Modal, Platform, Pressable, Image } from 'react-native';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, InteractionManager, Linking, Modal, Platform, Pressable, Image, useWindowDimensions } from 'react-native';
 import type { ImageSourcePropType } from 'react-native';
 import Animated, {
-  Easing,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
@@ -155,484 +154,6 @@ const resolveAgendaVenueImage = (
   return null;
 };
 
-type AgendaTypeRevealProps = {
-  itemId: string;
-  typeColor: string;
-  foregroundColor: string;
-  surfaceColor: string;
-  iconName: NativeSafeIconName;
-  label: string;
-  accessibilityLabel: string;
-  accessibilityHint: string;
-};
-
-const AGENDA_TYPE_REVEAL_EXPAND_DURATION_MS = 240;
-const AGENDA_TYPE_REVEAL_COLLAPSE_DURATION_MS = 520;
-const AGENDA_TYPE_REVEAL_COLLAPSED_WIDTH = 68;
-const AGENDA_TYPE_REVEAL_EXPANDED_WIDTH = 276;
-const AGENDA_TYPE_REVEAL_AUTO_COLLAPSE_MS = 3_000;
-
-const useReducedMotionPreference = (): boolean => {
-  const [reduceMotion, setReduceMotion] = useState(true);
-
-  useEffect(() => {
-    let active = true;
-    void AccessibilityInfo.isReduceMotionEnabled()
-      .then((value) => {
-        if (active) setReduceMotion(value);
-      })
-      .catch(() => {
-        if (active) setReduceMotion(true);
-      });
-    const subscription = AccessibilityInfo.addEventListener(
-      'reduceMotionChanged',
-      setReduceMotion,
-    );
-    return () => {
-      active = false;
-      subscription.remove();
-    };
-  }, []);
-
-  return reduceMotion;
-};
-
-/**
- * Keeps temporary type labels readable without leaving the agenda crowded.
- * A direct second tap always wins over hover/focus and retracts immediately.
- */
-const useAutoRetractingTypeReveal = () => {
-  const [hovered, setHovered] = useState(false);
-  const [focused, setFocused] = useState(false);
-  const [pinned, setPinned] = useState(false);
-  const [interactionSuppressed, setInteractionSuppressed] = useState(false);
-  const expanded = pinned || (!interactionSuppressed && (hovered || focused));
-
-  useEffect(() => {
-    if (!pinned) return undefined;
-    const collapseTimeout = setTimeout(
-      () => {
-        setPinned(false);
-        // A click may also leave focus/hover on web. Keep that stale state
-        // from reopening the pill after its timed retraction.
-        setInteractionSuppressed(true);
-      },
-      AGENDA_TYPE_REVEAL_AUTO_COLLAPSE_MS,
-    );
-    return () => clearTimeout(collapseTimeout);
-  }, [pinned]);
-
-  const handlePress = useCallback(() => {
-    const interactionExpanded = !interactionSuppressed && (hovered || focused);
-    if (pinned || interactionExpanded) {
-      setPinned(false);
-      setInteractionSuppressed(true);
-      return;
-    }
-    setInteractionSuppressed(false);
-    setPinned(true);
-  }, [focused, hovered, interactionSuppressed, pinned]);
-
-  return {
-    expanded,
-    handlePress,
-    handleBlur: () => {
-      setFocused(false);
-      setInteractionSuppressed(false);
-    },
-    handleFocus: () => setFocused(true),
-    handleHoverIn: () => setHovered(true),
-    handleHoverOut: () => {
-      setHovered(false);
-      setInteractionSuppressed(false);
-    },
-  };
-};
-
-const agendaTypeRevealStyles = StyleSheet.create({
-  container: {
-    alignItems: 'center',
-    borderBottomLeftRadius: uiTokens.radius.pill,
-    borderTopLeftRadius: uiTokens.radius.pill,
-    borderWidth: 1,
-    bottom: -1,
-    justifyContent: 'center',
-    height: 68,
-    position: 'absolute',
-    right: -1,
-    boxShadow: '0 8px 18px rgba(3, 12, 24, 0.18)',
-    overflow: 'hidden',
-  },
-  pressable: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  layer: {
-    backgroundColor: uiTokens.colors.light.text,
-    borderRadius: uiTokens.radius.circle,
-    position: 'absolute',
-    top: '50%',
-    zIndex: 0,
-  },
-  layerRing: {
-    borderRadius: uiTokens.radius.circle,
-    position: 'absolute',
-  },
-  layerRingOuter: {
-    bottom: '5%',
-    left: '5%',
-    right: '5%',
-    top: '5%',
-  },
-  layerRingWhite: {
-    backgroundColor: uiTokens.colors.light.canvas,
-    bottom: '16%',
-    left: '16%',
-    right: '16%',
-    top: '16%',
-  },
-  layerRingAccent: {
-    bottom: '28%',
-    left: '28%',
-    right: '28%',
-    top: '28%',
-  },
-  layerRingCenter: {
-    backgroundColor: uiTokens.colors.light.canvas,
-    bottom: '40%',
-    left: '40%',
-    right: '40%',
-    top: '40%',
-  },
-  content: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: uiTokens.space.md,
-    justifyContent: 'center',
-    paddingHorizontal: uiTokens.space.lg,
-    zIndex: 1,
-  },
-  collapsedIcon: {
-    alignItems: 'center',
-    bottom: -8,
-    justifyContent: 'center',
-    position: 'absolute',
-    right: -4,
-    zIndex: 0,
-  },
-  label: {
-    fontSize: 18,
-    fontWeight: '800',
-    letterSpacing: 0.7,
-    textShadowColor: 'rgba(3, 12, 24, 0.42)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
-  },
-});
-
-/**
- * Hides diagnostic testIDs on production web builds (Platform.OS === 'web'
- * outside Jest) so they never ship in the real DOM, while still exposing
- * them for test queries under Jest (NODE_ENV === 'test').
- */
-export function agendaTypeRevealTestId(id: string): { testID?: string } {
-  return Platform.OS === 'web' && process.env.NODE_ENV !== 'test' ? {} : { testID: id };
-}
-
-function AgendaTypeReveal({
-  itemId,
-  typeColor,
-  foregroundColor,
-  surfaceColor,
-  iconName,
-  label,
-  accessibilityLabel,
-  accessibilityHint,
-}: AgendaTypeRevealProps) {
-  const reduceMotion = useReducedMotionPreference();
-  const revealProgress = useSharedValue(0);
-  const {
-    expanded: revealed,
-    handleBlur,
-    handleFocus,
-    handleHoverIn,
-    handleHoverOut,
-    handlePress,
-  } = useAutoRetractingTypeReveal();
-
-  useEffect(() => {
-    const nextProgress = revealed ? 1 : 0;
-    revealProgress.value = reduceMotion
-      ? nextProgress
-      : withTiming(nextProgress, {
-          duration: nextProgress
-            ? AGENDA_TYPE_REVEAL_EXPAND_DURATION_MS
-            : AGENDA_TYPE_REVEAL_COLLAPSE_DURATION_MS,
-          // A retract begins gently, then clears the label quickly so the
-          // compact card affordance feels intentional instead of abrupt.
-          easing: nextProgress ? Easing.out(Easing.cubic) : Easing.in(Easing.cubic),
-        });
-  }, [reduceMotion, revealProgress, revealed]);
-
-  const contentStyle = useAnimatedStyle(() => ({
-    opacity: revealProgress.value,
-    transform: [
-      { translateX: (1 - revealProgress.value) * 8 },
-      { scale: 0.96 + revealProgress.value * 0.04 },
-    ],
-  }));
-  const collapsedIconStyle = useAnimatedStyle(() => ({
-    opacity: 1 - revealProgress.value,
-    transform: [{ scale: 0.92 + (1 - revealProgress.value) * 0.08 }],
-  }));
-  const shellStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: revealProgress.value * 5 }],
-    width: AGENDA_TYPE_REVEAL_COLLAPSED_WIDTH
-      + revealProgress.value * (AGENDA_TYPE_REVEAL_EXPANDED_WIDTH - AGENDA_TYPE_REVEAL_COLLAPSED_WIDTH),
-  }));
-  const layerStyle = useAnimatedStyle(() => {
-    const diameter = 52 + revealProgress.value * 660;
-    return {
-      height: diameter,
-      left: -26 - revealProgress.value * 150,
-      marginTop: -diameter / 2,
-      opacity: revealProgress.value,
-      transform: [{ rotate: `${revealProgress.value * 360}deg` }],
-      width: diameter,
-    };
-  });
-
-  return (
-    <Animated.View
-      {...agendaTypeRevealTestId(`agenda-card-type-shell-${itemId}`)}
-      style={[
-        agendaTypeRevealStyles.container,
-        {
-          borderColor: `${typeColor}24`,
-          backgroundColor: `${typeColor}1A`,
-          boxShadow: revealed
-            ? '0 5px 14px rgba(3, 12, 24, 0.16)'
-            : '0 8px 18px rgba(3, 12, 24, 0.18)',
-        },
-        shellStyle,
-      ]}
-    >
-      <Pressable
-        testID={`agenda-card-type-watermark-${itemId}`}
-        accessibilityRole="button"
-        accessibilityLabel={accessibilityLabel}
-        accessibilityHint={accessibilityHint}
-        accessibilityState={{ expanded: revealed }}
-        onBlur={handleBlur}
-        onFocus={handleFocus}
-        onHoverIn={handleHoverIn}
-        onHoverOut={handleHoverOut}
-        onPress={handlePress}
-        style={agendaTypeRevealStyles.pressable}
-      >
-        <Animated.View
-          {...agendaTypeRevealTestId(`agenda-card-type-layer-${itemId}`)}
-          pointerEvents="none"
-          style={[agendaTypeRevealStyles.layer, layerStyle]}
-        >
-          <View
-            style={[
-              agendaTypeRevealStyles.layerRing,
-              agendaTypeRevealStyles.layerRingOuter,
-              { backgroundColor: typeColor },
-            ]}
-          />
-          <View
-            style={[
-              agendaTypeRevealStyles.layerRing,
-              agendaTypeRevealStyles.layerRingWhite,
-              { backgroundColor: surfaceColor },
-            ]}
-          />
-          <View
-            style={[
-              agendaTypeRevealStyles.layerRing,
-              agendaTypeRevealStyles.layerRingAccent,
-              { backgroundColor: typeColor },
-            ]}
-          />
-          <View
-            style={[
-              agendaTypeRevealStyles.layerRing,
-              agendaTypeRevealStyles.layerRingCenter,
-              { backgroundColor: surfaceColor },
-            ]}
-          />
-        </Animated.View>
-        <Animated.View
-          {...agendaTypeRevealTestId(`agenda-card-type-collapsed-icon-${itemId}`)}
-          pointerEvents="none"
-          style={[agendaTypeRevealStyles.collapsedIcon, collapsedIconStyle]}
-        >
-          <NativeSafeIcon
-            name={iconName}
-            size={48}
-            color={`${typeColor}52`}
-            strokeWidth={2.2}
-          />
-        </Animated.View>
-        <Animated.View
-          {...agendaTypeRevealTestId(`agenda-card-type-content-${itemId}`)}
-          pointerEvents="none"
-          style={[agendaTypeRevealStyles.content, contentStyle]}
-        >
-          <NativeSafeIcon
-            name={iconName}
-            size={24}
-            color={foregroundColor}
-            strokeWidth={2.2}
-          />
-          <Text style={[agendaTypeRevealStyles.label, { color: foregroundColor }]}>{label}</Text>
-        </Animated.View>
-      </Pressable>
-    </Animated.View>
-  );
-}
-
-type AgendaTypeLegendControlProps = {
-  itemKey: string;
-  label: string;
-  color: string;
-  iconName: NativeSafeIconName;
-  surfaceColor: string;
-  borderColor: string;
-  textColor: string;
-  mode: 'light' | 'dark';
-  onPress?: () => void;
-  selected?: boolean;
-};
-
-const AGENDA_TYPE_LEGEND_SIZE = uiTokens.control.compactHeight - uiTokens.space.sm - uiTokens.space.xs;
-const AGENDA_TYPE_LEGEND_COLLAPSED_WIDTH = AGENDA_TYPE_LEGEND_SIZE;
-const AGENDA_TYPE_LEGEND_LABEL_WIDTH = 76;
-
-const agendaTypeLegendControlStyles = StyleSheet.create({
-  shell: {
-    borderRadius: uiTokens.radius.pill,
-    borderWidth: uiTokens.control.borderWidth,
-    height: AGENDA_TYPE_LEGEND_SIZE,
-    overflow: 'hidden',
-  },
-  pressable: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    height: '100%',
-  },
-  icon: {
-    alignItems: 'center',
-    height: AGENDA_TYPE_LEGEND_SIZE,
-    justifyContent: 'center',
-    width: AGENDA_TYPE_LEGEND_COLLAPSED_WIDTH - uiTokens.control.borderWidth * 2,
-  },
-  labelClip: {
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  label: {
-    fontSize: uiTokens.type.caption,
-    fontWeight: '700',
-    paddingRight: uiTokens.space.xs,
-  },
-});
-
-function AgendaTypeLegendControl({
-  itemKey,
-  label,
-  color,
-  iconName,
-  surfaceColor,
-  borderColor,
-  textColor,
-  mode,
-  onPress,
-  selected,
-}: AgendaTypeLegendControlProps) {
-  const reduceMotion = useReducedMotionPreference();
-  const expansion = useSharedValue(0);
-  const {
-    expanded,
-    handleBlur,
-    handleFocus,
-    handleHoverIn,
-    handleHoverOut,
-    handlePress: handleRevealPress,
-  } = useAutoRetractingTypeReveal();
-
-  const handlePress = () => {
-    handleRevealPress();
-    onPress?.();
-  };
-
-  useEffect(() => {
-    const nextProgress = expanded ? 1 : 0;
-    expansion.value = reduceMotion
-      ? nextProgress
-      : withTiming(nextProgress, {
-          duration: nextProgress
-            ? AGENDA_TYPE_REVEAL_EXPAND_DURATION_MS
-            : AGENDA_TYPE_REVEAL_COLLAPSE_DURATION_MS,
-          easing: nextProgress ? Easing.out(Easing.cubic) : Easing.in(Easing.cubic),
-        });
-  }, [expanded, expansion, reduceMotion]);
-
-  const shellStyle = useAnimatedStyle(() => ({
-    width: AGENDA_TYPE_LEGEND_COLLAPSED_WIDTH
-      + expansion.value * AGENDA_TYPE_LEGEND_LABEL_WIDTH,
-  }));
-  const labelStyle = useAnimatedStyle(() => ({
-    opacity: expansion.value,
-    width: expansion.value * AGENDA_TYPE_LEGEND_LABEL_WIDTH,
-  }));
-
-  return (
-    <Animated.View
-      style={[
-        agendaTypeLegendControlStyles.shell,
-        {
-          backgroundColor: selected ? `${color}24` : expanded ? `${color}14` : surfaceColor,
-          borderColor: selected ? color : expanded ? `${color}52` : borderColor,
-        },
-        shellStyle,
-      ]}
-    >
-      <Pressable
-        testID={`agenda-type-legend-${itemKey}`}
-        accessibilityRole="button"
-        accessibilityLabel={label}
-        accessibilityState={{ expanded, selected }}
-        onBlur={handleBlur}
-        onFocus={handleFocus}
-        onHoverIn={handleHoverIn}
-        onHoverOut={handleHoverOut}
-        onPress={handlePress}
-        style={agendaTypeLegendControlStyles.pressable}
-      >
-        <View style={agendaTypeLegendControlStyles.icon}>
-          <NativeSafeIcon
-            name={iconName}
-            size={16}
-            color={color}
-            strokeWidth={2.2}
-          />
-        </View>
-        <Animated.View style={[agendaTypeLegendControlStyles.labelClip, labelStyle]}>
-          <HoverText mode={mode} numberOfLines={1} style={[agendaTypeLegendControlStyles.label, { color: textColor }]}>
-            {label}
-          </HoverText>
-        </Animated.View>
-      </Pressable>
-    </Animated.View>
-  );
-}
-
 // Same one-shot fade-in pulse PassCardsSkeleton (components/passes/PassesWallet.tsx)
 // already uses for its own skeleton cards -- kept identical here rather than
 // inventing a second skeleton-animation convention for the app.
@@ -744,6 +265,7 @@ function AgendaItemCardsSkeleton({
 export default function BSL2025AgendaScreen() {
   const { event } = useEvent();
   const { isDark, colors } = useTheme();
+  const { width: viewportWidth } = useWindowDimensions();
   const interfaceMode = isDark ? 'dark' : 'light';
   const router = useRouter();
   const params = useLocalSearchParams<{ session?: string; scrollTo?: string; day?: string }>();
@@ -775,33 +297,15 @@ export default function BSL2025AgendaScreen() {
   const userSelectedTabRef = useRef(false); // Track if user manually selected a tab
   const [isLive, setIsLive] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  // Stackable, multi-select legend filters: clicking a session-type icon
-  // toggles it into/out of this set rather than replacing a single active
-  // choice, so a viewer can e.g. show keynotes + panels together and the
-  // filter badge counts every active type ("1 2 3 4...").
-  const [selectedFilters, setSelectedFilters] = useState<AgendaType[]>([]);
   const [agendaLayout, setAgendaLayout] = useState<'compact' | 'list' | 'grid'>('compact');
   const isCompactAgenda = agendaLayout === 'compact';
   const isAgendaGrid = agendaLayout === 'grid';
+  const isWideAgenda = viewportWidth >= 768;
   const [usingJsonFallback, setUsingJsonFallback] = useState(false);
   const [serviceStatus, setServiceStatus] = useState<'running' | 'stopped' | 'unknown'>('unknown');
   const [isEventPeriod, setIsEventPeriod] = useState(false);
   const [isEventFinished, setIsEventFinished] = useState(false);
   const [filteredAgenda, setFilteredAgenda] = useState<AgendaItem[]>([]);
-  // Drives UnifiedSearchAndFilter's own internal filter state so pressing a
-  // legend icon actually narrows filteredAgenda instead of only toggling the
-  // legend's own visual "selected" style. Memoized so the reference only
-  // changes when selectedFilters itself changes -- UnifiedSearchAndFilter
-  // reacts to this via a useEffect keyed on identity, and a fresh object on
-  // every render would otherwise re-trigger that effect (and the resulting
-  // setFilteredAgenda call) on every unrelated re-render. customAgendaFilterLogic's
-  // 'type' case already matches an array of types with .includes(item.type),
-  // so passing the whole stacked selection through as one array gives OR
-  // semantics across every selected type for free.
-  const legendExternalFilters = useMemo(
-    () => (selectedFilters.length === 0 ? {} : { type: selectedFilters }),
-    [selectedFilters],
-  );
   const [showNotLiveDetails, setShowNotLiveDetails] = useState(false);
   const [userAgendaStatus, setUserAgendaStatus] = useState<Record<string, 'tentative' | 'confirmed'>>({});
   const [favoriteStatus, setFavoriteStatus] = useState<Record<string, boolean>>({});
@@ -1971,11 +1475,18 @@ export default function BSL2025AgendaScreen() {
         key={action}
         mode={interfaceMode}
         label={label}
-        variant="ghost"
+        labelNumberOfLines={1}
+        tooltipText={label}
+        accessibilityLabel={label}
+        variant="secondary"
         leadingIcon={icon}
         accessibilityHint={t('actions.actionHint', 'Opens this session action')}
         onPress={onPress}
-        style={styles.agendaActionButton}
+        style={[
+          styles.agendaActionButton,
+          isCompactAgenda && styles.agendaActionButtonCompact,
+          isWideAgenda && !isAgendaGrid && styles.agendaActionButtonWide,
+        ]}
       />
     );
 
@@ -2014,6 +1525,7 @@ export default function BSL2025AgendaScreen() {
                 styles.agendaMedia,
                 isCompactAgenda && styles.agendaMediaCompact,
                 isAgendaGrid && styles.agendaMediaGrid,
+                isWideAgenda && !isAgendaGrid && styles.agendaMediaWide,
                 { backgroundColor: `${typeColor}20` },
               ]}
             >
@@ -2053,7 +1565,7 @@ export default function BSL2025AgendaScreen() {
                 <Text
                   testID={`agenda-card-time-${item.id}`}
                   style={styles.agendaTime}
-                  numberOfLines={2}
+                  numberOfLines={isWideAgenda && !isAgendaGrid ? 1 : 2}
                 >
                   {formatAgendaCardTime(item, eventTzOffset)}
                 </Text>
@@ -2061,22 +1573,22 @@ export default function BSL2025AgendaScreen() {
             </View>
 
             <View style={[styles.agendaItemContent, isCompactAgenda && styles.agendaItemContentCompact]}>
-              <AgendaTypeReveal
-                itemId={item.id}
-                typeColor={typeColor}
-                foregroundColor={isDark ? uiTokens.colors.dark.onAccent : uiTokens.colors.light.text}
-                surfaceColor={colors.background.paper}
-                iconName={getAgendaTypeIcon(item.type) as NativeSafeIconName}
-                label={typeLabel}
-                accessibilityLabel={t('types.revealLabel', `Session type: ${typeLabel}`)}
-                accessibilityHint={t('types.revealHint', 'Reveals this session type')}
-              />
+              <Badge
+                mode={interfaceMode}
+                tone="neutral"
+                compact
+                markerColor={typeColor}
+                leadingIcon={<NativeSafeIcon name={getAgendaTypeIcon(item.type) as NativeSafeIconName} size={13} color={colors.text.secondary} />}
+              >
+                {typeLabel}
+              </Badge>
               <View style={styles.agendaTitleRow}>
                 <View style={styles.agendaTitleMeta}>
                   <HoverText
                     mode={interfaceMode}
                     style={[styles.agendaTitle, isCompactAgenda && styles.agendaTitleCompact]}
                     numberOfLines={isCompactAgenda ? 2 : 3}
+                    tooltipText={cleanSessionTitle(item.title)}
                   >
                     {cleanSessionTitle(item.title)}
                   </HoverText>
@@ -2098,7 +1610,11 @@ export default function BSL2025AgendaScreen() {
                 <HoverText mode={interfaceMode} style={styles.agendaLocation} numberOfLines={1}>{location}</HoverText>
               </View>
 
-              <View style={[styles.agendaItemTools, isCompactAgenda && styles.agendaItemToolsCompact]}>
+              <View style={[
+                styles.agendaItemTools,
+                isCompactAgenda && styles.agendaItemToolsCompact,
+                isWideAgenda && !isAgendaGrid && styles.agendaItemToolsWide,
+              ]}>
                 {renderAgendaAction(
                   'calendar',
                   t('calendar.openPicker', 'Add this session to a calendar'),
@@ -2279,48 +1795,7 @@ export default function BSL2025AgendaScreen() {
           filterGroups={filterGroups}
           customFilterLogic={customAgendaFilterLogic}
           showResultsCount={true}
-          externalFilters={legendExternalFilters}
         />
-      )}
-
-      {/* Compact session type legend: single row below the search input */}
-      {agenda.length > 0 && filterGroups[0]?.options?.length > 0 && (
-        <View
-          testID="agenda-type-legend"
-          accessibilityLabel={t('legend.label', 'Session type legend')}
-          style={styles.agendaTypeLegendCompact}
-        >
-          <Text style={styles.agendaTypeLegendCompactLabel}>
-            {t('legend.title', 'Session types').toUpperCase()}
-          </Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.agendaTypeLegendCompactItems}
-          >
-            {filterGroups[0].options.map((option) => (
-              <AgendaTypeLegendControl
-                key={option.key}
-                itemKey={option.key}
-                label={option.label}
-                color={option.color}
-                iconName={getAgendaTypeIcon(option.key) as NativeSafeIconName}
-                surfaceColor={colors.background.paper}
-                borderColor={colors.divider}
-                textColor={colors.text.primary}
-                mode={interfaceMode}
-                selected={selectedFilters.includes(option.key as AgendaType)}
-                onPress={() => {
-                  setSelectedFilters((prev) =>
-                    prev.includes(option.key as AgendaType)
-                      ? prev.filter((key) => key !== option.key)
-                      : [...prev, option.key as AgendaType],
-                  );
-                }}
-              />
-            ))}
-          </ScrollView>
-        </View>
       )}
 
       {/* The full day theme is kept out of the compact day chip so translated
@@ -2587,50 +2062,6 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     gap: uiTokens.space.sm,
     paddingHorizontal: uiTokens.space.lg,
   },
-  agendaTypeLegend: {
-    alignItems: 'center',
-    paddingHorizontal: uiTokens.space.md,
-    paddingTop: uiTokens.space.md,
-  },
-  agendaTypeLegendTitle: {
-    color: colors.text.secondary,
-    fontSize: uiTokens.type.caption,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-    marginBottom: uiTokens.space.xs,
-    textTransform: 'uppercase',
-  },
-  agendaTypeLegendItems: {
-    flexDirection: 'row',
-    flexGrow: 1,
-    gap: uiTokens.space.xs,
-    justifyContent: 'center',
-    paddingHorizontal: uiTokens.space.xs,
-  },
-  agendaTypeLegendScroll: {
-    width: '100%',
-  },
-  // Compact single-row legend below the search input
-  agendaTypeLegendCompact: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: uiTokens.space.sm,
-    paddingHorizontal: uiTokens.space.lg,
-    paddingVertical: uiTokens.space.xs,
-  },
-  agendaTypeLegendCompactLabel: {
-    color: colors.text.secondary,
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 0.8,
-    flexShrink: 0,
-  },
-  agendaTypeLegendCompactItems: {
-    flexDirection: 'row',
-    flexGrow: 1,
-    gap: uiTokens.space.xs,
-    alignItems: 'center',
-  },
   dayTab: {
     width: 148,
     minHeight: 104,
@@ -2746,7 +2177,7 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   },
   agendaItem: {
     backgroundColor: colors.background.paper,
-    borderLeftWidth: 4,
+    borderLeftWidth: 3,
     marginBottom: uiTokens.space.md,
     overflow: 'hidden',
     padding: 0,
@@ -2775,6 +2206,10 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   agendaMediaCompact: {
     minHeight: 118,
     width: 116,
+  },
+  agendaMediaWide: {
+    minHeight: 184,
+    width: 168,
   },
   agendaMediaGrid: {
     minHeight: 260,
@@ -2863,16 +2298,17 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     flex: 1,
     overflow: 'hidden',
     padding: uiTokens.space.xl,
-    paddingBottom: uiTokens.space.xl + AGENDA_TYPE_REVEAL_COLLAPSED_WIDTH + uiTokens.space.sm,
+    paddingBottom: uiTokens.space.xl,
     position: 'relative',
   },
   agendaItemContentCompact: {
     paddingHorizontal: uiTokens.space.md,
     paddingVertical: uiTokens.space.sm,
-    paddingBottom: AGENDA_TYPE_REVEAL_COLLAPSED_WIDTH + uiTokens.space.md,
+    paddingBottom: uiTokens.space.md,
   },
   agendaTitleRow: {
     marginBottom: uiTokens.space.sm,
+    marginTop: uiTokens.space.xs,
   },
   agendaTitleMeta: {
     alignItems: 'center',
@@ -2893,18 +2329,34 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     lineHeight: 18,
   },
   agendaItemTools: {
-    flexDirection: 'column',
-    alignItems: 'stretch',
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
     gap: uiTokens.space.xs,
     marginBottom: uiTokens.space.md,
   },
   agendaItemToolsCompact: {
+    alignItems: 'stretch',
+    flexDirection: 'column',
+    gap: uiTokens.space.xs,
     marginBottom: uiTokens.space.sm,
+  },
+  agendaItemToolsWide: {
+    alignItems: 'center',
+    width: '100%',
   },
   agendaActionButton: {
     alignSelf: 'flex-start',
+    flexShrink: 1,
+    maxWidth: '100%',
+    minWidth: 0,
     paddingHorizontal: uiTokens.space.md,
-    paddingVertical: uiTokens.space.xs,
+  },
+  agendaActionButtonCompact: {
+    alignSelf: 'stretch',
+  },
+  agendaActionButtonWide: {
+    alignSelf: 'center',
   },
   calendarModalOverlay: {
     flex: 1,

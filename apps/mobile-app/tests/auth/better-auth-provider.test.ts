@@ -230,8 +230,37 @@ describe('BetterAuthProvider', () => {
         disableRedirect: true,
       })
     );
+    expect(mockCreateAuthClient).toHaveBeenCalledWith(expect.objectContaining({
+      fetchOptions: { credentials: 'include' },
+    }));
     expect(locationReplace).toHaveBeenCalledWith('https://accounts.google.com/o/oauth2/v2/auth?state=test');
     expect(result.pending).toBe(true);
+  });
+
+  it('uses the local Expo auth route when the browser is on localhost', async () => {
+    setTestWindow({
+      location: {
+        origin: 'http://localhost:8081',
+        hostname: 'localhost',
+        pathname: '/auth',
+      } as unknown as Window['location'],
+      localStorage: {
+        getItem: jest.fn(),
+        setItem: jest.fn(),
+        removeItem: jest.fn(),
+      } as unknown as Storage,
+    } as Window);
+    mockSignOut.mockResolvedValueOnce({});
+
+    const { BetterAuthProvider } = require('../../../../packages/auth/src/providers/better-auth');
+    const provider = new BetterAuthProvider({ baseURL: 'https://api-dev.hashpass.tech/api/auth' });
+
+    await provider.signOut();
+
+    expect(mockCreateAuthClient).toHaveBeenCalledWith(expect.objectContaining({
+      baseURL: 'http://localhost:8081/api/auth',
+      fetchOptions: { credentials: 'include' },
+    }));
   });
 
   it('starts web Apple sign-in through the Better Auth social endpoint', async () => {
@@ -288,6 +317,7 @@ describe('BetterAuthProvider', () => {
         baseURL: 'https://api.hashpass.tech/api/auth',
         plugins: [expect.objectContaining({ id: 'oauth-provider-client' })],
         fetchOptions: {
+          credentials: 'include',
           headers: {
             Origin: 'https://hashpass.tech',
             Referer: 'https://hashpass.tech/',

@@ -56,6 +56,24 @@ two divergent Google identities for the same user (`ba_users` vs
    be diagnosed. It does not redirect to Supabase's `/auth/v1/authorize`
    endpoint.
 
+### Local Expo web development
+
+When the Expo web app runs at `http://localhost:8081` while the client points
+at `https://api-dev.hashpass.tech/api/auth`, the Better Auth client must send
+credentialed cross-origin requests. The OAuth-start response sets the state
+cookie on the API origin, and the session probe after the Google callback reads
+that same origin's session cookie. The shared `BetterAuthProvider` configures
+`credentials: 'include'` for these requests; changing it back to the browser's
+same-origin default causes the flow to finish at `/auth/callback` with
+“Authentication completed but no Better Auth session was found.”
+
+The browser callback remains `http://localhost:8081/auth/callback`; Google
+still returns to the Better Auth API callback first. If this error reappears,
+confirm that the dev API allows the localhost origin with credentials and that
+the browser has not blocked the API's secure session cookie. A local API
+serving Better Auth directly needs its own localhost Google redirect URI and
+does not use the shared dev API cookie.
+
 ### Native: Better Auth first, Supabase ID-token fallback
 
 Native (Android) still starts with the Google Sign-In SDK account picker, then
