@@ -1,5 +1,5 @@
 import { getSupabaseServerForRequest } from "@/lib/supabase-server";
-import { eventIdFromRequest } from "@/lib/server/event-api";
+import { eventIdFromRequest, isEventSectionPublic } from "@/lib/server/event-api";
 
 // Speaker directory access is server-owned so browser clients do not couple to
 // the current Supabase schema or credentials.
@@ -13,6 +13,15 @@ export async function GET(request: Request) {
   }
 
   const supabase = getSupabaseServerForRequest(request);
+
+  // This route runs on the service-role client (bypasses RLS), so the
+  // organizer's speakers_public toggle has to be enforced here -- covers
+  // both the legacy bsl_speakers table and the newer speakers table below.
+  const speakersPublic = await isEventSectionPublic(supabase, eventId, "speakers_public");
+  if (!speakersPublic) {
+    return Response.json({ data: [] });
+  }
+
   const { searchParams } = new URL(request.url);
   const search = searchParams.get("search")?.trim();
   const usesLegacyBslDirectory =

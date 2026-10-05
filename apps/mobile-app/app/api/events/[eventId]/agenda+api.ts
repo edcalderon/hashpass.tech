@@ -1,5 +1,5 @@
 import { getSupabaseServerForRequest } from '@/lib/supabase-server';
-import { eventIdFromRequest } from '@/lib/server/event-api';
+import { eventIdFromRequest, isEventSectionPublic } from '@/lib/server/event-api';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -25,6 +25,17 @@ export async function GET(request: Request) {
   }
 
   try {
+    // event_agenda's own RLS policy is `USING (true)` -- wide open -- and
+    // this route runs on the service-role client anyway (bypasses RLS), so
+    // the organizer's agenda_public toggle has to be enforced here.
+    const agendaPublic = await isEventSectionPublic(supabase, eventId, 'agenda_public');
+    if (!agendaPublic) {
+      return new Response(JSON.stringify({ data: [] }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      });
+    }
+
     const { data, error } = await supabase
       .from('event_agenda')
       .select('*')
