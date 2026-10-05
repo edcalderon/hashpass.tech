@@ -22,24 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610042332, // Updated to current timestamp
-  releaseDate: '2026-10-04',
+  buildNumber: 202610051448, // Updated to current timestamp
+  releaseDate: '2026-10-05',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'add calendar subscriptions in settings'
+    // No new features
   ],
   bugfixes: [
-    'publish complete agenda subscriptions',
-    'resolve local BSL assets and OAuth errors',
-    'create logos/bsl directory to stop Metro ENOENT error loop'
+    'preserve local Better Auth OAuth sessions'
   ],
   breakingChanges: [],
-  notes: 'add calendar subscriptions in settings; publish complete agenda subscriptions; resolve local BSL assets and OAuth errors; create logos/bsl directory to stop Metro ENOENT error loop'
+  notes: 'preserve local Better Auth OAuth sessions'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.98': {
+    version: '1.9.98',
+    buildNumber: 202610051448,
+    releaseDate: '2026-10-05',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'preserve local Better Auth OAuth sessions'
+    ],
+    breakingChanges: [],
+    notes: 'preserve local Better Auth OAuth sessions'
+  },
   '1.9.97': {
     version: '1.9.97',
     buildNumber: 202610042332,

@@ -1,3 +1,19 @@
+## [1.9.98](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.97...v1.9.98) (2026-10-05)
+
+
+### Bug Fixes
+
+* **auth:** preserve local Better Auth OAuth sessions ([fdcc921](https://github.com/hashpass-tech/hashpass.tech/commit/fdcc9211d0276397de719dc2d048cd0e82d25ac4))
+### Release Highlights
+- preserve local Better Auth OAuth sessions
+
+### Release scope
+- Compared with: `v1.9.97` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Auth
+
 ## [1.9.97](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.95...v1.9.97) (2026-10-04)
 
 
