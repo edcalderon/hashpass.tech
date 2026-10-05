@@ -189,7 +189,11 @@ describe("EventInfoScreen", () => {
       const links = renderer.root.findAll(
         (node) => node.props.accessibilityRole === "link",
       );
-      expect(links).toHaveLength(2);
+      // 2 real contact links (website, address) plus the 2 Explore entry
+      // points (Agenda, Speakers) -- this fixture's details row has no
+      // agenda_public/speakers_public columns, so both default open per
+      // event-info.tsx's `!== false` fallback (db/migrations/V109).
+      expect(links).toHaveLength(4);
       expect(
         renderer.root.findAll((node) => node.props.disabled === true),
       ).toHaveLength(0);
@@ -197,11 +201,13 @@ describe("EventInfoScreen", () => {
         renderer.root
           .findAll((node) => node.props.accessibilityRole === "header")
           .map((node) => node.children.join("")),
-      ).toEqual(expect.arrayContaining(["Event Details", "About", "Contact"]));
+      ).toEqual(expect.arrayContaining(["Event Details", "Explore", "About", "Contact"]));
       expect(links.map((node) => node.props.accessibilityLabel)).toEqual(
         expect.arrayContaining([
           expect.stringContaining("blockchainsummit.la"),
           expect.stringContaining("Cra 40 #22C-67"),
+          expect.stringContaining("Agenda"),
+          expect.stringContaining("Speakers"),
         ]),
       );
     } finally {
