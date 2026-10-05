@@ -1909,11 +1909,14 @@ export default function BSL2025AgendaScreen() {
         key={action}
         mode={interfaceMode}
         label={label}
+        labelNumberOfLines={1}
+        tooltipText={label}
+        accessibilityLabel={label}
         variant="secondary"
         leadingIcon={icon}
         accessibilityHint={t('actions.actionHint', 'Opens this session action')}
         onPress={onPress}
-        style={styles.agendaActionButton}
+        style={[styles.agendaActionButton, isCompactAgenda && styles.agendaActionButtonCompact]}
       />
     );
 
@@ -2013,10 +2016,10 @@ export default function BSL2025AgendaScreen() {
               ) : null}
               <Badge
                 mode={interfaceMode}
-                tone="accent"
+                tone="neutral"
                 compact
                 markerColor={typeColor}
-                leadingIcon={<NativeSafeIcon name={getAgendaTypeIcon(item.type) as NativeSafeIconName} size={13} color={typeColor} />}
+                leadingIcon={<NativeSafeIcon name={getAgendaTypeIcon(item.type) as NativeSafeIconName} size={13} color={colors.text.secondary} />}
               >
                 {typeLabel}
               </Badge>
@@ -2026,6 +2029,7 @@ export default function BSL2025AgendaScreen() {
                     mode={interfaceMode}
                     style={[styles.agendaTitle, isCompactAgenda && styles.agendaTitleCompact]}
                     numberOfLines={isCompactAgenda ? 2 : 3}
+                    tooltipText={cleanSessionTitle(item.title)}
                   >
                     {cleanSessionTitle(item.title)}
                   </HoverText>
@@ -2232,7 +2236,8 @@ export default function BSL2025AgendaScreen() {
         />
       )}
 
-      {/* Compact session type legend: single row below the search input */}
+      {/* Session types stay in their own block so the heading never competes
+          with the horizontally scrollable chip row on narrow screens. */}
       {agenda.length > 0 && filterGroups[0]?.options?.length > 0 && (
         <View
           testID="agenda-type-legend"
@@ -2561,22 +2566,22 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   },
   // Compact single-row legend below the search input
   agendaTypeLegendCompact: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'stretch',
     gap: uiTokens.space.sm,
     paddingHorizontal: uiTokens.space.lg,
-    paddingVertical: uiTokens.space.xs,
+    paddingTop: uiTokens.space.sm,
+    paddingBottom: uiTokens.space.xs,
     minWidth: 0,
   },
   agendaTypeLegendCompactLabel: {
     color: colors.text.secondary,
-    fontSize: 10,
+    fontSize: uiTokens.type.caption,
     fontWeight: '700',
     letterSpacing: 0.8,
-    flexShrink: 0,
+    lineHeight: 16,
   },
   agendaTypeLegendCompactScroll: {
-    flex: 1,
+    width: '100%',
     minWidth: 0,
   },
   agendaTypeLegendCompactItems: {
@@ -2702,7 +2707,7 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   },
   agendaItem: {
     backgroundColor: colors.background.paper,
-    borderLeftWidth: 4,
+    borderLeftWidth: 3,
     marginBottom: uiTokens.space.md,
     overflow: 'hidden',
     padding: 0,
@@ -2857,10 +2862,20 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     marginBottom: uiTokens.space.md,
   },
   agendaItemToolsCompact: {
+    alignItems: 'stretch',
+    flexDirection: 'column',
+    gap: uiTokens.space.xs,
     marginBottom: uiTokens.space.sm,
   },
   agendaActionButton: {
     alignSelf: 'flex-start',
+    flexShrink: 1,
+    maxWidth: '100%',
+    minWidth: 0,
+    paddingHorizontal: uiTokens.space.md,
+  },
+  agendaActionButtonCompact: {
+    alignSelf: 'stretch',
   },
   calendarModalOverlay: {
     flex: 1,

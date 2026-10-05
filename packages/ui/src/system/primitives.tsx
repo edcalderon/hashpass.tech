@@ -145,6 +145,10 @@ export function Badge({
 export type ActionButtonProps = Omit<PressableProps, "children"> &
   Themed & {
     label: string;
+    /** Limit the visible label without changing the accessible name. */
+    labelNumberOfLines?: number;
+    /** Optional native/web tooltip for a truncated visible label. */
+    tooltipText?: string;
     leadingIcon?: React.ReactNode;
     trailingIcon?: React.ReactNode;
     variant?: "primary" | "secondary" | "ghost";
@@ -153,6 +157,8 @@ export type ActionButtonProps = Omit<PressableProps, "children"> &
 export function ActionButton({
   mode = "light",
   label,
+  labelNumberOfLines,
+  tooltipText,
   leadingIcon,
   trailingIcon,
   variant = "primary",
@@ -166,9 +172,11 @@ export function ActionButton({
   const palette = uiPalette(mode);
   const blocked = disabled || loading;
   const foreground = variant === "primary" ? palette.onAccent : palette.accent;
+  const tooltipProps = tooltipText ? ({ title: tooltipText } as Record<string, string>) : {};
   return (
     <Pressable
       {...props}
+      {...tooltipProps}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel || label}
       disabled={blocked}
@@ -198,7 +206,7 @@ export function ActionButton({
       ]}
     >
       {loading ? <ActivityIndicator size="small" color={foreground} /> : leadingIcon && <View accessible={false} pointerEvents="none">{leadingIcon}</View>}
-      <Text style={[styles.buttonLabel, { color: foreground }]}>{label}</Text>
+      <Text numberOfLines={labelNumberOfLines} ellipsizeMode="tail" style={[styles.buttonLabel, { color: foreground }]}>{label}</Text>
       {!loading && trailingIcon ? <View accessible={false} pointerEvents="none">{trailingIcon}</View> : null}
     </Pressable>
   );
