@@ -21,7 +21,19 @@ const speaker = {
 };
 
 let mockResult: { data: unknown; error: unknown } = { data: speaker, error: null };
-const mockFrom = jest.fn(() => mockCreateQuery());
+// Backs the `events` table lookup that isEventSectionPublic (db/migrations/V109)
+// does ahead of every speaker query -- defaults to speakers_public=true so
+// existing assertions below (about the speaker query itself) are unaffected
+// by that gate unless a test overrides it.
+let mockEventsResult: { data: unknown; error: unknown } = {
+  data: { speakers_public: true },
+  error: null,
+};
+const mockFrom = jest.fn((table: string) =>
+  table === "events" ? mockCreateEventsQuery() : mockCreateQuery(),
+);
+const mockResolveNotificationIdentity = jest.fn();
+const mockIsResolveIdentityError = jest.fn(() => false);
 
 function mockCreateQuery(): Record<string, unknown> {
   const query: Record<string, unknown> = {
@@ -41,6 +53,16 @@ function mockCreateQuery(): Record<string, unknown> {
   return query;
 }
 
+function mockCreateEventsQuery(): Record<string, unknown> {
+  const query: Record<string, unknown> = {
+    eq: jest.fn(() => query),
+    select: jest.fn(() => query),
+    maybeSingle: jest.fn(async () => mockEventsResult),
+  };
+
+  return query;
+}
+
 jest.mock("@/lib/supabase-server", () => ({
   getSupabaseServerForRequest: () => ({
     from: mockFrom,
@@ -48,10 +70,23 @@ jest.mock("@/lib/supabase-server", () => ({
   }),
 }));
 
+// The real module pulls in @hashpass/auth (and from there @edcalderon/auth's
+// ESM-only dist), which jest-expo's transformIgnorePatterns does not cover --
+// mock it like every other API test that touches this guest-vs-authenticated
+// gate (see tests/api/meeting-requests.test.ts) instead of letting the real
+// implementation load.
+jest.mock("@/lib/server/resolve-notification-identity", () => ({
+  resolveNotificationIdentity: (request: Request) => mockResolveNotificationIdentity(request),
+  isResolveIdentityError: (identity: unknown) => mockIsResolveIdentityError(identity),
+}));
+
 describe("event-scoped speaker detail api", () => {
   beforeEach(() => {
     jest.resetModules();
     mockResult = { data: speaker, error: null };
+    mockEventsResult = { data: { speakers_public: true }, error: null };
+    mockResolveNotificationIdentity.mockReset();
+    mockIsResolveIdentityError.mockReset().mockReturnValue(false);
   });
 
   it("exposes an event-scoped server endpoint instead of requiring a browser Supabase call", () => {
@@ -85,6 +120,38 @@ describe("event-scoped speaker detail api", () => {
 
       expect(response.status).toBe(404);
     });
+
+    describe("speakers_public=false guest gate (db/migrations/V109)", () => {
+      beforeEach(() => {
+        mockEventsResult = { data: { speakers_public: false }, error: null };
+      });
+
+      it("hides the real speaker from an unauthenticated guest behind a public:false discriminator, not a 404", async () => {
+        mockIsResolveIdentityError.mockReturnValue(true);
+
+        /* eslint-disable @typescript-eslint/no-require-imports */
+        const { GET } = require("../../app/api/events/[eventId]/speakers/[id]+api");
+        const response = await GET(
+          new Request("https://api.hashpass.tech/api/events/bsl/speakers/speaker-123"),
+        );
+
+        expect(response.status).toBe(200);
+        expect(await response.json()).toEqual({ data: null, public: false });
+      });
+
+      it("still serves the real speaker to a signed-in attendee despite speakers_public=false", async () => {
+        mockIsResolveIdentityError.mockReturnValue(false);
+
+        /* eslint-disable @typescript-eslint/no-require-imports */
+        const { GET } = require("../../app/api/events/[eventId]/speakers/[id]+api");
+        const response = await GET(
+          new Request("https://api.hashpass.tech/api/events/bsl/speakers/speaker-123"),
+        );
+
+        expect(response.status).toBe(200);
+        expect(await response.json()).toEqual({ data: speaker });
+      });
+    });
   });
 });
 
@@ -92,6 +159,9 @@ describe("event-scoped speaker collection api", () => {
   beforeEach(() => {
     jest.resetModules();
     mockResult = { data: [speaker], error: null };
+    mockEventsResult = { data: { speakers_public: true }, error: null };
+    mockResolveNotificationIdentity.mockReset();
+    mockIsResolveIdentityError.mockReset().mockReturnValue(false);
     mockFrom.mockClear();
   });
 
@@ -126,6 +196,38 @@ describe("event-scoped speaker collection api", () => {
     expect(mockFrom).toHaveBeenCalledWith("speakers");
     const query = mockFrom.mock.results.at(-1)?.value as ReturnType<typeof mockCreateQuery>;
     expect(query.eq).toHaveBeenCalledWith("event_id", "cbweek2026");
+  });
+
+  describe("speakers_public=false guest gate (db/migrations/V109)", () => {
+    beforeEach(() => {
+      mockEventsResult = { data: { speakers_public: false }, error: null };
+    });
+
+    it("hides the real directory from an unauthenticated guest behind a public:false discriminator, not a bare empty array", async () => {
+      mockIsResolveIdentityError.mockReturnValue(true);
+
+      /* eslint-disable @typescript-eslint/no-require-imports */
+      const { GET } = require("../../app/api/events/[eventId]/speakers+api");
+      const response = await GET(
+        new Request("https://api.hashpass.tech/api/events/bsl/speakers"),
+      );
+
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual({ data: [], public: false });
+    });
+
+    it("still serves the real directory to a signed-in attendee despite speakers_public=false", async () => {
+      mockIsResolveIdentityError.mockReturnValue(false);
+
+      /* eslint-disable @typescript-eslint/no-require-imports */
+      const { GET } = require("../../app/api/events/[eventId]/speakers+api");
+      const response = await GET(
+        new Request("https://api.hashpass.tech/api/events/bsl/speakers"),
+      );
+
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual({ data: [speaker] });
+    });
   });
 });
 });
