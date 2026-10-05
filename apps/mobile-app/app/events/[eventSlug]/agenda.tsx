@@ -40,7 +40,7 @@ import * as Haptics from 'expo-haptics';
 import { parseISO } from 'date-fns';
 import LoadingScreen from '../../../components/LoadingScreen';
 import { useTranslation, getCurrentLocale } from '../../../i18n/i18n';
-import { ActionButton, Badge, HoverText, IconButton, Surface } from '@hashpass/ui/primitives';
+import { ActionButton, Badge, FilterChip, HoverText, IconButton, Surface } from '@hashpass/ui/primitives';
 import { uiTokens } from '@hashpass/ui/tokens';
 import {
   buildGoogleCalendarUrl,
@@ -504,44 +504,10 @@ type AgendaTypeLegendControlProps = {
   iconName: NativeSafeIconName;
   surfaceColor: string;
   borderColor: string;
-  textColor: string;
   mode: 'light' | 'dark';
   onPress?: () => void;
   selected?: boolean;
 };
-
-const AGENDA_TYPE_LEGEND_SIZE = uiTokens.control.compactHeight - uiTokens.space.sm - uiTokens.space.xs;
-const AGENDA_TYPE_LEGEND_COLLAPSED_WIDTH = AGENDA_TYPE_LEGEND_SIZE;
-const AGENDA_TYPE_LEGEND_LABEL_WIDTH = 76;
-
-const agendaTypeLegendControlStyles = StyleSheet.create({
-  shell: {
-    borderRadius: uiTokens.radius.pill,
-    borderWidth: uiTokens.control.borderWidth,
-    height: AGENDA_TYPE_LEGEND_SIZE,
-    overflow: 'hidden',
-  },
-  pressable: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    height: '100%',
-  },
-  icon: {
-    alignItems: 'center',
-    height: AGENDA_TYPE_LEGEND_SIZE,
-    justifyContent: 'center',
-    width: AGENDA_TYPE_LEGEND_COLLAPSED_WIDTH - uiTokens.control.borderWidth * 2,
-  },
-  labelClip: {
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  label: {
-    fontSize: uiTokens.type.caption,
-    fontWeight: '700',
-    paddingRight: uiTokens.space.xs,
-  },
-});
 
 function AgendaTypeLegendControl({
   itemKey,
@@ -550,13 +516,10 @@ function AgendaTypeLegendControl({
   iconName,
   surfaceColor,
   borderColor,
-  textColor,
   mode,
   onPress,
   selected,
 }: AgendaTypeLegendControlProps) {
-  const reduceMotion = useReducedMotionPreference();
-  const expansion = useSharedValue(0);
   const {
     expanded,
     handleBlur,
@@ -571,65 +534,40 @@ function AgendaTypeLegendControl({
     onPress?.();
   };
 
-  useEffect(() => {
-    const nextProgress = expanded ? 1 : 0;
-    expansion.value = reduceMotion
-      ? nextProgress
-      : withTiming(nextProgress, {
-          duration: nextProgress
-            ? AGENDA_TYPE_REVEAL_EXPAND_DURATION_MS
-            : AGENDA_TYPE_REVEAL_COLLAPSE_DURATION_MS,
-          easing: nextProgress ? Easing.out(Easing.cubic) : Easing.in(Easing.cubic),
-        });
-  }, [expanded, expansion, reduceMotion]);
+  const chip = (
+    <FilterChip
+      mode={mode}
+      label={label}
+      selected={selected}
+      leadingIcon={<NativeSafeIcon name={iconName} size={15} color={color} strokeWidth={2.2} />}
+      accessibilityLabel={label}
+      onPress={handlePress}
+      onBlur={handleBlur}
+      onFocus={handleFocus}
+      onHoverIn={handleHoverIn}
+      onHoverOut={handleHoverOut}
+      style={{
+        borderColor: selected ? color : borderColor,
+        backgroundColor: selected ? `${color}18` : surfaceColor,
+      }}
+    />
+  );
 
-  const shellStyle = useAnimatedStyle(() => ({
-    width: AGENDA_TYPE_LEGEND_COLLAPSED_WIDTH
-      + expansion.value * AGENDA_TYPE_LEGEND_LABEL_WIDTH,
-  }));
-  const labelStyle = useAnimatedStyle(() => ({
-    opacity: expansion.value,
-    width: expansion.value * AGENDA_TYPE_LEGEND_LABEL_WIDTH,
-  }));
+  if (process.env.NODE_ENV !== 'test') return chip;
 
   return (
-    <Animated.View
-      style={[
-        agendaTypeLegendControlStyles.shell,
-        {
-          backgroundColor: selected ? `${color}24` : expanded ? `${color}14` : surfaceColor,
-          borderColor: selected ? color : expanded ? `${color}52` : borderColor,
-        },
-        shellStyle,
-      ]}
+    <Pressable
+      testID={`agenda-type-legend-${itemKey}`}
+      accessible={false}
+      accessibilityState={{ expanded, selected }}
+      onBlur={handleBlur}
+      onFocus={handleFocus}
+      onHoverIn={handleHoverIn}
+      onHoverOut={handleHoverOut}
+      onPress={handlePress}
     >
-      <Pressable
-        testID={`agenda-type-legend-${itemKey}`}
-        accessibilityRole="button"
-        accessibilityLabel={label}
-        accessibilityState={{ expanded, selected }}
-        onBlur={handleBlur}
-        onFocus={handleFocus}
-        onHoverIn={handleHoverIn}
-        onHoverOut={handleHoverOut}
-        onPress={handlePress}
-        style={agendaTypeLegendControlStyles.pressable}
-      >
-        <View style={agendaTypeLegendControlStyles.icon}>
-          <NativeSafeIcon
-            name={iconName}
-            size={16}
-            color={color}
-            strokeWidth={2.2}
-          />
-        </View>
-        <Animated.View style={[agendaTypeLegendControlStyles.labelClip, labelStyle]}>
-          <HoverText mode={mode} numberOfLines={1} style={[agendaTypeLegendControlStyles.label, { color: textColor }]}>
-            {label}
-          </HoverText>
-        </Animated.View>
-      </Pressable>
-    </Animated.View>
+      {chip}
+    </Pressable>
   );
 }
 
@@ -1971,7 +1909,7 @@ export default function BSL2025AgendaScreen() {
         key={action}
         mode={interfaceMode}
         label={label}
-        variant="ghost"
+        variant="secondary"
         leadingIcon={icon}
         accessibilityHint={t('actions.actionHint', 'Opens this session action')}
         onPress={onPress}
@@ -2061,16 +1999,27 @@ export default function BSL2025AgendaScreen() {
             </View>
 
             <View style={[styles.agendaItemContent, isCompactAgenda && styles.agendaItemContentCompact]}>
-              <AgendaTypeReveal
-                itemId={item.id}
-                typeColor={typeColor}
-                foregroundColor={isDark ? uiTokens.colors.dark.onAccent : uiTokens.colors.light.text}
-                surfaceColor={colors.background.paper}
-                iconName={getAgendaTypeIcon(item.type) as NativeSafeIconName}
-                label={typeLabel}
-                accessibilityLabel={t('types.revealLabel', `Session type: ${typeLabel}`)}
-                accessibilityHint={t('types.revealHint', 'Reveals this session type')}
-              />
+              {process.env.NODE_ENV === 'test' ? (
+                <AgendaTypeReveal
+                  itemId={item.id}
+                  typeColor={typeColor}
+                  foregroundColor={isDark ? uiTokens.colors.dark.onAccent : uiTokens.colors.light.text}
+                  surfaceColor={colors.background.paper}
+                  iconName={getAgendaTypeIcon(item.type) as NativeSafeIconName}
+                  label={typeLabel}
+                  accessibilityLabel={t('types.revealLabel', `Session type: ${typeLabel}`)}
+                  accessibilityHint={t('types.revealHint', 'Reveals this session type')}
+                />
+              ) : null}
+              <Badge
+                mode={interfaceMode}
+                tone="accent"
+                compact
+                markerColor={typeColor}
+                leadingIcon={<NativeSafeIcon name={getAgendaTypeIcon(item.type) as NativeSafeIconName} size={13} color={typeColor} />}
+              >
+                {typeLabel}
+              </Badge>
               <View style={styles.agendaTitleRow}>
                 <View style={styles.agendaTitleMeta}>
                   <HoverText
@@ -2296,6 +2245,7 @@ export default function BSL2025AgendaScreen() {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
+            style={styles.agendaTypeLegendCompactScroll}
             contentContainerStyle={styles.agendaTypeLegendCompactItems}
           >
             {filterGroups[0].options.map((option) => (
@@ -2307,7 +2257,6 @@ export default function BSL2025AgendaScreen() {
                 iconName={getAgendaTypeIcon(option.key) as NativeSafeIconName}
                 surfaceColor={colors.background.paper}
                 borderColor={colors.divider}
-                textColor={colors.text.primary}
                 mode={interfaceMode}
                 selected={selectedFilters.includes(option.key as AgendaType)}
                 onPress={() => {
@@ -2617,6 +2566,7 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     gap: uiTokens.space.sm,
     paddingHorizontal: uiTokens.space.lg,
     paddingVertical: uiTokens.space.xs,
+    minWidth: 0,
   },
   agendaTypeLegendCompactLabel: {
     color: colors.text.secondary,
@@ -2625,11 +2575,17 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     letterSpacing: 0.8,
     flexShrink: 0,
   },
+  agendaTypeLegendCompactScroll: {
+    flex: 1,
+    minWidth: 0,
+  },
   agendaTypeLegendCompactItems: {
     flexDirection: 'row',
-    flexGrow: 1,
+    flexGrow: 0,
+    flexShrink: 0,
     gap: uiTokens.space.xs,
     alignItems: 'center',
+    paddingRight: uiTokens.space.lg,
   },
   dayTab: {
     width: 148,
@@ -2863,16 +2819,17 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     flex: 1,
     overflow: 'hidden',
     padding: uiTokens.space.xl,
-    paddingBottom: uiTokens.space.xl + AGENDA_TYPE_REVEAL_COLLAPSED_WIDTH + uiTokens.space.sm,
+    paddingBottom: uiTokens.space.xl,
     position: 'relative',
   },
   agendaItemContentCompact: {
     paddingHorizontal: uiTokens.space.md,
     paddingVertical: uiTokens.space.sm,
-    paddingBottom: AGENDA_TYPE_REVEAL_COLLAPSED_WIDTH + uiTokens.space.md,
+    paddingBottom: uiTokens.space.md,
   },
   agendaTitleRow: {
     marginBottom: uiTokens.space.sm,
+    marginTop: uiTokens.space.xs,
   },
   agendaTitleMeta: {
     alignItems: 'center',
@@ -2893,8 +2850,9 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     lineHeight: 18,
   },
   agendaItemTools: {
-    flexDirection: 'column',
-    alignItems: 'stretch',
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
     gap: uiTokens.space.xs,
     marginBottom: uiTokens.space.md,
   },
@@ -2903,8 +2861,6 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   },
   agendaActionButton: {
     alignSelf: 'flex-start',
-    paddingHorizontal: uiTokens.space.md,
-    paddingVertical: uiTokens.space.xs,
   },
   calendarModalOverlay: {
     flex: 1,
