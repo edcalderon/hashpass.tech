@@ -159,15 +159,14 @@ export default function SpeakersCalendar() {
         });
 
         try {
-          const requestPromise = apiClient.request<{ data?: any[]; public?: boolean }>(
-            eventApiPath(event.id, 'speakers'),
-            { skipEventSegment: true },
-          );
+          const requestPromise = apiClient.request(eventApiPath(event.id, 'speakers'), {
+            skipEventSegment: true,
+          });
           const response = await Promise.race([requestPromise, timeoutPromise]) as Awaited<typeof requestPromise>;
 
           if (!response.success) throw new Error(response.error);
 
-          const payload = response.data;
+          const payload = response.data as { data?: any[]; public?: boolean } | undefined;
 
           // speakers_public=false for this guest -- never fall back to the
           // bundled directory below, that would show the organizer's real
