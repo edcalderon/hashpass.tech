@@ -578,6 +578,9 @@ describe('event schedule screens', () => {
     });
 
     const media = renderer!.root.findByProps({ testID: 'agenda-card-media-keynote-session' });
+    expect(media.props.style).toEqual(expect.arrayContaining([
+      expect.objectContaining({ minHeight: 184, width: 168 }),
+    ]));
     expect(media.findAllByType('Image' as any).some((node) => (
       node.props.source?.uri === 'https://images.example.test/ada.jpg'
     ))).toBe(true);
@@ -590,7 +593,15 @@ describe('event schedule screens', () => {
       backgroundColor: 'rgba(3, 12, 24, 0.42)',
       borderTopWidth: 1,
     }));
-    expect(renderer!.root.findByProps({ testID: 'agenda-card-time-keynote-session' }).children.join('')).toBe('8:00 – 9:00 AM');
+    const keynoteTime = renderer!.root.findByProps({ testID: 'agenda-card-time-keynote-session' });
+    expect(keynoteTime.children.join('')).toBe('8:00 – 9:00 AM');
+    expect(keynoteTime.props.numberOfLines).toBe(1);
+    expect(renderer!.root.findAllByProps({ accessibilityLabel: 'calendar.openPicker' }).some((node) => (
+      Array.isArray(node.props.style)
+        && node.props.style.some((style: unknown) => (
+          style && typeof style === 'object' && (style as { alignSelf?: string }).alignSelf === 'center'
+        ))
+    ))).toBe(true);
     expect(renderer!.root.findAll((node) => (
       node.type === Text && node.children.join('').includes('source_fingerprint')
     ))).toHaveLength(0);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, InteractionManager, Linking, Modal, Platform, Pressable, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, InteractionManager, Linking, Modal, Platform, Pressable, Image, useWindowDimensions } from 'react-native';
 import type { ImageSourcePropType } from 'react-native';
 import Animated, {
   useAnimatedStyle,
@@ -265,6 +265,7 @@ function AgendaItemCardsSkeleton({
 export default function BSL2025AgendaScreen() {
   const { event } = useEvent();
   const { isDark, colors } = useTheme();
+  const { width: viewportWidth } = useWindowDimensions();
   const interfaceMode = isDark ? 'dark' : 'light';
   const router = useRouter();
   const params = useLocalSearchParams<{ session?: string; scrollTo?: string; day?: string }>();
@@ -299,6 +300,7 @@ export default function BSL2025AgendaScreen() {
   const [agendaLayout, setAgendaLayout] = useState<'compact' | 'list' | 'grid'>('compact');
   const isCompactAgenda = agendaLayout === 'compact';
   const isAgendaGrid = agendaLayout === 'grid';
+  const isWideAgenda = viewportWidth >= 768;
   const [usingJsonFallback, setUsingJsonFallback] = useState(false);
   const [serviceStatus, setServiceStatus] = useState<'running' | 'stopped' | 'unknown'>('unknown');
   const [isEventPeriod, setIsEventPeriod] = useState(false);
@@ -1480,7 +1482,11 @@ export default function BSL2025AgendaScreen() {
         leadingIcon={icon}
         accessibilityHint={t('actions.actionHint', 'Opens this session action')}
         onPress={onPress}
-        style={[styles.agendaActionButton, isCompactAgenda && styles.agendaActionButtonCompact]}
+        style={[
+          styles.agendaActionButton,
+          isCompactAgenda && styles.agendaActionButtonCompact,
+          isWideAgenda && !isAgendaGrid && styles.agendaActionButtonWide,
+        ]}
       />
     );
 
@@ -1519,6 +1525,7 @@ export default function BSL2025AgendaScreen() {
                 styles.agendaMedia,
                 isCompactAgenda && styles.agendaMediaCompact,
                 isAgendaGrid && styles.agendaMediaGrid,
+                isWideAgenda && !isAgendaGrid && styles.agendaMediaWide,
                 { backgroundColor: `${typeColor}20` },
               ]}
             >
@@ -1558,7 +1565,7 @@ export default function BSL2025AgendaScreen() {
                 <Text
                   testID={`agenda-card-time-${item.id}`}
                   style={styles.agendaTime}
-                  numberOfLines={2}
+                  numberOfLines={isWideAgenda && !isAgendaGrid ? 1 : 2}
                 >
                   {formatAgendaCardTime(item, eventTzOffset)}
                 </Text>
@@ -1603,7 +1610,11 @@ export default function BSL2025AgendaScreen() {
                 <HoverText mode={interfaceMode} style={styles.agendaLocation} numberOfLines={1}>{location}</HoverText>
               </View>
 
-              <View style={[styles.agendaItemTools, isCompactAgenda && styles.agendaItemToolsCompact]}>
+              <View style={[
+                styles.agendaItemTools,
+                isCompactAgenda && styles.agendaItemToolsCompact,
+                isWideAgenda && !isAgendaGrid && styles.agendaItemToolsWide,
+              ]}>
                 {renderAgendaAction(
                   'calendar',
                   t('calendar.openPicker', 'Add this session to a calendar'),
@@ -2196,6 +2207,10 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     minHeight: 118,
     width: 116,
   },
+  agendaMediaWide: {
+    minHeight: 184,
+    width: 168,
+  },
   agendaMediaGrid: {
     minHeight: 260,
     width: '100%',
@@ -2326,6 +2341,10 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     gap: uiTokens.space.xs,
     marginBottom: uiTokens.space.sm,
   },
+  agendaItemToolsWide: {
+    alignItems: 'center',
+    width: '100%',
+  },
   agendaActionButton: {
     alignSelf: 'flex-start',
     flexShrink: 1,
@@ -2335,6 +2354,9 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   },
   agendaActionButtonCompact: {
     alignSelf: 'stretch',
+  },
+  agendaActionButtonWide: {
+    alignSelf: 'center',
   },
   calendarModalOverlay: {
     flex: 1,
