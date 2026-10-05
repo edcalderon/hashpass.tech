@@ -237,6 +237,32 @@ describe('BetterAuthProvider', () => {
     expect(result.pending).toBe(true);
   });
 
+  it('uses the local Expo auth route when the browser is on localhost', async () => {
+    setTestWindow({
+      location: {
+        origin: 'http://localhost:8081',
+        hostname: 'localhost',
+        pathname: '/auth',
+      } as unknown as Window['location'],
+      localStorage: {
+        getItem: jest.fn(),
+        setItem: jest.fn(),
+        removeItem: jest.fn(),
+      } as unknown as Storage,
+    } as Window);
+    mockSignOut.mockResolvedValueOnce({});
+
+    const { BetterAuthProvider } = require('../../../../packages/auth/src/providers/better-auth');
+    const provider = new BetterAuthProvider({ baseURL: 'https://api-dev.hashpass.tech/api/auth' });
+
+    await provider.signOut();
+
+    expect(mockCreateAuthClient).toHaveBeenCalledWith(expect.objectContaining({
+      baseURL: 'http://localhost:8081/api/auth',
+      fetchOptions: { credentials: 'include' },
+    }));
+  });
+
   it('starts web Apple sign-in through the Better Auth social endpoint', async () => {
     const mockLocalStorage = {
       getItem: jest.fn(() => '/dashboard/explore'),

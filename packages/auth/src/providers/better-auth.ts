@@ -88,6 +88,20 @@ export class BetterAuthProvider implements IAuthProvider {
   }
 
   private resolveClientBaseURL(): string {
+    // Local Expo web runs its Better Auth route on the same origin as the
+    // bundle. A propagated .env.local may still contain the deployed API base
+    // URL for data requests; using that remote origin here makes the OAuth
+    // callback set its session cookie on api-dev.hashpass.tech, while the
+    // localhost callback page probes a different cookie jar and reports that
+    // authentication completed without a session.
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      const hostname = window.location?.hostname?.toLowerCase();
+      const isLocalHost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0' || hostname?.endsWith('.local');
+      if (isLocalHost && window.location?.origin) {
+        return `${window.location.origin.replace(/\/$/, '')}${this.basePath}`;
+      }
+    }
+
     if (this.explicitBaseURL) return this.explicitBaseURL;
 
     const apiBaseUrl = ENV_CONFIG.getApiUrl();
