@@ -52,11 +52,6 @@ const config = {
       },
       items: [
         {
-          to: '/media-kit',
-          label: 'Media Kit',
-          position: 'left',
-        },
-        {
           type: 'docSidebar',
           sidebarId: 'docsSidebar',
           position: 'left',
@@ -113,6 +108,7 @@ const config = {
           title: 'HASHPASS',
           items: [
             { label: 'hashpass.tech', href: 'https://hashpass.tech' },
+            { label: 'Media Kit', to: '/media-kit' },
             { label: 'Terms of Service', to: '/legal/terms-of-service' },
             { label: 'Privacy Policy', to: '/legal/privacy-policy' },
           ],
