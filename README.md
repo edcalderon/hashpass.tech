@@ -20,19 +20,21 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.101)
+## 📋 Latest Changes (v1.9.102)
 
 ### Features
 
-* **lukas:** add branded favicon and legal footer ([da9ebf7](https://github.com/hashpass-tech/hashpass.tech/commit/da9ebf700c6609535030c653b761591c0ec2ac94))
+* **auth:** add Sign in with X (Twitter) via Better Auth (web only) ([a803980](https://github.com/hashpass-tech/hashpass.tech/commit/a8039801aa7835d6fd7cc0f7decead4425b2e045))
 ### Release Highlights
-- add branded favicon and legal footer
+- add Sign in with X (Twitter) via Better Auth (web only)
 
 ### Release scope
-- Compared with: `v1.9.100` (the previous global release tag)
+- Compared with: `v1.9.101` (the previous global release tag)
 
 ### Affected products & packages
-- Infrastructure
+- Mobile app
+- Auth
+- Documentation
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

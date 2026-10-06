@@ -212,6 +212,9 @@ export const syncBetterAuthUser = async (
 const googleClientId = readEnv('BETTER_AUTH_GOOGLE_CLIENT_ID') || readEnv('GOOGLE_CLIENT_ID');
 const googleClientSecret =
   readEnv('BETTER_AUTH_GOOGLE_CLIENT_SECRET') || readEnv('GOOGLE_CLIENT_SECRET');
+const twitterClientId = readEnv('BETTER_AUTH_TWITTER_CLIENT_ID') || readEnv('TWITTER_CLIENT_ID');
+const twitterClientSecret =
+  readEnv('BETTER_AUTH_TWITTER_CLIENT_SECRET') || readEnv('TWITTER_CLIENT_SECRET');
 const DEFAULT_APPLE_BUNDLE_IDENTIFIER = 'tech.hashpass.app';
 const configuredBaseURL = normalizeAuthURL(readEnv('BETTER_AUTH_URL'));
 const mcpResource = readEnv('BETTER_AUTH_MCP_RESOURCE_URL') || 'https://mcp.hashpass.tech/mcp';
@@ -348,8 +351,13 @@ const createAuthInstance = () =>
         // `trustedProviders` additionally auto-links even if a provider's
         // token doesn't come through as email-verified for some reason, since
         // both Google and Apple accounts are first-party-verified identities.
+        // X/Twitter is included here too: X's OAuth 2.0 user lookup does not
+        // reliably return a verified-email flag, so without this a user who
+        // already signed up via Google/email and then tries "Continue with
+        // X" on the same address would hit Better Auth's duplicate-account
+        // error instead of linking.
         enabled: true,
-        trustedProviders: ['google', 'apple'],
+        trustedProviders: ['google', 'apple', 'twitter'],
       },
     },
     socialProviders: {
@@ -358,6 +366,14 @@ const createAuthInstance = () =>
             google: {
               clientId: googleClientId,
               clientSecret: googleClientSecret,
+            },
+          }
+        : {}),
+      ...(twitterClientId && twitterClientSecret
+        ? {
+            twitter: {
+              clientId: twitterClientId,
+              clientSecret: twitterClientSecret,
             },
           }
         : {}),

@@ -165,6 +165,18 @@ For the Better Auth Google flow (now the default for every tenant on web):
   without that cookie, the server rejects the Google return as
   `state_mismatch` and the app falls back to `/auth`.
 
+For the Better Auth X (Twitter) flow (web only — see above):
+
+- `BETTER_AUTH_TWITTER_CLIENT_ID` / `BETTER_AUTH_TWITTER_CLIENT_SECRET` (or
+  the bare `TWITTER_CLIENT_ID` / `TWITTER_CLIENT_SECRET`)
+- The X Developer Portal app must have
+  `<apiBase>/api/auth/callback/twitter` registered as a Callback URI for
+  every environment, same pattern as Google's redirect URI above:
+  `https://api.hashpass.tech/api/auth/callback/twitter` (production) and
+  `https://api-dev.hashpass.tech/api/auth/callback/twitter` (dev / shared
+  dev API). Same `trustedOrigins`/CORS/cookie-forwarding requirements as
+  Google apply, since it's the same Better Auth instance and route.
+
 Supabase compatibility paths (email/OTP and native fallback only):
 
 - `EXPO_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_ANON_KEY` (or the active
@@ -182,11 +194,69 @@ in [Sign in with Apple](SIGN_IN_WITH_APPLE.md). In summary, web/PWA uses Better
 Auth OAuth, iOS exchanges the native Apple identity token with Better Auth, and
 Android intentionally does not render an Apple button.
 
+## Sign in with X (Twitter) (web only, added 2026-10-06)
+
+X/Twitter uses the exact same Better Auth browser-redirect flow as web
+Google/Apple above — `signIn.social({ provider: 'twitter', ... })` — not the
+legacy Directus bridge. There is intentionally **no native path yet**:
+`useAuth.signInWithOAuth('twitter')` returns an explicit "available on the
+web only" error on Android/iOS, since X has no ID-token SDK exchange like
+Google and no deep-link callback has been wired up for it.
+
+1. **X Developer Portal → App → User authentication settings**, for the
+   `hashpass.tech` app:
+   - **App permissions:** `Read` (profile info only — this integration never
+     posts or DMs on a user's behalf).
+   - **Request email from users:** on — Better Auth keys account
+     linking/dedup off the user's registry by email the same way Google and
+     Apple do.
+   - **Type of App:** `Web App, Automated App or Bot` (confidential client —
+     this issues a Client ID **and** Client Secret, matching how
+     `socialProviders.google`/`.apple` already hold both server-side; a
+     `Native App` client is public/PKCE-only and does not fit this flow).
+   - **Callback URI / Redirect URL**, register one per environment, exactly
+     matching the Google pattern:
+     - `https://api.hashpass.tech/api/auth/callback/twitter` (production)
+     - `https://api-dev.hashpass.tech/api/auth/callback/twitter` (dev / local
+       Expo web pointed at the shared dev API)
+     - `http://localhost:8081/api/auth/callback/twitter` — only needed when
+       `BETTER_AUTH_URL` is unset locally, so Better Auth resolves its own
+       host dynamically and treats the local Expo dev server itself as the
+       API (confirmed: this is the redirect_uri a real local
+       `signIn.social({ provider: 'twitter' })` call produced on
+       2026-10-06). Same local-direct-API case already documented for
+       Google above. X permits plain `http://localhost` callback URIs for
+       development, unlike most providers that require HTTPS everywhere.
+   - **Website URL:** `https://hashpass.tech`
+2. Set `BETTER_AUTH_TWITTER_CLIENT_ID` / `BETTER_AUTH_TWITTER_CLIENT_SECRET`
+   (or the bare `TWITTER_CLIENT_ID` / `TWITTER_CLIENT_SECRET` fallback,
+   mirroring the Google env var pair) in each environment's secrets. Until
+   both are set, `socialProviders.twitter` is omitted entirely and the
+   `/auth` screen's X button fails with Better Auth's normal "provider not
+   configured" error rather than crashing the route.
+3. `account.accountLinking.trustedProviders` includes `'twitter'`, so a user
+   who already has a Google/email/Apple account can link an X account on the
+   same email even though X's OAuth 2.0 user-lookup response does not
+   reliably report the email as verified.
+4. The sign-in button lives in `apps/mobile-app/app/(shared)/auth.tsx`
+   (`handleXSignIn`), rendered only when `Platform.OS === 'web'`, right below
+   the Apple button. Icon is `components/icons/XIcon.tsx`, an inline
+   `react-native-svg` path of the real X brand mark — **not** Ionicons'
+   `logo-twitter`, which Ionicons dropped after the rebrand without adding a
+   replacement, so that name renders a missing-glyph fallback (a question
+   mark) instead of a logo; see that file's header comment and
+   `components/icons/SettingsIcons.tsx` for the same pattern used elsewhere.
+   The visible label is `t('signInWithX', 'Continue with X')`.
+5. **Follow-up, not yet done:** a native (Android/iOS) path would need a
+   `WebBrowser.openAuthSessionAsync` browser-redirect + deep-link callback,
+   analogous to the Directus native fallback already described above, since
+   there is no native X SDK ID-token exchange to mirror Google's.
+
 ## Relevant Routes
 
-- `apps/mobile-app/hooks/useAuth.ts` — `signInWithOAuth('google')` and `handleOAuthCallback` (Better-Auth-first routing)
+- `apps/mobile-app/hooks/useAuth.ts` — `signInWithOAuth('google')` and `handleOAuthCallback` (Better-Auth-first routing); `signInWithOAuth('twitter')` reuses the same web branch, with an explicit native-unsupported guard
 - `packages/auth/src/providers/better-auth.ts` — `BetterAuthProvider.signInWithOAuth` / `.handleOAuthCallback`
-- `apps/mobile-app/lib/server/better-auth.ts` — server-side Better Auth config (`socialProviders.google`, `allowedHosts`, `trustedOrigins`)
+- `apps/mobile-app/lib/server/better-auth.ts` — server-side Better Auth config (`socialProviders.google`/`.twitter`, `allowedHosts`, `trustedOrigins`)
 - `apps/mobile-app/lib/server/better-auth-route.ts` — wraps Better Auth's route handler so auth errors never strand users on the API host
 - `apps/mobile-app/lib/server/better-auth-error-redirect.ts` — converts Better Auth `/api/auth/error?...` and bad redirect targets into frontend `/auth?...` redirects
 - `packages/infra/lambda/index.js` — converts API Gateway v2 events into Fetch requests; must preserve the OAuth state cookie from `event.cookies`
