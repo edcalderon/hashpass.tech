@@ -1,3 +1,20 @@
+## [1.9.102](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.101...v1.9.102) (2026-10-06)
+
+
+### Features
+
+* **auth:** add Sign in with X (Twitter) via Better Auth (web only) ([a803980](https://github.com/hashpass-tech/hashpass.tech/commit/a8039801aa7835d6fd7cc0f7decead4425b2e045))
+### Release Highlights
+- add Sign in with X (Twitter) via Better Auth (web only)
+
+### Release scope
+- Compared with: `v1.9.101` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Auth
+- Documentation
+
 ## [1.9.101](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.100...v1.9.101) (2026-10-06)
 
 

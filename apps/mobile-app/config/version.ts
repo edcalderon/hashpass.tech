@@ -22,22 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610060147, // Updated to current timestamp
+  buildNumber: 202610061918, // Updated to current timestamp
   releaseDate: '2026-10-06',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'add branded favicon and legal footer'
+    'add Sign in with X (Twitter) via Better Auth (web only)'
   ],
   bugfixes: [
     // No bugfixes
   ],
   breakingChanges: [],
-  notes: 'add branded favicon and legal footer'
+  notes: 'add Sign in with X (Twitter) via Better Auth (web only)'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.102': {
+    version: '1.9.102',
+    buildNumber: 202610061918,
+    releaseDate: '2026-10-06',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'add Sign in with X (Twitter) via Better Auth (web only)'
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'add Sign in with X (Twitter) via Better Auth (web only)'
+  },
   '1.9.101': {
     version: '1.9.101',
     buildNumber: 202610060147,
