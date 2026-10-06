@@ -23,6 +23,7 @@ SOURCE_PATHS = [
 
 def build(output):
     expected = "v" + (REPO / ".nvmrc").read_text().strip()
+    release_version = json.loads((REPO / "package.json").read_text())["version"]
     actual = subprocess.check_output(["node", "--version"], text=True).strip()
     if actual != expected:
         raise SystemExit(f"Use the repository Node runtime: {expected}; found {actual}")
@@ -78,6 +79,8 @@ export default function Index() { return <Redirect href='/lukas' />; }
             target = source / relative
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(override, target)
+            if relative.as_posix() == "components/lukas/LukasFooter.tsx":
+                target.write_text(target.read_text().replace("__LUKAS_RELEASE_VERSION__", release_version))
             override_hashes[str(relative)] = hashlib.sha256(override.read_bytes()).hexdigest()
         env = {k: v for k, v in os.environ.items() if not k.startswith(("EXPO_PUBLIC_", "AMPLIFY_"))}
         env.update(EXPO_NO_DOTENV="1", CI="1")
@@ -92,7 +95,15 @@ export default function Index() { return <Redirect href='/lukas' />; }
         if forbidden:
             raise SystemExit("Unexpected source/server files in static export.")
         shutil.copy2(site / "+not-found.html", site / "404.html")
-        (site / "recovery.json").write_text(json.dumps({"sourceCommit": SOURCE_COMMIT, "scope": "original-lukas-landing", "overrides": override_hashes}) + "\n")
+        favicon = overrides / "public/favicon.svg"
+        if favicon.is_file():
+            shutil.copy2(favicon, site / "favicon.svg")
+            for html in site.glob("*.html"):
+                content = html.read_text()
+                content = content.replace('rel="icon" href="/favicon.ico"', 'rel="icon" type="image/svg+xml" href="/favicon.svg"')
+                content = content.replace("rel=\"icon\" href=\"/favicon.ico\"", "rel=\"icon\" type=\"image/svg+xml\" href=\"/favicon.svg\"")
+                html.write_text(content)
+        (site / "recovery.json").write_text(json.dumps({"sourceCommit": SOURCE_COMMIT, "releaseVersion": release_version, "scope": "original-lukas-landing", "overrides": override_hashes}) + "\n")
         shutil.copytree(site, output)
     print(f"Static Lukas site ready at {output}")
 

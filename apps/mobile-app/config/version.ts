@@ -22,23 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610060052, // Updated to current timestamp
+  buildNumber: 202610060147, // Updated to current timestamp
   releaseDate: '2026-10-06',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'align landing with LatAm index'
+    'add branded favicon and legal footer'
   ],
   bugfixes: [
-    'serve landing from lks route',
-    'create Lukas build output path correctly'
+    // No bugfixes
   ],
   breakingChanges: [],
-  notes: 'align landing with LatAm index; serve landing from lks route; create Lukas build output path correctly'
+  notes: 'add branded favicon and legal footer'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.101': {
+    version: '1.9.101',
+    buildNumber: 202610060147,
+    releaseDate: '2026-10-06',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'add branded favicon and legal footer'
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'add branded favicon and legal footer'
+  },
   '1.9.100': {
     version: '1.9.100',
     buildNumber: 202610060052,
