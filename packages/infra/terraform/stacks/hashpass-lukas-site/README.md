@@ -40,9 +40,9 @@ python3 packages/infra/terraform/stacks/hashpass-lukas-site/build.py /tmp/lukas-
 
 Use a new output directory. The result includes `recovery.json` with source
 provenance, and `404.html` for genuine missing routes. `/` loads the original
-router entry and navigates to `/lukas`; CloudFront maps clean URLs to their
-exported HTML files without rewriting JavaScript/assets or masking failures as
-successful pages.
+router entry and navigates to `/lukas`; CloudFront maps `/lukas` and `/lks` to
+the same landing page and maps other clean URLs to their exported HTML files
+without rewriting JavaScript/assets or masking failures as successful pages.
 
 ## Local development
 
@@ -53,9 +53,10 @@ npm run dev:all -- --lukas-landing
 ```
 
 The flag builds the pinned landing into an isolated temporary directory and
-serves it at `http://127.0.0.1:4173/lukas`. Override the port with
-`LUKAS_LANDING_PORT`; the local server preserves the clean `/lukas` route and
-static asset paths used in production.
+serves it at `http://127.0.0.1:4173/lukas` and
+`http://127.0.0.1:4173/lks`. Override the port with `LUKAS_LANDING_PORT`; the
+local server preserves both clean routes and the static asset paths used in
+production.
 
 ## Infrastructure and publishing
 
@@ -87,7 +88,8 @@ the existing production budget.
 ## Verification and rollback
 
 Check authoritative and public DNS A/AAAA answers, HTTP-to-HTTPS redirection,
-trusted TLS, `/` and `/lukas`, static assets, and a missing URL returning 404.
+trusted TLS, `/`, `/lukas`, and `/lks`, static assets, and a missing URL
+returning 404.
 Use an isolated browser for desktop and mobile; verify landing text, language
 cycling, section navigation, FAQ expansion, no horizontal overflow, and no browser
 exceptions. The landing connection flow signs an authentication message only; it never requests a seed phrase or private key. Token minting remains outside this landing page.

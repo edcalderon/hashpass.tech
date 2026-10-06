@@ -34,7 +34,7 @@ const routeToFile = (requestPath) => {
   const normalized = path.posix.normalize(decoded);
   if (normalized.includes('\\')) return null;
   if (normalized === '..' || normalized.startsWith('../') || normalized.includes('/../')) return null;
-  if (normalized === '/' || normalized === '/lukas') return '/lukas.html';
+  if (normalized === '/' || normalized === '/lukas' || normalized === '/lukas/' || normalized === '/lks' || normalized === '/lks/') return '/lukas.html';
   if (normalized === '/index') return '/index.html';
   return normalized;
 };
