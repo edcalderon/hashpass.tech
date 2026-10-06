@@ -23,15 +23,30 @@ const contentTypes = {
 };
 
 const routeToFile = (requestPath) => {
-  const decoded = decodeURIComponent(requestPath.split('?', 1)[0]);
-  if (decoded === '/' || decoded === '/lukas') return '/lukas.html';
-  if (decoded === '/index') return '/index.html';
-  return decoded;
+  const rawPath = requestPath.split('?', 1)[0];
+  let decoded;
+  try {
+    decoded = decodeURIComponent(rawPath);
+  } catch {
+    return null;
+  }
+  if (!decoded.startsWith('/')) return null;
+  const normalized = path.posix.normalize(decoded);
+  if (normalized.includes('\\')) return null;
+  if (normalized === '..' || normalized.startsWith('../') || normalized.includes('/../')) return null;
+  if (normalized === '/' || normalized === '/lukas') return '/lukas.html';
+  if (normalized === '/index') return '/index.html';
+  return normalized;
 };
 
 const server = http.createServer(async (request, response) => {
   try {
     const relativePath = routeToFile(request.url || '/');
+    if (!relativePath) {
+      response.writeHead(400);
+      response.end('Invalid path');
+      return;
+    }
     const filePath = path.resolve(root, `.${relativePath}`);
     if (filePath !== root && !filePath.startsWith(`${root}${path.sep}`)) {
       response.writeHead(400);
