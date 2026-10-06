@@ -1,3 +1,18 @@
+## [1.9.101](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.100...v1.9.101) (2026-10-06)
+
+
+### Features
+
+* **lukas:** add branded favicon and legal footer ([da9ebf7](https://github.com/hashpass-tech/hashpass.tech/commit/da9ebf700c6609535030c653b761591c0ec2ac94))
+### Release Highlights
+- add branded favicon and legal footer
+
+### Release scope
+- Compared with: `v1.9.100` (the previous global release tag)
+
+### Affected products & packages
+- Infrastructure
+
 ## [1.9.100](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.99...v1.9.100) (2026-10-06)
 
 
