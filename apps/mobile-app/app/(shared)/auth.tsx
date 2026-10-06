@@ -37,6 +37,7 @@ import { useAuth } from "../../hooks/useAuth";
 import { getCurrentLocale, useTranslation } from "../../i18n/i18n";
 import { apiClient, eventApiPath } from "../../lib/api-client";
 import { MorphIcon } from "../../lib/morph-icon";
+import { XIcon } from "../../components/icons/XIcon";
 import { LoaderCircle, Check } from "lucide";
 import {
   authService,
@@ -692,7 +693,7 @@ export default function AuthScreen({ embedded = false, onAuthenticated, onDismis
   );
 
   const [busyAction, setBusyAction] = useState<BusyAction>(null);
-  const [oauthProvider, setOauthProvider] = useState<"google" | "apple" | null>(null);
+  const [oauthProvider, setOauthProvider] = useState<"google" | "apple" | "twitter" | null>(null);
   // Pilot use of the morphicons library: briefly holds the primary button in
   // a "verified" visual state so the spinner->checkmark morph is visible
   // before the busy state clears. Purely additive -- navigation is still
@@ -828,6 +829,10 @@ export default function AuthScreen({ embedded = false, onAuthenticated, onDismis
       ? t("redirectingToApple", "Redirecting to Apple...")
       : t("openingAppleSignIn", "Opening Apple sign-in...")
     : t("signInWithApple", "Sign in with Apple");
+  const isXOAuthRedirecting = busyAction === "oauth" && oauthProvider === "twitter";
+  const xOAuthButtonLabel = isXOAuthRedirecting
+    ? t("redirectingToX", "Redirecting to X...")
+    : t("signInWithX", "Continue with X");
   const authActionMessage = useMemo(() => {
     switch (busyAction) {
       case "magic-link":
@@ -1611,6 +1616,57 @@ export default function AuthScreen({ embedded = false, onAuthenticated, onDismis
       const message = extractApiError(
         error?.message,
         t("appleOauthError", "Apple sign-in failed. Please try again."),
+      );
+      if (typeof window !== "undefined" && window.localStorage) {
+        window.localStorage.removeItem("auth_signin_method");
+      }
+      showError(t("authenticationError", "Authentication Error"), message);
+    } finally {
+      if (!keepOAuthBusy) {
+        oauthInFlightRef.current = false;
+        setOauthProvider(null);
+        setBusyAction(null);
+      }
+    }
+  };
+
+  // Web-only for now: X/Twitter goes through Better Auth's browser-redirect
+  // flow the same way Google/Apple do on web, but there is no native
+  // ID-token exchange for it yet (see useAuth.signInWithOAuth's 'twitter'
+  // guard) and no deep-link callback wired up for native.
+  const handleXSignIn = async () => {
+    if (isBusy || oauthInFlightRef.current) return;
+    hapticLight();
+
+    setOauthProvider("twitter");
+    oauthInFlightRef.current = true;
+    setBusyAction("oauth");
+    let keepOAuthBusy = false;
+
+    try {
+      if (typeof window !== "undefined" && window.localStorage) {
+        window.localStorage.removeItem(PASSWORDLESS_CALLBACK_MARKER);
+        window.localStorage.setItem("auth_signin_method", "twitter_oauth");
+        window.localStorage.setItem("oauth_return_url", redirectPath);
+      }
+
+      const result = await signInWithOAuth("twitter");
+      if (result.error) {
+        throw new Error(result.error);
+      }
+      if (result.pending) {
+        keepOAuthBusy = true;
+        return;
+      }
+
+      showSuccess(
+        t("loginSuccess", "Login successful"),
+        t("welcomeBack", "Welcome back!"),
+      );
+    } catch (error: any) {
+      const message = extractApiError(
+        error?.message,
+        t("xOauthError", "X sign-in failed. Please try again."),
       );
       if (typeof window !== "undefined" && window.localStorage) {
         window.localStorage.removeItem("auth_signin_method");
@@ -2768,6 +2824,47 @@ export default function AuthScreen({ embedded = false, onAuthenticated, onDismis
                             ellipsizeMode="tail"
                           >
                             {appleOAuthButtonLabel}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    </View>
+                  ) : null}
+
+                  {Platform.OS === "web" ? (
+                    <View style={styles.oauthContainer}>
+                      <TouchableOpacity
+                        style={[
+                          styles.oauthButton,
+                          styles.oauthButtonNative,
+                          styles.appleOauthButton,
+                        ]}
+                        onPress={() => void handleXSignIn()}
+                        disabled={isBusy}
+                        accessibilityRole="button"
+                        accessibilityLabel={xOAuthButtonLabel}
+                        accessibilityState={{
+                          disabled: isBusy,
+                          busy: isXOAuthRedirecting,
+                        }}
+                      >
+                        <View style={styles.oauthButtonContent}>
+                          <View style={styles.oauthButtonIconGroup}>
+                            {isXOAuthRedirecting ? (
+                              <ActivityIndicator size="small" color={uiPalette(isDark).canvas} />
+                            ) : (
+                              <XIcon size={20} color={uiPalette(isDark).canvas} />
+                            )}
+                          </View>
+                          <Text
+                            style={[
+                              styles.oauthButtonText,
+                              styles.appleOauthButtonText,
+                              isXOAuthRedirecting ? styles.oauthButtonTextBusy : null,
+                            ]}
+                            numberOfLines={1}
+                            ellipsizeMode="tail"
+                          >
+                            {xOAuthButtonLabel}
                           </Text>
                         </View>
                       </TouchableOpacity>

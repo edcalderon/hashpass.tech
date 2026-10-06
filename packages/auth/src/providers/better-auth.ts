@@ -289,7 +289,7 @@ export class BetterAuthProvider implements IAuthProvider {
       return { error: 'OAuth authentication is only available in web browsers.' };
     }
 
-    if (provider !== 'google' && provider !== 'apple') {
+    if (provider !== 'google' && provider !== 'apple' && provider !== 'twitter') {
       return { error: `${provider} social sign-in is not configured for this Better Auth flow.` };
     }
 
@@ -301,7 +301,7 @@ export class BetterAuthProvider implements IAuthProvider {
       const returnTo = storedReturnTo.replace(/\/\([^/]+\)/g, '') || '/dashboard/explore';
       const frontendOrigin = resolveWebOrigin();
       const callbackURL = `${frontendOrigin}/auth/callback?returnTo=${encodeURIComponent(returnTo)}`;
-      const providerLabel = provider === 'apple' ? 'Apple' : 'Google';
+      const providerLabel = provider === 'apple' ? 'Apple' : provider === 'twitter' ? 'X' : 'Google';
       // Better Auth appends the provider's `error` and `error_description`
       // when it returns here. Do not pre-populate those parameters: duplicate
       // generic values hide the actual local configuration or consent error.

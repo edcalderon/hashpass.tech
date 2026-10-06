@@ -1182,7 +1182,7 @@ export const useAuth = () => {
       // (hashpass.tech) and BSL tenants. Never call Supabase's OAuth directly as
       // the primary path — that produced divergent identities depending on which
       // host happened to be resolved.
-      if (Platform.OS === 'web' && (provider === 'google' || provider === 'apple')) {
+      if (Platform.OS === 'web' && (provider === 'google' || provider === 'apple' || provider === 'twitter')) {
         await clearStaleProviderSession('better-auth');
 
         const betterAuthSocial: IAuthProvider =
@@ -1248,6 +1248,13 @@ export const useAuth = () => {
 
       if (provider === 'apple') {
         return { error: 'Sign in with Apple is available on the web and iOS.' };
+      }
+
+      // X/Twitter is web-only for now — there is no native ID-token exchange
+      // for it the way there is for Google/Apple, and no browser-redirect +
+      // deep-link callback has been wired up for native yet.
+      if (provider === 'twitter') {
+        return { error: 'Sign in with X is available on the web only.' };
       }
 
       // ── Native Google Sign-In (SDK path, feature-flagged) ──────────────────────
