@@ -27,6 +27,13 @@ jest.mock('../../components/VersionDisplay', () => () => null);
 jest.mock('../../components/ShaderAnimation', () => () => null);
 jest.mock('../../lib/morph-icon', () => ({ MorphIcon: () => null }));
 jest.mock('../../lib/vector-icons', () => ({ Ionicons: () => null }));
+// Same convention as the SettingsIcons mocks in other tests that render
+// auth.tsx/home.tsx incidentally (e.g. home.test.tsx, QuickSettingsPanel.test.tsx,
+// events-index.test.tsx): the real react-native-svg-backed icon module breaks
+// Jest's module graph here (SvgTouchableMixin reads an undefined `.Mixin` off a
+// react-native internal that this test's mocks don't provide), so stub the icon
+// component itself rather than let react-native-svg load for real.
+jest.mock('../../components/icons/XIcon', () => ({ XIcon: () => null }));
 jest.mock('../../lib/haptics', () => ({ hapticLight: jest.fn(), hapticMedium: jest.fn() }));
 jest.mock('lucide', () => ({ LoaderCircle: {}, Check: {} }));
 jest.mock('expo-clipboard', () => ({ getStringAsync: jest.fn() }));
