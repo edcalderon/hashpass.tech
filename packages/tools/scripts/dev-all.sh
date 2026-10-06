@@ -446,6 +446,10 @@ fi
 
 if [[ "${INCLUDE_LUKAS_LANDING}" == "true" ]]; then
   LUKAS_BUILD_DIR="$(mktemp -d -t hashpass-lukas-dev.XXXXXX)"
+  # build.py requires a path that does not exist yet so it can copy the
+  # generated export into it. `mktemp -d` creates the directory for us; remove
+  # that empty placeholder before handing the path to the builder.
+  rmdir "${LUKAS_BUILD_DIR}"
   echo "Building Lukas landing for local development..."
   python3 packages/infra/terraform/stacks/hashpass-lukas-site/build.py "${LUKAS_BUILD_DIR}"
   echo "Starting Lukas landing on port ${LUKAS_LANDING_PORT}..."
