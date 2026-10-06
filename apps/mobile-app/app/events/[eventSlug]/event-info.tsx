@@ -16,6 +16,12 @@ interface EventDetailsRow {
   venue_address: string | null;
   city: string | null;
   country: string | null;
+  // Per-event guest-visibility flags (public.events.agenda_public /
+  // speakers_public, db/migrations/V109). Absent on events with no
+  // public.events row yet, so treat anything but an explicit `false` as
+  // public -- same fallback the API itself uses.
+  agenda_public?: boolean | null;
+  speakers_public?: boolean | null;
 }
 
 // Public, no-auth-required event info screen -- this is where a logged-out
@@ -103,6 +109,12 @@ export default function EventInfoScreen() {
     !normalizedVenue.includes(normalizedAddress)
   );
   const isArchiveEvent = event?.tour?.role === 'archive' || eventId === 'bsl2025';
+  // Guests only get a direct entry point into Agenda/Speakers when the
+  // organizer has actually opted the event into it; absent a details row
+  // (not-yet-migrated/ingested events) this defaults open, matching the
+  // DB column's own DEFAULT true and the API's same fallback.
+  const isAgendaPublic = details?.agenda_public !== false;
+  const isSpeakersPublic = details?.speakers_public !== false;
 
   const [isEventFinished, setIsEventFinished] = useState(false);
   useEffect(() => {
@@ -130,6 +142,30 @@ export default function EventInfoScreen() {
     { icon: 'location-on', label: 'Location', value: eventLocationLabel },
     { icon: 'business', label: 'Venue', value: venueLabel },
   ];
+
+  // Direct guest entry points into Agenda/Speakers -- each only shown when
+  // the event has actually opted that section into guest visibility (see
+  // isAgendaPublic/isSpeakersPublic above). Shown for archive events too:
+  // reviewing a past edition's schedule/lineup is still useful, unlike the
+  // ticket/CFP CTAs those are gated off for.
+  const exploreItems = [
+    isAgendaPublic
+      ? {
+          icon: 'event-note',
+          label: 'Agenda',
+          value: 'View the full schedule',
+          action: () => router.push(`/events/${eventId}/agenda`),
+        }
+      : null,
+    isSpeakersPublic
+      ? {
+          icon: 'groups',
+          label: 'Speakers',
+          value: 'Meet the speaker lineup',
+          action: () => router.push(`/events/${eventId}/speakers`),
+        }
+      : null,
+  ].filter((item): item is NonNullable<typeof item> => item !== null);
 
   const contactItems = [
     event?.website
@@ -231,6 +267,17 @@ export default function EventInfoScreen() {
       </Surface>
     </View>
   );
+
+  const exploreSection = exploreItems.length > 0 ? (
+    <View testID="event-info-explore-section" style={styles.section}>
+      <Text accessibilityRole="header" style={styles.sectionTitle}>
+        Explore
+      </Text>
+      <Surface mode={isDark ? 'dark' : 'light'} style={styles.sectionContent}>
+        {exploreItems.map(renderItemRow)}
+      </Surface>
+    </View>
+  ) : null;
 
   const contactSection = contactItems.length > 0 ? (
     <View testID="event-info-contact-section" style={styles.section}>
@@ -340,12 +387,14 @@ export default function EventInfoScreen() {
               </View>
               <View testID="event-info-column" style={styles.supportColumn}>
                 {detailsSection}
+                {exploreSection}
                 {contactSection}
               </View>
             </>
           ) : (
             <>
               {detailsSection}
+              {exploreSection}
               {aboutSection}
               {contactSection}
             </>

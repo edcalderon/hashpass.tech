@@ -15,7 +15,7 @@ export async function GET(request: Request) {
   const { data, error } = await supabase
     .from("events")
     .select(
-      "id, name, slug, status, starts_at, ends_at, timezone, venue_name, venue_address, city, country, description",
+      "id, name, slug, status, starts_at, ends_at, timezone, venue_name, venue_address, city, country, description, agenda_public, speakers_public",
     )
     .eq("id", eventId)
     .in("status", ["published", "archived"])

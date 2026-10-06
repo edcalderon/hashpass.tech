@@ -4,7 +4,7 @@ import { useEvent } from '@contexts/EventContext';
 import { useTheme } from '../../../../hooks/useTheme';
 import { MaterialIcons } from '../../../../lib/vector-icons';
 import { useRouter } from 'expo-router';
-import { supabase } from '../../../../lib/supabase';
+import { apiClient, eventApiPath } from '../../../../lib/api-client';
 import EventBanner from '../../../../components/EventBanner';
 import SpeakerAvatar from '../../../../components/SpeakerAvatar';
 import SpeakerSearchAndSort from '../../../../components/SpeakerSearchAndSort';
@@ -110,6 +110,11 @@ export default function SpeakersCalendar() {
   const [sortBy, setSortBy] = useState('name');
   const [showActiveOnly, setShowActiveOnly] = useState(false);
   const [loading, setLoading] = useState(true);
+  // Set when the gated API explicitly marks this directory as not public for
+  // this guest (speakers_public=false, db/migrations/V109) -- distinct from a
+  // genuinely empty directory so this never falls back to the event's
+  // bundled speaker config, which would defeat that gate.
+  const [isDirectoryPrivate, setIsDirectoryPrivate] = useState(false);
 
   // Check if event is finished
   const [isEventFinished, setIsEventFinished] = useState(false);
@@ -129,13 +134,15 @@ export default function SpeakersCalendar() {
     return speakers.filter(s => s.isActive).length;
   }, [speakers]);
 
-  // Load speakers from database with JSON fallback. Gated on event being
-  // resolved: EventContext derives `event` synchronously from usePathname(),
-  // which can be null on the very first render before routing settles. This
-  // effect only runs once "on mount" (see deps below), so if it fired while
-  // `event` was still null, event?.speakers would bake in as [] forever --
-  // the JSON fallback would never get real data even after `event` resolved
-  // moments later, since nothing would re-trigger this effect.
+  // Load speakers from the gated API (server-enforces speakers_public --
+  // db/migrations/V109) with a JSON fallback for a genuinely empty/erroring
+  // directory. Gated on event being resolved: EventContext derives `event`
+  // synchronously from usePathname(), which can be null on the very first
+  // render before routing settles. This effect only runs once "on mount"
+  // (see deps below), so if it fired while `event` was still null,
+  // event?.speakers would bake in as [] forever -- the JSON fallback would
+  // never get real data even after `event` resolved moments later, since
+  // nothing would re-trigger this effect.
   useEffect(() => {
     if (!event) return;
     let cancelled = false;
@@ -144,32 +151,37 @@ export default function SpeakersCalendar() {
     const loadSpeakers = async () => {
       try {
         setLoading(true);
-
-        // bsl_speakers is a legacy shared BSL directory. Whitelabel events
-        // use the event-scoped speakers table so they never inherit the BSL
-        // directory by accident.
-        const dbPromise = canUseLegacyBslDirectory
-          ? supabase
-              .from('bsl_speakers')
-              .select('*')
-              .eq(
-                'event_id',
-                event.id.toLowerCase() === 'bsl'
-                  ? 'bsl2025'
-                  : event.id.toLowerCase(),
-              )
-              .eq('is_active', true)
-          : supabase.from('speakers').select('*').eq('event_id', event.id).order('sort_order');
+        setIsDirectoryPrivate(false);
 
         let timeoutId: ReturnType<typeof setTimeout> | undefined;
         const timeoutPromise = new Promise((_, reject) => {
-          timeoutId = setTimeout(() => reject(new Error('Database timeout')), 5000);
+          timeoutId = setTimeout(() => reject(new Error('API timeout')), 5000);
         });
 
         try {
-          const { data: dbSpeakers, error: dbError } = await Promise.race([dbPromise, timeoutPromise]) as any;
+          const requestPromise = apiClient.request(eventApiPath(event.id, 'speakers'), {
+            skipEventSegment: true,
+          });
+          const response = await Promise.race([requestPromise, timeoutPromise]) as Awaited<typeof requestPromise>;
 
-          if (dbSpeakers && !dbError && dbSpeakers.length > 0) {
+          if (!response.success) throw new Error(response.error);
+
+          const payload = response.data as { data?: any[]; public?: boolean } | undefined;
+
+          // speakers_public=false for this guest -- never fall back to the
+          // bundled directory below, that would show the organizer's real
+          // speaker list to a guest it was just hidden from.
+          if (payload?.public === false) {
+            if (cancelled) return;
+            setSpeakers([]);
+            setIsDirectoryPrivate(true);
+            setLoading(false);
+            return;
+          }
+
+          const dbSpeakers = payload?.data;
+
+          if (dbSpeakers && dbSpeakers.length > 0) {
             const formattedSpeakers = dbSpeakers.map((s: any) => ({
               id: s.id,
               name: s.name,
@@ -286,7 +298,11 @@ export default function SpeakersCalendar() {
         {/* Event Header */}
         <EventBanner
           title="All Speakers"
-          subtitle={`Complete Directory • ${speakers.length} Speakers${activeSpeakersCount > 0 ? ` • ${activeSpeakersCount} Active` : ''}`}
+          subtitle={
+            isDirectoryPrivate
+              ? 'Directory not public yet'
+              : `Complete Directory • ${speakers.length} Speakers${activeSpeakersCount > 0 ? ` • ${activeSpeakersCount} Active` : ''}`
+          }
           date={eventDateLabel}
           showCountdown={!isEventFinished && Boolean(event?.eventStartDate)}
           showLiveIndicator={!isEventFinished && Boolean(event?.eventStartDate)}
@@ -297,43 +313,55 @@ export default function SpeakersCalendar() {
           eventVideo={event?.heroVideo}
         />
 
-        {/* Search and Sort */}
-        {speakers.length > 0 && (
-          <SpeakerSearchAndSort
-            speakers={speakers}
-            onFilteredSpeakers={setFilteredSpeakers}
-            onGroupedSpeakers={setGroupedSpeakers}
-            onSearchChange={setSearchQuery}
-            onSortChange={setSortBy}
-            onActiveFilterChange={setShowActiveOnly}
-          />
-        )}
-
-        {/* All Speakers Section */}
-        {filteredSpeakers.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>
-              {searchQuery 
-                ? `Search Results (${filteredSpeakers.length})`
-                : showActiveOnly
-                  ? `Active Speakers (${filteredSpeakers.length})`
-                  : `All Speakers (${speakers.length})`}
-            </Text>
-            <View style={styles.speakersList}>
-              {filteredSpeakers.map(speaker => (
-                <SpeakerCard key={speaker.id} speaker={speaker} eventId={eventId} styles={styles} />
-              ))}
-            </View>
-          </View>
-        )}
-
-        {/* No Results */}
-        {searchQuery && filteredSpeakers.length === 0 && (
+        {isDirectoryPrivate ? (
+          // speakers_public=false for this guest -- no retry affordance:
+          // retrying can't change the organizer's visibility setting.
           <View style={styles.noResultsContainer}>
-            <MaterialIcons name="search-off" size={48} color={colors.text.secondary} />
-            <Text style={styles.noResultsText}>No speakers found for &quot;{searchQuery}&quot;</Text>
-            <Text style={styles.noResultsSubtext}>Try a different search term</Text>
+            <MaterialIcons name="lock-outline" size={48} color={colors.text.secondary} />
+            <Text style={styles.noResultsText}>Speaker directory not public yet</Text>
+            <Text style={styles.noResultsSubtext}>The organizer hasn&apos;t made this event&apos;s speaker directory public</Text>
           </View>
+        ) : (
+          <>
+            {/* Search and Sort */}
+            {speakers.length > 0 && (
+              <SpeakerSearchAndSort
+                speakers={speakers}
+                onFilteredSpeakers={setFilteredSpeakers}
+                onGroupedSpeakers={setGroupedSpeakers}
+                onSearchChange={setSearchQuery}
+                onSortChange={setSortBy}
+                onActiveFilterChange={setShowActiveOnly}
+              />
+            )}
+
+            {/* All Speakers Section */}
+            {filteredSpeakers.length > 0 && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>
+                  {searchQuery
+                    ? `Search Results (${filteredSpeakers.length})`
+                    : showActiveOnly
+                      ? `Active Speakers (${filteredSpeakers.length})`
+                      : `All Speakers (${speakers.length})`}
+                </Text>
+                <View style={styles.speakersList}>
+                  {filteredSpeakers.map(speaker => (
+                    <SpeakerCard key={speaker.id} speaker={speaker} eventId={eventId} styles={styles} />
+                  ))}
+                </View>
+              </View>
+            )}
+
+            {/* No Results */}
+            {searchQuery && filteredSpeakers.length === 0 && (
+              <View style={styles.noResultsContainer}>
+                <MaterialIcons name="search-off" size={48} color={colors.text.secondary} />
+                <Text style={styles.noResultsText}>No speakers found for &quot;{searchQuery}&quot;</Text>
+                <Text style={styles.noResultsSubtext}>Try a different search term</Text>
+              </View>
+            )}
+          </>
         )}
 
       </ScrollView>

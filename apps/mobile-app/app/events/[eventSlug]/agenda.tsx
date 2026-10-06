@@ -303,6 +303,11 @@ export default function BSL2025AgendaScreen() {
   const isWideAgenda = viewportWidth >= 768;
   const [usingJsonFallback, setUsingJsonFallback] = useState(false);
   const [serviceStatus, setServiceStatus] = useState<'running' | 'stopped' | 'unknown'>('unknown');
+  // Set when the API explicitly marks the agenda as not public for this
+  // guest (agenda_public=false, db/migrations/V109) -- distinct from a
+  // genuinely empty/not-yet-live agenda so this never falls back to the
+  // event's bundled static schedule, which would defeat that gate.
+  const [isAgendaPrivate, setIsAgendaPrivate] = useState(false);
   const [isEventPeriod, setIsEventPeriod] = useState(false);
   const [isEventFinished, setIsEventFinished] = useState(false);
   const [filteredAgenda, setFilteredAgenda] = useState<AgendaItem[]>([]);
@@ -541,9 +546,11 @@ export default function BSL2025AgendaScreen() {
     }
     setUsingJsonFallback(false);
     setServiceStatus('unknown');
+    setIsAgendaPrivate(false);
 
     try {
       let agendaData: AgendaItem[] = [];
+      let isPrivate = false;
 
       try {
         const response = await apiClient.request(agendaApiPath, {
@@ -559,11 +566,29 @@ export default function BSL2025AgendaScreen() {
         } else if (Array.isArray(response?.data?.data)) {
           agendaData = response.data.data;
         }
+
+        // agenda_public=false for this guest (db/migrations/V109) -- the API
+        // marks this explicitly so it's never confused with a genuinely
+        // empty/not-yet-live agenda below.
+        if ((response?.data as { public?: boolean } | undefined)?.public === false) {
+          isPrivate = true;
+        }
       } catch {
         if (!isCurrentRequest()) return;
       }
 
       if (!isCurrentRequest()) return;
+
+      if (isPrivate) {
+        // Never fall back to the bundled static schedule here -- that would
+        // show the organizer's real agenda to a guest it was just hidden
+        // from.
+        setAgenda([]);
+        setIsLive(false);
+        setServiceStatus('unknown');
+        setIsAgendaPrivate(true);
+        return;
+      }
 
       if (agendaData.length > 0) {
         setAgenda(agendaData);
@@ -1885,6 +1910,16 @@ export default function BSL2025AgendaScreen() {
           // agenda.length > 0 already proves there IS agenda.
           <View style={styles.agendaList}>
             <LoadingScreen message={t('loading')} fullScreen={false} />
+          </View>
+        ) : isAgendaPrivate ? (
+          // agenda_public=false for this guest (db/migrations/V109) -- no
+          // Retry button here: retrying can't change the organizer's
+          // visibility setting, and showing one would wrongly imply this is
+          // a transient/loading problem rather than an intentional gate.
+          <View style={styles.noAgendaContainer}>
+            <MaterialIcons name="lock-outline" size={48} color={colors.text.secondary} />
+            <Text style={styles.noAgendaText}>{t('empty.privateTitle')}</Text>
+            <Text style={styles.noAgendaSubtext}>{t('empty.privateSubtitle')}</Text>
           </View>
         ) : (
           // Only reachable once agenda is confirmed empty -- the real "no

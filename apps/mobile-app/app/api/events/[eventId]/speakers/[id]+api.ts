@@ -1,5 +1,6 @@
 import { getSupabaseServerForRequest } from "@/lib/supabase-server";
-import { eventIdFromRequest } from "@/lib/server/event-api";
+import { eventIdFromRequest, isEventSectionPublic } from "@/lib/server/event-api";
+import { resolveNotificationIdentity, isResolveIdentityError } from "@/lib/server/resolve-notification-identity";
 
 function speakerIdFromRequest(request: Request) {
   const segments = new URL(request.url).pathname.split("/").filter(Boolean);
@@ -22,6 +23,23 @@ export async function GET(request: Request) {
     return Response.json({ error: "Missing speaker id" }, { status: 400 });
 
   const supabase = getSupabaseServerForRequest(request);
+
+  // This endpoint runs on the service-role client (bypasses RLS) and was
+  // never gated by speakers_public at all -- the collection route
+  // (speakers+api.ts) hiding a speaker from the directory list did nothing
+  // to stop a guest deep-linking straight to their id here. Same
+  // guest-only gate, same signed-in-caller bypass.
+  const speakersPublic = await isEventSectionPublic(supabase, eventId, "speakers_public");
+  if (!speakersPublic) {
+    const identity = await resolveNotificationIdentity(request);
+    if (isResolveIdentityError(identity)) {
+      // `public: false` on a 200 (not a 404) lets speakers/[id].tsx tell
+      // "hidden" apart from "no such speaker" and skip falling back to the
+      // bundled config speaker, which would defeat this gate.
+      return Response.json({ data: null, public: false });
+    }
+  }
+
   const usesLegacyBslDirectory =
     /^(?:bsl|bsl2025|peru2026|chile2026|colombia2026)$/i.test(eventId);
   const legacyEventId =

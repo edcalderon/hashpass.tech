@@ -1,3 +1,19 @@
+## [1.9.99](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.98...v1.9.99) (2026-10-05)
+
+
+### Features
+
+* **mobile:** gate guest-mode agenda/speakers on per-event public flags ([5a4b476](https://github.com/hashpass-tech/hashpass.tech/commit/5a4b47666a416bab86e2201c62abfab7ccdbc4aa))
+### Release Highlights
+- gate guest-mode agenda/speakers on per-event public flags
+
+### Release scope
+- Compared with: `v1.9.98` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Database migrations
+
 ## [1.9.98](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.97...v1.9.98) (2026-10-05)
 
 

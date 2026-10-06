@@ -1249,7 +1249,9 @@
       "title": "Nenhuma agenda disponível",
       "subtitle": "Volte mais tarde para ver a programação do evento",
       "noLiveData": "Sem dados de agenda ao vivo",
-      "retry": "Recarregar agenda"
+      "retry": "Recarregar agenda",
+      "privateTitle": "Agenda ainda não é pública",
+      "privateSubtitle": "O organizador ainda não tornou a programação deste evento pública"
     },
     "badges": {
       "past": "PASSADO"

@@ -23,7 +23,7 @@ const config: StorybookConfig = {
   },
   // Configure base path for static deployment
   // This allows Storybook to work when served from /storybook/ subdirectory
-  staticDirs: ['../.storybook/static'],
+  staticDirs: ['../.storybook/static', '../packages/infra/terraform/stacks/hashpass-lukas-site/overrides/public'],
   typescript: {
     check: false,
     reactDocgen: 'react-docgen-typescript',

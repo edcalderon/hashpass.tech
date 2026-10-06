@@ -22,22 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610051448, // Updated to current timestamp
+  buildNumber: 202610051848, // Updated to current timestamp
   releaseDate: '2026-10-05',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    // No new features
+    'gate guest-mode agenda/speakers on per-event public flags'
   ],
   bugfixes: [
-    'preserve local Better Auth OAuth sessions'
+    // No bugfixes
   ],
   breakingChanges: [],
-  notes: 'preserve local Better Auth OAuth sessions'
+  notes: 'gate guest-mode agenda/speakers on per-event public flags'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.99': {
+    version: '1.9.99',
+    buildNumber: 202610051848,
+    releaseDate: '2026-10-05',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'gate guest-mode agenda/speakers on per-event public flags'
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'gate guest-mode agenda/speakers on per-event public flags'
+  },
   '1.9.98': {
     version: '1.9.98',
     buildNumber: 202610051448,

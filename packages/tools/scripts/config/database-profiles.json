@@ -94,13 +94,15 @@
       "hashpass-auth-qr",
       "event-ingestion",
       "event-search-aliases",
-      "business-invite-campaigns"
+      "business-invite-campaigns",
+      "lukas-site"
     ],
     "core-production": [
       "hashpass-auth-qr",
       "event-ingestion",
       "event-search-aliases",
-      "business-invite-campaigns"
+      "business-invite-campaigns",
+      "lukas-site"
     ],
     "better-auth-development": [
       "better-auth-mcp-oauth"
@@ -142,6 +144,9 @@
     ],
     "native-pass-test-codes": [
       "db/migrations/V062__seed_native_pass_redemption_test_codes.sql"
+    ],
+    "lukas-site": [
+      "db/migrations/V110__lukas_newsletter_subscribers.sql"
     ],
     "meeting-chat-e2e": [
       "db/migrations/V053__e2e_encrypted_persistent_meeting_chat.sql",

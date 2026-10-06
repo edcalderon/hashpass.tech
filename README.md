@@ -20,20 +20,20 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.98)
+## 📋 Latest Changes (v1.9.99)
 
-### Bug Fixes
+### Features
 
-* **auth:** preserve local Better Auth OAuth sessions ([fdcc921](https://github.com/hashpass-tech/hashpass.tech/commit/fdcc9211d0276397de719dc2d048cd0e82d25ac4))
+* **mobile:** gate guest-mode agenda/speakers on per-event public flags ([5a4b476](https://github.com/hashpass-tech/hashpass.tech/commit/5a4b47666a416bab86e2201c62abfab7ccdbc4aa))
 ### Release Highlights
-- preserve local Better Auth OAuth sessions
+- gate guest-mode agenda/speakers on per-event public flags
 
 ### Release scope
-- Compared with: `v1.9.97` (the previous global release tag)
+- Compared with: `v1.9.98` (the previous global release tag)
 
 ### Affected products & packages
 - Mobile app
-- Auth
+- Database migrations
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

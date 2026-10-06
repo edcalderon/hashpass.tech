@@ -192,7 +192,17 @@ export default function SpeakerDetail() {
     try {
       if (!speakerPath) return;
       const response = await apiClient.request(speakerPath, { skipEventSegment: true });
-      const dbSpeaker = response.success ? (response.data as any)?.data : null;
+      const payload = response.success ? (response.data as { data?: any; public?: boolean } | undefined) : undefined;
+      const dbSpeaker = payload?.data;
+
+      // speakers_public=false for this guest (db/migrations/V109) -- never
+      // fall back to the bundled config speaker below, that would show the
+      // organizer's real speaker details to a guest they were just hidden
+      // from.
+      if (payload?.public === false) {
+        showError('Speaker Not Available', 'This event has not made its speaker directory public yet.');
+        return;
+      }
 
       if (dbSpeaker?.id) {
         const isActive = isClaimedActiveSpeaker(dbSpeaker);

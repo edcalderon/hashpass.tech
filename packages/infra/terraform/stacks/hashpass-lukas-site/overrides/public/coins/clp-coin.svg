@@ -1,0 +1,28 @@
+<svg width="256" height="256" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+  <!-- Outer coin -->
+  <circle cx="128" cy="128" r="120" fill="#F0C048" stroke="#B67814" stroke-width="10"/>
+  <!-- Inner ring -->
+  <circle cx="128" cy="128" r="95" fill="#111" opacity="0.18"/>
+  <!-- Flag-style inner disk -->
+  <mask id="clpCircleMask">
+    <circle cx="128" cy="128" r="78" fill="white"/>
+  </mask>
+  <g mask="url(#clpCircleMask)">
+    <!-- Blue canton -->
+    <rect x="50" y="50" width="78" height="78" fill="#0039A6"/>
+    <!-- White top-right -->
+    <rect x="128" y="50" width="78" height="78" fill="#FFFFFF"/>
+    <!-- Red bottom -->
+    <rect x="50" y="128" width="156" height="78" fill="#D52B1E"/>
+    <!-- White star in blue canton -->
+    <polygon points="89,68 84,84 99,74 79,74 94,84"
+             fill="#FFFFFF"/>
+  </g>
+  <!-- CLP text -->
+  <text x="128" y="145" text-anchor="middle"
+        font-family="system-ui, -apple-system, BlinkMacSystemFont, sans-serif"
+        font-size="64" font-weight="700" fill="#FFFFFF"
+        stroke="#111111" stroke-width="3" paint-order="stroke" stroke-linejoin="round">
+    CLP
+  </text>
+</svg>

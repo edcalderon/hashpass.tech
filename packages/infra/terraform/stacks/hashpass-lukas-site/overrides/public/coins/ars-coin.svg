@@ -1,0 +1,25 @@
+<svg width="256" height="256" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+  <!-- Outer coin -->
+  <circle cx="128" cy="128" r="120" fill="#D9E7F5" stroke="#7D8B99" stroke-width="10"/>
+  <!-- Inner ring -->
+  <circle cx="128" cy="128" r="95" fill="#1A1A1A" opacity="0.15"/>
+  <!-- Flag-style inner disk -->
+  <mask id="arsCircleMask">
+    <circle cx="128" cy="128" r="78" fill="white"/>
+  </mask>
+  <g mask="url(#arsCircleMask)">
+    <!-- Top light blue -->
+    <rect x="50" y="50" width="156" height="52" fill="#75AADB"/>
+    <!-- White middle -->
+    <rect x="50" y="102" width="156" height="52" fill="#FFFFFF"/>
+    <!-- Bottom light blue -->
+    <rect x="50" y="154" width="156" height="52" fill="#75AADB"/>
+  </g>
+  <!-- ARS text -->
+  <text x="128" y="145" text-anchor="middle"
+        font-family="system-ui, -apple-system, BlinkMacSystemFont, sans-serif"
+        font-size="64" font-weight="700" fill="#FFFFFF"
+        stroke="#1A1A1A" stroke-width="3" paint-order="stroke" stroke-linejoin="round">
+    ARS
+  </text>
+</svg>

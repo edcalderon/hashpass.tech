@@ -1,0 +1,10 @@
+import React from 'react';
+import type { Meta, StoryObj } from '@storybook/react';
+import { LukasCoin } from '../../../../packages/infra/terraform/stacks/hashpass-lukas-site/overrides/components/lukas/LukasCoin';
+const meta: Meta<typeof LukasCoin> = { title: 'Brand/Lukas coin', component: LukasCoin, parameters: { layout: 'centered' }, args: { size: 220 } };
+export default meta;
+type Story = StoryObj<typeof LukasCoin>;
+export const Desktop: Story = {};
+export const Mobile: Story = { args: { size: 160 }, parameters: { viewport: { defaultViewport: 'mobile1' } } };
+export const Light: Story = { parameters: { backgrounds: { default: 'light' } } };
+export const Dark: Story = { parameters: { backgrounds: { default: 'dark' } } };

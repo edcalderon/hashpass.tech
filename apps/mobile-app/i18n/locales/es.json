@@ -1606,7 +1606,9 @@
       "title": "No hay agenda disponible",
       "subtitle": "Vuelve más tarde para ver el programa del evento",
       "noLiveData": "No hay datos de agenda en vivo",
-      "retry": "Recargar agenda"
+      "retry": "Recargar agenda",
+      "privateTitle": "La agenda aún no es pública",
+      "privateSubtitle": "El organizador no ha hecho público el programa de este evento"
     },
     "badges": {
       "past": "PASADO"

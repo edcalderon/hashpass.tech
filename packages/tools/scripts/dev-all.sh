@@ -7,11 +7,14 @@ DOCS_PID=""
 VIDEO_STUDIO_PID=""
 LINKS_API_PID=""
 LOCALPROOF_PID=""
+LUKAS_PID=""
+LUKAS_BUILD_DIR=""
 declare -a RESERVED_PORTS=()
 CLUB_PORT="${CLUB_PORT:-3000}"
 DOCS_PORT="${DOCS_PORT:-3101}"
 VIDEO_STUDIO_PORT="${VIDEO_STUDIO_PORT:-3105}"
 LOCALPROOF_PORT="${LOCALPROOF_PORT:-3200}"
+LUKAS_LANDING_PORT="${LUKAS_LANDING_PORT:-4173}"
 # Keep the Expo web app on 8081 so it stays out of the club app's 3000 slot.
 MOBILE_PORT="${MOBILE_PORT:-8081}"
 # Matches NEXT_PUBLIC_LINKS_API_BASE_URL / EXPO_PUBLIC_LINKS_API_BASE_URL's
@@ -48,6 +51,9 @@ SKIP_FRAPPE_HELPDESK="${SKIP_FRAPPE_HELPDESK:-false}"
 # docs page unrelated to most dev work. Start it with --local-proof (or
 # INCLUDE_LOCALPROOF=true) to serve it on LOCALPROOF_PORT (default 3200).
 INCLUDE_LOCALPROOF="${INCLUDE_LOCALPROOF:-false}"
+# Opt-in: serve the restored Lukas landing locally with the same clean /lukas
+# route used by CloudFront. Build output is isolated in a temporary directory.
+INCLUDE_LUKAS_LANDING="${INCLUDE_LUKAS_LANDING:-false}"
 
 for arg in "$@"; do
   case "${arg}" in
@@ -60,9 +66,12 @@ for arg in "$@"; do
     --local-proof|--localproof)
       INCLUDE_LOCALPROOF=true
       ;;
+    --lukas-landing|--lukas)
+      INCLUDE_LUKAS_LANDING=true
+      ;;
     *)
       echo "Unknown argument: ${arg}" >&2
-      echo "Usage: dev-all.sh [--kill-allowed] [--skip-frappe-helpdesk] [--local-proof]" >&2
+      echo "Usage: dev-all.sh [--kill-allowed] [--skip-frappe-helpdesk] [--local-proof] [--lukas-landing]" >&2
       exit 1
       ;;
   esac
@@ -320,6 +329,15 @@ stop_background_apps() {
     kill "${LOCALPROOF_PID}" >/dev/null 2>&1 || true
     wait "${LOCALPROOF_PID}" >/dev/null 2>&1 || true
   fi
+
+  if [[ -n "${LUKAS_PID}" ]]; then
+    kill "${LUKAS_PID}" >/dev/null 2>&1 || true
+    wait "${LUKAS_PID}" >/dev/null 2>&1 || true
+  fi
+
+  if [[ -n "${LUKAS_BUILD_DIR}" && -d "${LUKAS_BUILD_DIR}" ]]; then
+    rm -rf "${LUKAS_BUILD_DIR}"
+  fi
 }
 
 cleanup() {
@@ -374,6 +392,11 @@ VIDEO_STUDIO_PORT="${REPLY_PORT}"
 claim_port "hashpass-links-api" "${LINKS_API_PORT}" || exit 1
 LINKS_API_PORT="${REPLY_PORT}"
 
+if [[ "${INCLUDE_LUKAS_LANDING}" == "true" ]]; then
+  claim_port "Lukas landing" "${LUKAS_LANDING_PORT}" || exit 1
+  LUKAS_LANDING_PORT="${REPLY_PORT}"
+fi
+
 # Reserve the Frappe Helpdesk port before claiming LocalProof, so a
 # LOCALPROOF_PORT that collides with FRAPPE_HELPDESK_PORT is caught by
 # claim_port's duplicate-port check rather than surfacing as an
@@ -415,6 +438,21 @@ elif [[ "${INCLUDE_LOCALPROOF}" == "true" ]]; then
   echo "Using ports: mobile=${MOBILE_PORT}, club=${CLUB_PORT}, docs=${DOCS_PORT}, video-studio=${VIDEO_STUDIO_PORT}, links-api=${LINKS_API_PORT}, localproof=${LOCALPROOF_PORT} (Frappe Helpdesk skipped)"
 else
   echo "Using ports: mobile=${MOBILE_PORT}, club=${CLUB_PORT}, docs=${DOCS_PORT}, video-studio=${VIDEO_STUDIO_PORT}, links-api=${LINKS_API_PORT} (Frappe Helpdesk skipped)"
+fi
+
+if [[ "${INCLUDE_LUKAS_LANDING}" == "true" ]]; then
+  echo "Lukas landing will be available at http://127.0.0.1:${LUKAS_LANDING_PORT}/lukas"
+fi
+
+if [[ "${INCLUDE_LUKAS_LANDING}" == "true" ]]; then
+  LUKAS_BUILD_DIR="$(mktemp -d -t hashpass-lukas-dev.XXXXXX)"
+  echo "Building Lukas landing for local development..."
+  python3 packages/infra/terraform/stacks/hashpass-lukas-site/build.py "${LUKAS_BUILD_DIR}"
+  echo "Starting Lukas landing on port ${LUKAS_LANDING_PORT}..."
+  (
+    node packages/tools/scripts/serve-lukas-landing.mjs "${LUKAS_BUILD_DIR}" "${LUKAS_LANDING_PORT}"
+  ) &
+  LUKAS_PID=$!
 fi
 
 echo "Starting Directus (detached)..."
@@ -529,6 +567,9 @@ MOBILE_PID=$!
 
 set +e
 WAIT_PIDS=("$MOBILE_PID" "$CLUB_PID" "$DOCS_PID" "$VIDEO_STUDIO_PID" "$LINKS_API_PID")
+if [[ -n "${LUKAS_PID}" ]]; then
+  WAIT_PIDS+=("${LUKAS_PID}")
+fi
 if [[ -n "${LOCALPROOF_PID}" ]]; then
   WAIT_PIDS+=("${LOCALPROOF_PID}")
 fi

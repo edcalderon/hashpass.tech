@@ -1,5 +1,6 @@
 import { getSupabaseServerForRequest } from "@/lib/supabase-server";
-import { eventIdFromRequest } from "@/lib/server/event-api";
+import { eventIdFromRequest, isEventSectionPublic } from "@/lib/server/event-api";
+import { resolveNotificationIdentity, isResolveIdentityError } from "@/lib/server/resolve-notification-identity";
 
 // Speaker directory access is server-owned so browser clients do not couple to
 // the current Supabase schema or credentials.
@@ -13,6 +14,24 @@ export async function GET(request: Request) {
   }
 
   const supabase = getSupabaseServerForRequest(request);
+
+  // This route runs on the service-role client (bypasses RLS), so the
+  // organizer's speakers_public toggle has to be enforced here -- covers
+  // both the legacy bsl_speakers table and the newer speakers table below.
+  const speakersPublic = await isEventSectionPublic(supabase, eventId, "speakers_public");
+  if (!speakersPublic) {
+    // Guest-only gate (db/migrations/V109) -- a signed-in attendee must still
+    // see a private event's real directory via the same dashboard links that
+    // already route them here, so only deny once there's no session at all.
+    const identity = await resolveNotificationIdentity(request);
+    if (isResolveIdentityError(identity)) {
+      // `public: false` lets callers (speakers/calendar.tsx) tell "hidden"
+      // apart from a genuinely empty directory, so they don't fall back to
+      // bundled config speakers and defeat this gate.
+      return Response.json({ data: [], public: false });
+    }
+  }
+
   const { searchParams } = new URL(request.url);
   const search = searchParams.get("search")?.trim();
   const usesLegacyBslDirectory =

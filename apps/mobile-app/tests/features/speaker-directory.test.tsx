@@ -6,7 +6,7 @@ import SpeakersCalendar from '../../app/events/[eventSlug]/speakers/calendar';
 import SpeakerSearchAndSort from '../../components/SpeakerSearchAndSort';
 
 const mockRouterPush = jest.fn();
-const mockEq = jest.fn();
+const mockApiRequest = jest.fn();
 type DbSpeaker = {
   id: string;
   name: string;
@@ -62,21 +62,15 @@ jest.mock('../../hooks/useTheme', () => ({
   }),
 }));
 
-jest.mock('../../lib/supabase', () => ({
-  supabase: {
-    from: () => {
-      const query = {
-        select: () => query,
-        eq: (...args: unknown[]) => {
-          mockEq(...args);
-          return query;
-        },
-        order: () => query,
-        then: (resolve: (value: unknown) => unknown) => Promise.resolve({ data: mockDbSpeakers, error: null }).then(resolve),
-      };
-      return query;
-    },
-  },
+// calendar.tsx loads the directory through the server-gated
+// /api/events/{eventId}/speakers endpoint (speakers_public, db/migrations/V109)
+// rather than querying Supabase directly, so this mocks that client boundary
+// instead of the DB client. The legacy bsl->bsl2025 event-id mapping is a
+// server concern now (see tests/api/event-speaker-detail.test.ts), not
+// something this component test observes.
+jest.mock('../../lib/api-client', () => ({
+  apiClient: { request: (...args: unknown[]) => mockApiRequest(...args) },
+  eventApiPath: (eventId: string, resource: string) => `events/${eventId}/${resource}`,
 }));
 
 jest.mock('../../components/EventBanner', () => 'EventBanner');
@@ -94,11 +88,13 @@ const flushPromises = () => new Promise<void>((resolve) => setTimeout(resolve, 0
 describe('speaker directory', () => {
   beforeEach(() => {
     mockRouterPush.mockReset();
-    mockEq.mockReset();
     mockDbSpeakers = defaultDbSpeakers();
     mockEventSpeakers = [];
     mockEventId = 'chile2026';
     mockConfiguredImage.mockReset().mockImplementation((image, name) => image || `avatar:${name}`);
+    mockApiRequest.mockReset().mockImplementation(() =>
+      Promise.resolve({ success: true, data: { data: mockDbSpeakers } }),
+    );
   });
 
   it('preserves CBWeek database priorities in the rendered directory', async () => {
@@ -135,10 +131,10 @@ describe('speaker directory', () => {
     }
   });
 
-  it.each([
-    ['bsl', 'bsl2025'],
-    ['colombia2026', 'colombia2026'],
-  ])('scopes the legacy BSL directory to %s', async (eventId, expectedEventId) => {
+  // The legacy bsl->bsl2025 event-id remapping now happens server-side only
+  // (see tests/api/event-speaker-detail.test.ts) -- calendar.tsx just passes
+  // the route's literal event id through to the gated API.
+  it.each(['bsl', 'colombia2026'])('requests the event-scoped speaker directory for %s', async (eventId) => {
     mockEventId = eventId;
     let renderer: ReturnType<typeof create>;
 
@@ -147,8 +143,7 @@ describe('speaker directory', () => {
       await flushPromises();
     });
 
-    expect(mockEq).toHaveBeenCalledWith('event_id', expectedEventId);
-    expect(mockEq).toHaveBeenCalledWith('is_active', true);
+    expect(mockApiRequest).toHaveBeenCalledWith(`events/${eventId}/speakers`, expect.anything());
     act(() => renderer!.unmount());
   });
 
@@ -176,6 +171,25 @@ describe('speaker directory', () => {
 
     act(() => activeCard.props.onPress());
     expect(mockRouterPush).toHaveBeenCalledWith('/events/chile2026/speakers/active-speaker');
+
+    await act(async () => renderer!.unmount());
+  });
+
+  it('shows the directory-not-public state instead of falling back to configured speakers when speakers_public=false (db/migrations/V109)', async () => {
+    mockEventSpeakers = [{ id: 'configured-speaker', name: 'Configured Speaker', title: 'Moderator', company: 'Hashpass' }];
+    mockApiRequest.mockReset().mockResolvedValue({ success: true, data: { public: false } });
+
+    let renderer: ReturnType<typeof create>;
+    await act(async () => {
+      renderer = create(<SpeakersCalendar />);
+      await flushPromises();
+    });
+
+    expect(renderer!.root.findByProps({ children: 'Speaker directory not public yet' })).toBeTruthy();
+    // Never falls back to the event's bundled speaker config just because
+    // the real directory came back empty -- that would defeat the gate.
+    expect(JSON.stringify(renderer!.toJSON())).not.toContain('Configured Speaker');
+    expect(mockRouterPush).not.toHaveBeenCalled();
 
     await act(async () => renderer!.unmount());
   });
