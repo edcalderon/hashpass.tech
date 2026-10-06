@@ -10,11 +10,13 @@ let mockAuth: any = { user: null, isLoggedIn: false, isLoading: false };
 let mockParams: Record<string, string> = {};
 const mockFocus = jest.fn();
 const mockT = (key: string, fallback: unknown) => typeof fallback === 'string' ? fallback : key;
+const mockShowError = jest.fn();
+const mockShowSuccess = jest.fn();
 jest.mock('../../lib/api-client', () => ({ apiClient: { post: (...args: unknown[]) => mockPost(...args) }, eventApiPath: jest.fn() }));
 jest.mock('../../hooks/useAuth', () => ({ useAuth: () => mockAuth }));
 jest.mock('../../hooks/useTheme', () => ({ useTheme: () => ({ isDark: false, colors: { text: { primary: '#111', secondary: '#555' } } }) }));
 jest.mock('../../i18n/i18n', () => ({ useTranslation: () => ({ t: mockT }), getCurrentLocale: () => 'en' }));
-jest.mock('../../contexts/ToastContext', () => ({ useToastHelpers: () => ({ showError: jest.fn(), showSuccess: jest.fn() }) }));
+jest.mock('../../contexts/ToastContext', () => ({ useToastHelpers: () => ({ showError: mockShowError, showSuccess: mockShowSuccess }) }));
 jest.mock('../../contexts/AnimationLevelContext', () => ({ useAnimationLevel: () => ({ animationLevel: 'none' }) }));
 jest.mock('expo-router', () => ({ useRouter: () => ({ replace: mockReplace }), useLocalSearchParams: () => mockParams, Redirect: () => null }));
 jest.mock('react-native-safe-area-context', () => ({ SafeAreaView: 'SafeAreaView' }));
@@ -50,6 +52,8 @@ describe('passwordless email reset', () => {
     jest.useFakeTimers();
     mockPost.mockReset().mockResolvedValue({ success: true, data: { success: true } });
     mockFocus.mockClear();
+    mockShowError.mockReset();
+    mockShowSuccess.mockReset();
     await act(async () => {
       renderer = create(<AuthScreen />, { createNodeMock: () => ({ focus: mockFocus }) });
     });
@@ -112,6 +116,137 @@ describe('passwordless email reset', () => {
       Object.defineProperty(window, 'addEventListener', { configurable: true, value: originalAddEventListener });
       Object.defineProperty(window, 'removeEventListener', { configurable: true, value: originalRemoveEventListener });
     }
+  });
+
+  it('renders the web-only X (Twitter) button and routes sign-in through Better Auth', async () => {
+    Platform.OS = 'web';
+    const signInWithOAuth = jest.fn().mockResolvedValue({ pending: true });
+    mockAuth = { ...mockAuth, signInWithOAuth };
+    const localStorage = {
+      clear: jest.fn(),
+      getItem: jest.fn(),
+      key: jest.fn(),
+      length: 0,
+      removeItem: jest.fn(),
+      setItem: jest.fn(),
+    };
+    const originalLocalStorage = window.localStorage;
+    Object.defineProperty(window, 'localStorage', { configurable: true, value: localStorage });
+    Object.defineProperty(window, 'addEventListener', { configurable: true, value: jest.fn() });
+    Object.defineProperty(window, 'removeEventListener', { configurable: true, value: jest.fn() });
+
+    await act(async () => renderer.update(<AuthScreen key="web-x" />));
+    expect(button('Continue with X')).toBeDefined();
+
+    await press('Continue with X');
+    expect(signInWithOAuth).toHaveBeenCalledWith('twitter');
+    // Records the chosen auth method and the post-OAuth return path in
+    // localStorage before the browser redirect — mirrors the Google/Apple
+    // web flow so the callback handler knows to resume a Twitter OAuth.
+    expect(localStorage.setItem).toHaveBeenCalledWith('auth_signin_method', 'twitter_oauth');
+    expect(localStorage.removeItem).toHaveBeenCalledWith('supabase_passwordless_in_progress');
+    // Once pending, the button switches to the busy label and disables
+    // itself so the user cannot kick off a second redirect mid-flight.
+    expect(button('Redirecting to X...').props.disabled).toBe(true);
+
+    Object.defineProperty(window, 'localStorage', { configurable: true, value: originalLocalStorage });
+  });
+
+  it('prevents duplicate X (Twitter) OAuth requests while one is already in flight', async () => {
+    Platform.OS = 'web';
+    const signInWithOAuth = jest.fn().mockResolvedValue({ pending: true });
+    mockAuth = { ...mockAuth, signInWithOAuth };
+    const localStorage = {
+      clear: jest.fn(),
+      getItem: jest.fn(),
+      key: jest.fn(),
+      length: 0,
+      removeItem: jest.fn(),
+      setItem: jest.fn(),
+    };
+    const originalLocalStorage = window.localStorage;
+    Object.defineProperty(window, 'localStorage', { configurable: true, value: localStorage });
+    Object.defineProperty(window, 'addEventListener', { configurable: true, value: jest.fn() });
+    Object.defineProperty(window, 'removeEventListener', { configurable: true, value: jest.fn() });
+
+    await act(async () => renderer.update(<AuthScreen key="web-x-dedup" />));
+    await press('Continue with X');
+    expect(signInWithOAuth).toHaveBeenCalledTimes(1);
+    // Pressing the busy button must not fire a second sign-in request —
+    // same dedup guarantee the Google/Apple flows already have.
+    await press('Redirecting to X...');
+    expect(signInWithOAuth).toHaveBeenCalledTimes(1);
+
+    Object.defineProperty(window, 'localStorage', { configurable: true, value: originalLocalStorage });
+  });
+
+  it('shows the X (Twitter) error toast and resets the busy state when sign-in fails', async () => {
+    Platform.OS = 'web';
+    const signInWithOAuth = jest.fn().mockResolvedValue({ error: 'X is not configured for this tenant.' });
+    mockAuth = { ...mockAuth, signInWithOAuth };
+    const localStorage = {
+      clear: jest.fn(),
+      getItem: jest.fn(),
+      key: jest.fn(),
+      length: 0,
+      removeItem: jest.fn(),
+      setItem: jest.fn(),
+    };
+    const originalLocalStorage = window.localStorage;
+    Object.defineProperty(window, 'localStorage', { configurable: true, value: localStorage });
+    Object.defineProperty(window, 'addEventListener', { configurable: true, value: jest.fn() });
+    Object.defineProperty(window, 'removeEventListener', { configurable: true, value: jest.fn() });
+
+    await act(async () => renderer.update(<AuthScreen key="web-x-error" />));
+    await press('Continue with X');
+    expect(mockShowError).toHaveBeenCalled();
+    // Failure clears the in-flight marker the web callback handler uses,
+    // so a retry after a failed attempt starts from a clean slate.
+    expect(localStorage.removeItem).toHaveBeenCalledWith('auth_signin_method');
+    // And the button returns to its idle label so the user can retry.
+    expect(button('Continue with X')).toBeDefined();
+
+    Object.defineProperty(window, 'localStorage', { configurable: true, value: originalLocalStorage });
+  });
+
+  it('fires the success toast when X (Twitter) sign-in completes without a redirect', async () => {
+    Platform.OS = 'web';
+    // Non-pending + no error: the server completed the sign-in inline
+    // (e.g. a pre-resolved session) instead of issuing a browser redirect.
+    // handleXSignIn must celebrate and release the busy lock in that case.
+    const signInWithOAuth = jest.fn().mockResolvedValue({ pending: false });
+    mockAuth = { ...mockAuth, signInWithOAuth };
+    const localStorage = {
+      clear: jest.fn(),
+      getItem: jest.fn(),
+      key: jest.fn(),
+      length: 0,
+      removeItem: jest.fn(),
+      setItem: jest.fn(),
+    };
+    const originalLocalStorage = window.localStorage;
+    Object.defineProperty(window, 'localStorage', { configurable: true, value: localStorage });
+    Object.defineProperty(window, 'addEventListener', { configurable: true, value: jest.fn() });
+    Object.defineProperty(window, 'removeEventListener', { configurable: true, value: jest.fn() });
+
+    await act(async () => renderer.update(<AuthScreen key="web-x-success" />));
+    await press('Continue with X');
+    expect(mockShowSuccess).toHaveBeenCalled();
+    // Button returns to idle (not stuck on the busy label) so the user can
+    // trigger another sign-in attempt if needed.
+    expect(button('Continue with X')).toBeDefined();
+
+    Object.defineProperty(window, 'localStorage', { configurable: true, value: originalLocalStorage });
+  });
+
+  it('omits the X (Twitter) button on native platforms — there is no ID-token exchange for it', async () => {
+    Platform.OS = 'ios';
+    await act(async () => renderer.update(<AuthScreen key="ios-no-x" />));
+    expect(button('Continue with X')).toBeUndefined();
+
+    Platform.OS = 'android';
+    await act(async () => renderer.update(<AuthScreen key="android-no-x" />));
+    expect(button('Continue with X')).toBeUndefined();
   });
 
   it('preserves a web OAuth return path before opening Google sign-in', async () => {
