@@ -91,11 +91,11 @@ export function HeroSection({ onGetLukas, onForMerchants }: HeroSectionProps) {
           <Text style={styles.title} numberOfLines={3} adjustsFontSizeToFit>
             The first <Text style={styles.titleHighlight}>stable meme coin</Text>
             {'\n'}
-            pegged 1:1 to the <Text style={styles.titleGreen}>LatAm currency basket</Text>.
+            pegged 1:1 to the <Text style={styles.titleGreen}>LatAm peso index</Text>.
           </Text>
 
           <Text style={styles.subtitle} numberOfLines={4}>
-            Backed by HashPass merchants and omni-chain crypto collateral. 1 LUKA = 1 Peso LatAm (Canasta de BRL, MXN, COP, CLP, ARS). Designed for real payments across LatAm.
+            Backed by HashPass merchants and omni-chain crypto collateral. $LUKAS is pegged 1:1 to the LatAm peso index: 1 LUKAS = 1 Peso LatAm (Canasta de BRL, MXN, COP, CLP, ARS). Designed for real payments across LatAm.
           </Text>
 
           <View style={styles.buttonContainer}>

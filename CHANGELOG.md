@@ -1,3 +1,25 @@
+## [1.9.100](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.99...v1.9.100) (2026-10-06)
+
+
+### Bug Fixes
+
+* **dev-tools:** create Lukas build output path correctly ([63028f6](https://github.com/hashpass-tech/hashpass.tech/commit/63028f670de2289fd6501f381508c9647a0c163f))
+* **lukas:** serve landing from lks route ([fc73605](https://github.com/hashpass-tech/hashpass.tech/commit/fc7360534ce36a968e41cecd32fdcb1f9b9d242b))
+
+
+### Features
+
+* **lukas:** align landing with LatAm index ([295cc7d](https://github.com/hashpass-tech/hashpass.tech/commit/295cc7ded43da8137ed9afbd75c4d6517c1882f3))
+### Release Highlights
+- align landing with LatAm index; serve landing from lks route; create Lukas build output path correctly
+
+### Release scope
+- Compared with: `v1.9.99` (the previous global release tag)
+
+### Affected products & packages
+- Infrastructure
+- Release tooling
+
 ## [1.9.99](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.98...v1.9.99) (2026-10-05)
 
 

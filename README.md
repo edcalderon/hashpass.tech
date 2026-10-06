@@ -20,20 +20,26 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.99)
+## 📋 Latest Changes (v1.9.100)
+
+### Bug Fixes
+
+* **dev-tools:** create Lukas build output path correctly ([63028f6](https://github.com/hashpass-tech/hashpass.tech/commit/63028f670de2289fd6501f381508c9647a0c163f))
+* **lukas:** serve landing from lks route ([fc73605](https://github.com/hashpass-tech/hashpass.tech/commit/fc7360534ce36a968e41cecd32fdcb1f9b9d242b))
+
 
 ### Features
 
-* **mobile:** gate guest-mode agenda/speakers on per-event public flags ([5a4b476](https://github.com/hashpass-tech/hashpass.tech/commit/5a4b47666a416bab86e2201c62abfab7ccdbc4aa))
+* **lukas:** align landing with LatAm index ([295cc7d](https://github.com/hashpass-tech/hashpass.tech/commit/295cc7ded43da8137ed9afbd75c4d6517c1882f3))
 ### Release Highlights
-- gate guest-mode agenda/speakers on per-event public flags
+- align landing with LatAm index; serve landing from lks route; create Lukas build output path correctly
 
 ### Release scope
-- Compared with: `v1.9.98` (the previous global release tag)
+- Compared with: `v1.9.99` (the previous global release tag)
 
 ### Affected products & packages
-- Mobile app
-- Database migrations
+- Infrastructure
+- Release tooling
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

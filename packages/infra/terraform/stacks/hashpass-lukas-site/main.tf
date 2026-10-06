@@ -80,7 +80,7 @@ resource "aws_cloudfront_function" "routes" {
       }
       if (request.uri === '/') {
         request.uri = '/index.html';
-      } else if (request.uri === '/lukas' || request.uri === '/lukas/') {
+      } else if (request.uri === '/lukas' || request.uri === '/lukas/' || request.uri === '/lks' || request.uri === '/lks/') {
         request.uri = '/lukas.html';
       } else if (request.uri.endsWith('/')) {
         request.uri += 'index.html';

@@ -22,22 +22,39 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610051848, // Updated to current timestamp
-  releaseDate: '2026-10-05',
+  buildNumber: 202610060052, // Updated to current timestamp
+  releaseDate: '2026-10-06',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'gate guest-mode agenda/speakers on per-event public flags'
+    'align landing with LatAm index'
   ],
   bugfixes: [
-    // No bugfixes
+    'serve landing from lks route',
+    'create Lukas build output path correctly'
   ],
   breakingChanges: [],
-  notes: 'gate guest-mode agenda/speakers on per-event public flags'
+  notes: 'align landing with LatAm index; serve landing from lks route; create Lukas build output path correctly'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.100': {
+    version: '1.9.100',
+    buildNumber: 202610060052,
+    releaseDate: '2026-10-06',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'align landing with LatAm index'
+    ],
+    bugfixes: [
+      'serve landing from lks route',
+      'create Lukas build output path correctly'
+    ],
+    breakingChanges: [],
+    notes: 'align landing with LatAm index; serve landing from lks route; create Lukas build output path correctly'
+  },
   '1.9.99': {
     version: '1.9.99',
     buildNumber: 202610051848,

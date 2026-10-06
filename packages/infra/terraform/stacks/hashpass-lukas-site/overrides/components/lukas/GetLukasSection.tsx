@@ -155,7 +155,7 @@ export function GetLukasSection() {
   const joinNewsletter = async () => {
     const normalizedEmail = email.trim().toLowerCase();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
-      setError('Enter a valid email address to join the Lukas newsletter.');
+      setError('Enter a valid email address to join the LUKAS newsletter.');
       return;
     }
     setBusy(true);
@@ -200,7 +200,7 @@ export function GetLukasSection() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>{t('getLukas.title')}</Text>
-      <Text style={styles.intro}>Connect a wallet or join the Lukas newsletter for launch updates and $LKS eligibility.</Text>
+      <Text style={styles.intro}>Connect a wallet or join the independent LUKAS newsletter for LatAm index updates and $LKS eligibility.</Text>
       <View style={styles.content}>
         <View style={styles.stepsContainer}>
           {[
@@ -216,7 +216,7 @@ export function GetLukasSection() {
         </View>
         <View style={styles.ctaContainer}>
           <Pressable onPress={() => openModal()} style={styles.primaryButton} accessibilityRole="button"><Text style={styles.primaryButtonText}>{t('getLukas.connectWallet')}</Text></Pressable>
-          <Pressable onPress={() => openModal('newsletter')} style={styles.secondaryButton} accessibilityRole="button"><Text style={styles.secondaryButtonText}>Join the Newsletter</Text></Pressable>
+          <Pressable onPress={() => openModal('newsletter')} style={styles.secondaryButton} accessibilityRole="button"><Text style={styles.secondaryButtonText}>Join the LUKAS Newsletter</Text></Pressable>
         </View>
         <View style={styles.comingSoonContainer}><Text style={styles.comingSoonText}>LUKAS $LKS TGE · Q2 2027</Text><Text style={styles.comingSoonSubtext}>Stay listed for airdrops, prizes, and launch pricing.</Text></View>
       </View>
@@ -232,7 +232,7 @@ export function GetLukasSection() {
                 <Text style={styles.modalSubtitle}>Choose how you want to reserve your place in the $LKS community.</Text>
                 <Pressable onPress={connectHashPass} style={styles.modalPrimaryButton}><Text style={styles.modalPrimaryText}>Connect with HASHPASS</Text></Pressable>
                 <Pressable onPress={() => setView('wallets')} style={styles.modalOutlineButton}><Text style={styles.modalOutlineText}>Connect Wallet</Text></Pressable>
-                <Pressable onPress={() => setView('newsletter')} style={styles.modalLinkButton}><Text style={styles.modalLinkText}>Join the Lukas newsletter instead</Text></Pressable>
+                <Pressable onPress={() => setView('newsletter')} style={styles.modalLinkButton}><Text style={styles.modalLinkText}>Join the LUKAS newsletter instead</Text></Pressable>
               </> : null}
               {view === 'hashpass' ? <>
                 <Text style={styles.modalTitle}>Connect with HASHPASS</Text>
@@ -247,11 +247,11 @@ export function GetLukasSection() {
                 <Text style={styles.walletHint}>WalletConnect and Coinbase Wallet work when their browser provider is enabled.</Text>
               </> : null}
               {view === 'newsletter' ? <>
-                <Text style={styles.modalTitle}>Join the Lukas newsletter</Text>
-                <Text style={styles.modalSubtitle}>Get independent Lukas updates, launch timing, and $LKS airdrop news.</Text>
+                <Text style={styles.modalTitle}>Join the LUKAS newsletter</Text>
+                <Text style={styles.modalSubtitle}>Get independent LUKAS updates, LatAm index mechanics, launch timing, and $LKS airdrop news.</Text>
                 <TextInput value={email} onChangeText={setEmail} autoCapitalize="none" autoCorrect={false} keyboardType="email-address" placeholder="you@example.com" placeholderTextColor={isDark ? '#718096' : '#94A3B8'} style={styles.emailInput} />
                 <View style={styles.optInRow}><Switch value={hashPassOptIn} onValueChange={setHashPassOptIn} trackColor={{ false: '#475569', true: '#35C66B' }} /><Text style={styles.optInText}>Also send me HASHPASS ecosystem updates.</Text></View>
-                <Pressable disabled={busy} onPress={joinNewsletter} style={styles.modalPrimaryButton}>{busy ? <ActivityIndicator color="#07111F" /> : <Text style={styles.modalPrimaryText}>Join Lukas updates</Text>}</Pressable>
+                <Pressable disabled={busy} onPress={joinNewsletter} style={styles.modalPrimaryButton}>{busy ? <ActivityIndicator color="#07111F" /> : <Text style={styles.modalPrimaryText}>Join LUKAS updates</Text>}</Pressable>
               </> : null}
               {view === 'success' ? <>
                 <View style={styles.successIcon}><Text style={styles.successIconText}>✓</Text></View>
