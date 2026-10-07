@@ -22,22 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610071600, // Updated to current timestamp
+  buildNumber: 202610071943, // Updated to current timestamp
   releaseDate: '2026-10-07',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    // No new features
+    'publish profiles and queue meeting requests'
   ],
   bugfixes: [
-    'configure BSL Colombia sync credentials and remove retired events domain'
+    // No bugfixes
   ],
   breakingChanges: [],
-  notes: 'configure BSL Colombia sync credentials and remove retired events domain'
+  notes: 'publish profiles and queue meeting requests'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.104': {
+    version: '1.9.104',
+    buildNumber: 202610071943,
+    releaseDate: '2026-10-07',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'publish profiles and queue meeting requests'
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'publish profiles and queue meeting requests'
+  },
   '1.9.103': {
     version: '1.9.103',
     buildNumber: 202610071600,

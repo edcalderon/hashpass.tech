@@ -20,21 +20,20 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.103)
+## 📋 Latest Changes (v1.9.104)
 
-### Bug Fixes
+### Features
 
-* **ci:** configure BSL Colombia sync credentials and remove retired events domain ([69a528e](https://github.com/hashpass-tech/hashpass.tech/commit/69a528eb07272d306c14c9a6ae5a137431f6ef1a))
+* **speakers:** publish profiles and queue meeting requests ([8abfb0a](https://github.com/hashpass-tech/hashpass.tech/commit/8abfb0a1a3d5805b574347abcdd9ae260f1cbbec))
 ### Release Highlights
-- configure BSL Colombia sync credentials and remove retired events domain
+- publish profiles and queue meeting requests
 
 ### Release scope
-- Compared with: `v1.9.102` (the previous global release tag)
+- Compared with: `v1.9.103` (the previous global release tag)
 
 ### Affected products & packages
-- Club web
 - Mobile app
-- Infrastructure
+- Database migrations
 - Release tooling
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)

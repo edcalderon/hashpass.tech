@@ -1,3 +1,20 @@
+## [1.9.104](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.103...v1.9.104) (2026-10-07)
+
+
+### Features
+
+* **speakers:** publish profiles and queue meeting requests ([8abfb0a](https://github.com/hashpass-tech/hashpass.tech/commit/8abfb0a1a3d5805b574347abcdd9ae260f1cbbec))
+### Release Highlights
+- publish profiles and queue meeting requests
+
+### Release scope
+- Compared with: `v1.9.103` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Database migrations
+- Release tooling
+
 ## [1.9.103](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.102...v1.9.103) (2026-10-07)
 
 
