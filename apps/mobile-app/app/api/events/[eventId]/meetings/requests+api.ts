@@ -129,12 +129,15 @@ export async function GET(request: Request) {
     if (speakerId) {
       if (!UUID_PATTERN.test(speakerId)) return Response.json({ data: [] });
       const speaker = await speakerForRecordId(supabase, speakerId);
-      if (!speaker?.user_id) return Response.json({ data: [] });
+      if (!speaker) return Response.json({ data: [] });
+      const speakerTargetIds = [speaker.id, speaker.user_id].filter(
+        (targetId): targetId is string => typeof targetId === "string" && targetId.length > 0,
+      );
       let query = supabase
         .from("meeting_requests")
         .select("*")
         .eq("requester_id", userId)
-        .eq("speaker_id", speaker.user_id)
+        .in("speaker_id", speakerTargetIds)
         .eq("event_id", eventId);
       if (status) query = query.eq("status", status);
       const { data, error } = await query.order("created_at", {
@@ -158,10 +161,13 @@ export async function GET(request: Request) {
 
     let incoming: any[] = [];
     if (speaker) {
+      const speakerTargetIds = [speaker.id, speaker.user_id].filter(
+        (targetId): targetId is string => typeof targetId === "string" && targetId.length > 0,
+      );
       let incomingQuery = supabase
         .from("meeting_requests")
         .select("*")
-        .eq("speaker_id", userId)
+        .in("speaker_id", speakerTargetIds)
         .eq("event_id", eventId);
       if (status) incomingQuery = incomingQuery.eq("status", status);
       const { data, error } = await incomingQuery.order("created_at", {
@@ -235,7 +241,10 @@ export async function POST(request: Request) {
         { error: result.error || "Meeting request rejected" },
         { status: 409 },
       );
-    const speakerUserId = typeof result?.speaker_id === 'string' ? result.speaker_id : null;
+    // The RPC returns the profile id for an unclaimed speaker and the auth id
+    // for a claimed speaker. Only an auth id is a valid email recipient.
+    const targetSpeaker = await speakerForRecordId(supabase, String(body.speakerId));
+    const speakerUserId = targetSpeaker?.user_id || null;
     const meetingEmailDetails = {
       status: "requested",
       eventId,

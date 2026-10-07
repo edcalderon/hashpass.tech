@@ -88,15 +88,18 @@ jest.mock('../../components/SpeakerAvatar', () => 'SpeakerAvatar');
 jest.mock('../../components/LoadingScreen', () => 'LoadingScreen');
 jest.mock('../../components/PassesDisplay', () => {
   const { Text, TouchableOpacity } = require('react-native');
-  return ({ onRequestPress, existingRequest, onExistingRequestPress }: {
+  return ({ onRequestPress, existingRequest, onExistingRequestPress, showRequestButton = true }: {
     onRequestPress: () => void;
     existingRequest?: { id: string } | null;
     onExistingRequestPress?: () => void;
+    showRequestButton?: boolean;
   }) => (
     <>
-      <TouchableOpacity testID="request-meeting" onPress={onRequestPress}>
-        <Text>Request meeting</Text>
-      </TouchableOpacity>
+      {showRequestButton && (
+        <TouchableOpacity testID="request-meeting" onPress={onRequestPress}>
+          <Text>Request meeting</Text>
+        </TouchableOpacity>
+      )}
       {existingRequest && onExistingRequestPress && (
         <TouchableOpacity testID="view-existing-request" onPress={onExistingRequestPress}>
           <Text>View request</Text>
@@ -126,6 +129,8 @@ const speaker = {
   company: 'Analytical Engine',
   user_id: 'speaker-user-1',
   is_active: true,
+  directory_visible: true,
+  is_accepting_meetings: true,
 };
 
 const flushPromises = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
@@ -235,12 +240,12 @@ describe('speaker detail screen', () => {
     await act(async () => renderer.unmount());
   });
 
-  it('shows an inactive status for an unclaimed speaker, even when its legacy record is enabled', async () => {
+  it('renders an unclaimed published profile and exposes the meeting request action', async () => {
     mockApiRequest.mockImplementation((path: string, options?: { method?: string }) =>
       path === 'events/bsl/speakers/speaker-1'
         ? Promise.resolve({
           success: true,
-          data: { data: { ...speaker, user_id: null, is_active: true } },
+          data: { data: { ...speaker, user_id: null, is_active: true, is_accepting_meetings: false } },
         })
         : defaultApiResponse(path, options),
     );
@@ -251,11 +256,115 @@ describe('speaker detail screen', () => {
       await flushPromises();
     });
 
-    expect(renderer.root.findByProps({ children: 'speakerView.inactive' })).toBeTruthy();
+    expect(renderer.root.findByProps({ children: 'Ada Lovelace' })).toBeTruthy();
+    expect(renderer.root.findAllByProps({ testID: 'claim-profile' })).toHaveLength(1);
+    expect(renderer.root.findAllByProps({ testID: 'request-meeting' })).toHaveLength(1);
     await act(async () => renderer.unmount());
   });
 
-  it('recovers from an event API error with the configured speaker instead of remaining in loading', async () => {
+  it('submits a claim for an authenticated speaker and shows the pending state', async () => {
+    mockApiRequest.mockImplementation((path: string, options?: { method?: string }) => {
+      if (path === 'events/bsl/speakers/claims' && options?.method === 'POST') {
+        return Promise.resolve({ success: true, data: { data: { status: 'pending' } } });
+      }
+      return path === 'events/bsl/speakers/speaker-1'
+        ? Promise.resolve({ success: true, data: { data: { ...speaker, user_id: null, is_active: true } } })
+        : defaultApiResponse(path, options);
+    });
+
+    let renderer: any;
+    await act(async () => {
+      renderer = create(<SpeakerDetail />);
+      await flushPromises();
+    });
+
+    await act(async () => {
+      renderer.root.findByProps({ accessibilityLabel: 'speakerView.claimProfile' }).props.onPress();
+      await flushPromises();
+    });
+
+    expect(mockApiRequest).toHaveBeenCalledWith('events/bsl/speakers/claims', {
+      skipEventSegment: true,
+      method: 'POST',
+      body: { eventId: 'bsl', speakerId: 'speaker-1' },
+    });
+    expect(mockShowSuccess).toHaveBeenCalledWith('speakerView.claimSubmittedTitle', 'speakerView.claimSubmittedMessage');
+    expect(renderer.root.findByProps({ accessibilityLabel: 'speakerView.claimPending' })).toBeTruthy();
+
+    await act(async () => renderer.unmount());
+  });
+
+  it('routes a guest to sign-in before submitting a claim', async () => {
+    mockAuthState = { user: null, isLoggedIn: false, dbUserId: null } as any;
+    mockApiRequest.mockImplementation((path: string, options?: { method?: string }) =>
+      path === 'events/bsl/speakers/speaker-1'
+        ? Promise.resolve({ success: true, data: { data: { ...speaker, user_id: null, is_active: true } } })
+        : defaultApiResponse(path, options),
+    );
+    let renderer: any;
+    await act(async () => {
+      renderer = create(<SpeakerDetail />);
+      await flushPromises();
+    });
+
+    await act(async () => {
+      renderer.root.findByProps({ accessibilityLabel: 'speakerView.claimProfile' }).props.onPress();
+    });
+    expect(mockRouterPush).toHaveBeenCalledWith('/(shared)/auth');
+
+    await act(async () => renderer.unmount());
+  });
+
+  it('resets the claim state and reports a failed claim request', async () => {
+    mockApiRequest.mockImplementation((path: string, options?: { method?: string }) => {
+      if (path === 'events/bsl/speakers/claims' && options?.method === 'POST') {
+        return Promise.resolve({ success: false, error: 'Claim service unavailable' });
+      }
+      return path === 'events/bsl/speakers/speaker-1'
+        ? Promise.resolve({ success: true, data: { data: { ...speaker, user_id: null, is_active: true } } })
+        : defaultApiResponse(path, options);
+    });
+    let renderer: any;
+    await act(async () => {
+      renderer = create(<SpeakerDetail />);
+      await flushPromises();
+    });
+    await act(async () => {
+      renderer.root.findByProps({ accessibilityLabel: 'speakerView.claimProfile' }).props.onPress();
+      await flushPromises();
+    });
+
+    expect(mockShowError).toHaveBeenCalledWith('speakerView.claimFailedTitle', 'Claim service unavailable');
+    expect(renderer.root.findByProps({ accessibilityLabel: 'speakerView.claimProfile' })).toBeTruthy();
+
+    await act(async () => renderer.unmount());
+  });
+
+  it('treats a legacy active speaker response without directory_visible as public', async () => {
+    const { directory_visible: _directoryVisible, is_accepting_meetings: _acceptingMeetings, ...legacySpeaker } = speaker;
+    mockApiRequest.mockImplementation((path: string, options?: { method?: string }) =>
+      path === 'events/bsl/speakers/speaker-1'
+        ? Promise.resolve({
+          success: true,
+          data: { data: { ...legacySpeaker, user_id: null, is_active: true } },
+        })
+        : defaultApiResponse(path, options),
+    );
+
+    let renderer: any;
+    await act(async () => {
+      renderer = create(<SpeakerDetail />);
+      await flushPromises();
+    });
+
+    expect(renderer.root.findByProps({ children: 'Ada Lovelace' })).toBeTruthy();
+    expect(renderer.root.findAllByProps({ testID: 'claim-profile' })).toHaveLength(1);
+    expect(renderer.root.findAllByProps({ testID: 'request-meeting' })).toHaveLength(1);
+
+    await act(async () => renderer.unmount());
+  });
+
+  it('does not expose the configured speaker when the event API fails', async () => {
     mockEventSpeakers = [{ ...speaker, image: 'ada.png' }];
     mockApiRequest.mockImplementation((path: string, options?: { method?: string }) =>
       path === 'events/bsl/speakers/speaker-1'
@@ -269,15 +378,14 @@ describe('speaker detail screen', () => {
       await flushPromises();
     });
 
-    expect(renderer.root.findByProps({ children: 'Ada Lovelace' })).toBeTruthy();
-    expect(renderer.root.findByProps({ children: 'speakerView.inactive' })).toBeTruthy();
-    expect(() => renderer.root.findByType('LoadingScreen')).toThrow();
-    expect(mockShowError).not.toHaveBeenCalled();
+    expect(renderer.root.findAllByProps({ children: 'Ada Lovelace' })).toHaveLength(0);
+    expect(renderer.root.findByType('LoadingScreen')).toBeTruthy();
+    expect(mockShowError).toHaveBeenCalled();
 
     await act(async () => renderer.unmount());
   });
 
-  it('uses the configured speaker when the event API cannot find the requested record', async () => {
+  it('does not expose the configured speaker when the event API cannot find the requested record', async () => {
     mockEventSpeakers = [{ ...speaker, image: 'ada.png' }];
     mockApiRequest.mockImplementation((path: string, options?: { method?: string }) =>
       path === 'events/bsl/speakers/speaker-1'
@@ -291,8 +399,9 @@ describe('speaker detail screen', () => {
       await flushPromises();
     });
 
-    expect(renderer.root.findByProps({ children: 'Ada Lovelace' })).toBeTruthy();
-    expect(mockShowError).not.toHaveBeenCalled();
+    expect(renderer.root.findAllByProps({ children: 'Ada Lovelace' })).toHaveLength(0);
+    expect(mockShowError).toHaveBeenCalled();
+    expect(renderer.root.findByType('LoadingScreen')).toBeTruthy();
 
     await act(async () => renderer.unmount());
   });

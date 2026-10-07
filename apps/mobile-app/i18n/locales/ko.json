@@ -1502,6 +1502,15 @@
       "online": "온라인",
       "active": "활성",
       "inactive": "비활성",
+      "unclaimed": "공개 프로필",
+      "claimed": "연결됨",
+      "claimProfile": "이 프로필 소유권 요청",
+      "claimProfileDescription": "이메일을 인증하고 소유권을 요청하세요. 네트워킹을 활성화하기 전에 BSL이 검토합니다.",
+      "claimPending": "소유권 요청 검토 중",
+      "claimSubmittedTitle": "소유권 요청 제출됨",
+      "claimSubmittedMessage": "프로필을 연결하기 전에 BSL이 인증된 계정을 검토합니다.",
+      "claimFailedTitle": "소유권 요청 실패",
+      "claimFailedMessage": "나중에 다시 시도해 주세요.",
       "speakerDashboard": "연사 대시보드",
       "manageMeetingRequests": "미팅 요청 관리",
       "about": "소개",
@@ -1612,6 +1621,10 @@
     "locations": {
       "mainStage": "메인 스테이지",
       "registrationArea": "등록 구역"
+    },
+    "calendar": {
+      "shortLabel": "캘린더",
+      "openPicker": "외부 캘린더에 추가"
     },
     "messages": {
       "untitledEvent": "제목 없는 이벤트",

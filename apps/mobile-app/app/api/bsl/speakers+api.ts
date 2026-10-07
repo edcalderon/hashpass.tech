@@ -17,6 +17,7 @@ export async function GET(request: Request) {
       .select("*", { count: "exact" })
       .eq("event_id", "bsl2025")
       .eq("is_active", true)
+      .eq("directory_visible", true)
       .range(from, to)
       .order("name", { ascending: true });
 

@@ -14,6 +14,8 @@ type DbSpeaker = {
   company: string;
   user_id: string | null;
   is_active: boolean;
+  directory_visible?: boolean;
+  is_accepting_meetings?: boolean;
   sort_order?: number;
   metadata?: { is_active: boolean };
 };
@@ -24,11 +26,12 @@ type EventSpeaker = {
   title?: string;
   company?: string;
   image?: string;
+  isActive?: boolean;
 };
 
 const defaultDbSpeakers = (): DbSpeaker[] => [
-  { id: 'inactive-speaker', name: 'Inactive Speaker', title: 'Advisor', company: 'Hashpass', user_id: null, is_active: true },
-  { id: 'active-speaker', name: 'Active Speaker', title: 'Founder', company: 'Hashpass', user_id: 'claimed-auth-user', is_active: true },
+  { id: 'inactive-speaker', name: 'Unclaimed Speaker', title: 'Advisor', company: 'Hashpass', user_id: null, is_active: true, directory_visible: true },
+  { id: 'active-speaker', name: 'Active Speaker', title: 'Founder', company: 'Hashpass', user_id: 'claimed-auth-user', is_active: true, directory_visible: true },
 ];
 let mockDbSpeakers: DbSpeaker[] = defaultDbSpeakers();
 let mockEventSpeakers: EventSpeaker[] = [];
@@ -100,8 +103,8 @@ describe('speaker directory', () => {
   it('preserves CBWeek database priorities in the rendered directory', async () => {
     mockEventId = 'cbweek2026';
     mockDbSpeakers = ['Edward', 'Bryan', 'Lucero'].map((name, index) => ({
-      id: name, name, title: 'Speaker', company: 'Event', user_id: null,
-      is_active: true, metadata: { is_active: true }, sort_order: 30 - index * 10,
+      id: name, name, title: 'Speaker', company: 'Event', user_id: `claimed-${name}`,
+      is_active: true, metadata: { is_active: true, directory_visible: true }, sort_order: 30 - index * 10,
     }));
     let renderer: ReturnType<typeof create>;
     await act(async () => { renderer = create(<SpeakersCalendar />); await flushPromises(); });
@@ -113,7 +116,7 @@ describe('speaker directory', () => {
 
   it.each([
     ['cbweek2026', false], ['cbweek2026', true], ['chile2026', true],
-  ])('retains configured speakers for %s, emergency=%s', async (eventId, emergency) => {
+  ])('does not expose configured speakers for %s when the directory is empty, emergency=%s', async (eventId, emergency) => {
     mockEventId = eventId as string;
     mockDbSpeakers = [];
     mockEventSpeakers = [{ id: 'lucero', name: 'Lucero', title: 'COO', company: 'Event' }];
@@ -122,9 +125,8 @@ describe('speaker directory', () => {
     let renderer: ReturnType<typeof create>;
     try {
       await act(async () => { renderer = create(<SpeakersCalendar />); await flushPromises(); });
-      const search = renderer!.root.findByType(SpeakerSearchAndSort);
-      expect(search.props.speakers[0].sortOrder).toBe(eventId === 'cbweek2026' ? 0 : undefined);
-      expect(renderer!.root.findByProps({ children: 'Lucero' })).toBeTruthy();
+      expect(renderer!.root.findAllByType(SpeakerSearchAndSort)).toHaveLength(0);
+      expect(renderer!.root.findAllByProps({ children: 'Lucero' })).toHaveLength(0);
     } finally {
       act(() => renderer!.unmount());
       consoleError.mockRestore();
@@ -147,7 +149,7 @@ describe('speaker directory', () => {
     act(() => renderer!.unmount());
   });
 
-  it('shows all speakers while disabling the unclaimed profiles', async () => {
+  it('shows unclaimed profiles when the organizer publishes the directory', async () => {
     let renderer: ReturnType<typeof create>;
     await act(async () => {
       renderer = create(<SpeakersCalendar />);
@@ -156,21 +158,41 @@ describe('speaker directory', () => {
 
     const cards = renderer!.root.findAll((node: any) => node.props?.accessibilityState?.disabled !== undefined);
     const activeCard = cards.find((node: any) => node.props.accessibilityState.disabled === false);
-    const inactiveCard = cards.find((node: any) => node.props.accessibilityState.disabled === true);
 
-    if (!activeCard || !inactiveCard) {
-      throw new Error('Expected both an active and inactive speaker card');
-    }
-
+    if (!activeCard) throw new Error('Expected a public speaker card');
     expect(activeCard.props.disabled).toBe(false);
     expect(typeof activeCard.props.onPress).toBe('function');
-    expect(inactiveCard.props.disabled).toBe(true);
-    expect(inactiveCard.props.onPress).toBeUndefined();
-    expect(cards.map((card: any) => card.props.accessibilityState.disabled)).toEqual([false, true]);
-    expect(renderer!.root.findByProps({ children: 'Inactive' })).toBeTruthy();
+    expect(cards).toHaveLength(2);
+    expect(renderer!.root.findByProps({ children: 'Unclaimed Speaker' })).toBeTruthy();
 
     act(() => activeCard.props.onPress());
     expect(mockRouterPush).toHaveBeenCalledWith('/events/chile2026/speakers/active-speaker');
+
+    await act(async () => renderer!.unmount());
+  });
+
+  it('keeps legacy active rows public while older APIs roll out directory_visible', async () => {
+    mockEventId = 'colombia2026';
+    mockDbSpeakers = [{
+      id: 'legacy-colombia-speaker',
+      name: 'Legacy Colombia Speaker',
+      title: 'Advisor',
+      company: 'BSL',
+      user_id: null,
+      is_active: true,
+    }];
+
+    let renderer: ReturnType<typeof create>;
+    await act(async () => {
+      renderer = create(<SpeakersCalendar />);
+      await flushPromises();
+    });
+
+    const card = renderer!.root.findAll(
+      (node: any) => node.props?.accessibilityState?.disabled !== undefined,
+    )[0];
+    expect(card.props.disabled).toBe(false);
+    expect(renderer!.root.findByProps({ children: 'Legacy Colombia Speaker' })).toBeTruthy();
 
     await act(async () => renderer!.unmount());
   });
@@ -194,7 +216,7 @@ describe('speaker directory', () => {
     await act(async () => renderer!.unmount());
   });
 
-  it('uses non-interactive fallback speakers when the database returns no records', async () => {
+  it('does not fall back to bundled speaker profiles when the directory returns no public records', async () => {
     mockDbSpeakers = [];
     mockEventSpeakers = [{
       id: 'configured-speaker',
@@ -210,11 +232,27 @@ describe('speaker directory', () => {
       await flushPromises();
     });
 
-    const cards = renderer!.root.findAll((node: any) => node.props?.accessibilityState?.disabled !== undefined);
-    expect(cards).toHaveLength(1);
-    expect(cards[0].props.disabled).toBe(true);
-    expect(renderer!.root.findByProps({ children: 'Configured Speaker' })).toBeTruthy();
-    expect(renderer!.root.findByProps({ children: 'Inactive' })).toBeTruthy();
+    expect(renderer!.root.findAllByProps({ children: 'Configured Speaker' })).toHaveLength(0);
+    expect(renderer!.root.findAllByProps({ children: 'Inactive' })).toHaveLength(0);
+
+    await act(async () => renderer!.unmount());
+  });
+
+  it('falls back to bundled event references when the directory request fails', async () => {
+    mockEventSpeakers = [
+      { id: 'active-reference', name: 'Active Reference', title: 'Advisor', company: 'Hashpass', isActive: true },
+      { id: 'inactive-reference', name: 'Inactive Reference', title: 'Former Advisor', company: 'Hashpass', isActive: false },
+    ];
+    mockApiRequest.mockReset().mockRejectedValue(new Error('directory unavailable'));
+
+    let renderer: ReturnType<typeof create>;
+    await act(async () => {
+      renderer = create(<SpeakersCalendar />);
+      await flushPromises();
+    });
+
+    expect(renderer!.root.findByProps({ children: 'Active Reference' })).toBeTruthy();
+    expect(renderer!.root.findByProps({ children: 'Inactive Reference' })).toBeTruthy();
 
     await act(async () => renderer!.unmount());
   });

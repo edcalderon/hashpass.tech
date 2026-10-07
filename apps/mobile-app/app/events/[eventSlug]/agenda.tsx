@@ -1491,28 +1491,46 @@ export default function BSL2025AgendaScreen() {
     // screen-specific pill/duplication the design system contract asks us
     // to avoid (see CLAUDE.md's Shared UI and Storybook contract).
     const renderAgendaAction = (
-      action: 'calendar' | 'favorite' | 'schedule',
       label: string,
       icon: React.ReactNode,
       onPress: () => void,
     ) => (
       <ActionButton
-        key={action}
+        key="agenda"
         mode={interfaceMode}
         label={label}
         labelNumberOfLines={1}
         tooltipText={label}
         accessibilityLabel={label}
-        variant="secondary"
+        variant="primary"
         leadingIcon={icon}
         accessibilityHint={t('actions.actionHint', 'Opens this session action')}
         onPress={onPress}
         style={[
           styles.agendaActionButton,
-          isCompactAgenda && styles.agendaActionButtonCompact,
-          isWideAgenda && !isAgendaGrid && styles.agendaActionButtonWide,
+          !isWideAgenda && styles.agendaActionButtonMobile,
         ]}
       />
+    );
+
+    const renderAgendaIconAction = (
+      action: 'calendar' | 'favorite',
+      label: string,
+      accentColor: string,
+      icon: React.ReactNode,
+      onPress: () => void,
+    ) => (
+      <IconButton
+        key={action}
+        mode={interfaceMode}
+        label={label}
+        accentColor={accentColor}
+        revealLabel
+        onPress={onPress}
+        style={styles.agendaIconAction}
+      >
+        {icon}
+      </IconButton>
     );
 
     return (
@@ -1542,6 +1560,7 @@ export default function BSL2025AgendaScreen() {
               styles.agendaItemLayout,
               isCompactAgenda && styles.agendaItemLayoutCompact,
               isAgendaGrid && styles.agendaItemLayoutGrid,
+              isCompactAgenda && !isWideAgenda && styles.agendaItemLayoutMobile,
             ]}
           >
             <View
@@ -1551,6 +1570,7 @@ export default function BSL2025AgendaScreen() {
                 isCompactAgenda && styles.agendaMediaCompact,
                 isAgendaGrid && styles.agendaMediaGrid,
                 isWideAgenda && !isAgendaGrid && styles.agendaMediaWide,
+                isCompactAgenda && !isWideAgenda && styles.agendaMediaMobile,
                 { backgroundColor: `${typeColor}20` },
               ]}
             >
@@ -1590,7 +1610,7 @@ export default function BSL2025AgendaScreen() {
                 <Text
                   testID={`agenda-card-time-${item.id}`}
                   style={styles.agendaTime}
-                  numberOfLines={isWideAgenda && !isAgendaGrid ? 1 : 2}
+                  numberOfLines={isWideAgenda || isCompactAgenda || isAgendaGrid ? 1 : 2}
                 >
                   {formatAgendaCardTime(item, eventTzOffset)}
                 </Text>
@@ -1640,24 +1660,35 @@ export default function BSL2025AgendaScreen() {
                 isCompactAgenda && styles.agendaItemToolsCompact,
                 isWideAgenda && !isAgendaGrid && styles.agendaItemToolsWide,
               ]}>
-                {renderAgendaAction(
-                  'calendar',
-                  t('calendar.openPicker', 'Add this session to a calendar'),
-                  <MaterialIcons name="event" size={18} color={colors.primary} />,
-                  () => setCalendarPickerItem(item),
-                )}
-                {renderAgendaAction(
-                  'favorite',
-                  isFavorite ? t('actions.removeFromFavorites', 'Remove from favorites') : t('actions.addToFavorites', 'Add to favorites'),
-                  <MaterialIcons name={isFavorite ? 'star' : 'star-border'} size={18} color={isFavorite ? colors.primary : colors.text.secondary} />,
-                  () => { void handleToggleFavorite(item); },
-                )}
-                {renderAgendaAction(
-                  'schedule',
-                  isConfirmed ? t('actions.removeFromAgenda', 'Remove from agenda') : t('actions.addToAgenda', 'Add to agenda'),
-                  <MaterialIcons name={isConfirmed ? 'check-circle' : 'add-circle-outline'} size={19} color={isConfirmed ? colors.success.main : colors.primary} />,
-                  () => { void handleAgendaAction(item, startTime); },
-                )}
+                <Text style={styles.agendaActionsIntro}>
+                  {t('actions.sectionLabel', 'Session actions')}
+                </Text>
+                <View style={[
+                  styles.agendaActionsRow,
+                  !isWideAgenda && styles.agendaActionsRowMobile,
+                ]}>
+                  {renderAgendaAction(
+                    isConfirmed ? t('actions.removeFromAgenda', 'Remove from agenda') : t('actions.addToAgenda', 'Add to agenda'),
+                    <MaterialIcons name={isConfirmed ? 'check-circle' : 'add-circle-outline'} size={19} color={colors.primaryContrastText} />,
+                    () => { void handleAgendaAction(item, startTime); },
+                  )}
+                  <View style={styles.agendaSecondaryActions}>
+                    {renderAgendaIconAction(
+                      'favorite',
+                      isFavorite ? t('actions.removeFromFavorites', 'Remove from favorites') : t('actions.addToFavorites', 'Add to favorites'),
+                      isFavorite ? colors.primary : colors.text.secondary,
+                      <MaterialIcons name={isFavorite ? 'star' : 'star-border'} size={18} color={isFavorite ? colors.primary : colors.text.secondary} />,
+                      () => { void handleToggleFavorite(item); },
+                    )}
+                    {renderAgendaIconAction(
+                      'calendar',
+                      t('calendar.openPicker', 'Add to an external calendar'),
+                      colors.primary,
+                      <MaterialIcons name="event" size={18} color={colors.primary} />,
+                      () => setCalendarPickerItem(item),
+                    )}
+                  </View>
+                </View>
               </View>
 
               {!isCompactAgenda && displayDescription ? (
@@ -2246,6 +2277,11 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     minHeight: 184,
     width: 168,
   },
+  agendaMediaMobile: {
+    height: 156,
+    minHeight: 156,
+    width: '100%',
+  },
   agendaMediaGrid: {
     minHeight: 260,
     width: '100%',
@@ -2313,6 +2349,9 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   agendaItemLayoutCompact: {
     minHeight: 118,
   },
+  agendaItemLayoutMobile: {
+    flexDirection: 'column',
+  },
   agendaItemLayoutGrid: {
     flexDirection: 'column',
   },
@@ -2364,34 +2403,52 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     lineHeight: 18,
   },
   agendaItemTools: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
     gap: uiTokens.space.xs,
     marginBottom: uiTokens.space.md,
   },
   agendaItemToolsCompact: {
-    alignItems: 'stretch',
-    flexDirection: 'column',
-    gap: uiTokens.space.xs,
     marginBottom: uiTokens.space.sm,
   },
   agendaItemToolsWide: {
+    alignItems: 'flex-start',
+  },
+  agendaActionsIntro: {
+    color: colors.text.secondary,
+    fontSize: uiTokens.type.caption,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  agendaActionsRow: {
     alignItems: 'center',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: uiTokens.space.sm,
+  },
+  agendaActionsRowMobile: {
+    alignItems: 'stretch',
+    flexDirection: 'column',
+    flexWrap: 'nowrap',
     width: '100%',
+  },
+  agendaSecondaryActions: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: uiTokens.space.sm,
   },
   agendaActionButton: {
     alignSelf: 'flex-start',
     flexShrink: 1,
     maxWidth: '100%',
     minWidth: 0,
-    paddingHorizontal: uiTokens.space.md,
+    paddingHorizontal: uiTokens.space.lg,
   },
-  agendaActionButtonCompact: {
+  agendaActionButtonMobile: {
     alignSelf: 'stretch',
+    width: '100%',
   },
-  agendaActionButtonWide: {
-    alignSelf: 'center',
+  agendaIconAction: {
+    flexShrink: 0,
   },
   calendarModalOverlay: {
     flex: 1,

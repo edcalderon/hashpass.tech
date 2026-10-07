@@ -11,12 +11,13 @@ import { apiClient, eventApiPath } from '@/lib/api-client';
 import { resolveActiveEventId } from '@/lib/event-path';
 import SpeakerAvatar from '../../../../components/SpeakerAvatar';
 import PassesDisplay from '../../../../components/PassesDisplay';
-import { getSpeakerAvatarUrl, getSpeakerLinkedInUrl, getSpeakerTwitterUrl, resolveSpeakerImage } from '../../../../lib/string-utils';
-import { isClaimedActiveSpeaker } from '../../../../lib/speaker-status';
+import { getSpeakerAvatarUrl, getSpeakerLinkedInUrl, getSpeakerTwitterUrl } from '../../../../lib/string-utils';
+import { getSpeakerDirectoryState, isClaimedActiveSpeaker } from '../../../../lib/speaker-status';
 import LoadingScreen from '../../../../components/LoadingScreen';
 import { CopilotStep, walkthroughable } from '@lib/copilot-shim';
 import { useTranslation } from '../../../../i18n/i18n';
 import { MaterialIcons } from '../../../../lib/vector-icons';
+import { ActionButton } from '@hashpass/ui/primitives';
 
 // Helper function to generate user avatar URL
 const generateUserAvatarUrl = (name: string): string => {
@@ -44,6 +45,8 @@ interface Speaker {
     twitter?: string;
   };
   user_id?: string;
+  directory_visible?: boolean;
+  is_accepting_meetings?: boolean;
   isActive?: boolean; // Claimed account with an active speaker profile
   isOnline?: boolean; // User is currently online (last_seen within last 5 minutes)
 }
@@ -93,6 +96,7 @@ export default function SpeakerDetail() {
 
   const [speaker, setSpeaker] = useState<Speaker | null>(null);
   const [loading, setLoading] = useState(true);
+  const [claimStatus, setClaimStatus] = useState<'idle' | 'loading' | 'pending'>('idle');
   // userTicket removed - now using pass system
   const [isRequestingMeeting, setIsRequestingMeeting] = useState(false);
   const [showMeetingModal, setShowMeetingModal] = useState(false);
@@ -206,6 +210,12 @@ export default function SpeakerDetail() {
 
       if (dbSpeaker?.id) {
         const isActive = isClaimedActiveSpeaker(dbSpeaker);
+        const usesLegacyBslDirectory = /^(?:bsl|bsl2025|peru2026|chile2026|colombia2026)$/i.test(eventId);
+        const isExplicitlyPublished = dbSpeaker.directory_visible === true || dbSpeaker.metadata?.directory_visible === true;
+        if (!isExplicitlyPublished && !(usesLegacyBslDirectory && dbSpeaker.is_active === true)) {
+          showError('Speaker Not Available', 'This speaker profile is not public yet.');
+          return;
+        }
         setIsCurrentUserSpeaker(Boolean(dbUserId && dbSpeaker.user_id === dbUserId));
         setSpeaker({
           id: String(dbSpeaker.id),
@@ -219,66 +229,21 @@ export default function SpeakerDetail() {
           tags: dbSpeaker.tags || ['Blockchain', 'FinTech', 'Innovation'],
           availability: dbSpeaker.availability,
           user_id: dbSpeaker.user_id,
+          directory_visible: !usesLegacyBslDirectory
+            || dbSpeaker.directory_visible === true
+            || dbSpeaker.metadata?.directory_visible === true
+            || (usesLegacyBslDirectory && dbSpeaker.is_active === true),
+          is_accepting_meetings: dbSpeaker.is_accepting_meetings !== false,
           isActive,
           isOnline: Boolean(dbSpeaker.is_online),
         });
         return;
       }
 
-      // Fallback to event config (JSON) - always available
-      const foundSpeaker = event?.speakers?.find((s: { id: string }) => s.id === id);
-      
-      if (foundSpeaker) {
-        setSpeaker({
-          id: foundSpeaker.id,
-          name: foundSpeaker.name,
-          title: foundSpeaker.title,
-          company: foundSpeaker.company,
-          bio: `Experienced professional in ${foundSpeaker.title} at ${foundSpeaker.company}.`,
-          image: resolveSpeakerImage(foundSpeaker.image, foundSpeaker.name),
-          linkedin: getSpeakerLinkedInUrl(foundSpeaker.name),
-          twitter: getSpeakerTwitterUrl(foundSpeaker.name),
-          tags: ['Blockchain', 'FinTech', 'Innovation'],
-          isActive: false,
-          availability: {
-            monday: { start: '09:00', end: '17:00' },
-            tuesday: { start: '09:00', end: '17:00' },
-            wednesday: { start: '09:00', end: '17:00' },
-            thursday: { start: '09:00', end: '17:00' },
-            friday: { start: '09:00', end: '17:00' }
-          }
-        });
-        setIsCurrentUserSpeaker(false);
-      } else {
-        showError('Speaker Not Found', 'The requested speaker could not be found.');
-      }
+      showError('Speaker Not Found', 'The requested speaker could not be found.');
     } catch (error) {
       console.error('❌ Error loading speaker:', error);
-      const foundSpeaker = event?.speakers?.find((s: { id: string }) => s.id === id);
-      if (foundSpeaker) {
-        setSpeaker({
-          id: foundSpeaker.id,
-          name: foundSpeaker.name,
-          title: foundSpeaker.title,
-          company: foundSpeaker.company,
-          bio: `Experienced professional in ${foundSpeaker.title} at ${foundSpeaker.company}.`,
-          image: resolveSpeakerImage(foundSpeaker.image, foundSpeaker.name),
-          linkedin: getSpeakerLinkedInUrl(foundSpeaker.name),
-          twitter: getSpeakerTwitterUrl(foundSpeaker.name),
-          tags: ['Blockchain', 'FinTech', 'Innovation'],
-          isActive: false,
-          availability: {
-            monday: { start: '09:00', end: '17:00' },
-            tuesday: { start: '09:00', end: '17:00' },
-            wednesday: { start: '09:00', end: '17:00' },
-            thursday: { start: '09:00', end: '17:00' },
-            friday: { start: '09:00', end: '17:00' }
-          }
-        });
-        setIsCurrentUserSpeaker(false);
-      } else {
-        showError('Error', 'Failed to load speaker information from all sources.');
-      }
+      showError('Error', 'Failed to load speaker information from the event directory.');
     } finally {
       setLoading(false);
     }
@@ -1062,6 +1027,29 @@ export default function SpeakerDetail() {
     }
   };
 
+  const handleClaimProfile = async () => {
+    if (!speaker || claimStatus === 'loading' || claimStatus === 'pending') return;
+    if (!isLoggedIn) {
+      router.push('/(shared)/auth' as any);
+      return;
+    }
+
+    setClaimStatus('loading');
+    try {
+      const response = await apiClient.request(eventApiPath(eventId, 'speakers/claims'), {
+        skipEventSegment: true,
+        method: 'POST',
+        body: { eventId, speakerId: speaker.id },
+      });
+      if (!response.success) throw new Error(response.error || 'Unable to submit claim');
+      setClaimStatus('pending');
+      showSuccess(t('speakerView.claimSubmittedTitle'), t('speakerView.claimSubmittedMessage'));
+    } catch (error: any) {
+      setClaimStatus('idle');
+      showError(t('speakerView.claimFailedTitle'), error?.message || t('speakerView.claimFailedMessage'));
+    }
+  };
+
   if (loading || !speaker) {
     return (
       <LoadingScreen
@@ -1073,6 +1061,19 @@ export default function SpeakerDetail() {
   }
 
   const access = getTicketAccessLevel('business'); // Default to business pass
+  const directoryState = getSpeakerDirectoryState({
+    directory_visible: speaker.directory_visible,
+    is_active: speaker.isActive,
+    is_accepting_meetings: speaker.is_accepting_meetings,
+    user_id: speaker.user_id,
+  });
+  const statusLabel = directoryState.isNetworkingActive
+    ? speaker.isOnline ? t('speakerView.online') : t('speakerView.active')
+    : directoryState.status === 'unclaimed'
+      ? t('speakerView.unclaimed')
+      : directoryState.status === 'claimed'
+        ? t('speakerView.claimed')
+        : t('speakerView.inactive');
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -1091,13 +1092,13 @@ export default function SpeakerDetail() {
             <View style={styles.floatingStatusBadge}>
               <View style={[
                 styles.statusIndicator,
-                speaker.isActive ? styles.activeIndicator : styles.inactiveIndicator
+                directoryState.isNetworkingActive ? styles.activeIndicator : styles.inactiveIndicator
               ]} />
               <Text style={[
                 styles.statusBadgeText,
-                speaker.isActive ? styles.activeBadgeText : styles.inactiveBadgeText
+                directoryState.isNetworkingActive ? styles.activeBadgeText : styles.inactiveBadgeText
               ]}>
-                {speaker.isActive ? (speaker.isOnline ? t('speakerView.online') : t('speakerView.active')) : t('speakerView.inactive')}
+                {statusLabel}
               </Text>
             </View>
           )}
@@ -1137,6 +1138,26 @@ export default function SpeakerDetail() {
             <Text style={styles.sectionTitle}>{t('speakerView.about')}</Text>
           </View>
           <Text style={styles.bioText}>{speaker.bio}</Text>
+        </View>
+      )}
+
+      {directoryState.isPublished && !directoryState.isClaimed && (
+        <View style={[styles.claimCard, { borderRadius: styles.speakerCard.borderRadius }]}>
+          <View style={styles.claimCardHeader}>
+            <MaterialIcons name="verified-user" size={22} color={colors.primary} />
+            <Text style={styles.claimCardTitle}>{t('speakerView.claimProfile')}</Text>
+          </View>
+          <Text style={styles.claimCardText}>{t('speakerView.claimProfileDescription')}</Text>
+          <View testID="claim-profile">
+            <ActionButton
+              label={claimStatus === 'pending' ? t('speakerView.claimPending') : t('speakerView.claimProfile')}
+              loading={claimStatus === 'loading'}
+              variant="primary"
+              style={[styles.claimButton, { borderRadius: styles.socialButton.borderRadius }, claimStatus !== 'idle' && styles.claimButtonDisabled]}
+              onPress={handleClaimProfile}
+              disabled={claimStatus !== 'idle'}
+            />
+          </View>
         </View>
       )}
 
@@ -1325,7 +1346,7 @@ export default function SpeakerDetail() {
           <PassesDisplay
             mode="speaker"
             speakerId={speaker.id}
-            showRequestButton={true}
+            showRequestButton={directoryState.isAcceptingMeetings}
             onRequestPress={handleRequestMeeting}
             eventId={eventId}
             existingRequest={existingRequest ? { id: existingRequest.id, status: existingRequest.status } : null}
@@ -2111,6 +2132,48 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     fontSize: 16,
     color: colors.text.primary,
     lineHeight: 24,
+  },
+  claimCard: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+    padding: 16,
+    backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : `${colors.primary}10`,
+    borderWidth: 1,
+    borderColor: isDark ? 'rgba(255,255,255,0.14)' : colors.primaryLight,
+  },
+  claimCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  claimCardTitle: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.text.primary,
+  },
+  claimCardText: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: colors.text.secondary,
+    marginBottom: 14,
+  },
+  claimButton: {
+    alignSelf: 'flex-start',
+    minHeight: 44,
+    paddingHorizontal: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary,
+  },
+  claimButtonDisabled: {
+    opacity: 0.65,
+  },
+  claimButtonText: {
+    color: colors.primaryContrastText,
+    fontSize: 14,
+    fontWeight: '700',
   },
   socialLinks: {
     flexDirection: 'row',

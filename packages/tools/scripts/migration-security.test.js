@@ -585,9 +585,15 @@ describe('verified speaker identity claim migration contract', () => {
     expect(migration).toMatch(/CREATE OR REPLACE FUNCTION public\.configure_speaker_identity_claim/i);
     expect(migration).toMatch(/Only a super admin may preconfigure event_admin/i);
     expect(migration).toMatch(/CREATE TRIGGER trg_claim_speaker_profile_on_verified_signup/i);
-    expect(config.defaultGroups).toContain('speaker-identity-claims');
+    expect(config.defaultGroups).not.toContain('bsl-speaker-identity-claims');
     expect(config.groups['speaker-identity-claims']).toContain(
       'db/migrations/V028__claim_speaker_profiles_on_verified_signup.sql',
+    );
+    expect(config.groups['bsl-speaker-identity-claims']).toContain(
+      'db/migrations/V111__publish_speaker_profiles_and_claim_requests.sql',
+    );
+    expect(config.groups['bsl-speaker-identity-claims']).toContain(
+      'db/migrations/V115__repair_speaker_claim_review_policy.sql',
     );
   });
 

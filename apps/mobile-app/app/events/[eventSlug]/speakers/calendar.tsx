@@ -9,8 +9,8 @@ import EventBanner from '../../../../components/EventBanner';
 import SpeakerAvatar from '../../../../components/SpeakerAvatar';
 import SpeakerSearchAndSort from '../../../../components/SpeakerSearchAndSort';
 import { sortSpeakersByPriority } from '../../../../lib/speaker-priority';
-import { isClaimedActiveSpeaker } from '../../../../lib/speaker-status';
-import { getSpeakerAvatarUrl, resolveConfiguredSpeakerImage, resolveSpeakerImage } from '../../../../lib/string-utils';
+import { getSpeakerDirectoryState, isClaimedActiveSpeaker } from '../../../../lib/speaker-status';
+import { getSpeakerAvatarUrl } from '../../../../lib/string-utils';
 import LoadingScreen from '../../../../components/LoadingScreen';
 
 // Type definitions
@@ -22,26 +22,17 @@ interface Speaker {
   bio?: string;
   image?: string;
   user_id?: string;
+  directory_visible?: boolean;
+  is_accepting_meetings?: boolean;
   isActive?: boolean; // Claimed account with an active speaker profile
+  isPublished?: boolean;
+  isClaimed?: boolean;
   isPastEditionReference?: boolean;
 }
 
-// Shape of event?.speakers entries (from packages/config/src/events.ts's
-// Speaker type) as actually read below -- named explicitly rather than
-// inferred through `event` (from useEvent(), a non-relative import) so the
-// pre-push isolated typecheck's blanket `any` stub for that import doesn't
-// cascade into implicit-any errors on every .map() callback here.
-interface EventSpeakerConfig {
-  id: string;
-  name: string;
-  title?: string | null;
-  company?: string | null;
-  bio?: string;
-  image?: string;
-  isActive?: boolean;
-  isPastEditionReference?: boolean;
-}
-
+// The directory is loaded from the server-owned event API. It is intentionally
+// not reconstructed from the bundled event roster because that roster is not
+// ownership-verified.
 function SpeakerCard({
   speaker,
   eventId,
@@ -52,12 +43,15 @@ function SpeakerCard({
   styles: ReturnType<typeof getStyles>;
 }) {
   const router = useRouter();
-  const isInteractive = Boolean(speaker.isActive);
-  const statusText = speaker.isActive
+  const directoryState = getSpeakerDirectoryState(speaker);
+  const isInteractive = directoryState.isPublished;
+  const statusText = directoryState.isNetworkingActive
     ? 'Active'
-    : speaker.isPastEditionReference
-      ? 'Past edition'
-      : 'Inactive';
+    : directoryState.isPublished && directoryState.isClaimed
+      ? 'Claimed'
+      : speaker.isPastEditionReference
+        ? 'Past edition'
+        : 'Inactive';
 
   return (
     <TouchableOpacity
@@ -73,7 +67,7 @@ function SpeakerCard({
           size={50}
           showBorder={false}
         />
-        {speaker.isActive && (
+        {directoryState.isNetworkingActive && (
           <View style={styles.activeBadge}>
             <View style={styles.activeIndicator} />
           </View>
@@ -82,8 +76,8 @@ function SpeakerCard({
       <View style={styles.speakerInfo}>
         <View style={styles.speakerNameRow}>
           <Text style={styles.speakerName}>{speaker.name}</Text>
-          <View style={[styles.statusLabel, speaker.isActive ? styles.activeLabel : styles.inactiveLabel]}>
-            <Text style={[styles.statusLabelText, speaker.isActive ? styles.activeLabelText : styles.inactiveLabelText]}>
+          <View style={[styles.statusLabel, directoryState.isNetworkingActive ? styles.activeLabel : styles.inactiveLabel]}>
+            <Text style={[styles.statusLabelText, directoryState.isNetworkingActive ? styles.activeLabelText : styles.inactiveLabelText]}>
               {statusText}
             </Text>
           </View>
@@ -135,14 +129,9 @@ export default function SpeakersCalendar() {
   }, [speakers]);
 
   // Load speakers from the gated API (server-enforces speakers_public --
-  // db/migrations/V109) with a JSON fallback for a genuinely empty/erroring
-  // directory. Gated on event being resolved: EventContext derives `event`
-  // synchronously from usePathname(), which can be null on the very first
-  // render before routing settles. This effect only runs once "on mount"
-  // (see deps below), so if it fired while `event` was still null,
-  // event?.speakers would bake in as [] forever -- the JSON fallback would
-  // never get real data even after `event` resolved moments later, since
-  // nothing would re-trigger this effect.
+  // db/migrations/V109). Gated on event being resolved: EventContext derives
+  // `event` synchronously from usePathname(), which can be null on the very
+  // first render before routing settles.
   useEffect(() => {
     if (!event) return;
     let cancelled = false;
@@ -179,10 +168,14 @@ export default function SpeakersCalendar() {
             return;
           }
 
-          const dbSpeakers = payload?.data;
+          const dbSpeakers = Array.isArray(payload?.data) ? payload.data : [];
+          const publicDbSpeakers = dbSpeakers.filter((s: any) => {
+            const isExplicitlyPublished = s.directory_visible === true || s.metadata?.directory_visible === true;
+            return isExplicitlyPublished || (canUseLegacyBslDirectory && s.is_active === true);
+          });
 
-          if (dbSpeakers && dbSpeakers.length > 0) {
-            const formattedSpeakers = dbSpeakers.map((s: any) => ({
+          if (Array.isArray(payload?.data)) {
+            const formattedSpeakers = publicDbSpeakers.map((s: any) => ({
               id: s.id,
               name: s.name,
               title: s.title || null,
@@ -190,10 +183,15 @@ export default function SpeakersCalendar() {
               bio: s.bio || (s.title ? `Experienced professional in ${s.title}.` : undefined),
               image: s.imageurl || s.image_url || getSpeakerAvatarUrl(s.name),
               user_id: s.user_id || undefined,
+              directory_visible: !canUseLegacyBslDirectory
+                || s.directory_visible === true
+                || s.metadata?.directory_visible === true
+                || (canUseLegacyBslDirectory && s.is_active === true),
+              is_accepting_meetings: s.is_accepting_meetings !== false,
               sortOrder: canUseLegacyBslDirectory ? undefined : s.sort_order,
-              isActive: canUseLegacyBslDirectory
-                ? isClaimedActiveSpeaker(s)
-                : s.metadata?.is_active === true,
+              isActive: isClaimedActiveSpeaker(s),
+              isPublished: true,
+              isClaimed: Boolean(s.user_id),
               isPastEditionReference: !canUseLegacyBslDirectory
                 && s.metadata?.is_past_edition_reference === true,
             }));
@@ -207,67 +205,38 @@ export default function SpeakersCalendar() {
             const sortedSpeakers: Speaker[] = sortSpeakersByPriority(uniqueSpeakers);
             if (cancelled) return;
             setSpeakers(sortedSpeakers);
+            setIsDirectoryPrivate(sortedSpeakers.length === 0);
             setLoading(false);
             return;
           }
-        } catch (dbError: any) {
-          // Fall back to the event configuration when the database is unavailable.
+        } catch {
+          // Do not expose bundled speaker data when the authoritative directory
+          // is unavailable. A stale local roster can contain unclaimed profiles.
         } finally {
           if (timeoutId) clearTimeout(timeoutId);
         }
-
-        // Fallback to event config (JSON)
+        if (cancelled) return;
         const eventSpeakers = event?.speakers || [];
-        const formattedEventSpeakers = eventSpeakers.map((s: EventSpeakerConfig, index: number) => ({
+        const sortedEventSpeakers = sortSpeakersByPriority(eventSpeakers.map((s: any, index: number) => ({
           id: s.id,
           name: s.name,
           title: s.title || null,
           company: s.company || null,
-          bio: s.bio || ((s.title && s.company) ? `Experienced professional in ${s.title} at ${s.company}.` : undefined),
+          bio: s.bio,
+          image: getSpeakerAvatarUrl(s.name),
           isActive: Boolean(s.isActive),
-          sortOrder: canUseLegacyBslDirectory ? undefined : index,
-          isPastEditionReference: Boolean(s.isPastEditionReference),
-          // s.image is our own hosted photo (see packages/config/src/events.ts).
-          // Only fall back to the legacy Cloudinary/name-guessing lookup for
-          // older speakers that were never given a real image field.
-          image: resolveConfiguredSpeakerImage(s.image, s.name)
-        }));
-
-        // Remove duplicates based on ID
-        const uniqueEventSpeakers = formattedEventSpeakers.filter((speaker: Speaker, index: number, self: Speaker[]) =>
-          index === self.findIndex((s: Speaker) => s.id === speaker.id)
-        );
-
-        // Sort by priority order
-        const sortedEventSpeakers: Speaker[] = sortSpeakersByPriority(uniqueEventSpeakers);
-        if (cancelled) return;
+          isPublished: Boolean(s.isActive),
+          isClaimed: false,
+          sortOrder: index,
+        })));
         setSpeakers(sortedEventSpeakers);
+        setIsDirectoryPrivate(sortedEventSpeakers.length === 0);
         setLoading(false);
       } catch (error) {
         console.error('❌ Error loading speakers:', error);
-        // Emergency fallback to event config
-        const eventSpeakers = event?.speakers || [];
-        const formattedEventSpeakers = eventSpeakers.map((s: EventSpeakerConfig, index: number) => ({
-          id: s.id,
-          name: s.name,
-          title: s.title || null,
-          company: s.company || null,
-          bio: (s.title && s.company) ? `Experienced professional in ${s.title} at ${s.company}.` : undefined,
-          isActive: Boolean(s.isActive),
-          sortOrder: canUseLegacyBslDirectory ? undefined : index,
-          isPastEditionReference: Boolean(s.isPastEditionReference),
-          image: resolveSpeakerImage(s.image, s.name)
-        }));
-
-        // Remove duplicates based on ID
-        const uniqueEmergencySpeakers = formattedEventSpeakers.filter((speaker: Speaker, index: number, self: Speaker[]) =>
-          index === self.findIndex((s: Speaker) => s.id === speaker.id)
-        );
-        
-        // Sort by priority order
-        const sortedEmergencySpeakers: Speaker[] = sortSpeakersByPriority(uniqueEmergencySpeakers);
         if (cancelled) return;
-        setSpeakers(sortedEmergencySpeakers);
+        setSpeakers([]);
+        setIsDirectoryPrivate(true);
         setLoading(false);
       }
     };
