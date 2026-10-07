@@ -54,7 +54,7 @@ variable "site_www_domain_name" {
 variable "site_additional_domain_names" {
   description = "Additional production CloudFront aliases served by the same source-account front door"
   type        = list(string)
-  default     = ["events.hashpass.tech"]
+  default     = []
 }
 
 variable "site_origin_domain_name" {

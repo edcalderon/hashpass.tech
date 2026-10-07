@@ -42,6 +42,7 @@ fi
 echo "Syncing site assets to S3..."
 aws s3 sync "${BUILD_DIR}" "s3://${SITE_BUCKET_NAME}" \
   --delete \
+  --exclude 'events/*/speakers/*' \
   --cache-control "${ASSET_CACHE_CONTROL}"
 
 # Older copied email signatures used stable filenames before the assets were

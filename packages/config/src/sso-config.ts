@@ -35,7 +35,6 @@ export const SSO_CONFIG = {
     origins: [
       'https://hashpass.tech',
       'https://www.hashpass.tech',
-      'https://events.hashpass.tech',
       'https://dev.hashpass.tech',
       'https://hashpass.co',
       'https://www.hashpass.co',
