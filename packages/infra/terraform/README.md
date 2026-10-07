@@ -155,8 +155,6 @@ The current live layout is:
 - `hashpass.tech` resolves through the source-account CloudFront front door.
 - `www.hashpass.tech` remains a CNAME to `hashpass.tech` and is covered by the
   same CloudFront certificate.
-- `events.hashpass.tech` is also routed through the source-account CloudFront
-  front door and is covered by that certificate.
 - `dev.hashpass.tech` is routed through the source-account CloudFront front
   door and aliases directly from the parent `hashpass.tech` hosted zone.
 - The target `hashpass.tech` hosted zone still carries the static origin used

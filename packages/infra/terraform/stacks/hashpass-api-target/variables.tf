@@ -104,7 +104,6 @@ variable "api_cors_origins" {
     dev = [
       "http://localhost:8081",
       "https://dev.hashpass.tech",
-      "https://events.hashpass.tech",
       "https://bsl-dev.hashpass.tech",
       "https://bsl.hashpass.tech",
       "https://blockchainsummit-dev.hashpass.lat",
@@ -114,7 +113,6 @@ variable "api_cors_origins" {
     prod = [
       "https://hashpass.tech",
       "https://www.hashpass.tech",
-      "https://events.hashpass.tech",
       "https://bsl.hashpass.tech",
       "https://bsl-dev.hashpass.tech",
       "https://blockchainsummit.hashpass.lat",

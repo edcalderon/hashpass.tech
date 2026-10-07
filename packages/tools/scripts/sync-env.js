@@ -236,7 +236,6 @@ function applyCanonicalTenantOverrides(targetConfig, runtime) {
     'http://localhost:3000',
     'https://hashpass.tech',
     'https://www.hashpass.tech',
-    'https://events.hashpass.tech',
     'https://hashpass.co',
     'https://www.hashpass.co',
     'https://bsl.hashpass.tech',

@@ -80,18 +80,4 @@ describe("Expo Router Lambda adapter request headers", () => {
     );
     expect(headers["access-control-allow-credentials"]).toBe("true");
   });
-
-  it("allows credentialed CORS requests from the events app", () => {
-    const { applyCorsHeaders } = loadInternals();
-
-    const headers = applyCorsHeaders(
-      {},
-      { headers: { origin: "https://events.hashpass.tech" } },
-    );
-
-    expect(headers["access-control-allow-origin"]).toBe(
-      "https://events.hashpass.tech",
-    );
-    expect(headers["access-control-allow-credentials"]).toBe("true");
-  });
 });
