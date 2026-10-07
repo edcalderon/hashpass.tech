@@ -1491,28 +1491,45 @@ export default function BSL2025AgendaScreen() {
     // screen-specific pill/duplication the design system contract asks us
     // to avoid (see CLAUDE.md's Shared UI and Storybook contract).
     const renderAgendaAction = (
-      action: 'calendar' | 'favorite' | 'schedule',
       label: string,
       icon: React.ReactNode,
       onPress: () => void,
     ) => (
       <ActionButton
-        key={action}
+        key="calendar"
         mode={interfaceMode}
-        label={label}
+        label={t('calendar.shortLabel', 'Calendar')}
         labelNumberOfLines={1}
         tooltipText={label}
         accessibilityLabel={label}
-        variant="secondary"
+        variant="primary"
         leadingIcon={icon}
         accessibilityHint={t('actions.actionHint', 'Opens this session action')}
         onPress={onPress}
         style={[
           styles.agendaActionButton,
-          isCompactAgenda && styles.agendaActionButtonCompact,
-          isWideAgenda && !isAgendaGrid && styles.agendaActionButtonWide,
         ]}
       />
+    );
+
+    const renderAgendaIconAction = (
+      action: 'favorite' | 'schedule',
+      label: string,
+      accentColor: string,
+      icon: React.ReactNode,
+      onPress: () => void,
+    ) => (
+      <IconButton
+        key={action}
+        mode={interfaceMode}
+        label={label}
+        accentColor={accentColor}
+        revealLabel
+        onPress={onPress}
+        style={styles.agendaIconAction}
+      >
+        {icon}
+      </IconButton>
     );
 
     return (
@@ -1641,20 +1658,21 @@ export default function BSL2025AgendaScreen() {
                 isWideAgenda && !isAgendaGrid && styles.agendaItemToolsWide,
               ]}>
                 {renderAgendaAction(
-                  'calendar',
                   t('calendar.openPicker', 'Add this session to a calendar'),
                   <MaterialIcons name="event" size={18} color={colors.primary} />,
                   () => setCalendarPickerItem(item),
                 )}
-                {renderAgendaAction(
+                {renderAgendaIconAction(
                   'favorite',
                   isFavorite ? t('actions.removeFromFavorites', 'Remove from favorites') : t('actions.addToFavorites', 'Add to favorites'),
+                  isFavorite ? colors.primary : colors.text.secondary,
                   <MaterialIcons name={isFavorite ? 'star' : 'star-border'} size={18} color={isFavorite ? colors.primary : colors.text.secondary} />,
                   () => { void handleToggleFavorite(item); },
                 )}
-                {renderAgendaAction(
+                {renderAgendaIconAction(
                   'schedule',
                   isConfirmed ? t('actions.removeFromAgenda', 'Remove from agenda') : t('actions.addToAgenda', 'Add to agenda'),
+                  isConfirmed ? colors.success.main : colors.primary,
                   <MaterialIcons name={isConfirmed ? 'check-circle' : 'add-circle-outline'} size={19} color={isConfirmed ? colors.success.main : colors.primary} />,
                   () => { void handleAgendaAction(item, startTime); },
                 )}
@@ -2367,31 +2385,27 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'wrap',
-    gap: uiTokens.space.xs,
+    gap: uiTokens.space.sm,
     marginBottom: uiTokens.space.md,
   },
   agendaItemToolsCompact: {
-    alignItems: 'stretch',
-    flexDirection: 'column',
-    gap: uiTokens.space.xs,
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: uiTokens.space.sm,
     marginBottom: uiTokens.space.sm,
   },
   agendaItemToolsWide: {
-    alignItems: 'center',
-    width: '100%',
+    justifyContent: 'flex-start',
   },
   agendaActionButton: {
     alignSelf: 'flex-start',
     flexShrink: 1,
     maxWidth: '100%',
     minWidth: 0,
-    paddingHorizontal: uiTokens.space.md,
+    paddingHorizontal: uiTokens.space.lg,
   },
-  agendaActionButtonCompact: {
-    alignSelf: 'stretch',
-  },
-  agendaActionButtonWide: {
-    alignSelf: 'center',
+  agendaIconAction: {
+    flexShrink: 0,
   },
   calendarModalOverlay: {
     flex: 1,

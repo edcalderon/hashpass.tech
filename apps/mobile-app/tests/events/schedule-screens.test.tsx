@@ -599,7 +599,7 @@ describe('event schedule screens', () => {
     expect(renderer!.root.findAllByProps({ accessibilityLabel: 'calendar.openPicker' }).some((node) => (
       Array.isArray(node.props.style)
         && node.props.style.some((style: unknown) => (
-          style && typeof style === 'object' && (style as { alignSelf?: string }).alignSelf === 'center'
+          style && typeof style === 'object' && (style as { alignSelf?: string }).alignSelf === 'flex-start'
         ))
     ))).toBe(true);
     expect(renderer!.root.findAll((node) => (
@@ -643,16 +643,16 @@ describe('event schedule screens', () => {
     await act(async () => renderer!.unmount());
   });
 
-  it('renders agenda action buttons as always-visible vertical labels without collapse behaviour', async () => {
+  it('renders one primary calendar action with compact reveal controls', async () => {
     const renderer = await renderCalendarAgenda();
-    // ActionButton always renders its label as a child; unlike the old
-    // revealLabel IconButton, the label is present without any hover/focus.
-    const calendarLabel = renderer.root.findAllByProps({ children: 'calendar.openPicker' });
+    const calendarLabel = renderer.root.findAllByProps({ children: 'calendar.shortLabel' });
     expect(calendarLabel.length).toBeGreaterThan(0);
-    const favoriteLabel = renderer.root.findAllByProps({ children: 'actions.addToFavorites' });
+    const favoriteLabel = renderer.root.findAllByProps({ accessibilityLabel: 'actions.addToFavorites' });
     expect(favoriteLabel.length).toBeGreaterThan(0);
-    const scheduleLabel = renderer.root.findAllByProps({ children: 'actions.addToAgenda' });
+    const scheduleLabel = renderer.root.findAllByProps({ accessibilityLabel: 'actions.addToAgenda' });
     expect(scheduleLabel.length).toBeGreaterThan(0);
+    expect(agendaSource).toContain('revealLabel');
+    expect(agendaSource).toContain('styles.agendaIconAction');
 
     await act(async () => renderer.unmount());
   });
