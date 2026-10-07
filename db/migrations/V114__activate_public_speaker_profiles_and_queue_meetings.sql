@@ -1,10 +1,11 @@
 -- ============================================================================
 -- V114: Activate public speaker profiles and queue meeting requests
 -- ============================================================================
--- BSL wants every imported speaker to be discoverable and eligible for
--- networking before the speaker has claimed an account. A request made before
--- claiming is stored against the profile id and relinked to auth.users when
--- the profile is claimed.
+-- BSL wants every current imported speaker to be discoverable and eligible
+-- for networking before the speaker has claimed an account. A request made
+-- before claiming is stored against the profile id and relinked to auth.users
+-- when the profile is claimed. Rows retired by programme reconciliation or
+-- explicitly deactivated by an administrator are intentionally untouched.
 -- ============================================================================
 
 BEGIN;
@@ -13,7 +14,9 @@ UPDATE public.bsl_speakers
    SET directory_visible = true,
        is_active = true,
        is_accepting_meetings = true,
-       updated_at = now();
+       updated_at = now()
+ WHERE (event_id = 'colombia2026' AND metadata ->> 'source' = 'blockchainsummit-colombia2026')
+    OR (event_id = 'bsl2025' AND metadata ->> 'source' = 'packages/config/src/events.ts');
 
 ALTER TABLE public.bsl_speakers
   ALTER COLUMN directory_visible SET DEFAULT true;

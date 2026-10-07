@@ -229,7 +229,7 @@ BEGIN
     RAISE EXCEPTION 'Speaker claim request not found' USING ERRCODE = '22023';
   END IF;
 
-  IF NOT public.has_event_admin_access(v_actor_user_id, v_claim.event_id, false) THEN
+  IF NOT public.has_event_admin_access(p_actor_user_id, v_claim.event_id, false) THEN
     RAISE EXCEPTION 'Only an event administrator may review speaker claims'
       USING ERRCODE = '42501';
   END IF;
@@ -287,7 +287,7 @@ BEGIN
     UPDATE public.bsl_speakers
        SET user_id = v_claim.requester_user_id,
            is_active = true,
-           is_accepting_meetings = false,
+           is_accepting_meetings = true,
            directory_visible = true,
            updated_at = now()
      WHERE id::text = v_claim.speaker_id
@@ -305,7 +305,7 @@ BEGIN
       v_claim.speaker_id,
       v_email,
       'claimed',
-      v_actor_user_id,
+      p_actor_user_id,
       v_claim.requester_user_id,
       now(),
       jsonb_build_object('source', 'speaker_claim_request', 'claim_request_id', v_claim.id)

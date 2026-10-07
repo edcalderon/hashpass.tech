@@ -17,6 +17,7 @@ import LoadingScreen from '../../../../components/LoadingScreen';
 import { CopilotStep, walkthroughable } from '@lib/copilot-shim';
 import { useTranslation } from '../../../../i18n/i18n';
 import { MaterialIcons } from '../../../../lib/vector-icons';
+import { ActionButton } from '@hashpass/ui/primitives';
 
 // Helper function to generate user avatar URL
 const generateUserAvatarUrl = (name: string): string => {
@@ -1035,10 +1036,10 @@ export default function SpeakerDetail() {
 
     setClaimStatus('loading');
     try {
-      const response = await apiClient.request('/speakers/claims', {
+      const response = await apiClient.request(eventApiPath(eventId, 'speakers/claims'), {
         skipEventSegment: true,
         method: 'POST',
-        body: { speakerId: speaker.id },
+        body: { eventId, speakerId: speaker.id },
       });
       if (!response.success) throw new Error(response.error || 'Unable to submit claim');
       setClaimStatus('pending');
@@ -1147,20 +1148,16 @@ export default function SpeakerDetail() {
             <Text style={styles.claimCardTitle}>{t('speakerView.claimProfile')}</Text>
           </View>
           <Text style={styles.claimCardText}>{t('speakerView.claimProfileDescription')}</Text>
-          <TouchableOpacity
-            testID="claim-profile"
-            style={[styles.claimButton, { borderRadius: styles.socialButton.borderRadius }, claimStatus !== 'idle' && styles.claimButtonDisabled]}
-            onPress={handleClaimProfile}
-            disabled={claimStatus !== 'idle'}
-          >
-            {claimStatus === 'loading' ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <Text style={styles.claimButtonText}>
-                {claimStatus === 'pending' ? t('speakerView.claimPending') : t('speakerView.claimProfile')}
-              </Text>
-            )}
-          </TouchableOpacity>
+          <View testID="claim-profile">
+            <ActionButton
+              label={claimStatus === 'pending' ? t('speakerView.claimPending') : t('speakerView.claimProfile')}
+              loading={claimStatus === 'loading'}
+              variant="primary"
+              style={[styles.claimButton, { borderRadius: styles.socialButton.borderRadius }, claimStatus !== 'idle' && styles.claimButtonDisabled]}
+              onPress={handleClaimProfile}
+              disabled={claimStatus !== 'idle'}
+            />
+          </View>
         </View>
       )}
 

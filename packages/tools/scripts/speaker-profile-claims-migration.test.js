@@ -19,6 +19,13 @@ const enforcementMigrationPath = path.resolve(
 const enforcementMigration = fs.existsSync(enforcementMigrationPath)
   ? fs.readFileSync(enforcementMigrationPath, 'utf8')
   : '';
+const repairMigrationPath = path.resolve(
+  __dirname,
+  '../../../db/migrations/V115__repair_speaker_claim_review_policy.sql',
+);
+const repairMigration = fs.existsSync(repairMigrationPath)
+  ? fs.readFileSync(repairMigrationPath, 'utf8')
+  : '';
 
 describe('V111 speaker profile publication and claim requests', () => {
   it('separates public directory visibility from account ownership', () => {
@@ -36,7 +43,8 @@ describe('V111 speaker profile publication and claim requests', () => {
   it('keeps review and linking server-side and audited', () => {
     expect(migration).toMatch(/CREATE OR REPLACE FUNCTION public\.request_speaker_profile_claim/i);
     expect(migration).toMatch(/CREATE OR REPLACE FUNCTION public\.review_speaker_profile_claim/i);
-    expect(migration).toMatch(/has_event_admin_access\(v_actor_user_id, v_claim\.event_id, false\)/i);
+    expect(migration).toMatch(/has_event_admin_access\(p_actor_user_id, v_claim\.event_id, false\)/i);
+    expect(migration).toMatch(/is_active\s*=\s*true,[\s\S]*is_accepting_meetings\s*=\s*true/i);
     expect(migration).toMatch(/SET user_id = v_claim\.requester_user_id/i);
     expect(migration).toMatch(/speaker_claim\.' \|\| p_action/i);
     expect(migration).toMatch(/REVOKE ALL ON FUNCTION public\.request_speaker_profile_claim/i);
@@ -76,5 +84,14 @@ describe('V114 speaker activation and queued meeting requests', () => {
     expect(enforcementMigration).toMatch(/DROP CONSTRAINT IF EXISTS meeting_requests_speaker_id_fkey/i);
     expect(enforcementMigration).toMatch(/COALESCE\(v_speaker\.user_id, v_speaker\.id::uuid\)/i);
     expect(enforcementMigration).toMatch(/link_pending_speaker_requests_on_claim/i);
+    expect(enforcementMigration).toMatch(/metadata\s*->>\s*'source'/i);
+  });
+});
+
+describe('V115 deployed claim review repair', () => {
+  it('replaces the deployed review function with the scoped actor and active meeting policy', () => {
+    expect(repairMigration).toMatch(/has_event_admin_access\(p_actor_user_id, v_claim\.event_id, false\)/i);
+    expect(repairMigration).toMatch(/is_accepting_meetings\s*=\s*true/i);
+    expect(repairMigration).toMatch(/metadata\s*->>\s*'source'/i);
   });
 });

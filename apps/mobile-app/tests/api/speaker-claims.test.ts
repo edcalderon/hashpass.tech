@@ -38,7 +38,7 @@ describe('/api/speakers/claims', () => {
     const { POST } = require('../../app/api/speakers/claims+api');
     const response = await POST(new Request('https://api.hashpass.tech/api/speakers/claims', {
       method: 'POST',
-      body: JSON.stringify({ speakerId: 'speaker-1' }),
+      body: JSON.stringify({ eventId: 'colombia2026', speakerId: 'speaker-1' }),
     }));
 
     expect(response.status).toBe(401);
@@ -50,7 +50,7 @@ describe('/api/speakers/claims', () => {
     const { POST } = require('../../app/api/speakers/claims+api');
     const response = await POST(new Request('https://api.hashpass.tech/api/speakers/claims', {
       method: 'POST',
-      body: JSON.stringify({ speakerId: 'speaker-1', note: 'I am speaking at BSL Colombia.' }),
+      body: JSON.stringify({ eventId: 'colombia2026', speakerId: 'speaker-1', note: 'I am speaking at BSL Colombia.' }),
     }));
 
     expect(response.status).toBe(200);
