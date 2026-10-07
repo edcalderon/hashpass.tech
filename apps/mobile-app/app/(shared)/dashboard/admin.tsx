@@ -129,6 +129,21 @@ interface SpeakerRoleRecord {
   } | null;
 }
 
+interface SpeakerClaimRequest {
+  claim_id: string;
+  speaker_id: string;
+  event_id: string;
+  speaker_name: string;
+  speaker_title: string | null;
+  speaker_company: string | null;
+  requester_user_id: string;
+  requester_email: string | null;
+  status: "pending" | "approved" | "rejected";
+  request_note: string | null;
+  created_at: string;
+  review_note: string | null;
+}
+
 interface MeetingRequest {
   id: string;
   requester_id: string;
@@ -270,6 +285,8 @@ export default function AdminPanel() {
   const [selectedSpeakerRole, setSelectedSpeakerRole] =
     useState<SpeakerRoleRecord | null>(null);
   const [newSpeakerAccountEmail, setNewSpeakerAccountEmail] = useState("");
+  const [speakerClaims, setSpeakerClaims] = useState<SpeakerClaimRequest[]>([]);
+  const [speakerClaimsLoading, setSpeakerClaimsLoading] = useState(false);
 
   const styles = getStyles(isDark, colors);
   const updateTabScrollState = (offsetX = 0) => {
@@ -414,7 +431,7 @@ export default function AdminPanel() {
         adminRole === "super_admin" ? loadGlobalAdmins() : Promise.resolve(),
       ]);
     } else if (activeTab === "speaker-roles") {
-      await loadSpeakerRoles();
+      await Promise.all([loadSpeakerRoles(), loadSpeakerClaims()]);
     }
   };
 
@@ -438,6 +455,60 @@ export default function AdminPanel() {
     } finally {
       setSpeakerRolesLoading(false);
     }
+  };
+
+  const loadSpeakerClaims = async () => {
+    setSpeakerClaimsLoading(true);
+    try {
+      const result = await apiClient.get(
+        `/admin/speaker-claims?eventId=${encodeURIComponent(selectedEventId)}`,
+        { skipEventSegment: true },
+      );
+      if (!result.success) throw new Error(result.error || "Unable to load claim requests");
+      setSpeakerClaims(
+        (result.data as { data?: SpeakerClaimRequest[] })?.data || [],
+      );
+    } catch (error: any) {
+      Alert.alert(
+        "Error",
+        "Failed to load speaker claim requests: " + (error.message || "Unknown error"),
+      );
+    } finally {
+      setSpeakerClaimsLoading(false);
+    }
+  };
+
+  const reviewSpeakerClaim = (claim: SpeakerClaimRequest, action: "approve" | "reject") => {
+    const verb = action === "approve" ? "Approve" : "Reject";
+    Alert.alert(
+      `${verb} profile claim?`,
+      `${verb} the verified request from ${claim.requester_email || "this account"} for ${claim.speaker_name}?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: verb,
+          style: action === "reject" ? "destructive" : "default",
+          onPress: () => {
+            void (async () => {
+              try {
+                setSpeakerClaimsLoading(true);
+                const result = await apiClient.post(
+                  "/admin/speaker-claims",
+                  { eventId: selectedEventId, claimId: claim.claim_id, action },
+                  { skipEventSegment: true },
+                );
+                if (!result.success) throw new Error(result.error || "Unable to review claim");
+                await Promise.all([loadSpeakerClaims(), loadSpeakerRoles()]);
+              } catch (error: any) {
+                Alert.alert("Claim not updated", error.message || "Please try again.");
+              } finally {
+                setSpeakerClaimsLoading(false);
+              }
+            })();
+          },
+        },
+      ],
+    );
   };
 
   const mutateSpeakerRole = async (
@@ -1675,6 +1746,8 @@ export default function AdminPanel() {
             styles={styles}
             speakers={speakerRoles}
             loading={speakerRolesLoading}
+            claims={speakerClaims}
+            claimsLoading={speakerClaimsLoading}
             onAssign={(speaker: SpeakerRoleRecord) => {
               setSelectedSpeakerRole(speaker);
               setNewSpeakerAccountEmail("");
@@ -1687,7 +1760,10 @@ export default function AdminPanel() {
                 speaker,
               );
             }}
-            onRefresh={loadSpeakerRoles}
+            onReviewClaim={reviewSpeakerClaim}
+            onRefresh={() => {
+              void Promise.all([loadSpeakerRoles(), loadSpeakerClaims()]);
+            }}
           />
         )}
       </ScrollView>
@@ -2585,7 +2661,7 @@ function EventAuthAllySettings({
         <ActivityIndicator size="large" color="#007AFF" style={styles.loader} />
       ) : (
         <>
-          {AUTH_ALLIES.map((ally) => {
+          {AUTH_ALLIES.map((ally: (typeof AUTH_ALLIES)[number]) => {
             const required = ally.id === DEFAULT_AUTH_ALLY_ID;
             const enabled = allowedAllyIds.includes(ally.id);
             return (
@@ -3042,9 +3118,12 @@ function SpeakerRoleManagementTab({
   styles,
   speakers,
   loading,
+  claims,
+  claimsLoading,
   onAssign,
   onRevoke,
   onToggleActive,
+  onReviewClaim,
   onRefresh,
 }: any) {
   const speakerSearchData = useMemo(
@@ -3096,6 +3175,61 @@ function SpeakerRoleManagementTab({
         <MaterialIcons name="refresh" size={16} color="#fff" />
         <Text style={styles.actionButtonText}>Refresh</Text>
       </TouchableOpacity>
+
+      <View style={[styles.passCard, { marginTop: 16 }]}>
+        <View style={styles.passCardHeader}>
+          <View style={styles.speakerRoleTitleWrap}>
+            <Text style={styles.passNumber}>Pending profile claims</Text>
+            <Text style={styles.passInfo}>
+              Verify the requester with BSL before linking an account or enabling networking.
+            </Text>
+          </View>
+          {claimsLoading && <ActivityIndicator size="small" color="#007AFF" />}
+        </View>
+        {claims.filter((claim: SpeakerClaimRequest) => claim.status === "pending").map((claim: SpeakerClaimRequest) => (
+          <View key={claim.claim_id} style={[styles.passCard, { marginTop: 10 }]}>
+            <View style={styles.passCardHeader}>
+              <View style={styles.speakerRoleTitleWrap}>
+                <Text style={styles.passNumber}>{claim.speaker_name}</Text>
+                <Text style={styles.passInfo}>
+                  {claim.requester_email || "Verified account"}
+                </Text>
+              </View>
+              <View style={[styles.statusBadge, styles.actionButtonWarning]}>
+                <Text style={styles.statusBadgeText}>PENDING</Text>
+              </View>
+            </View>
+            {(claim.speaker_title || claim.speaker_company) && (
+              <Text style={styles.passInfo}>
+                {[claim.speaker_title, claim.speaker_company].filter(Boolean).join(" · ")}
+              </Text>
+            )}
+            {claim.request_note ? (
+              <Text style={styles.speakerClaimNote}>{claim.request_note}</Text>
+            ) : null}
+            <Text style={styles.speakerClaimDate}>
+              Requested {new Date(claim.created_at).toLocaleDateString()}
+            </Text>
+            <View style={styles.passActions}>
+              <TouchableOpacity
+                style={[styles.actionButton, styles.actionButtonSuccess]}
+                onPress={() => onReviewClaim(claim, "approve")}
+              >
+                <Text style={styles.actionButtonText}>Approve & link</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={() => onReviewClaim(claim, "reject")}
+              >
+                <Text style={styles.actionButtonText}>Reject</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ))}
+        {!claimsLoading && claims.filter((claim: SpeakerClaimRequest) => claim.status === "pending").length === 0 && (
+          <Text style={styles.emptyText}>No pending profile claims</Text>
+        )}
+      </View>
 
       {loading ? (
         <ActivityIndicator size="large" color="#007AFF" style={styles.loader} />
@@ -3753,6 +3887,17 @@ const getStyles = (isDark: boolean, colors: any) =>
       color: "#D97706",
       fontSize: 13,
       marginTop: 4,
+    },
+    speakerClaimNote: {
+      color: colors.text.primary,
+      fontSize: 14,
+      lineHeight: 20,
+      marginTop: 6,
+    },
+    speakerClaimDate: {
+      color: colors.text.secondary,
+      fontSize: 12,
+      marginTop: 6,
     },
     qrScannerCard: {
       alignItems: "center",

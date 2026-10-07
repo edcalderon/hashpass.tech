@@ -48,9 +48,10 @@ export async function GET(request: Request) {
     ? supabase
         .from("bsl_speakers")
         .select(
-          "id, name, title, company, bio, imageurl, linkedin, twitter, tags, availability, user_id, is_active",
+          "id, name, title, company, bio, imageurl, linkedin, twitter, tags, availability, user_id, is_active, is_accepting_meetings, directory_visible",
         )
         .eq("event_id", legacyEventId)
+        .eq("directory_visible", true)
         .eq("id", speakerId)
     : supabase
         .from("speakers")

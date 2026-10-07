@@ -13,8 +13,8 @@ type View = 'discover' | 'calendar' | 'host' | 'profile';
 // href values are each tour stop's real organizer site (same
 // `blockchainsummit.la/<eventId>/` pattern the shared BSL event config in
 // packages/config/src/events.ts already derives `website` from) -- never a
-// fabricated/placeholder route, since no events.hashpass.tech event-detail
-// page exists yet for these cards to link to internally.
+// fabricated/placeholder route, since no event-detail page exists yet for
+// these cards to link to internally.
 const upcomingEvents = [
   { month: 'MAY', day: '13', title: 'Blockchain Summit Latam · Perú', meta: 'Lima, Peru · May 13–15', tone: 'sunset', href: 'https://blockchainsummit.la/peru2026/' },
   { month: 'AUG', day: '05', title: 'Blockchain Summit Latam · Chile', meta: 'Santiago, Chile · Aug 5–7', tone: 'violet', href: 'https://blockchainsummit.la/chile2026/' },
@@ -41,7 +41,7 @@ export function EventsExperience() {
 
   const openOnboarding = () => { setStep(1); setOnboarding(true); };
   const copyProfile = async () => {
-    await navigator.clipboard?.writeText('https://events.hashpass.tech/@yourname');
+    await navigator.clipboard?.writeText('https://hashpass.tech/events/@yourname');
     setCopied(true); window.setTimeout(() => setCopied(false), 1800);
   };
 
@@ -175,7 +175,7 @@ function Onboarding({ step, onStep, onClose }: { step: number; onStep: (step: nu
         <div className={styles.stepCount}>STEP {step} OF 3</div><h2 id="onboarding-title">{step === 1 ? 'Tell us about the organizer.' : step === 2 ? 'What are you planning?' : 'Shape your public page.'}</h2><p className={styles.modalLead}>{step === 1 ? 'This becomes the public identity behind your events.' : step === 2 ? 'You can change every detail before publishing.' : 'Choose the link guests will remember.'}</p>
         {step === 1 && <div className={styles.form}><label>Organization name<input autoFocus placeholder="e.g. Your community"/></label><label>Your role<select defaultValue=""><option value="" disabled>Select your role</option><option>Founder</option><option>Event manager</option><option>Community lead</option></select><ChevronDown/></label><label>Organization type<div className={styles.choiceRow}>{['Community','Company','Independent'].map((x,i)=><button className={i===0 ? styles.choiceActive : ''} key={x}>{x}</button>)}</div></label></div>}
         {step === 2 && <div className={styles.form}><label>Event name<input autoFocus placeholder="Give your event a clear name"/></label><div className={styles.formRow}><label>Date<input type="date"/></label><label>Start time<input type="time"/></label></div><label>Location<input placeholder="Venue, city, or online"/></label></div>}
-        {step === 3 && <div className={styles.form}><label>Event URL<div className={styles.urlField}><span>events.hashpass.tech/</span><input autoFocus placeholder="your-event"/></div></label><label>Who can RSVP?<div className={styles.choiceRow}>{['Everyone','Approval','Invite only'].map((x,i)=><button className={i===0 ? styles.choiceActive : ''} key={x}>{x}</button>)}</div></label><label className={styles.checkbox}><input type="checkbox" defaultChecked/><span><b>Show attendee list</b><small>Guests can discover who else is going.</small></span></label></div>}
+        {step === 3 && <div className={styles.form}><label>Event URL<div className={styles.urlField}><span>hashpass.tech/events/</span><input autoFocus placeholder="your-event"/></div></label><label>Who can RSVP?<div className={styles.choiceRow}>{['Everyone','Approval','Invite only'].map((x,i)=><button className={i===0 ? styles.choiceActive : ''} key={x}>{x}</button>)}</div></label><label className={styles.checkbox}><input type="checkbox" defaultChecked/><span><b>Show attendee list</b><small>Guests can discover who else is going.</small></span></label></div>}
         <div className={styles.modalFooter}>{step > 1 ? <button className={styles.secondary} onClick={() => onStep(step-1)}>Back</button> : <span/>}<button className={styles.primary} onClick={() => onStep(step+1)}>{step === 3 ? 'Create draft' : 'Continue'} <ArrowRight/></button></div>
       </>}</div>
     </div>

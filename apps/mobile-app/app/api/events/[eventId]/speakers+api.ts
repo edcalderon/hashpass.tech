@@ -41,9 +41,9 @@ export async function GET(request: Request) {
   let query = usesLegacyBslDirectory
     ? supabase
         .from("bsl_speakers")
-        .select("id, name, title, company, imageurl, user_id, is_active")
+        .select("id, name, title, company, imageurl, user_id, is_active, is_accepting_meetings, directory_visible")
         .eq("event_id", legacyEventId)
-        .eq("is_active", true)
+        .eq("directory_visible", true)
         .not("id", "is", null)
         .order("name", { ascending: true })
     : supabase

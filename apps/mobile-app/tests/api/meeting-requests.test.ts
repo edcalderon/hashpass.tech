@@ -261,7 +261,7 @@ describe("meeting-requests api", () => {
       });
     });
 
-    it("queries incoming requests with the Supabase speaker user id", async () => {
+    it("queries incoming requests with both profile and auth speaker ids", async () => {
       mockResolveNotificationIdentity.mockResolvedValue({
         supabaseUserId: "auth-uuid-123",
         registryUserId: "registry-id-123",
@@ -279,8 +279,7 @@ describe("meeting-requests api", () => {
       );
 
       expect(response.status).toBe(200);
-      expect(mockEq).toHaveBeenCalledWith("speaker_id", "auth-uuid-123");
-      expect(mockIn).not.toHaveBeenCalled();
+      expect(mockIn).toHaveBeenCalledWith("speaker_id", ["claudia-sotelo", "auth-uuid-123"]);
     });
 
     it("applies a status filter to both sent and incoming request lists", async () => {
@@ -366,7 +365,7 @@ describe("meeting-requests api", () => {
       expect(mockEq).toHaveBeenCalledWith("event_id", "chile2026");
     });
 
-    it("resolves a speaker record id to its user id before filtering requests", async () => {
+    it("filters speaker requests by both the profile id and linked auth id", async () => {
       mockResolveNotificationIdentity.mockResolvedValue({
         supabaseUserId: "auth-uuid-123",
       });
@@ -384,11 +383,10 @@ describe("meeting-requests api", () => {
         ),
       );
 
-      expect(mockEq).toHaveBeenCalledWith("speaker_id", "speaker-user-id");
-      expect(mockEq).not.toHaveBeenCalledWith(
-        "speaker_id",
+      expect(mockIn).toHaveBeenCalledWith("speaker_id", [
         "550e8400-e29b-41d4-a716-446655440000",
-      );
+        "speaker-user-id",
+      ]);
     });
 
     it("returns identity error if identity resolution fails", async () => {
@@ -493,6 +491,10 @@ describe("meeting-requests api", () => {
       mockIsResolveIdentityError.mockReturnValue(false);
       mockRpc.mockResolvedValue({
         data: { success: true, id: "request-123", speaker_id: "speaker-auth-id" },
+        error: null,
+      });
+      mockMaybeSingle.mockResolvedValueOnce({
+        data: { id: "claudia-sotelo", user_id: "speaker-auth-id" },
         error: null,
       });
 

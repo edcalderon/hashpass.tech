@@ -21,6 +21,7 @@ jobs:
       matrix:
         profile: [development, production]
     runs-on: ubuntu-latest
+    environment: bsl-${{ matrix.profile }}
     timeout-minutes: 10
     steps:
       - id: gate
@@ -49,19 +50,21 @@ jobs:
       - if: steps.gate.outputs.run == 'true'
         uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
         with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-to-assume: ${{ vars.AWS_STATIC_SITE_DEPLOY_ROLE_ARN }}
+          allowed-account-ids: ${{ vars.AWS_TARGET_ACCOUNT_ID }}
+          role-session-name: bsl-colombia-sync-${{ matrix.profile }}
           aws-region: us-east-1
       - name: Scrape, validate, upload, and synchronize
         if: steps.gate.outputs.run == 'true'
         run: pnpm exec tsx packages/tools/scripts/sync-bsl-colombia.mjs --profile=${{ matrix.profile }}
         env:
-          EXPECTED_AWS_ACCOUNT_ID: ${{ secrets.HASHPASS_AWS_ACCOUNT_ID }}
+          EXPECTED_AWS_ACCOUNT_ID: ${{ vars.AWS_TARGET_ACCOUNT_ID }}
           # The speaker-asset bucket lives in us-east-2; without this the SDK falls
           # back to us-east-1 and every PutObject fails with PermanentRedirect.
           AWS_REGION: us-east-2
-          BSL_SPEAKER_ASSETS_BUCKET: ${{ vars.BSL_SPEAKER_ASSETS_BUCKET }}
+          BSL_SPEAKER_ASSETS_BUCKET: ${{ vars.STATIC_SITE_BUCKET }}
           BSL_SPEAKER_CDN_URL: ${{ vars.BSL_SPEAKER_CDN_URL }}
-          BSL_SUPABASE_URL_DEV: ${{ secrets.BSL_SUPABASE_URL_DEV }}
-          BSL_SUPABASE_SERVICE_ROLE_KEY_DEV: ${{ secrets.BSL_SUPABASE_SERVICE_ROLE_KEY_DEV }}
-          BSL_SUPABASE_URL_PROD: ${{ secrets.BSL_SUPABASE_URL_PROD }}
-          BSL_SUPABASE_SERVICE_ROLE_KEY_PROD: ${{ secrets.BSL_SUPABASE_SERVICE_ROLE_KEY_PROD }}
+          BSL_SUPABASE_URL_DEV: ${{ vars.BSL_SUPABASE_URL }}
+          BSL_SUPABASE_SERVICE_ROLE_KEY_DEV: ${{ secrets.BSL_SUPABASE_SERVICE_ROLE_KEY }}
+          BSL_SUPABASE_URL_PROD: ${{ vars.BSL_SUPABASE_URL }}
+          BSL_SUPABASE_SERVICE_ROLE_KEY_PROD: ${{ secrets.BSL_SUPABASE_SERVICE_ROLE_KEY }}

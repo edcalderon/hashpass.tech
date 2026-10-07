@@ -6,7 +6,12 @@ export async function GET(request: Request, { params }: { params: { id: string }
   if (!id) {
     return new Response(JSON.stringify({ error: 'Missing speaker id' }), { status: 400 });
   }
-  const { data, error } = await supabase.from('bsl_speakers').select('*').eq('id', id).maybeSingle();
+  const { data, error } = await supabase
+    .from('bsl_speakers')
+    .select('*')
+    .eq('id', id)
+    .eq('directory_visible', true)
+    .maybeSingle();
   if (error) {
     console.error('Speaker fetch error:', error);
     return new Response(JSON.stringify({ error: 'Failed to fetch speaker' }), { status: 500 });
@@ -17,5 +22,3 @@ export async function GET(request: Request, { params }: { params: { id: string }
 
   return new Response(JSON.stringify(data), { status: 200, headers: { 'Content-Type': 'application/json' } });
 }
-
-

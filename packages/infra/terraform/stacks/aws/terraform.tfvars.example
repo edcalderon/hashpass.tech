@@ -13,7 +13,7 @@ github_pages_domain    = "hashpass.club"
 # target-account production S3 website endpoint so Amplify can be retired.
 site_custom_domain_name = "hashpass.tech"
 site_www_domain_name    = "www.hashpass.tech"
-site_additional_domain_names = ["events.hashpass.tech"]
+site_additional_domain_names = []
 site_origin_domain_name = "hashpass-production-site-952191196420-us-east-2.s3-website.us-east-2.amazonaws.com"
 
 # Set true and provide existing Amplify App ID if you want Terraform

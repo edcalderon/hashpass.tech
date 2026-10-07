@@ -241,7 +241,11 @@
     "speaker-identity-claims": [
       "db/migrations/V028__claim_speaker_profiles_on_verified_signup.sql",
       "db/migrations/V029__harden_speaker_identity_claims.sql",
-      "db/migrations/V033__enable_event_admin_speaker_role_management.sql"
+      "db/migrations/V033__enable_event_admin_speaker_role_management.sql",
+      "db/migrations/V111__publish_speaker_profiles_and_claim_requests.sql",
+      "db/migrations/V112__disable_unclaimed_speaker_meetings.sql",
+      "db/migrations/V113__keep_unclaimed_speaker_profiles_private.sql",
+      "db/migrations/V114__activate_public_speaker_profiles_and_queue_meetings.sql"
     ],
     "event-pass-tiers": [
       "db/migrations/V035__configure_event_pass_tiers.sql",
