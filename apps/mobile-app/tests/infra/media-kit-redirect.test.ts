@@ -14,6 +14,15 @@ function effectiveObjectKey(source: string, destination: string) {
 }
 
 describe('media kit public redirect', () => {
+  it('preserves synchronized event speaker media during static-site pruning', () => {
+    const deployScript = fs.readFileSync(
+      path.join(root, 'packages/tools/scripts/deploy-static-site.sh'),
+      'utf8',
+    );
+
+    expect(deployScript).toContain("--exclude 'events/*/speakers/*'");
+  });
+
   it('models AWS CLI prefix destinations rather than treating them as literal keys', () => {
     expect(effectiveObjectKey('/build/mediakit.html', 's3://test/mediakit/')).toBe('mediakit/mediakit.html');
     expect(effectiveObjectKey('/build/mediakit.html', 's3://test/mediakit/index.html')).toBe('mediakit/index.html');
