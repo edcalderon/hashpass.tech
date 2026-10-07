@@ -596,7 +596,7 @@ describe('event schedule screens', () => {
     const keynoteTime = renderer!.root.findByProps({ testID: 'agenda-card-time-keynote-session' });
     expect(keynoteTime.children.join('')).toBe('8:00 – 9:00 AM');
     expect(keynoteTime.props.numberOfLines).toBe(1);
-    expect(renderer!.root.findAllByProps({ accessibilityLabel: 'calendar.openPicker' }).some((node) => (
+    expect(renderer!.root.findAllByProps({ accessibilityLabel: 'actions.addToAgenda' }).some((node) => (
       Array.isArray(node.props.style)
         && node.props.style.some((style: unknown) => (
           style && typeof style === 'object' && (style as { alignSelf?: string }).alignSelf === 'flex-start'
@@ -643,18 +643,44 @@ describe('event schedule screens', () => {
     await act(async () => renderer!.unmount());
   });
 
-  it('renders one primary calendar action with compact reveal controls', async () => {
+  it('renders a primary agenda action with compact supporting controls', async () => {
     const renderer = await renderCalendarAgenda();
-    const calendarLabel = renderer.root.findAllByProps({ children: 'calendar.shortLabel' });
+    const agendaLabel = renderer.root.findAllByProps({ children: 'actions.addToAgenda' });
+    expect(agendaLabel.length).toBeGreaterThan(0);
+    const calendarLabel = renderer.root.findAllByProps({ accessibilityLabel: 'calendar.openPicker' });
     expect(calendarLabel.length).toBeGreaterThan(0);
     const favoriteLabel = renderer.root.findAllByProps({ accessibilityLabel: 'actions.addToFavorites' });
     expect(favoriteLabel.length).toBeGreaterThan(0);
-    const scheduleLabel = renderer.root.findAllByProps({ accessibilityLabel: 'actions.addToAgenda' });
-    expect(scheduleLabel.length).toBeGreaterThan(0);
+    expect(renderer.root.findAllByProps({ children: 'actions.sectionLabel' }).length).toBeGreaterThan(0);
     expect(agendaSource).toContain('revealLabel');
     expect(agendaSource).toContain('styles.agendaIconAction');
 
     await act(async () => renderer.unmount());
+  });
+
+  it('uses a wide mobile media banner and keeps the time on one line', async () => {
+    mockWindowWidth = 390;
+    const dimensionsSpy = jest
+      .spyOn(require('react-native'), 'useWindowDimensions')
+      .mockReturnValue({ width: mockWindowWidth, height: 844, scale: 1, fontScale: 1 });
+    const renderer = await renderCalendarAgenda();
+    const layoutStyles = renderer.root
+      .findByProps({ testID: 'agenda-card-layout-calendar-agenda-1' })
+      .props.style.flat(Infinity).filter(Boolean);
+    const mediaStyles = renderer.root
+      .findByProps({ testID: 'agenda-card-media-calendar-agenda-1' })
+      .props.style.flat(Infinity).filter(Boolean);
+
+    expect(layoutStyles).toEqual(expect.arrayContaining([
+      expect.objectContaining({ flexDirection: 'column' }),
+    ]));
+    expect(mediaStyles).toEqual(expect.arrayContaining([
+      expect.objectContaining({ height: 156, minHeight: 156, width: '100%' }),
+    ]));
+    expect(renderer.root.findByProps({ testID: 'agenda-card-time-calendar-agenda-1' }).props.numberOfLines).toBe(1);
+
+    await act(async () => renderer.unmount());
+    dimensionsSpy.mockRestore();
   });
 
   it('keeps a configured speaker portrait when the directory record has no image', async () => {
