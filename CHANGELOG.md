@@ -1,3 +1,21 @@
+## [1.9.103](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.102...v1.9.103) (2026-10-07)
+
+
+### Bug Fixes
+
+* **ci:** configure BSL Colombia sync credentials and remove retired events domain ([69a528e](https://github.com/hashpass-tech/hashpass.tech/commit/69a528eb07272d306c14c9a6ae5a137431f6ef1a))
+### Release Highlights
+- configure BSL Colombia sync credentials and remove retired events domain
+
+### Release scope
+- Compared with: `v1.9.102` (the previous global release tag)
+
+### Affected products & packages
+- Club web
+- Mobile app
+- Infrastructure
+- Release tooling
+
 ## [1.9.102](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.101...v1.9.102) (2026-10-06)
 
 

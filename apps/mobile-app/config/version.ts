@@ -22,22 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610061918, // Updated to current timestamp
-  releaseDate: '2026-10-06',
+  buildNumber: 202610071600, // Updated to current timestamp
+  releaseDate: '2026-10-07',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'add Sign in with X (Twitter) via Better Auth (web only)'
+    // No new features
   ],
   bugfixes: [
-    // No bugfixes
+    'configure BSL Colombia sync credentials and remove retired events domain'
   ],
   breakingChanges: [],
-  notes: 'add Sign in with X (Twitter) via Better Auth (web only)'
+  notes: 'configure BSL Colombia sync credentials and remove retired events domain'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.103': {
+    version: '1.9.103',
+    buildNumber: 202610071600,
+    releaseDate: '2026-10-07',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'configure BSL Colombia sync credentials and remove retired events domain'
+    ],
+    breakingChanges: [],
+    notes: 'configure BSL Colombia sync credentials and remove retired events domain'
+  },
   '1.9.102': {
     version: '1.9.102',
     buildNumber: 202610061918,
