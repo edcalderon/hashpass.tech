@@ -1261,6 +1261,10 @@
       "mainStage": "Scène Principale",
       "registrationArea": "Zone d'Inscription"
     },
+    "calendar": {
+      "shortLabel": "Calendrier",
+      "openPicker": "Ajouter à un calendrier externe"
+    },
     "messages": {
       "untitledEvent": "Événement Sans Titre",
       "eventConfirmed": "Événement confirmé",

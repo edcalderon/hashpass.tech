@@ -111,5 +111,11 @@
     "upcoming": "Tulevased",
     "past": "Varasemad",
     "empty": "Sündmusi ei leitud"
+  },
+  "agenda": {
+    "calendar": {
+      "shortLabel": "Kalender",
+      "openPicker": "Lisa välisesse kalendrisse"
+    }
   }
 }

@@ -1260,6 +1260,10 @@
       "mainStage": "Hauptbühne",
       "registrationArea": "Anmeldebereich"
     },
+    "calendar": {
+      "shortLabel": "Kalender",
+      "openPicker": "Zu einem externen Kalender hinzufügen"
+    },
     "messages": {
       "untitledEvent": "Unbenannte Veranstaltung",
       "eventConfirmed": "Veranstaltung bestätigt",

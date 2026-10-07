@@ -262,6 +262,84 @@ describe('speaker detail screen', () => {
     await act(async () => renderer.unmount());
   });
 
+  it('submits a claim for an authenticated speaker and shows the pending state', async () => {
+    mockApiRequest.mockImplementation((path: string, options?: { method?: string }) => {
+      if (path === 'events/bsl/speakers/claims' && options?.method === 'POST') {
+        return Promise.resolve({ success: true, data: { data: { status: 'pending' } } });
+      }
+      return path === 'events/bsl/speakers/speaker-1'
+        ? Promise.resolve({ success: true, data: { data: { ...speaker, user_id: null, is_active: true } } })
+        : defaultApiResponse(path, options);
+    });
+
+    let renderer: any;
+    await act(async () => {
+      renderer = create(<SpeakerDetail />);
+      await flushPromises();
+    });
+
+    await act(async () => {
+      renderer.root.findByProps({ accessibilityLabel: 'speakerView.claimProfile' }).props.onPress();
+      await flushPromises();
+    });
+
+    expect(mockApiRequest).toHaveBeenCalledWith('events/bsl/speakers/claims', {
+      skipEventSegment: true,
+      method: 'POST',
+      body: { eventId: 'bsl', speakerId: 'speaker-1' },
+    });
+    expect(mockShowSuccess).toHaveBeenCalledWith('speakerView.claimSubmittedTitle', 'speakerView.claimSubmittedMessage');
+    expect(renderer.root.findByProps({ accessibilityLabel: 'speakerView.claimPending' })).toBeTruthy();
+
+    await act(async () => renderer.unmount());
+  });
+
+  it('routes a guest to sign-in before submitting a claim', async () => {
+    mockAuthState = { user: null, isLoggedIn: false, dbUserId: null } as any;
+    mockApiRequest.mockImplementation((path: string, options?: { method?: string }) =>
+      path === 'events/bsl/speakers/speaker-1'
+        ? Promise.resolve({ success: true, data: { data: { ...speaker, user_id: null, is_active: true } } })
+        : defaultApiResponse(path, options),
+    );
+    let renderer: any;
+    await act(async () => {
+      renderer = create(<SpeakerDetail />);
+      await flushPromises();
+    });
+
+    await act(async () => {
+      renderer.root.findByProps({ accessibilityLabel: 'speakerView.claimProfile' }).props.onPress();
+    });
+    expect(mockRouterPush).toHaveBeenCalledWith('/(shared)/auth');
+
+    await act(async () => renderer.unmount());
+  });
+
+  it('resets the claim state and reports a failed claim request', async () => {
+    mockApiRequest.mockImplementation((path: string, options?: { method?: string }) => {
+      if (path === 'events/bsl/speakers/claims' && options?.method === 'POST') {
+        return Promise.resolve({ success: false, error: 'Claim service unavailable' });
+      }
+      return path === 'events/bsl/speakers/speaker-1'
+        ? Promise.resolve({ success: true, data: { data: { ...speaker, user_id: null, is_active: true } } })
+        : defaultApiResponse(path, options);
+    });
+    let renderer: any;
+    await act(async () => {
+      renderer = create(<SpeakerDetail />);
+      await flushPromises();
+    });
+    await act(async () => {
+      renderer.root.findByProps({ accessibilityLabel: 'speakerView.claimProfile' }).props.onPress();
+      await flushPromises();
+    });
+
+    expect(mockShowError).toHaveBeenCalledWith('speakerView.claimFailedTitle', 'Claim service unavailable');
+    expect(renderer.root.findByProps({ accessibilityLabel: 'speakerView.claimProfile' })).toBeTruthy();
+
+    await act(async () => renderer.unmount());
+  });
+
   it('treats a legacy active speaker response without directory_visible as public', async () => {
     const { directory_visible: _directoryVisible, is_accepting_meetings: _acceptingMeetings, ...legacySpeaker } = speaker;
     mockApiRequest.mockImplementation((path: string, options?: { method?: string }) =>

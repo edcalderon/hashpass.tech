@@ -1260,6 +1260,10 @@
       "mainStage": "Palco Principal",
       "registrationArea": "Área de Registro"
     },
+    "calendar": {
+      "shortLabel": "Calendário",
+      "openPicker": "Adicionar a um calendário externo"
+    },
     "messages": {
       "untitledEvent": "Evento Sem Título",
       "eventConfirmed": "Evento confirmado",

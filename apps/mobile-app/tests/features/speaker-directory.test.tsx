@@ -26,6 +26,7 @@ type EventSpeaker = {
   title?: string;
   company?: string;
   image?: string;
+  isActive?: boolean;
 };
 
 const defaultDbSpeakers = (): DbSpeaker[] => [
@@ -233,6 +234,25 @@ describe('speaker directory', () => {
 
     expect(renderer!.root.findAllByProps({ children: 'Configured Speaker' })).toHaveLength(0);
     expect(renderer!.root.findAllByProps({ children: 'Inactive' })).toHaveLength(0);
+
+    await act(async () => renderer!.unmount());
+  });
+
+  it('falls back to bundled event references when the directory request fails', async () => {
+    mockEventSpeakers = [
+      { id: 'active-reference', name: 'Active Reference', title: 'Advisor', company: 'Hashpass', isActive: true },
+      { id: 'inactive-reference', name: 'Inactive Reference', title: 'Former Advisor', company: 'Hashpass', isActive: false },
+    ];
+    mockApiRequest.mockReset().mockRejectedValue(new Error('directory unavailable'));
+
+    let renderer: ReturnType<typeof create>;
+    await act(async () => {
+      renderer = create(<SpeakersCalendar />);
+      await flushPromises();
+    });
+
+    expect(renderer!.root.findByProps({ children: 'Active Reference' })).toBeTruthy();
+    expect(renderer!.root.findByProps({ children: 'Inactive Reference' })).toBeTruthy();
 
     await act(async () => renderer!.unmount());
   });

@@ -658,6 +658,23 @@ describe('event schedule screens', () => {
     await act(async () => renderer.unmount());
   });
 
+  it('keeps the primary agenda icon readable against the primary button fill', async () => {
+    const renderer = await renderCalendarAgenda();
+    const primaryIcon = renderer.root.findAll(
+      (node: any) => node.type === 'MaterialIcons' && node.props.name === 'add-circle-outline',
+    )[0];
+
+    expect(primaryIcon.props.color).toBe(mockThemeColors.primaryContrastText);
+
+    await act(async () => renderer.unmount());
+  });
+
+  it.each(['en', 'es', 'de', 'et', 'fr', 'ko', 'pt'])('ships calendar labels for the %s agenda locale', (locale) => {
+    const messages = JSON.parse(readFileSync(resolve(__dirname, `../../i18n/locales/${locale}.json`), 'utf8'));
+    expect(messages.agenda.calendar.shortLabel).toBeTruthy();
+    expect(messages.agenda.calendar.openPicker).toBeTruthy();
+  });
+
   it('uses a wide mobile media banner and keeps the time on one line', async () => {
     mockWindowWidth = 390;
     const dimensionsSpy = jest

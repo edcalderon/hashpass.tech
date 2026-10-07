@@ -319,4 +319,87 @@ describe('AdminPanel pass codes', () => {
       expect.any(Array),
     );
   });
+
+  it('lists pending speaker claims and sends the admin review decision', async () => {
+    const managedSpeakers = [{
+      id: 'edward-calderon',
+      name: 'Edward Calderón',
+      title: 'Founder & CEO',
+      company: 'Hashpass',
+      imageUrl: null,
+      userId: null,
+      isActive: true,
+      isAcceptingMeetings: true,
+      claim: null,
+    }];
+    const pendingClaim = {
+      claim_id: '11111111-1111-4111-8111-111111111111',
+      speaker_id: 'edward-calderon',
+      event_id: 'chile2026',
+      speaker_name: 'Edward Calderón',
+      speaker_title: 'Founder & CEO',
+      speaker_company: 'Hashpass',
+      requester_user_id: 'requester-user',
+      requester_email: 'edward@example.com',
+      status: 'pending',
+      request_note: 'I am the speaker for this event.',
+      created_at: '2026-10-07T12:00:00.000Z',
+      review_note: null,
+    };
+    mockGet.mockImplementation((path: string) => {
+      if (path.startsWith('/admin/speaker-roles')) {
+        return Promise.resolve({ success: true, data: { data: managedSpeakers } });
+      }
+      if (path.startsWith('/admin/speaker-claims')) {
+        return Promise.resolve({ success: true, data: { data: [pendingClaim] } });
+      }
+      return Promise.resolve({ success: true, data: { data: [] } });
+    });
+
+    const renderer = await renderPanel();
+    await act(async () => {
+      triggerPress(renderer.root.findByProps({ children: 'Speakers' }).parent);
+      await Promise.resolve();
+    });
+    await flush();
+
+    expect(mockGet).toHaveBeenCalledWith('/admin/speaker-claims?eventId=chile2026', { skipEventSegment: true });
+    expect(renderer.root.findByProps({ children: 'Pending profile claims' })).toBeTruthy();
+    expect(renderer.root.findByProps({ children: 'edward@example.com' })).toBeTruthy();
+    expect(renderer.root.findByProps({ children: 'I am the speaker for this event.' })).toBeTruthy();
+
+    await act(async () => {
+      triggerPress(renderer.root.findByProps({ children: 'Approve & link' }).parent);
+    });
+    const approveAlert = mockAlert.mock.calls.at(-1);
+    expect(approveAlert?.[0]).toBe('Approve profile claim?');
+    const approveAction = (approveAlert?.[2] as Array<{ text: string; onPress?: () => void }>)
+      .find((button) => button.text === 'Approve');
+    await act(async () => {
+      approveAction?.onPress?.();
+      await Promise.resolve();
+    });
+    expect(mockPost).toHaveBeenCalledWith('/admin/speaker-claims', {
+      eventId: 'chile2026',
+      claimId: pendingClaim.claim_id,
+      action: 'approve',
+    }, { skipEventSegment: true });
+
+    await act(async () => {
+      triggerPress(renderer.root.findByProps({ children: 'Reject' }).parent);
+    });
+    const rejectAlert = mockAlert.mock.calls.at(-1);
+    expect(rejectAlert?.[0]).toBe('Reject profile claim?');
+    const rejectAction = (rejectAlert?.[2] as Array<{ text: string; onPress?: () => void }>)
+      .find((button) => button.text === 'Reject');
+    await act(async () => {
+      rejectAction?.onPress?.();
+      await Promise.resolve();
+    });
+    expect(mockPost).toHaveBeenCalledWith('/admin/speaker-claims', {
+      eventId: 'chile2026',
+      claimId: pendingClaim.claim_id,
+      action: 'reject',
+    }, { skipEventSegment: true });
+  });
 });

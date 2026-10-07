@@ -1627,6 +1627,10 @@
       "mainStage": "Main Stage",
       "registrationArea": "Registration Area"
     },
+    "calendar": {
+      "shortLabel": "Calendar",
+      "openPicker": "Add to an external calendar"
+    },
     "messages": {
       "untitledEvent": "Untitled Event",
       "eventConfirmed": "Event confirmed",

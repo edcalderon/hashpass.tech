@@ -1622,6 +1622,10 @@
       "mainStage": "메인 스테이지",
       "registrationArea": "등록 구역"
     },
+    "calendar": {
+      "shortLabel": "캘린더",
+      "openPicker": "외부 캘린더에 추가"
+    },
     "messages": {
       "untitledEvent": "제목 없는 이벤트",
       "eventConfirmed": "이벤트 확인됨",
