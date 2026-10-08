@@ -20,20 +20,21 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.104)
+## 📋 Latest Changes (v1.9.105)
 
-### Features
+### Bug Fixes
 
-* **speakers:** publish profiles and queue meeting requests ([8abfb0a](https://github.com/hashpass-tech/hashpass.tech/commit/8abfb0a1a3d5805b574347abcdd9ae260f1cbbec))
+* **ci:** require release refs for Lukas pushes ([c0beb1a](https://github.com/hashpass-tech/hashpass.tech/commit/c0beb1ae34f76b13ce216996ceac89d2d6489d1f))
+* **ci:** restrict manual Lukas deploys to released refs ([39ec912](https://github.com/hashpass-tech/hashpass.tech/commit/39ec912866f09cdf8e5e4d59c2845728ad4cffa9))
 ### Release Highlights
-- publish profiles and queue meeting requests
+- require release refs for Lukas pushes; restrict manual Lukas deploys to released refs
 
 ### Release scope
-- Compared with: `v1.9.103` (the previous global release tag)
+- Compared with: `v1.9.104` (the previous global release tag)
 
 ### Affected products & packages
-- Mobile app
-- Database migrations
+- Infrastructure
+- Documentation
 - Release tooling
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)

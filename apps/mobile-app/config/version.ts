@@ -22,22 +22,39 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610071943, // Updated to current timestamp
-  releaseDate: '2026-10-07',
+  buildNumber: 202610081758, // Updated to current timestamp
+  releaseDate: '2026-10-08',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'publish profiles and queue meeting requests'
+    // No new features
   ],
   bugfixes: [
-    // No bugfixes
+    'require release refs for Lukas pushes',
+    'restrict manual Lukas deploys to released refs'
   ],
   breakingChanges: [],
-  notes: 'publish profiles and queue meeting requests'
+  notes: 'require release refs for Lukas pushes; restrict manual Lukas deploys to released refs'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.105': {
+    version: '1.9.105',
+    buildNumber: 202610081758,
+    releaseDate: '2026-10-08',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'require release refs for Lukas pushes',
+      'restrict manual Lukas deploys to released refs'
+    ],
+    breakingChanges: [],
+    notes: 'require release refs for Lukas pushes; restrict manual Lukas deploys to released refs'
+  },
   '1.9.104': {
     version: '1.9.104',
     buildNumber: 202610071943,

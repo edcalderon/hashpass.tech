@@ -1,3 +1,21 @@
+## [1.9.105](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.104...v1.9.105) (2026-10-08)
+
+
+### Bug Fixes
+
+* **ci:** require release refs for Lukas pushes ([c0beb1a](https://github.com/hashpass-tech/hashpass.tech/commit/c0beb1ae34f76b13ce216996ceac89d2d6489d1f))
+* **ci:** restrict manual Lukas deploys to released refs ([39ec912](https://github.com/hashpass-tech/hashpass.tech/commit/39ec912866f09cdf8e5e4d59c2845728ad4cffa9))
+### Release Highlights
+- require release refs for Lukas pushes; restrict manual Lukas deploys to released refs
+
+### Release scope
+- Compared with: `v1.9.104` (the previous global release tag)
+
+### Affected products & packages
+- Infrastructure
+- Documentation
+- Release tooling
+
 ## [1.9.104](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.103...v1.9.104) (2026-10-07)
 
 

@@ -71,7 +71,16 @@ state, plans, private variable values, or account-bearing logs. The local ignore
 private operations backup bucket at `terraform/hashpass-lukas-site/terraform.tfstate`.
 Refresh that snapshot after future infrastructure changes; do not publish it.
 
-After the account check and infrastructure apply, publish the built directory:
+Normal production releases publish this stack automatically when
+`release-tag-on-merge.yml` calls the reusable `Lukas landing build and deploy`
+workflow before creating the release tag. The
+builder reads the root `package.json` version, writes it to `recovery.json`, and
+the workflow refuses to deploy if the tag, package version, or live manifest do
+not match. This keeps Lukas on the same release version as the app; there is no
+independent Lukas version to update.
+
+For initial provisioning or manual recovery, after the account check and
+infrastructure apply, publish the built directory:
 
 ```bash
 aws s3 sync /tmp/lukas-site s3://hashpass-lukas-landing-site/ \
