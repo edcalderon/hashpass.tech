@@ -18,7 +18,7 @@ on:
   workflow_dispatch:
     inputs:
       ref:
-        description: Released main ref or version tag to recover
+        description: Current main ref to recover (historical tags are unsupported)
         required: true
         default: main
         type: string
@@ -29,6 +29,7 @@ permissions:
 
 concurrency:
   group: lukas-landing-production
+  queue: max
   cancel-in-progress: false
 
 jobs:
@@ -71,21 +72,32 @@ jobs:
               main|refs/heads/main)
                 ;;
               v*|refs/tags/v*)
-                tag_version="${REF_NAME#refs/tags/v}"
-                tag_version="${tag_version#v}"
-                if [[ "${tag_version}" != "${package_version}" ]]; then
-                  echo "::error::Tag ${REF_NAME} does not match package.json version ${package_version}."
-                  exit 1
-                fi
+                echo "::error::Manual Lukas recovery supports main only; historical release tags do not include the current deployment tooling."
+                exit 1
                 ;;
               *)
-                echo "::error::Manual Lukas recovery must use main or a v* release tag, received ${REF_NAME}."
+                echo "::error::Manual Lukas recovery must use main, received ${REF_NAME}."
                 exit 1
                 ;;
             esac
           fi
           echo "release_version=${package_version}" >> "$GITHUB_OUTPUT"
           echo "Lukas release version: ${package_version}"
+
+      - name: Fetch pinned Lukas source
+        env:
+          LUKAS_SOURCE_REPOSITORY: https://github.com/edcalderon/hashpass.tech.git
+          LUKAS_SOURCE_COMMIT: 1133ab564f9e8a589bc49f02c3c95b67f177b096
+        run: |
+          set -euo pipefail
+          if ! git cat-file -e "${LUKAS_SOURCE_COMMIT}^{commit}" 2>/dev/null; then
+            git fetch --no-tags --depth=1 "${LUKAS_SOURCE_REPOSITORY}" "${LUKAS_SOURCE_COMMIT}" || \
+              git fetch --no-tags "${LUKAS_SOURCE_REPOSITORY}" refs/heads/lukas
+          fi
+          git cat-file -e "${LUKAS_SOURCE_COMMIT}^{commit}" || {
+            echo "::error::Pinned Lukas source ${LUKAS_SOURCE_COMMIT} is unavailable after fetching ${LUKAS_SOURCE_REPOSITORY}."
+            exit 1
+          }
 
       - name: Build the versioned Lukas export
         env:
