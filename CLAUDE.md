@@ -393,13 +393,13 @@ instructions remain in [`archive/amplify/README.md`](archive/amplify/README.md).
 | CBWeek development | `github-hosted-tenant-site-deploy.yml`, target `cbweek-development` | Matching push to `develop` |
 | `api.hashpass.tech`, `api-dev.hashpass.tech` | Expo Router API Lambdas in `us-east-1` | Corresponding core web deployment, with version-endpoint guard |
 | `bsl.hashpass.tech`, `bsl-dev.hashpass.tech` | `github-hosted-tenant-site-deploy.yml` → existing static origins and cross-account CloudFront delivery | Matching push to `main` / `develop`, respectively |
-| `lukas.hashpass.tech` | `lukas-landing-deploy.yml` → dedicated S3/CloudFront origin | Release tag `v*.*.*` (or manual recovery dispatch) |
+| `lukas.hashpass.tech` | `release-tag-on-merge.yml` calls `lukas-landing-deploy.yml` → dedicated S3/CloudFront origin | Merged `develop` → `main` promotion, before the release tag (or manual recovery dispatch) |
 | Android | GitHub-hosted Fastlane → Play Store; OTA for eligible JS-only changes | Existing native-change-gated tag flow; manual dispatch only as documented in Mobile Android Release Workflow above |
 
 **Critical facts:**
 
 - Builds have no AWS credentials; separate deploy jobs assume scoped OIDC roles. Tenant targets have branch-restricted GitHub environments. Manual workflow dispatch defaults to build-only and requires `deploy=true` to publish.
-- The Lukas landing is a separate S3/CloudFront origin, but it has no separate release number: `packages/infra/terraform/stacks/hashpass-lukas-site/build.py` reads the root `package.json` version and the tag-triggered `lukas-landing-deploy.yml` verifies that version before publishing and again through `recovery.json` at the live site.
+- The Lukas landing is a separate S3/CloudFront origin, but it has no separate release number: `packages/infra/terraform/stacks/hashpass-lukas-site/build.py` reads the root `package.json` version and `release-tag-on-merge.yml` blocks tag creation until `lukas-landing-deploy.yml` verifies that version before publishing and again through `recovery.json` at the live site.
 - BSL uses `packages/tools/scripts/build-bsl-static-site.sh`, not SST. Its existing cross-account CloudFront front door is unchanged; the new BSL deploy roles only update their static origins.
 - The core deploy helper packages the Expo Router API, updates the configured Lambda, and verifies `https://api.hashpass.tech/api/config/versions` or `https://api-dev.hashpass.tech/api/config/versions`. A stale endpoint fails the deploy.
 - `hashpass-dev-site`, `hashpass-cbweek2026-develop-site`, `bsl-hashpass-dev`, `hashpass-production-site`, and `bsl-hashpass-prod` have no V2 triggers and explicitly set source `DetectChanges=false`. Their CodeBuild projects remain available for owner-approved recovery, not normal pushes.
@@ -439,7 +439,7 @@ because the month is already over budget even when all trigger checks pass.
 
 - `.github/workflows/github-hosted-static-site-deploy.yml` — primary core development build/deploy
 - `.github/workflows/github-hosted-tenant-site-deploy.yml` — primary CBWeek, BSL, and core production build/deploy
-- `.github/workflows/lukas-landing-deploy.yml` — release-tagged Lukas S3/CloudFront build/deploy and live version guard
+- `.github/workflows/lukas-landing-deploy.yml` — reusable Lukas S3/CloudFront build/deploy and live version guard
 - `.github/workflows/aws-cost-report.yml` — read-only budget/manual-trigger collector with encrypted, private cost-alert deduplication state; apply `github-cost-report.yml` before promoting a workflow change that uses that state
 - `.github/workflows/mobile-android-release.yml` — Android release CI
 - `.github/workflows/infra-deploy.yml` — separate active legacy SST/API workflow; push-triggered and manual

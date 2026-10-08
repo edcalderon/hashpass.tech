@@ -6,11 +6,11 @@ name: Release tag on merge
 # used to run on main, and commits it as its own labeled commit before the
 # PR opens) — so by the time this workflow runs, the merge commit on main
 # already has the final, reviewed version in package.json. This job's only
-# jobs are: tag that exact commit, and sync develop to match -- a plain
-# fast-forward when possible, falling back to a real (content-empty) merge
-# when the PR was squash- or rebase-merged, since main's new commit then
-# isn't a descendant of develop and a fast-forward push is correctly
-# rejected. That fallback was added 2026-08-14 after two consecutive real
+# jobs are: publish the exact Lukas artifact and verify it live, tag that exact
+# commit, and sync develop to match -- a plain fast-forward when possible,
+# falling back to a real (content-empty) merge when the PR was squash- or
+# rebase-merged, since main's new commit then isn't a descendant of develop
+# and a fast-forward push is correctly rejected. That fallback was added 2026-08-14 after two consecutive real
 # failures (v1.8.341, v1.8.342) from squash-merging this PR -- see the
 # "Sync develop from main" step below for the recovery logic, which mirrors
 # the manual fix used both times.
@@ -57,18 +57,31 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  id-token: write
 
 concurrency:
   group: release-tag-on-merge-${{ github.event.pull_request.number }}
   cancel-in-progress: false
 
 jobs:
+  publish-lukas:
+    if: >
+      github.repository == 'hashpass-tech/hashpass.tech' &&
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.head.ref == 'develop' &&
+      github.event.pull_request.base.ref == 'main'
+    uses: ./.github/workflows/lukas-landing-deploy.yml
+    with:
+      ref: ${{ github.event.pull_request.merge_commit_sha }}
+      mode: release
+
   tag-and-sync:
     if: >
       github.repository == 'hashpass-tech/hashpass.tech' &&
       github.event.pull_request.merged == true &&
       github.event.pull_request.head.ref == 'develop' &&
       github.event.pull_request.base.ref == 'main'
+    needs: publish-lukas
     runs-on: ubuntu-latest
     steps:
       - name: Preflight — require RELEASE_AUTOMATION_TOKEN
@@ -153,8 +166,12 @@ jobs:
             -m "🔀 merge: sync develop with main (v${RELEASE_VERSION})"
           git push origin develop
 
+  notify-on-failure:
+    needs: [publish-lukas, tag-and-sync]
+    if: failure()
+    runs-on: ubuntu-latest
+    steps:
       - name: Notify on failure
-        if: failure()
         env:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
@@ -162,4 +179,4 @@ jobs:
         run: |
           gh pr comment "${PR_NUMBER}" \
             --repo hashpass-tech/hashpass.tech \
-            --body "⚠️ release-tag-on-merge failed after this PR merged — the release tag and/or the develop sync may be incomplete. Manual follow-up needed. Failed run: ${RUN_URL}"
+            --body "⚠️ release-tag-on-merge failed after this PR merged — the Lukas publication, release tag, and/or develop sync may be incomplete. Manual follow-up needed. Failed run: ${RUN_URL}"
