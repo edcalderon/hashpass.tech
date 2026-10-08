@@ -19,7 +19,9 @@ concurrency:
 
 jobs:
   publish:
-    if: github.repository == 'hashpass-tech/hashpass.tech'
+    if: >-
+      github.repository == 'hashpass-tech/hashpass.tech' &&
+      (github.event_name == 'push' || github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
     runs-on: ubuntu-latest
     timeout-minutes: 25
     environment: production
