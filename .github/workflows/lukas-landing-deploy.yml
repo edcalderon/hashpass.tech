@@ -27,16 +27,15 @@ permissions:
   contents: read
   id-token: write
 
-concurrency:
-  group: lukas-landing-production
-  queue: max
-  cancel-in-progress: false
-
 jobs:
   publish:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     environment: production
+    concurrency:
+      group: lukas-landing-production
+      queue: max
+      cancel-in-progress: false
     env:
       LUKAS_SITE_BUCKET: hashpass-lukas-landing-site
       LUKAS_SITE_URL: https://lukas.hashpass.tech
