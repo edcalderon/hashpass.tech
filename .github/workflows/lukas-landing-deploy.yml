@@ -1,0 +1,108 @@
+name: Lukas landing build and deploy
+
+# The Lukas hostname is a standalone S3/CloudFront site. Release tags are the
+# single production trigger so its artifact is built from the exact same
+# versioned commit that the release workflow tags.
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: lukas-landing-production
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.repository == 'hashpass-tech/hashpass.tech'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment: production
+    env:
+      LUKAS_SITE_BUCKET: hashpass-lukas-landing-site
+      LUKAS_SITE_URL: https://lukas.hashpass.tech
+      AWS_REGION: us-east-2
+      LUKAS_BUILD_DIR: ${{ runner.temp }}/lukas-site
+    steps:
+      - name: Checkout release ref
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Read and validate release version
+        id: version
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          package_version=$(node -p "require('./package.json').version")
+          if [[ "${EVENT_NAME}" == "push" ]]; then
+            tag_version="${REF_NAME#v}"
+            if [[ "${tag_version}" != "${package_version}" ]]; then
+              echo "::error::Tag ${REF_NAME} does not match package.json version ${package_version}."
+              exit 1
+            fi
+          fi
+          echo "release_version=${package_version}" >> "$GITHUB_OUTPUT"
+          echo "Lukas release version: ${package_version}"
+
+      - name: Build the versioned Lukas export
+        env:
+          LUKAS_RELEASE_VERSION: ${{ steps.version.outputs.release_version }}
+        run: |
+          set -euo pipefail
+          python3 packages/infra/terraform/stacks/hashpass-lukas-site/build.py "${LUKAS_BUILD_DIR}"
+
+      - name: Validate deployment role configuration
+        env:
+          ROLE_ARN: ${{ vars.AWS_INFRA_DEPLOY_ROLE_ARN }}
+          EXPECTED_ACCOUNT: ${{ vars.AWS_TARGET_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          [[ -n "${ROLE_ARN}" ]] || {
+            echo "::error::AWS_INFRA_DEPLOY_ROLE_ARN is not configured for the production environment."
+            exit 1
+          }
+          [[ -n "${EXPECTED_ACCOUNT}" ]] || {
+            echo "::error::AWS_TARGET_ACCOUNT_ID is not configured for the production environment."
+            exit 1
+          }
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_INFRA_DEPLOY_ROLE_ARN }}
+          allowed-account-ids: ${{ vars.AWS_TARGET_ACCOUNT_ID }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: hashpass-lukas-release-${{ steps.version.outputs.release_version }}
+          mask-aws-account-id: true
+
+      - name: Publish and verify Lukas landing
+        env:
+          LUKAS_RELEASE_VERSION: ${{ steps.version.outputs.release_version }}
+        run: bash packages/tools/scripts/deploy-lukas-landing.sh
+
+      - name: Record deployment evidence
+        env:
+          RELEASE_VERSION: ${{ steps.version.outputs.release_version }}
+        run: |
+          {
+            echo "## Lukas landing deployment"
+            echo
+            echo "- Release: \`${RELEASE_VERSION}\`"
+            echo "- Commit: \`${GITHUB_SHA}\`"
+            echo "- URL: https://lukas.hashpass.tech/lukas"
+            echo "- Artifact version: verified from recovery.json"
+            echo "- Favicon: verified at /favicon.svg"
+          } >> "$GITHUB_STEP_SUMMARY"

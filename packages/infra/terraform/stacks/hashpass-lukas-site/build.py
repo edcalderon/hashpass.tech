@@ -23,7 +23,12 @@ SOURCE_PATHS = [
 
 def build(output):
     expected = "v" + (REPO / ".nvmrc").read_text().strip()
-    release_version = json.loads((REPO / "package.json").read_text())["version"]
+    package_version = json.loads((REPO / "package.json").read_text())["version"]
+    release_version = os.environ.get("LUKAS_RELEASE_VERSION", package_version).lstrip("v")
+    if release_version != package_version:
+        raise SystemExit(
+            f"Lukas release version {release_version} does not match package.json {package_version}"
+        )
     actual = subprocess.check_output(["node", "--version"], text=True).strip()
     if actual != expected:
         raise SystemExit(f"Use the repository Node runtime: {expected}; found {actual}")
