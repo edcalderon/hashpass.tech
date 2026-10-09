@@ -1,3 +1,26 @@
+## [1.9.106](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.104...v1.9.106) (2026-10-09)
+
+
+### Bug Fixes
+
+* **ci:** address Lukas deployment review ([1706061](https://github.com/hashpass-tech/hashpass.tech/commit/170606115a8ae63c98476b4b4f3f2a63e9ea327c))
+* **ci:** preserve every queued Lukas publication ([1ca324b](https://github.com/hashpass-tech/hashpass.tech/commit/1ca324b3bca3dabba8fa9c4ed849ff1257c85722))
+* **ci:** queue Lukas publish job safely ([635fd28](https://github.com/hashpass-tech/hashpass.tech/commit/635fd283f1e3c20fd4d76ea63f899194715f3f48))
+* **ci:** require release refs for Lukas pushes ([c0beb1a](https://github.com/hashpass-tech/hashpass.tech/commit/c0beb1ae34f76b13ce216996ceac89d2d6489d1f))
+* **ci:** restrict manual Lukas deploys to released refs ([39ec912](https://github.com/hashpass-tech/hashpass.tech/commit/39ec912866f09cdf8e5e4d59c2845728ad4cffa9))
+* **ci:** use supported Lukas concurrency syntax ([f75a193](https://github.com/hashpass-tech/hashpass.tech/commit/f75a193704dd7a28ce8d189ed12b009cb16ff6c9))
+* **lukas:** add SEO metadata and social assets ([424c867](https://github.com/hashpass-tech/hashpass.tech/commit/424c86734be5a1a67173bb099e63f5587a2c70d0))
+### Release Highlights
+- add SEO metadata and social assets; preserve every queued Lukas publication; use supported Lukas concurrency syntax; queue Lukas publish job safely; address Lukas deployment review; require release refs for Lukas pushes; restrict manual Lukas deploys to released refs
+
+### Release scope
+- Compared with: `v1.9.104` (the previous global release tag)
+
+### Affected products & packages
+- Infrastructure
+- Documentation
+- Release tooling
+
 ## [1.9.105](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.104...v1.9.105) (2026-10-08)
 
 
