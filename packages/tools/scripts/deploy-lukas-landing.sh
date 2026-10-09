@@ -276,8 +276,15 @@ for attempt in $(seq 1 12); do
         "${SITE_URL%/}/favicon.svg?release=${EXPECTED_VERSION}" \
         -o /dev/null \
       && curl --fail --silent --show-error --location \
+        "${SITE_URL%/}/lukas-social-card.png?release=${EXPECTED_VERSION}" \
+        -o /dev/null \
+      && curl --fail --silent --show-error --location \
         "${SITE_URL%/}/lukas?release=${EXPECTED_VERSION}" \
         -o "${tmp_dir}/lukas.html" \
+      && grep -q '<title>LUKAS | Stable value for LatAm payments</title>' "${tmp_dir}/lukas.html" \
+      && grep -q 'rel="canonical" href="https://lukas.hashpass.tech/lukas"' "${tmp_dir}/lukas.html" \
+      && grep -q 'property="og:image" content="https://lukas.hashpass.tech/lukas-social-card.png"' "${tmp_dir}/lukas.html" \
+      && grep -q 'name="twitter:card" content="summary_large_image"' "${tmp_dir}/lukas.html" \
       && grep -q 'favicon.svg' "${tmp_dir}/lukas.html"; then
     verified="true"
     break
