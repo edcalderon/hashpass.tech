@@ -214,9 +214,9 @@
       "question": "How is the peg 1:1 to the LatAm basket maintained?",
       "question_es": "¿Cómo se mantiene el peg 1:1 a la canasta LatAm?",
       "question_pt": "Como a vinculação 1:1 à cesta LatAm é mantida?",
-      "answer": "The peg is maintained through: (1) Omni-chain crypto collateral vaults holding blue-chip assets (USDC, BTC, ETH), (2) Algorithmic mechanisms that adjust supply based on demand and price deviations, (3) Price oracles (Chainlink/Pyth) tracking the LatAm currency basket in real-time, (4) Integration with HashPass merchants that accept $LUKAS at face value, and (5) Overcollateralization (150%+) to absorb volatility.",
-      "answer_es": "El peg se mantiene a través de: (1) Bóvedas de colateral cripto omni-chain que mantienen activos blue-chip (USDC, BTC, ETH), (2) Mecanismos algorítmicos que ajustan la oferta según la demanda y desviaciones de precio, (3) Oráculos de precios (Chainlink/Pyth) que rastrean la canasta de monedas LatAm en tiempo real, (4) Integración con comercios de HashPass que aceptan $LUKAS a valor nominal, y (5) Sobrecolateralización (150%+) para absorber volatilidad.",
-      "answer_pt": "A vinculação é mantida através de: (1) Cofres de garantia cripto omni-chain que mantêm ativos blue-chip (USDC, BTC, ETH), (2) Mecanismos algorítmicos que ajustam a oferta com base na demanda e desvios de preço, (3) Oráculos de preços (Chainlink/Pyth) que rastreiam a cesta de moedas LatAm em tempo real, (4) Integração com comerciantes HashPass que aceitam $LUKAS pelo valor nominal, e (5) Sobrecolateralização (150%+) para absorver volatilidade."
+      "answer": "$LUKAS runs on an elastic-supply StabilizerVault: depositing USDC mints new $LUKAS 1:1, and burning $LUKAS redeems the underlying USDC, so supply expands and contracts with real demand instead of relying on a fixed collateral ratio. A Chainlink oracle feeds the live LatAm basket price, trading routes through a dedicated Uniswap V4 hook (0.3% pool fee) that keeps the on-chain price aligned with that oracle, and a 1-hour cooldown between mint/burn actions limits short-term manipulation.",
+      "answer_es": "$LUKAS funciona con un StabilizerVault de oferta elástica: depositar USDC acuña nuevos $LUKAS 1:1, y quemar $LUKAS redime el USDC subyacente, así la oferta se expande y contrae según la demanda real en vez de depender de un ratio de colateral fijo. Un oráculo de Chainlink alimenta el precio en vivo de la canasta LatAm, el trading pasa por un hook dedicado de Uniswap V4 (comisión de pool del 0.3%) que mantiene el precio on-chain alineado con ese oráculo, y hay un período de espera de 1 hora entre acciones de acuñación/quema para limitar la manipulación a corto plazo.",
+      "answer_pt": "$LUKAS funciona com um StabilizerVault de oferta elástica: depositar USDC emite novos $LUKAS 1:1, e queimar $LUKAS resgata o USDC subjacente, assim a oferta se expande e se contrai conforme a demanda real em vez de depender de uma proporção de garantia fixa. Um oráculo da Chainlink alimenta o preço em tempo real da cesta LatAm, as negociações passam por um hook dedicado da Uniswap V4 (taxa de pool de 0.3%) que mantém o preço on-chain alinhado com esse oráculo, e há um período de espera de 1 hora entre ações de emissão/queima para limitar manipulações de curto prazo."
     },
     "q3": {
       "question": "What does \"LatAm currency basket\" mean?",
@@ -241,7 +241,21 @@
       "answer": "$LUKAS is built by the HashPass team and ecosystem partners. HashPass is a digital identity and wallet platform focused on making crypto accessible for real-world use in Latin America. Learn more at hashpass.tech",
       "answer_es": "$LUKAS está construido por el equipo de HashPass y socios del ecosistema. HashPass es una plataforma de identidad digital y wallet enfocada en hacer que el cripto sea accesible para uso en el mundo real en América Latina. Aprende más en hashpass.tech",
       "answer_pt": "$LUKAS é construído pela equipe HashPass e parceiros do ecossistema. HashPass é uma plataforma de identidade digital e carteira focada em tornar o cripto acessível para uso no mundo real na América Latina. Saiba mais em hashpass.tech"
-    }
+    },
+    "q6": {
+      "question": "What stage is $LUKAS at right now?",
+      "question_es": "¿En qué etapa está $LUKAS en este momento?",
+      "question_pt": "Em que estágio o $LUKAS está agora?",
+      "answer": "$LUKAS is currently in public testnet only, live on Polygon Amoy and Ethereum Sepolia — there's no mainnet token yet and no fixed launch date. The team is deep in the \"advanced features\" phase of the roadmap (privacy and security modules), with mainnet preparation as the next milestone. Sign up above to get on the list for $LKS airdrops and prizes once $LUKAS reaches mainnet.",
+      "answer_es": "$LUKAS está actualmente solo en testnet pública, activo en Polygon Amoy y Ethereum Sepolia — todavía no hay un token en mainnet ni una fecha de lanzamiento fija. El equipo está en plena fase de \"funciones avanzadas\" de la hoja de ruta (módulos de privacidad y seguridad), con la preparación de mainnet como el siguiente hito. Regístrate arriba para entrar en la lista de airdrops y premios de $LKS cuando $LUKAS llegue a mainnet.",
+      "answer_pt": "O $LUKAS está atualmente apenas em testnet pública, ativo na Polygon Amoy e na Ethereum Sepolia — ainda não existe um token na mainnet nem uma data de lançamento fixa. A equipe está em plena fase de \"funcionalidades avançadas\" do roteiro (módulos de privacidade e segurança), com a preparação da mainnet como o próximo marco. Cadastre-se acima para entrar na lista de airdrops e prêmios de $LKS quando o $LUKAS chegar à mainnet."
+    },
+    "moreInfo": "Want the full technical details?",
+    "moreInfo_es": "¿Quieres todos los detalles técnicos?",
+    "moreInfo_pt": "Quer todos os detalhes técnicos?",
+    "moreInfoLink": "Read the documentation",
+    "moreInfoLink_es": "Lee la documentación",
+    "moreInfoLink_pt": "Leia a documentação"
   },
   "footer": {
     "text": "$LUKAS — The region's stable index peso, with real meme coin soul",

@@ -17,7 +17,7 @@ import { useIsMobile } from '../../hooks/useIsMobile';
 import { useTranslation } from '../../i18n/i18n';
 
 const API_BASE = 'https://api.hashpass.tech/api';
-const SUCCESS_COPY = "You're already listed for $LKS airdrops and prizes until the LUKAS $LKS TGE in Q2 2027.";
+const SUCCESS_COPY = "You're already listed for $LKS airdrops and prizes until the LUKAS $LKS TGE. We're currently in testnet.";
 
 type WalletKind = 'ethereum' | 'solana';
 type ModalView = 'choices' | 'hashpass' | 'wallets' | 'newsletter' | 'success';
@@ -218,7 +218,7 @@ export function GetLukasSection() {
           <Pressable onPress={() => openModal()} style={styles.primaryButton} accessibilityRole="button"><Text style={styles.primaryButtonText}>{t('getLukas.connectWallet')}</Text></Pressable>
           <Pressable onPress={() => openModal('newsletter')} style={styles.secondaryButton} accessibilityRole="button"><Text style={styles.secondaryButtonText}>Join the LUKAS Newsletter</Text></Pressable>
         </View>
-        <View style={styles.comingSoonContainer}><Text style={styles.comingSoonText}>LUKAS $LKS TGE · Q2 2027</Text><Text style={styles.comingSoonSubtext}>Stay listed for airdrops, prizes, and launch pricing.</Text></View>
+        <View style={styles.comingSoonContainer}><Text style={styles.comingSoonText}>LUKAS $LKS · Testnet until TGE</Text><Text style={styles.comingSoonSubtext}>Stay listed for airdrops, prizes, and launch pricing.</Text></View>
       </View>
 
       <Modal visible={modalVisible} transparent animationType="fade" onRequestClose={closeModal}>
