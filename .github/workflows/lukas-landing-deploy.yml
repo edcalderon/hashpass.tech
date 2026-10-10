@@ -41,7 +41,7 @@ jobs:
       LUKAS_SITE_BUCKET: hashpass-lukas-landing-site
       LUKAS_SITE_URL: https://lukas.hashpass.tech
       AWS_REGION: us-east-2
-      LUKAS_BUILD_DIR: ${{ runner.temp }}/lukas-site
+      LUKAS_BUILD_DIR: ${{ github.workspace }}/.tmp/lukas-site
       LUKAS_LOCK_PREFIX: _locks/lukas-landing
       LUKAS_LOCK_WAIT_SECONDS: 21600
       LUKAS_LOCK_ENTRY_TTL_SECONDS: 86400
@@ -130,10 +130,21 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ vars.AWS_INFRA_DEPLOY_ROLE_ARN }}
-          allowed-account-ids: ${{ vars.AWS_TARGET_ACCOUNT_ID }}
           aws-region: ${{ env.AWS_REGION }}
           role-session-name: hashpass-lukas-release-${{ steps.version.outputs.release_version }}
           mask-aws-account-id: true
+
+      - name: Verify AWS account identity
+        env:
+          EXPECTED_ACCOUNT: ${{ vars.AWS_TARGET_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          actual_account=$(aws sts get-caller-identity --query Account --output text)
+          if [[ "${actual_account}" != "${EXPECTED_ACCOUNT}" ]]; then
+            echo "::error::AWS account identity mismatch; refusing deployment."
+            exit 1
+          fi
+          echo "AWS account identity verified."
 
       - name: Publish and verify Lukas landing
         env:
