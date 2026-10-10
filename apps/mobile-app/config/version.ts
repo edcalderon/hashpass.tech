@@ -22,14 +22,19 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610092355, // Updated to current timestamp
-  releaseDate: '2026-10-09',
+  buildNumber: 202610100128, // Updated to current timestamp
+  releaseDate: '2026-10-10',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
     // No new features
   ],
   bugfixes: [
+    'use production Lukas deploy role',
+    'report promotion resolution failures',
+    'release from post-merge main push',
+    'redact AWS account mismatch details',
+    'repair Lukas reusable workflow validation',
     'add SEO metadata and social assets',
     'preserve every queued Lukas publication',
     'use supported Lukas concurrency syntax',
@@ -39,11 +44,37 @@ export const CURRENT_VERSION: VersionInfo = {
     'restrict manual Lukas deploys to released refs'
   ],
   breakingChanges: [],
-  notes: 'add SEO metadata and social assets; preserve every queued Lukas publication; use supported Lukas concurrency syntax; queue Lukas publish job safely; address Lukas deployment review; require release refs for Lukas pushes; restrict manual Lukas deploys to released refs'
+  notes: 'use production Lukas deploy role; report promotion resolution failures; release from post-merge main push; redact AWS account mismatch details; repair Lukas reusable workflow validation; add SEO metadata and social assets; preserve every queued Lukas publication; use supported Lukas concurrency syntax; queue Lukas publish job safely; address Lukas deployment review; require release refs for Lukas pushes; restrict manual Lukas deploys to released refs'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.107': {
+    version: '1.9.107',
+    buildNumber: 202610100128,
+    releaseDate: '2026-10-10',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'use production Lukas deploy role',
+      'report promotion resolution failures',
+      'release from post-merge main push',
+      'redact AWS account mismatch details',
+      'repair Lukas reusable workflow validation',
+      'add SEO metadata and social assets',
+      'preserve every queued Lukas publication',
+      'use supported Lukas concurrency syntax',
+      'queue Lukas publish job safely',
+      'address Lukas deployment review',
+      'require release refs for Lukas pushes',
+      'restrict manual Lukas deploys to released refs'
+    ],
+    breakingChanges: [],
+    notes: 'use production Lukas deploy role; report promotion resolution failures; release from post-merge main push; redact AWS account mismatch details; repair Lukas reusable workflow validation; add SEO metadata and social assets; preserve every queued Lukas publication; use supported Lukas concurrency syntax; queue Lukas publish job safely; address Lukas deployment review; require release refs for Lukas pushes; restrict manual Lukas deploys to released refs'
+  },
   '1.9.106': {
     version: '1.9.106',
     buildNumber: 202610092355,
