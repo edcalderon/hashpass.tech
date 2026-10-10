@@ -74,7 +74,7 @@ export function HeroSection({ onGetLukas, onForMerchants }: HeroSectionProps) {
       <View style={styles.content}>
         {/* Left side - Animated Coin */}
         <View style={styles.coinContainer}>
-          <View style={{ width: coinSize * 1.6, height: coinSize * 1.6 }}>
+          <View style={{ width: coinSize * 1.6, height: coinSize * 1.6, overflow: 'hidden' }}>
             <LukasCoin size={coinSize} />
           </View>
           <Text style={styles.coinPeg} numberOfLines={1} adjustsFontSizeToFit>
@@ -89,13 +89,13 @@ export function HeroSection({ onGetLukas, onForMerchants }: HeroSectionProps) {
           </Text>
 
           <Text style={styles.title} numberOfLines={3} adjustsFontSizeToFit>
-            The first <Text style={styles.titleHighlight}>stable meme coin</Text>
+            The region's <Text style={styles.titleHighlight}>stable index peso</Text>
             {'\n'}
-            pegged 1:1 to the <Text style={styles.titleGreen}>LatAm peso index</Text>.
+            with real <Text style={styles.titleGreen}>meme coin soul</Text>.
           </Text>
 
           <Text style={styles.subtitle} numberOfLines={4}>
-            Backed by HashPass merchants and omni-chain crypto collateral. $LUKAS is pegged 1:1 to the LatAm peso index: 1 LUKAS = 1 Peso LatAm (Canasta de BRL, MXN, COP, CLP, ARS). Designed for real payments across LatAm.
+            $LUKAS tracks the LatAm peso index: 1 LUKAS = 1 Peso LatAm (basket of BRL, MXN, COP, CLP, ARS), backed by HashPass merchants and omni-chain crypto collateral. Built for real payments across Latin America.
           </Text>
 
           <View style={styles.buttonContainer}>
@@ -188,7 +188,7 @@ const getStyles = (
     color: isDark ? '#A7F3D0' : '#022C22',
     fontSize: isSmallMobile ? 10 : isMobile ? 12 : 14,
     fontWeight: '700',
-    marginTop: 8,
+    marginTop: 18,
     textAlign: 'center',
     maxWidth: '100%',
   },
