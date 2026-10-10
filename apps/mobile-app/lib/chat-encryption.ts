@@ -123,7 +123,7 @@ export async function fetchParticipantPublicKey(userId: string): Promise<Uint8Ar
 // every message in the conversation regardless of which side sent it.
 function deriveConversationKey(myPrivateKey: Uint8Array, theirPublicKey: Uint8Array): Uint8Array {
   const shared = x25519.getSharedSecret(myPrivateKey, theirPublicKey);
-  return hkdf(sha256, shared, undefined, HKDF_INFO, 32);
+  return hkdf(sha256, shared, undefined, utf8ToBytes(HKDF_INFO), 32);
 }
 
 export interface EncryptedChatPayload {
@@ -174,7 +174,7 @@ function deriveBackupKey(password: string, salt: Uint8Array): Uint8Array {
   const passwordBytes = utf8ToBytes(password);
   // HKDF extract: salt the password to produce a pseudo-random key (PRK)
   // HKDF expand: stretch the PRK to 32 bytes using the info string
-  return hkdf(sha256, passwordBytes, salt, BACKUP_KDF_INFO, 32);
+  return hkdf(sha256, passwordBytes, salt, utf8ToBytes(BACKUP_KDF_INFO), 32);
 }
 
 /** Encrypts a private key with a user-provided password. Returns the
