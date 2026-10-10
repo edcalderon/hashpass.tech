@@ -27,6 +27,11 @@ interface FAQItemProps {
 function FAQItem({ question, answer, isOpen, onToggle, isDark, isMobile }: FAQItemProps) {
   const height = useSharedValue(isOpen ? 1 : 0);
   const rotation = useSharedValue(isOpen ? 180 : 0);
+  // Real measured height of the answer text, taken via onLayout below. The inner
+  // View is always rendered (just visually clipped by the parent's maxHeight/
+  // overflow while collapsed), so onLayout fires with the true content height
+  // from first mount — not an arbitrary guess.
+  const [contentHeight, setContentHeight] = useState(0);
 
   useEffect(() => {
     if (isOpen) {
@@ -39,7 +44,16 @@ function FAQItem({ question, answer, isOpen, onToggle, isDark, isMobile }: FAQIt
   }, [isOpen]);
 
   const animatedHeight = useAnimatedStyle(() => ({
-    maxHeight: height.value === 1 ? 500 : 0,
+    // Interpolate across the full continuous 0-1 range (not a `height.value === 1`
+    // binary check) so expand/collapse actually animates instead of staying
+    // clamped at 0 for the whole 300ms and only snapping open on the final frame
+    // (and snapping shut on the very first frame of a close, since height.value
+    // leaves 1 immediately). Uses the real measured contentHeight instead of a
+    // fixed 500px cap, so long ES/PT answers or OS-level enlarged text never get
+    // clipped. Once fully open, the cap is dropped entirely so any further
+    // content growth (e.g. a live font-scale change) isn't clipped by a stale
+    // measurement either.
+    maxHeight: isOpen && height.value === 1 ? undefined : height.value * contentHeight,
     opacity: height.value,
   }));
 
@@ -55,6 +69,14 @@ function FAQItem({ question, answer, isOpen, onToggle, isDark, isMobile }: FAQIt
         onPress={onToggle}
         style={styles.faqQuestion}
         activeOpacity={0.7}
+        accessibilityRole="button"
+        accessibilityState={{ expanded: isOpen }}
+        // Belt-and-suspenders: this RNW version's TouchableOpacity doesn't
+        // translate accessibilityState.expanded into aria-expanded on the
+        // rendered <button> (confirmed via live DOM inspection — accessibilityState
+        // alone produced no aria-expanded attribute at all). RNW passes raw aria-*
+        // props straight through to the host element, so set it explicitly too.
+        aria-expanded={isOpen}
       >
         <Text style={styles.faqQuestionText}>{question}</Text>
         <Animated.View style={animatedArrow}>
@@ -71,7 +93,9 @@ function FAQItem({ question, answer, isOpen, onToggle, isDark, isMobile }: FAQIt
       </TouchableOpacity>
 
       <Animated.View style={[styles.faqAnswer, animatedHeight]}>
-        <Text style={styles.faqAnswerText}>{answer}</Text>
+        <View onLayout={(event) => setContentHeight(event.nativeEvent.layout.height)}>
+          <Text style={styles.faqAnswerText}>{answer}</Text>
+        </View>
       </Animated.View>
     </View>
   );
