@@ -79,12 +79,22 @@ the workflow refuses to deploy if the tag, package version, or live manifest do
 not match. This keeps Lukas on the same release version as the app; there is no
 independent Lukas version to update.
 
+The publisher serializes releases and manual recoveries with a FIFO in the
+existing private S3 bucket. Each invocation writes a unique entry below
+`_locks/lukas-landing/queue/`; the queue head claims
+`_locks/lukas-landing/active.json` with an atomic `If-None-Match: *` write.
+Queue and lease records expire so an abandoned runner cannot block future
+releases, and the deployment sync excludes the lock prefix from `--delete`.
+This replaces the lossy GitHub concurrency pending slot, which would cancel
+the older of two waiting runs.
+
 For initial provisioning or manual recovery, after the account check and
 infrastructure apply, publish the built directory:
 
 ```bash
 aws s3 sync /tmp/lukas-site s3://hashpass-lukas-landing-site/ \
-  --profile hashpass --only-show-errors --cache-control 'public,max-age=300'
+  --profile hashpass --only-show-errors --cache-control 'public,max-age=300' \
+  --exclude '_locks/lukas-landing/*'
 ```
 
 For subsequent publications, invalidate changed HTML paths on the distribution

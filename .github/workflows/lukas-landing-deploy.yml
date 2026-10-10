@@ -3,6 +3,11 @@ name: Lukas landing build and deploy
 # The Lukas hostname is a standalone S3/CloudFront site. The protected release
 # workflow calls this reusable workflow before creating a production tag, so a
 # release cannot be tagged until the exact versioned Lukas artifact is live.
+#
+# Do not add a fixed GitHub concurrency group here. This Actions installation
+# keeps only one pending run per group and replaces it when another run queues.
+# deploy-lukas-landing.sh owns a lossless S3-backed FIFO instead, so every
+# release/recovery invocation gets a queue entry and runs in order.
 on:
   workflow_call:
     inputs:
@@ -30,17 +35,18 @@ permissions:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 360
     environment: production
-    concurrency:
-      group: lukas-landing-production
-      queue: max
-      cancel-in-progress: false
     env:
       LUKAS_SITE_BUCKET: hashpass-lukas-landing-site
       LUKAS_SITE_URL: https://lukas.hashpass.tech
       AWS_REGION: us-east-2
       LUKAS_BUILD_DIR: ${{ runner.temp }}/lukas-site
+      LUKAS_LOCK_PREFIX: _locks/lukas-landing
+      LUKAS_LOCK_WAIT_SECONDS: 21600
+      LUKAS_LOCK_ENTRY_TTL_SECONDS: 86400
+      LUKAS_LOCK_LEASE_SECONDS: 28800
+      LUKAS_LOCK_POLL_SECONDS: 15
     steps:
       - name: Checkout release ref
         uses: actions/checkout@v4
