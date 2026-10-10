@@ -212,16 +212,55 @@ jobs:
     needs: [resolve-promotion, publish-lukas, tag-and-sync]
     if: >
       always() &&
-      needs.resolve-promotion.outputs.is_promotion == 'true' &&
-      (needs.publish-lukas.result == 'failure' || needs.tag-and-sync.result == 'failure')
+      (
+        needs.resolve-promotion.result == 'failure' ||
+        (
+          needs.resolve-promotion.outputs.is_promotion == 'true' &&
+          (needs.publish-lukas.result == 'failure' || needs.tag-and-sync.result == 'failure')
+        )
+      )
     runs-on: ubuntu-latest
     steps:
       - name: Notify on failure
         env:
           GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ needs.resolve-promotion.outputs.pr_number }}
+          RESOLUTION_RESULT: ${{ needs.resolve-promotion.result }}
+          RESOLVED_PR_NUMBER: ${{ needs.resolve-promotion.outputs.pr_number }}
+          COMMIT_SHA: ${{ github.sha }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          gh pr comment "${PR_NUMBER}" \
-            --repo hashpass-tech/hashpass.tech \
-            --body "⚠️ release-tag-on-merge failed after this PR merged — the Lukas publication, release tag, and/or develop sync may be incomplete. Manual follow-up needed. Failed run: ${RUN_URL}"
+          set -euo pipefail
+
+          pr_number="${RESOLVED_PR_NUMBER}"
+          if [[ -z "${pr_number}" && "${RESOLUTION_RESULT}" == "failure" ]]; then
+            for attempt in 1 2 3; do
+              promotion_prs=$(gh api \
+                "repos/${GITHUB_REPOSITORY}/commits/${COMMIT_SHA}/pulls" \
+                -H 'Accept: application/vnd.github+json' \
+                --jq '[.[] | select(.merged_at != null and .base.ref == "main" and .head.ref == "develop")] | sort_by(.merged_at)' \
+                2>/dev/null || true)
+              promotion_prs=${promotion_prs:-[]}
+              pr_number=$(jq -r '.[-1].number // empty' <<<"${promotion_prs}")
+              [[ -n "${pr_number}" ]] && break
+              [[ "${attempt}" == "3" ]] || sleep 5
+            done
+          fi
+
+          if [[ -n "${pr_number}" ]]; then
+            if [[ "${RESOLUTION_RESULT}" == "failure" ]]; then
+              body="⚠️ release-tag-on-merge could not resolve the merged promotion PR for commit ${COMMIT_SHA}; Lukas publication, release tagging, and develop sync did not run. Manual follow-up is required. Failed run: ${RUN_URL}"
+            else
+              body="⚠️ release-tag-on-merge failed after this PR merged — the Lukas publication, release tag, and/or develop sync may be incomplete. Manual follow-up needed. Failed run: ${RUN_URL}"
+            fi
+            gh pr comment "${pr_number}" \
+              --repo hashpass-tech/hashpass.tech \
+              --body "${body}"
+          else
+            echo "::error::release-tag-on-merge failed before it could resolve the affected promotion PR for commit ${COMMIT_SHA}."
+            {
+              echo "## Release automation failure"
+              echo
+              echo "Promotion resolution failed for commit \`${COMMIT_SHA}\`. No affected PR could be resolved for an automatic comment."
+              echo "Failed run: ${RUN_URL}"
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
