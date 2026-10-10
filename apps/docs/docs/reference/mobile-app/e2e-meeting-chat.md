@@ -72,6 +72,10 @@ All primitives come from the pure-JS `@noble/*` suite (`@noble/curves/ed25519`'s
 `x25519`, `@noble/hashes/hkdf`+`sha2`, `@noble/ciphers/chacha.js`'s
 `xchacha20poly1305`) rather than a native crypto module — see
 [Why pure-JS crypto](#why-pure-js-crypto-and-the-one-native-adjacent-exception) below.
+Both `HKDF_INFO` and `BACKUP_KDF_INFO` are explicitly UTF-8 encoded
+(`utf8ToBytes(...)`) before being passed as the `info` argument to `hkdf()`,
+matching the same explicit-encoding pattern `deriveBackupKey()` already used
+for the password itself, rather than handing `hkdf()` a raw JS string.
 
 ### Optional encrypted key backup and restore
 
