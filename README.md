@@ -20,16 +20,19 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.108)
+## 📋 Latest Changes (v1.9.109)
 
-### Released
-- Version 1.9.108 release
+### Bug Fixes
+
+* **lukas:** rewrite landing copy, fix satellite overlap bug ([bdb8cc1](https://github.com/hashpass-tech/hashpass.tech/commit/bdb8cc122179a37412b175148181d7df54c5fbfe))
+### Release Highlights
+- rewrite landing copy, fix satellite overlap bug
 
 ### Release scope
-- Compared with: `v1.9.107` (the previous global release tag)
+- Compared with: `v1.9.108` (the previous global release tag)
 
 ### Affected products & packages
-- Shared repository changes only
+- Infrastructure
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

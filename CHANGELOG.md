@@ -1,3 +1,18 @@
+## [1.9.109](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.108...v1.9.109) (2026-10-10)
+
+
+### Bug Fixes
+
+* **lukas:** rewrite landing copy, fix satellite overlap bug ([bdb8cc1](https://github.com/hashpass-tech/hashpass.tech/commit/bdb8cc122179a37412b175148181d7df54c5fbfe))
+### Release Highlights
+- rewrite landing copy, fix satellite overlap bug
+
+### Release scope
+- Compared with: `v1.9.108` (the previous global release tag)
+
+### Affected products & packages
+- Infrastructure
+
 ## [1.9.108](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.107...v1.9.108) (2026-10-10)
 ### Released
 - Version 1.9.108 release
