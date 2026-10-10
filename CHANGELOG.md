@@ -1,3 +1,18 @@
+## [1.9.110](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.109...v1.9.110) (2026-10-10)
+
+
+### Bug Fixes
+
+* **lukas:** resolve omni-chain overlap/connector bugs, wire up i18n switcher ([bfd5570](https://github.com/hashpass-tech/hashpass.tech/commit/bfd55700a30c7cb9ba345b69cb8d22bca3fcf538))
+### Release Highlights
+- resolve omni-chain overlap/connector bugs, wire up i18n switcher
+
+### Release scope
+- Compared with: `v1.9.109` (the previous global release tag)
+
+### Affected products & packages
+- Infrastructure
+
 ## [1.9.109](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.108...v1.9.109) (2026-10-10)
 
 

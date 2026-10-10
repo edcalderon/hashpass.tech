@@ -89,13 +89,13 @@ export function HeroSection({ onGetLukas, onForMerchants }: HeroSectionProps) {
           </Text>
 
           <Text style={styles.title} numberOfLines={3} adjustsFontSizeToFit>
-            The region's <Text style={styles.titleHighlight}>stable index peso</Text>
+            {t('hero.title')} <Text style={styles.titleHighlight}>{t('hero.titleHighlight')}</Text>
             {'\n'}
-            with real <Text style={styles.titleGreen}>meme coin soul</Text>.
+            {t('hero.titleSuffix')} <Text style={styles.titleGreen}>{t('hero.titleGreen')}</Text>.
           </Text>
 
           <Text style={styles.subtitle} numberOfLines={4}>
-            $LUKAS tracks the LatAm peso index: 1 LUKAS = 1 Peso LatAm (basket of BRL, MXN, COP, CLP, ARS), backed by HashPass merchants and omni-chain crypto collateral. Built for real payments across Latin America.
+            {t('hero.subtitle')}
           </Text>
 
           <View style={styles.buttonContainer}>

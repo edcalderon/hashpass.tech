@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610100936, // Updated to current timestamp
+  buildNumber: 202610101050, // Updated to current timestamp
   releaseDate: '2026-10-10',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,14 +30,29 @@ export const CURRENT_VERSION: VersionInfo = {
     // No new features
   ],
   bugfixes: [
-    'rewrite landing copy, fix satellite overlap bug'
+    'resolve omni-chain overlap/connector bugs, wire up i18n switcher'
   ],
   breakingChanges: [],
-  notes: 'rewrite landing copy, fix satellite overlap bug'
+  notes: 'resolve omni-chain overlap/connector bugs, wire up i18n switcher'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.110': {
+    version: '1.9.110',
+    buildNumber: 202610101050,
+    releaseDate: '2026-10-10',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'resolve omni-chain overlap/connector bugs, wire up i18n switcher'
+    ],
+    breakingChanges: [],
+    notes: 'resolve omni-chain overlap/connector bugs, wire up i18n switcher'
+  },
   '1.9.109': {
     version: '1.9.109',
     buildNumber: 202610100936,

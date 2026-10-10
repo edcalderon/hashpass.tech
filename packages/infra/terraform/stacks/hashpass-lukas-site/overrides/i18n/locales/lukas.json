@@ -15,18 +15,18 @@
     "titleGreen": "meme coin soul",
     "titleGreen_es": "meme coin",
     "titleGreen_pt": "meme coin",
-    "subtitle": "Backed by HashPass merchants and omni-chain crypto collateral. 1 LUKA = 1 LatAm Peso (basket of BRL, MXN, COP, CLP, ARS). Designed for real payments across LatAm.",
-    "subtitle_es": "Respaldado por comercios de HashPass y colateral cripto omni-chain. 1 LUKA = 1 Peso LatAm (canasta de BRL, MXN, COP, CLP, ARS). Diseñado para pagos reales en toda LatAm.",
-    "subtitle_pt": "Apoiado por comerciantes HashPass e garantia cripto omni-chain. 1 LUKA = 1 Peso LatAm (cesta de BRL, MXN, COP, CLP, ARS). Projetado para pagamentos reais em toda a LatAm.",
+    "subtitle": "$LUKAS tracks the LatAm peso index: 1 LUKAS = 1 Peso LatAm (basket of BRL, MXN, COP, CLP, ARS), backed by HashPass merchants and omni-chain crypto collateral. Built for real payments across Latin America.",
+    "subtitle_es": "$LUKAS sigue el índice del peso LatAm: 1 LUKAS = 1 Peso LatAm (canasta de BRL, MXN, COP, CLP, ARS), respaldado por comercios de HashPass y colateral cripto omni-chain. Diseñado para pagos reales en toda Latinoamérica.",
+    "subtitle_pt": "$LUKAS acompanha o índice do peso LatAm: 1 LUKAS = 1 Peso LatAm (cesta de BRL, MXN, COP, CLP, ARS), apoiado por comerciantes HashPass e garantia cripto omni-chain. Projetado para pagamentos reais em toda a América Latina.",
     "getLukas": "Get $LUKAS",
     "getLukas_es": "Obtener $LUKAS",
     "getLukas_pt": "Obter $LUKAS",
     "forMerchants": "I'm a merchant",
     "forMerchants_es": "Soy comercio",
     "forMerchants_pt": "Sou comerciante",
-    "peg": "1 LUKA = 1 LatAm Peso",
-    "peg_es": "1 LUKA = 1 Peso LatAm",
-    "peg_pt": "1 LUKA = 1 Peso LatAm",
+    "peg": "1 LUKAS = 1 LatAm Peso",
+    "peg_es": "1 LUKAS = 1 Peso LatAm",
+    "peg_pt": "1 LUKAS = 1 Peso LatAm",
     "badges": {
       "peg": "Peg 1:1 LatAm Basket",
       "peg_es": "Vinculación 1:1 Canasta LatAm",
@@ -47,9 +47,9 @@
       "title": "Stable across all of LatAm",
       "title_es": "Estable en toda LatAm",
       "title_pt": "Estável em toda a LatAm",
-      "description": "1 LUKA is pegged to a basket of Latin American currencies (BRL 40%, MXN 30%, COP 15%, CLP 10%, ARS 5%), making it regionally stable, not tied to any single country.",
-      "description_es": "1 LUKA está vinculado a una canasta de monedas latinoamericanas (BRL 40%, MXN 30%, COP 15%, CLP 10%, ARS 5%), haciéndolo regionalmente estable, no vinculado a un solo país.",
-      "description_pt": "1 LUKA está vinculado a uma cesta de moedas latino-americanas (BRL 40%, MXN 30%, COP 15%, CLP 10%, ARS 5%), tornando-o regionalmente estável, não vinculado a um único país."
+      "description": "1 LUKAS is pegged to a basket of Latin American currencies (BRL 40%, MXN 30%, COP 15%, CLP 10%, ARS 5%), making it regionally stable, not tied to any single country.",
+      "description_es": "1 LUKAS está vinculado a una canasta de monedas latinoamericanas (BRL 40%, MXN 30%, COP 15%, CLP 10%, ARS 5%), haciéndolo regionalmente estable, no vinculado a un solo país.",
+      "description_pt": "1 LUKAS está vinculado a uma cesta de moedas latino-americanas (BRL 40%, MXN 30%, COP 15%, CLP 10%, ARS 5%), tornando-o regionalmente estável, não vinculado a um único país."
     },
     "bullet2": {
       "title": "Spendable where you actually live",
@@ -222,9 +222,9 @@
       "question": "What does \"LatAm currency basket\" mean?",
       "question_es": "¿Qué significa \"canasta de monedas LatAm\"?",
       "question_pt": "O que significa \"cesta de moedas LatAm\"?",
-      "answer": "The LatAm basket is a weighted combination of major Latin American currencies: Brazilian Real (BRL) 40%, Mexican Peso (MXN) 30%, Colombian Peso (COP) 15%, Chilean Peso (CLP) 10%, and Argentine Peso (ARS) 5%. This makes 1 LUKA represent the average value of these currencies, providing regional stability instead of being tied to any single country's economic conditions.",
-      "answer_es": "La canasta LatAm es una combinación ponderada de las principales monedas latinoamericanas: Real Brasileño (BRL) 40%, Peso Mexicano (MXN) 30%, Peso Colombiano (COP) 15%, Peso Chileno (CLP) 10%, y Peso Argentino (ARS) 5%. Esto hace que 1 LUKA represente el valor promedio de estas monedas, proporcionando estabilidad regional en lugar de estar vinculado a las condiciones económicas de un solo país.",
-      "answer_pt": "A cesta LatAm é uma combinação ponderada das principais moedas latino-americanas: Real Brasileiro (BRL) 40%, Peso Mexicano (MXN) 30%, Peso Colombiano (COP) 15%, Peso Chileno (CLP) 10%, e Peso Argentino (ARS) 5%. Isso faz com que 1 LUKA represente o valor médio dessas moedas, proporcionando estabilidade regional em vez de estar vinculado às condições econômicas de um único país."
+      "answer": "The LatAm basket is a weighted combination of major Latin American currencies: Brazilian Real (BRL) 40%, Mexican Peso (MXN) 30%, Colombian Peso (COP) 15%, Chilean Peso (CLP) 10%, and Argentine Peso (ARS) 5%. This makes 1 LUKAS represent the average value of these currencies, providing regional stability instead of being tied to any single country's economic conditions.",
+      "answer_es": "La canasta LatAm es una combinación ponderada de las principales monedas latinoamericanas: Real Brasileño (BRL) 40%, Peso Mexicano (MXN) 30%, Peso Colombiano (COP) 15%, Peso Chileno (CLP) 10%, y Peso Argentino (ARS) 5%. Esto hace que 1 LUKAS represente el valor promedio de estas monedas, proporcionando estabilidad regional en lugar de estar vinculado a las condiciones económicas de un solo país.",
+      "answer_pt": "A cesta LatAm é uma combinação ponderada das principais moedas latino-americanas: Real Brasileiro (BRL) 40%, Peso Mexicano (MXN) 30%, Peso Colombiano (COP) 15%, Peso Chileno (CLP) 10%, e Peso Argentino (ARS) 5%. Isso faz com que 1 LUKAS represente o valor médio dessas moedas, proporcionando estabilidade regional em vez de estar vinculado às condições econômicas de um único país."
     },
     "q4": {
       "question": "Where can I actually spend $LUKAS?",
