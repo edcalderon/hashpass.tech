@@ -83,10 +83,8 @@ async function writePrivateKeyHex(userId: string, hexKey: string): Promise<void>
  * existing key once one exists).
  */
 export async function ensureChatKeyPair(userId: string): Promise<Uint8Array> {
-  const existing = await readPrivateKeyHex(userId);
-  if (existing) {
-    return hexToBytes(existing);
-  }
+  const existing = await loadChatKeyPair(userId);
+  if (existing) return existing;
 
   ensureCryptoPolyfill();
   const privateKey = x25519.utils.randomSecretKey();
@@ -104,6 +102,15 @@ export async function ensureChatKeyPair(userId: string): Promise<Uint8Array> {
   return privateKey;
 }
 
+/** Returns the locally stored chat private key without generating or publishing one. */
+export async function loadChatKeyPair(userId: string): Promise<Uint8Array | null> {
+  const existing = await readPrivateKeyHex(userId);
+  if (existing) {
+    return hexToBytes(existing);
+  }
+  return null;
+}
+
 /** Returns null if the other participant hasn't set up chat yet (never opened it on any device). */
 export async function fetchParticipantPublicKey(userId: string): Promise<Uint8Array | null> {
   const { data, error } = await supabase.rpc('get_user_chat_public_key', { p_user_id: userId });
@@ -116,7 +123,7 @@ export async function fetchParticipantPublicKey(userId: string): Promise<Uint8Ar
 // every message in the conversation regardless of which side sent it.
 function deriveConversationKey(myPrivateKey: Uint8Array, theirPublicKey: Uint8Array): Uint8Array {
   const shared = x25519.getSharedSecret(myPrivateKey, theirPublicKey);
-  return hkdf(sha256, shared, undefined, HKDF_INFO, 32);
+  return hkdf(sha256, shared, undefined, utf8ToBytes(HKDF_INFO), 32);
 }
 
 export interface EncryptedChatPayload {
@@ -167,7 +174,7 @@ function deriveBackupKey(password: string, salt: Uint8Array): Uint8Array {
   const passwordBytes = utf8ToBytes(password);
   // HKDF extract: salt the password to produce a pseudo-random key (PRK)
   // HKDF expand: stretch the PRK to 32 bytes using the info string
-  return hkdf(sha256, passwordBytes, salt, BACKUP_KDF_INFO, 32);
+  return hkdf(sha256, passwordBytes, salt, utf8ToBytes(BACKUP_KDF_INFO), 32);
 }
 
 /** Encrypts a private key with a user-provided password. Returns the

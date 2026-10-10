@@ -23,3 +23,21 @@ variable "expected_account_id" {
   type        = string
   sensitive   = true
 }
+
+variable "github_repository" {
+  description = "GitHub repository allowed to assume the Lukas deployment role."
+  type        = string
+  default     = "hashpass-tech/hashpass.tech"
+}
+
+variable "github_environment" {
+  description = "GitHub environment bound to the Lukas deployment role."
+  type        = string
+  default     = "production"
+}
+
+variable "github_actions_role_name" {
+  description = "Dedicated IAM role name for the Lukas GitHub Actions publisher."
+  type        = string
+  default     = "hashpass-lukas-site-github-actions"
+}

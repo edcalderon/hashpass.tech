@@ -6,6 +6,7 @@ Reference docs capture implementation details that are still useful but not part
 
 - [`mobile-app/event-scoped-api-client.md`](mobile-app/event-scoped-api-client.md)
 - [`mobile-app/event-api-architecture.md`](mobile-app/event-api-architecture.md)
+- [`mobile-app/e2e-meeting-chat.md`](mobile-app/e2e-meeting-chat.md)
 - [`mobile-app/lingui-localization.md`](mobile-app/lingui-localization.md)
 - [`mobile-app/native-module-version-pinning.md`](mobile-app/native-module-version-pinning.md)
 - [`performance/PERFORMANCE_OPTIMIZATIONS.md`](performance/PERFORMANCE_OPTIMIZATIONS.md)

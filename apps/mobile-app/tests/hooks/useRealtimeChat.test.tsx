@@ -39,6 +39,7 @@ jest.mock('@hashpass/utils', () => ({
 }));
 
 const mockEnsureChatKeyPair = jest.fn();
+const mockLoadChatKeyPair = jest.fn();
 const mockFetchParticipantPublicKey = jest.fn();
 const mockEncryptChatMessage = jest.fn();
 const mockDecryptChatMessage = jest.fn();
@@ -48,6 +49,7 @@ const mockBackupChatKeyPair = jest.fn();
 
 jest.mock('../../lib/chat-encryption', () => ({
   ensureChatKeyPair: (...args: unknown[]) => mockEnsureChatKeyPair(...args),
+  loadChatKeyPair: (...args: unknown[]) => mockLoadChatKeyPair(...args),
   fetchParticipantPublicKey: (...args: unknown[]) => mockFetchParticipantPublicKey(...args),
   encryptChatMessage: (...args: unknown[]) => mockEncryptChatMessage(...args),
   decryptChatMessage: (...args: unknown[]) => mockDecryptChatMessage(...args),
@@ -142,6 +144,7 @@ describe('useRealtimeChat', () => {
     latestSubscribeCallback = null;
     latest = null;
     mockEnsureChatKeyPair.mockResolvedValue(myPriv);
+    mockLoadChatKeyPair.mockResolvedValue(myPriv);
     mockFetchParticipantPublicKey.mockResolvedValue(theirPub);
     mockHasChatKeyBackup.mockResolvedValue({ hasBackup: false });
     mockRestoreChatKeyPair.mockResolvedValue({ success: true });
@@ -175,6 +178,7 @@ describe('useRealtimeChat', () => {
       return Promise.resolve({ data: { success: true }, error: null });
     });
     mockDecryptChatMessage.mockReturnValue('Hey, running late!');
+    mockLoadChatKeyPair.mockResolvedValue(null);
 
     const renderer = await renderHook({
       meetingId: 'meeting-1',
@@ -196,6 +200,7 @@ describe('useRealtimeChat', () => {
   });
 
   it('flags an available server backup and restores it through the hook actions', async () => {
+    mockLoadChatKeyPair.mockResolvedValue(null);
     mockHasChatKeyBackup.mockResolvedValue({ hasBackup: true });
     const restoredPriv = new Uint8Array([7, 8, 9]);
     mockRestoreChatKeyPair.mockResolvedValue({ success: true });
@@ -210,6 +215,9 @@ describe('useRealtimeChat', () => {
     });
 
     expect(latest!.needsKeyRestore).toBe(true);
+    expect(latest!.loading).toBe(false);
+    expect(mockHasChatKeyBackup).toHaveBeenCalledWith('my-user-id');
+    expect(mockEnsureChatKeyPair).not.toHaveBeenCalled();
     await act(async () => {
       await expect(latest!.restoreKeyFromBackup('backup-password')).resolves.toEqual({ success: true });
     });

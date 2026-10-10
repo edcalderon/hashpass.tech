@@ -16,6 +16,88 @@ data "aws_acm_certificate" "wildcard" {
   statuses    = ["ISSUED"]
   most_recent = true
 }
+data "aws_iam_openid_connect_provider" "github" {
+  url = "https://token.actions.githubusercontent.com"
+}
+
+data "aws_iam_policy_document" "github_actions_assume_role" {
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+
+    principals {
+      type        = "Federated"
+      identifiers = [data.aws_iam_openid_connect_provider.github.arn]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "token.actions.githubusercontent.com:aud"
+      values   = ["sts.amazonaws.com"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "token.actions.githubusercontent.com:sub"
+      values   = ["repo:${var.github_repository}:environment:${var.github_environment}"]
+    }
+  }
+}
+
+resource "aws_iam_role" "github_actions" {
+  name               = var.github_actions_role_name
+  assume_role_policy = data.aws_iam_policy_document.github_actions_assume_role.json
+  tags               = merge(local.tags, { Service = "lukas-site-deployment" })
+}
+
+resource "aws_iam_role_policy" "github_actions" {
+  name = "hashpass-lukas-site-deploy"
+  role = aws_iam_role.github_actions.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "SyncOnlyLukasSiteBucketObjects"
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:DeleteObject",
+          "s3:AbortMultipartUpload",
+          "s3:ListMultipartUploadParts",
+        ]
+        Resource = "${aws_s3_bucket.site.arn}/*"
+      },
+      {
+        Sid    = "ListOnlyLukasSiteBucket"
+        Effect = "Allow"
+        Action = [
+          "s3:GetBucketLocation",
+          "s3:ListBucket",
+          "s3:ListBucketMultipartUploads",
+        ]
+        Resource = aws_s3_bucket.site.arn
+      },
+      {
+        Sid      = "DiscoverCloudFrontDistribution"
+        Effect   = "Allow"
+        Action   = ["cloudfront:ListDistributions"]
+        Resource = "*"
+      },
+      {
+        Sid    = "InvalidateOnlyLukasDistribution"
+        Effect = "Allow"
+        Action = [
+          "cloudfront:CreateInvalidation",
+          "cloudfront:GetDistribution",
+        ]
+        Resource = aws_cloudfront_distribution.site.arn
+      },
+    ]
+  })
+}
+
 resource "aws_s3_bucket" "site" {
   bucket        = "hashpass-lukas-landing-site"
   force_destroy = false

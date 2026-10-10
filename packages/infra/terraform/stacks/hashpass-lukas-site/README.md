@@ -79,6 +79,13 @@ the workflow refuses to deploy if the tag, package version, or live manifest do
 not match. This keeps Lukas on the same release version as the app; there is no
 independent Lukas version to update.
 
+The stack also provisions the dedicated GitHub OIDC publisher role
+`github_actions_deploy_role_arn`. After applying the stack, set its value as the
+production environment variable `AWS_LUKAS_DEPLOY_ROLE_ARN`. Do not point the
+workflow at the shared static-site role: the dedicated policy is limited to this
+bucket and distribution, with CloudFront distribution discovery as its only
+account-wide permission.
+
 The publisher serializes releases and manual recoveries with a FIFO in the
 existing private S3 bucket. Each invocation writes a unique entry below
 `_locks/lukas-landing/queue/`; the queue head claims

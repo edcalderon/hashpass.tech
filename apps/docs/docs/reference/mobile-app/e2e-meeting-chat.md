@@ -2,7 +2,10 @@
 
 Shipped 2026-08-02, replacing an entirely broadcast-only, unpersisted chat
 implementation. Migration: `db/migrations/V053__e2e_encrypted_persistent_meeting_chat.sql`
-(group `meeting-chat-e2e` in `database-profiles.json`).
+(group `meeting-chat-e2e` in `database-profiles.json`). Optional encrypted
+key backup and restore was added later in
+`db/migrations/V075__chat_key_backup_restore.sql`; the completed migration
+record is archived at `archive/docs/E2E_CHAT_ENCRYPTION_UPGRADE.md`.
 
 ## What was actually broken before this
 
@@ -70,29 +73,33 @@ All primitives come from the pure-JS `@noble/*` suite (`@noble/curves/ed25519`'s
 `xchacha20poly1305`) rather than a native crypto module — see
 [Why pure-JS crypto](#why-pure-js-crypto-and-the-one-native-adjacent-exception) below.
 
-### Single-device key model — deliberate, not an oversight
+### Optional encrypted key backup and restore
 
-Confirmed with product before building: **no cross-device key backup or
-escrow**. A new device or a reinstall generates a fresh keypair; publishing
-it overwrites the old public key in `user_chat_keys`. Messages encrypted
-under the old key become permanently undecryptable *on that device* — the
-private key needed to derive their shared secret is gone. This trades away
-multi-device continuity for a materially simpler, smaller security surface
-(no backup mechanism to get wrong). `decryptChatMessage()` returns `null`
-(never throws) on any failure — including this exact "sender rotated keys
-after this message was sent" case — so the UI renders a per-message
-`[Unable to decrypt this message]` placeholder rather than crashing or
-hiding the whole conversation.
+The original V053 design was device-local, but V075 adds optional continuity
+for reinstall and new-device flows. The private key is encrypted on the
+client with a user-provided password before storage; the server stores only
+the encrypted backup and salt. There is no password reset or server-side key
+escrow.
 
-If this tradeoff needs revisiting (e.g. a real multi-device support ask),
-the design point to change is `ensureChatKeyPair()` in
-`apps/mobile-app/lib/chat-encryption.ts` — it would need to become a
-key-backup/escrow flow instead of a bare generate-and-publish.
+When a device has no local key but an encrypted backup exists, the chat UI
+offers restore. Users may skip the prompt and continue with a new keypair,
+which means messages encrypted under the old key remain unavailable on that
+device. Setup reads local storage and checks for the encrypted backup before it
+can generate or publish a replacement key; publishing a new public key clears
+the old backup, so key rotation requires creating a new backup if continuity is
+still desired.
+
+`decryptChatMessage()` returns `null` (never throws) on decryption failure,
+so the UI renders a per-message `[Unable to decrypt this message]` placeholder
+rather than crashing or hiding the whole conversation. The detailed migration
+schema, user flows, and security record is archived at
+`archive/docs/E2E_CHAT_ENCRYPTION_UPGRADE.md`.
 
 ### Schema
 
-`meeting_chat_messages` (existing table, redesigned columns) and the new
-`user_chat_keys` — see `V053` for full DDL. Also cleaned up in the same
+`meeting_chat_messages` (existing table, redesigned columns) and the
+`user_chat_keys` table — see `V053` for the core DDL and `V075` for the
+encrypted backup columns and RPCs. Also cleaned up in the same
 migration: prod had accumulated a vestigial `meeting_request_id` column and
 a second, older set of RLS policies referencing it
 (`chat_select_participant`/`chat_insert_participant`) alongside newer
@@ -185,7 +192,7 @@ the guard worth working around.
   message), unique nonce per call, AEAD tamper detection (corrupted
   ciphertext → `null`, not a throw), wrong-keypair decryption → `null`,
   key generation/publish/reuse, public-key fetch (found / not-found /
-  RPC-error cases).
+  RPC-error cases), encrypted backup/restore, and wrong-password handling.
 - `tests/hooks/useRealtimeChat.test.tsx` — hook orchestration with the
   crypto functions mocked: key setup sequencing, history load + decrypt,
   `otherKeyMissing` gating, `postgres_changes` INSERT handling with

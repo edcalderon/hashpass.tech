@@ -4,6 +4,7 @@ import { AppState, AppStateStatus } from 'react-native';
 import { memoryManager } from '@hashpass/utils';
 import {
   ensureChatKeyPair,
+  loadChatKeyPair,
   fetchParticipantPublicKey,
   encryptChatMessage,
   decryptChatMessage,
@@ -67,6 +68,16 @@ export function useRealtimeChat({ meetingId, roomName, username, userId, otherPa
   const presenceChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const refreshMessagesRef = useRef<() => void>(() => undefined);
 
+  const loadOtherParticipantKey = useCallback(async () => {
+    if (otherParticipantId) {
+      const theirKey = await fetchParticipantPublicKey(otherParticipantId);
+      otherPublicKeyRef.current = theirKey;
+      setOtherKeyMissing(!theirKey);
+    } else {
+      setOtherKeyMissing(true);
+    }
+  }, [otherParticipantId]);
+
   const decryptRow = useCallback((row: any): ChatMessage => {
     const priv = myPrivateKeyRef.current;
     const otherPub = otherPublicKeyRef.current;
@@ -91,38 +102,39 @@ export function useRealtimeChat({ meetingId, roomName, username, userId, otherPa
   const setupKeys = useCallback(async () => {
     if (!userId) return;
     try {
-      // Check if we already have a local keypair
       let privateKey = myPrivateKeyRef.current;
       if (!privateKey) {
-        // Try to load from SecureStore/localStorage
+        privateKey = await loadChatKeyPair(userId);
+      }
+
+      if (privateKey) {
+        myPrivateKeyRef.current = privateKey;
+      }
+
+      if (!privateKey) {
+        // Check for the backup before generating/publishing a replacement key.
+        // The publish RPC deliberately clears old backups after key rotation.
+        const backup = await hasChatKeyBackup(userId);
+        if (backup.error) {
+          throw new Error(`Failed to check for chat key backup: ${backup.error}`);
+        }
+        if (backup.hasBackup) {
+          setNeedsKeyRestore(true);
+          setLoading(false);
+          return;
+        }
         privateKey = await ensureChatKeyPair(userId);
         myPrivateKeyRef.current = privateKey;
       }
 
-      // If we just generated a new key (no local key existed), check if there's
-      // a server-side backup that should be restored instead
-      const { hasBackup } = await hasChatKeyBackup(userId);
-      if (hasBackup) {
-        // A backup exists but we're using a freshly generated key. This means
-        // the user reinstalled or is on a new device. Prompt them to restore.
-        // Don't set keysReady yet -- wait for them to decide whether to restore
-        // or continue with the new key (which means losing old messages).
-        setNeedsKeyRestore(true);
-      }
-
-      if (otherParticipantId) {
-        const theirKey = await fetchParticipantPublicKey(otherParticipantId);
-        otherPublicKeyRef.current = theirKey;
-        setOtherKeyMissing(!theirKey);
-      } else {
-        setOtherKeyMissing(true);
-      }
+      await loadOtherParticipantKey();
       setKeysReady(true);
     } catch (err) {
       console.error('[useRealtimeChat] Failed to set up chat keys:', err);
       setError(err instanceof Error ? err.message : 'Failed to set up secure chat');
+      setLoading(false);
     }
-  }, [userId, otherParticipantId]);
+  }, [userId, loadOtherParticipantKey]);
 
   // Restore the private key from a server-side encrypted backup. Call this
   // when needsKeyRestore is true and the user provides their backup password.
@@ -136,9 +148,10 @@ export function useRealtimeChat({ meetingId, roomName, username, userId, otherPa
       return result;
     }
 
-    // Reload the private key from storage now that it's been restored
+    // Reload the private key from storage now that it's been restored.
     const restoredKey = await ensureChatKeyPair(userId);
     myPrivateKeyRef.current = restoredKey;
+    await loadOtherParticipantKey();
     setNeedsKeyRestore(false);
     setKeysReady(true);
 
@@ -146,13 +159,25 @@ export function useRealtimeChat({ meetingId, roomName, username, userId, otherPa
     refreshMessagesRef.current();
 
     return { success: true };
-  }, [userId]);
+  }, [userId, loadOtherParticipantKey]);
 
-  // Skip restore and continue with the current (newly generated) key.
+  // Skip restore and generate/publish a replacement key.
   // This means old messages will show as "[Unable to decrypt this message]".
   const skipKeyRestore = useCallback(() => {
-    setNeedsKeyRestore(false);
-  }, []);
+    void (async () => {
+      if (!userId) return;
+      try {
+        const newKey = await ensureChatKeyPair(userId);
+        myPrivateKeyRef.current = newKey;
+        await loadOtherParticipantKey();
+        setNeedsKeyRestore(false);
+        setKeysReady(true);
+      } catch (err) {
+        console.error('[useRealtimeChat] Failed to create replacement chat key:', err);
+        setError(err instanceof Error ? err.message : 'Failed to set up secure chat');
+      }
+    })();
+  }, [userId, loadOtherParticipantKey]);
 
   // Create a backup of the current private key, encrypted with the user's
   // password. Call this after successful setup if the user wants to enable
