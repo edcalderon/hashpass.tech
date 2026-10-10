@@ -1,5 +1,8 @@
 # E2E Chat Encryption Upgrade: Key Backup & Restore
 
+> Archived implementation record. The active meeting-chat reference lives in
+> [`apps/docs/docs/reference/mobile-app/e2e-meeting-chat.md`](../../apps/docs/docs/reference/mobile-app/e2e-meeting-chat.md).
+
 **Date:** 2026-10-03  
 **Status:** Implemented  
 **Migration:** V075__chat_key_backup_restore.sql
