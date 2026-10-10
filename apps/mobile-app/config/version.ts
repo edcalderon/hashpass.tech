@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610100711, // Updated to current timestamp
+  buildNumber: 202610100936, // Updated to current timestamp
   releaseDate: '2026-10-10',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,14 +30,29 @@ export const CURRENT_VERSION: VersionInfo = {
     // No new features
   ],
   bugfixes: [
-    // No bugfixes
+    'rewrite landing copy, fix satellite overlap bug'
   ],
   breakingChanges: [],
-  notes: 'Version 1.9.108 release'
+  notes: 'rewrite landing copy, fix satellite overlap bug'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.109': {
+    version: '1.9.109',
+    buildNumber: 202610100936,
+    releaseDate: '2026-10-10',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'rewrite landing copy, fix satellite overlap bug'
+    ],
+    breakingChanges: [],
+    notes: 'rewrite landing copy, fix satellite overlap bug'
+  },
   '1.9.108': {
     version: '1.9.108',
     buildNumber: 202610100711,

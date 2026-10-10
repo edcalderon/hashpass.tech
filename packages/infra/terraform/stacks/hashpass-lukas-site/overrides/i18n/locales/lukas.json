@@ -1,0 +1,257 @@
+{
+  "hero": {
+    "badge": "Backed by HashPass merchants",
+    "badge_es": "Respaldado por comercios de HashPass",
+    "badge_pt": "Apoiado por comerciantes HashPass",
+    "title": "The region's",
+    "title_es": "El peso índice",
+    "title_pt": "O peso índice",
+    "titleHighlight": "stable index peso",
+    "titleHighlight_es": "estable de la región",
+    "titleHighlight_pt": "estável da região",
+    "titleSuffix": "with real",
+    "titleSuffix_es": "con alma real de",
+    "titleSuffix_pt": "com alma real de",
+    "titleGreen": "meme coin soul",
+    "titleGreen_es": "meme coin",
+    "titleGreen_pt": "meme coin",
+    "subtitle": "Backed by HashPass merchants and omni-chain crypto collateral. 1 LUKA = 1 LatAm Peso (basket of BRL, MXN, COP, CLP, ARS). Designed for real payments across LatAm.",
+    "subtitle_es": "Respaldado por comercios de HashPass y colateral cripto omni-chain. 1 LUKA = 1 Peso LatAm (canasta de BRL, MXN, COP, CLP, ARS). Diseñado para pagos reales en toda LatAm.",
+    "subtitle_pt": "Apoiado por comerciantes HashPass e garantia cripto omni-chain. 1 LUKA = 1 Peso LatAm (cesta de BRL, MXN, COP, CLP, ARS). Projetado para pagamentos reais em toda a LatAm.",
+    "getLukas": "Get $LUKAS",
+    "getLukas_es": "Obtener $LUKAS",
+    "getLukas_pt": "Obter $LUKAS",
+    "forMerchants": "I'm a merchant",
+    "forMerchants_es": "Soy comercio",
+    "forMerchants_pt": "Sou comerciante",
+    "peg": "1 LUKA = 1 LatAm Peso",
+    "peg_es": "1 LUKA = 1 Peso LatAm",
+    "peg_pt": "1 LUKA = 1 Peso LatAm",
+    "badges": {
+      "peg": "Peg 1:1 LatAm Basket",
+      "peg_es": "Vinculación 1:1 Canasta LatAm",
+      "peg_pt": "Vinculação 1:1 Cesta LatAm",
+      "merchants": "Backed by merchants",
+      "merchants_es": "Respaldado por comercios",
+      "merchants_pt": "Apoiado por comerciantes",
+      "collateral": "Omni-chain crypto collateral",
+      "collateral_es": "Colateral cripto omni-chain",
+      "collateral_pt": "Garantia cripto omni-chain"
+    }
+  },
+  "why": {
+    "title": "Why a stable meme coin?",
+    "title_es": "¿Por qué un stable meme coin?",
+    "title_pt": "Por que um stable meme coin?",
+    "bullet1": {
+      "title": "Stable across all of LatAm",
+      "title_es": "Estable en toda LatAm",
+      "title_pt": "Estável em toda a LatAm",
+      "description": "1 LUKA is pegged to a basket of Latin American currencies (BRL 40%, MXN 30%, COP 15%, CLP 10%, ARS 5%), making it regionally stable, not tied to any single country.",
+      "description_es": "1 LUKA está vinculado a una canasta de monedas latinoamericanas (BRL 40%, MXN 30%, COP 15%, CLP 10%, ARS 5%), haciéndolo regionalmente estable, no vinculado a un solo país.",
+      "description_pt": "1 LUKA está vinculado a uma cesta de moedas latino-americanas (BRL 40%, MXN 30%, COP 15%, CLP 10%, ARS 5%), tornando-o regionalmente estável, não vinculado a um único país."
+    },
+    "bullet2": {
+      "title": "Spendable where you actually live",
+      "title_es": "Gastable donde realmente vives",
+      "title_pt": "Gastável onde você realmente vive",
+      "description": "Redeem and use LUKAS with HashPass merchants across Latin America (events, coffee shops, coworkings, etc.).",
+      "description_es": "Canjea y usa LUKAS con comercios de HashPass en toda América Latina (eventos, cafeterías, coworkings, etc.).",
+      "description_pt": "Resgate e use LUKAS com comerciantes HashPass em toda a América Latina (eventos, cafeterias, coworkings, etc.)."
+    },
+    "bullet3": {
+      "title": "Backed by real crypto collateral",
+      "title_es": "Respaldado por colateral cripto real",
+      "title_pt": "Apoiado por garantia cripto real",
+      "description": "Omni-chain vaults holding blue-chip assets (USDC, BTC, ETH) plus merchant deposits from the HashPass ecosystem.",
+      "description_es": "Bóvedas omni-chain que mantienen activos blue-chip (USDC, BTC, ETH) más depósitos de comercios del ecosistema HashPass.",
+      "description_pt": "Cofres omni-chain que mantêm ativos blue-chip (USDC, BTC, ETH) além de depósitos de comerciantes do ecossistema HashPass."
+    }
+  },
+  "howItWorks": {
+    "title": "How $LUKAS works",
+    "title_es": "Cómo funciona $LUKAS",
+    "title_pt": "Como funciona $LUKAS",
+    "step1": {
+      "title": "Collateral Vaults",
+      "title_es": "Bóvedas de Colateral",
+      "title_pt": "Cofres de Garantia",
+      "description": "Users and partners deposit crypto (USDC, BTC, ETH) and merchant deposits into omni-chain vaults.",
+      "description_es": "Usuarios y socios depositan cripto (USDC, BTC, ETH) y depósitos de comercios en bóvedas omni-chain.",
+      "description_pt": "Usuários e parceiros depositam cripto (USDC, BTC, ETH) e depósitos de comerciantes em cofres omni-chain."
+    },
+    "step2": {
+      "title": "Mint $LUKAS",
+      "title_es": "Acuñar $LUKAS",
+      "title_pt": "Cunhar $LUKAS",
+      "description": "Protocol mints $LUKAS pegged 1:1 to the LatAm currency basket (BRL+MXN+COP+CLP+ARS), maintained by algorithmic mechanisms and price oracles.",
+      "description_es": "El protocolo acuña $LUKAS vinculado 1:1 a la canasta de monedas LatAm (BRL+MXN+COP+CLP+ARS), mantenido por mecanismos algorítmicos y oráculos de precios.",
+      "description_pt": "O protocolo cunha $LUKAS vinculado 1:1 à cesta de moedas LatAm (BRL+MXN+COP+CLP+ARS), mantido por mecanismos algorítmicos e oráculos de preços."
+    },
+    "step3": {
+      "title": "Spend with Merchants",
+      "title_es": "Gastar con Comercios",
+      "title_pt": "Gastar com Comerciantes",
+      "description": "Use $LUKAS to pay HashPass merchants across Latin America, redeem perks, or swap back to crypto.",
+      "description_es": "Usa $LUKAS para pagar comercios de HashPass en toda América Latina, canjear beneficios, o intercambiar de vuelta a cripto.",
+      "description_pt": "Use $LUKAS para pagar comerciantes HashPass em toda a América Latina, resgatar benefícios ou trocar de volta para cripto."
+    }
+  },
+  "merchants": {
+    "title": "Backed by real-world merchants, not just vibes.",
+    "title_es": "Respaldado por comercios del mundo real, no solo vibes.",
+    "title_pt": "Apoiado por comerciantes do mundo real, não apenas vibes.",
+    "category1": {
+      "title": "Events & Conferences",
+      "title_es": "Eventos y Conferencias",
+      "title_pt": "Eventos e Conferências",
+      "subtitle": "powered by HashPass",
+      "subtitle_es": "powered by HashPass",
+      "subtitle_pt": "powered by HashPass"
+    },
+    "category2": {
+      "title": "Coffee & Food",
+      "title_es": "Café y Comida",
+      "title_pt": "Café e Comida",
+      "subtitle": "Local favorites",
+      "subtitle_es": "Favoritos locales",
+      "subtitle_pt": "Favoritos locais"
+    },
+    "category3": {
+      "title": "Coworking & Startups",
+      "title_es": "Coworking y Startups",
+      "title_pt": "Coworking e Startups",
+      "subtitle": "Innovation hubs",
+      "subtitle_es": "Hubs de innovación",
+      "subtitle_pt": "Hubs de inovação"
+    },
+    "category4": {
+      "title": "Nightlife & Experiences",
+      "title_es": "Vida Nocturna y Experiencias",
+      "title_pt": "Vida Noturna e Experiências",
+      "subtitle": "Entertainment venues",
+      "subtitle_es": "Lugares de entretenimiento",
+      "subtitle_pt": "Locais de entretenimento"
+    }
+  },
+  "omnichain": {
+    "title": "Omni-chain Collateral",
+    "title_es": "Colateral Omni-chain",
+    "title_pt": "Garantia Omni-chain",
+    "vaultLabel": "LUKAS Reserve",
+    "vaultLabel_es": "Reserva LUKAS",
+    "vaultLabel_pt": "Reserva LUKAS",
+    "feature1": "Multi-chain vaults",
+    "feature1_es": "Bóvedas multi-cadena",
+    "feature1_pt": "Cofres multi-cadeia",
+    "feature2": "On-chain transparency",
+    "feature2_es": "Transparencia on-chain",
+    "feature2_pt": "Transparência on-chain",
+    "feature3": "Real-time proof-of-collateral (coming soon)",
+    "feature3_es": "Prueba de colateral en tiempo real (próximamente)",
+    "feature3_pt": "Prova de garantia em tempo real (em breve)"
+  },
+  "getLukas": {
+    "title": "Get your first $LUKAS",
+    "title_es": "Obtén tus primeros $LUKAS",
+    "title_pt": "Obtenha seus primeiros $LUKAS",
+    "step1": {
+      "title": "Connect wallet",
+      "title_es": "Conectar wallet",
+      "title_pt": "Conectar carteira",
+      "description": "Link your crypto wallet to get started",
+      "description_es": "Vincula tu wallet cripto para comenzar",
+      "description_pt": "Vincule sua carteira cripto para começar"
+    },
+    "step2": {
+      "title": "Choose amount",
+      "title_es": "Elegir cantidad",
+      "title_pt": "Escolher quantidade",
+      "description": "Select how much LatAm currency or crypto to convert",
+      "description_es": "Selecciona cuánta moneda LatAm o cripto convertir",
+      "description_pt": "Selecione quanto de moeda LatAm ou cripto converter"
+    },
+    "step3": {
+      "title": "Confirm and mint",
+      "title_es": "Confirmar y acuñar",
+      "title_pt": "Confirmar e cunhar",
+      "description": "Review and complete your $LUKAS purchase",
+      "description_es": "Revisa y completa tu compra de $LUKAS",
+      "description_pt": "Revise e complete sua compra de $LUKAS"
+    },
+    "connectWallet": "Connect Wallet",
+    "connectWallet_es": "Conectar Wallet",
+    "connectWallet_pt": "Conectar Carteira",
+    "connecting": "Connecting...",
+    "connecting_es": "Conectando...",
+    "connecting_pt": "Conectando...",
+    "joinWaitlist": "Join the Waitlist",
+    "joinWaitlist_es": "Únete a la Lista de Espera",
+    "joinWaitlist_pt": "Junte-se à Lista de Espera",
+    "comingSoon": "🚧 Wallet integration coming soon",
+    "comingSoon_es": "🚧 Integración de wallet próximamente",
+    "comingSoon_pt": "🚧 Integração de carteira em breve",
+    "comingSoonDesc": "We're building the infrastructure to make $LUKAS accessible to everyone. Join the waitlist to be notified when it's ready!",
+    "comingSoonDesc_es": "Estamos construyendo la infraestructura para hacer $LUKAS accesible para todos. ¡Únete a la lista de espera para ser notificado cuando esté listo!",
+    "comingSoonDesc_pt": "Estamos construindo a infraestrutura para tornar $LUKAS acessível para todos. Junte-se à lista de espera para ser notificado quando estiver pronto!"
+  },
+  "faq": {
+    "title": "FAQ",
+    "title_es": "FAQ",
+    "title_pt": "FAQ",
+    "subtitle": "Meme + serious answers to your questions",
+    "subtitle_es": "Respuestas meme + serias a tus preguntas",
+    "subtitle_pt": "Respostas meme + sérias para suas perguntas",
+    "q1": {
+      "question": "Is $LUKAS really stable or just a meme?",
+      "question_es": "¿$LUKAS es realmente estable o solo un meme?",
+      "question_pt": "$LUKAS é realmente estável ou apenas um meme?",
+      "answer": "$LUKAS is both! It's a stable coin pegged 1:1 to a basket of Latin American currencies (BRL 40%, MXN 30%, COP 15%, CLP 10%, ARS 5%), backed by real crypto collateral in omni-chain vaults. The \"meme\" part is about making crypto accessible and fun for everyday use across LatAm, not just for traders.",
+      "answer_es": "$LUKAS es ambas cosas! Es una moneda estable vinculada 1:1 a una canasta de monedas latinoamericanas (BRL 40%, MXN 30%, COP 15%, CLP 10%, ARS 5%), respaldada por colateral cripto real en bóvedas omni-chain. La parte \"meme\" es sobre hacer que el cripto sea accesible y divertido para uso diario en toda LatAm, no solo para traders.",
+      "answer_pt": "$LUKAS é ambos! É uma moeda estável vinculada 1:1 a uma cesta de moedas latino-americanas (BRL 40%, MXN 30%, COP 15%, CLP 10%, ARS 5%), apoiada por garantia cripto real em cofres omni-chain. A parte \"meme\" é sobre tornar o cripto acessível e divertido para uso diário em toda a LatAm, não apenas para traders."
+    },
+    "q2": {
+      "question": "How is the peg 1:1 to the LatAm basket maintained?",
+      "question_es": "¿Cómo se mantiene el peg 1:1 a la canasta LatAm?",
+      "question_pt": "Como a vinculação 1:1 à cesta LatAm é mantida?",
+      "answer": "The peg is maintained through: (1) Omni-chain crypto collateral vaults holding blue-chip assets (USDC, BTC, ETH), (2) Algorithmic mechanisms that adjust supply based on demand and price deviations, (3) Price oracles (Chainlink/Pyth) tracking the LatAm currency basket in real-time, (4) Integration with HashPass merchants that accept $LUKAS at face value, and (5) Overcollateralization (150%+) to absorb volatility.",
+      "answer_es": "El peg se mantiene a través de: (1) Bóvedas de colateral cripto omni-chain que mantienen activos blue-chip (USDC, BTC, ETH), (2) Mecanismos algorítmicos que ajustan la oferta según la demanda y desviaciones de precio, (3) Oráculos de precios (Chainlink/Pyth) que rastrean la canasta de monedas LatAm en tiempo real, (4) Integración con comercios de HashPass que aceptan $LUKAS a valor nominal, y (5) Sobrecolateralización (150%+) para absorber volatilidad.",
+      "answer_pt": "A vinculação é mantida através de: (1) Cofres de garantia cripto omni-chain que mantêm ativos blue-chip (USDC, BTC, ETH), (2) Mecanismos algorítmicos que ajustam a oferta com base na demanda e desvios de preço, (3) Oráculos de preços (Chainlink/Pyth) que rastreiam a cesta de moedas LatAm em tempo real, (4) Integração com comerciantes HashPass que aceitam $LUKAS pelo valor nominal, e (5) Sobrecolateralização (150%+) para absorver volatilidade."
+    },
+    "q3": {
+      "question": "What does \"LatAm currency basket\" mean?",
+      "question_es": "¿Qué significa \"canasta de monedas LatAm\"?",
+      "question_pt": "O que significa \"cesta de moedas LatAm\"?",
+      "answer": "The LatAm basket is a weighted combination of major Latin American currencies: Brazilian Real (BRL) 40%, Mexican Peso (MXN) 30%, Colombian Peso (COP) 15%, Chilean Peso (CLP) 10%, and Argentine Peso (ARS) 5%. This makes 1 LUKA represent the average value of these currencies, providing regional stability instead of being tied to any single country's economic conditions.",
+      "answer_es": "La canasta LatAm es una combinación ponderada de las principales monedas latinoamericanas: Real Brasileño (BRL) 40%, Peso Mexicano (MXN) 30%, Peso Colombiano (COP) 15%, Peso Chileno (CLP) 10%, y Peso Argentino (ARS) 5%. Esto hace que 1 LUKA represente el valor promedio de estas monedas, proporcionando estabilidad regional en lugar de estar vinculado a las condiciones económicas de un solo país.",
+      "answer_pt": "A cesta LatAm é uma combinação ponderada das principais moedas latino-americanas: Real Brasileiro (BRL) 40%, Peso Mexicano (MXN) 30%, Peso Colombiano (COP) 15%, Peso Chileno (CLP) 10%, e Peso Argentino (ARS) 5%. Isso faz com que 1 LUKA represente o valor médio dessas moedas, proporcionando estabilidade regional em vez de estar vinculado às condições econômicas de um único país."
+    },
+    "q4": {
+      "question": "Where can I actually spend $LUKAS?",
+      "question_es": "¿Dónde puedo gastar $LUKAS realmente?",
+      "question_pt": "Onde posso realmente gastar $LUKAS?",
+      "answer": "You can spend $LUKAS with any HashPass merchant partner across Latin America, including events & conferences, coffee shops & restaurants, coworking spaces & startups, and nightlife & entertainment venues. The full merchant network will be available when $LUKAS launches.",
+      "answer_es": "Puedes gastar $LUKAS con cualquier socio comercio de HashPass en toda América Latina, incluyendo eventos y conferencias, cafeterías y restaurantes, espacios de coworking y startups, y vida nocturna y lugares de entretenimiento. La red completa de comercios estará disponible cuando $LUKAS se lance.",
+      "answer_pt": "Você pode gastar $LUKAS com qualquer parceiro comerciante HashPass em toda a América Latina, incluindo eventos e conferências, cafeterias e restaurantes, espaços de coworking e startups, e vida noturna e locais de entretenimento. A rede completa de comerciantes estará disponível quando $LUKAS for lançado."
+    },
+    "q5": {
+      "question": "Who is behind this?",
+      "question_es": "¿Quién está detrás de esto?",
+      "question_pt": "Quem está por trás disso?",
+      "answer": "$LUKAS is built by the HashPass team and ecosystem partners. HashPass is a digital identity and wallet platform focused on making crypto accessible for real-world use in Latin America. Learn more at hashpass.tech",
+      "answer_es": "$LUKAS está construido por el equipo de HashPass y socios del ecosistema. HashPass es una plataforma de identidad digital y wallet enfocada en hacer que el cripto sea accesible para uso en el mundo real en América Latina. Aprende más en hashpass.tech",
+      "answer_pt": "$LUKAS é construído pela equipe HashPass e parceiros do ecossistema. HashPass é uma plataforma de identidade digital e carteira focada em tornar o cripto acessível para uso no mundo real na América Latina. Saiba mais em hashpass.tech"
+    }
+  },
+  "footer": {
+    "text": "$LUKAS — The region's stable index peso, with real meme coin soul",
+    "text_es": "$LUKAS — El peso índice estable de la región, con alma real de meme coin",
+    "text_pt": "$LUKAS — O peso índice estável da região, com alma real de meme coin",
+    "subtext": "Pegged 1:1 to LatAm currency basket (BRL+MXN+COP+CLP+ARS). Backed by HashPass merchants and omni-chain crypto collateral.",
+    "subtext_es": "Vinculado 1:1 a canasta de monedas LatAm (BRL+MXN+COP+CLP+ARS). Respaldado por comercios de HashPass y colateral cripto omni-chain.",
+    "subtext_pt": "Vinculado 1:1 à cesta de moedas LatAm (BRL+MXN+COP+CLP+ARS). Apoiado por comerciantes HashPass e garantia cripto omni-chain.",
+    "link": "Learn more about HashPass",
+    "link_es": "Aprende más sobre HashPass",
+    "link_pt": "Saiba mais sobre HashPass"
+  }
+}

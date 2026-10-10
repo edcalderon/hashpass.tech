@@ -8,11 +8,11 @@
 .lukas-scene__coin { display: block; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(5px 8px 0 #7e4919) drop-shadow(0 20px 20px rgba(0,0,0,.48)); }
 .lukas-scene__satellite { position: absolute; width: 21%; height: 21%; animation: lukas-satellite-float 6s ease-in-out infinite; }
 .lukas-scene__satellite img { display: block; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 8px 8px rgba(0,0,0,.4)); }
-.lukas-scene__satellite--ars { left: 15%; top: -5%; animation-delay: -1s; }
+.lukas-scene__satellite--ars { left: 15%; top: 4%; animation-delay: -1s; }
 .lukas-scene__satellite--mxn { left: 21%; top: 15%; animation-delay: -3s; }
 .lukas-scene__satellite--cop { right: 3%; top: 37%; animation-delay: -2s; }
 .lukas-scene__satellite--brl { left: 2%; bottom: 16%; animation-delay: -4s; }
-.lukas-scene__satellite--clp { right: 17%; bottom: -2%; animation-delay: -5s; }
+.lukas-scene__satellite--clp { right: 17%; bottom: 6%; animation-delay: -5s; }
 .lukas-scene[data-active="false"] * { animation-play-state: paused; }
 @keyframes lukas-coin-float { 0%,100% { transform: translateY(3px) rotateX(9deg) rotateY(-16deg) rotateZ(-5deg); } 50% { transform: translateY(-7px) rotateX(-5deg) rotateY(13deg) rotateZ(3deg); } }
 @keyframes lukas-satellite-float { 0%,100% { transform: translateY(3px); } 50% { transform: translateY(-5px); } }
