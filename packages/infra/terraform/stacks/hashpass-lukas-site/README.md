@@ -44,6 +44,28 @@ router entry and navigates to `/lukas`; CloudFront maps `/lukas` and `/lks` to
 the same landing page and maps other clean URLs to their exported HTML files
 without rewriting JavaScript/assets or masking failures as successful pages.
 
+## SEO metadata and social assets
+
+`build.py` rewrites `<title>`, the meta description, `robots`/`googlebot`,
+`theme-color`, the canonical link, Open Graph tags, and a Twitter
+`summary_large_image` card directly into `index.html` and `lukas.html` after
+the static export, replacing any existing tag of the same name/property
+in-place rather than appending a duplicate. `404.html` gets the same
+treatment with `noindex, nofollow, noarchive` instead, so a missing route
+never gets indexed. The canonical URL and `og:url` always point at
+`/lukas`, not `/` or `/404`, matching the route visitors actually land on.
+
+The build fails outright (`SystemExit`) if any of the four required assets —
+`favicon.svg`, `favicon-32.png`, `apple-touch-icon.png`,
+`lukas-social-card.png` — is missing from `overrides/public/`, instead of
+silently shipping a page with a broken social card or favicon. `recovery.json`
+additionally records `seo.canonical` and `seo.socialImage` alongside the
+existing source provenance. `deploy-lukas-landing.sh`'s post-publish
+verification re-fetches the live page and greps for the exact title, the
+canonical link, the `og:image` URL, and the Twitter card tag before
+considering the release confirmed — a metadata regression fails the deploy
+the same way a missing favicon or stale version already did.
+
 ## Local development
 
 Start the restored landing alongside the normal development services with:
