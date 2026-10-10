@@ -1,6 +1,6 @@
 name: Release tag on merge
 
-# Fires once a develop -> main promotion PR merges. The version bump and
+# Fires after a develop -> main promotion PR merges. The version bump and
 # changelog now happen inside that PR itself (packages/tools/scripts/
 # release.js's --promote path runs the same bump machinery release:patch
 # used to run on main, and commits it as its own labeled commit before the
@@ -32,6 +32,9 @@ name: Release tag on merge
 #   remote) — that remote lives under a different GitHub account, so no
 #   token available here can authenticate to it anyway. Re-sync upstream
 #   manually if needed, same as CLAUDE.md already documents elsewhere.
+# - It listens to the post-merge push on main, rather than pull_request:
+#   closed, so the production environment sees refs/heads/main instead of
+#   refs/pull/*/merge and applies its normal branch protection rules.
 # - On failure, comments on the merged PR directly (where a human will
 #   actually look) rather than relying on the Actions tab status alone.
 #
@@ -49,8 +52,7 @@ name: Release tag on merge
 # silently falling back to a token whose pushes wouldn't cascade.
 
 on:
-  pull_request:
-    types: [closed]
+  push:
     branches:
       - main
 
@@ -60,28 +62,68 @@ permissions:
   id-token: write
 
 concurrency:
-  group: release-tag-on-merge-${{ github.event.pull_request.number }}
+  # A unique group per main commit prevents duplicate delivery for one
+  # release without replacing a different release that is already pending.
+  group: release-tag-on-merge-${{ github.sha }}
   cancel-in-progress: false
 
 jobs:
+  resolve-promotion:
+    if: github.repository == 'hashpass-tech/hashpass.tech'
+    runs-on: ubuntu-latest
+    outputs:
+      is_promotion: ${{ steps.resolve.outputs.is_promotion }}
+      merge_sha: ${{ steps.resolve.outputs.merge_sha }}
+      pr_number: ${{ steps.resolve.outputs.pr_number }}
+    steps:
+      - name: Resolve merged promotion PR
+        id: resolve
+        env:
+          GH_TOKEN: ${{ github.token }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          promotion_prs=$(gh api \
+            "repos/${GITHUB_REPOSITORY}/commits/${COMMIT_SHA}/pulls" \
+            -H 'Accept: application/vnd.github+json' \
+            --jq '[.[] | select(.merged_at != null and .base.ref == "main" and .head.ref == "develop")] | sort_by(.merged_at)')
+
+          if [[ "$(jq 'length' <<<"${promotion_prs}")" == "0" ]]; then
+            echo "is_promotion=false" >> "$GITHUB_OUTPUT"
+            echo "Main commit ${COMMIT_SHA} is not a merged develop promotion; nothing to release."
+            exit 0
+          fi
+
+          promotion_pr=$(jq '.[-1]' <<<"${promotion_prs}")
+          merge_sha=$(jq -r '.merge_commit_sha' <<<"${promotion_pr}")
+          pr_number=$(jq -r '.number' <<<"${promotion_pr}")
+
+          if [[ "${merge_sha}" != "${COMMIT_SHA}" ]]; then
+            echo "::error::The associated promotion PR does not point at the pushed main commit."
+            exit 1
+          fi
+
+          {
+            echo "is_promotion=true"
+            echo "merge_sha=${merge_sha}"
+            echo "pr_number=${pr_number}"
+          } >> "$GITHUB_OUTPUT"
+          echo "Resolved merged develop promotion PR #${pr_number}."
+
   publish-lukas:
-    if: >
-      github.repository == 'hashpass-tech/hashpass.tech' &&
-      github.event.pull_request.merged == true &&
-      github.event.pull_request.head.ref == 'develop' &&
-      github.event.pull_request.base.ref == 'main'
+    needs: resolve-promotion
+    if: needs.resolve-promotion.outputs.is_promotion == 'true'
     uses: ./.github/workflows/lukas-landing-deploy.yml
     with:
-      ref: ${{ github.event.pull_request.merge_commit_sha }}
+      ref: ${{ needs.resolve-promotion.outputs.merge_sha }}
       mode: release
 
   tag-and-sync:
+    needs: [resolve-promotion, publish-lukas]
     if: >
-      github.repository == 'hashpass-tech/hashpass.tech' &&
-      github.event.pull_request.merged == true &&
-      github.event.pull_request.head.ref == 'develop' &&
-      github.event.pull_request.base.ref == 'main'
-    needs: publish-lukas
+      needs.resolve-promotion.outputs.is_promotion == 'true' &&
+      needs.publish-lukas.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - name: Preflight — require RELEASE_AUTOMATION_TOKEN
@@ -97,7 +139,7 @@ jobs:
       - name: Checkout merge commit
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
-          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          ref: ${{ needs.resolve-promotion.outputs.merge_sha }}
           fetch-depth: 0
           token: ${{ secrets.RELEASE_AUTOMATION_TOKEN }}
 
@@ -122,7 +164,7 @@ jobs:
 
       - name: Create and push release tag
         env:
-          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+          MERGE_SHA: ${{ needs.resolve-promotion.outputs.merge_sha }}
           RELEASE_VERSION: ${{ steps.version.outputs.version }}
         run: |
           set -euo pipefail
@@ -133,7 +175,7 @@ jobs:
 
       - name: Sync develop from main
         env:
-          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+          MERGE_SHA: ${{ needs.resolve-promotion.outputs.merge_sha }}
           RELEASE_VERSION: ${{ steps.version.outputs.version }}
         run: |
           set -euo pipefail
@@ -167,14 +209,17 @@ jobs:
           git push origin develop
 
   notify-on-failure:
-    needs: [publish-lukas, tag-and-sync]
-    if: failure()
+    needs: [resolve-promotion, publish-lukas, tag-and-sync]
+    if: >
+      always() &&
+      needs.resolve-promotion.outputs.is_promotion == 'true' &&
+      (needs.publish-lukas.result == 'failure' || needs.tag-and-sync.result == 'failure')
     runs-on: ubuntu-latest
     steps:
       - name: Notify on failure
         env:
           GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_NUMBER: ${{ needs.resolve-promotion.outputs.pr_number }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           gh pr comment "${PR_NUMBER}" \
