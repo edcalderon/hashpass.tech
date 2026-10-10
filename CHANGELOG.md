@@ -1,3 +1,18 @@
+## [1.9.111](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.110...v1.9.111) (2026-10-10)
+
+
+### Bug Fixes
+
+* **lukas:** drop unconfirmed TGE date, improve FAQ with real lukas.lat docs ([515435d](https://github.com/hashpass-tech/hashpass.tech/commit/515435d1963c71f9c760c6a7873bca1630732b53))
+### Release Highlights
+- drop unconfirmed TGE date, improve FAQ with real lukas.lat docs
+
+### Release scope
+- Compared with: `v1.9.110` (the previous global release tag)
+
+### Affected products & packages
+- Infrastructure
+
 ## [1.9.110](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.109...v1.9.110) (2026-10-10)
 
 
