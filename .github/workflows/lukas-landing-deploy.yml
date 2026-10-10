@@ -141,10 +141,10 @@ jobs:
           set -euo pipefail
           actual_account=$(aws sts get-caller-identity --query Account --output text)
           if [[ "${actual_account}" != "${EXPECTED_ACCOUNT}" ]]; then
-            echo "::error::AWS credentials resolved to account ${actual_account}, expected ${EXPECTED_ACCOUNT}."
+            echo "::error::AWS account identity mismatch; refusing deployment."
             exit 1
           fi
-          echo "AWS account identity verified: ${actual_account}"
+          echo "AWS account identity verified."
 
       - name: Publish and verify Lukas landing
         env:
