@@ -33,18 +33,50 @@ function transformMessages(nested: any): Record<string, string> {
   return flat;
 }
 
-const lukasCatalog = transformMessages(lukasMessages as any);
-const lukasScopedMessages = Object.fromEntries(
-  Object.entries(lukasCatalog).map(([key, value]) => [`lukas.${key}`, value]),
-);
+// lukas.json stores every locale variant as a sibling key with a `_<locale>` suffix
+// (e.g. "title" / "title_es" / "title_pt") in a single file, rather than one file per
+// locale like en.json/es.json/etc. A plain transformMessages() walk would flatten all
+// of those siblings as their own distinct keys (hero.title, hero.title_es, ...) and
+// nothing would ever select between them per active locale — every locale's catalog
+// ended up with the identical (English) hero.title value. This resolves the suffix
+// per target locale instead, falling back to the base (English) key when no
+// locale-specific sibling exists (lukas.json currently only has _es/_pt variants).
+const LUKAS_LOCALE_SUFFIXES: Record<string, string> = { es: '_es', pt: '_pt' };
+
+function buildLukasCatalog(nested: any, locale: string): Record<string, string> {
+  const suffix = LUKAS_LOCALE_SUFFIXES[locale];
+  const flat: Record<string, string> = {};
+  const walk = (obj: any, prefix = '') => {
+    Object.keys(obj || {}).forEach((k) => {
+      // Locale-variant sibling keys (e.g. "title_es") are resolved via the base key's
+      // lookup below, not emitted as their own top-level keys.
+      if (/_(es|pt)$/.test(k)) return;
+      const v = (obj as any)[k];
+      const key = prefix ? `${prefix}.${k}` : k;
+      if (v && typeof v === 'object') {
+        walk(v, key);
+      } else if (typeof v === 'string') {
+        const localized = suffix ? obj[`${k}${suffix}`] : undefined;
+        flat[key] = typeof localized === 'string' ? localized : v;
+      }
+    });
+  };
+  walk(nested);
+  return flat;
+}
+
+function lukasScopedMessagesFor(locale: string): Record<string, string> {
+  const catalog = buildLukasCatalog(lukasMessages as any, locale);
+  return Object.fromEntries(Object.entries(catalog).map(([key, value]) => [`lukas.${key}`, value]));
+}
 
 const messagesByLocale: Record<string, Record<string, string>> = {
-  en: { ...transformMessages(enMessages as any), ...lukasScopedMessages },
-  es: { ...transformMessages(esMessages as any), ...lukasScopedMessages },
-  ko: { ...transformMessages(koMessages as any), ...lukasScopedMessages },
-  fr: { ...transformMessages(frMessages as any), ...lukasScopedMessages },
-  pt: { ...transformMessages(ptMessages as any), ...lukasScopedMessages },
-  de: { ...transformMessages(deMessages as any), ...lukasScopedMessages },
+  en: { ...transformMessages(enMessages as any), ...lukasScopedMessagesFor('en') },
+  es: { ...transformMessages(esMessages as any), ...lukasScopedMessagesFor('es') },
+  ko: { ...transformMessages(koMessages as any), ...lukasScopedMessagesFor('ko') },
+  fr: { ...transformMessages(frMessages as any), ...lukasScopedMessagesFor('fr') },
+  pt: { ...transformMessages(ptMessages as any), ...lukasScopedMessagesFor('pt') },
+  de: { ...transformMessages(deMessages as any), ...lukasScopedMessagesFor('de') },
 };
 
 // Use the global singleton so @lingui/macro can see current locale
