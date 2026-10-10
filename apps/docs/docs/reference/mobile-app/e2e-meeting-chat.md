@@ -84,8 +84,10 @@ escrow.
 When a device has no local key but an encrypted backup exists, the chat UI
 offers restore. Users may skip the prompt and continue with a new keypair,
 which means messages encrypted under the old key remain unavailable on that
-device. Publishing a new public key clears the old backup, so key rotation
-requires creating a new backup if continuity is still desired.
+device. Setup reads local storage and checks for the encrypted backup before it
+can generate or publish a replacement key; publishing a new public key clears
+the old backup, so key rotation requires creating a new backup if continuity is
+still desired.
 
 `decryptChatMessage()` returns `null` (never throws) on decryption failure,
 so the UI renders a per-message `[Unable to decrypt this message]` placeholder

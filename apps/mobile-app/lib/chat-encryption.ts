@@ -83,10 +83,8 @@ async function writePrivateKeyHex(userId: string, hexKey: string): Promise<void>
  * existing key once one exists).
  */
 export async function ensureChatKeyPair(userId: string): Promise<Uint8Array> {
-  const existing = await readPrivateKeyHex(userId);
-  if (existing) {
-    return hexToBytes(existing);
-  }
+  const existing = await loadChatKeyPair(userId);
+  if (existing) return existing;
 
   ensureCryptoPolyfill();
   const privateKey = x25519.utils.randomSecretKey();
@@ -102,6 +100,15 @@ export async function ensureChatKeyPair(userId: string): Promise<Uint8Array> {
   }
 
   return privateKey;
+}
+
+/** Returns the locally stored chat private key without generating or publishing one. */
+export async function loadChatKeyPair(userId: string): Promise<Uint8Array | null> {
+  const existing = await readPrivateKeyHex(userId);
+  if (existing) {
+    return hexToBytes(existing);
+  }
+  return null;
 }
 
 /** Returns null if the other participant hasn't set up chat yet (never opened it on any device). */

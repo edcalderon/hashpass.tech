@@ -23,6 +23,7 @@ jest.mock('../../lib/supabase', () => ({
 // eslint-disable-next-line import/first
 import {
   ensureChatKeyPair,
+  loadChatKeyPair,
   fetchParticipantPublicKey,
   encryptChatMessage,
   decryptChatMessage,
@@ -115,6 +116,21 @@ describe('chat-encryption', () => {
   });
 
   describe('ensureChatKeyPair', () => {
+    it('loads an existing key without generating or publishing one', async () => {
+      const existingPriv = x25519.utils.randomSecretKey();
+      mockGetItemAsync.mockResolvedValue(bytesToHex(existingPriv));
+
+      await expect(loadChatKeyPair('user-123')).resolves.toEqual(existingPriv);
+      expect(mockRpc).not.toHaveBeenCalled();
+      expect(mockSetItemAsync).not.toHaveBeenCalled();
+    });
+
+    it('returns null when no local key exists without generating or publishing one', async () => {
+      await expect(loadChatKeyPair('user-123')).resolves.toBeNull();
+      expect(mockRpc).not.toHaveBeenCalled();
+      expect(mockSetItemAsync).not.toHaveBeenCalled();
+    });
+
     it('generates and publishes a new keypair on first use, then persists it to SecureStore', async () => {
       mockRpc.mockResolvedValue({ data: { success: true }, error: null });
 
