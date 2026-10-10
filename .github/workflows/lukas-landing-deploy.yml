@@ -113,12 +113,12 @@ jobs:
 
       - name: Validate deployment role configuration
         env:
-          ROLE_ARN: ${{ vars.AWS_STATIC_SITE_DEPLOY_ROLE_ARN }}
+          ROLE_ARN: ${{ vars.AWS_LUKAS_DEPLOY_ROLE_ARN }}
           EXPECTED_ACCOUNT: ${{ vars.AWS_TARGET_ACCOUNT_ID }}
         run: |
           set -euo pipefail
           [[ -n "${ROLE_ARN}" ]] || {
-            echo "::error::AWS_STATIC_SITE_DEPLOY_ROLE_ARN is not configured for the production environment."
+            echo "::error::AWS_LUKAS_DEPLOY_ROLE_ARN is not configured for the production environment."
             exit 1
           }
           [[ -n "${EXPECTED_ACCOUNT}" ]] || {
@@ -129,7 +129,7 @@ jobs:
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ vars.AWS_STATIC_SITE_DEPLOY_ROLE_ARN }}
+          role-to-assume: ${{ vars.AWS_LUKAS_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
           role-session-name: hashpass-lukas-release-${{ steps.version.outputs.release_version }}
           mask-aws-account-id: true
