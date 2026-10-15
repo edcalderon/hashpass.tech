@@ -2,6 +2,7 @@
 
 // Dashboard copy is shared by native and web. Keep en/es/ko structurally
 // aligned so a new dashboard message cannot silently fall back to English.
+// The drawer contract below also covers every runtime-supported locale.
 
 import fs from "node:fs";
 import path from "node:path";
@@ -10,6 +11,7 @@ import { fileURLToPath } from "node:url";
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const localeDir = path.join(scriptDir, "..", "i18n", "locales");
 const requiredLocales = ["en", "es", "ko"];
+const runtimeLocales = ["en", "es", "ko", "fr", "pt", "de", "et"];
 const requiredKeys = [
   "explore.global.title",
   "explore.global.subtitle",
@@ -151,6 +153,39 @@ const intentionallySharedKeys = new Set([
   "explore.rework.series",
   "explore.rework.seriesLabel",
 ]);
+const drawerRuntimeKeys = [
+  "nav.account",
+  "nav.admin",
+  "nav.adminSection",
+  "nav.backToLanding",
+  "nav.closeMenu",
+  "nav.darkMode",
+  "nav.explore",
+  "nav.lightMode",
+  "nav.logout",
+  "nav.navigation",
+  "nav.notifications",
+  "nav.passes",
+  "nav.profile",
+  "nav.requests",
+  "nav.settings",
+  "nav.since",
+  "nav.tour.admin",
+  "nav.tour.explore",
+  "nav.tour.notifications",
+  "nav.tour.profile",
+  "nav.tour.settings",
+  "nav.tour.wallet",
+  "nav.upcoming",
+  "nav.wallet",
+  "settings.languages.de",
+  "settings.languages.en",
+  "settings.languages.es",
+  "settings.languages.et",
+  "settings.languages.fr",
+  "settings.languages.ko",
+  "settings.languages.pt",
+];
 
 const readLocale = (locale) =>
   JSON.parse(fs.readFileSync(path.join(localeDir, `${locale}.json`), "utf8"));
@@ -179,7 +214,19 @@ const collectLeaves = (value, prefix = "") => {
 const catalogs = Object.fromEntries(
   requiredLocales.map((locale) => [locale, readLocale(locale)]),
 );
+const runtimeCatalogs = Object.fromEntries(
+  runtimeLocales.map((locale) => [locale, readLocale(locale)]),
+);
 const errors = [];
+
+for (const key of drawerRuntimeKeys) {
+  for (const locale of runtimeLocales) {
+    const value = getValue(runtimeCatalogs[locale], key);
+    if (typeof value !== "string" || !value.trim()) {
+      errors.push(`${locale} is missing runtime drawer key ${key}`);
+    }
+  }
+}
 
 // Catch a new runtime Explorer ID even when it has not yet been added to the
 // explicit contract above. Explorer uses the app translation hook, so

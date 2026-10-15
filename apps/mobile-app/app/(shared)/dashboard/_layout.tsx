@@ -390,6 +390,7 @@ export function CustomDrawerContent({
       accountPasses.length,
       colors.text.primary,
       isDark,
+      locale,
       sentRequestCount,
       upcomingEventCount,
     ],
@@ -986,17 +987,41 @@ export function CustomDrawerContent({
           };
           const stepTexts: Record<string, string> = {
             "./explore":
-              "Explore: Browse events, view your passes, and access quick links to speakers, agenda, and networking. Tap to continue.",
+              t({
+                id: "nav.tour.explore",
+                message:
+                  "Explore: Browse events, view your passes, and access quick links to speakers, agenda, and networking. Tap to continue.",
+              }),
             "./wallet":
-              "Wallet: View and manage your digital passes and tickets for events. Tap to continue.",
+              t({
+                id: "nav.tour.wallet",
+                message:
+                  "Wallet: View and manage your digital passes and tickets for events. Tap to continue.",
+              }),
             "./notifications":
-              "Notifications: Check your meeting requests, updates, and important alerts. The badge shows unread count. Tap to continue.",
+              t({
+                id: "nav.tour.notifications",
+                message:
+                  "Notifications: Check your meeting requests, updates, and important alerts. The badge shows unread count. Tap to continue.",
+              }),
             "./profile":
-              "Profile: View and edit your profile information and account settings. Tap to continue.",
+              t({
+                id: "nav.tour.profile",
+                message:
+                  "Profile: View and edit your profile information and account settings. Tap to continue.",
+              }),
             "./settings":
-              "Settings: Customize app preferences, theme, language, and tutorials. Tap to finish sidebar tour.",
+              t({
+                id: "nav.tour.settings",
+                message:
+                  "Settings: Customize app preferences, theme, language, and tutorials. Tap to finish sidebar tour.",
+              }),
             "./admin":
-              "Admin Panel: Manage passes, scan QR codes, and create meeting matches. Admin access only.",
+              t({
+                id: "nav.tour.admin",
+                message:
+                  "Admin Panel: Manage passes, scan QR codes, and create meeting matches. Admin access only.",
+              }),
           };
           return (
             <React.Fragment key={item.route as string}>
