@@ -1,14 +1,14 @@
 import React from 'react';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { Platform, Pressable, Text, TextInput, TouchableOpacity } from 'react-native';
-const mockPush = jest.fn(); const mockSetParams = jest.fn(); let mockParams: any = {}; const mockSaveBookmarks = jest.fn(); let mockEvents: any[]; let mockLoggedIn = false; let mockAnimationLevel = 'none';
+const mockPush = jest.fn(); const mockSetParams = jest.fn(); const mockRetryDatabaseSession = jest.fn(); let mockParams: any = {}; const mockSaveBookmarks = jest.fn(); let mockEvents: any[]; let mockLoggedIn = false; let mockAnimationLevel = 'none';
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) }));
 jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush, setParams: mockSetParams }), useLocalSearchParams: () => mockParams }));
 jest.mock('../../hooks/useTheme', () => ({ useTheme: () => ({ isDark: true, colors: { primary: '#22d3ee', divider: '#333', background: { default: '#111', paper: '#19191f' }, text: { primary: '#fff', secondary: '#aaa', disabled: '#777' }, warning: { dark: '#f59e0b' } } }) }));
 jest.mock('../../i18n/i18n', () => ({ useTranslation: () => ({ t: (_key: string, fallback: string) => fallback }) }));
 jest.mock('../../contexts/AnimationLevelContext', () => ({ useAnimationLevel: () => ({ animationLevel: mockAnimationLevel }) }));
 jest.mock('../../contexts/EventContext', () => ({ useEvent: () => ({}) }));
-jest.mock('../../hooks/useAuth', () => ({ useAuth: () => ({ isLoggedIn: mockLoggedIn, dbUserId: null }) }));
+jest.mock('../../hooks/useAuth', () => ({ useAuth: () => ({ isLoggedIn: mockLoggedIn, dbUserId: null, retryDatabaseSession: mockRetryDatabaseSession }) }));
 jest.mock('../../components/icons/SettingsIcons', () => ({ LogInIcon: () => null }));
 jest.mock('../../components/QuickSettingsPanel', () => 'QuickSettingsPanel');
 jest.mock('../../app/(shared)/auth', () => 'EmbeddedAuth');
@@ -44,7 +44,7 @@ const setViewport = (width: number, height = 768) => {
   jest.spyOn(require('react-native'), 'useWindowDimensions').mockReturnValue({ width, height, scale: 1, fontScale: 1 });
 };
 const setPlatform = (os: string) => Object.defineProperty(Platform, 'OS', { configurable: true, value: os });
-beforeEach(() => { setViewport(1024); setPlatform('ios'); mockAnimationLevel = 'none'; mockPush.mockReset(); mockSetParams.mockReset(); mockParams = {}; mockSaveBookmarks.mockReset(); mockLoggedIn = false; mockEvents = [
+beforeEach(() => { setViewport(1024); setPlatform('ios'); mockAnimationLevel = 'none'; mockPush.mockReset(); mockSetParams.mockReset(); mockRetryDatabaseSession.mockReset(); mockParams = {}; mockSaveBookmarks.mockReset(); mockLoggedIn = false; mockEvents = [
   { id: 'main', title: 'Hidden shell', color: '#000' },
   { id: 'one', title: 'Colombia conference', color: '#f00', series: 'Series A', geo: { continent: 'South America', country: 'Colombia' }, routes: { home: '/events//one' }, eventDateString: '2026', eventStartDate: '2099-01-01', image: '/real-event.webp' },
   { id: 'two', title: 'Europe conference', color: '#0f0', series: 'Series B', geo: { continent: 'Europe', country: 'France' }, routes: { home: '/events/two' }, eventStartDate: '2099-02-01' },
@@ -125,6 +125,12 @@ it('shows the sent-request stat for authenticated explorers', async () => {
   await act(async () => { view = create(<EventsScreen />); });
   expect(content()).toContain('Requests');
   expect(content()).toContain('{count} sent');
+});
+it('retries the shared database session when reloading passes', async () => {
+  mockLoggedIn = true;
+  await act(async () => { view = create(<EventsScreen />); });
+  act(() => view.root.findByProps({ testID: 'explorer-reload-passes' }).props.onPress());
+  expect(mockRetryDatabaseSession).toHaveBeenCalledTimes(1);
 });
 
 it.each(['My passes', 'Wallet', 'Community'])('opens registration for guest %s without leaving Explorer', async label => {
