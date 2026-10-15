@@ -390,6 +390,7 @@ export function CustomDrawerContent({
       accountPasses.length,
       colors.text.primary,
       isDark,
+      locale,
       sentRequestCount,
       upcomingEventCount,
     ],
