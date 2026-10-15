@@ -45,10 +45,10 @@ function SpeakerCard({
   const router = useRouter();
   const directoryState = getSpeakerDirectoryState(speaker);
   const isInteractive = directoryState.isPublished;
-  const statusText = directoryState.isNetworkingActive
+  const statusText = directoryState.status === 'active'
     ? 'Active'
-    : directoryState.isPublished && directoryState.isClaimed
-      ? 'Claimed'
+    : directoryState.status === 'pending'
+      ? 'Pending'
       : speaker.isPastEditionReference
         ? 'Past edition'
         : 'Inactive';
@@ -76,8 +76,8 @@ function SpeakerCard({
       <View style={styles.speakerInfo}>
         <View style={styles.speakerNameRow}>
           <Text style={styles.speakerName}>{speaker.name}</Text>
-          <View style={[styles.statusLabel, directoryState.isNetworkingActive ? styles.activeLabel : styles.inactiveLabel]}>
-            <Text style={[styles.statusLabelText, directoryState.isNetworkingActive ? styles.activeLabelText : styles.inactiveLabelText]}>
+          <View style={[styles.statusLabel, directoryState.status === 'active' ? styles.activeLabel : directoryState.status === 'pending' ? styles.pendingLabel : styles.inactiveLabel]}>
+            <Text style={[styles.statusLabelText, directoryState.status === 'active' ? styles.activeLabelText : directoryState.status === 'pending' ? styles.pendingLabelText : styles.inactiveLabelText]}>
               {statusText}
             </Text>
           </View>
@@ -171,7 +171,7 @@ export default function SpeakersCalendar() {
           const dbSpeakers = Array.isArray(payload?.data) ? payload.data : [];
           const publicDbSpeakers = dbSpeakers.filter((s: any) => {
             const isExplicitlyPublished = s.directory_visible === true || s.metadata?.directory_visible === true;
-            return isExplicitlyPublished || (canUseLegacyBslDirectory && s.is_active === true);
+            return isExplicitlyPublished || canUseLegacyBslDirectory;
           });
 
           if (Array.isArray(payload?.data)) {
@@ -436,6 +436,9 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   inactiveLabel: {
     backgroundColor: '#6B7280',
   },
+  pendingLabel: {
+    backgroundColor: '#FEF3C7',
+  },
   statusLabelText: {
     fontSize: 10,
     fontWeight: '700',
@@ -446,6 +449,9 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   },
   inactiveLabelText: {
     color: '#FFFFFF',
+  },
+  pendingLabelText: {
+    color: '#92400E',
   },
   speakerTitle: {
     fontSize: 14,

@@ -3,8 +3,8 @@ import { getSpeakerDirectoryState, isClaimedActiveSpeaker } from '../../lib/spea
 describe('isClaimedActiveSpeaker', () => {
   it.each([
     [{ is_active: true, user_id: 'speaker-auth-user' }, true],
-    [{ is_active: true, user_id: null }, true],
-    [{ is_active: true, user_id: '   ' }, true],
+    [{ is_active: true, user_id: null }, false],
+    [{ is_active: true, user_id: '   ' }, false],
     [{ is_active: false, user_id: 'speaker-auth-user' }, false],
     [{ is_active: null, user_id: 'speaker-auth-user' }, false],
   ])('returns %s for %o', (speaker, expected) => {
@@ -13,22 +13,22 @@ describe('isClaimedActiveSpeaker', () => {
 });
 
 describe('getSpeakerDirectoryState', () => {
-  it('publishes an unclaimed profile and allows meeting requests when the organizer enables them', () => {
+  it('publishes an unclaimed profile as pending and allows meeting requests', () => {
     expect(getSpeakerDirectoryState({
       directory_visible: true,
-      is_active: true,
+      is_active: false,
       user_id: null,
-      is_accepting_meetings: true,
+      is_accepting_meetings: false,
     })).toEqual({
       isPublished: true,
       isClaimed: false,
-      isNetworkingActive: true,
+      isNetworkingActive: false,
       isAcceptingMeetings: true,
-      status: 'active',
+      status: 'pending',
     });
   });
 
-  it('allows networking only after a claimed speaker opts into meetings', () => {
+  it('marks a claimed and enabled speaker as active', () => {
     expect(getSpeakerDirectoryState({
       directory_visible: true,
       is_active: true,
@@ -40,6 +40,20 @@ describe('getSpeakerDirectoryState', () => {
       isNetworkingActive: true,
       isAcceptingMeetings: true,
       status: 'active',
+    });
+  });
+
+  it('keeps a claimed speaker inactive when they disable their profile', () => {
+    expect(getSpeakerDirectoryState({
+      directory_visible: true,
+      is_active: false,
+      user_id: 'speaker-auth-user',
+      is_accepting_meetings: true,
+    })).toMatchObject({
+      isClaimed: true,
+      isNetworkingActive: false,
+      isAcceptingMeetings: false,
+      status: 'inactive',
     });
   });
 

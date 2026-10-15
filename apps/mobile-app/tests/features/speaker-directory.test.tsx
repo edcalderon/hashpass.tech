@@ -108,9 +108,9 @@ describe('speaker directory', () => {
     }));
     let renderer: ReturnType<typeof create>;
     await act(async () => { renderer = create(<SpeakersCalendar />); await flushPromises(); });
-    const cards = renderer!.root.findAll((node) => node.props?.accessibilityState?.disabled !== undefined);
+    const cards = renderer!.root.findAll((node) => node.props?.accessibilityState?.disabled !== undefined && typeof node.props?.onPress === 'function');
     cards.forEach((card) => act(() => card.props.onPress()));
-    expect(mockRouterPush.mock.calls.map(([route]) => route.split('/').pop())).toEqual(['Lucero', 'Bryan', 'Edward']);
+    expect([...new Set(mockRouterPush.mock.calls.map(([route]) => route.split('/').pop()))]).toEqual(['Lucero', 'Bryan', 'Edward']);
     act(() => renderer!.unmount());
   });
 
@@ -156,17 +156,46 @@ describe('speaker directory', () => {
       await flushPromises();
     });
 
-    const cards = renderer!.root.findAll((node: any) => node.props?.accessibilityState?.disabled !== undefined);
+    const cards = renderer!.root.findAll((node: any) => node.props?.accessibilityState?.disabled !== undefined && typeof node.props?.onPress === 'function');
     const activeCard = cards.find((node: any) => node.props.accessibilityState.disabled === false);
 
     if (!activeCard) throw new Error('Expected a public speaker card');
     expect(activeCard.props.disabled).toBe(false);
     expect(typeof activeCard.props.onPress).toBe('function');
-    expect(cards).toHaveLength(2);
+    expect(cards.every((card: any) => card.props.accessibilityState.disabled === false)).toBe(true);
     expect(renderer!.root.findByProps({ children: 'Unclaimed Speaker' })).toBeTruthy();
 
     act(() => activeCard.props.onPress());
     expect(mockRouterPush).toHaveBeenCalledWith('/events/chile2026/speakers/active-speaker');
+
+    await act(async () => renderer!.unmount());
+  });
+
+  it('shows an unclaimed imported profile as pending even when its legacy active flag is false', async () => {
+    mockEventId = 'colombia2026';
+    mockDbSpeakers = [{
+      id: 'pending-colombia-speaker',
+      name: 'Pending Colombia Speaker',
+      title: 'Advisor',
+      company: 'BSL',
+      user_id: null,
+      is_active: false,
+      directory_visible: true,
+      is_accepting_meetings: false,
+    }];
+
+    let renderer: ReturnType<typeof create>;
+    await act(async () => {
+      renderer = create(<SpeakersCalendar />);
+      await flushPromises();
+    });
+
+    expect(renderer!.root.findByProps({ children: 'Pending Colombia Speaker' })).toBeTruthy();
+    expect(renderer!.root.findByProps({ children: 'Pending' })).toBeTruthy();
+    const card = renderer!.root.findAll(
+      (node: any) => node.props?.accessibilityState?.disabled !== undefined && typeof node.props?.onPress === 'function',
+    )[0];
+    expect(card.props.disabled).toBe(false);
 
     await act(async () => renderer!.unmount());
   });

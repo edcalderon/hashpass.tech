@@ -4,7 +4,7 @@ import {
   resolveNotificationIdentity,
 } from '@/lib/server/resolve-notification-identity';
 
-const SPEAKER_FIELDS = 'id, name, title, company, imageurl';
+const SPEAKER_FIELDS = 'id, name, title, company, imageurl, is_active, is_accepting_meetings';
 const MAX_NAME_LENGTH = 120;
 const MAX_TITLE_LENGTH = 160;
 const MAX_COMPANY_LENGTH = 160;
@@ -16,6 +16,8 @@ type SpeakerRow = {
   title: string | null;
   company: string | null;
   imageurl: string | null;
+  is_active: boolean;
+  is_accepting_meetings: boolean;
 };
 
 const toProfileSpeaker = (speaker: SpeakerRow) => ({
@@ -24,6 +26,8 @@ const toProfileSpeaker = (speaker: SpeakerRow) => ({
   title: speaker.title,
   company: speaker.company,
   imageUrl: speaker.imageurl,
+  isActive: speaker.is_active,
+  isAcceptingMeetings: speaker.is_accepting_meetings,
 });
 
 async function authenticatedSpeakerIdentity(request: Request) {
@@ -85,7 +89,7 @@ export async function PATCH(request: Request) {
   const body = await request.json().catch(() => null) as Record<string, unknown> | null;
   if (!body) return Response.json({ error: 'A JSON body is required' }, { status: 400 });
 
-  const updates: Record<string, string | null> = {};
+  const updates: Record<string, string | boolean | null> = {};
   if (body.name !== undefined) {
     const name = optionalText(body.name, MAX_NAME_LENGTH);
     if (!name) return Response.json({ error: 'A speaker name is required' }, { status: 400 });
@@ -106,6 +110,12 @@ export async function PATCH(request: Request) {
       return Response.json({ error: 'imageUrl must be a valid HTTP(S) URL' }, { status: 400 });
     }
     updates.imageurl = body.imageUrl;
+  }
+  if (body.isActive !== undefined) {
+    if (typeof body.isActive !== 'boolean') {
+      return Response.json({ error: 'isActive must be a boolean' }, { status: 400 });
+    }
+    updates.is_active = body.isActive;
   }
   if (!Object.keys(updates).length) {
     return Response.json({ error: 'At least one speaker field is required' }, { status: 400 });

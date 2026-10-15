@@ -1069,11 +1069,9 @@ export default function SpeakerDetail() {
   });
   const statusLabel = directoryState.isNetworkingActive
     ? speaker.isOnline ? t('speakerView.online') : t('speakerView.active')
-    : directoryState.status === 'unclaimed'
-      ? t('speakerView.unclaimed')
-      : directoryState.status === 'claimed'
-        ? t('speakerView.claimed')
-        : t('speakerView.inactive');
+    : directoryState.status === 'pending'
+      ? 'Pending'
+      : t('speakerView.inactive');
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
