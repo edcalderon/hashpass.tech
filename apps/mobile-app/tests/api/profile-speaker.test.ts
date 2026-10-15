@@ -15,6 +15,7 @@ const speaker = {
   imageurl: 'https://cdn.hashpass.tech/edward.png',
   is_active: true,
   is_accepting_meetings: true,
+  directory_visible: true,
 };
 
 jest.mock('@/lib/server/resolve-notification-identity', () => ({
@@ -116,7 +117,6 @@ describe('/api/profile/speaker', () => {
       company: 'Hashpass Labs',
       is_active: false,
       is_accepting_meetings: false,
-      directory_visible: false,
     });
     expect(mockEq).toHaveBeenCalledWith('id', speaker.id);
     expect(mockEq).toHaveBeenCalledWith('user_id', '7f60f5d2-5948-4df1-9670-2f9177cf2fe4');

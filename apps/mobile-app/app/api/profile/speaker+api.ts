@@ -120,7 +120,7 @@ export async function PATCH(request: Request) {
     // makes it visible and able to receive meeting requests again.
     updates.is_active = body.isActive;
     updates.is_accepting_meetings = body.isActive;
-    updates.directory_visible = body.isActive;
+    if (body.isActive) updates.directory_visible = true;
   }
   if (!Object.keys(updates).length) {
     return Response.json({ error: 'At least one speaker field is required' }, { status: 400 });
