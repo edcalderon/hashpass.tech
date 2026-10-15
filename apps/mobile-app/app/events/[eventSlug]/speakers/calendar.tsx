@@ -437,7 +437,7 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     backgroundColor: '#6B7280',
   },
   pendingLabel: {
-    backgroundColor: '#FEF3C7',
+    backgroundColor: colors.warning?.light || colors.warning?.main || colors.primary,
   },
   statusLabelText: {
     fontSize: 10,
@@ -451,7 +451,7 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     color: '#FFFFFF',
   },
   pendingLabelText: {
-    color: '#92400E',
+    color: colors.warning?.dark || colors.text.primary,
   },
   speakerTitle: {
     fontSize: 14,
