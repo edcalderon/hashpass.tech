@@ -1303,14 +1303,14 @@ export const EVENTS: Record<string, EventConfig> = {
     name: "BSL Colombia 2026",
     title: "Blockchain Summit Latam Colombia 2026",
     subtitle: "Bogotá, Colombia",
-    // Shared regional call for speakers (Colombia Blockchain Week's own form,
-    // not a BSL-run CFP) -- surfaced here per explicit request to cross-promote
+    // Shared regional call for speakers (Colombia Blockchain Week's own scheduling
+    // link, not a BSL-run CFP) -- surfaced here per explicit request to cross-promote
     // it on this event's page too, alongside its organizer's own cbweek2026 page.
     // `speakerApplicationLabel` is required here: this is a *different*
     // conference/organizer than this event's own `title`, so the CTA copy
     // must name Colombia Blockchain Week explicitly rather than implying
     // BSL Colombia itself runs the CFP.
-    speakerApplicationUrl: "https://colombiablockchainweek.com/ser-speaker#postulacion",
+    speakerApplicationUrl: "https://calendar.google.com/calendar/u/0/appointments/schedules/AcZssZ1wHziE-4TMqTr0W5MJAhQwPZP_GtCVXNdkTHBfLjXX6lEDMpTlX1cxEu4iHTZ5c8aGxn_NICcO",
     speakerApplicationLabel: "Colombia Blockchain Week",
     aliases: [
       "BSL Colombia",
@@ -2393,7 +2393,7 @@ export const EVENTS: Record<string, EventConfig> = {
     ],
     domain: "cbweek2026.hashpass.tech",
     website: "https://colombiablockchainweek.com/",
-    speakerApplicationUrl: "https://colombiablockchainweek.com/ser-speaker#postulacion",
+    speakerApplicationUrl: "https://calendar.google.com/calendar/u/0/appointments/schedules/AcZssZ1wHziE-4TMqTr0W5MJAhQwPZP_GtCVXNdkTHBfLjXX6lEDMpTlX1cxEu4iHTZ5c8aGxn_NICcO",
     speakerApplicationLabel: "Colombia Blockchain Week",
     title: "Colombia Blockchain Week 2026",
     subtitle: "Hotel InterContinental Medellín • 1ª Edición",
