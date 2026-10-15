@@ -249,7 +249,8 @@
       "db/migrations/V112__disable_unclaimed_speaker_meetings.sql",
       "db/migrations/V113__keep_unclaimed_speaker_profiles_private.sql",
       "db/migrations/V114__activate_public_speaker_profiles_and_queue_meetings.sql",
-      "db/migrations/V115__repair_speaker_claim_review_policy.sql"
+      "db/migrations/V115__repair_speaker_claim_review_policy.sql",
+      "db/migrations/V116__separate_pending_speaker_profiles.sql"
     ],
     "event-pass-tiers": [
       "db/migrations/V035__configure_event_pass_tiers.sql",
