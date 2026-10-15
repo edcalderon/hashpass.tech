@@ -28,7 +28,6 @@ import Animated, {
   withRepeat,
   withTiming,
   interpolate,
-  withSpring,
 } from "react-native-reanimated";
 import { SystemBars } from "react-native-edge-to-edge";
 import { Ionicons } from "../../../lib/vector-icons";
@@ -79,7 +78,7 @@ import { parseAuthQrScan } from "../../../lib/auth-qr";
 import { t } from "@lingui/macro";
 import { CopilotStep, walkthroughable, useCopilot } from "@lib/copilot-shim";
 import { hapticLight, hapticMedium } from "../../../lib/haptics";
-import FlipWords from "../../../components/FlipWords";
+import { uiTokens } from "@hashpass/ui/tokens";
 
 const ANDROID_DASHBOARD_HEADER_HEIGHT = 64;
 const ANDROID_DRAWER_EDGE_GUARD = 16;
@@ -253,7 +252,6 @@ function CustomDrawerContent({
   const insets = useSafeAreaInsets();
   const { width: viewportWidth } = useWindowDimensions();
   const compactQuickActions = viewportWidth < 480;
-  const compactDrawerBranding = viewportWidth < 390;
   const drawerSafeInsets = getDashboardDrawerInsets(insets);
   const styles = getStyles(
     isDark,
@@ -261,74 +259,10 @@ function CustomDrawerContent({
     isMobile,
     drawerSafeInsets,
     compactQuickActions,
-    compactDrawerBranding,
   );
   const [isUserAdmin, setIsUserAdmin] = React.useState(false);
   const [isSigningOut, setIsSigningOut] = React.useState(false);
-  const eventBadgeText = React.useMemo(() => {
-    const configuredBadge = event?.branding?.badge?.trim();
-    if (configuredBadge)
-      return configuredBadge.startsWith("#")
-        ? configuredBadge
-        : `#${configuredBadge}`;
-    const domain = event?.domain
-      ?.split(".")[0]
-      ?.replace(/[^a-z0-9]/gi, "")
-      .toUpperCase();
-    return domain && domain !== "HASHPASS" ? `#${domain}` : null;
-  }, [event?.branding?.badge, event?.domain]);
-  const [showEventBadge, setShowEventBadge] = React.useState(false);
-  const badgeTransitionRef = React.useRef<RNAnimated.Value | null>(null);
-  if (badgeTransitionRef.current === null)
-    badgeTransitionRef.current = new RNAnimated.Value(1);
-  const badgeTransition = badgeTransitionRef.current;
-  const brandBadgeText =
-    showEventBadge && eventBadgeText ? eventBadgeText : "HASHPASS";
   const brandBadgeColor = event?.branding?.primaryColor || "#007AFF";
-  const drawerTaglineWords = React.useMemo(
-    () =>
-      t({
-        id: "index.taglineFlipList",
-        message: "- YOUR EVENT -,- YOUR COMMUNITY -,- YOUR REWARDS -",
-      })
-        .split(",")
-        .map((phrase) => phrase.trim())
-        .filter(Boolean),
-    [locale],
-  );
-
-  // Keep the platform badge as the default, then gently reveal the current
-  // event domain when one is active. The event value is data-driven so an
-  // organizer can later provide a different domain/badge without changing
-  // this shell (for example, #BSL2026).
-  React.useEffect(() => {
-    if (!eventBadgeText || !animationsEnabled) {
-      setShowEventBadge(false);
-      return;
-    }
-
-    const interval = setInterval(() => {
-      RNAnimated.sequence([
-        RNAnimated.timing(badgeTransition, {
-          toValue: 0,
-          duration: 220,
-          useNativeDriver: true,
-        }),
-        RNAnimated.timing(badgeTransition, {
-          toValue: 1,
-          duration: 280,
-          useNativeDriver: true,
-        }),
-      ]).start();
-      setShowEventBadge((visible) => !visible);
-    }, 4200);
-
-    return () => {
-      clearInterval(interval);
-      badgeTransition.stopAnimation();
-      badgeTransition.setValue(1);
-    };
-  }, [animationsEnabled, badgeTransition, eventBadgeText]);
 
   const username = React.useMemo(() => {
     const email = typeof user?.email === "string" ? user.email.trim() : "";
@@ -347,6 +281,67 @@ function CustomDrawerContent({
       year: "numeric",
     }).format(date);
   }, [locale, user?.created_at, user?.date_created]);
+  const accountDisplayName = React.useMemo(() => {
+    const metadata = user?.user_metadata as
+      { full_name?: string; name?: string } | undefined;
+    const directusName = [user?.first_name, user?.last_name]
+      .filter(Boolean)
+      .join(" ")
+      .trim();
+    return (
+      metadata?.full_name?.trim() ||
+      metadata?.name?.trim() ||
+      directusName ||
+      username.replace(/^@/, "")
+    );
+  }, [user?.first_name, user?.last_name, user?.user_metadata, username]);
+  const accountInitials = React.useMemo(
+    () =>
+      accountDisplayName
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((part) => part[0])
+        .join("")
+        .toUpperCase() || "H",
+    [accountDisplayName],
+  );
+  const profileAvatarUrl = React.useMemo(() => {
+    const metadata = user?.user_metadata as
+      { avatar_url?: string; picture?: string } | undefined;
+    const candidate = metadata?.avatar_url || metadata?.picture || user?.avatar;
+    return typeof candidate === "string" && /^https?:\/\//.test(candidate)
+      ? candidate
+      : null;
+  }, [user?.avatar, user?.user_metadata]);
+  const accountStats = React.useMemo(
+    () => [
+      {
+        value: event ? "1" : "0",
+        label: t({ id: "nav.activeEvent", message: "Event" }),
+        color: brandBadgeColor,
+      },
+      {
+        value: unreadCount > 9 ? "9+" : String(unreadCount),
+        label: t({ id: "nav.alerts", message: "Alerts" }),
+        color: isDark ? "#ffb74d" : "#c56f00",
+      },
+      {
+        value: locale.toUpperCase(),
+        label: t({ id: "nav.language", message: "Language" }),
+        color: colors.text.primary,
+      },
+    ],
+    [
+      brandBadgeColor,
+      colors.text.primary,
+      event,
+      isDark,
+      locale,
+      t,
+      unreadCount,
+    ],
+  );
 
   // Animated fluid gradient effect with multiple layers
   const gradientAnimation1 = useSharedValue(0);
@@ -355,8 +350,6 @@ function CustomDrawerContent({
   const gradientAnimation4 = useSharedValue(0);
 
   // Logo zoom animation
-  const logoScale = useSharedValue(1);
-
   // Native explicitly opts OUT of every decorative drawer animation. Users
   // reported the sidebar felt slow to open and close on native, and the
   // biggest avoidable cost during the slide is these UI-thread reanimated
@@ -372,6 +365,7 @@ function CustomDrawerContent({
   useEffect(() => {
     // The 4 gradient layers only animate while the drawer is open AND only on
     // web (see decorativeAnimationsEnabled above — native drops them entirely).
+    if (Platform.OS !== "web") return;
     if (decorativeAnimationsEnabled && drawerStatus === "open") {
       // Wait for the open transition to settle before starting the infinite
       // animations, so they never contend with the slide-in for frame budget.
@@ -722,13 +716,6 @@ function CustomDrawerContent({
     }
   };
 
-  // Logo zoom animation style
-  const logoAnimatedStyle = useAnimatedStyle(() => {
-    return {
-      transform: [{ scale: logoScale.value }],
-    };
-  });
-
   const handleLogoPress = () => {
     navigateDashboardBrandToLanding({
       navigation,
@@ -743,42 +730,6 @@ function CustomDrawerContent({
     });
   };
 
-  const handleLogoPressIn = () => {
-    // Web only — native opts out of all decorative drawer animation (see
-    // decorativeAnimationsEnabled). logoScale stays 1, so the logo is static.
-    if (Platform.OS !== "web") return;
-    logoScale.value = withSpring(1.1, {
-      damping: 10,
-      stiffness: 300,
-    });
-  };
-
-  const handleLogoPressOut = () => {
-    if (Platform.OS !== "web") return;
-    logoScale.value = withSpring(1, {
-      damping: 10,
-      stiffness: 300,
-    });
-  };
-
-  const handleLogoHoverIn = () => {
-    if (Platform.OS === "web") {
-      logoScale.value = withSpring(1.1, {
-        damping: 10,
-        stiffness: 300,
-      });
-    }
-  };
-
-  const handleLogoHoverOut = () => {
-    if (Platform.OS === "web") {
-      logoScale.value = withSpring(1, {
-        damping: 10,
-        stiffness: 300,
-      });
-    }
-  };
-
   return (
     <View
       style={[
@@ -786,24 +737,9 @@ function CustomDrawerContent({
         { backgroundColor: colors.background.default, flex: 1 },
       ]}
     >
-      {/* Drawer Header */}
-      <View
-        style={[
-          styles.drawerHeader,
-          {
-            backgroundColor: isDark
-              ? "rgba(255, 255, 255, 0.03)"
-              : colors.background.paper,
-            borderTopWidth: 4,
-            borderTopColor: brandBadgeColor,
-            borderBottomWidth: 1,
-            borderBottomColor: colors.divider,
-            boxShadow: isDark
-              ? "0 3px 12px rgba(0, 0, 0, 0.24)"
-              : "0 3px 12px rgba(15, 23, 42, 0.12)",
-          },
-        ]}
-      >
+      {/* Sidebar v2: quiet chrome, a clear account anchor, and a compact
+          navigation rhythm that keeps the drawer useful at every width. */}
+      <View style={styles.drawerHeader}>
         {/* Animated Fluid Gradient Background Layers — web only; native drops
             them entirely so the drawer slide keeps the whole frame budget. */}
         {decorativeAnimationsEnabled ? (
@@ -854,115 +790,102 @@ function CustomDrawerContent({
             />
           </>
         ) : null}
-        <View
-          style={[
-            styles.brandingContainer,
-            { zIndex: 1, position: "relative" },
-          ]}
-        >
+        <View style={styles.drawerTopBar}>
           <TouchableOpacity
             onPress={handleLogoPress}
-            onPressIn={handleLogoPressIn}
-            onPressOut={handleLogoPressOut}
-            style={styles.logoCardButton}
-            activeOpacity={1}
+            style={styles.drawerBrandButton}
+            activeOpacity={0.75}
             accessibilityRole="button"
             accessibilityLabel={t({
               id: "nav.backToLanding",
               message: "Back to landing",
             })}
-            // @ts-ignore - Web-specific hover handlers
-            onMouseEnter={handleLogoHoverIn}
-            onMouseLeave={handleLogoHoverOut}
           >
-            <Animated.View
-              style={[
-                styles.logoPill,
-                {
-                  backgroundColor: isDark
-                    ? colors.primaryLight
-                    : colors.primaryDark,
-                  borderColor: colors.primaryContrastText + "66",
-                  zIndex: 10,
-                },
-                logoAnimatedStyle,
-              ]}
-            >
-              <Image
-                source={
-                  isDark
-                    ? require("../../../assets/logos/hashpass/logo-full-hashpass-white-cyan.webp")
-                    : require("../../../assets/logos/hashpass/logo-full-hashpass-white.webp")
-                }
-                style={styles.logoImage}
-                resizeMode="contain"
-              />
-              <View style={styles.logoCardMeta}>
-                <Text style={styles.brandSubtitle} numberOfLines={2}>
-                  {t({
-                    id: "nav.brandSubtitle",
-                    message: "Digital Event Platform",
-                  })}
-                </Text>
-                <View style={styles.brandTaglineContainer} pointerEvents="none">
-                  {animationsEnabled ? (
-                    <FlipWords
-                      words={drawerTaglineWords}
-                      duration={3000}
-                      textStyle={styles.brandTaglineAnimated}
-                    />
-                  ) : (
-                    <Text style={styles.brandTaglineStatic} numberOfLines={1}>
-                      {drawerTaglineWords[0]}
-                    </Text>
-                  )}
-                </View>
-              </View>
-            </Animated.View>
+            <Image
+              source={
+                isDark
+                  ? require("../../../assets/logos/hashpass/logo-full-hashpass-white-cyan.webp")
+                  : require("../../../assets/logos/hashpass/logo-full-hashpass-black-cyan.png")
+              }
+              style={styles.drawerBrandLogo}
+              resizeMode="contain"
+            />
+            <Text style={styles.drawerSectionEyebrow}>
+              {t({ id: "nav.menu", message: "Menu" })}
+            </Text>
           </TouchableOpacity>
-          <View style={styles.identityMeta}>
-            <TouchableOpacity
-              onPress={() => handleNavigation("./profile")}
-              style={styles.brandUsernameButton}
-              activeOpacity={0.7}
-              accessibilityRole="link"
-              accessibilityLabel={`${username}: ${t({ id: "nav.profile", message: "Profile" })}`}
-            >
-              <Text style={styles.brandUsername} numberOfLines={1}>
+          <Text style={styles.drawerMenuLabel}>MENU</Text>
+          <TouchableOpacity
+            onPress={closeDrawer}
+            style={styles.drawerCloseButton}
+            activeOpacity={0.75}
+            accessibilityRole="button"
+            accessibilityLabel={t({
+              id: "nav.closeMenu",
+              message: "Close navigation menu",
+            })}
+          >
+            <Ionicons name="close" size={20} color={colors.text.primary} />
+          </TouchableOpacity>
+        </View>
+
+        <TouchableOpacity
+          onPress={() => handleNavigation("./profile")}
+          style={styles.profileCard}
+          activeOpacity={0.82}
+          accessibilityRole="link"
+          accessibilityLabel={`${username}: ${t({ id: "nav.profile", message: "Profile" })}`}
+        >
+          <View style={styles.profileIdentityRow}>
+            <View style={styles.profileAvatarShell}>
+              <View style={styles.profileAvatar}>
+                {profileAvatarUrl ? (
+                  <Image
+                    source={{ uri: profileAvatarUrl }}
+                    style={styles.profileAvatarImage}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <Text style={styles.profileAvatarInitials}>
+                    {accountInitials}
+                  </Text>
+                )}
+              </View>
+              <View style={styles.profileAvatarAction}>
+                <Ionicons
+                  name="add"
+                  size={13}
+                  color={uiTokens.colors.light.onAccent}
+                />
+              </View>
+            </View>
+            <View style={styles.profileCopy}>
+              <Text style={styles.profileUsername} numberOfLines={1}>
                 {username}
               </Text>
-            </TouchableOpacity>
-            <Text style={styles.brandMemberSince} numberOfLines={1}>
-              {t({ id: "nav.memberSince", message: "Member since" })}{" "}
-              {memberSince || "—"}
-            </Text>
-            <RNAnimated.View
-              style={[styles.identityBadgeWrap, { opacity: badgeTransition }]}
-            >
-              <View
-                style={[
-                  styles.brandBadge,
-                  { backgroundColor: brandBadgeColor },
-                ]}
-              >
-                <Text style={styles.brandBadgeText} numberOfLines={1}>
-                  {brandBadgeText}
-                </Text>
+              <Text style={styles.profileEmail} numberOfLines={1}>
+                {user?.email || accountDisplayName}
+              </Text>
+              <View style={styles.profileMetaRow}>
+                <Text style={styles.profileBrandBadge}>HASHPASS</Text>
+                {memberSince ? (
+                  <Text style={styles.profileMemberSince} numberOfLines={1}>
+                    {t({ id: "nav.since", message: "Since" })} {memberSince}
+                  </Text>
+                ) : null}
               </View>
-            </RNAnimated.View>
+            </View>
           </View>
-        </View>
-        <TouchableOpacity
-          onPress={closeDrawer}
-          style={styles.drawerCloseButton}
-          activeOpacity={0.75}
-          accessibilityRole="button"
-          accessibilityLabel={t({
-            id: "nav.closeMenu",
-            message: "Close navigation menu",
-          })}
-        >
-          <Ionicons name="close" size={24} color={colors.text.primary} />
+          <View style={styles.profileStatsRow}>
+            {accountStats.map((stat) => (
+              <View key={stat.label} style={styles.profileStat}>
+                <Text style={[styles.profileStatValue, { color: stat.color }]}>
+                  {stat.value}
+                </Text>
+                <Text style={styles.profileStatLabel}>{stat.label}</Text>
+              </View>
+            ))}
+          </View>
         </TouchableOpacity>
       </View>
 
@@ -974,6 +897,9 @@ function CustomDrawerContent({
         nestedScrollEnabled={true}
         bounces={true}
       >
+        <Text style={styles.menuSectionLabel}>
+          {t({ id: "nav.navigation", message: "Navigation" })}
+        </Text>
         {menuItems.map((item, index) => {
           // Safety check: ensure route exists
           if (!item.route || typeof item.route !== "string") {
@@ -1009,114 +935,108 @@ function CustomDrawerContent({
               "Admin Panel: Manage passes, scan QR codes, and create meeting matches. Admin access only.",
           };
           return (
-            <CopilotStep
-              key={item.route as string}
-              text={stepTexts[item.route] || `Navigate to ${getLabel(item.id)}`}
-              order={stepOrder}
-              name={stepNames[item.route] || `sidebar${item.id}`}
-            >
-              <CopilotTouchableOpacity
-                style={[
-                  styles.menuItem,
-                  {
-                    boxShadow: isActive
-                      ? isDark
-                        ? "0 10px 24px rgba(0, 0, 0, 0.24)"
-                        : "0 10px 24px rgba(15, 23, 42, 0.12)"
-                      : isDark
-                        ? "0 6px 16px rgba(0, 0, 0, 0.18)"
-                        : "0 6px 16px rgba(15, 23, 42, 0.08)",
-                    backgroundColor: isActive
-                      ? isDark
-                        ? `${item.tone}1F`
-                        : `${item.tone}14`
-                      : isDark
-                        ? "rgba(255, 255, 255, 0.05)"
-                        : "rgba(0, 0, 0, 0.03)", // Subtle background
-                    borderLeftWidth: isActive ? 4 : 0,
-                    borderLeftColor: isActive ? item.tone : "transparent",
-                    borderColor: isActive ? `${item.tone}55` : colors.divider,
-                  },
-                ]}
-                onPress={() => {
-                  // Navigate to the actual view first
-                  handleNavigation(item.route);
-
-                  // Continue to next tutorial step after a short delay
-                  const nextStep = stepOrder + 1;
-                  setTimeout(() => {
-                    if (
-                      copilotHook?.handleNext &&
-                      typeof copilotHook.handleNext === "function"
-                    ) {
-                      copilotHook.handleNext();
-                    } else if (
-                      copilotHook?.handleNth &&
-                      typeof copilotHook.handleNth === "function"
-                    ) {
-                      copilotHook.handleNth(nextStep);
-                    }
-
-                    // If this is the last sidebar item (Settings), close drawer after tutorial moves
-                    // This ensures main content steps (Your Passes, Quick Access, etc.) are visible
-                    if (index === menuItems.length - 1) {
-                      setTimeout(() => {
-                        setDrawerOpen(false);
-                      }, 500); // Wait for tutorial to move to next step (order 8)
-                    }
-                  }, 300); // Small delay to allow navigation to complete
-                }}
-                activeOpacity={0.6}
+            <React.Fragment key={item.route as string}>
+              {item.route === "./admin" ? (
+                <Text style={styles.menuSectionLabel}>
+                  {t({ id: "nav.adminSection", message: "Admin" })}
+                </Text>
+              ) : null}
+              <CopilotStep
+                text={
+                  stepTexts[item.route] || `Navigate to ${getLabel(item.id)}`
+                }
+                order={stepOrder}
+                name={stepNames[item.route] || `sidebar${item.id}`}
               >
-                <View
+                <CopilotTouchableOpacity
                   style={[
-                    styles.menuIconContainer,
+                    styles.menuItem,
                     {
                       backgroundColor: isActive
-                        ? item.tone
-                        : isDark
-                          ? "rgba(255, 255, 255, 0.08)"
-                          : "rgba(0, 0, 0, 0.05)",
+                        ? isDark
+                          ? "rgba(175, 13, 1, 0.20)"
+                          : "rgba(175, 13, 1, 0.08)"
+                        : "transparent",
+                      borderColor: isActive
+                        ? isDark
+                          ? "rgba(255, 106, 77, 0.28)"
+                          : "rgba(175, 13, 1, 0.14)"
+                        : "transparent",
                     },
                   ]}
+                  onPress={() => {
+                    // Navigate to the actual view first
+                    handleNavigation(item.route);
+
+                    // Continue to next tutorial step after a short delay
+                    const nextStep = stepOrder + 1;
+                    setTimeout(() => {
+                      if (
+                        copilotHook?.handleNext &&
+                        typeof copilotHook.handleNext === "function"
+                      ) {
+                        copilotHook.handleNext();
+                      } else if (
+                        copilotHook?.handleNth &&
+                        typeof copilotHook.handleNth === "function"
+                      ) {
+                        copilotHook.handleNth(nextStep);
+                      }
+
+                      // If this is the last sidebar item (Settings), close drawer after tutorial moves
+                      // This ensures main content steps (Your Passes, Quick Access, etc.) are visible
+                      if (index === menuItems.length - 1) {
+                        setTimeout(() => {
+                          setDrawerOpen(false);
+                        }, 500); // Wait for tutorial to move to next step (order 8)
+                      }
+                    }, 300); // Small delay to allow navigation to complete
+                  }}
+                  activeOpacity={0.6}
                 >
-                  <Ionicons
-                    name={item.icon as any}
-                    size={20}
-                    color={isActive ? "#FFFFFF" : colors.text.secondary}
-                  />
-                </View>
-                <Text
-                  style={[
-                    styles.menuText,
-                    {
-                      color: isActive
-                        ? colors.text.primary
-                        : colors.text.secondary,
-                      fontWeight: isActive ? "600" : "500",
-                      fontSize: 16,
-                    },
-                  ]}
-                >
-                  {getLabel(item.id)}
-                </Text>
-                {item.route === "./notifications" && unreadCount > 0 && (
-                  <View style={styles.menuBadge}>
-                    <Text style={styles.menuBadgeText}>
-                      {unreadCount > 9 ? "9+" : unreadCount}
-                    </Text>
-                  </View>
-                )}
-                {isActive && (
                   <View
                     style={[
-                      styles.activeIndicator,
-                      { backgroundColor: item.tone },
+                      styles.menuIconContainer,
+                      {
+                        backgroundColor: isActive
+                          ? uiTokens.colors.light.accent
+                          : isDark
+                            ? "rgba(255, 255, 255, 0.08)"
+                            : colors.background.paper,
+                      },
                     ]}
-                  />
-                )}
-              </CopilotTouchableOpacity>
-            </CopilotStep>
+                  >
+                    <Ionicons
+                      name={item.icon as any}
+                      size={20}
+                      color={
+                        isActive ? uiTokens.colors.light.onAccent : item.tone
+                      }
+                    />
+                  </View>
+                  <Text
+                    style={[
+                      styles.menuText,
+                      {
+                        color: isActive
+                          ? colors.text.primary
+                          : colors.text.secondary,
+                        fontWeight: isActive ? "700" : "600",
+                      },
+                    ]}
+                  >
+                    {getLabel(item.id)}
+                  </Text>
+                  {item.route === "./notifications" && unreadCount > 0 && (
+                    <View style={styles.menuBadge}>
+                      <Text style={styles.menuBadgeText}>
+                        {unreadCount > 9 ? "9+" : unreadCount}
+                      </Text>
+                    </View>
+                  )}
+                </CopilotTouchableOpacity>
+              </CopilotStep>
+            </React.Fragment>
           );
         })}
       </ScrollView>
@@ -1184,46 +1104,39 @@ function CustomDrawerContent({
               </Text>
             )}
           </TouchableOpacity>
-
-          {/* Logout Button */}
-          <TouchableOpacity
-            style={[
-              styles.quickToggleButton,
-              isSigningOut && styles.quickToggleButtonDisabled,
-            ]}
-            onPress={handleLogout}
-            disabled={isSigningOut}
-            activeOpacity={isSigningOut ? 1 : 0.7}
-            accessibilityRole="button"
-            accessibilityLabel={t({ id: "nav.logout", message: "Logout" })}
-            accessibilityState={{ busy: isSigningOut, disabled: isSigningOut }}
-          >
-            <View
-              style={[
-                styles.quickToggleIcon,
-                { backgroundColor: "rgba(255, 59, 48, 0.12)" },
-              ]}
-            >
-              {isSigningOut ? (
-                <ActivityIndicator size="small" color={colors.error.main} />
-              ) : (
-                <Ionicons
-                  name="log-out-outline"
-                  size={20}
-                  color={colors.error.main}
-                />
-              )}
-            </View>
-            {!compactQuickActions && (
-              <Text
-                style={[styles.quickToggleLabel, { color: colors.error.main }]}
-                numberOfLines={1}
-              >
-                {t({ id: "nav.logout", message: "Logout" })}
-              </Text>
-            )}
-          </TouchableOpacity>
         </View>
+        <TouchableOpacity
+          style={[
+            styles.logoutAction,
+            isSigningOut && styles.quickToggleButtonDisabled,
+          ]}
+          onPress={handleLogout}
+          disabled={isSigningOut}
+          activeOpacity={isSigningOut ? 1 : 0.7}
+          accessibilityRole="button"
+          accessibilityLabel={t({ id: "nav.logout", message: "Logout" })}
+          accessibilityState={{ busy: isSigningOut, disabled: isSigningOut }}
+        >
+          <View style={styles.logoutActionIcon}>
+            {isSigningOut ? (
+              <ActivityIndicator size="small" color={colors.error.main} />
+            ) : (
+              <Ionicons
+                name="log-out-outline"
+                size={18}
+                color={colors.error.main}
+              />
+            )}
+          </View>
+          <Text style={styles.logoutActionText} numberOfLines={1}>
+            {t({ id: "nav.logout", message: "Logout" })}
+          </Text>
+          <Ionicons
+            name="chevron-forward"
+            size={16}
+            color={colors.error.main}
+          />
+        </TouchableOpacity>
       </View>
 
       {/* Version Display */}
@@ -1940,56 +1853,56 @@ function AuthenticatedDashboardLayout() {
         <NotificationProvider>
           <ScrollProvider>
             <View style={{ flex: 1 }}>
-            <Drawer
-              openControlRef={drawerOpenControlRef}
-              drawerContent={renderDrawerContent}
-              screenOptions={({ navigation }) => ({
-                ...getDrawerHeaderOptions(navigation),
-                drawerType: "front",
-                drawerStyle: dashboardDrawerStyle,
-                overlayColor: "rgba(0,0,0,0.5)",
-                drawerPosition: "left",
-                // Native edge swipes can dispatch a second drawer transition
-                // while the current slide is settling. Keep the deterministic
-                // burger and backdrop close paths on Android/iOS.
-                swipeEnabled: Platform.OS === "web",
-              })}
-            >
-              <Drawer.Screen name="explore" />
-              <Drawer.Screen name="notifications" />
-              <Drawer.Screen name="business-invites" />
-              <Drawer.Screen name="wallet" />
-              <Drawer.Screen name="profile" />
-              <Drawer.Screen name="settings" />
-              <Drawer.Screen name="admin" />
-              <Drawer.Screen name="qr-view" />
-              <Drawer.Screen name="pass-details" />
-              <Drawer.Screen name="auth-qr-approve" />
-            </Drawer>
-            {Platform.OS === "android" && (
-              <QRScanner
-                visible={androidQrScannerVisible}
-                onClose={() => setAndroidQrScannerVisible(false)}
-                onScanSuccess={(result: unknown) => {
-                  setAndroidQrScannerVisible(false);
-                }}
-                onScanError={(error: unknown) => {
-                  console.error("QR Scan Error:", error);
-                }}
-                onRawScan={(data: string) => {
-                  const parsed = parseAuthQrScan(data);
-                  if (!parsed) return false;
-                  setAndroidQrScannerVisible(false);
-                  router.push({
-                    pathname: "./auth-qr-approve",
-                    params: { challengeId: parsed.challengeId },
-                  } as any);
-                  return true;
-                }}
-              />
-            )}
-          </View>
-        </ScrollProvider>
+              <Drawer
+                openControlRef={drawerOpenControlRef}
+                drawerContent={renderDrawerContent}
+                screenOptions={({ navigation }) => ({
+                  ...getDrawerHeaderOptions(navigation),
+                  drawerType: "front",
+                  drawerStyle: dashboardDrawerStyle,
+                  overlayColor: "rgba(0,0,0,0.5)",
+                  drawerPosition: "left",
+                  // Native edge swipes can dispatch a second drawer transition
+                  // while the current slide is settling. Keep the deterministic
+                  // burger and backdrop close paths on Android/iOS.
+                  swipeEnabled: Platform.OS === "web",
+                })}
+              >
+                <Drawer.Screen name="explore" />
+                <Drawer.Screen name="notifications" />
+                <Drawer.Screen name="business-invites" />
+                <Drawer.Screen name="wallet" />
+                <Drawer.Screen name="profile" />
+                <Drawer.Screen name="settings" />
+                <Drawer.Screen name="admin" />
+                <Drawer.Screen name="qr-view" />
+                <Drawer.Screen name="pass-details" />
+                <Drawer.Screen name="auth-qr-approve" />
+              </Drawer>
+              {Platform.OS === "android" && (
+                <QRScanner
+                  visible={androidQrScannerVisible}
+                  onClose={() => setAndroidQrScannerVisible(false)}
+                  onScanSuccess={(result: unknown) => {
+                    setAndroidQrScannerVisible(false);
+                  }}
+                  onScanError={(error: unknown) => {
+                    console.error("QR Scan Error:", error);
+                  }}
+                  onRawScan={(data: string) => {
+                    const parsed = parseAuthQrScan(data);
+                    if (!parsed) return false;
+                    setAndroidQrScannerVisible(false);
+                    router.push({
+                      pathname: "./auth-qr-approve",
+                      params: { challengeId: parsed.challengeId },
+                    } as any);
+                    return true;
+                  }}
+                />
+              )}
+            </View>
+          </ScrollProvider>
         </NotificationProvider>
       </DiscoveryScopeProvider>
     </AnimationProvider>
@@ -2002,10 +1915,9 @@ const getStyles = (
   isMobile: boolean,
   insets: DashboardDrawerInsets = {},
   compactQuickActions = false,
-  compactDrawerBranding = false,
 ) => {
   const drawerSafeInsets = getDashboardDrawerInsets(insets);
-  const brandCardSize = compactDrawerBranding ? 88 : isMobile ? 100 : 108;
+  const brandRed = uiTokens.colors.light.accent;
 
   return StyleSheet.create({
     container: {
@@ -2102,20 +2014,188 @@ const getStyles = (
       justifyContent: "center",
     },
     drawerHeader: {
-      paddingTop: (isMobile ? 10 : 14) + drawerSafeInsets.top,
-      paddingBottom: isMobile ? 12 : 14,
-      paddingLeft: 18 + drawerSafeInsets.left,
-      paddingRight: 18 + drawerSafeInsets.right,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.divider,
+      paddingTop: 14 + drawerSafeInsets.top,
+      paddingBottom: 16,
+      paddingHorizontal: 16,
       backgroundColor: isDark
-        ? "rgba(255, 255, 255, 0.03)"
-        : colors.background.paper,
+        ? uiTokens.colors.dark.canvas
+        : uiTokens.colors.light.canvas,
       position: "relative",
       overflow: "hidden",
+      borderBottomWidth: 1,
+      borderBottomColor: colors.divider,
+    },
+    drawerTopBar: {
+      height: 36,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      position: "relative",
+      zIndex: 2,
+    },
+    drawerBrandButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      minHeight: 36,
+      paddingRight: 8,
+    },
+    drawerBrandLogo: {
+      width: 88,
+      height: 22,
+    },
+    drawerSectionEyebrow: {
+      fontSize: 10,
+      fontWeight: "800",
+      letterSpacing: 1.4,
+      color: colors.text.secondary,
+      textTransform: "uppercase",
+    },
+    drawerMenuLabel: {
+      position: "absolute",
+      left: 0,
+      right: 0,
+      textAlign: "center",
+      fontSize: 11,
+      fontWeight: "800",
+      letterSpacing: 1.8,
+      color: colors.text.secondary,
+      textTransform: "uppercase",
+      pointerEvents: "none",
+    },
+    profileCard: {
+      marginTop: 16,
+      padding: 16,
+      borderRadius: uiTokens.radius.card,
+      backgroundColor: isDark ? "#1c1716" : "#fbf3f2",
+      borderWidth: 1,
+      borderColor: isDark
+        ? "rgba(255, 255, 255, 0.10)"
+        : "rgba(175, 13, 1, 0.10)",
+      position: "relative",
+      zIndex: 1,
       boxShadow: isDark
-        ? "0 3px 12px rgba(0, 0, 0, 0.22)"
-        : "0 3px 12px rgba(15, 23, 42, 0.12)",
+        ? "0 12px 24px rgba(0, 0, 0, 0.20)"
+        : "0 12px 24px rgba(175, 13, 1, 0.08)",
+    },
+    profileIdentityRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 14,
+    },
+    profileAvatarShell: {
+      width: 68,
+      height: 68,
+      flexShrink: 0,
+      position: "relative",
+      padding: 3,
+      borderRadius: uiTokens.radius.circle,
+      backgroundColor: brandRed,
+    },
+    profileAvatar: {
+      width: "100%",
+      height: "100%",
+      borderRadius: uiTokens.radius.circle,
+      alignItems: "center",
+      justifyContent: "center",
+      overflow: "hidden",
+      borderWidth: 3,
+      borderColor: isDark ? "#1c1716" : "#fbf3f2",
+      backgroundColor: isDark ? "#2a2220" : "#f1dcd9",
+    },
+    profileAvatarImage: {
+      width: "100%",
+      height: "100%",
+    },
+    profileAvatarInitials: {
+      fontSize: 22,
+      fontWeight: "800",
+      color: isDark ? uiTokens.colors.dark.text : brandRed,
+      letterSpacing: 0.5,
+    },
+    profileAvatarAction: {
+      position: "absolute",
+      right: -1,
+      bottom: -1,
+      width: 22,
+      height: 22,
+      borderRadius: uiTokens.radius.circle,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: brandRed,
+      borderWidth: 2,
+      borderColor: isDark ? "#1c1716" : "#fbf3f2",
+    },
+    profileCopy: {
+      flex: 1,
+      minWidth: 0,
+      gap: 5,
+    },
+    profileUsername: {
+      fontSize: 19,
+      lineHeight: 22,
+      fontWeight: "800",
+      letterSpacing: -0.2,
+      color: colors.text.primary,
+    },
+    profileEmail: {
+      fontSize: 12,
+      lineHeight: 16,
+      color: colors.text.secondary,
+    },
+    profileMetaRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 7,
+      marginTop: 2,
+      minWidth: 0,
+    },
+    profileBrandBadge: {
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: uiTokens.radius.circle,
+      overflow: "hidden",
+      backgroundColor: brandRed,
+      color: uiTokens.colors.light.onAccent,
+      fontSize: 9,
+      lineHeight: 11,
+      fontWeight: "800",
+      letterSpacing: 0.8,
+    },
+    profileMemberSince: {
+      flexShrink: 1,
+      fontSize: 11,
+      lineHeight: 14,
+      color: colors.text.secondary,
+    },
+    profileStatsRow: {
+      flexDirection: "row",
+      gap: 8,
+      marginTop: 16,
+    },
+    profileStat: {
+      flex: 1,
+      minWidth: 0,
+      paddingVertical: 10,
+      paddingHorizontal: 8,
+      borderRadius: uiTokens.radius.input,
+      backgroundColor: isDark
+        ? uiTokens.colors.dark.raised
+        : uiTokens.colors.light.raised,
+      borderWidth: 1,
+      borderColor: isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.07)",
+    },
+    profileStatValue: {
+      fontSize: 17,
+      lineHeight: 20,
+      fontWeight: "800",
+    },
+    profileStatLabel: {
+      marginTop: 3,
+      fontSize: 10,
+      lineHeight: 12,
+      fontWeight: "600",
+      color: colors.text.secondary,
     },
     gradientBackground: {
       position: "absolute",
@@ -2136,161 +2216,36 @@ const getStyles = (
       marginLeft: -200,
       zIndex: 0,
     },
-    brandingContainer: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: compactDrawerBranding ? 8 : 12,
-    },
-    logoCardButton: {
-      width: brandCardSize,
-      height: brandCardSize,
-      flexShrink: 0,
-    },
-    logoPill: {
-      width: "100%",
-      height: "100%",
-      flexDirection: "column",
-      alignItems: "center",
-      justifyContent: "center",
-      paddingHorizontal: compactDrawerBranding ? 7 : 8,
-      paddingVertical: compactDrawerBranding ? 7 : 8,
-      borderRadius: compactDrawerBranding ? 22 : 24,
-      borderWidth: 2,
-      boxShadow: "0 3px 6px rgba(0, 0, 0, 0.18)",
-    },
-    logoImage: {
-      width: compactDrawerBranding ? 62 : 70,
-      height: compactDrawerBranding ? 20 : 23,
-    },
-    logoCardMeta: {
-      width: "100%",
-      paddingTop: compactDrawerBranding ? 4 : 5,
-      alignItems: "center",
-    },
-    identityMeta: {
-      flex: 1,
-      minWidth: 0,
-      // The close button is absolute in the header, so the identity column
-      // reserves its 38/42px hit target plus a small gutter. This keeps long
-      // usernames visible and prevents the close control from intercepting
-      // profile-link taps at the edge of the drawer.
-      paddingRight: isMobile ? 46 : 50,
-      justifyContent: "center",
-    },
-    identityBadgeWrap: {
-      alignSelf: "flex-start",
-      maxWidth: "100%",
-      marginTop: compactDrawerBranding ? 7 : 8,
-    },
     drawerCloseButton: {
-      position: "absolute",
-      top: (isMobile ? 10 : 14) + drawerSafeInsets.top,
-      right: 18 + drawerSafeInsets.right,
-      width: isMobile ? 38 : 42,
-      height: isMobile ? 38 : 42,
-      borderRadius: isMobile ? 19 : 21,
+      width: 36,
+      height: 36,
+      borderRadius: uiTokens.radius.circle,
       alignItems: "center",
       justifyContent: "center",
-      backgroundColor: isDark
-        ? "rgba(255, 255, 255, 0.08)"
-        : "rgba(0, 0, 0, 0.06)",
+      backgroundColor: isDark ? "rgba(255, 255, 255, 0.08)" : "#f5f5f7",
       borderWidth: 1,
       borderColor: colors.divider,
-      zIndex: 2,
-    },
-    brandTaglineContainer: {
-      width: "100%",
-      height: compactDrawerBranding ? 12 : 14,
-      marginTop: compactDrawerBranding ? 2 : 3,
-      alignItems: "center",
-      justifyContent: "center",
-      overflow: "hidden",
-    },
-    brandSubtitle: {
-      fontSize: compactDrawerBranding ? 5.8 : 6.8,
-      fontWeight: "700",
-      color: colors.primaryContrastText + "C7",
-      letterSpacing: compactDrawerBranding ? 0.55 : 0.7,
-      lineHeight: compactDrawerBranding ? 7 : 8,
-      textAlign: "center",
-      textTransform: "uppercase",
-      maxWidth: "100%",
-    },
-    brandTaglineAnimated: {
-      fontSize: compactDrawerBranding ? 4.8 : 5.3,
-      fontWeight: "600",
-      color: colors.primaryContrastText + "A3",
-      letterSpacing: compactDrawerBranding ? 0.45 : 0.55,
-      lineHeight: compactDrawerBranding ? 7 : 8,
-      textAlign: "center",
-      textTransform: "uppercase",
-      maxWidth: "100%",
-    },
-    brandTaglineStatic: {
-      fontSize: compactDrawerBranding ? 4.8 : 5.3,
-      fontWeight: "600",
-      color: colors.primaryContrastText + "A3",
-      letterSpacing: compactDrawerBranding ? 0.45 : 0.55,
-      lineHeight: compactDrawerBranding ? 7 : 8,
-      textAlign: "center",
-      textTransform: "uppercase",
-      maxWidth: "100%",
-    },
-    brandBadge: {
-      backgroundColor: isDark ? colors.primaryLight : colors.primaryDark,
-      borderRadius: 999,
-      paddingHorizontal: compactDrawerBranding ? 8 : 10,
-      paddingVertical: compactDrawerBranding ? 3 : 4,
-      borderWidth: 1,
-      borderColor: colors.primaryContrastText + "26",
-      boxShadow: "0 2px 4px rgba(0, 0, 0, 0.14)",
-    },
-    brandBadgeText: {
-      fontSize: compactDrawerBranding ? 9 : 10,
-      fontWeight: "800",
-      color: colors.primaryContrastText,
-      letterSpacing: 1.1,
-      textTransform: "uppercase",
-    },
-    brandUsername: {
-      marginTop: 0,
-      fontSize: compactDrawerBranding ? 13 : isMobile ? 15 : 16,
-      lineHeight: compactDrawerBranding ? 17 : 20,
-      fontWeight: "800",
-      color: colors.text.primary,
-      maxWidth: "100%",
-    },
-    brandUsernameButton: {
-      alignSelf: "flex-start",
-      maxWidth: "100%",
-    },
-    brandMemberSince: {
-      marginTop: compactDrawerBranding ? 3 : 4,
-      fontSize: compactDrawerBranding ? 8.5 : isMobile ? 9.5 : 10,
-      lineHeight: compactDrawerBranding ? 12 : 14,
-      fontWeight: "400",
-      fontStyle: "italic",
-      letterSpacing: 0.1,
-      color: colors.text.secondary,
-      maxWidth: "100%",
-    },
-    drawerHeaderText: {
-      fontSize: 20,
-      fontWeight: "bold",
-      color: colors.primaryContrastText,
-      textShadowColor: "rgba(0, 0, 0, 0.2)",
-      textShadowOffset: { width: 0, height: 1 },
-      textShadowRadius: 2,
     },
     menuItemsScrollView: {
       flex: 1,
     },
     menuItemsContent: {
-      paddingTop: 16,
+      paddingTop: 12,
       paddingBottom: 12,
       paddingStart: (isMobile ? 12 : 10) + drawerSafeInsets.left,
       paddingEnd: (isMobile ? 12 : 10) + drawerSafeInsets.right,
       flexGrow: 1,
+    },
+    menuSectionLabel: {
+      paddingHorizontal: 8,
+      paddingTop: 4,
+      paddingBottom: 7,
+      fontSize: 10,
+      lineHeight: 13,
+      fontWeight: "800",
+      letterSpacing: 1.5,
+      color: colors.text.secondary,
+      textTransform: "uppercase",
     },
     menuItems: {
       flex: 1,
@@ -2301,38 +2256,22 @@ const getStyles = (
     menuItem: {
       flexDirection: "row",
       alignItems: "center",
-      paddingVertical: isMobile ? 13 : 12,
-      paddingRight: isMobile ? 16 : 14,
-      paddingLeft: isMobile ? 16 : 14,
-      marginVertical: isMobile ? 6 : 5,
-      borderRadius: isMobile ? 18 : 16,
-      borderLeftWidth: 4,
-      borderLeftColor: "transparent",
+      minHeight: 52,
+      paddingVertical: 6,
+      paddingRight: 12,
+      paddingLeft: 8,
+      marginVertical: 2,
+      borderRadius: 16,
       borderWidth: 1,
-      borderColor: colors.divider,
-      backgroundColor: isDark
-        ? "rgba(255, 255, 255, 0.03)"
-        : colors.background.default,
-      position: "relative",
-      overflow: "visible",
-      boxShadow: isDark
-        ? "0 4px 12px rgba(0, 0, 0, 0.12)"
-        : "0 4px 12px rgba(15, 23, 42, 0.06)",
+      borderColor: "transparent",
     },
     menuIconContainer: {
-      width: 40,
-      height: 40,
+      width: 36,
+      height: 36,
       borderRadius: 12,
       justifyContent: "center",
       alignItems: "center",
-      marginRight: isMobile ? 14 : 12,
-    },
-    activeIndicator: {
-      position: "absolute",
-      right: 12,
-      width: 4,
-      height: 24,
-      borderRadius: 999,
+      marginRight: 14,
     },
     menuText: {
       fontSize: 15,
@@ -2342,7 +2281,7 @@ const getStyles = (
     },
     menuBadge: {
       backgroundColor: "#FF3B30",
-      borderRadius: 10,
+      borderRadius: uiTokens.radius.small,
       paddingHorizontal: 7,
       paddingVertical: 2,
       minWidth: 22,
@@ -2352,33 +2291,37 @@ const getStyles = (
       marginLeft: 8,
     },
     menuBadgeText: {
-      color: "#FFFFFF",
+      color: uiTokens.colors.light.onAccent,
       fontSize: 10,
       fontWeight: "700",
     },
-    logoutButton: {
+    logoutAction: {
       flexDirection: "row",
       alignItems: "center",
-      padding: 20,
-      borderRadius: 16,
-      margin: 12,
-      gap: 16,
+      minHeight: 48,
+      paddingHorizontal: 12,
+      borderRadius: uiTokens.radius.input,
+      marginTop: 10,
       backgroundColor: isDark
         ? "rgba(255, 59, 48, 0.1)"
         : "rgba(255, 59, 48, 0.05)",
-      borderLeftWidth: 4,
-      borderLeftColor: "#FF3B30",
       borderWidth: 1,
       borderColor: isDark ? "rgba(255, 59, 48, 0.2)" : "rgba(255, 59, 48, 0.1)",
-      boxShadow: isDark
-        ? "0 4px 10px rgba(255, 59, 48, 0.14)"
-        : "0 4px 10px rgba(255, 59, 48, 0.08)",
+      gap: 10,
     },
-    logoutText: {
-      fontSize: 16,
-      fontWeight: "500",
-      color: colors.error.main,
+    logoutActionIcon: {
+      width: 30,
+      height: 30,
+      borderRadius: uiTokens.radius.small,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: "rgba(255, 59, 48, 0.12)",
+    },
+    logoutActionText: {
       flex: 1,
+      fontSize: 13,
+      fontWeight: "700",
+      color: colors.error.main,
     },
     quickSettingsSection: {
       paddingHorizontal: compactQuickActions ? 10 : 12,
@@ -2387,7 +2330,7 @@ const getStyles = (
       marginEnd: (isMobile ? 18 : 16) + drawerSafeInsets.right,
       marginTop: 10,
       marginBottom: 6,
-      borderRadius: 18,
+      borderRadius: uiTokens.radius.card,
       backgroundColor: isDark
         ? "rgba(255, 255, 255, 0.04)"
         : colors.background.paper,
@@ -2435,7 +2378,7 @@ const getStyles = (
     quickToggleIcon: {
       width: compactQuickActions ? 38 : 30,
       height: compactQuickActions ? 38 : 30,
-      borderRadius: 10,
+      borderRadius: uiTokens.radius.small,
       alignItems: "center",
       justifyContent: "center",
       marginBottom: 0,
