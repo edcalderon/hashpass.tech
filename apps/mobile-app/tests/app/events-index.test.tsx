@@ -4,7 +4,7 @@ import { Platform, Pressable, Text, TextInput, TouchableOpacity } from 'react-na
 const mockPush = jest.fn(); const mockSetParams = jest.fn(); let mockParams: any = {}; const mockSaveBookmarks = jest.fn(); let mockEvents: any[]; let mockLoggedIn = false; let mockAnimationLevel = 'none';
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) }));
 jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush, setParams: mockSetParams }), useLocalSearchParams: () => mockParams }));
-jest.mock('../../hooks/useTheme', () => ({ useTheme: () => ({ isDark: true, colors: { primary: '#22d3ee', divider: '#333', background: { default: '#111', paper: '#19191f' }, text: { primary: '#fff', secondary: '#aaa', disabled: '#777' } } }) }));
+jest.mock('../../hooks/useTheme', () => ({ useTheme: () => ({ isDark: true, colors: { primary: '#22d3ee', divider: '#333', background: { default: '#111', paper: '#19191f' }, text: { primary: '#fff', secondary: '#aaa', disabled: '#777' }, warning: { dark: '#f59e0b' } } }) }));
 jest.mock('../../i18n/i18n', () => ({ useTranslation: () => ({ t: (_key: string, fallback: string) => fallback }) }));
 jest.mock('../../contexts/AnimationLevelContext', () => ({ useAnimationLevel: () => ({ animationLevel: mockAnimationLevel }) }));
 jest.mock('../../contexts/EventContext', () => ({ useEvent: () => ({}) }));

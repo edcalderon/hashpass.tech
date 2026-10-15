@@ -18,6 +18,9 @@ const copilotEvents = {
 const runAfterInteractions = jest.fn();
 
 const noEventTheme = {
+  warning: {
+    dark: "#b45309",
+  },
   background: {
     default: "#ffffff",
     paper: "#ffffff",
