@@ -22,22 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610151713, // Updated to current timestamp
+  buildNumber: 202610151821, // Updated to current timestamp
   releaseDate: '2026-10-15',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'complete dashboard drawer translations'
+    // No new features
   ],
   bugfixes: [
-    // No bugfixes
+    'complete native Apple sign-in'
   ],
   breakingChanges: [],
-  notes: 'complete dashboard drawer translations'
+  notes: 'complete native Apple sign-in'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.116': {
+    version: '1.9.116',
+    buildNumber: 202610151821,
+    releaseDate: '2026-10-15',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'complete native Apple sign-in'
+    ],
+    breakingChanges: [],
+    notes: 'complete native Apple sign-in'
+  },
   '1.9.115': {
     version: '1.9.115',
     buildNumber: 202610151713,
