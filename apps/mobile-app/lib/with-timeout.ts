@@ -7,12 +7,19 @@
  * flakiness on these exact paths (see the v1.8.234-239 auth crash
  * investigation). A promise that never settles — not even with an error —
  * means `await` never returns, which silently hangs whatever UI is waiting
- * on it (e.g. a logout button's busy state) forever. This does not cancel
- * the underlying operation, only stops the caller from waiting on it.
+ * on it (e.g. a logout button's busy state) forever. The optional timeout
+ * callback can cancel or invalidate the underlying operation before the
+ * caller stops waiting on it.
  */
-export const withTimeout = <T>(promise: Promise<T>, ms: number, label?: string): Promise<T> =>
+export const withTimeout = <T>(
+  promise: Promise<T>,
+  ms: number,
+  label?: string,
+  onTimeout?: () => void,
+): Promise<T> =>
   new Promise<T>((resolve, reject) => {
     const timer = setTimeout(() => {
+      onTimeout?.();
       reject(new Error(label ? `${label} timed out after ${ms}ms` : `Timed out after ${ms}ms`));
     }, ms);
 

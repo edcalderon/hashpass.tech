@@ -1202,6 +1202,7 @@ export const useAuth = () => {
       // it with Better Auth so it produces the same session and Supabase bridge as
       // web Apple OAuth; do not create a second provider-specific mobile account.
       if (provider === 'apple' && Platform.OS === 'ios') {
+        const betterAuthAttemptController = new AbortController();
         try {
           const { identityToken } = await signInWithNativeAppleAccount();
           await clearStaleProviderSession('better-auth');
@@ -1211,9 +1212,12 @@ export const useAuth = () => {
               ? (authService as unknown as BetterAuthProvider)
               : getGoogleBetterAuthProvider();
           const betterAuthResult = await withTimeout(
-            betterAuthApple.signInWithIdToken('apple', identityToken),
+            betterAuthApple.signInWithIdToken('apple', identityToken, {
+              signal: betterAuthAttemptController.signal,
+            }),
             NATIVE_SOCIAL_SIGN_IN_TIMEOUT_MS,
             'Apple sign-in',
+            () => betterAuthAttemptController.abort(),
           );
           if (betterAuthResult.error) {
             throw new Error(betterAuthResult.error);
@@ -1242,6 +1246,7 @@ export const useAuth = () => {
             session,
           };
         } catch (error: any) {
+          betterAuthAttemptController.abort();
           if (error?.code === 'ERR_REQUEST_CANCELED') {
             return { pending: false };
           }

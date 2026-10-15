@@ -194,6 +194,7 @@ describe('BetterAuthProvider', () => {
       });
       expect(mockExpoClient).toHaveBeenCalledWith({ storage: expect.anything() });
       expect(mockGetSession).not.toHaveBeenCalled();
+      expect(mockSetItemAsync).not.toHaveBeenCalled();
       expect(result.error).toBeUndefined();
       expect(result.session).toEqual(expect.objectContaining({
         access_token: 'native-apple-session-token',
@@ -204,6 +205,36 @@ describe('BetterAuthProvider', () => {
       Platform.OS = originalPlatform;
     }
 
+  });
+
+  it('does not commit a native sign-in that is aborted while the request is in flight', async () => {
+    let resolveSignIn: ((value: unknown) => void) | undefined;
+    const pendingSignIn = new Promise((resolve) => {
+      resolveSignIn = resolve;
+    });
+    mockSignInSocial.mockReturnValueOnce(pendingSignIn);
+
+    const { BetterAuthProvider } = require('../../../../packages/auth/src/providers/better-auth');
+    const provider = new BetterAuthProvider({ baseURL: 'https://api.hashpass.tech/api/auth' });
+    const controller = new AbortController();
+    const signInPromise = provider.signInWithIdToken('apple', 'apple-id-token-123', {
+      signal: controller.signal,
+    });
+
+    controller.abort();
+    resolveSignIn?.({
+      data: {
+        redirect: false,
+        token: 'late-apple-session-token',
+        user: createBetterAuthSession().user,
+      },
+    });
+
+    await expect(signInPromise).resolves.toEqual({
+      error: 'Native sign-in attempt was cancelled.',
+    });
+    expect(mockSetItemAsync).not.toHaveBeenCalled();
+    expect(provider.isAuthenticated()).toBe(false);
   });
 
   it('marks web Google sign-in in localStorage before redirecting', async () => {

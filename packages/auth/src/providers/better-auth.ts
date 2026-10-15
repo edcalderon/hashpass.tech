@@ -25,6 +25,10 @@ const LEGACY_BETTER_AUTH_SEGMENT = ['bsl', 'auth'].join('-');
 const BETTER_AUTH_SESSION_CACHE_KEY = 'hashpass_better_auth_session';
 const PASSWORDLESS_CALLBACK_MARKER = 'supabase_passwordless_in_progress';
 
+type NativeSignInOptions = {
+  signal?: AbortSignal;
+};
+
 let secureStoreModule: SecureStoreModule | null = null;
 
 const getSecureStore = (): SecureStoreModule => {
@@ -72,6 +76,7 @@ export class BetterAuthProvider implements IAuthProvider {
   private currentSession: AuthSession | null = null;
   private stateChangeCallbacks: AuthStateChangeCallback[] = [];
   private sessionLookupInFlight: Promise<AuthSession | null> | null = null;
+  private nativeSignInAttempt = 0;
 
   constructor(options: { baseURL?: string; basePath?: string } = {}) {
     this.basePath = normalizeBasePath(options.basePath);
@@ -197,7 +202,9 @@ export class BetterAuthProvider implements IAuthProvider {
 
   private isSessionExpired(session: AuthSession | null): boolean {
     if (!session?.expires_at) {
-      return false;
+      // A cached session without an expiry cannot be trusted after the
+      // server's cookie-backed session has expired or been revoked.
+      return true;
     }
 
     return session.expires_at <= Date.now();
@@ -360,15 +367,35 @@ export class BetterAuthProvider implements IAuthProvider {
    * its configured provider client ID — see
    * https://www.better-auth.com/docs/concepts/oauth#sign-in-with-id-token
    */
-  async signInWithIdToken(provider: 'google' | 'apple', idToken: string): Promise<AuthResponse> {
+  async signInWithIdToken(
+    provider: 'google' | 'apple',
+    idToken: string,
+    options: NativeSignInOptions = {},
+  ): Promise<AuthResponse> {
+    const attempt = ++this.nativeSignInAttempt;
+    const assertActive = () => {
+      if (options.signal?.aborted || attempt !== this.nativeSignInAttempt) {
+        const error = new Error('Native sign-in attempt was cancelled.');
+        error.name = 'AbortError';
+        throw error;
+      }
+    };
+
     try {
+      assertActive();
       this.currentSession = null;
       this.notifyStateChange(null);
 
-      const result = await (this.getClient() as any).signIn.social({
+      const signInOptions: Record<string, any> = {
         provider,
         idToken: { token: idToken },
-      });
+      };
+      if (options.signal) {
+        signInOptions.fetchOptions = { signal: options.signal };
+      }
+
+      const result = await (this.getClient() as any).signIn.social(signInOptions);
+      assertActive();
 
       if (result?.error) {
         const providerLabel = provider === 'apple' ? 'Apple' : 'Google';
@@ -387,13 +414,18 @@ export class BetterAuthProvider implements IAuthProvider {
           provider: 'better-auth',
         };
 
+        // The native ID-token response has no server expiry. Keep this
+        // response in memory only; the Expo client persists the Better Auth
+        // cookie, and a later getSession() stores a cache entry only when the
+        // server supplies expiresAt. This prevents an incomplete response
+        // from becoming an unbounded offline login.
         this.currentSession = session;
-        await this.storeSession(session);
         this.notifyStateChange(session);
         return { user: session.user, session };
       }
 
       const session = await this.readSessionWithRetry();
+      assertActive();
       if (!session) {
         return { error: 'Authentication completed but no Better Auth session was found.' };
       }
@@ -456,6 +488,7 @@ export class BetterAuthProvider implements IAuthProvider {
     // just tapped Logout — the exact "logout doesn't actually clear the
     // session" symptom on native. Clearing up front guarantees the local
     // session is gone regardless of whether the remote call ever settles.
+    this.nativeSignInAttempt += 1;
     this.currentSession = null;
     await this.clearStoredSession();
     this.notifyStateChange(null);
