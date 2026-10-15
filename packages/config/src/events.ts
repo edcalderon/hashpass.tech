@@ -2393,7 +2393,7 @@ export const EVENTS: Record<string, EventConfig> = {
     ],
     domain: "cbweek2026.hashpass.tech",
     website: "https://colombiablockchainweek.com/",
-    speakerApplicationUrl: "https://calendar.google.com/calendar/u/0/appointments/schedules/AcZssZ1wHziE-4TMqTr0W5MJAhQwPZP_GtCVXNdkTHBfLjXX6lEDMpTlX1cxEu4iHTZ5c8aGxn_NICcO",
+    speakerApplicationUrl: "https://colombiablockchainweek.com/ser-speaker#postulacion",
     speakerApplicationLabel: "Colombia Blockchain Week",
     title: "Colombia Blockchain Week 2026",
     subtitle: "Hotel InterContinental Medellín • 1ª Edición",
