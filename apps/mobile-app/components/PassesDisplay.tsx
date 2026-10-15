@@ -620,7 +620,7 @@ function PassesDisplayInner({
               justifyContent: "space-between",
               padding: 12,
               backgroundColor: colors.background.default,
-              borderRadius: 8,
+              borderRadius: uiTokens.radius.small,
               marginBottom: 16,
               borderWidth: 1,
               borderColor: colors.divider,
