@@ -189,6 +189,7 @@
       "privacy": "Datenschutzrichtlinie"
     },
     "orContinueWith": "Oder weiter mit",
+    "orContinueWithSocialLogin": "Oder mit einem sozialen Konto fortfahren",
     "processing": "Wird verarbeitet...",
     "processingAuthentication": "Authentifizierung wird verarbeitet...",
     "authenticationSuccessful": "Authentifizierung erfolgreich!",

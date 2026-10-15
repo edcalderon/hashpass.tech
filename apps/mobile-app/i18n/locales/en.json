@@ -276,6 +276,7 @@
       "privacy": "Privacy Policy"
     },
     "orContinueWith": "Or continue with",
+    "orContinueWithSocialLogin": "Or continue with social login",
     "processing": "Processing...",
     "processingAuthentication": "Processing authentication...",
     "authenticationSuccessful": "Authentication successful!",

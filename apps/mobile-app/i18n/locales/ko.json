@@ -272,6 +272,7 @@
       "privacy": "개인정보 처리방침"
     },
     "orContinueWith": "또는 다음으로 계속",
+    "orContinueWithSocialLogin": "또는 소셜 계정으로 계속",
     "processing": "처리 중...",
     "processingAuthentication": "인증 처리 중...",
     "authenticationSuccessful": "인증 성공!",
