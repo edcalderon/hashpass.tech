@@ -332,15 +332,7 @@ function CustomDrawerContent({
         color: colors.text.primary,
       },
     ],
-    [
-      brandBadgeColor,
-      colors.text.primary,
-      event,
-      isDark,
-      locale,
-      t,
-      unreadCount,
-    ],
+    [brandBadgeColor, colors.text.primary, event, isDark, locale, unreadCount],
   );
 
   // Animated fluid gradient effect with multiple layers
