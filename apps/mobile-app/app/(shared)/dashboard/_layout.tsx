@@ -1931,7 +1931,7 @@ function AuthenticatedDashboardLayout() {
     !hasRecentAuthSuccess() &&
     !isDevAuthBypassEnabled()
   ) {
-    return <LoadingScreen fullScreen />;
+    return <LoadingScreen icon="dashboard" fullScreen />;
   }
 
   return (

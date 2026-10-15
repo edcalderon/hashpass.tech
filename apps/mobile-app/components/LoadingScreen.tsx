@@ -1,18 +1,13 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-// lib/vector-icons routes web to SVG-based Lucide icons instead of the raw
-// font glyphs @expo/vector-icons renders directly; the raw font can show its
-// tofu/"?" fallback glyph for a window before the icon font loads on web --
-// worse here since LoadingScreen is often the very first thing rendered.
-import { MaterialIcons } from '../lib/vector-icons';
 import HashpassLoader from './HashpassLoader';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../i18n/i18n';
 
 export interface LoadingScreenProps {
   /**
-   * Custom icon name from MaterialIcons (optional)
-   * If not provided, will use ActivityIndicator
+   * Contextual page icon from MaterialIcons (optional). The shared loader
+   * crossfades between the HASHPASS mark and this icon while loading.
    */
   icon?: string;
   
@@ -78,11 +73,10 @@ const LoadingScreen: React.FC<LoadingScreenProps> = ({
   const { t } = useTranslation('common');
   const styles = getStyles(isDark, colors, fullScreen);
   
-  // Determine if we should show spinner (default: true if no icon)
-  const shouldShowSpinner = showSpinner !== undefined ? showSpinner : !icon;
-  
-  // Determine icon color
-  const finalIconColor = iconColor || colors.primary;
+  // The contextual icon is now layered into the branded loader, so the
+  // loading mark remains present whether or not a page supplies an icon.
+  const shouldShowSpinner = showSpinner !== undefined ? showSpinner : true;
+  const loaderSize = icon ? iconSize : spinnerSize === 'small' ? 32 : 64;
   
   // Build display message with translations
   const defaultMessage = t('loading.default') || 'Loading...';
@@ -97,24 +91,13 @@ const LoadingScreen: React.FC<LoadingScreenProps> = ({
   return (
     <View style={styles.container}>
       <View style={styles.content}>
-        {/* Icon or Spinner */}
-        {icon ? (
-          <MaterialIcons
-            name={icon as any}
-            size={iconSize}
-            color={finalIconColor}
-            style={styles.icon}
-          />
-        ) : shouldShowSpinner ? (
-          // The branded logo-in-ring loader replaces the plain
-          // ActivityIndicator for every generic loading state (no `icon`
-          // given) -- app startup, route resolution, etc. Screens that pass
-          // their own contextual `icon` are unaffected. Only tint the ring
-          // from `iconColor` when a caller explicitly set one; otherwise
-          // HashpassLoader keeps the logo's own cyan.
+        {/* Branded loader with an optional contextual page icon. */}
+        {shouldShowSpinner ? (
           <View style={styles.spinner}>
             <HashpassLoader
-              size={spinnerSize === 'small' ? 32 : 64}
+              size={loaderSize}
+              contextIcon={icon}
+              contextColor={iconColor || colors.primary}
               {...(iconColor ? { color: iconColor } : null)}
             />
           </View>
@@ -184,4 +167,3 @@ const getStyles = (isDark: boolean, colors: any, fullScreen: boolean) => StyleSh
 });
 
 export default LoadingScreen;
-

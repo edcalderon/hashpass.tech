@@ -10,6 +10,9 @@ jest.mock('../../contexts/AnimationLevelContext', () => ({ useAnimationLevel: ()
 jest.mock('react-native-svg', () => ({
   __esModule: true, default: 'Svg', Svg: 'Svg', Path: 'Path', Circle: 'Circle',
 }));
+jest.mock('../../lib/vector-icons', () => ({
+  MaterialIcons: (props: Record<string, unknown>) => jest.requireActual('react').createElement('ContextIcon' as any, props),
+}));
 
 let view: ReactTestRenderer;
 let timing: jest.SpyInstance;
@@ -37,6 +40,13 @@ const render = async (props = {}) => {
 
 it('renders the chevron mark and a single accent ring', async () => {
   await render();
+  expect(view.root.findAllByType(Path)).toHaveLength(1);
+  expect(view.root.findAllByType(Circle)).toHaveLength(1);
+});
+
+it('renders a contextual page icon for the shared loading loop', async () => {
+  await render({ contextIcon: 'people' });
+  expect(view.root.findByType('ContextIcon' as any)).toBeTruthy();
   expect(view.root.findAllByType(Path)).toHaveLength(1);
   expect(view.root.findAllByType(Circle)).toHaveLength(1);
 });
