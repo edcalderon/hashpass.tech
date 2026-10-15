@@ -115,7 +115,12 @@ export async function PATCH(request: Request) {
     if (typeof body.isActive !== 'boolean') {
       return Response.json({ error: 'isActive must be a boolean' }, { status: 400 });
     }
+    // The profile switch controls the complete public/requestable state. Keep
+    // the dependent flags in sync so reactivating a retired profile really
+    // makes it visible and able to receive meeting requests again.
     updates.is_active = body.isActive;
+    updates.is_accepting_meetings = body.isActive;
+    updates.directory_visible = body.isActive;
   }
   if (!Object.keys(updates).length) {
     return Response.json({ error: 'At least one speaker field is required' }, { status: 400 });

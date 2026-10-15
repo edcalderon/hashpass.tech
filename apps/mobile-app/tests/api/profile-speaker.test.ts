@@ -111,11 +111,52 @@ describe('/api/profile/speaker', () => {
     }));
 
     expect(response.status).toBe(200);
-    expect(mockUpdate).toHaveBeenCalledWith({ title: 'Co-Founder', company: 'Hashpass Labs', is_active: false });
+    expect(mockUpdate).toHaveBeenCalledWith({
+      title: 'Co-Founder',
+      company: 'Hashpass Labs',
+      is_active: false,
+      is_accepting_meetings: false,
+      directory_visible: false,
+    });
     expect(mockEq).toHaveBeenCalledWith('id', speaker.id);
     expect(mockEq).toHaveBeenCalledWith('user_id', '7f60f5d2-5948-4df1-9670-2f9177cf2fe4');
     await expect(response.json()).resolves.toMatchObject({
       data: { title: 'Co-Founder', company: 'Hashpass Labs' },
+    });
+  });
+
+  it('reactivates meeting availability and directory publication for a retired profile', async () => {
+    mockMaybeSingle.mockResolvedValue({
+      data: {
+        ...speaker,
+        is_active: false,
+        is_accepting_meetings: false,
+        directory_visible: false,
+      },
+      error: null,
+    });
+    mockSingle.mockResolvedValue({
+      data: {
+        ...speaker,
+        is_active: true,
+        is_accepting_meetings: true,
+        directory_visible: true,
+      },
+      error: null,
+    });
+
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    const { PATCH } = require('../../app/api/profile/speaker+api');
+    const response = await PATCH(new Request('https://api.hashpass.tech/api/profile/speaker', {
+      method: 'PATCH',
+      body: JSON.stringify({ isActive: true }),
+    }));
+
+    expect(response.status).toBe(200);
+    expect(mockUpdate).toHaveBeenCalledWith({
+      is_active: true,
+      is_accepting_meetings: true,
+      directory_visible: true,
     });
   });
 
