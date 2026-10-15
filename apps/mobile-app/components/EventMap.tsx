@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Linking, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Linking, Platform, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { ExternalLink, MapPin } from 'lucide-react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { uiPalette, uiTokens } from '@hashpass/ui/tokens';
@@ -36,10 +36,18 @@ const MAP_HEIGHT = 280;
 // venue cannot be located we show a plain link instead of an empty box.
 export default function EventMap({ address, venue, city, country, label, isDark, animated }: EventMapProps) {
   const palette = uiPalette(isDark);
+  const { width: viewportWidth } = useWindowDimensions();
   const [state, setState] = useState<MapState>({ status: 'loading' });
   const [frameLoaded, setFrameLoaded] = useState(false);
   const fade = useSharedValue(0);
   const fadeStyle = useAnimatedStyle(() => ({ opacity: fade.value }));
+
+  // On mobile the map should fill the full available row width; scale the
+  // height proportionally so the tiles aren't cropped into a tall narrow
+  // box. On wider viewports keep a fixed, comfortable height.
+  const mapHeight = viewportWidth < 960
+    ? Math.min(400, Math.max(240, Math.round(viewportWidth * 0.65)))
+    : MAP_HEIGHT;
 
   useEffect(() => {
     const controller = new AbortController();
@@ -77,7 +85,7 @@ export default function EventMap({ address, venue, city, country, label, isDark,
     [state, label, palette.accent, palette.surface, isDark, animated],
   );
 
-  const styles = getStyles(palette);
+  const styles = getStyles(palette, mapHeight);
   const externalUrl =
     state.status === 'ready'
       ? openStreetMapUrl(state.coordinates)
@@ -149,20 +157,18 @@ export default function EventMap({ address, venue, city, country, label, isDark,
   );
 }
 
-const getStyles = (palette: ReturnType<typeof uiPalette>) =>
+const getStyles = (palette: ReturnType<typeof uiPalette>, mapHeight: number) =>
   StyleSheet.create({
     container: {
-      paddingHorizontal: uiTokens.space.xl,
-      paddingBottom: uiTokens.space.lg,
+      // Map fills edge-to-edge within the parent Surface card; only the
+      // "Open in OpenStreetMap" link below keeps horizontal padding.
+      paddingBottom: uiTokens.space.md,
       gap: uiTokens.space.sm,
     },
     mapBox: {
-      height: MAP_HEIGHT,
-      borderRadius: uiTokens.radius.card,
+      height: mapHeight,
       overflow: 'hidden',
       backgroundColor: palette.accentSoft,
-      borderWidth: 1,
-      borderColor: palette.border,
     },
     webview: {
       flex: 1,
@@ -185,7 +191,8 @@ const getStyles = (palette: ReturnType<typeof uiPalette>) =>
       alignItems: 'center',
       alignSelf: 'flex-end',
       gap: 4,
-      paddingVertical: 2,
+      paddingVertical: 4,
+      paddingHorizontal: uiTokens.space.md,
     },
     mapLinkText: {
       color: palette.accent,

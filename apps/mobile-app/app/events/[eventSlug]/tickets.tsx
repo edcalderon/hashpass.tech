@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Modal, useWindowDimensions, Platform, TouchableOpacity, ScrollView, Linking } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { AccessibilityInfo, View, Text, StyleSheet, Modal, useWindowDimensions, Platform, TouchableOpacity, ScrollView, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useEvent } from '@contexts/EventContext';
 import { useTheme } from '../../../hooks/useTheme';
+import { useAnimationLevel } from '../../../contexts/AnimationLevelContext';
 import EventBanner from '../../../components/EventBanner';
 import { Surface, ActionButton, ModalBackdrop, HoverText } from '@hashpass/ui/primitives';
 import { uiPalette, uiTokens } from '@hashpass/ui/tokens';
@@ -27,6 +28,7 @@ export default function TicketsScreen() {
   const { event } = useEvent();
   const { isDark } = useTheme();
   const router = useRouter();
+  const { animationLevel } = useAnimationLevel();
   const { width: viewportWidth } = useWindowDimensions();
   const isWide = viewportWidth >= 960;
   const palette = uiPalette(isDark);
@@ -39,16 +41,61 @@ export default function TicketsScreen() {
 
   const [showTicketModal, setShowTicketModal] = useState(false);
 
+  // Match the event-info banner's reduce-motion + countdown wiring so the
+  // tickets page shows the same hero with video and live countdown.
+  const [systemReducedMotion, setSystemReducedMotion] = useState(true);
+  const [motionResolved, setMotionResolved] = useState(false);
+  const videoPlaybackEnabled = animationLevel === 'full' && (!motionResolved || !systemReducedMotion);
+
+  useEffect(() => {
+    let active = true;
+    void AccessibilityInfo.isReduceMotionEnabled()
+      .then((reduced) => {
+        if (active) {
+          setSystemReducedMotion(reduced);
+          setMotionResolved(true);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setSystemReducedMotion(true);
+          setMotionResolved(true);
+        }
+      });
+    const subscription = AccessibilityInfo.addEventListener(
+      'reduceMotionChanged',
+      setSystemReducedMotion,
+    );
+    return () => {
+      active = false;
+      subscription.remove();
+    };
+  }, []);
+
+  const [isEventFinished, setIsEventFinished] = useState(false);
+  useEffect(() => {
+    const check = () => {
+      const now = new Date();
+      const end = event?.eventEndDate ? new Date(event.eventEndDate) : null;
+      setIsEventFinished(Boolean(end && now > end));
+    };
+    check();
+    const interval = setInterval(check, 60000);
+    return () => clearInterval(interval);
+  }, [event?.eventEndDate]);
+
   // PKRR owns the current Hash Poker tournament registration pages. Prefer
   // the live ingested CTA so each tournament opens its exact registration
   // page; fall back to the public club calendar between tournaments.
   const ticketUrl = eventId === 'colombia2026'
     ? 'https://bsl.blckchn.xyz/e/bsl-colombia-2026#tickets'
-    : isHashPoker
-      ? event?.cta?.url || 'https://pkrr.io/c/hash-poker'
-      : event?.cta?.url || (event?.website
-          ? `${event.website.replace(/\/$/, '')}/tickets/`
-          : `https://bsl.blckchn.xyz/e/${eventId}#tickets`);
+    : eventId === 'cbweek2026'
+      ? 'https://colombiablockchainweek.com/#checkout'
+      : isHashPoker
+        ? event?.cta?.url || 'https://pkrr.io/c/hash-poker'
+        : event?.cta?.url || (event?.website
+            ? `${event.website.replace(/\/$/, '')}/tickets/`
+            : `https://bsl.blckchn.xyz/e/${eventId}#tickets`);
   const ticketHostname = getHostname(ticketUrl);
   const organizerSupportEmail = isHashPoker ? 'torneos@pkrr.io' : null;
 
@@ -77,9 +124,18 @@ export default function TicketsScreen() {
         showsVerticalScrollIndicator={false}
       >
         <EventBanner
+          variant="detail"
           title={eventTitle}
-          subtitle="Get your tickets"
+          subtitle={event?.subtitle || 'Event Details & Logistics'}
           date={eventDate}
+          showCountdown={!isEventFinished && Boolean(event?.eventStartDate)}
+          showLiveIndicator={!isEventFinished && Boolean(event?.eventStartDate)}
+          isEventFinished={isEventFinished}
+          eventStartDate={event?.eventStartDate}
+          eventId={eventId}
+          eventImage={event?.image}
+          eventVideo={event?.heroVideo}
+          videoPlaybackEnabled={videoPlaybackEnabled}
         />
 
         <View style={styles.content}>

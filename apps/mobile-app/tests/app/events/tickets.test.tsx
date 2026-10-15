@@ -18,6 +18,10 @@ jest.mock("../../../hooks/useTheme", () => ({
   useTheme: () => ({ isDark: false }),
 }));
 
+jest.mock("../../../contexts/AnimationLevelContext", () => ({
+  useAnimationLevel: () => ({ animationLevel: "full" }),
+}));
+
 jest.mock("@expo/vector-icons", () => ({ MaterialIcons: "MaterialIcons" }));
 
 jest.mock("../../../components/EventBanner", () => "EventBanner");
@@ -230,6 +234,29 @@ describe("TicketsScreen", () => {
     const view = renderScreen();
 
     expect(collectText(view.toJSON())).toContain("Tickets provided by tickets.example.com");
+  });
+
+  it("uses the colombiablockchainweek.com checkout URL for the cbweek2026 event", () => {
+    Platform.OS = "web";
+    const openMock = jest.fn();
+    const originalWindow = (global as any).window;
+    Object.defineProperty(global, "window", {
+      configurable: true,
+      value: { open: openMock },
+    });
+    mockEvent = { id: "cbweek2026", title: "Colombia Blockchain Week 2026" };
+    const view = renderScreen();
+
+    expect(collectText(view.toJSON())).toContain("Tickets provided by colombiablockchainweek.com");
+
+    act(() => findTicketHostnameLink(view).props.onPress());
+    expect(openMock).toHaveBeenCalledWith(
+      "https://colombiablockchainweek.com/#checkout",
+      "_blank",
+      "noopener,noreferrer",
+    );
+
+    Object.defineProperty(global, "window", { configurable: true, value: originalWindow });
   });
 
   it("falls back to the bsl.blckchn.xyz ticket URL by event id when there is no website", () => {

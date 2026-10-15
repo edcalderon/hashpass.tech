@@ -330,11 +330,15 @@ export default function EventInfoScreen() {
             <ActivityIndicator size="small" color={palette.accent} />
           </View>
         ) : (
-          <Text style={[styles.aboutText, hasMapLocation && styles.aboutTextWithMap]}>
+          <Text style={styles.aboutText}>
             {aboutText || `More details for ${event?.title || 'this event'} are coming soon.`}
           </Text>
         )}
-        {hasMapLocation && (
+      </Surface>
+      {/* Map gets its own full-width card so it occupies the entire row on
+          mobile instead of being squeezed inside the text card's padding. */}
+      {hasMapLocation && (
+        <Surface mode={isDark ? 'dark' : 'light'} style={[styles.sectionContent, styles.mapCard]}>
           <EventMap
             address={details?.venue_address}
             venue={mapVenue}
@@ -344,8 +348,8 @@ export default function EventInfoScreen() {
             isDark={isDark}
             animated={motionEnabled}
           />
-        )}
-      </Surface>
+        </Surface>
+      )}
     </View>
   );
 
@@ -551,7 +555,10 @@ const getStyles = (
   },
   sections: {
     flexDirection: isWide ? 'row' : 'column',
-    alignItems: 'flex-start',
+    // On mobile the cross-axis is horizontal — 'stretch' lets each section
+    // fill the full row width. On desktop the cross-axis is vertical, so
+    // 'flex-start' keeps each column sized by its content.
+    alignItems: isWide ? 'flex-start' : 'stretch',
     gap: uiTokens.space.xl,
     marginTop: isWide ? uiTokens.space.section : uiTokens.space.xxl,
   },
@@ -574,6 +581,7 @@ const getStyles = (
     marginBottom: uiTokens.space.md,
   },
   sectionContent: {
+    width: '100%',
     padding: 0,
     backgroundColor: palette.surface,
     borderRadius: uiTokens.radius.card,
@@ -639,7 +647,8 @@ const getStyles = (
     lineHeight: 26,
     padding: uiTokens.space.xl,
   },
-  aboutTextWithMap: {
-    paddingBottom: uiTokens.space.lg,
+  mapCard: {
+    marginTop: uiTokens.space.md,
+    overflow: 'hidden',
   },
 });

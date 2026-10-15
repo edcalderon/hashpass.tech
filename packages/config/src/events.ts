@@ -2397,6 +2397,11 @@ export const EVENTS: Record<string, EventConfig> = {
     speakerApplicationLabel: "Colombia Blockchain Week",
     title: "Colombia Blockchain Week 2026",
     subtitle: "Hotel InterContinental Medellín • 1ª Edición",
+    tour: {
+      city: "Medellín",
+      country: "Colombia",
+      venue: "Hotel InterContinental Medellín, El Poblado",
+    },
     // Official Colombia Blockchain Week assets, downloaded from the event's
     // own published media library and re-hosted on HashPass event media.
     image: "https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events/cbweek2026/branding/cbweek2026-hero.jpg",
