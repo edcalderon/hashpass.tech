@@ -86,6 +86,15 @@ jest.mock('expo-apple-authentication', () => ({
   signInAsync: jest.fn(async () => ({ identityToken: 'apple-id-token' })),
 }));
 
+// @better-auth/expo publishes an ESM-only .mjs dependency graph. The native
+// client is covered by the auth-provider tests' explicit mock; keep unrelated
+// provider-selection suites from loading Expo's runtime-only implementation.
+jest.mock('@better-auth/expo/client', () => ({
+  expoClient: jest.fn(() => ({
+    id: 'expo-client',
+  })),
+}));
+
 // The email module uses S3 for asset URLs. The mobile Jest preset resolves
 // AWS SDK export conditions to a native ESM entry point that Jest cannot
 // parse, and unit tests must never construct a real AWS client anyway. Keep
