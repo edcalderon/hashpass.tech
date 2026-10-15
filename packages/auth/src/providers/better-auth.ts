@@ -3,6 +3,7 @@
  */
 
 import { createAuthClient } from 'better-auth/client';
+import { expoClient } from '@better-auth/expo/client';
 import { oauthProviderClient } from '@better-auth/oauth-provider/client';
 import { ENV_CONFIG } from '@hashpass/config';
 import { Platform } from 'react-native';
@@ -115,7 +116,16 @@ export class BetterAuthProvider implements IAuthProvider {
       const nativeTrustedOriginHeaders = resolveNativeTrustedOriginHeaders();
       this.client = createAuthClient({
         baseURL,
-        plugins: [oauthProviderClient()],
+        plugins: [
+          oauthProviderClient(),
+          ...(Platform.OS === 'web'
+            ? []
+            : [
+                expoClient({
+                  storage: getSecureStore(),
+                }),
+              ]),
+        ],
         // Local Expo web runs on localhost while Better Auth lives on the
         // environment API origin. Explicit credentials are required for both
         // the OAuth state cookie on sign-in and the session cookie on the
@@ -363,6 +373,24 @@ export class BetterAuthProvider implements IAuthProvider {
       if (result?.error) {
         const providerLabel = provider === 'apple' ? 'Apple' : 'Google';
         return { error: result.error.message || result.error.statusText || `${providerLabel} sign-in failed.` };
+      }
+
+      // Better Auth returns the native ID-token session directly. Native
+      // fetch does not retain Set-Cookie headers unless the Expo client
+      // plugin is installed, so reading /get-session here can otherwise
+      // report a false logout immediately after Apple/Google succeeds.
+      const nativeSessionData = result?.data;
+      if (nativeSessionData?.token && nativeSessionData?.user) {
+        const session: AuthSession = {
+          user: this.mapUser(nativeSessionData.user),
+          access_token: nativeSessionData.token,
+          provider: 'better-auth',
+        };
+
+        this.currentSession = session;
+        await this.storeSession(session);
+        this.notifyStateChange(session);
+        return { user: session.user, session };
       }
 
       const session = await this.readSessionWithRetry();

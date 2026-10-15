@@ -64,6 +64,7 @@ const SIGN_OUT_STEP_TIMEOUT_MS = 8000;
 // prevent the legacy and Supabase fallbacks from resolving the auth state.
 const BETTER_AUTH_BOOTSTRAP_TIMEOUT_MS = 8000;
 const SUPABASE_BRIDGE_BOOTSTRAP_TIMEOUT_MS = 8000;
+const NATIVE_SOCIAL_SIGN_IN_TIMEOUT_MS = 15000;
 
 type SignOutOptions = {
   /**
@@ -1209,7 +1210,11 @@ export const useAuth = () => {
             providerName === 'better-auth'
               ? (authService as unknown as BetterAuthProvider)
               : getGoogleBetterAuthProvider();
-          const betterAuthResult = await betterAuthApple.signInWithIdToken('apple', identityToken);
+          const betterAuthResult = await withTimeout(
+            betterAuthApple.signInWithIdToken('apple', identityToken),
+            NATIVE_SOCIAL_SIGN_IN_TIMEOUT_MS,
+            'Apple sign-in',
+          );
           if (betterAuthResult.error) {
             throw new Error(betterAuthResult.error);
           }
