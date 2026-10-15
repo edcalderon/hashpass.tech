@@ -1,7 +1,7 @@
 {
   "name": "hashpass.tech",
   "main": "index.js",
-  "version": "1.9.115",
+  "version": "1.9.116",
   "packageManager": "pnpm@9.15.5",
   "pnpm": {
     "overrides": {
@@ -239,6 +239,7 @@
     "expo-linear-gradient": "~14.1.5",
     "expo-linking": "~7.1.4",
     "expo-localization": "^16.1.6",
+    "expo-network": "~7.1.5",
     "expo-router": "~5.1.11",
     "expo-secure-store": "^14.2.3",
     "expo-splash-screen": "~0.30.8",

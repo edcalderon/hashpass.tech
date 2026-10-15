@@ -28,9 +28,14 @@ const mockCreateAuthClient = jest.fn(() => ({
   getSession: mockGetSession,
   $fetch: mockFetch,
 }));
+const mockExpoClient = jest.fn(() => ({ name: 'expo-client' }));
 
 jest.mock('better-auth/client', () => ({
   createAuthClient: mockCreateAuthClient,
+}));
+
+jest.mock('@better-auth/expo/client', () => ({
+  expoClient: mockExpoClient,
 }));
 
 jest.mock('expo-secure-store', () => ({
@@ -79,6 +84,7 @@ describe('BetterAuthProvider', () => {
       createAuthClient: mockCreateAuthClient,
     }));
     mockCreateAuthClient.mockClear();
+    mockExpoClient.mockClear();
     mockGetSession.mockReset();
     mockSignInSocial.mockReset();
     mockSignOut.mockReset();
@@ -164,26 +170,71 @@ describe('BetterAuthProvider', () => {
   });
 
   it('exchanges a native Apple identity token through Better Auth', async () => {
-    jest.useFakeTimers();
+    const { Platform } = require('react-native');
+    const originalPlatform = Platform.OS;
+    Platform.OS = 'ios';
 
-    mockSignInSocial.mockResolvedValueOnce({});
-    mockGetSession.mockResolvedValueOnce({ data: createBetterAuthSession() });
+    mockSignInSocial.mockResolvedValueOnce({
+      data: {
+        redirect: false,
+        token: 'native-apple-session-token',
+        user: createBetterAuthSession().user,
+      },
+    });
+
+    try {
+      const { BetterAuthProvider } = require('../../../../packages/auth/src/providers/better-auth');
+      const provider = new BetterAuthProvider({ baseURL: 'https://api.hashpass.tech/api/auth' });
+
+      const result = await provider.signInWithIdToken('apple', 'apple-id-token-123');
+
+      expect(mockSignInSocial).toHaveBeenCalledWith({
+        provider: 'apple',
+        idToken: { token: 'apple-id-token-123' },
+      });
+      expect(mockExpoClient).toHaveBeenCalledWith({ storage: expect.anything() });
+      expect(mockGetSession).not.toHaveBeenCalled();
+      expect(mockSetItemAsync).not.toHaveBeenCalled();
+      expect(result.error).toBeUndefined();
+      expect(result.session).toEqual(expect.objectContaining({
+        access_token: 'native-apple-session-token',
+        provider: 'better-auth',
+      }));
+      expect(result.session?.user.email).toBe('user@example.com');
+    } finally {
+      Platform.OS = originalPlatform;
+    }
+
+  });
+
+  it('does not commit a native sign-in that is aborted while the request is in flight', async () => {
+    let resolveSignIn: ((value: unknown) => void) | undefined;
+    const pendingSignIn = new Promise((resolve) => {
+      resolveSignIn = resolve;
+    });
+    mockSignInSocial.mockReturnValueOnce(pendingSignIn);
 
     const { BetterAuthProvider } = require('../../../../packages/auth/src/providers/better-auth');
     const provider = new BetterAuthProvider({ baseURL: 'https://api.hashpass.tech/api/auth' });
-
-    const signInPromise = provider.signInWithIdToken('apple', 'apple-id-token-123');
-    await jest.runAllTimersAsync();
-    const result = await signInPromise;
-
-    expect(mockSignInSocial).toHaveBeenCalledWith({
-      provider: 'apple',
-      idToken: { token: 'apple-id-token-123' },
+    const controller = new AbortController();
+    const signInPromise = provider.signInWithIdToken('apple', 'apple-id-token-123', {
+      signal: controller.signal,
     });
-    expect(result.error).toBeUndefined();
-    expect(result.session?.user.email).toBe('user@example.com');
 
-    jest.useRealTimers();
+    controller.abort();
+    resolveSignIn?.({
+      data: {
+        redirect: false,
+        token: 'late-apple-session-token',
+        user: createBetterAuthSession().user,
+      },
+    });
+
+    await expect(signInPromise).resolves.toEqual({
+      error: 'Native sign-in attempt was cancelled.',
+    });
+    expect(mockSetItemAsync).not.toHaveBeenCalled();
+    expect(provider.isAuthenticated()).toBe(false);
   });
 
   it('marks web Google sign-in in localStorage before redirecting', async () => {
@@ -315,7 +366,10 @@ describe('BetterAuthProvider', () => {
 
       expect(mockCreateAuthClient).toHaveBeenCalledWith({
         baseURL: 'https://api.hashpass.tech/api/auth',
-        plugins: [expect.objectContaining({ id: 'oauth-provider-client' })],
+        plugins: [
+          expect.objectContaining({ id: 'oauth-provider-client' }),
+          expect.objectContaining({ name: 'expo-client' }),
+        ],
         fetchOptions: {
           credentials: 'include',
           headers: {

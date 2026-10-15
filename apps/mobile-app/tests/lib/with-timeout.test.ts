@@ -20,10 +20,12 @@ describe('withTimeout', () => {
     // forever. A promise that simply never resolves or rejects is exactly
     // that failure mode.
     const neverSettles = new Promise(() => {});
+    const onTimeout = jest.fn();
 
-    await expect(withTimeout(neverSettles, 20, 'stuckCall')).rejects.toThrow(
+    await expect(withTimeout(neverSettles, 20, 'stuckCall', onTimeout)).rejects.toThrow(
       'stuckCall timed out after 20ms',
     );
+    expect(onTimeout).toHaveBeenCalledTimes(1);
   });
 
   it('does not throw when given a non-promise value (defensive against loose mocks)', async () => {

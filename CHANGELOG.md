@@ -1,3 +1,14 @@
+## [1.9.116](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.115...v1.9.116) (2026-10-15)
+### Released
+- complete native Apple sign-in
+
+### Release scope
+- Compared with: `v1.9.115` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Auth
+
 ## [1.9.115](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.114...v1.9.115) (2026-10-15)
 ### Released
 - complete dashboard drawer translations

@@ -42,11 +42,17 @@ host for web testing.
    native adapter.
 2. The system sheet requests the user's email and full name. Apple may only
    provide those fields on the first authorization.
-3. The app sends the returned identity token to Better Auth's Apple ID-token
-   exchange.
-4. Better Auth accepts the iOS bundle-identifier audience, creates the same
-   session type as web OAuth, and starts the Supabase bridge.
-5. A cancelled sheet returns to the login screen without an error state.
+3. The app sends the returned identity token to Better Auth's native
+   `signIn.social({ provider: 'apple', idToken })` exchange. Better Auth
+   returns the session token and user directly; iOS does **not** need a browser
+   redirect after the PIN/passcode sheet closes.
+4. `BetterAuthProvider` stores that direct session response and the Expo client
+   persists its cookie state in SecureStore. The auth-state machine then routes
+   the user into the app and starts the Supabase bridge.
+5. The native exchange has a 15-second timeout so a network/configuration
+   failure returns an actionable sign-in error instead of leaving the login
+   screen indefinitely on “Please wait while your sign-in finishes.”
+6. A cancelled sheet returns to the login screen without an error state.
 
 The iOS build must include the Sign in with Apple capability and use the same
 bundle identifier registered for the Apple App ID. Test this path on a signed
@@ -121,6 +127,12 @@ After configuring secrets and building a signed iOS release:
   Services ID, or the request is using a localhost URL.
 - **Native iOS unavailable**: install a new signed build containing the Apple
   capability; the web/PWA path cannot provide the native sheet.
+- **The login screen stays on “Please wait while your sign-in finishes.”**: the
+  Apple sheet succeeded but the native ID-token exchange did not return a
+  session. Check API reachability and the Better Auth native client setup,
+  especially the Expo SecureStore plugin in
+  `packages/auth/src/providers/better-auth.ts`. iOS should receive a direct
+  session response, not wait for a browser callback.
 
 ## Code references
 

@@ -14,6 +14,9 @@ const mockAuthService = {
   getProviderName: jest.fn(() => 'supabase'),
   handleOAuthCallback: jest.fn(),
   signInWithEmailAndPassword: jest.fn(),
+  signInWithIdToken: jest.fn(async (..._args: unknown[]): Promise<any> => ({
+    error: 'Better Auth is not configured for this test.',
+  })),
   signOut: jest.fn(),
   getSession: jest.fn(async () => null),
   onAuthStateChange: jest.fn(() => () => {}),
@@ -33,6 +36,7 @@ const MockIdleBetterAuthProvider = jest.fn().mockImplementation(() => ({
 }));
 
 const mockSignInWithNativeGoogleAccount = jest.fn(async () => ({ idToken: 'native-id-token' }));
+const mockSignInWithNativeAppleAccount = jest.fn(async () => ({ identityToken: 'apple-id-token' }));
 const mockClearNativeGoogleAccount = jest.fn(async () => undefined);
 const mockOpenAuthSessionAsync = jest.fn();
 const mockMarkRecentAuthSuccess = jest.fn();
@@ -111,10 +115,13 @@ describe('useAuth native Google sign-in', () => {
   beforeEach(() => {
     jest.resetModules();
     mockAuthService.signInWithOAuth.mockClear();
-    mockAuthService.getProviderName.mockClear();
+    mockAuthService.getProviderName.mockReset().mockReturnValue('supabase');
     mockAuthService.getSession.mockClear();
     mockAuthService.onAuthStateChange.mockClear();
     mockAuthService.signOut.mockClear();
+    mockAuthService.signInWithIdToken.mockReset().mockResolvedValue({
+      error: 'Better Auth is not configured for this test.',
+    });
     mockIdleBetterAuthProviderSignOut.mockClear();
     mockSignInWithNativeGoogleAccount.mockReset().mockResolvedValue({ idToken: 'native-id-token' });
     mockClearNativeGoogleAccount.mockReset().mockResolvedValue(undefined);
@@ -226,6 +233,199 @@ describe('useAuth native Google sign-in', () => {
       provider: 'google',
       token: 'native-id-token',
     });
+  });
+
+  it('exchanges the native iOS Apple identity token with Better Auth', async () => {
+    mockAuthService.getProviderName.mockReturnValue('better-auth');
+    const betterAuthSession = {
+      user: {
+        id: 'better-auth-apple-user',
+        email: 'apple@example.com',
+      },
+      access_token: 'better-auth-apple-session',
+      provider: 'better-auth',
+    };
+    mockAuthService.signInWithIdToken.mockResolvedValue({
+      user: betterAuthSession.user,
+      session: betterAuthSession,
+    });
+
+    let capturedHook: any = null;
+    let testAct: any = null;
+
+    jest.isolateModules(() => {
+      jest.doMock('react-native', () => ({
+        Platform: { OS: 'ios' },
+      }));
+
+      jest.doMock('@hashpass/auth', () => ({
+        authService: mockAuthService,
+        BetterAuthProvider: MockIdleBetterAuthProvider,
+        getSupabaseOAuthRedirectUrl: jest.fn(() => 'myapp://auth/callback'),
+      }));
+
+      jest.doMock('@hashpass/auth/auth-dependencies', () => ({
+        configureAuthService: jest.fn(),
+      }));
+
+      jest.doMock('../../lib/supabase', () => ({
+        supabase: mockSupabase,
+        createSessionFromUrl: jest.fn(),
+        clearPersistedSupabaseSession: jest.fn(),
+      }));
+
+      jest.doMock('../../config/supabase-profiles', () => ({
+        resolvePublicSupabaseConfig: jest.fn(() => ({
+          supabaseUrl: 'https://example.supabase.co',
+          supabaseAnonKey: 'anon-key',
+        })),
+      }));
+
+      jest.doMock('../../lib/native-google-signin', () => ({
+        clearNativeGoogleAccount: jest.fn(),
+        nativeGoogleSigninStatusCodes: {
+          SIGN_IN_CANCELLED: 'SIGN_IN_CANCELLED',
+          PLAY_SERVICES_NOT_AVAILABLE: 'PLAY_SERVICES_NOT_AVAILABLE',
+        },
+        signInWithNativeGoogleAccount: mockSignInWithNativeGoogleAccount,
+      }));
+
+      jest.doMock('../../lib/native-apple-signin', () => ({
+        signInWithNativeAppleAccount: mockSignInWithNativeAppleAccount,
+      }));
+
+      jest.doMock('../../lib/auth/recent-auth', () => ({
+        markRecentAuthSuccess: mockMarkRecentAuthSuccess,
+      }));
+
+      jest.doMock('../../lib/auth/oauth/callback-params', () => ({
+        mergeOAuthFragmentParams: jest.fn(),
+      }));
+
+      jest.doMock('expo-web-browser', () => ({
+        __esModule: true,
+        openAuthSessionAsync: mockOpenAuthSessionAsync,
+      }));
+
+      const React = require('react');
+      const TestRenderer = require('react-test-renderer');
+      const { useAuth } = require('../../hooks/useAuth');
+      testAct = TestRenderer.act;
+
+      const Harness = () => {
+        capturedHook = useAuth();
+        return null;
+      };
+
+      TestRenderer.act(() => {
+        TestRenderer.create(React.createElement(Harness));
+      });
+    });
+
+    let result: any;
+    await testAct(async () => {
+      result = await capturedHook.signInWithOAuth('apple');
+    });
+
+    expect(mockSignInWithNativeAppleAccount).toHaveBeenCalledTimes(1);
+    expect(mockAuthService.signInWithIdToken).toHaveBeenCalledWith(
+      'apple',
+      'apple-id-token',
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
+    expect(result).toEqual({
+      user: betterAuthSession.user,
+      session: betterAuthSession,
+    });
+    expect(mockMarkRecentAuthSuccess).toHaveBeenCalledTimes(1);
+    expect(mockAuthService.signInWithOAuth).not.toHaveBeenCalled();
+  });
+
+  it('aborts a native iOS Apple exchange that exceeds the timeout', async () => {
+    mockAuthService.getProviderName.mockReturnValue('better-auth');
+    let observedSignal: AbortSignal | undefined;
+    mockAuthService.signInWithIdToken.mockImplementation(
+      async (...args: unknown[]) => {
+        const options = args[2] as { signal: AbortSignal };
+        observedSignal = options.signal;
+        return await new Promise<never>(() => {});
+      },
+    );
+
+    let capturedHook: any = null;
+    let testAct: any = null;
+
+    jest.isolateModules(() => {
+      jest.doMock('react-native', () => ({
+        Platform: { OS: 'ios' },
+      }));
+      jest.doMock('@hashpass/auth', () => ({
+        authService: mockAuthService,
+        BetterAuthProvider: MockIdleBetterAuthProvider,
+        getSupabaseOAuthRedirectUrl: jest.fn(() => 'myapp://auth/callback'),
+      }));
+      jest.doMock('@hashpass/auth/auth-dependencies', () => ({ configureAuthService: jest.fn() }));
+      jest.doMock('../../lib/supabase', () => ({
+        supabase: mockSupabase,
+        createSessionFromUrl: jest.fn(),
+        clearPersistedSupabaseSession: jest.fn(),
+      }));
+      jest.doMock('../../config/supabase-profiles', () => ({
+        resolvePublicSupabaseConfig: jest.fn(() => ({
+          supabaseUrl: 'https://example.supabase.co',
+          supabaseAnonKey: 'anon-key',
+        })),
+      }));
+      jest.doMock('../../lib/native-google-signin', () => ({
+        clearNativeGoogleAccount: jest.fn(),
+        nativeGoogleSigninStatusCodes: {
+          SIGN_IN_CANCELLED: 'SIGN_IN_CANCELLED',
+          PLAY_SERVICES_NOT_AVAILABLE: 'PLAY_SERVICES_NOT_AVAILABLE',
+        },
+        signInWithNativeGoogleAccount: mockSignInWithNativeGoogleAccount,
+      }));
+      jest.doMock('../../lib/native-apple-signin', () => ({
+        signInWithNativeAppleAccount: mockSignInWithNativeAppleAccount,
+      }));
+      jest.doMock('../../lib/auth/recent-auth', () => ({
+        markRecentAuthSuccess: mockMarkRecentAuthSuccess,
+      }));
+      jest.doMock('../../lib/auth/oauth/callback-params', () => ({ mergeOAuthFragmentParams: jest.fn() }));
+      jest.doMock('expo-web-browser', () => ({
+        __esModule: true,
+        openAuthSessionAsync: mockOpenAuthSessionAsync,
+      }));
+
+      const React = require('react');
+      const TestRenderer = require('react-test-renderer');
+      const { useAuth } = require('../../hooks/useAuth');
+      testAct = TestRenderer.act;
+      const Harness = () => {
+        capturedHook = useAuth();
+        return null;
+      };
+      TestRenderer.act(() => {
+        TestRenderer.create(React.createElement(Harness));
+      });
+    });
+
+    jest.useFakeTimers();
+    try {
+      let result: any;
+      await testAct(async () => {
+        const signInPromise = capturedHook.signInWithOAuth('apple');
+        await Promise.resolve();
+        await Promise.resolve();
+        jest.advanceTimersByTime(15000);
+        result = await signInPromise;
+      });
+
+      expect(result).toEqual({ error: 'Apple sign-in timed out after 15000ms' });
+      expect(observedSignal?.aborted).toBe(true);
+      expect(mockMarkRecentAuthSuccess).not.toHaveBeenCalled();
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   it('uses the native SDK by default on Android when the Google web client id exists', async () => {

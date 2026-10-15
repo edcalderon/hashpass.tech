@@ -471,6 +471,18 @@ The native app uses a 6-digit code flow, NOT magic links. Flow:
 
 See `apps/docs/docs/auth/AUTH_FLOW.md` for full details.
 
+## Sign in with Apple (web and native iOS)
+
+The current Apple integration is documented in
+`apps/docs/docs/auth/SIGN_IN_WITH_APPLE.md`. Web/PWA uses Better Auth's browser
+OAuth flow; iOS uses the native Apple sheet and exchanges its identity token
+directly with Better Auth. The iOS path must receive the direct session token
+and user response, persist the session through the Expo SecureStore client, and
+let the auth-state machine route the user — it must not wait for a browser
+redirect after the Apple PIN/passcode sheet closes. The exchange is bounded by
+a 15-second timeout so a failed native handoff cannot leave the login screen in
+an indefinite loading state.
+
 ## Better Auth ↔ Supabase Identity Bridge (as of v1.8.273)
 
 **Root cause this fixes:** Better Auth sign-ins (Google, for every tenant — see
