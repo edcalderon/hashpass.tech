@@ -806,7 +806,6 @@ function CustomDrawerContent({
               {t({ id: "nav.menu", message: "Menu" })}
             </Text>
           </TouchableOpacity>
-          <Text style={styles.drawerMenuLabel}>MENU</Text>
           <TouchableOpacity
             onPress={closeDrawer}
             style={styles.drawerCloseButton}
@@ -1195,7 +1194,12 @@ function AuthenticatedDashboardLayout() {
         : 360;
   }, [isMobile, viewportWidth]);
   const dashboardDrawerStyle = useMemo(
-    () => ({ width: dashboardDrawerWidth }),
+    () => ({
+      width: dashboardDrawerWidth,
+      borderTopRightRadius: 24,
+      borderBottomRightRadius: 24,
+      overflow: "hidden" as const,
+    }),
     [dashboardDrawerWidth],
   );
   // Instance-scoped bridge from CustomDrawerContent's navigation object to
@@ -2042,18 +2046,6 @@ const getStyles = (
       letterSpacing: 1.4,
       color: colors.text.secondary,
       textTransform: "uppercase",
-    },
-    drawerMenuLabel: {
-      position: "absolute",
-      left: 0,
-      right: 0,
-      textAlign: "center",
-      fontSize: 11,
-      fontWeight: "800",
-      letterSpacing: 1.8,
-      color: colors.text.secondary,
-      textTransform: "uppercase",
-      pointerEvents: "none",
     },
     profileCard: {
       marginTop: 16,

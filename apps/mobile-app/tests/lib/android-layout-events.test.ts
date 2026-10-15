@@ -152,9 +152,10 @@ describe("Android layout event crash guards", () => {
       "const dashboardDrawerWidth = useMemo<DimensionValue>(",
     );
     expect(dashboardSource).toContain("const dashboardDrawerStyle = useMemo(");
-    expect(dashboardSource).toContain(
-      "() => ({ width: dashboardDrawerWidth }),",
-    );
+    expect(dashboardSource).toContain("width: dashboardDrawerWidth,");
+    expect(dashboardSource).toContain("borderTopRightRadius: 24,");
+    expect(dashboardSource).toContain("borderBottomRightRadius: 24,");
+    expect(dashboardSource).toContain('overflow: "hidden" as const,');
     expect(dashboardSource).toContain("drawerStyle: dashboardDrawerStyle,");
   });
 
