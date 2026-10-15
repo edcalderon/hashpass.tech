@@ -2,8 +2,8 @@
  * Supabase Storage Provider Implementation
  * 
  * Wraps the existing Supabase storage functionality behind the IStorageProvider interface.
- * Note: HASHPASS currently uses Cloudinary for images, but this abstraction enables
- * future use of S3-compatible storage.
+ * Event and profile media use S3-compatible storage and CDN delivery. This
+ * provider remains generic for Supabase Storage-backed application data.
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';

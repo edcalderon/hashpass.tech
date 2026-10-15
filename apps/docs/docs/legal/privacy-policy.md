@@ -102,7 +102,7 @@ purposes above, including to:
   necessary to decide a submitted invitation request;
 - service providers acting on our behalf, including Supabase for
   authentication and database hosting, Brevo for transactional email, and
-  Cloudinary for optional profile-image hosting and optimization;
+  AWS S3 and CloudFront for event and profile-image hosting and delivery;
 - professional advisers, authorities, or other parties where required by law,
   to protect rights or safety, or in connection with a corporate transaction;
   and

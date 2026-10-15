@@ -26,6 +26,7 @@ import {
   resolveConfiguredSpeakerImage,
   resolveSpeakerImage,
   getSpeakerAvatarUrl,
+  getOptimizedAvatarUrl,
 } from '../../lib/string-utils';
 
 describe('resolveSpeakerImage', () => {
@@ -67,5 +68,16 @@ describe('getSpeakerAvatarUrl', () => {
     expect(getSpeakerAvatarUrl('Erick Ortiz', 'https://cdn.example.com/erick.png')).toBe(
       'https://cdn.example.com/erick.png'
     );
+  });
+});
+
+describe('getOptimizedAvatarUrl', () => {
+  it('preserves a configured legacy URL without generating a new Cloudinary URL', () => {
+    const legacyUrl = 'https://res.cloudinary.com/legacy/image/upload/speaker.png';
+    expect(getOptimizedAvatarUrl('Grace Hopper', legacyUrl, 100)).toBe(legacyUrl);
+  });
+
+  it('uses the S3-backed lookup when no configured URL exists', () => {
+    expect(getOptimizedAvatarUrl('Grace Hopper')).toBe(getSpeakerAvatarUrl('Grace Hopper'));
   });
 });

@@ -3,12 +3,11 @@
  */
 
 import Constants from 'expo-constants';
-import { 
-  getSpeakerCloudinaryAvatarUrl, 
-  getCloudinaryUrl, 
-  isCloudinaryUrl
+import {
+  getCloudinaryUrl,
+  getSpeakerCloudinaryAvatarUrl,
+  isCloudinaryUrl,
 } from './cloudinary';
-
 /**
  * Converts accented characters to ASCII equivalents for URL-safe strings
  * @param str - The string to convert
@@ -64,8 +63,9 @@ export function getLocalOptimizedAvatarUrl(name: string): string | null {
 }
 
 /**
- * Gets the optimized avatar URL with Cloudinary priority
- * Priority order: Cloudinary > Local optimized > S3
+ * Gets the configured avatar URL, preserving legacy URLs when present.
+ * New name-based lookups are S3-backed; Cloudinary is not guessed or used for
+ * new speaker media.
  * @param name - The speaker's name
  * @param imageUrl - Existing image URL (if any)
  * @param size - Avatar size in pixels
@@ -76,34 +76,11 @@ export function getOptimizedAvatarUrl(
   imageUrl?: string | null,
   size: number = 100
 ): string {
-  // If imageUrl is already a Cloudinary URL, optimize it
-  if (imageUrl && isCloudinaryUrl(imageUrl)) {
-    return getCloudinaryUrl(imageUrl, {
-      width: size,
-      height: size,
-      crop: 'fill',
-      gravity: 'face',
-      format: 'auto',
-      quality: 'auto:best',
-      dpr: 'auto',
-    });
-  }
-
-  // Try Cloudinary first (highest priority for performance)
-  if (name) {
-    const cloudinaryUrl = getSpeakerCloudinaryAvatarUrl(name, size);
-    // Return Cloudinary URL - it will fallback gracefully if image doesn't exist
-    return cloudinaryUrl;
-  }
-
-  // Fallback to local optimized
-  const localUrl = getLocalOptimizedAvatarUrl(name);
-  if (localUrl) {
-    return localUrl;
-  }
-
-  // Final fallback to S3
-  return getSpeakerAvatarUrl(name, imageUrl ?? undefined);
+  // Keep the argument for backwards-compatible callers. S3/CDN URLs are
+  // content-addressed and do not accept Cloudinary-style transforms.
+  void size;
+  if (imageUrl) return imageUrl;
+  return getSpeakerAvatarUrl(name);
 }
 
 /**
@@ -227,4 +204,4 @@ export function getSpeakerTwitterUrl(name: string): string {
 }
 
 // Re-export Cloudinary functions for convenience
-export { getSpeakerCloudinaryAvatarUrl, getCloudinaryUrl, isCloudinaryUrl } from './cloudinary';
+export { getSpeakerCloudinaryAvatarUrl, getCloudinaryUrl, isCloudinaryUrl };

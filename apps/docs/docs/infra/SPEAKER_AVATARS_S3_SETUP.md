@@ -1,94 +1,114 @@
-# Speaker Avatars S3 Setup
+# Speaker avatars on S3 and the event CDN
 
-This document explains how to set up S3 for hosting speaker avatars as a fallback when blockchainsummit.la is not responding.
+BSL speaker images are owned by HASHPASS. They are uploaded to the target AWS
+S3 event-media bucket and served through the BSL CDN. The app reads the
+canonical URL from `bsl_speakers.imageurl`; it does not hotlink the source
+event site and does not guess a Cloudinary URL.
 
-## Problem
+## Canonical object layout
 
-Speaker avatars are currently hosted on `blockchainsummit.la`, which sometimes doesn't respond, causing avatars to not load in the application.
+The Colombia programme sync writes immutable objects using a short SHA-256
+fingerprint of the image bytes:
 
-## Solution
+```text
+events/{event-id}/speakers/{speaker-slug}-{sha256-prefix}.{extension}
+```
 
-1. Download all speaker avatars from blockchainsummit.la
-2. Upload them to S3
-3. Update the database with S3 URLs
-4. The application will use S3 URLs from the database, with blockchainsummit.la as fallback
+For example, an image in the Colombia event is served as:
 
-## Prerequisites
+```text
+https://bsl.hashpass.tech/events/colombia2026/speakers/<slug>-<fingerprint>.png
+```
 
-1. AWS Account with S3 access
-2. S3 Bucket created (or use existing `hashpass-email-assets` bucket)
-3. AWS Access Key ID and Secret Access Key with S3 permissions
-4. Environment variables configured in `.env`:
+Development uses `https://bsl-dev.hashpass.tech` with the same path layout.
+The CDN URL is stored in `bsl_speakers.imageurl` separately in development and
+production.
+
+## Automated sync
+
+The source of truth is the BSL Colombia sync script:
 
 ```bash
+pnpm sync:bsl-colombia:dev
+pnpm sync:bsl-colombia:prod
+```
+
+The scheduled workflow is
+`.github/workflows/bsl-colombia-sync.yml`. It runs once for each environment,
+uploads the source image to S3, and reconciles the speaker and agenda rows
+through `sync_bsl_public_programme`.
+
+Required runtime configuration:
+
+```text
 AWS_REGION=us-east-2
-AWS_ACCESS_KEY_ID=your-access-key-id
-AWS_SECRET_ACCESS_KEY=your-secret-access-key
-AWS_S3_BUCKET_NAME=hashpass-email-assets
-AWS_S3_CDN_URL=https://your-cdn-url.com  # Optional, for CDN
+BSL_SPEAKER_ASSETS_BUCKET=<target-account-event-media-bucket>
+BSL_SPEAKER_CDN_URL=https://bsl-dev.hashpass.tech  # or bsl.hashpass.tech
+BSL_SUPABASE_URL_DEV=<development-BSL-Supabase-URL>
+BSL_SUPABASE_URL_PROD=<production-BSL-Supabase-URL>
 ```
 
-## Running the Script
+Service-role keys and AWS credentials must stay in the environment or GitHub
+secrets. Do not commit them or place them in documentation.
+
+Before any local AWS upload, use the `hashpass` AWS profile and compare the
+non-printing `sts get-caller-identity` account result with the private expected
+account ID. The sync script performs the same account assertion through
+`EXPECTED_AWS_ACCOUNT_ID`.
+
+## Manual profile upload
+
+For a one-off approved profile image, use the same S3/CDN contract as the sync:
+
+1. Validate that the file is a PNG, JPEG, or WebP and is within the upload
+   limit.
+2. Upload it to the target event-media bucket under
+   `events/{event-id}/speakers/` with `Content-Type: image/*` and immutable
+   cache control.
+3. Set the matching CDN URL in the environment’s `bsl_speakers.imageurl` row.
+4. Verify both the database value and a `200` CDN response before publishing.
+
+Do not store a local file path, an S3 `s3://` URI, a source-site URL, or a new
+Cloudinary URL in `imageurl`.
+
+## Verification
+
+Read the exact speaker row and check the public URL:
+
+```sql
+select id, name, imageurl
+from public.bsl_speakers
+where event_id = 'colombia2026'
+  and name = 'Edward Calderón';
+```
 
 ```bash
-node scripts/download-and-upload-speaker-avatars.mjs
+curl -I "https://bsl-dev.hashpass.tech/events/colombia2026/speakers/<key>.png"
+curl -I "https://bsl.hashpass.tech/events/colombia2026/speakers/<key>.png"
 ```
 
-The script will:
-1. Fetch all speakers from the database
-2. For each speaker with a blockchainsummit.la URL:
-   - Check if the avatar already exists in S3
-   - If not, download the image from blockchainsummit.la
-   - Upload to S3 at `speakers/avatars/foto-{speaker-name}.png`
-   - Update the database `imageurl` field with the S3 URL
-
-## S3 Bucket Structure
-
-```
-hashpass-email-assets/
-  └── speakers/
-      └── avatars/
-          ├── foto-rafael-gago.png
-          ├── foto-daniel-marulanda.png
-          └── ...
-```
-
-## Database Update
-
-The script updates the `bsl_speakers.imageurl` field with the S3 URL. The application code already uses `s.imageurl || getSpeakerAvatarUrl(s.name)`, so it will automatically use the S3 URL from the database.
-
-## Fallback Logic
-
-1. **Primary**: Use `imageurl` from database (S3 URL after script runs)
-2. **Fallback**: Use `getSpeakerAvatarUrl(name)` which always generates S3 URLs
+Expected results are `200`, an image content type, S3/CloudFront response
+headers, and immutable caching. A working response must not redirect to
+Cloudinary or the source event site.
 
 ## Troubleshooting
 
-### AWS Credentials Error
+### `PermanentRedirect` from S3
 
-If you see "The AWS Access Key Id you provided does not exist in our records":
-- Check that `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` are set in `.env`
-- Verify the credentials are correct
-- Ensure the IAM user has S3 permissions
+The speaker-media bucket is in `us-east-2`. Set `AWS_REGION=us-east-2`; the
+workflow already does this explicitly.
 
-### Download Failures
+### CDN returns `403` or `404`
 
-If downloads fail:
-- Check network connectivity
-- Verify blockchainsummit.la is accessible
-- Some images may have different paths (e.g., `/2025/11/` instead of `/2025/09/`)
+- Confirm the object key exactly matches the `imageurl` path.
+- Confirm the CDN distribution points at the target S3 bucket.
+- Check that the object is readable through the CDN origin policy.
+- Check the environment-specific database row; dev and prod have separate
+  buckets/CDN origins.
 
-### S3 Upload Failures
+### The speaker shows initials
 
-If uploads fail:
-- Check S3 bucket permissions
-- Verify the bucket name is correct
-- Ensure the IAM user has `s3:PutObject` permission
-
-## Manual Upload
-
-If the script fails, you can manually:
-1. Download images from blockchainsummit.la
-2. Upload to S3 using AWS Console or CLI
-3. Update database manually with S3 URLs
-
+Confirm that `imageurl` is non-empty, the URL returns an image response, and
+the app build is reading the event-specific speaker endpoint. The active
+speaker resolution path uses the stored S3 URL before generating an S3-backed
+fallback.

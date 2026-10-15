@@ -425,7 +425,7 @@ export const GENERATED_LEGAL_DOCUMENTS = {
         "items": [
           "event organizers for events for which you register or hold a credential;",
           "designated Business-access reviewers, only for the request information necessary to decide a submitted invitation request;",
-          "service providers acting on our behalf, including Supabase for authentication and database hosting, Brevo for transactional email, and Cloudinary for optional profile-image hosting and optimization;",
+          "service providers acting on our behalf, including Supabase for authentication and database hosting, Brevo for transactional email, and AWS S3 and CloudFront for event and profile-image hosting and delivery;",
           "professional advisers, authorities, or other parties where required by law, to protect rights or safety, or in connection with a corporate transaction; and",
           "integrations that you choose to connect, subject to their own terms and privacy notices."
         ]
