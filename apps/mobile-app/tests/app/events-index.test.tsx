@@ -132,6 +132,16 @@ it('retries the shared database session when reloading passes', async () => {
   act(() => view.root.findByProps({ testID: 'explorer-reload-passes' }).props.onPress());
   expect(mockRetryDatabaseSession).toHaveBeenCalledTimes(1);
 });
+it('moves the quick-access rail for web wheel input', async () => {
+  setPlatform('web');
+  await act(async () => { view = create(<EventsScreen />); });
+  const quickRail = view.root.findAll(
+    node => node.props?.snapToInterval === 152 && typeof node.props?.onWheel === 'function',
+  )[0];
+  const container = { scrollLeft: 0 };
+  act(() => quickRail.props.onWheel({ currentTarget: container, deltaY: 18 }));
+  expect(container.scrollLeft).toBe(18);
+});
 
 it.each(['My passes', 'Wallet', 'Community'])('opens registration for guest %s without leaving Explorer', async label => {
   await act(async () => { view = create(<EventsScreen />); });
