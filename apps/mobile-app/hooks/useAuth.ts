@@ -1246,7 +1246,6 @@ export const useAuth = () => {
             session,
           };
         } catch (error: any) {
-          betterAuthAttemptController.abort();
           if (error?.code === 'ERR_REQUEST_CANCELED') {
             return { pending: false };
           }
