@@ -120,6 +120,12 @@ it('allows authenticated visitors to enter their account without a guest form', 
   expect(mockPush).toHaveBeenCalledWith('/dashboard/wallet');
   expect(view.root.findAllByType('EmbeddedAuth' as any)).toHaveLength(0);
 });
+it('shows the sent-request stat for authenticated explorers', async () => {
+  mockLoggedIn = true;
+  await act(async () => { view = create(<EventsScreen />); });
+  expect(content()).toContain('Requests');
+  expect(content()).toContain('{count} sent');
+});
 
 it.each(['My passes', 'Wallet', 'Community'])('opens registration for guest %s without leaving Explorer', async label => {
   await act(async () => { view = create(<EventsScreen />); });
