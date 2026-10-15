@@ -282,6 +282,22 @@ describe('ProfileScreen speaker information', () => {
     }));
   });
 
+  it('loads an inactive speaker profile with the inactive status copy', async () => {
+    mockApiGet.mockImplementation((path: string) => Promise.resolve({
+      success: true,
+      data: { data: path === '/profile/attendee' ? attendee : { ...speaker, isActive: false } },
+    }));
+
+    const renderer = await renderProfile();
+    await act(async () => {
+      pressText(renderer, 'Edit Speaker Information');
+      await Promise.resolve();
+    });
+
+    expect(renderer.root.findByProps({ accessibilityLabel: 'Speaker profile active' }).props.value).toBe(false);
+    expect(renderer.root.findByProps({ children: 'Inactive — attendees cannot request meetings.' })).toBeTruthy();
+  });
+
   it('keeps the public speaker avatar in sync with a selected profile photo', async () => {
     const renderer = await renderProfile();
     await act(async () => {

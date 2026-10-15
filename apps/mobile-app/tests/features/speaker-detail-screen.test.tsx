@@ -257,8 +257,31 @@ describe('speaker detail screen', () => {
     });
 
     expect(renderer.root.findByProps({ children: 'Ada Lovelace' })).toBeTruthy();
+    expect(renderer.root.findByProps({ children: 'Pending' })).toBeTruthy();
     expect(renderer.root.findAllByProps({ testID: 'claim-profile' })).toHaveLength(1);
     expect(renderer.root.findAllByProps({ testID: 'request-meeting' })).toHaveLength(1);
+    await act(async () => renderer.unmount());
+  });
+
+  it('renders a claimed inactive profile without a meeting request action', async () => {
+    mockApiRequest.mockImplementation((path: string, options?: { method?: string }) =>
+      path === 'events/bsl/speakers/speaker-1'
+        ? Promise.resolve({
+          success: true,
+          data: { data: { ...speaker, is_active: false, is_accepting_meetings: false } },
+        })
+        : defaultApiResponse(path, options),
+    );
+
+    let renderer: any;
+    await act(async () => {
+      renderer = create(<SpeakerDetail />);
+      await flushPromises();
+    });
+
+    expect(renderer.root.findByProps({ children: 'speakerView.inactive' })).toBeTruthy();
+    expect(renderer.root.findAllByProps({ testID: 'request-meeting' })).toHaveLength(0);
+
     await act(async () => renderer.unmount());
   });
 
