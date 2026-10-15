@@ -7,6 +7,7 @@ import {
   TextInput,
   TouchableOpacity,
 } from "react-native";
+import { IconButton } from "@hashpass/ui/primitives";
 import AuthScreen from "../../app/(shared)/auth";
 
 const mockPost = jest.fn();
@@ -56,6 +57,18 @@ jest.mock("@hashpass/auth", () => ({
   getSupabaseMagicLinkCallbackPath: () => "/auth/callback",
   getSupabaseOAuthRedirectUrl: () => "https://example.com/auth/callback",
 }));
+jest.mock("@hashpass/ui/primitives", () => {
+  const mockReact = jest.requireActual("react");
+  const mockReactNative = jest.requireActual("react-native");
+  return {
+    IconButton: ({ children, label, ...props }: any) =>
+      mockReact.createElement(
+        mockReactNative.TouchableOpacity,
+        { ...props, accessibilityLabel: label },
+        children,
+      ),
+  };
+});
 jest.mock("../../config/supabase-profiles", () => ({
   resolvePublicSupabaseConfig: () => ({}),
 }));
@@ -123,16 +136,17 @@ describe("passwordless email reset", () => {
     renderer.root
       .findAllByType(TextInput)
       .find((node) => node.props.placeholder === "Enter your email")!;
+  const buttonNodes = () => [
+    ...renderer.root.findAllByType(TouchableOpacity),
+    ...renderer.root.findAllByType(IconButton),
+  ];
   const button = (label: string) =>
-    renderer.root
-      .findAllByType(TouchableOpacity)
-      .find(
-        (node) =>
-          node.props.accessibilityLabel === label ||
-          node
-            .findAllByType(Text)
-            .some((text) => text.props.children === label),
-      )!;
+    buttonNodes().find(
+      (node) =>
+        node.props.accessibilityLabel === label ||
+        node.props.label === label ||
+        node.findAllByType(Text).some((text) => text.props.children === label),
+    )!;
   const press = async (label: string) => {
     await act(async () => {
       button(label).props.onPress();
@@ -156,9 +170,9 @@ describe("passwordless email reset", () => {
     mockAuth = { ...mockAuth, signInWithOAuth };
     await act(async () => renderer.update(<AuthScreen key="ios-apple" />));
 
-    const oauthLabels = renderer.root
-      .findAllByType(TouchableOpacity)
-      .map((node) => node.props.accessibilityLabel);
+    const oauthLabels = buttonNodes().map(
+      (node) => node.props.accessibilityLabel || node.props.label,
+    );
 
     expect(oauthLabels.indexOf("Sign in with Apple")).toBeGreaterThan(
       oauthLabels.indexOf("Sign in with Google"),

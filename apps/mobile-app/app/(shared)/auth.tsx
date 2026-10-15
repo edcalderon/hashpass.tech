@@ -1,4 +1,5 @@
 import { uiPalette, uiTokens } from "@hashpass/ui/tokens";
+import { IconButton } from "@hashpass/ui/primitives";
 import React, {
   useCallback,
   useEffect,
@@ -861,6 +862,71 @@ export default function AuthScreen({
         return "";
     }
   }, [busyAction, t]);
+
+  const renderOAuthButton = ({
+    label,
+    onPress,
+    redirecting,
+    icon,
+    iconColor,
+    brandingStyle,
+  }: {
+    label: string;
+    onPress: () => void;
+    redirecting: boolean;
+    icon: React.ReactNode;
+    iconColor: string;
+    brandingStyle?: React.ComponentProps<typeof TouchableOpacity>["style"];
+  }) => {
+    const renderedIcon = redirecting ? (
+      <ActivityIndicator size="small" color={iconColor} />
+    ) : (
+      icon
+    );
+
+    if (isDesktopLayout) {
+      return (
+        <TouchableOpacity
+          style={[styles.oauthButton, styles.oauthButtonNative, brandingStyle]}
+          onPress={onPress}
+          disabled={isBusy}
+          accessibilityRole="button"
+          accessibilityLabel={label}
+          accessibilityState={{ disabled: isBusy, busy: redirecting }}
+        >
+          <View style={styles.oauthButtonContent}>
+            <View style={styles.oauthButtonIconGroup}>{renderedIcon}</View>
+            <Text
+              style={[
+                styles.oauthButtonText,
+                brandingStyle ? styles.appleOauthButtonText : null,
+                redirecting ? styles.oauthButtonTextBusy : null,
+              ]}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {label}
+            </Text>
+          </View>
+        </TouchableOpacity>
+      );
+    }
+
+    return (
+      <IconButton
+        mode={isDark ? "dark" : "light"}
+        label={label}
+        onPress={onPress}
+        disabled={isBusy}
+        loading={redirecting}
+        accentColor={iconColor}
+        accessibilityState={{ disabled: isBusy, busy: redirecting }}
+        style={brandingStyle}
+      >
+        {icon}
+      </IconButton>
+    );
+  };
   const magicLinkResendRemainingSeconds =
     magicLinkSentAt === null
       ? 0
@@ -2791,50 +2857,19 @@ export default function AuthScreen({
                         !isDesktopLayout ? styles.oauthContainerCompact : null,
                       ]}
                     >
-                      <TouchableOpacity
-                        style={[
-                          styles.oauthButton,
-                          isDesktopLayout
-                            ? styles.oauthButtonNative
-                            : styles.oauthButtonCompact,
-                        ]}
-                        onPress={() => void handleGoogleSignIn()}
-                        disabled={isBusy}
-                        accessibilityRole="button"
-                        accessibilityLabel={oauthButtonLabel}
-                        accessibilityState={{
-                          disabled: isBusy,
-                          busy: isGoogleOAuthRedirecting,
-                        }}
-                      >
-                        <View style={styles.oauthButtonContent}>
-                          <View style={styles.oauthButtonIconGroup}>
-                            {isGoogleOAuthRedirecting ? (
-                              <ActivityIndicator size="small" color="#4285F4" />
-                            ) : (
-                              <Ionicons
-                                name="logo-google"
-                                size={24}
-                                color="#4285F4"
-                              />
-                            )}
-                          </View>
-                          {isDesktopLayout ? (
-                            <Text
-                              style={[
-                                styles.oauthButtonText,
-                                isGoogleOAuthRedirecting
-                                  ? styles.oauthButtonTextBusy
-                                  : null,
-                              ]}
-                              numberOfLines={1}
-                              ellipsizeMode="tail"
-                            >
-                              {oauthButtonLabel}
-                            </Text>
-                          ) : null}
-                        </View>
-                      </TouchableOpacity>
+                      {renderOAuthButton({
+                        label: oauthButtonLabel,
+                        onPress: () => void handleGoogleSignIn(),
+                        redirecting: isGoogleOAuthRedirecting,
+                        iconColor: "#4285F4",
+                        icon: (
+                          <Ionicons
+                            name="logo-google"
+                            size={24}
+                            color="#4285F4"
+                          />
+                        ),
+                      })}
                     </View>
 
                     {Platform.OS !== "android" ? (
@@ -2846,55 +2881,20 @@ export default function AuthScreen({
                             : null,
                         ]}
                       >
-                        <TouchableOpacity
-                          style={[
-                            styles.oauthButton,
-                            isDesktopLayout
-                              ? styles.oauthButtonNative
-                              : styles.oauthButtonCompact,
-                            styles.appleOauthButton,
-                          ]}
-                          onPress={() => void handleAppleSignIn()}
-                          disabled={isBusy}
-                          accessibilityRole="button"
-                          accessibilityLabel={appleOAuthButtonLabel}
-                          accessibilityState={{
-                            disabled: isBusy,
-                            busy: isAppleOAuthRedirecting,
-                          }}
-                        >
-                          <View style={styles.oauthButtonContent}>
-                            <View style={styles.oauthButtonIconGroup}>
-                              {isAppleOAuthRedirecting ? (
-                                <ActivityIndicator
-                                  size="small"
-                                  color={uiPalette(isDark).canvas}
-                                />
-                              ) : (
-                                <Ionicons
-                                  name="logo-apple"
-                                  size={24}
-                                  color={uiPalette(isDark).canvas}
-                                />
-                              )}
-                            </View>
-                            {isDesktopLayout ? (
-                              <Text
-                                style={[
-                                  styles.oauthButtonText,
-                                  styles.appleOauthButtonText,
-                                  isAppleOAuthRedirecting
-                                    ? styles.oauthButtonTextBusy
-                                    : null,
-                                ]}
-                                numberOfLines={1}
-                                ellipsizeMode="tail"
-                              >
-                                {appleOAuthButtonLabel}
-                              </Text>
-                            ) : null}
-                          </View>
-                        </TouchableOpacity>
+                        {renderOAuthButton({
+                          label: appleOAuthButtonLabel,
+                          onPress: () => void handleAppleSignIn(),
+                          redirecting: isAppleOAuthRedirecting,
+                          iconColor: uiPalette(isDark).canvas,
+                          brandingStyle: styles.appleOauthButton,
+                          icon: (
+                            <Ionicons
+                              name="logo-apple"
+                              size={24}
+                              color={uiPalette(isDark).canvas}
+                            />
+                          ),
+                        })}
                       </View>
                     ) : null}
 
@@ -2907,54 +2907,16 @@ export default function AuthScreen({
                             : null,
                         ]}
                       >
-                        <TouchableOpacity
-                          style={[
-                            styles.oauthButton,
-                            isDesktopLayout
-                              ? styles.oauthButtonNative
-                              : styles.oauthButtonCompact,
-                            styles.appleOauthButton,
-                          ]}
-                          onPress={() => void handleXSignIn()}
-                          disabled={isBusy}
-                          accessibilityRole="button"
-                          accessibilityLabel={xOAuthButtonLabel}
-                          accessibilityState={{
-                            disabled: isBusy,
-                            busy: isXOAuthRedirecting,
-                          }}
-                        >
-                          <View style={styles.oauthButtonContent}>
-                            <View style={styles.oauthButtonIconGroup}>
-                              {isXOAuthRedirecting ? (
-                                <ActivityIndicator
-                                  size="small"
-                                  color={uiPalette(isDark).canvas}
-                                />
-                              ) : (
-                                <XIcon
-                                  size={20}
-                                  color={uiPalette(isDark).canvas}
-                                />
-                              )}
-                            </View>
-                            {isDesktopLayout ? (
-                              <Text
-                                style={[
-                                  styles.oauthButtonText,
-                                  styles.appleOauthButtonText,
-                                  isXOAuthRedirecting
-                                    ? styles.oauthButtonTextBusy
-                                    : null,
-                                ]}
-                                numberOfLines={1}
-                                ellipsizeMode="tail"
-                              >
-                                {xOAuthButtonLabel}
-                              </Text>
-                            ) : null}
-                          </View>
-                        </TouchableOpacity>
+                        {renderOAuthButton({
+                          label: xOAuthButtonLabel,
+                          onPress: () => void handleXSignIn(),
+                          redirecting: isXOAuthRedirecting,
+                          iconColor: uiPalette(isDark).canvas,
+                          brandingStyle: styles.appleOauthButton,
+                          icon: (
+                            <XIcon size={20} color={uiPalette(isDark).canvas} />
+                          ),
+                        })}
                       </View>
                     ) : null}
                   </View>
@@ -3914,12 +3876,6 @@ const getStyles = (
       borderColor: isDark ? "rgba(255,255,255,0.18)" : "#d7d7da",
       boxShadow: "0 2px 8px rgba(0,0,0,0.18)",
       elevation: 3,
-    },
-    oauthButtonCompact: {
-      alignSelf: "center",
-      flexDirection: "column",
-      paddingHorizontal: 0,
-      overflow: "hidden",
     },
     oauthButtonNative: {
       width: "100%",
