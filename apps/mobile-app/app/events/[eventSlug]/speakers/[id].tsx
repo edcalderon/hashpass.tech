@@ -18,6 +18,7 @@ import { CopilotStep, walkthroughable } from '@lib/copilot-shim';
 import { useTranslation } from '../../../../i18n/i18n';
 import { MaterialIcons } from '../../../../lib/vector-icons';
 import { ActionButton } from '@hashpass/ui/primitives';
+import { uiTokens } from '@hashpass/ui/tokens';
 
 // Helper function to generate user avatar URL
 const generateUserAvatarUrl = (name: string): string => {
@@ -1107,6 +1108,23 @@ export default function SpeakerDetail() {
           {speaker.title && <Text style={styles.speakerTitle}>{speaker.title}</Text>}
           {speaker.company && <Text style={styles.speakerCompany}>{speaker.company}</Text>}
         </View>
+
+        {directoryState.isPublished && !directoryState.isClaimed && (
+          <View style={styles.claimBadgeSlot} testID="claim-profile">
+            <ActionButton
+              mode={isDark ? 'dark' : 'light'}
+              label={claimStatus === 'pending' ? t('speakerView.claimPending') : t('speakerView.claimProfileShort')}
+              labelNumberOfLines={1}
+              accessibilityLabel={claimStatus === 'pending' ? t('speakerView.claimPending') : t('speakerView.claimProfile')}
+              leadingIcon={<MaterialIcons name="verified-user" size={16} color={isDark ? '#ffffff' : colors.primary} />}
+              loading={claimStatus === 'loading'}
+              variant="secondary"
+              style={[styles.claimBadge, claimStatus !== 'idle' && styles.claimBadgeDisabled]}
+              onPress={handleClaimProfile}
+              disabled={claimStatus !== 'idle'}
+            />
+          </View>
+        )}
       </View>
 
       {/* Speaker Dashboard Access - Only for the speaker themselves */}
@@ -1136,26 +1154,6 @@ export default function SpeakerDetail() {
             <Text style={styles.sectionTitle}>{t('speakerView.about')}</Text>
           </View>
           <Text style={styles.bioText}>{speaker.bio}</Text>
-        </View>
-      )}
-
-      {directoryState.isPublished && !directoryState.isClaimed && (
-        <View style={[styles.claimCard, { borderRadius: styles.speakerCard.borderRadius }]}>
-          <View style={styles.claimCardHeader}>
-            <MaterialIcons name="verified-user" size={22} color={colors.primary} />
-            <Text style={styles.claimCardTitle}>{t('speakerView.claimProfile')}</Text>
-          </View>
-          <Text style={styles.claimCardText}>{t('speakerView.claimProfileDescription')}</Text>
-          <View testID="claim-profile">
-            <ActionButton
-              label={claimStatus === 'pending' ? t('speakerView.claimPending') : t('speakerView.claimProfile')}
-              loading={claimStatus === 'loading'}
-              variant="primary"
-              style={[styles.claimButton, { borderRadius: styles.socialButton.borderRadius }, claimStatus !== 'idle' && styles.claimButtonDisabled]}
-              onPress={handleClaimProfile}
-              disabled={claimStatus !== 'idle'}
-            />
-          </View>
         </View>
       )}
 
@@ -2027,6 +2025,7 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     elevation: 6,
     borderWidth: 1,
     borderColor: colors.divider,
+    position: 'relative',
   },
   avatarContainer: {
     marginRight: 16,
@@ -2131,47 +2130,21 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     color: colors.text.primary,
     lineHeight: 24,
   },
-  claimCard: {
-    marginHorizontal: 16,
-    marginBottom: 16,
-    padding: 16,
-    backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : `${colors.primary}10`,
-    borderWidth: 1,
-    borderColor: isDark ? 'rgba(255,255,255,0.14)' : colors.primaryLight,
+  claimBadgeSlot: {
+    position: 'absolute',
+    top: uiTokens.space.md,
+    right: uiTokens.space.md,
+    maxWidth: '45%',
+    zIndex: 2,
   },
-  claimCardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 8,
+  claimBadge: {
+    minHeight: uiTokens.control.compactHeight,
+    paddingHorizontal: uiTokens.space.md,
+    paddingVertical: uiTokens.space.sm,
+    borderRadius: uiTokens.radius.pill,
   },
-  claimCardTitle: {
-    flex: 1,
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.text.primary,
-  },
-  claimCardText: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: colors.text.secondary,
-    marginBottom: 14,
-  },
-  claimButton: {
-    alignSelf: 'flex-start',
-    minHeight: 44,
-    paddingHorizontal: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.primary,
-  },
-  claimButtonDisabled: {
+  claimBadgeDisabled: {
     opacity: 0.65,
-  },
-  claimButtonText: {
-    color: colors.primaryContrastText,
-    fontSize: 14,
-    fontWeight: '700',
   },
   socialLinks: {
     flexDirection: 'row',

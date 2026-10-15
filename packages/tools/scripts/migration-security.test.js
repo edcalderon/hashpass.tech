@@ -401,6 +401,11 @@ describe('event-scoped meeting lifecycle migration contract', () => {
       'db/migrations/V051__fix_meetings_speaker_id_write_type_divergence.sql',
       'db/migrations/V052__notification_levels_and_critical_delivery.sql',
       'db/migrations/V095__enable_notification_realtime.sql',
+      'db/migrations/V117__repair_event_meeting_limits_and_reset.sql',
+      'db/migrations/V118__ensure_event_scoped_meeting_request_column.sql',
+      'db/migrations/V119__repair_enum_safe_meeting_request_eligibility.sql',
+      'db/migrations/V120__repair_legacy_user_block_compatibility.sql',
+      'db/migrations/V121__fix_meeting_limit_reset_column_scope.sql',
     ]);
   });
 

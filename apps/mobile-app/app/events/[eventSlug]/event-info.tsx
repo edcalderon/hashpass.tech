@@ -233,6 +233,17 @@ export default function EventInfoScreen() {
           action: () => handleOpenLink(`https://maps.google.com/?q=${encodeURIComponent(addressLabel)}`),
         }
       : null,
+    // Speaker application uses the same InfoRow style as Website/Address
+    // (icon in rounded square, uppercase label, accent value) for visual
+    // consistency within the Contact card.
+    !isArchiveEvent && event?.speakerApplicationUrl
+      ? {
+          icon: Mic,
+          label: 'Speaker',
+          value: `Apply to speak at ${event?.speakerApplicationLabel || event?.title || 'this event'}`,
+          action: () => handleOpenLink(event.speakerApplicationUrl!),
+        }
+      : null,
   ].filter((item): item is NonNullable<typeof item> => item !== null);
 
   const renderItemRow = (item: InfoRow, index: number, all: InfoRow[]) => {
@@ -349,45 +360,13 @@ export default function EventInfoScreen() {
     </View>
   ) : null;
 
-  // Call-for-speakers is a secondary, contact-style link (not a CTA): the
-  // only primary action on this page is buying a ticket. Only shown for
-  // events with an actual open call (`speakerApplicationUrl`), never a
-  // placeholder link.
-  const speakerApplicationUrl = !isArchiveEvent ? event?.speakerApplicationUrl : null;
-  const speakerLink = speakerApplicationUrl ? (
-    <TouchableOpacity
-      key="speaker-link"
-      style={styles.speakerLink}
-      onPress={() => handleOpenLink(speakerApplicationUrl)}
-      activeOpacity={0.6}
-      accessibilityRole="link"
-      accessibilityLabel="Become a speaker"
-    >
-      <Mic size={16} color={palette.accent} />
-      <View style={styles.speakerLinkCopy}>
-        <Text style={styles.speakerLinkTitle}>Become a speaker</Text>
-        {/* speakerApplicationLabel names whoever actually reviews
-            applications at speakerApplicationUrl. Some events
-            (e.g. colombia2026) cross-promote a *different*
-            conference/organizer's CFP -- for those, falling back
-            to this event's own title would misname who the
-            application actually goes to. */}
-        <Text style={styles.speakerLinkCaption} numberOfLines={2}>
-          Apply to speak at {event?.speakerApplicationLabel || event?.title || 'this event'}
-        </Text>
-      </View>
-      <ArrowRight size={14} color={palette.muted} />
-    </TouchableOpacity>
-  ) : null;
-
-  const contactSection = contactItems.length > 0 || speakerLink ? (
+  const contactSection = contactItems.length > 0 ? (
     <View testID="event-info-contact-section" style={styles.section}>
       <Text accessibilityRole="header" style={styles.sectionTitle}>
         Contact
       </Text>
       <Surface mode={isDark ? 'dark' : 'light'} style={styles.sectionContent}>
         {contactItems.map(renderItemRow)}
-        {speakerLink}
       </Surface>
     </View>
   ) : null;
@@ -418,7 +397,7 @@ export default function EventInfoScreen() {
         {renderArchiveSummary()}
 
         {/* Get Tickets is the page's single primary CTA (the call for
-            speakers lives in Contact as a small link). */}
+            speakers lives in Contact as a matching row). */}
         {!isArchiveEvent && (
           <Reveal enabled={revealEnabled}>
             <Surface mode={isDark ? 'dark' : 'light'} style={styles.ticketCta}>
@@ -458,9 +437,11 @@ export default function EventInfoScreen() {
             </>
           ) : (
             <>
-              <Reveal enabled={revealEnabled} delay={60}>{detailsSection}</Reveal>
-              {exploreSection && <Reveal enabled={revealEnabled} delay={120}>{exploreSection}</Reveal>}
-              <Reveal enabled={revealEnabled} delay={180}>{aboutSection}</Reveal>
+              {/* About + map first on mobile so the map gets full width
+                  right below the Get Tickets CTA. */}
+              <Reveal enabled={revealEnabled} delay={60}>{aboutSection}</Reveal>
+              <Reveal enabled={revealEnabled} delay={120}>{detailsSection}</Reveal>
+              {exploreSection && <Reveal enabled={revealEnabled} delay={180}>{exploreSection}</Reveal>}
               {contactSection && <Reveal enabled={revealEnabled} delay={240}>{contactSection}</Reveal>}
             </>
           )}
@@ -567,27 +548,6 @@ const getStyles = (
   },
   ticketCtaButton: {
     alignSelf: 'stretch',
-  },
-  speakerLink: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: uiTokens.space.md,
-    paddingVertical: uiTokens.space.md,
-    paddingHorizontal: uiTokens.space.xl,
-  },
-  speakerLinkCopy: {
-    flex: 1,
-    minWidth: 0,
-  },
-  speakerLinkTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: palette.accent,
-  },
-  speakerLinkCaption: {
-    fontSize: uiTokens.type.caption,
-    color: palette.muted,
-    lineHeight: 16,
   },
   sections: {
     flexDirection: isWide ? 'row' : 'column',

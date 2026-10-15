@@ -233,7 +233,12 @@
       "db/migrations/V050__resolve_agenda_status_registry_id.sql",
       "db/migrations/V051__fix_meetings_speaker_id_write_type_divergence.sql",
       "db/migrations/V052__notification_levels_and_critical_delivery.sql",
-      "db/migrations/V095__enable_notification_realtime.sql"
+      "db/migrations/V095__enable_notification_realtime.sql",
+      "db/migrations/V117__repair_event_meeting_limits_and_reset.sql",
+      "db/migrations/V118__ensure_event_scoped_meeting_request_column.sql",
+      "db/migrations/V119__repair_enum_safe_meeting_request_eligibility.sql",
+      "db/migrations/V120__repair_legacy_user_block_compatibility.sql",
+      "db/migrations/V121__fix_meeting_limit_reset_column_scope.sql"
     ],
     "event-catalog": [
       "db/migrations/V020__seed_canonical_bsl_2026_event_catalog.sql",
@@ -250,7 +255,8 @@
       "db/migrations/V113__keep_unclaimed_speaker_profiles_private.sql",
       "db/migrations/V114__activate_public_speaker_profiles_and_queue_meetings.sql",
       "db/migrations/V115__repair_speaker_claim_review_policy.sql",
-      "db/migrations/V116__separate_pending_speaker_profiles.sql"
+      "db/migrations/V116__separate_pending_speaker_profiles.sql",
+      "db/migrations/V122__sync_bsl_colombia_speaker_accounts.sql"
     ],
     "event-pass-tiers": [
       "db/migrations/V035__configure_event_pass_tiers.sql",
