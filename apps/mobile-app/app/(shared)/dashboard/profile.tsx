@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, Image, ScrollView, StyleSheet, StatusBar, Modal, ActivityIndicator, TextInput } from 'react-native';
+import { View, Text, TouchableOpacity, Image, ScrollView, StyleSheet, StatusBar, Modal, ActivityIndicator, TextInput, Switch } from 'react-native';
 import { useAuth } from '../../../hooks/useAuth';
 import { useTheme } from '../../../hooks/useTheme';
 import { useScroll } from '@contexts/ScrollContext';
@@ -43,6 +43,8 @@ type SpeakerProfile = {
   title: string | null;
   company: string | null;
   imageUrl: string | null;
+  isActive?: boolean;
+  isAcceptingMeetings?: boolean;
 };
 
 type AttendeeProfile = {
@@ -94,6 +96,7 @@ export default function ProfileScreen() {
   const [speakerName, setSpeakerName] = useState('');
   const [speakerTitle, setSpeakerTitle] = useState('');
   const [speakerCompany, setSpeakerCompany] = useState('');
+  const [speakerIsActive, setSpeakerIsActive] = useState(true);
   const [showAttendeeModal, setShowAttendeeModal] = useState(false);
   const [savingAttendee, setSavingAttendee] = useState(false);
   const [attendeeTitle, setAttendeeTitle] = useState('');
@@ -271,7 +274,7 @@ export default function ProfileScreen() {
     return generateUIAvatarUrl(name);
   };
 
-  const updateLinkedSpeaker = useCallback(async (updates: Record<string, string>) => {
+  const updateLinkedSpeaker = useCallback(async (updates: Record<string, string | boolean>) => {
     const response = await apiClient.request('/profile/speaker', {
       skipEventSegment: true,
       method: 'PATCH',
@@ -349,6 +352,7 @@ export default function ProfileScreen() {
     setSpeakerName(speakerProfile.name);
     setSpeakerTitle(speakerProfile.title || '');
     setSpeakerCompany(speakerProfile.company || '');
+    setSpeakerIsActive(speakerProfile.isActive !== false);
     setShowSpeakerModal(true);
   };
 
@@ -364,6 +368,7 @@ export default function ProfileScreen() {
         name: speakerName,
         title: speakerTitle,
         company: speakerCompany,
+        isActive: speakerIsActive,
       });
       setShowSpeakerModal(false);
       showSuccess('Speaker Information Updated', 'Your attendee-facing speaker profile is up to date.');
@@ -860,6 +865,20 @@ export default function ProfileScreen() {
               autoCapitalize="words"
               accessibilityLabel="Speaker company"
             />
+            <View style={styles.speakerStatusRow}>
+              <View style={styles.speakerStatusCopy}>
+                <Text style={styles.fieldLabel}>Speaker profile status</Text>
+                <Text style={styles.speakerStatusDescription}>
+                  {speakerIsActive ? 'Active — attendees can request meetings.' : 'Inactive — attendees cannot request meetings.'}
+                </Text>
+              </View>
+              <Switch
+                value={speakerIsActive}
+                onValueChange={setSpeakerIsActive}
+                accessibilityLabel="Speaker profile active"
+                trackColor={{ false: '#9CA3AF', true: colors.primary }}
+              />
+            </View>
             <TouchableOpacity
               style={[styles.speakerSaveButton, { backgroundColor: colors.primary }, savingSpeaker && styles.actionButtonDisabled]}
               onPress={saveSpeakerProfile}
@@ -1169,6 +1188,21 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     color: colors.text?.primary || (isDark ? '#FFFFFF' : '#000000'),
     backgroundColor: isDark ? '#202020' : '#F9FAFB',
     fontSize: 16,
+  },
+  speakerStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 16,
+    marginTop: 8,
+  },
+  speakerStatusCopy: {
+    flex: 1,
+  },
+  speakerStatusDescription: {
+    color: colors.text?.secondary || (isDark ? '#CCCCCC' : '#666666'),
+    fontSize: 13,
+    lineHeight: 18,
   },
   speakerSaveButton: {
     minHeight: 48,

@@ -107,6 +107,8 @@ describe('ProfileScreen speaker information', () => {
     title: 'Founder & CEO',
     company: 'Hashpass',
     imageUrl: 'https://cdn.hashpass.tech/speakers/edward.png',
+    isActive: true,
+    isAcceptingMeetings: true,
   };
   const attendee = {
     fullName: 'Edward Calderón',
@@ -252,12 +254,32 @@ describe('ProfileScreen speaker information', () => {
     expect(mockApiRequest).toHaveBeenCalledWith('/profile/speaker', {
       skipEventSegment: true,
       method: 'PATCH',
-      body: { name: 'Edward C.', title: 'CEO', company: 'Hashpass Labs' },
+      body: { name: 'Edward C.', title: 'CEO', company: 'Hashpass Labs', isActive: true },
     });
     expect(mockShowSuccess).toHaveBeenCalledWith(
       'Speaker Information Updated',
       'Your attendee-facing speaker profile is up to date.',
     );
+  });
+
+  it('lets a claimed speaker switch their profile to inactive', async () => {
+    const renderer = await renderProfile();
+    await act(async () => {
+      pressText(renderer, 'Edit Speaker Information');
+      await Promise.resolve();
+    });
+
+    const toggle = renderer.root.findByProps({ accessibilityLabel: 'Speaker profile active' });
+    act(() => toggle.props.onValueChange(false));
+    await act(async () => {
+      pressText(renderer, 'Save Speaker Information');
+      await Promise.resolve();
+    });
+
+    expect(mockApiRequest).toHaveBeenCalledWith('/profile/speaker', expect.objectContaining({
+      method: 'PATCH',
+      body: expect.objectContaining({ isActive: false }),
+    }));
   });
 
   it('keeps the public speaker avatar in sync with a selected profile photo', async () => {

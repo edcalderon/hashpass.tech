@@ -20,19 +20,21 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.111)
+## 📋 Latest Changes (v1.9.112)
 
 ### Bug Fixes
 
-* **lukas:** drop unconfirmed TGE date, improve FAQ with real lukas.lat docs ([515435d](https://github.com/hashpass-tech/hashpass.tech/commit/515435d1963c71f9c760c6a7873bca1630732b53))
+* separate pending speaker profiles ([9d54a93](https://github.com/hashpass-tech/hashpass.tech/commit/9d54a932e7e78dc307d1e5da2840cb3a39e7bf15))
 ### Release Highlights
-- drop unconfirmed TGE date, improve FAQ with real lukas.lat docs
+- separate pending speaker profiles
 
 ### Release scope
-- Compared with: `v1.9.110` (the previous global release tag)
+- Compared with: `v1.9.111` (the previous global release tag)
 
 ### Affected products & packages
-- Infrastructure
+- Mobile app
+- Database migrations
+- Release tooling
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

@@ -1,3 +1,20 @@
+## [1.9.112](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.111...v1.9.112) (2026-10-15)
+
+
+### Bug Fixes
+
+* separate pending speaker profiles ([9d54a93](https://github.com/hashpass-tech/hashpass.tech/commit/9d54a932e7e78dc307d1e5da2840cb3a39e7bf15))
+### Release Highlights
+- separate pending speaker profiles
+
+### Release scope
+- Compared with: `v1.9.111` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Database migrations
+- Release tooling
+
 ## [1.9.111](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.110...v1.9.111) (2026-10-10)
 
 

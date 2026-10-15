@@ -1,5 +1,5 @@
 /**
- * BSL publishes imported speakers as active networking profiles before they
+ * BSL publishes imported speakers as pending networking profiles before they
  * claim an account. The profile id remains the stable meeting-request target;
  * pending requests are relinked to the account when the speaker claims it.
  */
@@ -12,10 +12,11 @@ export interface SpeakerActivationRecord {
 }
 
 export function isClaimedActiveSpeaker(speaker: SpeakerActivationRecord): boolean {
-  return speaker.is_active === true || speaker.isActive === true;
+  const isClaimed = typeof speaker.user_id === 'string' && speaker.user_id.trim().length > 0;
+  return isClaimed && (speaker.is_active === true || speaker.isActive === true);
 }
 
-export type SpeakerDirectoryStatus = 'private' | 'unclaimed' | 'claimed' | 'active';
+export type SpeakerDirectoryStatus = 'private' | 'inactive' | 'pending' | 'active';
 
 export interface SpeakerDirectoryState {
   isPublished: boolean;
@@ -29,21 +30,17 @@ export function getSpeakerDirectoryState(speaker: SpeakerActivationRecord): Spea
   const isPublished = speaker.directory_visible === true;
   const isClaimed = typeof speaker.user_id === 'string' && speaker.user_id.trim().length > 0;
   const isNetworkingActive = isClaimedActiveSpeaker(speaker);
-  // Imported profiles are deliberately meeting-eligible before claiming.
-  // `is_accepting_meetings=false` from V112 is legacy data superseded by V114.
-  const isAcceptingMeetings = isNetworkingActive;
+  // Imported profiles remain requestable while waiting for their owner to
+  // claim them. This also handles legacy rows backfilled with
+  // is_accepting_meetings=false before pending was defined.
+  const isPending = isPublished && !isClaimed;
+  const isAcceptingMeetings = isPending || (isNetworkingActive && speaker.is_accepting_meetings !== false);
 
   return {
     isPublished,
     isClaimed,
     isNetworkingActive,
     isAcceptingMeetings,
-    status: !isPublished
-      ? 'private'
-      : isNetworkingActive
-        ? 'active'
-        : isClaimed
-          ? 'claimed'
-          : 'unclaimed',
+    status: !isPublished ? 'private' : isPending ? 'pending' : isNetworkingActive ? 'active' : 'inactive',
   };
 }

@@ -26,6 +26,13 @@ const repairMigrationPath = path.resolve(
 const repairMigration = fs.existsSync(repairMigrationPath)
   ? fs.readFileSync(repairMigrationPath, 'utf8')
   : '';
+const pendingMigrationPath = path.resolve(
+  __dirname,
+  '../../../db/migrations/V116__separate_pending_speaker_profiles.sql',
+);
+const pendingMigration = fs.existsSync(pendingMigrationPath)
+  ? fs.readFileSync(pendingMigrationPath, 'utf8')
+  : '';
 
 describe('V111 speaker profile publication and claim requests', () => {
   it('separates public directory visibility from account ownership', () => {
@@ -93,5 +100,20 @@ describe('V115 deployed claim review repair', () => {
     expect(repairMigration).toMatch(/has_event_admin_access\(p_actor_user_id, v_claim\.event_id, false\)/i);
     expect(repairMigration).toMatch(/is_accepting_meetings\s*=\s*true/i);
     expect(repairMigration).toMatch(/metadata\s*->>\s*'source'/i);
+  });
+});
+
+describe('V116 pending speaker profiles', () => {
+  it('keeps unclaimed imported speakers pending and requestable', () => {
+    expect(pendingMigration).toMatch(/user_id\s+IS NULL/i);
+    expect(pendingMigration).toMatch(/directory_visible\s*=\s*true/i);
+    expect(pendingMigration).toMatch(/is_active\s*=\s*false/i);
+    expect(pendingMigration).toMatch(/is_accepting_meetings\s*=\s*true/i);
+    expect(pendingMigration).toMatch(/speaker_inactive/i);
+  });
+
+  it('does not reactivate a claimed speaker that chose inactive', () => {
+    expect(pendingMigration).toMatch(/user_id\s+IS NOT NULL[\s\S]*is_active/i);
+    expect(pendingMigration).toMatch(/bsl_speakers\.user_id\s+IS NULL/i);
   });
 });
