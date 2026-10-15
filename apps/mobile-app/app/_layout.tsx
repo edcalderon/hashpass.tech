@@ -92,7 +92,7 @@ installGlobalErrorHandler();
 try {
   require('../lib/polyfills/native-event-registry').installNativeEventRegistryPatch();
 } catch (err) {
-  console.error('[HashPass] Failed to re-install native event registry guard:', err);
+  console.error('[HASHPASS] Failed to re-install native event registry guard:', err);
 }
 
 // Keep the splash screen visible while we fetch resources

@@ -22,10 +22,10 @@ type ConsentResponse =
   | { data?: ConsentDetails | null; error: string; success: false };
 
 const scopeLabels: Record<string, string> = {
-  'plane:read': 'Read Hashpass projects, milestones, modules, and work items',
-  'plane:write': 'Create and update Hashpass planning data after confirmation',
+  'plane:read': 'Read HASHPASS projects, milestones, modules, and work items',
+  'plane:write': 'Create and update HASHPASS planning data after confirmation',
   offline_access: 'Stay connected until you revoke access',
-  profile: 'Identify your Hashpass account',
+  profile: 'Identify your HASHPASS account',
   email: 'Verify that your account is approved for internal access',
 };
 
@@ -92,7 +92,7 @@ export default function McpConsentScreen() {
         <Surface mode={mode} style={styles.surface}>
           <Badge mode={mode}>OAuth access request</Badge>
           <Text style={[styles.title, { color: palette.text }]}>{clientName} wants to connect</Text>
-          <Text style={[styles.body, { color: palette.muted }]}>Only approved Hashpass team accounts can use this private MCP server. Review the exact client and redirect destination before allowing access. Your Plane service credential is never shared with the client.</Text>
+          <Text style={[styles.body, { color: palette.muted }]}>Only approved HASHPASS team accounts can use this private MCP server. Review the exact client and redirect destination before allowing access. Your Plane service credential is never shared with the client.</Text>
           {!!details && (
             <View style={[styles.clientDetails, { borderColor: palette.border }]} accessibilityLabel="OAuth client identity">
               <Text style={[styles.detailLabel, { color: palette.muted }]}>Client name (self-declared)</Text>

@@ -2107,7 +2107,7 @@ export default function AuthScreen({ embedded = false, onAuthenticated, onDismis
                         <Text style={styles.passwordlessInfoMessage}>
                           {t(
                             "mcpSignInMessage",
-                            "Continue with Google to authorize this app with your Hashpass account.",
+                            "Continue with Google to authorize this app with your HASHPASS account.",
                           )}
                         </Text>
                       </View>
