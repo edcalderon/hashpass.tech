@@ -32,6 +32,14 @@ jest.mock("../../../hooks/useTheme", () => ({
 
 jest.mock("@expo/vector-icons", () => ({ MaterialIcons: "MaterialIcons" }));
 
+jest.mock(
+  "lucide-react-native",
+  () => new Proxy({}, { get: (_target, name) => (name === "__esModule" ? false : "LucideIcon") }),
+);
+
+// The real map geocodes over the network and mounts an iframe/WebView.
+jest.mock("../../../components/EventMap", () => "EventMap");
+
 jest.mock("../../../components/EventBanner", () => "EventBanner");
 
 jest.mock("../../../contexts/AnimationLevelContext", () => ({
@@ -45,7 +53,7 @@ jest.mock("../../../lib/api-client", () => ({
 }));
 
 import React from "react";
-import { StyleSheet } from "react-native";
+import { AccessibilityInfo, StyleSheet } from "react-native";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import EventInfoScreen from "../../../app/events/[eventSlug]/event-info";
 
@@ -306,8 +314,8 @@ describe("EventInfoScreen", () => {
           )
           .map((node) => node.props.testID),
       ).toEqual([
-        "event-info-details-section",
         "event-info-about-section",
+        "event-info-details-section",
         "event-info-contact-section",
       ]);
 
@@ -329,7 +337,7 @@ describe("EventInfoScreen", () => {
     }
   });
 
-  it("renders a Become a Speaker CTA that opens the event's call-for-speakers link", async () => {
+  it("renders a Speaker row that opens the event's call-for-speakers link", async () => {
     mockEvent = {
       ...COLOMBIA_EVENT,
       speakerApplicationUrl: "https://colombiablockchainweek.com/ser-speaker#postulacion",
@@ -338,16 +346,17 @@ describe("EventInfoScreen", () => {
 
     try {
       const text = findAllText(renderer).join(" | ");
-      expect(text).toContain("Become a speaker");
+      expect(text).toContain("Apply to speak at");
 
       const { Linking } = require("react-native");
       Linking.openURL.mockReturnValue(Promise.resolve());
-      const button = renderer.root.find(
+      const link = renderer.root.find(
         (node) =>
-          node.props.accessibilityRole === "button" &&
-          node.props.accessibilityLabel === "Apply to Speak",
+          node.props.accessibilityRole === "link" &&
+          typeof node.props.accessibilityLabel === "string" &&
+          node.props.accessibilityLabel.startsWith("Speaker:"),
       );
-      act(() => button.props.onPress());
+      act(() => link.props.onPress());
       expect(Linking.openURL).toHaveBeenCalledWith(
         "https://colombiablockchainweek.com/ser-speaker#postulacion",
       );
@@ -356,13 +365,74 @@ describe("EventInfoScreen", () => {
     }
   });
 
-  it("does not render a Become a Speaker CTA when the event has no call-for-speakers link", async () => {
+  it("keeps Get Tickets as the only button and files the speaker row under Contact", async () => {
+    mockEvent = {
+      ...COLOMBIA_EVENT,
+      speakerApplicationUrl: "https://colombiablockchainweek.com/ser-speaker#postulacion",
+    };
+    const renderer = await renderScreen({ success: true, data: { data: null } });
+
+    try {
+      expect(
+        renderer.root
+          .findAll((node) => node.props.accessibilityRole === "button")
+          .map((node) => node.props.accessibilityLabel),
+      ).toEqual(["Get Tickets"]);
+      const contact = renderer.root.findByProps({ testID: "event-info-contact-section" });
+      expect(
+        contact.findAll(
+          (node) =>
+            typeof node.props.accessibilityLabel === "string" &&
+            node.props.accessibilityLabel.startsWith("Speaker:"),
+        ).length,
+      ).toBeGreaterThan(0);
+    } finally {
+      act(() => renderer.unmount());
+    }
+  });
+
+  it("renders the venue map under About when the event has a location, and omits it otherwise", async () => {
+    mockEvent = COLOMBIA_EVENT;
+    const located = await renderScreen({
+      success: true,
+      data: {
+        data: {
+          description: "d",
+          venue_name: "Corferias",
+          venue_address: "Cra 40 #22C-67, Bogotá",
+          city: "Bogotá",
+          country: "Colombia",
+        },
+      },
+    });
+    try {
+      const about = located.root.findByProps({ testID: "event-info-about-section" });
+      expect(about.findByType("EventMap" as any).props).toMatchObject({
+        address: "Cra 40 #22C-67, Bogotá",
+        venue: "Corferias",
+        city: "Bogotá",
+        country: "Colombia",
+      });
+    } finally {
+      act(() => located.unmount());
+    }
+
+    mockEvent = HASH_POKER_EVENT;
+    const unlocated = await renderScreen({ success: true, data: { data: null } });
+    try {
+      expect(unlocated.root.findAllByType("EventMap" as any)).toHaveLength(0);
+    } finally {
+      act(() => unlocated.unmount());
+    }
+  });
+
+  it("does not render a Speaker row when the event has no call-for-speakers link", async () => {
     mockEvent = COLOMBIA_EVENT;
     const renderer = await renderScreen({ success: true, data: { data: null } });
 
     try {
       const text = findAllText(renderer).join(" | ");
-      expect(text).not.toContain("Become a speaker");
+      expect(text).not.toContain("Apply to speak at");
     } finally {
       act(() => renderer.unmount());
     }
@@ -381,14 +451,9 @@ describe("EventInfoScreen", () => {
     const renderer = await renderScreen({ success: true, data: { data: null } });
 
     try {
-      // The CTA's copy is split across adjacent <Text> children
-      // ("Apply to speak at " + the name), so assert on the sequence
-      // rather than a single concatenated string.
-      const textArr = findAllText(renderer);
-      const idx = textArr.findIndex((t) => t.trim() === "Apply to speak at");
-      expect(idx).toBeGreaterThanOrEqual(0);
-      expect(textArr[idx + 1]).toBe("Colombia Blockchain Week");
-      expect(textArr[idx + 1]).not.toBe(COLOMBIA_EVENT.title);
+      const text = findAllText(renderer).join(" | ");
+      expect(text).toContain("Apply to speak at Colombia Blockchain Week");
+      expect(text).not.toContain(`Apply to speak at ${COLOMBIA_EVENT.title}`);
     } finally {
       act(() => renderer.unmount());
     }
@@ -402,10 +467,8 @@ describe("EventInfoScreen", () => {
     const renderer = await renderScreen({ success: true, data: { data: null } });
 
     try {
-      const textArr = findAllText(renderer);
-      const idx = textArr.findIndex((t) => t.trim() === "Apply to speak at");
-      expect(idx).toBeGreaterThanOrEqual(0);
-      expect(textArr[idx + 1]).toBe(COLOMBIA_EVENT.title);
+      const text = findAllText(renderer).join(" | ");
+      expect(text).toContain(`Apply to speak at ${COLOMBIA_EVENT.title}`);
     } finally {
       act(() => renderer.unmount());
     }
@@ -419,16 +482,14 @@ describe("EventInfoScreen", () => {
     const renderer = await renderScreen({ success: true, data: { data: null } });
 
     try {
-      const textArr = findAllText(renderer);
-      const idx = textArr.findIndex((t) => t.trim() === "Apply to speak at");
-      expect(idx).toBeGreaterThanOrEqual(0);
-      expect(textArr[idx + 1]).toBe("this event");
+      const text = findAllText(renderer).join(" | ");
+      expect(text).toContain("Apply to speak at this event");
     } finally {
       act(() => renderer.unmount());
     }
   });
 
-  it("renders the Become a Speaker CTA in dark mode without crashing", async () => {
+  it("renders the Speaker row in dark mode without crashing", async () => {
     mockIsDark = true;
     mockEvent = {
       ...COLOMBIA_EVENT,
@@ -438,13 +499,13 @@ describe("EventInfoScreen", () => {
 
     try {
       const text = findAllText(renderer).join(" | ");
-      expect(text).toContain("Become a speaker");
+      expect(text).toContain("Apply to speak at");
     } finally {
       act(() => renderer.unmount());
     }
   });
 
-  it("hides both the Get Tickets and Become a Speaker CTAs on an archived event even with a CFP link configured", async () => {
+  it("hides both the Get Tickets and Speaker rows on an archived event even with a CFP link configured", async () => {
     mockEvent = {
       ...COLOMBIA_EVENT,
       id: "bsl2025",
@@ -454,7 +515,7 @@ describe("EventInfoScreen", () => {
 
     try {
       const text = findAllText(renderer).join(" | ");
-      expect(text).not.toContain("Become a speaker");
+      expect(text).not.toContain("Apply to speak at");
       expect(text).not.toContain("Get your tickets");
     } finally {
       act(() => renderer.unmount());
@@ -472,6 +533,38 @@ describe("EventInfoScreen", () => {
       expect(
         renderer.root.findByType("EventBanner" as any).props.videoPlaybackEnabled,
       ).toBe(false);
+    } finally {
+      act(() => renderer.unmount());
+    }
+  });
+
+  it("falls back to the event tour location and stays safe when the OS motion lookup rejects", async () => {
+    mockEvent = {
+      ...HASH_POKER_EVENT,
+      tour: { city: "Medellín", country: "Colombia", venue: "Hash House Club" },
+    };
+    jest.mocked(AccessibilityInfo.isReduceMotionEnabled).mockRejectedValueOnce(new Error("unsupported"));
+    const renderer = await renderScreen({ success: true, data: { data: null } });
+
+    try {
+      expect(renderer.root.findByType("EventMap" as any).props).toMatchObject({
+        venue: "Hash House Club",
+        city: "Medellín",
+        country: "Colombia",
+        animated: false,
+      });
+    } finally {
+      act(() => renderer.unmount());
+    }
+  });
+
+  it("renders the archive summary for a past event", async () => {
+    mockEvent = { ...COLOMBIA_EVENT, id: "bsl2025" };
+    const renderer = await renderScreen({ success: true, data: { data: null } });
+
+    try {
+      expect(findAllText(renderer).join(" | ")).toEqual(expect.stringContaining("Archived Edition"));
+      expect(findAllText(renderer).join(" | ")).toEqual(expect.stringContaining("Past Event"));
     } finally {
       act(() => renderer.unmount());
     }

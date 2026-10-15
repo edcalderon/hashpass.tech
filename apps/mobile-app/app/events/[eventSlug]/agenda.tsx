@@ -1748,6 +1748,7 @@ export default function BSL2025AgendaScreen() {
   if (loading || agendaGroupingPending) {
     return (
       <LoadingScreen
+        icon="event-note"
         message={t('loading')}
         fullScreen={true}
       />
@@ -1940,7 +1941,7 @@ export default function BSL2025AgendaScreen() {
           // This is still a loading state, not "no agenda for this event":
           // agenda.length > 0 already proves there IS agenda.
           <View style={styles.agendaList}>
-            <LoadingScreen message={t('loading')} fullScreen={false} />
+            <LoadingScreen icon="event-note" message={t('loading')} fullScreen={false} />
           </View>
         ) : isAgendaPrivate ? (
           // agenda_public=false for this guest (db/migrations/V109) -- no

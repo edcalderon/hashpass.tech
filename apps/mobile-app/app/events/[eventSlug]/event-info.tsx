@@ -1,10 +1,25 @@
 import React, { useEffect, useState } from 'react';
 import { AccessibilityInfo, View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, ActivityIndicator, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
+import Animated, { useAnimatedStyle, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
 import { useEvent } from '@contexts/EventContext';
 import { useTheme } from '../../../hooks/useTheme';
-import { MaterialIcons } from '@expo/vector-icons';
+import {
+  ArrowRight,
+  Building2,
+  CalendarDays,
+  CalendarRange,
+  ChevronRight,
+  Globe,
+  History,
+  type LucideIcon,
+  MapPin,
+  Mic,
+  Ticket,
+  Users,
+} from 'lucide-react-native';
 import EventBanner from '../../../components/EventBanner';
+import EventMap from '../../../components/EventMap';
 import { apiClient, eventApiPath } from '../../../lib/api-client';
 import { useAnimationLevel } from '../../../contexts/AnimationLevelContext';
 import { Surface, ActionButton, HoverText } from '@hashpass/ui/primitives';
@@ -22,6 +37,29 @@ interface EventDetailsRow {
   // public -- same fallback the API itself uses.
   agenda_public?: boolean | null;
   speakers_public?: boolean | null;
+}
+
+// Fade + slight rise on first render. Content starts hidden only when the
+// app's animation level allows motion, and snaps to visible if the OS
+// reduce-motion setting (resolved asynchronously) turns out to be on.
+function Reveal({ children, delay = 0, enabled }: { children: React.ReactNode; delay?: number; enabled: boolean }) {
+  const progress = useSharedValue(enabled ? 0 : 1);
+  useEffect(() => {
+    progress.value = enabled ? withDelay(delay, withTiming(1, { duration: 380 })) : 1;
+  }, [enabled, delay, progress]);
+  const style = useAnimatedStyle(() => ({
+    opacity: progress.value,
+    transform: [{ translateY: (1 - progress.value) * 10 }],
+  }));
+
+  return <Animated.View style={style}>{children}</Animated.View>;
+}
+
+interface InfoRow {
+  icon: LucideIcon;
+  label: string;
+  value: string;
+  action?: () => void;
 }
 
 // Public, no-auth-required event info screen -- this is where a logged-out
@@ -42,15 +80,26 @@ export default function EventInfoScreen() {
   const eventId = event?.id || 'bsl';
   const [details, setDetails] = useState<EventDetailsRow | null>(null);
   const [systemReducedMotion, setSystemReducedMotion] = useState(true);
+  const motionEnabled = animationLevel === 'full' && !systemReducedMotion;
+  // Reveal hides content until its animation runs, so it must not wait on the
+  // async reduce-motion lookup (that would flash content in and back out).
+  const [motionResolved, setMotionResolved] = useState(false);
+  const revealEnabled = animationLevel === 'full' && (!motionResolved || !systemReducedMotion);
 
   useEffect(() => {
     let active = true;
     void AccessibilityInfo.isReduceMotionEnabled()
       .then((reduced) => {
-        if (active) setSystemReducedMotion(reduced);
+        if (active) {
+          setSystemReducedMotion(reduced);
+          setMotionResolved(true);
+        }
       })
       .catch(() => {
-        if (active) setSystemReducedMotion(true);
+        if (active) {
+          setSystemReducedMotion(true);
+          setMotionResolved(true);
+        }
       });
     const subscription = AccessibilityInfo.addEventListener(
       'reduceMotionChanged',
@@ -137,10 +186,10 @@ export default function EventInfoScreen() {
   // paragraph that doesn't reflect what this specific event actually is.
   const aboutText = details?.description || event?.subtitle || null;
 
-  const eventDetailItems = [
-    { icon: 'event', label: 'Date', value: eventDateLabel },
-    { icon: 'location-on', label: 'Location', value: eventLocationLabel },
-    { icon: 'business', label: 'Venue', value: venueLabel },
+  const eventDetailItems: InfoRow[] = [
+    { icon: CalendarDays, label: 'Date', value: eventDateLabel },
+    { icon: MapPin, label: 'Location', value: eventLocationLabel },
+    { icon: Building2, label: 'Venue', value: venueLabel },
   ];
 
   // Direct guest entry points into Agenda/Speakers -- each only shown when
@@ -148,10 +197,10 @@ export default function EventInfoScreen() {
   // isAgendaPublic/isSpeakersPublic above). Shown for archive events too:
   // reviewing a past edition's schedule/lineup is still useful, unlike the
   // ticket/CFP CTAs those are gated off for.
-  const exploreItems = [
+  const exploreItems: InfoRow[] = [
     isAgendaPublic
       ? {
-          icon: 'event-note',
+          icon: CalendarRange,
           label: 'Agenda',
           value: 'View the full schedule',
           action: () => router.push(`/events/${eventId}/agenda`),
@@ -159,7 +208,7 @@ export default function EventInfoScreen() {
       : null,
     isSpeakersPublic
       ? {
-          icon: 'groups',
+          icon: Users,
           label: 'Speakers',
           value: 'Meet the speaker lineup',
           action: () => router.push(`/events/${eventId}/speakers`),
@@ -167,10 +216,10 @@ export default function EventInfoScreen() {
       : null,
   ].filter((item): item is NonNullable<typeof item> => item !== null);
 
-  const contactItems = [
+  const contactItems: InfoRow[] = [
     event?.website
       ? {
-          icon: 'web',
+          icon: Globe,
           label: 'Website',
           value: event.website.replace(/^https?:\/\//, ''),
           action: () => handleOpenLink(event.website!),
@@ -178,46 +227,67 @@ export default function EventInfoScreen() {
       : null,
     hasDistinctAddress
       ? {
-          icon: 'location-on',
+          icon: MapPin,
           label: 'Address',
           value: addressLabel,
           action: () => handleOpenLink(`https://maps.google.com/?q=${encodeURIComponent(addressLabel)}`),
         }
       : null,
+    // Speaker application uses the same InfoRow style as Website/Address
+    // (icon in rounded square, uppercase label, accent value) for visual
+    // consistency within the Contact card.
+    !isArchiveEvent && event?.speakerApplicationUrl
+      ? {
+          icon: Mic,
+          label: 'Speaker',
+          value: `Apply to speak at ${event?.speakerApplicationLabel || event?.title || 'this event'}`,
+          action: () => handleOpenLink(event.speakerApplicationUrl!),
+        }
+      : null,
   ].filter((item): item is NonNullable<typeof item> => item !== null);
 
-  const renderItemRow = (item: { icon: string; label: string; value: string; action?: () => void }) => {
+  const renderItemRow = (item: InfoRow, index: number, all: InfoRow[]) => {
+    const Icon = item.icon;
+    const rowStyle = [styles.infoItem, index === all.length - 1 && styles.infoItemLast];
     const content = (
       <>
         <View style={styles.infoItemLeft}>
           <View style={styles.infoIcon}>
-            <MaterialIcons name={item.icon as any} size={24} color={palette.accent} />
+            <Icon size={18} color={palette.accent} strokeWidth={2} />
           </View>
           <View style={styles.infoText}>
             <Text style={styles.infoLabel}>{item.label}</Text>
             <Text style={[styles.infoValue, item.action && styles.infoValueLink]}>{item.value}</Text>
           </View>
         </View>
-        {item.action && <MaterialIcons name="chevron-right" size={20} color={palette.muted} />}
+        {item.action && <ChevronRight size={18} color={palette.muted} />}
       </>
     );
 
     return item.action ? (
       <TouchableOpacity
         key={item.label}
-        style={styles.infoItem}
+        style={rowStyle}
         onPress={item.action}
+        activeOpacity={0.6}
         accessibilityRole="link"
         accessibilityLabel={`${item.label}: ${item.value}`}
       >
         {content}
       </TouchableOpacity>
     ) : (
-      <View key={item.label} style={styles.infoItem}>
+      <View key={item.label} style={rowStyle}>
         {content}
       </View>
     );
   };
+
+  // The map needs *some* real location signal; without one we skip it rather
+  // than pin a placeholder city.
+  const tourCity = event?.tour?.city;
+  const tourCountry = event?.tour?.country;
+  const mapVenue = details?.venue_name || event?.tour?.venue || null;
+  const hasMapLocation = Boolean(details?.venue_address || mapVenue || details?.city || tourCity);
 
   const renderArchiveSummary = () => {
     if (!isArchiveEvent) return null;
@@ -225,7 +295,7 @@ export default function EventInfoScreen() {
     return (
       <View style={styles.archiveSummary}>
         <View style={styles.archiveBadge}>
-          <MaterialIcons name="history" size={16} color={isDark ? '#E0F2FE' : '#1D4ED8'} />
+          <History size={14} color={isDark ? '#E0F2FE' : '#1D4ED8'} />
           <Text style={styles.archiveBadgeText}>Past Event</Text>
         </View>
         <Text accessibilityRole="header" style={styles.archiveTitle}>
@@ -265,6 +335,21 @@ export default function EventInfoScreen() {
           </Text>
         )}
       </Surface>
+      {/* Map gets its own full-width card so it occupies the entire row on
+          mobile instead of being squeezed inside the text card's padding. */}
+      {hasMapLocation && (
+        <Surface mode={isDark ? 'dark' : 'light'} style={[styles.sectionContent, styles.mapCard]}>
+          <EventMap
+            address={details?.venue_address}
+            venue={mapVenue}
+            city={details?.city || tourCity}
+            country={details?.country || tourCountry}
+            label={venueLabel}
+            isDark={isDark}
+            animated={motionEnabled}
+          />
+        </Surface>
+      )}
     </View>
   );
 
@@ -315,88 +400,53 @@ export default function EventInfoScreen() {
 
         {renderArchiveSummary()}
 
-        {/* Get Tickets CTA -- lives only here now (no longer duplicated on
-            the Quick Access rail) as a proper, integrated card rather than
-            a bare button, so it reads as part of the page instead of a
-            floating control. */}
+        {/* Get Tickets is the page's single primary CTA (the call for
+            speakers lives in Contact as a matching row). */}
         {!isArchiveEvent && (
-          <Surface mode={isDark ? 'dark' : 'light'} style={styles.ticketCta}>
-            <View style={styles.ticketCtaRow}>
-              <View style={styles.ticketCtaIcon}>
-                <MaterialIcons name="confirmation-number" size={26} color={palette.accent} />
+          <Reveal enabled={revealEnabled}>
+            <Surface mode={isDark ? 'dark' : 'light'} style={styles.ticketCta}>
+              <View style={styles.ticketCtaRow}>
+                <View style={styles.ticketCtaIcon}>
+                  <Ticket size={22} color={palette.accent} />
+                </View>
+                <View style={styles.ticketCtaCopy}>
+                  <Text style={styles.ticketCtaTitle}>Get your tickets</Text>
+                  <HoverText mode={isDark ? 'dark' : 'light'} style={styles.ticketCtaSubtitle} numberOfLines={2}>
+                    Secure your spot at {event?.title || 'this event'} · {eventDateLabel}
+                  </HoverText>
+                </View>
               </View>
-              <View style={styles.ticketCtaCopy}>
-                <Text style={styles.ticketCtaTitle}>Get your tickets</Text>
-                <HoverText mode={isDark ? 'dark' : 'light'} style={styles.ticketCtaSubtitle} numberOfLines={2}>
-                  Secure your spot at {event?.title || 'this event'} · {eventDateLabel}
-                </HoverText>
-              </View>
-            </View>
-            <ActionButton
-              mode={isDark ? 'dark' : 'light'}
-              label="Get Tickets"
-              trailingIcon={
-                <MaterialIcons name="arrow-forward" size={18} color={palette.onAccent} />
-              }
-              onPress={() => router.push(`/events/${eventId}/tickets`)}
-              style={styles.ticketCtaButton}
-            />
-          </Surface>
-        )}
-
-        {/* Become a Speaker CTA -- only rendered for events with an actual
-            open call for speakers configured (see `speakerApplicationUrl` on
-            EventConfig); most events don't run one, so this never shows a
-            dead/placeholder link. */}
-        {!isArchiveEvent && event?.speakerApplicationUrl && (
-          <Surface mode={isDark ? 'dark' : 'light'} style={styles.speakerCta}>
-            <View style={styles.ticketCtaRow}>
-              <View style={styles.ticketCtaIcon}>
-                <MaterialIcons name="campaign" size={26} color={palette.accent} />
-              </View>
-              <View style={styles.ticketCtaCopy}>
-                <Text style={styles.ticketCtaTitle}>Become a speaker</Text>
-                <HoverText mode={isDark ? 'dark' : 'light'} style={styles.ticketCtaSubtitle} numberOfLines={2}>
-                  {/* speakerApplicationLabel names whoever actually reviews
-                      applications at speakerApplicationUrl. Some events
-                      (e.g. colombia2026) cross-promote a *different*
-                      conference/organizer's CFP -- for those, falling back
-                      to this event's own title would misname who the
-                      application actually goes to. */}
-                  Apply to speak at {event?.speakerApplicationLabel || event?.title || 'this event'}
-                </HoverText>
-              </View>
-            </View>
-            <ActionButton
-              mode={isDark ? 'dark' : 'light'}
-              label="Apply to Speak"
-              trailingIcon={
-                <MaterialIcons name="open-in-new" size={18} color={palette.onAccent} />
-              }
-              onPress={() => handleOpenLink(event.speakerApplicationUrl!)}
-              style={styles.ticketCtaButton}
-            />
-          </Surface>
+              <ActionButton
+                mode={isDark ? 'dark' : 'light'}
+                label="Get Tickets"
+                trailingIcon={<ArrowRight size={18} color={palette.onAccent} />}
+                onPress={() => router.push(`/events/${eventId}/tickets`)}
+                style={styles.ticketCtaButton}
+              />
+            </Surface>
+          </Reveal>
         )}
 
         <View testID="event-info-sections" style={styles.sections}>
           {isWide ? (
             <>
               <View testID="event-info-column" style={styles.mainColumn}>
-                {aboutSection}
+                <Reveal enabled={revealEnabled} delay={120}>{aboutSection}</Reveal>
               </View>
               <View testID="event-info-column" style={styles.supportColumn}>
-                {detailsSection}
-                {exploreSection}
-                {contactSection}
+                <Reveal enabled={revealEnabled} delay={60}>{detailsSection}</Reveal>
+                {exploreSection && <Reveal enabled={revealEnabled} delay={140}>{exploreSection}</Reveal>}
+                {contactSection && <Reveal enabled={revealEnabled} delay={220}>{contactSection}</Reveal>}
               </View>
             </>
           ) : (
             <>
-              {detailsSection}
-              {exploreSection}
-              {aboutSection}
-              {contactSection}
+              {/* About + map first on mobile so the map gets full width
+                  right below the Get Tickets CTA. */}
+              <Reveal enabled={revealEnabled} delay={60}>{aboutSection}</Reveal>
+              <Reveal enabled={revealEnabled} delay={120}>{detailsSection}</Reveal>
+              {exploreSection && <Reveal enabled={revealEnabled} delay={180}>{exploreSection}</Reveal>}
+              {contactSection && <Reveal enabled={revealEnabled} delay={240}>{contactSection}</Reveal>}
             </>
           )}
         </View>
@@ -466,7 +516,7 @@ const getStyles = (
     marginTop: uiTokens.space.xl,
     marginBottom: uiTokens.space.md,
     gap: uiTokens.space.lg,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: palette.accent,
     backgroundColor: palette.accentSoft,
   },
@@ -476,8 +526,8 @@ const getStyles = (
     gap: uiTokens.space.md,
   },
   ticketCtaIcon: {
-    width: 52,
-    height: 52,
+    width: 44,
+    height: 44,
     borderRadius: uiTokens.radius.circle,
     justifyContent: 'center',
     alignItems: 'center',
@@ -503,17 +553,12 @@ const getStyles = (
   ticketCtaButton: {
     alignSelf: 'stretch',
   },
-  speakerCta: {
-    marginTop: uiTokens.space.md,
-    marginBottom: uiTokens.space.md,
-    gap: uiTokens.space.lg,
-    borderWidth: 1.5,
-    borderColor: palette.border,
-    backgroundColor: palette.surface,
-  },
   sections: {
     flexDirection: isWide ? 'row' : 'column',
-    alignItems: 'flex-start',
+    // On mobile the cross-axis is horizontal — 'stretch' lets each section
+    // fill the full row width. On desktop the cross-axis is vertical, so
+    // 'flex-start' keeps each column sized by its content.
+    alignItems: isWide ? 'flex-start' : 'stretch',
     gap: uiTokens.space.xl,
     marginTop: isWide ? uiTokens.space.section : uiTokens.space.xxl,
   },
@@ -536,6 +581,7 @@ const getStyles = (
     marginBottom: uiTokens.space.md,
   },
   sectionContent: {
+    width: '100%',
     padding: 0,
     backgroundColor: palette.surface,
     borderRadius: uiTokens.radius.card,
@@ -548,10 +594,13 @@ const getStyles = (
     alignItems: 'center',
     justifyContent: 'space-between',
     minHeight: uiTokens.control.minHeight,
-    paddingVertical: uiTokens.space.lg,
+    paddingVertical: uiTokens.space.md,
     paddingHorizontal: uiTokens.space.xl,
-    borderBottomWidth: 1,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: palette.border,
+  },
+  infoItemLast: {
+    borderBottomWidth: 0,
   },
   infoItemLeft: {
     flexDirection: 'row',
@@ -559,25 +608,25 @@ const getStyles = (
     flex: 1,
   },
   infoIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 36,
+    height: 36,
+    borderRadius: uiTokens.radius.input,
     backgroundColor: palette.accentSoft,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
-    borderWidth: 1,
-    borderColor: palette.border,
+    marginRight: 14,
   },
   infoText: {
     flex: 1,
     minWidth: 0,
   },
   infoLabel: {
-    fontSize: 13,
+    fontSize: 12,
     color: palette.muted,
-    marginBottom: 4,
-    fontWeight: '500',
+    marginBottom: 2,
+    fontWeight: '600',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
   },
   infoValue: {
     fontSize: uiTokens.type.body,
@@ -597,5 +646,9 @@ const getStyles = (
     color: palette.text,
     lineHeight: 26,
     padding: uiTokens.space.xl,
+  },
+  mapCard: {
+    marginTop: uiTokens.space.md,
+    overflow: 'hidden',
   },
 });

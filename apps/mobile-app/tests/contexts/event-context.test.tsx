@@ -63,7 +63,7 @@ describe("EventProvider runtime registry refresh", () => {
       await Promise.resolve();
     });
 
-    expect(consoleError).toHaveBeenCalledWith("[HashPass] Event registry refresh failed", error);
+    expect(consoleError).toHaveBeenCalledWith("[HASHPASS] Event registry refresh failed", error);
     consoleError.mockRestore();
   });
 

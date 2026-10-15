@@ -56,6 +56,7 @@ const warnInvalidSupabaseUserId = (
 };
 
 export type PassType = "general" | "business" | "vip";
+export const MEETING_REQUEST_LIMIT_RESET_COST = 50;
 export type PassStatus =
   "active" | "used" | "expired" | "cancelled" | "suspended";
 export type SubpassType =
@@ -112,6 +113,15 @@ export interface PassRequestLimits {
   pass_type: PassType | null;
   remaining_requests: number;
   remaining_boost: number;
+}
+
+export interface PassLimitResetResult {
+  pass_id: string;
+  event_id: string;
+  reset_cost: number;
+  remaining_requests: number;
+  remaining_boost: number;
+  pass_type: PassType;
 }
 
 export interface PassInfo {
@@ -337,6 +347,11 @@ class PassSystemService {
         .single();
 
       if (error) {
+        console.error("[PassSystem] Meeting-limit RPC failed:", {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+        });
         return {
           can_request: false,
           canSendRequest: false,
@@ -360,6 +375,33 @@ class PassSystemService {
         remaining_boost: 0,
       };
     }
+  }
+
+  async resetMeetingRequestLimits(
+    userId: string,
+    eventId?: string,
+  ): Promise<PassLimitResetResult> {
+    if (!isSupabaseAuthUserId(userId)) {
+      warnInvalidSupabaseUserId("resetMeetingRequestLimits", userId);
+      throw new Error("Invalid user ID format");
+    }
+
+    const resolvedEventId = resolvePassStorageEventId(
+      resolveActiveEventId(eventId),
+    );
+    const { data, error } = await supabase
+      .rpc("reset_meeting_request_limits", {
+        p_user_id: userId,
+        p_event_id: resolvedEventId,
+        p_boost_cost: MEETING_REQUEST_LIMIT_RESET_COST,
+      })
+      .single();
+
+    if (error || !data) {
+      throw new Error(error?.message || "Unable to reset meeting request limits");
+    }
+
+    return data as PassLimitResetResult;
   }
 
   // Get actual meeting request status for a user and speaker

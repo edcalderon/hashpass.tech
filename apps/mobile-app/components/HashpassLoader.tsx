@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { AccessibilityInfo, AppState, StyleSheet, View } from 'react-native';
-import Animated, { cancelAnimation, Easing, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
+import Animated, { cancelAnimation, Easing, interpolate, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { useAnimationLevel } from '../contexts/AnimationLevelContext';
+import { MaterialIcons } from '../lib/vector-icons';
 
 // The chevron from assets/logo-hashpass.svg (path data copied verbatim, in
 // the source file's own un-translated coordinate space) -- just the glyph,
@@ -31,13 +32,16 @@ export interface HashpassLoaderProps {
   color?: string;
   /** Lets a caller freeze the spin (e.g. a hidden/inactive screen). */
   active?: boolean;
+  /** Optional contextual page icon that crossfades with the HASHPASS mark. */
+  contextIcon?: string;
+  /** Color for the contextual page icon. */
+  contextColor?: string;
 }
 
 /**
  * The HASHPASS chevron glyph paired with a rotating accent ring -- the
- * app's one shared branded loader. Used wherever LoadingScreen falls back
- * to a plain spinner (no `icon` prop given), so every generic loading state
- * gets it automatically.
+ * app's one shared branded loader. When a screen provides a contextual icon,
+ * the mark crossfades to it and back inside the same branded frame.
  *
  * Motion follows the same accessible pattern as FeatureIcon: gated by
  * AnimationLevelContext, the OS reduce-motion setting, and app foreground
@@ -45,12 +49,19 @@ export interface HashpassLoaderProps {
  * it reads as a deliberate open-ring frame around the logo rather than a
  * stuck spinner.
  */
-export default function HashpassLoader({ size = 64, color = HASHPASS_LOADER_RING_COLOR, active = true }: HashpassLoaderProps) {
+export default function HashpassLoader({
+  size = 64,
+  color = HASHPASS_LOADER_RING_COLOR,
+  active = true,
+  contextIcon,
+  contextColor = MARK_CHEVRON_COLOR,
+}: HashpassLoaderProps) {
   const { animationLevel } = useAnimationLevel();
   // Fail static until the OS preference is known, same as FeatureIcon.
   const [systemReduced, setSystemReduced] = useState(true);
   const [foreground, setForeground] = useState(AppState.currentState === 'active');
   const rotation = useSharedValue(0);
+  const contextPhase = useSharedValue(0);
 
   useEffect(() => {
     let mounted = true;
@@ -87,7 +98,34 @@ export default function HashpassLoader({ size = 64, color = HASHPASS_LOADER_RING
     return () => cancelAnimation(rotation);
   }, [spin, animationLevel, rotation]);
 
+  useEffect(() => {
+    cancelAnimation(contextPhase);
+    if (contextIcon && spin) {
+      contextPhase.value = withRepeat(
+        withTiming(1, {
+          duration: animationLevel === 'reduced' ? 1500 : 1050,
+          easing: Easing.inOut(Easing.ease),
+        }),
+        -1,
+        true,
+      );
+    } else {
+      contextPhase.value = 0;
+    }
+    return () => cancelAnimation(contextPhase);
+  }, [contextIcon, spin, animationLevel, contextPhase]);
+
   const ringStyle = useAnimatedStyle(() => ({ transform: [{ rotate: `${rotation.value}deg` }] }), [rotation]);
+  const brandStyle = useAnimatedStyle(() => ({
+    opacity: contextIcon
+      ? interpolate(contextPhase.value, [0, 0.42, 0.58, 1], [1, 1, 0, 0])
+      : 1,
+  }), [contextIcon]);
+  const contextStyle = useAnimatedStyle(() => ({
+    opacity: contextIcon
+      ? interpolate(contextPhase.value, [0, 0.42, 0.58, 1], [0, 0, 1, 1])
+      : 0,
+  }), [contextIcon]);
 
   const strokeWidth = Math.max(2.5, size * 0.045);
   const radius = size / 2 - strokeWidth;
@@ -120,10 +158,21 @@ export default function HashpassLoader({ size = 64, color = HASHPASS_LOADER_RING
           />
         </Svg>
       </Animated.View>
-      <View style={styles.center} pointerEvents="none">
-        <Svg width={markSize} height={markSize} viewBox={CHEVRON_VIEWBOX}>
-          <Path d={CHEVRON_MARK_D} fill={MARK_CHEVRON_COLOR} />
-        </Svg>
+      <View style={[styles.center, { width: markSize, height: markSize }]} pointerEvents="none">
+        <Animated.View style={[StyleSheet.absoluteFill, styles.center, brandStyle]}>
+          <Svg width={markSize} height={markSize} viewBox={CHEVRON_VIEWBOX}>
+            <Path d={CHEVRON_MARK_D} fill={MARK_CHEVRON_COLOR} />
+          </Svg>
+        </Animated.View>
+        {contextIcon ? (
+          <Animated.View style={[StyleSheet.absoluteFill, styles.center, contextStyle]}>
+            <MaterialIcons
+              name={contextIcon as any}
+              size={markSize * 0.72}
+              color={contextColor}
+            />
+          </Animated.View>
+        ) : null}
       </View>
     </View>
   );

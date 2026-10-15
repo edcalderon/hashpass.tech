@@ -5,7 +5,6 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
-  Linking,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { MaterialIcons } from "../lib/vector-icons";
@@ -17,10 +16,12 @@ import {
   PassInfo,
   PassRequestLimits,
   PassType,
+  MEETING_REQUEST_LIMIT_RESET_COST,
 } from "@/lib/pass-system";
 import { resolveActiveEventId } from "@/lib/event-path";
 import { useTranslation } from "@/i18n/i18n";
 import * as Sentry from "@sentry/react-native";
+import { uiTokens } from "@hashpass/ui/tokens";
 import PassesWallet from "./passes/PassesWallet";
 import type { PassTimelineFilter, PassTypeFilter } from "../lib/pass-wallet";
 
@@ -123,6 +124,7 @@ function PassesDisplayInner({
   );
   const [loading, setLoading] = useState(true);
   const [initialLoad, setInitialLoad] = useState(true);
+  const [resettingLimits, setResettingLimits] = useState(false);
   const [showComparison, setShowComparison] = useState(showPassComparison);
   const [eventPassTiers, setEventPassTiers] = useState<EventPassTier[]>([]);
 
@@ -280,7 +282,7 @@ function PassesDisplayInner({
     if (speakerId && dbUserId) {
       loadRequestLimits();
     }
-  }, [speakerId, dbUserId, boostAmount, refreshTrigger]);
+  }, [speakerId, dbUserId, boostAmount, eventId, refreshTrigger]);
 
   const loadPassInfo = async () => {
     if (!dbUserId) {
@@ -315,25 +317,15 @@ function PassesDisplayInner({
     }
   };
 
-  const openEventPurchaseSite = async () => {
-    const purchaseUrl = "https://blockchainsummit.la";
-    try {
-      if (!(await Linking.canOpenURL(purchaseUrl)))
-        throw new Error("Unsupported purchase URL");
-      await Linking.openURL(purchaseUrl);
-    } catch {
-      Alert.alert(
-        t({
-          id: "passes.alert.purchaseTitle",
-          message: "Visit Blockchain Summit",
-        }),
-        t({
-          id: "passes.alert.purchaseMessage",
-          message:
-            "Visit blockchainsummit.la for more information and to purchase your pass.",
-        }),
-      );
-    }
+  const openEventTickets = () => {
+    const targetEventId = eventId || passInfo?.event_id || resolveActiveEventId();
+    router.push({
+      pathname: "/events/[eventSlug]/tickets",
+      params: {
+        eventSlug: targetEventId,
+        openTicketModal: "true",
+      },
+    } as any);
   };
 
   const loadRequestLimits = async () => {
@@ -344,6 +336,7 @@ function PassesDisplayInner({
         dbUserId,
         speakerId,
         boostAmount,
+        eventId,
       );
       setRequestLimits(limits);
       onRequestLimitsLoaded?.(limits);
@@ -370,6 +363,75 @@ function PassesDisplayInner({
         });
       }
     }
+  };
+
+  const hasExistingRequest = Boolean(existingRequest);
+
+  const canResetRequestLimits = Boolean(
+    passInfo &&
+      requestLimits &&
+      !requestLimits.canSendRequest &&
+      !hasExistingRequest &&
+      requestLimits.reason === "no_requests_remaining" &&
+      requestLimits.remaining_boost >= MEETING_REQUEST_LIMIT_RESET_COST,
+  );
+
+  const resetRequestLimits = () => {
+    if (!dbUserId || !eventId || !canResetRequestLimits || resettingLimits) {
+      return;
+    }
+
+    Alert.alert(
+      t({
+        id: "passes.resetMeetingRequestLimitTitle",
+        message: "Reset meeting request limit?",
+      }),
+      t({
+        id: "passes.resetMeetingRequestLimitDescription",
+        message: `Spend ${MEETING_REQUEST_LIMIT_RESET_COST} Boost points to restore your meeting requests.`,
+      }),
+      [
+        {
+          text: t({ id: "passes.cancel", message: "Cancel" }),
+          style: "cancel",
+        },
+        {
+          text: t({
+            id: "passes.resetMeetingRequestLimit",
+            message: "Reset limit",
+          }),
+          onPress: async () => {
+            setResettingLimits(true);
+            try {
+              await passSystemService.resetMeetingRequestLimits(dbUserId, eventId);
+              await loadPassInfo();
+              await loadRequestLimits();
+              Alert.alert(
+                t({
+                  id: "passes.resetMeetingRequestLimitSuccessTitle",
+                  message: "Limit reset",
+                }),
+                t({
+                  id: "passes.resetMeetingRequestLimitSuccessDescription",
+                  message: "Your meeting requests are available again.",
+                }),
+              );
+            } catch (error) {
+              console.error("Error resetting meeting request limits:", error);
+              Alert.alert(
+                t({ id: "passes.alert.errorTitle", message: "Unable to reset limit" }),
+                error instanceof Error ? error.message : t({
+                  id: "passes.resetMeetingRequestLimitFailure",
+                  message: "Please try again.",
+                }),
+              );
+            } finally {
+              setResettingLimits(false);
+            }
+          },
+        },
+      ],
+    );
   };
 
   const createDefaultPass = async (
@@ -435,7 +497,6 @@ function PassesDisplayInner({
   // The entitlement endpoint only reports that an active request exists; it
   // does not include its status. Never turn that incomplete hint into a
   // “pending” card—the speaker-detail request query is the source of truth.
-  const hasExistingRequest = Boolean(existingRequest);
   const isPendingExistingRequest =
     !existingRequest ||
     ["pending", "requested"].includes(existingRequest.status);
@@ -551,7 +612,43 @@ function PassesDisplayInner({
               })}
         </Text>
 
-        {isDemoMode ? (
+        {mode === "speaker" ? (
+          <TouchableOpacity
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: 12,
+              backgroundColor: colors.background.default,
+              borderRadius: uiTokens.radius.small,
+              marginBottom: 16,
+              borderWidth: 1,
+              borderColor: colors.divider,
+            }}
+            accessibilityRole="link"
+            accessibilityLabel="View event tickets"
+            onPress={openEventTickets}
+            activeOpacity={0.7}
+          >
+            <Text
+              style={{
+                fontSize: 14,
+                fontWeight: "600",
+                color: colors.text.primary,
+              }}
+            >
+              {t({
+                id: "passes.viewEventTickets",
+                message: "View event tickets",
+              })}
+            </Text>
+            <MaterialIcons
+              name="arrow-forward"
+              size={24}
+              color={colors.primary}
+            />
+          </TouchableOpacity>
+        ) : isDemoMode ? (
           <>
             {/* Pass Comparison Toggle - Demo Mode Only */}
             <TouchableOpacity
@@ -727,7 +824,7 @@ function PassesDisplayInner({
                     }}
                     accessibilityLabel="Purchase Business pass"
                     accessibilityRole="button"
-                    onPress={() => void openEventPurchaseSite()}
+                    onPress={openEventTickets}
                   >
                     <View
                       style={{
@@ -835,7 +932,7 @@ function PassesDisplayInner({
                     }}
                     accessibilityLabel="Purchase VIP pass"
                     accessibilityRole="button"
-                    onPress={() => void openEventPurchaseSite()}
+                    onPress={openEventTickets}
                   >
                     <View
                       style={{
@@ -987,7 +1084,7 @@ function PassesDisplayInner({
                     borderWidth: 1,
                     borderColor: colors.divider,
                   }}
-                  onPress={openEventPurchaseSite}
+                  onPress={openEventTickets}
                 >
                   <View style={{ flexDirection: "row", alignItems: "center" }}>
                     <View
@@ -1035,7 +1132,7 @@ function PassesDisplayInner({
                     borderWidth: 1,
                     borderColor: colors.divider,
                   }}
-                  onPress={openEventPurchaseSite}
+                  onPress={openEventTickets}
                 >
                   <View style={{ flexDirection: "row", alignItems: "center" }}>
                     <View
@@ -1087,7 +1184,7 @@ function PassesDisplayInner({
                     borderWidth: 1,
                     borderColor: colors.divider,
                   }}
-                  onPress={openEventPurchaseSite}
+                  onPress={openEventTickets}
                 >
                   <View style={{ flexDirection: "row", alignItems: "center" }}>
                     <View
@@ -1311,8 +1408,8 @@ function PassesDisplayInner({
         </View>
       </View>
 
-      {/* Pass Comparison Toggle - Only show if user has a pass AND in demo mode */}
-      {passInfo && isDemoMode && (
+      {/* Pass pricing belongs in the event ticket modal, not the speaker card. */}
+      {mode === "speaker" && passInfo && (
         <TouchableOpacity
           style={{
             flexDirection: "row",
@@ -1325,7 +1422,9 @@ function PassesDisplayInner({
             borderWidth: 1,
             borderColor: colors.divider,
           }}
-          onPress={() => setShowComparison(!showComparison)}
+          accessibilityRole="link"
+          accessibilityLabel="View event tickets"
+          onPress={openEventTickets}
           activeOpacity={0.7}
         >
           <Text
@@ -1336,23 +1435,20 @@ function PassesDisplayInner({
             }}
           >
             {t({
-              id: "passes.passTypes.all",
-              message: "All Pass Types & Pricing",
-            })}{" "}
-            {showComparison
-              ? `(${t({ id: "passes.passTypes.open", message: "Open" })})`
-              : `(${t({ id: "passes.passTypes.closed", message: "Closed" })})`}
+              id: "passes.viewEventTickets",
+              message: "View event tickets",
+            })}
           </Text>
           <MaterialIcons
-            name={showComparison ? "keyboard-arrow-up" : "keyboard-arrow-down"}
+            name="arrow-forward"
             size={24}
-            color={colors.text.secondary}
+            color={colors.primary}
           />
         </TouchableOpacity>
       )}
 
-      {/* Pass Comparison Content - Only show if user has a pass AND in demo mode */}
-      {passInfo && showComparison && isDemoMode && (
+      {/* Dashboard-only demo comparison; speaker details link to event tickets. */}
+      {mode !== "speaker" && passInfo && showComparison && isDemoMode && (
         <View style={{ marginBottom: 16 }}>
           <Text
             style={{
@@ -1842,6 +1938,44 @@ function PassesDisplayInner({
                       })
                   : passSystemService.getPassValidationMessage(requestLimits)}
           </Text>
+          {canResetRequestLimits && (
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel={t({
+                id: "passes.resetMeetingRequestLimit",
+                message: "Reset limit",
+              })}
+              onPress={resetRequestLimits}
+              disabled={resettingLimits}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                marginTop: uiTokens.space.md,
+                paddingVertical: uiTokens.space.sm,
+                paddingHorizontal: uiTokens.space.lg,
+                borderRadius: uiTokens.radius.pill,
+                borderWidth: 1,
+                borderColor: colors.primary,
+                opacity: resettingLimits ? 0.5 : 1,
+              }}
+            >
+              {resettingLimits && <ActivityIndicator size="small" color={colors.primary} />}
+              <Text
+                style={{
+                  color: colors.primary,
+                  fontSize: 14,
+                  fontWeight: "600",
+                  marginLeft: resettingLimits ? 8 : 0,
+                }}
+              >
+                {t({
+                  id: "passes.resetMeetingRequestLimit",
+                  message: `Reset limit · ${MEETING_REQUEST_LIMIT_RESET_COST} Boost points`,
+                })}
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
       )}
 

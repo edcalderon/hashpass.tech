@@ -44,7 +44,7 @@ export default function McpLoginScreen() {
         router.replace(`/auth?returnTo=${encodeURIComponent(continuation.returnTo)}` as never);
       })
       .catch(() => {
-        if (active) setError('We could not verify your Hashpass session. Please try again.');
+        if (active) setError('We could not verify your HASHPASS session. Please try again.');
       });
 
     return () => {
@@ -56,14 +56,14 @@ export default function McpLoginScreen() {
     <SafeAreaView style={[styles.safeArea, { backgroundColor: palette.canvas }]}>
       <View style={styles.content}>
         <Surface mode={mode} style={styles.surface}>
-          <Badge mode={mode}>Hashpass Plane</Badge>
+          <Badge mode={mode}>HASHPASS Plane</Badge>
           <Text style={[styles.title, { color: palette.text }]}>Securely connecting your workspace</Text>
           {error ? (
             <Text accessibilityRole="alert" style={[styles.body, { color: palette.danger }]}>{error}</Text>
           ) : (
-            <View style={styles.progress} accessibilityRole="progressbar" accessibilityLabel="Checking your Hashpass session">
+            <View style={styles.progress} accessibilityRole="progressbar" accessibilityLabel="Checking your HASHPASS session">
               <ActivityIndicator color={palette.accent} />
-              <Text style={[styles.body, { color: palette.muted }]}>Checking your Hashpass session…</Text>
+              <Text style={[styles.body, { color: palette.muted }]}>Checking your HASHPASS session…</Text>
             </View>
           )}
         </Surface>

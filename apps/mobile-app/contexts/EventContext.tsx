@@ -61,7 +61,7 @@ export function EventProvider({ children }: EventProviderProps) {
       .then((changed: boolean) => {
         if (active && changed) setRegistryRevision((value) => value + 1);
       })
-      .catch((error: unknown) => console.error('[HashPass] Event registry refresh failed', error));
+      .catch((error: unknown) => console.error('[HASHPASS] Event registry refresh failed', error));
     return () => { active = false; };
   }, [shouldRefreshHashPoker]);
 

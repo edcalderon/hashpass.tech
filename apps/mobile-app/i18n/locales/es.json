@@ -388,7 +388,7 @@
     },
     "sharing": {
       "title": "4. Compartir y Divulgación de Información",
-      "text": "No vendemos su información personal, y no la compartimos con terceros para sus propios fines independientes. Utilizamos un pequeño número de proveedores de servicios que procesan datos únicamente en nuestro nombre, bajo contrato, para ayudarnos a operar el Servicio:\n\n• Supabase, para autenticación y alojamiento de bases de datos\n• Brevo, para entregar correos electrónicos transaccionales como códigos de verificación de inicio de sesión\n• Cloudinary, para alojar y optimizar las fotos de perfil que usted decida subir\n\nTambién podemos compartir su información:\n\n• Con organizadores de eventos para los eventos en los que se registre\n• Cuando lo exija la ley o para proteger nuestros derechos\n• En relación con una fusión, adquisición o venta de activos"
+      "text": "No vendemos su información personal, y no la compartimos con terceros para sus propios fines independientes. Utilizamos un pequeño número de proveedores de servicios que procesan datos únicamente en nuestro nombre, bajo contrato, para ayudarnos a operar el Servicio:\n\n• Supabase, para autenticación y alojamiento de bases de datos\n• Brevo, para entregar correos electrónicos transaccionales como códigos de verificación de inicio de sesión\n• AWS S3 y CloudFront, para alojar y entregar imágenes de eventos y perfiles\n\nTambién podemos compartir su información:\n\n• Con organizadores de eventos para los eventos en los que se registre\n• Cuando lo exija la ley o para proteger nuestros derechos\n• En relación con una fusión, adquisición o venta de activos"
     },
     "security": {
       "title": "5. Seguridad de Datos",
@@ -1033,6 +1033,13 @@
       "limitReached": "Límite alcanzado",
       "requestMeeting": "Solicitar reunión"
     },
+    "cancel": "Cancelar",
+    "resetMeetingRequestLimit": "Restablecer límite · 50 puntos Boost",
+    "resetMeetingRequestLimitTitle": "¿Restablecer el límite de reuniones?",
+    "resetMeetingRequestLimitDescription": "Gasta 50 puntos Boost para recuperar tus solicitudes de reunión.",
+    "resetMeetingRequestLimitSuccessTitle": "Límite restablecido",
+    "resetMeetingRequestLimitSuccessDescription": "Tus solicitudes de reunión están disponibles de nuevo.",
+    "resetMeetingRequestLimitFailure": "Inténtalo de nuevo.",
     "copiedTitle": "Información del pase copiada",
     "copiedMessage": "La información del pase se copió al portapapeles. Puedes pegarla para compartir.",
     "copyError": "No se puede compartir el pase. Inténtalo de nuevo.",
@@ -1509,6 +1516,7 @@
       "unclaimed": "Perfil publicado",
       "claimed": "Vinculado",
       "claimProfile": "Reclamar este perfil",
+      "claimProfileShort": "Reclamar",
       "claimProfileDescription": "Verifica tu correo y solicita la propiedad. BSL lo revisará antes de activar el networking.",
       "claimPending": "Solicitud pendiente",
       "claimSubmittedTitle": "Solicitud enviada",

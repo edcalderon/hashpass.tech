@@ -301,7 +301,7 @@
     },
     "sharing": {
       "title": "4. Compartilhamento e divulgação de informações",
-      "text": "Não vendemos suas informações pessoais, e não as compartilhamos com terceiros para seus próprios fins independentes. Usamos um pequeno número de provedores de serviços que processam dados exclusivamente em nosso nome, sob contrato, para nos ajudar a operar o Serviço:\n\n• Supabase, para autenticação e hospedagem de banco de dados\n• Brevo, para entregar e-mails transacionais, como códigos de verificação de login\n• Cloudinary, para hospedar e otimizar as fotos de perfil que você optar por enviar\n\nTambém podemos compartilhar suas informações:\n\n• Com organizadores de eventos para os eventos em que você se inscrever\n• Quando exigido por lei ou para proteger nossos direitos\n• Em conexão com uma fusão, aquisição ou venda de ativos"
+      "text": "Não vendemos suas informações pessoais, e não as compartilhamos com terceiros para seus próprios fins independentes. Usamos um pequeno número de provedores de serviços que processam dados exclusivamente em nosso nome, sob contrato, para nos ajudar a operar o Serviço:\n\n• Supabase, para autenticação e hospedagem de banco de dados\n• Brevo, para entregar e-mails transacionais, como códigos de verificação de login\n• AWS S3 e CloudFront, para hospedar e entregar imagens de eventos e perfis\n\nTambém podemos compartilhar suas informações:\n\n• Com organizadores de eventos para os eventos em que você se inscrever\n• Quando exigido por lei ou para proteger nossos direitos\n• Em conexão com uma fusão, aquisição ou venda de ativos"
     },
     "security": {
       "title": "5. Segurança de dados",

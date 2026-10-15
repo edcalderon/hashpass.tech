@@ -91,7 +91,7 @@ export const createAgendaCalendarEvent = (source: AgendaCalendarSource): AgendaC
     `Event: ${source.eventName}`,
     source.item.description,
     speakers ? `Speakers: ${speakers}` : '',
-    'View this session in the Hashpass app',
+    'View this session in the HASHPASS app',
     source.agendaUrl,
   ].filter(Boolean).join('\n\n');
 

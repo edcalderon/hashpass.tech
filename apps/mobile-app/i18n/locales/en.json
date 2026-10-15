@@ -389,7 +389,7 @@
     },
     "sharing": {
       "title": "4. Information Sharing and Disclosure",
-      "text": "We do not sell your personal information, and we do not share it with third parties for their own independent purposes. We use a small number of service providers who process data solely on our behalf, under contract, to help us operate the Service:\n\n• Supabase, for authentication and database hosting\n• Brevo, to deliver transactional emails such as sign-in verification codes\n• Cloudinary, to host and optimize profile pictures you choose to upload\n\nWe may also share your information:\n\n• With event organizers for events you register for\n• When required by law or to protect our rights\n• In connection with a merger, acquisition, or sale of assets"
+      "text": "We do not sell your personal information, and we do not share it with third parties for their own independent purposes. We use a small number of service providers who process data solely on our behalf, under contract, to help us operate the Service:\n\n• Supabase, for authentication and database hosting\n• Brevo, to deliver transactional emails such as sign-in verification codes\n• AWS S3 and CloudFront, to host and deliver event and profile images\n\nWe may also share your information:\n\n• With event organizers for events you register for\n• When required by law or to protect our rights\n• In connection with a merger, acquisition, or sale of assets"
     },
     "security": {
       "title": "5. Data Security",
@@ -1034,6 +1034,13 @@
       "limitReached": "Limit Reached",
       "requestMeeting": "Request Meeting"
     },
+    "cancel": "Cancel",
+    "resetMeetingRequestLimit": "Reset limit · 50 Boost points",
+    "resetMeetingRequestLimitTitle": "Reset meeting request limit?",
+    "resetMeetingRequestLimitDescription": "Spend 50 Boost points to restore your meeting requests.",
+    "resetMeetingRequestLimitSuccessTitle": "Limit reset",
+    "resetMeetingRequestLimitSuccessDescription": "Your meeting requests are available again.",
+    "resetMeetingRequestLimitFailure": "Please try again.",
     "copiedTitle": "Pass Information Copied",
     "copiedMessage": "Pass information has been copied to your clipboard. You can paste it anywhere to share.",
     "copyError": "Unable to share pass. Please try again.",
@@ -1510,6 +1517,7 @@
       "unclaimed": "Published profile",
       "claimed": "Claimed",
       "claimProfile": "Claim this profile",
+      "claimProfileShort": "Claim",
       "claimProfileDescription": "Verify your email and request ownership. BSL will review it before networking is enabled.",
       "claimPending": "Claim request pending",
       "claimSubmittedTitle": "Claim request submitted",

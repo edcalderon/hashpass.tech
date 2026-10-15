@@ -3,6 +3,8 @@
 
 let mockEvent: Record<string, unknown> | null = null;
 const mockRouterPush = jest.fn();
+let mockTicketParams: Record<string, string> = {};
+const renderedViews: ReactTestRenderer[] = [];
 
 jest.mock("@contexts/EventContext", () => ({
   useEvent: () => ({ event: mockEvent }),
@@ -12,10 +14,15 @@ jest.mock("@contexts/EventContext", () => ({
 // expo-router/@react-navigation machinery for a single router.push call.
 jest.mock("expo-router", () => ({
   useRouter: () => ({ push: mockRouterPush }),
+  useLocalSearchParams: () => mockTicketParams,
 }));
 
 jest.mock("../../../hooks/useTheme", () => ({
   useTheme: () => ({ isDark: false }),
+}));
+
+jest.mock("../../../contexts/AnimationLevelContext", () => ({
+  useAnimationLevel: () => ({ animationLevel: "full" }),
 }));
 
 jest.mock("@expo/vector-icons", () => ({ MaterialIcons: "MaterialIcons" }));
@@ -52,6 +59,7 @@ function renderScreen(): ReactTestRenderer {
   act(() => {
     view = create(<TicketsScreen />);
   });
+  renderedViews.push(view);
   return view;
 }
 
@@ -94,6 +102,7 @@ describe("TicketsScreen", () => {
 
   beforeEach(() => {
     mockEvent = null;
+    mockTicketParams = {};
     jest.clearAllMocks();
     // Default to a narrow viewport (phone portrait) so the existing tests
     // exercise the same isWide=false path they always have; individual tests
@@ -103,6 +112,9 @@ describe("TicketsScreen", () => {
   });
 
   afterEach(() => {
+    act(() => {
+      renderedViews.splice(0).forEach((view) => view.unmount());
+    });
     Platform.OS = originalPlatformOs;
     mockUseWindowDimensions.mockRestore();
   });
@@ -148,6 +160,15 @@ describe("TicketsScreen", () => {
     if (requestClosedModal) {
       expect(requestClosedModal.props.visible).toBe(false);
     }
+  });
+
+  it('opens the ticket purchase modal immediately from the route query', () => {
+    mockEvent = COLOMBIA_EVENT;
+    mockTicketParams = { openTicketModal: "true" };
+
+    const view = renderScreen();
+
+    expect(view.root.findByType("Modal" as any).props.visible).toBe(true);
   });
 
   it('navigates to Contact Support from the "Need Help?" card', () => {
@@ -230,6 +251,29 @@ describe("TicketsScreen", () => {
     const view = renderScreen();
 
     expect(collectText(view.toJSON())).toContain("Tickets provided by tickets.example.com");
+  });
+
+  it("uses the colombiablockchainweek.com checkout URL for the cbweek2026 event", () => {
+    Platform.OS = "web";
+    const openMock = jest.fn();
+    const originalWindow = (global as any).window;
+    Object.defineProperty(global, "window", {
+      configurable: true,
+      value: { open: openMock },
+    });
+    mockEvent = { id: "cbweek2026", title: "Colombia Blockchain Week 2026" };
+    const view = renderScreen();
+
+    expect(collectText(view.toJSON())).toContain("Tickets provided by colombiablockchainweek.com");
+
+    act(() => findTicketHostnameLink(view).props.onPress());
+    expect(openMock).toHaveBeenCalledWith(
+      "https://colombiablockchainweek.com/#checkout",
+      "_blank",
+      "noopener,noreferrer",
+    );
+
+    Object.defineProperty(global, "window", { configurable: true, value: originalWindow });
   });
 
   it("falls back to the bsl.blckchn.xyz ticket URL by event id when there is no website", () => {

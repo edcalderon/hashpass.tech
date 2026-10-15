@@ -171,4 +171,17 @@ describe('/api/profile/speaker', () => {
     expect(response.status).toBe(400);
     expect(mockFrom).not.toHaveBeenCalled();
   });
+
+  it('rejects a non-boolean speaker active flag before loading the profile', async () => {
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    const { PATCH } = require('../../app/api/profile/speaker+api');
+    const response = await PATCH(new Request('https://api.hashpass.tech/api/profile/speaker', {
+      method: 'PATCH',
+      body: JSON.stringify({ isActive: 'true' }),
+    }));
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({ error: 'isActive must be a boolean' });
+    expect(mockFrom).not.toHaveBeenCalled();
+  });
 });

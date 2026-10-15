@@ -92,7 +92,7 @@ describe('MCP login screen', () => {
       await Promise.resolve();
     });
     expect(root().findByProps({ accessibilityRole: 'alert' }).props.children).toContain(
-      'could not verify your Hashpass session',
+      'could not verify your HASHPASS session',
     );
   });
 });

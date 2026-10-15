@@ -298,7 +298,7 @@ describe("passSystemService Supabase user id guard", () => {
     expect(mockRpc).not.toHaveBeenCalled();
   });
 
-  it("returns a safe result without logging when the meeting-limit RPC fails", async () => {
+  it("returns a safe result and records the meeting-limit RPC failure", async () => {
     const databaseError = {
       code: "42883",
       message: "operator does not exist: uuid = text",
@@ -327,7 +327,41 @@ describe("passSystemService Supabase user id guard", () => {
       p_boost_amount: 0,
       p_event_id: "chile2026",
     });
-    expect(errorSpy).not.toHaveBeenCalled();
+    expect(errorSpy).toHaveBeenCalledWith(
+      "[PassSystem] Meeting-limit RPC failed:",
+      expect.objectContaining({ code: databaseError.code, message: databaseError.message }),
+    );
+  });
+
+  it("resets event-scoped meeting limits through the protected RPC", async () => {
+    mockRpcSingle({
+      data: {
+        pass_id: "pass-existing",
+        event_id: "colombia2026",
+        reset_cost: 50,
+        remaining_requests: 10,
+        remaining_boost: 50,
+        pass_type: "general",
+      },
+      error: null,
+    });
+
+    await expect(
+      passSystemService.resetMeetingRequestLimits(supabaseUserId, "bsl"),
+    ).resolves.toEqual({
+      pass_id: "pass-existing",
+      event_id: "colombia2026",
+      reset_cost: 50,
+      remaining_requests: 10,
+      remaining_boost: 50,
+      pass_type: "general",
+    });
+
+    expect(mockRpc).toHaveBeenCalledWith("reset_meeting_request_limits", {
+      p_user_id: supabaseUserId,
+      p_event_id: "colombia2026",
+      p_boost_cost: 50,
+    });
   });
 
   it("recovers an existing pass after duplicate default-pass creation", async () => {

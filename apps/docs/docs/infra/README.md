@@ -11,7 +11,7 @@ Current infrastructure documentation for HASHPASS lives here. These pages descri
 - [`migrations/aws-account-cutover.md`](migrations/aws-account-cutover.md) - active AWS account, DNS, and mail-provider cutover runbook
 - [`api-gateway/`](api-gateway) - API Gateway and Lambda setup docs
 - [`lambda/`](lambda) - Lambda deployment playbooks
-- [`CLOUDINARY_CONFIG.md`](CLOUDINARY_CONFIG.md)
+- [`CLOUDINARY_CONFIG.md`](CLOUDINARY_CONFIG.md) - deprecated legacy compatibility only
 - [`MAKE_S3_BUCKET_PUBLIC.md`](MAKE_S3_BUCKET_PUBLIC.md)
 - [`SPEAKER_AVATARS_S3_SETUP.md`](SPEAKER_AVATARS_S3_SETUP.md)
 - [`security/wazuh-integration-guide.md`](security/wazuh-integration-guide.md)

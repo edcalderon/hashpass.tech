@@ -1,11 +1,12 @@
 /// <reference types="jest" />
 
 import React from 'react';
-import { Linking } from 'react-native';
+import { Alert } from 'react-native';
 
 const mockGetUserPassInfo = jest.fn();
 const mockGetEventPassTiers = jest.fn();
 const mockCanMakeMeetingRequest = jest.fn();
+const mockResetMeetingRequestLimits = jest.fn();
 const mockRouterPush = jest.fn();
 let mockAuthState: { dbUserId: string | null; retryDatabaseSession?: jest.Mock } = {
   dbUserId: '7f60f5d2-5948-4df1-9670-2f9177cf2fe4',
@@ -26,11 +27,13 @@ jest.mock('../../lib/vector-icons', () => ({ MaterialIcons: 'MaterialIcons' }));
 jest.mock('@sentry/react-native', () => ({ captureException: jest.fn() }));
 jest.mock('../../components/passes/PassesWallet', () => 'PassesWallet');
 jest.mock('../../lib/pass-system', () => ({
+  MEETING_REQUEST_LIMIT_RESET_COST: 50,
   passSystemService: {
     getUserPassInfo: (...args: unknown[]) => mockGetUserPassInfo(...args),
     getEventPassTiers: (...args: unknown[]) => mockGetEventPassTiers(...args),
     getPassPerks: () => ({ features: [], perks: [] }),
     canMakeMeetingRequest: (...args: unknown[]) => mockCanMakeMeetingRequest(...args),
+    resetMeetingRequestLimits: (...args: unknown[]) => mockResetMeetingRequestLimits(...args),
     getPassValidationMessage: jest.fn(),
     getPassTypeColor: () => '#34A853',
     getPassTypeDisplayName: () => 'General Pass',
@@ -50,6 +53,7 @@ const textContent = (node: any): string => {
 describe('PassesDisplay', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
     mockAuthState = { dbUserId: '7f60f5d2-5948-4df1-9670-2f9177cf2fe4' };
     mockGetUserPassInfo.mockResolvedValue({
       pass_id: 'pass-1', event_id: 'chile2026', pass_type: 'general', status: 'active', pass_number: 'BSL-GE-79b2',
@@ -57,6 +61,10 @@ describe('PassesDisplay', () => {
       max_boost: 100, used_boost: 0, remaining_boost: 100, access_features: [], special_perks: [],
     });
     mockGetEventPassTiers.mockResolvedValue([]);
+    mockResetMeetingRequestLimits.mockResolvedValue({
+      pass_id: 'pass-1', event_id: 'chile2026', reset_cost: 50,
+      remaining_requests: 10, remaining_boost: 50, pass_type: 'general',
+    });
     mockCanMakeMeetingRequest.mockResolvedValue({
       can_request: false,
       canSendRequest: false,
@@ -81,6 +89,78 @@ describe('PassesDisplay', () => {
     expect(mockGetEventPassTiers).toHaveBeenCalledWith('chile2026');
     expect(renderer.root.findAllByProps({ children: 'Boost points' }).length).toBeGreaterThan(0);
     expect(renderer.root.findAllByProps({ children: 'VOI Boost' })).toHaveLength(0);
+  });
+
+  it('links speaker pass details to the event tickets modal instead of expanding pass pricing', async () => {
+    let renderer: any;
+    await act(async () => {
+      renderer = create(<PassesDisplay mode="speaker" eventId="colombia2026" />);
+      await Promise.resolve();
+    });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 320));
+    });
+
+    const ticketsLink = renderer.root.findByProps({
+      accessibilityLabel: 'View event tickets',
+    });
+
+    await act(async () => ticketsLink.props.onPress());
+
+    expect(mockRouterPush).toHaveBeenCalledWith({
+      pathname: '/events/[eventSlug]/tickets',
+      params: {
+        eventSlug: 'colombia2026',
+        openTicketModal: 'true',
+      },
+    });
+    expect(renderer.root.findAllByProps({ children: 'All Pass Types & Pricing' })).toHaveLength(0);
+  });
+
+  it('checks limits for the selected event and offers a 50-point reset at the request limit', async () => {
+    mockCanMakeMeetingRequest.mockResolvedValue({
+      can_request: false,
+      canSendRequest: false,
+      reason: 'no_requests_remaining',
+      pass_type: 'general',
+      remaining_requests: 0,
+      remaining_boost: 100,
+    });
+
+    let renderer: any;
+    await act(async () => {
+      renderer = create(
+        <PassesDisplay
+          mode="speaker"
+          eventId="chile2026"
+          speakerId="speaker-1"
+        />,
+      );
+      await Promise.resolve();
+    });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 320));
+    });
+
+    expect(mockCanMakeMeetingRequest).toHaveBeenCalledWith(
+      '7f60f5d2-5948-4df1-9670-2f9177cf2fe4',
+      'speaker-1',
+      0,
+      'chile2026',
+    );
+    const resetButton = renderer.root.findByProps({
+      accessibilityLabel: 'Reset limit',
+    });
+    expect(resetButton).toBeDefined();
+    await act(async () => resetButton.props.onPress());
+
+    const alertButtons = (Alert.alert as jest.Mock).mock.calls.at(-1)?.[2];
+    const confirmButton = alertButtons?.find((button: any) => button.text === 'Reset limit');
+    await act(async () => confirmButton?.onPress());
+    expect(mockResetMeetingRequestLimits).toHaveBeenCalledWith(
+      '7f60f5d2-5948-4df1-9670-2f9177cf2fe4',
+      'chile2026',
+    );
   });
 
   it('links an existing pending request instead of presenting it as a limit error', async () => {
@@ -183,11 +263,8 @@ describe('PassesDisplay', () => {
     });
   });
 
-  it('sends native pass purchases to the Blockchain Summit site instead of a placeholder alert', async () => {
+  it('opens the event tickets modal when a speaker has no pass', async () => {
     mockGetUserPassInfo.mockResolvedValue(null);
-    const canOpenUrl = jest.fn().mockResolvedValue(true);
-    const openUrl = jest.fn().mockResolvedValue(true);
-    Object.assign(Linking as any, { canOpenURL: canOpenUrl, openURL: openUrl });
 
     let renderer: any;
     await act(async () => {
@@ -198,16 +275,18 @@ describe('PassesDisplay', () => {
       await new Promise((resolve) => setTimeout(resolve, 320));
     });
 
-    const price = renderer.root.findAllByType('Text').find((node: any) => textContent(node) === '$99');
-    expect(price).toBeDefined();
-    let purchaseButton = price.parent;
-    while (purchaseButton && typeof purchaseButton.props?.onPress !== 'function') {
-      purchaseButton = purchaseButton.parent;
-    }
-    await act(async () => purchaseButton.props.onPress());
+    const ticketsLink = renderer.root.findByProps({
+      accessibilityLabel: 'View event tickets',
+    });
+    await act(async () => ticketsLink.props.onPress());
 
-    expect(canOpenUrl).toHaveBeenCalledWith('https://blockchainsummit.la');
-    expect(openUrl).toHaveBeenCalledWith('https://blockchainsummit.la');
+    expect(mockRouterPush).toHaveBeenCalledWith({
+      pathname: '/events/[eventSlug]/tickets',
+      params: {
+        eventSlug: 'chile2026',
+        openTicketModal: 'true',
+      },
+    });
   });
 
   it('formats configured fractional tier prices without mutating the renderer environment', () => {
