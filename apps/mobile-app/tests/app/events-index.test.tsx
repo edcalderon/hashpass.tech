@@ -15,7 +15,7 @@ jest.mock('../../app/(shared)/auth', () => 'EmbeddedAuth');
 jest.mock('../../lib/vector-icons', () => ({ NativeSafeIcon: () => null }));
 jest.mock('../../components/PassesDisplay', () => () => null);
 jest.mock('../../components/banner/SliderProgressBar', () => ({ SliderProgressBar: () => null }));
-jest.mock('../../lib/hooks/useAutoAdvanceProgress', () => ({ useAutoAdvanceProgress: () => ({ activeIndex: 0, progress: { value: 0 }, pause: jest.fn(), resume: jest.fn(), goTo: jest.fn() }) }));
+jest.mock('../../lib/hooks/useAutoAdvanceProgress', () => ({ useAutoAdvanceProgress: (options: any) => { options.durationMs?.(0); return { activeIndex: 0, progress: { value: 0 }, pause: jest.fn(), resume: jest.fn(), goTo: jest.fn() }; } }));
 jest.mock('../../lib/event-chat', () => ({ loadEventChatPresence: jest.fn(), getEventChatAvatarUrl: jest.fn() }));
 jest.mock('../../lib/explorer-bookmarks', () => ({ loadExplorerBookmarks: async () => [], saveExplorerBookmarks: (...args: unknown[]) => mockSaveBookmarks(...args) }));
 jest.mock('../../lib/event-detector', () => ({ getAvailableEvents: () => mockEvents, getEventQuickAccessItems: () => [] }));
