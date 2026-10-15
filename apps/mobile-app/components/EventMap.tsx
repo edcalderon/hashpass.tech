@@ -46,7 +46,7 @@ export default function EventMap({ address, venue, city, country, label, isDark,
     setState({ status: 'loading' });
     setFrameLoaded(false);
     geocode({ address, venue, city, country }, controller.signal)
-      .then((coordinates) => {
+      .then((coordinates: MapCoordinates) => {
         if (!controller.signal.aborted) {
           setState(coordinates ? { status: 'ready', coordinates } : { status: 'unavailable' });
         }
