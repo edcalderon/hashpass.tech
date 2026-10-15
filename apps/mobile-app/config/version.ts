@@ -22,22 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610102225, // Updated to current timestamp
-  releaseDate: '2026-10-10',
+  buildNumber: 202610150352, // Updated to current timestamp
+  releaseDate: '2026-10-15',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
     // No new features
   ],
   bugfixes: [
-    'drop unconfirmed TGE date, improve FAQ with real lukas.lat docs'
+    'separate pending speaker profiles'
   ],
   breakingChanges: [],
-  notes: 'drop unconfirmed TGE date, improve FAQ with real lukas.lat docs'
+  notes: 'separate pending speaker profiles'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.112': {
+    version: '1.9.112',
+    buildNumber: 202610150352,
+    releaseDate: '2026-10-15',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'separate pending speaker profiles'
+    ],
+    breakingChanges: [],
+    notes: 'separate pending speaker profiles'
+  },
   '1.9.111': {
     version: '1.9.111',
     buildNumber: 202610102225,
