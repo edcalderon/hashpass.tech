@@ -6,6 +6,7 @@ import { uiPalette, uiTokens } from '@hashpass/ui/tokens';
 import {
   buildMapHtml,
   geocode,
+  isEventMapNavigationAllowed,
   openStreetMapSearchUrl,
   openStreetMapUrl,
   type MapCoordinates,
@@ -105,7 +106,7 @@ export default function EventMap({ address, venue, city, country, label, isDark,
         onLoadEnd={() => setFrameLoaded(true)}
         onShouldStartLoadWithRequest={(request: { url: string }) => {
           // Keep the map in place; attribution links open in the browser.
-          if (request.url.startsWith('about:') || request.url.startsWith('https://hashpass.tech')) return true;
+          if (isEventMapNavigationAllowed(request.url)) return true;
           void Linking.openURL(request.url).catch(() => undefined);
           return false;
         }}
@@ -121,7 +122,7 @@ export default function EventMap({ address, venue, city, country, label, isDark,
         {state.status === 'unavailable' ? (
           <View style={styles.placeholder}>
             <MapPin size={22} color={palette.muted} />
-            <Text style={styles.placeholderText}>We couldn't locate this venue on the map.</Text>
+            <Text style={styles.placeholderText}>We couldn&apos;t locate this venue on the map.</Text>
           </View>
         ) : (
           <>

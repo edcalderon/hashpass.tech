@@ -51,6 +51,17 @@ it('renders a contextual page icon for the shared loading loop', async () => {
   expect(view.root.findAllByType(Circle)).toHaveLength(1);
 });
 
+it('crossfades the contextual icon at the accessible motion speed', async () => {
+  await render({ contextIcon: 'event-note' });
+  expect(repeat.mock.calls.length).toBeGreaterThanOrEqual(2);
+  expect(timing).toHaveBeenCalledWith(1, expect.objectContaining({ duration: 1050 }));
+
+  mockAnimationLevel = 'reduced';
+  timing.mockClear();
+  await render({ contextIcon: 'event-note' });
+  expect(timing).toHaveBeenCalledWith(1, expect.objectContaining({ duration: 1500 }));
+});
+
 it('defaults to the logo cyan ring color, and lets a caller override it', async () => {
   await render();
   expect(view.root.findByType(Circle).props.stroke).toBe('#0fe5f0');

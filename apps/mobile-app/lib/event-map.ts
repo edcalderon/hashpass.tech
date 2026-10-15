@@ -88,6 +88,8 @@ export const geocode = async (
       }
     }
 
+    // Nominatim is an external geocoder; apiClient is scoped to Hashpass APIs.
+    // eslint-disable-next-line no-restricted-syntax
     const response = await fetch(
       `${NOMINATIM_URL}?format=jsonv2&limit=1&q=${encodeURIComponent(query)}`,
       { signal, headers: { Accept: 'application/json' } },
@@ -114,6 +116,18 @@ export const openStreetMapUrl = ({ lat, lng, zoom }: MapCoordinates) =>
 
 export const openStreetMapSearchUrl = (query: string) =>
   `https://www.openstreetmap.org/search?query=${encodeURIComponent(query)}`;
+
+/** Keep iframe navigation local while sending attribution links to the OS. */
+export const isEventMapNavigationAllowed = (rawUrl: string): boolean => {
+  if (rawUrl.startsWith('about:')) return true;
+  try {
+    const parsed = new URL(rawUrl);
+    return parsed.origin === 'https://hashpass.tech';
+  } catch {
+    // Fall through to external open for invalid or unexpected URLs.
+    return false;
+  }
+};
 
 // JSON for embedding in an inline <script>; "<" is escaped so a value can
 // never close the script tag.

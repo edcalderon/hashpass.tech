@@ -53,7 +53,7 @@ jest.mock("../../../lib/api-client", () => ({
 }));
 
 import React from "react";
-import { StyleSheet } from "react-native";
+import { AccessibilityInfo, StyleSheet } from "react-native";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import EventInfoScreen from "../../../app/events/[eventSlug]/event-info";
 
@@ -533,6 +533,38 @@ describe("EventInfoScreen", () => {
       expect(
         renderer.root.findByType("EventBanner" as any).props.videoPlaybackEnabled,
       ).toBe(false);
+    } finally {
+      act(() => renderer.unmount());
+    }
+  });
+
+  it("falls back to the event tour location and stays safe when the OS motion lookup rejects", async () => {
+    mockEvent = {
+      ...HASH_POKER_EVENT,
+      tour: { city: "Medellín", country: "Colombia", venue: "Hash House Club" },
+    };
+    jest.mocked(AccessibilityInfo.isReduceMotionEnabled).mockRejectedValueOnce(new Error("unsupported"));
+    const renderer = await renderScreen({ success: true, data: { data: null } });
+
+    try {
+      expect(renderer.root.findByType("EventMap" as any).props).toMatchObject({
+        venue: "Hash House Club",
+        city: "Medellín",
+        country: "Colombia",
+        animated: false,
+      });
+    } finally {
+      act(() => renderer.unmount());
+    }
+  });
+
+  it("renders the archive summary for a past event", async () => {
+    mockEvent = { ...COLOMBIA_EVENT, id: "bsl2025" };
+    const renderer = await renderScreen({ success: true, data: { data: null } });
+
+    try {
+      expect(findAllText(renderer).join(" | ")).toEqual(expect.stringContaining("Archived Edition"));
+      expect(findAllText(renderer).join(" | ")).toEqual(expect.stringContaining("Past Event"));
     } finally {
       act(() => renderer.unmount());
     }
