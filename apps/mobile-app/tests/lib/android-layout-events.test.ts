@@ -97,6 +97,7 @@ describe("Android layout event crash guards", () => {
 
   it("keeps native OTP autofill from leaving stale text in the first digit cell", () => {
     const authSource = readSource("../../app/(shared)/auth.tsx");
+    const compactAuthSource = authSource.replace(/\s+/g, "");
 
     expect(authSource).toContain(
       "const [otpCell0RemountKey, setOtpCell0RemountKey] = useState(0);",
@@ -104,8 +105,8 @@ describe("Android layout event crash guards", () => {
     expect(authSource).toContain("setOtpCell0RemountKey((k) => k + 1);");
     expect(authSource).toContain("`otp-input-${key}-${otpCell0RemountKey}`");
     expect(authSource).toContain("`otp-input-${key}`");
-    expect(authSource).toContain(
-      "maxLength={index === 0 ? OTP_CODE_LENGTH : 1}",
+    expect(compactAuthSource).toContain(
+      "maxLength={index===0?OTP_CODE_LENGTH:1}",
     );
     expect(authSource).toContain('index === 0 ? "oneTimeCode" : undefined');
   });

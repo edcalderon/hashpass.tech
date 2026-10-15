@@ -46,10 +46,7 @@ describe("desktop auth event allies", () => {
     const source = readAuthSource();
 
     expect(source).toContain(
-      `const authHeaderPalette = getAuthHeaderPalette(
-    isDark,
-    showAuthBackground,
-  );`,
+      "const authHeaderPalette = getAuthHeaderPalette(isDark, showAuthBackground);",
     );
   });
 
