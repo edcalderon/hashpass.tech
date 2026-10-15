@@ -687,6 +687,8 @@
     "backToLanding": "Retour à l'accueil",
     "light": "Clair",
     "dark": "Sombre",
+    "lightMode": "Mode clair",
+    "darkMode": "Mode sombre",
     "logout": "Déconnexion"
   },
   "explore": {

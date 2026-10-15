@@ -163,7 +163,7 @@ const CopilotTouchableOpacity = walkthroughable(TouchableOpacity);
 const CopilotView = walkthroughable(View);
 
 // Custom drawer content component
-function CustomDrawerContent({
+export function CustomDrawerContent({
   navRef,
   navigation: drawerContentNavigation,
   onDrawerStatusChange,
@@ -256,16 +256,8 @@ function CustomDrawerContent({
   const copilotHook = useCopilot() as any;
   const isMobile = useIsMobile();
   const insets = useSafeAreaInsets();
-  const { width: viewportWidth } = useWindowDimensions();
-  const compactQuickActions = viewportWidth < 480;
   const drawerSafeInsets = getDashboardDrawerInsets(insets);
-  const styles = getStyles(
-    isDark,
-    colors,
-    isMobile,
-    drawerSafeInsets,
-    compactQuickActions,
-  );
+  const styles = getStyles(isDark, colors, isMobile, drawerSafeInsets);
   const [isUserAdmin, setIsUserAdmin] = React.useState(false);
   const [isSigningOut, setIsSigningOut] = React.useState(false);
   const [accountPasses, setAccountPasses] = React.useState<EventPassInfo[]>([]);
@@ -756,26 +748,21 @@ function CustomDrawerContent({
     await setLocale(locales[nextIndex]);
   };
 
-  const getLanguageFlag = (locale: string) => {
-    switch (locale) {
-      case "en":
-        return "🇺🇸";
-      case "es":
-        return "🇪🇸";
-      case "ko":
-        return "🇰🇷";
-      case "fr":
-        return "🇫🇷";
-      case "pt":
-        return "🇵🇹";
-      case "de":
-        return "🇩🇪";
-      case "et":
-        return "🇪🇪";
-      default:
-        return "🇺🇸";
-    }
-  };
+  const languageLabel =
+    (
+      {
+        en: t({ id: "settings.languages.en", message: "English" }),
+        es: t({ id: "settings.languages.es", message: "Spanish" }),
+        ko: t({ id: "settings.languages.ko", message: "Korean" }),
+        fr: t({ id: "settings.languages.fr", message: "French" }),
+        pt: t({ id: "settings.languages.pt", message: "Portuguese" }),
+        de: t({ id: "settings.languages.de", message: "German" }),
+        et: t({ id: "settings.languages.et", message: "Estonian" }),
+      } as Record<string, string>
+    )[locale] || locale.toUpperCase();
+  const themeLabel = isDark
+    ? t({ id: "nav.lightMode", message: "Light mode" })
+    : t({ id: "nav.darkMode", message: "Dark mode" });
 
   const handleLogoPress = () => {
     navigateDashboardBrandToLanding({
@@ -871,9 +858,6 @@ function CustomDrawerContent({
               style={styles.drawerBrandLogo}
               resizeMode="contain"
             />
-            <Text style={styles.drawerSectionEyebrow}>
-              {t({ id: "nav.menu", message: "Menu" })}
-            </Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={closeDrawer}
@@ -906,15 +890,26 @@ function CustomDrawerContent({
                     resizeMode="cover"
                   />
                 ) : (
-                  <Text style={styles.profileAvatarInitials}>
-                    {accountInitials}
-                  </Text>
+                  <View style={styles.profileAvatarDefault}>
+                    {Array.from({ length: 10 }, (_, index) => (
+                      <View
+                        key={`profile-avatar-stripe-${index}`}
+                        style={[
+                          styles.profileAvatarStripe,
+                          { top: index * 10 - 20 },
+                        ]}
+                      />
+                    ))}
+                    <Text style={styles.profileAvatarInitials}>
+                      {accountInitials}
+                    </Text>
+                  </View>
                 )}
               </View>
               <View style={styles.profileAvatarAction}>
                 <Ionicons
                   name="add"
-                  size={13}
+                  size={17}
                   color={uiTokens.colors.light.onAccent}
                 />
               </View>
@@ -1164,9 +1159,6 @@ function CustomDrawerContent({
 
       {/* Quick Settings & Actions */}
       <View style={styles.quickSettingsSection}>
-        <Text style={styles.quickSettingsTitle}>
-          {t({ id: "nav.quickActions", message: "Quick actions" })}
-        </Text>
         <View style={styles.quickTogglesRow}>
           {/* Language Toggle */}
           <TouchableOpacity
@@ -1174,16 +1166,16 @@ function CustomDrawerContent({
             onPress={handleLanguageToggle}
             activeOpacity={0.7}
             accessibilityRole="button"
-            accessibilityLabel={`${t({ id: "nav.language", message: "Language" })}: ${locale.toUpperCase()}`}
+            accessibilityLabel={languageLabel}
           >
-            <View style={styles.quickToggleIcon}>
-              <Text style={styles.languageFlag}>{getLanguageFlag(locale)}</Text>
-            </View>
-            {!compactQuickActions && (
-              <Text style={styles.quickToggleLabel} numberOfLines={1}>
-                {locale.toUpperCase()}
-              </Text>
-            )}
+            <Ionicons
+              name="globe-outline"
+              size={22}
+              color={colors.text.primary}
+            />
+            <Text style={styles.quickToggleLabel} numberOfLines={1}>
+              {languageLabel}
+            </Text>
           </TouchableOpacity>
 
           {/* Theme Toggle */}
@@ -1195,35 +1187,16 @@ function CustomDrawerContent({
             }}
             activeOpacity={0.7}
             accessibilityRole="button"
-            accessibilityLabel={
-              isDark
-                ? t({ id: "nav.light", message: "Light" })
-                : t({ id: "nav.dark", message: "Dark" })
-            }
+            accessibilityLabel={themeLabel}
           >
-            <View
-              style={[
-                styles.quickToggleIcon,
-                {
-                  backgroundColor: isDark
-                    ? "rgba(255, 255, 255, 0.08)"
-                    : "rgba(175, 13, 1, 0.10)",
-                },
-              ]}
-            >
-              <Ionicons
-                name={isDark ? "sunny" : "moon"}
-                size={20}
-                color={isDark ? "#FFFFFF" : colors.primary}
-              />
-            </View>
-            {!compactQuickActions && (
-              <Text style={styles.quickToggleLabel} numberOfLines={1}>
-                {isDark
-                  ? t({ id: "nav.light", message: "Light" })
-                  : t({ id: "nav.dark", message: "Dark" })}
-              </Text>
-            )}
+            <Ionicons
+              name={isDark ? "sunny" : "moon-outline"}
+              size={22}
+              color={colors.text.primary}
+            />
+            <Text style={styles.quickToggleLabel} numberOfLines={1}>
+              {themeLabel}
+            </Text>
           </TouchableOpacity>
         </View>
         <TouchableOpacity
@@ -1235,28 +1208,21 @@ function CustomDrawerContent({
           disabled={isSigningOut}
           activeOpacity={isSigningOut ? 1 : 0.7}
           accessibilityRole="button"
-          accessibilityLabel={t({ id: "nav.logout", message: "Logout" })}
+          accessibilityLabel={t({ id: "nav.logout", message: "Log out" })}
           accessibilityState={{ busy: isSigningOut, disabled: isSigningOut }}
         >
-          <View style={styles.logoutActionIcon}>
-            {isSigningOut ? (
-              <ActivityIndicator size="small" color={colors.error.main} />
-            ) : (
-              <Ionicons
-                name="log-out-outline"
-                size={18}
-                color={colors.error.main}
-              />
-            )}
-          </View>
+          {isSigningOut ? (
+            <ActivityIndicator size="small" color={colors.error.main} />
+          ) : (
+            <Ionicons
+              name="log-out-outline"
+              size={22}
+              color={colors.error.main}
+            />
+          )}
           <Text style={styles.logoutActionText} numberOfLines={1}>
-            {t({ id: "nav.logout", message: "Logout" })}
+            {t({ id: "nav.logout", message: "Log out" })}
           </Text>
-          <Ionicons
-            name="chevron-forward"
-            size={16}
-            color={colors.error.main}
-          />
         </TouchableOpacity>
       </View>
 
@@ -2040,7 +2006,6 @@ const getStyles = (
   colors: any,
   isMobile: boolean,
   insets: DashboardDrawerInsets = {},
-  compactQuickActions = false,
 ) => {
   const drawerSafeInsets = getDashboardDrawerInsets(insets);
   const brandRed = uiTokens.colors.light.accent;
@@ -2170,13 +2135,6 @@ const getStyles = (
       width: 88,
       height: 22,
     },
-    drawerSectionEyebrow: {
-      fontSize: 10,
-      fontWeight: "800",
-      letterSpacing: 1.4,
-      color: colors.text.secondary,
-      textTransform: "uppercase",
-    },
     profileCard: {
       marginTop: 16,
       padding: 16,
@@ -2221,6 +2179,24 @@ const getStyles = (
       width: "100%",
       height: "100%",
     },
+    profileAvatarDefault: {
+      width: "100%",
+      height: "100%",
+      alignItems: "center",
+      justifyContent: "center",
+      overflow: "hidden",
+      backgroundColor: isDark ? "#2a2220" : "#f1dcd9",
+    },
+    profileAvatarStripe: {
+      position: "absolute",
+      left: -24,
+      width: 112,
+      height: 8,
+      backgroundColor: isDark
+        ? "rgba(255, 255, 255, 0.08)"
+        : "rgba(255, 255, 255, 0.62)",
+      transform: [{ rotate: "-45deg" }],
+    },
     profileAvatarInitials: {
       fontSize: 22,
       fontWeight: "800",
@@ -2229,10 +2205,10 @@ const getStyles = (
     },
     profileAvatarAction: {
       position: "absolute",
-      right: -1,
-      bottom: -1,
-      width: 22,
-      height: 22,
+      right: -2,
+      bottom: -2,
+      width: 28,
+      height: 28,
       borderRadius: uiTokens.radius.circle,
       alignItems: "center",
       justifyContent: "center",
@@ -2412,6 +2388,7 @@ const getStyles = (
     logoutAction: {
       flexDirection: "row",
       alignItems: "center",
+      justifyContent: "center",
       minHeight: 48,
       paddingHorizontal: 12,
       borderRadius: uiTokens.radius.input,
@@ -2423,45 +2400,19 @@ const getStyles = (
       borderColor: isDark ? "rgba(255, 59, 48, 0.2)" : "rgba(255, 59, 48, 0.1)",
       gap: 10,
     },
-    logoutActionIcon: {
-      width: 30,
-      height: 30,
-      borderRadius: uiTokens.radius.small,
-      alignItems: "center",
-      justifyContent: "center",
-      backgroundColor: "rgba(255, 59, 48, 0.12)",
-    },
     logoutActionText: {
-      flex: 1,
-      fontSize: 13,
+      fontSize: 14,
       fontWeight: "700",
       color: colors.error.main,
     },
     quickSettingsSection: {
-      paddingHorizontal: compactQuickActions ? 10 : 12,
-      paddingVertical: compactQuickActions ? 10 : 12,
+      paddingTop: 14,
       marginStart: (isMobile ? 20 : 16) + drawerSafeInsets.left,
       marginEnd: (isMobile ? 18 : 16) + drawerSafeInsets.right,
       marginTop: 10,
       marginBottom: 6,
-      borderRadius: uiTokens.radius.card,
-      backgroundColor: isDark
-        ? "rgba(255, 255, 255, 0.04)"
-        : colors.background.paper,
-      borderWidth: 1,
-      borderColor: colors.divider,
-      overflow: "hidden",
-      boxShadow: isDark
-        ? "0 8px 18px rgba(0, 0, 0, 0.12)"
-        : "0 8px 18px rgba(15, 23, 42, 0.06)",
-    },
-    quickSettingsTitle: {
-      fontSize: 11,
-      fontWeight: "700",
-      marginBottom: 10,
-      textTransform: "uppercase",
-      letterSpacing: 1,
-      color: colors.text.secondary,
+      borderTopWidth: 1,
+      borderTopColor: colors.divider,
     },
     quickTogglesRow: {
       flexDirection: "row",
@@ -2472,45 +2423,27 @@ const getStyles = (
     quickToggleButton: {
       flex: 1,
       minWidth: 0,
-      minHeight: compactQuickActions ? 48 : 50,
-      borderRadius: 13,
-      justifyContent: compactQuickActions ? "center" : "flex-start",
+      minHeight: 44,
+      borderRadius: uiTokens.radius.input,
+      justifyContent: "center",
       flexDirection: "row",
       alignItems: "center",
-      paddingVertical: 8,
-      paddingHorizontal: compactQuickActions ? 8 : 6,
+      paddingHorizontal: 8,
       borderWidth: 1,
       borderColor: colors.divider,
       backgroundColor: colors.background.paper,
-      boxShadow: isDark
-        ? "0 3px 8px rgba(0, 0, 0, 0.10)"
-        : "0 3px 8px rgba(15, 23, 42, 0.05)",
+      gap: 8,
     },
     quickToggleButtonDisabled: {
       opacity: 0.72,
     },
-    quickToggleIcon: {
-      width: compactQuickActions ? 38 : 30,
-      height: compactQuickActions ? 38 : 30,
-      borderRadius: uiTokens.radius.small,
-      alignItems: "center",
-      justifyContent: "center",
-      marginBottom: 0,
-      marginRight: compactQuickActions ? 0 : 5,
-      backgroundColor: isDark
-        ? "rgba(255, 255, 255, 0.1)"
-        : "rgba(0, 0, 0, 0.05)",
-    },
     quickToggleLabel: {
-      fontSize: 12,
-      fontWeight: "600",
-      color: colors.text.secondary,
+      fontSize: 13,
+      fontWeight: "700",
+      color: colors.text.primary,
       textAlign: "left",
       flexShrink: 1,
       minWidth: 0,
-    },
-    languageFlag: {
-      fontSize: 18,
     },
     mainContent: {
       flex: 1,

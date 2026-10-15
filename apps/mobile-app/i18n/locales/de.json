@@ -686,6 +686,8 @@
     "backToLanding": "Zur Startseite",
     "light": "Hell",
     "dark": "Dunkel",
+    "lightMode": "Heller Modus",
+    "darkMode": "Dunkler Modus",
     "logout": "Abmelden"
   },
   "explore": {

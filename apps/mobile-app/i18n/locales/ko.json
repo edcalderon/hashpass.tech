@@ -766,7 +766,7 @@
     "exploreAllLabel": "모든 이벤트 둘러보기",
     "or": "또는",
     "previous": "이전 슬라이드",
-    "next": "다음 슬라이드",
+    "next": "다음",
     "pause": "캐러셀 일시 정지",
     "play": "캐러셀 재생",
     "restart": "첫 번째 슬라이드로 돌아가기"
@@ -832,6 +832,8 @@
     "backToLanding": "랜딩으로 돌아가기",
     "light": "밝게",
     "dark": "어둡게",
+    "lightMode": "라이트 모드",
+    "darkMode": "다크 모드",
     "logout": "로그아웃"
   },
   "explore": {
@@ -931,11 +933,14 @@
       "discoverySummary": "이벤트 및 패스 요약",
       "events": "이벤트",
       "passes": "패스",
+      "requests": "요청",
       "eventsAttending": "참여 예정 {count}개",
       "summaryCardInfo": "{label}은(는) 무슨 의미인가요?",
       "eventsTooltip": "HASHPASS에 총 {total}개의 이벤트가 있습니다. 그중 {attending}개에 참여 중입니다.",
       "passesTooltip": "총 {total}개의 패스를 보유하고 있으며, 그중 {active}개가 현재 활성화되어 사용 가능합니다.",
       "upcomingTooltip": "곧 {total}개의 이벤트가 예정되어 있습니다. 그중 {withPass}개에 대한 패스를 이미 보유하고 있습니다.",
+      "requestsSent": "보낸 요청 {count}개",
+      "requestsTooltip": "패스로 미팅 요청을 {count}개 보냈습니다.",
       "pastTooltip": "이미 {total}개의 이벤트가 종료되었습니다. 그중 {withPass}개에 대한 패스를 보유했었습니다.",
       "activePasses": "활성 {count}개",
       "eventsWithPass": "내 패스 포함 {count}개",

@@ -185,6 +185,36 @@ describe("passwordless email reset", () => {
     expect(signInWithOAuth).toHaveBeenCalledTimes(1);
   });
 
+  it("clears Apple OAuth state and shows an error when Apple sign-in fails", async () => {
+    const signInWithOAuth = jest
+      .fn()
+      .mockResolvedValue({ error: "Apple is not configured for this tenant." });
+    mockAuth = { ...mockAuth, signInWithOAuth };
+
+    await act(async () =>
+      renderer.update(<AuthScreen key="ios-apple-error" />),
+    );
+    await press("Sign in with Apple");
+
+    expect(signInWithOAuth).toHaveBeenCalledWith("apple");
+    expect(mockShowError).toHaveBeenCalled();
+    expect(button("Sign in with Apple")).toBeDefined();
+  });
+
+  it("shows the success toast when Apple sign-in completes inline", async () => {
+    const signInWithOAuth = jest.fn().mockResolvedValue({ pending: false });
+    mockAuth = { ...mockAuth, signInWithOAuth };
+
+    await act(async () =>
+      renderer.update(<AuthScreen key="ios-apple-success" />),
+    );
+    await press("Sign in with Apple");
+
+    expect(signInWithOAuth).toHaveBeenCalledWith("apple");
+    expect(mockShowSuccess).toHaveBeenCalled();
+    expect(button("Sign in with Apple")).toBeDefined();
+  });
+
   it("uses compact icon-only social actions with an explicit mobile hint", async () => {
     Platform.OS = "android";
     await act(async () =>

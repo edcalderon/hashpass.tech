@@ -1,4 +1,4 @@
-import { uiTokens } from '@hashpass/ui/tokens';
+import { uiTokens } from "@hashpass/ui/tokens";
 import React, {
   useCallback,
   useEffect,
@@ -58,6 +58,7 @@ import {
   getActiveFilterCount,
   getExplorerPageCount,
   getExplorerPageEvents,
+  getExplorerMeetingRequestCount,
   getExplorerReloadFeedbackDelay,
   getExplorerToolbarBackgroundColor,
   getEventRoomTarget,
@@ -211,7 +212,10 @@ export default function Explorer({
 
   useEffect(() => {
     let mounted = true;
-    if (!isLoggedIn && onAuthRequired) { setBookmarkedEventIds([]); return; }
+    if (!isLoggedIn && onAuthRequired) {
+      setBookmarkedEventIds([]);
+      return;
+    }
     loadExplorerBookmarks().then((ids: string[]) => {
       if (mounted) setBookmarkedEventIds(ids);
     });
@@ -402,6 +406,7 @@ export default function Explorer({
         (pass: WalletPass) =>
           pass.status.toLowerCase() === "active" && pass.timeline !== "past",
       ).length,
+      requestsSent: getExplorerMeetingRequestCount(walletPassesWithMeta),
       upcomingEvents: upcomingEvents.length,
       upcomingEventsWithPass: upcomingEvents.filter((event) =>
         ownedEventIds.has(event.id),
@@ -474,7 +479,8 @@ export default function Explorer({
   const globalHeroSlide = globalHeroSlides[heroIndex] || globalHeroSlides[0];
 
   const selectedHeroSlider = useAutoAdvanceProgress({
-    count: showcase === undefined && selectedEvent ? selectedHeroSlides.length : 0,
+    count:
+      showcase === undefined && selectedEvent ? selectedHeroSlides.length : 0,
     durationMs: (index: number) =>
       selectedHeroSlides[index]?.durationMs || DEFAULT_EVENT_HERO_DURATION_MS,
     resetKey: selectedEvent?.id,
@@ -657,8 +663,12 @@ export default function Explorer({
         >
           <EventHeroBackground
             fallbackImage={fallbackImage}
-            focalPosition={selectedEvent.id === "hash-poker" ? "center top" : undefined}
-            videoSource={heroSlide.media.type === "video" ? heroSlide.media.url : undefined}
+            focalPosition={
+              selectedEvent.id === "hash-poker" ? "center top" : undefined
+            }
+            videoSource={
+              heroSlide.media.type === "video" ? heroSlide.media.url : undefined
+            }
             loadingLogo={selectedEvent.branding?.logo || selectedEvent.image}
             loadingLabel={translate(
               "explore.rework.loadingEventFilm",
@@ -738,7 +748,9 @@ export default function Explorer({
         >
           <EventHeroBackground
             fallbackImage={singleTenantSlide?.fallbackImage}
-            focalPosition={heroEvent.id === "hash-poker" ? "center top" : undefined}
+            focalPosition={
+              heroEvent.id === "hash-poker" ? "center top" : undefined
+            }
             videoSource={
               singleTenantSlide?.media?.type === "video"
                 ? singleTenantSlide.media.url
@@ -785,13 +797,17 @@ export default function Explorer({
       >
         <EventHeroBackground
           fallbackImage={globalHeroSlide.fallbackImage}
-          focalPosition={globalHeroSlide.eventId === "hash-poker" ? "center top" : undefined}
+          focalPosition={
+            globalHeroSlide.eventId === "hash-poker" ? "center top" : undefined
+          }
           videoSource={
             globalHeroSlide.media?.type === "video"
               ? globalHeroSlide.media.url
               : undefined
           }
-          loadingLogo={globalEvent?.branding?.logo || globalHeroSlide.fallbackImage}
+          loadingLogo={
+            globalEvent?.branding?.logo || globalHeroSlide.fallbackImage
+          }
           loadingLabel={translate(
             "explore.rework.loadingEventFilm",
             "Loading event film",
@@ -952,7 +968,10 @@ export default function Explorer({
           disabled={isRefreshingEvents}
           loading={isRefreshingEvents}
           label={translate("explore.rework.reloadEvents", "Reload events")}
-          loadingLabel={translate("explore.rework.reloadingEvents", "Reloading events…")}
+          loadingLabel={translate(
+            "explore.rework.reloadingEvents",
+            "Reloading events…",
+          )}
         >
           <Icon name="refresh" color={colors.primary} size={18} />
         </IconButton>
@@ -1108,10 +1127,7 @@ export default function Explorer({
             ) : (
               value
             )}
-            <HoverText
-              style={styles.discoveryCounterLabel}
-              numberOfLines={1}
-            >
+            <HoverText style={styles.discoveryCounterLabel} numberOfLines={1}>
               {label}
             </HoverText>
           </View>
@@ -1161,39 +1177,6 @@ export default function Explorer({
         {isLoggedIn && (
           <>
             {renderCard(
-              "passes",
-              "confirmation-number",
-              isRefreshingPasses ? (
-                <View style={styles.discoveryCounterValueSkeleton} />
-              ) : (
-                discoverySummary.totalPasses
-              ),
-              styles.discoveryCounterValue,
-              translate("explore.rework.passes", "Passes"),
-              isRefreshingPasses ? (
-                <View style={styles.discoveryCounterDetailSkeleton} />
-              ) : (
-              <HoverText
-                  style={styles.discoveryCounterDetail}
-                  numberOfLines={1}
-                >
-                  {translate(
-                    "explore.rework.activePasses",
-                    "{count} active",
-                    { count: discoverySummary.activePasses },
-                  )}
-                </HoverText>
-              ),
-              translate(
-                "explore.rework.passesTooltip",
-                "You hold {total} passes in total, {active} of which are currently active and ready to use.",
-                {
-                  total: discoverySummary.totalPasses,
-                  active: discoverySummary.activePasses,
-                },
-              ),
-            )}
-            {renderCard(
               "upcoming",
               "schedule",
               discoverySummary.upcomingEvents,
@@ -1202,7 +1185,7 @@ export default function Explorer({
               isRefreshingPasses ? (
                 <View style={styles.discoveryCounterDetailSkeleton} />
               ) : (
-              <HoverText
+                <HoverText
                   style={styles.discoveryCounterDetail}
                   numberOfLines={1}
                 >
@@ -1223,6 +1206,34 @@ export default function Explorer({
               ),
             )}
             {renderCard(
+              "requests",
+              "people",
+              isRefreshingPasses ? (
+                <View style={styles.discoveryCounterValueSkeleton} />
+              ) : (
+                discoverySummary.requestsSent
+              ),
+              [styles.discoveryCounterValue, styles.discoveryCounterRequests],
+              translate("explore.rework.requests", "Requests"),
+              isRefreshingPasses ? (
+                <View style={styles.discoveryCounterDetailSkeleton} />
+              ) : (
+                <HoverText
+                  style={styles.discoveryCounterDetail}
+                  numberOfLines={1}
+                >
+                  {translate("explore.rework.requestsSent", "{count} sent", {
+                    count: discoverySummary.requestsSent,
+                  })}
+                </HoverText>
+              ),
+              translate(
+                "explore.rework.requestsTooltip",
+                "You have sent {count} meeting requests from your passes.",
+                { count: discoverySummary.requestsSent },
+              ),
+            )}
+            {renderCard(
               "past",
               "history",
               discoverySummary.pastEvents,
@@ -1231,7 +1242,7 @@ export default function Explorer({
               isRefreshingPasses ? (
                 <View style={styles.discoveryCounterDetailSkeleton} />
               ) : (
-              <HoverText
+                <HoverText
                   style={styles.discoveryCounterDetail}
                   numberOfLines={1}
                 >
@@ -1325,7 +1336,10 @@ export default function Explorer({
               styles.bookmarkButton,
               bookmarked && styles.bookmarkButtonActive,
             ]}
-            onTouchEnd={(pressEvent) => { pressEvent?.stopPropagation(); toggleBookmark(event.id); }}
+            onTouchEnd={(pressEvent) => {
+              pressEvent?.stopPropagation();
+              toggleBookmark(event.id);
+            }}
             accessibilityRole="button"
             accessibilityLabel={`${
               bookmarkedEventIds.includes(event.id)
@@ -1353,7 +1367,10 @@ export default function Explorer({
           {mode !== "grid" && (
             <View
               style={styles.eventFooter}
-              onTouchEnd={(pressEvent) => { pressEvent?.stopPropagation(); openEventRoom(event); }}
+              onTouchEnd={(pressEvent) => {
+                pressEvent?.stopPropagation();
+                openEventRoom(event);
+              }}
               accessibilityRole="button"
               accessibilityLabel={`Join the room for ${event.title}`}
             >
@@ -1574,7 +1591,9 @@ export default function Explorer({
             <TouchableOpacity
               key={item.id}
               style={styles.quickCard}
-              onPress={() => { if (!requireAccount()) router.push(item.route as any); }}
+              onPress={() => {
+                if (!requireAccount()) router.push(item.route as any);
+              }}
               accessibilityRole="button"
               accessibilityLabel={item.title}
             >
@@ -1626,8 +1645,14 @@ export default function Explorer({
                 mode={isDark ? "dark" : "light"}
                 accentColor={colors.primary}
                 revealLabel
-                label={translate("explore.rework.reloadPasses", "Reload passes")}
-                loadingLabel={translate("explore.rework.reloadingPasses", "Reloading passes…")}
+                label={translate(
+                  "explore.rework.reloadPasses",
+                  "Reload passes",
+                )}
+                loadingLabel={translate(
+                  "explore.rework.reloadingPasses",
+                  "Reloading passes…",
+                )}
                 disabled={isRefreshingPasses}
                 loading={isRefreshingPasses}
                 onPress={handleReloadPasses}
@@ -1814,7 +1839,10 @@ export default function Explorer({
                         styles.sheetMode,
                         active && styles.sheetModeActive,
                       ]}
-                      onPress={() => { if (value !== "passes" || !requireAccount()) setFilterTab(value); }}
+                      onPress={() => {
+                        if (value !== "passes" || !requireAccount())
+                          setFilterTab(value);
+                      }}
                       accessibilityRole="tab"
                       accessibilityState={{ selected: active }}
                     >
@@ -1961,7 +1989,9 @@ export default function Explorer({
                   <View style={styles.accessRows}>
                     <TouchableOpacity
                       style={styles.accessRow}
-                      onPress={() => { if (!requireAccount()) setOnlyPasses((value) => !value); }}
+                      onPress={() => {
+                        if (!requireAccount()) setOnlyPasses((value) => !value);
+                      }}
                       accessibilityRole="switch"
                       accessibilityState={{ checked: onlyPasses }}
                     >
@@ -2195,7 +2225,12 @@ const getStyles = (isDark: boolean, colors: any) =>
       borderRadius: uiTokens.radius.pill,
       backgroundColor: "rgba(239, 68, 68, .92)",
     },
-    liveDot: { width: 7, height: 7, borderRadius: uiTokens.radius.small, backgroundColor: "#fff" },
+    liveDot: {
+      width: 7,
+      height: 7,
+      borderRadius: uiTokens.radius.small,
+      backgroundColor: "#fff",
+    },
     heroEyebrowText: {
       color: "#fff",
       fontSize: 10,
@@ -2366,6 +2401,7 @@ const getStyles = (isDark: boolean, colors: any) =>
       flexShrink: 0,
     },
     discoveryCounterUpcoming: { color: "#34A853" },
+    discoveryCounterRequests: { color: colors.warning.dark },
     discoveryCounterLabel: {
       flexShrink: 1,
       color: colors.text.secondary,
