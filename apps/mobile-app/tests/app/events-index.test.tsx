@@ -1,7 +1,7 @@
 import React from 'react';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { Platform, Pressable, Text, TextInput, TouchableOpacity } from 'react-native';
-const mockPush = jest.fn(); const mockSetParams = jest.fn(); const mockRetryDatabaseSession = jest.fn(); let mockParams: any = {}; const mockSaveBookmarks = jest.fn(); let mockEvents: any[]; let mockLoggedIn = false; let mockAnimationLevel = 'none';
+const mockPush = jest.fn(); const mockSetParams = jest.fn(); const mockRetryDatabaseSession = jest.fn(); let mockParams: any = {}; const mockSaveBookmarks = jest.fn(); let mockEvents: any[]; let mockLoggedIn = false; let mockAnimationLevel = 'none'; let mockHeroIndex = 0;
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) }));
 jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush, setParams: mockSetParams }), useLocalSearchParams: () => mockParams }));
 jest.mock('../../hooks/useTheme', () => ({ useTheme: () => ({ isDark: true, colors: { primary: '#22d3ee', divider: '#333', background: { default: '#111', paper: '#19191f' }, text: { primary: '#fff', secondary: '#aaa', disabled: '#777' }, warning: { dark: '#f59e0b' } } }) }));
@@ -15,14 +15,16 @@ jest.mock('../../app/(shared)/auth', () => 'EmbeddedAuth');
 jest.mock('../../lib/vector-icons', () => ({ NativeSafeIcon: () => null }));
 jest.mock('../../components/PassesDisplay', () => () => null);
 jest.mock('../../components/banner/SliderProgressBar', () => ({ SliderProgressBar: () => null }));
-jest.mock('../../lib/hooks/useAutoAdvanceProgress', () => ({ useAutoAdvanceProgress: (options: any) => { options.durationMs?.(0); return { activeIndex: 0, progress: { value: 0 }, pause: jest.fn(), resume: jest.fn(), goTo: jest.fn() }; } }));
+jest.mock('../../lib/hooks/useAutoAdvanceProgress', () => ({ useAutoAdvanceProgress: (options: any) => { options.durationMs?.(0); return { activeIndex: mockHeroIndex, progress: { value: 0 }, pause: jest.fn(), resume: jest.fn(), goTo: jest.fn() }; } }));
 jest.mock('../../lib/event-chat', () => ({ loadEventChatPresence: jest.fn(), getEventChatAvatarUrl: jest.fn() }));
 jest.mock('../../lib/explorer-bookmarks', () => ({ loadExplorerBookmarks: async () => [], saveExplorerBookmarks: (...args: unknown[]) => mockSaveBookmarks(...args) }));
 jest.mock('../../lib/event-detector', () => ({ getAvailableEvents: () => mockEvents, getEventQuickAccessItems: () => [] }));
 jest.mock('../../lib/event-branding', () => ({ resolveEventImageSource: (uri: string) => ({ uri }) }));
 jest.mock('../../components/EventBannerBackgroundVideo.native', () => 'EventVideo');
 jest.mock('../../components/EventBannerBackgroundVideo', () => 'EventVideo', { virtual: true });
+jest.mock('../../components/explorer/EventHeroBackground', () => () => null);
 import EventsScreen from '../../components/events/GuestExplorer';
+import Explorer from '../../components/explorer/Explorer';
 let view: ReactTestRenderer;
 const content = () => JSON.stringify(view.toJSON());
 // Some cards' inner controls (e.g. Explorer's bookmark/footer buttons) are
@@ -44,7 +46,7 @@ const setViewport = (width: number, height = 768) => {
   jest.spyOn(require('react-native'), 'useWindowDimensions').mockReturnValue({ width, height, scale: 1, fontScale: 1 });
 };
 const setPlatform = (os: string) => Object.defineProperty(Platform, 'OS', { configurable: true, value: os });
-beforeEach(() => { setViewport(1024); setPlatform('ios'); mockAnimationLevel = 'none'; mockPush.mockReset(); mockSetParams.mockReset(); mockRetryDatabaseSession.mockReset(); mockParams = {}; mockSaveBookmarks.mockReset(); mockLoggedIn = false; mockEvents = [
+beforeEach(() => { setViewport(1024); setPlatform('ios'); mockAnimationLevel = 'none'; mockHeroIndex = 0; mockPush.mockReset(); mockSetParams.mockReset(); mockRetryDatabaseSession.mockReset(); mockParams = {}; mockSaveBookmarks.mockReset(); mockLoggedIn = false; mockEvents = [
   { id: 'main', title: 'Hidden shell', color: '#000' },
   { id: 'one', title: 'Colombia conference', color: '#f00', series: 'Series A', geo: { continent: 'South America', country: 'Colombia' }, routes: { home: '/events//one' }, eventDateString: '2026', eventStartDate: '2099-01-01', image: '/real-event.webp' },
   { id: 'two', title: 'Europe conference', color: '#0f0', series: 'Series B', geo: { continent: 'Europe', country: 'France' }, routes: { home: '/events/two' }, eventStartDate: '2099-02-01' },
@@ -141,6 +143,82 @@ it('moves the quick-access rail for web wheel input', async () => {
   const container = { scrollLeft: 0 };
   act(() => quickRail.props.onWheel({ currentTarget: container, deltaY: 18 }));
   expect(container.scrollLeft).toBe(18);
+});
+it('renders the event-backed global hero and paginates the catalogue', async () => {
+  mockHeroIndex = 1;
+  const pagedEvents = Array.from({ length: 14 }, (_, index) => ({
+    ...mockEvents[1],
+    id: `event-${index}`,
+    title: `Event ${index}`,
+    eventStartDate: '2099-02-01',
+  }));
+  await act(async () => { view = create(
+    <Explorer
+      events={pagedEvents}
+      selectedEvent={null}
+      onSelectEvent={() => {}}
+      onResetSelection={() => {}}
+      isLoggedIn
+      dbUserId="user-1"
+      isGlobalExplorer
+    />,
+  ); });
+  expect(content()).toContain('Event 0');
+  const invoke = (label: string) => act(() => {
+    const targets = view.root.findAll(
+      node => node.props?.accessibilityLabel === label && typeof node.props?.onPress === 'function',
+    );
+    const target = targets[targets.length - 1];
+    target.props.onPress();
+  });
+  invoke('Explore event');
+  invoke('Next events page');
+  invoke('Previous events page');
+  const progress = view.root.findAll(
+    node => typeof node.props?.getSegmentAccessibilityLabel === 'function',
+  )[0];
+  expect(progress.props.getSegmentAccessibilityLabel(1)).toContain('Event 0');
+});
+it('renders selected and tenant-owned hero media', async () => {
+  const selected = {
+    ...mockEvents[1],
+    bannerSlides: [{
+      id: 'hero',
+      media: { type: 'video', url: 'https://cdn.example/hero.mp4' },
+      cta: { label: 'Watch hero', url: '/events/two/home' },
+    }],
+    heroPoster: '/hero-poster.webp',
+  };
+  await act(async () => { view = create(
+    <Explorer
+      events={[selected]}
+      selectedEvent={selected}
+      onSelectEvent={() => {}}
+      onResetSelection={() => {}}
+      isLoggedIn
+      dbUserId="user-1"
+      isGlobalExplorer
+    />,
+  ); });
+  expect(content()).toContain('Watch hero');
+  const action = view.root.findAll(
+    node => node.props?.accessibilityLabel === 'Watch hero' && typeof node.props?.onPress === 'function',
+  ).at(-1)!;
+  act(() => action.props.onPress());
+  act(() => view.unmount());
+  const tenant = { ...selected, id: 'hash-poker', title: 'Hash Poker' };
+  await act(async () => { view = create(
+    <Explorer
+      events={[tenant]}
+      selectedEvent={null}
+      onSelectEvent={() => {}}
+      onResetSelection={() => {}}
+      isLoggedIn
+      dbUserId="user-1"
+      isGlobalExplorer={false}
+    />,
+  ); });
+  expect(content()).toContain('Hash Poker');
 });
 
 it.each(['My passes', 'Wallet', 'Community'])('opens registration for guest %s without leaving Explorer', async label => {
