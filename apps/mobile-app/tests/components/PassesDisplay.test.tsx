@@ -1,7 +1,7 @@
 /// <reference types="jest" />
 
 import React from 'react';
-import { Alert, Linking } from 'react-native';
+import { Alert } from 'react-native';
 
 const mockGetUserPassInfo = jest.fn();
 const mockGetEventPassTiers = jest.fn();
@@ -89,6 +89,32 @@ describe('PassesDisplay', () => {
     expect(mockGetEventPassTiers).toHaveBeenCalledWith('chile2026');
     expect(renderer.root.findAllByProps({ children: 'Boost points' }).length).toBeGreaterThan(0);
     expect(renderer.root.findAllByProps({ children: 'VOI Boost' })).toHaveLength(0);
+  });
+
+  it('links speaker pass details to the event tickets modal instead of expanding pass pricing', async () => {
+    let renderer: any;
+    await act(async () => {
+      renderer = create(<PassesDisplay mode="speaker" eventId="colombia2026" />);
+      await Promise.resolve();
+    });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 320));
+    });
+
+    const ticketsLink = renderer.root.findByProps({
+      accessibilityLabel: 'View event tickets',
+    });
+
+    await act(async () => ticketsLink.props.onPress());
+
+    expect(mockRouterPush).toHaveBeenCalledWith({
+      pathname: '/events/[eventSlug]/tickets',
+      params: {
+        eventSlug: 'colombia2026',
+        openTicketModal: 'true',
+      },
+    });
+    expect(renderer.root.findAllByProps({ children: 'All Pass Types & Pricing' })).toHaveLength(0);
   });
 
   it('checks limits for the selected event and offers a 50-point reset at the request limit', async () => {
@@ -237,11 +263,8 @@ describe('PassesDisplay', () => {
     });
   });
 
-  it('sends native pass purchases to the Blockchain Summit site instead of a placeholder alert', async () => {
+  it('opens the event tickets modal when a speaker has no pass', async () => {
     mockGetUserPassInfo.mockResolvedValue(null);
-    const canOpenUrl = jest.fn().mockResolvedValue(true);
-    const openUrl = jest.fn().mockResolvedValue(true);
-    Object.assign(Linking as any, { canOpenURL: canOpenUrl, openURL: openUrl });
 
     let renderer: any;
     await act(async () => {
@@ -252,16 +275,18 @@ describe('PassesDisplay', () => {
       await new Promise((resolve) => setTimeout(resolve, 320));
     });
 
-    const price = renderer.root.findAllByType('Text').find((node: any) => textContent(node) === '$99');
-    expect(price).toBeDefined();
-    let purchaseButton = price.parent;
-    while (purchaseButton && typeof purchaseButton.props?.onPress !== 'function') {
-      purchaseButton = purchaseButton.parent;
-    }
-    await act(async () => purchaseButton.props.onPress());
+    const ticketsLink = renderer.root.findByProps({
+      accessibilityLabel: 'View event tickets',
+    });
+    await act(async () => ticketsLink.props.onPress());
 
-    expect(canOpenUrl).toHaveBeenCalledWith('https://blockchainsummit.la');
-    expect(openUrl).toHaveBeenCalledWith('https://blockchainsummit.la');
+    expect(mockRouterPush).toHaveBeenCalledWith({
+      pathname: '/events/[eventSlug]/tickets',
+      params: {
+        eventSlug: 'chile2026',
+        openTicketModal: 'true',
+      },
+    });
   });
 
   it('formats configured fractional tier prices without mutating the renderer environment', () => {

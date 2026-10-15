@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { AccessibilityInfo, View, Text, StyleSheet, Modal, useWindowDimensions, Platform, TouchableOpacity, ScrollView, Linking } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEvent } from '@contexts/EventContext';
 import { useTheme } from '../../../hooks/useTheme';
 import { useAnimationLevel } from '../../../contexts/AnimationLevelContext';
@@ -28,6 +28,7 @@ export default function TicketsScreen() {
   const { event } = useEvent();
   const { isDark } = useTheme();
   const router = useRouter();
+  const { openTicketModal } = useLocalSearchParams<{ openTicketModal?: string }>();
   const { animationLevel } = useAnimationLevel();
   const { width: viewportWidth } = useWindowDimensions();
   const isWide = viewportWidth >= 960;
@@ -39,7 +40,12 @@ export default function TicketsScreen() {
   const eventTitle = event?.title || 'Event';
   const eventDate = event?.eventDateString || event?.subtitle || 'Date TBA';
 
-  const [showTicketModal, setShowTicketModal] = useState(false);
+  const shouldOpenTicketModal = openTicketModal === 'true' || openTicketModal === '1';
+  const [showTicketModal, setShowTicketModal] = useState(shouldOpenTicketModal);
+
+  useEffect(() => {
+    if (shouldOpenTicketModal) setShowTicketModal(true);
+  }, [shouldOpenTicketModal]);
 
   // Match the event-info banner's reduce-motion + countdown wiring so the
   // tickets page shows the same hero with video and live countdown.

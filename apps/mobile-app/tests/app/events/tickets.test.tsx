@@ -3,6 +3,7 @@
 
 let mockEvent: Record<string, unknown> | null = null;
 const mockRouterPush = jest.fn();
+let mockTicketParams: Record<string, string> = {};
 
 jest.mock("@contexts/EventContext", () => ({
   useEvent: () => ({ event: mockEvent }),
@@ -12,6 +13,7 @@ jest.mock("@contexts/EventContext", () => ({
 // expo-router/@react-navigation machinery for a single router.push call.
 jest.mock("expo-router", () => ({
   useRouter: () => ({ push: mockRouterPush }),
+  useLocalSearchParams: () => mockTicketParams,
 }));
 
 jest.mock("../../../hooks/useTheme", () => ({
@@ -98,6 +100,7 @@ describe("TicketsScreen", () => {
 
   beforeEach(() => {
     mockEvent = null;
+    mockTicketParams = {};
     jest.clearAllMocks();
     // Default to a narrow viewport (phone portrait) so the existing tests
     // exercise the same isWide=false path they always have; individual tests
@@ -152,6 +155,15 @@ describe("TicketsScreen", () => {
     if (requestClosedModal) {
       expect(requestClosedModal.props.visible).toBe(false);
     }
+  });
+
+  it('opens the ticket purchase modal immediately from the route query', () => {
+    mockEvent = COLOMBIA_EVENT;
+    mockTicketParams = { openTicketModal: "true" };
+
+    const view = renderScreen();
+
+    expect(view.root.findByType("Modal" as any).props.visible).toBe(true);
   });
 
   it('navigates to Contact Support from the "Need Help?" card', () => {

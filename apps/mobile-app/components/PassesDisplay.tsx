@@ -5,7 +5,6 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
-  Linking,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { MaterialIcons } from "../lib/vector-icons";
@@ -318,25 +317,15 @@ function PassesDisplayInner({
     }
   };
 
-  const openEventPurchaseSite = async () => {
-    const purchaseUrl = "https://blockchainsummit.la";
-    try {
-      if (!(await Linking.canOpenURL(purchaseUrl)))
-        throw new Error("Unsupported purchase URL");
-      await Linking.openURL(purchaseUrl);
-    } catch {
-      Alert.alert(
-        t({
-          id: "passes.alert.purchaseTitle",
-          message: "Visit Blockchain Summit",
-        }),
-        t({
-          id: "passes.alert.purchaseMessage",
-          message:
-            "Visit blockchainsummit.la for more information and to purchase your pass.",
-        }),
-      );
-    }
+  const openEventTickets = () => {
+    const targetEventId = eventId || passInfo?.event_id || resolveActiveEventId();
+    router.push({
+      pathname: "/events/[eventSlug]/tickets",
+      params: {
+        eventSlug: targetEventId,
+        openTicketModal: "true",
+      },
+    } as any);
   };
 
   const loadRequestLimits = async () => {
@@ -623,7 +612,43 @@ function PassesDisplayInner({
               })}
         </Text>
 
-        {isDemoMode ? (
+        {mode === "speaker" ? (
+          <TouchableOpacity
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: 12,
+              backgroundColor: colors.background.default,
+              borderRadius: 8,
+              marginBottom: 16,
+              borderWidth: 1,
+              borderColor: colors.divider,
+            }}
+            accessibilityRole="link"
+            accessibilityLabel="View event tickets"
+            onPress={openEventTickets}
+            activeOpacity={0.7}
+          >
+            <Text
+              style={{
+                fontSize: 14,
+                fontWeight: "600",
+                color: colors.text.primary,
+              }}
+            >
+              {t({
+                id: "passes.viewEventTickets",
+                message: "View event tickets",
+              })}
+            </Text>
+            <MaterialIcons
+              name="arrow-forward"
+              size={24}
+              color={colors.primary}
+            />
+          </TouchableOpacity>
+        ) : isDemoMode ? (
           <>
             {/* Pass Comparison Toggle - Demo Mode Only */}
             <TouchableOpacity
@@ -799,7 +824,7 @@ function PassesDisplayInner({
                     }}
                     accessibilityLabel="Purchase Business pass"
                     accessibilityRole="button"
-                    onPress={() => void openEventPurchaseSite()}
+                    onPress={openEventTickets}
                   >
                     <View
                       style={{
@@ -907,7 +932,7 @@ function PassesDisplayInner({
                     }}
                     accessibilityLabel="Purchase VIP pass"
                     accessibilityRole="button"
-                    onPress={() => void openEventPurchaseSite()}
+                    onPress={openEventTickets}
                   >
                     <View
                       style={{
@@ -1059,7 +1084,7 @@ function PassesDisplayInner({
                     borderWidth: 1,
                     borderColor: colors.divider,
                   }}
-                  onPress={openEventPurchaseSite}
+                  onPress={openEventTickets}
                 >
                   <View style={{ flexDirection: "row", alignItems: "center" }}>
                     <View
@@ -1107,7 +1132,7 @@ function PassesDisplayInner({
                     borderWidth: 1,
                     borderColor: colors.divider,
                   }}
-                  onPress={openEventPurchaseSite}
+                  onPress={openEventTickets}
                 >
                   <View style={{ flexDirection: "row", alignItems: "center" }}>
                     <View
@@ -1159,7 +1184,7 @@ function PassesDisplayInner({
                     borderWidth: 1,
                     borderColor: colors.divider,
                   }}
-                  onPress={openEventPurchaseSite}
+                  onPress={openEventTickets}
                 >
                   <View style={{ flexDirection: "row", alignItems: "center" }}>
                     <View
@@ -1383,8 +1408,8 @@ function PassesDisplayInner({
         </View>
       </View>
 
-      {/* Pass Comparison Toggle - Only show if user has a pass AND in demo mode */}
-      {passInfo && isDemoMode && (
+      {/* Pass pricing belongs in the event ticket modal, not the speaker card. */}
+      {mode === "speaker" && passInfo && (
         <TouchableOpacity
           style={{
             flexDirection: "row",
@@ -1397,7 +1422,9 @@ function PassesDisplayInner({
             borderWidth: 1,
             borderColor: colors.divider,
           }}
-          onPress={() => setShowComparison(!showComparison)}
+          accessibilityRole="link"
+          accessibilityLabel="View event tickets"
+          onPress={openEventTickets}
           activeOpacity={0.7}
         >
           <Text
@@ -1408,23 +1435,20 @@ function PassesDisplayInner({
             }}
           >
             {t({
-              id: "passes.passTypes.all",
-              message: "All Pass Types & Pricing",
-            })}{" "}
-            {showComparison
-              ? `(${t({ id: "passes.passTypes.open", message: "Open" })})`
-              : `(${t({ id: "passes.passTypes.closed", message: "Closed" })})`}
+              id: "passes.viewEventTickets",
+              message: "View event tickets",
+            })}
           </Text>
           <MaterialIcons
-            name={showComparison ? "keyboard-arrow-up" : "keyboard-arrow-down"}
+            name="arrow-forward"
             size={24}
-            color={colors.text.secondary}
+            color={colors.primary}
           />
         </TouchableOpacity>
       )}
 
-      {/* Pass Comparison Content - Only show if user has a pass AND in demo mode */}
-      {passInfo && showComparison && isDemoMode && (
+      {/* Dashboard-only demo comparison; speaker details link to event tickets. */}
+      {mode !== "speaker" && passInfo && showComparison && isDemoMode && (
         <View style={{ marginBottom: 16 }}>
           <Text
             style={{
