@@ -1,3 +1,13 @@
+## [1.9.115](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.114...v1.9.115) (2026-10-15)
+### Released
+- complete dashboard drawer translations
+
+### Release scope
+- Compared with: `v1.9.114` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+
 ## [1.9.114](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.113...v1.9.114) (2026-10-15)
 ### Released
 - refine responsive social sign-in
