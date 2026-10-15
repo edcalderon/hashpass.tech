@@ -4,6 +4,7 @@
 let mockEvent: Record<string, unknown> | null = null;
 const mockRouterPush = jest.fn();
 let mockTicketParams: Record<string, string> = {};
+const renderedViews: ReactTestRenderer[] = [];
 
 jest.mock("@contexts/EventContext", () => ({
   useEvent: () => ({ event: mockEvent }),
@@ -58,6 +59,7 @@ function renderScreen(): ReactTestRenderer {
   act(() => {
     view = create(<TicketsScreen />);
   });
+  renderedViews.push(view);
   return view;
 }
 
@@ -110,6 +112,9 @@ describe("TicketsScreen", () => {
   });
 
   afterEach(() => {
+    act(() => {
+      renderedViews.splice(0).forEach((view) => view.unmount());
+    });
     Platform.OS = originalPlatformOs;
     mockUseWindowDimensions.mockRestore();
   });
