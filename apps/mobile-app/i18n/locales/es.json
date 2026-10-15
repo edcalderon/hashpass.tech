@@ -276,6 +276,7 @@
       "privacy": "Política de Privacidad"
     },
     "orContinueWith": "O continúa con",
+    "orContinueWithSocialLogin": "O continúa con una cuenta social",
     "processing": "Procesando...",
     "processingAuthentication": "Procesando autenticación...",
     "authenticationSuccessful": "¡Autenticación exitosa!",
@@ -835,6 +836,8 @@
     "backToLanding": "Volver al inicio",
     "light": "Claro",
     "dark": "Oscuro",
+    "lightMode": "Modo claro",
+    "darkMode": "Modo oscuro",
     "logout": "Salir"
   },
   "explore": {
@@ -934,13 +937,16 @@
       "discoverySummary": "Resumen de eventos y pases",
       "events": "Eventos",
       "passes": "Pases",
+      "requests": "Solicitudes",
       "eventsAttending": "Asistirás a {count}",
       "activePasses": "{count} activo(s)",
       "eventsWithPass": "{count} con tu pase",
+      "requestsSent": "{count} enviadas",
       "summaryCardInfo": "¿Qué significa {label}?",
       "eventsTooltip": "Hay {total} eventos en HASHPASS. Estás asistiendo a {attending} de ellos.",
       "passesTooltip": "Tienes {total} pases en total, {active} de los cuales están activos y listos para usar.",
       "upcomingTooltip": "Se acercan {total} eventos. Ya tienes un pase para {withPass} de ellos.",
+      "requestsTooltip": "Has enviado {count} solicitudes de reunión desde tus pases.",
       "pastTooltip": "Ya se realizaron {total} eventos. Tenías un pase para {withPass} de ellos.",
       "reloadEvents": "Recargar eventos",
       "reloadingEvents": "Recargando eventos…",

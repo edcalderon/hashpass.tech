@@ -4,6 +4,7 @@ import {
   getExplorerFloatingBottomInset,
   getExplorerHeroActionTarget,
   getExplorerHeroSlides,
+  getExplorerMeetingRequestCount,
   getExplorerTenantHeroSlide,
   getExplorerLayout,
   getExplorerPageCount,
@@ -56,6 +57,22 @@ const events: ExplorerEvent[] = [
 ];
 
 describe("explorer rework behavior", () => {
+  it("counts sent meeting requests across wallet passes", () => {
+    expect(
+      getExplorerMeetingRequestCount([
+        { used_requests: 2 },
+        { used_requests: 0 },
+        { used_requests: 3 },
+      ]),
+    ).toBe(5);
+    expect(
+      getExplorerMeetingRequestCount([
+        { used_requests: -1 },
+        { used_requests: Number.NaN },
+      ]),
+    ).toBe(0);
+  });
+
   it("builds one media-backed hero slide per event and keeps an image fallback behind video", () => {
     expect(
       getExplorerHeroSlides([
@@ -82,43 +99,45 @@ describe("explorer rework behavior", () => {
           subtitle: "No media",
         },
       ]),
-    ).toEqual(expect.arrayContaining([
-      expect.objectContaining({
-        id: "colombia2026-default",
-        eventId: "colombia2026",
-        eyebrow: "BSL",
-        media: {
-          type: "video",
-          url: "https://media.example/events/colombia2026/hero.mp4",
-        },
-        fallbackImage: "https://media.example/events/colombia2026/hero.jpg",
-        route: "/events/colombia2026/home",
-      }),
-      expect.objectContaining({
-        id: "offline-event-default",
-        media: {
-          type: "image",
-          url: "https://media.example/events/offline-event/poster.jpg",
-        },
-        fallbackImage: "https://media.example/events/offline-event/poster.jpg",
-      }),
-      expect.objectContaining({
-        id: "legacy-event-default",
-        media: undefined,
-        fallbackImage: undefined,
-      }),
-      expect.objectContaining({
-        id: "hashpass-partners-discovery",
-        title: "Built with the people moving the ecosystem forward.",
-        media: {
-          type: "video",
-          url:
-            "https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events/hashpass-partners/branding/hashpass-partners-cover-v1.mp4",
-        },
-        fallbackImage:
-          "https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events/hashpass-partners/branding/hashpass-partners-cover-v1.jpg",
-      }),
-    ]));
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "colombia2026-default",
+          eventId: "colombia2026",
+          eyebrow: "BSL",
+          media: {
+            type: "video",
+            url: "https://media.example/events/colombia2026/hero.mp4",
+          },
+          fallbackImage: "https://media.example/events/colombia2026/hero.jpg",
+          route: "/events/colombia2026/home",
+        }),
+        expect.objectContaining({
+          id: "offline-event-default",
+          media: {
+            type: "image",
+            url: "https://media.example/events/offline-event/poster.jpg",
+          },
+          fallbackImage:
+            "https://media.example/events/offline-event/poster.jpg",
+        }),
+        expect.objectContaining({
+          id: "legacy-event-default",
+          media: undefined,
+          fallbackImage: undefined,
+        }),
+        expect.objectContaining({
+          id: "hashpass-partners-discovery",
+          title: "Built with the people moving the ecosystem forward.",
+          media: {
+            type: "video",
+            url: "https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events/hashpass-partners/branding/hashpass-partners-cover-v1.mp4",
+          },
+          fallbackImage:
+            "https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events/hashpass-partners/branding/hashpass-partners-cover-v1.jpg",
+        }),
+      ]),
+    );
 
     expect(
       getExplorerHeroSlides([
@@ -126,7 +145,7 @@ describe("explorer rework behavior", () => {
         { id: "colombia2026", title: "BSL Colombia", tourHubEventId: "bsl" },
         { id: "hash-poker", title: "Hash Poker" },
         { id: "cbweek2026", title: "CBWeek" },
-    ]).map((slide) => slide.id),
+      ]).map((slide) => slide.id),
     ).toEqual([
       "hashpass-partners-discovery",
       "bsl-default",
@@ -214,8 +233,7 @@ describe("explorer rework behavior", () => {
       eyebrow: "OFFICIAL PARTNERS",
       media: {
         type: "video",
-        url:
-            "https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events/hashpass-partners/branding/hashpass-partners-cover-v1.mp4",
+        url: "https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events/hashpass-partners/branding/hashpass-partners-cover-v1.mp4",
       },
     });
 
@@ -227,7 +245,7 @@ describe("explorer rework behavior", () => {
           communityEventType: "poker_room_event",
         },
       ])[1],
-    ).toMatchObject({eyebrow: "POKER ROOM"});
+    ).toMatchObject({ eyebrow: "POKER ROOM" });
   });
 
   it("uses the refresh glyph for the compact event reload control", () => {

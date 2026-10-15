@@ -189,6 +189,7 @@
       "privacy": "Politique de confidentialité"
     },
     "orContinueWith": "Ou continuer avec",
+    "orContinueWithSocialLogin": "Ou continuer avec un compte social",
     "processing": "Traitement en cours...",
     "processingAuthentication": "Traitement de l'authentification...",
     "authenticationSuccessful": "Authentification réussie !",
@@ -686,6 +687,8 @@
     "backToLanding": "Retour à l'accueil",
     "light": "Clair",
     "dark": "Sombre",
+    "lightMode": "Mode clair",
+    "darkMode": "Mode sombre",
     "logout": "Déconnexion"
   },
   "explore": {

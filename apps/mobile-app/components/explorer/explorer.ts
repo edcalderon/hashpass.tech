@@ -23,6 +23,19 @@ export const getExplorerReloadFeedbackDelay = (
 ): number =>
   Math.max(0, EXPLORER_RELOAD_FEEDBACK_MINIMUM_MS - (completedAt - startedAt));
 
+/** Count meeting requests sent across the user's wallet passes. */
+export const getExplorerMeetingRequestCount = (
+  passes: ReadonlyArray<{ used_requests: number }>,
+): number =>
+  passes.reduce(
+    (total, pass) =>
+      total +
+      (Number.isFinite(pass.used_requests)
+        ? Math.max(0, pass.used_requests)
+        : 0),
+    0,
+  );
+
 // Floating controls need enough room above Android's three-button navigation
 // even when a device reports a zero bottom inset. Every Explorer action that
 // is pinned to the lower-right corner can use this instead of guessing at the
@@ -116,9 +129,7 @@ export interface ExplorerEvent {
   cityKey?: string;
   series?: string;
   communityEventType?:
-    | "poker_room_event"
-    | "community_tournament"
-    | "community_event";
+    "poker_room_event" | "community_tournament" | "community_event";
   continent?: EventContinent;
   /** Event-family key: BSL's hub and each of its stops share one chapter. */
   tourHubEventId?: string;
@@ -200,22 +211,22 @@ export const getExplorerHeroSlides = (
   const eventSlides = events
     .filter((event) => getExplorerEventStatus(event, now) !== "past")
     .map((event) => ({
-        familyId: event.tourHubEventId || event.id,
-        slide: getExplorerTenantHeroSlide(event),
-      }));
+      familyId: event.tourHubEventId || event.id,
+      slide: getExplorerTenantHeroSlide(event),
+    }));
 
   const partnersSlide: ExplorerHeroSlide = {
-      id: "hashpass-partners-discovery",
-      eyebrow: "OFFICIAL PARTNERS",
-      title: "Built with the people moving the ecosystem forward.",
-      subtitle: "Sponsors and community partners make every stop possible.",
-      backgroundColor: "#18212D",
-      media: {
-        type: "video",
-        url: "https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events/hashpass-partners/branding/hashpass-partners-cover-v1.mp4",
-      },
-      fallbackImage:
-        "https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events/hashpass-partners/branding/hashpass-partners-cover-v1.jpg",
+    id: "hashpass-partners-discovery",
+    eyebrow: "OFFICIAL PARTNERS",
+    title: "Built with the people moving the ecosystem forward.",
+    subtitle: "Sponsors and community partners make every stop possible.",
+    backgroundColor: "#18212D",
+    media: {
+      type: "video",
+      url: "https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events/hashpass-partners/branding/hashpass-partners-cover-v1.mp4",
+    },
+    fallbackImage:
+      "https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events/hashpass-partners/branding/hashpass-partners-cover-v1.jpg",
   };
 
   // Partners lead the global Explorer, then each event family remains intact

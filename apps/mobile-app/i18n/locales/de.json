@@ -189,6 +189,7 @@
       "privacy": "Datenschutzrichtlinie"
     },
     "orContinueWith": "Oder weiter mit",
+    "orContinueWithSocialLogin": "Oder mit einem sozialen Konto fortfahren",
     "processing": "Wird verarbeitet...",
     "processingAuthentication": "Authentifizierung wird verarbeitet...",
     "authenticationSuccessful": "Authentifizierung erfolgreich!",
@@ -685,6 +686,8 @@
     "backToLanding": "Zur Startseite",
     "light": "Hell",
     "dark": "Dunkel",
+    "lightMode": "Heller Modus",
+    "darkMode": "Dunkler Modus",
     "logout": "Abmelden"
   },
   "explore": {

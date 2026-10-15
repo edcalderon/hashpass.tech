@@ -276,6 +276,7 @@
       "privacy": "Privacy Policy"
     },
     "orContinueWith": "Or continue with",
+    "orContinueWithSocialLogin": "Or continue with social login",
     "processing": "Processing...",
     "processingAuthentication": "Processing authentication...",
     "authenticationSuccessful": "Authentication successful!",
@@ -836,7 +837,9 @@
     "backToLanding": "Back to landing",
     "light": "Light",
     "dark": "Dark",
-    "logout": "Logout"
+    "lightMode": "Light mode",
+    "darkMode": "Dark mode",
+    "logout": "Log out"
   },
   "explore": {
     "noEvent": "No event available",
@@ -935,13 +938,16 @@
       "discoverySummary": "Event and pass summary",
       "events": "Events",
       "passes": "Passes",
+      "requests": "Requests",
       "eventsAttending": "{count} you're attending",
       "activePasses": "{count} active",
       "eventsWithPass": "{count} with your pass",
+      "requestsSent": "{count} sent",
       "summaryCardInfo": "What does {label} mean?",
       "eventsTooltip": "There are {total} events on HASHPASS. You're attending {attending} of them.",
       "passesTooltip": "You hold {total} passes in total, {active} of which are currently active and ready to use.",
       "upcomingTooltip": "{total} events are coming up. You already have a pass for {withPass} of them.",
+      "requestsTooltip": "You have sent {count} meeting requests from your passes.",
       "pastTooltip": "{total} events have already taken place. You had a pass for {withPass} of them.",
       "reloadEvents": "Reload events",
       "reloadingEvents": "Reloading events…",

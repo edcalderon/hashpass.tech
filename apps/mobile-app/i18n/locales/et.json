@@ -31,7 +31,8 @@
     "processing": "Töötleme…",
     "authenticationSuccessful": "Autentimine õnnestus",
     "authenticationFailed": "Autentimine ebaõnnestus",
-    "back": "Tagasi"
+    "back": "Tagasi",
+    "orContinueWithSocialLogin": "Või jätka sotsiaalkontoga"
   },
   "pwaPrompt": {
     "installAction": "Paigalda",
@@ -77,6 +78,8 @@
     "backToLanding": "Tagasi avalehele",
     "light": "Hele",
     "dark": "Tume",
+    "lightMode": "Hele režiim",
+    "darkMode": "Tume režiim",
     "logout": "Logi välja"
   },
   "index": {

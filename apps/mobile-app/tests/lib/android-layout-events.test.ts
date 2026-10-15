@@ -97,6 +97,7 @@ describe("Android layout event crash guards", () => {
 
   it("keeps native OTP autofill from leaving stale text in the first digit cell", () => {
     const authSource = readSource("../../app/(shared)/auth.tsx");
+    const compactAuthSource = authSource.replace(/\s+/g, "");
 
     expect(authSource).toContain(
       "const [otpCell0RemountKey, setOtpCell0RemountKey] = useState(0);",
@@ -104,8 +105,8 @@ describe("Android layout event crash guards", () => {
     expect(authSource).toContain("setOtpCell0RemountKey((k) => k + 1);");
     expect(authSource).toContain("`otp-input-${key}-${otpCell0RemountKey}`");
     expect(authSource).toContain("`otp-input-${key}`");
-    expect(authSource).toContain(
-      "maxLength={index === 0 ? OTP_CODE_LENGTH : 1}",
+    expect(compactAuthSource).toContain(
+      "maxLength={index===0?OTP_CODE_LENGTH:1}",
     );
     expect(authSource).toContain('index === 0 ? "oneTimeCode" : undefined');
   });
@@ -151,9 +152,10 @@ describe("Android layout event crash guards", () => {
       "const dashboardDrawerWidth = useMemo<DimensionValue>(",
     );
     expect(dashboardSource).toContain("const dashboardDrawerStyle = useMemo(");
-    expect(dashboardSource).toContain(
-      "() => ({ width: dashboardDrawerWidth }),",
-    );
+    expect(dashboardSource).toContain("width: dashboardDrawerWidth,");
+    expect(dashboardSource).toContain("borderTopRightRadius: 24,");
+    expect(dashboardSource).toContain("borderBottomRightRadius: 24,");
+    expect(dashboardSource).toContain('overflow: "hidden" as const,');
     expect(dashboardSource).toContain("drawerStyle: dashboardDrawerStyle,");
   });
 
@@ -187,6 +189,23 @@ describe("Android layout event crash guards", () => {
       "const previousPathnameRef = useRef(pathname);",
     );
     expect(dashboardSource).toContain("}, [pathname, setDrawerOpen]);");
+  });
+
+  it("keeps drawer stats meaningful and gives menu items native/web selection feedback", () => {
+    const dashboardSource = readSource(
+      "../../app/(shared)/dashboard/_layout.tsx",
+    );
+
+    expect(dashboardSource).toContain("getAllUserPasses(dbUserId)");
+    expect(dashboardSource).toContain('message: "Passes"');
+    expect(dashboardSource).toContain('message: "Upcoming"');
+    expect(dashboardSource).toContain('message: "Requests"');
+    expect(dashboardSource).toContain("used_requests");
+    expect(dashboardSource).toContain("publicEventStatus(availableEvent)");
+    expect(dashboardSource).toContain("onHoverIn={() => {");
+    expect(dashboardSource).toContain("onFocus={() => {");
+    expect(dashboardSource).toContain("useNativeDriver: true,");
+    expect(dashboardSource).toContain("currentPath.split(\"/\").includes");
   });
 
   it("routes dashboard drawer logout to the login screen after clearing the local session", () => {

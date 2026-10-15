@@ -1,4 +1,5 @@
 import { uiPalette, uiTokens } from "@hashpass/ui/tokens";
+import { IconButton } from "@hashpass/ui/primitives";
 import React, {
   useCallback,
   useEffect,
@@ -106,7 +107,10 @@ const buildSupabaseCallbackPath = (returnTo: string, nativeRelay = false) => {
 const normalizeReturnToPath = normalizeSafeReturnToPath;
 
 const mapToRouterPath = (path: string): string => {
-  if (path.startsWith("/dashboard") && !path.startsWith("/(shared)/dashboard")) {
+  if (
+    path.startsWith("/dashboard") &&
+    !path.startsWith("/(shared)/dashboard")
+  ) {
     return path.replace("/dashboard", "/(shared)/dashboard");
   }
 
@@ -406,9 +410,7 @@ const DesktopHeroPanel = ({
       }).start(({ finished }) => {
         if (!finished) return;
 
-        setActiveHeroModeIndex((current) =>
-          (current + 1) % heroModes.length,
-        );
+        setActiveHeroModeIndex((current) => (current + 1) % heroModes.length);
         heroModeTransition.setValue(0);
         Animated.timing(heroModeTransition, {
           toValue: 1,
@@ -589,7 +591,8 @@ const DesktopHeroPanel = ({
             resumeLabel={t("resumeAllies", "Resume carousel")}
             color={isDark ? "#a1d1d6" : "#af0d01"}
           >
-              {eventAllies.map((ally: ReturnType<typeof getEventAuthAllies>[number]) => (
+            {eventAllies.map(
+              (ally: ReturnType<typeof getEventAuthAllies>[number]) => (
                 <Pressable
                   key={ally.id}
                   style={[
@@ -632,7 +635,8 @@ const DesktopHeroPanel = ({
                     {t("desktopHero.allyBadge", "EVENT ALLY")}
                   </Text>
                 </Pressable>
-              ))}
+              ),
+            )}
           </AuthAlliesCarousel>
         </View>
       </Animated.View>
@@ -640,7 +644,15 @@ const DesktopHeroPanel = ({
   );
 };
 
-export default function AuthScreen({ embedded = false, onAuthenticated, onDismiss }: { embedded?: boolean; onAuthenticated?: () => void; onDismiss?: () => void } = {}) {
+export default function AuthScreen({
+  embedded = false,
+  onAuthenticated,
+  onDismiss,
+}: {
+  embedded?: boolean;
+  onAuthenticated?: () => void;
+  onDismiss?: () => void;
+} = {}) {
   const { width: windowWidth } = useWindowDimensions();
   const { colors, isDark } = useTheme();
   const { t } = useTranslation("auth");
@@ -654,7 +666,9 @@ export default function AuthScreen({ embedded = false, onAuthenticated, onDismis
     signInWithOAuth,
   } = useAuth();
   const isDesktopLayout =
-    !embedded && Platform.OS === "web" && windowWidth >= DESKTOP_AUTH_BREAKPOINT;
+    !embedded &&
+    Platform.OS === "web" &&
+    windowWidth >= DESKTOP_AUTH_BREAKPOINT;
   const isCompactMobile = !isDesktopLayout && windowWidth <= 420;
   const isVeryCompactMobile = !isDesktopLayout && windowWidth <= 360;
   const useNativeDriver = Platform.OS !== "web";
@@ -693,15 +707,18 @@ export default function AuthScreen({ embedded = false, onAuthenticated, onDismis
   );
 
   const [busyAction, setBusyAction] = useState<BusyAction>(null);
-  const [oauthProvider, setOauthProvider] = useState<"google" | "apple" | "twitter" | null>(null);
+  const [oauthProvider, setOauthProvider] = useState<
+    "google" | "apple" | "twitter" | null
+  >(null);
   // Pilot use of the morphicons library: briefly holds the primary button in
   // a "verified" visual state so the spinner->checkmark morph is visible
   // before the busy state clears. Purely additive -- navigation is still
   // driven elsewhere (see the comment above markRecentAuthSuccess() below),
   // so this pause never delays anything real.
   const [otpVerifySucceeded, setOtpVerifySucceeded] = useState(false);
-  const [emailAuthMethod, setEmailAuthMethod] =
-    useState<EmailAuthMethod>(embedded ? "otp-code" : "magic-link");
+  const [emailAuthMethod, setEmailAuthMethod] = useState<EmailAuthMethod>(
+    embedded ? "otp-code" : "magic-link",
+  );
   const [email, setEmail] = useState("");
   const [otpDigits, setOtpDigits] = useState<string[]>(
     new Array(OTP_CODE_LENGTH).fill(""),
@@ -771,16 +788,11 @@ export default function AuthScreen({ embedded = false, onAuthenticated, onDismis
   const oauthInFlightRef = useRef(false);
   const authProviderName = authService.getProviderName();
   const isNativeLightMode = !isDark;
-  const showAuthBackground = !embedded && shouldShowAuthBackground(
-    Platform.OS,
-    animationLevel,
-  );
+  const showAuthBackground =
+    !embedded && shouldShowAuthBackground(Platform.OS, animationLevel);
   const showGlobalAuthBackground = showAuthBackground && !isDesktopLayout;
   const showDesktopFormBackground = showAuthBackground && isDesktopLayout;
-  const authHeaderPalette = getAuthHeaderPalette(
-    isDark,
-    showAuthBackground,
-  );
+  const authHeaderPalette = getAuthHeaderPalette(isDark, showAuthBackground);
   const authLogoSource =
     Platform.OS === "web" && !isDark
       ? HASHPASS_WEB_LIGHT_AUTH_LOGO
@@ -812,8 +824,10 @@ export default function AuthScreen({ embedded = false, onAuthenticated, onDismis
     embedded,
   );
   const isBusy = busyAction !== null;
-  const isGoogleOAuthRedirecting = busyAction === "oauth" && oauthProvider === "google";
-  const isAppleOAuthRedirecting = busyAction === "oauth" && oauthProvider === "apple";
+  const isGoogleOAuthRedirecting =
+    busyAction === "oauth" && oauthProvider === "google";
+  const isAppleOAuthRedirecting =
+    busyAction === "oauth" && oauthProvider === "apple";
   const signInWithGoogleLabel = t("signInWithGoogle", "Sign in with Google");
   const openingGoogleSignInLabel = t(
     "openingGoogleSignIn",
@@ -829,7 +843,8 @@ export default function AuthScreen({ embedded = false, onAuthenticated, onDismis
       ? t("redirectingToApple", "Redirecting to Apple...")
       : t("openingAppleSignIn", "Opening Apple sign-in...")
     : t("signInWithApple", "Sign in with Apple");
-  const isXOAuthRedirecting = busyAction === "oauth" && oauthProvider === "twitter";
+  const isXOAuthRedirecting =
+    busyAction === "oauth" && oauthProvider === "twitter";
   const xOAuthButtonLabel = isXOAuthRedirecting
     ? t("redirectingToX", "Redirecting to X...")
     : t("signInWithX", "Continue with X");
@@ -842,14 +857,76 @@ export default function AuthScreen({ embedded = false, onAuthenticated, onDismis
       case "otp-verify":
         return t("verifyingCode", "Verifying code...");
       case "oauth":
-        return t(
-          "socialAuthHint",
-          "Please wait while your sign-in finishes.",
-        );
+        return t("socialAuthHint", "Please wait while your sign-in finishes.");
       default:
         return "";
     }
   }, [busyAction, t]);
+
+  const renderOAuthButton = ({
+    label,
+    onPress,
+    redirecting,
+    icon,
+    iconColor,
+    brandingStyle,
+  }: {
+    label: string;
+    onPress: () => void;
+    redirecting: boolean;
+    icon: React.ReactNode;
+    iconColor: string;
+    brandingStyle?: React.ComponentProps<typeof TouchableOpacity>["style"];
+  }) => {
+    const renderedIcon = redirecting ? (
+      <ActivityIndicator size="small" color={iconColor} />
+    ) : (
+      icon
+    );
+
+    if (isDesktopLayout) {
+      return (
+        <TouchableOpacity
+          style={[styles.oauthButton, styles.oauthButtonNative, brandingStyle]}
+          onPress={onPress}
+          disabled={isBusy}
+          accessibilityRole="button"
+          accessibilityLabel={label}
+          accessibilityState={{ disabled: isBusy, busy: redirecting }}
+        >
+          <View style={styles.oauthButtonContent}>
+            <View style={styles.oauthButtonIconGroup}>{renderedIcon}</View>
+            <Text
+              style={[
+                styles.oauthButtonText,
+                brandingStyle ? styles.appleOauthButtonText : null,
+                redirecting ? styles.oauthButtonTextBusy : null,
+              ]}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {label}
+            </Text>
+          </View>
+        </TouchableOpacity>
+      );
+    }
+
+    return (
+      <IconButton
+        mode={isDark ? "dark" : "light"}
+        label={label}
+        onPress={onPress}
+        disabled={isBusy}
+        loading={redirecting}
+        accentColor={iconColor}
+        accessibilityState={{ disabled: isBusy, busy: redirecting }}
+        style={brandingStyle}
+      >
+        {icon}
+      </IconButton>
+    );
+  };
   const magicLinkResendRemainingSeconds =
     magicLinkSentAt === null
       ? 0
@@ -920,7 +997,15 @@ export default function AuthScreen({ embedded = false, onAuthenticated, onDismis
       if (embedded) onAuthenticated?.();
       else router.replace(routerRedirectPath as any);
     }
-  }, [authLoading, isLoggedIn, router, routerRedirectPath, user, embedded, onAuthenticated]);
+  }, [
+    authLoading,
+    isLoggedIn,
+    router,
+    routerRedirectPath,
+    user,
+    embedded,
+    onAuthenticated,
+  ]);
 
   useEffect(() => {
     if (!shouldShowEmailSuggestions) {
@@ -1098,7 +1183,7 @@ export default function AuthScreen({ embedded = false, onAuthenticated, onDismis
         relayToNative: nativeRelay,
       });
 
-      const response = await apiClient.post(
+      const response = (await apiClient.post(
         "/auth/magic-link",
         { email: normalizedEmail, redirectTo, locale: currentLocale },
         {
@@ -1107,7 +1192,7 @@ export default function AuthScreen({ embedded = false, onAuthenticated, onDismis
           retries: 0,
           timeout: OTP_API_TIMEOUT_MS,
         },
-      ) as { success?: boolean; error?: string };
+      )) as { success?: boolean; error?: string };
 
       if (!response.success) {
         throw new Error(response.error || "Could not send magic link");
@@ -1117,7 +1202,6 @@ export default function AuthScreen({ embedded = false, onAuthenticated, onDismis
       setOtpDigits(new Array(OTP_CODE_LENGTH).fill(""));
       setMagicLinkSentAt(Date.now());
       setMagicLinkTimerNow(Date.now());
-
     } catch (error: any) {
       const message = extractApiError(
         error?.message,
@@ -1225,7 +1309,6 @@ export default function AuthScreen({ embedded = false, onAuthenticated, onDismis
       setOtpCodeSentAt(Date.now());
       setMagicLinkTimerNow(Date.now());
       focusOtpInput(0);
-
     } catch (error: any) {
       const message = extractApiError(
         error?.message,
@@ -2017,23 +2100,25 @@ export default function AuthScreen({ embedded = false, onAuthenticated, onDismis
           ) : null}
           {!embedded && <QuickSettingsPanel />}
 
-          {!embedded && <TouchableOpacity
-            style={[
-              styles.backButton,
-              isDesktopLayout ? styles.backButtonDesktop : null,
-            ]}
-            onPress={() => embedded ? onDismiss?.() : router.push("/home")}
-            accessibilityLabel={t("back", "Go Back")}
-            accessibilityRole="button"
-            activeOpacity={0.85}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-          >
-            <Ionicons
-              name="arrow-back"
-              size={26}
-              color={isDark ? "#f8f8fb" : "#121212"}
-            />
-          </TouchableOpacity>}
+          {!embedded && (
+            <TouchableOpacity
+              style={[
+                styles.backButton,
+                isDesktopLayout ? styles.backButtonDesktop : null,
+              ]}
+              onPress={() => (embedded ? onDismiss?.() : router.push("/home"))}
+              accessibilityLabel={t("back", "Go Back")}
+              accessibilityRole="button"
+              activeOpacity={0.85}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            >
+              <Ionicons
+                name="arrow-back"
+                size={26}
+                color={isDark ? "#f8f8fb" : "#121212"}
+              />
+            </TouchableOpacity>
+          )}
 
           <ScrollView
             style={styles.scrollView}
@@ -2052,19 +2137,21 @@ export default function AuthScreen({ embedded = false, onAuthenticated, onDismis
                 isDesktopLayout ? styles.contentDesktop : null,
               ]}
             >
-              {!embedded && <View
-                style={[
-                  styles.authHeaderBlock,
-                  isDesktopLayout ? styles.authHeaderBlockDesktop : null,
-                ]}
-              >
-                <Text style={styles.authHeaderTitle}>
-                  {t("welcomeHeading", "Welcome")}
-                </Text>
-                <Text style={styles.authHeaderSubtitle}>
-                  {t("subtitle", "Sign in to unlock your digital life.")}
-                </Text>
-              </View>}
+              {!embedded && (
+                <View
+                  style={[
+                    styles.authHeaderBlock,
+                    isDesktopLayout ? styles.authHeaderBlockDesktop : null,
+                  ]}
+                >
+                  <Text style={styles.authHeaderTitle}>
+                    {t("welcomeHeading", "Welcome")}
+                  </Text>
+                  <Text style={styles.authHeaderSubtitle}>
+                    {t("subtitle", "Sign in to unlock your digital life.")}
+                  </Text>
+                </View>
+              )}
 
               <Animated.View
                 style={
@@ -2289,85 +2376,87 @@ export default function AuthScreen({ embedded = false, onAuthenticated, onDismis
                           </View>
                         ) : null}
 
-                        {!embedded && <View style={styles.methodTabs}>
-                          <TouchableOpacity
-                            style={[
-                              styles.methodTab,
-                              emailAuthMethod === "magic-link"
-                                ? styles.methodTabActive
-                                : null,
-                            ]}
-                            onPress={() => {
-                              setEmailAuthMethod("magic-link");
-                              resetMagicLinkConfirmation();
-                              setOtpError("");
-                              setPhoneError("");
-                              focusEmailInput();
-                            }}
-                            disabled={isBusy}
-                          >
-                            <Ionicons
-                              name="link-outline"
-                              size={16}
-                              color={
-                                emailAuthMethod === "magic-link"
-                                  ? colors.text.primary
-                                  : colors.text.secondary
-                              }
-                            />
-                            <Text
-                              numberOfLines={1}
-                              ellipsizeMode="tail"
+                        {!embedded && (
+                          <View style={styles.methodTabs}>
+                            <TouchableOpacity
                               style={[
-                                styles.methodTabText,
+                                styles.methodTab,
                                 emailAuthMethod === "magic-link"
-                                  ? styles.methodTabTextActive
+                                  ? styles.methodTabActive
                                   : null,
                               ]}
+                              onPress={() => {
+                                setEmailAuthMethod("magic-link");
+                                resetMagicLinkConfirmation();
+                                setOtpError("");
+                                setPhoneError("");
+                                focusEmailInput();
+                              }}
+                              disabled={isBusy}
                             >
-                              {t("magicLink", "Magic Link")}
-                            </Text>
-                          </TouchableOpacity>
+                              <Ionicons
+                                name="link-outline"
+                                size={16}
+                                color={
+                                  emailAuthMethod === "magic-link"
+                                    ? colors.text.primary
+                                    : colors.text.secondary
+                                }
+                              />
+                              <Text
+                                numberOfLines={1}
+                                ellipsizeMode="tail"
+                                style={[
+                                  styles.methodTabText,
+                                  emailAuthMethod === "magic-link"
+                                    ? styles.methodTabTextActive
+                                    : null,
+                                ]}
+                              >
+                                {t("magicLink", "Magic Link")}
+                              </Text>
+                            </TouchableOpacity>
 
-                          <TouchableOpacity
-                            style={[
-                              styles.methodTab,
-                              emailAuthMethod === "otp-code"
-                                ? styles.methodTabActive
-                                : null,
-                            ]}
-                            onPress={() => {
-                              setEmailAuthMethod("otp-code");
-                              resetMagicLinkConfirmation();
-                              setOtpError("");
-                              setPhoneError("");
-                              focusEmailInput();
-                            }}
-                            disabled={isBusy}
-                          >
-                            <Ionicons
-                              name="keypad-outline"
-                              size={16}
-                              color={
-                                emailAuthMethod === "otp-code"
-                                  ? colors.text.primary
-                                  : colors.text.secondary
-                              }
-                            />
-                            <Text
-                              numberOfLines={1}
-                              ellipsizeMode="tail"
+                            <TouchableOpacity
                               style={[
-                                styles.methodTabText,
+                                styles.methodTab,
                                 emailAuthMethod === "otp-code"
-                                  ? styles.methodTabTextActive
+                                  ? styles.methodTabActive
                                   : null,
                               ]}
+                              onPress={() => {
+                                setEmailAuthMethod("otp-code");
+                                resetMagicLinkConfirmation();
+                                setOtpError("");
+                                setPhoneError("");
+                                focusEmailInput();
+                              }}
+                              disabled={isBusy}
                             >
-                              {t("otpCode", "OTP Code")}
-                            </Text>
-                          </TouchableOpacity>
-                        </View>}
+                              <Ionicons
+                                name="keypad-outline"
+                                size={16}
+                                color={
+                                  emailAuthMethod === "otp-code"
+                                    ? colors.text.primary
+                                    : colors.text.secondary
+                                }
+                              />
+                              <Text
+                                numberOfLines={1}
+                                ellipsizeMode="tail"
+                                style={[
+                                  styles.methodTabText,
+                                  emailAuthMethod === "otp-code"
+                                    ? styles.methodTabTextActive
+                                    : null,
+                                ]}
+                              >
+                                {t("otpCode", "OTP Code")}
+                              </Text>
+                            </TouchableOpacity>
+                          </View>
+                        )}
 
                         {/* SMS sign-in is intentionally unavailable until phones are
                             verified and account-bound in Security settings. */}
@@ -2588,7 +2677,9 @@ export default function AuthScreen({ embedded = false, onAuthenticated, onDismis
                                     // rest out across the other cells (each capped
                                     // at 1, since they never receive autofill
                                     // directly).
-                                    maxLength={index === 0 ? OTP_CODE_LENGTH : 1}
+                                    maxLength={
+                                      index === 0 ? OTP_CODE_LENGTH : 1
+                                    }
                                     editable={!isBusy}
                                     textContentType={
                                       index === 0 ? "oneTimeCode" : undefined
@@ -2744,132 +2835,91 @@ export default function AuthScreen({ embedded = false, onAuthenticated, onDismis
                   <View style={styles.dividerContainer}>
                     <View style={styles.dividerLine} />
                     <Text style={styles.dividerText}>
-                      {t("orContinueWith", "Or continue with")}
+                      {isDesktopLayout
+                        ? t("orContinueWith", "Or continue with")
+                        : t(
+                            "orContinueWithSocialLogin",
+                            "Or continue with social login",
+                          )}
                     </Text>
                     <View style={styles.dividerLine} />
                   </View>
 
-                  <View style={styles.oauthContainer}>
-                    <TouchableOpacity
-                      style={[styles.oauthButton, styles.oauthButtonNative]}
-                      onPress={() => void handleGoogleSignIn()}
-                      disabled={isBusy}
-                      accessibilityRole="button"
-                      accessibilityLabel={oauthButtonLabel}
-                      accessibilityState={{
-                        disabled: isBusy,
-                        busy: isGoogleOAuthRedirecting,
-                      }}
+                  <View
+                    style={[
+                      styles.oauthProviders,
+                      !isDesktopLayout ? styles.oauthProvidersCompact : null,
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.oauthContainer,
+                        !isDesktopLayout ? styles.oauthContainerCompact : null,
+                      ]}
                     >
-                      <View style={styles.oauthButtonContent}>
-                        <View style={styles.oauthButtonIconGroup}>
-                          {isGoogleOAuthRedirecting ? (
-                            <ActivityIndicator size="small" color="#4285F4" />
-                          ) : (
+                      {renderOAuthButton({
+                        label: oauthButtonLabel,
+                        onPress: () => void handleGoogleSignIn(),
+                        redirecting: isGoogleOAuthRedirecting,
+                        iconColor: "#4285F4",
+                        icon: (
+                          <Ionicons
+                            name="logo-google"
+                            size={24}
+                            color="#4285F4"
+                          />
+                        ),
+                      })}
+                    </View>
+
+                    {Platform.OS !== "android" ? (
+                      <View
+                        style={[
+                          styles.oauthContainer,
+                          !isDesktopLayout
+                            ? styles.oauthContainerCompact
+                            : null,
+                        ]}
+                      >
+                        {renderOAuthButton({
+                          label: appleOAuthButtonLabel,
+                          onPress: () => void handleAppleSignIn(),
+                          redirecting: isAppleOAuthRedirecting,
+                          iconColor: uiPalette(isDark).canvas,
+                          brandingStyle: styles.appleOauthButton,
+                          icon: (
                             <Ionicons
-                              name="logo-google"
+                              name="logo-apple"
                               size={24}
-                              color="#4285F4"
+                              color={uiPalette(isDark).canvas}
                             />
-                          )}
-                        </View>
-                        <Text
-                          style={[
-                            styles.oauthButtonText,
-                            isGoogleOAuthRedirecting
-                              ? styles.oauthButtonTextBusy
-                              : null,
-                          ]}
-                          numberOfLines={1}
-                          ellipsizeMode="tail"
-                        >
-                          {oauthButtonLabel}
-                        </Text>
+                          ),
+                        })}
                       </View>
-                    </TouchableOpacity>
+                    ) : null}
+
+                    {Platform.OS === "web" ? (
+                      <View
+                        style={[
+                          styles.oauthContainer,
+                          !isDesktopLayout
+                            ? styles.oauthContainerCompact
+                            : null,
+                        ]}
+                      >
+                        {renderOAuthButton({
+                          label: xOAuthButtonLabel,
+                          onPress: () => void handleXSignIn(),
+                          redirecting: isXOAuthRedirecting,
+                          iconColor: uiPalette(isDark).canvas,
+                          brandingStyle: styles.appleOauthButton,
+                          icon: (
+                            <XIcon size={20} color={uiPalette(isDark).canvas} />
+                          ),
+                        })}
+                      </View>
+                    ) : null}
                   </View>
-
-                  {Platform.OS !== "android" ? (
-                    <View style={styles.oauthContainer}>
-                      <TouchableOpacity
-                        style={[
-                          styles.oauthButton,
-                          styles.oauthButtonNative,
-                          styles.appleOauthButton,
-                        ]}
-                        onPress={() => void handleAppleSignIn()}
-                        disabled={isBusy}
-                        accessibilityRole="button"
-                        accessibilityLabel={appleOAuthButtonLabel}
-                        accessibilityState={{
-                          disabled: isBusy,
-                          busy: isAppleOAuthRedirecting,
-                        }}
-                      >
-                        <View style={styles.oauthButtonContent}>
-                          <View style={styles.oauthButtonIconGroup}>
-                            {isAppleOAuthRedirecting ? (
-                              <ActivityIndicator size="small" color={uiPalette(isDark).canvas} />
-                            ) : (
-                              <Ionicons name="logo-apple" size={24} color={uiPalette(isDark).canvas} />
-                            )}
-                          </View>
-                          <Text
-                            style={[
-                              styles.oauthButtonText,
-                              styles.appleOauthButtonText,
-                              isAppleOAuthRedirecting ? styles.oauthButtonTextBusy : null,
-                            ]}
-                            numberOfLines={1}
-                            ellipsizeMode="tail"
-                          >
-                            {appleOAuthButtonLabel}
-                          </Text>
-                        </View>
-                      </TouchableOpacity>
-                    </View>
-                  ) : null}
-
-                  {Platform.OS === "web" ? (
-                    <View style={styles.oauthContainer}>
-                      <TouchableOpacity
-                        style={[
-                          styles.oauthButton,
-                          styles.oauthButtonNative,
-                          styles.appleOauthButton,
-                        ]}
-                        onPress={() => void handleXSignIn()}
-                        disabled={isBusy}
-                        accessibilityRole="button"
-                        accessibilityLabel={xOAuthButtonLabel}
-                        accessibilityState={{
-                          disabled: isBusy,
-                          busy: isXOAuthRedirecting,
-                        }}
-                      >
-                        <View style={styles.oauthButtonContent}>
-                          <View style={styles.oauthButtonIconGroup}>
-                            {isXOAuthRedirecting ? (
-                              <ActivityIndicator size="small" color={uiPalette(isDark).canvas} />
-                            ) : (
-                              <XIcon size={20} color={uiPalette(isDark).canvas} />
-                            )}
-                          </View>
-                          <Text
-                            style={[
-                              styles.oauthButtonText,
-                              styles.appleOauthButtonText,
-                              isXOAuthRedirecting ? styles.oauthButtonTextBusy : null,
-                            ]}
-                            numberOfLines={1}
-                            ellipsizeMode="tail"
-                          >
-                            {xOAuthButtonLabel}
-                          </Text>
-                        </View>
-                      </TouchableOpacity>
-                    </View>
-                  ) : null}
 
                   {authActionMessage ? (
                     <View
@@ -3059,11 +3109,12 @@ const getStyles = (
       position: "relative",
       ...(Platform.OS === "web"
         ? {
-            backgroundColor: embedded || showAuthBackground
-              ? "transparent"
-              : isDark
-                ? "#050507"
-                : "#f3f4f8",
+            backgroundColor:
+              embedded || showAuthBackground
+                ? "transparent"
+                : isDark
+                  ? "#050507"
+                  : "#f3f4f8",
           }
         : {}),
     },
@@ -3111,7 +3162,10 @@ const getStyles = (
       borderRadius: AUTH_DESKTOP_PANEL_RADIUS - 1,
       overflow: "hidden",
       ...(Platform.OS === "web"
-        ? { clipPath: `inset(0 round ${AUTH_DESKTOP_PANEL_RADIUS - 1}px)`, isolation: "isolate" as const }
+        ? {
+            clipPath: `inset(0 round ${AUTH_DESKTOP_PANEL_RADIUS - 1}px)`,
+            isolation: "isolate" as const,
+          }
         : {}),
     },
     centered: {
@@ -3204,9 +3258,11 @@ const getStyles = (
       borderWidth: embedded ? 0 : 1,
       borderColor: uiPalette(isDark).border,
       overflow: "hidden",
-      boxShadow: embedded ? "none" : isDark
-        ? "0 14px 36px rgba(0,0,0,0.45)"
-        : "0 12px 34px rgba(0,0,0,0.12)",
+      boxShadow: embedded
+        ? "none"
+        : isDark
+          ? "0 14px 36px rgba(0,0,0,0.45)"
+          : "0 12px 34px rgba(0,0,0,0.12)",
       elevation: embedded ? 0 : 6,
     },
     authCardDesktop: {
@@ -3796,10 +3852,23 @@ const getStyles = (
       marginBottom: 18,
       width: "100%",
     },
+    oauthProviders: {
+      width: "100%",
+    },
+    oauthProvidersCompact: {
+      flexDirection: "row",
+      justifyContent: "center",
+      alignItems: "center",
+      gap: uiTokens.space.md,
+    },
+    oauthContainerCompact: {
+      width: "auto",
+      marginBottom: 0,
+    },
     oauthButton: {
       width: 56,
       height: 56,
-      borderRadius: 28,
+      borderRadius: uiTokens.radius.circle,
       alignItems: "center",
       justifyContent: "center",
       backgroundColor: isDark ? "rgba(255,255,255,0.12)" : "#ffffff",
@@ -3859,7 +3928,7 @@ const getStyles = (
     authActionMessageContainer: {
       width: "100%",
       alignItems: "center",
-      marginTop: -2,
+      marginTop: 12,
       marginBottom: 8,
       paddingHorizontal: 8,
     },
@@ -3870,7 +3939,7 @@ const getStyles = (
       textAlign: "center",
     },
     footer: {
-      marginTop: 2,
+      marginTop: 22,
       alignItems: "center",
       paddingHorizontal: 6,
     },
