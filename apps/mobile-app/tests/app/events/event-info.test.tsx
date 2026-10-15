@@ -32,6 +32,14 @@ jest.mock("../../../hooks/useTheme", () => ({
 
 jest.mock("@expo/vector-icons", () => ({ MaterialIcons: "MaterialIcons" }));
 
+jest.mock(
+  "lucide-react-native",
+  () => new Proxy({}, { get: (_target, name) => (name === "__esModule" ? false : "LucideIcon") }),
+);
+
+// The real map geocodes over the network and mounts an iframe/WebView.
+jest.mock("../../../components/EventMap", () => "EventMap");
+
 jest.mock("../../../components/EventBanner", () => "EventBanner");
 
 jest.mock("../../../contexts/AnimationLevelContext", () => ({
@@ -342,17 +350,74 @@ describe("EventInfoScreen", () => {
 
       const { Linking } = require("react-native");
       Linking.openURL.mockReturnValue(Promise.resolve());
-      const button = renderer.root.find(
+      const link = renderer.root.find(
         (node) =>
-          node.props.accessibilityRole === "button" &&
-          node.props.accessibilityLabel === "Apply to Speak",
+          node.props.accessibilityRole === "link" &&
+          node.props.accessibilityLabel === "Become a speaker",
       );
-      act(() => button.props.onPress());
+      act(() => link.props.onPress());
       expect(Linking.openURL).toHaveBeenCalledWith(
         "https://colombiablockchainweek.com/ser-speaker#postulacion",
       );
     } finally {
       act(() => renderer.unmount());
+    }
+  });
+
+  it("keeps Get Tickets as the only button and files Become a speaker under Contact as a link", async () => {
+    mockEvent = {
+      ...COLOMBIA_EVENT,
+      speakerApplicationUrl: "https://colombiablockchainweek.com/ser-speaker#postulacion",
+    };
+    const renderer = await renderScreen({ success: true, data: { data: null } });
+
+    try {
+      expect(
+        renderer.root
+          .findAll((node) => node.props.accessibilityRole === "button")
+          .map((node) => node.props.accessibilityLabel),
+      ).toEqual(["Get Tickets"]);
+      const contact = renderer.root.findByProps({ testID: "event-info-contact-section" });
+      expect(
+        contact.findAll((node) => node.props.accessibilityLabel === "Become a speaker").length,
+      ).toBeGreaterThan(0);
+    } finally {
+      act(() => renderer.unmount());
+    }
+  });
+
+  it("renders the venue map under About when the event has a location, and omits it otherwise", async () => {
+    mockEvent = COLOMBIA_EVENT;
+    const located = await renderScreen({
+      success: true,
+      data: {
+        data: {
+          description: "d",
+          venue_name: "Corferias",
+          venue_address: "Cra 40 #22C-67, Bogotá",
+          city: "Bogotá",
+          country: "Colombia",
+        },
+      },
+    });
+    try {
+      const about = located.root.findByProps({ testID: "event-info-about-section" });
+      expect(about.findByType("EventMap" as any).props).toMatchObject({
+        address: "Cra 40 #22C-67, Bogotá",
+        venue: "Corferias",
+        city: "Bogotá",
+        country: "Colombia",
+      });
+    } finally {
+      act(() => located.unmount());
+    }
+
+    mockEvent = HASH_POKER_EVENT;
+    const unlocated = await renderScreen({ success: true, data: { data: null } });
+    try {
+      expect(unlocated.root.findAllByType("EventMap" as any)).toHaveLength(0);
+    } finally {
+      act(() => unlocated.unmount());
     }
   });
 
