@@ -191,6 +191,23 @@ describe("Android layout event crash guards", () => {
     expect(dashboardSource).toContain("}, [pathname, setDrawerOpen]);");
   });
 
+  it("keeps drawer stats meaningful and gives menu items native/web selection feedback", () => {
+    const dashboardSource = readSource(
+      "../../app/(shared)/dashboard/_layout.tsx",
+    );
+
+    expect(dashboardSource).toContain("getAllUserPasses(dbUserId)");
+    expect(dashboardSource).toContain('message: "Passes"');
+    expect(dashboardSource).toContain('message: "Upcoming"');
+    expect(dashboardSource).toContain('message: "Requests"');
+    expect(dashboardSource).toContain("used_requests");
+    expect(dashboardSource).toContain("publicEventStatus(availableEvent)");
+    expect(dashboardSource).toContain("onHoverIn={() => {");
+    expect(dashboardSource).toContain("onFocus={() => {");
+    expect(dashboardSource).toContain("useNativeDriver: true,");
+    expect(dashboardSource).toContain("currentPath.split(\"/\").includes");
+  });
+
   it("routes dashboard drawer logout to the login screen after clearing the local session", () => {
     // Logout must clear the actual persisted session (see
     // SupabaseAuthProvider/BetterAuthProvider signOut fixes) and land on the

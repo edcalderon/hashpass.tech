@@ -75,6 +75,12 @@ import { isDevAuthBypassEnabled } from "../../../lib/auth/dev-bypass";
 import { navigateDashboardBrandToLanding } from "../../../lib/dashboard-navigation";
 import { openTargetedDashboardDrawer } from "../../../lib/dashboard-drawer";
 import { parseAuthQrScan } from "../../../lib/auth-qr";
+import { getAvailableEvents } from "../../../lib/event-detector";
+import { publicEventStatus } from "../../../lib/public-events";
+import {
+  passSystemService,
+  type EventPassInfo,
+} from "../../../lib/pass-system";
 import { t } from "@lingui/macro";
 import { CopilotStep, walkthroughable, useCopilot } from "@lib/copilot-shim";
 import { hapticLight, hapticMedium } from "../../../lib/haptics";
@@ -262,7 +268,63 @@ function CustomDrawerContent({
   );
   const [isUserAdmin, setIsUserAdmin] = React.useState(false);
   const [isSigningOut, setIsSigningOut] = React.useState(false);
-  const brandBadgeColor = event?.branding?.primaryColor || "#007AFF";
+  const [accountPasses, setAccountPasses] = React.useState<EventPassInfo[]>([]);
+  const [menuInteractionId, setMenuInteractionId] = React.useState<
+    string | null
+  >(null);
+  const menuIconMotionRefs = useRef<Record<string, any>>({});
+  const animateMenuIcon = useCallback((id: string, isEmphasized: boolean) => {
+    const motion =
+      menuIconMotionRefs.current[id] ||
+      (menuIconMotionRefs.current[id] = new RNAnimated.Value(0));
+
+    RNAnimated.timing(motion, {
+      toValue: isEmphasized ? 1 : 0,
+      duration: isEmphasized ? 160 : 120,
+      useNativeDriver: true,
+    }).start();
+  }, []);
+  React.useEffect(() => {
+    let active = true;
+
+    if (!dbUserId) {
+      setAccountPasses([]);
+      return () => {
+        active = false;
+      };
+    }
+
+    passSystemService
+      .getAllUserPasses(dbUserId)
+      .then((passes: EventPassInfo[]) => {
+        if (active) setAccountPasses(passes);
+      })
+      .catch((error: unknown) => {
+        console.error("Unable to load drawer account stats:", error);
+        if (active) setAccountPasses([]);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [dbUserId]);
+
+  const upcomingEventCount = React.useMemo(
+    () =>
+      getAvailableEvents(undefined, { includeAllTenants: true }).filter(
+        (availableEvent: ReturnType<typeof getAvailableEvents>[number]) =>
+          publicEventStatus(availableEvent) === "upcoming",
+      ).length,
+    [],
+  );
+  const sentRequestCount = React.useMemo(
+    () =>
+      accountPasses.reduce(
+        (total, pass) => total + Math.max(0, Number(pass.used_requests) || 0),
+        0,
+      ),
+    [accountPasses],
+  );
 
   const username = React.useMemo(() => {
     const email = typeof user?.email === "string" ? user.email.trim() : "";
@@ -317,22 +379,28 @@ function CustomDrawerContent({
   const accountStats = React.useMemo(
     () => [
       {
-        value: event ? "1" : "0",
-        label: t({ id: "nav.activeEvent", message: "Event" }),
-        color: brandBadgeColor,
-      },
-      {
-        value: unreadCount > 9 ? "9+" : String(unreadCount),
-        label: t({ id: "nav.alerts", message: "Alerts" }),
-        color: isDark ? "#ffb74d" : "#c56f00",
-      },
-      {
-        value: locale.toUpperCase(),
-        label: t({ id: "nav.language", message: "Language" }),
+        value: String(accountPasses.length),
+        label: t({ id: "nav.passes", message: "Passes" }),
         color: colors.text.primary,
       },
+      {
+        value: String(upcomingEventCount),
+        label: t({ id: "nav.upcoming", message: "Upcoming" }),
+        color: isDark ? "#54c878" : "#2fa556",
+      },
+      {
+        value: sentRequestCount > 99 ? "99+" : String(sentRequestCount),
+        label: t({ id: "nav.requests", message: "Requests" }),
+        color: isDark ? "#ffb74d" : "#c56f00",
+      },
     ],
-    [brandBadgeColor, colors.text.primary, event, isDark, locale, unreadCount],
+    [
+      accountPasses.length,
+      colors.text.primary,
+      isDark,
+      sentRequestCount,
+      upcomingEventCount,
+    ],
   );
 
   // Animated fluid gradient effect with multiple layers
@@ -619,7 +687,8 @@ function CustomDrawerContent({
     // Only navigate if we're not already on this screen
     const currentPath = pathname || "";
     const isActive = route.startsWith("./")
-      ? currentPath === route || currentPath.endsWith(route.replace("./", ""))
+      ? currentPath === route ||
+        currentPath.split("/").includes(route.replace("./", ""))
       : currentPath.startsWith(route);
 
     if (!isActive) {
@@ -898,10 +967,19 @@ function CustomDrawerContent({
             return null;
           }
 
-          // Check if current path matches the route (handle both relative and absolute routes)
+          // Keep selection tied to the displayed route, including nested screens.
           const isActive = item.route.startsWith("./")
-            ? pathname === item.route
+            ? pathname === item.route ||
+              pathname.split("/").includes(item.route.replace("./", ""))
             : pathname.startsWith(item.route);
+          const isInteracting = menuInteractionId === item.id;
+          const iconMotion =
+            menuIconMotionRefs.current[item.id] ||
+            (menuIconMotionRefs.current[item.id] = new RNAnimated.Value(0));
+          const iconScale = iconMotion.interpolate({
+            inputRange: [0, 1],
+            outputRange: [isActive ? 1.02 : 1, isActive ? 1.1 : 1.08],
+          });
           const stepOrder = index + 2; // Start from 2 (after menu button)
           const stepNames: Record<string, string> = {
             "./explore": "sidebarExplore",
@@ -947,14 +1025,52 @@ function CustomDrawerContent({
                         ? isDark
                           ? "rgba(175, 13, 1, 0.20)"
                           : "rgba(175, 13, 1, 0.08)"
-                        : "transparent",
+                        : isInteracting
+                          ? isDark
+                            ? "rgba(255, 106, 77, 0.10)"
+                            : "rgba(175, 13, 1, 0.045)"
+                          : "transparent",
                       borderColor: isActive
                         ? isDark
                           ? "rgba(255, 106, 77, 0.28)"
                           : "rgba(175, 13, 1, 0.14)"
-                        : "transparent",
+                        : isInteracting
+                          ? isDark
+                            ? "rgba(255, 106, 77, 0.16)"
+                            : "rgba(175, 13, 1, 0.10)"
+                          : "transparent",
                     },
                   ]}
+                  onHoverIn={() => {
+                    setMenuInteractionId(item.id);
+                    animateMenuIcon(item.id, true);
+                  }}
+                  onHoverOut={() => {
+                    setMenuInteractionId((current) =>
+                      current === item.id ? null : current,
+                    );
+                    animateMenuIcon(item.id, false);
+                  }}
+                  onFocus={() => {
+                    setMenuInteractionId(item.id);
+                    animateMenuIcon(item.id, true);
+                  }}
+                  onBlur={() => {
+                    setMenuInteractionId((current) =>
+                      current === item.id ? null : current,
+                    );
+                    animateMenuIcon(item.id, false);
+                  }}
+                  onPressIn={() => {
+                    setMenuInteractionId(item.id);
+                    animateMenuIcon(item.id, true);
+                  }}
+                  onPressOut={() => {
+                    setMenuInteractionId((current) =>
+                      current === item.id ? null : current,
+                    );
+                    animateMenuIcon(item.id, false);
+                  }}
                   onPress={() => {
                     // Navigate to the actual view first
                     handleNavigation(item.route);
@@ -983,35 +1099,49 @@ function CustomDrawerContent({
                       }
                     }, 300); // Small delay to allow navigation to complete
                   }}
-                  activeOpacity={0.6}
+                  activeOpacity={0.72}
                 >
-                  <View
-                    style={[
-                      styles.menuIconContainer,
-                      {
-                        backgroundColor: isActive
-                          ? uiTokens.colors.light.accent
-                          : isDark
-                            ? "rgba(255, 255, 255, 0.08)"
-                            : colors.background.paper,
-                      },
-                    ]}
+                  <RNAnimated.View
+                    style={{
+                      transform: [{ scale: iconScale }],
+                    }}
                   >
-                    <Ionicons
-                      name={item.icon as any}
-                      size={20}
-                      color={
-                        isActive ? uiTokens.colors.light.onAccent : item.tone
-                      }
-                    />
-                  </View>
+                    <View
+                      style={[
+                        styles.menuIconContainer,
+                        {
+                          backgroundColor: isActive
+                            ? uiTokens.colors.light.accent
+                            : isInteracting
+                              ? isDark
+                                ? "rgba(255, 106, 77, 0.18)"
+                                : "rgba(175, 13, 1, 0.08)"
+                              : isDark
+                                ? "rgba(255, 255, 255, 0.08)"
+                                : colors.background.paper,
+                        },
+                      ]}
+                    >
+                      <Ionicons
+                        name={item.icon as any}
+                        size={20}
+                        color={
+                          isActive
+                            ? uiTokens.colors.light.onAccent
+                            : isInteracting
+                              ? isDark
+                                ? "#FFB39E"
+                                : uiTokens.colors.light.accent
+                              : item.tone
+                        }
+                      />
+                    </View>
+                  </RNAnimated.View>
                   <Text
                     style={[
                       styles.menuText,
                       {
-                        color: isActive
-                          ? colors.text.primary
-                          : colors.text.secondary,
+                        color: colors.text.primary,
                         fontWeight: isActive ? "700" : "600",
                       },
                     ]}
