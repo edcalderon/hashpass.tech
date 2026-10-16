@@ -216,7 +216,13 @@ const twitterClientId = readEnv('BETTER_AUTH_TWITTER_CLIENT_ID') || readEnv('TWI
 const twitterClientSecret =
   readEnv('BETTER_AUTH_TWITTER_CLIENT_SECRET') || readEnv('TWITTER_CLIENT_SECRET');
 const DEFAULT_APPLE_BUNDLE_IDENTIFIER = 'tech.hashpass.app';
-const configuredBaseURL = normalizeAuthURL(readEnv('BETTER_AUTH_URL'));
+// The API deploy contract historically propagated only the public alias. Keep
+// the server-side name authoritative when present, but accept that alias as a
+// compatibility fallback so deployed OAuth cookies still receive the correct
+// cross-site attributes during a rolling environment migration.
+const configuredBaseURL = normalizeAuthURL(
+  readEnv('BETTER_AUTH_URL') || readEnv('EXPO_PUBLIC_BETTER_AUTH_URL'),
+);
 const mcpResource = readEnv('BETTER_AUTH_MCP_RESOURCE_URL') || 'https://mcp.hashpass.tech/mcp';
 const mcpLoginPage = readEnv('BETTER_AUTH_MCP_LOGIN_PAGE') || 'https://hashpass.tech/mcp/login';
 const mcpConsentPage = readEnv('BETTER_AUTH_MCP_CONSENT_PAGE') || 'https://hashpass.tech/mcp/consent';

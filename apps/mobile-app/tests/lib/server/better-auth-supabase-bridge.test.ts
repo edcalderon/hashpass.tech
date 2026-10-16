@@ -155,6 +155,32 @@ describe('syncBetterAuthUser (Supabase account bridge)', () => {
     }
   });
 
+  it('uses the public Better Auth URL as a deployed fallback and enables cross-site OAuth cookies', () => {
+    const previousServerUrl = process.env.BETTER_AUTH_URL;
+    const previousPublicUrl = process.env.EXPO_PUBLIC_BETTER_AUTH_URL;
+    delete process.env.BETTER_AUTH_URL;
+    process.env.EXPO_PUBLIC_BETTER_AUTH_URL = 'https://api.hashpass.tech/api/auth';
+
+    try {
+      /* eslint-disable @typescript-eslint/no-require-imports */
+      const { betterAuth } = require('better-auth');
+      const { getAuth } = require('../../../lib/server/better-auth');
+
+      getAuth();
+
+      const authConfig = betterAuth.mock.calls[0][0];
+      expect(authConfig.advanced.defaultCookieAttributes).toEqual({
+        sameSite: 'none',
+        secure: true,
+      });
+    } finally {
+      if (previousServerUrl === undefined) delete process.env.BETTER_AUTH_URL;
+      else process.env.BETTER_AUTH_URL = previousServerUrl;
+      if (previousPublicUrl === undefined) delete process.env.EXPO_PUBLIC_BETTER_AUTH_URL;
+      else process.env.EXPO_PUBLIC_BETTER_AUTH_URL = previousPublicUrl;
+    }
+  });
+
   it('loads Sign in with Apple credentials from Infisical when they are not Lambda environment values', async () => {
     const names = [
       'BETTER_AUTH_APPLE_CLIENT_ID',

@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610160221, // Updated to current timestamp
+  buildNumber: 202610160310, // Updated to current timestamp
   releaseDate: '2026-10-16',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,14 +30,29 @@ export const CURRENT_VERSION: VersionInfo = {
     // No new features
   ],
   bugfixes: [
-    'preserve web OAuth callback parameters'
+    'enable Apple form-post state cookies'
   ],
   breakingChanges: [],
-  notes: 'preserve web OAuth callback parameters'
+  notes: 'enable Apple form-post state cookies'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.118': {
+    version: '1.9.118',
+    buildNumber: 202610160310,
+    releaseDate: '2026-10-16',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'enable Apple form-post state cookies'
+    ],
+    breakingChanges: [],
+    notes: 'enable Apple form-post state cookies'
+  },
   '1.9.117': {
     version: '1.9.117',
     buildNumber: 202610160221,

@@ -1,3 +1,19 @@
+## [1.9.118](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.117...v1.9.118) (2026-10-16)
+
+
+### Bug Fixes
+
+* **auth:** enable Apple form-post state cookies ([f984032](https://github.com/hashpass-tech/hashpass.tech/commit/f9840321114ff0ea2ffa0f43ff3922a455c6c3cf))
+### Release Highlights
+- enable Apple form-post state cookies
+
+### Release scope
+- Compared with: `v1.9.117` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Release tooling
+
 ## [1.9.117](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.116...v1.9.117) (2026-10-16)
 
 
