@@ -20,13 +20,16 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.116)
+## 📋 Latest Changes (v1.9.117)
 
-### Released
-- complete native Apple sign-in
+### Bug Fixes
+
+* **auth:** preserve web OAuth callback parameters ([b418bb7](https://github.com/hashpass-tech/hashpass.tech/commit/b418bb7b337fdf52e55aea6e9b79b35fb26f94dd))
+### Release Highlights
+- preserve web OAuth callback parameters
 
 ### Release scope
-- Compared with: `v1.9.115` (the previous global release tag)
+- Compared with: `v1.9.116` (the previous global release tag)
 
 ### Affected products & packages
 - Mobile app

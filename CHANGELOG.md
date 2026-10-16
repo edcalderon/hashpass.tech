@@ -1,3 +1,19 @@
+## [1.9.117](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.116...v1.9.117) (2026-10-16)
+
+
+### Bug Fixes
+
+* **auth:** preserve web OAuth callback parameters ([b418bb7](https://github.com/hashpass-tech/hashpass.tech/commit/b418bb7b337fdf52e55aea6e9b79b35fb26f94dd))
+### Release Highlights
+- preserve web OAuth callback parameters
+
+### Release scope
+- Compared with: `v1.9.116` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Auth
+
 ## [1.9.116](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.115...v1.9.116) (2026-10-15)
 ### Released
 - complete native Apple sign-in

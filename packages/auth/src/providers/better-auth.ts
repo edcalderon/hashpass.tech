@@ -317,12 +317,16 @@ export class BetterAuthProvider implements IAuthProvider {
       const storedReturnTo = window.localStorage?.getItem('oauth_return_url') || '/dashboard/explore';
       const returnTo = storedReturnTo.replace(/\/\([^/]+\)/g, '') || '/dashboard/explore';
       const frontendOrigin = resolveWebOrigin();
-      const callbackURL = `${frontendOrigin}/auth/callback?returnTo=${encodeURIComponent(returnTo)}`;
+      // The production web app is served from S3/CloudFront. Its directory
+      // redirect from `/auth/callback` to `/auth/callback/` drops the query
+      // string, which removes OAuth state/return parameters before Expo Router
+      // can process the callback. Use the canonical slash forms directly.
+      const callbackURL = `${frontendOrigin}/auth/callback/?returnTo=${encodeURIComponent(returnTo)}`;
       const providerLabel = provider === 'apple' ? 'Apple' : provider === 'twitter' ? 'X' : 'Google';
       // Better Auth appends the provider's `error` and `error_description`
       // when it returns here. Do not pre-populate those parameters: duplicate
       // generic values hide the actual local configuration or consent error.
-      const errorCallbackURL = `${frontendOrigin}/auth`;
+      const errorCallbackURL = `${frontendOrigin}/auth/`;
 
       window.localStorage.setItem('oauth_return_url', window.location.pathname);
       window.localStorage.removeItem(PASSWORDLESS_CALLBACK_MARKER);
