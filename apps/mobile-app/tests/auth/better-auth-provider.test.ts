@@ -276,8 +276,8 @@ describe('BetterAuthProvider', () => {
     expect(mockSignInSocial).toHaveBeenCalledWith(
       expect.objectContaining({
         provider: 'google',
-        callbackURL: 'https://hashpass.tech/auth/callback?returnTo=%2Fdashboard%2Fexplore',
-        errorCallbackURL: 'https://hashpass.tech/auth',
+        callbackURL: 'https://hashpass.tech/auth/callback/?returnTo=%2Fdashboard%2Fexplore',
+        errorCallbackURL: 'https://hashpass.tech/auth/',
         disableRedirect: true,
       })
     );
@@ -344,7 +344,12 @@ describe('BetterAuthProvider', () => {
     const result = await provider.signInWithOAuth('apple');
 
     expect(mockSignInSocial).toHaveBeenCalledWith(
-      expect.objectContaining({ provider: 'apple', disableRedirect: true })
+      expect.objectContaining({
+        provider: 'apple',
+        callbackURL: 'https://hashpass.tech/auth/callback/?returnTo=%2Fdashboard%2Fexplore',
+        errorCallbackURL: 'https://hashpass.tech/auth/',
+        disableRedirect: true,
+      })
     );
     expect(window.location.replace).toHaveBeenCalledWith('https://appleid.apple.com/auth/authorize?state=test');
     expect(result.pending).toBe(true);
