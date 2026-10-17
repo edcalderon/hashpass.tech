@@ -374,13 +374,23 @@ describe("dashboard drawer visual controls", () => {
     expect(root.findAllByProps({ name: "globe-outline" })).toHaveLength(1);
     expect(root.findAllByProps({ name: "sunny" })).toHaveLength(1);
     expect(root.findAllByProps({ name: "log-out-outline" })).toHaveLength(1);
+    expect(root.findAllByProps({ name: "camera-outline" })).toHaveLength(1);
     expect(root.findAllByProps({ name: "chevron-forward" })).toHaveLength(0);
+
+    root
+      .findByProps({ accessibilityLabel: "@edward: Profile" })
+      .props.onPress();
+    root.findByProps({ accessibilityLabel: "Profile" }).props.onPress();
+    expect(mockNavigate).toHaveBeenCalledTimes(2);
+    expect(mockNavigate).toHaveBeenNthCalledWith(1, "profile");
+    expect(mockNavigate).toHaveBeenNthCalledWith(2, "profile");
+    mockNavigate.mockClear();
 
     const accountDetails = root.findByProps({
       accessibilityLabel: "Account details",
     });
     expect(accountDetails.props.accessibilityState).toEqual({ expanded: false });
-    expect(root.findAllByProps({ name: "chevron-down" })).toHaveLength(1);
+    expect(root.findAllByProps({ name: "chevron-down-outline" })).toHaveLength(1);
 
     await TestRenderer.act(async () => {
       accountDetails.props.onPress();
@@ -391,7 +401,7 @@ describe("dashboard drawer visual controls", () => {
       root.findByProps({ accessibilityLabel: "Account details" }).props
         .accessibilityState,
     ).toEqual({ expanded: true });
-    expect(root.findAllByProps({ name: "chevron-up" })).toHaveLength(1);
+    expect(root.findAllByProps({ name: "chevron-up-outline" })).toHaveLength(1);
     expect(mockNavigate).not.toHaveBeenCalled();
 
     await TestRenderer.act(async () => {
@@ -416,7 +426,7 @@ describe("dashboard drawer visual controls", () => {
     expect(root.findAllByProps({ name: "moon-outline" })).toHaveLength(1);
   });
 
-  it("keeps the account panel expanded by default on desktop", async () => {
+  it("keeps the account panel collapsed by default on desktop", async () => {
     mockIsMobile = false;
     const renderer = await renderDrawer();
     const root = renderer.root;
@@ -424,8 +434,8 @@ describe("dashboard drawer visual controls", () => {
     expect(
       root.findByProps({ accessibilityLabel: "Account details" }).props
         .accessibilityState,
-    ).toEqual({ expanded: true });
-    expect(root.findAllByProps({ name: "chevron-up" })).toHaveLength(1);
+    ).toEqual({ expanded: false });
+    expect(root.findAllByProps({ name: "chevron-down-outline" })).toHaveLength(1);
   });
 
   it("falls back to an uppercase locale label for an unsupported locale", async () => {

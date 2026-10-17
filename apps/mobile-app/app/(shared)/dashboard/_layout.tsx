@@ -260,7 +260,7 @@ export function CustomDrawerContent({
   const styles = getStyles(isDark, colors, isMobile, drawerSafeInsets);
   const [isUserAdmin, setIsUserAdmin] = React.useState(false);
   const [isSigningOut, setIsSigningOut] = React.useState(false);
-  const [isProfileExpanded, setIsProfileExpanded] = React.useState(!isMobile);
+  const [isProfileExpanded, setIsProfileExpanded] = React.useState(false);
   const [accountPasses, setAccountPasses] = React.useState<EventPassInfo[]>([]);
   const [menuInteractionId, setMenuInteractionId] = React.useState<
     string | null
@@ -876,18 +876,14 @@ export function CustomDrawerContent({
         </View>
 
         <View style={styles.profileCard}>
-          <TouchableOpacity
-            onPress={() => setIsProfileExpanded((expanded) => !expanded)}
-            style={styles.profileIdentityButton}
-            activeOpacity={0.82}
-            accessibilityRole="button"
-            accessibilityLabel={t({
-              id: "nav.accountDetails",
-              message: "Account details",
-            })}
-            accessibilityState={{ expanded: isProfileExpanded }}
-          >
-            <View style={styles.profileIdentityRow}>
+          <View style={styles.profileIdentityRow}>
+            <TouchableOpacity
+              onPress={() => handleNavigation("./profile")}
+              style={styles.profileAvatarButton}
+              activeOpacity={0.82}
+              accessibilityRole="link"
+              accessibilityLabel={t({ id: "nav.profile", message: "Profile" })}
+            >
               <View style={styles.profileAvatarShell}>
                 <View style={styles.profileAvatar}>
                   {profileAvatarUrl ? (
@@ -915,35 +911,62 @@ export function CustomDrawerContent({
                 </View>
                 <View style={styles.profileAvatarAction}>
                   <Ionicons
-                    name="add"
-                    size={17}
+                    name="camera-outline"
+                    size={15}
                     color={uiTokens.colors.light.onAccent}
                   />
                 </View>
               </View>
-              <View style={styles.profileCopy}>
+            </TouchableOpacity>
+            <View style={styles.profileCopy}>
+              <TouchableOpacity
+                onPress={() => handleNavigation("./profile")}
+                style={styles.profileUsernameButton}
+                activeOpacity={0.75}
+                accessibilityRole="link"
+                accessibilityLabel={`${username}: ${t({
+                  id: "nav.profile",
+                  message: "Profile",
+                })}`}
+              >
                 <Text style={styles.profileUsername} numberOfLines={1}>
                   {username}
                 </Text>
-                <Text style={styles.profileEmail} numberOfLines={1}>
-                  {user?.email || accountDisplayName}
-                </Text>
-                <View style={styles.profileMetaRow}>
-                  <Text style={styles.profileBrandBadge}>HASHPASS</Text>
-                  {!isProfileExpanded && memberSince ? (
-                    <Text style={styles.profileMemberSince} numberOfLines={1}>
-                      {t({ id: "nav.since", message: "Since" })} {memberSince}
-                    </Text>
-                  ) : null}
-                </View>
+              </TouchableOpacity>
+              <Text style={styles.profileEmail} numberOfLines={1}>
+                {user?.email || accountDisplayName}
+              </Text>
+              <View style={styles.profileMetaRow}>
+                <Text style={styles.profileBrandBadge}>HASHPASS</Text>
+                {!isProfileExpanded && memberSince ? (
+                  <Text style={styles.profileMemberSince} numberOfLines={1}>
+                    {t({ id: "nav.since", message: "Since" })} {memberSince}
+                  </Text>
+                ) : null}
               </View>
+            </View>
+            <TouchableOpacity
+              onPress={() => setIsProfileExpanded((expanded) => !expanded)}
+              style={styles.profileChevronButton}
+              activeOpacity={0.75}
+              accessibilityRole="button"
+              accessibilityLabel={t({
+                id: "nav.accountDetails",
+                message: "Account details",
+              })}
+              accessibilityState={{ expanded: isProfileExpanded }}
+            >
               <Ionicons
-                name={isProfileExpanded ? "chevron-up" : "chevron-down"}
+                name={
+                  isProfileExpanded
+                    ? "chevron-up-outline"
+                    : "chevron-down-outline"
+                }
                 size={18}
                 color={colors.text.secondary}
               />
-            </View>
-          </TouchableOpacity>
+            </TouchableOpacity>
+          </View>
           {isProfileExpanded ? (
             <>
               <View style={styles.profileStatsRow}>
@@ -2194,8 +2217,19 @@ const getStyles = (
         ? "0 12px 24px rgba(0, 0, 0, 0.20)"
         : "0 12px 24px rgba(175, 13, 1, 0.08)",
     },
-    profileIdentityButton: {
-      width: "100%",
+    profileAvatarButton: {
+      flexShrink: 0,
+    },
+    profileUsernameButton: {
+      alignSelf: "flex-start",
+      maxWidth: "100%",
+    },
+    profileChevronButton: {
+      width: 32,
+      height: 32,
+      flexShrink: 0,
+      alignItems: "center",
+      justifyContent: "center",
     },
     profileIdentityRow: {
       flexDirection: "row",
