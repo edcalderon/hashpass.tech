@@ -53,15 +53,32 @@ describe("Expo Router Lambda adapter request headers", () => {
     const { buildRequestBody } = loadInternals();
     const formPost = "code=apple-code&state=apple-state";
 
-    expect(
-      buildRequestBody(
-        {
-          body: Buffer.from(formPost, "utf8").toString("base64"),
-          isBase64Encoded: true,
-        },
-        "POST",
-      ),
-    ).toBe(formPost);
+    const body = buildRequestBody(
+      {
+        body: Buffer.from(formPost, "utf8").toString("base64"),
+        isBase64Encoded: true,
+      },
+      "POST",
+    );
+
+    expect(Buffer.isBuffer(body)).toBe(true);
+    expect(body.toString("utf8")).toBe(formPost);
+  });
+
+  it("preserves binary API Gateway bodies without UTF-8 coercion", () => {
+    const { buildRequestBody } = loadInternals();
+    const binary = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x00, 0xff]);
+
+    const body = buildRequestBody(
+      {
+        body: binary.toString("base64"),
+        isBase64Encoded: true,
+      },
+      "POST",
+    );
+
+    expect(Buffer.isBuffer(body)).toBe(true);
+    expect(body.equals(binary)).toBe(true);
   });
 
   it("allows credentialed CORS requests from the dev frontend", () => {

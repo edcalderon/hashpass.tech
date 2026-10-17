@@ -147,7 +147,7 @@ function buildRequestBody(event, method) {
 
   if (typeof event.body === "string") {
     return event.isBase64Encoded
-      ? Buffer.from(event.body, "base64").toString("utf8")
+      ? Buffer.from(event.body, "base64")
       : event.body;
   }
 
