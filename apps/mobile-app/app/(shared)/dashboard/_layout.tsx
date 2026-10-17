@@ -2443,7 +2443,7 @@ const getStyles = (
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
-      minHeight: 42,
+      minHeight: 48,
       paddingHorizontal: 12,
       borderRadius: uiTokens.radius.input,
       marginTop: 0,
@@ -2476,7 +2476,7 @@ const getStyles = (
     },
     quickToggleButton: {
       minWidth: 0,
-      minHeight: 42,
+      minHeight: 48,
       borderRadius: uiTokens.radius.input,
       justifyContent: "center",
       flexDirection: "row",

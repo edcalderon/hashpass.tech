@@ -821,6 +821,7 @@
       "themeLight": "Light"
     },
     "account": "Account",
+    "accountDetails": "Account details",
     "signOut": "Sign Out",
     "version": "HASHPASS v{version}"
   },

@@ -816,6 +816,7 @@
       "themeLight": "라이트"
     },
     "account": "계정",
+    "accountDetails": "계정 세부정보",
     "signOut": "로그아웃",
     "version": "HASHPASS v{version}"
   },

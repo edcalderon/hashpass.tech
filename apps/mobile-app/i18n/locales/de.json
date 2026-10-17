@@ -671,6 +671,7 @@
       "themeLight": "Hell"
     },
     "account": "Konto",
+    "accountDetails": "Kontodetails",
     "signOut": "Abmelden",
     "version": "HASHPASS v{version}"
   },

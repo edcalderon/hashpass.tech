@@ -672,6 +672,7 @@
       "themeLight": "Clair"
     },
     "account": "Compte",
+    "accountDetails": "Détails du compte",
     "signOut": "Se déconnecter",
     "version": "HASHPASS v{version}"
   },

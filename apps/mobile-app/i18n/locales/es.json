@@ -820,6 +820,7 @@
       "themeLight": "Claro"
     },
     "account": "Cuenta",
+    "accountDetails": "Detalles de la cuenta",
     "signOut": "Salir",
     "version": "HASHPASS v{version}"
   },

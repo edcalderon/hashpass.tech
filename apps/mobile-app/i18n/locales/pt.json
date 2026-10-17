@@ -671,6 +671,7 @@
       "themeLight": "Claro"
     },
     "account": "Conta",
+    "accountDetails": "Detalhes da conta",
     "signOut": "Sair",
     "version": "HASHPASS v{version}"
   },

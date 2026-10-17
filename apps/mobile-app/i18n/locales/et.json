@@ -71,6 +71,7 @@
   },
   "nav": {
     "account": "Konto",
+    "accountDetails": "Konto üksikasjad",
     "explore": "Avasta",
     "wallet": "Rahakott",
     "notifications": "Teavitused",
