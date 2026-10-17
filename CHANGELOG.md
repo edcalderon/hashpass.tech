@@ -1,3 +1,19 @@
+## [1.9.119](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.118...v1.9.119) (2026-10-17)
+
+
+### Bug Fixes
+
+* **auth:** preserve Apple form-post callback ([5321f76](https://github.com/hashpass-tech/hashpass.tech/commit/5321f76d209f77dfb01349ffa5f5b25227914d1a))
+### Release Highlights
+- preserve Apple form-post callback
+
+### Release scope
+- Compared with: `v1.9.118` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Infrastructure
+
 ## [1.9.118](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.117...v1.9.118) (2026-10-16)
 
 

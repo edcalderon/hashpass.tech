@@ -140,6 +140,20 @@ function buildRequestHeaders(event) {
   return headers;
 }
 
+function buildRequestBody(event, method) {
+  if (!event.body || method === "GET" || method === "HEAD") {
+    return undefined;
+  }
+
+  if (typeof event.body === "string") {
+    return event.isBase64Encoded
+      ? Buffer.from(event.body, "base64")
+      : event.body;
+  }
+
+  return JSON.stringify(event.body);
+}
+
 // AWS Lambda handler for API Gateway
 async function handleLambdaEvent(event) {
   try {
@@ -213,12 +227,7 @@ async function handleLambdaEvent(event) {
     const request = new Request(fullUrl, {
       method: method,
       headers: buildRequestHeaders(event),
-      body:
-        event.body && method !== "GET" && method !== "HEAD"
-          ? typeof event.body === "string"
-            ? event.body
-            : JSON.stringify(event.body)
-          : undefined,
+      body: buildRequestBody(event, method),
     });
 
     // Handle the request with Expo Server
@@ -339,6 +348,7 @@ exports.handler = Sentry && process.env.SENTRY_DSN
 
 exports._internal = {
   buildRequestHeaders,
+  buildRequestBody,
   applyCorsHeaders,
   resolveCorsOrigin,
 };
