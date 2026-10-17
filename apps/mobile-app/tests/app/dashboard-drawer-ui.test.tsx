@@ -370,10 +370,23 @@ describe("dashboard drawer visual controls", () => {
     expect(root.findAllByProps({ name: "log-out-outline" })).toHaveLength(1);
     expect(root.findAllByProps({ name: "chevron-forward" })).toHaveLength(0);
 
-    root
-      .findByProps({ accessibilityLabel: "@edward: Profile" })
-      .props.onPress();
-    expect(mockNavigate).toHaveBeenCalledWith("profile");
+    const accountDetails = root.findByProps({
+      accessibilityLabel: "Account details",
+    });
+    expect(accountDetails.props.accessibilityState).toEqual({ expanded: false });
+    expect(root.findAllByProps({ name: "chevron-down" })).toHaveLength(1);
+
+    await TestRenderer.act(async () => {
+      accountDetails.props.onPress();
+      await Promise.resolve();
+    });
+
+    expect(
+      root.findByProps({ accessibilityLabel: "Account details" }).props
+        .accessibilityState,
+    ).toEqual({ expanded: true });
+    expect(root.findAllByProps({ name: "chevron-up" })).toHaveLength(1);
+    expect(mockNavigate).not.toHaveBeenCalled();
 
     await TestRenderer.act(async () => {
       root.findByProps({ accessibilityLabel: "English" }).props.onPress();

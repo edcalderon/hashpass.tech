@@ -260,6 +260,7 @@ export function CustomDrawerContent({
   const styles = getStyles(isDark, colors, isMobile, drawerSafeInsets);
   const [isUserAdmin, setIsUserAdmin] = React.useState(false);
   const [isSigningOut, setIsSigningOut] = React.useState(false);
+  const [isProfileExpanded, setIsProfileExpanded] = React.useState(!isMobile);
   const [accountPasses, setAccountPasses] = React.useState<EventPassInfo[]>([]);
   const [menuInteractionId, setMenuInteractionId] = React.useState<
     string | null
@@ -874,84 +875,104 @@ export function CustomDrawerContent({
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity
-          onPress={() => handleNavigation("./profile")}
-          style={styles.profileCard}
-          activeOpacity={0.82}
-          accessibilityRole="link"
-          accessibilityLabel={`${username}: ${t({ id: "nav.profile", message: "Profile" })}`}
-        >
-          <View style={styles.profileIdentityRow}>
-            <View style={styles.profileAvatarShell}>
-              <View style={styles.profileAvatar}>
-                {profileAvatarUrl ? (
-                  <Image
-                    source={{ uri: profileAvatarUrl }}
-                    style={styles.profileAvatarImage}
-                    resizeMode="cover"
+        <View style={styles.profileCard}>
+          <TouchableOpacity
+            onPress={() => setIsProfileExpanded((expanded) => !expanded)}
+            style={styles.profileIdentityButton}
+            activeOpacity={0.82}
+            accessibilityRole="button"
+            accessibilityLabel={t({
+              id: "nav.accountDetails",
+              message: "Account details",
+            })}
+            accessibilityState={{ expanded: isProfileExpanded }}
+          >
+            <View style={styles.profileIdentityRow}>
+              <View style={styles.profileAvatarShell}>
+                <View style={styles.profileAvatar}>
+                  {profileAvatarUrl ? (
+                    <Image
+                      source={{ uri: profileAvatarUrl }}
+                      style={styles.profileAvatarImage}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <View style={styles.profileAvatarDefault}>
+                      {Array.from({ length: 10 }, (_, index) => (
+                        <View
+                          key={`profile-avatar-stripe-${index}`}
+                          style={[
+                            styles.profileAvatarStripe,
+                            { top: index * 10 - 20 },
+                          ]}
+                        />
+                      ))}
+                      <Text style={styles.profileAvatarInitials}>
+                        {accountInitials}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+                <View style={styles.profileAvatarAction}>
+                  <Ionicons
+                    name="add"
+                    size={17}
+                    color={uiTokens.colors.light.onAccent}
                   />
-                ) : (
-                  <View style={styles.profileAvatarDefault}>
-                    {Array.from({ length: 10 }, (_, index) => (
-                      <View
-                        key={`profile-avatar-stripe-${index}`}
-                        style={[
-                          styles.profileAvatarStripe,
-                          { top: index * 10 - 20 },
-                        ]}
-                      />
-                    ))}
-                    <Text style={styles.profileAvatarInitials}>
-                      {accountInitials}
-                    </Text>
-                  </View>
-                )}
+                </View>
               </View>
-              <View style={styles.profileAvatarAction}>
-                <Ionicons
-                  name="add"
-                  size={17}
-                  color={uiTokens.colors.light.onAccent}
-                />
-              </View>
-            </View>
-            <View style={styles.profileCopy}>
-              <Text style={styles.profileUsername} numberOfLines={1}>
-                {username}
-              </Text>
-              <Text style={styles.profileEmail} numberOfLines={1}>
-                {user?.email || accountDisplayName}
-              </Text>
-              <View style={styles.profileMetaRow}>
-                <Text style={styles.profileBrandBadge}>HASHPASS</Text>
-                {memberSince ? (
-                  <Text style={styles.profileMemberSince} numberOfLines={1}>
-                    {t({ id: "nav.since", message: "Since" })} {memberSince}
-                  </Text>
-                ) : null}
-              </View>
-            </View>
-          </View>
-          <View style={styles.profileStatsRow}>
-            {accountStats.map((stat) => (
-              <View key={stat.label} style={styles.profileStat}>
-                <Text style={[styles.profileStatValue, { color: stat.color }]}>
-                  {stat.value}
+              <View style={styles.profileCopy}>
+                <Text style={styles.profileUsername} numberOfLines={1}>
+                  {username}
                 </Text>
-                <Text style={styles.profileStatLabel}>{stat.label}</Text>
+                <Text style={styles.profileEmail} numberOfLines={1}>
+                  {user?.email || accountDisplayName}
+                </Text>
+                <View style={styles.profileMetaRow}>
+                  <Text style={styles.profileBrandBadge}>HASHPASS</Text>
+                  {!isProfileExpanded && memberSince ? (
+                    <Text style={styles.profileMemberSince} numberOfLines={1}>
+                      {t({ id: "nav.since", message: "Since" })} {memberSince}
+                    </Text>
+                  ) : null}
+                </View>
               </View>
-            ))}
-          </View>
-        </TouchableOpacity>
+              <Ionicons
+                name={isProfileExpanded ? "chevron-up" : "chevron-down"}
+                size={18}
+                color={colors.text.secondary}
+              />
+            </View>
+          </TouchableOpacity>
+          {isProfileExpanded ? (
+            <>
+              <View style={styles.profileStatsRow}>
+                {accountStats.map((stat) => (
+                  <View key={stat.label} style={styles.profileStat}>
+                    <Text style={[styles.profileStatValue, { color: stat.color }]}>
+                      {stat.value}
+                    </Text>
+                    <Text style={styles.profileStatLabel}>{stat.label}</Text>
+                  </View>
+                ))}
+              </View>
+              {memberSince ? (
+                <Text style={styles.profileMemberSinceExpanded} numberOfLines={1}>
+                  {t({ id: "nav.memberSince", message: "Member since" })} {memberSince}
+                </Text>
+              ) : null}
+            </>
+          ) : null}
+        </View>
       </View>
 
       {/* Menu Items - Scrollable on mobile */}
       <ScrollView
         style={styles.menuItemsScrollView}
         contentContainerStyle={styles.menuItemsContent}
-        showsVerticalScrollIndicator={true}
+        showsVerticalScrollIndicator={false}
         nestedScrollEnabled={true}
-        bounces={true}
+        bounces={false}
       >
         <Text style={styles.menuSectionLabel}>
           {t({ id: "nav.navigation", message: "Navigation" })}
@@ -1187,7 +1208,7 @@ export function CustomDrawerContent({
         <View style={styles.quickTogglesRow}>
           {/* Language Toggle */}
           <TouchableOpacity
-            style={styles.quickToggleButton}
+            style={[styles.quickToggleButton, styles.languageToggleButton]}
             onPress={handleLanguageToggle}
             activeOpacity={0.7}
             accessibilityRole="button"
@@ -1205,7 +1226,7 @@ export function CustomDrawerContent({
 
           {/* Theme Toggle */}
           <TouchableOpacity
-            style={styles.quickToggleButton}
+            style={[styles.quickToggleButton, styles.themeToggleButton]}
             onPress={() => {
               hapticLight();
               toggleTheme();
@@ -1219,36 +1240,34 @@ export function CustomDrawerContent({
               size={22}
               color={colors.text.primary}
             />
-            <Text style={styles.quickToggleLabel} numberOfLines={1}>
-              {themeLabel}
+            <Text style={styles.visuallyHiddenLabel}>{themeLabel}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.logoutAction,
+              isSigningOut && styles.quickToggleButtonDisabled,
+            ]}
+            onPress={handleLogout}
+            disabled={isSigningOut}
+            activeOpacity={isSigningOut ? 1 : 0.7}
+            accessibilityRole="button"
+            accessibilityLabel={t({ id: "nav.logout", message: "Log out" })}
+            accessibilityState={{ busy: isSigningOut, disabled: isSigningOut }}
+          >
+            {isSigningOut ? (
+              <ActivityIndicator size="small" color={colors.error.main} />
+            ) : (
+              <Ionicons
+                name="log-out-outline"
+                size={22}
+                color={colors.error.main}
+              />
+            )}
+            <Text style={styles.logoutActionText} numberOfLines={1}>
+              {t({ id: "nav.logout", message: "Log out" })}
             </Text>
           </TouchableOpacity>
         </View>
-        <TouchableOpacity
-          style={[
-            styles.logoutAction,
-            isSigningOut && styles.quickToggleButtonDisabled,
-          ]}
-          onPress={handleLogout}
-          disabled={isSigningOut}
-          activeOpacity={isSigningOut ? 1 : 0.7}
-          accessibilityRole="button"
-          accessibilityLabel={t({ id: "nav.logout", message: "Log out" })}
-          accessibilityState={{ busy: isSigningOut, disabled: isSigningOut }}
-        >
-          {isSigningOut ? (
-            <ActivityIndicator size="small" color={colors.error.main} />
-          ) : (
-            <Ionicons
-              name="log-out-outline"
-              size={22}
-              color={colors.error.main}
-            />
-          )}
-          <Text style={styles.logoutActionText} numberOfLines={1}>
-            {t({ id: "nav.logout", message: "Log out" })}
-          </Text>
-        </TouchableOpacity>
       </View>
 
       {/* Version Display */}
@@ -2161,8 +2180,8 @@ const getStyles = (
       height: 22,
     },
     profileCard: {
-      marginTop: 16,
-      padding: 16,
+      marginTop: 12,
+      padding: isMobile ? 12 : 14,
       borderRadius: uiTokens.radius.card,
       backgroundColor: isDark ? "#1c1716" : "#fbf3f2",
       borderWidth: 1,
@@ -2175,14 +2194,17 @@ const getStyles = (
         ? "0 12px 24px rgba(0, 0, 0, 0.20)"
         : "0 12px 24px rgba(175, 13, 1, 0.08)",
     },
+    profileIdentityButton: {
+      width: "100%",
+    },
     profileIdentityRow: {
       flexDirection: "row",
       alignItems: "center",
-      gap: 14,
+      gap: 10,
     },
     profileAvatarShell: {
-      width: 68,
-      height: 68,
+      width: isMobile ? 56 : 64,
+      height: isMobile ? 56 : 64,
       flexShrink: 0,
       position: "relative",
       padding: 3,
@@ -2223,7 +2245,7 @@ const getStyles = (
       transform: [{ rotate: "-45deg" }],
     },
     profileAvatarInitials: {
-      fontSize: 22,
+      fontSize: isMobile ? 19 : 22,
       fontWeight: "800",
       color: isDark ? uiTokens.colors.dark.text : brandRed,
       letterSpacing: 0.5,
@@ -2244,11 +2266,11 @@ const getStyles = (
     profileCopy: {
       flex: 1,
       minWidth: 0,
-      gap: 5,
+      gap: 3,
     },
     profileUsername: {
-      fontSize: 19,
-      lineHeight: 22,
+      fontSize: isMobile ? 17 : 19,
+      lineHeight: isMobile ? 20 : 22,
       fontWeight: "800",
       letterSpacing: -0.2,
       color: colors.text.primary,
@@ -2283,15 +2305,21 @@ const getStyles = (
       lineHeight: 14,
       color: colors.text.secondary,
     },
+    profileMemberSinceExpanded: {
+      marginTop: 8,
+      fontSize: 12,
+      lineHeight: 16,
+      color: colors.text.secondary,
+    },
     profileStatsRow: {
       flexDirection: "row",
       gap: 8,
-      marginTop: 16,
+      marginTop: 12,
     },
     profileStat: {
       flex: 1,
       minWidth: 0,
-      paddingVertical: 10,
+      paddingVertical: 8,
       paddingHorizontal: 8,
       borderRadius: uiTokens.radius.input,
       backgroundColor: isDark
@@ -2301,14 +2329,14 @@ const getStyles = (
       borderColor: isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.07)",
     },
     profileStatValue: {
-      fontSize: 17,
-      lineHeight: 20,
+      fontSize: 16,
+      lineHeight: 19,
       fontWeight: "800",
     },
     profileStatLabel: {
       marginTop: 3,
-      fontSize: 10,
-      lineHeight: 12,
+      fontSize: 9,
+      lineHeight: 11,
       fontWeight: "600",
       color: colors.text.secondary,
     },
@@ -2345,16 +2373,16 @@ const getStyles = (
       flex: 1,
     },
     menuItemsContent: {
-      paddingTop: 12,
-      paddingBottom: 12,
+      paddingTop: 8,
+      paddingBottom: 8,
       paddingStart: (isMobile ? 12 : 10) + drawerSafeInsets.left,
       paddingEnd: (isMobile ? 12 : 10) + drawerSafeInsets.right,
       flexGrow: 1,
     },
     menuSectionLabel: {
       paddingHorizontal: 8,
-      paddingTop: 4,
-      paddingBottom: 7,
+      paddingTop: 2,
+      paddingBottom: 5,
       fontSize: 10,
       lineHeight: 13,
       fontWeight: "800",
@@ -2371,22 +2399,22 @@ const getStyles = (
     menuItem: {
       flexDirection: "row",
       alignItems: "center",
-      minHeight: 52,
-      paddingVertical: 6,
+      minHeight: 46,
+      paddingVertical: 4,
       paddingRight: 12,
       paddingLeft: 8,
-      marginVertical: 2,
-      borderRadius: 16,
+      marginVertical: 1,
+      borderRadius: uiTokens.radius.input,
       borderWidth: 1,
       borderColor: "transparent",
     },
     menuIconContainer: {
-      width: 36,
-      height: 36,
-      borderRadius: 12,
+      width: 32,
+      height: 32,
+      borderRadius: 10,
       justifyContent: "center",
       alignItems: "center",
-      marginRight: 14,
+      marginRight: 12,
     },
     menuText: {
       fontSize: 15,
@@ -2411,13 +2439,14 @@ const getStyles = (
       fontWeight: "700",
     },
     logoutAction: {
+      flex: 1.15,
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
-      minHeight: 48,
+      minHeight: 42,
       paddingHorizontal: 12,
       borderRadius: uiTokens.radius.input,
-      marginTop: 10,
+      marginTop: 0,
       backgroundColor: isDark
         ? "rgba(255, 59, 48, 0.1)"
         : "rgba(255, 59, 48, 0.05)",
@@ -2431,11 +2460,11 @@ const getStyles = (
       color: colors.error.main,
     },
     quickSettingsSection: {
-      paddingTop: 14,
+      paddingTop: 10,
       marginStart: (isMobile ? 20 : 16) + drawerSafeInsets.left,
       marginEnd: (isMobile ? 18 : 16) + drawerSafeInsets.right,
-      marginTop: 10,
-      marginBottom: 6,
+      marginTop: 6,
+      marginBottom: 4,
       borderTopWidth: 1,
       borderTopColor: colors.divider,
     },
@@ -2446,9 +2475,8 @@ const getStyles = (
       gap: 8,
     },
     quickToggleButton: {
-      flex: 1,
       minWidth: 0,
-      minHeight: 44,
+      minHeight: 42,
       borderRadius: uiTokens.radius.input,
       justifyContent: "center",
       flexDirection: "row",
@@ -2458,6 +2486,13 @@ const getStyles = (
       borderColor: colors.divider,
       backgroundColor: colors.background.paper,
       gap: 8,
+    },
+    languageToggleButton: {
+      flex: 1,
+    },
+    themeToggleButton: {
+      width: 50,
+      paddingHorizontal: 0,
     },
     quickToggleButtonDisabled: {
       opacity: 0.72,
@@ -2469,6 +2504,12 @@ const getStyles = (
       textAlign: "left",
       flexShrink: 1,
       minWidth: 0,
+    },
+    visuallyHiddenLabel: {
+      position: "absolute",
+      width: 1,
+      height: 1,
+      opacity: 0,
     },
     mainContent: {
       flex: 1,
