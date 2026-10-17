@@ -85,6 +85,7 @@ import { t } from "@lingui/macro";
 import { CopilotStep, walkthroughable, useCopilot } from "@lib/copilot-shim";
 import { hapticLight, hapticMedium } from "../../../lib/haptics";
 import { uiTokens } from "@hashpass/ui/tokens";
+import { ChevronDownIcon } from "../../../components/icons/SettingsIcons";
 
 const ANDROID_DASHBOARD_HEADER_HEIGHT = 64;
 const ANDROID_DRAWER_EDGE_GUARD = 16;
@@ -956,15 +957,19 @@ export function CustomDrawerContent({
               })}
               accessibilityState={{ expanded: isProfileExpanded }}
             >
-              <Ionicons
-                name={
-                  isProfileExpanded
-                    ? "chevron-up-outline"
-                    : "chevron-down-outline"
-                }
-                size={18}
-                color={colors.text.secondary}
-              />
+              <View
+                style={{
+                  transform: [
+                    { rotate: isProfileExpanded ? "180deg" : "0deg" },
+                  ],
+                }}
+              >
+                <ChevronDownIcon
+                  size={18}
+                  color={colors.text.secondary}
+                  strokeWidth={2.25}
+                />
+              </View>
             </TouchableOpacity>
           </View>
           {isProfileExpanded ? (

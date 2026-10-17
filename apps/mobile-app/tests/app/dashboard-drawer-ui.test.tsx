@@ -265,6 +265,9 @@ jest.mock(
 );
 
 jest.mock("../../lib/vector-icons", () => ({ Ionicons: "Ionicons" }));
+jest.mock("../../components/icons/SettingsIcons", () => ({
+  ChevronDownIcon: "ChevronDownIcon",
+}));
 jest.mock("../../lib/morph-icon", () => ({ MorphIcon: "MorphIcon" }));
 jest.mock("../../lib/haptics", () => ({
   hapticLight: mockHapticLight,
@@ -390,7 +393,10 @@ describe("dashboard drawer visual controls", () => {
       accessibilityLabel: "Account details",
     });
     expect(accountDetails.props.accessibilityState).toEqual({ expanded: false });
-    expect(root.findAllByProps({ name: "chevron-down-outline" })).toHaveLength(1);
+    expect(root.findAllByType("ChevronDownIcon" as any)).toHaveLength(1);
+    expect(root.findByType("ChevronDownIcon" as any).parent?.props.style).toEqual({
+      transform: [{ rotate: "0deg" }],
+    });
 
     await TestRenderer.act(async () => {
       accountDetails.props.onPress();
@@ -401,7 +407,10 @@ describe("dashboard drawer visual controls", () => {
       root.findByProps({ accessibilityLabel: "Account details" }).props
         .accessibilityState,
     ).toEqual({ expanded: true });
-    expect(root.findAllByProps({ name: "chevron-up-outline" })).toHaveLength(1);
+    expect(root.findAllByType("ChevronDownIcon" as any)).toHaveLength(1);
+    expect(root.findByType("ChevronDownIcon" as any).parent?.props.style).toEqual({
+      transform: [{ rotate: "180deg" }],
+    });
     expect(mockNavigate).not.toHaveBeenCalled();
 
     await TestRenderer.act(async () => {
@@ -435,7 +444,7 @@ describe("dashboard drawer visual controls", () => {
       root.findByProps({ accessibilityLabel: "Account details" }).props
         .accessibilityState,
     ).toEqual({ expanded: false });
-    expect(root.findAllByProps({ name: "chevron-down-outline" })).toHaveLength(1);
+    expect(root.findAllByType("ChevronDownIcon" as any)).toHaveLength(1);
   });
 
   it("falls back to an uppercase locale label for an unsupported locale", async () => {
