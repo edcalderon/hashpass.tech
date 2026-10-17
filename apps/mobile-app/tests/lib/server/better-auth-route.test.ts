@@ -82,6 +82,49 @@ describe('better-auth-route', () => {
     expect(forwardedRequest.headers.get('cookie')).toBe('__Secure-better-auth.state=state-cookie');
   });
 
+  it('leaves an Apple callback with a non-form body unchanged', async () => {
+    mockBetterAuthHandler.mockResolvedValueOnce(new Response(null, { status: 204 }));
+
+    const { POST } = require('../../../lib/server/better-auth-route');
+    await POST(
+      new Request('https://api.hashpass.tech/api/auth/callback/apple', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ state: 'not-a-form-post' }),
+      })
+    );
+
+    expect((mockBetterAuthHandler.mock.calls[0][0] as Request).method).toBe('POST');
+  });
+
+  it('leaves an Apple callback without a content type unchanged', async () => {
+    mockBetterAuthHandler.mockResolvedValueOnce(new Response(null, { status: 204 }));
+
+    const { POST } = require('../../../lib/server/better-auth-route');
+    await POST(
+      new Request('https://api.hashpass.tech/api/auth/callback/apple', {
+        method: 'POST',
+      })
+    );
+
+    expect((mockBetterAuthHandler.mock.calls[0][0] as Request).method).toBe('POST');
+  });
+
+  it('leaves form posts for other OAuth providers unchanged', async () => {
+    mockBetterAuthHandler.mockResolvedValueOnce(new Response(null, { status: 204 }));
+
+    const { POST } = require('../../../lib/server/better-auth-route');
+    await POST(
+      new Request('https://api.hashpass.tech/api/auth/callback/google', {
+        method: 'POST',
+        headers: { 'content-type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ state: 'google-state' }),
+      })
+    );
+
+    expect((mockBetterAuthHandler.mock.calls[0][0] as Request).method).toBe('POST');
+  });
+
   it('rewrites RFC 8414 issuer-path discovery to the Better Auth base path', async () => {
     mockBetterAuthHandler.mockResolvedValueOnce(Response.json({ issuer: 'https://api.hashpass.tech/api/auth' }));
     const { GET } = require('../../../app/.well-known/oauth-authorization-server/api/auth+api');
