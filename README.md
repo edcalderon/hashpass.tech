@@ -20,20 +20,20 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.118)
+## 📋 Latest Changes (v1.9.119)
 
 ### Bug Fixes
 
-* **auth:** enable Apple form-post state cookies ([f984032](https://github.com/hashpass-tech/hashpass.tech/commit/f9840321114ff0ea2ffa0f43ff3922a455c6c3cf))
+* **auth:** preserve Apple form-post callback ([5321f76](https://github.com/hashpass-tech/hashpass.tech/commit/5321f76d209f77dfb01349ffa5f5b25227914d1a))
 ### Release Highlights
-- enable Apple form-post state cookies
+- preserve Apple form-post callback
 
 ### Release scope
-- Compared with: `v1.9.117` (the previous global release tag)
+- Compared with: `v1.9.118` (the previous global release tag)
 
 ### Affected products & packages
 - Mobile app
-- Release tooling
+- Infrastructure
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
