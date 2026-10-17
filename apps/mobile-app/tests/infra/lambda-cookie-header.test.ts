@@ -49,6 +49,21 @@ describe("Expo Router Lambda adapter request headers", () => {
     expect(headers.get("cookie")).toBe("existing=value");
   });
 
+  it("decodes API Gateway base64 form posts before Expo reads the request", () => {
+    const { buildRequestBody } = loadInternals();
+    const formPost = "code=apple-code&state=apple-state";
+
+    expect(
+      buildRequestBody(
+        {
+          body: Buffer.from(formPost, "utf8").toString("base64"),
+          isBase64Encoded: true,
+        },
+        "POST",
+      ),
+    ).toBe(formPost);
+  });
+
   it("allows credentialed CORS requests from the dev frontend", () => {
     const { applyCorsHeaders } = loadInternals();
 
