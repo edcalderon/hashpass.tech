@@ -25,6 +25,7 @@ let mockLocale = "en";
 let mockPlatformOS: "ios" | "web" = "ios";
 let mockAnimationsEnabled = false;
 let mockDbUserId: string | null = "db-user-1";
+let mockIsMobile = true;
 let mockScrollChildren: unknown;
 let mockHasHandleNext = true;
 
@@ -209,7 +210,9 @@ jest.mock("../../hooks/useTheme", () => ({
   }),
 }));
 
-jest.mock("../../hooks/useIsMobile", () => ({ useIsMobile: () => true }));
+jest.mock("../../hooks/useIsMobile", () => ({
+  useIsMobile: () => mockIsMobile,
+}));
 
 jest.mock("../../hooks/useAuth", () => ({
   useAuth: () => ({
@@ -312,7 +315,9 @@ jest.mock("@lingui/macro", () => ({
 }));
 
 const { CustomDrawerContent } =
-  require("../../app/(shared)/dashboard/_layout") as typeof import("../../app/(shared)/dashboard/_layout");
+  require("../../app/(shared)/dashboard/_layout") as {
+    CustomDrawerContent: React.ComponentType<any>;
+  };
 const TestRenderer =
   require("react-test-renderer") as typeof import("react-test-renderer");
 const { i18n } = require("../../i18n/i18n") as { i18n: any };
@@ -343,6 +348,7 @@ describe("dashboard drawer visual controls", () => {
     mockPlatformOS = "ios";
     mockAnimationsEnabled = false;
     mockDbUserId = "db-user-1";
+    mockIsMobile = true;
     mockHasHandleNext = true;
     mockRequestAnimationFrame.mockClear();
     mockWithRepeat.mockClear();
@@ -408,6 +414,18 @@ describe("dashboard drawer visual controls", () => {
 
     expect(root.findByProps({ accessibilityLabel: "Dark mode" })).toBeTruthy();
     expect(root.findAllByProps({ name: "moon-outline" })).toHaveLength(1);
+  });
+
+  it("keeps the account panel expanded by default on desktop", async () => {
+    mockIsMobile = false;
+    const renderer = await renderDrawer();
+    const root = renderer.root;
+
+    expect(
+      root.findByProps({ accessibilityLabel: "Account details" }).props
+        .accessibilityState,
+    ).toEqual({ expanded: true });
+    expect(root.findAllByProps({ name: "chevron-up" })).toHaveLength(1);
   });
 
   it("falls back to an uppercase locale label for an unsupported locale", async () => {
