@@ -1719,6 +1719,8 @@
   "notifications": {
     "center": {
       "title": "Notifications",
+      "eyebrow": "YOUR INBOX",
+      "subtitle": "Messages, meeting updates and event news in one place.",
       "all": "All",
       "archive": "Archive",
       "markAllRead": "Mark All Read",

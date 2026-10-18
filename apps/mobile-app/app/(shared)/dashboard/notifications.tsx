@@ -20,13 +20,13 @@ import {
 
 export default function NotificationsScreen() {
   const { isDark, colors } = useTheme();
-  const { navbarInset, column } = useDashboardPageLayout();
+  const { topInset, bottomInset, column } = useDashboardPageLayout();
   const { notifications, unreadCount, isLoading, markAsRead, markAsUnread, markAllAsRead, archiveNotification, deleteNotification, refreshNotifications } = useNotifications();
   const { user } = useAuth();
   const router = useRouter();
   const params = useLocalSearchParams();
   const { t } = useTranslation('notifications');
-  const styles = getStyles(isDark, colors, navbarInset);
+  const styles = getStyles(isDark, colors, topInset, bottomInset);
   const scrollViewRef = useRef<ScrollView>(null);
   const notificationRefs = useRef<{ [key: string]: View | null }>({});
 
@@ -577,52 +577,58 @@ export default function NotificationsScreen() {
   return (
     <View style={styles.container}>
       <View style={[styles.column, column]}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Text style={styles.headerTitle}>{t('center.title')}</Text>
+      {/* Heading: same eyebrow / title / subtitle pattern as the wallet view */}
+      <View style={styles.heading}>
+        <Text style={styles.eyebrow}>{t('center.eyebrow', 'YOUR INBOX')}</Text>
+        <View style={styles.titleRow}>
+          <View style={styles.titleGroup}>
+            <Text accessibilityRole="header" style={styles.headerTitle}>{t('center.title')}</Text>
+            {unreadCount > 0 && activeTab !== 'archive' && (
+              <View style={styles.unreadBadge}>
+                <Text style={styles.unreadBadgeText}>{unreadCount}</Text>
+              </View>
+            )}
+          </View>
           {unreadCount > 0 && activeTab !== 'archive' && (
-            <View style={styles.unreadBadge}>
-              <Text style={styles.unreadBadgeText}>{unreadCount}</Text>
-            </View>
-          )}
-        </View>
-        <View style={styles.notificationHeaderActions}>
-          {unreadCount > 0 && activeTab !== 'archive' && (
-            <TouchableOpacity style={styles.markAllButton} onPress={markAllAsRead}>
+            <TouchableOpacity accessibilityRole="button" style={styles.markAllButton} onPress={markAllAsRead}>
               <Text style={styles.markAllText}>{t('center.markAllRead')}</Text>
             </TouchableOpacity>
           )}
         </View>
+        <Text style={styles.subtitle}>
+          {t('center.subtitle', 'Messages, meeting updates and event news in one place.')}
+        </Text>
       </View>
 
-      {/* Inbox tabs */}
-      <View style={styles.tabContainer}>
-        {([
-          ['all', t('center.all')],
-          ['messages', t('center.messages', 'Messages')],
-          ['updates', t('center.updates', 'Updates')],
-          ['archive', t('center.archive')],
-        ] as const).map(([tab, label]) => (
-          <TouchableOpacity
-            key={tab}
-            accessibilityRole="tab"
-            accessibilityState={{ selected: activeTab === tab }}
-            style={[styles.tab, activeTab === tab && styles.activeTab]}
-            onPress={() => {
-              setActiveTab(tab);
-              setFilteredNotifications([]);
-              setSearchQuery('');
-            }}
-          >
-            <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>{label}</Text>
-            {tabUnreadCounts[tab] > 0 && (
-              <View style={styles.tabBadge}>
-                <Text style={styles.tabBadgeText}>{tabUnreadCounts[tab]}</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-        ))}
+      {/* Inbox tabs: rounded pill control, matching the wallet tabs */}
+      <View style={styles.tabsWrap}>
+        <View style={styles.tabContainer} accessibilityRole="tablist">
+          {([
+            ['all', t('center.all')],
+            ['messages', t('center.messages', 'Messages')],
+            ['updates', t('center.updates', 'Updates')],
+            ['archive', t('center.archive')],
+          ] as const).map(([tab, label]) => (
+            <TouchableOpacity
+              key={tab}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: activeTab === tab }}
+              style={[styles.tab, activeTab === tab && styles.activeTab]}
+              onPress={() => {
+                setActiveTab(tab);
+                setFilteredNotifications([]);
+                setSearchQuery('');
+              }}
+            >
+              <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>{label}</Text>
+              {tabUnreadCounts[tab] > 0 && (
+                <View style={[styles.tabBadge, activeTab === tab && styles.activeTabBadge]}>
+                  <Text style={[styles.tabBadgeText, activeTab === tab && styles.activeTabBadgeText]}>{tabUnreadCounts[tab]}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          ))}
+        </View>
       </View>
 
       {/* Filter Section */}
@@ -714,11 +720,11 @@ export default function NotificationsScreen() {
   );
 }
 
-const getStyles = (isDark: boolean, colors: any, navbarInset: number = 0) => StyleSheet.create({
+const getStyles = (isDark: boolean, colors: any, topInset: number = 0, bottomInset: number = 0) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background.default,
-    paddingTop: navbarInset,
+    paddingTop: topInset,
   },
   loadingContainer: {
     flex: 1,
@@ -731,30 +737,42 @@ const getStyles = (isDark: boolean, colors: any, navbarInset: number = 0) => Sty
     color: colors.text.secondary,
     marginTop: 16,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 16,
-    backgroundColor: colors.background.paper,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.divider,
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  notificationHeaderActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  heading: {
     gap: 8,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+  },
+  eyebrow: {
+    color: colors.text.secondary,
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 2,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  titleGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  subtitle: {
+    color: colors.text.secondary,
+    fontSize: 14,
+    lineHeight: 23,
+  },
+  tabsWrap: {
+    paddingHorizontal: 20,
+    paddingBottom: 12,
+    alignItems: 'flex-start',
   },
   refreshRow: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingTop: 8,
     paddingBottom: 4,
   },
@@ -772,8 +790,9 @@ const getStyles = (isDark: boolean, colors: any, navbarInset: number = 0) => Sty
   refreshButtonDisabled: { opacity: 0.55 },
   refreshButtonText: { color: colors.primary, fontSize: 13, fontWeight: '700' },
   headerTitle: {
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: 36,
+    fontWeight: '800',
+    letterSpacing: -1,
     color: colors.text.primary,
   },
   unreadBadge: {
@@ -782,6 +801,7 @@ const getStyles = (isDark: boolean, colors: any, navbarInset: number = 0) => Sty
     paddingHorizontal: 8,
     paddingVertical: 2,
     marginLeft: 12,
+    alignSelf: 'center',
   },
   unreadBadgeText: {
     color: '#FFFFFF',
@@ -789,10 +809,11 @@ const getStyles = (isDark: boolean, colors: any, navbarInset: number = 0) => Sty
     fontWeight: '600',
   },
   markAllButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: colors.background.default,
-    borderRadius: 8,
+    minHeight: 44,
+    justifyContent: 'center',
+    paddingHorizontal: 18,
+    backgroundColor: 'transparent',
+    borderRadius: 24,
     borderWidth: 1,
     borderColor: colors.divider,
   },
@@ -803,31 +824,30 @@ const getStyles = (isDark: boolean, colors: any, navbarInset: number = 0) => Sty
   },
   tabContainer: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    padding: 5,
+    borderRadius: 28,
     backgroundColor: colors.background.paper,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.divider,
-    paddingHorizontal: 20,
   },
   tab: {
-    flex: 1,
+    minHeight: 44,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
+    paddingHorizontal: 18,
+    borderRadius: 24,
   },
   activeTab: {
-    borderBottomColor: '#007AFF',
+    backgroundColor: colors.primary,
   },
   tabText: {
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: 14,
+    fontWeight: '600',
     color: colors.text.secondary,
   },
   activeTabText: {
-    color: '#007AFF',
-    fontWeight: '600',
+    color: colors.primaryContrastText,
   },
   tabBadge: {
     backgroundColor: '#FF3B30',
@@ -838,10 +858,16 @@ const getStyles = (isDark: boolean, colors: any, navbarInset: number = 0) => Sty
     minWidth: 20,
     alignItems: 'center',
   },
+  activeTabBadge: {
+    backgroundColor: colors.primaryContrastText,
+  },
   tabBadgeText: {
     color: '#FFFFFF',
     fontSize: 11,
     fontWeight: '600',
+  },
+  activeTabBadgeText: {
+    color: colors.primary,
   },
   column: {
     flex: 1,
@@ -850,7 +876,9 @@ const getStyles = (isDark: boolean, colors: any, navbarInset: number = 0) => Sty
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: bottomInset,
   },
   emptyContainer: {
     flex: 1,

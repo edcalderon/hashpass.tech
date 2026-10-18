@@ -1714,6 +1714,8 @@
   "notifications": {
     "center": {
       "title": "알림",
+      "eyebrow": "내 받은편지함",
+      "subtitle": "메시지, 미팅 업데이트, 이벤트 소식을 한곳에서 확인하세요.",
       "all": "전체",
       "archive": "보관함",
       "markAllRead": "모두 읽음으로 표시",

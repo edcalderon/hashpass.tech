@@ -445,6 +445,21 @@ export default function SettingsScreen() {
     </TouchableOpacity>
   );
 
+  // Profile-style group: one card per section, rows separated by dividers.
+  const renderGroup = (rows: React.ReactElement<{ children?: React.ReactNode }>) => {
+    const items = React.Children.toArray(rows.props.children);
+    return (
+      <View style={styles.card}>
+        {items.map((item, index) => (
+          <React.Fragment key={index}>
+            {index > 0 && <View style={styles.rowDivider} />}
+            {item}
+          </React.Fragment>
+        ))}
+      </View>
+    );
+  };
+
   return (
     <View style={styles.container}>
       <ScrollView 
@@ -456,6 +471,7 @@ export default function SettingsScreen() {
         {/* App Settings */}
         <View style={[styles.section, styles.firstSection]}>
           <Text style={styles.sectionTitle}>{tSettings('appSettings', 'App Settings')}</Text>
+          {renderGroup(<>
 
           {renderSettingItem({
             icon: isDark ? 'moon' : 'moon-outline',
@@ -535,6 +551,7 @@ export default function SettingsScreen() {
               />
             ),
           })}
+          </>)}
         </View>
 
         {/* Calendar Connections */}
@@ -542,6 +559,7 @@ export default function SettingsScreen() {
           <Text style={styles.sectionTitle}>
             {tSettings('calendarConnections.title', 'Calendar Connections')}
           </Text>
+          {renderGroup(<>
 
           {renderSettingItem({
             icon: 'logo-google',
@@ -575,11 +593,13 @@ export default function SettingsScreen() {
             onPress: () => connectCalendar('notion'),
             showChevron: true,
           })}
+          </>)}
         </View>
 
         {/* Tutorial Settings */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{tSettings('tutorials', 'Tutorials')}</Text>
+          {renderGroup(<>
 
           {renderSettingItem({
             icon: 'school-outline',
@@ -637,11 +657,13 @@ export default function SettingsScreen() {
             },
             showChevron: true,
           })}
+          </>)}
         </View>
 
         {/* Security Settings */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{tSettings('security', 'Security')}</Text>
+          {renderGroup(<>
 
           {renderSettingItem({
             icon: 'finger-print-outline',
@@ -676,11 +698,13 @@ export default function SettingsScreen() {
               showSuccess('Google Account Reset', 'The cached Google account has been cleared. You will be prompted to choose an account on your next sign-in.');
             },
           })}
+          </>)}
         </View>
 
         {/* Privacy Settings */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{tSettings('privacy_section', 'Privacy')}</Text>
+          {renderGroup(<>
 
           {renderSettingItem({
             icon: 'shield-outline',
@@ -713,11 +737,13 @@ export default function SettingsScreen() {
             showChevron: true,
             disabled: deletingAccount,
           })}
+          </>)}
         </View>
 
         {/* About Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{tSettings('about', 'About')}</Text>
+          {renderGroup(<>
 
           {renderSettingItem({
             icon: 'information-circle-outline',
@@ -756,6 +782,7 @@ export default function SettingsScreen() {
             },
             showChevron: true,
           })}
+          </>)}
         </View>
         </View>
 
@@ -1019,21 +1046,38 @@ export default function SettingsScreen() {
 const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background.default,
+    backgroundColor: isDark ? colors.background?.default || '#000000' : colors.background?.paper || '#F5F5F5',
   },
   scrollView: {
     flex: 1,
   },
   section: {
     marginTop: 24,
-    marginHorizontal: 16,
+    marginHorizontal: 20,
+  },
+  card: {
+    backgroundColor: colors.card?.default || (isDark ? '#1a1a1a' : '#FFFFFF'),
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: isDark ? 0.3 : 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+    borderWidth: isDark ? 1 : 0,
+    borderColor: isDark ? '#333333' : 'transparent',
+  },
+  rowDivider: {
+    height: 1,
+    marginLeft: 76,
+    backgroundColor: isDark ? '#333333' : '#E0E0E0',
   },
   firstSection: {
     marginTop: 0,
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: '700',
     color: colors.text.primary,
     marginBottom: 12,
     marginLeft: 4,
@@ -1042,18 +1086,9 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 16,
+    minHeight: 72,
+    paddingVertical: 14,
     paddingHorizontal: 16,
-    backgroundColor: colors.background.paper,
-    borderRadius: 12,
-    marginBottom: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-    borderWidth: 1,
-    borderColor: colors.divider,
   },
   settingItemLeft: {
     flexDirection: 'row',
@@ -1061,13 +1096,13 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     flex: 1,
   },
   iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: `${colors.primary}15`,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: `${colors.primary}1A`,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    marginRight: 16,
   },
   settingItemContent: {
     flex: 1,
@@ -1089,7 +1124,7 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   signOutSection: {
     marginTop: 32,
     marginBottom: 32,
-    marginHorizontal: 16,
+    marginHorizontal: 20,
   },
   signOutButton: {
     flexDirection: 'row',

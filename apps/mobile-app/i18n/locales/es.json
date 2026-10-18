@@ -1718,6 +1718,8 @@
   "notifications": {
     "center": {
       "title": "Notificaciones",
+      "eyebrow": "TU BANDEJA",
+      "subtitle": "Mensajes, novedades de reuniones y noticias del evento en un solo lugar.",
       "all": "Todas",
       "archive": "Archivo",
       "markAllRead": "Marcar todas como leídas",
