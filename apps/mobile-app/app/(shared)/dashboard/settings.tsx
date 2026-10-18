@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, Switch, TouchableOpacity, ScrollView, StyleSheet, Alert, StatusBar, TextInput, Modal, Platform, Linking } from 'react-native';
+import { View, Text, Switch, TouchableOpacity, ScrollView, StyleSheet, Alert, TextInput, Modal, Platform, Linking } from 'react-native';
 import { useTheme } from '../../../hooks/useTheme';
 import { useLanguage } from '../../../providers/LanguageProvider';
 import { useAnimations } from '../../../providers/AnimationProvider';
@@ -9,7 +9,7 @@ import { Ionicons } from '../../../lib/vector-icons';
 import Svg, { Circle as SvgCircle, Path as SvgPath } from 'react-native-svg';
 import { useTranslation } from '../../../i18n/i18n';
 import { version } from '../../../package.json';
-import { useScroll } from '@contexts/ScrollContext';
+import { useDashboardPageLayout } from '../../../hooks/useDashboardPageLayout';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { t } from '@lingui/macro';
@@ -37,7 +37,7 @@ export default function SettingsScreen() {
   const { locale, setLocale } = useLanguage();
   const { animationsEnabled, setAnimationsEnabled } = useAnimations();
   const { showAllTenants, setShowAllTenants, isEditable: showAllTenantsEditable } = useDiscoveryScope();
-  const { headerHeight } = useScroll();
+  const { topInset, bottomInset, column } = useDashboardPageLayout();
   const { showSuccess, showInfo, showError } = useToastHelpers();
   const { t: tProfile } = useTranslation('profile');
   const { t: tSettings } = useTranslation('settings');
@@ -80,9 +80,6 @@ export default function SettingsScreen() {
     }
   }, [otpSent, showDeleteConfirm]);
   
-  // Calculate safe area for nav bar overlay
-  const navBarHeight = (StatusBar.currentHeight || 0) + 80;
-
   const handleAnimationsToggle = async (enabled: boolean) => {
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -453,10 +450,11 @@ export default function SettingsScreen() {
       <ScrollView 
         style={styles.scrollView} 
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingTop: navBarHeight }}
+        contentContainerStyle={{ paddingTop: topInset, paddingBottom: bottomInset }}
       >
+        <View style={column}>
         {/* App Settings */}
-        <View style={styles.section}>
+        <View style={[styles.section, styles.firstSection]}>
           <Text style={styles.sectionTitle}>{tSettings('appSettings', 'App Settings')}</Text>
 
           {renderSettingItem({
@@ -759,6 +757,7 @@ export default function SettingsScreen() {
             showChevron: true,
           })}
         </View>
+        </View>
 
       </ScrollView>
 
@@ -1028,6 +1027,9 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   section: {
     marginTop: 24,
     marginHorizontal: 16,
+  },
+  firstSection: {
+    marginTop: 0,
   },
   sectionTitle: {
     fontSize: 16,

@@ -1,11 +1,11 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Alert, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Alert } from 'react-native';
 import { useTheme } from '../../../hooks/useTheme';
 import { useNotifications, type Notification } from '@contexts/NotificationContext';
 import { MaterialIcons } from '../../../lib/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import UnifiedSearchAndFilter from '../../../components/UnifiedSearchAndFilter';
-import { useScroll } from '@contexts/ScrollContext';
+import { useDashboardPageLayout } from '../../../hooks/useDashboardPageLayout';
 import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../hooks/useAuth';
 import { useTranslation } from '../../../i18n/i18n';
@@ -20,15 +20,13 @@ import {
 
 export default function NotificationsScreen() {
   const { isDark, colors } = useTheme();
-  const { headerHeight } = useScroll();
+  const { navbarInset, column } = useDashboardPageLayout();
   const { notifications, unreadCount, isLoading, markAsRead, markAsUnread, markAllAsRead, archiveNotification, deleteNotification, refreshNotifications } = useNotifications();
   const { user } = useAuth();
   const router = useRouter();
   const params = useLocalSearchParams();
   const { t } = useTranslation('notifications');
-  // Calculate nav bar height (StatusBar + header content)
-  const navBarHeight = (StatusBar.currentHeight || 0) + 80;
-  const styles = getStyles(isDark, colors, navBarHeight, headerHeight);
+  const styles = getStyles(isDark, colors, navbarInset);
   const scrollViewRef = useRef<ScrollView>(null);
   const notificationRefs = useRef<{ [key: string]: View | null }>({});
 
@@ -578,6 +576,7 @@ export default function NotificationsScreen() {
 
   return (
     <View style={styles.container}>
+      <View style={[styles.column, column]}>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
@@ -710,15 +709,16 @@ export default function NotificationsScreen() {
           ))}
         </ScrollView>
       )}
+      </View>
     </View>
   );
 }
 
-const getStyles = (isDark: boolean, colors: any, navBarHeight: number = 0, scrollHeaderHeight: number = 0) => StyleSheet.create({
+const getStyles = (isDark: boolean, colors: any, navbarInset: number = 0) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background.default,
-    paddingTop: Math.max(scrollHeaderHeight || 0, (StatusBar.currentHeight || 0) + 80),
+    paddingTop: navbarInset,
   },
   loadingContainer: {
     flex: 1,
@@ -842,6 +842,9 @@ const getStyles = (isDark: boolean, colors: any, navBarHeight: number = 0, scrol
     color: '#FFFFFF',
     fontSize: 11,
     fontWeight: '600',
+  },
+  column: {
+    flex: 1,
   },
   scrollView: {
     flex: 1,

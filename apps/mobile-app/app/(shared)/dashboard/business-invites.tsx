@@ -7,11 +7,10 @@ import {
   Text,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ActionButton, ModalBackdrop, Surface } from "@hashpass/ui/primitives";
 import { uiPalette, uiTokens } from "@hashpass/ui/tokens";
 import { apiClient } from "../../../lib/api-client";
-import { useScroll } from "@contexts/ScrollContext";
+import { DASHBOARD_PAGE_MAX_WIDTH, useDashboardPageLayout } from "../../../hooks/useDashboardPageLayout";
 import { useTheme } from "../../../hooks/useTheme";
 import { useTranslation } from "../../../i18n/i18n";
 
@@ -39,8 +38,7 @@ const responseItems = (response: unknown): BusinessInviteRequest[] => {
 
 export default function BusinessInviteApprovalScreen() {
   const { isDark } = useTheme();
-  const { headerHeight } = useScroll();
-  const insets = useSafeAreaInsets();
+  const { topInset, bottomInset } = useDashboardPageLayout();
   const { t } = useTranslation("passes");
   const mode = isDark ? "dark" : "light";
   const palette = uiPalette(mode);
@@ -114,9 +112,8 @@ export default function BusinessInviteApprovalScreen() {
       contentContainerStyle={[
         styles.content,
         {
-          paddingTop:
-            Math.max(headerHeight, insets.top + 80) + uiTokens.space.xl,
-          paddingBottom: insets.bottom + uiTokens.space.section,
+          paddingTop: topInset,
+          paddingBottom: bottomInset,
         },
       ]}
     >
@@ -266,7 +263,7 @@ const styles = StyleSheet.create({
   page: { flex: 1 },
   content: {
     width: "100%",
-    maxWidth: 880,
+    maxWidth: DASHBOARD_PAGE_MAX_WIDTH,
     alignSelf: "center",
     paddingHorizontal: uiTokens.space.lg,
     gap: uiTokens.space.xl,

@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons, MaterialIcons } from '../../../lib/vector-icons';
 import { useTheme } from '../../../hooks/useTheme';
+import { useDashboardPageLayout } from '../../../hooks/useDashboardPageLayout';
 import { useAuth } from '../../../hooks/useAuth';
 import { passSystemService, PassInfo } from '../../../lib/pass-system';
 import { EVENTS } from '../../../config/events';
@@ -17,6 +18,7 @@ const formatEntitlement = (value: string) => value
 
 export default function PassDetailsScreen() {
   const { colors, isDark } = useTheme();
+  const { topInset, bottomInset, column } = useDashboardPageLayout();
   const { t } = useTranslation('passes');
   const { showSuccess, showError } = useToastHelpers();
   const { user, dbUserId, isLoading: authLoading } = useAuth();
@@ -193,7 +195,7 @@ export default function PassDetailsScreen() {
   const eventDate = event?.eventDateString || t('eventDateUnavailable', 'Event dates to be announced');
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView style={styles.container} contentContainerStyle={[styles.content, column, { paddingTop: topInset, paddingBottom: bottomInset }]}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity 

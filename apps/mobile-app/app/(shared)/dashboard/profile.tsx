@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, Image, ScrollView, StyleSheet, StatusBar, Modal, ActivityIndicator, TextInput, Switch } from 'react-native';
+import { View, Text, TouchableOpacity, Image, ScrollView, StyleSheet, Modal, ActivityIndicator, TextInput, Switch } from 'react-native';
 import { useAuth } from '../../../hooks/useAuth';
 import { useTheme } from '../../../hooks/useTheme';
-import { useScroll } from '@contexts/ScrollContext';
+import { useDashboardPageLayout } from '../../../hooks/useDashboardPageLayout';
 import { Ionicons, MaterialIcons } from '../../../lib/vector-icons';
 import { supabase } from '../../../lib/supabase';
 import { useToastHelpers } from '@contexts/ToastContext';
@@ -74,7 +74,7 @@ const isAttendeeProfile = (value: unknown): value is AttendeeProfile => {
 export default function ProfileScreen() {
   const { user, isLoading: authLoading } = useAuth();
   const { isDark, colors } = useTheme();
-  const { headerHeight } = useScroll();
+  const { topInset, bottomInset, column } = useDashboardPageLayout();
   const { showSuccess, showError } = useToastHelpers();
   const styles = getStyles(isDark, colors);
 
@@ -237,10 +237,6 @@ export default function ProfileScreen() {
 
   const activeUser = profileUser ?? user ?? null;
 
-  // Calculate padding needed to account for navbar
-  const statusBarHeight = StatusBar.currentHeight || 0;
-  const effectiveHeaderHeight = headerHeight || 60;
-  const totalHeaderHeight = statusBarHeight + effectiveHeaderHeight;
 
   // Get current avatar URL or generate one
   const getDisplayName = (): string => {
@@ -437,13 +433,13 @@ export default function ProfileScreen() {
   if (authLoading || profileLoading) {
     return (
       <View style={styles.container}>
-        <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          <View style={[styles.header, { paddingTop: totalHeaderHeight + 20 }]}>
+        <ScrollView style={styles.scrollView} contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomInset }]} showsVerticalScrollIndicator={false}>
+          <View style={[styles.header, { paddingTop: topInset }]}>
             <View style={[styles.avatar, styles.skeletonBlock]} />
             <View style={[styles.skeletonLine, styles.skeletonTitle]} />
             <View style={[styles.skeletonLine, styles.skeletonSubtitle]} />
           </View>
-          <View style={styles.content}>
+          <View style={[styles.content, column]}>
             <View style={styles.section}>
               <View style={[styles.skeletonLine, styles.skeletonSectionTitle]} />
               <View style={styles.infoCard}>
@@ -462,11 +458,11 @@ export default function ProfileScreen() {
     <View style={styles.container}>
       <ScrollView 
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomInset }]}
         showsVerticalScrollIndicator={false}
       >
         {/* Profile Header */}
-        <View style={[styles.header, { paddingTop: totalHeaderHeight + 20 }]}>
+        <View style={[styles.header, { paddingTop: topInset }]}>
           <TouchableOpacity 
             style={styles.avatarContainer}
             onPress={handleAvatarPress}
@@ -496,7 +492,7 @@ export default function ProfileScreen() {
         </View>
 
         {/* Profile Content */}
-        <View style={styles.content}>
+        <View style={[styles.content, column]}>
           {profileError ? (
             <View style={styles.profileErrorCard}>
               <View style={styles.profileErrorHeader}>
