@@ -1,5 +1,6 @@
 import { getSupabaseServerForRequest } from "@/lib/supabase-server";
 import { eventIdFromRequest, isEventSectionPublic } from "@/lib/server/event-api";
+import { getEventSupabaseProfileId } from "@/lib/server/event-supabase-profile";
 import { resolveNotificationIdentity, isResolveIdentityError } from "@/lib/server/resolve-notification-identity";
 
 // Speaker directory access is server-owned so browser clients do not couple to
@@ -13,7 +14,8 @@ export async function GET(request: Request) {
     );
   }
 
-  const supabase = getSupabaseServerForRequest(request);
+  const supabaseProfile = getEventSupabaseProfileId(request, eventId);
+  const supabase = getSupabaseServerForRequest(request, supabaseProfile);
 
   // This route runs on the service-role client (bypasses RLS), so the
   // organizer's speakers_public toggle has to be enforced here -- covers
@@ -23,7 +25,7 @@ export async function GET(request: Request) {
     // Guest-only gate (db/migrations/V109) -- a signed-in attendee must still
     // see a private event's real directory via the same dashboard links that
     // already route them here, so only deny once there's no session at all.
-    const identity = await resolveNotificationIdentity(request);
+    const identity = await resolveNotificationIdentity(request, supabaseProfile);
     if (isResolveIdentityError(identity)) {
       // `public: false` lets callers (speakers/calendar.tsx) tell "hidden"
       // apart from a genuinely empty directory, so they don't fall back to

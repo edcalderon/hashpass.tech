@@ -4,6 +4,7 @@ import { View, Text, StyleSheet, Image } from 'react-native';
 interface SpeakerAvatarProps {
   name?: string;
   imageUrl?: string | null;
+  fallbackImageUrl?: string | null;
   size?: number;
   style?: any;
   showBorder?: boolean;
@@ -55,19 +56,24 @@ function getBackgroundColor(name?: string): string {
 export default function SpeakerAvatar({
   name,
   imageUrl,
+  fallbackImageUrl,
   size = 50,
   style,
   showBorder = false,
 }: SpeakerAvatarProps) {
-  // Photos are our own bundled/S3-hosted static assets (no CDN retry/loading
-  // state machine like the one that caused prior "infinite loading loops" --
-  // see git history on this file, "fix: harden mobile web launch"). This is
-  // deliberately a single onError flag with no retries: if it fails to load
-  // once, permanently fall back to the initials placeholder for this instance.
-  const [imageFailed, setImageFailed] = useState(false);
+  // Try the authoritative profile image once, then the deterministic local
+  // asset fallback once. Never retry the same URL, which avoids the loading
+  // loops that previously affected mobile web launch.
+  const imageSources = [imageUrl, fallbackImageUrl].filter(
+    (source, index, sources): source is string => Boolean(source) && sources.indexOf(source) === index,
+  );
+  const [failedImageSources, setFailedImageSources] = useState<Set<string>>(
+    () => new Set(),
+  );
   const initials = getInitials(name);
   const backgroundColor = getBackgroundColor(name);
-  const showImage = Boolean(imageUrl) && !imageFailed;
+  const imageSource = imageSources.find((source) => !failedImageSources.has(source));
+  const showImage = Boolean(imageSource);
 
   return (
     <View
@@ -87,9 +93,17 @@ export default function SpeakerAvatar({
     >
       {showImage ? (
         <Image
-          source={{ uri: imageUrl as string }}
+          source={{ uri: imageSource as string }}
           style={{ width: size, height: size, borderRadius: size / 2 }}
-          onError={() => setImageFailed(true)}
+          onError={() => {
+            if (!imageSource) return;
+            setFailedImageSources((current) => {
+              if (current.has(imageSource)) return current;
+              const next = new Set(current);
+              next.add(imageSource);
+              return next;
+            });
+          }}
         />
       ) : (
         <Text style={[styles.initialsText, { fontSize: Math.max(12, size * 0.38) }]}>

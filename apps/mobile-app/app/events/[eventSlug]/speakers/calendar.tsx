@@ -21,6 +21,7 @@ interface Speaker {
   company: string | null;
   bio?: string;
   image?: string;
+  imageFallback?: string;
   user_id?: string;
   directory_visible?: boolean;
   is_accepting_meetings?: boolean;
@@ -63,6 +64,7 @@ function SpeakerCard({
       <View style={styles.speakerImageContainer}>
         <SpeakerAvatar
           imageUrl={speaker.image}
+          fallbackImageUrl={speaker.imageFallback}
           name={speaker.name}
           size={50}
           showBorder={false}
@@ -181,7 +183,8 @@ export default function SpeakersCalendar() {
               title: s.title || null,
               company: s.company || null,
               bio: s.bio || (s.title ? `Experienced professional in ${s.title}.` : undefined),
-              image: s.imageurl || s.image_url || getSpeakerAvatarUrl(s.name),
+              image: s.imageurl || s.image_url || undefined,
+              imageFallback: getSpeakerAvatarUrl(s.name),
               user_id: s.user_id || undefined,
               directory_visible: !canUseLegacyBslDirectory
                 || s.directory_visible === true
@@ -223,10 +226,16 @@ export default function SpeakersCalendar() {
           title: s.title || null,
           company: s.company || null,
           bio: s.bio,
-          image: getSpeakerAvatarUrl(s.name),
-          isActive: Boolean(s.isActive),
-          isPublished: Boolean(s.isActive),
+          image: s.image || undefined,
+          imageFallback: getSpeakerAvatarUrl(s.name),
+          // Bundled event records are public references, not claimed account
+          // state. Keep them visible and pending while the authoritative API
+          // recovers instead of presenting every speaker as inactive.
+          isActive: false,
+          isPublished: true,
           isClaimed: false,
+          directory_visible: true,
+          is_accepting_meetings: true,
           sortOrder: index,
         })));
         setSpeakers(sortedEventSpeakers);

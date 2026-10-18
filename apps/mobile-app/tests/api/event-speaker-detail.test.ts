@@ -32,6 +32,10 @@ let mockEventsResult: { data: unknown; error: unknown } = {
 const mockFrom = jest.fn((table: string) =>
   table === "events" ? mockCreateEventsQuery() : mockCreateQuery(),
 );
+const mockGetSupabaseServerForRequest = jest.fn((_request: Request, _profile?: string) => ({
+  from: mockFrom,
+  rpc: jest.fn(async () => mockResult),
+}));
 const mockResolveNotificationIdentity = jest.fn();
 const mockIsResolveIdentityError = jest.fn();
 
@@ -64,10 +68,7 @@ function mockCreateEventsQuery(): Record<string, unknown> {
 }
 
 jest.mock("@/lib/supabase-server", () => ({
-  getSupabaseServerForRequest: () => ({
-    from: mockFrom,
-    rpc: jest.fn(async () => mockResult),
-  }),
+  getSupabaseServerForRequest: mockGetSupabaseServerForRequest,
 }));
 
 // The real module pulls in @hashpass/auth (and from there @edcalderon/auth's
@@ -87,6 +88,7 @@ describe("event-scoped speaker detail api", () => {
     mockEventsResult = { data: { speakers_public: true }, error: null };
     mockResolveNotificationIdentity.mockReset();
     mockIsResolveIdentityError.mockReset().mockReturnValue(false);
+    mockGetSupabaseServerForRequest.mockClear();
   });
 
   it("exposes an event-scoped server endpoint instead of requiring a browser Supabase call", () => {
@@ -106,6 +108,10 @@ describe("event-scoped speaker detail api", () => {
 
       expect(response.status).toBe(200);
       expect(await response.json()).toEqual({ data: speaker });
+      expect(mockGetSupabaseServerForRequest).toHaveBeenCalledWith(
+        expect.any(Request),
+        "bsl-production",
+      );
     });
 
     it("returns not found when the server cannot resolve that speaker in the event", async () => {
@@ -227,6 +233,10 @@ describe("event-scoped speaker collection api", () => {
 
       expect(response.status).toBe(200);
       expect(await response.json()).toEqual({ data: [speaker] });
+      expect(mockGetSupabaseServerForRequest).toHaveBeenCalledWith(
+        expect.any(Request),
+        "bsl-production",
+      );
     });
   });
 });

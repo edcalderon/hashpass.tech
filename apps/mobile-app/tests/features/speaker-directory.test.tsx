@@ -282,6 +282,8 @@ describe('speaker directory', () => {
 
     expect(renderer!.root.findByProps({ children: 'Active Reference' })).toBeTruthy();
     expect(renderer!.root.findByProps({ children: 'Inactive Reference' })).toBeTruthy();
+    expect(renderer!.root.findAllByProps({ children: 'Pending' })).toHaveLength(2);
+    expect(renderer!.root.findAllByProps({ children: 'Inactive' })).toHaveLength(0);
 
     await act(async () => renderer!.unmount());
   });
