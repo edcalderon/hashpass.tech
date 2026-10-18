@@ -1,3 +1,14 @@
+## [1.9.123](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.122...v1.9.123) (2026-10-18)
+### Released
+- native X sign-in through the system auth session
+
+### Release scope
+- Compared with: `v1.9.122` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Auth
+
 ## [1.9.122](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.121...v1.9.122) (2026-10-18)
 ### Released
 - Version 1.9.122 release
