@@ -65,6 +65,7 @@ import {
   getExplorerEventStatus,
   getExplorerFloatingBottomInset,
   getExplorerHeroSlides,
+  localizeExplorerHeroSlide,
   getExplorerTenantHeroSlide,
   getExplorerLayout,
   getExplorerScopeLabel,
@@ -466,6 +467,13 @@ export default function Explorer({
     () => getExplorerHeroSlides(explorerEvents),
     [explorerEvents],
   );
+  const localizedGlobalHeroSlides = useMemo(
+    () =>
+      globalHeroSlides.map((slide) =>
+        localizeExplorerHeroSlide(slide, translate),
+      ),
+    [globalHeroSlides, translate],
+  );
 
   // A global dashboard may show every event, while a single-tenant surface
   // owns one static hero. Active media pauses whenever the user holds the
@@ -476,7 +484,8 @@ export default function Explorer({
     durationMs: () => DEFAULT_EVENT_HERO_DURATION_MS,
   });
   const heroIndex = defaultHeroSlider.activeIndex;
-  const globalHeroSlide = globalHeroSlides[heroIndex] || globalHeroSlides[0];
+  const globalHeroSlide =
+    localizedGlobalHeroSlides[heroIndex] || localizedGlobalHeroSlides[0];
 
   const selectedHeroSlider = useAutoAdvanceProgress({
     count:
@@ -851,7 +860,7 @@ export default function Explorer({
             "Hero slides",
           )}
           getSegmentAccessibilityLabel={(index: number) =>
-            `${translate("explore.rework.show", "Show")} ${globalHeroSlides[index]?.title || "event"}`
+            `${translate("explore.rework.show", "Show")} ${localizedGlobalHeroSlides[index]?.title || "event"}`
           }
         />
       </Pressable>

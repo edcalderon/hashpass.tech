@@ -754,6 +754,11 @@
         "title": "Event-Informationen",
         "subtitle": "Details & Logistik"
       }
+    },
+    "rework": {
+      "heroPartners": "OFFIZIELLE PARTNER",
+      "heroPartnersTitle": "Mit den Menschen entwickelt, die das Ökosystem voranbringen.",
+      "heroPartnersSubtitle": "Sponsoren und Community-Partner machen jeden Halt möglich."
     }
   },
   "passes": {
@@ -1173,6 +1178,7 @@
   },
   "version": {
     "title": "Versionsinformationen",
+    "stable": "Stabil",
     "current": "Aktuelle Version",
     "released": "Veröffentlicht:",
     "buildInfo": "Build-Informationen:",

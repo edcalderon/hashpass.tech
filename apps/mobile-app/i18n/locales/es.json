@@ -1858,6 +1858,7 @@
   },
   "version": {
     "title": "Información de Versión",
+    "stable": "Estable",
     "current": "Versión Actual",
     "released": "Publicado:",
     "buildInfo": "Información de Compilación:",

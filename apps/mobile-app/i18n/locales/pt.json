@@ -754,6 +754,11 @@
         "title": "Informações do evento",
         "subtitle": "Detalhes e logística"
       }
+    },
+    "rework": {
+      "heroPartners": "PARCEIROS OFICIAIS",
+      "heroPartnersTitle": "Construído com as pessoas que impulsionam o ecossistema.",
+      "heroPartnersSubtitle": "Patrocinadores e parceiros da comunidade tornam cada parada possível."
     }
   },
   "passes": {
@@ -1173,6 +1178,7 @@
   },
   "version": {
     "title": "Informações da Versão",
+    "stable": "Estável",
     "current": "Versão Atual",
     "released": "Lançado:",
     "buildInfo": "Informações de Build:",

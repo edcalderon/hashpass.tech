@@ -1854,6 +1854,7 @@
   },
   "version": {
     "title": "버전 정보",
+    "stable": "안정",
     "current": "현재 버전",
     "released": "출시일:",
     "buildInfo": "빌드 정보:",
