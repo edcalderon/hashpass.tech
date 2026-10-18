@@ -20,20 +20,16 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.120)
+## 📋 Latest Changes (v1.9.121)
 
-### Features
-
-* **mobile:** compact dashboard sidebar ([07d6bd7](https://github.com/hashpass-tech/hashpass.tech/commit/07d6bd7666d33555b2cd81225273333964e3d28f))
-### Release Highlights
-- compact dashboard sidebar
+### Released
+- route BSL speakers to the correct tenant
 
 ### Release scope
-- Compared with: `v1.9.119` (the previous global release tag)
+- Compared with: `v1.9.120` (the previous global release tag)
 
 ### Affected products & packages
 - Mobile app
-- Documentation
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
