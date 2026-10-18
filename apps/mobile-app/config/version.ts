@@ -22,22 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610172327, // Updated to current timestamp
-  releaseDate: '2026-10-17',
+  buildNumber: 202610180151, // Updated to current timestamp
+  releaseDate: '2026-10-18',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'compact dashboard sidebar'
+    // No new features
   ],
   bugfixes: [
-    // No bugfixes
+    'route BSL speakers to the correct tenant'
   ],
   breakingChanges: [],
-  notes: 'compact dashboard sidebar'
+  notes: 'route BSL speakers to the correct tenant'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.121': {
+    version: '1.9.121',
+    buildNumber: 202610180151,
+    releaseDate: '2026-10-18',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'route BSL speakers to the correct tenant'
+    ],
+    breakingChanges: [],
+    notes: 'route BSL speakers to the correct tenant'
+  },
   '1.9.120': {
     version: '1.9.120',
     buildNumber: 202610172327,

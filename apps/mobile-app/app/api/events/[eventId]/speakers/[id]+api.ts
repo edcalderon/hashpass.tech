@@ -1,5 +1,6 @@
 import { getSupabaseServerForRequest } from "@/lib/supabase-server";
 import { eventIdFromRequest, isEventSectionPublic } from "@/lib/server/event-api";
+import { getEventSupabaseProfileId } from "@/lib/server/event-supabase-profile";
 import { resolveNotificationIdentity, isResolveIdentityError } from "@/lib/server/resolve-notification-identity";
 
 function speakerIdFromRequest(request: Request) {
@@ -22,7 +23,8 @@ export async function GET(request: Request) {
   if (!speakerId)
     return Response.json({ error: "Missing speaker id" }, { status: 400 });
 
-  const supabase = getSupabaseServerForRequest(request);
+  const supabaseProfile = getEventSupabaseProfileId(request, eventId);
+  const supabase = getSupabaseServerForRequest(request, supabaseProfile);
 
   // This endpoint runs on the service-role client (bypasses RLS) and was
   // never gated by speakers_public at all -- the collection route
@@ -31,7 +33,7 @@ export async function GET(request: Request) {
   // guest-only gate, same signed-in-caller bypass.
   const speakersPublic = await isEventSectionPublic(supabase, eventId, "speakers_public");
   if (!speakersPublic) {
-    const identity = await resolveNotificationIdentity(request);
+    const identity = await resolveNotificationIdentity(request, supabaseProfile);
     if (isResolveIdentityError(identity)) {
       // `public: false` on a 200 (not a 404) lets speakers/[id].tsx tell
       // "hidden" apart from "no such speaker" and skip falling back to the

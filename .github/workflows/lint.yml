@@ -1,0 +1,43 @@
+name: Type placement guard
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Type placement
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --prefer-offline
+
+      - name: Set pull request diff base
+        if: ${{ github.event_name == 'pull_request' }}
+        run: echo "TYPE_PLACEMENT_BASE=origin/${GITHUB_BASE_REF}" >> "$GITHUB_ENV"
+
+      - name: Run type placement guard
+        run: pnpm check:type-placement
+
+      - name: Test type placement guard
+        run: node scripts/check-type-placement.test.mjs
