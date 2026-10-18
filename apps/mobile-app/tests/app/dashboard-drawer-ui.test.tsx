@@ -25,6 +25,7 @@ let mockLocale = "en";
 let mockPlatformOS: "ios" | "web" = "ios";
 let mockAnimationsEnabled = false;
 let mockDbUserId: string | null = "db-user-1";
+let mockIsMobile = true;
 let mockScrollChildren: unknown;
 let mockHasHandleNext = true;
 
@@ -209,7 +210,9 @@ jest.mock("../../hooks/useTheme", () => ({
   }),
 }));
 
-jest.mock("../../hooks/useIsMobile", () => ({ useIsMobile: () => true }));
+jest.mock("../../hooks/useIsMobile", () => ({
+  useIsMobile: () => mockIsMobile,
+}));
 
 jest.mock("../../hooks/useAuth", () => ({
   useAuth: () => ({
@@ -262,6 +265,9 @@ jest.mock(
 );
 
 jest.mock("../../lib/vector-icons", () => ({ Ionicons: "Ionicons" }));
+jest.mock("../../components/icons/SettingsIcons", () => ({
+  ChevronDownIcon: "ChevronDownIcon",
+}));
 jest.mock("../../lib/morph-icon", () => ({ MorphIcon: "MorphIcon" }));
 jest.mock("../../lib/haptics", () => ({
   hapticLight: mockHapticLight,
@@ -312,7 +318,9 @@ jest.mock("@lingui/macro", () => ({
 }));
 
 const { CustomDrawerContent } =
-  require("../../app/(shared)/dashboard/_layout") as typeof import("../../app/(shared)/dashboard/_layout");
+  require("../../app/(shared)/dashboard/_layout") as {
+    CustomDrawerContent: React.ComponentType<any>;
+  };
 const TestRenderer =
   require("react-test-renderer") as typeof import("react-test-renderer");
 const { i18n } = require("../../i18n/i18n") as { i18n: any };
@@ -343,6 +351,7 @@ describe("dashboard drawer visual controls", () => {
     mockPlatformOS = "ios";
     mockAnimationsEnabled = false;
     mockDbUserId = "db-user-1";
+    mockIsMobile = true;
     mockHasHandleNext = true;
     mockRequestAnimationFrame.mockClear();
     mockWithRepeat.mockClear();
@@ -365,15 +374,46 @@ describe("dashboard drawer visual controls", () => {
     expect(root.findByProps({ accessibilityLabel: "English" })).toBeTruthy();
     expect(root.findByProps({ accessibilityLabel: "Light mode" })).toBeTruthy();
     expect(root.findByProps({ accessibilityLabel: "Log out" })).toBeTruthy();
+    expect(root.findAllByProps({ children: "Navigation" })).toHaveLength(1);
+    expect(root.findAllByProps({ children: "Quick actions" })).toHaveLength(1);
     expect(root.findAllByProps({ name: "globe-outline" })).toHaveLength(1);
     expect(root.findAllByProps({ name: "sunny" })).toHaveLength(1);
     expect(root.findAllByProps({ name: "log-out-outline" })).toHaveLength(1);
+    expect(root.findAllByProps({ name: "camera-outline" })).toHaveLength(1);
     expect(root.findAllByProps({ name: "chevron-forward" })).toHaveLength(0);
 
     root
       .findByProps({ accessibilityLabel: "@edward: Profile" })
       .props.onPress();
-    expect(mockNavigate).toHaveBeenCalledWith("profile");
+    root.findByProps({ accessibilityLabel: "Profile" }).props.onPress();
+    expect(mockNavigate).toHaveBeenCalledTimes(2);
+    expect(mockNavigate).toHaveBeenNthCalledWith(1, "profile");
+    expect(mockNavigate).toHaveBeenNthCalledWith(2, "profile");
+    mockNavigate.mockClear();
+
+    const accountDetails = root.findByProps({
+      accessibilityLabel: "Account details",
+    });
+    expect(accountDetails.props.accessibilityState).toEqual({ expanded: false });
+    expect(root.findAllByType("ChevronDownIcon" as any)).toHaveLength(1);
+    expect(root.findByType("ChevronDownIcon" as any).parent?.props.style).toEqual({
+      transform: [{ rotate: "0deg" }],
+    });
+
+    await TestRenderer.act(async () => {
+      accountDetails.props.onPress();
+      await Promise.resolve();
+    });
+
+    expect(
+      root.findByProps({ accessibilityLabel: "Account details" }).props
+        .accessibilityState,
+    ).toEqual({ expanded: true });
+    expect(root.findAllByType("ChevronDownIcon" as any)).toHaveLength(1);
+    expect(root.findByType("ChevronDownIcon" as any).parent?.props.style).toEqual({
+      transform: [{ rotate: "180deg" }],
+    });
+    expect(mockNavigate).not.toHaveBeenCalled();
 
     await TestRenderer.act(async () => {
       root.findByProps({ accessibilityLabel: "English" }).props.onPress();
@@ -395,6 +435,18 @@ describe("dashboard drawer visual controls", () => {
 
     expect(root.findByProps({ accessibilityLabel: "Dark mode" })).toBeTruthy();
     expect(root.findAllByProps({ name: "moon-outline" })).toHaveLength(1);
+  });
+
+  it("keeps the account panel collapsed by default on desktop", async () => {
+    mockIsMobile = false;
+    const renderer = await renderDrawer();
+    const root = renderer.root;
+
+    expect(
+      root.findByProps({ accessibilityLabel: "Account details" }).props
+        .accessibilityState,
+    ).toEqual({ expanded: false });
+    expect(root.findAllByType("ChevronDownIcon" as any)).toHaveLength(1);
   });
 
   it("falls back to an uppercase locale label for an unsupported locale", async () => {

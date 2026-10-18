@@ -816,6 +816,7 @@
       "themeLight": "라이트"
     },
     "account": "계정",
+    "accountDetails": "계정 세부정보",
     "signOut": "로그아웃",
     "version": "HASHPASS v{version}"
   },
@@ -1853,6 +1854,7 @@
   },
   "version": {
     "title": "버전 정보",
+    "stable": "안정",
     "current": "현재 버전",
     "released": "출시일:",
     "buildInfo": "빌드 정보:",

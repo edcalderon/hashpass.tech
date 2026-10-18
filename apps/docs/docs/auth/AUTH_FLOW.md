@@ -190,9 +190,12 @@ Google sign-in button anymore — see ["Do we still need Directus?"](#do-we-stil
 ## Sign in with Apple (web and iOS)
 
 The current Apple flow, safe secret setup, and release checklist are documented
-in [Sign in with Apple](SIGN_IN_WITH_APPLE.md). In summary, web/PWA uses Better
-Auth OAuth, iOS exchanges the native Apple identity token with Better Auth, and
-Android intentionally does not render an Apple button.
+in [Sign in with Apple](SIGN_IN_WITH_APPLE.md). In summary, web/PWA—including
+iOS Safari—uses Better Auth OAuth with Apple's `response_mode=form_post`, the
+API boundary preserves the state cookie and normalizes the allow-listed form
+fields, iOS native exchanges the Apple identity token with Better Auth, and
+Android intentionally does not render an Apple button. The production
+configuration and verified iOS Safari smoke test are recorded in that page.
 
 ## Sign in with X (Twitter) (web only, added 2026-10-06)
 

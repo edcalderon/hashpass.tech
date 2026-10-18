@@ -157,6 +157,23 @@ export interface ExplorerHeroSlide {
   fallbackImage?: string;
 }
 
+type TranslateExplorerCopy = (key: string, fallback: string) => string;
+
+/** Localize campaign copy while leaving organizer-owned event text untouched. */
+export const localizeExplorerHeroSlide = (
+  slide: ExplorerHeroSlide,
+  translate: TranslateExplorerCopy,
+): ExplorerHeroSlide => {
+  if (slide.id !== "hashpass-partners-discovery") return slide;
+
+  return {
+    ...slide,
+    eyebrow: translate("explore.rework.heroPartners", slide.eyebrow),
+    title: translate("explore.rework.heroPartnersTitle", slide.title),
+    subtitle: translate("explore.rework.heroPartnersSubtitle", slide.subtitle),
+  };
+};
+
 const getExplorerEventEyebrow = (event: ExplorerEvent): string => {
   switch (event.communityEventType) {
     case "poker_room_event":

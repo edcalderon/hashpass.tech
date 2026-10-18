@@ -672,6 +672,7 @@
       "themeLight": "Clair"
     },
     "account": "Compte",
+    "accountDetails": "Détails du compte",
     "signOut": "Se déconnecter",
     "version": "HASHPASS v{version}"
   },
@@ -754,6 +755,11 @@
         "title": "Informations sur l'événement",
         "subtitle": "Détails et logistique"
       }
+    },
+    "rework": {
+      "heroPartners": "PARTENAIRES OFFICIELS",
+      "heroPartnersTitle": "Construit avec les personnes qui font avancer l’écosystème.",
+      "heroPartnersSubtitle": "Les sponsors et partenaires de la communauté rendent chaque étape possible."
     }
   },
   "passes": {
@@ -1173,6 +1179,7 @@
   },
   "version": {
     "title": "Informations sur la Version",
+    "stable": "Stable",
     "current": "Version Actuelle",
     "released": "Publié:",
     "buildInfo": "Informations de Build:",

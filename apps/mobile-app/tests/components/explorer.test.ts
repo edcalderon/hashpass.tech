@@ -5,6 +5,7 @@ import {
   getExplorerHeroActionTarget,
   getExplorerHeroSlides,
   getExplorerMeetingRequestCount,
+  localizeExplorerHeroSlide,
   getExplorerTenantHeroSlide,
   getExplorerLayout,
   getExplorerPageCount,
@@ -179,6 +180,28 @@ describe("explorer rework behavior", () => {
       "colombia2026",
       undefined,
     ]);
+  });
+
+  it("localizes the partners hero copy without changing event-owned slides", () => {
+    const partnersSlide = getExplorerHeroSlides([])[0];
+    const translate = (key: string, fallback: string) =>
+      ({
+        "explore.rework.heroPartners": "SOCIOS OFICIALES",
+        "explore.rework.heroPartnersTitle": "Creado con quienes mueven el ecosistema.",
+        "explore.rework.heroPartnersSubtitle": "Los socios hacen posible cada parada.",
+      })[key] || fallback;
+
+    expect(localizeExplorerHeroSlide(partnersSlide, translate)).toMatchObject({
+      eyebrow: "SOCIOS OFICIALES",
+      title: "Creado con quienes mueven el ecosistema.",
+      subtitle: "Los socios hacen posible cada parada.",
+    });
+
+    const eventSlide = getExplorerTenantHeroSlide({
+      id: "event",
+      title: "Event title",
+    });
+    expect(localizeExplorerHeroSlide(eventSlide, translate)).toBe(eventSlide);
   });
 
   it("keeps a tenant's own hero media after that event has ended", () => {

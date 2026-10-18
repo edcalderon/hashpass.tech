@@ -1,3 +1,19 @@
+## [1.9.120](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.119...v1.9.120) (2026-10-17)
+
+
+### Features
+
+* **mobile:** compact dashboard sidebar ([07d6bd7](https://github.com/hashpass-tech/hashpass.tech/commit/07d6bd7666d33555b2cd81225273333964e3d28f))
+### Release Highlights
+- compact dashboard sidebar
+
+### Release scope
+- Compared with: `v1.9.119` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Documentation
+
 ## [1.9.119](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.118...v1.9.119) (2026-10-17)
 
 

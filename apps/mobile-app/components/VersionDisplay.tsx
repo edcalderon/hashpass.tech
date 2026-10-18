@@ -6,6 +6,7 @@ import { versionService } from '../lib/services/version-service';
 import { apiClient } from '../lib/api-client';
 import VersionInfoDrawer from './VersionInfoDrawer';
 import type { VersionStatusState } from './VersionInfoDrawer';
+import { useTranslation } from '../i18n/i18n';
 
 const STATUS_REQUEST_TIMEOUT_MS = 30000;
 
@@ -40,11 +41,19 @@ export default function VersionDisplay({
   bottomInset = 0,
 }: VersionDisplayProps) {
   const { colors } = useTheme();
+  const { t: translate } = useTranslation();
   const [status, setStatus] = useState<VersionStatusState>('checking');
   const styles = getStyles(colors);
 
   const versionInfo = versionService.getCurrentVersion();
   const badgeInfo = versionService.getVersionBadgeInfo(versionInfo.releaseType);
+  const localizedBadgeInfo = {
+    ...badgeInfo,
+    text:
+      versionInfo.releaseType === 'stable'
+        ? translate('version.stable', 'Stable').toUpperCase()
+        : badgeInfo.text,
+  };
 
   useEffect(() => {
     checkStatus();
@@ -87,7 +96,7 @@ export default function VersionDisplay({
             onPress={openDrawer}
           >
             <Text style={styles.compactText}>v{versionInfo.version}</Text>
-            <VersionBadge styles={styles} badgeInfo={badgeInfo} />
+            <VersionBadge styles={styles} badgeInfo={localizedBadgeInfo} />
           </TouchableOpacity>
         )}
       </VersionInfoDrawer>
@@ -132,7 +141,7 @@ export default function VersionDisplay({
           >
             <View style={styles.versionInfo}>
               <Text style={styles.versionText}>v{versionInfo.version}</Text>
-              <VersionBadge styles={styles} badgeInfo={badgeInfo} />
+              <VersionBadge styles={styles} badgeInfo={localizedBadgeInfo} />
             </View>
             <MaterialIcons name="info-outline" size={20} color={colors.text.secondary} />
           </TouchableOpacity>

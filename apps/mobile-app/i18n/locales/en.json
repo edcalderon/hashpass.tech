@@ -821,6 +821,7 @@
       "themeLight": "Light"
     },
     "account": "Account",
+    "accountDetails": "Account details",
     "signOut": "Sign Out",
     "version": "HASHPASS v{version}"
   },
@@ -1858,6 +1859,7 @@
   },
   "version": {
     "title": "Version Information",
+    "stable": "Stable",
     "current": "Current Version",
     "released": "Released:",
     "buildInfo": "Build Information:",

@@ -71,6 +71,7 @@
   },
   "nav": {
     "account": "Konto",
+    "accountDetails": "Konto üksikasjad",
     "explore": "Avasta",
     "wallet": "Rahakott",
     "notifications": "Teavitused",
@@ -101,6 +102,16 @@
     "lightMode": "Hele režiim",
     "darkMode": "Tume režiim",
     "logout": "Logi välja"
+  },
+  "version": {
+    "stable": "Stabiilne"
+  },
+  "explore": {
+    "rework": {
+      "heroPartners": "AMETLIKUD PARTNERID",
+      "heroPartnersTitle": "Loodud koos inimestega, kes ökosüsteemi edasi viivad.",
+      "heroPartnersSubtitle": "Sponsorid ja kogukonna partnerid teevad iga peatuse võimalikuks."
+    }
   },
   "index": {
     "tagline": "Sinu sündmus kuulub siia",

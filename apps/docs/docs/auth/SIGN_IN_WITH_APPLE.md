@@ -1,14 +1,20 @@
 # Sign in with Apple
 
 This page describes the current HASHPASS Sign in with Apple integration. It is
-intentionally safe to publish: it contains variable names and placeholders, not
-Apple account identifiers, private keys, client secrets, or token values.
+intentionally safe to publish: it contains public Apple portal identifiers and
+callback URLs, plus variable names and placeholders—not private keys, client
+secrets, cookies, authorization codes, or token values.
+
+**Production status (verified 2026-10-17):** Sign in with Apple completes on
+iOS Safari/mobile browser and returns the user to the dashboard. The verified
+runtime is `v1.9.119`, with both production and development API version
+endpoints reporting that backend version.
 
 ## Supported clients
 
 | Client | Button | Authentication path |
 | --- | --- | --- |
-| Web/PWA | Shown | Better Auth OAuth; Apple redirects to the Better Auth callback |
+| Web/PWA (including iOS Safari) | Shown | Better Auth OAuth; Apple redirects to the Better Auth callback |
 | iOS | Shown | Native Apple sheet; the identity token is exchanged with Better Auth |
 | Android | Hidden | Apple has no native Android SDK in this app |
 
@@ -23,18 +29,59 @@ features attached to the same user identity.
 1. The auth screen calls `signInWithOAuth("apple")`.
 2. Better Auth starts Apple OAuth using the Apple Service ID as the web client
    identifier.
-3. Apple returns to the registered HTTPS callback:
+3. Apple sends its `response_mode=form_post` response to the registered HTTPS
+   callback:
 
    ```text
    https://<API_ORIGIN>/api/auth/callback/apple
    ```
 
-4. Better Auth consumes the authorization code, creates the session cookie, and
-   redirects the browser to the app callback route.
-5. The app restores the Better Auth session and starts the Supabase bridge.
+4. The API Gateway/Lambda boundary preserves the request body and state cookie.
+   The Apple callback adapter accepts only the expected urlencoded callback
+   fields, converts the form POST into the equivalent Better Auth GET callback,
+   and preserves the request cookie headers.
+5. Better Auth validates the state, consumes the authorization code, creates
+   the session cookie, and redirects the browser to the app callback route.
+6. The app restores the Better Auth session and starts the Supabase bridge,
+   then routes the user to the dashboard.
 
-`localhost` is not a valid Apple return URL. Use a registered HTTPS environment
-host for web testing.
+The same flow is used by desktop browsers and iOS Safari. `localhost` is not a
+valid Apple return URL; use a registered HTTPS environment host for web testing.
+
+### Verified iOS Safari behavior
+
+The production verification path is:
+
+1. Open `https://hashpass.tech/auth` in iOS Safari.
+2. Tap **Continue with Apple** and complete the Apple sheet/passcode step.
+3. Safari posts the Apple response to the API callback, briefly processes the
+   callback, and returns to the HashPass app callback.
+4. The Better Auth session is read and the user lands on the dashboard.
+
+The browser callback is deliberately different from the native iOS flow below:
+iOS Safari uses the web OAuth Service ID and browser callback; the installed
+iOS app uses the native identity-token exchange and does not need a browser
+callback after the native sheet.
+
+### Production Apple portal configuration
+
+The following public configuration is the known-good production setup. Keep
+the Apple private key and all server secret values out of this documentation.
+
+| Apple Developer field | Production value |
+| --- | --- |
+| Primary App ID | `7UG3Q53FQ3.tech.hashpass.app` (HASHPASS TECH) |
+| Web Services ID / OAuth client ID | `tech.hashpass.signin` |
+| Website domain | `api.hashpass.tech` |
+| Development website domain | `api-dev.hashpass.tech` |
+| Production return URL | `https://api.hashpass.tech/api/auth/callback/apple` |
+| Development return URL | `https://api-dev.hashpass.tech/api/auth/callback/apple` |
+
+Return URLs must match exactly, including `https://`, host, path, and the
+absence of a trailing slash. Do not add a new Apple return URL without also
+deploying and testing the corresponding environment. The production Services
+ID is used for browser OAuth; the iOS bundle identifier is used as the second
+Better Auth audience for native identity tokens.
 
 ### iOS
 
@@ -105,8 +152,9 @@ the credential that must be protected and rotated.
 
 After configuring secrets and building a signed iOS release:
 
-- Web/PWA: start Apple OAuth, complete consent, and verify the callback returns
-  to the app rather than the API host.
+- Web/PWA: start Apple OAuth from desktop Safari/Chrome and iOS Safari,
+  complete consent, and verify the callback returns to the dashboard rather
+  than the API host or the sign-in screen.
 - iOS: verify the Apple sheet opens, test first-time consent, cancellation, a
   repeat sign-in, and **Hide My Email**.
 - Confirm the Better Auth session exists and that the Supabase bridge creates
@@ -114,6 +162,40 @@ After configuring secrets and building a signed iOS release:
 - Confirm Android does not show an Apple button and still offers its supported
   sign-in methods.
 - Check server logs for configuration errors without logging secret values.
+
+For a release-level smoke test, also verify that `/api/config/versions`
+reports the release backend version and that the Apple callback request does
+not produce `State not found` in the API logs. A deliberately invalid code may
+be used in a non-user diagnostic to confirm the callback reaches code exchange;
+never log or paste a real Apple `code`, `state`, cookie, or ID token.
+
+## Security and change-safety invariants
+
+The following are intentional production safeguards and should remain covered
+by tests when auth code changes:
+
+- Apple web callbacks accept only `POST /api/auth/callback/apple` with an
+  `application/x-www-form-urlencoded` body.
+- The adapter forwards only Better Auth/Apple callback fields (`code`, `error`,
+  `device_id`, `error_description`, `state`, `user`, and `iss`). It must not
+  copy arbitrary form fields into the callback URL.
+- API Gateway v2 cookies must be reconstructed into the request `Cookie` header
+  so Better Auth can validate the state cookie. The state value is never a
+  substitute for server-side validation.
+- Base64 request bodies must be decoded as bytes. Converting them to UTF-8 can
+  corrupt unrelated multipart support uploads.
+- Apple credentials are resolved server-side from Infisical; the client must
+  never receive the private key or generated client-secret JWT.
+- The iOS Safari path must keep using the HTTPS API callback and the native
+  iOS path must keep using the bundle-identifier audience. Do not merge the
+  two flows by adding a browser redirect to the native token exchange.
+- Do not log authorization codes, state values, cookies, Apple `user` payloads,
+  identity tokens, private keys, or client-secret JWTs.
+
+The route-level tests, Lambda body/cookie tests, CodeQL, secret scanning, and
+release coverage gate are the minimum regression safety net. The deferred
+weekly test matrix is tracked in the repository task
+`.agents/pending/task-apple-auth-hardening.md`.
 
 ### Troubleshooting
 
@@ -141,4 +223,8 @@ After configuring secrets and building a signed iOS release:
 - `apps/mobile-app/lib/native-apple-signin.ios.ts` — native Apple sheet adapter
 - `apps/mobile-app/lib/server/better-auth.ts` — server credentials, audiences,
   and client-secret generation
+- `apps/mobile-app/lib/server/better-auth-route.ts` — Apple form-post
+  normalization and allow-listed callback fields
+- `packages/infra/lambda/index.js` — API Gateway cookie reconstruction and
+  byte-preserving base64 request-body decoding
 - `packages/tools/scripts/propagate-env.js` — local environment propagation
