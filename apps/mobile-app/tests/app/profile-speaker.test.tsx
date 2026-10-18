@@ -38,6 +38,9 @@ jest.mock('../../hooks/useTheme', () => ({
     },
   }),
 }));
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+}));
 jest.mock('@contexts/ScrollContext', () => ({ useScroll: () => ({ headerHeight: 0 }) }));
 jest.mock('@contexts/ToastContext', () => ({
   useToastHelpers: () => ({ showSuccess: mockShowSuccess, showError: mockShowError }),

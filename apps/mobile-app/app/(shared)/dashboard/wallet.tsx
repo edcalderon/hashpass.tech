@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../../hooks/useTheme';
-import { useScroll } from '@contexts/ScrollContext';
+import { DASHBOARD_PAGE_MAX_WIDTH, DASHBOARD_PAGE_SIDE_PADDING, useDashboardPageLayout } from '../../../hooks/useDashboardPageLayout';
 import { useTranslation } from '../../../i18n/i18n';
 import BlockchainTokensView from '../../../components/BlockchainTokensView';
 import HashPointsView from '../../../components/HashPointsView';
@@ -21,8 +20,7 @@ const NETWORKS = [
 export default function WalletScreen() {
   const params = useLocalSearchParams<{ section?: string; inviteCode?: string }>();
   const { colors } = useTheme();
-  const { headerHeight } = useScroll();
-  const insets = useSafeAreaInsets();
+  const { topInset, bottomInset } = useDashboardPageLayout();
   const { t } = useTranslation('wallet');
   const [section, setSection] = useState<Section>('assets');
   const [showSecurity, setShowSecurity] = useState(false);
@@ -39,7 +37,7 @@ export default function WalletScreen() {
   }, [params.section]);
 
   return <ScrollView style={styles.page} contentContainerStyle={[
-    styles.content, { paddingTop: Math.max(headerHeight, insets.top + 80) + 24, paddingBottom: insets.bottom + 40 },
+    styles.content, { paddingTop: topInset, paddingBottom: bottomInset },
   ]}>
     <View style={styles.heading}>
       <Text style={styles.eyebrow}>{t('overview.eyebrow', 'YOUR HASHPASS')}</Text>
@@ -95,7 +93,7 @@ export default function WalletScreen() {
 
 const getStyles = (colors: ThemeColors) => StyleSheet.create({
   page: { flex: 1, backgroundColor: colors.background.default },
-  content: { width: '100%', maxWidth: 1040, alignSelf: 'center', paddingHorizontal: 20, gap: 24 },
+  content: { width: '100%', maxWidth: DASHBOARD_PAGE_MAX_WIDTH, alignSelf: 'center', paddingHorizontal: DASHBOARD_PAGE_SIDE_PADDING, gap: 24 },
   heading: { gap: 8 },
   eyebrow: { color: colors.text.secondary, fontSize: 11, fontWeight: '700', letterSpacing: 2 },
   title: { color: colors.text.primary, fontSize: 36, fontWeight: '800', letterSpacing: -1 },

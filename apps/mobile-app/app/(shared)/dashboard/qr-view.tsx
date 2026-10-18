@@ -3,12 +3,14 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons, MaterialIcons } from '../../../lib/vector-icons';
 import { useTheme } from '../../../hooks/useTheme';
+import { useDashboardPageLayout } from '../../../hooks/useDashboardPageLayout';
 import { useAuth } from '../../../hooks/useAuth';
 import { passSystemService, PassInfo } from '../../../lib/pass-system';
 import DynamicQRDisplay from '../../../components/DynamicQRDisplay';
 
 export default function QRViewScreen() {
   const { colors, isDark } = useTheme();
+  const { topInset, bottomInset, column } = useDashboardPageLayout();
   const { user, dbUserId } = useAuth();
   const router = useRouter();
   const params = useLocalSearchParams();
@@ -91,7 +93,7 @@ export default function QRViewScreen() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView style={styles.container} contentContainerStyle={[styles.content, column, { paddingTop: topInset, paddingBottom: bottomInset }]}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>

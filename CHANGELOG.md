@@ -1,3 +1,13 @@
+## [1.9.122](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.121...v1.9.122) (2026-10-18)
+### Released
+- Version 1.9.122 release
+
+### Release scope
+- Compared with: `v1.9.121` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+
 ## [1.9.121](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.120...v1.9.121) (2026-10-18)
 ### Released
 - route BSL speakers to the correct tenant
