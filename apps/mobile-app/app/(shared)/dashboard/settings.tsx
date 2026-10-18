@@ -9,6 +9,7 @@ import { Ionicons } from '../../../lib/vector-icons';
 import Svg, { Circle as SvgCircle, Path as SvgPath } from 'react-native-svg';
 import { useTranslation } from '../../../i18n/i18n';
 import { version } from '../../../package.json';
+import { uiTokens } from '@hashpass/ui/tokens';
 import { useDashboardPageLayout } from '../../../hooks/useDashboardPageLayout';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
@@ -1057,7 +1058,7 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   },
   card: {
     backgroundColor: colors.card?.default || (isDark ? '#1a1a1a' : '#FFFFFF'),
-    borderRadius: 16,
+    borderRadius: uiTokens.radius.media,
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -1098,7 +1099,7 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   iconContainer: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: uiTokens.radius.circle,
     backgroundColor: `${colors.primary}1A`,
     alignItems: 'center',
     justifyContent: 'center',

@@ -5,6 +5,7 @@ import { useNotifications, type Notification } from '@contexts/NotificationConte
 import { MaterialIcons } from '../../../lib/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import UnifiedSearchAndFilter from '../../../components/UnifiedSearchAndFilter';
+import { uiTokens } from '@hashpass/ui/tokens';
 import { useDashboardPageLayout } from '../../../hooks/useDashboardPageLayout';
 import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../hooks/useAuth';
@@ -813,7 +814,7 @@ const getStyles = (isDark: boolean, colors: any, topInset: number = 0, bottomIns
     justifyContent: 'center',
     paddingHorizontal: 18,
     backgroundColor: 'transparent',
-    borderRadius: 24,
+    borderRadius: uiTokens.radius.pill,
     borderWidth: 1,
     borderColor: colors.divider,
   },
@@ -827,7 +828,7 @@ const getStyles = (isDark: boolean, colors: any, topInset: number = 0, bottomIns
     flexWrap: 'wrap',
     gap: 6,
     padding: 5,
-    borderRadius: 28,
+    borderRadius: uiTokens.radius.pill,
     backgroundColor: colors.background.paper,
   },
   tab: {
@@ -836,7 +837,7 @@ const getStyles = (isDark: boolean, colors: any, topInset: number = 0, bottomIns
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 18,
-    borderRadius: 24,
+    borderRadius: uiTokens.radius.pill,
   },
   activeTab: {
     backgroundColor: colors.primary,
