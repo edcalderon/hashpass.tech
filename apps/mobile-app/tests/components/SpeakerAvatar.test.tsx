@@ -81,4 +81,12 @@ describe('SpeakerAvatar', () => {
 
     act(() => renderer.unmount());
   });
+
+  it('uses the first two letters for a single-word name', () => {
+    const renderer = renderAvatar({ name: 'Cher' });
+
+    expect(initials(renderer)).toBe('CH');
+
+    act(() => renderer.unmount());
+  });
 });
