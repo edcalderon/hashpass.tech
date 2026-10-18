@@ -3,7 +3,7 @@
  */
 
 import { createAuthClient } from 'better-auth/client';
-import { expoClient } from '@better-auth/expo/client';
+import { expoClient, getSetCookie, storageAdapter } from '@better-auth/expo/client';
 import { oauthProviderClient } from '@better-auth/oauth-provider/client';
 import { ENV_CONFIG } from '@hashpass/config';
 import { Platform } from 'react-native';
@@ -24,6 +24,11 @@ const DEFAULT_BASE_PATH = '/api/auth';
 const LEGACY_BETTER_AUTH_SEGMENT = ['bsl', 'auth'].join('-');
 const BETTER_AUTH_SESSION_CACHE_KEY = 'hashpass_better_auth_session';
 const PASSWORDLESS_CALLBACK_MARKER = 'supabase_passwordless_in_progress';
+// expoClient's default storage keys: `${storagePrefix}_cookie`, and the OAuth
+// state cookie it plants is `${cookiePrefix}.oauth_state` (optionally __Secure-).
+const EXPO_COOKIE_STORAGE_KEY = 'better-auth_cookie';
+const NATIVE_X_CALLBACK_PATH = '/dashboard/explore';
+const NATIVE_X_ERROR_PATH = '/auth';
 
 type NativeSignInOptions = {
   signal?: AbortSignal;
@@ -41,6 +46,19 @@ const getSecureStore = (): SecureStoreModule => {
 
   return secureStoreModule;
 };
+
+const readOAuthStateCookie = (cookieJson: string | null | undefined): string | null => {
+  if (!cookieJson) return null;
+  try {
+    const jar = JSON.parse(cookieJson) as Record<string, { value?: string }>;
+    return jar['__Secure-better-auth.oauth_state']?.value || jar['better-auth.oauth_state']?.value || null;
+  } catch {
+    return null;
+  }
+};
+
+const describeOAuthError = (code: string): string =>
+  code === 'access_denied' ? 'X sign-in was not approved.' : `X sign-in failed (${code}).`;
 
 const normalizeBasePath = (value?: string | null): string => {
   const trimmed = (value || DEFAULT_BASE_PATH).trim();
@@ -374,38 +392,88 @@ export class BetterAuthProvider implements IAuthProvider {
   }
 
   /**
-   * Native browser-session sign-in (X). Better Auth's Expo client opens the
-   * authorization page in ASWebAuthenticationSession (iOS) or a Custom Tab
-   * (Android) through `expo-authorization-proxy`, which plants the OAuth state
-   * cookie in that browser, then returns the session cookie via the app's
-   * `hashpass://` deep link. Both systems share the device browser's X login,
-   * so users already signed in to X there only have to approve.
+   * Native browser-session sign-in (X). Better Auth's Expo client would open
+   * the system auth session itself, but it discards the returned URL, so a
+   * provider denial is indistinguishable from the user closing the sheet. This
+   * runs the same steps with the result in hand:
    *
-   * The X app itself is deliberately not used: the state cookie lives in the
-   * app's secure store, so a callback delivered to a different browser context
-   * (which an app handoff would cause) would fail the state check.
+   *   1. `signIn.social` with `disableRedirect` -> authorization URL, and the
+   *      OAuth state cookie lands in the Expo cookie jar.
+   *   2. Open `expo-authorization-proxy` in ASWebAuthenticationSession (iOS) /
+   *      a Custom Tab (Android); it plants that state cookie in the browser.
+   *   3. The callback returns to `hashpass://...` with either `cookie=` (the
+   *      session) or `error=`; a dismissed sheet returns neither.
+   *
+   * The X app itself is deliberately not used: the state cookie lives in this
+   * browser context, so a callback delivered elsewhere would fail the state
+   * check.
    */
   private async signInWithNativeBrowserSession(provider: 'twitter'): Promise<AuthResponse> {
     try {
       this.currentSession = null;
       this.notifyStateChange(null);
 
-      // Relative callbacks are turned into deep links by the Expo client.
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const Linking = require('expo-linking') as typeof import('expo-linking');
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const WebBrowser = require('expo-web-browser') as typeof import('expo-web-browser');
+
+      const callbackURL = Linking.createURL(NATIVE_X_CALLBACK_PATH);
+      const errorCallbackURL = Linking.createURL(NATIVE_X_ERROR_PATH);
+      const cookieStore = storageAdapter(getSecureStore() as any);
+
       const result = await (this.getClient() as any).signIn.social({
         provider,
-        callbackURL: '/dashboard/explore',
-        newUserCallbackURL: '/dashboard/explore',
-        errorCallbackURL: '/auth',
+        callbackURL,
+        newUserCallbackURL: callbackURL,
+        errorCallbackURL,
+        disableRedirect: true,
       });
 
       if (result?.error) {
         return { error: result.error.message || result.error.statusText || 'X sign-in failed.' };
       }
 
-      const session = await this.readSessionWithRetry({ retries: 1, delayMs: 400 });
-      if (!session) {
-        // Dismissing the auth session leaves no cookie behind.
+      const authorizationUrl = result?.data?.url;
+      if (typeof authorizationUrl !== 'string' || authorizationUrl.length === 0) {
+        return { error: 'X sign-in did not return an authorization URL.' };
+      }
+
+      const params = new URLSearchParams({ authorizationURL: authorizationUrl });
+      const oauthState = readOAuthStateCookie(await cookieStore.getItemAsync(EXPO_COOKIE_STORAGE_KEY));
+      if (oauthState) params.append('oauthState', oauthState);
+
+      if (Platform.OS === 'android') {
+        try {
+          WebBrowser.dismissAuthSession();
+        } catch {
+          // No auth session to dismiss.
+        }
+      }
+
+      const proxyURL = `${this.resolveClientBaseURL()}/expo-authorization-proxy?${params.toString()}`;
+      const browserResult = await WebBrowser.openAuthSessionAsync(proxyURL, callbackURL);
+      if (browserResult.type !== 'success') {
         return { cancelled: true };
+      }
+
+      const returned = new URL(browserResult.url);
+      const providerError = returned.searchParams.get('error');
+      if (providerError) {
+        const description = returned.searchParams.get('error_description');
+        return { error: description || describeOAuthError(providerError) };
+      }
+
+      const cookie = returned.searchParams.get('cookie');
+      if (!cookie) {
+        return { error: 'X sign-in finished without a session. Please try again.' };
+      }
+      const previous = await cookieStore.getItemAsync(EXPO_COOKIE_STORAGE_KEY);
+      await cookieStore.setItemAsync(EXPO_COOKIE_STORAGE_KEY, getSetCookie(cookie, previous ?? undefined));
+
+      const session = await this.readSessionWithRetry({ retries: 2, delayMs: 400 });
+      if (!session) {
+        return { error: 'X sign-in completed, but no session was found. Please try again.' };
       }
 
       this.currentSession = session;
