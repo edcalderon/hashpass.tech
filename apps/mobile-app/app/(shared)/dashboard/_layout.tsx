@@ -1233,6 +1233,9 @@ export function CustomDrawerContent({
 
       {/* Quick Settings & Actions */}
       <View style={styles.quickSettingsSection}>
+        <Text style={styles.menuSectionLabel}>
+          {t({ id: "nav.quickActions", message: "Quick actions" })}
+        </Text>
         <View style={styles.quickTogglesRow}>
           {/* Language Toggle */}
           <TouchableOpacity

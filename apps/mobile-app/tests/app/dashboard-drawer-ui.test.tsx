@@ -374,6 +374,8 @@ describe("dashboard drawer visual controls", () => {
     expect(root.findByProps({ accessibilityLabel: "English" })).toBeTruthy();
     expect(root.findByProps({ accessibilityLabel: "Light mode" })).toBeTruthy();
     expect(root.findByProps({ accessibilityLabel: "Log out" })).toBeTruthy();
+    expect(root.findAllByProps({ children: "Navigation" })).toHaveLength(1);
+    expect(root.findAllByProps({ children: "Quick actions" })).toHaveLength(1);
     expect(root.findAllByProps({ name: "globe-outline" })).toHaveLength(1);
     expect(root.findAllByProps({ name: "sunny" })).toHaveLength(1);
     expect(root.findAllByProps({ name: "log-out-outline" })).toHaveLength(1);
