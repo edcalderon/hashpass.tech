@@ -99,6 +99,7 @@
     "postbuild:web": "rm -rf dist/client dist/server && mkdir -p dist/client dist/server && if [ -d apps/mobile-app/dist/client ]; then cp -R apps/mobile-app/dist/client/. dist/client/; if [ -d apps/mobile-app/dist/server ]; then cp -R apps/mobile-app/dist/server/. dist/server/; fi; elif [ -d apps/mobile-app/dist/server ]; then cp -R apps/mobile-app/dist/server/. dist/server/; elif [ -d apps/mobile-app/dist ]; then cp -R apps/mobile-app/dist/. dist/client/; fi && if [ -f dist/server/index.html ] && [ ! -f dist/client/index.html ]; then cp dist/server/index.html dist/client/index.html; fi && if [ -d storybook-static ]; then mkdir -p dist/client/storybook && cp -r storybook-static/* dist/client/storybook/; else echo 'Storybook static directory not found, skipping copy'; fi && mkdir -p dist/client/config && cp apps/mobile-app/config/versions.json dist/client/config/versions.json 2>/dev/null || true && cp apps/mobile-app/public/sw.js dist/client/sw.js 2>/dev/null || true",
     "prebuild": "rm -rf dist",
     "lint": "pnpm --filter hashpass-mobile-app lint",
+    "check:type-placement": "node scripts/check-type-placement.mjs",
     "deploy:directus": "bash packages/tools/scripts/deploy-directus.sh",
     "db:migrate": "node packages/tools/scripts/migrate-tenant-db.mjs",
     "db:migrate:bsl:prod": "node packages/tools/scripts/migrate-tenant-db.mjs --profile bsl-production",

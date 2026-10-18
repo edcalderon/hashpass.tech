@@ -95,3 +95,9 @@ The Husky pre-commit hook runs the README sync guard, so a stale changelog/READM
   web effects, pause offscreen media, and preserve accessible names/touch targets.
 - Impeccable is design assistance; `PRODUCT.md`, `DESIGN.md`, actual product data,
   and user instructions remain the authority. Do not install/approve hooks silently.
+
+## Type placement
+
+- Keep new interfaces, type aliases, and type-only unions out of product components and scope modules.
+- Put them in a nearby `types/ComponentName.types.ts` file or the nearest dedicated `types.ts` module, then use `import type` from runtime code.
+- `pnpm lint` runs the incremental `check:type-placement` guard; it blocks declarations added in a product diff while leaving the existing migration backlog visible.
