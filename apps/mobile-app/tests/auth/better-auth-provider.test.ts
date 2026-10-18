@@ -207,6 +207,91 @@ describe('BetterAuthProvider', () => {
 
   });
 
+  describe('native X sign-in (browser session)', () => {
+    const withNativePlatform = async (run: () => Promise<void>) => {
+      const { Platform } = require('react-native');
+      const originalPlatform = Platform.OS;
+      Platform.OS = 'ios';
+      try {
+        await run();
+      } finally {
+        Platform.OS = originalPlatform;
+      }
+    };
+
+    it('runs the redirect through the Expo client with relative deep-link callbacks', async () => {
+      await withNativePlatform(async () => {
+        mockSignInSocial.mockResolvedValueOnce({ data: { redirect: true } });
+        mockGetSession.mockResolvedValueOnce({ data: createBetterAuthSession() });
+
+        const { BetterAuthProvider } = require('../../../../packages/auth/src/providers/better-auth');
+        const provider = new BetterAuthProvider({ baseURL: 'https://api.hashpass.tech/api/auth' });
+        const result = await provider.signInWithOAuth('twitter');
+
+        expect(mockSignInSocial).toHaveBeenCalledWith({
+          provider: 'twitter',
+          callbackURL: '/dashboard/explore',
+          newUserCallbackURL: '/dashboard/explore',
+          errorCallbackURL: '/auth',
+        });
+        expect(result.error).toBeUndefined();
+        expect(result.session?.user.email).toBe('user@example.com');
+      });
+    });
+
+    it('reports a dismissed auth session as cancelled, not as an error', async () => {
+      jest.useFakeTimers();
+      try {
+        await withNativePlatform(async () => {
+          mockSignInSocial.mockResolvedValueOnce({ data: { redirect: true } });
+          mockGetSession.mockResolvedValue({ data: { user: null, session: null } });
+
+          const { BetterAuthProvider } = require('../../../../packages/auth/src/providers/better-auth');
+          const provider = new BetterAuthProvider({ baseURL: 'https://api.hashpass.tech/api/auth' });
+          const pending = provider.signInWithOAuth('twitter');
+          await jest.advanceTimersByTimeAsync(400);
+
+          await expect(pending).resolves.toEqual({ cancelled: true });
+        });
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
+    it('surfaces provider errors', async () => {
+      await withNativePlatform(async () => {
+        mockSignInSocial.mockResolvedValueOnce({ error: { message: 'X denied access' } });
+
+        const { BetterAuthProvider } = require('../../../../packages/auth/src/providers/better-auth');
+        const provider = new BetterAuthProvider({ baseURL: 'https://api.hashpass.tech/api/auth' });
+
+        await expect(provider.signInWithOAuth('twitter')).resolves.toEqual({ error: 'X denied access' });
+      });
+    });
+
+    it('returns a thrown error message', async () => {
+      await withNativePlatform(async () => {
+        mockSignInSocial.mockRejectedValueOnce(new Error('network down'));
+
+        const { BetterAuthProvider } = require('../../../../packages/auth/src/providers/better-auth');
+        const provider = new BetterAuthProvider({ baseURL: 'https://api.hashpass.tech/api/auth' });
+
+        await expect(provider.signInWithOAuth('twitter')).resolves.toEqual({ error: 'network down' });
+      });
+    });
+
+    it('does not offer a browser redirect for native Google', async () => {
+      await withNativePlatform(async () => {
+        const { BetterAuthProvider } = require('../../../../packages/auth/src/providers/better-auth');
+        const provider = new BetterAuthProvider({ baseURL: 'https://api.hashpass.tech/api/auth' });
+
+        const result = await provider.signInWithOAuth('google');
+        expect(result.error).toMatch(/platform SDK/);
+        expect(mockSignInSocial).not.toHaveBeenCalled();
+      });
+    });
+  });
+
   it('does not commit a native sign-in that is aborted while the request is in flight', async () => {
     let resolveSignIn: ((value: unknown) => void) | undefined;
     const pendingSignIn = new Promise((resolve) => {

@@ -302,12 +302,21 @@ export class BetterAuthProvider implements IAuthProvider {
   }
 
   async signInWithOAuth(provider: 'google' | 'apple' | 'github' | 'facebook' | 'twitter'): Promise<AuthResponse> {
-    if (typeof window === 'undefined') {
-      return { error: 'OAuth authentication is only available in web browsers.' };
-    }
-
     if (provider !== 'google' && provider !== 'apple' && provider !== 'twitter') {
       return { error: `${provider} social sign-in is not configured for this Better Auth flow.` };
+    }
+
+    // Native Google/Apple exchange an SDK ID token (signInWithIdToken). X has
+    // no ID-token SDK, so native X runs the OAuth redirect inside the system
+    // auth session instead.
+    if (Platform.OS !== 'web') {
+      return provider === 'twitter'
+        ? this.signInWithNativeBrowserSession(provider)
+        : { error: `${provider} native sign-in uses the platform SDK, not a browser redirect.` };
+    }
+
+    if (typeof window === 'undefined') {
+      return { error: 'OAuth authentication is only available in web browsers.' };
     }
 
     try {
@@ -361,6 +370,49 @@ export class BetterAuthProvider implements IAuthProvider {
       return { pending: true };
     } catch (error) {
       return { error: error instanceof Error ? error.message : 'OAuth sign-in failed' };
+    }
+  }
+
+  /**
+   * Native browser-session sign-in (X). Better Auth's Expo client opens the
+   * authorization page in ASWebAuthenticationSession (iOS) or a Custom Tab
+   * (Android) through `expo-authorization-proxy`, which plants the OAuth state
+   * cookie in that browser, then returns the session cookie via the app's
+   * `hashpass://` deep link. Both systems share the device browser's X login,
+   * so users already signed in to X there only have to approve.
+   *
+   * The X app itself is deliberately not used: the state cookie lives in the
+   * app's secure store, so a callback delivered to a different browser context
+   * (which an app handoff would cause) would fail the state check.
+   */
+  private async signInWithNativeBrowserSession(provider: 'twitter'): Promise<AuthResponse> {
+    try {
+      this.currentSession = null;
+      this.notifyStateChange(null);
+
+      // Relative callbacks are turned into deep links by the Expo client.
+      const result = await (this.getClient() as any).signIn.social({
+        provider,
+        callbackURL: '/dashboard/explore',
+        newUserCallbackURL: '/dashboard/explore',
+        errorCallbackURL: '/auth',
+      });
+
+      if (result?.error) {
+        return { error: result.error.message || result.error.statusText || 'X sign-in failed.' };
+      }
+
+      const session = await this.readSessionWithRetry({ retries: 1, delayMs: 400 });
+      if (!session) {
+        // Dismissing the auth session leaves no cookie behind.
+        return { cancelled: true };
+      }
+
+      this.currentSession = session;
+      this.notifyStateChange(session);
+      return { user: session.user, session };
+    } catch (error) {
+      return { error: error instanceof Error ? error.message : 'X sign-in failed' };
     }
   }
 

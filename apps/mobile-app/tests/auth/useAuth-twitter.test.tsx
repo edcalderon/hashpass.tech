@@ -1,13 +1,10 @@
 /// <reference types="jest" />
 /**
- * X (Twitter) sign-in in `useAuth.ts` is web-only: there is no native
- * ID-token exchange wired up for it (unlike Google/Apple) and no
- * deep-link callback path. These tests cover the two branches that code
- * adds to `signInWithOAuth`:
+ * X (Twitter) sign-in in `useAuth.ts`:
  *
  *   - web:   route `twitter` through Better Auth's social redirect flow.
- *   - native (android/ios): return a controlled error instead of falling
- *     through to the Google/Apple native paths.
+ *   - native (android/ios): run Better Auth's system browser session (X has
+ *     no ID-token SDK) and apply the resulting session.
  */
 
 jest.mock('expo/virtual/env', () => ({
@@ -134,21 +131,65 @@ describe('useAuth X (Twitter) sign-in', () => {
     expect(mockBetterAuthSignInWithOAuth).not.toHaveBeenCalled();
   });
 
-  it.each(['android', 'ios'])('returns a controlled error for Twitter on %s (no native ID-token path)', async (platform) => {
-    const { captured, testAct } = mountUseAuth(platform);
+  describe.each(['android', 'ios'])('native (%s)', (platform) => {
+    const nativeSession = {
+      user: { id: 'ba-user', email: 'x@example.com' },
+      access_token: 'token',
+      provider: 'better-auth',
+    };
 
-    let result: any;
-    await testAct(async () => {
-      result = await captured.signInWithOAuth('twitter');
+    it('signs in through the Better Auth browser session, never Supabase', async () => {
+      mockAuthService.signInWithOAuth.mockResolvedValueOnce({
+        user: nativeSession.user,
+        session: nativeSession,
+      } as any);
+      const { captured, testAct } = mountUseAuth(platform);
+
+      let result: any;
+      await testAct(async () => {
+        result = await captured.signInWithOAuth('twitter');
+      });
+
+      expect(mockAuthService.signInWithOAuth).toHaveBeenCalledWith('twitter');
+      expect(result.session).toEqual(nativeSession);
+      expect(result.error).toBeUndefined();
+      expect(mockSupabase.auth.signInWithOAuth).not.toHaveBeenCalled();
     });
 
-    expect(result).toEqual({
-      error: 'Sign in with X is available on the web only.',
+    it('treats a dismissed auth session as a quiet cancel', async () => {
+      mockAuthService.signInWithOAuth.mockResolvedValueOnce({ cancelled: true } as any);
+      const { captured, testAct } = mountUseAuth(platform);
+
+      let result: any;
+      await testAct(async () => {
+        result = await captured.signInWithOAuth('twitter');
+      });
+
+      expect(result).toEqual({ pending: false });
     });
-    // No provider must have been contacted on native — this is a pure
-    // client-side guard, not a failed network call.
-    expect(mockAuthService.signInWithOAuth).not.toHaveBeenCalled();
-    expect(mockSupabase.auth.signInWithOAuth).not.toHaveBeenCalled();
-    expect(mockBetterAuthSignInWithOAuth).not.toHaveBeenCalled();
+
+    it('returns provider errors instead of throwing', async () => {
+      mockAuthService.signInWithOAuth.mockResolvedValueOnce({ error: 'X denied access' } as any);
+      const { captured, testAct } = mountUseAuth(platform);
+
+      let result: any;
+      await testAct(async () => {
+        result = await captured.signInWithOAuth('twitter');
+      });
+
+      expect(result.error).toContain('X denied access');
+    });
+
+    it('errors when sign-in completes without a session', async () => {
+      mockAuthService.signInWithOAuth.mockResolvedValueOnce({} as any);
+      const { captured, testAct } = mountUseAuth(platform);
+
+      let result: any;
+      await testAct(async () => {
+        result = await captured.signInWithOAuth('twitter');
+      });
+
+      expect(result.error).toContain('no Better Auth session');
+    });
   });
 });

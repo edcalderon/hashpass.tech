@@ -1,5 +1,6 @@
 import { betterAuth } from 'better-auth';
 import { jwt } from 'better-auth/plugins';
+import { expo } from '@better-auth/expo';
 import { mcp } from '@better-auth/mcp';
 import { importPKCS8, SignJWT } from 'jose';
 import { ENV_CONFIG, SSO_CONFIG } from '@hashpass/config';
@@ -325,6 +326,9 @@ const createAuthInstance = () =>
       ...DEFAULT_TRUSTED_ORIGINS,
       ...readListEnv('BETTER_AUTH_TRUSTED_ORIGINS'),
       'https://appleid.apple.com',
+      // Native X sign-in returns to the app through its custom scheme; the Expo
+      // plugin only attaches the session cookie to redirects to trusted origins.
+      'hashpass://',
     ],
     advanced: {
       // Apple's authorization response uses response_mode=form_post, so the
@@ -413,6 +417,7 @@ const createAuthInstance = () =>
       },
     },
     plugins: [
+      expo(),
       jwt(),
       mcp({
         loginPage: mcpLoginPage,
