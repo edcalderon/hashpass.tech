@@ -17,7 +17,7 @@ import { clearPersistedNativeProviderSessions } from '../lib/auth/native-session
 import { resolveGoogleOAuthClientId } from '../lib/auth/oauth/google-credentials';
 import { resolvePublicSupabaseConfig } from '../config/supabase-profiles';
 import { markRecentAuthSuccess, clearRecentAuthSuccess } from '../lib/auth/recent-auth';
-import { isBetterAuthGoogleCallback } from '../lib/auth/passwordless-callback';
+import { isBetterAuthSocialCallback } from '../lib/auth/passwordless-callback';
 import { withTimeout } from '../lib/with-timeout';
 import {
   createAuthSessionActor,
@@ -75,23 +75,22 @@ type SignOutOptions = {
   waitForRemoteCleanup?: boolean;
 };
 
-// Dedicated Better Auth instance for web Google sign-in when the tenant's
-// primary provider (authService) is NOT better-auth (e.g. core/hashpass.tech,
-// which still resolves to 'directus' for email/password + OTP). Reused as a
-// singleton so we never open more than one Better Auth session client for
-// this purpose. When authService's own provider IS 'better-auth' (BSL
-// tenants), reuse authService directly instead of creating a second instance.
-let googleBetterAuthProvider: BetterAuthProvider | null = null;
-const getGoogleBetterAuthProvider = (): BetterAuthProvider => {
-  if (!googleBetterAuthProvider) {
-    googleBetterAuthProvider = new BetterAuthProvider();
+// Dedicated Better Auth instance for social sign-in when the tenant's primary
+// provider (authService) is NOT better-auth (e.g. core/hashpass.tech, which
+// still resolves to 'directus' for email/password + OTP). Reuse one instance
+// so Google, Apple, and X share a single Better Auth session client. When
+// authService's own provider IS 'better-auth' (BSL tenants), reuse it instead.
+let socialBetterAuthProvider: BetterAuthProvider | null = null;
+const getSocialBetterAuthProvider = (): BetterAuthProvider => {
+  if (!socialBetterAuthProvider) {
+    socialBetterAuthProvider = new BetterAuthProvider();
   }
-  return googleBetterAuthProvider;
+  return socialBetterAuthProvider;
 };
 
 const getWebBetterAuthProvider = (): IAuthProvider => {
   const providerName = authService.getProviderName();
-  return providerName === 'better-auth' ? authService : getGoogleBetterAuthProvider();
+  return providerName === 'better-auth' ? authService : getSocialBetterAuthProvider();
 };
 
 const getBetterAuthBootstrapSession = (provider: IAuthProvider): Promise<AuthSession | null> => {
@@ -738,7 +737,7 @@ export const useAuth = () => {
       Platform.OS === 'web'
         ? getWebBetterAuthProvider()
         : shouldBootstrapNativeBetterAuth
-          ? getGoogleBetterAuthProvider()
+          ? getSocialBetterAuthProvider()
           : null;
 
     const retryBridge = async () => {
@@ -1098,7 +1097,7 @@ export const useAuth = () => {
       const dedicatedGoogleBetterAuthProvider =
         authService.getProviderName() !== 'better-auth' &&
         (Platform.OS === 'web' || shouldSignOutNativeGoogle)
-          ? getGoogleBetterAuthProvider()
+          ? getSocialBetterAuthProvider()
           : null;
 
       // Each provider call is individually bounded so one hung network request
@@ -1187,7 +1186,7 @@ export const useAuth = () => {
         await clearStaleProviderSession('better-auth');
 
         const betterAuthSocial: IAuthProvider =
-          providerName === 'better-auth' ? authService : getGoogleBetterAuthProvider();
+          providerName === 'better-auth' ? authService : getSocialBetterAuthProvider();
 
         const result = await betterAuthSocial.signInWithOAuth!(provider);
         if (result.error) {
@@ -1210,7 +1209,7 @@ export const useAuth = () => {
           const betterAuthApple =
             providerName === 'better-auth'
               ? (authService as unknown as BetterAuthProvider)
-              : getGoogleBetterAuthProvider();
+              : getSocialBetterAuthProvider();
           const betterAuthResult = await withTimeout(
             betterAuthApple.signInWithIdToken('apple', identityToken, {
               signal: betterAuthAttemptController.signal,
@@ -1271,7 +1270,7 @@ export const useAuth = () => {
           const betterAuthX =
             providerName === 'better-auth'
               ? (authService as unknown as BetterAuthProvider)
-              : getGoogleBetterAuthProvider();
+              : getSocialBetterAuthProvider();
           const betterAuthResult = await betterAuthX.signInWithOAuth('twitter');
           if (betterAuthResult.cancelled) {
             return { pending: false };
@@ -1324,7 +1323,7 @@ export const useAuth = () => {
             const betterAuthGoogle =
               providerName === 'better-auth'
                 ? (authService as unknown as BetterAuthProvider)
-                : getGoogleBetterAuthProvider();
+                : getSocialBetterAuthProvider();
 
             const betterAuthResult = await betterAuthGoogle.signInWithIdToken('google', idToken);
             if (betterAuthResult.error) {
@@ -1625,7 +1624,7 @@ export const useAuth = () => {
           ? window.localStorage.getItem('oauth_in_progress') === 'true'
           : false;
 
-      // Web Google sign-in always goes through Better Auth first (see
+      // Web social sign-in always goes through Better Auth first (see
       // signInWithOAuth above). Its callback is cookie-based — Better Auth's
       // own server already consumed the code and set the session cookie
       // before redirecting here, so there's no code/token in the URL.
@@ -1633,12 +1632,12 @@ export const useAuth = () => {
       // primary provider (e.g. 'directus' for core on web) and misread that
       // empty params object as a failed callback for a provider that was
       // never actually used. Check for a live Better Auth session instead.
-      if (Platform.OS === 'web' && isBetterAuthGoogleCallback({ signInMethod, oauthInProgress })) {
+      if (Platform.OS === 'web' && isBetterAuthSocialCallback({ signInMethod, oauthInProgress })) {
         const providerName = authService.getProviderName();
-        const betterAuthGoogle: IAuthProvider =
-          providerName === 'better-auth' ? authService : getGoogleBetterAuthProvider();
+        const betterAuthSocial: IAuthProvider =
+          providerName === 'better-auth' ? authService : getSocialBetterAuthProvider();
 
-        const betterAuthResult = await betterAuthGoogle.handleOAuthCallback!(codeOrParams, state);
+        const betterAuthResult = await betterAuthSocial.handleOAuthCallback!(codeOrParams, state);
 
         if (betterAuthResult.error) {
           throw new Error(betterAuthResult.error);
@@ -1647,7 +1646,7 @@ export const useAuth = () => {
         // Fire-and-forget: establishes a real Supabase session so passes/
         // admin roles work for this Better-Auth-only account. Must not
         // block or fail the sign-in the user already completed.
-        void ensureSupabaseBridgeSession(betterAuthGoogle);
+        void ensureSupabaseBridgeSession(betterAuthSocial);
 
         return betterAuthResult;
       }

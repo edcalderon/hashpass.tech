@@ -13,7 +13,8 @@ import { markRecentAuthSuccess } from '../../../lib/auth/recent-auth';
 import {
     buildNativePasswordlessCallbackUrl,
     extractNativeRelayFragment,
-    isBetterAuthGoogleCallback,
+    isBetterAuthSocialCallback,
+    isBetterAuthSocialSignInMethod,
     isSupabasePasswordlessCallback,
     PASSWORDLESS_CALLBACK_MARKER,
 } from '../../../lib/auth/passwordless-callback';
@@ -482,7 +483,7 @@ export default function AuthCallback() {
                     email: params.email,
                     hasImplicitAccessToken: isImplicitPasswordlessLink,
                 });
-                const isBetterAuthGoogle = isBetterAuthGoogleCallback({
+                const isBetterAuthSocial = isBetterAuthSocialCallback({
                     signInMethod,
                     oauthInProgress,
                 });
@@ -586,11 +587,15 @@ export default function AuthCallback() {
                     return;
                 }
                 
-                // A stale `google_oauth` marker must never route an otherwise
-                // empty magic-link return through Better Auth. Its callback is
-                // cookie-only and therefore cannot establish a Supabase
-                // passwordless session.
-                if (signInMethod === 'google_oauth' && !isBetterAuthGoogle && !hasOAuthPayloadInUrl()) {
+                // A stale Better Auth social marker must never route an
+                // otherwise empty magic-link return through a different auth
+                // provider. Its callback is cookie-only and therefore cannot
+                // establish a Supabase passwordless session.
+                if (
+                    isBetterAuthSocialSignInMethod(signInMethod) &&
+                    !isBetterAuthSocial &&
+                    !hasOAuthPayloadInUrl()
+                ) {
                     throw new Error(
                         'This magic link did not include a usable Supabase authentication payload. Request a new magic link and try again.'
                     );

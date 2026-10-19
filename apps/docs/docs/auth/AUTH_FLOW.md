@@ -197,14 +197,20 @@ fields, iOS native exchanges the Apple identity token with Better Auth, and
 Android intentionally does not render an Apple button. The production
 configuration and verified iOS Safari smoke test are recorded in that page.
 
-## Sign in with X (Twitter) (web only, added 2026-10-06)
+## Sign in with X (Twitter)
 
-X/Twitter uses the exact same Better Auth browser-redirect flow as web
-Google/Apple above — `signIn.social({ provider: 'twitter', ... })` — not the
-legacy Directus bridge. There is intentionally **no native path yet**:
-`useAuth.signInWithOAuth('twitter')` returns an explicit "available on the
-web only" error on Android/iOS, since X has no ID-token SDK exchange like
-Google and no deep-link callback has been wired up for it.
+X/Twitter uses Better Auth's browser-based OAuth flow, not the legacy Directus
+bridge. On the web/PWA it follows the same redirect pattern as Google and
+Apple. On the native iOS and Android apps, it uses the platform authentication
+session and returns to `hashpass://` with the Better Auth session cookie.
+
+X does not provide a current native sign-in SDK or an app-switch OAuth 2.0
+contract that HASHPASS can safely use. Do not probe for or force-open the X app
+as an authentication path: it cannot return the PKCE/state-bound response that
+the server needs to validate the sign-in. The secure, supported fallback is the
+system auth session (ASWebAuthenticationSession on iOS and a Custom Tab on
+Android), which shares the user's browser X session when available. A native
+app must use this browser handoff even when the X app is installed.
 
 1. **X Developer Portal → App → User authentication settings**, for the
    `hashpass.tech` app:
@@ -242,22 +248,22 @@ Google and no deep-link callback has been wired up for it.
    same email even though X's OAuth 2.0 user-lookup response does not
    reliably report the email as verified.
 4. The sign-in button lives in `apps/mobile-app/app/(shared)/auth.tsx`
-   (`handleXSignIn`), rendered only when `Platform.OS === 'web'`, right below
-   the Apple button. Icon is `components/icons/XIcon.tsx`, an inline
-   `react-native-svg` path of the real X brand mark — **not** Ionicons'
-   `logo-twitter`, which Ionicons dropped after the rebrand without adding a
-   replacement, so that name renders a missing-glyph fallback (a question
-   mark) instead of a logo; see that file's header comment and
+   (`handleXSignIn`). On web it starts the Better Auth redirect; on native it
+   starts the system auth-session handoff. Icon is `components/icons/XIcon.tsx`,
+   an inline `react-native-svg` path of the real X brand mark — **not**
+   Ionicons' `logo-twitter`, which Ionicons dropped after the rebrand without
+   adding a replacement, so that name renders a missing-glyph fallback (a
+   question mark) instead of a logo; see that file's header comment and
    `components/icons/SettingsIcons.tsx` for the same pattern used elsewhere.
    The visible label is `t('signInWithX', 'Continue with X')`.
-5. **Follow-up, not yet done:** a native (Android/iOS) path would need a
-   `WebBrowser.openAuthSessionAsync` browser-redirect + deep-link callback,
-   analogous to the Directus native fallback already described above, since
-   there is no native X SDK ID-token exchange to mirror Google's.
+5. Successful Google, Apple, and X web callbacks all return through the same
+   Better Auth cookie-session handler. The app records the initiating provider
+   (`google_oauth`, `apple_oauth`, or `twitter_oauth`) before it redirects, so
+   a completed X callback cannot be misrouted to the legacy provider handler.
 
 ## Relevant Routes
 
-- `apps/mobile-app/hooks/useAuth.ts` — `signInWithOAuth('google')` and `handleOAuthCallback` (Better-Auth-first routing); `signInWithOAuth('twitter')` reuses the same web branch, with an explicit native-unsupported guard
+- `apps/mobile-app/hooks/useAuth.ts` — `signInWithOAuth` and `handleOAuthCallback` (Better-Auth-first social routing, including X on native)
 - `packages/auth/src/providers/better-auth.ts` — `BetterAuthProvider.signInWithOAuth` / `.handleOAuthCallback`
 - `apps/mobile-app/lib/server/better-auth.ts` — server-side Better Auth config (`socialProviders.google`/`.twitter`, `allowedHosts`, `trustedOrigins`)
 - `apps/mobile-app/lib/server/better-auth-route.ts` — wraps Better Auth's route handler so auth errors never strand users on the API host
