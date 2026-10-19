@@ -1,3 +1,18 @@
+## [1.9.125](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.124...v1.9.125) (2026-10-19)
+
+
+### Bug Fixes
+
+* **profile:** sync social avatars across drawer and uploads ([f52309b](https://github.com/hashpass-tech/hashpass.tech/commit/f52309b59febb886bc2e5fcd3f6f2e8c350a5695))
+### Release Highlights
+- sync social avatars across drawer and uploads
+
+### Release scope
+- Compared with: `v1.9.124` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+
 ## [1.9.124](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.123...v1.9.124) (2026-10-19)
 
 
