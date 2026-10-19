@@ -28,7 +28,7 @@ export default function LegalDocumentContent({
 
   return (
     <View style={styles.readOnly}>
-      {document.blocks.map((block, index) => {
+      {document.blocks.map((block: LegalDocumentBlock, index: number) => {
         const key = blockKey(block, index);
 
         if (block.type === 'heading') {
@@ -42,7 +42,7 @@ export default function LegalDocumentContent({
         if (block.type === 'list') {
           return (
             <View key={key} style={styles.list}>
-              {block.items.map((item, itemIndex) => (
+              {block.items.map((item: string, itemIndex: number) => (
                 <View key={`${itemIndex}-${item.slice(0, 24)}`} style={styles.listRow}>
                   <Text style={styles.bullet} selectable={false}>•</Text>
                   <Text style={styles.sectionText} selectable={false}>{item}</Text>
