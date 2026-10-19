@@ -22,7 +22,7 @@ jest.mock(
   () => ({ default: "MaterialIcons" }),
 );
 
-import { QrCode, Bell, User } from "lucide-react-native";
+import { QrCode, Bell, Headset, User } from "lucide-react-native";
 import { NativeSafeIcon } from "../../lib/vector-icons";
 
 describe("NativeSafeIcon", () => {
@@ -64,6 +64,6 @@ describe("NativeSafeIcon", () => {
   });
 });
 
-it.each([['qr-code', QrCode], ['notifications', Bell], ['person', User]] as const)('renders the actual %s account icon instead of the info fallback', (name, expected) => {
+it.each([['qr-code', QrCode], ['notifications', Bell], ['person', User], ['support', Headset]] as const)('renders the actual %s account icon instead of the info fallback', (name, expected) => {
   expect(NativeSafeIcon({ name }).type).toBe(expected);
 });

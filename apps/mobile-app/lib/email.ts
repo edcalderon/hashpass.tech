@@ -558,18 +558,34 @@ export async function sendSubscriptionConfirmation(
 
   try {
     const subject = getSubject('newsletter-welcome', locale);
+    const supportEmail = process.env.NODEMAILER_FROM_SUPPORT || 'support@hashpass.tech';
     const html = renderTemplate('newsletter-welcome', locale, {
       appUrl: 'https://hashpass.tech',
-      supportEmail: process.env.NODEMAILER_FROM_SUPPORT || 'support@hashpass.tech',
+      supportEmail,
       unsubscribeUrl,
     });
 
+    // Keep the text alternative meaningfully equivalent to the HTML email.
+    // A two-line fallback gives recipients and mailbox filters no useful
+    // context for a subscription-triggered message.
+    const text = [
+      'You are subscribed to HASHPASS updates.',
+      '',
+      'We will send product and community updates to this address.',
+      'Visit HASHPASS at https://hashpass.tech',
+      `Questions? Reply to this email or contact ${supportEmail}.`,
+      unsubscribeUrl ? `Unsubscribe: ${unsubscribeUrl}` : '',
+    ]
+      .filter(Boolean)
+      .join('\n');
+
     const mailOptions = {
       from: `HASHPASS <${smtpFrom}>`,
+      replyTo: supportEmail,
       to: email,
       subject,
       html,
-      text: `Welcome to the HASHPASS Newsletter!\n\nhashpass.tech`,
+      text,
     };
 
     if (!transporter) {

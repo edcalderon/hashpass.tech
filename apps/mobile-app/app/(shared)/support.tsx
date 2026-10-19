@@ -15,7 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { MaterialIcons } from '../../lib/vector-icons';
+import { MaterialIcons, NativeSafeIcon } from '../../lib/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../hooks/useAuth';
 import { getCaptchaApiEndpoint } from '../../lib/api-client';
@@ -37,7 +37,7 @@ import { SupportRichText } from '../../lib/support/render-html-content';
 import { isPickedAttachmentError, pickAttachmentNative } from '../../lib/support/pick-attachment';
 
 const SUPPORT_EMAIL = 'support@hashpass.tech';
-const SUPPORT_WEBSITE = 'https://hashpass.tech/support';
+const SUPPORT_WHATSAPP_URL = 'https://wa.me/573194202614';
 // Frappe HD Ticket has no session/visitor system of its own for this
 // staff-only instance (see lib/server/frappe-helpdesk.ts) -- "resuming" a
 // ticket or live chat is purely a local convenience, keyed on the ticket id
@@ -415,11 +415,11 @@ export default function SupportScreen() {
     Linking.openURL(`mailto:${SUPPORT_EMAIL}`).catch(() => null);
   };
 
-  const handleOpenWebsite = () => {
+  const handleOpenWhatsApp = () => {
     if (Platform.OS === 'web') {
-      window.open(SUPPORT_WEBSITE, '_blank', 'noopener,noreferrer');
+      window.open(SUPPORT_WHATSAPP_URL, '_blank', 'noopener,noreferrer');
     } else {
-      Linking.openURL(SUPPORT_WEBSITE).catch(() => null);
+      Linking.openURL(SUPPORT_WHATSAPP_URL).catch(() => null);
     }
   };
 
@@ -525,7 +525,7 @@ export default function SupportScreen() {
                         html={item.content}
                         style={[styles.messageContent, isYou && styles.messageContentYou]}
                         linkColor={isYou ? palette.onAccent : palette.accent}
-                        onAttachmentPress={(fileId) => handleOpenAttachment(fileId)}
+                        onAttachmentPress={(fileId: string) => handleOpenAttachment(fileId)}
                       />
                       {time ? (
                         <Text style={[styles.messageTime, isYou && styles.messageTimeYou]}>{time}</Text>
@@ -662,7 +662,7 @@ export default function SupportScreen() {
       {renderHeader('Support', () => router.back())}
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.intro}>
-          <MaterialIcons name="help-outline" size={44} color={palette.accent} />
+          <NativeSafeIcon name="support" size={44} color={palette.accent} />
           <Text style={styles.introTitle}>Need Help?</Text>
           <Text style={styles.introDescription}>
             Open a support ticket or start a live chat with our team -- both go straight to the HASHPASS support desk.
@@ -738,14 +738,14 @@ export default function SupportScreen() {
 
         <Text style={styles.contactTitle}>Other Ways to Reach Us</Text>
 
-        <TouchableOpacity onPress={handleOpenWebsite} accessibilityRole="link" accessibilityLabel="Open support website">
+        <TouchableOpacity onPress={handleOpenWhatsApp} accessibilityRole="link" accessibilityLabel="Chat with support on WhatsApp">
           <Surface mode={mode} style={styles.actionCard}>
             <View style={styles.actionCardIcon}>
-              <MaterialIcons name="language" size={22} color={palette.accent} />
+              <NativeSafeIcon name="support" size={22} color={palette.accent} />
             </View>
             <View style={styles.actionCardCopy}>
-              <Text style={styles.actionCardTitle}>Support Website</Text>
-              <Text style={styles.actionCardSubtitle}>hashpass.tech/support</Text>
+              <Text style={styles.actionCardTitle}>WhatsApp Support</Text>
+              <Text style={styles.actionCardSubtitle}>+57 319 420 2614</Text>
             </View>
             <MaterialIcons name="open-in-new" size={18} color={palette.muted} />
           </Surface>

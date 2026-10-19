@@ -41,6 +41,7 @@ const sidebars = {
         'infra/README',
         'infra/CLOUDINARY_CONFIG',
         'infra/INFRA_NAMING_GUIDE',
+        'infra/EMAIL_DELIVERABILITY',
         {
           type: 'category',
           label: 'Migration',

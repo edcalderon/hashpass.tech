@@ -40,6 +40,13 @@ describe('@hashpass/emails templates', () => {
     expect(html).not.toMatch(/\{\{[A-Z_]+\}\}/);
   });
 
+  it.each(SUPPORTED_LOCALES)('uses a clear, non-promotional newsletter confirmation subject for locale %s', (locale) => {
+    const subject = getSubject('newsletter-welcome', locale);
+
+    expect(subject).toContain('HASHPASS');
+    expect(subject).not.toMatch(/[🎉!]/u);
+  });
+
   it.each(SUPPORTED_LOCALES)('renders app-welcome for locale %s without touching the filesystem', (locale) => {
     const html = renderTemplate('app-welcome', locale, {
       userName: 'Test User',
