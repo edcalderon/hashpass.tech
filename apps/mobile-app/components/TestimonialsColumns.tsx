@@ -48,7 +48,7 @@ const TestimonialsColumn = (props: {
   testimonials: any;
   duration?: number;
 }) => {
-  const { useTheme } = require("../hooks/useTheme") as typeof import("../hooks/useTheme");
+  const { useTheme } = require("../hooks/useTheme");
   const { colors, isDark } = useTheme();
   const styles = getStyles(colors, isDark);
 
