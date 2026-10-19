@@ -41,7 +41,9 @@ jest.mock('../../lib/support/frappe-support-client', () => ({
 jest.mock('../../lib/support/render-html-content', () => ({ SupportRichText: 'SupportRichText' }));
 jest.mock('../../lib/support/pick-attachment', () => ({ isPickedAttachmentError: jest.fn(), pickAttachmentNative: jest.fn() }));
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import SupportScreen from '../../app/(shared)/support';
+import { getSupportAttachmentUrl, getSupportTicket } from '../../lib/support/frappe-support-client';
 
 describe('SupportScreen contact options', () => {
   const originalPlatform = Platform.OS;
@@ -100,5 +102,38 @@ describe('SupportScreen contact options', () => {
       screen.root.findByProps({ accessibilityLabel: 'Chat with support on WhatsApp' }).props.onPress();
       await Promise.resolve();
     });
+  });
+
+  it('opens a support attachment from a tracked ticket thread', async () => {
+    Platform.OS = 'ios';
+    const openUrl = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
+    (AsyncStorage.getItem as jest.Mock).mockImplementation(async (key: string) =>
+      key === '@hashpass_support_frappe_tickets'
+        ? JSON.stringify([{ ticketId: 'T-1', email: 'a@b.test', subject: 'Help', status: 'Open', createdAt: '2026-01-01T00:00:00Z' }])
+        : null,
+    );
+    (getSupportTicket as jest.Mock).mockResolvedValue({
+      ticket: { subject: 'Help', status: 'Open' },
+      messages: [{ id: 'm1', content: '<p>hi</p>', isVisitorReply: false, createdAt: '2026-01-01T00:00:00Z' }],
+    });
+    (getSupportAttachmentUrl as jest.Mock).mockReturnValue('https://files.example.test/f1');
+    let screen!: TestRenderer.ReactTestRenderer;
+
+    await act(async () => {
+      screen = TestRenderer.create(<SupportScreen />);
+      await Promise.resolve();
+    });
+    await act(async () => {
+      screen.root.findByProps({ accessibilityLabel: 'Open ticket Help' }).props.onPress();
+      await Promise.resolve();
+    });
+    act(() => {
+      screen.root.findByType('SupportRichText' as any).props.onAttachmentPress('f1');
+    });
+
+    expect(getSupportAttachmentUrl).toHaveBeenCalledWith('T-1', 'a@b.test', 'f1');
+    expect(openUrl).toHaveBeenCalledWith('https://files.example.test/f1');
+    act(() => screen.unmount());
+    (AsyncStorage.getItem as jest.Mock).mockReset().mockResolvedValue(null);
   });
 });
