@@ -42,6 +42,9 @@ const mockSupabase = {
   },
 };
 
+let lastAct: any = null;
+let lastRenderer: any = null;
+
 const mountUseAuth = (platform: string) => {
   let captured: any = null;
   let testAct: any = null;
@@ -96,14 +99,32 @@ const mountUseAuth = (platform: string) => {
       return null;
     };
     TestRenderer.act(() => {
-      TestRenderer.create(React.createElement(Harness));
+      lastRenderer = TestRenderer.create(React.createElement(Harness));
     });
   });
 
+  lastAct = testAct;
   return { captured, testAct };
 };
 
+// The hook starts fire-and-forget work (Supabase bridge, auth-state listeners)
+// after a successful sign-in. Drain it inside act() so its state updates don't
+// land after the test ends, which Jest reports as a failed run.
+const flushAsyncWork = async (testAct: any) => {
+  await testAct(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+};
+
 describe('useAuth X (Twitter) sign-in', () => {
+  afterEach(async () => {
+    if (lastAct) await flushAsyncWork(lastAct);
+    // Unmount so the hook's timers/listeners can't update state after the file ends.
+    if (lastRenderer && lastAct) lastAct(() => lastRenderer.unmount());
+    lastAct = null;
+    lastRenderer = null;
+  });
+
   beforeEach(() => {
     jest.resetModules();
     mockAuthService.signInWithOAuth.mockClear();
