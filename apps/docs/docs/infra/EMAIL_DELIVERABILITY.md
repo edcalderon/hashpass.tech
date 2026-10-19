@@ -1,8 +1,30 @@
 # Email Deliverability
 
-This runbook covers mail sent from `no-reply@hashpass.tech` through Brevo. It
-applies to the newsletter confirmation and transactional application mail. Do
-not put SMTP/API keys, recipient addresses, or raw headers in this document.
+## Providers by sender
+
+Hostinger is the main email provider for `@hashpass.tech`. **Only
+`no-reply@hashpass.tech` goes through Brevo**; every other `@hashpass.tech`
+mailbox sends and receives through Hostinger.
+
+| Sender | Provider | Used for | Env prefix |
+|--------|----------|----------|------------|
+| `no-reply@hashpass.tech` | Brevo relay | Transactional/OTP/app mail | `NODEMAILER_*` |
+| Updates mailbox (`updates@` on the main domain) | Hostinger (`smtp.hostinger.com:465`, implicit TLS; IMAP `imap.hostinger.com:993`) | Newsletter, subscription confirmation, admin campaign/update messages | `NODEMAILER_*_UPDATES` |
+| Info-domain no-reply sender | `NODEMAILER_*_INFO` relay | Welcome email | `NODEMAILER_*_INFO` |
+
+The updates mailbox is sent directly from Hostinger so bulk-style mail does not
+pass through Brevo's relay and its spam detection. In `apps/mobile-app/lib/email.ts`,
+`sendSubscriptionConfirmation` and `sendAdminCampaignEmail` use the
+`_UPDATES` sender and fall back to the primary sender if it is not configured.
+Use IMAP, never POP3. Port 465 uses `secure: true`; 587 uses STARTTLS.
+
+Locally the `_UPDATES` variables live in `.env`. On deployed Lambdas they are
+not raw env vars (4KB limit) and are fetched from Infisical at runtime. Add
+`NODEMAILER_HOST_UPDATES`, `NODEMAILER_PORT_UPDATES`, `NODEMAILER_USER_UPDATES`,
+`NODEMAILER_PASS_UPDATES` and `NODEMAILER_FROM_UPDATES` there.
+
+The rest of this runbook covers the Brevo-sent `no-reply@hashpass.tech` mail.
+Do not put SMTP/API keys, recipient addresses, or raw headers in this document.
 
 ## Sender setup
 

@@ -77,4 +77,46 @@ describe('sendSubscriptionConfirmation', () => {
     }));
     expect(mockSendMail.mock.calls[0][0].text).toContain('Questions? Reply to this email');
   });
+
+  it('defaults the reply-to to support@ and omits the unsubscribe line when no link is given', async () => {
+    delete process.env.NODEMAILER_FROM_SUPPORT;
+    const { sendSubscriptionConfirmation } = require('../../lib/email');
+
+    await sendSubscriptionConfirmation('reader@example.com', 'en');
+
+    const sent = mockSendMail.mock.calls[0][0];
+    expect(sent.replyTo).toBe('support@hashpass.tech');
+    expect(sent.text).not.toContain('Unsubscribe:');
+  });
+
+  it('honors a custom NODEMAILER_FROM_SUPPORT address', async () => {
+    process.env.NODEMAILER_FROM_SUPPORT = 'help@hashpass.tech';
+    const { sendSubscriptionConfirmation } = require('../../lib/email');
+
+    await sendSubscriptionConfirmation('reader@example.com', 'en');
+
+    expect(mockSendMail.mock.calls[0][0].replyTo).toBe('help@hashpass.tech');
+  });
+
+  it('rejects an invalid recipient address without sending', async () => {
+    const { sendSubscriptionConfirmation } = require('../../lib/email');
+
+    const result = await sendSubscriptionConfirmation('not-an-email', 'en');
+
+    expect(result.success).toBe(false);
+    expect(mockSendMail).not.toHaveBeenCalled();
+  });
+
+  it('reports the service as unconfigured when no sender is available', async () => {
+    for (const key of ['NODEMAILER_HOST', 'NODEMAILER_PORT', 'NODEMAILER_USER', 'NODEMAILER_PASS', 'NODEMAILER_FROM']) {
+      delete process.env[key];
+    }
+    const { sendSubscriptionConfirmation } = require('../../lib/email');
+
+    await expect(sendSubscriptionConfirmation('reader@example.com', 'en')).resolves.toEqual({
+      success: false,
+      error: 'Email service is not configured',
+    });
+    expect(mockSendMail).not.toHaveBeenCalled();
+  });
 });
