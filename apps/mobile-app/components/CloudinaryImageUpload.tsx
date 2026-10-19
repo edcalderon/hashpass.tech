@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, Platform } from 'react-native';
+import type { CloudinaryUploadPart } from '../types/cloudinary.types';
 
 const DEFAULT_UPLOAD_MAX_SIZE = 10 * 1024 * 1024;
 const DEFAULT_UPLOAD_FORMATS = ['jpg', 'jpeg', 'png', 'webp', 'avif'];
@@ -31,9 +32,10 @@ export default function CloudinaryImageUpload({
   const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const validateFile = useCallback((file: Blob, fileName: string): boolean => {
+  const validateFile = useCallback((file: CloudinaryUploadPart, fileName: string): boolean => {
     // Check file size
-    if (file.size > maxSize) {
+    const fileSize = 'size' in file && typeof file.size === 'number' ? file.size : undefined;
+    if (fileSize !== undefined && fileSize > maxSize) {
       const error = new Error(`File size exceeds ${Math.round(maxSize / (1024 * 1024))}MB limit`);
       onUploadError?.(error);
       return false;
@@ -50,7 +52,7 @@ export default function CloudinaryImageUpload({
     return true;
   }, [allowedTypes, maxSize, onUploadError]);
 
-  const handleFileUpload = useCallback(async (file: Blob, fileName = 'upload.jpg') => {
+  const handleFileUpload = useCallback(async (file: CloudinaryUploadPart, fileName = 'upload.jpg') => {
     if (!validateFile(file, fileName)) return;
 
     setUploading(true);
@@ -61,9 +63,7 @@ export default function CloudinaryImageUpload({
       // initialize Expo Constants/native modules on web or in Jest.
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       const { uploadImage } = require('../lib/cloudinary') as typeof import('../lib/cloudinary');
-      // Cloudinary's browser-facing helper accepts File; native uploads pass
-      // an equivalent Blob through React Native FormData.
-      const result = await uploadImage(file as File, {
+      const result = await uploadImage(file, {
         publicId: undefined, // Let Cloudinary generate
         folder,
         uploadPreset,
@@ -118,12 +118,15 @@ export default function CloudinaryImageUpload({
       });
 
       if (!result.canceled && result.assets[0]) {
-        // Keep the native Blob instead of constructing File, which is not
-        // available on every Expo/Hermes runtime (notably older iOS builds).
         const asset = result.assets[0];
-        const response = await globalThis.fetch(asset.uri);
-        const blob = await response.blob();
-        await handleFileUpload(blob, asset.fileName || 'avatar.jpg');
+        // React Native 0.79's FormData accepts local files only as URI-backed
+        // parts. Keep the picker URI intact instead of fetching it into a Blob.
+        const fileName = asset.fileName || 'avatar.jpg';
+        await handleFileUpload({
+          uri: asset.uri,
+          name: fileName,
+          type: asset.mimeType || 'image/jpeg',
+        }, fileName);
       }
     } catch (error) {
       console.error('Mobile upload error:', error);

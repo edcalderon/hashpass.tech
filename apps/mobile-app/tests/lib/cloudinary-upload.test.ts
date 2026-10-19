@@ -44,4 +44,28 @@ describe('uploadImage', () => {
       'Invalid upload preset',
     );
   });
+
+  it('accepts a native URI-backed upload part', async () => {
+    const appendSpy = jest.spyOn(FormData.prototype, 'append');
+    globalThis.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ secure_url: 'https://cdn.example/native-avatar.png' }),
+    }) as typeof fetch;
+
+    const nativePart = {
+      uri: 'file:///avatar.png',
+      name: 'avatar.png',
+      type: 'image/png',
+    };
+
+    try {
+      await expect(uploadImage(nativePart)).resolves.toEqual({
+        secure_url: 'https://cdn.example/native-avatar.png',
+      });
+      expect(appendSpy).toHaveBeenCalledWith('file', nativePart);
+    } finally {
+      appendSpy.mockRestore();
+    }
+  });
 });

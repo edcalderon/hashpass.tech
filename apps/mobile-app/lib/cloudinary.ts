@@ -2,6 +2,7 @@
 
 // Cloudinary configuration (browser-compatible)
 import Constants from 'expo-constants';
+import type { CloudinaryUploadPart } from '../types/cloudinary.types';
 
 type CloudinaryExtraConfig = {
   cloudName?: string;
@@ -308,7 +309,7 @@ export function getUploadUrl(): string {
  * @returns Promise with upload result
  */
 export async function uploadImage(
-  file: File,
+  file: CloudinaryUploadPart,
   options: {
     publicId?: string;
     folder?: string;
@@ -317,7 +318,10 @@ export async function uploadImage(
   } = {}
 ): Promise<any> {
   const formData = new FormData();
-  formData.append('file', file);
+  // React Native's FormData implementation requires URI-backed parts for
+  // local picker assets. The cast only satisfies the browser DOM type; the
+  // native `{ uri, name, type }` descriptor is preserved at runtime.
+  formData.append('file', file as unknown as Blob);
   formData.append('upload_preset', options.uploadPreset ?? UPLOAD_CONFIG.uploadPreset);
   
   if (options.publicId) {

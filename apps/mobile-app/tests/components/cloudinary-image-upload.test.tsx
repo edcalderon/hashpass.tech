@@ -35,12 +35,9 @@ describe('CloudinaryImageUpload', () => {
     mockRequestPermission.mockResolvedValue({ granted: true });
     mockLaunchPicker.mockResolvedValue({
       canceled: false,
-      assets: [{ uri: 'file:///avatar.png', fileName: 'avatar.png' }],
+      assets: [{ uri: 'file:///avatar.png', fileName: 'avatar.png', mimeType: 'image/png' }],
     });
     mockUploadImage.mockResolvedValue({ secure_url: 'https://cdn.example/avatar.png' });
-    globalThis.fetch = jest.fn().mockResolvedValue({
-      blob: async () => new Blob(['avatar'], { type: 'image/png' }),
-    }) as typeof fetch;
   });
 
   afterEach(() => {
@@ -48,7 +45,7 @@ describe('CloudinaryImageUpload', () => {
     globalThis.fetch = originalFetch;
   });
 
-  it('uploads a native picker Blob and returns the Cloudinary result', async () => {
+  it('uploads a native picker URI part and returns the Cloudinary result', async () => {
     const onUploadSuccess = jest.fn();
     let renderer: ReturnType<typeof create>;
     await act(async () => {
@@ -62,7 +59,11 @@ describe('CloudinaryImageUpload', () => {
       await Promise.resolve();
     });
 
-    expect(mockUploadImage).toHaveBeenCalledWith(expect.any(Blob), expect.objectContaining({
+    expect(mockUploadImage).toHaveBeenCalledWith({
+      uri: 'file:///avatar.png',
+      name: 'avatar.png',
+      type: 'image/png',
+    }, expect.objectContaining({
       folder: 'speakers/avatars',
       uploadPreset: 'speaker_avatars',
     }));
