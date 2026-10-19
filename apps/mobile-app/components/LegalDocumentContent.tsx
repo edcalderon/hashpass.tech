@@ -1,5 +1,5 @@
 import React from 'react';
-import { Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 import { uiPalette } from '@hashpass/ui/tokens';
 import { useTheme } from '../hooks/useTheme';
 import {
@@ -27,13 +27,13 @@ export default function LegalDocumentContent({
   const styles = getStyles(isDark);
 
   return (
-    <>
-      {document.blocks.map((block, index) => {
+    <View style={styles.readOnly}>
+      {document.blocks.map((block: LegalDocumentBlock, index: number) => {
         const key = blockKey(block, index);
 
         if (block.type === 'heading') {
           return (
-            <Text key={key} style={styles.sectionTitle} selectable>
+            <Text key={key} style={styles.sectionTitle} selectable={false}>
               {block.text}
             </Text>
           );
@@ -42,10 +42,10 @@ export default function LegalDocumentContent({
         if (block.type === 'list') {
           return (
             <View key={key} style={styles.list}>
-              {block.items.map((item, itemIndex) => (
+              {block.items.map((item: string, itemIndex: number) => (
                 <View key={`${itemIndex}-${item.slice(0, 24)}`} style={styles.listRow}>
-                  <Text style={styles.bullet} selectable>•</Text>
-                  <Text style={styles.sectionText} selectable>{item}</Text>
+                  <Text style={styles.bullet} selectable={false}>•</Text>
+                  <Text style={styles.sectionText} selectable={false}>{item}</Text>
                 </View>
               ))}
             </View>
@@ -56,29 +56,25 @@ export default function LegalDocumentContent({
           <Text
             key={key}
             style={block.type === 'quote' ? styles.quote : styles.sectionText}
-            selectable
+            selectable={false}
           >
             {block.text}
           </Text>
         );
       })}
 
-      <TouchableOpacity
-        accessibilityRole="link"
-        onPress={() => Linking.openURL(document.sourceUrl)}
-        style={styles.sourceLink}
-      >
-        <Text style={styles.sourceLinkText} selectable={false}>
-          View the canonical document
-        </Text>
-      </TouchableOpacity>
-    </>
+    </View>
   );
 }
 
 const getStyles = (isDark: boolean) => {
   const palette = uiPalette(isDark);
   return StyleSheet.create({
+    // The drawer is read-only: no text selection or pointer interaction on web.
+    readOnly: Platform.select<object>({
+      web: { userSelect: 'none', pointerEvents: 'none' },
+      default: {},
+    }) as object,
     sectionTitle: {
       fontSize: 18,
       fontWeight: '600',
@@ -114,17 +110,6 @@ const getStyles = (isDark: boolean) => {
     bullet: {
       fontSize: 14,
       lineHeight: 22,
-      color: palette.accent,
-    },
-    sourceLink: {
-      alignSelf: 'flex-start',
-      paddingVertical: 12,
-      marginTop: 8,
-      marginBottom: 24,
-    },
-    sourceLinkText: {
-      fontSize: 14,
-      fontWeight: '600',
       color: palette.accent,
     },
   });
