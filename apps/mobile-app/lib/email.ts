@@ -254,7 +254,7 @@ async function loadSecondarySender(suffix: '_INFO' | '_UPDATES'): Promise<Second
     // intended "fall back to the primary hashpass.tech sender" behavior
     // entirely and silently dropping the email.
     try {
-      const { getInfisicalSecret } = await import('./server/infisical-secrets');
+      const { getInfisicalSecret } = require('./server/infisical-secrets');
       const rawPort = process.env[`NODEMAILER_PORT${suffix}`];
       const [host, port, user, pass, from] = await Promise.all([
         config.host || getInfisicalSecret(`NODEMAILER_HOST${suffix}`),

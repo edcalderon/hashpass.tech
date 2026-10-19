@@ -105,6 +105,29 @@ describe('updates@hashpass.tech sender', () => {
       );
     });
 
+    it('builds the Hostinger sender from Infisical values and defaults the port', async () => {
+      clearUpdatesEnv();
+      const values: Record<string, string> = {
+        NODEMAILER_HOST_UPDATES: 'smtp.hostinger.com',
+        NODEMAILER_USER_UPDATES: 'updates@hashpass.tech',
+        [updatesPasswordVariable]: 'hostinger-value',
+        NODEMAILER_FROM_UPDATES: 'updates@hashpass.tech',
+      };
+      jest.doMock('../../lib/server/infisical-secrets', () => ({
+        getInfisicalSecret: jest.fn(async (key: string) => values[key]),
+      }));
+      const { sendAdminCampaignEmail } = require('../../lib/email');
+
+      await sendAdminCampaignEmail(campaign);
+
+      expect(mockCreateTransport).toHaveBeenCalledWith(
+        expect.objectContaining({ host: 'smtp.hostinger.com', port: 587 }),
+      );
+      expect(mockSendMail).toHaveBeenCalledWith(
+        expect.objectContaining({ from: 'HASHPASS <updates@hashpass.tech>' }),
+      );
+    });
+
     it('falls back to the primary sender when Infisical has no values', async () => {
       clearUpdatesEnv();
       jest.doMock('../../lib/server/infisical-secrets', () => ({
@@ -118,6 +141,13 @@ describe('updates@hashpass.tech sender', () => {
         expect.objectContaining({ from: 'HASHPASS <no-reply@hashpass.tech>' }),
       );
     });
+  });
+
+  it('resolves the info sender before validating the welcome email address', async () => {
+    jest.doMock('../../lib/server/infisical-secrets', () => ({ getInfisicalSecret: jest.fn(async () => undefined) }));
+    const { sendWelcomeEmail } = require('../../lib/email');
+
+    await expect(sendWelcomeEmail('not-an-email')).resolves.toEqual({ success: false, error: 'Invalid email address' });
   });
 
   it('returns the delivery error when the campaign send fails', async () => {
