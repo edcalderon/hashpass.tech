@@ -846,7 +846,9 @@ export default function AuthScreen({
   const isXOAuthRedirecting =
     busyAction === "oauth" && oauthProvider === "twitter";
   const xOAuthButtonLabel = isXOAuthRedirecting
-    ? t("redirectingToX", "Redirecting to X...")
+    ? Platform.OS === "web"
+      ? t("redirectingToX", "Redirecting to X...")
+      : t("openingXSignIn", "Opening X sign-in...")
     : t("signInWithX", "Continue with X");
   const authActionMessage = useMemo(() => {
     switch (busyAction) {
@@ -1713,10 +1715,10 @@ export default function AuthScreen({
     }
   };
 
-  // Web-only for now: X/Twitter goes through Better Auth's browser-redirect
-  // flow the same way Google/Apple do on web, but there is no native
-  // ID-token exchange for it yet (see useAuth.signInWithOAuth's 'twitter'
-  // guard) and no deep-link callback wired up for native.
+  // Web: Better Auth's browser-redirect flow, like Google/Apple. Native: the
+  // same provider runs inside the system auth session (ASWebAuthenticationSession
+  // / Custom Tab) and returns through the hashpass:// deep link -- see
+  // useAuth.signInWithOAuth's 'twitter' branch.
   const handleXSignIn = async () => {
     if (isBusy || oauthInFlightRef.current) return;
     hapticLight();
@@ -1739,6 +1741,10 @@ export default function AuthScreen({
       }
       if (result.pending) {
         keepOAuthBusy = true;
+        return;
+      }
+      // The user dismissed the native X sheet: no session, and not an error.
+      if (!result.session && !result.user) {
         return;
       }
 
@@ -2898,27 +2904,23 @@ export default function AuthScreen({
                       </View>
                     ) : null}
 
-                    {Platform.OS === "web" ? (
-                      <View
-                        style={[
-                          styles.oauthContainer,
-                          !isDesktopLayout
-                            ? styles.oauthContainerCompact
-                            : null,
-                        ]}
-                      >
-                        {renderOAuthButton({
-                          label: xOAuthButtonLabel,
-                          onPress: () => void handleXSignIn(),
-                          redirecting: isXOAuthRedirecting,
-                          iconColor: uiPalette(isDark).canvas,
-                          brandingStyle: styles.appleOauthButton,
-                          icon: (
-                            <XIcon size={20} color={uiPalette(isDark).canvas} />
-                          ),
-                        })}
-                      </View>
-                    ) : null}
+                    <View
+                      style={[
+                        styles.oauthContainer,
+                        !isDesktopLayout ? styles.oauthContainerCompact : null,
+                      ]}
+                    >
+                      {renderOAuthButton({
+                        label: xOAuthButtonLabel,
+                        onPress: () => void handleXSignIn(),
+                        redirecting: isXOAuthRedirecting,
+                        iconColor: uiPalette(isDark).canvas,
+                        brandingStyle: styles.appleOauthButton,
+                        icon: (
+                          <XIcon size={20} color={uiPalette(isDark).canvas} />
+                        ),
+                      })}
+                    </View>
                   </View>
 
                   {authActionMessage ? (

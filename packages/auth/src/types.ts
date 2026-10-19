@@ -26,6 +26,7 @@ export interface AuthResponse {
   session?: AuthSession;
   error?: string;
   pending?: boolean; // For OAuth redirects
+  cancelled?: boolean; // The user dismissed the sign-in UI; not an error
   oauthUrl?: string; // Native: caller must open this URL in a WebBrowser
 }
 

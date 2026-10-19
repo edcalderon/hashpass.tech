@@ -207,6 +207,188 @@ describe('BetterAuthProvider', () => {
 
   });
 
+  describe('native X sign-in (browser session)', () => {
+    const mockOpenAuthSession = jest.fn();
+    const mockDismissAuthSession = jest.fn();
+    const mockStorage = { getItemAsync: jest.fn(), setItemAsync: jest.fn() };
+    const mockGetSetCookie = jest.fn((cookie: string) => `merged:${cookie}`);
+
+    const run = async (fn: (provider: any) => Promise<void>, os = 'ios') => {
+      const { Platform } = require('react-native');
+      const originalPlatform = Platform.OS;
+      Platform.OS = os;
+      jest.doMock('expo-web-browser', () => ({
+        openAuthSessionAsync: mockOpenAuthSession,
+        dismissAuthSession: mockDismissAuthSession,
+      }));
+      jest.doMock('expo-linking', () => ({
+        createURL: (path: string) => `hashpass://${path.replace(/^\//, '')}`,
+      }));
+      jest.doMock('@better-auth/expo/client', () => ({
+        expoClient: mockExpoClient,
+        getSetCookie: mockGetSetCookie,
+        storageAdapter: () => mockStorage,
+      }));
+      try {
+        const { BetterAuthProvider } = require('../../../../packages/auth/src/providers/better-auth');
+        await fn(new BetterAuthProvider({ baseURL: 'https://api.hashpass.tech/api/auth' }));
+      } finally {
+        Platform.OS = originalPlatform;
+      }
+    };
+
+    beforeEach(() => {
+      mockOpenAuthSession.mockReset();
+      mockDismissAuthSession.mockReset();
+      mockStorage.getItemAsync.mockReset().mockResolvedValue(
+        JSON.stringify({ 'better-auth.oauth_state': { value: 'state-abc' } }),
+      );
+      mockStorage.setItemAsync.mockReset().mockResolvedValue(undefined);
+      mockGetSetCookie.mockClear();
+      mockSignInSocial.mockResolvedValue({
+        data: { redirect: false, url: 'https://x.com/i/oauth2/authorize?state=s' },
+      });
+    });
+
+    it('opens the authorization proxy with the state cookie and stores the returned session cookie', async () => {
+      mockOpenAuthSession.mockResolvedValueOnce({
+        type: 'success',
+        url: 'hashpass://dashboard/explore?cookie=better-auth.session_token%3Dabc',
+      });
+      mockGetSession.mockResolvedValueOnce({ data: createBetterAuthSession() });
+
+      await run(async (provider) => {
+        const result = await provider.signInWithOAuth('twitter');
+
+        expect(mockSignInSocial).toHaveBeenCalledWith(expect.objectContaining({
+          provider: 'twitter',
+          callbackURL: 'hashpass://dashboard/explore',
+          errorCallbackURL: 'hashpass://auth',
+          disableRedirect: true,
+        }));
+        const [proxyURL, returnURL] = mockOpenAuthSession.mock.calls[0];
+        expect(returnURL).toBe('hashpass://dashboard/explore');
+        const url = new URL(proxyURL);
+        expect(url.pathname).toBe('/api/auth/expo-authorization-proxy');
+        expect(url.searchParams.get('oauthState')).toBe('state-abc');
+        expect(url.searchParams.get('authorizationURL')).toContain('x.com/i/oauth2/authorize');
+        expect(mockGetSetCookie).toHaveBeenCalledWith('better-auth.session_token=abc', expect.anything());
+        expect(mockStorage.setItemAsync).toHaveBeenCalledWith('better-auth_cookie', expect.stringContaining('merged:'));
+        expect(result.error).toBeUndefined();
+        expect(result.session?.user.email).toBe('user@example.com');
+      });
+    });
+
+    it('dismisses a stale Android auth session first', async () => {
+      mockOpenAuthSession.mockResolvedValueOnce({ type: 'cancel' });
+      await run(async (provider) => {
+        await provider.signInWithOAuth('twitter');
+        expect(mockDismissAuthSession).toHaveBeenCalled();
+      }, 'android');
+    });
+
+    it('reports a closed sheet as cancelled', async () => {
+      mockOpenAuthSession.mockResolvedValueOnce({ type: 'dismiss' });
+      await run(async (provider) => {
+        await expect(provider.signInWithOAuth('twitter')).resolves.toEqual({ cancelled: true });
+        expect(mockGetSession).not.toHaveBeenCalled();
+      });
+    });
+
+    it('reports a provider denial as an error, not a cancel', async () => {
+      mockOpenAuthSession.mockResolvedValueOnce({
+        type: 'success',
+        url: 'hashpass://auth?error=access_denied&cookie=x',
+      });
+      await run(async (provider) => {
+        await expect(provider.signInWithOAuth('twitter')).resolves.toEqual({
+          error: 'X sign-in was not approved.',
+        });
+      });
+    });
+
+    it('prefers the provider error description and falls back to the code', async () => {
+      mockOpenAuthSession
+        .mockResolvedValueOnce({ type: 'success', url: 'hashpass://auth?error=server_error&error_description=Email%20required' })
+        .mockResolvedValueOnce({ type: 'success', url: 'hashpass://auth?error=server_error' });
+      await run(async (provider) => {
+        await expect(provider.signInWithOAuth('twitter')).resolves.toEqual({ error: 'Email required' });
+        await expect(provider.signInWithOAuth('twitter')).resolves.toEqual({ error: 'X sign-in failed (server_error).' });
+      });
+    });
+
+    it('errors when the callback carries no session cookie', async () => {
+      mockOpenAuthSession.mockResolvedValueOnce({ type: 'success', url: 'hashpass://dashboard/explore' });
+      await run(async (provider) => {
+        const result = await provider.signInWithOAuth('twitter');
+        expect(result.error).toMatch(/without a session/);
+      });
+    });
+
+    it('errors when the cookie is stored but no session can be read', async () => {
+      jest.useFakeTimers();
+      try {
+        mockOpenAuthSession.mockResolvedValueOnce({ type: 'success', url: 'hashpass://x?cookie=a%3Db' });
+        mockGetSession.mockResolvedValue({ data: { user: null, session: null } });
+        await run(async (provider) => {
+          const pending = provider.signInWithOAuth('twitter');
+          await jest.advanceTimersByTimeAsync(1000);
+          expect((await pending).error).toMatch(/no session was found/);
+        });
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
+    it('works without a stored state cookie', async () => {
+      mockStorage.getItemAsync.mockResolvedValue(null);
+      mockOpenAuthSession.mockResolvedValueOnce({ type: 'cancel' });
+      await run(async (provider) => {
+        await provider.signInWithOAuth('twitter');
+        expect(new URL(mockOpenAuthSession.mock.calls[0][0]).searchParams.has('oauthState')).toBe(false);
+      });
+    });
+
+    it('tolerates a corrupt cookie jar', async () => {
+      mockStorage.getItemAsync.mockResolvedValue('not json');
+      mockOpenAuthSession.mockResolvedValueOnce({ type: 'cancel' });
+      await run(async (provider) => {
+        await expect(provider.signInWithOAuth('twitter')).resolves.toEqual({ cancelled: true });
+      });
+    });
+
+    it('surfaces provider errors from the sign-in request', async () => {
+      mockSignInSocial.mockResolvedValueOnce({ error: { message: 'X denied access' } });
+      await run(async (provider) => {
+        await expect(provider.signInWithOAuth('twitter')).resolves.toEqual({ error: 'X denied access' });
+        expect(mockOpenAuthSession).not.toHaveBeenCalled();
+      });
+    });
+
+    it('errors when no authorization URL is returned', async () => {
+      mockSignInSocial.mockResolvedValueOnce({ data: { redirect: false } });
+      await run(async (provider) => {
+        const result = await provider.signInWithOAuth('twitter');
+        expect(result.error).toMatch(/authorization URL/);
+      });
+    });
+
+    it('returns a thrown error message', async () => {
+      mockSignInSocial.mockRejectedValueOnce(new Error('network down'));
+      await run(async (provider) => {
+        await expect(provider.signInWithOAuth('twitter')).resolves.toEqual({ error: 'network down' });
+      });
+    });
+
+    it('does not offer a browser redirect for native Google', async () => {
+      await run(async (provider) => {
+        const result = await provider.signInWithOAuth('google');
+        expect(result.error).toMatch(/platform SDK/);
+        expect(mockSignInSocial).not.toHaveBeenCalled();
+      });
+    });
+  });
+
   it('does not commit a native sign-in that is aborted while the request is in flight', async () => {
     let resolveSignIn: ((value: unknown) => void) | undefined;
     const pendingSignIn = new Promise((resolve) => {

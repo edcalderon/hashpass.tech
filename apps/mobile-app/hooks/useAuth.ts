@@ -1259,11 +1259,40 @@ export const useAuth = () => {
         return { error: 'Sign in with Apple is available on the web and iOS.' };
       }
 
-      // X/Twitter is web-only for now — there is no native ID-token exchange
-      // for it the way there is for Google/Apple, and no browser-redirect +
-      // deep-link callback has been wired up for native yet.
+      // ── Native X sign-in (system browser session) ──────────────────────────────
+      // X has no ID-token SDK, so Better Auth runs the OAuth redirect inside
+      // ASWebAuthenticationSession / a Custom Tab and returns the session
+      // cookie through the hashpass:// deep link (see
+      // BetterAuthProvider.signInWithNativeBrowserSession).
       if (provider === 'twitter') {
-        return { error: 'Sign in with X is available on the web only.' };
+        try {
+          await clearStaleProviderSession('better-auth');
+
+          const betterAuthX =
+            providerName === 'better-auth'
+              ? (authService as unknown as BetterAuthProvider)
+              : getGoogleBetterAuthProvider();
+          const betterAuthResult = await betterAuthX.signInWithOAuth('twitter');
+          if (betterAuthResult.cancelled) {
+            return { pending: false };
+          }
+          if (betterAuthResult.error) {
+            throw new Error(betterAuthResult.error);
+          }
+
+          const session = betterAuthResult.session;
+          if (!session?.user) {
+            throw new Error('X sign-in completed, but no Better Auth session was created.');
+          }
+
+          sessionBootstrapPromise = Promise.resolve(session);
+          markRecentAuthSuccess();
+          applyAuthenticatedSession(session);
+          void ensureSupabaseBridgeSession(betterAuthX);
+          return betterAuthResult;
+        } catch (error: any) {
+          return { error: getAuthErrorMessage(error, 'X sign-in failed. Please try again.') };
+        }
       }
 
       // ── Native Google Sign-In (SDK path, feature-flagged) ──────────────────────

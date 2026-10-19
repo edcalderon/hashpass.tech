@@ -93,6 +93,17 @@ jest.mock('@better-auth/expo/client', () => ({
   expoClient: jest.fn(() => ({
     id: 'expo-client',
   })),
+  getSetCookie: jest.fn((cookie, previous) => previous ?? cookie),
+  storageAdapter: jest.fn(() => ({
+    getItemAsync: jest.fn(async () => null),
+    setItemAsync: jest.fn(async () => undefined),
+  })),
+}));
+
+// Server entry (expo() plugin) is ESM-only as well; suites that import
+// lib/server/better-auth only need it to be constructible.
+jest.mock('@better-auth/expo', () => ({
+  expo: jest.fn(() => ({ id: 'expo' })),
 }));
 
 // The email module uses S3 for asset URLs. The mobile Jest preset resolves

@@ -407,10 +407,12 @@ describe("passwordless email reset", () => {
 
   it("fires the success toast when X (Twitter) sign-in completes without a redirect", async () => {
     Platform.OS = "web";
-    // Non-pending + no error: the server completed the sign-in inline
-    // (e.g. a pre-resolved session) instead of issuing a browser redirect.
-    // handleXSignIn must celebrate and release the busy lock in that case.
-    const signInWithOAuth = jest.fn().mockResolvedValue({ pending: false });
+    // Non-pending + a session: the sign-in completed inline (the native
+    // browser-session flow, or a pre-resolved web session) instead of issuing a
+    // redirect. handleXSignIn must celebrate and release the busy lock.
+    const signInWithOAuth = jest.fn().mockResolvedValue({
+      session: { user: { id: "u1", email: "x@example.com" } },
+    });
     mockAuth = { ...mockAuth, signInWithOAuth };
     const localStorage = {
       clear: jest.fn(),
@@ -447,14 +449,21 @@ describe("passwordless email reset", () => {
     });
   });
 
-  it("omits the X (Twitter) button on native platforms — there is no ID-token exchange for it", async () => {
-    Platform.OS = "ios";
-    await act(async () => renderer.update(<AuthScreen key="ios-no-x" />));
-    expect(button("Continue with X")).toBeUndefined();
+  it("shows the X (Twitter) button on native platforms and stays quiet when the sheet is dismissed", async () => {
+    for (const os of ["ios", "android"] as const) {
+      Platform.OS = os;
+      const signInWithOAuth = jest.fn().mockResolvedValue({ pending: false });
+      mockAuth = { ...mockAuth, signInWithOAuth };
+      mockShowSuccess.mockReset();
+      await act(async () => renderer.update(<AuthScreen key={`${os}-x`} />));
+      expect(button("Continue with X")).toBeDefined();
 
-    Platform.OS = "android";
-    await act(async () => renderer.update(<AuthScreen key="android-no-x" />));
-    expect(button("Continue with X")).toBeUndefined();
+      await press("Continue with X");
+      expect(signInWithOAuth).toHaveBeenCalledWith("twitter");
+      // A dismissed sheet returns no session: no false "Login successful".
+      expect(mockShowSuccess).not.toHaveBeenCalled();
+      expect(button("Continue with X")).toBeDefined();
+    }
   });
 
   it("preserves a web OAuth return path before opening Google sign-in", async () => {
