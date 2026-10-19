@@ -284,8 +284,8 @@ const resolveInfoSender = () => resolveSecondarySender('_INFO');
 async function resolveUpdatesSender() {
   const sender = await resolveSecondarySender('_UPDATES');
   return sender.transporter
-    ? { transporter: sender.transporter, from: sender.from, viaUpdates: true }
-    : { transporter, from: smtpFrom, viaUpdates: false };
+    ? { transporter: sender.transporter, from: sender.from }
+    : { transporter, from: smtpFrom };
 }
 
 function getEmailContent(type: 'subscriptionConfirmation' | 'welcome' | 'userOnboarding' | 'speakerOnboarding' | 'troubleshooting', locale: string = DEFAULT_LOCALE) {
