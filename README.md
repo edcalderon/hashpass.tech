@@ -20,17 +20,20 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.123)
+## 📋 Latest Changes (v1.9.124)
 
-### Released
-- native X sign-in through the system auth session
+### Bug Fixes
+
+* **auth:** route X OAuth callbacks through Better Auth ([4351abd](https://github.com/hashpass-tech/hashpass.tech/commit/4351abd2145ee38e9cdc3aa2f0dc93a090011dc4))
+### Release Highlights
+- route X OAuth callbacks through Better Auth
 
 ### Release scope
-- Compared with: `v1.9.122` (the previous global release tag)
+- Compared with: `v1.9.123` (the previous global release tag)
 
 ### Affected products & packages
 - Mobile app
-- Auth
+- Documentation
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

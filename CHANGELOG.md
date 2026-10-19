@@ -1,3 +1,19 @@
+## [1.9.124](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.123...v1.9.124) (2026-10-19)
+
+
+### Bug Fixes
+
+* **auth:** route X OAuth callbacks through Better Auth ([4351abd](https://github.com/hashpass-tech/hashpass.tech/commit/4351abd2145ee38e9cdc3aa2f0dc93a090011dc4))
+### Release Highlights
+- route X OAuth callbacks through Better Auth
+
+### Release scope
+- Compared with: `v1.9.123` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Documentation
+
 ## [1.9.123](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.122...v1.9.123) (2026-10-18)
 ### Released
 - native X sign-in through the system auth session
