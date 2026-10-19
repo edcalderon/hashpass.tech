@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610190514, // Updated to current timestamp
+  buildNumber: 202610190749, // Updated to current timestamp
   releaseDate: '2026-10-19',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,14 +30,35 @@ export const CURRENT_VERSION: VersionInfo = {
     // No new features
   ],
   bugfixes: [
-    'improve support and static delivery'
+    'type block callbacks explicitly for isolated typecheck',
+    'make terms/privacy drawers read-only, shorten Storybook title',
+    'replace dead bsl2025.hashpass.tech links',
+    'back arrow falls back to home when opened directly'
   ],
   breakingChanges: [],
-  notes: 'improve support and static delivery'
+  notes: 'type block callbacks explicitly for isolated typecheck; make terms/privacy drawers read-only, shorten Storybook title; replace dead bsl2025.hashpass.tech links; back arrow falls back to home when opened directly'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.127': {
+    version: '1.9.127',
+    buildNumber: 202610190749,
+    releaseDate: '2026-10-19',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'type block callbacks explicitly for isolated typecheck',
+      'make terms/privacy drawers read-only, shorten Storybook title',
+      'replace dead bsl2025.hashpass.tech links',
+      'back arrow falls back to home when opened directly'
+    ],
+    breakingChanges: [],
+    notes: 'type block callbacks explicitly for isolated typecheck; make terms/privacy drawers read-only, shorten Storybook title; replace dead bsl2025.hashpass.tech links; back arrow falls back to home when opened directly'
+  },
   '1.9.126': {
     version: '1.9.126',
     buildNumber: 202610190514,

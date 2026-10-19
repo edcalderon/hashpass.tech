@@ -4,10 +4,9 @@ import { themes } from '@storybook/theming';
 addons.setConfig({
   theme: {
     ...themes.light,
-    brandTitle: 'HASHPASS Documentation',
-    brandUrl: 'https://bsl2025.hashpass.tech',
+    brandTitle: 'HASHPASS',
+    brandUrl: 'https://hashpass.tech',
     brandImage: undefined,
     brandTarget: '_self',
   },
 });
-

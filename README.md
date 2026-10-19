@@ -20,22 +20,16 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.126)
+## 📋 Latest Changes (v1.9.127)
 
-### Bug Fixes
-
-* **platform:** improve support and static delivery ([2782a96](https://github.com/hashpass-tech/hashpass.tech/commit/2782a962760c652eb4b1f13339248d3096c0da22))
-### Release Highlights
-- improve support and static delivery
+### Released
+- type block callbacks explicitly for isolated typecheck; make terms/privacy drawers read-only, shorten Storybook title; replace dead bsl2025.hashpass.tech links; back arrow falls back to home when opened directly
 
 ### Release scope
-- Compared with: `v1.9.125` (the previous global release tag)
+- Compared with: `v1.9.126` (the previous global release tag)
 
 ### Affected products & packages
 - Mobile app
-- Infrastructure
-- Documentation
-- Release tooling
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

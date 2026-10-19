@@ -5,8 +5,10 @@ import TestRenderer, { act } from 'react-test-renderer';
 import { Linking, Platform } from 'react-native';
 
 const mockRouterBack = jest.fn();
+const mockRouterReplace = jest.fn();
+const mockCanGoBack = jest.fn();
 
-jest.mock('expo-router', () => ({ useRouter: () => ({ back: mockRouterBack }) }));
+jest.mock('expo-router', () => ({ useRouter: () => ({ back: mockRouterBack, replace: mockRouterReplace, canGoBack: mockCanGoBack }) }));
 jest.mock('react-native-safe-area-context', () => ({ SafeAreaView: 'SafeAreaView' }));
 jest.mock('@react-native-async-storage/async-storage', () => ({
   getItem: jest.fn().mockResolvedValue(null),
@@ -135,5 +137,28 @@ describe('SupportScreen contact options', () => {
     expect(openUrl).toHaveBeenCalledWith('https://files.example.test/f1');
     act(() => screen.unmount());
     (AsyncStorage.getItem as jest.Mock).mockReset().mockResolvedValue(null);
+  });
+
+  it.each([
+    [true, 1, 0],
+    [false, 0, 1],
+  ])('back arrow with canGoBack=%s pops history=%s, falls back home=%s', async (canGoBack, backCalls, replaceCalls) => {
+    mockRouterBack.mockClear();
+    mockRouterReplace.mockClear();
+    mockCanGoBack.mockReturnValue(canGoBack);
+    Platform.OS = 'web';
+    let screen!: TestRenderer.ReactTestRenderer;
+
+    await act(async () => {
+      screen = TestRenderer.create(<SupportScreen />);
+      await Promise.resolve();
+    });
+    act(() => {
+      screen.root.findByProps({ accessibilityLabel: 'Go back' }).props.onPress();
+    });
+
+    expect(mockRouterBack).toHaveBeenCalledTimes(backCalls);
+    expect(mockRouterReplace).toHaveBeenCalledTimes(replaceCalls);
+    if (replaceCalls) expect(mockRouterReplace).toHaveBeenCalledWith('/');
   });
 });
