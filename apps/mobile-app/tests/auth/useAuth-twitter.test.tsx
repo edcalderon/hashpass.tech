@@ -202,6 +202,71 @@ describe('useAuth X (Twitter) sign-in', () => {
     }
   });
 
+  it('reuses the primary Better Auth provider for a completed web X callback', async () => {
+    const originalWindow = global.window;
+    Object.defineProperty(global, 'window', {
+      configurable: true,
+      value: {
+        localStorage: {
+          getItem: jest.fn((key: string) => {
+            if (key === 'auth_signin_method') return 'twitter_oauth';
+            if (key === 'oauth_in_progress') return 'true';
+            return null;
+          }),
+        },
+      },
+    });
+    const completedSession = {
+      user: { id: 'ba-user', email: 'x@example.com' },
+      access_token: 'token',
+      provider: 'better-auth',
+    };
+    mockAuthService.handleOAuthCallback.mockResolvedValueOnce({
+      user: completedSession.user,
+      session: completedSession,
+    } as any);
+
+    try {
+      const { captured, testAct } = mountUseAuth('web');
+
+      let result: any;
+      await testAct(async () => {
+        result = await captured.handleOAuthCallback({});
+      });
+
+      expect(result.session).toEqual(completedSession);
+      expect(mockAuthService.handleOAuthCallback).toHaveBeenCalledWith({}, undefined);
+      expect(mockBetterAuthHandleOAuthCallback).not.toHaveBeenCalled();
+    } finally {
+      Object.defineProperty(global, 'window', {
+        configurable: true,
+        value: originalWindow,
+      });
+    }
+  });
+
+  it('keeps native callbacks on their primary provider instead of applying web social routing', async () => {
+    const completedSession = {
+      user: { id: 'native-user', email: 'native@example.com' },
+      access_token: 'token',
+      provider: 'better-auth',
+    };
+    mockAuthService.handleOAuthCallback.mockResolvedValueOnce({
+      user: completedSession.user,
+      session: completedSession,
+    } as any);
+    const { captured, testAct } = mountUseAuth('ios');
+
+    let result: any;
+    await testAct(async () => {
+      result = await captured.handleOAuthCallback({});
+    });
+
+    expect(result.session).toEqual(completedSession);
+    expect(mockAuthService.handleOAuthCallback).toHaveBeenCalledWith({}, undefined);
+    expect(mockBetterAuthHandleOAuthCallback).not.toHaveBeenCalled();
+  });
+
   describe.each(['android', 'ios'])('native (%s)', (platform) => {
     const nativeSession = {
       user: { id: 'ba-user', email: 'x@example.com' },
