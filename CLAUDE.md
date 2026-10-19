@@ -483,6 +483,21 @@ redirect after the Apple PIN/passcode sheet closes. The exchange is bounded by
 a 15-second timeout so a failed native handoff cannot leave the login screen in
 an indefinite loading state.
 
+## X (Twitter) social sign-in and callbacks
+
+X has no native ID-token SDK. On iOS it must use the system authentication
+session and on Android a Custom Tab, both initiated by Better Auth; do not
+probe for, force-open, or depend on the installed X app. On web, Better Auth
+consumes the OAuth response and establishes its cookie session before returning
+to `/auth/callback`.
+
+The callback route recognizes active Better Auth social markers for Google,
+Apple, and X only when `oauth_in_progress` is set. A stale social marker must
+fail as an unusable magic-link callback rather than falling through to the
+tenant's primary provider. Keep the regression coverage in
+`tests/auth/auth-callback-social.test.tsx` and
+`tests/auth/useAuth-twitter.test.tsx` when changing this routing.
+
 ## Better Auth ↔ Supabase Identity Bridge (as of v1.8.273)
 
 **Root cause this fixes:** Better Auth sign-ins (Google, for every tenant — see

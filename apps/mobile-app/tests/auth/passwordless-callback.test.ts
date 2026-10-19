@@ -3,7 +3,8 @@
 import {
   buildNativePasswordlessCallbackUrl,
   extractNativeRelayFragment,
-  isBetterAuthGoogleCallback,
+  isBetterAuthSocialCallback,
+  isBetterAuthSocialSignInMethod,
   isSupabasePasswordlessCallback,
 } from '../../lib/auth/passwordless-callback';
 
@@ -30,11 +31,19 @@ describe('isSupabasePasswordlessCallback', () => {
     expect(isSupabasePasswordlessCallback({ signInMethod: 'google_oauth' })).toBe(false);
   });
 
+  it.each(['google_oauth', 'apple_oauth', 'twitter_oauth'])(
+    'routes an active %s Better Auth social callback through its cookie session',
+    (signInMethod) => {
+      expect(isBetterAuthSocialCallback({ signInMethod, oauthInProgress: true })).toBe(true);
+      expect(isBetterAuthSocialSignInMethod(signInMethod)).toBe(true);
+    },
+  );
+
   it('requires Better Auth\'s active OAuth marker before choosing its cookie callback', () => {
-    expect(isBetterAuthGoogleCallback({ signInMethod: 'google_oauth', oauthInProgress: true })).toBe(true);
-    expect(isBetterAuthGoogleCallback({ signInMethod: 'google_oauth', oauthInProgress: false })).toBe(false);
-    expect(isBetterAuthGoogleCallback({ signInMethod: 'google_oauth' })).toBe(false);
-    expect(isBetterAuthGoogleCallback({ signInMethod: 'magic_link', oauthInProgress: true })).toBe(false);
+    expect(isBetterAuthSocialCallback({ signInMethod: 'twitter_oauth', oauthInProgress: false })).toBe(false);
+    expect(isBetterAuthSocialCallback({ signInMethod: 'twitter_oauth' })).toBe(false);
+    expect(isBetterAuthSocialCallback({ signInMethod: 'magic_link', oauthInProgress: true })).toBe(false);
+    expect(isBetterAuthSocialSignInMethod('magic_link')).toBe(false);
   });
 });
 

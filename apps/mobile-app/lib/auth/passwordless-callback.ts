@@ -1,3 +1,5 @@
+import type { BetterAuthSocialCallbackParams } from './types/passwordless-callback.types';
+
 /**
  * Browser-storage marker used only to route a just-requested Supabase
  * passwordless callback. It prevents an abandoned Google sign-in marker from
@@ -15,10 +17,11 @@ type PasswordlessCallbackParams = {
   hasImplicitAccessToken?: boolean;
 };
 
-type BetterAuthGoogleCallbackParams = {
-  signInMethod?: string | null;
-  oauthInProgress?: boolean;
-};
+const BETTER_AUTH_SOCIAL_SIGN_IN_METHODS = new Set([
+  'google_oauth',
+  'apple_oauth',
+  'twitter_oauth',
+]);
 
 export const isSupabasePasswordlessCallback = ({
   signInMethod,
@@ -38,17 +41,20 @@ export const isSupabasePasswordlessCallback = ({
   hasImplicitAccessToken;
 
 /**
- * Better Auth's Google callback has no query payload because the backend has
- * already consumed it and set a same-site session cookie. Do not select that
+ * Better Auth social callbacks have no query payload because the backend has
+ * already consumed it and set a same-site session cookie. Do not select this
  * path based solely on the historical sign-in-method marker: magic-link
  * emails can be opened later or in another browser context where that marker
  * is stale or absent.
  */
-export const isBetterAuthGoogleCallback = ({
+export const isBetterAuthSocialCallback = ({
   signInMethod,
   oauthInProgress = false,
-}: BetterAuthGoogleCallbackParams): boolean =>
-  signInMethod === 'google_oauth' && oauthInProgress;
+}: BetterAuthSocialCallbackParams): boolean =>
+  Boolean(signInMethod && BETTER_AUTH_SOCIAL_SIGN_IN_METHODS.has(signInMethod) && oauthInProgress);
+
+export const isBetterAuthSocialSignInMethod = (signInMethod?: string | null): boolean =>
+  Boolean(signInMethod && BETTER_AUTH_SOCIAL_SIGN_IN_METHODS.has(signInMethod));
 
 type NativeRelayCallbackParams = {
   ['#']?: string | string[];

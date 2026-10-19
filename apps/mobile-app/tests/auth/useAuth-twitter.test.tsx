@@ -14,18 +14,22 @@ jest.mock('expo/virtual/env', () => ({
 
 const mockAuthService = {
   signInWithOAuth: jest.fn(async () => ({ pending: true })),
+  handleOAuthCallback: jest.fn(async () => ({ pending: true })),
   getProviderName: jest.fn(() => 'better-auth'),
+  isAuthenticated: jest.fn(() => false),
   signOut: jest.fn(async () => undefined),
   getSession: jest.fn(async () => null),
   onAuthStateChange: jest.fn(() => () => {}),
 };
 
 const mockBetterAuthSignInWithOAuth = jest.fn(async () => ({ pending: true }));
+const mockBetterAuthHandleOAuthCallback = jest.fn(async (): Promise<any> => ({ pending: true }));
 const MockBetterAuthProvider = jest.fn().mockImplementation(() => ({
   onAuthStateChange: jest.fn(() => () => {}),
   getSession: jest.fn(async () => null),
   signOut: jest.fn(async () => undefined),
   signInWithOAuth: mockBetterAuthSignInWithOAuth,
+  handleOAuthCallback: mockBetterAuthHandleOAuthCallback,
 }));
 
 const mockSupabase = {
@@ -128,7 +132,9 @@ describe('useAuth X (Twitter) sign-in', () => {
   beforeEach(() => {
     jest.resetModules();
     mockAuthService.signInWithOAuth.mockClear();
+    mockAuthService.handleOAuthCallback.mockClear();
     mockBetterAuthSignInWithOAuth.mockClear();
+    mockBetterAuthHandleOAuthCallback.mockClear();
     MockBetterAuthProvider.mockClear();
     mockSupabase.auth.signInWithOAuth.mockClear();
   });
@@ -144,12 +150,121 @@ describe('useAuth X (Twitter) sign-in', () => {
     expect(result).toEqual({ pending: true });
     // Web routing always goes through Better Auth (not Supabase OAuth).
     // With `providerName === 'better-auth'`, useAuth uses `authService`
-    // directly; otherwise it uses the lazy `getGoogleBetterAuthProvider()`.
+    // directly; otherwise it uses the lazy social Better Auth provider.
     expect(mockAuthService.signInWithOAuth).toHaveBeenCalledWith('twitter');
     // Twitter must NOT fall through to the Supabase OAuth path, nor to the
     // native Google/Apple flows — it is a pure Better Auth social provider.
     expect(mockSupabase.auth.signInWithOAuth).not.toHaveBeenCalled();
     expect(mockBetterAuthSignInWithOAuth).not.toHaveBeenCalled();
+  });
+
+  it('routes a completed web X callback through Better Auth, not the tenant primary provider', async () => {
+    const originalWindow = global.window;
+    const localStorage = {
+      getItem: jest.fn((key: string) => {
+        if (key === 'auth_signin_method') return 'twitter_oauth';
+        if (key === 'oauth_in_progress') return 'true';
+        return null;
+      }),
+    };
+    Object.defineProperty(global, 'window', {
+      configurable: true,
+      value: { localStorage },
+    });
+    mockAuthService.getProviderName.mockReturnValue('directus');
+    const completedSession = {
+      user: { id: 'ba-user', email: 'x@example.com' },
+      access_token: 'token',
+      provider: 'better-auth',
+    };
+    mockBetterAuthHandleOAuthCallback.mockResolvedValueOnce({
+      user: completedSession.user,
+      session: completedSession,
+    });
+
+    try {
+      const { captured, testAct } = mountUseAuth('web');
+
+      let result: any;
+      await testAct(async () => {
+        result = await captured.handleOAuthCallback({});
+      });
+
+      expect(result.session).toEqual(completedSession);
+      expect(mockBetterAuthHandleOAuthCallback).toHaveBeenCalledWith({}, undefined);
+      expect(mockAuthService.handleOAuthCallback).not.toHaveBeenCalled();
+    } finally {
+      Object.defineProperty(global, 'window', {
+        configurable: true,
+        value: originalWindow,
+      });
+      mockAuthService.getProviderName.mockReturnValue('better-auth');
+    }
+  });
+
+  it('reuses the primary Better Auth provider for a completed web X callback', async () => {
+    const originalWindow = global.window;
+    Object.defineProperty(global, 'window', {
+      configurable: true,
+      value: {
+        localStorage: {
+          getItem: jest.fn((key: string) => {
+            if (key === 'auth_signin_method') return 'twitter_oauth';
+            if (key === 'oauth_in_progress') return 'true';
+            return null;
+          }),
+        },
+      },
+    });
+    const completedSession = {
+      user: { id: 'ba-user', email: 'x@example.com' },
+      access_token: 'token',
+      provider: 'better-auth',
+    };
+    mockAuthService.handleOAuthCallback.mockResolvedValueOnce({
+      user: completedSession.user,
+      session: completedSession,
+    } as any);
+
+    try {
+      const { captured, testAct } = mountUseAuth('web');
+
+      let result: any;
+      await testAct(async () => {
+        result = await captured.handleOAuthCallback({});
+      });
+
+      expect(result.session).toEqual(completedSession);
+      expect(mockAuthService.handleOAuthCallback).toHaveBeenCalledWith({}, undefined);
+      expect(mockBetterAuthHandleOAuthCallback).not.toHaveBeenCalled();
+    } finally {
+      Object.defineProperty(global, 'window', {
+        configurable: true,
+        value: originalWindow,
+      });
+    }
+  });
+
+  it('keeps native callbacks on their primary provider instead of applying web social routing', async () => {
+    const completedSession = {
+      user: { id: 'native-user', email: 'native@example.com' },
+      access_token: 'token',
+      provider: 'better-auth',
+    };
+    mockAuthService.handleOAuthCallback.mockResolvedValueOnce({
+      user: completedSession.user,
+      session: completedSession,
+    } as any);
+    const { captured, testAct } = mountUseAuth('ios');
+
+    let result: any;
+    await testAct(async () => {
+      result = await captured.handleOAuthCallback({});
+    });
+
+    expect(result.session).toEqual(completedSession);
+    expect(mockAuthService.handleOAuthCallback).toHaveBeenCalledWith({}, undefined);
+    expect(mockBetterAuthHandleOAuthCallback).not.toHaveBeenCalled();
   });
 
   describe.each(['android', 'ios'])('native (%s)', (platform) => {
