@@ -111,7 +111,7 @@ interface EmailTranslations {
 // switched every transactional email (including OTP-adjacent ones) onto the
 // new address the moment its vars were deployed -- not what's wanted here,
 // since the two addresses need to keep working side by side.
-function buildSmtpConfig(suffix: '' | '_INFO') {
+function buildSmtpConfig(suffix: '' | '_INFO' | '_UPDATES') {
   return {
     host: process.env[`NODEMAILER_HOST${suffix}`] || '',
     port: process.env[`NODEMAILER_PORT${suffix}`] || '587',
@@ -128,10 +128,13 @@ function isAllowedHost(host: string, domain: string): boolean {
 function buildTransporter(config: ReturnType<typeof buildSmtpConfig>) {
   const normalizedHost = config.host.split(':')[0].toLowerCase();
   const isBrevo = isAllowedHost(normalizedHost, 'brevo.com') || isAllowedHost(normalizedHost, 'sendinblue.com');
+  const port = parseInt(config.port, 10);
+  // Port 465 is implicit TLS (e.g. Hostinger SMTP); 587 upgrades via STARTTLS.
+  const secure = port === 465;
   return nodemailer.createTransport({
     host: config.host,
-    port: parseInt(config.port, 10),
-    secure: false,
+    port,
+    secure,
     auth: {
       user: config.user,
       pass: config.pass,
@@ -147,7 +150,7 @@ function buildTransporter(config: ReturnType<typeof buildSmtpConfig>) {
           checkServerIdentity: () => undefined,
         }
       : { rejectUnauthorized: process.env.NODE_ENV === 'production' },
-    requireTLS: true,
+    requireTLS: !secure,
   });
 }
 
@@ -214,8 +217,9 @@ export async function sendAuthenticationMagicLink({
   }
 }
 
-// Secondary sender (no-reply@hashpass.info). Only used where a call site
-// opts in explicitly (sendWelcomeEmail); every other function keeps using
+// Secondary senders: no-reply@hashpass.info (suffix _INFO) and
+// updates@hashpass.tech (suffix _UPDATES). Only used where a call site
+// opts in explicitly (sendWelcomeEmail, newsletter/updates); every other function keeps using
 // the primary transporter above regardless of whether this one is configured.
 //
 // Resolved lazily and cached for the process lifetime rather than built at
@@ -225,12 +229,14 @@ export async function sendAuthenticationMagicLink({
 // limit) -- they live in Infisical instead and get fetched here at runtime.
 // See lib/server/infisical-secrets.ts for the hybrid policy this implements:
 // vital secrets stay as Lambda env vars, new/non-critical ones go to Infisical.
-let cachedInfoSender: { transporter: ReturnType<typeof buildTransporter> | null; from: string } | undefined;
+type SecondarySender = { transporter: ReturnType<typeof buildTransporter> | null; from: string };
+const cachedSecondarySenders = new Map<'_INFO' | '_UPDATES', SecondarySender>();
 
-async function resolveInfoSender(): Promise<{ transporter: ReturnType<typeof buildTransporter> | null; from: string }> {
-  if (cachedInfoSender) return cachedInfoSender;
+async function resolveSecondarySender(suffix: '_INFO' | '_UPDATES'): Promise<SecondarySender> {
+  const cached = cachedSecondarySenders.get(suffix);
+  if (cached) return cached;
 
-  let config = buildSmtpConfig('_INFO');
+  let config = buildSmtpConfig(suffix);
   if (!Object.values(config).every(Boolean)) {
     // A hard failure anywhere in here (module import, SDK client
     // construction, network) must not take down the whole welcome-email
@@ -240,25 +246,39 @@ async function resolveInfoSender(): Promise<{ transporter: ReturnType<typeof bui
     // entirely and silently dropping the email.
     try {
       const { getInfisicalSecret } = await import('./server/infisical-secrets');
-      const rawPort = process.env.NODEMAILER_PORT_INFO;
+      const rawPort = process.env[`NODEMAILER_PORT${suffix}`];
       const [host, port, user, pass, from] = await Promise.all([
-        config.host || getInfisicalSecret('NODEMAILER_HOST_INFO'),
-        rawPort || getInfisicalSecret('NODEMAILER_PORT_INFO'),
-        config.user || getInfisicalSecret('NODEMAILER_USER_INFO'),
-        config.pass || getInfisicalSecret('NODEMAILER_PASS_INFO'),
-        config.from || getInfisicalSecret('NODEMAILER_FROM_INFO'),
+        config.host || getInfisicalSecret(`NODEMAILER_HOST${suffix}`),
+        rawPort || getInfisicalSecret(`NODEMAILER_PORT${suffix}`),
+        config.user || getInfisicalSecret(`NODEMAILER_USER${suffix}`),
+        config.pass || getInfisicalSecret(`NODEMAILER_PASS${suffix}`),
+        config.from || getInfisicalSecret(`NODEMAILER_FROM${suffix}`),
       ]);
       config = { host: host || '', port: port || '587', user: user || '', pass: pass || '', from: from || '' };
     } catch (error) {
-      console.error('[email] Infisical info-sender resolution failed, falling back to primary sender:', error instanceof Error ? error.message : String(error));
+      console.error(`[email] Infisical ${suffix} sender resolution failed, falling back to primary sender:`, error instanceof Error ? error.message : String(error));
       config = { host: '', port: '587', user: '', pass: '', from: '' };
     }
   }
 
   const enabled = Object.values(config).every(Boolean);
-  console.log('[email] info sender (hashpass.info) enabled:', enabled);
-  cachedInfoSender = { transporter: enabled ? buildTransporter(config) : null, from: config.from };
-  return cachedInfoSender;
+  console.log(`[email] ${suffix} sender enabled:`, enabled);
+  const resolved = { transporter: enabled ? buildTransporter(config) : null, from: config.from };
+  cachedSecondarySenders.set(suffix, resolved);
+  return resolved;
+}
+
+const resolveInfoSender = () => resolveSecondarySender('_INFO');
+
+// Newsletter/updates sender (updates@hashpass.tech), delivered directly
+// through the Hostinger mailbox instead of the Brevo relay so bulk-looking
+// mail is not subject to relay spam detection. Falls back to the primary
+// sender where it is not configured.
+async function resolveUpdatesSender() {
+  const sender = await resolveSecondarySender('_UPDATES');
+  return sender.transporter
+    ? { transporter: sender.transporter, from: sender.from, viaUpdates: true }
+    : { transporter, from: smtpFrom, viaUpdates: false };
 }
 
 function getEmailContent(type: 'subscriptionConfirmation' | 'welcome' | 'userOnboarding' | 'speakerOnboarding' | 'troubleshooting', locale: string = DEFAULT_LOCALE) {
@@ -541,7 +561,8 @@ export async function sendSubscriptionConfirmation(
   locale: string = DEFAULT_LOCALE,
   unsubscribeUrl?: string
 ): Promise<{ success: boolean; error?: string; messageId?: string }> {
-  if (!emailEnabled) {
+  const sender = await resolveUpdatesSender();
+  if (!sender.transporter) {
     console.warn('Email functionality is disabled due to missing configuration');
     return { 
       success: false, 
@@ -580,7 +601,7 @@ export async function sendSubscriptionConfirmation(
       .join('\n');
 
     const mailOptions = {
-      from: `HASHPASS <${smtpFrom}>`,
+      from: `HASHPASS <${sender.from}>`,
       replyTo: supportEmail,
       to: email,
       subject,
@@ -588,20 +609,16 @@ export async function sendSubscriptionConfirmation(
       text,
     };
 
-    if (!transporter) {
-      throw new Error('Email transporter is not initialized');
-    }
-
     // Verify connection configuration
     try {
-      await transporter.verify();
+      await sender.transporter.verify();
     } catch (error) {
       console.error('Email server connection error:', error);
       throw new Error('Could not connect to email server. Please try again later.');
     }
 
     // Send the email
-    const info = await transporter.sendMail(mailOptions);
+    const info = await sender.transporter.sendMail(mailOptions);
     
     // Log success but don't expose internal details to client
     console.log('Email sent:', info.messageId);
@@ -807,10 +824,11 @@ export function renderAdminCampaignEmail(details: AdminCampaignEmail): AdminCamp
 
 /** Delivers an administrator-authored event message using the branded (default) or raw template. */
 export async function sendAdminCampaignEmail(details: AdminCampaignEmail & { to: string }) {
-  if (!emailEnabled || !transporter) return { success: false, error: 'Email service is not configured' };
+  const sender = await resolveUpdatesSender();
+  if (!sender.transporter) return { success: false, error: 'Email service is not configured' };
   const { subject, html, text } = renderAdminCampaignEmail(details);
   try {
-    const info = await transporter.sendMail({ from: `HASHPASS <${smtpFrom}>`, to: details.to, subject, html, text });
+    const info = await sender.transporter.sendMail({ from: `HASHPASS <${sender.from}>`, to: details.to, subject, html, text });
     return { success: true, messageId: info.messageId };
   } catch (error: any) {
     return { success: false, error: error?.message || 'Email delivery failed' };

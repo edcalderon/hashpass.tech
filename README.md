@@ -238,6 +238,7 @@ Env vars (email via SES / Nodemailer):
 - `NODEMAILER_USER` - SMTP authentication username
 - `NODEMAILER_PASS` - SMTP authentication password
 - `NODEMAILER_FROM` - Email address to send from (e.g., no-reply@hashpass.tech)
+- `NODEMAILER_{HOST,PORT,USER,PASS,FROM}_UPDATES` - Hostinger mailbox `updates@hashpass.tech` (`smtp.hostinger.com`, port 465) for newsletter/update mail. Hostinger is the main `@hashpass.tech` provider; only `no-reply@hashpass.tech` uses Brevo (see [EMAIL_DELIVERABILITY.md](apps/docs/docs/infra/EMAIL_DELIVERABILITY.md))
 - `NODEMAILER_FROM_SUPPORT` - Support email address shown in email footers (defaults to support@hashpass.tech if not set)
 
 For a complete guide on our environment management strategy, see [apps/docs/docs/infra/env/ENVIRONMENT_STRATEGY.md](apps/docs/docs/infra/env/ENVIRONMENT_STRATEGY.md).

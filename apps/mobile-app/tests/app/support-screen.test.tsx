@@ -69,4 +69,36 @@ describe('SupportScreen contact options', () => {
     });
     expect(openUrl).toHaveBeenCalledWith('https://wa.me/573194202614');
   });
+
+  it('opens WhatsApp in a new window on web', async () => {
+    Platform.OS = 'web';
+    const openWindow = jest.fn();
+    (globalThis as any).window = Object.assign((globalThis as any).window ?? {}, { open: openWindow });
+    let screen!: TestRenderer.ReactTestRenderer;
+
+    await act(async () => {
+      screen = TestRenderer.create(<SupportScreen />);
+      await Promise.resolve();
+    });
+    act(() => {
+      screen.root.findByProps({ accessibilityLabel: 'Chat with support on WhatsApp' }).props.onPress();
+    });
+
+    expect(openWindow).toHaveBeenCalledWith('https://wa.me/573194202614', '_blank', 'noopener,noreferrer');
+  });
+
+  it('swallows a failed native WhatsApp link without crashing', async () => {
+    Platform.OS = 'android';
+    jest.spyOn(Linking, 'openURL').mockRejectedValue(new Error('no handler'));
+    let screen!: TestRenderer.ReactTestRenderer;
+
+    await act(async () => {
+      screen = TestRenderer.create(<SupportScreen />);
+      await Promise.resolve();
+    });
+    await act(async () => {
+      screen.root.findByProps({ accessibilityLabel: 'Chat with support on WhatsApp' }).props.onPress();
+      await Promise.resolve();
+    });
+  });
 });
