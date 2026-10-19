@@ -9,25 +9,10 @@ const formatWalletAddress = (address: string): string => {
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
 };
 
-// Validate Ethereum address format (42 chars, starts with 0x, hex only)
-const isValidEthereumAddress = (address: string): boolean => {
-  if (!address || typeof address !== 'string') return false;
-  if (address.length !== 42) return false;
-  if (!address.startsWith('0x')) return false;
-  // Check if remaining characters are valid hex (0-9, a-f, A-F)
-  const hexPattern = /^0x[0-9a-fA-F]{40}$/;
-  return hexPattern.test(address);
-};
-
 // Generate avatar URL with multiple fallback options
 const getAvatarUrls = (address: string): string[] => {
   const normalizedAddress = address.toLowerCase();
   const urls: string[] = [];
-
-  // Only use effigy.im for valid Ethereum addresses to avoid 500 errors
-  if (isValidEthereumAddress(address)) {
-    urls.push(`https://effigy.im/a/${normalizedAddress}.svg`);
-  }
 
   // Add other fallbacks
   urls.push(`https://avatar.vercel.sh/${normalizedAddress}`);
