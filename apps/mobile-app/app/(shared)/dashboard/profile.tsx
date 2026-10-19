@@ -11,6 +11,8 @@ import type { AuthUser } from '@hashpass/auth';
 import { canLoadCurrentAdminAccess, getCurrentAdminAccess, type AdminAccess } from '../../../lib/admin-access';
 import { getProfileRoleLabels } from '../../../lib/profile-roles';
 import { apiClient } from '../../../lib/api-client';
+import { resolveAvatarUrl } from '../../../lib/auth/avatar';
+import CloudinaryImageUpload from '../../../components/CloudinaryImageUpload';
 
 // DiceBear PNG format — React Native Image cannot render SVG so we use /png endpoints
 const generateAvatarUrl = (name: string, style: 'avataaars' | 'fun-emoji' | 'bottts' = 'avataaars'): string => {
@@ -252,18 +254,8 @@ export default function ProfileScreen() {
 
     // Priority 1: Supabase user_metadata (Google OAuth sets avatar_url / picture here)
     // Raw Supabase session is the most reliable source across all auth paths
-    const supabaseMeta = rawSupabaseUser?.user_metadata;
-    const supabasePhoto = supabaseMeta?.avatar_url || supabaseMeta?.picture;
-    if (supabasePhoto) return supabasePhoto;
-
-    // Priority 2: activeUser user_metadata (populated for native Supabase path after mapSupabaseUserToAuthUser fix)
-    const metaPhoto = activeUser?.user_metadata?.avatar_url || activeUser?.user_metadata?.picture;
-    if (metaPhoto) return metaPhoto;
-
-    // Priority 3: Directus avatar — only trust full URLs (UUID-only assets require auth and a live Directus server)
-    if (typeof activeUser?.avatar === 'string' && /^https?:\/\//.test(activeUser.avatar)) {
-      return activeUser.avatar;
-    }
+    const existingPhoto = resolveAvatarUrl(rawSupabaseUser, activeUser);
+    if (existingPhoto) return existingPhoto;
 
     // Fallback: initials via UI-Avatars
     const name = getDisplayName() || 'hashpass-user';
@@ -283,6 +275,44 @@ export default function ProfileScreen() {
     return data;
   }, []);
 
+  const persistAvatarUrl = useCallback(async (avatarUrl: string) => {
+    if (!activeUser) return;
+
+    const metadata = activeUser.user_metadata ?? {};
+    const { error: metaError } = await supabase.auth.updateUser({
+      data: {
+        ...metadata,
+        avatar_url: avatarUrl,
+        picture: avatarUrl,
+        image: avatarUrl,
+      },
+    });
+    if (metaError) throw metaError;
+
+    if (speakerProfile) {
+      await updateLinkedSpeaker({ imageUrl: avatarUrl });
+    }
+
+    const { error: dbError } = await (supabase as any)
+      .from('user_profiles')
+      .upsert({ user_id: activeUser.id, avatar_url: avatarUrl }, { onConflict: 'user_id' });
+    if (dbError) console.warn('[profile] user_profiles upsert:', dbError.message);
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (sessionData?.session?.user) {
+      setRawSupabaseUser(sessionData.session.user);
+      setProfileUser((prev: AuthUser | null) => prev ? {
+        ...prev,
+        user_metadata: {
+          ...prev.user_metadata,
+          avatar_url: avatarUrl,
+          picture: avatarUrl,
+          image: avatarUrl,
+        },
+      } : prev);
+    }
+  }, [activeUser, speakerProfile, updateLinkedSpeaker]);
+
   const handleAvatarPress = () => {
     setShowAvatarModal(true);
   };
@@ -296,7 +326,7 @@ export default function ProfileScreen() {
       let avatarUrl: string;
 
       if (style === 'google-photo') {
-        const googlePhoto = activeUser?.user_metadata?.avatar_url || activeUser?.user_metadata?.picture;
+        const googlePhoto = resolveAvatarUrl(rawSupabaseUser, activeUser);
         if (!googlePhoto) {
           showError('No Google Photo', 'No Google profile photo found for your account');
           return;
@@ -308,30 +338,7 @@ export default function ProfileScreen() {
         avatarUrl = generateAvatarUrl(name, style as 'avataaars' | 'fun-emoji' | 'bottts');
       }
 
-      // Update Supabase auth metadata (works for all Supabase-authenticated users including Google)
-      const { error: metaError } = await supabase.auth.updateUser({
-        data: { ...activeUser.user_metadata, avatar_url: avatarUrl },
-      });
-      if (metaError) throw metaError;
-
-      if (speakerProfile) {
-        await updateLinkedSpeaker({ imageUrl: avatarUrl });
-      }
-
-      // Also persist to user_profiles table so other parts of the app read it consistently
-      const { error: dbError } = await (supabase as any)
-        .from('user_profiles')
-        .upsert({ user_id: activeUser.id, avatar_url: avatarUrl }, { onConflict: 'user_id' });
-      if (dbError) console.warn('[profile] user_profiles upsert:', dbError.message);
-
-      // Refresh session so user_metadata reflects the change immediately
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (sessionData?.session?.user) {
-        setProfileUser((prev: AuthUser | null) => prev ? {
-          ...prev,
-          user_metadata: { ...prev.user_metadata, avatar_url: avatarUrl },
-        } : prev);
-      }
+      await persistAvatarUrl(avatarUrl);
 
       showSuccess('Avatar Updated', 'Your profile picture has been updated successfully');
       setShowAvatarModal(false);
@@ -342,6 +349,29 @@ export default function ProfileScreen() {
       setUpdatingAvatar(false);
     }
   };
+
+  const handleUploadedAvatar = useCallback(async (result: unknown) => {
+    const uploadedUrl =
+      result && typeof result === 'object' && 'secure_url' in result
+        ? (result as { secure_url?: unknown }).secure_url
+        : null;
+    if (typeof uploadedUrl !== 'string' || !/^https?:\/\//i.test(uploadedUrl)) {
+      showError('Upload Failed', 'The image upload did not return a usable URL');
+      return;
+    }
+
+    setUpdatingAvatar(true);
+    try {
+      await persistAvatarUrl(uploadedUrl);
+      showSuccess('Avatar Updated', 'Your uploaded profile picture is now active');
+      setShowAvatarModal(false);
+    } catch (error: any) {
+      console.error('Error saving uploaded avatar:', error);
+      showError('Update Failed', error?.message || 'Failed to save uploaded image');
+    } finally {
+      setUpdatingAvatar(false);
+    }
+  }, [persistAvatarUrl, showError, showSuccess]);
 
   const openSpeakerEditor = () => {
     if (!speakerProfile) return;
@@ -699,16 +729,22 @@ export default function ProfileScreen() {
               </TouchableOpacity>
             </View>
 
+            <CloudinaryImageUpload
+              placeholder="Upload photo"
+              onUploadSuccess={handleUploadedAvatar}
+              onUploadError={(error) => showError('Upload Failed', error.message)}
+            />
+
             <ScrollView style={styles.avatarGrid} showsVerticalScrollIndicator={false}>
               {AVATAR_STYLES.filter((style) => {
                 if (style.key === 'google-photo') {
-                  return !!(activeUser?.user_metadata?.avatar_url || activeUser?.user_metadata?.picture);
+                  return !!resolveAvatarUrl(rawSupabaseUser, activeUser);
                 }
                 return true;
               }).map((style) => {
                 let previewUrl: string;
                 if (style.key === 'google-photo') {
-                  previewUrl = activeUser?.user_metadata?.avatar_url || activeUser?.user_metadata?.picture || '';
+                  previewUrl = resolveAvatarUrl(rawSupabaseUser, activeUser) || '';
                 } else if (style.key === 'ui-avatar') {
                   previewUrl = generateUIAvatarUrl(userNameDisplay);
                 } else {

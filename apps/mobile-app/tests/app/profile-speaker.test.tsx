@@ -2,6 +2,7 @@
 
 import React from 'react';
 import ProfileScreen from '../../app/(shared)/dashboard/profile';
+import CloudinaryImageUpload from '../../components/CloudinaryImageUpload';
 
 const mockGetCurrentAdminAccess = jest.fn();
 const mockApiGet = jest.fn();
@@ -318,5 +319,30 @@ describe('ProfileScreen speaker information', () => {
       method: 'PATCH',
       body: expect.objectContaining({ imageUrl: expect.stringContaining('ui-avatars.com') }),
     }));
+  });
+
+  it('persists an uploaded profile photo for every avatar consumer', async () => {
+    const renderer = await renderProfile();
+    await act(async () => {
+      pressText(renderer, 'Change Avatar');
+      await Promise.resolve();
+    });
+
+    const uploader = renderer.root.findByType(CloudinaryImageUpload);
+    await act(async () => {
+      await uploader.props.onUploadSuccess({ secure_url: 'https://cdn.hashpass.tech/uploads/avatar.png' });
+    });
+
+    expect(mockUpdateUser).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        avatar_url: 'https://cdn.hashpass.tech/uploads/avatar.png',
+        picture: 'https://cdn.hashpass.tech/uploads/avatar.png',
+        image: 'https://cdn.hashpass.tech/uploads/avatar.png',
+      }),
+    });
+    expect(mockShowSuccess).toHaveBeenCalledWith(
+      'Avatar Updated',
+      'Your uploaded profile picture is now active',
+    );
   });
 });

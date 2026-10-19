@@ -72,6 +72,8 @@ import QRScanner from "../../../components/QRScanner";
 import MiniNotificationDropdown from "../../../components/MiniNotificationDropdown";
 import { hasRecentAuthSuccess } from "../../../lib/auth/recent-auth";
 import { isDevAuthBypassEnabled } from "../../../lib/auth/dev-bypass";
+import { resolveAvatarUrl } from "../../../lib/auth/avatar";
+import { supabase } from "../../../lib/supabase";
 import { navigateDashboardBrandToLanding } from "../../../lib/dashboard-navigation";
 import { openTargetedDashboardDrawer } from "../../../lib/dashboard-drawer";
 import { parseAuthQrScan } from "../../../lib/auth-qr";
@@ -266,6 +268,7 @@ export function CustomDrawerContent({
   const [menuInteractionId, setMenuInteractionId] = React.useState<
     string | null
   >(null);
+  const [rawSupabaseUser, setRawSupabaseUser] = React.useState<unknown>(null);
   const menuIconMotionRefs = useRef<Record<string, any>>({});
   const animateMenuIcon = useCallback((id: string, isEmphasized: boolean) => {
     const motion =
@@ -311,6 +314,31 @@ export function CustomDrawerContent({
       ).length,
     [],
   );
+  React.useEffect(() => {
+    let active = true;
+
+    if (!user) {
+      setRawSupabaseUser(null);
+      return () => {
+        active = false;
+      };
+    }
+
+    void supabase.auth.getSession().then(({ data }: { data: any }) => {
+      if (active) setRawSupabaseUser(data?.session?.user ?? null);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event: string, session: any) => {
+      if (active) setRawSupabaseUser(session?.user ?? null);
+    });
+
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
+  }, [user?.id]);
   const sentRequestCount = React.useMemo(
     () =>
       accountPasses.reduce(
@@ -363,13 +391,8 @@ export function CustomDrawerContent({
     [accountDisplayName],
   );
   const profileAvatarUrl = React.useMemo(() => {
-    const metadata = user?.user_metadata as
-      { avatar_url?: string; picture?: string } | undefined;
-    const candidate = metadata?.avatar_url || metadata?.picture || user?.avatar;
-    return typeof candidate === "string" && /^https?:\/\//.test(candidate)
-      ? candidate
-      : null;
-  }, [user?.avatar, user?.user_metadata]);
+    return resolveAvatarUrl(rawSupabaseUser, user);
+  }, [rawSupabaseUser, user]);
   const accountStats = React.useMemo(
     () => [
       {
