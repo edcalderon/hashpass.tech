@@ -2,12 +2,12 @@ import type { EmailLocale, EmailTemplate } from './types';
 
 const SUBJECTS: Record<EmailTemplate, Record<EmailLocale, string>> = {
   'newsletter-welcome': {
-    en: '🎉 Welcome to the HASHPASS Newsletter!',
-    es: '🎉 ¡Bienvenido al boletín de HASHPASS!',
-    ko: '🎉 HASHPASS 뉴스레터에 오신 것을 환영합니다!',
-    fr: '🎉 Bienvenue dans la newsletter HASHPASS !',
-    pt: '🎉 Bem-vindo à newsletter da HASHPASS!',
-    de: '🎉 Willkommen beim HASHPASS Newsletter!',
+    en: 'You’re subscribed to HASHPASS updates',
+    es: 'Te has suscrito a las novedades de HASHPASS',
+    ko: 'HASHPASS 업데이트 구독이 완료되었습니다',
+    fr: 'Vous êtes inscrit(e) aux actualités HASHPASS',
+    pt: 'Você assinou as atualizações da HASHPASS',
+    de: 'Sie haben HASHPASS-Updates abonniert',
   },
   'app-welcome': {
     en: '🔐 Welcome to HASHPASS!',

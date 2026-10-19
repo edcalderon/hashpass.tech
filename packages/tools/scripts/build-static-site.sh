@@ -56,4 +56,8 @@ corepack pnpm config set store-dir "${PNPM_STORE_DIR}"
 corepack pnpm --version
 corepack pnpm install --frozen-lockfile --prefer-offline
 corepack pnpm --filter hashpass-mobile-app build
+# postbuild:web publishes Storybook beneath dist/client/storybook only when
+# this directory exists. Build it in CI rather than silently omitting the
+# public catalog and letting /storybook fall back to the application shell.
+corepack pnpm build:storybook
 npm run postbuild:web

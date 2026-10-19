@@ -48,6 +48,7 @@ import {
   Globe,
   Grid3x3,
   History,
+  Headset,
   Hourglass,
   IdCard,
   Inbox,
@@ -164,7 +165,8 @@ export type NativeSafeIconName =
   | "history"
   | "qr-code"
   | "notifications"
-  | "person";
+  | "person"
+  | "support";
 
 const NATIVE_SAFE_ICONS: Record<NativeSafeIconName, WebIconComponent> = {
   search: Search,
@@ -195,6 +197,7 @@ const NATIVE_SAFE_ICONS: Record<NativeSafeIconName, WebIconComponent> = {
   "qr-code": QrCode,
   notifications: Bell,
   person: User,
+  support: Headset,
 };
 
 export function NativeSafeIcon({

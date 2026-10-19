@@ -8,6 +8,7 @@ Current infrastructure documentation for HASHPASS lives here. These pages descri
 - [`ENVIRONMENT_STRATEGY.md`](env/ENVIRONMENT_STRATEGY.md)
 - [`ENVIRONMENT_VARIABLES.md`](env/ENVIRONMENT_VARIABLES.md)
 - [`INFRA_NAMING_GUIDE.md`](INFRA_NAMING_GUIDE.md)
+- [`EMAIL_DELIVERABILITY.md`](EMAIL_DELIVERABILITY.md) - Email providers by sender (Hostinger vs Brevo), DNS authentication, and spam-placement runbook
 - [`migrations/aws-account-cutover.md`](migrations/aws-account-cutover.md) - active AWS account, DNS, and mail-provider cutover runbook
 - [`api-gateway/`](api-gateway) - API Gateway and Lambda setup docs
 - [`lambda/`](lambda) - Lambda deployment playbooks

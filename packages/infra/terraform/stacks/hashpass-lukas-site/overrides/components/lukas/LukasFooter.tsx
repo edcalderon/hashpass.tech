@@ -40,7 +40,7 @@ export function LukasFooter() {
             <Pressable onPress={() => openLink('https://lukas.lat')} accessibilityRole="link" style={styles.linkButton}>
               <Text style={styles.linkText}>lukas.lat</Text>
             </Pressable>
-            <Pressable onPress={() => openLink('https://github.com/hashpass-tech/hashpass.tech')} accessibilityRole="link" style={styles.linkButton}>
+            <Pressable onPress={() => openLink('https://github.com/hashpass-tech/lukas-protocol')} accessibilityRole="link" style={styles.linkButton}>
               <Text style={styles.linkText}>GitHub</Text>
             </Pressable>
           </View>
