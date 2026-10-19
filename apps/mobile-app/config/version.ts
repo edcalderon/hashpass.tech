@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610190144, // Updated to current timestamp
+  buildNumber: 202610190343, // Updated to current timestamp
   releaseDate: '2026-10-19',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,14 +30,29 @@ export const CURRENT_VERSION: VersionInfo = {
     // No new features
   ],
   bugfixes: [
-    'route X OAuth callbacks through Better Auth'
+    'sync social avatars across drawer and uploads'
   ],
   breakingChanges: [],
-  notes: 'route X OAuth callbacks through Better Auth'
+  notes: 'sync social avatars across drawer and uploads'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.125': {
+    version: '1.9.125',
+    buildNumber: 202610190343,
+    releaseDate: '2026-10-19',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'sync social avatars across drawer and uploads'
+    ],
+    breakingChanges: [],
+    notes: 'sync social avatars across drawer and uploads'
+  },
   '1.9.124': {
     version: '1.9.124',
     buildNumber: 202610190144,

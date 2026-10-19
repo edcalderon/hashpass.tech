@@ -2,7 +2,7 @@
 
 // Cloudinary configuration (browser-compatible)
 import Constants from 'expo-constants';
-import { apiClient } from './api-client';
+import type { CloudinaryUploadPart } from '../types/cloudinary.types';
 
 type CloudinaryExtraConfig = {
   cloudName?: string;
@@ -12,7 +12,7 @@ type CloudinaryExtraConfig = {
 
 const cloudinaryExtra: CloudinaryExtraConfig =
   ((Constants?.expoConfig?.extra as { cloudinary?: CloudinaryExtraConfig })?.cloudinary ??
-    (Constants?.manifest?.extra as { cloudinary?: CloudinaryExtraConfig })?.cloudinary ??
+    ((Constants?.manifest as unknown as { extra?: { cloudinary?: CloudinaryExtraConfig } } | undefined)?.extra?.cloudinary) ??
     {});
 
 const getEnv = (key: string): string | undefined =>
@@ -309,16 +309,20 @@ export function getUploadUrl(): string {
  * @returns Promise with upload result
  */
 export async function uploadImage(
-  file: File,
+  file: CloudinaryUploadPart,
   options: {
     publicId?: string;
     folder?: string;
     tags?: string[];
+    uploadPreset?: string;
   } = {}
 ): Promise<any> {
   const formData = new FormData();
-  formData.append('file', file);
-  formData.append('upload_preset', UPLOAD_CONFIG.uploadPreset);
+  // React Native's FormData implementation requires URI-backed parts for
+  // local picker assets. The cast only satisfies the browser DOM type; the
+  // native `{ uri, name, type }` descriptor is preserved at runtime.
+  formData.append('file', file as unknown as Blob);
+  formData.append('upload_preset', options.uploadPreset ?? UPLOAD_CONFIG.uploadPreset);
   
   if (options.publicId) {
     formData.append('public_id', options.publicId);
@@ -333,13 +337,19 @@ export async function uploadImage(
   }
 
   try {
-    const response = await apiClient.post(getUploadUrl(), formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
+    const response = await globalThis.fetch(getUploadUrl(), {
+      method: 'POST',
+      // Leave Content-Type unset so fetch supplies the multipart boundary on
+      // both browsers and React Native.
+      body: formData,
     });
 
-    return response.data;
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data?.error?.message || data?.error || `Cloudinary upload failed (${response.status})`);
+    }
+
+    return data;
   } catch (error) {
     console.error('Cloudinary upload error:', error);
     throw error;

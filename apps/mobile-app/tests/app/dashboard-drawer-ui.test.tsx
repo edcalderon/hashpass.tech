@@ -28,6 +28,10 @@ let mockDbUserId: string | null = "db-user-1";
 let mockIsMobile = true;
 let mockScrollChildren: unknown;
 let mockHasHandleNext = true;
+const mockSupabaseGetSession = jest.fn().mockResolvedValue({
+  data: { session: { user: { user_metadata: {} } } },
+});
+const mockSupabaseUnsubscribe = jest.fn();
 
 const mockRequestAnimationFrame = jest.fn((callback: () => void) => {
   callback();
@@ -219,6 +223,7 @@ jest.mock("../../hooks/useAuth", () => ({
     user: {
       email: "edward@ists.tech",
       created_at: "2026-07-01T00:00:00.000Z",
+      image: "https://social.example/edward.png",
       user_metadata: { full_name: "Edward Calderon" },
     },
     isLoading: false,
@@ -226,6 +231,17 @@ jest.mock("../../hooks/useAuth", () => ({
     isLoggedIn: true,
     signOut: mockSignOut,
   }),
+}));
+
+jest.mock("../../lib/supabase", () => ({
+  supabase: {
+    auth: {
+      getSession: (...args: unknown[]) => mockSupabaseGetSession(...args),
+      onAuthStateChange: jest.fn(() => ({
+        data: { subscription: { unsubscribe: mockSupabaseUnsubscribe } },
+      })),
+    },
+  },
 }));
 
 jest.mock("../../providers/LanguageProvider", () => ({
@@ -381,6 +397,9 @@ describe("dashboard drawer visual controls", () => {
     expect(root.findAllByProps({ name: "log-out-outline" })).toHaveLength(1);
     expect(root.findAllByProps({ name: "camera-outline" })).toHaveLength(1);
     expect(root.findAllByProps({ name: "chevron-forward" })).toHaveLength(0);
+    expect(
+      root.findAll((node: any) => node.props?.source?.uri === "https://social.example/edward.png"),
+    ).not.toHaveLength(0);
 
     root
       .findByProps({ accessibilityLabel: "@edward: Profile" })

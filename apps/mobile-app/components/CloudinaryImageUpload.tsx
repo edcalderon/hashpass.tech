@@ -1,7 +1,9 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, Platform } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
-import { uploadImage, UPLOAD_CONFIG } from '../lib/cloudinary';
+import type { CloudinaryUploadPart } from '../types/cloudinary.types';
+
+const DEFAULT_UPLOAD_MAX_SIZE = 10 * 1024 * 1024;
+const DEFAULT_UPLOAD_FORMATS = ['jpg', 'jpeg', 'png', 'webp', 'avif'];
 
 interface CloudinaryImageUploadProps {
   onUploadSuccess?: (result: any) => void;
@@ -21,25 +23,26 @@ export default function CloudinaryImageUpload({
   placeholder = 'Upload Image',
   buttonStyle,
   textStyle,
-  maxSize = UPLOAD_CONFIG.maxFileSize,
-  allowedTypes = UPLOAD_CONFIG.allowedFormats,
-  uploadPreset = UPLOAD_CONFIG.uploadPreset,
-  folder = UPLOAD_CONFIG.folder,
+  maxSize = DEFAULT_UPLOAD_MAX_SIZE,
+  allowedTypes = DEFAULT_UPLOAD_FORMATS,
+  uploadPreset = 'speaker_avatars',
+  folder = 'speakers/avatars',
 }: CloudinaryImageUploadProps) {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const validateFile = (file: File): boolean => {
+  const validateFile = useCallback((file: CloudinaryUploadPart, fileName: string): boolean => {
     // Check file size
-    if (file.size > maxSize) {
+    const fileSize = 'size' in file && typeof file.size === 'number' ? file.size : undefined;
+    if (fileSize !== undefined && fileSize > maxSize) {
       const error = new Error(`File size exceeds ${Math.round(maxSize / (1024 * 1024))}MB limit`);
       onUploadError?.(error);
       return false;
     }
 
     // Check file type
-    const fileExtension = file.name.split('.').pop()?.toLowerCase();
+    const fileExtension = fileName.split('.').pop()?.toLowerCase();
     if (!fileExtension || !allowedTypes.includes(fileExtension)) {
       const error = new Error(`File type not allowed. Allowed types: ${allowedTypes.join(', ')}`);
       onUploadError?.(error);
@@ -47,18 +50,23 @@ export default function CloudinaryImageUpload({
     }
 
     return true;
-  };
+  }, [allowedTypes, maxSize, onUploadError]);
 
-  const handleFileUpload = useCallback(async (file: File) => {
-    if (!validateFile(file)) return;
+  const handleFileUpload = useCallback(async (file: CloudinaryUploadPart, fileName = 'upload.jpg') => {
+    if (!validateFile(file, fileName)) return;
 
     setUploading(true);
     setUploadProgress(0);
 
     try {
+      // Cloudinary is loaded on demand so importing this component does not
+      // initialize Expo Constants/native modules on web or in Jest.
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { uploadImage } = require('../lib/cloudinary') as typeof import('../lib/cloudinary');
       const result = await uploadImage(file, {
         publicId: undefined, // Let Cloudinary generate
         folder,
+        uploadPreset,
         tags: ['avatar', 'uploaded'],
       });
 
@@ -71,7 +79,7 @@ export default function CloudinaryImageUpload({
       setUploading(false);
       setUploadProgress(0);
     }
-  }, [folder, onUploadSuccess, onUploadError]);
+  }, [folder, onUploadSuccess, onUploadError, uploadPreset, validateFile]);
 
   const handleWebUpload = useCallback(() => {
     fileInputRef.current?.click();
@@ -80,7 +88,7 @@ export default function CloudinaryImageUpload({
   const handleWebFileChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      handleFileUpload(file);
+      handleFileUpload(file, file.name);
     }
     // Reset input value to allow uploading the same file again
     if (fileInputRef.current) {
@@ -90,6 +98,10 @@ export default function CloudinaryImageUpload({
 
   const handleMobileUpload = useCallback(async () => {
     try {
+      // Load the native picker only when the mobile control is used. This
+      // keeps web and Jest consumers from importing Expo's native module.
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const ImagePicker = require('expo-image-picker') as typeof import('expo-image-picker');
       // Request permission
       const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (permissionResult.granted === false) {
@@ -106,15 +118,15 @@ export default function CloudinaryImageUpload({
       });
 
       if (!result.canceled && result.assets[0]) {
-        // Convert to File object for upload
         const asset = result.assets[0];
-        const response = await fetch(asset.uri);
-        const blob = await response.blob();
-        const file = new File([blob], asset.fileName || 'avatar.jpg', {
+        // React Native 0.79's FormData accepts local files only as URI-backed
+        // parts. Keep the picker URI intact instead of fetching it into a Blob.
+        const fileName = asset.fileName || 'avatar.jpg';
+        await handleFileUpload({
+          uri: asset.uri,
+          name: fileName,
           type: asset.mimeType || 'image/jpeg',
-        });
-
-        await handleFileUpload(file);
+        }, fileName);
       }
     } catch (error) {
       console.error('Mobile upload error:', error);
