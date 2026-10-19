@@ -411,6 +411,16 @@ export default function SupportScreen() {
     }
   };
 
+  // Opened directly (deep link, new tab, shared URL) there is no previous
+  // screen to pop to, so fall back to the home screen instead of a dead arrow.
+  const handleBackPress = () => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+    router.replace('/');
+  };
+
   const handleEmailSupport = () => {
     Linking.openURL(`mailto:${SUPPORT_EMAIL}`).catch(() => null);
   };
@@ -659,7 +669,7 @@ export default function SupportScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {renderHeader('Support', () => router.back())}
+      {renderHeader('Support', handleBackPress)}
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.intro}>
           <NativeSafeIcon name="support" size={44} color={palette.accent} />
