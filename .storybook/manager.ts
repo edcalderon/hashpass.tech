@@ -5,7 +5,7 @@ addons.setConfig({
   theme: {
     ...themes.light,
     brandTitle: 'HASHPASS Documentation',
-    brandUrl: 'https://bsl2025.hashpass.tech',
+    brandUrl: 'https://hashpass.tech',
     brandImage: undefined,
     brandTarget: '_self',
   },
