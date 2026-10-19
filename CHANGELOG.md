@@ -1,3 +1,13 @@
+## [1.9.127](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.126...v1.9.127) (2026-10-19)
+### Released
+- type block callbacks explicitly for isolated typecheck; make terms/privacy drawers read-only, shorten Storybook title; replace dead bsl2025.hashpass.tech links; back arrow falls back to home when opened directly
+
+### Release scope
+- Compared with: `v1.9.126` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+
 ## [1.9.126](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.125...v1.9.126) (2026-10-19)
 
 
