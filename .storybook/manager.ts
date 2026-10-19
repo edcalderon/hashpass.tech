@@ -4,7 +4,7 @@ import { themes } from '@storybook/theming';
 addons.setConfig({
   theme: {
     ...themes.light,
-    brandTitle: 'HASHPASS Documentation',
+    brandTitle: 'HASHPASS',
     brandUrl: 'https://bsl2025.hashpass.tech',
     brandImage: undefined,
     brandTarget: '_self',

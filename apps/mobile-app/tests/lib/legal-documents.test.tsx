@@ -101,7 +101,7 @@ it('rejects failed and malformed canonical responses', async () => {
   await expect(fetchCanonicalLegalDocument('privacy')).rejects.toThrow('invalid shape');
 });
 
-it('renders every canonical block type and opens the source document', async () => {
+it('renders every canonical block type as read-only text with no links', async () => {
   jest.mocked(globalThis.fetch).mockResolvedValue(response(sampleDocument));
 
   await act(async () => {
@@ -115,8 +115,9 @@ it('renders every canonical block type and opens the source document', async () 
   expect(rendered().root.findByProps({ children: 'First item' })).toBeTruthy();
   expect(rendered().root.findAllByProps({ children: '•' })).toHaveLength(2);
 
-  act(() => view?.root.findByProps({ accessibilityRole: 'link' }).props.onPress());
-  expect(Linking.openURL).toHaveBeenCalledWith(sampleDocument.sourceUrl);
+  expect(rendered().root.findAllByProps({ accessibilityRole: 'link' })).toHaveLength(0);
+  expect(rendered().root.findAllByProps({ selectable: true })).toHaveLength(0);
+  expect(Linking.openURL).not.toHaveBeenCalled();
 });
 
 it('keeps a newer bundled policy when the deployed Club artifact is stale', async () => {
@@ -194,7 +195,7 @@ it('does not fetch while an inactive drawer uses its bundled fallback', async ()
   });
 
   expect(globalThis.fetch).not.toHaveBeenCalled();
-  expect(rendered().root.findByProps({ accessibilityRole: 'link' })).toBeTruthy();
+  expect(rendered().root.findAllByProps({ accessibilityRole: 'link' })).toHaveLength(0);
 });
 
 it('keeps the fallback on network errors and ignores abort errors', async () => {
