@@ -20,19 +20,22 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.125)
+## 📋 Latest Changes (v1.9.126)
 
 ### Bug Fixes
 
-* **profile:** sync social avatars across drawer and uploads ([f52309b](https://github.com/hashpass-tech/hashpass.tech/commit/f52309b59febb886bc2e5fcd3f6f2e8c350a5695))
+* **platform:** improve support and static delivery ([2782a96](https://github.com/hashpass-tech/hashpass.tech/commit/2782a962760c652eb4b1f13339248d3096c0da22))
 ### Release Highlights
-- sync social avatars across drawer and uploads
+- improve support and static delivery
 
 ### Release scope
-- Compared with: `v1.9.124` (the previous global release tag)
+- Compared with: `v1.9.125` (the previous global release tag)
 
 ### Affected products & packages
 - Mobile app
+- Infrastructure
+- Documentation
+- Release tooling
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
