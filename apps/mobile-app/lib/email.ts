@@ -7,6 +7,7 @@ import emails from '../i18n/locales/emails.json';
 import { getEmailAssetUrl } from './s3-service';
 import { supabaseServer } from './supabase-server';
 import type { HealthCheck } from './server/system-health';
+import type { SecondarySender } from '../types/email.types';
 import { getEventEmailBranding } from './email-event-branding';
 
 // Load .env.local before reading NODEMAILER_* vars — Metro/Expo may not inject
@@ -229,7 +230,6 @@ export async function sendAuthenticationMagicLink({
 // limit) -- they live in Infisical instead and get fetched here at runtime.
 // See lib/server/infisical-secrets.ts for the hybrid policy this implements:
 // vital secrets stay as Lambda env vars, new/non-critical ones go to Infisical.
-type SecondarySender = { transporter: ReturnType<typeof buildTransporter> | null; from: string };
 const cachedSecondarySenders = new Map<'_INFO' | '_UPDATES', SecondarySender>();
 
 async function resolveSecondarySender(suffix: '_INFO' | '_UPDATES'): Promise<SecondarySender> {

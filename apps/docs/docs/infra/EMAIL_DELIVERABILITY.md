@@ -9,8 +9,8 @@ mailbox sends and receives through Hostinger.
 | Sender | Provider | Used for | Env prefix |
 |--------|----------|----------|------------|
 | `no-reply@hashpass.tech` | Brevo relay | Transactional/OTP/app mail | `NODEMAILER_*` |
-| `updates@hashpass.tech` | Hostinger (`smtp.hostinger.com:465`, implicit TLS; IMAP `imap.hostinger.com:993`) | Newsletter, subscription confirmation, admin campaign/update messages | `NODEMAILER_*_UPDATES` |
-| `no-reply@hashpass.info` | `NODEMAILER_*_INFO` relay | Welcome email | `NODEMAILER_*_INFO` |
+| Updates mailbox (`updates@` on the main domain) | Hostinger (`smtp.hostinger.com:465`, implicit TLS; IMAP `imap.hostinger.com:993`) | Newsletter, subscription confirmation, admin campaign/update messages | `NODEMAILER_*_UPDATES` |
+| Info-domain no-reply sender | `NODEMAILER_*_INFO` relay | Welcome email | `NODEMAILER_*_INFO` |
 
 The updates mailbox is sent directly from Hostinger so bulk-style mail does not
 pass through Brevo's relay and its spam detection. In `apps/mobile-app/lib/email.ts`,
