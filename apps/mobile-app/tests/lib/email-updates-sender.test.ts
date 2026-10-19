@@ -64,4 +64,21 @@ describe('updates@hashpass.tech sender', () => {
       expect.objectContaining({ host: 'smtp-relay.brevo.com', port: 587, secure: false }),
     );
   });
+
+  it('shares one transporter build across concurrent campaign sends', async () => {
+    const { sendAdminCampaignEmail } = require('../../lib/email');
+    mockCreateTransport.mockClear();
+
+    await Promise.all(
+      Array.from({ length: 20 }, (_, i) =>
+        sendAdminCampaignEmail({ to: `r${i}@example.test`, subject: 's', heading: 'h', message: 'm', template: 'raw' }),
+      ),
+    );
+
+    const updatesBuilds = mockCreateTransport.mock.calls.filter(
+      ([o]) => (o as { host: string }).host === 'smtp.hostinger.com',
+    );
+    expect(updatesBuilds).toHaveLength(1);
+    expect(mockSendMail).toHaveBeenCalledTimes(20);
+  });
 });

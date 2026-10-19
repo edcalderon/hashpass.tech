@@ -230,12 +230,21 @@ export async function sendAuthenticationMagicLink({
 // limit) -- they live in Infisical instead and get fetched here at runtime.
 // See lib/server/infisical-secrets.ts for the hybrid policy this implements:
 // vital secrets stay as Lambda env vars, new/non-critical ones go to Infisical.
-const cachedSecondarySenders = new Map<'_INFO' | '_UPDATES', SecondarySender>();
+// Caches the in-flight promise, not the result: admin campaigns call this once
+// per recipient via Promise.all, and a cold Lambda must share one Infisical
+// lookup instead of starting one per recipient.
+const cachedSecondarySenders = new Map<'_INFO' | '_UPDATES', Promise<SecondarySender>>();
 
-async function resolveSecondarySender(suffix: '_INFO' | '_UPDATES'): Promise<SecondarySender> {
-  const cached = cachedSecondarySenders.get(suffix);
-  if (cached) return cached;
+function resolveSecondarySender(suffix: '_INFO' | '_UPDATES'): Promise<SecondarySender> {
+  let pending = cachedSecondarySenders.get(suffix);
+  if (!pending) {
+    pending = loadSecondarySender(suffix);
+    cachedSecondarySenders.set(suffix, pending);
+  }
+  return pending;
+}
 
+async function loadSecondarySender(suffix: '_INFO' | '_UPDATES'): Promise<SecondarySender> {
   let config = buildSmtpConfig(suffix);
   if (!Object.values(config).every(Boolean)) {
     // A hard failure anywhere in here (module import, SDK client
@@ -263,9 +272,7 @@ async function resolveSecondarySender(suffix: '_INFO' | '_UPDATES'): Promise<Sec
 
   const enabled = Object.values(config).every(Boolean);
   console.log(`[email] ${suffix} sender enabled:`, enabled);
-  const resolved = { transporter: enabled ? buildTransporter(config) : null, from: config.from };
-  cachedSecondarySenders.set(suffix, resolved);
-  return resolved;
+  return { transporter: enabled ? buildTransporter(config) : null, from: config.from };
 }
 
 const resolveInfoSender = () => resolveSecondarySender('_INFO');
