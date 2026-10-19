@@ -1,3 +1,5 @@
+import type { BetterAuthSocialCallbackParams } from './types/passwordless-callback.types';
+
 /**
  * Browser-storage marker used only to route a just-requested Supabase
  * passwordless callback. It prevents an abandoned Google sign-in marker from
@@ -13,11 +15,6 @@ type PasswordlessCallbackParams = {
   token?: unknown;
   email?: unknown;
   hasImplicitAccessToken?: boolean;
-};
-
-type BetterAuthSocialCallbackParams = {
-  signInMethod?: string | null;
-  oauthInProgress?: boolean;
 };
 
 const BETTER_AUTH_SOCIAL_SIGN_IN_METHODS = new Set([
