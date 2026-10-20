@@ -61,6 +61,14 @@ Use the installed browser tools in this order for web fetch, QA, and responsive 
 
 Keep screenshots, recordings, logs, and copied page text free of credentials, cookies, auth tokens, account IDs, and private environment values. Prefer Playwright or the repo test scripts for deterministic regression checks, and use these browser tools to inspect or reproduce live UI issues.
 
+### Branching: work from `develop`
+
+**Default flow (set 2026-10-19):** do not create feature branches. Check out
+and fast-forward `develop`, commit there, push `develop`, and ship through
+`npm run release:promote` (the protected `develop -> main` release patch).
+This keeps the number of stale branches to delete and maintain near zero. Only
+branch when explicitly asked, or when `develop` cannot take the change.
+
 ### Version Management
 **NEVER manually edit version numbers in package.json or app.json.**
 **Do not hand-release.** The release scripts own the version bump, CHANGELOG.md, README.md sync, tag, and push flow.
