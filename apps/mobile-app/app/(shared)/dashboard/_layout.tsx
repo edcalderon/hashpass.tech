@@ -2220,7 +2220,6 @@ const getStyles = (
       height: 1,
       marginStart: drawerInset + drawerSafeInsets.left,
       marginEnd: drawerInset + drawerSafeInsets.right,
-      borderRadius: 1,
       backgroundColor: isDark
         ? "rgba(255, 255, 255, 0.07)"
         : "rgba(0, 0, 0, 0.06)",
