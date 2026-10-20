@@ -1,6 +1,6 @@
 import React from 'react';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
-import { Platform, Pressable, Text, TextInput, TouchableOpacity } from 'react-native';
+import { Modal, Platform, Pressable, Text, TextInput, TouchableOpacity } from 'react-native';
 const mockPush = jest.fn(); const mockSetParams = jest.fn(); const mockRetryDatabaseSession = jest.fn(); let mockParams: any = {}; const mockSaveBookmarks = jest.fn(); let mockEvents: any[]; let mockLoggedIn = false; let mockAnimationLevel = 'none'; let mockHeroIndex = 0;
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) }));
 jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush, setParams: mockSetParams }), useLocalSearchParams: () => mockParams }));
@@ -287,4 +287,29 @@ it('explains guest mode on focus and dismisses the tooltip on blur without openi
   expect(badge.props.accessibilityState.expanded).toBe(true);
   expect(view.root.findAllByType('EmbeddedAuth' as any)).toHaveLength(0);
   expect(mockPush).not.toHaveBeenCalled();
+});
+it('switches the filter sheet tabs, gates Passes for guests and closes from the backdrop', async () => {
+  mockLoggedIn = true;
+  await act(async () => { view = create(<EventsScreen />); });
+  press('Open filters');
+  const tab = (name: string) => view.root.findAll((n) => n.props.accessibilityRole === 'tab' && n.findAllByType(Text).some((t: any) => t.props.children === name))[0];
+  expect(tab('Events').props.accessibilityState.selected).toBe(true);
+  act(() => tab('Passes').props.onPress());
+  expect(tab('Passes').props.accessibilityState.selected).toBe(true);
+  act(() => tab('Events').props.onPress());
+  expect(tab('Events').props.accessibilityState.selected).toBe(true);
+  // The dismiss layer covers the whole backdrop, so any outside tap closes.
+  press('Close filters');
+  const sheet = view.root.findAllByType(Modal).find((m) => m.findAll((n) => n.props.accessibilityLabel === 'Close filters').length > 0)!;
+  expect(sheet.props.visible).toBe(false);
+});
+it('keeps guests on the Events filter tab when they pick Passes', async () => {
+  mockLoggedIn = false;
+  await act(async () => { view = create(<EventsScreen />); });
+  press('Open filters');
+  const tabs = () => view.root.findAll((n) => n.props.accessibilityRole === 'tab');
+  const passes = tabs().find((n) => n.findAllByType(Text).some((t: any) => t.props.children === 'Passes'))!;
+  act(() => passes.props.onPress());
+  const events = tabs().find((n) => n.findAllByType(Text).some((t: any) => t.props.children === 'Events'))!;
+  expect(events.props.accessibilityState.selected).toBe(true);
 });

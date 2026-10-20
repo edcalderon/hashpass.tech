@@ -1761,7 +1761,10 @@ export default function Explorer({
         onRequestClose={() => setFilterSheetOpen(false)}
       >
         <View style={styles.sheetBackdrop}>
+          {/* Fills the whole backdrop so a tap anywhere outside the sheet,
+              including beside it on wide screens, closes it. */}
           <TouchableOpacity
+            activeOpacity={1}
             style={styles.sheetDismiss}
             onPress={() => setFilterSheetOpen(false)}
             accessibilityLabel={translate(
@@ -2790,7 +2793,7 @@ const getStyles = (isDark: boolean, colors: any) =>
       justifyContent: "flex-end",
       backgroundColor: "rgba(4,6,12,.55)",
     },
-    sheetDismiss: { flex: 1 },
+    sheetDismiss: { ...StyleSheet.absoluteFillObject },
     filterSheet: {
       width: "100%",
       maxWidth: 640,
@@ -2968,7 +2971,7 @@ const getStyles = (isDark: boolean, colors: any) =>
       backgroundColor: "#fff",
     },
     toggleThumbActive: { alignSelf: "flex-end" },
-    sheetModeRow: { flexDirection: "row", gap: 8, marginTop: 14 },
+    sheetModeRow: { marginTop: 14 },
     applyButton: {
       minHeight: 48,
       alignItems: "center",

@@ -39,4 +39,17 @@ describe('ProfileAvatar', () => {
     act(() => { r.update(<ProfileAvatar isDark={false} uri="https://img.example.test/b.png" name="Edward" />); });
     expect(r.root.findByType(Image).props.source.uri).toBe('https://img.example.test/b.png');
   });
+
+  it('renders the dark fallback with a labelled name and custom initials size', () => {
+    const r = render({ uri: undefined, name: 'Ada Lovelace', isDark: true, initialsSize: 30 });
+    const label = r.root.find((n) => n.props.accessibilityLabel === 'Ada Lovelace');
+    expect(label).toBeTruthy();
+    expect(r.root.findByType(Text).props.style).toEqual(expect.objectContaining({ fontSize: 30 }));
+  });
+
+  it('shows the default initial and no label when there is no name', () => {
+    const r = render({ uri: null, name: null });
+    expect(r.root.findByType(Text).props.children).toBe('H');
+    expect(r.root.findAll((n) => n.props.accessibilityLabel !== undefined && n.props.accessibilityLabel !== null && typeof n.props.accessibilityLabel === 'string')).toHaveLength(0);
+  });
 });
