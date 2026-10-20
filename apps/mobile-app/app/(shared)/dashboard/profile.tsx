@@ -734,7 +734,7 @@ export default function ProfileScreen() {
             <CloudinaryImageUpload
               placeholder="Upload photo"
               onUploadSuccess={handleUploadedAvatar}
-              onUploadError={(error) => showError('Upload Failed', error.message)}
+              onUploadError={(error: Error) => showError('Upload Failed', error.message)}
             />
 
             <ScrollView style={styles.avatarGrid} showsVerticalScrollIndicator={false}>
