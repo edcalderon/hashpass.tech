@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Image, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 import { uiTokens } from '@hashpass/ui/tokens';
+import type { ProfileAvatarProps } from './ProfileAvatar.types';
 
 export const getAvatarInitials = (name?: string | null): string =>
   (name || '')
@@ -11,16 +12,6 @@ export const getAvatarInitials = (name?: string | null): string =>
     .map((part) => part[0])
     .join('')
     .toUpperCase() || 'H';
-
-interface ProfileAvatarProps {
-  /** Remote photo; when missing or it fails to load, the striped initials show. */
-  uri?: string | null;
-  name?: string | null;
-  isDark: boolean;
-  /** Fills its parent; the parent owns size, ring and clipping. */
-  style?: StyleProp<ViewStyle>;
-  initialsSize?: number;
-}
 
 /**
  * Profile photo with the shared striped capital-letter fallback. Also covers

@@ -98,6 +98,8 @@ interface ExplorerProps {
 }
 
 const DEFAULT_EVENT_HERO_DURATION_MS = 5_000;
+// Compact 30px sheet pills still expose a 44px touch target.
+const PILL_HIT_SLOP = { top: 7, bottom: 7, left: 0, right: 0 };
 
 const FILTER_SERIES = [
   "BSL On Tour",
@@ -1817,6 +1819,7 @@ export default function Explorer({
                     {(["All", "Upcoming", "Past"] as const).map((status) => (
                       <TouchableOpacity
                         key={status}
+                        hitSlop={PILL_HIT_SLOP}
                         style={[
                           styles.statusPill,
                           filterStatus === status && styles.statusPillActive,
@@ -1879,6 +1882,7 @@ export default function Explorer({
                       return (
                         <TouchableOpacity
                           key={series}
+                          hitSlop={PILL_HIT_SLOP}
                           style={[
                             styles.filterPill,
                             active && styles.filterPillActive,
@@ -1913,6 +1917,7 @@ export default function Explorer({
                       return (
                         <TouchableOpacity
                           key={key}
+                          hitSlop={PILL_HIT_SLOP}
                           style={[
                             styles.filterPill,
                             active && styles.filterPillActive,
@@ -2027,6 +2032,7 @@ export default function Explorer({
                       return (
                         <TouchableOpacity
                           key={value}
+                          hitSlop={PILL_HIT_SLOP}
                           style={[
                             styles.filterPill,
                             active && styles.filterPillActive,
@@ -2073,6 +2079,7 @@ export default function Explorer({
                       return (
                         <TouchableOpacity
                           key={value}
+                          hitSlop={PILL_HIT_SLOP}
                           style={[
                             styles.filterPill,
                             active && styles.filterPillActive,
@@ -2853,7 +2860,7 @@ const getStyles = (isDark: boolean, colors: any) =>
     dateRangeRow: { flexDirection: "row", gap: 6, marginTop: 8 },
     dateField: {
       flex: 1,
-      height: 30,
+      minHeight: uiTokens.control.minHeight,
       paddingHorizontal: 10,
       borderRadius: uiTokens.radius.pill,
       borderWidth: 1,

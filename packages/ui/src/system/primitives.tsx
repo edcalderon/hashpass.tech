@@ -20,6 +20,7 @@ import {
   type ViewProps,
 } from "react-native";
 import { uiPalette, uiTokens, type ColorMode } from "./tokens";
+import type { SegmentedTab } from "./primitives.types";
 type Themed = { mode?: ColorMode };
 
 // Android needs this opt-in once per process before LayoutAnimation calls
@@ -228,12 +229,7 @@ export function FilterChip({
     />
   );
 }
-export type SegmentedTab<T extends string = string> = {
-  id: T;
-  label: string;
-  /** Optional unread/result count shown as a small badge. */
-  count?: number;
-};
+export type { SegmentedTab } from "./primitives.types";
 
 /**
  * The one tab control: a rounded pill track with a filled selected segment,
@@ -412,19 +408,10 @@ export function IconButton({
           transitionTimingFunction: "ease-out",
         } as ViewStyle)
       : undefined;
+    // The visible pill may be compact (`size`), but the Pressable keeps at
+    // least the compact touch target so a 30px pill is still easy to tap.
+    const visualWidth = expanded ? edge + 104 : edge;
     return (
-      <View
-        style={[
-          styles.revealIconButton,
-          {
-            height: edge,
-            width: expanded ? edge + 104 : edge,
-            backgroundColor: expanded ? `${color}14` : palette.surface,
-            borderColor: expanded ? `${color}52` : palette.border,
-          },
-          transitionStyle,
-        ]}
-      >
         <Pressable
           {...props}
           accessibilityRole="button"
@@ -467,17 +454,35 @@ export function IconButton({
           }}
           style={(state) => [
             styles.revealIconButtonPressable,
-            { opacity: state.pressed ? 0.72 : 1 },
+            {
+              height: Math.max(edge, uiTokens.control.compactHeight),
+              width: Math.max(visualWidth, uiTokens.control.compactHeight),
+              opacity: state.pressed ? 0.72 : 1,
+            },
           ]}
         >
-          <View accessible={false} pointerEvents="none" style={[styles.revealIcon, { height: edge, width: edge }]}>{content}</View>
-          {expanded ? (
-            <View style={[styles.revealLabelClip, transitionStyle]}>
-              <Text numberOfLines={1} style={[styles.revealLabel, { color }]}>{loading && loadingLabel ? loadingLabel : label}</Text>
-            </View>
-          ) : null}
+          <View
+            accessible={false}
+            pointerEvents="none"
+            style={[
+              styles.revealIconButton,
+              {
+                height: edge,
+                width: visualWidth,
+                backgroundColor: expanded ? `${color}14` : palette.surface,
+                borderColor: expanded ? `${color}52` : palette.border,
+              },
+              transitionStyle,
+            ]}
+          >
+            <View style={[styles.revealIcon, { height: edge, width: edge }]}>{content}</View>
+            {expanded ? (
+              <View style={[styles.revealLabelClip, transitionStyle]}>
+                <Text numberOfLines={1} style={[styles.revealLabel, { color }]}>{loading && loadingLabel ? loadingLabel : label}</Text>
+              </View>
+            ) : null}
+          </View>
         </Pressable>
-      </View>
     );
   }
 
@@ -683,6 +688,8 @@ const styles = StyleSheet.create({
   },
   segmentCountText: { fontSize: 11, fontWeight: "600" },
   revealIconButton: {
+    alignItems: "center",
+    flexDirection: "row",
     borderRadius: uiTokens.radius.pill,
     borderWidth: uiTokens.control.borderWidth,
     height: uiTokens.control.compactHeight,
@@ -690,8 +697,7 @@ const styles = StyleSheet.create({
   },
   revealIconButtonPressable: {
     alignItems: "center",
-    flexDirection: "row",
-    height: "100%",
+    justifyContent: "center",
   },
   revealIcon: {
     alignItems: "center",
