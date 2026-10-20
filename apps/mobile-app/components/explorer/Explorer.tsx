@@ -2962,5 +2962,13 @@ const getStyles = (isDark: boolean, colors: any) =>
     },
     toggleThumbActive: { alignSelf: "flex-end" },
     sheetModeRow: { flexDirection: "row", gap: 8, marginTop: 14 },
+    applyButton: {
+      minHeight: 48,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: uiTokens.radius.media,
+      backgroundColor: colors.primary,
+      marginTop: 28,
+    },
     applyButtonText: { color: "#fff", fontSize: 14, fontWeight: "800" },
   });
