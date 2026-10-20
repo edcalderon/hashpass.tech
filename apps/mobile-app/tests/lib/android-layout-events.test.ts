@@ -29,7 +29,7 @@ describe("Android layout event crash guards", () => {
     expect(explorerSource).toContain(
       'onScroll={(event) => handleScroll(event, "horizontal")}',
     );
-    expect(explorerSource).toContain("setShowBackToTop(contentOffset.y > 120)");
+    expect(explorerSource).not.toContain("setShowBackToTop");
     expect(explorerSource).toContain(
       "const handleFilterChipWheel = (event: any) => {",
     );
