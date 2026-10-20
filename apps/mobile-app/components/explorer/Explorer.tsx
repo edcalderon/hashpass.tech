@@ -972,13 +972,14 @@ export default function Explorer({
           mode={isDark ? "dark" : "light"}
           accentColor={colors.primary}
           revealLabel
+          size={30}
           onPress={handleReload}
           disabled={isReloading}
           loading={isReloading}
           label={translate("explore.rework.reload", "Reload")}
           loadingLabel={translate("explore.rework.reloading", "Reloading…")}
         >
-          <Icon name="refresh" color={colors.primary} size={18} />
+          <Icon name="refresh" color={colors.primary} size={15} />
         </IconButton>
       </View>
     </View>
@@ -2825,74 +2826,74 @@ const getStyles = (isDark: boolean, colors: any) =>
       height: 5,
       borderRadius: uiTokens.radius.small,
       backgroundColor: colors.divider,
-      marginBottom: 18,
+      marginBottom: 14,
     },
     sheetHeader: {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
     },
-    sheetTitle: { color: colors.text.primary, fontSize: 21, fontWeight: "800" },
-    resetText: { color: colors.primary, fontSize: 13, fontWeight: "800" },
+    sheetTitle: { color: colors.text.primary, fontSize: 18, fontWeight: "800" },
+    resetText: { color: colors.primary, fontSize: 12, fontWeight: "800" },
     sheetLabel: {
       color: colors.text.secondary,
       fontSize: 11,
       fontWeight: "800",
       letterSpacing: 1.2,
       textTransform: "uppercase",
-      marginTop: 26,
-      marginBottom: 10,
+      marginTop: 20,
+      marginBottom: 8,
     },
     statusPill: {
-      minHeight: 44,
-      paddingHorizontal: 18,
+      height: 30,
+      paddingHorizontal: 10,
       alignItems: "center",
       justifyContent: "center",
       borderRadius: uiTokens.radius.pill,
       borderWidth: 1,
       borderColor: colors.divider,
-      backgroundColor: isDark ? "#252528" : "#F5F5F7",
+      backgroundColor: "transparent",
     },
     statusPillActive: {
       borderColor: colors.primary,
       backgroundColor: colors.primary,
     },
     statusPillText: {
-      color: colors.text.primary,
-      fontSize: 14,
+      color: colors.text.secondary,
+      fontSize: 11,
       fontWeight: "700",
     },
     statusPillTextActive: { color: "#fff" },
-    dateRangeRow: { flexDirection: "row", gap: 9, marginTop: 11 },
+    dateRangeRow: { flexDirection: "row", gap: 6, marginTop: 8 },
     dateField: {
       flex: 1,
-      height: 55,
-      paddingHorizontal: 14,
-      borderRadius: uiTokens.radius.media,
+      height: 30,
+      paddingHorizontal: 10,
+      borderRadius: uiTokens.radius.pill,
       borderWidth: 1,
       borderColor: colors.divider,
-      backgroundColor: isDark ? "#252528" : "#F5F5F7",
-      color: colors.text.primary,
-      fontSize: 14,
+      backgroundColor: "transparent",
+      color: colors.text.secondary,
+      fontSize: 11,
     },
-    filterPillRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+    filterPillRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
     filterPill: {
-      minHeight: 42,
-      paddingHorizontal: 15,
+      height: 30,
+      paddingHorizontal: 10,
       alignItems: "center",
       justifyContent: "center",
       borderRadius: uiTokens.radius.pill,
       borderWidth: 1,
       borderColor: colors.divider,
-      backgroundColor: isDark ? "#252528" : "#F5F5F7",
+      backgroundColor: "transparent",
     },
     filterPillActive: {
       borderColor: colors.primary,
       backgroundColor: colors.primary,
     },
     filterPillText: {
-      color: colors.text.primary,
-      fontSize: 13,
+      color: colors.text.secondary,
+      fontSize: 11,
       fontWeight: "700",
     },
     filterPillTextActive: { color: "#fff" },
@@ -2974,13 +2975,13 @@ const getStyles = (isDark: boolean, colors: any) =>
       backgroundColor: "#fff",
     },
     toggleThumbActive: { alignSelf: "flex-end" },
-    sheetModeRow: { flexDirection: "row", gap: 8 },
+    sheetModeRow: { flexDirection: "row", gap: 8, marginTop: 14 },
     sheetMode: {
       flex: 1,
       alignItems: "center",
       justifyContent: "center",
-      minHeight: 42,
-      borderRadius: uiTokens.radius.input,
+      height: 30,
+      borderRadius: uiTokens.radius.pill,
       borderWidth: 1,
       borderColor: colors.divider,
     },
@@ -2990,7 +2991,7 @@ const getStyles = (isDark: boolean, colors: any) =>
     },
     sheetModeText: {
       color: colors.text.secondary,
-      fontSize: 13,
+      fontSize: 11,
       fontWeight: "700",
     },
     sheetModeTextActive: { color: "#fff" },

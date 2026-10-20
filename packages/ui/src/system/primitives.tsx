@@ -239,6 +239,8 @@ export type IconButtonProps = Omit<PressableProps, "children"> &
     accentColor?: string;
     loading?: boolean;
     loadingLabel?: string;
+    /** Reveal buttons only: square edge in px, to line up with neighbouring pills. */
+    size?: number;
   };
 
 export function IconButton({
@@ -251,12 +253,14 @@ export function IconButton({
   accentColor,
   loading = false,
   loadingLabel,
+  size,
   onHoverIn,
   onHoverOut,
   onFocus,
   onBlur,
   ...props
 }: IconButtonProps) {
+  const edge = size ?? uiTokens.control.compactHeight;
   const palette = uiPalette(mode);
   const color = accentColor || palette.accent;
   const [hovered, setHovered] = useState(false);
@@ -329,7 +333,8 @@ export function IconButton({
         style={[
           styles.revealIconButton,
           {
-            width: expanded ? uiTokens.control.compactHeight + 104 : uiTokens.control.compactHeight,
+            height: edge,
+            width: expanded ? edge + 104 : edge,
             backgroundColor: expanded ? `${color}14` : palette.surface,
             borderColor: expanded ? `${color}52` : palette.border,
           },
@@ -381,7 +386,7 @@ export function IconButton({
             { opacity: state.pressed ? 0.72 : 1 },
           ]}
         >
-          <View accessible={false} pointerEvents="none" style={styles.revealIcon}>{content}</View>
+          <View accessible={false} pointerEvents="none" style={[styles.revealIcon, { height: edge, width: edge }]}>{content}</View>
           {expanded ? (
             <View style={[styles.revealLabelClip, transitionStyle]}>
               <Text numberOfLines={1} style={[styles.revealLabel, { color }]}>{loading && loadingLabel ? loadingLabel : label}</Text>
