@@ -73,6 +73,7 @@ import MiniNotificationDropdown from "../../../components/MiniNotificationDropdo
 import { hasRecentAuthSuccess } from "../../../lib/auth/recent-auth";
 import { isDevAuthBypassEnabled } from "../../../lib/auth/dev-bypass";
 import { resolveAvatarUrl } from "../../../lib/auth/avatar";
+import ProfileAvatar from "../../../components/ProfileAvatar";
 import { supabase } from "../../../lib/supabase";
 import { navigateDashboardBrandToLanding } from "../../../lib/dashboard-navigation";
 import { openTargetedDashboardDrawer } from "../../../lib/dashboard-drawer";
@@ -379,17 +380,6 @@ export function CustomDrawerContent({
       username.replace(/^@/, "")
     );
   }, [user?.first_name, user?.last_name, user?.user_metadata, username]);
-  const accountInitials = React.useMemo(
-    () =>
-      accountDisplayName
-        .split(/\s+/)
-        .filter(Boolean)
-        .slice(0, 2)
-        .map((part) => part[0])
-        .join("")
-        .toUpperCase() || "H",
-    [accountDisplayName],
-  );
   const profileAvatarUrl = React.useMemo(() => {
     return resolveAvatarUrl(rawSupabaseUser, user);
   }, [rawSupabaseUser, user]);
@@ -910,28 +900,12 @@ export function CustomDrawerContent({
             >
               <View style={styles.profileAvatarShell}>
                 <View style={styles.profileAvatar}>
-                  {profileAvatarUrl ? (
-                    <Image
-                      source={{ uri: profileAvatarUrl }}
-                      style={styles.profileAvatarImage}
-                      resizeMode="cover"
-                    />
-                  ) : (
-                    <View style={styles.profileAvatarDefault}>
-                      {Array.from({ length: 10 }, (_, index) => (
-                        <View
-                          key={`profile-avatar-stripe-${index}`}
-                          style={[
-                            styles.profileAvatarStripe,
-                            { top: index * 10 - 20 },
-                          ]}
-                        />
-                      ))}
-                      <Text style={styles.profileAvatarInitials}>
-                        {accountInitials}
-                      </Text>
-                    </View>
-                  )}
+                  <ProfileAvatar
+                    uri={profileAvatarUrl}
+                    name={accountDisplayName}
+                    isDark={isDark}
+                    initialsSize={isMobile ? 19 : 22}
+                  />
                 </View>
                 <View style={styles.profileAvatarAction}>
                   <Ionicons
@@ -2292,34 +2266,6 @@ const getStyles = (
       borderWidth: 3,
       borderColor: isDark ? "#1c1716" : "#fbf3f2",
       backgroundColor: isDark ? "#2a2220" : "#f1dcd9",
-    },
-    profileAvatarImage: {
-      width: "100%",
-      height: "100%",
-    },
-    profileAvatarDefault: {
-      width: "100%",
-      height: "100%",
-      alignItems: "center",
-      justifyContent: "center",
-      overflow: "hidden",
-      backgroundColor: isDark ? "#2a2220" : "#f1dcd9",
-    },
-    profileAvatarStripe: {
-      position: "absolute",
-      left: -24,
-      width: 112,
-      height: 8,
-      backgroundColor: isDark
-        ? "rgba(255, 255, 255, 0.08)"
-        : "rgba(255, 255, 255, 0.62)",
-      transform: [{ rotate: "-45deg" }],
-    },
-    profileAvatarInitials: {
-      fontSize: isMobile ? 19 : 22,
-      fontWeight: "800",
-      color: isDark ? uiTokens.colors.dark.text : brandRed,
-      letterSpacing: 0.5,
     },
     profileAvatarAction: {
       position: "absolute",
