@@ -20,13 +20,13 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.127)
+## 📋 Latest Changes (v1.9.128)
 
 ### Released
-- type block callbacks explicitly for isolated typecheck; make terms/privacy drawers read-only, shorten Storybook title; replace dead bsl2025.hashpass.tech links; back arrow falls back to home when opened directly
+- avoid typeof import cast that breaks isolated typecheck; drop effigy.im avatars that 500 on testimonials
 
 ### Release scope
-- Compared with: `v1.9.126` (the previous global release tag)
+- Compared with: `v1.9.127` (the previous global release tag)
 
 ### Affected products & packages
 - Mobile app
