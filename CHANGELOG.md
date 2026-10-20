@@ -1,3 +1,14 @@
+## [1.9.129](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.128...v1.9.129) (2026-10-20)
+### Released
+- single reload control, drop scroll-to-top
+
+### Release scope
+- Compared with: `v1.9.128` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Documentation
+
 ## [1.9.128](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.127...v1.9.128) (2026-10-20)
 ### Released
 - avoid typeof import cast that breaks isolated typecheck; drop effigy.im avatars that 500 on testimonials
