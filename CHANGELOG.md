@@ -1,3 +1,14 @@
+## [1.9.131](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.129...v1.9.131) (2026-10-20)
+### Released
+- type avatar upload error callback for isolated typecheck; striped capital-letter avatar fallback in sidebar and profile
+
+### Release scope
+- Compared with: `v1.9.129` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Shared UI
+
 ## [1.9.130](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.129...v1.9.130) (2026-10-20)
 ### Released
 - type avatar upload error callback for isolated typecheck; striped capital-letter avatar fallback in sidebar and profile
