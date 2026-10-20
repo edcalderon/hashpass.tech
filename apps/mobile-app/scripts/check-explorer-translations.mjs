@@ -114,7 +114,6 @@ const requiredKeys = [
   "explore.rework.noEventsMatch",
   "explore.rework.noEventsHint",
   "explore.rework.clearAllFilters",
-  "explore.rework.scrollToTop",
   "explore.rework.eventLayout",
   "explore.rework.openFilters",
   "explore.rework.openFiltersAndSorting",

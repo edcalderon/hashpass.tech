@@ -7,7 +7,6 @@ import React, {
   useState,
 } from "react";
 import {
-  ActivityIndicator,
   Alert,
   Image,
   Linking,
@@ -29,7 +28,6 @@ import { SliderProgressBar } from "../banner/SliderProgressBar";
 import { useTheme } from "../../hooks/useTheme";
 import { useAuth } from "../../hooks/useAuth";
 import { useRouter } from "expo-router";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "../../i18n/i18n";
 import PassesDisplay from "../PassesDisplay";
 import { getEventQuickAccessItems } from "../../lib/event-detector";
@@ -63,7 +61,6 @@ import {
   getExplorerToolbarBackgroundColor,
   getEventRoomTarget,
   getExplorerEventStatus,
-  getExplorerFloatingBottomInset,
   getExplorerHeroSlides,
   localizeExplorerHeroSlide,
   getExplorerTenantHeroSlide,
@@ -174,7 +171,6 @@ export default function Explorer({
 }: ExplorerProps) {
   const { isDark, colors } = useTheme();
   const { retryDatabaseSession } = useAuth();
-  const safeAreaInsets = useSafeAreaInsets();
   const router = useRouter();
   const styles = getStyles(isDark, colors);
   const { t: translate } = useTranslation();
@@ -204,8 +200,6 @@ export default function Explorer({
   const [roomPresenceByEventId, setRoomPresenceByEventId] = useState<
     Record<string, EventChatPresence>
   >({});
-  const [showBackToTop, setShowBackToTop] = useState(false);
-  const scrollRef = useRef<ScrollView>(null);
   const railScrollRef = useRef<ScrollView>(null);
   const railScrollOffsetRef = useRef(0);
   const filterChipScrollRef = useRef<ScrollView>(null);
@@ -436,6 +430,14 @@ export default function Explorer({
       setIsRefreshingEvents(false);
     }
   }, [isRefreshingEvents, onRefreshEvents]);
+
+  // One control reloads everything on screen: the events list and, for a
+  // signed-in explorer, the pass wallet (its own reload is hidden).
+  const isReloading = isRefreshingEvents || (isLoggedIn && isRefreshingPasses);
+  const handleReload = useCallback(() => {
+    if (isLoggedIn) handleReloadPasses();
+    return handleEventsReload();
+  }, [isLoggedIn, handleReloadPasses, handleEventsReload]);
   const sortedEvents = useMemo(
     () => sortExplorerEvents(filteredEvents, bookmarkedEventIds, sortBy),
     [bookmarkedEventIds, filteredEvents, sortBy],
@@ -522,9 +524,6 @@ export default function Explorer({
     axis: "vertical" | "horizontal" = "vertical",
   ) => {
     const { contentOffset } = event.nativeEvent;
-    if (axis === "vertical") {
-      setShowBackToTop(contentOffset.y > 120);
-    }
     if (axis === "horizontal") railScrollOffsetRef.current = contentOffset.x;
   };
 
@@ -969,18 +968,15 @@ export default function Explorer({
           ))}
         </ScrollView>
         <IconButton
-          testID="explorer-reload-events"
+          testID="explorer-reload"
           mode={isDark ? "dark" : "light"}
           accentColor={colors.primary}
           revealLabel
-          onPress={handleEventsReload}
-          disabled={isRefreshingEvents}
-          loading={isRefreshingEvents}
-          label={translate("explore.rework.reloadEvents", "Reload events")}
-          loadingLabel={translate(
-            "explore.rework.reloadingEvents",
-            "Reloading events…",
-          )}
+          onPress={handleReload}
+          disabled={isReloading}
+          loading={isReloading}
+          label={translate("explore.rework.reload", "Reload")}
+          loadingLabel={translate("explore.rework.reloading", "Reloading…")}
         >
           <Icon name="refresh" color={colors.primary} size={18} />
         </IconButton>
@@ -1632,7 +1628,6 @@ export default function Explorer({
   return (
     <View style={styles.container}>
       <ScrollView
-        ref={scrollRef}
         style={styles.scrollView}
         contentContainerStyle={styles.content}
         stickyHeaderIndices={[1]}
@@ -1649,25 +1644,6 @@ export default function Explorer({
               <Text style={styles.sectionTitle}>
                 {translate("explore.rework.yourPasses", "Your Passes")}
               </Text>
-              <IconButton
-                testID="explorer-reload-passes"
-                mode={isDark ? "dark" : "light"}
-                accentColor={colors.primary}
-                revealLabel
-                label={translate(
-                  "explore.rework.reloadPasses",
-                  "Reload passes",
-                )}
-                loadingLabel={translate(
-                  "explore.rework.reloadingPasses",
-                  "Reloading passes…",
-                )}
-                disabled={isRefreshingPasses}
-                loading={isRefreshingPasses}
-                onPress={handleReloadPasses}
-              >
-                <Icon name="refresh" color={colors.primary} size={18} />
-              </IconButton>
             </View>
             <PassesDisplay
               mode="dashboard"
@@ -1695,26 +1671,6 @@ export default function Explorer({
         </View>
         {renderQuickAccess()}
       </ScrollView>
-
-      {showBackToTop && (
-        <TouchableOpacity
-          style={[
-            styles.toTop,
-            { bottom: getExplorerFloatingBottomInset(safeAreaInsets.bottom) },
-          ]}
-          onPress={() => {
-            setShowBackToTop(false);
-            scrollRef.current?.scrollTo({ y: 0, animated: true });
-          }}
-          accessibilityRole="button"
-          accessibilityLabel={translate(
-            "explore.rework.scrollToTop",
-            "Scroll to top",
-          )}
-        >
-          <Icon name="arrow-upward" color="#fff" size={22} />
-        </TouchableOpacity>
-      )}
 
       <Modal
         visible={searchOpen}
@@ -2768,17 +2724,6 @@ const getStyles = (isDark: boolean, colors: any) =>
       fontSize: 11,
       lineHeight: 15,
       marginTop: 4,
-    },
-    toTop: {
-      position: "absolute",
-      right: 16,
-      bottom: 22,
-      width: 48,
-      height: 48,
-      borderRadius: uiTokens.radius.media,
-      alignItems: "center",
-      justifyContent: "center",
-      backgroundColor: colors.primary,
     },
     searchLayer: { flex: 1, backgroundColor: colors.background.default },
     searchLayerTop: {

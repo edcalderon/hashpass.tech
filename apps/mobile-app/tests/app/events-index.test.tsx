@@ -128,11 +128,25 @@ it('shows the sent-request stat for authenticated explorers', async () => {
   expect(content()).toContain('Requests');
   expect(content()).toContain('{count} sent');
 });
-it('retries the shared database session when reloading passes', async () => {
+it('retries the shared database session from the single reload control', async () => {
   mockLoggedIn = true;
   await act(async () => { view = create(<EventsScreen />); });
-  act(() => view.root.findByProps({ testID: 'explorer-reload-passes' }).props.onPress());
-  expect(mockRetryDatabaseSession).toHaveBeenCalledTimes(1);
+  jest.useFakeTimers();
+  try {
+    await act(async () => { view.root.findByProps({ testID: 'explorer-reload' }).props.onPress(); });
+    expect(mockRetryDatabaseSession).toHaveBeenCalledTimes(1);
+    // Let the minimum reload-feedback delay elapse so no timer outlives the test.
+    await act(async () => { jest.runAllTimers(); });
+  } finally {
+    jest.useRealTimers();
+  }
+});
+it('renders one reload control and no scroll-to-top button', async () => {
+  mockLoggedIn = true;
+  await act(async () => { view = create(<EventsScreen />); });
+  expect(view.root.findAll((n) => n.props.testID === 'explorer-reload' && n.props.accessibilityLabel === 'Reload')).toHaveLength(1);
+  expect(view.root.findAll((n) => n.props.testID === 'explorer-reload-passes' || n.props.testID === 'explorer-reload-events')).toHaveLength(0);
+  expect(view.root.findAll((n) => n.props.accessibilityLabel === 'Scroll to top')).toHaveLength(0);
 });
 it('moves the quick-access rail for web wheel input', async () => {
   setPlatform('web');

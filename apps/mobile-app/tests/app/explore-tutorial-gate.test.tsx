@@ -314,8 +314,8 @@ describe("ExploreScreen disabled tutorial gate", () => {
       });
 
       const reloadButton = renderer!.root
-        .findAll((node) => node.props.testID === "explorer-reload-events")
-        .find((node) => node.props.accessibilityLabel === "Reload events");
+        .findAll((node) => node.props.testID === "explorer-reload")
+        .find((node) => node.props.accessibilityLabel === "Reload");
       expect(reloadButton).toBeTruthy();
 
       await TestRenderer.act(async () => {
