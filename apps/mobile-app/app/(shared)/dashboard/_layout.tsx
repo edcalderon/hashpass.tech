@@ -1018,6 +1018,7 @@ export function CustomDrawerContent({
       </View>
 
       {/* Menu Items - Scrollable on mobile */}
+      <View style={styles.drawerDivider} />
       <ScrollView
         style={styles.menuItemsScrollView}
         contentContainerStyle={styles.menuItemsContent}
@@ -1122,15 +1123,11 @@ export function CustomDrawerContent({
                             ? "rgba(255, 106, 77, 0.10)"
                             : "rgba(175, 13, 1, 0.045)"
                           : "transparent",
-                      borderColor: isActive
+                      boxShadow: isActive
                         ? isDark
-                          ? "rgba(255, 106, 77, 0.28)"
-                          : "rgba(175, 13, 1, 0.14)"
-                        : isInteracting
-                          ? isDark
-                            ? "rgba(255, 106, 77, 0.16)"
-                            : "rgba(175, 13, 1, 0.10)"
-                          : "transparent",
+                          ? "0 8px 18px rgba(0, 0, 0, 0.28)"
+                          : "0 8px 18px rgba(175, 13, 1, 0.10)"
+                        : undefined,
                     },
                   ]}
                   onHoverIn={() => {
@@ -1255,6 +1252,7 @@ export function CustomDrawerContent({
       </ScrollView>
 
       {/* Quick Settings & Actions */}
+      <View style={styles.drawerDivider} />
       <View style={styles.quickSettingsSection}>
         <Text style={styles.menuSectionLabel}>
           {t({ id: "nav.quickActions", message: "Quick actions" })}
@@ -2106,6 +2104,12 @@ const getStyles = (
   insets: DashboardDrawerInsets = {},
 ) => {
   const drawerSafeInsets = getDashboardDrawerInsets(insets);
+  // One horizontal inset for the profile card, nav rows, divider and quick
+  // actions keeps every block in the drawer on the same symmetric grid.
+  const drawerInset = isMobile ? 16 : 14;
+  const drawerSoftShadow = isDark
+    ? "0 6px 16px rgba(0, 0, 0, 0.30)"
+    : "0 6px 16px rgba(20, 20, 30, 0.08)";
   const brandRed = uiTokens.colors.light.accent;
 
   return StyleSheet.create({
@@ -2211,8 +2215,14 @@ const getStyles = (
         : uiTokens.colors.light.canvas,
       position: "relative",
       overflow: "hidden",
-      borderBottomWidth: 1,
-      borderBottomColor: colors.divider,
+    },
+    drawerDivider: {
+      height: 1,
+      marginStart: drawerInset + drawerSafeInsets.left,
+      marginEnd: drawerInset + drawerSafeInsets.right,
+      backgroundColor: isDark
+        ? "rgba(255, 255, 255, 0.07)"
+        : "rgba(0, 0, 0, 0.06)",
     },
     drawerTopBar: {
       height: 36,
@@ -2238,10 +2248,6 @@ const getStyles = (
       padding: isMobile ? 12 : 14,
       borderRadius: uiTokens.radius.card,
       backgroundColor: isDark ? "#1c1716" : "#fbf3f2",
-      borderWidth: 1,
-      borderColor: isDark
-        ? "rgba(255, 255, 255, 0.10)"
-        : "rgba(175, 13, 1, 0.10)",
       position: "relative",
       zIndex: 1,
       boxShadow: isDark
@@ -2390,8 +2396,7 @@ const getStyles = (
       backgroundColor: isDark
         ? uiTokens.colors.dark.raised
         : uiTokens.colors.light.raised,
-      borderWidth: 1,
-      borderColor: isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.07)",
+      boxShadow: drawerSoftShadow,
     },
     profileStatValue: {
       fontSize: 16,
@@ -2431,23 +2436,22 @@ const getStyles = (
       alignItems: "center",
       justifyContent: "center",
       backgroundColor: isDark ? "rgba(255, 255, 255, 0.08)" : "#f5f5f7",
-      borderWidth: 1,
-      borderColor: colors.divider,
+      boxShadow: drawerSoftShadow,
     },
     menuItemsScrollView: {
       flex: 1,
     },
     menuItemsContent: {
-      paddingTop: 8,
-      paddingBottom: 8,
-      paddingStart: (isMobile ? 12 : 10) + drawerSafeInsets.left,
-      paddingEnd: (isMobile ? 12 : 10) + drawerSafeInsets.right,
+      paddingTop: 12,
+      paddingBottom: 12,
+      paddingStart: drawerInset + drawerSafeInsets.left,
+      paddingEnd: drawerInset + drawerSafeInsets.right,
       flexGrow: 1,
     },
     menuSectionLabel: {
       paddingHorizontal: 8,
       paddingTop: 2,
-      paddingBottom: 5,
+      paddingBottom: 8,
       fontSize: 10,
       lineHeight: 13,
       fontWeight: "800",
@@ -2470,8 +2474,6 @@ const getStyles = (
       paddingLeft: 8,
       marginVertical: 1,
       borderRadius: uiTokens.radius.input,
-      borderWidth: 1,
-      borderColor: "transparent",
     },
     menuIconContainer: {
       width: 32,
@@ -2515,8 +2517,7 @@ const getStyles = (
       backgroundColor: isDark
         ? "rgba(255, 59, 48, 0.1)"
         : "rgba(255, 59, 48, 0.05)",
-      borderWidth: 1,
-      borderColor: isDark ? "rgba(255, 59, 48, 0.2)" : "rgba(255, 59, 48, 0.1)",
+      boxShadow: drawerSoftShadow,
       gap: 10,
     },
     logoutActionText: {
@@ -2525,13 +2526,10 @@ const getStyles = (
       color: colors.error.main,
     },
     quickSettingsSection: {
-      paddingTop: 10,
-      marginStart: (isMobile ? 20 : 16) + drawerSafeInsets.left,
-      marginEnd: (isMobile ? 18 : 16) + drawerSafeInsets.right,
-      marginTop: 6,
-      marginBottom: 4,
-      borderTopWidth: 1,
-      borderTopColor: colors.divider,
+      paddingTop: 12,
+      paddingBottom: 12,
+      paddingStart: drawerInset + drawerSafeInsets.left,
+      paddingEnd: drawerInset + drawerSafeInsets.right,
     },
     quickTogglesRow: {
       flexDirection: "row",
@@ -2547,8 +2545,7 @@ const getStyles = (
       flexDirection: "row",
       alignItems: "center",
       paddingHorizontal: 8,
-      borderWidth: 1,
-      borderColor: colors.divider,
+      boxShadow: drawerSoftShadow,
       backgroundColor: colors.background.paper,
       gap: 8,
     },

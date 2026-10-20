@@ -22,23 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610200006, // Updated to current timestamp
+  buildNumber: 202610200111, // Updated to current timestamp
   releaseDate: '2026-10-20',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    // No new features
+    'single reload control, drop scroll-to-top'
   ],
   bugfixes: [
-    'avoid typeof import cast that breaks isolated typecheck',
-    'drop effigy.im avatars that 500 on testimonials'
+    // No bugfixes
   ],
   breakingChanges: [],
-  notes: 'avoid typeof import cast that breaks isolated typecheck; drop effigy.im avatars that 500 on testimonials'
+  notes: 'single reload control, drop scroll-to-top'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.129': {
+    version: '1.9.129',
+    buildNumber: 202610200111,
+    releaseDate: '2026-10-20',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'single reload control, drop scroll-to-top'
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'single reload control, drop scroll-to-top'
+  },
   '1.9.128': {
     version: '1.9.128',
     buildNumber: 202610200006,
