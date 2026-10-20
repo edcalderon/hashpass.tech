@@ -6,6 +6,7 @@ import { MaterialIcons } from '../../../lib/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import UnifiedSearchAndFilter from '../../../components/UnifiedSearchAndFilter';
 import { uiTokens } from '@hashpass/ui/tokens';
+import { SegmentedTabs } from '@hashpass/ui/primitives';
 import { useDashboardPageLayout } from '../../../hooks/useDashboardPageLayout';
 import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../hooks/useAuth';
@@ -601,35 +602,29 @@ export default function NotificationsScreen() {
         </Text>
       </View>
 
-      {/* Inbox tabs: rounded pill control, matching the wallet tabs */}
+      {/* Inbox tabs: the shared SegmentedTabs control, same as Wallet */}
       <View style={styles.tabsWrap}>
-        <View style={styles.tabContainer} accessibilityRole="tablist">
-          {([
+        <SegmentedTabs
+          mode={isDark ? 'dark' : 'light'}
+          tabs={([
             ['all', t('center.all')],
             ['messages', t('center.messages', 'Messages')],
             ['updates', t('center.updates', 'Updates')],
             ['archive', t('center.archive')],
-          ] as const).map(([tab, label]) => (
-            <TouchableOpacity
-              key={tab}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: activeTab === tab }}
-              style={[styles.tab, activeTab === tab && styles.activeTab]}
-              onPress={() => {
-                setActiveTab(tab);
-                setFilteredNotifications([]);
-                setSearchQuery('');
-              }}
-            >
-              <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>{label}</Text>
-              {tabUnreadCounts[tab] > 0 && (
-                <View style={[styles.tabBadge, activeTab === tab && styles.activeTabBadge]}>
-                  <Text style={[styles.tabBadgeText, activeTab === tab && styles.activeTabBadgeText]}>{tabUnreadCounts[tab]}</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          ))}
-        </View>
+          ] as const).map(([id, label]) => ({
+            id,
+            label,
+            count: tabUnreadCounts[id],
+          }))}
+          value={activeTab}
+          onChange={(tab) => {
+            setActiveTab(tab);
+            setFilteredNotifications([]);
+            setSearchQuery('');
+          }}
+          accentColor={colors.primary}
+          surfaceColor={colors.background.paper}
+        />
       </View>
 
       {/* Filter Section */}
@@ -822,53 +817,6 @@ const getStyles = (isDark: boolean, colors: any, topInset: number = 0, bottomIns
     fontSize: 14,
     fontWeight: '500',
     color: colors.text.primary,
-  },
-  tabContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-    padding: 5,
-    borderRadius: uiTokens.radius.pill,
-    backgroundColor: colors.background.paper,
-  },
-  tab: {
-    minHeight: 44,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 18,
-    borderRadius: uiTokens.radius.pill,
-  },
-  activeTab: {
-    backgroundColor: colors.primary,
-  },
-  tabText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text.secondary,
-  },
-  activeTabText: {
-    color: colors.primaryContrastText,
-  },
-  tabBadge: {
-    backgroundColor: '#FF3B30',
-    borderRadius: 10,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    marginLeft: 6,
-    minWidth: 20,
-    alignItems: 'center',
-  },
-  activeTabBadge: {
-    backgroundColor: colors.primaryContrastText,
-  },
-  tabBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  activeTabBadgeText: {
-    color: colors.primary,
   },
   column: {
     flex: 1,

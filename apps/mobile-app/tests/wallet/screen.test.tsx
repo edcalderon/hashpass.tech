@@ -3,7 +3,8 @@ import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { Pressable } from 'react-native';
 
 jest.mock('expo-router', () => ({ useLocalSearchParams: () => ({}) }));
-jest.mock('../../hooks/useTheme', () => ({ useTheme: () => ({ colors: {
+let mockDark = false;
+jest.mock('../../hooks/useTheme', () => ({ useTheme: () => ({ isDark: mockDark, colors: {
   primary: '#a00', primaryContrastText: '#fff', divider: '#ddd',
   background: { paper: '#fafafa', default: '#fff' }, text: { primary: '#111', secondary: '#555' },
 } }) }));
@@ -33,4 +34,18 @@ it('explains setup availability, expands security, and navigates to genuine pass
   expect(view.root.findByType('PassesDisplay' as any).props.mode).toBe('dashboard');
   expect(view.root.findAllByType('Rewards' as any)).toHaveLength(0);
   act(() => view.unmount());
+});
+
+it('renders the shared segmented tabs in dark mode', () => {
+  mockDark = true;
+  let view!: ReactTestRenderer;
+  try {
+    act(() => { view = create(<Wallet />); });
+    const tabs = view.root.findAllByType(Pressable).filter(node => node.props.accessibilityRole === 'tab');
+    expect(tabs.length).toBeGreaterThan(1);
+    expect(view.root.findAll(node => node.props.accessibilityRole === 'tablist')).not.toHaveLength(0);
+  } finally {
+    mockDark = false;
+    act(() => view.unmount());
+  }
 });

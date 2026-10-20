@@ -22,7 +22,7 @@ import {
   type NativeSyntheticEvent,
 } from "react-native";
 import { NativeSafeIcon } from "../../lib/vector-icons";
-import { HoverText, IconButton } from "@hashpass/ui/primitives";
+import { HoverText, IconButton, SegmentedTabs } from "@hashpass/ui/primitives";
 import { useAutoAdvanceProgress } from "../../lib/hooks/useAutoAdvanceProgress";
 import { SliderProgressBar } from "../banner/SliderProgressBar";
 import { useTheme } from "../../hooks/useTheme";
@@ -98,6 +98,8 @@ interface ExplorerProps {
 }
 
 const DEFAULT_EVENT_HERO_DURATION_MS = 5_000;
+// Compact 30px sheet pills still expose a 44px touch target.
+const PILL_HIT_SLOP = { top: 7, bottom: 7, left: 0, right: 0 };
 
 const FILTER_SERIES = [
   "BSL On Tour",
@@ -972,13 +974,14 @@ export default function Explorer({
           mode={isDark ? "dark" : "light"}
           accentColor={colors.primary}
           revealLabel
+          size={30}
           onPress={handleReload}
           disabled={isReloading}
           loading={isReloading}
           label={translate("explore.rework.reload", "Reload")}
           loadingLabel={translate("explore.rework.reloading", "Reloading…")}
         >
-          <Icon name="refresh" color={colors.primary} size={18} />
+          <Icon name="refresh" color={colors.primary} size={15} />
         </IconButton>
       </View>
     </View>
@@ -1758,7 +1761,10 @@ export default function Explorer({
         onRequestClose={() => setFilterSheetOpen(false)}
       >
         <View style={styles.sheetBackdrop}>
+          {/* Fills the whole backdrop so a tap anywhere outside the sheet,
+              including beside it on wide screens, closes it. */}
           <TouchableOpacity
+            activeOpacity={1}
             style={styles.sheetDismiss}
             onPress={() => setFilterSheetOpen(false)}
             accessibilityLabel={translate(
@@ -1784,44 +1790,27 @@ export default function Explorer({
               </View>
 
               <View style={styles.sheetModeRow}>
-                {(
-                  [
-                    [
-                      "events",
-                      translate("explore.rework.filterEvents", "Events"),
-                    ],
-                    [
-                      "passes",
-                      translate("explore.rework.filterPasses", "Passes"),
-                    ],
-                  ] as const
-                ).map(([value, label]) => {
-                  const active = filterTab === value;
-                  return (
-                    <TouchableOpacity
-                      key={value}
-                      style={[
-                        styles.sheetMode,
-                        active && styles.sheetModeActive,
-                      ]}
-                      onPress={() => {
-                        if (value !== "passes" || !requireAccount())
-                          setFilterTab(value);
-                      }}
-                      accessibilityRole="tab"
-                      accessibilityState={{ selected: active }}
-                    >
-                      <Text
-                        style={[
-                          styles.sheetModeText,
-                          active && styles.sheetModeTextActive,
-                        ]}
-                      >
-                        {label}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
+                <SegmentedTabs
+                  mode={isDark ? "dark" : "light"}
+                  fullWidth
+                  accentColor={colors.primary}
+                  surfaceColor={isDark ? "#252528" : "#F5F5F7"}
+                  tabs={[
+                    {
+                      id: "events",
+                      label: translate("explore.rework.filterEvents", "Events"),
+                    },
+                    {
+                      id: "passes",
+                      label: translate("explore.rework.filterPasses", "Passes"),
+                    },
+                  ]}
+                  value={filterTab}
+                  onChange={(value) => {
+                    if (value !== "passes" || !requireAccount())
+                      setFilterTab(value);
+                  }}
+                />
               </View>
 
               {filterTab === "events" ? (
@@ -1833,6 +1822,7 @@ export default function Explorer({
                     {(["All", "Upcoming", "Past"] as const).map((status) => (
                       <TouchableOpacity
                         key={status}
+                        hitSlop={PILL_HIT_SLOP}
                         style={[
                           styles.statusPill,
                           filterStatus === status && styles.statusPillActive,
@@ -1895,6 +1885,7 @@ export default function Explorer({
                       return (
                         <TouchableOpacity
                           key={series}
+                          hitSlop={PILL_HIT_SLOP}
                           style={[
                             styles.filterPill,
                             active && styles.filterPillActive,
@@ -1929,6 +1920,7 @@ export default function Explorer({
                       return (
                         <TouchableOpacity
                           key={key}
+                          hitSlop={PILL_HIT_SLOP}
                           style={[
                             styles.filterPill,
                             active && styles.filterPillActive,
@@ -2043,6 +2035,7 @@ export default function Explorer({
                       return (
                         <TouchableOpacity
                           key={value}
+                          hitSlop={PILL_HIT_SLOP}
                           style={[
                             styles.filterPill,
                             active && styles.filterPillActive,
@@ -2089,6 +2082,7 @@ export default function Explorer({
                       return (
                         <TouchableOpacity
                           key={value}
+                          hitSlop={PILL_HIT_SLOP}
                           style={[
                             styles.filterPill,
                             active && styles.filterPillActive,
@@ -2799,8 +2793,11 @@ const getStyles = (isDark: boolean, colors: any) =>
       justifyContent: "flex-end",
       backgroundColor: "rgba(4,6,12,.55)",
     },
-    sheetDismiss: { flex: 1 },
+    sheetDismiss: { ...StyleSheet.absoluteFillObject },
     filterSheet: {
+      width: "100%",
+      maxWidth: 640,
+      alignSelf: "center",
       maxHeight: "92%",
       borderTopLeftRadius: 28,
       borderTopRightRadius: 28,
@@ -2825,74 +2822,74 @@ const getStyles = (isDark: boolean, colors: any) =>
       height: 5,
       borderRadius: uiTokens.radius.small,
       backgroundColor: colors.divider,
-      marginBottom: 18,
+      marginBottom: 14,
     },
     sheetHeader: {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
     },
-    sheetTitle: { color: colors.text.primary, fontSize: 21, fontWeight: "800" },
-    resetText: { color: colors.primary, fontSize: 13, fontWeight: "800" },
+    sheetTitle: { color: colors.text.primary, fontSize: 18, fontWeight: "800" },
+    resetText: { color: colors.primary, fontSize: 12, fontWeight: "800" },
     sheetLabel: {
       color: colors.text.secondary,
       fontSize: 11,
       fontWeight: "800",
       letterSpacing: 1.2,
       textTransform: "uppercase",
-      marginTop: 26,
-      marginBottom: 10,
+      marginTop: 20,
+      marginBottom: 8,
     },
     statusPill: {
-      minHeight: 44,
-      paddingHorizontal: 18,
+      height: 30,
+      paddingHorizontal: 10,
       alignItems: "center",
       justifyContent: "center",
       borderRadius: uiTokens.radius.pill,
       borderWidth: 1,
       borderColor: colors.divider,
-      backgroundColor: isDark ? "#252528" : "#F5F5F7",
+      backgroundColor: "transparent",
     },
     statusPillActive: {
       borderColor: colors.primary,
       backgroundColor: colors.primary,
     },
     statusPillText: {
-      color: colors.text.primary,
-      fontSize: 14,
+      color: colors.text.secondary,
+      fontSize: 11,
       fontWeight: "700",
     },
     statusPillTextActive: { color: "#fff" },
-    dateRangeRow: { flexDirection: "row", gap: 9, marginTop: 11 },
+    dateRangeRow: { flexDirection: "row", gap: 6, marginTop: 8 },
     dateField: {
       flex: 1,
-      height: 55,
-      paddingHorizontal: 14,
-      borderRadius: uiTokens.radius.media,
+      minHeight: uiTokens.control.minHeight,
+      paddingHorizontal: 10,
+      borderRadius: uiTokens.radius.pill,
       borderWidth: 1,
       borderColor: colors.divider,
-      backgroundColor: isDark ? "#252528" : "#F5F5F7",
-      color: colors.text.primary,
-      fontSize: 14,
+      backgroundColor: "transparent",
+      color: colors.text.secondary,
+      fontSize: 11,
     },
-    filterPillRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+    filterPillRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
     filterPill: {
-      minHeight: 42,
-      paddingHorizontal: 15,
+      height: 30,
+      paddingHorizontal: 10,
       alignItems: "center",
       justifyContent: "center",
       borderRadius: uiTokens.radius.pill,
       borderWidth: 1,
       borderColor: colors.divider,
-      backgroundColor: isDark ? "#252528" : "#F5F5F7",
+      backgroundColor: "transparent",
     },
     filterPillActive: {
       borderColor: colors.primary,
       backgroundColor: colors.primary,
     },
     filterPillText: {
-      color: colors.text.primary,
-      fontSize: 13,
+      color: colors.text.secondary,
+      fontSize: 11,
       fontWeight: "700",
     },
     filterPillTextActive: { color: "#fff" },
@@ -2974,26 +2971,7 @@ const getStyles = (isDark: boolean, colors: any) =>
       backgroundColor: "#fff",
     },
     toggleThumbActive: { alignSelf: "flex-end" },
-    sheetModeRow: { flexDirection: "row", gap: 8 },
-    sheetMode: {
-      flex: 1,
-      alignItems: "center",
-      justifyContent: "center",
-      minHeight: 42,
-      borderRadius: uiTokens.radius.input,
-      borderWidth: 1,
-      borderColor: colors.divider,
-    },
-    sheetModeActive: {
-      borderColor: colors.primary,
-      backgroundColor: colors.primary,
-    },
-    sheetModeText: {
-      color: colors.text.secondary,
-      fontSize: 13,
-      fontWeight: "700",
-    },
-    sheetModeTextActive: { color: "#fff" },
+    sheetModeRow: { marginTop: 14 },
     applyButton: {
       minHeight: 48,
       alignItems: "center",

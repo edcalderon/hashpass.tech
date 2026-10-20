@@ -20,17 +20,17 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.129)
+## 📋 Latest Changes (v1.9.131)
 
 ### Released
-- single reload control, drop scroll-to-top
+- type avatar upload error callback for isolated typecheck; striped capital-letter avatar fallback in sidebar and profile
 
 ### Release scope
-- Compared with: `v1.9.128` (the previous global release tag)
+- Compared with: `v1.9.129` (the previous global release tag)
 
 ### Affected products & packages
 - Mobile app
-- Documentation
+- Shared UI
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

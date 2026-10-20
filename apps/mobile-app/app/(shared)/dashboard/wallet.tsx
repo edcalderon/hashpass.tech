@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
+import { SegmentedTabs } from '@hashpass/ui/primitives';
 import { useTheme } from '../../../hooks/useTheme';
 import { DASHBOARD_PAGE_MAX_WIDTH, DASHBOARD_PAGE_SIDE_PADDING, useDashboardPageLayout } from '../../../hooks/useDashboardPageLayout';
 import { useTranslation } from '../../../i18n/i18n';
@@ -19,7 +20,7 @@ const NETWORKS = [
 
 export default function WalletScreen() {
   const params = useLocalSearchParams<{ section?: string; inviteCode?: string }>();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { topInset, bottomInset } = useDashboardPageLayout();
   const { t } = useTranslation('wallet');
   const [section, setSection] = useState<Section>('assets');
@@ -44,12 +45,14 @@ export default function WalletScreen() {
       <Text accessibilityRole="header" style={styles.title}>{t('overview.title', 'Wallet')}</Text>
       <Text style={styles.body}>{t('overview.subtitle', 'Your assets, rewards and event passes. One place, clear ownership.')}</Text>
     </View>
-    <View style={styles.tabs} accessibilityRole="tablist">
-      {tabs.map(tab => <Pressable key={tab.id} accessibilityRole="tab" accessibilityState={{ selected: section === tab.id }}
-        onPress={() => setSection(tab.id)} style={[styles.tab, section === tab.id && styles.selectedTab]}>
-        <Text style={[styles.tabText, section === tab.id && { color: colors.primaryContrastText }]}>{tab.label}</Text>
-      </Pressable>)}
-    </View>
+    <SegmentedTabs
+      mode={isDark ? 'dark' : 'light'}
+      tabs={tabs}
+      value={section}
+      onChange={setSection}
+      accentColor={colors.primary}
+      surfaceColor={colors.background.paper}
+    />
 
     {section === 'assets' && <View style={styles.stack}>
       <WalletEnrollmentView />
@@ -98,10 +101,6 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
   eyebrow: { color: colors.text.secondary, fontSize: 11, fontWeight: '700', letterSpacing: 2 },
   title: { color: colors.text.primary, fontSize: 36, fontWeight: '800', letterSpacing: -1 },
   body: { color: colors.text.secondary, fontSize: 14, lineHeight: 23 },
-  tabs: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, alignSelf: 'flex-start', padding: 5, borderRadius: 28, backgroundColor: colors.background.paper },
-  tab: { minHeight: 44, paddingHorizontal: 18, justifyContent: 'center', borderRadius: 24 },
-  selectedTab: { backgroundColor: colors.primary },
-  tabText: { color: colors.text.secondary, fontSize: 14, fontWeight: '600' },
   stack: { gap: 20 },
   hero: { padding: 24, borderRadius: 24, backgroundColor: colors.background.paper, borderColor: colors.divider, borderWidth: 1, gap: 16 },
   badge: { alignSelf: 'flex-start', borderWidth: 1, borderColor: colors.divider, paddingVertical: 7, paddingHorizontal: 12, borderRadius: 20 },

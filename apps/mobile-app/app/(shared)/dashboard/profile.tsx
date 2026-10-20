@@ -12,6 +12,7 @@ import { canLoadCurrentAdminAccess, getCurrentAdminAccess, type AdminAccess } fr
 import { getProfileRoleLabels } from '../../../lib/profile-roles';
 import { apiClient } from '../../../lib/api-client';
 import { resolveAvatarUrl } from '../../../lib/auth/avatar';
+import ProfileAvatar from '../../../components/ProfileAvatar';
 import CloudinaryImageUpload from '../../../components/CloudinaryImageUpload';
 
 // DiceBear PNG format — React Native Image cannot render SVG so we use /png endpoints
@@ -247,7 +248,7 @@ export default function ProfileScreen() {
     return metadataName || directusName || activeUser?.email?.split('@')[0] || '';
   };
 
-  const getCurrentAvatarUrl = (): string => {
+  const getCurrentAvatarUrl = (): string | null => {
     // A claimed speaker profile is the public identity attendees see. Prefer
     // that photo by default; changing the avatar below updates both records.
     if (speakerProfile?.imageUrl) return speakerProfile.imageUrl;
@@ -257,9 +258,9 @@ export default function ProfileScreen() {
     const existingPhoto = resolveAvatarUrl(rawSupabaseUser, activeUser);
     if (existingPhoto) return existingPhoto;
 
-    // Fallback: initials via UI-Avatars
-    const name = getDisplayName() || 'hashpass-user';
-    return generateUIAvatarUrl(name);
+    // No photo: ProfileAvatar renders the striped initials fallback locally,
+    // instead of depending on a remote avatar service being reachable.
+    return null;
   };
 
   const updateLinkedSpeaker = useCallback(async (updates: Record<string, string | boolean>) => {
@@ -498,13 +499,14 @@ export default function ProfileScreen() {
             onPress={handleAvatarPress}
             activeOpacity={0.8}
           >
-            <Image
-              source={{ uri: getCurrentAvatarUrl() }}
-              style={styles.avatar}
-              onError={() => {
-                // Silently handled — avatar falls back to initials placeholder via container bg
-              }}
-            />
+            <View style={styles.avatar}>
+              <ProfileAvatar
+                uri={getCurrentAvatarUrl()}
+                name={getDisplayName() || userNameDisplay}
+                isDark={isDark}
+                initialsSize={44}
+              />
+            </View>
             <View style={styles.avatarEditBadge}>
               <MaterialIcons name="camera-alt" size={20} color="#FFFFFF" />
             </View>
@@ -732,7 +734,7 @@ export default function ProfileScreen() {
             <CloudinaryImageUpload
               placeholder="Upload photo"
               onUploadSuccess={handleUploadedAvatar}
-              onUploadError={(error) => showError('Upload Failed', error.message)}
+              onUploadError={(error: Error) => showError('Upload Failed', error.message)}
             />
 
             <ScrollView style={styles.avatarGrid} showsVerticalScrollIndicator={false}>
@@ -955,6 +957,7 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
+    overflow: 'hidden',
     backgroundColor: isDark ? '#1a1a1a' : '#E0E0E0',
     borderWidth: 4,
     borderColor: colors.primary || '#6366f1',

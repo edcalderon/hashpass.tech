@@ -7,6 +7,7 @@ import {
   ModalBackdrop,
   Badge,
   FilterChip,
+  SegmentedTabs,
   FormField,
   HoverText,
   Surface,
@@ -122,11 +123,35 @@ function Catalog({ mode = "light" }: { mode?: ColorMode }) {
           label="A longer translated filter that wraps without clipping"
         />
       </View>
+      <SegmentedTabs
+        mode={mode}
+        value="messages"
+        onChange={() => undefined}
+        tabs={[
+          { id: "all", label: "All" },
+          { id: "messages", label: "Messages", count: 3 },
+          { id: "updates", label: "Updates" },
+          { id: "archive", label: "Archive" },
+        ]}
+      />
+      <SegmentedTabs
+        mode={mode}
+        fullWidth
+        value="events"
+        onChange={() => undefined}
+        tabs={[
+          { id: "events", label: "Events" },
+          { id: "passes", label: "Passes" },
+        ]}
+      />
       <View style={{ flexDirection: "row", gap: uiTokens.space.sm }}>
         <IconButton mode={mode} label="Reload events">
           <Text style={{ color: palette.accent }}>↻</Text>
         </IconButton>
         <IconButton mode={mode} label="Reload events" revealLabel>
+          <Text style={{ color: palette.accent }}>↻</Text>
+        </IconButton>
+        <IconButton mode={mode} label="Reload" revealLabel size={30}>
           <Text style={{ color: palette.accent }}>↻</Text>
         </IconButton>
       </View>
