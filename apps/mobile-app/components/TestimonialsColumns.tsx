@@ -12,19 +12,9 @@ const formatWalletAddress = (address: string): string => {
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
 };
 
-const isValidEthereumAddress = (address: string): boolean => {
-  if (!address || typeof address !== "string") return false;
-  if (address.length !== 42) return false;
-  if (!address.startsWith("0x")) return false;
-  return /^0x[0-9a-fA-F]{40}$/.test(address);
-};
-
 const getAvatarUrls = (address: string): string[] => {
   const normalizedAddress = address.toLowerCase();
   const urls: string[] = [];
-  if (isValidEthereumAddress(address)) {
-    urls.push(`https://effigy.im/a/${normalizedAddress}.svg`);
-  }
   urls.push(`https://avatar.vercel.sh/${normalizedAddress}`);
   urls.push(
     `https://ui-avatars.com/api/?name=${encodeURIComponent(normalizedAddress)}&background=random&size=128`
@@ -58,7 +48,7 @@ const TestimonialsColumn = (props: {
   testimonials: any;
   duration?: number;
 }) => {
-  const { useTheme } = require("../hooks/useTheme") as typeof import("../hooks/useTheme");
+  const { useTheme } = require("../hooks/useTheme");
   const { colors, isDark } = useTheme();
   const styles = getStyles(colors, isDark);
 

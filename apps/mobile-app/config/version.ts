@@ -22,25 +22,39 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610190749, // Updated to current timestamp
-  releaseDate: '2026-10-19',
+  buildNumber: 202610200006, // Updated to current timestamp
+  releaseDate: '2026-10-20',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
     // No new features
   ],
   bugfixes: [
-    'type block callbacks explicitly for isolated typecheck',
-    'make terms/privacy drawers read-only, shorten Storybook title',
-    'replace dead bsl2025.hashpass.tech links',
-    'back arrow falls back to home when opened directly'
+    'avoid typeof import cast that breaks isolated typecheck',
+    'drop effigy.im avatars that 500 on testimonials'
   ],
   breakingChanges: [],
-  notes: 'type block callbacks explicitly for isolated typecheck; make terms/privacy drawers read-only, shorten Storybook title; replace dead bsl2025.hashpass.tech links; back arrow falls back to home when opened directly'
+  notes: 'avoid typeof import cast that breaks isolated typecheck; drop effigy.im avatars that 500 on testimonials'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.128': {
+    version: '1.9.128',
+    buildNumber: 202610200006,
+    releaseDate: '2026-10-20',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'avoid typeof import cast that breaks isolated typecheck',
+      'drop effigy.im avatars that 500 on testimonials'
+    ],
+    breakingChanges: [],
+    notes: 'avoid typeof import cast that breaks isolated typecheck; drop effigy.im avatars that 500 on testimonials'
+  },
   '1.9.127': {
     version: '1.9.127',
     buildNumber: 202610190749,
