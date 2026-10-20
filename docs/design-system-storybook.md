@@ -22,3 +22,12 @@ Primitives must be independent of app auth, event, router and theme providers.
 Pass `mode` explicitly in stories and from the app's `useTheme` at call sites.
 Use synthetic, explicitly illustrative data only in stories; never live account
 identifiers, wallet seeds, cookies, auth tokens or environment values.
+
+## Keeping Storybook current
+
+Storybook is the source of truth for the default components and styles. Whenever a
+shared primitive or its default style changes (new prop, size, state, or a new
+primitive such as `SegmentedTabs`), update `packages/ui/src/system/System.stories.tsx`
+in the same change, covering selected, count-badge and full-width variants, in
+light and dark. Tabs in any screen must use `SegmentedTabs`; do not ship a screen-local
+tab style.

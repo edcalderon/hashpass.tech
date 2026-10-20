@@ -1,7 +1,7 @@
 import React from 'react';
 import { act, create } from 'react-test-renderer';
 import { Pressable, Text, TextInput } from 'react-native';
-import { ActionButton, Badge, FilterChip, FormField, Surface } from '@hashpass/ui/primitives';
+import { ActionButton, Badge, FilterChip, FormField, SegmentedTabs, Surface } from '@hashpass/ui/primitives';
 import { uiPalette } from '@hashpass/ui/tokens';
 it('exposes loading and selected states while preserving accessible names', () => {
   let view: ReturnType<typeof create>;
@@ -78,4 +78,25 @@ it.each(['light', 'dark'] as const)('maintains AA contrast for %s text and actio
   expect(contrast(palette.muted, palette.surface)).toBeGreaterThanOrEqual(4.5);
   expect(contrast(palette.accent, palette.accentSoft)).toBeGreaterThanOrEqual(4.5);
   expect(contrast(palette.onAccent, palette.accentFill)).toBeGreaterThanOrEqual(4.5);
+});
+
+it('exposes tab roles, selected state and counts, and reports changes', () => {
+  const onChange = jest.fn();
+  let view: ReturnType<typeof create>;
+  act(() => {
+    view = create(
+      <SegmentedTabs
+        value="b"
+        onChange={onChange}
+        tabs={[{ id: 'a', label: 'Alpha' }, { id: 'b', label: 'Beta', count: 2 }]}
+      />,
+    );
+  });
+  const tabs = view!.root.findAll(node => node.props.accessibilityRole === 'tab');
+  expect(tabs).toHaveLength(2);
+  expect(tabs[0].props.accessibilityState.selected).toBe(false);
+  expect(tabs[1].props.accessibilityState.selected).toBe(true);
+  act(() => tabs[0].props.onPress());
+  expect(onChange).toHaveBeenCalledWith('a');
+  act(() => view!.unmount());
 });

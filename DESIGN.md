@@ -26,13 +26,21 @@ belong to event artwork; they do not redefine app controls.
 | Form field | 12px corners, minimum 48px height | Persistent label, error text, accessible name |
 | Action button | Pill, minimum 48px height | Primary filled cyan; secondary tinted; ghost transparent |
 | Filter chip | Pill, minimum 44px height | Selected state exposed to assistive technology |
+| Segmented tabs | Pill track, 5px inset, minimum 44px segments | Filled selected segment; `tablist`/`tab` roles; optional count badge |
 | Badge | Pill, minimum 32px height, 12px semibold | Non-interactive status/section label; never looks like a button |
 | Circular artwork | Circle token or intrinsic geometry | Avatars, logos, progress graphics; not card corners |
 
-Use `Surface`, `Badge`, `ActionButton`, `FilterChip`, and `FormField`, `IconButton` and `ModalBackdrop` for their
+Use `Surface`, `Badge`, `ActionButton`, `FilterChip`, `SegmentedTabs`, and `FormField`, `IconButton` and `ModalBackdrop` for their
 respective roles. Do not invent variants in individual screens. Extend a shared
 primitive when the same intent appears in three places. Static labels and actions
 share a silhouette but differ in height, semantics and interaction.
+
+**Tabs always use `SegmentedTabs`** (the Wallet and Notifications look): a rounded
+pill track with a filled selected segment. Use it for every switch between sibling
+sections, including inside sheets (`fullWidth`). Never hand-roll tab rows or
+outlined tab buttons. Compact filter pills stay `FilterChip`-style, not tabs.
+Sheets and drawers on large screens are capped (about 640px) and centered so
+content stays readable.
 
 Account/header tools use `IconButton` with a concrete `NativeSafeIcon` SVG mapping:
 QR (`qr-code`), notifications (`notifications`), profile (`person`). Never rely on

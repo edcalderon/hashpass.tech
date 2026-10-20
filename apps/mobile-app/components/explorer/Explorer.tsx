@@ -22,7 +22,7 @@ import {
   type NativeSyntheticEvent,
 } from "react-native";
 import { NativeSafeIcon } from "../../lib/vector-icons";
-import { HoverText, IconButton } from "@hashpass/ui/primitives";
+import { HoverText, IconButton, SegmentedTabs } from "@hashpass/ui/primitives";
 import { useAutoAdvanceProgress } from "../../lib/hooks/useAutoAdvanceProgress";
 import { SliderProgressBar } from "../banner/SliderProgressBar";
 import { useTheme } from "../../hooks/useTheme";
@@ -1785,44 +1785,27 @@ export default function Explorer({
               </View>
 
               <View style={styles.sheetModeRow}>
-                {(
-                  [
-                    [
-                      "events",
-                      translate("explore.rework.filterEvents", "Events"),
-                    ],
-                    [
-                      "passes",
-                      translate("explore.rework.filterPasses", "Passes"),
-                    ],
-                  ] as const
-                ).map(([value, label]) => {
-                  const active = filterTab === value;
-                  return (
-                    <TouchableOpacity
-                      key={value}
-                      style={[
-                        styles.sheetMode,
-                        active && styles.sheetModeActive,
-                      ]}
-                      onPress={() => {
-                        if (value !== "passes" || !requireAccount())
-                          setFilterTab(value);
-                      }}
-                      accessibilityRole="tab"
-                      accessibilityState={{ selected: active }}
-                    >
-                      <Text
-                        style={[
-                          styles.sheetModeText,
-                          active && styles.sheetModeTextActive,
-                        ]}
-                      >
-                        {label}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
+                <SegmentedTabs
+                  mode={isDark ? "dark" : "light"}
+                  fullWidth
+                  accentColor={colors.primary}
+                  surfaceColor={isDark ? "#252528" : "#F5F5F7"}
+                  tabs={[
+                    {
+                      id: "events",
+                      label: translate("explore.rework.filterEvents", "Events"),
+                    },
+                    {
+                      id: "passes",
+                      label: translate("explore.rework.filterPasses", "Passes"),
+                    },
+                  ]}
+                  value={filterTab}
+                  onChange={(value) => {
+                    if (value !== "passes" || !requireAccount())
+                      setFilterTab(value);
+                  }}
+                />
               </View>
 
               {filterTab === "events" ? (
@@ -2802,6 +2785,9 @@ const getStyles = (isDark: boolean, colors: any) =>
     },
     sheetDismiss: { flex: 1 },
     filterSheet: {
+      width: "100%",
+      maxWidth: 640,
+      alignSelf: "center",
       maxHeight: "92%",
       borderTopLeftRadius: 28,
       borderTopRightRadius: 28,
@@ -2976,32 +2962,5 @@ const getStyles = (isDark: boolean, colors: any) =>
     },
     toggleThumbActive: { alignSelf: "flex-end" },
     sheetModeRow: { flexDirection: "row", gap: 8, marginTop: 14 },
-    sheetMode: {
-      flex: 1,
-      alignItems: "center",
-      justifyContent: "center",
-      height: 30,
-      borderRadius: uiTokens.radius.pill,
-      borderWidth: 1,
-      borderColor: colors.divider,
-    },
-    sheetModeActive: {
-      borderColor: colors.primary,
-      backgroundColor: colors.primary,
-    },
-    sheetModeText: {
-      color: colors.text.secondary,
-      fontSize: 11,
-      fontWeight: "700",
-    },
-    sheetModeTextActive: { color: "#fff" },
-    applyButton: {
-      minHeight: 48,
-      alignItems: "center",
-      justifyContent: "center",
-      borderRadius: uiTokens.radius.media,
-      backgroundColor: colors.primary,
-      marginTop: 28,
-    },
     applyButtonText: { color: "#fff", fontSize: 14, fontWeight: "800" },
   });

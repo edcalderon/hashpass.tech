@@ -228,6 +228,90 @@ export function FilterChip({
     />
   );
 }
+export type SegmentedTab<T extends string = string> = {
+  id: T;
+  label: string;
+  /** Optional unread/result count shown as a small badge. */
+  count?: number;
+};
+
+/**
+ * The one tab control: a rounded pill track with a filled selected segment,
+ * as used by Wallet and Notifications. Use it whenever a view switches
+ * between sibling sections; do not hand-roll tab rows.
+ */
+export function SegmentedTabs<T extends string = string>({
+  mode = "light",
+  tabs,
+  value,
+  onChange,
+  accentColor,
+  surfaceColor,
+  fullWidth = false,
+  accessibilityLabel,
+}: Themed & {
+  tabs: ReadonlyArray<SegmentedTab<T>>;
+  value: T;
+  onChange: (id: T) => void;
+  /** Selected segment fill; defaults to the palette accent. */
+  accentColor?: string;
+  /** Track fill; defaults to the palette surface. */
+  surfaceColor?: string;
+  /** Stretch the track and share the width equally between segments. */
+  fullWidth?: boolean;
+  accessibilityLabel?: string;
+}) {
+  const palette = uiPalette(mode);
+  const accent = accentColor || palette.accent;
+  return (
+    <View
+      accessibilityRole="tablist"
+      accessibilityLabel={accessibilityLabel}
+      style={[
+        styles.segmentTrack,
+        { backgroundColor: surfaceColor || palette.surface },
+        fullWidth ? styles.segmentTrackFull : null,
+      ]}
+    >
+      {tabs.map((tab) => {
+        const selected = tab.id === value;
+        return (
+          <Pressable
+            key={tab.id}
+            accessibilityRole="tab"
+            accessibilityState={{ selected }}
+            onPress={() => onChange(tab.id)}
+            style={({ pressed }) => [
+              styles.segment,
+              fullWidth ? styles.segmentFull : null,
+              selected ? { backgroundColor: accent } : null,
+              { opacity: pressed ? 0.8 : 1 },
+            ]}
+          >
+            <Text
+              numberOfLines={1}
+              style={[styles.segmentLabel, { color: selected ? palette.onAccent : palette.muted }]}
+            >
+              {tab.label}
+            </Text>
+            {tab.count ? (
+              <View
+                style={[
+                  styles.segmentCount,
+                  { backgroundColor: selected ? palette.onAccent : "#FF3B30" },
+                ]}
+              >
+                <Text style={[styles.segmentCountText, { color: selected ? accent : "#FFFFFF" }]}>
+                  {tab.count}
+                </Text>
+              </View>
+            ) : null}
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
 /** Compact account/tool action; consumers supply the shared icon renderer. */
 export type IconButtonProps = Omit<PressableProps, "children"> &
   Themed & {
@@ -570,6 +654,34 @@ export function HoverText({
 }
 
 const styles = StyleSheet.create({
+  segmentTrack: {
+    alignSelf: "flex-start",
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+    padding: 5,
+    borderRadius: uiTokens.radius.pill,
+  },
+  segmentTrackFull: { alignSelf: "stretch", flexWrap: "nowrap" },
+  segment: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "center",
+    minHeight: uiTokens.control.compactHeight,
+    paddingHorizontal: 18,
+    borderRadius: uiTokens.radius.pill,
+  },
+  segmentFull: { flex: 1, paddingHorizontal: 8 },
+  segmentLabel: { fontSize: uiTokens.type.label, fontWeight: "600" },
+  segmentCount: {
+    alignItems: "center",
+    borderRadius: uiTokens.radius.pill,
+    marginLeft: 6,
+    minWidth: 20,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  segmentCountText: { fontSize: 11, fontWeight: "600" },
   revealIconButton: {
     borderRadius: uiTokens.radius.pill,
     borderWidth: uiTokens.control.borderWidth,
