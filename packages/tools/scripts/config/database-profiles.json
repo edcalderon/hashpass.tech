@@ -56,16 +56,6 @@
         "DEV_BSL_DB_URL",
         "SUPABASE_DB_URL_DEV"
       ]
-    },
-    "bsl-production": {
-      "tenant": "bsl",
-      "environment": "production",
-      "databaseUrlEnv": [
-        "BSL_SUPABASE_DB_URL_PROD",
-        "SUPABASE_DB_URL_BSL_PROD",
-        "DATABASE_URL_BSL_PROD",
-        "PROD_BSL_DB_URL"
-      ]
     }
   },
   "defaultGroups": [
@@ -102,24 +92,29 @@
       "event-ingestion",
       "event-search-aliases",
       "business-invite-campaigns",
-      "lukas-site"
+      "lukas-site",
+      "core-speaker-shape",
+      "event-scoped-speakers",
+      "bsl-speaker-identity-claims",
+      "pending-speaker-eligibility"
     ],
     "better-auth-development": [
       "better-auth-mcp-oauth"
     ],
     "better-auth-production": [
       "better-auth-mcp-oauth"
-    ],
-    "bsl-production": [
-      "event-search-aliases",
-      "business-invite-campaigns",
-      "event-scoped-speakers",
-      "bsl-speaker-identity-claims"
     ]
   },
   "groups": {
     "better-auth-mcp-oauth": [
       "db/migrations/V106__better_auth_mcp_oauth.sql"
+    ],
+    "core-speaker-shape": [
+      "db/migrations/V124__align_core_bsl_speakers_with_event_scoped_shape.sql"
+    ],
+    "pending-speaker-eligibility": [
+      "db/migrations/V123__restore_pending_speaker_meeting_eligibility.sql",
+      "db/migrations/V126__scope_pending_speaker_eligibility_to_event.sql"
     ],
     "event-scoped-speakers": [
       "db/migrations/V107__scope_legacy_speakers_by_event.sql",

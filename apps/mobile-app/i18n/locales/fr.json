@@ -763,6 +763,11 @@
     }
   },
   "passes": {
+    "tiersTitle": "Niveaux de pass",
+    "tierMeetingRequests": "demandes de rendez-vous",
+    "tierBoostPoints": "points de boost",
+    "yourPass": "Votre pass",
+    "acquireTicket": "Obtenir un billet",
     "title": "Vos passes d'événement",
     "loading": "Chargement des informations de votre passe...",
     "loadingSubtitle": "Cela ne devrait prendre qu'un instant.",

@@ -4,6 +4,13 @@ title: Supabase project map (core vs BSL, dev vs prod)
 
 # Supabase project map
 
+:::warning Consolidation in progress
+On 2026-10-20 the decision was made to serve every tenant and event from core
+production, with the BSL project kept as a read-only backup. Until the cutover
+lands, the tables below describe the live routing. See
+[Decision: one core database](decisions/single-core-database.md).
+:::
+
 This repo talks to **three** physical Supabase projects, not two, and the
 `.env` variable names alone don't make that obvious -- several names are
 ambiguous between profiles by design (fallback chains), which has caused
@@ -25,8 +32,9 @@ from a `*_DEV` variable, or `gsugeqozyeokncpbndna` referenced from a
 
 ## How resolution actually works
 
-`apps/mobile-app/config/supabase-profiles.ts` defines four profiles
-(`core-development`, `core-production`, `bsl-development`, `bsl-production`),
+`apps/mobile-app/config/supabase-profiles.ts` defines three profiles
+(`core-development`, `core-production`, `bsl-development`; the former
+`bsl-production` id is retired and resolves to `core-production`),
 each resolved by request hostname. Each profile has its own **priority
 list** of env var names it checks in order -- the first one that's set
 wins. This is why the same physical value can validly appear under several
@@ -53,15 +61,14 @@ doing the right thing.
 
 ### `core-production`
 - URL: `EXPO_PUBLIC_SUPABASE_URL_PROD` → `EXPO_PUBLIC_SUPABASE_URL`
-- Service role: `SUPABASE_SERVICE_ROLE_KEY_PROD` → `SUPABASE_SERVICE_ROLE_KEY` → (BSL fallbacks, compatibility-only, should never actually be hit)
+- Service role: `SUPABASE_SERVICE_ROLE_KEY_PROD` → `SUPABASE_SERVICE_ROLE_KEY` (no BSL fallbacks since the 2026-10-20 consolidation)
 - DB URL: `SUPABASE_DB_URL_PROD` → `DATABASE_URL_PROD` → `PROD_DB_URL`
 - **Project: `fxgftanraszjjyeidvia`**
+- Also serves `bsl.hashpass.tech` and every production event (BSL included).
 
-### `bsl-production`
-- URL: `EXPO_PUBLIC_BSL_SUPABASE_URL_PROD` (checked first) → fallbacks
-- Service role: `BSL_SUPABASE_SERVICE_ROLE_KEY_PROD` (checked first) → fallbacks
-- DB URL: `BSL_SUPABASE_DB_URL_PROD` (checked first) → fallbacks
-- **Project: `mnnqryrdlhddorqsrtbn`**
+### `bsl-production` (retired)
+Resolves to `core-production`. The BSL project `mnnqryrdlhddorqsrtbn` is a
+read-only backup; no service should use it.
 
 ## Migration bootstrap findings (2026-08-06)
 

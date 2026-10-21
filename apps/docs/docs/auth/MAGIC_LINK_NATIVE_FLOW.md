@@ -93,8 +93,7 @@ The Lambda selects a Supabase project based on the request origin:
 
 | Request origin | Profile | Supabase project |
 |---------------|---------|-----------------|
-| `hashpass.tech`, `api.hashpass.tech` | `core-production` | Configured via `SUPABASE_SERVICE_ROLE_KEY` env var |
-| `bsl.hashpass.tech` | `bsl-production` | Configured via `BSL_SUPABASE_SERVICE_ROLE_KEY` env var |
+| `hashpass.tech`, `bsl.hashpass.tech`, `api.hashpass.tech` | `core-production` | Configured via `SUPABASE_SERVICE_ROLE_KEY` env var |
 | `localhost`, `api-dev.hashpass.tech` | `core-development` | Dev credentials |
 
 Profile logic lives in `apps/mobile-app/config/supabase-profiles.ts`. The server-side `readProcessEnv` always prefers live Lambda `process.env` values over Metro-baked build-time values, so Lambda env vars override any values baked into the bundle at build time.

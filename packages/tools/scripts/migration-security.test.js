@@ -138,7 +138,7 @@ describe('event-scoped speaker administration migrations', () => {
         .filter(([, groups]) => groups.includes('event-scoped-speakers'))
         .map(([profile]) => profile)
         .sort(),
-    ).toEqual(['bsl-development', 'bsl-production']);
+    ).toEqual(['bsl-development', 'core-production']);
   });
 
   it('only reconciles agenda rows owned by the active programme source', () => {
@@ -558,7 +558,7 @@ describe('development demo migration plan', () => {
     const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
 
     expect(config.profileGroups['bsl-development']).toContain('demo-event-bootstrap');
-    expect(config.profileGroups['bsl-production'] || []).not.toContain('demo-event-bootstrap');
+    expect(config.profileGroups['core-production'] || []).not.toContain('demo-event-bootstrap');
     expect(config.groups['demo-event-bootstrap']).toEqual([
       'db/migrations/V076__add_event_demo_mode_flag.sql',
       'db/migrations/V077__provision_criptolatinfest_general_pass.sql',

@@ -112,7 +112,7 @@ pnpm run db:migrate:bsl:prod:dry
 pnpm run db:migrate:bsl:prod
 
 # Apply only selected groups
-pnpm run db:migrate -- --profile bsl-production --groups core,wallet,auth
+pnpm run db:migrate -- --profile core-production --groups core,wallet,auth
 ```
 
 Required database URL env vars:

@@ -1,3 +1,17 @@
+## [1.9.132](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.131...v1.9.132) (2026-10-21)
+### Released
+- consolidate BSL production data into the core database; collapse speaker pass tiers into one expandable row and lift pending badge contrast; redirect hashpass.lat and www to hashpass.tech
+
+### Release scope
+- Compared with: `v1.9.131` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Database migrations
+- Infrastructure
+- Documentation
+- Release tooling
+
 ## [1.9.131](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.129...v1.9.131) (2026-10-20)
 ### Released
 - type avatar upload error callback for isolated typecheck; striped capital-letter avatar fallback in sidebar and profile

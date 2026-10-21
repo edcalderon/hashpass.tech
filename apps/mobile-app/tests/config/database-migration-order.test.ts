@@ -5,7 +5,7 @@ const root = path.resolve(__dirname, "../../../..");
 
 describe("CBWeek migration plans", () => {
   it("ships the support schema through every default tenant migration plan", () => {
-    for (const profile of ["core-development", "core-production", "bsl-development", "bsl-production"]) {
+    for (const profile of ["core-development", "core-production", "bsl-development"]) {
       const plan = execFileSync(process.execPath, [
         "packages/tools/scripts/migrate-tenant-db.mjs",
         "--profile", profile, "--dry-run",

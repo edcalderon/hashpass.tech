@@ -81,7 +81,7 @@ because it has zero rows.
 ## Required dev/prod audit sequence
 
 Run the same read-only inventory against `bsl-development` and
-`bsl-production`, save results outside the repository, and compare:
+`core-production`, save results outside the repository, and compare:
 
 ```sql
 select n.nspname as schema_name, c.relname, c.relkind,

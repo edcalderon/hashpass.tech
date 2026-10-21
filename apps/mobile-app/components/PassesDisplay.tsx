@@ -127,6 +127,8 @@ function PassesDisplayInner({
   const [resettingLimits, setResettingLimits] = useState(false);
   const [showComparison, setShowComparison] = useState(showPassComparison);
   const [eventPassTiers, setEventPassTiers] = useState<EventPassTier[]>([]);
+  // The whole tier overview is one collapsed row; opening it lists the tiers.
+  const [tiersOpen, setTiersOpen] = useState(false);
 
   // Helper function to translate
   // Note: useTranslation('passes') already sets the namespace, so remove 'passes.' prefix if present
@@ -220,6 +222,150 @@ function PassesDisplayInner({
       currencyFormatters
         .get(`${currency}:${fractionDigits}`)
         ?.format(tier.price_cents / 100) ?? formatEventPassTierPrice(tier)
+    );
+  };
+
+  // Tier overview for the speaker view: what each pass allows, never what it
+  // costs (prices change dynamically and live in the ticket modal). Collapsed
+  // to a single row by default; opening it lists the tiers compactly with one
+  // shared "Acquire ticket" link to the ticket purchase.
+  const renderTierShowcase = () => {
+    const tierTypes: PassType[] = ["general", "business", "vip"];
+    return (
+      <View
+        style={{
+          marginBottom: 16,
+          backgroundColor: colors.background.default,
+          borderRadius: uiTokens.radius.small,
+          borderWidth: 1,
+          borderColor: colors.divider,
+          overflow: "hidden",
+        }}
+        testID="pass-tier-showcase"
+      >
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel="Pass tiers"
+          accessibilityState={{ expanded: tiersOpen }}
+          onPress={() => setTiersOpen((open) => !open)}
+          activeOpacity={0.7}
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            minHeight: 44,
+            paddingHorizontal: 12,
+          }}
+        >
+          <Text
+            style={{
+              fontSize: 14,
+              fontWeight: "600",
+              color: colors.text.primary,
+            }}
+          >
+            {t({ id: "passes.tiersTitle", message: "Pass tiers" })}
+          </Text>
+          <MaterialIcons
+            name={tiersOpen ? "expand-less" : "expand-more"}
+            size={24}
+            color={colors.text.secondary}
+          />
+        </TouchableOpacity>
+        {tiersOpen && (
+          <View style={{ paddingHorizontal: 12, paddingBottom: 12 }}>
+            {tierTypes.map((passType) => {
+              const tier = getTier(passType);
+              const isCurrent = passInfo?.pass_type === passType;
+              return (
+                <View
+                  key={passType}
+                  testID={`pass-tier-${passType}`}
+                  style={{
+                    paddingVertical: 8,
+                    borderTopWidth: 1,
+                    borderTopColor: colors.divider,
+                  }}
+                >
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 14,
+                        fontWeight: "700",
+                        color: getPassTypeColor(passType),
+                      }}
+                    >
+                      {getPassTypeDisplayName(passType)}
+                    </Text>
+                    {isCurrent && (
+                      <Text
+                        style={{ fontSize: 12, color: colors.text.secondary }}
+                      >
+                        {t({ id: "passes.yourPass", message: "Your pass" })}
+                      </Text>
+                    )}
+                  </View>
+                  {tier && (
+                    <Text
+                      style={{
+                        fontSize: 12,
+                        color: colors.text.secondary,
+                        marginTop: 2,
+                      }}
+                    >
+                      {`${tier.max_meeting_requests} ${t({
+                        id: "passes.tierMeetingRequests",
+                        message: "meeting requests",
+                      })} · ${tier.max_boost_amount} ${t({
+                        id: "passes.tierBoostPoints",
+                        message: "boost points",
+                      })}`}
+                    </Text>
+                  )}
+                </View>
+              );
+            })}
+            <TouchableOpacity
+              accessibilityRole="link"
+              accessibilityLabel="Acquire ticket"
+              onPress={openEventTickets}
+              activeOpacity={0.7}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                minHeight: 44,
+                marginTop: 4,
+                paddingHorizontal: 12,
+                borderRadius: uiTokens.radius.small,
+                borderWidth: 1,
+                borderColor: colors.primary,
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 14,
+                  fontWeight: "600",
+                  color: colors.primary,
+                }}
+              >
+                {t({ id: "passes.acquireTicket", message: "Acquire ticket" })}
+              </Text>
+              <MaterialIcons
+                name="arrow-forward"
+                size={20}
+                color={colors.primary}
+              />
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
     );
   };
 
@@ -613,41 +759,7 @@ function PassesDisplayInner({
         </Text>
 
         {mode === "speaker" ? (
-          <TouchableOpacity
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-              padding: 12,
-              backgroundColor: colors.background.default,
-              borderRadius: uiTokens.radius.small,
-              marginBottom: 16,
-              borderWidth: 1,
-              borderColor: colors.divider,
-            }}
-            accessibilityRole="link"
-            accessibilityLabel="View event tickets"
-            onPress={openEventTickets}
-            activeOpacity={0.7}
-          >
-            <Text
-              style={{
-                fontSize: 14,
-                fontWeight: "600",
-                color: colors.text.primary,
-              }}
-            >
-              {t({
-                id: "passes.viewEventTickets",
-                message: "View event tickets",
-              })}
-            </Text>
-            <MaterialIcons
-              name="arrow-forward"
-              size={24}
-              color={colors.primary}
-            />
-          </TouchableOpacity>
+          renderTierShowcase()
         ) : isDemoMode ? (
           <>
             {/* Pass Comparison Toggle - Demo Mode Only */}
@@ -1408,44 +1520,8 @@ function PassesDisplayInner({
         </View>
       </View>
 
-      {/* Pass pricing belongs in the event ticket modal, not the speaker card. */}
-      {mode === "speaker" && passInfo && (
-        <TouchableOpacity
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: 12,
-            backgroundColor: colors.background.default,
-            borderRadius: 8,
-            marginBottom: 16,
-            borderWidth: 1,
-            borderColor: colors.divider,
-          }}
-          accessibilityRole="link"
-          accessibilityLabel="View event tickets"
-          onPress={openEventTickets}
-          activeOpacity={0.7}
-        >
-          <Text
-            style={{
-              fontSize: 14,
-              fontWeight: "600",
-              color: colors.text.primary,
-            }}
-          >
-            {t({
-              id: "passes.viewEventTickets",
-              message: "View event tickets",
-            })}
-          </Text>
-          <MaterialIcons
-            name="arrow-forward"
-            size={24}
-            color={colors.primary}
-          />
-        </TouchableOpacity>
-      )}
+      {/* Entitlements per tier (no prices) with a ticket link on each. */}
+      {mode === "speaker" && passInfo && renderTierShowcase()}
 
       {/* Dashboard-only demo comparison; speaker details link to event tickets. */}
       {mode !== "speaker" && passInfo && showComparison && isDemoMode && (

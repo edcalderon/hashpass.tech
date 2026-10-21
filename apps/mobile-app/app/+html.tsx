@@ -107,7 +107,6 @@ export default function Root({
     'core-development': buildSupabaseConfig('core-development'),
     'core-production': buildSupabaseConfig('core-production'),
     'bsl-development': buildSupabaseConfig('bsl-development'),
-    'bsl-production': buildSupabaseConfig('bsl-production'),
   };
   const title = metadata?.title || DEFAULT_TITLE;
   const description = metadata?.description || DEFAULT_DESCRIPTION;

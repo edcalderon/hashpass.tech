@@ -205,12 +205,12 @@ create_or_update_codebuild() {
       stage_suffix="_PROD"
       compute_type="${CODEBUILD_COMPUTE_TYPE_PROD}"
       expo_export_max_workers="${EXPO_EXPORT_MAX_WORKERS_PROD}"
-      supabase_profile="bsl-production"
+      supabase_profile="core-production"
       ;;
     *)
       compute_type="${CODEBUILD_COMPUTE_TYPE_PROD}"
       expo_export_max_workers="${EXPO_EXPORT_MAX_WORKERS_PROD}"
-      supabase_profile="bsl-production"
+      supabase_profile="core-production"
       ;;
   esac
 

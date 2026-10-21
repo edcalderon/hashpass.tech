@@ -762,6 +762,11 @@
     }
   },
   "passes": {
+    "tiersTitle": "Pass-Stufen",
+    "tierMeetingRequests": "Meeting-Anfragen",
+    "tierBoostPoints": "Boost-Punkte",
+    "yourPass": "Dein Pass",
+    "acquireTicket": "Ticket erwerben",
     "title": "Ihre Event-Pässe",
     "loading": "Laden Ihrer Pass-Informationen...",
     "loadingSubtitle": "Dies sollte nur einen Moment dauern.",

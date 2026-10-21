@@ -139,8 +139,8 @@ describe('web Supabase client initialization', () => {
     setEnv('EXPO_PUBLIC_SUPABASE_KEY_PROD', undefined);
     setEnv('EXPO_PUBLIC_BSL_SUPABASE_URL_PROD', undefined);
     setEnv('EXPO_PUBLIC_BSL_SUPABASE_KEY_PROD', undefined);
-    setEnv('EXPO_PUBLIC_SUPABASE_PROFILE', 'bsl-production');
-    setEnv('SUPABASE_PROFILE', 'bsl-production');
+    setEnv('EXPO_PUBLIC_SUPABASE_PROFILE', 'core-production');
+    setEnv('SUPABASE_PROFILE', 'core-production');
 
     const globalAny = globalThis as Record<string, unknown>;
     const previousRuntime = globalAny.__HASHPASS_RUNTIME__;
@@ -148,7 +148,7 @@ describe('web Supabase client initialization', () => {
     try {
       globalAny.__HASHPASS_RUNTIME__ = {
         supabaseProfiles: {
-          'bsl-production': {
+          'core-production': {
             supabaseUrl: 'https://runtime-bsl.supabase.co',
             supabaseAnonKey: 'runtime-bsl-key',
           },
