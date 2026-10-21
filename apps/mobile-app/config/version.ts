@@ -22,24 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610210255, // Updated to current timestamp
+  buildNumber: 202610210654, // Updated to current timestamp
   releaseDate: '2026-10-21',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'consolidate BSL production data into the core database',
-    'collapse speaker pass tiers into one expandable row and lift pending badge contrast',
-    'redirect hashpass.lat and www to hashpass.tech'
+    // No new features
   ],
   bugfixes: [
     // No bugfixes
   ],
   breakingChanges: [],
-  notes: 'consolidate BSL production data into the core database; collapse speaker pass tiers into one expandable row and lift pending badge contrast; redirect hashpass.lat and www to hashpass.tech'
+  notes: 'Version 1.9.133 release'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.133': {
+    version: '1.9.133',
+    buildNumber: 202610210654,
+    releaseDate: '2026-10-21',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'Version 1.9.133 release'
+  },
   '1.9.132': {
     version: '1.9.132',
     buildNumber: 202610210255,

@@ -20,17 +20,16 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.132)
+## 📋 Latest Changes (v1.9.133)
 
 ### Released
-- consolidate BSL production data into the core database; collapse speaker pass tiers into one expandable row and lift pending badge contrast; redirect hashpass.lat and www to hashpass.tech
+- Version 1.9.133 release
 
 ### Release scope
-- Compared with: `v1.9.131` (the previous global release tag)
+- Compared with: `v1.9.132` (the previous global release tag)
 
 ### Affected products & packages
 - Mobile app
-- Database migrations
 - Infrastructure
 - Documentation
 - Release tooling
