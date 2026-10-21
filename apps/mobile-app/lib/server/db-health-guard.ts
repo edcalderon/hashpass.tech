@@ -88,7 +88,7 @@ export const recordDbFailure = (options: RecordFailureOptions): void => {
           `(profile: ${options.profileId}, last failing call: ${options.context}) within the last ${Math.round(FAILURE_WINDOW_MS / 1000)}s.\n\n` +
           `Last error: ${errorMessage || '(no error message captured)'}\n\n` +
           `This is an automated alert from the in-process db-health-guard circuit breaker. It only fires for production profiles, at most once every ${Math.round(MIN_ALERT_INTERVAL_MS / 60000)} minutes per backend.`,
-      }).catch((emailError) => {
+      }).catch((emailError: unknown) => {
         console.error('[db-health-guard] failed to send ops alert email:', emailError);
       });
     }
