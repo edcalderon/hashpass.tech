@@ -19,8 +19,6 @@ instance_type = "m6i.xlarge"
 # only for an approved rollback while troubleshooting CodeBuild, and enable
 # the persistent workers explicitly for that rollback.
 production_build_execution_mode = "codebuild"
-production_codebuild_project_name = "bsl-hashpass-prod-build"
-production_codebuild_compute_type = "BUILD_GENERAL1_LARGE"
 development_build_execution_mode = "codebuild"
 development_codebuild_project_name = "bsl-hashpass-dev-build"
 # Persistent build workers are disabled by default. Enabling them requires a
@@ -31,17 +29,10 @@ pipeline_build_worker_approval_reference = ""
 # Supabase config -- fill with real values in a local terraform.tfvars,
 # never commit real secrets here.
 #
-# CONSOLIDATED 2026-10-21: the *_prod values below must point at the CORE
-# production project (fxgftanraszjjyeidvia, us-east-2). The old BSL production
-# project (mnnqryrdlhddorqsrtbn, us-west-2) is a frozen read-only backup; a
-# build that bakes it in would ship a bundle talking to stale data. The
-# *_dev values are unchanged (shared dev project).
-supabase_url_prod             = "https://your-prod-project.supabase.co"
-supabase_key_prod             = "sb_publishable_..."
-supabase_service_role_key_prod = "eyJhbGciOi..."
-supabase_db_url_prod           = "postgresql://postgres...@aws-0-us-east-2.pooler.supabase.com:6543/postgres?sslmode=require"
-
-supabase_url_dev             = "https://your-dev-project.supabase.co"
+# RETIRED 2026-10-21: there are no production values. The bsl-hashpass-prod
+# pipeline and bsl-hashpass-prod-build project were removed; bsl.hashpass.tech
+# production is built by GitHub Actions against core production.
+supabase_url_dev            = "https://your-dev-project.supabase.co"
 supabase_key_dev             = "sb_publishable_..."
 supabase_service_role_key_dev = "eyJhbGciOi..."
 supabase_db_url_dev           = "postgresql://postgres...@aws-0-us-east-2.pooler.supabase.com:5432/postgres?sslmode=require"

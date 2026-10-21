@@ -21,3 +21,8 @@ output "alerts_topic_arn" {
   description = "SNS topic for backup freshness alerts (confirm the email subscription once)."
   value       = aws_sns_topic.alerts.arn
 }
+
+output "replica_bucket_name" {
+  description = "Cross-region replica bucket (repo variable DB_BACKUP_REPLICA_BUCKET)."
+  value       = aws_s3_bucket.replica.bucket
+}

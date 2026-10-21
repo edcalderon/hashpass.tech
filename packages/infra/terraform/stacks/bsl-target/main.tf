@@ -302,31 +302,6 @@ locals {
     "packages/infra/terraform/stacks/aws/**",
   ]
 
-  prod_build_environment = merge(
-    {
-      AWS_DEFAULT_REGION                 = var.aws_region
-      AWS_REGION                         = var.aws_region
-      CI                                 = "1"
-      TARGET_STAGE                       = "production"
-      EXPO_PUBLIC_SUPABASE_URL           = var.supabase_url_prod
-      NEXT_PUBLIC_SUPABASE_URL           = var.supabase_url_prod
-      EXPO_PUBLIC_SUPABASE_KEY           = var.supabase_key_prod
-      EXPO_PUBLIC_SUPABASE_ANON_KEY      = var.supabase_key_prod
-      NEXT_PUBLIC_SUPABASE_ANON_KEY      = var.supabase_key_prod
-      EXPO_PUBLIC_BSL_SUPABASE_URL_PROD  = var.supabase_url_prod
-      EXPO_PUBLIC_BSL_SUPABASE_KEY_PROD  = var.supabase_key_prod
-      EXPO_PUBLIC_BSL_SUPABASE_URL       = var.supabase_url_prod
-      EXPO_PUBLIC_BSL_SUPABASE_KEY       = var.supabase_key_prod
-      BSL_SUPABASE_SERVICE_ROLE_KEY_PROD = var.supabase_service_role_key_prod
-      BSL_SUPABASE_SERVICE_ROLE_KEY      = var.supabase_service_role_key_prod
-      BSL_SUPABASE_DB_URL_PROD           = var.supabase_db_url_prod
-      BSL_SUPABASE_DB_URL                = var.supabase_db_url_prod
-      EXPO_EXPORT_MAX_WORKERS            = "4"
-      SITE_BUCKET_NAME                   = aws_s3_bucket.bsl_prod_site.bucket
-    },
-    var.build_environment_overrides
-  )
-
   dev_build_environment = merge(
     {
       AWS_DEFAULT_REGION                = var.aws_region
@@ -378,138 +353,10 @@ resource "aws_s3_bucket_lifecycle_configuration" "pipeline_artifacts" {
   }
 }
 
-resource "aws_cloudwatch_log_group" "bsl_prod_codebuild" {
-  name              = "/aws/codebuild/${var.production_codebuild_project_name}"
-  retention_in_days = 30
-  tags              = merge(var.tags, { Environment = "production", Service = "bsl-codebuild" })
-}
-
-# This project was provisioned before the BSL target-account cutover and is
-# now managed here so its buildspec, sizing, environment, logs, and timeout
-# cannot silently drift back to the old SST/EC2 flow.
-resource "aws_codebuild_project" "bsl_prod" {
-  name          = var.production_codebuild_project_name
-  description   = "On-demand production BSL static site build"
-  service_role  = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/BslHashpassCodeBuildRole"
-  build_timeout = var.build_action_timeout
-
-  artifacts {
-    type = "CODEPIPELINE"
-  }
-
-  cache {
-    type     = "S3"
-    location = "${var.artifact_bucket_name}/codebuild-cache"
-  }
-
-  environment {
-    compute_type                = var.production_codebuild_compute_type
-    image                       = "aws/codebuild/standard:7.0"
-    type                        = "LINUX_CONTAINER"
-    image_pull_credentials_type = "CODEBUILD"
-
-    dynamic "environment_variable" {
-      for_each = local.prod_build_environment
-
-      content {
-        name  = environment_variable.key
-        value = environment_variable.value
-        type  = "PLAINTEXT"
-      }
-    }
-  }
-
-  source {
-    type      = "CODEPIPELINE"
-    buildspec = "packages/tools/buildspecs/bsl-static-site-codebuild.yml"
-  }
-
-  logs_config {
-    cloudwatch_logs {
-      group_name  = aws_cloudwatch_log_group.bsl_prod_codebuild.name
-      stream_name = "build"
-    }
-  }
-
-  tags = merge(var.tags, { Environment = "production", Service = "bsl-codebuild" })
-}
-
-resource "aws_codepipeline" "bsl_prod" {
-  name          = "bsl-hashpass-prod"
-  role_arn      = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/BslHashpassPipelineRole"
-  pipeline_type = "V2"
-
-  artifact_store {
-    location = var.artifact_bucket_name
-    type     = "S3"
-  }
-
-  stage {
-    name = "Source"
-
-    action {
-      name             = "Source"
-      category         = "Source"
-      owner            = "AWS"
-      provider         = "CodeStarSourceConnection"
-      version          = "1"
-      output_artifacts = ["SourceArtifact"]
-
-      configuration = {
-        ConnectionArn        = var.connection_arn
-        FullRepositoryId     = var.repository
-        BranchName           = var.prod_branch_name
-        DetectChanges        = var.prod_aws_pipeline_source_detect_changes ? "true" : "false"
-        OutputArtifactFormat = "CODE_ZIP"
-      }
-    }
-  }
-
-  stage {
-    name = "Build"
-
-    action {
-      name             = "DeployInfra"
-      category         = "Build"
-      owner            = local.production_build_is_codebuild ? "AWS" : "Custom"
-      provider         = local.production_build_is_codebuild ? "CodeBuild" : var.production_build_action_provider_name
-      version          = local.production_build_is_codebuild ? "1" : var.build_action_version
-      input_artifacts  = ["SourceArtifact"]
-      output_artifacts = ["BuildArtifact"]
-      configuration = local.production_build_is_codebuild ? {
-        ProjectName = aws_codebuild_project.bsl_prod.name
-        } : {
-        BuildScript          = var.build_script_path_hybrid
-        OutputDirectory      = var.build_output_directory
-        BuildEnvironmentJson = jsonencode(local.prod_build_environment)
-      }
-    }
-  }
-
-  dynamic "trigger" {
-    for_each = var.prod_aws_pipeline_source_detect_changes ? [1] : []
-    content {
-      provider_type = "CodeStarSourceConnection"
-      git_configuration {
-        source_action_name = "Source"
-        push {
-          branches {
-            includes = [var.prod_branch_name]
-          }
-          file_paths {
-            includes = local.bsl_trigger_includes
-            excludes = local.bsl_trigger_excludes
-          }
-        }
-      }
-    }
-  }
-
-  tags = merge(var.tags, { Environment = "production" })
-
-  depends_on = [aws_codebuild_project.bsl_prod, module.production_build_worker, aws_codepipeline_custom_action_type.ec2_build]
-}
-
+# Retired 2026-10-21: the production CodeBuild project (bsl-hashpass-prod-build),
+# its log group and the bsl-hashpass-prod pipeline were removed. bsl.hashpass.tech
+# production is built and deployed by github-hosted-tenant-site-deploy.yml
+# (target bsl-production) against core production.
 resource "aws_codepipeline" "bsl_dev" {
   name          = "bsl-hashpass-dev"
   role_arn      = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/BslHashpassPipelineRole"

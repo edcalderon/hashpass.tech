@@ -13,11 +13,6 @@ output "development_worker_dashboard_url" {
   value       = module.development_build_worker.dashboard_url
 }
 
-output "prod_pipeline_name" {
-  description = "Name of the production BSL CodePipeline"
-  value       = aws_codepipeline.bsl_prod.name
-}
-
 output "dev_pipeline_name" {
   description = "Name of the dev BSL CodePipeline"
   value       = aws_codepipeline.bsl_dev.name

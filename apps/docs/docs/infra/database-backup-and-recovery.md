@@ -4,7 +4,7 @@ title: Database backup and recovery
 
 # Database backup and recovery
 
-**Status (2026-10-21):** 6-hour dumps, read-only backup roles and the freshness alarm are built. The workflows run once they reach `main`. Items 4-7 under "Recommended service" are not built yet.
+**Status (2026-10-21):** 6-hour dumps, read-only backup roles and the freshness alarm are built. The workflows run once they reach `main`. Retention tiers, Object Lock, the cross-region replica and the pre-migration dump are built; the yearly disaster exercise is a manual procedure.
 
 ## Constraint: Supabase free tier
 
@@ -56,21 +56,41 @@ Keep it small and owned by us. Do not build WAL tooling that the platform will n
 1. **Dump more often** (built). Every 6 hours for core; the database is a few MB.
 2. **Read-only backup role** (built). `backup_reader` with `pg_read_all_data`, `bypassrls`, read-only by default, used by `DB_BACKUP_*_DB_URL`.
 3. **Independent freshness alarm** (built). EventBridge-scheduled Lambda that checks the age and size of the newest dump and emails through SNS.
-4. **Retention (grandfather-father-son).** Keep every dump for 14 days, one per day for 35 days, one per
-   month for 12 months, via a lifecycle rule on a `daily/` prefix plus a monthly copy. Current objects
-   are never expired today; that is fine at this size but should be decided deliberately.
-5. **Tamper and account-loss protection.** S3 Object Lock (governance mode) on the dump prefixes, and a
-   cross-region (or cross-account) replica of the bucket. The writer role already cannot delete.
-6. **Quarterly drill stays**, and add a yearly full disaster exercise: restore into a *new* Supabase
-   project, apply nothing else, repoint a staging Lambda, and time it. That number is the real RTO.
-7. **Pre-change snapshot.** `pnpm run db:migrate` against production should take a dump first when it
-   applies any pending migration (cheap insurance for the riskiest operation).
+4. **Retention tiers** (built). `db-backup.yml` tags each upload `tier=frequent|daily|monthly|dev`; the bucket's lifecycle
+   rules expire them after 14 / 35 / 365 / 90 days. Objects **without** a tier tag (manual dumps, `prod/bsl-final/`,
+   pre-migration dumps uploaded as `daily`) are never matched by a rule by default, except the pre-migration ones noted below.
+   Glacier Instant Retrieval transition is at 90 days (it bills a 90-day minimum).
+5. **Tamper and region-loss protection** (built).
+   * Object Lock, GOVERNANCE mode, 14 days default retention on new dumps. A dump cannot be deleted or overwritten for 14 days
+     without `s3:BypassGovernanceRetention`. Enabling Object Lock cannot be undone. Not COMPLIANCE mode, so a mistake stays fixable.
+   * Cross-region replica `hashpass-db-backups-replica-<account>-us-west-2` (versioned, locked, encrypted, same tiers).
+     Delete markers are not replicated, so a delete in the primary does not remove the replica copy. Only objects written after
+     2026-10-21 replicate automatically.
+   * **Not covered:** compromise of the AWS account itself. A cross-account copy needs a second account and is not built.
+   * The freshness Lambda also alerts when the newest replicated `prod/core/` dump is older than 12 hours.
+6. **Yearly full disaster exercise** (procedure below, manual). Not automated: it needs a fresh Supabase project.
+7. **Dump before every production migration** (built). `pnpm run db:migrate` takes a verified `pg_dump` (postgres:17 container,
+   `pg_restore -l` check) before applying the first pending migration to any production profile, and aborts the migration
+   if the dump fails. Dumps land in `~/hashpass-backups/pre-migration/` (mode 0600) and, when `DB_BACKUP_BUCKET` is set and AWS
+   credentials are available, in `prod/pre-migration/` tagged `daily` (a separate prefix, so the restore drill and freshness alarm only see scheduled dumps; it uses the `hashpass` profile after a non-printing account check). `--skip-backup` bypasses it with a warning.
 
 ### Build vs upgrade
 
 If the event load or the cost of 6 hours of lost data becomes unacceptable, the answer is the paid
 plan (platform daily backups, then the PITR add-on), not more custom tooling. The custom service above
 is still worth keeping then as an independent copy outside Supabase.
+
+## Yearly disaster exercise
+
+Once a year (suggest January), with a stopwatch:
+
+1. Create a new throwaway Supabase project. Do not touch production.
+2. Pull the newest dump from the **replica** bucket (`us-west-2`) with the reader role, not the primary, so the replica path is proven too.
+3. Follow "Restore (disaster)" below up to step 3 and record the elapsed time. That is the real recovery time.
+4. Point a staging API at it and sign in with a test account.
+5. Delete the throwaway project and write the date, elapsed time and anything that broke into this page.
+
+Last exercise: none yet.
 
 ## Restore (disaster)
 

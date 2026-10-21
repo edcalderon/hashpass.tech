@@ -191,14 +191,13 @@ describe("read-only AWS cost guard", () => {
       "hashpass-production-site",
       "hashpass-cbweek2026-develop-site",
       "bsl-hashpass-dev",
-      "bsl-hashpass-prod",
     ];
     const result = await report({ pipelines: names.join(",") });
     expect(result.exitCode).toBe(0);
     const pipelineCalls = result.calls.filter(
       (args) => args[0] === "codepipeline",
     );
-    expect(pipelineCalls).toHaveLength(5);
+    expect(pipelineCalls).toHaveLength(4);
     for (const args of pipelineCalls) {
       expect(args[args.indexOf("--region") + 1]).toBe("us-east-2");
       expect(args.filter((arg) => arg === "--region")).toHaveLength(1);
@@ -219,12 +218,12 @@ describe("read-only AWS cost guard", () => {
     expect(result.calls).toHaveLength(0);
   });
 
-  it("defaults to monitoring all five migrated pipelines when the variable is absent", async () => {
+  it("defaults to monitoring all four migrated pipelines when the variable is absent", async () => {
     const result = await report({ pipelines: "" });
     expect(result.exitCode).toBe(0);
     expect(
       result.calls.filter((args) => args[0] === "codepipeline"),
-    ).toHaveLength(5);
+    ).toHaveLength(4);
   });
 
   it("rejects a mismatched account before accessing billing or pipelines", async () => {

@@ -91,6 +91,48 @@ resource "aws_s3_bucket_lifecycle_configuration" "db_backups" {
       days_after_initiation = 7
     }
   }
+
+  # Retention tiers. db-backup.yml tags each upload `tier=<name>`; objects without
+  # the tag (manual dumps, prod/bsl-final) match no tier rule and never expire.
+  dynamic "rule" {
+    for_each = var.retention_days
+    content {
+      id     = "retention-${rule.key}"
+      status = "Enabled"
+
+      filter {
+        tag {
+          key   = "tier"
+          value = rule.key
+        }
+      }
+
+      expiration {
+        days = rule.value
+      }
+
+      noncurrent_version_expiration {
+        noncurrent_days = 2
+      }
+    }
+  }
+}
+
+# Tamper protection: new dumps cannot be deleted or overwritten for object_lock_days,
+# even by an admin, without the explicit s3:BypassGovernanceRetention permission.
+# GOVERNANCE (not COMPLIANCE) so a mistake stays recoverable. Enabling Object Lock
+# on a bucket cannot be undone.
+resource "aws_s3_bucket_object_lock_configuration" "db_backups" {
+  bucket = aws_s3_bucket.db_backups.id
+
+  rule {
+    default_retention {
+      mode = "GOVERNANCE"
+      days = var.object_lock_days
+    }
+  }
+
+  depends_on = [aws_s3_bucket_versioning.db_backups]
 }
 
 data "aws_iam_policy_document" "tls_only" {
@@ -176,7 +218,7 @@ resource "aws_iam_role_policy" "writer" {
     Statement = [{
       Sid      = "PutDumpsOnly"
       Effect   = "Allow"
-      Action   = ["s3:PutObject"]
+      Action   = ["s3:PutObject", "s3:PutObjectTagging"]
       Resource = ["${aws_s3_bucket.db_backups.arn}/prod/core/*", "${aws_s3_bucket.db_backups.arn}/dev/shared/*"]
     }]
   })
@@ -196,16 +238,19 @@ resource "aws_iam_role_policy" "reader" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid      = "ReadDumps"
-        Effect   = "Allow"
-        Action   = ["s3:GetObject"]
-        Resource = ["${aws_s3_bucket.db_backups.arn}/prod/core/*", "${aws_s3_bucket.db_backups.arn}/dev/shared/*"]
+        Sid    = "ReadDumps"
+        Effect = "Allow"
+        Action = ["s3:GetObject"]
+        Resource = [
+          "${aws_s3_bucket.db_backups.arn}/prod/core/*", "${aws_s3_bucket.db_backups.arn}/dev/shared/*",
+          "${aws_s3_bucket.replica.arn}/prod/core/*", "${aws_s3_bucket.replica.arn}/dev/shared/*",
+        ]
       },
       {
         Sid       = "ListDumpPrefixes"
         Effect    = "Allow"
         Action    = ["s3:ListBucket"]
-        Resource  = aws_s3_bucket.db_backups.arn
+        Resource  = [aws_s3_bucket.db_backups.arn, aws_s3_bucket.replica.arn]
         Condition = { StringLike = { "s3:prefix" = ["prod/core/*", "dev/shared/*"] } }
       }
     ]
@@ -264,7 +309,7 @@ resource "aws_iam_role_policy" "freshness" {
         Sid       = "ListDumpMetadataOnly"
         Effect    = "Allow"
         Action    = ["s3:ListBucket"]
-        Resource  = aws_s3_bucket.db_backups.arn
+        Resource  = [aws_s3_bucket.db_backups.arn, aws_s3_bucket.replica.arn]
         Condition = { StringLike = { "s3:prefix" = ["prod/core/*", "dev/shared/*"] } }
       },
       {
@@ -305,7 +350,10 @@ resource "aws_lambda_function" "freshness" {
       CHECKS = jsonencode([
         { prefix = "prod/core/", max_age_hours = var.core_max_age_hours, min_bytes = var.min_dump_bytes },
         { prefix = "dev/shared/", max_age_hours = var.dev_max_age_hours, min_bytes = var.min_dump_bytes },
+        { prefix = "prod/core/", max_age_hours = var.replica_core_max_age_hours, min_bytes = var.min_dump_bytes, replica = true },
       ])
+      REPLICA_BUCKET = aws_s3_bucket.replica.bucket
+      REPLICA_REGION = var.replica_region
     }
   }
 
@@ -346,4 +394,236 @@ resource "aws_cloudwatch_metric_alarm" "freshness_errors" {
   comparison_operator = "GreaterThanThreshold"
   treat_missing_data  = "breaching" # no invocation at all is also a failure
   alarm_actions       = [aws_sns_topic.alerts.arn]
+}
+
+# --- Cross-region replica ----------------------------------------------------
+#
+# Same account, different region: protects against losing us-east-2 (and against
+# a bad delete in the primary, because delete markers are NOT replicated). It does
+# not protect against compromise of this AWS account; a cross-account copy needs a
+# second account and is not built. Only objects written after replication was
+# enabled are replicated automatically.
+
+locals {
+  replica_bucket_name = "${var.name_prefix}-replica-${data.aws_caller_identity.current.account_id}-${var.replica_region}"
+}
+
+resource "aws_s3_bucket" "replica" {
+  provider = aws.replica
+  bucket   = local.replica_bucket_name
+
+  lifecycle {
+    prevent_destroy = true
+  }
+
+  tags = {
+    Purpose   = "database-backups-replica"
+    DataClass = "contains-user-data"
+    ManagedBy = "terraform"
+    Stack     = "hashpass-db-backups"
+  }
+}
+
+resource "aws_s3_bucket_public_access_block" "replica" {
+  provider                = aws.replica
+  bucket                  = aws_s3_bucket.replica.id
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+resource "aws_s3_bucket_ownership_controls" "replica" {
+  provider = aws.replica
+  bucket   = aws_s3_bucket.replica.id
+
+  rule {
+    object_ownership = "BucketOwnerEnforced"
+  }
+}
+
+resource "aws_s3_bucket_versioning" "replica" {
+  provider = aws.replica
+  bucket   = aws_s3_bucket.replica.id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "replica" {
+  provider = aws.replica
+  bucket   = aws_s3_bucket.replica.id
+
+  rule {
+    bucket_key_enabled = true
+
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
+resource "aws_s3_bucket_object_lock_configuration" "replica" {
+  provider = aws.replica
+  bucket   = aws_s3_bucket.replica.id
+
+  rule {
+    default_retention {
+      mode = "GOVERNANCE"
+      days = var.object_lock_days
+    }
+  }
+
+  depends_on = [aws_s3_bucket_versioning.replica]
+}
+
+# Delete markers are not replicated, so the replica needs its own expiry. Same
+# tiers as the primary; replicated objects keep their `tier` tag.
+resource "aws_s3_bucket_lifecycle_configuration" "replica" {
+  provider = aws.replica
+  bucket   = aws_s3_bucket.replica.id
+
+  depends_on = [aws_s3_bucket_versioning.replica]
+
+  rule {
+    id     = "clean-old-versions"
+    status = "Enabled"
+
+    filter {}
+
+    noncurrent_version_expiration {
+      noncurrent_days = var.noncurrent_version_expiration_days
+    }
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 7
+    }
+  }
+
+  dynamic "rule" {
+    for_each = var.retention_days
+    content {
+      id     = "retention-${rule.key}"
+      status = "Enabled"
+
+      filter {
+        tag {
+          key   = "tier"
+          value = rule.key
+        }
+      }
+
+      expiration {
+        days = rule.value
+      }
+
+      noncurrent_version_expiration {
+        noncurrent_days = 2
+      }
+    }
+  }
+}
+
+data "aws_iam_policy_document" "replica_tls_only" {
+  statement {
+    sid     = "DenyInsecureTransport"
+    effect  = "Deny"
+    actions = ["s3:*"]
+
+    resources = [
+      aws_s3_bucket.replica.arn,
+      "${aws_s3_bucket.replica.arn}/*",
+    ]
+
+    principals {
+      type        = "*"
+      identifiers = ["*"]
+    }
+
+    condition {
+      test     = "Bool"
+      variable = "aws:SecureTransport"
+      values   = ["false"]
+    }
+  }
+}
+
+resource "aws_s3_bucket_policy" "replica" {
+  provider = aws.replica
+  bucket   = aws_s3_bucket.replica.id
+  policy   = data.aws_iam_policy_document.replica_tls_only.json
+
+  depends_on = [aws_s3_bucket_public_access_block.replica]
+}
+
+data "aws_iam_policy_document" "s3_assume" {
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRole"]
+    principals {
+      type        = "Service"
+      identifiers = ["s3.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role" "replication" {
+  name               = "hashpass-db-backups-replication"
+  assume_role_policy = data.aws_iam_policy_document.s3_assume.json
+  tags               = { Purpose = "database-backups", ManagedBy = "terraform", Stack = "hashpass-db-backups" }
+}
+
+resource "aws_iam_role_policy" "replication" {
+  name = "replicate-dumps"
+  role = aws_iam_role.replication.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["s3:GetReplicationConfiguration", "s3:ListBucket"]
+        Resource = aws_s3_bucket.db_backups.arn
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["s3:GetObjectVersionForReplication", "s3:GetObjectVersionAcl", "s3:GetObjectVersionTagging", "s3:GetObjectRetention", "s3:GetObjectLegalHold"]
+        Resource = "${aws_s3_bucket.db_backups.arn}/*"
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["s3:ReplicateObject", "s3:ReplicateTags"]
+        Resource = "${aws_s3_bucket.replica.arn}/*"
+      }
+    ]
+  })
+}
+
+resource "aws_s3_bucket_replication_configuration" "db_backups" {
+  bucket = aws_s3_bucket.db_backups.id
+  role   = aws_iam_role.replication.arn
+
+  depends_on = [
+    aws_s3_bucket_versioning.db_backups,
+    aws_s3_bucket_versioning.replica,
+    aws_s3_bucket_object_lock_configuration.db_backups,
+    aws_s3_bucket_object_lock_configuration.replica,
+    aws_iam_role_policy.replication,
+  ]
+
+  rule {
+    id     = "replicate-all-dumps"
+    status = "Enabled"
+
+    filter {}
+
+    delete_marker_replication {
+      status = "Disabled"
+    }
+
+    destination {
+      bucket = aws_s3_bucket.replica.arn
+    }
+  }
 }
