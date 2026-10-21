@@ -351,6 +351,7 @@ function ThemedContent() {
   const isHomePage = pathname === '/home' || pathname === '/' || pathname === '/index';
   // Public pages that don't require authentication
   const isPublicPage =
+    pathname === '/contacts' ||
     pathname === '/docs' ||
     pathname === '/(shared)/docs' ||
     pathname === '/privacy' ||

@@ -70,7 +70,8 @@
     "event-auth-allies",
     "admin-pass-management",
     "admin-matchmaking-communications",
-    "support-system"
+    "support-system",
+    "contacts-network"
   ],
   "profileGroups": {
     "bsl-development": [
@@ -106,6 +107,9 @@
     ]
   },
   "groups": {
+    "contacts-network": [
+      "db/migrations/V127__contacts_network.sql"
+    ],
     "better-auth-mcp-oauth": [
       "db/migrations/V106__better_auth_mcp_oauth.sql"
     ],

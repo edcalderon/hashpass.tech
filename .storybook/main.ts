@@ -71,6 +71,25 @@ const config: StorybookConfig = {
         },
       },
     });
+
+    // Contacts renders production Expo controls and QR codes. These packages
+    // publish JSX (and expo-modules-core publishes TS), so compile their web
+    // implementations rather than replacing them with catalog-only mocks.
+    config.module.rules.push({
+      test: /\.[jt]sx?$/,
+      include: /node_modules[\\/](?:@expo[\\/]vector-icons|expo-modules-core|expo-clipboard|expo-localization|expo-font|react-native-qrcode-svg)[\\/]/,
+      use: {
+        loader: 'babel-loader',
+        options: {
+          babelrc: false,
+          configFile: false,
+          presets: [
+            ['@babel/preset-typescript', { allExtensions: true, isTSX: true }],
+            '@babel/preset-react',
+          ],
+        },
+      },
+    });
     
     // Find and modify existing CSS rule or add new one with PostCSS and Tailwind support
     const cssRuleIndex = config.module.rules.findIndex((rule: any) => 

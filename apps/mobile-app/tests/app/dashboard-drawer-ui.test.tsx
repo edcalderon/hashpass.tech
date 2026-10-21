@@ -182,6 +182,7 @@ jest.mock("@hashpass/auth", () => ({
 
 jest.mock("@hashpass/ui/tokens", () => ({
   uiTokens: {
+    feature: jest.requireActual('@hashpass/ui/tokens').uiTokens.feature,
     radius: { card: 24, media: 16, input: 12, small: 8, circle: 999 },
     colors: {
       light: {
@@ -404,7 +405,7 @@ describe("dashboard drawer visual controls", () => {
     root
       .findByProps({ accessibilityLabel: "@edward: Profile" })
       .props.onPress();
-    root.findByProps({ accessibilityLabel: "Profile" }).props.onPress();
+    root.findAllByProps({ accessibilityLabel: "Profile" })[0].props.onPress();
     expect(mockNavigate).toHaveBeenCalledTimes(2);
     expect(mockNavigate).toHaveBeenNthCalledWith(1, "profile");
     expect(mockNavigate).toHaveBeenNthCalledWith(2, "profile");
@@ -454,6 +455,16 @@ describe("dashboard drawer visual controls", () => {
 
     expect(root.findByProps({ accessibilityLabel: "Dark mode" })).toBeTruthy();
     expect(root.findAllByProps({ name: "moon-outline" })).toHaveLength(1);
+  });
+
+  it('opens the Contacts screen from its accessible dashboard navigation entry', async () => {
+    const renderer = await renderDrawer();
+    await TestRenderer.act(async () => {
+      renderer.root.findByProps({ accessibilityLabel: 'Contacts' }).props.onPress();
+    });
+    expect(mockNavigate).toHaveBeenCalledWith('contacts');
+    expect(mockSetOpen).toHaveBeenCalledWith(false);
+    await TestRenderer.act(async () => { renderer.unmount(); });
   });
 
   it("keeps the account panel collapsed by default on desktop", async () => {
@@ -545,7 +556,7 @@ describe("dashboard drawer visual controls", () => {
       collectMenuButtons(mockScrollChildren);
 
       expect(menuButtons.length).toBeGreaterThan(1);
-      const walletButton = menuButtons[1];
+      const walletButton = menuButtons.find(button => button.props.accessibilityLabel === 'Wallet');
 
       await TestRenderer.act(async () => {
         walletButton.props.onHoverIn();
@@ -599,12 +610,12 @@ describe("dashboard drawer visual controls", () => {
       collectMenuButtons(mockScrollChildren);
 
       await TestRenderer.act(async () => {
-        menuButtons[1].props.onPress();
+        menuButtons.find(button => button.props.accessibilityLabel === 'Wallet').props.onPress();
         jest.advanceTimersByTime(300);
         await Promise.resolve();
       });
 
-      expect(mockHandleNth).toHaveBeenCalledWith(4);
+      expect(mockHandleNth).toHaveBeenCalledWith(5);
     } finally {
       jest.useRealTimers();
     }
