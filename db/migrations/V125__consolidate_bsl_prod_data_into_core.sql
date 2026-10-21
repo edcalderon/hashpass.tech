@@ -198,6 +198,60 @@ INSERT INTO public."oauthResource" (identifier, name, "accessTokenTtl", "refresh
 SELECT identifier, name, "accessTokenTtl", "refreshTokenTtl", "signingAlgorithm", "signingKeyId", "allowedScopes", "customClaims", "dpopBoundAccessTokensRequired", disabled, "createdAt", "updatedAt", "policyVersion", metadata, id FROM bsl_import."oauthResource"
 ON CONFLICT (id) DO NOTHING;
 
+-- 3b. OAuth/MCP credentials issued by BSL (refresh/access tokens, consents,
+--     client assertions). Better Auth moves to core at cutover, so without
+--     these every existing bearer/refresh token would stop working. Dependency
+--     order: refresh tokens, access tokens (refreshId), consents, assertions.
+--     userId is remapped for shared-email ba_users; rows whose client, user
+--     or session did not make it across are skipped (the FKs would reject them).
+-- ---------------------------------------------------------------------------
+
+INSERT INTO public."oauthRefreshToken" (id, token, "clientId", "sessionId", "userId", "referenceId", "authorizationCodeId", resources, "requestedUserInfoClaims", "expiresAt", "createdAt", revoked, "rotatedAt", "rotationReplayResponse", "rotationReplayExpiresAt", "authTime", confirmation, scopes)
+SELECT b.id, b.token, b."clientId",
+       CASE WHEN EXISTS (SELECT 1 FROM public.session s WHERE s.id = b."sessionId") THEN b."sessionId" END,
+       COALESCE(ba_map.core_id, b."userId"), b."referenceId", b."authorizationCodeId", b.resources, b."requestedUserInfoClaims", b."expiresAt", b."createdAt", b.revoked, b."rotatedAt", b."rotationReplayResponse", b."rotationReplayExpiresAt", b."authTime", b.confirmation, b.scopes
+  FROM bsl_import."oauthRefreshToken" b
+  LEFT JOIN (
+    SELECT bb.id AS bsl_id, c.id AS core_id
+      FROM bsl_import.ba_users bb
+      JOIN public.ba_users c ON lower(c.email) = lower(bb.email)
+  ) ba_map ON ba_map.bsl_id = b."userId"
+ WHERE EXISTS (SELECT 1 FROM public."oauthClient" c WHERE c."clientId" = b."clientId")
+   AND EXISTS (SELECT 1 FROM public.ba_users x WHERE x.id = COALESCE(ba_map.core_id, b."userId"))
+ON CONFLICT DO NOTHING;
+
+INSERT INTO public."oauthAccessToken" (id, token, "clientId", "sessionId", "userId", "referenceId", "authorizationCodeId", resources, "requestedUserInfoClaims", "refreshId", "expiresAt", "createdAt", revoked, confirmation, scopes)
+SELECT b.id, b.token, b."clientId",
+       CASE WHEN EXISTS (SELECT 1 FROM public.session s WHERE s.id = b."sessionId") THEN b."sessionId" END,
+       COALESCE(ba_map.core_id, b."userId"), b."referenceId", b."authorizationCodeId", b.resources, b."requestedUserInfoClaims",
+       CASE WHEN EXISTS (SELECT 1 FROM public."oauthRefreshToken" r WHERE r.id = b."refreshId") THEN b."refreshId" END,
+       b."expiresAt", b."createdAt", b.revoked, b.confirmation, b.scopes
+  FROM bsl_import."oauthAccessToken" b
+  LEFT JOIN (
+    SELECT bb.id AS bsl_id, c.id AS core_id
+      FROM bsl_import.ba_users bb
+      JOIN public.ba_users c ON lower(c.email) = lower(bb.email)
+  ) ba_map ON ba_map.bsl_id = b."userId"
+ WHERE EXISTS (SELECT 1 FROM public."oauthClient" c WHERE c."clientId" = b."clientId")
+   AND (b."userId" IS NULL OR EXISTS (SELECT 1 FROM public.ba_users x WHERE x.id = COALESCE(ba_map.core_id, b."userId")))
+ON CONFLICT DO NOTHING;
+
+INSERT INTO public."oauthConsent" (id, "clientId", "userId", "referenceId", resources, "requestedUserInfoClaims", scopes, "createdAt", "updatedAt")
+SELECT b.id, b."clientId", COALESCE(ba_map.core_id, b."userId"), b."referenceId", b.resources, b."requestedUserInfoClaims", b.scopes, b."createdAt", b."updatedAt"
+  FROM bsl_import."oauthConsent" b
+  LEFT JOIN (
+    SELECT bb.id AS bsl_id, c.id AS core_id
+      FROM bsl_import.ba_users bb
+      JOIN public.ba_users c ON lower(c.email) = lower(bb.email)
+  ) ba_map ON ba_map.bsl_id = b."userId"
+ WHERE EXISTS (SELECT 1 FROM public."oauthClient" c WHERE c."clientId" = b."clientId")
+   AND (b."userId" IS NULL OR EXISTS (SELECT 1 FROM public.ba_users x WHERE x.id = COALESCE(ba_map.core_id, b."userId")))
+ON CONFLICT DO NOTHING;
+
+INSERT INTO public."oauthClientAssertion" (id, "expiresAt")
+SELECT id, "expiresAt" FROM bsl_import."oauthClientAssertion"
+ON CONFLICT (id) DO NOTHING;
+
 -- ---------------------------------------------------------------------------
 -- 4. Speakers (BSL wins on content: colombia2026's 50 speakers only exist
 --    there, and V116's pending semantics are the current product behavior).
@@ -539,6 +593,52 @@ SELECT b.event_id, b.created_at FROM bsl_import.event_chat_rooms b
 --   * directus_*: Directus is retired (see docs); BSL keeps them as backup.
 --   * hashpass_schema_migrations: each ledger describes its own database.
 
+-- 8b. User blocks/mutes. can_make_meeting_request consults only core's
+--     user_blocks, so every BSL block has to be present or blocked people could
+--     request meetings again. BSL rows carry the auth id (blocker_id/blocked_id)
+--     and/or the registry id (blocker_user_id/blocked_user_id, via
+--     public."user".auth_user_id); both resolve to a BSL auth id, which then
+--     goes through bsl_auth_map (shared email -> core id) or is kept as is.
+--     Core's table has no blocker_id/blocked_id and only blocked_user_id is
+--     an FK (auth.users).
+-- ---------------------------------------------------------------------------
+
+DROP TABLE IF EXISTS pg_temp.bsl_block_resolved;
+CREATE TEMP TABLE bsl_block_resolved AS
+SELECT b.id AS bsl_block_id,
+       COALESCE(mb.core_id, rb.auth_id) AS blocked_core_id,
+       COALESCE(mr.core_id, rr.auth_id) AS blocker_core_id,
+       -- core requires a speaker_id; a user-to-user block uses the blocker's own
+       -- speaker row (the RPC's blocker_user_id path matches through it).
+       COALESCE(b.speaker_id::text, (
+         SELECT s.id::text FROM public.bsl_speakers s
+          WHERE s.user_id::text = COALESCE(mr.core_id, rr.auth_id)::text
+          ORDER BY s.event_id, s.id LIMIT 1
+       )) AS speaker_id, b.reason,
+       COALESCE(b.blocked_at, b.created_at, now()) AS blocked_at,
+       COALESCE(b.is_muted, false) AS is_muted
+  FROM bsl_import.user_blocks b
+  LEFT JOIN bsl_import."user" ub ON ub.id = b.blocked_user_id
+  LEFT JOIN bsl_import."user" ur ON ur.id = b.blocker_user_id
+  CROSS JOIN LATERAL (SELECT COALESCE(b.blocked_id, NULLIF(ub.auth_user_id::text, '')::uuid) AS auth_id) rb
+  CROSS JOIN LATERAL (SELECT COALESCE(b.blocker_id, NULLIF(ur.auth_user_id::text, '')::uuid) AS auth_id) rr
+  LEFT JOIN bsl_auth_map mb ON mb.bsl_id = rb.auth_id
+  LEFT JOIN bsl_auth_map mr ON mr.bsl_id = rr.auth_id;
+
+INSERT INTO public.user_blocks (id, speaker_id, blocked_user_id, reason, blocked_at, blocker_user_id, is_muted)
+SELECT r.bsl_block_id, r.speaker_id, r.blocked_core_id, r.reason, r.blocked_at, r.blocker_core_id, r.is_muted
+  FROM bsl_block_resolved r
+ WHERE r.blocked_core_id IS NOT NULL
+   AND r.speaker_id IS NOT NULL
+   AND EXISTS (SELECT 1 FROM auth.users u WHERE u.id = r.blocked_core_id)
+   AND NOT EXISTS (
+     SELECT 1 FROM public.user_blocks c
+      WHERE c.blocked_user_id = r.blocked_core_id
+        AND c.blocker_user_id IS NOT DISTINCT FROM r.blocker_core_id
+        AND c.speaker_id IS NOT DISTINCT FROM r.speaker_id
+   )
+ON CONFLICT DO NOTHING;
+
 -- ---------------------------------------------------------------------------
 -- 9. Verification (raises, and so rolls the whole migration back, on loss).
 -- ---------------------------------------------------------------------------
@@ -571,6 +671,30 @@ BEGIN
   IF v_missing > 0 THEN
     RAISE EXCEPTION 'agenda copy incomplete: % rows missing', v_missing;
   END IF;
+
+  -- Every BSL block/mute must be represented on core (same blocked user,
+  -- blocker and speaker after identity remapping).
+  SELECT count(*) INTO v_missing FROM bsl_block_resolved r
+   WHERE NOT EXISTS (
+     SELECT 1 FROM public.user_blocks c
+      WHERE c.blocked_user_id = r.blocked_core_id
+        AND c.blocker_user_id IS NOT DISTINCT FROM r.blocker_core_id
+        AND c.speaker_id IS NOT DISTINCT FROM r.speaker_id
+   );
+  IF v_missing > 0 THEN
+    RAISE EXCEPTION 'user block copy incomplete: % BSL blocks missing on core', v_missing;
+  END IF;
+
+  -- Issued OAuth credentials must survive the move, or clients are logged out.
+  SELECT count(*) INTO v_missing FROM bsl_import."oauthRefreshToken" b
+   WHERE NOT EXISTS (SELECT 1 FROM public."oauthRefreshToken" c WHERE c.id = b.id);
+  RAISE NOTICE 'BSL OAuth refresh tokens not copied: %', v_missing;
+  SELECT count(*) INTO v_missing FROM bsl_import."oauthAccessToken" b
+   WHERE NOT EXISTS (SELECT 1 FROM public."oauthAccessToken" c WHERE c.id = b.id);
+  RAISE NOTICE 'BSL OAuth access tokens not copied: %', v_missing;
+  SELECT count(*) INTO v_missing FROM bsl_import."oauthConsent" b
+   WHERE NOT EXISTS (SELECT 1 FROM public."oauthConsent" c WHERE c.id = b.id);
+  RAISE NOTICE 'BSL OAuth consents not copied: %', v_missing;
 
   -- Passes may legitimately be skipped (duplicate of a core pass, or an owner
   -- that exists nowhere); report instead of failing.

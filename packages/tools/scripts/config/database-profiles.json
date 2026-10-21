@@ -113,7 +113,8 @@
       "db/migrations/V124__align_core_bsl_speakers_with_event_scoped_shape.sql"
     ],
     "pending-speaker-eligibility": [
-      "db/migrations/V123__restore_pending_speaker_meeting_eligibility.sql"
+      "db/migrations/V123__restore_pending_speaker_meeting_eligibility.sql",
+      "db/migrations/V126__scope_pending_speaker_eligibility_to_event.sql"
     ],
     "event-scoped-speakers": [
       "db/migrations/V107__scope_legacy_speakers_by_event.sql",
