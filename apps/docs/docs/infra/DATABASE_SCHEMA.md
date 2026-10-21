@@ -34,12 +34,13 @@ tenant resolution). Summary:
 
 | Project ref | Role | Tables (public schema) |
 |---|---|---|
-| `fxgftanraszjjyeidvia` | core production (`hashpass.tech`) | 88 |
-| `mnnqryrdlhddorqsrtbn` | BSL production (`bsl.hashpass.tech`) | 86 |
+| `fxgftanraszjjyeidvia` | production for every tenant (`hashpass.tech`, `bsl.hashpass.tech`) | 88 (at the 2026-08-11 audit) |
+| `mnnqryrdlhddorqsrtbn` | BSL backup, read-only (consolidated into core 2026-10-21) | 86 |
 | `gsugeqozyeokncpbndna` | shared dev (both `core-development` and `bsl-development`) | 86 |
 
 Audited 2026-08-11 via direct `psql` connection to all three (`SUPABASE_DB_URL_PROD`,
-`BSL_SUPABASE_DB_URL_PROD`, `SUPABASE_DB_URL_DEV`).
+`BSL_SUPABASE_DB_URL_PROD`, `SUPABASE_DB_URL_DEV`). Table counts are from that audit,
+before the BSL data was consolidated into core on 2026-10-21.
 
 ## Finding 1 (fixed): legacy `directus_*` tables exposed via public API on dev
 

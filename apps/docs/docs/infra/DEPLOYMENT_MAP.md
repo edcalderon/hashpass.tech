@@ -13,7 +13,7 @@ existing S3 origins or CloudFront delivery.
 | `dev.hashpass.tech` | CloudFront + S3 static site | `hashpass` | [`github-hosted-static-site-deploy.yml`](../../../../.github/workflows/github-hosted-static-site-deploy.yml), matching `develop` pushes |
 | CBWeek development | Existing CloudFront + S3 static site | `hashpass` | Tenant workflow, target `cbweek-development`, matching `develop` pushes |
 | `api.hashpass.tech`, `api-dev.hashpass.tech` | Lambda + API Gateway, `us-east-1` | `hashpass` | Corresponding core web deploy with version-endpoint guard |
-| `bsl.hashpass.tech`, `bsl-dev.hashpass.tech` | Existing cross-account CloudFront + production-account static origins | `hashpass` for origin deployment | Tenant workflow, targets `bsl-production` / `bsl-development`, matching `main` / `develop` pushes |
+| `bsl.hashpass.tech`, `bsl-dev.hashpass.tech` | Existing cross-account CloudFront + production-account static origins | `hashpass` for origin deployment | Tenant workflow, targets `bsl-production` / `bsl-development`, matching `main` / `develop` pushes. Since 2026-10-21 `bsl-production` is only the static-site hosting target; its build env points at core production, not the BSL project |
 | `hashpass.club` | GitHub Pages | n/a | `club-v*` release workflow |
 | `hashpass.link`, `hpass.id`, `hashp.link` | Shared Lambda + API Gateway | `hashpass` | Terraform-managed links API |
 | `hashpass.lat`, `www.hashpass.lat` | CloudFront Function 301 to `https://hashpass.tech` (path and query preserved), unused OAC S3 origin | `hashpass` | `packages/infra/terraform/stacks/hashpass-lat-redirect` (reuses `modules/aws_domain_redirect`; reads the existing Route 53 zone, leaves the `blockchainsummit*` records untouched) |
