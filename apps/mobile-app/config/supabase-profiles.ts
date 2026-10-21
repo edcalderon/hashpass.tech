@@ -3,8 +3,14 @@ import { resolveTenantByHostname } from '@hashpass/config';
 export type SupabaseProfileId =
   | 'core-development'
   | 'core-production'
-  | 'bsl-development'
-  | 'bsl-production';
+  | 'bsl-development';
+
+// The BSL production database was consolidated into core (2026-10-20, see
+// apps/docs/docs/infra/decisions/single-core-database.md). Stale builds, env
+// values and callers that still name the retired profile resolve to core.
+const RETIRED_PROFILE_ALIASES: Record<string, SupabaseProfileId> = {
+  'bsl-production': 'core-production',
+};
 
 type EnvReader = (name: string) => string | undefined;
 
@@ -247,7 +253,8 @@ const PROFILES: SupabaseProfile[] = [
     id: 'core-production',
     tenant: 'core',
     environment: 'production',
-    hosts: ['hashpass.tech', 'www.hashpass.tech', 'api.hashpass.tech'],
+    // bsl.hashpass.tech is a whitelabel front for the same production database.
+    hosts: ['hashpass.tech', 'www.hashpass.tech', 'api.hashpass.tech', 'bsl.hashpass.tech'],
     publicUrlEnv: [
       'EXPO_PUBLIC_SUPABASE_URL_PROD',
       'EXPO_PUBLIC_SUPABASE_URL',
@@ -260,16 +267,8 @@ const PROFILES: SupabaseProfile[] = [
       'EXPO_PUBLIC_SUPABASE_ANON_KEY',
       'NEXT_PUBLIC_SUPABASE_ANON_KEY',
     ],
-    // Prefer the canonical production service-role key first and keep BSL aliases as
-    // compatibility fallbacks during rollout. Main production should not drift to the
-    // BSL-specific key unless the canonical key is unavailable.
-    serviceRoleEnv: [
-      'SUPABASE_SERVICE_ROLE_KEY_PROD',
-      'SUPABASE_SERVICE_ROLE_KEY',
-      'BSL_SUPABASE_SERVICE_ROLE_KEY_PROD',
-      'SUPABASE_SERVICE_ROLE_KEY_BSL_PROD',
-      'BSL_SUPABASE_SERVICE_ROLE_KEY',
-    ],
+    // Never fall back to a BSL-named key: those belong to the retired BSL project.
+    serviceRoleEnv: ['SUPABASE_SERVICE_ROLE_KEY_PROD', 'SUPABASE_SERVICE_ROLE_KEY'],
     dbUrlEnv: ['SUPABASE_DB_URL_PROD', 'DATABASE_URL_PROD', 'PROD_DB_URL'],
   },
   {
@@ -310,44 +309,6 @@ const PROFILES: SupabaseProfile[] = [
       'SUPABASE_DB_URL_BSL_DEV',
       'DATABASE_URL_BSL_DEV',
       'DEV_BSL_DB_URL',
-    ],
-  },
-  {
-    id: 'bsl-production',
-    tenant: 'bsl',
-    environment: 'production',
-    hosts: ['bsl.hashpass.tech'],
-    publicUrlEnv: [
-      'EXPO_PUBLIC_BSL_SUPABASE_URL_PROD',
-      'EXPO_PUBLIC_SUPABASE_URL_BSL_PROD',
-      'EXPO_PUBLIC_BSL_SUPABASE_URL',
-      'EXPO_PUBLIC_SUPABASE_URL_PROD',
-      'EXPO_PUBLIC_SUPABASE_URL',
-      'NEXT_PUBLIC_SUPABASE_URL',
-    ],
-    publicKeyEnv: [
-      'EXPO_PUBLIC_BSL_SUPABASE_KEY_PROD',
-      'EXPO_PUBLIC_SUPABASE_KEY_BSL_PROD',
-      'EXPO_PUBLIC_BSL_SUPABASE_ANON_KEY_PROD',
-      'EXPO_PUBLIC_BSL_SUPABASE_KEY',
-      'EXPO_PUBLIC_BSL_SUPABASE_ANON_KEY',
-      'EXPO_PUBLIC_SUPABASE_KEY_PROD',
-      'EXPO_PUBLIC_SUPABASE_ANON_KEY_PROD',
-      'EXPO_PUBLIC_SUPABASE_KEY',
-      'EXPO_PUBLIC_SUPABASE_ANON_KEY',
-      'NEXT_PUBLIC_SUPABASE_ANON_KEY',
-    ],
-    serviceRoleEnv: [
-      'BSL_SUPABASE_SERVICE_ROLE_KEY_PROD',
-      'SUPABASE_SERVICE_ROLE_KEY_BSL_PROD',
-      'BSL_SUPABASE_SERVICE_ROLE_KEY',
-      'SUPABASE_SERVICE_ROLE_KEY_PROD',
-    ],
-    dbUrlEnv: [
-      'BSL_SUPABASE_DB_URL_PROD',
-      'SUPABASE_DB_URL_BSL_PROD',
-      'DATABASE_URL_BSL_PROD',
-      'PROD_BSL_DB_URL',
     ],
   },
 ];
@@ -468,8 +429,10 @@ const runtimeHostname = (hostname?: string) => {
   );
 };
 
-const profileById = (profileId?: string | null): SupabaseProfile | undefined =>
-  PROFILES.find((profile) => profile.id === profileId);
+const profileById = (profileId?: string | null): SupabaseProfile | undefined => {
+  const canonicalId = (profileId && RETIRED_PROFILE_ALIASES[profileId]) || profileId;
+  return PROFILES.find((profile) => profile.id === canonicalId);
+};
 
 // Demo-mode tenants (TenantConfig.isDemo / EventConfig.isDemo in
 // packages/config/src/sso-config.ts) are for prospective clients whose deal
@@ -503,7 +466,7 @@ export const resolveSupabaseProfile = (input?: {
       profileById(readProcessEnv('SUPABASE_PROFILE'));
     if (buildProfile) return buildProfile;
 
-    return host.includes('bsl') ? profileById('bsl-production')! : profileById('core-production')!;
+    return profileById('core-production')!;
   })();
 
   if (resolved.environment === 'production' && isDemoHostname(host)) {

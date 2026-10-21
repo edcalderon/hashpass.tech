@@ -22,9 +22,6 @@ function getPublicSupabaseEnv(stage: string) {
   const supabaseUrl = firstEnv(
     isProduction
       ? [
-          "EXPO_PUBLIC_BSL_SUPABASE_URL_PROD",
-          "EXPO_PUBLIC_SUPABASE_URL_BSL_PROD",
-          "EXPO_PUBLIC_BSL_SUPABASE_URL",
           "EXPO_PUBLIC_SUPABASE_URL_PROD",
           "EXPO_PUBLIC_SUPABASE_URL",
           "NEXT_PUBLIC_SUPABASE_URL",
@@ -42,10 +39,6 @@ function getPublicSupabaseEnv(stage: string) {
   const supabaseAnonKey = firstEnv(
     isProduction
       ? [
-          "EXPO_PUBLIC_BSL_SUPABASE_KEY_PROD",
-          "EXPO_PUBLIC_SUPABASE_KEY_BSL_PROD",
-          "EXPO_PUBLIC_BSL_SUPABASE_ANON_KEY_PROD",
-          "EXPO_PUBLIC_BSL_SUPABASE_KEY",
           "EXPO_PUBLIC_SUPABASE_KEY_PROD",
           "EXPO_PUBLIC_SUPABASE_KEY",
           "EXPO_PUBLIC_SUPABASE_ANON_KEY",
@@ -62,12 +55,12 @@ function getPublicSupabaseEnv(stage: string) {
           "NEXT_PUBLIC_SUPABASE_ANON_KEY",
         ]
   );
-  const profile = isProduction ? "bsl-production" : "bsl-development";
+  const profile = isProduction ? "core-production" : "bsl-development";
 
   // Guard: a production stage deploy with no resolvable Supabase URL/key
   // used to silently proceed — SST would build and ship a static site whose
   // client bundle logs "Supabase URL or Anon Key is missing for profile
-  // bsl-production" at runtime instead of failing the deploy, which is how
+  // core-production" at runtime instead of failing the deploy, which is how
   // this reached bsl.hashpass.tech live. Only checked for the production
   // stage: the dev stage's SST Console environment can legitimately be
   // configured later/incompletely without blocking iteration.

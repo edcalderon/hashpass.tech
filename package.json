@@ -102,8 +102,6 @@
     "check:type-placement": "node scripts/check-type-placement.mjs",
     "deploy:directus": "bash packages/tools/scripts/deploy-directus.sh",
     "db:migrate": "node packages/tools/scripts/migrate-tenant-db.mjs",
-    "db:migrate:bsl:prod": "node packages/tools/scripts/migrate-tenant-db.mjs --profile bsl-production",
-    "db:migrate:bsl:prod:dry": "node packages/tools/scripts/migrate-tenant-db.mjs --profile bsl-production --dry-run",
     "db:schema:dump": "node packages/tools/scripts/dump-db-schemas.mjs",
     "db:schema:diff": "git diff --stat db/schema-snapshots/ && git diff db/schema-snapshots/",
     "deploy:staging": "npm run env:propagate staging && npm run env:sync staging && pnpm --filter hashpass-mobile-app build && npm run deploy:directus && netlify deploy --prod",

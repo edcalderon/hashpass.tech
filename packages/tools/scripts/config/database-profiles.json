@@ -56,16 +56,6 @@
         "DEV_BSL_DB_URL",
         "SUPABASE_DB_URL_DEV"
       ]
-    },
-    "bsl-production": {
-      "tenant": "bsl",
-      "environment": "production",
-      "databaseUrlEnv": [
-        "BSL_SUPABASE_DB_URL_PROD",
-        "SUPABASE_DB_URL_BSL_PROD",
-        "DATABASE_URL_BSL_PROD",
-        "PROD_BSL_DB_URL"
-      ]
     }
   },
   "defaultGroups": [
@@ -113,12 +103,6 @@
     ],
     "better-auth-production": [
       "better-auth-mcp-oauth"
-    ],
-    "bsl-production": [
-      "event-search-aliases",
-      "business-invite-campaigns",
-      "event-scoped-speakers",
-      "bsl-speaker-identity-claims"
     ]
   },
   "groups": {

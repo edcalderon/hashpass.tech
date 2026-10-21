@@ -54,7 +54,9 @@ verified twice, and the two schemas had already drifted (`bsl_speakers`,
   completes, no row points at a missing account, and `can_make_meeting_request`
   returns `allowed` for Nagel Paulino and Edward Calderón for General-pass
   holders from both databases.
-* Not yet done: production data copy, Lambda environment switch and host
-  routing. Until they land, the live system still reads BSL for BSL hosts, and
-  [supabase-project-map.md](../supabase-project-map.md) still describes that
-  state.
+* Done: production data copy (V125, verified on core).
+* In the release pipeline: host/event routing to `core-production`, the retired
+  `bsl-production` profile, and the Lambda database URL switch (applied by
+  `deploy-api-lambda.sh` from the `API_LAMBDA_DATABASE_URL_PROD` secret).
+* After the deploy is verified: drop the `bsl_import` and `bsl_import_auth`
+  staging schemas on core, then change this status to **done**.

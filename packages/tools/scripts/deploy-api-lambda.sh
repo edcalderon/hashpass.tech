@@ -225,6 +225,26 @@ const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
 const current = { ...(config.Environment?.Variables || {}) };
 const maxBytes = Number.parseInt(process.env.API_LAMBDA_ENV_UPDATE_MAX_BYTES || '3900', 10) || 3900;
 
+// Database connection strings are secrets and are never read from the generic
+// DATABASE_URL of the caller's shell. API_LAMBDA_DATABASE_URL (the core
+// production pooler URL) fans out to the three variables the API reads, so
+// they can never point at different databases. Absent -> left untouched, which
+// keeps CI deploys (which have no database secret) from reverting the value.
+const databaseUrl = (process.env.API_LAMBDA_DATABASE_URL || '').trim();
+const databaseKeys = ['DATABASE_URL', 'SUPABASE_DB_URL', 'BETTER_AUTH_DATABASE_URL'];
+
+// Variables of the retired BSL Supabase project (consolidated into core on
+// 2026-10-20, see apps/docs/docs/infra/decisions/single-core-database.md).
+// Removed (API_LAMBDA_REMOVE_RETIRED_ENV=true) so no server code path can fall
+// back to the BSL project, and so the payload stays under the size limit. Only
+// set it together with a code deploy that no longer reads them.
+const retiredKeys = [
+  'EXPO_PUBLIC_BSL_SUPABASE_URL_PROD',
+  'EXPO_PUBLIC_BSL_SUPABASE_KEY_PROD',
+  'BSL_SUPABASE_SERVICE_ROLE_KEY',
+  'BSL_SUPABASE_SERVICE_ROLE_KEY_PROD',
+];
+
 const syncKeys = [
   'EXPO_PUBLIC_SUPABASE_PROFILE',
   'SUPABASE_PROFILE',
@@ -237,9 +257,7 @@ const syncKeys = [
   'EXPO_PUBLIC_SUPABASE_ANON_KEY',
   'EXPO_PUBLIC_SUPABASE_ANON_KEY_DEV',
   'EXPO_PUBLIC_SUPABASE_ANON_KEY_PROD',
-  'EXPO_PUBLIC_BSL_SUPABASE_URL_PROD',
   'EXPO_PUBLIC_BSL_SUPABASE_URL_DEV',
-  'EXPO_PUBLIC_BSL_SUPABASE_KEY_PROD',
   'EXPO_PUBLIC_BSL_SUPABASE_KEY_DEV',
   // Core's own service-role key -- was missing from this list entirely
   // until 2026-08-07, meaning no deploy ever touched it since the Lambda
@@ -247,8 +265,6 @@ const syncKeys = [
   // project) the whole time, undetected because nothing ever re-synced
   // it to catch the drift. See supabase-project-map.md for the incident.
   'SUPABASE_SERVICE_ROLE_KEY',
-  'BSL_SUPABASE_SERVICE_ROLE_KEY',
-  'BSL_SUPABASE_SERVICE_ROLE_KEY_PROD',
   'BSL_SUPABASE_SERVICE_ROLE_KEY_DEV',
   'EXPO_PUBLIC_SITE_URL',
   'SITE_URL',
@@ -260,6 +276,20 @@ const syncKeys = [
 ];
 
 const changed = [];
+if (databaseUrl) {
+  for (const key of databaseKeys) {
+    if (current[key] !== databaseUrl) changed.push(key);
+    current[key] = databaseUrl;
+  }
+}
+if (process.env.API_LAMBDA_REMOVE_RETIRED_ENV === 'true') {
+  for (const key of retiredKeys) {
+    if (key in current) {
+      delete current[key];
+      changed.push(`-${key}`);
+    }
+  }
+}
 for (const key of syncKeys) {
   const value = process.env[key];
   if (typeof value !== 'string' || !value.trim()) continue;
@@ -417,15 +447,22 @@ echo "  Region:   ${LAMBDA_REGION}"
 echo "  Version:  ${expected_version}"
 echo "  Verify:   ${API_VERSION_URL}"
 
-ensure_fresh_api_bundle "${expected_version}"
-bash "${SCRIPT_DIR}/package-lambda.sh"
+if [[ "${API_LAMBDA_ENV_ONLY:-false}" != "true" ]]; then
+  ensure_fresh_api_bundle "${expected_version}"
+  bash "${SCRIPT_DIR}/package-lambda.sh"
 
-if [[ ! -f "${PROJECT_ROOT}/${LAMBDA_ZIP_PATH}" ]]; then
-  echo "ERROR: Lambda package was not created: ${PROJECT_ROOT}/${LAMBDA_ZIP_PATH}" >&2
-  exit 1
+  if [[ ! -f "${PROJECT_ROOT}/${LAMBDA_ZIP_PATH}" ]]; then
+    echo "ERROR: Lambda package was not created: ${PROJECT_ROOT}/${LAMBDA_ZIP_PATH}" >&2
+    exit 1
+  fi
 fi
 
 sync_lambda_environment
+
+if [[ "${API_LAMBDA_ENV_ONLY:-false}" == "true" ]]; then
+  echo "API_LAMBDA_ENV_ONLY=true: environment synced, Lambda code left untouched."
+  exit 0
+fi
 
 code_update_error_file="$(mktemp /tmp/hashpass-lambda-code-aws-error.XXXXXX.log)"
 superseded="false"

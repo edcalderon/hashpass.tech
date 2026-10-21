@@ -20,7 +20,6 @@ const SUPABASE_PROFILE_IDS = [
   'core-development',
   'core-production',
   'bsl-development',
-  'bsl-production',
 ] as const;
 
 function parseStoredTokenHash(rawTokenHash: string | null | undefined): ParsedTokenHash {

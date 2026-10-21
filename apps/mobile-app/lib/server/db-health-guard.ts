@@ -10,7 +10,7 @@
 // confirmed via pg_stat_statements, 2026-08-14). It is not a substitute for
 // real infrastructure monitoring.
 //
-// Keyed per Supabase profile id (core-development, bsl-production, etc.) since
+// Keyed per Supabase profile id (core-development, core-production, etc.) since
 // each is an independent backend with independent health.
 
 import { sendOpsAlertEmail } from '../email';

@@ -56,7 +56,7 @@ describe('/api/speakers/claims', () => {
     expect(response.status).toBe(200);
     expect(mockResolveNotificationIdentity).toHaveBeenLastCalledWith(
       expect.any(Request),
-      'bsl-production',
+      'core-production',
     );
     expect(mockRpc).toHaveBeenCalledWith('request_speaker_profile_claim', {
       p_speaker_id: 'speaker-1',
@@ -107,7 +107,7 @@ describe('/api/speakers/claims', () => {
     }));
 
     expect(response.status).toBe(400);
-    expect(mockResolveNotificationIdentity).toHaveBeenCalledWith(expect.any(Request), 'bsl-production');
+    expect(mockResolveNotificationIdentity).toHaveBeenCalledWith(expect.any(Request), 'core-production');
     expect(mockRpc).not.toHaveBeenCalled();
   });
 

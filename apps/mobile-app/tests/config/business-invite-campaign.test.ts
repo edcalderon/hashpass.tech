@@ -61,7 +61,6 @@ describe("business invitation campaign migration", () => {
       "core-development",
       "core-production",
       "bsl-development",
-      "bsl-production",
     ]) {
       expect(profiles.profileGroups[profile] ?? []).toContain(
         "business-invite-campaigns",

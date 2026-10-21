@@ -5,7 +5,9 @@ const BSL_EVENT_PATTERN = /^(?:bsl|bsl2025|peru2026|chile2026|colombia2026|cbwee
 /**
  * Resolves a server database profile from the event identity, not merely the
  * request host. Shared API calls arrive through api(-dev).hashpass.tech and
- * would otherwise lose a whitelabel tenant's database affinity.
+ * would otherwise lose a whitelabel tenant's database affinity. Production
+ * events all live in the core database; only development hosts and the
+ * CBWeek tenant stay on the BSL development profile.
  */
 export function getEventSupabaseProfileId(
   request: Request,
@@ -23,5 +25,5 @@ export function getEventSupabaseProfileId(
     host === "localhost" ||
     host === "127.0.0.1"
     ? "bsl-development"
-    : "bsl-production";
+    : "core-production";
 }

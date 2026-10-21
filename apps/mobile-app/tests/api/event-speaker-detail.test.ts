@@ -110,7 +110,7 @@ describe("event-scoped speaker detail api", () => {
       expect(await response.json()).toEqual({ data: speaker });
       expect(mockGetSupabaseServerForRequest).toHaveBeenCalledWith(
         expect.any(Request),
-        "bsl-production",
+        "core-production",
       );
     });
 
@@ -235,7 +235,7 @@ describe("event-scoped speaker collection api", () => {
       expect(await response.json()).toEqual({ data: [speaker] });
       expect(mockGetSupabaseServerForRequest).toHaveBeenCalledWith(
         expect.any(Request),
-        "bsl-production",
+        "core-production",
       );
     });
   });

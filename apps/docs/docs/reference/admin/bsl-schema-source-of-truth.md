@@ -16,7 +16,7 @@ which objects are explicitly outside the application's ownership boundary.
 | Latest repository migration | `V059__admin_pass_registry_identity_fallback.sql` | `db/migrations/` |
 | Migration runner | `packages/tools/scripts/migrate-tenant-db.mjs` | profile + migration group config |
 | Applied migration ledger | `public.hashpass_schema_migrations` | created/updated by the migration runner |
-| BSL profiles | `bsl-development`, `bsl-production` | `packages/tools/scripts/config/database-profiles.json` |
+| BSL profile | `bsl-development` (`bsl-production` retired 2026-10-20) | `packages/tools/scripts/config/database-profiles.json` |
 
 `V059` is the latest migration in the repository, not a claim that both live
 databases have applied it. The live version must be read from

@@ -35,7 +35,7 @@ describe('resolvePublicSupabaseConfig', () => {
     try {
       process.env.EXPO_PUBLIC_SUPABASE_PROFILE = 'core-production';
 
-      expect(resolveSupabaseProfile({ hostname: 'bsl.hashpass.tech' }).id).toBe('bsl-production');
+      expect(resolveSupabaseProfile({ hostname: 'bsl.hashpass.tech' }).id).toBe('core-production');
       expect(resolveSupabaseProfile({ hostname: 'bsl-dev.hashpass.tech' }).id).toBe('bsl-development');
       expect(resolveSupabaseProfile({ hostname: 'cbweek2026.hashpass.tech' }).id).toBe('bsl-development');
       expect(resolveSupabaseProfile({
@@ -51,7 +51,7 @@ describe('resolvePublicSupabaseConfig', () => {
     }
   });
 
-  it('falls back to canonical public envs for bsl-production', () => {
+  it('resolves the retired bsl-production profile id to core-production', () => {
     const env: Record<string, string> = {
       [PUBLIC_SUPABASE_URL_ENV]: 'https://generic-project.supabase.co',
       [PUBLIC_SUPABASE_KEY_ENV]: 'anon1',
@@ -62,12 +62,12 @@ describe('resolvePublicSupabaseConfig', () => {
       readEnv: (name) => env[name],
     });
 
-    expect(config.profileId).toBe('bsl-production');
+    expect(config.profileId).toBe('core-production');
     expect(config.supabaseUrl).toBe('https://generic-project.supabase.co');
     expect(config.supabaseAnonKey).toBe('anon1');
   });
 
-  it('prefers BSL-specific envs when present', () => {
+  it('ignores BSL-named production envs now that BSL production lives in core', () => {
     const env: Record<string, string> = {
       [BSL_PROD_SUPABASE_URL_ENV]: 'https://bsl-project.supabase.co',
       [BSL_PROD_SUPABASE_ANON_KEY_ENV]: 'anon2',
@@ -76,22 +76,22 @@ describe('resolvePublicSupabaseConfig', () => {
     };
 
     const config = resolvePublicSupabaseConfig({
-      profileId: 'bsl-production',
+      profileId: 'core-production',
       readEnv: (name) => env[name],
     });
 
-    expect(config.supabaseUrl).toBe('https://bsl-project.supabase.co');
-    expect(config.supabaseAnonKey).toBe('anon2');
+    expect(config.supabaseUrl).toBe('https://generic-project.supabase.co');
+    expect(config.supabaseAnonKey).toBe('anon1');
   });
 
-  it('accepts the canonical anon key alias for bsl-production', () => {
+  it('accepts the canonical anon key alias for the retired bsl-production id', () => {
     const env: Record<string, string> = {
       [PUBLIC_SUPABASE_URL_ENV]: 'https://generic-project.supabase.co',
       [PUBLIC_SUPABASE_ANON_KEY_ENV]: 'anon1',
     };
 
     const config = resolvePublicSupabaseConfig({
-      profileId: 'bsl-production',
+      profileId: 'core-production',
       readEnv: (name) => env[name],
     });
 
@@ -169,7 +169,7 @@ describe('resolvePublicSupabaseConfig', () => {
       };
 
       const config = resolvePublicSupabaseConfig({
-        profileId: 'bsl-production',
+        profileId: 'core-production',
         readEnv: () => undefined,
       });
 
@@ -184,14 +184,14 @@ describe('resolvePublicSupabaseConfig', () => {
     }
   });
 
-  it('prefers a browser runtime profile map for bsl-production when generic runtime values are absent', () => {
+  it('prefers a browser runtime profile map for core-production when generic runtime values are absent', () => {
     const globalAny = globalThis as Record<string, unknown>;
     const previousRuntime = globalAny.__HASHPASS_RUNTIME__;
 
     try {
       globalAny.__HASHPASS_RUNTIME__ = {
         supabaseProfiles: {
-          'bsl-production': {
+          'core-production': {
             supabaseUrl: 'https://profile-bsl.supabase.co',
             supabaseAnonKey: 'anon-profile-bsl',
           },
@@ -199,7 +199,7 @@ describe('resolvePublicSupabaseConfig', () => {
       };
 
       const config = resolvePublicSupabaseConfig({
-        profileId: 'bsl-production',
+        profileId: 'core-production',
         readEnv: () => undefined,
       });
 

@@ -14,12 +14,12 @@ describe("event Supabase profile selection", () => {
     }), "cbweek2026")).toBe("bsl-development");
   });
 
-  it("uses the BSL production profile for an on-tour event on the production host", () => {
+  it("uses the core production profile for an on-tour event on the production host", () => {
     expect(
       getEventSupabaseProfileId(
         new Request("https://api.hashpass.tech/api/events/chile2026/auth-allies"),
         "chile2026",
       ),
-    ).toBe("bsl-production");
+    ).toBe("core-production");
   });
 });
