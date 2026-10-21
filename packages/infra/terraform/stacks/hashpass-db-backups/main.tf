@@ -608,6 +608,7 @@ resource "aws_s3_bucket_replication_configuration" "db_backups" {
     aws_s3_bucket_versioning.db_backups,
     aws_s3_bucket_versioning.replica,
     aws_s3_bucket_object_lock_configuration.db_backups,
+    aws_s3_bucket_object_lock_configuration.replica,
     aws_iam_role_policy.replication,
   ]
 

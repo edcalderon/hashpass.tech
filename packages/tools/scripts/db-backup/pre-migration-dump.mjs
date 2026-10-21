@@ -56,16 +56,24 @@ export function takePreMigrationDump({ databaseUrl, profile, pending, run = exec
   console.log(`Pre-migration backup: ${target} (${pending} migration(s) pending)`);
 
   // Optional off-machine copy. Dumps hold user data, so prefer it to a laptop file.
+  // They go under their own prefix: the restore drill and the freshness alarm read
+  // prod/core/ and expect scheduled dumps with matching row-count files there.
   const bucket = process.env.DB_BACKUP_BUCKET;
   if (bucket) {
     try {
+      const expectedAccount = process.env.AWS_TARGET_ACCOUNT_ID;
+      if (!expectedAccount) throw new Error('AWS_TARGET_ACCOUNT_ID is not set, so the hashpass profile cannot be verified');
+      const awsProfile = ['--profile', process.env.HASHPASS_AWS_PROFILE || 'hashpass'];
+      const account = run('aws', [...awsProfile, 'sts', 'get-caller-identity', '--query', 'Account', '--output', 'text'],
+        { stdio: ['ignore', 'pipe', 'pipe'] }).toString().trim();
+      if (account !== expectedAccount) throw new Error('the selected AWS profile is not the HASHPASS production account');
       run(
         'aws',
-        ['s3api', 'put-object', '--bucket', bucket, '--key', `prod/core/${file}`, '--body', target,
+        [...awsProfile, 's3api', 'put-object', '--bucket', bucket, '--key', `prod/pre-migration/${file}`, '--body', target,
           '--server-side-encryption', 'AES256', '--tagging', 'tier=daily'],
         { stdio: ['ignore', 'ignore', 'pipe'] },
       );
-      console.log(`Pre-migration backup uploaded: s3://${bucket}/prod/core/${file}`);
+      console.log(`Pre-migration backup uploaded: s3://${bucket}/prod/pre-migration/${file}`);
     } catch (error) {
       console.warn(`Warning: S3 upload skipped (${(error.stderr || error.message).toString().trim().split('\n')[0]}). Local copy kept.`);
     }
