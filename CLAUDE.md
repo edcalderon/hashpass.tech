@@ -389,7 +389,7 @@ cost budget is configured only in the `hashpass` account.
 
 ### How Each Domain Is Deployed
 
-Verified 2026-09-21: site builds run on standard GitHub-hosted runners; the five
+Verified 2026-09-21: site builds run on standard GitHub-hosted runners; the four
 AWS site pipelines are retained for manual recovery only. The cutover changed
 build execution, not the existing S3/CloudFront serving setup. Historical Amplify
 instructions remain in [`archive/amplify/README.md`](archive/amplify/README.md).
@@ -410,7 +410,7 @@ instructions remain in [`archive/amplify/README.md`](archive/amplify/README.md).
 - The Lukas landing is a separate S3/CloudFront origin, but it has no separate release number: `packages/infra/terraform/stacks/hashpass-lukas-site/build.py` reads the root `package.json` version and `release-tag-on-merge.yml` blocks tag creation until `lukas-landing-deploy.yml` verifies that version before publishing and again through `recovery.json` at the live site.
 - BSL uses `packages/tools/scripts/build-bsl-static-site.sh`, not SST. Its existing cross-account CloudFront front door is unchanged; the new BSL deploy roles only update their static origins.
 - The core deploy helper packages the Expo Router API, updates the configured Lambda, and verifies `https://api.hashpass.tech/api/config/versions` or `https://api-dev.hashpass.tech/api/config/versions`. A stale endpoint fails the deploy.
-- `hashpass-dev-site`, `hashpass-cbweek2026-develop-site`, `bsl-hashpass-dev`, `hashpass-production-site`, and `bsl-hashpass-prod` have no V2 triggers and explicitly set source `DetectChanges=false`. Their CodeBuild projects remain available for owner-approved recovery, not normal pushes.
+- `hashpass-dev-site`, `hashpass-cbweek2026-develop-site`, `bsl-hashpass-dev`, and `hashpass-production-site` have no V2 triggers and explicitly set source `DetectChanges=false`. Their CodeBuild projects remain available for owner-approved recovery, not normal pushes.
 - **Separate legacy workflow still active:** `infra-deploy.yml` retains matching `main`/`develop` push triggers and manual dispatch. It attempts SST deployment and then uses `AWS_WEB_PIPELINE_ROLE_ARN` to run `deploy-api-lambda.sh`, including Lambda configuration sync and version verification. It is not the primary site build path, and the CodePipeline cutover did not disable it. Audit its remaining infrastructure/API responsibilities before changing or retiring it; do not copy its broader configuration-update permissions into the new scoped site roles.
 - The legacy workflow's repository-level `AWS_ACCOUNT_ID` differs from production. Use the `hashpass` profile and a non-printing comparison with private `AWS_TARGET_ACCOUNT_ID` before production mutations; `default` is not a production fallback.
 - The [canonical build-cost task](.agents/active/task-build-cost-containment-and-cicd-migration.md) records deployment evidence and recovery safeguards. Budget email alerts are live; the daily cost/trigger guard schedule awaits [PR #249](https://github.com/hashpass-tech/hashpass.tech/pull/249) reaching `main`.

@@ -36,7 +36,6 @@ Resources:
                   - !Sub arn:${AWS::Partition}:codepipeline:us-east-2:${AWS::AccountId}:hashpass-production-site
                   - !Sub arn:${AWS::Partition}:codepipeline:us-east-2:${AWS::AccountId}:hashpass-cbweek2026-develop-site
                   - !Sub arn:${AWS::Partition}:codepipeline:us-east-2:${AWS::AccountId}:bsl-hashpass-dev
-                  - !Sub arn:${AWS::Partition}:codepipeline:us-east-2:${AWS::AccountId}:bsl-hashpass-prod
               - Effect: Allow
                 Action:
                   - ssm:GetParameter

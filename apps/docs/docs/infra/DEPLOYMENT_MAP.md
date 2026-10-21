@@ -47,16 +47,17 @@ BSL uses `packages/tools/scripts/build-bsl-static-site.sh`, not SST. Its deploy
 jobs update only the existing S3 origins; they do not change the cross-account
 CloudFront setup.
 
-All five AWS site pipelines are now **manual recovery only**: no V2 push triggers
+The four remaining AWS site pipelines are **manual recovery only**: no V2 push triggers
 and explicit source `DetectChanges=false`:
 
 - `hashpass-dev-site`
 - `hashpass-cbweek2026-develop-site`
 - `bsl-hashpass-dev`
 - `hashpass-production-site`
-- `bsl-hashpass-prod`
 
-The pipelines and CodeBuild projects remain available for owner-approved
+The `bsl-hashpass-prod` pipeline, its `bsl-hashpass-prod-build` CodeBuild project
+and log group were retired on 2026-10-21 (BSL production is built by GitHub Actions
+against core). The remaining pipelines and CodeBuild projects remain available for owner-approved
 recovery; they are not normal release triggers. No EC2 instances were present
 in `us-east-1` or `us-east-2` at verification. Do not provision or re-enable
 workers without explicit owner approval. See [github-outage-monitor.md](github-outage-monitor.md)

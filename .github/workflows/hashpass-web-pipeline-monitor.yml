@@ -58,12 +58,12 @@ jobs:
       WEB_PIPELINE_PROJECT_TAG: ${{ vars.WEB_PIPELINE_PROJECT_TAG || 'hashpass' }}
       WEB_PIPELINE_SERVICE_TAG: ${{ vars.WEB_PIPELINE_SERVICE_TAG || 'pipeline-build-worker' }}
       WEB_PIPELINE_PROVIDER_TAGS: ${{ vars.WEB_PIPELINE_PROVIDER_TAGS || 'hashpass-prod-ec2-build,hashpass-dev-ec2-build' }}
-      BSL_PIPELINE_NAMES: ${{ vars.BSL_PIPELINE_NAMES || 'bsl-hashpass-dev,bsl-hashpass-prod' }}
-      BSL_PIPELINE_PROVIDER_TAGS: ${{ vars.BSL_PIPELINE_PROVIDER_TAGS || 'hashpass-bsl-prod-ec2-build,hashpass-bsl-dev-ec2-build' }}
+      BSL_PIPELINE_NAMES: ${{ vars.BSL_PIPELINE_NAMES || 'bsl-hashpass-dev' }}
+      BSL_PIPELINE_PROVIDER_TAGS: ${{ vars.BSL_PIPELINE_PROVIDER_TAGS || 'hashpass-bsl-dev-ec2-build' }}
       ACTIVE_WEB_PIPELINE_NAME: ${{ github.ref == 'refs/heads/main' && 'hashpass-production-site' || 'hashpass-dev-site' }}
       ACTIVE_WEB_PROVIDER_TAG: ${{ github.ref == 'refs/heads/main' && 'hashpass-prod-ec2-build' || 'hashpass-dev-ec2-build' }}
-      ACTIVE_BSL_PIPELINE_NAME: ${{ github.ref == 'refs/heads/main' && 'bsl-hashpass-prod' || 'bsl-hashpass-dev' }}
-      ACTIVE_BSL_PROVIDER_TAG: ${{ github.ref == 'refs/heads/main' && 'hashpass-bsl-prod-ec2-build' || 'hashpass-bsl-dev-ec2-build' }}
+      ACTIVE_BSL_PIPELINE_NAME: bsl-hashpass-dev
+      ACTIVE_BSL_PROVIDER_TAG: hashpass-bsl-dev-ec2-build
       WEB_PIPELINE_GRACE_SECONDS: ${{ vars.WEB_PIPELINE_GRACE_SECONDS || '30' }}
       WEB_PIPELINE_START_WAIT_SECONDS: ${{ vars.WEB_PIPELINE_START_WAIT_SECONDS || '180' }}
       WEB_PIPELINE_POLL_SECONDS: ${{ vars.WEB_PIPELINE_POLL_SECONDS || '20' }}

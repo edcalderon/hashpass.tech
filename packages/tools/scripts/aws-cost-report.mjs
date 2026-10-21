@@ -103,7 +103,6 @@ async function main() {
     "hashpass-production-site",
     "hashpass-cbweek2026-develop-site",
     "bsl-hashpass-dev",
-    "bsl-hashpass-prod",
   ]);
   const configuredPipelines = (
     process.env.AWS_MANUAL_BUILD_PIPELINES || [...allowed].join(",")

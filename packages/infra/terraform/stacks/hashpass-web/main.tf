@@ -82,7 +82,6 @@ locals {
       "hashpass-dev-site",
       "hashpass-production-site",
       "bsl-hashpass-dev",
-      "bsl-hashpass-prod",
     ] : "arn:aws:codepipeline:${var.aws_region}:${data.aws_caller_identity.current.account_id}:${pipeline_name}"
   ]
   production_build_worker_lambda_function_names  = [trimspace(var.lambda_function_name)]

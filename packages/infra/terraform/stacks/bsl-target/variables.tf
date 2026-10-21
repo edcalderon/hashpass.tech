@@ -21,12 +21,6 @@ variable "connection_arn" {
   type        = string
 }
 
-variable "prod_branch_name" {
-  description = "Git branch that deploys the production BSL stage"
-  type        = string
-  default     = "main"
-}
-
 variable "dev_branch_name" {
   description = "Git branch that deploys the dev BSL stage"
   type        = string
@@ -35,12 +29,6 @@ variable "dev_branch_name" {
 
 variable "dev_aws_pipeline_source_detect_changes" {
   description = "Automatic BSL development AWS builds. Keep false after the verified GitHub cutover; manual recovery remains available."
-  type        = bool
-  default     = false
-}
-
-variable "prod_aws_pipeline_source_detect_changes" {
-  description = "Automatic BSL production AWS builds. Disabled after verified GitHub deployment; manual recovery remains available."
   type        = bool
   default     = false
 }
@@ -88,18 +76,6 @@ variable "production_build_execution_mode" {
     condition     = contains(["codebuild", "ec2"], lower(trimspace(var.production_build_execution_mode)))
     error_message = "production_build_execution_mode must be codebuild or ec2."
   }
-}
-
-variable "production_codebuild_project_name" {
-  description = "Existing CodeBuild project used by the production BSL pipeline when execution mode is codebuild."
-  type        = string
-  default     = "bsl-hashpass-prod-build"
-}
-
-variable "production_codebuild_compute_type" {
-  description = "CodeBuild compute class used by the production BSL pipeline."
-  type        = string
-  default     = "BUILD_GENERAL1_LARGE"
 }
 
 variable "development_codebuild_project_name" {
@@ -196,36 +172,11 @@ variable "detailed_monitoring" {
   default     = true
 }
 
-# BSL Supabase config, mirroring the (currently plaintext, matching this
-# account's existing hashpass-web/mobile-release IAM convention of broad
-# AdministratorAccess roles rather than least-privilege) env vars already
-# set on the now-superseded bsl-hashpass-prod-build/bsl-hashpass-dev-build
-# CodeBuild projects. Populate the real values in a gitignored
-# terraform.tfvars, never commit them.
-variable "supabase_url_prod" {
-  description = "Production Supabase URL for bsl.hashpass.tech. Since 2026-10-21 this MUST be the core production project (fxgftanraszjjyeidvia), not the retired BSL project."
-  type        = string
-  sensitive   = true
-}
-
-variable "supabase_key_prod" {
-  description = "Core production publishable/anon key (core project fxgftanraszjjyeidvia, never the retired BSL backup)"
-  type        = string
-  sensitive   = true
-}
-
-variable "supabase_service_role_key_prod" {
-  description = "Core production service-role key (core project fxgftanraszjjyeidvia, never the retired BSL backup)"
-  type        = string
-  sensitive   = true
-}
-
-variable "supabase_db_url_prod" {
-  description = "Core production Postgres connection string (core project fxgftanraszjjyeidvia, never the retired BSL backup)"
-  type        = string
-  sensitive   = true
-}
-
+# BSL development Supabase config for the bsl-hashpass-dev-build CodeBuild
+# project. Populate the real values in a gitignored terraform.tfvars, never
+# commit them. There are no production values: bsl.hashpass.tech production is
+# built by GitHub Actions against core, and its AWS pipeline was retired
+# 2026-10-21.
 variable "supabase_url_dev" {
   description = "BSL dev Supabase URL"
   type        = string
