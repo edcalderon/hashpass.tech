@@ -10,21 +10,20 @@ audit that introduced this directory).
 
 | File | Project ref | What it is |
 |---|---|---|
-| `core-prod.sql` | `fxgftanraszjjyeidvia` | core production (`hashpass.tech`) |
-| `bsl-prod.sql` | `mnnqryrdlhddorqsrtbn` | BSL production (`bsl.hashpass.tech`) |
+| `core-prod.sql` | `fxgftanraszjjyeidvia` | core production (`hashpass.tech` and `bsl.hashpass.tech`; BSL production was consolidated into core on 2026-10-21 and its frozen backup is no longer snapshotted) |
 | `dev.sql` | `gsugeqozyeokncpbndna` | shared dev — both `core-development` and `bsl-development` point here |
 
 ## Regenerating
 
 ```bash
-npm run db:schema:dump              # all three
+npm run db:schema:dump              # core-prod and dev
 node packages/tools/scripts/dump-db-schemas.mjs --project core-prod   # just one
 ```
 
 Requires Docker (`postgres:17-alpine` — Supabase runs Postgres 17, and this
 repo's native `pg_dump` is v16, which cannot safely dump a newer server) and
 the same `.env` DB URL variables the migration tooling already uses
-(`SUPABASE_DB_URL_PROD`, `BSL_SUPABASE_DB_URL_PROD`, `SUPABASE_DB_URL_DEV`).
+(`SUPABASE_DB_URL_PROD`, `SUPABASE_DB_URL_DEV`).
 
 ## When to regenerate
 

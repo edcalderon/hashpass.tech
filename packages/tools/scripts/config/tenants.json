@@ -88,15 +88,15 @@
           "databaseUrl": "BSL_SUPABASE_DB_URL_DEV"
         },
         "production": {
-          "publicUrl": "EXPO_PUBLIC_BSL_SUPABASE_URL_PROD",
-          "publicKey": "EXPO_PUBLIC_BSL_SUPABASE_KEY_PROD",
-          "serviceRoleKey": "BSL_SUPABASE_SERVICE_ROLE_KEY_PROD",
-          "databaseUrl": "BSL_SUPABASE_DB_URL_PROD"
+          "publicUrl": "EXPO_PUBLIC_SUPABASE_URL_PROD",
+          "publicKey": "EXPO_PUBLIC_SUPABASE_KEY_PROD",
+          "serviceRoleKey": "SUPABASE_SERVICE_ROLE_KEY_PROD",
+          "databaseUrl": "SUPABASE_DB_URL_PROD"
         }
       },
       "supabaseRefs": {
         "development": "gsugeqozyeokncpbndna",
-        "production": "mnnqryrdlhddorqsrtbn"
+        "production": "fxgftanraszjjyeidvia"
       }
     }
   }

@@ -120,10 +120,8 @@ export const getDatabaseConnectionString = (): string | undefined => {
 
   const prodSupabaseConnectionString =
     normalizeSupabaseDatabaseUrl(readEnv("SUPABASE_DB_URL_PROD")) ||
-    normalizeSupabaseDatabaseUrl(readEnv("BSL_SUPABASE_DB_URL_PROD")) ||
     normalizeSupabaseDatabaseUrl(readEnv("DATABASE_URL_PROD")) ||
-    normalizeSupabaseDatabaseUrl(readEnv("PROD_DB_URL")) ||
-    normalizeSupabaseDatabaseUrl(readEnv("PROD_BSL_DB_URL"));
+    normalizeSupabaseDatabaseUrl(readEnv("PROD_DB_URL"));
 
   const dbConnectionString = buildDatabaseConnectionStringFromDbEnv();
 

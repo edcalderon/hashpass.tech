@@ -1,5 +1,12 @@
 data "aws_caller_identity" "current" {}
 
+# NOTE (2026-10-21): bsl.hashpass.tech production now uses the CORE production
+# Supabase project. The `*_prod` Supabase variables in this stack (and the
+# BSL_*-named build env keys that carry them) must hold core's values. The old
+# BSL production project is a frozen backup. Production builds actually run in
+# GitHub Actions (github-hosted-tenant-site-deploy.yml, target bsl-production);
+# this CodeBuild path is retained for owner-approved recovery only.
+
 # Hybrid BSL dev (2026-07-28): the target account can't create new CloudFront
 # distributions yet (AccessDenied: "account must be verified", confirmed via
 # a real failed sst deploy -- see task-aws-account-migration.md). Rather than

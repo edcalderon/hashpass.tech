@@ -20,13 +20,14 @@ const REPO_ROOT = resolve(new URL('../../..', import.meta.url).pathname);
 const OUT_DIR = resolve(REPO_ROOT, 'db/schema-snapshots');
 
 // Mirrors packages/tools/scripts/config/database-profiles.json's databaseUrlEnv
-// priority chains for core-production / bsl-production / core-development.
+// priority chains for core-production / core-development. The BSL production project was
+// consolidated into core on 2026-10-21 and is a frozen backup, so it is no
+// longer dumped (its last snapshot was removed with it).
 // core-development and bsl-development resolve to the SAME physical project
 // (gsugeqozyeokncpbndna, the shared dev DB — see supabase-project-map.md), so
 // there is deliberately only one "dev" entry here, not two.
 const PROJECTS = {
   'core-prod': { ref: 'fxgftanraszjjyeidvia', envNames: ['SUPABASE_DB_URL_PROD', 'DATABASE_URL_PROD', 'PROD_DB_URL'] },
-  'bsl-prod': { ref: 'mnnqryrdlhddorqsrtbn', envNames: ['BSL_SUPABASE_DB_URL_PROD', 'SUPABASE_DB_URL_BSL_PROD', 'DATABASE_URL_BSL_PROD', 'PROD_BSL_DB_URL'] },
   dev: { ref: 'gsugeqozyeokncpbndna', envNames: ['SUPABASE_DB_URL_DEV', 'DATABASE_URL_DEV', 'DEV_DB_URL'] },
 };
 

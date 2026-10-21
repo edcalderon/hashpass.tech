@@ -63,16 +63,15 @@ public Supabase variables from the root `.env` so the export can bundle the
 client correctly. The live BSL projects use `packages/tools/buildspecs/infra-deploy.yml`
 as their CodeBuild buildspec. The active CodeBuild path sets `CI=1` before
 dependency installation so Husky `prepare` hooks do not run against source
-archives that do not contain `.git` metadata. Production BSL should use the
-BSL-specific variables first:
+archives that do not contain `.git` metadata. Since 2026-10-21 production BSL
+uses the **core** production Supabase project, so its builds take the core
+`*_PROD` variables (`SUPABASE_DB_URL_PROD` and friends); the `BSL_*_PROD` names
+below are retired and must not be set to the old BSL project. Development BSL
+still uses the BSL-specific variables:
 
-- `EXPO_PUBLIC_BSL_SUPABASE_URL_PROD`
-- `EXPO_PUBLIC_BSL_SUPABASE_KEY_PROD`
 - `EXPO_PUBLIC_BSL_SUPABASE_URL_DEV`
 - `EXPO_PUBLIC_BSL_SUPABASE_KEY_DEV`
-- `BSL_SUPABASE_SERVICE_ROLE_KEY_PROD`
 - `BSL_SUPABASE_SERVICE_ROLE_KEY_DEV`
-- `BSL_SUPABASE_DB_URL_PROD`
 - `BSL_SUPABASE_DB_URL_DEV`
 
 The generic `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_KEY` remain as

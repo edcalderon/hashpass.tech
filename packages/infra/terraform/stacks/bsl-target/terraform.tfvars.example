@@ -28,12 +28,18 @@ development_codebuild_project_name = "bsl-hashpass-dev-build"
 enable_pipeline_build_workers = false
 pipeline_build_worker_approval_reference = ""
 
-# BSL Supabase config -- fill with real values in a local terraform.tfvars,
+# Supabase config -- fill with real values in a local terraform.tfvars,
 # never commit real secrets here.
+#
+# CONSOLIDATED 2026-10-21: the *_prod values below must point at the CORE
+# production project (fxgftanraszjjyeidvia, us-east-2). The old BSL production
+# project (mnnqryrdlhddorqsrtbn, us-west-2) is a frozen read-only backup; a
+# build that bakes it in would ship a bundle talking to stale data. The
+# *_dev values are unchanged (shared dev project).
 supabase_url_prod             = "https://your-prod-project.supabase.co"
 supabase_key_prod             = "sb_publishable_..."
 supabase_service_role_key_prod = "eyJhbGciOi..."
-supabase_db_url_prod           = "postgresql://postgres...@aws-1-us-west-2.pooler.supabase.com:5432/postgres?sslmode=require"
+supabase_db_url_prod           = "postgresql://postgres...@aws-0-us-east-2.pooler.supabase.com:6543/postgres?sslmode=require"
 
 supabase_url_dev             = "https://your-dev-project.supabase.co"
 supabase_key_dev             = "sb_publishable_..."
