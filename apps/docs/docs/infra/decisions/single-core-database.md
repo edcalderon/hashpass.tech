@@ -63,3 +63,11 @@ verified twice, and the two schemas had already drifted (`bsl_speakers`,
 * `can_make_meeting_request` returns `allowed` on production core for
   General-pass holders booking Nagel Paulino and Edward Calderón.
 * The `bsl_import` and `bsl_import_auth` staging schemas were dropped from core.
+* A final encrypted dump of the BSL project (and of core production and shared
+  dev) is stored in the dedicated `hashpass-db-backups-<account>-us-east-2`
+  bucket under `prod/bsl-final/`, `prod/core/` and `dev/shared/`
+  (`packages/infra/terraform/stacks/hashpass-db-backups`). The BSL dump was
+  restored into a throwaway Postgres and its speaker, pass, meeting-request and
+  `ba_users` counts matched the live project. The BSL project itself is obsolete:
+  it is an archive, not a restore source for current production, and is to be
+  paused and then deleted.
