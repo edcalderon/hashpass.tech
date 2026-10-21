@@ -1,3 +1,15 @@
+## [1.9.134](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.133...v1.9.134) (2026-10-21)
+### Released
+- retention tiers, Object Lock, cross-region replica and pre-migration dump
+
+### Release scope
+- Compared with: `v1.9.133` (the previous global release tag)
+
+### Affected products & packages
+- Infrastructure
+- Documentation
+- Release tooling
+
 ## [1.9.133](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.132...v1.9.133) (2026-10-21)
 ### Released
 - Version 1.9.133 release
