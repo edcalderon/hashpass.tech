@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
 """
+DEPRECATED (2026-10-21) -- DO NOT USE. Early one-off migration applier that
+defaults to the legacy Supabase project tgbdilebadmzqwubsijr and bypasses the
+numbered migrations and the ledger public.hashpass_schema_migrations. Use
+`pnpm run db:migrate -- --profile <profile> --groups <groups> --dry-run`
+(production profile: core-production). Disabled unless
+HASHPASS_ALLOW_LEGACY_DB_MIGRATION=1 (never for a production database). See
+packages/tools/scripts/README.md#deprecated-database-scripts.
+
 Database Migration Script
 Reads connection strings from .env and runs the migration
 """
@@ -9,6 +17,11 @@ import subprocess
 import urllib.parse
 import sys
 from pathlib import Path
+
+if os.environ.get('HASHPASS_ALLOW_LEGACY_DB_MIGRATION') != '1':
+    sys.stderr.write('ERROR: run-migration.py is deprecated and disabled.\n')
+    sys.stderr.write('Use: pnpm run db:migrate -- --profile core-production --groups <groups> --dry-run\n')
+    sys.exit(1)
 
 def parse_env_file(env_path):
     """Parse .env file and extract variables"""

@@ -5,6 +5,26 @@
 
 set -e
 
+# DEPRECATED (2026-10-21) -- DO NOT USE FOR PRODUCTION.
+# This ad-hoc "dump dev schema, replay onto prod" workflow predates the numbered
+# migrations in db/migrations/ and the ledger-tracked runner
+# (packages/tools/scripts/migrate-tenant-db.mjs). It uses `pg_dump --clean`, so
+# it DROPS and recreates objects on whatever PROD_DB_URL points at, and it
+# bypasses public.hashpass_schema_migrations. Its former default "production"
+# target (mnnqryrdlhddorqsrtbn) is the BSL project, which was consolidated into
+# core and is now a frozen read-only backup. Use instead:
+#   pnpm run db:migrate -- --profile core-production --groups <groups> --dry-run
+# See packages/tools/scripts/DB_MIGRATION_GUIDE.md and
+# apps/docs/docs/infra/decisions/single-core-database.md.
+if [ "${HASHPASS_ALLOW_LEGACY_DB_MIGRATION:-}" != "1" ]; then
+    echo "ERROR: setup-db-migration.sh is deprecated and disabled." >&2
+    echo "Use: pnpm run db:migrate -- --profile core-production --groups <groups> --dry-run" >&2
+    echo "See packages/tools/scripts/DB_MIGRATION_GUIDE.md. Historical reuse against a" >&2
+    echo "non-production database requires HASHPASS_ALLOW_LEGACY_DB_MIGRATION=1." >&2
+    exit 1
+fi
+
+
 # Colors
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'

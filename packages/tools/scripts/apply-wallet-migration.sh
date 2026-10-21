@@ -4,6 +4,19 @@
 
 set -e
 
+# DEPRECATED (2026-10-21) -- DO NOT USE. Early one-off migration applier that
+# defaults to the legacy Supabase project tgbdilebadmzqwubsijr and bypasses the
+# numbered migrations and the ledger public.hashpass_schema_migrations. Use
+# `pnpm run db:migrate -- --profile <profile> --groups <groups> --dry-run`
+# (production profile: core-production). Disabled unless
+# HASHPASS_ALLOW_LEGACY_DB_MIGRATION=1 (never for a production database). See
+# packages/tools/scripts/README.md#deprecated-database-scripts.
+if [ "${HASHPASS_ALLOW_LEGACY_DB_MIGRATION:-}" != "1" ]; then
+  echo "ERROR: apply-wallet-migration.sh is deprecated and disabled." >&2
+  echo "Use: pnpm run db:migrate -- --profile core-production --groups wallet --dry-run" >&2
+  exit 1
+fi
+
 echo "🔧 Applying wallet authentication migration..."
 echo ""
 
@@ -53,7 +66,7 @@ else
     echo "  3. Paste and click 'Run'"
     echo ""
     echo "Option 2: Install psql and run:"
-    echo "  psql \"postgresql://postgres:$DB_PASSWORD@db.tgbdilebadmzqwubsijr.supabase.co:5432/postgres\" \\"
+    echo "  psql \"postgresql://postgres:<PASSWORD>@db.tgbdilebadmzqwubsijr.supabase.co:5432/postgres\" \\"
     echo "    -f supabase/migrations/20250123000000_create_wallet_auth.sql"
     echo ""
     exit 1

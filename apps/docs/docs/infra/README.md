@@ -17,4 +17,8 @@ Current infrastructure documentation for HASHPASS lives here. These pages descri
 - [`SPEAKER_AVATARS_S3_SETUP.md`](SPEAKER_AVATARS_S3_SETUP.md)
 - [`security/wazuh-integration-guide.md`](security/wazuh-integration-guide.md)
 
+## Deprecated
+
+- `packages/tools/scripts/DB_MIGRATION_GUIDE.md` and the dev-to-prod schema replay scripts it describes are deprecated and disabled (2026-10-21). They targeted the BSL project, now a frozen backup. Production schema changes go through `db:migrate --profile core-production`; see [`decisions/single-core-database.md`](decisions/single-core-database.md) and [`supabase-project-map.md`](supabase-project-map.md). The full list is in the [scripts README](../../../../packages/tools/scripts/README.md#deprecated-database-scripts).
+
 Historical infra migrations, completed setup notes, and one-off fixes live in `archive/docs/`.
