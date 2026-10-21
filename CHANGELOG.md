@@ -1,3 +1,22 @@
+## [1.9.135](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.134...v1.9.135) (2026-10-21)
+
+
+### Features
+
+* **contacts:** add interest-based networking and progression ([416f7f3](https://github.com/hashpass-tech/hashpass.tech/commit/416f7f3d66db82d3698270dc05472d30b6521ca5))
+### Release Highlights
+- add interest-based networking and progression; let the read-only backup role fetch pre-migration dumps
+
+### Release scope
+- Compared with: `v1.9.134` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Database migrations
+- Infrastructure
+- Documentation
+- Release tooling
+
 ## [1.9.134](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.133...v1.9.134) (2026-10-21)
 ### Released
 - retention tiers, Object Lock, cross-region replica and pre-migration dump
