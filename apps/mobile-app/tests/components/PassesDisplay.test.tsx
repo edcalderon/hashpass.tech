@@ -36,7 +36,8 @@ jest.mock('../../lib/pass-system', () => ({
     resetMeetingRequestLimits: (...args: unknown[]) => mockResetMeetingRequestLimits(...args),
     getPassValidationMessage: jest.fn(),
     getPassTypeColor: () => '#34A853',
-    getPassTypeDisplayName: () => 'General Pass',
+    getPassTypeDisplayName: (type: string) =>
+      ({ general: 'General Pass', business: 'Business Pass', vip: 'VIP Pass' } as Record<string, string>)[type] ?? 'General Pass',
   },
 }));
 
@@ -91,7 +92,12 @@ describe('PassesDisplay', () => {
     expect(renderer.root.findAllByProps({ children: 'VOI Boost' })).toHaveLength(0);
   });
 
-  it('links speaker pass details to the event tickets modal instead of expanding pass pricing', async () => {
+  it('shows one collapsed pass-tier row that expands to entitlements without prices', async () => {
+    mockGetEventPassTiers.mockResolvedValue([
+      { event_id: 'colombia2026', pass_type: 'general', max_meeting_requests: 10, max_boost_amount: 100, price_cents: 9900, currency: 'USD', price_label: null },
+      { event_id: 'colombia2026', pass_type: 'business', max_meeting_requests: 20, max_boost_amount: 300, price_cents: 24900, currency: 'USD', price_label: null },
+      { event_id: 'colombia2026', pass_type: 'vip', max_meeting_requests: 50, max_boost_amount: 500, price_cents: null, currency: 'USD', price_label: 'Premium' },
+    ]);
     let renderer: any;
     await act(async () => {
       renderer = create(<PassesDisplay mode="speaker" eventId="colombia2026" />);
@@ -101,9 +107,26 @@ describe('PassesDisplay', () => {
       await new Promise((resolve) => setTimeout(resolve, 320));
     });
 
-    const ticketsLink = renderer.root.findByProps({
-      accessibilityLabel: 'View event tickets',
+    // One collapsed row by default: no tier names, entitlements or buttons yet.
+    expect(renderer.root.findAllByProps({ testID: 'pass-tier-showcase' }).length).toBeGreaterThan(0);
+    expect(renderer.root.findAllByProps({ testID: 'pass-tier-vip' })).toHaveLength(0);
+    expect(JSON.stringify(renderer.toJSON())).not.toContain('Acquire ticket');
+    await act(async () => {
+      renderer.root.findAllByProps({ accessibilityLabel: 'Pass tiers' })[0].props.onPress();
     });
+
+    for (const tier of ['general', 'business', 'vip']) {
+      expect(renderer.root.findAllByProps({ testID: `pass-tier-${tier}` }).length).toBeGreaterThan(0);
+    }
+    const tree = JSON.stringify(renderer.toJSON());
+    expect(tree).toContain('50 meeting requests · 500 boost points');
+    expect(tree).toContain('20 meeting requests · 300 boost points');
+    // Entitlements are shown; prices (dynamic) are not.
+    expect(tree).not.toMatch(/\$|USD|9900|24900|99\.00|249|Premium/);
+
+    const ticketsLink = renderer.root.findAllByProps({
+      accessibilityLabel: 'Acquire ticket',
+    })[0];
 
     await act(async () => ticketsLink.props.onPress());
 
@@ -275,9 +298,12 @@ describe('PassesDisplay', () => {
       await new Promise((resolve) => setTimeout(resolve, 320));
     });
 
-    const ticketsLink = renderer.root.findByProps({
-      accessibilityLabel: 'View event tickets',
+    await act(async () => {
+      renderer.root.findAllByProps({ accessibilityLabel: 'Pass tiers' })[0].props.onPress();
     });
+    const ticketsLink = renderer.root.findAllByProps({
+      accessibilityLabel: 'Acquire ticket',
+    })[0];
     await act(async () => ticketsLink.props.onPress());
 
     expect(mockRouterPush).toHaveBeenCalledWith({

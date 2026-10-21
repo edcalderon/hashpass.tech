@@ -1091,11 +1091,15 @@ export default function SpeakerDetail() {
             <View style={styles.floatingStatusBadge}>
               <View style={[
                 styles.statusIndicator,
-                directoryState.isNetworkingActive ? styles.activeIndicator : styles.inactiveIndicator
+                directoryState.isNetworkingActive
+                  ? styles.activeIndicator
+                  : directoryState.status === 'pending' ? styles.pendingIndicator : styles.inactiveIndicator
               ]} />
               <Text style={[
                 styles.statusBadgeText,
-                directoryState.isNetworkingActive ? styles.activeBadgeText : styles.inactiveBadgeText
+                directoryState.isNetworkingActive
+                  ? styles.activeBadgeText
+                  : directoryState.status === 'pending' ? styles.pendingBadgeText : styles.inactiveBadgeText
               ]}>
                 {statusLabel}
               </Text>
@@ -2075,6 +2079,10 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   inactiveIndicator: {
     backgroundColor: '#9ca3af',
   },
+  // Amber on the paper surface: #fcd34d is ~11:1 on dark, #92400e ~7:1 on light.
+  pendingIndicator: {
+    backgroundColor: isDark ? '#fbbf24' : '#b45309',
+  },
   statusBadgeText: {
     fontSize: 10,
     fontWeight: '600',
@@ -2084,6 +2092,9 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   },
   inactiveBadgeText: {
     color: '#9ca3af',
+  },
+  pendingBadgeText: {
+    color: isDark ? '#fcd34d' : '#92400e',
   },
   speakerTitle: {
     fontSize: 16,
