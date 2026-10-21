@@ -123,3 +123,91 @@ resource "aws_s3_bucket_policy" "db_backups" {
 
   depends_on = [aws_s3_bucket_public_access_block.db_backups]
 }
+
+# --- GitHub Actions access (OIDC, no long-lived keys) -----------------------
+#
+# Two roles with deliberately split powers:
+#   writer - may only PutObject under prod/core/ and dev/shared/ (nightly dumps).
+#            It cannot read, list, overwrite-by-delete, or touch prod/bsl-final/.
+#   reader - may only read those prefixes (quarterly restore drill).
+# Both trust only workflows running on this repository's main branch (scheduled
+# workflows always run there).
+
+data "aws_iam_openid_connect_provider" "github" {
+  url = "https://token.actions.githubusercontent.com"
+}
+
+data "aws_iam_policy_document" "github_assume" {
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+
+    principals {
+      type        = "Federated"
+      identifiers = [data.aws_iam_openid_connect_provider.github.arn]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "token.actions.githubusercontent.com:aud"
+      values   = ["sts.amazonaws.com"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "token.actions.githubusercontent.com:sub"
+      values   = ["repo:${var.github_repository}:ref:refs/heads/main"]
+    }
+  }
+}
+
+resource "aws_iam_role" "writer" {
+  name               = "hashpass-db-backups-writer"
+  assume_role_policy = data.aws_iam_policy_document.github_assume.json
+  tags               = { Purpose = "database-backups", ManagedBy = "terraform", Stack = "hashpass-db-backups" }
+}
+
+resource "aws_iam_role_policy" "writer" {
+  name = "put-dumps-only"
+  role = aws_iam_role.writer.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Sid      = "PutDumpsOnly"
+      Effect   = "Allow"
+      Action   = ["s3:PutObject"]
+      Resource = ["${aws_s3_bucket.db_backups.arn}/prod/core/*", "${aws_s3_bucket.db_backups.arn}/dev/shared/*"]
+    }]
+  })
+}
+
+resource "aws_iam_role" "reader" {
+  name               = "hashpass-db-backups-reader"
+  assume_role_policy = data.aws_iam_policy_document.github_assume.json
+  tags               = { Purpose = "database-backups", ManagedBy = "terraform", Stack = "hashpass-db-backups" }
+}
+
+resource "aws_iam_role_policy" "reader" {
+  name = "read-dumps-only"
+  role = aws_iam_role.reader.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid      = "ReadDumps"
+        Effect   = "Allow"
+        Action   = ["s3:GetObject"]
+        Resource = ["${aws_s3_bucket.db_backups.arn}/prod/core/*", "${aws_s3_bucket.db_backups.arn}/dev/shared/*"]
+      },
+      {
+        Sid       = "ListDumpPrefixes"
+        Effect    = "Allow"
+        Action    = ["s3:ListBucket"]
+        Resource  = aws_s3_bucket.db_backups.arn
+        Condition = { StringLike = { "s3:prefix" = ["prod/core/*", "dev/shared/*"] } }
+      }
+    ]
+  })
+}

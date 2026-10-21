@@ -1,0 +1,75 @@
+name: Database backup
+
+# Nightly dump of core production, weekly dump of shared dev, into the private
+# hashpass-db-backups bucket. AWS access is OIDC-only through a role that can
+# only PutObject under prod/core/ and dev/shared/ (see
+# packages/infra/terraform/stacks/hashpass-db-backups). Restores are proven by
+# db-restore-drill.yml.
+
+on:
+  schedule:
+    - cron: "30 6 * * *"   # core production, daily
+    - cron: "45 6 * * 0"   # shared dev, Sundays
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Which database to dump"
+        type: choice
+        options: [core-production, shared-dev]
+        default: core-production
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: db-backup-${{ github.event.schedule || inputs.target }}
+  cancel-in-progress: false
+
+jobs:
+  dump:
+    if: github.repository == 'hashpass-tech/hashpass.tech'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      TARGET: ${{ inputs.target || (github.event.schedule == '45 6 * * 0' && 'shared-dev' || 'core-production') }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
+        with:
+          role-to-assume: ${{ vars.DB_BACKUP_WRITER_ROLE_ARN }}
+          role-session-name: db-backup-${{ github.run_id }}
+          aws-region: us-east-2
+      - name: Dump, verify, upload
+        env:
+          CORE_DB_URL: ${{ secrets.DB_BACKUP_CORE_DB_URL }}
+          DEV_DB_URL: ${{ secrets.DB_BACKUP_DEV_DB_URL }}
+          BUCKET: ${{ vars.DB_BACKUP_BUCKET }}
+        run: |
+          set -euo pipefail
+          if [ "$TARGET" = "shared-dev" ]; then
+            URL="$DEV_DB_URL"; PREFIX="dev/shared"; NAME="dev-shared"
+          else
+            URL="$CORE_DB_URL"; PREFIX="prod/core"; NAME="core-prod"
+          fi
+          [ -n "$URL" ] && [ -n "$BUCKET" ] || { echo "::error::missing DB_BACKUP secret or bucket variable for $TARGET"; exit 1; }
+          TS=$(date -u +%Y%m%dT%H%M%SZ)
+          OUT="$RUNNER_TEMP/out"; mkdir -p "$OUT"
+
+          # Row counts first, then the dump; the restore drill compares against these.
+          docker run --rm -e U="$URL" -v "$PWD/packages/tools/scripts/db-backup:/q:ro" postgres:17 \
+            sh -c 'psql "$U" -At -f /q/row-counts.sql' > "$OUT/${NAME}_${TS}.counts.txt"
+          docker run --rm -e U="$URL" -v "$OUT:/out" postgres:17 \
+            sh -c "pg_dump \"\$U\" -Fc --no-owner --no-privileges -f /out/${NAME}_${TS}.dump"
+
+          # Never upload a dump that is empty or unreadable.
+          SIZE=$(stat -c %s "$OUT/${NAME}_${TS}.dump")
+          [ "$SIZE" -gt 100000 ] || { echo "::error::dump is suspiciously small ($SIZE bytes)"; exit 1; }
+          [ -s "$OUT/${NAME}_${TS}.counts.txt" ] || { echo "::error::no row counts captured"; exit 1; }
+          docker run --rm -v "$OUT:/out:ro" postgres:17 pg_restore -l "/out/${NAME}_${TS}.dump" > /dev/null
+
+          for f in "${NAME}_${TS}.dump" "${NAME}_${TS}.counts.txt"; do
+            aws s3api put-object --bucket "$BUCKET" --key "$PREFIX/$f" --body "$OUT/$f" \
+              --server-side-encryption AES256 --checksum-algorithm SHA256 > /dev/null
+          done
+          echo "Uploaded $PREFIX/${NAME}_${TS}.dump ($SIZE bytes, $(wc -l < "$OUT/${NAME}_${TS}.counts.txt") tables)" | tee -a "$GITHUB_STEP_SUMMARY"

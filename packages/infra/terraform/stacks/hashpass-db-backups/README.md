@@ -36,8 +36,31 @@ A dump is not verified until it has been restored: restore it into a throwaway
 errors for Supabase-only roles/extensions (`authenticated`, `supabase_vault`).
 Compare the S3 `ChecksumSHA256` with the local file before deleting the local copy.
 
+## Scheduled backups and restore drill
+
+| Workflow | Schedule | What it does |
+|----------|----------|--------------|
+| `.github/workflows/db-backup.yml` | core production daily 06:30 UTC; shared dev Sundays 06:45 UTC | `pg_dump` (postgres:17) + per-table row counts, size/`pg_restore -l` sanity checks, upload to `prod/core/` or `dev/shared/` |
+| `.github/workflows/db-restore-drill.yml` | quarterly (Jan/Apr/Jul/Oct, day 5) | Restores the newest dump into a throwaway postgres:17 and compares every public table's row count with the counts captured at backup time |
+
+AWS access is OIDC only, restricted to this repository's `main` branch:
+
+* `hashpass-db-backups-writer`: `PutObject` under `prod/core/*` and `dev/shared/*` only.
+* `hashpass-db-backups-reader`: `GetObject`/`ListBucket` on the same prefixes only.
+
+Neither role can touch `prod/bsl-final/`, delete, or change the bucket.
+
+Repository configuration (names only):
+
+* variables `DB_BACKUP_BUCKET`, `DB_BACKUP_WRITER_ROLE_ARN`, `DB_BACKUP_READER_ROLE_ARN`
+* secrets `DB_BACKUP_CORE_DB_URL` (core production pooler URL) and `DB_BACKUP_DEV_DB_URL`
+  (shared dev pooler URL). Use a pooler URL: GitHub runners have no IPv6. A dedicated
+  read-only database role is better than the owner credentials.
+
 ## Gaps
 
-* No schedule yet: dumps are manual. Core still needs point-in-time recovery or
-  daily backups enabled in Supabase; this bucket is the second line, not the first.
+* Core still needs Supabase's own backups: enable daily backups and the PITR add-on
+  (Dashboard > Database > Backups). The dump above is the second line, not the first.
 * Nothing replicates the bucket to another region.
+* The dump is logical: it covers the `public` schema and the objects `pg_dump` can read
+  as the pooler user, not Supabase Storage objects or `auth` internals owned by the platform.

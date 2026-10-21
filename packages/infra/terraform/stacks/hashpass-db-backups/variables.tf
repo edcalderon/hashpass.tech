@@ -21,3 +21,9 @@ variable "noncurrent_version_expiration_days" {
   type        = number
   default     = 90
 }
+
+variable "github_repository" {
+  description = "GitHub repository (owner/name) whose main-branch workflows may assume the backup roles."
+  type        = string
+  default     = "hashpass-tech/hashpass.tech"
+}
