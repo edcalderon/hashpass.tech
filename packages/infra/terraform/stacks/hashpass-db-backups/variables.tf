@@ -27,3 +27,27 @@ variable "github_repository" {
   type        = string
   default     = "hashpass-tech/hashpass.tech"
 }
+
+variable "alert_email" {
+  description = "Mailbox for backup freshness alerts. The SNS subscription must be confirmed once from the email AWS sends."
+  type        = string
+  default     = "support@hashpass.tech"
+}
+
+variable "core_max_age_hours" {
+  description = "Alert when the newest prod/core dump is older than this. The workflow runs every 6 hours."
+  type        = number
+  default     = 8
+}
+
+variable "dev_max_age_hours" {
+  description = "Alert when the newest dev/shared dump is older than this. The workflow runs weekly."
+  type        = number
+  default     = 200
+}
+
+variable "min_dump_bytes" {
+  description = "Alert when the newest dump is smaller than this. Real dumps are about 1 MB or more."
+  type        = number
+  default     = 100000
+}

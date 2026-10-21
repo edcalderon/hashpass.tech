@@ -1,6 +1,6 @@
 name: Database backup
 
-# Nightly dump of core production, weekly dump of shared dev, into the private
+# Dump of core production every 6 hours, weekly dump of shared dev, into the private
 # hashpass-db-backups bucket. AWS access is OIDC-only through a role that can
 # only PutObject under prod/core/ and dev/shared/ (see
 # packages/infra/terraform/stacks/hashpass-db-backups). Restores are proven by
@@ -8,7 +8,7 @@ name: Database backup
 
 on:
   schedule:
-    - cron: "30 6 * * *"   # core production, daily
+    - cron: "30 */6 * * *"   # core production, every 6 hours
     - cron: "45 6 * * 0"   # shared dev, Sundays
   workflow_dispatch:
     inputs:

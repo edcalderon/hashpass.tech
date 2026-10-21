@@ -170,3 +170,4 @@ apps/web-app/public/openproof/*.mp4
 !/ops/self-hosted/config/
 /ops/self-hosted/config/*
 !/ops/self-hosted/config/mcp.json.example
+packages/infra/terraform/stacks/hashpass-db-backups/.build/

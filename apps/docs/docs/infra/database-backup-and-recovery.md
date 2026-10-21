@@ -4,7 +4,7 @@ title: Database backup and recovery
 
 # Database backup and recovery
 
-**Status:** automated dumps built 2026-10-21 (workflows land on `main` with the next release); hardening items below are proposed, not built.
+**Status (2026-10-21):** 6-hour dumps, read-only backup roles and the freshness alarm are built. The workflows run once they reach `main`. Items 4-7 under "Recommended service" are not built yet.
 
 ## Constraint: Supabase free tier
 
@@ -26,8 +26,9 @@ Treat the S3 bucket as the first line of defence, not the second.
 | Piece | Where |
 |-------|-------|
 | Bucket (private, encrypted, versioned, TLS-only, `prevent_destroy`) | `packages/infra/terraform/stacks/hashpass-db-backups` |
-| Dump workflow (core daily, shared dev weekly) | `.github/workflows/db-backup.yml` |
+| Dump workflow (core every 6 hours, shared dev weekly) | `.github/workflows/db-backup.yml` |
 | Quarterly restore drill (restore into throwaway `postgres:17`, compare row counts) | `.github/workflows/db-restore-drill.yml` |
+| Freshness alarm (Lambda + SNS + CloudWatch, independent of GitHub) | same Terraform stack, `lambda/freshness.py` |
 | Row-count helpers | `packages/tools/scripts/db-backup/` |
 | Final BSL archive and the one-off 2026-10-21 dumps | `prod/bsl-final/`, `prod/core/`, `dev/shared/` |
 
@@ -36,11 +37,12 @@ and a reader role (read on the same prefixes), both trusted only from `main`.
 
 ## Known limits of the current design
 
-* **RPO is up to 24 hours** (core) / 7 days (dev). Anything written after the last dump is lost in a disaster.
-* **A silent failure is not detected.** GitHub emails on a failed run, but it does not tell us
-  when the schedule never ran. GitHub disables scheduled workflows after 60 days without
-  repository activity on some repos, and a deleted secret or role fails the same way.
-* **The dump credential is the owner URL.** A leaked `DB_BACKUP_CORE_DB_URL` is full write access to production.
+* **RPO is up to 6 hours** (core) / 7 days (dev). Anything written after the last dump is lost in a disaster.
+* **Silent failure is covered only once the alert email is confirmed.** The freshness Lambda emails when the newest
+  dump is too old or too small, which also catches a schedule that never ran. The SNS subscription is created
+  `PendingConfirmation` and does nothing until the recipient confirms it.
+* **The dump credential is a read-only role** (`backup_reader`, `pg_read_all_data`, no write privileges, verified on
+  core and dev). Its password lives only in the `DB_BACKUP_*_DB_URL` secrets; rotate it with `alter role backup_reader password '…'`.
 * **Logical dump scope:** tables and data reachable through `pg_dump`. Not covered: project settings,
   Auth provider config, Edge Function code, Storage objects (speaker images live in our own S3
   buckets, not Supabase Storage). Schema and policies are reproducible from `db/migrations/`.
@@ -51,12 +53,9 @@ and a reader role (read on the same prefixes), both trusted only from `main`.
 
 Keep it small and owned by us. Do not build WAL tooling that the platform will not let us run.
 
-1. **Dump more often.** The database is a few MB, so a dump every 6 hours (RPO 6h) costs effectively nothing. Public-repo Actions minutes are free.
-2. **Read-only backup role.** `create role backup_reader login password …; grant pg_read_all_data to backup_reader;`
-   and use it for `DB_BACKUP_*_DB_URL`. A leaked backup secret then cannot modify data.
-3. **Independent freshness alarm.** A scheduled AWS Lambda (EventBridge) that reads the newest key under
-   `prod/core/` and publishes to SNS/email when it is older than 8 hours or the dump is below an
-   expected size. It does not depend on GitHub, so it also catches a dead schedule.
+1. **Dump more often** (built). Every 6 hours for core; the database is a few MB.
+2. **Read-only backup role** (built). `backup_reader` with `pg_read_all_data`, `bypassrls`, read-only by default, used by `DB_BACKUP_*_DB_URL`.
+3. **Independent freshness alarm** (built). EventBridge-scheduled Lambda that checks the age and size of the newest dump and emails through SNS.
 4. **Retention (grandfather-father-son).** Keep every dump for 14 days, one per day for 35 days, one per
    month for 12 months, via a lifecycle rule on a `daily/` prefix plus a monthly copy. Current objects
    are never expired today; that is fine at this size but should be decided deliberately.

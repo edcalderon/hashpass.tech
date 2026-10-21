@@ -40,7 +40,7 @@ Compare the S3 `ChecksumSHA256` with the local file before deleting the local co
 
 | Workflow | Schedule | What it does |
 |----------|----------|--------------|
-| `.github/workflows/db-backup.yml` | core production daily 06:30 UTC; shared dev Sundays 06:45 UTC | `pg_dump` (postgres:17) + per-table row counts, size/`pg_restore -l` sanity checks, upload to `prod/core/` or `dev/shared/` |
+| `.github/workflows/db-backup.yml` | core production every 6 hours (:30 past 00/06/12/18 UTC); shared dev Sundays 06:45 UTC | `pg_dump` (postgres:17) + per-table row counts, size/`pg_restore -l` sanity checks, upload to `prod/core/` or `dev/shared/` |
 | `.github/workflows/db-restore-drill.yml` | quarterly (Jan/Apr/Jul/Oct, day 5) | Restores the newest dump into a throwaway postgres:17 and compares every public table's row count with the counts captured at backup time |
 
 AWS access is OIDC only, restricted to this repository's `main` branch:
@@ -56,6 +56,15 @@ Repository configuration (names only):
 * secrets `DB_BACKUP_CORE_DB_URL` (core production pooler URL) and `DB_BACKUP_DEV_DB_URL`
   (shared dev pooler URL). Use a pooler URL: GitHub runners have no IPv6. A dedicated
   read-only database role is better than the owner credentials.
+
+## Freshness alarm
+
+A Lambda (`hashpass-db-backups-freshness`, every 2 hours, no GitHub dependency) lists the newest
+`.dump` under `prod/core/` and `dev/shared/` and emails the `hashpass-db-backups-alerts` SNS topic
+when core is older than 8 hours, dev older than 200 hours, or a dump is under 100 kB. A CloudWatch
+alarm on the Lambda's own errors (missing data counts as a failure) covers the checker failing.
+It only has `s3:ListBucket`, so it cannot read dump contents. **The email subscription must be
+confirmed once** from the message AWS sends to the alert address.
 
 ## Gaps
 

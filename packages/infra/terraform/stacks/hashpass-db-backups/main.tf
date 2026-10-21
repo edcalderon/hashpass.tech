@@ -211,3 +211,139 @@ resource "aws_iam_role_policy" "reader" {
     ]
   })
 }
+
+# --- Freshness alarm (independent of GitHub) --------------------------------
+#
+# Emails when the newest dump is too old or too small, or when this check itself
+# fails. A dead GitHub schedule, a deleted secret and a revoked role all look the
+# same from here: no new object.
+
+resource "aws_sns_topic" "alerts" {
+  name         = "hashpass-db-backups-alerts"
+  display_name = "HASHPASS database backups"
+  tags         = { Purpose = "database-backups", ManagedBy = "terraform", Stack = "hashpass-db-backups" }
+}
+
+resource "aws_sns_topic_subscription" "alert_email" {
+  topic_arn = aws_sns_topic.alerts.arn
+  protocol  = "email"
+  endpoint  = var.alert_email
+}
+
+data "archive_file" "freshness" {
+  type        = "zip"
+  source_file = "${path.module}/lambda/freshness.py"
+  output_path = "${path.module}/.build/freshness.zip"
+}
+
+data "aws_iam_policy_document" "lambda_assume" {
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRole"]
+    principals {
+      type        = "Service"
+      identifiers = ["lambda.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role" "freshness" {
+  name               = "hashpass-db-backups-freshness"
+  assume_role_policy = data.aws_iam_policy_document.lambda_assume.json
+  tags               = { Purpose = "database-backups", ManagedBy = "terraform", Stack = "hashpass-db-backups" }
+}
+
+resource "aws_iam_role_policy" "freshness" {
+  name = "list-dumps-and-alert"
+  role = aws_iam_role.freshness.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "ListDumpMetadataOnly"
+        Effect    = "Allow"
+        Action    = ["s3:ListBucket"]
+        Resource  = aws_s3_bucket.db_backups.arn
+        Condition = { StringLike = { "s3:prefix" = ["prod/core/*", "dev/shared/*"] } }
+      },
+      {
+        Sid      = "PublishAlert"
+        Effect   = "Allow"
+        Action   = ["sns:Publish"]
+        Resource = aws_sns_topic.alerts.arn
+      },
+      {
+        Sid      = "WriteOwnLogs"
+        Effect   = "Allow"
+        Action   = ["logs:CreateLogStream", "logs:PutLogEvents"]
+        Resource = "${aws_cloudwatch_log_group.freshness.arn}:*"
+      }
+    ]
+  })
+}
+
+resource "aws_cloudwatch_log_group" "freshness" {
+  name              = "/aws/lambda/hashpass-db-backups-freshness"
+  retention_in_days = 30
+}
+
+resource "aws_lambda_function" "freshness" {
+  function_name    = "hashpass-db-backups-freshness"
+  role             = aws_iam_role.freshness.arn
+  runtime          = "python3.12"
+  handler          = "freshness.handler"
+  filename         = data.archive_file.freshness.output_path
+  source_code_hash = data.archive_file.freshness.output_base64sha256
+  timeout          = 30
+  memory_size      = 128
+
+  environment {
+    variables = {
+      BUCKET    = aws_s3_bucket.db_backups.bucket
+      TOPIC_ARN = aws_sns_topic.alerts.arn
+      CHECKS = jsonencode([
+        { prefix = "prod/core/", max_age_hours = var.core_max_age_hours, min_bytes = var.min_dump_bytes },
+        { prefix = "dev/shared/", max_age_hours = var.dev_max_age_hours, min_bytes = var.min_dump_bytes },
+      ])
+    }
+  }
+
+  depends_on = [aws_cloudwatch_log_group.freshness]
+  tags       = { Purpose = "database-backups", ManagedBy = "terraform", Stack = "hashpass-db-backups" }
+}
+
+resource "aws_cloudwatch_event_rule" "freshness" {
+  name                = "hashpass-db-backups-freshness"
+  description         = "Check that database dumps are fresh."
+  schedule_expression = "rate(2 hours)"
+}
+
+resource "aws_cloudwatch_event_target" "freshness" {
+  rule = aws_cloudwatch_event_rule.freshness.name
+  arn  = aws_lambda_function.freshness.arn
+}
+
+resource "aws_lambda_permission" "freshness" {
+  statement_id  = "AllowEventBridge"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.freshness.function_name
+  principal     = "events.amazonaws.com"
+  source_arn    = aws_cloudwatch_event_rule.freshness.arn
+}
+
+# If the checker itself errors, nothing else would tell us.
+resource "aws_cloudwatch_metric_alarm" "freshness_errors" {
+  alarm_name          = "hashpass-db-backups-freshness-errors"
+  alarm_description   = "The database backup freshness check failed to run."
+  namespace           = "AWS/Lambda"
+  metric_name         = "Errors"
+  dimensions          = { FunctionName = aws_lambda_function.freshness.function_name }
+  statistic           = "Sum"
+  period              = 7200
+  evaluation_periods  = 1
+  threshold           = 0
+  comparison_operator = "GreaterThanThreshold"
+  treat_missing_data  = "breaching" # no invocation at all is also a failure
+  alarm_actions       = [aws_sns_topic.alerts.arn]
+}
