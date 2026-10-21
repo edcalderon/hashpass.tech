@@ -4,6 +4,7 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { config as loadDotenv } from 'dotenv';
+import { needsPreMigrationDump, takePreMigrationDump } from './db-backup/pre-migration-dump.mjs';
 
 const REPO_ROOT = resolve(new URL('../../..', import.meta.url).pathname);
 const CONFIG_PATH = resolve(REPO_ROOT, 'packages/tools/scripts/config/database-profiles.json');
@@ -24,6 +25,7 @@ function parseArgs(argv) {
     env: 'production',
     groups: '',
     dryRun: false,
+    skipBackup: false,
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -31,6 +33,8 @@ function parseArgs(argv) {
 
     if (arg === '--dry-run') {
       args.dryRun = true;
+    } else if (arg === '--skip-backup') {
+      args.skipBackup = true;
     } else if (arg.startsWith('--profile=')) {
       args.profile = arg.slice('--profile='.length);
     } else if (arg === '--profile') {
@@ -177,6 +181,14 @@ function main() {
   }
 
   ensureMigrationTable(databaseUrl.value);
+
+  // Production gets a verified dump before the first pending migration is applied.
+  const pending = migrationFiles.filter((filePath) => !hasMigration(databaseUrl.value, migrationIdFromPath(filePath)));
+  if (needsPreMigrationDump({ environment: profile.environment, pendingCount: pending.length, skip: args.skipBackup })) {
+    takePreMigrationDump({ databaseUrl: databaseUrl.value, profile: args.profile, pending: pending.length });
+  } else if (profile.environment === 'production' && pending.length > 0) {
+    console.warn('WARNING: --skip-backup given; applying production migrations without a pre-migration dump.');
+  }
 
   for (const filePath of migrationFiles) {
     const absolutePath = resolve(REPO_ROOT, filePath);

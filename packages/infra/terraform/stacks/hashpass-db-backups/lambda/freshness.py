@@ -11,12 +11,13 @@ import os
 import boto3
 
 s3 = boto3.client("s3")
+s3_replica = boto3.client("s3", region_name=os.environ.get("REPLICA_REGION"))
 sns = boto3.client("sns")
 
 
-def newest_dump(bucket, prefix):
+def newest_dump(client, bucket, prefix):
     newest = None
-    for page in s3.get_paginator("list_objects_v2").paginate(Bucket=bucket, Prefix=prefix):
+    for page in client.get_paginator("list_objects_v2").paginate(Bucket=bucket, Prefix=prefix):
         for obj in page.get("Contents", []):
             if obj["Key"].endswith(".dump") and (newest is None or obj["LastModified"] > newest["LastModified"]):
                 newest = obj
@@ -28,15 +29,21 @@ def handler(event, context):
     now = datetime.datetime.now(datetime.timezone.utc)
     problems = []
     for check in json.loads(os.environ["CHECKS"]):
-        obj = newest_dump(bucket, check["prefix"])
+        replica = check.get("replica", False)
+        label = ("replica " if replica else "") + check["prefix"]
+        obj = (
+            newest_dump(s3_replica, os.environ["REPLICA_BUCKET"], check["prefix"])
+            if replica
+            else newest_dump(s3, bucket, check["prefix"])
+        )
         if obj is None:
-            problems.append(f"{check['prefix']}: no dump found")
+            problems.append(f"{label}: no dump found")
             continue
         age_h = (now - obj["LastModified"]).total_seconds() / 3600
         if age_h > check["max_age_hours"]:
-            problems.append(f"{check['prefix']}: newest dump is {age_h:.1f}h old (limit {check['max_age_hours']}h): {obj['Key']}")
+            problems.append(f"{label}: newest dump is {age_h:.1f}h old (limit {check['max_age_hours']}h): {obj['Key']}")
         elif obj["Size"] < check["min_bytes"]:
-            problems.append(f"{check['prefix']}: newest dump is only {obj['Size']} bytes (minimum {check['min_bytes']}): {obj['Key']}")
+            problems.append(f"{label}: newest dump is only {obj['Size']} bytes (minimum {check['min_bytes']}): {obj['Key']}")
     if problems:
         sns.publish(
             TopicArn=os.environ["TOPIC_ARN"],

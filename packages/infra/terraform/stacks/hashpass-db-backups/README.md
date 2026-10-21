@@ -57,6 +57,14 @@ Repository configuration (names only):
   (shared dev pooler URL). Use a pooler URL: GitHub runners have no IPv6. A dedicated
   read-only database role is better than the owner credentials.
 
+## Retention, lock and replica
+
+* `db-backup.yml` tags uploads `tier=frequent|daily|monthly|dev` (14 / 35 / 365 / 90 days). Untagged objects never expire.
+* Object Lock GOVERNANCE, 14 days, on both buckets. Irreversible once enabled.
+* Replica: `hashpass-db-backups-replica-<account>-us-west-2`, versioned, locked, encrypted, no delete-marker replication.
+  Same account, so it does not protect against account compromise.
+* `pnpm run db:migrate` dumps production first (`packages/tools/scripts/db-backup/pre-migration-dump.mjs`).
+
 ## Freshness alarm
 
 A Lambda (`hashpass-db-backups-freshness`, every 2 hours, no GitHub dependency) lists the newest

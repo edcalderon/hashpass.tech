@@ -68,8 +68,19 @@ jobs:
           [ -s "$OUT/${NAME}_${TS}.counts.txt" ] || { echo "::error::no row counts captured"; exit 1; }
           docker run --rm -v "$OUT:/out:ro" postgres:17 pg_restore -l "/out/${NAME}_${TS}.dump" > /dev/null
 
+          # Retention tier, read by the bucket's lifecycle rules (see the Terraform stack):
+          #   dev      weekly shared-dev dump           -> 90 days
+          #   monthly  the 00:30 UTC dump on the 1st    -> 365 days
+          #   daily    any other 00:30 UTC dump         -> 35 days
+          #   frequent every other 6-hour dump          -> 14 days
+          if [ "$TARGET" = "shared-dev" ]; then TIER=dev
+          elif [ "$(date -u +%H)" = "00" ] && [ "$(date -u +%d)" = "01" ]; then TIER=monthly
+          elif [ "$(date -u +%H)" = "00" ]; then TIER=daily
+          else TIER=frequent; fi
+          [ "${{ github.event_name }}" = "workflow_dispatch" ] && TIER=frequent
+
           for f in "${NAME}_${TS}.dump" "${NAME}_${TS}.counts.txt"; do
             aws s3api put-object --bucket "$BUCKET" --key "$PREFIX/$f" --body "$OUT/$f" \
-              --server-side-encryption AES256 --checksum-algorithm SHA256 > /dev/null
+              --server-side-encryption AES256 --checksum-algorithm SHA256 --tagging "tier=$TIER" > /dev/null
           done
-          echo "Uploaded $PREFIX/${NAME}_${TS}.dump ($SIZE bytes, $(wc -l < "$OUT/${NAME}_${TS}.counts.txt") tables)" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "Uploaded $PREFIX/${NAME}_${TS}.dump (tier=$TIER, $SIZE bytes, $(wc -l < "$OUT/${NAME}_${TS}.counts.txt") tables)" | tee -a "$GITHUB_STEP_SUMMARY"
