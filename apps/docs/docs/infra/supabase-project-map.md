@@ -71,6 +71,12 @@ doing the right thing.
 Resolves to `core-production`. The BSL project `mnnqryrdlhddorqsrtbn` is a
 read-only backup; no service should use it.
 
+## Plan and backups
+
+All projects are on the Supabase **free plan**: no platform backups, no PITR, no add-ons.
+Our own dumps in the `hashpass-db-backups` bucket are the only backups. See
+[Database backup and recovery](database-backup-and-recovery.md).
+
 ## Migration bootstrap findings (2026-08-06)
 
 Bootstrapping the brand-new `gsugeqozyeokncpbndna` dev project from a

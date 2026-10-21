@@ -59,8 +59,9 @@ Repository configuration (names only):
 
 ## Gaps
 
-* Core still needs Supabase's own backups: enable daily backups and the PITR add-on
-  (Dashboard > Database > Backups). The dump above is the second line, not the first.
+* Supabase is on the **free plan**: no platform backups, no PITR, no add-ons. These dumps are the
+  only backups; recovery point is the age of the newest dump. See
+  `apps/docs/docs/infra/database-backup-and-recovery.md` for limits and the hardening plan.
 * Nothing replicates the bucket to another region.
 * The dump is logical: it covers the `public` schema and the objects `pg_dump` can read
   as the pooler user, not Supabase Storage objects or `auth` internals owned by the platform.
