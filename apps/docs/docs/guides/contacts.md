@@ -35,7 +35,7 @@ Network XP is **not wallet HashPoints**, currency or a redeemable balance. It is
 From the repository root, activate its pinned Node/pnpm tools and run:
 
 ```sh
-pnpm --dir apps/mobile-app exec jest --runInBand --watchAll=false tests/lib/contacts.test.ts tests/api/contacts.test.ts tests/hooks/useContacts.test.tsx tests/app/contacts-screen.test.tsx
+pnpm --dir apps/mobile-app exec jest --runInBand --watchAll=false tests/lib/contacts.test.ts tests/api/contacts.test.ts tests/hooks/useContacts.test.tsx tests/app/contacts-screen.test.tsx tests/app/contacts-graph.test.tsx tests/app/contacts-routing.test.tsx
 pnpm check:design-system
 pnpm check:type-placement
 node packages/tools/scripts/typecheck-changed.mjs
