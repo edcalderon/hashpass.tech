@@ -4,6 +4,13 @@ title: Supabase project map (core vs BSL, dev vs prod)
 
 # Supabase project map
 
+:::warning Consolidation in progress
+On 2026-10-20 the decision was made to serve every tenant and event from core
+production, with the BSL project kept as a read-only backup. Until the cutover
+lands, the tables below describe the live routing. See
+[Decision: one core database](decisions/single-core-database.md).
+:::
+
 This repo talks to **three** physical Supabase projects, not two, and the
 `.env` variable names alone don't make that obvious -- several names are
 ambiguous between profiles by design (fallback chains), which has caused

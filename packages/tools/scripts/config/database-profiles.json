@@ -102,7 +102,11 @@
       "event-ingestion",
       "event-search-aliases",
       "business-invite-campaigns",
-      "lukas-site"
+      "lukas-site",
+      "core-speaker-shape",
+      "event-scoped-speakers",
+      "bsl-speaker-identity-claims",
+      "pending-speaker-eligibility"
     ],
     "better-auth-development": [
       "better-auth-mcp-oauth"
@@ -120,6 +124,12 @@
   "groups": {
     "better-auth-mcp-oauth": [
       "db/migrations/V106__better_auth_mcp_oauth.sql"
+    ],
+    "core-speaker-shape": [
+      "db/migrations/V124__align_core_bsl_speakers_with_event_scoped_shape.sql"
+    ],
+    "pending-speaker-eligibility": [
+      "db/migrations/V123__restore_pending_speaker_meeting_eligibility.sql"
     ],
     "event-scoped-speakers": [
       "db/migrations/V107__scope_legacy_speakers_by_event.sql",
