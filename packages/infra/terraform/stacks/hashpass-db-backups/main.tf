@@ -171,7 +171,7 @@ resource "aws_s3_bucket_policy" "db_backups" {
 # Two roles with deliberately split powers:
 #   writer - may only PutObject under prod/core/ and dev/shared/ (nightly dumps).
 #            It cannot read, list, overwrite-by-delete, or touch prod/bsl-final/.
-#   reader - may only read those prefixes (quarterly restore drill).
+#   reader - may only read those prefixes plus prod/pre-migration/ (quarterly restore drill).
 # Both trust only workflows running on this repository's main branch (scheduled
 # workflows always run there).
 
@@ -243,7 +243,9 @@ resource "aws_iam_role_policy" "reader" {
         Action = ["s3:GetObject"]
         Resource = [
           "${aws_s3_bucket.db_backups.arn}/prod/core/*", "${aws_s3_bucket.db_backups.arn}/dev/shared/*",
+          "${aws_s3_bucket.db_backups.arn}/prod/pre-migration/*",
           "${aws_s3_bucket.replica.arn}/prod/core/*", "${aws_s3_bucket.replica.arn}/dev/shared/*",
+          "${aws_s3_bucket.replica.arn}/prod/pre-migration/*",
         ]
       },
       {
@@ -251,7 +253,7 @@ resource "aws_iam_role_policy" "reader" {
         Effect    = "Allow"
         Action    = ["s3:ListBucket"]
         Resource  = [aws_s3_bucket.db_backups.arn, aws_s3_bucket.replica.arn]
-        Condition = { StringLike = { "s3:prefix" = ["prod/core/*", "dev/shared/*"] } }
+        Condition = { StringLike = { "s3:prefix" = ["prod/core/*", "dev/shared/*", "prod/pre-migration/*"] } }
       }
     ]
   })
