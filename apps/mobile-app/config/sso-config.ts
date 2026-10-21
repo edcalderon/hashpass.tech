@@ -56,7 +56,11 @@ export const SSO_CONFIG = {
 // These values are kept for migration purposes only
 // They will be removed after complete migration to Directus SSO
 export const LEGACY_SUPABASE_CONFIG = {
-  // Old target database (now connected to Directus)
+  // Old target database (now connected to Directus).
+  // HISTORICAL ONLY: this was the BSL production project, which was
+  // consolidated into core (fxgftanraszjjyeidvia) on 2026-10-21 and is now a
+  // frozen read-only backup. Nothing may connect to it; do not copy these
+  // values into a live configuration.
   TARGET_DB: {
     url: 'https://mnnqryrdlhddorqsrtbn.supabase.co',
     host: 'aws-0-us-east-2.pooler.supabase.com',
@@ -106,6 +110,8 @@ export const MIGRATION_STATUS = {
     completed: true,
     users_migrated: 72,
     functions_migrated: 43,
+    // Historical record (2025-12-18): the then-target BSL project, now a frozen
+    // backup after the 2026-10-21 consolidation into core.
     target_db: 'mnnqryrdlhddorqsrtbn',
     date: '2025-12-18',
   },

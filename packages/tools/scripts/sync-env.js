@@ -195,9 +195,6 @@ function applyCanonicalTenantOverrides(targetConfig, runtime) {
       ? [
           'SUPABASE_SERVICE_ROLE_KEY_PROD',
           'SUPABASE_SERVICE_ROLE_KEY',
-          'BSL_SUPABASE_SERVICE_ROLE_KEY_PROD',
-          'SUPABASE_SERVICE_ROLE_KEY_BSL_PROD',
-          'BSL_SUPABASE_SERVICE_ROLE_KEY',
         ]
       : [
           'BSL_SUPABASE_SERVICE_ROLE_KEY_DEV',
@@ -209,9 +206,6 @@ function applyCanonicalTenantOverrides(targetConfig, runtime) {
   const databaseFallbackKeys =
     runtime.environment === 'production'
       ? [
-          'BSL_SUPABASE_DB_URL_PROD',
-          'SUPABASE_DB_URL_BSL_PROD',
-          'BSL_SUPABASE_DB_URL',
           'SUPABASE_DB_URL_PROD',
           'DATABASE_URL_PROD',
           'DATABASE_URL',
@@ -490,22 +484,17 @@ try {
     'SUPABASE_SERVICE_ROLE_KEY_PROD',
     'BSL_SUPABASE_SERVICE_ROLE_KEY',
     'BSL_SUPABASE_SERVICE_ROLE_KEY_DEV',
-    'BSL_SUPABASE_SERVICE_ROLE_KEY_PROD',
     'SUPABASE_SERVICE_ROLE_KEY_BSL_DEV',
-    'SUPABASE_SERVICE_ROLE_KEY_BSL_PROD',
     'SUPABASE_DB_URL',
     'SUPABASE_DB_URL_DEV',
     'SUPABASE_DB_URL_PROD',
     'BSL_SUPABASE_DB_URL',
     'BSL_SUPABASE_DB_URL_DEV',
-    'BSL_SUPABASE_DB_URL_PROD',
     'SUPABASE_DB_URL_BSL_DEV',
-    'SUPABASE_DB_URL_BSL_PROD',
     'DATABASE_URL',
     'DATABASE_URL_DEV',
     'DATABASE_URL_PROD',
     'DATABASE_URL_BSL_DEV',
-    'DATABASE_URL_BSL_PROD',
     'DIRECTUS_URL',
     'EXPO_PUBLIC_DIRECTUS_URL',
     'DIRECTUS_SECRET',

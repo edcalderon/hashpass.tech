@@ -1,4 +1,34 @@
-# Database Migration Guide
+# Database Migration Guide (DEPRECATED)
+
+> **Status: deprecated and unsafe for production (2026-10-21). Do not follow
+> this guide to change a production database.**
+>
+> * **Why:** it describes a one-off "dump the dev schema with `pg_dump --clean`
+>   and replay it onto production" workflow. That drops and recreates objects,
+>   skips the numbered migrations in `db/migrations/`, and never records
+>   anything in `public.hashpass_schema_migrations`.
+> * **Wrong target:** it names `mnnqryrdlhddorqsrtbn` as "Production". That was
+>   the BSL project, which was consolidated into core and is now a **frozen
+>   read-only backup**. The only production database for every tenant and event
+>   is core (`fxgftanraszjjyeidvia`). `tgbdilebadmzqwubsijr` (the "source" below)
+>   is a legacy project, not the current shared dev database
+>   (`gsugeqozyeokncpbndna`).
+> * **Current procedure:** add a numbered `db/migrations/Vnnn__*.sql`, register
+>   it in a group in `packages/tools/scripts/config/database-profiles.json`, then
+>   `pnpm run db:migrate -- --profile core-production --groups <group> --dry-run`
+>   followed by the real run. See [`db/README.md`](../../../db/README.md),
+>   [`supabase-project-map.md`](../../../apps/docs/docs/infra/supabase-project-map.md)
+>   and the [single core database decision](../../../apps/docs/docs/infra/decisions/single-core-database.md).
+> * **Scripts this guide refers to are disabled:** `migrate-db-to-prod-docker.sh`,
+>   `migrate-db-schema-supabase.mjs` and `setup-db-migration.sh` exit immediately
+>   unless `HASHPASS_ALLOW_LEGACY_DB_MIGRATION=1` is set. (`migrate-db-to-prod.sh`
+>   no longer exists.) Do not set it for a production URL.
+>
+> The text below is kept only as a historical record of the original workflow.
+
+---
+
+# Historical: Database Migration Guide
 
 This guide explains how to migrate the database schema from the development Supabase instance to the production instance.
 
@@ -6,7 +36,7 @@ This guide explains how to migrate the database schema from the development Supa
 
 The migration process copies the complete database structure (schema only, no data) from:
 - **Source (Dev)**: `https://tgbdilebadmzqwubsijr.supabase.co`
-- **Production**: `https://mnnqryrdlhddorqsrtbn.supabase.co`
+- **Production (at the time; now the retired BSL backup)**: `https://mnnqryrdlhddorqsrtbn.supabase.co`
 
 ### What Gets Migrated
 
@@ -61,7 +91,7 @@ The migration process copies the complete database structure (schema only, no da
    - Copy the "URI" connection string
    - Replace `[YOUR-PASSWORD]` with your database password
 
-2. **Production Database**:
+2. **Production Database** (historical; do not use the BSL project):
    - Go to: https://supabase.com/dashboard/project/mnnqryrdlhddorqsrtbn/settings/database
    - Copy the "URI" connection string
    - Replace `[YOUR-PASSWORD]` with your database password

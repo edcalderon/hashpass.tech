@@ -1,11 +1,25 @@
 #!/usr/bin/env node
 /**
+ * DEPRECATED (2026-10-21) -- DO NOT USE. Early one-off migration applier that
+ * defaults to the legacy Supabase project tgbdilebadmzqwubsijr and bypasses the
+ * numbered migrations and the ledger public.hashpass_schema_migrations. Use
+ * `pnpm run db:migrate -- --profile <profile> --groups <groups> --dry-run`
+ * (production profile: core-production). Disabled unless
+ * HASHPASS_ALLOW_LEGACY_DB_MIGRATION=1 (never for a production database). See
+ * packages/tools/scripts/README.md#deprecated-database-scripts.
+ *
  * Execute SQL directly using Supabase REST API
  */
 
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+
+if (process.env.HASHPASS_ALLOW_LEGACY_DB_MIGRATION !== '1') {
+  console.error('ERROR: execute-sql-direct.mjs is deprecated and disabled.');
+  console.error('Use: pnpm run db:migrate -- --profile core-production --groups <groups> --dry-run');
+  process.exit(1);
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

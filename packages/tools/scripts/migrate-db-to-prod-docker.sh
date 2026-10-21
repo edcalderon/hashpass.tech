@@ -13,6 +13,26 @@
 
 set -e  # Exit on error
 
+# DEPRECATED (2026-10-21) -- DO NOT USE FOR PRODUCTION.
+# This ad-hoc "dump dev schema, replay onto prod" workflow predates the numbered
+# migrations in db/migrations/ and the ledger-tracked runner
+# (packages/tools/scripts/migrate-tenant-db.mjs). It uses `pg_dump --clean`, so
+# it DROPS and recreates objects on whatever PROD_DB_URL points at, and it
+# bypasses public.hashpass_schema_migrations. Its former default "production"
+# target (mnnqryrdlhddorqsrtbn) is the BSL project, which was consolidated into
+# core and is now a frozen read-only backup. Use instead:
+#   pnpm run db:migrate -- --profile core-production --groups <groups> --dry-run
+# See packages/tools/scripts/DB_MIGRATION_GUIDE.md and
+# apps/docs/docs/infra/decisions/single-core-database.md.
+if [ "${HASHPASS_ALLOW_LEGACY_DB_MIGRATION:-}" != "1" ]; then
+    echo "ERROR: $(basename "$0") is deprecated and disabled." >&2
+    echo "Use: pnpm run db:migrate -- --profile core-production --groups <groups> --dry-run" >&2
+    echo "See packages/tools/scripts/DB_MIGRATION_GUIDE.md. Historical reuse against a" >&2
+    echo "non-production database requires HASHPASS_ALLOW_LEGACY_DB_MIGRATION=1." >&2
+    exit 1
+fi
+
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -55,7 +75,9 @@ SOURCE_SUPABASE_URL="${SOURCE_SUPABASE_URL:-https://tgbdilebadmzqwubsijr.supabas
 SOURCE_DB_URL="${SOURCE_DB_URL}"
 
 # Production database
-PROD_SUPABASE_URL="${PROD_SUPABASE_URL:-https://mnnqryrdlhddorqsrtbn.supabase.co}"
+# No default: the former default (mnnqryrdlhddorqsrtbn, the retired BSL project)
+# must never be targeted by accident.
+PROD_SUPABASE_URL="${PROD_SUPABASE_URL:-<unset>}"
 PROD_DB_URL="${PROD_DB_URL}"
 
 echo -e "${BLUE}🔄 Starting database migration (using Docker)...${NC}\n"
@@ -80,7 +102,7 @@ if [ -z "$SOURCE_DB_URL" ]; then
     echo -e "  4. Replace [YOUR-PASSWORD] with your database password"
     echo -e "\n${YELLOW}Then run:${NC}"
     echo -e "  export SOURCE_DB_URL=\"postgresql://postgres:[PASSWORD]@db.tgbdilebadmzqwubsijr.supabase.co:5432/postgres\""
-    echo -e "  export PROD_DB_URL=\"postgresql://postgres:[PASSWORD]@db.mnnqryrdlhddorqsrtbn.supabase.co:5432/postgres\""
+    echo -e "  export PROD_DB_URL=\"postgresql://postgres:[PASSWORD]@db.<TARGET-PROJECT-REF>.supabase.co:5432/postgres\""
     echo -e "  ./scripts/migrate-db-to-prod-docker.sh\n"
     exit 1
 fi
@@ -94,7 +116,7 @@ if [ -z "$PROD_DB_URL" ]; then
     echo -e "  4. Replace [YOUR-PASSWORD] with your database password"
     echo -e "\n${YELLOW}Then run:${NC}"
     echo -e "  export SOURCE_DB_URL=\"postgresql://postgres:[PASSWORD]@db.tgbdilebadmzqwubsijr.supabase.co:5432/postgres\""
-    echo -e "  export PROD_DB_URL=\"postgresql://postgres:[PASSWORD]@db.mnnqryrdlhddorqsrtbn.supabase.co:5432/postgres\""
+    echo -e "  export PROD_DB_URL=\"postgresql://postgres:[PASSWORD]@db.<TARGET-PROJECT-REF>.supabase.co:5432/postgres\""
     echo -e "  ./scripts/migrate-db-to-prod-docker.sh\n"
     exit 1
 fi

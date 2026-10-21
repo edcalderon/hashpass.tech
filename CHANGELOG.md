@@ -1,3 +1,16 @@
+## [1.9.133](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.132...v1.9.133) (2026-10-21)
+### Released
+- Version 1.9.133 release
+
+### Release scope
+- Compared with: `v1.9.132` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Infrastructure
+- Documentation
+- Release tooling
+
 ## [1.9.132](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.131...v1.9.132) (2026-10-21)
 ### Released
 - consolidate BSL production data into the core database; collapse speaker pass tiers into one expandable row and lift pending badge contrast; redirect hashpass.lat and www to hashpass.tech

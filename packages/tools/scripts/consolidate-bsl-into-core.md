@@ -111,3 +111,6 @@ were already dangling before the copy.
 
 The `bsl-production` profile is no longer migrated. BSL keeps its data as a
 backup and receives no further schema changes.
+
+The staging schemas (`bsl_import`, `bsl_import_auth`) were dropped from core on
+2026-10-21 after the cutover was verified.

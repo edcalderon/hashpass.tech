@@ -98,12 +98,17 @@ Required BSL auth values:
 - `BETTER_AUTH_GOOGLE_CLIENT_SECRET`
 - `BETTER_AUTH_TRUSTED_ORIGINS`
 
-Required BSL Supabase values:
-
-- `EXPO_PUBLIC_BSL_SUPABASE_URL_PROD`
-- `EXPO_PUBLIC_BSL_SUPABASE_KEY_PROD`
-- `BSL_SUPABASE_SERVICE_ROLE_KEY_PROD`
-- `BSL_SUPABASE_DB_URL_PROD`
+BSL production Supabase values are retired. `bsl.hashpass.tech` uses the core
+production values (`EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_KEY`,
+`SUPABASE_SERVICE_ROLE_KEY_PROD`, `SUPABASE_DB_URL_PROD`) since the 2026-10-21
+consolidation; the `bsl-production` GitHub environment's
+`STATIC_SITE_PUBLIC_BUILD_ENV` carries core's public URL and key. The
+production API Lambda gets its database URL from the
+`API_LAMBDA_DATABASE_URL_PROD` repository secret, which `deploy-api-lambda.sh`
+writes to `DATABASE_URL`, `SUPABASE_DB_URL` and `BETTER_AUTH_DATABASE_URL`
+together, and `API_LAMBDA_REMOVE_RETIRED_ENV=true` removes the old BSL keys.
+`BSL_SUPABASE_DB_URL_PROD` remains in a local `.env` only to read the backup.
+The `*_DEV` BSL values are unchanged.
 - The live pipeline projects are `bsl-hashpass-dev-build` and `bsl-hashpass-prod-build`. Dev uses the hybrid static-site buildspec (`packages/tools/buildspecs/bsl-static-site-codebuild.yml`); prod uses `packages/tools/buildspecs/infra-deploy.yml` (SST deploy) -- see `provision-infra-pipelines.sh` for how each project's buildspec is selected.
 
 The sync scripts also keep the public Supabase key aliases aligned for BSL browser helpers.

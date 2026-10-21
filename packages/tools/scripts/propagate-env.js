@@ -329,9 +329,6 @@ function applyCanonicalTenantOverrides(targetConfig, runtime) {
       ? [
           'SUPABASE_SERVICE_ROLE_KEY_PROD',
           'SUPABASE_SERVICE_ROLE_KEY',
-          'BSL_SUPABASE_SERVICE_ROLE_KEY_PROD',
-          'SUPABASE_SERVICE_ROLE_KEY_BSL_PROD',
-          'BSL_SUPABASE_SERVICE_ROLE_KEY',
         ]
       : [
           'BSL_SUPABASE_SERVICE_ROLE_KEY_DEV',
@@ -343,9 +340,6 @@ function applyCanonicalTenantOverrides(targetConfig, runtime) {
   const databaseFallbackKeys =
     options.environment === 'production'
       ? [
-          'BSL_SUPABASE_DB_URL_PROD',
-          'SUPABASE_DB_URL_BSL_PROD',
-          'BSL_SUPABASE_DB_URL',
           'SUPABASE_DB_URL_PROD',
           'DATABASE_URL_PROD',
           'DATABASE_URL',

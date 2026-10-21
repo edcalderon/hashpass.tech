@@ -163,17 +163,36 @@ For non-local `dev`/`production` propagation and AWS sync:
   - `EXPO_PUBLIC_DIRECTUS_URL`
   - `EXPO_PUBLIC_API_BASE_URL`
 - Tenant-specific Supabase aliases are also materialized when configured:
-  - `EXPO_PUBLIC_BSL_SUPABASE_URL_DEV` / `EXPO_PUBLIC_BSL_SUPABASE_URL_PROD`
-  - `EXPO_PUBLIC_BSL_SUPABASE_KEY_DEV` / `EXPO_PUBLIC_BSL_SUPABASE_KEY_PROD`
-  - `BSL_SUPABASE_SERVICE_ROLE_KEY_DEV` / `BSL_SUPABASE_SERVICE_ROLE_KEY_PROD`
-  - `BSL_SUPABASE_DB_URL_DEV` / `BSL_SUPABASE_DB_URL_PROD`
+  - `EXPO_PUBLIC_BSL_SUPABASE_URL_DEV`, `EXPO_PUBLIC_BSL_SUPABASE_KEY_DEV`
+  - `BSL_SUPABASE_SERVICE_ROLE_KEY_DEV`, `BSL_SUPABASE_DB_URL_DEV`
+  - (BSL production values are retired; `bsl.hashpass.tech` uses core production)
 - `SUPABASE_SERVICE_ROLE_KEY` must decode to the expected Supabase project ref for the target environment, otherwise scripts fail fast.
 
 When using different Supabase projects per environment, provide the matching tenant aliases in root `.env`:
 
 - `EXPO_PUBLIC_SUPABASE_KEY_DEV` / `EXPO_PUBLIC_SUPABASE_KEY_PROD`
 - `SUPABASE_SERVICE_ROLE_KEY_DEV` / `SUPABASE_SERVICE_ROLE_KEY_PROD`
-- `EXPO_PUBLIC_BSL_SUPABASE_URL_DEV` / `EXPO_PUBLIC_BSL_SUPABASE_URL_PROD`
-- `EXPO_PUBLIC_BSL_SUPABASE_KEY_DEV` / `EXPO_PUBLIC_BSL_SUPABASE_KEY_PROD`
-- `BSL_SUPABASE_SERVICE_ROLE_KEY_DEV` / `BSL_SUPABASE_SERVICE_ROLE_KEY_PROD`
-- `BSL_SUPABASE_DB_URL_DEV` / `BSL_SUPABASE_DB_URL_PROD`
+- `EXPO_PUBLIC_BSL_SUPABASE_URL_DEV`, `EXPO_PUBLIC_BSL_SUPABASE_KEY_DEV`
+- `BSL_SUPABASE_SERVICE_ROLE_KEY_DEV`, `BSL_SUPABASE_DB_URL_DEV`
+
+## Deprecated database scripts
+
+The supported way to change a database is `migrate-tenant-db.mjs`
+(`pnpm run db:migrate -- --profile <profile> --groups <groups>`), which applies
+numbered files from `db/migrations/` and records them in
+`public.hashpass_schema_migrations`. The production profile is `core-production`
+(one database for every tenant and event; see
+[single core database](../../../apps/docs/docs/infra/decisions/single-core-database.md)).
+
+| File | Status |
+|------|--------|
+| `DB_MIGRATION_GUIDE.md` | **Deprecated 2026-10-21.** Historical record of a dev-to-prod schema replay; carries a banner explaining why it is unsafe and what replaces it. |
+| `migrate-db-to-prod-docker.sh`, `migrate-db-schema-supabase.mjs`, `setup-db-migration.sh` | **Deprecated and disabled 2026-10-21.** Dev-to-prod schema replay with `pg_dump --clean`; its "production" was the BSL project, now a frozen backup. |
+| `apply-migration-direct-api.mjs`, `apply-migration-via-client.mjs`, `execute-sql-direct.mjs`, `apply-wallet-migration.sh`, `run-migration.py` | **Deprecated and disabled 2026-10-21.** Early one-off appliers that default to the legacy project `tgbdilebadmzqwubsijr` (neither core nor the shared dev database). |
+
+Every disabled script exits immediately unless `HASHPASS_ALLOW_LEGACY_DB_MIGRATION=1`
+is set; never set it against a production URL.
+
+When retiring a script, change its header (and, if it can mutate a database,
+make it refuse to run) and list it here, so a stale file cannot be mistaken for
+the current procedure.

@@ -4,10 +4,11 @@ title: Supabase project map (core vs BSL, dev vs prod)
 
 # Supabase project map
 
-:::warning Consolidation in progress
-On 2026-10-20 the decision was made to serve every tenant and event from core
-production, with the BSL project kept as a read-only backup. Until the cutover
-lands, the tables below describe the live routing. See
+:::info Consolidated on 2026-10-21
+Every tenant and event is served from core production. Both `hashpass.tech`
+and `bsl.hashpass.tech` resolve to the `core-production` profile, the
+production API Lambda's database URLs point at core, and the BSL project is a
+read-only backup. See
 [Decision: one core database](decisions/single-core-database.md).
 :::
 
@@ -22,8 +23,8 @@ needs fixing, not the other way around.
 
 | Project ref | Used as | Notes |
 |---|---|---|
-| `fxgftanraszjjyeidvia` | **core production** (`hashpass.tech`) only | Never used for dev, never used for BSL. |
-| `mnnqryrdlhddorqsrtbn` | **BSL production** (`bsl.hashpass.tech`) only | Never used for dev, never used for core. |
+| `fxgftanraszjjyeidvia` | **production for every tenant** (`hashpass.tech`, `bsl.hashpass.tech`, every event) | Never used for dev. |
+| `mnnqryrdlhddorqsrtbn` | **BSL backup (read-only)** | Frozen at the 2026-10-21 cutover. No service may read or write it. |
 | `gsugeqozyeokncpbndna` | **shared dev** for both core and BSL | Deliberate, added 2026-08-06. `core-development` and `bsl-development` both point here. This is the *only* place core and BSL intentionally share a database. |
 
 If you ever see `fxgftanraszjjyeidvia` or `mnnqryrdlhddorqsrtbn` referenced
@@ -69,6 +70,12 @@ doing the right thing.
 ### `bsl-production` (retired)
 Resolves to `core-production`. The BSL project `mnnqryrdlhddorqsrtbn` is a
 read-only backup; no service should use it.
+
+## Plan and backups
+
+All projects are on the Supabase **free plan**: no platform backups, no PITR, no add-ons.
+Our own dumps in the `hashpass-db-backups` bucket are the only backups. See
+[Database backup and recovery](database-backup-and-recovery.md).
 
 ## Migration bootstrap findings (2026-08-06)
 

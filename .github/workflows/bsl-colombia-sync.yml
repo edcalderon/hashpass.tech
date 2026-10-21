@@ -20,6 +20,10 @@ jobs:
       fail-fast: false
       matrix:
         profile: [development, production]
+    # Each environment only accepts its own branch (bsl-production: main,
+    # bsl-development: develop). Scheduled runs always use main, so only the
+    # production leg runs on a schedule; dispatch from develop to sync development.
+    if: (matrix.profile == 'production') == (github.ref_name == 'main')
     runs-on: ubuntu-latest
     environment: bsl-${{ matrix.profile }}
     timeout-minutes: 10

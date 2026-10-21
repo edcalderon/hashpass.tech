@@ -4,8 +4,7 @@ title: "Decision: one core database for every tenant and event"
 
 # Decision: one core database for every tenant and event
 
-**Date:** 2026-10-20 · **Status:** accepted; data copy rehearsed, production
-copy and routing cutover pending (see [Status](#status))
+**Date:** 2026-10-20 · **Status:** done (2026-10-21); see [Status](#status)
 
 ## Decision
 
@@ -50,13 +49,25 @@ verified twice, and the two schemas had already drifted (`bsl_speakers`,
 
 ## Status
 
-* Rehearsed on a restored copy of core plus the staged BSL snapshot: the copy
-  completes, no row points at a missing account, and `can_make_meeting_request`
-  returns `allowed` for Nagel Paulino and Edward Calderón for General-pass
-  holders from both databases.
-* Done: production data copy (V125, verified on core).
-* In the release pipeline: host/event routing to `core-production`, the retired
-  `bsl-production` profile, and the Lambda database URL switch (applied by
-  `deploy-api-lambda.sh` from the `API_LAMBDA_DATABASE_URL_PROD` secret).
-* After the deploy is verified: drop the `bsl_import` and `bsl_import_auth`
-  staging schemas on core, then change this status to **done**.
+**Done, 2026-10-21.**
+
+* Production data copy (V125) verified on core; V126 scopes pending-speaker
+  eligibility to the requested event and is applied on core.
+* Host/event routing sends every BSL host and event to `core-production`; the
+  `bsl-production` database profile is retired (the id aliases to
+  `core-production`).
+* The production Lambda's `DATABASE_URL`, `SUPABASE_DB_URL` and
+  `BETTER_AUTH_DATABASE_URL` point at core, and the retired BSL keys were
+  removed from its environment.
+* `bsl.hashpass.tech` was rebuilt; its live bundle references only core.
+* `can_make_meeting_request` returns `allowed` on production core for
+  General-pass holders booking Nagel Paulino and Edward Calderón.
+* The `bsl_import` and `bsl_import_auth` staging schemas were dropped from core.
+* A final encrypted dump of the BSL project (and of core production and shared
+  dev) is stored in the dedicated `hashpass-db-backups-<account>-us-east-2`
+  bucket under `prod/bsl-final/`, `prod/core/` and `dev/shared/`
+  (`packages/infra/terraform/stacks/hashpass-db-backups`). The BSL dump was
+  restored into a throwaway Postgres and its speaker, pass, meeting-request and
+  `ba_users` counts matched the live project. The BSL project itself is obsolete:
+  it is an archive, not a restore source for current production, and is to be
+  paused and then deleted.

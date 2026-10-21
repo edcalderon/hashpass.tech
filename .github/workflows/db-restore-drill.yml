@@ -1,0 +1,66 @@
+name: Database restore drill
+
+# Quarterly proof that the newest backup actually restores. Downloads the latest
+# dump, restores it into a throwaway postgres:17 container, and compares every
+# public table's row count with the counts captured at backup time. A backup that
+# has never been restored is not a backup.
+
+on:
+  schedule:
+    - cron: "0 9 5 1,4,7,10 *"   # 05:00 Bogota time-ish, first week of each quarter
+  workflow_dispatch:
+    inputs:
+      prefix:
+        description: "Backup prefix to test"
+        type: choice
+        options: [prod/core, dev/shared]
+        default: prod/core
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  drill:
+    if: github.repository == 'hashpass-tech/hashpass.tech'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      PREFIX: ${{ inputs.prefix || 'prod/core' }}
+      BUCKET: ${{ vars.DB_BACKUP_BUCKET }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
+        with:
+          role-to-assume: ${{ vars.DB_BACKUP_READER_ROLE_ARN }}
+          role-session-name: db-restore-drill-${{ github.run_id }}
+          aws-region: us-east-2
+      - name: Fetch newest dump and its row counts
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/drill"
+          KEY=$(aws s3api list-objects-v2 --bucket "$BUCKET" --prefix "$PREFIX/" \
+            --query "sort_by(Contents[?ends_with(Key, '.dump')], &LastModified)[-1].Key" --output text)
+          [ -n "$KEY" ] && [ "$KEY" != "None" ] || { echo "::error::no dump under $PREFIX/"; exit 1; }
+          echo "Newest dump: $KEY"
+          aws s3api get-object --bucket "$BUCKET" --key "$KEY" --checksum-mode ENABLED "$RUNNER_TEMP/drill/db.dump" > /dev/null
+          aws s3api get-object --bucket "$BUCKET" --key "${KEY%.dump}.counts.txt" "$RUNNER_TEMP/drill/expected.txt" > /dev/null
+          echo "KEY=$KEY" >> "$GITHUB_ENV"
+      - name: Restore into a throwaway Postgres 17
+        run: |
+          set -euo pipefail
+          docker run -d --name drill -e POSTGRES_PASSWORD=drill postgres:17 > /dev/null
+          for i in $(seq 1 30); do docker exec drill pg_isready -U postgres >/dev/null 2>&1 && break; sleep 2; done
+          docker cp "$RUNNER_TEMP/drill/db.dump" drill:/tmp/db.dump
+          # Supabase-only roles/extensions/schemas produce non-fatal restore errors; data integrity is
+          # decided by the row-count comparison below, not by pg_restore's exit status.
+          docker exec drill pg_restore -U postgres -d postgres --no-owner --no-privileges /tmp/db.dump > "$RUNNER_TEMP/drill/restore.log" 2>&1 || true
+          echo "pg_restore reported $(grep -c 'error:' "$RUNNER_TEMP/drill/restore.log" || true) error lines"
+      - name: Compare row counts
+        run: |
+          set -euo pipefail
+          docker cp packages/tools/scripts/db-backup/row-counts.sql drill:/tmp/row-counts.sql
+          docker exec drill psql -U postgres -d postgres -At -f /tmp/row-counts.sql > "$RUNNER_TEMP/drill/actual.txt"
+          packages/tools/scripts/db-backup/compare-counts.sh "$RUNNER_TEMP/drill/expected.txt" "$RUNNER_TEMP/drill/actual.txt" | tee -a "$GITHUB_STEP_SUMMARY"
+      - if: always()
+        run: docker rm -f drill >/dev/null 2>&1 || true

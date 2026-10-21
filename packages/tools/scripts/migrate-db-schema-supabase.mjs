@@ -1,6 +1,15 @@
 #!/usr/bin/env node
 
 /**
+ * DEPRECATED (2026-10-21) -- DO NOT USE FOR PRODUCTION.
+ *
+ * Ad-hoc "copy dev schema onto prod" tool that predates db/migrations/ and the
+ * ledger-tracked runner. It replays pg_dump output (with DROP statements) and
+ * bypasses public.hashpass_schema_migrations. Use instead:
+ *   pnpm run db:migrate -- --profile core-production --groups <groups> --dry-run
+ * See packages/tools/scripts/DB_MIGRATION_GUIDE.md. Disabled unless
+ * HASHPASS_ALLOW_LEGACY_DB_MIGRATION=1 (non-production databases only).
+ *
  * Database Schema Migration Script (Supabase Client)
  * 
  * Migrates database structure from source to production Supabase instance using Supabase client.
@@ -21,6 +30,13 @@ import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { execSync } from 'child_process';
+
+if (process.env.HASHPASS_ALLOW_LEGACY_DB_MIGRATION !== '1') {
+  console.error('ERROR: migrate-db-schema-supabase.mjs is deprecated and disabled.');
+  console.error('Use: pnpm run db:migrate -- --profile core-production --groups <groups> --dry-run');
+  console.error('See packages/tools/scripts/DB_MIGRATION_GUIDE.md.');
+  process.exit(1);
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

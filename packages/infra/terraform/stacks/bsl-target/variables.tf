@@ -203,25 +203,25 @@ variable "detailed_monitoring" {
 # CodeBuild projects. Populate the real values in a gitignored
 # terraform.tfvars, never commit them.
 variable "supabase_url_prod" {
-  description = "BSL production Supabase URL"
+  description = "Production Supabase URL for bsl.hashpass.tech. Since 2026-10-21 this MUST be the core production project (fxgftanraszjjyeidvia), not the retired BSL project."
   type        = string
   sensitive   = true
 }
 
 variable "supabase_key_prod" {
-  description = "BSL production Supabase publishable/anon key"
+  description = "Core production publishable/anon key (core project fxgftanraszjjyeidvia, never the retired BSL backup)"
   type        = string
   sensitive   = true
 }
 
 variable "supabase_service_role_key_prod" {
-  description = "BSL production Supabase service-role key"
+  description = "Core production service-role key (core project fxgftanraszjjyeidvia, never the retired BSL backup)"
   type        = string
   sensitive   = true
 }
 
 variable "supabase_db_url_prod" {
-  description = "BSL production Supabase Postgres connection string"
+  description = "Core production Postgres connection string (core project fxgftanraszjjyeidvia, never the retired BSL backup)"
   type        = string
   sensitive   = true
 }
