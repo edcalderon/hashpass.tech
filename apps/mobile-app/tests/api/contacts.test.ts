@@ -30,6 +30,12 @@ describe('Contacts API boundary', () => {
     await post({ action: 'profile', profile }, `?card=${id}`);
     expect(mockRpc).toHaveBeenCalledWith('contact_network', expect.objectContaining({ p_payload: expect.objectContaining({ card: id }) }));
   });
+  it('accepts an explicit speaker identity without allowing arbitrary identity values', async () => {
+    const response = await post({ action: 'profile', profile: { ...profile, identity_mode: 'speaker' } });
+    expect(response.status).toBe(200);
+    expect(validContactsAction({ action: 'profile', profile: { ...profile, identity_mode: 'speaker' } })).toBe(true);
+    expect(validContactsAction({ action: 'profile', profile: { ...profile, identity_mode: 'admin' } })).toBe(false);
+  });
   it.each([
     { action: 'profile', profile: { ...profile, topics: ['AI', 'AI'] } },
     { action: 'profile', profile: { ...profile, topics: ['unknown'] } },

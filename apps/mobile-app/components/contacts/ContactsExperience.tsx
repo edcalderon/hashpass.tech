@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Image, Modal, ScrollView, StyleSheet, Switch, Text, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, Image, Linking, Modal, ScrollView, Share, StyleSheet, Switch, Text, View, useWindowDimensions } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import QRCode from 'react-native-qrcode-svg';
 import { ActionButton, Badge, FilterChip, FormField, IconButton, ModalBackdrop, SegmentedTabs, Surface } from '@hashpass/ui/primitives';
@@ -9,8 +9,9 @@ import { useToastHelpers } from '../../contexts/ToastContext';
 import { useTranslation } from '../../i18n/i18n';
 import { CONTACT_TOPICS, MAX_CONTACT_TOPICS, contactInitials, filterContacts, networkProgress, toggleContactTopic } from '../../lib/contacts';
 import { getHashpassFullLogo } from '../../lib/hashpass-logo';
+import { apiClient } from '../../lib/api-client';
 import { Ionicons } from '../../lib/vector-icons';
-import type { ContactGrouping, ContactProfile, ContactProfileDraft, ContactsExperienceProps, ContactsTab } from '../../types/contacts';
+import type { ContactGrouping, ContactIdentityMode, ContactProfile, ContactProfileDraft, ContactsExperienceProps, ContactsTab } from '../../types/contacts';
 import ContactsGraph from './ContactsGraph';
 
 export default function ContactsExperience({ snapshot, loading = false, busy = false, error, signedIn, standalone, mode, onAction, onRetry, onSignIn, onDashboard, onStandalone }: ContactsExperienceProps) {
@@ -26,7 +27,9 @@ export default function ContactsExperience({ snapshot, loading = false, busy = f
   const [editing, setEditing] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [draft, setDraft] = useState<ContactProfileDraft>({ name: '', role: '', company: '', topics: [], discoverable: false, leaderboard: false });
+  const [draft, setDraft] = useState<ContactProfileDraft>({ name: '', role: '', company: '', topics: [], discoverable: false, leaderboard: false, identity_mode: 'attendee' });
+  const [identityProfiles, setIdentityProfiles] = useState<Partial<Record<ContactIdentityMode, { name: string; role: string; company: string; imageUrl?: string }>>>({});
+  const [identityLoading, setIdentityLoading] = useState(false);
   const { showError, showSuccess } = useToastHelpers();
   const profile = snapshot?.profile;
   const contacts = snapshot?.contacts ?? [];
@@ -36,7 +39,8 @@ export default function ContactsExperience({ snapshot, loading = false, busy = f
   const progress = networkProgress(profile?.points ?? 0);
   const topics = profile?.topics ?? [];
   const shared = snapshot?.shared;
-  const shareUrl = profile?.share_id ? `https://hashpass.tech/contacts?card=${encodeURIComponent(profile.share_id)}` : '';
+  const shareUrl = profile?.share_id ? `https://hpass.id/c/${encodeURIComponent(profile.share_id)}` : '';
+  const qrSize = Math.min(240, Math.max(176, width - 96));
   const styles = useMemo(() => makeStyles(mode), [mode]);
 
   useEffect(() => {
@@ -56,12 +60,61 @@ export default function ContactsExperience({ snapshot, loading = false, busy = f
   const editProfile = () => {
     if (!signedIn) { onSignIn(); return; }
     if (!snapshot || loading || busy) return;
-    setDraft({ name: profile?.name ?? '', role: profile?.role ?? '', company: profile?.company ?? '', topics: [...topics], discoverable: profile?.discoverable ?? false, leaderboard: profile?.leaderboard ?? false });
+    const identityMode = profile?.identity_mode === 'speaker' ? 'speaker' : 'attendee';
+    setDraft({ name: profile?.name ?? '', role: profile?.role ?? '', company: profile?.company ?? '', topics: [...topics], discoverable: profile?.discoverable ?? false, leaderboard: profile?.leaderboard ?? false, identity_mode: identityMode });
+    setIdentityLoading(true);
+    void Promise.allSettled([
+      apiClient.get('/profile/attendee', { skipEventSegment: true }),
+      apiClient.get('/profile/speaker', { skipEventSegment: true }),
+    ]).then(([attendeeResult, speakerResult]) => {
+      const next: Partial<Record<ContactIdentityMode, { name: string; role: string; company: string; imageUrl?: string }>> = {};
+      if (attendeeResult.status === 'fulfilled' && attendeeResult.value.success) {
+        const value = (attendeeResult.value.data as { data?: { fullName?: string | null; title?: string | null; company?: string | null } } | undefined)?.data;
+        if (value) next.attendee = { name: value.fullName?.trim() || profile?.name || '', role: value.title?.trim() || '', company: value.company?.trim() || '' };
+      }
+      if (speakerResult.status === 'fulfilled' && speakerResult.value.success) {
+        const value = (speakerResult.value.data as { data?: { name?: string | null; title?: string | null; company?: string | null; imageUrl?: string | null } } | undefined)?.data;
+        if (value?.name) next.speaker = { name: value.name.trim(), role: value.title?.trim() || '', company: value.company?.trim() || '', imageUrl: value.imageUrl || undefined };
+      }
+      setIdentityProfiles(next);
+      if (identityMode === 'speaker' && next.speaker) setDraft(previous => ({ ...previous, name: next.speaker!.name, role: next.speaker!.role, company: next.speaker!.company, identity_mode: 'speaker' }));
+      else if (identityMode === 'speaker') setDraft(previous => ({ ...previous, identity_mode: 'attendee' }));
+      setIdentityLoading(false);
+    });
     setEditing(true);
+  };
+  const selectIdentity = (identity_mode: ContactIdentityMode) => {
+    const source = identityProfiles[identity_mode];
+    if (!source) return;
+    setDraft(previous => ({ ...previous, ...source, identity_mode }));
   };
   const share = () => {
     if (!profile) { editProfile(); return; }
     setCopied(false); setSharing(true);
+  };
+  const shareMessage = profile ? `${profile.name} · ${[profile.role, profile.company].filter(Boolean).join(' · ')}` : t('shareCard', 'Share card');
+  const shareNative = async () => {
+    if (!shareUrl) return;
+    try {
+      await Share.share({ title: t('shareCard', 'Share card'), message: `${shareMessage}\n${shareUrl}`, url: shareUrl });
+    } catch (error) {
+      if ((error as { message?: string })?.message !== 'User did not share') showError(t('shareFailed', 'Could not open the share sheet.'));
+    }
+  };
+  const shareSocial = async (network: 'linkedin' | 'whatsapp' | 'x') => {
+    if (!shareUrl) return;
+    const encodedUrl = encodeURIComponent(shareUrl);
+    const encodedMessage = encodeURIComponent(`${shareMessage} ${shareUrl}`);
+    const target = network === 'linkedin'
+      ? `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`
+      : network === 'whatsapp'
+        ? `https://wa.me/?text=${encodedMessage}`
+        : `https://twitter.com/intent/tweet?text=${encodedMessage}`;
+    try {
+      await Linking.openURL(target);
+    } catch {
+      showError(t('shareFailed', 'Could not open the share channel.'));
+    }
   };
   const connect = async (card: string) => {
     if (!profile) { editProfile(); return; }
@@ -69,7 +122,7 @@ export default function ContactsExperience({ snapshot, loading = false, busy = f
   };
 
   const person = (contact: ContactProfile, action?: React.ReactNode) => <View key={contact.id} style={styles.person}>
-    <View style={styles.avatar}><Text style={styles.initials}>{contactInitials(contact.name)}</Text></View>
+    {contact.avatar_url ? <Image source={{ uri: contact.avatar_url }} style={styles.avatar} accessibilityLabel={t('avatarFor', '{name} profile photo', { name: contact.name })} /> : <View style={styles.avatar}><Text style={styles.initials}>{contactInitials(contact.name)}</Text></View>}
     <View style={styles.personText}>
       <Text style={styles.name}>{contact.name}</Text>
       {!!(contact.role || contact.company) && <Text style={styles.caption}>{[contact.role, contact.company].filter(Boolean).join(' · ')}</Text>}
@@ -217,9 +270,28 @@ export default function ContactsExperience({ snapshot, loading = false, busy = f
           <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.stack}>
             <View style={styles.between}>{heading(t('editCard', 'Your contact card'))}<IconButton mode={mode} label={t('close', 'Close')} disabled={busy} onPress={() => setEditing(false)}><Ionicons name="close" size={20} color={palette.text} /></IconButton></View>
             <Text style={styles.body}>{t('cardPrivacy', 'Share your name, role and interests. Your email and phone number stay private.')}</Text>
-            <FormField mode={mode} label={t('name', 'Name')} value={draft.name} onChangeText={name => setDraft(value => ({ ...value, name }))} maxLength={80} autoFocus editable={!busy} />
-            <FormField mode={mode} label={t('role', 'Role')} value={draft.role} onChangeText={role => setDraft(value => ({ ...value, role }))} maxLength={100} editable={!busy} />
-            <FormField mode={mode} label={t('company', 'Company')} value={draft.company} onChangeText={company => setDraft(value => ({ ...value, company }))} maxLength={100} editable={!busy} />
+            <View style={styles.identitySection}>
+              <View style={styles.stackSmall}>
+                <Text style={styles.sectionTitle}>{t('shareIdentity', 'Share this identity')}</Text>
+                <Text style={styles.caption}>{t('shareIdentityHint', 'Choose which profile people see when you connect.')}</Text>
+              </View>
+              {identityLoading ? <View style={styles.row}><ActivityIndicator color={palette.accent} /><Text style={styles.caption}>{t('loadingProfiles', 'Checking your profile options…')}</Text></View> : <SegmentedTabs<ContactIdentityMode>
+                mode={mode}
+                fullWidth
+                value={draft.identity_mode}
+                onChange={selectIdentity}
+                accessibilityLabel={t('shareIdentity', 'Share this identity')}
+                tabs={[{ id: 'attendee', label: t('attendeeProfile', 'Attendee profile') }, ...(identityProfiles.speaker ? [{ id: 'speaker' as const, label: t('speakerProfile', 'Speaker profile') }] : [])]}
+              />}
+              {draft.identity_mode === 'speaker' && identityProfiles.speaker ? <View style={styles.identityPreview}>
+                {identityProfiles.speaker.imageUrl ? <Image source={{ uri: identityProfiles.speaker.imageUrl }} style={styles.avatar} accessibilityLabel={t('avatarFor', '{name} profile photo', { name: identityProfiles.speaker.name })} /> : <View style={styles.avatar}><Text style={styles.initials}>{contactInitials(identityProfiles.speaker.name)}</Text></View>}
+                <View style={styles.personText}><Text style={styles.name}>{identityProfiles.speaker.name}</Text><Text style={styles.caption}>{t('speakerProfileHint', 'Your event speaker profile is shared. Edit it from Profile.')}</Text></View>
+                <Badge mode={mode} tone="accent">{t('live', 'LIVE')}</Badge>
+              </View> : <Text style={styles.caption}>{t('attendeeProfileHint', 'Your attendee name, role and company are shared. Contact details stay private.')}</Text>}
+            </View>
+            <FormField mode={mode} label={t('name', 'Name')} value={draft.name} onChangeText={name => setDraft(value => ({ ...value, name }))} maxLength={80} autoFocus editable={!busy && draft.identity_mode === 'attendee'} />
+            <FormField mode={mode} label={t('role', 'Role')} value={draft.role} onChangeText={role => setDraft(value => ({ ...value, role }))} maxLength={100} editable={!busy && draft.identity_mode === 'attendee'} />
+            <FormField mode={mode} label={t('company', 'Company')} value={draft.company} onChangeText={company => setDraft(value => ({ ...value, company }))} maxLength={100} editable={!busy && draft.identity_mode === 'attendee'} />
             {heading(t('chooseTopics', 'Choose your topics'), t('topicLimit', '{count} of {max} interests selected', { count: draft.topics.length, max: MAX_CONTACT_TOPICS }))}
             <View style={styles.wrap}>{CONTACT_TOPICS.map((value: string) => <FilterChip key={value} mode={mode} label={t(`topics.${value}`, value)} selected={draft.topics.includes(value)} disabled={busy || !draft.topics.includes(value) && draft.topics.length >= MAX_CONTACT_TOPICS} onPress={() => setDraft(previous => ({ ...previous, topics: toggleContactTopic(previous.topics, value) }))} />)}</View>
             <View style={styles.between}><View style={styles.personText}><Text style={styles.name}>{t('discoverable', 'Help like-minded people find me')}</Text><Text style={styles.caption}>{t('discoverableHint', 'Show your card in shared-interest suggestions.')}</Text></View><Switch accessibilityLabel={t('discoverable', 'Help like-minded people find me')} value={draft.discoverable} disabled={busy} onValueChange={discoverable => setDraft(previous => ({ ...previous, discoverable }))} trackColor={{ true: palette.accentFill }} /></View>
@@ -236,10 +308,26 @@ export default function ContactsExperience({ snapshot, loading = false, busy = f
           <ScrollView contentContainerStyle={styles.stack}>
             <View style={styles.between}>{heading(t('shareCard', 'Share card'))}<IconButton mode={mode} label={t('close', 'Close')} onPress={() => setSharing(false)}><Ionicons name="close" size={20} color={palette.text} /></IconButton></View>
             {profile && person(profile)}
-            <View style={styles.qr} accessibilityLabel={t('qrLabel', 'Scan to request a connection')} accessible>{!!shareUrl && <QRCode value={shareUrl} size={200} color={uiTokens.colors.light.text} backgroundColor={uiTokens.colors.light.canvas} />}</View>
+            <View style={styles.qr} accessibilityLabel={t('qrLabel', 'Scan to request a connection')} accessible>
+              {!!shareUrl && <View style={[styles.qrCodeFrame, { width: qrSize + uiTokens.space.lg * 2, height: qrSize + uiTokens.space.lg * 2 }]}>
+                <QRCode value={shareUrl} size={qrSize} color={uiTokens.colors.light.text} backgroundColor={uiTokens.colors.light.canvas} quietZone={uiTokens.space.sm} ecl="H" />
+                <View pointerEvents="none" style={styles.qrBrandBadge}>
+                  <Image source={getHashpassFullLogo(false)} style={styles.qrBrandLogo} resizeMode="contain" accessibilityLabel="HASHPASS" />
+                </View>
+              </View>}
+              <Badge mode={mode} compact tone="neutral" leadingIcon={<Ionicons name="link" size={14} color={palette.accent} />}>hpass.id · {t('scanToConnect', 'scan to connect')}</Badge>
+            </View>
             <Text style={styles.body}>{t('shareHint', 'Let someone scan your card or send them the link. You both choose to connect before your networks grow.')}</Text>
             <Text selectable style={styles.caption}>{shareUrl}</Text>
-            <ActionButton mode={mode} label={copied ? t('copied', 'Link copied') : t('copyLink', 'Copy card link')} onPress={async () => { try { const didCopy = await Clipboard.setStringAsync(shareUrl); setCopied(didCopy); if (!didCopy) notifyCopyFailed(); } catch { notifyCopyFailed(); } }} />
+            <View style={styles.shareActions}>
+              <ActionButton mode={mode} label={copied ? t('copied', 'Link copied') : t('copyLink', 'Copy card link')} leadingIcon={<Ionicons name="copy-outline" size={18} color={palette.onAccent} />} onPress={async () => { try { const didCopy = await Clipboard.setStringAsync(shareUrl); setCopied(didCopy); if (!didCopy) notifyCopyFailed(); } catch { notifyCopyFailed(); } }} />
+              <ActionButton mode={mode} variant="secondary" label={t('shareMore', 'Share more ways')} leadingIcon={<Ionicons name="share-social-outline" size={18} color={palette.accent} />} onPress={() => void shareNative()} />
+            </View>
+            <View style={styles.socialRow}>
+              <ActionButton mode={mode} variant="secondary" label="LinkedIn" leadingIcon={<Ionicons name="logo-linkedin" size={18} color={palette.accent} />} onPress={() => void shareSocial('linkedin')} />
+              <ActionButton mode={mode} variant="secondary" label="WhatsApp" leadingIcon={<Ionicons name="logo-whatsapp" size={18} color={palette.accent} />} onPress={() => void shareSocial('whatsapp')} />
+              <ActionButton mode={mode} variant="secondary" label="X" leadingIcon={<Text style={styles.socialGlyph}>𝕏</Text>} onPress={() => void shareSocial('x')} />
+            </View>
           </ScrollView>
         </Surface>
       </ModalBackdrop>
@@ -295,8 +383,16 @@ const makeStyles = (mode: ColorMode) => {
     leaderRow: { flexDirection: 'row', alignItems: 'center', gap: uiTokens.space.md, paddingVertical: uiTokens.space.md, borderBottomWidth: 1, borderColor: p.border },
     rank: { color: p.muted, fontSize: uiTokens.type.title, fontWeight: '600' },
     xp: { color: p.accent, fontSize: uiTokens.type.label, fontWeight: '600' },
-    modalBackdrop: { padding: uiTokens.space.lg, justifyContent: 'center', alignItems: 'center' },
-    dialog: { width: '100%', maxWidth: 640, maxHeight: '90%', backgroundColor: p.raised },
-    qr: { alignSelf: 'center', padding: uiTokens.space.lg, backgroundColor: uiTokens.colors.light.canvas, borderRadius: uiTokens.radius.media },
+    identitySection: { gap: uiTokens.space.lg, padding: uiTokens.space.lg, borderRadius: uiTokens.radius.media, borderWidth: 1, borderColor: p.border, backgroundColor: p.surface },
+    identityPreview: { flexDirection: 'row', alignItems: 'center', gap: uiTokens.space.md, paddingTop: uiTokens.space.xs },
+    modalBackdrop: { padding: uiTokens.space.md, justifyContent: 'center', alignItems: 'center' },
+    dialog: { width: '100%', maxWidth: 640, maxHeight: '92%', backgroundColor: p.raised },
+    qr: { alignSelf: 'center', alignItems: 'center', gap: uiTokens.space.md, padding: uiTokens.space.lg, backgroundColor: uiTokens.colors.light.canvas, borderRadius: uiTokens.radius.media },
+    qrCodeFrame: { alignItems: 'center', justifyContent: 'center', position: 'relative', backgroundColor: uiTokens.colors.light.canvas, borderRadius: uiTokens.radius.media },
+    qrBrandBadge: { position: 'absolute', left: '50%', top: '50%', width: 52, height: 52, marginLeft: -26, marginTop: -26, borderRadius: uiTokens.radius.circle, alignItems: 'center', justifyContent: 'center', backgroundColor: uiTokens.colors.light.canvas, borderWidth: 3, borderColor: uiTokens.colors.light.canvas },
+    qrBrandLogo: { width: 34, height: 34 },
+    shareActions: { gap: uiTokens.space.sm },
+    socialRow: { flexDirection: 'row', flexWrap: 'wrap', gap: uiTokens.space.sm },
+    socialGlyph: { color: p.accent, fontSize: uiTokens.type.label, fontWeight: '700' },
   });
 };

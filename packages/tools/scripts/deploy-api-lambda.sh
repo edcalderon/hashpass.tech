@@ -323,6 +323,19 @@ for (const key of syncKeys) {
 
 const measuredBytes = Buffer.byteLength(JSON.stringify(current), 'utf8');
 
+if (measuredBytes > 3500) {
+  // Budget guard: the hard AWS limit is 4096 and the script's safe ceiling is
+  // 3900; above 3500 there is little headroom left for the next secret.
+  // See apps/docs/docs/infra/decisions/lambda-env-var-budget.md.
+  console.warn(
+    `Lambda environment is ${measuredBytes} bytes -- over the 3500-byte budget guard. ` +
+      'Move the next secret to Secrets Manager/Infisical (lib/server/infisical-secrets.ts) instead of adding it here.'
+  );
+}
+
+// The warning above is advisory. Keep status selection and payload generation
+// independent from it so a valid payload between the warning threshold and the
+// safe ceiling is still written and applied.
 if (changed.length === 0) {
   fs.writeFileSync(statusPath, JSON.stringify({ action: 'noop', changed, measuredBytes, maxBytes }));
   console.log('Lambda environment already has the requested public Supabase/API keys.');
@@ -336,16 +349,6 @@ if (changed.length === 0) {
     // Surface it as a check annotation too, not just a log line.
     console.log(`::error::${message.replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A')}`);
   }
-}
-
-if (measuredBytes > 3500) {
-  // Budget guard: the hard AWS limit is 4096 and the script's safe ceiling is
-  // 3900; above 3500 there is little headroom left for the next secret.
-  // See apps/docs/docs/infra/decisions/lambda-env-var-budget.md.
-  console.warn(
-    `Lambda environment is ${measuredBytes} bytes -- over the 3500-byte budget guard. ` +
-      'Move the next secret to Secrets Manager/Infisical (lib/server/infisical-secrets.ts) instead of adding it here.'
-  );
 } else {
   fs.writeFileSync(environmentPath, JSON.stringify({ Variables: current }));
   fs.writeFileSync(statusPath, JSON.stringify({ action: 'update', changed, measuredBytes, maxBytes }));

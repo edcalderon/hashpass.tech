@@ -288,7 +288,9 @@
     ],
     "marketing-campaigns": [
       "db/migrations/V132__marketing_campaigns.sql",
-      "db/migrations/V133__marketing_activity_snapshots.sql"
+      "db/migrations/V133__marketing_activity_snapshots.sql",
+      "db/migrations/V134__contact_identity_modes.sql",
+      "db/migrations/V135__contact_profile_avatars.sql"
     ]
   }
 }
