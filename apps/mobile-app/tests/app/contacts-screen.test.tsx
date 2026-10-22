@@ -1,8 +1,14 @@
 import React from 'react';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
-import { Image, Modal, Text, TextInput } from 'react-native';
+import { Image, Linking, Modal, Share, Text, TextInput } from 'react-native';
 import ContactsExperience from '../../components/contacts/ContactsExperience';
 import type { ContactsExperienceProps, ContactsSnapshot } from '../../types/contacts';
+jest.mock('react-native', () => {
+  const actual = jest.requireActual('react-native');
+  const share = { share: jest.fn(), sharedAction: 'sharedAction', dismissedAction: 'dismissedAction' };
+  Object.defineProperty(actual, 'Share', { configurable: true, value: share });
+  return actual;
+});
 const mockCopy = jest.fn();
 
 const mockShowError = jest.fn();
@@ -87,7 +93,42 @@ describe('Contacts experience', () => {
     await act(async () => { view = create(<ContactsExperience {...props} />); });
     act(() => control(view, 'Share card').props.onPress());
     expect(view.root.findAllByType(Image).some(image => image.props.source?.uri === 'https://images.example/ari.png')).toBe(true);
-    expect(view.root.findAllByType(Text).some(text => String(text.props.children).includes('https://hpass.id/c/00000000-0000-4000-8000-000000000001'))).toBe(true);
+    const cardUrl = view.root.findAllByType(Text)
+      .map(text => String(text.props.children))
+      .map(value => { try { return new URL(value); } catch { return null; } })
+      .find(value => value?.hostname === 'hpass.id');
+    expect(cardUrl?.protocol).toBe('https:');
+    expect(cardUrl?.hostname).toBe('hpass.id');
+    expect(cardUrl?.pathname).toBe('/c/00000000-0000-4000-8000-000000000001');
+    act(() => view.unmount());
+  });
+
+  it('shares through native and social channels and reports rejected share attempts', async () => {
+    const nativeShare = jest.spyOn(Share, 'share').mockResolvedValue({ action: 'sharedAction' });
+    const openUrl = jest.mocked(Linking.openURL);
+    openUrl.mockReset().mockResolvedValue(true);
+    let view!: ReactTestRenderer;
+    await act(async () => { view = create(<ContactsExperience {...props} />); });
+    act(() => control(view, 'Share card').props.onPress());
+
+    await act(async () => { await control(view, 'Share more ways').props.onPress(); });
+    expect(nativeShare).toHaveBeenCalledWith(expect.objectContaining({ url: 'https://hpass.id/c/00000000-0000-4000-8000-000000000001' }));
+
+    await act(async () => { await control(view, 'LinkedIn').props.onPress(); });
+    await act(async () => { await control(view, 'WhatsApp').props.onPress(); });
+    await act(async () => { await control(view, 'X').props.onPress(); });
+    expect(openUrl).toHaveBeenNthCalledWith(1, expect.stringContaining('linkedin.com/sharing/share-offsite'));
+    expect(openUrl).toHaveBeenNthCalledWith(2, expect.stringContaining('wa.me/?text='));
+    expect(openUrl).toHaveBeenNthCalledWith(3, expect.stringContaining('twitter.com/intent/tweet'));
+
+    nativeShare.mockRejectedValueOnce(new Error('share unavailable'));
+    await act(async () => { await control(view, 'Share more ways').props.onPress(); });
+    expect(mockShowError).toHaveBeenCalledWith('Could not open the share sheet.');
+
+    openUrl.mockRejectedValueOnce(new Error('channel unavailable'));
+    await act(async () => { await control(view, 'LinkedIn').props.onPress(); });
+    expect(mockShowError).toHaveBeenCalledWith('Could not open the share channel.');
+    nativeShare.mockRestore();
     act(() => view.unmount());
   });
 });
