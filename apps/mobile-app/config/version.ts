@@ -22,25 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610221720, // Updated to current timestamp
+  buildNumber: 202610221849, // Updated to current timestamp
   releaseDate: '2026-10-22',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'guided profile claim with email verification and admin alerts',
-    'prepare BSL 2026 campaign and reusable admin operations'
+    // No new features
   ],
   bugfixes: [
-    'select Node through .nvmrc in marketing storage workflow',
-    'preserve shared dev database pooler',
-    'resolve promotion PRs reliably'
+    // No bugfixes
   ],
   breakingChanges: [],
-  notes: 'guided profile claim with email verification and admin alerts; prepare BSL 2026 campaign and reusable admin operations; select Node through .nvmrc in marketing storage workflow; preserve shared dev database pooler; resolve promotion PRs reliably'
+  notes: 'Version 1.9.138 release'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.138': {
+    version: '1.9.138',
+    buildNumber: 202610221849,
+    releaseDate: '2026-10-22',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'Version 1.9.138 release'
+  },
   '1.9.137': {
     version: '1.9.137',
     buildNumber: 202610221720,
