@@ -262,7 +262,8 @@
       "db/migrations/V114__activate_public_speaker_profiles_and_queue_meetings.sql",
       "db/migrations/V115__repair_speaker_claim_review_policy.sql",
       "db/migrations/V116__separate_pending_speaker_profiles.sql",
-      "db/migrations/V122__sync_bsl_colombia_speaker_accounts.sql"
+      "db/migrations/V122__sync_bsl_colombia_speaker_accounts.sql",
+      "db/migrations/V132__speaker_claim_email_verification.sql"
     ],
     "event-pass-tiers": [
       "db/migrations/V035__configure_event_pass_tiers.sql",

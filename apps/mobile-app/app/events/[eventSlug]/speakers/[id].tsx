@@ -1128,20 +1128,19 @@ export default function SpeakerDetail() {
           />
           {directoryState.isPublished && !directoryState.isClaimed && (
             <View style={styles.claimBadgeSlot} testID="claim-profile">
-              <TouchableOpacity
-                accessibilityRole="button"
+              <ActionButton
+                mode={isDark ? 'dark' : 'light'}
+                variant="secondary"
+                label={claimStatus === 'pending' ? t('speakerView.claimPendingShort') : t('speakerView.claimProfileShort')}
                 accessibilityLabel={claimStatus === 'pending' ? t('speakerView.claimPending') : t('speakerView.claimProfile')}
-                accessibilityState={{ disabled: claimStatus !== 'idle', busy: claimStatus === 'loading' }}
                 disabled={claimStatus !== 'idle'}
+                loading={claimStatus === 'loading'}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 onPress={handleClaimProfile}
-                style={[styles.claimBadge, claimStatus !== 'idle' && styles.claimBadgeDisabled]}
-              >
-                <MaterialIcons name={claimStatus === 'pending' ? 'hourglass-top' : 'verified-user'} size={12} color={colors.primary} />
-                <Text style={styles.claimBadgeText} numberOfLines={1}>
-                  {claimStatus === 'pending' ? t('speakerView.claimPendingShort') : t('speakerView.claimProfileShort')}
-                </Text>
-              </TouchableOpacity>
+                leadingIcon={<MaterialIcons name={claimStatus === 'pending' ? 'hourglass-top' : 'verified-user'} size={16} color={isDark ? '#ffffff' : colors.primary} />}
+                labelNumberOfLines={1}
+                testID="claim-profile-action"
+              />
             </View>
           )}
           {/* Floating status badge near avatar */}
@@ -2183,26 +2182,6 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     top: -uiTokens.space.xs,
     left: -uiTokens.space.xs,
     zIndex: 2,
-  },
-  claimBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: uiTokens.space.xs,
-    paddingHorizontal: uiTokens.space.sm,
-    paddingVertical: uiTokens.space.xs,
-    borderRadius: uiTokens.radius.pill,
-    borderWidth: uiTokens.control.borderWidth,
-    borderColor: colors.divider,
-    backgroundColor: colors.background.paper,
-  },
-  claimBadgeText: {
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 0.3,
-    color: colors.primary,
-  },
-  claimBadgeDisabled: {
-    opacity: 0.65,
   },
   socialLinks: {
     flexDirection: 'row',

@@ -208,7 +208,7 @@ BEGIN
         'claim_id', v_existing.id, 'speaker_id', v_existing.speaker_id,
         'status', v_existing.status, 'claim_mode', v_existing.claim_mode,
         'verification_status', v_existing.verification_status,
-        'speaker_name', v_speaker.name, 'claim_email', v_existing.claim_email,
+        'speaker_name', v_speaker.name, 'claim_email', NULL::text,
         'created', false, 'reviewer_ids', '[]'::jsonb
       );
     END IF;
