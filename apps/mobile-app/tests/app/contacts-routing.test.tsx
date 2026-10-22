@@ -14,7 +14,28 @@ jest.mock('react-native-safe-area-context', () => ({ SafeAreaView: 'SafeAreaView
 jest.mock('../../hooks/useAuth', () => ({ useAuth: () => mockAuth }));
 jest.mock('../../hooks/useTheme', () => ({ useTheme: () => ({ isDark: true }) }));
 jest.mock('../../hooks/useContacts', () => ({ useContacts: (...args: unknown[]) => mockContacts(...args) }));
+// The setup wizard and PIN seams pull `lib/setup-client` -> `lib/api-client` ->
+// expo-constants, whose module init crashes under this suite's mock set. They are
+// not what these routing tests exercise: with a null setup view the screen renders
+// ContactsExperience (mocked below), exactly the surface under test.
+jest.mock('../../hooks/useSetup', () => ({ useSetup: () => ({ view: null, context: null, required: false, send: jest.fn() }) }));
+jest.mock('../../hooks/usePin', () => ({
+  usePin: () => ({
+    busy: false,
+    problem: null,
+    isUnlocked: () => false,
+    setPin: jest.fn(async () => true),
+    unlock: jest.fn(async () => true),
+    proofFor: () => null,
+    lock: jest.fn(),
+    clearProblem: jest.fn(),
+  }),
+}));
 jest.mock('../../components/contacts/ContactsExperience', () => 'ContactsExperience');
+// SetupWizard's static import chain (PinPad -> expo-haptics -> expo-asset ->
+// expo-constants) crashes this suite's mock environment at module init; the
+// wizard itself is not what these routing tests exercise.
+jest.mock('../../components/security/SetupWizard', () => 'SetupWizard');
 
 describe('Contacts standalone and dashboard routing', () => {
   beforeEach(() => {

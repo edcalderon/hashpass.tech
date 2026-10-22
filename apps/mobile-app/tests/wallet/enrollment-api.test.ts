@@ -141,7 +141,7 @@ describe('second factor on wallet creation', () => {
   });
 
   it('refuses a proof signed under a different pepper', async () => {
-    const foreign = issueStepUpProof(owner, 'wallet:sign', Date.now(), { HASHPASS_PIN_PEPPER: 'another-pepper-another-pepper-another-pepper' } as NodeJS.ProcessEnv).token;
+    const foreign = issueStepUpProof(owner, 'wallet:sign', Date.now(), { ...process.env, HASHPASS_PIN_PEPPER: 'another-pepper-another-pepper-another-pepper' }).token;
     await denied(await POST(request(reserve, foreign)));
   });
 
