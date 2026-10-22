@@ -73,7 +73,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     [localNotifications, serverNotifications],
   );
   const [isLoading, setIsLoading] = useState(true);
-  const { user, dbUserId } = useAuth();
+  const { user, dbUserId, isLoading: authLoading } = useAuth();
   const { t } = useTranslation();
 
   // Track current user ID to prevent unnecessary re-fetches
@@ -116,6 +116,13 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   }, []);
 
   const fetchNotifications = useCallback(async (force = false) => {
+    // Better Auth can briefly expose a cached user while its cookie/session
+    // bootstrap is still settling. Do not turn that transitional state into
+    // a pair of protected requests that are guaranteed to race the session
+    // cookie (and produce noisy 401s in the browser). The auth hook will
+    // re-run this effect once the provider state is resolved.
+    if (authLoading) return;
+
     if (!user) {
       setNotifications([]);
       resetLocalNotifications();
@@ -182,7 +189,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     } finally {
       setIsLoading(false);
     }
-  }, [user, t, recordFetchFailure, recordFetchSuccess]);
+  }, [authLoading, user, t, recordFetchFailure, recordFetchSuccess]);
 
   const markAsRead = useCallback(async (notificationId: string) => {
     if (isLocalNotification(notificationId)) {
@@ -347,9 +354,9 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   // still recover for the current session (see the success-only ref guard
   // above).
   useEffect(() => {
-    if (!user) return;
+    if (authLoading) return;
     fetchNotifications();
-  }, [user, fetchNotifications, dbUserId]);
+  }, [authLoading, user, fetchNotifications, dbUserId]);
 
   // Set up real-time subscription — scoped to the resolved Supabase auth
   // UUID, not user.id, since user.id may be a non-Supabase provider id that
@@ -362,7 +369,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     // and a reconnect storm on top of an already-struggling DB only makes it
     // worse. The 30s poll below keeps working as the fallback in the
     // meantime; this effect re-runs once backendDegraded clears.
-    if (!user || !resolvedUserId || backendDegraded) return;
+    if (authLoading || !user || !resolvedUserId || backendDegraded) return;
 
     // Unique topic per subscription instance. A stable per-user topic collides
     // on the Realtime server whenever two subscriptions for the same user race
@@ -484,14 +491,14 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       supabase.removeChannel(channel);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id, resolvedUserId, backendDegraded]); // Identity + degraded-state gate; other user changes intentionally excluded
+  }, [authLoading, user?.id, resolvedUserId, backendDegraded]); // Identity + degraded-state gate; other user changes intentionally excluded
 
   // Auto-refresh notifications as a fallback, with exponential backoff on
   // consecutive failures (capped at NOTIFICATION_POLL_MAX_MS) instead of a
   // fixed 30s interval -- a fixed interval kept hammering an already-failing
   // backend at full frequency during the real incident this guards against.
   useEffect(() => {
-    if (!user) return;
+    if (authLoading || !user) return;
 
     let timeoutId: ReturnType<typeof setTimeout>;
     let cancelled = false;
@@ -513,7 +520,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       clearTimeout(timeoutId);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id, fetchNotifications]); // Only depend on identity + the fetch fn to prevent timer-chain recreation on other user changes
+  }, [authLoading, user?.id, fetchNotifications]); // Only depend on identity + the fetch fn to prevent timer-chain recreation on other user changes
 
   const value: NotificationContextType = {
     notifications,
