@@ -38,6 +38,7 @@ jest.mock('../../lib/api-client', () => ({
 jest.mock('../../lib/event-path', () => ({ resolveActiveEventId: () => 'chile2026' }));
 jest.mock('expo-router', () => ({ useRouter: () => ({ replace: jest.fn() }) }));
 jest.mock('../../components/AdminQRScanner', () => 'AdminQRScanner');
+jest.mock('../../components/admin/MarketingManager', () => 'MarketingManager');
 jest.mock('../../components/LoadingScreen', () => 'LoadingScreen');
 jest.mock('../../lib/vector-icons', () => ({
   MaterialIcons: 'MaterialIcons',

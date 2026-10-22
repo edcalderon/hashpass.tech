@@ -1,0 +1,15 @@
+REVIEW PREVIEW — recipient unsubscribe token is inserted only at send time.
+
+Tu participación deja una huella.
+
+Tu participación deja una huella.
+
+El programa previsto para usuarios HASHPASS registrará interacciones como actividad para un sistema de niveles y puntos de bonificación de un futuro airdrop exclusivo de $LKS en el TGE.
+
+Los niveles, la elegibilidad final, el cálculo de asignaciones y los plazos se anunciarán por los canales oficiales. El registro y las instantáneas de prueba no constituyen una distribución de tokens ni garantizan una asignación. No necesitas comprar tokens ni compartir tu frase de recuperación para preparar tu participación.
+
+Ver las guías oficiales: https://hashpass.tech/demo?utm_source=hashpass&utm_medium=email&utm_campaign=bsl2026-activity
+Video y guía: https://hashpass.tech/campaigns/bsl-2026/#activity
+
+Recibes este correo por tu suscripción a las novedades de HASHPASS. Puedes dejar de recibir campañas en cualquier momento.
+Cancelar suscripción: https://api.hashpass.tech/api/marketing/unsubscribe?token=PREVIEW

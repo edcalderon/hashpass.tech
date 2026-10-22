@@ -1,0 +1,15 @@
+REVIEW PREVIEW — recipient unsubscribe token is inserted only at send time.
+
+Your participation leaves a record.
+
+Your participation leaves a record.
+
+The planned HASHPASS-user programme records interactions as activity for tiers and bonus points toward a future user-exclusive $LKS airdrop at TGE.
+
+Tier definitions, final eligibility, allocation calculations and timing will be announced through official channels. Test records and prepared snapshots are not token distributions and do not guarantee an allocation. You do not need to buy tokens or share a recovery phrase to prepare your participation.
+
+View the official guides: https://hashpass.tech/demo?utm_source=hashpass&utm_medium=email&utm_campaign=bsl2026-activity
+Video and guide: https://hashpass.tech/campaigns/bsl-2026/#activity
+
+You receive this email because you subscribed to HASHPASS updates. You can stop receiving campaigns at any time.
+Unsubscribe: https://api.hashpass.tech/api/marketing/unsubscribe?token=PREVIEW

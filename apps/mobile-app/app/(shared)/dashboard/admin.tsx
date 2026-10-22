@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import { MaterialIcons } from "../../../lib/vector-icons";
 import { useTheme } from "../../../hooks/useTheme";
+import MarketingManager from '../../../components/admin/MarketingManager';
 import { useAuth } from "../../../hooks/useAuth";
 import type { AdminRole } from "../../../lib/admin-utils";
 import { getCurrentAdminAccess } from "../../../lib/admin-access";
@@ -1718,7 +1719,10 @@ export default function AdminPanel() {
           />
         )}
 
-        {activeTab === "emails" && <CommunicationsTab styles={styles} colors={colors} subject={campaignSubject} heading={campaignHeading} message={campaignMessage} audience={campaignAudience} template={campaignTemplate} preview={campaignPreview} sending={campaignSending} onSubject={setCampaignSubject} onHeading={setCampaignHeading} onMessage={setCampaignMessage} onAudience={setCampaignAudience} onTemplate={setCampaignTemplate} onPreview={() => submitCampaign(true)} onSend={() => submitCampaign(false)} />}
+        {activeTab === "emails" && <>
+          {isGlobalAdmin && <MarketingManager mode={isDark ? 'dark' : 'light'} />}
+          <CommunicationsTab styles={styles} colors={colors} subject={campaignSubject} heading={campaignHeading} message={campaignMessage} audience={campaignAudience} template={campaignTemplate} preview={campaignPreview} sending={campaignSending} onSubject={setCampaignSubject} onHeading={setCampaignHeading} onMessage={setCampaignMessage} onAudience={setCampaignAudience} onTemplate={setCampaignTemplate} onPreview={() => submitCampaign(true)} onSend={() => submitCampaign(false)} />
+        </>}
 
         {activeTab === "roles" && (
           <RolesTab

@@ -65,6 +65,29 @@ describe('updates@hashpass.tech sender', () => {
     );
   });
 
+  const marketingMessage = { to: 'fixture@example.test', subject: 'Campaign', html: '<p>Preview</p>', text: 'Preview', unsubscribeUrl: 'https://api.hashpass.tech/api/marketing/unsubscribe?token=opaque', deliveryId: 'delivery-uuid' };
+  it('sends auditable campaign messages with one-click opt-out headers', async () => {
+    const { marketingSenderReady, sendMarketingMessage } = require('../../lib/email');
+    expect(await marketingSenderReady()).toBe(true);
+    mockSendMail.mockResolvedValueOnce({ messageId: 'm1', accepted: [marketingMessage.to] });
+    expect(await sendMarketingMessage(marketingMessage)).toEqual({ status: 'accepted', messageId: 'm1' });
+    expect(mockSendMail).toHaveBeenCalledWith(expect.objectContaining({
+      messageId: '<marketing-delivery-uuid@hashpass.tech>',
+      headers: { 'List-Unsubscribe': `<${marketingMessage.unsubscribeUrl}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' },
+    }));
+  });
+  it('distinguishes provider rejection from uncertain network outcomes', async () => {
+    const { sendMarketingMessage } = require('../../lib/email');
+    mockSendMail.mockResolvedValueOnce({ rejected: ['fixture@example.test'] });
+    expect((await sendMarketingMessage(marketingMessage)).status).toBe('failed');
+    mockSendMail.mockRejectedValueOnce({ responseCode: 550 });
+    expect(await sendMarketingMessage(marketingMessage)).toEqual({ status: 'failed', errorCode: 'smtp_rejected' });
+    mockSendMail.mockRejectedValueOnce(new Error('socket closed after submission'));
+    expect(await sendMarketingMessage(marketingMessage)).toEqual({ status: 'unknown', errorCode: 'transport_outcome_uncertain' });
+    mockSendMail.mockResolvedValueOnce({ messageId: 'm1', accepted: [] });
+    expect(await sendMarketingMessage(marketingMessage)).toEqual({ status: 'unknown', errorCode: 'provider_acceptance_unconfirmed' });
+  });
+
   it('shares one transporter build across concurrent campaign sends', async () => {
     const { sendAdminCampaignEmail } = require('../../lib/email');
     mockCreateTransport.mockClear();
