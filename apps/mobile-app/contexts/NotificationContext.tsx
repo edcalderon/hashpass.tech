@@ -67,7 +67,7 @@ interface NotificationProviderProps {
 
 export const NotificationProvider: React.FC<NotificationProviderProps> = ({ children }) => {
   const [serverNotifications, setNotifications] = useState<Notification[]>([]);
-  const localNotifications = useSyncExternalStore(subscribeLocalNotifications, getLocalNotifications, getLocalNotifications);
+  const localNotifications = useSyncExternalStore<Notification[]>(subscribeLocalNotifications, getLocalNotifications, getLocalNotifications);
   const notifications = useMemo(
     () => [...localNotifications, ...serverNotifications].sort((first, second) => Date.parse(second.created_at) - Date.parse(first.created_at)),
     [localNotifications, serverNotifications],

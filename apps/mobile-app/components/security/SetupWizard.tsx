@@ -6,6 +6,7 @@ import type { ColorMode } from '@hashpass/ui/tokens';
 import { useTranslation } from '../../i18n/i18n';
 import { CONTACT_TOPICS, MAX_CONTACT_TOPICS } from '../../lib/contacts';
 import { MAX_SETUP_GOALS, SETUP_GOALS } from '../../lib/setup';
+import type { SetupGoal } from '../../types/setup';
 import { SETUP_WIZARD_STEPS, type SetupWizardContext, type SetupWizardEvent, type SetupWizardView } from '../../hooks/setup-wizard-machine';
 import type { UsePin } from '../../hooks/usePin';
 import PinFlow from './PinFlow';
@@ -61,7 +62,7 @@ export default function SetupWizard({ mode, view, context, send, pin, onClose }:
       </View>
 
       {view.step === 'goals' && <View style={styles.wrap}>
-        {SETUP_GOALS.map(goal => {
+        {SETUP_GOALS.map((goal: SetupGoal) => {
           const selected = context.goals.includes(goal);
           return <FilterChip key={goal} mode={mode} label={t(`goals.${goal}`, GOAL_FALLBACK[goal])} selected={selected}
             disabled={!selected && context.goals.length >= MAX_SETUP_GOALS} onPress={() => send({ type: 'TOGGLE_GOAL', goal })} />;
