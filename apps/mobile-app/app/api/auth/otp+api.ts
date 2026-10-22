@@ -1,21 +1,50 @@
-import { getSupabaseServerEnv, getSupabaseServerForRequest } from '../../../lib/supabase-server';
-import * as nodemailer from 'nodemailer';
+import {
+  getSupabaseServerEnv,
+  getSupabaseServerForRequest,
+} from "../../../lib/supabase-server";
+import {
+  createEmailLookupHash,
+  createOtpCodeHash,
+  createPhoneLookupHash,
+  createSmsChallengeCodeHash,
+  createSmsCode,
+  isE164Phone,
+  normalizeE164Phone,
+  sendTransactionalSms,
+} from "../../../lib/server/sms-auth";
+import { randomUUID } from "crypto";
+import * as nodemailer from "nodemailer";
+
+async function findSupabaseUserByEmailForSms(client: any, email: string) {
+  const perPage = 200;
+  for (let page = 1; page <= 10; page += 1) {
+    const { data, error } = await client.auth.admin.listUsers({
+      page,
+      perPage,
+    });
+    if (error) return { user: null, available: false };
+    const users = data?.users || [];
+    const user = users.find(
+      (candidate: { email?: string }) =>
+        candidate.email?.trim().toLowerCase() === email,
+    );
+    if (user) return { user, available: true };
+    if (users.length < perPage) break;
+  }
+  return { user: null, available: true };
+}
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
-
-function isSmsDeliveryRequested(delivery: string): boolean {
-  return delivery === 'sms';
-}
 
 // Handle CORS preflight requests
 export async function OPTIONS() {
   return new Response(null, {
     status: 204,
-    headers: corsHeaders
+    headers: corsHeaders,
   });
 }
 
@@ -30,73 +59,75 @@ export async function POST(request: Request) {
     try {
       body = await request.json();
     } catch (parseError: any) {
-      console.error('Error parsing request body:', parseError);
+      console.error("Error parsing request body:", parseError);
       return new Response(
         JSON.stringify({
-          error: 'Invalid JSON in request body',
-          code: 'invalid_json',
-          message: 'Please ensure the request body contains valid JSON with an email field.'
+          error: "Invalid JSON in request body",
+          code: "invalid_json",
+          message:
+            "Please ensure the request body contains valid JSON with an email field.",
         }),
-        { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        },
       );
     }
 
     const { email, delivery: requestedDelivery, phone } = body || {};
-    const delivery = requestedDelivery === 'sms' ? 'sms' : 'email';
+    const delivery = requestedDelivery === "sms" ? "sms" : "email";
 
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return new Response(
-        JSON.stringify({ error: 'Valid email is required' }),
-        { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
-      );
-    }
-
-    // A phone number typed into a public form must never become a credential
-    // for the supplied email address. SMS sign-in will be restored only after
-    // trusted, account-bound phone enrollment is available.
-    if (isSmsDeliveryRequested(delivery)) {
-      return new Response(
-        JSON.stringify({
-          error: 'SMS sign-in requires a trusted phone.',
-          code: 'trusted_phone_required',
-          message: 'Sign in with email first, then add and verify a trusted phone in Security settings before using SMS sign-in.',
-        }),
-        { status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders } },
+        JSON.stringify({ error: "Valid email is required" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        },
       );
     }
 
     const supabase = getSupabaseServerForRequest(request);
     // Check Supabase configuration before proceeding.
-    const { supabaseUrl, supabaseServiceKey, usingDevFallback, selectedProfile } = getSupabaseServerEnv(request);
+    const {
+      supabaseUrl,
+      supabaseServiceKey,
+      usingDevFallback,
+      selectedProfile,
+    } = getSupabaseServerEnv(request);
 
     if (!supabaseUrl || !supabaseServiceKey) {
       const missingVars = [];
       if (!supabaseUrl) {
         missingVars.push(
-          'Supabase public URL missing (dev fallback available)'
+          "Supabase public URL missing (dev fallback available)",
         );
       }
       if (!supabaseServiceKey) {
         missingVars.push(
-          'Supabase service role key missing (dev fallback available)'
+          "Supabase service role key missing (dev fallback available)",
         );
       }
 
       console.error(
-        '❌ OTP API: Missing environment variables:',
-        missingVars.join(', '),
-        '| selectedProfile=',
+        "❌ OTP API: Missing environment variables:",
+        missingVars.join(", "),
+        "| selectedProfile=",
         selectedProfile,
-        '| usingDevFallback=',
-        usingDevFallback
+        "| usingDevFallback=",
+        usingDevFallback,
       );
       return new Response(
         JSON.stringify({
-          error: 'Server configuration error',
-          code: 'server_config_error',
-          message: 'Authentication service is not properly configured. Please contact support.'
+          error: "Server configuration error",
+          code: "server_config_error",
+          message:
+            "Authentication service is not properly configured. Please contact support.",
         }),
-        { status: 503, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+        {
+          status: 503,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        },
       );
     }
 
@@ -108,49 +139,236 @@ export async function POST(request: Request) {
         // Keep raw value if URL parsing fails.
       }
       console.log(
-        'ℹ️ OTP API Supabase target:', supabaseHost,
-        '| profile=', selectedProfile,
-        '| hasServiceKey=', Boolean(supabaseServiceKey),
-        '| origin=', request.headers.get('origin') || '(none)',
+        "ℹ️ OTP API Supabase target:",
+        supabaseHost,
+        "| profile=",
+        selectedProfile,
+        "| hasServiceKey=",
+        Boolean(supabaseServiceKey),
+        "| origin=",
+        request.headers.get("origin") || "(none)",
       );
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+    let normalizedPhone = "";
+    let phoneLookupHmac = "";
+    let smsEnrollmentFlow: "registration" | "phone-link" | null = null;
+
+    if (delivery === "sms") {
+      normalizedPhone = normalizeE164Phone(phone);
+      if (!isE164Phone(normalizedPhone)) {
+        return new Response(
+          JSON.stringify({
+            error: "Valid phone is required in E.164 format.",
+            code: "invalid_phone",
+          }),
+          {
+            status: 400,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          },
+        );
+      }
+
+      phoneLookupHmac = createPhoneLookupHash(
+        supabaseServiceKey,
+        normalizedPhone,
+      );
+      const accountLookup = await findSupabaseUserByEmailForSms(
+        supabase,
+        normalizedEmail,
+      );
+      if (!accountLookup.available) {
+        return new Response(
+          JSON.stringify({
+            error: "SMS verification is temporarily unavailable.",
+            code: "sms_unavailable",
+          }),
+          {
+            status: 503,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          },
+        );
+      }
+      const existingUser = accountLookup.user;
+
+      if (existingUser) {
+        const { data: phoneAuthenticator, error: phoneAuthenticatorError } =
+          await supabase
+            .from("user_phone_authenticators")
+            .select("id")
+            .eq("user_id", existingUser.id)
+            .eq("phone_lookup_hmac", phoneLookupHmac)
+            .is("revoked_at", null)
+            .maybeSingle();
+
+        if (phoneAuthenticatorError) {
+          return new Response(
+            JSON.stringify({
+              error: "SMS verification is temporarily unavailable.",
+              code: "sms_unavailable",
+            }),
+            {
+              status: 503,
+              headers: { "Content-Type": "application/json", ...corsHeaders },
+            },
+          );
+        }
+
+        // A first or second phone can be proposed from the sign-in screen,
+        // but it remains unusable until the account email is proven too.
+        if (!phoneAuthenticator) {
+          const { data: activePhones, error: activePhonesError } =
+            await supabase
+              .from("user_phone_authenticators")
+              .select("id")
+              .eq("user_id", existingUser.id)
+              .is("revoked_at", null);
+          if (activePhonesError) {
+            return new Response(
+              JSON.stringify({
+                error: "SMS verification is temporarily unavailable.",
+                code: "sms_unavailable",
+              }),
+              {
+                status: 503,
+                headers: { "Content-Type": "application/json", ...corsHeaders },
+              },
+            );
+          }
+          if (Array.isArray(activePhones) && activePhones.length >= 2) {
+            return new Response(
+              JSON.stringify({
+                error: "This account already has two trusted phones.",
+                code: "trusted_phone_limit",
+                message:
+                  "Use one of the two phones already saved in Security settings.",
+              }),
+              {
+                status: 409,
+                headers: { "Content-Type": "application/json", ...corsHeaders },
+              },
+            );
+          }
+
+          smsEnrollmentFlow = "phone-link";
+        }
+      } else {
+        // A new account may start through SMS, but it cannot receive a session
+        // or a phone binding until the entered email address is also proven.
+        const { data: existingBinding, error: bindingError } = await supabase
+          .from("user_phone_authenticators")
+          .select("id")
+          .eq("phone_lookup_hmac", phoneLookupHmac)
+          .is("revoked_at", null)
+          .maybeSingle();
+        if (bindingError) {
+          return new Response(
+            JSON.stringify({
+              error: "SMS verification is temporarily unavailable.",
+              code: "sms_unavailable",
+            }),
+            {
+              status: 503,
+              headers: { "Content-Type": "application/json", ...corsHeaders },
+            },
+          );
+        }
+        if (existingBinding) {
+          return new Response(
+            JSON.stringify({
+              error: "SMS sign-in requires a verified phone.",
+              code: "trusted_phone_required",
+            }),
+            {
+              status: 403,
+              headers: { "Content-Type": "application/json", ...corsHeaders },
+            },
+          );
+        }
+        smsEnrollmentFlow = "registration";
+      }
+
+      const { data: deliveryAllowed, error: deliveryLimitError } =
+        await supabase.rpc("claim_sms_delivery_slot", {
+          p_phone_lookup_hmac: phoneLookupHmac,
+        });
+      if (deliveryLimitError) {
+        return new Response(
+          JSON.stringify({
+            error: "SMS verification is temporarily unavailable.",
+            code: "sms_unavailable",
+          }),
+          {
+            status: 503,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          },
+        );
+      }
+      if (!deliveryAllowed) {
+        return new Response(
+          JSON.stringify({
+            error: "Too many SMS requests. Please wait before trying again.",
+            code: "sms_rate_limited",
+          }),
+          {
+            status: 429,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          },
+        );
+      }
     }
 
     // Use Supabase Admin API to generate OTP token
     let linkData, linkError;
     try {
       const result = await supabase.auth.admin.generateLink({
-        type: 'magiclink',
+        type: "magiclink",
         email: email.trim(),
       });
       linkData = result.data;
       linkError = result.error;
     } catch (supabaseError: any) {
-      console.error('❌ Supabase connection error:', supabaseError);
+      console.error("❌ Supabase connection error:", supabaseError);
 
       // Check if it's a configuration error
-      if (supabaseError?.message?.includes('Missing Supabase environment variables') ||
-        supabaseError?.message?.includes('SUPABASE_SERVICE_ROLE_KEY')) {
+      if (
+        supabaseError?.message?.includes(
+          "Missing Supabase environment variables",
+        ) ||
+        supabaseError?.message?.includes("SUPABASE_SERVICE_ROLE_KEY")
+      ) {
         return new Response(
           JSON.stringify({
-            error: 'Server configuration error',
-            code: 'server_config_error',
-            message: 'Authentication service is not properly configured. Please contact support.'
+            error: "Server configuration error",
+            code: "server_config_error",
+            message:
+              "Authentication service is not properly configured. Please contact support.",
           }),
-          { status: 503, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+          {
+            status: 503,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          },
         );
       }
 
       // Check if it's a network error
-      if (supabaseError?.message?.includes('network') ||
-        supabaseError?.message?.includes('fetch') ||
-        supabaseError?.message?.includes('connection')) {
+      if (
+        supabaseError?.message?.includes("network") ||
+        supabaseError?.message?.includes("fetch") ||
+        supabaseError?.message?.includes("connection")
+      ) {
         return new Response(
           JSON.stringify({
-            error: 'Network connection error',
-            code: 'network_error',
-            message: 'Authentication requires network connection. Please check your internet connection and try again.'
+            error: "Network connection error",
+            code: "network_error",
+            message:
+              "Authentication requires network connection. Please check your internet connection and try again.",
           }),
-          { status: 503, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+          {
+            status: 503,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          },
         );
       }
 
@@ -163,31 +381,40 @@ export async function POST(request: Request) {
       // 401 usually means the service role key doesn't match the Supabase project URL.
       // Check: EXPO_PUBLIC_SUPABASE_URL_PROD / BSL_SUPABASE_SERVICE_ROLE_KEY_PROD in Lambda env.
       console.error(
-        '❌ OTP generateLink failed:',
+        "❌ OTP generateLink failed:",
         JSON.stringify(linkError, null, 2),
-        '| supabaseUrl=', supabaseUrl,
-        '| profile=', selectedProfile,
-        '| httpStatus=', errorStatus,
+        "| supabaseUrl=",
+        supabaseUrl,
+        "| profile=",
+        selectedProfile,
+        "| httpStatus=",
+        errorStatus,
       );
 
       // Check for rate limit errors specifically - check multiple possible formats
-      const errorMessage = linkError?.message || '';
-      const errorCode = linkError?.code || '';
+      const errorMessage = linkError?.message || "";
+      const errorCode = linkError?.code || "";
 
-      if (errorMessage.includes('rate limit') ||
-        errorMessage.includes('over_email_send_rate_limit') ||
-        errorMessage.includes('email rate limit') ||
-        errorCode === 'over_email_send_rate_limit' ||
-        errorCode === 'rate_limit_exceeded' ||
-        errorStatus === 429) {
-        console.log('Rate limit detected, returning 429');
+      if (
+        errorMessage.includes("rate limit") ||
+        errorMessage.includes("over_email_send_rate_limit") ||
+        errorMessage.includes("email rate limit") ||
+        errorCode === "over_email_send_rate_limit" ||
+        errorCode === "rate_limit_exceeded" ||
+        errorStatus === 429
+      ) {
+        console.log("Rate limit detected, returning 429");
         return new Response(
           JSON.stringify({
-            error: 'Email rate limit exceeded',
-            code: 'over_email_send_rate_limit',
-            message: 'Too many emails sent. Please wait a few minutes before requesting another code.'
+            error: "Email rate limit exceeded",
+            code: "over_email_send_rate_limit",
+            message:
+              "Too many emails sent. Please wait a few minutes before requesting another code.",
           }),
-          { status: 429, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+          {
+            status: 429,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          },
         );
       }
 
@@ -203,53 +430,61 @@ export async function POST(request: Request) {
         JSON.stringify(
           isClientAuthRejection
             ? {
-                error: 'Authentication request rejected',
-                code: 'auth_request_rejected',
-                message: 'This sign-in request cannot be processed. Check your email address or use another sign-in method.',
+                error: "Authentication request rejected",
+                code: "auth_request_rejected",
+                message:
+                  "This sign-in request cannot be processed. Check your email address or use another sign-in method.",
               }
             : {
-                error: 'Authentication service unavailable',
-                code: 'auth_service_unavailable',
-                message: 'We could not start your sign-in request. Please try again shortly.',
+                error: "Authentication service unavailable",
+                code: "auth_service_unavailable",
+                message:
+                  "We could not start your sign-in request. Please try again shortly.",
               },
         ),
-        { status: responseStatus, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+        {
+          status: responseStatus,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        },
       );
     }
 
     // Extract token hash and verification type from generated link payload.
     const verificationTypeRaw = linkData.properties?.verification_type;
     const verificationType =
-      typeof verificationTypeRaw === 'string' && verificationTypeRaw.trim()
+      typeof verificationTypeRaw === "string" && verificationTypeRaw.trim()
         ? verificationTypeRaw.trim()
-        : 'magiclink';
+        : "magiclink";
 
     let tokenHash =
-      typeof linkData.properties?.hashed_token === 'string'
+      typeof linkData.properties?.hashed_token === "string"
         ? linkData.properties.hashed_token.trim()
-        : '';
+        : "";
 
     // email_otp is the raw token that GoTrue's { email, token, type } path accepts.
     // This is more reliable than hashed_token + token_hash path across GoTrue versions.
     const emailOtp =
-      typeof linkData.properties?.email_otp === 'string'
+      typeof linkData.properties?.email_otp === "string"
         ? linkData.properties.email_otp.trim()
-        : '';
+        : "";
 
     // Backward-compatible fallback: parse from action_link if hashed_token is absent.
     if (!tokenHash && linkData.properties?.action_link) {
       const linkUrl = new URL(linkData.properties.action_link);
       tokenHash =
-        linkUrl.searchParams.get('token_hash') ||
-        linkUrl.searchParams.get('token') ||
-        '';
+        linkUrl.searchParams.get("token_hash") ||
+        linkUrl.searchParams.get("token") ||
+        "";
     }
 
     if (!tokenHash && !emailOtp) {
-      console.error('Could not extract token hash from generated link');
+      console.error("Could not extract token hash from generated link");
       return new Response(
-        JSON.stringify({ error: 'Failed to extract OTP token' }),
-        { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+        JSON.stringify({ error: "Failed to extract OTP token" }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        },
       );
     }
 
@@ -259,52 +494,104 @@ export async function POST(request: Request) {
       ? `${verificationType}::${tokenHash}::${emailOtp}`
       : `${verificationType}::${tokenHash}`;
 
-    // Generate a 6-digit OTP code
-    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    // A CSPRNG-generated code is stored as a keyed verifier rather than in
+    // plaintext. The HMAC binds it to this email and flow, so a leaked DB row
+    // cannot be used to complete sign-in without the server secret.
+    const otpCode = createSmsCode();
 
     // Clean up expired OTP codes
-    await supabase.rpc('cleanup_expired_otp_codes');
+    await supabase.rpc("cleanup_expired_otp_codes");
 
     // Store the mapping in the database (normalize email to lowercase)
-    const normalizedEmail = email.trim().toLowerCase();
-    const { error: storeError } = await supabase
-      .from('otp_codes')
-      .insert({
+    const { error: storeError } = await supabase.from("otp_codes").insert({
+      email: normalizedEmail,
+      code_hmac: createOtpCodeHash({
+        serviceKey: supabaseServiceKey,
         email: normalizedEmail,
         code: otpCode,
-        token_hash: encodedTokenHash,
-        expires_at: new Date(Date.now() + 3600000).toISOString(), // 1 hour from now
-        used: false,
-      } as any);
+        purpose: "email-login",
+      }),
+      token_hash: encodedTokenHash,
+      expires_at: new Date(Date.now() + 3600000).toISOString(), // 1 hour from now
+      used: false,
+    } as any);
 
     if (storeError) {
-      console.error('Error storing OTP code:', storeError);
-      if (storeError.code === 'PGRST205') {
+      console.error("Error storing OTP code:", storeError);
+      if (storeError.code === "PGRST205") {
         return new Response(
           JSON.stringify({
-            error: 'OTP storage table is not available in the current Supabase project.',
-            code: 'otp_storage_missing_table',
-            message: 'The otp_codes table is missing from the active Supabase database. Please contact support.',
+            error:
+              "OTP storage table is not available in the current Supabase project.",
+            code: "otp_storage_missing_table",
+            message:
+              "The otp_codes table is missing from the active Supabase database. Please contact support.",
           }),
-          { status: 503, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+          {
+            status: 503,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          },
         );
       }
 
       return new Response(
         JSON.stringify({
-          error: 'Could not store OTP code',
-          code: storeError.code || 'otp_storage_failed',
-          message: storeError.message || 'Failed to persist OTP code. Please try again.',
+          error: "Could not store OTP code",
+          code: storeError.code || "otp_storage_failed",
+          message:
+            storeError.message ||
+            "Failed to persist OTP code. Please try again.",
         }),
-        { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        },
       );
     }
 
-    // Delivery channel:
-    // - email (default): send via configured SMTP
-    // - sms: send via Brevo transactional SMS API
-    if (delivery === 'email') {
-      const emailEnabled = process.env.NODEMAILER_HOST &&
+    let registrationChallengeId: string | null = null;
+    let smsCode = otpCode;
+    if (smsEnrollmentFlow) {
+      registrationChallengeId = randomUUID();
+      smsCode = createSmsCode();
+      const { error: registrationError } = await supabase
+        .from("sms_auth_challenges")
+        .insert({
+          id: registrationChallengeId,
+          email_lookup_hmac: createEmailLookupHash(
+            supabaseServiceKey,
+            normalizedEmail,
+          ),
+          phone_lookup_hmac: phoneLookupHmac,
+          phone_last4: normalizedPhone.slice(-4),
+          purpose: "registration",
+          code_hmac: createSmsChallengeCodeHash({
+            serviceKey: supabaseServiceKey,
+            challengeId: registrationChallengeId,
+            code: smsCode,
+            purpose: "registration",
+          }),
+          expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+        });
+      if (registrationError) {
+        return new Response(
+          JSON.stringify({
+            error: "SMS verification is temporarily unavailable.",
+            code: "sms_unavailable",
+          }),
+          {
+            status: 503,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          },
+        );
+      }
+    }
+
+    // A first-time phone link deliberately sends an independent code to each
+    // channel. Both must be verified before the phone is bound to the account.
+    if (delivery === "email" || smsEnrollmentFlow) {
+      const emailEnabled =
+        process.env.NODEMAILER_HOST &&
         process.env.NODEMAILER_PORT &&
         process.env.NODEMAILER_USER &&
         process.env.NODEMAILER_PASS &&
@@ -313,19 +600,24 @@ export async function POST(request: Request) {
       if (!emailEnabled) {
         return new Response(
           JSON.stringify({
-            error: 'Email service not configured. Please configure NODEMAILER settings.',
-            code: 'email_not_configured',
+            error:
+              "Email service not configured. Please configure NODEMAILER settings.",
+            code: "email_not_configured",
           }),
-          { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+          {
+            status: 500,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          },
         );
       }
 
-      const smtpHost = process.env.NODEMAILER_HOST || '';
-      const isBrevo = smtpHost.includes('brevo.com') || smtpHost.includes('sendinblue.com');
+      const smtpHost = process.env.NODEMAILER_HOST || "";
+      const isBrevo =
+        smtpHost.includes("brevo.com") || smtpHost.includes("sendinblue.com");
 
       const transporter = nodemailer.createTransport({
         host: smtpHost,
-        port: parseInt(process.env.NODEMAILER_PORT || '587'),
+        port: parseInt(process.env.NODEMAILER_PORT || "587"),
         secure: false,
         auth: {
           user: process.env.NODEMAILER_USER,
@@ -333,8 +625,8 @@ export async function POST(request: Request) {
         },
         tls: {
           // For Brevo/Sendinblue, allow hostname mismatch but still verify certificate
-          rejectUnauthorized: process.env.NODE_ENV === 'production',
-          servername: isBrevo ? 'smtp-relay.sendinblue.com' : undefined,
+          rejectUnauthorized: process.env.NODE_ENV === "production",
+          servername: isBrevo ? "smtp-relay.sendinblue.com" : undefined,
           checkServerIdentity: isBrevo ? () => undefined : undefined,
         },
         requireTLS: true,
@@ -365,117 +657,63 @@ export async function POST(request: Request) {
 
       try {
         await transporter.sendMail(mailOptions);
-        console.log('OTP email sent successfully to:', email);
+        console.log("OTP email sent successfully to:", email);
       } catch (emailError: any) {
-        console.error('Error sending OTP email:', emailError);
+        console.error("Error sending OTP email:", emailError);
 
         // Check for rate limit errors from SMTP provider
-        if (emailError?.code === 'EENVELOPE' ||
+        if (
+          emailError?.code === "EENVELOPE" ||
           emailError?.responseCode === 550 ||
-          emailError?.message?.includes('rate limit') ||
-          emailError?.message?.includes('quota') ||
-          emailError?.message?.includes('too many')) {
+          emailError?.message?.includes("rate limit") ||
+          emailError?.message?.includes("quota") ||
+          emailError?.message?.includes("too many")
+        ) {
           return new Response(
             JSON.stringify({
-              error: 'Email rate limit exceeded',
-              code: 'over_email_send_rate_limit',
-              message: 'Too many emails sent. Please wait a few minutes before requesting another code.'
+              error: "Email rate limit exceeded",
+              code: "over_email_send_rate_limit",
+              message:
+                "Too many emails sent. Please wait a few minutes before requesting another code.",
             }),
-            { status: 429, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+            {
+              status: 429,
+              headers: { "Content-Type": "application/json", ...corsHeaders },
+            },
           );
         }
 
         return new Response(
           JSON.stringify({
-            error: 'Failed to send OTP email',
-            code: 'email_send_failed',
-            message: emailError?.message || 'Could not send email. Please try again later.'
+            error: "Failed to send OTP email",
+            code: "email_send_failed",
+            message:
+              emailError?.message ||
+              "Could not send email. Please try again later.",
           }),
-          { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
-        );
-      }
-    } else {
-      const brevoApiKey = process.env.BREVO_API_KEY?.trim();
-      const sender = (process.env.BREVO_SMS_SENDER || 'HASHPASS').trim().slice(0, 11);
-      const normalizedPhone = typeof phone === 'string' ? phone.trim() : '';
-      const isValidPhone = /^\+[1-9]\d{7,14}$/.test(normalizedPhone);
-      const brevoRecipient = normalizedPhone.replace(/^\+/, '');
-
-      if (!isValidPhone) {
-        return new Response(
-          JSON.stringify({
-            error: 'Valid phone is required in E.164 format (example: +573001112233).',
-            code: 'invalid_phone',
-          }),
-          { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
-        );
-      }
-
-      if (!brevoApiKey) {
-        return new Response(
-          JSON.stringify({
-            error: 'SMS service is not configured.',
-            code: 'sms_not_configured',
-            message: 'BREVO_API_KEY is missing on the server.',
-          }),
-          { status: 503, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
-        );
-      }
-
-      const smsPayload = {
-        sender,
-        recipient: brevoRecipient,
-        content: `HASHPASS login code: ${otpCode}. It expires in 1 hour.`,
-        type: 'transactional',
-      };
-
-      try {
-        // eslint-disable-next-line no-restricted-syntax
-        const brevoResponse = await fetch('https://api.brevo.com/v3/transactionalSMS/send', {
-          method: 'POST',
-          headers: {
-            'accept': 'application/json',
-            'api-key': brevoApiKey,
-            'content-type': 'application/json',
+          {
+            status: 500,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
           },
-          body: JSON.stringify(smsPayload),
-        });
+        );
+      }
+    }
 
-        if (!brevoResponse.ok) {
-          const errorBody = await brevoResponse.text().catch(() => '');
-          const compact = errorBody.replace(/\s+/g, ' ').slice(0, 300);
-          const isRateLimited = brevoResponse.status === 429 || /rate|quota|limit/i.test(compact);
-
-          if (isRateLimited) {
-            return new Response(
-              JSON.stringify({
-                error: 'SMS rate limit exceeded',
-                code: 'sms_rate_limited',
-                message: 'Too many SMS requests. Please try again in a few minutes.',
-              }),
-              { status: 429, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
-            );
-          }
-
-          return new Response(
-            JSON.stringify({
-              error: 'Failed to send OTP SMS',
-              code: 'sms_send_failed',
-              message: compact || `Brevo API returned ${brevoResponse.status}`,
-            }),
-            { status: 502, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
-          );
-        }
-
-        console.log('OTP SMS sent successfully to:', normalizedPhone);
-      } catch (smsError: any) {
+    if (delivery === "sms") {
+      const smsDelivery = await sendTransactionalSms({
+        phone: normalizedPhone,
+        code: smsCode,
+      });
+      if (!smsDelivery.success) {
         return new Response(
           JSON.stringify({
-            error: 'Failed to send OTP SMS',
-            code: 'sms_send_failed',
-            message: smsError?.message || 'Could not send SMS. Please try again later.',
+            error: smsDelivery.message,
+            code: smsDelivery.code,
           }),
-          { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+          {
+            status: smsDelivery.status,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          },
         );
       }
     }
@@ -484,40 +722,56 @@ export async function POST(request: Request) {
       JSON.stringify({
         success: true,
         delivery,
-        message: delivery === 'sms' ? 'OTP code sent by SMS' : 'OTP code sent to email',
+        flow: smsEnrollmentFlow || "sign-in",
+        registrationChallengeId,
+        session: null,
+        phoneBound: false,
+        message:
+          delivery === "sms"
+            ? "OTP code sent by SMS"
+            : "OTP code sent to email",
       }),
       {
-        status: 200,
+        status: smsEnrollmentFlow ? 202 : 200,
         headers: {
-          'Content-Type': 'application/json',
-          ...corsHeaders
-        }
-      }
+          "Content-Type": "application/json",
+          ...corsHeaders,
+        },
+      },
     );
   } catch (error: any) {
-    console.error('OTP generation error:', error);
+    console.error("OTP generation error:", error);
 
     // Check for rate limit errors in the catch block as well
-    if (error?.message?.includes('rate limit') ||
-      error?.message?.includes('over_email_send_rate_limit') ||
-      error?.code === 'over_email_send_rate_limit' ||
-      error?.status === 429) {
+    if (
+      error?.message?.includes("rate limit") ||
+      error?.message?.includes("over_email_send_rate_limit") ||
+      error?.code === "over_email_send_rate_limit" ||
+      error?.status === 429
+    ) {
       return new Response(
         JSON.stringify({
-          error: 'Email rate limit exceeded',
-          code: 'over_email_send_rate_limit',
-          message: 'Too many emails sent. Please wait a few minutes before requesting another code.'
+          error: "Email rate limit exceeded",
+          code: "over_email_send_rate_limit",
+          message:
+            "Too many emails sent. Please wait a few minutes before requesting another code.",
         }),
-        { status: 429, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+        {
+          status: 429,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        },
       );
     }
 
     return new Response(
       JSON.stringify({
-        error: error.message || 'Failed to send OTP',
-        code: error.code || 'unknown_error'
+        error: error.message || "Failed to send OTP",
+        code: error.code || "unknown_error",
       }),
-      { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      },
     );
   }
 }

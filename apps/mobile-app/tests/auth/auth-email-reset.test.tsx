@@ -581,6 +581,127 @@ describe("passwordless email reset", () => {
       }
     },
   );
+
+  it("keeps email OTP available without a phone fallback payload", async () => {
+    await press("OTP Code");
+    act(() => emailInput().props.onChangeText("person@example.com"));
+    await press("Send Code");
+
+    const [emailPath, emailRequest] = mockPost.mock.calls.at(-1);
+    expect(emailPath).toBe("/auth/otp");
+    expect(emailRequest).toEqual(
+      expect.objectContaining({ email: "person@example.com" }),
+    );
+    expect(emailRequest.delivery).not.toBe("sms");
+    expect(emailRequest.phone).toBeUndefined();
+  });
+
+  it("offers a validated SMS fallback for OTP Code and submits the bound E.164 phone", async () => {
+    await press("OTP Code");
+    act(() => emailInput().props.onChangeText("person@example.com"));
+
+    expect(button("Can't access email? Send OTP by SMS")).toBeDefined();
+    await press("Can't access email? Send OTP by SMS");
+
+    const phoneInput = renderer.root
+      .findAllByType(TextInput)
+      .find((node) => node.props.accessibilityLabel === "Phone number")!;
+
+    act(() => phoneInput.props.onChangeText("not a phone"));
+    await press("Send SMS Code");
+    expect(mockPost).not.toHaveBeenCalled();
+
+    act(() => phoneInput.props.onChangeText("4155552671"));
+    await press("Send SMS Code");
+
+    const [smsPath, smsRequest] = mockPost.mock.calls.at(-1);
+    expect(smsPath).toBe("/auth/otp");
+    expect(smsRequest).toEqual(
+      expect.objectContaining({
+        email: "person@example.com",
+        delivery: "sms",
+        phone: "+14155552671",
+      }),
+    );
+  });
+
+  it("offers an email proof link for saving the SMS number as trusted", async () => {
+    await press("OTP Code");
+    act(() => emailInput().props.onChangeText("person@example.com"));
+    await press("Can't access email? Send OTP by SMS");
+
+    const phoneInput = renderer.root
+      .findAllByType(TextInput)
+      .find((node) => node.props.accessibilityLabel === "Phone number")!;
+    act(() => phoneInput.props.onChangeText("4155552671"));
+    await press("Email me a code to add this number as a trusted phone");
+
+    const [smsPath, smsRequest] = mockPost.mock.calls.at(-1);
+    expect(smsPath).toBe("/auth/otp");
+    expect(smsRequest).toEqual(
+      expect.objectContaining({
+        email: "person@example.com",
+        delivery: "sms",
+        phone: "+14155552671",
+      }),
+    );
+    expect(
+      renderer.root
+        .findAllByType(Text)
+        .some(
+          (node) =>
+            node.props.children ===
+            "We sent a verification code to your email and phone. Verify both to save this number as trusted.",
+        ),
+    ).toBe(true);
+  });
+
+  it("explains that an untrusted phone is saved only after both SMS and email proofs", async () => {
+    await press("OTP Code");
+    act(() => emailInput().props.onChangeText("person@example.com"));
+    await press("Can't access email? Send OTP by SMS");
+    const phoneInput = renderer.root
+      .findAllByType(TextInput)
+      .find((node) => node.props.accessibilityLabel === "Phone number")!;
+    act(() => phoneInput.props.onChangeText("4155552671"));
+    mockPost.mockResolvedValueOnce({
+      success: true,
+      data: {
+        success: true,
+        flow: "phone-link",
+        registrationChallengeId: "25a2f1d9-6b9e-469d-a03c-b3cb9c2ca730",
+      },
+    });
+
+    await press("Send SMS Code");
+    expect(
+      renderer.root
+        .findAllByType(Text)
+        .some(
+          (node) =>
+            node.props.children ===
+            "Verify this number to save it as a trusted phone",
+        ),
+    ).toBe(true);
+
+    mockPost.mockResolvedValueOnce({ success: true, data: { success: true } });
+    const firstCodeInput = renderer.root
+      .findAllByType(TextInput)
+      .find((node) => node.props.maxLength === 6)!;
+    await act(async () => {
+      firstCodeInput.props.onChangeText("123456");
+    });
+
+    expect(
+      renderer.root
+        .findAllByType(Text)
+        .some(
+          (node) =>
+            node.props.children === "Enter the 6-digit code sent to your email",
+        ),
+    ).toBe(true);
+  });
+
   it("registers or signs in inside the guest dialog using the existing OTP service without navigation", async () => {
     const onAuthenticated = jest.fn();
     await act(async () => {

@@ -29,6 +29,12 @@ import {
   buildCalendarProviderUrl,
   type CalendarProvider,
 } from '../../../lib/calendar-subscription';
+import type {
+  ApiClientResponse,
+  PhoneEnrollmentStartResponse,
+  PhoneEnrollmentVerifyResponse,
+  TrustedPhonesResponse,
+} from '../../../types/auth-screen.types';
 
 export default function SettingsScreen() {
   const [notifications, setNotifications] = useState(true);
@@ -62,6 +68,12 @@ export default function SettingsScreen() {
   const [otpSent, setOtpSent] = useState(false);
   const [sendingOtp, setSendingOtp] = useState(false);
   const [verifyingOtp, setVerifyingOtp] = useState(false);
+  const [showTrustedPhoneModal, setShowTrustedPhoneModal] = useState(false);
+  const [trustedPhone, setTrustedPhone] = useState('');
+  const [trustedPhoneCode, setTrustedPhoneCode] = useState('');
+  const [trustedPhoneChallengeId, setTrustedPhoneChallengeId] = useState<string | null>(null);
+  const [trustedPhoneBusy, setTrustedPhoneBusy] = useState(false);
+  const [trustedPhoneLast4s, setTrustedPhoneLast4s] = useState<string[]>([]);
   const otpInputRef = useRef<TextInput>(null);
   const styles = getStyles(isDark, colors);
   
@@ -80,6 +92,30 @@ export default function SettingsScreen() {
       return () => clearTimeout(timer);
     }
   }, [otpSent, showDeleteConfirm]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void (apiClient.get('/auth/phone', { skipEventSegment: true, retries: 0 }) as Promise<
+      ApiClientResponse<TrustedPhonesResponse>
+    >)
+      .then((response) => {
+        if (cancelled || !response.success || !response.data?.success) return;
+        setTrustedPhoneLast4s(
+          (response.data.data?.phones || [])
+            .map((phone) => phone.last4)
+            .filter((last4): last4 is string => Boolean(last4)),
+        );
+      })
+      .catch(() => {
+        // A phone is an optional authenticator; avoid surfacing an unrelated
+        // settings error if the status check is temporarily unavailable.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
   
   const handleAnimationsToggle = async (enabled: boolean) => {
     try {
@@ -141,6 +177,98 @@ export default function SettingsScreen() {
     const currentIndex = mainLocales.indexOf(locale);
     const nextIndex = (currentIndex + 1) % mainLocales.length;
     await setLocale(mainLocales[nextIndex]);
+  };
+
+  const closeTrustedPhoneModal = (force = false) => {
+    if (trustedPhoneBusy && !force) return;
+    setShowTrustedPhoneModal(false);
+    setTrustedPhone('');
+    setTrustedPhoneCode('');
+    setTrustedPhoneChallengeId(null);
+  };
+
+  const startTrustedPhoneEnrollment = async () => {
+    if (trustedPhoneLast4s.length >= 2) {
+      showInfo(
+        tSettings('trustedPhoneLimitTitle', 'Two trusted phones already saved'),
+        tSettings('trustedPhoneLimitBody', 'Use either saved number to sign in by SMS.'),
+      );
+      return;
+    }
+
+    const phone = trustedPhone.trim();
+    if (!/^\+[1-9]\d{7,14}$/.test(phone)) {
+      showError(
+        tSettings('trustedPhoneInvalidTitle', 'Enter a valid phone number'),
+        tSettings('trustedPhoneInvalidBody', 'Use international format, for example +14155552671.'),
+      );
+      return;
+    }
+
+    setTrustedPhoneBusy(true);
+    try {
+      const response = (await apiClient.post(
+        '/auth/phone',
+        { action: 'enroll-start', phone },
+        { skipEventSegment: true, retries: 0 },
+      )) as ApiClientResponse<PhoneEnrollmentStartResponse>;
+      const challengeId = response.success ? response.data?.data?.challengeId : undefined;
+      if (!response.success || !response.data?.success || !challengeId) {
+        throw new Error(response.success ? response.data?.error : response.error);
+      }
+      setTrustedPhoneChallengeId(challengeId);
+      showInfo(
+        tSettings('trustedPhoneCodeSentTitle', 'Code sent'),
+        tSettings('trustedPhoneCodeSentBody', 'Enter the six-digit code sent to your phone.'),
+      );
+    } catch (error) {
+      showError(
+        tSettings('trustedPhoneEnrollmentFailedTitle', 'Could not send a code'),
+        error instanceof Error && error.message
+          ? error.message
+          : tSettings('trustedPhoneEnrollmentFailedBody', 'Please try again shortly.'),
+      );
+    } finally {
+      setTrustedPhoneBusy(false);
+    }
+  };
+
+  const verifyTrustedPhoneEnrollment = async () => {
+    if (!trustedPhoneChallengeId || !/^\d{6}$/.test(trustedPhoneCode)) return;
+
+    setTrustedPhoneBusy(true);
+    try {
+      const response = (await apiClient.post(
+        '/auth/phone',
+        {
+          action: 'enroll-verify',
+          challengeId: trustedPhoneChallengeId,
+          code: trustedPhoneCode,
+        },
+        { skipEventSegment: true, retries: 0 },
+      )) as ApiClientResponse<PhoneEnrollmentVerifyResponse>;
+      if (!response.success || !response.data?.success) {
+        throw new Error(response.success ? response.data?.error : response.error);
+      }
+      const last4 = response.data.data?.last4 || trustedPhone.slice(-4);
+      setTrustedPhoneLast4s((current) =>
+        current.includes(last4) ? current : [...current, last4].slice(0, 2),
+      );
+      closeTrustedPhoneModal(true);
+      showSuccess(
+        tSettings('trustedPhoneVerifiedTitle', 'Trusted phone verified'),
+        tSettings('trustedPhoneVerifiedBody', 'You can now use this number for SMS sign-in.'),
+      );
+    } catch (error) {
+      showError(
+        tSettings('trustedPhoneVerificationFailedTitle', 'Could not verify the code'),
+        error instanceof Error && error.message
+          ? error.message
+          : tSettings('trustedPhoneVerificationFailedBody', 'Request a new code and try again.'),
+      );
+    } finally {
+      setTrustedPhoneBusy(false);
+    }
   };
 
   const getLanguageName = (locale: string) => {
@@ -681,6 +809,16 @@ export default function SettingsScreen() {
           })}
 
           {renderSettingItem({
+            icon: 'phone-portrait-outline',
+            title: tSettings('trustedPhone', 'Trusted phone'),
+            subtitle: trustedPhoneLast4s.length
+              ? tSettings('trustedPhoneVerifiedSuffix', `${trustedPhoneLast4s.length} trusted phone${trustedPhoneLast4s.length === 1 ? '' : 's'} saved`)
+              : tSettings('trustedPhoneSubtitle', 'Add a verified number for SMS sign-in'),
+            onPress: () => setShowTrustedPhoneModal(true),
+            showChevron: true,
+          })}
+
+          {renderSettingItem({
             icon: 'lock-closed-outline',
             title: tSettings('changePassword', 'Change Password'),
             subtitle: tSettings('changePasswordSubtitle', 'Update your account password'),
@@ -793,6 +931,79 @@ export default function SettingsScreen() {
         visible={showVersionModal}
         onClose={() => setShowVersionModal(false)}
       />
+
+      <Modal
+        visible={showTrustedPhoneModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => closeTrustedPhoneModal()}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>
+              {tSettings('trustedPhoneModalTitle', 'Add a trusted phone')}
+            </Text>
+            <Text style={styles.modalMessage}>
+              {trustedPhoneLast4s.length >= 2
+                ? tSettings('trustedPhoneLimitBody', 'Use either saved number to sign in by SMS.')
+                : trustedPhoneChallengeId
+                ? tSettings('trustedPhoneVerifyMessage', 'Enter the six-digit code sent to your phone.')
+                : tSettings('trustedPhoneAddMessage', 'Use international format. This number will be required for SMS sign-in.')}
+            </Text>
+            {trustedPhoneLast4s.length >= 2 ? null : !trustedPhoneChallengeId ? (
+              <TextInput
+                style={styles.modalInput}
+                value={trustedPhone}
+                onChangeText={setTrustedPhone}
+                placeholder="+14155552671"
+                placeholderTextColor={colors.text.secondary}
+                keyboardType="phone-pad"
+                autoCapitalize="none"
+                autoCorrect={false}
+                editable={!trustedPhoneBusy}
+                accessibilityLabel={tSettings('trustedPhoneInputLabel', 'Phone number in international format')}
+              />
+            ) : (
+              <TextInput
+                style={styles.modalInput}
+                value={trustedPhoneCode}
+                onChangeText={(value) => setTrustedPhoneCode(value.replace(/[^0-9]/g, '').slice(0, 6))}
+                placeholder={tSettings('trustedPhoneCodePlaceholder', 'Six-digit code')}
+                placeholderTextColor={colors.text.secondary}
+                keyboardType="number-pad"
+                textContentType="oneTimeCode"
+                maxLength={6}
+                editable={!trustedPhoneBusy}
+                accessibilityLabel={tSettings('trustedPhoneCodeLabel', 'SMS verification code')}
+              />
+            )}
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonCancel]}
+                onPress={() => closeTrustedPhoneModal()}
+                disabled={trustedPhoneBusy}
+              >
+                <Text style={styles.modalButtonCancelText}>{tSettings('cancel', 'Cancel')}</Text>
+              </TouchableOpacity>
+              {trustedPhoneLast4s.length < 2 ? (
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonPrimary, trustedPhoneBusy && styles.modalButtonDisabled]}
+                onPress={trustedPhoneChallengeId ? verifyTrustedPhoneEnrollment : startTrustedPhoneEnrollment}
+                disabled={trustedPhoneBusy || (trustedPhoneChallengeId ? trustedPhoneCode.length !== 6 : !trustedPhone.trim())}
+              >
+                <Text style={styles.modalButtonPrimaryText}>
+                  {trustedPhoneBusy
+                    ? tSettings('trustedPhoneWorking', 'Working...')
+                    : trustedPhoneChallengeId
+                      ? tSettings('trustedPhoneVerify', 'Verify')
+                      : tSettings('trustedPhoneSendCode', 'Send code')}
+                </Text>
+              </TouchableOpacity>
+              ) : null}
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* Delete Account Disclaimer Modal */}
       <Modal
@@ -1219,6 +1430,14 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   modalButtonDelete: {
     backgroundColor: '#F44336',
   },
+  modalButtonPrimary: {
+    backgroundColor: colors.primary,
+  },
+  modalButtonPrimaryText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: uiTokens.colors.light.onAccent,
+  },
   modalButtonDisabled: {
     opacity: 0.5,
     backgroundColor: '#999',
@@ -1226,7 +1445,7 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   modalButtonDeleteText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: uiTokens.colors.light.onAccent,
   },
   resendButton: {
     marginTop: -12,

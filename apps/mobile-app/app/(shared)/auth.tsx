@@ -76,6 +76,10 @@ import {
 } from "../../lib/event-auth-allies";
 import { normalizeSafeReturnToPath } from "../../lib/auth/return-to";
 import { isMcpLoginContinuation } from "../../lib/auth/mcp-login";
+import type {
+  SmsEnrollmentFlow,
+  SmsPhoneVerificationResponse,
+} from "../../types/auth-screen.types";
 
 const HASHPASS_WEB_LIGHT_AUTH_LOGO = require("../../assets/logos/hashpass/logo-full-hashpass-white.svg");
 
@@ -83,8 +87,6 @@ type EmailAuthMethod = "magic-link" | "otp-code";
 type BusyAction = "magic-link" | "otp-send" | "otp-verify" | "oauth" | null;
 type OtpDeliveryMethod = "email" | "sms";
 type ActiveSubmitField = "email" | "phone" | "otp" | null;
-
-const SMS_OTP_LOGIN_ENABLED = false;
 
 const DASHBOARD_EXPLORE_PUBLIC_PATH = "/dashboard/explore";
 const DASHBOARD_EXPLORE_ROUTER_PATH = "/(shared)/dashboard/explore";
@@ -733,6 +735,15 @@ export default function AuthScreen({
     resolveDefaultCountryISO2(countryDialOptions, currentLocale),
   );
   const [phone, setPhone] = useState("");
+  const [smsRegistrationChallengeId, setSmsRegistrationChallengeId] = useState<
+    string | null
+  >(null);
+  const [smsRegistrationPhoneVerified, setSmsRegistrationPhoneVerified] =
+    useState(false);
+  const [smsEnrollmentFlow, setSmsEnrollmentFlow] =
+    useState<SmsEnrollmentFlow>(null);
+  const [trustedPhoneEmailRequested, setTrustedPhoneEmailRequested] =
+    useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [otpCodeSentAt, setOtpCodeSentAt] = useState<number | null>(null);
   const [magicLinkSentAt, setMagicLinkSentAt] = useState<number | null>(null);
@@ -1223,7 +1234,9 @@ export default function AuthScreen({
     }
   };
 
-  const handleSendOtpCode = async () => {
+  const handleSendOtpCode = async (options?: {
+    trustedPhoneRequest?: boolean;
+  }) => {
     if (isBusy) return;
     if (otpCodeSentAt !== null && otpResendRemainingSeconds > 0) return;
 
@@ -1266,6 +1279,7 @@ export default function AuthScreen({
     setBusyAction("otp-send");
     setOtpError("");
     setPhoneError("");
+    setTrustedPhoneEmailRequested(Boolean(options?.trustedPhoneRequest));
 
     try {
       const response = (await apiClient.post(
@@ -1288,6 +1302,8 @@ export default function AuthScreen({
           message?: string;
           error?: string;
           delivery?: "email" | "sms";
+          flow?: "sign-in" | "registration" | "phone-link";
+          registrationChallengeId?: string | null;
         };
         error?: string;
       };
@@ -1310,6 +1326,19 @@ export default function AuthScreen({
 
       setOtpSent(true);
       setOtpDigits(new Array(OTP_CODE_LENGTH).fill(""));
+      setSmsRegistrationChallengeId(
+        response.data.flow === "registration" ||
+          response.data.flow === "phone-link"
+          ? response.data.registrationChallengeId || null
+          : null,
+      );
+      setSmsEnrollmentFlow(
+        response.data.flow === "registration" ||
+          response.data.flow === "phone-link"
+          ? response.data.flow
+          : null,
+      );
+      setSmsRegistrationPhoneVerified(false);
       setOtpCodeSentAt(Date.now());
       setMagicLinkTimerNow(Date.now());
       focusOtpInput(0);
@@ -1325,11 +1354,21 @@ export default function AuthScreen({
       if (otpDeliveryMethod === "sms" && /phone/i.test(message)) {
         setPhoneError(message);
       }
+      if (options?.trustedPhoneRequest) {
+        setTrustedPhoneEmailRequested(false);
+      }
 
       showError(t("authenticationError", "Authentication Error"), message);
     } finally {
       setBusyAction(null);
     }
+  };
+
+  const handleRequestTrustedPhoneEmail = () => {
+    if (otpDeliveryMethod !== "sms") {
+      setOtpDeliveryMethod("sms");
+    }
+    void handleSendOtpCode({ trustedPhoneRequest: true });
   };
 
   const handleVerifyOtpCode = useCallback(async () => {
@@ -1361,9 +1400,56 @@ export default function AuthScreen({
     setOtpError("");
 
     try {
+      if (smsRegistrationChallengeId && !smsRegistrationPhoneVerified) {
+        const phoneVerification = (await apiClient.post(
+          "/auth/phone",
+          {
+            action: "registration-verify",
+            email: normalizedEmail,
+            challengeId: smsRegistrationChallengeId,
+            code: normalizedCode,
+          },
+          {
+            skipEventSegment: true,
+            skipAuth: true,
+            retries: 0,
+            timeout: OTP_API_TIMEOUT_MS,
+          },
+        )) as SmsPhoneVerificationResponse;
+
+        if (!phoneVerification.success || !phoneVerification.data?.success) {
+          throw new Error(
+            phoneVerification.error ||
+              t("otpInvalid", "Invalid or expired code."),
+          );
+        }
+
+        setSmsRegistrationPhoneVerified(true);
+        setOtpDigits(new Array(OTP_CODE_LENGTH).fill(""));
+        autoSubmittedCodeRef.current = "";
+        setBusyAction(null);
+        showSuccess(
+          smsEnrollmentFlow === "phone-link"
+            ? t("trustedPhoneVerified", "Phone verified for this account")
+            : t("phoneVerified", "Phone verified"),
+          t(
+            "verifyEmailToFinish",
+            "Now enter the code sent to your email to finish creating your account.",
+          ),
+        );
+        focusOtpInput(0);
+        return;
+      }
+
       const verifyResponse = (await apiClient.post(
         "/auth/otp/verify",
-        { email: normalizedEmail, code: normalizedCode },
+        {
+          email: normalizedEmail,
+          code: normalizedCode,
+          registrationChallengeId: smsRegistrationPhoneVerified
+            ? smsRegistrationChallengeId
+            : undefined,
+        },
         {
           skipEventSegment: true,
           skipAuth: true,
@@ -1487,6 +1573,9 @@ export default function AuthScreen({
     setOtpError,
     showError,
     showSuccess,
+    smsRegistrationChallengeId,
+    smsRegistrationPhoneVerified,
+    smsEnrollmentFlow,
     t,
     validateEmailOrShowError,
   ]);
@@ -1974,6 +2063,9 @@ export default function AuthScreen({
     autoSubmittedCodeRef.current = "";
     setOtpDeliveryMethod("email");
     setPhone("");
+    setSmsRegistrationChallengeId(null);
+    setSmsRegistrationPhoneVerified(false);
+    setSmsEnrollmentFlow(null);
     setPhoneError("");
     setCountryPickerVisible(false);
     setCountrySearchQuery("");
@@ -2476,10 +2568,7 @@ export default function AuthScreen({
                           </View>
                         )}
 
-                        {/* SMS sign-in is intentionally unavailable until phones are
-                            verified and account-bound in Security settings. */}
-                        {emailAuthMethod === "otp-code" &&
-                        SMS_OTP_LOGIN_ENABLED ? (
+                        {emailAuthMethod === "otp-code" ? (
                           <View style={styles.otpDeliveryContainer}>
                             <TouchableOpacity
                               style={styles.deliverySwitchButton}
@@ -2488,6 +2577,15 @@ export default function AuthScreen({
                                   prev === "email" ? "sms" : "email",
                                 );
                                 setPhoneError("");
+                                setOtpSent(false);
+                                setOtpCodeSentAt(null);
+                                setOtpDigits(
+                                  new Array(OTP_CODE_LENGTH).fill(""),
+                                );
+                                setSmsRegistrationChallengeId(null);
+                                setSmsRegistrationPhoneVerified(false);
+                                setSmsEnrollmentFlow(null);
+                                setTrustedPhoneEmailRequested(false);
                                 setCountryPickerVisible(false);
                                 setCountrySearchQuery("");
                               }}
@@ -2561,6 +2659,9 @@ export default function AuthScreen({
                                       onChangeText={(text) => {
                                         setPhone(text.replace(/[^\d]/g, ""));
                                         if (phoneError) setPhoneError("");
+                                        if (trustedPhoneEmailRequested) {
+                                          setTrustedPhoneEmailRequested(false);
+                                        }
                                       }}
                                       placeholder={t(
                                         "phonePlaceholder",
@@ -2572,6 +2673,10 @@ export default function AuthScreen({
                                       keyboardType="phone-pad"
                                       autoCapitalize="none"
                                       autoCorrect={false}
+                                      accessibilityLabel={t(
+                                        "phoneNumber",
+                                        "Phone number",
+                                      )}
                                       editable={!isBusy}
                                       onFocus={() => {
                                         activeSubmitFieldRef.current = "phone";
@@ -2607,11 +2712,35 @@ export default function AuthScreen({
                                   </Text>
                                 ) : null}
                                 <Text style={styles.deliveryHint}>
-                                  {t(
-                                    "otpSmsHint",
-                                    "We will send the login code by SMS using the selected country code.",
-                                  )}
+                                  {trustedPhoneEmailRequested
+                                    ? t(
+                                        "trustedPhoneEmailSent",
+                                        "We sent a verification code to your email and phone. Verify both to save this number as trusted.",
+                                      )
+                                    : t(
+                                        "otpSmsHint",
+                                        "Use a saved phone to sign in. If this account has fewer than two trusted phones, verify this number and your email once to save it. After that, SMS sign-in works without email.",
+                                      )}
                                 </Text>
+                                {!otpSent ? (
+                                  <TouchableOpacity
+                                    onPress={handleRequestTrustedPhoneEmail}
+                                    disabled={isBusy}
+                                    accessibilityRole="button"
+                                    accessibilityLabel={t(
+                                      "addTrustedPhoneByEmail",
+                                      "Email me a code to add this number as a trusted phone",
+                                    )}
+                                    dataSet={{ authEnterIgnore: "true" }}
+                                  >
+                                    <Text style={styles.trustedPhoneLinkText}>
+                                      {t(
+                                        "addTrustedPhoneByEmail",
+                                        "Email me a code to add this number as a trusted phone",
+                                      )}
+                                    </Text>
+                                  </TouchableOpacity>
+                                ) : null}
                               </>
                             ) : null}
                           </View>
@@ -2620,7 +2749,23 @@ export default function AuthScreen({
                         {emailAuthMethod === "otp-code" && otpSent ? (
                           <View style={styles.otpSection}>
                             <Text style={styles.otpInputPrompt}>
-                              {t("enterOtpCode", "Enter 6-digit code")}
+                              {smsRegistrationChallengeId &&
+                              !smsRegistrationPhoneVerified
+                                ? smsEnrollmentFlow === "phone-link"
+                                  ? t(
+                                      "enterTrustedPhoneOtpCode",
+                                      "Verify this number to save it as a trusted phone",
+                                    )
+                                  : t(
+                                      "enterPhoneOtpCode",
+                                      "Enter the 6-digit code sent to your phone",
+                                    )
+                                : smsRegistrationChallengeId
+                                  ? t(
+                                      "enterEmailOtpCode",
+                                      "Enter the 6-digit code sent to your email",
+                                    )
+                                  : t("enterOtpCode", "Enter 6-digit code")}
                             </Text>
 
                             <View
@@ -2835,14 +2980,24 @@ export default function AuthScreen({
                                 : busyAction === "magic-link"
                                   ? t("sendingEmail", "Sending email...")
                                   : busyAction === "otp-send"
-                                    ? t("sendingOtpCode", "Sending OTP code...")
+                                    ? otpDeliveryMethod === "sms"
+                                      ? t(
+                                          "sendingSmsCode",
+                                          "Sending SMS code...",
+                                        )
+                                      : t(
+                                          "sendingOtpCode",
+                                          "Sending OTP code...",
+                                        )
                                     : busyAction === "otp-verify"
                                       ? t("verifyingCode", "Verifying code...")
                                       : emailAuthMethod === "magic-link"
                                         ? t("sendMagicLink", "Send Magic Link")
                                         : otpSent
                                           ? t("verifyCode", "Verify Code")
-                                          : t("sendCode", "Send Code")}
+                                          : otpDeliveryMethod === "sms"
+                                            ? t("sendSmsCode", "Send SMS Code")
+                                            : t("sendCode", "Send Code")}
                             </Text>
                           </View>
                         </TouchableOpacity>
@@ -3646,6 +3801,14 @@ const getStyles = (
       color: isDark ? "#bdbdc2" : "#6a6b70",
       marginLeft: 4,
       lineHeight: 16,
+    },
+    trustedPhoneLinkText: {
+      fontSize: 12,
+      color: isDark ? "#e6e7eb" : "#55565b",
+      textDecorationLine: "underline",
+      fontWeight: "600",
+      marginLeft: 4,
+      lineHeight: 18,
     },
     phoneRow: {
       width: "100%",
