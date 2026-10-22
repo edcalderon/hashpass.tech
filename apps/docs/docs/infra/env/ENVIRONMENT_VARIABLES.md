@@ -105,8 +105,11 @@ consolidation; the `bsl-production` GitHub environment's
 `STATIC_SITE_PUBLIC_BUILD_ENV` carries core's public URL and key. The
 production API Lambda gets its database URL from the
 `API_LAMBDA_DATABASE_URL_PROD` repository secret, which `deploy-api-lambda.sh`
-writes to `DATABASE_URL`, `SUPABASE_DB_URL` and `BETTER_AUTH_DATABASE_URL`
-together, and `API_LAMBDA_REMOVE_RETIRED_ENV=true` removes the old BSL keys.
+writes to `BETTER_AUTH_DATABASE_URL` (the only DB-URL variable on the Lambda
+since the 2026-10-22 env-budget cleanup -- see
+[decisions/lambda-env-var-budget.md](../decisions/lambda-env-var-budget.md)),
+and `API_LAMBDA_REMOVE_RETIRED_ENV=true` removes the old BSL keys and the
+duplicate `DATABASE_URL`/`SUPABASE_DB_URL` copies.
 `BSL_SUPABASE_DB_URL_PROD` remains in a local `.env` only to read the backup.
 The `*_DEV` BSL values are unchanged.
 - The live pipeline projects are `bsl-hashpass-dev-build` and `bsl-hashpass-prod-build`. Dev uses the hybrid static-site buildspec (`packages/tools/buildspecs/bsl-static-site-codebuild.yml`); prod uses `packages/tools/buildspecs/infra-deploy.yml` (SST deploy) -- see `provision-infra-pipelines.sh` for how each project's buildspec is selected.

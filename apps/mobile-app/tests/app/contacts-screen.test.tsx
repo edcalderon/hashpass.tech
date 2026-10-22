@@ -1,8 +1,14 @@
 import React from 'react';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
-import { Modal, Text, TextInput } from 'react-native';
+import { Image, Linking, Modal, Share, Text, TextInput } from 'react-native';
 import ContactsExperience from '../../components/contacts/ContactsExperience';
 import type { ContactsExperienceProps, ContactsSnapshot } from '../../types/contacts';
+jest.mock('react-native', () => {
+  const actual = jest.requireActual('react-native');
+  const share = { share: jest.fn(), sharedAction: 'sharedAction', dismissedAction: 'dismissedAction' };
+  Object.defineProperty(actual, 'Share', { configurable: true, value: share });
+  return actual;
+});
 const mockCopy = jest.fn();
 
 const mockShowError = jest.fn();
@@ -11,12 +17,13 @@ jest.mock('../../contexts/ToastContext', () => ({ useToastHelpers: () => ({ show
 jest.mock('../../i18n/i18n', () => ({ useTranslation: () => ({ t: (_key: string, fallback: string) => fallback }) }));
 jest.mock('../../lib/vector-icons', () => ({ Ionicons: 'Icon' }));
 jest.mock('../../lib/hashpass-logo', () => ({ getHashpassFullLogo: () => ({ uri: 'logo' }) }));
+jest.mock('../../lib/api-client', () => ({ apiClient: { get: jest.fn(async () => ({ success: false, error: 'not available' })) } }));
 jest.mock('../../components/contacts/ContactsGraph', () => 'ContactsGraph');
 jest.mock('react-native-qrcode-svg', () => 'QRCode');
 jest.mock('expo-clipboard', () => ({ setStringAsync: (...args: unknown[]) => mockCopy(...args) }));
 
 const snapshot: ContactsSnapshot = {
-  profile: { id: 'me', name: 'Ari', role: '', company: '', topics: ['AI'], points: 20, connections: 0, discoverable: false, leaderboard: false, share_id: '00000000-0000-4000-8000-000000000001' },
+  profile: { id: 'me', name: 'Ari', role: '', company: '', topics: ['AI'], points: 20, connections: 0, discoverable: false, leaderboard: false, share_id: '00000000-0000-4000-8000-000000000001', avatar_url: 'https://images.example/ari.png' },
   contacts: [], incoming: [{ id: 'request', profile: { id: 'other', name: 'Robin', role: '', company: '', topics: ['AI'], points: 20, connections: 0, discoverable: true, leaderboard: false } }],
   outgoing: [], suggestions: [], leaderboard: [], shared: null,
 };
@@ -78,6 +85,50 @@ describe('Contacts experience', () => {
     await act(async () => { await control(view, 'Copy card link').props.onPress(); });
     expect(mockShowError).toHaveBeenCalledWith('Could not copy. Select the card link to copy it manually.');
     expect(control(view, 'Link copied')).toBeUndefined();
+    act(() => view.unmount());
+  });
+
+  it('renders the owner avatar and branded hpass.id QR destination in the share sheet', async () => {
+    let view!: ReactTestRenderer;
+    await act(async () => { view = create(<ContactsExperience {...props} />); });
+    act(() => control(view, 'Share card').props.onPress());
+    expect(view.root.findAllByType(Image).some(image => image.props.source?.uri === 'https://images.example/ari.png')).toBe(true);
+    const cardUrl = view.root.findAllByType(Text)
+      .map(text => String(text.props.children))
+      .map(value => { try { return new URL(value); } catch { return null; } })
+      .find(value => value?.hostname === 'hpass.id');
+    expect(cardUrl?.protocol).toBe('https:');
+    expect(cardUrl?.hostname).toBe('hpass.id');
+    expect(cardUrl?.pathname).toBe('/c/00000000-0000-4000-8000-000000000001');
+    act(() => view.unmount());
+  });
+
+  it('shares through native and social channels and reports rejected share attempts', async () => {
+    const nativeShare = jest.spyOn(Share, 'share').mockResolvedValue({ action: 'sharedAction' });
+    const openUrl = jest.mocked(Linking.openURL);
+    openUrl.mockReset().mockResolvedValue(true);
+    let view!: ReactTestRenderer;
+    await act(async () => { view = create(<ContactsExperience {...props} />); });
+    act(() => control(view, 'Share card').props.onPress());
+
+    await act(async () => { await control(view, 'Share more ways').props.onPress(); });
+    expect(nativeShare).toHaveBeenCalledWith(expect.objectContaining({ url: 'https://hpass.id/c/00000000-0000-4000-8000-000000000001' }));
+
+    await act(async () => { await control(view, 'LinkedIn').props.onPress(); });
+    await act(async () => { await control(view, 'WhatsApp').props.onPress(); });
+    await act(async () => { await control(view, 'X').props.onPress(); });
+    expect(openUrl).toHaveBeenNthCalledWith(1, expect.stringContaining('linkedin.com/sharing/share-offsite'));
+    expect(openUrl).toHaveBeenNthCalledWith(2, expect.stringContaining('wa.me/?text='));
+    expect(openUrl).toHaveBeenNthCalledWith(3, expect.stringContaining('twitter.com/intent/tweet'));
+
+    nativeShare.mockRejectedValueOnce(new Error('share unavailable'));
+    await act(async () => { await control(view, 'Share more ways').props.onPress(); });
+    expect(mockShowError).toHaveBeenCalledWith('Could not open the share sheet.');
+
+    openUrl.mockRejectedValueOnce(new Error('channel unavailable'));
+    await act(async () => { await control(view, 'LinkedIn').props.onPress(); });
+    expect(mockShowError).toHaveBeenCalledWith('Could not open the share channel.');
+    nativeShare.mockRestore();
     act(() => view.unmount());
   });
 });

@@ -396,6 +396,22 @@ describe('marketing activity migration contract', () => {
     );
     expect(migration).toMatch(/CREATE FUNCTION public\.record_marketing_activity/i);
     expect(migration).toMatch(/GRANT EXECUTE ON FUNCTION public\.record_marketing_activity/i);
+    expect(config.groups['marketing-campaigns']).toContain(
+      'db/migrations/V134__contact_identity_modes.sql',
+    );
+    const identityMigration = fs.readFileSync(
+      path.join(root, 'db/migrations/V134__contact_identity_modes.sql'),
+      'utf8',
+    );
+    expect(identityMigration).toMatch(/ADD COLUMN IF NOT EXISTS identity_mode text/i);
+    expect(identityMigration).toMatch(/A claimed speaker profile is required/i);
+    expect(identityMigration).toMatch(/AS avatar_url/i);
+    expect(config.groups['marketing-campaigns']).toContain(
+      'db/migrations/V135__contact_profile_avatars.sql',
+    );
+    expect(fs.readFileSync(path.join(root, 'db/migrations/V135__contact_profile_avatars.sql'), 'utf8')).toMatch(
+      /CREATE OR REPLACE VIEW public\.contact_network_profiles/i,
+    );
   });
 });
 

@@ -320,33 +320,11 @@ function applyCanonicalTenantOverrides(targetConfig, runtime) {
     targetConfig[key] = value;
   });
 
-  const trimTrailingSlash = (value) => String(value || '').trim().replace(/\/$/, '');
-  const splitCsv = (value) =>
-    String(value || '')
-      .split(',')
-      .map((entry) => entry.trim())
-      .filter(Boolean);
-
-  const mergeRedirectAllowList = (value) => {
-    const allowList = new Set(splitCsv(value));
-    const derivedCallbacks = [
-      runtime.frontendUrl ? `${trimTrailingSlash(runtime.frontendUrl)}/auth/callback` : '',
-      runtime.apiBaseUrl ? `${trimTrailingSlash(runtime.apiBaseUrl)}/auth/oauth/callback` : '',
-    ].filter(Boolean);
-
-    for (const entry of derivedCallbacks) {
-      allowList.add(entry);
-    }
-
-    return Array.from(allowList).join(',');
-  };
-
-  targetConfig.AUTH_GOOGLE_REDIRECT_ALLOW_LIST = mergeRedirectAllowList(
-    targetConfig.AUTH_GOOGLE_REDIRECT_ALLOW_LIST
-  );
-  targetConfig.AUTH_REDIRECT_ALLOW_LIST = mergeRedirectAllowList(
-    targetConfig.AUTH_REDIRECT_ALLOW_LIST
-  );
+  // AUTH_GOOGLE_REDIRECT_ALLOW_LIST / AUTH_REDIRECT_ALLOW_LIST are no longer
+  // built or synced here: nothing in the API runtime reads them (only the
+  // Directus .env does, which propagate-env.js still writes), and the two
+  // combined CSVs cost >1KB of the Lambda's 4KB env budget. See
+  // apps/docs/docs/infra/decisions/lambda-env-var-budget.md.
 
   const tenantAliasEntries = [
     [supabaseBindings.publicUrl, supabaseUrl],
@@ -485,16 +463,10 @@ try {
     'BSL_SUPABASE_SERVICE_ROLE_KEY',
     'BSL_SUPABASE_SERVICE_ROLE_KEY_DEV',
     'SUPABASE_SERVICE_ROLE_KEY_BSL_DEV',
-    'SUPABASE_DB_URL',
-    'SUPABASE_DB_URL_DEV',
-    'SUPABASE_DB_URL_PROD',
-    'BSL_SUPABASE_DB_URL',
-    'BSL_SUPABASE_DB_URL_DEV',
-    'SUPABASE_DB_URL_BSL_DEV',
-    'DATABASE_URL',
-    'DATABASE_URL_DEV',
-    'DATABASE_URL_PROD',
-    'DATABASE_URL_BSL_DEV',
+    // Only BETTER_AUTH_DATABASE_URL is synced: it is the first DB URL every
+    // runtime chain reads (database-config.ts), so every other DB-URL spelling
+    // is duplicate bytes against the Lambda 4KB env budget. See
+    // apps/docs/docs/infra/decisions/lambda-env-var-budget.md.
     'DIRECTUS_URL',
     'EXPO_PUBLIC_DIRECTUS_URL',
     'DIRECTUS_SECRET',
@@ -503,8 +475,6 @@ try {
     'GOOGLE_CLIENT_ID',
     'GOOGLE_CLIENT_SECRET',
     'AUTH_GOOGLE_MODE',
-    'AUTH_GOOGLE_REDIRECT_ALLOW_LIST',
-    'AUTH_REDIRECT_ALLOW_LIST',
     'ADMIN_EMAIL',
     'ADMIN_PASSWORD',
     'DEFAULT_ROLE_ID',
@@ -575,6 +545,13 @@ try {
     'BETTER_AUTH_TRUSTED_ORIGINS',
     'BETTER_AUTH_GOOGLE_CLIENT_ID',
     'BETTER_AUTH_GOOGLE_CLIENT_SECRET',
+    // Removed from the Lambdas 2026-10-22 to reclaim env budget -- see
+    // apps/docs/docs/infra/decisions/lambda-env-var-budget.md. Dropped here so
+    // a sync can never reintroduce them.
+    'AUTH_GOOGLE_REDIRECT_ALLOW_LIST',
+    'AUTH_REDIRECT_ALLOW_LIST',
+    'SUPABASE_DB_URL',
+    'DATABASE_URL',
   ];
   keysToDrop.forEach((key) => {
     if (key in newVars) {

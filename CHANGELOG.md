@@ -1,3 +1,27 @@
+## [1.9.139](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.137...v1.9.139) (2026-10-22)
+### Released
+- Version 1.9.139 release
+
+### Release scope
+- Compared with: `v1.9.137` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Documentation
+- Release tooling
+
+## [1.9.138](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.137...v1.9.138) (2026-10-22)
+### Released
+- Version 1.9.138 release
+
+### Release scope
+- Compared with: `v1.9.137` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Documentation
+- Release tooling
+
 ## [1.9.137](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.135...v1.9.137) (2026-10-22)
 
 

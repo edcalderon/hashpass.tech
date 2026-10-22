@@ -403,20 +403,11 @@ async function auditTenant(tenantName, environment, configPath) {
       issues += 1;
     }
 
-    const oauthAllowList = String(
-      lambdaEnv.AUTH_GOOGLE_REDIRECT_ALLOW_LIST || lambdaEnv.AUTH_REDIRECT_ALLOW_LIST || ''
-    );
-    const requiredRedirects = [
-      `${runtime.frontendUrl.replace(/\/$/, '')}/auth/callback`,
-      `${runtime.apiBaseUrl.replace(/\/$/, '')}/auth/oauth/callback`,
-    ];
-
-    for (const redirectUrl of requiredRedirects) {
-      if (!oauthAllowList.includes(redirectUrl)) {
-        log(`Missing OAuth redirect allow-list entry: ${redirectUrl}`, 'error');
-        issues += 1;
-      }
-    }
+    // The AUTH_GOOGLE_REDIRECT_ALLOW_LIST / AUTH_REDIRECT_ALLOW_LIST check that
+    // used to live here was removed 2026-10-22: nothing in the API runtime
+    // reads those variables (only the Directus .env does), and they were
+    // dropped from both Lambdas to reclaim env budget -- see
+    // apps/docs/docs/infra/decisions/lambda-env-var-budget.md.
 
     const jwtKeys = ['SUPABASE_SERVICE_ROLE_KEY', 'EXPO_PUBLIC_SUPABASE_KEY'];
     for (const key of jwtKeys) {

@@ -124,6 +124,14 @@ test('the QR URL origin matches the request that created the challenge, not a fi
   assert.ok(created.qrUrl.startsWith('https://api.hashpass.link/auth/'));
 });
 
+test('hpass.id contact-card links redirect only validated card ids to HashPass', async () => {
+  const cardId = 'b2534c57-9fe6-405a-acfa-484e0659da41';
+  const response = await handleRequest(new Request(`https://hpass.id/c/${cardId}`));
+  assert.equal(response.status, 302);
+  assert.equal(response.headers.get('location'), `https://hashpass.tech/contacts?card=${cardId}`);
+  assert.equal((await handleRequest(new Request('https://hpass.id/c/not-a-card'))).status, 400);
+});
+
 test('concurrent exchange attempts race safely: exactly one succeeds', async () => {
   useFakeDb();
   const { created, binding, codeVerifier } = await driveFullFlow();

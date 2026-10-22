@@ -7,9 +7,13 @@ export interface ContactProfile {
   discoverable: boolean;
   leaderboard: boolean;
   share_id?: string;
+  identity_mode?: ContactIdentityMode;
+  avatar_url?: string;
   points: number;
   connections: number;
 }
+
+export type ContactIdentityMode = 'attendee' | 'speaker';
 
 export interface ContactRequest {
   id: string;
@@ -35,6 +39,7 @@ export interface ContactProfileDraft {
   topics: string[];
   discoverable: boolean;
   leaderboard: boolean;
+  identity_mode: ContactIdentityMode;
 }
 
 export type ContactsAction =

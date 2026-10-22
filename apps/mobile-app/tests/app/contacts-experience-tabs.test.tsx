@@ -6,12 +6,14 @@ import type { ContactProfile, ContactsExperienceProps, ContactsSnapshot } from '
 
 const mockShowError = jest.fn();
 const mockShowSuccess = jest.fn();
+const mockProfileGet = jest.fn(async (_path?: unknown): Promise<{ success: boolean; data?: unknown; error?: string }> => ({ success: false, error: 'not available' }));
 jest.mock('../../contexts/ToastContext', () => ({ useToastHelpers: () => ({ showError: (...args: unknown[]) => mockShowError(...args), showSuccess: (...args: unknown[]) => mockShowSuccess(...args) }) }));
 let mockWidth = 400;
 jest.mock('react-native/Libraries/Utilities/useWindowDimensions', () => ({ __esModule: true, default: () => ({ width: mockWidth, height: 800, scale: 1, fontScale: 1 }) }));
 jest.mock('../../i18n/i18n', () => ({ useTranslation: () => ({ t: (_key: string, fallback: string, values?: Record<string, unknown>) => Object.entries(values ?? {}).reduce((text, [key, value]) => text.replace(`{${key}}`, String(value)), fallback) }) }));
 jest.mock('../../lib/vector-icons', () => ({ Ionicons: 'Icon' }));
 jest.mock('../../lib/hashpass-logo', () => ({ getHashpassFullLogo: () => ({ uri: 'logo' }) }));
+jest.mock('../../lib/api-client', () => ({ apiClient: { get: (...args: unknown[]) => mockProfileGet(...args) } }));
 jest.mock('../../components/contacts/ContactsGraph', () => 'ContactsGraph');
 jest.mock('react-native-qrcode-svg', () => 'QRCode');
 jest.mock('expo-clipboard', () => ({ setStringAsync: jest.fn(async () => true) }));
@@ -43,7 +45,7 @@ const openTab = (view: ReactTestRenderer, label: string) => act(() => {
 });
 
 describe('Contacts experience tabs and actions', () => {
-  beforeEach(() => { mockWidth = 400; jest.clearAllMocks(); });
+  beforeEach(() => { mockWidth = 400; jest.clearAllMocks(); mockProfileGet.mockResolvedValue({ success: false, error: 'not available' }); });
 
   it('shows no inline retry button without a snapshot and reports save errors as toasts', async () => {
     const view = await render({ ...baseProps(), snapshot: null });
@@ -167,6 +169,21 @@ describe('Contacts experience tabs and actions', () => {
     await act(async () => { await control(view, 'Save contact card').props.onPress(); });
     expect(props.onAction).toHaveBeenCalledWith({ action: 'profile', profile: expect.objectContaining({ role: 'CTO', company: 'Hash', discoverable: true, leaderboard: true }) });
     expect(mockShowSuccess).toHaveBeenCalledWith('Your contact card is saved.');
+    act(() => view.unmount());
+  });
+
+  it('switches a speaker between the attendee and speaker identity before saving', async () => {
+    mockProfileGet.mockImplementation(async (path: unknown) => path === '/profile/speaker'
+      ? { success: true, data: { data: { name: 'Speaker Ari', title: 'Founder', company: 'Hashpass', imageUrl: 'https://images.example/speaker.png' } } }
+      : { success: true, data: { data: { fullName: 'Attendee Ari', title: 'Builder', company: 'Community' } } });
+    const props = baseProps();
+    const view = await render(props);
+    act(() => control(view, 'Edit interests').props.onPress());
+    await act(async () => { await Promise.resolve(); });
+    const speakerTab = view.root.findAll(node => node.props.accessibilityRole === 'tab' && typeof node.props.onPress === 'function' && node.findAllByType(Text).some(text => text.props.children === 'Speaker profile')).at(-1)!;
+    act(() => speakerTab.props.onPress());
+    await act(async () => { await control(view, 'Save contact card').props.onPress(); });
+    expect(props.onAction).toHaveBeenCalledWith({ action: 'profile', profile: expect.objectContaining({ identity_mode: 'speaker', name: 'Speaker Ari', role: 'Founder', company: 'Hashpass' }) });
     act(() => view.unmount());
   });
 

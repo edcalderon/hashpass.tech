@@ -227,11 +227,14 @@ const maxBytes = Number.parseInt(process.env.API_LAMBDA_ENV_UPDATE_MAX_BYTES || 
 
 // Database connection strings are secrets and are never read from the generic
 // DATABASE_URL of the caller's shell. API_LAMBDA_DATABASE_URL (the core
-// production pooler URL) fans out to the three variables the API reads, so
-// they can never point at different databases. Absent -> left untouched, which
-// keeps CI deploys (which have no database secret) from reverting the value.
+// production pooler URL) writes only BETTER_AUTH_DATABASE_URL -- the first
+// variable every runtime resolution chain reads (see
+// apps/mobile-app/lib/server/database-config.ts), so the historical
+// DATABASE_URL / SUPABASE_DB_URL copies were pure duplicate bytes against the
+// 4KB env budget and are retired below. Absent -> left untouched, which keeps
+// CI deploys (which have no database secret) from reverting the value.
 const databaseUrl = (process.env.API_LAMBDA_DATABASE_URL || '').trim();
-const databaseKeys = ['DATABASE_URL', 'SUPABASE_DB_URL', 'BETTER_AUTH_DATABASE_URL'];
+const databaseKeys = ['BETTER_AUTH_DATABASE_URL'];
 
 // Variables of the retired BSL Supabase project (consolidated into core on
 // 2026-10-20, see apps/docs/docs/infra/decisions/single-core-database.md).
@@ -243,6 +246,17 @@ const retiredKeys = [
   'EXPO_PUBLIC_BSL_SUPABASE_KEY_PROD',
   'BSL_SUPABASE_SERVICE_ROLE_KEY',
   'BSL_SUPABASE_SERVICE_ROLE_KEY_PROD',
+  // Retired 2026-10-22 from the dev Lambda to make room for HASHPASS_PIN_PEPPER
+  // under the 4KB env budget: the bsl-development profile chain now ends on
+  // SUPABASE_SERVICE_ROLE_KEY(_DEV) (shared dev), so the _DEV BSL alias is
+  // redundant wherever the shared-dev key is present. See
+  // apps/docs/docs/infra/decisions/lambda-env-var-budget.md.
+  'BSL_SUPABASE_SERVICE_ROLE_KEY_DEV',
+  // Duplicate DB-URL copies of BETTER_AUTH_DATABASE_URL -- removed together
+  // with the 2026-10-22 env-budget cleanup; nothing reads them once
+  // BETTER_AUTH_DATABASE_URL is set (database-config.ts reads it first).
+  'DATABASE_URL',
+  'SUPABASE_DB_URL',
 ];
 
 const syncKeys = [
@@ -273,6 +287,12 @@ const syncKeys = [
   'EXPO_PUBLIC_BETTER_AUTH_URL',
   'BETTER_AUTH_URL',
   'SENTRY_DSN',
+  // PIN second-factor pepper (lib/server/pin-auth.ts). Only callers that have
+  // it in their own environment sync it (a local deploy with the repo .env
+  // exported); CI never sets it, and this merge never deletes keys, so a CI
+  // deploy leaves the live value untouched. Set directly on both Lambdas
+  // 2026-10-22 -- see decisions/lambda-env-var-budget.md.
+  'HASHPASS_PIN_PEPPER',
 ];
 
 const changed = [];
@@ -303,15 +323,32 @@ for (const key of syncKeys) {
 
 const measuredBytes = Buffer.byteLength(JSON.stringify(current), 'utf8');
 
+if (measuredBytes > 3500) {
+  // Budget guard: the hard AWS limit is 4096 and the script's safe ceiling is
+  // 3900; above 3500 there is little headroom left for the next secret.
+  // See apps/docs/docs/infra/decisions/lambda-env-var-budget.md.
+  console.warn(
+    `Lambda environment is ${measuredBytes} bytes -- over the 3500-byte budget guard. ` +
+      'Move the next secret to Secrets Manager/Infisical (lib/server/infisical-secrets.ts) instead of adding it here.'
+  );
+}
+
+// The warning above is advisory. Keep status selection and payload generation
+// independent from it so a valid payload between the warning threshold and the
+// safe ceiling is still written and applied.
 if (changed.length === 0) {
   fs.writeFileSync(statusPath, JSON.stringify({ action: 'noop', changed, measuredBytes, maxBytes }));
   console.log('Lambda environment already has the requested public Supabase/API keys.');
 } else if (measuredBytes > maxBytes) {
   fs.writeFileSync(statusPath, JSON.stringify({ action: 'skip_size', changed, measuredBytes, maxBytes }));
-  console.warn(
+  const message =
     `Skipping Lambda environment sync because the merged payload is ${measuredBytes} bytes, above the safe ${maxBytes} byte limit. ` +
-      `Keys not synced: ${changed.join(', ')}`
-  );
+    `Keys not synced: ${changed.join(', ')}`;
+  console.warn(message);
+  if (process.env.GITHUB_ACTIONS === 'true') {
+    // Surface it as a check annotation too, not just a log line.
+    console.log(`::error::${message.replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A')}`);
+  }
 } else {
   fs.writeFileSync(environmentPath, JSON.stringify({ Variables: current }));
   fs.writeFileSync(statusPath, JSON.stringify({ action: 'update', changed, measuredBytes, maxBytes }));
@@ -341,6 +378,15 @@ NODE
   }
 
   refresh_lambda_environment_payload
+
+  # A skipped env sync used to be a quiet warning: the deploy continued and
+  # shipped code against stale environment values with no signal beyond a log
+  # line. Fail instead (2026-10-22) -- a red deploy is recoverable, a silently
+  # stale config is not. Opt back out with API_LAMBDA_FAIL_ON_ENV_SKIP=false.
+  if [[ "${sync_action}" == "skip_size" && "${API_LAMBDA_FAIL_ON_ENV_SKIP:-true}" == "true" ]]; then
+    echo "ERROR: Lambda environment sync skipped for size; failing the deploy so the environment is never silently stale. Set API_LAMBDA_FAIL_ON_ENV_SKIP=false to allow the legacy skip-and-continue behavior." >&2
+    return 1
+  fi
 
   if [[ "${sync_action}" == "update" ]]; then
     set +e

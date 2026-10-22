@@ -18,6 +18,7 @@ export function validContactsAction(value: unknown): value is ContactsAction {
     typeof profile.role === 'string' && profile.role.length <= 100 &&
     typeof profile.company === 'string' && profile.company.length <= 100 &&
     typeof profile.discoverable === 'boolean' && typeof profile.leaderboard === 'boolean' &&
+    (profile.identity_mode === undefined || profile.identity_mode === 'attendee' || profile.identity_mode === 'speaker') &&
     Array.isArray(profile.topics) && profile.topics.length <= MAX_CONTACT_TOPICS && new Set(profile.topics).size === profile.topics.length &&
     profile.topics.every(topic => CONTACT_TOPICS.some((allowed: string) => allowed === topic));
 }
