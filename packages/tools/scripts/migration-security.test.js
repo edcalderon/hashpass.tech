@@ -383,6 +383,22 @@ describe('admin matchmaking and email campaign migration contract', () => {
   });
 });
 
+describe('marketing activity migration contract', () => {
+  it('ships the activity RPC through the marketing campaign group', () => {
+    const migration = fs.readFileSync(
+      path.join(root, 'db/migrations/V133__marketing_activity_snapshots.sql'),
+      'utf8',
+    );
+    const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+
+    expect(config.groups['marketing-campaigns']).toContain(
+      'db/migrations/V133__marketing_activity_snapshots.sql',
+    );
+    expect(migration).toMatch(/CREATE FUNCTION public\.record_marketing_activity/i);
+    expect(migration).toMatch(/GRANT EXECUTE ON FUNCTION public\.record_marketing_activity/i);
+  });
+});
+
 describe('event-scoped meeting lifecycle migration contract', () => {
   it('adds event-aware request creation and availability RPCs', () => {
     const migration = fs.readFileSync(meetingLifecycleMigrationPath, 'utf8');

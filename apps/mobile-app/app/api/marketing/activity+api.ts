@@ -9,9 +9,14 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
   const route = typeof body?.path === 'string' ? activityRoute(body.path) : null;
   if (!route) return Response.json({ error: 'Unsupported activity route' }, { status: 400 });
-  const recorded = await getSupabaseServerForRequest(request).rpc('record_marketing_activity', {
-    p_user: identity.registryUserId, p_key: `navigation:${route}:${new Date().toISOString().slice(0, 10)}`,
-    p_kind: 'page_view', p_event: null, p_source: 'observed_client',
-  });
+  let recorded;
+  try {
+    recorded = await getSupabaseServerForRequest(request).rpc('record_marketing_activity', {
+      p_user: identity.registryUserId, p_key: `navigation:${route}:${new Date().toISOString().slice(0, 10)}`,
+      p_kind: 'page_view', p_event: null, p_source: 'observed_client',
+    });
+  } catch {
+    return Response.json({ error: 'Activity logging unavailable' }, { status: 503 });
+  }
   return recorded.error ? Response.json({ error: 'Activity logging unavailable' }, { status: 503 }) : Response.json({ data: { recorded: true, trust: 'observed', provisionalPoints: 0 } }, { headers: { 'Cache-Control': 'private, no-store' } });
 }
