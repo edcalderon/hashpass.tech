@@ -273,6 +273,7 @@ jest.mock("../../components/VersionDisplay", () => ({
   __esModule: true,
   default: () => null,
 }));
+jest.mock("../../components/ProfileAvatar", () => "ProfileAvatar");
 jest.mock("../../components/LoadingScreen", () => "LoadingScreen");
 jest.mock("../../components/SafeBlurView", () => "SafeBlurView");
 jest.mock("../../components/QRScanner", () => "QRScanner");
@@ -399,7 +400,7 @@ describe("dashboard drawer visual controls", () => {
     expect(root.findAllByProps({ name: "camera-outline" })).toHaveLength(1);
     expect(root.findAllByProps({ name: "chevron-forward" })).toHaveLength(0);
     expect(
-      root.findAll((node: any) => node.props?.source?.uri === "https://social.example/edward.png"),
+      root.findAll((node: any) => node.props?.uri === "https://social.example/edward.png"),
     ).not.toHaveLength(0);
 
     root

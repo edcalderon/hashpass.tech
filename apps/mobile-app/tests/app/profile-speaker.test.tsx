@@ -171,7 +171,7 @@ describe('ProfileScreen speaker information', () => {
     expect(renderer.root.findByProps({ children: 'Super Admin · Event Admin · bsl · Speaker' })).toBeTruthy();
     expect(renderer.root.findByProps({ children: 'Speaker Information' })).toBeTruthy();
     expect(renderer.root.findByProps({ children: 'Founder & CEO' })).toBeTruthy();
-    expect(renderer.root.findAll((node: any) => node.props?.source?.uri === speaker.imageUrl)).not.toHaveLength(0);
+    expect(renderer.root.findAll((node: any) => node.props?.source?.uri === speaker.imageUrl || node.props?.src === speaker.imageUrl)).not.toHaveLength(0);
   });
 
   it('shows editable attendee information for every signed-in user', async () => {
