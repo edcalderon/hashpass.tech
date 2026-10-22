@@ -14,7 +14,23 @@ beforeEach(() => {
 afterEach(() => {
   act(() => view?.unmount());
   delete process.env.EXPO_PUBLIC_CIG_ANALYTICS_SITE_ID;
+  delete process.env.EXPO_PUBLIC_API_BASE_URL;
+  delete process.env.EXPO_PUBLIC_API_TARGET;
 });
+
+/** Renders the root document and runs its inline runtime-config script against a fake window. */
+const runRuntimeScript = (hostname: string, origin: string) => {
+  act(() => {
+    view = create(<Root><main>HASHPASS</main></Root>);
+  });
+  const script = view.root
+    .findAllByType('script')
+    .map(node => node.props.dangerouslySetInnerHTML?.__html as string | undefined)
+    .find(html => html?.includes('window.__API_BASE_URL__ ='));
+  const fakeWindow: Record<string, any> = { location: { hostname, origin } };
+  new Function('window', script as string)(fakeWindow);
+  return fakeWindow;
+};
 
 it('publishes a mobile PWA viewport without disabling browser zoom', () => {
   act(() => {
@@ -67,4 +83,33 @@ it('injects the cig.technology tracker when EXPO_PUBLIC_CIG_ANALYTICS_SITE_ID is
   );
   expect(tracker?.props['data-site']).toBe('site_-dCPyOHCCE8im_ht');
   expect(tracker?.props.defer).toBe(true);
+});
+
+describe('inline API base URL', () => {
+  const pinned = 'https://api-dev.hashpass.tech/api';
+
+  it('keeps localhost on its own /api routes even when a deployed base is pinned', () => {
+    process.env.EXPO_PUBLIC_API_BASE_URL = pinned;
+    const win = runRuntimeScript('localhost', 'http://localhost:8081');
+    expect(win.__API_BASE_URL__).toBe('http://localhost:8081/api');
+    expect(win.__BETTER_AUTH_URL__).toBe('http://localhost:8081/api/auth');
+  });
+
+  it.each([
+    ['dev', 'https://api-dev.hashpass.tech/api'],
+    ['prod', 'https://api.hashpass.tech/api'],
+  ])('points localhost at the %s Lambda when EXPO_PUBLIC_API_TARGET opts in', (target, expected) => {
+    process.env.EXPO_PUBLIC_API_BASE_URL = pinned;
+    process.env.EXPO_PUBLIC_API_TARGET = target;
+    expect(runRuntimeScript('localhost', 'http://localhost:8081').__API_BASE_URL__).toBe(expected);
+  });
+
+  it('uses the pinned base on a deployed host', () => {
+    process.env.EXPO_PUBLIC_API_BASE_URL = pinned;
+    expect(runRuntimeScript('hashpass.tech', 'https://hashpass.tech').__API_BASE_URL__).toBe(pinned);
+  });
+
+  it('falls back to the production API on a deployed host with nothing pinned', () => {
+    expect(runRuntimeScript('hashpass.tech', 'https://hashpass.tech').__API_BASE_URL__).toBe('https://api.hashpass.tech/api');
+  });
 });

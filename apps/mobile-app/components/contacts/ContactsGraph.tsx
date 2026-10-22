@@ -43,7 +43,7 @@ export default function ContactsGraph({ contacts, topics, grouping, selected, mo
   });
 
   return <View testID="contacts-graph" onLayout={event => setWidth(Math.max(240, event.nativeEvent.layout.width))} style={[styles.graph, { height }]}>
-    <Svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} accessible={false}>
+    <Svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`}>
       {[0.6, 1, 1.45].map(size => <Circle key={size} cx={cx} cy={cy} r={orbit * size} stroke={palette.border} strokeWidth={1} strokeDasharray={size === 1 ? undefined : '3 8'} fill="none" />)}
       {hubs.map(hub => <Line key={hub.label} x1={cx} y1={cy} x2={hub.x} y2={hub.y} stroke={hub.color} strokeOpacity={0.45} strokeDasharray="3 6" />)}
       {nodes.map(node => <Line key={node.contact.id} x1={cx} y1={cy} x2={node.x} y2={node.y} stroke={node.color} strokeOpacity={selected === node.contact.id ? 0.9 : 0.2} />)}

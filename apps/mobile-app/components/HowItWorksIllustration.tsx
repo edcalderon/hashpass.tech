@@ -15,7 +15,7 @@ const defaultLabels: HowItWorksSceneLabels = {
 export default function HowItWorksIllustration({ kind, color, labels = defaultLabels }: { kind: HowItWorksCardId; color: string; animated?: boolean; labels?: HowItWorksSceneLabels }) {
   const frame = { fill: 'none', stroke: color, strokeWidth: 1.25, opacity: 0.24 } as const;
   const copy = { fill: color, fontSize: 6, fontWeight: '700', letterSpacing: 0.7, opacity: 0.58 } as const;
-  return <Svg width={220} height={116} viewBox="0 0 220 116" accessible={false}>
+  return <Svg width={220} height={116} viewBox="0 0 220 116">
     {kind === 'scan' && <>
       <Rect {...frame} x={53} y={18} width={114} height={80} rx={14} />
       <SvgText {...copy} x={68} y={33}>{labels.eventPass}</SvgText><Path d="M68 39h28" stroke={color} strokeWidth={2} opacity={0.2} strokeLinecap="round" />
