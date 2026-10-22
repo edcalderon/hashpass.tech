@@ -2055,7 +2055,6 @@ const getStyles = (
       height: isMobile ? 152 : 229,
       maxWidth: "100%",
       alignSelf: "center",
-      resizeMode: "contain",
     },
     campaignImage: {
       width: "100%",
