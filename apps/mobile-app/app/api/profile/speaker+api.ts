@@ -4,11 +4,11 @@ import {
   resolveNotificationIdentity,
 } from '@/lib/server/resolve-notification-identity';
 import { isAllowedAvatarUrl } from '@/lib/avatar-guards';
+import type { AvatarSource } from '@/types/speaker-profile.types';
 
 const LEGACY_SPEAKER_FIELDS = 'id, name, title, company, imageurl, is_active, is_accepting_meetings';
 const SPEAKER_FIELDS = `${LEGACY_SPEAKER_FIELDS}, event_imageurl, avatar_source, do_not_disturb`;
 const AVATAR_SOURCES = ['event', 'personal'] as const;
-type AvatarSource = (typeof AVATAR_SOURCES)[number];
 // Postgres "undefined_column": the avatar-source migration is not applied yet.
 const UNDEFINED_COLUMN = '42703';
 const MAX_NAME_LENGTH = 120;

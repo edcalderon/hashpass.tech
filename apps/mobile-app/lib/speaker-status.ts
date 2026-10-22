@@ -1,3 +1,15 @@
+import type {
+  SpeakerActivationRecord,
+  SpeakerDirectoryState,
+  SpeakerDirectoryStatus,
+} from '../types/speaker-status.types';
+
+export type {
+  SpeakerActivationRecord,
+  SpeakerDirectoryState,
+  SpeakerDirectoryStatus,
+} from '../types/speaker-status.types';
+
 /**
  * Public speaker states:
  * - active: confirmed (claimed) account that is receiving meeting requests.
@@ -8,31 +20,9 @@
  * The profile id remains the stable meeting-request target; requests are
  * relinked to the account when the speaker claims it.
  */
-export interface SpeakerActivationRecord {
-  directory_visible?: boolean | null;
-  is_active?: boolean | null;
-  isActive?: boolean | null;
-  is_accepting_meetings?: boolean | null;
-  user_id?: string | null;
-  do_not_disturb?: boolean | null;
-  doNotDisturb?: boolean | null;
-}
-
 export function isClaimedActiveSpeaker(speaker: SpeakerActivationRecord): boolean {
   const isClaimed = typeof speaker.user_id === 'string' && speaker.user_id.trim().length > 0;
   return isClaimed && (speaker.is_active === true || speaker.isActive === true);
-}
-
-export type SpeakerDirectoryStatus = 'private' | 'inactive' | 'idle' | 'active' | 'dnd';
-
-export interface SpeakerDirectoryState {
-  isPublished: boolean;
-  isClaimed: boolean;
-  isNetworkingActive: boolean;
-  isAcceptingMeetings: boolean;
-  /** Requests are accepted but archived rather than shown to the speaker. */
-  archivesRequests: boolean;
-  status: SpeakerDirectoryStatus;
 }
 
 export function getSpeakerDirectoryState(speaker: SpeakerActivationRecord): SpeakerDirectoryState {

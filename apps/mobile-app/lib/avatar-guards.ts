@@ -1,3 +1,17 @@
+import type {
+  AvatarCandidate,
+  AvatarGuardCode,
+  AvatarMime,
+  AvatarPolicy,
+} from '../types/avatar-guards.types';
+
+export type {
+  AvatarCandidate,
+  AvatarGuardCode,
+  AvatarMime,
+  AvatarPolicy,
+} from '../types/avatar-guards.types';
+
 /**
  * Profile-picture guards shared by the upload control (client) and the speaker
  * profile API (server). Pure functions only, so both sides enforce one policy.
@@ -9,16 +23,6 @@ export const AVATAR_MIN_DIMENSION = 64;
 export const AVATAR_ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp'] as const;
 export const AVATAR_ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp'] as const;
 
-export type AvatarMime = (typeof AVATAR_ALLOWED_MIME)[number];
-export type AvatarGuardCode =
-  | 'empty'
-  | 'too_large'
-  | 'type_not_allowed'
-  | 'content_mismatch'
-  | 'unreadable'
-  | 'dimensions_too_large'
-  | 'dimensions_too_small';
-
 export class AvatarGuardError extends Error {
   readonly code: AvatarGuardCode;
 
@@ -27,21 +31,6 @@ export class AvatarGuardError extends Error {
     this.name = 'AvatarGuardError';
     this.code = code;
   }
-}
-
-export interface AvatarCandidate {
-  name?: string | null;
-  mimeType?: string | null;
-  size?: number | null;
-  width?: number | null;
-  height?: number | null;
-}
-
-export interface AvatarPolicy {
-  maxBytes?: number;
-  maxDimension?: number;
-  minDimension?: number;
-  allowedExtensions?: readonly string[];
 }
 
 const EXTENSION_MIME: Record<string, AvatarMime> = {

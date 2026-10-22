@@ -3,9 +3,11 @@ import { Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'reac
 import { MaterialIcons } from '../lib/vector-icons';
 import { useTranslation } from '../i18n/i18n';
 import { uiPalette, uiTokens } from '@hashpass/ui/tokens';
-import type { SpeakerDirectoryStatus } from '../lib/speaker-status';
-
-export type SpeakerBadgeStatus = Exclude<SpeakerDirectoryStatus, 'private'> | 'past';
+import type {
+  SpeakerBadgeStatus,
+  SpeakerStatusBadgeProps,
+} from '../types/speaker-status-badge.types';
+export type { SpeakerBadgeStatus } from '../types/speaker-status-badge.types';
 
 const TONES: Record<SpeakerBadgeStatus, { bg: string; fg: string; icon: string }> = {
   active: { bg: '#34A853', fg: '#FFFFFF', icon: 'verified' },
@@ -16,13 +18,6 @@ const TONES: Record<SpeakerBadgeStatus, { bg: string; fg: string; icon: string }
 };
 
 const ORDER: SpeakerBadgeStatus[] = ['active', 'idle', 'dnd'];
-
-interface SpeakerStatusBadgeProps {
-  status: SpeakerBadgeStatus;
-  /** Replaces the default label, e.g. "Online" on the detail screen. */
-  label?: string;
-  isDark?: boolean;
-}
 
 /** Status pill; pressing it opens a modal that explains every speaker status. */
 export default function SpeakerStatusBadge({ status, label, isDark = false }: SpeakerStatusBadgeProps) {

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, Platform } from 'react-native';
 import type { CloudinaryUploadPart } from '../types/cloudinary.types';
+import type { AvatarCandidate, AvatarMime } from '../types/avatar-guards.types';
 import {
   AVATAR_ALLOWED_EXTENSIONS,
   AVATAR_ALLOWED_MIME,
@@ -9,8 +10,6 @@ import {
   formatBytes,
   validateAvatarBytes,
   validateAvatarMetadata,
-  type AvatarCandidate,
-  type AvatarMime,
 } from '../lib/avatar-guards';
 
 const DEFAULT_UPLOAD_MAX_SIZE = AVATAR_MAX_BYTES;
