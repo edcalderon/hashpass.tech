@@ -92,6 +92,32 @@ describe("/api/passes self-service provisioning", () => {
       p_event_id: "colombia2026",
     });
   });
+
+  it("returns the existing pass when another tier already holds the event slot", async () => {
+    mockRpc.mockResolvedValueOnce({ data: null, error: { code: "23505", message: "unique_user_event" } });
+    const builder: Record<string, jest.Mock> = {};
+    for (const name of ["select", "eq", "order", "limit"]) builder[name] = jest.fn(() => builder);
+    builder.maybeSingle = jest.fn(async () => ({ data: { id: "vip-pass" }, error: null }));
+    mockFrom.mockReturnValue(builder);
+
+    const response = await post({ action: "create-default", eventId: "colombia2026" });
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ data: { passId: "vip-pass" } });
+    expect(mockFrom).toHaveBeenCalledWith("passes");
+    expect(builder.eq).toHaveBeenCalledWith("user_id", userId);
+  });
+
+  it("still reports unavailable when a duplicate cannot be resolved to a pass", async () => {
+    mockRpc.mockResolvedValueOnce({ data: null, error: { code: "23505" } });
+    const builder: Record<string, jest.Mock> = {};
+    for (const name of ["select", "eq", "order", "limit"]) builder[name] = jest.fn(() => builder);
+    builder.maybeSingle = jest.fn(async () => ({ data: null, error: null }));
+    mockFrom.mockReturnValue(builder);
+    jest.spyOn(console, "error").mockImplementation(() => undefined);
+
+    expect((await post({ action: "create-default", eventId: "colombia2026" })).status).toBe(503);
+  });
 });
 
 describe("/api/passes event wallet", () => {
