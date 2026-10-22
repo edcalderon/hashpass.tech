@@ -1,4 +1,8 @@
-import { getSupabaseServerForRequest } from '@/lib/supabase-server';
+import {
+  getSupabaseServerEnv,
+  getSupabaseServerForRequest,
+} from '@/lib/supabase-server';
+import { createOtpCodeHash } from '@/lib/server/sms-auth';
 
 /**
  * API endpoint to verify OTP code for account deletion
@@ -17,66 +21,47 @@ export async function POST(request: Request) {
       );
     }
 
-    // Clean up expired OTP codes
-    await supabase.rpc('cleanup_expired_otp_codes');
-
-    // Look up the token_hash from the code
-    const { data: otpData, error: lookupError } = await supabase
-      .from('otp_codes')
-      .select('token_hash, used, expires_at, email')
-      .eq('email', email.trim().toLowerCase())
-      .eq('code', code.toString().trim())
-      .eq('used', false)
-      .gt('expires_at', new Date().toISOString())
-      .like('token_hash', 'delete_account_%')
-      .maybeSingle();
-
-    if (lookupError) {
-      console.error('OTP lookup error:', lookupError);
+    const { supabaseServiceKey } = getSupabaseServerEnv(request);
+    if (!supabaseServiceKey) {
       return new Response(
-        JSON.stringify({ 
-          error: 'Database error while verifying code',
-          details: lookupError.message 
-        }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Authentication service unavailable' }),
+        { status: 503, headers: { 'Content-Type': 'application/json' } },
       );
     }
 
-    if (!otpData) {
-      // Log for debugging
-      console.log('OTP code not found or invalid:', { email: email.trim(), code: code.toString() });
-      
-      // Check if code was already used
-      const { data: usedData } = await supabase
-        .from('otp_codes')
-        .select('used')
-        .eq('email', email.trim().toLowerCase())
-        .eq('code', code.toString().trim())
-        .maybeSingle();
-      
-      if (usedData?.used) {
-        return new Response(
-          JSON.stringify({ error: 'This verification code has already been used' }),
-          { status: 400, headers: { 'Content-Type': 'application/json' } }
-        );
-      }
+    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedCode = code.toString().trim();
 
+    // Clean up expired OTP codes
+    await supabase.rpc('cleanup_expired_otp_codes');
+
+    const { data: otpData, error: consumeError } = await supabase.rpc(
+      'consume_email_otp',
+      {
+        p_email: normalizedEmail,
+        p_code_hmac: createOtpCodeHash({
+          serviceKey: supabaseServiceKey,
+          email: normalizedEmail,
+          code: normalizedCode,
+          purpose: 'account-delete',
+        }),
+        p_purpose: 'account-delete',
+      },
+    );
+
+    if (consumeError) {
+      console.error('OTP consume error:', consumeError);
+      return new Response(
+        JSON.stringify({ error: 'Authentication service unavailable' }),
+        { status: 503, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!otpData?.ok) {
       return new Response(
         JSON.stringify({ error: 'Invalid verification code' }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
-    }
-
-    // Mark the code as used
-    const { error: updateError } = await supabase
-      .from('otp_codes')
-      .update({ used: true })
-      .eq('email', email.trim().toLowerCase())
-      .eq('code', code.toString().trim());
-
-    if (updateError) {
-      console.error('Error marking OTP as used:', updateError);
-      // Don't fail the request, just log the error
     }
 
     return new Response(
@@ -95,4 +80,3 @@ export async function POST(request: Request) {
     );
   }
 }
-

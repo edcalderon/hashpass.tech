@@ -1,4 +1,8 @@
-import { getSupabaseServerForRequest } from '@/lib/supabase-server';
+import {
+  getSupabaseServerEnv,
+  getSupabaseServerForRequest,
+} from '@/lib/supabase-server';
+import { createOtpCodeHash, createSmsCode } from '@/lib/server/sms-auth';
 import nodemailer from 'nodemailer';
 
 /**
@@ -8,6 +12,14 @@ import nodemailer from 'nodemailer';
 export async function POST(request: Request) {
   const supabase = getSupabaseServerForRequest(request);
   try {
+    const { supabaseServiceKey } = getSupabaseServerEnv(request);
+    if (!supabaseServiceKey) {
+      return new Response(
+        JSON.stringify({ error: 'Authentication service unavailable' }),
+        { status: 503, headers: { 'Content-Type': 'application/json' } },
+      );
+    }
+
     const body = await request.json();
     const { email } = body;
 
@@ -18,39 +30,64 @@ export async function POST(request: Request) {
       );
     }
 
-    // Generate a 6-digit OTP code
-    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    // Generate a CSPRNG-backed code. Only its keyed verifier is persisted.
+    const otpCode = createSmsCode();
     
     // Clean up expired OTP codes
     await supabase.rpc('cleanup_expired_otp_codes');
     
     // Store the mapping in the database (normalize email to lowercase)
     const normalizedEmail = email.trim().toLowerCase();
-    const expiresAt = new Date();
-    expiresAt.setHours(expiresAt.getHours() + 1); // Expires in 1 hour
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+    await supabase
+      .from('otp_codes')
+      .update({ used: true })
+      .eq('email', normalizedEmail)
+      .eq('purpose', 'account-delete')
+      .eq('used', false);
     
     const { error: storeError } = await supabase
       .from('otp_codes')
       .insert({
         email: normalizedEmail,
-        code: otpCode,
-        token_hash: `delete_account_${Date.now()}`, // Special token for account deletion
+        code_hmac: createOtpCodeHash({
+          serviceKey: supabaseServiceKey,
+          email: normalizedEmail,
+          code: otpCode,
+          purpose: 'account-delete',
+        }),
+        purpose: 'account-delete',
+        token_hash: 'delete_account',
         expires_at: expiresAt.toISOString(),
         used: false,
       });
 
     if (storeError) {
       console.error('Error storing OTP code:', storeError);
+      const migrationRequired =
+        storeError.code === 'PGRST204' ||
+        /code_hmac|purpose/i.test(storeError.message || '');
       return new Response(
-        JSON.stringify({ error: 'Failed to store OTP code' }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
+        JSON.stringify({
+          error: migrationRequired
+            ? 'OTP security storage is not ready in this environment.'
+            : 'Failed to store OTP code',
+          code: migrationRequired ? 'otp_storage_migration_required' : 'otp_storage_failed',
+        }),
+        { status: migrationRequired ? 503 : 500, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
     // Send custom email with OTP code using nodemailer
     if (process.env.NODEMAILER_FROM && process.env.NODEMAILER_PASS) {
       const smtpHost = process.env.NODEMAILER_HOST || 'smtp.sendgrid.net';
-      const isBrevo = smtpHost.includes('brevo.com') || smtpHost.includes('sendinblue.com');
+      const normalizedSmtpHost = smtpHost.trim().toLowerCase().replace(/\.$/, '').split(':')[0];
+      const isBrevo =
+        normalizedSmtpHost === 'brevo.com' ||
+        normalizedSmtpHost.endsWith('.brevo.com') ||
+        normalizedSmtpHost === 'sendinblue.com' ||
+        normalizedSmtpHost.endsWith('.sendinblue.com');
       
       const transporter = nodemailer.createTransport({
         host: smtpHost,
@@ -61,10 +98,10 @@ export async function POST(request: Request) {
           pass: process.env.NODEMAILER_PASS,
         },
         tls: {
-          // For Brevo/Sendinblue, allow hostname mismatch but still verify certificate
+          // For Brevo/Sendinblue, verify the certificate against the provider
+          // relay name. Leave Node's default hostname validation enabled.
           rejectUnauthorized: process.env.NODE_ENV === 'production',
           servername: isBrevo ? 'smtp-relay.sendinblue.com' : undefined,
-          checkServerIdentity: isBrevo ? () => undefined : undefined,
         },
         requireTLS: true,
       });
@@ -81,7 +118,7 @@ export async function POST(request: Request) {
               <h1 style="color: #F44336; font-size: 32px; letter-spacing: 8px; margin: 0;">${otpCode}</h1>
             </div>
             <p style="color: #6b7280; font-size: 14px;"><strong>Warning:</strong> This action cannot be undone. All your data will be permanently deleted.</p>
-            <p style="color: #6b7280; font-size: 14px;">This code will expire in 1 hour.</p>
+            <p style="color: #6b7280; font-size: 14px;">This code will expire in 10 minutes.</p>
             <p style="color: #6b7280; font-size: 14px;">If you didn't request this code, please ignore this email and secure your account.</p>
             <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
             <p style="font-size: 12px; color: #6b7280;">
@@ -89,7 +126,7 @@ export async function POST(request: Request) {
             </p>
           </div>
         `,
-        text: `Account Deletion Verification\n\nYou have requested to delete your HASHPASS account. Please enter this verification code to confirm: ${otpCode}\n\nWarning: This action cannot be undone. All your data will be permanently deleted.\n\nThis code will expire in 1 hour.\n\nIf you didn't request this code, please ignore this email and secure your account.`,
+        text: `Account Deletion Verification\n\nYou have requested to delete your HASHPASS account. Please enter this verification code to confirm: ${otpCode}\n\nWarning: This action cannot be undone. All your data will be permanently deleted.\n\nThis code will expire in 10 minutes.\n\nIf you didn't request this code, please ignore this email and secure your account.`,
       };
 
       try {

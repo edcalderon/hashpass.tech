@@ -502,7 +502,16 @@ export async function POST(request: Request) {
     // Clean up expired OTP codes
     await supabase.rpc("cleanup_expired_otp_codes");
 
-    // Store the mapping in the database (normalize email to lowercase)
+    // Invalidate a previous active email challenge for this account before
+    // issuing a new one. This prevents an older code from remaining usable.
+    await supabase
+      .from("otp_codes")
+      .update({ used: true } as any)
+      .eq("email", normalizedEmail)
+      .eq("purpose", "email-login")
+      .eq("used", false);
+
+    // Store only a keyed verifier; the raw code is never persisted.
     const { error: storeError } = await supabase.from("otp_codes").insert({
       email: normalizedEmail,
       code_hmac: createOtpCodeHash({
@@ -511,21 +520,25 @@ export async function POST(request: Request) {
         code: otpCode,
         purpose: "email-login",
       }),
+      purpose: "email-login",
       token_hash: encodedTokenHash,
-      expires_at: new Date(Date.now() + 3600000).toISOString(), // 1 hour from now
+      expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
       used: false,
     } as any);
 
     if (storeError) {
       console.error("Error storing OTP code:", storeError);
-      if (storeError.code === "PGRST205") {
+      if (
+        storeError.code === "PGRST205" ||
+        storeError.code === "PGRST204" ||
+        /code_hmac|purpose/i.test(storeError.message || "")
+      ) {
         return new Response(
           JSON.stringify({
-            error:
-              "OTP storage table is not available in the current Supabase project.",
-            code: "otp_storage_missing_table",
+            error: "OTP security storage is not ready in this environment.",
+            code: "otp_storage_migration_required",
             message:
-              "The otp_codes table is missing from the active Supabase database. Please contact support.",
+              "The OTP security migration has not been applied to the active database. Please contact support.",
           }),
           {
             status: 503,
@@ -632,10 +645,10 @@ export async function POST(request: Request) {
           pass: process.env.NODEMAILER_PASS,
         },
         tls: {
-          // For Brevo/Sendinblue, allow hostname mismatch but still verify certificate
+          // For Brevo/Sendinblue, verify the certificate against the provider
+          // relay name. Leave Node's default hostname validation enabled.
           rejectUnauthorized: process.env.NODE_ENV === "production",
           servername: isBrevo ? "smtp-relay.sendinblue.com" : undefined,
-          checkServerIdentity: isBrevo ? () => undefined : undefined,
         },
         requireTLS: true,
       });
@@ -652,7 +665,7 @@ export async function POST(request: Request) {
             <div style="background-color: #f3f4f6; border: 2px solid #4f46e5; border-radius: 8px; padding: 20px; text-align: center; margin: 20px 0;">
               <h1 style="color: #4f46e5; font-size: 32px; letter-spacing: 8px; margin: 0;">${otpCode}</h1>
             </div>
-            <p style="color: #6b7280; font-size: 14px;">This code will expire in 1 hour.</p>
+            <p style="color: #6b7280; font-size: 14px;">This code will expire in 10 minutes.</p>
             <p style="color: #6b7280; font-size: 14px;">If you didn't request this code, you can safely ignore this email.</p>
             <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
             <p style="font-size: 12px; color: #6b7280;">
@@ -660,7 +673,7 @@ export async function POST(request: Request) {
             </p>
           </div>
         `,
-        text: `${otpCode} is your HASHPASS login code.\n\nPlease enter this code to sign in.\n\nThis code will expire in 1 hour.\n\nIf you didn't request this code, you can safely ignore this email.`,
+        text: `${otpCode} is your HASHPASS login code.\n\nPlease enter this code to sign in.\n\nThis code will expire in 10 minutes.\n\nIf you didn't request this code, you can safely ignore this email.`,
       };
 
       try {

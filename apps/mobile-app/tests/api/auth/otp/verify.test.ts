@@ -93,7 +93,18 @@ describe("otp verify api", () => {
     mockResolvePublicSupabaseConfig.mockReset();
     mockSyncPublicUserRegistry.mockReset();
     mockRpc.mockReset();
-    mockRpc.mockResolvedValue({ data: { ok: true }, error: null });
+    mockRpc.mockImplementation(async (name: string) =>
+      name === "consume_email_otp"
+        ? {
+            data: {
+              ok: true,
+              tokenHash: "magiclink::stored-token-hash::123456",
+              email: "user@example.com",
+            },
+            error: null,
+          }
+        : { data: { ok: true }, error: null },
+    );
 
     const lookupBuilder = createOtpLookupBuilder();
     const updateBuilder = createOtpUpdateBuilder();

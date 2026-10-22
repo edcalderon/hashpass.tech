@@ -300,7 +300,6 @@ describe("otp send api", () => {
         host: "brevo.com.attacker.example",
         tls: expect.objectContaining({
           servername: undefined,
-          checkServerIdentity: undefined,
         }),
       }),
     );

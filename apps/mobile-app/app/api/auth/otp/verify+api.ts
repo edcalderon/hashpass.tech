@@ -136,8 +136,8 @@ export async function OPTIONS() {
  * API endpoint to verify OTP code.
  *
  * Flow:
- * 1. Look up the 6-digit code in otp_codes (service-role client).
- * 2. Mark the code as used.
+ * 1. Atomically compare the keyed verifier in otp_codes (service-role client).
+ * 2. Mark the code as used while holding the row lock.
  * 3. Generate a fresh single-use magic-link via the admin API.
  * 4. Verify the fresh token using an anon-key client (same Supabase project,
  *    resolved from the request hostname). GoTrue rejects token_hash verification
@@ -181,35 +181,33 @@ export async function POST(request: Request) {
       purpose: "email-login",
     });
 
-    // Look up the token_hash from the code
-    const { data: otpData, error: lookupError } = await supabase
-      .from("otp_codes")
-      .select("token_hash, used, expires_at, email, code_hmac")
-      .eq("email", normalizedEmail)
-      .or(
-        `code_hmac.eq.${codeHmac},and(code.eq.${normalizedCode},code_hmac.is.null)`,
-      )
-      .or("used.eq.false,used.is.null")
-      .gt("expires_at", new Date().toISOString())
-      .order("expires_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    // Compare and consume the verifier inside a locked database function. This
+    // counts failed attempts and makes a successful code single-use even when
+    // two verification requests arrive concurrently.
+    const { data: otpData, error: consumeError } = await supabase.rpc(
+      "consume_email_otp",
+      {
+        p_email: normalizedEmail,
+        p_code_hmac: codeHmac,
+        p_purpose: "email-login",
+      },
+    );
 
-    if (lookupError) {
-      console.error("OTP lookup error:", lookupError);
+    if (consumeError) {
+      console.error("OTP consume error:", consumeError);
       return new Response(
         JSON.stringify({
-          error: "Database error while verifying code",
-          details: lookupError.message,
+          error: "Authentication service unavailable",
+          code: "otp_verification_unavailable",
         }),
         {
-          status: 500,
+          status: 503,
           headers: { "Content-Type": "application/json", ...corsHeaders },
         },
       );
     }
 
-    if (!otpData) {
+    if (!otpData?.ok) {
       console.log("OTP code not found:", { selectedProfile, usingDevFallback });
       return new Response(
         JSON.stringify({ error: "Invalid verification code" }),
@@ -220,7 +218,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const parsedToken = parseStoredTokenHash((otpData as any).token_hash);
+    const parsedToken = parseStoredTokenHash(otpData.tokenHash);
     if (!parsedToken.tokenHash && !parsedToken.emailOtp) {
       return new Response(
         JSON.stringify({ error: "Invalid verification token payload" }),
@@ -230,19 +228,6 @@ export async function POST(request: Request) {
         },
       );
     }
-
-    // Mark the code as used before touching Supabase auth so it cannot be replayed.
-    const codeUpdate = supabase
-      .from("otp_codes")
-      .update({ used: true } as any)
-      .eq("email", normalizedEmail)
-      .eq("token_hash", (otpData as any).token_hash);
-    if ((otpData as any).code_hmac) {
-      codeUpdate.eq("code_hmac", codeHmac);
-    } else {
-      codeUpdate.eq("code", normalizedCode);
-    }
-    await codeUpdate;
 
     // Use the stored token_hash directly — admin.generateLink() does not send an email,
     // so the stored token from the OTP send step is still valid and unConsumed.
