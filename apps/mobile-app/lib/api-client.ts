@@ -73,7 +73,19 @@ export const readBuildEnvironment = (): 'development' | 'production' | null => {
   return null;
 };
 
+/** True when the web app runs from a localhost dev server, which also hosts the `app/api/**` routes. */
+const isLocalhostWebDev = () =>
+  Platform.OS === 'web' &&
+  typeof window !== 'undefined' &&
+  typeof window.location?.origin === 'string' &&
+  LOCALHOST_API_PATTERN.test(window.location.origin);
+
 const resolveFallbackApiBaseUrl = () => {
+  // Localhost web dev talks to itself (see resolveRuntimeApiBaseUrl); returning null
+  // lets the client fall back to the same-origin `/api` base. Production web is
+  // static assets on a real domain (never localhost), so it keeps the remote Lambda.
+  if (isLocalhostWebDev()) return null;
+
   const environment = readBuildEnvironment();
   if (environment) {
     return REMOTE_API_BASE_BY_ENV[environment];
@@ -110,14 +122,47 @@ const resolveWebRuntimeApiBaseUrl = () => {
   return null;
 };
 
+/**
+ * Where localhost web dev sends its API calls. Default (unset or `local`): this
+ * same dev server, which hosts the Expo Router `app/api/**` routes — full local
+ * development with no deployed Lambda involved. Set `EXPO_PUBLIC_API_TARGET=dev`
+ * or `=prod` to aim the local web app at a deployed Lambda instead (e.g. to
+ * reproduce an environment-specific backend issue). An explicit
+ * `window.__API_BASE_URL__` runtime override still wins over this.
+ */
+const resolveLocalWebApiTarget = () => {
+  const target = String(
+    (process.env.EXPO_PUBLIC_API_TARGET || '') ||
+      (Constants?.expoConfig?.extra as any)?.EXPO_PUBLIC_API_TARGET ||
+      '',
+  )
+    .trim()
+    .toLowerCase();
+
+  if (target === 'dev' || target === 'development') return REMOTE_API_BASE_BY_ENV.development;
+  if (target === 'prod' || target === 'production') return REMOTE_API_BASE_BY_ENV.production;
+  return null; // 'local' or unset → same-origin `/api`
+};
+
 const resolveRuntimeApiBaseUrl = () => {
+  // An explicit runtime override always wins (injected by tooling/tests on purpose).
+  const runtimeOverride = resolveWebRuntimeApiBaseUrl();
+  if (runtimeOverride) return runtimeOverride;
+
+  // Localhost web dev (`expo start`) is served by the same server that runs the
+  // Expo Router `app/api/**` routes, so by default the app talks to itself and the
+  // pinned `EXPO_PUBLIC_API_BASE_URL` (aimed at deployed/native builds) must not
+  // drag it to a remote Lambda. `EXPO_PUBLIC_API_TARGET=dev|prod` opts back into a
+  // remote backend; a null return selects the same-origin `/api` base.
+  if (isLocalhostWebDev()) return resolveLocalWebApiTarget();
+
   const envBase =
     ((process.env.EXPO_PUBLIC_API_BASE_URL || '') ||
       (Constants?.expoConfig?.extra as any)?.EXPO_PUBLIC_API_BASE_URL ||
       '').trim();
 
   if (!envBase) {
-    return resolveWebRuntimeApiBaseUrl() || resolveFallbackApiBaseUrl();
+    return resolveFallbackApiBaseUrl();
   }
 
   const normalizedBase = normalizeBaseUrl(envBase);
@@ -155,7 +200,11 @@ export function eventApiPath(eventId: string, resource: string) {
  * the same backend as the subscription request while preserving localhost
  * development routing.
  */
-export const getCaptchaApiEndpoint = () => `${getRuntimeApiBaseUrl().replace(/\/$/, '')}/captcha/`;
+export const getCaptchaApiEndpoint = () => {
+  // Null base means localhost web dev: same-origin `/api` (see resolveFallbackApiBaseUrl).
+  const base = getRuntimeApiBaseUrl() ?? '/api';
+  return `${base.replace(/\/$/, '')}/captcha/`;
+};
 
 export class EventApiClient {
   private baseURL: string;

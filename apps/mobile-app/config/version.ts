@@ -22,22 +22,39 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610210907, // Updated to current timestamp
+  buildNumber: 202610211941, // Updated to current timestamp
   releaseDate: '2026-10-21',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'retention tiers, Object Lock, cross-region replica and pre-migration dump'
+    'add interest-based networking and progression',
+    'let the read-only backup role fetch pre-migration dumps'
   ],
   bugfixes: [
     // No bugfixes
   ],
   breakingChanges: [],
-  notes: 'retention tiers, Object Lock, cross-region replica and pre-migration dump'
+  notes: 'add interest-based networking and progression; let the read-only backup role fetch pre-migration dumps'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.135': {
+    version: '1.9.135',
+    buildNumber: 202610211941,
+    releaseDate: '2026-10-21',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'add interest-based networking and progression',
+      'let the read-only backup role fetch pre-migration dumps'
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'add interest-based networking and progression; let the read-only backup role fetch pre-migration dumps'
+  },
   '1.9.134': {
     version: '1.9.134',
     buildNumber: 202610210907,

@@ -122,6 +122,22 @@ const eventScopedSpeakerAdminMigrationPath = path.join(
   'db/migrations/V108__enforce_event_scoped_speaker_admin_roles.sql',
 );
 
+describe('setup and PIN migration plan', () => {
+  it('runs the setup/PIN schema before the dependent SMS auth migrations', () => {
+    const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+    const authMigrations = config.groups.auth;
+
+    expect(authMigrations).toEqual(expect.arrayContaining([
+      'db/migrations/V128__user_setup_and_pin.sql',
+      'db/migrations/V129__secure_sms_authenticators.sql',
+      'db/migrations/V130__atomic_otp_consumption.sql',
+      'db/migrations/V131__retire_legacy_plaintext_otp_storage.sql',
+    ]));
+    expect(authMigrations.indexOf('db/migrations/V128__user_setup_and_pin.sql'))
+      .toBeLessThan(authMigrations.indexOf('db/migrations/V129__secure_sms_authenticators.sql'));
+  });
+});
+
 describe('event-scoped speaker administration migrations', () => {
   it('ships speaker schema and role enforcement migrations after the Better Auth V106 migration', () => {
     const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));

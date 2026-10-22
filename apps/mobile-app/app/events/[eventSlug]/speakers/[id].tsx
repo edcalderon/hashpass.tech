@@ -12,6 +12,7 @@ import { resolveActiveEventId } from '@/lib/event-path';
 import SpeakerAvatar from '../../../../components/SpeakerAvatar';
 import PassesDisplay from '../../../../components/PassesDisplay';
 import { getSpeakerAvatarUrl, getSpeakerLinkedInUrl, getSpeakerTwitterUrl } from '../../../../lib/string-utils';
+import SpeakerStatusBadge, { type SpeakerBadgeStatus } from '../../../../components/SpeakerStatusBadge';
 import { getSpeakerDirectoryState, isClaimedActiveSpeaker } from '../../../../lib/speaker-status';
 import LoadingScreen from '../../../../components/LoadingScreen';
 import { CopilotStep, walkthroughable } from '@lib/copilot-shim';
@@ -48,6 +49,7 @@ interface Speaker {
   user_id?: string;
   directory_visible?: boolean;
   is_accepting_meetings?: boolean;
+  do_not_disturb?: boolean;
   isActive?: boolean; // Claimed account with an active speaker profile
   isOnline?: boolean; // User is currently online (last_seen within last 5 minutes)
 }
@@ -235,6 +237,7 @@ export default function SpeakerDetail() {
             || dbSpeaker.metadata?.directory_visible === true
             || (usesLegacyBslDirectory && dbSpeaker.is_active === true),
           is_accepting_meetings: dbSpeaker.is_accepting_meetings !== false,
+          do_not_disturb: dbSpeaker.do_not_disturb === true,
           isActive,
           isOnline: Boolean(dbSpeaker.is_online),
         });
@@ -1066,13 +1069,11 @@ export default function SpeakerDetail() {
     directory_visible: speaker.directory_visible,
     is_active: speaker.isActive,
     is_accepting_meetings: speaker.is_accepting_meetings,
+    do_not_disturb: speaker.do_not_disturb,
     user_id: speaker.user_id,
   });
-  const statusLabel = directoryState.isNetworkingActive
-    ? speaker.isOnline ? t('speakerView.online') : t('speakerView.active')
-    : directoryState.status === 'pending'
-      ? 'Pending'
-      : t('speakerView.inactive');
+  const badgeStatus: SpeakerBadgeStatus = directoryState.status === 'private' ? 'inactive' : directoryState.status;
+  const onlineLabel = badgeStatus === 'active' && speaker.isOnline ? t('speakerView.online') : undefined;
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -1089,20 +1090,7 @@ export default function SpeakerDetail() {
           {/* Floating status badge near avatar */}
           {speaker.isActive !== undefined && (
             <View style={styles.floatingStatusBadge}>
-              <View style={[
-                styles.statusIndicator,
-                directoryState.isNetworkingActive
-                  ? styles.activeIndicator
-                  : directoryState.status === 'pending' ? styles.pendingIndicator : styles.inactiveIndicator
-              ]} />
-              <Text style={[
-                styles.statusBadgeText,
-                directoryState.isNetworkingActive
-                  ? styles.activeBadgeText
-                  : directoryState.status === 'pending' ? styles.pendingBadgeText : styles.inactiveBadgeText
-              ]}>
-                {statusLabel}
-              </Text>
+              <SpeakerStatusBadge status={badgeStatus} label={onlineLabel} isDark={isDark} />
             </View>
           )}
         </View>

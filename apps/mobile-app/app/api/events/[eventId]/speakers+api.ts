@@ -43,7 +43,7 @@ export async function GET(request: Request) {
   let query = usesLegacyBslDirectory
     ? supabase
         .from("bsl_speakers")
-        .select("id, name, title, company, imageurl, user_id, is_active, is_accepting_meetings, directory_visible")
+        .select("id, name, title, company, imageurl, user_id, is_active, is_accepting_meetings, directory_visible, do_not_disturb")
         .eq("event_id", legacyEventId)
         .eq("directory_visible", true)
         .not("id", "is", null)
@@ -57,7 +57,19 @@ export async function GET(request: Request) {
         .order("sort_order", { ascending: true });
   if (search) query = query.ilike("name", `%${search.replace(/[%_,]/g, "")}%`);
 
-  const { data, error } = await query;
+  let { data, error } = await query;
+  if (error?.code === "42703" && usesLegacyBslDirectory) {
+    // do_not_disturb is added by V131; keep the directory readable until it is applied.
+    let legacy = supabase
+      .from("bsl_speakers")
+      .select("id, name, title, company, imageurl, user_id, is_active, is_accepting_meetings, directory_visible")
+      .eq("event_id", legacyEventId)
+      .eq("directory_visible", true)
+      .not("id", "is", null)
+      .order("name", { ascending: true });
+    if (search) legacy = legacy.ilike("name", `%${search.replace(/[%_,]/g, "")}%`);
+    ({ data, error } = await legacy);
+  }
   if (error) {
     console.error("[event-speakers] collection error:", error);
     return Response.json({ error: "Failed to load speakers" }, { status: 500 });

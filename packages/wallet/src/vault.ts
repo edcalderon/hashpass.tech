@@ -39,8 +39,25 @@ async function deriveKey(password: string, salt: Uint8Array): Promise<Uint8Array
   validateWalletPassword(password);
   const bytes = utf8ToBytes(password);
   try {
-    // Async audited JS implementation works on Hermes without pretending that
-    // WebCrypto exists there. The KDF cost is fixed by the format version.
+    // Prefer the platform implementation where WebCrypto is available. This
+    // keeps the production cost at the format's fixed 600k iterations while
+    // avoiding a multi-minute pure-JS KDF in Node-based CI and web runtimes.
+    // Hermes/native builds may not expose WebCrypto, so retain Noble as the
+    // audited cross-platform fallback.
+    const subtle = globalThis.crypto?.subtle;
+    if (subtle) {
+      try {
+        const key = await subtle.importKey('raw', bytes, 'PBKDF2', false, ['deriveBits']);
+        const derived = await subtle.deriveBits(
+          { name: 'PBKDF2', salt, iterations: VAULT_ITERATIONS, hash: 'SHA-256' },
+          key,
+          256,
+        );
+        return new Uint8Array(derived);
+      } catch {
+        // Fall through for runtimes that expose an incomplete WebCrypto shim.
+      }
+    }
     return await pbkdf2Async(sha256, bytes, salt, { c: VAULT_ITERATIONS, dkLen: 32, asyncTick: 10 });
   } finally { bytes.fill(0); }
 }

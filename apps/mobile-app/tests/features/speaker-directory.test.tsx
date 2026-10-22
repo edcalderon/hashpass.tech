@@ -5,6 +5,14 @@ import { act, create } from 'react-test-renderer';
 import SpeakersCalendar from '../../app/events/[eventSlug]/speakers/calendar';
 import SpeakerSearchAndSort from '../../components/SpeakerSearchAndSort';
 
+const mountedRenderers = new Set<ReturnType<typeof create>>();
+
+function renderCalendar() {
+  const renderer = create(<SpeakersCalendar />);
+  mountedRenderers.add(renderer);
+  return renderer;
+}
+
 const mockRouterPush = jest.fn();
 const mockApiRequest = jest.fn();
 type DbSpeaker = {
@@ -100,6 +108,17 @@ describe('speaker directory', () => {
     );
   });
 
+  afterEach(() => {
+    for (const renderer of mountedRenderers) {
+      try {
+        act(() => renderer.unmount());
+      } catch {
+        // Keep cleanup best-effort when an assertion fails before unmounting.
+      }
+    }
+    mountedRenderers.clear();
+  });
+
   it('preserves CBWeek database priorities in the rendered directory', async () => {
     mockEventId = 'cbweek2026';
     mockDbSpeakers = ['Edward', 'Bryan', 'Lucero'].map((name, index) => ({
@@ -107,7 +126,7 @@ describe('speaker directory', () => {
       is_active: true, metadata: { is_active: true, directory_visible: true }, sort_order: 30 - index * 10,
     }));
     let renderer: ReturnType<typeof create>;
-    await act(async () => { renderer = create(<SpeakersCalendar />); await flushPromises(); });
+    await act(async () => { renderer = renderCalendar(); await flushPromises(); });
     const cards = renderer!.root.findAll((node) => node.props?.accessibilityState?.disabled !== undefined && typeof node.props?.onPress === 'function');
     cards.forEach((card) => act(() => card.props.onPress()));
     expect([...new Set(mockRouterPush.mock.calls.map(([route]) => route.split('/').pop()))]).toEqual(['Lucero', 'Bryan', 'Edward']);
@@ -124,7 +143,7 @@ describe('speaker directory', () => {
     const consoleError = jest.spyOn(console, 'error').mockImplementation(() => {});
     let renderer: ReturnType<typeof create>;
     try {
-      await act(async () => { renderer = create(<SpeakersCalendar />); await flushPromises(); });
+      await act(async () => { renderer = renderCalendar(); await flushPromises(); });
       expect(renderer!.root.findAllByType(SpeakerSearchAndSort)).toHaveLength(0);
       expect(renderer!.root.findAllByProps({ children: 'Lucero' })).toHaveLength(0);
     } finally {
@@ -141,7 +160,7 @@ describe('speaker directory', () => {
     let renderer: ReturnType<typeof create>;
 
     await act(async () => {
-      renderer = create(<SpeakersCalendar />);
+      renderer = renderCalendar();
       await flushPromises();
     });
 
@@ -152,7 +171,7 @@ describe('speaker directory', () => {
   it('shows unclaimed profiles when the organizer publishes the directory', async () => {
     let renderer: ReturnType<typeof create>;
     await act(async () => {
-      renderer = create(<SpeakersCalendar />);
+      renderer = renderCalendar();
       await flushPromises();
     });
 
@@ -186,12 +205,12 @@ describe('speaker directory', () => {
 
     let renderer: ReturnType<typeof create>;
     await act(async () => {
-      renderer = create(<SpeakersCalendar />);
+      renderer = renderCalendar();
       await flushPromises();
     });
 
     expect(renderer!.root.findByProps({ children: 'Pending Colombia Speaker' })).toBeTruthy();
-    expect(renderer!.root.findByProps({ children: 'Pending' })).toBeTruthy();
+    expect(renderer!.root.findAllByProps({ testID: 'speaker-status-idle' })).toHaveLength(1);
     const card = renderer!.root.findAll(
       (node: any) => node.props?.accessibilityState?.disabled !== undefined && typeof node.props?.onPress === 'function',
     )[0];
@@ -213,7 +232,7 @@ describe('speaker directory', () => {
 
     let renderer: ReturnType<typeof create>;
     await act(async () => {
-      renderer = create(<SpeakersCalendar />);
+      renderer = renderCalendar();
       await flushPromises();
     });
 
@@ -232,7 +251,7 @@ describe('speaker directory', () => {
 
     let renderer: ReturnType<typeof create>;
     await act(async () => {
-      renderer = create(<SpeakersCalendar />);
+      renderer = renderCalendar();
       await flushPromises();
     });
 
@@ -257,7 +276,7 @@ describe('speaker directory', () => {
 
     let renderer: ReturnType<typeof create>;
     await act(async () => {
-      renderer = create(<SpeakersCalendar />);
+      renderer = renderCalendar();
       await flushPromises();
     });
 
@@ -276,14 +295,14 @@ describe('speaker directory', () => {
 
     let renderer: ReturnType<typeof create>;
     await act(async () => {
-      renderer = create(<SpeakersCalendar />);
+      renderer = renderCalendar();
       await flushPromises();
     });
 
     expect(renderer!.root.findByProps({ children: 'Active Reference' })).toBeTruthy();
     expect(renderer!.root.findByProps({ children: 'Inactive Reference' })).toBeTruthy();
-    expect(renderer!.root.findAllByProps({ children: 'Pending' })).toHaveLength(2);
-    expect(renderer!.root.findAllByProps({ children: 'Inactive' })).toHaveLength(0);
+    expect(renderer!.root.findAllByProps({ testID: 'speaker-status-idle' })).toHaveLength(2);
+    expect(renderer!.root.findAllByProps({ testID: 'speaker-status-inactive' })).toHaveLength(0);
 
     await act(async () => renderer!.unmount());
   });

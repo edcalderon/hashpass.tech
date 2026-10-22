@@ -2,10 +2,10 @@
 -- PostgreSQL database dump
 --
 
-\restrict SSHKej7lfT0vTQQ0PQ7cm2N3cQB7cwkbMIlzGnHY3lt2XfGa25isaCuanBrLQpU
+\restrict a1CtmNCu8wajGimhyia1SUrm0hpAmK8J3DAiEBCalRt8rwvzC14p5U1LekBz8BL
 
 -- Dumped from database version 17.6
--- Dumped by pg_dump version 17.10
+-- Dumped by pg_dump version 17.11
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -94,6 +94,32 @@ CREATE TYPE public.pass_type AS ENUM (
     'general',
     'business',
     'vip'
+);
+
+
+--
+-- Name: qr_auth_status; Type: TYPE; Schema: public; Owner: -
+--
+
+CREATE TYPE public.qr_auth_status AS ENUM (
+    'pending',
+    'approved',
+    'denied',
+    'expired',
+    'consumed',
+    'cancelled'
+);
+
+
+--
+-- Name: qr_link_status; Type: TYPE; Schema: public; Owner: -
+--
+
+CREATE TYPE public.qr_link_status AS ENUM (
+    'active',
+    'paused',
+    'expired',
+    'archived'
 );
 
 
@@ -653,9 +679,10 @@ BEGIN
     INTO v_speaker_user_id, v_speaker_name, v_is_active
     FROM public.bsl_speakers
    WHERE id::text = p_speaker_id
+     AND event_id = p_event_id
    FOR UPDATE;
   IF NOT FOUND THEN
-    RAISE EXCEPTION 'Unknown speaker profile' USING ERRCODE = '22023';
+    RAISE EXCEPTION 'Unknown speaker profile for this event' USING ERRCODE = '22023';
   END IF;
 
   IF p_action = 'grant' THEN
@@ -664,8 +691,6 @@ BEGIN
       RAISE EXCEPTION 'A valid existing account email is required' USING ERRCODE = '22023';
     END IF;
 
-    -- Only email confirmation proves that this account controls the address.
-    -- Do not accept confirmed_at: it can reflect phone confirmation alone.
     SELECT id, lower(email)
       INTO v_target_user_id, v_target_email
       FROM auth.users
@@ -712,7 +737,8 @@ BEGIN
        SET user_id = v_target_user_id,
            is_active = true,
            updated_at = now()
-     WHERE id::text = p_speaker_id;
+     WHERE id::text = p_speaker_id
+       AND event_id = p_event_id;
 
     INSERT INTO public.speaker_identity_claims (
       speaker_id,
@@ -746,7 +772,8 @@ BEGIN
        SET user_id = NULL,
            is_active = false,
            updated_at = now()
-     WHERE id::text = p_speaker_id;
+     WHERE id::text = p_speaker_id
+       AND event_id = p_event_id;
     DELETE FROM public.speaker_identity_claims WHERE speaker_id = p_speaker_id;
 
   ELSE
@@ -756,7 +783,8 @@ BEGIN
     UPDATE public.bsl_speakers
        SET is_active = (p_action = 'activate'),
            updated_at = now()
-     WHERE id::text = p_speaker_id;
+     WHERE id::text = p_speaker_id
+       AND event_id = p_event_id;
   END IF;
 
   INSERT INTO public.admin_action_log (actor_user_id, event_id, action, target_type, target_id, metadata)
@@ -772,7 +800,8 @@ BEGIN
   SELECT COALESCE(is_active, false)
     INTO v_is_active
     FROM public.bsl_speakers
-   WHERE id::text = p_speaker_id;
+   WHERE id::text = p_speaker_id
+     AND event_id = p_event_id;
 
   RETURN jsonb_build_object(
     'speaker_id', p_speaker_id,
@@ -1328,8 +1357,8 @@ $$;
 
 CREATE FUNCTION public.can_make_meeting_request(p_user_id text, p_speaker_id text, p_boost_amount numeric DEFAULT 0, p_event_id text DEFAULT NULL::text) RETURNS TABLE(can_request boolean, reason text, pass_type text, remaining_requests integer, remaining_boost numeric)
     LANGUAGE plpgsql STABLE SECURITY DEFINER
-    SET search_path TO 'public'
-    AS $$
+    SET search_path TO 'public', 'pg_temp'
+    AS $_$
 DECLARE
   v_event_id text := COALESCE(NULLIF(p_event_id, ''), COALESCE(NULLIF(current_setting('app.event_id', true), ''), 'bsl2025'));
   v_speaker RECORD;
@@ -1343,7 +1372,7 @@ BEGIN
   FROM public.get_speaker_by_id_or_slug(p_speaker_id)
   LIMIT 1;
 
-  IF v_speaker.user_id IS NULL THEN
+  IF v_speaker.id IS NULL THEN
     RETURN QUERY SELECT false, 'speaker_not_found', NULL::text, 0, 0::numeric;
     RETURN;
   END IF;
@@ -1378,21 +1407,24 @@ BEGIN
     RETURN;
   END IF;
 
-  v_remaining_requests := GREATEST(0, COALESCE(v_pass.max_meeting_requests, 0) - (
-    SELECT COUNT(*)
-    FROM public.meeting_requests mr
-    WHERE mr.requester_id::text = p_user_id
-      AND mr.event_id = v_event_id
-      AND mr.status NOT IN ('cancelled', 'expired')
-  ));
-  v_remaining_boost := GREATEST(0, COALESCE(v_pass.max_boost_amount, 0) - COALESCE(v_pass.used_boost_amount, 0));
+  v_remaining_requests := GREATEST(
+    0,
+    COALESCE(v_pass.max_meeting_requests, 0) - COALESCE(v_pass.used_meeting_requests, 0)
+  );
+  v_remaining_boost := GREATEST(
+    0,
+    COALESCE(v_pass.max_boost_amount, 0) - COALESCE(v_pass.used_boost_amount, 0)
+  );
 
   SELECT * INTO v_existing_request
   FROM public.meeting_requests mr
   WHERE mr.requester_id::text = p_user_id
-    AND mr.speaker_id::text = v_speaker.user_id::text
     AND mr.event_id = v_event_id
-    AND mr.status IN ('pending', 'requested', 'approved', 'accepted')
+    AND mr.status::text IN ('pending', 'requested', 'approved', 'accepted')
+    AND (
+      mr.speaker_id::text = v_speaker.id::text
+      OR (v_speaker.user_id IS NOT NULL AND mr.speaker_id::text = v_speaker.user_id::text)
+    )
   LIMIT 1;
 
   IF v_existing_request.id IS NOT NULL THEN
@@ -1400,21 +1432,35 @@ BEGIN
     RETURN;
   END IF;
 
-  SELECT EXISTS (
+  IF EXISTS (
     SELECT 1
-    FROM public.user_blocks ub
-    WHERE (
-      ub.blocked_user_id = p_user_id::uuid
-      AND (
-        ub.speaker_id::text = v_speaker.id
-        OR ub.blocker_user_id = v_speaker.user_id
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'user_blocks'
+      AND column_name = 'blocker_user_id'
+  ) THEN
+    EXECUTE 'SELECT EXISTS (
+      SELECT 1
+      FROM public.user_blocks ub
+      WHERE (
+        ub.blocked_user_id = $1::uuid
+        AND (ub.speaker_id::text = $2 OR ub.blocker_user_id = $3::uuid)
+      ) OR (
+        ub.blocker_user_id = $1::uuid
+        AND $3 IS NOT NULL
+        AND ub.blocked_user_id = $3::uuid
       )
-    )
-    OR (
-      ub.blocker_user_id = p_user_id::uuid
-      AND ub.blocked_user_id = v_speaker.user_id
-    )
-  ) INTO v_blocked;
+    )'
+    INTO v_blocked
+    USING p_user_id, v_speaker.id::text, v_speaker.user_id::text;
+  ELSIF v_speaker.user_id IS NOT NULL THEN
+    SELECT EXISTS (
+      SELECT 1
+      FROM public.user_blocks ub
+      WHERE (ub.blocked_id = p_user_id::uuid AND ub.blocker_id = v_speaker.user_id)
+         OR (ub.blocker_id = p_user_id::uuid AND ub.blocked_id = v_speaker.user_id)
+    ) INTO v_blocked;
+  END IF;
 
   IF v_blocked THEN
     RETURN QUERY SELECT false, 'blocked', v_pass.pass_type, v_remaining_requests, v_remaining_boost;
@@ -1426,14 +1472,14 @@ BEGIN
     RETURN;
   END IF;
 
-  IF p_boost_amount > v_remaining_boost THEN
+  IF COALESCE(p_boost_amount, 0) > v_remaining_boost THEN
     RETURN QUERY SELECT false, 'insufficient_boost', v_pass.pass_type, v_remaining_requests, v_remaining_boost;
     RETURN;
   END IF;
 
   RETURN QUERY SELECT true, 'allowed', v_pass.pass_type, v_remaining_requests, v_remaining_boost;
 END;
-$$;
+$_$;
 
 
 --
@@ -1672,6 +1718,213 @@ $$;
 
 
 --
+-- Name: claim_business_invite(text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.claim_business_invite(p_code text) RETURNS jsonb
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public', 'pg_temp'
+    AS $_$
+DECLARE
+  v_user_id uuid := auth.uid();
+  v_email text;
+  v_campaign public.business_invite_campaigns%ROWTYPE;
+  v_existing_pass_id text;
+  v_event record;
+  v_pass_id text;
+  v_primary_pass_id text;
+  v_max_requests integer;
+  v_max_boost numeric;
+  v_pass_ids jsonb := '{}'::jsonb;
+  v_already_claimed boolean := false;
+BEGIN
+  IF v_user_id IS NULL THEN
+    RAISE EXCEPTION 'Authentication is required to claim a business invitation' USING ERRCODE = '42501';
+  END IF;
+
+  SELECT lower(email) INTO v_email
+  FROM auth.users WHERE id = v_user_id AND email_confirmed_at IS NOT NULL;
+  IF v_email IS NULL THEN
+    RAISE EXCEPTION 'Verify your email before claiming this business invitation' USING ERRCODE = '42501';
+  END IF;
+
+  IF p_code IS NULL
+    OR length(btrim(p_code)) < 4
+    OR length(btrim(p_code)) > 64
+    OR upper(btrim(p_code)) !~ '^[A-Z0-9][A-Z0-9_-]{3,63}$' THEN
+    RAISE EXCEPTION 'Invalid business invitation code' USING ERRCODE = '22023';
+  END IF;
+
+  SELECT * INTO v_campaign
+  FROM public.business_invite_campaigns
+  WHERE code_hash = encode(digest(upper(btrim(p_code)), 'sha256'), 'hex')
+    AND is_active = true
+  FOR UPDATE;
+
+  IF NOT FOUND OR (v_campaign.expires_at IS NOT NULL AND v_campaign.expires_at <= now()) THEN
+    RAISE EXCEPTION 'Invalid or expired business invitation code' USING ERRCODE = '22023';
+  END IF;
+
+  SELECT pass_id INTO v_existing_pass_id
+  FROM public.business_invite_claims
+  WHERE campaign_id = v_campaign.id AND user_id = v_user_id;
+  v_already_claimed := v_existing_pass_id IS NOT NULL;
+
+  IF NOT v_already_claimed
+    AND v_campaign.max_claims IS NOT NULL
+    AND v_campaign.claimed_count >= v_campaign.max_claims THEN
+    RAISE EXCEPTION 'This business invitation has reached its limit' USING ERRCODE = '22023';
+  END IF;
+
+  FOR v_event IN
+    SELECT targets.event_id
+    FROM public.business_invite_campaign_events AS targets
+    JOIN public.events AS event ON event.id = targets.event_id
+    JOIN public.event_pass_tiers AS tier
+      ON tier.event_id = targets.event_id AND tier.pass_type = 'business'
+    WHERE targets.campaign_id = v_campaign.id
+      AND event.status = 'published'
+    ORDER BY CASE targets.event_id WHEN 'bsl' THEN 0 WHEN 'cbweek2026' THEN 1 ELSE 2 END
+  LOOP
+    SELECT max_meeting_requests, max_boost_amount
+    INTO v_max_requests, v_max_boost
+    FROM public.event_pass_tiers
+    WHERE event_id = v_event.event_id AND pass_type = 'business';
+
+    v_pass_id := public.create_default_pass(v_user_id::text, 'general', v_event.event_id);
+    IF NOT EXISTS (
+      SELECT 1 FROM public.passes
+      WHERE id::text = v_pass_id AND status = 'active'
+    ) THEN
+      RAISE EXCEPTION 'An active event pass is required for this invitation' USING ERRCODE = '22023';
+    END IF;
+
+    -- Upgrade in place only. VIP stays VIP and consumed counters stay intact.
+    UPDATE public.passes AS pass
+    SET pass_type = 'business'::public.pass_type,
+        max_meeting_requests = v_max_requests,
+        max_boost_amount = v_max_boost,
+        access_features = ARRAY['all_sessions', 'networking', 'business_events'],
+        special_perks = ARRAY['business_lounge', 'networking_tools'],
+        updated_at = now()
+    WHERE pass.id::text = v_pass_id
+      AND pass.status = 'active'
+      AND CASE pass.pass_type::text WHEN 'vip' THEN 2 WHEN 'business' THEN 1 ELSE 0 END <= 1;
+
+    v_primary_pass_id := COALESCE(v_primary_pass_id, v_pass_id);
+    v_pass_ids := v_pass_ids || jsonb_build_object(v_event.event_id, v_pass_id);
+  END LOOP;
+
+  IF v_primary_pass_id IS NULL THEN
+    RAISE EXCEPTION 'Business access is not configured for this invitation' USING ERRCODE = '22023';
+  END IF;
+
+  IF NOT v_already_claimed THEN
+    INSERT INTO public.business_invite_claims (campaign_id, user_id, pass_id)
+    VALUES (v_campaign.id, v_user_id, v_primary_pass_id);
+    UPDATE public.business_invite_campaigns
+    SET claimed_count = claimed_count + 1, updated_at = now()
+    WHERE id = v_campaign.id;
+  END IF;
+
+  RETURN jsonb_build_object(
+    'status', CASE WHEN v_already_claimed THEN 'already_claimed' ELSE 'claimed' END,
+    'pass_id', COALESCE(v_existing_pass_id, v_primary_pass_id),
+    'pass_ids', v_pass_ids,
+    'event_id', v_campaign.event_id
+  );
+END;
+$_$;
+
+
+--
+-- Name: claim_event_account_grants(uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.claim_event_account_grants(p_user_id uuid) RETURNS void
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public', 'pg_temp'
+    AS $$
+DECLARE
+  v_email text;
+  v_grant public.event_account_grants%ROWTYPE;
+  v_pass_id text;
+BEGIN
+  SELECT lower(email) INTO v_email FROM auth.users
+  WHERE id = p_user_id AND email_confirmed_at IS NOT NULL;
+  IF v_email IS NULL THEN RETURN; END IF;
+
+  FOR v_grant IN
+    SELECT * FROM public.event_account_grants
+    WHERE email_normalized = v_email AND claimed_user_id IS NULL
+    FOR UPDATE
+  LOOP
+    IF v_grant.speaker_id IS NOT NULL THEN
+      UPDATE public.speakers SET user_id = p_user_id, updated_at = now()
+      WHERE id = v_grant.speaker_id AND event_id = v_grant.event_id
+        AND (user_id IS NULL OR user_id = p_user_id);
+      IF NOT FOUND THEN
+        RAISE EXCEPTION 'Speaker grant conflicts with the event or linked account';
+      END IF;
+    END IF;
+
+    v_pass_id := public.create_default_pass(p_user_id::text, 'general', v_grant.event_id);
+    IF NOT EXISTS (SELECT 1 FROM public.passes WHERE id::text = v_pass_id AND status = 'active')
+      OR NOT EXISTS (SELECT 1 FROM public.event_pass_tiers WHERE event_id = v_grant.event_id AND pass_type = v_grant.pass_type) THEN
+      RAISE EXCEPTION 'Grant requires an active pass and a configured event tier';
+    END IF;
+    -- Upgrade the existing entitlement in place: this also works on tenant
+    -- schemas with UNIQUE(user_id, event_id). Never reset consumed usage.
+    UPDATE public.passes AS p
+    SET pass_type = v_grant.pass_type::public.pass_type,
+        max_meeting_requests = t.max_meeting_requests,
+        max_boost_amount = t.max_boost_amount,
+        access_features = CASE v_grant.pass_type
+          WHEN 'vip' THEN ARRAY['all_sessions', 'networking', 'exclusive_events', 'priority_seating', 'speaker_access']
+          WHEN 'business' THEN ARRAY['all_sessions', 'networking', 'business_events']
+          ELSE ARRAY['general_sessions'] END,
+        special_perks = CASE v_grant.pass_type
+          WHEN 'vip' THEN ARRAY['concierge_service', 'exclusive_lounge', 'premium_swag']
+          WHEN 'business' THEN ARRAY['business_lounge', 'networking_tools']
+          ELSE ARRAY['basic_swag'] END,
+        updated_at = now()
+    FROM public.event_pass_tiers AS t
+    WHERE p.id::text = v_pass_id AND p.status = 'active'
+      AND t.event_id = v_grant.event_id AND t.pass_type = v_grant.pass_type
+      AND CASE p.pass_type::text WHEN 'vip' THEN 2 WHEN 'business' THEN 1 ELSE 0 END
+        <= CASE v_grant.pass_type WHEN 'vip' THEN 2 WHEN 'business' THEN 1 ELSE 0 END;
+
+    IF v_grant.event_role IS NOT NULL THEN
+      INSERT INTO public.event_roles(event_id, user_id, role, granted_by, metadata)
+      VALUES (v_grant.event_id, p_user_id, v_grant.event_role, v_grant.configured_by,
+        jsonb_build_object('source', 'verified_event_account_grant'))
+      ON CONFLICT (event_id, user_id, role) DO NOTHING;
+    END IF;
+
+    UPDATE public.event_account_grants
+    SET claimed_user_id = p_user_id, claimed_at = now()
+    WHERE event_id = v_grant.event_id AND email_normalized = v_grant.email_normalized;
+  END LOOP;
+END;
+$$;
+
+
+--
+-- Name: claim_event_account_grants_on_signup(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.claim_event_account_grants_on_signup() RETURNS trigger
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public', 'pg_temp'
+    AS $$
+BEGIN
+  PERFORM public.claim_event_account_grants(NEW.id);
+  RETURN NEW;
+END;
+$$;
+
+
+--
 -- Name: claim_event_pass_code(text); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -1740,6 +1993,40 @@ BEGIN
   UPDATE public.pass_claim_codes SET claimed_count = claimed_count + 1 WHERE id = v_code.id;
 
   RETURN jsonb_build_object('status', 'claimed', 'pass_id', v_pass_id, 'event_id', v_code.event_id);
+END;
+$$;
+
+
+--
+-- Name: claim_sms_delivery_slot(text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.claim_sms_delivery_slot(p_phone_lookup_hmac text) RETURNS boolean
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO ''
+    AS $$
+DECLARE
+  bucket_start timestamptz := date_trunc('hour', now())
+    + (floor(extract(minute FROM now()) / 10) * interval '10 minutes');
+BEGIN
+  INSERT INTO public.sms_delivery_rate_limits (
+    phone_lookup_hmac,
+    window_started_at,
+    request_count
+  ) VALUES (p_phone_lookup_hmac, bucket_start, 1)
+  ON CONFLICT (phone_lookup_hmac) DO UPDATE
+  SET window_started_at = CASE
+        WHEN public.sms_delivery_rate_limits.window_started_at < bucket_start THEN bucket_start
+        ELSE public.sms_delivery_rate_limits.window_started_at
+      END,
+      request_count = CASE
+        WHEN public.sms_delivery_rate_limits.window_started_at < bucket_start THEN 1
+        ELSE public.sms_delivery_rate_limits.request_count + 1
+      END
+  WHERE public.sms_delivery_rate_limits.window_started_at < bucket_start
+    OR public.sms_delivery_rate_limits.request_count < 3;
+
+  RETURN FOUND;
 END;
 $$;
 
@@ -1980,6 +2267,250 @@ $$;
 
 
 --
+-- Name: consume_email_otp(text, text, text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.consume_email_otp(p_email text, p_code_hmac text, p_purpose text) RETURNS jsonb
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO ''
+    AS $$
+DECLARE
+  challenge public.otp_codes;
+BEGIN
+  SELECT * INTO challenge
+  FROM public.otp_codes
+  WHERE email = p_email
+    AND purpose = p_purpose
+    AND used = false
+    AND expires_at > now()
+    AND attempt_count < 5
+  ORDER BY created_at DESC
+  LIMIT 1
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('ok', false, 'reason', 'invalid');
+  END IF;
+
+  IF challenge.code_hmac IS NULL OR challenge.code_hmac <> p_code_hmac THEN
+    UPDATE public.otp_codes
+    SET attempt_count = LEAST(attempt_count + 1, 5)
+    WHERE id = challenge.id;
+    RETURN jsonb_build_object(
+      'ok', false,
+      'reason', CASE WHEN challenge.attempt_count >= 4 THEN 'locked' ELSE 'invalid' END
+    );
+  END IF;
+
+  UPDATE public.otp_codes
+  SET used = true
+  WHERE id = challenge.id;
+
+  RETURN jsonb_build_object(
+    'ok', true,
+    'tokenHash', challenge.token_hash,
+    'email', challenge.email
+  );
+END;
+$$;
+
+
+--
+-- Name: consume_sms_auth_challenge(uuid, uuid, text, text, text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.consume_sms_auth_challenge(p_challenge_id uuid, p_user_id uuid, p_email_lookup_hmac text, p_code_hmac text, p_purpose text) RETURNS jsonb
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO ''
+    AS $$
+DECLARE
+  challenge public.sms_auth_challenges;
+BEGIN
+  SELECT * INTO challenge
+  FROM public.sms_auth_challenges
+  WHERE id = p_challenge_id
+  FOR UPDATE;
+
+  IF NOT FOUND
+    OR challenge.purpose <> p_purpose
+    OR challenge.email_lookup_hmac <> p_email_lookup_hmac
+    OR (p_user_id IS NOT NULL AND challenge.user_id <> p_user_id)
+    OR (p_user_id IS NULL AND challenge.user_id IS NOT NULL) THEN
+    RETURN jsonb_build_object('ok', false, 'reason', 'invalid');
+  END IF;
+
+  IF challenge.consumed_at IS NOT NULL OR challenge.expires_at <= now() THEN
+    RETURN jsonb_build_object('ok', false, 'reason', 'expired');
+  END IF;
+
+  IF challenge.attempt_count >= 5 THEN
+    RETURN jsonb_build_object('ok', false, 'reason', 'locked');
+  END IF;
+
+  IF challenge.code_hmac <> p_code_hmac THEN
+    UPDATE public.sms_auth_challenges
+    SET attempt_count = attempt_count + 1
+    WHERE id = challenge.id;
+    RETURN jsonb_build_object('ok', false, 'reason', 'invalid');
+  END IF;
+
+  UPDATE public.sms_auth_challenges
+  SET phone_verified_at = now(),
+      consumed_at = CASE WHEN challenge.purpose = 'enrollment' THEN now() ELSE consumed_at END
+  WHERE id = challenge.id;
+
+  RETURN jsonb_build_object(
+    'ok', true,
+    'phoneLookupHmac', challenge.phone_lookup_hmac,
+    'phoneLast4', challenge.phone_last4
+  );
+END;
+$$;
+
+
+--
+-- Name: consume_sms_registration(uuid, text, uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.consume_sms_registration(p_challenge_id uuid, p_email_lookup_hmac text, p_user_id uuid) RETURNS jsonb
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO ''
+    AS $$
+DECLARE
+  challenge public.sms_auth_challenges;
+  active_phone_count integer;
+BEGIN
+  SELECT * INTO challenge
+  FROM public.sms_auth_challenges
+  WHERE id = p_challenge_id
+  FOR UPDATE;
+
+  IF NOT FOUND
+    OR challenge.purpose <> 'registration'
+    OR challenge.email_lookup_hmac <> p_email_lookup_hmac
+    OR challenge.phone_verified_at IS NULL
+    OR challenge.consumed_at IS NOT NULL
+    OR challenge.expires_at <= now() THEN
+    RETURN jsonb_build_object('ok', false);
+  END IF;
+
+  -- Lock this account's capacity check so concurrent requests cannot bind a
+  -- third number. Two active phone authenticators are intentionally allowed.
+  PERFORM pg_advisory_xact_lock(hashtextextended(p_user_id::text, 0));
+  SELECT count(*) INTO active_phone_count
+  FROM public.user_phone_authenticators
+  WHERE user_id = p_user_id AND revoked_at IS NULL;
+  IF active_phone_count >= 2 THEN
+    RETURN jsonb_build_object('ok', false, 'reason', 'phone_limit');
+  END IF;
+
+  INSERT INTO public.user_phone_authenticators (
+    user_id,
+    phone_lookup_hmac,
+    phone_last4,
+    verified_at
+  ) VALUES (
+    p_user_id,
+    challenge.phone_lookup_hmac,
+    challenge.phone_last4,
+    now()
+  ) ON CONFLICT (phone_lookup_hmac) DO NOTHING;
+
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('ok', false, 'reason', 'phone_unavailable');
+  END IF;
+
+  UPDATE public.sms_auth_challenges SET consumed_at = now() WHERE id = challenge.id;
+  RETURN jsonb_build_object(
+    'ok', true,
+    'phoneLookupHmac', challenge.phone_lookup_hmac,
+    'phoneLast4', challenge.phone_last4
+  );
+END;
+$$;
+
+
+--
+-- Name: contact_network(uuid, text, jsonb); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.contact_network(p_user_id uuid, p_action text, p_payload jsonb DEFAULT '{}'::jsonb) RETURNS jsonb
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public', 'pg_temp'
+    AS $$
+DECLARE
+  target uuid;
+  profile jsonb;
+  selected_topics text[];
+  result jsonb;
+BEGIN
+  IF p_action = 'profile' THEN
+    profile := p_payload->'profile';
+    SELECT coalesce(array_agg(value), '{}') INTO selected_topics FROM jsonb_array_elements_text(profile->'topics');
+    IF cardinality(selected_topics) <> (SELECT count(DISTINCT t) FROM unnest(selected_topics) t) THEN
+      RAISE EXCEPTION 'Duplicate topics';
+    END IF;
+    INSERT INTO contact_profiles (id, name, role, company, topics, discoverable, leaderboard)
+    VALUES (p_user_id, btrim(profile->>'name'), btrim(profile->>'role'), btrim(profile->>'company'), selected_topics,
+      (profile->>'discoverable')::boolean, (profile->>'leaderboard')::boolean)
+    ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, role = EXCLUDED.role, company = EXCLUDED.company,
+      topics = EXCLUDED.topics, discoverable = EXCLUDED.discoverable, leaderboard = EXCLUDED.leaderboard;
+  ELSIF p_action = 'request' THEN
+    SELECT id INTO target FROM contact_profiles WHERE share_id = (p_payload->>'card')::uuid;
+    IF target IS NULL OR target = p_user_id OR NOT EXISTS (SELECT 1 FROM contact_profiles WHERE id = p_user_id) THEN
+      RAISE EXCEPTION 'Invalid contact request';
+    END IF;
+    IF (SELECT count(*) FROM contact_requests WHERE sender = p_user_id AND status = 'pending') >= 50 THEN
+      RAISE EXCEPTION 'Pending request limit reached';
+    END IF;
+    IF EXISTS (SELECT 1 FROM contact_requests WHERE LEAST(sender,recipient) = LEAST(p_user_id,target)
+      AND GREATEST(sender,recipient) = GREATEST(p_user_id,target) AND status IN ('declined','cancelled')) THEN
+      RAISE EXCEPTION 'Request not available';
+    END IF;
+    INSERT INTO contact_requests (sender, recipient) VALUES (p_user_id, target)
+    ON CONFLICT DO NOTHING;
+  ELSIF p_action IN ('accept', 'decline', 'cancel') THEN
+    UPDATE contact_requests SET status = CASE p_action WHEN 'accept' THEN 'accepted' WHEN 'decline' THEN 'declined' ELSE 'cancelled' END
+    WHERE id = (p_payload->>'requestId')::uuid AND status = 'pending'
+      AND CASE WHEN p_action = 'cancel' THEN sender = p_user_id ELSE recipient = p_user_id END;
+    IF NOT FOUND THEN RAISE EXCEPTION 'Request not available'; END IF;
+  ELSIF p_action <> 'read' THEN
+    RAISE EXCEPTION 'Unknown contacts action';
+  END IF;
+
+  SELECT jsonb_build_object(
+    'profile', (SELECT to_jsonb(p) FROM contact_network_profiles p WHERE p.id = p_user_id),
+    'contacts', coalesce((SELECT jsonb_agg(to_jsonb(p) - 'share_id' ORDER BY p.name, p.id)
+      FROM contact_network_profiles p JOIN contact_requests r
+      ON ((r.sender = p_user_id AND r.recipient = p.id) OR (r.recipient = p_user_id AND r.sender = p.id)) AND r.status = 'accepted'), '[]'),
+    'incoming', coalesce((SELECT jsonb_agg(jsonb_build_object('id', r.id, 'profile', to_jsonb(p) - 'share_id') ORDER BY r.created_at DESC)
+      FROM contact_requests r JOIN contact_network_profiles p ON p.id = r.sender
+      WHERE r.recipient = p_user_id AND r.status = 'pending'), '[]'),
+    'outgoing', coalesce((SELECT jsonb_agg(r.recipient) FROM contact_requests r WHERE r.sender = p_user_id AND r.status = 'pending'), '[]'),
+    'suggestions', coalesce((SELECT jsonb_agg(to_jsonb(p)) FROM (
+      SELECT p.* FROM contact_network_profiles p JOIN contact_profiles me ON me.id = p_user_id
+      WHERE p.discoverable AND p.id <> p_user_id AND p.topics && me.topics
+        AND NOT EXISTS (SELECT 1 FROM contact_requests r WHERE LEAST(r.sender,r.recipient) = LEAST(p.id,p_user_id) AND GREATEST(r.sender,r.recipient) = GREATEST(p.id,p_user_id))
+      ORDER BY cardinality(ARRAY(SELECT unnest(p.topics) INTERSECT SELECT unnest(me.topics))) DESC, p.id LIMIT 30
+    ) p), '[]'),
+    'leaderboard', coalesce((SELECT jsonb_agg(to_jsonb(p) - 'share_id' ORDER BY p.points DESC, p.id) FROM (
+      SELECT * FROM contact_network_profiles WHERE leaderboard AND points > 0 ORDER BY points DESC, id LIMIT 20
+    ) p), '[]'),
+    'shared', (SELECT to_jsonb(p) FROM contact_network_profiles p WHERE p.share_id = nullif(p_payload->>'card', '')::uuid)
+  ) INTO result;
+  RETURN result;
+END;
+$$;
+
+
+--
+-- Name: FUNCTION contact_network(p_user_id uuid, p_action text, p_payload jsonb); Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON FUNCTION public.contact_network(p_user_id uuid, p_action text, p_payload jsonb) IS 'Server-only Contacts read/write model. Never expose actor selection to clients. Network XP is not wallet HashPoints.';
+
+
+--
 -- Name: create_default_pass(text, text); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -2121,22 +2652,212 @@ $$;
 -- Name: create_default_pass(text, text, text); Type: FUNCTION; Schema: public; Owner: -
 --
 
-CREATE FUNCTION public.create_default_pass(p_user_id text, p_pass_type text, p_event_id text) RETURNS text
+CREATE FUNCTION public.create_default_pass(p_user_id text, p_pass_type text DEFAULT 'general'::text, p_event_id text DEFAULT 'colombia2026'::text) RETURNS text
     LANGUAGE plpgsql SECURITY DEFINER
     SET search_path TO 'public', 'pg_temp'
-    AS $$
+    AS $_$
+DECLARE
+  v_event_id text := NULLIF(trim(p_event_id), '');
+  v_pass_type text := lower(NULLIF(trim(p_pass_type), ''));
+  v_existing_id text;
+  v_pass_id uuid;
+  v_return_id text;
+  v_pass_number text := 'BSL-' || upper(v_pass_type) || '-' || substring(replace(gen_random_uuid()::text, '-', ''), 1, 8);
+  v_pass_number_type text;
+  v_max_requests integer := 10;
+  v_max_boost numeric := 100;
+  v_access_features text[] := ARRAY['general_sessions'];
+  v_special_perks text[] := ARRAY['basic_swag'];
 BEGIN
-  IF auth.uid() IS NULL OR auth.uid()::text <> p_user_id THEN
-    RAISE EXCEPTION 'A pass may only be created for the authenticated user' USING ERRCODE = '42501';
+  IF NULLIF(trim(p_user_id), '') IS NULL THEN
+    RAISE EXCEPTION 'p_user_id is required' USING ERRCODE = '22023';
+  END IF;
+  IF v_event_id IS NULL OR v_event_id NOT IN ('bsl2025', 'peru2026', 'chile2026', 'colombia2026', 'cbweek2026') THEN
+    RAISE EXCEPTION 'Unsupported pass event: %', p_event_id USING ERRCODE = '22023';
+  END IF;
+  IF v_pass_type IS NULL OR v_pass_type NOT IN ('general', 'business', 'vip') THEN
+    RAISE EXCEPTION 'Unsupported pass type: %', p_pass_type USING ERRCODE = '22023';
   END IF;
 
-  IF p_pass_type <> 'general' THEN
-    RAISE EXCEPTION 'Self-service pass creation only supports general passes' USING ERRCODE = '42501';
+  IF v_pass_type = 'business' THEN
+    v_max_requests := 20;
+    v_max_boost := 300;
+  ELSIF v_pass_type = 'vip' THEN
+    v_max_requests := 50;
+    v_max_boost := 500;
   END IF;
 
-  RETURN public.create_upcoming_bsl_general_pass_for_user(auth.uid(), p_event_id);
+  IF v_pass_type = 'business' THEN
+    v_access_features := ARRAY['all_sessions', 'networking', 'business_events'];
+    v_special_perks := ARRAY['business_lounge', 'networking_tools'];
+  ELSIF v_pass_type = 'vip' THEN
+    v_access_features := ARRAY['all_sessions', 'networking', 'exclusive_events', 'priority_seating', 'speaker_access'];
+    v_special_perks := ARRAY['concierge_service', 'exclusive_lounge', 'premium_swag'];
+  END IF;
+
+  PERFORM pg_advisory_xact_lock(
+    hashtextextended('hashpass:pass:' || p_user_id || ':' || v_event_id || ':' || CASE WHEN v_event_id = 'cbweek2026' THEN 'general' ELSE v_pass_type END, 0)
+  );
+
+  SELECT id::text
+  INTO v_existing_id
+  FROM public.passes
+  WHERE user_id::text = p_user_id
+    AND event_id = v_event_id
+    AND (pass_type::text = v_pass_type OR v_event_id = 'cbweek2026')
+    AND (status = 'active' OR v_event_id = 'cbweek2026')
+  ORDER BY created_at DESC
+  LIMIT 1;
+  IF v_existing_id IS NOT NULL THEN RETURN v_existing_id; END IF;
+
+  SELECT max_meeting_requests, max_boost_amount
+  INTO v_max_requests, v_max_boost
+  FROM public.event_pass_tiers
+  WHERE event_id = v_event_id AND pass_type = v_pass_type AND v_event_id = 'cbweek2026';
+  v_max_requests := COALESCE(v_max_requests, CASE v_pass_type WHEN 'vip' THEN 50 WHEN 'business' THEN 20 ELSE 10 END);
+  v_max_boost := COALESCE(v_max_boost, CASE v_pass_type WHEN 'vip' THEN 500 WHEN 'business' THEN 300 ELSE 100 END);
+
+  v_pass_id := gen_random_uuid();
+  SELECT data_type
+  INTO v_pass_number_type
+  FROM information_schema.columns
+  WHERE table_schema = 'public'
+    AND table_name = 'passes'
+    AND column_name = 'pass_number';
+
+  IF v_pass_number_type IN ('text', 'character varying') THEN
+    EXECUTE '
+      INSERT INTO public.passes (
+        id, user_id, event_id, pass_type, status, pass_number,
+        max_meeting_requests, used_meeting_requests, max_boost_amount,
+        used_boost_amount, access_features, special_perks
+      ) VALUES (
+        $1, $2, $3, $4::public.pass_type, ''active'', $5,
+        $6, 0, $7, 0,
+        $8, $9
+      )
+      RETURNING id::text'
+    INTO v_return_id
+    USING v_pass_id, p_user_id, v_event_id, v_pass_type, v_pass_number,
+      v_max_requests, v_max_boost, v_access_features, v_special_perks;
+  ELSE
+    INSERT INTO public.passes (
+      id, user_id, event_id, pass_type, status,
+      max_meeting_requests, used_meeting_requests, max_boost_amount,
+      used_boost_amount, access_features, special_perks
+    ) VALUES (
+      v_pass_id, p_user_id, v_event_id, v_pass_type::public.pass_type, 'active',
+      v_max_requests, 0, v_max_boost, 0,
+      v_access_features, v_special_perks
+    )
+    RETURNING id::text INTO v_return_id;
+  END IF;
+
+  RETURN v_return_id;
 END;
-$$;
+$_$;
+
+
+--
+-- Name: create_demo_general_pass_for_user(uuid, text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.create_demo_general_pass_for_user(p_user_id uuid, p_event_id text) RETURNS text
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public', 'pg_temp'
+    AS $_$
+DECLARE
+  v_pass_id text;
+  v_existing_id text;
+  v_tier public.event_pass_tiers%ROWTYPE;
+  v_event_id text;
+  v_id_type text;
+  v_pass_number_type text;
+  v_id_value text;
+  v_pass_number_value text;
+BEGIN
+  SELECT e.id
+  INTO v_event_id
+  FROM public.events e
+  WHERE e.id = p_event_id
+    AND e.is_demo
+    AND e.status = 'published';
+
+  IF v_event_id IS NULL THEN
+    RAISE EXCEPTION 'Courtesy demo pass requested for an unpublished or non-demo event: %', p_event_id
+      USING ERRCODE = '22023';
+  END IF;
+
+  -- A transaction-scoped lock plus the existing-pass check makes repeated
+  -- confirmation updates and concurrent OAuth callbacks safe and idempotent.
+  PERFORM pg_advisory_xact_lock(
+    hashtextextended('hashpass:demo-pass:' || p_user_id::text || ':' || p_event_id, 0)
+  );
+
+  SELECT id::text
+  INTO v_existing_id
+  FROM public.passes
+  WHERE user_id::text = p_user_id::text
+    AND event_id = p_event_id
+    AND pass_type = 'general'::pass_type
+    AND status = 'active'
+  ORDER BY created_at DESC
+  LIMIT 1;
+
+  IF v_existing_id IS NOT NULL THEN
+    RETURN v_existing_id;
+  END IF;
+
+  -- A future demo event needs no one-off SQL to become usable. Organizers may
+  -- configure richer limits later; an existing General tier is never replaced.
+  INSERT INTO public.event_pass_tiers (
+    event_id, pass_type, max_meeting_requests, max_boost_amount, price_cents, currency, price_label
+  ) VALUES (
+    p_event_id, 'general', 10, 100, 0, 'USD', 'Demo courtesy pass'
+  )
+  ON CONFLICT (event_id, pass_type) DO NOTHING;
+
+  SELECT *
+  INTO v_tier
+  FROM public.event_pass_tiers
+  WHERE event_id = p_event_id
+    AND pass_type = 'general';
+
+  SELECT data_type INTO v_id_type
+  FROM information_schema.columns
+  WHERE table_schema = 'public' AND table_name = 'passes' AND column_name = 'id';
+
+  SELECT data_type INTO v_pass_number_type
+  FROM information_schema.columns
+  WHERE table_schema = 'public' AND table_name = 'passes' AND column_name = 'pass_number';
+
+  v_id_value := gen_random_uuid()::text;
+  v_pass_number_value := CASE
+    WHEN v_pass_number_type IN ('integer', 'bigint', 'smallint') THEN
+      (trunc(random() * 900000000 + 100000000))::bigint::text
+    ELSE
+      upper(p_event_id) || '-GENERAL-' || substring(replace(gen_random_uuid()::text, '-', ''), 1, 8)
+  END;
+
+  EXECUTE format(
+    'INSERT INTO public.passes (
+       id, user_id, event_id, pass_type, status, pass_number,
+       max_meeting_requests, used_meeting_requests,
+       max_boost_amount, used_boost_amount, access_features, special_perks
+     ) VALUES (
+       %L%s, $1, $2, ''general''::public.pass_type, ''active'', %L%s,
+       $3, 0, $4, 0, $5, $6
+     ) RETURNING id::text',
+    v_id_value, CASE WHEN v_id_type = 'uuid' THEN '::uuid' ELSE '' END,
+    v_pass_number_value, CASE WHEN v_pass_number_type IN ('integer', 'bigint', 'smallint') THEN '::' || v_pass_number_type ELSE '' END
+  )
+  INTO v_pass_id
+  USING p_user_id::text, p_event_id, v_tier.max_meeting_requests, v_tier.max_boost_amount,
+    ARRAY['general_sessions'], ARRAY['basic_swag'];
+
+  RETURN v_pass_id;
+END;
+$_$;
 
 
 --
@@ -2298,14 +3019,18 @@ $$;
 CREATE FUNCTION public.create_upcoming_bsl_general_pass_for_user(p_user_id uuid, p_event_id text) RETURNS text
     LANGUAGE plpgsql SECURITY DEFINER
     SET search_path TO 'public', 'pg_temp'
-    AS $$
+    AS $_$
 DECLARE
   v_pass_id text;
   v_existing_id text;
   v_tier public.event_pass_tiers%ROWTYPE;
+  v_id_type text;
+  v_pass_number_type text;
+  v_id_value text;
+  v_pass_number_value text;
 BEGIN
-  IF p_event_id NOT IN ('chile2026', 'colombia2026') THEN
-    RAISE EXCEPTION 'Unsupported upcoming BSL event: %', p_event_id USING ERRCODE = '22023';
+  IF p_event_id NOT IN ('chile2026', 'colombia2026', 'criptolatinfest') THEN
+    RAISE EXCEPTION 'Unsupported upcoming general-pass event: %', p_event_id USING ERRCODE = '22023';
   END IF;
 
   PERFORM pg_advisory_xact_lock(
@@ -2336,23 +3061,42 @@ BEGIN
     RAISE EXCEPTION 'Pass tier is not configured for this event' USING ERRCODE = '22023';
   END IF;
 
-  v_pass_id := gen_random_uuid()::text;
+  SELECT data_type INTO v_id_type
+  FROM information_schema.columns
+  WHERE table_schema = 'public' AND table_name = 'passes' AND column_name = 'id';
 
-  INSERT INTO public.passes (
-    id, user_id, event_id, pass_type, status, pass_number,
-    max_meeting_requests, used_meeting_requests,
-    max_boost_amount, used_boost_amount, access_features, special_perks
-  ) VALUES (
-    v_pass_id, p_user_id::text, p_event_id, 'general'::pass_type, 'active',
-    'BSL-GENERAL-' || substring(replace(gen_random_uuid()::text, '-', ''), 1, 8),
-    v_tier.max_meeting_requests, 0, v_tier.max_boost_amount, 0,
-    ARRAY['general_sessions'], ARRAY['basic_swag']
+  SELECT data_type INTO v_pass_number_type
+  FROM information_schema.columns
+  WHERE table_schema = 'public' AND table_name = 'passes' AND column_name = 'pass_number';
+
+  v_id_value := gen_random_uuid()::text;
+
+  v_pass_number_value := CASE
+    WHEN v_pass_number_type IN ('integer', 'bigint', 'smallint') THEN
+      (trunc(random() * 900000000 + 100000000))::bigint::text
+    ELSE
+      upper(p_event_id) || '-GENERAL-' || substring(replace(gen_random_uuid()::text, '-', ''), 1, 8)
+  END;
+
+  EXECUTE format(
+    'INSERT INTO public.passes (
+       id, user_id, event_id, pass_type, status, pass_number,
+       max_meeting_requests, used_meeting_requests,
+       max_boost_amount, used_boost_amount, access_features, special_perks
+     ) VALUES (
+       %L%s, $1, $2, ''general''::public.pass_type, ''active'', %L%s,
+       $3, 0, $4, 0, $5, $6
+     ) RETURNING id::text',
+    v_id_value, CASE WHEN v_id_type = 'uuid' THEN '::uuid' ELSE '' END,
+    v_pass_number_value, CASE WHEN v_pass_number_type IN ('integer', 'bigint', 'smallint') THEN '::' || v_pass_number_type ELSE '' END
   )
-  RETURNING id::text INTO v_pass_id;
+  INTO v_pass_id
+  USING p_user_id::text, p_event_id, v_tier.max_meeting_requests, v_tier.max_boost_amount,
+    ARRAY['general_sessions'], ARRAY['basic_swag'];
 
   RETURN v_pass_id;
 END;
-$$;
+$_$;
 
 
 --
@@ -2402,6 +3146,89 @@ BEGIN
   RETURN jsonb_build_object('success', true, 'status', 'declined');
 END;
 $$;
+
+
+--
+-- Name: ensure_business_invite_event_pass(uuid, text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.ensure_business_invite_event_pass(p_user_id uuid, p_event_id text) RETURNS text
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public', 'pg_temp'
+    AS $_$
+DECLARE
+  v_existing_id text;
+  v_pass_id uuid;
+  v_return_id text;
+  v_pass_number text := 'HP-GENERAL-' || substring(replace(gen_random_uuid()::text, '-', ''), 1, 8);
+  v_pass_number_type text;
+BEGIN
+  IF p_user_id IS NULL OR NULLIF(btrim(p_event_id), '') IS NULL THEN
+    RAISE EXCEPTION 'Business invitation pass identity is required' USING ERRCODE = '22023';
+  END IF;
+
+  PERFORM pg_advisory_xact_lock(
+    hashtextextended('hashpass:business-invite-pass:' || p_user_id::text || ':' || p_event_id, 0)
+  );
+
+  SELECT pass.id::text INTO v_existing_id
+  FROM public.passes AS pass
+  WHERE pass.user_id = p_user_id::text
+    AND pass.event_id = p_event_id
+    AND pass.status = 'active'
+  ORDER BY CASE pass.pass_type::text WHEN 'vip' THEN 2 WHEN 'business' THEN 1 ELSE 0 END DESC,
+           pass.created_at DESC
+  LIMIT 1;
+  IF v_existing_id IS NOT NULL THEN
+    RETURN v_existing_id;
+  END IF;
+
+  SELECT data_type INTO v_pass_number_type
+  FROM information_schema.columns
+  WHERE table_schema = 'public' AND table_name = 'passes' AND column_name = 'pass_number';
+
+  v_pass_id := gen_random_uuid();
+  BEGIN
+    IF v_pass_number_type IN ('text', 'character varying') THEN
+      EXECUTE '
+        INSERT INTO public.passes (
+          id, user_id, event_id, pass_type, status, pass_number,
+          max_meeting_requests, used_meeting_requests, max_boost_amount,
+          used_boost_amount, access_features, special_perks
+        ) VALUES ($1, $2, $3, ''general''::public.pass_type, ''active'', $4,
+          10, 0, 100, 0, $5, $6)
+        RETURNING id::text'
+      INTO v_return_id
+      USING v_pass_id, p_user_id::text, p_event_id, v_pass_number,
+        ARRAY['general_sessions'], ARRAY['basic_swag'];
+    ELSE
+      INSERT INTO public.passes (
+        id, user_id, event_id, pass_type, status,
+        max_meeting_requests, used_meeting_requests, max_boost_amount,
+        used_boost_amount, access_features, special_perks
+      ) VALUES (
+        v_pass_id, p_user_id::text, p_event_id, 'general'::public.pass_type, 'active',
+        10, 0, 100, 0, ARRAY['general_sessions'], ARRAY['basic_swag']
+      )
+      RETURNING id::text INTO v_return_id;
+    END IF;
+  EXCEPTION WHEN unique_violation THEN
+    SELECT pass.id::text INTO v_return_id
+    FROM public.passes AS pass
+    WHERE pass.user_id = p_user_id::text
+      AND pass.event_id = p_event_id
+      AND pass.status = 'active'
+    ORDER BY CASE pass.pass_type::text WHEN 'vip' THEN 2 WHEN 'business' THEN 1 ELSE 0 END DESC,
+             pass.created_at DESC
+    LIMIT 1;
+  END;
+
+  IF v_return_id IS NULL THEN
+    RAISE EXCEPTION 'Unable to provision the Business invitation event pass' USING ERRCODE = '22023';
+  END IF;
+  RETURN v_return_id;
+END;
+$_$;
 
 
 --
@@ -2690,7 +3517,8 @@ CREATE TABLE public.meeting_requests (
     speaker_response_at timestamp with time zone,
     expires_at timestamp with time zone DEFAULT (now() + '48:00:00'::interval),
     created_at timestamp with time zone DEFAULT now(),
-    updated_at timestamp with time zone DEFAULT now()
+    updated_at timestamp with time zone DEFAULT now(),
+    event_id text DEFAULT 'bsl2025'::text NOT NULL
 );
 
 
@@ -3108,7 +3936,7 @@ $$;
 
 CREATE FUNCTION public.get_user_meeting_request_counts(p_user_id text, p_event_id text) RETURNS TABLE(total_requests bigint, accepted_requests bigint, approved_requests bigint, pending_requests bigint, declined_requests bigint, cancelled_requests bigint, remaining_requests integer, remaining_boost numeric, max_requests integer, max_boost numeric, pass_type text)
     LANGUAGE plpgsql STABLE SECURITY DEFINER
-    SET search_path TO 'public'
+    SET search_path TO 'public', 'pg_temp'
     AS $$
 DECLARE
   v_event_id text := NULLIF(trim(COALESCE(p_event_id, '')), '');
@@ -3141,16 +3969,16 @@ BEGIN
 
   SELECT
     COUNT(*)::bigint,
-    COUNT(*) FILTER (WHERE status IN ('accepted', 'approved'))::bigint,
-    COUNT(*) FILTER (WHERE status IN ('accepted', 'approved'))::bigint,
-    COUNT(*) FILTER (WHERE status IN ('pending', 'requested'))::bigint,
-    COUNT(*) FILTER (WHERE status IN ('declined', 'rejected'))::bigint,
-    COUNT(*) FILTER (WHERE status = 'cancelled')::bigint
+    COUNT(*) FILTER (WHERE status::text IN ('accepted', 'approved'))::bigint,
+    COUNT(*) FILTER (WHERE status::text IN ('accepted', 'approved'))::bigint,
+    COUNT(*) FILTER (WHERE status::text IN ('pending', 'requested'))::bigint,
+    COUNT(*) FILTER (WHERE status::text IN ('declined', 'rejected'))::bigint,
+    COUNT(*) FILTER (WHERE status::text = 'cancelled')::bigint
   INTO v_total, v_accepted, v_approved, v_pending, v_declined, v_cancelled
   FROM public.meeting_requests
   WHERE requester_id::text = p_user_id
     AND event_id = v_event_id
-    AND status NOT IN ('cancelled', 'expired');
+    AND status::text NOT IN ('cancelled', 'expired');
 
   RETURN QUERY
   SELECT
@@ -3166,6 +3994,34 @@ BEGIN
     COALESCE(v_pass.max_boost_amount, 0),
     COALESCE(v_pass.pass_type, 'general');
 END;
+$$;
+
+
+--
+-- Name: get_user_setup(uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.get_user_setup(p_user_id uuid) RETURNS jsonb
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO ''
+    AS $$
+  SELECT jsonb_build_object(
+    'status', coalesce(s.status, 'not_started'),
+    'step', coalesce(s.step, 0),
+    'goals', to_jsonb(coalesce(s.goals, '{}'::text[])),
+    'topics', to_jsonb(coalesce(s.topics, '{}'::text[])),
+    'privacyScope', coalesce(s.privacy_scope, 'private'),
+    'consentVersion', s.consent_version,
+    'completedAt', s.completed_at,
+    'pin', jsonb_build_object(
+      'enabled', p.user_id IS NOT NULL,
+      'lockedUntil', CASE WHEN p.locked_until > now() THEN p.locked_until END,
+      'remainingAttempts', CASE WHEN p.user_id IS NULL THEN NULL ELSE greatest(0, 5 - p.failed_attempts) END
+    )
+  )
+  FROM (SELECT 1) AS anchor
+  LEFT JOIN public.user_setup s ON s.user_id = p_user_id
+  LEFT JOIN public.user_pin p ON p.user_id = p_user_id;
 $$;
 
 
@@ -3326,17 +4182,112 @@ $$;
 
 
 --
+-- Name: ingest_event_source_sync(text, timestamp with time zone, text, text, jsonb); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.ingest_event_source_sync(p_source_id text, p_attempted_at timestamp with time zone, p_status text, p_error text, p_events jsonb) RETURNS void
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public', 'extensions', 'pg_temp'
+    AS $$
+DECLARE
+  v_run_id uuid;
+  v_event jsonb;
+  v_existing public.external_events%ROWTYPE;
+  v_review boolean;
+  v_observation_id uuid;
+  v_payload_hash text;
+BEGIN
+  IF p_status NOT IN ('healthy', 'degraded', 'failed') OR jsonb_typeof(p_events) <> 'array' THEN
+    RAISE EXCEPTION 'Invalid event ingestion payload' USING ERRCODE = '22023';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.event_sources WHERE id = p_source_id AND active) THEN
+    RAISE EXCEPTION 'Unknown or inactive event source' USING ERRCODE = '22023';
+  END IF;
+
+  INSERT INTO public.event_source_sync_runs(source_id, attempted_at, status, event_count, error_summary)
+  VALUES (p_source_id, p_attempted_at, p_status, jsonb_array_length(p_events), left(p_error, 1000))
+  RETURNING id INTO v_run_id;
+
+  UPDATE public.event_sources SET
+    last_success_at = CASE WHEN p_status = 'healthy' THEN p_attempted_at ELSE last_success_at END,
+    consecutive_failures = CASE WHEN p_status = 'healthy' THEN 0 ELSE consecutive_failures + 1 END,
+    updated_at = now()
+  WHERE id = p_source_id;
+
+  -- A degraded/failed fetch records durable health only. Retained rows are not
+  -- new source observations and must not advance last_seen_at.
+  IF p_status <> 'healthy' THEN
+    RETURN;
+  END IF;
+
+  FOR v_event IN SELECT value FROM jsonb_array_elements(p_events)
+  LOOP
+    IF v_event->>'sourceId' IS DISTINCT FROM p_source_id OR coalesce(v_event->>'externalId', '') = '' THEN
+      RAISE EXCEPTION 'Event identity does not match source' USING ERRCODE = '22023';
+    END IF;
+
+    v_payload_hash := encode(digest(v_event::text, 'sha256'), 'hex');
+    INSERT INTO public.external_event_observations(
+      sync_run_id, source_id, external_id, observed_at, payload_hash,
+      normalized_payload, confidence, needs_review
+    ) VALUES (
+      v_run_id, p_source_id, v_event->>'externalId', p_attempted_at,
+      v_payload_hash, v_event,
+      (v_event->>'confidence')::numeric, (v_event->>'needsReview')::boolean
+    ) RETURNING id INTO v_observation_id;
+
+    SELECT * INTO v_existing FROM public.external_events
+    WHERE source_id = p_source_id AND external_id = v_event->>'externalId' FOR UPDATE;
+
+    v_review := ((v_event->>'needsReview')::boolean
+      OR (v_event->>'confidence')::numeric < 0.90
+      OR v_event->>'status' IN ('stale', 'cancelled')
+      OR (v_existing.source_id IS NOT NULL AND (
+        v_existing.normalized_payload->>'startsAt' IS DISTINCT FROM v_event->>'startsAt'
+        OR v_existing.normalized_payload->>'title' IS DISTINCT FROM v_event->>'title'
+        OR v_existing.normalized_payload->>'venueName' IS DISTINCT FROM v_event->>'venueName'
+        OR v_existing.normalized_payload->>'sourceUrl' IS DISTINCT FROM v_event->>'sourceUrl'
+      ))) AND (v_existing.source_id IS NULL
+        OR v_existing.last_reviewed_payload_hash IS DISTINCT FROM v_payload_hash);
+
+    INSERT INTO public.external_events(
+      source_id, external_id, source_status, publication_status, normalized_payload,
+      candidate_payload, confidence, first_seen_at, last_seen_at, published_at, review_reason
+    ) VALUES (
+      p_source_id, v_event->>'externalId', v_event->>'status',
+      CASE WHEN v_review THEN 'needs_review' ELSE 'published' END,
+      v_event, CASE WHEN v_review THEN v_event ELSE NULL END,
+      (v_event->>'confidence')::numeric, p_attempted_at, p_attempted_at,
+      CASE WHEN v_review THEN NULL ELSE p_attempted_at END,
+      CASE WHEN v_review THEN 'Source marked the event for review or a protected field changed' ELSE NULL END
+    ) ON CONFLICT (source_id, external_id) DO UPDATE SET
+      source_status = EXCLUDED.source_status,
+      publication_status = CASE WHEN v_review THEN 'needs_review' ELSE external_events.publication_status END,
+      normalized_payload = CASE WHEN v_review THEN external_events.normalized_payload ELSE EXCLUDED.normalized_payload END,
+      candidate_payload = CASE WHEN v_review THEN EXCLUDED.normalized_payload ELSE NULL END,
+      confidence = EXCLUDED.confidence,
+      last_seen_at = EXCLUDED.last_seen_at,
+      published_at = CASE WHEN NOT v_review AND external_events.published_at IS NULL THEN p_attempted_at ELSE external_events.published_at END,
+      review_reason = CASE WHEN v_review THEN EXCLUDED.review_reason ELSE NULL END;
+  END LOOP;
+END;
+$$;
+
+
+--
 -- Name: insert_meeting_request(text, text, text, text, text, text, text, text, text, text, numeric, integer, timestamp with time zone, text); Type: FUNCTION; Schema: public; Owner: -
 --
 
 CREATE FUNCTION public.insert_meeting_request(p_requester_id text, p_speaker_id text, p_speaker_name text, p_requester_name text, p_requester_company text, p_requester_title text, p_requester_ticket_type text, p_meeting_type text, p_message text, p_note text DEFAULT NULL::text, p_boost_amount numeric DEFAULT 0, p_duration_minutes integer DEFAULT 15, p_expires_at timestamp with time zone DEFAULT NULL::timestamp with time zone, p_event_id text DEFAULT NULL::text) RETURNS TABLE(id uuid, requester_id uuid, speaker_id uuid, status text, created_at timestamp with time zone)
     LANGUAGE plpgsql SECURITY DEFINER
-    SET search_path TO 'public'
+    SET search_path TO 'public', 'pg_temp'
     AS $$
 DECLARE
   v_speaker RECORD;
   v_request_id uuid := gen_random_uuid();
+  v_consumed_pass_id text;
   v_event_id text := NULLIF(trim(COALESCE(p_event_id, '')), '');
+  v_target_speaker_id uuid;
 BEGIN
   IF v_event_id IS NULL THEN
     RAISE EXCEPTION 'A valid event id is required';
@@ -3346,7 +4297,7 @@ BEGIN
   FROM public.get_speaker_by_id_or_slug(p_speaker_id)
   LIMIT 1;
 
-  IF v_speaker.user_id IS NULL THEN
+  IF v_speaker.id IS NULL THEN
     RAISE EXCEPTION 'Speaker not found';
   END IF;
 
@@ -3360,13 +4311,15 @@ BEGIN
     RAISE EXCEPTION 'Meeting request not allowed';
   END IF;
 
+  v_target_speaker_id := COALESCE(v_speaker.user_id, v_speaker.id::uuid);
+
   INSERT INTO public.meeting_requests (
     id, requester_id, speaker_id, event_id, speaker_name, requester_name,
     requester_company, requester_title, requester_ticket_type, meeting_type,
     message, note, boost_amount, duration_minutes, expires_at, status,
     created_at, updated_at
   ) VALUES (
-    v_request_id, p_requester_id::uuid, v_speaker.user_id, v_event_id,
+    v_request_id, p_requester_id::uuid, v_target_speaker_id, v_event_id,
     p_speaker_name, p_requester_name, p_requester_company, p_requester_title,
     p_requester_ticket_type, COALESCE(NULLIF(p_meeting_type, ''), 'networking'),
     COALESCE(p_message, ''), p_note, COALESCE(p_boost_amount, 0),
@@ -3374,19 +4327,48 @@ BEGIN
     'pending', now(), now()
   );
 
+  WITH active_pass AS (
+    SELECT p.id
+    FROM public.passes p
+    WHERE p.user_id::text = p_requester_id
+      AND p.event_id = v_event_id
+      AND p.status = 'active'
+    ORDER BY p.created_at DESC
+    LIMIT 1
+  )
+  UPDATE public.passes p
+  SET
+    used_meeting_requests = COALESCE(p.used_meeting_requests, 0) + 1,
+    used_boost_amount = COALESCE(p.used_boost_amount, 0) + GREATEST(COALESCE(p_boost_amount, 0), 0),
+    updated_at = now()
+  FROM active_pass
+  WHERE p.id = active_pass.id
+    AND COALESCE(p.used_meeting_requests, 0) < COALESCE(p.max_meeting_requests, 0)
+    AND COALESCE(p.used_boost_amount, 0) + GREATEST(COALESCE(p_boost_amount, 0), 0)
+      <= COALESCE(p.max_boost_amount, 0)
+  RETURNING p.id::text INTO v_consumed_pass_id;
+
+  IF v_consumed_pass_id IS NULL THEN
+    RAISE EXCEPTION 'Meeting request entitlement is no longer available';
+  END IF;
+
   PERFORM public.create_notification(
     p_requester_id::uuid, 'meeting_request', 'Request Sent',
     'Your meeting request to ' || p_speaker_name || ' has been sent.',
     v_request_id, v_speaker.id::text, false, NULL
   );
 
-  PERFORM public.send_prioritized_notification(
-    v_speaker.id::text, p_requester_name, p_requester_company,
-    p_requester_ticket_type, COALESCE(p_boost_amount, 0), v_request_id
-  );
+  -- An unclaimed profile has no auth recipient yet. The claim trigger below
+  -- relinks this request to the eventual account before notifications begin.
+  IF v_speaker.user_id IS NOT NULL THEN
+    PERFORM public.send_prioritized_notification(
+      v_speaker.user_id::text, p_requester_name, p_requester_company,
+      p_requester_ticket_type, COALESCE(p_boost_amount, 0), v_request_id
+    );
+  END IF;
 
   RETURN QUERY
-  SELECT v_request_id, p_requester_id::uuid, v_speaker.user_id, 'pending', now();
+  SELECT v_request_id, p_requester_id::uuid, v_target_speaker_id, 'pending', now();
 END;
 $$;
 
@@ -3480,6 +4462,120 @@ $$;
 
 
 --
+-- Name: link_pending_speaker_requests_on_claim(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.link_pending_speaker_requests_on_claim() RETURNS trigger
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public', 'pg_temp'
+    AS $$
+BEGIN
+  IF OLD.user_id IS NULL AND NEW.user_id IS NOT NULL THEN
+    UPDATE public.meeting_requests
+       SET speaker_id = NEW.user_id,
+           updated_at = now()
+     WHERE speaker_id = NEW.id
+       AND status IN ('pending', 'requested');
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: list_business_invite_approver_user_ids(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.list_business_invite_approver_user_ids() RETURNS TABLE(user_id uuid)
+    LANGUAGE sql SECURITY DEFINER
+    SET search_path TO 'public', 'pg_temp'
+    AS $$
+  SELECT user_record.id
+  FROM auth.users AS user_record
+  JOIN public.business_invite_approvers AS approver
+    ON approver.email_hash = encode(extensions.digest(lower(user_record.email), 'sha256'), 'hex')
+  WHERE user_record.email_confirmed_at IS NOT NULL;
+$$;
+
+
+--
+-- Name: list_business_invite_requests_for_approver(uuid, text, integer); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.list_business_invite_requests_for_approver(p_actor_user_id uuid, p_status text DEFAULT 'pending'::text, p_limit integer DEFAULT 100) RETURNS TABLE(id uuid, user_id uuid, user_email text, status text, requested_at timestamp with time zone, reviewed_at timestamp with time zone, reviewed_by uuid)
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public', 'pg_temp'
+    AS $$
+BEGIN
+  IF p_status NOT IN ('pending', 'approved', 'rejected') THEN
+    RAISE EXCEPTION 'Invalid Business invitation status' USING ERRCODE = '22023';
+  END IF;
+  IF p_limit < 1 OR p_limit > 100 THEN
+    RAISE EXCEPTION 'Invalid Business invitation page size' USING ERRCODE = '22023';
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1
+    FROM auth.users AS actor
+    JOIN public.business_invite_approvers AS approver
+      ON approver.email_hash = encode(extensions.digest(lower(actor.email), 'sha256'), 'hex')
+    WHERE actor.id = p_actor_user_id AND actor.email_confirmed_at IS NOT NULL
+  ) THEN
+    RAISE EXCEPTION 'Business invitation approval is not authorized' USING ERRCODE = '42501';
+  END IF;
+
+  RETURN QUERY
+  SELECT request.id, request.user_id, requester.email, request.status,
+         request.requested_at, request.reviewed_at, request.reviewed_by
+  FROM public.business_invite_requests AS request
+  JOIN auth.users AS requester ON requester.id = request.user_id
+  WHERE request.status = p_status
+  ORDER BY request.requested_at ASC
+  LIMIT p_limit;
+END;
+$$;
+
+
+--
+-- Name: list_speaker_claim_requests(uuid, text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.list_speaker_claim_requests(p_actor_user_id uuid, p_event_id text) RETURNS TABLE(claim_id uuid, speaker_id text, event_id text, speaker_name text, speaker_title text, speaker_company text, requester_user_id uuid, requester_email text, status text, request_note text, created_at timestamp with time zone, review_note text)
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public', 'auth', 'pg_temp'
+    AS $$
+BEGIN
+  IF NOT public.has_event_admin_access(p_actor_user_id, p_event_id, false) THEN
+    RAISE EXCEPTION 'Only an event administrator may review speaker claims'
+      USING ERRCODE = '42501';
+  END IF;
+
+  RETURN QUERY
+  SELECT request.id,
+         request.speaker_id,
+         request.event_id,
+         speaker.name,
+         speaker.title,
+         speaker.company,
+         request.requester_user_id,
+         lower(auth_user.email),
+         request.status,
+         request.request_note,
+         request.created_at,
+         request.review_note
+    FROM public.speaker_claim_requests AS request
+    JOIN public.bsl_speakers AS speaker
+      ON speaker.id::text = request.speaker_id
+     AND speaker.event_id = request.event_id
+    JOIN auth.users AS auth_user
+      ON auth_user.id = request.requester_user_id
+   WHERE request.event_id = p_event_id
+   ORDER BY request.created_at DESC
+   LIMIT 200;
+END;
+$$;
+
+
+--
 -- Name: list_support_events(uuid, uuid, text, integer); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -3542,7 +4638,7 @@ CREATE FUNCTION public.list_support_messages(p_ticket_id uuid, p_visitor_id uuid
     AS $$
 #variable_conflict use_column
 DECLARE
-  v_limit integer := LEAST(GREATEST(COALESCE(p_limit, 30), 1), 100);
+  v_limit integer := LEAST(GREATEST(COALESCE(p_limit, 30), 1), 101);
   v_cursor_created_at timestamptz;
   v_cursor_id uuid;
 BEGIN
@@ -3578,7 +4674,7 @@ CREATE FUNCTION public.list_support_tickets_admin(p_app_id text DEFAULT NULL::te
     AS $$
 #variable_conflict use_column
 DECLARE
-  v_limit integer := LEAST(GREATEST(COALESCE(p_limit, 20), 1), 100);
+  v_limit integer := LEAST(GREATEST(COALESCE(p_limit, 20), 1), 101);
   v_cursor_updated_at timestamptz;
   v_cursor_id uuid;
 BEGIN
@@ -3610,7 +4706,7 @@ CREATE FUNCTION public.list_support_tickets_for_visitor(p_visitor_id uuid, p_sta
     AS $$
 #variable_conflict use_column
 DECLARE
-  v_limit integer := LEAST(GREATEST(COALESCE(p_limit, 20), 1), 100);
+  v_limit integer := LEAST(GREATEST(COALESCE(p_limit, 20), 1), 101);
   v_cursor_updated_at timestamptz;
   v_cursor_id uuid;
 BEGIN
@@ -3677,6 +4773,69 @@ $$;
 
 
 --
+-- Name: parse_iso8601_immutable(text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.parse_iso8601_immutable(value text) RETURNS timestamp with time zone
+    LANGUAGE sql IMMUTABLE
+    AS $$
+  SELECT value::timestamptz
+$$;
+
+
+--
+-- Name: provision_bsl_colombia_business_invite_campaign(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.provision_bsl_colombia_business_invite_campaign() RETURNS trigger
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public', 'pg_temp'
+    AS $$
+BEGIN
+  IF NEW.id = 'colombia2026' AND NEW.status = 'published' THEN
+    INSERT INTO public.business_invite_campaigns (
+      event_id, code_hash, label, max_claims, is_active
+    ) VALUES (
+      'colombia2026',
+      encode(digest('9899', 'sha256'), 'hex'),
+      'Blockchain Summit Latam Colombia 2026 Business invitation',
+      NULL,
+      true
+    )
+    ON CONFLICT (code_hash) DO UPDATE
+    SET event_id = EXCLUDED.event_id,
+        label = EXCLUDED.label,
+        max_claims = EXCLUDED.max_claims,
+        expires_at = NULL,
+        is_active = true,
+        updated_at = now()
+    WHERE public.business_invite_campaigns.claimed_count = 0;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: provision_cbweek_general_pass(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.provision_cbweek_general_pass() RETURNS trigger
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public', 'pg_temp'
+    AS $$
+BEGIN
+  IF NEW.email_confirmed_at IS NOT NULL AND EXISTS (
+    SELECT 1 FROM public.events WHERE id = 'cbweek2026' AND status = 'published'
+  ) THEN
+    PERFORM public.create_default_pass(NEW.id::text, 'general', 'cbweek2026');
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+--
 -- Name: provision_upcoming_bsl_general_passes(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -3684,13 +4843,27 @@ CREATE FUNCTION public.provision_upcoming_bsl_general_passes() RETURNS trigger
     LANGUAGE plpgsql SECURITY DEFINER
     SET search_path TO 'public', 'pg_temp'
     AS $$
+DECLARE
+  v_demo_event record;
 BEGIN
   IF NEW.email_confirmed_at IS NULL AND NEW.confirmed_at IS NULL THEN
     RETURN NEW;
   END IF;
 
+  -- Preserve the standard BSL entitlements.
   PERFORM public.create_upcoming_bsl_general_pass_for_user(NEW.id, 'chile2026');
   PERFORM public.create_upcoming_bsl_general_pass_for_user(NEW.id, 'colombia2026');
+
+  -- New and future published demo events automatically participate.
+  FOR v_demo_event IN
+    SELECT e.id
+    FROM public.events e
+    WHERE e.is_demo
+      AND e.status = 'published'
+  LOOP
+    PERFORM public.create_demo_general_pass_for_user(NEW.id, v_demo_event.id);
+  END LOOP;
+
   RETURN NEW;
 END;
 $$;
@@ -3720,6 +4893,25 @@ BEGIN
     updated_at = now();
 
   RETURN jsonb_build_object('success', true);
+END;
+$$;
+
+
+--
+-- Name: release_event_account_grants(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.release_event_account_grants() RETURNS trigger
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public', 'pg_temp'
+    AS $$
+BEGIN
+  UPDATE public.speakers AS s SET user_id = NULL, updated_at = now()
+  FROM public.event_account_grants AS g
+  WHERE g.claimed_user_id = OLD.id AND s.id = g.speaker_id AND s.user_id = OLD.id;
+  UPDATE public.event_account_grants SET claimed_user_id = NULL, claimed_at = NULL
+  WHERE claimed_user_id = OLD.id;
+  RETURN OLD;
 END;
 $$;
 
@@ -3768,6 +4960,195 @@ $$;
 
 
 --
+-- Name: request_business_invite_for_user(uuid, text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.request_business_invite_for_user(p_user_id uuid, p_code text) RETURNS jsonb
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public', 'pg_temp'
+    AS $_$
+DECLARE
+  v_email text;
+  v_campaign public.business_invite_campaigns%ROWTYPE;
+  v_request public.business_invite_requests%ROWTYPE;
+  v_created boolean := false;
+  v_event_ids jsonb;
+  v_approver record;
+BEGIN
+  IF p_user_id IS NULL THEN
+    RAISE EXCEPTION 'Authentication is required to request Business access' USING ERRCODE = '42501';
+  END IF;
+
+  SELECT lower(email) INTO v_email
+  FROM auth.users
+  WHERE id = p_user_id AND email_confirmed_at IS NOT NULL;
+  IF v_email IS NULL THEN
+    RAISE EXCEPTION 'Verify your email before requesting Business access' USING ERRCODE = '42501';
+  END IF;
+
+  IF p_code IS NULL
+    OR length(btrim(p_code)) < 4
+    OR length(btrim(p_code)) > 64
+    OR upper(btrim(p_code)) !~ '^[A-Z0-9][A-Z0-9_-]{3,63}$' THEN
+    RAISE EXCEPTION 'Invalid Business invitation code' USING ERRCODE = '22023';
+  END IF;
+
+  SELECT * INTO v_campaign
+  FROM public.business_invite_campaigns
+  WHERE code_hash = encode(extensions.digest(upper(btrim(p_code)), 'sha256'), 'hex')
+    AND is_active = true
+  FOR UPDATE;
+  IF NOT FOUND OR (v_campaign.expires_at IS NOT NULL AND v_campaign.expires_at <= now()) THEN
+    RAISE EXCEPTION 'Invalid or expired Business invitation code' USING ERRCODE = '22023';
+  END IF;
+
+  SELECT jsonb_agg(target.event_id ORDER BY target.event_id)
+  INTO v_event_ids
+  FROM public.business_invite_campaign_events AS target
+  JOIN public.events AS event ON event.id = target.event_id AND event.status = 'published'
+  JOIN public.event_pass_tiers AS tier
+    ON tier.event_id = target.event_id AND tier.pass_type = 'business'
+  WHERE target.campaign_id = v_campaign.id;
+  IF v_event_ids IS NULL THEN
+    RAISE EXCEPTION 'Business access is not configured for this invitation' USING ERRCODE = '22023';
+  END IF;
+
+  INSERT INTO public.business_invite_requests (campaign_id, user_id)
+  VALUES (v_campaign.id, p_user_id)
+  ON CONFLICT (campaign_id, user_id) DO NOTHING
+  RETURNING * INTO v_request;
+
+  v_created := FOUND;
+  IF NOT v_created THEN
+    SELECT * INTO v_request
+    FROM public.business_invite_requests
+    WHERE campaign_id = v_campaign.id AND user_id = p_user_id
+    FOR UPDATE;
+  END IF;
+
+  IF v_created THEN
+    PERFORM public.create_notification(
+      p_user_id,
+      'business_invite_pending',
+      'Business access pending review',
+      'Your Business access request is pending confirmation by HASHPASS.',
+      NULL, NULL, false, NULL, 'important'
+    );
+
+    FOR v_approver IN
+      SELECT user_id FROM public.list_business_invite_approver_user_ids()
+    LOOP
+      PERFORM public.create_notification(
+        v_approver.user_id,
+        'business_invite_review_required',
+        'Business access approval requested',
+        'A verified account requested BSL and Colombia Blockchain Week Business access.',
+        NULL, NULL, true, NULL, 'critical'
+      );
+    END LOOP;
+  END IF;
+
+  RETURN jsonb_build_object(
+    'status', v_request.status,
+    'request_id', v_request.id,
+    'created', v_created,
+    'event_ids', v_event_ids
+  );
+END;
+$_$;
+
+
+--
+-- Name: request_speaker_profile_claim(text, uuid, text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.request_speaker_profile_claim(p_speaker_id text, p_requester_user_id uuid, p_note text DEFAULT NULL::text) RETURNS jsonb
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public', 'auth', 'pg_temp'
+    AS $$
+DECLARE
+  v_speaker public.bsl_speakers%ROWTYPE;
+  v_existing public.speaker_claim_requests%ROWTYPE;
+  v_email text;
+BEGIN
+  SELECT lower(email)
+    INTO v_email
+    FROM auth.users
+   WHERE id = p_requester_user_id
+     AND email IS NOT NULL
+     AND email_confirmed_at IS NOT NULL;
+  IF v_email IS NULL THEN
+    RAISE EXCEPTION 'A confirmed email is required to request a speaker profile claim'
+      USING ERRCODE = '42501';
+  END IF;
+
+  SELECT *
+    INTO v_speaker
+    FROM public.bsl_speakers
+   WHERE id::text = btrim(COALESCE(p_speaker_id, ''))
+     AND user_id IS NULL
+   FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Speaker profile is not available for claiming'
+      USING ERRCODE = '22023';
+  END IF;
+
+  IF EXISTS (
+    SELECT 1
+      FROM public.bsl_speakers
+     WHERE user_id = p_requester_user_id
+  ) THEN
+    RAISE EXCEPTION 'This account is already linked to a speaker profile'
+      USING ERRCODE = '23505';
+  END IF;
+
+  SELECT *
+    INTO v_existing
+    FROM public.speaker_claim_requests
+   WHERE speaker_id = v_speaker.id::text
+     AND status = 'pending'
+   FOR UPDATE;
+  IF FOUND THEN
+    RETURN jsonb_build_object(
+      'claim_id', v_existing.id,
+      'speaker_id', v_existing.speaker_id,
+      'status', v_existing.status
+    );
+  END IF;
+
+  INSERT INTO public.speaker_claim_requests (
+    speaker_id,
+    event_id,
+    requester_user_id,
+    request_note
+  ) VALUES (
+    v_speaker.id::text,
+    v_speaker.event_id,
+    p_requester_user_id,
+    NULLIF(left(btrim(COALESCE(p_note, '')), 1000), '')
+  )
+  RETURNING * INTO v_existing;
+
+  INSERT INTO public.admin_action_log (actor_user_id, event_id, action, target_type, target_id, metadata)
+  VALUES (
+    p_requester_user_id,
+    v_speaker.event_id,
+    'speaker_claim.requested',
+    'speaker',
+    v_speaker.id::text,
+    jsonb_build_object('claim_id', v_existing.id)
+  );
+
+  RETURN jsonb_build_object(
+    'claim_id', v_existing.id,
+    'speaker_id', v_existing.speaker_id,
+    'status', v_existing.status
+  );
+END;
+$$;
+
+
+--
 -- Name: request_ticket_handoff(uuid, uuid); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -3794,6 +5175,105 @@ BEGIN
   SELECT t.id, t.app_id, t.visitor_id, t.subject, t.status, t.priority,
          t.needs_human, t.context, t.created_at, t.updated_at
   FROM public.support_tickets t WHERE t.id = p_ticket_id;
+END;
+$$;
+
+
+--
+-- Name: reset_meeting_request_limits(text, text, numeric); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.reset_meeting_request_limits(p_user_id text, p_event_id text, p_boost_cost numeric DEFAULT 50) RETURNS TABLE(pass_id text, event_id text, reset_cost numeric, remaining_requests integer, remaining_boost numeric, pass_type text)
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public', 'auth', 'pg_temp'
+    AS $$
+DECLARE
+  v_event_id text := NULLIF(trim(COALESCE(p_event_id, '')), '');
+  v_user_id text := NULLIF(trim(COALESCE(p_user_id, '')), '');
+  v_role text := COALESCE(current_setting('request.jwt.claim.role', true), '');
+  v_pass RECORD;
+  v_updated_pass_id text;
+  v_remaining_requests integer;
+  v_remaining_boost numeric;
+BEGIN
+  IF v_user_id IS NULL THEN
+    RAISE EXCEPTION 'A valid user id is required' USING ERRCODE = '22023';
+  END IF;
+  IF v_event_id IS NULL THEN
+    RAISE EXCEPTION 'A valid event id is required' USING ERRCODE = '22023';
+  END IF;
+  IF p_boost_cost IS DISTINCT FROM 50 THEN
+    RAISE EXCEPTION 'The meeting-request reset costs exactly 50 Boost points'
+      USING ERRCODE = '22023';
+  END IF;
+
+  IF v_role <> 'service_role'
+     AND auth.uid() IS NOT NULL
+     AND auth.uid()::text <> v_user_id THEN
+    RAISE EXCEPTION 'You may only reset your own meeting request limits'
+      USING ERRCODE = '42501';
+  END IF;
+  IF v_role <> 'service_role'
+     AND auth.uid() IS NULL
+     AND public.get_current_user_id()::text IS DISTINCT FROM v_user_id THEN
+    RAISE EXCEPTION 'An authenticated user is required'
+      USING ERRCODE = '42501';
+  END IF;
+
+  SELECT
+    p.id,
+    p.max_meeting_requests,
+    p.used_meeting_requests,
+    p.max_boost_amount,
+    p.used_boost_amount,
+    p.pass_type::text AS pass_type
+  INTO v_pass
+  FROM public.passes p
+  WHERE p.user_id::text = v_user_id
+    AND p.event_id = v_event_id
+    AND p.status = 'active'
+  ORDER BY p.created_at DESC
+  LIMIT 1
+  FOR UPDATE;
+
+  IF v_pass.id IS NULL THEN
+    RAISE EXCEPTION 'No active pass found for this event' USING ERRCODE = '22023';
+  END IF;
+  IF COALESCE(v_pass.used_meeting_requests, 0)
+       < COALESCE(v_pass.max_meeting_requests, 0) THEN
+    RAISE EXCEPTION 'The meeting request limit has not been reached'
+      USING ERRCODE = '22023';
+  END IF;
+  IF COALESCE(v_pass.max_boost_amount, 0)
+       - COALESCE(v_pass.used_boost_amount, 0) < p_boost_cost THEN
+    RAISE EXCEPTION 'Not enough Boost points remain for this reset'
+      USING ERRCODE = '22023';
+  END IF;
+
+  UPDATE public.passes p
+  SET used_meeting_requests = 0,
+      used_boost_amount = COALESCE(p.used_boost_amount, 0) + p_boost_cost,
+      updated_at = now()
+  WHERE p.id = v_pass.id
+  RETURNING p.id::text,
+            GREATEST(0, COALESCE(p.max_meeting_requests, 0) - COALESCE(p.used_meeting_requests, 0)),
+            GREATEST(0, COALESCE(p.max_boost_amount, 0) - COALESCE(p.used_boost_amount, 0))
+  INTO v_updated_pass_id, v_remaining_requests, v_remaining_boost;
+
+  UPDATE public.pass_request_limits AS prl
+  SET requests_used = 0,
+      reset_at = now(),
+      updated_at = now()
+  WHERE prl.pass_id = v_pass.id
+    AND prl.user_id = v_user_id;
+
+  RETURN QUERY
+  SELECT v_updated_pass_id,
+         v_event_id,
+         p_boost_cost,
+         v_remaining_requests,
+         v_remaining_boost,
+         v_pass.pass_type;
 END;
 $$;
 
@@ -3927,6 +5407,348 @@ $$;
 
 
 --
+-- Name: review_business_invite_request(uuid, uuid, text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.review_business_invite_request(p_request_id uuid, p_actor_user_id uuid, p_decision text) RETURNS jsonb
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public', 'pg_temp'
+    AS $$
+DECLARE
+  v_request public.business_invite_requests%ROWTYPE;
+  v_campaign public.business_invite_campaigns%ROWTYPE;
+  v_event record;
+  v_pass_id text;
+  v_primary_pass_id text;
+  v_max_requests integer;
+  v_max_boost numeric;
+  v_pass_ids jsonb := '{}'::jsonb;
+  v_has_claim boolean;
+BEGIN
+  IF p_decision NOT IN ('approve', 'reject') THEN
+    RAISE EXCEPTION 'Invalid Business invitation decision' USING ERRCODE = '22023';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1
+    FROM auth.users AS user_record
+    JOIN public.business_invite_approvers AS approver
+      ON approver.email_hash = encode(extensions.digest(lower(user_record.email), 'sha256'), 'hex')
+    WHERE user_record.id = p_actor_user_id AND user_record.email_confirmed_at IS NOT NULL
+  ) THEN
+    RAISE EXCEPTION 'Business invitation approval is not authorized' USING ERRCODE = '42501';
+  END IF;
+
+  SELECT * INTO v_request
+  FROM public.business_invite_requests
+  WHERE id = p_request_id
+  FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Business invitation request was not found' USING ERRCODE = 'P0002';
+  END IF;
+
+  IF v_request.status <> 'pending' THEN
+    RETURN jsonb_build_object(
+      'request_id', v_request.id,
+      'user_id', v_request.user_id,
+      'status', v_request.status,
+      'already_reviewed', true
+    );
+  END IF;
+
+  SELECT * INTO v_campaign
+  FROM public.business_invite_campaigns
+  WHERE id = v_request.campaign_id
+  FOR UPDATE;
+  IF NOT FOUND OR NOT v_campaign.is_active
+    OR (v_campaign.expires_at IS NOT NULL AND v_campaign.expires_at <= now()) THEN
+    RAISE EXCEPTION 'Business invitation campaign is unavailable' USING ERRCODE = '22023';
+  END IF;
+
+  IF p_decision = 'reject' THEN
+    UPDATE public.business_invite_requests
+    SET status = 'rejected', reviewed_at = now(), reviewed_by = p_actor_user_id, updated_at = now()
+    WHERE id = v_request.id;
+
+    PERFORM public.create_notification(
+      v_request.user_id,
+      'business_invite_rejected',
+      'Business access request not approved',
+      'Your Business access request was reviewed and was not approved.',
+      NULL, NULL, false, NULL, 'important'
+    );
+
+    RETURN jsonb_build_object(
+      'request_id', v_request.id,
+      'user_id', v_request.user_id,
+      'status', 'rejected',
+      'already_reviewed', false
+    );
+  END IF;
+
+  SELECT EXISTS (
+    SELECT 1 FROM public.business_invite_claims
+    WHERE campaign_id = v_campaign.id AND user_id = v_request.user_id
+  ) INTO v_has_claim;
+
+  IF NOT v_has_claim
+    AND v_campaign.max_claims IS NOT NULL
+    AND v_campaign.claimed_count >= v_campaign.max_claims THEN
+    RAISE EXCEPTION 'This Business invitation has reached its limit' USING ERRCODE = '22023';
+  END IF;
+
+  FOR v_event IN
+    SELECT target.event_id
+    FROM public.business_invite_campaign_events AS target
+    JOIN public.events AS event ON event.id = target.event_id
+    JOIN public.event_pass_tiers AS tier
+      ON tier.event_id = target.event_id AND tier.pass_type = 'business'
+    WHERE target.campaign_id = v_campaign.id AND event.status = 'published'
+    ORDER BY CASE target.event_id WHEN 'bsl' THEN 0 WHEN 'cbweek2026' THEN 1 ELSE 2 END
+  LOOP
+    SELECT max_meeting_requests, max_boost_amount
+    INTO v_max_requests, v_max_boost
+    FROM public.event_pass_tiers
+    WHERE event_id = v_event.event_id AND pass_type = 'business';
+
+    v_pass_id := public.ensure_business_invite_event_pass(v_request.user_id, v_event.event_id);
+    IF NOT EXISTS (
+      SELECT 1 FROM public.passes
+      WHERE id::text = v_pass_id AND status = 'active'
+    ) THEN
+      RAISE EXCEPTION 'An active event pass is required for this invitation' USING ERRCODE = '22023';
+    END IF;
+
+    -- Upgrade in place only; a VIP entitlement and its consumed counters stay intact.
+    UPDATE public.passes AS pass
+    SET pass_type = 'business'::public.pass_type,
+        max_meeting_requests = v_max_requests,
+        max_boost_amount = v_max_boost,
+        access_features = ARRAY['all_sessions', 'networking', 'business_events'],
+        special_perks = ARRAY['business_lounge', 'networking_tools'],
+        updated_at = now()
+    WHERE pass.id::text = v_pass_id
+      AND pass.status = 'active'
+      AND CASE pass.pass_type::text WHEN 'vip' THEN 2 WHEN 'business' THEN 1 ELSE 0 END <= 1;
+
+    v_primary_pass_id := COALESCE(v_primary_pass_id, v_pass_id);
+    v_pass_ids := v_pass_ids || jsonb_build_object(v_event.event_id, v_pass_id);
+  END LOOP;
+
+  IF v_primary_pass_id IS NULL THEN
+    RAISE EXCEPTION 'Business access is not configured for this invitation' USING ERRCODE = '22023';
+  END IF;
+
+  INSERT INTO public.business_invite_claims (campaign_id, user_id, pass_id)
+  VALUES (v_campaign.id, v_request.user_id, v_primary_pass_id)
+  ON CONFLICT (campaign_id, user_id) DO UPDATE
+  SET pass_id = EXCLUDED.pass_id, claimed_at = now();
+
+  IF NOT v_has_claim THEN
+    UPDATE public.business_invite_campaigns
+    SET claimed_count = claimed_count + 1, updated_at = now()
+    WHERE id = v_campaign.id;
+  END IF;
+
+  UPDATE public.business_invite_requests
+  SET status = 'approved', reviewed_at = now(), reviewed_by = p_actor_user_id, updated_at = now()
+  WHERE id = v_request.id;
+
+  PERFORM public.create_notification(
+    v_request.user_id,
+    'business_invite_approved',
+    'Business access approved',
+    'Your BSL and Colombia Blockchain Week Business access is now active.',
+    NULL, NULL, false, NULL, 'important'
+  );
+
+  RETURN jsonb_build_object(
+    'request_id', v_request.id,
+    'user_id', v_request.user_id,
+    'status', 'approved',
+    'pass_ids', v_pass_ids,
+    'already_reviewed', false
+  );
+END;
+$$;
+
+
+--
+-- Name: review_external_event_candidate(text, text, text, uuid, text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.review_external_event_candidate(p_source_id text, p_external_id text, p_decision text, p_reviewer uuid, p_reason text DEFAULT NULL::text) RETURNS void
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public', 'extensions', 'pg_temp'
+    AS $$
+DECLARE
+  v_event public.external_events%ROWTYPE;
+  v_observation_id uuid;
+BEGIN
+  IF p_decision NOT IN ('approved', 'rejected') OR p_reviewer IS NULL THEN
+    RAISE EXCEPTION 'Invalid ingestion review' USING ERRCODE = '22023';
+  END IF;
+  SELECT * INTO v_event FROM public.external_events
+  WHERE source_id = p_source_id AND external_id = p_external_id FOR UPDATE;
+  IF NOT FOUND OR v_event.publication_status <> 'needs_review' OR v_event.candidate_payload IS NULL THEN
+    RAISE EXCEPTION 'No reviewable event candidate found' USING ERRCODE = '22023';
+  END IF;
+  SELECT id INTO v_observation_id FROM public.external_event_observations
+  WHERE source_id = p_source_id AND external_id = p_external_id
+  ORDER BY observed_at DESC LIMIT 1;
+
+  INSERT INTO public.event_ingestion_reviews(source_id, external_id, observation_id, decision, reason, reviewed_by)
+  VALUES (p_source_id, p_external_id, v_observation_id, p_decision, left(p_reason, 1000), p_reviewer);
+
+  UPDATE public.external_events SET
+    normalized_payload = CASE WHEN p_decision = 'approved' THEN candidate_payload ELSE normalized_payload END,
+    source_status = CASE WHEN p_decision = 'approved' THEN candidate_payload->>'status' ELSE source_status END,
+    publication_status = CASE
+      WHEN p_decision = 'approved' AND candidate_payload->>'status' IN ('upcoming', 'live') THEN 'published'
+      WHEN p_decision = 'approved' THEN 'rejected'
+      ELSE 'rejected'
+    END,
+    candidate_payload = NULL,
+    published_at = CASE WHEN p_decision = 'approved' AND candidate_payload->>'status' IN ('upcoming', 'live') THEN now() ELSE published_at END,
+    reviewed_at = now(), reviewed_by = p_reviewer,
+    review_reason = left(p_reason, 1000),
+    last_reviewed_payload_hash = encode(digest(candidate_payload::text, 'sha256'), 'hex')
+  WHERE source_id = p_source_id AND external_id = p_external_id;
+END;
+$$;
+
+
+--
+-- Name: review_speaker_profile_claim(uuid, uuid, text, text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.review_speaker_profile_claim(p_actor_user_id uuid, p_claim_id uuid, p_action text, p_review_note text DEFAULT NULL::text) RETURNS jsonb
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public', 'auth', 'pg_temp'
+    AS $$
+DECLARE
+  v_claim public.speaker_claim_requests%ROWTYPE;
+  v_speaker public.bsl_speakers%ROWTYPE;
+  v_email text;
+BEGIN
+  SELECT *
+    INTO v_claim
+    FROM public.speaker_claim_requests
+   WHERE id = p_claim_id
+   FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Speaker claim request not found' USING ERRCODE = '22023';
+  END IF;
+
+  IF NOT public.has_event_admin_access(p_actor_user_id, v_claim.event_id, false) THEN
+    RAISE EXCEPTION 'Only an event administrator may review speaker claims'
+      USING ERRCODE = '42501';
+  END IF;
+  IF p_action NOT IN ('approve', 'reject') THEN
+    RAISE EXCEPTION 'Unsupported speaker claim review action' USING ERRCODE = '22023';
+  END IF;
+  IF v_claim.status <> 'pending' THEN
+    RAISE EXCEPTION 'This speaker claim has already been reviewed' USING ERRCODE = '23505';
+  END IF;
+
+  SELECT *
+    INTO v_speaker
+    FROM public.bsl_speakers
+   WHERE id::text = v_claim.speaker_id
+     AND event_id = v_claim.event_id
+   FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Speaker profile not found for this event' USING ERRCODE = '22023';
+  END IF;
+
+  IF p_action = 'approve' THEN
+    SELECT lower(email)
+      INTO v_email
+      FROM auth.users
+     WHERE id = v_claim.requester_user_id
+       AND email IS NOT NULL
+       AND email_confirmed_at IS NOT NULL;
+    IF v_email IS NULL THEN
+      RAISE EXCEPTION 'The claimant must have a confirmed email before approval'
+        USING ERRCODE = '42501';
+    END IF;
+    IF v_speaker.user_id IS NOT NULL THEN
+      RAISE EXCEPTION 'Speaker profile is already linked to an account'
+        USING ERRCODE = '23505';
+    END IF;
+    IF EXISTS (
+      SELECT 1 FROM public.bsl_speakers
+       WHERE user_id = v_claim.requester_user_id
+         AND id::text <> v_claim.speaker_id
+    ) THEN
+      RAISE EXCEPTION 'This account is already linked to another speaker profile'
+        USING ERRCODE = '23505';
+    END IF;
+    IF EXISTS (
+      SELECT 1 FROM public.speaker_identity_claims
+       WHERE (claimed_user_id = v_claim.requester_user_id OR email_normalized = v_email)
+         AND speaker_id <> v_claim.speaker_id
+    ) THEN
+      RAISE EXCEPTION 'This account or email is already linked to another speaker profile'
+        USING ERRCODE = '23505';
+    END IF;
+
+    UPDATE public.bsl_speakers
+       SET user_id = v_claim.requester_user_id,
+           is_active = true,
+           is_accepting_meetings = true,
+           directory_visible = true,
+           updated_at = now()
+     WHERE id::text = v_claim.speaker_id
+       AND event_id = v_claim.event_id;
+
+    INSERT INTO public.speaker_identity_claims (
+      speaker_id, email_normalized, status, configured_by,
+      claimed_user_id, claimed_at, metadata
+    ) VALUES (
+      v_claim.speaker_id, v_email, 'claimed', p_actor_user_id,
+      v_claim.requester_user_id, now(),
+      jsonb_build_object('source', 'speaker_claim_request', 'claim_request_id', v_claim.id)
+    )
+    ON CONFLICT (speaker_id) DO UPDATE
+      SET email_normalized = EXCLUDED.email_normalized,
+          status = 'claimed',
+          configured_by = EXCLUDED.configured_by,
+          claimed_user_id = EXCLUDED.claimed_user_id,
+          claimed_at = EXCLUDED.claimed_at,
+          claim_error = NULL,
+          metadata = EXCLUDED.metadata,
+          updated_at = now();
+  END IF;
+
+  UPDATE public.speaker_claim_requests
+     SET status = p_action,
+         reviewed_by = p_actor_user_id,
+         review_note = NULLIF(left(btrim(COALESCE(p_review_note, '')), 1000), ''),
+         reviewed_at = now(),
+         updated_at = now()
+   WHERE id = v_claim.id;
+
+  INSERT INTO public.admin_action_log (actor_user_id, event_id, action, target_type, target_id, metadata)
+  VALUES (
+    p_actor_user_id,
+    v_claim.event_id,
+    'speaker_claim.' || p_action,
+    'speaker',
+    v_claim.speaker_id,
+    jsonb_build_object('claim_id', v_claim.id, 'requester_user_id', v_claim.requester_user_id)
+  );
+
+  RETURN jsonb_build_object(
+    'claim_id', v_claim.id,
+    'speaker_id', v_claim.speaker_id,
+    'status', p_action
+  );
+END;
+$$;
+
+
+--
 -- Name: reward_meeting_accepted(uuid, uuid, uuid); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -4017,6 +5839,153 @@ BEGIN
         RAISE LOG 'rls_auto_enable: skip % (either system schema or not in enforced list: %.)', cmd.object_identity, cmd.schema_name;
      END IF;
   END LOOP;
+END;
+$$;
+
+
+--
+-- Name: save_user_setup(uuid, jsonb); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.save_user_setup(p_user_id uuid, p_patch jsonb) RETURNS jsonb
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO ''
+    AS $$
+DECLARE
+  current_row public.user_setup;
+  unknown_keys text[];
+  next_goals text[];
+  next_topics text[];
+  next_scope text;
+  next_step smallint;
+  next_consent smallint;
+  finishing boolean := false;
+BEGIN
+  IF p_patch IS NULL OR jsonb_typeof(p_patch) <> 'object' THEN
+    RAISE EXCEPTION 'invalid_setup_request' USING ERRCODE = '23514';
+  END IF;
+  SELECT array_agg(k) INTO unknown_keys FROM jsonb_object_keys(p_patch) AS k
+    WHERE k NOT IN ('step', 'goals', 'topics', 'privacyScope', 'consentVersion', 'complete');
+  IF unknown_keys IS NOT NULL THEN
+    RAISE EXCEPTION 'invalid_setup_request' USING ERRCODE = '23514';
+  END IF;
+  IF (p_patch ? 'goals' AND jsonb_typeof(p_patch->'goals') <> 'array')
+    OR (p_patch ? 'topics' AND jsonb_typeof(p_patch->'topics') <> 'array')
+    OR (p_patch ? 'step' AND jsonb_typeof(p_patch->'step') <> 'number')
+    OR (p_patch ? 'consentVersion' AND jsonb_typeof(p_patch->'consentVersion') <> 'number')
+    OR (p_patch ? 'privacyScope' AND jsonb_typeof(p_patch->'privacyScope') <> 'string')
+    OR (p_patch ? 'complete' AND jsonb_typeof(p_patch->'complete') <> 'boolean') THEN
+    RAISE EXCEPTION 'invalid_setup_request' USING ERRCODE = '23514';
+  END IF;
+
+  INSERT INTO public.user_setup(user_id) VALUES (p_user_id) ON CONFLICT (user_id) DO NOTHING;
+  SELECT * INTO current_row FROM public.user_setup WHERE user_id = p_user_id FOR UPDATE;
+
+  next_goals := CASE WHEN p_patch ? 'goals'
+    THEN ARRAY(SELECT jsonb_array_elements_text(p_patch->'goals')) ELSE current_row.goals END;
+  next_topics := CASE WHEN p_patch ? 'topics'
+    THEN ARRAY(SELECT jsonb_array_elements_text(p_patch->'topics')) ELSE current_row.topics END;
+  IF cardinality(next_goals) <> (SELECT count(DISTINCT g) FROM unnest(next_goals) g)
+    OR cardinality(next_topics) <> (SELECT count(DISTINCT t) FROM unnest(next_topics) t) THEN
+    RAISE EXCEPTION 'invalid_setup_request' USING ERRCODE = '23514';
+  END IF;
+  next_scope := CASE WHEN p_patch ? 'privacyScope' THEN p_patch->>'privacyScope' ELSE current_row.privacy_scope END;
+  next_step := CASE WHEN p_patch ? 'step' THEN (p_patch->>'step')::smallint ELSE current_row.step END;
+  next_consent := CASE WHEN p_patch ? 'consentVersion'
+    THEN greatest(coalesce(current_row.consent_version, 0), (p_patch->>'consentVersion')::smallint)
+    ELSE current_row.consent_version END;
+  finishing := coalesce((p_patch->>'complete')::boolean, false);
+  IF finishing AND next_consent IS NULL THEN
+    RAISE EXCEPTION 'consent_required' USING ERRCODE = '23514';
+  END IF;
+
+  UPDATE public.user_setup SET
+    goals = next_goals,
+    topics = next_topics,
+    privacy_scope = next_scope,
+    step = CASE WHEN current_row.status = 'complete' THEN current_row.step ELSE next_step END,
+    consent_version = next_consent,
+    consented_at = CASE WHEN p_patch ? 'consentVersion' THEN now() ELSE current_row.consented_at END,
+    status = CASE WHEN current_row.status = 'complete' OR finishing THEN 'complete' ELSE 'in_progress' END,
+    completed_at = CASE WHEN current_row.status = 'complete' THEN current_row.completed_at
+      WHEN finishing THEN now() ELSE NULL END,
+    updated_at = now()
+  WHERE user_id = p_user_id;
+  RETURN public.get_user_setup(p_user_id);
+END;
+$$;
+
+
+--
+-- Name: send_event_chat_room_message(text, uuid, text, text, text, uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.send_event_chat_room_message(p_event_id text, p_sender_id uuid, p_message text, p_message_type text DEFAULT 'text'::text, p_sender_display_name text DEFAULT NULL::text, p_reply_to_message_id uuid DEFAULT NULL::uuid) RETURNS TABLE(id uuid, event_id text, sender_id uuid, sender_display_name text, message text, message_type text, reply_to_message_id uuid, created_at timestamp with time zone)
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+DECLARE
+  trailing_sender uuid;
+  consecutive_count integer := 0;
+BEGIN
+  PERFORM pg_advisory_xact_lock(
+    hashtextextended(p_event_id || ':' || p_sender_id::text, 0)
+  );
+
+  IF p_reply_to_message_id IS NOT NULL AND NOT EXISTS (
+    SELECT 1
+    FROM public.event_chat_messages reply
+    WHERE reply.id = p_reply_to_message_id
+      AND reply.event_id = p_event_id
+  ) THEN
+    RAISE EXCEPTION 'The reply target does not belong to this event room'
+      USING ERRCODE = '22023';
+  END IF;
+
+  FOR trailing_sender IN
+    SELECT recent.sender_id
+    FROM public.event_chat_messages recent
+    WHERE recent.event_id = p_event_id
+    ORDER BY recent.created_at DESC, recent.id DESC
+    LIMIT 5
+  LOOP
+    IF trailing_sender <> p_sender_id THEN
+      EXIT;
+    END IF;
+    consecutive_count := consecutive_count + 1;
+  END LOOP;
+
+  IF consecutive_count >= 5 THEN
+    RAISE EXCEPTION 'A reply from another attendee is required before you can send another message'
+      USING ERRCODE = 'P0001', DETAIL = 'CHAT_RATE_LIMIT';
+  END IF;
+
+  RETURN QUERY
+  INSERT INTO public.event_chat_messages (
+    event_id,
+    sender_id,
+    sender_display_name,
+    message,
+    message_type,
+    reply_to_message_id
+  )
+  VALUES (
+    p_event_id,
+    p_sender_id,
+    p_sender_display_name,
+    btrim(p_message),
+    p_message_type,
+    p_reply_to_message_id
+  )
+  RETURNING
+    event_chat_messages.id,
+    event_chat_messages.event_id,
+    event_chat_messages.sender_id,
+    event_chat_messages.sender_display_name,
+    event_chat_messages.message,
+    event_chat_messages.message_type,
+    event_chat_messages.reply_to_message_id,
+    event_chat_messages.created_at;
 END;
 $$;
 
@@ -4220,6 +6189,44 @@ $$;
 
 
 --
+-- Name: set_user_pin(uuid, text, text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.set_user_pin(p_user_id uuid, p_verifier text, p_current text DEFAULT NULL::text) RETURNS jsonb
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO ''
+    AS $_$
+DECLARE
+  outcome jsonb;
+  inserted integer;
+BEGIN
+  IF p_verifier IS NULL OR p_verifier !~ '^[0-9a-f]{64}$' THEN
+    RAISE EXCEPTION 'invalid_pin_request' USING ERRCODE = '23514';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.user_pin WHERE user_id = p_user_id) THEN
+    INSERT INTO public.user_pin(user_id, verifier) VALUES (p_user_id, decode(p_verifier, 'hex'))
+      ON CONFLICT (user_id) DO NOTHING;
+    GET DIAGNOSTICS inserted = ROW_COUNT;
+    IF inserted = 1 THEN
+      RETURN jsonb_build_object('ok', true, 'enabled', true, 'remainingAttempts', 5, 'lockedUntil', NULL);
+    END IF;
+  END IF;
+  -- A PIN already exists (possibly created a moment ago by a concurrent request).
+  IF p_current IS NULL THEN
+    RAISE EXCEPTION 'pin_already_set' USING ERRCODE = '23514';
+  END IF;
+  outcome := public.verify_user_pin(p_user_id, p_current);
+  IF NOT (outcome->>'ok')::boolean THEN
+    RETURN outcome;
+  END IF;
+  UPDATE public.user_pin SET verifier = decode(p_verifier, 'hex'), set_at = now(), updated_at = now()
+    WHERE user_id = p_user_id;
+  RETURN outcome;
+END;
+$_$;
+
+
+--
 -- Name: set_users_updated_at(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -4284,6 +6291,107 @@ BEGIN
   RETURN NEW;
 END;
 $$;
+
+
+--
+-- Name: sync_bsl_public_programme(text, text, jsonb, jsonb); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.sync_bsl_public_programme(p_event_id text, p_source_id text, p_speakers jsonb, p_agenda jsonb) RETURNS jsonb
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public', 'pg_temp'
+    AS $_$
+DECLARE
+  v_speaker_count integer;
+  v_agenda_count integer;
+BEGIN
+  IF auth.role() <> 'service_role' THEN
+    RAISE EXCEPTION 'service_role required' USING ERRCODE = '42501';
+  END IF;
+  IF p_event_id !~ '^[a-z0-9-]{2,80}$' OR p_source_id !~ '^[a-z0-9-]{2,100}$' THEN
+    RAISE EXCEPTION 'invalid event or source id' USING ERRCODE = '22023';
+  END IF;
+  v_speaker_count := jsonb_array_length(p_speakers);
+  v_agenda_count := jsonb_array_length(p_agenda);
+  IF v_speaker_count < 10 OR v_speaker_count > 500 OR v_agenda_count < 20 OR v_agenda_count > 1000 THEN
+    RAISE EXCEPTION 'programme size outside safety bounds' USING ERRCODE = '22023';
+  END IF;
+
+  INSERT INTO public.bsl_speakers
+    (event_id, slug, name, title, company, bio, imageurl, is_active,
+     is_accepting_meetings, directory_visible, metadata, updated_at)
+  SELECT p_event_id, x.slug, x.name, x.title, x.company, x.bio, x.imageurl,
+    false, true, true, x.metadata, x.updated_at
+  FROM jsonb_to_recordset(p_speakers) AS x(
+    slug text, name text, title text, company text, bio text, imageurl text,
+    metadata jsonb, updated_at timestamptz
+  )
+  ON CONFLICT (event_id, slug) WHERE slug IS NOT NULL DO UPDATE SET
+    name = EXCLUDED.name,
+    title = EXCLUDED.title,
+    company = EXCLUDED.company,
+    bio = EXCLUDED.bio,
+    imageurl = EXCLUDED.imageurl,
+    is_active = CASE
+      WHEN public.bsl_speakers.user_id IS NULL THEN false
+      ELSE public.bsl_speakers.is_active
+    END,
+    is_accepting_meetings = CASE
+      WHEN public.bsl_speakers.user_id IS NULL THEN true
+      ELSE public.bsl_speakers.is_accepting_meetings
+    END,
+    directory_visible = CASE
+      WHEN public.bsl_speakers.user_id IS NULL THEN true
+      ELSE public.bsl_speakers.directory_visible
+    END,
+    metadata = EXCLUDED.metadata,
+    updated_at = EXCLUDED.updated_at;
+
+  UPDATE public.bsl_speakers speaker
+  SET is_active = false,
+      is_accepting_meetings = false,
+      directory_visible = false,
+      updated_at = now()
+  WHERE speaker.event_id = p_event_id
+    AND speaker.metadata ->> 'source' = p_source_id
+    AND NOT EXISTS (
+      SELECT 1 FROM jsonb_array_elements(p_speakers) item
+      WHERE item ->> 'slug' = speaker.slug
+    );
+
+  INSERT INTO public.event_agenda
+    (id, event_id, source_id, time, title, description, speakers, type,
+     location, day, day_name, updated_at)
+  SELECT x.id, p_event_id, p_source_id, x.time, x.title, x.description,
+    x.speakers, x.type, x.location, x.day, x.day_name, x.updated_at
+  FROM jsonb_to_recordset(p_agenda) AS x(
+    id text, time timestamptz, title text, description text, speakers text[],
+    type text, location text, day text, day_name text, updated_at timestamptz
+  )
+  ON CONFLICT (id) DO UPDATE SET
+    event_id = EXCLUDED.event_id,
+    source_id = EXCLUDED.source_id,
+    time = EXCLUDED.time,
+    title = EXCLUDED.title,
+    description = EXCLUDED.description,
+    speakers = EXCLUDED.speakers,
+    type = EXCLUDED.type,
+    location = EXCLUDED.location,
+    day = EXCLUDED.day,
+    day_name = EXCLUDED.day_name,
+    updated_at = EXCLUDED.updated_at;
+
+  DELETE FROM public.event_agenda agenda
+  WHERE agenda.event_id = p_event_id
+    AND agenda.source_id = p_source_id
+    AND NOT EXISTS (
+      SELECT 1 FROM jsonb_array_elements(p_agenda) item
+      WHERE item ->> 'id' = agenda.id
+    );
+
+  RETURN jsonb_build_object('speakers', v_speaker_count, 'agenda', v_agenda_count);
+END;
+$_$;
 
 
 --
@@ -4387,6 +6495,20 @@ BEGIN
 
   RETURN NEW;
 END;
+$$;
+
+
+--
+-- Name: touch_qr_link(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.touch_qr_link() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END
 $$;
 
 
@@ -4567,6 +6689,48 @@ BEGIN
   RETURN jsonb_build_object('id', v_result_id);
 END;
 $$;
+
+
+--
+-- Name: verify_user_pin(uuid, text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.verify_user_pin(p_user_id uuid, p_candidate text) RETURNS jsonb
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO ''
+    AS $_$
+DECLARE
+  stored public.user_pin;
+  attempts integer;
+  lock_for interval;
+BEGIN
+  IF p_candidate IS NULL OR p_candidate !~ '^[0-9a-f]{64}$' THEN
+    RAISE EXCEPTION 'invalid_pin_request' USING ERRCODE = '23514';
+  END IF;
+  SELECT * INTO stored FROM public.user_pin WHERE user_id = p_user_id FOR UPDATE;
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('ok', false, 'enabled', false, 'remainingAttempts', 0, 'lockedUntil', NULL);
+  END IF;
+  IF stored.locked_until IS NOT NULL AND stored.locked_until > now() THEN
+    RETURN jsonb_build_object('ok', false, 'enabled', true, 'remainingAttempts', 0, 'lockedUntil', stored.locked_until);
+  END IF;
+  IF stored.verifier = decode(p_candidate, 'hex') THEN
+    UPDATE public.user_pin SET failed_attempts = 0, locked_until = NULL,
+      last_verified_at = now(), updated_at = now() WHERE user_id = p_user_id;
+    RETURN jsonb_build_object('ok', true, 'enabled', true, 'remainingAttempts', 5, 'lockedUntil', NULL);
+  END IF;
+  attempts := stored.failed_attempts + 1;
+  IF attempts >= 5 THEN
+    lock_for := least(interval '1 hour', interval '30 seconds' * power(2, least(attempts - 5, 7))::integer);
+  END IF;
+  UPDATE public.user_pin SET failed_attempts = attempts, updated_at = now(),
+    locked_until = CASE WHEN lock_for IS NULL THEN NULL ELSE now() + lock_for END
+    WHERE user_id = p_user_id;
+  RETURN jsonb_build_object('ok', false, 'enabled', true,
+    'remainingAttempts', greatest(0, 5 - attempts),
+    'lockedUntil', CASE WHEN lock_for IS NULL THEN NULL ELSE now() + lock_for END);
+END;
+$_$;
 
 
 --
@@ -4769,11 +6933,92 @@ CREATE TABLE public.bsl_speakers (
     session_time text,
     session_title text,
     session_type text,
-    is_active boolean DEFAULT true,
+    is_active boolean DEFAULT false,
     is_accepting_meetings boolean DEFAULT true,
     metadata jsonb DEFAULT '{}'::jsonb,
     created_at timestamp with time zone DEFAULT now(),
-    updated_at timestamp with time zone DEFAULT now()
+    updated_at timestamp with time zone DEFAULT now(),
+    imageurl text,
+    linkedin text,
+    twitter text,
+    tags text[],
+    availability jsonb,
+    event_id text DEFAULT 'bsl2025'::text NOT NULL,
+    directory_visible boolean DEFAULT true NOT NULL
+);
+
+
+--
+-- Name: business_invite_approvers; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.business_invite_approvers (
+    email_hash text NOT NULL,
+    label text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT business_invite_approvers_label_check CHECK (((length(btrim(label)) >= 1) AND (length(btrim(label)) <= 120)))
+);
+
+
+--
+-- Name: business_invite_campaign_events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.business_invite_campaign_events (
+    campaign_id uuid NOT NULL,
+    event_id text NOT NULL
+);
+
+
+--
+-- Name: business_invite_campaigns; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.business_invite_campaigns (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    event_id text NOT NULL,
+    code_hash text NOT NULL,
+    label text NOT NULL,
+    max_claims integer,
+    claimed_count integer DEFAULT 0 NOT NULL,
+    expires_at timestamp with time zone,
+    is_active boolean DEFAULT true NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT business_invite_campaigns_check CHECK (((max_claims IS NULL) OR (claimed_count <= max_claims))),
+    CONSTRAINT business_invite_campaigns_claimed_count_check CHECK ((claimed_count >= 0)),
+    CONSTRAINT business_invite_campaigns_label_check CHECK (((length(btrim(label)) >= 1) AND (length(btrim(label)) <= 160))),
+    CONSTRAINT business_invite_campaigns_max_claims_check CHECK (((max_claims IS NULL) OR (max_claims > 0)))
+);
+
+
+--
+-- Name: business_invite_claims; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.business_invite_claims (
+    campaign_id uuid NOT NULL,
+    user_id uuid NOT NULL,
+    pass_id text NOT NULL,
+    claimed_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: business_invite_requests; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.business_invite_requests (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    campaign_id uuid NOT NULL,
+    user_id uuid NOT NULL,
+    status text DEFAULT 'pending'::text NOT NULL,
+    requested_at timestamp with time zone DEFAULT now() NOT NULL,
+    reviewed_at timestamp with time zone,
+    reviewed_by uuid,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT business_invite_requests_check CHECK ((((status = 'pending'::text) AND (reviewed_at IS NULL) AND (reviewed_by IS NULL)) OR ((status = ANY (ARRAY['approved'::text, 'rejected'::text])) AND (reviewed_at IS NOT NULL) AND (reviewed_by IS NOT NULL)))),
+    CONSTRAINT business_invite_requests_status_check CHECK ((status = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text])))
 );
 
 
@@ -4785,6 +7030,59 @@ CREATE TABLE public.chat_last_seen (
     id uuid DEFAULT extensions.uuid_generate_v4() NOT NULL,
     user_id uuid NOT NULL,
     last_seen_at timestamp with time zone DEFAULT now()
+);
+
+
+--
+-- Name: contact_network_profiles; Type: VIEW; Schema: public; Owner: -
+--
+
+CREATE VIEW public.contact_network_profiles AS
+SELECT
+    NULL::uuid AS id,
+    NULL::text AS name,
+    NULL::text AS role,
+    NULL::text AS company,
+    NULL::text[] AS topics,
+    NULL::boolean AS discoverable,
+    NULL::boolean AS leaderboard,
+    NULL::uuid AS share_id,
+    NULL::integer AS connections,
+    NULL::integer AS points;
+
+
+--
+-- Name: contact_profiles; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.contact_profiles (
+    id uuid NOT NULL,
+    name text NOT NULL,
+    role text DEFAULT ''::text NOT NULL,
+    company text DEFAULT ''::text NOT NULL,
+    topics text[] DEFAULT '{}'::text[] NOT NULL,
+    discoverable boolean DEFAULT false NOT NULL,
+    leaderboard boolean DEFAULT false NOT NULL,
+    share_id uuid DEFAULT gen_random_uuid() NOT NULL,
+    CONSTRAINT contact_profiles_company_check CHECK ((length(company) <= 100)),
+    CONSTRAINT contact_profiles_name_check CHECK (((length(btrim(name)) >= 1) AND (length(btrim(name)) <= 80))),
+    CONSTRAINT contact_profiles_role_check CHECK ((length(role) <= 100)),
+    CONSTRAINT contact_profiles_topics_check CHECK (((cardinality(topics) <= 5) AND (topics <@ ARRAY['AI'::text, 'Web3'::text, 'Design'::text, 'Startups'::text, 'Payments'::text, 'DeFi'::text, 'Infrastructure'::text, 'Gaming'::text, 'Policy'::text, 'Community'::text])))
+);
+
+
+--
+-- Name: contact_requests; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.contact_requests (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    sender uuid NOT NULL,
+    recipient uuid NOT NULL,
+    status text DEFAULT 'pending'::text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT contact_requests_check CHECK ((sender <> recipient)),
+    CONSTRAINT contact_requests_status_check CHECK ((status = ANY (ARRAY['pending'::text, 'accepted'::text, 'declined'::text, 'cancelled'::text])))
 );
 
 
@@ -5526,6 +7824,26 @@ CREATE TABLE public.email_sent_log (
 
 
 --
+-- Name: event_account_grants; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.event_account_grants (
+    event_id text NOT NULL,
+    email_normalized text NOT NULL,
+    pass_type text NOT NULL,
+    speaker_id uuid,
+    event_role public.event_role,
+    configured_by uuid NOT NULL,
+    claimed_user_id uuid,
+    claimed_at timestamp with time zone,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT event_account_grants_email_normalized_check CHECK ((email_normalized = lower(btrim(email_normalized)))),
+    CONSTRAINT event_account_grants_event_role_check CHECK ((event_role = ANY (ARRAY['event_admin'::public.event_role, 'moderator'::public.event_role]))),
+    CONSTRAINT event_account_grants_pass_type_check CHECK ((pass_type = ANY (ARRAY['general'::text, 'business'::text, 'vip'::text])))
+);
+
+
+--
 -- Name: event_agenda; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -5542,7 +7860,104 @@ CREATE TABLE public.event_agenda (
     day_name text,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    source_id text,
     CONSTRAINT event_agenda_type_check CHECK ((type = ANY (ARRAY['keynote'::text, 'panel'::text, 'workshop'::text, 'networking'::text, 'break'::text, 'registration'::text, 'meal'::text])))
+);
+
+
+--
+-- Name: event_auth_allies; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.event_auth_allies (
+    event_id text NOT NULL,
+    allowed_ally_ids text[] DEFAULT ARRAY['hash-poker-room'::text] NOT NULL,
+    updated_by uuid,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT event_auth_allies_allowed_ids_nonempty CHECK ((cardinality(allowed_ally_ids) >= 1)),
+    CONSTRAINT event_auth_allies_hash_poker_required CHECK (('hash-poker-room'::text = ANY (allowed_ally_ids)))
+);
+
+
+--
+-- Name: event_chat_direct_messages; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.event_chat_direct_messages (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    event_id text NOT NULL,
+    sender_id uuid NOT NULL,
+    recipient_id uuid NOT NULL,
+    sender_display_name text,
+    message text NOT NULL,
+    message_type text DEFAULT 'text'::text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    reply_to_message_id uuid,
+    CONSTRAINT event_chat_direct_messages_check CHECK ((sender_id <> recipient_id)),
+    CONSTRAINT event_chat_direct_messages_message_check CHECK (((char_length(btrim(message)) >= 1) AND (char_length(btrim(message)) <= 2000))),
+    CONSTRAINT event_chat_direct_messages_message_type_check CHECK ((message_type = ANY (ARRAY['text'::text, 'emoji'::text]))),
+    CONSTRAINT event_chat_direct_messages_sender_display_name_check CHECK (((sender_display_name IS NULL) OR ((char_length(btrim(sender_display_name)) >= 1) AND (char_length(btrim(sender_display_name)) <= 80))))
+);
+
+ALTER TABLE ONLY public.event_chat_direct_messages REPLICA IDENTITY FULL;
+
+
+--
+-- Name: event_chat_messages; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.event_chat_messages (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    event_id text NOT NULL,
+    sender_id uuid NOT NULL,
+    sender_display_name text,
+    message text NOT NULL,
+    message_type text DEFAULT 'text'::text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    reply_to_message_id uuid,
+    CONSTRAINT event_chat_messages_message_check CHECK (((char_length(btrim(message)) >= 1) AND (char_length(btrim(message)) <= 2000))),
+    CONSTRAINT event_chat_messages_message_type_check CHECK ((message_type = ANY (ARRAY['text'::text, 'emoji'::text]))),
+    CONSTRAINT event_chat_messages_sender_display_name_check CHECK (((sender_display_name IS NULL) OR ((char_length(btrim(sender_display_name)) >= 1) AND (char_length(btrim(sender_display_name)) <= 80))))
+);
+
+ALTER TABLE ONLY public.event_chat_messages REPLICA IDENTITY FULL;
+
+
+--
+-- Name: event_chat_presence; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.event_chat_presence (
+    event_id text NOT NULL,
+    user_id uuid NOT NULL,
+    last_seen_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: event_chat_rooms; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.event_chat_rooms (
+    event_id text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: event_ingestion_reviews; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.event_ingestion_reviews (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    source_id text NOT NULL,
+    external_id text NOT NULL,
+    observation_id uuid,
+    decision text NOT NULL,
+    reason text,
+    reviewed_by uuid NOT NULL,
+    reviewed_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT event_ingestion_reviews_decision_check CHECK ((decision = ANY (ARRAY['approved'::text, 'rejected'::text])))
 );
 
 
@@ -5588,6 +8003,42 @@ CREATE TABLE public.event_roles (
 
 
 --
+-- Name: event_source_sync_runs; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.event_source_sync_runs (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    source_id text NOT NULL,
+    attempted_at timestamp with time zone NOT NULL,
+    finished_at timestamp with time zone DEFAULT now() NOT NULL,
+    status text NOT NULL,
+    event_count integer DEFAULT 0 NOT NULL,
+    error_summary text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT event_source_sync_runs_status_check CHECK ((status = ANY (ARRAY['healthy'::text, 'degraded'::text, 'failed'::text])))
+);
+
+
+--
+-- Name: event_sources; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.event_sources (
+    id text NOT NULL,
+    name text NOT NULL,
+    base_url text NOT NULL,
+    adapter text NOT NULL,
+    active boolean DEFAULT true NOT NULL,
+    poll_interval_minutes integer DEFAULT 360 NOT NULL,
+    last_success_at timestamp with time zone,
+    consecutive_failures integer DEFAULT 0 NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT event_sources_poll_interval_minutes_check CHECK (((poll_interval_minutes >= 15) AND (poll_interval_minutes <= 10080)))
+);
+
+
+--
 -- Name: events; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -5609,8 +8060,59 @@ CREATE TABLE public.events (
     created_by uuid,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    is_demo boolean DEFAULT false NOT NULL,
+    search_aliases text[] DEFAULT ARRAY[]::text[] NOT NULL,
     CONSTRAINT events_date_order CHECK (((ends_at IS NULL) OR (starts_at IS NULL) OR (ends_at >= starts_at))),
     CONSTRAINT events_status_check CHECK ((status = ANY (ARRAY['draft'::text, 'published'::text, 'archived'::text])))
+);
+
+
+--
+-- Name: COLUMN events.search_aliases; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.events.search_aliases IS 'Canonical alternative names and hashtag-style discovery terms for event search.';
+
+
+--
+-- Name: external_event_observations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.external_event_observations (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    sync_run_id uuid NOT NULL,
+    source_id text NOT NULL,
+    external_id text NOT NULL,
+    observed_at timestamp with time zone NOT NULL,
+    payload_hash text NOT NULL,
+    normalized_payload jsonb NOT NULL,
+    confidence numeric(4,3) NOT NULL,
+    needs_review boolean NOT NULL
+);
+
+
+--
+-- Name: external_events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.external_events (
+    source_id text NOT NULL,
+    external_id text NOT NULL,
+    source_status text NOT NULL,
+    publication_status text DEFAULT 'pending'::text NOT NULL,
+    normalized_payload jsonb NOT NULL,
+    candidate_payload jsonb,
+    confidence numeric(4,3) NOT NULL,
+    first_seen_at timestamp with time zone DEFAULT now() NOT NULL,
+    last_seen_at timestamp with time zone DEFAULT now() NOT NULL,
+    published_at timestamp with time zone,
+    reviewed_at timestamp with time zone,
+    reviewed_by uuid,
+    review_reason text,
+    last_reviewed_payload_hash text,
+    CONSTRAINT external_events_confidence_check CHECK (((confidence >= (0)::numeric) AND (confidence <= (1)::numeric))),
+    CONSTRAINT external_events_publication_status_check CHECK ((publication_status = ANY (ARRAY['pending'::text, 'published'::text, 'needs_review'::text, 'rejected'::text]))),
+    CONSTRAINT external_events_source_status_check CHECK ((source_status = ANY (ARRAY['upcoming'::text, 'live'::text, 'past'::text, 'stale'::text, 'cancelled'::text])))
 );
 
 
@@ -5622,6 +8124,57 @@ CREATE TABLE public.hashpass_schema_migrations (
     id text NOT NULL,
     file_path text NOT NULL,
     applied_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: invite_scan_events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.invite_scan_events (
+    id bigint NOT NULL,
+    invite_code text NOT NULL,
+    scanned_at timestamp with time zone DEFAULT now() NOT NULL,
+    device_type text NOT NULL,
+    bot_classification text NOT NULL,
+    CONSTRAINT invite_scan_events_bot_classification_check CHECK ((bot_classification = ANY (ARRAY['human'::text, 'bot'::text]))),
+    CONSTRAINT invite_scan_events_invite_code_check CHECK ((invite_code ~ '^[A-Za-z0-9_-]{1,64}$'::text))
+);
+
+
+--
+-- Name: TABLE invite_scan_events; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.invite_scan_events IS 'Invite URL GET visits since tracking was enabled; includes shared-link opens and classified bots, not proven camera scans. HEAD and prefetch requests excluded.';
+
+
+--
+-- Name: invite_scan_events_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+ALTER TABLE public.invite_scan_events ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME public.invite_scan_events_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
+-- Name: jwks; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.jwks (
+    id text NOT NULL,
+    "publicKey" text NOT NULL,
+    "privateKey" text NOT NULL,
+    "createdAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "expiresAt" timestamp with time zone,
+    alg text,
+    crv text
 );
 
 
@@ -5727,7 +8280,7 @@ CREATE TABLE public.notifications (
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     level text DEFAULT 'info'::text NOT NULL,
     CONSTRAINT notifications_level_check CHECK ((level = ANY (ARRAY['info'::text, 'important'::text, 'critical'::text]))),
-    CONSTRAINT notifications_type_check CHECK ((type = ANY (ARRAY['meeting_request'::text, 'meeting_accepted'::text, 'meeting_declined'::text, 'meeting_reminder'::text, 'meeting_expired'::text, 'meeting_cancelled'::text, 'boost_received'::text, 'system_alert'::text, 'chat_message'::text])))
+    CONSTRAINT notifications_type_check CHECK ((type = ANY (ARRAY['meeting_request'::text, 'meeting_accepted'::text, 'meeting_declined'::text, 'meeting_reminder'::text, 'meeting_expired'::text, 'meeting_cancelled'::text, 'boost_received'::text, 'system_alert'::text, 'chat_message'::text, 'business_invite_pending'::text, 'business_invite_review_required'::text, 'business_invite_rejected'::text, 'business_invite_approved'::text])))
 );
 
 
@@ -5739,18 +8292,199 @@ COMMENT ON COLUMN public.notifications.level IS 'Delivery severity: info stays i
 
 
 --
+-- Name: oauthAccessToken; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public."oauthAccessToken" (
+    id text NOT NULL,
+    token text NOT NULL,
+    "clientId" text NOT NULL,
+    "sessionId" text,
+    "userId" text,
+    "referenceId" text,
+    "authorizationCodeId" text,
+    resources jsonb,
+    "requestedUserInfoClaims" jsonb,
+    "refreshId" text,
+    "expiresAt" timestamp with time zone NOT NULL,
+    "createdAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    revoked timestamp with time zone,
+    confirmation jsonb,
+    scopes jsonb NOT NULL
+);
+
+
+--
+-- Name: oauthClient; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public."oauthClient" (
+    id text NOT NULL,
+    "clientId" text NOT NULL,
+    "clientSecret" text,
+    "clientDiscoveryId" text,
+    disabled boolean DEFAULT false,
+    "skipConsent" boolean,
+    "enableEndSession" boolean,
+    "subjectType" text,
+    scopes jsonb,
+    "clientCredentialsScopes" jsonb DEFAULT '[]'::jsonb,
+    "userId" text,
+    "createdAt" timestamp with time zone,
+    "updatedAt" timestamp with time zone,
+    name text,
+    uri text,
+    icon text,
+    contacts jsonb,
+    tos text,
+    policy text,
+    "softwareId" text,
+    "softwareVersion" text,
+    "softwareStatement" text,
+    "redirectUris" jsonb NOT NULL,
+    "postLogoutRedirectUris" jsonb,
+    "backchannelLogoutUri" text,
+    "backchannelLogoutSessionRequired" boolean,
+    "tokenEndpointAuthMethod" text,
+    "applicationType" text,
+    jwks text,
+    "jwksUri" text,
+    "grantTypes" jsonb,
+    "responseTypes" jsonb,
+    "requirePKCE" boolean,
+    "dpopBoundAccessTokens" boolean DEFAULT false,
+    "referenceId" text,
+    metadata jsonb
+);
+
+
+--
+-- Name: oauthClientAssertion; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public."oauthClientAssertion" (
+    id text NOT NULL,
+    "expiresAt" timestamp with time zone NOT NULL
+);
+
+
+--
+-- Name: oauthClientResource; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public."oauthClientResource" (
+    id text NOT NULL,
+    "clientId" text NOT NULL,
+    "resourceId" text NOT NULL,
+    metadata jsonb,
+    "createdAt" timestamp with time zone
+);
+
+
+--
+-- Name: oauthConsent; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public."oauthConsent" (
+    id text NOT NULL,
+    "clientId" text NOT NULL,
+    "userId" text,
+    "referenceId" text,
+    resources jsonb,
+    "requestedUserInfoClaims" jsonb,
+    scopes jsonb NOT NULL,
+    "createdAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+--
+-- Name: oauthRefreshToken; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public."oauthRefreshToken" (
+    id text NOT NULL,
+    token text NOT NULL,
+    "clientId" text NOT NULL,
+    "sessionId" text,
+    "userId" text NOT NULL,
+    "referenceId" text,
+    "authorizationCodeId" text,
+    resources jsonb,
+    "requestedUserInfoClaims" jsonb,
+    "expiresAt" timestamp with time zone NOT NULL,
+    "createdAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    revoked timestamp with time zone,
+    "rotatedAt" timestamp with time zone,
+    "rotationReplayResponse" text,
+    "rotationReplayExpiresAt" timestamp with time zone,
+    "authTime" timestamp with time zone,
+    confirmation jsonb,
+    scopes jsonb NOT NULL
+);
+
+
+--
+-- Name: oauthResource; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public."oauthResource" (
+    id text NOT NULL,
+    identifier text NOT NULL,
+    name text NOT NULL,
+    "accessTokenTtl" integer,
+    "refreshTokenTtl" integer,
+    "signingAlgorithm" text,
+    "signingKeyId" text,
+    "allowedScopes" jsonb,
+    "customClaims" jsonb,
+    "dpopBoundAccessTokensRequired" boolean DEFAULT false,
+    disabled boolean DEFAULT false,
+    "createdAt" timestamp with time zone,
+    "updatedAt" timestamp with time zone,
+    "policyVersion" integer DEFAULT 1,
+    metadata jsonb
+);
+
+
+--
 -- Name: otp_codes; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.otp_codes (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     email text NOT NULL,
-    code text NOT NULL,
     token_hash text NOT NULL,
     expires_at timestamp with time zone DEFAULT (now() + '01:00:00'::interval) NOT NULL,
     used boolean DEFAULT false,
-    created_at timestamp with time zone DEFAULT now()
+    created_at timestamp with time zone DEFAULT now(),
+    code_hmac text,
+    purpose text DEFAULT 'email-login'::text NOT NULL,
+    attempt_count smallint DEFAULT 0 NOT NULL,
+    CONSTRAINT otp_codes_attempt_count_check CHECK (((attempt_count >= 0) AND (attempt_count <= 5))),
+    CONSTRAINT otp_codes_purpose_check CHECK ((purpose = ANY (ARRAY['email-login'::text, 'account-delete'::text])))
 );
+
+
+--
+-- Name: TABLE otp_codes; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.otp_codes IS 'Canonical server-only email OTP challenges. Raw OTP codes are never stored; code_hmac is consumed atomically by consume_email_otp.';
+
+
+--
+-- Name: COLUMN otp_codes.token_hash; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.otp_codes.token_hash IS 'Server-only GoTrue token material required to exchange a verified OTP for a session.';
+
+
+--
+-- Name: COLUMN otp_codes.code_hmac; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.otp_codes.code_hmac IS 'HMAC-SHA256 verifier for the short-lived code; keyed with the server service secret and never exposed to clients.';
 
 
 --
@@ -5823,7 +8557,15 @@ CREATE TABLE public.passes (
     metadata jsonb DEFAULT '{}'::jsonb,
     is_active boolean DEFAULT true,
     created_at timestamp with time zone DEFAULT now(),
-    updated_at timestamp with time zone DEFAULT now()
+    updated_at timestamp with time zone DEFAULT now(),
+    pass_type public.pass_type DEFAULT 'general'::public.pass_type NOT NULL,
+    status text DEFAULT 'active'::text NOT NULL,
+    max_meeting_requests integer DEFAULT 10 NOT NULL,
+    used_meeting_requests integer DEFAULT 0 NOT NULL,
+    max_boost_amount numeric DEFAULT 100 NOT NULL,
+    used_boost_amount numeric DEFAULT 0 NOT NULL,
+    access_features text[] DEFAULT '{}'::text[] NOT NULL,
+    special_perks text[] DEFAULT '{}'::text[] NOT NULL
 );
 
 
@@ -5867,6 +8609,165 @@ CREATE TABLE public.profiles (
 
 
 --
+-- Name: published_external_events; Type: VIEW; Schema: public; Owner: -
+--
+
+CREATE VIEW public.published_external_events WITH (security_invoker='true') AS
+ SELECT source_id,
+    external_id,
+    normalized_payload,
+    confidence,
+    last_seen_at,
+    published_at
+   FROM public.external_events
+  WHERE ((publication_status = 'published'::text) AND (source_status = ANY (ARRAY['upcoming'::text, 'live'::text])));
+
+
+--
+-- Name: qr_auth_challenges; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.qr_auth_challenges (
+    id text NOT NULL,
+    browser_binding_hash text NOT NULL,
+    state_hash text NOT NULL,
+    code_challenge text NOT NULL,
+    status public.qr_auth_status DEFAULT 'pending'::public.qr_auth_status NOT NULL,
+    expires_at timestamp with time zone NOT NULL,
+    approved_by_user_id uuid,
+    authorization_code_hash text,
+    authorization_code_secret text,
+    consumed_at timestamp with time zone,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT qr_auth_challenges_check CHECK ((expires_at <= (created_at + '00:05:00'::interval))),
+    CONSTRAINT qr_auth_challenges_id_check CHECK ((char_length(id) >= 32))
+);
+
+
+--
+-- Name: qr_auth_events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.qr_auth_events (
+    id bigint NOT NULL,
+    challenge_id text NOT NULL,
+    type text NOT NULL,
+    actor_id uuid,
+    metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: qr_auth_events_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+ALTER TABLE public.qr_auth_events ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME public.qr_auth_events_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
+-- Name: qr_link_audit_events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.qr_link_audit_events (
+    id bigint NOT NULL,
+    qr_link_id uuid NOT NULL,
+    actor_id uuid,
+    event_type text NOT NULL,
+    before_summary jsonb,
+    after_summary jsonb,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: qr_link_audit_events_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+ALTER TABLE public.qr_link_audit_events ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME public.qr_link_audit_events_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
+-- Name: qr_links; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.qr_links (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    owner_id uuid NOT NULL,
+    organization_id uuid,
+    public_slug text NOT NULL,
+    name text NOT NULL,
+    description text,
+    destination_url text NOT NULL,
+    campaign_source text,
+    campaign_medium text,
+    campaign_name text,
+    campaign_term text,
+    campaign_content text,
+    visual_config jsonb DEFAULT '{"logo": false, "margin": 4, "modules": "square", "logoSize": 18, "finderEye": "rounded", "background": "#ffffff", "foreground": "#071426", "errorCorrection": "Q"}'::jsonb NOT NULL,
+    status public.qr_link_status DEFAULT 'active'::public.qr_link_status NOT NULL,
+    expires_at timestamp with time zone,
+    archived_at timestamp with time zone,
+    deleted_at timestamp with time zone,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    starts_at timestamp with time zone,
+    CONSTRAINT qr_links_availability_window_chk CHECK (((starts_at IS NULL) OR (expires_at IS NULL) OR (starts_at < expires_at))),
+    CONSTRAINT qr_links_description_check CHECK ((char_length(description) <= 1000)),
+    CONSTRAINT qr_links_name_check CHECK (((char_length(name) >= 1) AND (char_length(name) <= 120))),
+    CONSTRAINT qr_links_public_slug_check CHECK ((public_slug ~ '^[A-Za-z0-9_-]{3,48}$'::text))
+);
+
+
+--
+-- Name: qr_scan_events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.qr_scan_events (
+    id bigint NOT NULL,
+    qr_link_id uuid NOT NULL,
+    scanned_at timestamp with time zone DEFAULT now() NOT NULL,
+    visitor_hash text NOT NULL,
+    country text,
+    city text,
+    device_type text DEFAULT 'unknown'::text NOT NULL,
+    os text,
+    browser text,
+    referrer text,
+    bot_classification text DEFAULT 'unknown'::text NOT NULL,
+    campaign jsonb DEFAULT '{}'::jsonb NOT NULL
+);
+
+
+--
+-- Name: qr_scan_events_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+ALTER TABLE public.qr_scan_events ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME public.qr_scan_events_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
 -- Name: reward_transactions; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -5900,6 +8801,75 @@ CREATE TABLE public.session (
     "ipAddress" text,
     "userAgent" text,
     "userId" text NOT NULL
+);
+
+
+--
+-- Name: sms_auth_challenges; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.sms_auth_challenges (
+    id uuid NOT NULL,
+    user_id uuid,
+    email_lookup_hmac text NOT NULL,
+    phone_lookup_hmac text NOT NULL,
+    phone_last4 text NOT NULL,
+    purpose text NOT NULL,
+    code_hmac text NOT NULL,
+    attempt_count smallint DEFAULT 0 NOT NULL,
+    delivery_count smallint DEFAULT 1 NOT NULL,
+    phone_verified_at timestamp with time zone,
+    consumed_at timestamp with time zone,
+    expires_at timestamp with time zone NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT sms_auth_challenges_attempt_count_check CHECK (((attempt_count >= 0) AND (attempt_count <= 5))),
+    CONSTRAINT sms_auth_challenges_check CHECK (((purpose = 'enrollment'::text) = (user_id IS NOT NULL))),
+    CONSTRAINT sms_auth_challenges_code_hmac_check CHECK ((code_hmac ~ '^[0-9a-f]{64}$'::text)),
+    CONSTRAINT sms_auth_challenges_delivery_count_check CHECK (((delivery_count >= 1) AND (delivery_count <= 3))),
+    CONSTRAINT sms_auth_challenges_email_lookup_hmac_check CHECK ((email_lookup_hmac ~ '^[0-9a-f]{64}$'::text)),
+    CONSTRAINT sms_auth_challenges_phone_last4_check CHECK ((phone_last4 ~ '^[0-9]{4}$'::text)),
+    CONSTRAINT sms_auth_challenges_phone_lookup_hmac_check CHECK ((phone_lookup_hmac ~ '^[0-9a-f]{64}$'::text)),
+    CONSTRAINT sms_auth_challenges_purpose_check CHECK ((purpose = ANY (ARRAY['enrollment'::text, 'registration'::text])))
+);
+
+
+--
+-- Name: TABLE sms_auth_challenges; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.sms_auth_challenges IS 'Short-lived server-only SMS challenges with keyed OTP verifiers and locked attempt accounting.';
+
+
+--
+-- Name: sms_delivery_rate_limits; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.sms_delivery_rate_limits (
+    phone_lookup_hmac text NOT NULL,
+    window_started_at timestamp with time zone NOT NULL,
+    request_count smallint DEFAULT 1 NOT NULL,
+    CONSTRAINT sms_delivery_rate_limits_phone_lookup_hmac_check CHECK ((phone_lookup_hmac ~ '^[0-9a-f]{64}$'::text)),
+    CONSTRAINT sms_delivery_rate_limits_request_count_check CHECK (((request_count > 0) AND (request_count <= 3)))
+);
+
+
+--
+-- Name: speaker_claim_requests; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.speaker_claim_requests (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    speaker_id text NOT NULL,
+    event_id text NOT NULL,
+    requester_user_id uuid NOT NULL,
+    status text DEFAULT 'pending'::text NOT NULL,
+    request_note text,
+    reviewed_by uuid,
+    review_note text,
+    reviewed_at timestamp with time zone,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT speaker_claim_requests_status_check CHECK ((status = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text])))
 );
 
 
@@ -5967,7 +8937,8 @@ CREATE TABLE public.support_idempotency_keys (
     key text NOT NULL,
     response_status integer NOT NULL,
     response_body jsonb NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    visitor_id uuid NOT NULL
 );
 
 
@@ -6162,6 +9133,57 @@ CREATE TABLE public.user_chat_keys (
 
 
 --
+-- Name: user_phone_authenticators; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.user_phone_authenticators (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid NOT NULL,
+    phone_lookup_hmac text NOT NULL,
+    phone_last4 text NOT NULL,
+    verified_at timestamp with time zone DEFAULT now() NOT NULL,
+    last_used_at timestamp with time zone,
+    revoked_at timestamp with time zone,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT user_phone_authenticators_phone_last4_check CHECK ((phone_last4 ~ '^[0-9]{4}$'::text)),
+    CONSTRAINT user_phone_authenticators_phone_lookup_hmac_check CHECK ((phone_lookup_hmac ~ '^[0-9a-f]{64}$'::text))
+);
+
+
+--
+-- Name: TABLE user_phone_authenticators; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.user_phone_authenticators IS 'Server-only verified SMS authenticators; phone values are keyed HMAC lookups, never plaintext.';
+
+
+--
+-- Name: user_pin; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.user_pin (
+    user_id uuid NOT NULL,
+    verifier bytea NOT NULL,
+    kdf_version smallint DEFAULT 1 NOT NULL,
+    failed_attempts integer DEFAULT 0 NOT NULL,
+    locked_until timestamp with time zone,
+    set_at timestamp with time zone DEFAULT now() NOT NULL,
+    last_verified_at timestamp with time zone,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT user_pin_failed_attempts_check CHECK ((failed_attempts >= 0)),
+    CONSTRAINT user_pin_verifier_check CHECK ((octet_length(verifier) = 32))
+);
+
+
+--
+-- Name: TABLE user_pin; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.user_pin IS 'Peppered 4-digit PIN verifier plus lockout state. The verifier is never readable by any API role; use verify_user_pin().';
+
+
+--
 -- Name: user_profiles; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -6231,6 +9253,39 @@ CREATE TABLE public.user_schedule_shares (
     share_token text DEFAULT encode(extensions.gen_random_bytes(16), 'hex'::text) NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL
 );
+
+
+--
+-- Name: user_setup; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.user_setup (
+    user_id uuid NOT NULL,
+    status text DEFAULT 'not_started'::text NOT NULL,
+    step smallint DEFAULT 0 NOT NULL,
+    goals text[] DEFAULT '{}'::text[] NOT NULL,
+    topics text[] DEFAULT '{}'::text[] NOT NULL,
+    privacy_scope text DEFAULT 'private'::text NOT NULL,
+    consent_version smallint,
+    consented_at timestamp with time zone,
+    completed_at timestamp with time zone,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT user_setup_check CHECK (((status <> 'complete'::text) OR ((completed_at IS NOT NULL) AND (consent_version IS NOT NULL) AND (consented_at IS NOT NULL)))),
+    CONSTRAINT user_setup_consent_version_check CHECK ((consent_version > 0)),
+    CONSTRAINT user_setup_goals_check CHECK (((cardinality(goals) <= 3) AND (goals <@ ARRAY['hire'::text, 'get_hired'::text, 'cofounders'::text, 'learn'::text, 'investors'::text, 'friends'::text]))),
+    CONSTRAINT user_setup_privacy_scope_check CHECK ((privacy_scope = ANY (ARRAY['private'::text, 'public'::text]))),
+    CONSTRAINT user_setup_status_check CHECK ((status = ANY (ARRAY['not_started'::text, 'in_progress'::text, 'complete'::text]))),
+    CONSTRAINT user_setup_step_check CHECK (((step >= 0) AND (step <= 3))),
+    CONSTRAINT user_setup_topics_check CHECK (((cardinality(topics) <= 5) AND (topics <@ ARRAY['AI'::text, 'Web3'::text, 'Design'::text, 'Startups'::text, 'Payments'::text, 'DeFi'::text, 'Infrastructure'::text, 'Gaming'::text, 'Policy'::text, 'Community'::text])))
+);
+
+
+--
+-- Name: TABLE user_setup; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.user_setup IS 'Per-user first-run setup: goals, topics, privacy scope and versioned consent. Server-only.';
 
 
 --
@@ -6421,14 +9476,6 @@ ALTER TABLE ONLY public.bsl_speakers
 
 
 --
--- Name: bsl_speakers bsl_speakers_slug_key; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.bsl_speakers
-    ADD CONSTRAINT bsl_speakers_slug_key UNIQUE (slug);
-
-
---
 -- Name: bsl_tickets bsl_tickets_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -6437,11 +9484,91 @@ ALTER TABLE ONLY public.bsl_tickets
 
 
 --
+-- Name: business_invite_approvers business_invite_approvers_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.business_invite_approvers
+    ADD CONSTRAINT business_invite_approvers_pkey PRIMARY KEY (email_hash);
+
+
+--
+-- Name: business_invite_campaign_events business_invite_campaign_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.business_invite_campaign_events
+    ADD CONSTRAINT business_invite_campaign_events_pkey PRIMARY KEY (campaign_id, event_id);
+
+
+--
+-- Name: business_invite_campaigns business_invite_campaigns_code_hash_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.business_invite_campaigns
+    ADD CONSTRAINT business_invite_campaigns_code_hash_key UNIQUE (code_hash);
+
+
+--
+-- Name: business_invite_campaigns business_invite_campaigns_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.business_invite_campaigns
+    ADD CONSTRAINT business_invite_campaigns_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: business_invite_claims business_invite_claims_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.business_invite_claims
+    ADD CONSTRAINT business_invite_claims_pkey PRIMARY KEY (campaign_id, user_id);
+
+
+--
+-- Name: business_invite_requests business_invite_requests_campaign_id_user_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.business_invite_requests
+    ADD CONSTRAINT business_invite_requests_campaign_id_user_id_key UNIQUE (campaign_id, user_id);
+
+
+--
+-- Name: business_invite_requests business_invite_requests_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.business_invite_requests
+    ADD CONSTRAINT business_invite_requests_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: chat_last_seen chat_last_seen_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.chat_last_seen
     ADD CONSTRAINT chat_last_seen_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: contact_profiles contact_profiles_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.contact_profiles
+    ADD CONSTRAINT contact_profiles_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: contact_profiles contact_profiles_share_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.contact_profiles
+    ADD CONSTRAINT contact_profiles_share_id_key UNIQUE (share_id);
+
+
+--
+-- Name: contact_requests contact_requests_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.contact_requests
+    ADD CONSTRAINT contact_requests_pkey PRIMARY KEY (id);
 
 
 --
@@ -6717,11 +9844,75 @@ ALTER TABLE ONLY public.email_sent_log
 
 
 --
+-- Name: event_account_grants event_account_grants_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.event_account_grants
+    ADD CONSTRAINT event_account_grants_pkey PRIMARY KEY (event_id, email_normalized);
+
+
+--
+-- Name: event_account_grants event_account_grants_speaker_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.event_account_grants
+    ADD CONSTRAINT event_account_grants_speaker_id_key UNIQUE (speaker_id);
+
+
+--
 -- Name: event_agenda event_agenda_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.event_agenda
     ADD CONSTRAINT event_agenda_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: event_auth_allies event_auth_allies_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.event_auth_allies
+    ADD CONSTRAINT event_auth_allies_pkey PRIMARY KEY (event_id);
+
+
+--
+-- Name: event_chat_direct_messages event_chat_direct_messages_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.event_chat_direct_messages
+    ADD CONSTRAINT event_chat_direct_messages_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: event_chat_messages event_chat_messages_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.event_chat_messages
+    ADD CONSTRAINT event_chat_messages_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: event_chat_presence event_chat_presence_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.event_chat_presence
+    ADD CONSTRAINT event_chat_presence_pkey PRIMARY KEY (event_id, user_id);
+
+
+--
+-- Name: event_chat_rooms event_chat_rooms_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.event_chat_rooms
+    ADD CONSTRAINT event_chat_rooms_pkey PRIMARY KEY (event_id);
+
+
+--
+-- Name: event_ingestion_reviews event_ingestion_reviews_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.event_ingestion_reviews
+    ADD CONSTRAINT event_ingestion_reviews_pkey PRIMARY KEY (id);
 
 
 --
@@ -6749,6 +9940,22 @@ ALTER TABLE ONLY public.event_roles
 
 
 --
+-- Name: event_source_sync_runs event_source_sync_runs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.event_source_sync_runs
+    ADD CONSTRAINT event_source_sync_runs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: event_sources event_sources_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.event_sources
+    ADD CONSTRAINT event_sources_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: events events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -6765,11 +9972,51 @@ ALTER TABLE ONLY public.events
 
 
 --
+-- Name: external_event_observations external_event_observations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.external_event_observations
+    ADD CONSTRAINT external_event_observations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: external_event_observations external_event_observations_sync_run_id_source_id_external__key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.external_event_observations
+    ADD CONSTRAINT external_event_observations_sync_run_id_source_id_external__key UNIQUE (sync_run_id, source_id, external_id);
+
+
+--
+-- Name: external_events external_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.external_events
+    ADD CONSTRAINT external_events_pkey PRIMARY KEY (source_id, external_id);
+
+
+--
 -- Name: hashpass_schema_migrations hashpass_schema_migrations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.hashpass_schema_migrations
     ADD CONSTRAINT hashpass_schema_migrations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: invite_scan_events invite_scan_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.invite_scan_events
+    ADD CONSTRAINT invite_scan_events_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: jwks jwks_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.jwks
+    ADD CONSTRAINT jwks_pkey PRIMARY KEY (id);
 
 
 --
@@ -6837,11 +10084,99 @@ ALTER TABLE ONLY public.notifications
 
 
 --
--- Name: otp_codes otp_codes_email_code_token_hash_key; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: oauthAccessToken oauthAccessToken_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.otp_codes
-    ADD CONSTRAINT otp_codes_email_code_token_hash_key UNIQUE (email, code, token_hash);
+ALTER TABLE ONLY public."oauthAccessToken"
+    ADD CONSTRAINT "oauthAccessToken_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: oauthAccessToken oauthAccessToken_token_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."oauthAccessToken"
+    ADD CONSTRAINT "oauthAccessToken_token_key" UNIQUE (token);
+
+
+--
+-- Name: oauthClientAssertion oauthClientAssertion_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."oauthClientAssertion"
+    ADD CONSTRAINT "oauthClientAssertion_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: oauthClientResource oauthClientResource_clientId_resourceId_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."oauthClientResource"
+    ADD CONSTRAINT "oauthClientResource_clientId_resourceId_key" UNIQUE ("clientId", "resourceId");
+
+
+--
+-- Name: oauthClientResource oauthClientResource_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."oauthClientResource"
+    ADD CONSTRAINT "oauthClientResource_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: oauthClient oauthClient_clientId_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."oauthClient"
+    ADD CONSTRAINT "oauthClient_clientId_key" UNIQUE ("clientId");
+
+
+--
+-- Name: oauthClient oauthClient_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."oauthClient"
+    ADD CONSTRAINT "oauthClient_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: oauthConsent oauthConsent_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."oauthConsent"
+    ADD CONSTRAINT "oauthConsent_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: oauthRefreshToken oauthRefreshToken_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."oauthRefreshToken"
+    ADD CONSTRAINT "oauthRefreshToken_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: oauthRefreshToken oauthRefreshToken_token_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."oauthRefreshToken"
+    ADD CONSTRAINT "oauthRefreshToken_token_key" UNIQUE (token);
+
+
+--
+-- Name: oauthResource oauthResource_identifier_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."oauthResource"
+    ADD CONSTRAINT "oauthResource_identifier_key" UNIQUE (identifier);
+
+
+--
+-- Name: oauthResource oauthResource_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."oauthResource"
+    ADD CONSTRAINT "oauthResource_pkey" PRIMARY KEY (id);
 
 
 --
@@ -6909,6 +10244,54 @@ ALTER TABLE ONLY public.profiles
 
 
 --
+-- Name: qr_auth_challenges qr_auth_challenges_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.qr_auth_challenges
+    ADD CONSTRAINT qr_auth_challenges_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: qr_auth_events qr_auth_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.qr_auth_events
+    ADD CONSTRAINT qr_auth_events_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: qr_link_audit_events qr_link_audit_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.qr_link_audit_events
+    ADD CONSTRAINT qr_link_audit_events_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: qr_links qr_links_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.qr_links
+    ADD CONSTRAINT qr_links_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: qr_links qr_links_public_slug_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.qr_links
+    ADD CONSTRAINT qr_links_public_slug_key UNIQUE (public_slug);
+
+
+--
+-- Name: qr_scan_events qr_scan_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.qr_scan_events
+    ADD CONSTRAINT qr_scan_events_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: reward_transactions reward_transactions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -6930,6 +10313,30 @@ ALTER TABLE ONLY public.session
 
 ALTER TABLE ONLY public.session
     ADD CONSTRAINT session_token_key UNIQUE (token);
+
+
+--
+-- Name: sms_auth_challenges sms_auth_challenges_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sms_auth_challenges
+    ADD CONSTRAINT sms_auth_challenges_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: sms_delivery_rate_limits sms_delivery_rate_limits_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sms_delivery_rate_limits
+    ADD CONSTRAINT sms_delivery_rate_limits_pkey PRIMARY KEY (phone_lookup_hmac);
+
+
+--
+-- Name: speaker_claim_requests speaker_claim_requests_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.speaker_claim_requests
+    ADD CONSTRAINT speaker_claim_requests_pkey PRIMARY KEY (id);
 
 
 --
@@ -6973,14 +10380,6 @@ ALTER TABLE ONLY public.speaker_identity_claims
 
 
 --
--- Name: speakers speakers_event_user_unique; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.speakers
-    ADD CONSTRAINT speakers_event_user_unique UNIQUE NULLS NOT DISTINCT (event_id, user_id);
-
-
---
 -- Name: speakers speakers_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -6993,7 +10392,7 @@ ALTER TABLE ONLY public.speakers
 --
 
 ALTER TABLE ONLY public.support_idempotency_keys
-    ADD CONSTRAINT support_idempotency_keys_pkey PRIMARY KEY (app_id, route, key);
+    ADD CONSTRAINT support_idempotency_keys_pkey PRIMARY KEY (app_id, visitor_id, route, key);
 
 
 --
@@ -7133,6 +10532,38 @@ ALTER TABLE ONLY public.ba_users
 
 
 --
+-- Name: user_phone_authenticators user_phone_authenticators_phone_lookup_hmac_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_phone_authenticators
+    ADD CONSTRAINT user_phone_authenticators_phone_lookup_hmac_key UNIQUE (phone_lookup_hmac);
+
+
+--
+-- Name: user_phone_authenticators user_phone_authenticators_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_phone_authenticators
+    ADD CONSTRAINT user_phone_authenticators_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: user_phone_authenticators user_phone_authenticators_user_id_phone_lookup_hmac_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_phone_authenticators
+    ADD CONSTRAINT user_phone_authenticators_user_id_phone_lookup_hmac_key UNIQUE (user_id, phone_lookup_hmac);
+
+
+--
+-- Name: user_pin user_pin_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_pin
+    ADD CONSTRAINT user_pin_pkey PRIMARY KEY (user_id);
+
+
+--
 -- Name: user_profiles user_profiles_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -7194,6 +10625,14 @@ ALTER TABLE ONLY public.user_schedule_shares
 
 ALTER TABLE ONLY public.user_schedule_shares
     ADD CONSTRAINT user_schedule_shares_user_id_event_id_key UNIQUE (user_id, event_id);
+
+
+--
+-- Name: user_setup user_setup_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_setup
+    ADD CONSTRAINT user_setup_pkey PRIMARY KEY (user_id);
 
 
 --
@@ -7267,6 +10706,27 @@ CREATE INDEX admin_email_deliveries_event_created_idx ON public.admin_email_deli
 
 
 --
+-- Name: contact_requests_pair; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX contact_requests_pair ON public.contact_requests USING btree (LEAST(sender, recipient), GREATEST(sender, recipient));
+
+
+--
+-- Name: contact_requests_recipient; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX contact_requests_recipient ON public.contact_requests USING btree (recipient, status);
+
+
+--
+-- Name: contact_requests_sender; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX contact_requests_sender ON public.contact_requests USING btree (sender, status);
+
+
+--
 -- Name: directus_activity_timestamp_index; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -7278,6 +10738,69 @@ CREATE INDEX directus_activity_timestamp_index ON public.directus_activity USING
 --
 
 CREATE INDEX directus_revisions_parent_index ON public.directus_revisions USING btree (parent);
+
+
+--
+-- Name: event_chat_direct_messages_reply_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX event_chat_direct_messages_reply_idx ON public.event_chat_direct_messages USING btree (reply_to_message_id);
+
+
+--
+-- Name: event_chat_direct_messages_thread_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX event_chat_direct_messages_thread_idx ON public.event_chat_direct_messages USING btree (event_id, sender_id, recipient_id, created_at);
+
+
+--
+-- Name: event_chat_messages_event_created_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX event_chat_messages_event_created_idx ON public.event_chat_messages USING btree (event_id, created_at);
+
+
+--
+-- Name: event_chat_messages_reply_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX event_chat_messages_reply_idx ON public.event_chat_messages USING btree (reply_to_message_id);
+
+
+--
+-- Name: event_chat_presence_active_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX event_chat_presence_active_idx ON public.event_chat_presence USING btree (event_id, last_seen_at);
+
+
+--
+-- Name: event_source_sync_runs_source_attempt_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX event_source_sync_runs_source_attempt_idx ON public.event_source_sync_runs USING btree (source_id, attempted_at DESC);
+
+
+--
+-- Name: events_search_aliases_gin; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX events_search_aliases_gin ON public.events USING gin (search_aliases);
+
+
+--
+-- Name: external_event_observations_event_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX external_event_observations_event_idx ON public.external_event_observations USING btree (source_id, external_id, observed_at DESC);
+
+
+--
+-- Name: external_events_publication_start_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX external_events_publication_start_idx ON public.external_events USING btree (publication_status, public.parse_iso8601_immutable((normalized_payload ->> 'startsAt'::text)));
 
 
 --
@@ -7309,6 +10832,20 @@ CREATE INDEX idx_bsl_speakers_day ON public.bsl_speakers USING btree (day);
 
 
 --
+-- Name: idx_bsl_speakers_event_active; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_bsl_speakers_event_active ON public.bsl_speakers USING btree (event_id, is_active, name);
+
+
+--
+-- Name: idx_bsl_speakers_event_slug; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_bsl_speakers_event_slug ON public.bsl_speakers USING btree (event_id, slug) WHERE (slug IS NOT NULL);
+
+
+--
 -- Name: idx_bsl_speakers_slug; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -7320,6 +10857,27 @@ CREATE INDEX idx_bsl_speakers_slug ON public.bsl_speakers USING btree (slug);
 --
 
 CREATE INDEX idx_bsl_speakers_user_id ON public.bsl_speakers USING btree (user_id);
+
+
+--
+-- Name: idx_business_invite_campaign_events_event; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_business_invite_campaign_events_event ON public.business_invite_campaign_events USING btree (event_id, campaign_id);
+
+
+--
+-- Name: idx_business_invite_campaigns_event_active; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_business_invite_campaigns_event_active ON public.business_invite_campaigns USING btree (event_id, is_active, created_at DESC);
+
+
+--
+-- Name: idx_business_invite_requests_review_queue; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_business_invite_requests_review_queue ON public.business_invite_requests USING btree (status, requested_at);
 
 
 --
@@ -7348,6 +10906,13 @@ CREATE INDEX idx_email_log_type ON public.email_sent_log USING btree (email_type
 --
 
 CREATE INDEX idx_email_log_user_id ON public.email_sent_log USING btree (user_id);
+
+
+--
+-- Name: idx_event_agenda_event_source; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_event_agenda_event_source ON public.event_agenda USING btree (event_id, source_id) WHERE (source_id IS NOT NULL);
 
 
 --
@@ -7463,10 +11028,10 @@ CREATE INDEX idx_newsletter_subscribers_email ON public.newsletter_subscribers U
 
 
 --
--- Name: idx_otp_codes_email_code; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_otp_codes_active_purpose; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX idx_otp_codes_email_code ON public.otp_codes USING btree (email, code);
+CREATE INDEX idx_otp_codes_active_purpose ON public.otp_codes USING btree (email, purpose, created_at DESC) WHERE (used = false);
 
 
 --
@@ -7474,13 +11039,6 @@ CREATE INDEX idx_otp_codes_email_code ON public.otp_codes USING btree (email, co
 --
 
 CREATE INDEX idx_otp_codes_expires_at ON public.otp_codes USING btree (expires_at);
-
-
---
--- Name: idx_otp_codes_token_hash; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_otp_codes_token_hash ON public.otp_codes USING btree (token_hash);
 
 
 --
@@ -7558,6 +11116,20 @@ CREATE INDEX idx_reward_transactions_type ON public.reward_transactions USING bt
 --
 
 CREATE INDEX idx_reward_transactions_user_id ON public.reward_transactions USING btree (user_id);
+
+
+--
+-- Name: idx_sms_auth_challenges_expiry; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_sms_auth_challenges_expiry ON public.sms_auth_challenges USING btree (expires_at);
+
+
+--
+-- Name: idx_sms_auth_challenges_phone; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_sms_auth_challenges_phone ON public.sms_auth_challenges USING btree (phone_lookup_hmac, created_at DESC);
 
 
 --
@@ -7708,6 +11280,13 @@ CREATE INDEX idx_user_email ON public."user" USING btree (email);
 
 
 --
+-- Name: idx_user_phone_authenticators_active_user; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_user_phone_authenticators_active_user ON public.user_phone_authenticators USING btree (user_id) WHERE (revoked_at IS NULL);
+
+
+--
 -- Name: idx_user_profiles_email; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -7799,6 +11378,13 @@ CREATE INDEX idx_wallet_auth_user_id ON public.wallet_auth USING btree (user_id)
 
 
 --
+-- Name: invite_scans_code_time_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX invite_scans_code_time_idx ON public.invite_scan_events USING btree (invite_code, scanned_at DESC);
+
+
+--
 -- Name: notifications_user_level_created_at_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -7806,10 +11392,157 @@ CREATE INDEX notifications_user_level_created_at_idx ON public.notifications USI
 
 
 --
+-- Name: oauthAccessToken_authorizationCodeId_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "oauthAccessToken_authorizationCodeId_idx" ON public."oauthAccessToken" USING btree ("authorizationCodeId");
+
+
+--
+-- Name: oauthAccessToken_clientId_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "oauthAccessToken_clientId_idx" ON public."oauthAccessToken" USING btree ("clientId");
+
+
+--
+-- Name: oauthAccessToken_refreshId_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "oauthAccessToken_refreshId_idx" ON public."oauthAccessToken" USING btree ("refreshId");
+
+
+--
+-- Name: oauthAccessToken_sessionId_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "oauthAccessToken_sessionId_idx" ON public."oauthAccessToken" USING btree ("sessionId");
+
+
+--
+-- Name: oauthAccessToken_userId_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "oauthAccessToken_userId_idx" ON public."oauthAccessToken" USING btree ("userId");
+
+
+--
+-- Name: oauthClientResource_clientId_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "oauthClientResource_clientId_idx" ON public."oauthClientResource" USING btree ("clientId");
+
+
+--
+-- Name: oauthClientResource_resourceId_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "oauthClientResource_resourceId_idx" ON public."oauthClientResource" USING btree ("resourceId");
+
+
+--
+-- Name: oauthClient_userId_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "oauthClient_userId_idx" ON public."oauthClient" USING btree ("userId");
+
+
+--
+-- Name: oauthConsent_clientId_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "oauthConsent_clientId_idx" ON public."oauthConsent" USING btree ("clientId");
+
+
+--
+-- Name: oauthConsent_userId_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "oauthConsent_userId_idx" ON public."oauthConsent" USING btree ("userId");
+
+
+--
+-- Name: oauthRefreshToken_authorizationCodeId_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "oauthRefreshToken_authorizationCodeId_idx" ON public."oauthRefreshToken" USING btree ("authorizationCodeId");
+
+
+--
+-- Name: oauthRefreshToken_clientId_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "oauthRefreshToken_clientId_idx" ON public."oauthRefreshToken" USING btree ("clientId");
+
+
+--
+-- Name: oauthRefreshToken_sessionId_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "oauthRefreshToken_sessionId_idx" ON public."oauthRefreshToken" USING btree ("sessionId");
+
+
+--
+-- Name: oauthRefreshToken_userId_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "oauthRefreshToken_userId_idx" ON public."oauthRefreshToken" USING btree ("userId");
+
+
+--
+-- Name: qr_auth_expiry_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX qr_auth_expiry_idx ON public.qr_auth_challenges USING btree (expires_at) WHERE (status = 'pending'::public.qr_auth_status);
+
+
+--
+-- Name: qr_links_expiry_sweep_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX qr_links_expiry_sweep_idx ON public.qr_links USING btree (expires_at) WHERE ((status = 'active'::public.qr_link_status) AND (deleted_at IS NULL) AND (expires_at IS NOT NULL));
+
+
+--
+-- Name: qr_links_owner_updated_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX qr_links_owner_updated_idx ON public.qr_links USING btree (owner_id, updated_at DESC) WHERE (deleted_at IS NULL);
+
+
+--
+-- Name: qr_scans_link_time_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX qr_scans_link_time_idx ON public.qr_scan_events USING btree (qr_link_id, scanned_at DESC);
+
+
+--
 -- Name: session_userId_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX "session_userId_idx" ON public.session USING btree ("userId");
+
+
+--
+-- Name: speaker_claim_requests_event_status_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX speaker_claim_requests_event_status_idx ON public.speaker_claim_requests USING btree (event_id, status, created_at DESC);
+
+
+--
+-- Name: speaker_claim_requests_pending_unique; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX speaker_claim_requests_pending_unique ON public.speaker_claim_requests USING btree (speaker_id) WHERE (status = 'pending'::text);
+
+
+--
+-- Name: speakers_event_user_unique; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX speakers_event_user_unique ON public.speakers USING btree (event_id, user_id) WHERE (user_id IS NOT NULL);
 
 
 --
@@ -7824,6 +11557,33 @@ CREATE UNIQUE INDEX unique_pending_request ON public.meeting_requests USING btre
 --
 
 CREATE INDEX verification_identifier_idx ON public.verification USING btree (identifier);
+
+
+--
+-- Name: contact_network_profiles _RETURN; Type: RULE; Schema: public; Owner: -
+--
+
+CREATE OR REPLACE VIEW public.contact_network_profiles WITH (security_invoker='true') AS
+ SELECT p.id,
+    p.name,
+    p.role,
+    p.company,
+    p.topics,
+    p.discoverable,
+    p.leaderboard,
+    p.share_id,
+    (count(r.id))::integer AS connections,
+    (((count(r.id) * 100) + (cardinality(p.topics) * 20)))::integer AS points
+   FROM (public.contact_profiles p
+     LEFT JOIN public.contact_requests r ON ((((r.sender = p.id) OR (r.recipient = p.id)) AND (r.status = 'accepted'::text))))
+  GROUP BY p.id;
+
+
+--
+-- Name: qr_links qr_link_updated; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER qr_link_updated BEFORE UPDATE ON public.qr_links FOR EACH ROW EXECUTE FUNCTION public.touch_qr_link();
 
 
 --
@@ -7845,6 +11605,13 @@ CREATE TRIGGER trg_chat_last_seen_updated_at BEFORE UPDATE ON public.chat_last_s
 --
 
 CREATE TRIGGER trg_event_agenda_updated_at BEFORE UPDATE ON public.event_agenda FOR EACH ROW EXECUTE FUNCTION public.touch_updated_at();
+
+
+--
+-- Name: bsl_speakers trg_link_pending_speaker_requests_on_claim; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_link_pending_speaker_requests_on_claim AFTER UPDATE OF user_id ON public.bsl_speakers FOR EACH ROW EXECUTE FUNCTION public.link_pending_speaker_requests_on_claim();
 
 
 --
@@ -7880,6 +11647,13 @@ CREATE TRIGGER trg_passes_updated_at BEFORE UPDATE ON public.passes FOR EACH ROW
 --
 
 CREATE TRIGGER trg_profiles_updated_at BEFORE UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION public.touch_updated_at();
+
+
+--
+-- Name: events trg_provision_bsl_colombia_business_invite_campaign; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_provision_bsl_colombia_business_invite_campaign AFTER INSERT OR UPDATE OF id, status ON public.events FOR EACH ROW EXECUTE FUNCTION public.provision_bsl_colombia_business_invite_campaign();
 
 
 --
@@ -7962,11 +11736,99 @@ ALTER TABLE ONLY public.admin_action_log
 
 
 --
+-- Name: business_invite_campaign_events business_invite_campaign_events_campaign_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.business_invite_campaign_events
+    ADD CONSTRAINT business_invite_campaign_events_campaign_id_fkey FOREIGN KEY (campaign_id) REFERENCES public.business_invite_campaigns(id) ON DELETE CASCADE;
+
+
+--
+-- Name: business_invite_campaign_events business_invite_campaign_events_event_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.business_invite_campaign_events
+    ADD CONSTRAINT business_invite_campaign_events_event_id_fkey FOREIGN KEY (event_id) REFERENCES public.events(id) ON DELETE CASCADE;
+
+
+--
+-- Name: business_invite_campaigns business_invite_campaigns_event_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.business_invite_campaigns
+    ADD CONSTRAINT business_invite_campaigns_event_id_fkey FOREIGN KEY (event_id) REFERENCES public.events(id) ON DELETE CASCADE;
+
+
+--
+-- Name: business_invite_claims business_invite_claims_campaign_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.business_invite_claims
+    ADD CONSTRAINT business_invite_claims_campaign_id_fkey FOREIGN KEY (campaign_id) REFERENCES public.business_invite_campaigns(id) ON DELETE CASCADE;
+
+
+--
+-- Name: business_invite_claims business_invite_claims_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.business_invite_claims
+    ADD CONSTRAINT business_invite_claims_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: business_invite_requests business_invite_requests_campaign_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.business_invite_requests
+    ADD CONSTRAINT business_invite_requests_campaign_id_fkey FOREIGN KEY (campaign_id) REFERENCES public.business_invite_campaigns(id) ON DELETE CASCADE;
+
+
+--
+-- Name: business_invite_requests business_invite_requests_reviewed_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.business_invite_requests
+    ADD CONSTRAINT business_invite_requests_reviewed_by_fkey FOREIGN KEY (reviewed_by) REFERENCES auth.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: business_invite_requests business_invite_requests_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.business_invite_requests
+    ADD CONSTRAINT business_invite_requests_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+
+
+--
 -- Name: chat_last_seen chat_last_seen_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.chat_last_seen
     ADD CONSTRAINT chat_last_seen_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE NOT VALID;
+
+
+--
+-- Name: contact_profiles contact_profiles_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.contact_profiles
+    ADD CONSTRAINT contact_profiles_id_fkey FOREIGN KEY (id) REFERENCES public."user"(id) ON DELETE CASCADE;
+
+
+--
+-- Name: contact_requests contact_requests_recipient_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.contact_requests
+    ADD CONSTRAINT contact_requests_recipient_fkey FOREIGN KEY (recipient) REFERENCES public.contact_profiles(id) ON DELETE CASCADE;
+
+
+--
+-- Name: contact_requests contact_requests_sender_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.contact_requests
+    ADD CONSTRAINT contact_requests_sender_fkey FOREIGN KEY (sender) REFERENCES public.contact_profiles(id) ON DELETE CASCADE;
 
 
 --
@@ -8314,6 +12176,134 @@ ALTER TABLE ONLY public.directus_webhooks
 
 
 --
+-- Name: event_account_grants event_account_grants_claimed_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.event_account_grants
+    ADD CONSTRAINT event_account_grants_claimed_user_id_fkey FOREIGN KEY (claimed_user_id) REFERENCES auth.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: event_account_grants event_account_grants_event_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.event_account_grants
+    ADD CONSTRAINT event_account_grants_event_id_fkey FOREIGN KEY (event_id) REFERENCES public.events(id) ON DELETE CASCADE;
+
+
+--
+-- Name: event_account_grants event_account_grants_speaker_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.event_account_grants
+    ADD CONSTRAINT event_account_grants_speaker_id_fkey FOREIGN KEY (speaker_id) REFERENCES public.speakers(id) ON DELETE CASCADE;
+
+
+--
+-- Name: event_auth_allies event_auth_allies_event_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.event_auth_allies
+    ADD CONSTRAINT event_auth_allies_event_id_fkey FOREIGN KEY (event_id) REFERENCES public.events(id) ON DELETE CASCADE;
+
+
+--
+-- Name: event_auth_allies event_auth_allies_updated_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.event_auth_allies
+    ADD CONSTRAINT event_auth_allies_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES auth.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: event_chat_direct_messages event_chat_direct_messages_event_room_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.event_chat_direct_messages
+    ADD CONSTRAINT event_chat_direct_messages_event_room_fkey FOREIGN KEY (event_id) REFERENCES public.event_chat_rooms(event_id) NOT VALID;
+
+
+--
+-- Name: event_chat_direct_messages event_chat_direct_messages_recipient_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.event_chat_direct_messages
+    ADD CONSTRAINT event_chat_direct_messages_recipient_id_fkey FOREIGN KEY (recipient_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: event_chat_direct_messages event_chat_direct_messages_reply_to_message_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.event_chat_direct_messages
+    ADD CONSTRAINT event_chat_direct_messages_reply_to_message_id_fkey FOREIGN KEY (reply_to_message_id) REFERENCES public.event_chat_direct_messages(id) ON DELETE SET NULL;
+
+
+--
+-- Name: event_chat_direct_messages event_chat_direct_messages_sender_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.event_chat_direct_messages
+    ADD CONSTRAINT event_chat_direct_messages_sender_id_fkey FOREIGN KEY (sender_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: event_chat_messages event_chat_messages_event_room_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.event_chat_messages
+    ADD CONSTRAINT event_chat_messages_event_room_fkey FOREIGN KEY (event_id) REFERENCES public.event_chat_rooms(event_id) NOT VALID;
+
+
+--
+-- Name: event_chat_messages event_chat_messages_reply_to_message_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.event_chat_messages
+    ADD CONSTRAINT event_chat_messages_reply_to_message_id_fkey FOREIGN KEY (reply_to_message_id) REFERENCES public.event_chat_messages(id) ON DELETE SET NULL;
+
+
+--
+-- Name: event_chat_messages event_chat_messages_sender_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.event_chat_messages
+    ADD CONSTRAINT event_chat_messages_sender_id_fkey FOREIGN KEY (sender_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: event_chat_presence event_chat_presence_event_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.event_chat_presence
+    ADD CONSTRAINT event_chat_presence_event_id_fkey FOREIGN KEY (event_id) REFERENCES public.event_chat_rooms(event_id);
+
+
+--
+-- Name: event_chat_presence event_chat_presence_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.event_chat_presence
+    ADD CONSTRAINT event_chat_presence_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: event_ingestion_reviews event_ingestion_reviews_observation_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.event_ingestion_reviews
+    ADD CONSTRAINT event_ingestion_reviews_observation_id_fkey FOREIGN KEY (observation_id) REFERENCES public.external_event_observations(id) ON DELETE SET NULL;
+
+
+--
+-- Name: event_ingestion_reviews event_ingestion_reviews_source_id_external_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.event_ingestion_reviews
+    ADD CONSTRAINT event_ingestion_reviews_source_id_external_id_fkey FOREIGN KEY (source_id, external_id) REFERENCES public.external_events(source_id, external_id) ON DELETE CASCADE;
+
+
+--
 -- Name: event_pass_tiers event_pass_tiers_event_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -8338,6 +12328,30 @@ ALTER TABLE ONLY public.event_roles
 
 
 --
+-- Name: event_source_sync_runs event_source_sync_runs_source_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.event_source_sync_runs
+    ADD CONSTRAINT event_source_sync_runs_source_id_fkey FOREIGN KEY (source_id) REFERENCES public.event_sources(id) ON DELETE CASCADE;
+
+
+--
+-- Name: external_event_observations external_event_observations_sync_run_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.external_event_observations
+    ADD CONSTRAINT external_event_observations_sync_run_id_fkey FOREIGN KEY (sync_run_id) REFERENCES public.event_source_sync_runs(id) ON DELETE CASCADE;
+
+
+--
+-- Name: external_events external_events_source_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.external_events
+    ADD CONSTRAINT external_events_source_id_fkey FOREIGN KEY (source_id) REFERENCES public.event_sources(id) ON DELETE CASCADE;
+
+
+--
 -- Name: meeting_chat_messages meeting_chat_messages_meeting_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -8359,14 +12373,6 @@ ALTER TABLE ONLY public.meeting_chat_messages
 
 ALTER TABLE ONLY public.meeting_requests
     ADD CONSTRAINT meeting_requests_requester_id_fkey FOREIGN KEY (requester_id) REFERENCES auth.users(id) ON DELETE CASCADE NOT VALID;
-
-
---
--- Name: meeting_requests meeting_requests_speaker_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.meeting_requests
-    ADD CONSTRAINT meeting_requests_speaker_id_fkey FOREIGN KEY (speaker_id) REFERENCES auth.users(id) ON DELETE CASCADE NOT VALID;
 
 
 --
@@ -8434,6 +12440,102 @@ ALTER TABLE ONLY public.notifications
 
 
 --
+-- Name: oauthAccessToken oauthAccessToken_clientId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."oauthAccessToken"
+    ADD CONSTRAINT "oauthAccessToken_clientId_fkey" FOREIGN KEY ("clientId") REFERENCES public."oauthClient"("clientId") ON DELETE CASCADE;
+
+
+--
+-- Name: oauthAccessToken oauthAccessToken_refreshId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."oauthAccessToken"
+    ADD CONSTRAINT "oauthAccessToken_refreshId_fkey" FOREIGN KEY ("refreshId") REFERENCES public."oauthRefreshToken"(id) ON DELETE CASCADE;
+
+
+--
+-- Name: oauthAccessToken oauthAccessToken_sessionId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."oauthAccessToken"
+    ADD CONSTRAINT "oauthAccessToken_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES public.session(id) ON DELETE SET NULL;
+
+
+--
+-- Name: oauthAccessToken oauthAccessToken_userId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."oauthAccessToken"
+    ADD CONSTRAINT "oauthAccessToken_userId_fkey" FOREIGN KEY ("userId") REFERENCES public.ba_users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: oauthClientResource oauthClientResource_clientId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."oauthClientResource"
+    ADD CONSTRAINT "oauthClientResource_clientId_fkey" FOREIGN KEY ("clientId") REFERENCES public."oauthClient"("clientId") ON DELETE CASCADE;
+
+
+--
+-- Name: oauthClientResource oauthClientResource_resourceId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."oauthClientResource"
+    ADD CONSTRAINT "oauthClientResource_resourceId_fkey" FOREIGN KEY ("resourceId") REFERENCES public."oauthResource"(identifier) ON DELETE CASCADE;
+
+
+--
+-- Name: oauthClient oauthClient_userId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."oauthClient"
+    ADD CONSTRAINT "oauthClient_userId_fkey" FOREIGN KEY ("userId") REFERENCES public.ba_users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: oauthConsent oauthConsent_clientId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."oauthConsent"
+    ADD CONSTRAINT "oauthConsent_clientId_fkey" FOREIGN KEY ("clientId") REFERENCES public."oauthClient"("clientId") ON DELETE CASCADE;
+
+
+--
+-- Name: oauthConsent oauthConsent_userId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."oauthConsent"
+    ADD CONSTRAINT "oauthConsent_userId_fkey" FOREIGN KEY ("userId") REFERENCES public.ba_users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: oauthRefreshToken oauthRefreshToken_clientId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."oauthRefreshToken"
+    ADD CONSTRAINT "oauthRefreshToken_clientId_fkey" FOREIGN KEY ("clientId") REFERENCES public."oauthClient"("clientId") ON DELETE CASCADE;
+
+
+--
+-- Name: oauthRefreshToken oauthRefreshToken_sessionId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."oauthRefreshToken"
+    ADD CONSTRAINT "oauthRefreshToken_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES public.session(id) ON DELETE SET NULL;
+
+
+--
+-- Name: oauthRefreshToken oauthRefreshToken_userId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."oauthRefreshToken"
+    ADD CONSTRAINT "oauthRefreshToken_userId_fkey" FOREIGN KEY ("userId") REFERENCES public.ba_users(id) ON DELETE CASCADE;
+
+
+--
 -- Name: pass_claim_codes pass_claim_codes_created_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -8482,6 +12584,62 @@ ALTER TABLE ONLY public.profiles
 
 
 --
+-- Name: qr_auth_challenges qr_auth_challenges_approved_by_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.qr_auth_challenges
+    ADD CONSTRAINT qr_auth_challenges_approved_by_user_id_fkey FOREIGN KEY (approved_by_user_id) REFERENCES auth.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: qr_auth_events qr_auth_events_actor_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.qr_auth_events
+    ADD CONSTRAINT qr_auth_events_actor_id_fkey FOREIGN KEY (actor_id) REFERENCES auth.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: qr_auth_events qr_auth_events_challenge_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.qr_auth_events
+    ADD CONSTRAINT qr_auth_events_challenge_id_fkey FOREIGN KEY (challenge_id) REFERENCES public.qr_auth_challenges(id) ON DELETE CASCADE;
+
+
+--
+-- Name: qr_link_audit_events qr_link_audit_events_actor_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.qr_link_audit_events
+    ADD CONSTRAINT qr_link_audit_events_actor_id_fkey FOREIGN KEY (actor_id) REFERENCES auth.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: qr_link_audit_events qr_link_audit_events_qr_link_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.qr_link_audit_events
+    ADD CONSTRAINT qr_link_audit_events_qr_link_id_fkey FOREIGN KEY (qr_link_id) REFERENCES public.qr_links(id) ON DELETE CASCADE;
+
+
+--
+-- Name: qr_links qr_links_owner_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.qr_links
+    ADD CONSTRAINT qr_links_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: qr_scan_events qr_scan_events_qr_link_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.qr_scan_events
+    ADD CONSTRAINT qr_scan_events_qr_link_id_fkey FOREIGN KEY (qr_link_id) REFERENCES public.qr_links(id) ON DELETE CASCADE;
+
+
+--
 -- Name: reward_transactions reward_transactions_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -8495,6 +12653,30 @@ ALTER TABLE ONLY public.reward_transactions
 
 ALTER TABLE ONLY public.session
     ADD CONSTRAINT "session_userId_fkey" FOREIGN KEY ("userId") REFERENCES public.ba_users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: sms_auth_challenges sms_auth_challenges_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sms_auth_challenges
+    ADD CONSTRAINT sms_auth_challenges_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: speaker_claim_requests speaker_claim_requests_requester_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.speaker_claim_requests
+    ADD CONSTRAINT speaker_claim_requests_requester_user_id_fkey FOREIGN KEY (requester_user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: speaker_claim_requests speaker_claim_requests_reviewed_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.speaker_claim_requests
+    ADD CONSTRAINT speaker_claim_requests_reviewed_by_fkey FOREIGN KEY (reviewed_by) REFERENCES auth.users(id) ON DELETE SET NULL;
 
 
 --
@@ -8618,6 +12800,22 @@ ALTER TABLE ONLY public.user_chat_keys
 
 
 --
+-- Name: user_phone_authenticators user_phone_authenticators_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_phone_authenticators
+    ADD CONSTRAINT user_phone_authenticators_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: user_pin user_pin_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_pin
+    ADD CONSTRAINT user_pin_user_id_fkey FOREIGN KEY (user_id) REFERENCES public."user"(id) ON DELETE CASCADE;
+
+
+--
 -- Name: user_profiles user_profiles_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -8647,6 +12845,14 @@ ALTER TABLE ONLY public.user_roles
 
 ALTER TABLE ONLY public.user_schedule_shares
     ADD CONSTRAINT user_schedule_shares_user_id_fkey FOREIGN KEY (user_id) REFERENCES public."user"(id) ON DELETE CASCADE;
+
+
+--
+-- Name: user_setup user_setup_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_setup
+    ADD CONSTRAINT user_setup_user_id_fkey FOREIGN KEY (user_id) REFERENCES public."user"(id) ON DELETE CASCADE;
 
 
 --
@@ -8825,6 +13031,36 @@ ALTER TABLE public.bsl_speakers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.bsl_tickets ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: business_invite_approvers; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.business_invite_approvers ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: business_invite_campaign_events; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.business_invite_campaign_events ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: business_invite_campaigns; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.business_invite_campaigns ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: business_invite_claims; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.business_invite_claims ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: business_invite_requests; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.business_invite_requests ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: chat_last_seen; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -8850,6 +13086,18 @@ CREATE POLICY chat_last_seen_select_own ON public.chat_last_seen FOR SELECT USIN
 
 CREATE POLICY chat_last_seen_update_own ON public.chat_last_seen FOR UPDATE USING ((user_id = auth.uid())) WITH CHECK ((user_id = auth.uid()));
 
+
+--
+-- Name: contact_profiles; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.contact_profiles ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: contact_requests; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.contact_requests ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: directus_access; Type: ROW SECURITY; Schema: public; Owner: -
@@ -9027,6 +13275,12 @@ CREATE POLICY email_log_select_own ON public.email_sent_log FOR SELECT USING ((u
 ALTER TABLE public.email_sent_log ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: event_account_grants; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.event_account_grants ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: event_agenda; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -9038,6 +13292,42 @@ ALTER TABLE public.event_agenda ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY event_agenda_public_read ON public.event_agenda FOR SELECT USING (true);
 
+
+--
+-- Name: event_auth_allies; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.event_auth_allies ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: event_chat_direct_messages; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.event_chat_direct_messages ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: event_chat_messages; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.event_chat_messages ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: event_chat_presence; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.event_chat_presence ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: event_chat_rooms; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.event_chat_rooms ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: event_ingestion_reviews; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.event_ingestion_reviews ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: event_pass_tiers; Type: ROW SECURITY; Schema: public; Owner: -
@@ -9068,6 +13358,18 @@ CREATE POLICY event_roles_self_read ON public.event_roles FOR SELECT USING ((use
 
 
 --
+-- Name: event_source_sync_runs; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.event_source_sync_runs ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: event_sources; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.event_sources ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: events; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -9081,10 +13383,34 @@ CREATE POLICY events_public_read ON public.events FOR SELECT USING ((status = AN
 
 
 --
+-- Name: external_event_observations; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.external_event_observations ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: external_events; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.external_events ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: hashpass_schema_migrations; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
 ALTER TABLE public.hashpass_schema_migrations ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: invite_scan_events; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.invite_scan_events ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: jwks; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.jwks ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: pass_request_limits limits_select_own; Type: POLICY; Schema: public; Owner: -
@@ -9238,6 +13564,48 @@ CREATE POLICY notifications_update_own ON public.notifications FOR UPDATE USING 
 
 
 --
+-- Name: oauthAccessToken; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public."oauthAccessToken" ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: oauthClient; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public."oauthClient" ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: oauthClientAssertion; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public."oauthClientAssertion" ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: oauthClientResource; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public."oauthClientResource" ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: oauthConsent; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public."oauthConsent" ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: oauthRefreshToken; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public."oauthRefreshToken" ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: oauthResource; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public."oauthResource" ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: otp_codes; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -9337,6 +13705,68 @@ CREATE POLICY profiles_update_own ON public.user_profiles FOR UPDATE USING ((use
 
 
 --
+-- Name: external_events published_external_events_are_public; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY published_external_events_are_public ON public.external_events FOR SELECT TO authenticated, anon USING (((publication_status = 'published'::text) AND (source_status = ANY (ARRAY['upcoming'::text, 'live'::text]))));
+
+
+--
+-- Name: qr_link_audit_events qr_audit_owner_read; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY qr_audit_owner_read ON public.qr_link_audit_events FOR SELECT USING ((EXISTS ( SELECT 1
+   FROM public.qr_links q
+  WHERE ((q.id = qr_link_audit_events.qr_link_id) AND (q.owner_id = auth.uid())))));
+
+
+--
+-- Name: qr_auth_challenges; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.qr_auth_challenges ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: qr_auth_events; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.qr_auth_events ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: qr_link_audit_events; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.qr_link_audit_events ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: qr_links; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.qr_links ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: qr_links qr_links_owner_all; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY qr_links_owner_all ON public.qr_links USING ((owner_id = auth.uid())) WITH CHECK ((owner_id = auth.uid()));
+
+
+--
+-- Name: qr_scan_events; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.qr_scan_events ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: qr_scan_events qr_scans_owner_read; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY qr_scans_owner_read ON public.qr_scan_events FOR SELECT USING ((EXISTS ( SELECT 1
+   FROM public.qr_links q
+  WHERE ((q.id = qr_scan_events.qr_link_id) AND (q.owner_id = auth.uid())))));
+
+
+--
 -- Name: meeting_requests requests_insert_own; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -9393,6 +13823,24 @@ CREATE POLICY roles_select_own ON public.user_roles FOR SELECT USING ((user_id =
 --
 
 ALTER TABLE public.session ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: sms_auth_challenges; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.sms_auth_challenges ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: sms_delivery_rate_limits; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.sms_delivery_rate_limits ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: speaker_claim_requests; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.speaker_claim_requests ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: speaker_identity_claim_event_roles; Type: ROW SECURITY; Schema: public; Owner: -
@@ -9564,6 +14012,18 @@ CREATE POLICY user_chat_keys_update_own ON public.user_chat_keys FOR UPDATE USIN
 
 
 --
+-- Name: user_phone_authenticators; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.user_phone_authenticators ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: user_pin; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.user_pin ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: user_profiles; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -9651,6 +14111,12 @@ CREATE POLICY user_select_own ON public."user" FOR SELECT USING (((auth_user_id 
 
 
 --
+-- Name: user_setup; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.user_setup ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: user_tutorial_progress; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -9679,5 +14145,5 @@ ALTER TABLE public.wallet_auth ENABLE ROW LEVEL SECURITY;
 -- PostgreSQL database dump complete
 --
 
-\unrestrict SSHKej7lfT0vTQQ0PQ7cm2N3cQB7cwkbMIlzGnHY3lt2XfGa25isaCuanBrLQpU
+\unrestrict a1CtmNCu8wajGimhyia1SUrm0hpAmK8J3DAiEBCalRt8rwvzC14p5U1LekBz8BL
 

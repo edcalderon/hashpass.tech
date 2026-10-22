@@ -26,6 +26,7 @@
 | [pending/task-build-system-cost-and-speed.md](pending/task-build-system-cost-and-speed.md) | CodeBuild vs EC2 cost comparison, future build-system improvements; deliberately paced follow-up to the cost-audit task | 🟡 Medium |
 | [pending/task-deep-technical-debt-review.md](pending/task-deep-technical-debt-review.md) | Type organization, `any` reduction, god-file breakup, perf baseline | 🟢 Low |
 | [pending/task-hashpass-ai-assistant.md](pending/task-hashpass-ai-assistant.md) | App-wide HashPass AI assistant (Bedrock RAG, floating chat, standalone page); planning only, no execution started since creation | 🔴 High |
+| [pending/task-lean-knowledge-management-system.md](pending/task-lean-knowledge-management-system.md) | Hashpass KMS: encrypted Notion archive, Plane execution, Frappe private support, FIDO2 human access, and gated AWS SSM/Roles Anywhere identities; host hardening complete | 🔴 High |
 | [pending/task-play-console-operational-hygiene.md](pending/task-play-console-operational-hygiene.md) | Play Console hygiene follow-ups split out of the done app-publish task | 🟡 Medium |
 | [pending/task-reduce-direct-supabase-client-calls.md](pending/task-reduce-direct-supabase-client-calls.md) | Reduce/guard direct client-side Supabase calls; 14 call sites classified, needs scoping decision | 🟡 Medium |
 | [pending/typescript-7-safe-migration.md](pending/typescript-7-safe-migration.md) | Safe staged migration to TypeScript 7 with TS 6 compatibility tooling; concrete blockers documented, no work started | 🟡 Medium |

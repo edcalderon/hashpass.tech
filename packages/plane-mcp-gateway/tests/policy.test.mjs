@@ -112,7 +112,6 @@ test("rejects unverified and look-alike Hashpass email domains", () => {
     assert.equal(decision.allowed, false, `${identity.email} should be rejected`);
   }
 });
-
 test("an empty allowlist rejects every caller", () => {
   const decision = authorizePlaneRequest(request({
     allowedSubjects: [],

@@ -323,8 +323,7 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
             position: 'relative',
           }}
           imageStyle={{
-            opacity: 0.3,
-            resizeMode: 'cover'
+            opacity: 0.3
           }}
         >
           <View style={{

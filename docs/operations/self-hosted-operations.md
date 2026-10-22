@@ -1,72 +1,91 @@
-# Self-hosted operations and customer support
+# Hashpass self-hosted operations architecture
 
-## Decision and status
+## Decision and current state
 
-HASHPASS uses **Plane Community Edition** as the internal execution system of record and **Frappe Helpdesk** as the customer-support and public knowledge-base system of record. They share only the edge network and links/IDs; each has its own database, cache, file volume, service identities, upgrade cadence, and backup artifacts. Notion remains the founder's private archive.
+Hashpass will run a private **Plane Community + Frappe Helpdesk** baseline on a provider-neutral Ubuntu VPS. Plane is the internal execution workspace; Frappe Helpdesk is the private support workspace. Both are backed by private databases and are exposed only through Caddy.
 
-This repository pins Plane CE `v1.4.2`, Frappe Helpdesk `v1.30.1`, Plane MCP `v0.3.2`, and the Frappe Docker deployment pattern `v3.2.2`, the stable releases checked on 2026-09-20. Pinning—not `latest`/`stable`—makes upgrades reviewable. The repository work is deployment-ready, but no production host, DNS authorization, SMTP/mailbox credentials, off-server backup bucket, or service-user keys were available in this environment. Consequently `work.hashpass.tech` and `support.hashpass.tech` are **not claimed as deployed or tested** by this change.
+The Notion CEO HQ archive remains separate and serverless in AWS: the importer archives the allowed root and descendants before materializing selected work items. Notion-to-Plane remains one-way until idempotency, attachment, deletion, and restore drills pass.
 
-Upstream references: [Plane CE release](https://github.com/makeplane/plane/releases/tag/v1.4.2), [Frappe Helpdesk release](https://github.com/frappe/helpdesk/releases/tag/v1.30.1), [Plane MCP release](https://github.com/makeplane/plane-mcp-server/releases/tag/v0.3.2), and [Frappe Docker release](https://github.com/frappe/frappe_docker/releases/tag/v3.2.2).
+Current state, reconciled 2026-09-27:
 
-## Architecture
+- The VPS has been reinstalled with Ubuntu LTS.
+- Interactive administrator access is hardware-backed OpenSSH FIDO2. The bootstrap key was removed after verification; root, password, and keyboard-interactive SSH are disabled.
+- The Hashpass AWS deployment identity was verified privately. An encrypted, versioned Terraform state bucket and encrypted DynamoDB lock table were created, and the generated Plane/Frappe bootstrap secret is held only in AWS Secrets Manager. No secret value is in Git or the VPS.
+- The Terraform backend must explicitly use `AWS_PROFILE=hashpass`; raw Terraform otherwise selects an ambient credential and is denied state access. The profile-pinned three-resource plan was applied: one SSM managed-node role, its core policy attachment, and one short-lived, one-host activation.
+- The SSM managed node is registered and online. Its enrollment was authenticated with the FIDO2 operator key; administrative commands now use SSM rather than weakening SSH.
+- Docker Engine and Docker Compose are installed and verified on the VPS. `/opt/hashpass/self-hosted` and `/etc/hashpass` are root-owned deployment directories. No public ports or application containers have been opened/deployed.
+- Plane, Frappe, DNS, public support, IAM Roles Anywhere, and the Notion schedule are **not yet deployed or verified**.
+- The encrypted Notion archive infrastructure exists privately in AWS, but has no Notion integration credential and its schedule is disabled.
+
+## Identity separation
+
+Three identities have different authority. Do not merge them.
+
+| Identity | Purpose | Authority | Prohibited use |
+| --- | --- | --- | --- |
+| FIDO2 operator | Human emergency and planned administration | Hardware-touched SSH and sudo only | CI, cron, containers, AWS workload calls |
+| AWS SSM Hybrid managed node | Programmatic host administration | Session Manager and allowlisted Run Command | Reading application secrets or acting as a Plane/Frappe runtime |
+| IAM Roles Anywhere workload | A specific service's AWS access | Short-lived credentials for exact secret, KMS, and S3 ARNs | SSH administration, wildcard secret access, CA administration |
+
+No VPS workload may contain a long-lived AWS access key. `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` may appear only as runtime names required by an S3-compatible client; the tracked host configuration supplies provider-neutral object-storage inputs and must never contain AWS IAM keys.
+
+## Provider-neutral boundary
 
 ```text
-Internet -> Caddy (80/443 only)
-  work.hashpass.tech    -> Plane proxy -> Plane CE app/API/workers
-                                      -> private PostgreSQL/Valkey/RabbitMQ/MinIO
-  support.hashpass.tech -> Frappe nginx -> Helpdesk/websocket/workers/scheduler
-                                        -> private MariaDB/Redis/site volumes
+Caddy -> Plane + Frappe -> private PostgreSQL/MariaDB/Redis/Valkey/MinIO
+                         -> encrypted, off-server S3-compatible backup repository
 
-Approved AI client -> official Plane MCP -> Plane API (dedicated Plane service user)
-Approved AI client -> HASHPASS Helpdesk MCP -> Frappe REST API
-                                           -> read or write service user
-Customer -> Helpdesk portal/email -> ticket -> support triage
-  engineering escalation -> linked Plane work item -> fix -> ticket update -> customer
+Notion integration -> AWS archive Lambda -> encrypted archive bucket + registry
 ```
 
-Only Caddy publishes host ports. Both database families, queues, object storage, workers, admin internals, and MCP stdio processes remain private. Caddy terminates TLS and renews ACME certificates automatically. Native authentication is the phase-one choice; future SSO should use one OIDC provider for employee Plane and Helpdesk identities without merging customer identities into the employee directory.
+`ops/self-hosted/` contains pinned Compose assets, backups, and Ansible playbooks. They require only an Ubuntu host, DNS records, outbound HTTPS, and S3-compatible backup storage. They do not encode an OVH API, AWS instance identity, public address, or provider disk/network resource.
 
-## Why Plane Community is the internal operations plane
+`packages/infra/terraform/stacks/hashpass-vps-access` is an AWS adapter, not a VPS provisioner. It creates a one-node expiring SSM Hybrid Activation with only `AmazonSSMManagedInstanceCore`, and an opt-in IAM Roles Anywhere trust anchor, profile, and workload role whose permissions are exact input ARNs.
 
-Plane Community is the selected day-to-day workspace at `work.hashpass.tech`, not merely a ticket escalation target. It is self-hosted under AGPL-3.0 and its Community deployment does not impose per-seat licensing. The pinned Community source provides the primitives HASHPASS needs: Projects, Work Items, assignees, Cycles, Modules, Pages, Views, and Intake. Those primitives cover product delivery, releases, boards, deadlines, HASHFEST, BSL, partnerships, sponsorship work, engineering, and operations. Roadmap presentation is assembled from cycles and modules so the design does not depend on an enterprise-only roadmap view.
+Moving to another VPS or cloud provider means applying the same host contract and changing only the small provider adapter for compute, DNS, firewall, and backup endpoint.
 
-Plane is also the preferred AI integration because Plane publishes an [official open-source MCP server](https://github.com/makeplane/plane-mcp-server) for ChatGPT, Claude, Cursor, and VS Code, backed by Plane's documented REST API. HASHPASS therefore uses that server directly with a least-privilege Plane service account; it does **not** build or maintain a custom Plane MCP compatibility layer. Intended workflows include creating a HASHFEST Sponsor Outreach cycle, updating and assigning a Stellar follow-up, and listing BSL blockers.
+## AWS control plane
 
-This deployment does **not** rely on paid customer management, email intake, public forms, or Plane Wiki. Frappe Helpdesk's open-source app supplies the portal, tickets, contacts, assignment, priorities/statuses, SLA doctypes, email accounts, knowledge-base articles, and agent UI. Reporting is limited to what the open-source app exposes. There is no paid or per-agent critical dependency.
+### SSM Hybrid: administration
 
-Before each upgrade, repeat this validation against the candidate tags; never silently replace a Community primitive with an enterprise feature. Relevant upstream references are Plane's [Community Edition repository](https://github.com/makeplane/plane), [feature documentation](https://developers.plane.so/self-hosting/govern/feature-management), [API introduction](https://developers.plane.so/api-reference/introduction), and [official MCP repository](https://github.com/makeplane/plane-mcp-server).
+Use AWS Systems Manager Hybrid Activation for programmatic host operations. The VPS initiates outbound TLS connections; SSM does not require an inbound administrative port. Create an activation with registration limit `1` and the shortest practical expiry. Treat its ID and code like a one-time enrollment secret and pass them only to `ops/self-hosted/ansible/playbooks/aws-hybrid-ssm.yml` through a secure operator channel.
 
-## Source of truth and support lifecycle
+The Terraform S3 backend is mandatory for this stack because an activation code is a sensitive Terraform output. Its bucket must permit the Hashpass deployment identity to list the state prefix and read/write its objects; its lock-table permission set is limited to the Terraform locking operations. Always set `AWS_PROFILE=hashpass` before Terraform backend initialization. Never fall back to local state or copy an activation output into a ticket, shell history, CI log, or `.env` file.
 
-Customer accounts, conversations, SLA state, articles, and ticket history live in Frappe only. The SDK/widget work in this PR is an application-facing intake surface; production wiring must target the Frappe-backed gateway rather than create a second durable ticket store. Until that cutover is verified, keep the existing HASHPASS support routes disabled in production. Plane stores only an escalation work item containing the Frappe ticket ID and URL; do not copy the full customer conversation or unnecessary personal data.
+The SSM node role must remain administration-only. A CI or operator role may invoke only reviewed SSM documents against the tagged Hashpass node; do not grant arbitrary `SendCommand` broadly. Session Manager and Run Command are billable for hybrid nodes from 2026-09-30, so retain this path for deliberate administration, not application traffic.
 
-1. Customer signs in at `support.hashpass.tech`, creates/replies to a ticket, or emails the configured support mailbox.
-2. Helpdesk applies category, priority, SLA, assignment, and customer history. Support resolves ordinary issues there.
-3. For product/engineering work, an agent creates a Plane issue manually or through the narrow integration and adds reciprocal `FRAPPE:<ticket-id>` / Plane URLs.
-4. Engineering resolves the Plane issue. Support records the outcome in Frappe and notifies the customer.
+### IAM Roles Anywhere: workload access
 
-Email-to-ticket uses a dedicated support mailbox configured as a Frappe Email Account using provider credentials from the host secret store. SPF, DKIM, DMARC, inbound IMAP/OAuth, and outbound SMTP must be verified before enabling replies. Plane never receives customer email.
+Use IAM Roles Anywhere only when a named VPS workload genuinely needs an AWS secret, KMS decrypt operation, or S3 prefix. The workload presents a client X.509 certificate to obtain short-lived role credentials through `aws_signing_helper credential-process`.
 
-## Initial information architecture
+Before applying the access stack, provide and review all of the following:
 
-Import `ops/self-hosted/config/hashfest.json` after the Plane workspace exists. Create one `HASHFEST` project and its listed modules. Store historical narrative and research as Pages; decisions as dated decision records; milestones in cycles/modules; risks as labelled work items; actions only as work items with an owner and expected outcome. Create the Helpdesk categories from `helpdesk-taxonomy.json` and resist adding overlapping categories until ticket data demonstrates a need.
+- a public trust-anchor certificate bundle, never its CA private key;
+- one client-certificate Common Name bound in the role trust policy;
+- exact Secrets Manager ARNs;
+- exact KMS key ARNs;
+- exact S3 bucket and object-prefix ARNs.
 
-## AI/MCP boundary
+The low-cost first stage must not create AWS Private CA by default. Use an existing approved CA or an offline/operator-controlled CA and import only its public certificate as the trust anchor. Store the workload private key root-readable only (`0400`), outside Git and the shared Compose `.env`; rotate and revoke the client certificate on host compromise or role change.
 
-Plane uses the official pinned MCP server and a non-admin Plane service identity. The HASHPASS Frappe MCP exposes exactly the fourteen approved tools. Its read process cannot mutate; its write process requires a distinct credential plus two explicit write switches. The AI client never receives Administrator credentials. Close/reopen and arbitrary updates belong only in the separately approved write client. Frappe permissions remain the final authorization boundary and audit source.
+## Deployment gates
 
-## Notion migration
+1. Apply and review the access Terraform plan using the `hashpass` AWS profile after confirming the target account privately.
+2. Enroll the VPS once with `aws-hybrid-ssm.yml`; verify it appears as a managed node and close the activation window.
+3. Install the signed AWS Roles Anywhere helper and configure `aws-roles-anywhere.yml` only if a specific workload has approved ARNs. Verify a temporary credential's role identity and denied access outside its allowlist.
+4. Configure DNS, Caddy TLS, encrypted off-server backups, and monitoring.
+5. Stream the generated bootstrap secret from AWS Secrets Manager directly into a root-owned host environment file (`/etc/hashpass/self-hosted.env`, mode `0600`) during a FIDO2-approved deployment session. Do not write it to the repository, a Compose directory, or terminal output. Complete the separately scoped backup-endpoint and application-service-token values before deployment.
+6. Deploy pinned Plane and Frappe Compose assets; validate private database listeners, authenticated application health, backup, and restore.
+7. Run the Notion importer manually in archive-only mode, then execute idempotency and restore drills before enabling the schedule or Plane materialization.
 
-Do not bulk-import the founder workspace and do not build bidirectional sync.
+## Security controls
 
-1. Inventory only HASHFEST, BSL, product operations, partner/sponsor execution, runbooks, SOPs, and shared product documents.
-2. Classify every item as reference, decision, milestone, risk, or actionable work. Remove duplicates and secrets before export.
-3. Recreate HASHFEST flagship planning, 2023 archive, break-even strategy, committee/governance, anchor-partner strategy, sponsor matrices, and contact research in the corresponding Plane Pages/modules. Restrict sensitive contact research to the smallest team role.
-4. Owners compare counts, links, attachments, permissions, and a sample of rendered pages. Actions receive an owner; prose does not automatically become tickets.
-5. Freeze the operational Notion area, add a dated pointer to the Plane project, retain it read-only for 30 days, then archive it. Plane is the sole operational source from the cutover date.
+- Keep SSH key-only and root-disabled. The FIDO2 key is the recovery path, not a service credential.
+- Restrict the host firewall to 80/443 public, SSH only from approved management networks, and outbound HTTPS/DNS/NTP plus explicitly required backup destinations. Database, Docker API, MinIO console, and service ports remain private.
+- Pin images; use independent generated application/database/object-storage secrets; rotate container logs; retain encrypted backups off-host.
+- Give Plane and Frappe no AWS credentials by default. Their local MinIO and restic endpoint credentials are separate S3-compatible service credentials.
+- Log SSM and IAM role activity in AWS; avoid logging activation codes, certificate private keys, database passwords, Notion tokens, or raw archive material.
 
-## Security review
+## Cost guardrail
 
-Required before public exposure: patched host and Docker; default-deny firewall allowing only SSH from the management network plus 80/443; no default/placeholders; unique generated credentials; SSH keys and no password login; encrypted host disk; service-user least privilege; Frappe/Plane audit logs retained; container logs rotated; SMTP OAuth/app password isolated; MCP accessible only to approved local clients or a mutually authenticated private gateway; Caddy/upstream request limits at the host firewall/WAF; database ports verified absent from `ss -lnt`; daily encrypted off-server backups; and alerts for disk, certificate expiry, container health, backup age, and 5xx rate.
-
-Track upstream advisories for [Plane](https://github.com/makeplane/plane/security), [Frappe Helpdesk](https://github.com/frappe/helpdesk/security), [Frappe Framework](https://github.com/frappe/frappe/security), Caddy, MariaDB, PostgreSQL, Redis/Valkey, RabbitMQ, and MinIO. Run `docker scout cves` or Trivy on every pinned image before promotion. Do not expose MinIO console, RabbitMQ management, databases, Redis, or MCP over the public network.
+The VPS remains the fixed compute cost. SSM hybrid-node registration has no per-node fee; Session Manager is $0.05 per session and Run Command is $0.002 per invocation from 2026-09-30. IAM Roles Anywhere avoids long-lived keys but certificate lifecycle remains an operations cost. Do not add AWS Private CA without a separate cost approval.

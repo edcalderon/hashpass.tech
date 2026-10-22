@@ -43,6 +43,9 @@ const setCachedRegistryRow = (
 type AuthenticatedUser = {
   id: string;
   email?: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
+  user_metadata?: Record<string, unknown> | null;
 };
 
 export interface ResolvedNotificationIdentity {
@@ -86,7 +89,8 @@ export function isResolveIdentityError(
 export async function resolveSupabaseIdentityForUser(
   supabase: ReturnType<typeof getSupabaseServerForRequest>,
   user: AuthenticatedUser,
-  guardContext?: { profileId: string; environment: 'development' | 'production' }
+  guardContext?: { profileId: string; environment: 'development' | 'production' },
+  provider?: 'better-auth' | 'directus',
 ): Promise<ResolvedNotificationIdentity> {
   const email = user.email?.trim().toLowerCase() || '';
   if (!email) {
@@ -116,6 +120,45 @@ export async function resolveSupabaseIdentityForUser(
     }
 
     if (guardContext) recordDbSuccess(guardContext.profileId);
+
+    // Better Auth sessions are valid before the asynchronous Supabase bridge
+    // has completed. Keep Contacts usable in that interval by creating the
+    // canonical registry row from the already verified session. This does
+    // not grant a Supabase identity; it only gives registry-backed features
+    // their own account id and records the Better Auth provider id.
+    if (!registryRow && provider === 'better-auth') {
+      const { data: upserted, error: upsertError } = await (supabase as any).rpc(
+        'upsert_public_user_registry',
+        {
+          p_payload: {
+            provider: 'better-auth',
+            auth_provider: 'better-auth',
+            auth_user_id: user.id,
+            email,
+            first_name: user.first_name ?? null,
+            last_name: user.last_name ?? null,
+            full_name: [user.first_name, user.last_name].filter(Boolean).join(' ') || null,
+            avatar_url: (user.user_metadata?.image as string | undefined) || null,
+            role: 'user',
+            status: 'active',
+            auth_metadata: user.user_metadata || {},
+            profile_metadata: {},
+            provider_ids: { 'better-auth': user.id },
+          },
+        },
+      );
+
+      if (!upsertError && upserted?.id) {
+        const value = { id: upserted.id, provider_ids: { 'better-auth': user.id } };
+        setCachedRegistryRow(email, value, guardContext?.profileId);
+        return { supabaseUserId: null, registryUserId: upserted.id, email };
+      }
+
+      if (upsertError) {
+        console.error('[resolve-notification-identity] Better Auth registry self-heal failed:', upsertError);
+      }
+    }
+
     setCachedRegistryRow(email, registryRow ?? null, guardContext?.profileId);
     const supabaseUserId = registryRow?.provider_ids?.supabase ?? null;
     const registryUserId = registryRow?.id ?? null;
@@ -262,7 +305,7 @@ export async function resolveNotificationIdentity(
     if (!user.email) {
       return { error: 'Authenticated user has no email on record', status: 400 };
     }
-    return resolveSupabaseIdentityForUser(supabase, user, guardContext);
+    return resolveSupabaseIdentityForUser(supabase, user, guardContext, 'directus');
   }
 
   // 3. A Better Auth session is cookie-backed. After a provider bearer could
@@ -279,7 +322,7 @@ export async function resolveNotificationIdentity(
     if (!betterAuthUser.email) {
       return { error: 'Authenticated user has no email on record', status: 400 };
     }
-    return resolveSupabaseIdentityForUser(supabase, betterAuthUser, guardContext);
+    return resolveSupabaseIdentityForUser(supabase, betterAuthUser, guardContext, 'better-auth');
   }
 
   // Neither the bearer nor the Better Auth cookie authenticated the caller.

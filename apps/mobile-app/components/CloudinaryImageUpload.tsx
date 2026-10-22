@@ -1,9 +1,20 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, Platform } from 'react-native';
 import type { CloudinaryUploadPart } from '../types/cloudinary.types';
+import type { AvatarCandidate, AvatarMime } from '../types/avatar-guards.types';
+import {
+  AVATAR_ALLOWED_EXTENSIONS,
+  AVATAR_ALLOWED_MIME,
+  AVATAR_MAX_BYTES,
+  AvatarGuardError,
+  formatBytes,
+  validateAvatarBytes,
+  validateAvatarMetadata,
+} from '../lib/avatar-guards';
 
-const DEFAULT_UPLOAD_MAX_SIZE = 10 * 1024 * 1024;
-const DEFAULT_UPLOAD_FORMATS = ['jpg', 'jpeg', 'png', 'webp', 'avif'];
+const DEFAULT_UPLOAD_MAX_SIZE = AVATAR_MAX_BYTES;
+const DEFAULT_UPLOAD_FORMATS: string[] = [...AVATAR_ALLOWED_EXTENSIONS];
+const MIME_EXTENSION: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
 
 interface CloudinaryImageUploadProps {
   onUploadSuccess?: (result: any) => void;
@@ -32,28 +43,38 @@ export default function CloudinaryImageUpload({
   const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const validateFile = useCallback((file: CloudinaryUploadPart, fileName: string): boolean => {
-    // Check file size
-    const fileSize = 'size' in file && typeof file.size === 'number' ? file.size : undefined;
-    if (fileSize !== undefined && fileSize > maxSize) {
-      const error = new Error(`File size exceeds ${Math.round(maxSize / (1024 * 1024))}MB limit`);
-      onUploadError?.(error);
+  // Metadata guards (size, extension/MIME allowlist, dimensions) work for both
+  // web Files and native picker assets. Web files also get a magic-byte check.
+  const validateFile = useCallback(async (
+    file: CloudinaryUploadPart,
+    fileName: string,
+    extra: Pick<AvatarCandidate, 'width' | 'height' | 'size' | 'mimeType'> = {},
+  ): Promise<boolean> => {
+    try {
+      const blob = typeof Blob !== 'undefined' && file instanceof Blob ? file : null;
+      const mime = validateAvatarMetadata({
+        name: fileName,
+        mimeType: extra.mimeType ?? blob?.type ?? ('type' in file ? file.type : undefined),
+        size: extra.size ?? blob?.size,
+        width: extra.width,
+        height: extra.height,
+      }, { maxBytes: maxSize, allowedExtensions: allowedTypes });
+      if (blob && typeof blob.slice === 'function' && typeof blob.slice(0, 12).arrayBuffer === 'function') {
+        validateAvatarBytes(new Uint8Array(await blob.slice(0, 12).arrayBuffer()), mime as AvatarMime);
+      }
+      return true;
+    } catch (error) {
+      onUploadError?.(error instanceof AvatarGuardError ? error : new Error('The selected image could not be checked'));
       return false;
     }
-
-    // Check file type
-    const fileExtension = fileName.split('.').pop()?.toLowerCase();
-    if (!fileExtension || !allowedTypes.includes(fileExtension)) {
-      const error = new Error(`File type not allowed. Allowed types: ${allowedTypes.join(', ')}`);
-      onUploadError?.(error);
-      return false;
-    }
-
-    return true;
   }, [allowedTypes, maxSize, onUploadError]);
 
-  const handleFileUpload = useCallback(async (file: CloudinaryUploadPart, fileName = 'upload.jpg') => {
-    if (!validateFile(file, fileName)) return;
+  const handleFileUpload = useCallback(async (
+    file: CloudinaryUploadPart,
+    fileName = 'upload.jpg',
+    extra?: Pick<AvatarCandidate, 'width' | 'height' | 'size' | 'mimeType'>,
+  ) => {
+    if (!(await validateFile(file, fileName, extra))) return;
 
     setUploading(true);
     setUploadProgress(0);
@@ -62,7 +83,9 @@ export default function CloudinaryImageUpload({
       // Cloudinary is loaded on demand so importing this component does not
       // initialize Expo Constants/native modules on web or in Jest.
       // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const { uploadImage } = require('../lib/cloudinary') as typeof import('../lib/cloudinary');
+      const { uploadImage } = require('../lib/cloudinary') as {
+        uploadImage: (file: CloudinaryUploadPart, options: Record<string, unknown>) => Promise<unknown>;
+      };
       const result = await uploadImage(file, {
         publicId: undefined, // Let Cloudinary generate
         folder,
@@ -121,12 +144,18 @@ export default function CloudinaryImageUpload({
         const asset = result.assets[0];
         // React Native 0.79's FormData accepts local files only as URI-backed
         // parts. Keep the picker URI intact instead of fetching it into a Blob.
-        const fileName = asset.fileName || 'avatar.jpg';
+        const mimeType = asset.mimeType || 'image/jpeg';
+        const fileName = asset.fileName || `avatar.${MIME_EXTENSION[mimeType.toLowerCase()] ?? 'jpg'}`;
         await handleFileUpload({
           uri: asset.uri,
           name: fileName,
-          type: asset.mimeType || 'image/jpeg',
-        }, fileName);
+          type: mimeType,
+        }, fileName, {
+          mimeType,
+          size: asset.fileSize,
+          width: asset.width,
+          height: asset.height,
+        });
       }
     } catch (error) {
       console.error('Mobile upload error:', error);
@@ -168,7 +197,7 @@ export default function CloudinaryImageUpload({
         <input
           ref={fileInputRef}
           type="file"
-          accept={allowedTypes.map(type => `image/${type}`).join(',')}
+          accept={AVATAR_ALLOWED_MIME.join(',')}
           onChange={handleWebFileChange}
           style={{ display: 'none' }}
         />
@@ -176,7 +205,7 @@ export default function CloudinaryImageUpload({
 
       {/* Upload info */}
       <Text style={styles.infoText}>
-        Max size: {Math.round(maxSize / (1024 * 1024))}MB
+        Max size: {formatBytes(maxSize)}
       </Text>
       <Text style={styles.infoText}>
         Formats: {allowedTypes.join(', ')}

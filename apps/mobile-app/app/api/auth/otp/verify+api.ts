@@ -1,13 +1,23 @@
 /* eslint-disable no-restricted-syntax -- Server-side OTP verification must call GoTrue directly. */
-import { getSupabaseServerEnv, getSupabaseServerForRequest } from '../../../../lib/supabase-server';
-import { hostnameFromRequest, resolvePublicSupabaseConfig } from '../../../../config/supabase-profiles';
-import { syncPublicUserRegistry } from '../../../../lib/auth/public-user-registry';
-import { sendWelcomeEmailToNewUser } from '../../../../lib/email';
+import {
+  getSupabaseServerEnv,
+  getSupabaseServerForRequest,
+} from "../../../../lib/supabase-server";
+import {
+  hostnameFromRequest,
+  resolvePublicSupabaseConfig,
+} from "../../../../config/supabase-profiles";
+import { syncPublicUserRegistry } from "../../../../lib/auth/public-user-registry";
+import { sendWelcomeEmailToNewUser } from "../../../../lib/email";
+import {
+  createEmailLookupHash,
+  createOtpCodeHash,
+} from "../../../../lib/server/sms-auth";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
 
 type ParsedTokenHash = {
@@ -17,53 +27,59 @@ type ParsedTokenHash = {
 };
 
 const SUPABASE_PROFILE_IDS = [
-  'core-development',
-  'core-production',
-  'bsl-development',
+  "core-development",
+  "core-production",
+  "bsl-development",
 ] as const;
 
-function parseStoredTokenHash(rawTokenHash: string | null | undefined): ParsedTokenHash {
+function parseStoredTokenHash(
+  rawTokenHash: string | null | undefined,
+): ParsedTokenHash {
   const fallback: ParsedTokenHash = {
-    tokenHash: rawTokenHash?.trim() || '',
-    verificationType: 'magiclink',
-    emailOtp: '',
+    tokenHash: rawTokenHash?.trim() || "",
+    verificationType: "magiclink",
+    emailOtp: "",
   };
 
   if (!rawTokenHash) return fallback;
 
-  const parts = rawTokenHash.split('::');
+  const parts = rawTokenHash.split("::");
   if (parts.length < 2) return fallback;
 
   const verificationType = parts[0].trim();
   const tokenHash = parts[1].trim();
-  const emailOtp = parts.length >= 3 ? parts[2].trim() : '';
+  const emailOtp = parts.length >= 3 ? parts[2].trim() : "";
 
   if (!tokenHash) return fallback;
 
   return {
     tokenHash,
-    verificationType: verificationType || 'magiclink',
+    verificationType: verificationType || "magiclink",
     emailOtp,
   };
 }
 
-function decodeJwtPayload(token: string | null | undefined): Record<string, any> | null {
-  if (!token || !token.includes('.')) return null;
+function decodeJwtPayload(
+  token: string | null | undefined,
+): Record<string, any> | null {
+  if (!token || !token.includes(".")) return null;
 
   try {
-    const payload = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
-    return JSON.parse(Buffer.from(payload, 'base64').toString('utf8'));
+    const payload = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+    return JSON.parse(Buffer.from(payload, "base64").toString("utf8"));
   } catch {
     return null;
   }
 }
 
-function supabaseProjectRefFromUrl(value: string | null | undefined): string | null {
+function supabaseProjectRefFromUrl(
+  value: string | null | undefined,
+): string | null {
   if (!value) return null;
 
   try {
     const hostname = new URL(value).hostname.toLowerCase();
-    const [projectRef] = hostname.split('.');
+    const [projectRef] = hostname.split(".");
     return projectRef || null;
   } catch {
     return null;
@@ -78,7 +94,8 @@ function resolveAnonConfigForServiceProject(request: Request): {
 } {
   const hostname = hostnameFromRequest(request);
   const serverEnv = getSupabaseServerEnv(request);
-  const serviceRef = decodeJwtPayload(serverEnv.supabaseServiceKey)?.ref || null;
+  const serviceRef =
+    decodeJwtPayload(serverEnv.supabaseServiceKey)?.ref || null;
   const fallback = resolvePublicSupabaseConfig({ hostname });
 
   if (serviceRef) {
@@ -111,7 +128,7 @@ function resolveAnonConfigForServiceProject(request: Request): {
 export async function OPTIONS() {
   return new Response(null, {
     status: 204,
-    headers: corsHeaders
+    headers: corsHeaders,
   });
 }
 
@@ -119,8 +136,8 @@ export async function OPTIONS() {
  * API endpoint to verify OTP code.
  *
  * Flow:
- * 1. Look up the 6-digit code in otp_codes (service-role client).
- * 2. Mark the code as used.
+ * 1. Atomically compare the keyed verifier in otp_codes (service-role client).
+ * 2. Mark the code as used while holding the row lock.
  * 3. Generate a fresh single-use magic-link via the admin API.
  * 4. Verify the fresh token using an anon-key client (same Supabase project,
  *    resolved from the request hostname). GoTrue rejects token_hash verification
@@ -131,119 +148,115 @@ export async function POST(request: Request) {
   try {
     const supabase = getSupabaseServerForRequest(request);
     const body = await request.json();
-    const { email, code } = body;
+    const { email, code, registrationChallengeId } = body;
 
     if (!email || !code) {
       return new Response(
-        JSON.stringify({ error: 'Email and code are required' }),
-        { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+        JSON.stringify({ error: "Email and code are required" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        },
       );
     }
 
-    const { selectedProfile, usingDevFallback } = getSupabaseServerEnv(request);
+    const { selectedProfile, usingDevFallback, supabaseServiceKey } =
+      getSupabaseServerEnv(request);
+    if (!supabaseServiceKey) {
+      return new Response(
+        JSON.stringify({ error: "Authentication service unavailable" }),
+        {
+          status: 503,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        },
+      );
+    }
 
     const normalizedEmail = email.trim().toLowerCase();
     const normalizedCode = code.toString().trim();
+    const codeHmac = createOtpCodeHash({
+      serviceKey: supabaseServiceKey,
+      email: normalizedEmail,
+      code: normalizedCode,
+      purpose: "email-login",
+    });
 
-    // Look up the token_hash from the code
-    const { data: otpData, error: lookupError } = await supabase
-      .from('otp_codes')
-      .select('token_hash, used, expires_at, email')
-      .eq('email', normalizedEmail)
-      .eq('code', normalizedCode)
-      .or('used.eq.false,used.is.null')
-      .gt('expires_at', new Date().toISOString())
-      .order('expires_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    // Compare and consume the verifier inside a locked database function. This
+    // counts failed attempts and makes a successful code single-use even when
+    // two verification requests arrive concurrently.
+    const { data: otpData, error: consumeError } = await supabase.rpc(
+      "consume_email_otp",
+      {
+        p_email: normalizedEmail,
+        p_code_hmac: codeHmac,
+        p_purpose: "email-login",
+      },
+    );
 
-    if (lookupError) {
-      console.error('OTP lookup error:', lookupError);
+    if (consumeError) {
+      console.error("OTP consume error:", consumeError);
       return new Response(
         JSON.stringify({
-          error: 'Database error while verifying code',
-          details: lookupError.message
+          error: "Authentication service unavailable",
+          code: "otp_verification_unavailable",
         }),
-        { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+        {
+          status: 503,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        },
       );
     }
 
-    if (!otpData) {
-      console.log('OTP code not found:', {
-        email: normalizedEmail,
-        code: normalizedCode,
-        selectedProfile,
-        usingDevFallback,
-      });
-
-      // Check if code exists but is used or expired
-      const { data: expiredData } = await supabase
-        .from('otp_codes')
-        .select('used, expires_at')
-        .eq('email', normalizedEmail)
-        .eq('code', normalizedCode)
-        .order('expires_at', { ascending: false })
-        .limit(1)
-        .maybeSingle() as any;
-
-      if (expiredData) {
-        if (expiredData.used) {
-          return new Response(
-            JSON.stringify({ error: 'This code has already been used' }),
-            { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
-          );
-        }
-        if (new Date(expiredData.expires_at) < new Date()) {
-          return new Response(
-            JSON.stringify({ error: 'This code has expired' }),
-            { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
-          );
-        }
-      }
-
+    if (!otpData?.ok) {
+      console.log("OTP code not found:", { selectedProfile, usingDevFallback });
       return new Response(
-        JSON.stringify({ error: 'Invalid verification code' }),
-        { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+        JSON.stringify({ error: "Invalid verification code" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        },
       );
     }
 
-    const parsedToken = parseStoredTokenHash((otpData as any).token_hash);
+    const parsedToken = parseStoredTokenHash(otpData.tokenHash);
     if (!parsedToken.tokenHash && !parsedToken.emailOtp) {
       return new Response(
-        JSON.stringify({ error: 'Invalid verification token payload' }),
-        { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+        JSON.stringify({ error: "Invalid verification token payload" }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        },
       );
     }
-
-    // Mark the code as used before touching Supabase auth so it cannot be replayed.
-    await supabase
-      .from('otp_codes')
-      .update({ used: true } as any)
-      .eq('email', normalizedEmail)
-      .eq('code', normalizedCode)
-      .eq('token_hash', (otpData as any).token_hash);
 
     // Use the stored token_hash directly — admin.generateLink() does not send an email,
     // so the stored token from the OTP send step is still valid and unConsumed.
     // Generating a fresh link here caused GoTrue to return "Only the token_hash and type
     // should be provided" because the JS client attaches extra PKCE fields internally.
-    const { anonUrl, anonKey, matchedProfile, serviceRef } = resolveAnonConfigForServiceProject(request);
+    const { anonUrl, anonKey, matchedProfile, serviceRef } =
+      resolveAnonConfigForServiceProject(request);
 
     if (!anonUrl || !anonKey) {
-      console.error('OTP verify: missing anon Supabase config:', {
+      console.error("OTP verify: missing anon Supabase config:", {
         matchedProfile,
         serviceRef,
       });
       return new Response(
-        JSON.stringify({ error: 'Server configuration error', code: 'server_config_error' }),
-        { status: 503, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+        JSON.stringify({
+          error: "Server configuration error",
+          code: "server_config_error",
+        }),
+        {
+          status: 503,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        },
       );
     }
 
     const gotrueVerifyUrl = `${anonUrl}/auth/v1/verify`;
 
     const verificationTypes = Array.from(
-      new Set([parsedToken.verificationType, 'magiclink', 'signup', 'email'])
+      new Set([parsedToken.verificationType, "magiclink", "signup", "email"]),
     );
 
     let verificationResult: { data: any; error: any } | null = null;
@@ -264,7 +277,11 @@ export async function POST(request: Request) {
         bodies.push({ token_hash: parsedToken.tokenHash, type });
       }
       if (parsedToken.emailOtp) {
-        bodies.push({ email: normalizedEmail, token: parsedToken.emailOtp, type });
+        bodies.push({
+          email: normalizedEmail,
+          token: parsedToken.emailOtp,
+          type,
+        });
       }
       return bodies;
     };
@@ -274,16 +291,19 @@ export async function POST(request: Request) {
         let res: Response;
         try {
           res = await fetch(gotrueVerifyUrl, {
-            method: 'POST',
+            method: "POST",
             headers: {
-              'Content-Type': 'application/json',
-              'apikey': anonKey,
-              'Authorization': `Bearer ${anonKey}`,
+              "Content-Type": "application/json",
+              apikey: anonKey,
+              Authorization: `Bearer ${anonKey}`,
             },
             body: JSON.stringify(body),
           });
         } catch (fetchErr) {
-          verificationResult = { data: null, error: { message: String(fetchErr), code: 'fetch_error' } };
+          verificationResult = {
+            data: null,
+            error: { message: String(fetchErr), code: "fetch_error" },
+          };
           break outer;
         }
 
@@ -305,12 +325,19 @@ export async function POST(request: Request) {
         }
 
         const errData = await res.json().catch(() => ({}));
-        const message: string = errData.msg || errData.error_description || errData.message || `status ${res.status}`;
+        const message: string =
+          errData.msg ||
+          errData.error_description ||
+          errData.message ||
+          `status ${res.status}`;
         const isExpired =
           /email link is invalid or has expired/i.test(message) ||
           /otp has expired or is invalid/i.test(message);
 
-        verificationResult = { data: null, error: { message, code: errData.error_code || 'verify_failed' } };
+        verificationResult = {
+          data: null,
+          error: { message, code: errData.error_code || "verify_failed" },
+        };
         // Only stop all retries when the token itself is expired/invalid.
         // For any other error (wrong type, unsupported body shape, etc.) keep
         // trying the remaining bodies and types.
@@ -320,30 +347,77 @@ export async function POST(request: Request) {
     }
 
     if (!verificationResult || verificationResult.error) {
-      const errorMessage = verificationResult?.error?.message || 'Failed to verify OTP';
-      console.error('OTP verify: GoTrue verification failed:', errorMessage);
+      const errorMessage =
+        verificationResult?.error?.message || "Failed to verify OTP";
+      console.error("OTP verify: GoTrue verification failed:", errorMessage);
       return new Response(
         JSON.stringify({
           error: errorMessage,
-          code: verificationResult?.error?.code || 'otp_verify_failed',
+          code: verificationResult?.error?.code || "otp_verify_failed",
         }),
-        { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+        {
+          status: 401,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        },
       );
     }
 
     const session = verificationResult.data?.session || null;
     const user = verificationResult.data?.user || null;
 
+    if (registrationChallengeId !== undefined) {
+      const challengeId =
+        typeof registrationChallengeId === "string"
+          ? registrationChallengeId.trim()
+          : "";
+      if (!/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(challengeId) || !user?.id) {
+        return new Response(
+          JSON.stringify({
+            error: "Phone registration could not be completed.",
+          }),
+          {
+            status: 400,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          },
+        );
+      }
+
+      // This procedure locks the SMS challenge, verifies that phone possession
+      // was already proven, creates the account-bound authenticator, and marks
+      // the registration consumed as one database operation.
+      const { data: registration, error: registrationError } =
+        await supabase.rpc("consume_sms_registration", {
+          p_challenge_id: challengeId,
+          p_email_lookup_hmac: createEmailLookupHash(
+            supabaseServiceKey,
+            normalizedEmail,
+          ),
+          p_user_id: user.id,
+        });
+      if (registrationError || !registration?.ok) {
+        return new Response(
+          JSON.stringify({
+            error: "Phone registration could not be completed.",
+          }),
+          {
+            status: 400,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          },
+        );
+      }
+    }
+
     if (user?.id && user?.email) {
       await syncPublicUserRegistry(request, {
-        provider: 'supabase',
+        provider: "supabase",
         authUserId: user.id,
         email: user.email,
         firstName: user.user_metadata?.first_name || null,
         lastName: user.user_metadata?.last_name || null,
         fullName: user.user_metadata?.full_name || null,
-        avatarUrl: user.user_metadata?.avatar_url || user.user_metadata?.picture || null,
-        status: user.user_metadata?.status || 'active',
+        avatarUrl:
+          user.user_metadata?.avatar_url || user.user_metadata?.picture || null,
+        status: user.user_metadata?.status || "active",
         emailVerifiedAt: user.email_confirmed_at || user.confirmed_at || null,
         lastSignInAt: user.last_sign_in_at || null,
         authMetadata: user.app_metadata || {},
@@ -362,19 +436,26 @@ export async function POST(request: Request) {
       // both hashpass.tech and bsl.hashpass.tech via SUPABASE_PROFILE_IDS),
       // not the global core-production default -- otherwise a BSL user's
       // tracking lookup/mark would run against the wrong Supabase project.
-      if (!user.email.includes('@wallet.')) {
+      if (!user.email.includes("@wallet.")) {
         try {
-          await sendWelcomeEmailToNewUser(user.id, user.email, undefined, supabase);
+          await sendWelcomeEmailToNewUser(
+            user.id,
+            user.email,
+            undefined,
+            supabase,
+          );
         } catch (error) {
           console.error(
-            '[OTP verify] Welcome email failed:',
-            error instanceof Error ? error.message : String(error)
+            "[OTP verify] Welcome email failed:",
+            error instanceof Error ? error.message : String(error),
           );
         }
       }
     }
 
-    console.log('OTP code verified on server, returning session payload to client');
+    console.log(
+      "OTP code verified on server, returning session payload to client",
+    );
 
     return new Response(
       JSON.stringify({
@@ -385,13 +466,19 @@ export async function POST(request: Request) {
         session,
         user,
       }),
-      { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      },
     );
   } catch (error: any) {
-    console.error('OTP verification error:', error);
+    console.error("OTP verification error:", error);
     return new Response(
-      JSON.stringify({ error: error.message || 'Failed to verify OTP' }),
-      { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      JSON.stringify({ error: error.message || "Failed to verify OTP" }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      },
     );
   }
 }

@@ -488,6 +488,8 @@ const WEB_IONICONS_TO_MATERIAL_ICONS: Record<string, string> = {
   "language-outline": "language",
   "lock-closed-outline": "lock-closed-outline",
   "notifications-outline": "notifications",
+  "open-outline": "open-in-new",
+  "options-outline": "tune",
   "people-outline": "people-outline",
   "person-outline": "person",
   "refresh-outline": "refresh",

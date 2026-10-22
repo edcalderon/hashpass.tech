@@ -153,7 +153,6 @@ export function isPlaneIdentityAllowed({
   if (separator <= 0 || separator === normalizedEmail.length - 1) return false;
   return emailDomains.has(normalizedEmail.slice(separator + 1));
 }
-
 export function authorizePlaneRequest({
   body,
   scopes,

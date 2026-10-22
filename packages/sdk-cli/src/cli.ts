@@ -4,7 +4,10 @@ import {
   type HashpassClient,
 } from "@hashpass-tech/sdk";
 import { parseArgs, stringFlag, type ParsedArgs } from "./args.js";
+import { createSecretReader, type SecretReader } from "./prompt.js";
 import { defaultSessionPath, FileSessionStore } from "./session-store.js";
+import { FileStepUpProofStore, isStepUpScope } from "./step-up-store.js";
+import type { CliOptions } from "./types.js";
 
 export interface CliIo {
   out(message: string): void;
@@ -28,6 +31,7 @@ export async function runCli(
   argv: string[],
   env: NodeJS.ProcessEnv = process.env,
   io: CliIo = { out: console.log, error: console.error },
+  options: CliOptions = {},
 ): Promise<number> {
   const args = parseArgs(argv);
   if (!args.command || args.command === "help" || args.flags.help) {
@@ -54,8 +58,16 @@ export async function runCli(
       supportSessionStore: new FileSessionStore(
         env.HASHPASS_SUPPORT_SESSION_FILE ?? `${primarySessionPath}.support`,
       ),
+      stepUpStore: new FileStepUpProofStore(
+        env.HASHPASS_STEP_UP_FILE ?? `${primarySessionPath}.step-up`,
+      ),
     });
-    const result = await dispatch(sdk, args, io);
+    const result = await dispatch(
+      sdk,
+      args,
+      io,
+      options.readSecret ?? createSecretReader(),
+    );
     if (result !== undefined) print(result, Boolean(args.flags.json), io);
     return 0;
   } catch (error) {
@@ -74,6 +86,7 @@ async function dispatch(
   sdk: HashpassClient,
   args: ParsedArgs,
   io: CliIo,
+  readSecret: SecretReader,
 ): Promise<unknown> {
   const [subcommand, id] = args.positionals;
   switch (args.command) {
@@ -92,6 +105,8 @@ async function dispatch(
     }
     case "logout":
       await sdk.auth.logout();
+      // A signed-out machine must not keep a proof that could still sign.
+      await sdk.stepUp.clear();
       return { authenticated: false };
     case "whoami": {
       const session = await sdk.auth.getSession();
@@ -105,6 +120,8 @@ async function dispatch(
     }
     case "support":
       return dispatchSupport(sdk, subcommand, id, args, io);
+    case "pin":
+      return dispatchPin(sdk, subcommand, args, readSecret);
     default:
       throw new Error(
         `Unknown command: ${args.command}. Run \`hashpass help\`.`,
@@ -176,6 +193,60 @@ async function dispatchSupport(
         "Use `hashpass support create|list|show|reply|handoff|resolve|widget|doctor`.",
       );
   }
+}
+
+async function dispatchPin(
+  sdk: HashpassClient,
+  command: string | undefined,
+  args: ParsedArgs,
+  readSecret: SecretReader,
+): Promise<unknown> {
+  // A PIN on the command line ends up in shell history and the process list.
+  if (args.flags.pin !== undefined || args.flags["current-pin"] !== undefined) {
+    throw new Error("Never pass a PIN as a flag. Type it at the prompt or pipe it on stdin.");
+  }
+  switch (command) {
+    case "status":
+      return sdk.stepUp.getPinStatus();
+    case "set": {
+      const status = await sdk.stepUp.getPinStatus();
+      const currentPin = status.enabled ? await readSecret("Current PIN: ") : undefined;
+      const pin = await readSecret("New PIN: ");
+      if ((await readSecret("Confirm new PIN: ")) !== pin) throw new Error("The PINs do not match.");
+      const outcome = await sdk.stepUp.setPin(pin, currentPin);
+      if (!outcome.ok) throw new Error(pinDenial(outcome));
+      return { ok: true, enabled: true };
+    }
+    case "verify": {
+      const scope = scopeFlag(args);
+      const result = await sdk.stepUp.verify(await readSecret("PIN: "), scope);
+      if (!result.ok) throw new Error(pinDenial(result));
+      // The proof itself stays in the store; it is a credential, not output.
+      return { ok: true, scope, expiresAt: result.proof.expiresAt };
+    }
+    case "forget": {
+      const scope = stringFlag(args, "scope");
+      if (scope !== undefined && !isStepUpScope(scope)) throw new Error(scopeError());
+      await sdk.stepUp.clear(scope as Parameters<typeof sdk.stepUp.clear>[0]);
+      return { cleared: scope ?? "all" };
+    }
+    default:
+      throw new Error("Use `hashpass pin status|set|verify|forget`.");
+  }
+}
+
+function pinDenial(outcome: { enabled: boolean; remainingAttempts: number; lockedUntil: string | null }): string {
+  if (!outcome.enabled) return "No PIN is set. Run `hashpass pin set` first.";
+  if (outcome.lockedUntil) return `Too many attempts. Try again after ${outcome.lockedUntil}.`;
+  return `That PIN is not correct. ${outcome.remainingAttempts} attempt${outcome.remainingAttempts === 1 ? "" : "s"} left.`;
+}
+
+const scopeError = () => "--scope must be app:unlock or wallet:sign.";
+
+function scopeFlag(args: ParsedArgs) {
+  const value = stringFlag(args, "scope") ?? "wallet:sign";
+  if (!isStepUpScope(value)) throw new Error(scopeError());
+  return value;
 }
 
 async function dispatchSupportWidget(
@@ -276,10 +347,16 @@ Usage:
   hashpass support widget init
   hashpass support widget show [--app-id ID]
   hashpass support doctor [--json]
+  hashpass pin status
+  hashpass pin set
+  hashpass pin verify [--scope wallet:sign|app:unlock]
+  hashpass pin forget [--scope wallet:sign|app:unlock]
 
 Configuration:
   HASHPASS_APP_ID       Public application identifier (required)
   HASHPASS_BASE_URL     Optional API override
   HASHPASS_SESSION_FILE Optional session file override
+  HASHPASS_STEP_UP_FILE Optional step-up proof file override
 
+The PIN is typed at a hidden prompt or piped on stdin, never a flag.
 Never pass client secrets or access tokens on the command line.`;

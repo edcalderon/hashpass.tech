@@ -1,9 +1,13 @@
 /// <reference types="jest" />
 
-jest.mock('expo/virtual/env', () => ({
-  __esModule: true,
-  env: process.env,
-}), { virtual: true });
+jest.mock(
+  "expo/virtual/env",
+  () => ({
+    __esModule: true,
+    env: process.env,
+  }),
+  { virtual: true },
+);
 
 const mockGetSupabaseServerEnv = jest.fn();
 const mockGetSupabaseServerForRequest = jest.fn();
@@ -11,18 +15,19 @@ const mockHostnameFromRequest = jest.fn();
 const mockResolvePublicSupabaseConfig = jest.fn();
 const mockSyncPublicUserRegistry = jest.fn(async () => null);
 const mockSendWelcomeEmailToNewUser = jest.fn(async () => ({ success: true }));
+const mockRpc = jest.fn();
 
-jest.mock('../../../../lib/supabase-server', () => ({
+jest.mock("../../../../lib/supabase-server", () => ({
   getSupabaseServerEnv: mockGetSupabaseServerEnv,
   getSupabaseServerForRequest: mockGetSupabaseServerForRequest,
 }));
 
-jest.mock('../../../../config/supabase-profiles', () => ({
+jest.mock("../../../../config/supabase-profiles", () => ({
   hostnameFromRequest: mockHostnameFromRequest,
   resolvePublicSupabaseConfig: mockResolvePublicSupabaseConfig,
 }));
 
-jest.mock('../../../../lib/auth/public-user-registry', () => ({
+jest.mock("../../../../lib/auth/public-user-registry", () => ({
   syncPublicUserRegistry: mockSyncPublicUserRegistry,
 }));
 
@@ -31,15 +36,17 @@ jest.mock('../../../../lib/auth/public-user-registry', () => ({
 // own tree -- mocked out entirely rather than depending on that being fixed,
 // matching the existing pattern other route tests already use (see
 // tests/api/subscribe.test.ts).
-jest.mock('../../../../lib/email', () => ({
+jest.mock("../../../../lib/email", () => ({
   sendWelcomeEmailToNewUser: mockSendWelcomeEmailToNewUser,
 }));
 
 const serviceRoleJwtForRef = (ref: string) => {
-  const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' }))
-    .toString('base64url');
-  const payload = Buffer.from(JSON.stringify({ ref, role: 'service_role' }))
-    .toString('base64url');
+  const header = Buffer.from(
+    JSON.stringify({ alg: "HS256", typ: "JWT" }),
+  ).toString("base64url");
+  const payload = Buffer.from(
+    JSON.stringify({ ref, role: "service_role" }),
+  ).toString("base64url");
 
   return `${header}.${payload}.signature`;
 };
@@ -54,10 +61,10 @@ const createOtpLookupBuilder = () => {
     limit: jest.fn(() => builder),
     maybeSingle: jest.fn(async () => ({
       data: {
-        token_hash: 'magiclink::stored-token-hash::123456',
+        token_hash: "magiclink::stored-token-hash::123456",
         used: false,
         expires_at: new Date(Date.now() + 60000).toISOString(),
-        email: 'user@example.com',
+        email: "user@example.com",
       },
       error: null,
     })),
@@ -75,7 +82,7 @@ const createOtpUpdateBuilder = () => {
   return builder;
 };
 
-describe('otp verify api', () => {
+describe("otp verify api", () => {
   const originalFetch = global.fetch;
 
   beforeEach(() => {
@@ -85,6 +92,19 @@ describe('otp verify api', () => {
     mockHostnameFromRequest.mockReset();
     mockResolvePublicSupabaseConfig.mockReset();
     mockSyncPublicUserRegistry.mockReset();
+    mockRpc.mockReset();
+    mockRpc.mockImplementation(async (name: string) =>
+      name === "consume_email_otp"
+        ? {
+            data: {
+              ok: true,
+              tokenHash: "magiclink::stored-token-hash::123456",
+              email: "user@example.com",
+            },
+            error: null,
+          }
+        : { data: { ok: true }, error: null },
+    );
 
     const lookupBuilder = createOtpLookupBuilder();
     const updateBuilder = createOtpUpdateBuilder();
@@ -95,99 +115,136 @@ describe('otp verify api', () => {
 
     mockGetSupabaseServerForRequest.mockReturnValue({
       from: mockFrom,
+      rpc: mockRpc,
     });
 
-    mockHostnameFromRequest.mockReturnValue('api-dev.hashpass.tech');
+    mockHostnameFromRequest.mockReturnValue("api-dev.hashpass.tech");
     mockGetSupabaseServerEnv.mockReturnValue({
-      selectedProfile: 'core-development',
+      selectedProfile: "core-development",
       usingDevFallback: false,
-      supabaseServiceKey: serviceRoleJwtForRef('prod-ref'),
+      supabaseServiceKey: serviceRoleJwtForRef("prod-ref"),
     });
 
-    mockResolvePublicSupabaseConfig.mockImplementation((input?: { profileId?: string }) => {
-      if (input?.profileId === 'core-production') {
+    mockResolvePublicSupabaseConfig.mockImplementation(
+      (input?: { profileId?: string }) => {
+        if (input?.profileId === "core-production") {
+          return {
+            profileId: "core-production",
+            supabaseUrl: "https://prod-ref.supabase.co",
+            supabaseAnonKey: "prod-anon-key",
+          };
+        }
+
+        if (input?.profileId === "core-development" || !input?.profileId) {
+          return {
+            profileId: "core-development",
+            supabaseUrl: "https://dev-ref.supabase.co",
+            supabaseAnonKey: "dev-anon-key",
+          };
+        }
+
         return {
-          profileId: 'core-production',
-          supabaseUrl: 'https://prod-ref.supabase.co',
-          supabaseAnonKey: 'prod-anon-key',
+          profileId: input.profileId,
+          supabaseUrl: undefined,
+          supabaseAnonKey: undefined,
         };
-      }
-
-      if (input?.profileId === 'core-development' || !input?.profileId) {
-        return {
-          profileId: 'core-development',
-          supabaseUrl: 'https://dev-ref.supabase.co',
-          supabaseAnonKey: 'dev-anon-key',
-        };
-      }
-
-      return {
-        profileId: input.profileId,
-        supabaseUrl: undefined,
-        supabaseAnonKey: undefined,
-      };
-    });
-
-    global.fetch = jest.fn(async () => new Response(JSON.stringify({
-      access_token: 'access-token',
-      refresh_token: 'refresh-token',
-      expires_in: 3600,
-      token_type: 'bearer',
-      user: {
-        id: 'user-123',
-        email: 'user@example.com',
-        app_metadata: {},
-        user_metadata: {},
       },
-    }), {
-      status: 200,
-      headers: { 'content-type': 'application/json' },
-    })) as typeof fetch;
+    );
+
+    global.fetch = jest.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            access_token: "access-token",
+            refresh_token: "refresh-token",
+            expires_in: 3600,
+            token_type: "bearer",
+            user: {
+              id: "user-123",
+              email: "user@example.com",
+              app_metadata: {},
+              user_metadata: {},
+            },
+          }),
+          {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          },
+        ),
+    ) as typeof fetch;
   });
 
   afterAll(() => {
     global.fetch = originalFetch;
   });
 
-  it('verifies OTP with the anon key from the same Supabase project as the service role', async () => {
-    const { POST } = require('../../../../app/api/auth/otp/verify+api');
+  it("verifies OTP with the anon key from the same Supabase project as the service role", async () => {
+    const { POST } = require("../../../../app/api/auth/otp/verify+api");
 
     const response = await POST(
-      new Request('https://api-dev.hashpass.tech/api/auth/otp/verify', {
-        method: 'POST',
+      new Request("https://api-dev.hashpass.tech/api/auth/otp/verify", {
+        method: "POST",
         headers: {
-          origin: 'https://dev.hashpass.tech',
-          'content-type': 'application/json',
+          origin: "https://dev.hashpass.tech",
+          "content-type": "application/json",
         },
         body: JSON.stringify({
-          email: 'user@example.com',
-          code: '123456',
+          email: "user@example.com",
+          code: "123456",
         }),
-      })
+      }),
     );
 
     expect(response.status).toBe(200);
     expect(global.fetch).toHaveBeenCalledWith(
-      'https://prod-ref.supabase.co/auth/v1/verify',
+      "https://prod-ref.supabase.co/auth/v1/verify",
       expect.objectContaining({
-        method: 'POST',
+        method: "POST",
         headers: expect.objectContaining({
-          apikey: 'prod-anon-key',
-          Authorization: 'Bearer prod-anon-key',
+          apikey: "prod-anon-key",
+          Authorization: "Bearer prod-anon-key",
         }),
         body: JSON.stringify({
-          token_hash: 'stored-token-hash',
-          type: 'magiclink',
+          token_hash: "stored-token-hash",
+          type: "magiclink",
         }),
-      })
+      }),
     );
     expect(mockSyncPublicUserRegistry).toHaveBeenCalledWith(
       expect.any(Request),
       expect.objectContaining({
-        provider: 'supabase',
-        authUserId: 'user-123',
-        email: 'user@example.com',
-      })
+        provider: "supabase",
+        authUserId: "user-123",
+        email: "user@example.com",
+      }),
+    );
+  });
+
+  it("binds an SMS phone only after the email OTP creates the authenticated user session", async () => {
+    const { POST } = require("../../../../app/api/auth/otp/verify+api");
+
+    const response = await POST(
+      new Request("https://api-dev.hashpass.tech/api/auth/otp/verify", {
+        method: "POST",
+        headers: {
+          origin: "https://dev.hashpass.tech",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          email: "user@example.com",
+          code: "123456",
+          registrationChallengeId: "25a2f1d9-6b9e-469d-a03c-b3cb9c2ca730",
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(mockRpc).toHaveBeenCalledWith(
+      "consume_sms_registration",
+      expect.objectContaining({
+        p_challenge_id: "25a2f1d9-6b9e-469d-a03c-b3cb9c2ca730",
+        p_user_id: "user-123",
+      }),
     );
   });
 });

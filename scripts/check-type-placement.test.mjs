@@ -1,5 +1,44 @@
 import assert from 'node:assert/strict';
-import { findTypePlacementViolations } from './check-type-placement.mjs';
+import {
+  buildDiffArgs,
+  findTypePlacementViolations,
+} from './check-type-placement.mjs';
+
+assert.deepEqual(buildDiffArgs({ TYPE_PLACEMENT_STAGED: '1' }), [
+  'diff',
+  '--unified=0',
+  '--no-color',
+  '--no-ext-diff',
+  '--no-textconv',
+  '--cached',
+  '--',
+  'apps',
+  'packages',
+]);
+
+assert.deepEqual(buildDiffArgs({ TYPE_PLACEMENT_BASE: 'origin/main' }), [
+  'diff',
+  '--unified=0',
+  '--no-color',
+  '--no-ext-diff',
+  '--no-textconv',
+  'origin/main...HEAD',
+  '--',
+  'apps',
+  'packages',
+]);
+
+assert.deepEqual(buildDiffArgs({}), [
+  'diff',
+  '--unified=0',
+  '--no-color',
+  '--no-ext-diff',
+  '--no-textconv',
+  'HEAD',
+  '--',
+  'apps',
+  'packages',
+]);
 
 {
   const diff = [
@@ -29,6 +68,35 @@ import { findTypePlacementViolations } from './check-type-placement.mjs';
 
 {
   const diff = [
+    '+++ b/packages/auth/src/providers/better-auth.ts',
+    '@@ -1,0 +1,3 @@',
+    '+export type NativeSignInOptions = {',
+    '+  signal?: AbortSignal;',
+    '+};',
+    '+++ b/apps/mobile-app/app/api/auth/route.ts',
+    '@@ -1,0 +1,2 @@',
+    '+declare interface AuthRouteContext {',
+    '+  request: Request;',
+  ].join('\n');
+
+  assert.deepEqual(findTypePlacementViolations(diff), [
+    {
+      filePath: 'packages/auth/src/providers/better-auth.ts',
+      line: 1,
+      kind: 'type',
+      name: 'NativeSignInOptions',
+    },
+    {
+      filePath: 'apps/mobile-app/app/api/auth/route.ts',
+      line: 1,
+      kind: 'interface',
+      name: 'AuthRouteContext',
+    },
+  ]);
+}
+
+{
+  const diff = [
     '+++ b/apps/mobile-app/components/types/ProfileCard.types.ts',
     '@@ -1,0 +1,1 @@',
     '+export interface ProfileCardProps {}',
@@ -51,4 +119,4 @@ import { findTypePlacementViolations } from './check-type-placement.mjs';
   assert.deepEqual(findTypePlacementViolations(diff), []);
 }
 
-console.log('Type placement guard tests passed (3 cases).');
+console.log('Type placement guard tests passed (7 cases).');

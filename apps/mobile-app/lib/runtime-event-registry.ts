@@ -1,12 +1,13 @@
 import type { EventConfig } from "@hashpass/types";
 import { EVENTS } from "../config/events";
+import { getRuntimeApiBaseUrl } from "./api-client";
 
-const apiBaseUrl = () => {
-  const value = process.env.EXPO_PUBLIC_API_BASE_URL || "";
-  let end = value.length;
-  while (end > 0 && value.charCodeAt(end - 1) === 47) end -= 1;
-  return value.slice(0, end);
-};
+/**
+ * Always resolve through the shared API client so localhost web dev stays on its
+ * own server (or the explicit `EXPO_PUBLIC_API_TARGET`) instead of the pinned
+ * deployed base. A null base means same-origin `/api`.
+ */
+const apiBaseUrl = () => (getRuntimeApiBaseUrl() ?? "/api").replace(/\/+$/, "");
 
 const isHashPokerConfig = (value: unknown): value is EventConfig => {
   if (!value || typeof value !== "object") return false;
@@ -22,12 +23,7 @@ export async function refreshHashPokerRuntimeEvent(
   fetchImpl: typeof fetch = fetch,
   registry: Record<string, EventConfig> = EVENTS,
 ): Promise<boolean> {
-  const configuredBase = apiBaseUrl();
-  const response = await fetchImpl(
-    configuredBase
-      ? `${configuredBase}/event-sources/hash-poker`
-      : "/api/event-sources/hash-poker",
-  );
+  const response = await fetchImpl(`${apiBaseUrl()}/event-sources/hash-poker`);
   // A scheduled feed outage must not remove the bundled tournament fallback or
   // surface an unhandled error in the public explorer. Keep the last registry
   // value and let the next refresh recover when the source returns.

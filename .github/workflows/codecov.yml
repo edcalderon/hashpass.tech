@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - develop
   pull_request:
     branches:
       - main
@@ -14,9 +13,17 @@ on:
 permissions:
   contents: read
 
+# Pull requests are the merge gate for develop changes, so keep coverage on the
+# PR event instead of duplicating it with a branch push. Cancel superseded PR
+# runs so a 365-file mobile suite never competes with an older commit.
+concurrency:
+  group: coverage-${{ github.repository }}-${{ github.event.pull_request.head.ref || github.ref_name }}
+  cancel-in-progress: true
+
 jobs:
   coverage:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     env:
       CI: '1'
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
@@ -45,7 +52,7 @@ jobs:
         run: pnpm check:native-fetch
 
       - name: Run coverage tests
-        run: pnpm --dir apps/mobile-app test:coverage
+        run: pnpm --dir apps/mobile-app test:coverage:ci
 
       - name: Run event ingestion coverage tests
         run: pnpm --filter @hashpass/event-ingestion test:coverage
@@ -60,6 +67,9 @@ jobs:
 
       - name: Run wallet database boundary tests
         run: pnpm --filter @hashpass/wallet test:db
+
+      - name: Run setup and PIN database tests
+        run: bash db/tests/run-user-setup-pin.sh
 
       - name: Run backend tests
         run: pnpm --filter @hashpass/backend run test

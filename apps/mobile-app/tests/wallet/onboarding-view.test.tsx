@@ -3,13 +3,18 @@ import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { Pressable, TextInput } from 'react-native';
 const mockLocal = { exists: jest.fn(), lock: jest.fn(), recoveryPhrase: jest.fn(), exportBackup: jest.fn(), restore: jest.fn() };
 const mockProvision = jest.fn();
+const mockClientFactory = jest.fn((_proof: () => string | null) => ({}));
 const mockSaveFile = jest.fn(); const mockPickFile = jest.fn(); const mockImport = jest.fn();
 let mockLock: () => void;
+const mockPin = { isUnlocked: jest.fn(), proofFor: jest.fn(), lock: jest.fn() };
+let mockFlow: any = null;
+jest.mock('../../hooks/usePin', () => ({ usePin: () => mockPin }));
+jest.mock('../../components/security/PinFlow', () => ({ __esModule: true, default: (props: any) => { mockFlow = props; return null; } }));
 jest.mock('../../hooks/useTheme', () => ({ useTheme: () => ({ colors: { primary: '#08a', divider: '#333', background: { paper: '#111' }, text: { primary: '#fff', secondary: '#aaa' } } }) }));
 jest.mock('../../i18n/i18n', () => ({ useTranslation: () => ({ t: (_key: string, fallback: string) => fallback }) }));
 jest.mock('../../lib/wallet/device-wallet', () => ({ createDeviceWallet: () => mockLocal, walletOperationId: () => 'operation', walletRandom: jest.fn() }));
 jest.mock('../../lib/wallet/lifecycle', () => ({ bindWalletLifecycle: (target: { lock(): void }) => { mockLock = () => target.lock(); return mockLock; } }));
-jest.mock('../../lib/wallet/enrollment-client', () => ({ walletEnrollmentClient: {} }));
+jest.mock('../../lib/wallet/enrollment-client', () => ({ createWalletEnrollmentClient: (proof: () => string | null) => mockClientFactory(proof) }));
 jest.mock('../../lib/wallet/recovery-files', () => ({ saveRecoveryFile: (...args: any[]) => mockSaveFile(...args), pickRecoveryFile: () => mockPickFile(), protectRecoveryScreen: async () => () => {} }));
 jest.mock('@hashpass/wallet', () => ({ WalletProvisioning: class { provision = mockProvision; lock = mockLocal.lock; }, createRecoveryChallenge: () => ({ positions: [0, 1, 2], verify: () => true, dispose: jest.fn() }), importRecoveryBackup: (...args: any[]) => mockImport(...args) }));
 import WalletOnboarding from '../../components/wallet/WalletOnboarding';
@@ -18,7 +23,7 @@ let view: ReactTestRenderer;
 const content = () => JSON.stringify(view.toJSON());
 const press = async (label: string) => { await act(async () => { view.root.findAllByType(Pressable).find(button => button.props.accessibilityLabel === label)!.props.onPress(); }); };
 const input = (label: string, value: string) => act(() => view.root.findAllByType(TextInput).find(field => field.props.accessibilityLabel === label)!.props.onChangeText(value));
-beforeEach(() => { jest.clearAllMocks(); mockLocal.exists.mockResolvedValue(false); });
+beforeEach(() => { jest.clearAllMocks(); mockFlow = null; mockLocal.exists.mockResolvedValue(false); mockPin.isUnlocked.mockReturnValue(true); mockPin.proofFor.mockReturnValue('proof.token'); });
 afterEach(() => { if (view) act(() => view.unmount()); });
 it('requires matching passwords before provisioning and clears them after success', async () => {
   mockProvision.mockResolvedValue({ ...row, state: 'registered', wallet: {} });
@@ -103,4 +108,36 @@ it('allows a reservation retry when provisioning has no local vault yet', async 
   input('Confirm wallet password', 'separate-wallet-password');
   await press('Resume wallet setup');
   expect(mockProvision).toHaveBeenCalledWith('separate-wallet-password');
+});
+
+it('asks for the PIN before creating a wallet, then creates it once the PIN is confirmed', async () => {
+  mockPin.isUnlocked.mockReturnValue(false);
+  mockProvision.mockResolvedValue({ ...row, state: 'registered', wallet: {} });
+  await act(async () => { view = create(<WalletOnboarding enrollment={row} />); });
+  input('Wallet password', 'separate-wallet-password'); input('Confirm wallet password', 'separate-wallet-password');
+  await press('Create testnet wallet');
+  expect(mockProvision).not.toHaveBeenCalled();
+  expect(mockFlow).toMatchObject({ scope: 'wallet:sign', intent: 'unlock' });
+  await act(async () => { mockFlow.onDone(); });
+  expect(mockProvision).toHaveBeenCalledWith('separate-wallet-password');
+  expect(content()).toContain('Signing remains unavailable');
+});
+it('lets the person back out of the PIN prompt without creating anything', async () => {
+  mockPin.isUnlocked.mockReturnValue(false);
+  await act(async () => { view = create(<WalletOnboarding enrollment={row} />); });
+  input('Wallet password', 'separate-wallet-password'); input('Confirm wallet password', 'separate-wallet-password');
+  await press('Create testnet wallet');
+  await act(async () => { mockFlow.onCancel(); });
+  expect(mockProvision).not.toHaveBeenCalled();
+  expect(content()).toContain('Create testnet wallet');
+});
+it('hands the wallet:sign proof to the enrollment client and forgets it if the server refuses it', async () => {
+  await act(async () => { view = create(<WalletOnboarding enrollment={row} />); });
+  const proofFor = mockClientFactory.mock.calls[0]![0];
+  expect(proofFor()).toBe('proof.token');
+  expect(mockPin.proofFor).toHaveBeenCalledWith('wallet:sign');
+  mockProvision.mockRejectedValue(new Error('wallet_step_up_required'));
+  input('Wallet password', 'separate-wallet-password'); input('Confirm wallet password', 'separate-wallet-password');
+  await press('Create testnet wallet');
+  expect(mockPin.lock).toHaveBeenCalledWith('wallet:sign');
 });

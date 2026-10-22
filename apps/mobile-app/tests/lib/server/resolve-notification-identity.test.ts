@@ -282,6 +282,41 @@ describe('resolveNotificationIdentity', () => {
     expect(mockAuthenticateRequest).toHaveBeenCalledTimes(1);
   });
 
+  it('self-heals a missing Better Auth registry row for Contacts', async () => {
+    const maybeSingle = jest.fn().mockResolvedValue({ data: null, error: null });
+    const rpc = jest.fn().mockResolvedValue({ data: { id: 'new-registry-id' }, error: null });
+    mockGetSupabaseServerForRequest.mockReturnValue({
+      auth: { getUser: jest.fn() },
+      from: () => ({ select: () => ({ eq: () => ({ maybeSingle }) }) }),
+      rpc,
+    });
+    mockGetBetterAuthSessionUser.mockResolvedValue({
+      id: 'better-auth-user-id',
+      email: 'new-user@example.com',
+      first_name: 'New',
+      last_name: 'User',
+    });
+    mockAuthenticateRequest.mockResolvedValue({ user: null, error: 'No authorization token provided' });
+
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    const { resolveNotificationIdentity } = require('../../../lib/server/resolve-notification-identity');
+    await expect(resolveNotificationIdentity(new Request('https://api.hashpass.tech/api/contacts', {
+      headers: { Cookie: 'better-auth.session_token=valid-session' },
+    }))).resolves.toEqual({
+      supabaseUserId: null,
+      registryUserId: 'new-registry-id',
+      email: 'new-user@example.com',
+    });
+
+    expect(rpc).toHaveBeenCalledWith('upsert_public_user_registry', expect.objectContaining({
+      p_payload: expect.objectContaining({
+        provider: 'better-auth',
+        auth_user_id: 'better-auth-user-id',
+        provider_ids: { 'better-auth': 'better-auth-user-id' },
+      }),
+    }));
+  });
+
   it('rejects a verified Better Auth session that has no email', async () => {
     mockGetSupabaseServerForRequest.mockReturnValue({ auth: { getUser: jest.fn() } });
     mockAuthenticateRequest.mockResolvedValue({ user: null, error: 'No authorization token provided' });

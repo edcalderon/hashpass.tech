@@ -1,0 +1,19 @@
+# Use a UTC timestamp no more than 30 days in the future. Do not commit terraform.tfvars.
+ssm_activation_expiration_date = "2026-10-01T00:00:00Z"
+
+# Public trust-anchor certificate only. Never place a CA private key in Terraform.
+enable_roles_anywhere = true
+
+roles_anywhere_trust_anchor_certificate_pem = <<-PEM
+-----BEGIN CERTIFICATE-----
+REPLACE_WITH_REVIEWED_PUBLIC_CA_CERTIFICATE
+-----END CERTIFICATE-----
+PEM
+
+workload_certificate_common_name = "hashpass-vps-workload"
+
+# Exact ARNs only; no wildcard resource names or prefix broadening.
+workload_secret_arns     = ["arn:aws:secretsmanager:REGION:ACCOUNT:secret:REPLACE_ME"]
+workload_kms_key_arns    = ["arn:aws:kms:REGION:ACCOUNT:key:REPLACE_ME"]
+workload_s3_bucket_arns  = ["arn:aws:s3:::REPLACE_ME"]
+workload_s3_object_arns  = ["arn:aws:s3:::REPLACE_ME/approved-prefix/*"]

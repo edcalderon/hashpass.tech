@@ -61,6 +61,9 @@ export type EventContinent =
 export interface EventGeo {
   country: string;
   continent: EventContinent;
+  /** Optional place detail; present when an event's data carries it (used by banner search). */
+  city?: string;
+  venue?: string;
 }
 
 /** An organizer-managed promotional slide shown within one event's banner. */

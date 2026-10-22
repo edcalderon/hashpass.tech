@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Image, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Image, Platform, StyleSheet, Text, View } from 'react-native';
 import { uiTokens } from '@hashpass/ui/tokens';
 import type { ProfileAvatarProps } from './ProfileAvatar.types';
 
@@ -23,6 +23,19 @@ export default function ProfileAvatar({ uri, name, isDark, style, initialsSize =
   useEffect(() => setFailedUri(null), [uri]);
 
   if (uri && uri !== failedUri) {
+    if (Platform.OS === 'web') {
+      // react-native-web's Image drops referrerPolicy. Google's avatar CDN
+      // answers 429 to hotlinked requests that carry our page as referrer.
+      return React.createElement('img', {
+        src: uri,
+        alt: '',
+        referrerPolicy: 'no-referrer',
+        decoding: 'async',
+        draggable: false,
+        style: { width: '100%', height: '100%', objectFit: 'cover' },
+        onError: () => setFailedUri(uri),
+      });
+    }
     return (
       <Image
         source={{ uri }}

@@ -72,7 +72,7 @@ Keep it small and owned by us. Do not build WAL tooling that the platform will n
 7. **Dump before every production migration** (built). `pnpm run db:migrate` takes a verified `pg_dump` (postgres:17 container,
    `pg_restore -l` check) before applying the first pending migration to any production profile, and aborts the migration
    if the dump fails. Dumps land in `~/hashpass-backups/pre-migration/` (mode 0600) and, when `DB_BACKUP_BUCKET` is set and AWS
-   credentials are available, in `prod/pre-migration/` tagged `daily` (a separate prefix, so the restore drill and freshness alarm only see scheduled dumps; it uses the `hashpass` profile after a non-printing account check). `--skip-backup` bypasses it with a warning.
+   credentials are available, in `prod/pre-migration/` tagged `daily` (a separate prefix, so the restore drill and freshness alarm only see scheduled dumps; the bucket-wide `daily` retention rule expires it at 35 days and replication copies it; the read-only role can fetch it; it uses the `hashpass` profile after a non-printing account check). `--skip-backup` bypasses it with a warning.
 
 ### Build vs upgrade
 

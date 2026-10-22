@@ -30,7 +30,12 @@ export interface MeetingRequest {
   speaker_id: string;
   speaker_name: string;
   speaker_image?: string;
+  speaker_title?: string | null;
+  speaker_company?: string | null;
   requester_name: string;
+  requester_full_name?: string | null;
+  requester_avatar?: string | null;
+  requester_email?: string | null;
   requester_company: string;
   requester_title: string;
   requester_ticket_type: string;
@@ -48,6 +53,12 @@ export interface MeetingRequest {
   expires_at?: string;
   speaker_response?: string;
   speaker_response_at?: string;
+}
+
+export interface MeetingRequesterProfile {
+  user_id: string;
+  full_name: string | null;
+  avatar_url: string | null;
 }
 
 export interface TimeSlot {

@@ -7,6 +7,13 @@ import React from 'react';
 // test deterministic while still rendering the real screen and invoking its
 // real request handlers.
 const { act, create } = require('react-test-renderer');
+const mountedRenderers = new Set<any>();
+
+function renderSpeaker() {
+  const renderer = create(<SpeakerDetail />);
+  mountedRenderers.add(renderer);
+  return renderer;
+}
 
 const mockApiRequest = jest.fn();
 const mockShowError = jest.fn();
@@ -209,6 +216,14 @@ describe('speaker detail screen', () => {
   });
 
   afterEach(() => {
+    for (const renderer of mountedRenderers) {
+      try {
+        act(() => renderer.unmount());
+      } catch {
+        // A failed render should not prevent the remaining test cleanup.
+      }
+    }
+    mountedRenderers.clear();
     jest.restoreAllMocks();
   });
 
@@ -225,7 +240,7 @@ describe('speaker detail screen', () => {
 
     let renderer: any;
     act(() => {
-      renderer = create(<SpeakerDetail />);
+      renderer = renderSpeaker();
     });
     expect(renderer.root.findByType('LoadingScreen').props.message).toBe('speakerView.loadingSpeakerDetails');
 
@@ -252,12 +267,12 @@ describe('speaker detail screen', () => {
 
     let renderer: any;
     await act(async () => {
-      renderer = create(<SpeakerDetail />);
+      renderer = renderSpeaker();
       await flushPromises();
     });
 
     expect(renderer.root.findByProps({ children: 'Ada Lovelace' })).toBeTruthy();
-    expect(renderer.root.findByProps({ children: 'Pending' })).toBeTruthy();
+    expect(renderer.root.findAllByProps({ testID: 'speaker-status-idle' })).toHaveLength(1);
     expect(renderer.root.findAllByProps({ testID: 'claim-profile' })).toHaveLength(1);
     expect(renderer.root.findAllByProps({ testID: 'request-meeting' })).toHaveLength(1);
     await act(async () => renderer.unmount());
@@ -275,11 +290,11 @@ describe('speaker detail screen', () => {
 
     let renderer: any;
     await act(async () => {
-      renderer = create(<SpeakerDetail />);
+      renderer = renderSpeaker();
       await flushPromises();
     });
 
-    expect(renderer.root.findByProps({ children: 'speakerView.inactive' })).toBeTruthy();
+    expect(renderer.root.findAllByProps({ testID: 'speaker-status-inactive' })).toHaveLength(1);
     expect(renderer.root.findAllByProps({ testID: 'request-meeting' })).toHaveLength(0);
 
     await act(async () => renderer.unmount());
@@ -297,7 +312,7 @@ describe('speaker detail screen', () => {
 
     let renderer: any;
     await act(async () => {
-      renderer = create(<SpeakerDetail />);
+      renderer = renderSpeaker();
       await flushPromises();
     });
 
@@ -326,7 +341,7 @@ describe('speaker detail screen', () => {
     );
     let renderer: any;
     await act(async () => {
-      renderer = create(<SpeakerDetail />);
+      renderer = renderSpeaker();
       await flushPromises();
     });
 
@@ -349,7 +364,7 @@ describe('speaker detail screen', () => {
     });
     let renderer: any;
     await act(async () => {
-      renderer = create(<SpeakerDetail />);
+      renderer = renderSpeaker();
       await flushPromises();
     });
     await act(async () => {
@@ -376,7 +391,7 @@ describe('speaker detail screen', () => {
 
     let renderer: any;
     await act(async () => {
-      renderer = create(<SpeakerDetail />);
+      renderer = renderSpeaker();
       await flushPromises();
     });
 
@@ -397,7 +412,7 @@ describe('speaker detail screen', () => {
 
     let renderer: any;
     await act(async () => {
-      renderer = create(<SpeakerDetail />);
+      renderer = renderSpeaker();
       await flushPromises();
     });
 
@@ -418,7 +433,7 @@ describe('speaker detail screen', () => {
 
     let renderer: any;
     await act(async () => {
-      renderer = create(<SpeakerDetail />);
+      renderer = renderSpeaker();
       await flushPromises();
     });
 
@@ -439,7 +454,7 @@ describe('speaker detail screen', () => {
 
     let renderer: any;
     await act(async () => {
-      renderer = create(<SpeakerDetail />);
+      renderer = renderSpeaker();
       await flushPromises();
     });
 
@@ -457,7 +472,7 @@ describe('speaker detail screen', () => {
   it('validates request capacity with the event limits API before submitting a meeting request', async () => {
     let renderer: any;
     await act(async () => {
-      renderer = create(<SpeakerDetail />);
+      renderer = renderSpeaker();
       await flushPromises();
     });
 
@@ -505,7 +520,7 @@ describe('speaker detail screen', () => {
   it('submits a meeting request after the event limits API confirms capacity', async () => {
     let renderer: any;
     await act(async () => {
-      renderer = create(<SpeakerDetail />);
+      renderer = renderSpeaker();
       await flushPromises();
     });
 
@@ -579,7 +594,7 @@ describe('speaker detail screen', () => {
 
     let renderer: any;
     await act(async () => {
-      renderer = create(<SpeakerDetail />);
+      renderer = renderSpeaker();
       await flushPromises();
     });
     await act(async () => {
@@ -616,7 +631,7 @@ describe('speaker detail screen', () => {
 
     let renderer: any;
     await act(async () => {
-      renderer = create(<SpeakerDetail />);
+      renderer = renderSpeaker();
       await flushPromises();
     });
     await act(async () => {
@@ -650,7 +665,7 @@ describe('speaker detail screen', () => {
 
     let renderer: any;
     await act(async () => {
-      renderer = create(<SpeakerDetail />);
+      renderer = renderSpeaker();
       await flushPromises();
       await flushPromises();
     });
@@ -720,7 +735,7 @@ describe('speaker detail screen', () => {
 
     let renderer: any;
     await act(async () => {
-      renderer = create(<SpeakerDetail />);
+      renderer = renderSpeaker();
       await flushPromises();
       await flushPromises();
     });
@@ -804,7 +819,7 @@ describe('speaker detail screen', () => {
 
     let renderer: any;
     await act(async () => {
-      renderer = create(<SpeakerDetail />);
+      renderer = renderSpeaker();
       await flushPromises();
       await flushPromises();
     });
@@ -870,7 +885,7 @@ describe('speaker detail screen', () => {
 
     let renderer: any;
     await act(async () => {
-      renderer = create(<SpeakerDetail />);
+      renderer = renderSpeaker();
       await flushPromises();
       await flushPromises();
     });
@@ -932,7 +947,7 @@ describe('speaker detail screen', () => {
 
     let renderer: any;
     await act(async () => {
-      renderer = create(<SpeakerDetail />);
+      renderer = renderSpeaker();
       await flushPromises();
       await flushPromises();
     });
@@ -988,7 +1003,7 @@ describe('speaker detail screen', () => {
 
     let renderer: any;
     await act(async () => {
-      renderer = create(<SpeakerDetail />);
+      renderer = renderSpeaker();
       await flushPromises();
       await flushPromises();
     });

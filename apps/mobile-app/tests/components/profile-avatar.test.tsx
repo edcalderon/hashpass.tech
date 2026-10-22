@@ -1,7 +1,7 @@
 /// <reference types="jest" />
 import React from 'react';
 import TestRenderer, { act } from 'react-test-renderer';
-import { Image, Text } from 'react-native';
+import { Image, Platform, Text } from 'react-native';
 import ProfileAvatar, { getAvatarInitials } from '../../components/ProfileAvatar';
 
 const render = (props: Partial<React.ComponentProps<typeof ProfileAvatar>>) => {
@@ -11,6 +11,10 @@ const render = (props: Partial<React.ComponentProps<typeof ProfileAvatar>>) => {
 };
 
 describe('ProfileAvatar', () => {
+  const originalOs = Platform.OS;
+  beforeEach(() => { Platform.OS = 'ios'; });
+  afterEach(() => { Platform.OS = originalOs; });
+
   it('derives capital initials from names, handles and empty input', () => {
     expect(getAvatarInitials('Edward Calderon')).toBe('EC');
     expect(getAvatarInitials('@tiranicida.mtheory')).toBe('TM');
@@ -51,5 +55,24 @@ describe('ProfileAvatar', () => {
     const r = render({ uri: null, name: null });
     expect(r.root.findByType(Text).props.children).toBe('H');
     expect(r.root.findAll((n) => n.props.accessibilityLabel !== undefined && n.props.accessibilityLabel !== null && typeof n.props.accessibilityLabel === 'string')).toHaveLength(0);
+  });
+
+  describe('on web', () => {
+    beforeEach(() => { Platform.OS = 'web'; });
+
+    it('loads the photo without a referrer so Google avatars are not rate limited', () => {
+      const r = render({ uri: 'https://lh3.googleusercontent.com/a/x=s96-c', name: 'Edward' });
+      const img = r.root.findByType('img');
+      expect(img.props.src).toBe('https://lh3.googleusercontent.com/a/x=s96-c');
+      expect(img.props.referrerPolicy).toBe('no-referrer');
+      expect(r.root.findAllByType(Image)).toHaveLength(0);
+    });
+
+    it('falls back to initials when the web photo fails', () => {
+      const r = render({ uri: 'https://img.example.test/a.png', name: 'Edward' });
+      act(() => { r.root.findByType('img').props.onError(); });
+      expect(r.root.findAllByType('img')).toHaveLength(0);
+      expect(r.root.findByType(Text).props.children).toBe('E');
+    });
   });
 });

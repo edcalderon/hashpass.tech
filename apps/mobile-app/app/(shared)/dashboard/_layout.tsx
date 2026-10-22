@@ -617,6 +617,13 @@ export function CustomDrawerContent({
       tone: "#00A9E0",
     },
     {
+      id: "nav.contacts",
+      message: "Contacts",
+      icon: "people-outline",
+      route: "./contacts" as const,
+      tone: uiTokens.feature.cyan,
+    },
+    {
       id: "nav.wallet",
       message: "Wallet",
       icon: "wallet-outline",
@@ -665,6 +672,8 @@ export function CustomDrawerContent({
     switch (id) {
       case "nav.explore":
         return t({ id: "nav.explore", message: "Explore" });
+      case "nav.contacts":
+        return t({ id: "nav.contacts", message: "Contacts" });
       case "nav.wallet":
         return t({ id: "nav.wallet", message: "Wallet" });
       case "nav.notifications":
@@ -1026,6 +1035,7 @@ export function CustomDrawerContent({
           const stepOrder = index + 2; // Start from 2 (after menu button)
           const stepNames: Record<string, string> = {
             "./explore": "sidebarExplore",
+            "./contacts": "sidebarContacts",
             "./wallet": "sidebarWallet",
             "./notifications": "sidebarNotifications",
             "./profile": "sidebarProfile",
@@ -1033,6 +1043,10 @@ export function CustomDrawerContent({
             "./admin": "sidebarAdmin",
           };
           const stepTexts: Record<string, string> = {
+            "./contacts": t({
+              id: "nav.tour.contacts",
+              message: "Contacts: Shape your interests, exchange contact cards and grow your network.",
+            }),
             "./explore":
               t({
                 id: "nav.tour.explore",
@@ -1085,6 +1099,8 @@ export function CustomDrawerContent({
                 name={stepNames[item.route] || `sidebar${item.id}`}
               >
                 <CopilotTouchableOpacity
+                  accessibilityRole="button"
+                  accessibilityLabel={getLabel(item.id)}
                   style={[
                     styles.menuItem,
                     {
@@ -2031,6 +2047,7 @@ function AuthenticatedDashboardLayout() {
                 })}
               >
                 <Drawer.Screen name="explore" />
+                <Drawer.Screen name="contacts" />
                 <Drawer.Screen name="notifications" />
                 <Drawer.Screen name="business-invites" />
                 <Drawer.Screen name="wallet" />

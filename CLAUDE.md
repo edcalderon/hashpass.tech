@@ -470,14 +470,47 @@ because the month is already over budget even when all trigger checks pass.
 
 ## OTP Authentication (Native Mobile)
 
-The native app uses a 6-digit code flow, NOT magic links. Flow:
+The native app uses a six-digit, single-use verification-code flow. The UI may
+call this a magic link for compatibility, but the API never sends a login link
+to the device. Email OTP, SMS phone enrollment, SMS registration, and account
+deletion each have an explicit purpose and verifier.
 
-1. **Send** (`/api/auth/otp`): `admin.generateLink({ type: 'magiclink' })` → stores `{type}::{hashed_token}::{email_otp}` in `otp_codes` table → sends 6-digit code by email/SMS
-2. **Verify** (`/api/auth/otp/verify`): DB lookup by code → direct `fetch()` to GoTrue `/auth/v1/verify` (bypasses Supabase JS client to avoid PKCE fields) → tries `{ token_hash, type }` first, then `{ email, token: email_otp, type }` → returns session to client → client calls `supabase.auth.setSession()`
+- **Email login** (`/api/auth/otp` → `/api/auth/otp/verify`): the server asks
+  Supabase Admin for one GoTrue token, creates a CSPRNG six-digit code, and
+  stores only a keyed HMAC (`code_hmac`) in `public.otp_codes`. The raw code
+  is delivered by email (or alongside SMS phone enrollment), expires after ten
+  minutes, and invalidates any previous active email challenge. Verification
+  calls `consume_email_otp` under a row lock, counts failed attempts (maximum
+  five), marks the row used atomically, then calls GoTrue's `/auth/v1/verify`
+  endpoint with an anon key from the same Supabase project.
+- **SMS registration / phone enrollment** (`/api/auth/otp` and
+  `/api/auth/phone`): the server stores only HMACs and the phone's last four
+  digits in `public.sms_auth_challenges`. A registration requires both the SMS
+  code and the email OTP before a session or phone binding is created. An
+  authenticated user can enroll at most two active phones in
+  `public.user_phone_authenticators`; the phone itself is stored as a keyed
+  lookup HMAC, never plaintext. Delivery is limited atomically by
+  `claim_sms_delivery_slot`.
+- **Account deletion** (`/api/auth/delete-account-otp`): uses the same
+  `otp_codes` table and atomic consumer with purpose `account-delete`, so a
+  login code cannot authorize deletion.
 
-**Why direct fetch:** `supabase.auth.verifyOtp()` injects PKCE fields that cause GoTrue to reject with "Only the token_hash and type should be provided".
+The service-role client is the only database role allowed to read or consume
+these records. `public.otp_codes` is the canonical email challenge table;
+`public.sms_auth_challenges`, `public.sms_delivery_rate_limits`, and
+`public.user_phone_authenticators` are the canonical SMS tables. There are no
+separate legacy OTP tables. Migration V131 purges legacy plaintext rows and
+removes the old plaintext `code` column and indexes; raw OTP values must never
+be added back.
 
-See `apps/docs/docs/auth/AUTH_FLOW.md` for full details.
+**Why direct fetch:** `supabase.auth.verifyOtp()` injects PKCE fields that cause
+GoTrue to reject the request with "Only the token_hash and type should be
+provided". The verify route therefore calls GoTrue directly and returns the
+session to the client, which then calls `supabase.auth.setSession()`.
+
+See `apps/docs/docs/auth/AUTH_FLOW.md#otp-and-sms-authentication` for the
+complete flow, schema, migration order, retention rules, and verification
+commands.
 
 ## Sign in with Apple (web and native iOS)
 

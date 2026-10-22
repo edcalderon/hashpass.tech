@@ -1,3 +1,4 @@
+import type { StepUpProofStore } from "./auth/step-up.js";
 import type { AuthSessionStore } from "./auth/types.js";
 
 export type HashpassEnvironment = "production" | "development" | "local";
@@ -17,6 +18,8 @@ export interface HashpassSdkOptions {
   sessionStore?: AuthSessionStore | undefined;
   /** Persistent storage for the isolated support visitor credential. */
   supportSessionStore?: AuthSessionStore | undefined;
+  /** Where step-up proofs (short-lived PIN confirmations) are kept. Defaults to memory; never store the PIN itself. */
+  stepUpStore?: StepUpProofStore | undefined;
   /** Advanced primary token provider. Takes precedence over the built-in session provider. */
   auth?: AuthProvider | undefined;
 }

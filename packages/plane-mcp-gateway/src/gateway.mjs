@@ -53,7 +53,6 @@ const readBodyWithLimit = async (request, maxBodyBytes) => {
   }
   return {body: new TextDecoder().decode(bytes), tooLarge: false};
 };
-
 export function createGatewayHandler(options) {
   const {
     resource,

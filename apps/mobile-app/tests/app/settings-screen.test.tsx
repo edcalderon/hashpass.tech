@@ -4,6 +4,8 @@ import { Switch, Text, TouchableOpacity } from 'react-native';
 
 const mockPush = jest.fn();
 const mockToggleTheme = jest.fn();
+const mockApiGet = jest.fn();
+const mockApiPost = jest.fn();
 
 jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush, back: jest.fn(), replace: jest.fn() }) }));
 jest.mock('expo-haptics', () => ({}));
@@ -50,7 +52,13 @@ jest.mock('../../hooks/useAuth', () => {
   const auth = { user: { id: 'u1', email: 'a@b.c' }, signOut: jest.fn() };
   return { useAuth: () => auth };
 });
-jest.mock('../../lib/api-client', () => ({ apiClient: {}, getRuntimeApiBaseUrl: () => 'https://api.test' }));
+jest.mock('../../lib/api-client', () => ({
+  apiClient: {
+    get: (...args: unknown[]) => mockApiGet(...args),
+    post: (...args: unknown[]) => mockApiPost(...args),
+  },
+  getRuntimeApiBaseUrl: () => 'https://api.test',
+}));
 jest.mock('../../lib/hashpass-web-url', () => ({ getHashpassWebOrigin: () => 'https://hashpass.test' }));
 jest.mock('../../lib/event-path', () => ({ buildEventPath: () => '/events/x' }));
 jest.mock('../../components/VersionDetailsModal', () => 'VersionDetailsModal');
@@ -65,6 +73,14 @@ jest.mock('../../lib/calendar-subscription', () => ({
 import Settings from '../../app/(shared)/dashboard/settings';
 
 describe('Settings screen', () => {
+  beforeEach(() => {
+    mockApiGet.mockReset().mockResolvedValue({
+      success: true,
+      data: { success: true, data: { phones: [] } },
+    });
+    mockApiPost.mockReset();
+  });
+
   it('groups rows into cards under section headings and keeps the controls working', () => {
     let view!: ReactTestRenderer;
     act(() => { view = create(<Settings />); });

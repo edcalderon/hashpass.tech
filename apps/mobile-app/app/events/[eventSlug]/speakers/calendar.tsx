@@ -9,6 +9,7 @@ import EventBanner from '../../../../components/EventBanner';
 import SpeakerAvatar from '../../../../components/SpeakerAvatar';
 import SpeakerSearchAndSort from '../../../../components/SpeakerSearchAndSort';
 import { sortSpeakersByPriority } from '../../../../lib/speaker-priority';
+import SpeakerStatusBadge, { type SpeakerBadgeStatus } from '../../../../components/SpeakerStatusBadge';
 import { getSpeakerDirectoryState, isClaimedActiveSpeaker } from '../../../../lib/speaker-status';
 import { getSpeakerAvatarUrl } from '../../../../lib/string-utils';
 import LoadingScreen from '../../../../components/LoadingScreen';
@@ -25,6 +26,7 @@ interface Speaker {
   user_id?: string;
   directory_visible?: boolean;
   is_accepting_meetings?: boolean;
+  do_not_disturb?: boolean;
   isActive?: boolean; // Claimed account with an active speaker profile
   isPublished?: boolean;
   isClaimed?: boolean;
@@ -46,13 +48,11 @@ function SpeakerCard({
   const router = useRouter();
   const directoryState = getSpeakerDirectoryState(speaker);
   const isInteractive = directoryState.isPublished;
-  const statusText = directoryState.status === 'active'
-    ? 'Active'
-    : directoryState.status === 'pending'
-      ? 'Pending'
-      : speaker.isPastEditionReference
-        ? 'Past edition'
-        : 'Inactive';
+  const badgeStatus: SpeakerBadgeStatus = directoryState.status === 'private'
+    ? 'inactive'
+    : directoryState.status === 'inactive' && speaker.isPastEditionReference
+      ? 'past'
+      : directoryState.status;
 
   return (
     <TouchableOpacity
@@ -78,11 +78,7 @@ function SpeakerCard({
       <View style={styles.speakerInfo}>
         <View style={styles.speakerNameRow}>
           <Text style={styles.speakerName}>{speaker.name}</Text>
-          <View style={[styles.statusLabel, directoryState.status === 'active' ? styles.activeLabel : directoryState.status === 'pending' ? styles.pendingLabel : styles.inactiveLabel]}>
-            <Text style={[styles.statusLabelText, directoryState.status === 'active' ? styles.activeLabelText : directoryState.status === 'pending' ? styles.pendingLabelText : styles.inactiveLabelText]}>
-              {statusText}
-            </Text>
-          </View>
+          <SpeakerStatusBadge status={badgeStatus} />
         </View>
         {speaker.title && <Text style={styles.speakerTitle}>{speaker.title}</Text>}
         {speaker.company && <Text style={styles.speakerCompany}>{speaker.company}</Text>}
@@ -191,6 +187,7 @@ export default function SpeakersCalendar() {
                 || s.metadata?.directory_visible === true
                 || (canUseLegacyBslDirectory && s.is_active === true),
               is_accepting_meetings: s.is_accepting_meetings !== false,
+              do_not_disturb: s.do_not_disturb === true,
               sortOrder: canUseLegacyBslDirectory ? undefined : s.sort_order,
               isActive: isClaimedActiveSpeaker(s),
               isPublished: true,

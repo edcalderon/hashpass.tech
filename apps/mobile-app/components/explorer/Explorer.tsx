@@ -1348,7 +1348,9 @@ export default function Explorer({
               pressEvent?.stopPropagation();
               toggleBookmark(event.id);
             }}
-            accessibilityRole="button"
+            // No accessibilityRole here: on web this View sits inside the card
+            // TouchableOpacity, and role="button" would render a <button> nested
+            // inside the card's own <button> (invalid HTML, hydration error).
             accessibilityLabel={`${
               bookmarkedEventIds.includes(event.id)
                 ? translate("explore.rework.removeBookmark", "Remove bookmark")
@@ -1379,7 +1381,8 @@ export default function Explorer({
                 pressEvent?.stopPropagation();
                 openEventRoom(event);
               }}
-              accessibilityRole="button"
+              // No accessibilityRole here either — same nested-button reason as
+              // the bookmark above: the card wrapper is already the button.
               accessibilityLabel={`Join the room for ${event.title}`}
             >
               <View

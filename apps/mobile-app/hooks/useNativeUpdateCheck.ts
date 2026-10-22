@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Platform, AppState, AppStateStatus } from 'react-native';
 import { compareAppVersions, getInstalledNativeAppVersion } from '../config/runtime-version';
 import packageJson from '../package.json';
+import { getRuntimeApiBaseUrl } from '../lib/api-client';
 
 export type NativeUpdateStatus = {
   needsHardUpdate: boolean;
@@ -22,10 +23,9 @@ const INITIAL_STATE: NativeUpdateStatus = {
 };
 
 function getVersionsApiUrl(): string {
-  // Use the API Lambda subdomain, not the Amplify SPA frontend
-  const apiBase = __DEV__
-    ? 'https://api-dev.hashpass.tech/api'
-    : 'https://api.hashpass.tech/api';
+  // Resolve through the shared client so dev/prod builds hit their own Lambda
+  // (not whatever __DEV__ implies) and every environment switch lives in one place.
+  const apiBase = (getRuntimeApiBaseUrl() ?? '/api').replace(/\/+$/, '');
   return `${apiBase}/config/versions`;
 }
 

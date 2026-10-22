@@ -1,7 +1,7 @@
 {
   "name": "hashpass.tech",
   "main": "index.js",
-  "version": "1.9.134",
+  "version": "1.9.135",
   "packageManager": "pnpm@9.15.5",
   "pnpm": {
     "overrides": {
@@ -79,6 +79,12 @@
     "infra:hashpass-web:plan": "bash packages/infra/terraform/scripts/stack.sh hashpass-web plan",
     "infra:hashpass-web:apply": "bash packages/infra/terraform/scripts/stack.sh hashpass-web apply",
     "infra:hashpass-web:destroy": "bash packages/infra/terraform/scripts/stack.sh hashpass-web destroy",
+    "infra:notion-archive:plan": "bash packages/infra/terraform/scripts/stack.sh hashpass-notion-archive plan",
+    "infra:notion-archive:apply": "bash packages/infra/terraform/scripts/stack.sh hashpass-notion-archive apply",
+    "infra:notion-archive:validate": "bash packages/infra/terraform/scripts/stack.sh hashpass-notion-archive validate",
+    "infra:vps-access:plan": "bash packages/infra/terraform/scripts/stack.sh hashpass-vps-access plan",
+    "infra:vps-access:apply": "bash packages/infra/terraform/scripts/stack.sh hashpass-vps-access apply",
+    "infra:vps-access:validate": "bash packages/infra/terraform/scripts/stack.sh hashpass-vps-access validate",
     "infra:doctor": "pnpm --filter @hashpass/infra run doctor",
     "infra:mobile-release:plan": "bash packages/infra/terraform/scripts/stack.sh mobile-release-target plan",
     "infra:mobile-release:apply": "bash packages/infra/terraform/scripts/stack.sh mobile-release-target apply",

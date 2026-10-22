@@ -3,6 +3,19 @@
 import React from 'react';
 import TestRenderer, { act } from 'react-test-renderer';
 
+// expo-constants reads NativeModules.EXDevLauncher at import time. The Jest
+// native shim intentionally omits that runtime-only module, so keep this
+// screen test at the same deterministic boundary as the other string-utils
+// consumers.
+jest.mock('expo-constants', () => ({
+  __esModule: true,
+  default: {
+    expoConfig: {
+      extra: {},
+    },
+  },
+}));
+
 const mockApiRequest = jest.fn();
 const mockShowError = jest.fn();
 const mockRefreshNotifications = jest.fn();

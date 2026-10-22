@@ -195,14 +195,28 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { data, error } = await getSupabaseServerForRequest(request).rpc(
-      "create_default_pass",
-      {
-        p_user_id: auth.userId,
-        p_pass_type: "general",
-        p_event_id: eventId,
-      },
-    );
+    const supabase = getSupabaseServerForRequest(request);
+    const { data, error } = await supabase.rpc("create_default_pass", {
+      p_user_id: auth.userId,
+      p_pass_type: "general",
+      p_event_id: eventId,
+    });
+    if (error?.code === "23505") {
+      // One pass per (user, event): the user already holds a pass of another
+      // tier (e.g. VIP), so the general insert collides. That is not a missing
+      // migration — hand back the pass they already have.
+      const { data: existing } = await supabase
+        .from("passes")
+        .select("id")
+        .eq("user_id", auth.userId)
+        .eq("event_id", eventId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (existing?.id) {
+        return Response.json({ data: { passId: existing.id } }, { status: 200 });
+      }
+    }
     if (error) {
       console.error("[passes] default pass creation error:", error);
       return Response.json(

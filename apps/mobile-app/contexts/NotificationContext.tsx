@@ -1,10 +1,19 @@
-import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState, useCallback, useRef, useSyncExternalStore } from 'react';
 import { supabase } from '../lib/supabase';
 import { apiClient } from '../lib/api-client';
 import { useAuth } from '../hooks/useAuth';
 import { useTranslation } from '../i18n/i18n';
 import { translateNotification } from '../lib/notification-translations';
 import { buildEventPath } from '../lib/event-path';
+import {
+  getLocalNotifications,
+  isLocalNotification,
+  markAllLocalNotificationsRead,
+  resetLocalNotifications,
+  removeLocalNotification,
+  subscribeLocalNotifications,
+  updateLocalNotification,
+} from '../lib/local-notifications';
 
 export interface Notification {
   id: string;
@@ -57,9 +66,14 @@ interface NotificationProviderProps {
 }
 
 export const NotificationProvider: React.FC<NotificationProviderProps> = ({ children }) => {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [serverNotifications, setNotifications] = useState<Notification[]>([]);
+  const localNotifications = useSyncExternalStore<Notification[]>(subscribeLocalNotifications, getLocalNotifications, getLocalNotifications);
+  const notifications = useMemo(
+    () => [...localNotifications, ...serverNotifications].sort((first, second) => Date.parse(second.created_at) - Date.parse(first.created_at)),
+    [localNotifications, serverNotifications],
+  );
   const [isLoading, setIsLoading] = useState(true);
-  const { user, dbUserId } = useAuth();
+  const { user, dbUserId, isLoading: authLoading } = useAuth();
   const { t } = useTranslation();
 
   // Track current user ID to prevent unnecessary re-fetches
@@ -83,6 +97,9 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   // so the Realtime subscription effect (which reads it in its deps) actually
   // re-runs and tears the channel down -- a ref alone wouldn't trigger that.
   const [backendDegraded, setBackendDegraded] = useState(false);
+  // Bumped on every Realtime subscription the effect opens, so each one gets a
+  // unique channel topic (see the effect for why that matters).
+  const subscriptionEpochRef = useRef(0);
 
   const unreadCount = notifications.filter(n => !n.is_read && !n.is_archived).length;
 
@@ -99,8 +116,16 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   }, []);
 
   const fetchNotifications = useCallback(async (force = false) => {
+    // Better Auth can briefly expose a cached user while its cookie/session
+    // bootstrap is still settling. Do not turn that transitional state into
+    // a pair of protected requests that are guaranteed to race the session
+    // cookie (and produce noisy 401s in the browser). The auth hook will
+    // re-run this effect once the provider state is resolved.
+    if (authLoading) return;
+
     if (!user) {
       setNotifications([]);
+      resetLocalNotifications();
       setResolvedUserId(null);
       setIsLoading(false);
       currentUserIdRef.current = null;
@@ -164,9 +189,13 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     } finally {
       setIsLoading(false);
     }
-  }, [user, t, recordFetchFailure, recordFetchSuccess]);
+  }, [authLoading, user, t, recordFetchFailure, recordFetchSuccess]);
 
   const markAsRead = useCallback(async (notificationId: string) => {
+    if (isLocalNotification(notificationId)) {
+      updateLocalNotification(notificationId, { is_read: true, read_at: new Date().toISOString() });
+      return;
+    }
     if (!user) return;
 
     try {
@@ -194,6 +223,10 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   }, [user]);
 
   const markAsUnread = useCallback(async (notificationId: string) => {
+    if (isLocalNotification(notificationId)) {
+      updateLocalNotification(notificationId, { is_read: false, read_at: undefined });
+      return;
+    }
     if (!user) return;
 
     try {
@@ -221,6 +254,10 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   }, [user]);
 
   const archiveNotification = useCallback(async (notificationId: string) => {
+    if (isLocalNotification(notificationId)) {
+      updateLocalNotification(notificationId, { is_read: true, is_archived: true, archived_at: new Date().toISOString() });
+      return;
+    }
     if (!user) return;
 
     try {
@@ -257,6 +294,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   }, [user]);
 
   const markAllAsRead = useCallback(async () => {
+    markAllLocalNotificationsRead();
     if (!user) return;
 
     try {
@@ -280,6 +318,10 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   }, [user]);
 
   const deleteNotification = useCallback(async (notificationId: string) => {
+    if (isLocalNotification(notificationId)) {
+      removeLocalNotification(notificationId);
+      return;
+    }
     if (!user) return;
 
     try {
@@ -312,9 +354,9 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   // still recover for the current session (see the success-only ref guard
   // above).
   useEffect(() => {
-    if (!user) return;
+    if (authLoading) return;
     fetchNotifications();
-  }, [user, fetchNotifications, dbUserId]);
+  }, [authLoading, user, fetchNotifications, dbUserId]);
 
   // Set up real-time subscription — scoped to the resolved Supabase auth
   // UUID, not user.id, since user.id may be a non-Supabase provider id that
@@ -327,10 +369,18 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     // and a reconnect storm on top of an already-struggling DB only makes it
     // worse. The 30s poll below keeps working as the fallback in the
     // meantime; this effect re-runs once backendDegraded clears.
-    if (!user || !resolvedUserId || backendDegraded) return;
+    if (authLoading || !user || !resolvedUserId || backendDegraded) return;
 
+    // Unique topic per subscription instance. A stable per-user topic collides
+    // on the Realtime server whenever two subscriptions for the same user race
+    // (StrictMode double-mount, a stale tab on an older bundle, or the
+    // degraded-state teardown racing a rebuild) and any binding difference is
+    // rejected as "mismatch between server and client bindings for postgres
+    // changes". A per-instance suffix keeps every join on its own topic, so
+    // teardown below is still the only thing that retires a channel.
+    subscriptionEpochRef.current += 1;
     const channel = supabase
-      .channel(`notifications:${resolvedUserId}`)
+      .channel(`notifications:${resolvedUserId}:${subscriptionEpochRef.current}`)
       .on(
         'postgres_changes',
         {
@@ -441,14 +491,14 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       supabase.removeChannel(channel);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id, resolvedUserId, backendDegraded]); // Identity + degraded-state gate; other user changes intentionally excluded
+  }, [authLoading, user?.id, resolvedUserId, backendDegraded]); // Identity + degraded-state gate; other user changes intentionally excluded
 
   // Auto-refresh notifications as a fallback, with exponential backoff on
   // consecutive failures (capped at NOTIFICATION_POLL_MAX_MS) instead of a
   // fixed 30s interval -- a fixed interval kept hammering an already-failing
   // backend at full frequency during the real incident this guards against.
   useEffect(() => {
-    if (!user) return;
+    if (authLoading || !user) return;
 
     let timeoutId: ReturnType<typeof setTimeout>;
     let cancelled = false;
@@ -470,7 +520,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       clearTimeout(timeoutId);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id, fetchNotifications]); // Only depend on identity + the fetch fn to prevent timer-chain recreation on other user changes
+  }, [authLoading, user?.id, fetchNotifications]); // Only depend on identity + the fetch fn to prevent timer-chain recreation on other user changes
 
   const value: NotificationContextType = {
     notifications,
