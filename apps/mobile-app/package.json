@@ -41,6 +41,7 @@
     "lint": "expo lint && node ../../scripts/check-type-placement.mjs",
     "test": "jest --watchAll",
     "test:coverage": "jest --config jest.coverage.config.cjs --runInBand",
+    "test:coverage:ci": "jest --config jest.coverage.config.cjs --maxWorkers=50% --watchman=false --silent",
     "smoke:web": "node scripts/web-smoke-test.mjs"
   },
   "dependencies": {

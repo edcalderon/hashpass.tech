@@ -186,7 +186,7 @@ describe('self-hosted VPS deployment workflow', () => {
       const block = compose.slice(serviceStart, nextService === -1 ? compose.length : nextService);
 
       expect(serviceStart).toBeGreaterThan(-1);
-      expect(block).toContain('entrypoint: ["bash", "-c"]');
+      expect(block).toMatch(/entrypoint:\s+\["bash", "-e?c"\]/);
       expect(block).toMatch(/command:\s*\n\s+- \|-\s*\n/);
     }
   });

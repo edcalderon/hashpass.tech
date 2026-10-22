@@ -14,9 +14,17 @@ on:
 permissions:
   contents: read
 
+# A develop push and the matching pull_request event point at the same commit.
+# Keep one coverage run per branch/PR and cancel superseded runs instead of
+# consuming a second runner on an identical 365-file mobile suite.
+concurrency:
+  group: coverage-${{ github.repository }}-${{ github.event.pull_request.head.ref || github.ref_name }}
+  cancel-in-progress: true
+
 jobs:
   coverage:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     env:
       CI: '1'
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
@@ -45,7 +53,7 @@ jobs:
         run: pnpm check:native-fetch
 
       - name: Run coverage tests
-        run: pnpm --dir apps/mobile-app test:coverage
+        run: pnpm --dir apps/mobile-app test:coverage:ci
 
       - name: Run event ingestion coverage tests
         run: pnpm --filter @hashpass/event-ingestion test:coverage
