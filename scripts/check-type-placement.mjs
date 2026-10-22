@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 const DECLARATION_PATTERN = /^\+\s*(?:export\s+)?(?:declare\s+)?(interface|type)\s+([A-Za-z_$][\w$]*)\b/;
 const SOURCE_PATH_PATTERN = /^(?:apps|packages)\/.*\.(?:ts|tsx|js|jsx)$/;
+const DIFF_MAX_BUFFER = 64 * 1024 * 1024;
 
 function isTypeModule(filePath) {
   const normalizedPath = normalize(filePath).replaceAll('\\', '/');
@@ -98,7 +99,10 @@ function getDiff() {
     args.push('HEAD');
   }
 
-  return execFileSync('git', args, { encoding: 'utf8' });
+  // Large release or migration pull requests can exceed Node's 1 MiB default
+  // child-process buffer before the guard has a chance to inspect the diff.
+  // Keep the guard deterministic while allowing the complete PR diff through.
+  return execFileSync('git', args, { encoding: 'utf8', maxBuffer: DIFF_MAX_BUFFER });
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
