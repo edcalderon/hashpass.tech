@@ -1,5 +1,44 @@
 import assert from 'node:assert/strict';
-import { findTypePlacementViolations } from './check-type-placement.mjs';
+import {
+  buildDiffArgs,
+  findTypePlacementViolations,
+} from './check-type-placement.mjs';
+
+assert.deepEqual(buildDiffArgs({ TYPE_PLACEMENT_STAGED: '1' }), [
+  'diff',
+  '--unified=0',
+  '--no-color',
+  '--no-ext-diff',
+  '--no-textconv',
+  '--cached',
+  '--',
+  'apps',
+  'packages',
+]);
+
+assert.deepEqual(buildDiffArgs({ TYPE_PLACEMENT_BASE: 'origin/main' }), [
+  'diff',
+  '--unified=0',
+  '--no-color',
+  '--no-ext-diff',
+  '--no-textconv',
+  'origin/main...HEAD',
+  '--',
+  'apps',
+  'packages',
+]);
+
+assert.deepEqual(buildDiffArgs({}), [
+  'diff',
+  '--unified=0',
+  '--no-color',
+  '--no-ext-diff',
+  '--no-textconv',
+  'HEAD',
+  '--',
+  'apps',
+  'packages',
+]);
 
 {
   const diff = [
@@ -80,4 +119,4 @@ import { findTypePlacementViolations } from './check-type-placement.mjs';
   assert.deepEqual(findTypePlacementViolations(diff), []);
 }
 
-console.log('Type placement guard tests passed (4 cases).');
+console.log('Type placement guard tests passed (7 cases).');
