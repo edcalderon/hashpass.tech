@@ -298,11 +298,16 @@ const PROFILES: SupabaseProfile[] = [
       'EXPO_PUBLIC_SUPABASE_ANON_KEY',
       'NEXT_PUBLIC_SUPABASE_ANON_KEY',
     ],
+    // Never fall back to a non-DEV BSL-named key: BSL_SUPABASE_SERVICE_ROLE_KEY
+    // belongs to the retired BSL production project (mnnqryrdlhddorqsrtbn), not
+    // shared dev. The unsuffixed SUPABASE_SERVICE_ROLE_KEY / _DEV keys point at
+    // shared dev, so they are the safe last resorts -- see
+    // apps/docs/docs/infra/decisions/single-core-database.md.
     serviceRoleEnv: [
       'BSL_SUPABASE_SERVICE_ROLE_KEY_DEV',
       'SUPABASE_SERVICE_ROLE_KEY_BSL_DEV',
-      'BSL_SUPABASE_SERVICE_ROLE_KEY',
       'SUPABASE_SERVICE_ROLE_KEY_DEV',
+      'SUPABASE_SERVICE_ROLE_KEY',
     ],
     dbUrlEnv: [
       'BSL_SUPABASE_DB_URL_DEV',
