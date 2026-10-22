@@ -42,6 +42,34 @@ Audited 2026-08-11 via direct `psql` connection to all three (`SUPABASE_DB_URL_P
 `BSL_SUPABASE_DB_URL_PROD`, `SUPABASE_DB_URL_DEV`). Table counts are from that audit,
 before the BSL data was consolidated into core on 2026-10-21.
 
+## Passwordless authentication schema (V129–V131)
+
+The passwordless auth tables are intentionally small and server-only. The
+canonical email challenge table is `public.otp_codes`; SMS uses
+`public.sms_auth_challenges`, `public.user_phone_authenticators`, and
+`public.sms_delivery_rate_limits`. These are not duplicate tables and must not
+be replaced with a second email-OTP or SMS-OTP store. `qr_auth_challenges` is a
+separate QR-login protocol, while Better Auth's `verification` table belongs to
+the Better Auth adapter.
+
+The current rows never contain a six-digit code or a full phone number:
+
+- `otp_codes.code_hmac` is a service-secret HMAC bound to the email, code, and
+  purpose. `purpose` is `email-login` or `account-delete`; `consume_email_otp`
+  verifies it under a row lock and consumes it once.
+- SMS challenges store keyed email/phone lookups, phone last four digits, a
+  keyed code verifier, expiry, and attempt counters. A verified account can
+  have at most two active phone authenticators.
+- RLS is enabled and table/function access is granted only to `service_role`.
+
+The ordered auth migrations are `V005__otp_codes.sql`,
+`V129__secure_sms_authenticators.sql`, `V130__atomic_otp_consumption.sql`, and
+`V131__retire_legacy_plaintext_otp_storage.sql`. V131 removes expired/used or
+legacy rows, drops the old plaintext `code` column and indexes, and leaves the
+four canonical objects above as the only OTP/SMS storage. See
+[`auth/AUTH_FLOW.md`](../auth/AUTH_FLOW.md#otp-and-sms-authentication) for the
+request/verification flow and the migration commands.
+
 ## Finding 1 (fixed): legacy `directus_*` tables exposed via public API on dev
 
 27 `directus_*` tables on the shared dev project had Row-Level Security

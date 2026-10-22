@@ -27,6 +27,7 @@ import { useBalance } from '@contexts/BalanceContext';
 import { useTranslation } from '../../../../i18n/i18n';
 import { apiClient, eventApiPath } from '@/lib/api-client';
 import { resolveActiveEventId } from '@/lib/event-path';
+import { getSpeakerAvatarUrl } from '../../../../lib/string-utils';
 
 type MeetingRequestWithDirection = MeetingRequest & {
   _direction?: 'sent' | 'incoming';
@@ -148,9 +149,11 @@ export default function MyRequestsView() {
       const response = await apiClient.request(meetingRequestsPath, { skipEventSegment: true });
       if (!response.success) throw new Error(response.error);
       const meetingRequests = (response.data as any)?.data || [];
-      setRequests(meetingRequests.map((request: any) => request._direction === 'incoming'
-        ? { ...request, requester_avatar: generateUserAvatarUrl(request.requester_name || 'User'), requester_full_name: request.requester_name || 'User' }
-        : request));
+      setRequests(meetingRequests.map((request: any) => ({
+        ...request,
+        requester_avatar: request.requester_avatar || generateUserAvatarUrl(request.requester_name || 'User'),
+        requester_full_name: request.requester_full_name || request.requester_name || 'User',
+      })));
     } catch (error) {
       console.error('❌ Error loading my requests:', error);
       showError(t('requestView.loadErrorTitle'), t('requestView.loadErrorMessage'));
@@ -875,7 +878,7 @@ export default function MyRequestsView() {
               <View style={styles.speakerDetail}>
                 <SpeakerAvatar
                   name={selectedRequest.speaker_name}
-                  imageUrl={selectedRequest.speaker_image || null}
+                  imageUrl={selectedRequest.speaker_image || getSpeakerAvatarUrl(selectedRequest.speaker_name)}
                   size={60}
                   showBorder={true}
                 />

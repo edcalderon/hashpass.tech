@@ -1,6 +1,6 @@
 # Authentication
 
-HASHPASS uses a provider-agnostic auth layer in code, but as of 2026-07-08 **Google sign-in has one canonical path for every tenant: Better Auth first, Supabase as a last-resort fallback.** The Directus OAuth bridge described lower in this doc still exists in the tree but is not reachable from the Google button anymore — see [AUTH_FLOW.md § Do we still need Directus?](AUTH_FLOW.md#do-we-still-need-directus).
+HASHPASS uses a provider-agnostic auth layer in code, but as of 2026-07-08 **Google sign-in has one canonical path for every tenant: Better Auth first, Supabase as a last-resort fallback.** The Directus OAuth bridge described lower in this doc still exists in the tree but is not reachable from the Google button anymore — see [AUTH_FLOW.md § Do we still need Directus?](AUTH_FLOW.md#do-we-still-need-directus). Apple sign-in is planned but not enabled; see [APPLE_SIGN_IN.md](APPLE_SIGN_IN.md) for the separate Apple Developer setup and implementation requirements.
 
 ## What Happens In Production
 

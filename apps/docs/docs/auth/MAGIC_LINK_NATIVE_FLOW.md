@@ -75,17 +75,27 @@ The web callback detects Android via user agent and switches between formats:
 
 ## OTP Code Flow
 
-The OTP flow uses a custom API endpoint instead of Supabase's built-in OTP:
+The native OTP flow is a custom public API, separate from the browser PKCE
+magic-link flow described above. The canonical implementation and schema
+description live in [AUTH_FLOW.md § OTP and SMS Authentication](./AUTH_FLOW.md#otp-and-sms-authentication).
 
-1. App calls `POST /api/auth/otp` with `{ email, delivery }` — **no auth header** (`skipAuth: true`)
-2. Lambda calls `supabase.auth.admin.generateLink()` to create a magic link token
-3. Lambda extracts the 6-digit OTP from the token and sends it via Brevo email/SMS
-4. User enters code in the app
-5. App calls `POST /api/auth/otp/verify` with `{ email, code }` — **no auth header**
-6. Lambda looks up the stored `token_hash`, then calls GoTrue `/auth/v1/verify` with an anon key from the same Supabase project as the service-role key
-7. Returns the Supabase session to the client
+At a high level:
 
-The OTP endpoints are **public** (no bearer token). The API client must use `skipAuth: true` to prevent adding an `Authorization` header, which would cause CORS failures and possible API Gateway rejections.
+1. The app calls `POST /api/auth/otp` with `{ email, delivery }` — no bearer
+   token (`skipAuth: true`).
+2. The server creates a GoTrue token, generates a CSPRNG six-digit code, and
+   stores only a keyed HMAC verifier in `public.otp_codes`.
+3. The code is delivered by email, or by SMS as part of the separately
+   verified phone-registration flow.
+4. The app calls `POST /api/auth/otp/verify` with `{ email, code }` — again with
+   `skipAuth: true`.
+5. The server atomically consumes the HMAC verifier, then calls GoTrue's verify
+   endpoint with the anon key for the same Supabase project and returns the
+   session.
+
+The endpoints remain public, but rate limits, ten-minute expiry, five-attempt
+locking, single-use consumption, and service-role-only database access are
+mandatory. Never reintroduce plaintext OTP storage or a second OTP table.
 
 ## Supabase Profile Selection (Server Side)
 

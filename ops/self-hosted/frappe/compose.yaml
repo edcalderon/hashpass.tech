@@ -49,7 +49,7 @@ services:
     depends_on:
       frappe-db: {condition: service_healthy}
       frappe-configurator: {condition: service_completed_successfully}
-    entrypoint: ["bash", "-c"]
+    entrypoint: ["bash", "-ec"]
     env_file: ../.env
     command:
       - |-
@@ -63,6 +63,9 @@ services:
   frappe-backend:
     <<: *worker
     depends_on: {frappe-create-site: {condition: service_completed_successfully}}
+    # The application needs controlled outbound DNS/TLS for mailbox polling and
+    # SMTP delivery. Data services remain on the isolated default network.
+    networks: [default, egress]
   frappe-frontend:
     <<: *worker
     command: ["nginx-entrypoint.sh"]
@@ -84,9 +87,11 @@ services:
   frappe-worker-short:
     <<: *worker
     command: ["bench", "worker", "--queue", "short,default"]
+    networks: [default, egress]
   frappe-worker-long:
     <<: *worker
     command: ["bench", "worker", "--queue", "long,default,short"]
+    networks: [default, egress]
   frappe-scheduler:
     <<: *worker
     command: ["bench", "schedule"]
@@ -97,4 +102,7 @@ volumes:
   logs:
 networks:
   default: {internal: true}
+  # Deliberately scoped to the Frappe HTTP process and queue workers. It is not
+  # attached to MariaDB, Redis, the frontend, or the edge network.
+  egress: {}
   ops: {name: hashpass-ops, external: true}

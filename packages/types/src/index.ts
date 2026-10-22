@@ -14,6 +14,7 @@ export * from "./language";
 export type {
   Meeting,
   MeetingRequest,
+  MeetingRequesterProfile,
   TimeSlot,
   DaySchedule,
   SystemStats,

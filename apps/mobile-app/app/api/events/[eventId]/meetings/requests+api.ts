@@ -6,6 +6,7 @@ import {
 import { eventIdFromRequest } from "@/lib/server/event-api";
 import { authenticatedIdentity } from "@/lib/server/authenticated-meeting-identity";
 import { sendCriticalNotificationEmail, sendMeetingNotificationEmail } from "@/lib/email";
+import type { MeetingRequesterProfile } from '@hashpass/types';
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -66,6 +67,7 @@ async function speakerForRecordId(supabase: any, speakerId: string) {
 }
 
 type RequestSpeakerProfile = {
+  id: string;
   user_id: string;
   title: string | null;
   company: string | null;
@@ -80,28 +82,55 @@ async function addSpeakerProfileDetails(supabase: any, requests: any[]) {
   )];
   if (!speakerIds.length) return requests;
 
-  const { data, error } = await supabase
-    .from('bsl_speakers')
-    .select('user_id, title, company, imageurl')
-    .in('user_id', speakerIds);
-  if (error) {
-    console.error('[meeting-requests] speaker profile lookup error:', error);
+  const [byUserId, byProfileId] = await Promise.all([
+    supabase.from('bsl_speakers').select('id, user_id, title, company, imageurl').in('user_id', speakerIds),
+    supabase.from('bsl_speakers').select('id, user_id, title, company, imageurl').in('id', speakerIds),
+  ]);
+  if (byUserId.error || byProfileId.error) {
+    console.error('[meeting-requests] speaker profile lookup error:', byUserId.error || byProfileId.error);
     return requests;
   }
 
   const speakerProfiles = new Map(
-    ((data || []) as RequestSpeakerProfile[]).map((profile) => [profile.user_id, profile]),
+    ([...(byUserId.data || []), ...(byProfileId.data || [])] as RequestSpeakerProfile[])
+      .flatMap((profile) => [[profile.user_id, profile], [profile.id, profile]] as const),
   );
+
+  const requesterIds = [...new Set(
+    requests
+      .map((request) => request.requester_id)
+      .filter((requesterId): requesterId is string => typeof requesterId === 'string' && requesterId.length > 0),
+  )];
+  let requesterProfiles = new Map<string, MeetingRequesterProfile>();
+  if (requesterIds.length) {
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .select('user_id, full_name, avatar_url')
+      .in('user_id', requesterIds);
+    if (error) {
+      console.error('[meeting-requests] requester profile lookup error:', error);
+    } else {
+      requesterProfiles = new Map(
+        ((data || []) as MeetingRequesterProfile[]).map((profile) => [profile.user_id, profile]),
+      );
+    }
+  }
+
   return requests.map((request) => {
     const speaker = speakerProfiles.get(request.speaker_id);
-    return speaker
-      ? {
-        ...request,
+    const requester = requesterProfiles.get(request.requester_id);
+    return {
+      ...request,
+      ...(speaker ? {
         speaker_title: speaker.title,
         speaker_company: speaker.company,
         speaker_image: speaker.imageurl,
-      }
-      : request;
+      } : {}),
+      ...(requester ? {
+        requester_full_name: requester.full_name,
+        requester_avatar: requester.avatar_url,
+      } : {}),
+    };
   });
 }
 

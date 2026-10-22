@@ -25,6 +25,7 @@ const sidebars = {
         'auth/AUTHENTICATION',
         'auth/AUTH_FLOW',
         'auth/SIGN_IN_WITH_APPLE',
+        'auth/APPLE_SIGN_IN',
         'auth/AUTH_STRUCTURE',
         'auth/USER_REGISTRY',
         'auth/SECOND_FACTOR_PIN',

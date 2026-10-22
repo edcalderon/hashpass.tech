@@ -14,6 +14,12 @@
 
 ## Current Main Google Flow (as of 2026-07-08)
 
+**Apple status (reviewed 2026-09-27): not enabled.** Better Auth currently
+configures Google only; the native app has no Apple authentication entitlement,
+package, or button. Setup requirements and the staged web/iOS implementation
+plan are in [APPLE_SIGN_IN.md](APPLE_SIGN_IN.md). Do not infer Apple support
+from the App Store Connect app record alone.
+
 **Better Auth is now the only web Google sign-in path for every tenant** — both
 `hashpass.tech` (core) and the BSL event tenants. The browser never starts
 Supabase Google OAuth directly, and the Directus OAuth bridge is effectively
@@ -307,42 +313,123 @@ Confirmed present in both the local `core-development` and production
 `core-production` databases as of 2026-07-08 (BSL had already migrated
 theirs); this only needs re-running for a genuinely new database.
 
-## OTP (One-Time Password) Flow — Native Mobile
+## OTP and SMS Authentication
 
-HASHPASS native uses a 6-digit OTP code instead of magic links. The Lambda generates a token via Supabase Admin API, stores a mapping, and sends the code via custom email or SMS.
+The native client presents a six-digit code flow. The “Magic Link” label is a
+compatibility label in the UI; the server does not put a login credential in a
+mobile deep link. Every challenge has a purpose, a ten-minute expiry, a
+single-use state, and a five-attempt maximum.
 
-### Send (`POST /api/auth/otp`)
+### Email login (`POST /api/auth/otp`)
 
-1. Call `supabase.auth.admin.generateLink({ type: 'magiclink', email })`.
-2. Extract from the response:
-   - `properties.hashed_token` → `tokenHash` (SHA256 of the raw token; used with GoTrue `token_hash` path)
-   - `properties.email_otp` → `emailOtp` (raw token; used with GoTrue `{ email, token }` path)
-   - `properties.verification_type` → `verificationType` (usually `'magiclink'`)
-3. Store `{verificationType}::{tokenHash}::{emailOtp}` as `token_hash` in the `otp_codes` table alongside the 6-digit `code`, email, and expiry.
-4. Send the 6-digit code via SMTP (Brevo) or Brevo transactional SMS.
+1. Normalize the email and ask `supabase.auth.admin.generateLink({
+   type: "magiclink", email })` for a single-use GoTrue token.
+2. Keep the token material server-side in `otp_codes.token_hash`; it is never
+   returned to the client. Generate the six-digit delivery code with Node's
+   CSPRNG and store only `code_hmac`, keyed by the Supabase service secret and
+   bound to the normalized email and `purpose = "email-login"`.
+3. Mark any previous active email challenge for that account as used, then send
+   the new code through the configured SMTP provider. A request that also
+   enrolls a phone creates an independent SMS challenge as well.
+4. The database is restricted to `service_role`; anonymous and authenticated
+   PostgREST roles cannot read the challenge rows.
 
-### Verify (`POST /api/auth/otp/verify`)
+### Email login verification (`POST /api/auth/otp/verify`)
 
-1. Look up the `otp_codes` row by email + 6-digit code (not used, not expired).
-2. Parse `token_hash` column: split on `::` to recover `verificationType`, `tokenHash`, `emailOtp`.
-3. Mark the row `used = true` immediately (replay prevention).
-4. Call GoTrue `/auth/v1/verify` directly (no Supabase JS client — avoids PKCE fields being injected):
-   - **Primary**: `{ token_hash: tokenHash, type: verificationType }` — the most reliable path for magic link tokens.
-   - **Fallback**: `{ email, token: emailOtp, type: verificationType }` — used if token_hash path fails for a recoverable reason.
-   - Tries multiple `type` values (`magiclink`, `signup`, `email`) to survive GoTrue version quirks.
-   - Stops immediately if the error is "expired/invalid" (no point retrying an expired token).
-5. Return the GoTrue session (`access_token`, `refresh_token`) to the client.
-6. Client calls `supabase.auth.setSession()` to establish the local session.
+1. Recompute the keyed HMAC from `{ email, code, purpose }`.
+2. Call `consume_email_otp`, which locks the newest active row, increments
+   failed attempts, returns `locked` after five failures, and marks a valid
+   row `used = true` in the same transaction. This prevents concurrent replay.
+3. Parse the server-only GoTrue token material and call
+   `/<supabase-project>/auth/v1/verify` directly with that project's anon key.
+   The route tries `{ token_hash, type }` first and the `{ email, token, type }`
+   fallback for GoTrue versions that require the raw email OTP token.
+4. Return the GoTrue session to the client, which calls
+   `supabase.auth.setSession()`.
 
-### Why we bypass the Supabase JS client for verify
+`supabase.auth.verifyOtp()` is intentionally not used: the JS client adds PKCE
+fields that older GoTrue versions reject with “Only the token_hash and type
+should be provided.”
 
-`supabase.auth.verifyOtp({ token_hash, type })` internally appends `code_verifier` and other PKCE fields. GoTrue rejects this with "Only the token_hash and type should be provided". Using a raw `fetch()` to `/auth/v1/verify` avoids the issue entirely.
+### SMS registration and trusted-phone enrollment
+
+SMS is an authenticator, not proof of an email identity by itself.
+
+- The request must contain an E.164 phone number. A new account can start with
+  SMS, but it cannot receive a session or bind the phone until the email OTP is
+  also verified.
+- An existing account may propose a first or second phone from the sign-in
+  screen. The phone is not trusted until both the email and SMS challenges pass.
+- `public.sms_auth_challenges` stores only the challenge UUID, keyed email and
+  phone lookups, the phone's last four digits, a keyed code verifier, purpose,
+  expiry, and locked attempt/delivery counters.
+- `POST /api/auth/phone` consumes registration or enrollment challenges through
+  `consume_sms_auth_challenge`. Successful registration is finalized by
+  `consume_sms_registration`, which locks the account capacity check and allows
+  at most two active rows in `public.user_phone_authenticators`.
+- `claim_sms_delivery_slot` allows at most three deliveries per phone in each
+  ten-minute bucket. Brevo receives the code; neither the code nor the full
+  phone number is stored in Postgres.
+
+### Account-deletion OTP
+
+`/api/auth/delete-account-otp` uses the same `public.otp_codes` table with
+`purpose = "account-delete"`. It invalidates older deletion challenges and
+calls `consume_email_otp` with that purpose, so an email-login code cannot
+authorize account deletion.
+
+### Canonical database objects and cleanup
+
+| Object | Role | Sensitive values stored? |
+| --- | --- | --- |
+| `public.otp_codes` | Email login and account-deletion challenges | HMAC verifier and server-only GoTrue token material; never the six-digit code |
+| `public.sms_auth_challenges` | Registration and trusted-phone challenges | HMAC lookups/verifier and phone last four digits only |
+| `public.user_phone_authenticators` | Verified phone bindings | Phone lookup HMAC and last four digits only |
+| `public.sms_delivery_rate_limits` | Atomic SMS delivery buckets | Phone lookup HMAC only |
+
+There are no separate `email_otp`, `sms_otp`, or legacy OTP-code tables. The
+old plaintext `otp_codes.code` column and its code/token indexes were removed
+by `V131__retire_legacy_plaintext_otp_storage.sql`; that migration also deletes
+expired, used, and legacy rows before dropping the column. `qr_auth_challenges`
+is a separate QR-login protocol and must not be removed; Better Auth's
+`verification` table is also unrelated.
+
+### Migration order and operations
+
+The auth migration group is deliberately ordered:
+
+1. `db/migrations-mobile-bootstrap/V005__otp_codes.sql` — baseline table and
+   cleanup function.
+2. `db/migrations/V129__secure_sms_authenticators.sql` — HMAC-backed SMS
+   challenges, trusted phones, rate limiting, and the `code_hmac` column.
+3. `db/migrations/V130__atomic_otp_consumption.sql` — OTP purposes, attempt
+   limits, and the locked `consume_email_otp` function.
+4. `db/migrations/V131__retire_legacy_plaintext_otp_storage.sql` — purge of
+   legacy rows and removal of plaintext storage/indexes.
+
+Apply and verify a profile through the migration runner; do not run ad-hoc DDL:
+
+```bash
+pnpm run db:migrate -- --profile core-development --groups auth
+pnpm run db:migrate -- --profile core-production --groups auth
+```
+
+The production runner creates its pre-migration dump automatically. A safe
+read-only inventory should show only the four canonical objects above (plus
+the unrelated QR and Better Auth tables). Never print database URLs, service
+keys, OTP values, or full phone numbers in logs or documentation.
 
 ### Relevant files
 
-- `apps/mobile-app/app/api/auth/otp+api.ts` — send endpoint
-- `apps/mobile-app/app/api/auth/otp/verify+api.ts` — verify endpoint
-- `apps/mobile-app/db/otp_codes.sql` — DB schema for otp_codes table
+- `apps/mobile-app/app/api/auth/otp+api.ts` — email/SMS send endpoint
+- `apps/mobile-app/app/api/auth/otp/verify+api.ts` — email OTP verification
+- `apps/mobile-app/app/api/auth/phone+api.ts` — SMS enrollment/registration
+- `apps/mobile-app/app/api/auth/delete-account-otp+api.ts` — deletion code send
+- `apps/mobile-app/app/api/auth/delete-account-otp/verify+api.ts` — deletion verification
+- `apps/mobile-app/lib/server/sms-auth.ts` — CSPRNG/HMAC/SMS delivery helpers
+- `db/migrations/V129__secure_sms_authenticators.sql` — SMS schema and RPCs
+- `db/migrations/V130__atomic_otp_consumption.sql` — email OTP RPC
+- `db/migrations/V131__retire_legacy_plaintext_otp_storage.sql` — legacy cleanup
 
 ## Native Google Sign-In SDK Flow (Android)
 
