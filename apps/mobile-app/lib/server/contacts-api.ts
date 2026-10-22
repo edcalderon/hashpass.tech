@@ -40,6 +40,7 @@ export async function contactsRequest(request: Request, write = false) {
       p_payload: write ? { ...payload as ContactsAction, ...((payload as ContactsAction).action !== 'request' && card ? { card } : {}) } : { card },
     });
     if (error) {
+      console.error('[contacts] contact_network rpc error:', { code: error.code, message: error.message });
       const status = error.code === 'P0001' ? 409 : error.code === '42501' ? 403 : 503;
       return reply({ error: status === 409 ? 'This request is no longer available. Refresh your network.' : 'Contacts are temporarily unavailable. Please try again.' }, status);
     }

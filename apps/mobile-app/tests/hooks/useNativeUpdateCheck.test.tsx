@@ -40,6 +40,10 @@ jest.mock("../../config/runtime-version", () => ({
     mockInstalledVersion(fallbackVersion),
 }));
 
+jest.mock("../../lib/api-client", () => ({
+  getRuntimeApiBaseUrl: () => "https://api-test.example/api/",
+}));
+
 import { useNativeUpdateCheck } from "../../hooks/useNativeUpdateCheck";
 
 let latest: ReturnType<typeof useNativeUpdateCheck> | null = null;

@@ -1,18 +1,20 @@
+const mockApiBase = jest.fn<string | null, []>();
+jest.mock("../../lib/api-client", () => ({ getRuntimeApiBaseUrl: () => mockApiBase() }));
+
 import { refreshHashPokerRuntimeEvent } from "../../lib/runtime-event-registry";
 import type { EventConfig } from "@hashpass/types";
 
 const mockEvents: Record<string, EventConfig> = {};
 
 describe("runtime event registry", () => {
-  const originalApiBase = process.env.EXPO_PUBLIC_API_BASE_URL;
+  beforeEach(() => mockApiBase.mockReturnValue(null));
 
   afterEach(() => {
-    process.env.EXPO_PUBLIC_API_BASE_URL = originalApiBase;
     delete mockEvents["hash-poker"];
   });
 
   it("installs the database-published Hash Poker configuration", async () => {
-    process.env.EXPO_PUBLIC_API_BASE_URL = "https://api.example.test/api/";
+    mockApiBase.mockReturnValue("https://api.example.test/api/");
     const config = {
       id: "hash-poker",
       title: "Database tournament",
@@ -39,7 +41,7 @@ describe("runtime event registry", () => {
   });
 
   it("uses the same-origin endpoint and reports an unchanged configuration", async () => {
-    delete process.env.EXPO_PUBLIC_API_BASE_URL;
+    mockApiBase.mockReturnValue(null);
     const config = {
       id: "hash-poker",
       title: "Existing tournament",
