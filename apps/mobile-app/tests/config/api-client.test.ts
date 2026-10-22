@@ -229,6 +229,100 @@ describe('EventApiClient credential handling', () => {
     expect(getCaptchaApiEndpoint()).toBe('https://api.hashpass.tech/api/captcha/');
   });
 
+  describe('local web development routing', () => {
+    const healthyFetch = () => jest.fn(async () => ({
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      headers: {
+        get: (name: string) => (name.toLowerCase() === 'content-type' ? 'application/json' : null),
+      },
+      json: async () => ({ status: 'healthy' }),
+    }));
+
+    const setLocalhostWindow = (overrides?: Record<string, unknown>) => {
+      setWindow({
+        location: {
+          hostname: 'localhost',
+          origin: 'http://localhost:8081',
+        },
+        ...overrides,
+      });
+    };
+
+    it('ignores the pinned remote base on localhost web and calls the same-origin API', async () => {
+      Platform.OS = 'web';
+      setEnv('EXPO_PUBLIC_API_TARGET', undefined);
+      setLocalhostWindow();
+
+      const fetchMock = healthyFetch();
+      global.fetch = fetchMock as unknown as typeof fetch;
+
+      const client = new EventApiClient();
+      const response = await client.request('status', { skipEventSegment: true, skipAuth: true });
+
+      expect(response.success).toBe(true);
+      const [url] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+      expect(url).toBe('/api/status');
+    });
+
+    it('points localhost web at the development Lambda when EXPO_PUBLIC_API_TARGET=dev', async () => {
+      Platform.OS = 'web';
+      setEnv('EXPO_PUBLIC_API_TARGET', 'dev');
+      setLocalhostWindow();
+
+      const fetchMock = healthyFetch();
+      global.fetch = fetchMock as unknown as typeof fetch;
+
+      const client = new EventApiClient();
+      const response = await client.request('status', { skipEventSegment: true, skipAuth: true });
+
+      expect(response.success).toBe(true);
+      const [url] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+      expect(url).toBe('https://api-dev.hashpass.tech/api/status');
+    });
+
+    it('points localhost web at the production Lambda when EXPO_PUBLIC_API_TARGET=prod', async () => {
+      Platform.OS = 'web';
+      setEnv('EXPO_PUBLIC_API_TARGET', 'prod');
+      setLocalhostWindow();
+
+      const fetchMock = healthyFetch();
+      global.fetch = fetchMock as unknown as typeof fetch;
+
+      const client = new EventApiClient();
+      const response = await client.request('status', { skipEventSegment: true, skipAuth: true });
+
+      expect(response.success).toBe(true);
+      const [url] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+      expect(url).toBe('https://api.hashpass.tech/api/status');
+    });
+
+    it('still lets an injected runtime override win over the localhost default', async () => {
+      Platform.OS = 'web';
+      setEnv('EXPO_PUBLIC_API_TARGET', undefined);
+      setLocalhostWindow({ __API_BASE_URL__: 'https://api.hashpass.tech/api' });
+
+      const fetchMock = healthyFetch();
+      global.fetch = fetchMock as unknown as typeof fetch;
+
+      const client = new EventApiClient();
+      const response = await client.request('status', { skipEventSegment: true, skipAuth: true });
+
+      expect(response.success).toBe(true);
+      const [url] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+      expect(url).toBe('https://api.hashpass.tech/api/status');
+    });
+
+    it('routes Cap challenges to the same-origin API on localhost web', () => {
+      Platform.OS = 'web';
+      setEnv('EXPO_PUBLIC_API_TARGET', undefined);
+      setLocalhostWindow();
+
+      expect(getCaptchaApiEndpoint()).toBe('/api/captcha/');
+    });
+  });
+
   it('parses JSON API Gateway responses even when the content type is text/plain', async () => {
     const fetchMock = jest.fn(async () => ({
       ok: true,
