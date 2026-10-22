@@ -49,6 +49,8 @@ import {
 import { PASSWORDLESS_CALLBACK_MARKER } from "../../lib/auth/passwordless-callback";
 import ShaderAnimation from "../../components/ShaderAnimation";
 import AuthAlliesCarousel from "../../components/auth/AuthAlliesCarousel";
+import MagicLinkSparkIcon from "../../components/auth/MagicLinkSparkIcon";
+import AuthWelcomeReveal from "../../components/auth/AuthWelcomeReveal";
 import SafeLinearGradient from "../../components/SafeLinearGradient";
 import { getEmailAutocompleteSuggestions } from "../../lib/email-autocomplete";
 import {
@@ -2150,12 +2152,20 @@ export default function AuthScreen({
                     isDesktopLayout ? styles.authHeaderBlockDesktop : null,
                   ]}
                 >
-                  <Text style={styles.authHeaderTitle}>
-                    {t("welcomeHeading", "Welcome")}
-                  </Text>
-                  <Text style={styles.authHeaderSubtitle}>
-                    {t("subtitle", "Sign in to unlock your digital life.")}
-                  </Text>
+                  <AuthWelcomeReveal
+                    animationLevel={animationLevel}
+                    contrastShadowColor={uiPalette(isDark).overlay}
+                    subtitle={t(
+                      "subtitle",
+                      "Sign in to unlock your digital life.",
+                    )}
+                    subtitleOverlayColor={uiPalette(isDark).accent}
+                    subtitleStyle={styles.authHeaderSubtitle}
+                    subtitleWrapperStyle={styles.authHeaderSubtitleReveal}
+                    title={t("welcomeHeading", "Welcome")}
+                    titleOverlayColor={uiPalette(isDark).accent}
+                    titleStyle={styles.authHeaderTitle}
+                  />
                 </View>
               )}
 
@@ -2400,14 +2410,16 @@ export default function AuthScreen({
                               }}
                               disabled={isBusy}
                             >
-                              <Ionicons
-                                name="link-outline"
-                                size={16}
+                              <MagicLinkSparkIcon
                                 color={
                                   emailAuthMethod === "magic-link"
                                     ? colors.text.primary
                                     : colors.text.secondary
                                 }
+                                isActive={
+                                  emailAuthMethod === "magic-link" && !isBusy
+                                }
+                                animationLevel={animationLevel}
                               />
                               <Text
                                 numberOfLines={1}
@@ -3299,11 +3311,13 @@ const getStyles = (
       letterSpacing: -0.8,
     },
     authHeaderSubtitle: {
-      marginTop: 8,
       fontSize: isDesktopLayout ? 24 : isCompactMobile ? 16 : 18,
       lineHeight: isDesktopLayout ? 30 : 24,
       color: authHeaderPalette.subtitleColor,
       textAlign: "center",
+    },
+    authHeaderSubtitleReveal: {
+      marginTop: 8,
     },
     primaryAuthContainer: {
       width: "100%",
