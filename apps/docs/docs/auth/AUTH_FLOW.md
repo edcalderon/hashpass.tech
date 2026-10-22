@@ -12,13 +12,15 @@
 > [AUTH_BOOTSTRAP_STABILITY.md](AUTH_BOOTSTRAP_STABILITY.md) before changing
 > provider resolution, auth subscribers, or auth-consuming dashboard UI.
 
-## Current Main Google Flow (as of 2026-07-08)
+## Current Main Auth Flow (as of 2026-10-17)
 
-**Apple status (reviewed 2026-09-27): not enabled.** Better Auth currently
-configures Google only; the native app has no Apple authentication entitlement,
-package, or button. Setup requirements and the staged web/iOS implementation
-plan are in [APPLE_SIGN_IN.md](APPLE_SIGN_IN.md). Do not infer Apple support
-from the App Store Connect app record alone.
+**Apple status (verified 2026-10-17): enabled for web/PWA and iOS.** Better Auth
+uses the protected Apple provider configuration for browser OAuth and the
+native iOS identity-token exchange. Android intentionally keeps the Apple
+button hidden. See [SIGN_IN_WITH_APPLE.md](SIGN_IN_WITH_APPLE.md) for the
+tested runtime flow and [APPLE_SIGN_IN.md](APPLE_SIGN_IN.md) for credential
+operations. Do not infer production readiness from the App Store Connect app
+record alone.
 
 **Better Auth is now the only web Google sign-in path for every tenant** — both
 `hashpass.tech` (core) and the BSL event tenants. The browser never starts
@@ -468,7 +470,7 @@ Android native app
   Supabase session established → user logged in
 ```
 
-Mirrors the web precedence (see [Current Main Google Flow](#current-main-google-flow-as-of-2026-07-08)) so native and web users end up under the same Better Auth identity rather than diverging depending on platform. `BetterAuthProvider.signInWithIdToken` is implemented in `packages/auth/src/providers/better-auth.ts` using Better Auth's documented ["Sign in with ID Token"](https://www.better-auth.com/docs/concepts/oauth#sign-in-with-id-token) support — no new native SDK code, no extra user interaction, same `GoogleSignin` call as before.
+Mirrors the web precedence (see [Current Main Auth Flow](#current-main-auth-flow-as-of-2026-10-17)) so native and web users end up under the same Better Auth identity rather than diverging depending on platform. `BetterAuthProvider.signInWithIdToken` is implemented in `packages/auth/src/providers/better-auth.ts` using Better Auth's documented ["Sign in with ID Token"](https://www.better-auth.com/docs/concepts/oauth#sign-in-with-id-token) support — no new native SDK code, no extra user interaction, same `GoogleSignin` call as before.
 
 ### Required configuration
 

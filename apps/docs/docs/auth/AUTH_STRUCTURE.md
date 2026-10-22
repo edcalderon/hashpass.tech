@@ -15,11 +15,11 @@
 - `app/api/auth/oauth/callback+api.ts` -> `/api/auth/oauth/callback`
 - `app/api/auth/oauth/google+api.ts` -> legacy compatibility callback for older Google links
 
-## Current Main Google Flow (updated 2026-07-08)
+## Current Main Auth Flow (updated 2026-10-17)
 
 Main Google sign-in starts in `apps/mobile-app/hooks/useAuth.ts` through `signInWithOAuth('google')`.
 
-**Web and native now try Better Auth first, for every tenant** (not just BSL events) — see [AUTH_FLOW.md](AUTH_FLOW.md#current-main-google-flow-as-of-2026-07-08) for the full sequence:
+**Web and native now try Better Auth first, for every tenant** (not just BSL events) — see [AUTH_FLOW.md](AUTH_FLOW.md#current-main-auth-flow-as-of-2026-10-17) for the full sequence:
 
 1. Web calls Better Auth's `signIn.social({ provider: 'google' })`, which redirects to Google with `redirect_uri=<apiBase>/api/auth/callback/google`.
 2. Better Auth's own server exchanges the code, sets a session cookie, and redirects back to `/auth/callback`.

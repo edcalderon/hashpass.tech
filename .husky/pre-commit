@@ -30,6 +30,25 @@ fi
 echo "📐 Checking type placement on staged changes..."
 TYPE_PLACEMENT_STAGED=1 pnpm -s run check:type-placement
 
+# The staged check catches declarations added by this commit. A second
+# branch-range check catches declarations that landed in an earlier commit and
+# would otherwise only be discovered by the pull-request workflow.
+type_placement_base="${TYPE_PLACEMENT_BASE:-}"
+if [ -z "$type_placement_base" ] && git rev-parse --verify origin/main >/dev/null 2>&1; then
+  type_placement_base="origin/main"
+fi
+if [ -z "$type_placement_base" ]; then
+  type_placement_base="$(git rev-parse --abbrev-ref --symbolic-full-name '@{upstream}' 2>/dev/null || true)"
+fi
+if [ -n "$type_placement_base" ]; then
+  echo "📐 Checking type placement across the branch range ($type_placement_base)..."
+  TYPE_PLACEMENT_BASE="$type_placement_base" pnpm -s run check:type-placement
+else
+  echo "❌ No remote base ref is available for the branch-wide type placement check."
+  echo "   Fetch origin/main or set TYPE_PLACEMENT_BASE before committing."
+  exit 1
+fi
+
 echo "📘 Checking README sync..."
 echo "🌐 Checking dashboard translations (en/es/ko)..."
 pnpm --dir apps/mobile-app run check:dashboard-translations

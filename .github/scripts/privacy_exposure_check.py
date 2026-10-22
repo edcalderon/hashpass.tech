@@ -32,6 +32,9 @@ ALLOWLIST = {
     "legal@hashpass.tech",
     "no-reply@hashpass.tech",
     "noreply@hashpass.tech",
+    "info@hashpass.tech",
+    "updates@hashpass.tech",
+    "no-reply@hashpass.info",
 }
 
 PLACEHOLDER_DOMAINS = {
