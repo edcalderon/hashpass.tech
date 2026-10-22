@@ -616,6 +616,9 @@ describe('verified speaker identity claim migration contract', () => {
     expect(config.groups['bsl-speaker-identity-claims']).toContain(
       'db/migrations/V115__repair_speaker_claim_review_policy.sql',
     );
+    expect(config.groups['bsl-speaker-identity-claims']).toContain(
+      'db/migrations/V132__speaker_claim_email_verification.sql',
+    );
   });
 
   it('requires verified email ownership, reports completed claims, and releases claims before auth deletion', () => {
