@@ -18,7 +18,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '24.21.0'
+          node-version-file: '.nvmrc'
       - name: Install isolated PostgreSQL test runtime
         run: npm install --prefix "$RUNNER_TEMP/hashpass-pglite" --no-package-lock --no-save @electric-sql/pglite@0.3.14
       - name: Check migrations and campaign project tree
