@@ -20,13 +20,14 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.136)
+## 📋 Latest Changes (v1.9.137)
 
 ### Features
 
 * **marketing:** prepare BSL 2026 campaign and reusable admin operations ([12eab30](https://github.com/hashpass-tech/hashpass.tech/commit/12eab30c65d78ff890302ce5630bda2913d11cc4))
+* **speakers:** guided profile claim with email verification and admin alerts ([d1f6e64](https://github.com/hashpass-tech/hashpass.tech/commit/d1f6e6491dea65db7bdeb75dfa14d82277a31e4f))
 ### Release Highlights
-- prepare BSL 2026 campaign and reusable admin operations; preserve shared dev database pooler; resolve promotion PRs reliably
+- guided profile claim with email verification and admin alerts; prepare BSL 2026 campaign and reusable admin operations; select Node through .nvmrc in marketing storage workflow; preserve shared dev database pooler; resolve promotion PRs reliably
 
 ### Release scope
 - Compared with: `v1.9.135` (the previous global release tag)
