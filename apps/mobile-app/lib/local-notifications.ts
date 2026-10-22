@@ -1,13 +1,13 @@
 import type { Notification } from '../contexts/NotificationContext';
+import type { LocalNotificationListener } from '../types/local-notifications.types';
 
 // Session-only inbox entries, kept outside React so the root and dashboard
 // NotificationProviders show the same list. Nothing here reaches the server.
 export const LOCAL_NOTIFICATION_PREFIX = 'local-';
 const MAX_LOCAL_NOTIFICATIONS = 20;
 
-type Listener = () => void;
 let entries: Notification[] = [];
-const listeners = new Set<Listener>();
+const listeners = new Set<LocalNotificationListener>();
 
 const commit = (next: Notification[]) => {
   entries = next;
@@ -16,7 +16,7 @@ const commit = (next: Notification[]) => {
 
 export const isLocalNotification = (id: string) => id.startsWith(LOCAL_NOTIFICATION_PREFIX);
 export const getLocalNotifications = () => entries;
-export const subscribeLocalNotifications = (listener: Listener) => {
+export const subscribeLocalNotifications = (listener: LocalNotificationListener) => {
   listeners.add(listener);
   return () => { listeners.delete(listener); };
 };
