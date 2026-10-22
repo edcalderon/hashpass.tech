@@ -1,8 +1,25 @@
-import { assign, fromPromise, setup, type SnapshotFrom } from 'xstate';
+import { assign, fromPromise, setup } from 'xstate';
 
 import { MAX_CONTACT_TOPICS } from '../lib/contacts';
 import { CURRENT_CONSENT_VERSION, needsSetup, toggleSetupGoal } from '../lib/setup';
-import type { PrivacyScope, SetupGoal, SetupPatch, UserSetup } from '../types/setup';
+import type { SetupPatch, UserSetup } from '../types/setup';
+import type {
+  SetupWizardContext,
+  SetupWizardError,
+  SetupWizardEvent,
+  SetupWizardSnapshot,
+  SetupWizardStep,
+  SetupWizardView,
+} from '../types/setup-wizard.types';
+
+export type {
+  SetupWizardContext,
+  SetupWizardError,
+  SetupWizardEvent,
+  SetupWizardSnapshot,
+  SetupWizardStep,
+  SetupWizardView,
+};
 
 /**
  * First-run setup for Contacts, in three steps:
@@ -15,33 +32,7 @@ import type { PrivacyScope, SetupGoal, SetupPatch, UserSetup } from '../types/se
  * best-effort draft save (`persistProgress`), so the same machine runs in the app,
  * in Storybook and in plain unit tests.
  */
-export type SetupWizardStep = 'goals' | 'topics' | 'privacy';
 export const SETUP_WIZARD_STEPS: readonly SetupWizardStep[] = ['goals', 'topics', 'privacy'];
-export type SetupWizardError = 'load_failed' | 'save_failed';
-
-export interface SetupWizardContext {
-  setup: UserSetup | null;
-  goals: SetupGoal[];
-  topics: string[];
-  privacyScope: PrivacyScope;
-  consent: boolean;
-  pinEnabled: boolean;
-  /** Re-opened from settings by someone who already finished. Saving can never un-complete them. */
-  revisiting: boolean;
-  error: SetupWizardError | null;
-}
-
-export type SetupWizardEvent =
-  | { type: 'RETRY' }
-  | { type: 'NEXT' }
-  | { type: 'BACK' }
-  | { type: 'TOGGLE_GOAL'; goal: SetupGoal }
-  | { type: 'TOGGLE_TOPIC'; topic: string }
-  | { type: 'SET_PRIVACY'; scope: PrivacyScope }
-  | { type: 'SET_CONSENT'; accepted: boolean }
-  | { type: 'PIN_SET' }
-  | { type: 'FINISH' }
-  | { type: 'REVISIT' };
 
 const initialContext = (): SetupWizardContext => ({
   setup: null,
@@ -206,19 +197,6 @@ export const setupWizardMachine = setup({
     complete: { on: { REVISIT: { target: 'wizard.goals', actions: 'startRevisit' } } },
   },
 });
-
-export type SetupWizardSnapshot = SnapshotFrom<typeof setupWizardMachine>;
-
-export interface SetupWizardView {
-  phase: 'loading' | 'loadFailed' | 'wizard' | 'finishing' | 'complete';
-  step: SetupWizardStep | null;
-  /** 1-based, for "Step 2 of 3". Null outside the wizard. */
-  stepNumber: number | null;
-  stepCount: number;
-  canGoBack: boolean;
-  canFinish: boolean;
-  error: SetupWizardError | null;
-}
 
 export function getSetupWizardView(snapshot: SetupWizardSnapshot): SetupWizardView {
   const value = snapshot.value;

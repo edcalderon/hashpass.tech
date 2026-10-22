@@ -9,34 +9,14 @@ import {
   proofVersion,
   rememberProof,
   subscribeToProofs,
-  type StepUpScope,
 } from '../lib/step-up-session';
 import type { PinOutcome } from '../types/setup';
+import type { PinProblem, UsePin } from '../types/pin.types';
+import type { StepUpScope } from '../types/step-up.types';
 
+export type { PinProblem, UsePin };
 export { PIN_LENGTH };
 export const isPinComplete = (value: string) => /^\d{4}$/.test(value);
-
-export type PinProblem =
-  | { kind: 'wrong'; remainingAttempts: number }
-  | { kind: 'locked'; lockedUntil: string }
-  | { kind: 'not_set' }
-  | { kind: 'already_set' }
-  | { kind: 'unavailable' };
-
-export interface UsePin {
-  busy: boolean;
-  problem: PinProblem | null;
-  /** True while a proof for this scope is still good, so the person is not asked again. */
-  isUnlocked: (scope: StepUpScope) => boolean;
-  /** Creates a PIN (or changes it when `currentPin` is given). The PIN is passed through, never stored. */
-  setPin: (pin: string, currentPin?: string) => Promise<boolean>;
-  /** Checks the PIN and keeps the resulting short-lived proof in memory. */
-  unlock: (pin: string, scope: StepUpScope) => Promise<boolean>;
-  /** The proof to attach to a sensitive request, or null when the person must enter the PIN. */
-  proofFor: (scope: StepUpScope) => string | null;
-  lock: (scope?: StepUpScope) => void;
-  clearProblem: () => void;
-}
 
 export function describePinOutcome(outcome: PinOutcome): PinProblem {
   if (!outcome.enabled) return { kind: 'not_set' };

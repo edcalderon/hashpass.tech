@@ -1,15 +1,18 @@
 import { useCallback, useEffect, useState } from 'react';
-import { createActor, fromPromise, type Actor } from 'xstate';
+import { createActor, fromPromise } from 'xstate';
 
 import { fetchSetup, saveSetup } from '../lib/setup-client';
-import {
-  getSetupWizardView,
-  setupWizardMachine,
-  type SetupWizardContext,
-  type SetupWizardEvent,
-  type SetupWizardSnapshot,
-  type SetupWizardView,
-} from './setup-wizard-machine';
+import { getSetupWizardView, setupWizardMachine } from './setup-wizard-machine';
+import type { Running, SetupWizardActor, UseSetup } from '../types/setup-wizard.types';
+import type {
+  SetupWizardContext,
+  SetupWizardEvent,
+  SetupWizardSnapshot,
+  SetupWizardView,
+} from '../types/setup-wizard.types';
+
+export type { Running, SetupWizardActor, UseSetup };
+export type { SetupWizardContext, SetupWizardEvent, SetupWizardSnapshot, SetupWizardView };
 
 const machineWithApi = () => {
   // Draft saves are best-effort, but they must land in order and before the final save,
@@ -32,18 +35,6 @@ const machineWithApi = () => {
 };
 
 export const createSetupWizardActor = () => createActor(machineWithApi());
-type SetupWizardActor = Actor<ReturnType<typeof machineWithApi>>;
-
-export interface UseSetup {
-  /** Null until a signed-in person is known: guests never trigger a setup request. */
-  view: SetupWizardView | null;
-  context: SetupWizardContext | null;
-  /** True while the wizard must be shown (first run, or the consent text moved on). */
-  required: boolean;
-  send: (event: SetupWizardEvent) => void;
-}
-
-interface Running { owner: string; actor: SetupWizardActor; snapshot: SetupWizardSnapshot }
 
 /**
  * Runs the setup wizard machine for one account. Switching accounts stops the old actor,

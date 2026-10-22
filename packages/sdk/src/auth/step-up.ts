@@ -1,5 +1,16 @@
 import { HashpassError } from "../errors.js";
 import type { HttpTransport } from "../transport.js";
+import type {
+  Envelope,
+  PinOutcome,
+  PinStatus,
+  SecondFactorMethod,
+  StepUpProof,
+  StepUpProofStore,
+  StepUpResult,
+  StepUpScope,
+  VerifyData,
+} from "./step-up.types.js";
 
 /**
  * Step-up authentication: a short-lived proof that the signed-in person just
@@ -10,42 +21,15 @@ import type { HttpTransport } from "../transport.js";
  * endpoints (wallet signing) demand a proof for their scope; everything else keeps
  * using the normal bearer session.
  */
-export type StepUpScope = "app:unlock" | "wallet:sign";
-
-export interface StepUpProof {
-  token: string;
-  scope: StepUpScope;
-  /** ISO timestamp. Treat the proof as unusable slightly before this. */
-  expiresAt: string;
-}
-
-export interface PinStatus {
-  enabled: boolean;
-  lockedUntil: string | null;
-  remainingAttempts: number | null;
-}
-
-export interface PinOutcome {
-  ok: boolean;
-  enabled: boolean;
-  remainingAttempts: number;
-  lockedUntil: string | null;
-}
-
-export type StepUpResult =
-  | { ok: true; proof: StepUpProof }
-  | { ok: false; enabled: boolean; remainingAttempts: number; lockedUntil: string | null };
-
-/**
- * Where proofs live between calls. The default is memory, so a proof dies with the
- * process. Hosts may persist them (the CLI does, so `verify` and `sign` can be
- * separate invocations), but must never persist the PIN itself.
- */
-export interface StepUpProofStore {
-  get(scope: StepUpScope): StepUpProof | null | Promise<StepUpProof | null>;
-  set(proof: StepUpProof): void | Promise<void>;
-  clear(scope?: StepUpScope): void | Promise<void>;
-}
+export type {
+  PinOutcome,
+  PinStatus,
+  SecondFactorMethod,
+  StepUpProof,
+  StepUpProofStore,
+  StepUpResult,
+  StepUpScope,
+} from "./step-up.types.js";
 
 export class MemoryStepUpProofStore implements StepUpProofStore {
   readonly #proofs = new Map<StepUpScope, StepUpProof>();
@@ -59,11 +43,8 @@ export class MemoryStepUpProofStore implements StepUpProofStore {
  * hardware key, ...). A method turns a credential it understands into a proof;
  * the proof format and the server-side scope checks stay the same, so adding a
  * method never changes what sensitive endpoints accept.
+ * (Type in ./step-up.types.ts; re-exported above.)
  */
-export interface SecondFactorMethod<Credential = string> {
-  readonly id: string;
-  verify(credential: Credential, scope: StepUpScope): Promise<StepUpResult>;
-}
 
 /** Refuse a proof this close to expiry so it cannot lapse in flight. */
 const EXPIRY_MARGIN_MS = 5_000;
@@ -80,9 +61,6 @@ export class StepUpDeniedError extends HashpassError {
     this.name = "StepUpDeniedError";
   }
 }
-
-interface Envelope<T> { success: boolean; data?: T; error?: string }
-interface VerifyData extends PinOutcome { proof?: { token: string; expiresAt: string } }
 
 export class StepUpClient {
   readonly #methods = new Map<string, SecondFactorMethod<any>>();

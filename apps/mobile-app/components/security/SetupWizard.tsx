@@ -9,21 +9,14 @@ import { MAX_SETUP_GOALS, SETUP_GOALS } from '../../lib/setup';
 import { SETUP_WIZARD_STEPS, type SetupWizardContext, type SetupWizardEvent, type SetupWizardView } from '../../hooks/setup-wizard-machine';
 import type { UsePin } from '../../hooks/usePin';
 import PinFlow from './PinFlow';
+import type { SetupWizardProps } from './types/SetupWizard.types';
+
+export type { SetupWizardProps };
 
 const GOAL_FALLBACK: Record<(typeof SETUP_GOALS)[number], string> = {
   hire: 'Hire talent', get_hired: 'Find a role', cofounders: 'Meet co-founders',
   learn: 'Learn from others', investors: 'Meet investors', friends: 'Make friends',
 };
-
-export interface SetupWizardProps {
-  mode: ColorMode;
-  view: SetupWizardView;
-  context: SetupWizardContext;
-  send: (event: SetupWizardEvent) => void;
-  pin: UsePin;
-  /** Lets someone who is only revisiting settings leave without finishing. */
-  onClose?: () => void;
-}
 
 /**
  * Three steps before Contacts shares anything: what you are here for, what interests you,

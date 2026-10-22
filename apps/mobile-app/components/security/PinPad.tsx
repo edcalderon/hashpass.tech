@@ -5,27 +5,15 @@ import type { ColorMode } from '@hashpass/ui/tokens';
 import { useTranslation } from '../../i18n/i18n';
 import { hapticLight } from '../../lib/haptics';
 import { PIN_LENGTH } from '../../lib/setup';
+import type { PinKeyAction, PinPadProps } from './types/PinPad.types';
 
-export type PinKeyAction = { type: 'digit'; digit: string } | { type: 'delete' } | null;
+export type { PinKeyAction, PinPadProps };
 
 /** Maps a hardware key (web) to a pad action, so a keyboard behaves exactly like the keypad. */
 export function pinKeyAction(key: string): PinKeyAction {
   if (/^[0-9]$/.test(key)) return { type: 'digit', digit: key };
   if (key === 'Backspace' || key === 'Delete') return { type: 'delete' };
   return null;
-}
-
-export interface PinPadProps {
-  mode: ColorMode;
-  title: string;
-  hint?: string;
-  /** Already-translated problem to show under the dots. */
-  error?: string | null;
-  busy?: boolean;
-  /** Blocks input without implying work in progress, e.g. during a lockout. */
-  disabled?: boolean;
-  /** Called with the four digits; the pad forgets them in the same tick. */
-  onComplete: (pin: string) => void;
 }
 
 const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9'] as const;

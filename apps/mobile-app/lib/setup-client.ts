@@ -1,6 +1,9 @@
 import { apiClient } from './api-client';
+import type { PinVerification } from '../types/pin.types';
 import type { PinOutcome, SetupPatch, UserSetup } from '../types/setup';
-import type { StepUpScope } from './step-up-session';
+import type { StepUpScope } from '../types/step-up.types';
+
+export type { PinVerification };
 
 /** Every setup route is global (no event segment) and must never be replayed: a retry would be a second PIN guess. */
 const REQUEST = { skipEventSegment: true, retries: 0 } as const;
@@ -10,10 +13,6 @@ export class SetupRequestError extends Error {
     super(code);
     this.name = 'SetupRequestError';
   }
-}
-
-export interface PinVerification extends PinOutcome {
-  proof?: { token: string; expiresAt: string };
 }
 
 /**

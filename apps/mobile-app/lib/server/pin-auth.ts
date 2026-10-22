@@ -1,5 +1,9 @@
 import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
 
+import type { StepUpClaims, StepUpScope } from '../types/step-up.types';
+
+export type { StepUpClaims, StepUpScope };
+
 // Server half of the second factor. The database stores only the verifier this
 // module derives; the pepper lives in the API environment and never reaches it.
 //
@@ -15,10 +19,8 @@ const KDF_LABEL = 'hashpass-pin:v1';
 const PROOF_LABEL = 'hashpass-step-up:v1';
 
 /** Highest-risk scopes first. A proof only ever authorises the scope it names. */
-export const STEP_UP_SCOPES = ['app:unlock', 'wallet:sign'] as const;
-export type StepUpScope = (typeof STEP_UP_SCOPES)[number];
+export const STEP_UP_SCOPES = ['app:unlock', 'wallet:sign'] as const satisfies readonly StepUpScope[];
 export const STEP_UP_TTL_SECONDS: Record<StepUpScope, number> = { 'app:unlock': 300, 'wallet:sign': 60 };
-
 export const isStepUpScope = (value: unknown): value is StepUpScope =>
   typeof value === 'string' && (STEP_UP_SCOPES as readonly string[]).includes(value);
 
@@ -39,8 +41,6 @@ export function derivePinVerifier(userId: string, pin: string, env?: NodeJS.Proc
 }
 
 const encode = (value: Buffer | string) => Buffer.from(value).toString('base64url');
-
-export interface StepUpClaims { v: 1; sub: string; scope: StepUpScope; iat: number; exp: number; jti: string }
 
 /**
  * A short-lived proof that this user just entered their PIN. Sensitive endpoints

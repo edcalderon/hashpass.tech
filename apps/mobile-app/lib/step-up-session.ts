@@ -6,8 +6,9 @@
  * Mirrors the SDK's `StepUpProofStore` contract (see `packages/sdk/src/auth/step-up.ts`),
  * so a device-locker or biometric method can later mint proofs into the same place.
  */
-export type StepUpScope = 'app:unlock' | 'wallet:sign';
-export interface StepUpProof { token: string; scope: StepUpScope; expiresAt: string }
+import type { StepUpProof, StepUpScope } from '../types/step-up.types';
+
+export type { StepUpProof, StepUpScope };
 
 /** Request header that carries a proof to an endpoint which requires one. */
 export const STEP_UP_HEADER = 'X-Hashpass-Step-Up';

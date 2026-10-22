@@ -1,8 +1,9 @@
 import { createInterface } from "node:readline";
 import { Writable } from "node:stream";
 
-/** Reads one secret per call. Implementations must never echo it. */
-export type SecretReader = (question: string) => Promise<string>;
+import type { SecretReader } from "./types.js";
+
+export type { SecretReader };
 
 /**
  * Secrets never come from flags (they would land in shell history and `ps`) or

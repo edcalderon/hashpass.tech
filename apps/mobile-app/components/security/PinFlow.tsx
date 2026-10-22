@@ -2,13 +2,13 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { ActionButton } from '@hashpass/ui/primitives';
 import { uiTokens } from '@hashpass/ui/tokens';
-import type { ColorMode } from '@hashpass/ui/tokens';
 import { useTranslation } from '../../i18n/i18n';
 import type { PinProblem, UsePin } from '../../hooks/usePin';
 import type { StepUpScope } from '../../lib/step-up-session';
 import PinPad from './PinPad';
+import type { PinFlowProps, Translate } from './types/PinFlow.types';
 
-type Translate = (key: string, fallback: string, params?: Record<string, unknown>) => string;
+export type { PinFlowProps };
 
 /** Plain-language text for what went wrong. Never says which digit was wrong, only how many tries remain. */
 export function describePinProblem(problem: PinProblem | null, t: Translate, now = Date.now()): string | null {
@@ -23,17 +23,6 @@ export function describePinProblem(problem: PinProblem | null, t: Translate, now
     case 'already_set': return t('alreadySet', 'A PIN already exists. Enter it to continue.');
     default: return t('unavailable', 'We could not check your PIN. Check your connection and try again.');
   }
-}
-
-export interface PinFlowProps {
-  mode: ColorMode;
-  pin: UsePin;
-  /** What the proof is for: it only works for this action. */
-  scope: StepUpScope;
-  /** `create` asks twice; `unlock` asks once. The flow switches by itself if the server disagrees. */
-  intent: 'create' | 'unlock';
-  onDone: () => void;
-  onCancel?: () => void;
 }
 
 /**
