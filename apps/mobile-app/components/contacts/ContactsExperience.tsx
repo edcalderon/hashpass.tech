@@ -1,10 +1,11 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Image, Modal, ScrollView, StyleSheet, Switch, Text, View, useWindowDimensions } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import QRCode from 'react-native-qrcode-svg';
 import { ActionButton, Badge, FilterChip, FormField, IconButton, ModalBackdrop, SegmentedTabs, Surface } from '@hashpass/ui/primitives';
 import { uiPalette, uiTokens } from '@hashpass/ui/tokens';
 import type { ColorMode } from '@hashpass/ui/tokens';
+import { useToastHelpers } from '../../contexts/ToastContext';
 import { useTranslation } from '../../i18n/i18n';
 import { CONTACT_TOPICS, MAX_CONTACT_TOPICS, contactInitials, filterContacts, networkProgress, toggleContactTopic } from '../../lib/contacts';
 import { getHashpassFullLogo } from '../../lib/hashpass-logo';
@@ -25,9 +26,8 @@ export default function ContactsExperience({ snapshot, loading = false, busy = f
   const [editing, setEditing] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [copyFailed, setCopyFailed] = useState(false);
   const [draft, setDraft] = useState<ContactProfileDraft>({ name: '', role: '', company: '', topics: [], discoverable: false, leaderboard: false });
-  const [notice, setNotice] = useState('');
+  const { showError, showSuccess } = useToastHelpers();
   const profile = snapshot?.profile;
   const contacts = snapshot?.contacts ?? [];
   const filtered = useMemo(() => filterContacts(contacts, query, topic), [contacts, query, topic]);
@@ -40,9 +40,18 @@ export default function ContactsExperience({ snapshot, loading = false, busy = f
   const styles = useMemo(() => makeStyles(mode), [mode]);
 
   useEffect(() => {
-    setSelectedId(null); setEditing(false); setSharing(false); setNotice(''); setCopied(false);
+    setSelectedId(null); setEditing(false); setSharing(false); setCopied(false);
     setQuery(''); setTopic(null);
   }, [profile?.id, signedIn]);
+
+  const notifyCopyFailed = useCallback(() => showError(t('copyFailed', 'Could not copy. Select the card link to copy it manually.')), [showError, t]);
+  useEffect(() => {
+    if (!error) return;
+    if (editing) showError(t('saveError', 'Your changes could not be saved. Please try again.'));
+    else showError(t('loadError', 'Your network could not be updated. Your saved connections are unchanged.'), undefined, { label: t('retry', 'Try again'), onPress: onRetry });
+    // Only a new error should raise a toast; the handlers below read current props.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [error]);
 
   const editProfile = () => {
     if (!signedIn) { onSignIn(); return; }
@@ -52,11 +61,11 @@ export default function ContactsExperience({ snapshot, loading = false, busy = f
   };
   const share = () => {
     if (!profile) { editProfile(); return; }
-    setCopied(false); setCopyFailed(false); setSharing(true);
+    setCopied(false); setSharing(true);
   };
   const connect = async (card: string) => {
     if (!profile) { editProfile(); return; }
-    if (await onAction({ action: 'request', card })) setNotice(t('requestSent', 'Request sent. Your connection begins when they accept.'));
+    if (await onAction({ action: 'request', card })) showSuccess(t('requestSent', 'Request sent. Your connection begins when they accept.'));
   };
 
   const person = (contact: ContactProfile, action?: React.ReactNode) => <View key={contact.id} style={styles.person}>
@@ -101,11 +110,6 @@ export default function ContactsExperience({ snapshot, loading = false, busy = f
       </View>
     </View>
 
-    {error && <Surface mode={mode} style={styles.stackSmall}>
-      <Text accessibilityRole="alert" style={styles.error}>{t('loadError', 'Your network could not be updated. Your saved connections are unchanged.')}</Text>
-      <ActionButton mode={mode} variant="secondary" label={t('retry', 'Try again')} onPress={onRetry} disabled={busy || loading} />
-    </Surface>}
-    {!!notice && <Text accessibilityLiveRegion="polite" style={styles.success}>{notice}</Text>}
     {loading && <View accessibilityLabel={t('loading', 'Loading your network')} style={styles.row}><ActivityIndicator color={palette.accent} /><Text style={styles.body}>{t('loading', 'Loading your network')}</Text></View>}
 
     {!signedIn && <Surface mode={mode} style={styles.guest}>
@@ -160,7 +164,7 @@ export default function ContactsExperience({ snapshot, loading = false, busy = f
             {heading(t('networkTitle', 'Your living network'), t('networkCount', '{count} connections · built one conversation at a time', { count: contacts.length }))}
             <SegmentedTabs mode={mode} value={grouping} onChange={setGrouping} accessibilityLabel={t('groupBy', 'Group network by')} tabs={[{ id: 'topic', label: t('topic', 'Topic') }, { id: 'company', label: t('company', 'Company') }]} />
           </View>
-          <ContactsGraph contacts={filtered} topics={topics} topicLabel={value => t(`topics.${value}`, value)} grouping={grouping} selected={selectedId} mode={mode} onSelect={setSelectedId} youLabel={t('you', 'YOU')} />
+          <ContactsGraph contacts={filtered} topics={topics} topicLabel={(value: string) => t(`topics.${value}`, value)} grouping={grouping} selected={selectedId} mode={mode} onSelect={setSelectedId} youLabel={t('you', 'YOU')} />
           {filtered.length === 0 && <View style={styles.graphEmpty}><Text style={styles.body}>{contacts.length ? t('noMatches', 'No matches. Try another search or topic.') : t('networkEmpty', 'Your first connection starts a new orbit. Share your card to begin.')}</Text></View>}
           {filtered.length > 80 && <Text style={styles.caption}>{t('graphLimit', 'Showing the first 80 connections. Use Directory to see everyone.')}</Text>}
           <View style={styles.graphFooter}><Badge mode={mode} tone="neutral">{t('mutualOnly', 'Mutual connections only')}</Badge><Text style={styles.caption}>{t('graphHint', 'Select a person to explore your shared interests.')}</Text></View>
@@ -176,10 +180,10 @@ export default function ContactsExperience({ snapshot, loading = false, busy = f
 
         {tab === 'directory' && <Surface mode={mode} style={styles.stack}>
           {heading(t('directory', 'Directory'))}
-          {filtered.map(contact => person(contact, <IconButton mode={mode} label={t('viewContact', 'View {name}', { name: contact.name })} onPress={() => { setSelectedId(contact.id); setTab('network'); }}><Ionicons name="arrow-forward" size={20} color={palette.accent} /></IconButton>))}
+          {filtered.map((contact: ContactProfile) => person(contact, <IconButton mode={mode} label={t('viewContact', 'View {name}', { name: contact.name })} onPress={() => { setSelectedId(contact.id); setTab('network'); }}><Ionicons name="arrow-forward" size={20} color={palette.accent} /></IconButton>))}
           {!filtered.length && <Text style={styles.body}>{contacts.length ? t('noMatches', 'No matches. Try another search or topic.') : t('directoryEmpty', 'Accepted connections will appear here. Your contact details are never imported automatically.')}</Text>}
           {heading(t('discover', 'Shared interests. New possibilities.'), t('discoverHint', 'People who chose to be discoverable and share your topics.'))}
-          {suggestions.map(contact => <View key={contact.id} style={styles.stackSmall}>{person(contact)}<ActionButton mode={mode} variant="secondary" label={t('connect', 'Connect')} disabled={busy} onPress={() => contact.share_id && void connect(contact.share_id)} /></View>)}
+          {suggestions.map((contact: ContactProfile) => <View key={contact.id} style={styles.stackSmall}>{person(contact)}<ActionButton mode={mode} variant="secondary" label={t('connect', 'Connect')} disabled={busy} onPress={() => contact.share_id && void connect(contact.share_id)} /></View>)}
           {!suggestions.length && <Text style={styles.caption}>{t('suggestionsEmpty', 'No suggestions yet. Refine your interests or invite someone with your card.')}</Text>}
         </Surface>}
 
@@ -217,11 +221,10 @@ export default function ContactsExperience({ snapshot, loading = false, busy = f
             <FormField mode={mode} label={t('role', 'Role')} value={draft.role} onChangeText={role => setDraft(value => ({ ...value, role }))} maxLength={100} editable={!busy} />
             <FormField mode={mode} label={t('company', 'Company')} value={draft.company} onChangeText={company => setDraft(value => ({ ...value, company }))} maxLength={100} editable={!busy} />
             {heading(t('chooseTopics', 'Choose your topics'), t('topicLimit', '{count} of {max} interests selected', { count: draft.topics.length, max: MAX_CONTACT_TOPICS }))}
-            <View style={styles.wrap}>{CONTACT_TOPICS.map(value => <FilterChip key={value} mode={mode} label={t(`topics.${value}`, value)} selected={draft.topics.includes(value)} disabled={busy || !draft.topics.includes(value) && draft.topics.length >= MAX_CONTACT_TOPICS} onPress={() => setDraft(previous => ({ ...previous, topics: toggleContactTopic(previous.topics, value) }))} />)}</View>
+            <View style={styles.wrap}>{CONTACT_TOPICS.map((value: string) => <FilterChip key={value} mode={mode} label={t(`topics.${value}`, value)} selected={draft.topics.includes(value)} disabled={busy || !draft.topics.includes(value) && draft.topics.length >= MAX_CONTACT_TOPICS} onPress={() => setDraft(previous => ({ ...previous, topics: toggleContactTopic(previous.topics, value) }))} />)}</View>
             <View style={styles.between}><View style={styles.personText}><Text style={styles.name}>{t('discoverable', 'Help like-minded people find me')}</Text><Text style={styles.caption}>{t('discoverableHint', 'Show your card in shared-interest suggestions.')}</Text></View><Switch accessibilityLabel={t('discoverable', 'Help like-minded people find me')} value={draft.discoverable} disabled={busy} onValueChange={discoverable => setDraft(previous => ({ ...previous, discoverable }))} trackColor={{ true: palette.accentFill }} /></View>
             <View style={styles.between}><View style={styles.personText}><Text style={styles.name}>{t('joinLeaderboard', 'Join the leaderboard')}</Text><Text style={styles.caption}>{t('joinLeaderboardHint', 'Show your name, connections, level and XP.')}</Text></View><Switch accessibilityLabel={t('joinLeaderboard', 'Join the leaderboard')} value={draft.leaderboard} disabled={busy} onValueChange={leaderboard => setDraft(previous => ({ ...previous, leaderboard }))} trackColor={{ true: palette.accentFill }} /></View>
-            {error && <Text accessibilityRole="alert" style={styles.error}>{t('saveError', 'Your changes could not be saved. Please try again.')}</Text>}
-            <ActionButton mode={mode} label={t('save', 'Save contact card')} loading={busy} disabled={!draft.name.trim()} onPress={async () => { if (await onAction({ action: 'profile', profile: draft })) { setEditing(false); setNotice(t('saved', 'Your contact card is saved.')); } }} />
+            <ActionButton mode={mode} label={t('save', 'Save contact card')} loading={busy} disabled={!draft.name.trim()} onPress={async () => { if (await onAction({ action: 'profile', profile: draft })) { setEditing(false); showSuccess(t('saved', 'Your contact card is saved.')); } }} />
           </ScrollView>
         </Surface>
       </ModalBackdrop>
@@ -236,8 +239,7 @@ export default function ContactsExperience({ snapshot, loading = false, busy = f
             <View style={styles.qr} accessibilityLabel={t('qrLabel', 'Scan to request a connection')} accessible>{!!shareUrl && <QRCode value={shareUrl} size={200} color={uiTokens.colors.light.text} backgroundColor={uiTokens.colors.light.canvas} />}</View>
             <Text style={styles.body}>{t('shareHint', 'Let someone scan your card or send them the link. You both choose to connect before your networks grow.')}</Text>
             <Text selectable style={styles.caption}>{shareUrl}</Text>
-            {copyFailed && <Text accessibilityRole="alert" style={styles.error}>{t('copyFailed', 'Could not copy. Select the card link to copy it manually.')}</Text>}
-            <ActionButton mode={mode} label={copied ? t('copied', 'Link copied') : t('copyLink', 'Copy card link')} onPress={async () => { try { const didCopy = await Clipboard.setStringAsync(shareUrl); setCopied(didCopy); setCopyFailed(!didCopy); } catch { setCopyFailed(true); } }} />
+            <ActionButton mode={mode} label={copied ? t('copied', 'Link copied') : t('copyLink', 'Copy card link')} onPress={async () => { try { const didCopy = await Clipboard.setStringAsync(shareUrl); setCopied(didCopy); if (!didCopy) notifyCopyFailed(); } catch { notifyCopyFailed(); } }} />
           </ScrollView>
         </Surface>
       </ModalBackdrop>
@@ -259,8 +261,6 @@ const makeStyles = (mode: ColorMode) => {
     heroTitle: { fontSize: uiTokens.type.heading, color: p.text, fontWeight: '700' },
     body: { color: p.muted, fontSize: uiTokens.type.label, lineHeight: 22, flexShrink: 1 },
     caption: { color: p.muted, fontSize: uiTokens.type.caption, lineHeight: 19, flexShrink: 1 },
-    error: { color: p.danger, fontSize: uiTokens.type.label, lineHeight: 22 },
-    success: { color: p.success, fontSize: uiTokens.type.label },
     guest: { alignItems: 'flex-start', gap: uiTokens.space.lg },
     stats: { flexDirection: 'row', flexWrap: 'wrap', gap: uiTokens.space.xl, alignItems: 'center', paddingVertical: uiTokens.space.lg, borderTopWidth: 1, borderBottomWidth: 1, borderColor: p.border },
     stat: { gap: uiTokens.space.xs, flexGrow: 1 },

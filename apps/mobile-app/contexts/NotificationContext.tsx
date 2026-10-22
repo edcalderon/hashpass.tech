@@ -1,10 +1,19 @@
-import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState, useCallback, useRef, useSyncExternalStore } from 'react';
 import { supabase } from '../lib/supabase';
 import { apiClient } from '../lib/api-client';
 import { useAuth } from '../hooks/useAuth';
 import { useTranslation } from '../i18n/i18n';
 import { translateNotification } from '../lib/notification-translations';
 import { buildEventPath } from '../lib/event-path';
+import {
+  getLocalNotifications,
+  isLocalNotification,
+  markAllLocalNotificationsRead,
+  resetLocalNotifications,
+  removeLocalNotification,
+  subscribeLocalNotifications,
+  updateLocalNotification,
+} from '../lib/local-notifications';
 
 export interface Notification {
   id: string;
@@ -57,7 +66,12 @@ interface NotificationProviderProps {
 }
 
 export const NotificationProvider: React.FC<NotificationProviderProps> = ({ children }) => {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [serverNotifications, setNotifications] = useState<Notification[]>([]);
+  const localNotifications = useSyncExternalStore(subscribeLocalNotifications, getLocalNotifications, getLocalNotifications);
+  const notifications = useMemo(
+    () => [...localNotifications, ...serverNotifications].sort((first, second) => Date.parse(second.created_at) - Date.parse(first.created_at)),
+    [localNotifications, serverNotifications],
+  );
   const [isLoading, setIsLoading] = useState(true);
   const { user, dbUserId } = useAuth();
   const { t } = useTranslation();
@@ -101,6 +115,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   const fetchNotifications = useCallback(async (force = false) => {
     if (!user) {
       setNotifications([]);
+      resetLocalNotifications();
       setResolvedUserId(null);
       setIsLoading(false);
       currentUserIdRef.current = null;
@@ -167,6 +182,10 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   }, [user, t, recordFetchFailure, recordFetchSuccess]);
 
   const markAsRead = useCallback(async (notificationId: string) => {
+    if (isLocalNotification(notificationId)) {
+      updateLocalNotification(notificationId, { is_read: true, read_at: new Date().toISOString() });
+      return;
+    }
     if (!user) return;
 
     try {
@@ -194,6 +213,10 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   }, [user]);
 
   const markAsUnread = useCallback(async (notificationId: string) => {
+    if (isLocalNotification(notificationId)) {
+      updateLocalNotification(notificationId, { is_read: false, read_at: undefined });
+      return;
+    }
     if (!user) return;
 
     try {
@@ -221,6 +244,10 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   }, [user]);
 
   const archiveNotification = useCallback(async (notificationId: string) => {
+    if (isLocalNotification(notificationId)) {
+      updateLocalNotification(notificationId, { is_read: true, is_archived: true, archived_at: new Date().toISOString() });
+      return;
+    }
     if (!user) return;
 
     try {
@@ -257,6 +284,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   }, [user]);
 
   const markAllAsRead = useCallback(async () => {
+    markAllLocalNotificationsRead();
     if (!user) return;
 
     try {
@@ -280,6 +308,10 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   }, [user]);
 
   const deleteNotification = useCallback(async (notificationId: string) => {
+    if (isLocalNotification(notificationId)) {
+      removeLocalNotification(notificationId);
+      return;
+    }
     if (!user) return;
 
     try {

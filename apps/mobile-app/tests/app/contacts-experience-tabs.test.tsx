@@ -4,6 +4,9 @@ import { Modal, Text, TextInput } from 'react-native';
 import ContactsExperience from '../../components/contacts/ContactsExperience';
 import type { ContactProfile, ContactsExperienceProps, ContactsSnapshot } from '../../types/contacts';
 
+const mockShowError = jest.fn();
+const mockShowSuccess = jest.fn();
+jest.mock('../../contexts/ToastContext', () => ({ useToastHelpers: () => ({ showError: (...args: unknown[]) => mockShowError(...args), showSuccess: (...args: unknown[]) => mockShowSuccess(...args) }) }));
 let mockWidth = 400;
 jest.mock('react-native/Libraries/Utilities/useWindowDimensions', () => ({ __esModule: true, default: () => ({ width: mockWidth, height: 800, scale: 1, fontScale: 1 }) }));
 jest.mock('../../i18n/i18n', () => ({ useTranslation: () => ({ t: (_key: string, fallback: string, values?: Record<string, unknown>) => Object.entries(values ?? {}).reduce((text, [key, value]) => text.replace(`{${key}}`, String(value)), fallback) }) }));
@@ -42,6 +45,18 @@ const openTab = (view: ReactTestRenderer, label: string) => act(() => {
 describe('Contacts experience tabs and actions', () => {
   beforeEach(() => { mockWidth = 400; jest.clearAllMocks(); });
 
+  it('shows no inline retry button without a snapshot and reports save errors as toasts', async () => {
+    const view = await render({ ...baseProps(), snapshot: null });
+    expect(view.root.findAll(node => node.props.accessibilityLabel === 'Try again')).toHaveLength(0);
+    act(() => view.unmount());
+    const editing = await render({ ...baseProps(), error: 'x' });
+    mockShowError.mockClear();
+    act(() => control(editing, 'Edit interests').props.onPress());
+    await act(async () => { editing.update(<ContactsExperience {...baseProps()} error="y" />); });
+    expect(mockShowError).toHaveBeenCalledWith('Your changes could not be saved. Please try again.');
+    act(() => editing.unmount());
+  });
+
   it('lists the directory, opens a connection from it, and sends a request to a suggestion', async () => {
     const props = baseProps();
     const view = await render(props);
@@ -50,7 +65,7 @@ describe('Contacts experience tabs and actions', () => {
     expect(hasText(view, 'Sam')).toBe(true);
     await act(async () => { control(view, 'Connect').props.onPress(); });
     expect(props.onAction).toHaveBeenCalledWith({ action: 'request', card: 'card-stranger' });
-    expect(hasText(view, 'Request sent. Your connection begins when they accept.')).toBe(true);
+    expect(mockShowSuccess).toHaveBeenCalledWith('Request sent. Your connection begins when they accept.');
     openTab(view, 'Directory');
     act(() => control(view, 'View Fran').props.onPress());
     expect(hasText(view, 'Connection details')).toBe(true);
@@ -69,7 +84,7 @@ describe('Contacts experience tabs and actions', () => {
     expect(hasText(view, 'Different interests, a new perspective.')).toBe(true);
     openTab(view, 'Directory');
     await act(async () => { control(view, 'Connect').props.onPress(); });
-    expect(hasText(view, 'Request sent.')).toBe(false);
+    expect(mockShowSuccess).not.toHaveBeenCalled();
     act(() => view.unmount());
   });
 
@@ -151,7 +166,7 @@ describe('Contacts experience tabs and actions', () => {
     act(() => company.props.onChangeText('Hash'));
     await act(async () => { await control(view, 'Save contact card').props.onPress(); });
     expect(props.onAction).toHaveBeenCalledWith({ action: 'profile', profile: expect.objectContaining({ role: 'CTO', company: 'Hash', discoverable: true, leaderboard: true }) });
-    expect(hasText(view, 'Your contact card is saved.')).toBe(true);
+    expect(mockShowSuccess).toHaveBeenCalledWith('Your contact card is saved.');
     act(() => view.unmount());
   });
 
@@ -159,7 +174,9 @@ describe('Contacts experience tabs and actions', () => {
     const props = baseProps();
     props.error = 'unavailable';
     const view = await render(props);
-    act(() => control(view, 'Try again').props.onPress());
+    expect(hasText(view, 'Your network could not be updated')).toBe(false);
+    expect(mockShowError).toHaveBeenCalledWith('Your network could not be updated. Your saved connections are unchanged.', undefined, expect.objectContaining({ label: 'Try again' }));
+    act(() => mockShowError.mock.calls[0][2].onPress());
     expect(props.onRetry).toHaveBeenCalled();
     act(() => control(view, 'Open standalone Contacts').props.onPress());
     expect(props.onStandalone).toHaveBeenCalled();

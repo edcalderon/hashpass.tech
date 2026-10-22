@@ -290,6 +290,34 @@ function resolveTempModulePath(tempBaseDir, sourceFilePath, specifier, aliasEntr
   return `${resolved}.d.ts`;
 }
 
+// A type-only import of an unchanged file that imports nothing itself (for
+// example apps/mobile-app/types/contacts.ts) is safe to copy verbatim. Stubbing
+// it as `any` collapses every field the changed file reads from it, which shows
+// up as a cascade of implicit-any errors on callback parameters.
+function copySelfContainedTypeModule(specifier, sourceFilePath, tempBaseDir, tempFilePath, aliasEntries) {
+  const realBaseDir = path.join(ROOT_DIR, 'apps', 'mobile-app');
+  let realBase;
+  if (isRelativeSpecifier(specifier)) {
+    const tempTarget = path.resolve(path.dirname(tempFilePath), specifier);
+    realBase = path.join(realBaseDir, path.relative(tempBaseDir, tempTarget));
+  } else {
+    const aliasTarget = resolveAliasTarget(specifier, aliasEntries);
+    if (!aliasTarget) return null;
+    realBase = path.resolve(realBaseDir, aliasTarget);
+  }
+
+  for (const extension of ['.ts', '.d.ts']) {
+    const realFile = `${realBase}${extension}`;
+    if (!fs.existsSync(realFile)) continue;
+    if (collectImportSpecifiers(fs.readFileSync(realFile, 'utf8')).length > 0) return null;
+    const tempFile = path.join(tempBaseDir, path.relative(realBaseDir, realFile));
+    ensureParentDir(tempFile);
+    fs.copyFileSync(realFile, tempFile);
+    return tempFile;
+  }
+  return null;
+}
+
 function ensureParentDir(filePath) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
 }
@@ -608,6 +636,14 @@ function main() {
 
       if (copyAliasedWorkspacePackageSource(spec.specifier, pathAliasEntries, tempDir)) {
         continue;
+      }
+
+      if (spec.isTypeOnly) {
+        const copied = copySelfContainedTypeModule(spec.specifier, sourceFilePath, tempBaseDir, tempFilePath, pathAliasEntries);
+        if (copied) {
+          files.push(path.relative(tempDir, copied));
+          continue;
+        }
       }
 
       const stubPath = resolveTempModulePath(tempBaseDir, tempFilePath, spec.specifier, pathAliasEntries);

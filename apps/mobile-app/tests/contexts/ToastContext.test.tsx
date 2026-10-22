@@ -109,7 +109,8 @@ jest.mock('../../lib/vector-icons', () => ({
 
 import React from 'react';
 import TestRenderer from 'react-test-renderer';
-import { ToastProvider, useToast } from '../../contexts/ToastContext';
+import { DEFAULT_TOAST_DURATION_MS, ToastProvider, useToast } from '../../contexts/ToastContext';
+import { getLocalNotifications, resetLocalNotifications } from '../../lib/local-notifications';
 
 describe('ToastContext', () => {
   it('appends a toast when showToast is called', () => {
@@ -141,5 +142,23 @@ describe('ToastContext', () => {
     });
 
     expect(renderer!.toJSON()).not.toBeNull();
+  });
+
+  it('closes every toast after six seconds by default and keeps important ones in the inbox', () => {
+    jest.useFakeTimers();
+    resetLocalNotifications();
+    let helpers: ReturnType<typeof useToast> | undefined;
+    const Harness = () => { helpers = useToast(); return null; };
+    let renderer!: TestRenderer.ReactTestRenderer;
+    TestRenderer.act(() => { renderer = TestRenderer.create(<ToastProvider><Harness /></ToastProvider>); });
+    TestRenderer.act(() => { helpers!.showToast({ type: 'error', title: 'Could not save', message: 'Try again' }); });
+    TestRenderer.act(() => { helpers!.showToast({ type: 'success', title: 'Saved' }); });
+    TestRenderer.act(() => { helpers!.showToast({ type: 'warning', title: 'Offline', inbox: false }); });
+    expect(DEFAULT_TOAST_DURATION_MS).toBe(6000);
+    expect(JSON.stringify(renderer.toJSON())).toContain('Could not save');
+    expect(getLocalNotifications().map(item => item.title)).toEqual(['Could not save']);
+    expect(getLocalNotifications()[0]).toMatchObject({ is_urgent: true, message: 'Try again' });
+    TestRenderer.act(() => { jest.advanceTimersByTime(6500); });
+    jest.useRealTimers();
   });
 });

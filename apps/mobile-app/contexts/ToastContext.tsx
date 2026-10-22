@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Animated, Pressable, Modal } from 'react-native
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../hooks/useTheme';
 import { MaterialIcons } from '../lib/vector-icons';
+import { addLocalNotification } from '../lib/local-notifications';
 
 export interface Toast {
   id: string;
@@ -10,6 +11,8 @@ export interface Toast {
   title: string;
   message?: string;
   duration?: number;
+  /** Errors and warnings are also kept in the notification inbox; set false to keep a toast transient. */
+  inbox?: boolean;
   action?: {
     label: string;
     onPress: () => void;
@@ -21,6 +24,11 @@ interface ToastContextType {
   hideToast: (id: string) => void;
   clearAllToasts: () => void;
 }
+
+export const DEFAULT_TOAST_DURATION_MS = 6000;
+
+// Toasts raised in the same millisecond must not share a React key.
+let toastSequence = 0;
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
@@ -41,9 +49,10 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
   const { isDark, colors } = useTheme();
 
   const showToast = useCallback((toast: Omit<Toast, 'id'>) => {
-    const id = Date.now().toString();
-    // Use default duration of 2369ms (2.369 seconds) if duration is not explicitly provided (undefined or not set)
-    const duration = toast.duration !== undefined ? toast.duration : 2369;
+    toastSequence += 1;
+    const id = `${Date.now()}-${toastSequence}`;
+    // Every toast closes after 6 seconds unless a duration is given; duration 0 keeps it until dismissed.
+    const duration = toast.duration !== undefined ? toast.duration : DEFAULT_TOAST_DURATION_MS;
     const newToast: Toast = {
       id,
       ...toast, // Spread all toast properties
@@ -51,6 +60,11 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
     };
 
     setToasts(prev => [...prev, newToast]);
+
+    // A toast disappears after 6 seconds, so important ones also land in the inbox to be found later.
+    if (toast.inbox !== false && (toast.type === 'error' || toast.type === 'warning')) {
+      addLocalNotification({ title: toast.title, message: toast.message, is_urgent: toast.type === 'error' });
+    }
   }, []);
 
   const hideToast = useCallback((id: string) => {
@@ -180,8 +194,8 @@ const ToastItem: React.FC<ToastItemProps> = ({
   const pauseReasonsRef = useRef<Set<string>>(new Set());
   const isDismissingRef = useRef(false);
 
-  // Determine if toast is non-critical (errors are critical, others are not)
-  const isAutoDismissToast = toast.type !== 'error' && autoDismissDuration > 0;
+  // Every toast, errors included, counts down with a visible progress bar; duration 0 opts out.
+  const isAutoDismissToast = autoDismissDuration > 0;
 
   const clearAutoHideTimer = useCallback(() => {
     if (autoHideTimeoutRef.current) {

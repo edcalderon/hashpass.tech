@@ -5,6 +5,9 @@ import ContactsExperience from '../../components/contacts/ContactsExperience';
 import type { ContactsExperienceProps, ContactsSnapshot } from '../../types/contacts';
 const mockCopy = jest.fn();
 
+const mockShowError = jest.fn();
+const mockShowSuccess = jest.fn();
+jest.mock('../../contexts/ToastContext', () => ({ useToastHelpers: () => ({ showError: (...args: unknown[]) => mockShowError(...args), showSuccess: (...args: unknown[]) => mockShowSuccess(...args) }) }));
 jest.mock('../../i18n/i18n', () => ({ useTranslation: () => ({ t: (_key: string, fallback: string) => fallback }) }));
 jest.mock('../../lib/vector-icons', () => ({ Ionicons: 'Icon' }));
 jest.mock('../../lib/hashpass-logo', () => ({ getHashpassFullLogo: () => ({ uri: 'logo' }) }));
@@ -73,7 +76,7 @@ describe('Contacts experience', () => {
     await act(async () => { view = create(<ContactsExperience {...props} />); });
     act(() => control(view, 'Share card').props.onPress());
     await act(async () => { await control(view, 'Copy card link').props.onPress(); });
-    expect(view.root.findAllByType(Text).some(node => node.props.children === 'Could not copy. Select the card link to copy it manually.')).toBe(true);
+    expect(mockShowError).toHaveBeenCalledWith('Could not copy. Select the card link to copy it manually.');
     expect(control(view, 'Link copied')).toBeUndefined();
     act(() => view.unmount());
   });
