@@ -1,3 +1,21 @@
+## [1.9.136](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.135...v1.9.136) (2026-10-22)
+
+
+### Features
+
+* **marketing:** prepare BSL 2026 campaign and reusable admin operations ([12eab30](https://github.com/hashpass-tech/hashpass.tech/commit/12eab30c65d78ff890302ce5630bda2913d11cc4))
+### Release Highlights
+- prepare BSL 2026 campaign and reusable admin operations; preserve shared dev database pooler; resolve promotion PRs reliably
+
+### Release scope
+- Compared with: `v1.9.135` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Database migrations
+- Documentation
+- Release tooling
+
 ## [1.9.135](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.134...v1.9.135) (2026-10-21)
 
 

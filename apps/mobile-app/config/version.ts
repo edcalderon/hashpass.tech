@@ -22,23 +22,39 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610211941, // Updated to current timestamp
-  releaseDate: '2026-10-21',
+  buildNumber: 202610221618, // Updated to current timestamp
+  releaseDate: '2026-10-22',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'add interest-based networking and progression',
-    'let the read-only backup role fetch pre-migration dumps'
+    'prepare BSL 2026 campaign and reusable admin operations'
   ],
   bugfixes: [
-    // No bugfixes
+    'preserve shared dev database pooler',
+    'resolve promotion PRs reliably'
   ],
   breakingChanges: [],
-  notes: 'add interest-based networking and progression; let the read-only backup role fetch pre-migration dumps'
+  notes: 'prepare BSL 2026 campaign and reusable admin operations; preserve shared dev database pooler; resolve promotion PRs reliably'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.136': {
+    version: '1.9.136',
+    buildNumber: 202610221618,
+    releaseDate: '2026-10-22',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'prepare BSL 2026 campaign and reusable admin operations'
+    ],
+    bugfixes: [
+      'preserve shared dev database pooler',
+      'resolve promotion PRs reliably'
+    ],
+    breakingChanges: [],
+    notes: 'prepare BSL 2026 campaign and reusable admin operations; preserve shared dev database pooler; resolve promotion PRs reliably'
+  },
   '1.9.135': {
     version: '1.9.135',
     buildNumber: 202610211941,
