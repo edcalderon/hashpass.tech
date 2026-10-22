@@ -27,6 +27,9 @@ if [ "$secret_scan_ran" -eq 0 ]; then
   exit 1
 fi
 
+echo "📐 Checking type placement on staged changes..."
+TYPE_PLACEMENT_STAGED=1 pnpm -s run check:type-placement
+
 echo "📘 Checking README sync..."
 echo "🌐 Checking dashboard translations (en/es/ko)..."
 pnpm --dir apps/mobile-app run check:dashboard-translations

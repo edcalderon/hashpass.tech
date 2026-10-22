@@ -84,11 +84,17 @@ function getDiff() {
   const baseRef = process.env.TYPE_PLACEMENT_BASE;
   const args = ['diff', '--unified=0', '--no-color'];
 
-  if (baseRef) {
+  if (process.env.TYPE_PLACEMENT_STAGED === '1') {
+    // Pre-commit must inspect exactly what will be committed. Using HEAD here
+    // also includes unrelated unstaged edits and makes the local result differ
+    // from the commit that CI reviews.
+    args.push('--cached');
+  } else if (baseRef) {
     args.push(`${baseRef}...HEAD`);
   } else {
-    // HEAD includes staged and unstaged work locally. CI sets an explicit base
-    // ref so the same guard checks the complete pull request diff.
+    // The default remains useful for an explicit local check. CI sets an
+    // explicit base ref so the same guard checks the complete pull request
+    // diff.
     args.push('HEAD');
   }
 
