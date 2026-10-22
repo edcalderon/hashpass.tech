@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import { MaterialIcons } from "../../../lib/vector-icons";
 import { useTheme } from "../../../hooks/useTheme";
+import MarketingManager from '../../../components/admin/MarketingManager';
 import { useAuth } from "../../../hooks/useAuth";
 import type { AdminRole } from "../../../lib/admin-utils";
 import { getCurrentAdminAccess } from "../../../lib/admin-access";
@@ -142,6 +143,10 @@ interface SpeakerClaimRequest {
   request_note: string | null;
   created_at: string;
   review_note: string | null;
+  claim_mode?: "current_email" | "other_email";
+  claim_email?: string | null;
+  verification_status?: "not_required" | "pending" | "verified";
+  submitted_by_email?: string | null;
 }
 
 interface MeetingRequest {
@@ -478,7 +483,12 @@ export default function AdminPanel() {
     }
   };
 
-  const reviewSpeakerClaim = (claim: SpeakerClaimRequest, action: "approve" | "reject") => {
+  const reviewSpeakerClaim = (claim: SpeakerClaimRequest, action: "approve" | "reject", reviewNote = "") => {
+    const note = reviewNote.trim();
+    if (action === "reject" && !note) {
+      Alert.alert("Add a note", "Explain why the claim is declined so the claimant knows what to fix.");
+      return;
+    }
     const verb = action === "approve" ? "Approve" : "Reject";
     Alert.alert(
       `${verb} profile claim?`,
@@ -494,7 +504,7 @@ export default function AdminPanel() {
                 setSpeakerClaimsLoading(true);
                 const result = await apiClient.post(
                   "/admin/speaker-claims",
-                  { eventId: selectedEventId, claimId: claim.claim_id, action },
+                  { eventId: selectedEventId, claimId: claim.claim_id, action, reviewNote: note || undefined },
                   { skipEventSegment: true },
                 );
                 if (!result.success) throw new Error(result.error || "Unable to review claim");
@@ -1718,7 +1728,10 @@ export default function AdminPanel() {
           />
         )}
 
-        {activeTab === "emails" && <CommunicationsTab styles={styles} colors={colors} subject={campaignSubject} heading={campaignHeading} message={campaignMessage} audience={campaignAudience} template={campaignTemplate} preview={campaignPreview} sending={campaignSending} onSubject={setCampaignSubject} onHeading={setCampaignHeading} onMessage={setCampaignMessage} onAudience={setCampaignAudience} onTemplate={setCampaignTemplate} onPreview={() => submitCampaign(true)} onSend={() => submitCampaign(false)} />}
+        {activeTab === "emails" && <>
+          {isGlobalAdmin && <MarketingManager mode={isDark ? 'dark' : 'light'} />}
+          <CommunicationsTab styles={styles} colors={colors} subject={campaignSubject} heading={campaignHeading} message={campaignMessage} audience={campaignAudience} template={campaignTemplate} preview={campaignPreview} sending={campaignSending} onSubject={setCampaignSubject} onHeading={setCampaignHeading} onMessage={setCampaignMessage} onAudience={setCampaignAudience} onTemplate={setCampaignTemplate} onPreview={() => submitCampaign(true)} onSend={() => submitCampaign(false)} />
+        </>}
 
         {activeTab === "roles" && (
           <RolesTab
@@ -1744,6 +1757,7 @@ export default function AdminPanel() {
         {activeTab === "speaker-roles" && (
           <SpeakerRoleManagementTab
             styles={styles}
+            colors={colors}
             speakers={speakerRoles}
             loading={speakerRolesLoading}
             claims={speakerClaims}
@@ -3116,6 +3130,7 @@ function RolesTab({
 
 function SpeakerRoleManagementTab({
   styles,
+  colors,
   speakers,
   loading,
   claims,
@@ -3126,6 +3141,7 @@ function SpeakerRoleManagementTab({
   onReviewClaim,
   onRefresh,
 }: any) {
+  const [claimNotes, setClaimNotes] = useState<Record<string, string>>({});
   const speakerSearchData = useMemo(
     () =>
       speakers.map((speaker: SpeakerRoleRecord) => {
@@ -3192,13 +3208,23 @@ function SpeakerRoleManagementTab({
               <View style={styles.speakerRoleTitleWrap}>
                 <Text style={styles.passNumber}>{claim.speaker_name}</Text>
                 <Text style={styles.passInfo}>
-                  {claim.requester_email || "Verified account"}
+                  {claim.claim_email || claim.requester_email || "Verified account"}
                 </Text>
               </View>
               <View style={[styles.statusBadge, styles.actionButtonWarning]}>
-                <Text style={styles.statusBadgeText}>PENDING</Text>
+                <Text style={styles.statusBadgeText}>
+                  {claim.verification_status === "pending" ? "AWAITING EMAIL" : "PENDING"}
+                </Text>
               </View>
             </View>
+            <Text style={styles.passInfo}>
+              {claim.claim_mode === "other_email"
+                ? `Different email${claim.verification_status === "verified" ? " (inbox verified)" : " (inbox not verified yet)"}`
+                : "Signed-in email"}
+              {claim.submitted_by_email && claim.submitted_by_email !== (claim.claim_email || claim.requester_email)
+                ? ` · requested by ${claim.submitted_by_email}`
+                : ""}
+            </Text>
             {(claim.speaker_title || claim.speaker_company) && (
               <Text style={styles.passInfo}>
                 {[claim.speaker_title, claim.speaker_company].filter(Boolean).join(" · ")}
@@ -3210,16 +3236,26 @@ function SpeakerRoleManagementTab({
             <Text style={styles.speakerClaimDate}>
               Requested {new Date(claim.created_at).toLocaleDateString()}
             </Text>
+            <TextInput
+              style={styles.searchInput}
+              value={claimNotes[claim.claim_id] || ""}
+              onChangeText={(value) => setClaimNotes((current) => ({ ...current, [claim.claim_id]: value }))}
+              placeholder="Review note (required to reject)"
+              placeholderTextColor={colors.text.secondary}
+              maxLength={1000}
+              multiline
+            />
             <View style={styles.passActions}>
               <TouchableOpacity
-                style={[styles.actionButton, styles.actionButtonSuccess]}
-                onPress={() => onReviewClaim(claim, "approve")}
+                style={[styles.actionButton, styles.actionButtonSuccess, claim.verification_status === "pending" && { opacity: 0.5 }]}
+                disabled={claim.verification_status === "pending"}
+                onPress={() => onReviewClaim(claim, "approve", claimNotes[claim.claim_id])}
               >
                 <Text style={styles.actionButtonText}>Approve & link</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.actionButton}
-                onPress={() => onReviewClaim(claim, "reject")}
+                onPress={() => onReviewClaim(claim, "reject", claimNotes[claim.claim_id])}
               >
                 <Text style={styles.actionButtonText}>Reject</Text>
               </TouchableOpacity>

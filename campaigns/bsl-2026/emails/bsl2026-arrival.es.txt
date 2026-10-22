@@ -1,0 +1,15 @@
+REVIEW PREVIEW — recipient unsubscribe token is inserted only at send time.
+
+Nos vemos en Bogotá.
+
+Nos vemos en Bogotá.
+
+BSL Colombia 2026 empieza hoy, 4 de noviembre, y continúa hasta el 6 de noviembre en Bogotá. El catálogo indica los edificios H e I de la Universidad Externado de Colombia, La Candelaria; comprueba los avisos del organizador antes de desplazarte.
+
+Revisa tu pase, tu agenda y las reuniones aceptadas. Lleva tu tarjeta de contacto lista y abre HASHPASS antes de llegar. Si cambia una sesión o un horario, confirma la última información en la app.
+
+Abrir mi experiencia BSL: https://hashpass.tech/events/colombia2026?utm_source=hashpass&utm_medium=email&utm_campaign=bsl2026-arrival
+Video y guía: https://hashpass.tech/campaigns/bsl-2026/#teaser
+
+Recibes este correo por tu suscripción a las novedades de HASHPASS. Puedes dejar de recibir campañas en cualquier momento.
+Cancelar suscripción: https://api.hashpass.tech/api/marketing/unsubscribe?token=PREVIEW

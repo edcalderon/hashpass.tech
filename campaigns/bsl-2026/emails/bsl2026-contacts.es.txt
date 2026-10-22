@@ -1,0 +1,15 @@
+REVIEW PREVIEW — recipient unsubscribe token is inserted only at send time.
+
+Intereses en común. Nuevas posibilidades.
+
+Intereses en común. Nuevas posibilidades.
+
+En Contactos, crea tu tarjeta y elige hasta cinco temas que te interesen. Comparte tu QR o enlace con otra persona y acepta las conexiones que quieras mantener.
+
+Usa la red y el directorio para encontrar a tus contactos por nombre, empresa o tema. El crecimiento y los niveles de Network XP muestran conexiones mutuas; no son saldo de billetera ni distribución de $LKS.
+
+Construir mi red: https://hashpass.tech/contacts?utm_source=hashpass&utm_medium=email&utm_campaign=bsl2026-contacts
+Video y guía: https://hashpass.tech/campaigns/bsl-2026/#contacts
+
+Recibes este correo por tu suscripción a las novedades de HASHPASS. Puedes dejar de recibir campañas en cualquier momento.
+Cancelar suscripción: https://api.hashpass.tech/api/marketing/unsubscribe?token=PREVIEW

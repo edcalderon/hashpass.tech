@@ -31,13 +31,27 @@ ALTER TABLE public.bsl_speakers
 
 -- Archived requests stay on record (and visible to the requester) but are not
 -- surfaced in the speaker's incoming list. meeting_requests.status is text with
--- a CHECK constraint (V038), not an enum, so extend the constraint.
-ALTER TABLE public.meeting_requests DROP CONSTRAINT IF EXISTS meeting_requests_status_check;
-ALTER TABLE public.meeting_requests ADD CONSTRAINT meeting_requests_status_check
-  CHECK (status = ANY (ARRAY[
-    'pending', 'requested', 'approved', 'accepted', 'declined', 'rejected',
-    'expired', 'cancelled', 'completed', 'confirmed', 'archived'
-  ]));
+-- a CHECK constraint (V038) on production but the meeting_request_status enum on
+-- the shared dev database, so extend whichever representation exists.
+DO $$
+DECLARE
+  v_udt text;
+BEGIN
+  SELECT udt_name INTO v_udt
+    FROM information_schema.columns
+   WHERE table_schema = 'public' AND table_name = 'meeting_requests' AND column_name = 'status';
+
+  IF v_udt = 'meeting_request_status' THEN
+    ALTER TYPE public.meeting_request_status ADD VALUE IF NOT EXISTS 'archived';
+  ELSE
+    ALTER TABLE public.meeting_requests DROP CONSTRAINT IF EXISTS meeting_requests_status_check;
+    ALTER TABLE public.meeting_requests ADD CONSTRAINT meeting_requests_status_check
+      CHECK (status = ANY (ARRAY[
+        'pending', 'requested', 'approved', 'accepted', 'declined', 'rejected',
+        'expired', 'cancelled', 'completed', 'confirmed', 'archived'
+      ]));
+  END IF;
+END $$;
 
 CREATE OR REPLACE FUNCTION public.insert_meeting_request(
   p_requester_id text,
@@ -123,8 +137,13 @@ BEGIN
     p_requester_ticket_type, COALESCE(NULLIF(p_meeting_type, ''), 'networking'),
     COALESCE(p_message, ''), p_note, COALESCE(p_boost_amount, 0),
     COALESCE(p_duration_minutes, 15), COALESCE(p_expires_at, now() + interval '3 days'),
-    v_status, now(), now()
+    'pending', now(), now()
   );
+
+  -- Bare literals coerce to both the text column (prod) and the enum (dev).
+  IF v_status = 'archived' THEN
+    UPDATE public.meeting_requests SET status = 'archived' WHERE id = v_request_id;
+  END IF;
 
   WITH active_pass AS (
     SELECT p.id

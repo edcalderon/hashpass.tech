@@ -1,0 +1,27 @@
+name: Marketing storage invariants
+on:
+  pull_request:
+    paths:
+      - 'db/migrations/V127__contacts_network.sql'
+      - 'db/migrations/V132__marketing_campaigns.sql'
+      - 'db/migrations/V133__marketing_activity_snapshots.sql'
+      - 'campaigns/bsl-2026/**'
+      - '.github/workflows/marketing-storage-tests.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  storage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+      - name: Install isolated PostgreSQL test runtime
+        run: npm install --prefix "$RUNNER_TEMP/hashpass-pglite" --no-package-lock --no-save @electric-sql/pglite@0.3.14
+      - name: Check migrations and campaign project tree
+        run: |
+          PGLITE_MODULE="$RUNNER_TEMP/hashpass-pglite/node_modules/@electric-sql/pglite/dist/index.js" node campaigns/bsl-2026/database.test.mjs
+          node campaigns/bsl-2026/import-plane.mjs > "$RUNNER_TEMP/plane-plan.json"

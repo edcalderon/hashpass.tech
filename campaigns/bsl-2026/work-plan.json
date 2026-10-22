@@ -1,0 +1,385 @@
+{
+  "baseUrl": "https://work.hashpass.tech",
+  "workspace": "hashpass",
+  "project": {
+    "identifier": "BSL26",
+    "name": "BSL 2026 Launch & Campaign Platform",
+    "description": "Launch education and expectation campaign for BSL Colombia Nov 4–6; reusable marketing admin, scheduling, activity and planned $LKS bonus tracking."
+  },
+  "root": {
+    "key": "launch-epic",
+    "name": "BSL Colombia 2026: educate, connect and track activity",
+    "due": "2026-11-06",
+    "ownerRole": "Campaign lead",
+    "description": "Campaign begins Monday October 26, 2026 in America/Bogota. Deliver campaign assets and a reusable, auditable marketing platform. $LKS tier and distribution rules are not final. See the linked GitHub issue and repository campaign pack."
+  },
+  "tasks": [
+    {
+      "key": "strategy",
+      "name": "Campaign operations",
+      "parent": "launch-epic",
+      "due": "2026-10-23",
+      "ownerRole": "Campaign lead",
+      "description": "Campaign operations workstream. Complete the child tasks and link verification evidence.",
+      "acceptance": [
+        "Complete child tasks and link verification evidence.",
+        "Record blockers, responsible owner and next follow-up date."
+      ],
+      "dependsOn": []
+    },
+    {
+      "key": "audience",
+      "name": "Resolve eligible existing-user audience and suppression rules",
+      "parent": "strategy",
+      "due": "2026-10-23",
+      "ownerRole": "Marketing / data owner",
+      "description": "Use registered active users with newsletter consent; report counts only. Verify unsubscribe, duplicate addresses and inactive accounts.",
+      "acceptance": [
+        "Report eligible and excluded counts without disclosing addresses.",
+        "Verify current opt-in, normalized deduplication and last-moment suppression."
+      ],
+      "dependsOn": []
+    },
+    {
+      "key": "terms",
+      "name": "Document $LKS tier activity and testnet bonus boundaries",
+      "parent": "strategy",
+      "due": "2026-10-23",
+      "ownerRole": "Rewards owner",
+      "description": "Record the owner brief. Tier thresholds, final cutoff, allocation, claim contract and TGE date remain unannounced. Distinguish testnet preparation from on-chain publication.",
+      "acceptance": [
+        "Record the user-exclusive TGE bonus and forthcoming tiers.",
+        "Keep allocation, cutoff, TGE date and claim contract unannounced until the owner supplies them."
+      ],
+      "dependsOn": []
+    },
+    {
+      "key": "calendar",
+      "name": "Review Bogotá campaign calendar and per-message prerequisites",
+      "parent": "strategy",
+      "due": "2026-10-23",
+      "ownerRole": "Campaign operator",
+      "description": "Six planned sends: Oct 26/28/30, Nov 2/3 at 09:00 and Nov 4 at 07:00. No dates inferred from UTC server time.",
+      "acceptance": [
+        "Review all six explicit America/Bogota timestamps.",
+        "Confirm dispatcher capacity against the real audience and mailbox limit."
+      ],
+      "dependsOn": []
+    },
+    {
+      "key": "creative",
+      "name": "Emails, guides and social assets",
+      "parent": "launch-epic",
+      "due": "2026-10-25",
+      "ownerRole": "Campaign lead",
+      "description": "Emails, guides and social assets workstream. Complete the child tasks and link verification evidence.",
+      "acceptance": [
+        "Complete child tasks and link verification evidence.",
+        "Record blockers, responsible owner and next follow-up date."
+      ],
+      "dependsOn": []
+    },
+    {
+      "key": "emails",
+      "name": "Prepare six Spanish and English emails, HTML and text",
+      "parent": "creative",
+      "due": "2026-10-24",
+      "ownerRole": "Content owner",
+      "description": "Each has subject, preheader, one CTA, tracked campaign URL and unsubscribe footer. No invented TGE amounts or deadlines.",
+      "acceptance": [
+        "Review 12 HTML and text previews plus image descriptions.",
+        "Confirm every product CTA, guide URL and injected unsubscribe link in a real test message."
+      ],
+      "dependsOn": [
+        "terms",
+        "calendar"
+      ]
+    },
+    {
+      "key": "teaser",
+      "name": "Render BSL anticipation video and social poster",
+      "parent": "creative",
+      "due": "2026-10-24",
+      "ownerRole": "Motion / design",
+      "description": "Caption-led 1080x1920 source, MP4 and poster; official brand assets; event date/location from catalogue.",
+      "acceptance": [
+        "Export an 18-second 1080x1920 MP4 and 1080x1350 poster.",
+        "Check logo, contrast, captions and official Nov 4–6 dates."
+      ],
+      "dependsOn": []
+    },
+    {
+      "key": "tutorials",
+      "name": "Publish agenda, meeting and Contacts tutorial videos",
+      "parent": "creative",
+      "due": "2026-10-25",
+      "ownerRole": "Product education",
+      "description": "Show an accurate three-step flow, readable captions and clear acceptance/access constraints. Provide text guides and alt text.",
+      "acceptance": [
+        "Provide agenda, meeting, Contacts and activity videos with text alternatives.",
+        "Distinguish pending requests from confirmed meetings, favorites from seat guarantees and XP from token bonuses."
+      ],
+      "dependsOn": [
+        "taxonomy"
+      ]
+    },
+    {
+      "key": "publishing",
+      "name": "Verify public asset and guide URLs",
+      "parent": "creative",
+      "due": "2026-10-25",
+      "ownerRole": "Web operator",
+      "description": "Deploy assets, verify media MIME/status and mobile rendering before calendar activation. Contacts must be deployed before its tutorial send.",
+      "acceptance": [
+        "Verify all five MP4s, posters and guide page return successful public responses.",
+        "Review organizer updates and actual logged-in product flows before marking assets ready."
+      ],
+      "dependsOn": [
+        "emails",
+        "teaser",
+        "tutorials"
+      ]
+    },
+    {
+      "key": "platform",
+      "name": "Reusable marketing admin and delivery scheduler",
+      "parent": "launch-epic",
+      "due": "2026-10-25",
+      "ownerRole": "Campaign lead",
+      "description": "Reusable marketing admin and delivery scheduler workstream. Complete the child tasks and link verification evidence.",
+      "acceptance": [
+        "Complete child tasks and link verification evidence.",
+        "Record blockers, responsible owner and next follow-up date."
+      ],
+      "dependsOn": []
+    },
+    {
+      "key": "storage",
+      "name": "Add campaign, outbox, suppression and audit schema",
+      "parent": "platform",
+      "due": "2026-10-23",
+      "ownerRole": "Backend",
+      "description": "Service-role-only tables; immutable scheduled copy; unique campaign-recipient pair; leased delivery claims and explicit unknown outcomes.",
+      "acceptance": [
+        "Apply dependency-ordered migrations on development and test queue idempotence.",
+        "Verify global admin boundaries, RLS grants and private recipient fields."
+      ],
+      "dependsOn": []
+    },
+    {
+      "key": "admin",
+      "name": "Upgrade dashboard Emails with calendar and sent ledger",
+      "parent": "platform",
+      "due": "2026-10-24",
+      "ownerRole": "Frontend",
+      "description": "Create/save, preview, schedule, pause and cancel; show Bogotá schedule, provider acceptance vs confirmed delivery, queued/failed/unknown/suppressed totals.",
+      "acceptance": [
+        "Verify desktop/mobile and light/dark calendar, editor, history and snapshot states.",
+        "Check bilingual editing, dirty-state activation, readiness and pause/resume/cancel behavior."
+      ],
+      "dependsOn": [
+        "storage"
+      ]
+    },
+    {
+      "key": "worker",
+      "name": "Connect bounded scheduled sender to existing provider",
+      "parent": "platform",
+      "due": "2026-10-25",
+      "ownerRole": "Backend / operations",
+      "description": "Shared global-admin boundary, constant-time runner token checks, concurrency-safe claims, no automatic resend after ambiguous SMTP acceptance.",
+      "acceptance": [
+        "Test before-send opt-out and immutable copy after queueing.",
+        "Never automatically replay unknown SMTP outcomes; verify stable provider message IDs."
+      ],
+      "dependsOn": [
+        "storage",
+        "optout"
+      ]
+    },
+    {
+      "key": "optout",
+      "name": "Implement unsubscribe and current-consent rechecks",
+      "parent": "platform",
+      "due": "2026-10-24",
+      "ownerRole": "Backend",
+      "description": "Opaque signed/unguessable token, one-click POST, confirmation GET, global suppression; no recipient list in public API.",
+      "acceptance": [
+        "GET only confirms; POST supports one-click unsubscribe.",
+        "Remove current newsletter consent and suppress pending campaigns."
+      ],
+      "dependsOn": []
+    },
+    {
+      "key": "verify",
+      "name": "Run SQL, API, scheduler and responsive UI tests",
+      "parent": "platform",
+      "due": "2026-10-25",
+      "ownerRole": "QA",
+      "description": "Exercise authorization, scheduling/timezone, pause/cancel, retries, stale leases, partial delivery, opt-out races and account/event isolation.",
+      "acceptance": [
+        "Pass relevant component/API/SMTP/SQL tests and changed-file typechecking.",
+        "Pass design/type guards, Storybook build and four-mode browser QA."
+      ],
+      "dependsOn": [
+        "admin",
+        "worker",
+        "receipts",
+        "snapshots"
+      ]
+    },
+    {
+      "key": "activity",
+      "name": "Tier activity ledger and testnet snapshot preparation",
+      "parent": "launch-epic",
+      "due": "2026-10-28",
+      "ownerRole": "Campaign lead",
+      "description": "Tier activity ledger and testnet snapshot preparation workstream. Complete the child tasks and link verification evidence.",
+      "acceptance": [
+        "Complete child tasks and link verification evidence.",
+        "Record blockers, responsible owner and next follow-up date."
+      ],
+      "dependsOn": []
+    },
+    {
+      "key": "taxonomy",
+      "name": "Define all-interaction event taxonomy and trust levels",
+      "parent": "activity",
+      "due": "2026-10-23",
+      "ownerRole": "Product / rewards",
+      "description": "Document observed navigation separately from verified server actions. Never log passwords, tokens, messages or wallet keys.",
+      "acceptance": [
+        "Document verified action types, unique source keys and deployment start boundary.",
+        "Separate observed navigation from verified awards; define remaining interaction types before claiming universal coverage."
+      ],
+      "dependsOn": []
+    },
+    {
+      "key": "receipts",
+      "name": "Record unique verified interaction bonus receipts",
+      "parent": "activity",
+      "due": "2026-10-25",
+      "ownerRole": "Backend",
+      "description": "Agenda favorites/confirmations, meeting lifecycle, contact requests/connections and interest selection have stable source IDs and dedupe keys.",
+      "acceptance": [
+        "Verify agenda, meeting, interest and mutual-contact triggers.",
+        "Repeated requests and toggles cannot inflate the same source action."
+      ],
+      "dependsOn": [
+        "taxonomy"
+      ]
+    },
+    {
+      "key": "snapshots",
+      "name": "Add immutable testnet snapshot preparation and export",
+      "parent": "activity",
+      "due": "2026-10-28",
+      "ownerRole": "Backend / rewards",
+      "description": "Explicit cutoff and network label, deterministic digest, per-user verified points; unpublished status and no chain/contract/transaction invented.",
+      "acceptance": [
+        "Prepare deterministic private manifests and SHA-256 digests at explicit past cutoffs.",
+        "Show testnet/unpublished until a real network, contract and signer are configured and publication succeeds."
+      ],
+      "dependsOn": [
+        "receipts"
+      ]
+    },
+    {
+      "key": "claims",
+      "name": "Announce tiers and final allocation rules when defined",
+      "parent": "activity",
+      "due": "2026-11-02",
+      "ownerRole": "Rewards owner",
+      "description": "Publish eligibility/cutoff/allocation/claim details from an authoritative owner. Do not equate Network XP with $LKS tokens.",
+      "acceptance": [
+        "Obtain final tier thresholds, allocation, eligibility cutoff and claim steps from rewards owner.",
+        "Publish authoritative terms before activating the activity email."
+      ],
+      "dependsOn": [
+        "terms"
+      ]
+    },
+    {
+      "key": "launch",
+      "name": "Launch execution and follow-up",
+      "parent": "launch-epic",
+      "due": "2026-11-06",
+      "ownerRole": "Campaign lead",
+      "description": "Launch execution and follow-up workstream. Complete the child tasks and link verification evidence.",
+      "acceptance": [
+        "Complete child tasks and link verification evidence.",
+        "Record blockers, responsible owner and next follow-up date."
+      ],
+      "dependsOn": []
+    },
+    {
+      "key": "activate",
+      "name": "Load drafts, test a real internal seed audience and activate schedule",
+      "parent": "launch",
+      "due": "2026-10-25",
+      "ownerRole": "Campaign operator",
+      "description": "Verify production credentials, migration, SMTP mailbox limits and public links. Owner-authorized recipients only; keep logs free of addresses.",
+      "acceptance": [
+        "Complete production backup/migration, deployment, configured sender and internal test.",
+        "Activate dispatcher and schedule verified campaigns by Oct 25; keep incomplete campaigns in draft."
+      ],
+      "dependsOn": [
+        "publishing",
+        "verify",
+        "audience"
+      ]
+    },
+    {
+      "key": "monitor",
+      "name": "Monitor each scheduled touch and failed/unknown outcomes",
+      "parent": "launch",
+      "due": "2026-11-04",
+      "ownerRole": "Campaign operator",
+      "description": "Track accepted sends separately from confirmed delivery; stop/reconcile unknown outcomes, no blind replay.",
+      "acceptance": [
+        "Inspect every send for acceptance, rejection, uncertainty and suppression.",
+        "Reconcile provider logs before any replay; do not invent inbox, open or click metrics."
+      ],
+      "dependsOn": [
+        "activate"
+      ]
+    },
+    {
+      "key": "arrival",
+      "name": "Publish Nov 4 attendee checklist and organizer updates",
+      "parent": "launch",
+      "due": "2026-11-04",
+      "ownerRole": "Community",
+      "description": "Check venue/programme notices; no fake confirmed meetings, access rights or seat guarantees.",
+      "acceptance": [
+        "Check current venue, pass access, saved agenda and accepted meeting states.",
+        "Publish the Nov 4 checklist at the planned Bogotá time."
+      ],
+      "dependsOn": [
+        "monitor"
+      ]
+    },
+    {
+      "key": "report",
+      "name": "Report engagement and close campaign follow-ups",
+      "parent": "launch",
+      "due": "2026-11-06",
+      "ownerRole": "Analytics / community",
+      "description": "Compare eligible audience, provider-accepted sends, unsubscribes, verified product actions and successful mutual connections. No fabricated open rates.",
+      "acceptance": [
+        "Report eligible audience, accepted sends, unsubscribes and verified engagement.",
+        "Record unresolved follow-ups and link evidence by Nov 6."
+      ],
+      "dependsOn": [
+        "arrival"
+      ]
+    }
+  ],
+  "tracking": {
+    "github": "https://github.com/hashpass-tech/hashpass.tech/issues/424",
+    "activation": "https://github.com/hashpass-tech/hashpass.tech/issues/427",
+    "plane": "https://github.com/hashpass-tech/hashpass.tech/issues/428",
+    "rewards": "https://github.com/hashpass-tech/hashpass.tech/issues/429",
+    "planeStatus": "awaiting_secure_credentials"
+  }
+}

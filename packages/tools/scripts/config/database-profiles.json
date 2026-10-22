@@ -71,7 +71,8 @@
     "admin-pass-management",
     "admin-matchmaking-communications",
     "support-system",
-    "contacts-network"
+    "contacts-network",
+    "marketing-campaigns"
   ],
   "profileGroups": {
     "bsl-development": [
@@ -261,7 +262,8 @@
       "db/migrations/V114__activate_public_speaker_profiles_and_queue_meetings.sql",
       "db/migrations/V115__repair_speaker_claim_review_policy.sql",
       "db/migrations/V116__separate_pending_speaker_profiles.sql",
-      "db/migrations/V122__sync_bsl_colombia_speaker_accounts.sql"
+      "db/migrations/V122__sync_bsl_colombia_speaker_accounts.sql",
+      "db/migrations/V132__speaker_claim_email_verification.sql"
     ],
     "event-pass-tiers": [
       "db/migrations/V035__configure_event_pass_tiers.sql",
@@ -283,6 +285,10 @@
       "db/migrations/V080__qr_link_availability_windows.sql",
       "db/migrations/V081__qr_link_custom_slugs.sql",
       "db/migrations/V084__repair_legacy_email_auth_identities.sql"
+    ],
+    "marketing-campaigns": [
+      "db/migrations/V132__marketing_campaigns.sql",
+      "db/migrations/V133__marketing_activity_snapshots.sql"
     ]
   }
 }

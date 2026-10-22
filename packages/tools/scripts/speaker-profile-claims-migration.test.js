@@ -33,6 +33,21 @@ const pendingMigrationPath = path.resolve(
 const pendingMigration = fs.existsSync(pendingMigrationPath)
   ? fs.readFileSync(pendingMigrationPath, 'utf8')
   : '';
+const claimEmailMigrationPath = path.resolve(
+  __dirname,
+  '../../../db/migrations/V132__speaker_claim_email_verification.sql',
+);
+const claimEmailMigration = fs.existsSync(claimEmailMigrationPath)
+  ? fs.readFileSync(claimEmailMigrationPath, 'utf8')
+  : '';
+
+describe('V132 speaker claim email verification', () => {
+  it('redacts another claimant email from duplicate-claim responses', () => {
+    expect(claimEmailMigration).toMatch(/v_existing\.requester_user_id\s*=\s*p_claimant_user_id/i);
+    expect(claimEmailMigration).toMatch(/ELSIF\s+v_existing\.verification_status\s*=\s*'pending'/i);
+    expect(claimEmailMigration).toMatch(/'speaker_name',\s*v_speaker\.name,\s*'claim_email',\s*NULL::text/i);
+  });
+});
 
 describe('V111 speaker profile publication and claim requests', () => {
   it('separates public directory visibility from account ownership', () => {

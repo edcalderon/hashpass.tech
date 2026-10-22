@@ -84,10 +84,25 @@ jobs:
         run: |
           set -euo pipefail
 
-          promotion_prs=$(gh api \
-            "repos/${GITHUB_REPOSITORY}/commits/${COMMIT_SHA}/pulls" \
-            -H 'Accept: application/vnd.github+json' \
-            --jq '[.[] | select(.merged_at != null and .base.ref == "main" and .head.ref == "develop")] | sort_by(.merged_at)')
+          # GitHub does not consistently associate a merge commit with its
+          # pull request through /commits/{sha}/pulls (notably for promotion
+          # merge commits). Query the closed promotion PRs directly and match
+          # their merge_commit_sha instead. Retry briefly for API eventual
+          # consistency immediately after a main push.
+          promotion_prs='[]'
+          for attempt in 1 2 3 4 5; do
+            promotion_prs=$(gh api --paginate \
+              "repos/${GITHUB_REPOSITORY}/pulls?state=closed&base=main&head=${GITHUB_REPOSITORY_OWNER}:develop&per_page=100" \
+              -H 'Accept: application/vnd.github+json' \
+              --jq '.[]' | \
+              jq -s --arg commit "${COMMIT_SHA}" \
+                '[.[] | select(.merged_at != null and .merge_commit_sha == $commit)] | sort_by(.merged_at)') || promotion_prs='[]'
+
+            if [[ "$(jq 'length' <<<"${promotion_prs}")" != "0" ]]; then
+              break
+            fi
+            [[ "${attempt}" == "5" ]] || sleep 5
+          done
 
           if [[ "$(jq 'length' <<<"${promotion_prs}")" == "0" ]]; then
             echo "is_promotion=false" >> "$GITHUB_OUTPUT"

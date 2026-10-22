@@ -38,6 +38,7 @@ jest.mock('../../lib/api-client', () => ({
 jest.mock('../../lib/event-path', () => ({ resolveActiveEventId: () => 'chile2026' }));
 jest.mock('expo-router', () => ({ useRouter: () => ({ replace: jest.fn() }) }));
 jest.mock('../../components/AdminQRScanner', () => 'AdminQRScanner');
+jest.mock('../../components/admin/MarketingManager', () => 'MarketingManager');
 jest.mock('../../components/LoadingScreen', () => 'LoadingScreen');
 jest.mock('../../lib/vector-icons', () => ({
   MaterialIcons: 'MaterialIcons',
@@ -383,8 +384,17 @@ describe('AdminPanel pass codes', () => {
       eventId: 'chile2026',
       claimId: pendingClaim.claim_id,
       action: 'approve',
+      reviewNote: undefined,
     }, { skipEventSegment: true });
 
+    await act(async () => {
+      triggerPress(renderer.root.findByProps({ children: 'Reject' }).parent);
+    });
+    expect(mockAlert.mock.calls.at(-1)?.[0]).toBe('Add a note');
+    const noteInput = renderer.root.findByProps({ placeholder: 'Review note (required to reject)' });
+    await act(async () => {
+      noteInput.props.onChangeText('The roster lists a different email.');
+    });
     await act(async () => {
       triggerPress(renderer.root.findByProps({ children: 'Reject' }).parent);
     });
@@ -400,6 +410,7 @@ describe('AdminPanel pass codes', () => {
       eventId: 'chile2026',
       claimId: pendingClaim.claim_id,
       action: 'reject',
+      reviewNote: 'The roster lists a different email.',
     }, { skipEventSegment: true });
   });
 });

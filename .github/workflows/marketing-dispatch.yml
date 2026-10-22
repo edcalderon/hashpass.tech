@@ -1,0 +1,35 @@
+name: Marketing campaign dispatcher
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+permissions: {}
+concurrency:
+  group: marketing-production-dispatch
+  cancel-in-progress: false
+jobs:
+  dispatch:
+    if: ${{ vars.MARKETING_DISPATCH_ENABLED == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Dispatch bounded batches of due campaigns
+        env:
+          RUNNER_TOKEN: ${{ secrets.MARKETING_RUNNER_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${#RUNNER_TOKEN}" -lt 32 ]; then
+            echo 'MARKETING_RUNNER_TOKEN must be configured on the API and in GitHub secrets.'
+            exit 1
+          fi
+          # Each batch claims at most four recipients. No recipient data is returned.
+          # At most 24 recipients per invocation; increase only after mailbox limits are verified.
+          for batch in 1 2 3 4 5 6; do
+            response=$(curl --silent --show-error --fail --max-time 15 --request POST \
+              --header "Authorization: Bearer ${RUNNER_TOKEN}" \
+              https://api.hashpass.tech/api/marketing/dispatch)
+            count=$(jq -er '.data.claimed' <<< "$response")
+            echo "Batch ${batch}: ${count} claimed"
+            if [ "$count" -eq 0 ]; then break; fi
+          done

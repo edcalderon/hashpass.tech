@@ -24,7 +24,8 @@ const mockRouterReplace = jest.fn();
 const mockGetUserPassInfo = jest.fn();
 const mockRetryDatabaseSession = jest.fn();
 
-let mockParams: { id?: string } = { id: 'speaker-1' };
+let mockParams: { id?: string; claimVerify?: string; eventSlug?: string } = { id: 'speaker-1' };
+let mockClaimModalProps: any = null;
 let mockEventSpeakers: Array<Record<string, unknown>> = [];
 let mockAuthState = {
   user: { email: 'requester@example.test' },
@@ -80,6 +81,7 @@ jest.mock('@contexts/BalanceContext', () => ({
 
 jest.mock('../../i18n/i18n', () => ({
   useTranslation: () => ({ t: (key: string) => key }),
+  getCurrentLocale: () => 'en',
 }));
 
 jest.mock('@/lib/api-client', () => ({
@@ -92,6 +94,17 @@ jest.mock('../../lib/pass-system', () => ({
 }));
 
 jest.mock('../../components/SpeakerAvatar', () => 'SpeakerAvatar');
+jest.mock('../../components/SpeakerClaimModal', () => ({
+  __esModule: true,
+  default: (props: any) => {
+    mockClaimModalProps = props;
+    return null;
+  },
+}));
+jest.mock('../../lib/speaker-claim-redirect', () => ({
+  buildClaimVerificationRedirect: (returnTo: string) => `https://hashpass.tech/auth/callback?returnTo=${encodeURIComponent(returnTo)}`,
+  speakerClaimReturnPath: (slug: string, id: string) => `/events/${slug}/speakers/${id}?claimVerify=1`,
+}));
 jest.mock('../../components/LoadingScreen', () => 'LoadingScreen');
 jest.mock('../../components/PassesDisplay', () => {
   const { Text, TouchableOpacity } = require('react-native');
@@ -193,6 +206,7 @@ function textContent(node: any): string {
 describe('speaker detail screen', () => {
   beforeEach(() => {
     mockParams = { id: 'speaker-1' };
+    mockClaimModalProps = null;
     mockEventSpeakers = [];
     mockAuthState = {
       user: { email: 'requester@example.test' },
@@ -300,7 +314,7 @@ describe('speaker detail screen', () => {
     await act(async () => renderer.unmount());
   });
 
-  it('submits a claim for an authenticated speaker and shows the pending state', async () => {
+  it('opens the guided claim flow and submits a current-email claim for review', async () => {
     mockApiRequest.mockImplementation((path: string, options?: { method?: string }) => {
       if (path === 'events/bsl/speakers/claims' && options?.method === 'POST') {
         return Promise.resolve({ success: true, data: { data: { status: 'pending' } } });
@@ -315,24 +329,59 @@ describe('speaker detail screen', () => {
       renderer = renderSpeaker();
       await flushPromises();
     });
+    expect(mockClaimModalProps.visible).toBe(false);
 
     await act(async () => {
       renderer.root.findByProps({ accessibilityLabel: 'speakerView.claimProfile' }).props.onPress();
-      await flushPromises();
+    });
+    expect(mockClaimModalProps.visible).toBe(true);
+    expect(mockClaimModalProps.currentEmail).toBe('requester@example.test');
+
+    const note = 'I am the speaker listed on the agenda.';
+    await act(async () => {
+      await mockClaimModalProps.onSubmit({ mode: 'current_email', email: '', note });
     });
 
     expect(mockApiRequest).toHaveBeenCalledWith('events/bsl/speakers/claims', {
       skipEventSegment: true,
       method: 'POST',
-      body: { eventId: 'bsl', speakerId: 'speaker-1' },
+      body: { eventId: 'bsl', speakerId: 'speaker-1', mode: 'current_email', note },
     });
-    expect(mockShowSuccess).toHaveBeenCalledWith('speakerView.claimSubmittedTitle', 'speakerView.claimSubmittedMessage');
     expect(renderer.root.findByProps({ accessibilityLabel: 'speakerView.claimPending' })).toBeTruthy();
 
     await act(async () => renderer.unmount());
   });
 
-  it('routes a guest to sign-in before submitting a claim', async () => {
+  it('sends the other email with a callback that returns to this speaker', async () => {
+    mockParams = { id: 'speaker-1', eventSlug: 'bsl' };
+    mockApiRequest.mockImplementation((path: string, options?: { method?: string }) => {
+      if (path === 'events/bsl/speakers/claims' && options?.method === 'POST') {
+        return Promise.resolve({ success: true, data: { data: { verification_status: 'pending' } } });
+      }
+      return path === 'events/bsl/speakers/speaker-1'
+        ? Promise.resolve({ success: true, data: { data: { ...speaker, user_id: null, is_active: true } } })
+        : defaultApiResponse(path, options);
+    });
+    let renderer: any;
+    await act(async () => {
+      renderer = create(<SpeakerDetail />);
+      await flushPromises();
+    });
+    await act(async () => {
+      await mockClaimModalProps.onSubmit({ mode: 'other_email', email: 'ada@work.test', note: 'Ada works at the company on stage.' });
+    });
+
+    const call = mockApiRequest.mock.calls.find(([path, options]) => path === 'events/bsl/speakers/claims' && options?.method === 'POST');
+    expect(call?.[1].body).toMatchObject({
+      mode: 'other_email',
+      claimEmail: 'ada@work.test',
+      redirectTo: 'https://hashpass.tech/auth/callback?returnTo=' + encodeURIComponent('/events/bsl/speakers/speaker-1?claimVerify=1'),
+    });
+
+    await act(async () => renderer.unmount());
+  });
+
+  it('routes a guest to sign-in before opening the claim flow', async () => {
     mockAuthState = { user: null, isLoggedIn: false, dbUserId: null } as any;
     mockApiRequest.mockImplementation((path: string, options?: { method?: string }) =>
       path === 'events/bsl/speakers/speaker-1'
@@ -349,11 +398,12 @@ describe('speaker detail screen', () => {
       renderer.root.findByProps({ accessibilityLabel: 'speakerView.claimProfile' }).props.onPress();
     });
     expect(mockRouterPush).toHaveBeenCalledWith('/(shared)/auth');
+    expect(mockClaimModalProps.visible).toBe(false);
 
     await act(async () => renderer.unmount());
   });
 
-  it('resets the claim state and reports a failed claim request', async () => {
+  it('keeps the claim retryable and surfaces the error when submission fails', async () => {
     mockApiRequest.mockImplementation((path: string, options?: { method?: string }) => {
       if (path === 'events/bsl/speakers/claims' && options?.method === 'POST') {
         return Promise.resolve({ success: false, error: 'Claim service unavailable' });
@@ -367,13 +417,44 @@ describe('speaker detail screen', () => {
       renderer = renderSpeaker();
       await flushPromises();
     });
+
+    let thrown: any = null;
     await act(async () => {
-      renderer.root.findByProps({ accessibilityLabel: 'speakerView.claimProfile' }).props.onPress();
+      try {
+        await mockClaimModalProps.onSubmit({ mode: 'current_email', email: '', note: 'I am the speaker on the agenda.' });
+      } catch (error: any) {
+        thrown = error;
+      }
+    });
+
+    expect(thrown?.message).toBe('Claim service unavailable');
+    expect(renderer.root.findByProps({ accessibilityLabel: 'speakerView.claimProfile' })).toBeTruthy();
+
+    await act(async () => renderer.unmount());
+  });
+
+  it('confirms the claimed email when returning from the verification link', async () => {
+    mockParams = { id: 'speaker-1', claimVerify: '1' };
+    mockApiRequest.mockImplementation((path: string, options?: { method?: string }) => {
+      if (path === 'events/bsl/speakers/claims' && options?.method === 'PATCH') {
+        return Promise.resolve({ success: true, data: { data: { verification_status: 'verified' } } });
+      }
+      return path === 'events/bsl/speakers/speaker-1'
+        ? Promise.resolve({ success: true, data: { data: { ...speaker, user_id: null, is_active: true } } })
+        : defaultApiResponse(path, options);
+    });
+    let renderer: any;
+    await act(async () => {
+      renderer = create(<SpeakerDetail />);
       await flushPromises();
     });
 
-    expect(mockShowError).toHaveBeenCalledWith('speakerView.claimFailedTitle', 'Claim service unavailable');
-    expect(renderer.root.findByProps({ accessibilityLabel: 'speakerView.claimProfile' })).toBeTruthy();
+    expect(mockApiRequest).toHaveBeenCalledWith('events/bsl/speakers/claims', {
+      skipEventSegment: true,
+      method: 'PATCH',
+      body: { eventId: 'bsl', speakerId: 'speaker-1' },
+    });
+    expect(mockShowSuccess).toHaveBeenCalledWith('speakerView.claimFlow.verifiedTitle', 'speakerView.claimFlow.verifiedMessage');
 
     await act(async () => renderer.unmount());
   });

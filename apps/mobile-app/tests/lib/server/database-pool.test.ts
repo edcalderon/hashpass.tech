@@ -128,7 +128,7 @@ describe("database-pool", () => {
     );
   });
 
-  it("repairs the stale East-2 pooler alias used by older local env files", () => {
+  it("preserves the shared-dev pooler host used by local env files", () => {
     process.env.BETTER_AUTH_DATABASE_URL =
       "postgresql://postgres.fxgftanraszjjyeidvia:pw@aws-1-us-east-2.pooler.supabase.com:6543/postgres";
 
@@ -136,7 +136,7 @@ describe("database-pool", () => {
     const { getDatabaseConnectionString } = require("../../../lib/server/database-pool");
 
     expect(getDatabaseConnectionString()).toBe(
-      "postgresql://postgres.fxgftanraszjjyeidvia:pw@aws-0-us-east-2.pooler.supabase.com:6543/postgres",
+      "postgresql://postgres.fxgftanraszjjyeidvia:pw@aws-1-us-east-2.pooler.supabase.com:6543/postgres",
     );
   });
 });

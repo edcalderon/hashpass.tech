@@ -1,0 +1,266 @@
+{
+  "id": "bsl-colombia-2026",
+  "name": "BSL 2026 · Antes de llegar, empieza a conectar",
+  "timezone": "America/Bogota",
+  "startDate": "2026-10-26",
+  "eventStart": "2026-11-04T08:00:00-05:00",
+  "eventEnd": "2026-11-06T23:59:59-05:00",
+  "eventId": "colombia2026",
+  "audience": "Existing registered HASHPASS users with a current newsletter opt-in, excluding suppressions and deleted/inactive accounts. A registered account alone is not marketing consent.",
+  "localePolicy": "Use explicit es/en profile preference; Spanish fallback for this Colombian event.",
+  "rewardPolicy": {
+    "program": "Planned HASHPASS-user-exclusive $LKS TGE bonus",
+    "activity": "Record interactions and verified activity receipts; one provisional bonus point per unique verified interaction. Tier thresholds, cutoff, allocation and claim timing are unannounced.",
+    "snapshot": "Prepared testnet activity snapshots; no chain or contract has been confirmed; no on-chain or distribution claim.",
+    "contactsXp": "Network XP is separate from bonus activity points and wallet HashPoints."
+  },
+  "messages": [
+    {
+      "key": "bsl2026-launch",
+      "eventId": "colombia2026",
+      "name": "BSL Colombia 2026 · launch",
+      "scheduledAt": "2026-10-26T09:00:00-05:00",
+      "timeZone": "America/Bogota",
+      "audience": "registered_opt_in",
+      "status": "draft",
+      "requirements": [
+        "product_verified",
+        "assets_published"
+      ],
+      "content": {
+        "es": {
+          "subject": "Tu BSL comienza antes de llegar a Bogotá",
+          "preheader": "El encuentro empieza contigo.",
+          "heading": "El encuentro empieza contigo.",
+          "message": "Del 4 al 6 de noviembre, BSL Colombia 2026 llega a Bogotá. Abre HASHPASS, revisa tu acceso y empieza a preparar las conversaciones que quieres tener.\n\nDurante esta semana te compartiremos guías breves para crear tu agenda, solicitar reuniones y hacer crecer tu red. No necesitas hacerlo todo hoy: empieza por explorar el evento.",
+          "actionUrl": "https://hashpass.tech/events/colombia2026?utm_source=hashpass&utm_medium=email&utm_campaign=bsl2026-launch",
+          "actionLabel": "Explorar BSL Colombia",
+          "imageUrl": "https://hashpass.tech/campaigns/bsl-2026/teaser-poster.png",
+          "imageAlt": "El encuentro empieza contigo.",
+          "guideUrl": "https://hashpass.tech/campaigns/bsl-2026/#teaser"
+        },
+        "en": {
+          "subject": "Your BSL starts before you arrive in Bogotá",
+          "preheader": "The summit starts with you.",
+          "heading": "The summit starts with you.",
+          "message": "BSL Colombia 2026 takes place in Bogotá on November 4–6. Open HASHPASS, check your event access and start planning the conversations you want to have.\n\nThis week we will share short guides to build your agenda, request meetings and grow your network. Start by exploring the event.",
+          "actionUrl": "https://hashpass.tech/events/colombia2026?utm_source=hashpass&utm_medium=email&utm_campaign=bsl2026-launch",
+          "actionLabel": "Explore BSL Colombia",
+          "imageUrl": "https://hashpass.tech/campaigns/bsl-2026/teaser-poster.png",
+          "imageAlt": "The summit starts with you.",
+          "guideUrl": "https://hashpass.tech/campaigns/bsl-2026/#teaser"
+        }
+      },
+      "asset": {
+        "video": "/campaigns/bsl-2026/teaser.mp4",
+        "poster": "/campaigns/bsl-2026/teaser-poster.png"
+      }
+    },
+    {
+      "key": "bsl2026-agenda",
+      "eventId": "colombia2026",
+      "name": "BSL Colombia 2026 · agenda",
+      "scheduledAt": "2026-10-28T09:00:00-05:00",
+      "timeZone": "America/Bogota",
+      "audience": "registered_opt_in",
+      "status": "draft",
+      "requirements": [
+        "product_verified",
+        "assets_published"
+      ],
+      "content": {
+        "es": {
+          "subject": "Una agenda que se parece a ti",
+          "preheader": "Elige lo que quieres llevarte.",
+          "heading": "Elige lo que quieres llevarte.",
+          "message": "Tu tiempo en BSL cuenta. Abre la agenda de Colombia 2026, explora las sesiones y guarda tus favoritas. Revisa el día, la hora y la sala antes de confirmar tu participación.\n\nVuelve a tu agenda personal para revisar coincidencias. Guardar una sesión te ayuda a organizarte; no reemplaza tu pase ni garantiza un asiento. El programa puede actualizarse.",
+          "actionUrl": "https://hashpass.tech/events/colombia2026/agenda?utm_source=hashpass&utm_medium=email&utm_campaign=bsl2026-agenda",
+          "actionLabel": "Preparar mi agenda",
+          "imageUrl": "https://hashpass.tech/campaigns/bsl-2026/agenda-poster.png",
+          "imageAlt": "Elige lo que quieres llevarte.",
+          "guideUrl": "https://hashpass.tech/campaigns/bsl-2026/#agenda"
+        },
+        "en": {
+          "subject": "An agenda built around you",
+          "preheader": "Make room for what matters.",
+          "heading": "Make room for what matters.",
+          "message": "Your time at BSL matters. Open the Colombia 2026 agenda, browse the sessions and save your favorites. Check the day, time and room before confirming participation.\n\nReturn to your personal agenda to check for overlaps. Saving a session helps you plan; it does not replace your pass or guarantee a seat. The programme may change.",
+          "actionUrl": "https://hashpass.tech/events/colombia2026/agenda?utm_source=hashpass&utm_medium=email&utm_campaign=bsl2026-agenda",
+          "actionLabel": "Build my agenda",
+          "imageUrl": "https://hashpass.tech/campaigns/bsl-2026/agenda-poster.png",
+          "imageAlt": "Make room for what matters.",
+          "guideUrl": "https://hashpass.tech/campaigns/bsl-2026/#agenda"
+        }
+      },
+      "asset": {
+        "video": "/campaigns/bsl-2026/agenda.mp4",
+        "poster": "/campaigns/bsl-2026/agenda-poster.png"
+      }
+    },
+    {
+      "key": "bsl2026-meetings",
+      "eventId": "colombia2026",
+      "name": "BSL Colombia 2026 · meetings",
+      "scheduledAt": "2026-10-30T09:00:00-05:00",
+      "timeZone": "America/Bogota",
+      "audience": "registered_opt_in",
+      "status": "draft",
+      "requirements": [
+        "product_verified",
+        "assets_published"
+      ],
+      "content": {
+        "es": {
+          "subject": "La próxima buena conversación empieza con una solicitud",
+          "preheader": "Llega con una conversación en camino.",
+          "heading": "Llega con una conversación en camino.",
+          "message": "Abre Networking en BSL Colombia, encuentra a una persona y revisa su perfil y disponibilidad. Escribe un motivo concreto para reunirse, elige un horario permitido y envía la solicitud.\n\nRevisa Mis solicitudes para conocer la respuesta y Mi agenda para comprobar el horario final. Una solicitud no es una reunión confirmada: necesita aceptación y disponibilidad. Los límites dependen de tu pase.",
+          "actionUrl": "https://hashpass.tech/events/colombia2026/networking?utm_source=hashpass&utm_medium=email&utm_campaign=bsl2026-meetings",
+          "actionLabel": "Encontrar una conversación",
+          "imageUrl": "https://hashpass.tech/campaigns/bsl-2026/meetings-poster.png",
+          "imageAlt": "Llega con una conversación en camino.",
+          "guideUrl": "https://hashpass.tech/campaigns/bsl-2026/#meetings"
+        },
+        "en": {
+          "subject": "Your next good conversation starts with a request",
+          "preheader": "Start the conversation before arrival.",
+          "heading": "Start the conversation before arrival.",
+          "message": "Open BSL Colombia Networking, find a person and review their profile and availability. Write a specific reason to meet, choose an available time and send the request.\n\nCheck My requests for their response and My schedule for the final time. A request becomes a confirmed meeting only after acceptance and availability checks. Request limits depend on your pass.",
+          "actionUrl": "https://hashpass.tech/events/colombia2026/networking?utm_source=hashpass&utm_medium=email&utm_campaign=bsl2026-meetings",
+          "actionLabel": "Find a conversation",
+          "imageUrl": "https://hashpass.tech/campaigns/bsl-2026/meetings-poster.png",
+          "imageAlt": "Start the conversation before arrival.",
+          "guideUrl": "https://hashpass.tech/campaigns/bsl-2026/#meetings"
+        }
+      },
+      "asset": {
+        "video": "/campaigns/bsl-2026/meetings.mp4",
+        "poster": "/campaigns/bsl-2026/meetings-poster.png"
+      }
+    },
+    {
+      "key": "bsl2026-contacts",
+      "eventId": "colombia2026",
+      "name": "BSL Colombia 2026 · contacts",
+      "scheduledAt": "2026-11-02T09:00:00-05:00",
+      "timeZone": "America/Bogota",
+      "audience": "registered_opt_in",
+      "status": "draft",
+      "requirements": [
+        "product_verified",
+        "assets_published"
+      ],
+      "content": {
+        "es": {
+          "subject": "Que la conexión dure más que el evento",
+          "preheader": "Intereses en común. Nuevas posibilidades.",
+          "heading": "Intereses en común. Nuevas posibilidades.",
+          "message": "En Contactos, crea tu tarjeta y elige hasta cinco temas que te interesen. Comparte tu QR o enlace con otra persona y acepta las conexiones que quieras mantener.\n\nUsa la red y el directorio para encontrar a tus contactos por nombre, empresa o tema. El crecimiento y los niveles de Network XP muestran conexiones mutuas; no son saldo de billetera ni distribución de $LKS.",
+          "actionUrl": "https://hashpass.tech/contacts?utm_source=hashpass&utm_medium=email&utm_campaign=bsl2026-contacts",
+          "actionLabel": "Construir mi red",
+          "imageUrl": "https://hashpass.tech/campaigns/bsl-2026/contacts-poster.png",
+          "imageAlt": "Intereses en común. Nuevas posibilidades.",
+          "guideUrl": "https://hashpass.tech/campaigns/bsl-2026/#contacts"
+        },
+        "en": {
+          "subject": "Make the connection last beyond the event",
+          "preheader": "Shared interests. New possibilities.",
+          "heading": "Shared interests. New possibilities.",
+          "message": "In Contacts, create your card and choose up to five interests. Share your QR or link with someone and accept the connections you want to keep.\n\nUse the network and directory to find connections by name, company or topic. Network XP and levels reflect mutual connections; they are not wallet balances or a $LKS distribution.",
+          "actionUrl": "https://hashpass.tech/contacts?utm_source=hashpass&utm_medium=email&utm_campaign=bsl2026-contacts",
+          "actionLabel": "Build my network",
+          "imageUrl": "https://hashpass.tech/campaigns/bsl-2026/contacts-poster.png",
+          "imageAlt": "Shared interests. New possibilities.",
+          "guideUrl": "https://hashpass.tech/campaigns/bsl-2026/#contacts"
+        }
+      },
+      "asset": {
+        "video": "/campaigns/bsl-2026/contacts.mp4",
+        "poster": "/campaigns/bsl-2026/contacts-poster.png"
+      }
+    },
+    {
+      "key": "bsl2026-activity",
+      "eventId": "colombia2026",
+      "name": "BSL Colombia 2026 · activity",
+      "scheduledAt": "2026-11-03T09:00:00-05:00",
+      "timeZone": "America/Bogota",
+      "audience": "registered_opt_in",
+      "status": "draft",
+      "requirements": [
+        "product_verified",
+        "assets_published",
+        "reward_terms_verified"
+      ],
+      "content": {
+        "es": {
+          "subject": "Tu actividad también cuenta: conoce el registro de prueba de $LKS",
+          "preheader": "Tu participación deja una huella.",
+          "heading": "Tu participación deja una huella.",
+          "message": "El programa previsto para usuarios HASHPASS registrará interacciones como actividad para un sistema de niveles y puntos de bonificación de un futuro airdrop exclusivo de $LKS en el TGE.\n\nLos niveles, la elegibilidad final, el cálculo de asignaciones y los plazos se anunciarán por los canales oficiales. El registro y las instantáneas de prueba no constituyen una distribución de tokens ni garantizan una asignación. No necesitas comprar tokens ni compartir tu frase de recuperación para preparar tu participación.",
+          "actionUrl": "https://hashpass.tech/demo?utm_source=hashpass&utm_medium=email&utm_campaign=bsl2026-activity",
+          "actionLabel": "Ver las guías oficiales",
+          "imageUrl": "https://hashpass.tech/campaigns/bsl-2026/activity-poster.png",
+          "imageAlt": "Tu participación deja una huella.",
+          "guideUrl": "https://hashpass.tech/campaigns/bsl-2026/#activity"
+        },
+        "en": {
+          "subject": "Your activity counts: understand the $LKS testnet record",
+          "preheader": "Your participation leaves a record.",
+          "heading": "Your participation leaves a record.",
+          "message": "The planned HASHPASS-user programme records interactions as activity for tiers and bonus points toward a future user-exclusive $LKS airdrop at TGE.\n\nTier definitions, final eligibility, allocation calculations and timing will be announced through official channels. Test records and prepared snapshots are not token distributions and do not guarantee an allocation. You do not need to buy tokens or share a recovery phrase to prepare your participation.",
+          "actionUrl": "https://hashpass.tech/demo?utm_source=hashpass&utm_medium=email&utm_campaign=bsl2026-activity",
+          "actionLabel": "View the official guides",
+          "imageUrl": "https://hashpass.tech/campaigns/bsl-2026/activity-poster.png",
+          "imageAlt": "Your participation leaves a record.",
+          "guideUrl": "https://hashpass.tech/campaigns/bsl-2026/#activity"
+        }
+      },
+      "asset": {
+        "video": "/campaigns/bsl-2026/activity.mp4",
+        "poster": "/campaigns/bsl-2026/activity-poster.png"
+      }
+    },
+    {
+      "key": "bsl2026-arrival",
+      "eventId": "colombia2026",
+      "name": "BSL Colombia 2026 · arrival",
+      "scheduledAt": "2026-11-04T07:00:00-05:00",
+      "timeZone": "America/Bogota",
+      "audience": "registered_opt_in",
+      "status": "draft",
+      "requirements": [
+        "product_verified",
+        "assets_published"
+      ],
+      "content": {
+        "es": {
+          "subject": "Hoy empieza BSL Colombia: lleva tu agenda contigo",
+          "preheader": "Nos vemos en Bogotá.",
+          "heading": "Nos vemos en Bogotá.",
+          "message": "BSL Colombia 2026 empieza hoy, 4 de noviembre, y continúa hasta el 6 de noviembre en Bogotá. El catálogo indica los edificios H e I de la Universidad Externado de Colombia, La Candelaria; comprueba los avisos del organizador antes de desplazarte.\n\nRevisa tu pase, tu agenda y las reuniones aceptadas. Lleva tu tarjeta de contacto lista y abre HASHPASS antes de llegar. Si cambia una sesión o un horario, confirma la última información en la app.",
+          "actionUrl": "https://hashpass.tech/events/colombia2026?utm_source=hashpass&utm_medium=email&utm_campaign=bsl2026-arrival",
+          "actionLabel": "Abrir mi experiencia BSL",
+          "imageUrl": "https://hashpass.tech/campaigns/bsl-2026/teaser-poster.png",
+          "imageAlt": "Nos vemos en Bogotá.",
+          "guideUrl": "https://hashpass.tech/campaigns/bsl-2026/#teaser"
+        },
+        "en": {
+          "subject": "BSL Colombia starts today: bring your agenda",
+          "preheader": "See you in Bogotá.",
+          "heading": "See you in Bogotá.",
+          "message": "BSL Colombia 2026 starts today, November 4, and continues through November 6 in Bogotá. The event catalogue lists buildings H and I at Universidad Externado de Colombia, La Candelaria; check organiser notices before travelling.\n\nCheck your pass, agenda and accepted meetings. Keep your contact card ready and open HASHPASS before arrival. Confirm the latest session and meeting times in the app.",
+          "actionUrl": "https://hashpass.tech/events/colombia2026?utm_source=hashpass&utm_medium=email&utm_campaign=bsl2026-arrival",
+          "actionLabel": "Open my BSL experience",
+          "imageUrl": "https://hashpass.tech/campaigns/bsl-2026/teaser-poster.png",
+          "imageAlt": "See you in Bogotá.",
+          "guideUrl": "https://hashpass.tech/campaigns/bsl-2026/#teaser"
+        }
+      },
+      "asset": {
+        "video": "/campaigns/bsl-2026/teaser.mp4",
+        "poster": "/campaigns/bsl-2026/teaser-poster.png"
+      }
+    }
+  ]
+}

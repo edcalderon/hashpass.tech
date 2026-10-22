@@ -8,6 +8,7 @@ import { getEmailAssetUrl } from './s3-service';
 import { supabaseServer } from './supabase-server';
 import type { HealthCheck } from './server/system-health';
 import type { SecondarySender } from '../types/email.types';
+import type { MarketingMail } from '../types/marketing';
 import { getEventEmailBranding } from './email-event-branding';
 
 // Load .env.local before reading NODEMAILER_* vars — Metro/Expo may not inject
@@ -286,6 +287,30 @@ async function resolveUpdatesSender() {
   return sender.transporter
     ? { transporter: sender.transporter, from: sender.from }
     : { transporter, from: smtpFrom };
+}
+
+export async function marketingSenderReady(): Promise<boolean> {
+  return !!(await resolveUpdatesSender()).transporter;
+}
+
+/** SMTP acceptance is not an inbox-delivery confirmation. Do not retry an ambiguous send automatically. */
+export async function sendMarketingMessage(details: MarketingMail) {
+  const sender = await resolveUpdatesSender();
+  if (!sender.transporter) return { status: 'failed' as const, errorCode: 'sender_not_configured' };
+  try {
+    const result = await sender.transporter.sendMail({
+      from: `HASHPASS <${sender.from}>`, to: details.to, subject: details.subject,
+      html: details.html, text: details.text,
+      messageId: `<marketing-${details.deliveryId}@hashpass.tech>`,
+      headers: { 'List-Unsubscribe': `<${details.unsubscribeUrl}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' },
+    });
+    if (Array.isArray(result.rejected) && result.rejected.length) return { status: 'failed' as const, errorCode: 'recipient_rejected' };
+    if (!Array.isArray(result.accepted) || !result.accepted.some((address: string | { address?: string }) => (typeof address === 'string' ? address : address.address || '').toLowerCase() === details.to.toLowerCase())) return { status: 'unknown' as const, errorCode: 'provider_acceptance_unconfirmed' };
+    return { status: 'accepted' as const, messageId: String(result.messageId || `<marketing-${details.deliveryId}@hashpass.tech>`) };
+  } catch (error: unknown) {
+    const code = Number((error as { responseCode?: number }).responseCode);
+    return code >= 400 && code < 600 ? { status: 'failed' as const, errorCode: 'smtp_rejected' } : { status: 'unknown' as const, errorCode: 'transport_outcome_uncertain' };
+  }
 }
 
 function getEmailContent(type: 'subscriptionConfirmation' | 'welcome' | 'userOnboarding' | 'speakerOnboarding' | 'troubleshooting', locale: string = DEFAULT_LOCALE) {
