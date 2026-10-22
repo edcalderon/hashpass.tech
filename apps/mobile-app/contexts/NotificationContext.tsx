@@ -97,6 +97,9 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   // so the Realtime subscription effect (which reads it in its deps) actually
   // re-runs and tears the channel down -- a ref alone wouldn't trigger that.
   const [backendDegraded, setBackendDegraded] = useState(false);
+  // Bumped on every Realtime subscription the effect opens, so each one gets a
+  // unique channel topic (see the effect for why that matters).
+  const subscriptionEpochRef = useRef(0);
 
   const unreadCount = notifications.filter(n => !n.is_read && !n.is_archived).length;
 
@@ -361,8 +364,16 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     // meantime; this effect re-runs once backendDegraded clears.
     if (!user || !resolvedUserId || backendDegraded) return;
 
+    // Unique topic per subscription instance. A stable per-user topic collides
+    // on the Realtime server whenever two subscriptions for the same user race
+    // (StrictMode double-mount, a stale tab on an older bundle, or the
+    // degraded-state teardown racing a rebuild) and any binding difference is
+    // rejected as "mismatch between server and client bindings for postgres
+    // changes". A per-instance suffix keeps every join on its own topic, so
+    // teardown below is still the only thing that retires a channel.
+    subscriptionEpochRef.current += 1;
     const channel = supabase
-      .channel(`notifications:${resolvedUserId}`)
+      .channel(`notifications:${resolvedUserId}:${subscriptionEpochRef.current}`)
       .on(
         'postgres_changes',
         {
