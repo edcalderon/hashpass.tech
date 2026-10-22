@@ -1521,6 +1521,16 @@
       }
     },
     "speakerView": {
+      "status": {
+        "title": "연사 상태",
+        "close": "닫기",
+        "explainA11y": "{status} 상태. 탭하면 의미를 확인할 수 있습니다",
+        "active": { "label": "확인됨", "description": "연사가 계정을 확인했으며 미팅 요청을 받고 있습니다." },
+        "idle": { "label": "대기 중", "description": "연사가 아직 계정을 등록하지 않았지만 미팅 요청은 받을 수 있습니다. 요청은 제한된 시간 동안 유지되며 연사가 계정을 등록하지 않으면 만료됩니다." },
+        "dnd": { "label": "방해 금지", "description": "방해 금지 모드를 켠 확인된 연사입니다. 요청은 보낼 수 있지만 보관함으로 이동하며 연사에게 바로 표시되지 않습니다. 휴대폰의 무음 알림과 같습니다." },
+        "inactive": { "label": "비활성", "description": "이 연사 프로필은 꺼져 있어 미팅 요청을 받지 않습니다." },
+        "past": { "label": "지난 행사", "description": "이전 행사에 참여한 연사이며 참고용으로만 표시됩니다." }
+      },
       "connect": "연결",
       "linkedin": "LinkedIn",
       "twitter": "Twitter",

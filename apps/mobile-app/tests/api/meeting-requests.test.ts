@@ -18,6 +18,7 @@ jest.mock("@/lib/email", () => ({
 
 const mockEq = jest.fn();
 const mockIn = jest.fn();
+const mockNeq = jest.fn();
 const mockOrder = jest.fn().mockResolvedValue({ data: [], error: null });
 const mockMaybeSingle = jest.fn().mockResolvedValue({ data: null, error: null });
 const mockMeetingRequestMaybeSingle = jest
@@ -47,6 +48,7 @@ let consoleErrorSpy: jest.SpyInstance;
 
 function createChain(table?: string): {
   eq: (...args: unknown[]) => unknown;
+  neq: (...args: unknown[]) => unknown;
   in: (...args: unknown[]) => unknown;
   order: jest.Mock;
   maybeSingle: jest.Mock;
@@ -54,6 +56,10 @@ function createChain(table?: string): {
   return {
     eq: (...args: unknown[]) => {
       mockEq(...args);
+      return createChain(table);
+    },
+    neq: (...args: unknown[]) => {
+      mockNeq(...args);
       return createChain(table);
     },
     in: (...args: unknown[]) => {
@@ -81,6 +87,7 @@ describe("meeting-requests api", () => {
     mockIsResolveIdentityError.mockReset();
     mockEq.mockReset();
     mockIn.mockReset();
+    mockNeq.mockReset();
     mockOrder.mockReset();
     mockOrder.mockResolvedValue({ data: [], error: null });
     mockMaybeSingle.mockReset();
@@ -280,6 +287,25 @@ describe("meeting-requests api", () => {
 
       expect(response.status).toBe(200);
       expect(mockIn).toHaveBeenCalledWith("speaker_id", ["claudia-sotelo", "auth-uuid-123"]);
+    });
+
+    it("keeps do-not-disturb archived requests out of the speaker's incoming list", async () => {
+      mockResolveNotificationIdentity.mockResolvedValue({
+        supabaseUserId: "auth-uuid-123",
+        registryUserId: "registry-id-123",
+      });
+      mockIsResolveIdentityError.mockReturnValue(false);
+      mockMaybeSingle.mockResolvedValueOnce({
+        data: { id: "claudia-sotelo", user_id: "auth-uuid-123" },
+        error: null,
+      });
+
+      /* eslint-disable @typescript-eslint/no-require-imports */
+      const { GET } = require("../../app/api/events/[eventId]/meetings/requests+api");
+      await GET(new Request("https://api.hashpass.tech/api/events/bsl/meetings/requests"));
+
+      expect(mockNeq).toHaveBeenCalledTimes(1);
+      expect(mockNeq).toHaveBeenCalledWith("status", "archived");
     });
 
     it("applies a status filter to both sent and incoming request lists", async () => {
@@ -512,6 +538,35 @@ describe("meeting-requests api", () => {
       }));
       expect(mockSendMeetingNotificationEmail).toHaveBeenCalledWith(expect.objectContaining({
         recipientUserId: "requester-auth-id", recipientRole: "requester", status: "requested",
+      }));
+    });
+
+    it("archives silently for a do-not-disturb speaker: only the requester is emailed", async () => {
+      mockResolveNotificationIdentity.mockResolvedValue({
+        supabaseUserId: "requester-auth-id",
+        registryUserId: "registry-requester-id",
+      });
+      mockIsResolveIdentityError.mockReturnValue(false);
+      mockRpc.mockResolvedValue({
+        data: { success: true, id: "request-123", speaker_id: "speaker-auth-id", status: "archived" },
+        error: null,
+      });
+      mockMaybeSingle.mockResolvedValueOnce({
+        data: { id: "claudia-sotelo", user_id: "speaker-auth-id" },
+        error: null,
+      });
+
+      /* eslint-disable @typescript-eslint/no-require-imports */
+      const { POST } = require("../../app/api/events/[eventId]/meetings/requests+api");
+      const response = await POST(new Request("https://api.hashpass.tech/api/events/chile2026/meetings/requests", {
+        method: "POST",
+        body: JSON.stringify({ speakerId: "claudia-sotelo", speakerName: "Claudia Sotelo", requesterName: "Ada Lovelace" }),
+      }));
+
+      expect(response.status).toBe(201);
+      expect(mockSendMeetingNotificationEmail).toHaveBeenCalledTimes(1);
+      expect(mockSendMeetingNotificationEmail).toHaveBeenCalledWith(expect.objectContaining({
+        recipientUserId: "requester-auth-id", recipientRole: "requester",
       }));
     });
 

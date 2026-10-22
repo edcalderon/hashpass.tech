@@ -1525,6 +1525,16 @@
       }
     },
     "speakerView": {
+      "status": {
+        "title": "Estado del orador",
+        "close": "Cerrar",
+        "explainA11y": "Estado {status}. Toca para ver qué significa",
+        "active": { "label": "Confirmado", "description": "El orador confirmó su cuenta y está recibiendo solicitudes de reunión." },
+        "idle": { "label": "Inactivo", "description": "El orador aún no ha reclamado su cuenta, pero puede recibir solicitudes de reunión. Las solicitudes permanecen abiertas por un tiempo limitado y vencen si el orador nunca reclama la cuenta." },
+        "dnd": { "label": "No molestar", "description": "Orador confirmado con el modo No molestar activado. Puedes enviar una solicitud, pero se archiva y no se muestra directamente al orador, como las notificaciones silenciadas del teléfono." },
+        "inactive": { "label": "Desactivado", "description": "Este perfil de orador está desactivado y no recibe solicitudes de reunión." },
+        "past": { "label": "Edición anterior", "description": "Este orador participó en una edición anterior y se muestra solo como referencia." }
+      },
       "connect": "Conectar",
       "linkedin": "LinkedIn",
       "twitter": "Twitter",

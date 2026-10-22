@@ -80,7 +80,10 @@ describe('/api/profile/speaker', () => {
         title: speaker.title,
         company: speaker.company,
         imageUrl: speaker.imageurl,
+        eventImageUrl: speaker.imageurl,
+        avatarSource: 'event',
         isActive: true,
+        doNotDisturb: false,
         isAcceptingMeetings: true,
       },
     });
@@ -183,5 +186,103 @@ describe('/api/profile/speaker', () => {
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({ error: 'isActive must be a boolean' });
     expect(mockFrom).not.toHaveBeenCalled();
+  });
+  const patch = async (body: unknown) => {
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    const { PATCH } = require('../../app/api/profile/speaker+api');
+    return PATCH(new Request('https://api.hashpass.tech/api/profile/speaker', {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    }));
+  };
+
+  it('rejects image URLs from hosts the app does not produce', async () => {
+    const response = await patch({ imageUrl: 'https://tracker.example.com/pixel.png' });
+    expect(response.status).toBe(400);
+    expect(mockFrom).not.toHaveBeenCalled();
+  });
+
+  it('rejects an unknown photo source', async () => {
+    const response = await patch({ avatarSource: 'cloud' });
+    expect(response.status).toBe(400);
+    expect(mockFrom).not.toHaveBeenCalled();
+  });
+
+  it('requires an image URL to switch to the personal photo', async () => {
+    const response = await patch({ avatarSource: 'personal' });
+    expect(response.status).toBe(400);
+  });
+
+  it('keeps the event photo when switching to a personal photo', async () => {
+    mockMaybeSingle.mockResolvedValue({ data: speaker, error: null });
+    mockSingle.mockResolvedValue({ data: { ...speaker, avatar_source: 'personal' }, error: null });
+    const response = await patch({ imageUrl: 'https://lh3.googleusercontent.com/a/me' });
+    expect(response.status).toBe(200);
+    expect(mockUpdate).toHaveBeenCalledWith({
+      imageurl: 'https://lh3.googleusercontent.com/a/me',
+      avatar_source: 'personal',
+      event_imageurl: speaker.imageurl,
+    });
+  });
+
+  it('restores the stored event photo when switching back', async () => {
+    mockMaybeSingle.mockResolvedValue({
+      data: { ...speaker, imageurl: 'https://lh3.googleusercontent.com/a/me', event_imageurl: 'https://cdn.hashpass.tech/event.png', avatar_source: 'personal' },
+      error: null,
+    });
+    mockSingle.mockResolvedValue({ data: speaker, error: null });
+    const response = await patch({ avatarSource: 'event' });
+    expect(response.status).toBe(200);
+    expect(mockUpdate).toHaveBeenCalledWith({
+      avatar_source: 'event',
+      imageurl: 'https://cdn.hashpass.tech/event.png',
+    });
+  });
+
+  it('does not overwrite the saved event photo on later personal-photo updates', async () => {
+    mockMaybeSingle.mockResolvedValue({
+      data: { ...speaker, imageurl: 'https://lh3.googleusercontent.com/a/old', event_imageurl: 'https://cdn.hashpass.tech/event.png', avatar_source: 'personal' },
+      error: null,
+    });
+    mockSingle.mockResolvedValue({ data: speaker, error: null });
+    await patch({ imageUrl: 'https://lh3.googleusercontent.com/a/new' });
+    expect(mockUpdate).toHaveBeenCalledWith({
+      imageurl: 'https://lh3.googleusercontent.com/a/new',
+      avatar_source: 'personal',
+    });
+  });
+
+  it('answers 409 when there is no event photo to switch back to', async () => {
+    mockMaybeSingle.mockResolvedValue({ data: { ...speaker, imageurl: null, event_imageurl: null }, error: null });
+    const response = await patch({ avatarSource: 'event' });
+    expect(response.status).toBe(409);
+  });
+
+  it('toggles do-not-disturb and validates its type', async () => {
+    expect((await patch({ doNotDisturb: 'yes' })).status).toBe(400);
+    mockMaybeSingle.mockResolvedValue({ data: speaker, error: null });
+    mockSingle.mockResolvedValue({ data: { ...speaker, do_not_disturb: true }, error: null });
+    const response = await patch({ doNotDisturb: true });
+    expect(response.status).toBe(200);
+    expect(mockUpdate).toHaveBeenCalledWith({ do_not_disturb: true });
+    await expect(response.json()).resolves.toMatchObject({ data: { doNotDisturb: true } });
+  });
+
+  it('answers 503 while the migration for these columns is not applied', async () => {
+    mockMaybeSingle.mockResolvedValue({ data: speaker, error: null });
+    mockSingle.mockResolvedValue({ data: null, error: { code: '42703', message: 'column does not exist' } });
+    const response = await patch({ doNotDisturb: true });
+    expect(response.status).toBe(503);
+  });
+
+  it('reads the speaker through the legacy columns before the migration', async () => {
+    mockMaybeSingle
+      .mockResolvedValueOnce({ data: null, error: { code: '42703', message: 'missing column' } })
+      .mockResolvedValueOnce({ data: speaker, error: null });
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    const { GET } = require('../../app/api/profile/speaker+api');
+    const response = await GET(new Request('https://api.hashpass.tech/api/profile/speaker'));
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({ data: { id: speaker.id, avatarSource: 'event' } });
   });
 });

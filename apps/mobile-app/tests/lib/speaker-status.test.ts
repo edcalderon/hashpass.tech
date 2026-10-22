@@ -13,7 +13,7 @@ describe('isClaimedActiveSpeaker', () => {
 });
 
 describe('getSpeakerDirectoryState', () => {
-  it('publishes an unclaimed profile as pending and allows meeting requests', () => {
+  it('publishes an unclaimed profile as idle and allows meeting requests', () => {
     expect(getSpeakerDirectoryState({
       directory_visible: true,
       is_active: false,
@@ -24,7 +24,8 @@ describe('getSpeakerDirectoryState', () => {
       isClaimed: false,
       isNetworkingActive: false,
       isAcceptingMeetings: true,
-      status: 'pending',
+      archivesRequests: false,
+      status: 'idle',
     });
   });
 
@@ -39,6 +40,7 @@ describe('getSpeakerDirectoryState', () => {
       isClaimed: true,
       isNetworkingActive: true,
       isAcceptingMeetings: true,
+      archivesRequests: false,
       status: 'active',
     });
   });
@@ -64,5 +66,33 @@ describe('getSpeakerDirectoryState', () => {
       user_id: null,
       is_accepting_meetings: false,
     }).status).toBe('private');
+  });
+
+  it('keeps accepting requests in do-not-disturb mode but archives them', () => {
+    expect(getSpeakerDirectoryState({
+      directory_visible: true,
+      is_active: true,
+      user_id: 'speaker-auth-user',
+      is_accepting_meetings: true,
+      do_not_disturb: true,
+    })).toMatchObject({ status: 'dnd', isAcceptingMeetings: true, archivesRequests: true });
+  });
+
+  it('does not archive when a disabled profile still has the do-not-disturb flag', () => {
+    expect(getSpeakerDirectoryState({
+      directory_visible: true,
+      is_active: false,
+      user_id: 'speaker-auth-user',
+      do_not_disturb: true,
+    })).toMatchObject({ status: 'inactive', archivesRequests: false });
+  });
+
+  it('never applies do-not-disturb to an unclaimed profile', () => {
+    expect(getSpeakerDirectoryState({
+      directory_visible: true,
+      is_active: false,
+      user_id: null,
+      do_not_disturb: true,
+    })).toMatchObject({ status: 'idle', archivesRequests: false });
   });
 });

@@ -1526,6 +1526,16 @@
       }
     },
     "speakerView": {
+      "status": {
+        "title": "Speaker status",
+        "close": "Close",
+        "explainA11y": "{status} status. Tap to learn what it means",
+        "active": { "label": "Confirmed", "description": "The speaker has confirmed their account and is receiving meeting requests." },
+        "idle": { "label": "Idle", "description": "The speaker has not claimed their account yet but can still receive meeting requests. Requests stay open for a limited time and expire if the speaker never claims the account." },
+        "dnd": { "label": "Do not disturb", "description": "A confirmed speaker who turned on do-not-disturb. You can still send a request, but it is archived and not shown directly to the speaker, like silenced phone notifications." },
+        "inactive": { "label": "Inactive", "description": "This speaker profile is switched off and is not receiving meeting requests." },
+        "past": { "label": "Past edition", "description": "This speaker appeared at a previous edition and is shown for reference only." }
+      },
       "connect": "Connect",
       "linkedin": "LinkedIn",
       "twitter": "Twitter",

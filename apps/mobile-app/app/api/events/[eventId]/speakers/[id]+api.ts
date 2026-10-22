@@ -50,7 +50,7 @@ export async function GET(request: Request) {
     ? supabase
         .from("bsl_speakers")
         .select(
-          "id, name, title, company, bio, imageurl, linkedin, twitter, tags, availability, user_id, is_active, is_accepting_meetings, directory_visible",
+          "id, name, title, company, bio, imageurl, linkedin, twitter, tags, availability, user_id, is_active, is_accepting_meetings, directory_visible, do_not_disturb",
         )
         .eq("event_id", legacyEventId)
         .eq("directory_visible", true)
@@ -62,7 +62,19 @@ export async function GET(request: Request) {
         )
         .eq("event_id", eventId)
         .eq("id", speakerId);
-  const { data, error } = await query.maybeSingle();
+  let { data, error } = await query.maybeSingle();
+  if (error?.code === "42703" && usesLegacyBslDirectory) {
+    // do_not_disturb is added by V131; keep the profile readable until it is applied.
+    ({ data, error } = await supabase
+      .from("bsl_speakers")
+      .select(
+        "id, name, title, company, bio, imageurl, linkedin, twitter, tags, availability, user_id, is_active, is_accepting_meetings, directory_visible",
+      )
+      .eq("event_id", legacyEventId)
+      .eq("directory_visible", true)
+      .eq("id", speakerId)
+      .maybeSingle());
+  }
   if (error) {
     console.error("[event-speaker] detail error:", error);
     return Response.json({ error: "Failed to load speaker" }, { status: 500 });

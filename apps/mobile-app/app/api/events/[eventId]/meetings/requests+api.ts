@@ -168,7 +168,10 @@ export async function GET(request: Request) {
         .from("meeting_requests")
         .select("*")
         .in("speaker_id", speakerTargetIds)
-        .eq("event_id", eventId);
+        .eq("event_id", eventId)
+        // Do-not-disturb requests are archived: kept on record for the requester
+        // but never surfaced in the speaker's incoming list.
+        .neq("status", "archived");
       if (status) incomingQuery = incomingQuery.eq("status", status);
       const { data, error } = await incomingQuery.order("created_at", {
         ascending: false,
@@ -245,6 +248,7 @@ export async function POST(request: Request) {
     // for a claimed speaker. Only an auth id is a valid email recipient.
     const targetSpeaker = await speakerForRecordId(supabase, String(body.speakerId));
     const speakerUserId = targetSpeaker?.user_id || null;
+    const archivedForSpeaker = result?.status === "archived";
     const meetingEmailDetails = {
       status: "requested",
       eventId,
@@ -260,7 +264,7 @@ export async function POST(request: Request) {
     } as const;
     // Both people receive a clear transactional record: the speaker gets the
     // action request, while the requester gets confirmation that it was sent.
-    if (speakerUserId) await deliverMeetingEmail({
+    if (speakerUserId && !archivedForSpeaker) await deliverMeetingEmail({
       ...meetingEmailDetails,
       recipientUserId: speakerUserId,
       recipientRole: 'speaker',

@@ -7,6 +7,7 @@ import { Ionicons, MaterialIcons } from '../../../lib/vector-icons';
 import { supabase } from '../../../lib/supabase';
 import { useToastHelpers } from '@contexts/ToastContext';
 import { authService } from '@hashpass/auth';
+import { uiPalette, uiTokens } from '@hashpass/ui/tokens';
 import type { AuthUser } from '@hashpass/auth';
 import { canLoadCurrentAdminAccess, getCurrentAdminAccess, type AdminAccess } from '../../../lib/admin-access';
 import { getProfileRoleLabels } from '../../../lib/profile-roles';
@@ -46,6 +47,9 @@ type SpeakerProfile = {
   title: string | null;
   company: string | null;
   imageUrl: string | null;
+  eventImageUrl?: string | null;
+  avatarSource?: 'event' | 'personal';
+  doNotDisturb?: boolean;
   isActive?: boolean;
   isAcceptingMeetings?: boolean;
 };
@@ -100,6 +104,7 @@ export default function ProfileScreen() {
   const [speakerTitle, setSpeakerTitle] = useState('');
   const [speakerCompany, setSpeakerCompany] = useState('');
   const [speakerIsActive, setSpeakerIsActive] = useState(true);
+  const [speakerDoNotDisturb, setSpeakerDoNotDisturb] = useState(false);
   const [showAttendeeModal, setShowAttendeeModal] = useState(false);
   const [savingAttendee, setSavingAttendee] = useState(false);
   const [attendeeTitle, setAttendeeTitle] = useState('');
@@ -250,7 +255,7 @@ export default function ProfileScreen() {
 
   const getCurrentAvatarUrl = (): string | null => {
     // A claimed speaker profile is the public identity attendees see. Prefer
-    // that photo by default; changing the avatar below updates both records.
+    // the photo it currently shows (event photo or the personal one).
     if (speakerProfile?.imageUrl) return speakerProfile.imageUrl;
 
     // Priority 1: Supabase user_metadata (Google OAuth sets avatar_url / picture here)
@@ -313,6 +318,32 @@ export default function ProfileScreen() {
       } : prev);
     }
   }, [activeUser, speakerProfile, updateLinkedSpeaker]);
+
+  const personalAvatarUrl = resolveAvatarUrl(rawSupabaseUser, activeUser);
+  const eventPhotoUrl = speakerProfile?.eventImageUrl ?? null;
+  const speakerPhotoSource = speakerProfile?.avatarSource ?? 'event';
+
+  // Switch which photo attendees see on the claimed speaker profile.
+  const handleSpeakerPhotoSource = async (source: 'event' | 'personal') => {
+    if (!speakerProfile || source === speakerPhotoSource) return;
+    if (source === 'personal' && !personalAvatarUrl) {
+      showError('No personal photo', 'Upload a personal photo first, then switch to it.');
+      return;
+    }
+    setUpdatingAvatar(true);
+    try {
+      await updateLinkedSpeaker(
+        source === 'personal'
+          ? { avatarSource: 'personal', imageUrl: personalAvatarUrl as string }
+          : { avatarSource: 'event' },
+      );
+      showSuccess('Speaker photo updated', source === 'event' ? 'Attendees now see your event photo.' : 'Attendees now see your personal photo.');
+    } catch (error: any) {
+      showError('Update Failed', error?.message || 'Failed to switch speaker photo');
+    } finally {
+      setUpdatingAvatar(false);
+    }
+  };
 
   const handleAvatarPress = () => {
     setShowAvatarModal(true);
@@ -380,6 +411,7 @@ export default function ProfileScreen() {
     setSpeakerTitle(speakerProfile.title || '');
     setSpeakerCompany(speakerProfile.company || '');
     setSpeakerIsActive(speakerProfile.isActive !== false);
+    setSpeakerDoNotDisturb(speakerProfile.doNotDisturb === true);
     setShowSpeakerModal(true);
   };
 
@@ -396,6 +428,8 @@ export default function ProfileScreen() {
         title: speakerTitle,
         company: speakerCompany,
         isActive: speakerIsActive,
+        // Only sent when changed so a plain info edit never depends on the DND column.
+        ...(speakerDoNotDisturb !== (speakerProfile.doNotDisturb === true) ? { doNotDisturb: speakerDoNotDisturb } : {}),
       });
       setShowSpeakerModal(false);
       showSuccess('Speaker Information Updated', 'Your attendee-facing speaker profile is up to date.');
@@ -731,6 +765,38 @@ export default function ProfileScreen() {
               </TouchableOpacity>
             </View>
 
+            {speakerProfile && (
+              <View style={styles.photoSourceRow} testID="speaker-photo-source">
+                {([
+                  { key: 'event', label: 'Event photo', uri: eventPhotoUrl },
+                  { key: 'personal', label: 'My personal photo', uri: personalAvatarUrl },
+                ] as const).map((option) => {
+                  const selected = speakerPhotoSource === option.key;
+                  return (
+                    <TouchableOpacity
+                      key={option.key}
+                      style={[styles.photoSourceOption, selected && styles.avatarOptionSelected]}
+                      onPress={() => handleSpeakerPhotoSource(option.key)}
+                      disabled={updatingAvatar || selected}
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected }}
+                      accessibilityLabel={`Use ${option.label.toLowerCase()} on speaker profile`}
+                      testID={`speaker-photo-source-${option.key}`}
+                    >
+                      {option.uri ? (
+                        <Image source={{ uri: option.uri }} style={styles.photoSourcePreview} />
+                      ) : (
+                        <View style={[styles.photoSourcePreview, styles.photoSourceEmpty]}>
+                          <MaterialIcons name="person-outline" size={22} color={colors.text?.secondary || '#6B7280'} />
+                        </View>
+                      )}
+                      <Text style={styles.avatarOptionLabel}>{option.label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
+
             <CloudinaryImageUpload
               placeholder="Upload photo"
               onUploadSuccess={handleUploadedAvatar}
@@ -835,6 +901,22 @@ export default function ProfileScreen() {
               autoCapitalize="words"
               accessibilityLabel="Attendee company"
             />
+            <View style={styles.speakerStatusRow}>
+              <View style={styles.speakerStatusCopy}>
+                <Text style={styles.fieldLabel}>Do not disturb</Text>
+                <Text style={styles.speakerStatusDescription}>
+                  {speakerDoNotDisturb
+                    ? 'On — requests are archived quietly instead of reaching you directly.'
+                    : 'Off — meeting requests reach you right away.'}
+                </Text>
+              </View>
+              <Switch
+                value={speakerDoNotDisturb}
+                onValueChange={setSpeakerDoNotDisturb}
+                accessibilityLabel="Do not disturb"
+                trackColor={{ false: '#9CA3AF', true: colors.primary }}
+              />
+            </View>
             <TouchableOpacity
               style={[styles.speakerSaveButton, { backgroundColor: colors.primary }, savingAttendee && styles.actionButtonDisabled]}
               onPress={saveAttendeeProfile}
@@ -1251,6 +1333,10 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
   },
+  photoSourceRow: { flexDirection: 'row', gap: 12, marginBottom: 12 },
+  photoSourceOption: { flex: 1, alignItems: 'center', gap: 6, padding: 8, borderRadius: uiTokens.radius.input, borderWidth: 2, borderColor: 'transparent' },
+  photoSourcePreview: { width: 56, height: 56, borderRadius: uiTokens.radius.circle },
+  photoSourceEmpty: { alignItems: 'center', justifyContent: 'center', backgroundColor: uiPalette('light').surface },
   avatarGrid: {
     padding: 20,
   },
