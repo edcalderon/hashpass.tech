@@ -4,25 +4,16 @@ import { MaterialIcons } from '../lib/vector-icons';
 import { useTranslation } from '../i18n/i18n';
 import { ActionButton, FormField } from '@hashpass/ui/primitives';
 import { uiPalette, uiTokens } from '@hashpass/ui/tokens';
+import type {
+  SpeakerClaimMode,
+  SpeakerClaimModalProps,
+  SpeakerClaimStep,
+  SpeakerClaimSubmission,
+} from '../types/speaker-claim.types';
 
 export const CLAIM_NOTE_MIN_LENGTH = 20;
 export const CLAIM_NOTE_MAX_LENGTH = 1000;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-export type SpeakerClaimMode = 'current_email' | 'other_email';
-export type SpeakerClaimSubmission = { mode: SpeakerClaimMode; email: string; note: string };
-type Step = 'choose' | 'current_email' | 'other_email' | 'sent';
-
-interface SpeakerClaimModalProps {
-  visible: boolean;
-  speakerName: string;
-  /** Email of the signed-in account. */
-  currentEmail?: string | null;
-  isDark?: boolean;
-  /** Resolves when the claim was accepted; throws a readable error otherwise. */
-  onSubmit: (submission: SpeakerClaimSubmission) => Promise<void>;
-  onClose: () => void;
-}
 
 /** Guided "is this your speaker profile?" claim flow. */
 export default function SpeakerClaimModal({
@@ -36,7 +27,7 @@ export default function SpeakerClaimModal({
   const { t } = useTranslation('networking');
   const palette = uiPalette(isDark ? 'dark' : 'light');
   const mode = isDark ? 'dark' : 'light';
-  const [step, setStep] = useState<Step>('choose');
+  const [step, setStep] = useState<SpeakerClaimStep>('choose');
   const [email, setEmail] = useState('');
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
@@ -78,7 +69,7 @@ export default function SpeakerClaimModal({
     }
   };
 
-  const option = (key: Step, icon: string, title: string, body: string) => (
+  const option = (key: SpeakerClaimStep, icon: string, title: string, body: string) => (
     <TouchableOpacity
       key={key}
       accessibilityRole="button"

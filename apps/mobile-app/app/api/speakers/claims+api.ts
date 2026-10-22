@@ -6,6 +6,7 @@ import {
 } from '@/lib/server/resolve-notification-identity';
 import { getEventSupabaseProfileId } from '@/lib/server/event-supabase-profile';
 import { normalizeMagicLinkRedirect } from '@/lib/auth/magic-link-request';
+import type { SpeakerClaimResult } from '@/types/speaker-claim.types';
 import { sendAuthenticationMagicLink, sendCriticalNotificationEmail } from '@/lib/email';
 
 const SPEAKER_ID_PATTERN = /^[a-z0-9][a-z0-9-]{0,127}$/i;
@@ -41,22 +42,12 @@ function mapClaimError(error: { code?: string; message?: string }) {
 const isMissingFunction = (error: { code?: string } | null | undefined) =>
   error?.code === 'PGRST202' || error?.code === '42883';
 
-type ClaimResult = {
-  claim_id?: string;
-  speaker_name?: string;
-  claim_email?: string | null;
-  request_note?: string | null;
-  verification_status?: string;
-  created?: boolean;
-  reviewer_ids?: string[];
-};
-
 /**
  * Emails every reviewer who was just notified in-app. The in-app notification
  * is already persisted by the database; email is the escalation so an event
  * administrator does not have to be looking at the dashboard.
  */
-async function emailReviewers(eventId: string, claim: ClaimResult, claimantEmail: string | null) {
+async function emailReviewers(eventId: string, claim: SpeakerClaimResult, claimantEmail: string | null) {
   const reviewers = Array.isArray(claim.reviewer_ids) ? claim.reviewer_ids : [];
   if (!claim.created || reviewers.length === 0) return;
 
@@ -167,7 +158,7 @@ export async function POST(request: Request) {
       return Response.json({ error: mapped.message }, { status: mapped.status });
     }
 
-    const claim = data as ClaimResult;
+    const claim = data as SpeakerClaimResult;
     if (claim.verification_status === 'pending') {
       // Always send: a repeat submit is the user asking for a fresh link.
       const sent = await sendVerificationLink(
@@ -197,7 +188,7 @@ export async function POST(request: Request) {
     return Response.json({ error: mapped.message }, { status: mapped.status });
   }
 
-  await emailReviewers(eventId, data as ClaimResult, null);
+  await emailReviewers(eventId, data as SpeakerClaimResult, null);
   return Response.json({ data });
 }
 
@@ -230,6 +221,6 @@ export async function PATCH(request: Request) {
     return Response.json({ error: mapped.message }, { status: mapped.status });
   }
 
-  await emailReviewers(eventId, data as ClaimResult, null);
+  await emailReviewers(eventId, data as SpeakerClaimResult, null);
   return Response.json({ data });
 }
