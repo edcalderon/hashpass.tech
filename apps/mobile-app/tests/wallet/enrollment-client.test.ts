@@ -4,7 +4,7 @@ const mockParse = jest.fn();
 jest.mock('../../lib/api-client', () => ({ apiClient: { get: (...args: unknown[]) => mockGet(...args), post: (...args: unknown[]) => mockPost(...args) } }));
 // The package manifest suite covers the real address codecs.
 jest.mock('@hashpass/wallet/manifest', () => ({ parsePublicWallet: (...args: unknown[]) => mockParse(...args) }));
-import { walletEnrollmentClient as client } from '../../lib/wallet/enrollment-client';
+import { createWalletEnrollmentClient, walletEnrollmentClient as client } from '../../lib/wallet/enrollment-client';
 const walletId = '00000000-0000-4000-8000-000000000001';
 const operationId = '00000000-0000-4000-8000-000000000002';
 const row = { scope: { ownerId: '00000000-0000-4000-8000-000000000003', walletId, environment: 'development' }, state: 'enrolled', setupEnabled: true, wallet: null };
@@ -45,4 +45,33 @@ it('validates both outbound and returned public manifests during registration', 
   mockPost.mockClear();
   await expect(client.register(walletId, operationId, {} as any)).rejects.toThrow('invalid_public_wallet');
   expect(mockPost).not.toHaveBeenCalled();
+});
+
+describe('step-up proof', () => {
+  const reserved = { ...row, state: 'provisioning', operationId, network: 'testnet' };
+  it('is sent as a header on reserve only, and read fresh for each call', async () => {
+    let proof: string | null = 'proof.one';
+    const stepUp = createWalletEnrollmentClient(() => proof);
+    mockPost.mockResolvedValue({ success: true, data: reserved });
+    mockGet.mockResolvedValue({ success: true, data: row });
+    await stepUp.load();
+    await stepUp.reserve(walletId, operationId);
+    proof = 'proof.two';
+    await stepUp.reserve(walletId, operationId);
+    expect(mockGet).toHaveBeenCalledWith('/wallet/enrollment', { skipEventSegment: true, retries: 0 });
+    expect(mockPost.mock.calls[0][2]).toEqual({ skipEventSegment: true, retries: 0, headers: { 'X-Hashpass-Step-Up': 'proof.one' } });
+    expect(mockPost.mock.calls[1][2].headers['X-Hashpass-Step-Up']).toBe('proof.two');
+    mockPost.mockClear();
+    mockParse.mockImplementation(value => value);
+    mockPost.mockResolvedValue({ success: true, data: { ...reserved, state: 'registered', wallet: { network: 'testnet' } } });
+    await stepUp.register(walletId, operationId, { network: 'testnet' } as any);
+    expect(mockPost.mock.calls[0][2]).toEqual({ skipEventSegment: true, retries: 0 });
+  });
+
+  it('maps a refusal to a distinct error the screen can answer with the PIN pad', async () => {
+    const stepUp = createWalletEnrollmentClient(() => null);
+    mockPost.mockResolvedValue({ success: false, status: 403 });
+    await expect(stepUp.reserve(walletId, operationId)).rejects.toThrow('wallet_step_up_required');
+    expect(mockPost.mock.calls[0][2]).toEqual({ skipEventSegment: true, retries: 0 });
+  });
 });

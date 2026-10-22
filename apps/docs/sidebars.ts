@@ -27,6 +27,7 @@ const sidebars = {
         'auth/SIGN_IN_WITH_APPLE',
         'auth/AUTH_STRUCTURE',
         'auth/USER_REGISTRY',
+        'auth/SECOND_FACTOR_PIN',
       ],
     },
     {

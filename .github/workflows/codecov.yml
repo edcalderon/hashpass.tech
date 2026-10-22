@@ -61,6 +61,9 @@ jobs:
       - name: Run wallet database boundary tests
         run: pnpm --filter @hashpass/wallet test:db
 
+      - name: Run setup and PIN database tests
+        run: bash db/tests/run-user-setup-pin.sh
+
       - name: Run backend tests
         run: pnpm --filter @hashpass/backend run test
 

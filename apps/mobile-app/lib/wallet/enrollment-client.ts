@@ -1,6 +1,7 @@
 import { parsePublicWallet } from '@hashpass/wallet/manifest';
 import type { EnrollmentTransport, WalletEnrollment } from '@hashpass/wallet';
 import { apiClient } from '../api-client';
+import { STEP_UP_HEADER } from '../step-up-session';
 
 function enrollment(value: unknown): WalletEnrollment {
   const row = value as WalletEnrollment;
@@ -15,20 +16,31 @@ function enrollment(value: unknown): WalletEnrollment {
   return { ...row, wallet: row.state === 'registered' ? parsePublicWallet(row.wallet) : null };
 }
 
-export const walletEnrollmentClient: EnrollmentTransport = {
+const failure = (status?: number) => new Error(
+  status === 409 ? 'wallet_setup_conflict' : status === 403 ? 'wallet_step_up_required' : 'wallet_metadata_unavailable');
+
+/**
+ * `stepUpProof` supplies the short-lived `wallet:sign` proof from the PIN pad. Only the
+ * reservation (the moment a wallet is created) carries it; reading metadata does not.
+ */
+export const createWalletEnrollmentClient = (stepUpProof: () => string | null = () => null): EnrollmentTransport => ({
   async load() {
     const result = await apiClient.get('/wallet/enrollment', { skipEventSegment: true, retries: 0 });
     if (!result.success) throw new Error('wallet_metadata_unavailable');
     return enrollment(result.data);
   },
   async reserve(walletId, operationId) {
-    const result = await apiClient.post('/wallet/enrollment', { action: 'reserve', walletId, operationId }, { skipEventSegment: true, retries: 0 });
-    if (!result.success) throw new Error(result.status === 409 ? 'wallet_setup_conflict' : 'wallet_metadata_unavailable');
+    const proof = stepUpProof();
+    const result = await apiClient.post('/wallet/enrollment', { action: 'reserve', walletId, operationId },
+      { skipEventSegment: true, retries: 0, ...(proof ? { headers: { [STEP_UP_HEADER]: proof } } : {}) });
+    if (!result.success) throw failure(result.status);
     return enrollment(result.data);
   },
   async register(walletId, operationId, wallet) {
     const result = await apiClient.post('/wallet/enrollment', { action: 'register', walletId, operationId, wallet: parsePublicWallet(wallet) }, { skipEventSegment: true, retries: 0 });
-    if (!result.success) throw new Error(result.status === 409 ? 'wallet_setup_conflict' : 'wallet_metadata_unavailable');
+    if (!result.success) throw failure(result.status);
     return enrollment(result.data);
   },
-};
+});
+
+export const walletEnrollmentClient: EnrollmentTransport = createWalletEnrollmentClient();

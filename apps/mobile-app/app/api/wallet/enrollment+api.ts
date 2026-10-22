@@ -2,6 +2,8 @@ import { getSupabaseServerForRequest, getSupabaseServerEnv } from '../../../lib/
 import { resolveNotificationIdentity, isResolveIdentityError } from '../../../lib/server/resolve-notification-identity';
 import { parsePublicWallet } from '@hashpass/wallet/manifest';
 import type { WalletEnrollment } from '../../../lib/wallet/enrollment-types';
+import { verifyStepUpProof } from '../../../lib/server/pin-auth';
+import { STEP_UP_HEADER } from '../../../lib/step-up-session';
 
 const FIELDS = 'id,user_id,state,operation_id,network,ethereum_address,bitcoin_address,solana_address';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -89,6 +91,11 @@ export async function POST(request: Request): Promise<Response> {
     if (!owned.data || owned.data.id !== body.walletId) return failure('wallet_identity_changed', 409);
     let result;
     if (body.action === 'reserve' && keys === 'action,operationId,walletId') {
+      // Creating a wallet is the moment a person gets a second factor: it needs a fresh PIN proof.
+      // A missing pepper throws here and fails closed through the outer catch (503), never open.
+      if (!verifyStepUpProof(request.headers.get(STEP_UP_HEADER), { userId: auth.ownerId, scope: 'wallet:sign' })) {
+        return failure('step_up_required', 403);
+      }
       result = await db.rpc('reserve_user_wallet', { p_user_id: auth.ownerId, p_operation_id: body.operationId, p_network: 'testnet' });
     } else if (body.action === 'register' && keys === 'action,operationId,wallet,walletId') {
       let wallet;

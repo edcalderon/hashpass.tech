@@ -1,5 +1,6 @@
 import { AuthQrClient } from "./auth-qr/client.js";
 import { HashpassAuth, MemorySessionStore } from "./auth/client.js";
+import { MemoryStepUpProofStore, StepUpClient } from "./auth/step-up.js";
 import { HashpassError } from "./errors.js";
 import { QrLinksClient } from "./qr-links/client.js";
 import { SupportClient } from "./support/client.js";
@@ -15,6 +16,8 @@ const ENVIRONMENT_URLS: Record<HashpassEnvironment, string> = {
 export class HashpassClient {
   readonly support: SupportClient;
   readonly auth: HashpassAuth;
+  /** Second factor (4-digit PIN) and the short-lived proofs that gate sensitive actions such as signing. */
+  readonly stepUp: StepUpClient;
   /** "HashPass Auth": passwordless QR login, backed by a separate service -- see linksApiBaseUrl. */
   readonly authQr: AuthQrClient;
   /** "HashPass Links": custom/trackable QR link creation and management, backed by the same service as authQr -- see linksApiBaseUrl. */
@@ -70,6 +73,10 @@ export class HashpassClient {
       supportTransport,
       supportAuth,
       identityTransport,
+    );
+    this.stepUp = new StepUpClient(
+      identityTransport,
+      options.stepUpStore ?? new MemoryStepUpProofStore(),
     );
     this.authQr = new AuthQrClient({
       baseUrl: options.linksApiBaseUrl,

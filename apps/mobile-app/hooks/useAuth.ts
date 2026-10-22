@@ -19,6 +19,7 @@ import { resolvePublicSupabaseConfig } from '../config/supabase-profiles';
 import { markRecentAuthSuccess, clearRecentAuthSuccess } from '../lib/auth/recent-auth';
 import { isBetterAuthSocialCallback } from '../lib/auth/passwordless-callback';
 import { withTimeout } from '../lib/with-timeout';
+import { forgetProofs } from '../lib/step-up-session';
 import {
   createAuthSessionActor,
   getAuthViewState,
@@ -989,6 +990,8 @@ export const useAuth = () => {
 
   const signOut = useCallback(async ({ waitForRemoteCleanup = true }: SignOutOptions = {}) => {
     authenticatedSessionOverrideRef.current = null;
+    // Second-factor proofs are memory-only and must never outlive the session they unlocked.
+    forgetProofs();
     // Must run before the provider sign-outs below, not after: the root and
     // dashboard auth guards treat `isLoggedIn === false` as a possibly-transient
     // provider flap for AUTH_REDIRECT_GRACE_WINDOW_MS after a login, and in that

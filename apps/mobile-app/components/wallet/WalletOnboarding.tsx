@@ -3,11 +3,13 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { WalletProvisioning, createRecoveryChallenge, importRecoveryBackup, type LocalWallet, type RecoveryChallenge, type WalletEnrollment } from '@hashpass/wallet';
 import { createDeviceWallet, walletOperationId, walletRandom } from '../../lib/wallet/device-wallet';
-import { walletEnrollmentClient } from '../../lib/wallet/enrollment-client';
+import { createWalletEnrollmentClient } from '../../lib/wallet/enrollment-client';
 import { bindWalletLifecycle } from '../../lib/wallet/lifecycle';
 import { pickRecoveryFile, protectRecoveryScreen, saveRecoveryFile } from '../../lib/wallet/recovery-files';
+import { usePin } from '../../hooks/usePin';
 import { useTheme } from '../../hooks/useTheme';
 import { useTranslation } from '../../i18n/i18n';
+import PinFlow from '../security/PinFlow';
 
 /** Rollout remains development/testnet only. Backup proof grants no signing capability. */
 export default function WalletOnboarding({ enrollment }: { enrollment: WalletEnrollment }) {
@@ -16,8 +18,14 @@ export default function WalletOnboarding({ enrollment }: { enrollment: WalletEnr
 }
 
 function Setup({ initial }: { initial: WalletEnrollment }) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { t } = useTranslation('wallet');
+  // The wallet is created only after a PIN proof for this owner: the server checks it too.
+  const pin = usePin(initial.scope.ownerId);
+  const pinRef = useRef(pin);
+  pinRef.current = pin;
+  const [askingPin, setAskingPin] = useState(false);
+  const [createAfterPin, setCreateAfterPin] = useState(false);
   const label = (key: string, fallback: string) => t(`setup.${key}`, fallback);
   const [row, setRow] = useState(initial);
   const [exists, setExists] = useState<boolean | null>(null);
@@ -54,7 +62,7 @@ function Setup({ initial }: { initial: WalletEnrollment }) {
     try {
       const deviceWallet: LocalWallet = createDeviceWallet(initial.scope);
       local.current = deviceWallet;
-      provision.current = new WalletProvisioning(initial, deviceWallet, walletEnrollmentClient, walletOperationId);
+      provision.current = new WalletProvisioning(initial, deviceWallet, createWalletEnrollmentClient(() => pinRef.current.proofFor('wallet:sign')), walletOperationId);
       cleanupLifecycle = bindWalletLifecycle({ lock: clear });
       void (async () => {
         const release = await protectRecoveryScreen();
@@ -88,6 +96,21 @@ function Setup({ initial }: { initial: WalletEnrollment }) {
     <Text style={{ color: colors.primary, fontWeight: '600' }}>{label(key, fallback)}</Text>
   </Pressable>;
   const text = (key: string, fallback: string) => <Text style={{ color: colors.text.secondary, lineHeight: 22 }}>{label(key, fallback)}</Text>;
+  const createWallet = () => run(async current => {
+    try {
+      const registered = await provision.current!.provision(password);
+      if (current()) { setRow(registered); setExists(true); }
+    } catch (failure) {
+      // The server refused the proof (expired or revoked): ask again instead of looping on an error.
+      if (failure instanceof Error && failure.message === 'wallet_step_up_required') pinRef.current.lock('wallet:sign');
+      throw failure;
+    }
+  });
+  useEffect(() => {
+    if (!createAfterPin) return;
+    setCreateAfterPin(false);
+    createWallet();
+  });
   const recovery = row.state === 'registered' && exists === false;
   return <View style={styles.stack} {...(Platform.OS === 'web' ? { className: 'sentry-block' } : {})}>
     {text('title', 'Device setup · test networks only')}
@@ -98,13 +121,14 @@ function Setup({ initial }: { initial: WalletEnrollment }) {
       {text('passwordHelp', 'Use a separate wallet password: at least 16 characters and 8 distinct characters. HASHPASS cannot reset it or recover your phrase.')}
       {field('password', 'Wallet password', password, setPassword)}
       {(!exists) && field('confirm', 'Confirm wallet password', confirm, setConfirm)}
-      {row.state !== 'registered' && button(exists || row.state === 'provisioning' ? 'resume' : 'create', exists || row.state === 'provisioning' ? 'Resume wallet setup' : 'Create testnet wallet', () => {
+      {row.state !== 'registered' && !askingPin && button(exists || row.state === 'provisioning' ? 'resume' : 'create', exists || row.state === 'provisioning' ? 'Resume wallet setup' : 'Create testnet wallet', () => {
         if (!exists && password !== confirm) { setError(true); return; }
-        run(async current => {
-          const registered = await provision.current!.provision(password);
-          if (current()) { setRow(registered); setExists(true); }
-        });
+        // Creating a wallet needs the second factor; unlocking an existing one does not.
+        if (!exists && !pin.isUnlocked('wallet:sign')) { setAskingPin(true); return; }
+        createWallet();
       })}
+      {askingPin && <PinFlow mode={isDark ? 'dark' : 'light'} pin={pin} scope="wallet:sign" intent="unlock"
+        onDone={() => { setAskingPin(false); setCreateAfterPin(true); }} onCancel={() => setAskingPin(false)} />}
       {recovery && text('restoreTitle', 'Restore from encrypted backup')}
       {row.state === 'registered' && <>
         {exists && <>
