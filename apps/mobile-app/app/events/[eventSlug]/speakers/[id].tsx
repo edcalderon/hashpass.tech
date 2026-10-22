@@ -12,11 +12,13 @@ import { resolveActiveEventId } from '@/lib/event-path';
 import SpeakerAvatar from '../../../../components/SpeakerAvatar';
 import PassesDisplay from '../../../../components/PassesDisplay';
 import { getSpeakerAvatarUrl, getSpeakerLinkedInUrl, getSpeakerTwitterUrl } from '../../../../lib/string-utils';
+import SpeakerClaimModal, { type SpeakerClaimSubmission } from '../../../../components/SpeakerClaimModal';
+import { buildClaimVerificationRedirect, speakerClaimReturnPath } from '../../../../lib/speaker-claim-redirect';
 import SpeakerStatusBadge, { type SpeakerBadgeStatus } from '../../../../components/SpeakerStatusBadge';
 import { getSpeakerDirectoryState, isClaimedActiveSpeaker } from '../../../../lib/speaker-status';
 import LoadingScreen from '../../../../components/LoadingScreen';
 import { CopilotStep, walkthroughable } from '@lib/copilot-shim';
-import { useTranslation } from '../../../../i18n/i18n';
+import { getCurrentLocale, useTranslation } from '../../../../i18n/i18n';
 import { MaterialIcons } from '../../../../lib/vector-icons';
 import { ActionButton } from '@hashpass/ui/primitives';
 import { uiTokens } from '@hashpass/ui/tokens';
@@ -81,7 +83,7 @@ const requestIdentityFromProfile = (user: any, attendeeProfile: AttendeeProfile 
 // UserTicket interface removed - now using pass system
 
 export default function SpeakerDetail() {
-  const { id, eventSlug } = useLocalSearchParams<{ id: string; eventSlug?: string }>();
+  const { id, eventSlug, claimVerify } = useLocalSearchParams<{ id: string; eventSlug?: string; claimVerify?: string }>();
   const { isDark, colors } = useTheme();
   const { event } = useEvent();
   const eventId = resolveActiveEventId(eventSlug || event?.id);
@@ -100,6 +102,7 @@ export default function SpeakerDetail() {
   const [speaker, setSpeaker] = useState<Speaker | null>(null);
   const [loading, setLoading] = useState(true);
   const [claimStatus, setClaimStatus] = useState<'idle' | 'loading' | 'pending'>('idle');
+  const [claimModalOpen, setClaimModalOpen] = useState(false);
   // userTicket removed - now using pass system
   const [isRequestingMeeting, setIsRequestingMeeting] = useState(false);
   const [showMeetingModal, setShowMeetingModal] = useState(false);
@@ -1031,28 +1034,63 @@ export default function SpeakerDetail() {
     }
   };
 
-  const handleClaimProfile = async () => {
-    if (!speaker || claimStatus === 'loading' || claimStatus === 'pending') return;
+  const handleClaimProfile = () => {
+    if (!speaker || claimStatus === 'pending') return;
     if (!isLoggedIn) {
       router.push('/(shared)/auth' as any);
       return;
     }
+    setClaimModalOpen(true);
+  };
 
+  const submitClaim = async ({ mode, email, note }: SpeakerClaimSubmission) => {
+    if (!speaker) return;
     setClaimStatus('loading');
     try {
+      const body: Record<string, unknown> = { eventId, speakerId: speaker.id, mode, note };
+      if (mode === 'other_email') {
+        body.claimEmail = email;
+        body.locale = getCurrentLocale();
+        body.redirectTo = buildClaimVerificationRedirect(
+          speakerClaimReturnPath(String(eventSlug || eventId), speaker.id),
+        );
+      }
       const response = await apiClient.request(eventApiPath(eventId, 'speakers/claims'), {
         skipEventSegment: true,
         method: 'POST',
-        body: { eventId, speakerId: speaker.id },
+        body,
       });
       if (!response.success) throw new Error(response.error || 'Unable to submit claim');
       setClaimStatus('pending');
-      showSuccess(t('speakerView.claimSubmittedTitle'), t('speakerView.claimSubmittedMessage'));
     } catch (error: any) {
       setClaimStatus('idle');
-      showError(t('speakerView.claimFailedTitle'), error?.message || t('speakerView.claimFailedMessage'));
+      throw error;
     }
   };
+
+  // The verification email returns the speaker here, signed in as the new
+  // account; that sign-in is the proof of inbox ownership.
+  useEffect(() => {
+    if (!speaker || !isLoggedIn || claimVerify !== '1') return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const response = await apiClient.request(eventApiPath(eventId, 'speakers/claims'), {
+          skipEventSegment: true,
+          method: 'PATCH',
+          body: { eventId, speakerId: speaker.id },
+        });
+        if (cancelled) return;
+        if (!response.success) throw new Error(response.error || 'Unable to verify email');
+        setClaimStatus('pending');
+        showSuccess(t('speakerView.claimFlow.verifiedTitle'), t('speakerView.claimFlow.verifiedMessage'));
+      } catch (error: any) {
+        if (!cancelled) showError(t('speakerView.claimFailedTitle'), error?.message || t('speakerView.claimFailedMessage'));
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [speaker?.id, isLoggedIn, claimVerify]);
 
   if (loading || !speaker) {
     return (
@@ -1087,6 +1125,24 @@ export default function SpeakerDetail() {
             showBorder={true}
             isOnline={speaker.isOnline}
           />
+          {directoryState.isPublished && !directoryState.isClaimed && (
+            <View style={styles.claimBadgeSlot} testID="claim-profile">
+              <TouchableOpacity
+                accessibilityRole="button"
+                accessibilityLabel={claimStatus === 'pending' ? t('speakerView.claimPending') : t('speakerView.claimProfile')}
+                accessibilityState={{ disabled: claimStatus !== 'idle', busy: claimStatus === 'loading' }}
+                disabled={claimStatus !== 'idle'}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                onPress={handleClaimProfile}
+                style={[styles.claimBadge, claimStatus !== 'idle' && styles.claimBadgeDisabled]}
+              >
+                <MaterialIcons name={claimStatus === 'pending' ? 'hourglass-top' : 'verified-user'} size={12} color={colors.primary} />
+                <Text style={styles.claimBadgeText} numberOfLines={1}>
+                  {claimStatus === 'pending' ? t('speakerView.claimPendingShort') : t('speakerView.claimProfileShort')}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
           {/* Floating status badge near avatar */}
           {speaker.isActive !== undefined && (
             <View style={styles.floatingStatusBadge}>
@@ -1101,22 +1157,14 @@ export default function SpeakerDetail() {
           {speaker.company && <Text style={styles.speakerCompany}>{speaker.company}</Text>}
         </View>
 
-        {directoryState.isPublished && !directoryState.isClaimed && (
-          <View style={styles.claimBadgeSlot} testID="claim-profile">
-            <ActionButton
-              mode={isDark ? 'dark' : 'light'}
-              label={claimStatus === 'pending' ? t('speakerView.claimPending') : t('speakerView.claimProfileShort')}
-              labelNumberOfLines={1}
-              accessibilityLabel={claimStatus === 'pending' ? t('speakerView.claimPending') : t('speakerView.claimProfile')}
-              leadingIcon={<MaterialIcons name="verified-user" size={16} color={isDark ? '#ffffff' : colors.primary} />}
-              loading={claimStatus === 'loading'}
-              variant="secondary"
-              style={[styles.claimBadge, claimStatus !== 'idle' && styles.claimBadgeDisabled]}
-              onPress={handleClaimProfile}
-              disabled={claimStatus !== 'idle'}
-            />
-          </View>
-        )}
+      <SpeakerClaimModal
+        visible={claimModalOpen}
+        speakerName={speaker.name}
+        currentEmail={user?.email}
+        isDark={isDark}
+        onSubmit={submitClaim}
+        onClose={() => setClaimModalOpen(false)}
+      />
       </View>
 
       {/* Speaker Dashboard Access - Only for the speaker themselves */}
@@ -2131,16 +2179,26 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   },
   claimBadgeSlot: {
     position: 'absolute',
-    top: uiTokens.space.md,
-    right: uiTokens.space.md,
-    maxWidth: '45%',
+    top: -uiTokens.space.xs,
+    left: -uiTokens.space.xs,
     zIndex: 2,
   },
   claimBadge: {
-    minHeight: uiTokens.control.compactHeight,
-    paddingHorizontal: uiTokens.space.md,
-    paddingVertical: uiTokens.space.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: uiTokens.space.xs,
+    paddingHorizontal: uiTokens.space.sm,
+    paddingVertical: uiTokens.space.xs,
     borderRadius: uiTokens.radius.pill,
+    borderWidth: uiTokens.control.borderWidth,
+    borderColor: colors.divider,
+    backgroundColor: colors.background.paper,
+  },
+  claimBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+    color: colors.primary,
   },
   claimBadgeDisabled: {
     opacity: 0.65,

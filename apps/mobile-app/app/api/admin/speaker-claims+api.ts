@@ -1,5 +1,6 @@
 import { rateLimitOk } from '@/lib/bsl/rateLimit';
 import { authorizeEventAdmin } from '@/lib/server/event-admin';
+import { sendCriticalNotificationEmail } from '@/lib/email';
 
 const EVENT_ID_PATTERN = /^[a-z0-9][a-z0-9-]{0,63}$/;
 const CLAIM_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -59,6 +60,10 @@ export async function POST(request: Request) {
     return Response.json({ error: 'The review note is too long' }, { status: 400 });
   }
 
+  if (action === 'reject' && !reviewNote) {
+    return Response.json({ error: 'Explain why the claim is declined so the claimant knows what to fix' }, { status: 400 });
+  }
+
   const authorization = await authorizeEventAdmin(request, eventId);
   if ('response' in authorization) return authorization.response;
 
@@ -72,6 +77,23 @@ export async function POST(request: Request) {
     console.error('Speaker claim review failed:', error.message);
     const mapped = mapReviewError(error);
     return Response.json({ error: mapped.message }, { status: mapped.status });
+  }
+
+  // The in-app notification is written by the review RPC; email is the
+  // escalation so the claimant learns the outcome without opening the app.
+  const reviewed = data as { requester_user_id?: string; speaker_name?: string; status?: string; review_note?: string | null } | null;
+  if (reviewed?.requester_user_id) {
+    const approved = reviewed.status === 'approved';
+    await sendCriticalNotificationEmail({
+      recipientUserId: reviewed.requester_user_id,
+      title: approved ? 'Speaker profile linked' : 'Speaker profile claim declined',
+      message: approved
+        ? `${reviewed.speaker_name || 'The speaker profile'} is now linked to your account.`
+        : `Your claim for ${reviewed.speaker_name || 'the speaker profile'} was not approved.${reviewed.review_note ? ` Reviewer note: ${reviewed.review_note}` : ''}`,
+      notificationType: approved ? 'speaker_claim_approved' : 'speaker_claim_rejected',
+      speakerName: reviewed.speaker_name,
+      eventId,
+    }).catch(() => undefined);
   }
   return Response.json({ data });
 }
