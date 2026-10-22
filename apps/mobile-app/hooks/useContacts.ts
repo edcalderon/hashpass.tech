@@ -2,6 +2,21 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { apiClient } from '../lib/api-client';
 import type { ContactsAction, ContactsApiResult, ContactsSnapshot } from '../types/contacts';
 
+/**
+ * The contacts route replies `{ data: snapshot }` and apiClient wraps every body
+ * as `{ data: body, success }`, so the snapshot arrives one level deeper than
+ * the typed contract. Accept both shapes and refuse anything that is not a
+ * complete snapshot instead of letting the screen crash on a missing list.
+ */
+export function readContactsSnapshot(payload: unknown): ContactsSnapshot | null {
+  const nested = (payload as { data?: unknown } | null)?.data;
+  const candidate = (nested && typeof nested === 'object' && !('incoming' in (payload as object)) ? nested : payload) as Partial<ContactsSnapshot> | null;
+  if (!candidate || typeof candidate !== 'object') return null;
+  const lists = ['contacts', 'incoming', 'outgoing', 'suggestions', 'leaderboard'] as const;
+  if (!lists.every(key => Array.isArray(candidate[key]))) return null;
+  return candidate as ContactsSnapshot;
+}
+
 export function useContacts(userId: string | null, card?: string) {
   const [snapshot, setSnapshot] = useState<ContactsSnapshot | null>(null);
   const [loading, setLoading] = useState(false);
@@ -33,8 +48,9 @@ export function useContacts(userId: string | null, card?: string) {
         skipEventSegment: true, retries: 0, params: card ? { card } : undefined,
       }) as ContactsApiResult;
       if (generation.current !== run) return;
-      if (response.success) setSnapshot(response.data);
-      else setError(response.error);
+      const next = response.success ? readContactsSnapshot(response.data) : null;
+      if (next) setSnapshot(next);
+      else setError(response.success ? 'Contacts unavailable' : response.error);
     } catch {
       if (generation.current === run) setError('Contacts unavailable');
     } finally {
@@ -54,7 +70,9 @@ export function useContacts(userId: string | null, card?: string) {
       const response = await apiClient.post('contacts', action, { skipEventSegment: true, retries: 0, params: card ? { card } : undefined }) as ContactsApiResult;
       if (generation.current !== run) return false;
       if (!response.success) { setError(response.error); return false; }
-      setSnapshot(response.data);
+      const next = readContactsSnapshot(response.data);
+      if (!next) { setError('Contacts unavailable'); return false; }
+      setSnapshot(next);
       return true;
     } catch {
       if (generation.current === run) setError('Contacts unavailable');

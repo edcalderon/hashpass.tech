@@ -1,6 +1,6 @@
 import React from 'react';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
-import { useContacts } from '../../hooks/useContacts';
+import { readContactsSnapshot, useContacts } from '../../hooks/useContacts';
 import type { ContactsSnapshot } from '../../types/contacts';
 const mockGet = jest.fn();
 const mockPost = jest.fn();
@@ -36,5 +36,26 @@ describe('Contacts session isolation', () => {
     await act(async () => { expect(await state.act({ action: 'accept', requestId: 'request' })).toBe(true); });
     expect(state.error).toBeNull();
     act(() => view.unmount());
+  });
+  it('unwraps the route reply that apiClient nests one level deeper', async () => {
+    mockGet.mockResolvedValue({ success: true, data: { data: empty } });
+    let view!: ReactTestRenderer;
+    await act(async () => { view = create(<Probe id="user" />); });
+    expect(state.snapshot).toEqual(empty); expect(state.error).toBeNull();
+    act(() => view.unmount());
+  });
+  it('reports an error instead of storing a partial snapshot', async () => {
+    mockGet.mockResolvedValue({ success: true, data: { data: { profile: null, contacts: [] } } });
+    let view!: ReactTestRenderer;
+    await act(async () => { view = create(<Probe id="user" />); });
+    expect(state.snapshot).toBeNull(); expect(state.error).toBeTruthy();
+    act(() => view.unmount());
+  });
+  it('reads flat, nested and invalid payloads', () => {
+    expect(readContactsSnapshot(empty)).toBe(empty);
+    expect(readContactsSnapshot({ data: empty })).toBe(empty);
+    expect(readContactsSnapshot(null)).toBeNull();
+    expect(readContactsSnapshot({ data: null })).toBeNull();
+    expect(readContactsSnapshot({ incoming: [] })).toBeNull();
   });
 });
