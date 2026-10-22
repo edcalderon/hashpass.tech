@@ -32,28 +32,17 @@ const isSupabasePoolerHost = (hostname: string): boolean =>
   hostname === "pooler.supabase.com" ||
   hostname.endsWith(".pooler.supabase.com");
 
-// Supabase's East-2 development pooler is the aws-0 endpoint. Older local
-// env files used aws-1-us-east-2, which does not resolve and makes Better Auth
-// session reads hang until the request timeout. Keep this compatibility fix
-// in code so a stale ignored .env.local cannot take the whole auth bootstrap
-// down; production regions are left untouched.
-const normalizeKnownSupabasePoolerAlias = (hostname: string): string =>
-  !isProductionRuntime() && hostname === "aws-1-us-east-2.pooler.supabase.com"
-    ? getPreferredSupabasePoolerHost()
-    : hostname;
-
 const convertDirectSupabaseUrlToPooler = (connectionString: string): string => {
   try {
     const url = new URL(connectionString);
     const hostname = url.hostname.toLowerCase();
 
     if (isSupabasePoolerHost(hostname)) {
-      const normalizedHostname = normalizeKnownSupabasePoolerAlias(hostname);
-      if (normalizedHostname === hostname) {
-        return connectionString;
-      }
-      url.hostname = normalizedHostname;
-      return url.toString();
+      // Pooler hostnames are project/region-specific. Preserve an explicit
+      // pooler URL instead of guessing a region from NODE_ENV; otherwise a
+      // valid shared-dev tenant can be routed to a different pooler and fail
+      // with "tenant/user ... not found".
+      return connectionString;
     }
 
     const match = hostname.match(/^db\.([^.]+)\.supabase\.co$/);
