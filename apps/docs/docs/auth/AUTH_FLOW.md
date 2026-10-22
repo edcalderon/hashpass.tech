@@ -400,11 +400,13 @@ The auth migration group is deliberately ordered:
 
 1. `db/migrations-mobile-bootstrap/V005__otp_codes.sql` — baseline table and
    cleanup function.
-2. `db/migrations/V129__secure_sms_authenticators.sql` — HMAC-backed SMS
+2. `db/migrations/V128__user_setup_and_pin.sql` — server-only setup state,
+   peppered PIN verifiers, and atomic PIN lockout RPCs.
+3. `db/migrations/V129__secure_sms_authenticators.sql` — HMAC-backed SMS
    challenges, trusted phones, rate limiting, and the `code_hmac` column.
-3. `db/migrations/V130__atomic_otp_consumption.sql` — OTP purposes, attempt
+4. `db/migrations/V130__atomic_otp_consumption.sql` — OTP purposes, attempt
    limits, and the locked `consume_email_otp` function.
-4. `db/migrations/V131__retire_legacy_plaintext_otp_storage.sql` — purge of
+5. `db/migrations/V131__retire_legacy_plaintext_otp_storage.sql` — purge of
    legacy rows and removal of plaintext storage/indexes.
 
 Apply and verify a profile through the migration runner; do not run ad-hoc DDL:

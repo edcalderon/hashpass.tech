@@ -191,6 +191,7 @@
     "wallet": ["db/migrations-mobile-bootstrap/V004__wallet_auth.sql"],
     "auth": [
       "db/migrations-mobile-bootstrap/V005__otp_codes.sql",
+      "db/migrations/V128__user_setup_and_pin.sql",
       "db/migrations/V129__secure_sms_authenticators.sql",
       "db/migrations/V130__atomic_otp_consumption.sql",
       "db/migrations/V131__retire_legacy_plaintext_otp_storage.sql"
