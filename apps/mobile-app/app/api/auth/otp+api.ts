@@ -612,8 +612,16 @@ export async function POST(request: Request) {
       }
 
       const smtpHost = process.env.NODEMAILER_HOST || "";
+      const normalizedSmtpHost = smtpHost
+        .trim()
+        .toLowerCase()
+        .replace(/\.$/, "")
+        .split(":")[0];
       const isBrevo =
-        smtpHost.includes("brevo.com") || smtpHost.includes("sendinblue.com");
+        normalizedSmtpHost === "brevo.com" ||
+        normalizedSmtpHost.endsWith(".brevo.com") ||
+        normalizedSmtpHost === "sendinblue.com" ||
+        normalizedSmtpHost.endsWith(".sendinblue.com");
 
       const transporter = nodemailer.createTransport({
         host: smtpHost,

@@ -15,6 +15,7 @@ const mockGetSupabaseServerForRequest = jest.fn();
 const mockListUsers = jest.fn();
 const mockRpc = jest.fn();
 const mockSendMail = jest.fn();
+const mockCreateTransport = jest.fn(() => ({ sendMail: mockSendMail }));
 const originalFetch = global.fetch;
 const originalBrevoApiKey = process.env.BREVO_API_KEY;
 const originalNodemailerHost = process.env.NODEMAILER_HOST;
@@ -52,7 +53,7 @@ jest.mock("../../../lib/supabase-server", () => ({
 }));
 
 jest.mock("nodemailer", () => ({
-  createTransport: jest.fn(() => ({ sendMail: mockSendMail })),
+  createTransport: mockCreateTransport,
 }));
 
 describe("otp send api", () => {
@@ -64,6 +65,8 @@ describe("otp send api", () => {
     mockListUsers.mockReset();
     mockRpc.mockReset();
     mockSendMail.mockReset();
+    mockCreateTransport.mockReset();
+    mockCreateTransport.mockReturnValue({ sendMail: mockSendMail });
     mockSendMail.mockResolvedValue({});
     process.env["BREVO_API_KEY"] = "YOUR_TEST_BREVO_KEY";
     process.env.NODEMAILER_HOST = "smtp.example.test";
@@ -269,6 +272,38 @@ describe("otp send api", () => {
       session: null,
       phoneBound: false,
     });
+  });
+
+  it("does not treat lookalike SMTP hosts as Brevo", async () => {
+    process.env.NODEMAILER_HOST = "brevo.com.attacker.example";
+    mockGenerateLink.mockResolvedValue({
+      data: {
+        properties: {
+          hashed_token: "email-otp-token",
+          verification_type: "magiclink",
+        },
+      },
+      error: null,
+    });
+    const { POST } = require("../../../app/api/auth/otp+api");
+
+    await POST(
+      new Request("https://api.hashpass.tech/api/auth/otp", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ email: "user@example.com", delivery: "email" }),
+      }),
+    );
+
+    expect(mockCreateTransport).toHaveBeenCalledWith(
+      expect.objectContaining({
+        host: "brevo.com.attacker.example",
+        tls: expect.objectContaining({
+          servername: undefined,
+          checkServerIdentity: undefined,
+        }),
+      }),
+    );
   });
 
   it("does not expose raw identity-provider database failures", async () => {
