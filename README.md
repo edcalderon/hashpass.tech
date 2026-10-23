@@ -20,20 +20,21 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.140)
+## 📋 Latest Changes (v1.9.141)
 
 ### Bug Fixes
 
-* **auth:** bound Better Auth session requests ([26136b4](https://github.com/hashpass-tech/hashpass.tech/commit/26136b4807bcbcb7ad39de82b4ae6badf9c50862))
+* **auth:** deduplicate Better Auth OAuth identities ([3b0ed59](https://github.com/hashpass-tech/hashpass.tech/commit/3b0ed59b5cb7ddf42a9bb4512b8e48b0e5aea1c1))
 ### Release Highlights
-- bound Better Auth session requests
+- deduplicate Better Auth OAuth identities
 
 ### Release scope
-- Compared with: `v1.9.139` (the previous global release tag)
+- Compared with: `v1.9.140` (the previous global release tag)
 
 ### Affected products & packages
-- Mobile app
-- Auth
+- Database migrations
+- Documentation
+- Release tooling
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
