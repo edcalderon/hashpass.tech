@@ -252,6 +252,35 @@ describe('Better Auth MCP OAuth migration plan', () => {
   });
 });
 
+describe('Better Auth account identity integrity migration plan', () => {
+  it('deduplicates same-owner identities and enforces the provider/account key', () => {
+    const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+    const migration = 'db/migrations/V136__dedupe_better_auth_account_identities.sql';
+    const migrationGroups = Object.entries(config.groups).filter(([, migrations]) =>
+      migrations.includes(migration),
+    );
+
+    expect(migrationGroups).toHaveLength(1);
+
+    const [groupName] = migrationGroups[0];
+    expect(config.defaultGroups).not.toContain(groupName);
+    expect(
+      Object.entries(config.profileGroups)
+        .filter(([, groups]) => groups.includes(groupName))
+        .map(([profileName]) => profileName)
+        .sort(),
+    ).toEqual(['better-auth-development', 'better-auth-production']);
+
+    const sql = fs.readFileSync(
+      path.join(root, migration),
+      'utf8',
+    );
+    expect(sql).toMatch(/count\(DISTINCT "userId"\) > 1/i);
+    expect(sql).toMatch(/row_number\(\) OVER/i);
+    expect(sql).toMatch(/CREATE UNIQUE INDEX IF NOT EXISTS account_provider_account_id_key/i);
+  });
+});
+
 describe('upcoming BSL pass provisioning migration', () => {
   it('uses UUID-compatible IDs and keeps privileged minting out of public RPC access', () => {
     const migration = fs.readFileSync(migrationPath, 'utf8');

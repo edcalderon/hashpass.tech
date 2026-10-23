@@ -43,6 +43,33 @@ Supabase's own Google provider must be enabled in that project's Dashboard, and 
 
 See [AUTH_FLOW.md](AUTH_FLOW.md) for the full requirements list, the schema-migration steps, and troubleshooting for each of the three infra bugs found and fixed on 2026-07-08 (Metro bundler blocking Better Auth's own `zod` dependency, `allowedHosts` not matching `host:port`, and Better Auth's database tables never having been migrated on a given environment).
 
+## OAuth account identity integrity
+
+The Better Auth `account` table must have one row per `(providerId, accountId)`
+pair. Older adapter versions could create duplicate rows for the same Google
+identity. Better Auth then rejects the callback with `Multiple accounts match
+the same accountId`, before it can issue the session cookie, and the browser
+returns to the auth screen without a session.
+
+The registered `better-auth-account-integrity` migration removes duplicates
+only when every duplicate belongs to the same Better Auth user (keeping the
+most recently updated token row), refuses ambiguous cross-user duplicates, and
+adds a unique index for future writes. Run it against the database named by the
+API runtime's `BETTER_AUTH_DATABASE_URL`; do not use a shared core database URL
+just because the host is the same. Verify the runtime database after a deploy:
+
+```sql
+SELECT "providerId", "accountId", count(*)
+FROM public.account
+GROUP BY "providerId", "accountId"
+HAVING count(*) > 1;
+```
+
+This query must return no rows. A successful callback should then be followed
+by `GET /api/auth/get-session` returning a non-null session. CSP warnings from
+`accounts.google.com` or browser extensions are unrelated to the HashPass API
+unless the API callback is absent from the production Lambda logs.
+
 ## Related Code
 
 - `apps/mobile-app/hooks/useAuth.ts` — `signInWithOAuth('google')` and `handleOAuthCallback` (Better-Auth-first routing)
