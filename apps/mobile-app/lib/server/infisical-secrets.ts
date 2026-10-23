@@ -60,6 +60,13 @@ function appleSignInSecretName(): string {
 let cachedBootstrap: BootstrapCredentials | null | undefined;
 let cachedAppleSignInSecrets: Record<string, string> | null | undefined;
 
+const hasLocalInfisicalBootstrap = (): boolean =>
+  !process.env.AWS_LAMBDA_FUNCTION_NAME &&
+  Boolean(process.env.INFISICAL_PROJECT_ID && process.env.INFISICAL_CLIENT_ID && process.env.INFISICAL_CLIENT_SECRET);
+
+const shouldReadAppleSecretsFromAws = (): boolean =>
+  !hasLocalInfisicalBootstrap() || process.env.HASHPASS_USE_AWS_SECRETS === 'true';
+
 async function getBootstrapCredentials(): Promise<BootstrapCredentials | null> {
   if (cachedBootstrap !== undefined) return cachedBootstrap;
 
@@ -209,6 +216,16 @@ export async function getInfisicalSecret(key: string): Promise<string | undefine
  */
 export async function getAppleSignInSecret(key: string): Promise<string | undefined> {
   if (cachedAppleSignInSecrets === undefined) {
+    // Local Expo server processes have Infisical credentials but no Lambda IAM
+    // role. Avoid waiting on the AWS SDK credential/metadata chain during
+    // Better Auth startup; a missing local Apple secret is handled by the
+    // provider's disabled fallback. Set HASHPASS_USE_AWS_SECRETS=true only
+    // when intentionally testing the AWS-backed path locally.
+    if (!shouldReadAppleSecretsFromAws()) {
+      cachedAppleSignInSecrets = null;
+      return undefined;
+    }
+
     try {
       const response = await getSecretsManagerClient().send(
         new GetSecretValueCommand({ SecretId: appleSignInSecretName() })

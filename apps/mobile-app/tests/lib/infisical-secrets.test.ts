@@ -17,6 +17,7 @@ const ENV_KEYS = [
   'AWS_SESSION_TOKEN',
   'AWS_REGION',
   'AWS_LAMBDA_FUNCTION_NAME',
+  'HASHPASS_USE_AWS_SECRETS',
   'NODE_ENV',
 ];
 
@@ -135,6 +136,18 @@ describe('getInfisicalSecret', () => {
     expect(mockSend).toHaveBeenCalledWith(
       expect.objectContaining({ SecretId: 'hashpass/expo-router-api-dev/apple-sign-in' })
     );
+  });
+
+  it('does not contact AWS Secrets Manager for local Infisical-backed startup', async () => {
+    Object.assign(process.env, {
+      INFISICAL_PROJECT_ID: 'proj-123',
+      INFISICAL_CLIENT_ID: 'client-id',
+      INFISICAL_CLIENT_SECRET: '<test-client-secret>',
+    });
+
+    const { getAppleSignInSecret } = require('../../lib/server/infisical-secrets');
+    await expect(getAppleSignInSecret('BETTER_AUTH_APPLE_CLIENT_ID')).resolves.toBeUndefined();
+    expect(mockSend).not.toHaveBeenCalled();
   });
 
   it('reads the dedicated Apple provider secret from Secrets Manager without using Infisical', async () => {
