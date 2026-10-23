@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610230008, // Updated to current timestamp
+  buildNumber: 202610230111, // Updated to current timestamp
   releaseDate: '2026-10-23',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,14 +30,29 @@ export const CURRENT_VERSION: VersionInfo = {
     // No new features
   ],
   bugfixes: [
-    'bound Better Auth session requests'
+    'deduplicate Better Auth OAuth identities'
   ],
   breakingChanges: [],
-  notes: 'bound Better Auth session requests'
+  notes: 'deduplicate Better Auth OAuth identities'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.141': {
+    version: '1.9.141',
+    buildNumber: 202610230111,
+    releaseDate: '2026-10-23',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'deduplicate Better Auth OAuth identities'
+    ],
+    breakingChanges: [],
+    notes: 'deduplicate Better Auth OAuth identities'
+  },
   '1.9.140': {
     version: '1.9.140',
     buildNumber: 202610230008,

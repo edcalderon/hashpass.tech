@@ -1,3 +1,20 @@
+## [1.9.141](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.140...v1.9.141) (2026-10-23)
+
+
+### Bug Fixes
+
+* **auth:** deduplicate Better Auth OAuth identities ([3b0ed59](https://github.com/hashpass-tech/hashpass.tech/commit/3b0ed59b5cb7ddf42a9bb4512b8e48b0e5aea1c1))
+### Release Highlights
+- deduplicate Better Auth OAuth identities
+
+### Release scope
+- Compared with: `v1.9.140` (the previous global release tag)
+
+### Affected products & packages
+- Database migrations
+- Documentation
+- Release tooling
+
 ## [1.9.140](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.139...v1.9.140) (2026-10-23)
 
 

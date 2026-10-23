@@ -101,10 +101,12 @@
       "pending-speaker-eligibility"
     ],
     "better-auth-development": [
-      "better-auth-mcp-oauth"
+      "better-auth-mcp-oauth",
+      "better-auth-account-integrity"
     ],
     "better-auth-production": [
-      "better-auth-mcp-oauth"
+      "better-auth-mcp-oauth",
+      "better-auth-account-integrity"
     ]
   },
   "groups": {
@@ -113,6 +115,9 @@
     ],
     "better-auth-mcp-oauth": [
       "db/migrations/V106__better_auth_mcp_oauth.sql"
+    ],
+    "better-auth-account-integrity": [
+      "db/migrations/V136__dedupe_better_auth_account_identities.sql"
     ],
     "core-speaker-shape": [
       "db/migrations/V124__align_core_bsl_speakers_with_event_scoped_shape.sql"
