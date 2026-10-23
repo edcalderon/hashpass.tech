@@ -1,3 +1,19 @@
+## [1.9.140](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.139...v1.9.140) (2026-10-23)
+
+
+### Bug Fixes
+
+* **auth:** bound Better Auth session requests ([26136b4](https://github.com/hashpass-tech/hashpass.tech/commit/26136b4807bcbcb7ad39de82b4ae6badf9c50862))
+### Release Highlights
+- bound Better Auth session requests
+
+### Release scope
+- Compared with: `v1.9.139` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Auth
+
 ## [1.9.139](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.137...v1.9.139) (2026-10-22)
 ### Released
 - Version 1.9.139 release
