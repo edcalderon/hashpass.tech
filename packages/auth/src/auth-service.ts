@@ -70,15 +70,28 @@ const hostnameFromRequest = (request: Request): string => {
 
 const originFromRequest = (request: Request): string => {
   try {
-    const forwardedProto = request.headers.get('x-forwarded-proto') || 'https';
+    const requestURL = new URL(request.url);
     const forwardedHost = request.headers.get('x-forwarded-host');
     const host = forwardedHost || request.headers.get('host');
+    const hostname = normalizeHostname(host || requestURL.hostname);
+    const isLocalHost =
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      hostname === '0.0.0.0' ||
+      hostname.endsWith('.local');
+    const forwardedProto = request.headers.get('x-forwarded-proto')?.split(',')[0].trim();
+    // Expo's local server is HTTP. Do not apply the production proxy default
+    // (`https`) to localhost, or server-side session verification attempts TLS
+    // against the plain HTTP dev server and fails with WRONG_VERSION_NUMBER.
+    const protocol = isLocalHost
+      ? requestURL.protocol.replace(':', '')
+      : forwardedProto || requestURL.protocol.replace(':', '') || 'https';
 
     if (host) {
-      return `${forwardedProto.split(',')[0]}://${host.split(',')[0]}`;
+      return `${protocol}://${host.split(',')[0]}`;
     }
 
-    return new URL(request.url).origin;
+    return requestURL.origin;
   } catch {
     return '';
   }
