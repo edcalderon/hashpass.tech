@@ -464,7 +464,7 @@ describe('BetterAuthProvider', () => {
       })
     );
     expect(mockCreateAuthClient).toHaveBeenCalledWith(expect.objectContaining({
-      fetchOptions: { credentials: 'include' },
+      fetchOptions: { credentials: 'include', timeout: 7000 },
     }));
     expect(locationReplace).toHaveBeenCalledWith('https://accounts.google.com/o/oauth2/v2/auth?state=test');
     expect(result.pending).toBe(true);
@@ -492,7 +492,7 @@ describe('BetterAuthProvider', () => {
 
     expect(mockCreateAuthClient).toHaveBeenCalledWith(expect.objectContaining({
       baseURL: 'http://localhost:8081/api/auth',
-      fetchOptions: { credentials: 'include' },
+      fetchOptions: { credentials: 'include', timeout: 7000 },
     }));
   });
 
@@ -559,6 +559,7 @@ describe('BetterAuthProvider', () => {
         ],
         fetchOptions: {
           credentials: 'include',
+          timeout: 7000,
           headers: {
             Origin: 'https://hashpass.tech',
             Referer: 'https://hashpass.tech/',

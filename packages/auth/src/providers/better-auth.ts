@@ -21,6 +21,11 @@ type BetterAuthClient = ReturnType<typeof createAuthClient>;
 type SecureStoreModule = typeof import('expo-secure-store');
 
 const DEFAULT_BASE_PATH = '/api/auth';
+// Keep Better Auth requests bounded below the web bootstrap guard in
+// apps/mobile-app/hooks/useAuth.ts. Without a client-side timeout, a stalled
+// session refresh leaves getSession() pending until the outer guard expires,
+// which presents as a bootstrap timeout even though the API is reachable.
+const BETTER_AUTH_REQUEST_TIMEOUT_MS = 7000;
 const LEGACY_BETTER_AUTH_SEGMENT = ['bsl', 'auth'].join('-');
 const BETTER_AUTH_SESSION_CACHE_KEY = 'hashpass_better_auth_session';
 const PASSWORDLESS_CALLBACK_MARKER = 'supabase_passwordless_in_progress';
@@ -155,6 +160,7 @@ export class BetterAuthProvider implements IAuthProvider {
         // callback session probe; the browser's default is same-origin.
         fetchOptions: {
           credentials: 'include',
+          timeout: BETTER_AUTH_REQUEST_TIMEOUT_MS,
           ...(nativeTrustedOriginHeaders ? { headers: nativeTrustedOriginHeaders } : {}),
         },
       });
