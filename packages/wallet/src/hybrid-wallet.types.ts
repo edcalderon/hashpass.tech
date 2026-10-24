@@ -22,7 +22,9 @@ export type HybridWalletDeps = {
   newOperationId: () => string;
   /** Short-lived proofs already minted by the PIN pad for this person. */
   proofs: { unlock(): string | null; sign(): string | null };
-  /** Server-side PIN change (needs the current PIN). Resolves true when the verifier was replaced. */
+  /** Server-side PIN change (needs the current PIN). Resolves true when the verifier was
+   *  replaced, false ONLY when the server authoritatively rejected it; throws when the
+   *  outcome is unknown (the response was lost, so the server may have committed). */
   changeServerPin(next: string, current: string): Promise<boolean>;
   /** Server-side PIN reset after email-code recovery. */
   resetServerPin(next: string, recoverProof: string): Promise<void>;

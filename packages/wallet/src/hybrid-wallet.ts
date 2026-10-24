@@ -94,8 +94,11 @@ export class HybridWallet {
 
   /**
    * Re-wraps the same key for the new PIN (the encrypted seed is untouched), then replaces the
-   * server verifier. If the verifier change fails the vault is put back, so the two never disagree.
-   * Needs fresh `wallet:unlock` and `wallet:sign` proofs minted with the CURRENT pin.
+   * server verifier. The two writes are reconciled before the envelope is ever rolled back:
+   * `changeServerPin` resolves false ONLY for an authoritative rejection (the server answered
+   * and kept the old verifier) and throws when its outcome is unknown (the response was lost,
+   * so the server may have committed). Needs fresh `wallet:unlock` and `wallet:sign` proofs
+   * minted with the CURRENT pin.
    */
   async changePin(current: string, next: string): Promise<void> {
     if (current === next) throw new Error('pin_unchanged');
@@ -104,9 +107,19 @@ export class HybridWallet {
     if (!vault.envelope) throw new Error('wallet_vault_missing');
     const rewrapped = await rewrapHybridVault(this.d.scope, vault.envelope, current, next, vault.serverShare, this.d.random);
     await this.d.vault.save(this.d.scope.walletId, rewrapped, vault.version, need(this.d.proofs.sign(), 'wallet_step_up_required'));
-    let changed = false;
-    try { changed = await this.d.changeServerPin(next, current); } catch { changed = false; }
-    if (changed) return;
+    let unknown = false;
+    try {
+      if (await this.d.changeServerPin(next, current)) return;
+    } catch { unknown = true; }
+    if (unknown) {
+      // The envelope is on `next` and the verifier may already be too: rolling the envelope
+      // back here is the one move that can strand the pair (verifier `next`, envelope
+      // `current`) with no PIN that opens both. Leave it on `next`: if the server committed,
+      // the wallet simply works with the new PIN; if it did not, the email-code recovery
+      // rebuilds the vault from the phrase.
+      throw new Error('wallet_pin_change_unknown');
+    }
+    // An authoritative rejection: the verifier is still `current`, so put the envelope back.
     try {
       const restored = await rewrapHybridVault(this.d.scope, rewrapped, next, current, vault.serverShare, this.d.random);
       await this.d.vault.save(this.d.scope.walletId, restored, vault.version + 1, need(this.d.proofs.sign(), 'wallet_step_up_required'));

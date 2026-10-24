@@ -11,7 +11,7 @@ import {
   subscribeToProofs,
 } from '../lib/step-up-session';
 import type { PinOutcome } from '../types/setup';
-import type { PinProblem, UsePin } from '../types/pin.types';
+import type { PinProblem, PinVerification, UsePin } from '../types/pin.types';
 import type { StepUpScope } from '../types/step-up.types';
 
 export type { PinProblem, UsePin };
@@ -25,7 +25,9 @@ export function describePinOutcome(outcome: PinOutcome): PinProblem {
 }
 
 function describeFailure(error: unknown): PinProblem {
-  if (error instanceof SetupRequestError && error.code === 'pin_already_set') return { kind: 'already_set' };
+  // The cast survives the isolated changed-file typecheck, where SetupRequestError's stub is
+  // `any` and cannot narrow `unknown` the way the real class does here.
+  if (error instanceof SetupRequestError && (error as SetupRequestError).code === 'pin_already_set') return { kind: 'already_set' };
   return { kind: 'unavailable' };
 }
 
@@ -71,21 +73,33 @@ export function usePin(userId: string | null): UsePin {
     }
   }, [userId]);
 
-  const setPin = useCallback(async (pin: string, currentPin?: string) => {
-    if (!isPinComplete(pin) || (currentPin !== undefined && !isPinComplete(currentPin))) return false;
-    const result = await run(() => requestSetPin(pin, currentPin));
-    if (!result) return false;
-    if (!result.value.ok) { setProblem(describePinOutcome(result.value)); return false; }
-    return true;
+  /**
+   * The same call as `setPin` but with the server's outcome kept apart, which the wallet's
+   * PIN change needs: 'changed' the server accepted, 'rejected' the server answered no
+   * (wrong current PIN, lockout), 'unknown' the response was lost so the server may have
+   * committed. Only 'rejected' may be treated as an authoritative "nothing happened".
+   */
+  const setPinDetailed = useCallback(async (pin: string, currentPin?: string): Promise<'changed' | 'rejected' | 'unknown'> => {
+    if (!isPinComplete(pin) || (currentPin !== undefined && !isPinComplete(currentPin))) return 'rejected';
+    // The server's answer types are named here (not inferred) so the isolated changed-file
+    // typecheck cannot lose them behind setup-client's `any` stub.
+    const result = await run<PinOutcome>(() => requestSetPin(pin, currentPin));
+    if (!result) return 'unknown';
+    if (!result.value.ok) { setProblem(describePinOutcome(result.value)); return 'rejected'; }
+    return 'changed';
   }, [run]);
+
+  const setPin = useCallback(async (pin: string, currentPin?: string) =>
+    (await setPinDetailed(pin, currentPin)) === 'changed', [setPinDetailed]);
 
   const unlock = useCallback(async (pin: string, scope: StepUpScope) => {
     // A malformed PIN is rejected here so it can never count as a guess.
     if (!userId || !isPinComplete(pin)) return false;
-    const result = await run(() => requestVerifyPin(pin, scope));
+    const result = await run<PinVerification>(() => requestVerifyPin(pin, scope));
     if (!result) return false;
-    const { proof, ...outcome } = result.value;
-    if (!outcome.ok || !proof) { setProblem(describePinOutcome(outcome)); return false; }
+    const value = result.value;
+    const proof = value.proof;
+    if (!value.ok || !proof) { setProblem(describePinOutcome(value)); return false; }
     const stored = { token: proof.token, scope, expiresAt: proof.expiresAt };
     if (!isProofUsable(stored)) { setProblem({ kind: 'unavailable' }); return false; }
     rememberProof(userId, stored);
@@ -97,5 +111,5 @@ export function usePin(userId: string | null): UsePin {
   const lock = useCallback((scope?: StepUpScope) => forgetProofs(scope), []);
   const clearProblem = useCallback(() => setProblem(null), []);
 
-  return { busy, problem, isUnlocked, setPin, unlock, proofFor, lock, clearProblem };
+  return { busy, problem, isUnlocked, setPin, setPinDetailed, unlock, proofFor, lock, clearProblem };
 }

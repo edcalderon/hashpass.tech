@@ -36,7 +36,12 @@
       "pinSetupDone": "PIN saved. Your wallet is unlocked.",
       "unlocking": "Checking your wallet protection…",
       "unavailable": "We could not check your wallet protection. Check your connection and try again.",
-      "retry": "Try again"
+      "retry": "Try again",
+      "forgotPin": "I forgot my PIN",
+      "recoveryChecking": "Checking your wallet…",
+      "recoveryNoWallet": "This account has no wallet yet, so there is nothing to recover. Your PIN protects your account; contact support if you cannot sign in.",
+      "recoveryUnavailable": "We could not reach the PIN recovery service. Check your connection and try again.",
+      "backToPin": "Back to PIN entry"
     },
     "vault": {
       "title": "Your wallet",
@@ -92,6 +97,11 @@
       "back": "Go back",
       "wrongPin": "That PIN did not unlock the wallet. Nothing was changed.",
       "changeFailed": "The PIN could not be changed. Nothing was changed.",
+      "changeUnknown": "The PIN change could not be confirmed. Try your new PIN first; if it does not open the wallet, use \"I forgot my PIN\" with your recovery phrase.",
+      "recoveryClosedTitle": "PIN recovery",
+      "recoveryClosedBody": "Your PIN was not changed. You can start again or go back to the PIN entry.",
+      "recoveryClosedRestart": "Start again",
+      "recoveryClosedExit": "Back to PIN entry",
       "conflict": "The wallet changed while you were working. Start again.",
       "recoveryMismatch": "That recovery phrase does not match this wallet.",
       "wordsWrong": "Those words are not right. Check your saved recovery phrase.",

@@ -1,6 +1,7 @@
 import { uiTokens } from '@hashpass/ui/tokens';
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View, type ViewStyle } from 'react-native';
+import { AccessibilityInfo, Animated, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View, type ViewStyle } from 'react-native';
+import { useAnimations } from '../../providers/AnimationProvider';
 import { useTheme } from '../../hooks/useTheme';
 import type { ThemeColors } from '../../lib/theme';
 import type { DrawerSheetProps } from './DrawerSheet.types';
@@ -13,6 +14,20 @@ export default function DrawerSheet({
   defaultHeight = 'content', children,
 }: DrawerSheetProps) {
   const { colors } = useTheme();
+  // Respect both motion preferences (AGENTS.md): the app-level "disable animations" setting
+  // and the system reduced-motion flag, including changes while the sheet is open.
+  const { animationsEnabled } = useAnimations();
+  const [systemReducedMotion, setSystemReducedMotion] = useState(false);
+  useEffect(() => {
+    let active = true;
+    // A missing answer is treated as reduced motion (the safe default is no movement).
+    void AccessibilityInfo.isReduceMotionEnabled()
+      .then(reduced => { if (active) setSystemReducedMotion(reduced); })
+      .catch(() => { if (active) setSystemReducedMotion(true); });
+    const subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', setSystemReducedMotion);
+    return () => { active = false; subscription.remove(); };
+  }, []);
+  const motionOk = animationsEnabled && !systemReducedMotion;
   const [fullHeight, setFullHeight] = useState(false);
   const fade = useRef(new Animated.Value(0)).current;
   const slide = useRef(new Animated.Value(0)).current;
@@ -24,11 +39,17 @@ export default function DrawerSheet({
       slide.setValue(0);
       return;
     }
+    // Reduced motion: the sheet appears at its visible endpoints at once — no fade, no slide.
+    if (!motionOk) {
+      fade.setValue(1);
+      slide.setValue(1);
+      return;
+    }
     Animated.parallel([
       Animated.timing(fade, { toValue: 1, duration: ENTRANCE_MS, useNativeDriver: false }),
       Animated.timing(slide, { toValue: 1, duration: ENTRANCE_MS, useNativeDriver: false }),
     ]).start();
-  }, [open, fade, slide]);
+  }, [open, motionOk, fade, slide]);
   const styles = getStyles(colors);
   const backdrop = Platform.OS === 'web'
     ? [styles.backdrop, { backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' } as ViewStyle]

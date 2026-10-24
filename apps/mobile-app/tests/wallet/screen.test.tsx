@@ -15,7 +15,18 @@ jest.mock('../../components/BlockchainTokensView', () => 'Rewards');
 jest.mock('../../components/HashPointsView', () => 'Points');
 jest.mock('../../components/PassesDisplay', () => 'PassesDisplay');
 jest.mock('../../components/wallet/WalletEnrollmentView', () => 'WalletEnrollment');
-jest.mock('../../hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'u1' }, isLoading: false }) }));
+jest.mock('../../components/wallet/WalletVaultFlow', () => 'WalletVaultFlow');
+const mockEnrollmentLoad = jest.fn();
+// Lazy closure, not the fn itself: the mock factory runs during the hoisted imports, before
+// the const above has executed (the same pattern enrollment-view.test uses).
+jest.mock('../../lib/wallet/enrollment-client', () => ({
+  walletEnrollmentClient: { load: (...args: unknown[]) => mockEnrollmentLoad(...args) },
+}));
+jest.mock('../../providers/AnimationProvider', () => ({
+  useAnimations: () => ({ animationsEnabled: true, setAnimationsEnabled: jest.fn(), isReady: true }),
+}));
+// The guard keys on the registry id (dbUserId), never the auth provider's own id.
+jest.mock('../../hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'u1' }, dbUserId: 'reg-1', isLoading: false }) }));
 let mockPhase = 'unlocked';
 const mockPinDone = jest.fn();
 jest.mock('../../hooks/useWalletGuard', () => ({
@@ -85,4 +96,45 @@ it('hides content while the guard is still checking or unavailable', () => {
     act(() => view.unmount());
   }
   mockPhase = 'unlocked';
+});
+
+it('offers the email-code recovery from the locked gate, without unlocking the wallet', async () => {
+  mockPhase = 'pin_entry';
+  mockEnrollmentLoad.mockResolvedValue({ state: 'registered', setupEnabled: true, scope: { ownerId: 'reg-1', walletId: 'w1' } });
+  let view!: ReactTestRenderer;
+  try {
+    act(() => { view = create(<Wallet />); });
+    const forgot = view.root.findAllByType(Pressable)
+      .find(node => node.props.accessibilityRole === 'button' && node.props.accessibilityLabel === 'I forgot my PIN')!;
+    await act(async () => { forgot.props.onPress(); });
+    // The recovery mounts in the locked gate: recover-only, never the wallet's home.
+    const flow = view.root.findByType('WalletVaultFlow' as any);
+    expect(flow.props.recoverOnly).toBe(true);
+    expect(flow.props.enrollment.state).toBe('registered');
+    expect(view.root.findAllByType('PinFlow' as any)).toHaveLength(0);
+    await act(async () => { flow.props.onExit(); });
+    expect(view.root.findByType('PinFlow' as any)).toBeDefined();
+  } finally {
+    mockEnrollmentLoad.mockReset();
+    mockPhase = 'unlocked';
+    act(() => view.unmount());
+  }
+});
+
+it('says so when the locked gate has no wallet to recover', async () => {
+  mockPhase = 'pin_entry';
+  mockEnrollmentLoad.mockResolvedValue({ state: 'enrolled', setupEnabled: true, scope: { ownerId: 'reg-1', walletId: 'w1' } });
+  let view!: ReactTestRenderer;
+  try {
+    act(() => { view = create(<Wallet />); });
+    const forgot = view.root.findAllByType(Pressable)
+      .find(node => node.props.accessibilityRole === 'button' && node.props.accessibilityLabel === 'I forgot my PIN')!;
+    await act(async () => { forgot.props.onPress(); });
+    expect(JSON.stringify(view.toJSON())).toContain('This account has no wallet yet, so there is nothing to recover.');
+    expect(view.root.findAllByType('WalletVaultFlow' as any)).toHaveLength(0);
+  } finally {
+    mockEnrollmentLoad.mockReset();
+    mockPhase = 'unlocked';
+    act(() => view.unmount());
+  }
 });

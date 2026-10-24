@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { SegmentedTabs } from '@hashpass/ui/primitives';
@@ -9,6 +9,9 @@ import BlockchainTokensView from '../../../components/BlockchainTokensView';
 import HashPointsView from '../../../components/HashPointsView';
 import BlockchainTicketsView from '../../../components/BlockchainTicketsView';
 import WalletEnrollmentView from '../../../components/wallet/WalletEnrollmentView';
+import WalletVaultFlow from '../../../components/wallet/WalletVaultFlow';
+import { walletEnrollmentClient } from '../../../lib/wallet/enrollment-client';
+import type { WalletEnrollment } from '../../../lib/wallet/enrollment-types';
 import WalletHelpDrawer, { WalletHelpButton } from '../../../components/wallet/WalletHelpDrawer';
 import PinFlow from '../../../components/security/PinFlow';
 import { useAuth } from '../../../hooks/useAuth';
@@ -24,8 +27,12 @@ const NETWORKS = [
 ] as const;
 
 export default function WalletScreen() {
-  const { user, isLoading: authLoading } = useAuth();
-  const guard = useWalletGuard(authLoading ? null : user?.id ?? null);
+  // The guard must key on the registry id (dbUserId), the same identity the enrollment row's
+  // scope.ownerId uses: proofs are stored per owner, and a guard keyed on the auth provider's
+  // own id would have its proof cleared the moment the vault flow stores one under the
+  // registry id (rememberProof drops everything when the owner changes).
+  const { user, dbUserId, isLoading: authLoading } = useAuth();
+  const guard = useWalletGuard(authLoading ? null : dbUserId ?? null);
   return <WalletGate guard={guard} signedIn={!!user} />;
 }
 
@@ -34,6 +41,19 @@ function WalletGate({ guard, signedIn }: { guard: ReturnType<typeof useWalletGua
   const { topInset, bottomInset } = useDashboardPageLayout();
   const { t } = useTranslation('wallet');
   const styles = getStyles(colors);
+  // The email-code recovery must be reachable from the locked gate: both in-flow recovery
+  // entry points sit inside WalletContent, which mounts only after a successful unlock.
+  const [recovery, setRecovery] = useState<'idle' | 'loading' | 'active' | 'noWallet' | 'unavailable'>('idle');
+  const [recoveryRow, setRecoveryRow] = useState<WalletEnrollment | null>(null);
+  const startRecovery = useCallback(() => {
+    setRecovery('loading');
+    // Typed params (not inferred): the isolated changed-file typecheck stubs the enrollment
+    // client to `any`, so an unannotated callback would fail it.
+    void walletEnrollmentClient.load()
+      .then((row: WalletEnrollment) => { setRecoveryRow(row); setRecovery(row.state === 'registered' ? 'active' : 'noWallet'); })
+      .catch((failure: unknown) => setRecovery(failure instanceof Error && failure.message === 'wallet_not_enrolled' ? 'noWallet' : 'unavailable'));
+  }, []);
+  const endRecovery = useCallback(() => setRecovery('idle'), []);
   if (guard.phase === 'unlocked') return <WalletContent />;
   const shell = (children: React.ReactNode) => <ScrollView style={styles.page} contentContainerStyle={[
     styles.content, { paddingTop: topInset, paddingBottom: bottomInset },
@@ -52,13 +72,41 @@ function WalletGate({ guard, signedIn }: { guard: ReturnType<typeof useWalletGua
       <Text style={styles.buttonText}>{t('guard.retry', 'Try again')}</Text></Pressable>
   </View>);
   const settingUp = guard.phase === 'pin_setup';
+  const body = settingUp
+    ? t('guard.pinSetupBody', 'Choose a 4-digit PIN. It is asked every time you open your wallet and before every sensitive action. HASHPASS cannot recover it for you.')
+    : t('guard.lockedBody', 'Enter your PIN to open your wallet.');
   return shell(<View style={styles.panel}>
     <Text accessibilityRole="header" style={styles.sectionTitle}>{settingUp ? t('guard.pinSetupTitle', 'Protect your wallet with a PIN') : t('guard.lockedTitle', 'Wallet locked')}</Text>
-    <Text style={styles.body}>{settingUp
-      ? t('guard.pinSetupBody', 'Choose a 4-digit PIN. It is asked every time you open your wallet and before every sensitive action. HASHPASS cannot recover it for you.')
-      : t('guard.lockedBody', 'Enter your PIN to open your wallet.')}</Text>
-    <PinFlow mode={isDark ? 'dark' : 'light'} pin={guard.pin} scope={WALLET_UNLOCK_SCOPE}
-      intent={settingUp ? 'create' : 'unlock'} onDone={guard.onPinDone} />
+    <Text style={styles.body}>{body}</Text>
+    {recovery === 'active' && recoveryRow
+      ? // Recovery mounted before the unlock: only the email-code flow runs here, never the
+        // wallet's home, so a locked-out person still has a way back in (see WalletVaultFlow).
+        <WalletVaultFlow enrollment={recoveryRow} recoverOnly onChanged={endRecovery} onExit={endRecovery} />
+      : recovery === 'loading'
+        ? <Text style={styles.body}>{t('guard.recoveryChecking', 'Checking your wallet…')}</Text>
+        : recovery === 'noWallet'
+          ? <View>
+              <Text style={styles.body}>{t('guard.recoveryNoWallet', 'This account has no wallet yet, so there is nothing to recover. Your PIN protects your account; contact support if you cannot sign in.')}</Text>
+              <Pressable accessibilityRole="button" onPress={endRecovery} style={styles.outlineButton}>
+                <Text style={styles.buttonText}>{t('guard.backToPin', 'Back to PIN entry')}</Text></Pressable>
+            </View>
+          : recovery === 'unavailable'
+            ? <View>
+                <Text style={styles.body}>{t('guard.recoveryUnavailable', 'We could not reach the PIN recovery service. Check your connection and try again.')}</Text>
+                <Pressable accessibilityRole="button" onPress={endRecovery} style={styles.outlineButton}>
+                  <Text style={styles.buttonText}>{t('guard.backToPin', 'Back to PIN entry')}</Text></Pressable>
+              </View>
+            : <>
+                <PinFlow mode={isDark ? 'dark' : 'light'} pin={guard.pin} scope={WALLET_UNLOCK_SCOPE}
+                  intent={settingUp ? 'create' : 'unlock'} onDone={guard.onPinDone} />
+                {/* The recovery path is offered exactly where it is needed: at the PIN entry of a
+                    person who cannot enter a PIN they never knew or no longer remember. */}
+                {!settingUp && <Pressable accessibilityRole="button" accessibilityLabel={t('guard.forgotPin', 'I forgot my PIN')}
+                  onPress={startRecovery} style={styles.outlineButton}>
+                  <Text style={styles.buttonText}>{t('guard.forgotPin', 'I forgot my PIN')}</Text>
+                </Pressable>}
+              </>
+          }
   </View>);
 }
 

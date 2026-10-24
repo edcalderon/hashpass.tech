@@ -200,7 +200,12 @@
       "pinSetupDone": "PIN guardado. Tu billetera está desbloqueada.",
       "unlocking": "Comprobando la protección de tu billetera…",
       "unavailable": "No pudimos comprobar la protección de tu billetera. Revisa tu conexión e inténtalo de nuevo.",
-      "retry": "Intentar de nuevo"
+      "retry": "Intentar de nuevo",
+      "forgotPin": "Olvidé mi PIN",
+      "recoveryChecking": "Comprobando tu billetera…",
+      "recoveryNoWallet": "Esta cuenta aún no tiene billetera, así que no hay nada que recuperar. Tu PIN protege tu cuenta; contacta a soporte si no puedes iniciar sesión.",
+      "recoveryUnavailable": "No pudimos conectar con el servicio de recuperación de PIN. Revisa tu conexión e inténtalo de nuevo.",
+      "backToPin": "Volver al PIN"
     },
     "vault": {
       "title": "Tu billetera",
@@ -256,6 +261,11 @@
       "back": "Volver",
       "wrongPin": "Ese PIN no abrió la billetera. No se cambió nada.",
       "changeFailed": "No se pudo cambiar el PIN. No se cambió nada.",
+      "changeUnknown": "No se pudo confirmar el cambio de PIN. Prueba primero tu nuevo PIN; si no abre la billetera, usa \"Olvidé mi PIN\" con tu frase de recuperación.",
+      "recoveryClosedTitle": "Recuperación de PIN",
+      "recoveryClosedBody": "Tu PIN no cambió. Puedes empezar de nuevo o volver al ingreso del PIN.",
+      "recoveryClosedRestart": "Empezar de nuevo",
+      "recoveryClosedExit": "Volver al ingreso del PIN",
       "conflict": "La billetera cambió mientras trabajabas. Empieza de nuevo.",
       "recoveryMismatch": "Esa frase de recuperación no corresponde a esta billetera.",
       "wordsWrong": "Esas palabras no son correctas. Revisa tu frase guardada.",

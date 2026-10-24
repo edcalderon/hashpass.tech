@@ -12,6 +12,8 @@ jest.mock('react-native', () => ({
     Value: class MockAnimatedValue {
       constructor(initial) { this.value = initial; }
       setValue(next) { this.value = next; }
+      // stopAnimation reports the (already synchronous) value; callers use it to re-sync.
+      stopAnimation(callback) { callback?.(this.value); return this.value; }
       interpolate({ inputRange, outputRange }) {
         const position = inputRange.indexOf(this.value);
         return position >= 0 ? outputRange[position] : outputRange[0];

@@ -15,23 +15,30 @@ import { useTheme } from '../../hooks/useTheme';
 import { useTranslation } from '../../i18n/i18n';
 import PinFlow from '../security/PinFlow';
 import PinPad from '../security/PinPad';
-import { walletVaultMachine, vaultFlowStep, type VaultFlowOrigin } from '../../hooks/wallet-vault-machine';
+import { walletVaultMachine, vaultFlowStep, type VaultFlowEvent, type VaultFlowOrigin } from '../../hooks/wallet-vault-machine';
 import type { VaultCommand } from './WalletVaultFlow.types';
 export type { VaultCommand } from './WalletVaultFlow.types';
 
-export default function WalletVaultFlow({ enrollment, onReload, onChanged, command }: {
+export default function WalletVaultFlow({ enrollment, onReload, onChanged, command, recoverOnly = false, onExit }: {
   enrollment: WalletEnrollment; onReload?: () => void;
   /** Called once the wallet's state changed on the server (created), so the card can refresh quietly. */
   onChanged?: () => void;
   /** An action chosen from the card's menu; applied once per nonce. */
   command?: VaultCommand | null;
+  /** Mount from the locked wallet gate: only the email-code recovery ever runs here, and
+   *  the wallet's home (reveal/change actions) is never rendered, so nothing protected is
+   *  exposed to a person who has not unlocked. */
+  recoverOnly?: boolean;
+  /** Used with `recoverOnly` to return to the gate's PIN entry. */
+  onExit?: () => void;
 }) {
   if (!enrollment.setupEnabled || enrollment.scope.environment !== 'development') {
     // Never silently hidden: the person must know the setup wizard exists, why it is not
     // offered here, and how to start it once it becomes available.
     return <SetupUnavailable environment={enrollment.scope.environment} registered={enrollment.state === 'registered'} onReload={onReload} />;
   }
-  return <Vault key={`${enrollment.scope.ownerId}:${enrollment.scope.walletId}`} initial={enrollment} onChanged={onChanged} command={command} />;
+  return <Vault key={`${enrollment.scope.ownerId}:${enrollment.scope.walletId}`} initial={enrollment} onChanged={onChanged}
+    command={command} recoverOnly={recoverOnly} onExit={onExit} />;
 }
 
 function SetupUnavailable({ environment, registered, onReload }: { environment: string; registered: boolean; onReload?: () => void }) {
@@ -53,7 +60,10 @@ function SetupUnavailable({ environment, registered, onReload }: { environment: 
   </View>;
 }
 
-function Vault({ initial, onChanged, command }: { initial: WalletEnrollment; onChanged?: () => void; command?: VaultCommand | null }) {
+function Vault({ initial, onChanged, command, recoverOnly = false, onExit }: {
+  initial: WalletEnrollment; onChanged?: () => void; command?: VaultCommand | null;
+  recoverOnly?: boolean; onExit?: () => void;
+}) {
   const { colors, isDark } = useTheme();
   const { t } = useTranslation('wallet');
   const mode = isDark ? 'dark' : 'light';
@@ -81,6 +91,11 @@ function Vault({ initial, onChanged, command }: { initial: WalletEnrollment; onC
   const challengeRef = useRef<RecoveryChallenge | null>(null);
   const actorRef = useRef<ReturnType<typeof createActor<typeof walletVaultMachine>> | null>(null);
 
+  // Events flow through the machine's own union, not the actor's inferred type: the isolated
+  // changed-file typecheck stubs the machine module, and a bare actor.send would lose every
+  // payload field (origin, next, reason) behind that stub.
+  const send = useCallback((event: VaultFlowEvent) => { actorRef.current?.send(event); }, []);
+
   const lockNow = useCallback(() => {
     // Invalidate in-flight work so a late result (a phrase!) can never land on screen.
     epoch.current++;
@@ -89,7 +104,7 @@ function Vault({ initial, onChanged, command }: { initial: WalletEnrollment; onC
     setRecoverCode(''); setRecoverPhrase(''); setRecoverProof(null); recoverProofRef.current = null;
     setChangeCurrent(null);
     setBackupPassword(''); setBackupConfirm(''); setBackupFormOpen(false); setBackupProblem(null);
-    actorRef.current?.send({ type: 'LOCK' });
+    send({ type: 'LOCK' });
     setBusy(false);
   }, []);
   useEffect(() => bindWalletLifecycle({ lock: lockNow }), [lockNow]);
@@ -99,6 +114,9 @@ function Vault({ initial, onChanged, command }: { initial: WalletEnrollment; onC
     actorRef.current = actor;
     const sub = actor.subscribe(snapshot => { setStep(vaultFlowStep(snapshot.value)); setAcknowledged(snapshot.context.acknowledged); });
     actor.start();
+    // A gate-mounted recovery enters the flow immediately: the wallet's home is never shown,
+    // only the recovery steps (which the full-screen secure modal below takes over anyway).
+    if (recoverOnly) send({ type: 'RECOVER' });
     return () => { sub.unsubscribe(); actor.stop(); actorRef.current = null; };
     // A quiet status refresh hands in a new row object for the same wallet; restarting the
     // machine then would throw away a phrase screen that is open. Only the identity restarts it.
@@ -111,7 +129,7 @@ function Vault({ initial, onChanged, command }: { initial: WalletEnrollment; onC
     if (!command || command.nonce === lastCommand.current) return;
     lastCommand.current = command.nonce;
     setPhrase(''); setChangeCurrent(null); setReason(null);
-    actorRef.current?.send({ type: command.type });
+    send({ type: command.type });
   }, [command]);
 
   const wallet = useMemo(() => new HybridWallet({
@@ -124,7 +142,14 @@ function Vault({ initial, onChanged, command }: { initial: WalletEnrollment; onC
       unlock: () => pinRef.current.proofFor('wallet:unlock'),
       sign: () => pinRef.current.proofFor('wallet:sign'),
     },
-    changeServerPin: (next, current) => pinRef.current.setPin(next, current),
+    // The vault dep must tell an authoritative rejection from a lost response: a plain false
+    // would make HybridWallet roll the envelope back while the server may have committed the
+    // new verifier, leaving the pair permanently out of step (see hybrid-wallet.changePin).
+    changeServerPin: async (next, current) => {
+      const outcome = await pinRef.current.setPinDetailed(next, current);
+      if (outcome === 'unknown') throw new Error('wallet_pin_change_unknown');
+      return outcome === 'changed';
+    },
     // The full proof object (scope + expiry, not just the token) is what the recovery endpoint checks.
     resetServerPin: async next => {
       const proof = recoverProofRef.current;
@@ -140,13 +165,13 @@ function Vault({ initial, onChanged, command }: { initial: WalletEnrollment; onC
     void (async () => {
       try {
         const next = await action();
-        if (stamp === epoch.current) { actorRef.current?.send({ type: 'SUCCEEDED', next }); onChanged?.(); }
+        if (stamp === epoch.current) { send({ type: 'SUCCEEDED', next }); onChanged?.(); }
       } catch (failure) {
         if (stamp !== epoch.current) return;
         const message = failure instanceof Error ? failure.message : 'vault_failed';
         if (message === 'wallet_step_up_required') pinRef.current.lock();
         setReason(message);
-        actorRef.current?.send({ type: 'FAILED', reason: message });
+        send({ type: 'FAILED', reason: message });
       } finally {
         working.current = false;
         if (stamp === epoch.current) setBusy(false);
@@ -195,20 +220,30 @@ function Vault({ initial, onChanged, command }: { initial: WalletEnrollment; onC
   const input = [styles.input, { color: colors.text.primary, borderColor: colors.divider }];
 
   const content = (() => {
+  // Gate-mounted recovery never shows the wallet's home (reveal/change actions). The only
+  // way back to this card is a cancel or a failure; a success unmounts the flow (onChanged).
+  if (recoverOnly && (step === 'home' || step === 'intro')) return <View style={stack}>
+    <Text style={heading}>{label('recoveryClosedTitle', 'PIN recovery')}</Text>
+    <Text style={body}>{label('recoveryClosedBody', 'Your PIN was not changed. You can start again or go back to the PIN entry.')}</Text>
+    <ActionButton mode={mode} disabled={busy} label={label('recoveryClosedRestart', 'Start again')}
+      onPress={() => { setReason(null); send({ type: 'RECOVER' }); }} />
+    {onExit && <ActionButton mode={mode} variant="ghost" disabled={busy}
+      label={label('recoveryClosedExit', 'Back to PIN entry')} onPress={onExit} />}
+  </View>;
   if (step === 'intro') return <View style={stack}>
     <Text style={heading}>{label('title', 'Your wallet')}</Text>
     <Text style={body}>{label('intro', 'Create your HASHPASS wallet: one wallet for Ethereum, Bitcoin and Solana (testnet for now), encrypted with your PIN. You will see your recovery phrase once and can save it.')}</Text>
     <Text style={body}>{label('exportOnly', 'HASHPASS only manages wallets it creates itself. You can export your recovery phrase at any time; importing wallets made elsewhere is not supported.')}</Text>
     <ActionButton mode={mode} disabled={busy} label={label('create', 'Create wallet')}
-      onPress={() => actorRef.current?.send({ type: 'CREATE' })} />
+      onPress={() => send({ type: 'CREATE' })} />
   </View>;
 
   if (step === 'enter_pin') return <View style={stack}>
     <Text style={heading}>{label('pinTitle', 'Confirm your PIN')}</Text>
     <Text style={body}>{label('pinIntro', 'Enter your 4-digit PIN. It encrypts your wallet and is asked every time you open your wallet and before every sensitive action.')}</Text>
     <PinFlow mode={mode} pin={pin} scope="wallet:unlock" intent="unlock"
-      onDone={digits => { if (digits) { setPhrase(''); actorRef.current?.send({ type: 'PIN_OK', origin: 'create' }); create(digits); } }}
-      onCancel={() => actorRef.current?.send({ type: 'CANCEL' })} />
+      onDone={(digits?: string) => { if (digits) { setPhrase(''); send({ type: 'PIN_OK', origin: 'create' }); create(digits); } }}
+      onCancel={() => send({ type: 'CANCEL' })} />
   </View>;
 
   if (step === 'working') return <View style={stack}><Text style={body}>{label('working', 'Working…')}</Text></View>;
@@ -221,11 +256,11 @@ function Vault({ initial, onChanged, command }: { initial: WalletEnrollment; onC
     </Text>
     <Text style={body}>{label('acknowledge', 'I understand that if I lose this phrase my funds cannot be recovered, and that HASHPASS is not responsible for the management or security of my assets.')}</Text>
     <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: acknowledged }}
-      onPress={() => actorRef.current?.send({ type: 'ACKNOWLEDGE' })} style={styles.check}>
+      onPress={() => send({ type: 'ACKNOWLEDGE' })} style={styles.check}>
       <Text style={{ color: colors.text.primary }}>{label('acknowledgeShort', 'I understand and accept')}</Text>
     </Pressable>
     <ActionButton mode={mode} disabled={busy} label={label('hide', 'I saved it — continue')}
-      onPress={() => { setPhrase(''); actorRef.current?.send({ type: 'HIDE' }); }} />
+      onPress={() => { setPhrase(''); send({ type: 'HIDE' }); }} />
     <ActionButton mode={mode} variant="ghost" disabled={busy || !acknowledged}
       label={label('download', 'Download unprotected phrase')}
       onPress={() => { void saveRecoveryFile(phrase, true); }} />
@@ -259,21 +294,21 @@ function Vault({ initial, onChanged, command }: { initial: WalletEnrollment; onC
       <Text style={heading}>{label('homeTitle', 'Wallet ready')}</Text>
       <Text style={body}>{label('homeIntro', 'Your wallet is encrypted with your PIN. If you forget it, a code from your email plus your recovery phrase resets it.')}</Text>
       <ActionButton mode={mode} disabled={busy} label={label('reveal', 'Show recovery phrase')}
-        onPress={() => { setPhrase(''); actorRef.current?.send({ type: 'REVEAL' }); }} />
+        onPress={() => { setPhrase(''); send({ type: 'REVEAL' }); }} />
       <ActionButton mode={mode} variant="secondary" disabled={busy} label={label('change', 'Change PIN')}
-        onPress={() => { setChangeCurrent(null); actorRef.current?.send({ type: 'CHANGE' }); }} />
+        onPress={() => { setChangeCurrent(null); send({ type: 'CHANGE' }); }} />
       <ActionButton mode={mode} variant="ghost" disabled={busy} label={label('recover', 'I forgot my PIN')}
-        onPress={() => actorRef.current?.send({ type: 'RECOVER' })} />
+        onPress={() => send({ type: 'RECOVER' })} />
     </>}
     {step === 'reveal_pin' && <PinFlow mode={mode} pin={pin} scope="wallet:unlock" intent="unlock"
-      onDone={digits => { if (digits) { actorRef.current?.send({ type: 'PIN_OK', origin: 'reveal' }); reveal(digits); } }}
-      onCancel={() => actorRef.current?.send({ type: 'CANCEL' })} />}
+      onDone={(digits?: string) => { if (digits) { send({ type: 'PIN_OK', origin: 'reveal' }); reveal(digits); } }}
+      onCancel={() => send({ type: 'CANCEL' })} />}
     {step === 'change_pin' && (changeCurrent === null
       ? <PinFlow mode={mode} pin={pin} scope="wallet:unlock" intent="unlock"
-          onDone={digits => { if (digits) setChangeCurrent(digits); }}
-          onCancel={() => actorRef.current?.send({ type: 'CANCEL' })} />
-      : <NewPinEntry mode={mode} label={label} onDone={digits => { actorRef.current?.send({ type: 'PIN_OK', origin: 'change' }); change(digits); }}
-        onCancel={() => { setChangeCurrent(null); actorRef.current?.send({ type: 'CANCEL' }); }} />)}
+          onDone={(digits?: string) => { if (digits) setChangeCurrent(digits); }}
+          onCancel={() => send({ type: 'CANCEL' })} />
+      : <NewPinEntry mode={mode} label={label} onDone={digits => { send({ type: 'PIN_OK', origin: 'change' }); change(digits); }}
+        onCancel={() => { setChangeCurrent(null); send({ type: 'CANCEL' }); }} />)}
     {step === 'challenge' && <>
       <Text style={body}>{label('challenge', 'Enter the requested words from your saved recovery phrase.')}</Text>
       {(challengeRef.current?.positions ?? []).map((position, index) => <View key={position}>
@@ -285,7 +320,7 @@ function Vault({ initial, onChanged, command }: { initial: WalletEnrollment; onC
       <ActionButton mode={mode} disabled={busy} label={label('verifyWords', 'Verify recovery words')} onPress={() => {
         if (challengeRef.current?.verify(challengeAnswers)) {
           challengeRef.current.dispose(); challengeRef.current = null; setChallengeAnswers(['', '', '']);
-          actorRef.current?.send({ type: 'CHALLENGE_PASSED' });
+          send({ type: 'CHALLENGE_PASSED' });
         } else setReason('vault_words_wrong');
       }} />
     </>}
@@ -293,8 +328,8 @@ function Vault({ initial, onChanged, command }: { initial: WalletEnrollment; onC
       <Text style={body}>{label('recoverIntro', 'We will email you a 6-digit code. You will also need your recovery phrase.')}</Text>
       <ActionButton mode={mode} disabled={busy} label={label('sendCode', 'Email me a reset code')}
         onPress={() => { setBusy(true); setReason(null);
-          void walletPinRecoveryClient.sendRecoveryCode().then(() => { setBusy(false); actorRef.current?.send({ type: 'CODE_SENT' }); })
-            .catch(failure => { setBusy(false); setReason(messageOf(failure)); }); }} />
+          void walletPinRecoveryClient.sendRecoveryCode().then(() => { setBusy(false); send({ type: 'CODE_SENT' }); })
+            .catch((failure: unknown) => { setBusy(false); setReason(messageOf(failure)); }); }} />
     </>}
     {step === 'recover_code' && <>
       <Text style={body}>{label('codeHint', 'Enter the 6-digit code from your email.')}</Text>
@@ -302,35 +337,38 @@ function Vault({ initial, onChanged, command }: { initial: WalletEnrollment; onC
         value={recoverCode} onChangeText={setRecoverCode} style={input} />
       <ActionButton mode={mode} disabled={busy || recoverCode.length !== 6} label={label('codeNext', 'Continue')}
         onPress={() => { setBusy(true); setReason(null);
-          void walletPinRecoveryClient.verifyRecoveryCode(recoverCode).then(proof => {
-            setBusy(false); recoverProofRef.current = proof; setRecoverProof(proof.token); actorRef.current?.send({ type: 'CODE_OK' });
-          }).catch(failure => { setBusy(false); setReason(messageOf(failure)); }); }} />
+          void walletPinRecoveryClient.verifyRecoveryCode(recoverCode).then((proof: import('../../types/step-up.types').StepUpProof) => {
+            setBusy(false); recoverProofRef.current = proof; setRecoverProof(proof.token); send({ type: 'CODE_OK' });
+          }).catch((failure: unknown) => { setBusy(false); setReason(messageOf(failure)); }); }} />
     </>}
     {step === 'recover_phrase' && <>
       <Text style={body}>{label('recoverPhraseHint', 'Enter your recovery phrase to prove this wallet is yours.')}</Text>
       <TextInput accessibilityLabel={label('recoverPhrase', 'Recovery phrase')} value={recoverPhrase}
         onChangeText={setRecoverPhrase} multiline style={input} />
       <ActionButton mode={mode} disabled={busy || !recoverPhrase.trim()} label={label('phraseNext', 'Continue')}
-        onPress={() => actorRef.current?.send({ type: 'PHRASE_OK' })} />
+        onPress={() => send({ type: 'PHRASE_OK' })} />
     </>}
     {step === 'recover_pin' && <NewPinEntry mode={mode} label={label}
-      onDone={digits => { actorRef.current?.send({ type: 'PIN_OK', origin: 'recover' }); recover(digits); }}
-      onCancel={() => actorRef.current?.send({ type: 'CANCEL' })} />}
+      onDone={digits => { send({ type: 'PIN_OK', origin: 'recover' }); recover(digits); }}
+      onCancel={() => send({ type: 'CANCEL' })} />}
     {step === 'failed' && <>
       <Text style={body}>{describeFailure(reason ?? 'vault_failed', label)}</Text>
       <ActionButton mode={mode} label={label('back', 'Go back')}
-        onPress={() => { setChangeCurrent(null); actorRef.current?.send({ type: 'BACK' }); }} />
+        onPress={() => { setChangeCurrent(null); send({ type: 'BACK' }); }} />
     </>}
   </View>;
   })();
 
-  // Everything past the intro and the wallet's home is a security-sensitive step (PIN entry,
-  // the recovery phrase, resets). Those take over the whole screen, like the initial PIN
-  // setup, so nothing else on the page can be tapped or read while they run.
-  const secure = step !== 'intro' && step !== 'home';
+  // Screens that SHOW a secret (the recovery phrase, its word challenge, the backup form)
+  // take over the whole screen, like the initial PIN setup, so nothing else on the page can
+  // be tapped or read while they are up. The PIN pads show no secret, so they stay inside
+  // the card — the same view the wallet's locked gate uses (per product feedback, the
+  // in-card pad reads as one flow, not a second lock).
+  const inline = step === 'enter_pin' || step === 'reveal_pin' || step === 'change_pin' || step === 'recover_pin';
+  const secure = step !== 'intro' && step !== 'home' && !inline;
   if (!secure) return content;
   const cancellable = step === 'enter_pin' || step === 'reveal_pin' || step === 'change_pin' || step === 'recover_code' || step === 'recover_phrase' || step === 'recover_pin';
-  return <Modal visible animationType="fade" onRequestClose={() => { if (cancellable) actorRef.current?.send({ type: 'CANCEL' }); }}>
+  return <Modal visible animationType="fade" onRequestClose={() => { if (cancellable) send({ type: 'CANCEL' }); }}>
     <View style={[styles.fullScreen, { backgroundColor: colors.background.default }]}>
       <ScrollView contentContainerStyle={styles.fullScreenContent} keyboardShouldPersistTaps="handled">
         <View style={styles.fullScreenInner}>{content}</View>
@@ -376,6 +414,7 @@ function describeFailure(reason: string, label: (key: string, fallback: string) 
     case 'wallet_vault_missing': return label('vaultMissing', 'The encrypted wallet record is missing for this account. Use "I forgot my PIN" with your recovery phrase to rebuild it.');
     case 'vault_unlock_failed': return label('wrongPin', 'That PIN did not unlock the wallet. Nothing was changed.');
     case 'wallet_pin_change_failed': return label('changeFailed', 'The PIN could not be changed. Nothing was changed.');
+    case 'wallet_pin_change_unknown': return label('changeUnknown', 'The PIN change could not be confirmed. Try your new PIN first; if it does not open the wallet, use "I forgot my PIN" with your recovery phrase.');
     case 'wallet_vault_conflict': return label('conflict', 'The wallet changed while you were working. Start again.');
     case 'wallet_recovery_mismatch': return label('recoveryMismatch', 'That recovery phrase does not match this wallet.');
     case 'vault_words_wrong': return label('wordsWrong', 'Those words are not right. Check your saved recovery phrase.');

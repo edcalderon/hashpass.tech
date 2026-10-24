@@ -7,6 +7,11 @@ jest.mock('../../hooks/useTheme', () => ({ useTheme: () => ({ isDark: false, col
   text: { primary: '#111', secondary: '#555' },
 } }) }));
 jest.mock('../../i18n/i18n', () => ({ useTranslation: () => ({ t: (_key: string, fallback: string) => fallback }) }));
+// DrawerSheet reads both motion preferences; the app-level one comes from this provider.
+let mockAnimations = true;
+jest.mock('../../providers/AnimationProvider', () => ({
+  useAnimations: () => ({ animationsEnabled: mockAnimations, setAnimationsEnabled: jest.fn(), isReady: true }),
+}));
 import WalletHelpDrawer from '../../components/wallet/WalletHelpDrawer';
 
 const search = (view: ReactTestRenderer, text: string) => {
@@ -44,5 +49,21 @@ describe('wallet help drawer', () => {
     act(() => tabs[3].props.onPress());
     expect(rendered(view)).toContain('How do I get help?');
     act(() => view.unmount());
+  });
+
+  it('opens with the app animations disabled: the sheet appears at once, no movement', () => {
+    mockAnimations = false;
+    let view!: ReactTestRenderer;
+    try {
+      act(() => { view = create(<WalletHelpDrawer open onClose={() => {}} />); });
+      // The entrance lands on the visible endpoints immediately; the sheet is fully usable.
+      expect(rendered(view)).toContain('Who controls my assets?');
+      const first = items(view)[0];
+      act(() => first.props.onPress());
+      expect(first.props.accessibilityState.expanded).toBe(true);
+    } finally {
+      mockAnimations = true;
+      if (view) act(() => view.unmount());
+    }
   });
 });

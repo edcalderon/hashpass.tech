@@ -9,7 +9,8 @@ let mockPad: any;
 jest.mock('../../../components/security/PinPad', () => ({ __esModule: true, default: (props: any) => { mockPad = props; return null; } }));
 
 const makePin = (overrides: Partial<UsePin> = {}): UsePin => ({
-  busy: false, problem: null, isUnlocked: jest.fn(() => false), setPin: jest.fn(async () => true), unlock: jest.fn(async () => true),
+  busy: false, problem: null, isUnlocked: jest.fn(() => false), setPin: jest.fn(async () => true),
+  setPinDetailed: jest.fn(async () => 'changed' as const), unlock: jest.fn(async () => true),
   proofFor: jest.fn(() => null), lock: jest.fn(), clearProblem: jest.fn(), ...overrides,
 });
 async function mount(pin: UsePin, intent: 'create' | 'unlock', onDone = jest.fn(), onCancel?: () => void) {

@@ -17,6 +17,9 @@ export interface UsePin {
   isUnlocked: (scope: StepUpScope) => boolean;
   /** Creates a PIN (or changes it when `currentPin` is given). The PIN is passed through, never stored. */
   setPin: (pin: string, currentPin?: string) => Promise<boolean>;
+  /** The same as `setPin`, keeping the server's outcome apart. 'rejected' is an authoritative
+   *  no; 'unknown' means the response was lost, so the server may have committed the change. */
+  setPinDetailed: (pin: string, currentPin?: string) => Promise<'changed' | 'rejected' | 'unknown'>;
   /** Checks the PIN and keeps the resulting short-lived proof in memory. */
   unlock: (pin: string, scope: StepUpScope) => Promise<boolean>;
   /** The proof to attach to a sensitive request, or null when the person must enter the PIN. */

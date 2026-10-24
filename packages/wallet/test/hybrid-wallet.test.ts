@@ -123,6 +123,21 @@ test('puts the vault back if the server refuses the verifier change', async () =
   await assert.rejects(openHybridVault(scope, vault.envelope!, '5678', share), /vault_unlock_failed/);
 });
 
+test('keeps the vault on the new PIN when the verifier change outcome is unknown', async () => {
+  const vault = new MockVault();
+  vault.envelope = await createHybridVault(scope, phrase, 'testnet', '1234', share);
+  vault.version = 1;
+  // A lost response, not a rejection: the server may have committed the new verifier. Rolling
+  // the envelope back could then strand the pair (verifier `5678`, envelope `1234`).
+  const wallet = makeWallet(registered, vault, {
+    changeServerPin: async () => { throw new Error('network down'); },
+  });
+  await assert.rejects(wallet.changePin('1234', '5678'), /wallet_pin_change_unknown/);
+  assert.equal((await openHybridVault(scope, vault.envelope!, '5678', share)).mnemonic, phrase);
+  // Exactly one save (the re-wrap): the restore path never ran.
+  assert.equal(vault.saved.length, 1);
+});
+
 test('recovers with the right phrase and rejects a wrong one before anything is saved', async () => {
   const vault = new MockVault();
   vault.envelope = await createHybridVault(scope, phrase, 'testnet', '1234', share);
