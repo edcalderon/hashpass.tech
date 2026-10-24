@@ -1,8 +1,12 @@
 # Second factor: per-user PIN, setup and step-up proofs
 
-Status: implemented on `develop`, **not yet released**. Server enforcement is live in code
-for wallet creation; it fails closed (HTTP 503) until `HASHPASS_PIN_PEPPER` is provisioned
-in the API environments.
+Status: implemented; the app-side gate and onboarding wizard ship in v1.9.142. Server
+enforcement is live in code for wallet creation; it fails closed (HTTP 503) until
+`HASHPASS_PIN_PEPPER` is provisioned in the API environments.
+
+The app-side wallet flows (the PIN gate, the create-only vault wizard, the PIN-change
+unknown-outcome rule and the locked-gate recovery entry) are documented in
+[wallet-onboarding.md](../reference/mobile-app/wallet-onboarding.md).
 
 This document covers what a signed-in person does *in addition to* signing in: choose a
 4-digit PIN once, and re-enter it before something sensitive happens (creating a wallet today,
@@ -124,7 +128,9 @@ claims = { v:1, sub:<userId>, scope, iat, exp, jti }
 | Scope | Lifetime | Used for |
 |-------|---------:|----------|
 | `app:unlock` | 300 s | Screen lock / re-entering Contacts, PIN setup confirmation |
-| `wallet:sign` | 60 s | Creating a wallet now; signing transactions next |
+| `wallet:unlock` | 300 s | Opening the wallet screen (the PIN gate); creating the vault envelope (expectedVersion 0) |
+| `wallet:sign` | 60 s | Creating a wallet (reservation); signing transactions next |
+| `wallet:recover` | 600 s | PIN recovery only — minted solely by the recovery verify route (§12), never by verify-PIN |
 
 Properties, all covered by tests (`tests/lib/pin-auth.test.ts`):
 
@@ -205,22 +211,33 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
   participant P as Person
-  participant W as WalletOnboarding
+  participant G as WalletGate
+  participant W as WalletVaultFlow
   participant A as API
-  P->>W: Create testnet wallet
-  alt no live wallet:sign proof
-    W->>P: PinFlow (unlock, scope wallet:sign)
-    P->>W: PIN → proof
+  P->>G: open the wallet tab
+  alt no live wallet:unlock proof
+    G->>P: PinFlow (unlock intent, scope wallet:unlock)
+    P->>G: PIN → proof
   end
-  W->>A: reserve + X-Hashpass-Step-Up: proof
+  G->>W: unlock; wizard shows the card
+  P->>W: Create wallet
+  W->>P: enter the PIN digits (they encrypt the vault; asked again by design)
+  P->>W: PIN → unlock proof used for the envelope
+  W->>A: reserve + X-Hashpass-Step-Up: wallet:sign proof
   A->>A: verifyStepUpProof(owner, wallet:sign)
   alt valid
     A-->>W: reserved
   else missing / expired / wrong scope / other user
     A-->>W: 403 step_up_required
-    W->>W: forget proof, ask again
+    W-->>P: forget proof, ask again
   end
 ```
+
+The PIN appears twice at creation on purpose: the gate verifies *identity* (it exchanges
+the PIN for a `wallet:unlock` proof), while the wizard needs the *digits themselves* to
+wrap the vault envelope — the PIN is never stored, so it must be asked whenever something
+is encrypted with it. Full app-side flow:
+[wallet-onboarding.md](../reference/mobile-app/wallet-onboarding.md).
 
 Resuming an existing local wallet does not need the PIN; the wallet password protects it.
 

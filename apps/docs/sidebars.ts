@@ -147,6 +147,7 @@ const sidebars = {
             'reference/mobile-app/event-api-architecture',
             'reference/mobile-app/e2e-meeting-chat',
             'reference/mobile-app/db-user-id-pattern',
+            'reference/mobile-app/wallet-onboarding',
             'reference/mobile-app/eas-update-ota',
           ],
         },
