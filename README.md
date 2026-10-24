@@ -20,18 +20,26 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.141)
+## 📋 Latest Changes (v1.9.142)
 
 ### Bug Fixes
 
-* **auth:** deduplicate Better Auth OAuth identities ([3b0ed59](https://github.com/hashpass-tech/hashpass.tech/commit/3b0ed59b5cb7ddf42a9bb4512b8e48b0e5aea1c1))
+* **wallet:** explicit parameter types for the isolated changed-file typecheck ([bb4d8dd](https://github.com/hashpass-tech/hashpass.tech/commit/bb4d8dd54e276692fe6c7c7bbc8691b6a60da1ec))
+
+
+### Features
+
+* **wallet:** PIN-protected hybrid vault wizard, create-only, full-screen secure steps ([f978528](https://github.com/hashpass-tech/hashpass.tech/commit/f9785283f0dbd1c411dba55f4ecd1b0466b9e9b6))
 ### Release Highlights
-- deduplicate Better Auth OAuth identities
+- PIN-protected hybrid vault wizard, create-only, full-screen secure steps; explicit parameter types for the isolated changed-file typecheck
 
 ### Release scope
-- Compared with: `v1.9.140` (the previous global release tag)
+- Compared with: `v1.9.141` (the previous global release tag)
 
 ### Affected products & packages
+- Mobile app
+- SDK
+- Auth
 - Database migrations
 - Documentation
 - Release tooling
