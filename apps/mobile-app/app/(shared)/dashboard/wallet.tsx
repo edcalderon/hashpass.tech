@@ -14,6 +14,7 @@ import PinFlow from '../../../components/security/PinFlow';
 import { useAuth } from '../../../hooks/useAuth';
 import { useWalletGuard, WALLET_UNLOCK_SCOPE } from '../../../hooks/useWalletGuard';
 import type { ThemeColors } from '../../../lib/theme';
+import { uiTokens } from '@hashpass/ui/tokens';
 
 type Section = 'assets' | 'rewards' | 'passes';
 const NETWORKS = [
@@ -169,7 +170,7 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
   stack: { gap: 20 },
   securityHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   securityHeading: { flexDirection: 'row', alignItems: 'center', gap: 10, flexShrink: 1 },
-  securityIcon: { width: 36, height: 36, borderRadius: 12, borderWidth: 1, borderColor: colors.divider, alignItems: 'center', justifyContent: 'center' },
+  securityIcon: { width: 36, height: 36, borderRadius: uiTokens.radius.input, borderWidth: 1, borderColor: colors.divider, alignItems: 'center', justifyContent: 'center' },
   securityIconGlyph: { fontSize: 16 },
   learnMore: { minHeight: 44, justifyContent: 'center' },
   learnMoreText: { color: colors.primary, fontSize: 14, fontWeight: '600' },

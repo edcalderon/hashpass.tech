@@ -70,7 +70,7 @@ export default function DrawerSheet({
 const getStyles = (colors: ThemeColors) => StyleSheet.create({
   root: { flex: 1, justifyContent: 'flex-end' },
   backdropLayer: { ...StyleSheet.absoluteFillObject },
-  backdrop: { backgroundColor: 'rgba(0,0,0,0.45)' },
+  backdrop: { backgroundColor: uiTokens.effects.mediaVenueScrim },
   // Fills the root (definite height) so the panel's percentage heights resolve reliably;
   // content anchors to the bottom and box-none lets taps above the panel reach the backdrop.
   panelWrap: { flex: 1, justifyContent: 'flex-end' },
@@ -85,11 +85,11 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
   // Grab area: 40pt tall (standard touch target) with a 36×5 pill; no text, no chevron —
   // the sheet's own slide animation communicates the expanded state.
   grabArea: { minHeight: 40, alignItems: 'center', justifyContent: 'center', paddingTop: 10, paddingBottom: 2 },
-  grabber: { width: 36, height: 5, borderRadius: 3, backgroundColor: colors.divider },
+  grabber: { width: 36, height: 5, borderRadius: uiTokens.radius.pill, backgroundColor: colors.divider },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: uiTokens.space.lg, gap: 12 },
   title: { color: colors.text.primary, fontSize: 22, fontWeight: '700', flexShrink: 1 },
-  closeButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 22,
+  closeButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: uiTokens.radius.circle,
     borderWidth: 1, borderColor: colors.divider },
   closeIcon: { color: colors.text.primary, fontSize: 22, fontWeight: '700' },
   body: { paddingHorizontal: uiTokens.space.lg },

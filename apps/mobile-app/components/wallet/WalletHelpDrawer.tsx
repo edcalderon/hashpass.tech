@@ -6,6 +6,7 @@ import { useTranslation } from '../../i18n/i18n';
 import DrawerSheet from '../ui/DrawerSheet';
 import type { ThemeColors } from '../../lib/theme';
 import type { FaqEntry, FaqCategory } from './WalletHelpDrawer.types';
+import { uiPalette, uiTokens } from '@hashpass/ui/tokens';
 
 /**
  * The wallet's internal support wiki, hosted in the shared DrawerSheet base: semantic-ish
@@ -19,8 +20,7 @@ const SYNONYMS: Record<string, string[]> = {
   lost: ['forgot', 'lose', 'losing'], stolen: ['control', 'private'],
   backup: ['recovery phrase', 'phrase', 'save'], back: ['recovery phrase', 'phrase'],
   seed: ['recovery phrase', 'phrase'], words: ['recovery phrase', 'phrase'],
-  import: ['bip-39', 'metamask', 'ledger', 'phantom', 'existing'],
-  bring: ['import', 'bip-39'], transfer: ['move', 'send', 'funds'],
+  transfer: ['move', 'send', 'funds'],
   money: ['funds', 'assets'], crypto: ['assets', 'funds'],
   safe: ['security', 'control'], secure: ['security', 'control'],
   custodial: ['non-custodial', 'control'], bank: ['non-custodial', 'control'],
@@ -131,16 +131,16 @@ export function WalletHelpButton({ onPress }: { onPress: () => void }) {
 }
 
 const helpStyles = StyleSheet.create({
-  button: { position: 'absolute', right: 20, bottom: 28, width: 56, height: 56, borderRadius: 28,
+  button: { position: 'absolute', right: 20, bottom: 28, width: 56, height: 56, borderRadius: uiTokens.radius.circle,
     alignItems: 'center', justifyContent: 'center', elevation: 4, shadowOpacity: 0.25, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } },
-  icon: { color: '#FFFFFF', fontSize: 24, fontWeight: '800' },
+  icon: { color: uiPalette(false).onAccent, fontSize: 24, fontWeight: '800' },
 });
 
 const getStyles = (colors: ThemeColors) => StyleSheet.create({
-  search: { minHeight: 48, borderRadius: 12, borderWidth: 1, borderColor: colors.divider,
+  search: { minHeight: 48, borderRadius: uiTokens.radius.input, borderWidth: 1, borderColor: colors.divider,
     paddingHorizontal: 14, color: colors.text.primary, fontSize: 14 },
   list: { gap: 12 },
-  item: { borderRadius: 16, borderWidth: 1, borderColor: colors.divider, padding: 16, gap: 10 },
+  item: { borderRadius: uiTokens.radius.media, borderWidth: 1, borderColor: colors.divider, padding: 16, gap: 10 },
   itemButton: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   question: { color: colors.text.primary, fontSize: 15, fontWeight: '600', flexShrink: 1 },
   body: { color: colors.text.secondary, fontSize: 14, lineHeight: 22 },

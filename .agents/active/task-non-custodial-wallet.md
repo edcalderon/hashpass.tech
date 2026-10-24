@@ -434,3 +434,12 @@ Production remains disabled; no migration or signing rollout occurred.
 - `DrawerSheet`: JS-driven entrance animation (no `useNativeDriver` warning on web), backdrop absolutely fills the modal (white-strip fix), grabber pill, `defaultHeight` prop ('content' default, 'medium'). The help drawer opens content-fit.
 - `jest.setup.cjs`: `Animated` mock gained `Value`, `timing` and `parallel`.
 - Verification: `npx jest tests/wallet tests/lib/pin-auth` gives 15 suites / 111 tests green.
+
+### 2026-10-24 (release v1.9.142: create-only vault wizard)
+- **Migrations**: new `database-profiles.json` groups `non-custodial-wallet` (V097/V137/V138), `chat-key-backup` (V075), `event-public-flags` (V109), all in `core-development`; V075 and V109 applied to dev. V125 (one-off BSL prod consolidation, needs staged `bsl_import*` schemas) intentionally NOT applied to dev.
+- **Create-only**: import of external wallets removed from the machine, UI, copy and tests (security: HASHPASS does not handle externally created wallets; export only). `HybridWallet.importPhrase` still exists in `packages/wallet` but no UI reaches it.
+- **Full-screen secure steps**: every step except `intro`/`home` (PIN, phrase, challenge, recovery) renders in a full-screen `Modal`, so nothing else is actionable during the checks.
+- **Wallet detection**: the card derives its state from the enrollment row (registered -> "Wallet active" + menu; enrolled -> "No wallet yet" + Set up wallet; provisioning -> "Setup incomplete"). Refresh is quiet (`load(true)`) and the machine is keyed on owner/wallet ids, so a refresh no longer restarts an open wizard.
+- **Card redesign**: top row with READ ONLY badge, refresh icon and three-dot menu (export phrase / change PIN / forgot PIN); Send/Receive with icons.
+- **Guards**: type declarations moved to `*.types.ts`; hardcoded radii/colors replaced by `uiTokens`/`uiPalette` (design-system guard).
+- **Open**: confirm on a restarted dev server that `/api/wallet/enrollment` returns 200 and the wizard runs end to end; provision `HASHPASS_VAULT_KEK` for real environments.
