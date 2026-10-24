@@ -351,7 +351,7 @@ function NewPinEntry({ mode, label, onDone, onCancel }: {
       title={first === null ? label('newPinTitle', 'Choose a new 4-digit PIN') : label('newPinConfirmTitle', 'Enter the same four digits again')}
       hint={label('newPinHint', 'This PIN encrypts your wallet from now on.')}
       error={mismatch ? label('mismatch', 'The two PINs did not match. Start again.') : null}
-      onComplete={entered => {
+      onComplete={(entered: string) => {
         if (first === null) { setFirst(entered); setMismatch(false); return; }
         if (first !== entered) { setFirst(null); setMismatch(true); return; }
         setFirst(null); onDone(entered);

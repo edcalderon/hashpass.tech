@@ -54,11 +54,11 @@ export default function PinFlow({ mode, pin, scope, intent, onDone, onCancel }: 
 
   const submit = useCallback((entered: string) => {
     setMismatch(false);
-    if (!creating) { void pin.unlock(entered, scope).then(ok => { if (ok) onDone(entered); }); return; }
+    if (!creating) { void pin.unlock(entered, scope).then((ok: boolean) => { if (ok) onDone(entered); }); return; }
     if (first === null) { clearProblem(); setFirst(entered); return; }
     if (first !== entered) { setFirst(null); setMismatch(true); return; }
     setFirst(null);
-    void pin.setPin(entered).then(async saved => {
+    void pin.setPin(entered).then(async (saved: boolean) => {
       if (saved && await pin.unlock(entered, scope)) onDone(entered);
     });
   }, [creating, first, pin, scope, onDone, clearProblem]);

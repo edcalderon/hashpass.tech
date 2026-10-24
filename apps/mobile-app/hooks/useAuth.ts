@@ -106,18 +106,19 @@ const getBetterAuthBootstrapSession = (provider: IAuthProvider): Promise<AuthSes
   }
 
   if (!betterAuthBootstrapPromise) {
-    betterAuthBootstrapPromise = withTimeout(
+    const bootstrap: Promise<AuthSession | null> = withTimeout(
       provider.getSession(),
       BETTER_AUTH_BOOTSTRAP_TIMEOUT_MS,
       'betterAuthProvider.getSession',
     ).finally(() => {
       betterAuthBootstrapSettled = true;
     });
+    betterAuthBootstrapPromise = bootstrap;
     // Log the failure exactly once, here. Every useAuth mount awaits this same cached
     // promise, so per-mount catch handlers replay the identical line dozens of times
     // during one cold start (the 8s-timeout LogBox spam). Attaching this handler also
     // keeps the shared promise from surfacing as an unhandled rejection.
-    betterAuthBootstrapPromise.catch((error: unknown) => {
+    bootstrap.catch((error: unknown) => {
       console.warn('[useAuth] Better Auth session bootstrap failed:', error);
     });
   }
