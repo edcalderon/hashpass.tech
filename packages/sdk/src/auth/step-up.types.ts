@@ -7,7 +7,7 @@
  * endpoints (wallet signing) demand a proof for their scope; everything else
  * keeps using the normal bearer session.
  */
-export type StepUpScope = "app:unlock" | "wallet:sign";
+export type StepUpScope = "app:unlock" | "wallet:sign" | "wallet:unlock" | "wallet:recover";
 
 export interface StepUpProof {
   token: string;

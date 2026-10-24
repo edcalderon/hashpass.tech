@@ -1,6 +1,6 @@
 import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
 
-import type { StepUpClaims, StepUpScope } from '../types/step-up.types';
+import type { StepUpClaims, StepUpScope } from '../../types/step-up.types';
 
 export type { StepUpClaims, StepUpScope };
 
@@ -19,8 +19,15 @@ const KDF_LABEL = 'hashpass-pin:v1';
 const PROOF_LABEL = 'hashpass-step-up:v1';
 
 /** Highest-risk scopes first. A proof only ever authorises the scope it names. */
-export const STEP_UP_SCOPES = ['app:unlock', 'wallet:sign'] as const satisfies readonly StepUpScope[];
-export const STEP_UP_TTL_SECONDS: Record<StepUpScope, number> = { 'app:unlock': 300, 'wallet:sign': 60 };
+export const STEP_UP_SCOPES = ['app:unlock', 'wallet:sign', 'wallet:unlock', 'wallet:recover'] as const satisfies readonly StepUpScope[];
+export const STEP_UP_TTL_SECONDS: Record<StepUpScope, number> = { 'app:unlock': 300, 'wallet:sign': 60, 'wallet:unlock': 300, 'wallet:recover': 600 };
+/**
+ * Scopes the verify-PIN route may mint. `wallet:recover` is the PIN-reset capability: it is
+ * minted only by the wallet recovery route after an emailed code, never from the PIN it replaces.
+ */
+export const PIN_MINTABLE_SCOPES = ['app:unlock', 'wallet:sign', 'wallet:unlock'] as const satisfies readonly StepUpScope[];
+export const isPinMintableScope = (value: unknown): value is (typeof PIN_MINTABLE_SCOPES)[number] =>
+  typeof value === 'string' && (PIN_MINTABLE_SCOPES as readonly string[]).includes(value);
 export const isStepUpScope = (value: unknown): value is StepUpScope =>
   typeof value === 'string' && (STEP_UP_SCOPES as readonly string[]).includes(value);
 

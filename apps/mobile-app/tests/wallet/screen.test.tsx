@@ -15,6 +15,14 @@ jest.mock('../../components/BlockchainTokensView', () => 'Rewards');
 jest.mock('../../components/HashPointsView', () => 'Points');
 jest.mock('../../components/PassesDisplay', () => 'PassesDisplay');
 jest.mock('../../components/wallet/WalletEnrollmentView', () => 'WalletEnrollment');
+jest.mock('../../hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'u1' }, isLoading: false }) }));
+let mockPhase = 'unlocked';
+const mockPinDone = jest.fn();
+jest.mock('../../hooks/useWalletGuard', () => ({
+  WALLET_UNLOCK_SCOPE: 'wallet:unlock',
+  useWalletGuard: () => ({ phase: mockPhase, pin: {}, onPinDone: mockPinDone, retry: jest.fn(), lock: jest.fn() }),
+}));
+jest.mock('../../components/security/PinFlow', () => 'PinFlow');
 import Wallet from '../../app/(shared)/dashboard/wallet';
 
 it('explains setup availability, expands security, and navigates to genuine pass/reward surfaces', () => {
@@ -22,7 +30,10 @@ it('explains setup availability, expands security, and navigates to genuine pass
   act(() => { view = create(<Wallet />); });
   expect(view.root.findAllByType('WalletEnrollment' as any)).toHaveLength(1);
   expect(JSON.stringify(view.toJSON())).not.toContain('BSL2025-VIP-001');
-  const securityButton = () => view.root.findAllByType(Pressable).find(node => node.props.accessibilityRole === 'button')!;
+  // The security accordion is the only button whose state carries `expanded`; the balance
+  // card's Send/Receive action buttons come first in the tree.
+  const securityButton = () => view.root.findAllByType(Pressable)
+    .find(node => node.props.accessibilityRole === 'button' && node.props.accessibilityState && 'expanded' in node.props.accessibilityState)!;
   act(() => securityButton().props.onPress());
   expect(securityButton().props.accessibilityState.expanded).toBe(true);
   expect(JSON.stringify(view.toJSON())).toContain('never enter its recovery phrase here');
@@ -48,4 +59,30 @@ it('renders the shared segmented tabs in dark mode', () => {
     mockDark = false;
     act(() => view.unmount());
   }
+});
+
+it.each([['pin_setup', 'create'], ['pin_entry', 'unlock'], ['locked', 'unlock']])(
+  'shows the PIN gate instead of wallet content while %s', (phase, intent) => {
+    mockPhase = phase;
+    let view!: ReactTestRenderer;
+    try {
+      act(() => { view = create(<Wallet />); });
+      const flow = view.root.findByType('PinFlow' as any);
+      expect(flow.props.intent).toBe(intent);
+      expect(flow.props.scope).toBe('wallet:unlock');
+      expect(view.root.findAllByType('WalletEnrollment' as any)).toHaveLength(0);
+      expect(view.root.findAllByType('Rewards' as any)).toHaveLength(0);
+    } finally { mockPhase = 'unlocked'; act(() => view.unmount()); }
+  });
+
+it('hides content while the guard is still checking or unavailable', () => {
+  for (const phase of ['checking', 'unavailable']) {
+    mockPhase = phase;
+    let view!: ReactTestRenderer;
+    act(() => { view = create(<Wallet />); });
+    expect(view.root.findAllByType('WalletEnrollment' as any)).toHaveLength(0);
+    expect(view.root.findAllByType('PinFlow' as any)).toHaveLength(0);
+    act(() => view.unmount());
+  }
+  mockPhase = 'unlocked';
 });

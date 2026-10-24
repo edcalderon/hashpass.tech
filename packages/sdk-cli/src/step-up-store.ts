@@ -2,7 +2,7 @@ import type { StepUpProof, StepUpProofStore, StepUpScope } from "@hashpass-tech/
 import { chmod, mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 
-const SCOPES: readonly StepUpScope[] = ["app:unlock", "wallet:sign"];
+const SCOPES: readonly StepUpScope[] = ["app:unlock", "wallet:sign", "wallet:unlock", "wallet:recover"];
 
 export const isStepUpScope = (value: unknown): value is StepUpScope =>
   typeof value === "string" && (SCOPES as readonly string[]).includes(value);

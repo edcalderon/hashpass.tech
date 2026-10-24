@@ -87,7 +87,10 @@
       "event-ingestion",
       "event-search-aliases",
       "business-invite-campaigns",
-      "lukas-site"
+      "lukas-site",
+      "non-custodial-wallet",
+      "chat-key-backup",
+      "event-public-flags"
     ],
     "core-production": [
       "hashpass-auth-qr",
@@ -296,6 +299,13 @@
       "db/migrations/V133__marketing_activity_snapshots.sql",
       "db/migrations/V134__contact_identity_modes.sql",
       "db/migrations/V135__contact_profile_avatars.sql"
-    ]
+    ],
+    "non-custodial-wallet": [
+      "db/migrations/V097__non_custodial_wallet_enrollment.sql",
+      "db/migrations/V137__wallet_vault.sql",
+      "db/migrations/V138__wallet_pin_recovery.sql"
+    ],
+    "chat-key-backup": ["db/migrations/V075__chat_key_backup_restore.sql"],
+    "event-public-flags": ["db/migrations/V109__add_event_agenda_speakers_public_flags.sql"]
   }
 }

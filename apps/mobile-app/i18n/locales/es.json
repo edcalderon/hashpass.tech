@@ -29,6 +29,7 @@
   },
   "wallet": {
     "enrollment": {
+      "notEnrolled": "A tu cuenta le falta su registro de billetera. La configuración no puede comenzar hasta que se aprovisione: contacta con soporte de HASHPASS.",
       "readOnly": "SOLO LECTURA",
       "signIn": "Inicia sesión para ver el estado de tu billetera.",
       "loading": "Cargando el estado de la billetera",
@@ -40,7 +41,11 @@
       "mainnet": "Redes principales",
       "registered": "Direcciones públicas registradas. El acceso desde este dispositivo y la recuperación no se han verificado en esta pantalla. Los saldos y la firma no están disponibles.",
       "refresh": "Actualizar estado de la billetera",
-      "setupReady": "Tu cuenta está inscrita. Aún no se han creado claves. Configura este dispositivo a continuación."
+      "setupReady": "Tu cuenta está inscrita. Aún no se han creado claves. Configura este dispositivo a continuación.",
+      "tryAgain": "Intentar de nuevo",
+      "statusActive": "Billetera activa",
+      "statusIncomplete": "Configuración incompleta",
+      "statusNotCreated": "Aún sin billetera"
     },
     "overview": {
       "assets": "Activos",
@@ -64,8 +69,21 @@
       "networksDescription": "Los saldos aparecerán después de configurar la billetera y conectarse correctamente a la red.",
       "notConnected": "Sin conexión",
       "balanceUnavailable": "Saldo no disponible",
-      "activity": "Actividad",
+      "activity": "Actividad reciente",
       "activityUnavailable": "El historial de transacciones estará disponible cuando conectes tu billetera. No se ha cargado actividad de la cadena.",
+      "transactionNone": "Aún no hay transacciones",
+      "totalBalance": "Saldo total",
+      "balancePlaceholder": "—",
+      "testnetNote": "Redes de prueba. Los saldos aparecerán cuando conectes tu billetera.",
+      "send": "Enviar",
+      "sendNote": "El envío llegará con transacciones firmadas tras el despliegue de seguridad.",
+      "receive": "Recibir",
+      "receiveNote": "Muestra tus direcciones para recibir fondos.",
+      "receiveDisclaimer": "HASHPASS no puede recuperar fondos enviados en redes incorrectas. Comprueba la dirección y la red antes de enviar.",
+      "receiveNoWallet": "Configura tu billetera abajo para obtener tus direcciones de recepción de Ethereum, Bitcoin y Solana.",
+      "receivePending": "Tus direcciones de recepción de Ethereum, Bitcoin y Solana aparecerán cuando configures tu billetera.",
+      "securityTitle": "Seguridad",
+      "learnMore": "Saber más",
       "passesNote": "Tus pases de acceso a eventos. Son independientes de los activos en la cadena.",
       "rewardsLabel": "RECOMPENSAS HASHPASS",
       "rewardsSignIn": "Inicia sesión para ver tu saldo de recompensas.",
@@ -75,7 +93,40 @@
       "rewardsNote": "Tu saldo de recompensas HASHPASS es independiente de tus activos en la cadena. No se presupone ningún valor monetario ni tipo de cambio.",
       "refreshRewards": "Actualizar recompensas",
       "pointsTitle": "Hash Points",
-      "pointsUnavailable": "Los saldos y los intercambios de puntos aún no están disponibles."
+      "pointsUnavailable": "Los saldos y los intercambios de puntos aún no están disponibles.",
+      "setUp": "Configurar billetera"
+    },
+    "faq": {
+      "controlQ": "¿Quién controla mis activos?",
+      "controlA": "Tú. HASHPASS no es custodial: tu billetera se cifra con tu PIN y tu semilla nunca sale de tu dispositivo sin cifrar. HASHPASS no puede mover, congelar ni recuperar tus activos, y no es responsable de su gestión ni de su seguridad.",
+      "pinQ": "¿Qué hace el PIN de 4 dígitos?",
+      "pinA": "El PIN cifra tu billetera. Se pide cada vez que abres tu billetera y antes de cada acción sensible. HASHPASS no puede verlo ni recuperarlo: si lo olvidas, usa el código por correo y tu frase de recuperación.",
+      "phraseQ": "¿Qué es la frase de recuperación?",
+      "phraseA": "Veinticuatro palabras que respaldan por completo tu billetera. Anótalas en orden y guárdalas en privado: quien las tenga controla tus fondos. Si las pierdes, tus fondos no se pueden recuperar.",
+      "forgotQ": "Olvidé mi PIN. ¿Qué hago?",
+      "forgotA": "Abre tu página de billetera y elige «Olvidé mi PIN». Te enviaremos un código de seis dígitos; el código más tu frase de recuperación guardada establece un PIN nuevo y reconstruye tu billetera.",
+      "importQ": "¿Puedo importar mi billetera existente?",
+      "importA": "Por ahora no. Por tu seguridad, HASHPASS solo administra billeteras que crea él mismo y nunca maneja frases de recuperación de otras billeteras. Puedes exportar tu propia frase de recuperación en cualquier momento desde el menú de la billetera.",
+      "networksQ": "¿Qué redes son compatibles?",
+      "networksA": "Ethereum, Bitcoin y Solana primero. El despliegue se realiza en redes de prueba; las redes principales llegarán tras completar la revisión de seguridad.",
+      "testnetQ": "¿Por qué veo «redes de prueba»?",
+      "testnetA": "Durante el despliegue tu billetera HASHPASS se crea en redes de prueba, por lo que los saldos son de prueba. Tu cuenta, PIN y frase de recuperación funcionarán igual en las redes principales más adelante.",
+      "supportQ": "¿Cómo consigo ayuda?",
+      "supportA": "Para dudas de cuenta o eventos, contacta con soporte de HASHPASS. Para todo lo relacionado con tus fondos, recuerda: solo tu PIN y tu frase de recuperación controlan la billetera; soporte nunca puede mover activos por ti."
+    },
+    "help": {
+      "title": "Ayuda de la billetera",
+      "open": "Ayuda de la billetera",
+      "close": "Cerrar la ayuda",
+      "security": "Seguridad",
+      "recovery": "PIN y recuperación",
+      "networks": "Billeteras y redes",
+      "support": "Soporte",
+      "searchLabel": "Buscar en la ayuda",
+      "searchPlaceholder": "Busca: contraseña, respaldo perdido, importar…",
+      "expand": "Ampliar",
+      "shrink": "Reducir",
+      "noResults": "Nada coincidió. Prueba otras palabras o explora las categorías."
     },
     "digitalWalletTitle": "Billetera de Boletos Digitales",
     "walletDesc": "Accede a tus boletos verificados en blockchain, tokens y puntos",
@@ -141,36 +192,85 @@
       "title": "Intercambio",
       "description": "Convierte puntos a criptomonedas."
     },
-    "setup": {
-      "title": "Configuración del dispositivo · solo redes de prueba",
-      "readOnly": "La firma sigue deshabilitada. Verificar el respaldo no habilita transacciones.",
-      "error": "No se pudo completar este paso. Revisa las contraseñas, el respaldo y la conexión. Conserva el dispositivo original; no crees otra billetera.",
-      "passwordHelp": "Usa una contraseña de billetera diferente: mínimo 16 caracteres y 8 caracteres distintos. HASHPASS no puede restablecerla ni recuperar tu frase.",
-      "password": "Contraseña de la billetera",
-      "confirm": "Confirmar contraseña de la billetera",
-      "restoreTitle": "Restaurar desde un respaldo cifrado",
-      "reveal": "Mostrar frase de recuperación",
-      "phraseWarning": "Quien tenga estas palabras controla la billetera. Escríbelas en privado, en orden. Nunca las envíes a soporte.",
-      "hide": "Ocultar frase y verificar palabras",
-      "challenge": "Introduce las palabras solicitadas de tu frase guardada.",
-      "answer": "Palabra de recuperación",
-      "verifyWords": "Verificar palabras",
-      "backupHelp": "El archivo cifrado se restaura en HASHPASS. No es un archivo JSON de MetaMask. Guarda su contraseña por separado; la compatibilidad de importación aún está en pruebas.",
+    "guard": {
+      "lockedTitle": "Billetera bloqueada",
+      "lockedBody": "Introduce tu PIN para abrir tu billetera.",
+      "pinSetupTitle": "Protege tu billetera con un PIN",
+      "pinSetupBody": "Elige un PIN de 4 dígitos. Se pedirá cada vez que abras tu billetera y antes de cada acción sensible. HASHPASS no puede recuperarlo por ti.",
+      "pinSetupDone": "PIN guardado. Tu billetera está desbloqueada.",
+      "unlocking": "Comprobando la protección de tu billetera…",
+      "unavailable": "No pudimos comprobar la protección de tu billetera. Revisa tu conexión e inténtalo de nuevo.",
+      "retry": "Intentar de nuevo"
+    },
+    "vault": {
+      "title": "Tu billetera",
+      "intro": "Crea tu billetera HASHPASS: una billetera para Ethereum, Bitcoin y Solana (por ahora en red de prueba), cifrada con tu PIN. Verás tu frase de recuperación una sola vez y podrás guardarla.",
+      "create": "Crear billetera",
+      "alreadyWallet": "Esta cuenta ya tiene una billetera. Una importación no puede reemplazarla: usa «Mostrar frase de recuperación» o «Olvidé mi PIN».",
+      "vaultMissing": "Falta el registro cifrado de la billetera de esta cuenta. Usa «Olvidé mi PIN» con tu frase de recuperación para reconstruirla.",
+      "setupTitle": "Asistente de configuración de billetera",
+      "setupEnv": "El asistente solo funciona en las redes de prueba en esta versión. Tu cuenta aún no tiene billetera.",
+      "setupFlag": "La configuración de billetera aún no está habilitada para tu cuenta. Tu cuenta aún no tiene billetera.",
+      "setupCheck": "Comprobar de nuevo la configuración de billetera",
+      "setupRegistered": "La gestión de billetera no está disponible en esta versión para tu cuenta. Tu billetera en sí no se ve afectada.",
+      "pinTitle": "Confirma tu PIN",
+      "pinIntro": "Introduce tu PIN de 4 dígitos. Cifra tu billetera y se pide cada vez que la abras y antes de cada acción sensible.",
+      "working": "Trabajando…",
+      "phraseTitle": "Tu frase de recuperación",
+      "phraseWarning": "Escribe estas palabras en orden, en un lugar privado. Quien las tenga controla tu billetera. HASHPASS jamás te las pedirá.",
+      "acknowledge": "Entiendo que si pierdo esta frase no se podrán recuperar mis fondos, y que HASHPASS no es responsable de la gestión ni de la seguridad de mis activos.",
+      "acknowledgeShort": "Entiendo y acepto",
+      "hide": "La guardé — continuar",
+      "download": "Descargar frase sin proteger",
+      "export": "Descargar respaldo cifrado",
+      "backupCancel": "Cancelar respaldo cifrado",
       "backupPassword": "Contraseña del respaldo",
       "backupConfirm": "Confirmar contraseña del respaldo",
-      "export": "Descargar respaldo cifrado",
-      "pick": "Elegir archivo de respaldo cifrado",
-      "fileSelected": "Archivo cifrado seleccionado. Introduce su contraseña para verificarlo o restaurarlo localmente.",
-      "verified": "Palabras y respaldo cifrado verificados en esta sesión. La firma sigue deshabilitada.",
-      "plaintextWarning": "Descarga opcional sin cifrar: quien abra este archivo puede tomar la billetera. Evita carpetas compartidas y sincronización en la nube.",
-      "plaintext": "Descargar frase de recuperación sin cifrar",
-      "create": "Crear billetera de prueba",
-      "resume": "Reanudar configuración",
-      "restore": "Restaurar billetera en este dispositivo",
-      "verifyFile": "Verificar respaldo guardado",
+      "backupHelp": "Una contraseña separada de al menos 16 caracteres con 8 caracteres distintos protege este archivo. HASHPASS no puede restablecerla ni recuperar tu frase. Sin ella el archivo no se puede abrir.",
+      "backupSave": "Guardar archivo cifrado",
+      "backupMismatch": "Las dos contraseñas no coinciden. Escríbelas de nuevo.",
+      "backupWeak": "Usa al menos 16 caracteres con 8 caracteres distintos, y no solo dígitos.",
+      "backupFailed": "No se pudo crear el archivo cifrado. No se cambió nada; inténtalo de nuevo.",
+      "homeTitle": "Billetera lista",
+      "homeIntro": "Tu billetera está cifrada con tu PIN. Si lo olvidas, un código de tu correo junto con tu frase de recuperación la restablece.",
+      "reveal": "Mostrar frase de recuperación",
+      "change": "Cambiar PIN",
+      "recover": "Olvidé mi PIN",
+      "newPinTitle": "Elige un nuevo PIN de 4 dígitos",
+      "newPinConfirmTitle": "Introduce los mismos cuatro dígitos otra vez",
+      "newPinHint": "Este PIN cifrará tu billetera a partir de ahora.",
+      "mismatch": "Los dos PIN no coinciden. Empieza de nuevo.",
+      "challenge": "Introduce las palabras solicitadas de tu frase guardada.",
       "word": "Palabra",
-      "acknowledge": "Entiendo el riesgo del archivo sin cifrar",
-      "cancelPlaintext": "Cancelar descarga sin cifrar"
+      "answer": "Palabra de recuperación",
+      "verifyWords": "Verificar palabras",
+      "recoverIntro": "Te enviaremos un código de 6 dígitos por correo. También necesitarás tu frase de recuperación.",
+      "sendCode": "Enviarme un código",
+      "codeHint": "Introduce el código de 6 dígitos de tu correo.",
+      "code": "Código del correo",
+      "codeNext": "Continuar",
+      "recoverPhraseHint": "Introduce tu frase de recuperación para demostrar que esta billetera es tuya.",
+      "recoverPhrase": "Frase de recuperación",
+      "phraseNext": "Continuar",
+      "cancel": "Ahora no",
+      "back": "Volver",
+      "wrongPin": "Ese PIN no abrió la billetera. No se cambió nada.",
+      "changeFailed": "No se pudo cambiar el PIN. No se cambió nada.",
+      "conflict": "La billetera cambió mientras trabajabas. Empieza de nuevo.",
+      "recoveryMismatch": "Esa frase de recuperación no corresponde a esta billetera.",
+      "wordsWrong": "Esas palabras no son correctas. Revisa tu frase guardada.",
+      "codeInvalid": "Ese código no es correcto o expiró. Pide uno nuevo.",
+      "rateLimited": "Demasiados intentos. Espera un poco y pide un código nuevo.",
+      "recoveryUnavailable": "El restablecimiento del PIN no está disponible ahora. Inténtalo más tarde.",
+      "stepUp": "Tu sesión de PIN expiró. Empieza de nuevo.",
+      "failed": "Algo salió mal. No se cambió nada. Inténtalo de nuevo.",
+      "exportOnly": "HASHPASS solo administra billeteras que crea él mismo. Puedes exportar tu frase de recuperación en cualquier momento; no se admite importar billeteras creadas en otro lugar."
+    },
+    "menu": {
+      "more": "Más acciones de la billetera",
+      "export": "Exportar frase de recuperación",
+      "changePin": "Cambiar PIN",
+      "forgotPin": "Olvidé mi PIN"
     }
   },
   "digitalWallet": {
@@ -571,22 +671,22 @@
       "secure": {
         "title": "Seguro y Privado",
         "description": "Tus datos están cifrados y protegidos con protocolos de seguridad líderes.",
-        "action": "Proteger mis datos"
-        ,"metric": "Conversaciones cifradas de extremo a extremo",
+        "action": "Proteger mis datos",
+        "metric": "Conversaciones cifradas de extremo a extremo",
         "metricLabel": "ponentes verificados"
       },
       "management": {
         "title": "Gestión Sencilla",
         "description": "Organiza credenciales, tarjetas y comunidades en un solo lugar.",
-        "action": "Gestionar mis llaves"
-        ,"metric": "Un pase para tu red de eventos",
+        "action": "Gestionar mis llaves",
+        "metric": "Un pase para tu red de eventos",
         "metricLabel": "pases emitidos"
       },
       "sync": {
         "title": "Sincronización Multiplataforma",
         "description": "Accede a tus datos en todos tus dispositivos.",
-        "action": "Activar sincronización"
-        ,"metric": "3 clientes: web, Android e iOS",
+        "action": "Activar sincronización",
+        "metric": "3 clientes: web, Android e iOS",
         "metricLabel": "plataformas compatibles"
       },
       "entry": {
@@ -609,8 +709,14 @@
       "moreInfo": "Más información",
       "closeInfo": "Cerrar información",
       "scenes": {
-        "eventPass": "PASE DEL EVENTO", "eventExplorer": "EXPLORADOR DE EVENTOS", "agenda": "AGENDA", "speakers": "PONENTES",
-        "findAttendees": "BUSCAR ASISTENTES", "meet": "REUNIRSE", "lksWallet": "BILLETERA $LKS", "availableBalance": "SALDO DISPONIBLE"
+        "eventPass": "PASE DEL EVENTO",
+        "eventExplorer": "EXPLORADOR DE EVENTOS",
+        "agenda": "AGENDA",
+        "speakers": "PONENTES",
+        "findAttendees": "BUSCAR ASISTENTES",
+        "meet": "REUNIRSE",
+        "lksWallet": "BILLETERA $LKS",
+        "availableBalance": "SALDO DISPONIBLE"
       },
       "cards": {
         "scan": {
@@ -668,17 +774,17 @@
       "webSubmitError": "No pudimos enviar tu propuesta. Inténtalo de nuevo o escribe a support@hashpass.tech."
     },
     "eventSearch": {
-    "placeholder": "Buscar eventos",
-    "mobilePlaceholder": "Busca por nombre, referencia o #hashtag",
-    "accessibilityLabel": "Buscar eventos en el carrusel",
-    "exploreAll": "Explorar todo",
-    "exploreAllLabel": "Explorar todos los eventos",
-    "or": "o",
-    "previous": "Diapositiva anterior",
-    "next": "Siguiente diapositiva",
-    "pause": "Pausar carrusel",
-    "play": "Reproducir carrusel",
-    "restart": "Volver a la primera diapositiva"
+      "placeholder": "Buscar eventos",
+      "mobilePlaceholder": "Busca por nombre, referencia o #hashtag",
+      "accessibilityLabel": "Buscar eventos en el carrusel",
+      "exploreAll": "Explorar todo",
+      "exploreAllLabel": "Explorar todos los eventos",
+      "or": "o",
+      "previous": "Diapositiva anterior",
+      "next": "Siguiente diapositiva",
+      "pause": "Pausar carrusel",
+      "play": "Reproducir carrusel",
+      "restart": "Volver a la primera diapositiva"
     },
     "eventsExplorerSubtitle": "Descubre eventos en todo el mundo — encuentra el tuyo.",
     "noEventsFound": "No se encontraron eventos.",
@@ -701,21 +807,21 @@
       "bsl2025": "BSL 2025"
     },
     "docs": {
-    "title": "Documentación",
-    "subtitle": "Guías completas y solución de problemas",
-    "back": "Volver",
-    "needHelp": "¿Necesitas más ayuda?",
-    "contactSupport": "Contactar Soporte",
-    "viewStorybook": "Ver Documentación Completa",
-    "installPwaGuide": "Guía para instalar HASHPASS como PWA",
+      "title": "Documentación",
+      "subtitle": "Guías completas y solución de problemas",
+      "back": "Volver",
+      "needHelp": "¿Necesitas más ayuda?",
+      "contactSupport": "Contactar Soporte",
+      "viewStorybook": "Ver Documentación Completa",
+      "installPwaGuide": "Guía para instalar HASHPASS como PWA",
       "interactiveDocs": {
         "title": "Documentación Completa",
         "description": "Abre el sitio completo de documentación con guías, referencias y ejemplos"
       },
-    "gettingStarted": {
-      "title": "Comenzar",
-      "description": "Aprende cómo iniciar sesión y navegar la app",
-      "seeDemo": "Ver los videos de demostración",
+      "gettingStarted": {
+        "title": "Comenzar",
+        "description": "Aprende cómo iniciar sesión y navegar la app",
+        "seeDemo": "Ver los videos de demostración",
         "signIn": {
           "title": "Iniciar Sesión en Tu Cuenta",
           "content": "Para comenzar, necesitarás iniciar sesión en la app HASHPASS. Abre la app, ingresa tu dirección de correo electrónico, revisa tu correo para un código de inicio de sesión de un solo uso, e ingresa el código para acceder a tu cuenta."
@@ -1529,11 +1635,26 @@
         "title": "Estado del orador",
         "close": "Cerrar",
         "explainA11y": "Estado {status}. Toca para ver qué significa",
-        "active": { "label": "Confirmado", "description": "El orador confirmó su cuenta y está recibiendo solicitudes de reunión." },
-        "idle": { "label": "Inactivo", "description": "El orador aún no ha reclamado su cuenta, pero puede recibir solicitudes de reunión. Las solicitudes permanecen abiertas por un tiempo limitado y vencen si el orador nunca reclama la cuenta." },
-        "dnd": { "label": "No molestar", "description": "Orador confirmado con el modo No molestar activado. Puedes enviar una solicitud, pero se archiva y no se muestra directamente al orador, como las notificaciones silenciadas del teléfono." },
-        "inactive": { "label": "Desactivado", "description": "Este perfil de orador está desactivado y no recibe solicitudes de reunión." },
-        "past": { "label": "Edición anterior", "description": "Este orador participó en una edición anterior y se muestra solo como referencia." }
+        "active": {
+          "label": "Confirmado",
+          "description": "El orador confirmó su cuenta y está recibiendo solicitudes de reunión."
+        },
+        "idle": {
+          "label": "Inactivo",
+          "description": "El orador aún no ha reclamado su cuenta, pero puede recibir solicitudes de reunión. Las solicitudes permanecen abiertas por un tiempo limitado y vencen si el orador nunca reclama la cuenta."
+        },
+        "dnd": {
+          "label": "No molestar",
+          "description": "Orador confirmado con el modo No molestar activado. Puedes enviar una solicitud, pero se archiva y no se muestra directamente al orador, como las notificaciones silenciadas del teléfono."
+        },
+        "inactive": {
+          "label": "Desactivado",
+          "description": "Este perfil de orador está desactivado y no recibe solicitudes de reunión."
+        },
+        "past": {
+          "label": "Edición anterior",
+          "description": "Este orador participó en una edición anterior y se muestra solo como referencia."
+        }
       },
       "connect": "Conectar",
       "linkedin": "LinkedIn",

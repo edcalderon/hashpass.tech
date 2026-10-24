@@ -28,7 +28,82 @@
     "supportedBy": "Supported by"
   },
   "wallet": {
+    "guard": {
+      "lockedTitle": "Wallet locked",
+      "lockedBody": "Enter your PIN to open your wallet.",
+      "pinSetupTitle": "Protect your wallet with a PIN",
+      "pinSetupBody": "Choose a 4-digit PIN. It is asked every time you open your wallet and before every sensitive action. HASHPASS cannot recover it for you.",
+      "pinSetupDone": "PIN saved. Your wallet is unlocked.",
+      "unlocking": "Checking your wallet protection…",
+      "unavailable": "We could not check your wallet protection. Check your connection and try again.",
+      "retry": "Try again"
+    },
+    "vault": {
+      "title": "Your wallet",
+      "intro": "Create your HASHPASS wallet: one wallet for Ethereum, Bitcoin and Solana (testnet for now), encrypted with your PIN. You will see your recovery phrase once and can save it.",
+      "create": "Create wallet",
+      "alreadyWallet": "This account already has a wallet. An import cannot replace it — use \"Show recovery phrase\" or \"I forgot my PIN\" instead.",
+      "vaultMissing": "The encrypted wallet record is missing for this account. Use \"I forgot my PIN\" with your recovery phrase to rebuild it.",
+      "setupTitle": "Wallet setup wizard",
+      "setupEnv": "The setup wizard only runs on the test networks in this build. Your account has no wallet yet.",
+      "setupFlag": "Wallet setup is not enabled for your account yet. Your account has no wallet yet.",
+      "setupCheck": "Check again for wallet setup",
+      "setupRegistered": "Wallet management is not available in this build for your account. Your wallet itself is not affected.",
+      "pinTitle": "Confirm your PIN",
+      "pinIntro": "Enter your 4-digit PIN. It encrypts your wallet and is asked every time you open your wallet and before every sensitive action.",
+      "working": "Working…",
+      "phraseTitle": "Your recovery phrase",
+      "phraseWarning": "Write these words down, in order, somewhere private. Anyone who has them controls your wallet. HASHPASS will never ask you for them.",
+      "acknowledge": "I understand that if I lose this phrase my funds cannot be recovered, and that HASHPASS is not responsible for the management or security of my assets.",
+      "acknowledgeShort": "I understand and accept",
+      "hide": "I saved it — continue",
+      "download": "Download unprotected phrase",
+      "export": "Download encrypted backup",
+      "backupCancel": "Cancel encrypted backup",
+      "backupPassword": "Backup password",
+      "backupConfirm": "Confirm backup password",
+      "backupHelp": "A separate password of at least 16 characters with 8 distinct characters protects this file. HASHPASS cannot reset it or recover your phrase. Without it the file cannot be opened.",
+      "backupSave": "Save encrypted file",
+      "backupMismatch": "The two passwords did not match. Enter them again.",
+      "backupWeak": "Use at least 16 characters with 8 distinct characters, and not only digits.",
+      "backupFailed": "The encrypted file could not be created. Nothing was changed; try again.",
+      "homeTitle": "Wallet ready",
+      "homeIntro": "Your wallet is encrypted with your PIN. If you forget it, a code from your email plus your recovery phrase resets it.",
+      "reveal": "Show recovery phrase",
+      "change": "Change PIN",
+      "recover": "I forgot my PIN",
+      "newPinTitle": "Choose a new 4-digit PIN",
+      "newPinConfirmTitle": "Enter the same four digits again",
+      "newPinHint": "This PIN encrypts your wallet from now on.",
+      "mismatch": "The two PINs did not match. Start again.",
+      "challenge": "Enter the requested words from your saved recovery phrase.",
+      "word": "Word",
+      "answer": "Recovery word",
+      "verifyWords": "Verify recovery words",
+      "recoverIntro": "We will email you a 6-digit code. You will also need your recovery phrase.",
+      "sendCode": "Email me a reset code",
+      "codeHint": "Enter the 6-digit code from your email.",
+      "code": "Email code",
+      "codeNext": "Continue",
+      "recoverPhraseHint": "Enter your recovery phrase to prove this wallet is yours.",
+      "recoverPhrase": "Recovery phrase",
+      "phraseNext": "Continue",
+      "cancel": "Not now",
+      "back": "Go back",
+      "wrongPin": "That PIN did not unlock the wallet. Nothing was changed.",
+      "changeFailed": "The PIN could not be changed. Nothing was changed.",
+      "conflict": "The wallet changed while you were working. Start again.",
+      "recoveryMismatch": "That recovery phrase does not match this wallet.",
+      "wordsWrong": "Those words are not right. Check your saved recovery phrase.",
+      "codeInvalid": "That code is not right or has expired. Request a new one.",
+      "rateLimited": "Too many attempts. Wait a little, then request a new code.",
+      "recoveryUnavailable": "PIN reset is unavailable right now. Try again later.",
+      "stepUp": "Your PIN session expired. Start again.",
+      "failed": "Something went wrong. Nothing was changed. Try again.",
+      "exportOnly": "HASHPASS only manages wallets it creates itself. You can export your recovery phrase at any time; importing wallets made elsewhere is not supported."
+    },
     "enrollment": {
+      "notEnrolled": "Your account is missing its wallet record. Wallet setup cannot start until it is provisioned — contact HASHPASS support.",
       "readOnly": "READ ONLY",
       "signIn": "Sign in to see your wallet status.",
       "loading": "Loading wallet status",
@@ -40,7 +115,11 @@
       "mainnet": "Main networks",
       "registered": "Registered public addresses. Device access and recovery have not been verified on this screen. Balances and signing are unavailable.",
       "refresh": "Refresh wallet status",
-      "setupReady": "Your account is enrolled. No keys have been created. Set up this device below."
+      "setupReady": "Your account is enrolled. No keys have been created. Set up this device below.",
+      "tryAgain": "Try again",
+      "statusActive": "Wallet active",
+      "statusIncomplete": "Setup incomplete",
+      "statusNotCreated": "No wallet yet"
     },
     "overview": {
       "assets": "Assets",
@@ -64,8 +143,21 @@
       "networksDescription": "Balances will appear after wallet setup and a successful network connection.",
       "notConnected": "Not connected",
       "balanceUnavailable": "Balance unavailable",
-      "activity": "Activity",
+      "activity": "Recent activity",
       "activityUnavailable": "Transaction history will be available when your wallet is connected. No on-chain activity has been loaded.",
+      "transactionNone": "No transactions yet",
+      "totalBalance": "Total balance",
+      "balancePlaceholder": "—",
+      "testnetNote": "Test networks. Balances appear after your wallet is connected.",
+      "send": "Send",
+      "sendNote": "Sending arrives with signed transactions after the security rollout.",
+      "receive": "Receive",
+      "receiveNote": "Show your addresses to receive funds.",
+      "receiveDisclaimer": "HASHPASS cannot recover funds sent on wrong networks. Check the address and network before sending.",
+      "receiveNoWallet": "Set up your wallet below to get your receiving addresses for Ethereum, Bitcoin and Solana.",
+      "receivePending": "Your receiving addresses for Ethereum, Bitcoin and Solana appear once your wallet is set up.",
+      "securityTitle": "Security",
+      "learnMore": "Learn more",
       "passesNote": "Your event access passes. These are separate from on-chain assets.",
       "rewardsLabel": "HASHPASS REWARDS",
       "rewardsSignIn": "Sign in to see your rewards balance.",
@@ -75,7 +167,40 @@
       "rewardsNote": "Your HASHPASS rewards balance is separate from your on-chain assets. No cash value or exchange rate is assumed.",
       "refreshRewards": "Refresh rewards",
       "pointsTitle": "Hash Points",
-      "pointsUnavailable": "Points balances and exchanges are not available yet."
+      "pointsUnavailable": "Points balances and exchanges are not available yet.",
+      "setUp": "Set up wallet"
+    },
+    "faq": {
+      "controlQ": "Who controls my assets?",
+      "controlA": "You do. HASHPASS is non-custodial: your wallet is encrypted with your PIN and your seed never leaves your device unencrypted. HASHPASS cannot move, freeze or recover your assets, and is not responsible for their management or security.",
+      "pinQ": "What does the 4-digit PIN do?",
+      "pinA": "The PIN encrypts your wallet. It is asked every time you open your wallet and before every sensitive action. HASHPASS cannot see or recover it — if you forget it, use the email code + recovery phrase reset.",
+      "phraseQ": "What is the recovery phrase?",
+      "phraseA": "Twenty-four words that fully back up your wallet. Write them down in order and keep them private: anyone who has them controls your funds. If you lose them, your funds cannot be recovered.",
+      "forgotQ": "I forgot my PIN. What now?",
+      "forgotA": "Open your wallet page and choose \"I forgot my PIN\". A six-digit code is emailed to you; the code plus your saved recovery phrase sets a new PIN and rebuilds your wallet.",
+      "importQ": "Can I import my existing wallet?",
+      "importA": "Not at the moment. For your security HASHPASS only manages wallets it creates itself, and never handles recovery phrases from other wallets. You can export your own recovery phrase at any time from the wallet menu.",
+      "networksQ": "Which networks are supported?",
+      "networksA": "Ethereum, Bitcoin and Solana first. The rollout runs on test networks; main networks arrive after the security review is complete.",
+      "testnetQ": "Why do I see \"test networks\"?",
+      "testnetA": "During the rollout your HASHPASS wallet is created on test networks, so balances are test balances. Your account, PIN and recovery phrase work the same way on main networks later.",
+      "supportQ": "How do I get help?",
+      "supportA": "For account or event questions, contact HASHPASS support. For anything about your funds, remember: only your PIN and recovery phrase control the wallet — support can never move assets for you."
+    },
+    "help": {
+      "title": "Wallet help",
+      "open": "Wallet help",
+      "close": "Close help",
+      "security": "Security",
+      "recovery": "PIN & recovery",
+      "networks": "Wallets & networks",
+      "support": "Support",
+      "searchLabel": "Search help",
+      "searchPlaceholder": "Search: password, lost backup, import…",
+      "expand": "Expand",
+      "shrink": "Shrink",
+      "noResults": "Nothing matched. Try other words, or browse the categories."
     },
     "digitalWalletTitle": "Digital Ticket Wallet",
     "walletDesc": "Access your secure blockchain-verified tickets, tokens, and points",
@@ -141,36 +266,11 @@
       "title": "Token Exchange",
       "description": "Convert points to cryptocurrency."
     },
-    "setup": {
-      "title": "Device setup · test networks only",
-      "readOnly": "Signing remains unavailable. Backup checks do not enable transactions.",
-      "error": "Unable to complete this step. Check your passwords, backup and connection. Keep your original device; never create a replacement wallet.",
-      "passwordHelp": "Use a separate wallet password: at least 16 characters and 8 distinct characters. HASHPASS cannot reset it or recover your phrase.",
-      "password": "Wallet password",
-      "confirm": "Confirm wallet password",
-      "restoreTitle": "Restore from encrypted backup",
-      "reveal": "Reveal recovery phrase",
-      "phraseWarning": "Anyone with these words controls the wallet. Write them down privately, in order. Never send them to support.",
-      "hide": "Hide phrase and verify words",
-      "challenge": "Enter the requested words from your saved recovery phrase.",
-      "answer": "Recovery word",
-      "verifyWords": "Verify recovery words",
-      "backupHelp": "The encrypted file restores into HASHPASS. It is not a MetaMask JSON keystore. Keep its separate password safely; wallet import compatibility is still being tested.",
-      "backupPassword": "Backup password",
-      "backupConfirm": "Confirm backup password",
-      "export": "Download encrypted backup",
-      "pick": "Choose encrypted backup file",
-      "fileSelected": "Encrypted file selected. Enter its password to verify or restore it locally.",
-      "verified": "Recovery words and encrypted backup verified for this session. Signing is still disabled.",
-      "plaintextWarning": "Optional unencrypted phrase download: anyone who can open this file can take the wallet. Avoid shared folders and cloud sync.",
-      "plaintext": "Download unencrypted recovery phrase",
-      "create": "Create testnet wallet",
-      "resume": "Resume wallet setup",
-      "restore": "Restore wallet on this device",
-      "verifyFile": "Verify saved backup",
-      "word": "Word",
-      "acknowledge": "I understand the unencrypted file risk",
-      "cancelPlaintext": "Cancel unencrypted download"
+    "menu": {
+      "more": "More wallet actions",
+      "export": "Export recovery phrase",
+      "changePin": "Change PIN",
+      "forgotPin": "I forgot my PIN"
     }
   },
   "digitalWallet": {
@@ -572,22 +672,22 @@
       "secure": {
         "title": "Secure & Private",
         "description": "Your data is encrypted and protected with industry-leading security protocols. We prioritize your privacy above all else.",
-        "action": "Secure my data"
-        ,"metric": "End-to-end encrypted conversations",
+        "action": "Secure my data",
+        "metric": "End-to-end encrypted conversations",
         "metricLabel": "verified speakers"
       },
       "management": {
         "title": "Effortless Management",
         "description": "Organize all your digital credentials, loyalty cards, and communities in one intuitive place.",
-        "action": "Manage my keys"
-        ,"metric": "One pass for your event network",
+        "action": "Manage my keys",
+        "metric": "One pass for your event network",
         "metricLabel": "passes issued"
       },
       "sync": {
         "title": "Cross-Platform Sync",
         "description": "Access your data across all your devices with our secure cloud sync.",
-        "action": "Enable secure sync"
-        ,"metric": "3 clients: web, Android and iOS",
+        "action": "Enable secure sync",
+        "metric": "3 clients: web, Android and iOS",
         "metricLabel": "supported platforms"
       },
       "entry": {
@@ -610,8 +710,14 @@
       "moreInfo": "More information",
       "closeInfo": "Close information",
       "scenes": {
-        "eventPass": "EVENT PASS", "eventExplorer": "EVENT EXPLORER", "agenda": "AGENDA", "speakers": "SPEAKERS",
-        "findAttendees": "FIND ATTENDEES", "meet": "MEET", "lksWallet": "$LKS WALLET", "availableBalance": "AVAILABLE BALANCE"
+        "eventPass": "EVENT PASS",
+        "eventExplorer": "EVENT EXPLORER",
+        "agenda": "AGENDA",
+        "speakers": "SPEAKERS",
+        "findAttendees": "FIND ATTENDEES",
+        "meet": "MEET",
+        "lksWallet": "$LKS WALLET",
+        "availableBalance": "AVAILABLE BALANCE"
       },
       "cards": {
         "scan": {
@@ -669,17 +775,17 @@
       "webSubmitError": "We could not send your proposal. Please try again or email support@hashpass.tech."
     },
     "eventSearch": {
-    "placeholder": "Search events",
-    "mobilePlaceholder": "Search by name, reference or #hashtag",
-    "accessibilityLabel": "Search events in the carousel",
-    "exploreAll": "Explore all",
-    "exploreAllLabel": "Explore all events",
-    "or": "or",
-    "previous": "Previous slide",
-    "next": "Next slide",
-    "pause": "Pause carousel",
-    "play": "Play carousel",
-    "restart": "Return to first slide"
+      "placeholder": "Search events",
+      "mobilePlaceholder": "Search by name, reference or #hashtag",
+      "accessibilityLabel": "Search events in the carousel",
+      "exploreAll": "Explore all",
+      "exploreAllLabel": "Explore all events",
+      "or": "or",
+      "previous": "Previous slide",
+      "next": "Next slide",
+      "pause": "Pause carousel",
+      "play": "Play carousel",
+      "restart": "Return to first slide"
     },
     "eventsExplorerSubtitle": "Discover events across the world — find yours.",
     "noEventsFound": "No events found.",
@@ -702,21 +808,21 @@
       "bsl2025": "BSL 2025"
     },
     "docs": {
-    "title": "Documentation",
-    "subtitle": "Complete guides and troubleshooting",
-    "back": "Go back",
-    "needHelp": "Need more help?",
-    "contactSupport": "Contact Support",
-    "viewStorybook": "See Full Documentation",
-    "installPwaGuide": "Install HASHPASS PWA guide",
+      "title": "Documentation",
+      "subtitle": "Complete guides and troubleshooting",
+      "back": "Go back",
+      "needHelp": "Need more help?",
+      "contactSupport": "Contact Support",
+      "viewStorybook": "See Full Documentation",
+      "installPwaGuide": "Install HASHPASS PWA guide",
       "interactiveDocs": {
         "title": "Full Documentation",
         "description": "Open the full documentation site for guides, references, and examples"
       },
-    "gettingStarted": {
-      "title": "Getting Started",
-      "description": "Learn how to sign in and navigate the app",
-      "seeDemo": "See the demo videos",
+      "gettingStarted": {
+        "title": "Getting Started",
+        "description": "Learn how to sign in and navigate the app",
+        "seeDemo": "See the demo videos",
         "signIn": {
           "title": "Sign In to Your Account",
           "content": "To get started, you'll need to sign in to the HASHPASS app. Open the app, enter your email address, check your email for a one-time login code, and enter the code to access your account."
@@ -1530,11 +1636,26 @@
         "title": "Speaker status",
         "close": "Close",
         "explainA11y": "{status} status. Tap to learn what it means",
-        "active": { "label": "Confirmed", "description": "The speaker has confirmed their account and is receiving meeting requests." },
-        "idle": { "label": "Idle", "description": "The speaker has not claimed their account yet but can still receive meeting requests. Requests stay open for a limited time and expire if the speaker never claims the account." },
-        "dnd": { "label": "Do not disturb", "description": "A confirmed speaker who turned on do-not-disturb. You can still send a request, but it is archived and not shown directly to the speaker, like silenced phone notifications." },
-        "inactive": { "label": "Inactive", "description": "This speaker profile is switched off and is not receiving meeting requests." },
-        "past": { "label": "Past edition", "description": "This speaker appeared at a previous edition and is shown for reference only." }
+        "active": {
+          "label": "Confirmed",
+          "description": "The speaker has confirmed their account and is receiving meeting requests."
+        },
+        "idle": {
+          "label": "Idle",
+          "description": "The speaker has not claimed their account yet but can still receive meeting requests. Requests stay open for a limited time and expire if the speaker never claims the account."
+        },
+        "dnd": {
+          "label": "Do not disturb",
+          "description": "A confirmed speaker who turned on do-not-disturb. You can still send a request, but it is archived and not shown directly to the speaker, like silenced phone notifications."
+        },
+        "inactive": {
+          "label": "Inactive",
+          "description": "This speaker profile is switched off and is not receiving meeting requests."
+        },
+        "past": {
+          "label": "Past edition",
+          "description": "This speaker appeared at a previous edition and is shown for reference only."
+        }
       },
       "connect": "Connect",
       "linkedin": "LinkedIn",

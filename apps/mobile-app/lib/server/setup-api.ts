@@ -2,7 +2,7 @@ import { getSupabaseServerForRequest } from '../supabase-server';
 import { isResolveIdentityError, resolveNotificationIdentity } from './resolve-notification-identity';
 import { CONTACT_TOPICS, MAX_CONTACT_TOPICS } from '../contacts';
 import { SETUP_GOALS, MAX_SETUP_GOALS } from '../setup';
-import { derivePinVerifier, isStepUpScope, issueStepUpProof, PIN_PATTERN } from './pin-auth';
+import { derivePinVerifier, isPinMintableScope, issueStepUpProof, PIN_PATTERN } from './pin-auth';
 import type { PinOutcome, SetupPatch } from '../../types/setup';
 
 const privateHeaders = { 'Cache-Control': 'private, no-store', Vary: 'Authorization, Cookie' };
@@ -103,7 +103,7 @@ export async function pinRequest(request: Request) {
     }
 
     if (body.action === 'verify') {
-      if (typeof body.pin !== 'string' || !PIN_PATTERN.test(body.pin) || !isStepUpScope(body.scope)) return failure('invalid_request', 400);
+      if (typeof body.pin !== 'string' || !PIN_PATTERN.test(body.pin) || !isPinMintableScope(body.scope)) return failure('invalid_request', 400);
       if (Object.keys(body).some(key => !['action', 'pin', 'scope'].includes(key))) return failure('invalid_request', 400);
       const { data, error } = await db.rpc('verify_user_pin', { p_user_id: who.userId, p_candidate: derivePinVerifier(who.userId, body.pin) });
       if (error) return databaseFailure(error.code);

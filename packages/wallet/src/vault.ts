@@ -16,7 +16,7 @@ type VaultEnvelope = {
 };
 export type VaultContents = { mnemonic: string; network: WalletNetwork };
 
-function scopeBinding(scope: VaultScope): string {
+export function scopeBinding(scope: VaultScope): string {
   if (!scope || typeof scope.ownerId !== 'string' || typeof scope.walletId !== 'string' ||
     !['production', 'development'].includes(scope.environment) ||
     !/^[a-zA-Z0-9_-]{1,128}$/.test(scope.ownerId) || !/^[a-zA-Z0-9_-]{1,128}$/.test(scope.walletId)) {

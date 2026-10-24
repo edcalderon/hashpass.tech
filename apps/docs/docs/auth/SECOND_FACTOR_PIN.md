@@ -309,3 +309,31 @@ each endpoint.
 | Stolen unlocked phone | Proofs in memory only; cleared on sign-out, account change, expiry |
 | Shoulder-surfing | Dots only, no echo; reduced to hardware-key support on web for accessibility |
 | Account switch race | Late answers dropped by generation checks in `useSetup`, `usePin`, proof store |
+
+## 12. Wallet PIN recovery (email code + recovery phrase)
+
+If someone forgets their PIN, the account session alone is **not** enough to replace it —
+that would make the second factor pointless. Recovery requires control of the registered
+email, and replacing the wallet vault additionally requires the recovery phrase.
+
+Flow (dev/testnet only, same gate as wallet setup):
+
+1. `POST /api/wallet/pin-recovery {action:'send'}` — authenticated session + bearer; emails
+   a single-use six-digit code (`otp_codes` purpose `wallet-pin-reset`, V138: HMAC-only
+   storage, 10-minute expiry, five attempts, atomic `consume_email_otp`, 60 s resend
+   cooldown). Never logged.
+2. `{action:'verify', code}` — consumes the code atomically and returns a **`wallet:recover`
+   proof** (TTL 600 s). This is the only endpoint that can mint that scope: the verify-PIN
+   route rejects it (`PIN_MINTABLE_SCOPES` is a separate, smaller allow-list than
+   `STEP_UP_SCOPES`), so a lost PIN can never be used to bootstrap its own replacement.
+3. The client then uses the recovery phrase to re-wrap its wallet vault locally and saves
+   the new envelope via `POST /api/wallet/vault` with `expectedVersion > 0` — the vault
+   route accepts `wallet:recover` for reads and replacements (not creation).
+4. `{action:'set-pin', newPin}` with the same proof header calls service-role-only
+   `reset_user_pin`, which overwrites the verifier and clears attempts/lockout.
+
+Ordering rule: **vault first, PIN second.** The old PIN keeps working until the very last
+step, both steps fit inside the 600 s proof, and a failure between them can be retried with
+the same proof — no half-reset state exists. The server never re-wraps the vault on its own
+(it cannot: the seed is under client-held keys), and a lost recovery phrase plus a lost PIN
+together means the wallet is unrecoverable through HASHPASS, by design.

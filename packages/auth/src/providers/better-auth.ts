@@ -28,6 +28,12 @@ const DEFAULT_BASE_PATH = '/api/auth';
 const BETTER_AUTH_REQUEST_TIMEOUT_MS = 7000;
 const LEGACY_BETTER_AUTH_SEGMENT = ['bsl', 'auth'].join('-');
 const BETTER_AUTH_SESSION_CACHE_KEY = 'hashpass_better_auth_session';
+/** better-fetch's abortTimeout surfaces as DOMException "The operation was aborted" (web)
+ * or an Error named AbortError; both mean the request timed out or was cancelled. */
+const isAbortLikeError = (error: unknown): boolean =>
+  error instanceof Error && (
+    error.name === 'AbortError' || error.name === 'TimeoutError' || /aborted|timed?\s?out/i.test(error.message)
+  );
 const PASSWORDLESS_CALLBACK_MARKER = 'supabase_passwordless_in_progress';
 // expoClient's default storage keys: `${storagePrefix}_cookie`, and the OAuth
 // state cookie it plants is `${cookiePrefix}.oauth_state` (optionally __Secure-).
@@ -645,8 +651,21 @@ export class BetterAuthProvider implements IAuthProvider {
     }
 
     this.sessionLookupInFlight = (async () => {
+      const lookup = () => (this.getClient() as any).getSession();
       try {
-        const result = await (this.getClient() as any).getSession();
+        let result;
+        try {
+          result = await lookup();
+        } catch (error) {
+          // better-fetch aborts the request at fetchOptions.timeout with a
+          // DOMException ("The operation was aborted"). That is a slow or
+          // cold backend (dev server first hit), not an auth verdict: retry
+          // once before treating it like any other transport failure.
+          if (!isAbortLikeError(error)) throw error;
+          console.warn('Better Auth getSession timed out; retrying once.');
+          await new Promise(resolve => setTimeout(resolve, 750));
+          result = await lookup();
+        }
         const session = this.mapSession(result?.data);
 
         this.currentSession = session;
@@ -655,7 +674,13 @@ export class BetterAuthProvider implements IAuthProvider {
 
         return session;
       } catch (error) {
-        console.error('Better Auth getSession error:', error);
+        if (isAbortLikeError(error)) {
+          // A timeout after the retry above is a transport state (slow backend),
+          // not a bug: no error-level noise for it, same fallback as offline.
+          console.warn('Better Auth getSession timed out twice; keeping the last-known session.');
+        } else {
+          console.error('Better Auth getSession error:', error);
+        }
         // Transport-level failure (offline, DNS, flaky mobile data): keep the
         // last-known session instead of broadcasting a logout. Only a
         // successful response without a user (mapSession → null above) is a

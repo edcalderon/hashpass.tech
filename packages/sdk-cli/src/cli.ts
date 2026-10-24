@@ -241,7 +241,7 @@ function pinDenial(outcome: { enabled: boolean; remainingAttempts: number; locke
   return `That PIN is not correct. ${outcome.remainingAttempts} attempt${outcome.remainingAttempts === 1 ? "" : "s"} left.`;
 }
 
-const scopeError = () => "--scope must be app:unlock or wallet:sign.";
+const scopeError = () => "--scope must be app:unlock, wallet:sign or wallet:unlock.";
 
 function scopeFlag(args: ParsedArgs) {
   const value = stringFlag(args, "scope") ?? "wallet:sign";
@@ -349,8 +349,8 @@ Usage:
   hashpass support doctor [--json]
   hashpass pin status
   hashpass pin set
-  hashpass pin verify [--scope wallet:sign|app:unlock]
-  hashpass pin forget [--scope wallet:sign|app:unlock]
+  hashpass pin verify [--scope wallet:sign|wallet:unlock|app:unlock]
+  hashpass pin forget [--scope wallet:sign|wallet:unlock|app:unlock]
 
 Configuration:
   HASHPASS_APP_ID       Public application identifier (required)

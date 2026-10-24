@@ -6,6 +6,23 @@ jest.mock('react-native', () => ({
   Animated: {
     View: 'Animated.View',
     Text: 'Animated.Text',
+    // Minimal Value/timing/parallel so components that drive JS-based entrance
+    // animations (DrawerSheet) can render under Jest: values track synchronously and
+    // started animations finish immediately. No native driver is ever requested.
+    Value: class MockAnimatedValue {
+      constructor(initial) { this.value = initial; }
+      setValue(next) { this.value = next; }
+      interpolate({ inputRange, outputRange }) {
+        const position = inputRange.indexOf(this.value);
+        return position >= 0 ? outputRange[position] : outputRange[0];
+      }
+    },
+    timing: (value, { toValue }) => ({
+      start: (done) => { value.setValue(toValue); done?.({ finished: true }); },
+    }),
+    parallel: (animations) => ({
+      start: (done) => { for (const animation of animations) animation.start(); done?.({ finished: true }); },
+    }),
   },
   AccessibilityInfo: {
     addEventListener: jest.fn(() => ({ remove: jest.fn() })),
