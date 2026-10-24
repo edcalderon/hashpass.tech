@@ -2736,7 +2736,7 @@ describe('useAuth native Google sign-in', () => {
       expect(capturedHook.isLoading).toBe(true);
 
       await testAct(async () => {
-        await jest.advanceTimersByTimeAsync(8000);
+        await jest.advanceTimersByTimeAsync(16000);
       });
 
       expect(mockDirectusAuthService.getSession).toHaveBeenCalledTimes(1);
