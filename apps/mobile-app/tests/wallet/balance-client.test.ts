@@ -19,11 +19,12 @@ afterEach(() => {
 it('reads public chain balances and converts the total into fiat currencies', async () => {
   globalThis.fetch = jest.fn(async (input: RequestInfo | URL) => {
     const url = String(input);
-    if (url.includes('rpc.sepolia.org')) return response({ result: '0xde0b6b3a7640000' });
-    if (url.includes('blockstream.info/testnet')) {
+    const parsed = new URL(url);
+    if (parsed.hostname === 'rpc.sepolia.org') return response({ result: '0xde0b6b3a7640000' });
+    if (parsed.hostname === 'blockstream.info' && parsed.pathname.startsWith('/testnet/')) {
       return response({ chain_stats: { funded_txo_sum: 10_000_000, spent_txo_sum: 0 }, mempool_stats: {} });
     }
-    if (url.includes('api.devnet.solana.com')) return response({ result: { value: 2_000_000_000 } });
+    if (parsed.hostname === 'api.devnet.solana.com') return response({ result: { value: 2_000_000_000 } });
     return response({
       ethereum: { usd: 2_000, ars: 2_000_000, brl: 10, clp: 1_800_000, cop: 8_000_000, cup: 2_000_000, dop: 100_000, mxn: 40_000, uyu: 80_000 },
       bitcoin: { usd: 30_000, cop: 120_000_000, mxn: 600_000 },
