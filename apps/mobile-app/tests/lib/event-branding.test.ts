@@ -18,6 +18,11 @@ describe('resolveEventImageSource', () => {
     expect(resolveEventImageSource('/logos/bsl/bsl-ontour-pro.svg')).toBe('bsl-ontour-svg');
   });
 
+  it('maps hosted and cache-busted public BSL paths to bundled raster assets', () => {
+    expect(resolveEventImageSource('http://localhost:8081/assets/logos/bsl/bsl-colombia-pro.svg')).toBe('bsl-colombia-svg');
+    expect(resolveEventImageSource('/assets/logos/bsl/bsl-colombia-pro.svg?v=2026-10-24')).toBe('bsl-colombia-svg');
+  });
+
   it('maps the dead BSL 2025 banner URL to a local banner asset', () => {
     expect(
       resolveEventImageSource('https://blockchainsummit.la/wp-content/uploads/2025/09/bsl2025-banner.jpg')

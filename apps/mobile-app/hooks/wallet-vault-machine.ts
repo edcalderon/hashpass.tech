@@ -1,11 +1,12 @@
 import { assign, setup } from 'xstate';
-import type { VaultFlowOrigin, VaultFlowStep, VaultFlowEvent, Context } from './wallet-vault-machine.types';
+import type { VaultFlowStep, VaultFlowEvent, Context } from './wallet-vault-machine.types';
 export type { VaultFlowOrigin, VaultFlowStep, VaultFlowEvent } from './wallet-vault-machine.types';
 
 export const walletVaultMachine = setup({
   types: { context: {} as Context, events: {} as VaultFlowEvent, input: {} as { registered: boolean } },
   actions: {
     forgetPhraseState: assign({ acknowledged: false }),
+    clearPhraseState: assign({ acknowledged: false, origin: null }),
     remember: assign(({ event }) => ({ origin: event.type === 'PIN_OK' ? event.origin : null })),
   },
   guards: { fromCreate: ({ context }) => context.origin === 'create' },
@@ -33,16 +34,17 @@ export const walletVaultMachine = setup({
     phrase: {
       on: {
         ACKNOWLEDGE: { actions: assign(({ context }) => ({ acknowledged: !context.acknowledged })) },
-        HIDE: [{ guard: 'fromCreate', target: 'challenge' }, { target: 'home', actions: 'forgetPhraseState' }],
+        HIDE: [{ guard: 'fromCreate', target: 'challenge' }, { target: 'home', actions: 'clearPhraseState' }],
       },
     },
-    challenge: { on: { CHALLENGE_PASSED: { target: 'home', actions: 'forgetPhraseState' }, BACK: 'phrase' } },
+    challenge: { on: { CHALLENGE_PASSED: { target: 'home', actions: 'clearPhraseState' }, BACK: 'phrase' } },
     home: { on: { REVEAL: 'reveal_pin', CHANGE: 'change_pin', RECOVER: 'recover_send' } },
     reveal_pin: { on: { PIN_OK: { target: 'working', actions: 'remember' }, CANCEL: 'home' } },
     change_pin: { on: { PIN_OK: { target: 'working', actions: 'remember' }, CANCEL: 'home' } },
     recover_send: {
       on: {
         CODE_SENT: 'recover_code',
+        CANCEL: 'home',
         FAILED: { target: 'failed', actions: assign(({ event }) => ({ reason: event.reason })) },
       },
     },
@@ -53,7 +55,7 @@ export const walletVaultMachine = setup({
       on: { BACK: [{ guard: ({ context }) => context.registered, target: 'home' }, { target: 'intro' }] },
     },
   },
-  on: { LOCK: { target: '.start', actions: 'forgetPhraseState' } },
+  on: { LOCK: { target: '.start', actions: 'clearPhraseState' } },
 });
 
 export const vaultFlowStep = (value: unknown): VaultFlowStep => value as VaultFlowStep;

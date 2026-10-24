@@ -20,11 +20,6 @@ import type { ThemeColors } from '../../../lib/theme';
 import { uiTokens } from '@hashpass/ui/tokens';
 
 type Section = 'assets' | 'rewards' | 'passes';
-const NETWORKS = [
-  { symbol: 'ETH', name: 'Ethereum' },
-  { symbol: 'BTC', name: 'Bitcoin' },
-  { symbol: 'SOL', name: 'Solana' },
-] as const;
 
 export default function WalletScreen() {
   // The guard must key on the registry id (dbUserId), the same identity the enrollment row's
@@ -54,7 +49,7 @@ function WalletGate({ guard, signedIn }: { guard: ReturnType<typeof useWalletGua
       .catch((failure: unknown) => setRecovery(failure instanceof Error && failure.message === 'wallet_not_enrolled' ? 'noWallet' : 'unavailable'));
   }, []);
   const endRecovery = useCallback(() => setRecovery('idle'), []);
-  if (guard.phase === 'unlocked') return <WalletContent />;
+  if (guard.phase === 'unlocked') return <WalletContent pin={guard.pin} />;
   const shell = (children: React.ReactNode) => <ScrollView style={styles.page} contentContainerStyle={[
     styles.content, { paddingTop: topInset, paddingBottom: bottomInset },
   ]}>
@@ -110,7 +105,7 @@ function WalletGate({ guard, signedIn }: { guard: ReturnType<typeof useWalletGua
   </View>);
 }
 
-function WalletContent() {
+function WalletContent({ pin }: { pin: ReturnType<typeof useWalletGuard>['pin'] }) {
   const params = useLocalSearchParams<{ section?: string; inviteCode?: string }>();
   const { colors, isDark } = useTheme();
   const { topInset, bottomInset } = useDashboardPageLayout();
@@ -151,21 +146,11 @@ function WalletContent() {
     {section === 'assets' && <View style={styles.stack}>
       {/* Balance, send/receive, status and the PIN-protected vault flow all live in this
           one card (WalletEnrollmentView) — one unified section, not two stacked panels. */}
-      <WalletEnrollmentView />
-      <View style={styles.panel}>
-        <Text accessibilityRole="header" style={styles.sectionTitle}>{t('overview.networks', 'Planned networks')}</Text>
-        <Text style={styles.body}>{t('overview.networksDescription', 'Balances will appear after wallet setup and a successful network connection.')}</Text>
-        {NETWORKS.map(network => <View key={network.symbol} style={styles.network}>
-          <View style={styles.networkIcon}><Text style={styles.networkSymbol}>{network.symbol}</Text></View>
-          <View style={styles.networkInfo}><Text style={styles.sectionTitle}>{network.name}</Text>
-            <Text style={styles.small}>{t('overview.notConnected', 'Not connected')}</Text></View>
-          <Text accessibilityLabel={t('overview.balanceUnavailable', 'Balance unavailable')} style={styles.balance}>—</Text>
-        </View>)}
-      </View>
+      <WalletEnrollmentView pin={pin} />
       <View style={styles.panel}>
         <Text accessibilityRole="header" style={styles.sectionTitle}>{t('overview.activity', 'Recent activity')}</Text>
         <View style={styles.transactionEmpty}>
-          <View style={styles.transactionIcon}><Text style={styles.networkSymbol}>{t('overview.transactionNone', 'No transactions yet')}</Text></View>
+          <View style={styles.transactionIcon}><Text style={styles.transactionLabel}>{t('overview.transactionNone', 'No transactions yet')}</Text></View>
           <Text style={styles.body}>{t('overview.activityUnavailable', 'Transaction history will be available when your wallet is connected. No on-chain activity has been loaded.')}</Text>
         </View>
       </View>
@@ -228,12 +213,7 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
   securityStep: { gap: 5 },
   panel: { padding: 24, borderWidth: 1, borderColor: colors.divider, borderRadius: 20, gap: 12 },
   sectionTitle: { color: colors.text.primary, fontSize: 16, fontWeight: '600' },
-  network: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 14, borderTopWidth: 1, borderColor: colors.divider },
-  networkIcon: { width: 46, height: 46, borderRadius: 16, backgroundColor: colors.background.paper, alignItems: 'center', justifyContent: 'center' },
-  networkSymbol: { color: colors.text.primary, fontSize: 11, fontWeight: '800' },
-  networkInfo: { flex: 1, gap: 3 },
-  small: { color: colors.text.secondary, fontSize: 12 },
-  balance: { color: colors.text.secondary, fontSize: 24 },
   transactionEmpty: { gap: 12, alignItems: 'center', paddingVertical: 18, borderTopWidth: 1, borderColor: colors.divider, marginTop: 4 },
   transactionIcon: { minHeight: 48, justifyContent: 'center', alignItems: 'center' },
+  transactionLabel: { color: colors.text.primary, fontSize: 12, fontWeight: '700' },
 });

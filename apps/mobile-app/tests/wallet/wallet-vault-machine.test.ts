@@ -48,6 +48,17 @@ describe('wallet vault flow machine', () => {
     expect(phase(actor)).toBe('home');
   });
 
+  it('lets a person return from the word challenge to review the phrase again', () => {
+    const actor = start(false);
+    actor.send({ type: 'CREATE' });
+    actor.send({ type: 'PIN_OK', origin: 'create' });
+    actor.send({ type: 'SUCCEEDED', next: 'phrase' });
+    actor.send({ type: 'HIDE' });
+    expect(phase(actor)).toBe('challenge');
+    actor.send({ type: 'BACK' });
+    expect(phase(actor)).toBe('phrase');
+  });
+
   it('offers no way to bring in a wallet made elsewhere', () => {
     const actor = start(false);
     actor.send({ type: 'IMPORT' } as never);
@@ -97,6 +108,17 @@ describe('wallet vault flow machine', () => {
     expect(phase(actor)).toBe('failed');
     expect(actor.getSnapshot().context.reason).toBe('wallet_code_invalid');
     actor.send({ type: 'BACK' });
+    expect(phase(actor)).toBe('home');
+  });
+
+  it('cancels recovery from the email-send and code-entry steps', () => {
+    const actor = start(true);
+    actor.send({ type: 'RECOVER' });
+    actor.send({ type: 'CANCEL' });
+    expect(phase(actor)).toBe('home');
+    actor.send({ type: 'RECOVER' });
+    actor.send({ type: 'CODE_SENT' });
+    actor.send({ type: 'CANCEL' });
     expect(phase(actor)).toBe('home');
   });
 });

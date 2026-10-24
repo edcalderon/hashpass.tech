@@ -4,7 +4,8 @@ import { useTheme } from '../hooks/useTheme';
 export default function DesignSystemStyles() {
   const { isDark } = useTheme(); const palette = uiPalette(isDark);
   return <style>{`
-    :root { color-scheme: ${isDark ? 'dark' : 'light'}; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+    :root { color-scheme: ${isDark ? 'dark' : 'light'}; }
+    @supports (-webkit-text-size-adjust: 100%) { :root { -webkit-text-size-adjust: 100%; } }
     html, body, #root { width: 100%; min-height: 100%; min-height: 100dvh; overflow-x: hidden; overflow-x: clip; }
     html { overscroll-behavior-x: none; }
     body { margin: 0; -webkit-tap-highlight-color: transparent; }

@@ -15,6 +15,12 @@ it('removes exported temporary files even when sharing fails', async () => {
   expect(mockSave).toHaveBeenCalledWith('file:///cache/unique-hashpass-recovery.json', 'encrypted-fixture');
   expect(mockDelete).toHaveBeenCalledWith('file:///cache/unique-hashpass-recovery.json', { idempotent: true });
 });
+it('uses a separate filename for the generated backup password', async () => {
+  mockShare.mockResolvedValue(undefined);
+  await saveRecoveryFile('generated-password', true, 'hashpass-recovery-password.txt');
+  expect(mockSave).toHaveBeenCalledWith('file:///cache/unique-hashpass-recovery-password.txt', 'generated-password');
+  expect(mockShare).toHaveBeenCalledWith('file:///cache/unique-hashpass-recovery-password.txt', expect.objectContaining({ mimeType: 'text/plain' }));
+});
 it('rejects oversized backup files before reading and cleans its cached copy', async () => {
   mockPick.mockResolvedValue({ canceled: false, assets: [{ uri: 'file:///cache/picked' }] });
   mockInfo.mockResolvedValue({ exists: true, isDirectory: false, size: 16385 });

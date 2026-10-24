@@ -14,7 +14,16 @@ jest.mock('../../i18n/i18n', () => ({ useTranslation: () => ({ t: (_key: string,
 jest.mock('../../components/BlockchainTokensView', () => 'Rewards');
 jest.mock('../../components/HashPointsView', () => 'Points');
 jest.mock('../../components/PassesDisplay', () => 'PassesDisplay');
-jest.mock('../../components/wallet/WalletEnrollmentView', () => 'WalletEnrollment');
+let mockWalletEnrollmentProps: Record<string, unknown> | null = null;
+jest.mock('../../components/wallet/WalletEnrollmentView', () => {
+  return {
+    __esModule: true,
+    default: (props: Record<string, unknown>) => {
+      mockWalletEnrollmentProps = props;
+      return require('react').createElement('WalletEnrollment', props);
+    },
+  };
+});
 jest.mock('../../components/wallet/WalletVaultFlow', () => 'WalletVaultFlow');
 const mockEnrollmentLoad = jest.fn();
 // Lazy closure, not the fn itself: the mock factory runs during the hoisted imports, before
@@ -29,9 +38,10 @@ jest.mock('../../providers/AnimationProvider', () => ({
 jest.mock('../../hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'u1' }, dbUserId: 'reg-1', isLoading: false }) }));
 let mockPhase = 'unlocked';
 const mockPinDone = jest.fn();
+const mockGuardPin = {};
 jest.mock('../../hooks/useWalletGuard', () => ({
   WALLET_UNLOCK_SCOPE: 'wallet:unlock',
-  useWalletGuard: () => ({ phase: mockPhase, pin: {}, onPinDone: mockPinDone, retry: jest.fn(), lock: jest.fn() }),
+  useWalletGuard: () => ({ phase: mockPhase, pin: mockGuardPin, onPinDone: mockPinDone, retry: jest.fn(), lock: jest.fn() }),
 }));
 jest.mock('../../components/security/PinFlow', () => 'PinFlow');
 import Wallet from '../../app/(shared)/dashboard/wallet';
@@ -70,6 +80,14 @@ it('renders the shared segmented tabs in dark mode', () => {
     mockDark = false;
     act(() => view.unmount());
   }
+});
+
+it('keeps the guard PIN session when mounting the wallet enrollment flow', () => {
+  let view!: ReactTestRenderer;
+  try {
+    act(() => { view = create(<Wallet />); });
+    expect(mockWalletEnrollmentProps?.pin).toBe(mockGuardPin);
+  } finally { act(() => view.unmount()); }
 });
 
 it.each([['pin_setup', 'create'], ['pin_entry', 'unlock'], ['locked', 'unlock']])(
@@ -132,6 +150,33 @@ it('says so when the locked gate has no wallet to recover', async () => {
     await act(async () => { forgot.props.onPress(); });
     expect(JSON.stringify(view.toJSON())).toContain('This account has no wallet yet, so there is nothing to recover.');
     expect(view.root.findAllByType('WalletVaultFlow' as any)).toHaveLength(0);
+  } finally {
+    mockEnrollmentLoad.mockReset();
+    mockPhase = 'unlocked';
+    act(() => view.unmount());
+  }
+});
+
+it.each([
+  ['a transport failure', new Error('offline'), 'We could not reach the PIN recovery service.'],
+  ['an account without enrollment', new Error('wallet_not_enrolled'), 'This account has no wallet yet'],
+])('maps %s from the locked-gate recovery check to an honest dead-end-free answer', async (_name, failure) => {
+  mockPhase = 'pin_entry';
+  mockEnrollmentLoad.mockRejectedValue(failure);
+  let view!: ReactTestRenderer;
+  try {
+    act(() => { view = create(<Wallet />); });
+    const forgot = view.root.findAllByType(Pressable)
+      .find(node => node.props.accessibilityRole === 'button' && node.props.accessibilityLabel === 'I forgot my PIN')!;
+    await act(async () => { forgot.props.onPress(); });
+    expect(JSON.stringify(view.toJSON())).toContain('Back to PIN entry');
+    expect(view.root.findAllByType('WalletVaultFlow' as any)).toHaveLength(0);
+    // Back to PIN entry is never a dead end: it returns to the gate's PIN pad. (It is the
+    // only button Pressable in this state: the gate's PIN pad itself is a mocked string.)
+    const back = view.root.findAllByType(Pressable)
+      .find(node => node.props.accessibilityRole === 'button')!;
+    await act(async () => { back.props.onPress(); });
+    expect(view.root.findByType('PinFlow' as any)).toBeDefined();
   } finally {
     mockEnrollmentLoad.mockReset();
     mockPhase = 'unlocked';

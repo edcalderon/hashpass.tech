@@ -1,4 +1,4 @@
-import { Image, Platform, type ImageSourcePropType } from 'react-native';
+import { Image, type ImageSourcePropType } from 'react-native';
 
 // SVG can't be decoded by React Native's native Image view (Android/iOS have
 // no SVG image decoder, unlike browsers) -- these must be rasterized (webp)
@@ -108,12 +108,35 @@ const resolveUri = (assetModule: ImageSourcePropType): string | undefined => {
 
 export const resolveEventImageSource = (image?: string): ImageSourcePropType | { uri: string } | undefined => {
   if (!image) return undefined;
-  const localAsset = EVENT_IMAGE_ASSETS[image];
+  // Event records can carry either the public path or the dev server's absolute
+  // URL. Strip cache suffixes and a host before looking up known bundled assets;
+  // otherwise the browser requests `/assets/logos/...svg` and produces a noisy
+  // 404 even though the matching raster is already in the app bundle.
+  const path = image.split(/[?#]/, 1)[0];
+  const pathOnly = path.replace(/^https?:\/\/[^/]+/i, '');
+  const localAsset = EVENT_IMAGE_ASSETS[image]
+    ?? EVENT_IMAGE_ASSETS[path]
+    ?? EVENT_IMAGE_ASSETS[pathOnly];
   if (localAsset) return localAsset;
   if (BLOCKCHAIN_SUMMIT_IMAGE_PATTERN.test(image)) {
     return BSL_ARCHIVE_BANNER;
   }
   return { uri: image };
+};
+
+/**
+ * Resolve an event image for components that need a URL string (for example,
+ * an HTML `<img>` or a video loader poster). Known bundled assets are first
+ * resolved through React Native so they never fall back to a stale `/assets`
+ * SVG request in the browser.
+ */
+export const resolveEventImageUri = (image?: string): string | undefined => {
+  const source = resolveEventImageSource(image);
+  if (!source) return undefined;
+  if (typeof source === 'object' && 'uri' in source && typeof source.uri === 'string') {
+    return source.uri;
+  }
+  return resolveUri(source);
 };
 
 export const getTourBrandAsset = (eventId?: string | null): TourBrandAsset | null => {

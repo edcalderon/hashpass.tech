@@ -115,6 +115,22 @@ This is two different jobs, not one repeated question:
 Creation then uses a `wallet:sign` proof (60 s) for the reservation/creation call, and the
 vault envelope is saved with `expectedVersion: 0` under a `wallet:unlock` proof.
 
+The phrase screen has two deliberate safeguards before setup completes:
+
+- The person can return from the word challenge to review the phrase again. The challenge
+  only completes after the requested words are checked against the one-time salted hashes;
+  a wrong answer stays on the challenge and shows an error.
+- The acknowledgement explicitly warns that losing the phrase can permanently lose access to
+  funds. The unprotected download is available only after that acknowledgement.
+
+The **Hashpass encrypted backup** download asks for the current PIN again. It wraps the phrase
+with the same AES-256-GCM + PBKDF2/HKDF design used by the hybrid vault, using the account's
+server-held share as the second key input. The share is never written into the downloaded file,
+so a stolen file cannot be brute-forced with the four-digit PIN alone. This format is therefore
+account-bound: restoring it requires the signed-in Hashpass account and the PIN. The portable
+`exportRecoveryBackup` format remains available for integrations that need a separate strong
+backup password.
+
 ## 4. Changing the PIN: rewrap first, swap the verifier second, and what "unknown" means
 
 `HybridWallet.changePin` (`packages/wallet/src/hybrid-wallet.ts`) is deliberately ordered:

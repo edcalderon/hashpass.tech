@@ -129,6 +129,7 @@ their own `NEXT_PUBLIC_LINKS_API_BASE_URL` / `EXPO_PUBLIC_LINKS_API_BASE_URL`
 | `POST` | `/api/v1/auth/qr/challenges/:id/approve` | bearer token (app's own session) | Mobile app approves/denies, called under the user's own authenticated session |
 | `POST` | `/api/v1/auth/qr/exchange` | `x-hashpass-binding` header | Browser trades the one-time authorization code + PKCE verifier for a real session |
 | `GET` | `/q/:slug` | none | Public QR redirect — 302s to the link's destination (with campaign UTM params merged in) and logs a scan event; 404 if the slug is unknown, paused, archived, or expired |
+| `GET` | `/w/:network/:chain/:address` | none | Public non-custodial wallet-share redirect to the chain explorer for a validated public receiving address; no wallet secrets are accepted or stored |
 | `GET` | `/api/v1/qr-links` | bearer token | Lists every QR link the caller owns |
 | `POST` | `/api/v1/qr-links` | bearer token | Creates a new QR link owned by the caller |
 | `GET` | `/api/v1/qr-links/:id` | bearer token, owner-only | Fetches one QR link |

@@ -2,8 +2,8 @@ import { Platform } from 'react-native';
 
 const MAX_BYTES = 16_384;
 /** Export only after explicit user action. Temporary native files are removed. */
-export async function saveRecoveryFile(contents: string, plaintext = false): Promise<void> {
-  const name = plaintext ? 'hashpass-recovery-phrase.txt' : 'hashpass-recovery.json';
+export async function saveRecoveryFile(contents: string, plaintext = false, fileName?: string): Promise<void> {
+  const name = fileName ?? (plaintext ? 'hashpass-recovery-phrase.txt' : 'hashpass-recovery.json');
   if (Platform.OS === 'web') {
     const url = URL.createObjectURL(new Blob([contents], { type: plaintext ? 'text/plain' : 'application/json' }));
     const anchor = document.createElement('a'); anchor.href = url; anchor.download = name;

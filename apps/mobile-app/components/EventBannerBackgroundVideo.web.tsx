@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { resolveEventImageUri } from "../lib/event-branding";
 
 interface EventBannerBackgroundVideoProps {
   source: string;
@@ -27,6 +28,7 @@ export default function EventBannerBackgroundVideo({
 }: EventBannerBackgroundVideoProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [hasFirstFrame, setHasFirstFrame] = useState(false);
+  const loadingLogoUri = resolveEventImageUri(loadingLogo);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -107,9 +109,9 @@ export default function EventBannerBackgroundVideo({
             transition: "opacity 180ms ease-out",
           }}
         >
-          {!playbackEnabled && loadingLogo ? (
+          {!playbackEnabled && loadingLogoUri ? (
             <img
-              src={loadingLogo}
+              src={loadingLogoUri}
               alt=""
               style={{
                 position: "absolute",
@@ -121,9 +123,9 @@ export default function EventBannerBackgroundVideo({
                 opacity: 0.62,
               }}
             />
-          ) : loadingLogo ? (
+          ) : loadingLogoUri ? (
             <img
-              src={loadingLogo}
+              src={loadingLogoUri}
               alt=""
               style={{
                 width: 190,

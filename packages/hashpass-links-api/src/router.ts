@@ -1,6 +1,7 @@
 import { health } from './routes/health';
 import { redirectInvite } from './routes/invite';
 import { redirectContactCard } from './routes/contact-card';
+import { redirectWalletShare } from './routes/wallet-share';
 import { approveChallenge, createChallenge, exchangeChallenge, pollChallenge } from './routes/auth-qr';
 import { createCaptchaChallenge, redeemCaptchaChallenge } from './routes/captcha';
 import {
@@ -34,6 +35,7 @@ const ROUTES: Array<[string, RegExp, Handler]> = [
   ],
   ['POST', /^\/api\/v1\/auth\/qr\/exchange$/, (request) => exchangeChallenge(request)],
   ['GET', /^\/c\/([^/]+)$/, (request, match) => redirectContactCard(request, match[1])],
+  ['GET', /^\/w\/([^/]+)\/([^/]+)\/([^/]+)$/, (request, match) => redirectWalletShare(request, match[1], match[2], match[3])],
   // HashPass Links (custom/dynamic QR links) -- see README "QR link
   // lifecycle" section.
   ['GET', /^\/q\/([^/]+)$/, (request, match) => redirectQrLink(request, match[1])],
