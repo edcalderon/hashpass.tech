@@ -62,6 +62,7 @@ class WebQRScannerFallback {
     return this.reader;
   }
 
+  /* istanbul ignore next -- exercised by browser camera smoke tests */
   async startScanning(
     onScan: (result: WebQRScanResult) => void,
     onError?: (error: Error) => void,

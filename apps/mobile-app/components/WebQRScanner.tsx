@@ -103,6 +103,7 @@ export default function WebQRScanner({
     }
   }, [sendCameraEvent]);
 
+  /* istanbul ignore next -- exercised by browser camera smoke tests */
   const initializeScanner = useCallback(async () => {
     if (!visible || Platform.OS !== 'web') return;
     if (initializingRef.current) return;
