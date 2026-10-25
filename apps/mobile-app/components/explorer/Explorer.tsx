@@ -22,7 +22,13 @@ import {
   type NativeSyntheticEvent,
 } from "react-native";
 import { NativeSafeIcon } from "../../lib/vector-icons";
-import { HoverText, IconButton, SegmentedTabs } from "@hashpass/ui/primitives";
+import {
+  ActionButton,
+  Badge,
+  HoverText,
+  IconButton,
+  SegmentedTabs,
+} from "@hashpass/ui/primitives";
 import { useAutoAdvanceProgress } from "../../lib/hooks/useAutoAdvanceProgress";
 import { SliderProgressBar } from "../banner/SliderProgressBar";
 import { useTheme } from "../../hooks/useTheme";
@@ -33,7 +39,6 @@ import PassesDisplay from "../PassesDisplay";
 import { getEventQuickAccessItems } from "../../lib/event-detector";
 import { resolveEventImageSource } from "../../lib/event-branding";
 import {
-  getEventChatAvatarUrl,
   loadEventChatPresence,
   type EventChatPresence,
 } from "../../lib/event-chat";
@@ -1299,8 +1304,16 @@ export default function Explorer({
           ? styles.railCard
           : styles.listCard;
 
+    const roomStatusLabel = presence
+      ? presence.peopleCount === 0
+        ? translate("eventChat.zeroPeopleInRoom", "0 people in room")
+        : translate("eventChat.peopleInRoom", "{count} people in room", {
+            count: presence.peopleCount,
+          })
+      : null;
+
     return (
-      <TouchableOpacity
+      <View
         key={event.id}
         style={[
           styles.eventCard,
@@ -1308,63 +1321,85 @@ export default function Explorer({
           selected && styles.eventCardSelected,
           archive && styles.archiveCard,
         ]}
-        onPress={() => selectEvent(event.id)}
-        activeOpacity={0.86}
-        accessibilityRole="button"
-        accessibilityLabel={`Select ${event.title}`}
       >
         <View
           style={[
-            styles.eventCover,
-            mode !== "list" && styles.wideEventCover,
-            {
-              height: layout.coverSize,
-              backgroundColor: event.color || colors.primary,
-            },
+            styles.eventMedia,
+            mode !== "list" && styles.wideEventMedia,
+            { height: layout.coverSize },
           ]}
         >
-          {imageSource && (
-            <Image
-              source={imageSource}
-              style={styles.eventCoverImage}
-              resizeMode="cover"
-            />
-          )}
-          <View style={styles.eventCoverShade} />
-          <Text style={styles.eventCoverMark}>
-            {archive
-              ? translate("explore.rework.archive", "ARCHIVE")
-              : eventBadgeLabel}
-          </Text>
-          <View style={styles.eventBadge}>
-            <Text style={styles.eventBadgeText}>{eventBadgeLabel}</Text>
-          </View>
-          <View
+          <Pressable
             style={[
-              styles.bookmarkButton,
-              bookmarked && styles.bookmarkButtonActive,
+              styles.eventCover,
+              {
+                height: layout.coverSize,
+                backgroundColor: event.color || colors.primary,
+              },
             ]}
-            onTouchEnd={(pressEvent) => {
-              pressEvent?.stopPropagation();
-              toggleBookmark(event.id);
-            }}
-            // No accessibilityRole here: on web this View sits inside the card
-            // TouchableOpacity, and role="button" would render a <button> nested
-            // inside the card's own <button> (invalid HTML, hydration error).
-            accessibilityLabel={`${
+            onPress={() => selectEvent(event.id)}
+            accessibilityRole="button"
+            accessibilityLabel={`Select ${event.title}`}
+          >
+            {imageSource && (
+              <Image
+                source={imageSource}
+                style={styles.eventCoverImage}
+                resizeMode="cover"
+              />
+            )}
+            <View style={styles.eventCoverShade} />
+            <View style={styles.eventBadge}>
+              <Badge mode={isDark ? "dark" : "light"} tone="onMedia" compact>
+                {archive
+                  ? translate("explore.rework.archive", "ARCHIVE")
+                  : eventBadgeLabel}
+              </Badge>
+            </View>
+          </Pressable>
+          <IconButton
+            mode={isDark ? "dark" : "light"}
+            label={`${
               bookmarkedEventIds.includes(event.id)
                 ? translate("explore.rework.removeBookmark", "Remove bookmark")
                 : translate("explore.rework.bookmark", "Bookmark")
             } ${event.title}`}
+            style={[
+              styles.bookmarkButton,
+              bookmarked && styles.bookmarkButtonActive,
+            ]}
+            onPress={() => toggleBookmark(event.id)}
           >
             <Icon
               name={bookmarked ? "bookmark" : "bookmark-border"}
               color="#fff"
               size={19}
             />
-          </View>
+          </IconButton>
+          <ActionButton
+            mode={isDark ? "dark" : "light"}
+            variant="ghost"
+            label={translate("eventChat.joinRoom", "Join the room")}
+            labelNumberOfLines={1}
+            leadingIcon={<Icon name="event" color={colors.primary} size={15} />}
+            trailingIcon={
+              roomStatusLabel ? (
+                <Text style={styles.joinRoomPresence} numberOfLines={1}>
+                  {roomStatusLabel}
+                </Text>
+              ) : undefined
+            }
+            style={styles.joinRoomButton}
+            onPress={() => openEventRoom(event)}
+            accessibilityLabel={`Join the room for ${event.title}`}
+          />
         </View>
-        <View style={styles.eventBody}>
+        <Pressable
+          style={styles.eventBody}
+          onPress={() => selectEvent(event.id)}
+          accessibilityRole="button"
+          accessibilityLabel={`Select ${event.title}`}
+        >
           <HoverText style={styles.eventTitle} numberOfLines={2}>
             {event.title}
           </HoverText>
@@ -1374,59 +1409,8 @@ export default function Explorer({
           <HoverText style={styles.eventCity} numberOfLines={1}>
             {event.subtitle}
           </HoverText>
-          {mode !== "grid" && (
-            <View
-              style={styles.eventFooter}
-              onTouchEnd={(pressEvent) => {
-                pressEvent?.stopPropagation();
-                openEventRoom(event);
-              }}
-              // No accessibilityRole here either — same nested-button reason as
-              // the bookmark above: the card wrapper is already the button.
-              accessibilityLabel={`Join the room for ${event.title}`}
-            >
-              <View
-                style={styles.attendeeDots}
-                accessibilityLabel="Event room attendees"
-              >
-                {(presence?.avatarUrls || []).map(
-                  (avatarUrl: string | null, index: number) => (
-                    <Image
-                      key={avatarUrl || event.id}
-                      source={{
-                        uri:
-                          avatarUrl ||
-                          getEventChatAvatarUrl({
-                            senderId: `${event.id}-attendee-${index}`,
-                          }),
-                      }}
-                      style={[
-                        styles.attendeeAvatar,
-                        index > 0 && styles.attendeeDotOffset,
-                      ]}
-                      accessibilityIgnoresInvertColors
-                    />
-                  ),
-                )}
-              </View>
-              <Text style={styles.attendeeText}>
-                {presence
-                  ? presence.peopleCount === 0
-                    ? translate(
-                        "eventChat.zeroPeopleInRoom",
-                        "0 people in room",
-                      )
-                    : translate(
-                        "eventChat.peopleInRoom",
-                        "{count} people in room",
-                        { count: presence.peopleCount },
-                      )
-                  : translate("eventChat.joinRoom", "Join the room")}
-              </Text>
-            </View>
-          )}
-        </View>
-      </TouchableOpacity>
+        </Pressable>
+      </View>
     );
   };
 
@@ -2478,6 +2462,7 @@ const getStyles = (isDark: boolean, colors: any) =>
     },
     eventCard: {
       overflow: "hidden",
+      position: "relative",
       flexDirection: "row",
       borderRadius: uiTokens.radius.media,
       borderWidth: 1,
@@ -2504,14 +2489,17 @@ const getStyles = (isDark: boolean, colors: any) =>
       flexDirection: "column",
       borderRadius: uiTokens.radius.card,
     },
-    eventCover: {
+    eventMedia: {
       width: 132,
       position: "relative",
       overflow: "hidden",
-      justifyContent: "center",
-      alignItems: "center",
     },
-    wideEventCover: { width: "100%" },
+    wideEventMedia: { width: "100%" },
+    eventCover: {
+      width: "100%",
+      position: "relative",
+      overflow: "hidden",
+    },
     eventCoverImage: {
       ...StyleSheet.absoluteFillObject,
       width: "100%",
@@ -2520,42 +2508,48 @@ const getStyles = (isDark: boolean, colors: any) =>
     },
     eventCoverShade: {
       ...StyleSheet.absoluteFillObject,
-      backgroundColor: "rgba(0,0,0,.22)",
-    },
-    eventCoverMark: {
-      color: "rgba(255,255,255,.68)",
-      fontSize: 10,
-      fontWeight: "800",
-      letterSpacing: 1.2,
+      backgroundColor: uiTokens.effects.mediaOverlayGlass,
     },
     eventBadge: {
       position: "absolute",
       top: 10,
       left: 9,
-      paddingHorizontal: 7,
-      paddingVertical: 5,
-      borderRadius: uiTokens.radius.small,
       maxWidth: "88%",
-      backgroundColor: "rgba(10, 28, 42, .86)",
-    },
-    eventBadgeText: {
-      color: "#fff",
-      fontSize: 8.5,
-      fontWeight: "800",
-      letterSpacing: 0.5,
     },
     bookmarkButton: {
       position: "absolute",
       top: 8,
       right: 8,
-      width: 30,
-      height: 30,
-      borderRadius: uiTokens.radius.small,
+      width: uiTokens.control.compactHeight,
+      height: uiTokens.control.compactHeight,
+      borderRadius: uiTokens.radius.pill,
       alignItems: "center",
       justifyContent: "center",
       backgroundColor: "rgba(10, 28, 42, .78)",
+      borderWidth: uiTokens.control.borderWidth,
+      borderColor: uiTokens.effects.mediaBorder,
     },
     bookmarkButtonActive: { backgroundColor: colors.primary },
+    joinRoomButton: {
+      position: "absolute",
+      left: 9,
+      right: 9,
+      bottom: 9,
+      width: "auto",
+      alignSelf: "stretch",
+      minHeight: uiTokens.control.compactHeight,
+      paddingHorizontal: 12,
+      justifyContent: "space-between",
+      borderColor: uiTokens.effects.mediaBorder,
+      backgroundColor: uiTokens.effects.mediaOverlayGlass,
+    },
+    joinRoomPresence: {
+      maxWidth: "46%",
+      color: uiTokens.effects.mediaForegroundMuted,
+      fontSize: 10,
+      fontWeight: "600",
+      textAlign: "right",
+    },
     eventBody: {
       flex: 1,
       minWidth: 0,
@@ -2576,30 +2570,6 @@ const getStyles = (isDark: boolean, colors: any) =>
       fontWeight: "700",
     },
     eventCity: { color: colors.text.secondary, fontSize: 12, lineHeight: 16 },
-    eventFooter: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 7,
-      paddingTop: 8,
-      marginTop: 3,
-      borderTopWidth: 1,
-      borderTopColor: colors.divider,
-    },
-    attendeeDots: { flexDirection: "row" },
-    attendeeAvatar: {
-      width: 16,
-      height: 16,
-      borderRadius: uiTokens.radius.small,
-      borderWidth: 1.5,
-      borderColor: colors.background.paper,
-      backgroundColor: colors.divider,
-    },
-    attendeeDotOffset: { marginLeft: -6 },
-    attendeeText: {
-      color: colors.text.secondary,
-      fontSize: 10,
-      fontWeight: "600",
-    },
     skeletonCard: {
       height: 136,
       borderRadius: uiTokens.radius.media,

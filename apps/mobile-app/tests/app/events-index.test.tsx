@@ -66,6 +66,33 @@ it('renders the real Explorer and gates bookmarks and rooms with an in-place for
   expect(view.root.findByType('EmbeddedAuth' as any)).toBeDefined();
   expect(mockPush).not.toHaveBeenCalled();
 });
+it('keeps bookmark and room actions independent from card selection', async () => {
+  const onSelectEvent = jest.fn();
+  mockLoggedIn = true;
+  mockSaveBookmarks.mockResolvedValue(undefined);
+  await act(async () => { view = create(
+    <Explorer
+      events={[mockEvents[1]]}
+      selectedEvent={null}
+      onSelectEvent={onSelectEvent}
+      onResetSelection={() => {}}
+      isLoggedIn
+      dbUserId="user-1"
+      isGlobalExplorer
+    />,
+  ); });
+
+  press('Bookmark Colombia conference');
+  expect(onSelectEvent).not.toHaveBeenCalled();
+  expect(mockSaveBookmarks).toHaveBeenCalledWith(['one']);
+
+  press('Join the room for Colombia conference');
+  expect(onSelectEvent).not.toHaveBeenCalled();
+  expect(mockPush).toHaveBeenCalledWith({
+    pathname: '/dashboard/event-chat',
+    params: { eventId: 'one' },
+  });
+});
 it('retains the shared search when dismissing registration and allows real public event navigation', async () => {
   await act(async () => { view = create(<EventsScreen />); });
   const input = view.root.findAllByType(TextInput)[0];

@@ -15,6 +15,7 @@ export const uiTokens = {
     mediaOverlayGlass: "rgba(3, 12, 24, 0.42)",
     mediaOverlayBlur: 16,
     mediaBorder: "rgba(255, 255, 255, 0.45)",
+    mediaForegroundMuted: "rgba(255, 255, 255, 0.78)",
     mediaVenueScrim: "rgba(3, 12, 24, 0.48)",
   },
   control: { minHeight: 48, compactHeight: 44, badgeHeight: 32, borderWidth: 1 },
