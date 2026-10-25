@@ -1364,19 +1364,26 @@ export default function Explorer({
               />
             )}
             <View style={styles.eventCoverShade} />
-            <View style={styles.eventBadges}>
-              {eventBadgeLabels.map((label) => (
-                <Badge
-                  key={`${event.id}-${label}`}
-                  mode={isDark ? "dark" : "light"}
-                  tone="onMedia"
-                  compact
-                >
-                  {label}
-                </Badge>
-              ))}
-            </View>
           </Pressable>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.eventBadgesViewport}
+            contentContainerStyle={styles.eventBadges}
+          >
+            {eventBadgeLabels.map((label) => (
+              <Badge
+                key={`${event.id}-${label}`}
+                mode={isDark ? "dark" : "light"}
+                tone="onMedia"
+                compact
+                onPress={() => selectEvent(event.id)}
+                accessibilityLabel={`${label} badge for ${event.title}`}
+              >
+                {label}
+              </Badge>
+            ))}
+          </ScrollView>
           <IconButton
             mode="dark"
             accentColor="#fff"
@@ -2550,14 +2557,19 @@ const getStyles = (isDark: boolean, colors: any) =>
       ...StyleSheet.absoluteFillObject,
       backgroundColor: uiTokens.effects.mediaOverlayGlass,
     },
-    eventBadges: {
+    eventBadgesViewport: {
       position: "absolute",
-      bottom: 9,
-      left: 9,
+      bottom: 8,
+      left: 8,
+      right: 8,
+      zIndex: 2,
+      maxHeight: 30,
+    },
+    eventBadges: {
       flexDirection: "row",
       alignItems: "center",
-      gap: 6,
-      maxWidth: "88%",
+      gap: 4,
+      paddingRight: 4,
     },
     bookmarkButton: {
       position: "absolute",

@@ -60,6 +60,15 @@ function Catalog({ mode = "light" }: { mode?: ColorMode }) {
         <Badge mode={mode} tone="onMedia">
           Organizer media
         </Badge>
+        <Badge
+          mode={mode}
+          tone="onMedia"
+          compact
+          onPress={() => undefined}
+          accessibilityLabel="Interactive badge"
+        >
+          Interactive
+        </Badge>
       </View>
       <Surface mode={mode}>
         <Text
