@@ -7,6 +7,7 @@ import { useAuth } from '../hooks/useAuth';
 import { qrSystemService, QRScanResult, QRCode } from '../lib/qr-system';
 import { cameraPermissionManager } from '../lib/camera-permissions';
 import { qrScannerService } from '../lib/qr-scanner-service';
+import { getCurrentAdminAccess, type AdminAccess } from '../lib/admin-access';
 import { useQrCameraSession } from '../hooks/qr-camera-machine';
 import { BarCodeScanner, type BarCodeScannerResult } from '../lib/barcode-scanner-compat';
 import { ActionButton } from '@hashpass/ui/primitives';
@@ -85,9 +86,8 @@ export default function QRScanner({
         // Resolve roles through the provider-aware backend endpoint. The
         // browser auth id is not necessarily the Supabase UUID used by the
         // database, so querying user_roles directly can return a 400.
-        import('../lib/admin-access')
-          .then(({ getCurrentAdminAccess }) => getCurrentAdminAccess())
-          .then((access) => {
+        getCurrentAdminAccess()
+          .then((access: AdminAccess) => {
             setIsUserAdmin(Boolean(access.globalRole) || access.eventRoles.length > 0);
           })
           .catch(() => setIsUserAdmin(false));
@@ -588,7 +588,7 @@ export default function QRScanner({
       <Modal visible={visible} animationType="slide" transparent>
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Ionicons name="camera-outline" size={64} color={colors.error} />
+            <Ionicons name="camera-outline" size={64} color={colors.error.main} />
             <Text style={styles.errorTitle}>Camera Permission Required</Text>
             <Text style={styles.permissionErrorText}>
               {cameraError || (Platform.OS === 'web'
@@ -715,7 +715,7 @@ export default function QRScanner({
 
             {cameraError && hasPermission === true && cameraStatus === 'error' && (
               <View style={styles.cameraErrorBanner} pointerEvents="auto">
-                <Ionicons name="alert-circle" size={20} color={colors.error} />
+                <Ionicons name="alert-circle" size={20} color={colors.error.main} />
                 <Text style={styles.cameraErrorText}>{cameraError}</Text>
                 <ActionButton
                   mode={isDark ? 'dark' : 'light'}
@@ -753,13 +753,13 @@ export default function QRScanner({
                 )}
                 {scanResult && !scanResult.valid && (
                   <View style={styles.errorContainer}>
-                    <Ionicons name="close-circle" size={24} color={colors.error} />
+                    <Ionicons name="close-circle" size={24} color={colors.error.main} />
                     <Text style={styles.errorText}>{scanResult.message}</Text>
                   </View>
                 )}
                 {scanResult && scanResult.valid && (
                   <View style={styles.successContainer}>
-                    <Ionicons name="checkmark-circle" size={24} color={colors.success} />
+                    <Ionicons name="checkmark-circle" size={24} color={colors.success.main} />
                     <Text style={styles.successText}>{scanResult.message}</Text>
                   </View>
                 )}
@@ -779,7 +779,7 @@ export default function QRScanner({
               
               <View style={styles.detailSection}>
                 <Text style={styles.detailLabel}>Status</Text>
-                <Text style={[styles.detailValue, { color: qrDetails.status === 'active' ? colors.success : colors.error }]}>
+                <Text style={[styles.detailValue, { color: qrDetails.status === 'active' ? colors.success.main : colors.error.main }]}>
                   {qrDetails.status.toUpperCase()}
                 </Text>
               </View>

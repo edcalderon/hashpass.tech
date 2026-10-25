@@ -81,7 +81,7 @@ export default function QRViewScreen() {
     return (
       <View style={styles.container}>
         <View style={styles.errorContainer}>
-          <Ionicons name="alert-circle" size={64} color={colors.error} />
+          <Ionicons name="alert-circle" size={64} color={colors.error.main} />
           <Text style={styles.errorTitle}>Error</Text>
           <Text style={styles.errorText}>{error || 'Pass not found'}</Text>
           <TouchableOpacity style={styles.button} onPress={() => router.back()}>

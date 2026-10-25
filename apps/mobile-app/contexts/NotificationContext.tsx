@@ -1,10 +1,8 @@
 import React, { createContext, useContext, useEffect, useMemo, useState, useCallback, useRef, useSyncExternalStore } from 'react';
-import { supabase } from '../lib/supabase';
 import { apiClient } from '../lib/api-client';
 import { useAuth } from '../hooks/useAuth';
 import { useTranslation } from '../i18n/i18n';
 import { translateNotification } from '../lib/notification-translations';
-import { buildEventPath } from '../lib/event-path';
 import {
   getLocalNotifications,
   isLocalNotification,
@@ -45,13 +43,10 @@ export interface NotificationContextType {
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
-// Fallback poll base/cap and the failure count at which the client treats
-// the backend as degraded and stops opening/renewing the Realtime
-// postgres_changes subscription (the dominant cost during the real incident
-// this guards against -- see NotificationProvider's consecutiveFailuresRef).
+// Fallback polling base/cap. Consecutive failures back off without opening a
+// client-side database connection.
 const NOTIFICATION_POLL_BASE_MS = 30_000;
 const NOTIFICATION_POLL_MAX_MS = 5 * 60_000;
-const CLIENT_FAILURE_THRESHOLD = 3;
 
 export const useNotifications = () => {
   const context = useContext(NotificationContext);
@@ -78,41 +73,14 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
 
   // Track current user ID to prevent unnecessary re-fetches
   const currentUserIdRef = useRef<string | null>(null);
-  // Client-side backoff so a struggling backend doesn't get hammered by every
-  // open tab polling every 30s and immediately re-subscribing to Realtime --
-  // confirmed root cause of a real incident: ~25k Realtime WAL-polling calls
-  // against one dev DB in a single session (pg_stat_statements). Reset on
-  // any success; grows (capped) on consecutive failures. Gates both the
-  // fallback poll interval and whether a new Realtime channel is opened at
-  // all -- adding a persistent WAL-tailing subscription on top of an already
-  // failing backend makes things worse, not better.
+  // Client-side backoff prevents every open tab from hammering a struggling
+  // API at the same fixed interval. The authenticated server boundary owns
+  // database identity; the client never opens a database subscription.
   const consecutiveFailuresRef = useRef(0);
-  // The REAL Supabase auth.users(id) UUID for the current session, resolved
-  // server-side (see lib/server/resolve-notification-identity.ts). This can
-  // differ from `user.id` when the active session came from a non-Supabase
-  // provider (e.g. Better Auth uses its own non-UUID id format). Used to
-  // scope the realtime subscription filter correctly.
-  const [resolvedUserId, setResolvedUserId] = useState<string | null>(null);
-  // Mirrors consecutiveFailuresRef crossing CLIENT_FAILURE_THRESHOLD, as state
-  // so the Realtime subscription effect (which reads it in its deps) actually
-  // re-runs and tears the channel down -- a ref alone wouldn't trigger that.
-  const [backendDegraded, setBackendDegraded] = useState(false);
-  // Bumped on every Realtime subscription the effect opens, so each one gets a
-  // unique channel topic (see the effect for why that matters).
-  const subscriptionEpochRef = useRef(0);
-
   const unreadCount = notifications.filter(n => !n.is_read && !n.is_archived).length;
 
   const recordFetchFailure = useCallback(() => {
     consecutiveFailuresRef.current += 1;
-    if (consecutiveFailuresRef.current >= CLIENT_FAILURE_THRESHOLD) {
-      setBackendDegraded(true);
-    }
-  }, []);
-
-  const recordFetchSuccess = useCallback(() => {
-    consecutiveFailuresRef.current = 0;
-    setBackendDegraded(false);
   }, []);
 
   const fetchNotifications = useCallback(async (force = false) => {
@@ -126,7 +94,6 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     if (!user) {
       setNotifications([]);
       resetLocalNotifications();
-      setResolvedUserId(null);
       setIsLoading(false);
       currentUserIdRef.current = null;
       return;
@@ -153,7 +120,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
         return;
       }
 
-      recordFetchSuccess();
+      consecutiveFailuresRef.current = 0;
 
       // Only lock in "already fetched for this user" on success. Right
       // after a fresh Better Auth sign-in, `user` is truthy before the
@@ -168,7 +135,6 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
 
       const messagesData = messagesResponse.data as { data: Notification[]; resolvedUserId: string | null };
       const updatesData = updatesResponse.data as { data: Notification[]; resolvedUserId: string | null };
-      setResolvedUserId(messagesData.resolvedUserId || updatesData.resolvedUserId);
 
       // Translate notifications
       const translatedNotifications = [...(messagesData.data || []), ...(updatesData.data || [])]
@@ -189,7 +155,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     } finally {
       setIsLoading(false);
     }
-  }, [authLoading, user, t, recordFetchFailure, recordFetchSuccess]);
+  }, [authLoading, user, t, recordFetchFailure]);
 
   const markAsRead = useCallback(async (notificationId: string) => {
     if (isLocalNotification(notificationId)) {
@@ -347,152 +313,21 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     await fetchNotifications(true);
   }, [fetchNotifications]);
 
-  // Initial fetch + auto-refresh fallback. Realtime subscription (below)
-  // depends on resolvedUserId, which this fetch populates. dbUserId is
-  // included so the bridge refreshes the cookie-backed identity once its
-  // Supabase session lands, and any genuinely transient first failure can
-  // still recover for the current session (see the success-only ref guard
-  // above).
+  // Initial fetch + auto-refresh uses the authenticated API boundary. dbUserId
+  // is included so the bridge refreshes the cookie-backed identity once its
+  // Supabase session lands, and transient failures can recover for the current
+  // session through the success-only ref guard above.
+
   useEffect(() => {
     if (authLoading) return;
     fetchNotifications();
   }, [authLoading, user, fetchNotifications, dbUserId]);
 
-  // Set up real-time subscription — scoped to the resolved Supabase auth
-  // UUID, not user.id, since user.id may be a non-Supabase provider id that
-  // would never match the notifications.user_id column and silently receive
-  // no events.
-  useEffect(() => {
-    // Skip opening (or renewing) the WAL-tailing subscription while the
-    // backend is flagged degraded -- confirmed via pg_stat_statements to be
-    // the dominant cost during a real incident (~25k calls in one session),
-    // and a reconnect storm on top of an already-struggling DB only makes it
-    // worse. The 30s poll below keeps working as the fallback in the
-    // meantime; this effect re-runs once backendDegraded clears.
-    if (authLoading || !user || !resolvedUserId || backendDegraded) return;
-
-    // Unique topic per subscription instance. A stable per-user topic collides
-    // on the Realtime server whenever two subscriptions for the same user race
-    // (StrictMode double-mount, a stale tab on an older bundle, or the
-    // degraded-state teardown racing a rebuild) and any binding difference is
-    // rejected as "mismatch between server and client bindings for postgres
-    // changes". A per-instance suffix keeps every join on its own topic, so
-    // teardown below is still the only thing that retires a channel.
-    subscriptionEpochRef.current += 1;
-    const channel = supabase
-      .channel(`notifications:${resolvedUserId}:${subscriptionEpochRef.current}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${resolvedUserId}`,
-        },
-        (payload: any) => {
-          console.log('New notification received:', payload);
-          const newNotification = payload.new as Notification;
-
-          // Translate the new notification
-          const translated = translateNotification(newNotification, t);
-          const translatedNotification = {
-            ...newNotification,
-            title: translated.title,
-            message: translated.message
-          };
-
-          // Add to the beginning of the list
-          setNotifications(prev => [translatedNotification, ...prev]);
-
-          // Show browser notification if permission granted (web-only; Notification API doesn't exist on native)
-          if (typeof window !== 'undefined' && typeof Notification !== 'undefined' && Notification.permission === 'granted' && newNotification.is_urgent) {
-            const notificationOptions: NotificationOptions = {
-              body: newNotification.message,
-              icon: '/favicon.ico',
-              tag: newNotification.id,
-              badge: '/favicon.ico',
-              requireInteraction: false,
-            };
-
-            // Add click handler for chat messages to navigate to meeting room
-            const browserNotification = new window.Notification(newNotification.title, notificationOptions);
-
-            browserNotification.onclick = () => {
-              window.focus();
-              // Navigate straight to the dedicated chat screen -- meeting-detail
-              // never read openChat, so this link silently landed on the wrong screen.
-              if (newNotification.type === 'chat_message' && (newNotification as any).meeting_id) {
-                const meetingId = (newNotification as any).meeting_id;
-                window.location.href = `${buildEventPath(undefined, 'networking/meeting-chat')}?meetingId=${meetingId}`;
-              }
-              browserNotification.close();
-            };
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${resolvedUserId}`,
-        },
-        (payload: any) => {
-          console.log('Notification updated:', payload);
-          const updatedNotification = payload.new as Notification;
-
-          setNotifications(prev =>
-            prev.map(notification =>
-              notification.id === updatedNotification.id
-                ? updatedNotification
-                : notification
-            )
-          );
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'DELETE',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${resolvedUserId}`,
-        },
-        (payload: any) => {
-          console.log('Notification deleted:', payload);
-          const deletedNotification = payload.old as Notification;
-
-          setNotifications(prev =>
-            prev.filter(notification => notification.id !== deletedNotification.id)
-          );
-        }
-      )
-      .subscribe((status: string, err?: Error) => {
-        // CHANNEL_ERROR/TIMED_OUT mean the subscription itself is failing
-        // (e.g. the backend rejecting/dropping connections during an
-        // incident) -- feed that into the same failure counter as fetch
-        // failures so a broken Realtime channel alone can also trip
-        // backendDegraded, not just failed HTTP polls.
-        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-          console.error('[notifications] realtime channel unhealthy:', status, err);
-          recordFetchFailure();
-        } else if (status === 'SUBSCRIBED') {
-          recordFetchSuccess();
-        }
-      });
-
-    // Request notification permission (web-only)
-    if (typeof window !== 'undefined' && typeof Notification !== 'undefined' && Notification.permission === 'default') {
-      Notification.requestPermission();
-    }
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authLoading, user?.id, resolvedUserId, backendDegraded]); // Identity + degraded-state gate; other user changes intentionally excluded
-
+  // Notifications intentionally stay behind the authenticated API boundary.
+  // The bounded polling fallback below replaces the fragile browser-side
+  // Supabase postgres_changes socket, preventing binding races and the
+  // invalid cross-domain cookie warning emitted by that websocket in local
+  // web builds.
   // Auto-refresh notifications as a fallback, with exponential backoff on
   // consecutive failures (capped at NOTIFICATION_POLL_MAX_MS) instead of a
   // fixed 30s interval -- a fixed interval kept hammering an already-failing

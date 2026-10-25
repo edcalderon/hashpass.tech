@@ -1947,7 +1947,7 @@ function PassesDisplayInner({
               ? `${colors.primary}10`
               : hasExistingRequest
                 ? `${colors.warning?.main || "#FF9500"}10`
-                : `${colors.error}10`,
+                : `${colors.error.main}10`,
             borderRadius: 8,
             marginBottom: 16,
           }}

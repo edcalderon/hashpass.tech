@@ -1244,8 +1244,8 @@ export default function SpeakerDetail() {
                   backgroundColor: isApprovedRequestStatus(request.status)
                     ? `${colors.primary}10`
                     : request.status === 'declined'
-                      ? `${colors.error}10`
-                      : `${colors.warning}10`,
+                      ? `${colors.error.main}10`
+                      : `${colors.warning.main}10`,
                   borderColor: isApprovedRequestStatus(request.status)
                     ? colors.primary
                     : request.status === 'declined'
@@ -1808,8 +1808,8 @@ export default function SpeakerDetail() {
                     backgroundColor: isApprovedRequestStatus(selectedRequestDetail.status)
                       ? `${colors.primary}10`
                       : selectedRequestDetail.status === 'declined'
-                        ? `${colors.error}10`
-                        : `${colors.warning}10`,
+                        ? `${colors.error.main}10`
+                        : `${colors.warning.main}10`,
                     borderColor: isApprovedRequestStatus(selectedRequestDetail.status)
                       ? colors.primary
                       : selectedRequestDetail.status === 'declined'

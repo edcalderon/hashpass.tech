@@ -1546,7 +1546,7 @@ const getStyles = (isDark: boolean, colors: any) =>
     },
     revokeButton: {
       borderWidth: 1,
-      borderColor: colors.error,
+      borderColor: colors.error.main,
     },
     actionButtonText: {
       marginLeft: 8,
@@ -1629,7 +1629,7 @@ const getStyles = (isDark: boolean, colors: any) =>
       marginTop: 16,
       fontSize: 20,
       fontWeight: 'bold',
-      color: colors.error,
+      color: colors.error.main,
       textAlign: 'center',
     },
     cameraErrorDetails: {

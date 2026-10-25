@@ -208,7 +208,7 @@ export default function DynamicQRDisplay({
     return (
       <View style={styles.container}>
         <View style={styles.errorContainer}>
-          <Ionicons name="alert-circle" size={48} color={colors.error} />
+          <Ionicons name="alert-circle" size={48} color={colors.error.main} />
           <Text style={styles.errorText}>{error}</Text>
           <TouchableOpacity style={styles.retryButton} onPress={generateQR}>
             <Text style={styles.retryButtonText}>Retry</Text>
@@ -227,7 +227,7 @@ export default function DynamicQRDisplay({
     return (
       <View style={styles.container}>
         <View style={styles.errorContainer}>
-          <Ionicons name="alert-circle" size={48} color={colors.error} />
+          <Ionicons name="alert-circle" size={48} color={colors.error.main} />
           <Text style={styles.errorText}>QR code missing token. Please refresh.</Text>
           <TouchableOpacity style={styles.retryButton} onPress={generateQR}>
             <Text style={styles.retryButtonText}>Refresh QR</Text>
@@ -328,7 +328,7 @@ const getStyles = (isDark: boolean, colors: any, size: number) =>
     errorText: {
       marginTop: 12,
       fontSize: 14,
-      color: colors.error,
+      color: colors.error.main,
       textAlign: 'center',
     },
     retryButton: {
@@ -366,7 +366,7 @@ const getStyles = (isDark: boolean, colors: any, size: number) =>
       position: 'absolute',
       top: 8,
       right: 8,
-      backgroundColor: colors.error,
+      backgroundColor: colors.error.main,
       paddingHorizontal: 8,
       paddingVertical: 4,
       borderRadius: 4,
