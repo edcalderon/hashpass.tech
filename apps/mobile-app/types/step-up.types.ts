@@ -4,7 +4,7 @@
  * proof minter/verifier (lib/server/pin-auth.ts). See
  * apps/docs/docs/auth/SECOND_FACTOR_PIN.md.
  */
-export type StepUpScope = 'app:unlock' | 'wallet:sign';
+export type StepUpScope = 'app:unlock' | 'wallet:sign' | 'wallet:unlock' | 'wallet:recover';
 
 export interface StepUpProof { token: string; scope: StepUpScope; expiresAt: string }
 

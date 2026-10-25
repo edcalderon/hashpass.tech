@@ -60,7 +60,11 @@ it('rejects secrets and invalid public manifests', async () => {
   expect(mockRpc).not.toHaveBeenCalled();
 });
 it('fails closed on missing enrollment, unavailable DB and disabled rollout', async () => {
+  // A missing user_wallet row for a resolved registry user is provisioning drift, not an
+  // outage: it is a distinct 409 so the UI can ask for provisioning instead of a retry.
   mockLookup.mockResolvedValue({ data: null, error: null });
+  expect((await GET(new Request('https://localhost/api/wallet/enrollment'))).status).toBe(409);
+  mockLookup.mockResolvedValue({ data: null, error: { message: 'db down' } });
   expect((await GET(new Request('https://localhost/api/wallet/enrollment'))).status).toBe(503);
   mockLookup.mockResolvedValue({ data: row, error: null });
   mockRpc.mockResolvedValue({ data: null, error: { code: '23514' } });

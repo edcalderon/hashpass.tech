@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, A
 import { useTheme } from '../../../hooks/useTheme';
 import { useNotifications, type Notification } from '@contexts/NotificationContext';
 import { MaterialIcons } from '../../../lib/vector-icons';
+import DashboardRefreshButton from '../../../components/dashboard/DashboardRefreshButton';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import UnifiedSearchAndFilter from '../../../components/UnifiedSearchAndFilter';
 import { uiTokens } from '@hashpass/ui/tokens';
@@ -643,19 +644,14 @@ export default function NotificationsScreen() {
           screen's layout (events/[eventSlug]/speakers/calendar.tsx) instead
           of crowding the title row alongside Mark All Read. */}
       <View style={styles.refreshRow}>
-        <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityLabel={t('center.refresh', 'Refresh notifications')}
-          accessibilityHint={t('center.refreshHint', 'Fetch the latest notifications')}
-          disabled={refreshing || isLoading}
-          style={[styles.refreshButton, (refreshing || isLoading) && styles.refreshButtonDisabled]}
+        <DashboardRefreshButton
+          loading={refreshing}
+          disabled={isLoading}
+          label={t('center.refresh', 'Refresh')}
+          loadingLabel={t('center.refreshing', 'Refreshing…')}
+          hint={t('center.refreshHint', 'Fetch the latest notifications')}
           onPress={() => void onRefresh()}
-        >
-          <MaterialIcons name="refresh" size={18} color={colors.primary} />
-          <Text style={styles.refreshButtonText}>
-            {refreshing ? t('center.refreshing', 'Refreshing…') : t('center.refresh', 'Refresh')}
-          </Text>
-        </TouchableOpacity>
+        />
       </View>
 
       {/* Notifications List */}
@@ -772,19 +768,6 @@ const getStyles = (isDark: boolean, colors: any, topInset: number = 0, bottomIns
     paddingTop: 8,
     paddingBottom: 4,
   },
-  refreshButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    minHeight: 36,
-    paddingHorizontal: 10,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: `${colors.primary}55`,
-    backgroundColor: `${colors.primary}12`,
-  },
-  refreshButtonDisabled: { opacity: 0.55 },
-  refreshButtonText: { color: colors.primary, fontSize: 13, fontWeight: '700' },
   headerTitle: {
     fontSize: 36,
     fontWeight: '800',

@@ -7,7 +7,7 @@ import { ENV_CONFIG } from '@hashpass/config';
 import { ActionButton, Badge, Surface } from '@hashpass/ui/primitives';
 import { uiPalette, uiTokens } from '@hashpass/ui/tokens';
 import { useTheme } from '../../../hooks/useTheme';
-import type { ConsentDetails, ConsentResponse } from './consent.types';
+import type { ConsentDetails, ConsentResponse } from '../../../types/mcp-consent.types';
 import { apiClient } from '@/lib/api-client';
 import { extractSignedOAuthQuery } from '@/lib/auth/mcp-login';
 

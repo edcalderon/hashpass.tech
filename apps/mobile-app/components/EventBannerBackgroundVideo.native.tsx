@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Image, StyleSheet, View } from "react-native";
 import { VideoView, useVideoPlayer } from "expo-video";
+import { resolveEventImageSource } from "../lib/event-branding";
 
 interface EventBannerBackgroundVideoProps {
   source: string;
@@ -22,6 +23,7 @@ export default function EventBannerBackgroundVideo({
   contentFit = "cover",
 }: EventBannerBackgroundVideoProps) {
   const [hasFirstFrame, setHasFirstFrame] = useState(false);
+  const loadingLogoSource = resolveEventImageSource(loadingLogo);
   const player = useVideoPlayer(source, (player) => {
     player.loop = true;
     player.muted = true;
@@ -48,9 +50,9 @@ export default function EventBannerBackgroundVideo({
         style={[styles.video, !hasFirstFrame && styles.hiddenVideo]}
         surfaceType="textureView"
       />
-      {!playbackEnabled && loadingLogo ? (
+      {!playbackEnabled && loadingLogoSource ? (
         <Image
-          source={{ uri: loadingLogo }}
+          source={loadingLogoSource}
           style={styles.poster}
           resizeMode={contentFit}
           accessibilityElementsHidden
@@ -63,9 +65,9 @@ export default function EventBannerBackgroundVideo({
           pointerEvents="none"
           accessibilityLabel={loadingLabel}
         >
-          {loadingLogo ? (
+          {loadingLogoSource ? (
             <Image
-              source={{ uri: loadingLogo }}
+              source={loadingLogoSource}
               style={styles.loaderLogo}
               resizeMode="contain"
             />

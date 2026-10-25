@@ -12,6 +12,7 @@ export interface PinFlowProps {
   scope: StepUpScope;
   /** `create` asks twice; `unlock` asks once. The flow switches by itself if the server disagrees. */
   intent: 'create' | 'unlock';
-  onDone: () => void;
+  /** Carries the entered digits so the caller can wrap/unwrap a vault right away. Never store them. */
+  onDone: (pin?: string) => void;
   onCancel?: () => void;
 }

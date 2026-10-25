@@ -8,3 +8,5 @@ export * from './recovery';
 export * from './enrollment';
 export * from './provisioning';
 export * from './manifest';
+export * from './hybrid-vault';
+export * from './hybrid-wallet';

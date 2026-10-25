@@ -172,16 +172,22 @@ export function CustomDrawerContent({
   navigation: drawerContentNavigation,
   onDrawerStatusChange,
   openCloseControlRef,
+  languageRef,
 }: {
   navRef?: DrawerNavRef;
   navigation?: DrawerNavigation;
   onDrawerStatusChange?: (isOpen: boolean) => void;
   openCloseControlRef?: DrawerOpenControlRef;
+  languageRef: React.MutableRefObject<ReturnType<typeof useLanguage>>;
 }) {
   const { colors, isDark, toggleTheme } = useTheme();
   const { signOut, user, isLoading: authLoading, dbUserId } = useAuth();
   const { event } = useEvent();
-  const { locale, setLocale } = useLanguage();
+  // Drawer content can render through React Navigation's portal on web, where
+  // context propagation is not guaranteed. The parent captures the live
+  // language session and passes it through a stable ref so locale changes do
+  // not recreate the drawer component or lose the provider boundary.
+  const { locale, setLocale } = languageRef.current;
   const { unreadCount } = useNotifications();
   const { animationsEnabled } = useAnimations();
   const router = useRouter();
@@ -1333,6 +1339,7 @@ export default function DashboardLayout() {
 
 function AuthenticatedDashboardLayout() {
   const { colors, isDark } = useTheme();
+  const language = useLanguage();
   const isMobile = useIsMobile();
   const insets = useSafeAreaInsets();
   const { width: viewportWidth } = useWindowDimensions();
@@ -1387,6 +1394,8 @@ function AuthenticatedDashboardLayout() {
   // Instance-scoped bridge from CustomDrawerContent's navigation object to
   // Header (see the DrawerNavRef comment above CustomDrawerContent).
   const drawerNavRef = useRef<DrawerNavigation | null>(null);
+  const languageRef = useRef(language);
+  languageRef.current = language;
   // Drawer open/closed is tracked in a REF, not useState, on purpose: it's only
   // ever read (never rendered) — the two copilot `wasOpen` checks below — so
   // making it reactive state bought nothing but a full DashboardLayout
@@ -1426,6 +1435,7 @@ function AuthenticatedDashboardLayout() {
       <CustomDrawerContent
         {...props}
         navRef={drawerNavRef}
+        languageRef={languageRef}
         onDrawerStatusChange={handleDrawerStatusChange}
         openCloseControlRef={drawerOpenControlRef}
       />

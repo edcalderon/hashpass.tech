@@ -290,6 +290,7 @@ export function SegmentedTabs<T extends string = string>({
             >
               {tab.label}
             </Text>
+            {tab.trailingIcon ? <View accessible={false} pointerEvents="none">{tab.trailingIcon}</View> : null}
             {tab.count ? (
               <View
                 style={[

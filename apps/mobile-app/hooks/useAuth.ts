@@ -63,7 +63,11 @@ const SIGN_OUT_STEP_TIMEOUT_MS = 8000;
 // Better Auth's web session lookup is an HTTP request. It is the first step
 // of the web auth bootstrap, so a request that never settles would otherwise
 // prevent the legacy and Supabase fallbacks from resolving the auth state.
-const BETTER_AUTH_BOOTSTRAP_TIMEOUT_MS = 8000;
+// The bound must comfortably cover the provider's own recovery path (a ~7s
+// better-fetch abort, a 750ms backoff and one retry): an 8s outer race fired
+// before the retry could land, so every cold start "failed" while the retried
+// lookup was still on its way.
+const BETTER_AUTH_BOOTSTRAP_TIMEOUT_MS = 16000;
 const SUPABASE_BRIDGE_BOOTSTRAP_TIMEOUT_MS = 8000;
 const NATIVE_SOCIAL_SIGN_IN_TIMEOUT_MS = 15000;
 
@@ -102,12 +106,20 @@ const getBetterAuthBootstrapSession = (provider: IAuthProvider): Promise<AuthSes
   }
 
   if (!betterAuthBootstrapPromise) {
-    betterAuthBootstrapPromise = withTimeout(
+    const bootstrap: Promise<AuthSession | null> = withTimeout(
       provider.getSession(),
       BETTER_AUTH_BOOTSTRAP_TIMEOUT_MS,
       'betterAuthProvider.getSession',
     ).finally(() => {
       betterAuthBootstrapSettled = true;
+    });
+    betterAuthBootstrapPromise = bootstrap;
+    // Log the failure exactly once, here. Every useAuth mount awaits this same cached
+    // promise, so per-mount catch handlers replay the identical line dozens of times
+    // during one cold start (the 8s-timeout LogBox spam). Attaching this handler also
+    // keeps the shared promise from surfacing as an unhandled rejection.
+    bootstrap.catch((error: unknown) => {
+      console.warn('[useAuth] Better Auth session bootstrap failed:', error);
     });
   }
 
@@ -953,8 +965,10 @@ export const useAuth = () => {
 
           startLegacyBootstrap();
         })
-        .catch((error: any) => {
-          console.error('[useAuth] Better Auth session bootstrap failed:', error);
+        .catch(() => {
+          // The failure was already logged once when the shared bootstrap promise was
+          // created (see getBetterAuthBootstrapSession); this mount only falls back to
+          // the legacy providers, silently.
           latestBetterAuthState = readAuthSessionState(null);
           startLegacyBootstrap();
         })

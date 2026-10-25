@@ -22,22 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610230111, // Updated to current timestamp
-  releaseDate: '2026-10-23',
+  buildNumber: 202610242108, // Updated to current timestamp
+  releaseDate: '2026-10-24',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    // No new features
+    'PIN-protected hybrid vault wizard, create-only, full-screen secure steps'
   ],
   bugfixes: [
-    'deduplicate Better Auth OAuth identities'
+    'explicit parameter types for the isolated changed-file typecheck'
   ],
   breakingChanges: [],
-  notes: 'deduplicate Better Auth OAuth identities'
+  notes: 'PIN-protected hybrid vault wizard, create-only, full-screen secure steps; explicit parameter types for the isolated changed-file typecheck'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.142': {
+    version: '1.9.142',
+    buildNumber: 202610242108,
+    releaseDate: '2026-10-24',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'PIN-protected hybrid vault wizard, create-only, full-screen secure steps'
+    ],
+    bugfixes: [
+      'explicit parameter types for the isolated changed-file typecheck'
+    ],
+    breakingChanges: [],
+    notes: 'PIN-protected hybrid vault wizard, create-only, full-screen secure steps; explicit parameter types for the isolated changed-file typecheck'
+  },
   '1.9.141': {
     version: '1.9.141',
     buildNumber: 202610230111,

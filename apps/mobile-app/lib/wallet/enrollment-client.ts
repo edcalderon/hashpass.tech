@@ -26,7 +26,13 @@ const failure = (status?: number) => new Error(
 export const createWalletEnrollmentClient = (stepUpProof: () => string | null = () => null): EnrollmentTransport => ({
   async load() {
     const result = await apiClient.get('/wallet/enrollment', { skipEventSegment: true, retries: 0 });
-    if (!result.success) throw new Error('wallet_metadata_unavailable');
+    if (!result.success) {
+      // The server distinguishes "no wallet record for this account" from a real outage.
+      if (result.status === 409 && (result.data as { error?: string } | undefined)?.error === 'wallet_not_enrolled') {
+        throw new Error('wallet_not_enrolled');
+      }
+      throw new Error('wallet_metadata_unavailable');
+    }
     return enrollment(result.data);
   },
   async reserve(walletId, operationId) {

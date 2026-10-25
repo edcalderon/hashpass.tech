@@ -1,14 +1,17 @@
-import React, { createContext, useContext, ReactNode } from 'react';
+import React, { createContext, useContext } from 'react';
 import { useLanguageStore } from '../hooks/useLanguageStore';
+import { setLocale as setI18nLocale } from '../i18n/i18n';
+import type { LanguageContextValue, LanguageProviderProps } from './LanguageProvider.types';
 
-const LanguageContext = createContext<{
-  locale: string;
-  setLocale: (locale: string) => Promise<void>;
-} | undefined>(undefined);
-
-type LanguageProviderProps = {
-  children: ReactNode;
+// Expo Router can render a nested route boundary while the root provider tree
+// is being rebuilt during web refresh/HMR. Keep that transient boundary safe:
+// the fallback still updates the shared Lingui locale instead of crashing the
+// dashboard, while the normal provider continues to persist preferences.
+const fallbackLanguage: LanguageContextValue = {
+  locale: 'en',
+  setLocale: setI18nLocale,
 };
+const LanguageContext = createContext<LanguageContextValue>(fallbackLanguage);
 
 export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) => {
   const { locale, setLocale } = useLanguageStore();
@@ -21,13 +24,4 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
   );
 };
 
-export const useLanguage = (): {
-  locale: string;
-  setLocale: (locale: string) => Promise<void>;
-} => {
-  const context = useContext(LanguageContext);
-  if (context === undefined) {
-    throw new Error('useLanguage must be used within a LanguageProvider');
-  }
-  return context;
-};
+export const useLanguage = (): LanguageContextValue => useContext(LanguageContext);

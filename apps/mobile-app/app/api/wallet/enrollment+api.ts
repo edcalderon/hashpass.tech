@@ -68,9 +68,23 @@ export async function GET(request: Request): Promise<Response> {
     if ('response' in auth) return auth.response;
     const { data, error } = await getSupabaseServerForRequest(request).from('user_wallet')
       .select(FIELDS).eq('user_id', auth.ownerId).maybeSingle();
-    if (error || !data) return failure('wallet_enrollment_unavailable', 503);
+    if (error) {
+      // Reason (message only, never payloads/keys) so a 503 is diagnosable from the server log.
+      console.warn('[wallet/enrollment] lookup failed:', String((error as { message?: string }).message ?? '').slice(0, 200));
+      return failure('wallet_enrollment_unavailable', 503);
+    }
+    if (!data) {
+      // The registry user resolved, but no user_wallet row exists (the V097 trigger should
+      // create one per account). That is provisioning drift, not a service outage — the
+      // client renders a specific message instead of a generic "try again".
+      console.warn('[wallet/enrollment] no user_wallet row for a resolved registry user');
+      return failure('wallet_not_enrolled', 409);
+    }
     return reply(present(data, auth.environment, auth.enabled));
-  } catch { return failure('wallet_enrollment_unavailable', 503); }
+  } catch (error) {
+    console.warn('[wallet/enrollment] request failed:', String((error as Error)?.message ?? '').slice(0, 200));
+    return failure('wallet_enrollment_unavailable', 503);
+  }
 }
 
 export async function POST(request: Request): Promise<Response> {

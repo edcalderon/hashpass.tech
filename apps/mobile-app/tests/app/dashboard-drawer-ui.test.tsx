@@ -352,6 +352,7 @@ const renderDrawer = async () => {
       <CustomDrawerContent
         navigation={{ navigate: mockNavigate, dispatch: jest.fn() }}
         navRef={{ current: null }}
+        languageRef={{ current: { locale: mockLocale, setLocale: mockSetLocale } }}
         openCloseControlRef={{ current: { setOpen: mockSetOpen } }}
         onDrawerStatusChange={jest.fn()}
       />,
