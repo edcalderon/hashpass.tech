@@ -15574,4 +15574,3 @@ ALTER TABLE public.wallet_auth ENABLE ROW LEVEL SECURITY;
 --
 
 \unrestrict 1cQeYKAjmxvTcyNRaUeTXgnXQAgkiBKzqoeOamBHy647fZpy9mY4gYr7Rxy7zZz
-

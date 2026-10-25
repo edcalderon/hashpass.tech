@@ -10,6 +10,25 @@ Everything below is gated to the dev/testnet environment (`setupEnabled` and
 `scope.environment === 'development'`) — people on other builds see an honest
 "not available in this build" card, never a silent absence.
 
+## Operational database state (2026-10-25)
+
+The enrollment read is available in both environments even though wallet setup
+remains enabled only for development/testnet. The `non-custodial-wallet` migration
+group is registered for `core-development` and `core-production` and contains:
+
+- `V097__non_custodial_wallet_enrollment.sql` (`public.user_wallet` and enrollment RPCs)
+- `V137__wallet_vault.sql` (`public.user_wallet_vault` and vault RPCs)
+- `V138__wallet_pin_recovery.sql` (PIN-recovery OTP contract)
+
+All three migrations are applied and recorded in both live core databases. On
+2026-10-25, production returned `503 wallet_enrollment_unavailable` because the
+production profile had omitted this migration group and `public.user_wallet` did
+not exist. The group was added to the profile, the production migrations were
+applied with the required pre-migration dump, and the schema snapshots were
+regenerated. A request without authentication now correctly returns
+`401 wallet_auth_required`; an authenticated request can reach the enrollment
+row instead of failing on a missing relation.
+
 ## 1. The layers
 
 ```mermaid
@@ -59,7 +78,7 @@ therefore passes `dbUserId` (and holds the gate at `checking` while auth is stil
 ## 3. Onboarding: create-only vault wizard
 
 `WalletVaultFlow` runs the machine defined in
-[`hooks/wallet-vault-machine.ts`](../../../../apps/mobile-app/hooks/wallet-vault-machine.ts):
+[`apps/mobile-app/hooks/wallet-vault-machine.ts`](https://github.com/hashpass-tech/hashpass.tech/blob/main/apps/mobile-app/hooks/wallet-vault-machine.ts):
 
 ```mermaid
 stateDiagram-v2

@@ -53,6 +53,23 @@ badge and is not persisted. See
 [Speaker directory statuses](../reference/mobile-app/speaker-statuses.md) for
 the derivation rules and rollout command.
 
+## Wallet enrollment schema (V097, V137, V138)
+
+The non-custodial wallet uses `public.user_wallet` for public enrollment
+metadata and `public.user_wallet_vault` for the client-encrypted vault envelope.
+The tables and RPCs are server-only (`service_role`); no seed, PIN, or private
+key is stored in either table. `V138__wallet_pin_recovery.sql` extends the
+canonical OTP-purpose constraint for recovery without introducing a second OTP
+store.
+
+The migration group is `non-custodial-wallet` and is registered for both
+`core-development` and `core-production`. As of 2026-10-25, V097, V137, and
+V138 are recorded as applied in both databases, and `db/schema-snapshots/dev.sql`
+and `db/schema-snapshots/core-prod.sql` contain the live wallet objects. This
+registration matters even though wallet creation is currently development-only:
+the enrollment read runs in production too and must return a wallet state rather
+than a missing-relation `503`.
+
 ## Passwordless authentication schema (V129–V131)
 
 The passwordless auth tables are intentionally small and server-only. The

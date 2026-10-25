@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict oONfpYSc7Ic8zq8bdjBlQLL0ElxJLssytcnr1zb7OYWyKY5tYbmrUdNv8uYwaG6
+\restrict 03lzi7Qu0MUEccn4ySZE3tSLrxW31KcSHkMW5voJZxcO110xy8I1NKm9sxhEbaK
 
 -- Dumped from database version 17.4
 -- Dumped by pg_dump version 17.11
@@ -2890,6 +2890,21 @@ $$;
 
 
 --
+-- Name: enroll_user_wallet(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.enroll_user_wallet() RETURNS trigger
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO ''
+    AS $$
+BEGIN
+  INSERT INTO public.user_wallet(user_id) VALUES (NEW.id) ON CONFLICT (user_id) DO NOTHING;
+  RETURN NEW;
+END;
+$$;
+
+
+--
 -- Name: ensure_business_invite_event_pass(uuid, text); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -4107,6 +4122,20 @@ $$;
 
 
 --
+-- Name: get_user_wallet_vault(uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.get_user_wallet_vault(p_user_id uuid) RETURNS jsonb
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO ''
+    AS $$
+  SELECT coalesce((SELECT jsonb_build_object('walletId', wallet_id, 'envelope', envelope,
+    'version', version, 'keyVersion', key_version) FROM public.user_wallet_vault WHERE user_id = p_user_id),
+    'null'::jsonb);
+$$;
+
+
+--
 -- Name: handle_auth_user_deleted(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -5271,6 +5300,64 @@ $$;
 
 
 --
+-- Name: user_wallet; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.user_wallet (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid NOT NULL,
+    state text DEFAULT 'enrolled'::text NOT NULL,
+    operation_id uuid,
+    network text,
+    ethereum_address character varying(64),
+    bitcoin_address character varying(100),
+    solana_address character varying(64),
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT user_wallet_check CHECK ((((state = 'enrolled'::text) AND (operation_id IS NULL) AND (network IS NULL) AND (ethereum_address IS NULL) AND (bitcoin_address IS NULL) AND (solana_address IS NULL)) OR ((state = 'provisioning'::text) AND (operation_id IS NOT NULL) AND (network IS NOT NULL) AND (ethereum_address IS NULL) AND (bitcoin_address IS NULL) AND (solana_address IS NULL)) OR ((state = 'registered'::text) AND (operation_id IS NOT NULL) AND (network IS NOT NULL) AND (ethereum_address IS NOT NULL) AND (bitcoin_address IS NOT NULL) AND (solana_address IS NOT NULL)))),
+    CONSTRAINT user_wallet_network_check CHECK ((network = ANY (ARRAY['mainnet'::text, 'testnet'::text]))),
+    CONSTRAINT user_wallet_state_check CHECK ((state = ANY (ARRAY['enrolled'::text, 'provisioning'::text, 'registered'::text])))
+);
+
+
+--
+-- Name: TABLE user_wallet; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.user_wallet IS 'Self-reported public wallet metadata, not verified payout destinations or signing authorization. Secret material stays on device.';
+
+
+--
+-- Name: register_user_wallet(uuid, uuid, text, text, text, text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.register_user_wallet(p_user_id uuid, p_operation_id uuid, p_network text, p_ethereum_address text, p_bitcoin_address text, p_solana_address text) RETURNS public.user_wallet
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO ''
+    AS $$
+DECLARE row public.user_wallet;
+BEGIN
+  SELECT * INTO row FROM public.user_wallet WHERE user_id = p_user_id FOR UPDATE;
+  IF NOT FOUND OR row.state = 'enrolled' OR p_operation_id IS DISTINCT FROM row.operation_id
+    OR p_network IS DISTINCT FROM row.network OR nullif(p_ethereum_address, '') IS NULL
+    OR nullif(p_bitcoin_address, '') IS NULL OR nullif(p_solana_address, '') IS NULL THEN
+    RAISE EXCEPTION 'wallet_registration_conflict' USING ERRCODE = '23514';
+  END IF;
+  IF row.state = 'registered' THEN
+    IF row.ethereum_address <> p_ethereum_address OR row.bitcoin_address <> p_bitcoin_address OR row.solana_address <> p_solana_address THEN
+      RAISE EXCEPTION 'wallet_registration_conflict' USING ERRCODE = '23514';
+    END IF;
+    RETURN row;
+  END IF;
+  UPDATE public.user_wallet SET state = 'registered', ethereum_address = p_ethereum_address,
+    bitcoin_address = p_bitcoin_address, solana_address = p_solana_address, updated_at = now()
+    WHERE id = row.id RETURNING * INTO row;
+  RETURN row;
+END;
+$$;
+
+
+--
 -- Name: release_speaker_identity_claim_before_auth_user_delete(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -5534,6 +5621,32 @@ $$;
 
 
 --
+-- Name: reserve_user_wallet(uuid, uuid, text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.reserve_user_wallet(p_user_id uuid, p_operation_id uuid, p_network text) RETURNS public.user_wallet
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO ''
+    AS $$
+DECLARE row public.user_wallet;
+BEGIN
+  IF p_operation_id IS NULL OR p_network IS NULL OR p_network NOT IN ('mainnet', 'testnet') THEN
+    RAISE EXCEPTION 'invalid_wallet_request' USING ERRCODE = '23514';
+  END IF;
+  SELECT * INTO row FROM public.user_wallet WHERE user_id = p_user_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'wallet_not_enrolled' USING ERRCODE = '23514'; END IF;
+  IF row.state = 'enrolled' THEN
+    UPDATE public.user_wallet SET state = 'provisioning', operation_id = p_operation_id,
+      network = p_network, updated_at = now() WHERE id = row.id RETURNING * INTO row;
+  ELSIF row.state <> 'provisioning' OR row.operation_id <> p_operation_id OR row.network <> p_network THEN
+    RAISE EXCEPTION 'wallet_already_reserved' USING ERRCODE = '23514';
+  END IF;
+  RETURN row;
+END;
+$$;
+
+
+--
 -- Name: reset_meeting_request_limits(text, text, numeric); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -5651,6 +5764,27 @@ $$;
 --
 
 COMMENT ON FUNCTION public.reset_user_email_tracking(p_user_id uuid) IS 'Resets email tracking for a user (used on account deletion)';
+
+
+--
+-- Name: reset_user_pin(uuid, text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.reset_user_pin(p_user_id uuid, p_verifier text) RETURNS jsonb
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO ''
+    AS $_$
+BEGIN
+  IF p_verifier IS NULL OR p_verifier !~ '^[0-9a-f]{64}$' THEN
+    RAISE EXCEPTION 'invalid_pin_request' USING ERRCODE = '23514';
+  END IF;
+  INSERT INTO public.user_pin(user_id, verifier) VALUES (p_user_id, decode(p_verifier, 'hex'))
+    ON CONFLICT (user_id) DO UPDATE SET
+      verifier = excluded.verifier, failed_attempts = 0, locked_until = NULL,
+      set_at = now(), updated_at = now();
+  RETURN jsonb_build_object('ok', true, 'enabled', true, 'remainingAttempts', 5, 'lockedUntil', NULL);
+END;
+$_$;
 
 
 --
@@ -6287,6 +6421,36 @@ BEGIN
     updated_at = now()
   WHERE user_id = p_user_id;
   RETURN public.get_user_setup(p_user_id);
+END;
+$$;
+
+
+--
+-- Name: save_user_wallet_vault(uuid, uuid, text, integer, smallint); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.save_user_wallet_vault(p_user_id uuid, p_wallet_id uuid, p_envelope text, p_expected_version integer, p_key_version smallint DEFAULT 1) RETURNS jsonb
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO ''
+    AS $$
+DECLARE saved public.user_wallet_vault;
+BEGIN
+  IF p_envelope IS NULL OR octet_length(p_envelope) NOT BETWEEN 100 AND 8192 OR p_expected_version < 0 THEN
+    RAISE EXCEPTION 'invalid_wallet_vault' USING ERRCODE = '23514';
+  END IF;
+  PERFORM 1 FROM public.user_wallet WHERE id = p_wallet_id AND user_id = p_user_id;
+  IF NOT FOUND THEN RAISE EXCEPTION 'invalid_wallet_vault' USING ERRCODE = '23514'; END IF;
+  IF p_expected_version = 0 THEN
+    INSERT INTO public.user_wallet_vault(user_id, wallet_id, envelope, key_version)
+      VALUES (p_user_id, p_wallet_id, p_envelope, p_key_version)
+      ON CONFLICT (user_id) DO NOTHING RETURNING * INTO saved;
+  ELSE
+    UPDATE public.user_wallet_vault SET envelope = p_envelope, key_version = p_key_version,
+      version = version + 1, updated_at = now()
+      WHERE user_id = p_user_id AND wallet_id = p_wallet_id AND version = p_expected_version RETURNING * INTO saved;
+  END IF;
+  IF saved.user_id IS NULL THEN RAISE EXCEPTION 'wallet_vault_conflict' USING ERRCODE = '23514'; END IF;
+  RETURN jsonb_build_object('walletId', saved.wallet_id, 'version', saved.version, 'keyVersion', saved.key_version);
 END;
 $$;
 
@@ -9450,7 +9614,7 @@ CREATE TABLE public.otp_codes (
     purpose text DEFAULT 'email-login'::text NOT NULL,
     attempt_count smallint DEFAULT 0 NOT NULL,
     CONSTRAINT otp_codes_attempt_count_check CHECK (((attempt_count >= 0) AND (attempt_count <= 5))),
-    CONSTRAINT otp_codes_purpose_check CHECK ((purpose = ANY (ARRAY['email-login'::text, 'account-delete'::text])))
+    CONSTRAINT otp_codes_purpose_check CHECK ((purpose = ANY (ARRAY['email-login'::text, 'account-delete'::text, 'wallet-pin-reset'::text])))
 );
 
 
@@ -10415,6 +10579,30 @@ CREATE TABLE public.user_tutorial_progress (
     CONSTRAINT user_tutorial_progress_status_check CHECK ((status = ANY (ARRAY['not_started'::text, 'in_progress'::text, 'completed'::text, 'skipped'::text]))),
     CONSTRAINT user_tutorial_progress_tutorial_type_check CHECK ((tutorial_type = ANY (ARRAY['main'::text, 'networking'::text])))
 );
+
+
+--
+-- Name: user_wallet_vault; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.user_wallet_vault (
+    user_id uuid NOT NULL,
+    wallet_id uuid NOT NULL,
+    envelope text NOT NULL,
+    version integer DEFAULT 1 NOT NULL,
+    key_version smallint DEFAULT 1 NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT user_wallet_vault_envelope_check CHECK (((octet_length(envelope) >= 100) AND (octet_length(envelope) <= 8192))),
+    CONSTRAINT user_wallet_vault_version_check CHECK ((version > 0))
+);
+
+
+--
+-- Name: TABLE user_wallet_vault; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.user_wallet_vault IS 'Client-encrypted hybrid wallet envelope (seed under DEK, DEK wrapped by PIN + server share). Server-only; no plaintext secret is ever stored.';
 
 
 --
@@ -11820,6 +12008,38 @@ ALTER TABLE ONLY public.user_tutorial_progress
 
 
 --
+-- Name: user_wallet user_wallet_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_wallet
+    ADD CONSTRAINT user_wallet_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: user_wallet user_wallet_user_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_wallet
+    ADD CONSTRAINT user_wallet_user_id_key UNIQUE (user_id);
+
+
+--
+-- Name: user_wallet_vault user_wallet_vault_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_wallet_vault
+    ADD CONSTRAINT user_wallet_vault_pkey PRIMARY KEY (user_id);
+
+
+--
+-- Name: user_wallet_vault user_wallet_vault_wallet_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_wallet_vault
+    ADD CONSTRAINT user_wallet_vault_wallet_id_key UNIQUE (wallet_id);
+
+
+--
 -- Name: user users_email_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -12878,6 +13098,13 @@ CREATE OR REPLACE VIEW public.contact_network_profiles WITH (security_invoker='t
    FROM (public.contact_profiles p
      LEFT JOIN public.contact_requests r ON ((((r.sender = p.id) OR (r.recipient = p.id)) AND (r.status = 'accepted'::text))))
   GROUP BY p.id;
+
+
+--
+-- Name: user enroll_user_wallet; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER enroll_user_wallet AFTER INSERT ON public."user" FOR EACH ROW EXECUTE FUNCTION public.enroll_user_wallet();
 
 
 --
@@ -14253,6 +14480,30 @@ ALTER TABLE ONLY public.user_setup
 
 ALTER TABLE ONLY public.user_tutorial_progress
     ADD CONSTRAINT user_tutorial_progress_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: user_wallet user_wallet_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_wallet
+    ADD CONSTRAINT user_wallet_user_id_fkey FOREIGN KEY (user_id) REFERENCES public."user"(id) ON DELETE CASCADE;
+
+
+--
+-- Name: user_wallet_vault user_wallet_vault_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_wallet_vault
+    ADD CONSTRAINT user_wallet_vault_user_id_fkey FOREIGN KEY (user_id) REFERENCES public."user"(id) ON DELETE CASCADE;
+
+
+--
+-- Name: user_wallet_vault user_wallet_vault_wallet_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_wallet_vault
+    ADD CONSTRAINT user_wallet_vault_wallet_id_fkey FOREIGN KEY (wallet_id) REFERENCES public.user_wallet(id) ON DELETE CASCADE;
 
 
 --
@@ -15672,6 +15923,18 @@ CREATE POLICY user_tutorial_progress_own_rows ON public.user_tutorial_progress U
 
 
 --
+-- Name: user_wallet; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.user_wallet ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: user_wallet_vault; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.user_wallet_vault ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: verification; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -15687,5 +15950,5 @@ ALTER TABLE public.wallet_auth ENABLE ROW LEVEL SECURITY;
 -- PostgreSQL database dump complete
 --
 
-\unrestrict oONfpYSc7Ic8zq8bdjBlQLL0ElxJLssytcnr1zb7OYWyKY5tYbmrUdNv8uYwaG6
+\unrestrict 03lzi7Qu0MUEccn4ySZE3tSLrxW31KcSHkMW5voJZxcO110xy8I1NKm9sxhEbaK
 

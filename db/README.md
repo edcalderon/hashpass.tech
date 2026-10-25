@@ -106,8 +106,12 @@ profile and records applied files in `public.hashpass_schema_migrations`.
 
 ```bash
 # Preview, then apply selected groups to core production (serves every tenant)
-pnpm run db:migrate -- --profile core-production --groups core,wallet,auth --dry-run
-pnpm run db:migrate -- --profile core-production --groups core,wallet,auth
+pnpm run db:migrate -- --profile core-production --groups core,non-custodial-wallet,auth --dry-run
+pnpm run db:migrate -- --profile core-production --groups core,non-custodial-wallet,auth
+
+# Wallet-only repair/verification (V097, V137, V138)
+pnpm run db:migrate -- --profile core-development --groups non-custodial-wallet
+pnpm run db:migrate -- --profile core-production --groups non-custodial-wallet
 ```
 
 Required database URL env vars:
