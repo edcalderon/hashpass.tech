@@ -784,9 +784,9 @@ const styles = StyleSheet.create({
     maxWidth: "100%",
   },
   badgeCompact: {
-    minHeight: uiTokens.control.badgeHeight - uiTokens.space.xs,
-    paddingHorizontal: uiTokens.space.sm,
-    paddingVertical: uiTokens.space.xs / 2,
+    minHeight: uiTokens.space.md * 2,
+    paddingHorizontal: uiTokens.space.sm - uiTokens.space.xs / 2,
+    paddingVertical: uiTokens.space.xs / 4,
   },
   badgeContent: {
     alignItems: "center",
@@ -807,7 +807,9 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   badgeLabelCompact: {
-    letterSpacing: 0.4,
+    fontSize: uiTokens.type.caption - 1,
+    lineHeight: uiTokens.type.caption + 2,
+    letterSpacing: 0.2,
   },
   button: {
     minHeight: uiTokens.control.minHeight,
