@@ -31,6 +31,9 @@ export const uiTokens = {
     green: '#22c55e',
     amber: '#f59e0b',
   },
+  status: {
+    passive: '#2563EB',
+  },
 } as const;
 export type ColorMode = 'light' | 'dark';
 export const uiPalette = (dark: boolean | ColorMode) => uiTokens.colors[dark === true || dark === 'dark' ? 'dark' : 'light'];

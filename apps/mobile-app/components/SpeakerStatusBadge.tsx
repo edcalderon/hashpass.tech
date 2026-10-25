@@ -11,7 +11,7 @@ export type { SpeakerBadgeStatus } from '../types/speaker-status-badge.types';
 
 const TONES: Record<SpeakerBadgeStatus, { bg: string; fg: string; icon: string }> = {
   active: { bg: '#34A853', fg: '#FFFFFF', icon: 'verified' },
-  passive: { bg: '#2563EB', fg: '#FFFFFF', icon: 'hourglass-empty' },
+  passive: { bg: uiTokens.status.passive, fg: '#FFFFFF', icon: 'hourglass-empty' },
   dnd: { bg: '#6366F1', fg: '#FFFFFF', icon: 'notifications-off' },
   inactive: { bg: '#6B7280', fg: '#FFFFFF', icon: 'pause-circle-outline' },
   past: { bg: '#6B7280', fg: '#FFFFFF', icon: 'history' },
