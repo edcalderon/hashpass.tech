@@ -157,7 +157,11 @@ it('shows brand and event-family badges for summit and blockchain week cards', a
   expect(content()).toContain('SUMMIT');
   expect(content()).toContain('CBW');
   expect(content()).toContain('CONFERENCE');
-  expect(view.root.findByProps({ accessibilityLabel: 'BSL badge for Blockchain Summit Latam Colombia 2026' }).props.onPress).toEqual(expect.any(Function));
+  const summitBadge = view.root.findByProps({
+    accessibilityLabel: 'BSL badge for Blockchain Summit Latam Colombia 2026',
+  });
+  expect(summitBadge.props.onPress).toEqual(expect.any(Function));
+  act(() => summitBadge.props.onPress());
 });
 it('retains the shared search when dismissing registration and allows real public event navigation', async () => {
   await act(async () => { view = create(<EventsScreen />); });

@@ -1386,7 +1386,7 @@ export default function Explorer({
           </ScrollView>
           <IconButton
             mode="dark"
-            accentColor="#fff"
+            accentColor="#ffffff"
             revealLabel
             preserveBaseStyleOnReveal
             size={30}
