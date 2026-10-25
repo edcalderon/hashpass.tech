@@ -81,6 +81,7 @@ import {
   QrCode,
   Ticket,
   RefreshCw,
+  Reply,
   RotateCw,
   ScanQrCode,
   Search,
@@ -396,6 +397,7 @@ const WEB_MATERIAL_ICONS: Record<string, WebIconComponent> = {
   "qr-code-scanner": ScanQrCode,
   "radio-button-unchecked": Circle,
   refresh: RefreshCw,
+  reply: Reply,
   restaurant: Utensils,
   schedule: Clock,
   // AgendaTracker uses Material's `timer` icon for the remaining-live-session
