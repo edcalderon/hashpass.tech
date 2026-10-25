@@ -20,17 +20,19 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.145)
+## 📋 Latest Changes (v1.9.146)
 
-### Released
-- harden QR camera permission flow
+### Bug Fixes
+
+* keep QR ticket scans read only ([8793548](https://github.com/hashpass-tech/hashpass.tech/commit/87935484ec2358da0079bfb1ba47380592069a41))
+### Release Highlights
+- keep QR ticket scans read only
 
 ### Release scope
-- Compared with: `v1.9.144` (the previous global release tag)
+- Compared with: `v1.9.145` (the previous global release tag)
 
 ### Affected products & packages
 - Mobile app
-- Shared UI
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610250408, // Updated to current timestamp
+  buildNumber: 202610251431, // Updated to current timestamp
   releaseDate: '2026-10-25',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,14 +30,29 @@ export const CURRENT_VERSION: VersionInfo = {
     // No new features
   ],
   bugfixes: [
-    'harden QR camera permission flow'
+    'keep QR ticket scans read only'
   ],
   breakingChanges: [],
-  notes: 'harden QR camera permission flow'
+  notes: 'keep QR ticket scans read only'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.146': {
+    version: '1.9.146',
+    buildNumber: 202610251431,
+    releaseDate: '2026-10-25',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'keep QR ticket scans read only'
+    ],
+    breakingChanges: [],
+    notes: 'keep QR ticket scans read only'
+  },
   '1.9.145': {
     version: '1.9.145',
     buildNumber: 202610250408,
