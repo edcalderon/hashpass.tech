@@ -608,7 +608,9 @@ export class BetterAuthProvider implements IAuthProvider {
         refresh_token: data.refresh_token,
       };
     } catch (error) {
-      console.warn('[BetterAuth] Failed to fetch Supabase session bridge:', error);
+      // The bridge is a best-effort companion to the already valid Better
+      // Auth session. A timeout/abort is expected while the API is waking up
+      // and must not surface as an alarming browser console error.
       return null;
     }
   }

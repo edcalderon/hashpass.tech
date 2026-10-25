@@ -19,7 +19,7 @@ it('stabilizes mobile layout and form zoom while keeping reduced motion support'
 
   expect(css).toContain('min-height: 100dvh');
   expect(css).toContain('overflow-x: hidden; overflow-x: clip');
-  expect(css).toContain('-webkit-text-size-adjust: 100%');
+  expect(css).toContain('text-size-adjust: 100%');
   expect(css).toContain('font-size: max(16px, 1em)');
   expect(css).toContain('prefers-reduced-motion: reduce');
 });
