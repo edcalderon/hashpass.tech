@@ -487,6 +487,14 @@ describe("event chat authorization api", () => {
     expect(mockFrom).not.toHaveBeenCalled();
   });
 
+  it("rejects unsupported GET chat channels before touching the room", async () => {
+    const response = await get("colombia2026", "channel=unsupported");
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: "Unsupported chat channel" });
+    expect(mockFrom).not.toHaveBeenCalled();
+  });
+
   it("fails closed when the canonical event room is not registered", async () => {
     const roomQuery = queryResult(null);
     mockFrom.mockImplementation((table: string) => {
