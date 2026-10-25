@@ -68,10 +68,8 @@ export const useTutorialPreferences = (): TutorialPreferences => {
               completed_at: mainProgress.completed_at,
               skipped_at: mainProgress.skipped_at,
             });
-            console.log('Loaded main tutorial progress:', { status: mainProgress.status, isCompleted });
           } else {
             // New user - no progress record exists
-            console.log('No main tutorial progress found - new user');
             setMainTutorialCompleted(false);
             setMainTutorialProgress(null);
           }
@@ -87,10 +85,8 @@ export const useTutorialPreferences = (): TutorialPreferences => {
               completed_at: networkingProgress.completed_at,
               skipped_at: networkingProgress.skipped_at,
             });
-            console.log('Loaded networking tutorial progress:', { status: networkingProgress.status, isCompleted });
           } else {
             // New user - no progress record exists
-            console.log('No networking tutorial progress found - new user');
             setNetworkingTutorialCompleted(false);
             setNetworkingTutorialProgress(null);
           }
@@ -98,7 +94,6 @@ export const useTutorialPreferences = (): TutorialPreferences => {
           console.error('Error loading tutorial progress:', error);
         } else {
           // No data returned - new user
-          console.log('No tutorial progress data returned - new user');
           setMainTutorialCompleted(false);
           setNetworkingTutorialCompleted(false);
           setMainTutorialProgress(null);
@@ -348,7 +343,6 @@ export const useTutorialPreferences = (): TutorialPreferences => {
       }
       
       // Reload preferences to ensure consistency
-      console.log('Tutorial reset - reloading preferences');
       await loadPreferences();
     } catch (error) {
       console.error('Failed to reset tutorial:', error);
@@ -376,7 +370,6 @@ export const useTutorialPreferences = (): TutorialPreferences => {
       setNetworkingTutorialProgress(null);
       
       // Reload preferences to ensure consistency
-      console.log('All tutorials reset - reloading preferences');
       await loadPreferences();
     } catch (error) {
       console.error('Failed to reset all tutorials:', error);
@@ -404,21 +397,6 @@ export const useTutorialPreferences = (): TutorialPreferences => {
         progress.status === 'in_progress'
       );
       
-      console.log('shouldShowTutorial(main):', {
-        mainTutorialCompleted,
-        progressStatus: progress?.status,
-        progressIsNull: progress === null,
-        isCompleted,
-        shouldShow,
-        calculation: {
-          step1_notCompleted: !isCompleted,
-          step2_noProgress: progress === null,
-          step2_notStarted: progress?.status === 'not_started',
-          step2_skipped: progress?.status === 'skipped',
-          step2_inProgress: progress?.status === 'in_progress',
-          step2_anyValid: progress === null || progress.status === 'not_started' || progress.status === 'skipped' || progress.status === 'in_progress',
-        }
-      });
       return shouldShow;
     } else {
       const progress = networkingTutorialProgress;
@@ -429,13 +407,6 @@ export const useTutorialPreferences = (): TutorialPreferences => {
         progress.status === 'skipped' ||
         progress.status === 'in_progress'
       );
-      console.log('shouldShowTutorial(networking):', {
-        networkingTutorialCompleted,
-        progressStatus: progress?.status,
-        progressIsNull: progress === null,
-        isCompleted,
-        shouldShow
-      });
       return shouldShow;
     }
   }, [mainTutorialCompleted, networkingTutorialCompleted, mainTutorialProgress, networkingTutorialProgress]);

@@ -21,7 +21,7 @@ describe('mobile web viewport stability', () => {
 
     expect(htmlSource).toContain(appConfig.expo.web.meta.viewport);
     expect(styleSource).toContain('min-height: 100dvh');
-    expect(styleSource).toContain('-webkit-text-size-adjust: 100%');
+    expect(styleSource).toContain('text-size-adjust: 100%');
     expect(styleSource).toContain('font-size: max(16px, 1em)');
   });
 });

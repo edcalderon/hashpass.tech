@@ -228,7 +228,6 @@ export default function NetworkingView() {
   // Define loadNetworkingStats BEFORE it's used in useEffect hooks
   const loadNetworkingStats = useCallback(async (retryCount = 0, silent = false) => {
     if (!dbUserId) {
-      console.log('No user found, skipping networking stats load');
       setStatsState((prev: StatsState) => ({ ...prev, loading: false, error: 'No user found' }));
       return;
     }
@@ -253,8 +252,6 @@ export default function NetworkingView() {
         }));
       }
 
-      console.log(`🔄 Loading networking stats (attempt ${retryCount + 1}/${maxRetries + 1}) for user:`, dbUserId, silent ? '(silent update)' : '');
-
       const statsResponse = await Promise.race([
         apiClient.request(networkingStatsPath, { skipEventSegment: true }),
         timeoutPromise
@@ -271,8 +268,6 @@ export default function NetworkingView() {
 
       const newStats: NetworkingStats = resolveNetworkingStats(resolvedStats, speakerStats.blockedUsers);
 
-      console.log('✅ Networking stats loaded successfully:', newStats);
-
       setStatsState((_prev: StatsState) => ({
         data: newStats,
         loading: false,
@@ -287,7 +282,6 @@ export default function NetworkingView() {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       
       if (retryCount < maxRetries) {
-        console.log(`🔄 Retrying in ${retryDelay}ms...`);
         setTimeout(() => {
           loadNetworkingStats(retryCount + 1);
         }, retryDelay);
@@ -317,7 +311,6 @@ export default function NetworkingView() {
         if (isMounted) {
           setStatsState((prev: StatsState) => {
             if (prev.loading) {
-              console.warn('⚠️ Loading timeout reached, showing error state');
               return {
                 ...prev,
                 loading: false,
@@ -346,7 +339,6 @@ export default function NetworkingView() {
   useFocusEffect(
     useCallback(() => {
       if (dbUserId) {
-        console.log('📊 Screen focused, refreshing stats...');
         loadNetworkingStats(0, true); // Silent update when refocusing
       }
     }, [dbUserId, loadNetworkingStats])
@@ -355,8 +347,6 @@ export default function NetworkingView() {
   // Real-time subscription for meeting requests to update stats automatically
   useEffect(() => {
     if (!dbUserId) return;
-
-    console.log('🔄 Setting up real-time stats subscription for user:', dbUserId);
 
     // Channel for sent requests (where user is requester)
     const sentChannel = supabase
@@ -369,17 +359,14 @@ export default function NetworkingView() {
           table: 'meeting_requests',
           filter: `requester_id=eq.${dbUserId}`,
         },
-        (payload: any) => {
-          console.log('📊 Stats: SENT request changed:', payload.eventType);
+        () => {
           // Debounce stats reload to avoid too many calls
           setTimeout(() => {
             loadNetworkingStats(0, true); // Silent update (no loading state)
           }, 500);
         }
       )
-      .subscribe((status: string) => {
-        console.log('📡 Stats SENT subscription status:', status);
-      });
+      .subscribe();
 
     // Channel for incoming requests (where user is speaker)
     const incomingChannel = supabase
@@ -392,21 +379,17 @@ export default function NetworkingView() {
           table: 'meeting_requests',
           filter: `speaker_id=eq.${dbUserId}`,
         },
-        (payload: any) => {
-          console.log('📊 Stats: INCOMING request changed:', payload.eventType);
+        () => {
           // Debounce stats reload to avoid too many calls
           setTimeout(() => {
             loadNetworkingStats(0, true); // Silent update (no loading state)
           }, 500);
         }
       )
-      .subscribe((status: string) => {
-        console.log('📡 Stats INCOMING subscription status:', status);
-      });
+      .subscribe();
 
     // Cleanup
     return () => {
-      console.log('🧹 Cleaning up stats subscriptions...');
       supabase.removeChannel(sentChannel);
       supabase.removeChannel(incomingChannel);
     };

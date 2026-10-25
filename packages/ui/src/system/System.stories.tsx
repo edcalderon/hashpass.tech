@@ -60,6 +60,15 @@ function Catalog({ mode = "light" }: { mode?: ColorMode }) {
         <Badge mode={mode} tone="onMedia">
           Organizer media
         </Badge>
+        <Badge
+          mode={mode}
+          tone="onMedia"
+          compact
+          onPress={() => undefined}
+          accessibilityLabel="Interactive badge"
+        >
+          Interactive
+        </Badge>
       </View>
       <Surface mode={mode}>
         <Text
@@ -153,6 +162,15 @@ function Catalog({ mode = "light" }: { mode?: ColorMode }) {
         </IconButton>
         <IconButton mode={mode} label="Reload" revealLabel size={30}>
           <Text style={{ color: palette.accent }}>↻</Text>
+        </IconButton>
+        <IconButton
+          mode={mode}
+          label="Bookmark"
+          revealLabel
+          preserveBaseStyleOnReveal
+          size={30}
+        >
+          <Text style={{ color: palette.accent }}>☆</Text>
         </IconButton>
       </View>
       <View style={{ gap: uiTokens.space.md }}>

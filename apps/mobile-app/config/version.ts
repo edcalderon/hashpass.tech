@@ -22,22 +22,43 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610251431, // Updated to current timestamp
+  buildNumber: 202610251739, // Updated to current timestamp
   releaseDate: '2026-10-25',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    // No new features
+    'refine event card badges',
+    'add spacious event grid cards',
+    'reveal bookmark labels on hover',
+    'refine event card room actions'
   ],
   bugfixes: [
-    'keep QR ticket scans read only'
+    'quiet networking telemetry logs'
   ],
   breakingChanges: [],
-  notes: 'keep QR ticket scans read only'
+  notes: 'refine event card badges; add spacious event grid cards; reveal bookmark labels on hover; refine event card room actions; quiet networking telemetry logs'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.147': {
+    version: '1.9.147',
+    buildNumber: 202610251739,
+    releaseDate: '2026-10-25',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'refine event card badges',
+      'add spacious event grid cards',
+      'reveal bookmark labels on hover',
+      'refine event card room actions'
+    ],
+    bugfixes: [
+      'quiet networking telemetry logs'
+    ],
+    breakingChanges: [],
+    notes: 'refine event card badges; add spacious event grid cards; reveal bookmark labels on hover; refine event card room actions; quiet networking telemetry logs'
+  },
   '1.9.146': {
     version: '1.9.146',
     buildNumber: 202610251431,

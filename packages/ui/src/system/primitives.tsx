@@ -85,6 +85,8 @@ export function Badge({
   markerColor,
   leadingIcon,
   compact = false,
+  onPress,
+  accessibilityLabel,
 }: React.PropsWithChildren<
   Themed & {
     tone?: "accent" | "neutral" | "onMedia";
@@ -92,55 +94,84 @@ export function Badge({
     markerColor?: string;
     leadingIcon?: React.ReactNode;
     compact?: boolean;
+    onPress?: PressableProps["onPress"];
+    accessibilityLabel?: string;
   }
 >) {
   const palette = uiPalette(mode);
   const onMedia = tone === "onMedia";
-  return (
-    <View
-      style={[
-        styles.badge,
-        compact && styles.badgeCompact,
-        radius === undefined ? undefined : { borderRadius: radius },
-        {
-          backgroundColor: onMedia
-            ? "#111114e6"
-            : tone === "accent"
-              ? palette.accentSoft
-              : palette.surface,
-          borderColor: onMedia ? "#ffffff40" : palette.border,
-        },
-      ]}
-    >
-      <View style={styles.badgeContent}>
-        {markerColor ? (
-          <View
-            accessible={false}
-            style={[styles.badgeMarker, { backgroundColor: markerColor }]}
-          />
-        ) : null}
-        {leadingIcon ? (
-          <View accessible={false} pointerEvents="none">
-            {leadingIcon}
-          </View>
-        ) : null}
-        <Text
-          style={[
-            styles.badgeLabel,
-            compact && styles.badgeLabelCompact,
-            {
-              color: onMedia
-                ? "#ffffff"
-                : tone === "accent"
-                  ? palette.accent
-                  : palette.muted,
-            },
-          ]}
-        >
-          {children}
-        </Text>
-      </View>
+  const interactive = typeof onPress === "function";
+  const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const [pressed, setPressed] = useState(false);
+  const active = interactive && (hovered || focused || pressed);
+  const backgroundColor = active
+    ? palette.accent
+    : onMedia
+      ? "#111114e6"
+      : tone === "accent"
+        ? palette.accentSoft
+        : palette.surface;
+  const borderColor = active
+    ? palette.accent
+    : onMedia
+      ? "#ffffff40"
+      : palette.border;
+  const textColor = active
+    ? palette.onAccent
+    : onMedia
+      ? "#ffffff"
+      : tone === "accent"
+        ? palette.accent
+        : palette.muted;
+  const content = (
+    <View style={styles.badgeContent}>
+      {markerColor ? (
+        <View
+          accessible={false}
+          style={[styles.badgeMarker, { backgroundColor: markerColor }]}
+        />
+      ) : null}
+      {leadingIcon ? (
+        <View accessible={false} pointerEvents="none">
+          {leadingIcon}
+        </View>
+      ) : null}
+      <Text
+        style={[
+          styles.badgeLabel,
+          compact && styles.badgeLabelCompact,
+          { color: textColor },
+        ]}
+      >
+        {children}
+      </Text>
     </View>
+  );
+  const style = [
+    styles.badge,
+    compact && styles.badgeCompact,
+    radius === undefined ? undefined : { borderRadius: radius },
+    { backgroundColor, borderColor },
+  ];
+  if (!interactive) {
+    return <View style={style}>{content}</View>;
+  }
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      onPress={onPress}
+      onHoverIn={() => setHovered(true)}
+      onHoverOut={() => setHovered(false)}
+      onFocus={() => setFocused(true)}
+      onBlur={() => setFocused(false)}
+      onPressIn={() => setPressed(true)}
+      onPressOut={() => setPressed(false)}
+      style={style}
+    >
+      {content}
+    </Pressable>
   );
 }
 export type ActionButtonProps = Omit<PressableProps, "children"> &
@@ -318,6 +349,8 @@ export type IconButtonProps = Omit<PressableProps, "children"> &
     revealLabel?: boolean;
     /** Lets contextual tools retain their semantic accent while sharing this role. */
     accentColor?: string;
+    /** Keeps the compact button's surface and border while its label expands. */
+    preserveBaseStyleOnReveal?: boolean;
     loading?: boolean;
     loadingLabel?: string;
     /** Reveal buttons only: square edge in px, to line up with neighbouring pills. */
@@ -332,6 +365,7 @@ export function IconButton({
   style,
   revealLabel = false,
   accentColor,
+  preserveBaseStyleOnReveal = false,
   loading = false,
   loadingLabel,
   size,
@@ -460,6 +494,7 @@ export function IconButton({
               width: Math.max(visualWidth, uiTokens.control.compactHeight),
               opacity: state.pressed ? 0.72 : 1,
             },
+            typeof style === "function" ? style(state) : style,
           ]}
         >
           <View
@@ -470,8 +505,10 @@ export function IconButton({
               {
                 height: edge,
                 width: visualWidth,
-                backgroundColor: expanded ? `${color}14` : palette.surface,
-                borderColor: expanded ? `${color}52` : palette.border,
+                backgroundColor:
+                  expanded && !preserveBaseStyleOnReveal ? `${color}14` : palette.surface,
+                borderColor:
+                  expanded && !preserveBaseStyleOnReveal ? `${color}52` : palette.border,
               },
               transitionStyle,
             ]}
@@ -747,8 +784,9 @@ const styles = StyleSheet.create({
     maxWidth: "100%",
   },
   badgeCompact: {
-    paddingHorizontal: uiTokens.space.sm,
-    paddingVertical: uiTokens.space.xs,
+    minHeight: uiTokens.space.md * 2,
+    paddingHorizontal: uiTokens.space.sm - uiTokens.space.xs / 2,
+    paddingVertical: uiTokens.space.xs / 4,
   },
   badgeContent: {
     alignItems: "center",
@@ -769,7 +807,9 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   badgeLabelCompact: {
-    letterSpacing: 0.4,
+    fontSize: uiTokens.type.caption - 1,
+    lineHeight: uiTokens.type.caption + 2,
+    letterSpacing: 0.2,
   },
   button: {
     minHeight: uiTokens.control.minHeight,

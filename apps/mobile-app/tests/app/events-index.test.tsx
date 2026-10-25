@@ -1,6 +1,7 @@
 import React from 'react';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { Modal, Platform, Pressable, Text, TextInput, TouchableOpacity } from 'react-native';
+import { IconButton } from '@hashpass/ui/primitives';
 const mockPush = jest.fn(); const mockSetParams = jest.fn(); const mockRetryDatabaseSession = jest.fn(); let mockParams: any = {}; const mockSaveBookmarks = jest.fn(); let mockEvents: any[]; let mockLoggedIn = false; let mockAnimationLevel = 'none'; let mockHeroIndex = 0;
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) }));
 jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush, setParams: mockSetParams }), useLocalSearchParams: () => mockParams }));
@@ -65,6 +66,102 @@ it('renders the real Explorer and gates bookmarks and rooms with an in-place for
   press('Join the room for Colombia conference');
   expect(view.root.findByType('EmbeddedAuth' as any)).toBeDefined();
   expect(mockPush).not.toHaveBeenCalled();
+});
+it('keeps bookmark and room actions independent from card selection', async () => {
+  const onSelectEvent = jest.fn();
+  mockLoggedIn = true;
+  mockSaveBookmarks.mockResolvedValue(undefined);
+  await act(async () => { view = create(
+    <Explorer
+      events={[mockEvents[1]]}
+      selectedEvent={null}
+      onSelectEvent={onSelectEvent}
+      onResetSelection={() => {}}
+      isLoggedIn
+      dbUserId="user-1"
+      isGlobalExplorer
+    />,
+  ); });
+
+  const bookmark = view.root.findAllByType(IconButton).find(
+    node => node.props.label === 'Bookmark Colombia conference',
+  );
+  expect(bookmark).toBeDefined();
+  expect(bookmark?.props.revealLabel).toBe(true);
+  expect(bookmark?.props.preserveBaseStyleOnReveal).toBe(true);
+  press('Bookmark Colombia conference');
+  expect(onSelectEvent).not.toHaveBeenCalled();
+  expect(mockSaveBookmarks).toHaveBeenCalledWith(['one']);
+
+  press('Join the room for Colombia conference');
+  expect(onSelectEvent).not.toHaveBeenCalled();
+  expect(mockPush).toHaveBeenCalledWith({
+    pathname: '/dashboard/event-chat',
+    params: { eventId: 'one' },
+  });
+});
+it('uses a spacious two-column grid for wide screens and keeps the compact grid for medium screens', async () => {
+  mockLoggedIn = true;
+  await act(async () => { view = create(
+    <Explorer
+      events={[mockEvents[1], mockEvents[2]]}
+      selectedEvent={null}
+      onSelectEvent={() => {}}
+      onResetSelection={() => {}}
+      isLoggedIn
+      dbUserId="user-1"
+      isGlobalExplorer
+    />,
+  ); });
+
+  press('Grid layout');
+  const hasStyle = (node: any, key: string, value: unknown) => {
+    const entries = Array.isArray(node.props?.style) ? node.props.style : [node.props?.style];
+    return entries.some((entry: any) => entry?.[key] === value);
+  };
+  expect(view.root.findAll((node) => hasStyle(node, 'minHeight', 322))).not.toHaveLength(0);
+
+  setViewport(640);
+  await act(async () => { view = create(
+    <Explorer
+      events={[mockEvents[1], mockEvents[2]]}
+      selectedEvent={null}
+      onSelectEvent={() => {}}
+      onResetSelection={() => {}}
+      isLoggedIn
+      dbUserId="user-1"
+      isGlobalExplorer
+    />
+  ); });
+  press('Grid layout');
+  expect(view.root.findAll((node) => hasStyle(node, 'minHeight', 224))).not.toHaveLength(0);
+});
+it('shows brand and event-family badges for summit and blockchain week cards', async () => {
+  mockLoggedIn = true;
+  await act(async () => { view = create(
+    <Explorer
+      events={[
+        { ...mockEvents[1], id: 'colombia2026', title: 'Blockchain Summit Latam Colombia 2026' },
+        { ...mockEvents[1], id: 'cbweek2026', title: 'Colombia Blockchain Week 2026' },
+      ]}
+      selectedEvent={null}
+      onSelectEvent={() => {}}
+      onResetSelection={() => {}}
+      isLoggedIn
+      dbUserId="user-1"
+      isGlobalExplorer
+    />
+  ); });
+
+  expect(content()).toContain('BSL');
+  expect(content()).toContain('SUMMIT');
+  expect(content()).toContain('CBW');
+  expect(content()).toContain('CONFERENCE');
+  const summitBadge = view.root.findByProps({
+    accessibilityLabel: 'BSL badge for Blockchain Summit Latam Colombia 2026',
+  });
+  expect(summitBadge.props.onPress).toEqual(expect.any(Function));
+  act(() => summitBadge.props.onPress());
 });
 it('retains the shared search when dismissing registration and allows real public event navigation', async () => {
   await act(async () => { view = create(<EventsScreen />); });
