@@ -28,6 +28,12 @@ export interface HashpassQrResolution {
   eventId?: string;
   network?: string;
   address?: string;
+  qr?: {
+    id: string;
+    type: string | null;
+    status: string | null;
+    expiresAt: string | null;
+  };
   user?: {
     id: string;
     name: string | null;
@@ -44,4 +50,13 @@ export interface HashpassQrResolution {
     requests: { used: number; max: number };
     boost: { used: number; max: number };
   };
+}
+
+export interface ResolvedQrRecord {
+  id: string;
+  qr_type?: string | null;
+  pass_id?: string | null;
+  display_data?: Record<string, unknown> | null;
+  status?: string | null;
+  expires_at?: string | null;
 }

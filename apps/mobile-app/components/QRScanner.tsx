@@ -7,6 +7,8 @@ import { useAuth } from '../hooks/useAuth';
 import { qrSystemService, QRScanResult, QRCode } from '../lib/qr-system';
 import { cameraPermissionManager } from '../lib/camera-permissions';
 import { qrScannerService } from '../lib/qr-scanner-service';
+import { resolveHashpassQrPayload } from '../lib/qr-payload-resolver';
+import type { HashpassQrResolution } from '../types/qr-payload.types';
 import { getCurrentAdminAccess, type AdminAccess } from '../lib/admin-access';
 import { useQrCameraSession } from '../hooks/qr-camera-machine';
 import { BarCodeScanner, type BarCodeScannerResult } from '../lib/barcode-scanner-compat';
@@ -59,6 +61,7 @@ export default function QRScanner({
   const [isProcessing, setIsProcessing] = useState(false);
   const [scanResult, setScanResult] = useState<QRScanResult | null>(null);
   const [qrDetails, setQrDetails] = useState<QRCode | null>(null);
+  const [resolvedPayload, setResolvedPayload] = useState<HashpassQrResolution | null>(null);
   const [isUserAdmin, setIsUserAdmin] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [useWebFallback, setUseWebFallback] = useState(false);
@@ -77,6 +80,7 @@ export default function QRScanner({
       setScanResult(null);
       setIsProcessing(false);
       setQrDetails(null);
+      setResolvedPayload(null);
       setShowDetails(false);
       setUseWebFallback(false);
       setCameraError(null);
@@ -275,6 +279,7 @@ export default function QRScanner({
     setIsProcessing(false);
     setScanResult(null);
     setQrDetails(null);
+    setResolvedPayload(null);
     setShowDetails(false);
     
     // Stop web fallback if active
@@ -303,99 +308,41 @@ export default function QRScanner({
         return;
       }
 
-      // Use professional QR parser
-      const parsed = qrScannerService.parseQRData(data);
-      
-      if (!parsed.isValid || !parsed.token) {
+      // Resolve every HashPass payload through the authenticated backend. A
+      // regular user is only previewing a ticket, so never call the
+      // destructive validate-and-use RPC here (that flow belongs to the
+      // admin check-in scanner).
+      const parsed = qrScannerService.parseHashpassPayload(data);
+
+      if (!parsed.isValid) {
         throw new Error('Invalid QR code format');
-        }
+      }
 
-      const token = parsed.token;
-
-      // Validate and use QR code
-      const result = await qrSystemService.validateAndUseQR(
-        token,
-        user?.id,
-        Platform.OS === 'web' ? 'web-scanner' : 'mobile-scanner'
-      );
-
+      const resolved = await resolveHashpassQrPayload(parsed);
+      const result: QRScanResult = {
+        valid: resolved.valid,
+        status: resolved.valid ? 'valid' : 'invalid',
+        message: resolved.message,
+      };
       setScanResult(result);
-
-      if (result.valid) {
-        // Fetch QR details to show pass information
-        let qr = null;
-        try {
-          qr = await qrSystemService.getQRByToken(token);
-          setQrDetails(qr);
-          
-          // If admin, show detailed view
-          if (isUserAdmin) {
-            setShowDetails(true);
-          }
-        } catch (e) {
-          console.error('Error fetching QR details:', e);
-        }
-
-        if (onScanSuccess) {
-          onScanSuccess(result);
-        } else if (!isUserAdmin) {
-          // Regular user success handling with pass details
-          const passInfo = qr?.display_data;
-          const passNumber = passInfo?.pass_number || 'N/A';
-          const passType = passInfo?.pass_type || 'N/A';
-          
-          Alert.alert(
-            'QR Code Valid ✓',
-            `Pass Number: ${passNumber}\nPass Type: ${passType}\n\n${result.message || 'QR code scanned successfully'}`,
-            [
-              {
-                text: 'OK',
-                onPress: () => {
-                  resetScanner();
-                },
-              },
-            ]
-          );
-        }
+      if (resolved.valid || resolved.pass || resolved.qr) {
+        setResolvedPayload(resolved);
+        setShowDetails(true);
       } else {
         const errorMessage = result.message || 'Invalid QR code';
-        if (onScanError) {
-          onScanError(errorMessage);
-        } else {
-          Alert.alert('QR Code Invalid', errorMessage, [
-            {
-              text: 'Try Again',
-              onPress: () => {
-                resetScanner();
-              },
-            },
-            {
-              text: 'Close',
-              style: 'cancel',
-              onPress: onClose,
-            },
-          ]);
-        }
+        onScanError?.(errorMessage);
       }
     } catch (error: any) {
       console.error('Error scanning QR:', error);
       const errorMessage = error.message || 'Error processing QR code';
-      if (onScanError) {
-        onScanError(errorMessage);
-      } else {
-        Alert.alert('Error', errorMessage, [
-          {
-            text: 'Try Again',
-            onPress: () => {
-              resetScanner();
-            },
-          },
-        ]);
-      }
+      setScanResult({ valid: false, status: 'invalid', message: errorMessage });
+      setResolvedPayload({ kind: 'unknown', valid: false, message: errorMessage });
+      setShowDetails(true);
+      onScanError?.(errorMessage);
     } finally {
       setIsProcessing(false);
     }
-  }, [scanned, isProcessing, user?.id, isUserAdmin, onScanSuccess, onScanError, onClose, resetScanner, onRawScan]);
+  }, [scanned, isProcessing, onScanError, onRawScan]);
 
   const errorCallback = useCallback((error: Error) => {
     console.error('QR scan error:', error);
@@ -471,7 +418,6 @@ export default function QRScanner({
       }
       
       if (!wrapper) {
-        console.error('❌ Scanner wrapper not found after', maxAttempts, 'attempts');
         if (onScanError) {
           onScanError('Failed to initialize camera - wrapper not found');
         }
@@ -767,8 +713,60 @@ export default function QRScanner({
             </View>
           </View>
 
-          {/* Instructions or Admin Details */}
-          {showDetails && qrDetails && isUserAdmin ? (
+          {/* Public pass preview. Scanning someone else's ticket never opens
+              the wallet; it stays in this read-only result card. */}
+          {showDetails && resolvedPayload ? (
+            <ScrollView style={styles.publicDetailsContainer} contentContainerStyle={styles.publicDetailsContent}>
+              <View style={styles.publicDetailsHeader}>
+                <Ionicons
+                  name={resolvedPayload.valid ? 'checkmark-circle' : 'alert-circle'}
+                  size={34}
+                  color={resolvedPayload.valid ? colors.success.main : colors.error.main}
+                />
+                <View style={styles.publicDetailsHeaderCopy}>
+                  <Text style={styles.publicDetailsTitle}>
+                    {resolvedPayload.valid ? 'Pass details' : 'Pass unavailable'}
+                  </Text>
+                  <Text style={styles.publicDetailsMessage}>{resolvedPayload.message}</Text>
+                </View>
+              </View>
+              {resolvedPayload.pass && (
+                <View style={styles.publicDetailsCard}>
+                  <View style={styles.publicDetailRow}>
+                    <Text style={styles.publicDetailLabel}>Pass</Text>
+                    <Text style={styles.publicDetailValue} selectable>{resolvedPayload.pass.number || resolvedPayload.pass.id}</Text>
+                  </View>
+                  <View style={styles.publicDetailRow}>
+                    <Text style={styles.publicDetailLabel}>Tier</Text>
+                    <Text style={styles.publicDetailValue}>{resolvedPayload.pass.type?.toUpperCase() || 'PASS'}</Text>
+                  </View>
+                  <View style={styles.publicDetailRow}>
+                    <Text style={styles.publicDetailLabel}>Status</Text>
+                    <Text style={[styles.publicDetailValue, { color: resolvedPayload.pass.status === 'active' ? colors.success.main : colors.error.main }]}>
+                      {resolvedPayload.pass.status?.toUpperCase() || 'UNAVAILABLE'}
+                    </Text>
+                  </View>
+                  <View style={styles.publicDetailRow}>
+                    <Text style={styles.publicDetailLabel}>Event</Text>
+                    <Text style={styles.publicDetailValue}>{resolvedPayload.pass.eventId}</Text>
+                  </View>
+                </View>
+              )}
+              {resolvedPayload.network && (
+                <View style={styles.publicDetailsCard}>
+                  <Text style={styles.publicDetailLabel}>Network</Text>
+                  <Text style={styles.publicDetailValue}>{resolvedPayload.network}</Text>
+                  {resolvedPayload.address && <Text selectable style={styles.publicDetailValue}>{resolvedPayload.address}</Text>}
+                </View>
+              )}
+              <ActionButton
+                mode={isDark ? 'dark' : 'light'}
+                variant="secondary"
+                label="Scan another code"
+                onPress={resetScanner}
+              />
+            </ScrollView>
+          ) : showDetails && qrDetails && isUserAdmin ? (
             <ScrollView style={styles.adminDetailsContainer}>
               <View style={styles.adminDetailsHeader}>
                 <Text style={styles.adminDetailsTitle}>QR Code Details</Text>
@@ -1081,6 +1079,59 @@ const getStyles = (isDark: boolean, colors: any) =>
       backgroundColor: colors.background.paper,
       borderTopWidth: 1,
       borderTopColor: colors.divider,
+    },
+    publicDetailsContainer: {
+      maxHeight: 320,
+      margin: 16,
+      borderRadius: uiTokens.radius.card,
+      backgroundColor: colors.background.paper,
+    },
+    publicDetailsContent: {
+      padding: 20,
+      gap: 14,
+    },
+    publicDetailsHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+    },
+    publicDetailsHeaderCopy: {
+      flex: 1,
+      gap: 3,
+    },
+    publicDetailsTitle: {
+      color: colors.text.primary,
+      fontSize: 18,
+      fontWeight: '700',
+    },
+    publicDetailsMessage: {
+      color: colors.text.secondary,
+      fontSize: 13,
+      lineHeight: 18,
+    },
+    publicDetailsCard: {
+      gap: 10,
+      padding: 14,
+      borderRadius: uiTokens.radius.input,
+      backgroundColor: colors.background.default,
+      borderWidth: 1,
+      borderColor: colors.divider,
+    },
+    publicDetailRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      gap: 12,
+    },
+    publicDetailLabel: {
+      color: colors.text.secondary,
+      fontSize: 13,
+    },
+    publicDetailValue: {
+      flex: 1,
+      color: colors.text.primary,
+      fontSize: 14,
+      fontWeight: '600',
+      textAlign: 'right',
     },
     adminDetailsHeader: {
       flexDirection: 'row',

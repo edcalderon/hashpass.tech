@@ -156,17 +156,17 @@ describe("/api/event-sources/hash-poker", () => {
     });
   });
 
-  it("fails closed without fallback when the database feed is unavailable", async () => {
+  it("serves the checked-in snapshot when production database feed is unavailable", async () => {
     const error = { message: "database offline" };
     queryResult({ data: null, error });
+    mockGetHashPokerEventConfig.mockReturnValue({ id: "hash-poker", title: "Stale snapshot" });
     const consoleError = jest.spyOn(console, "error").mockImplementation(() => undefined);
 
     const response = await get();
 
-    expect(response.status).toBe(503);
-    expect(response.headers.get("cache-control")).toBe("no-store");
-    await expect(response.json()).resolves.toEqual({ error: "Event feed unavailable" });
-    expect(consoleError).toHaveBeenCalledWith("Database event feed unavailable", error);
+    expect(response.status).toBe(200);
+    expect(response.headers.get("warning")).toContain("Database event snapshot");
+    await expect(response.json()).resolves.toEqual({ data: { id: "hash-poker", title: "Stale snapshot" }, source: "stale-snapshot-fallback" });
     consoleError.mockRestore();
   });
 });

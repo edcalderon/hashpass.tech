@@ -16,7 +16,19 @@ export async function POST(request: Request) {
       p_kind: 'page_view', p_event: null, p_source: 'observed_client',
     });
   } catch {
-    return Response.json({ error: 'Activity logging unavailable' }, { status: 503 });
+    // Activity tracking is intentionally best-effort. It must never turn a
+    // successful page navigation into a production error when the analytics
+    // RPC or database is briefly unavailable.
+    return Response.json(
+      { data: { recorded: false, trust: 'observed', provisionalPoints: 0 } },
+      { status: 202, headers: { 'Cache-Control': 'private, no-store', Warning: '299 - "Activity logging temporarily unavailable"' } },
+    );
   }
-  return recorded.error ? Response.json({ error: 'Activity logging unavailable' }, { status: 503 }) : Response.json({ data: { recorded: true, trust: 'observed', provisionalPoints: 0 } }, { headers: { 'Cache-Control': 'private, no-store' } });
+  if (recorded.error) {
+    return Response.json(
+      { data: { recorded: false, trust: 'observed', provisionalPoints: 0 } },
+      { status: 202, headers: { 'Cache-Control': 'private, no-store', Warning: '299 - "Activity logging temporarily unavailable"' } },
+    );
+  }
+  return Response.json({ data: { recorded: true, trust: 'observed', provisionalPoints: 0 } }, { headers: { 'Cache-Control': 'private, no-store' } });
 }

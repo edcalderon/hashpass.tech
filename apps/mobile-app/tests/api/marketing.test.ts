@@ -98,9 +98,11 @@ describe('recipient and activity endpoints', () => {
     expect(mockRpc).toHaveBeenCalledWith('record_marketing_activity', expect.objectContaining({ p_user: 'registry-user', p_source: 'observed_client', p_key: expect.stringMatching(/^navigation:\/contacts:\d{4}-\d{2}-\d{2}$/) }));
     expect((await response.json()).data.provisionalPoints).toBe(0);
   });
-  it('returns a service-unavailable response when activity storage throws', async () => {
+  it('keeps navigation successful when activity storage throws', async () => {
     mockRpc.mockRejectedValue(new Error('database unavailable'));
-    expect((await activity(req({ path: '/contacts' }))).status).toBe(503);
+    const response = await activity(req({ path: '/contacts' }));
+    expect(response.status).toBe(202);
+    await expect(response.json()).resolves.toEqual({ data: { recorded: false, trust: 'observed', provisionalPoints: 0 } });
   });
   it('requires linked identities and excludes sensitive paths', async () => {
     expect((await activity(req({ path: '/auth/callback?code=secret' }))).status).toBe(400);

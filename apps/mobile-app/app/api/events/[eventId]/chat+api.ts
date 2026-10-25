@@ -259,16 +259,25 @@ export async function GET(request: Request) {
   if (!eventId) return jsonError("A valid event id is required", 400);
 
   const supabase = getSupabaseServerForRequest(request);
+  const channel = new URL(request.url).searchParams.get("channel") || "room";
+  if (channel !== "room" && channel !== "direct" && channel !== "members" && channel !== "presence") {
+    return jsonError("Unsupported chat channel", 400);
+  }
   try {
     const room = await requireEventRoom(supabase, eventId);
-    if ("response" in room) return room.response;
+    if ("response" in room) {
+      const response = room.response;
+      // Presence is an optional enhancement for event cards. An event can be
+      // published before its chat room migration runs; return an empty
+      // presence envelope instead of a noisy 404 every polling interval.
+      if (channel === "presence" && response?.status === 404) {
+        return Response.json({ data: { eventId, presence: { peopleCount: 0, avatarUrls: [] } } }, { headers: PRIVATE_HEADERS });
+      }
+      return response || jsonError("This event room is unavailable", 404);
+    }
     const access = await requirePass(supabase, auth.userId, eventId);
     if ("response" in access) return access.response;
 
-    const channel = new URL(request.url).searchParams.get("channel") || "room";
-    if (channel !== "room" && channel !== "direct" && channel !== "members" && channel !== "presence") {
-      return jsonError("Unsupported chat channel", 400);
-    }
     const recipientId = channel === "direct"
       ? new URL(request.url).searchParams.get("recipientId")
       : null;
@@ -400,7 +409,13 @@ export async function POST(request: Request) {
     const supabase = getSupabaseServerForRequest(request);
     try {
       const room = await requireEventRoom(supabase, eventId);
-      if ("response" in room) return room.response;
+      if ("response" in room) {
+        const response = room.response;
+        if (response?.status === 404) {
+          return Response.json({ data: { eventId, presence: { peopleCount: 0, avatarUrls: [] } } }, { headers: PRIVATE_HEADERS });
+        }
+        return response || jsonError("This event room is unavailable", 404);
+      }
       const access = await requirePass(supabase, auth.userId, eventId);
       if ("response" in access) return access.response;
       const { error } = await supabase.from("event_chat_presence").upsert(

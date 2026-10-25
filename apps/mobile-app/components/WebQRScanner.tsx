@@ -76,7 +76,11 @@ export default function WebQRScanner({
       initTimeoutRef.current = null;
     }
     sendCameraEvent({ type: 'STOP' });
-    if (scannerInstanceRef.current) {
+    const scanner = scannerInstanceRef.current;
+    // Detach the instance before awaiting its asynchronous stop. A new
+    // camera generation must never be stopped by an older cleanup callback.
+    scannerInstanceRef.current = null;
+    if (scanner) {
       try {
         // Reset scan tracking
         lastScanTimeRef.current = 0;
@@ -84,7 +88,7 @@ export default function WebQRScanner({
         isProcessingScanRef.current = false;
         
         // Stop scanning first
-        await scannerInstanceRef.current.stop().catch((e: any) => {
+        await scanner.stop().catch((e: any) => {
           // Ignore stop errors - scanner might already be stopped
           void e;
         });
@@ -96,7 +100,6 @@ export default function WebQRScanner({
         // Ignore errors during cleanup
         void err;
       } finally {
-        scannerInstanceRef.current = null;
         setIsScanning(false);
       }
     } else {
@@ -135,6 +138,7 @@ export default function WebQRScanner({
     setIsLoading(true);
     setError(null);
 
+    let activeScanner: any = null;
     try {
       // Check permissions first - but don't block initialization
       // Let html5-qrcode handle the actual permission request
@@ -194,10 +198,7 @@ export default function WebQRScanner({
       }
       if (!isCurrent()) return;
 
-      // Clear any existing content
-      if (scannerRef.current) {
-        scannerRef.current.innerHTML = '';
-      } else {
+      if (!scannerRef.current) {
         throw new Error('Scanner ref is null');
       }
 
@@ -211,10 +212,16 @@ export default function WebQRScanner({
       }
       
       const html5Qrcode = new Html5Qrcode(scannerId);
+      activeScanner = html5Qrcode;
       scannerInstanceRef.current = html5Qrcode;
 
       // Get available cameras
       const cameras = await Html5Qrcode.getCameras();
+      if (!isCurrent()) {
+        await html5Qrcode.stop().catch(() => undefined);
+        if (scannerInstanceRef.current === html5Qrcode) scannerInstanceRef.current = null;
+        return;
+      }
       if (cameras.length === 0) {
         throw new Error('No cameras found');
       }
@@ -345,7 +352,7 @@ export default function WebQRScanner({
               isProcessingScanRef.current = false;
             }, 1000);
           } catch (err) {
-            console.error('❌ Error in onScanSuccess callback:', err);
+            onErrorRef.current?.(err instanceof Error ? err : new Error(String(err)));
             isProcessingScanRef.current = false;
           }
         },
@@ -366,7 +373,6 @@ export default function WebQRScanner({
               errorMessage.includes('PermissionDeniedError') ||
               errorMessage.includes('permission denied') ||
               errorMessage.includes('Permission denied')) {
-            console.error('❌ Camera permission error:', errorMessage);
             setError('Camera permission denied. Click "Grant Permission" button to allow camera access.');
             setHasPermission(false);
             setIsLoading(false);
@@ -382,7 +388,6 @@ export default function WebQRScanner({
               errorMessage.includes('camera not available') ||
               errorMessage.includes('NotFoundError') ||
               errorMessage.includes('DevicesNotFoundError')) {
-            console.error('❌ Camera not available:', errorMessage);
             setError('Camera not available. Please ensure a camera is connected and not in use by another app.');
             setHasPermission(false);
             setIsLoading(false);
@@ -391,14 +396,13 @@ export default function WebQRScanner({
           }
           
           if (!isNormalError) {
-            console.warn('⚠️ QR scan error:', errorMessage);
           }
         }
       );
 
       if (!isCurrent()) {
         await html5Qrcode.stop().catch(() => undefined);
-        scannerInstanceRef.current = null;
+        if (scannerInstanceRef.current === html5Qrcode) scannerInstanceRef.current = null;
         return;
       }
       setIsScanning(true);
@@ -407,7 +411,11 @@ export default function WebQRScanner({
       setError(null); // Clear any previous errors
       sendCameraEvent({ type: 'SCANNING' });
     } catch (err: any) {
-      if (!isCurrent()) return;
+      if (!isCurrent()) {
+        await activeScanner?.stop?.().catch(() => undefined);
+        if (scannerInstanceRef.current === activeScanner) scannerInstanceRef.current = null;
+        return;
+      }
       const permission = await cameraPermissionManager.getPermissionStatus(true);
       // Handle constraint errors specifically
       let errorMessage = err.message || 'Failed to start camera';
@@ -526,8 +534,6 @@ export default function WebQRScanner({
         initializeScanner();
       }, 200);
     } catch (err: any) {
-      console.error('❌ Permission request error:', err);
-      
       let errorMsg = 'Permission denied. ';
       if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
         errorMsg += 'Please allow camera access in your browser settings or PWA permissions.';

@@ -47,19 +47,30 @@ export async function GET(request: Request) {
     || hostname === "[::1]";
   const useLegacyFallback = process.env.EVENT_INGESTION_LEGACY_JSON_FALLBACK === "true"
     || isLocalRequest;
+  const snapshot = getHashPokerEventConfig();
 
-  if (useLegacyFallback) {
+  // The checked-in event snapshot is safe to serve when the ingestion table
+  // or Supabase is temporarily unavailable. Returning a stale-but-renderable
+  // event keeps discovery usable and lets the client retry in the background;
+  // a 503 here used to blank the production home page during short DB faults.
+  if (useLegacyFallback || snapshot) {
     return Response.json(
       {
-        data: getHashPokerEventConfig(),
-        source: isLocalRequest ? "local-legacy-fallback" : "legacy-json-fallback",
+        data: snapshot,
+        source: isLocalRequest
+          ? "local-legacy-fallback"
+          : process.env.EVENT_INGESTION_LEGACY_JSON_FALLBACK === "true"
+            ? "legacy-json-fallback"
+            : "stale-snapshot-fallback",
       },
       {
         headers: {
           ...headers,
           Warning: isLocalRequest
             ? '299 - "Local event snapshot fallback active"'
-            : '299 - "Legacy event snapshot fallback active"',
+            : process.env.EVENT_INGESTION_LEGACY_JSON_FALLBACK === "true"
+              ? '299 - "Legacy event snapshot fallback active"'
+              : '299 - "Database event snapshot fallback active"',
         },
       },
     );

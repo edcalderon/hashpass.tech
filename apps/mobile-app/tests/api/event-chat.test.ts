@@ -484,4 +484,19 @@ describe("event chat authorization api", () => {
     expect(response.status).toBe(404);
     expect(await response.json()).toEqual({ error: "This event room is unavailable" });
   });
+
+  it("returns an empty optional presence envelope when a room migration is pending", async () => {
+    const roomQuery = queryResult(null);
+    mockFrom.mockImplementation((table: string) => {
+      if (table === "event_chat_rooms") return roomQuery;
+      throw new Error(`Unexpected table ${table}`);
+    });
+
+    const response = await get("cbweek2026", "channel=presence");
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      data: { eventId: "cbweek2026", presence: { peopleCount: 0, avatarUrls: [] } },
+    });
+  });
 });
