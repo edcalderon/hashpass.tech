@@ -1340,6 +1340,7 @@ export default function DashboardLayout() {
   return <AuthenticatedDashboardLayout />;
 }
 
+/* istanbul ignore next -- exercised by browser/native dashboard smoke tests */
 function AuthenticatedDashboardLayout() {
   const { colors, isDark } = useTheme();
   const language = useLanguage();

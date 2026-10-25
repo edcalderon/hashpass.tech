@@ -61,6 +61,27 @@ describe("qrScannerService.parseHashpassPayload", () => {
     }));
   });
 
+  it("accepts compact identifiers and explicit network payloads", () => {
+    expect(qrScannerService.parseHashpassPayload("hpass-user-1234")).toEqual(expect.objectContaining({
+      kind: "hpass_id",
+      hpassId: "hpass-user-1234",
+      isValid: true,
+    }));
+    expect(qrScannerService.parseHashpassPayload("pass-12345")).toEqual(expect.objectContaining({
+      kind: "pass_id",
+      passId: "pass-12345",
+      isValid: true,
+    }));
+    expect(qrScannerService.parseHashpassPayload(JSON.stringify({
+      type: "network",
+      network: "solana",
+    }))).toEqual(expect.objectContaining({
+      kind: "network",
+      network: "solana",
+      isValid: true,
+    }));
+  });
+
   it("rejects unsupported plain text instead of guessing a token", () => {
     expect(qrScannerService.parseHashpassPayload("this is not a HashPass QR")).toEqual({
       kind: "unknown",

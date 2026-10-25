@@ -4,6 +4,7 @@ import type {
   ParsedHashpassQrPayload,
 } from "../types/qr-payload.types";
 
+/** Resolve scanned identities through the authenticated backend boundary. */
 export async function resolveHashpassQrPayload(
   payload: ParsedHashpassQrPayload,
 ): Promise<HashpassQrResolution> {

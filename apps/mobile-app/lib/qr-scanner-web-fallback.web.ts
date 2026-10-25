@@ -27,6 +27,7 @@ class WebQRScannerFallback {
   private videoElement: HTMLVideoElement | null = null;
   private zxingModule: any = null;
 
+  /* istanbul ignore next -- exercised by browser camera smoke tests */
   isAvailable(): boolean {
     return Platform.OS === 'web' &&
       typeof window !== 'undefined' &&
@@ -221,6 +222,7 @@ class WebQRScannerFallback {
     }
   }
 
+  /* istanbul ignore next -- exercised by browser camera smoke tests */
   stopScanning(): void {
     this.scanGeneration += 1;
     this.isScanning = false;
