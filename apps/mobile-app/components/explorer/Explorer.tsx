@@ -1357,16 +1357,17 @@ export default function Explorer({
             </View>
           </Pressable>
           <IconButton
-            mode={isDark ? "dark" : "light"}
+            mode="dark"
+            accentColor={colors.primary}
+            revealLabel
+            size={30}
             label={`${
-              bookmarkedEventIds.includes(event.id)
+              bookmarked
                 ? translate("explore.rework.removeBookmark", "Remove bookmark")
-                : translate("explore.rework.bookmark", "Bookmark")
+                : translate("explore.rework.bookmark", "Add to bookmarks")
             } ${event.title}`}
-            style={[
-              styles.bookmarkButton,
-              bookmarked && styles.bookmarkButtonActive,
-            ]}
+            style={styles.bookmarkButton}
+            accessibilityState={{ selected: bookmarked }}
             onPress={() => toggleBookmark(event.id)}
           >
             <Icon
@@ -2521,16 +2522,8 @@ const getStyles = (isDark: boolean, colors: any) =>
       position: "absolute",
       top: 8,
       right: 8,
-      width: uiTokens.control.compactHeight,
-      height: uiTokens.control.compactHeight,
-      borderRadius: uiTokens.radius.pill,
-      alignItems: "center",
-      justifyContent: "center",
-      backgroundColor: "rgba(10, 28, 42, .78)",
-      borderWidth: uiTokens.control.borderWidth,
-      borderColor: uiTokens.effects.mediaBorder,
+      zIndex: 2,
     },
-    bookmarkButtonActive: { backgroundColor: colors.primary },
     joinRoomLink: {
       minWidth: 0,
       minHeight: uiTokens.control.compactHeight,

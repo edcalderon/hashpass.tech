@@ -460,6 +460,7 @@ export function IconButton({
               width: Math.max(visualWidth, uiTokens.control.compactHeight),
               opacity: state.pressed ? 0.72 : 1,
             },
+            typeof style === "function" ? style(state) : style,
           ]}
         >
           <View

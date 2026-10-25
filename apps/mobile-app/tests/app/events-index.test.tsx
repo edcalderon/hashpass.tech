@@ -1,6 +1,7 @@
 import React from 'react';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { Modal, Platform, Pressable, Text, TextInput, TouchableOpacity } from 'react-native';
+import { IconButton } from '@hashpass/ui/primitives';
 const mockPush = jest.fn(); const mockSetParams = jest.fn(); const mockRetryDatabaseSession = jest.fn(); let mockParams: any = {}; const mockSaveBookmarks = jest.fn(); let mockEvents: any[]; let mockLoggedIn = false; let mockAnimationLevel = 'none'; let mockHeroIndex = 0;
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) }));
 jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush, setParams: mockSetParams }), useLocalSearchParams: () => mockParams }));
@@ -56,7 +57,7 @@ it('renders the real Explorer and gates bookmarks and rooms with an in-place for
   await act(async () => { view = create(<EventsScreen />); });
   expect(content()).not.toContain('Hidden shell');
   expect(content()).toContain('Explorer Events');
-  press('Bookmark Colombia conference');
+  press('Add to bookmarks Colombia conference');
   expect(view.root.findByType('EmbeddedAuth' as any).props.embedded).toBe(true);
   expect(mockSaveBookmarks).not.toHaveBeenCalled();
   expect(mockPush).not.toHaveBeenCalled();
@@ -82,7 +83,12 @@ it('keeps bookmark and room actions independent from card selection', async () =
     />,
   ); });
 
-  press('Bookmark Colombia conference');
+  const bookmark = view.root.findAllByType(IconButton).find(
+    node => node.props.label === 'Add to bookmarks Colombia conference',
+  );
+  expect(bookmark).toBeDefined();
+  expect(bookmark?.props.revealLabel).toBe(true);
+  press('Add to bookmarks Colombia conference');
   expect(onSelectEvent).not.toHaveBeenCalled();
   expect(mockSaveBookmarks).toHaveBeenCalledWith(['one']);
 
