@@ -13,7 +13,7 @@ which objects are explicitly outside the application's ownership boundary.
 | Item | Current value | Source |
 | --- | --- | --- |
 | Application release | `1.8.320` | root `package.json` |
-| Latest repository migration | `V059__admin_pass_registry_identity_fallback.sql` | `db/migrations/` |
+| Latest repository migration | `V139__speaker_directory_status.sql` | `db/migrations/` |
 | Migration runner | `packages/tools/scripts/migrate-tenant-db.mjs` | profile + migration group config |
 | Applied migration ledger | `public.hashpass_schema_migrations` | created/updated by the migration runner |
 | BSL profile | `bsl-development` (`bsl-production` retired 2026-10-20) | `packages/tools/scripts/config/database-profiles.json` |
@@ -35,6 +35,9 @@ replaces them:
 - passes: `public.passes`, `public.event_pass_tiers`,
   `public.pass_claim_codes`, and pass audit records;
 - event content: agenda/session rows and `public.bsl_speakers`;
+- speaker directory state: `public.speaker_directory_status` and the generated
+  `public.bsl_speakers.directory_status` (`private`, `passive`, `inactive`,
+  `active`, `dnd`);
 - attendee workflows: meeting requests/slots, networking, notifications,
   chat, email delivery/audit, and schedule-share records;
 - security contracts: foreign keys, indexes, RLS policies, and security-
@@ -73,4 +76,3 @@ queries must use the fallback relation implemented in `V059`, not assume that
 The companion [BSL schema and relation audit](./bsl-schema-relational-audit.md)
 defines the read-only inventory queries and approval gates. The cleanup design
 task is tracked in `.agents/pending/task-bsl-database-cleanup.md`.
-

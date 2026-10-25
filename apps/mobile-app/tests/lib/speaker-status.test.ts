@@ -25,7 +25,7 @@ describe('getSpeakerDirectoryState', () => {
       isNetworkingActive: false,
       isAcceptingMeetings: true,
       archivesRequests: false,
-      status: 'idle',
+      status: 'passive',
     });
   });
 
@@ -93,6 +93,6 @@ describe('getSpeakerDirectoryState', () => {
       is_active: false,
       user_id: null,
       do_not_disturb: true,
-    })).toMatchObject({ status: 'idle', archivesRequests: false });
+    })).toMatchObject({ status: 'passive', archivesRequests: false });
   });
 });

@@ -1703,8 +1703,8 @@
           "label": "Confirmed",
           "description": "The speaker has confirmed their account and is receiving meeting requests."
         },
-        "idle": {
-          "label": "Idle",
+        "passive": {
+          "label": "Passive",
           "description": "The speaker has not claimed their account yet but can still receive meeting requests. Requests stay open for a limited time and expire if the speaker never claims the account."
         },
         "dnd": {

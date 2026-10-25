@@ -72,7 +72,8 @@
     "admin-matchmaking-communications",
     "support-system",
     "contacts-network",
-    "marketing-campaigns"
+    "marketing-campaigns",
+    "speaker-directory-status"
   ],
   "profileGroups": {
     "bsl-development": [
@@ -304,6 +305,9 @@
       "db/migrations/V097__non_custodial_wallet_enrollment.sql",
       "db/migrations/V137__wallet_vault.sql",
       "db/migrations/V138__wallet_pin_recovery.sql"
+    ],
+    "speaker-directory-status": [
+      "db/migrations/V139__speaker_directory_status.sql"
     ],
     "chat-key-backup": ["db/migrations/V075__chat_key_backup_restore.sql"],
     "event-public-flags": ["db/migrations/V109__add_event_agenda_speakers_public_flags.sql"]

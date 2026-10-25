@@ -210,7 +210,7 @@ describe('speaker directory', () => {
     });
 
     expect(renderer!.root.findByProps({ children: 'Pending Colombia Speaker' })).toBeTruthy();
-    expect(renderer!.root.findAllByProps({ testID: 'speaker-status-idle' })).toHaveLength(1);
+    expect(renderer!.root.findAllByProps({ testID: 'speaker-status-passive' })).toHaveLength(1);
     const card = renderer!.root.findAll(
       (node: any) => node.props?.accessibilityState?.disabled !== undefined && typeof node.props?.onPress === 'function',
     )[0];
@@ -301,7 +301,7 @@ describe('speaker directory', () => {
 
     expect(renderer!.root.findByProps({ children: 'Active Reference' })).toBeTruthy();
     expect(renderer!.root.findByProps({ children: 'Inactive Reference' })).toBeTruthy();
-    expect(renderer!.root.findAllByProps({ testID: 'speaker-status-idle' })).toHaveLength(2);
+    expect(renderer!.root.findAllByProps({ testID: 'speaker-status-passive' })).toHaveLength(2);
     expect(renderer!.root.findAllByProps({ testID: 'speaker-status-inactive' })).toHaveLength(0);
 
     await act(async () => renderer!.unmount());

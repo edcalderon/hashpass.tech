@@ -8,7 +8,7 @@ export interface SpeakerActivationRecord {
   doNotDisturb?: boolean | null;
 }
 
-export type SpeakerDirectoryStatus = 'private' | 'inactive' | 'idle' | 'active' | 'dnd';
+export type SpeakerDirectoryStatus = 'private' | 'inactive' | 'passive' | 'active' | 'dnd';
 
 export interface SpeakerDirectoryState {
   isPublished: boolean;

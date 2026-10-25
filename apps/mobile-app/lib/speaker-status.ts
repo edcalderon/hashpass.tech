@@ -13,7 +13,7 @@ export type {
 /**
  * Public speaker states:
  * - active: confirmed (claimed) account that is receiving meeting requests.
- * - idle: imported profile whose speaker has not claimed an account yet. It
+ * - passive: imported profile whose speaker has not claimed an account yet. It
  *   still receives requests, which expire if the speaker never claims it.
  * - dnd: confirmed account in do-not-disturb mode. Requests are accepted but
  *   archived instead of surfacing directly, like phone notifications.
@@ -30,11 +30,11 @@ export function getSpeakerDirectoryState(speaker: SpeakerActivationRecord): Spea
   const isClaimed = typeof speaker.user_id === 'string' && speaker.user_id.trim().length > 0;
   const isNetworkingActive = isClaimedActiveSpeaker(speaker);
   // Imported profiles remain requestable while waiting for their owner to
-  // claim them. This also handles legacy rows backfilled with
-  // is_accepting_meetings=false before idle was defined.
-  const isIdle = isPublished && !isClaimed;
+  // claim them. This is the passive directory state: the profile is visible
+  // and requestable, but no speaker account has claimed it yet.
+  const isPassive = isPublished && !isClaimed;
   const isDoNotDisturb = isNetworkingActive && (speaker.do_not_disturb === true || speaker.doNotDisturb === true);
-  const isAcceptingMeetings = isIdle || (isNetworkingActive && speaker.is_accepting_meetings !== false);
+  const isAcceptingMeetings = isPassive || (isNetworkingActive && speaker.is_accepting_meetings !== false);
 
   return {
     isPublished,
@@ -44,8 +44,8 @@ export function getSpeakerDirectoryState(speaker: SpeakerActivationRecord): Spea
     archivesRequests: isDoNotDisturb && isAcceptingMeetings,
     status: !isPublished
       ? 'private'
-      : isIdle
-        ? 'idle'
+      : isPassive
+        ? 'passive'
         : isNetworkingActive
           ? (isDoNotDisturb ? 'dnd' : 'active')
           : 'inactive',

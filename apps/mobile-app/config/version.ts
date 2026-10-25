@@ -22,22 +22,47 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610242108, // Updated to current timestamp
-  releaseDate: '2026-10-24',
+  buildNumber: 202610250029, // Updated to current timestamp
+  releaseDate: '2026-10-25',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
+    'formalize passive directory status',
+    'complete non-custodial wallet flow',
     'PIN-protected hybrid vault wizard, create-only, full-screen secure steps'
   ],
   bugfixes: [
+    'tighten balance test URL checks',
+    'address PR review findings on the gate, recovery and PIN change',
+    'use shared design tokens instead of literal radii and colors',
     'explicit parameter types for the isolated changed-file typecheck'
   ],
   breakingChanges: [],
-  notes: 'PIN-protected hybrid vault wizard, create-only, full-screen secure steps; explicit parameter types for the isolated changed-file typecheck'
+  notes: 'formalize passive directory status; complete non-custodial wallet flow; PIN-protected hybrid vault wizard, create-only, full-screen secure steps; tighten balance test URL checks; address PR review findings on the gate, recovery and PIN change; use shared design tokens instead of literal radii and colors; explicit parameter types for the isolated changed-file typecheck'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.143': {
+    version: '1.9.143',
+    buildNumber: 202610250029,
+    releaseDate: '2026-10-25',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'formalize passive directory status',
+      'complete non-custodial wallet flow',
+      'PIN-protected hybrid vault wizard, create-only, full-screen secure steps'
+    ],
+    bugfixes: [
+      'tighten balance test URL checks',
+      'address PR review findings on the gate, recovery and PIN change',
+      'use shared design tokens instead of literal radii and colors',
+      'explicit parameter types for the isolated changed-file typecheck'
+    ],
+    breakingChanges: [],
+    notes: 'formalize passive directory status; complete non-custodial wallet flow; PIN-protected hybrid vault wizard, create-only, full-screen secure steps; tighten balance test URL checks; address PR review findings on the gate, recovery and PIN change; use shared design tokens instead of literal radii and colors; explicit parameter types for the isolated changed-file typecheck'
+  },
   '1.9.142': {
     version: '1.9.142',
     buildNumber: 202610242108,

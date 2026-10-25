@@ -11,13 +11,13 @@ export type { SpeakerBadgeStatus } from '../types/speaker-status-badge.types';
 
 const TONES: Record<SpeakerBadgeStatus, { bg: string; fg: string; icon: string }> = {
   active: { bg: '#34A853', fg: '#FFFFFF', icon: 'verified' },
-  idle: { bg: '#F59E0B', fg: '#1F2937', icon: 'hourglass-empty' },
+  passive: { bg: uiTokens.status.passive, fg: '#FFFFFF', icon: 'hourglass-empty' },
   dnd: { bg: '#6366F1', fg: '#FFFFFF', icon: 'notifications-off' },
   inactive: { bg: '#6B7280', fg: '#FFFFFF', icon: 'pause-circle-outline' },
   past: { bg: '#6B7280', fg: '#FFFFFF', icon: 'history' },
 };
 
-const ORDER: SpeakerBadgeStatus[] = ['active', 'idle', 'dnd'];
+const ORDER: SpeakerBadgeStatus[] = ['active', 'passive', 'dnd'];
 
 /** Status pill; pressing it opens a modal that explains every speaker status. */
 export default function SpeakerStatusBadge({ status, label, isDark = false }: SpeakerStatusBadgeProps) {
