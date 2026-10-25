@@ -33,6 +33,8 @@ export const uiTokens = {
   },
   status: {
     passive: '#2563EB',
+    used: '#5E5CE6',
+    cancelled: '#6B7280',
   },
 } as const;
 export type ColorMode = 'light' | 'dark';

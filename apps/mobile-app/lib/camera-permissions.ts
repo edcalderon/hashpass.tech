@@ -9,6 +9,15 @@ export interface CameraPermissionResult {
   message?: string;
 }
 
+const WEB_CAMERA_CONSTRAINTS: MediaStreamConstraints = {
+  audio: false,
+  video: {
+    facingMode: { ideal: 'environment' },
+    width: { ideal: 1280 },
+    height: { ideal: 720 },
+  },
+};
+
 /**
  * Comprehensive camera permission management system
  */
@@ -17,51 +26,14 @@ class CameraPermissionManager {
    * Get current camera permission status
    * Uses fresh check to avoid browser cache issues
    */
-  async getPermissionStatus(forceRefresh: boolean = false): Promise<CameraPermissionResult> {
+  async getPermissionStatus(_forceRefresh: boolean = false): Promise<CameraPermissionResult> {
     try {
-      // On web, clear any cached permission state if force refresh
-      if (Platform.OS === 'web' && forceRefresh) {
-        // Try to clear any cached state
-        try {
-          // Force a new permission check by requesting and immediately checking
-          await BarCodeScanner.requestPermissionsAsync();
-        } catch (e) {
-          // Ignore errors - we just want to trigger a fresh check
-        }
+      if (Platform.OS === 'web') {
+        return this.getWebPermissionStatus();
       }
 
       const { status, canAskAgain } = await BarCodeScanner.getPermissionsAsync();
-      
-      // Additional validation for web browsers
-      if (Platform.OS === 'web') {
-        // Sometimes browsers report 'granted' but camera still doesn't work
-        // Try to validate by checking if we can actually access media devices
-        if (status === 'granted' && typeof navigator !== 'undefined' && navigator.mediaDevices) {
-          try {
-            // Quick check if we can enumerate devices (this validates permission)
-            const devices = await navigator.mediaDevices.enumerateDevices();
-            const hasCamera = devices.some(device => device.kind === 'videoinput');
-            
-            if (!hasCamera) {
-              // Permission might be granted but no camera found
-              return {
-                status: 'undetermined',
-                canAskAgain: true,
-                message: 'No camera device found. Please check your camera connection.',
-              };
-            }
-          } catch (mediaError) {
-            // If we can't enumerate devices, permission might not actually be granted
-            console.warn('Could not enumerate media devices:', mediaError);
-            return {
-              status: 'denied',
-              canAskAgain: true,
-              message: 'Camera permission check failed. Please try granting permission again.',
-            };
-          }
-        }
-      }
-      
+
       return {
         status: status as CameraPermissionStatus,
         canAskAgain: canAskAgain ?? true,
@@ -83,23 +55,13 @@ class CameraPermissionManager {
    */
   async requestPermission(forceFresh: boolean = false): Promise<CameraPermissionResult> {
     try {
-      // On web, clear browser cache first if forcing fresh
-      if (Platform.OS === 'web' && forceFresh) {
-        // Try to clear any cached permission state
-        try {
-          // Force browser to re-evaluate permission by making a fresh request
-          // without checking status first
-          const { status, canAskAgain } = await BarCodeScanner.requestPermissionsAsync();
-          
-          // Verify the result
-          const verified = await this.verifyPermissionStatus(status as CameraPermissionStatus);
-          return verified;
-        } catch (requestError) {
-          console.error('Error in fresh permission request:', requestError);
-        }
+      if (Platform.OS === 'web') {
+        // Browsers only show the permission prompt from a user gesture. Do not
+        // call Expo's native permission API or probe the camera before this
+        // request; both can leave web stuck in a denied/undetermined state.
+        return this.requestWebPermission();
       }
 
-      // First check current status (with force refresh if needed)
       const currentStatus = await this.getPermissionStatus(forceFresh);
       
       // If already granted, verify it's actually working
@@ -111,23 +73,12 @@ class CameraPermissionManager {
         // If verification failed, continue to request
       }
 
-      // On web, if blocked/denied, show instructions instead of trying to request again
-      if (Platform.OS === 'web' && (currentStatus.status === 'denied' || currentStatus.status === 'blocked')) {
-        return {
-          status: 'blocked',
-          canAskAgain: false,
-          message: 'Camera permission is blocked. Please enable it in your browser settings.',
-        };
-      }
-
       // If blocked or denied without canAskAgain, show settings prompt
       if (currentStatus.status === 'denied' && !currentStatus.canAskAgain) {
         return {
           status: 'blocked',
           canAskAgain: false,
-          message: Platform.OS === 'web' 
-            ? 'Camera permission is blocked. Please enable it in your browser settings.'
-            : 'Camera permission is blocked. Please enable it in device settings.',
+          message: 'Camera permission is blocked. Please enable it in device settings.',
         };
       }
 
@@ -168,8 +119,12 @@ class CameraPermissionManager {
   async isCameraInUse(): Promise<{ inUse: boolean; message?: string }> {
     if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.mediaDevices) {
       try {
-        // Try to get user media - if it fails with certain errors, camera might be in use
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        // Never prompt from a status check. Only probe after the browser has
+        // already reported camera permission as granted.
+        const permissionState = await this.getWebPermissionState();
+        if (permissionState !== 'granted') return { inUse: false };
+
+        const stream = await navigator.mediaDevices.getUserMedia(WEB_CAMERA_CONSTRAINTS);
         // If successful, camera is available
         stream.getTracks().forEach(track => track.stop());
         return { inUse: false };
@@ -201,7 +156,6 @@ class CameraPermissionManager {
     const inUseErrorNames = [
       'NotReadableError',
       'TrackStartError',
-      'OverconstrainedError', // Sometimes indicates device busy
     ];
     
     // Common error messages that indicate camera in use
@@ -212,7 +166,6 @@ class CameraPermissionManager {
       'resource busy',
       'could not start video source',
       'failed to allocate video source',
-      'permission denied', // Sometimes means device is locked by another app
     ];
     
     // Check error name
@@ -226,11 +179,6 @@ class CameraPermissionManager {
     }
     
     // Check for specific error codes (browser-specific)
-    if (error?.constraint === 'deviceId' || error?.constraint === 'facingMode') {
-      // These constraints failing might indicate device busy
-      return true;
-    }
-    
     return false;
   }
 
@@ -246,24 +194,19 @@ class CameraPermissionManager {
       };
     }
 
-    // On web, verify we can actually access the camera
+    // On web, requestPermission already opened and closed a real media stream.
+    // A second getUserMedia call here can create a second prompt or race the
+    // scanner on Safari/iOS, so use the browser permission state only.
     if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.mediaDevices) {
       try {
-        // Check if camera is in use first
-        const cameraCheck = await this.isCameraInUse();
-        if (cameraCheck.inUse) {
+        const permissionState = await this.getWebPermissionState();
+        if (permissionState === 'denied') {
           return {
-            status: 'undetermined',
-            canAskAgain: true,
-            message: cameraCheck.message || 'Camera is being used by another application.',
+            status: 'blocked',
+            canAskAgain: false,
+            message: 'Camera permission is blocked. Allow camera access in your browser settings.',
           };
         }
-
-        // Try to get user media (this validates permission)
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        // Immediately stop the stream - we just wanted to verify access
-        stream.getTracks().forEach(track => track.stop());
-        
         return {
           status: 'granted',
           canAskAgain: false,
@@ -272,37 +215,10 @@ class CameraPermissionManager {
       } catch (mediaError: any) {
         console.warn('Permission verification failed:', mediaError);
         
-        // Check if camera is in use
-        if (this.isCameraInUseError(mediaError)) {
-          return {
-            status: 'undetermined',
-            canAskAgain: true,
-            message: 'Camera is currently being used by another application. Please close other apps using the camera and try again.',
-          };
-        }
-        
-        // If getUserMedia fails, permission might not actually be granted
-        if (mediaError.name === 'NotAllowedError' || mediaError.name === 'PermissionDeniedError') {
-          return {
-            status: 'denied',
-            canAskAgain: true,
-            message: 'Camera permission appears to be denied. Please grant permission again.',
-          };
-        }
-        
-        if (mediaError.name === 'NotFoundError' || mediaError.name === 'DevicesNotFoundError') {
-          return {
-            status: 'undetermined',
-            canAskAgain: true,
-            message: 'No camera device found. Please check your camera connection.',
-          };
-        }
-        
-        // Other errors - might be temporary
         return {
-          status: 'granted',
-          canAskAgain: false,
-          message: 'Camera permission granted (verification incomplete)',
+          status: 'undetermined',
+          canAskAgain: true,
+          message: this.getWebCameraErrorMessage(mediaError),
         };
       }
     }
@@ -476,10 +392,10 @@ class CameraPermissionManager {
    * Includes cache-busting for web browsers and camera in-use detection
    */
   async requestWithFallback(forceFresh: boolean = false): Promise<CameraPermissionResult> {
-    // On web, always force fresh to avoid cache issues
-    const shouldForceFresh = Platform.OS === 'web' || forceFresh;
-    
-    // First check if camera is in use
+    if (Platform.OS === 'web') return this.requestPermission(true);
+
+    const shouldForceFresh = forceFresh;
+
     const cameraCheck = await this.isCameraInUse();
     if (cameraCheck.inUse) {
       return {
@@ -491,21 +407,11 @@ class CameraPermissionManager {
     
     let result = await this.requestPermission(shouldForceFresh);
     
-    // If status is stuck or unclear, try forcing a fresh check
-    if (Platform.OS === 'web' && result.status === 'undetermined') {
-      console.log('Retrying with fresh permission check...');
-      // Wait a bit and retry
-      await new Promise(resolve => setTimeout(resolve, 300));
-      result = await this.requestPermission(true);
-    }
-    
     // If blocked, show settings alert
     if (result.status === 'blocked' || (result.status === 'denied' && !result.canAskAgain)) {
       return {
         ...result,
-        message: Platform.OS === 'web'
-          ? 'Please enable camera permission in your browser settings to scan QR codes.'
-          : 'Please enable camera permission in device settings to scan QR codes.',
+        message: 'Please enable camera permission in device settings to scan QR codes.',
       };
     }
     
@@ -607,6 +513,18 @@ class CameraPermissionManager {
    * Get user-friendly status message
    */
   private getStatusMessage(status: CameraPermissionStatus, canAskAgain: boolean): string {
+    if (Platform.OS === 'web') {
+      switch (status) {
+        case 'granted':
+          return 'Camera permission is granted';
+        case 'denied':
+        case 'blocked':
+          return 'Camera permission is blocked. Allow camera access in your browser settings.';
+        case 'undetermined':
+          return 'Camera permission has not been requested yet';
+      }
+    }
+
     switch (status) {
       case 'granted':
         return 'Camera permission is granted';
@@ -641,6 +559,109 @@ class CameraPermissionManager {
     }
     // On native, permissions are managed by the OS and can't be reset programmatically
     // User must go to settings to revoke/grant
+  }
+
+  private async getWebPermissionState(): Promise<PermissionState | null> {
+    if (typeof navigator === 'undefined' || !navigator.permissions?.query) return null;
+
+    try {
+      const permission = await navigator.permissions.query({ name: 'camera' as PermissionName });
+      return permission.state;
+    } catch {
+      // Safari and embedded browsers may not expose camera in Permissions API.
+      return null;
+    }
+  }
+
+  private async getWebPermissionStatus(): Promise<CameraPermissionResult> {
+    if (typeof window === 'undefined' || !window.isSecureContext) {
+      return {
+        status: 'blocked',
+        canAskAgain: false,
+        message: 'Camera access requires HTTPS or localhost.',
+      };
+    }
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+      return {
+        status: 'blocked',
+        canAskAgain: false,
+        message: 'This browser does not expose camera access. Use HTTPS or localhost in a supported browser.',
+      };
+    }
+
+    const permissionState = await this.getWebPermissionState();
+    if (permissionState === 'granted') {
+      return { status: 'granted', canAskAgain: false, message: 'Camera permission is granted' };
+    }
+    if (permissionState === 'denied') {
+      return {
+        status: 'blocked',
+        canAskAgain: false,
+        message: 'Camera permission is blocked. Allow camera access in your browser settings.',
+      };
+    }
+
+    return {
+      status: 'undetermined',
+      canAskAgain: true,
+      message: 'Camera permission has not been requested yet',
+    };
+  }
+
+  private async requestWebPermission(): Promise<CameraPermissionResult> {
+    if (typeof window === 'undefined' || !window.isSecureContext) {
+      return {
+        status: 'blocked',
+        canAskAgain: false,
+        message: 'Camera access requires HTTPS or localhost.',
+      };
+    }
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+      return {
+        status: 'blocked',
+        canAskAgain: false,
+        message: 'This browser does not expose camera access. Use HTTPS or localhost in a supported browser.',
+      };
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia(WEB_CAMERA_CONSTRAINTS);
+      stream.getTracks().forEach(track => track.stop());
+      return {
+        status: 'granted',
+        canAskAgain: false,
+        message: 'Camera permission is granted and working',
+      };
+    } catch (error: any) {
+      const permissionState = await this.getWebPermissionState();
+      return {
+        status: permissionState === 'denied' ? 'blocked' : 'undetermined',
+        canAskAgain: permissionState !== 'denied',
+        message: this.getWebCameraErrorMessage(error),
+      };
+    }
+  }
+
+  private getWebCameraErrorMessage(error: any): string {
+    switch (error?.name) {
+      case 'NotAllowedError':
+      case 'PermissionDeniedError':
+        return 'Camera permission was denied. Allow camera access in the browser address-bar settings and try again.';
+      case 'NotFoundError':
+      case 'DevicesNotFoundError':
+        return 'No camera was found. Connect a camera and try again.';
+      case 'NotReadableError':
+      case 'TrackStartError':
+        return 'The camera is busy or unavailable. Close other camera apps and try again.';
+      case 'OverconstrainedError':
+        return 'The selected camera does not support these settings. Try another camera or browser.';
+      case 'SecurityError':
+        return 'Camera access was blocked by the browser security policy. Use HTTPS or localhost.';
+      default:
+        return `Unable to access the camera${error?.message ? `: ${error.message}` : '.'}`;
+    }
   }
 }
 

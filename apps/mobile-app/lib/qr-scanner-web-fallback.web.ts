@@ -27,7 +27,11 @@ class WebQRScannerFallback {
   private zxingModule: any = null;
 
   isAvailable(): boolean {
-    return Platform.OS === 'web' && typeof window !== 'undefined' && typeof navigator !== 'undefined';
+    return Platform.OS === 'web' &&
+      typeof window !== 'undefined' &&
+      window.isSecureContext &&
+      typeof navigator !== 'undefined' &&
+      Boolean(navigator.mediaDevices?.getUserMedia);
   }
 
   private async loadZXing() {
@@ -57,24 +61,6 @@ class WebQRScannerFallback {
     return this.reader;
   }
 
-  private async getBestCameraDevice(): Promise<string | null> {
-    try {
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      const videoDevices = devices.filter(device => device.kind === 'videoinput');
-      
-      // Prefer back camera (environment facing)
-      const backCamera = videoDevices.find(device => 
-      device.label.toLowerCase().includes('back') || 
-      device.label.toLowerCase().includes('rear')
-    );
-
-      return backCamera?.deviceId || videoDevices[0]?.deviceId || null;
-    } catch (error) {
-      console.error('Error getting camera devices:', error);
-      return null;
-    }
-  }
-
   async startScanning(
     onScan: (result: WebQRScanResult) => void,
     onError?: (error: Error) => void,
@@ -90,11 +76,6 @@ class WebQRScannerFallback {
 
     try {
       const reader = await this.initializeReader();
-      const deviceId = await this.getBestCameraDevice();
-
-      if (!deviceId) {
-        throw new Error('No camera device found');
-      }
 
       // Get or create video element - SIMPLIFIED
       let videoElement: HTMLVideoElement;
@@ -144,22 +125,35 @@ class WebQRScannerFallback {
         }
       }
 
-      // Simple styling - let parent handle dimensions
-          videoElement.style.width = '100%';
-          videoElement.style.height = '100%';
-          videoElement.style.objectFit = 'cover';
-          videoElement.setAttribute('autoplay', 'true');
-          videoElement.setAttribute('playsinline', 'true');
-          videoElement.setAttribute('muted', 'true');
+      // Set DOM properties as well as attributes. iOS Safari ignores some
+      // autoplay attributes unless playsInline/muted are properties.
+      videoElement.style.width = '100%';
+      videoElement.style.height = '100%';
+      videoElement.style.objectFit = 'cover';
+      videoElement.autoplay = true;
+      videoElement.playsInline = true;
+      videoElement.muted = true;
+      videoElement.setAttribute('autoplay', 'true');
+      videoElement.setAttribute('playsinline', 'true');
+      videoElement.setAttribute('muted', 'true');
 
       this.videoElement = videoElement;
       this.isScanning = true;
 
-      // ZXing handles video stream attachment automatically
+      // Let the browser choose the best camera. Using decodeFromVideoDevice
+      // with an enumerated id before permission is granted returns no devices
+      // on desktop Safari/Chrome and is the main reason web scanning stalls.
       const continuous = options.continuous !== false;
 
-      reader.decodeFromVideoDevice(
-        deviceId,
+      await reader.decodeFromConstraints(
+        {
+          audio: false,
+          video: {
+            facingMode: { ideal: 'environment' },
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+          },
+        },
         videoElement,
         (result: any, error: any) => {
           if (result) {

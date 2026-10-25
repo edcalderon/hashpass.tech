@@ -18,6 +18,7 @@ import {
   ScrollView,
   useWindowDimensions,
   ActivityIndicator,
+  Alert,
   Dimensions,
   type DimensionValue,
 } from "react-native";
@@ -78,6 +79,8 @@ import { supabase } from "../../../lib/supabase";
 import { navigateDashboardBrandToLanding } from "../../../lib/dashboard-navigation";
 import { openTargetedDashboardDrawer } from "../../../lib/dashboard-drawer";
 import { parseAuthQrScan } from "../../../lib/auth-qr";
+import { qrScannerService } from "../../../lib/qr-scanner-service";
+import { resolveHashpassQrPayload } from "../../../lib/qr-payload-resolver";
 import { getAvailableEvents } from "../../../lib/event-detector";
 import { publicEventStatus } from "../../../lib/public-events";
 import {
@@ -1418,6 +1421,28 @@ function AuthenticatedDashboardLayout() {
   // DashboardLayout re-render, for the same reason as drawerOpenRef above.
   const drawerOpenControlRef: DrawerOpenControlRef = useRef(null);
   const [androidQrScannerVisible, setAndroidQrScannerVisible] = useState(false);
+  const handleHashpassRawScan = useCallback(async (data: string) => {
+    const parsed = qrScannerService.parseHashpassPayload(data);
+    if (!parsed.isValid || parsed.kind === "qr_token") return false;
+    try {
+      const resolved = await resolveHashpassQrPayload(parsed);
+      const details = [
+        resolved.user?.name || resolved.user?.username,
+        resolved.pass?.number ? `Pass ${resolved.pass.number}` : null,
+        resolved.pass?.type ? resolved.pass.type.toUpperCase() : null,
+        resolved.network ? `Network: ${resolved.network}` : null,
+        resolved.address ? `Address: ${resolved.address}` : null,
+      ].filter(Boolean).join("\n");
+      Alert.alert(
+        resolved.valid ? "HashPass identified" : "QR not valid",
+        `${resolved.message}${details ? `\n\n${details}` : ""}`,
+        [{ text: "Done" }],
+      );
+    } catch (error: any) {
+      Alert.alert("QR unavailable", error?.message || "Unable to resolve this QR code.");
+    }
+    return true;
+  }, []);
   const dashboardCopilotHook = useCopilot() as any;
   // Memoized so drawerContent keeps a stable identity across DashboardLayout
   // re-renders (scroll, notifications, animation state all cause those). An
@@ -1876,15 +1901,19 @@ function AuthenticatedDashboardLayout() {
               console.error("QR Scan Error:", error);
               // Error is already shown in the scanner component
             }}
-            onRawScan={(data: string) => {
+            onRawScan={async (data: string) => {
               const parsed = parseAuthQrScan(data);
-              if (!parsed) return false;
-              setQrScannerVisible(false);
-              headerRouter.push({
-                pathname: "./auth-qr-approve",
-                params: { challengeId: parsed.challengeId },
-              } as any);
-              return true;
+              if (parsed) {
+                setQrScannerVisible(false);
+                headerRouter.push({
+                  pathname: "./auth-qr-approve",
+                  params: { challengeId: parsed.challengeId },
+                } as any);
+                return true;
+              }
+              const handled = await handleHashpassRawScan(data);
+              if (handled) setQrScannerVisible(false);
+              return handled;
             }}
           />
         )}
@@ -2078,15 +2107,19 @@ function AuthenticatedDashboardLayout() {
                   onScanError={(error: unknown) => {
                     console.error("QR Scan Error:", error);
                   }}
-                  onRawScan={(data: string) => {
+                  onRawScan={async (data: string) => {
                     const parsed = parseAuthQrScan(data);
-                    if (!parsed) return false;
-                    setAndroidQrScannerVisible(false);
-                    router.push({
-                      pathname: "./auth-qr-approve",
-                      params: { challengeId: parsed.challengeId },
-                    } as any);
-                    return true;
+                    if (parsed) {
+                      setAndroidQrScannerVisible(false);
+                      router.push({
+                        pathname: "./auth-qr-approve",
+                        params: { challengeId: parsed.challengeId },
+                      } as any);
+                      return true;
+                    }
+                    const handled = await handleHashpassRawScan(data);
+                    if (handled) setAndroidQrScannerVisible(false);
+                    return handled;
                   }}
                 />
               )}

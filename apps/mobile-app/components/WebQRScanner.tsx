@@ -7,6 +7,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, ActivityIndicator, Platform } from 'react-native';
 import { useTheme } from '../hooks/useTheme';
+import { useQrCameraSession } from '../hooks/qr-camera-machine';
 import { Ionicons } from '@expo/vector-icons';
 
 // Only load on web
@@ -40,59 +41,30 @@ export default function WebQRScanner({
   const lastScanTimeRef = useRef<number>(0);
   const lastScanTextRef = useRef<string>('');
   const isProcessingScanRef = useRef<boolean>(false);
+  const isScanningRef = useRef(false);
+  const isLoadingRef = useRef(false);
+  const onScanSuccessRef = useRef(onScanSuccess);
+  const onErrorRef = useRef(onError);
+  const { send: sendCameraEvent, status: cameraStatus } = useQrCameraSession();
 
   const styles = getStyles(isDark, colors);
 
-  const checkCameraPermission = useCallback(async (): Promise<boolean> => {
-    try {
-      // Check if we're in a secure context (HTTPS or localhost)
-      if (typeof window === 'undefined' || !window.isSecureContext) {
-        setError('Camera requires HTTPS. Please use a secure connection.');
-        return false;
-      }
+  useEffect(() => {
+    isScanningRef.current = isScanning;
+    isLoadingRef.current = isLoading;
+  }, [isScanning, isLoading]);
 
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        setError('Camera API not available. Please use HTTPS or localhost.');
-        return false;
-      }
+  useEffect(() => {
+    onScanSuccessRef.current = onScanSuccess;
+    onErrorRef.current = onError;
+  }, [onScanSuccess, onError]);
 
-      // Try to access camera with proper constraints
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: {
-          facingMode: 'environment', // Prefer back camera
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-        }
-      });
-      
-      // Stop immediately - we just wanted to check permission
-      // html5-qrcode will request its own stream
-      stream.getTracks().forEach(track => track.stop());
-      console.log('✅ Camera permission granted');
-      return true;
-    } catch (err: any) {
-      console.error('❌ Camera permission error:', err);
-      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-        setError('Camera permission denied. Please allow camera access in your browser settings or PWA permissions.');
-        setHasPermission(false);
-        return false;
-      } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
-        setError('No camera found. Please connect a camera device.');
-        setHasPermission(false);
-        return false;
-      } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
-        setError('Camera is in use by another application. Please close other apps using the camera.');
-        setHasPermission(false);
-        return false;
-      } else {
-        setError(`Camera error: ${err.message || 'Unknown error'}. Please ensure you're using HTTPS.`);
-        setHasPermission(false);
-        return false;
-      }
-    }
-  }, []);
+  // Permission requests are handled by the visible Grant button below. This
+  // avoids getUserMedia calls from effects, which browsers may reject because
+  // they are not user initiated.
 
   const stopScanner = useCallback(async () => {
+    sendCameraEvent({ type: 'STOP' });
     if (scannerInstanceRef.current) {
       try {
         console.log('🛑 Stopping scanner...');
@@ -126,20 +98,22 @@ export default function WebQRScanner({
     } else {
       setIsScanning(false);
     }
-  }, []);
+  }, [sendCameraEvent]);
 
   const initializeScanner = useCallback(async () => {
     if (!visible || Platform.OS !== 'web') return;
+
+    sendCameraEvent({ type: 'START' });
     
     // Check if scanner is already running - if so, don't reinitialize
-    if (scannerInstanceRef.current && isScanning) {
+    if (scannerInstanceRef.current && isScanningRef.current) {
       console.log('✅ Scanner already running');
       return;
     }
     
     // Wait longer if we just stopped to avoid media resource abort errors
     // This prevents rapid stop/start cycles that cause media abort errors
-    if (scannerInstanceRef.current === null && !isScanning) {
+    if (scannerInstanceRef.current === null && !isScanningRef.current) {
       console.log('⏳ Waiting before reinitializing to avoid media abort...');
       await new Promise(resolve => setTimeout(resolve, 800));
     }
@@ -387,7 +361,7 @@ export default function WebQRScanner({
           
           // Call success callback - scanner keeps running for continuous scanning
           try {
-            onScanSuccess(trimmedText);
+            onScanSuccessRef.current(trimmedText);
             // Reset processing flag after a delay to allow for async processing
             setTimeout(() => {
               isProcessingScanRef.current = false;
@@ -419,8 +393,8 @@ export default function WebQRScanner({
             setHasPermission(false);
             setIsLoading(false);
             setIsScanning(false);
-            if (onError) {
-              onError(new Error('Camera permission denied: ' + errorMessage));
+            if (onErrorRef.current) {
+              onErrorRef.current(new Error('Camera permission denied: ' + errorMessage));
             }
             return;
           }
@@ -448,6 +422,7 @@ export default function WebQRScanner({
       setIsLoading(false);
       setHasPermission(true); // Permission granted since scanner started successfully
       setError(null); // Clear any previous errors
+      sendCameraEvent({ type: 'SCANNING' });
       console.log('✅ QR Scanner started successfully');
       console.log('📹 Camera:', cameraId);
       console.log('🔍 Scanning continuously at 20fps with 85% viewport coverage...');
@@ -495,7 +470,7 @@ export default function WebQRScanner({
               (decodedText: string) => {
                 console.log('✅✅✅ QR Code detected! ✅✅✅');
                 if (decodedText && decodedText.trim().length > 0) {
-                  onScanSuccess(decodedText);
+                  onScanSuccessRef.current(decodedText);
                 }
               },
               () => {} // Ignore scan errors
@@ -503,6 +478,7 @@ export default function WebQRScanner({
             
             setIsScanning(true);
             setIsLoading(false);
+            sendCameraEvent({ type: 'SCANNING' });
             console.log('✅ Scanner started with simplified constraints');
             return; // Success!
           }
@@ -515,13 +491,15 @@ export default function WebQRScanner({
       setError(errorMessage);
       setIsLoading(false);
       setIsScanning(false);
-      if (onError) {
-        onError(err);
+      sendCameraEvent({ type: 'ERROR', message: errorMessage });
+      if (onErrorRef.current) {
+        onErrorRef.current(err);
       }
     }
-  }, [visible, checkCameraPermission, onScanSuccess, onError]);
+  }, [visible, sendCameraEvent]);
 
   const handleRequestPermission = useCallback(async () => {
+    sendCameraEvent({ type: 'REQUEST' });
     setError(null);
     setIsLoading(true);
     
@@ -531,6 +509,7 @@ export default function WebQRScanner({
         setError('Camera requires HTTPS. Please use a secure connection.');
         setIsLoading(false);
         setHasPermission(false);
+        sendCameraEvent({ type: 'ERROR', message: 'Camera requires HTTPS. Please use a secure connection.' });
         return;
       }
 
@@ -538,6 +517,7 @@ export default function WebQRScanner({
         setError('Camera API not available. Please use HTTPS or localhost.');
         setIsLoading(false);
         setHasPermission(false);
+        sendCameraEvent({ type: 'ERROR', message: 'Camera API not available. Please use HTTPS or localhost.' });
         return;
       }
 
@@ -556,6 +536,7 @@ export default function WebQRScanner({
       console.log('✅ Camera permission granted via manual request');
       setHasPermission(true);
       setIsLoading(false);
+      sendCameraEvent({ type: 'PERMISSION_GRANTED' });
       
       // Initialize scanner after permission granted
       setTimeout(() => {
@@ -578,12 +559,18 @@ export default function WebQRScanner({
       setError(errorMsg);
       setIsLoading(false);
       setHasPermission(false);
+      sendCameraEvent({
+        type: 'PERMISSION_REQUIRED',
+        message: errorMsg,
+        canAskAgain: err.name !== 'NotAllowedError' && err.name !== 'PermissionDeniedError',
+      });
     }
-  }, [initializeScanner]);
+  }, [initializeScanner, sendCameraEvent]);
 
   // Initialize scanner when modal opens
   useEffect(() => {
     if (!visible || Platform.OS !== 'web') {
+      sendCameraEvent({ type: 'CLOSE' });
       if (scannerInstanceRef.current) {
         console.log('🛑 Closing scanner...');
         stopScanner();
@@ -591,10 +578,47 @@ export default function WebQRScanner({
       return;
     }
 
-    // Add a small delay to ensure DOM is ready
+    sendCameraEvent({ type: 'OPEN' });
+
+    // Do not call getUserMedia while opening the modal. Browsers require the
+    // request to happen from a user gesture, otherwise the prompt may be
+    // suppressed and the scanner appears to have no camera permission.
     const initTimer = setTimeout(() => {
-      console.log('🚀 Initializing QR scanner...');
-      initializeScanner();
+      void (async () => {
+        try {
+          const permissionState = navigator.permissions?.query
+            ? (await navigator.permissions.query({ name: 'camera' as PermissionName })).state
+            : null;
+
+          if (permissionState === 'granted') {
+            console.log('🚀 Camera permission already granted; initializing QR scanner...');
+            sendCameraEvent({ type: 'PERMISSION_GRANTED' });
+            setHasPermission(true);
+            sendCameraEvent({ type: 'START' });
+            await initializeScanner();
+            return;
+          }
+
+          setHasPermission(false);
+          setIsLoading(false);
+          sendCameraEvent({
+            type: 'PERMISSION_REQUIRED',
+            message: permissionState === 'denied'
+              ? 'Camera permission is blocked. Allow camera access in your browser address-bar settings and try again.'
+              : 'Camera permission is required. Click Grant Permission to enable the camera.',
+            canAskAgain: permissionState !== 'denied',
+          });
+          setError(permissionState === 'denied'
+            ? 'Camera permission is blocked. Allow camera access in your browser address-bar settings and try again.'
+            : 'Camera permission is required. Click Grant Permission to enable the camera.');
+        } catch (permissionError) {
+          console.warn('Unable to query camera permission state:', permissionError);
+          setHasPermission(false);
+          setIsLoading(false);
+          sendCameraEvent({ type: 'PERMISSION_REQUIRED', message: 'Camera permission is required. Click Grant Permission to enable the camera.' });
+          setError('Camera permission is required. Click Grant Permission to enable the camera.');
+        }
+      })();
     }, 200);
     
     // Add periodic health check to restart scanner if it stops unexpectedly
@@ -606,10 +630,10 @@ export default function WebQRScanner({
       if (!visible || isInitializing || isCleaningUp) return;
       
       // Only check if we're supposed to be scanning
-      if (!isScanning && !isLoading) return;
+      if (!isScanningRef.current && !isLoadingRef.current) return;
       
       // Check if scanner instance exists and is scanning
-      if (!scannerInstanceRef.current && isScanning) {
+      if (!scannerInstanceRef.current && isScanningRef.current) {
         console.warn('⚠️ Scanner instance lost, restarting...');
         isInitializing = true;
         setIsScanning(false);
@@ -620,7 +644,7 @@ export default function WebQRScanner({
         return;
       }
       
-      if (scannerInstanceRef.current && !isScanning && !isLoading) {
+      if (scannerInstanceRef.current && !isScanningRef.current && !isLoadingRef.current) {
         console.warn('⚠️ Scanner stopped but instance exists, restarting...');
         isInitializing = true;
         try {
@@ -643,7 +667,7 @@ export default function WebQRScanner({
       // Stop immediately without delay to prevent conflicts
       stopScanner();
     };
-  }, [visible, initializeScanner, isLoading, isScanning, stopScanner]); // Include all dependencies
+  }, [visible, initializeScanner, stopScanner, sendCameraEvent]);
 
   // Animate scanning line when scanning
   useEffect(() => {
@@ -695,7 +719,7 @@ export default function WebQRScanner({
               </View>
             )}
 
-            {error && (
+            {error && (cameraStatus === 'permission_required' || cameraStatus === 'error') && (
               <View style={styles.errorOverlay}>
                 <Ionicons name="alert-circle" size={48} color={colors.error.main} />
                 <Text style={styles.errorText}>{error}</Text>

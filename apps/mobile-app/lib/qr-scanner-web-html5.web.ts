@@ -148,11 +148,13 @@ class Html5QRScannerService {
       // Create scanner instance
       this.scanner = new Html5Qrcode(element.id || 'html5qr-scanner');
 
-      // Get camera ID
+      // Device labels/IDs are often hidden until camera permission has been
+      // granted. Fall back to constraints so first-use desktop and mobile web
+      // can still open the browser prompt and select a camera.
       const cameraId = await this.getBestCamera();
-      if (!cameraId) {
-        throw new Error('No camera available');
-      }
+      const cameraSource: string | MediaTrackConstraints = cameraId || {
+        facingMode: { ideal: 'environment' },
+      };
 
       // Default options optimized for performance and reliability
       const scanOptions: Html5QRScanOptions = {
@@ -170,7 +172,7 @@ class Html5QRScannerService {
 
       // Start scanning
       await this.scanner.start(
-        cameraId,
+        cameraSource,
         scanOptions,
         (decodedText: string, decodedResult: any) => {
           // Success callback
@@ -368,4 +370,3 @@ class Html5QRScannerService {
 }
 
 export const html5QRScanner = new Html5QRScannerService();
-

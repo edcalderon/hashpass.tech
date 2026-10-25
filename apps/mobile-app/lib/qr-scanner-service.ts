@@ -11,6 +11,7 @@
 import { Platform } from 'react-native';
 import { BarCodeScanner, type BarCodeScannerResult, type BarcodeType } from './barcode-scanner-compat';
 import { cameraPermissionManager } from './camera-permissions';
+import type { ParsedHashpassQrPayload } from '../types/qr-payload.types';
 
 // Dynamic import for web scanners to avoid bundling on native
 let webQRScannerFallback: any = null; // ZXing (primary)
@@ -217,6 +218,140 @@ class QRScannerService {
    */
   getBarCodeTypes(): BarcodeType[] {
     return [BarCodeScanner.Constants.BarCodeType.qr];
+  }
+
+  /**
+   * Parse all QR payloads understood by HashPass. QR codes are user input, so
+   * this parser is deliberately strict and never treats arbitrary long text
+   * as a token. The legacy parseQRData method below remains available for
+   * minted QR tokens, while callers that need user/pass/network discovery use
+   * this richer result.
+   */
+  parseHashpassPayload(data: string): ParsedHashpassQrPayload {
+    const raw = typeof data === 'string' ? data.trim() : '';
+    const invalid: ParsedHashpassQrPayload = { kind: 'unknown', raw, isValid: false };
+    if (!raw) return invalid;
+
+    const fromObject = (value: Record<string, unknown>): ParsedHashpassQrPayload => {
+      const type = String(value.type || value.kind || '').toLowerCase();
+      const token = typeof value.token === 'string' ? value.token.trim() : undefined;
+      const hpassId = typeof value.hpassId === 'string'
+        ? value.hpassId.trim()
+        : typeof value.hpass_id === 'string'
+          ? value.hpass_id.trim()
+          : typeof value.userCode === 'string'
+            ? value.userCode.trim()
+            : undefined;
+      const passId = typeof value.passId === 'string'
+        ? value.passId.trim()
+        : typeof value.pass_id === 'string'
+          ? value.pass_id.trim()
+          : undefined;
+      const userId = typeof value.userId === 'string'
+        ? value.userId.trim()
+        : typeof value.user_id === 'string'
+          ? value.user_id.trim()
+          : undefined;
+      const eventId = typeof value.eventId === 'string'
+        ? value.eventId.trim().toLowerCase()
+        : typeof value.event_id === 'string'
+          ? value.event_id.trim().toLowerCase()
+          : undefined;
+      const network = typeof value.network === 'string' ? value.network.trim() : undefined;
+      const address = typeof value.address === 'string'
+        ? value.address.trim()
+        : typeof value.wallet_address === 'string'
+          ? value.wallet_address.trim()
+          : undefined;
+      const label = typeof value.label === 'string' ? value.label.trim() : undefined;
+
+      if (token) return { kind: 'qr_token', raw, token, eventId, isValid: true };
+      if (passId) return { kind: 'pass_id', raw, passId, eventId, isValid: true };
+      if (hpassId) return { kind: 'hpass_id', raw, hpassId, userId, eventId, isValid: true };
+      if (userId) return { kind: 'hpass_id', raw, hpassId: userId, userId, eventId, isValid: true };
+      if (address || type.includes('wallet')) {
+        return { kind: 'wallet', raw, address, network, label, userId, eventId, isValid: Boolean(address || network) };
+      }
+      if (network || type.includes('network')) {
+        return { kind: 'network', raw, network, eventId, isValid: Boolean(network) };
+      }
+      return invalid;
+    };
+
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        return fromObject(parsed as Record<string, unknown>);
+      }
+    } catch {
+      // Continue with URL and compact identifier formats.
+    }
+
+    try {
+      const url = new URL(raw);
+      const params = url.searchParams;
+      const value = fromObject({
+        token: params.get('token') || undefined,
+        hpassId: params.get('hpassId') || params.get('hpass_id') || undefined,
+        passId: params.get('passId') || params.get('pass_id') || undefined,
+        userId: params.get('userId') || undefined,
+        eventId: params.get('eventId') || params.get('event') || undefined,
+        network: params.get('network') || undefined,
+        address: params.get('address') || undefined,
+        type: params.get('type') || undefined,
+      });
+      if (value.isValid) return value;
+
+      const pathParts = url.pathname.split('/').filter(Boolean);
+      const pathMarker = pathParts[0]?.toLowerCase();
+      const hostMarker = url.hostname.toLowerCase();
+      const idMarkers = ['hpass', 'hpass-id', 'user', 'u', 'pass', 'p', 'passes'];
+      const hostIsMarker = idMarkers.includes(hostMarker);
+      const marker = hostIsMarker ? hostMarker : pathMarker;
+      const identifier = hostIsMarker ? pathParts[0] : pathParts[1];
+      if (url.protocol === 'hpass:' && !pathMarker && hostMarker) {
+        return {
+          kind: 'hpass_id',
+          raw,
+          hpassId: decodeURIComponent(hostMarker),
+          eventId: params.get('eventId') || params.get('event') || undefined,
+          isValid: true,
+        };
+      }
+      if (identifier && marker && ['hpass', 'hpass-id', 'user', 'u'].includes(marker)) {
+        return {
+          kind: 'hpass_id',
+          raw,
+          hpassId: decodeURIComponent(identifier),
+          userId: params.get('userId') || undefined,
+          eventId: params.get('eventId') || params.get('event') || undefined,
+          isValid: true,
+        };
+      }
+      if (identifier && marker && ['pass', 'p', 'passes'].includes(marker)) {
+        return {
+          kind: 'pass_id',
+          raw,
+          passId: decodeURIComponent(identifier),
+          eventId: params.get('eventId') || params.get('event') || undefined,
+          isValid: true,
+        };
+      }
+      return { kind: 'url', raw, isValid: true, label: url.hostname };
+    } catch {
+      // Not a URL.
+    }
+
+    if (/^(?:hpass|hpass-id|hp)(?:[-_:])[a-z0-9-]{4,}$/i.test(raw)) {
+      return { kind: 'hpass_id', raw, hpassId: raw, isValid: true };
+    }
+    if (/^(?:pass|p)(?:[-_:])[a-z0-9-]{4,}$/i.test(raw)) {
+      return { kind: 'pass_id', raw, passId: raw, isValid: true };
+    }
+    if (/^QR-[A-Z0-9-]{8,}$/i.test(raw)) {
+      return { kind: 'qr_token', raw, token: raw, isValid: true };
+    }
+    return invalid;
   }
 
   /**

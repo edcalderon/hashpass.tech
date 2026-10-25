@@ -45,6 +45,7 @@ import {
   EventRoleGrant,
 } from "../../../lib/event-admin-access";
 import UnifiedSearchAndFilter from "../../../components/UnifiedSearchAndFilter";
+import { uiTokens } from "@hashpass/ui/tokens";
 
 type TabType =
   | "passes"
@@ -59,6 +60,15 @@ type TabType =
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+const formatAdminDate = (value?: string | null, includeTime = false) => {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleDateString(undefined, includeTime
+    ? { dateStyle: "medium", timeStyle: "short" }
+    : { dateStyle: "medium" });
+};
 
 interface Pass {
   id: string;
@@ -1206,6 +1216,24 @@ export default function AdminPanel() {
     // The scanner component will handle showing the details
   };
 
+  const handleScannedPassResolved = async (passId: string) => {
+    const current = passes.find((pass) => pass.id === passId);
+    const refreshed = current ? passes : await loadPasses();
+    const pass = refreshed.find((candidate) => candidate.id === passId);
+    if (!pass) return;
+    setShowQRScanner(false);
+    setSelectedPass(pass);
+    setPassFeedback(null);
+    setPassEditMode(false);
+    setPassDraft({
+      maxRequests: String(pass.max_meeting_requests),
+      usedRequests: String(pass.used_meeting_requests),
+      maxBoost: String(pass.max_boost_amount),
+      usedBoost: String(pass.used_boost_amount),
+    });
+    setShowPassDetailsModal(true);
+  };
+
   const handleCreateMatch = async () => {
     if (!selectedRequest || !selectedSlot) {
       Alert.alert("Error", "Please select a request and time slot");
@@ -1805,15 +1833,19 @@ export default function AdminPanel() {
                   <View style={[styles.statusBadge, styles.passTypeButtonActive, { paddingHorizontal: 12 }]}><Text style={styles.statusBadgeText}>{selectedPass.pass_type.toUpperCase()} TIER</Text></View>
                   {selectedPass.username && <Text style={styles.passInfo}>@{selectedPass.username}</Text>}
                 </View>
-                <View style={{ marginTop: 14, padding: 14, borderRadius: 12, backgroundColor: colors.background.paper }}>
-                  <Text style={[styles.modalLabel, { marginBottom: 8 }]}>Pass overview</Text>
-                  <Text style={styles.passInfo}>Status: <Text style={{ fontWeight: "700", color: selectedPass.status === "active" ? colors.success.main : colors.warning.main }}>{selectedPass.status}</Text></Text>
-                  <Text style={styles.passInfo}>Requests used: {selectedPass.used_meeting_requests} / {selectedPass.max_meeting_requests}</Text>
-                  <Text style={styles.passInfo}>Boost points used: {selectedPass.used_boost_amount} / {selectedPass.max_boost_amount}</Text>
+                <View style={styles.passOverviewCard}>
+                  <View style={styles.passOverviewHeader}>
+                    <Text style={[styles.modalLabel, { marginTop: 0, marginBottom: 0 }]}>Pass overview</Text>
+                    <View style={[styles.statusBadge, selectedPass.status === "active" ? styles.statusBadgeactive : selectedPass.status === "suspended" ? styles.statusBadgesuspended : selectedPass.status === "expired" ? styles.statusBadgeexpired : selectedPass.status === "used" ? styles.statusBadgeused : styles.statusBadgecancelled]}><Text style={styles.statusBadgeText}>{selectedPass.status}</Text></View>
+                  </View>
+                  <View style={styles.passMetaGrid}>
+                    <View style={styles.passMetaItem}><Text style={styles.passMetaLabel}>Requests</Text><Text style={styles.passMetaValue}>{selectedPass.used_meeting_requests} / {selectedPass.max_meeting_requests}</Text></View>
+                    <View style={styles.passMetaItem}><Text style={styles.passMetaLabel}>Boost</Text><Text style={styles.passMetaValue}>{selectedPass.used_boost_amount} / {selectedPass.max_boost_amount}</Text></View>
+                    <View style={styles.passMetaItem}><Text style={styles.passMetaLabel}>Created</Text><Text style={styles.passMetaValue}>{formatAdminDate(selectedPass.created_at, true)}</Text></View>
+                    <View style={styles.passMetaItem}><Text style={styles.passMetaLabel}>Updated</Text><Text style={styles.passMetaValue}>{formatAdminDate(selectedPass.updated_at, true)}</Text></View>
+                  </View>
                   <Text style={styles.passInfo}>Event: {selectedPass.event_id}</Text>
                   <Text style={styles.passInfo}>Pass ID: {selectedPass.id}</Text>
-                  <Text style={styles.passInfo}>Created: {new Date(selectedPass.created_at).toLocaleString()}</Text>
-                  <Text style={styles.passInfo}>Updated: {new Date(selectedPass.updated_at).toLocaleString()}</Text>
                 </View>
                 {passFeedback && <View style={styles.passFeedback}><MaterialIcons name="check-circle" size={18} color="#188038" /><Text style={styles.passFeedbackText}>{passFeedback}</Text></View>}
                 {passEditMode && <>
@@ -2354,6 +2386,7 @@ export default function AdminPanel() {
         visible={showQRScanner}
         onClose={() => setShowQRScanner(false)}
         onScanSuccess={handleQRScanSuccess}
+        onPassResolved={(passId) => { void handleScannedPassResolved(passId); }}
       />
     </View>
   );
@@ -2379,15 +2412,15 @@ function PassManagementTab({
 }: any) {
   const [viewMode, setViewMode] = useState<"table" | "cards">("table");
   const [page, setPage] = useState(1);
-  const [columnWidths, setColumnWidths] = useState({ pass: 190, owner: 220, tier: 90, usage: 120, status: 90 });
-  const [columnFilters, setColumnFilters] = useState({ pass: "", owner: "", tier: "", usage: "", status: "" });
+  const [columnWidths, setColumnWidths] = useState({ pass: 190, owner: 220, tier: 90, usage: 120, created: 132, status: 90 });
+  const [columnFilters, setColumnFilters] = useState({ pass: "", owner: "", tier: "", usage: "", created: "", status: "" });
   const [showColumnFilters, setShowColumnFilters] = useState(false);
-  const [sort, setSort] = useState<{ key: "pass" | "owner" | "tier" | "usage" | "status"; direction: "asc" | "desc" }>({ key: "pass", direction: "asc" });
+  const [sort, setSort] = useState<{ key: "pass" | "owner" | "tier" | "usage" | "created" | "status"; direction: "asc" | "desc" }>({ key: "pass", direction: "asc" });
   const { width: viewportWidth } = useWindowDimensions();
-  const tableWidth = Math.max(760, viewportWidth - 40);
+  const tableWidth = Math.max(920, viewportWidth - 40);
   // Keep row padding and the trailing details affordance inside the measured
   // scroll width instead of scaling data columns over the whole viewport.
-  const columnLayoutWidth = Math.max(716, tableWidth - 44);
+  const columnLayoutWidth = Math.max(876, tableWidth - 44);
   const displayColumnWidths = useMemo(() => {
     const baseTotal = Object.values(columnWidths).reduce((total, width) => total + width, 0);
     const scale = baseTotal > 0 ? Math.max(1, columnLayoutWidth / baseTotal) : 1;
@@ -2408,9 +2441,10 @@ function PassManagementTab({
   const tablePasses = passes.filter((pass: Pass) => {
     const owner = `${pass.user_name || pass.username || ""} ${pass.user_email || ""}`.toLowerCase();
     const usage = Number(columnFilters.usage);
-    return (!columnFilters.pass || pass.pass_number.toLowerCase().includes(columnFilters.pass.toLowerCase())) && (!columnFilters.owner || owner.includes(columnFilters.owner.toLowerCase())) && (!columnFilters.tier || pass.pass_type.toLowerCase().includes(columnFilters.tier.toLowerCase())) && (!columnFilters.status || pass.status.toLowerCase().includes(columnFilters.status.toLowerCase())) && (!columnFilters.usage || (!Number.isNaN(usage) && pass.used_meeting_requests >= usage));
+    const createdAfter = columnFilters.created ? Date.parse(columnFilters.created) : NaN;
+    return (!columnFilters.pass || pass.pass_number.toLowerCase().includes(columnFilters.pass.toLowerCase())) && (!columnFilters.owner || owner.includes(columnFilters.owner.toLowerCase())) && (!columnFilters.tier || pass.pass_type.toLowerCase().includes(columnFilters.tier.toLowerCase())) && (!columnFilters.status || pass.status.toLowerCase().includes(columnFilters.status.toLowerCase())) && (!columnFilters.usage || (!Number.isNaN(usage) && pass.used_meeting_requests >= usage)) && (!columnFilters.created || (!Number.isNaN(createdAfter) && Date.parse(pass.created_at) >= createdAfter));
   }).sort((a: Pass, b: Pass) => {
-    const value = (pass: Pass) => sort.key === "pass" ? pass.pass_number : sort.key === "owner" ? (pass.user_name || pass.user_email || pass.user_id) : sort.key === "tier" ? pass.pass_type : sort.key === "status" ? pass.status : pass.used_meeting_requests;
+    const value = (pass: Pass) => sort.key === "pass" ? pass.pass_number : sort.key === "owner" ? (pass.user_name || pass.user_email || pass.user_id) : sort.key === "tier" ? pass.pass_type : sort.key === "status" ? pass.status : sort.key === "created" ? pass.created_at : pass.used_meeting_requests;
     const av = value(a), bv = value(b); return (av < bv ? -1 : av > bv ? 1 : 0) * (sort.direction === "asc" ? 1 : -1);
   });
   const pageCount = Math.max(1, Math.ceil(tablePasses.length / pageSize));
@@ -2510,10 +2544,10 @@ function PassManagementTab({
               >
               <View style={{ width: tableWidth, minWidth: tableWidth }}>
                 <View style={{ flexDirection: "row", backgroundColor: colors.background.paper, paddingVertical: 10, paddingHorizontal: 12 }}>
-                  {([["Pass", "pass"], ["Owner", "owner"], ["Tier", "tier"], ["Usage", "usage"], ["Status", "status"]] as const).map(([label, key]) => <TouchableOpacity key={key} onPress={() => toggleSort(key)} style={{ width: displayColumnWidths[key], flexDirection: "row", alignItems: "center" }}><Text style={{ flex: 1, fontSize: 12, fontWeight: "700", color: colors.text.secondary }}>{label}</Text><MaterialIcons name={sort.key === key ? (sort.direction === "asc" ? "arrow-upward" : "arrow-downward") : "unfold-more"} size={14} color={colors.text.secondary} /><View {...resizeResponders[key].panHandlers} style={{ width: 3, height: 28, marginLeft: 5, borderRadius: 2, backgroundColor: colors.primaryLight }} /></TouchableOpacity>)}
+                  {([["Pass", "pass"], ["Owner", "owner"], ["Tier", "tier"], ["Usage", "usage"], ["Created", "created"], ["Status", "status"]] as const).map(([label, key]) => <TouchableOpacity key={key} onPress={() => toggleSort(key)} style={{ width: displayColumnWidths[key], flexDirection: "row", alignItems: "center" }}><Text style={{ flex: 1, fontSize: 12, fontWeight: "700", color: colors.text.secondary }}>{label}</Text><MaterialIcons name={sort.key === key ? (sort.direction === "asc" ? "arrow-upward" : "arrow-downward") : "unfold-more"} size={14} color={colors.text.secondary} /><View {...resizeResponders[key].panHandlers} style={{ width: 3, height: 28, marginLeft: 5, borderRadius: 2, backgroundColor: colors.primaryLight }} /></TouchableOpacity>)}
                 </View>
                 {showColumnFilters && <View style={{ flexDirection: "row", paddingVertical: 6, paddingHorizontal: 12 }}>
-                  {([["pass", "Filter pass"], ["owner", "Filter owner"], ["tier", "Filter tier"], ["usage", "Min requests"], ["status", "Filter status"]] as const).map(([key, placeholder]) => <TextInput key={key} value={columnFilters[key]} onChangeText={(value) => setColumnFilters((current) => ({ ...current, [key]: value }))} placeholder={placeholder} placeholderTextColor={colors.text.secondary} keyboardType={key === "usage" ? "numeric" : "default"} style={{ width: displayColumnWidths[key], paddingHorizontal: 6, paddingVertical: 5, fontSize: 11, color: colors.text.primary, borderWidth: 1, borderColor: colors.divider, borderRadius: 5 }} />)}
+                  {([["pass", "Filter pass"], ["owner", "Filter owner"], ["tier", "Filter tier"], ["usage", "Min requests"], ["created", "Created after"], ["status", "Filter status"]] as const).map(([key, placeholder]) => <TextInput key={key} value={columnFilters[key]} onChangeText={(value) => setColumnFilters((current) => ({ ...current, [key]: value }))} placeholder={placeholder} placeholderTextColor={colors.text.secondary} keyboardType={key === "usage" ? "numeric" : "default"} style={{ width: displayColumnWidths[key], paddingHorizontal: 6, paddingVertical: 5, fontSize: 11, color: colors.text.primary, borderWidth: 1, borderColor: colors.divider, borderRadius: 5 }} />)}
                 </View>}
                 {visiblePasses.map((pass: Pass) => (
                   <ScrollView
@@ -2532,7 +2566,8 @@ function PassManagementTab({
                       <View style={{ width: displayColumnWidths.owner }}><Text numberOfLines={1} style={{ fontSize: 13, color: colors.text.primary }}>{pass.user_name || pass.username || "Unnamed user"}</Text><Text numberOfLines={1} style={{ fontSize: 11, color: colors.text.secondary }}>{pass.user_email || "No email"}</Text></View>
                       <Text style={{ width: displayColumnWidths.tier, fontSize: 12, fontWeight: "600", color: colors.text.primary }}>{pass.pass_type.toUpperCase()}</Text>
                       <Text style={{ width: displayColumnWidths.usage, fontSize: 12, color: colors.text.secondary }}>{pass.used_meeting_requests}/{pass.max_meeting_requests} req · {pass.used_boost_amount}/{pass.max_boost_amount} boost</Text>
-                      <View style={{ width: displayColumnWidths.status }}><View style={[styles.statusBadge, styles[`statusBadge${pass.status}`]]}><Text style={styles.statusBadgeText}>{pass.status}</Text></View></View>
+                      <Text style={{ width: displayColumnWidths.created, fontSize: 12, color: colors.text.secondary }}>{formatAdminDate(pass.created_at)}</Text>
+                      <View style={{ width: displayColumnWidths.status }}><View style={[styles.statusBadge, styles[`statusBadge${pass.status}` as keyof typeof styles]]}><Text style={styles.statusBadgeText}>{pass.status}</Text></View></View>
                       <MaterialIcons name="chevron-right" size={20} color={colors.text.secondary} />
                     </TouchableOpacity>
                   </ScrollView>
@@ -2550,7 +2585,7 @@ function PassManagementTab({
                 <View
                   style={[
                     styles.statusBadge,
-                    styles[`statusBadge${pass.status}`],
+                    styles[`statusBadge${pass.status}` as keyof typeof styles],
                   ]}
                 >
                   <Text style={styles.statusBadgeText}>{pass.status}</Text>
@@ -2578,6 +2613,20 @@ function PassManagementTab({
               <Text style={styles.passInfo}>
                 Boost: {pass.used_boost_amount} / {pass.max_boost_amount}
               </Text>
+              <View style={styles.passMetaGrid}>
+                <View style={styles.passMetaItem}>
+                  <Text style={styles.passMetaLabel}>Created</Text>
+                  <Text style={styles.passMetaValue}>{formatAdminDate(pass.created_at)}</Text>
+                </View>
+                <View style={styles.passMetaItem}>
+                  <Text style={styles.passMetaLabel}>Updated</Text>
+                  <Text style={styles.passMetaValue}>{formatAdminDate(pass.updated_at)}</Text>
+                </View>
+                <View style={styles.passMetaItem}>
+                  <Text style={styles.passMetaLabel}>Event</Text>
+                  <Text numberOfLines={1} style={styles.passMetaValue}>{pass.event_id}</Text>
+                </View>
+              </View>
               <View style={styles.passActions}>
                 {(["general", "business", "vip"] as PassType[]).filter((type) => type !== pass.pass_type).map((type) => (
                   <TouchableOpacity key={type} style={[styles.actionButton, type === "vip" && styles.actionButtonWarning]} onPress={() => onUpdateType(pass.id, type)}>
@@ -3464,7 +3513,7 @@ function MeetingMatcherTab({
                 <View
                   style={[
                     styles.statusBadge,
-                    styles[`statusBadge${request.status}`],
+                    styles[`statusBadge${request.status}` as keyof typeof styles],
                   ]}
                 >
                   <Text style={styles.statusBadgeText}>{request.status}</Text>
@@ -3824,8 +3873,8 @@ const getStyles = (isDark: boolean, colors: any) =>
     },
     passCard: {
       backgroundColor: colors.background.paper,
-      borderRadius: 12,
-      padding: 16,
+      borderRadius: uiTokens.radius.media,
+      padding: 20,
       borderWidth: 1,
       borderColor: colors.divider,
     },
@@ -3854,6 +3903,12 @@ const getStyles = (isDark: boolean, colors: any) =>
     statusBadgeexpired: {
       backgroundColor: "#8E8E93",
     },
+    statusBadgeused: {
+      backgroundColor: uiTokens.status.used,
+    },
+    statusBadgecancelled: {
+      backgroundColor: uiTokens.status.cancelled,
+    },
     statusBadgeText: {
       color: "#fff",
       fontSize: 12,
@@ -3863,6 +3918,32 @@ const getStyles = (isDark: boolean, colors: any) =>
       fontSize: 14,
       color: colors.text.secondary,
       marginBottom: 4,
+    },
+    passMetaGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 10,
+      marginTop: 12,
+      paddingTop: 12,
+      borderTopWidth: 1,
+      borderTopColor: colors.divider,
+    },
+    passMetaItem: {
+      minWidth: 110,
+      flexGrow: 1,
+    },
+    passMetaLabel: {
+      color: colors.text.secondary,
+      fontSize: 11,
+      fontWeight: "700",
+      letterSpacing: 0.3,
+      textTransform: "uppercase",
+      marginBottom: 3,
+    },
+    passMetaValue: {
+      color: colors.text.primary,
+      fontSize: 13,
+      fontWeight: "600",
     },
     passActions: {
       flexDirection: "row",
@@ -3885,7 +3966,7 @@ const getStyles = (isDark: boolean, colors: any) =>
     filterChip: {
       paddingHorizontal: 12,
       paddingVertical: 7,
-      borderRadius: 16,
+      borderRadius: uiTokens.radius.media,
       borderWidth: 1,
       borderColor: colors.divider,
       backgroundColor: colors.background.default,
@@ -4020,10 +4101,11 @@ const getStyles = (isDark: boolean, colors: any) =>
     },
     modalContent: {
       backgroundColor: colors.background.paper,
-      borderRadius: 16,
+      borderRadius: uiTokens.radius.card,
       padding: 24,
-      width: "90%",
-      maxHeight: "88%",
+      width: "94%",
+      maxWidth: 680,
+      maxHeight: "90%",
       shadowColor: "#000",
       shadowOpacity: 0.18,
       shadowRadius: 18,
@@ -4032,6 +4114,20 @@ const getStyles = (isDark: boolean, colors: any) =>
     },
     passModalScrollContent: {
       paddingBottom: 8,
+    },
+    passOverviewCard: {
+      marginTop: 18,
+      padding: 16,
+      borderRadius: uiTokens.radius.media,
+      backgroundColor: colors.background.default,
+      borderWidth: 1,
+      borderColor: colors.divider,
+    },
+    passOverviewHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 12,
     },
     passFeedback: {
       flexDirection: "row",
@@ -4065,7 +4161,7 @@ const getStyles = (isDark: boolean, colors: any) =>
     confirmIcon: {
       width: 48,
       height: 48,
-      borderRadius: 24,
+      borderRadius: uiTokens.radius.card,
       alignItems: "center",
       justifyContent: "center",
       backgroundColor: colors.background.default,
@@ -4115,10 +4211,10 @@ const getStyles = (isDark: boolean, colors: any) =>
       fontWeight: "700",
     },
     modalTitle: {
-      fontSize: 20,
-      fontWeight: "600",
+      fontSize: 24,
+      fontWeight: "800",
       color: colors.text.primary,
-      marginBottom: 20,
+      marginBottom: 8,
     },
     modalLabel: {
       fontSize: 14,
