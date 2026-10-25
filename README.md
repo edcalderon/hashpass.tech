@@ -20,19 +20,25 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.146)
+## 📋 Latest Changes (v1.9.147)
 
 ### Bug Fixes
 
-* keep QR ticket scans read only ([8793548](https://github.com/hashpass-tech/hashpass.tech/commit/87935484ec2358da0079bfb1ba47380592069a41))
+* quiet networking telemetry logs ([98934f2](https://github.com/hashpass-tech/hashpass.tech/commit/98934f2c46f8d8849781047fe38eaa8441ad372a))
+
+
+### Features
+
+* refine event card room actions ([9b1ea2f](https://github.com/hashpass-tech/hashpass.tech/commit/9b1ea2fd7288aeabb3f2dc10a9929fec2be6b49e))
 ### Release Highlights
-- keep QR ticket scans read only
+- refine event card badges; add spacious event grid cards; reveal bookmark labels on hover; refine event card room actions; quiet networking telemetry logs
 
 ### Release scope
-- Compared with: `v1.9.145` (the previous global release tag)
+- Compared with: `v1.9.146` (the previous global release tag)
 
 ### Affected products & packages
 - Mobile app
+- Shared UI
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
