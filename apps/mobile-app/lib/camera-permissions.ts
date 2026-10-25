@@ -41,6 +41,9 @@ class CameraPermissionManager {
       };
     } catch (error: any) {
       console.error('Error getting camera permission status:', error);
+      if (Platform.OS === 'web') {
+        return this.reconcileWebPermissionFailure(error);
+      }
       return {
         status: 'undetermined',
         canAskAgain: true,
@@ -98,11 +101,7 @@ class CameraPermissionManager {
       
       // On web, provide more helpful error message
       if (Platform.OS === 'web') {
-        return {
-          status: 'undetermined',
-          canAskAgain: true,
-          message: 'Unable to request camera permission. Please try refreshing the page or check your browser settings.',
-        };
+        return this.reconcileWebPermissionFailure(error);
       }
       
       return {
@@ -214,12 +213,7 @@ class CameraPermissionManager {
         };
       } catch (mediaError: any) {
         console.warn('Permission verification failed:', mediaError);
-        
-        return {
-          status: 'undetermined',
-          canAskAgain: true,
-          message: this.getWebCameraErrorMessage(mediaError),
-        };
+        return this.reconcileWebPermissionFailure(mediaError);
       }
     }
 
@@ -392,7 +386,15 @@ class CameraPermissionManager {
    * Includes cache-busting for web browsers and camera in-use detection
    */
   async requestWithFallback(forceFresh: boolean = false): Promise<CameraPermissionResult> {
-    if (Platform.OS === 'web') return this.requestPermission(true);
+    if (Platform.OS === 'web') {
+      try {
+        return await this.requestPermission(true);
+      } catch (error) {
+        // A failed browser request must be reconciled with the browser's
+        // current permission state before the UI decides whether to retry.
+        return this.reconcileWebPermissionFailure(error);
+      }
+    }
 
     const shouldForceFresh = forceFresh;
 
@@ -571,6 +573,29 @@ class CameraPermissionManager {
       // Safari and embedded browsers may not expose camera in Permissions API.
       return null;
     }
+  }
+
+  /**
+   * Reconcile a failed browser camera operation with navigator.permissions.
+   * Browsers can reject getUserMedia for reasons unrelated to permission
+   * (missing camera, busy device, unsupported constraints), so never report a
+   * generic denial without checking the browser state first.
+   */
+  private async reconcileWebPermissionFailure(error: any): Promise<CameraPermissionResult> {
+    const permissionState = await this.getWebPermissionState();
+    if (permissionState === 'denied') {
+      return {
+        status: 'blocked',
+        canAskAgain: false,
+        message: 'Camera permission is blocked. Allow camera access in your browser settings.',
+      };
+    }
+
+    return {
+      status: 'undetermined',
+      canAskAgain: true,
+      message: this.getWebCameraErrorMessage(error),
+    };
   }
 
   private async getWebPermissionStatus(): Promise<CameraPermissionResult> {

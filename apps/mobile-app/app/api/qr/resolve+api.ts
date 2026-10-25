@@ -60,10 +60,16 @@ async function findPass(supabase: any, payload: ParsedHashpassQrPayload): Promis
   ];
   for (const [column, value] of candidates) {
     if (!value) continue;
-    const { data, error } = await supabase
+    let query = supabase
       .from("passes")
       .select(passFields)
-      .eq(column, value)
+      .eq(column, value);
+    // A user can have one pass per event. Scope user-based lookups before
+    // ordering so a newer pass from another event cannot mask a valid match.
+    if (column === "user_id" && payload.eventId) {
+      query = query.eq("event_id", payload.eventId);
+    }
+    const { data, error } = await query
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();

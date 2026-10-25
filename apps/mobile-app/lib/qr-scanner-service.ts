@@ -498,11 +498,8 @@ class QRScannerService {
             console.log('✅ Using @zxing/browser scanner (primary)');
             return { success: true };
           }
-          // If ZXing fails, try html5-qrcode fallback
-          console.warn('ZXing scanner failed, trying html5-qrcode fallback:', result.error);
         }
-      } catch (error: any) {
-        console.warn('ZXing scanner failed, trying html5-qrcode fallback:', error);
+      } catch {
       }
     }
 
@@ -585,12 +582,10 @@ class QRScannerService {
           if (result.success) {
             this.html5ScannerActive = true;
             this.webFallbackActive = true;
-            console.log('✅ Using html5-qrcode scanner (fallback)');
             return { success: true };
           }
         }
       } catch (error: any) {
-        console.error('html5-qrcode fallback also failed:', error);
         return { success: false, error: error.message || 'Both scanners failed' };
       }
     }

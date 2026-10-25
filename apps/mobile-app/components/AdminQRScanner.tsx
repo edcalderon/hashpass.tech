@@ -6,7 +6,7 @@ import { useAuth } from '../hooks/useAuth';
 import { qrSystemService, QRScanResult, QRCode } from '../lib/qr-system';
 import { getCurrentAdminAccess } from '../lib/admin-access';
 import { cameraPermissionManager } from '../lib/camera-permissions';
-import { supabase } from '../lib/supabase';
+import { apiClient } from '../lib/api-client';
 import { PassType } from '../lib/pass-system';
 import { qrScannerService } from '../lib/qr-scanner-service';
 import { resolveHashpassQrPayload } from '../lib/qr-payload-resolver';
@@ -138,9 +138,7 @@ export default function AdminQRScanner({
   const checkPermissionStatus = async () => {
     try {
       sendCameraEvent({ type: 'CHECK' });
-      console.log('Checking camera permission status...');
       const result = await cameraPermissionManager.getPermissionStatus(true); // Force refresh
-      console.log('Permission status:', result);
       const granted = result.status === 'granted';
       setHasPermission(granted);
       sendCameraEvent(granted
@@ -153,17 +151,14 @@ export default function AdminQRScanner({
       
       // If permission is granted, set camera ready after a very short delay
       if (granted) {
-        console.log('Camera permission already granted');
         // Give camera minimal time to initialize, then show it
         setTimeout(() => {
-          console.log('Setting camera as ready after permission check');
           setCameraReady(true);
         }, 500); // Reduced to 500ms
       } else if (result.canAskAgain && Platform.OS !== 'web') {
         // Native permission prompts can be requested on mount. Browsers only
         // allow getUserMedia from a user gesture, so web waits for the Grant
         // Permission button instead of silently consuming the prompt.
-        console.log('Permission not granted, requesting on native...');
         requestCameraPermission();
       }
     } catch (error) {
@@ -182,18 +177,12 @@ export default function AdminQRScanner({
     }
     try {
       setAdminCheckLoading(true);
-      console.log('🔐 Checking provider-aware admin access for user:', user.id);
       // The signed-in user can come from Directus/Better Auth. Its provider
       // ID is not necessarily the Supabase auth UUID used by user_roles, so
       // querying user_roles directly with user.id incorrectly denies admins.
       // Use the same provider-aware endpoint as the admin dashboard instead.
       const access = await getCurrentAdminAccess();
       const admin = Boolean(access.globalRole) || access.eventRoles.length > 0;
-      console.log('🔐 Admin access result:', {
-        admin,
-        globalRole: access.globalRole,
-        eventRoles: access.eventRoles.length,
-      });
       setIsUserAdmin(admin);
     } catch (error) {
       console.error('❌ Error checking admin status:', error);
@@ -206,29 +195,23 @@ export default function AdminQRScanner({
   const requestCameraPermission = async () => {
     try {
       sendCameraEvent({ type: 'REQUEST' });
-      console.log('Requesting camera permission...');
       // Use permission manager for better handling
       const result = await cameraPermissionManager.requestWithFallback(true); // Force fresh
-      console.log('Permission request result:', result);
       
       if (result.status === 'granted') {
-        console.log('Camera permission granted!');
         setHasPermission(true);
         sendCameraEvent({ type: 'PERMISSION_GRANTED' });
         sendCameraEvent({ type: 'START' });
         sendCameraEvent({ type: 'SCANNING' });
         // Set camera ready after permission is granted
         setTimeout(() => {
-          console.log('Setting camera as ready after permission grant');
           setCameraReady(true);
         }, 500); // Reduced to 500ms
       } else if (result.status === 'blocked' || (result.status === 'denied' && !result.canAskAgain)) {
         // Permission is blocked - show settings option
-        console.log('Camera permission blocked');
         setHasPermission(false);
         sendCameraEvent({ type: 'PERMISSION_REQUIRED', message: result.message, canAskAgain: false });
       } else {
-        console.log('Camera permission denied');
         setHasPermission(false);
         sendCameraEvent({ type: 'PERMISSION_REQUIRED', message: result.message, canAskAgain: result.canAskAgain });
       }
@@ -252,24 +235,19 @@ export default function AdminQRScanner({
         await new Promise(resolve => setTimeout(resolve, 200));
         attempts++;
         
-        console.log(`🔍 Attempt ${attempts}/${maxAttempts} to find scanner wrapper...`);
-        
         // Try to get wrapper from ref
         if (scannerWrapperRef.current) {
           const refElement = scannerWrapperRef.current as any;
-          console.log('📦 Ref element type:', typeof refElement, 'has _nativeNode:', !!refElement?._nativeNode);
           
           // React Native Web exposes DOM via _nativeNode
           if (refElement?._nativeNode) {
             wrapper = refElement._nativeNode;
-            console.log('✅ Found wrapper via _nativeNode');
             break;
           }
           
           // Or it might be the element directly
           if (refElement?.nodeType === 1) {
             wrapper = refElement;
-            console.log('✅ Found wrapper directly');
             break;
           }
           
@@ -278,12 +256,9 @@ export default function AdminQRScanner({
             const div = refElement.querySelector('div');
             if (div && div.nodeType === 1) {
               wrapper = div;
-              console.log('✅ Found wrapper via querySelector on ref');
               break;
             }
           }
-        } else {
-          console.log('⚠️ scannerWrapperRef.current is null');
         }
         
         // Fallback: try querySelector
@@ -292,21 +267,12 @@ export default function AdminQRScanner({
                  document.getElementById('scanner-wrapper');
         
         if (wrapper) {
-          console.log('✅ Found wrapper via querySelector');
           break;
-        } else {
-          console.log('⚠️ querySelector found nothing');
         }
       }
       
       if (!wrapper) {
         console.error('❌ Scanner wrapper not found after', maxAttempts, 'attempts');
-        console.error('Available elements:', {
-          byDataTestId: document.querySelector('[data-testid="scanner-wrapper"]'),
-          byClass: document.querySelector('.scanner-wrapper'),
-          byId: document.getElementById('scanner-wrapper'),
-          refCurrent: scannerWrapperRef.current
-        });
         setCameraError('Failed to initialize camera - wrapper not found');
         return;
       }
@@ -318,12 +284,10 @@ export default function AdminQRScanner({
       wrapper.setAttribute('data-testid', 'scanner-wrapper');
       wrapper.className = 'scanner-wrapper';
       
-      console.log('✅ Found scanner wrapper:', wrapper.id, wrapper.tagName);
-
       // Start scanner - ZXing will create video element automatically
       const result = await qrScannerService.startWebFallback(
         wrapper.id,
-        async (scanResult) => {
+        async (scanResult: { text: string }) => {
           const barCodeResult: BarCodeScannerResult = {
             type: 'qr' as any,
             data: scanResult.text,
@@ -335,7 +299,7 @@ export default function AdminQRScanner({
             handleBarCodeScanned(barCodeResult);
           }
         },
-        (error) => {
+        (error: Error) => {
           console.error('Web fallback scan error:', error);
           setCameraError(error.message || 'Camera scan error');
         }
@@ -344,7 +308,6 @@ export default function AdminQRScanner({
       if (result.success) {
         setUseWebFallback(true);
         setCameraReady(true);
-        console.log('✅ Admin web scanner initialized successfully');
         
         // Store cleanup function for later use
         scannerCleanupRef.current = async () => {
@@ -375,7 +338,6 @@ export default function AdminQRScanner({
           // Check if video element exists
           const videoEl = wrapperEl.querySelector('video') as HTMLVideoElement;
           if (videoEl) {
-            console.log('✅ Video element found, ensuring visibility...');
             // Ensure video is visible and properly styled
             videoEl.style.display = 'block';
             videoEl.style.visibility = 'visible';
@@ -399,43 +361,24 @@ export default function AdminQRScanner({
             // Check video status
             const hasStream = videoEl.srcObject !== null;
             const isPlaying = !videoEl.paused && !videoEl.ended && videoEl.readyState > 2;
-            console.log('📹 Video status check:', {
-              hasStream,
-              isPlaying,
-              paused: videoEl.paused,
-              readyState: videoEl.readyState,
-              videoWidth: videoEl.videoWidth,
-              videoHeight: videoEl.videoHeight,
-              offsetWidth: videoEl.offsetWidth,
-              offsetHeight: videoEl.offsetHeight,
-              visible: videoEl.offsetWidth > 0 && videoEl.offsetHeight > 0
-            });
             
             // If video has stream but isn't playing, try to play it
             if (hasStream && !isPlaying) {
-              console.log('⚠️ Video has stream but not playing, attempting to play...');
               videoEl.play().catch(err => {
                 console.error('Error playing video:', err);
               });
             }
-            
-            // Force video to be visible by checking computed styles
-            const computedStyle = window.getComputedStyle(videoEl);
-            console.log('📐 Computed styles:', {
-              display: computedStyle.display,
-              visibility: computedStyle.visibility,
-              opacity: computedStyle.opacity,
-              zIndex: computedStyle.zIndex,
-              position: computedStyle.position
-            });
           } else {
             console.warn('⚠️ Video element not found after initialization');
           }
         }, 500);
       } else {
-        console.error('❌ Failed to start web fallback:', result.error);
         setUseWebFallback(false);
-        setCameraError(result.error || 'Failed to start camera');
+        const permission = await cameraPermissionManager.getPermissionStatus(true);
+        setHasPermission(permission.status === 'granted');
+        setCameraError(permission.status === 'blocked'
+          ? permission.message || 'Camera permission is blocked.'
+          : result.error || 'Failed to start camera');
         // Try native scanner as fallback
         if (Platform.OS !== 'web') {
           setUseWebFallback(false);
@@ -448,7 +391,6 @@ export default function AdminQRScanner({
   };
 
   const resetScanner = useCallback(async () => {
-    console.log('Resetting scanner...');
     setScanned(false);
     setIsProcessing(false);
     setScanResult(null);
@@ -526,7 +468,6 @@ export default function AdminQRScanner({
   const scanCallback = useCallback(async ({ data }: BarCodeScannerResult) => {
     if (scanned || isProcessing) return;
 
-    console.log('QR Code scanned:', { data });
     setScanned(true);
     setIsProcessing(true);
 
@@ -573,29 +514,24 @@ export default function AdminQRScanner({
       'Are you sure you want to revoke this QR code?',
       [
         { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Revoke',
-          style: 'destructive',
-          onPress: async () => {
+          {
+            text: 'Revoke',
+            style: 'destructive',
+            onPress: async () => {
             try {
-            const success = await qrSystemService.revokeQR(
-              qrDetails.token,
-              user.id,
-              'Revoked by admin via scanner'
-            );
-            if (success) {
+            const result = await apiClient.post('/qr/admin', {
+              token: qrDetails.token,
+              reason: 'Revoked by admin via scanner',
+            }, { skipEventSegment: true });
+            if (result.success && (result.data as { success?: boolean }).success !== false) {
               Alert.alert('Success', 'QR code has been revoked');
-                // Refresh QR details
-                const updatedQr = await qrSystemService.getQRByToken(qrDetails.token);
-                if (updatedQr) {
-                  setQrDetails(updatedQr);
-                  setScanResult({
-                    ...scanResult,
-                    valid: false,
-                    status: 'revoked',
-                    message: 'QR code has been revoked'
-                  });
-                }
+              setQrDetails((current: QRCode | null) => current ? { ...current, status: 'revoked' } : current);
+              setScanResult({
+                ...scanResult,
+                valid: false,
+                status: 'revoked',
+                message: 'QR code has been revoked'
+              });
             } else {
               Alert.alert('Error', 'Failed to revoke QR code');
               }
@@ -613,20 +549,16 @@ export default function AdminQRScanner({
     if (!scanResult || !qrDetails || !user) return;
 
     try {
-    const success = await qrSystemService.suspendQR(qrDetails.token, user.id);
-    if (success) {
+    const result = await apiClient.post('/qr/admin/suspend', { token: qrDetails.token }, { skipEventSegment: true });
+    if (result.success && (result.data as { success?: boolean }).success !== false) {
       Alert.alert('Success', 'QR code has been suspended');
-        // Refresh QR details
-        const updatedQr = await qrSystemService.getQRByToken(qrDetails.token);
-        if (updatedQr) {
-          setQrDetails(updatedQr);
-          setScanResult({
-            ...scanResult,
-            valid: false,
-            status: 'suspended',
-            message: 'QR code is suspended'
-          });
-        }
+      setQrDetails((current: QRCode | null) => current ? { ...current, status: 'suspended' } : current);
+      setScanResult({
+        ...scanResult,
+        valid: false,
+        status: 'suspended',
+        message: 'QR code is suspended'
+      });
     } else {
       Alert.alert('Error', 'Failed to suspend QR code');
       }
@@ -640,20 +572,16 @@ export default function AdminQRScanner({
     if (!qrDetails || !user) return;
     
     try {
-      const success = await qrSystemService.reactivateQR(qrDetails.token, user.id);
-      if (success) {
+      const result = await apiClient.post('/qr/admin/reactivate', { token: qrDetails.token }, { skipEventSegment: true });
+      if (result.success && (result.data as { success?: boolean }).success !== false) {
         Alert.alert('Success', 'QR code has been reactivated');
-        // Refresh QR details
-        const updatedQr = await qrSystemService.getQRByToken(qrDetails.token);
-        if (updatedQr) {
-          setQrDetails(updatedQr);
-          setScanResult({
-            ...scanResult!,
-            valid: updatedQr.status === 'active',
-            status: updatedQr.status === 'active' ? 'valid' : 'suspended',
-            message: updatedQr.status === 'active' ? 'QR code is valid' : 'QR code is suspended'
-          });
-        }
+        setQrDetails((current: QRCode | null) => current ? { ...current, status: 'active' } : current);
+        setScanResult({
+          ...scanResult!,
+          valid: true,
+          status: 'valid',
+          message: 'QR code is valid'
+        });
       } else {
         Alert.alert('Error', 'Failed to reactivate QR code');
       }
@@ -1254,36 +1182,29 @@ export default function AdminQRScanner({
                                       text: 'Upgrade',
                                       onPress: async () => {
                                         try {
-                                          // Get pass type limits
-                                          const { data: limits, error: limitsError } = await supabase
-                                            .rpc('get_pass_type_limits', { p_pass_type: type });
-                                          
-                                          if (limitsError) throw limitsError;
-                                          
-                                          // Update pass
-                                          const { error: updateError } = await supabase
-                                            .from('passes')
-                                            .update({
-                                              pass_type: type,
-                                              max_meeting_requests: limits?.max_requests || 10,
-                                              max_boost_amount: limits?.max_boost || 200.00,
-                                              updated_at: new Date().toISOString()
-                                            })
-                                            .eq('id', qrDetails.pass_id);
-                                          
-                                          if (updateError) throw updateError;
+                                          const eventId = resolvedPayload?.pass?.eventId ||
+                                            qrDetails.qr_data?.eventId ||
+                                            qrDetails.qr_data?.event_id ||
+                                            qrDetails.display_data?.eventId ||
+                                            qrDetails.display_data?.event_id;
+                                          if (typeof eventId !== 'string' || !eventId) {
+                                            throw new Error('The pass event could not be determined.');
+                                          }
+
+                                          const update = await apiClient.post('/admin/passes', {
+                                            action: 'update',
+                                            eventId,
+                                            passId: qrDetails.pass_id,
+                                            passType: type,
+                                          }, { skipEventSegment: true });
+                                          if (!update.success) throw new Error(update.error);
                                           
                                           Alert.alert('Success', `Pass upgraded to ${type.toUpperCase()}`);
                                           
-                                          // Refresh QR details
-                                          const updatedQr = await qrSystemService.getQRByToken(qrDetails.token);
-                                          if (updatedQr) {
-                                            setQrDetails(updatedQr);
-                                            // Update display data
-                                            if (updatedQr.display_data) {
-                                              updatedQr.display_data.pass_type = type;
-                                            }
-                                          }
+                                          setQrDetails((current: QRCode | null) => current ? {
+                                            ...current,
+                                            display_data: { ...(current.display_data || {}), pass_type: type },
+                                          } : current);
                                         } catch (error: any) {
                                           console.error('Error upgrading pass:', error);
                                           Alert.alert('Error', error.message || 'Failed to upgrade pass');
@@ -1317,31 +1238,7 @@ export default function AdminQRScanner({
                   {qrDetails.status === 'suspended' && (
                     <TouchableOpacity 
                       style={[styles.actionButton, { borderColor: typeof colors.success === 'string' ? colors.success : colors.success.main, borderWidth: 1 }]} 
-                      onPress={async () => {
-                        if (!qrDetails || !user) return;
-                        try {
-                          const success = await qrSystemService.reactivateQR(qrDetails.token, user.id);
-                          if (success) {
-                            Alert.alert('Success', 'QR code has been reactivated');
-                            // Refresh QR details
-                            const updatedQr = await qrSystemService.getQRByToken(qrDetails.token);
-                            if (updatedQr) {
-                              setQrDetails(updatedQr);
-                              setScanResult({
-                                ...scanResult!,
-                                valid: updatedQr.status === 'active',
-                                status: updatedQr.status === 'active' ? 'valid' : 'suspended',
-                                message: updatedQr.status === 'active' ? 'QR code is valid' : 'QR code is suspended'
-                              });
-                            }
-                          } else {
-                            Alert.alert('Error', 'Failed to reactivate QR code');
-                          }
-                        } catch (error: any) {
-                          console.error('Error reactivating QR:', error);
-                          Alert.alert('Error', error.message || 'Failed to reactivate QR code');
-                        }
-                      }}
+                      onPress={handleReactivate}
                     >
                       <MaterialIcons name="play-circle-outline" size={20} color={typeof colors.success === 'string' ? colors.success : colors.success.main} />
                       <Text style={[styles.actionButtonText, { color: typeof colors.success === 'string' ? colors.success : colors.success.main }]}>Reactivate QR</Text>

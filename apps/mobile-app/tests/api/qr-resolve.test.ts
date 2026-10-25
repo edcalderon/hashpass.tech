@@ -146,4 +146,46 @@ describe("/api/qr/resolve", () => {
       user: { id: "hpass-user-1234", name: "Grace Hopper", username: null },
     });
   });
+
+  it("scopes user pass lookups to the requested event before selecting the newest pass", async () => {
+    const passQuery = queryResult({
+      data: {
+        id: "pass-bsl",
+        user_id: "user-1",
+        event_id: "bsl",
+        pass_type: "general",
+        status: "active",
+        pass_number: "BSL-GENERAL-0001",
+        max_meeting_requests: 10,
+        used_meeting_requests: 0,
+        max_boost_amount: 100,
+        used_boost_amount: 0,
+        created_at: "2026-10-01T00:00:00.000Z",
+        updated_at: "2026-10-01T00:00:00.000Z",
+      },
+      error: null,
+    });
+    mockSupabase.from
+      .mockReturnValueOnce(queryResult({ data: null, error: null }))
+      .mockReturnValueOnce(passQuery)
+      .mockReturnValueOnce(queryResult({
+        data: { id: "user-1", full_name: "Ada Lovelace", display_name: null },
+        error: null,
+      }));
+
+    const response = await post({
+      kind: "hpass_id",
+      hpassId: "user-1",
+      eventId: "bsl",
+      raw: "hpass://user-1?event=bsl",
+    });
+
+    expect(response.status).toBe(200);
+    expect(passQuery.eq).toHaveBeenCalledWith("event_id", "bsl");
+    await expect(response.json()).resolves.toMatchObject({
+      valid: true,
+      eventId: "bsl",
+      pass: { id: "pass-bsl", eventId: "bsl" },
+    });
+  });
 });

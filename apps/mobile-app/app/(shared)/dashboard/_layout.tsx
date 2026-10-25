@@ -19,6 +19,7 @@ import {
   useWindowDimensions,
   ActivityIndicator,
   Alert,
+  Modal,
   Dimensions,
   type DimensionValue,
 } from "react-native";
@@ -79,8 +80,7 @@ import { supabase } from "../../../lib/supabase";
 import { navigateDashboardBrandToLanding } from "../../../lib/dashboard-navigation";
 import { openTargetedDashboardDrawer } from "../../../lib/dashboard-drawer";
 import { parseAuthQrScan } from "../../../lib/auth-qr";
-import { qrScannerService } from "../../../lib/qr-scanner-service";
-import { resolveHashpassQrPayload } from "../../../lib/qr-payload-resolver";
+import type { HashpassQrResolution } from "../../../types/qr-payload.types";
 import { getAvailableEvents } from "../../../lib/event-detector";
 import { publicEventStatus } from "../../../lib/public-events";
 import {
@@ -1421,25 +1421,25 @@ function AuthenticatedDashboardLayout() {
   // DashboardLayout re-render, for the same reason as drawerOpenRef above.
   const drawerOpenControlRef: DrawerOpenControlRef = useRef(null);
   const [androidQrScannerVisible, setAndroidQrScannerVisible] = useState(false);
+  const [hashpassQrResult, setHashpassQrResult] = useState<HashpassQrResolution | null>(null);
+  const [hashpassQrError, setHashpassQrError] = useState<string | null>(null);
   const handleHashpassRawScan = useCallback(async (data: string) => {
+    // Keep camera/Expo imports out of the dashboard module graph. Besides
+    // making the drawer lighter, this prevents native camera shims from
+    // crashing web/Jest consumers that never open the scanner.
+    const [{ qrScannerService }, { resolveHashpassQrPayload }] = await Promise.all([
+      import("../../../lib/qr-scanner-service"),
+      import("../../../lib/qr-payload-resolver"),
+    ]);
     const parsed = qrScannerService.parseHashpassPayload(data);
     if (!parsed.isValid || parsed.kind === "qr_token") return false;
     try {
       const resolved = await resolveHashpassQrPayload(parsed);
-      const details = [
-        resolved.user?.name || resolved.user?.username,
-        resolved.pass?.number ? `Pass ${resolved.pass.number}` : null,
-        resolved.pass?.type ? resolved.pass.type.toUpperCase() : null,
-        resolved.network ? `Network: ${resolved.network}` : null,
-        resolved.address ? `Address: ${resolved.address}` : null,
-      ].filter(Boolean).join("\n");
-      Alert.alert(
-        resolved.valid ? "HashPass identified" : "QR not valid",
-        `${resolved.message}${details ? `\n\n${details}` : ""}`,
-        [{ text: "Done" }],
-      );
+      setHashpassQrError(null);
+      setHashpassQrResult(resolved);
     } catch (error: any) {
-      Alert.alert("QR unavailable", error?.message || "Unable to resolve this QR code.");
+      setHashpassQrResult(null);
+      setHashpassQrError(error?.message || "Unable to resolve this QR code.");
     }
     return true;
   }, []);
@@ -2123,6 +2123,58 @@ function AuthenticatedDashboardLayout() {
                   }}
                 />
               )}
+              {(hashpassQrResult || hashpassQrError) && (
+                <Modal
+                  visible
+                  transparent
+                  animationType="fade"
+                  onRequestClose={() => {
+                    setHashpassQrResult(null);
+                    setHashpassQrError(null);
+                  }}
+                >
+                  <View style={styles.qrResultBackdrop}>
+                    <View style={styles.qrResultCard}>
+                      <Text style={styles.qrResultTitle}>
+                        {hashpassQrError
+                          ? "QR unavailable"
+                          : hashpassQrResult?.valid
+                            ? "HashPass identified"
+                            : "QR not valid"}
+                      </Text>
+                      <Text style={styles.qrResultMessage}>
+                        {hashpassQrError || hashpassQrResult?.message}
+                      </Text>
+                      {hashpassQrResult?.user && (
+                        <Text style={styles.qrResultDetail}>
+                          User: {hashpassQrResult.user.name || hashpassQrResult.user.username || hashpassQrResult.user.id}
+                        </Text>
+                      )}
+                      {hashpassQrResult?.pass && (
+                        <Text style={styles.qrResultDetail}>
+                          Pass: {hashpassQrResult.pass.number || hashpassQrResult.pass.id} · {hashpassQrResult.pass.type?.toUpperCase() || "UNKNOWN"}
+                        </Text>
+                      )}
+                      {hashpassQrResult?.network && (
+                        <Text style={styles.qrResultDetail}>Network: {hashpassQrResult.network}</Text>
+                      )}
+                      {hashpassQrResult?.address && (
+                        <Text selectable style={styles.qrResultDetail}>Address: {hashpassQrResult.address}</Text>
+                      )}
+                      <TouchableOpacity
+                        style={styles.qrResultClose}
+                        accessibilityRole="button"
+                        onPress={() => {
+                          setHashpassQrResult(null);
+                          setHashpassQrError(null);
+                        }}
+                      >
+                        <Text style={styles.qrResultCloseText}>Done</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </Modal>
+              )}
             </View>
           </ScrollProvider>
         </NotificationProvider>
@@ -2147,6 +2199,50 @@ const getStyles = (
   const brandRed = uiTokens.colors.light.accent;
 
   return StyleSheet.create({
+    qrResultBackdrop: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      padding: 24,
+      backgroundColor: uiTokens.colors[isDark ? "dark" : "light"].overlay,
+    },
+    qrResultCard: {
+      width: "100%",
+      maxWidth: 440,
+      borderRadius: uiTokens.radius.card,
+      padding: 24,
+      backgroundColor: colors.background.default,
+      borderWidth: 1,
+      borderColor: colors.divider,
+      gap: 10,
+    },
+    qrResultTitle: {
+      fontSize: 20,
+      fontWeight: "700",
+      color: colors.text.primary,
+    },
+    qrResultMessage: {
+      fontSize: 15,
+      lineHeight: 22,
+      color: colors.text.primary,
+    },
+    qrResultDetail: {
+      fontSize: 14,
+      lineHeight: 20,
+      color: colors.text.secondary,
+    },
+    qrResultClose: {
+      alignSelf: "flex-end",
+      marginTop: 8,
+      borderRadius: uiTokens.radius.pill,
+      paddingHorizontal: 20,
+      paddingVertical: 12,
+      backgroundColor: colors.primary,
+    },
+    qrResultCloseText: {
+      color: colors.background.default,
+      fontWeight: "700",
+    },
     container: {
       flex: 1,
       backgroundColor: colors.background.default,

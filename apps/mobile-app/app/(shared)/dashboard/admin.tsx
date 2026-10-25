@@ -65,9 +65,9 @@ const formatAdminDate = (value?: string | null, includeTime = false) => {
   if (!value) return "—";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "—";
-  return date.toLocaleDateString(undefined, includeTime
-    ? { dateStyle: "medium", timeStyle: "short" }
-    : { dateStyle: "medium" });
+  return includeTime
+    ? date.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })
+    : date.toLocaleDateString(undefined, { dateStyle: "medium" });
 };
 
 interface Pass {
@@ -2386,7 +2386,7 @@ export default function AdminPanel() {
         visible={showQRScanner}
         onClose={() => setShowQRScanner(false)}
         onScanSuccess={handleQRScanSuccess}
-        onPassResolved={(passId) => { void handleScannedPassResolved(passId); }}
+        onPassResolved={(passId: string) => { void handleScannedPassResolved(passId); }}
       />
     </View>
   );

@@ -61,4 +61,16 @@ describe('web camera permissions', () => {
     expect(result.canAskAgain).toBe(false);
     expect(mockGetUserMedia).toHaveBeenCalledTimes(1);
   });
+
+  it('rechecks navigator permission when the camera device is unavailable', async () => {
+    mockGetUserMedia.mockRejectedValue({ name: 'NotFoundError' });
+    mockQuery.mockResolvedValue({ state: 'granted' });
+
+    const result = await cameraPermissionManager.requestWithFallback();
+
+    expect(result.status).toBe('undetermined');
+    expect(result.canAskAgain).toBe(true);
+    expect(result.message).toContain('No camera was found');
+    expect(mockQuery).toHaveBeenCalledWith({ name: 'camera' });
+  });
 });

@@ -6,10 +6,10 @@ import { useTheme } from '../hooks/useTheme';
 import { useAuth } from '../hooks/useAuth';
 import { qrSystemService, QRScanResult, QRCode } from '../lib/qr-system';
 import { cameraPermissionManager } from '../lib/camera-permissions';
-import { isAdmin } from '../lib/admin-utils';
 import { qrScannerService } from '../lib/qr-scanner-service';
 import { useQrCameraSession } from '../hooks/qr-camera-machine';
 import { BarCodeScanner, type BarCodeScannerResult } from '../lib/barcode-scanner-compat';
+import { ActionButton } from '@hashpass/ui/primitives';
 
 // Dynamic import for web fallback
 // Using .web.ts extension ensures Metro only resolves this on web
@@ -81,7 +81,17 @@ export default function QRScanner({
       
       // Check admin status
       if (user?.id) {
-        isAdmin(user.id).then(setIsUserAdmin);
+        // Resolve roles through the provider-aware backend endpoint. The
+        // browser auth id is not necessarily the Supabase UUID used by the
+        // database, so querying user_roles directly can return a 400.
+        import('../lib/admin-access')
+          .then(({ getCurrentAdminAccess }) => getCurrentAdminAccess())
+          .then((access) => {
+            setIsUserAdmin(Boolean(access.globalRole) || access.eventRoles.length > 0);
+          })
+          .catch(() => setIsUserAdmin(false));
+      } else {
+        setIsUserAdmin(false);
       }
       
       // On web, enable fallback and initialize after permission is granted
@@ -126,7 +136,6 @@ export default function QRScanner({
     try {
       sendCameraEvent({ type: 'CHECK' });
       const result = await cameraPermissionManager.getPermissionStatus(forceRefresh);
-      console.log('Permission status:', result);
       
       const isGranted = result.status === 'granted';
       setHasPermission(isGranted);
@@ -160,7 +169,6 @@ export default function QRScanner({
 
   const requestCameraPermission = async (forceFresh: boolean = true) => {
     try {
-      console.log('Requesting camera permission (forceFresh:', forceFresh, ')...');
       sendCameraEvent({ type: 'REQUEST' });
       setHasPermission(null); // Show loading state
       
@@ -197,7 +205,6 @@ export default function QRScanner({
       
       // Use permission manager with force fresh to avoid cache issues
       const result = await cameraPermissionManager.requestWithFallback(forceFresh);
-      console.log('Permission request result:', result);
       
       // Check if result indicates camera in use
       if (result.message?.toLowerCase().includes('being used') || result.message?.toLowerCase().includes('in use')) {
@@ -232,7 +239,6 @@ export default function QRScanner({
         const verified = Platform.OS === 'web'
           ? result
           : await cameraPermissionManager.getPermissionStatus(false);
-        console.log('Verified permission status:', verified);
         setCameraError(null);
         setHasPermission(verified.status === 'granted');
         sendCameraEvent(verified.status === 'granted'
@@ -427,24 +433,19 @@ export default function QRScanner({
         await new Promise(resolve => setTimeout(resolve, 200));
         attempts++;
         
-        console.log(`🔍 Attempt ${attempts}/${maxAttempts} to find scanner wrapper...`);
-        
         // Try to get wrapper from ref
         if (scannerWrapperRef.current) {
           const refElement = scannerWrapperRef.current as any;
-          console.log('📦 Ref element type:', typeof refElement, 'has _nativeNode:', !!refElement?._nativeNode);
           
           // React Native Web exposes DOM via _nativeNode
           if (refElement?._nativeNode) {
             wrapper = refElement._nativeNode;
-            console.log('✅ Found wrapper via _nativeNode');
             break;
           }
           
           // Or it might be the element directly
           if (refElement?.nodeType === 1) {
             wrapper = refElement;
-            console.log('✅ Found wrapper directly');
             break;
           }
           
@@ -453,12 +454,9 @@ export default function QRScanner({
             const div = refElement.querySelector('div');
             if (div && div.nodeType === 1) {
               wrapper = div;
-              console.log('✅ Found wrapper via querySelector on ref');
               break;
             }
           }
-        } else {
-          console.log('⚠️ scannerWrapperRef.current is null');
         }
         
         // Fallback: try querySelector
@@ -467,21 +465,12 @@ export default function QRScanner({
                  document.getElementById('scanner-wrapper');
         
         if (wrapper) {
-          console.log('✅ Found wrapper via querySelector');
           break;
-        } else {
-          console.log('⚠️ querySelector found nothing');
         }
       }
       
       if (!wrapper) {
         console.error('❌ Scanner wrapper not found after', maxAttempts, 'attempts');
-        console.error('Available elements:', {
-          byDataTestId: document.querySelector('[data-testid="scanner-wrapper"]'),
-          byClass: document.querySelector('.scanner-wrapper'),
-          byId: document.getElementById('scanner-wrapper'),
-          refCurrent: scannerWrapperRef.current
-        });
         if (onScanError) {
           onScanError('Failed to initialize camera - wrapper not found');
         }
@@ -497,8 +486,6 @@ export default function QRScanner({
       wrapper.setAttribute('data-testid', 'scanner-wrapper');
       wrapper.classList.add('scanner-wrapper');
       
-      console.log('✅ Found scanner wrapper:', wrapper.id, wrapper.tagName);
-
       // Start scanner - ZXing will create video element automatically
       const result = await qrScannerService.startWebFallback(
         wrapper.id,
@@ -526,9 +513,7 @@ export default function QRScanner({
         setUseWebFallback(true);
         setCameraError(null);
         sendCameraEvent({ type: 'SCANNING' });
-        console.log('✅ Web scanner initialized successfully');
       } else {
-        console.error('Failed to start web fallback:', result.error);
         setUseWebFallback(false);
         setCameraError(result.error || 'Unable to start the camera scanner.');
         sendCameraEvent({ type: 'ERROR', message: result.error || 'Unable to start the camera scanner.' });
@@ -612,7 +597,6 @@ export default function QRScanner({
             <TouchableOpacity 
               style={styles.button} 
               onPress={async () => {
-                console.log('Grant Permission button pressed - forcing fresh check');
                 await requestCameraPermission(true); // Force fresh to avoid cache
               }}
               activeOpacity={0.7}
@@ -622,7 +606,6 @@ export default function QRScanner({
             <TouchableOpacity 
               style={[styles.button, styles.buttonSecondary]} 
               onPress={async () => {
-                console.log('Show Instructions button pressed');
                 if (Platform.OS === 'web') {
                   // Show comprehensive instructions directly
                   cameraPermissionManager.showSettingsAlert();
@@ -688,7 +671,6 @@ export default function QRScanner({
                   
                   // On web, try fallback to ZXing
                   if (Platform.OS === 'web' && webQRScannerFallback?.isAvailable()) {
-                    console.log('Expo barcode scanner failed, trying ZXing fallback...');
                     setUseWebFallback(true);
                     // Initialize fallback after state update
                     setTimeout(() => {
@@ -734,9 +716,12 @@ export default function QRScanner({
               <View style={styles.cameraErrorBanner} pointerEvents="auto">
                 <Ionicons name="alert-circle" size={20} color={colors.error} />
                 <Text style={styles.cameraErrorText}>{cameraError}</Text>
-                <TouchableOpacity onPress={() => initializeWebFallback()} style={styles.retryCameraButton}>
-                  <Text style={styles.retryCameraButtonText}>Retry</Text>
-                </TouchableOpacity>
+                <ActionButton
+                  mode={isDark ? 'dark' : 'light'}
+                  variant="secondary"
+                  label="Retry"
+                  onPress={() => initializeWebFallback()}
+                />
               </View>
             )}
 
@@ -931,16 +916,6 @@ const getStyles = (isDark: boolean, colors: any) =>
       flex: 1,
       color: uiPalette(isDark).onAccent,
       fontSize: 13,
-    },
-    retryCameraButton: {
-      paddingHorizontal: 12,
-      paddingVertical: 8,
-      borderRadius: uiTokens.radius.pill,
-      backgroundColor: colors.primary,
-    },
-    retryCameraButtonText: {
-      color: uiPalette(isDark).onAccent,
-      fontWeight: '600',
     },
     overlay: {
       ...StyleSheet.absoluteFillObject,
