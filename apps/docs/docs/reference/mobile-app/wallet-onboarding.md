@@ -78,7 +78,7 @@ therefore passes `dbUserId` (and holds the gate at `checking` while auth is stil
 ## 3. Onboarding: create-only vault wizard
 
 `WalletVaultFlow` runs the machine defined in
-[`hooks/wallet-vault-machine.ts`](../../../../apps/mobile-app/hooks/wallet-vault-machine.ts):
+[`apps/mobile-app/hooks/wallet-vault-machine.ts`](https://github.com/hashpass-tech/hashpass.tech/blob/main/apps/mobile-app/hooks/wallet-vault-machine.ts):
 
 ```mermaid
 stateDiagram-v2
