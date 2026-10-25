@@ -1300,6 +1300,16 @@ export default function Explorer({
       ? translate("explore.rework.pastEvent", "PAST EVENT")
       : event.shortName ||
         (event.series === "BSL On Tour" ? "BSL" : event.series || "HASHPASS");
+    const normalizedEventTitle = event.title.toLocaleLowerCase();
+    const eventBadgeLabels = archive
+      ? [translate("explore.rework.archive", "ARCHIVE")]
+      : event.id === "colombia2026" ||
+          normalizedEventTitle.includes("blockchain summit")
+        ? ["BSL", "SUMMIT"]
+        : event.id === "cbweek2026" ||
+            normalizedEventTitle.includes("blockchain week")
+          ? ["CBW", "CONFERENCE"]
+          : [eventBadgeLabel];
     const cardStyle =
       mode === "grid"
         ? wideGrid
@@ -1354,23 +1364,28 @@ export default function Explorer({
               />
             )}
             <View style={styles.eventCoverShade} />
-            <View style={styles.eventBadge}>
-              <Badge mode={isDark ? "dark" : "light"} tone="onMedia" compact>
-                {archive
-                  ? translate("explore.rework.archive", "ARCHIVE")
-                  : eventBadgeLabel}
-              </Badge>
+            <View style={styles.eventBadges}>
+              {eventBadgeLabels.map((label) => (
+                <Badge
+                  key={`${event.id}-${label}`}
+                  mode={isDark ? "dark" : "light"}
+                  tone="onMedia"
+                  compact
+                >
+                  {label}
+                </Badge>
+              ))}
             </View>
           </Pressable>
           <IconButton
             mode="dark"
-            accentColor={colors.primary}
+            accentColor="#fff"
             revealLabel
             size={30}
             label={`${
               bookmarked
                 ? translate("explore.rework.removeBookmark", "Remove bookmark")
-                : translate("explore.rework.bookmark", "Add to bookmarks")
+                : translate("explore.rework.bookmark", "Bookmark")
             } ${event.title}`}
             style={styles.bookmarkButton}
             accessibilityState={{ selected: bookmarked }}
@@ -2534,10 +2549,13 @@ const getStyles = (isDark: boolean, colors: any) =>
       ...StyleSheet.absoluteFillObject,
       backgroundColor: uiTokens.effects.mediaOverlayGlass,
     },
-    eventBadge: {
+    eventBadges: {
       position: "absolute",
-      top: 10,
+      bottom: 9,
       left: 9,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
       maxWidth: "88%",
     },
     bookmarkButton: {

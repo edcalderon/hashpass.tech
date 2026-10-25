@@ -57,7 +57,7 @@ it('renders the real Explorer and gates bookmarks and rooms with an in-place for
   await act(async () => { view = create(<EventsScreen />); });
   expect(content()).not.toContain('Hidden shell');
   expect(content()).toContain('Explorer Events');
-  press('Add to bookmarks Colombia conference');
+  press('Bookmark Colombia conference');
   expect(view.root.findByType('EmbeddedAuth' as any).props.embedded).toBe(true);
   expect(mockSaveBookmarks).not.toHaveBeenCalled();
   expect(mockPush).not.toHaveBeenCalled();
@@ -84,11 +84,11 @@ it('keeps bookmark and room actions independent from card selection', async () =
   ); });
 
   const bookmark = view.root.findAllByType(IconButton).find(
-    node => node.props.label === 'Add to bookmarks Colombia conference',
+    node => node.props.label === 'Bookmark Colombia conference',
   );
   expect(bookmark).toBeDefined();
   expect(bookmark?.props.revealLabel).toBe(true);
-  press('Add to bookmarks Colombia conference');
+  press('Bookmark Colombia conference');
   expect(onSelectEvent).not.toHaveBeenCalled();
   expect(mockSaveBookmarks).toHaveBeenCalledWith(['one']);
 
@@ -134,6 +134,28 @@ it('uses a spacious two-column grid for wide screens and keeps the compact grid 
   ); });
   press('Grid layout');
   expect(view.root.findAll((node) => hasStyle(node, 'minHeight', 224))).not.toHaveLength(0);
+});
+it('shows brand and event-family badges for summit and blockchain week cards', async () => {
+  mockLoggedIn = true;
+  await act(async () => { view = create(
+    <Explorer
+      events={[
+        { ...mockEvents[1], id: 'colombia2026', title: 'Blockchain Summit Latam Colombia 2026' },
+        { ...mockEvents[1], id: 'cbweek2026', title: 'Colombia Blockchain Week 2026' },
+      ]}
+      selectedEvent={null}
+      onSelectEvent={() => {}}
+      onResetSelection={() => {}}
+      isLoggedIn
+      dbUserId="user-1"
+      isGlobalExplorer
+    />
+  ); });
+
+  expect(content()).toContain('BSL');
+  expect(content()).toContain('SUMMIT');
+  expect(content()).toContain('CBW');
+  expect(content()).toContain('CONFERENCE');
 });
 it('retains the shared search when dismissing registration and allows real public event navigation', async () => {
   await act(async () => { view = create(<EventsScreen />); });
