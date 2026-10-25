@@ -99,6 +99,42 @@ it('keeps bookmark and room actions independent from card selection', async () =
     params: { eventId: 'one' },
   });
 });
+it('uses a spacious two-column grid for wide screens and keeps the compact grid for medium screens', async () => {
+  mockLoggedIn = true;
+  await act(async () => { view = create(
+    <Explorer
+      events={[mockEvents[1], mockEvents[2]]}
+      selectedEvent={null}
+      onSelectEvent={() => {}}
+      onResetSelection={() => {}}
+      isLoggedIn
+      dbUserId="user-1"
+      isGlobalExplorer
+    />,
+  ); });
+
+  press('Grid layout');
+  const hasStyle = (node: any, key: string, value: unknown) => {
+    const entries = Array.isArray(node.props?.style) ? node.props.style : [node.props?.style];
+    return entries.some((entry: any) => entry?.[key] === value);
+  };
+  expect(view.root.findAll((node) => hasStyle(node, 'minHeight', 322))).not.toHaveLength(0);
+
+  setViewport(640);
+  await act(async () => { view = create(
+    <Explorer
+      events={[mockEvents[1], mockEvents[2]]}
+      selectedEvent={null}
+      onSelectEvent={() => {}}
+      onResetSelection={() => {}}
+      isLoggedIn
+      dbUserId="user-1"
+      isGlobalExplorer
+    />
+  ); });
+  press('Grid layout');
+  expect(view.root.findAll((node) => hasStyle(node, 'minHeight', 224))).not.toHaveLength(0);
+});
 it('retains the shared search when dismissing registration and allows real public event navigation', async () => {
   await act(async () => { view = create(<EventsScreen />); });
   const input = view.root.findAllByType(TextInput)[0];

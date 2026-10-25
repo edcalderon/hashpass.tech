@@ -17,6 +17,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  useWindowDimensions,
   View,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
@@ -180,6 +181,7 @@ export default function Explorer({
   const router = useRouter();
   const styles = getStyles(isDark, colors);
   const { t: translate } = useTranslation();
+  const { width: viewportWidth } = useWindowDimensions();
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
@@ -463,6 +465,8 @@ export default function Explorer({
     sortBy,
   });
   const layout = getExplorerLayout(mode);
+  const wideGrid = mode === "grid" && viewportWidth >= 760;
+  const gridCoverSize = wideGrid ? 176 : layout.coverSize;
   const selectedHeroSlides = useMemo<ResolvedEventBannerSlide[]>(
     () => (selectedEvent ? getEventBannerSlides(selectedEvent) : []),
     [selectedEvent],
@@ -1028,7 +1032,7 @@ export default function Explorer({
             {
               key: "grid" as const,
               icon: "apps",
-              label: translate("explore.rework.grid", "3×3 grid"),
+              label: translate("explore.rework.grid", "Grid"),
             },
             {
               key: "rail" as const,
@@ -1298,7 +1302,9 @@ export default function Explorer({
         (event.series === "BSL On Tour" ? "BSL" : event.series || "HASHPASS");
     const cardStyle =
       mode === "grid"
-        ? styles.gridCard
+        ? wideGrid
+          ? styles.gridCardWide
+          : styles.gridCard
         : mode === "rail"
           ? styles.railCard
           : styles.listCard;
@@ -1325,14 +1331,14 @@ export default function Explorer({
           style={[
             styles.eventMedia,
             mode !== "list" && styles.wideEventMedia,
-            { height: layout.coverSize },
+            { height: mode === "grid" ? gridCoverSize : layout.coverSize },
           ]}
         >
           <Pressable
             style={[
               styles.eventCover,
               {
-                height: layout.coverSize,
+                height: mode === "grid" ? gridCoverSize : layout.coverSize,
                 backgroundColor: event.color || colors.primary,
               },
             ]}
@@ -1377,20 +1383,29 @@ export default function Explorer({
             />
           </IconButton>
         </View>
-        <View style={styles.eventBody}>
+        <View style={[styles.eventBody, wideGrid && styles.gridCardWideBody]}>
           <Pressable
             style={styles.eventBodyContent}
             onPress={() => selectEvent(event.id)}
             accessibilityRole="button"
             accessibilityLabel={`Select ${event.title}`}
           >
-            <HoverText style={styles.eventTitle} numberOfLines={2}>
+            <HoverText
+              style={[styles.eventTitle, wideGrid && styles.gridCardWideTitle]}
+              numberOfLines={2}
+            >
               {event.title}
             </HoverText>
-            <HoverText style={styles.eventMeta} numberOfLines={1}>
+            <HoverText
+              style={[styles.eventMeta, wideGrid && styles.gridCardWideMeta]}
+              numberOfLines={1}
+            >
               {dateLabel}
             </HoverText>
-            <HoverText style={styles.eventCity} numberOfLines={1}>
+            <HoverText
+              style={[styles.eventCity, wideGrid && styles.gridCardWideCity]}
+              numberOfLines={1}
+            >
               {event.subtitle}
             </HoverText>
           </Pressable>
@@ -1432,6 +1447,7 @@ export default function Explorer({
               style={[
                 styles.skeletonCard,
                 mode === "grid" && styles.skeletonGrid,
+                wideGrid && styles.skeletonGridWide,
               ]}
             />
           ))}
@@ -2485,6 +2501,12 @@ const getStyles = (isDark: boolean, colors: any) =>
       flexDirection: "column",
       borderRadius: uiTokens.radius.media,
     },
+    gridCardWide: {
+      width: "48%",
+      minHeight: 322,
+      flexDirection: "column",
+      borderRadius: uiTokens.radius.card,
+    },
     railCard: {
       width: 250,
       minHeight: 280,
@@ -2553,6 +2575,7 @@ const getStyles = (isDark: boolean, colors: any) =>
       padding: 13,
       gap: 5,
     },
+    gridCardWideBody: { padding: 17, gap: 8 },
     eventBodyContent: { minWidth: 0, gap: 5 },
     eventTitle: {
       color: colors.text.primary,
@@ -2560,13 +2583,16 @@ const getStyles = (isDark: boolean, colors: any) =>
       lineHeight: 18,
       fontWeight: "800",
     },
+    gridCardWideTitle: { fontSize: 17, lineHeight: 22 },
     eventMeta: {
       color: colors.primary,
       fontSize: 12,
       lineHeight: 16,
       fontWeight: "700",
     },
+    gridCardWideMeta: { fontSize: 13, lineHeight: 18 },
     eventCity: { color: colors.text.secondary, fontSize: 12, lineHeight: 16 },
+    gridCardWideCity: { fontSize: 13, lineHeight: 18 },
     skeletonCard: {
       height: 136,
       borderRadius: uiTokens.radius.media,
@@ -2576,6 +2602,7 @@ const getStyles = (isDark: boolean, colors: any) =>
       opacity: 0.72,
     },
     skeletonGrid: { width: "31%", height: 224 },
+    skeletonGridWide: { width: "48%", height: 322 },
     emptyState: {
       alignItems: "center",
       paddingHorizontal: 24,
