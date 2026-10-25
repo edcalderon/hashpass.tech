@@ -1,3 +1,18 @@
+## [1.9.146](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.145...v1.9.146) (2026-10-25)
+
+
+### Bug Fixes
+
+* keep QR ticket scans read only ([8793548](https://github.com/hashpass-tech/hashpass.tech/commit/87935484ec2358da0079bfb1ba47380592069a41))
+### Release Highlights
+- keep QR ticket scans read only
+
+### Release scope
+- Compared with: `v1.9.145` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+
 ## [1.9.145](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.144...v1.9.145) (2026-10-25)
 ### Released
 - harden QR camera permission flow

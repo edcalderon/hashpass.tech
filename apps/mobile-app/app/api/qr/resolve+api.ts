@@ -8,6 +8,7 @@ import type {
   HashpassQrKind,
   HashpassQrResolution,
   ParsedHashpassQrPayload,
+  ResolvedQrRecord,
 } from "@/types/qr-payload.types";
 import type { PassRecord } from "@/types/qr-api.types";
 
@@ -138,7 +139,37 @@ export async function POST(request: Request) {
     return Response.json(response);
   }
 
-  const pass = await findPass(supabase, payload);
+  let lookupPayload = payload;
+  let qr: ResolvedQrRecord | null = null;
+  if (payload.kind === "qr_token" && payload.token) {
+    const qrResult = await supabase
+      .from("qr_codes")
+      .select("id,qr_type,pass_id,display_data,status,expires_at")
+      .eq("token", payload.token)
+      .maybeSingle();
+    if (qrResult.error || !qrResult.data) {
+      return Response.json({
+        valid: false,
+        kind: payload.kind,
+        message: "QR code not found",
+        eventId: payload.eventId,
+      } satisfies HashpassQrResolution, { status: 404 });
+    }
+    const qrRecord = qrResult.data as ResolvedQrRecord;
+    qr = qrRecord;
+    const displayEvent = typeof qrRecord.display_data?.event_id === "string"
+      ? qrRecord.display_data.event_id
+      : typeof qrRecord.display_data?.eventId === "string"
+        ? qrRecord.display_data.eventId
+        : undefined;
+    lookupPayload = {
+      ...payload,
+      passId: payload.passId || qrRecord.pass_id || undefined,
+      eventId: payload.eventId || displayEvent,
+    };
+  }
+
+  const pass = await findPass(supabase, lookupPayload);
   if (!pass) {
     if (payload.kind === "hpass_id" && payload.hpassId) {
       const user = await findProfile(supabase, payload.hpassId);
@@ -155,8 +186,9 @@ export async function POST(request: Request) {
     const response: HashpassQrResolution = {
       valid: false,
       kind: payload.kind,
-      message: "No HashPass user or pass matched this QR code",
-      eventId: payload.eventId,
+      message: qr ? "QR code is not linked to an available pass" : "No HashPass user or pass matched this QR code",
+      eventId: lookupPayload.eventId,
+      qr: qr ? { id: qr.id, type: qr.qr_type || null, status: qr.status || null, expiresAt: qr.expires_at || null } : undefined,
     };
     return Response.json(response, { status: 404 });
   }
@@ -170,11 +202,16 @@ export async function POST(request: Request) {
   }
 
   const user = await findProfile(supabase, pass.user_id);
+  const qrExpired = Boolean(qr?.expires_at && Date.parse(qr.expires_at) < Date.now());
+  const qrUsable = !qr || (qr.status === "active" && !qrExpired);
   const response: HashpassQrResolution = {
-    valid: pass.status === "active",
+    valid: pass.status === "active" && qrUsable,
     kind: payload.kind,
-    message: pass.status === "active" ? "HashPass pass is valid" : `HashPass pass is ${pass.status || "unavailable"}`,
+    message: !qrUsable
+      ? `QR code is ${qrExpired ? "expired" : qr?.status || "unavailable"}`
+      : pass.status === "active" ? "HashPass pass is valid" : `HashPass pass is ${pass.status || "unavailable"}`,
     eventId: pass.event_id,
+    qr: qr ? { id: qr.id, type: qr.qr_type || null, status: qr.status || null, expiresAt: qr.expires_at || null } : undefined,
     user,
     pass: {
       id: pass.id,

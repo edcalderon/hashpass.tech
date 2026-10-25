@@ -364,20 +364,15 @@ class QRScannerService {
     raw: string;
   } {
     if (!data || typeof data !== 'string') {
-      console.warn('⚠️ parseQRData: Invalid input data');
       return { isValid: false, raw: data || '' };
     }
 
     const trimmed = data.trim();
-    console.log('🔍 Parsing QR data:', trimmed.substring(0, 100));
-
     try {
       // Try parsing as JSON first (most common format)
       const parsed = JSON.parse(trimmed);
-      console.log('📦 Parsed as JSON:', parsed);
       
       if (parsed.token) {
-        console.log('✅ Found token in JSON:', parsed.token);
         return {
           token: parsed.token,
           type: parsed.type || 'hashpass_qr',
@@ -388,7 +383,6 @@ class QRScannerService {
       
       // Check if it's a hashpass_qr format
       if (parsed.type === 'hashpass_qr' && parsed.token) {
-        console.log('✅ Found hashpass_qr token:', parsed.token);
         return {
           token: parsed.token,
           type: parsed.type,
@@ -397,10 +391,8 @@ class QRScannerService {
         };
       }
       
-      console.warn('⚠️ JSON parsed but no token found:', parsed);
     } catch (jsonError) {
       // Not JSON, try other formats
-      console.log('📝 Not JSON, trying other formats...');
       
       // Try URL parsing
       if (trimmed.includes('token=')) {
@@ -408,7 +400,6 @@ class QRScannerService {
           const url = new URL(trimmed);
           const token = url.searchParams.get('token');
           if (token) {
-            console.log('✅ Found token in URL:', token);
             return {
               token,
               type: 'hashpass_qr',
@@ -416,15 +407,13 @@ class QRScannerService {
               raw: data,
             };
           }
-        } catch (urlError) {
+        } catch {
           // Invalid URL, continue to next check
-          console.log('⚠️ URL parsing failed:', urlError);
         }
       }
 
       // Check if it looks like a raw token (starts with QR-)
       if (trimmed.startsWith('QR-')) {
-        console.log('✅ Detected raw QR token format');
         return {
           token: trimmed,
           type: 'hashpass_qr',
@@ -435,7 +424,6 @@ class QRScannerService {
 
       // Assume any string longer than 10 chars is a token
       if (trimmed.length > 10) {
-        console.log('✅ Treating as raw token (length > 10)');
         return {
           token: trimmed,
           type: 'hashpass_qr',
@@ -444,7 +432,6 @@ class QRScannerService {
         };
       }
       
-      console.warn('⚠️ Could not parse QR data, length:', trimmed.length);
     }
 
     return {

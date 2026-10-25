@@ -768,7 +768,6 @@ export default function AdminQRScanner({
             }
           }}
           onError={(error: Error) => {
-            console.error('QR Scanner error:', error);
             setCameraError(error.message);
           }}
           title="Admin QR Scanner"

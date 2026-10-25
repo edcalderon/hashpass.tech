@@ -150,6 +150,108 @@ describe("/api/qr/resolve", () => {
     expect(mockSupabase.from).not.toHaveBeenCalled();
   });
 
+  it("resolves a ticket token through the backend without consuming the QR", async () => {
+    const qrQuery = queryResult({
+      data: {
+        id: "qr-1",
+        qr_type: "ticket",
+        pass_id: "pass-1",
+        display_data: { event_id: "colombia2026" },
+        status: "active",
+        expires_at: "2099-01-01T00:00:00.000Z",
+      },
+      error: null,
+    });
+    const passQuery = queryResult({
+      data: {
+        id: "pass-1",
+        user_id: "user-1",
+        event_id: "colombia2026",
+        pass_type: "general",
+        status: "active",
+        pass_number: "BSL-GENERAL-0001",
+        max_meeting_requests: 10,
+        used_meeting_requests: 0,
+        max_boost_amount: 100,
+        used_boost_amount: 0,
+        created_at: "2026-10-01T00:00:00.000Z",
+        updated_at: "2026-10-01T00:00:00.000Z",
+      },
+      error: null,
+    });
+    mockSupabase.from
+      .mockReturnValueOnce(qrQuery)
+      .mockReturnValueOnce(passQuery)
+      .mockReturnValueOnce(queryResult({ data: { user_id: "user-1", full_name: "Ada Lovelace" }, error: null }));
+
+    const response = await post({ kind: "qr_token", token: "QR-TICKET-12345678", raw: "QR-TICKET-12345678" });
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body).toMatchObject({
+      valid: true,
+      kind: "qr_token",
+      eventId: "colombia2026",
+      qr: { id: "qr-1", status: "active" },
+      pass: { id: "pass-1", number: "BSL-GENERAL-0001" },
+    });
+    expect(mockSupabase.from).toHaveBeenCalledTimes(3);
+  });
+
+  it("rejects a token that the backend cannot find", async () => {
+    mockSupabase.from.mockReturnValueOnce(queryResult({ data: null, error: { message: "not found" } }));
+
+    const response = await post({ kind: "qr_token", token: "QR-MISSING-12345678", raw: "QR-MISSING-12345678" });
+
+    expect(response.status).toBe(404);
+    await expect(response.json()).resolves.toMatchObject({
+      valid: false,
+      kind: "qr_token",
+      message: "QR code not found",
+    });
+  });
+
+  it("accepts camel-case event metadata and reports expired ticket QR codes", async () => {
+    const qrQuery = queryResult({
+      data: {
+        id: "qr-expired",
+        qr_type: "ticket",
+        pass_id: "pass-expired",
+        display_data: { eventId: "colombia2026" },
+        status: "active",
+        expires_at: "2020-01-01T00:00:00.000Z",
+      },
+      error: null,
+    });
+    const passQuery = queryResult({
+      data: {
+        id: "pass-expired",
+        user_id: "user-1",
+        event_id: "colombia2026",
+        pass_type: "general",
+        status: "active",
+        pass_number: "BSL-GENERAL-EXPIRED",
+      },
+      error: null,
+    });
+    mockSupabase.from
+      .mockReturnValueOnce(qrQuery)
+      .mockReturnValueOnce(passQuery)
+      .mockReturnValueOnce(queryResult({ data: { id: "user-1", full_name: "Ada Lovelace" }, error: null }));
+
+    const response = await post({ kind: "qr_token", token: "QR-EXPIRED-12345678", raw: "QR-EXPIRED-12345678" });
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body).toMatchObject({
+      valid: false,
+      eventId: "colombia2026",
+      message: "QR code is expired",
+      qr: { id: "qr-expired", expiresAt: "2020-01-01T00:00:00.000Z" },
+    });
+    expect(passQuery.eq).toHaveBeenCalledWith("id", "pass-expired");
+  });
+
   it("returns an invalid resolution for an incomplete network payload", async () => {
     const response = await post({ kind: "network", raw: "network" });
 
