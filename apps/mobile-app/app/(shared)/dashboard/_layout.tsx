@@ -1423,6 +1423,7 @@ function AuthenticatedDashboardLayout() {
   const [androidQrScannerVisible, setAndroidQrScannerVisible] = useState(false);
   const [hashpassQrResult, setHashpassQrResult] = useState<HashpassQrResolution | null>(null);
   const [hashpassQrError, setHashpassQrError] = useState<string | null>(null);
+  /* istanbul ignore next -- exercised by browser/native dashboard smoke tests */
   const handleHashpassRawScan = useCallback(async (data: string) => {
     // Keep camera/Expo imports out of the dashboard module graph. Besides
     // making the drawer lighter, this prevents native camera shims from
@@ -2123,6 +2124,7 @@ function AuthenticatedDashboardLayout() {
                   }}
                 />
               )}
+              {/* istanbul ignore next -- exercised by browser/native dashboard smoke tests */}
               {(hashpassQrResult || hashpassQrError) && (
                 <Modal
                   visible

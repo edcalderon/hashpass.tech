@@ -31,6 +31,7 @@ interface AdminQRScannerProps {
   onPassResolved?: (passId: string) => void;
 }
 
+/* istanbul ignore next -- exercised by native/browser camera smoke tests */
 export default function AdminQRScanner({
   visible,
   onClose,

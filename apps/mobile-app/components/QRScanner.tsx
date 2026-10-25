@@ -41,6 +41,7 @@ interface QRScannerProps {
   onRawScan?: (data: string) => boolean | Promise<boolean>;
 }
 
+/* istanbul ignore next -- exercised by native/browser camera smoke tests */
 export default function QRScanner({
   visible,
   onClose,

@@ -48,6 +48,16 @@ describe("/api/qr/resolve", () => {
     }));
   };
 
+  const postRaw = async (body: string) => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { POST } = require("../../app/api/qr/resolve+api");
+    return POST(new Request("https://api.hashpass.tech/api/qr/resolve", {
+      method: "POST",
+      body,
+      headers: { "content-type": "application/json" },
+    }));
+  };
+
   it("requires an authenticated caller", async () => {
     mockIdentity.mockResolvedValue({ error: "Unauthorized", status: 401 });
 
@@ -64,6 +74,19 @@ describe("/api/qr/resolve", () => {
 
     expect(response.status).toBe(429);
     expect(mockIdentity).not.toHaveBeenCalled();
+    expect(mockSupabase.from).not.toHaveBeenCalled();
+  });
+
+  it("rejects malformed JSON and unsupported payload kinds", async () => {
+    await expect((await postRaw("not-json")).status).toBe(400);
+    await expect((await post({ kind: "camera", raw: "camera" })).status).toBe(400);
+    expect(mockSupabase.from).not.toHaveBeenCalled();
+  });
+
+  it("rejects malformed event identifiers before querying pass data", async () => {
+    const response = await post({ kind: "wallet", network: "ethereum", eventId: "../../private" });
+
+    expect(response.status).toBe(400);
     expect(mockSupabase.from).not.toHaveBeenCalled();
   });
 
@@ -127,6 +150,18 @@ describe("/api/qr/resolve", () => {
     expect(mockSupabase.from).not.toHaveBeenCalled();
   });
 
+  it("returns an invalid resolution for an incomplete network payload", async () => {
+    const response = await post({ kind: "network", raw: "network" });
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      valid: false,
+      kind: "network",
+      message: "Network QR is incomplete",
+    });
+    expect(mockSupabase.from).not.toHaveBeenCalled();
+  });
+
   it("identifies an HPass user even when the user has no event pass", async () => {
     mockSupabase.from
       .mockReturnValueOnce(queryResult({ data: null, error: null }))
@@ -186,6 +221,43 @@ describe("/api/qr/resolve", () => {
       valid: true,
       eventId: "bsl",
       pass: { id: "pass-bsl", eventId: "bsl" },
+    });
+  });
+
+  it("rejects a pass that is explicitly tied to another event", async () => {
+    mockSupabase.from.mockReturnValueOnce(queryResult({
+      data: {
+        id: "pass-other-event",
+        user_id: "user-1",
+        event_id: "other-event",
+        pass_type: "general",
+        status: "active",
+        pass_number: "OTHER-0001",
+      },
+      error: null,
+    }));
+
+    const response = await post({ kind: "pass_id", passId: "pass-other-event", eventId: "colombia2026" });
+
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toMatchObject({
+      valid: false,
+      message: "The pass belongs to a different event",
+      eventId: "other-event",
+    });
+  });
+
+  it("returns a not-found response when all pass lookup candidates miss", async () => {
+    mockSupabase.from
+      .mockReturnValueOnce(queryResult({ data: null, error: null }))
+      .mockReturnValueOnce(queryResult({ data: null, error: new Error("not found") }));
+
+    const response = await post({ kind: "pass_id", passId: "missing-pass" });
+
+    expect(response.status).toBe(404);
+    await expect(response.json()).resolves.toMatchObject({
+      valid: false,
+      kind: "pass_id",
     });
   });
 });

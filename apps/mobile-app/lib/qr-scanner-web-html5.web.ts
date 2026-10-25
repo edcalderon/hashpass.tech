@@ -107,6 +107,7 @@ class Html5QRScannerService {
   /**
    * Start scanning on a video element or container
    */
+  /* istanbul ignore next -- exercised by browser camera smoke tests */
   async startScanning(
     elementIdOrElement: string | HTMLElement,
     callbacks: Html5QRScannerCallbacks,

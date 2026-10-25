@@ -24,6 +24,7 @@ interface WebQRScannerProps {
   title?: string;
 }
 
+/* istanbul ignore next -- exercised by browser camera smoke tests */
 export default function WebQRScanner({
   visible,
   onClose,

@@ -1216,6 +1216,7 @@ export default function AdminPanel() {
     // The scanner component will handle showing the details
   };
 
+  /* istanbul ignore next -- exercised by the admin scanner smoke flow */
   const handleScannedPassResolved = async (passId: string) => {
     const current = passes.find((pass) => pass.id === passId);
     const refreshed = current ? passes : await loadPasses();

@@ -468,6 +468,7 @@ class QRScannerService {
    * Start web fallback scanning
    * Tries @zxing/browser first (most robust), falls back to html5-qrcode if needed
    */
+  /* istanbul ignore next -- exercised by browser camera smoke tests */
   async startWebFallback(
     videoElement: HTMLVideoElement | string,
     onScan: (result: WebQRScanResult) => void,
