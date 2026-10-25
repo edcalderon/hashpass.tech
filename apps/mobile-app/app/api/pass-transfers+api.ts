@@ -43,7 +43,16 @@ export async function POST(request: Request) {
       .or(`sender_token_hash.eq.${hashed},recipient_token_hash.eq.${hashed}`)
       .maybeSingle();
     if (transferError) return json({ error: "Unable to load this transfer" }, 503);
-    if (!transfer || transfer.status !== "pending" || new Date(transfer.expires_at).getTime() <= Date.now()) {
+    if (!transfer || transfer.status !== "pending") {
+      return json({ error: "This transfer is expired or already completed" }, 410);
+    }
+    if (new Date(transfer.expires_at).getTime() <= Date.now()) {
+      const { error: expiryError } = await supabase
+        .from("pass_transfer_requests")
+        .update({ status: "expired", updated_at: new Date().toISOString() })
+        .eq("id", transfer.id)
+        .eq("status", "pending");
+      if (expiryError) return json({ error: "Unable to expire this transfer" }, 503);
       return json({ error: "This transfer is expired or already completed" }, 410);
     }
     const senderTokenMatch = transfer.sender_token_hash === hashed;
@@ -96,6 +105,15 @@ export async function POST(request: Request) {
     if (passError) return json({ error: "Unable to verify your pass" }, 503);
     if (!pass || pass.status !== "active") return json({ error: "An active pass is required" }, 403);
     if (pass.event_id !== eventId) return json({ error: "The pass does not belong to this event" }, 409);
+
+    const now = new Date().toISOString();
+    const { error: expirePendingError } = await supabase
+      .from("pass_transfer_requests")
+      .update({ status: "expired", updated_at: now })
+      .eq("pass_id", String(pass.id))
+      .eq("status", "pending")
+      .lt("expires_at", now);
+    if (expirePendingError) return json({ error: "Unable to expire an older transfer" }, 503);
 
     const { data: recipient, error: recipientError } = await supabase
       .from("user")

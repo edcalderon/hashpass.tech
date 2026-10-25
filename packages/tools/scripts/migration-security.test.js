@@ -137,6 +137,10 @@ const backendQrAndExternalTicketClaimsMigrationPath = path.join(
   root,
   'db/migrations/V145__backend_qr_and_external_ticket_claims.sql',
 );
+const passTransferQrHardeningMigrationPath = path.join(
+  root,
+  'db/migrations/V146__harden_pass_transfer_qr_revocation.sql',
+);
 
 describe('setup and PIN migration plan', () => {
   it('runs the setup/PIN schema before the dependent SMS auth migrations', () => {
@@ -853,5 +857,21 @@ describe('backend QR and original ticket claim migration', () => {
     expect(migration).toMatch(/external_ticket_claim_code_key/i);
     expect(migration).toMatch(/REVOKE ALL ON FUNCTION public\.submit_external_ticket_claim[\s\S]*authenticated/i);
     expect(migration).toMatch(/GRANT EXECUTE ON FUNCTION public\.review_external_ticket_claim[\s\S]*service_role/i);
+  });
+});
+
+describe('pass transfer QR hardening migration', () => {
+  it('expires stale transfers and revokes active QR codes during an ownership change', () => {
+    const migration = fs.readFileSync(passTransferQrHardeningMigrationPath, 'utf8');
+    const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+
+    expect(config.groups['admin-pass-management']).toContain(
+      'db/migrations/V146__harden_pass_transfer_qr_revocation.sql',
+    );
+    expect(migration).toMatch(/CREATE OR REPLACE FUNCTION public\.complete_pass_transfer/i);
+    expect(migration).toMatch(/transfer_row\.expires_at <= now\(\)[\s\S]*?status = 'expired'/i);
+    expect(migration).toMatch(/UPDATE public\.qr_codes[\s\S]*?status = 'revoked'/i);
+    expect(migration).toMatch(/revoked_reason = 'Pass ownership transferred'/i);
+    expect(migration).toMatch(/WHERE pass_id = transfer_row\.pass_id[\s\S]*?AND status = 'active'/i);
   });
 });
