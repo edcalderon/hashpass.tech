@@ -22,25 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610251739, // Updated to current timestamp
+  buildNumber: 202610252350, // Updated to current timestamp
   releaseDate: '2026-10-25',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'refine event card badges',
-    'add spacious event grid cards',
-    'reveal bookmark labels on hover',
-    'refine event card room actions'
+    'add pass lifecycle and event chat workflows'
   ],
   bugfixes: [
-    'quiet networking telemetry logs'
+    // No bugfixes
   ],
   breakingChanges: [],
-  notes: 'refine event card badges; add spacious event grid cards; reveal bookmark labels on hover; refine event card room actions; quiet networking telemetry logs'
+  notes: 'add pass lifecycle and event chat workflows'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.148': {
+    version: '1.9.148',
+    buildNumber: 202610252350,
+    releaseDate: '2026-10-25',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'add pass lifecycle and event chat workflows'
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'add pass lifecycle and event chat workflows'
+  },
   '1.9.147': {
     version: '1.9.147',
     buildNumber: 202610251739,
