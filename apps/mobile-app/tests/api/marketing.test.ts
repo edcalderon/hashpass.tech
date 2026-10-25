@@ -104,6 +104,12 @@ describe('recipient and activity endpoints', () => {
     expect(response.status).toBe(202);
     await expect(response.json()).resolves.toEqual({ data: { recorded: false, trust: 'observed', provisionalPoints: 0 } });
   });
+  it('keeps navigation successful when activity storage returns an error', async () => {
+    mockRpc.mockResolvedValue({ error: { message: 'database unavailable' } });
+    const response = await activity(req({ path: '/contacts' }));
+    expect(response.status).toBe(202);
+    await expect(response.json()).resolves.toEqual({ data: { recorded: false, trust: 'observed', provisionalPoints: 0 } });
+  });
   it('requires linked identities and excludes sensitive paths', async () => {
     expect((await activity(req({ path: '/auth/callback?code=secret' }))).status).toBe(400);
     mockIdentity.mockResolvedValue({ supabaseUserId: actor }); expect((await activity(req({ path: '/contacts' }))).status).toBe(403);

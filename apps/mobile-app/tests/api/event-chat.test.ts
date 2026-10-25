@@ -464,6 +464,21 @@ describe("event chat authorization api", () => {
     });
   });
 
+  it("returns an empty presence envelope while the room migration is pending", async () => {
+    const roomQuery = queryResult(null);
+    mockFrom.mockImplementation((table: string) => {
+      if (table === "event_chat_rooms") return roomQuery;
+      throw new Error(`Unexpected table ${table}`);
+    });
+
+    const response = await post({ action: "presence", channel: "presence" });
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      data: { eventId: "colombia2026", presence: { peopleCount: 0, avatarUrls: [] } },
+    });
+  });
+
   it("rejects legacy aliases instead of remapping them to another event room", async () => {
     const response = await get("bsl");
 
