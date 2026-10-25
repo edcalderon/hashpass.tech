@@ -20,30 +20,17 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.144)
+## 📋 Latest Changes (v1.9.145)
 
-### Bug Fixes
-
-* **db:** register wallet migrations for core production ([17df77d](https://github.com/hashpass-tech/hashpass.tech/commit/17df77d725d139a22794faa50061ecc3e0b57134))
-* **docs:** use valid wallet source link ([5a47c35](https://github.com/hashpass-tech/hashpass.tech/commit/5a47c352d9c0e2e2d8708edcb77934fe75bcb59c))
-* **ui:** use shared passive status token ([89c2878](https://github.com/hashpass-tech/hashpass.tech/commit/89c28789de3cd124032a78aeaca9494a89f0e60d))
-* **wallet:** address PR review findings on the gate, recovery and PIN change ([98fb5c1](https://github.com/hashpass-tech/hashpass.tech/commit/98fb5c12d686bdd803fe3d7704554c11e733d09e))
-* **wallet:** explicit parameter types for the isolated changed-file typecheck ([bb4d8dd](https://github.com/hashpass-tech/hashpass.tech/commit/bb4d8dd54e276692fe6c7c7bbc8691b6a60da1ec))
-* **wallet:** use shared design tokens instead of literal radii and colors ([a9a27cb](https://github.com/hashpass-tech/hashpass.tech/commit/a9a27cb3a6a6c2ab9c3856af4dd19d07920dc082)), closes [#436](https://github.com/hashpass-tech/hashpass.tech/issues/436)
-
-
-### Features
-
-* **wallet:** PIN-protected hybrid vault wizard, create-only, full-screen secure steps ([f978528](https://github.com/hashpass-tech/hashpass.tech/commit/f9785283f0dbd1c411dba55f4ecd1b0466b9e9b6))
-### Release Highlights
-- formalize passive directory status; complete non-custodial wallet flow; PIN-protected hybrid vault wizard, create-only, full-screen secure steps; use valid wallet source link; register wallet migrations for core production; use shared passive status token; tighten balance test URL checks; address PR review findings on the gate, recovery and PIN change; use shared design tokens instead of literal radii and colors; explicit parameter types for the isolated changed-file typecheck
+### Released
+- harden QR camera permission flow
 
 ### Release scope
-- Compared with: `v1.9.143` (the previous global release tag)
+- Compared with: `v1.9.144` (the previous global release tag)
 
 ### Affected products & packages
-- Documentation
-- Release tooling
+- Mobile app
+- Shared UI
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

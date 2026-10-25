@@ -22,30 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610250203, // Updated to current timestamp
+  buildNumber: 202610250408, // Updated to current timestamp
   releaseDate: '2026-10-25',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'formalize passive directory status',
-    'complete non-custodial wallet flow',
-    'PIN-protected hybrid vault wizard, create-only, full-screen secure steps'
+    // No new features
   ],
   bugfixes: [
-    'use valid wallet source link',
-    'register wallet migrations for core production',
-    'use shared passive status token',
-    'tighten balance test URL checks',
-    'address PR review findings on the gate, recovery and PIN change',
-    'use shared design tokens instead of literal radii and colors',
-    'explicit parameter types for the isolated changed-file typecheck'
+    'harden QR camera permission flow'
   ],
   breakingChanges: [],
-  notes: 'formalize passive directory status; complete non-custodial wallet flow; PIN-protected hybrid vault wizard, create-only, full-screen secure steps; use valid wallet source link; register wallet migrations for core production; use shared passive status token; tighten balance test URL checks; address PR review findings on the gate, recovery and PIN change; use shared design tokens instead of literal radii and colors; explicit parameter types for the isolated changed-file typecheck'
+  notes: 'harden QR camera permission flow'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.145': {
+    version: '1.9.145',
+    buildNumber: 202610250408,
+    releaseDate: '2026-10-25',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'harden QR camera permission flow'
+    ],
+    breakingChanges: [],
+    notes: 'harden QR camera permission flow'
+  },
   '1.9.144': {
     version: '1.9.144',
     buildNumber: 202610250203,
