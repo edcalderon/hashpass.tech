@@ -12,7 +12,7 @@ import type { HashpassQrResolution } from '../types/qr-payload.types';
 import { getCurrentAdminAccess, type AdminAccess } from '../lib/admin-access';
 import { useQrCameraSession } from '../hooks/qr-camera-machine';
 import { BarCodeScanner, type BarCodeScannerResult } from '../lib/barcode-scanner-compat';
-import { ActionButton } from '@hashpass/ui/primitives';
+import { ActionButton, Surface } from '@hashpass/ui/primitives';
 
 // Dynamic import for web fallback
 // Using .web.ts extension ensures Metro only resolves this on web
@@ -725,13 +725,28 @@ export default function QRScanner({
                 />
                 <View style={styles.publicDetailsHeaderCopy}>
                   <Text style={styles.publicDetailsTitle}>
-                    {resolvedPayload.valid ? 'Pass details' : 'Pass unavailable'}
+                    {resolvedPayload.valid
+                      ? resolvedPayload.user && !resolvedPayload.pass
+                        ? 'HashPass user'
+                        : 'Pass details'
+                      : 'Pass unavailable'}
                   </Text>
                   <Text style={styles.publicDetailsMessage}>{resolvedPayload.message}</Text>
                 </View>
               </View>
+              {resolvedPayload.user && (
+                <Surface mode={isDark ? 'dark' : 'light'} style={styles.publicDetailsCard}>
+                  <Text style={styles.publicDetailLabel}>HashPass user</Text>
+                  <Text style={styles.publicDetailValue} selectable>
+                    {resolvedPayload.user.name || resolvedPayload.user.username || resolvedPayload.user.id}
+                  </Text>
+                  {resolvedPayload.user.username && resolvedPayload.user.name ? (
+                    <Text style={styles.publicDetailMeta}>@{resolvedPayload.user.username}</Text>
+                  ) : null}
+                </Surface>
+              )}
               {resolvedPayload.pass && (
-                <View style={styles.publicDetailsCard}>
+                <Surface mode={isDark ? 'dark' : 'light'} style={styles.publicDetailsCard}>
                   <View style={styles.publicDetailRow}>
                     <Text style={styles.publicDetailLabel}>Pass</Text>
                     <Text style={styles.publicDetailValue} selectable>{resolvedPayload.pass.number || resolvedPayload.pass.id}</Text>
@@ -750,14 +765,20 @@ export default function QRScanner({
                     <Text style={styles.publicDetailLabel}>Event</Text>
                     <Text style={styles.publicDetailValue}>{resolvedPayload.pass.eventId}</Text>
                   </View>
-                </View>
+                </Surface>
               )}
-              {resolvedPayload.network && (
-                <View style={styles.publicDetailsCard}>
+              {(resolvedPayload.network || resolvedPayload.address) && (
+                <Surface mode={isDark ? 'dark' : 'light'} style={styles.publicDetailsCard}>
+                  {resolvedPayload.network ? (
                   <Text style={styles.publicDetailLabel}>Network</Text>
-                  <Text style={styles.publicDetailValue}>{resolvedPayload.network}</Text>
-                  {resolvedPayload.address && <Text selectable style={styles.publicDetailValue}>{resolvedPayload.address}</Text>}
-                </View>
+                  ) : null}
+                  {resolvedPayload.network ? (
+                    <Text style={styles.publicDetailValue}>{resolvedPayload.network}</Text>
+                  ) : null}
+                  {resolvedPayload.address ? (
+                    <Text selectable style={styles.publicDetailValue}>{resolvedPayload.address}</Text>
+                  ) : null}
+                </Surface>
               )}
               <ActionButton
                 mode={isDark ? 'dark' : 'light'}
@@ -1112,10 +1133,6 @@ const getStyles = (isDark: boolean, colors: any) =>
     publicDetailsCard: {
       gap: 10,
       padding: 14,
-      borderRadius: uiTokens.radius.input,
-      backgroundColor: colors.background.default,
-      borderWidth: 1,
-      borderColor: colors.divider,
     },
     publicDetailRow: {
       flexDirection: 'row',
@@ -1132,6 +1149,10 @@ const getStyles = (isDark: boolean, colors: any) =>
       fontSize: 14,
       fontWeight: '600',
       textAlign: 'right',
+    },
+    publicDetailMeta: {
+      color: colors.text.secondary,
+      fontSize: 13,
     },
     adminDetailsHeader: {
       flexDirection: 'row',
