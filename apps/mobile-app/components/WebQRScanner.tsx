@@ -44,8 +44,10 @@ export default function WebQRScanner({
   const isProcessingScanRef = useRef<boolean>(false);
   const isScanningRef = useRef(false);
   const isLoadingRef = useRef(false);
+  const initializingRef = useRef(false);
   const scannerGenerationRef = useRef(0);
   const initTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const healthRestartTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const onScanSuccessRef = useRef(onScanSuccess);
   const onErrorRef = useRef(onError);
   const { send: sendCameraEvent, status: cameraStatus } = useQrCameraSession();
@@ -83,7 +85,7 @@ export default function WebQRScanner({
         // Stop scanning first
         await scannerInstanceRef.current.stop().catch((e: any) => {
           // Ignore stop errors - scanner might already be stopped
-          console.debug('Stop error (ignored):', e.message);
+          void e;
         });
         // Do not call html5-qrcode.clear() after stop. It mutates the scanner
         // container after React has begun unmounting the modal, which races
@@ -91,7 +93,7 @@ export default function WebQRScanner({
         // (insertBefore/removeChild) during startup and close transitions.
       } catch (err: any) {
         // Ignore errors during cleanup
-        console.debug('Scanner cleanup:', err.message || err);
+        void err;
       } finally {
         scannerInstanceRef.current = null;
         setIsScanning(false);
@@ -103,19 +105,24 @@ export default function WebQRScanner({
 
   const initializeScanner = useCallback(async () => {
     if (!visible || Platform.OS !== 'web') return;
+    if (initializingRef.current) return;
+    if (scannerInstanceRef.current && isScanningRef.current) return;
+
+    initializingRef.current = true;
     const generation = scannerGenerationRef.current;
+    const isCurrent = () => visible && generation === scannerGenerationRef.current;
 
     sendCameraEvent({ type: 'START' });
-    
-    // Check if scanner is already running - if so, don't reinitialize
-    if (scannerInstanceRef.current && isScanningRef.current) {
-      return;
-    }
     
     // Wait longer if we just stopped to avoid media resource abort errors
     // This prevents rapid stop/start cycles that cause media abort errors
     if (scannerInstanceRef.current === null && !isScanningRef.current) {
       await new Promise(resolve => setTimeout(resolve, 800));
+    }
+
+    if (!isCurrent()) {
+      initializingRef.current = false;
+      return;
     }
 
     // Reset scan tracking
@@ -137,10 +144,6 @@ export default function WebQRScanner({
           
           // If permission is denied/blocked, show error but still try to initialize
           // html5-qrcode might be able to request permission even if query says denied
-          if (permissionStatus.state === 'denied') {
-            console.warn('⚠️ Camera permission denied, but will attempt to request via html5-qrcode');
-            // Don't return - let html5-qrcode try to request permission
-          }
         } catch {
           // Permissions API not available or not supported (common in PWAs)
           // Don't set hasPermission to false - let html5-qrcode try
@@ -161,46 +164,33 @@ export default function WebQRScanner({
       const maxRetries = 10;
       
       const waitForElement = async (): Promise<boolean> => {
-        if (!scannerRef.current) {
-          if (retries < maxRetries) {
-            retries++;
-            await new Promise(resolve => setTimeout(resolve, 100 * retries));
-            return waitForElement();
+        while (retries < maxRetries) {
+          if (!isCurrent()) return false;
+          const element = scannerRef.current;
+          if (element && document.body.contains(element)) {
+            const rect = element.getBoundingClientRect();
+            if (rect.width > 0 && rect.height > 0) return true;
           }
-          return false;
+          retries += 1;
+          await new Promise(resolve => setTimeout(resolve, 100 * retries));
         }
-        
-        // Verify element is actually in the DOM and has dimensions
-        if (typeof window !== 'undefined' && scannerRef.current) {
-          // Check if element is actually in the document
-          if (!document.body.contains(scannerRef.current)) {
-            if (retries < maxRetries) {
-              retries++;
-              await new Promise(resolve => setTimeout(resolve, 100 * retries));
-              return waitForElement();
-            }
-            return false;
-          }
-          
-          const rect = scannerRef.current.getBoundingClientRect();
-          if (rect.width === 0 || rect.height === 0) {
-            if (retries < maxRetries) {
-              retries++;
-              await new Promise(resolve => setTimeout(resolve, 100 * retries));
-              return waitForElement();
-            }
-            return false;
-          }
-        }
-        
-        return true;
+        return isCurrent() && Boolean(
+          scannerRef.current &&
+          document.body.contains(scannerRef.current) &&
+          scannerRef.current.getBoundingClientRect().width > 0 &&
+          scannerRef.current.getBoundingClientRect().height > 0,
+        );
       };
       
       const elementReady = await waitForElement();
       if (!elementReady) {
-        throw new Error('Scanner element not ready after multiple retries');
+        if (!isCurrent()) return;
+        setIsLoading(false);
+        setError('Camera view is still loading. Please try again.');
+        sendCameraEvent({ type: 'ERROR', message: 'Camera view is still loading. Please try again.' });
+        return;
       }
-      if (!visible || generation !== scannerGenerationRef.current) return;
+      if (!isCurrent()) return;
 
       // Clear any existing content
       if (scannerRef.current) {
@@ -214,7 +204,7 @@ export default function WebQRScanner({
       scannerRef.current.id = scannerId;
       
       // Double-check element is still valid before creating scanner instance
-      if (!scannerRef.current || !document.body.contains(scannerRef.current)) {
+      if (!isCurrent() || !scannerRef.current || !document.body.contains(scannerRef.current)) {
         throw new Error('Scanner element became invalid');
       }
       
@@ -253,6 +243,7 @@ export default function WebQRScanner({
       let finalRetries = 0;
       const maxFinalRetries = 5;
       while (finalRetries < maxFinalRetries) {
+        if (!isCurrent()) return;
         if (!scannerRef.current) {
           await new Promise(resolve => setTimeout(resolve, 200));
           finalRetries++;
@@ -277,10 +268,10 @@ export default function WebQRScanner({
       }
       
       // Final validation before starting
-      if (!scannerRef.current || !document.body.contains(scannerRef.current)) {
+      if (!isCurrent() || !scannerRef.current || !document.body.contains(scannerRef.current)) {
         throw new Error('Scanner element invalid after final checks');
       }
-      if (!visible || generation !== scannerGenerationRef.current) return;
+      if (!isCurrent()) return;
       
       // Verify element has dimensions
       const finalRect = scannerRef.current.getBoundingClientRect();
@@ -291,6 +282,7 @@ export default function WebQRScanner({
 
       // Start scanning with optimized settings for maximum reliability
       // Higher FPS and more flexible constraints for better detection
+      if (!isCurrent()) return;
       await html5Qrcode.start(
         cameraId,
         {
@@ -402,13 +394,18 @@ export default function WebQRScanner({
         }
       );
 
+      if (!isCurrent()) {
+        await html5Qrcode.stop().catch(() => undefined);
+        scannerInstanceRef.current = null;
+        return;
+      }
       setIsScanning(true);
       setIsLoading(false);
       setHasPermission(true); // Permission granted since scanner started successfully
       setError(null); // Clear any previous errors
       sendCameraEvent({ type: 'SCANNING' });
     } catch (err: any) {
-      console.error('Error initializing scanner:', err);
+      if (!isCurrent()) return;
       const permission = await cameraPermissionManager.getPermissionStatus(true);
       // Handle constraint errors specifically
       let errorMessage = err.message || 'Failed to start camera';
@@ -420,7 +417,7 @@ export default function WebQRScanner({
           await new Promise(resolve => setTimeout(resolve, 500));
           
           // Ensure scanner element still exists
-          if (!scannerRef.current || !document.body.contains(scannerRef.current)) {
+          if (!isCurrent() || !scannerRef.current || !document.body.contains(scannerRef.current)) {
             throw new Error('Scanner element no longer available');
           }
           
@@ -460,7 +457,7 @@ export default function WebQRScanner({
             return; // Success!
           }
         } catch (retryErr: any) {
-          console.error('Retry with simple constraints also failed:', retryErr);
+          void retryErr;
           errorMessage = 'Camera not available. Please check permissions and try again.';
         }
       }
@@ -473,6 +470,8 @@ export default function WebQRScanner({
       if (onErrorRef.current) {
         onErrorRef.current(err);
       }
+    } finally {
+      initializingRef.current = false;
     }
   }, [visible, sendCameraEvent]);
 
@@ -560,6 +559,7 @@ export default function WebQRScanner({
     }
 
     sendCameraEvent({ type: 'OPEN' });
+    const effectGeneration = scannerGenerationRef.current;
 
     // Do not call getUserMedia while opening the modal. Browsers require the
     // request to happen from a user gesture, otherwise the prompt may be
@@ -572,6 +572,7 @@ export default function WebQRScanner({
             : null;
 
           if (permissionState === 'granted') {
+            if (effectGeneration !== scannerGenerationRef.current) return;
             sendCameraEvent({ type: 'PERMISSION_GRANTED' });
             setHasPermission(true);
             sendCameraEvent({ type: 'START' });
@@ -579,6 +580,7 @@ export default function WebQRScanner({
             return;
           }
 
+          if (effectGeneration !== scannerGenerationRef.current) return;
           setHasPermission(false);
           setIsLoading(false);
           sendCameraEvent({
@@ -592,7 +594,8 @@ export default function WebQRScanner({
             ? 'Camera permission is blocked. Allow camera access in your browser address-bar settings and try again.'
             : 'Camera permission is required. Click Grant Permission to enable the camera.');
         } catch (permissionError) {
-          console.warn('Unable to query camera permission state:', permissionError);
+          if (effectGeneration !== scannerGenerationRef.current) return;
+          void permissionError;
           setHasPermission(false);
           setIsLoading(false);
           sendCameraEvent({ type: 'PERMISSION_REQUIRED', message: 'Camera permission is required. Click Grant Permission to enable the camera.' });
@@ -614,10 +617,11 @@ export default function WebQRScanner({
       
       // Check if scanner instance exists and is scanning
       if (!scannerInstanceRef.current && isScanningRef.current) {
-        console.warn('⚠️ Scanner instance lost, restarting...');
+        if (healthRestartTimeoutRef.current) return;
         isInitializing = true;
         setIsScanning(false);
-        setTimeout(async () => {
+        healthRestartTimeoutRef.current = setTimeout(async () => {
+          healthRestartTimeoutRef.current = null;
           await initializeScanner();
           isInitializing = false;
         }, 1000);
@@ -625,14 +629,15 @@ export default function WebQRScanner({
       }
       
       if (scannerInstanceRef.current && !isScanningRef.current && !isLoadingRef.current) {
-        console.warn('⚠️ Scanner stopped but instance exists, restarting...');
+        if (healthRestartTimeoutRef.current) return;
         isInitializing = true;
         try {
           await stopScanner();
         } catch {
           // Ignore errors
         }
-        setTimeout(async () => {
+        healthRestartTimeoutRef.current = setTimeout(async () => {
+          healthRestartTimeoutRef.current = null;
           await initializeScanner();
           isInitializing = false;
         }, 1000);
@@ -643,6 +648,10 @@ export default function WebQRScanner({
       isCleaningUp = true;
       clearTimeout(initTimer);
       clearInterval(healthCheckInterval);
+      if (healthRestartTimeoutRef.current) {
+        clearTimeout(healthRestartTimeoutRef.current);
+        healthRestartTimeoutRef.current = null;
+      }
       if (initTimeoutRef.current) {
         clearTimeout(initTimeoutRef.current);
         initTimeoutRef.current = null;

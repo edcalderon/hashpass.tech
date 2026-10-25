@@ -548,8 +548,8 @@ BEGIN
   END IF;
 
   RETURN QUERY
-  SELECT p.id, p.user_id, p.event_id, p.pass_type::text, p.status::text,
-    p.pass_number, p.max_meeting_requests, p.used_meeting_requests,
+  SELECT p.id::text, p.user_id, p.event_id, p.pass_type::text, p.status::text,
+    p.pass_number::text, p.max_meeting_requests, p.used_meeting_requests,
     p.max_boost_amount::numeric, p.used_boost_amount::numeric,
     p.created_at, p.updated_at,
     COALESCE(auth_user.email::text, profile.email::text),
@@ -571,7 +571,9 @@ BEGIN
   ) profile ON true
   WHERE p.event_id = p_event_id
     AND (p_cursor IS NULL OR (p.created_at, p.id) < (
-      SELECT pc.created_at, pc.id FROM public.passes pc WHERE pc.id = p_cursor
+      SELECT pc.created_at, pc.id
+      FROM public.passes pc
+      WHERE pc.id::text = p_cursor
     ))
   ORDER BY p.created_at DESC, p.id DESC
   LIMIT LEAST(GREATEST(p_limit, 1), 100) + 1;

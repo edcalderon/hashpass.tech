@@ -495,8 +495,10 @@ class QRScannerService {
             }
           );
           if (result.success) {
-            console.log('✅ Using @zxing/browser scanner (primary)');
             return { success: true };
+          }
+          if (result.error === 'Scanner view closed before camera started') {
+            return result;
           }
         }
       } catch {
@@ -565,7 +567,6 @@ class QRScannerService {
                 if (error.message && 
                     !error.message.includes('No QR code') && 
                     !error.message.includes('NotFoundException')) {
-                  console.error('html5-qrcode scan error:', error);
                   if (onError) {
                     onError(error);
                   }

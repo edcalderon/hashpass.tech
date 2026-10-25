@@ -23,6 +23,7 @@ export interface WebQRScanResult {
 class WebQRScannerFallback {
   private reader: any = null;
   private isScanning = false;
+  private scanGeneration = 0;
   private videoElement: HTMLVideoElement | null = null;
   private zxingModule: any = null;
 
@@ -73,6 +74,11 @@ class WebQRScannerFallback {
     if (this.isScanning) {
       return { success: false, error: 'Already scanning' };
     }
+
+    const generation = this.scanGeneration;
+    const isCurrent = (element?: HTMLVideoElement) =>
+      generation === this.scanGeneration &&
+      Boolean(element && document.body.contains(element));
 
     try {
       const reader = await this.initializeReader();
@@ -125,6 +131,10 @@ class WebQRScannerFallback {
         }
       }
 
+      if (!isCurrent(videoElement)) {
+        return { success: false, error: 'Scanner view closed before camera started' };
+      }
+
       // Set DOM properties as well as attributes. iOS Safari ignores some
       // autoplay attributes unless playsInline/muted are properties.
       videoElement.style.width = '100%';
@@ -138,13 +148,18 @@ class WebQRScannerFallback {
       videoElement.setAttribute('muted', 'true');
 
       this.videoElement = videoElement;
-      this.isScanning = true;
 
       // Let the browser choose the best camera. Using decodeFromVideoDevice
       // with an enumerated id before permission is granted returns no devices
       // on desktop Safari/Chrome and is the main reason web scanning stalls.
       const continuous = options.continuous !== false;
 
+      if (!isCurrent(videoElement)) {
+        this.videoElement = null;
+        return { success: false, error: 'Scanner view closed before camera started' };
+      }
+
+      this.isScanning = true;
       await reader.decodeFromConstraints(
         {
           audio: false,
@@ -182,10 +197,22 @@ class WebQRScannerFallback {
         }
       );
 
+      if (!isCurrent(videoElement)) {
+        this.stopScanning();
+        return { success: false, error: 'Scanner view closed before camera started' };
+      }
+
       return { success: true };
     } catch (error: any) {
-      console.error('Error starting ZXing scanner:', error);
+      const elementMissing = !this.videoElement || !document.body.contains(this.videoElement);
+      const stale = generation !== this.scanGeneration ||
+        error?.message?.includes('object can not be found') ||
+        (error?.name === 'NotFoundError' && elementMissing);
       this.isScanning = false;
+      if (stale) {
+        this.stopScanning();
+        return { success: false, error: 'Scanner view closed before camera started' };
+      }
       return { 
         success: false, 
         error: error.message || 'Failed to start scanner' 
@@ -194,6 +221,7 @@ class WebQRScannerFallback {
   }
 
   stopScanning(): void {
+    this.scanGeneration += 1;
     this.isScanning = false;
 
     if (this.reader) {
