@@ -88,6 +88,7 @@ it('keeps bookmark and room actions independent from card selection', async () =
   );
   expect(bookmark).toBeDefined();
   expect(bookmark?.props.revealLabel).toBe(true);
+  expect(bookmark?.props.preserveBaseStyleOnReveal).toBe(true);
   press('Bookmark Colombia conference');
   expect(onSelectEvent).not.toHaveBeenCalled();
   expect(mockSaveBookmarks).toHaveBeenCalledWith(['one']);

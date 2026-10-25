@@ -1381,6 +1381,7 @@ export default function Explorer({
             mode="dark"
             accentColor="#fff"
             revealLabel
+            preserveBaseStyleOnReveal
             size={30}
             label={`${
               bookmarked

@@ -318,6 +318,8 @@ export type IconButtonProps = Omit<PressableProps, "children"> &
     revealLabel?: boolean;
     /** Lets contextual tools retain their semantic accent while sharing this role. */
     accentColor?: string;
+    /** Keeps the compact button's surface and border while its label expands. */
+    preserveBaseStyleOnReveal?: boolean;
     loading?: boolean;
     loadingLabel?: string;
     /** Reveal buttons only: square edge in px, to line up with neighbouring pills. */
@@ -332,6 +334,7 @@ export function IconButton({
   style,
   revealLabel = false,
   accentColor,
+  preserveBaseStyleOnReveal = false,
   loading = false,
   loadingLabel,
   size,
@@ -471,8 +474,10 @@ export function IconButton({
               {
                 height: edge,
                 width: visualWidth,
-                backgroundColor: expanded ? `${color}14` : palette.surface,
-                borderColor: expanded ? `${color}52` : palette.border,
+                backgroundColor:
+                  expanded && !preserveBaseStyleOnReveal ? `${color}14` : palette.surface,
+                borderColor:
+                  expanded && !preserveBaseStyleOnReveal ? `${color}52` : palette.border,
               },
               transitionStyle,
             ]}
