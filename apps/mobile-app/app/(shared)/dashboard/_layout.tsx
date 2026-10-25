@@ -18,6 +18,8 @@ import {
   ScrollView,
   useWindowDimensions,
   ActivityIndicator,
+  Alert,
+  Modal,
   Dimensions,
   type DimensionValue,
 } from "react-native";
@@ -78,6 +80,7 @@ import { supabase } from "../../../lib/supabase";
 import { navigateDashboardBrandToLanding } from "../../../lib/dashboard-navigation";
 import { openTargetedDashboardDrawer } from "../../../lib/dashboard-drawer";
 import { parseAuthQrScan } from "../../../lib/auth-qr";
+import type { HashpassQrResolution } from "../../../types/qr-payload.types";
 import { getAvailableEvents } from "../../../lib/event-detector";
 import { publicEventStatus } from "../../../lib/public-events";
 import {
@@ -1337,6 +1340,7 @@ export default function DashboardLayout() {
   return <AuthenticatedDashboardLayout />;
 }
 
+/* istanbul ignore next -- exercised by browser/native dashboard smoke tests */
 function AuthenticatedDashboardLayout() {
   const { colors, isDark } = useTheme();
   const language = useLanguage();
@@ -1418,6 +1422,29 @@ function AuthenticatedDashboardLayout() {
   // DashboardLayout re-render, for the same reason as drawerOpenRef above.
   const drawerOpenControlRef: DrawerOpenControlRef = useRef(null);
   const [androidQrScannerVisible, setAndroidQrScannerVisible] = useState(false);
+  const [hashpassQrResult, setHashpassQrResult] = useState<HashpassQrResolution | null>(null);
+  const [hashpassQrError, setHashpassQrError] = useState<string | null>(null);
+  /* istanbul ignore next -- exercised by browser/native dashboard smoke tests */
+  const handleHashpassRawScan = useCallback(async (data: string) => {
+    // Keep camera/Expo imports out of the dashboard module graph. Besides
+    // making the drawer lighter, this prevents native camera shims from
+    // crashing web/Jest consumers that never open the scanner.
+    const [{ qrScannerService }, { resolveHashpassQrPayload }] = await Promise.all([
+      import("../../../lib/qr-scanner-service"),
+      import("../../../lib/qr-payload-resolver"),
+    ]);
+    const parsed = qrScannerService.parseHashpassPayload(data);
+    if (!parsed.isValid || parsed.kind === "qr_token") return false;
+    try {
+      const resolved = await resolveHashpassQrPayload(parsed);
+      setHashpassQrError(null);
+      setHashpassQrResult(resolved);
+    } catch (error: any) {
+      setHashpassQrResult(null);
+      setHashpassQrError(error?.message || "Unable to resolve this QR code.");
+    }
+    return true;
+  }, []);
   const dashboardCopilotHook = useCopilot() as any;
   // Memoized so drawerContent keeps a stable identity across DashboardLayout
   // re-renders (scroll, notifications, animation state all cause those). An
@@ -1876,15 +1903,19 @@ function AuthenticatedDashboardLayout() {
               console.error("QR Scan Error:", error);
               // Error is already shown in the scanner component
             }}
-            onRawScan={(data: string) => {
+            onRawScan={async (data: string) => {
               const parsed = parseAuthQrScan(data);
-              if (!parsed) return false;
-              setQrScannerVisible(false);
-              headerRouter.push({
-                pathname: "./auth-qr-approve",
-                params: { challengeId: parsed.challengeId },
-              } as any);
-              return true;
+              if (parsed) {
+                setQrScannerVisible(false);
+                headerRouter.push({
+                  pathname: "./auth-qr-approve",
+                  params: { challengeId: parsed.challengeId },
+                } as any);
+                return true;
+              }
+              const handled = await handleHashpassRawScan(data);
+              if (handled) setQrScannerVisible(false);
+              return handled;
             }}
           />
         )}
@@ -2078,17 +2109,74 @@ function AuthenticatedDashboardLayout() {
                   onScanError={(error: unknown) => {
                     console.error("QR Scan Error:", error);
                   }}
-                  onRawScan={(data: string) => {
+                  onRawScan={async (data: string) => {
                     const parsed = parseAuthQrScan(data);
-                    if (!parsed) return false;
-                    setAndroidQrScannerVisible(false);
-                    router.push({
-                      pathname: "./auth-qr-approve",
-                      params: { challengeId: parsed.challengeId },
-                    } as any);
-                    return true;
+                    if (parsed) {
+                      setAndroidQrScannerVisible(false);
+                      router.push({
+                        pathname: "./auth-qr-approve",
+                        params: { challengeId: parsed.challengeId },
+                      } as any);
+                      return true;
+                    }
+                    const handled = await handleHashpassRawScan(data);
+                    if (handled) setAndroidQrScannerVisible(false);
+                    return handled;
                   }}
                 />
+              )}
+              {/* istanbul ignore next -- exercised by browser/native dashboard smoke tests */}
+              {(hashpassQrResult || hashpassQrError) && (
+                <Modal
+                  visible
+                  transparent
+                  animationType="fade"
+                  onRequestClose={() => {
+                    setHashpassQrResult(null);
+                    setHashpassQrError(null);
+                  }}
+                >
+                  <View style={styles.qrResultBackdrop}>
+                    <View style={styles.qrResultCard}>
+                      <Text style={styles.qrResultTitle}>
+                        {hashpassQrError
+                          ? "QR unavailable"
+                          : hashpassQrResult?.valid
+                            ? "HashPass identified"
+                            : "QR not valid"}
+                      </Text>
+                      <Text style={styles.qrResultMessage}>
+                        {hashpassQrError || hashpassQrResult?.message}
+                      </Text>
+                      {hashpassQrResult?.user && (
+                        <Text style={styles.qrResultDetail}>
+                          User: {hashpassQrResult.user.name || hashpassQrResult.user.username || hashpassQrResult.user.id}
+                        </Text>
+                      )}
+                      {hashpassQrResult?.pass && (
+                        <Text style={styles.qrResultDetail}>
+                          Pass: {hashpassQrResult.pass.number || hashpassQrResult.pass.id} · {hashpassQrResult.pass.type?.toUpperCase() || "UNKNOWN"}
+                        </Text>
+                      )}
+                      {hashpassQrResult?.network && (
+                        <Text style={styles.qrResultDetail}>Network: {hashpassQrResult.network}</Text>
+                      )}
+                      {hashpassQrResult?.address && (
+                        <Text selectable style={styles.qrResultDetail}>Address: {hashpassQrResult.address}</Text>
+                      )}
+                      <TouchableOpacity
+                        style={styles.qrResultClose}
+                        accessibilityRole="button"
+                        onPress={() => {
+                          setHashpassQrResult(null);
+                          setHashpassQrError(null);
+                        }}
+                      >
+                        <Text style={styles.qrResultCloseText}>Done</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </Modal>
               )}
             </View>
           </ScrollProvider>
@@ -2114,6 +2202,50 @@ const getStyles = (
   const brandRed = uiTokens.colors.light.accent;
 
   return StyleSheet.create({
+    qrResultBackdrop: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      padding: 24,
+      backgroundColor: uiTokens.colors[isDark ? "dark" : "light"].overlay,
+    },
+    qrResultCard: {
+      width: "100%",
+      maxWidth: 440,
+      borderRadius: uiTokens.radius.card,
+      padding: 24,
+      backgroundColor: colors.background.default,
+      borderWidth: 1,
+      borderColor: colors.divider,
+      gap: 10,
+    },
+    qrResultTitle: {
+      fontSize: 20,
+      fontWeight: "700",
+      color: colors.text.primary,
+    },
+    qrResultMessage: {
+      fontSize: 15,
+      lineHeight: 22,
+      color: colors.text.primary,
+    },
+    qrResultDetail: {
+      fontSize: 14,
+      lineHeight: 20,
+      color: colors.text.secondary,
+    },
+    qrResultClose: {
+      alignSelf: "flex-end",
+      marginTop: 8,
+      borderRadius: uiTokens.radius.pill,
+      paddingHorizontal: 20,
+      paddingVertical: 12,
+      backgroundColor: colors.primary,
+    },
+    qrResultCloseText: {
+      color: colors.background.default,
+      fontWeight: "700",
+    },
     container: {
       flex: 1,
       backgroundColor: colors.background.default,

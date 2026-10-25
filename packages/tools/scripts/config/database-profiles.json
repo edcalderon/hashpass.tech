@@ -285,7 +285,8 @@
       "db/migrations/V041__admin_pass_and_user_listing.sql",
       "db/migrations/V059__admin_pass_registry_identity_fallback.sql",
       "db/migrations/V060__admin_pass_listing_bsl_identity_compatibility.sql",
-      "db/migrations/V061__admin_pass_usage_editing.sql"
+      "db/migrations/V061__admin_pass_usage_editing.sql",
+      "db/migrations/V140__fix_admin_pass_cursor_type.sql"
     ],
     "admin-pass-identity": [
       "db/migrations/V059__admin_pass_registry_identity_fallback.sql"

@@ -178,7 +178,7 @@ export default function PassDetailsScreen() {
     return (
       <View style={styles.container}>
         <View style={styles.errorContainer}>
-          <Ionicons name="alert-circle" size={64} color={colors.error} />
+          <Ionicons name="alert-circle" size={64} color={colors.error.main} />
           <Text style={styles.errorTitle}>Error</Text>
           <Text style={styles.errorText}>{error || 'Pass not found'}</Text>
           <TouchableOpacity style={styles.button} onPress={() => router.back()}>
@@ -284,7 +284,7 @@ export default function PassDetailsScreen() {
                 <Ionicons 
                   name="checkmark-circle" 
                   size={20} 
-                  color={isDark ? '#4ADE80' : (colors.success || '#34A853')} 
+                  color={isDark ? '#4ADE80' : (colors.success?.main || '#34A853')}
                 />
                 <Text style={styles.featureText}>{formatEntitlement(feature)}</Text>
               </View>
@@ -303,7 +303,7 @@ export default function PassDetailsScreen() {
                 <Ionicons 
                   name="star" 
                   size={20} 
-                  color={isDark ? '#FFB84D' : (colors.warning || '#FF9500')} 
+                  color={isDark ? '#FFB84D' : (colors.warning?.main || '#FF9500')}
                 />
                 <Text style={styles.featureText}>{formatEntitlement(perk)}</Text>
               </View>

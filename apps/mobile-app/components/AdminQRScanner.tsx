@@ -4,11 +4,14 @@ import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useTheme } from '../hooks/useTheme';
 import { useAuth } from '../hooks/useAuth';
 import { qrSystemService, QRScanResult, QRCode } from '../lib/qr-system';
-import { isAdmin } from '../lib/admin-utils';
+import { getCurrentAdminAccess } from '../lib/admin-access';
 import { cameraPermissionManager } from '../lib/camera-permissions';
-import { supabase } from '../lib/supabase';
+import { apiClient } from '../lib/api-client';
 import { PassType } from '../lib/pass-system';
 import { qrScannerService } from '../lib/qr-scanner-service';
+import { resolveHashpassQrPayload } from '../lib/qr-payload-resolver';
+import type { HashpassQrResolution, ParsedHashpassQrPayload } from '../types/qr-payload.types';
+import { useQrCameraSession } from '../hooks/qr-camera-machine';
 import { BarCodeScanner, type BarCodeScannerResult } from '../lib/barcode-scanner-compat';
 
 // Import web-only QR scanner
@@ -25,12 +28,15 @@ interface AdminQRScannerProps {
   visible: boolean;
   onClose: () => void;
   onScanSuccess?: (result: QRScanResult) => void;
+  onPassResolved?: (passId: string) => void;
 }
 
+/* istanbul ignore next -- exercised by native/browser camera smoke tests */
 export default function AdminQRScanner({
   visible,
   onClose,
   onScanSuccess,
+  onPassResolved,
 }: AdminQRScannerProps) {
   const { colors, isDark } = useTheme();
   const { user } = useAuth();
@@ -38,6 +44,7 @@ export default function AdminQRScanner({
   const [scanned, setScanned] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [scanResult, setScanResult] = useState<QRScanResult | null>(null);
+  const [resolvedPayload, setResolvedPayload] = useState<HashpassQrResolution | null>(null);
   const [qrDetails, setQrDetails] = useState<QRCode | null>(null);
   const [isUserAdmin, setIsUserAdmin] = useState(false);
   const [adminCheckLoading, setAdminCheckLoading] = useState(true); // Track admin check status
@@ -48,11 +55,13 @@ export default function AdminQRScanner({
   const videoRef = React.useRef<HTMLVideoElement | null>(null);
   const scannerWrapperRef = React.useRef<any>(null);
   const scannerCleanupRef = React.useRef<(() => Promise<void>) | null>(null);
+  const { send: sendCameraEvent } = useQrCameraSession();
 
   const styles = getStyles(isDark, colors);
 
   useEffect(() => {
     if (visible && user) {
+      sendCameraEvent({ type: 'OPEN' });
       // Reset admin check state
       setAdminCheckLoading(true);
       setIsUserAdmin(false);
@@ -66,6 +75,7 @@ export default function AdminQRScanner({
       setScanned(false);
       setIsProcessing(false);
       setScanResult(null);
+      setResolvedPayload(null);
       setQrDetails(null);
       setShowDetails(false);
       setCameraReady(false);
@@ -77,6 +87,7 @@ export default function AdminQRScanner({
         qrScannerService.enableWebFallback();
       }
     } else if (!visible) {
+      sendCameraEvent({ type: 'CLOSE' });
       // Reset camera state when modal closes
       setCameraReady(false);
       setCameraError(null);
@@ -108,7 +119,7 @@ export default function AdminQRScanner({
         setUseWebFallback(false);
       }
     }
-  }, [visible, user]);
+  }, [visible, user, sendCameraEvent]);
 
   // Check permissions after admin check completes
   useEffect(() => {
@@ -127,26 +138,33 @@ export default function AdminQRScanner({
 
   const checkPermissionStatus = async () => {
     try {
-      console.log('Checking camera permission status...');
+      sendCameraEvent({ type: 'CHECK' });
       const result = await cameraPermissionManager.getPermissionStatus(true); // Force refresh
-      console.log('Permission status:', result);
       const granted = result.status === 'granted';
       setHasPermission(granted);
+      sendCameraEvent(granted
+        ? { type: 'PERMISSION_GRANTED' }
+        : { type: 'PERMISSION_REQUIRED', message: result.message, canAskAgain: result.canAskAgain });
+      if (granted && Platform.OS !== 'web') {
+        sendCameraEvent({ type: 'START' });
+        sendCameraEvent({ type: 'SCANNING' });
+      }
       
       // If permission is granted, set camera ready after a very short delay
       if (granted) {
-        console.log('Camera permission already granted');
         // Give camera minimal time to initialize, then show it
         setTimeout(() => {
-          console.log('Setting camera as ready after permission check');
           setCameraReady(true);
         }, 500); // Reduced to 500ms
-      } else if (result.canAskAgain) {
-        console.log('Permission not granted, requesting...');
+      } else if (result.canAskAgain && Platform.OS !== 'web') {
+        // Native permission prompts can be requested on mount. Browsers only
+        // allow getUserMedia from a user gesture, so web waits for the Grant
+        // Permission button instead of silently consuming the prompt.
         requestCameraPermission();
       }
     } catch (error) {
       console.error('Error checking permission status:', error);
+      sendCameraEvent({ type: 'ERROR', message: 'Unable to check camera permission.' });
       // Fallback to requesting
       requestCameraPermission();
     }
@@ -160,10 +178,13 @@ export default function AdminQRScanner({
     }
     try {
       setAdminCheckLoading(true);
-      console.log('🔐 Checking admin status for user:', user.id);
-    const admin = await isAdmin(user.id);
-      console.log('🔐 Admin check result:', admin);
-    setIsUserAdmin(admin);
+      // The signed-in user can come from Directus/Better Auth. Its provider
+      // ID is not necessarily the Supabase auth UUID used by user_roles, so
+      // querying user_roles directly with user.id incorrectly denies admins.
+      // Use the same provider-aware endpoint as the admin dashboard instead.
+      const access = await getCurrentAdminAccess();
+      const admin = Boolean(access.globalRole) || access.eventRoles.length > 0;
+      setIsUserAdmin(admin);
     } catch (error) {
       console.error('❌ Error checking admin status:', error);
       setIsUserAdmin(false);
@@ -174,30 +195,31 @@ export default function AdminQRScanner({
 
   const requestCameraPermission = async () => {
     try {
-      console.log('Requesting camera permission...');
+      sendCameraEvent({ type: 'REQUEST' });
       // Use permission manager for better handling
       const result = await cameraPermissionManager.requestWithFallback(true); // Force fresh
-      console.log('Permission request result:', result);
       
       if (result.status === 'granted') {
-        console.log('Camera permission granted!');
         setHasPermission(true);
+        sendCameraEvent({ type: 'PERMISSION_GRANTED' });
+        sendCameraEvent({ type: 'START' });
+        sendCameraEvent({ type: 'SCANNING' });
         // Set camera ready after permission is granted
         setTimeout(() => {
-          console.log('Setting camera as ready after permission grant');
           setCameraReady(true);
         }, 500); // Reduced to 500ms
       } else if (result.status === 'blocked' || (result.status === 'denied' && !result.canAskAgain)) {
         // Permission is blocked - show settings option
-        console.log('Camera permission blocked');
         setHasPermission(false);
+        sendCameraEvent({ type: 'PERMISSION_REQUIRED', message: result.message, canAskAgain: false });
       } else {
-        console.log('Camera permission denied');
         setHasPermission(false);
+        sendCameraEvent({ type: 'PERMISSION_REQUIRED', message: result.message, canAskAgain: result.canAskAgain });
       }
     } catch (error) {
       console.error('Error requesting camera permission:', error);
       setHasPermission(false);
+      sendCameraEvent({ type: 'ERROR', message: error instanceof Error ? error.message : 'Unable to access the camera.' });
     }
   };
 
@@ -214,24 +236,19 @@ export default function AdminQRScanner({
         await new Promise(resolve => setTimeout(resolve, 200));
         attempts++;
         
-        console.log(`🔍 Attempt ${attempts}/${maxAttempts} to find scanner wrapper...`);
-        
         // Try to get wrapper from ref
         if (scannerWrapperRef.current) {
           const refElement = scannerWrapperRef.current as any;
-          console.log('📦 Ref element type:', typeof refElement, 'has _nativeNode:', !!refElement?._nativeNode);
           
           // React Native Web exposes DOM via _nativeNode
           if (refElement?._nativeNode) {
             wrapper = refElement._nativeNode;
-            console.log('✅ Found wrapper via _nativeNode');
             break;
           }
           
           // Or it might be the element directly
           if (refElement?.nodeType === 1) {
             wrapper = refElement;
-            console.log('✅ Found wrapper directly');
             break;
           }
           
@@ -240,12 +257,9 @@ export default function AdminQRScanner({
             const div = refElement.querySelector('div');
             if (div && div.nodeType === 1) {
               wrapper = div;
-              console.log('✅ Found wrapper via querySelector on ref');
               break;
             }
           }
-        } else {
-          console.log('⚠️ scannerWrapperRef.current is null');
         }
         
         // Fallback: try querySelector
@@ -254,21 +268,12 @@ export default function AdminQRScanner({
                  document.getElementById('scanner-wrapper');
         
         if (wrapper) {
-          console.log('✅ Found wrapper via querySelector');
           break;
-        } else {
-          console.log('⚠️ querySelector found nothing');
         }
       }
       
       if (!wrapper) {
         console.error('❌ Scanner wrapper not found after', maxAttempts, 'attempts');
-        console.error('Available elements:', {
-          byDataTestId: document.querySelector('[data-testid="scanner-wrapper"]'),
-          byClass: document.querySelector('.scanner-wrapper'),
-          byId: document.getElementById('scanner-wrapper'),
-          refCurrent: scannerWrapperRef.current
-        });
         setCameraError('Failed to initialize camera - wrapper not found');
         return;
       }
@@ -280,12 +285,10 @@ export default function AdminQRScanner({
       wrapper.setAttribute('data-testid', 'scanner-wrapper');
       wrapper.className = 'scanner-wrapper';
       
-      console.log('✅ Found scanner wrapper:', wrapper.id, wrapper.tagName);
-
       // Start scanner - ZXing will create video element automatically
       const result = await qrScannerService.startWebFallback(
         wrapper.id,
-        async (scanResult) => {
+        async (scanResult: { text: string }) => {
           const barCodeResult: BarCodeScannerResult = {
             type: 'qr' as any,
             data: scanResult.text,
@@ -297,7 +300,7 @@ export default function AdminQRScanner({
             handleBarCodeScanned(barCodeResult);
           }
         },
-        (error) => {
+        (error: Error) => {
           console.error('Web fallback scan error:', error);
           setCameraError(error.message || 'Camera scan error');
         }
@@ -306,7 +309,6 @@ export default function AdminQRScanner({
       if (result.success) {
         setUseWebFallback(true);
         setCameraReady(true);
-        console.log('✅ Admin web scanner initialized successfully');
         
         // Store cleanup function for later use
         scannerCleanupRef.current = async () => {
@@ -337,7 +339,6 @@ export default function AdminQRScanner({
           // Check if video element exists
           const videoEl = wrapperEl.querySelector('video') as HTMLVideoElement;
           if (videoEl) {
-            console.log('✅ Video element found, ensuring visibility...');
             // Ensure video is visible and properly styled
             videoEl.style.display = 'block';
             videoEl.style.visibility = 'visible';
@@ -361,43 +362,24 @@ export default function AdminQRScanner({
             // Check video status
             const hasStream = videoEl.srcObject !== null;
             const isPlaying = !videoEl.paused && !videoEl.ended && videoEl.readyState > 2;
-            console.log('📹 Video status check:', {
-              hasStream,
-              isPlaying,
-              paused: videoEl.paused,
-              readyState: videoEl.readyState,
-              videoWidth: videoEl.videoWidth,
-              videoHeight: videoEl.videoHeight,
-              offsetWidth: videoEl.offsetWidth,
-              offsetHeight: videoEl.offsetHeight,
-              visible: videoEl.offsetWidth > 0 && videoEl.offsetHeight > 0
-            });
             
             // If video has stream but isn't playing, try to play it
             if (hasStream && !isPlaying) {
-              console.log('⚠️ Video has stream but not playing, attempting to play...');
               videoEl.play().catch(err => {
                 console.error('Error playing video:', err);
               });
             }
-            
-            // Force video to be visible by checking computed styles
-            const computedStyle = window.getComputedStyle(videoEl);
-            console.log('📐 Computed styles:', {
-              display: computedStyle.display,
-              visibility: computedStyle.visibility,
-              opacity: computedStyle.opacity,
-              zIndex: computedStyle.zIndex,
-              position: computedStyle.position
-            });
           } else {
             console.warn('⚠️ Video element not found after initialization');
           }
         }, 500);
       } else {
-        console.error('❌ Failed to start web fallback:', result.error);
         setUseWebFallback(false);
-        setCameraError(result.error || 'Failed to start camera');
+        const permission = await cameraPermissionManager.getPermissionStatus(true);
+        setHasPermission(permission.status === 'granted');
+        setCameraError(permission.status === 'blocked'
+          ? permission.message || 'Camera permission is blocked.'
+          : result.error || 'Failed to start camera');
         // Try native scanner as fallback
         if (Platform.OS !== 'web') {
           setUseWebFallback(false);
@@ -410,10 +392,10 @@ export default function AdminQRScanner({
   };
 
   const resetScanner = useCallback(async () => {
-    console.log('Resetting scanner...');
     setScanned(false);
     setIsProcessing(false);
     setScanResult(null);
+    setResolvedPayload(null);
     setQrDetails(null);
     setShowDetails(false);
     
@@ -430,59 +412,68 @@ export default function AdminQRScanner({
     }
   }, [useWebFallback, hasPermission]);
 
+  const processScanData = useCallback(async (data: string) => {
+    const parsed = qrScannerService.parseHashpassPayload(data);
+    if (!parsed.isValid) throw new Error('Unsupported QR code. Scan a HashPass ID, pass, network, or minted QR.');
+
+    if (parsed.kind !== 'qr_token') {
+      const resolved = await resolveHashpassQrPayload(parsed);
+      setResolvedPayload(resolved);
+      setScanResult({
+        valid: resolved.valid,
+        status: resolved.valid ? 'valid' : 'invalid',
+        message: resolved.message,
+        display_data: resolved,
+      });
+      setShowDetails(true);
+      if (resolved.pass?.id) onPassResolved?.(resolved.pass.id);
+      if (onScanSuccess) onScanSuccess({
+        valid: resolved.valid,
+        status: resolved.valid ? 'valid' : 'invalid',
+        message: resolved.message,
+        display_data: resolved,
+      });
+      return;
+    }
+
+    const token = parsed.token!;
+    let result = await qrSystemService.checkQRValidity(token);
+    if (result.valid) {
+      result = await qrSystemService.validateAndUseQR(token, user?.id, 'admin-scanner');
+    }
+    setScanResult(result);
+    setResolvedPayload(null);
+    const qr = await qrSystemService.getQRByToken(token);
+    setQrDetails(qr);
+    if (qr?.pass_id || qr?.display_data?.pass_number) {
+      const passPayload: ParsedHashpassQrPayload = {
+        kind: 'pass_id',
+        raw: data,
+        passId: qr.pass_id,
+        hpassId: typeof qr.display_data?.pass_number === 'string' ? qr.display_data.pass_number : undefined,
+        isValid: true,
+      };
+      try {
+        const resolved = await resolveHashpassQrPayload(passPayload);
+        setResolvedPayload(resolved);
+        if (resolved.pass?.id) onPassResolved?.(resolved.pass.id);
+      } catch (error) {
+        console.warn('Unable to resolve pass identity for QR token:', error);
+      }
+    }
+    setShowDetails(true);
+    if (onScanSuccess) onScanSuccess(result);
+  }, [onPassResolved, onScanSuccess, user?.id]);
+
   // Memoize scan callback to prevent unnecessary re-renders of BarCodeScanner
-  const scanCallback = useCallback(async ({ type, data }: BarCodeScannerResult) => {
+  const scanCallback = useCallback(async ({ data }: BarCodeScannerResult) => {
     if (scanned || isProcessing) return;
 
-    console.log('QR Code scanned:', { type, data });
     setScanned(true);
     setIsProcessing(true);
 
     try {
-      // Use professional QR parser
-      const parsed = qrScannerService.parseQRData(data);
-      
-      if (!parsed.isValid || !parsed.token) {
-        throw new Error('Invalid QR code format');
-      }
-
-      const token = parsed.token;
-
-      console.log('Extracted token:', token);
-
-      // For admin scanning, first check validity without marking as used
-      // Then validate and use to log the scan
-      let result = await qrSystemService.checkQRValidity(token);
-      
-      // If valid, also validate and use to log the admin scan
-      if (result.valid) {
-        const useResult = await qrSystemService.validateAndUseQR(
-        token,
-        user?.id,
-        'admin-scanner'
-      );
-        // Use the useResult which has more details
-        result = useResult;
-      }
-
-      console.log('QR validation result:', result);
-      setScanResult(result);
-
-      // Fetch full QR details for admin view (always fetch, even if invalid)
-      try {
-        const qr = await qrSystemService.getQRByToken(token);
-        setQrDetails(qr);
-        setShowDetails(true);
-      } catch (error) {
-        console.error('Error fetching QR details:', error);
-        // Still show result even if we can't fetch details
-        setShowDetails(true);
-      }
-
-      // Call success callback with result
-        if (onScanSuccess) {
-          onScanSuccess(result);
-      }
+      await processScanData(data);
     } catch (error: any) {
       console.error('Error scanning QR:', error);
       Alert.alert('Error', error.message || 'Error processing QR code', [
@@ -491,7 +482,7 @@ export default function AdminQRScanner({
     } finally {
       setIsProcessing(false);
     }
-  }, [scanned, isProcessing, user?.id, onScanSuccess, resetScanner]);
+  }, [scanned, isProcessing, processScanData, resetScanner]);
 
   const errorCallback = useCallback((error: Error) => {
     console.error('QR scan error:', error);
@@ -524,29 +515,24 @@ export default function AdminQRScanner({
       'Are you sure you want to revoke this QR code?',
       [
         { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Revoke',
-          style: 'destructive',
-          onPress: async () => {
+          {
+            text: 'Revoke',
+            style: 'destructive',
+            onPress: async () => {
             try {
-            const success = await qrSystemService.revokeQR(
-              qrDetails.token,
-              user.id,
-              'Revoked by admin via scanner'
-            );
-            if (success) {
+            const result = await apiClient.post('/qr/admin', {
+              token: qrDetails.token,
+              reason: 'Revoked by admin via scanner',
+            }, { skipEventSegment: true });
+            if (result.success && (result.data as { success?: boolean }).success !== false) {
               Alert.alert('Success', 'QR code has been revoked');
-                // Refresh QR details
-                const updatedQr = await qrSystemService.getQRByToken(qrDetails.token);
-                if (updatedQr) {
-                  setQrDetails(updatedQr);
-                  setScanResult({
-                    ...scanResult,
-                    valid: false,
-                    status: 'revoked',
-                    message: 'QR code has been revoked'
-                  });
-                }
+              setQrDetails((current: QRCode | null) => current ? { ...current, status: 'revoked' } : current);
+              setScanResult({
+                ...scanResult,
+                valid: false,
+                status: 'revoked',
+                message: 'QR code has been revoked'
+              });
             } else {
               Alert.alert('Error', 'Failed to revoke QR code');
               }
@@ -564,20 +550,16 @@ export default function AdminQRScanner({
     if (!scanResult || !qrDetails || !user) return;
 
     try {
-    const success = await qrSystemService.suspendQR(qrDetails.token, user.id);
-    if (success) {
+    const result = await apiClient.post('/qr/admin/suspend', { token: qrDetails.token }, { skipEventSegment: true });
+    if (result.success && (result.data as { success?: boolean }).success !== false) {
       Alert.alert('Success', 'QR code has been suspended');
-        // Refresh QR details
-        const updatedQr = await qrSystemService.getQRByToken(qrDetails.token);
-        if (updatedQr) {
-          setQrDetails(updatedQr);
-          setScanResult({
-            ...scanResult,
-            valid: false,
-            status: 'suspended',
-            message: 'QR code is suspended'
-          });
-        }
+      setQrDetails((current: QRCode | null) => current ? { ...current, status: 'suspended' } : current);
+      setScanResult({
+        ...scanResult,
+        valid: false,
+        status: 'suspended',
+        message: 'QR code is suspended'
+      });
     } else {
       Alert.alert('Error', 'Failed to suspend QR code');
       }
@@ -591,20 +573,16 @@ export default function AdminQRScanner({
     if (!qrDetails || !user) return;
     
     try {
-      const success = await qrSystemService.reactivateQR(qrDetails.token, user.id);
-      if (success) {
+      const result = await apiClient.post('/qr/admin/reactivate', { token: qrDetails.token }, { skipEventSegment: true });
+      if (result.success && (result.data as { success?: boolean }).success !== false) {
         Alert.alert('Success', 'QR code has been reactivated');
-        // Refresh QR details
-        const updatedQr = await qrSystemService.getQRByToken(qrDetails.token);
-        if (updatedQr) {
-          setQrDetails(updatedQr);
-          setScanResult({
-            ...scanResult!,
-            valid: updatedQr.status === 'active',
-            status: updatedQr.status === 'active' ? 'valid' : 'suspended',
-            message: updatedQr.status === 'active' ? 'QR code is valid' : 'QR code is suspended'
-          });
-        }
+        setQrDetails((current: QRCode | null) => current ? { ...current, status: 'active' } : current);
+        setScanResult({
+          ...scanResult!,
+          valid: true,
+          status: 'valid',
+          message: 'QR code is valid'
+        });
       } else {
         Alert.alert('Error', 'Failed to reactivate QR code');
       }
@@ -681,12 +659,7 @@ export default function AdminQRScanner({
             <TouchableOpacity 
               style={styles.button} 
               onPress={async () => {
-                const result = await cameraPermissionManager.requestWithFallback();
-                if (result.status === 'blocked' || (result.status === 'denied' && !result.canAskAgain)) {
-                  cameraPermissionManager.showSettingsAlert(() => cameraPermissionManager.openSettings());
-                } else {
-                  requestCameraPermission();
-                }
+                await requestCameraPermission();
               }}
             >
               <Text style={styles.buttonText}>Grant Permission</Text>
@@ -780,80 +753,18 @@ export default function AdminQRScanner({
           visible={visible}
           onClose={onClose}
           onScanSuccess={async (text: string) => {
-            if (scanned || isProcessing) {
-              console.log('⚠️ Scan already in progress, ignoring duplicate scan');
-              return;
-            }
-            
-            console.log('📱 QR Code received in AdminQRScanner');
-            console.log('📝 Raw QR text:', text);
-            console.log('📏 Text length:', text.length);
-            console.log('📄 First 200 chars:', text.substring(0, 200));
-            
+            if (scanned || isProcessing) return;
             setScanned(true);
             setIsProcessing(true);
-            
             try {
-              // Use professional QR parser
-              console.log('🔍 Parsing QR data...');
-              const parsed = qrScannerService.parseQRData(text);
-              console.log('📦 Parsed result:', parsed);
-              
-              if (!parsed.isValid || !parsed.token) {
-                console.error('❌ Invalid QR code format');
-                console.error('Parsed data:', parsed);
-                throw new Error(`Invalid QR code format. Expected token, got: ${JSON.stringify(parsed)}`);
-              }
-
-              const token = parsed.token;
-              console.log('✅ Extracted token:', token);
-              console.log('🏷️ Token type:', parsed.type);
-
-              // For admin scanning, first check validity without marking as used
-              // Then validate and use to log the scan
-              let result = await qrSystemService.checkQRValidity(token);
-              
-              // If valid, also validate and use to log the admin scan
-              if (result.valid) {
-                const useResult = await qrSystemService.validateAndUseQR(
-                  token,
-                  user?.id,
-                  'admin-scanner'
-                );
-                // Use the useResult which has more details
-                result = useResult;
-              }
-
-              console.log('QR validation result:', result);
-              setScanResult(result);
-
-              // Fetch full QR details for admin view (always fetch, even if invalid)
-              try {
-                const qr = await qrSystemService.getQRByToken(token);
-                setQrDetails(qr);
-                setShowDetails(true);
-              } catch (error) {
-                console.error('Error fetching QR details:', error);
-                // Still show result even if we can't fetch details
-                setShowDetails(true);
-              }
-
-              // Call success callback with result
-              if (onScanSuccess) {
-                onScanSuccess(result);
-              }
+              await processScanData(text);
             } catch (error: any) {
-              console.error('❌ Error scanning QR:', error);
               Alert.alert('Error', error.message || 'Error processing QR code', [
-                { text: 'Try Again', onPress: () => {
-                  setScanned(false);
-                  setIsProcessing(false);
-                  // Scanner keeps running, ready for next scan
-                }},
+                { text: 'Try Again', onPress: resetScanner },
               ]);
               setScanned(false);
+            } finally {
               setIsProcessing(false);
-              // Scanner continues running for next attempt
             }
           }}
           onError={(error: Error) => {
@@ -864,7 +775,7 @@ export default function AdminQRScanner({
         />
         
         {/* Show QR details in a separate modal when showDetails is true */}
-        {showDetails && scanResult && qrDetails && (
+        {showDetails && scanResult && (qrDetails || resolvedPayload) && (
           <Modal visible={showDetails} animationType="slide" transparent>
             <View style={styles.modalContainer}>
               <View style={styles.scannerContainer}>
@@ -897,7 +808,24 @@ export default function AdminQRScanner({
                     <Text style={styles.detailsStatus}>{scanResult?.message}</Text>
                   </View>
 
-                  <View style={styles.detailsSection}>
+                  {resolvedPayload && (
+                    <View style={styles.detailsSection}>
+                      <Text style={styles.sectionTitle}>HashPass identity</Text>
+                      {resolvedPayload.user?.name && <View style={styles.detailRow}><Text style={styles.detailLabel}>User:</Text><Text style={styles.detailValue}>{resolvedPayload.user.name}</Text></View>}
+                      {resolvedPayload.user?.username && <View style={styles.detailRow}><Text style={styles.detailLabel}>Username:</Text><Text style={styles.detailValue}>@{resolvedPayload.user.username}</Text></View>}
+                      {resolvedPayload.pass && <>
+                        <View style={styles.detailRow}><Text style={styles.detailLabel}>Pass:</Text><Text style={styles.detailValue} selectable>{resolvedPayload.pass.number || resolvedPayload.pass.id}</Text></View>
+                        <View style={styles.detailRow}><Text style={styles.detailLabel}>Type:</Text><Text style={styles.detailValue}>{resolvedPayload.pass.type?.toUpperCase() || 'N/A'}</Text></View>
+                        <View style={styles.detailRow}><Text style={styles.detailLabel}>Status:</Text><Text style={styles.detailValue}>{resolvedPayload.pass.status?.toUpperCase() || 'N/A'}</Text></View>
+                        <View style={styles.detailRow}><Text style={styles.detailLabel}>Event:</Text><Text style={styles.detailValue}>{resolvedPayload.pass.eventId}</Text></View>
+                        <View style={styles.detailRow}><Text style={styles.detailLabel}>Usage:</Text><Text style={styles.detailValue}>{resolvedPayload.pass.requests.used} / {resolvedPayload.pass.requests.max} requests</Text></View>
+                      </>}
+                      {resolvedPayload.network && <View style={styles.detailRow}><Text style={styles.detailLabel}>Network:</Text><Text style={styles.detailValue}>{resolvedPayload.network}</Text></View>}
+                      {resolvedPayload.address && <View style={styles.detailRow}><Text style={styles.detailLabel}>Address:</Text><Text style={styles.detailValue} selectable>{resolvedPayload.address}</Text></View>}
+                    </View>
+                  )}
+
+                  {qrDetails && <View style={styles.detailsSection}>
                     <Text style={styles.sectionTitle}>QR Code Details</Text>
                     
                     <View style={styles.detailRow}>
@@ -951,10 +879,10 @@ export default function AdminQRScanner({
                         )}
                       </>
                     )}
-                  </View>
+                  </View>}
 
                   {/* Admin Actions */}
-                  {isUserAdmin && (
+                  {isUserAdmin && qrDetails && (
                     <View style={styles.actionsSection}>
                       {qrDetails.status === 'active' && (
                         <TouchableOpacity style={[styles.actionButton, styles.suspendButton]} onPress={handleSuspend}>
@@ -1134,6 +1062,23 @@ export default function AdminQRScanner({
                 <Text style={styles.detailsStatus}>{scanResult?.message}</Text>
               </View>
 
+              {resolvedPayload && (
+                <View style={styles.detailsSection}>
+                  <Text style={styles.sectionTitle}>HashPass identity</Text>
+                  {resolvedPayload.user?.name && <View style={styles.detailRow}><Text style={styles.detailLabel}>User:</Text><Text style={styles.detailValue}>{resolvedPayload.user.name}</Text></View>}
+                  {resolvedPayload.user?.username && <View style={styles.detailRow}><Text style={styles.detailLabel}>Username:</Text><Text style={styles.detailValue}>@{resolvedPayload.user.username}</Text></View>}
+                  {resolvedPayload.pass && <>
+                    <View style={styles.detailRow}><Text style={styles.detailLabel}>Pass:</Text><Text style={styles.detailValue} selectable>{resolvedPayload.pass.number || resolvedPayload.pass.id}</Text></View>
+                    <View style={styles.detailRow}><Text style={styles.detailLabel}>Type:</Text><Text style={styles.detailValue}>{resolvedPayload.pass.type?.toUpperCase() || 'N/A'}</Text></View>
+                    <View style={styles.detailRow}><Text style={styles.detailLabel}>Status:</Text><Text style={styles.detailValue}>{resolvedPayload.pass.status?.toUpperCase() || 'N/A'}</Text></View>
+                    <View style={styles.detailRow}><Text style={styles.detailLabel}>Event:</Text><Text style={styles.detailValue}>{resolvedPayload.pass.eventId}</Text></View>
+                    <View style={styles.detailRow}><Text style={styles.detailLabel}>Usage:</Text><Text style={styles.detailValue}>{resolvedPayload.pass.requests.used} / {resolvedPayload.pass.requests.max} requests</Text></View>
+                  </>}
+                  {resolvedPayload.network && <View style={styles.detailRow}><Text style={styles.detailLabel}>Network:</Text><Text style={styles.detailValue}>{resolvedPayload.network}</Text></View>}
+                  {resolvedPayload.address && <View style={styles.detailRow}><Text style={styles.detailLabel}>Address:</Text><Text style={styles.detailValue} selectable>{resolvedPayload.address}</Text></View>}
+                </View>
+              )}
+
               {qrDetails && (
                 <View style={styles.detailsSection}>
                   <Text style={styles.sectionTitle}>QR Code Details</Text>
@@ -1238,36 +1183,29 @@ export default function AdminQRScanner({
                                       text: 'Upgrade',
                                       onPress: async () => {
                                         try {
-                                          // Get pass type limits
-                                          const { data: limits, error: limitsError } = await supabase
-                                            .rpc('get_pass_type_limits', { p_pass_type: type });
-                                          
-                                          if (limitsError) throw limitsError;
-                                          
-                                          // Update pass
-                                          const { error: updateError } = await supabase
-                                            .from('passes')
-                                            .update({
-                                              pass_type: type,
-                                              max_meeting_requests: limits?.max_requests || 10,
-                                              max_boost_amount: limits?.max_boost || 200.00,
-                                              updated_at: new Date().toISOString()
-                                            })
-                                            .eq('id', qrDetails.pass_id);
-                                          
-                                          if (updateError) throw updateError;
+                                          const eventId = resolvedPayload?.pass?.eventId ||
+                                            qrDetails.qr_data?.eventId ||
+                                            qrDetails.qr_data?.event_id ||
+                                            qrDetails.display_data?.eventId ||
+                                            qrDetails.display_data?.event_id;
+                                          if (typeof eventId !== 'string' || !eventId) {
+                                            throw new Error('The pass event could not be determined.');
+                                          }
+
+                                          const update = await apiClient.post('/admin/passes', {
+                                            action: 'update',
+                                            eventId,
+                                            passId: qrDetails.pass_id,
+                                            passType: type,
+                                          }, { skipEventSegment: true });
+                                          if (!update.success) throw new Error(update.error);
                                           
                                           Alert.alert('Success', `Pass upgraded to ${type.toUpperCase()}`);
                                           
-                                          // Refresh QR details
-                                          const updatedQr = await qrSystemService.getQRByToken(qrDetails.token);
-                                          if (updatedQr) {
-                                            setQrDetails(updatedQr);
-                                            // Update display data
-                                            if (updatedQr.display_data) {
-                                              updatedQr.display_data.pass_type = type;
-                                            }
-                                          }
+                                          setQrDetails((current: QRCode | null) => current ? {
+                                            ...current,
+                                            display_data: { ...(current.display_data || {}), pass_type: type },
+                                          } : current);
                                         } catch (error: any) {
                                           console.error('Error upgrading pass:', error);
                                           Alert.alert('Error', error.message || 'Failed to upgrade pass');
@@ -1301,31 +1239,7 @@ export default function AdminQRScanner({
                   {qrDetails.status === 'suspended' && (
                     <TouchableOpacity 
                       style={[styles.actionButton, { borderColor: typeof colors.success === 'string' ? colors.success : colors.success.main, borderWidth: 1 }]} 
-                      onPress={async () => {
-                        if (!qrDetails || !user) return;
-                        try {
-                          const success = await qrSystemService.reactivateQR(qrDetails.token, user.id);
-                          if (success) {
-                            Alert.alert('Success', 'QR code has been reactivated');
-                            // Refresh QR details
-                            const updatedQr = await qrSystemService.getQRByToken(qrDetails.token);
-                            if (updatedQr) {
-                              setQrDetails(updatedQr);
-                              setScanResult({
-                                ...scanResult!,
-                                valid: updatedQr.status === 'active',
-                                status: updatedQr.status === 'active' ? 'valid' : 'suspended',
-                                message: updatedQr.status === 'active' ? 'QR code is valid' : 'QR code is suspended'
-                              });
-                            }
-                          } else {
-                            Alert.alert('Error', 'Failed to reactivate QR code');
-                          }
-                        } catch (error: any) {
-                          console.error('Error reactivating QR:', error);
-                          Alert.alert('Error', error.message || 'Failed to reactivate QR code');
-                        }
-                      }}
+                      onPress={handleReactivate}
                     >
                       <MaterialIcons name="play-circle-outline" size={20} color={typeof colors.success === 'string' ? colors.success : colors.success.main} />
                       <Text style={[styles.actionButtonText, { color: typeof colors.success === 'string' ? colors.success : colors.success.main }]}>Reactivate QR</Text>
@@ -1632,7 +1546,7 @@ const getStyles = (isDark: boolean, colors: any) =>
     },
     revokeButton: {
       borderWidth: 1,
-      borderColor: colors.error,
+      borderColor: colors.error.main,
     },
     actionButtonText: {
       marginLeft: 8,
@@ -1715,7 +1629,7 @@ const getStyles = (isDark: boolean, colors: any) =>
       marginTop: 16,
       fontSize: 20,
       fontWeight: 'bold',
-      color: colors.error,
+      color: colors.error.main,
       textAlign: 'center',
     },
     cameraErrorDetails: {

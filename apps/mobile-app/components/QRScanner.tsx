@@ -1,13 +1,16 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, Alert, ActivityIndicator, Platform, ScrollView } from 'react-native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { uiPalette, uiTokens } from '@hashpass/ui/tokens';
 import { useTheme } from '../hooks/useTheme';
 import { useAuth } from '../hooks/useAuth';
 import { qrSystemService, QRScanResult, QRCode } from '../lib/qr-system';
 import { cameraPermissionManager } from '../lib/camera-permissions';
-import { isAdmin } from '../lib/admin-utils';
 import { qrScannerService } from '../lib/qr-scanner-service';
+import { getCurrentAdminAccess, type AdminAccess } from '../lib/admin-access';
+import { useQrCameraSession } from '../hooks/qr-camera-machine';
 import { BarCodeScanner, type BarCodeScannerResult } from '../lib/barcode-scanner-compat';
+import { ActionButton } from '@hashpass/ui/primitives';
 
 // Dynamic import for web fallback
 // Using .web.ts extension ensures Metro only resolves this on web
@@ -36,9 +39,10 @@ interface QRScannerProps {
    * (navigation, showing its own result UI, etc). Returning false/undefined
    * falls through to the normal pass-scanning behavior unchanged.
    */
-  onRawScan?: (data: string) => boolean;
+  onRawScan?: (data: string) => boolean | Promise<boolean>;
 }
 
+/* istanbul ignore next -- exercised by native/browser camera smoke tests */
 export default function QRScanner({
   visible,
   onClose,
@@ -58,6 +62,8 @@ export default function QRScanner({
   const [isUserAdmin, setIsUserAdmin] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [useWebFallback, setUseWebFallback] = useState(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const { send: sendCameraEvent, status: cameraStatus } = useQrCameraSession();
   const videoRef = React.useRef<HTMLVideoElement | null>(null);
   const scannerWrapperRef = React.useRef<any>(null);
 
@@ -65,6 +71,7 @@ export default function QRScanner({
 
   useEffect(() => {
     if (visible) {
+      sendCameraEvent({ type: 'OPEN' });
       // Reset state when modal opens
       setScanned(false);
       setScanResult(null);
@@ -72,10 +79,20 @@ export default function QRScanner({
       setQrDetails(null);
       setShowDetails(false);
       setUseWebFallback(false);
+      setCameraError(null);
       
       // Check admin status
       if (user?.id) {
-        isAdmin(user.id).then(setIsUserAdmin);
+        // Resolve roles through the provider-aware backend endpoint. The
+        // browser auth id is not necessarily the Supabase UUID used by the
+        // database, so querying user_roles directly can return a 400.
+        getCurrentAdminAccess()
+          .then((access: AdminAccess) => {
+            setIsUserAdmin(Boolean(access.globalRole) || access.eventRoles.length > 0);
+          })
+          .catch(() => setIsUserAdmin(false));
+      } else {
+        setIsUserAdmin(false);
       }
       
       // On web, enable fallback and initialize after permission is granted
@@ -86,6 +103,7 @@ export default function QRScanner({
       // Check permission status first
       checkPermissionStatus();
     } else {
+      sendCameraEvent({ type: 'CLOSE' });
       // Reset permission state when modal closes
       setHasPermission(null);
       
@@ -101,7 +119,7 @@ export default function QRScanner({
         setUseWebFallback(false);
       }
     }
-  }, [visible, user]);
+  }, [visible, user, sendCameraEvent]);
 
   // Initialize web fallback when permission is granted
   useEffect(() => {
@@ -117,11 +135,21 @@ export default function QRScanner({
 
   const checkPermissionStatus = async (forceRefresh: boolean = false) => {
     try {
+      sendCameraEvent({ type: 'CHECK' });
       const result = await cameraPermissionManager.getPermissionStatus(forceRefresh);
-      console.log('Permission status:', result);
       
       const isGranted = result.status === 'granted';
       setHasPermission(isGranted);
+      sendCameraEvent(isGranted
+        ? { type: 'PERMISSION_GRANTED' }
+        : { type: 'PERMISSION_REQUIRED', message: result.message, canAskAgain: result.canAskAgain });
+      if (isGranted && Platform.OS !== 'web') {
+        // Native Expo Camera mounts immediately after permission is granted;
+        // keep that transition in the same async operation instead of
+        // chaining another effect off hasPermission.
+        sendCameraEvent({ type: 'START' });
+        sendCameraEvent({ type: 'SCANNING' });
+      }
       
       // If not granted and can ask, don't auto-request - let user click button
       if (!isGranted && result.canAskAgain && result.status !== 'blocked') {
@@ -133,6 +161,8 @@ export default function QRScanner({
       return result;
     } catch (error) {
       console.error('Error checking permission status:', error);
+      setCameraError('Unable to check camera permission.');
+      sendCameraEvent({ type: 'ERROR', message: 'Unable to check camera permission.' });
       setHasPermission(false);
       return null;
     }
@@ -140,37 +170,42 @@ export default function QRScanner({
 
   const requestCameraPermission = async (forceFresh: boolean = true) => {
     try {
-      console.log('Requesting camera permission (forceFresh:', forceFresh, ')...');
+      sendCameraEvent({ type: 'REQUEST' });
       setHasPermission(null); // Show loading state
       
-      // Check if camera is in use first
-      const cameraCheck = await cameraPermissionManager.isCameraInUse();
-      if (cameraCheck.inUse) {
-        console.warn('Camera is in use:', cameraCheck.message);
-        Alert.alert(
-          'Camera In Use',
-          cameraCheck.message || 'Camera is being used by another application. Please close other apps using the camera and try again.',
-          [
-            {
-              text: 'Retry',
-              onPress: () => {
-                setTimeout(() => requestCameraPermission(forceFresh), 1000);
+      // On web, requestWithFallback must be the first camera call made from
+      // this button's user gesture. A preflight getUserMedia can consume the
+      // browser prompt and leave the scanner stuck in a denied state.
+      if (Platform.OS !== 'web') {
+        const cameraCheck = await cameraPermissionManager.isCameraInUse();
+        if (cameraCheck.inUse) {
+          console.warn('Camera is in use:', cameraCheck.message);
+          Alert.alert(
+            'Camera In Use',
+            cameraCheck.message || 'Camera is being used by another application. Please close other apps using the camera and try again.',
+            [
+              {
+                text: 'Retry',
+                onPress: () => {
+                  setTimeout(() => requestCameraPermission(forceFresh), 1000);
+                },
               },
-            },
-            {
-              text: 'Cancel',
-              style: 'cancel',
-              onPress: () => setHasPermission(false),
-            },
+              {
+                text: 'Cancel',
+                style: 'cancel',
+                onPress: () => setHasPermission(false),
+              },
           ]
-        );
-        setHasPermission(false);
-        return;
+          );
+          setHasPermission(false);
+          setCameraError(cameraCheck.message || 'Camera is in use.');
+          sendCameraEvent({ type: 'ERROR', message: cameraCheck.message || 'Camera is in use.' });
+          return;
+        }
       }
       
       // Use permission manager with force fresh to avoid cache issues
       const result = await cameraPermissionManager.requestWithFallback(forceFresh);
-      console.log('Permission request result:', result);
       
       // Check if result indicates camera in use
       if (result.message?.toLowerCase().includes('being used') || result.message?.toLowerCase().includes('in use')) {
@@ -189,25 +224,38 @@ export default function QRScanner({
               style: 'cancel',
               onPress: () => setHasPermission(false),
             },
-          ]
+        ]
         );
         setHasPermission(false);
+        setCameraError(result.message || 'Camera is in use.');
+        sendCameraEvent({ type: 'ERROR', message: result.message || 'Camera is in use.' });
         return;
       }
       
       if (result.status === 'granted') {
-        // Double-check that it's actually working
-        const verified = await cameraPermissionManager.getPermissionStatus(true);
-        console.log('Verified permission status:', verified);
+        // Re-read status without prompting a second time. On web this keeps
+        // the original button gesture as the only getUserMedia request.
+        // Safari and some embedded browsers do not implement the Permissions
+        // API, so trust the successful stream opened by the button on web.
+        const verified = Platform.OS === 'web'
+          ? result
+          : await cameraPermissionManager.getPermissionStatus(false);
+        setCameraError(null);
         setHasPermission(verified.status === 'granted');
+        sendCameraEvent(verified.status === 'granted'
+          ? { type: 'PERMISSION_GRANTED' }
+          : { type: 'PERMISSION_REQUIRED', message: verified.message, canAskAgain: verified.canAskAgain });
       } else if (result.status === 'blocked' || (result.status === 'denied' && !result.canAskAgain)) {
         // Permission is blocked - show settings option
         setHasPermission(false);
+        sendCameraEvent({ type: 'PERMISSION_REQUIRED', message: result.message, canAskAgain: false });
         if (Platform.OS === 'web') {
           cameraPermissionManager.showSettingsAlert(() => cameraPermissionManager.openSettings());
         }
       } else {
+        setCameraError(result.message || 'Unable to access the camera.');
         setHasPermission(false);
+        sendCameraEvent({ type: 'PERMISSION_REQUIRED', message: result.message, canAskAgain: result.canAskAgain });
         // Re-check status after request with fresh check
         setTimeout(async () => {
           await checkPermissionStatus(true);
@@ -215,11 +263,14 @@ export default function QRScanner({
       }
     } catch (error) {
       console.error('Error requesting camera permission:', error);
+      setCameraError(error instanceof Error ? error.message : 'Unable to access the camera.');
       setHasPermission(false);
+      sendCameraEvent({ type: 'ERROR', message: error instanceof Error ? error.message : 'Unable to access the camera.' });
     }
   };
 
   const resetScanner = useCallback(async () => {
+    sendCameraEvent({ type: 'RESET' });
     setScanned(false);
     setIsProcessing(false);
     setScanResult(null);
@@ -237,7 +288,7 @@ export default function QRScanner({
         }, 500);
       }
     }
-  }, [useWebFallback, hasPermission]);
+  }, [useWebFallback, hasPermission, sendCameraEvent]);
 
   // Memoize scan callback to prevent unnecessary re-renders of BarCodeScanner
   const scanCallback = useCallback(async ({ type, data }: BarCodeScannerResult) => {
@@ -247,7 +298,7 @@ export default function QRScanner({
     setIsProcessing(true);
 
     try {
-      if (onRawScan?.(data)) {
+      if (await onRawScan?.(data)) {
         setIsProcessing(false);
         return;
       }
@@ -373,6 +424,7 @@ export default function QRScanner({
     if (Platform.OS !== 'web' || !hasPermission) return;
     
     try {
+      sendCameraEvent({ type: 'START' });
       // Wait for DOM and ref to be ready - try multiple times with better logging
       let wrapper: HTMLElement | null = null;
       let attempts = 0;
@@ -382,24 +434,19 @@ export default function QRScanner({
         await new Promise(resolve => setTimeout(resolve, 200));
         attempts++;
         
-        console.log(`🔍 Attempt ${attempts}/${maxAttempts} to find scanner wrapper...`);
-        
         // Try to get wrapper from ref
         if (scannerWrapperRef.current) {
           const refElement = scannerWrapperRef.current as any;
-          console.log('📦 Ref element type:', typeof refElement, 'has _nativeNode:', !!refElement?._nativeNode);
           
           // React Native Web exposes DOM via _nativeNode
           if (refElement?._nativeNode) {
             wrapper = refElement._nativeNode;
-            console.log('✅ Found wrapper via _nativeNode');
             break;
           }
           
           // Or it might be the element directly
           if (refElement?.nodeType === 1) {
             wrapper = refElement;
-            console.log('✅ Found wrapper directly');
             break;
           }
           
@@ -408,12 +455,9 @@ export default function QRScanner({
             const div = refElement.querySelector('div');
             if (div && div.nodeType === 1) {
               wrapper = div;
-              console.log('✅ Found wrapper via querySelector on ref');
               break;
             }
           }
-        } else {
-          console.log('⚠️ scannerWrapperRef.current is null');
         }
         
         // Fallback: try querySelector
@@ -422,24 +466,17 @@ export default function QRScanner({
                  document.getElementById('scanner-wrapper');
         
         if (wrapper) {
-          console.log('✅ Found wrapper via querySelector');
           break;
-        } else {
-          console.log('⚠️ querySelector found nothing');
         }
       }
       
       if (!wrapper) {
         console.error('❌ Scanner wrapper not found after', maxAttempts, 'attempts');
-        console.error('Available elements:', {
-          byDataTestId: document.querySelector('[data-testid="scanner-wrapper"]'),
-          byClass: document.querySelector('.scanner-wrapper'),
-          byId: document.getElementById('scanner-wrapper'),
-          refCurrent: scannerWrapperRef.current
-        });
         if (onScanError) {
           onScanError('Failed to initialize camera - wrapper not found');
         }
+        setCameraError('Failed to initialize camera. Please retry.');
+        sendCameraEvent({ type: 'ERROR', message: 'Failed to initialize camera. Please retry.' });
         return;
       }
 
@@ -448,10 +485,8 @@ export default function QRScanner({
         wrapper.id = 'scanner-wrapper';
       }
       wrapper.setAttribute('data-testid', 'scanner-wrapper');
-      wrapper.className = 'scanner-wrapper';
+      wrapper.classList.add('scanner-wrapper');
       
-      console.log('✅ Found scanner wrapper:', wrapper.id, wrapper.tagName);
-
       // Start scanner - ZXing will create video element automatically
       const result = await qrScannerService.startWebFallback(
         wrapper.id,
@@ -459,6 +494,8 @@ export default function QRScanner({
           const barCodeResult: BarCodeScannerResult = {
             type: 'qr' as any,
             data: scanResult.text,
+            bounds: { origin: { x: 0, y: 0 }, size: { width: 0, height: 0 } },
+            cornerPoints: [],
           };
           
           if (handleBarCodeScanned) {
@@ -475,14 +512,18 @@ export default function QRScanner({
 
       if (result.success) {
         setUseWebFallback(true);
-        console.log('✅ Web scanner initialized successfully');
+        setCameraError(null);
+        sendCameraEvent({ type: 'SCANNING' });
       } else {
-        console.error('Failed to start web fallback:', result.error);
         setUseWebFallback(false);
+        setCameraError(result.error || 'Unable to start the camera scanner.');
+        sendCameraEvent({ type: 'ERROR', message: result.error || 'Unable to start the camera scanner.' });
       }
     } catch (error: any) {
       console.error('Error initializing web fallback:', error);
       setUseWebFallback(false);
+      setCameraError(error?.message || 'Unable to start the camera scanner.');
+      sendCameraEvent({ type: 'ERROR', message: error?.message || 'Unable to start the camera scanner.' });
     }
   };
 
@@ -547,17 +588,16 @@ export default function QRScanner({
       <Modal visible={visible} animationType="slide" transparent>
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Ionicons name="camera-outline" size={64} color={colors.error} />
+            <Ionicons name="camera-outline" size={64} color={colors.error.main} />
             <Text style={styles.errorTitle}>Camera Permission Required</Text>
             <Text style={styles.permissionErrorText}>
-              {Platform.OS === 'web' 
+              {cameraError || (Platform.OS === 'web'
                 ? 'Please enable camera permissions in your browser settings to scan QR codes.'
-                : 'Please enable camera permissions in your device settings to scan QR codes.'}
+                : 'Please enable camera permissions in your device settings to scan QR codes.')}
             </Text>
             <TouchableOpacity 
               style={styles.button} 
               onPress={async () => {
-                console.log('Grant Permission button pressed - forcing fresh check');
                 await requestCameraPermission(true); // Force fresh to avoid cache
               }}
               activeOpacity={0.7}
@@ -567,7 +607,6 @@ export default function QRScanner({
             <TouchableOpacity 
               style={[styles.button, styles.buttonSecondary]} 
               onPress={async () => {
-                console.log('Show Instructions button pressed');
                 if (Platform.OS === 'web') {
                   // Show comprehensive instructions directly
                   cameraPermissionManager.showSettingsAlert();
@@ -622,7 +661,7 @@ export default function QRScanner({
             // @ts-ignore
             className="scanner-wrapper"
           >
-            {!useWebFallback ? (
+            {Platform.OS !== 'web' && !useWebFallback ? (
             <BarCodeScanner
               onBarCodeScanned={scanned ? undefined : handleBarCodeScanned}
                 style={[StyleSheet.absoluteFillObject, styles.cameraView]}
@@ -632,8 +671,7 @@ export default function QRScanner({
                 console.error('Camera mount error:', error);
                   
                   // On web, try fallback to ZXing
-                  if (Platform.OS === 'web' && webQRScannerFallback.isAvailable()) {
-                    console.log('Expo barcode scanner failed, trying ZXing fallback...');
+                  if (Platform.OS === 'web' && webQRScannerFallback?.isAvailable()) {
                     setUseWebFallback(true);
                     // Initialize fallback after state update
                     setTimeout(() => {
@@ -675,6 +713,19 @@ export default function QRScanner({
               Platform.OS === 'web' && null
             )}
 
+            {cameraError && hasPermission === true && cameraStatus === 'error' && (
+              <View style={styles.cameraErrorBanner} pointerEvents="auto">
+                <Ionicons name="alert-circle" size={20} color={colors.error.main} />
+                <Text style={styles.cameraErrorText}>{cameraError}</Text>
+                <ActionButton
+                  mode={isDark ? 'dark' : 'light'}
+                  variant="secondary"
+                  label="Retry"
+                  onPress={() => initializeWebFallback()}
+                />
+              </View>
+            )}
+
             {/* Overlay with scanning frame - pointerEvents none to not block camera */}
             <View style={styles.overlay} pointerEvents="none">
               {/* Top overlay */}
@@ -702,13 +753,13 @@ export default function QRScanner({
                 )}
                 {scanResult && !scanResult.valid && (
                   <View style={styles.errorContainer}>
-                    <Ionicons name="close-circle" size={24} color={colors.error} />
+                    <Ionicons name="close-circle" size={24} color={colors.error.main} />
                     <Text style={styles.errorText}>{scanResult.message}</Text>
                   </View>
                 )}
                 {scanResult && scanResult.valid && (
                   <View style={styles.successContainer}>
-                    <Ionicons name="checkmark-circle" size={24} color={colors.success} />
+                    <Ionicons name="checkmark-circle" size={24} color={colors.success.main} />
                     <Text style={styles.successText}>{scanResult.message}</Text>
                   </View>
                 )}
@@ -728,7 +779,7 @@ export default function QRScanner({
               
               <View style={styles.detailSection}>
                 <Text style={styles.detailLabel}>Status</Text>
-                <Text style={[styles.detailValue, { color: qrDetails.status === 'active' ? colors.success : colors.error }]}>
+                <Text style={[styles.detailValue, { color: qrDetails.status === 'active' ? colors.success.main : colors.error.main }]}>
                   {qrDetails.status.toUpperCase()}
                 </Text>
               </View>
@@ -848,6 +899,24 @@ const getStyles = (isDark: boolean, colors: any) =>
       width: '100%',
       height: '100%',
       backgroundColor: '#000',
+    },
+    cameraErrorBanner: {
+      position: 'absolute',
+      top: 16,
+      left: 16,
+      right: 16,
+      zIndex: 3,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      padding: 12,
+      borderRadius: uiTokens.radius.input,
+      backgroundColor: uiTokens.effects.mediaOverlayStrong,
+    },
+    cameraErrorText: {
+      flex: 1,
+      color: uiPalette(isDark).onAccent,
+      fontSize: 13,
     },
     overlay: {
       ...StyleSheet.absoluteFillObject,

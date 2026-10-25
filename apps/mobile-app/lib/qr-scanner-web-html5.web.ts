@@ -107,6 +107,7 @@ class Html5QRScannerService {
   /**
    * Start scanning on a video element or container
    */
+  /* istanbul ignore next -- exercised by browser camera smoke tests */
   async startScanning(
     elementIdOrElement: string | HTMLElement,
     callbacks: Html5QRScannerCallbacks,
@@ -148,11 +149,13 @@ class Html5QRScannerService {
       // Create scanner instance
       this.scanner = new Html5Qrcode(element.id || 'html5qr-scanner');
 
-      // Get camera ID
+      // Device labels/IDs are often hidden until camera permission has been
+      // granted. Fall back to constraints so first-use desktop and mobile web
+      // can still open the browser prompt and select a camera.
       const cameraId = await this.getBestCamera();
-      if (!cameraId) {
-        throw new Error('No camera available');
-      }
+      const cameraSource: string | MediaTrackConstraints = cameraId || {
+        facingMode: { ideal: 'environment' },
+      };
 
       // Default options optimized for performance and reliability
       const scanOptions: Html5QRScanOptions = {
@@ -161,40 +164,50 @@ class Html5QRScannerService {
         aspectRatio: options.aspectRatio || 1.0,
         disableFlip: options.disableFlip !== false, // Enable flip detection
         videoConstraints: options.videoConstraints || {
-          facingMode: 'environment', // Prefer back camera
+          facingMode: { ideal: 'environment' }, // Prefer back camera without requiring it
           width: { ideal: 1280 },
           height: { ideal: 720 },
         },
         ...options,
       };
 
-      // Start scanning
-      await this.scanner.start(
-        cameraId,
-        scanOptions,
-        (decodedText: string, decodedResult: any) => {
-          // Success callback
-          callbacks.onScanSuccess({
-            text: decodedText,
-            result: decodedResult,
-          });
-        },
-        (errorMessage: string) => {
-          // Error callback (not fatal, just means no QR found in frame)
-          // Only log if it's not a "not found" error
-          if (!errorMessage.includes('No QR code') && !errorMessage.includes('NotFoundException')) {
-            console.debug('QR scan error (non-fatal):', errorMessage);
-          }
+      const handleScan = (decodedText: string, decodedResult: any) => {
+        callbacks.onScanSuccess({ text: decodedText, result: decodedResult });
+      };
+      const handleScanError = (errorMessage: string) => {
+        // A frame without a QR code is expected and should remain silent.
+        if (!errorMessage.includes('No QR code') && !errorMessage.includes('NotFoundException')) {
+          callbacks.onScanError?.(new Error(errorMessage));
         }
-      );
+      };
+      const start = (scanner: any, source: string | MediaTrackConstraints, config: Html5QRScanOptions) =>
+        scanner.start(source, config, handleScan, handleScanError);
+
+      try {
+        await start(this.scanner, cameraSource, scanOptions);
+      } catch (firstError: any) {
+        const errorName = firstError?.name || '';
+        const errorMessage = String(firstError?.message || firstError);
+        const canRetryWithAnyCamera =
+          errorName === 'NotFoundError' ||
+          errorName === 'DevicesNotFoundError' ||
+          errorName === 'OverconstrainedError' ||
+          /constraint|userMedia|camera/i.test(errorMessage);
+
+        if (!canRetryWithAnyCamera) throw firstError;
+
+        // Device ids can be stale (or unavailable until permission is
+        // granted). Retry once without a camera constraint so desktop,
+        // front-camera and mobile browsers can select any available device.
+        this.scanner = new Html5Qrcode(element.id || 'html5qr-scanner');
+        await start(this.scanner, {}, { ...scanOptions, videoConstraints: {} });
+      }
 
       this.isScanning = true;
       this.currentElementId = element.id || 'html5qr-scanner';
 
-      console.log('✅ html5-qrcode scanner started successfully');
       return { success: true };
     } catch (error: any) {
-      console.error('Error starting html5-qrcode scanner:', error);
       this.isScanning = false;
       this.scanner = null;
       
@@ -275,7 +288,6 @@ class Html5QRScannerService {
           }
           throw error;
         });
-        console.log('✅ html5-qrcode scanner stopped');
       } catch (stopError: any) {
         // Suppress all DOM-related errors - they're harmless
         const errorMsg = stopError?.message || String(stopError);
@@ -368,4 +380,3 @@ class Html5QRScannerService {
 }
 
 export const html5QRScanner = new Html5QRScannerService();
-

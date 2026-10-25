@@ -2682,7 +2682,7 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     elevation: 3,
   },
   liveBadge: {
-    backgroundColor: colors.success,
+    backgroundColor: colors.success.main,
   },
   notLiveBadge: {
     backgroundColor: '#8E8E93',

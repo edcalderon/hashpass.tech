@@ -75,6 +75,10 @@ const adminPassAndUserListingMigrationPath = path.join(
   root,
   'db/migrations/V041__admin_pass_and_user_listing.sql',
 );
+const adminPassCursorMigrationPath = path.join(
+  root,
+  'db/migrations/V140__fix_admin_pass_cursor_type.sql',
+);
 const meetingChatRealtimeMigrationPath = path.join(
   root,
   'db/migrations/V054__meeting_chat_realtime_and_participant_profiles.sql',
@@ -371,6 +375,7 @@ describe('event auth allies migration plan', () => {
 describe('admin pass management migration contract', () => {
   it('ships the admin RPCs through the default tenant migration command with compatible numeric fields and all pass statuses', () => {
     const migration = fs.readFileSync(adminPassAndUserListingMigrationPath, 'utf8');
+    const cursorMigration = fs.readFileSync(adminPassCursorMigrationPath, 'utf8');
     const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
 
     expect(config.defaultGroups).toContain('admin-pass-management');
@@ -382,6 +387,10 @@ describe('admin pass management migration contract', () => {
     expect(migration).toMatch(/max_boost_amount numeric, used_boost_amount numeric/i);
     expect(migration).toMatch(/p\.max_boost_amount::numeric, p\.used_boost_amount::numeric/i);
     expect(migration).not.toMatch(/WHERE p\.event_id = p_event_id AND p\.status/i);
+    expect(config.groups['admin-pass-management']).toContain(
+      'db/migrations/V140__fix_admin_pass_cursor_type.sql',
+    );
+    expect(cursorMigration).toMatch(/pc\.id::text = p_cursor/i);
   });
 });
 

@@ -1,3 +1,14 @@
+## [1.9.145](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.144...v1.9.145) (2026-10-25)
+### Released
+- harden QR camera permission flow
+
+### Release scope
+- Compared with: `v1.9.144` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Shared UI
+
 ## [1.9.144](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.143...v1.9.144) (2026-10-25)
 
 

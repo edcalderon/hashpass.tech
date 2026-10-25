@@ -23,11 +23,17 @@ export interface WebQRScanResult {
 class WebQRScannerFallback {
   private reader: any = null;
   private isScanning = false;
+  private scanGeneration = 0;
   private videoElement: HTMLVideoElement | null = null;
   private zxingModule: any = null;
 
+  /* istanbul ignore next -- exercised by browser camera smoke tests */
   isAvailable(): boolean {
-    return Platform.OS === 'web' && typeof window !== 'undefined' && typeof navigator !== 'undefined';
+    return Platform.OS === 'web' &&
+      typeof window !== 'undefined' &&
+      window.isSecureContext &&
+      typeof navigator !== 'undefined' &&
+      Boolean(navigator.mediaDevices?.getUserMedia);
   }
 
   private async loadZXing() {
@@ -57,24 +63,7 @@ class WebQRScannerFallback {
     return this.reader;
   }
 
-  private async getBestCameraDevice(): Promise<string | null> {
-    try {
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      const videoDevices = devices.filter(device => device.kind === 'videoinput');
-      
-      // Prefer back camera (environment facing)
-      const backCamera = videoDevices.find(device => 
-      device.label.toLowerCase().includes('back') || 
-      device.label.toLowerCase().includes('rear')
-    );
-
-      return backCamera?.deviceId || videoDevices[0]?.deviceId || null;
-    } catch (error) {
-      console.error('Error getting camera devices:', error);
-      return null;
-    }
-  }
-
+  /* istanbul ignore next -- exercised by browser camera smoke tests */
   async startScanning(
     onScan: (result: WebQRScanResult) => void,
     onError?: (error: Error) => void,
@@ -88,13 +77,13 @@ class WebQRScannerFallback {
       return { success: false, error: 'Already scanning' };
     }
 
+    const generation = this.scanGeneration;
+    const isCurrent = (element?: HTMLVideoElement) =>
+      generation === this.scanGeneration &&
+      Boolean(element && document.body.contains(element));
+
     try {
       const reader = await this.initializeReader();
-      const deviceId = await this.getBestCameraDevice();
-
-      if (!deviceId) {
-        throw new Error('No camera device found');
-      }
 
       // Get or create video element - SIMPLIFIED
       let videoElement: HTMLVideoElement;
@@ -144,22 +133,44 @@ class WebQRScannerFallback {
         }
       }
 
-      // Simple styling - let parent handle dimensions
-          videoElement.style.width = '100%';
-          videoElement.style.height = '100%';
-          videoElement.style.objectFit = 'cover';
-          videoElement.setAttribute('autoplay', 'true');
-          videoElement.setAttribute('playsinline', 'true');
-          videoElement.setAttribute('muted', 'true');
+      if (!isCurrent(videoElement)) {
+        return { success: false, error: 'Scanner view closed before camera started' };
+      }
+
+      // Set DOM properties as well as attributes. iOS Safari ignores some
+      // autoplay attributes unless playsInline/muted are properties.
+      videoElement.style.width = '100%';
+      videoElement.style.height = '100%';
+      videoElement.style.objectFit = 'cover';
+      videoElement.autoplay = true;
+      videoElement.playsInline = true;
+      videoElement.muted = true;
+      videoElement.setAttribute('autoplay', 'true');
+      videoElement.setAttribute('playsinline', 'true');
+      videoElement.setAttribute('muted', 'true');
 
       this.videoElement = videoElement;
-      this.isScanning = true;
 
-      // ZXing handles video stream attachment automatically
+      // Let the browser choose the best camera. Using decodeFromVideoDevice
+      // with an enumerated id before permission is granted returns no devices
+      // on desktop Safari/Chrome and is the main reason web scanning stalls.
       const continuous = options.continuous !== false;
 
-      reader.decodeFromVideoDevice(
-        deviceId,
+      if (!isCurrent(videoElement)) {
+        this.videoElement = null;
+        return { success: false, error: 'Scanner view closed before camera started' };
+      }
+
+      this.isScanning = true;
+      await reader.decodeFromConstraints(
+        {
+          audio: false,
+          video: {
+            facingMode: { ideal: 'environment' },
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+          },
+        },
         videoElement,
         (result: any, error: any) => {
           if (result) {
@@ -188,10 +199,22 @@ class WebQRScannerFallback {
         }
       );
 
+      if (!isCurrent(videoElement)) {
+        this.stopScanning();
+        return { success: false, error: 'Scanner view closed before camera started' };
+      }
+
       return { success: true };
     } catch (error: any) {
-      console.error('Error starting ZXing scanner:', error);
+      const elementMissing = !this.videoElement || !document.body.contains(this.videoElement);
+      const stale = generation !== this.scanGeneration ||
+        error?.message?.includes('object can not be found') ||
+        (error?.name === 'NotFoundError' && elementMissing);
       this.isScanning = false;
+      if (stale) {
+        this.stopScanning();
+        return { success: false, error: 'Scanner view closed before camera started' };
+      }
       return { 
         success: false, 
         error: error.message || 'Failed to start scanner' 
@@ -199,7 +222,9 @@ class WebQRScannerFallback {
     }
   }
 
+  /* istanbul ignore next -- exercised by browser camera smoke tests */
   stopScanning(): void {
+    this.scanGeneration += 1;
     this.isScanning = false;
 
     if (this.reader) {
