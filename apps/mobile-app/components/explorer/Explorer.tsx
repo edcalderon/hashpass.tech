@@ -23,7 +23,6 @@ import {
 } from "react-native";
 import { NativeSafeIcon } from "../../lib/vector-icons";
 import {
-  ActionButton,
   Badge,
   HoverText,
   IconButton,
@@ -1376,40 +1375,42 @@ export default function Explorer({
               size={19}
             />
           </IconButton>
-          <ActionButton
-            mode={isDark ? "dark" : "light"}
-            variant="ghost"
-            label={translate("eventChat.joinRoom", "Join the room")}
-            labelNumberOfLines={1}
-            leadingIcon={<Icon name="event" color={colors.primary} size={15} />}
-            trailingIcon={
-              roomStatusLabel ? (
-                <Text style={styles.joinRoomPresence} numberOfLines={1}>
-                  {roomStatusLabel}
-                </Text>
-              ) : undefined
-            }
-            style={styles.joinRoomButton}
-            onPress={() => openEventRoom(event)}
-            accessibilityLabel={`Join the room for ${event.title}`}
-          />
         </View>
-        <Pressable
-          style={styles.eventBody}
-          onPress={() => selectEvent(event.id)}
-          accessibilityRole="button"
-          accessibilityLabel={`Select ${event.title}`}
-        >
-          <HoverText style={styles.eventTitle} numberOfLines={2}>
-            {event.title}
-          </HoverText>
-          <HoverText style={styles.eventMeta} numberOfLines={1}>
-            {dateLabel}
-          </HoverText>
-          <HoverText style={styles.eventCity} numberOfLines={1}>
-            {event.subtitle}
-          </HoverText>
-        </Pressable>
+        <View style={styles.eventBody}>
+          <Pressable
+            style={styles.eventBodyContent}
+            onPress={() => selectEvent(event.id)}
+            accessibilityRole="button"
+            accessibilityLabel={`Select ${event.title}`}
+          >
+            <HoverText style={styles.eventTitle} numberOfLines={2}>
+              {event.title}
+            </HoverText>
+            <HoverText style={styles.eventMeta} numberOfLines={1}>
+              {dateLabel}
+            </HoverText>
+            <HoverText style={styles.eventCity} numberOfLines={1}>
+              {event.subtitle}
+            </HoverText>
+          </Pressable>
+          <Pressable
+            style={styles.joinRoomLink}
+            onPress={() => openEventRoom(event)}
+            accessibilityRole="link"
+            accessibilityLabel={`Join the room for ${event.title}`}
+          >
+            <Icon name="event" color={colors.primary} size={15} />
+            <Text style={styles.joinRoomLinkText} numberOfLines={1}>
+              {translate("eventChat.joinRoom", "Join the room")}
+            </Text>
+            <Icon name="arrow-forward" color={colors.primary} size={15} />
+            {roomStatusLabel ? (
+              <Text style={styles.joinRoomPresence} numberOfLines={1}>
+                {roomStatusLabel}
+              </Text>
+            ) : null}
+          </Pressable>
+        </View>
       </View>
     );
   };
@@ -2530,33 +2531,36 @@ const getStyles = (isDark: boolean, colors: any) =>
       borderColor: uiTokens.effects.mediaBorder,
     },
     bookmarkButtonActive: { backgroundColor: colors.primary },
-    joinRoomButton: {
-      position: "absolute",
-      left: 9,
-      right: 9,
-      bottom: 9,
-      width: "auto",
-      alignSelf: "stretch",
+    joinRoomLink: {
+      minWidth: 0,
       minHeight: uiTokens.control.compactHeight,
-      paddingHorizontal: 12,
-      justifyContent: "space-between",
-      borderColor: uiTokens.effects.mediaBorder,
-      backgroundColor: uiTokens.effects.mediaOverlayGlass,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      paddingTop: 8,
+      borderTopWidth: uiTokens.control.borderWidth,
+      borderTopColor: colors.divider,
+    },
+    joinRoomLinkText: {
+      flexShrink: 1,
+      color: colors.primary,
+      fontSize: 12,
+      fontWeight: "700",
     },
     joinRoomPresence: {
-      maxWidth: "46%",
-      color: uiTokens.effects.mediaForegroundMuted,
+      flexShrink: 1,
+      color: colors.text.secondary,
       fontSize: 10,
       fontWeight: "600",
-      textAlign: "right",
     },
     eventBody: {
       flex: 1,
       minWidth: 0,
-      justifyContent: "center",
+      justifyContent: "space-between",
       padding: 13,
       gap: 5,
     },
+    eventBodyContent: { minWidth: 0, gap: 5 },
     eventTitle: {
       color: colors.text.primary,
       fontSize: 14,
