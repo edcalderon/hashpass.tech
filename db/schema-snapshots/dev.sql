@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict a1CtmNCu8wajGimhyia1SUrm0hpAmK8J3DAiEBCalRt8rwvzC14p5U1LekBz8BL
+\restrict 1cQeYKAjmxvTcyNRaUeTXgnXQAgkiBKzqoeOamBHy647fZpy9mY4gYr7Rxy7zZz
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.11
@@ -53,7 +53,8 @@ CREATE TYPE public.meeting_request_status AS ENUM (
     'declined',
     'expired',
     'cancelled',
-    'completed'
+    'completed',
+    'archived'
 );
 
 
@@ -145,6 +146,19 @@ CREATE TYPE public.reward_transaction_type AS ENUM (
     'transfer',
     'swap',
     'redemption'
+);
+
+
+--
+-- Name: speaker_directory_status; Type: TYPE; Schema: public; Owner: -
+--
+
+CREATE TYPE public.speaker_directory_status AS ENUM (
+    'private',
+    'passive',
+    'inactive',
+    'active',
+    'dnd'
 );
 
 
@@ -2442,19 +2456,45 @@ DECLARE
   target uuid;
   profile jsonb;
   selected_topics text[];
+  identity_mode text;
+  resolved_name text;
+  resolved_role text;
+  resolved_company text;
   result jsonb;
 BEGIN
   IF p_action = 'profile' THEN
     profile := p_payload->'profile';
-    SELECT coalesce(array_agg(value), '{}') INTO selected_topics FROM jsonb_array_elements_text(profile->'topics');
+    identity_mode := COALESCE(NULLIF(profile->>'identity_mode', ''), 'attendee');
+    IF identity_mode NOT IN ('attendee', 'speaker') THEN
+      RAISE EXCEPTION 'Unsupported contact identity' USING ERRCODE = '22023';
+    END IF;
+
+    SELECT coalesce(array_agg(value), '{}') INTO selected_topics
+      FROM jsonb_array_elements_text(profile->'topics');
     IF cardinality(selected_topics) <> (SELECT count(DISTINCT t) FROM unnest(selected_topics) t) THEN
       RAISE EXCEPTION 'Duplicate topics';
     END IF;
-    INSERT INTO contact_profiles (id, name, role, company, topics, discoverable, leaderboard)
-    VALUES (p_user_id, btrim(profile->>'name'), btrim(profile->>'role'), btrim(profile->>'company'), selected_topics,
-      (profile->>'discoverable')::boolean, (profile->>'leaderboard')::boolean)
+
+    resolved_name := btrim(COALESCE(profile->>'name', ''));
+    resolved_role := btrim(COALESCE(profile->>'role', ''));
+    resolved_company := btrim(COALESCE(profile->>'company', ''));
+    IF identity_mode = 'speaker' THEN
+      SELECT btrim(s.name), btrim(COALESCE(s.title, '')), btrim(COALESCE(s.company, ''))
+        INTO resolved_name, resolved_role, resolved_company
+        FROM public.bsl_speakers s
+        JOIN public."user" u ON u.provider_ids->>'supabase' = s.user_id::text
+       WHERE u.id = p_user_id AND s.user_id IS NOT NULL;
+      IF NOT FOUND THEN
+        RAISE EXCEPTION 'A claimed speaker profile is required' USING ERRCODE = '42501';
+      END IF;
+    END IF;
+
+    INSERT INTO contact_profiles (id, name, role, company, topics, discoverable, leaderboard, identity_mode)
+    VALUES (p_user_id, resolved_name, resolved_role, resolved_company, selected_topics,
+      (profile->>'discoverable')::boolean, (profile->>'leaderboard')::boolean, identity_mode)
     ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, role = EXCLUDED.role, company = EXCLUDED.company,
-      topics = EXCLUDED.topics, discoverable = EXCLUDED.discoverable, leaderboard = EXCLUDED.leaderboard;
+      topics = EXCLUDED.topics, discoverable = EXCLUDED.discoverable, leaderboard = EXCLUDED.leaderboard,
+      identity_mode = EXCLUDED.identity_mode;
   ELSIF p_action = 'request' THEN
     SELECT id INTO target FROM contact_profiles WHERE share_id = (p_payload->>'card')::uuid;
     IF target IS NULL OR target = p_user_id OR NOT EXISTS (SELECT 1 FROM contact_profiles WHERE id = p_user_id) THEN
@@ -2507,7 +2547,7 @@ $$;
 -- Name: FUNCTION contact_network(p_user_id uuid, p_action text, p_payload jsonb); Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON FUNCTION public.contact_network(p_user_id uuid, p_action text, p_payload jsonb) IS 'Server-only Contacts read/write model. Never expose actor selection to clients. Network XP is not wallet HashPoints.';
+COMMENT ON FUNCTION public.contact_network(p_user_id uuid, p_action text, p_payload jsonb) IS 'Server-only Contacts read/write model with explicit attendee or speaker identity sharing.';
 
 
 --
@@ -3149,6 +3189,46 @@ $$;
 
 
 --
+-- Name: delete_chat_key_backup(uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.delete_chat_key_backup(p_user_id uuid) RETURNS jsonb
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+BEGIN
+  IF auth.uid() IS NOT NULL AND auth.uid() <> p_user_id THEN
+    RETURN jsonb_build_object('success', false, 'error', 'not_authorized');
+  END IF;
+
+  UPDATE public.user_chat_keys
+  SET
+    encrypted_private_key_backup = NULL,
+    backup_salt = NULL,
+    backup_created_at = NULL
+  WHERE user_id = p_user_id;
+
+  RETURN jsonb_build_object('success', true);
+END;
+$$;
+
+
+--
+-- Name: enroll_user_wallet(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.enroll_user_wallet() RETURNS trigger
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO ''
+    AS $$
+BEGIN
+  INSERT INTO public.user_wallet(user_id) VALUES (NEW.id) ON CONFLICT (user_id) DO NOTHING;
+  RETURN NEW;
+END;
+$$;
+
+
+--
 -- Name: ensure_business_invite_event_pass(uuid, text); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -3290,6 +3370,43 @@ BEGIN
   RETURN jsonb_build_object(
     'success', true,
     'slots_created', v_count
+  );
+END;
+$$;
+
+
+--
+-- Name: get_chat_key_backup(uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.get_chat_key_backup(p_user_id uuid) RETURNS jsonb
+    LANGUAGE plpgsql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+DECLARE
+  v_encrypted_key text;
+  v_salt text;
+  v_created_at timestamptz;
+BEGIN
+  -- Users can only retrieve their own backup
+  IF auth.uid() IS NULL OR auth.uid() <> p_user_id THEN
+    RETURN jsonb_build_object('success', false, 'error', 'not_authorized');
+  END IF;
+
+  SELECT encrypted_private_key_backup, backup_salt, backup_created_at
+  INTO v_encrypted_key, v_salt, v_created_at
+  FROM public.user_chat_keys
+  WHERE user_id = p_user_id;
+
+  IF v_encrypted_key IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'no_backup');
+  END IF;
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'encrypted_private_key', v_encrypted_key,
+    'salt', v_salt,
+    'created_at', v_created_at
   );
 END;
 $$;
@@ -4048,6 +4165,20 @@ $$;
 
 
 --
+-- Name: get_user_wallet_vault(uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.get_user_wallet_vault(p_user_id uuid) RETURNS jsonb
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO ''
+    AS $$
+  SELECT coalesce((SELECT jsonb_build_object('walletId', wallet_id, 'envelope', envelope,
+    'version', version, 'keyVersion', key_version) FROM public.user_wallet_vault WHERE user_id = p_user_id),
+    'null'::jsonb);
+$$;
+
+
+--
 -- Name: handle_auth_user_deleted(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -4288,6 +4419,8 @@ DECLARE
   v_consumed_pass_id text;
   v_event_id text := NULLIF(trim(COALESCE(p_event_id, '')), '');
   v_target_speaker_id uuid;
+  v_dnd boolean := false;
+  v_status text := 'pending';
 BEGIN
   IF v_event_id IS NULL THEN
     RAISE EXCEPTION 'A valid event id is required';
@@ -4313,6 +4446,19 @@ BEGIN
 
   v_target_speaker_id := COALESCE(v_speaker.user_id, v_speaker.id::uuid);
 
+  -- Do-not-disturb: a claimed, active speaker still receives the request, but
+  -- it is archived instead of surfacing (no notification, hidden from their inbox).
+  SELECT COALESCE(s.do_not_disturb, false) INTO v_dnd
+  FROM public.bsl_speakers s
+  WHERE s.id::text = v_speaker.id
+  LIMIT 1;
+  v_dnd := COALESCE(v_dnd, false)
+    AND v_speaker.user_id IS NOT NULL
+    AND COALESCE(v_speaker.is_active, false);
+  IF v_dnd THEN
+    v_status := 'archived';
+  END IF;
+
   INSERT INTO public.meeting_requests (
     id, requester_id, speaker_id, event_id, speaker_name, requester_name,
     requester_company, requester_title, requester_ticket_type, meeting_type,
@@ -4326,6 +4472,11 @@ BEGIN
     COALESCE(p_duration_minutes, 15), COALESCE(p_expires_at, now() + interval '3 days'),
     'pending', now(), now()
   );
+
+  -- Bare literals coerce to both the text column (prod) and the enum (dev).
+  IF v_status = 'archived' THEN
+    UPDATE public.meeting_requests SET status = 'archived' WHERE id = v_request_id;
+  END IF;
 
   WITH active_pass AS (
     SELECT p.id
@@ -4360,7 +4511,7 @@ BEGIN
 
   -- An unclaimed profile has no auth recipient yet. The claim trigger below
   -- relinks this request to the eventual account before notifications begin.
-  IF v_speaker.user_id IS NOT NULL THEN
+  IF v_speaker.user_id IS NOT NULL AND NOT v_dnd THEN
     PERFORM public.send_prioritized_notification(
       v_speaker.user_id::text, p_requester_name, p_requester_company,
       p_requester_ticket_type, COALESCE(p_boost_amount, 0), v_request_id
@@ -4368,7 +4519,7 @@ BEGIN
   END IF;
 
   RETURN QUERY
-  SELECT v_request_id, p_requester_id::uuid, v_target_speaker_id, 'pending', now();
+  SELECT v_request_id, p_requester_id::uuid, v_target_speaker_id, v_status, now();
 END;
 $$;
 
@@ -4539,7 +4690,7 @@ $$;
 -- Name: list_speaker_claim_requests(uuid, text); Type: FUNCTION; Schema: public; Owner: -
 --
 
-CREATE FUNCTION public.list_speaker_claim_requests(p_actor_user_id uuid, p_event_id text) RETURNS TABLE(claim_id uuid, speaker_id text, event_id text, speaker_name text, speaker_title text, speaker_company text, requester_user_id uuid, requester_email text, status text, request_note text, created_at timestamp with time zone, review_note text)
+CREATE FUNCTION public.list_speaker_claim_requests(p_actor_user_id uuid, p_event_id text) RETURNS TABLE(claim_id uuid, speaker_id text, event_id text, speaker_name text, speaker_title text, speaker_company text, requester_user_id uuid, requester_email text, status text, request_note text, created_at timestamp with time zone, review_note text, claim_mode text, claim_email text, verification_status text, submitted_by_email text)
     LANGUAGE plpgsql SECURITY DEFINER
     SET search_path TO 'public', 'auth', 'pg_temp'
     AS $$
@@ -4550,24 +4701,17 @@ BEGIN
   END IF;
 
   RETURN QUERY
-  SELECT request.id,
-         request.speaker_id,
-         request.event_id,
-         speaker.name,
-         speaker.title,
-         speaker.company,
-         request.requester_user_id,
-         lower(auth_user.email),
-         request.status,
-         request.request_note,
-         request.created_at,
-         request.review_note
+  SELECT request.id, request.speaker_id, request.event_id,
+         speaker.name, speaker.title, speaker.company,
+         request.requester_user_id, lower(auth_user.email),
+         request.status, request.request_note, request.created_at, request.review_note,
+         request.claim_mode, request.claim_email, request.verification_status,
+         lower(submitter.email)
     FROM public.speaker_claim_requests AS request
     JOIN public.bsl_speakers AS speaker
-      ON speaker.id::text = request.speaker_id
-     AND speaker.event_id = request.event_id
-    JOIN auth.users AS auth_user
-      ON auth_user.id = request.requester_user_id
+      ON speaker.id::text = request.speaker_id AND speaker.event_id = request.event_id
+    JOIN auth.users AS auth_user ON auth_user.id = request.requester_user_id
+    LEFT JOIN auth.users AS submitter ON submitter.id = request.submitted_by
    WHERE request.event_id = p_event_id
    ORDER BY request.created_at DESC
    LIMIT 200;
@@ -4773,6 +4917,326 @@ $$;
 
 
 --
+-- Name: marketing_ack(uuid, uuid, text, text, text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.marketing_ack(p_id uuid, p_claim uuid, p_status text, p_message_id text DEFAULT NULL::text, p_error text DEFAULT NULL::text) RETURNS boolean
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public', 'pg_temp'
+    AS $$
+DECLARE cid uuid;
+BEGIN
+  IF p_status NOT IN ('accepted','failed','unknown') THEN RAISE EXCEPTION 'Invalid acknowledgement'; END IF;
+  UPDATE marketing_deliveries SET status=p_status,provider_message_id=p_message_id,error_code=p_error,
+    accepted_at=CASE WHEN p_status='accepted' THEN now() ELSE NULL END
+    WHERE id=p_id AND claim_token=p_claim AND status='sending' RETURNING campaign_id INTO cid;
+  IF NOT FOUND THEN RETURN false; END IF;
+  INSERT INTO marketing_audit(campaign_id,action) VALUES(cid,'delivery_'||p_status);
+  UPDATE marketing_campaigns c SET status='completed',updated_at=now() WHERE id=cid AND status='sending'
+    AND NOT EXISTS(SELECT 1 FROM marketing_deliveries d WHERE d.campaign_id=cid AND d.status IN ('queued','sending'));
+  RETURN true;
+END;
+$$;
+
+
+--
+-- Name: marketing_activity_overview(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.marketing_activity_overview() RETURNS jsonb
+    LANGUAGE sql SECURITY DEFINER
+    SET search_path TO 'public', 'pg_temp'
+    AS $$
+ SELECT jsonb_build_object(
+   'activity',jsonb_build_object('verified',(SELECT count(*) FROM marketing_activity WHERE source='verified_server'),'observed',(SELECT count(*) FROM marketing_activity WHERE source='observed_client'),'points',(SELECT coalesce(sum(provisional_points),0) FROM marketing_activity WHERE source='verified_server')),
+   'snapshots',coalesce((SELECT jsonb_agg(to_jsonb(s)-'manifest'-'created_by') FROM (SELECT * FROM marketing_activity_snapshots ORDER BY created_at DESC LIMIT 20) s),'[]')
+ );
+$$;
+
+
+--
+-- Name: marketing_activity_trigger(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.marketing_activity_trigger() RETURNS trigger
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public', 'pg_temp'
+    AS $$
+DECLARE actor uuid; peer uuid; topic text; edge text;
+BEGIN
+  IF TG_TABLE_NAME='user_agenda_status' THEN
+    IF NEW.agenda_id IS NULL THEN RETURN NEW; END IF;
+    IF NEW.is_favorite AND (TG_OP='INSERT' OR NOT coalesce(OLD.is_favorite,false)) THEN
+      PERFORM record_marketing_activity(NEW.user_id,'agenda:'||NEW.event_id||':'||NEW.agenda_id||':favorite','agenda_favorited',NEW.event_id);
+    END IF;
+    IF NEW.status='confirmed' AND (TG_OP='INSERT' OR OLD.status IS DISTINCT FROM NEW.status) THEN
+      PERFORM record_marketing_activity(NEW.user_id,'agenda:'||NEW.event_id||':'||NEW.agenda_id||':confirmed','agenda_confirmed',NEW.event_id);
+    END IF;
+  ELSIF TG_TABLE_NAME='meeting_requests' THEN
+    SELECT id INTO actor FROM public."user" WHERE provider_ids->>'supabase'=NEW.requester_id::text OR id=NEW.requester_id ORDER BY id LIMIT 1;
+    IF TG_OP='INSERT' THEN
+      PERFORM record_marketing_activity(actor,'meeting:'||NEW.id||':requested','meeting_requested',NEW.event_id);
+    ELSIF NEW.status::text IN ('accepted','approved') AND OLD.status::text IS DISTINCT FROM NEW.status::text THEN
+      SELECT id INTO peer FROM public."user" WHERE provider_ids->>'supabase'=NEW.speaker_id::text OR id=NEW.speaker_id ORDER BY id LIMIT 1;
+      PERFORM record_marketing_activity(actor,'meeting:'||NEW.id||':accepted','meeting_accepted',NEW.event_id);
+      PERFORM record_marketing_activity(peer,'meeting:'||NEW.id||':accepted','meeting_accepted',NEW.event_id);
+    END IF;
+  ELSIF TG_TABLE_NAME='contact_requests' THEN
+    edge := 'contact:'||NEW.id;
+    IF TG_OP='INSERT' THEN
+      PERFORM record_marketing_activity(NEW.sender,edge||':requested','contact_requested');
+    ELSIF NEW.status='accepted' AND OLD.status IS DISTINCT FROM NEW.status THEN
+      PERFORM record_marketing_activity(NEW.sender,edge||':connected','contact_connected');
+      PERFORM record_marketing_activity(NEW.recipient,edge||':connected','contact_connected');
+    END IF;
+  ELSIF TG_TABLE_NAME='contact_profiles' THEN
+    FOR topic IN SELECT unnest(NEW.topics) EXCEPT SELECT unnest(CASE WHEN TG_OP='INSERT' THEN '{}'::text[] ELSE OLD.topics END) LOOP
+      PERFORM record_marketing_activity(NEW.id,'interest:'||topic,'interest_selected');
+    END LOOP;
+  ELSIF TG_TABLE_NAME='user' AND TG_OP='INSERT' THEN
+    PERFORM record_marketing_activity(NEW.id,'account:registered','account_registered');
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: marketing_before_send(uuid, uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.marketing_before_send(p_id uuid, p_claim uuid) RETURNS boolean
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public', 'pg_temp'
+    AS $$
+DECLARE d marketing_deliveries; allowed boolean;
+BEGIN
+  SELECT * INTO d FROM marketing_deliveries WHERE id=p_id AND claim_token=p_claim AND status='sending' FOR UPDATE;
+  IF NOT FOUND THEN RETURN false; END IF;
+  IF EXISTS(SELECT 1 FROM marketing_campaigns WHERE id=d.campaign_id AND status='paused') THEN
+    UPDATE marketing_deliveries SET status='queued',claim_token=NULL,claimed_at=NULL WHERE id=d.id;
+    RETURN false;
+  END IF;
+  allowed := EXISTS(SELECT 1 FROM marketing_campaigns WHERE id=d.campaign_id AND status='sending')
+    AND EXISTS(SELECT 1 FROM newsletter_subscribers n WHERE lower(btrim(n.email))=d.email)
+    AND NOT EXISTS(SELECT 1 FROM marketing_suppressions WHERE email=d.email)
+    AND EXISTS(SELECT 1 FROM public."user" WHERE id=d.user_id AND deleted_at IS NULL AND status='active' AND lower(btrim(email))=d.email);
+  IF NOT allowed THEN UPDATE marketing_deliveries SET status='suppressed',error_code='cancelled_paused_or_opted_out' WHERE id=d.id; END IF;
+  RETURN allowed;
+END;
+$$;
+
+
+--
+-- Name: marketing_campaign_action(uuid, text, jsonb); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.marketing_campaign_action(p_actor uuid, p_action text, p_payload jsonb) RETURNS jsonb
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public', 'pg_temp'
+    AS $$
+DECLARE c marketing_campaigns; d jsonb; items jsonb; cid uuid;
+BEGIN
+  IF p_action = 'seed' THEN
+    FOR d IN SELECT * FROM jsonb_array_elements(p_payload->'campaigns') LOOP
+      INSERT INTO marketing_campaigns(key,name,event_id,content,requirements,readiness,scheduled_at,time_zone,created_by)
+      VALUES(d->>'key',d->>'name',d->>'eventId',d->'content',ARRAY(SELECT jsonb_array_elements_text(d->'requirements')),'{}',(d->>'scheduledAt')::timestamptz,'America/Bogota',p_actor)
+      ON CONFLICT (key) DO NOTHING RETURNING id INTO cid;
+      IF cid IS NOT NULL THEN INSERT INTO marketing_audit(campaign_id,actor_id,action) VALUES(cid,p_actor,'draft_created'); END IF;
+      cid := NULL;
+    END LOOP;
+  ELSIF p_action = 'save' THEN
+    d := p_payload->'draft';
+    SELECT * INTO c FROM marketing_campaigns WHERE key = d->>'key' FOR UPDATE;
+    IF FOUND AND (c.status NOT IN ('draft','paused') OR EXISTS (SELECT 1 FROM marketing_deliveries WHERE campaign_id = c.id)) THEN RAISE EXCEPTION 'Campaign copy is locked after queueing'; END IF;
+    INSERT INTO marketing_campaigns(key,name,event_id,content,requirements,readiness,scheduled_at,time_zone,created_by)
+    VALUES(d->>'key',d->>'name',d->>'eventId',d->'content',ARRAY(SELECT jsonb_array_elements_text(d->'requirements')),d->'readiness',(d->>'scheduledAt')::timestamptz,'America/Bogota',p_actor)
+    ON CONFLICT(key) DO UPDATE SET name=EXCLUDED.name,content=EXCLUDED.content,readiness=EXCLUDED.readiness,
+      requirements=EXCLUDED.requirements,scheduled_at=EXCLUDED.scheduled_at,updated_at=now() RETURNING id INTO cid;
+    INSERT INTO marketing_audit(campaign_id,actor_id,action) VALUES(cid,p_actor,'draft_saved');
+  ELSE
+    SELECT * INTO c FROM marketing_campaigns WHERE id = (p_payload->>'id')::uuid FOR UPDATE;
+    IF NOT FOUND THEN RAISE EXCEPTION 'Campaign not found'; END IF;
+    IF p_action = 'schedule' THEN
+      IF c.status NOT IN ('draft','paused') OR c.scheduled_at <= now() OR c.scheduled_at IS NULL THEN RAISE EXCEPTION 'Choose a future date for a draft or paused campaign'; END IF;
+      IF EXISTS (SELECT 1 FROM unnest(c.requirements) r WHERE coalesce(c.readiness->>r,'false') <> 'true') THEN RAISE EXCEPTION 'Campaign prerequisites are incomplete'; END IF;
+      UPDATE marketing_campaigns SET status='scheduled',updated_at=now() WHERE id=c.id;
+    ELSIF p_action = 'resume' THEN
+      IF c.status <> 'paused' THEN RAISE EXCEPTION 'Campaign is not paused'; END IF;
+      IF EXISTS (SELECT 1 FROM unnest(c.requirements) r WHERE coalesce(c.readiness->>r,'false') <> 'true') THEN RAISE EXCEPTION 'Campaign prerequisites are incomplete'; END IF;
+      UPDATE marketing_campaigns SET status='scheduled',updated_at=now() WHERE id=c.id;
+    ELSIF p_action = 'pause' THEN
+      IF c.status NOT IN ('scheduled','sending') THEN RAISE EXCEPTION 'Campaign is not active'; END IF;
+      UPDATE marketing_campaigns SET status='paused',updated_at=now() WHERE id=c.id;
+    ELSIF p_action = 'cancel' THEN
+      IF c.status IN ('completed','cancelled') THEN RAISE EXCEPTION 'Campaign is already closed'; END IF;
+      UPDATE marketing_campaigns SET status='cancelled',updated_at=now() WHERE id=c.id;
+      UPDATE marketing_deliveries SET status='suppressed',error_code='campaign_cancelled' WHERE campaign_id=c.id AND status='queued';
+    ELSE RAISE EXCEPTION 'Unknown campaign action'; END IF;
+    INSERT INTO marketing_audit(campaign_id,actor_id,action) VALUES(c.id,p_actor,p_action);
+  END IF;
+  RETURN marketing_overview();
+END;
+$$;
+
+
+--
+-- Name: marketing_claim(integer); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.marketing_claim(p_limit integer DEFAULT 20) RETURNS jsonb
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public', 'pg_temp'
+    AS $$
+DECLARE pending_campaign marketing_campaigns; result jsonb;
+BEGIN
+  -- A lost acknowledgement is uncertain, never an automatic resend.
+  UPDATE marketing_deliveries SET status='unknown',error_code='lease_expired_reconcile_provider'
+    WHERE status='sending' AND claimed_at < now()-interval '15 minutes';
+  FOR pending_campaign IN SELECT * FROM marketing_campaigns WHERE status='scheduled' AND scheduled_at <= now() ORDER BY scheduled_at FOR UPDATE SKIP LOCKED LOOP
+    IF pending_campaign.audience_queued_at IS NULL THEN
+    INSERT INTO marketing_deliveries(campaign_id,user_id,email,locale)
+    SELECT pending_campaign.id,u.id,lower(btrim(u.email)),CASE WHEN u.profile_metadata->>'locale'='en' THEN 'en' ELSE 'es' END
+    FROM public."user" u JOIN public.newsletter_subscribers n ON lower(btrim(n.email))=lower(btrim(u.email))
+    WHERE u.deleted_at IS NULL AND u.status='active'
+      AND NOT EXISTS(SELECT 1 FROM marketing_suppressions s WHERE s.email=lower(btrim(u.email)))
+    ORDER BY u.id ON CONFLICT DO NOTHING;
+    INSERT INTO marketing_audit(campaign_id,action) VALUES(pending_campaign.id,'audience_queued');
+    END IF;
+    UPDATE marketing_campaigns SET status='sending',audience_queued_at=coalesce(audience_queued_at,now()),updated_at=now() WHERE id=pending_campaign.id;
+  END LOOP;
+  UPDATE marketing_deliveries d SET status='suppressed',error_code='consent_or_account_removed'
+    WHERE d.status='queued' AND (EXISTS(SELECT 1 FROM marketing_suppressions s WHERE s.email=d.email)
+      OR NOT EXISTS(SELECT 1 FROM newsletter_subscribers n WHERE lower(btrim(n.email))=d.email)
+      OR NOT EXISTS(SELECT 1 FROM public."user" u WHERE u.id=d.user_id AND u.deleted_at IS NULL AND u.status='active' AND lower(btrim(u.email))=d.email));
+  WITH picked AS (
+    SELECT d.id FROM marketing_deliveries d JOIN marketing_campaigns c ON c.id=d.campaign_id
+    WHERE d.status='queued' AND c.status='sending' ORDER BY d.created_at,d.id LIMIT greatest(1,least(p_limit,50)) FOR UPDATE OF d SKIP LOCKED
+  ), claimed AS (
+    UPDATE marketing_deliveries d SET status='sending',claim_token=gen_random_uuid(),claimed_at=now()
+    FROM picked p WHERE d.id=p.id RETURNING d.*
+  ) SELECT coalesce(jsonb_agg(to_jsonb(x) || jsonb_build_object('content',c.content,'event_id',c.event_id)),'[]') INTO result FROM claimed x JOIN marketing_campaigns c ON c.id=x.campaign_id;
+  UPDATE marketing_campaigns c SET status='completed',updated_at=now() WHERE status='sending'
+    AND NOT EXISTS(SELECT 1 FROM marketing_deliveries d WHERE d.campaign_id=c.id AND d.status IN ('queued','sending'));
+  RETURN result;
+END;
+$$;
+
+
+--
+-- Name: marketing_overview(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.marketing_overview() RETURNS jsonb
+    LANGUAGE sql SECURITY DEFINER
+    SET search_path TO 'public', 'pg_temp'
+    AS $$
+SELECT jsonb_build_object(
+  'campaigns', coalesce((SELECT jsonb_agg(to_jsonb(c) || jsonb_build_object('counts', coalesce((SELECT jsonb_object_agg(status,n) FROM (SELECT status,count(*)::int n FROM marketing_deliveries WHERE campaign_id = c.id GROUP BY status) x),'{}')) ORDER BY c.scheduled_at NULLS LAST,c.created_at) FROM marketing_campaigns c), '[]'),
+  'deliveries', coalesce((SELECT jsonb_agg(to_jsonb(d)) FROM (SELECT id,campaign_id,user_id,status,error_code,accepted_at,created_at FROM marketing_deliveries ORDER BY created_at DESC LIMIT 100) d), '[]'),
+  'audit', coalesce((SELECT jsonb_agg(to_jsonb(a)) FROM (SELECT id,campaign_id,action,created_at FROM marketing_audit ORDER BY created_at DESC LIMIT 100) a),'[]')
+);
+$$;
+
+
+--
+-- Name: marketing_prepare_snapshot(uuid, timestamp with time zone, jsonb, text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.marketing_prepare_snapshot(p_actor uuid, p_cutoff timestamp with time zone, p_manifest jsonb, p_digest text) RETURNS jsonb
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public', 'pg_temp'
+    AS $$
+DECLARE result marketing_activity_snapshots;
+BEGIN
+  IF p_cutoff > now()-interval '1 minute' THEN RAISE EXCEPTION 'Choose a cutoff at least one minute in the past'; END IF;
+  IF p_manifest IS DISTINCT FROM marketing_snapshot_preview(p_cutoff) THEN RAISE EXCEPTION 'Snapshot changed; reload and prepare again'; END IF;
+  INSERT INTO marketing_activity_snapshots(cutoff,manifest,digest,user_count,created_by)
+  VALUES(p_cutoff,p_manifest,p_digest,jsonb_array_length(p_manifest),p_actor)
+  ON CONFLICT(cutoff,digest) DO UPDATE SET digest=EXCLUDED.digest RETURNING * INTO result;
+  RETURN to_jsonb(result)-'manifest';
+END;
+$$;
+
+
+--
+-- Name: marketing_snapshot_preview(timestamp with time zone); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.marketing_snapshot_preview(p_cutoff timestamp with time zone) RETURNS jsonb
+    LANGUAGE sql SECURITY DEFINER
+    SET search_path TO 'public', 'pg_temp'
+    AS $$
+ SELECT coalesce(jsonb_agg(to_jsonb(t) ORDER BY t.user_id),'[]') FROM (
+   SELECT user_id,count(*)::int AS interactions,sum(provisional_points)::int AS provisional_points
+   FROM marketing_activity WHERE source='verified_server' AND created_at <= p_cutoff GROUP BY user_id
+ ) t;
+$$;
+
+
+--
+-- Name: marketing_unsubscribe(uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.marketing_unsubscribe(p_token uuid) RETURNS boolean
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public', 'pg_temp'
+    AS $$
+DECLARE address text;
+BEGIN
+  SELECT email INTO address FROM marketing_deliveries WHERE unsubscribe_token=p_token;
+  IF NOT FOUND THEN RETURN false; END IF;
+  INSERT INTO marketing_suppressions(email,reason) VALUES(address,'recipient_unsubscribe') ON CONFLICT DO NOTHING;
+  DELETE FROM newsletter_subscribers WHERE lower(btrim(email))=address;
+  UPDATE marketing_deliveries SET status='suppressed',error_code='recipient_unsubscribe' WHERE email=address AND status='queued';
+  RETURN true;
+END;
+$$;
+
+
+--
+-- Name: notify_speaker_claim_reviewers(uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.notify_speaker_claim_reviewers(p_claim_id uuid) RETURNS uuid[]
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public', 'auth', 'pg_temp'
+    AS $$
+DECLARE
+  v_claim public.speaker_claim_requests%ROWTYPE;
+  v_speaker_name text;
+  v_email text;
+  v_message text;
+  v_ids uuid[];
+  v_id uuid;
+BEGIN
+  SELECT * INTO v_claim FROM public.speaker_claim_requests WHERE id = p_claim_id;
+  IF NOT FOUND THEN RETURN ARRAY[]::uuid[]; END IF;
+
+  SELECT name INTO v_speaker_name FROM public.bsl_speakers WHERE id::text = v_claim.speaker_id;
+  v_email := COALESCE(v_claim.claim_email, (SELECT lower(email) FROM auth.users WHERE id = v_claim.requester_user_id));
+  v_message := left(format(
+    '%s asks to link %s to %s%s. Note: %s',
+    COALESCE(v_email, 'A verified account'),
+    COALESCE(v_speaker_name, 'a speaker profile'),
+    CASE v_claim.claim_mode WHEN 'other_email' THEN 'a different email (verified)' ELSE 'their signed-in email' END,
+    '',
+    COALESCE(v_claim.request_note, '-')
+  ), 500);
+
+  v_ids := public.speaker_claim_reviewer_ids(v_claim.event_id);
+  FOREACH v_id IN ARRAY v_ids LOOP
+    PERFORM public.create_notification(
+      v_id, 'speaker_claim_review_required', 'Speaker profile claim to review',
+      v_message, NULL::uuid, v_claim.speaker_id, false, NULL::uuid, 'important'
+    );
+  END LOOP;
+  RETURN v_ids;
+END;
+$$;
+
+
+--
 -- Name: parse_iso8601_immutable(text); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -4890,9 +5354,86 @@ BEGIN
   VALUES (p_user_id, p_public_key)
   ON CONFLICT (user_id) DO UPDATE SET
     public_key = EXCLUDED.public_key,
-    updated_at = now();
+    updated_at = now(),
+    -- Clear encrypted backup when publishing a new public key (key rotation)
+    encrypted_private_key_backup = NULL,
+    backup_salt = NULL,
+    backup_created_at = NULL;
 
   RETURN jsonb_build_object('success', true);
+END;
+$$;
+
+
+--
+-- Name: record_marketing_activity(uuid, text, text, text, text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.record_marketing_activity(p_user uuid, p_key text, p_kind text, p_event text DEFAULT NULL::text, p_source text DEFAULT 'verified_server'::text) RETURNS void
+    LANGUAGE sql SECURITY DEFINER
+    SET search_path TO 'public', 'pg_temp'
+    AS $$
+  INSERT INTO marketing_activity(user_id,event_key,kind,event_id,source,provisional_points)
+  SELECT p_user,left(p_key,220),left(p_kind,60),p_event,p_source,CASE WHEN p_source='verified_server' THEN 1 ELSE 0 END
+  WHERE EXISTS(SELECT 1 FROM public."user" WHERE id=p_user AND deleted_at IS NULL AND status='active')
+  ON CONFLICT(user_id,event_key) DO NOTHING;
+$$;
+
+
+--
+-- Name: user_wallet; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.user_wallet (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid NOT NULL,
+    state text DEFAULT 'enrolled'::text NOT NULL,
+    operation_id uuid,
+    network text,
+    ethereum_address character varying(64),
+    bitcoin_address character varying(100),
+    solana_address character varying(64),
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT user_wallet_check CHECK ((((state = 'enrolled'::text) AND (operation_id IS NULL) AND (network IS NULL) AND (ethereum_address IS NULL) AND (bitcoin_address IS NULL) AND (solana_address IS NULL)) OR ((state = 'provisioning'::text) AND (operation_id IS NOT NULL) AND (network IS NOT NULL) AND (ethereum_address IS NULL) AND (bitcoin_address IS NULL) AND (solana_address IS NULL)) OR ((state = 'registered'::text) AND (operation_id IS NOT NULL) AND (network IS NOT NULL) AND (ethereum_address IS NOT NULL) AND (bitcoin_address IS NOT NULL) AND (solana_address IS NOT NULL)))),
+    CONSTRAINT user_wallet_network_check CHECK ((network = ANY (ARRAY['mainnet'::text, 'testnet'::text]))),
+    CONSTRAINT user_wallet_state_check CHECK ((state = ANY (ARRAY['enrolled'::text, 'provisioning'::text, 'registered'::text])))
+);
+
+
+--
+-- Name: TABLE user_wallet; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.user_wallet IS 'Self-reported public wallet metadata, not verified payout destinations or signing authorization. Secret material stays on device.';
+
+
+--
+-- Name: register_user_wallet(uuid, uuid, text, text, text, text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.register_user_wallet(p_user_id uuid, p_operation_id uuid, p_network text, p_ethereum_address text, p_bitcoin_address text, p_solana_address text) RETURNS public.user_wallet
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO ''
+    AS $$
+DECLARE row public.user_wallet;
+BEGIN
+  SELECT * INTO row FROM public.user_wallet WHERE user_id = p_user_id FOR UPDATE;
+  IF NOT FOUND OR row.state = 'enrolled' OR p_operation_id IS DISTINCT FROM row.operation_id
+    OR p_network IS DISTINCT FROM row.network OR nullif(p_ethereum_address, '') IS NULL
+    OR nullif(p_bitcoin_address, '') IS NULL OR nullif(p_solana_address, '') IS NULL THEN
+    RAISE EXCEPTION 'wallet_registration_conflict' USING ERRCODE = '23514';
+  END IF;
+  IF row.state = 'registered' THEN
+    IF row.ethereum_address <> p_ethereum_address OR row.bitcoin_address <> p_bitcoin_address OR row.solana_address <> p_solana_address THEN
+      RAISE EXCEPTION 'wallet_registration_conflict' USING ERRCODE = '23514';
+    END IF;
+    RETURN row;
+  END IF;
+  UPDATE public.user_wallet SET state = 'registered', ethereum_address = p_ethereum_address,
+    bitcoin_address = p_bitcoin_address, solana_address = p_solana_address, updated_at = now()
+    WHERE id = row.id RETURNING * INTO row;
+  RETURN row;
 END;
 $$;
 
@@ -5180,6 +5721,32 @@ $$;
 
 
 --
+-- Name: reserve_user_wallet(uuid, uuid, text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.reserve_user_wallet(p_user_id uuid, p_operation_id uuid, p_network text) RETURNS public.user_wallet
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO ''
+    AS $$
+DECLARE row public.user_wallet;
+BEGIN
+  IF p_operation_id IS NULL OR p_network IS NULL OR p_network NOT IN ('mainnet', 'testnet') THEN
+    RAISE EXCEPTION 'invalid_wallet_request' USING ERRCODE = '23514';
+  END IF;
+  SELECT * INTO row FROM public.user_wallet WHERE user_id = p_user_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'wallet_not_enrolled' USING ERRCODE = '23514'; END IF;
+  IF row.state = 'enrolled' THEN
+    UPDATE public.user_wallet SET state = 'provisioning', operation_id = p_operation_id,
+      network = p_network, updated_at = now() WHERE id = row.id RETURNING * INTO row;
+  ELSIF row.state <> 'provisioning' OR row.operation_id <> p_operation_id OR row.network <> p_network THEN
+    RAISE EXCEPTION 'wallet_already_reserved' USING ERRCODE = '23514';
+  END IF;
+  RETURN row;
+END;
+$$;
+
+
+--
 -- Name: reset_meeting_request_limits(text, text, numeric); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -5276,6 +5843,27 @@ BEGIN
          v_pass.pass_type;
 END;
 $$;
+
+
+--
+-- Name: reset_user_pin(uuid, text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.reset_user_pin(p_user_id uuid, p_verifier text) RETURNS jsonb
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO ''
+    AS $_$
+BEGIN
+  IF p_verifier IS NULL OR p_verifier !~ '^[0-9a-f]{64}$' THEN
+    RAISE EXCEPTION 'invalid_pin_request' USING ERRCODE = '23514';
+  END IF;
+  INSERT INTO public.user_pin(user_id, verifier) VALUES (p_user_id, decode(p_verifier, 'hex'))
+    ON CONFLICT (user_id) DO UPDATE SET
+      verifier = excluded.verifier, failed_attempts = 0, locked_until = NULL,
+      set_at = now(), updated_at = now();
+  RETURN jsonb_build_object('ok', true, 'enabled', true, 'remainingAttempts', 5, 'lockedUntil', NULL);
+END;
+$_$;
 
 
 --
@@ -5630,19 +6218,15 @@ DECLARE
   v_claim public.speaker_claim_requests%ROWTYPE;
   v_speaker public.bsl_speakers%ROWTYPE;
   v_email text;
+  v_note text := NULLIF(left(btrim(COALESCE(p_review_note, '')), 1000), '');
 BEGIN
-  SELECT *
-    INTO v_claim
-    FROM public.speaker_claim_requests
-   WHERE id = p_claim_id
-   FOR UPDATE;
+  SELECT * INTO v_claim FROM public.speaker_claim_requests WHERE id = p_claim_id FOR UPDATE;
   IF NOT FOUND THEN
     RAISE EXCEPTION 'Speaker claim request not found' USING ERRCODE = '22023';
   END IF;
 
   IF NOT public.has_event_admin_access(p_actor_user_id, v_claim.event_id, false) THEN
-    RAISE EXCEPTION 'Only an event administrator may review speaker claims'
-      USING ERRCODE = '42501';
+    RAISE EXCEPTION 'Only an event administrator may review speaker claims' USING ERRCODE = '42501';
   END IF;
   IF p_action NOT IN ('approve', 'reject') THEN
     RAISE EXCEPTION 'Unsupported speaker claim review action' USING ERRCODE = '22023';
@@ -5651,56 +6235,47 @@ BEGIN
     RAISE EXCEPTION 'This speaker claim has already been reviewed' USING ERRCODE = '23505';
   END IF;
 
-  SELECT *
-    INTO v_speaker
+  SELECT * INTO v_speaker
     FROM public.bsl_speakers
-   WHERE id::text = v_claim.speaker_id
-     AND event_id = v_claim.event_id
+   WHERE id::text = v_claim.speaker_id AND event_id = v_claim.event_id
    FOR UPDATE;
   IF NOT FOUND THEN
     RAISE EXCEPTION 'Speaker profile not found for this event' USING ERRCODE = '22023';
   END IF;
 
   IF p_action = 'approve' THEN
-    SELECT lower(email)
-      INTO v_email
+    IF v_claim.claim_mode = 'other_email' AND v_claim.verification_status <> 'verified' THEN
+      RAISE EXCEPTION 'The claimant has not verified the email yet' USING ERRCODE = '42501';
+    END IF;
+    SELECT lower(email) INTO v_email
       FROM auth.users
      WHERE id = v_claim.requester_user_id
-       AND email IS NOT NULL
-       AND email_confirmed_at IS NOT NULL;
+       AND email IS NOT NULL AND email_confirmed_at IS NOT NULL;
     IF v_email IS NULL THEN
-      RAISE EXCEPTION 'The claimant must have a confirmed email before approval'
-        USING ERRCODE = '42501';
+      RAISE EXCEPTION 'The claimant must have a confirmed email before approval' USING ERRCODE = '42501';
     END IF;
     IF v_speaker.user_id IS NOT NULL THEN
-      RAISE EXCEPTION 'Speaker profile is already linked to an account'
-        USING ERRCODE = '23505';
+      RAISE EXCEPTION 'Speaker profile is already linked to an account' USING ERRCODE = '23505';
     END IF;
     IF EXISTS (
       SELECT 1 FROM public.bsl_speakers
-       WHERE user_id = v_claim.requester_user_id
-         AND id::text <> v_claim.speaker_id
+       WHERE user_id = v_claim.requester_user_id AND id::text <> v_claim.speaker_id
     ) THEN
-      RAISE EXCEPTION 'This account is already linked to another speaker profile'
-        USING ERRCODE = '23505';
+      RAISE EXCEPTION 'This account is already linked to another speaker profile' USING ERRCODE = '23505';
     END IF;
     IF EXISTS (
       SELECT 1 FROM public.speaker_identity_claims
        WHERE (claimed_user_id = v_claim.requester_user_id OR email_normalized = v_email)
          AND speaker_id <> v_claim.speaker_id
     ) THEN
-      RAISE EXCEPTION 'This account or email is already linked to another speaker profile'
-        USING ERRCODE = '23505';
+      RAISE EXCEPTION 'This account or email is already linked to another speaker profile' USING ERRCODE = '23505';
     END IF;
 
     UPDATE public.bsl_speakers
        SET user_id = v_claim.requester_user_id,
-           is_active = true,
-           is_accepting_meetings = true,
-           directory_visible = true,
+           is_active = true, is_accepting_meetings = true, directory_visible = true,
            updated_at = now()
-     WHERE id::text = v_claim.speaker_id
-       AND event_id = v_claim.event_id;
+     WHERE id::text = v_claim.speaker_id AND event_id = v_claim.event_id;
 
     INSERT INTO public.speaker_identity_claims (
       speaker_id, email_normalized, status, configured_by,
@@ -5722,27 +6297,34 @@ BEGIN
   END IF;
 
   UPDATE public.speaker_claim_requests
-     SET status = p_action,
-         reviewed_by = p_actor_user_id,
-         review_note = NULLIF(left(btrim(COALESCE(p_review_note, '')), 1000), ''),
-         reviewed_at = now(),
-         updated_at = now()
+     SET status = CASE p_action WHEN 'approve' THEN 'approved' ELSE 'rejected' END,
+         reviewed_by = p_actor_user_id, review_note = v_note,
+         reviewed_at = now(), updated_at = now()
    WHERE id = v_claim.id;
 
   INSERT INTO public.admin_action_log (actor_user_id, event_id, action, target_type, target_id, metadata)
   VALUES (
-    p_actor_user_id,
-    v_claim.event_id,
-    'speaker_claim.' || p_action,
-    'speaker',
-    v_claim.speaker_id,
+    p_actor_user_id, v_claim.event_id, 'speaker_claim.' || p_action, 'speaker', v_claim.speaker_id,
     jsonb_build_object('claim_id', v_claim.id, 'requester_user_id', v_claim.requester_user_id)
   );
 
+  PERFORM public.create_notification(
+    v_claim.requester_user_id,
+    CASE p_action WHEN 'approve' THEN 'speaker_claim_approved' ELSE 'speaker_claim_rejected' END,
+    CASE p_action WHEN 'approve' THEN 'Speaker profile linked' ELSE 'Speaker profile claim declined' END,
+    left(CASE p_action
+      WHEN 'approve' THEN format('%s is now linked to your account.', v_speaker.name)
+      ELSE format('Your claim for %s was not approved.%s', v_speaker.name, COALESCE(' Reviewer note: ' || v_note, ''))
+    END, 500),
+    NULL::uuid, v_claim.speaker_id, false, NULL::uuid, 'important'
+  );
+
   RETURN jsonb_build_object(
-    'claim_id', v_claim.id,
-    'speaker_id', v_claim.speaker_id,
-    'status', p_action
+    'claim_id', v_claim.id, 'speaker_id', v_claim.speaker_id,
+    'status', CASE p_action WHEN 'approve' THEN 'approved' ELSE 'rejected' END,
+    'requester_user_id', v_claim.requester_user_id,
+    'speaker_name', v_speaker.name, 'claim_mode', v_claim.claim_mode,
+    'review_note', v_note
   );
 END;
 $$;
@@ -5912,6 +6494,36 @@ BEGIN
     updated_at = now()
   WHERE user_id = p_user_id;
   RETURN public.get_user_setup(p_user_id);
+END;
+$$;
+
+
+--
+-- Name: save_user_wallet_vault(uuid, uuid, text, integer, smallint); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.save_user_wallet_vault(p_user_id uuid, p_wallet_id uuid, p_envelope text, p_expected_version integer, p_key_version smallint DEFAULT 1) RETURNS jsonb
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO ''
+    AS $$
+DECLARE saved public.user_wallet_vault;
+BEGIN
+  IF p_envelope IS NULL OR octet_length(p_envelope) NOT BETWEEN 100 AND 8192 OR p_expected_version < 0 THEN
+    RAISE EXCEPTION 'invalid_wallet_vault' USING ERRCODE = '23514';
+  END IF;
+  PERFORM 1 FROM public.user_wallet WHERE id = p_wallet_id AND user_id = p_user_id;
+  IF NOT FOUND THEN RAISE EXCEPTION 'invalid_wallet_vault' USING ERRCODE = '23514'; END IF;
+  IF p_expected_version = 0 THEN
+    INSERT INTO public.user_wallet_vault(user_id, wallet_id, envelope, key_version)
+      VALUES (p_user_id, p_wallet_id, p_envelope, p_key_version)
+      ON CONFLICT (user_id) DO NOTHING RETURNING * INTO saved;
+  ELSE
+    UPDATE public.user_wallet_vault SET envelope = p_envelope, key_version = p_key_version,
+      version = version + 1, updated_at = now()
+      WHERE user_id = p_user_id AND wallet_id = p_wallet_id AND version = p_expected_version RETURNING * INTO saved;
+  END IF;
+  IF saved.user_id IS NULL THEN RAISE EXCEPTION 'wallet_vault_conflict' USING ERRCODE = '23514'; END IF;
+  RETURN jsonb_build_object('walletId', saved.wallet_id, 'version', saved.version, 'keyVersion', saved.key_version);
 END;
 $$;
 
@@ -6236,6 +6848,202 @@ CREATE FUNCTION public.set_users_updated_at() RETURNS trigger
 BEGIN
   NEW.updated_at = now();
   RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: speaker_claim_reviewer_ids(text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.speaker_claim_reviewer_ids(p_event_id text) RETURNS uuid[]
+    LANGUAGE plpgsql STABLE SECURITY DEFINER
+    SET search_path TO 'public', 'pg_temp'
+    AS $$
+DECLARE
+  v_ids uuid[];
+BEGIN
+  SELECT COALESCE(array_agg(DISTINCT er.user_id), ARRAY[]::uuid[])
+    INTO v_ids
+    FROM public.event_roles er
+   WHERE er.role = 'event_admin'::public.event_role
+     AND (er.expires_at IS NULL OR er.expires_at > now())
+     AND (
+       er.event_id = p_event_id
+       OR EXISTS (
+         SELECT 1 FROM public.events target_event
+          WHERE target_event.id = p_event_id
+            AND target_event.metadata ->> 'hubEventId' = er.event_id
+       )
+     );
+
+  IF COALESCE(array_length(v_ids, 1), 0) = 0 THEN
+    SELECT COALESCE(array_agg(DISTINCT ur.user_id), ARRAY[]::uuid[])
+      INTO v_ids
+      FROM public.user_roles ur
+     WHERE ur.role IN ('admin'::public.user_role, 'super_admin'::public.user_role)
+       AND (ur.expires_at IS NULL OR ur.expires_at > now());
+  END IF;
+  RETURN v_ids;
+END;
+$$;
+
+
+--
+-- Name: store_chat_key_backup(uuid, text, text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.store_chat_key_backup(p_user_id uuid, p_encrypted_private_key text, p_salt text) RETURNS jsonb
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+BEGIN
+  IF auth.uid() IS NOT NULL AND auth.uid() <> p_user_id THEN
+    RETURN jsonb_build_object('success', false, 'error', 'not_authorized');
+  END IF;
+
+  IF length(coalesce(p_encrypted_private_key, '')) = 0 THEN
+    RETURN jsonb_build_object('success', false, 'error', 'invalid_encrypted_key');
+  END IF;
+
+  IF length(coalesce(p_salt, '')) = 0 THEN
+    RETURN jsonb_build_object('success', false, 'error', 'invalid_salt');
+  END IF;
+
+  -- User must already have a public key published (can't backup without setup)
+  IF NOT EXISTS (SELECT 1 FROM public.user_chat_keys WHERE user_id = p_user_id) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'no_key_pair');
+  END IF;
+
+  UPDATE public.user_chat_keys
+  SET
+    encrypted_private_key_backup = p_encrypted_private_key,
+    backup_salt = p_salt,
+    backup_created_at = now()
+  WHERE user_id = p_user_id;
+
+  RETURN jsonb_build_object('success', true);
+END;
+$$;
+
+
+--
+-- Name: submit_speaker_profile_claim(text, uuid, uuid, text, text, text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.submit_speaker_profile_claim(p_speaker_id text, p_submitted_by uuid, p_claimant_user_id uuid, p_claim_mode text, p_claim_email text, p_note text) RETURNS jsonb
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public', 'auth', 'pg_temp'
+    AS $$
+DECLARE
+  v_speaker public.bsl_speakers%ROWTYPE;
+  v_existing public.speaker_claim_requests%ROWTYPE;
+  v_claim public.speaker_claim_requests%ROWTYPE;
+  v_email text;
+  v_confirmed timestamptz;
+  v_note text := NULLIF(left(btrim(COALESCE(p_note, '')), 1000), '');
+  v_reviewers uuid[] := ARRAY[]::uuid[];
+  v_created boolean := true;
+BEGIN
+  IF p_claim_mode NOT IN ('current_email', 'other_email') THEN
+    RAISE EXCEPTION 'Unsupported claim mode' USING ERRCODE = '22023';
+  END IF;
+  IF v_note IS NULL OR char_length(v_note) < 20 THEN
+    RAISE EXCEPTION 'Explain why this email and account belong to the speaker (at least 20 characters)'
+      USING ERRCODE = '22023';
+  END IF;
+
+  SELECT lower(email), email_confirmed_at
+    INTO v_email, v_confirmed
+    FROM auth.users
+   WHERE id = p_claimant_user_id AND email IS NOT NULL;
+  IF v_email IS NULL THEN
+    RAISE EXCEPTION 'The claimant account was not found' USING ERRCODE = '42501';
+  END IF;
+
+  IF p_claim_mode = 'current_email' THEN
+    IF v_confirmed IS NULL THEN
+      RAISE EXCEPTION 'A confirmed email is required to request a speaker profile claim'
+        USING ERRCODE = '42501';
+    END IF;
+  ELSIF v_email IS DISTINCT FROM lower(btrim(COALESCE(p_claim_email, ''))) THEN
+    RAISE EXCEPTION 'The claim email does not match the claimant account' USING ERRCODE = '22023';
+  END IF;
+
+  SELECT * INTO v_speaker
+    FROM public.bsl_speakers
+   WHERE id::text = btrim(COALESCE(p_speaker_id, ''))
+     AND user_id IS NULL
+   FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Speaker profile is not available for claiming' USING ERRCODE = '22023';
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM public.bsl_speakers WHERE user_id = p_claimant_user_id) THEN
+    RAISE EXCEPTION 'This account is already linked to a speaker profile' USING ERRCODE = '23505';
+  END IF;
+
+  SELECT * INTO v_existing
+    FROM public.speaker_claim_requests
+   WHERE speaker_id = v_speaker.id::text AND status = 'pending'
+   FOR UPDATE;
+  IF FOUND THEN
+    IF v_existing.requester_user_id = p_claimant_user_id THEN
+      RETURN jsonb_build_object(
+        'claim_id', v_existing.id, 'speaker_id', v_existing.speaker_id,
+        'status', v_existing.status, 'claim_mode', v_existing.claim_mode,
+        'verification_status', v_existing.verification_status,
+        'speaker_name', v_speaker.name, 'claim_email', v_existing.claim_email,
+        'created', false, 'reviewer_ids', '[]'::jsonb
+      );
+    ELSIF v_existing.verification_status = 'pending' THEN
+      -- An unverified claim must not be able to block the real speaker.
+      UPDATE public.speaker_claim_requests
+         SET status = 'rejected',
+             review_note = 'Superseded by a newer claim request',
+             reviewed_at = now(), updated_at = now()
+       WHERE id = v_existing.id;
+    ELSE
+      RETURN jsonb_build_object(
+        'claim_id', v_existing.id, 'speaker_id', v_existing.speaker_id,
+        'status', v_existing.status, 'claim_mode', v_existing.claim_mode,
+        'verification_status', v_existing.verification_status,
+        'speaker_name', v_speaker.name, 'claim_email', v_existing.claim_email,
+        'created', false, 'reviewer_ids', '[]'::jsonb
+      );
+    END IF;
+  END IF;
+
+  INSERT INTO public.speaker_claim_requests (
+    speaker_id, event_id, requester_user_id, request_note,
+    claim_mode, claim_email, verification_status, submitted_by
+  ) VALUES (
+    v_speaker.id::text, v_speaker.event_id, p_claimant_user_id, v_note,
+    p_claim_mode, v_email,
+    CASE p_claim_mode WHEN 'other_email' THEN 'pending' ELSE 'not_required' END,
+    COALESCE(p_submitted_by, p_claimant_user_id)
+  )
+  RETURNING * INTO v_claim;
+
+  INSERT INTO public.admin_action_log (actor_user_id, event_id, action, target_type, target_id, metadata)
+  VALUES (
+    COALESCE(p_submitted_by, p_claimant_user_id), v_speaker.event_id,
+    'speaker_claim.requested', 'speaker', v_speaker.id::text,
+    jsonb_build_object('claim_id', v_claim.id, 'claim_mode', p_claim_mode)
+  );
+
+  IF p_claim_mode = 'current_email' THEN
+    v_reviewers := public.notify_speaker_claim_reviewers(v_claim.id);
+  END IF;
+
+  RETURN jsonb_build_object(
+    'claim_id', v_claim.id, 'speaker_id', v_claim.speaker_id,
+    'status', v_claim.status, 'claim_mode', v_claim.claim_mode,
+    'verification_status', v_claim.verification_status,
+    'speaker_name', v_speaker.name, 'claim_email', v_claim.claim_email,
+    'request_note', v_claim.request_note,
+    'created', v_created, 'reviewer_ids', to_jsonb(v_reviewers)
+  );
 END;
 $$;
 
@@ -6692,6 +7500,61 @@ $$;
 
 
 --
+-- Name: verify_speaker_claim_email(text, uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.verify_speaker_claim_email(p_speaker_id text, p_user_id uuid) RETURNS jsonb
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public', 'auth', 'pg_temp'
+    AS $$
+DECLARE
+  v_claim public.speaker_claim_requests%ROWTYPE;
+  v_email text;
+  v_confirmed timestamptz;
+  v_name text;
+  v_reviewers uuid[] := ARRAY[]::uuid[];
+  v_created boolean := false;
+BEGIN
+  SELECT * INTO v_claim
+    FROM public.speaker_claim_requests
+   WHERE speaker_id = btrim(COALESCE(p_speaker_id, ''))
+     AND requester_user_id = p_user_id
+     AND claim_mode = 'other_email'
+     AND status = 'pending'
+   FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'No pending claim is waiting for this email' USING ERRCODE = '22023';
+  END IF;
+
+  SELECT lower(email), email_confirmed_at INTO v_email, v_confirmed
+    FROM auth.users WHERE id = p_user_id;
+  IF v_confirmed IS NULL OR v_email IS DISTINCT FROM v_claim.claim_email THEN
+    RAISE EXCEPTION 'This email has not been verified yet' USING ERRCODE = '42501';
+  END IF;
+
+  IF v_claim.verification_status <> 'verified' THEN
+    UPDATE public.speaker_claim_requests
+       SET verification_status = 'verified', verified_at = now(), updated_at = now()
+     WHERE id = v_claim.id
+    RETURNING * INTO v_claim;
+    v_reviewers := public.notify_speaker_claim_reviewers(v_claim.id);
+    v_created := true;
+  END IF;
+
+  SELECT name INTO v_name FROM public.bsl_speakers WHERE id::text = v_claim.speaker_id;
+  RETURN jsonb_build_object(
+    'claim_id', v_claim.id, 'speaker_id', v_claim.speaker_id,
+    'status', v_claim.status, 'claim_mode', v_claim.claim_mode,
+    'verification_status', v_claim.verification_status,
+    'speaker_name', v_name, 'claim_email', v_claim.claim_email,
+    'request_note', v_claim.request_note,
+    'created', v_created, 'reviewer_ids', to_jsonb(v_reviewers)
+  );
+END;
+$$;
+
+
+--
 -- Name: verify_user_pin(uuid, text); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -6944,8 +7807,28 @@ CREATE TABLE public.bsl_speakers (
     tags text[],
     availability jsonb,
     event_id text DEFAULT 'bsl2025'::text NOT NULL,
-    directory_visible boolean DEFAULT true NOT NULL
+    directory_visible boolean DEFAULT true NOT NULL,
+    event_imageurl text,
+    avatar_source text DEFAULT 'event'::text NOT NULL,
+    do_not_disturb boolean DEFAULT false NOT NULL,
+    directory_status text GENERATED ALWAYS AS (
+CASE
+    WHEN (COALESCE(directory_visible, false) = false) THEN 'private'::text
+    WHEN (user_id IS NULL) THEN 'passive'::text
+    WHEN (COALESCE(is_active, false) AND COALESCE(do_not_disturb, false)) THEN 'dnd'::text
+    WHEN COALESCE(is_active, false) THEN 'active'::text
+    ELSE 'inactive'::text
+END) STORED,
+    CONSTRAINT bsl_speakers_avatar_source_check CHECK ((avatar_source = ANY (ARRAY['event'::text, 'personal'::text]))),
+    CONSTRAINT bsl_speakers_directory_status_check CHECK ((directory_status = ANY (ARRAY['private'::text, 'passive'::text, 'inactive'::text, 'active'::text, 'dnd'::text])))
 );
+
+
+--
+-- Name: COLUMN bsl_speakers.directory_status; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.bsl_speakers.directory_status IS 'Derived directory state: private, passive (published but unclaimed), inactive, active, or dnd.';
 
 
 --
@@ -7048,7 +7931,9 @@ SELECT
     NULL::boolean AS leaderboard,
     NULL::uuid AS share_id,
     NULL::integer AS connections,
-    NULL::integer AS points;
+    NULL::integer AS points,
+    NULL::text AS identity_mode,
+    NULL::text AS avatar_url;
 
 
 --
@@ -7064,7 +7949,9 @@ CREATE TABLE public.contact_profiles (
     discoverable boolean DEFAULT false NOT NULL,
     leaderboard boolean DEFAULT false NOT NULL,
     share_id uuid DEFAULT gen_random_uuid() NOT NULL,
+    identity_mode text DEFAULT 'attendee'::text NOT NULL,
     CONSTRAINT contact_profiles_company_check CHECK ((length(company) <= 100)),
+    CONSTRAINT contact_profiles_identity_mode_check CHECK ((identity_mode = ANY (ARRAY['attendee'::text, 'speaker'::text]))),
     CONSTRAINT contact_profiles_name_check CHECK (((length(btrim(name)) >= 1) AND (length(btrim(name)) <= 80))),
     CONSTRAINT contact_profiles_role_check CHECK ((length(role) <= 100)),
     CONSTRAINT contact_profiles_topics_check CHECK (((cardinality(topics) <= 5) AND (topics <@ ARRAY['AI'::text, 'Web3'::text, 'Design'::text, 'Startups'::text, 'Payments'::text, 'DeFi'::text, 'Infrastructure'::text, 'Gaming'::text, 'Policy'::text, 'Community'::text])))
@@ -8062,6 +8949,8 @@ CREATE TABLE public.events (
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     is_demo boolean DEFAULT false NOT NULL,
     search_aliases text[] DEFAULT ARRAY[]::text[] NOT NULL,
+    agenda_public boolean DEFAULT true NOT NULL,
+    speakers_public boolean DEFAULT true NOT NULL,
     CONSTRAINT events_date_order CHECK (((ends_at IS NULL) OR (starts_at IS NULL) OR (ends_at >= starts_at))),
     CONSTRAINT events_status_check CHECK ((status = ANY (ARRAY['draft'::text, 'published'::text, 'archived'::text])))
 );
@@ -8072,6 +8961,20 @@ CREATE TABLE public.events (
 --
 
 COMMENT ON COLUMN public.events.search_aliases IS 'Canonical alternative names and hashtag-style discovery terms for event search.';
+
+
+--
+-- Name: COLUMN events.agenda_public; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.events.agenda_public IS 'Whether this event''s agenda is shown to unauthenticated/guest visitors. Enforced in agenda+api.ts (service-role client bypasses RLS), not by a DB policy.';
+
+
+--
+-- Name: COLUMN events.speakers_public; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.events.speakers_public IS 'Whether this event''s speaker directory is shown to unauthenticated/guest visitors. Enforced in speakers+api.ts (service-role client bypasses RLS), not by a DB policy.';
 
 
 --
@@ -8179,6 +9082,142 @@ CREATE TABLE public.jwks (
 
 
 --
+-- Name: lukas_newsletter_subscribers; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.lukas_newsletter_subscribers (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    email text NOT NULL,
+    source text DEFAULT 'lukas_landing'::text NOT NULL,
+    hashpass_opt_in boolean DEFAULT false NOT NULL,
+    subscribed_at timestamp with time zone DEFAULT now() NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT lukas_newsletter_subscribers_email_check CHECK ((email = lower(btrim(email))))
+);
+
+
+--
+-- Name: TABLE lukas_newsletter_subscribers; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.lukas_newsletter_subscribers IS 'Independent Lukas newsletter audience. HashPass opt-ins are copied to newsletter_subscribers by the Lukas API route.';
+
+
+--
+-- Name: marketing_activity; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.marketing_activity (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid NOT NULL,
+    event_key text NOT NULL,
+    kind text NOT NULL,
+    event_id text,
+    source text NOT NULL,
+    provisional_points integer NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT marketing_activity_provisional_points_check CHECK ((provisional_points = ANY (ARRAY[0, 1]))),
+    CONSTRAINT marketing_activity_source_check CHECK ((source = ANY (ARRAY['verified_server'::text, 'observed_client'::text])))
+);
+
+
+--
+-- Name: marketing_activity_snapshots; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.marketing_activity_snapshots (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    cutoff timestamp with time zone NOT NULL,
+    network text DEFAULT 'testnet'::text NOT NULL,
+    status text DEFAULT 'unpublished'::text NOT NULL,
+    rules_version text DEFAULT 'pending-announcement-v1'::text NOT NULL,
+    manifest jsonb NOT NULL,
+    digest text NOT NULL,
+    user_count integer NOT NULL,
+    created_by uuid NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT marketing_activity_snapshots_digest_check CHECK ((digest ~ '^[0-9a-f]{64}$'::text)),
+    CONSTRAINT marketing_activity_snapshots_network_check CHECK ((network = 'testnet'::text)),
+    CONSTRAINT marketing_activity_snapshots_status_check CHECK ((status = 'unpublished'::text))
+);
+
+
+--
+-- Name: marketing_audit; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.marketing_audit (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    campaign_id uuid,
+    actor_id uuid,
+    action text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: marketing_campaigns; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.marketing_campaigns (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    key text NOT NULL,
+    name text NOT NULL,
+    event_id text NOT NULL,
+    status text DEFAULT 'draft'::text NOT NULL,
+    audience text DEFAULT 'registered_opt_in'::text NOT NULL,
+    content jsonb NOT NULL,
+    requirements text[] DEFAULT '{}'::text[] NOT NULL,
+    readiness jsonb DEFAULT '{}'::jsonb NOT NULL,
+    scheduled_at timestamp with time zone,
+    audience_queued_at timestamp with time zone,
+    time_zone text DEFAULT 'America/Bogota'::text NOT NULL,
+    created_by uuid NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT marketing_campaigns_audience_check CHECK ((audience = 'registered_opt_in'::text)),
+    CONSTRAINT marketing_campaigns_status_check CHECK ((status = ANY (ARRAY['draft'::text, 'scheduled'::text, 'paused'::text, 'sending'::text, 'completed'::text, 'cancelled'::text])))
+);
+
+
+--
+-- Name: marketing_deliveries; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.marketing_deliveries (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    campaign_id uuid NOT NULL,
+    user_id uuid NOT NULL,
+    email text NOT NULL,
+    locale text NOT NULL,
+    unsubscribe_token uuid DEFAULT gen_random_uuid() NOT NULL,
+    status text DEFAULT 'queued'::text NOT NULL,
+    claim_token uuid,
+    claimed_at timestamp with time zone,
+    accepted_at timestamp with time zone,
+    provider_message_id text,
+    error_code text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT marketing_deliveries_email_check CHECK ((email = lower(btrim(email)))),
+    CONSTRAINT marketing_deliveries_locale_check CHECK ((locale = ANY (ARRAY['es'::text, 'en'::text]))),
+    CONSTRAINT marketing_deliveries_status_check CHECK ((status = ANY (ARRAY['queued'::text, 'sending'::text, 'accepted'::text, 'failed'::text, 'unknown'::text, 'suppressed'::text])))
+);
+
+
+--
+-- Name: marketing_suppressions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.marketing_suppressions (
+    email text NOT NULL,
+    reason text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT marketing_suppressions_email_check CHECK ((email = lower(btrim(email))))
+);
+
+
+--
 -- Name: meeting_chat_messages; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -8280,7 +9319,7 @@ CREATE TABLE public.notifications (
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     level text DEFAULT 'info'::text NOT NULL,
     CONSTRAINT notifications_level_check CHECK ((level = ANY (ARRAY['info'::text, 'important'::text, 'critical'::text]))),
-    CONSTRAINT notifications_type_check CHECK ((type = ANY (ARRAY['meeting_request'::text, 'meeting_accepted'::text, 'meeting_declined'::text, 'meeting_reminder'::text, 'meeting_expired'::text, 'meeting_cancelled'::text, 'boost_received'::text, 'system_alert'::text, 'chat_message'::text, 'business_invite_pending'::text, 'business_invite_review_required'::text, 'business_invite_rejected'::text, 'business_invite_approved'::text])))
+    CONSTRAINT notifications_type_check CHECK ((type = ANY (ARRAY['meeting_request'::text, 'meeting_accepted'::text, 'meeting_declined'::text, 'meeting_reminder'::text, 'meeting_expired'::text, 'meeting_cancelled'::text, 'boost_received'::text, 'system_alert'::text, 'chat_message'::text, 'business_invite_pending'::text, 'business_invite_review_required'::text, 'business_invite_rejected'::text, 'business_invite_approved'::text, 'speaker_claim_review_required'::text, 'speaker_claim_approved'::text, 'speaker_claim_rejected'::text])))
 );
 
 
@@ -8462,7 +9501,7 @@ CREATE TABLE public.otp_codes (
     purpose text DEFAULT 'email-login'::text NOT NULL,
     attempt_count smallint DEFAULT 0 NOT NULL,
     CONSTRAINT otp_codes_attempt_count_check CHECK (((attempt_count >= 0) AND (attempt_count <= 5))),
-    CONSTRAINT otp_codes_purpose_check CHECK ((purpose = ANY (ARRAY['email-login'::text, 'account-delete'::text])))
+    CONSTRAINT otp_codes_purpose_check CHECK ((purpose = ANY (ARRAY['email-login'::text, 'account-delete'::text, 'wallet-pin-reset'::text])))
 );
 
 
@@ -8869,7 +9908,14 @@ CREATE TABLE public.speaker_claim_requests (
     reviewed_at timestamp with time zone,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT speaker_claim_requests_status_check CHECK ((status = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text])))
+    claim_mode text DEFAULT 'current_email'::text NOT NULL,
+    claim_email text,
+    verification_status text DEFAULT 'not_required'::text NOT NULL,
+    verified_at timestamp with time zone,
+    submitted_by uuid,
+    CONSTRAINT speaker_claim_requests_mode_check CHECK ((claim_mode = ANY (ARRAY['current_email'::text, 'other_email'::text]))),
+    CONSTRAINT speaker_claim_requests_status_check CHECK ((status = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text]))),
+    CONSTRAINT speaker_claim_requests_verification_check CHECK ((verification_status = ANY (ARRAY['not_required'::text, 'pending'::text, 'verified'::text])))
 );
 
 
@@ -9128,7 +10174,10 @@ CREATE TABLE public.user_chat_keys (
     user_id uuid NOT NULL,
     public_key text NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    encrypted_private_key_backup text,
+    backup_salt text,
+    backup_created_at timestamp with time zone
 );
 
 
@@ -9308,6 +10357,30 @@ CREATE TABLE public.user_tutorial_progress (
     CONSTRAINT user_tutorial_progress_status_check CHECK ((status = ANY (ARRAY['not_started'::text, 'in_progress'::text, 'completed'::text, 'skipped'::text]))),
     CONSTRAINT user_tutorial_progress_tutorial_type_check CHECK ((tutorial_type = ANY (ARRAY['main'::text, 'networking'::text])))
 );
+
+
+--
+-- Name: user_wallet_vault; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.user_wallet_vault (
+    user_id uuid NOT NULL,
+    wallet_id uuid NOT NULL,
+    envelope text NOT NULL,
+    version integer DEFAULT 1 NOT NULL,
+    key_version smallint DEFAULT 1 NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT user_wallet_vault_envelope_check CHECK (((octet_length(envelope) >= 100) AND (octet_length(envelope) <= 8192))),
+    CONSTRAINT user_wallet_vault_version_check CHECK ((version > 0))
+);
+
+
+--
+-- Name: TABLE user_wallet_vault; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.user_wallet_vault IS 'Client-encrypted hybrid wallet envelope (seed under DEK, DEK wrapped by PIN + server share). Server-only; no plaintext secret is ever stored.';
 
 
 --
@@ -10020,6 +11093,110 @@ ALTER TABLE ONLY public.jwks
 
 
 --
+-- Name: lukas_newsletter_subscribers lukas_newsletter_subscribers_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.lukas_newsletter_subscribers
+    ADD CONSTRAINT lukas_newsletter_subscribers_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: marketing_activity marketing_activity_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.marketing_activity
+    ADD CONSTRAINT marketing_activity_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: marketing_activity_snapshots marketing_activity_snapshots_cutoff_digest_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.marketing_activity_snapshots
+    ADD CONSTRAINT marketing_activity_snapshots_cutoff_digest_key UNIQUE (cutoff, digest);
+
+
+--
+-- Name: marketing_activity_snapshots marketing_activity_snapshots_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.marketing_activity_snapshots
+    ADD CONSTRAINT marketing_activity_snapshots_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: marketing_activity marketing_activity_user_id_event_key_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.marketing_activity
+    ADD CONSTRAINT marketing_activity_user_id_event_key_key UNIQUE (user_id, event_key);
+
+
+--
+-- Name: marketing_audit marketing_audit_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.marketing_audit
+    ADD CONSTRAINT marketing_audit_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: marketing_campaigns marketing_campaigns_key_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.marketing_campaigns
+    ADD CONSTRAINT marketing_campaigns_key_key UNIQUE (key);
+
+
+--
+-- Name: marketing_campaigns marketing_campaigns_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.marketing_campaigns
+    ADD CONSTRAINT marketing_campaigns_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: marketing_deliveries marketing_deliveries_campaign_id_email_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.marketing_deliveries
+    ADD CONSTRAINT marketing_deliveries_campaign_id_email_key UNIQUE (campaign_id, email);
+
+
+--
+-- Name: marketing_deliveries marketing_deliveries_campaign_id_user_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.marketing_deliveries
+    ADD CONSTRAINT marketing_deliveries_campaign_id_user_id_key UNIQUE (campaign_id, user_id);
+
+
+--
+-- Name: marketing_deliveries marketing_deliveries_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.marketing_deliveries
+    ADD CONSTRAINT marketing_deliveries_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: marketing_deliveries marketing_deliveries_unsubscribe_token_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.marketing_deliveries
+    ADD CONSTRAINT marketing_deliveries_unsubscribe_token_key UNIQUE (unsubscribe_token);
+
+
+--
+-- Name: marketing_suppressions marketing_suppressions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.marketing_suppressions
+    ADD CONSTRAINT marketing_suppressions_pkey PRIMARY KEY (email);
+
+
+--
 -- Name: meeting_chat_messages meeting_chat_messages_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -10652,6 +11829,38 @@ ALTER TABLE ONLY public.user_tutorial_progress
 
 
 --
+-- Name: user_wallet user_wallet_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_wallet
+    ADD CONSTRAINT user_wallet_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: user_wallet user_wallet_user_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_wallet
+    ADD CONSTRAINT user_wallet_user_id_key UNIQUE (user_id);
+
+
+--
+-- Name: user_wallet_vault user_wallet_vault_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_wallet_vault
+    ADD CONSTRAINT user_wallet_vault_pkey PRIMARY KEY (user_id);
+
+
+--
+-- Name: user_wallet_vault user_wallet_vault_wallet_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_wallet_vault
+    ADD CONSTRAINT user_wallet_vault_wallet_id_key UNIQUE (wallet_id);
+
+
+--
 -- Name: user users_email_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -10836,6 +12045,13 @@ CREATE INDEX idx_bsl_speakers_day ON public.bsl_speakers USING btree (day);
 --
 
 CREATE INDEX idx_bsl_speakers_event_active ON public.bsl_speakers USING btree (event_id, is_active, name);
+
+
+--
+-- Name: idx_bsl_speakers_event_directory_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_bsl_speakers_event_directory_status ON public.bsl_speakers USING btree (event_id, directory_status, name);
 
 
 --
@@ -11385,6 +12601,34 @@ CREATE INDEX invite_scans_code_time_idx ON public.invite_scan_events USING btree
 
 
 --
+-- Name: lukas_newsletter_subscribers_email_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX lukas_newsletter_subscribers_email_key ON public.lukas_newsletter_subscribers USING btree (email);
+
+
+--
+-- Name: lukas_newsletter_subscribers_hashpass_opt_in_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX lukas_newsletter_subscribers_hashpass_opt_in_idx ON public.lukas_newsletter_subscribers USING btree (hashpass_opt_in) WHERE (hashpass_opt_in = true);
+
+
+--
+-- Name: marketing_activity_cutoff; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX marketing_activity_cutoff ON public.marketing_activity USING btree (created_at, user_id);
+
+
+--
+-- Name: marketing_deliveries_claim; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX marketing_deliveries_claim ON public.marketing_deliveries USING btree (status, created_at);
+
+
+--
 -- Name: notifications_user_level_created_at_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -11565,18 +12809,77 @@ CREATE INDEX verification_identifier_idx ON public.verification USING btree (ide
 
 CREATE OR REPLACE VIEW public.contact_network_profiles WITH (security_invoker='true') AS
  SELECT p.id,
-    p.name,
-    p.role,
-    p.company,
+        CASE
+            WHEN (p.identity_mode = 'speaker'::text) THEN COALESCE(NULLIF(s.name, ''::text), p.name)
+            ELSE COALESCE(NULLIF(a.full_name, ''::text), p.name)
+        END AS name,
+        CASE
+            WHEN (p.identity_mode = 'speaker'::text) THEN COALESCE(NULLIF(s.title, ''::text), p.role)
+            ELSE COALESCE(NULLIF(a.title, ''::text), p.role)
+        END AS role,
+        CASE
+            WHEN (p.identity_mode = 'speaker'::text) THEN COALESCE(NULLIF(s.company, ''::text), p.company)
+            ELSE COALESCE(NULLIF(a.company, ''::text), p.company)
+        END AS company,
     p.topics,
     p.discoverable,
     p.leaderboard,
     p.share_id,
     (count(r.id))::integer AS connections,
-    (((count(r.id) * 100) + (cardinality(p.topics) * 20)))::integer AS points
-   FROM (public.contact_profiles p
+    (((count(r.id) * 100) + (cardinality(p.topics) * 20)))::integer AS points,
+    p.identity_mode,
+        CASE
+            WHEN (p.identity_mode = 'speaker'::text) THEN COALESCE(NULLIF(s.imageurl, ''::text), NULLIF(s.event_imageurl, ''::text))
+            ELSE NULLIF(a.avatar_url, ''::text)
+        END AS avatar_url
+   FROM ((((public.contact_profiles p
+     LEFT JOIN public."user" u ON ((u.id = p.id)))
+     LEFT JOIN public.bsl_speakers s ON (((s.user_id)::text = (u.provider_ids ->> 'supabase'::text))))
+     LEFT JOIN public.user_profiles a ON (((a.user_id)::text = (u.provider_ids ->> 'supabase'::text))))
      LEFT JOIN public.contact_requests r ON ((((r.sender = p.id) OR (r.recipient = p.id)) AND (r.status = 'accepted'::text))))
-  GROUP BY p.id;
+  GROUP BY p.id, s.name, s.title, s.company, s.imageurl, s.event_imageurl, a.full_name, a.title, a.company, a.avatar_url;
+
+
+--
+-- Name: user enroll_user_wallet; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER enroll_user_wallet AFTER INSERT ON public."user" FOR EACH ROW EXECUTE FUNCTION public.enroll_user_wallet();
+
+
+--
+-- Name: user marketing_account_activity; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER marketing_account_activity AFTER INSERT ON public."user" FOR EACH ROW EXECUTE FUNCTION public.marketing_activity_trigger();
+
+
+--
+-- Name: user_agenda_status marketing_agenda_activity; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER marketing_agenda_activity AFTER INSERT OR UPDATE ON public.user_agenda_status FOR EACH ROW EXECUTE FUNCTION public.marketing_activity_trigger();
+
+
+--
+-- Name: contact_requests marketing_contact_activity; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER marketing_contact_activity AFTER INSERT OR UPDATE ON public.contact_requests FOR EACH ROW EXECUTE FUNCTION public.marketing_activity_trigger();
+
+
+--
+-- Name: contact_profiles marketing_interest_activity; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER marketing_interest_activity AFTER INSERT OR UPDATE ON public.contact_profiles FOR EACH ROW EXECUTE FUNCTION public.marketing_activity_trigger();
+
+
+--
+-- Name: meeting_requests marketing_meeting_activity; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER marketing_meeting_activity AFTER INSERT OR UPDATE ON public.meeting_requests FOR EACH ROW EXECUTE FUNCTION public.marketing_activity_trigger();
 
 
 --
@@ -12352,6 +13655,38 @@ ALTER TABLE ONLY public.external_events
 
 
 --
+-- Name: marketing_activity marketing_activity_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.marketing_activity
+    ADD CONSTRAINT marketing_activity_user_id_fkey FOREIGN KEY (user_id) REFERENCES public."user"(id) ON DELETE CASCADE;
+
+
+--
+-- Name: marketing_audit marketing_audit_campaign_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.marketing_audit
+    ADD CONSTRAINT marketing_audit_campaign_id_fkey FOREIGN KEY (campaign_id) REFERENCES public.marketing_campaigns(id);
+
+
+--
+-- Name: marketing_deliveries marketing_deliveries_campaign_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.marketing_deliveries
+    ADD CONSTRAINT marketing_deliveries_campaign_id_fkey FOREIGN KEY (campaign_id) REFERENCES public.marketing_campaigns(id);
+
+
+--
+-- Name: marketing_deliveries marketing_deliveries_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.marketing_deliveries
+    ADD CONSTRAINT marketing_deliveries_user_id_fkey FOREIGN KEY (user_id) REFERENCES public."user"(id) ON DELETE CASCADE;
+
+
+--
 -- Name: meeting_chat_messages meeting_chat_messages_meeting_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -12680,6 +14015,14 @@ ALTER TABLE ONLY public.speaker_claim_requests
 
 
 --
+-- Name: speaker_claim_requests speaker_claim_requests_submitted_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.speaker_claim_requests
+    ADD CONSTRAINT speaker_claim_requests_submitted_by_fkey FOREIGN KEY (submitted_by) REFERENCES auth.users(id) ON DELETE SET NULL;
+
+
+--
 -- Name: speaker_identity_claim_event_roles speaker_identity_claim_event_roles_claim_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -12864,6 +14207,30 @@ ALTER TABLE ONLY public.user_tutorial_progress
 
 
 --
+-- Name: user_wallet user_wallet_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_wallet
+    ADD CONSTRAINT user_wallet_user_id_fkey FOREIGN KEY (user_id) REFERENCES public."user"(id) ON DELETE CASCADE;
+
+
+--
+-- Name: user_wallet_vault user_wallet_vault_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_wallet_vault
+    ADD CONSTRAINT user_wallet_vault_user_id_fkey FOREIGN KEY (user_id) REFERENCES public."user"(id) ON DELETE CASCADE;
+
+
+--
+-- Name: user_wallet_vault user_wallet_vault_wallet_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_wallet_vault
+    ADD CONSTRAINT user_wallet_vault_wallet_id_fkey FOREIGN KEY (wallet_id) REFERENCES public.user_wallet(id) ON DELETE CASCADE;
+
+
+--
 -- Name: wallet_auth wallet_auth_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -12911,6 +14278,13 @@ CREATE POLICY "Service role can manage all transactions" ON public.reward_transa
 --
 
 CREATE POLICY "Service role can manage all wallets" ON public.wallet_auth USING ((auth.role() = 'service_role'::text));
+
+
+--
+-- Name: lukas_newsletter_subscribers Service role manages Lukas newsletter; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Service role manages Lukas newsletter" ON public.lukas_newsletter_subscribers TO service_role USING (true) WITH CHECK (true);
 
 
 --
@@ -13425,6 +14799,48 @@ CREATE POLICY limits_select_own ON public.pass_request_limits FOR SELECT USING (
 
 CREATE POLICY limits_update_own ON public.pass_request_limits FOR UPDATE USING ((user_id = (public.get_current_user_id())::text));
 
+
+--
+-- Name: lukas_newsletter_subscribers; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.lukas_newsletter_subscribers ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: marketing_activity; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.marketing_activity ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: marketing_activity_snapshots; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.marketing_activity_snapshots ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: marketing_audit; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.marketing_audit ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: marketing_campaigns; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.marketing_campaigns ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: marketing_deliveries; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.marketing_deliveries ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: marketing_suppressions; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.marketing_suppressions ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: meeting_chat_messages; Type: ROW SECURITY; Schema: public; Owner: -
@@ -14130,6 +15546,18 @@ CREATE POLICY user_tutorial_progress_own_rows ON public.user_tutorial_progress U
 
 
 --
+-- Name: user_wallet; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.user_wallet ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: user_wallet_vault; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.user_wallet_vault ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: verification; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -14145,5 +15573,5 @@ ALTER TABLE public.wallet_auth ENABLE ROW LEVEL SECURITY;
 -- PostgreSQL database dump complete
 --
 
-\unrestrict a1CtmNCu8wajGimhyia1SUrm0hpAmK8J3DAiEBCalRt8rwvzC14p5U1LekBz8BL
+\unrestrict 1cQeYKAjmxvTcyNRaUeTXgnXQAgkiBKzqoeOamBHy647fZpy9mY4gYr7Rxy7zZz
 

@@ -42,6 +42,17 @@ Audited 2026-08-11 via direct `psql` connection to all three (`SUPABASE_DB_URL_P
 `BSL_SUPABASE_DB_URL_PROD`, `SUPABASE_DB_URL_DEV`). Table counts are from that audit,
 before the BSL data was consolidated into core on 2026-10-21.
 
+## Speaker directory status contract (V139)
+
+`public.bsl_speakers.directory_status` is an immutable generated text column
+constrained to the same values as the `public.speaker_directory_status` enum.
+It keeps the directory/API contract explicit while leaving the existing
+admin-controlled booleans as the source inputs. The live values are `private`,
+`passive`, `inactive`, `active`, and `dnd`; `past` is a UI-only historical
+badge and is not persisted. See
+[Speaker directory statuses](../reference/mobile-app/speaker-statuses.md) for
+the derivation rules and rollout command.
+
 ## Passwordless authentication schema (V129–V131)
 
 The passwordless auth tables are intentionally small and server-only. The

@@ -286,7 +286,7 @@ describe('speaker detail screen', () => {
     });
 
     expect(renderer.root.findByProps({ children: 'Ada Lovelace' })).toBeTruthy();
-    expect(renderer.root.findAllByProps({ testID: 'speaker-status-idle' })).toHaveLength(1);
+    expect(renderer.root.findAllByProps({ testID: 'speaker-status-passive' })).toHaveLength(1);
     expect(renderer.root.findAllByProps({ testID: 'claim-profile' })).toHaveLength(1);
     expect(renderer.root.findAllByProps({ testID: 'request-meeting' })).toHaveLength(1);
     await act(async () => renderer.unmount());

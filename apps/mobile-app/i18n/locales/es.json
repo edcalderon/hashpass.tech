@@ -1702,8 +1702,8 @@
           "label": "Confirmado",
           "description": "El orador confirmó su cuenta y está recibiendo solicitudes de reunión."
         },
-        "idle": {
-          "label": "Inactivo",
+        "passive": {
+          "label": "Pasivo",
           "description": "El orador aún no ha reclamado su cuenta, pero puede recibir solicitudes de reunión. Las solicitudes permanecen abiertas por un tiempo limitado y vencen si el orador nunca reclama la cuenta."
         },
         "dnd": {

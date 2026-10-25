@@ -50,6 +50,12 @@ public.events ──< public.event_roles
               └─< event-scoped audit, email, and chat records
 ```
 
+`public.bsl_speakers.directory_status` is the canonical derived status for a
+directory profile. It uses the `public.speaker_directory_status` enum values
+`private`, `passive`, `inactive`, `active`, and `dnd`; historical `past` badges
+are presentation-only. The status migration is
+`V139__speaker_directory_status.sql`.
+
 ## Objects that must be preserved
 
 The following are active application contracts and must not be removed during

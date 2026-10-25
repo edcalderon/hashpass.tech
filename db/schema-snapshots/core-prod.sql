@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict zOMf9aJjoWdlDbo8BKyWo8daMkTfxMm1ATpUMbzIzloeImCSOQ8JskCOtCarKgn
+\restrict oONfpYSc7Ic8zq8bdjBlQLL0ElxJLssytcnr1zb7OYWyKY5tYbmrUdNv8uYwaG6
 
 -- Dumped from database version 17.4
 -- Dumped by pg_dump version 17.11
@@ -152,6 +152,19 @@ CREATE TYPE public.reward_transaction_type AS ENUM (
     'transfer',
     'swap',
     'redemption'
+);
+
+
+--
+-- Name: speaker_directory_status; Type: TYPE; Schema: public; Owner: -
+--
+
+CREATE TYPE public.speaker_directory_status AS ENUM (
+    'private',
+    'passive',
+    'inactive',
+    'active',
+    'dnd'
 );
 
 
@@ -3441,7 +3454,7 @@ CREATE TABLE public.meeting_requests (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     CONSTRAINT meeting_requests_requester_ticket_type_check CHECK ((requester_ticket_type = ANY (ARRAY['general'::text, 'business'::text, 'vip'::text]))),
-    CONSTRAINT meeting_requests_status_check CHECK ((status = ANY (ARRAY['pending'::text, 'requested'::text, 'approved'::text, 'accepted'::text, 'declined'::text, 'rejected'::text, 'expired'::text, 'cancelled'::text, 'completed'::text, 'confirmed'::text])))
+    CONSTRAINT meeting_requests_status_check CHECK ((status = ANY (ARRAY['pending'::text, 'requested'::text, 'approved'::text, 'accepted'::text, 'declined'::text, 'rejected'::text, 'expired'::text, 'cancelled'::text, 'completed'::text, 'confirmed'::text, 'archived'::text])))
 );
 
 
@@ -4429,6 +4442,8 @@ DECLARE
   v_consumed_pass_id text;
   v_event_id text := NULLIF(trim(COALESCE(p_event_id, '')), '');
   v_target_speaker_id uuid;
+  v_dnd boolean := false;
+  v_status text := 'pending';
 BEGIN
   IF v_event_id IS NULL THEN
     RAISE EXCEPTION 'A valid event id is required';
@@ -4454,6 +4469,19 @@ BEGIN
 
   v_target_speaker_id := COALESCE(v_speaker.user_id, v_speaker.id::uuid);
 
+  -- Do-not-disturb: a claimed, active speaker still receives the request, but
+  -- it is archived instead of surfacing (no notification, hidden from their inbox).
+  SELECT COALESCE(s.do_not_disturb, false) INTO v_dnd
+  FROM public.bsl_speakers s
+  WHERE s.id::text = v_speaker.id
+  LIMIT 1;
+  v_dnd := COALESCE(v_dnd, false)
+    AND v_speaker.user_id IS NOT NULL
+    AND COALESCE(v_speaker.is_active, false);
+  IF v_dnd THEN
+    v_status := 'archived';
+  END IF;
+
   INSERT INTO public.meeting_requests (
     id, requester_id, speaker_id, event_id, speaker_name, requester_name,
     requester_company, requester_title, requester_ticket_type, meeting_type,
@@ -4467,6 +4495,11 @@ BEGIN
     COALESCE(p_duration_minutes, 15), COALESCE(p_expires_at, now() + interval '3 days'),
     'pending', now(), now()
   );
+
+  -- Bare literals coerce to both the text column (prod) and the enum (dev).
+  IF v_status = 'archived' THEN
+    UPDATE public.meeting_requests SET status = 'archived' WHERE id = v_request_id;
+  END IF;
 
   WITH active_pass AS (
     SELECT p.id
@@ -4501,7 +4534,7 @@ BEGIN
 
   -- An unclaimed profile has no auth recipient yet. The claim trigger below
   -- relinks this request to the eventual account before notifications begin.
-  IF v_speaker.user_id IS NOT NULL THEN
+  IF v_speaker.user_id IS NOT NULL AND NOT v_dnd THEN
     PERFORM public.send_prioritized_notification(
       v_speaker.user_id::text, p_requester_name, p_requester_company,
       p_requester_ticket_type, COALESCE(p_boost_amount, 0), v_request_id
@@ -4509,7 +4542,7 @@ BEGIN
   END IF;
 
   RETURN QUERY
-  SELECT v_request_id, p_requester_id::uuid, v_target_speaker_id, 'pending', now();
+  SELECT v_request_id, p_requester_id::uuid, v_target_speaker_id, v_status, now();
 END;
 $$;
 
@@ -4680,7 +4713,7 @@ $$;
 -- Name: list_speaker_claim_requests(uuid, text); Type: FUNCTION; Schema: public; Owner: -
 --
 
-CREATE FUNCTION public.list_speaker_claim_requests(p_actor_user_id uuid, p_event_id text) RETURNS TABLE(claim_id uuid, speaker_id text, event_id text, speaker_name text, speaker_title text, speaker_company text, requester_user_id uuid, requester_email text, status text, request_note text, created_at timestamp with time zone, review_note text)
+CREATE FUNCTION public.list_speaker_claim_requests(p_actor_user_id uuid, p_event_id text) RETURNS TABLE(claim_id uuid, speaker_id text, event_id text, speaker_name text, speaker_title text, speaker_company text, requester_user_id uuid, requester_email text, status text, request_note text, created_at timestamp with time zone, review_note text, claim_mode text, claim_email text, verification_status text, submitted_by_email text)
     LANGUAGE plpgsql SECURITY DEFINER
     SET search_path TO 'public', 'auth', 'pg_temp'
     AS $$
@@ -4691,24 +4724,17 @@ BEGIN
   END IF;
 
   RETURN QUERY
-  SELECT request.id,
-         request.speaker_id,
-         request.event_id,
-         speaker.name,
-         speaker.title,
-         speaker.company,
-         request.requester_user_id,
-         lower(auth_user.email),
-         request.status,
-         request.request_note,
-         request.created_at,
-         request.review_note
+  SELECT request.id, request.speaker_id, request.event_id,
+         speaker.name, speaker.title, speaker.company,
+         request.requester_user_id, lower(auth_user.email),
+         request.status, request.request_note, request.created_at, request.review_note,
+         request.claim_mode, request.claim_email, request.verification_status,
+         lower(submitter.email)
     FROM public.speaker_claim_requests AS request
     JOIN public.bsl_speakers AS speaker
-      ON speaker.id::text = request.speaker_id
-     AND speaker.event_id = request.event_id
-    JOIN auth.users AS auth_user
-      ON auth_user.id = request.requester_user_id
+      ON speaker.id::text = request.speaker_id AND speaker.event_id = request.event_id
+    JOIN auth.users AS auth_user ON auth_user.id = request.requester_user_id
+    LEFT JOIN auth.users AS submitter ON submitter.id = request.submitted_by
    WHERE request.event_id = p_event_id
    ORDER BY request.created_at DESC
    LIMIT 200;
@@ -5034,6 +5060,48 @@ BEGIN
     END IF;
     
     RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: notify_speaker_claim_reviewers(uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.notify_speaker_claim_reviewers(p_claim_id uuid) RETURNS uuid[]
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public', 'auth', 'pg_temp'
+    AS $$
+DECLARE
+  v_claim public.speaker_claim_requests%ROWTYPE;
+  v_speaker_name text;
+  v_email text;
+  v_message text;
+  v_ids uuid[];
+  v_id uuid;
+BEGIN
+  SELECT * INTO v_claim FROM public.speaker_claim_requests WHERE id = p_claim_id;
+  IF NOT FOUND THEN RETURN ARRAY[]::uuid[]; END IF;
+
+  SELECT name INTO v_speaker_name FROM public.bsl_speakers WHERE id::text = v_claim.speaker_id;
+  v_email := COALESCE(v_claim.claim_email, (SELECT lower(email) FROM auth.users WHERE id = v_claim.requester_user_id));
+  v_message := left(format(
+    '%s asks to link %s to %s%s. Note: %s',
+    COALESCE(v_email, 'A verified account'),
+    COALESCE(v_speaker_name, 'a speaker profile'),
+    CASE v_claim.claim_mode WHEN 'other_email' THEN 'a different email (verified)' ELSE 'their signed-in email' END,
+    '',
+    COALESCE(v_claim.request_note, '-')
+  ), 500);
+
+  v_ids := public.speaker_claim_reviewer_ids(v_claim.event_id);
+  FOREACH v_id IN ARRAY v_ids LOOP
+    PERFORM public.create_notification(
+      v_id, 'speaker_claim_review_required', 'Speaker profile claim to review',
+      v_message, NULL::uuid, v_claim.speaker_id, false, NULL::uuid, 'important'
+    );
+  END LOOP;
+  RETURN v_ids;
 END;
 $$;
 
@@ -5937,19 +6005,15 @@ DECLARE
   v_claim public.speaker_claim_requests%ROWTYPE;
   v_speaker public.bsl_speakers%ROWTYPE;
   v_email text;
+  v_note text := NULLIF(left(btrim(COALESCE(p_review_note, '')), 1000), '');
 BEGIN
-  SELECT *
-    INTO v_claim
-    FROM public.speaker_claim_requests
-   WHERE id = p_claim_id
-   FOR UPDATE;
+  SELECT * INTO v_claim FROM public.speaker_claim_requests WHERE id = p_claim_id FOR UPDATE;
   IF NOT FOUND THEN
     RAISE EXCEPTION 'Speaker claim request not found' USING ERRCODE = '22023';
   END IF;
 
   IF NOT public.has_event_admin_access(p_actor_user_id, v_claim.event_id, false) THEN
-    RAISE EXCEPTION 'Only an event administrator may review speaker claims'
-      USING ERRCODE = '42501';
+    RAISE EXCEPTION 'Only an event administrator may review speaker claims' USING ERRCODE = '42501';
   END IF;
   IF p_action NOT IN ('approve', 'reject') THEN
     RAISE EXCEPTION 'Unsupported speaker claim review action' USING ERRCODE = '22023';
@@ -5958,56 +6022,47 @@ BEGIN
     RAISE EXCEPTION 'This speaker claim has already been reviewed' USING ERRCODE = '23505';
   END IF;
 
-  SELECT *
-    INTO v_speaker
+  SELECT * INTO v_speaker
     FROM public.bsl_speakers
-   WHERE id::text = v_claim.speaker_id
-     AND event_id = v_claim.event_id
+   WHERE id::text = v_claim.speaker_id AND event_id = v_claim.event_id
    FOR UPDATE;
   IF NOT FOUND THEN
     RAISE EXCEPTION 'Speaker profile not found for this event' USING ERRCODE = '22023';
   END IF;
 
   IF p_action = 'approve' THEN
-    SELECT lower(email)
-      INTO v_email
+    IF v_claim.claim_mode = 'other_email' AND v_claim.verification_status <> 'verified' THEN
+      RAISE EXCEPTION 'The claimant has not verified the email yet' USING ERRCODE = '42501';
+    END IF;
+    SELECT lower(email) INTO v_email
       FROM auth.users
      WHERE id = v_claim.requester_user_id
-       AND email IS NOT NULL
-       AND email_confirmed_at IS NOT NULL;
+       AND email IS NOT NULL AND email_confirmed_at IS NOT NULL;
     IF v_email IS NULL THEN
-      RAISE EXCEPTION 'The claimant must have a confirmed email before approval'
-        USING ERRCODE = '42501';
+      RAISE EXCEPTION 'The claimant must have a confirmed email before approval' USING ERRCODE = '42501';
     END IF;
     IF v_speaker.user_id IS NOT NULL THEN
-      RAISE EXCEPTION 'Speaker profile is already linked to an account'
-        USING ERRCODE = '23505';
+      RAISE EXCEPTION 'Speaker profile is already linked to an account' USING ERRCODE = '23505';
     END IF;
     IF EXISTS (
       SELECT 1 FROM public.bsl_speakers
-       WHERE user_id = v_claim.requester_user_id
-         AND id::text <> v_claim.speaker_id
+       WHERE user_id = v_claim.requester_user_id AND id::text <> v_claim.speaker_id
     ) THEN
-      RAISE EXCEPTION 'This account is already linked to another speaker profile'
-        USING ERRCODE = '23505';
+      RAISE EXCEPTION 'This account is already linked to another speaker profile' USING ERRCODE = '23505';
     END IF;
     IF EXISTS (
       SELECT 1 FROM public.speaker_identity_claims
        WHERE (claimed_user_id = v_claim.requester_user_id OR email_normalized = v_email)
          AND speaker_id <> v_claim.speaker_id
     ) THEN
-      RAISE EXCEPTION 'This account or email is already linked to another speaker profile'
-        USING ERRCODE = '23505';
+      RAISE EXCEPTION 'This account or email is already linked to another speaker profile' USING ERRCODE = '23505';
     END IF;
 
     UPDATE public.bsl_speakers
        SET user_id = v_claim.requester_user_id,
-           is_active = true,
-           is_accepting_meetings = true,
-           directory_visible = true,
+           is_active = true, is_accepting_meetings = true, directory_visible = true,
            updated_at = now()
-     WHERE id::text = v_claim.speaker_id
-       AND event_id = v_claim.event_id;
+     WHERE id::text = v_claim.speaker_id AND event_id = v_claim.event_id;
 
     INSERT INTO public.speaker_identity_claims (
       speaker_id, email_normalized, status, configured_by,
@@ -6029,27 +6084,34 @@ BEGIN
   END IF;
 
   UPDATE public.speaker_claim_requests
-     SET status = p_action,
-         reviewed_by = p_actor_user_id,
-         review_note = NULLIF(left(btrim(COALESCE(p_review_note, '')), 1000), ''),
-         reviewed_at = now(),
-         updated_at = now()
+     SET status = CASE p_action WHEN 'approve' THEN 'approved' ELSE 'rejected' END,
+         reviewed_by = p_actor_user_id, review_note = v_note,
+         reviewed_at = now(), updated_at = now()
    WHERE id = v_claim.id;
 
   INSERT INTO public.admin_action_log (actor_user_id, event_id, action, target_type, target_id, metadata)
   VALUES (
-    p_actor_user_id,
-    v_claim.event_id,
-    'speaker_claim.' || p_action,
-    'speaker',
-    v_claim.speaker_id,
+    p_actor_user_id, v_claim.event_id, 'speaker_claim.' || p_action, 'speaker', v_claim.speaker_id,
     jsonb_build_object('claim_id', v_claim.id, 'requester_user_id', v_claim.requester_user_id)
   );
 
+  PERFORM public.create_notification(
+    v_claim.requester_user_id,
+    CASE p_action WHEN 'approve' THEN 'speaker_claim_approved' ELSE 'speaker_claim_rejected' END,
+    CASE p_action WHEN 'approve' THEN 'Speaker profile linked' ELSE 'Speaker profile claim declined' END,
+    left(CASE p_action
+      WHEN 'approve' THEN format('%s is now linked to your account.', v_speaker.name)
+      ELSE format('Your claim for %s was not approved.%s', v_speaker.name, COALESCE(' Reviewer note: ' || v_note, ''))
+    END, 500),
+    NULL::uuid, v_claim.speaker_id, false, NULL::uuid, 'important'
+  );
+
   RETURN jsonb_build_object(
-    'claim_id', v_claim.id,
-    'speaker_id', v_claim.speaker_id,
-    'status', p_action
+    'claim_id', v_claim.id, 'speaker_id', v_claim.speaker_id,
+    'status', CASE p_action WHEN 'approve' THEN 'approved' ELSE 'rejected' END,
+    'requester_user_id', v_claim.requester_user_id,
+    'speaker_name', v_speaker.name, 'claim_mode', v_claim.claim_mode,
+    'review_note', v_note
   );
 END;
 $$;
@@ -6531,6 +6593,164 @@ CREATE FUNCTION public.set_users_updated_at() RETURNS trigger
 BEGIN
   NEW.updated_at = now();
   RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: speaker_claim_reviewer_ids(text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.speaker_claim_reviewer_ids(p_event_id text) RETURNS uuid[]
+    LANGUAGE plpgsql STABLE SECURITY DEFINER
+    SET search_path TO 'public', 'pg_temp'
+    AS $$
+DECLARE
+  v_ids uuid[];
+BEGIN
+  SELECT COALESCE(array_agg(DISTINCT er.user_id), ARRAY[]::uuid[])
+    INTO v_ids
+    FROM public.event_roles er
+   WHERE er.role = 'event_admin'::public.event_role
+     AND (er.expires_at IS NULL OR er.expires_at > now())
+     AND (
+       er.event_id = p_event_id
+       OR EXISTS (
+         SELECT 1 FROM public.events target_event
+          WHERE target_event.id = p_event_id
+            AND target_event.metadata ->> 'hubEventId' = er.event_id
+       )
+     );
+
+  IF COALESCE(array_length(v_ids, 1), 0) = 0 THEN
+    SELECT COALESCE(array_agg(DISTINCT ur.user_id), ARRAY[]::uuid[])
+      INTO v_ids
+      FROM public.user_roles ur
+     WHERE ur.role IN ('admin'::public.user_role, 'super_admin'::public.user_role)
+       AND (ur.expires_at IS NULL OR ur.expires_at > now());
+  END IF;
+  RETURN v_ids;
+END;
+$$;
+
+
+--
+-- Name: submit_speaker_profile_claim(text, uuid, uuid, text, text, text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.submit_speaker_profile_claim(p_speaker_id text, p_submitted_by uuid, p_claimant_user_id uuid, p_claim_mode text, p_claim_email text, p_note text) RETURNS jsonb
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public', 'auth', 'pg_temp'
+    AS $$
+DECLARE
+  v_speaker public.bsl_speakers%ROWTYPE;
+  v_existing public.speaker_claim_requests%ROWTYPE;
+  v_claim public.speaker_claim_requests%ROWTYPE;
+  v_email text;
+  v_confirmed timestamptz;
+  v_note text := NULLIF(left(btrim(COALESCE(p_note, '')), 1000), '');
+  v_reviewers uuid[] := ARRAY[]::uuid[];
+  v_created boolean := true;
+BEGIN
+  IF p_claim_mode NOT IN ('current_email', 'other_email') THEN
+    RAISE EXCEPTION 'Unsupported claim mode' USING ERRCODE = '22023';
+  END IF;
+  IF v_note IS NULL OR char_length(v_note) < 20 THEN
+    RAISE EXCEPTION 'Explain why this email and account belong to the speaker (at least 20 characters)'
+      USING ERRCODE = '22023';
+  END IF;
+
+  SELECT lower(email), email_confirmed_at
+    INTO v_email, v_confirmed
+    FROM auth.users
+   WHERE id = p_claimant_user_id AND email IS NOT NULL;
+  IF v_email IS NULL THEN
+    RAISE EXCEPTION 'The claimant account was not found' USING ERRCODE = '42501';
+  END IF;
+
+  IF p_claim_mode = 'current_email' THEN
+    IF v_confirmed IS NULL THEN
+      RAISE EXCEPTION 'A confirmed email is required to request a speaker profile claim'
+        USING ERRCODE = '42501';
+    END IF;
+  ELSIF v_email IS DISTINCT FROM lower(btrim(COALESCE(p_claim_email, ''))) THEN
+    RAISE EXCEPTION 'The claim email does not match the claimant account' USING ERRCODE = '22023';
+  END IF;
+
+  SELECT * INTO v_speaker
+    FROM public.bsl_speakers
+   WHERE id::text = btrim(COALESCE(p_speaker_id, ''))
+     AND user_id IS NULL
+   FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Speaker profile is not available for claiming' USING ERRCODE = '22023';
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM public.bsl_speakers WHERE user_id = p_claimant_user_id) THEN
+    RAISE EXCEPTION 'This account is already linked to a speaker profile' USING ERRCODE = '23505';
+  END IF;
+
+  SELECT * INTO v_existing
+    FROM public.speaker_claim_requests
+   WHERE speaker_id = v_speaker.id::text AND status = 'pending'
+   FOR UPDATE;
+  IF FOUND THEN
+    IF v_existing.requester_user_id = p_claimant_user_id THEN
+      RETURN jsonb_build_object(
+        'claim_id', v_existing.id, 'speaker_id', v_existing.speaker_id,
+        'status', v_existing.status, 'claim_mode', v_existing.claim_mode,
+        'verification_status', v_existing.verification_status,
+        'speaker_name', v_speaker.name, 'claim_email', v_existing.claim_email,
+        'created', false, 'reviewer_ids', '[]'::jsonb
+      );
+    ELSIF v_existing.verification_status = 'pending' THEN
+      -- An unverified claim must not be able to block the real speaker.
+      UPDATE public.speaker_claim_requests
+         SET status = 'rejected',
+             review_note = 'Superseded by a newer claim request',
+             reviewed_at = now(), updated_at = now()
+       WHERE id = v_existing.id;
+    ELSE
+      RETURN jsonb_build_object(
+        'claim_id', v_existing.id, 'speaker_id', v_existing.speaker_id,
+        'status', v_existing.status, 'claim_mode', v_existing.claim_mode,
+        'verification_status', v_existing.verification_status,
+        'speaker_name', v_speaker.name, 'claim_email', v_existing.claim_email,
+        'created', false, 'reviewer_ids', '[]'::jsonb
+      );
+    END IF;
+  END IF;
+
+  INSERT INTO public.speaker_claim_requests (
+    speaker_id, event_id, requester_user_id, request_note,
+    claim_mode, claim_email, verification_status, submitted_by
+  ) VALUES (
+    v_speaker.id::text, v_speaker.event_id, p_claimant_user_id, v_note,
+    p_claim_mode, v_email,
+    CASE p_claim_mode WHEN 'other_email' THEN 'pending' ELSE 'not_required' END,
+    COALESCE(p_submitted_by, p_claimant_user_id)
+  )
+  RETURNING * INTO v_claim;
+
+  INSERT INTO public.admin_action_log (actor_user_id, event_id, action, target_type, target_id, metadata)
+  VALUES (
+    COALESCE(p_submitted_by, p_claimant_user_id), v_speaker.event_id,
+    'speaker_claim.requested', 'speaker', v_speaker.id::text,
+    jsonb_build_object('claim_id', v_claim.id, 'claim_mode', p_claim_mode)
+  );
+
+  IF p_claim_mode = 'current_email' THEN
+    v_reviewers := public.notify_speaker_claim_reviewers(v_claim.id);
+  END IF;
+
+  RETURN jsonb_build_object(
+    'claim_id', v_claim.id, 'speaker_id', v_claim.speaker_id,
+    'status', v_claim.status, 'claim_mode', v_claim.claim_mode,
+    'verification_status', v_claim.verification_status,
+    'speaker_name', v_speaker.name, 'claim_email', v_claim.claim_email,
+    'request_note', v_claim.request_note,
+    'created', v_created, 'reviewer_ids', to_jsonb(v_reviewers)
+  );
 END;
 $$;
 
@@ -7347,6 +7567,61 @@ COMMENT ON FUNCTION public.validate_and_use_qr(p_token text, p_scanner_user_id t
 
 
 --
+-- Name: verify_speaker_claim_email(text, uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.verify_speaker_claim_email(p_speaker_id text, p_user_id uuid) RETURNS jsonb
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public', 'auth', 'pg_temp'
+    AS $$
+DECLARE
+  v_claim public.speaker_claim_requests%ROWTYPE;
+  v_email text;
+  v_confirmed timestamptz;
+  v_name text;
+  v_reviewers uuid[] := ARRAY[]::uuid[];
+  v_created boolean := false;
+BEGIN
+  SELECT * INTO v_claim
+    FROM public.speaker_claim_requests
+   WHERE speaker_id = btrim(COALESCE(p_speaker_id, ''))
+     AND requester_user_id = p_user_id
+     AND claim_mode = 'other_email'
+     AND status = 'pending'
+   FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'No pending claim is waiting for this email' USING ERRCODE = '22023';
+  END IF;
+
+  SELECT lower(email), email_confirmed_at INTO v_email, v_confirmed
+    FROM auth.users WHERE id = p_user_id;
+  IF v_confirmed IS NULL OR v_email IS DISTINCT FROM v_claim.claim_email THEN
+    RAISE EXCEPTION 'This email has not been verified yet' USING ERRCODE = '42501';
+  END IF;
+
+  IF v_claim.verification_status <> 'verified' THEN
+    UPDATE public.speaker_claim_requests
+       SET verification_status = 'verified', verified_at = now(), updated_at = now()
+     WHERE id = v_claim.id
+    RETURNING * INTO v_claim;
+    v_reviewers := public.notify_speaker_claim_reviewers(v_claim.id);
+    v_created := true;
+  END IF;
+
+  SELECT name INTO v_name FROM public.bsl_speakers WHERE id::text = v_claim.speaker_id;
+  RETURN jsonb_build_object(
+    'claim_id', v_claim.id, 'speaker_id', v_claim.speaker_id,
+    'status', v_claim.status, 'claim_mode', v_claim.claim_mode,
+    'verification_status', v_claim.verification_status,
+    'speaker_name', v_name, 'claim_email', v_claim.claim_email,
+    'request_note', v_claim.request_note,
+    'created', v_created, 'reviewer_ids', to_jsonb(v_reviewers)
+  );
+END;
+$$;
+
+
+--
 -- Name: verify_user_pin(uuid, text); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -7618,7 +7893,20 @@ CREATE TABLE public.bsl_speakers (
     session_type text,
     metadata jsonb DEFAULT '{}'::jsonb,
     directory_visible boolean DEFAULT true,
-    event_id text DEFAULT 'bsl2025'::text NOT NULL
+    event_id text DEFAULT 'bsl2025'::text NOT NULL,
+    event_imageurl text,
+    avatar_source text DEFAULT 'event'::text NOT NULL,
+    do_not_disturb boolean DEFAULT false NOT NULL,
+    directory_status text GENERATED ALWAYS AS (
+CASE
+    WHEN (COALESCE(directory_visible, false) = false) THEN 'private'::text
+    WHEN (user_id IS NULL) THEN 'passive'::text
+    WHEN (COALESCE(is_active, false) AND COALESCE(do_not_disturb, false)) THEN 'dnd'::text
+    WHEN COALESCE(is_active, false) THEN 'active'::text
+    ELSE 'inactive'::text
+END) STORED,
+    CONSTRAINT bsl_speakers_avatar_source_check CHECK ((avatar_source = ANY (ARRAY['event'::text, 'personal'::text]))),
+    CONSTRAINT bsl_speakers_directory_status_check CHECK ((directory_status = ANY (ARRAY['private'::text, 'passive'::text, 'inactive'::text, 'active'::text, 'dnd'::text])))
 );
 
 
@@ -7627,6 +7915,13 @@ CREATE TABLE public.bsl_speakers (
 --
 
 COMMENT ON COLUMN public.bsl_speakers.user_id IS 'Links speaker record to auth.users table for generic speaker detection';
+
+
+--
+-- Name: COLUMN bsl_speakers.directory_status; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.bsl_speakers.directory_status IS 'Derived directory state: private, passive (published but unclaimed), inactive, active, or dnd.';
 
 
 --
@@ -8973,7 +9268,7 @@ CREATE TABLE public.notifications (
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     level text DEFAULT 'info'::text NOT NULL,
     CONSTRAINT notifications_level_check CHECK ((level = ANY (ARRAY['info'::text, 'important'::text, 'critical'::text]))),
-    CONSTRAINT notifications_type_check CHECK ((type = ANY (ARRAY['meeting_request'::text, 'meeting_accepted'::text, 'meeting_declined'::text, 'meeting_reminder'::text, 'meeting_expired'::text, 'meeting_cancelled'::text, 'boost_received'::text, 'system_alert'::text, 'chat_message'::text, 'business_invite_pending'::text, 'business_invite_review_required'::text, 'business_invite_rejected'::text, 'business_invite_approved'::text])))
+    CONSTRAINT notifications_type_check CHECK ((type = ANY (ARRAY['meeting_request'::text, 'meeting_accepted'::text, 'meeting_declined'::text, 'meeting_reminder'::text, 'meeting_expired'::text, 'meeting_cancelled'::text, 'boost_received'::text, 'system_alert'::text, 'chat_message'::text, 'business_invite_pending'::text, 'business_invite_review_required'::text, 'business_invite_rejected'::text, 'business_invite_approved'::text, 'speaker_claim_review_required'::text, 'speaker_claim_approved'::text, 'speaker_claim_rejected'::text])))
 );
 
 
@@ -9600,7 +9895,14 @@ CREATE TABLE public.speaker_claim_requests (
     reviewed_at timestamp with time zone,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT speaker_claim_requests_status_check CHECK ((status = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text])))
+    claim_mode text DEFAULT 'current_email'::text NOT NULL,
+    claim_email text,
+    verification_status text DEFAULT 'not_required'::text NOT NULL,
+    verified_at timestamp with time zone,
+    submitted_by uuid,
+    CONSTRAINT speaker_claim_requests_mode_check CHECK ((claim_mode = ANY (ARRAY['current_email'::text, 'other_email'::text]))),
+    CONSTRAINT speaker_claim_requests_status_check CHECK ((status = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text]))),
+    CONSTRAINT speaker_claim_requests_verification_check CHECK ((verification_status = ANY (ARRAY['not_required'::text, 'pending'::text, 'verified'::text])))
 );
 
 
@@ -11558,6 +11860,20 @@ ALTER TABLE ONLY public.wallet_auth
 
 
 --
+-- Name: account_provider_account_id_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX account_provider_account_id_key ON public.account USING btree ("providerId", "accountId");
+
+
+--
+-- Name: INDEX account_provider_account_id_key; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON INDEX public.account_provider_account_id_key IS 'A Better Auth provider account identity may belong to only one account row.';
+
+
+--
 -- Name: account_userId_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -11688,6 +12004,13 @@ CREATE INDEX idx_admin_action_event_created ON public.admin_action_log USING btr
 --
 
 CREATE INDEX idx_bsl_speakers_event_active ON public.bsl_speakers USING btree (event_id, is_active, name);
+
+
+--
+-- Name: idx_bsl_speakers_event_directory_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_bsl_speakers_event_directory_status ON public.bsl_speakers USING btree (event_id, directory_status, name);
 
 
 --
@@ -13733,6 +14056,14 @@ ALTER TABLE ONLY public.speaker_claim_requests
 
 
 --
+-- Name: speaker_claim_requests speaker_claim_requests_submitted_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.speaker_claim_requests
+    ADD CONSTRAINT speaker_claim_requests_submitted_by_fkey FOREIGN KEY (submitted_by) REFERENCES auth.users(id) ON DELETE SET NULL;
+
+
+--
 -- Name: speaker_identity_claim_event_roles speaker_identity_claim_event_roles_claim_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -15356,5 +15687,5 @@ ALTER TABLE public.wallet_auth ENABLE ROW LEVEL SECURITY;
 -- PostgreSQL database dump complete
 --
 
-\unrestrict zOMf9aJjoWdlDbo8BKyWo8daMkTfxMm1ATpUMbzIzloeImCSOQ8JskCOtCarKgn
+\unrestrict oONfpYSc7Ic8zq8bdjBlQLL0ElxJLssytcnr1zb7OYWyKY5tYbmrUdNv8uYwaG6
 

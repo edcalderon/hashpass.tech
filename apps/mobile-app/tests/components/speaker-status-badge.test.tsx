@@ -14,15 +14,15 @@ describe('SpeakerStatusBadge', () => {
   it('shows the status label and opens an explanation of every status', async () => {
     let renderer: ReturnType<typeof create>;
     await act(async () => {
-      renderer = create(<SpeakerStatusBadge status="idle" />);
+      renderer = create(<SpeakerStatusBadge status="passive" />);
     });
-    const badge = renderer!.root.findByProps({ testID: 'speaker-status-idle' });
-    expect(renderer!.root.findAllByProps({ children: 'speakerView.status.idle.label' }).length).toBeGreaterThan(0);
+    const badge = renderer!.root.findByProps({ testID: 'speaker-status-passive' });
+    expect(renderer!.root.findAllByProps({ children: 'speakerView.status.passive.label' }).length).toBeGreaterThan(0);
 
     await act(async () => {
       badge.props.onPress();
     });
-    for (const key of ['active', 'idle', 'dnd']) {
+    for (const key of ['active', 'passive', 'dnd']) {
       expect(renderer!.root.findAllByProps({ children: `speakerView.status.${key}.description` }).length).toBe(1);
     }
   });
