@@ -1,0 +1,38 @@
+import type { PassType } from "../lib/pass-system";
+
+export type ExternalTicketClaimStatus = "pending" | "validated" | "rejected" | "converted";
+
+export type ExternalTicketClaimInput = {
+  eventId: string;
+  ticketCode: string;
+  qrPayload: string;
+  requestedPassType: PassType;
+  ticketMetadata?: Record<string, unknown>;
+};
+
+export type ExternalTicketClaimResult = {
+  id: string;
+  status: ExternalTicketClaimStatus;
+  pass_id?: string | null;
+};
+
+export type ExternalTicketClaimInspection = {
+  valid: boolean;
+  status?: ExternalTicketClaimStatus | "unregistered";
+  message?: string;
+  claim?: {
+    id: string;
+    event_id: string;
+    issuer: string;
+    claimant_user_id: string;
+    ticket_code_last4: string;
+    source_ticket_metadata: Record<string, unknown>;
+    requested_pass_type: PassType;
+    status: ExternalTicketClaimStatus;
+    reviewer_note?: string | null;
+    hashpass_pass_id?: string | null;
+    submitted_at: string;
+    reviewed_at?: string | null;
+    converted_at?: string | null;
+  };
+};

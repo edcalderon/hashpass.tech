@@ -67,6 +67,7 @@
     "event-catalog",
     "event-pass-tiers",
     "event-chat",
+    "qr-system",
     "event-auth-allies",
     "admin-pass-management",
     "admin-matchmaking-communications",
@@ -169,7 +170,12 @@
       "db/migrations/V072__event_chat_realtime_signal.sql",
       "db/migrations/V073__event_chat_room_registry.sql",
       "db/migrations/V074__event_chat_presence.sql",
-      "db/migrations/V075__event_chat_reply_throttle.sql"
+      "db/migrations/V075__event_chat_reply_throttle.sql",
+      "db/migrations/V141__event_chat_reactions.sql",
+      "db/migrations/V144__event_vip_chat_room.sql"
+    ],
+    "qr-system": [
+      "db/migrations/V145__backend_qr_and_external_ticket_claims.sql"
     ],
     "event-auth-allies": ["db/migrations/V083__event_auth_allies.sql"],
     "event-search-aliases": [
@@ -286,7 +292,9 @@
       "db/migrations/V059__admin_pass_registry_identity_fallback.sql",
       "db/migrations/V060__admin_pass_listing_bsl_identity_compatibility.sql",
       "db/migrations/V061__admin_pass_usage_editing.sql",
-      "db/migrations/V140__fix_admin_pass_cursor_type.sql"
+      "db/migrations/V140__fix_admin_pass_cursor_type.sql",
+      "db/migrations/V142__pass_upgrade_requests.sql",
+      "db/migrations/V143__pass_sharing_and_transfers.sql"
     ],
     "admin-pass-identity": [
       "db/migrations/V059__admin_pass_registry_identity_fallback.sql"

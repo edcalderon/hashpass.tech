@@ -17,7 +17,7 @@ if (typeof process !== 'undefined' && typeof window === 'undefined') {
   const cwd = process.cwd();
   for (const candidate of ['.env.local', '.env', '../../.env.local', '../../.env']) {
     const p = pathDotenv.resolve(cwd, candidate);
-    if (fsDotenv.existsSync(p)) loadDotenv({ path: p, override: false });
+    if (fsDotenv.existsSync(p)) loadDotenv({ path: p, override: false, quiet: true });
   }
 }
 

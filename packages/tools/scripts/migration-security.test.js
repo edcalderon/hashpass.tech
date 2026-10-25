@@ -79,6 +79,14 @@ const adminPassCursorMigrationPath = path.join(
   root,
   'db/migrations/V140__fix_admin_pass_cursor_type.sql',
 );
+const eventChatReactionsMigrationPath = path.join(
+  root,
+  'db/migrations/V141__event_chat_reactions.sql',
+);
+const passUpgradeRequestsMigrationPath = path.join(
+  root,
+  'db/migrations/V142__pass_upgrade_requests.sql',
+);
 const meetingChatRealtimeMigrationPath = path.join(
   root,
   'db/migrations/V054__meeting_chat_realtime_and_participant_profiles.sql',
@@ -124,6 +132,10 @@ const eventScopedSpeakersMigrationPath = path.join(
 const eventScopedSpeakerAdminMigrationPath = path.join(
   root,
   'db/migrations/V108__enforce_event_scoped_speaker_admin_roles.sql',
+);
+const backendQrAndExternalTicketClaimsMigrationPath = path.join(
+  root,
+  'db/migrations/V145__backend_qr_and_external_ticket_claims.sql',
 );
 
 describe('setup and PIN migration plan', () => {
@@ -356,6 +368,19 @@ describe('event chat migration plan', () => {
       'db/migrations/V075__event_chat_reply_throttle.sql',
     ]));
   });
+
+  it('ships reactions with server-only access and keeps the migration portable across pass id types', () => {
+    const migration = fs.readFileSync(eventChatReactionsMigrationPath, 'utf8');
+    const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+
+    expect(config.groups['event-chat']).toContain(
+      'db/migrations/V141__event_chat_reactions.sql',
+    );
+    expect(migration).toMatch(/CREATE TABLE IF NOT EXISTS public\.event_chat_message_reactions/i);
+    expect(migration).toMatch(/CREATE TABLE IF NOT EXISTS public\.event_chat_direct_message_reactions/i);
+    expect(migration).toMatch(/REVOKE ALL ON TABLE public\.event_chat_message_reactions FROM anon, authenticated/i);
+    expect(migration).toMatch(/GRANT ALL ON TABLE public\.event_chat_direct_message_reactions TO service_role/i);
+  });
 });
 
 describe('event auth allies migration plan', () => {
@@ -391,6 +416,20 @@ describe('admin pass management migration contract', () => {
       'db/migrations/V140__fix_admin_pass_cursor_type.sql',
     );
     expect(cursorMigration).toMatch(/pc\.id::text = p_cursor/i);
+  });
+
+  it('ships the pass-upgrade request ledger through the default tenant migration command', () => {
+    const migration = fs.readFileSync(passUpgradeRequestsMigrationPath, 'utf8');
+    const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+
+    expect(config.groups['admin-pass-management']).toContain(
+      'db/migrations/V142__pass_upgrade_requests.sql',
+    );
+    expect(migration).toMatch(/CREATE TABLE IF NOT EXISTS public\.pass_upgrade_requests/i);
+    expect(migration).toMatch(/pass_id text NOT NULL/i);
+    expect(migration).toMatch(/current_pass_type = 'general' AND requested_pass_type = 'business'/i);
+    expect(migration).toMatch(/REVOKE ALL ON public\.pass_upgrade_requests FROM PUBLIC, anon, authenticated/i);
+    expect(migration).toMatch(/GRANT ALL ON public\.pass_upgrade_requests TO service_role/i);
   });
 });
 
@@ -791,5 +830,28 @@ describe('backend-only pass contract migration', () => {
     expect(config.groups['upcoming-bsl-passes']).toContain(
       'db/migrations/V070__harden_default_pass_provisioning.sql',
     );
+  });
+});
+
+describe('backend QR and original ticket claim migration', () => {
+  it('keeps QR data and external ticket claims behind the service-role API', () => {
+    const migration = fs.readFileSync(backendQrAndExternalTicketClaimsMigrationPath, 'utf8');
+    const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+
+    expect(config.defaultGroups).toContain('qr-system');
+    expect(config.groups['qr-system']).toContain(
+      'db/migrations/V145__backend_qr_and_external_ticket_claims.sql',
+    );
+    expect(migration).toMatch(/CREATE TABLE IF NOT EXISTS public\.qr_codes/i);
+    expect(migration).toMatch(/CREATE TABLE IF NOT EXISTS public\.qr_scan_logs/i);
+    expect(migration).toMatch(/REVOKE ALL ON TABLE public\.qr_codes FROM PUBLIC, anon, authenticated/i);
+    expect(migration).toMatch(/GRANT ALL ON TABLE public\.qr_codes TO service_role/i);
+    expect(migration).toMatch(/CREATE OR REPLACE FUNCTION public\.validate_and_use_qr/i);
+    expect(migration).toMatch(/FOR UPDATE/i);
+    expect(migration).toMatch(/CREATE TABLE IF NOT EXISTS public\.external_ticket_claims/i);
+    expect(migration).toMatch(/external_ticket_claim_qr_key/i);
+    expect(migration).toMatch(/external_ticket_claim_code_key/i);
+    expect(migration).toMatch(/REVOKE ALL ON FUNCTION public\.submit_external_ticket_claim[\s\S]*authenticated/i);
+    expect(migration).toMatch(/GRANT EXECUTE ON FUNCTION public\.review_external_ticket_claim[\s\S]*service_role/i);
   });
 });

@@ -369,7 +369,11 @@
     "replyToMessage": "Reply to message",
     "replyingTo": "Replying to {name}",
     "cancelReply": "Cancel reply",
-    "replyBeforeSending": "You have sent {count} messages in a row. Wait for another attendee to reply before sending more."
+    "replyBeforeSending": "You have sent {count} messages in a row. Wait for another attendee to reply before sending more.",
+    "reactions": "Reactions",
+    "reactionFilters": "Reaction filters",
+    "allReactions": "All",
+    "noReactions": "No reactions yet"
   },
   "common": {
     "back": "Back",

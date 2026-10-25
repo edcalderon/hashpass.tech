@@ -664,7 +664,6 @@ export class BetterAuthProvider implements IAuthProvider {
           // cold backend (dev server first hit), not an auth verdict: retry
           // once before treating it like any other transport failure.
           if (!isAbortLikeError(error)) throw error;
-          console.warn('Better Auth getSession timed out; retrying once.');
           await new Promise(resolve => setTimeout(resolve, 750));
           result = await lookup();
         }
@@ -679,7 +678,9 @@ export class BetterAuthProvider implements IAuthProvider {
         if (isAbortLikeError(error)) {
           // A timeout after the retry above is a transport state (slow backend),
           // not a bug: no error-level noise for it, same fallback as offline.
-          console.warn('Better Auth getSession timed out twice; keeping the last-known session.');
+          // A timeout is an expected transient state while the API wakes up
+          // or the browser resumes. Keep the cached session and stay quiet;
+          // callers already have their own user-facing retry state.
         } else {
           console.error('Better Auth getSession error:', error);
         }

@@ -1,27 +1,31 @@
 # BSL database schema source of truth
 
-Status: **repository baseline — live verification pending**  
-Last reviewed: **2026-08-04**
+Status: **live schema verified**
+Last reviewed: **2026-10-25**
 
-This page is the source of truth for the intended BSL database shape until the
-development and production pooler inventories are completed. It records what
-the repository owns, which migration defines the current schema version, and
-which objects are explicitly outside the application's ownership boundary.
+This page is the source of truth for the intended BSL database shape and the
+verified migration state. It records what the repository owns, which migration
+defines the current schema version, and which objects are explicitly outside
+the application's ownership boundary.
 
 ## Version baseline
 
 | Item | Current value | Source |
 | --- | --- | --- |
-| Application release | `1.8.320` | root `package.json` |
-| Latest repository migration | `V139__speaker_directory_status.sql` | `db/migrations/` |
+| Application release | `1.9.147` | root `package.json` |
+| Latest repository migration | `V142__pass_upgrade_requests.sql` | `db/migrations/` |
 | Migration runner | `packages/tools/scripts/migrate-tenant-db.mjs` | profile + migration group config |
 | Applied migration ledger | `public.hashpass_schema_migrations` | created/updated by the migration runner |
 | BSL profile | `bsl-development` (`bsl-production` retired 2026-10-20) | `packages/tools/scripts/config/database-profiles.json` |
 
-`V059` is the latest migration in the repository, not a claim that both live
-databases have applied it. The live version must be read from
-`hashpass_schema_migrations` in each environment after valid pooler credentials
-are available. Do not infer the live version from the app release number.
+`V141__event_chat_reactions.sql` and `V142__pass_upgrade_requests.sql` are
+registered in the `event-chat` and `admin-pass-management` groups. They are
+applied and recorded in `public.hashpass_schema_migrations` in both the shared
+development profile and consolidated core production. Reaction tables remain
+service-role-only; pass-upgrade requests are written and reviewed through the
+server API. The pass-upgrade ledger deliberately stores `pass_id` as text so
+the same migration works with development's UUID-shaped pass ids and
+production's legacy text ids; the API validates pass ownership before insert.
 
 ## Ownership boundaries
 

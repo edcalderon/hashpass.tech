@@ -5,7 +5,6 @@ export default function DesignSystemStyles() {
   const { isDark } = useTheme(); const palette = uiPalette(isDark);
   return <style>{`
     :root { color-scheme: ${isDark ? 'dark' : 'light'}; }
-    :root { text-size-adjust: 100%; }
     html, body, #root { width: 100%; min-height: 100%; min-height: 100dvh; overflow-x: hidden; overflow-x: clip; }
     html { overscroll-behavior-x: none; }
     body { margin: 0; -webkit-tap-highlight-color: transparent; }
