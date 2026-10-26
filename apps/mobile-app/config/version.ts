@@ -22,23 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610262213, // Updated to current timestamp
+  buildNumber: 202610262359, // Updated to current timestamp
   releaseDate: '2026-10-26',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    // No new features
+    'explain freshness alerts in plain language'
   ],
   bugfixes: [
-    'stop icon flicker during 3D pass tilt',
-    'emit trailing-slash login and consent URLs so the signed OAuth query survives'
+    'accept standard OIDC identity claims'
   ],
   breakingChanges: [],
-  notes: 'stop icon flicker during 3D pass tilt; emit trailing-slash login and consent URLs so the signed OAuth query survives'
+  notes: 'explain freshness alerts in plain language; accept standard OIDC identity claims'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.155': {
+    version: '1.9.155',
+    buildNumber: 202610262359,
+    releaseDate: '2026-10-26',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'explain freshness alerts in plain language'
+    ],
+    bugfixes: [
+      'accept standard OIDC identity claims'
+    ],
+    breakingChanges: [],
+    notes: 'explain freshness alerts in plain language; accept standard OIDC identity claims'
+  },
   '1.9.154': {
     version: '1.9.154',
     buildNumber: 202610262213,
