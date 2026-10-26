@@ -6,6 +6,7 @@ import {
 } from "@/lib/server/resolve-notification-identity";
 
 const EVENT_ID_PATTERN = /^[a-z0-9][a-z0-9-]{0,63}$/i;
+const ISSUER_PATTERN = /^[a-z0-9][a-z0-9_-]{1,63}$/;
 const json = (body: unknown, status = 200) =>
   Response.json(body, { status, headers: { "Cache-Control": "no-store", Vary: "Authorization" } });
 const digest = (value: string) => createHash("sha256").update(value).digest("hex");
@@ -31,10 +32,14 @@ export async function POST(request: Request) {
   const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
   const eventId = typeof body?.eventId === "string" ? body.eventId.trim().toLowerCase() : "";
   const issuer = typeof body?.issuer === "string" ? body.issuer.trim().toLowerCase() : "blockchain_summit_latam";
-  const ticketCode = typeof body?.ticketCode === "string" ? body.ticketCode.trim().toUpperCase() : "";
+  let ticketCode = typeof body?.ticketCode === "string" ? body.ticketCode.trim().toUpperCase() : "";
   const qrPayload = typeof body?.qrPayload === "string" ? body.qrPayload.trim() : "";
+  // Some ticketing QRs carry nothing we can read as a reference. The payload
+  // itself still identifies the ticket, so derive a stable reference from it.
+  if (!ticketCode && qrPayload) ticketCode = digest(qrPayload).slice(0, 24).toUpperCase();
   const requestedPassType = typeof body?.requestedPassType === "string" ? body.requestedPassType.trim().toLowerCase() : "general";
   if (!EVENT_ID_PATTERN.test(eventId)) return json({ error: "A valid event is required" }, 400);
+  if (!ISSUER_PATTERN.test(issuer)) return json({ error: "A valid ticket issuer is required" }, 400);
   if (ticketCode.length < 4 || ticketCode.length > 128) return json({ error: "The original ticket code is required" }, 400);
   if (!["general", "business", "vip"].includes(requestedPassType)) return json({ error: "Invalid requested pass type" }, 400);
 
@@ -59,7 +64,7 @@ export async function POST(request: Request) {
   });
   if (error) {
     if (error.code === "23505" || /already been claimed/i.test(error.message || "")) {
-      return json({ error: "This original ticket has already been submitted" }, 409);
+      return json({ error: "This original ticket has already been claimed by another account" }, 409);
     }
     console.error("[ticket-claim] submit failed:", error);
     return json({ error: "Unable to submit the ticket claim" }, 503);

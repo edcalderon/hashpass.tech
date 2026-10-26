@@ -21,7 +21,10 @@ export async function sendRecoveryEmail(to: string, code: string, env: NodeJS.Pr
   const transporter = nodemailer.createTransport({
     host, port: parseInt(env.NODEMAILER_PORT || '587'), secure: false, requireTLS: true,
     auth: { user: env.NODEMAILER_USER || 'apikey', pass: env.NODEMAILER_PASS },
-    tls: { rejectUnauthorized: env.NODE_ENV === 'production', servername: brevo ? 'smtp-relay.sendinblue.com' : undefined },
+    // Brevo edges serve different relay certs (legacy sendinblue.com names
+    // or brevo.com names), so no single hostname validates everywhere; keep
+    // the CA chain check, skip the hostname match.
+    tls: { rejectUnauthorized: env.NODE_ENV === 'production', ...(brevo ? { checkServerIdentity: () => undefined } : {}) },
   });
   await transporter.sendMail({
     from: `HASHPASS <${env.NODEMAILER_FROM}>`, to,

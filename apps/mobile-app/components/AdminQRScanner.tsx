@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, Alert, ActivityIndicator, ScrollView, Platform } from 'react-native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import ScanResultCard from './qr/ScanResultCard';
+import ExternalClaimReview from './qr/ExternalClaimReview';
 import { ActionButton } from '@hashpass/ui/primitives';
 import { useTheme } from '../hooks/useTheme';
 import { useAuth } from '../hooks/useAuth';
@@ -58,7 +60,7 @@ export default function AdminQRScanner({
   const videoRef = React.useRef<HTMLVideoElement | null>(null);
   const scannerWrapperRef = React.useRef<any>(null);
   const scannerCleanupRef = React.useRef<(() => Promise<void>) | null>(null);
-  const { send: sendCameraEvent } = useQrCameraSession();
+  const { send: sendCameraEvent, canAskAgain: cameraCanAskAgain } = useQrCameraSession();
 
   const styles = getStyles(isDark, colors);
 
@@ -131,6 +133,28 @@ export default function AdminQRScanner({
       checkPermissionStatus();
     }
   }, [visible, user, adminCheckLoading, isUserAdmin]);
+
+  // While the web permission screen is visible, follow the browser's own
+  // camera signals so enabling the camera from the address bar resumes the
+  // scanner without a page reload. Unsupported browsers never fire.
+  useEffect(() => {
+    if (Platform.OS !== 'web' || !visible || hasPermission !== false) return;
+
+    const unsubscribe = cameraPermissionManager.watchWebPermission((result) => {
+      if (result.status === 'granted') {
+        setCameraError(null);
+        setHasPermission(true);
+        sendCameraEvent({ type: 'PERMISSION_GRANTED' });
+      } else if (result.status === 'blocked') {
+        setCameraError(result.message ?? null);
+        sendCameraEvent({ type: 'PERMISSION_REQUIRED', message: result.message, canAskAgain: false });
+      }
+    });
+
+    return () => unsubscribe();
+    // hasPermission is intentionally read only to (re)arm the watcher.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible, hasPermission === false, sendCameraEvent]);
 
   // OLD WEB FALLBACK CODE - DISABLED - We now use WebQRScanner component instead
   // This useEffect is disabled because we're using WebQRScanner on web platform
@@ -778,14 +802,16 @@ export default function AdminQRScanner({
                 ? 'Please enable camera permissions in your browser settings to scan QR codes.'
                 : 'Please enable camera permissions in your device settings to scan QR codes.'}
             </Text>
-            <TouchableOpacity 
-              style={styles.button} 
-              onPress={async () => {
-                await requestCameraPermission();
-              }}
-            >
-              <Text style={styles.buttonText}>Grant Permission</Text>
-            </TouchableOpacity>
+            {Platform.OS !== 'web' || cameraCanAskAgain ? (
+              <TouchableOpacity
+                style={styles.button}
+                onPress={async () => {
+                  await requestCameraPermission();
+                }}
+              >
+                <Text style={styles.buttonText}>Grant Permission</Text>
+              </TouchableOpacity>
+            ) : null}
             <TouchableOpacity 
               style={[styles.button, styles.buttonSecondary]} 
               onPress={async () => {
@@ -896,7 +922,7 @@ export default function AdminQRScanner({
         />
         
         {/* Show QR details in a separate modal when showDetails is true */}
-        {showDetails && scanResult && (qrDetails || resolvedPayload || externalTicketClaim) && (
+        {showDetails && scanResult && (
           <Modal visible={showDetails} animationType="slide" transparent>
             <View style={styles.modalContainer}>
               <View style={styles.scannerContainer}>
@@ -930,47 +956,15 @@ export default function AdminQRScanner({
                   </View>
 
                   {resolvedPayload && (
-                    <View style={styles.detailsSection}>
-                      <Text style={styles.sectionTitle}>HashPass identity</Text>
-                      {resolvedPayload.user?.name && <View style={styles.detailRow}><Text style={styles.detailLabel}>User:</Text><Text style={styles.detailValue}>{resolvedPayload.user.name}</Text></View>}
-                      {resolvedPayload.user?.username && <View style={styles.detailRow}><Text style={styles.detailLabel}>Username:</Text><Text style={styles.detailValue}>@{resolvedPayload.user.username}</Text></View>}
-                      {resolvedPayload.pass && <>
-                        <View style={styles.detailRow}><Text style={styles.detailLabel}>Pass:</Text><Text style={styles.detailValue} selectable>{resolvedPayload.pass.number || resolvedPayload.pass.id}</Text></View>
-                        <View style={styles.detailRow}><Text style={styles.detailLabel}>Type:</Text><Text style={styles.detailValue}>{resolvedPayload.pass.type?.toUpperCase() || 'N/A'}</Text></View>
-                        <View style={styles.detailRow}><Text style={styles.detailLabel}>Status:</Text><Text style={styles.detailValue}>{resolvedPayload.pass.status?.toUpperCase() || 'N/A'}</Text></View>
-                        <View style={styles.detailRow}><Text style={styles.detailLabel}>Event:</Text><Text style={styles.detailValue}>{resolvedPayload.pass.eventId}</Text></View>
-                        <View style={styles.detailRow}><Text style={styles.detailLabel}>Usage:</Text><Text style={styles.detailValue}>{resolvedPayload.pass.requests.used} / {resolvedPayload.pass.requests.max} requests</Text></View>
-                      </>}
-                      {resolvedPayload.network && <View style={styles.detailRow}><Text style={styles.detailLabel}>Network:</Text><Text style={styles.detailValue}>{resolvedPayload.network}</Text></View>}
-                      {resolvedPayload.address && <View style={styles.detailRow}><Text style={styles.detailLabel}>Address:</Text><Text style={styles.detailValue} selectable>{resolvedPayload.address}</Text></View>}
-                    </View>
+                    <ScanResultCard resolution={resolvedPayload} mode={isDark ? 'dark' : 'light'} showUsage />
                   )}
 
                   {externalTicketClaim && (
-                    <View style={styles.detailsSection}>
-                      <Text style={styles.sectionTitle}>Original ticket verification</Text>
-                      {externalTicketClaim.claim ? (
-                        <>
-                          <View style={styles.detailRow}><Text style={styles.detailLabel}>Issuer:</Text><Text style={styles.detailValue}>{externalTicketClaim.claim.issuer}</Text></View>
-                          <View style={styles.detailRow}><Text style={styles.detailLabel}>Event:</Text><Text style={styles.detailValue}>{externalTicketClaim.claim.event_id}</Text></View>
-                          <View style={styles.detailRow}><Text style={styles.detailLabel}>Code:</Text><Text style={styles.detailValue}>••••{externalTicketClaim.claim.ticket_code_last4}</Text></View>
-                          <View style={styles.detailRow}><Text style={styles.detailLabel}>Claim status:</Text><Text style={styles.detailValue}>{externalTicketClaim.claim.status.toUpperCase()}</Text></View>
-                          {externalTicketClaim.claim.hashpass_pass_id && <View style={styles.detailRow}><Text style={styles.detailLabel}>HashPass pass:</Text><Text style={styles.detailValue} selectable>{externalTicketClaim.claim.hashpass_pass_id}</Text></View>}
-                        </>
-                      ) : (
-                        <Text style={styles.detailValue}>No matching claim is registered for this QR yet.</Text>
-                      )}
-                      {externalTicketClaim.claim &&
-                        (externalTicketClaim.claim.status === 'pending' || externalTicketClaim.claim.status === 'validated') && (
-                          <ActionButton
-                            mode={isDark ? 'dark' : 'light'}
-                            variant="secondary"
-                            label="Approve & create pass"
-                            leadingIcon={<MaterialIcons name="verified" size={20} color={colors.primary} />}
-                            onPress={approveExternalTicketClaim}
-                          />
-                        )}
-                    </View>
+                    <ExternalClaimReview
+                      inspection={externalTicketClaim}
+                      mode={isDark ? 'dark' : 'light'}
+                      onApprove={approveExternalTicketClaim}
+                    />
                   )}
 
                   {qrDetails && <View style={styles.detailsSection}>
@@ -1211,47 +1205,15 @@ export default function AdminQRScanner({
               </View>
 
               {resolvedPayload && (
-                <View style={styles.detailsSection}>
-                  <Text style={styles.sectionTitle}>HashPass identity</Text>
-                  {resolvedPayload.user?.name && <View style={styles.detailRow}><Text style={styles.detailLabel}>User:</Text><Text style={styles.detailValue}>{resolvedPayload.user.name}</Text></View>}
-                  {resolvedPayload.user?.username && <View style={styles.detailRow}><Text style={styles.detailLabel}>Username:</Text><Text style={styles.detailValue}>@{resolvedPayload.user.username}</Text></View>}
-                  {resolvedPayload.pass && <>
-                    <View style={styles.detailRow}><Text style={styles.detailLabel}>Pass:</Text><Text style={styles.detailValue} selectable>{resolvedPayload.pass.number || resolvedPayload.pass.id}</Text></View>
-                    <View style={styles.detailRow}><Text style={styles.detailLabel}>Type:</Text><Text style={styles.detailValue}>{resolvedPayload.pass.type?.toUpperCase() || 'N/A'}</Text></View>
-                    <View style={styles.detailRow}><Text style={styles.detailLabel}>Status:</Text><Text style={styles.detailValue}>{resolvedPayload.pass.status?.toUpperCase() || 'N/A'}</Text></View>
-                    <View style={styles.detailRow}><Text style={styles.detailLabel}>Event:</Text><Text style={styles.detailValue}>{resolvedPayload.pass.eventId}</Text></View>
-                    <View style={styles.detailRow}><Text style={styles.detailLabel}>Usage:</Text><Text style={styles.detailValue}>{resolvedPayload.pass.requests.used} / {resolvedPayload.pass.requests.max} requests</Text></View>
-                  </>}
-                  {resolvedPayload.network && <View style={styles.detailRow}><Text style={styles.detailLabel}>Network:</Text><Text style={styles.detailValue}>{resolvedPayload.network}</Text></View>}
-                  {resolvedPayload.address && <View style={styles.detailRow}><Text style={styles.detailLabel}>Address:</Text><Text style={styles.detailValue} selectable>{resolvedPayload.address}</Text></View>}
-                </View>
+                <ScanResultCard resolution={resolvedPayload} mode={isDark ? 'dark' : 'light'} showUsage />
               )}
 
               {externalTicketClaim && (
-                <View style={styles.detailsSection}>
-                  <Text style={styles.sectionTitle}>Original ticket verification</Text>
-                  {externalTicketClaim.claim ? (
-                    <>
-                      <View style={styles.detailRow}><Text style={styles.detailLabel}>Issuer:</Text><Text style={styles.detailValue}>{externalTicketClaim.claim.issuer}</Text></View>
-                      <View style={styles.detailRow}><Text style={styles.detailLabel}>Event:</Text><Text style={styles.detailValue}>{externalTicketClaim.claim.event_id}</Text></View>
-                      <View style={styles.detailRow}><Text style={styles.detailLabel}>Code:</Text><Text style={styles.detailValue}>••••{externalTicketClaim.claim.ticket_code_last4}</Text></View>
-                      <View style={styles.detailRow}><Text style={styles.detailLabel}>Claim status:</Text><Text style={styles.detailValue}>{externalTicketClaim.claim.status.toUpperCase()}</Text></View>
-                      {externalTicketClaim.claim.hashpass_pass_id && <View style={styles.detailRow}><Text style={styles.detailLabel}>HashPass pass:</Text><Text style={styles.detailValue} selectable>{externalTicketClaim.claim.hashpass_pass_id}</Text></View>}
-                    </>
-                  ) : (
-                    <Text style={styles.detailValue}>No matching claim is registered for this QR yet.</Text>
-                  )}
-                  {externalTicketClaim.claim &&
-                    (externalTicketClaim.claim.status === 'pending' || externalTicketClaim.claim.status === 'validated') && (
-                      <ActionButton
-                        mode={isDark ? 'dark' : 'light'}
-                        variant="secondary"
-                        label="Approve & create pass"
-                        leadingIcon={<MaterialIcons name="verified" size={20} color={colors.primary} />}
-                        onPress={approveExternalTicketClaim}
-                      />
-                    )}
-                </View>
+                <ExternalClaimReview
+                  inspection={externalTicketClaim}
+                  mode={isDark ? 'dark' : 'light'}
+                  onApprove={approveExternalTicketClaim}
+                />
               )}
 
               {qrDetails && (

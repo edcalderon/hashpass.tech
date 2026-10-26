@@ -67,6 +67,14 @@ export async function POST(request: Request) {
       return json({ data: { valid: false, status: "unregistered", message: "This original ticket QR has not been submitted" } });
     }
     const reusable = claim.status === "pending" || claim.status === "validated";
+    // Staff need to see who holds the ticket to spot impersonation.
+    let claimantEmail: string | null = null;
+    try {
+      const { data: lookup } = await admin.supabase.auth.admin.getUserById(claim.claimant_user_id);
+      claimantEmail = lookup?.user?.email ?? null;
+    } catch {
+      claimantEmail = null;
+    }
     return json({ data: {
       valid: reusable,
       status: claim.status,
@@ -75,7 +83,7 @@ export async function POST(request: Request) {
         : claim.status === "converted"
           ? "This original ticket has already been converted"
           : "This original ticket claim was rejected",
-      claim,
+      claim: { ...claim, claimant_email: claimantEmail },
     } });
   }
   if (!claimId || !["approve", "reject"].includes(action)) return json({ error: "A claim and review action are required" }, 400);

@@ -8,6 +8,10 @@
  * see PassNotchMask.web.tsx).
  */
 
+import type { NotchMaskGeometry, PerforationDotGeometry } from '../types/pass-notch.types';
+
+export type { NotchMaskGeometry, PerforationDotGeometry };
+
 const circlePath = (cx: number, cy: number, r: number) =>
   `M ${cx - r},${cy} ` +
   `A ${r},${r} 0 1 0 ${cx + r},${cy} ` +
@@ -19,14 +23,24 @@ const roundedRectPath = (width: number, height: number, r: number) =>
   `H ${r} A ${r},${r} 0 0 1 0,${height - r} ` +
   `V ${r} A ${r},${r} 0 0 1 ${r},0 Z`;
 
-export interface NotchMaskGeometry {
-  width: number;
-  height: number;
-  cornerRadius: number;
-  notchRadius: number;
-  /** Where the notch sits, as a fraction of height (0.58 = the perforation line). */
-  notchYRatio: number;
-}
+
+const buildPerforationDotPaths = (
+  width: number,
+  notchY: number,
+  notchRadius: number,
+  dots: PerforationDotGeometry,
+): string[] => {
+  const first = notchRadius + dots.margin;
+  const last = width - notchRadius - dots.margin;
+  if (last <= first) return [];
+  const count = Math.floor((last - first) / dots.spacing) + 1;
+  // Center the row: recompute the span so leftover space splits evenly.
+  const actualSpan = (count - 1) * dots.spacing;
+  const start = first + (last - first - actualSpan) / 2;
+  return Array.from({ length: count }, (_, i) =>
+    circlePath(start + i * dots.spacing, notchY, dots.radius),
+  );
+};
 
 export const buildNotchMaskPath = ({
   width,
@@ -34,12 +48,16 @@ export const buildNotchMaskPath = ({
   cornerRadius,
   notchRadius,
   notchYRatio,
+  perforationDots,
 }: NotchMaskGeometry): string => {
   const notchY = height * notchYRatio;
   return [
     roundedRectPath(width, height, cornerRadius),
     circlePath(0, notchY, notchRadius),
     circlePath(width, notchY, notchRadius),
+    ...(perforationDots
+      ? buildPerforationDotPaths(width, notchY, notchRadius, perforationDots)
+      : []),
   ].join(' ');
 };
 

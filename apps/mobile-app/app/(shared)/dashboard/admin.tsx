@@ -18,7 +18,7 @@ import { useTheme } from "../../../hooks/useTheme";
 import MarketingManager from '../../../components/admin/MarketingManager';
 import { useAuth } from "../../../hooks/useAuth";
 import type { AdminRole } from "../../../lib/admin-utils";
-import type { ExternalTicketClaimRequest } from "../../../types/ExternalTicketClaim.types";
+import type { ExternalTicketClaimRequest, ExternalTicketReportRequest } from "../../../types/ExternalTicketClaim.types";
 import { getCurrentAdminAccess } from "../../../lib/admin-access";
 import { supabase } from "../../../lib/supabase";
 import {
@@ -307,6 +307,7 @@ export default function AdminPanel() {
   const [speakerClaimsLoading, setSpeakerClaimsLoading] = useState(false);
   const [ticketClaims, setTicketClaims] = useState<ExternalTicketClaimRequest[]>([]);
   const [ticketClaimsLoading, setTicketClaimsLoading] = useState(false);
+  const [ticketReports, setTicketReports] = useState<ExternalTicketReportRequest[]>([]);
 
   const styles = getStyles(isDark, colors);
   const updateTabScrollState = (offsetX = 0) => {
@@ -466,6 +467,9 @@ export default function AdminPanel() {
       );
       if (!result.success) throw new Error(result.error || "Unable to load ticket claims");
       setTicketClaims((result.data as { data?: ExternalTicketClaimRequest[] })?.data || []);
+      // Reports are secondary to the claim queue; a failure must not hide claims.
+      const reports = await apiClient.get("/admin/pass-ticket-reports?status=open", { skipEventSegment: true });
+      setTicketReports(reports.success ? (reports.data as { data?: ExternalTicketReportRequest[] })?.data || [] : []);
     } catch (error: any) {
       Alert.alert("Error", "Failed to load ticket claims: " + (error.message || "Unknown error"));
     } finally {
@@ -501,6 +505,41 @@ export default function AdminPanel() {
                 await loadTicketClaims();
               } catch (error: any) {
                 Alert.alert("Claim not updated", error.message || "Please try again.");
+              } finally {
+                setTicketClaimsLoading(false);
+              }
+            })();
+          },
+        },
+      ],
+    );
+  };
+
+  const resolveTicketReport = (report: ExternalTicketReportRequest, action: "confirm" | "dismiss", reviewNote = "") => {
+    const confirming = action === "confirm";
+    Alert.alert(
+      confirming ? "Confirm misuse?" : "Dismiss report?",
+      confirming
+        ? `This revokes the claim and suspends any pass created from ticket ending ${report.ticket_code_last4}, so its rightful holder can claim it.`
+        : `Keep the existing claim for ticket ending ${report.ticket_code_last4}?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: confirming ? "Revoke claim" : "Dismiss",
+          style: confirming ? "destructive" : "default",
+          onPress: () => {
+            void (async () => {
+              try {
+                setTicketClaimsLoading(true);
+                const result = await apiClient.post(
+                  "/admin/pass-ticket-reports",
+                  { reportId: report.id, action, note: reviewNote.trim() || undefined },
+                  { skipEventSegment: true },
+                );
+                if (!result.success) throw new Error(result.error || "Unable to resolve report");
+                await loadTicketClaims();
+              } catch (error: any) {
+                Alert.alert("Report not updated", error.message || "Please try again.");
               } finally {
                 setTicketClaimsLoading(false);
               }
@@ -1894,8 +1933,10 @@ export default function AdminPanel() {
             styles={styles}
             colors={colors}
             claims={ticketClaims}
+            reports={ticketReports}
             loading={ticketClaimsLoading}
             onReview={reviewTicketClaim}
+            onResolveReport={resolveTicketReport}
             onRefresh={() => {
               void loadTicketClaims();
             }}
@@ -3270,7 +3311,7 @@ function RolesTab({
   );
 }
 
-function TicketClaimsTab({ styles, colors, claims, loading, onReview, onRefresh }: any) {
+function TicketClaimsTab({ styles, colors, claims, reports = [], loading, onReview, onResolveReport, onRefresh }: any) {
   const [notes, setNotes] = useState<Record<string, string>>({});
   const open = claims.filter(
     (claim: ExternalTicketClaimRequest) => claim.status === "pending" || claim.status === "validated",
@@ -3337,6 +3378,55 @@ function TicketClaimsTab({ styles, colors, claims, loading, onReview, onRefresh 
         {!loading && open.length === 0 && (
           <Text style={styles.emptyText}>No ticket claims awaiting review</Text>
         )}
+      </View>
+      <View style={[styles.passCard, { marginTop: 16 }]}>
+        <View style={styles.speakerRoleTitleWrap}>
+          <Text style={styles.passNumber}>Ticket misuse reports</Text>
+          <Text style={styles.passInfo}>
+            Someone says another account is using their original ticket. Confirming revokes that claim and frees the ticket for its rightful holder.
+          </Text>
+        </View>
+        {reports.map((report: ExternalTicketReportRequest) => (
+          <View key={report.id} style={[styles.passCard, { marginTop: 10 }]}>
+            <View style={styles.passCardHeader}>
+              <View style={styles.speakerRoleTitleWrap}>
+                <Text style={styles.passNumber}>Ticket ending {report.ticket_code_last4}</Text>
+                <Text style={styles.passInfo}>{report.issuer} · {report.event_id} · {report.reason}</Text>
+              </View>
+            </View>
+            <Text style={styles.passInfo}>Reported by: {report.reporter_email || "unknown"}</Text>
+            <Text style={styles.passInfo}>
+              {report.claim_id
+                ? `Currently claimed by: ${report.claimant_email || report.claimant_user_id || "unknown"}`
+                : "No active claim exists for this ticket"}
+            </Text>
+            {report.details ? <Text style={styles.passInfo}>{report.details}</Text> : null}
+            <TextInput
+              style={styles.searchInput}
+              value={notes[report.id] || ""}
+              onChangeText={(value) => setNotes((current) => ({ ...current, [report.id]: value }))}
+              placeholder="Resolution note"
+              placeholderTextColor={colors.text.secondary}
+              maxLength={1000}
+              multiline
+            />
+            <View style={styles.passActions}>
+              <TouchableOpacity
+                style={[styles.actionButton, styles.actionButtonWarning]}
+                onPress={() => onResolveReport(report, "confirm", notes[report.id])}
+              >
+                <Text style={styles.actionButtonText}>Confirm misuse</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={() => onResolveReport(report, "dismiss", notes[report.id])}
+              >
+                <Text style={styles.actionButtonText}>Dismiss</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ))}
+        {!loading && reports.length === 0 && <Text style={styles.emptyText}>No open reports</Text>}
       </View>
     </View>
   );

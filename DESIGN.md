@@ -53,7 +53,18 @@ version badges and nested card decoration.
 ## Color, type and spacing
 
 Use semantic canvas, surface, raised, border, text, muted, accent, accentFill,
-onAccent, danger and success tokens. Body and action text must meet 4.5:1 contrast.
+onAccent, vipFill, onVip, danger and success tokens. Body and action text must meet
+4.5:1 contrast.
+
+**Fill/on-fill pairs.** Every solid fill token has a paired `on*` token
+(`accentFill`/`onAccent`, `vipFill`/`onVip`; see `onFillPairs` in `tokens.ts`).
+Text and icons on a solid fill use its pair, never a literal `#fff` and never a
+mode-dependent text token such as `colors.text.primary`, which flips to near-white
+in dark mode and made "Upgrade to VIP" unreadable. Do not use the bright `accent`
+as a fill behind white text; use `accentFill`. VIP/premium is amber: a dark amber
+fill with white text in light mode, a light amber fill with dark text in dark mode.
+`tests/ui/design-token-contrast.test.ts` fails if a pair or text token drops below
+4.5:1; add new fill tokens to `onFillPairs` so they are covered automatically.
 Use muted text on neutral surfaces, not low-opacity text over video. Media-backed
 badges use the `onMedia` variant. Reserve red for errors/destructive actions;
 existing red brand marks are exempt.

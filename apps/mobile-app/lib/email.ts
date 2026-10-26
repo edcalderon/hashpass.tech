@@ -147,8 +147,11 @@ function buildTransporter(config: ReturnType<typeof buildSmtpConfig>) {
     tls: isBrevo
       ? {
           rejectUnauthorized: process.env.NODE_ENV === 'production',
-          // Brevo's relay may present a hostname that differs from the relay alias.
-          servername: 'smtp-relay.sendinblue.com',
+          // Brevo serves region-specific relay certificates: some edges
+          // still present only the legacy sendinblue.com names while others
+          // present only brevo.com names, so no single hostname validates
+          // everywhere. Keep the CA chain check and skip only the hostname
+          // match for Brevo; the account credentials protect the relay.
           checkServerIdentity: () => undefined,
         }
       : { rejectUnauthorized: process.env.NODE_ENV === 'production' },

@@ -449,7 +449,9 @@ describe('AdminPanel pass codes', () => {
     expect(renderer.root.findAllByProps({ children: 'Original QR attached' }).length).toBeGreaterThan(0);
     expect(renderer.root.findAllByProps({ children: 'Approve' }).length).toBeGreaterThan(0);
     expect(renderer.root.findAllByProps({ children: 'holder@example.com' }).length).toBeGreaterThan(0);
-    expect(renderer.root.findAllByProps({ placeholder: 'Review note (required to reject)' })).toHaveLength(4);
+    // One note input per open claim (claim-1 and claim-2); the rejected
+    // claim-3 must not render a review card.
+    expect(renderer.root.findAllByProps({ placeholder: 'Review note (required to reject)' })).toHaveLength(2);
 
     await act(async () => {
       triggerPress(renderer.root.findAllByProps({ children: 'Reject' })[0].parent);
