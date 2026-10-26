@@ -124,6 +124,18 @@ export async function POST(request: Request) {
     const recipientUserId = recipient?.provider_ids?.supabase;
     if (!recipientUserId) return json({ error: "The recipient must create and verify a HASHPASS account first" }, 404);
 
+    // A person can hold only one pass per event. Reject before creating a
+    // transfer or emailing either party so a recipient's courtesy/general pass
+    // cannot turn a later confirmation into a database conflict.
+    const { data: recipientPass, error: recipientPassError } = await supabase
+      .from("passes")
+      .select("id")
+      .eq("user_id", String(recipientUserId))
+      .eq("event_id", eventId)
+      .maybeSingle();
+    if (recipientPassError) return json({ error: "Unable to verify the recipient's event pass" }, 503);
+    if (recipientPass) return json({ error: "The recipient already has a pass for this event" }, 409);
+
     const senderToken = randomBytes(32).toString("base64url");
     const recipientToken = randomBytes(32).toString("base64url");
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();

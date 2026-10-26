@@ -57,11 +57,13 @@ describe("POST /api/pass-transfers", () => {
     });
     const expirePending = query({ data: null });
     const recipient = query({ data: { id: "account-id", provider_ids: { supabase: recipientId } } });
+    const noRecipientPass = query({ data: null });
     const created = query({ data: { id: "transfer-id", expires_at: "2026-10-26T00:00:00.000Z" } });
     mockFrom
       .mockReturnValueOnce(pass)
       .mockReturnValueOnce(expirePending)
       .mockReturnValueOnce(recipient)
+      .mockReturnValueOnce(noRecipientPass)
       .mockReturnValueOnce(created);
 
     // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -78,6 +80,35 @@ describe("POST /api/pass-transfers", () => {
     expect(expirePending.eq).toHaveBeenCalledWith("pass_id", passId);
     expect(expirePending.eq).toHaveBeenCalledWith("status", "pending");
     expect(expirePending.lt).toHaveBeenCalledWith("expires_at", expect.any(String));
+  });
+
+  it("rejects a recipient who already has an event pass before creating a transfer or sending email", async () => {
+    const pass = query({
+      data: { id: passId, event_id: "colombia2026", status: "active", pass_type: "business" },
+    });
+    const expirePending = query({ data: null });
+    const recipient = query({ data: { id: "account-id", provider_ids: { supabase: recipientId } } });
+    const recipientPass = query({ data: { id: "recipient-pass" } });
+    mockFrom
+      .mockReturnValueOnce(pass)
+      .mockReturnValueOnce(expirePending)
+      .mockReturnValueOnce(recipient)
+      .mockReturnValueOnce(recipientPass);
+
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { POST } = require("../../app/api/pass-transfers+api");
+    const response = await POST(request({
+      action: "request",
+      passId,
+      eventId: "colombia2026",
+      recipientEmail: "recipient@example.com",
+    }));
+
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toEqual({ error: "The recipient already has a pass for this event" });
+    expect(recipientPass.eq).toHaveBeenCalledWith("user_id", recipientId);
+    expect(recipientPass.eq).toHaveBeenCalledWith("event_id", "colombia2026");
+    expect(mockSendEmail).not.toHaveBeenCalled();
   });
 
   it("marks an expired confirmation request before rejecting it", async () => {

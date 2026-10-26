@@ -295,7 +295,8 @@
       "db/migrations/V140__fix_admin_pass_cursor_type.sql",
       "db/migrations/V142__pass_upgrade_requests.sql",
       "db/migrations/V143__pass_sharing_and_transfers.sql",
-      "db/migrations/V146__harden_pass_transfer_qr_revocation.sql"
+      "db/migrations/V146__harden_pass_transfer_qr_revocation.sql",
+      "db/migrations/V147__harden_pass_entitlement_transitions.sql"
     ],
     "admin-pass-identity": [
       "db/migrations/V059__admin_pass_registry_identity_fallback.sql"

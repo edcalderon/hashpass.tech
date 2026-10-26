@@ -141,6 +141,10 @@ const passTransferQrHardeningMigrationPath = path.join(
   root,
   'db/migrations/V146__harden_pass_transfer_qr_revocation.sql',
 );
+const passEntitlementTransitionsMigrationPath = path.join(
+  root,
+  'db/migrations/V147__harden_pass_entitlement_transitions.sql',
+);
 
 describe('setup and PIN migration plan', () => {
   it('runs the setup/PIN schema before the dependent SMS auth migrations', () => {
@@ -873,5 +877,23 @@ describe('pass transfer QR hardening migration', () => {
     expect(migration).toMatch(/UPDATE public\.qr_codes[\s\S]*?status = 'revoked'/i);
     expect(migration).toMatch(/revoked_reason = 'Pass ownership transferred'/i);
     expect(migration).toMatch(/WHERE pass_id = transfer_row\.pass_id[\s\S]*?AND status = 'active'/i);
+  });
+});
+
+describe('pass entitlement transition hardening migration', () => {
+  it('updates existing claimants and cancels recipient-conflicting transfers', () => {
+    const migration = fs.readFileSync(passEntitlementTransitionsMigrationPath, 'utf8');
+    const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+
+    expect(config.groups['admin-pass-management']).toContain(
+      'db/migrations/V147__harden_pass_entitlement_transitions.sql',
+    );
+    expect(migration).toMatch(/CREATE OR REPLACE FUNCTION public\.review_external_ticket_claim/i);
+    expect(migration).toMatch(/WHERE user_id::text = v_claim\.claimant_user_id::text[\s\S]*?event_id = v_claim\.event_id[\s\S]*?FOR UPDATE/i);
+    expect(migration).toMatch(/'update', v_claim\.claimant_user_id, v_existing_pass_id, v_type/i);
+    expect(migration).toMatch(/CREATE OR REPLACE FUNCTION public\.complete_pass_transfer/i);
+    expect(migration).toMatch(/WHERE user_id::text = transfer_row\.recipient_user_id[\s\S]*?event_id = transfer_row\.event_id[\s\S]*?FOR UPDATE/i);
+    expect(migration).toMatch(/status = 'cancelled'/i);
+    expect(migration).toMatch(/EXCEPTION WHEN unique_violation/i);
   });
 });
