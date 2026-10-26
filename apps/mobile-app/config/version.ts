@@ -22,22 +22,41 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610260447, // Updated to current timestamp
+  buildNumber: 202610261815, // Updated to current timestamp
   releaseDate: '2026-10-26',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    // No new features
+    'define safe action contracts',
+    'add evidence-based capsule reconciliation'
   ],
   bugfixes: [
-    'derive BSL Colombia sync profile from branch, not job-level matrix if'
+    'keep confirmation secrets out of model turns',
+    'clear filled fields and stop mutating previous evidence'
   ],
   breakingChanges: [],
-  notes: 'derive BSL Colombia sync profile from branch, not job-level matrix if'
+  notes: 'define safe action contracts; add evidence-based capsule reconciliation; keep confirmation secrets out of model turns; clear filled fields and stop mutating previous evidence'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.152': {
+    version: '1.9.152',
+    buildNumber: 202610261815,
+    releaseDate: '2026-10-26',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'define safe action contracts',
+      'add evidence-based capsule reconciliation'
+    ],
+    bugfixes: [
+      'keep confirmation secrets out of model turns',
+      'clear filled fields and stop mutating previous evidence'
+    ],
+    breakingChanges: [],
+    notes: 'define safe action contracts; add evidence-based capsule reconciliation; keep confirmation secrets out of model turns; clear filled fields and stop mutating previous evidence'
+  },
   '1.9.151': {
     version: '1.9.151',
     buildNumber: 202610260447,
