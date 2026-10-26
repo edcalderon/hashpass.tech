@@ -2,15 +2,26 @@ import {createRemoteJWKSet, jwtVerify} from "jose";
 
 const EMAIL_CLAIM = "https://hashpass.tech/email";
 const EMAIL_VERIFIED_CLAIM = "https://hashpass.tech/email_verified";
+// Better Auth may emit the OIDC-standard claims advertised by discovery; keep
+// the namespaced claims as the preferred source when both forms are present.
+const STANDARD_EMAIL_CLAIM = "email";
+const STANDARD_EMAIL_VERIFIED_CLAIM = "email_verified";
 
 export function identityFromPayload(payload = {}) {
   const rawScope = typeof payload.scope === "string" ? payload.scope.split(/\s+/) : [];
   const rawScp = Array.isArray(payload.scp) ? payload.scp.filter((item) => typeof item === "string") : [];
+  const hasNamespacedEmailVerified = Object.prototype.hasOwnProperty.call(payload, EMAIL_VERIFIED_CLAIM);
 
   return {
     subject: typeof payload.sub === "string" ? payload.sub : "",
-    email: typeof payload[EMAIL_CLAIM] === "string" ? payload[EMAIL_CLAIM] : "",
-    emailVerified: payload[EMAIL_VERIFIED_CLAIM] === true,
+    email: typeof payload[EMAIL_CLAIM] === "string"
+      ? payload[EMAIL_CLAIM]
+      : typeof payload[STANDARD_EMAIL_CLAIM] === "string"
+        ? payload[STANDARD_EMAIL_CLAIM]
+        : "",
+    emailVerified: hasNamespacedEmailVerified
+      ? payload[EMAIL_VERIFIED_CLAIM] === true
+      : payload[STANDARD_EMAIL_VERIFIED_CLAIM] === true,
     scopes: [...new Set([...rawScope, ...rawScp])],
   };
 }

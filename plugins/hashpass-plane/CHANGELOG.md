@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.0.3] - 2026-10-26
+
+- Accept standard OIDC email claims in the MCP gateway
+
 ## [1.0.2] - 2026-10-26
 
 - Derive checks from mcp.json, document slash rules, and ship against the fixed trailing-slash MCP login and consent pages.
