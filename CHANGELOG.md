@@ -1,3 +1,14 @@
+## [1.9.153](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.152...v1.9.153) (2026-10-26)
+### Released
+- harden authorization handoff
+
+### Release scope
+- Compared with: `v1.9.152` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Self-hosted operations
+
 ## [1.9.152](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.151...v1.9.152) (2026-10-26)
 
 

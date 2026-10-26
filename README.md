@@ -20,26 +20,17 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.152)
+## 📋 Latest Changes (v1.9.153)
 
-### Bug Fixes
-
-* **companion:** keep confirmation secrets out of model turns ([0be15a4](https://github.com/hashpass-tech/hashpass.tech/commit/0be15a4608bcdcff95e8b411e1bcf1d8320af67f))
-
-
-### Features
-
-* **companion:** define safe action contracts ([f05be46](https://github.com/hashpass-tech/hashpass.tech/commit/f05be46fe658131c37857b12d9070cf323f4c3f7))
-* **doorready:** add evidence-based capsule reconciliation ([cd7e459](https://github.com/hashpass-tech/hashpass.tech/commit/cd7e4593cd8cb563da27995d6ce0caf8a6a488a4))
-### Release Highlights
-- define safe action contracts; add evidence-based capsule reconciliation; keep confirmation secrets out of model turns; clear filled fields and stop mutating previous evidence
+### Released
+- harden authorization handoff
 
 ### Release scope
-- Compared with: `v1.9.151` (the previous global release tag)
+- Compared with: `v1.9.152` (the previous global release tag)
 
 ### Affected products & packages
-- Club web
-- Documentation
+- Mobile app
+- Self-hosted operations
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
