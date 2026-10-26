@@ -118,3 +118,4 @@ export * from './passport/types';
 export * from './passport/normalize';
 export * from './doorready/extraction';
 export * from './doorready/reconcile';
+export * from './doorready/types';

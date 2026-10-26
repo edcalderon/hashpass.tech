@@ -1,7 +1,7 @@
 import type {
   DoorReadyEventCapsule, DoorReadyFactEvidence, DoorReadyFactField,
-  DoorReadySourceDocument,
 } from '@hashpass/types';
+import type { ReconcileDoorReadyInput, ReconcileDoorReadyResult } from './types';
 
 const FIELD_TO_CAPSULE: Record<DoorReadyFactField, keyof Pick<DoorReadyEventCapsule, 'title' | 'startsAt' | 'endsAt' | 'timezone' | 'venue' | 'organizer'>> = {
   title: 'title', startAt: 'startsAt', endAt: 'endsAt', timezone: 'timezone', venue: 'venue', organizer: 'organizer',
@@ -23,21 +23,6 @@ function isIsoTimestamp(value: unknown): value is string {
   const date = new Date(`${day}T00:00:00Z`);
   return Number.isFinite(new Date(value).getTime()) && date.toISOString().slice(0, 10) === day;
 }
-
-export interface ReconcileDoorReadyInput {
-  userId: string;
-  capsuleId: string;
-  source: DoorReadySourceDocument;
-  evidence: DoorReadyFactEvidence[];
-  receivedAt: string;
-  /** The user explicitly identifies this original issuer artifact. */
-  isOriginalTicket?: boolean;
-  previous?: DoorReadyEventCapsule;
-}
-
-export type ReconcileDoorReadyResult =
-  | { kind: 'created' | 'updated'; capsule: DoorReadyEventCapsule }
-  | { kind: 'duplicate'; capsule: DoorReadyEventCapsule };
 
 /**
  * Reconcile only within an explicitly selected, already-owned capsule. This

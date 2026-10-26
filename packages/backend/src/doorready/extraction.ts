@@ -2,15 +2,11 @@ import type {
   DoorReadyArtifactKind, DoorReadyExtractionPayload, DoorReadyFactEvidence,
   DoorReadyFactField, DoorReadyFactStatus, DoorReadySourceDocument,
 } from '@hashpass/types';
+import type { DoorReadyDecodedExtraction } from './types';
 
 const FIELDS = new Set<DoorReadyFactField>(['title', 'startAt', 'endAt', 'timezone', 'venue', 'organizer']);
 const STATUSES = new Set<DoorReadyFactStatus>(['supported', 'ambiguous', 'conflicting', 'unknown']);
 const MAX_CITATION = 500;
-
-export interface DoorReadyDecodedExtraction {
-  evidence: DoorReadyFactEvidence[];
-  unresolved: DoorReadyFactField[];
-}
 
 function boundedString(value: unknown, max = MAX_CITATION): string | null {
   return typeof value === 'string' && value.trim().length > 0 && value.length <= max && !/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(value)
