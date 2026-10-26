@@ -225,8 +225,23 @@ const configuredBaseURL = normalizeAuthURL(
   readEnv('BETTER_AUTH_URL') || readEnv('EXPO_PUBLIC_BETTER_AUTH_URL'),
 );
 const mcpResource = readEnv('BETTER_AUTH_MCP_RESOURCE_URL') || 'https://mcp.hashpass.tech/mcp';
-const mcpLoginPage = readEnv('BETTER_AUTH_MCP_LOGIN_PAGE') || 'https://hashpass.tech/mcp/login';
-const mcpConsentPage = readEnv('BETTER_AUTH_MCP_CONSENT_PAGE') || 'https://hashpass.tech/mcp/consent';
+// The static web host canonicalizes these routes to a trailing slash. Its
+// redirect currently drops the query string, so Better Auth must emit the
+// canonical URLs directly or the signed OAuth request is lost before the
+// login/consent screen can verify it. Normalize configured overrides too, so
+// a stale environment value cannot reintroduce the query-dropping redirect.
+const normalizeMcpPageUrl = (value: string | undefined, fallback: string) => {
+  const url = value?.trim() || fallback;
+  return url.endsWith('/') ? url : `${url}/`;
+};
+const mcpLoginPage = normalizeMcpPageUrl(
+  readEnv('BETTER_AUTH_MCP_LOGIN_PAGE'),
+  'https://hashpass.tech/mcp/login/',
+);
+const mcpConsentPage = normalizeMcpPageUrl(
+  readEnv('BETTER_AUTH_MCP_CONSENT_PAGE'),
+  'https://hashpass.tech/mcp/consent/',
+);
 
 export const buildMcpAccessTokenClaims = (user?: {
   email?: string | null;

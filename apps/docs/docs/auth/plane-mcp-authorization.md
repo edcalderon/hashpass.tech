@@ -20,6 +20,21 @@ Do not remove, reorder, or append authorization parameters during a login
 handoff. Doing so invalidates the request signature and the consent page must
 reject the request rather than grant access.
 
+### Trailing slash on the login and consent pages
+
+The static web host redirects `/mcp/login` and `/mcp/consent` to the same
+path with a trailing slash, and that redirect **drops the query string**. The
+signed OAuth parameters would be lost before the screen could verify them, and
+the consent page would show "This authorization request is missing or
+invalid" (seen with the ChatGPT connector).
+
+Better Auth therefore emits `https://hashpass.tech/mcp/login/` and
+`https://hashpass.tech/mcp/consent/` directly. `BETTER_AUTH_MCP_LOGIN_PAGE`
+and `BETTER_AUTH_MCP_CONSENT_PAGE` overrides are normalized to end with `/`,
+so a stale environment value cannot bring the redirect back. After changing
+either page URL, run a real ChatGPT connection: a bare `curl` of the page
+returns 200 even when the query is lost.
+
 ## Consent review
 
 Before approving access, the consent screen shows the client name, client ID,

@@ -1,10 +1,12 @@
 import type { McpAuthorizationRequest } from '@/types/mcp-authorization-machine.types';
 
-export const MCP_LOGIN_PATH = '/mcp/login';
+export const MCP_LOGIN_PATH = '/mcp/login/';
+
+const LEGACY_MCP_LOGIN_PATH = '/mcp/login';
 
 export const isMcpLoginContinuation = (returnTo: string): boolean => {
   const [path] = returnTo.split('?', 1);
-  return path === MCP_LOGIN_PATH;
+  return path === MCP_LOGIN_PATH || path === LEGACY_MCP_LOGIN_PATH;
 };
 
 /**

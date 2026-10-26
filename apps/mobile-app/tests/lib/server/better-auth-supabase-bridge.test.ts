@@ -105,12 +105,41 @@ describe('syncBetterAuthUser (Supabase account bridge)', () => {
 
     const authConfig = betterAuth.mock.calls[0][0];
     const mcpPlugin = authConfig.plugins.find((plugin: { id?: string }) => plugin.id === 'mcp');
+    expect(mcpPlugin.options.loginPage).toBe('https://hashpass.tech/mcp/login/');
+    expect(mcpPlugin.options.consentPage).toBe('https://hashpass.tech/mcp/consent/');
     expect(mcpPlugin.options.customAccessTokenClaims({
       user: { email: 'operator@hashpass.tech', emailVerified: true },
     })).toEqual({
       'https://hashpass.tech/email': 'operator@hashpass.tech',
       'https://hashpass.tech/email_verified': true,
     });
+  });
+
+  it('normalizes configured MCP browser pages to preserve signed OAuth queries', () => {
+    const previous = {
+      loginPage: process.env.BETTER_AUTH_MCP_LOGIN_PAGE,
+      consentPage: process.env.BETTER_AUTH_MCP_CONSENT_PAGE,
+    };
+    process.env.BETTER_AUTH_MCP_LOGIN_PAGE = 'https://hashpass.tech/mcp/login';
+    process.env.BETTER_AUTH_MCP_CONSENT_PAGE = 'https://hashpass.tech/mcp/consent';
+
+    try {
+      jest.resetModules();
+      /* eslint-disable @typescript-eslint/no-require-imports */
+      const { betterAuth } = require('better-auth');
+      const { getAuth } = require('../../../lib/server/better-auth');
+      getAuth();
+
+      const authConfig = betterAuth.mock.calls[0][0];
+      const mcpPlugin = authConfig.plugins.find((plugin: { id?: string }) => plugin.id === 'mcp');
+      expect(mcpPlugin.options.loginPage).toBe('https://hashpass.tech/mcp/login/');
+      expect(mcpPlugin.options.consentPage).toBe('https://hashpass.tech/mcp/consent/');
+    } finally {
+      if (previous.loginPage === undefined) delete process.env.BETTER_AUTH_MCP_LOGIN_PAGE;
+      else process.env.BETTER_AUTH_MCP_LOGIN_PAGE = previous.loginPage;
+      if (previous.consentPage === undefined) delete process.env.BETTER_AUTH_MCP_CONSENT_PAGE;
+      else process.env.BETTER_AUTH_MCP_CONSENT_PAGE = previous.consentPage;
+    }
   });
 
   it('configures Apple for both web Service ID and native bundle audiences', async () => {
