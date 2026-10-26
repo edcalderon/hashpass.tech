@@ -1,5 +1,6 @@
 import { Platform, Linking, Alert } from 'react-native';
 import { BarCodeScanner } from './barcode-scanner-compat';
+import { detectWebBrowser, probeWebVideoInputs, subscribeToWebCameraSignals } from './web-camera-support';
 
 export type CameraPermissionStatus = 'granted' | 'denied' | 'undetermined' | 'blocked';
 
@@ -7,6 +8,8 @@ export interface CameraPermissionResult {
   status: CameraPermissionStatus;
   canAskAgain: boolean;
   message?: string;
+  /** Browser label on web (for example "Firefox") so UI copy can name it. */
+  browser?: string;
 }
 
 const WEB_CAMERA_CONSTRAINTS: MediaStreamConstraints = {
@@ -22,6 +25,15 @@ const WEB_CAMERA_CONSTRAINTS: MediaStreamConstraints = {
  * Comprehensive camera permission management system
  */
 class CameraPermissionManager {
+  /**
+   * Session memory of a successful web grant. Safari and embedded browsers do
+   * not expose camera permission through the Permissions API, so without this
+   * cache reopening the scanner would show the request screen again even
+   * though the browser will not re-prompt.
+   */
+  private webPermissionGrantedOnce = false;
+
+  private webPermissionWatchers: Array<() => void> = [];
   /**
    * Get current camera permission status
    * Uses fresh check to avoid browser cache issues
@@ -287,35 +299,36 @@ class CameraPermissionManager {
    * Includes both granting and revoking instructions
    */
   private showWebSettingsInstructions(): void {
-    const userAgent = typeof navigator !== 'undefined' ? navigator.userAgent.toLowerCase() : '';
-    let browserName = 'your browser';
+    const { id, label, isIOS } = detectWebBrowser();
+    let browserName = label;
     let grantInstructions = '';
     let revokeInstructions = '';
     let iconLocation = '';
 
-    if (userAgent.includes('chrome') && !userAgent.includes('edg')) {
-      browserName = 'Chrome';
-      iconLocation = 'the lock icon (🔒) or camera icon (📷) in the address bar';
-      grantInstructions = `To GRANT camera permission:\n1. Click ${iconLocation}\n2. Find "Camera" in permissions\n3. Select "Allow"\n4. Refresh the page`;
-      revokeInstructions = `To REVOKE camera permission:\n1. Click ${iconLocation}\n2. Find "Camera" in permissions\n3. Select "Block" or "Ask"\n4. Refresh the page\n\nOr: Settings → Privacy → Site Settings → Camera → Find this site → Block`;
-    } else if (userAgent.includes('firefox')) {
-      browserName = 'Firefox';
-      iconLocation = 'the lock icon (🔒) or information icon (i) in the address bar';
-      grantInstructions = `To GRANT camera permission:\n1. Click ${iconLocation}\n2. Click "More Information" or "Permissions" tab\n3. Find "Camera" and select "Allow"\n4. Refresh the page`;
-      revokeInstructions = `To REVOKE camera permission:\n1. Click ${iconLocation}\n2. Click "More Information"\n3. Go to "Permissions" tab\n4. Find "Camera" and click "Remove"\n5. Refresh the page\n\nOr: Settings → Privacy → Permissions → Camera → Find this site → Remove`;
-    } else if (userAgent.includes('safari') && !userAgent.includes('chrome')) {
-      browserName = 'Safari';
+    // Every iOS browser shares WebKit's permission sheet and Safari's
+    // Settings flow, regardless of the vendor printed on the icon.
+    const safariFlow = isIOS || id === 'safari';
+    if (safariFlow) {
+      browserName = isIOS ? `${label} (iOS uses Safari's camera settings)` : 'Safari';
       grantInstructions = `To GRANT camera permission:\n1. Safari menu → Settings → Websites\n2. Select "Camera" from sidebar\n3. Find this website → Set to "Allow"\n4. Refresh the page`;
       revokeInstructions = `To REVOKE camera permission:\n1. Safari menu → Settings → Websites\n2. Select "Camera" from sidebar\n3. Find this website → Set to "Deny" or "Ask"\n4. Refresh the page`;
-    } else if (userAgent.includes('edg')) {
-      browserName = 'Edge';
+    } else if (id === 'firefox') {
+      iconLocation = 'the lock icon (🔒) or camera icon in the address bar';
+      grantInstructions = `To GRANT camera permission:\n1. Click ${iconLocation}\n2. Go to the "Permissions" section\n3. Find "Camera" and select "Allow"\n4. Try scanning again\n\nIf the setting is missing: Settings → Privacy & Security → Permissions → Camera → Find this site → Allow`;
+      revokeInstructions = `To REVOKE camera permission:\n1. Click ${iconLocation}\n2. Go to the "Permissions" section\n3. Find "Camera" and click "Remove"\n4. Refresh the page`;
+    } else if (id === 'samsung') {
+      iconLocation = 'the lock or camera icon in the address bar';
+      grantInstructions = `To GRANT camera permission:\n1. Click ${iconLocation}\n2. Find "Camera" in permissions\n3. Select "Allow"\n4. Try scanning again\n\nOr: Menu → Settings → Site permissions → Camera → Find this site → Allow`;
+      revokeInstructions = `To REVOKE camera permission:\n1. Click ${iconLocation}\n2. Find "Camera" in permissions\n3. Select "Block"\n4. Refresh the page`;
+    } else if (id === 'edge') {
       iconLocation = 'the lock icon (🔒) or camera icon (📷) in the address bar';
-      grantInstructions = `To GRANT camera permission:\n1. Click ${iconLocation}\n2. Find "Camera" in permissions\n3. Select "Allow"\n4. Refresh the page`;
-      revokeInstructions = `To REVOKE camera permission:\n1. Click ${iconLocation}\n2. Find "Camera" in permissions\n3. Select "Block" or "Ask"\n4. Refresh the page\n\nOr: Settings → Cookies → Camera → Find this site → Block`;
+      grantInstructions = `To GRANT camera permission:\n1. Click ${iconLocation}\n2. Find "Camera" in permissions\n3. Select "Allow"\n4. Try scanning again\n\nOr: Settings → Cookies and site permissions → Camera → Find this site → Allow`;
+      revokeInstructions = `To REVOKE camera permission:\n1. Click ${iconLocation}\n2. Find "Camera" in permissions\n3. Select "Block" or "Ask"\n4. Refresh the page`;
     } else {
-      iconLocation = 'a lock, info, or camera icon in your browser\'s address bar';
-      grantInstructions = `To GRANT camera permission:\n1. Look for ${iconLocation}\n2. Click to access site permissions\n3. Find "Camera" → Set to "Allow"\n4. Refresh the page`;
-      revokeInstructions = `To REVOKE camera permission:\n1. Look for ${iconLocation}\n2. Click to access site permissions\n3. Find "Camera" → Set to "Block" or "Ask"\n4. Refresh the page`;
+      // Chrome and other Chromium-based browsers.
+      iconLocation = 'the lock icon (🔒) or camera icon (📷) in the address bar';
+      grantInstructions = `To GRANT camera permission:\n1. Click ${iconLocation}\n2. Find "Camera" in permissions\n3. Select "Allow"\n4. Try scanning again\n\nOr: Settings → Privacy and security → Site Settings → Camera → Find this site → Allow`;
+      revokeInstructions = `To REVOKE camera permission:\n1. Click ${iconLocation}\n2. Find "Camera" in permissions\n3. Select "Block" or "Ask"\n4. Refresh the page`;
     }
 
     const fullInstructions = `${grantInstructions}\n\n${revokeInstructions}`;
@@ -425,6 +438,50 @@ class CameraPermissionManager {
    */
   async forceRefreshPermission(): Promise<CameraPermissionResult> {
     return this.getPermissionStatus(true);
+  }
+
+  /**
+   * Watch the browser's own camera signals while a permission screen is
+   * visible. When the user flips Allow from the address bar (or plugs in a
+   * camera), the callback fires so the UI can retry without a page reload.
+   * Unsupported browsers (no Permissions API and no devicechange) simply
+   * never fire.
+   */
+  watchWebPermission(onChange: (result: CameraPermissionResult) => void): () => void {
+    if (Platform.OS !== 'web' || typeof navigator === 'undefined') return () => undefined;
+
+    const unsubscribe = subscribeToWebCameraSignals(async (signal) => {
+      if (signal.type === 'permission-changed') {
+        if (signal.state === 'granted') {
+          this.webPermissionGrantedOnce = true;
+          onChange({
+            status: 'granted',
+            canAskAgain: false,
+            message: 'Camera permission is granted',
+          });
+        } else if (signal.state === 'denied') {
+          this.webPermissionGrantedOnce = false;
+          onChange({
+            status: 'blocked',
+            canAskAgain: false,
+            message: 'Camera permission is blocked. Allow camera access in your browser settings.',
+          });
+        }
+        return;
+      }
+      // A camera appearing (or disappearing) changes what a retry can do,
+      // so surface the refreshed permission state.
+      onChange(await this.getWebPermissionStatus());
+    });
+
+    this.webPermissionWatchers.push(unsubscribe);
+    return unsubscribe;
+  }
+
+  /** Stop every watcher started through watchWebPermission. */
+  stopWatchingWebPermission(): void {
+    this.webPermissionWatchers.forEach((unsubscribe) => unsubscribe());
+    this.webPermissionWatchers = [];
   }
 
   /**
@@ -626,6 +683,12 @@ class CameraPermissionManager {
         message: 'Camera permission is blocked. Allow camera access in your browser settings.',
       };
     }
+    if (this.webPermissionGrantedOnce) {
+      // Browsers without a readable permission state only re-prompt after
+      // the user changes the site setting, so a session grant is the best
+      // available signal that the camera stays allowed.
+      return { status: 'granted', canAskAgain: false, message: 'Camera permission is granted' };
+    }
 
     return {
       status: 'undetermined',
@@ -651,9 +714,22 @@ class CameraPermissionManager {
       };
     }
 
+    // Firefox lists no devices before the first grant, so an empty list must
+    // stay inconclusive; only a conclusive device list with no camera avoids
+    // a pointless prompt.
+    const deviceProbe = await probeWebVideoInputs();
+    if (deviceProbe.outcome === 'no-camera') {
+      return {
+        status: 'blocked',
+        canAskAgain: false,
+        message: 'No camera was found. Connect a camera and try again.',
+      };
+    }
+
     try {
-      const stream = await navigator.mediaDevices.getUserMedia(WEB_CAMERA_CONSTRAINTS);
+      const stream = await this.openWebCameraStream(WEB_CAMERA_CONSTRAINTS);
       stream.getTracks().forEach(track => track.stop());
+      this.webPermissionGrantedOnce = true;
       return {
         status: 'granted',
         canAskAgain: false,
@@ -661,6 +737,9 @@ class CameraPermissionManager {
       };
     } catch (error: any) {
       const permissionState = await this.getWebPermissionState();
+      if (permissionState === 'denied') {
+        this.webPermissionGrantedOnce = false;
+      }
       return {
         status: permissionState === 'denied' ? 'blocked' : 'undetermined',
         canAskAgain: permissionState !== 'denied',
@@ -669,10 +748,32 @@ class CameraPermissionManager {
     }
   }
 
+  /**
+   * Opens a web camera stream, retrying once with bare constraints when the
+   * browser cannot satisfy the preferred ones. Firefox and some drivers can
+   * raise OverconstrainedError for the ideal-facing-mode profile even when a
+   * camera is attached and usable.
+   */
+  private async openWebCameraStream(constraints: MediaStreamConstraints): Promise<MediaStream> {
+    const getUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
+    try {
+      return await getUserMedia(constraints);
+    } catch (error: any) {
+      if (error?.name === 'OverconstrainedError') {
+        return await getUserMedia({ audio: false, video: true });
+      }
+      throw error;
+    }
+  }
+
   private getWebCameraErrorMessage(error: any): string {
+    const browser = detectWebBrowser();
     switch (error?.name) {
       case 'NotAllowedError':
       case 'PermissionDeniedError':
+        if (browser.id === 'firefox') {
+          return 'Camera permission was denied or dismissed. Click the camera or lock icon in the address bar, choose Allow, then try again.';
+        }
         return 'Camera permission was denied. Allow camera access in the browser address-bar settings and try again.';
       case 'NotFoundError':
       case 'DevicesNotFoundError':

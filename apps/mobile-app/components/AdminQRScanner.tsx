@@ -60,7 +60,7 @@ export default function AdminQRScanner({
   const videoRef = React.useRef<HTMLVideoElement | null>(null);
   const scannerWrapperRef = React.useRef<any>(null);
   const scannerCleanupRef = React.useRef<(() => Promise<void>) | null>(null);
-  const { send: sendCameraEvent } = useQrCameraSession();
+  const { send: sendCameraEvent, canAskAgain: cameraCanAskAgain } = useQrCameraSession();
 
   const styles = getStyles(isDark, colors);
 
@@ -133,6 +133,28 @@ export default function AdminQRScanner({
       checkPermissionStatus();
     }
   }, [visible, user, adminCheckLoading, isUserAdmin]);
+
+  // While the web permission screen is visible, follow the browser's own
+  // camera signals so enabling the camera from the address bar resumes the
+  // scanner without a page reload. Unsupported browsers never fire.
+  useEffect(() => {
+    if (Platform.OS !== 'web' || !visible || hasPermission !== false) return;
+
+    const unsubscribe = cameraPermissionManager.watchWebPermission((result) => {
+      if (result.status === 'granted') {
+        setCameraError(null);
+        setHasPermission(true);
+        sendCameraEvent({ type: 'PERMISSION_GRANTED' });
+      } else if (result.status === 'blocked') {
+        setCameraError(result.message ?? null);
+        sendCameraEvent({ type: 'PERMISSION_REQUIRED', message: result.message, canAskAgain: false });
+      }
+    });
+
+    return () => unsubscribe();
+    // hasPermission is intentionally read only to (re)arm the watcher.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible, hasPermission === false, sendCameraEvent]);
 
   // OLD WEB FALLBACK CODE - DISABLED - We now use WebQRScanner component instead
   // This useEffect is disabled because we're using WebQRScanner on web platform
@@ -780,14 +802,16 @@ export default function AdminQRScanner({
                 ? 'Please enable camera permissions in your browser settings to scan QR codes.'
                 : 'Please enable camera permissions in your device settings to scan QR codes.'}
             </Text>
-            <TouchableOpacity 
-              style={styles.button} 
-              onPress={async () => {
-                await requestCameraPermission();
-              }}
-            >
-              <Text style={styles.buttonText}>Grant Permission</Text>
-            </TouchableOpacity>
+            {Platform.OS !== 'web' || cameraCanAskAgain ? (
+              <TouchableOpacity
+                style={styles.button}
+                onPress={async () => {
+                  await requestCameraPermission();
+                }}
+              >
+                <Text style={styles.buttonText}>Grant Permission</Text>
+              </TouchableOpacity>
+            ) : null}
             <TouchableOpacity 
               style={[styles.button, styles.buttonSecondary]} 
               onPress={async () => {

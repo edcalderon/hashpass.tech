@@ -71,7 +71,7 @@ export default function QRScanner({
   const [showDetails, setShowDetails] = useState(false);
   const [useWebFallback, setUseWebFallback] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
-  const { send: sendCameraEvent, status: cameraStatus } = useQrCameraSession();
+  const { send: sendCameraEvent, status: cameraStatus, canAskAgain: cameraCanAskAgain } = useQrCameraSession();
   const videoRef = React.useRef<HTMLVideoElement | null>(null);
   const scannerWrapperRef = React.useRef<any>(null);
 
@@ -137,10 +137,33 @@ export default function QRScanner({
       const timer = setTimeout(() => {
         initializeWebFallback();
       }, 300);
-      
+
       return () => clearTimeout(timer);
     }
   }, [visible, hasPermission, useWebFallback]);
+
+  // While the web permission screen is visible, follow the browser's own
+  // camera signals. Enabling the camera from the address bar then resumes
+  // scanning without a page reload; Chrome, Edge and Firefox 125+ support
+  // this, and unsupported browsers simply never fire the watcher.
+  useEffect(() => {
+    if (Platform.OS !== 'web' || !visible || hasPermission !== false) return;
+
+    const unsubscribe = cameraPermissionManager.watchWebPermission((result) => {
+      if (result.status === 'granted') {
+        setCameraError(null);
+        setHasPermission(true);
+        sendCameraEvent({ type: 'PERMISSION_GRANTED' });
+      } else if (result.status === 'blocked') {
+        setCameraError(result.message ?? null);
+        sendCameraEvent({ type: 'PERMISSION_REQUIRED', message: result.message, canAskAgain: false });
+      }
+    });
+
+    return () => unsubscribe();
+    // hasPermission is intentionally read only to (re)arm the watcher.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible, hasPermission === false, sendCameraEvent]);
 
   const checkPermissionStatus = async (forceRefresh: boolean = false) => {
     try {
@@ -568,15 +591,17 @@ export default function QRScanner({
                 ? 'Please enable camera permissions in your browser settings to scan QR codes.'
                 : 'Please enable camera permissions in your device settings to scan QR codes.')}
             </Text>
-            <TouchableOpacity 
-              style={styles.button} 
-              onPress={async () => {
-                await requestCameraPermission(true); // Force fresh to avoid cache
-              }}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.buttonText}>Grant Permission</Text>
-            </TouchableOpacity>
+            {Platform.OS !== 'web' || cameraCanAskAgain ? (
+              <TouchableOpacity
+                style={styles.button}
+                onPress={async () => {
+                  await requestCameraPermission(true); // Force fresh to avoid cache
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.buttonText}>Grant Permission</Text>
+              </TouchableOpacity>
+            ) : null}
             <TouchableOpacity 
               style={[styles.button, styles.buttonSecondary]} 
               onPress={async () => {
@@ -640,7 +665,7 @@ export default function QRScanner({
                 style={[StyleSheet.absoluteFillObject, styles.cameraView]}
                 barCodeTypes={qrScannerService.getBarCodeTypes()}
                 type={qrScannerService.getRecommendedCameraType()}
-              onMountError={(error: Error) => {
+              onMountError={(error) => {
                 console.error('Camera mount error:', error);
                   
                   // On web, try fallback to ZXing

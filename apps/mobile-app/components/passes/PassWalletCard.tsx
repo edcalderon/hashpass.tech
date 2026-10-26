@@ -199,7 +199,7 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
     }}>
       <NotchMaskedCard
         style={{ width: '100%', height: '100%' }}
-        geometry={{ width: PASS_CARD_WIDTH, height: PASS_CARD_HEIGHT, cornerRadius: 16, notchRadius: 11, notchYRatio: 0.58 }}
+        geometry={{ width: PASS_CARD_WIDTH, height: PASS_CARD_HEIGHT, cornerRadius: 16, notchRadius: 11, notchYRatio: 0.58, perforationDots: { radius: 2, spacing: 12, margin: 4 } }}
       >
       <View style={{
         backgroundColor: colors.background.paper,
@@ -377,32 +377,6 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
         </ImageBackground>
       </View>
 
-      {/* Dotted Ticket Perforation Line - 90% width, centered at 58% height (aligned with side notches) */}
-      <View style={{
-        position: 'absolute',
-        left: '5%',
-        right: '5%',
-        top: '58%',
-        height: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        transform: [{ translateY: -0.5 }], // Center the line
-        zIndex: 2
-      }}>
-        {Array.from({ length: 25 }).map((_, i) => (
-          <View
-            key={i}
-            style={{
-              width: 8,
-              height: 1,
-              backgroundColor: colors.divider,
-              marginHorizontal: 2
-            }}
-          />
-        ))}
-      </View>
-
       {/* Ticket Stats - Requests and VOI Boost - Centered between dotted line and footer */}
       <View style={{
         flexDirection: 'row',
@@ -503,11 +477,11 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
           disabled={!canShowQr}
           onPress={() => setShowQRModal(true)}
         >
-          <MaterialIcons name="qr-code" size={16} color="#4A90E2" />
+          <MaterialIcons name="qr-code" size={16} color={colors.primary} />
           <Text style={{
             fontSize: 12,
             fontWeight: '600',
-            color: '#4A90E2',
+            color: colors.primary,
             marginLeft: 4
           }}>
             {t({ id: 'passes.qrCode', message: 'QR Code' })}
@@ -526,11 +500,11 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
           disabled={!interactive}
           onPress={handleFlip}
         >
-          <MaterialIcons name="info" size={16} color="#4A90E2" />
+          <MaterialIcons name="info" size={16} color={colors.primary} />
           <Text style={{
             fontSize: 12,
             fontWeight: '600',
-            color: '#4A90E2',
+            color: colors.primary,
             marginLeft: 4
           }}>
             {t({ id: 'passes.details', message: 'Details' })}
@@ -547,11 +521,11 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
           disabled={!interactive}
           onPress={handleShare}
         >
-          <MaterialIcons name="share" size={16} color="#4A90E2" />
+          <MaterialIcons name="share" size={16} color={colors.primary} />
           <Text style={{
             fontSize: 12,
             fontWeight: '600',
-            color: '#4A90E2',
+            color: colors.primary,
             marginLeft: 4
           }}>
             {t({ id: 'passes.share', message: 'Share' })}
@@ -578,7 +552,7 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
     }}>
       <NotchMaskedCard
         style={{ width: '100%', height: '100%' }}
-        geometry={{ width: PASS_CARD_WIDTH, height: PASS_CARD_HEIGHT, cornerRadius: 16, notchRadius: 11, notchYRatio: 0.54 }}
+        geometry={{ width: PASS_CARD_WIDTH, height: PASS_CARD_HEIGHT, cornerRadius: 16, notchRadius: 11, notchYRatio: 0.58, perforationDots: { radius: 2, spacing: 12, margin: 4 } }}
       >
       <View style={{
         backgroundColor: colors.background.paper,
@@ -589,31 +563,6 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
         height: '100%',
         flexDirection: 'column',
       }}>
-      {/* Dotted Ticket Perforation Line */}
-      <View style={{
-        position: 'absolute',
-        left: '5%',
-        right: '5%',
-        top: '54%',
-        height: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        transform: [{ translateY: -0.5 }],
-        zIndex: 1
-      }}>
-        {Array.from({ length: 25 }).map((_, i) => (
-          <View
-            key={i}
-            style={{
-              width: 8,
-              height: 1,
-              backgroundColor: colors.divider,
-              marginHorizontal: 2
-            }}
-          />
-        ))}
-      </View>
       {/* Content wrapper */}
       <View style={{ overflow: 'hidden', height: '100%', flexDirection: 'column', position: 'relative', borderRadius: 15 }}>
       {/* Ticket Header - Same as front */}
@@ -717,7 +666,7 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
             position: 'absolute',
             left: uiTokens.space.lg,
             right: uiTokens.space.lg,
-            top: '56%',
+            top: '60%',
             bottom: 52,
           }}
         >
@@ -753,7 +702,7 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
                 }}
                 disabled={!interactive}
                 accessibilityLabel={t({ id: 'passes.viewFullDetails', message: 'View Full Details' })}
-                leadingIcon={<MaterialIcons name="description" size={18} color={colors.text.secondary} />}
+                leadingIcon={<MaterialIcons name="description" size={18} color={colors.primary} />}
                 trailingIcon={<MaterialIcons name="chevron-right" size={20} color={colors.text.secondary} />}
                 style={{ flex: upgradeTarget ? 1 : 2, minHeight: 48, paddingHorizontal: uiTokens.space.sm }}
               />
@@ -808,11 +757,11 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
             setShowQRModal(true);
           }}
         >
-          <MaterialIcons name="qr-code" size={16} color="#4A90E2" />
+          <MaterialIcons name="qr-code" size={16} color={colors.primary} />
           <Text style={{
             fontSize: 12,
             fontWeight: '600',
-            color: '#4A90E2',
+            color: colors.primary,
             marginLeft: 4
           }}>
             {t({ id: 'passes.qrCode', message: 'QR Code' })}
@@ -831,11 +780,11 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
           disabled={!interactive}
           onPress={handleFlip}
         >
-          <MaterialIcons name="flip" size={16} color="#4A90E2" />
+          <MaterialIcons name="flip" size={16} color={colors.primary} />
           <Text style={{
             fontSize: 12,
             fontWeight: '600',
-            color: '#4A90E2',
+            color: colors.primary,
             marginLeft: 4
           }}>
             {t({ id: 'passes.flipBack', message: 'Flip Back' })}
@@ -852,11 +801,11 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
           disabled={!interactive}
           onPress={handleShare}
         >
-          <MaterialIcons name="share" size={16} color="#4A90E2" />
+          <MaterialIcons name="share" size={16} color={colors.primary} />
           <Text style={{
             fontSize: 12,
             fontWeight: '600',
-            color: '#4A90E2',
+            color: colors.primary,
             marginLeft: 4
           }}>
             {t({ id: 'passes.share', message: 'Share' })}

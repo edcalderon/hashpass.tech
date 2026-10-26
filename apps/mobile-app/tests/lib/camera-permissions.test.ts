@@ -177,3 +177,169 @@ describe('web camera permissions', () => {
     expect(mockGetUserMedia).not.toHaveBeenCalled();
   });
 });
+
+describe('web camera permission upgrades', () => {
+  const mockGetUserMedia = jest.fn();
+  const mockQuery = jest.fn();
+  const mockEnumerateDevices = jest.fn();
+  const mockWindow = { isSecureContext: true };
+  let manager: typeof cameraPermissionManager;
+
+  const loadFreshManager = () => {
+    jest.resetModules();
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    return require('../../lib/camera-permissions').cameraPermissionManager as typeof cameraPermissionManager;
+  };
+
+  beforeEach(() => {
+    Platform.OS = 'web';
+    mockWindow.isSecureContext = true;
+    Object.defineProperty(globalThis, 'window', { configurable: true, value: mockWindow });
+    Object.defineProperty(globalThis, 'navigator', {
+      configurable: true,
+      value: {
+        userAgent: 'Mozilla/5.0 (X11; Linux x86_64; rv:125.0) Gecko/20100101 Firefox/125.0',
+        mediaDevices: { getUserMedia: mockGetUserMedia, enumerateDevices: mockEnumerateDevices },
+        permissions: { query: mockQuery },
+      },
+    });
+    manager = loadFreshManager();
+    mockGetUserMedia.mockReset();
+    mockQuery.mockReset().mockResolvedValue({ state: 'prompt' });
+    mockEnumerateDevices.mockReset().mockResolvedValue([{ kind: 'videoinput' }]);
+  });
+
+  it('retries once with bare constraints when the browser over-constrains', async () => {
+    const stop = jest.fn();
+    mockGetUserMedia
+      .mockRejectedValueOnce({ name: 'OverconstrainedError' })
+      .mockResolvedValueOnce({ getTracks: () => [{ stop }] });
+
+    const result = await manager.requestWithFallback();
+
+    expect(result.status).toBe('granted');
+    expect(mockGetUserMedia).toHaveBeenCalledTimes(2);
+    expect(mockGetUserMedia).toHaveBeenLastCalledWith({ audio: false, video: true });
+    expect(stop).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not prompt when the machine has no camera at all', async () => {
+    mockEnumerateDevices.mockResolvedValue([{ kind: 'audioinput' }, { kind: 'audiooutput' }]);
+
+    const result = await manager.requestWithFallback();
+
+    expect(result.status).toBe('blocked');
+    expect(result.canAskAgain).toBe(false);
+    expect(result.message).toContain('No camera was found');
+    expect(mockGetUserMedia).not.toHaveBeenCalled();
+  });
+
+  it('still prompts when Firefox hides the device list before permission', async () => {
+    mockEnumerateDevices.mockResolvedValue([]);
+    mockGetUserMedia.mockResolvedValue({ getTracks: () => [{ stop: jest.fn() }] });
+
+    const result = await manager.requestWithFallback();
+
+    expect(result.status).toBe('granted');
+    expect(mockGetUserMedia).toHaveBeenCalledTimes(1);
+  });
+
+  it('names Firefox when the prompt is dismissed or denied', async () => {
+    mockGetUserMedia.mockRejectedValue({ name: 'NotAllowedError' });
+
+    const result = await manager.requestWithFallback();
+
+    expect(result.status).toBe('undetermined');
+    expect(result.message).toContain('denied or dismissed');
+    expect(result.message).toContain('address bar');
+  });
+
+  it('remembers a session grant when the Permissions API cannot report it', async () => {
+    mockGetUserMedia.mockResolvedValue({ getTracks: () => [{ stop: jest.fn() }] });
+    expect((await manager.requestWithFallback()).status).toBe('granted');
+
+    // Safari-like: the permissions query throws, so the grant must be remembered.
+    mockQuery.mockRejectedValue(new Error('unsupported'));
+    await expect(manager.getPermissionStatus()).resolves.toMatchObject({
+      status: 'granted',
+      canAskAgain: false,
+    });
+  });
+
+  it('forgets the session grant once the browser reports the camera blocked', async () => {
+    mockGetUserMedia.mockResolvedValue({ getTracks: () => [{ stop: jest.fn() }] });
+    await manager.requestWithFallback();
+
+    mockGetUserMedia.mockRejectedValue({ name: 'NotAllowedError' });
+    mockQuery.mockResolvedValue({ state: 'denied' });
+    await manager.requestWithFallback();
+    await expect(manager.getPermissionStatus()).resolves.toMatchObject({ status: 'blocked' });
+  });
+
+  it('watches the browser permission state and stops watching on demand', async () => {
+    const seen: Array<string> = [];
+    const changeHandlers = new Set<() => void>();
+    const fireChange = () => changeHandlers.forEach((handler) => handler());
+    // Real PermissionStatus objects mutate .state in place when the user
+    // changes the setting, so the mock must read a live variable.
+    let browserState: PermissionState = 'denied';
+    mockQuery.mockImplementation(async () => ({
+      get state() { return browserState; },
+      addEventListener: (event: string, handler: () => void) => {
+        if (event === 'change') changeHandlers.add(handler);
+      },
+      removeEventListener: (event: string, handler: () => void) => {
+        if (event === 'change') changeHandlers.delete(handler);
+      },
+    }));
+
+    const unsubscribe = manager.watchWebPermission((result) => seen.push(result.status));
+    await Promise.resolve(); // let the permissions query settle
+    expect(changeHandlers.size).toBeGreaterThan(0);
+
+    fireChange();
+    expect(seen).toContain('blocked');
+
+    // A flip to granted (the user enabling camera from the address bar) is
+    // reported without touching getUserMedia from a background handler.
+    browserState = 'granted';
+    fireChange();
+    expect(seen).toContain('granted');
+    expect(mockGetUserMedia).not.toHaveBeenCalled();
+
+    unsubscribe();
+    fireChange();
+    expect(seen.filter((status) => status === 'granted')).toHaveLength(1);
+    manager.stopWatchingWebPermission();
+  });
+
+  it('reacts to hot-plugged cameras through the device watcher', async () => {
+    const deviceHandlers = new Set<() => void>();
+    const fireDeviceChange = () => deviceHandlers.forEach((handler) => handler());
+    Object.defineProperty(globalThis.navigator.mediaDevices, 'addEventListener', {
+      configurable: true,
+      value: (event: string, handler: () => void) => {
+        if (event === 'devicechange') deviceHandlers.add(handler);
+      },
+    });
+    Object.defineProperty(globalThis.navigator.mediaDevices, 'removeEventListener', {
+      configurable: true,
+      value: (event: string, handler: () => void) => {
+        if (event === 'devicechange') deviceHandlers.delete(handler);
+      },
+    });
+    mockQuery.mockResolvedValue({ state: 'prompt' });
+
+    const seen: Array<string> = [];
+    const unsubscribe = manager.watchWebPermission((result) => seen.push(result.status));
+    fireDeviceChange();
+    // The device signal resolves the permission status through an async
+    // chain (handler -> getWebPermissionStatus -> permissions query).
+    for (let i = 0; i < 5 && seen.length === 0; i += 1) {
+      await Promise.resolve();
+    }
+
+    expect(seen).toContain('undetermined');
+    unsubscribe();
+  });
+});
