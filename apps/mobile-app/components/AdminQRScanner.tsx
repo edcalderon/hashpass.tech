@@ -8,7 +8,7 @@ import { useTheme } from '../hooks/useTheme';
 import { useAuth } from '../hooks/useAuth';
 import { qrSystemService, QRScanResult, QRCode } from '../lib/qr-system';
 import { getCurrentAdminAccess } from '../lib/admin-access';
-import { cameraPermissionManager } from '../lib/camera-permissions';
+import { cameraPermissionManager, type CameraPermissionResult } from '../lib/camera-permissions';
 import { apiClient } from '../lib/api-client';
 import { PassType } from '../lib/pass-system';
 import { qrScannerService } from '../lib/qr-scanner-service';
@@ -140,7 +140,7 @@ export default function AdminQRScanner({
   useEffect(() => {
     if (Platform.OS !== 'web' || !visible || hasPermission !== false) return;
 
-    const unsubscribe = cameraPermissionManager.watchWebPermission((result) => {
+    const unsubscribe = cameraPermissionManager.watchWebPermission((result: CameraPermissionResult) => {
       if (result.status === 'granted') {
         setCameraError(null);
         setHasPermission(true);
