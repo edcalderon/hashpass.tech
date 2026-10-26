@@ -20,6 +20,35 @@ Do not remove, reorder, or append authorization parameters during a login
 handoff. Doing so invalidates the request signature and the consent page must
 reject the request rather than grant access.
 
+### Trailing slash on the login and consent pages
+
+The static web host redirects `/mcp/login` and `/mcp/consent` to the same
+path with a trailing slash, and that redirect **drops the query string**. The
+signed OAuth parameters would be lost before the screen could verify them, and
+the consent page would show "This authorization request is missing or
+invalid" (seen with the ChatGPT connector).
+
+Better Auth therefore emits `https://hashpass.tech/mcp/login/` and
+`https://hashpass.tech/mcp/consent/` directly. `BETTER_AUTH_MCP_LOGIN_PAGE`
+and `BETTER_AUTH_MCP_CONSENT_PAGE` overrides are normalized to end with `/`,
+so a stale environment value cannot bring the redirect back. After changing
+either page URL, run a real ChatGPT connection: a bare `curl` of the page
+returns 200 even when the query is lost.
+
+### Slash rules to keep consistent
+
+Two opposite rules apply, and mixing them up breaks the connector:
+
+| URL | Slash | Why |
+| --- | --- | --- |
+| `https://mcp.hashpass.tech/mcp` (MCP resource) | none | OAuth compares resource and issuer as exact strings; `/mcp/` is a different resource. |
+| issuer from `oauth-protected-resource` | stripped before appending `/.well-known/...` | Avoids `//` in the discovery path. |
+| `https://hashpass.tech/mcp/login/`, `/mcp/consent/` | required | The static host drops the query on the redirect from the slashless path. |
+
+The ChatGPT plugin package (`plugins/hashpass-plane`) reads these from
+`mcp.json` rather than repeating them in its scripts; see its README for how to
+change the endpoint or scopes safely.
+
 ## Consent review
 
 Before approving access, the consent screen shows the client name, client ID,

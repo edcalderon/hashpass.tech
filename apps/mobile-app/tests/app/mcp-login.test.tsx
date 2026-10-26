@@ -77,7 +77,7 @@ describe('MCP login screen', () => {
     });
 
     expect(mockReplace).toHaveBeenCalledWith(
-      `/auth?returnTo=${encodeURIComponent(`/mcp/login${signedQuery}`)}`,
+      `/auth?returnTo=${encodeURIComponent(`/mcp/login/${signedQuery}`)}`,
     );
   });
 

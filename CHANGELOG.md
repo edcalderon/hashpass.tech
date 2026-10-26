@@ -1,3 +1,14 @@
+## [1.9.154](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.153...v1.9.154) (2026-10-26)
+### Released
+- stop icon flicker during 3D pass tilt; emit trailing-slash login and consent URLs so the signed OAuth query survives
+
+### Release scope
+- Compared with: `v1.9.153` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Documentation
+
 ## [1.9.153](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.152...v1.9.153) (2026-10-26)
 ### Released
 - harden authorization handoff

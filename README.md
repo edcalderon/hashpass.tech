@@ -20,17 +20,17 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.153)
+## 📋 Latest Changes (v1.9.154)
 
 ### Released
-- harden authorization handoff
+- stop icon flicker during 3D pass tilt; emit trailing-slash login and consent URLs so the signed OAuth query survives
 
 ### Release scope
-- Compared with: `v1.9.152` (the previous global release tag)
+- Compared with: `v1.9.153` (the previous global release tag)
 
 ### Affected products & packages
 - Mobile app
-- Self-hosted operations
+- Documentation
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

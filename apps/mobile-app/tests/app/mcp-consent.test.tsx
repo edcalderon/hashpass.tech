@@ -176,7 +176,7 @@ describe('MCP consent screen', () => {
 
     expect(mockGetSession).toHaveBeenCalled();
     expect(mockReplace).toHaveBeenCalledWith(
-      `/auth?returnTo=${encodeURIComponent(`/mcp/login?${signedQuery}`)}`,
+      `/auth?returnTo=${encodeURIComponent(`/mcp/login/?${signedQuery}`)}`,
     );
     expect(mockGet).not.toHaveBeenCalled();
     expect(root().findAllByType('ActionButton' as never)).toHaveLength(0);
