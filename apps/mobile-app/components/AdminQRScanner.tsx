@@ -698,7 +698,7 @@ export default function AdminQRScanner({
                   hashpass_pass_id: result.pass_id || current.claim.hashpass_pass_id,
                 } : current.claim,
               } : current);
-              setScanResult((current) => current ? {
+              setScanResult((current: QRScanResult | null) => current ? {
                 ...current,
                 valid: false,
                 status: 'invalid',
