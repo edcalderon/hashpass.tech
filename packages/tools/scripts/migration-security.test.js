@@ -149,6 +149,10 @@ const passQrOwnerBindingMigrationPath = path.join(
   root,
   'db/migrations/V148__bind_pass_qr_issuance_to_owner.sql',
 );
+const externalTicketClaimFingerprintMigrationPath = path.join(
+  root,
+  'db/migrations/V149__harden_external_ticket_claim_fingerprints.sql',
+);
 
 describe('setup and PIN migration plan', () => {
   it('runs the setup/PIN schema before the dependent SMS auth migrations', () => {
@@ -928,5 +932,20 @@ describe('pass QR issuance owner binding migration', () => {
   it('keeps issuance service-role only', () => {
     expect(migration).toMatch(/REVOKE ALL ON FUNCTION public\.generate_pass_qr\(text, text, integer, integer\)\s+FROM PUBLIC, anon, authenticated/i);
     expect(migration).toMatch(/GRANT EXECUTE ON FUNCTION public\.generate_pass_qr\(text, text, integer, integer\)\s+TO service_role/i);
+  });
+});
+
+describe('external ticket claim fingerprint hardening migration', () => {
+  it('uses the pgcrypto extension explicitly and ships with the QR claim schema', () => {
+    const migration = fs.readFileSync(externalTicketClaimFingerprintMigrationPath, 'utf8');
+    const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+
+    expect(config.groups['qr-system']).toContain(
+      'db/migrations/V149__harden_external_ticket_claim_fingerprints.sql',
+    );
+    expect(migration).toMatch(/CREATE OR REPLACE FUNCTION public\.submit_external_ticket_claim/i);
+    expect(migration).toMatch(/encode\(extensions\.digest\(v_code, 'sha256'\), 'hex'\)/i);
+    expect(migration).toMatch(/SET search_path = public, pg_temp/i);
+    expect(migration).toMatch(/GRANT EXECUTE ON FUNCTION public\.submit_external_ticket_claim[\s\S]*?TO service_role/i);
   });
 });

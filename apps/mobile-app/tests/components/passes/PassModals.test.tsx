@@ -269,7 +269,7 @@ describe("PassShareModal", () => {
 describe("PassUpgradeRequestModal", () => {
   const onClose = jest.fn();
   const open = (type: "business" | "vip" = "business") =>
-    mount(<PassUpgradeRequestModal pass={pass} requestedPassType={type} visible onClose={onClose} />);
+    mount(<PassUpgradeRequestModal pass={{ ...pass, pass_type: "general" }} requestedPassType={type} visible onClose={onClose} />);
   const enter = (r: TestRenderer.ReactTestRenderer, value: string) =>
     act(() => { r.root.findByType("TextInput" as any).props.onChangeText(value); });
 
@@ -277,9 +277,18 @@ describe("PassUpgradeRequestModal", () => {
     [mockShowSuccess, mockShowError, mockSubmitClaim, onClose].forEach((m) => m.mockReset());
   });
 
-  it("labels the requested access", async () => {
+  it("labels the original ticket tier", async () => {
     expect(texts(await open("business"))).toContain("Business");
     expect(texts(await open("vip"))).toContain("VIP");
+  });
+
+  it("lets a general-pass holder claim an original VIP ticket", async () => {
+    mockSubmitClaim.mockResolvedValue({ status: "validated" });
+    const r = await open("business");
+    await press(r, "VIP");
+    enter(r, "VIP-TICKET");
+    await press(r, "Send request");
+    expect(mockSubmitClaim).toHaveBeenCalledWith(expect.objectContaining({ requestedPassType: "vip" }));
   });
 
   it("requires a ticket code", async () => {

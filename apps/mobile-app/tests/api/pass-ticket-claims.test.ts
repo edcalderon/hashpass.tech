@@ -106,6 +106,20 @@ describe("/api/pass-ticket-claims", () => {
     expect(args.p_source_qr_digest).toMatch(/^manual:[0-9a-f]{64}$/);
   });
 
+  it("scopes manual ticket fingerprints to the issuer and event", async () => {
+    mockRpc.mockResolvedValue({ data: { id: "c" }, error: null });
+    await load().POST(post(USER_URL, {
+      eventId: "colombia2026", issuer: "issuer-a", ticketCode: "SAME-CODE",
+    }));
+    await load().POST(post(USER_URL, {
+      eventId: "chile2026", issuer: "issuer-b", ticketCode: "SAME-CODE",
+    }));
+
+    expect(mockRpc.mock.calls[0][1].p_source_qr_digest).toMatch(/^manual:[0-9a-f]{64}$/);
+    expect(mockRpc.mock.calls[1][1].p_source_qr_digest)
+      .not.toBe(mockRpc.mock.calls[0][1].p_source_qr_digest);
+  });
+
   it("stores a truncated QR payload and metadata when scanned", async () => {
     mockRpc.mockResolvedValueOnce({ data: { id: "c2" }, error: null });
     await load().POST(post(USER_URL, {

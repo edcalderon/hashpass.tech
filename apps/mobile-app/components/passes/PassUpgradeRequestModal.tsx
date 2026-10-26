@@ -1,4 +1,4 @@
-import React, { Suspense, useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import { ActivityIndicator, Modal, Text, TextInput, View } from "react-native";
 import { ActionButton, ModalBackdrop, Surface } from "@hashpass/ui/primitives";
 import { uiPalette, uiTokens } from "@hashpass/ui/tokens";
@@ -31,9 +31,15 @@ export default function PassUpgradeRequestModal({
   const [ticketQrPayload, setTicketQrPayload] = useState("");
   const [showTicketScanner, setShowTicketScanner] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [selectedPassType, setSelectedPassType] = useState(requestedPassType);
   const mode = isDark ? "dark" : "light";
   const palette = uiPalette(mode);
-  const requestedLabel = passTypeLabel(requestedPassType);
+  const canChooseVip = pass.pass_type === "general";
+  const requestedLabel = passTypeLabel(selectedPassType);
+
+  useEffect(() => {
+    if (visible) setSelectedPassType(requestedPassType);
+  }, [requestedPassType, visible]);
 
   const submit = async () => {
     if (submitting) return;
@@ -50,7 +56,7 @@ export default function PassUpgradeRequestModal({
         eventId: pass.eventId,
         ticketCode: ticketReference,
         qrPayload: ticketQrPayload,
-        requestedPassType,
+        requestedPassType: selectedPassType,
       });
       showSuccess(
         t("upgradeRequest.submittedTitle", "Upgrade request sent"),
@@ -109,8 +115,22 @@ export default function PassUpgradeRequestModal({
           </View>
           <View style={{ gap: uiTokens.space.xs }}>
             <Text style={{ color: palette.text, fontSize: 13, fontWeight: "700" }}>
-              {t("upgradeRequest.target", "Requested access")}: {requestedLabel}
+              {t("upgradeRequest.target", "Original ticket tier")}: {requestedLabel}
             </Text>
+            {canChooseVip ? (
+              <View style={{ flexDirection: "row", gap: uiTokens.space.sm }}>
+                {(["business", "vip"] as const).map((passType) => (
+                  <ActionButton
+                    key={passType}
+                    mode={mode}
+                    variant={selectedPassType === passType ? undefined : "secondary"}
+                    label={passTypeLabel(passType)}
+                    onPress={() => setSelectedPassType(passType)}
+                    disabled={submitting}
+                  />
+                ))}
+              </View>
+            ) : null}
             <TextInput
               value={ticketReference}
               onChangeText={setTicketReference}

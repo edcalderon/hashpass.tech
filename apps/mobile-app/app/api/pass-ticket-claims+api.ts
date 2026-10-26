@@ -39,7 +39,12 @@ export async function POST(request: Request) {
   if (!["general", "business", "vip"].includes(requestedPassType)) return json({ error: "Invalid requested pass type" }, 400);
 
   const supabase = getSupabaseServerForRequest(request);
-  const sourceQrDigest = qrPayload ? digest(qrPayload) : `manual:${digest(ticketCode)}`;
+  // Manual codes are only unique within an issuer and event. Keep that scope
+  // in the fallback fingerprint so equal codes from different ticket systems
+  // cannot collide in the globally unique QR-proof column.
+  const sourceQrDigest = qrPayload
+    ? digest(qrPayload)
+    : `manual:${digest(JSON.stringify([issuer, eventId, ticketCode]))}`;
   const { data, error } = await supabase.rpc("submit_external_ticket_claim", {
     p_user_id: identity.supabaseUserId,
     p_event_id: eventId,

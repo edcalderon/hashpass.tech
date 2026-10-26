@@ -175,7 +175,8 @@
       "db/migrations/V144__event_vip_chat_room.sql"
     ],
     "qr-system": [
-      "db/migrations/V145__backend_qr_and_external_ticket_claims.sql"
+      "db/migrations/V145__backend_qr_and_external_ticket_claims.sql",
+      "db/migrations/V149__harden_external_ticket_claim_fingerprints.sql"
     ],
     "event-auth-allies": ["db/migrations/V083__event_auth_allies.sql"],
     "event-search-aliases": [
