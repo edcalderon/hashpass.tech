@@ -665,7 +665,7 @@ export default function QRScanner({
                 style={[StyleSheet.absoluteFillObject, styles.cameraView]}
                 barCodeTypes={qrScannerService.getBarCodeTypes()}
                 type={qrScannerService.getRecommendedCameraType()}
-              onMountError={(error) => {
+              onMountError={(error: { message: string }) => {
                 console.error('Camera mount error:', error);
                   
                   // On web, try fallback to ZXing
