@@ -71,6 +71,7 @@ A Lambda (`hashpass-db-backups-freshness`, every 2 hours, no GitHub dependency) 
 `.dump` under `prod/core/` and `dev/shared/` and emails the `hashpass-db-backups-alerts` SNS topic
 when core is older than 8 hours, dev older than 200 hours, or a dump is under 100 kB. A CloudWatch
 alarm on the Lambda's own errors (missing data counts as a failure) covers the checker failing.
+The email names the database, the age against the limit, the newest file, why it matters, the likely cause, and the `gh workflow run db-backup.yml` command that fixes it (message built in `lambda/freshness.py`, covered by `lambda/test_freshness.py`: `python3 -B -m unittest test_freshness` from that directory). A late-but-present dump is usually GitHub delaying a scheduled run, not a failed backup; the 8 hour limit leaves only 2 hours of slack over the 6 hour schedule.
 It only has `s3:ListBucket`, so it cannot read dump contents. **The email subscription must be
 confirmed once** from the message AWS sends to the alert address.
 
