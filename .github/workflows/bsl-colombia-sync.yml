@@ -16,23 +16,26 @@ concurrency:
 
 jobs:
   sync:
-    strategy:
-      fail-fast: false
-      matrix:
-        profile: [development, production]
     # Each environment only accepts its own branch (bsl-production: main,
-    # bsl-development: develop). Scheduled runs always use main, so only the
-    # production leg runs on a schedule; dispatch from develop to sync development.
-    if: (matrix.profile == 'production') == (github.ref_name == 'main')
+    # bsl-development: develop). Scheduled runs always use main, so schedules
+    # sync production and a dispatch from develop syncs development. The
+    # previous two-leg matrix form put `if: (matrix.profile == ...)` at job
+    # level, where the matrix context is unavailable, which invalidated the
+    # whole workflow file; deriving the profile from the branch in a single
+    # job keeps the same behaviour without that context.
     runs-on: ubuntu-latest
-    environment: bsl-${{ matrix.profile }}
+    environment: ${{ github.ref_name == 'main' && 'bsl-production' || 'bsl-development' }}
     timeout-minutes: 10
     steps:
       - id: gate
-        name: Restrict five-minute polling to the live event
+        name: Pick profile and restrict five-minute polling to the live event
         env:
           SCHEDULE: ${{ github.event.schedule }}
+          REF_NAME: ${{ github.ref_name }}
         run: |
+          profile=development
+          if [[ "$REF_NAME" == "main" ]]; then profile=production; fi
+          echo "profile=$profile" >> "$GITHUB_OUTPUT"
           if [[ "$SCHEDULE" == "*/5 * 4-6 11 *" && "$(date -u +%Y-%m-%d)" != 2026-11-0[4-6] ]]; then
             echo "run=false" >> "$GITHUB_OUTPUT"
           else
@@ -56,11 +59,11 @@ jobs:
         with:
           role-to-assume: ${{ vars.AWS_STATIC_SITE_DEPLOY_ROLE_ARN }}
           allowed-account-ids: ${{ vars.AWS_TARGET_ACCOUNT_ID }}
-          role-session-name: bsl-colombia-sync-${{ matrix.profile }}
+          role-session-name: bsl-colombia-sync-${{ steps.gate.outputs.profile }}
           aws-region: us-east-1
       - name: Scrape, validate, upload, and synchronize
         if: steps.gate.outputs.run == 'true'
-        run: pnpm exec tsx packages/tools/scripts/sync-bsl-colombia.mjs --profile=${{ matrix.profile }}
+        run: pnpm exec tsx packages/tools/scripts/sync-bsl-colombia.mjs --profile=${{ steps.gate.outputs.profile }}
         env:
           EXPECTED_AWS_ACCOUNT_ID: ${{ vars.AWS_TARGET_ACCOUNT_ID }}
           # The speaker-asset bucket lives in us-east-2; without this the SDK falls
