@@ -16,7 +16,7 @@ import Animated, {
 import * as Clipboard from 'expo-clipboard';
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '../../lib/vector-icons';
-import { HoverText } from '@hashpass/ui/primitives';
+import { ActionButton, HoverText } from '@hashpass/ui/primitives';
 import { uiTokens } from '@hashpass/ui/tokens';
 import { useTheme } from '../../hooks/useTheme';
 import { useTranslation } from '../../i18n/i18n';
@@ -724,32 +724,26 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
           <View style={{ flexDirection: 'row', alignItems: 'stretch', minHeight: 48 }}>
             {upgradeTarget && (
               <>
-              <TouchableOpacity
+              <ActionButton
+                mode={isDark ? 'dark' : 'light'}
+                variant="ghost"
+                label={t({ id: 'passes.upgradeAction', message: 'Upgrade' })}
+                labelNumberOfLines={2}
                 onPress={openTicketPurchase}
                 disabled={!interactive}
-                accessibilityRole="button"
                 accessibilityLabel={t({ id: `passes.upgradeTo.${upgradeTarget}`, message: `Upgrade to ${getPassTypeLabel(upgradeTarget)}` })}
-                activeOpacity={0.72}
-                style={{
-                  flex: 1,
-                  minHeight: 48,
-                  paddingHorizontal: uiTokens.space.sm,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 6,
-                }}
-              >
-                <MaterialIcons name="confirmation-number" size={18} color={colors.primary} />
-                <Text style={{ color: colors.text.primary, fontSize: uiTokens.type.caption, fontWeight: '700', flexShrink: 1, textAlign: 'center' }} numberOfLines={2}>
-                  {t({ id: 'passes.upgradeAction', message: 'Upgrade' })}
-                </Text>
-                <MaterialIcons name="chevron-right" size={20} color={colors.text.secondary} />
-              </TouchableOpacity>
+                leadingIcon={<MaterialIcons name="confirmation-number" size={18} color={colors.primary} />}
+                trailingIcon={<MaterialIcons name="chevron-right" size={20} color={colors.text.secondary} />}
+                style={{ flex: 1, minHeight: 48, paddingHorizontal: uiTokens.space.sm }}
+              />
               <View style={{ width: 1, height: 32, alignSelf: 'center', backgroundColor: colors.divider }} />
               </>
             )}
-              <TouchableOpacity
+              <ActionButton
+                mode={isDark ? 'dark' : 'light'}
+                variant="ghost"
+                label={t({ id: 'passes.moreDetails', message: 'More details' })}
+                labelNumberOfLines={2}
                 onPress={() => {
                   handleFlip();
                   router.push({
@@ -758,25 +752,11 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
                   });
                 }}
                 disabled={!interactive}
-                accessibilityRole="button"
                 accessibilityLabel={t({ id: 'passes.viewFullDetails', message: 'View Full Details' })}
-                activeOpacity={0.72}
-                style={{
-                  flex: upgradeTarget ? 1 : 2,
-                  minHeight: 48,
-                  paddingHorizontal: uiTokens.space.sm,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 6,
-                }}
-              >
-                <MaterialIcons name="description" size={18} color={colors.text.secondary} />
-                <Text style={{ color: colors.text.primary, fontSize: uiTokens.type.caption, fontWeight: '700', flexShrink: 1, textAlign: 'center' }} numberOfLines={2}>
-                  {t({ id: 'passes.moreDetails', message: 'More details' })}
-                </Text>
-                <MaterialIcons name="chevron-right" size={20} color={colors.text.secondary} />
-              </TouchableOpacity>
+                leadingIcon={<MaterialIcons name="description" size={18} color={colors.text.secondary} />}
+                trailingIcon={<MaterialIcons name="chevron-right" size={20} color={colors.text.secondary} />}
+                style={{ flex: upgradeTarget ? 1 : 2, minHeight: 48, paddingHorizontal: uiTokens.space.sm }}
+              />
           </View>
 
           {upgradeTarget && (

@@ -970,6 +970,7 @@ describe('pass QR owner-bound caller migration', () => {
     expect(migration).toMatch(/generate_pass_qr\(NEW\.id::text, NEW\.user_id::text, 30, 1\)/i);
     expect(migration).toMatch(/CREATE OR REPLACE FUNCTION public\.update_existing_passes_with_qr\(\)/i);
     expect(migration).toMatch(/generate_pass_qr\(v_pass\.id::text, v_pass\.user_id::text, 30, 1\)/i);
+    expect(migration).toMatch(/qr\.pass_id = p\.id::text/i);
   });
 });
 

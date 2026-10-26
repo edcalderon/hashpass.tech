@@ -52,7 +52,7 @@ BEGIN
       AND NOT EXISTS (
         SELECT 1
         FROM public.qr_codes qr
-        WHERE qr.pass_id = p.id
+        WHERE qr.pass_id = p.id::text
           AND qr.status = 'active'
           AND qr.expires_at > now()
       )
