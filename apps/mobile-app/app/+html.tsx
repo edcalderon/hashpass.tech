@@ -155,8 +155,15 @@ export default function Root({
   }).replace(/</g, '\\u003c');
 
   return (
-    <html lang="en" dir="ltr">
+    // translate="no" + the notranslate meta stop Chrome/Google auto-translate
+    // from wrapping React-managed text nodes in <font> elements. That rewrite
+    // detaches the sibling React later passes to insertBefore, which surfaces
+    // as "NotFoundError: Failed to execute 'insertBefore' on 'Node'" and the
+    // AppErrorBoundary "startup error" screen. The app localizes itself via
+    // i18n, so browser translation is never needed.
+    <html lang="en" dir="ltr" translate="no" className="notranslate">
       <head>
+        <meta name="google" content="notranslate" />
         {/* Google Analytics 4 — only injected when EXPO_PUBLIC_GA_MEASUREMENT_ID is set.
             Empty in local dev (see root .env); populated from _PROD override in production. */}
         {gaMeasurementId ? (

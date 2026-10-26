@@ -17,7 +17,7 @@ export default function ExternalClaimReview({ inspection, mode, onApprove }: Ext
         ["Ticket", `••••${claim.ticket_code_last4}`],
         ["Requested pass", claim.requested_pass_type.toUpperCase()],
         ...(claim.claimant_email ? ([["Claimed by", claim.claimant_email]] as [string, string][]) : []),
-        ...(claim.hashpass_pass_id ? ([["HashPass pass", claim.hashpass_pass_id]] as [string, string][]) : []),
+        ...(claim.hashpass_pass_id ? ([["HASHPASS pass", claim.hashpass_pass_id]] as [string, string][]) : []),
       ]
     : [];
   return (

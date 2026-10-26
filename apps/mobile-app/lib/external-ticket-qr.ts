@@ -1,12 +1,23 @@
+import type { ExternalTicketEvent } from "../types/ExternalTicketClaim.types";
 import type { ExternalTicketQr } from "../types/external-ticket-qr.types";
 
 export const DEFAULT_TICKET_ISSUER = "blockchain_summit_latam";
 
-/** Events a third-party ticket can be exchanged for. */
-export const EXTERNAL_TICKET_EVENTS = [
-  { id: "colombia2026", label: "BSL Colombia 2026" },
-  { id: "chile2026", label: "BSL Chile 2026" },
-] as const;
+/**
+ * Events a third-party ticket can be exchanged for. `endsAt` mirrors
+ * `public.events.ends_at`; the database enforces the same rule on submit.
+ */
+export const EXTERNAL_TICKET_EVENTS: readonly ExternalTicketEvent[] = [
+  { id: "chile2026", label: "BSL Chile 2026", endsAt: "2026-08-07T23:59:59-04:00" },
+  { id: "colombia2026", label: "BSL Colombia 2026", endsAt: "2026-11-06T23:59:59-05:00" },
+];
+
+/** Events that have not finished yet, soonest first. */
+export function upcomingTicketEvents(now: Date = new Date()): ExternalTicketEvent[] {
+  return EXTERNAL_TICKET_EVENTS
+    .filter((event) => new Date(event.endsAt).getTime() >= now.getTime())
+    .sort((a, b) => new Date(a.endsAt).getTime() - new Date(b.endsAt).getTime());
+}
 
 const CODE_KEYS = [
   "ticketCode", "ticket_code", "ticketId", "ticket_id", "ticket", "code",

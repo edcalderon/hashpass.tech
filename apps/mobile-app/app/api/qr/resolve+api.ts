@@ -178,7 +178,7 @@ export async function POST(request: Request) {
         return Response.json({
           valid: true,
           kind: payload.kind,
-          message: "HashPass user identified",
+          message: "HASHPASS user identified",
           eventId: payload.eventId,
           user,
         } satisfies HashpassQrResolution);
@@ -187,7 +187,7 @@ export async function POST(request: Request) {
     const response: HashpassQrResolution = {
       valid: false,
       kind: payload.kind,
-      message: qr ? "QR code is not linked to an available pass" : "No HashPass user or pass matched this QR code",
+      message: qr ? "QR code is not linked to an available pass" : "No HASHPASS user or pass matched this QR code",
       eventId: lookupPayload.eventId,
       qr: qr ? { id: qr.id, type: qr.qr_type || null, status: qr.status || null, expiresAt: qr.expires_at || null } : undefined,
     };
@@ -215,7 +215,7 @@ export async function POST(request: Request) {
     kind: payload.kind,
     message: !qrUsable
       ? `QR code is ${qrExpired ? "expired" : qr?.status || "unavailable"}`
-      : pass.status === "active" ? "HashPass pass is valid" : `HashPass pass is ${pass.status || "unavailable"}`,
+      : pass.status === "active" ? "HASHPASS pass is valid" : `HASHPASS pass is ${pass.status || "unavailable"}`,
     eventId: pass.event_id,
     qr: qr ? { id: qr.id, type: qr.qr_type || null, status: qr.status || null, expiresAt: qr.expires_at || null } : undefined,
     user,

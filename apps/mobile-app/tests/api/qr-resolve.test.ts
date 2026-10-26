@@ -128,7 +128,7 @@ describe("/api/qr/resolve", () => {
     expect(body).toEqual({
       valid: true,
       kind: "pass_id",
-      message: "HashPass pass is valid",
+      message: "HASHPASS pass is valid",
       eventId: "colombia2026",
         user: { id: "user-1", name: "Ada Lovelace", username: null },
       pass: {
@@ -302,7 +302,7 @@ describe("/api/qr/resolve", () => {
     await expect(response.json()).resolves.toEqual({
       valid: true,
       kind: "hpass_id",
-      message: "HashPass user identified",
+      message: "HASHPASS user identified",
       user: { id: "hpass-user-1234", name: "Grace Hopper", username: null },
     });
   });

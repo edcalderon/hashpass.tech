@@ -82,3 +82,19 @@ export type ExternalTicketReportRequest = {
   claimant_user_id: string | null;
   claim_status: ExternalTicketClaimStatus | null;
 };
+
+export type ExternalTicketReviewRequest = {
+  claimantEmail: string;
+  eventId: string;
+  issuer: string;
+  requestedPassType: string;
+  ticketCodeLast4: string;
+  holder: string | null;
+};
+
+export type ExternalTicketEvent = {
+  readonly id: string;
+  readonly label: string;
+  /** ISO end of the event; mirrors `public.events.ends_at`. */
+  readonly endsAt: string;
+};

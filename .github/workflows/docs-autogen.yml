@@ -190,6 +190,7 @@ jobs:
       - run: pip install openwiki
 
       - name: Audit CLAUDE.md accuracy
+        id: audit
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
@@ -199,30 +200,45 @@ jobs:
             --changed-areas "${{ needs.classify.outputs.changed_areas }}" \
             --model claude-opus-4-8 \
             --output /tmp/claude-audit.md || true
-          [ -s /tmp/claude-audit.md ] || echo "No stale content found in CLAUDE.md." > /tmp/claude-audit.md
+          # An empty audit means nothing is stale: do not open an issue for it.
+          if [ -s /tmp/claude-audit.md ] && ! grep -qi 'no stale content' /tmp/claude-audit.md; then
+            echo "has_findings=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_findings=false" >> "$GITHUB_OUTPUT"
+          fi
 
-      - name: Check whether repository issues are enabled
-        id: repo_issues
+      - name: Open or update the CLAUDE.md review issue
+        if: steps.audit.outputs.has_findings == 'true'
         uses: actions/github-script@v7
+        env:
+          CHANGED_AREAS: ${{ needs.classify.outputs.changed_areas }}
         with:
           script: |
-            const repo = await github.rest.repos.get({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-            });
-
-            const enabled = repo.data.has_issues ? 'true' : 'false';
-            core.setOutput('enabled', enabled);
-
-            if (enabled !== 'true') {
-              core.warning('Repository issues are disabled; skipping CLAUDE.md review issue creation.');
+            const fs = require('fs');
+            const { owner, repo } = context.repo;
+            const repoInfo = await github.rest.repos.get({ owner, repo });
+            if (!repoInfo.data.has_issues) {
+              core.warning('Repository issues are disabled; skipping CLAUDE.md review issue.');
+              return;
             }
-
-      - name: Open CLAUDE.md review issue
-        if: steps.repo_issues.outputs.enabled == 'true'
-        uses: peter-evans/create-issue-from-file@v5
-        with:
-          title: 'CLAUDE.md accuracy review — ${{ needs.classify.outputs.changed_areas }}'
-          content-filepath: /tmp/claude-audit.md
-          labels: 'documentation,claude-md,priority: high'
-          assignees: edcalderon
+            const body = fs.readFileSync('/tmp/claude-audit.md', 'utf8');
+            const areas = process.env.CHANGED_AREAS || 'unspecified';
+            // One tracking issue: reuse the open one instead of opening a new
+            // issue on every critical push.
+            const open = await github.rest.issues.listForRepo({
+              owner, repo, state: 'open', labels: 'claude-md', per_page: 1,
+            });
+            if (open.data.length) {
+              await github.rest.issues.createComment({
+                owner, repo, issue_number: open.data[0].number,
+                body: `Updated audit for areas \`${areas}\` (${context.sha.slice(0, 7)}):\n\n${body}`,
+              });
+              return;
+            }
+            await github.rest.issues.create({
+              owner, repo,
+              title: 'CLAUDE.md accuracy review',
+              body: `Areas: \`${areas}\`\n\n${body}`,
+              labels: ['documentation', 'claude-md', 'priority: high'],
+              assignees: ['edcalderon'],
+            });
