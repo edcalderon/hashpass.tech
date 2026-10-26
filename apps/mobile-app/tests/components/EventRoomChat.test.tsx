@@ -101,6 +101,7 @@ jest.mock("../../i18n/i18n", () => ({
 }));
 jest.mock("../../lib/vector-icons", () => ({ MaterialIcons: "MaterialIcons" }));
 jest.mock("@hashpass/ui/primitives", () => ({
+  FilterChip: "FilterChip",
   ModalBackdrop: "ModalBackdrop",
   SegmentedTabs: "SegmentedTabs",
   Surface: "Surface",

@@ -22,7 +22,7 @@ import {
 import { useRouter } from "expo-router";
 import { MaterialIcons } from "../lib/vector-icons";
 import { uiTokens } from "@hashpass/ui/tokens";
-import { ModalBackdrop, SegmentedTabs, Surface } from "@hashpass/ui/primitives";
+import { FilterChip, ModalBackdrop, SegmentedTabs, Surface } from "@hashpass/ui/primitives";
 import { useTheme } from "../hooks/useTheme";
 import { useAuth } from "../hooks/useAuth";
 import { useTranslation } from "../i18n/i18n";
@@ -1275,19 +1275,14 @@ export default function EventRoomChat({
                           contentContainerStyle={styles.reactionPicker}
                         >
                           {EVENT_CHAT_REACTIONS.map((reaction) => (
-                            <TouchableOpacity
+                            <FilterChip
                               key={reaction.type}
-                              style={[
-                                styles.reactionOption,
-                                message.reactions?.viewerReaction === reaction.type &&
-                                  styles.reactionOptionActive,
-                              ]}
+                              mode={isDark ? "dark" : "light"}
+                              label={reaction.emoji}
+                              selected={message.reactions?.viewerReaction === reaction.type}
                               onPress={() => void handleReaction(message, reaction.type)}
-                              accessibilityRole="button"
                               accessibilityLabel={reaction.label}
-                            >
-                              <Text style={styles.reactionEmoji}>{reaction.emoji}</Text>
-                            </TouchableOpacity>
+                            />
                           ))}
                         </ScrollView>
                       )}
@@ -1846,20 +1841,6 @@ const getStyles = (colors: any) =>
       gap: 5,
       paddingVertical: 4,
       paddingRight: 6,
-    },
-    reactionOption: {
-      width: 30,
-      height: 30,
-      borderRadius: uiTokens.radius.circle,
-      alignItems: "center",
-      justifyContent: "center",
-      backgroundColor: colors.background.secondary,
-      borderWidth: 1,
-      borderColor: colors.divider,
-    },
-    reactionOptionActive: {
-      backgroundColor: `${colors.primary}18`,
-      borderColor: colors.primary,
     },
     replyQuote: {
       borderLeftWidth: 3,
