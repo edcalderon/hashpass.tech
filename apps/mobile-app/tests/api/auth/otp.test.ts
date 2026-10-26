@@ -295,12 +295,12 @@ describe("otp send api", () => {
       }),
     );
 
+    // A lookalike host must not get any Brevo TLS relaxation: no servername
+    // override and no hostname-match bypass, only chain validation.
     expect(mockCreateTransport).toHaveBeenCalledWith(
       expect.objectContaining({
         host: "brevo.com.attacker.example",
-        tls: expect.objectContaining({
-          servername: undefined,
-        }),
+        tls: { rejectUnauthorized: false },
       }),
     );
   });

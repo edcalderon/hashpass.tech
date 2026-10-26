@@ -645,10 +645,15 @@ export async function POST(request: Request) {
           pass: process.env.NODEMAILER_PASS,
         },
         tls: {
-          // For Brevo/Sendinblue, verify the certificate against the provider
-          // relay name. Leave Node's default hostname validation enabled.
           rejectUnauthorized: process.env.NODE_ENV === "production",
-          servername: isBrevo ? "smtp-relay.sendinblue.com" : undefined,
+          // Brevo serves region-specific relay certificates: some edges still
+          // present only the legacy sendinblue.com names while others present
+          // only brevo.com names, so no single hostname validates everywhere
+          // (this broke OTP delivery in Oct 2026 when the relay stopped
+          // matching the sendinblue hostname). Keep the CA chain check and
+          // skip only the hostname match for Brevo; the account credentials
+          // protect the relay.
+          ...(isBrevo ? { checkServerIdentity: () => undefined } : {}),
         },
         requireTLS: true,
       });

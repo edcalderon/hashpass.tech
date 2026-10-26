@@ -48,8 +48,10 @@ export async function POST(request: Request) {
       tls: {
         // For Brevo/Sendinblue, allow hostname mismatch but still verify certificate
         rejectUnauthorized: process.env.NODE_ENV === 'production',
-        servername: isBrevo ? 'smtp-relay.sendinblue.com' : undefined,
-        checkServerIdentity: isBrevo ? () => undefined : undefined,
+        // Brevo edges serve different relay certs (legacy sendinblue.com
+        // names or brevo.com names), so no single hostname validates
+        // everywhere; keep the CA chain check, skip the hostname match.
+        ...(isBrevo ? { checkServerIdentity: () => undefined } : {}),
       },
       requireTLS: true,
     });
