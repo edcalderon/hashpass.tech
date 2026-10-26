@@ -20,19 +20,15 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.150)
+## 📋 Latest Changes (v1.9.151)
 
 ### Released
-- die-cut perforation and robust web camera permissions; universal ticket QR scanning with one-owner claims and misuse reports; annotate scanner camera mount error parameter; pair solid fills with on-fill tokens to fix dark-mode upgrade button contrast
+- derive BSL Colombia sync profile from branch, not job-level matrix if
 
 ### Release scope
-- Compared with: `v1.9.149` (the previous global release tag)
+- Compared with: `v1.9.150` (the previous global release tag)
 
 ### Affected products & packages
-- Mobile app
-- Shared UI
-- Database migrations
-- Documentation
 - Release tooling
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)

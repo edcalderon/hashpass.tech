@@ -22,24 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610260342, // Updated to current timestamp
+  buildNumber: 202610260447, // Updated to current timestamp
   releaseDate: '2026-10-26',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'die-cut perforation and robust web camera permissions',
-    'universal ticket QR scanning with one-owner claims and misuse reports'
+    // No new features
   ],
   bugfixes: [
-    'annotate scanner camera mount error parameter',
-    'pair solid fills with on-fill tokens to fix dark-mode upgrade button contrast'
+    'derive BSL Colombia sync profile from branch, not job-level matrix if'
   ],
   breakingChanges: [],
-  notes: 'die-cut perforation and robust web camera permissions; universal ticket QR scanning with one-owner claims and misuse reports; annotate scanner camera mount error parameter; pair solid fills with on-fill tokens to fix dark-mode upgrade button contrast'
+  notes: 'derive BSL Colombia sync profile from branch, not job-level matrix if'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.151': {
+    version: '1.9.151',
+    buildNumber: 202610260447,
+    releaseDate: '2026-10-26',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'derive BSL Colombia sync profile from branch, not job-level matrix if'
+    ],
+    breakingChanges: [],
+    notes: 'derive BSL Colombia sync profile from branch, not job-level matrix if'
+  },
   '1.9.150': {
     version: '1.9.150',
     buildNumber: 202610260342,

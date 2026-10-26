@@ -1,3 +1,13 @@
+## [1.9.151](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.150...v1.9.151) (2026-10-26)
+### Released
+- derive BSL Colombia sync profile from branch, not job-level matrix if
+
+### Release scope
+- Compared with: `v1.9.150` (the previous global release tag)
+
+### Affected products & packages
+- Release tooling
+
 ## [1.9.150](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.149...v1.9.150) (2026-10-26)
 ### Released
 - die-cut perforation and robust web camera permissions; universal ticket QR scanning with one-owner claims and misuse reports; annotate scanner camera mount error parameter; pair solid fills with on-fill tokens to fix dark-mode upgrade button contrast
