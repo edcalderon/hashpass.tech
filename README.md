@@ -20,10 +20,10 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.148)
+## 📋 Latest Changes (v1.9.149)
 
 ### Released
-- add pass lifecycle and event chat workflows
+- add pass lifecycle and event chat workflows; reuse shared wallet action buttons; use shared reaction controls; retain ticket QR proof on resubmission; preserve automatic pass QR issuance; harden external ticket claims; bind pass QR issuance to owner and recover failed transfer emails; prevent duplicate pass entitlements; harden public pass transfers
 
 ### Release scope
 - Compared with: `v1.9.147` (the previous global release tag)

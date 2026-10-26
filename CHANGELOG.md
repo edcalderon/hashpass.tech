@@ -1,3 +1,18 @@
+## [1.9.149](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.147...v1.9.149) (2026-10-26)
+### Released
+- add pass lifecycle and event chat workflows; reuse shared wallet action buttons; use shared reaction controls; retain ticket QR proof on resubmission; preserve automatic pass QR issuance; harden external ticket claims; bind pass QR issuance to owner and recover failed transfer emails; prevent duplicate pass entitlements; harden public pass transfers
+
+### Release scope
+- Compared with: `v1.9.147` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- QR links API
+- Auth
+- Database migrations
+- Documentation
+- Release tooling
+
 ## [1.9.148](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.147...v1.9.148) (2026-10-25)
 ### Released
 - add pass lifecycle and event chat workflows
