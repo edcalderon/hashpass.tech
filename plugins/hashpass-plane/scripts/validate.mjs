@@ -2,18 +2,10 @@ import assert from "node:assert/strict";
 import { readFile, stat } from "node:fs/promises";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { MCP_URL, PLUGIN_ROOT, REQUIRED_SCOPES, SERVER_NAME } from "./contract.mjs";
 
-const ROOT = resolve(fileURLToPath(new URL("..", import.meta.url)));
+const ROOT = PLUGIN_ROOT;
 const SEMVER = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
-const MCP_URL = "https://mcp.hashpass.tech/mcp";
-const REQUIRED_SCOPES = [
-  "openid",
-  "profile",
-  "email",
-  "offline_access",
-  "plane:read",
-  "plane:write"
-];
 
 async function readJson(path) {
   try {
@@ -30,7 +22,7 @@ export async function validatePlugin(root = ROOT) {
 
   assert.match(packageManifest.version, SEMVER, "package.json must contain a semantic version");
   assert.equal(pluginManifest.version, packageManifest.version, "plugin.json and package.json versions must match");
-  assert.equal(pluginManifest.name, "hashpass-plane", "portable plugin name changed unexpectedly");
+  assert.equal(pluginManifest.name, SERVER_NAME, "portable plugin name changed unexpectedly");
   assert.equal(pluginManifest["$schema"], "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json");
   assert.equal(mcpManifest["$schema"], "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json");
 
@@ -44,9 +36,11 @@ export async function validatePlugin(root = ROOT) {
   const servers = Object.entries(mcpManifest.mcpServers ?? {});
   assert.equal(servers.length, 1, "mcp.json must expose exactly one MCP server");
   const [serverName, server] = servers[0];
-  assert.equal(serverName, "hashpass-plane");
+  assert.equal(serverName, SERVER_NAME);
   assert.equal(server.type, "streamable-http");
   assert.equal(server.url, MCP_URL);
+  // A trailing slash makes this a different OAuth resource identifier.
+  assert.equal(MCP_URL.endsWith("/"), false, "the MCP resource URL must not end with a slash");
 
   const auth = server.extensions?.["com.openai"]?.auth;
   assert.equal(auth?.type, "oauth");

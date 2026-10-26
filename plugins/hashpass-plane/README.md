@@ -28,6 +28,48 @@ signed authorization request is preserved.
 - `scripts/bump.mjs`: updates `package.json`, `plugin.json`, and `CHANGELOG.md` together.
 - `tests/`: Node's built-in test contract for the package.
 
+## Where the endpoint and scopes live
+
+`mcp.json` is the shipped source of truth for the MCP URL, OAuth resource, and
+scopes. Nothing else should repeat them:
+
+- `scripts/check-live.mjs` reads `mcp.json` and derives the discovery URLs from
+  it. Set `HASHPASS_PLANE_MCP_URL` to point the same checks at a staging server
+  without editing any file.
+- `scripts/contract.mjs` holds the *expected* values (`MCP_URL`,
+  `REQUIRED_SCOPES`). `scripts/validate.mjs` and the tests assert that
+  `mcp.json` matches them, so an accidental edit to `mcp.json` fails
+  `npm run validate`.
+
+To change the MCP endpoint or scopes on purpose:
+
+1. Edit `mcp.json`.
+2. Edit the matching constants in `scripts/contract.mjs`.
+3. Run `npm run validate`, `npm test`, and `npm run check:live`.
+4. Run `npm run bump -- minor --note "Describe the change"` and re-upload the
+   new archive. ChatGPT keeps the URL it read at install time, so existing
+   connections must be recreated after an endpoint change.
+
+## Trailing slashes
+
+Slashes change meaning in this flow, and two different rules apply:
+
+- **No trailing slash on the MCP resource** (`https://mcp.hashpass.tech/mcp`).
+  OAuth compares the resource and issuer as exact strings, so `.../mcp/` is a
+  different resource. `validate.mjs` rejects a resource ending in `/`.
+  `check-live.mjs` strips trailing slashes from the issuer it discovers
+  (`stripTrailingSlash`) before appending `/.well-known/...`, which prevents a
+  `//` in the request path.
+- **Trailing slash on the hosted login and consent pages**
+  (`https://hashpass.tech/mcp/login/`, `https://hashpass.tech/mcp/consent/`).
+  The static host redirects the slashless path and drops the query string, which
+  loses the signed OAuth request ("authorization request is missing or
+  invalid"). The server emits the slashed URLs; do not "clean" them. Details:
+  `apps/docs/docs/auth/plane-mcp-authorization.md`.
+
+A bare `curl` cannot catch the second problem because the redirected page still
+returns 200. Verify with a real ChatGPT connection started from scratch.
+
 ## Available MCP methods
 
 This plugin exposes the HASHPASS Plane MCP gateway as one OAuth-protected
