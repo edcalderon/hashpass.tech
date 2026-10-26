@@ -4,6 +4,7 @@ Reference docs capture implementation details that are still useful but not part
 
 ## Active Docs
 
+- [`doorready-foundation.md`](doorready-foundation.md)
 - [`mobile-app/event-scoped-api-client.md`](mobile-app/event-scoped-api-client.md)
 - [`mobile-app/event-api-architecture.md`](mobile-app/event-api-architecture.md)
 - [`mobile-app/e2e-meeting-chat.md`](mobile-app/e2e-meeting-chat.md)

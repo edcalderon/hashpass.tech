@@ -69,6 +69,14 @@ and fast-forward `develop`, commit there, push `develop`, and ship through
 This keeps the number of stale branches to delete and maintain near zero. Only
 branch when explicitly asked, or when `develop` cannot take the change.
 
+**Branch cleanup (added 2026-10-26):** when a feature branch is merged or its
+PR is closed, delete it on `origin` and locally in the same step. Delete only
+if there is no open PR and `git cherry origin/develop <branch>` shows no `+`
+commits (squash merges rewrite hashes, so compare patches). Never delete a
+branch with unmerged commits, including ones pushed after its PR merged. Record
+the tip SHA first so it can be restored. Never delete `main` or `develop`. See
+AGENTS.md "Branch hygiene".
+
 ### Version Management
 **NEVER manually edit version numbers in package.json or app.json.**
 **Do not hand-release.** The release scripts own the version bump, CHANGELOG.md, README.md sync, tag, and push flow.

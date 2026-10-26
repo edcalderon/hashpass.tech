@@ -96,6 +96,15 @@ The Husky pre-commit hook runs the README sync guard, so a stale changelog/READM
 - Impeccable is design assistance; `PRODUCT.md`, `DESIGN.md`, actual product data,
   and user instructions remain the authority. Do not install/approve hooks silently.
 
+## Branch hygiene
+
+- Work on `develop` by default; create a feature branch only when asked or when `develop` cannot take the change.
+- When a feature branch is merged or its PR is closed, delete it in the same step, on `origin` and locally. Do not leave merged branches behind.
+- Delete only after verifying it is safe: no open PR, and `git cherry origin/develop <branch>` shows no `+` commits (squash merges rewrite hashes, so compare patches, not SHAs). Never delete `main` or `develop`.
+- A branch with unmerged commits, including commits pushed after its PR merged, is not deletable. Report it instead.
+- Record the tip SHA before deleting so the branch can be restored with `git push origin <sha>:refs/heads/<name>`.
+- Prefer GitHub's "Automatically delete head branches" for PR branches, and prune with `git fetch --prune`.
+
 ## Type placement
 
 - Keep new interfaces, type aliases, and type-only unions out of product components and scope modules.
