@@ -7,12 +7,11 @@ import {
   ScrollView,
   Share,
   Text,
-  TextInput,
   View,
 } from "react-native";
 import * as Clipboard from "expo-clipboard";
 import QRCode from "react-native-qrcode-svg";
-import { ActionButton, ModalBackdrop, Surface } from "@hashpass/ui/primitives";
+import { ActionButton, FormField, ModalBackdrop, Surface } from "@hashpass/ui/primitives";
 import { uiPalette, uiTokens } from "@hashpass/ui/tokens";
 import { MaterialIcons } from "../../lib/vector-icons";
 import { useTheme } from "../../hooks/useTheme";
@@ -201,17 +200,15 @@ export default function PassShareModal({ pass, visible, onClose }: PassShareModa
                 <Text style={{ color: palette.muted, lineHeight: 20 }}>
                   {t("transfer.description", "Send this pass to another verified HASHPASS account. You and the recipient must confirm by email before ownership changes.")}
                 </Text>
-                <Text style={{ color: palette.text, fontSize: 13, fontWeight: "700" }}>{t("transfer.recipient", "Recipient email")}</Text>
-                <TextInput
+                <FormField
+                  mode={mode}
+                  label={t("transfer.recipient", "Recipient email")}
                   value={recipientEmail}
                   onChangeText={setRecipientEmail}
                   placeholder={t("transfer.recipientPlaceholder", "name@example.com")}
-                  placeholderTextColor={palette.muted}
                   keyboardType="email-address"
                   autoCapitalize="none"
                   autoCorrect={false}
-                  style={{ color: palette.text, borderColor: colors.divider, borderWidth: 1, borderRadius: uiTokens.radius.input, paddingHorizontal: 12, paddingVertical: 12, fontSize: 15 }}
-                  accessibilityLabel={t("transfer.recipient", "Recipient email")}
                 />
                 <ActionButton
                   mode={mode}

@@ -157,6 +157,10 @@ const passQrOwnerBoundCallerMigrationPath = path.join(
   root,
   'db/migrations/V150__update_pass_qr_owner_bound_callers.sql',
 );
+const pendingTicketQrProofMigrationPath = path.join(
+  root,
+  'db/migrations/V151__attach_qr_proof_to_pending_ticket_claims.sql',
+);
 
 describe('setup and PIN migration plan', () => {
   it('runs the setup/PIN schema before the dependent SMS auth migrations', () => {
@@ -966,5 +970,21 @@ describe('pass QR owner-bound caller migration', () => {
     expect(migration).toMatch(/generate_pass_qr\(NEW\.id::text, NEW\.user_id::text, 30, 1\)/i);
     expect(migration).toMatch(/CREATE OR REPLACE FUNCTION public\.update_existing_passes_with_qr\(\)/i);
     expect(migration).toMatch(/generate_pass_qr\(v_pass\.id::text, v_pass\.user_id::text, 30, 1\)/i);
+  });
+});
+
+describe('pending ticket QR proof migration', () => {
+  it('upgrades an owner-owned pending manual claim without allowing QR reuse', () => {
+    const migration = fs.readFileSync(pendingTicketQrProofMigrationPath, 'utf8');
+    const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+    const group = config.groups['qr-system'];
+
+    expect(group.indexOf('db/migrations/V151__attach_qr_proof_to_pending_ticket_claims.sql'))
+      .toBeGreaterThan(group.indexOf('db/migrations/V149__harden_external_ticket_claim_fingerprints.sql'));
+    expect(migration).toMatch(/source_qr_digest LIKE 'manual:%'/i);
+    expect(migration).toMatch(/v_claim\.status = 'pending'/i);
+    expect(migration).toMatch(/SET source_qr_digest = v_digest,[\s\S]*?source_qr_payload = coalesce\(p_source_qr_payload/i);
+    expect(migration).toMatch(/source_qr_digest = v_digest[\s\S]*?id <> v_claim\.id/i);
+    expect(migration).toMatch(/RAISE EXCEPTION 'This original ticket has already been claimed' USING ERRCODE = '23505'/i);
   });
 });

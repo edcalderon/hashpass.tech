@@ -39,6 +39,7 @@ jest.mock("expo-clipboard", () => ({ setStringAsync: (...a: unknown[]) => mockSe
 jest.mock("react-native-qrcode-svg", () => "QRCode");
 jest.mock("@hashpass/ui/primitives", () => ({
   ActionButton: "ActionButton",
+  FormField: "FormField",
   ModalBackdrop: "ModalBackdrop",
   Surface: "Surface",
 }));
@@ -220,7 +221,7 @@ describe("PassShareModal", () => {
       return r;
     };
     const type = (r: TestRenderer.ReactTestRenderer, value: string) =>
-      act(() => { r.root.findByType("TextInput" as any).props.onChangeText(value); });
+      act(() => { r.root.findByType("FormField" as any).props.onChangeText(value); });
 
     it("will not submit an empty recipient", async () => {
       const r = await toTransfer();
@@ -258,7 +259,7 @@ describe("PassShareModal", () => {
       type(r, "friend@example.com");
       await press(r, "Send confirmation emails");
       expect(mockShowError).toHaveBeenCalledWith("Transfer unavailable", "recipient has a pass");
-      expect(r.root.findByType("TextInput" as any).props.value).toBe("friend@example.com");
+      expect(r.root.findByType("FormField" as any).props.value).toBe("friend@example.com");
       mockRequestTransfer.mockRejectedValueOnce("weird");
       await press(r, "Send confirmation emails");
       expect(mockShowError).toHaveBeenLastCalledWith("Transfer unavailable", "Please try again.");

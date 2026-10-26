@@ -176,7 +176,8 @@
     ],
     "qr-system": [
       "db/migrations/V145__backend_qr_and_external_ticket_claims.sql",
-      "db/migrations/V149__harden_external_ticket_claim_fingerprints.sql"
+      "db/migrations/V149__harden_external_ticket_claim_fingerprints.sql",
+      "db/migrations/V151__attach_qr_proof_to_pending_ticket_claims.sql"
     ],
     "event-auth-allies": ["db/migrations/V083__event_auth_allies.sql"],
     "event-search-aliases": [
