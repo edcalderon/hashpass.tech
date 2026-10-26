@@ -5,13 +5,17 @@ import TestRenderer, { act } from "react-test-renderer";
 
 const mockRouterBack = jest.fn();
 const mockRouterReplace = jest.fn();
+const mockRouterPush = jest.fn();
 const mockLoadEventChat = jest.fn();
 const mockLoadEventChatMembers = jest.fn();
 const mockHeartbeat = jest.fn();
 const mockSendEventChatMessage = jest.fn();
+const mockReactToEventChatMessage = jest.fn();
 const mockAlert = jest.fn();
 const mockCanOpenURL = jest.fn();
 const mockOpenURL = jest.fn();
+const mockShowInfo = jest.fn();
+const mockShowError = jest.fn();
 
 jest.mock("react-native", () => ({
   ActivityIndicator: "ActivityIndicator",
@@ -48,8 +52,16 @@ jest.mock("react-native-css-interop/jsx-runtime", () =>
 );
 
 jest.mock("expo-router", () => ({
-  useRouter: () => ({ back: mockRouterBack, replace: mockRouterReplace }),
+  useRouter: () => ({
+    back: mockRouterBack,
+    replace: mockRouterReplace,
+    push: mockRouterPush,
+  }),
 }));
+jest.mock("../../contexts/ToastContext", () => ({
+  useToastHelpers: () => ({ showInfo: mockShowInfo, showError: mockShowError }),
+}));
+jest.mock("../../components/ProfileAvatar", () => "ProfileAvatar");
 jest.mock("../../hooks/useTheme", () => ({
   useTheme: () => ({
     colors: {
@@ -88,7 +100,21 @@ jest.mock("../../i18n/i18n", () => ({
   }),
 }));
 jest.mock("../../lib/vector-icons", () => ({ MaterialIcons: "MaterialIcons" }));
+jest.mock("@hashpass/ui/primitives", () => ({
+  FilterChip: "FilterChip",
+  ModalBackdrop: "ModalBackdrop",
+  SegmentedTabs: "SegmentedTabs",
+  Surface: "Surface",
+}));
 jest.mock("../../lib/event-chat", () => ({
+  EVENT_CHAT_REACTIONS: [
+    { type: "like", label: "Like", emoji: "👍" },
+    { type: "celebrate", label: "Celebrate", emoji: "🎉" },
+    { type: "support", label: "Support", emoji: "🤝" },
+    { type: "love", label: "Love", emoji: "❤️" },
+    { type: "insightful", label: "Insightful", emoji: "💡" },
+    { type: "funny", label: "Funny", emoji: "😂" },
+  ],
   isEventChatAccessDenied: (error: unknown) =>
     Boolean(
       error &&
@@ -115,6 +141,8 @@ jest.mock("../../lib/event-chat", () => ({
   loadEventChat: (...args: unknown[]) => mockLoadEventChat(...args),
   loadEventChatMembers: (...args: unknown[]) =>
     mockLoadEventChatMembers(...args),
+  reactToEventChatMessage: (...args: unknown[]) =>
+    mockReactToEventChatMessage(...args),
   sendEventChatMessage: (...args: unknown[]) =>
     mockSendEventChatMessage(...args),
 }));
@@ -191,6 +219,10 @@ describe("EventRoomChat", () => {
     mockOpenURL.mockResolvedValue(undefined);
     mockHeartbeat.mockResolvedValue({ peopleCount: 0, avatarUrls: [] });
     mockSendEventChatMessage.mockResolvedValue({ id: "sent-1" });
+    mockReactToEventChatMessage.mockResolvedValue({
+      messageId: "message-1",
+      reaction: { counts: { like: 1 }, viewerReaction: "like" },
+    });
     mockLoadEventChatMembers.mockResolvedValue([]);
     mockLoadEventChat.mockResolvedValue({ ...baseData });
   });
@@ -229,6 +261,7 @@ describe("EventRoomChat", () => {
       "colombia2026",
       "room",
       undefined,
+      true,
     );
     await unmountRoom(renderer);
   });
@@ -238,7 +271,7 @@ describe("EventRoomChat", () => {
       eventId: "colombia2026",
       eventTitle: "Colombia 2026",
     });
-    const modal = renderer.root.findByType("Modal" as any);
+    const modal = renderer.root.findAllByType("Modal" as any)[0];
 
     await pressText(renderer, "Not now");
     expect(modal.props.visible).toBe(false);
@@ -254,7 +287,9 @@ describe("EventRoomChat", () => {
       (node: any) => node.props.accessibilityLabel === "Close event room entry",
     );
     await act(async () => closeButton.props.onPress());
-    expect(renderer.root.findByType("Modal" as any).props.visible).toBe(false);
+    expect(renderer.root.findAllByType("Modal" as any)[0].props.visible).toBe(
+      false,
+    );
     expect(mockRouterBack).toHaveBeenCalledTimes(2);
 
     await unmountRoom(renderer);
@@ -271,7 +306,9 @@ describe("EventRoomChat", () => {
 
     await act(async () => backdrop.props.onPress());
 
-    expect(renderer.root.findByType("Modal" as any).props.visible).toBe(false);
+    expect(renderer.root.findAllByType("Modal" as any)[0].props.visible).toBe(
+      false,
+    );
     expect(mockRouterBack).toHaveBeenCalledTimes(1);
     await unmountRoom(renderer);
   });
@@ -288,6 +325,7 @@ describe("EventRoomChat", () => {
           message: "Welcome to the room",
           message_type: "text",
           created_at: "2026-08-13T12:00:00.000Z",
+          reactions: { counts: {}, viewerReaction: null },
         },
       ],
     });
@@ -298,6 +336,7 @@ describe("EventRoomChat", () => {
     await enterRoom(renderer);
 
     expect(textContent(renderer)).toContain("Welcome to the room");
+    expect(textContent(renderer)).toContain("Aug 13, 2026");
     await pressLabel(renderer, "Open Attendee One profile");
     expect(mockAlert).toHaveBeenCalledWith(
       "Attendee One",
@@ -317,11 +356,111 @@ describe("EventRoomChat", () => {
       }),
     );
 
+    await pressLabel(renderer, "React to message");
+    await pressLabel(renderer, "Like");
+    expect(mockReactToEventChatMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventId: "colombia2026",
+        messageId: "message-1",
+        reactionType: "like",
+      }),
+    );
+
     await pressLabel(renderer, "Choose emoji");
     expect(textContent(renderer)).toContain("Reactions");
     await pressLabel(renderer, "Send 👍");
     expect(mockSendEventChatMessage).toHaveBeenCalledWith(
       expect.objectContaining({ message: "👍", messageType: "emoji" }),
+    );
+    await unmountRoom(renderer);
+  });
+
+  it("shows the names behind a reaction when its chip is hovered", async () => {
+    mockLoadEventChat.mockResolvedValue({
+      ...baseData,
+      messages: [
+        {
+          id: "message-1",
+          event_id: "colombia2026",
+          sender_id: "attendee-1",
+          sender_name: "Attendee One",
+          message: "Welcome to the room",
+          message_type: "text",
+          created_at: "2026-08-13T12:00:00.000Z",
+          reactions: {
+            counts: { celebrate: 2 },
+            viewerReaction: null,
+            users: { celebrate: ["Edward Calderon", "Attendee One"] },
+          },
+        },
+      ],
+    });
+    const renderer = await renderRoom({
+      eventId: "colombia2026",
+      eventTitle: "Colombia 2026",
+    });
+    await enterRoom(renderer);
+
+    const reactionChip = renderer.root.find(
+      (node: any) => node.props.accessibilityLabel === "Celebrate 2",
+    );
+    await act(async () => reactionChip.props.onHoverIn());
+
+    expect(textContent(renderer)).toContain("Edward Calderon");
+    expect(textContent(renderer)).toContain("Attendee One");
+    await unmountRoom(renderer);
+  });
+
+  it("opens a reaction details modal from a reaction count", async () => {
+    mockLoadEventChat.mockResolvedValue({
+      ...baseData,
+      messages: [
+        {
+          id: "message-1",
+          event_id: "colombia2026",
+          sender_id: "attendee-1",
+          sender_name: "Attendee One",
+          message: "Welcome to the room",
+          message_type: "text",
+          created_at: "2026-08-13T12:00:00.000Z",
+          reactions: {
+            counts: { celebrate: 2, like: 1 },
+            viewerReaction: null,
+            users: {
+              celebrate: ["Edward Calderon", "Attendee One"],
+              like: ["Rodrigo Sainz"],
+            },
+          },
+        },
+      ],
+    });
+    const renderer = await renderRoom({
+      eventId: "colombia2026",
+      eventTitle: "Colombia 2026",
+    });
+    await enterRoom(renderer);
+
+    const reactionChip = renderer.root.find(
+      (node: any) => node.props.accessibilityLabel === "Celebrate 2",
+    );
+    await act(async () => reactionChip.props.onPress());
+
+    const modals = renderer.root.findAllByType("Modal" as any);
+    expect(modals[1].props.visible).toBe(true);
+    expect(textContent(renderer)).toContain("Reactions");
+    expect(textContent(renderer)).toContain("Edward Calderon");
+    expect(
+      renderer.root.findByType("SegmentedTabs" as any).props.value,
+    ).toBe("celebrate");
+
+    await act(async () =>
+      renderer.root.findByType("SegmentedTabs" as any).props.onChange("all"),
+    );
+    expect(textContent(renderer)).toContain("Rodrigo Sainz");
+
+    await pressLabel(renderer, "Close reactions");
+    expect(renderer.root.findAllByType("Modal" as any)[1].props.visible).toBe(
+      false,
     );
     await unmountRoom(renderer);
   });
@@ -369,6 +508,48 @@ describe("EventRoomChat", () => {
     await unmountRoom(renderer);
   });
 
+  it("exposes a dedicated VIP room only to VIP pass holders", async () => {
+    mockLoadEventChat.mockResolvedValue({
+      ...baseData,
+      passType: "vip",
+      permissions: {
+        canReadRoom: true,
+        canSendRoom: true,
+        canSendDirect: true,
+      },
+    });
+    const renderer = await renderRoom({
+      eventId: "colombia2026",
+      eventTitle: "Colombia 2026",
+    });
+    await enterRoom(renderer);
+
+    await pressText(renderer, "VIP room");
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(mockLoadEventChat).toHaveBeenLastCalledWith(
+      "colombia2026",
+      "vip",
+      undefined,
+    );
+    expect(textContent(renderer)).toContain("people in VIP room");
+
+    const input = renderer.root.find(
+      (node: any) => node.props.accessibilityLabel === "Message",
+    );
+    await act(async () => input.props.onChangeText("VIP hello"));
+    await pressLabel(renderer, "Send message");
+    expect(mockSendEventChatMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventId: "colombia2026",
+        channel: "vip",
+        message: "VIP hello",
+      }),
+    );
+    await unmountRoom(renderer);
+  });
+
   it("replaces the protected route with Explore when the attendee check is denied", async () => {
     const denied = Object.assign(new Error("No active event pass"), {
       status: 403,
@@ -385,6 +566,50 @@ describe("EventRoomChat", () => {
     expect(textContent(renderer)).toContain("Go back to Explore events");
     await pressText(renderer, "Go back to Explore events");
     expect(mockRouterReplace).toHaveBeenCalledWith("/dashboard/explore");
+    await unmountRoom(renderer);
+  });
+
+  it("offers separate Business and VIP ticket actions and explains reply access for a general pass", async () => {
+    mockLoadEventChat.mockResolvedValue({
+      ...baseData,
+      passType: "general",
+      permissions: {
+        canReadRoom: true,
+        canSendRoom: false,
+        canSendDirect: false,
+      },
+      messages: [
+        {
+          id: "message-1",
+          event_id: "colombia2026",
+          sender_id: "attendee-1",
+          sender_name: "Attendee One",
+          message: "Welcome",
+          message_type: "text",
+          created_at: "2026-08-13T12:00:00.000Z",
+        },
+      ],
+    });
+    const renderer = await renderRoom({
+      eventId: "colombia2026",
+      eventTitle: "Blockchain Summit Latam Colombia 2026",
+    });
+    await enterRoom(renderer);
+
+    expect(textContent(renderer)).toContain("Upgrade to Business");
+    expect(textContent(renderer)).toContain("Upgrade to VIP");
+    await pressText(renderer, "Upgrade to Business");
+    expect(mockRouterPush).toHaveBeenCalledWith({
+      pathname: "/events/[eventSlug]/tickets",
+      params: { eventSlug: "colombia2026", openTicketModal: "true", tier: "business" },
+    });
+
+    await pressLabel(renderer, "Reply to message");
+    expect(mockShowInfo).toHaveBeenCalledWith(
+      "Upgrade required",
+      "You can't reply to comments. Please upgrade your ticket to reply.",
+      expect.objectContaining({ label: "View tickets" }),
+    );
     await unmountRoom(renderer);
   });
 });

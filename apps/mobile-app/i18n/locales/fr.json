@@ -122,7 +122,11 @@
     "replyToMessage": "Répondre au message",
     "replyingTo": "Réponse à {name}",
     "cancelReply": "Annuler la réponse",
-    "replyBeforeSending": "Vous avez envoyé {count} messages à la suite. Attendez la réponse d’un autre participant avant d’en envoyer d’autres."
+    "replyBeforeSending": "Vous avez envoyé {count} messages à la suite. Attendez la réponse d’un autre participant avant d’en envoyer d’autres.",
+    "reactions": "Réactions",
+    "reactionFilters": "Filtres de réactions",
+    "allReactions": "Toutes",
+    "noReactions": "Aucune réaction pour le moment"
   },
   "common": {
     "back": "Retour",

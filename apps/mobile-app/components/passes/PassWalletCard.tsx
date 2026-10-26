@@ -2,8 +2,6 @@ import React, { useState } from 'react';
 import {
   ImageBackground,
   Modal,
-  Platform,
-  Share,
   Text,
   TouchableOpacity,
   View,
@@ -18,17 +16,20 @@ import Animated, {
 import * as Clipboard from 'expo-clipboard';
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '../../lib/vector-icons';
-import { HoverText } from '@hashpass/ui/primitives';
+import { ActionButton, HoverText } from '@hashpass/ui/primitives';
+import { uiTokens } from '@hashpass/ui/tokens';
 import { useTheme } from '../../hooks/useTheme';
 import { useTranslation } from '../../i18n/i18n';
 import { useToastHelpers } from '../../contexts/ToastContext';
-import { passSystemService } from '../../lib/pass-system';
 import type { WalletPass } from '../../lib/pass-wallet';
 import { normalizePassNumber } from '../../lib/pass-wallet';
 import DynamicQRDisplay from '../DynamicQRDisplay';
 import PassTiltCard from './PassTiltCard';
 import NotchMaskedCard from './NotchMaskedCard';
+import PassUpgradeRequestModal from './PassUpgradeRequestModal';
+import PassShareModal from './PassShareModal';
 import { usePassMotionPreferences } from './pass-motion-preferences';
+import { nextPassType } from '../../lib/pass-upgrade-requests';
 
 // The original ticket proportions. Kept exact: the layout below positions the
 // perforation, notches and stats block as percentages of this height, so
@@ -48,6 +49,8 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
   const { showSuccess, showError } = useToastHelpers();
   const router = useRouter();
   const [showQRModal, setShowQRModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [showUpgradeRequest, setShowUpgradeRequest] = useState(false);
   const [isFlipped, setIsFlipped] = useState(false);
   const { supports3d, reducedMotion } = usePassMotionPreferences();
   const passNumber = normalizePassNumber(pass.pass_number);
@@ -77,6 +80,7 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
 
   const passEventShortName = pass.eventName;
   const passEventDate = pass.eventDateLabel;
+  const upgradeTarget = nextPassType(pass.pass_type);
 
   const flipRotation = useSharedValue(0);
 
@@ -116,48 +120,14 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
     };
   });
 
-  const handleShare = async () => {
-    try {
-      const passTypeDisplay = passSystemService.getPassTypeDisplayName(pass.pass_type);
-      const shareMessage = `Check out my ${passTypeDisplay} pass for ${passEventShortName}!\n\nPass Number: ${passNumber}\nPass Type: ${passTypeDisplay}\n\nPresent this QR code at the event entrance.`;
+  const handleShare = () => setShowShareModal(true);
 
-      if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.share) {
-        await navigator.share({
-          title: `${passEventShortName} ${passTypeDisplay} Pass`,
-          text: shareMessage,
-        });
-      } else if (Platform.OS !== 'web' && Share.share) {
-        await Share.share({
-          message: shareMessage,
-          title: `${passEventShortName} ${passTypeDisplay} Pass`,
-        });
-      } else {
-        await Clipboard.setStringAsync(shareMessage);
-        showSuccess(
-          t({ id: 'passes.copiedTitle', message: 'Pass Information Copied' }),
-          t({ id: 'passes.copiedMessage', message: 'Pass information has been copied to your clipboard. You can paste it anywhere to share.' }),
-        );
-      }
-    } catch (error: any) {
-      if (error?.message?.includes('cancel') || error?.message?.includes('AbortError')) {
-        return;
-      }
-
-      try {
-        const passTypeDisplay = passSystemService.getPassTypeDisplayName(pass.pass_type);
-        const shareMessage = `Check out my ${passTypeDisplay} pass for ${passEventShortName}!\n\nPass Number: ${passNumber}\nPass Type: ${passTypeDisplay}\n\nPresent this QR code at the event entrance.`;
-        await Clipboard.setStringAsync(shareMessage);
-        showSuccess(
-          t({ id: 'passes.copiedTitle', message: 'Pass Information Copied' }),
-          t({ id: 'passes.copiedMessage', message: 'Pass information has been copied to your clipboard. You can paste it anywhere to share.' }),
-        );
-      } catch {
-        showError(
-          t({ id: 'passes.alert.errorTitle', message: 'Error' }),
-          t({ id: 'passes.copyError', message: 'Unable to share pass. Please try again.' })
-        );
-      }
-    }
+  const openTicketPurchase = () => {
+    if (!pass.eventId || !upgradeTarget) return;
+    router.push({
+      pathname: '/events/[eventSlug]/tickets' as any,
+      params: { eventSlug: pass.eventId, openTicketModal: 'true' },
+    });
   };
 
   const handleCopyPassNumber = async () => {
@@ -608,7 +578,7 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
     }}>
       <NotchMaskedCard
         style={{ width: '100%', height: '100%' }}
-        geometry={{ width: PASS_CARD_WIDTH, height: PASS_CARD_HEIGHT, cornerRadius: 16, notchRadius: 11, notchYRatio: 0.58 }}
+        geometry={{ width: PASS_CARD_WIDTH, height: PASS_CARD_HEIGHT, cornerRadius: 16, notchRadius: 11, notchYRatio: 0.54 }}
       >
       <View style={{
         backgroundColor: colors.background.paper,
@@ -624,7 +594,7 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
         position: 'absolute',
         left: '5%',
         right: '5%',
-        top: '58%',
+        top: '54%',
         height: 1,
         flexDirection: 'row',
         alignItems: 'center',
@@ -741,50 +711,75 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
             {getPassAccess(pass.pass_type)}
           </Text>
         </View>
-      </View>
 
-      {/* Full Details Button */}
-      <TouchableOpacity
-        style={{
-          position: 'absolute',
-          top: '79%',
-          left: 16,
-          right: 16,
-          backgroundColor: getPassTypeColor(pass.pass_type),
-          paddingVertical: 14,
-          borderRadius: 10,
-          alignItems: 'center',
-          flexDirection: 'row',
-          justifyContent: 'center',
-          gap: 8,
-          shadowColor: getPassTypeColor(pass.pass_type),
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.3,
-          shadowRadius: 4,
-          elevation: 4,
-          transform: [{ translateY: -21 }]
-        }}
-        disabled={!interactive}
-        onPress={() => {
-          handleFlip();
-          router.push({
-            pathname: '/dashboard/pass-details' as any,
-            params: { passId: pass.pass_id, eventId: pass.eventId },
-          });
-        }}
-        activeOpacity={0.8}
-      >
-        <MaterialIcons name="info" size={18} color="#FFFFFF" />
-        <Text style={{
-          fontSize: 14,
-          fontWeight: '700',
-          color: '#FFFFFF',
-          letterSpacing: 0.5
-        }}>
-          {t({ id: 'passes.viewFullDetails', message: 'View Full Details' })}
-        </Text>
-        <MaterialIcons name="arrow-forward" size={18} color="#FFFFFF" />
-      </TouchableOpacity>
+        <View
+          style={{
+            position: 'absolute',
+            left: uiTokens.space.lg,
+            right: uiTokens.space.lg,
+            top: '56%',
+            bottom: 52,
+          }}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'stretch', minHeight: 48 }}>
+            {upgradeTarget && (
+              <>
+              <ActionButton
+                mode={isDark ? 'dark' : 'light'}
+                variant="ghost"
+                label={t({ id: 'passes.upgradeAction', message: 'Upgrade' })}
+                labelNumberOfLines={2}
+                onPress={openTicketPurchase}
+                disabled={!interactive}
+                accessibilityLabel={t({ id: `passes.upgradeTo.${upgradeTarget}`, message: `Upgrade to ${getPassTypeLabel(upgradeTarget)}` })}
+                leadingIcon={<MaterialIcons name="confirmation-number" size={18} color={colors.primary} />}
+                trailingIcon={<MaterialIcons name="chevron-right" size={20} color={colors.text.secondary} />}
+                style={{ flex: 1, minHeight: 48, paddingHorizontal: uiTokens.space.sm }}
+              />
+              <View style={{ width: 1, height: 32, alignSelf: 'center', backgroundColor: colors.divider }} />
+              </>
+            )}
+              <ActionButton
+                mode={isDark ? 'dark' : 'light'}
+                variant="ghost"
+                label={t({ id: 'passes.moreDetails', message: 'More details' })}
+                labelNumberOfLines={2}
+                onPress={() => {
+                  handleFlip();
+                  router.push({
+                    pathname: '/dashboard/pass-details' as any,
+                    params: { passId: pass.pass_id, eventId: pass.eventId },
+                  });
+                }}
+                disabled={!interactive}
+                accessibilityLabel={t({ id: 'passes.viewFullDetails', message: 'View Full Details' })}
+                leadingIcon={<MaterialIcons name="description" size={18} color={colors.text.secondary} />}
+                trailingIcon={<MaterialIcons name="chevron-right" size={20} color={colors.text.secondary} />}
+                style={{ flex: upgradeTarget ? 1 : 2, minHeight: 48, paddingHorizontal: uiTokens.space.sm }}
+              />
+          </View>
+
+          {upgradeTarget && (
+            <View style={{ alignSelf: 'center', minHeight: 28, maxWidth: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <Text style={{ color: colors.text.secondary, fontSize: uiTokens.type.caption, textAlign: 'center' }}>
+                {t({ id: 'passes.claimExistingTicketPrompt', message: 'Already have a Business or VIP ticket?' })}{' '}
+              </Text>
+              <TouchableOpacity
+                onPress={() => setShowUpgradeRequest(true)}
+                disabled={!interactive}
+                accessibilityRole="link"
+                accessibilityLabel={t({ id: 'passes.claimExistingTicket', message: 'Already have a Business or VIP ticket? Claim it here' })}
+                activeOpacity={0.72}
+                style={{ minHeight: 28, justifyContent: 'center' }}
+              >
+                <Text style={{ color: colors.text.secondary, fontSize: uiTokens.type.caption, fontWeight: '700', textDecorationLine: 'underline', textAlign: 'center' }}>
+                  {t({ id: 'passes.claimExistingTicketLink', message: 'Claim it here' })}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+      </View>
 
       {/* Ticket Footer Actions - Same style as front */}
       <View style={{
@@ -962,6 +957,21 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
           </View>
         </View>
       </Modal>
+
+      <PassShareModal
+        pass={pass}
+        visible={showShareModal}
+        onClose={() => setShowShareModal(false)}
+      />
+
+      {upgradeTarget && (
+        <PassUpgradeRequestModal
+          pass={pass}
+          requestedPassType={upgradeTarget}
+          visible={showUpgradeRequest}
+          onClose={() => setShowUpgradeRequest(false)}
+        />
+      )}
     </View>
   );
 };

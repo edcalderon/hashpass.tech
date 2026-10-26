@@ -1,7 +1,27 @@
 import { apiClient } from "./api-client";
 import type { EventChatPassType, EventChatPermissions } from "./event-chat-permissions";
+import type {
+  EventChatChannel,
+  EventChatReactionSummary,
+  EventChatReactionType,
+  EventChatRoomChannel,
+} from "../types/EventChat.types";
 
-export type EventChatChannel = "room" | "direct" | "members";
+export const EVENT_CHAT_REACTIONS = [
+  { type: "like", label: "Like", emoji: "👍" },
+  { type: "celebrate", label: "Celebrate", emoji: "🎉" },
+  { type: "support", label: "Support", emoji: "🤝" },
+  { type: "love", label: "Love", emoji: "❤️" },
+  { type: "insightful", label: "Insightful", emoji: "💡" },
+  { type: "funny", label: "Funny", emoji: "😂" },
+] as const;
+
+export type {
+  EventChatChannel,
+  EventChatReactionSummary,
+  EventChatReactionType,
+  EventChatRoomChannel,
+} from "../types/EventChat.types";
 
 export type EventChatMessage = {
   id: string;
@@ -15,6 +35,7 @@ export type EventChatMessage = {
   message: string;
   message_type: "text" | "emoji";
   reply_to_message_id?: string | null;
+  reactions?: EventChatReactionSummary;
   created_at: string;
 };
 
@@ -90,7 +111,7 @@ export const isEventChatPastEvent = (
 
 type EventChatResponse = {
   eventId: string;
-  viewerId: string;
+  viewerId: string | null;
   passType: EventChatPassType;
   permissions: EventChatPermissions;
   messages: EventChatMessage[];
@@ -114,10 +135,12 @@ export async function loadEventChat(
   eventId: string,
   channel: Exclude<EventChatChannel, "members"> = "room",
   recipientId?: string,
+  readOnly = false,
 ) {
   const response = await apiClient.get(endpoint(eventId), {
     ...requestOptions,
-    params: { channel, recipientId },
+    skipAuth: readOnly,
+    params: { channel, recipientId, ...(readOnly ? { mode: "read" } : {}) },
   });
   if (!response.success) {
     const error = new Error(response.error) as EventChatError;
@@ -142,10 +165,17 @@ export async function loadEventChatMembers(eventId: string) {
   return unwrap<{ members: EventChatMember[] }>(response.data)?.members || [];
 }
 
-export async function heartbeatEventChatPresence(eventId: string) {
+export async function heartbeatEventChatPresence(
+  eventId: string,
+  roomChannel: EventChatRoomChannel = "global",
+) {
   const response = await apiClient.post(
     endpoint(eventId),
-    { action: "presence", channel: "presence" },
+    {
+      action: "presence",
+      channel: "presence",
+      ...(roomChannel === "vip" ? { roomChannel } : {}),
+    },
     requestOptions,
   );
   if (!response.success) {
@@ -159,10 +189,16 @@ export async function heartbeatEventChatPresence(eventId: string) {
   };
 }
 
-export async function loadEventChatPresence(eventId: string) {
+export async function loadEventChatPresence(
+  eventId: string,
+  roomChannel: EventChatRoomChannel = "global",
+) {
   const response = await apiClient.get(endpoint(eventId), {
     ...requestOptions,
-    params: { channel: "presence" },
+    params: {
+      channel: "presence",
+      ...(roomChannel === "vip" ? { roomChannel } : {}),
+    },
   });
   if (!response.success) {
     const error = new Error(response.error) as EventChatError;
@@ -179,6 +215,7 @@ export async function sendEventChatMessage(input: {
   eventId: string;
   message: string;
   messageType?: "text" | "emoji";
+  channel?: Exclude<EventChatChannel, "members">;
   recipientId?: string;
   replyToMessageId?: string;
   displayNameMode?: "profile" | "anonymous";
@@ -187,7 +224,7 @@ export async function sendEventChatMessage(input: {
     endpoint(input.eventId),
     {
       action: "send",
-      channel: input.recipientId ? "direct" : "room",
+      channel: input.channel || (input.recipientId ? "direct" : "room"),
       message: input.message,
       messageType: input.messageType || "text",
       recipientId: input.recipientId,
@@ -202,4 +239,28 @@ export async function sendEventChatMessage(input: {
     throw error;
   }
   return unwrap<{ id: string }>(response.data);
+}
+
+export async function reactToEventChatMessage(input: {
+  eventId: string;
+  messageId: string;
+  reactionType: EventChatReactionType | null;
+  channel?: "room" | "vip" | "direct";
+}) {
+  const response = await apiClient.post(
+    endpoint(input.eventId),
+    {
+      action: "react",
+      channel: input.channel || "room",
+      messageId: input.messageId,
+      reactionType: input.reactionType,
+    },
+    requestOptions,
+  );
+  if (!response.success) {
+    const error = new Error(response.error) as EventChatError;
+    error.status = response.status;
+    throw error;
+  }
+  return unwrap<{ messageId: string; reaction: EventChatReactionSummary }>(response.data);
 }

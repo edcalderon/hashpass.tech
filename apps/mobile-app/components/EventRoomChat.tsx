@@ -8,9 +8,7 @@ import React, {
 import {
   ActivityIndicator,
   Alert,
-  Image,
   KeyboardAvoidingView,
-  Linking,
   Modal,
   Platform,
   Pressable,
@@ -23,28 +21,39 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { MaterialIcons } from "../lib/vector-icons";
+import { uiTokens } from "@hashpass/ui/tokens";
+import { FilterChip, ModalBackdrop, SegmentedTabs, Surface } from "@hashpass/ui/primitives";
 import { useTheme } from "../hooks/useTheme";
 import { useAuth } from "../hooks/useAuth";
 import { useTranslation } from "../i18n/i18n";
+import { useToastHelpers } from "../contexts/ToastContext";
+import ProfileAvatar from "./ProfileAvatar";
 import {
+  EVENT_CHAT_REACTIONS,
   isEventChatAccessDenied,
   getEventChatAccessCopy,
-  getEventChatAvatarUrl,
-  getEventChatUpgradeUrl,
   heartbeatEventChatPresence,
   loadEventChat,
   loadEventChatMembers,
+  reactToEventChatMessage,
   sendEventChatMessage,
   type EventChatChannel,
   type EventChatMember,
   type EventChatMessage,
   type EventChatPresence,
 } from "../lib/event-chat";
+import type { EventChatReactionType } from "../types/EventChat.types";
 import {
   CHAT_EMOJI_CATEGORIES,
   type ChatEmojiCategoryId,
 } from "../lib/chat-emojis";
 import { getEventChatPermissions } from "../lib/event-chat-permissions";
+import type {
+  EventRoomReactionFilter,
+  EventRoomReactionModalSelection,
+  EventRoomReactionModalEntry,
+  EventRoomReactionOption,
+} from "../types/EventRoomChat.types";
 
 type EventRoomChatProps = {
   eventId: string;
@@ -55,7 +64,14 @@ type EventRoomChatProps = {
 const formatMessageTime = (createdAt: string): string => {
   const date = new Date(createdAt);
   if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  return date.toLocaleString([], {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
 };
 
 export default function EventRoomChat({
@@ -64,9 +80,10 @@ export default function EventRoomChat({
   isPastEvent = false,
 }: EventRoomChatProps) {
   const router = useRouter();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { isLoggedIn, dbUserId, user } = useAuth();
   const { t: translate } = useTranslation();
+  const { showInfo, showError } = useToastHelpers();
   const styles = useMemo(() => getStyles(colors), [colors]);
   const [channel, setChannel] =
     useState<Exclude<EventChatChannel, "members">>("room");
@@ -91,6 +108,11 @@ export default function EventRoomChat({
   } | null>(null);
   const [draft, setDraft] = useState("");
   const [replyTo, setReplyTo] = useState<EventChatMessage | null>(null);
+  const [reactionPickerMessageId, setReactionPickerMessageId] = useState<string | null>(null);
+  const [reactionDetailsKey, setReactionDetailsKey] = useState<string | null>(null);
+  const [reactionModal, setReactionModal] =
+    useState<EventRoomReactionModalSelection | null>(null);
+  const [reactingMessageId, setReactingMessageId] = useState<string | null>(null);
   const [emojiCategory, setEmojiCategory] =
     useState<ChatEmojiCategoryId>("reactions");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -104,6 +126,11 @@ export default function EventRoomChat({
   const [displayNameMode, setDisplayNameMode] = useState<
     "profile" | "anonymous"
   >("profile");
+  // Anonymous visitors are intentionally read-only.  Do not let a guest
+  // session (or an authenticated user who chose the anonymous entry mode)
+  // reach any mutation control; the API also enforces this with a public
+  // `mode=read` endpoint for guest history.
+  const anonymousReadOnly = !isLoggedIn || displayNameMode === "anonymous";
 
   const profileName =
     user?.user_metadata?.full_name?.trim() ||
@@ -114,11 +141,16 @@ export default function EventRoomChat({
 
   const selectedMember =
     members.find((member) => member.userId === recipientId) || null;
+  const isRoomChannel = channel === "room" || channel === "vip";
+  const isVipRoom = channel === "vip";
   const canSend =
-    (channel === "room"
-      ? permissions.canSendRoom
-      : permissions.canSendDirect) &&
-    !(channel === "room" && roomRateLimit?.waitingForReply);
+    !anonymousReadOnly &&
+    (isVipRoom
+      ? passType === "vip"
+      : channel === "room"
+        ? permissions.canSendRoom
+        : permissions.canSendDirect) &&
+    !(isRoomChannel && roomRateLimit?.waitingForReply);
   const accessCopy = getEventChatAccessCopy(isPastEvent);
   const localizedAccessCopy = {
     ...accessCopy,
@@ -148,11 +180,17 @@ export default function EventRoomChat({
     setPresence({ peopleCount: 0, avatarUrls: [] });
     setRoomRateLimit(null);
     setReplyTo(null);
+    setReactionPickerMessageId(null);
+    setReactionDetailsKey(null);
+    setReactionModal(null);
     setError(null);
     setAccessDenied(false);
     accessDeniedRef.current = false;
     setChannel("room");
-  }, [eventId]);
+    setEntered(false);
+    setEntryOpen(true);
+    setDisplayNameMode(isLoggedIn ? "profile" : "anonymous");
+  }, [eventId, isLoggedIn]);
 
   const refreshChat = useCallback(
     async (silent = false) => {
@@ -161,27 +199,23 @@ export default function EventRoomChat({
         accessDeniedRef.current = false;
         setAccessDenied(false);
       }
-      if (!isLoggedIn) {
-        setLoading(false);
-        setError("Sign in to join this event room.");
-        return;
-      }
       if (!silent) setLoading(true);
       try {
-        if (channel === "room") {
-          await heartbeatEventChatPresence(eventId).catch(() => null);
+        if (isRoomChannel && !anonymousReadOnly) {
+          await heartbeatEventChatPresence(
+            eventId,
+            isVipRoom ? "vip" : "global",
+          ).catch(() => null);
         }
-        const data = await loadEventChat(
-          eventId,
-          channel,
-          recipientId || undefined,
-        );
+        const data = anonymousReadOnly
+          ? await loadEventChat(eventId, channel, recipientId || undefined, true)
+          : await loadEventChat(eventId, channel, recipientId || undefined);
         setViewerId(data.viewerId);
         setPassType(data.passType);
         setPermissions(data.permissions);
         setPresence(data.presence || { peopleCount: 0, avatarUrls: [] });
         setRoomRateLimit(
-          channel === "room" ? data.roomRateLimit || null : null,
+          isRoomChannel ? data.roomRateLimit || null : null,
         );
         setMessages(data.messages);
         setError(null);
@@ -206,7 +240,7 @@ export default function EventRoomChat({
         if (!silent) setLoading(false);
       }
     },
-    [channel, entered, eventId, isLoggedIn, recipientId],
+    [anonymousReadOnly, channel, entered, eventId, isRoomChannel, isVipRoom, recipientId],
   );
 
   useEffect(() => {
@@ -228,11 +262,12 @@ export default function EventRoomChat({
   }, [channel, eventId, passType]);
 
   const chooseChannel = (nextChannel: Exclude<EventChatChannel, "members">) => {
+    if (anonymousReadOnly && nextChannel !== "room") return;
     setChannel(nextChannel);
     accessDeniedRef.current = false;
     setAccessDenied(false);
     setError(null);
-    if (nextChannel === "room") setRecipientId(null);
+    if (nextChannel === "room" || nextChannel === "vip") setRecipientId(null);
     setReplyTo(null);
   };
 
@@ -258,7 +293,7 @@ export default function EventRoomChat({
     const value = message.trim();
     if (!value || sending) return;
     if (!canSend) {
-      if (channel === "room" && roomRateLimit?.waitingForReply) {
+      if (isRoomChannel && roomRateLimit?.waitingForReply) {
         setError(
           translate(
             "eventChat.replyBeforeSending",
@@ -279,6 +314,7 @@ export default function EventRoomChat({
         eventId,
         message: value,
         messageType,
+        channel: channel === "vip" ? "vip" : channel === "direct" ? "direct" : "room",
         recipientId:
           channel === "direct" ? recipientId || undefined : undefined,
         replyToMessageId: replyTo?.id,
@@ -306,18 +342,97 @@ export default function EventRoomChat({
     }
   };
 
-  const openUpgrade = async (tier: "business" | "vip") => {
-    const purchaseUrl = getEventChatUpgradeUrl(eventId, tier);
-    try {
-      if (!(await Linking.canOpenURL(purchaseUrl)))
-        throw new Error("Unsupported purchase URL");
-      await Linking.openURL(purchaseUrl);
-    } catch {
-      Alert.alert(
-        "Upgrade to " + (tier === "vip" ? "VIP" : "Business"),
-        "Visit the " + eventTitle + " ticket page to upgrade your event pass.",
+  const openTicketPurchase = (tier?: "business" | "vip") => {
+    router.push({
+      pathname: "/events/[eventSlug]/tickets",
+      params: {
+        eventSlug: eventId,
+        openTicketModal: "true",
+        ...(tier ? { tier } : {}),
+      },
+    } as any);
+  };
+
+  const requestReply = (message: EventChatMessage) => {
+    if (anonymousReadOnly) {
+      showInfo(
+        translate("eventChat.readOnlyTitle", "Read-only guest view"),
+        translate(
+          "eventChat.readOnlyBody",
+          "Sign in with an event pass to react or reply to comments.",
+        ),
+        {
+          label: translate("eventChat.signIn", "Sign in"),
+          onPress: () => router.push("/(shared)/auth" as any),
+        },
       );
+      return;
     }
+    if (!canSend) {
+      showInfo(
+        translate("eventChat.replyUpgradeTitle", "Upgrade required"),
+        translate(
+          "eventChat.replyUpgradeBody",
+          "You can't reply to comments. Please upgrade your ticket to reply.",
+        ),
+        {
+          label: translate("eventChat.viewTickets", "View tickets"),
+          onPress: openTicketPurchase,
+        },
+      );
+      return;
+    }
+    setReplyTo(message);
+  };
+
+  const handleReaction = async (
+    message: EventChatMessage,
+    reactionType: EventChatReactionType,
+  ) => {
+    if (anonymousReadOnly) {
+      showInfo(
+        translate("eventChat.readOnlyTitle", "Read-only guest view"),
+        translate(
+          "eventChat.readOnlyBody",
+          "Sign in with an event pass to react or reply to comments.",
+        ),
+        {
+          label: translate("eventChat.signIn", "Sign in"),
+          onPress: () => router.push("/(shared)/auth" as any),
+        },
+      );
+      return;
+    }
+    if (reactingMessageId) return;
+    const currentReaction = message.reactions?.viewerReaction || null;
+    setReactingMessageId(message.id);
+    setReactionPickerMessageId(null);
+    try {
+      await reactToEventChatMessage({
+        eventId,
+        messageId: message.id,
+        reactionType: currentReaction === reactionType ? null : reactionType,
+        channel: channel === "direct" ? "direct" : channel === "vip" ? "vip" : "room",
+      });
+      await refreshChat(true);
+    } catch (reactionError) {
+      showError(
+        translate("eventChat.reactionFailedTitle", "Reaction unavailable"),
+        reactionError instanceof Error
+          ? reactionError.message
+          : translate("eventChat.reactionFailedBody", "Please try again."),
+      );
+    } finally {
+      setReactingMessageId(null);
+    }
+  };
+
+  const openReactionModal = (
+    messageId: string,
+    reactionType: EventRoomReactionFilter,
+  ) => {
+    setReactionDetailsKey(null);
+    setReactionModal({ messageId, reactionType });
   };
 
   const activeEmojiCategory =
@@ -325,6 +440,77 @@ export default function EventRoomChat({
       (category: (typeof CHAT_EMOJI_CATEGORIES)[number]) =>
         category.id === emojiCategory,
     ) || CHAT_EMOJI_CATEGORIES[0];
+
+  // Keep replies visually attached to their parent while preserving the
+  // chronological order within each thread. Orphaned replies (for example
+  // when the parent is outside the current page) remain top-level messages so
+  // a partial history never hides conversation content.
+  const messageRows = useMemo(() => {
+    const messageIds = new Set(messages.map((message) => message.id));
+    const childrenByParent = new Map<string, EventChatMessage[]>();
+    const roots: EventChatMessage[] = [];
+    for (const message of messages) {
+      const parentId = message.reply_to_message_id;
+      if (parentId && messageIds.has(parentId)) {
+        const children = childrenByParent.get(parentId) || [];
+        children.push(message);
+        childrenByParent.set(parentId, children);
+      } else {
+        roots.push(message);
+      }
+    }
+    const rows: [EventChatMessage, number][] = [];
+    const visited = new Set<string>();
+    const visit = (message: EventChatMessage, depth: number) => {
+      if (visited.has(message.id)) return;
+      visited.add(message.id);
+      rows.push([message, Math.min(depth, 3)]);
+      for (const child of childrenByParent.get(message.id) || []) {
+        visit(child, depth + 1);
+      }
+    };
+    roots.forEach((message) => visit(message, 0));
+    // A malformed cycle should not make messages disappear from the room.
+    messages.forEach((message) => visit(message, 0));
+    return rows;
+  }, [messages]);
+
+  const reactionModalMessage = useMemo(
+    () =>
+      reactionModal
+        ? messages.find((message) => message.id === reactionModal.messageId) ||
+          null
+        : null,
+    [messages, reactionModal],
+  );
+  const reactionModalEntries = useMemo<EventRoomReactionModalEntry[]>(() => {
+    const users = reactionModalMessage?.reactions?.users || {};
+    return EVENT_CHAT_REACTIONS.flatMap((reaction: EventRoomReactionOption) =>
+      (users[reaction.type] || []).map((name: string, index: number) => ({
+        id: `${reaction.type}:${name}:${index}`,
+        name,
+        reactionType: reaction.type,
+      })),
+    );
+  }, [reactionModalMessage]);
+  const reactionModalRows = useMemo(
+    () =>
+      reactionModal?.reactionType === "all"
+        ? reactionModalEntries
+        : reactionModalEntries.filter(
+            (entry: EventRoomReactionModalEntry) => entry.reactionType === reactionModal?.reactionType,
+          ),
+    [reactionModal, reactionModalEntries],
+  );
+  const reactionModalTotal = useMemo(
+    () =>
+      EVENT_CHAT_REACTIONS.reduce(
+        (total: number, reaction: EventRoomReactionOption) =>
+        total + (reactionModalMessage?.reactions?.counts?.[reaction.type] || 0),
+        0,
+      ),
+    [reactionModalMessage],
+  );
 
   const closeEntryDrawer = () => {
     setEntryOpen(false);
@@ -391,8 +577,12 @@ export default function EventRoomChat({
               style={[
                 styles.identityOption,
                 displayNameMode === "profile" && styles.identityOptionActive,
+                !isLoggedIn && styles.identityOptionDisabled,
               ]}
-              onPress={() => setDisplayNameMode("profile")}
+              onPress={() => {
+                if (isLoggedIn) setDisplayNameMode("profile");
+              }}
+              disabled={!isLoggedIn}
               accessibilityRole="radio"
               accessibilityState={{ selected: displayNameMode === "profile" }}
             >
@@ -404,7 +594,9 @@ export default function EventRoomChat({
               />
               <View style={styles.identityCopy}>
                 <Text style={styles.identityTitle}>Use my profile name</Text>
-                <Text style={styles.identitySubtitle}>{profileName}</Text>
+                <Text style={styles.identitySubtitle}>
+                  {isLoggedIn ? profileName : "Sign in to use your profile"}
+                </Text>
               </View>
             </TouchableOpacity>
             <TouchableOpacity
@@ -425,7 +617,7 @@ export default function EventRoomChat({
               <View style={styles.identityCopy}>
                 <Text style={styles.identityTitle}>Enter as Anonymous</Text>
                 <Text style={styles.identitySubtitle}>
-                  Your messages will show as Anonymous.
+                  Read the room without reacting or replying.
                 </Text>
               </View>
             </TouchableOpacity>
@@ -449,6 +641,124 @@ export default function EventRoomChat({
             </TouchableOpacity>
           </View>
         </Pressable>
+      </Modal>
+
+      <Modal
+        visible={Boolean(reactionModal && reactionModalMessage)}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setReactionModal(null)}
+      >
+        <ModalBackdrop
+          mode={isDark ? "dark" : "light"}
+          style={styles.reactionModalBackdrop}
+        >
+          <Pressable
+            style={styles.reactionModalDismissArea}
+            onPress={() => setReactionModal(null)}
+          >
+            <Surface
+              mode={isDark ? "dark" : "light"}
+              style={styles.reactionModalCard}
+              onStartShouldSetResponder={() => true}
+            >
+              <View style={styles.reactionModalHeader}>
+                <Text style={styles.reactionModalTitle}>
+                  {translate("eventChat.reactions", "Reactions")}
+                </Text>
+                <Pressable
+                  onPress={() => setReactionModal(null)}
+                  accessibilityRole="button"
+                  accessibilityLabel="Close reactions"
+                  hitSlop={10}
+                >
+                  <MaterialIcons
+                    name="close"
+                    size={24}
+                    color={colors.text.secondary}
+                  />
+                </Pressable>
+              </View>
+
+              <SegmentedTabs<EventRoomReactionFilter>
+                mode={isDark ? "dark" : "light"}
+                value={reactionModal?.reactionType || "all"}
+                onChange={(reactionType: EventRoomReactionFilter) =>
+                  setReactionModal((current: EventRoomReactionModalSelection | null) =>
+                    current ? { ...current, reactionType } : current,
+                  )
+                }
+                accessibilityLabel={translate(
+                  "eventChat.reactionFilters",
+                  "Reaction filters",
+                )}
+                tabs={[
+                  {
+                    id: "all",
+                    label: translate("eventChat.allReactions", "All"),
+                    count: reactionModalTotal,
+                  },
+                  ...EVENT_CHAT_REACTIONS.filter(
+                    (reaction: EventRoomReactionOption) =>
+                      (reactionModalMessage?.reactions?.counts?.[reaction.type] ||
+                        0) > 0,
+                  ).map((reaction: EventRoomReactionOption) => ({
+                    id: reaction.type,
+                    label: reaction.label,
+                    count:
+                      reactionModalMessage?.reactions?.counts?.[reaction.type] ||
+                      0,
+                    trailingIcon: (
+                      <Text style={styles.reactionModalTabEmoji}>
+                        {reaction.emoji}
+                      </Text>
+                    ),
+                  })),
+                ]}
+              />
+
+              <ScrollView
+                style={styles.reactionModalList}
+                contentContainerStyle={styles.reactionModalListContent}
+                showsVerticalScrollIndicator={false}
+              >
+                {reactionModalRows.map((entry: EventRoomReactionModalEntry) => {
+                  const reaction = EVENT_CHAT_REACTIONS.find(
+                    (candidate: EventRoomReactionOption) => candidate.type === entry.reactionType,
+                  );
+                  return (
+                    <View key={entry.id} style={styles.reactionModalRow}>
+                      <View style={styles.reactionModalAvatar}>
+                        <ProfileAvatar
+                          uri={null}
+                          name={entry.name}
+                          isDark={isDark}
+                          initialsSize={18}
+                        />
+                      </View>
+                      <View style={styles.reactionModalUserCopy}>
+                        <Text style={styles.reactionModalUserName}>
+                          {entry.name}
+                        </Text>
+                        <Text style={styles.reactionModalReaction}>
+                          {reaction?.emoji} {reaction?.label}
+                        </Text>
+                      </View>
+                    </View>
+                  );
+                })}
+                {!reactionModalRows.length && (
+                  <Text style={styles.reactionModalEmpty}>
+                    {translate(
+                      "eventChat.noReactions",
+                      "No reactions yet",
+                    )}
+                  </Text>
+                )}
+              </ScrollView>
+            </Surface>
+          </Pressable>
+        </ModalBackdrop>
       </Modal>
 
       <KeyboardAvoidingView
@@ -494,7 +804,33 @@ export default function EventRoomChat({
               Global room
             </Text>
           </TouchableOpacity>
-          {permissions.canSendDirect && (
+          {passType === "vip" && !anonymousReadOnly && (
+            <TouchableOpacity
+              style={[
+                styles.channelTab,
+                channel === "vip" && styles.channelTabActive,
+              ]}
+              onPress={() => chooseChannel("vip")}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: channel === "vip" }}
+              accessibilityLabel={translate("eventChat.vipRoom", "VIP room")}
+            >
+              <MaterialIcons
+                name="star"
+                size={14}
+                color={channel === "vip" ? "#fff" : colors.primary}
+              />
+              <Text
+                style={[
+                  styles.channelTabText,
+                  channel === "vip" && styles.channelTabTextActive,
+                ]}
+              >
+                {translate("eventChat.vipRoom", "VIP room")}
+              </Text>
+            </TouchableOpacity>
+          )}
+          {permissions.canSendDirect && !anonymousReadOnly && (
             <TouchableOpacity
               style={[
                 styles.channelTab,
@@ -516,38 +852,41 @@ export default function EventRoomChat({
           )}
         </View>
 
-        {channel === "room" && !loading && !accessDenied && (
+        {isRoomChannel && !loading && !accessDenied && (
           <View
             style={styles.presenceBar}
-            accessibilityLabel="Live event room presence"
+            accessibilityLabel={isVipRoom ? "Live VIP room presence" : "Live event room presence"}
           >
             <View style={styles.presenceAvatars}>
               {presence.avatarUrls.map(
                 (avatarUrl: string | null, index: number) => (
-                  <Image
+                  <View
                     key={`${avatarUrl || "fallback"}-${index}`}
-                    source={{
-                      uri:
-                        avatarUrl ||
-                        getEventChatAvatarUrl({
-                          senderId: `${eventId}-attendee-${index}`,
-                        }),
-                    }}
                     style={[
                       styles.presenceAvatar,
                       index > 0 && styles.presenceAvatarOffset,
                     ]}
-                    accessibilityIgnoresInvertColors
-                  />
+                    accessibilityLabel={`Attendee ${index + 1} avatar`}
+                  >
+                    <ProfileAvatar
+                      uri={avatarUrl}
+                      name={`Attendee ${index + 1}`}
+                      isDark={isDark}
+                      initialsSize={12}
+                    />
+                  </View>
                 ),
               )}
             </View>
             <Text style={styles.presenceText}>
               {presence.peopleCount === 0
-                ? translate("eventChat.zeroPeopleInRoom", "0 people in room")
+                ? translate(
+                    isVipRoom ? "eventChat.zeroPeopleInVipRoom" : "eventChat.zeroPeopleInRoom",
+                    isVipRoom ? "0 people in VIP room" : "0 people in room",
+                  )
                 : translate(
-                    "eventChat.peopleInRoom",
-                    "{count} people in room",
+                    isVipRoom ? "eventChat.peopleInVipRoom" : "eventChat.peopleInRoom",
+                    isVipRoom ? "{count} people in VIP room" : "{count} people in room",
                     { count: presence.peopleCount },
                   )}
             </Text>
@@ -583,15 +922,14 @@ export default function EventRoomChat({
                   accessibilityRole="button"
                   accessibilityLabel={`Message ${member.name}`}
                 >
-                  <Image
-                    source={{
-                      uri:
-                        member.avatarUrl ||
-                        getEventChatAvatarUrl({ senderId: member.userId }),
-                    }}
-                    style={styles.memberAvatar}
-                    accessibilityIgnoresInvertColors
-                  />
+                  <View style={styles.memberAvatar}>
+                    <ProfileAvatar
+                      uri={member.avatarUrl}
+                      name={member.name}
+                      isDark={isDark}
+                      initialsSize={12}
+                    />
+                  </View>
                   <Text
                     style={[
                       styles.memberChipText,
@@ -638,7 +976,7 @@ export default function EventRoomChat({
             {accessDenied && localizedAccessCopy.actionLabel && (
               <TouchableOpacity
                 style={styles.retryButton}
-                onPress={() => openUpgrade("business")}
+                onPress={() => openTicketPurchase()}
               >
                 <Text style={styles.retryText}>
                   {localizedAccessCopy.actionLabel}
@@ -683,7 +1021,7 @@ export default function EventRoomChat({
                 </Text>
               </View>
             )}
-            {messages.map((message) =>
+            {messageRows.map(([message, threadDepth]) =>
               (() => {
                 const isOwnMessage =
                   message.is_own_message ??
@@ -699,28 +1037,35 @@ export default function EventRoomChat({
                         candidate.id === message.reply_to_message_id,
                     )
                   : null;
+                const reactionCounts = message.reactions?.counts || {};
+                const visibleReactions = EVENT_CHAT_REACTIONS.filter(
+                  (reaction: EventRoomReactionOption) => (reactionCounts[reaction.type] || 0) > 0,
+                );
                 return (
                   <View
                     key={message.id}
                     style={[
                       styles.messageRow,
+                      threadDepth > 0 && styles.replyThreadRow,
+                      threadDepth > 0 && { marginLeft: threadDepth * 20 },
                       isOwnMessage && styles.messageRowOwn,
                     ]}
                   >
                     {isOwnMessage ? (
-                      <Image
-                        source={{
-                          uri: getEventChatAvatarUrl({
-                            senderId: message.sender_id,
-                            senderName: message.sender_name,
-                            senderAvatarUrl:
-                              profileAvatarUrl || message.sender_avatar_url,
-                            isAnonymous: message.sender_name === "Anonymous",
-                          }),
-                        }}
+                      <View
                         style={styles.avatar}
                         accessibilityLabel={`${senderName} avatar`}
-                      />
+                      >
+                        <ProfileAvatar
+                          uri={
+                            message.is_anonymous
+                              ? null
+                              : profileAvatarUrl || message.sender_avatar_url
+                          }
+                          name={senderName}
+                          isDark={isDark}
+                        />
+                      </View>
                     ) : canOpenProfile ? (
                       <TouchableOpacity
                         onPress={() =>
@@ -729,34 +1074,36 @@ export default function EventRoomChat({
                         accessibilityRole="button"
                         accessibilityLabel={`Open ${senderName} profile`}
                       >
-                        <Image
-                          source={{
-                            uri: getEventChatAvatarUrl({
-                              senderId: message.sender_id,
-                              senderName: message.sender_name,
-                              senderAvatarUrl: message.sender_avatar_url,
-                              isAnonymous: message.sender_name === "Anonymous",
-                            }),
-                          }}
+                        <View
                           style={styles.avatar}
                           accessibilityLabel={`${senderName} avatar`}
-                        />
+                        >
+                          <ProfileAvatar
+                            uri={
+                              message.is_anonymous
+                                ? null
+                                : message.sender_avatar_url
+                            }
+                            name={senderName}
+                            isDark={isDark}
+                          />
+                        </View>
                       </TouchableOpacity>
                     ) : (
-                      <Image
-                        source={{
-                          uri: getEventChatAvatarUrl({
-                            senderId: message.sender_id,
-                            senderName: message.sender_name,
-                            senderAvatarUrl: message.sender_avatar_url,
-                            isAnonymous:
-                              message.is_anonymous ||
-                              message.sender_name === "Anonymous",
-                          }),
-                        }}
+                      <View
                         style={styles.avatar}
                         accessibilityLabel={`${senderName} avatar`}
-                      />
+                      >
+                        <ProfileAvatar
+                          uri={
+                            message.is_anonymous
+                              ? null
+                              : message.sender_avatar_url
+                          }
+                          name={senderName}
+                          isDark={isDark}
+                        />
+                      </View>
                     )}
                     <View style={styles.messageColumn}>
                       <View style={styles.messageMeta}>
@@ -783,6 +1130,12 @@ export default function EventRoomChat({
                       </View>
                       {repliedMessage && (
                         <View style={styles.replyQuote}>
+                          <View style={styles.replyQuoteHeader}>
+                            <MaterialIcons
+                              name="reply"
+                              size={13}
+                              color={colors.primary}
+                            />
                           <Text
                             style={styles.replyQuoteAuthor}
                             numberOfLines={1}
@@ -797,9 +1150,7 @@ export default function EventRoomChat({
                               },
                             )}
                           </Text>
-                          <Text style={styles.replyQuoteText} numberOfLines={1}>
-                            {repliedMessage.message}
-                          </Text>
+                          </View>
                         </View>
                       )}
                       <View
@@ -812,24 +1163,151 @@ export default function EventRoomChat({
                           {message.message}
                         </Text>
                       </View>
-                      <TouchableOpacity
-                        style={styles.replyButton}
-                        onPress={() => setReplyTo(message)}
-                        accessibilityRole="button"
-                        accessibilityLabel={translate(
-                          "eventChat.replyToMessage",
-                          "Reply to message",
+                      <View style={styles.reactionBar}>
+                        {!anonymousReadOnly && (
+                          <TouchableOpacity
+                            style={styles.reactionTrigger}
+                            onPress={() =>
+                              setReactionPickerMessageId((current) =>
+                                current === message.id ? null : message.id,
+                              )
+                            }
+                            accessibilityRole="button"
+                            accessibilityLabel={translate(
+                              "eventChat.reactToMessage",
+                              "React to message",
+                            )}
+                          >
+                            <MaterialIcons
+                              name="thumb-up"
+                              size={14}
+                              color={colors.text.secondary}
+                            />
+                            <Text style={styles.reactionTriggerText}>
+                              {translate("eventChat.react", "React")}
+                            </Text>
+                          </TouchableOpacity>
                         )}
-                      >
-                        <MaterialIcons
-                          name="reply"
-                          size={14}
-                          color={colors.text.secondary}
-                        />
-                        <Text style={styles.replyButtonText}>
-                          {translate("eventChat.reply", "Reply")}
-                        </Text>
-                      </TouchableOpacity>
+                        {visibleReactions.map((reaction: EventRoomReactionOption) => (
+                          (() => {
+                            const reactionKey = `${message.id}:${reaction.type}`;
+                            const reactionUsers =
+                              message.reactions?.users?.[reaction.type] || [];
+                            const detailsVisible =
+                              reactionDetailsKey === reactionKey &&
+                              reactionUsers.length > 0;
+                            return (
+                              <View
+                                key={reaction.type}
+                                style={styles.reactionChipContainer}
+                              >
+                                <Pressable
+                                  style={[
+                                    styles.reactionCount,
+                                    message.reactions?.viewerReaction === reaction.type &&
+                                      styles.reactionCountActive,
+                                  ]}
+                                  onPress={() =>
+                                    openReactionModal(message.id, reaction.type)
+                                  }
+                                  onLongPress={() =>
+                                    setReactionDetailsKey(reactionKey)
+                                  }
+                                  onHoverIn={() =>
+                                    setReactionDetailsKey(reactionKey)
+                                  }
+                                  onHoverOut={() =>
+                                    setReactionDetailsKey((current) =>
+                                      current === reactionKey ? null : current,
+                                    )
+                                  }
+                                  onFocus={() =>
+                                    setReactionDetailsKey(reactionKey)
+                                  }
+                                  onBlur={() =>
+                                    setReactionDetailsKey((current) =>
+                                      current === reactionKey ? null : current,
+                                    )
+                                  }
+                                  accessibilityRole="button"
+                                  accessibilityLabel={`${reaction.label} ${message.reactions?.counts[reaction.type] || 0}`}
+                                  accessibilityHint="Open the list of people who reacted"
+                                >
+                                  <Text style={styles.reactionEmoji}>
+                                    {reaction.emoji}
+                                  </Text>
+                                  <Text style={styles.reactionCountText}>
+                                    {reactionCounts[reaction.type]}
+                                  </Text>
+                                </Pressable>
+                                {detailsVisible && (
+                                  <Surface
+                                    mode={isDark ? "dark" : "light"}
+                                    style={styles.reactionUsersPopover}
+                                    pointerEvents="none"
+                                  >
+                                    <Text style={styles.reactionUsersTitle}>
+                                      {reaction.emoji} {reaction.label}
+                                    </Text>
+                                    {reactionUsers.slice(0, 8).map((name: string, index: number) => (
+                                      <Text
+                                        key={`${name}-${index}`}
+                                        style={styles.reactionUserName}
+                                        numberOfLines={1}
+                                      >
+                                        {name}
+                                      </Text>
+                                    ))}
+                                    {reactionUsers.length > 8 && (
+                                      <Text style={styles.reactionUsersMore}>
+                                        +{reactionUsers.length - 8} more
+                                      </Text>
+                                    )}
+                                  </Surface>
+                                )}
+                              </View>
+                            );
+                          })()
+                        ))}
+                      </View>
+                      {!anonymousReadOnly && reactionPickerMessageId === message.id && (
+                        <ScrollView
+                          horizontal
+                          showsHorizontalScrollIndicator={false}
+                          contentContainerStyle={styles.reactionPicker}
+                        >
+                          {EVENT_CHAT_REACTIONS.map((reaction: EventRoomReactionOption) => (
+                            <FilterChip
+                              key={reaction.type}
+                              mode={isDark ? "dark" : "light"}
+                              label={reaction.emoji}
+                              selected={message.reactions?.viewerReaction === reaction.type}
+                              onPress={() => void handleReaction(message, reaction.type)}
+                              accessibilityLabel={reaction.label}
+                            />
+                          ))}
+                        </ScrollView>
+                      )}
+                      {!anonymousReadOnly && (
+                        <TouchableOpacity
+                          style={styles.replyButton}
+                          onPress={() => requestReply(message)}
+                          accessibilityRole="button"
+                          accessibilityLabel={translate(
+                            "eventChat.replyToMessage",
+                            "Reply to message",
+                          )}
+                        >
+                          <MaterialIcons
+                            name="reply"
+                            size={14}
+                            color={colors.text.secondary}
+                          />
+                          <Text style={styles.replyButtonText}>
+                            {translate("eventChat.reply", "Reply")}
+                          </Text>
+                        </TouchableOpacity>
+                      )}
                     </View>
                   </View>
                 );
@@ -841,7 +1319,7 @@ export default function EventRoomChat({
         {error && messages.length > 0 && (
           <Text style={styles.inlineError}>{error}</Text>
         )}
-        {!loading && channel === "room" && roomRateLimit?.waitingForReply && (
+        {!loading && isRoomChannel && roomRateLimit?.waitingForReply && (
           <View style={styles.rateLimitNotice} accessibilityRole="alert">
             <MaterialIcons name="forum" size={18} color={colors.primary} />
             <Text style={styles.rateLimitText}>
@@ -853,6 +1331,32 @@ export default function EventRoomChat({
             </Text>
           </View>
         )}
+        {!loading && anonymousReadOnly && !accessDenied && (
+          <View style={styles.readOnlyBanner} accessibilityRole="alert">
+            <MaterialIcons name="visibility" size={18} color={colors.primary} />
+            <View style={styles.readOnlyBannerCopy}>
+              <Text style={styles.readOnlyBannerTitle}>
+                {translate("eventChat.readOnlyTitle", "Read-only guest view")}
+              </Text>
+              <Text style={styles.readOnlyBannerText}>
+                {translate(
+                  "eventChat.readOnlyBody",
+                  "Sign in with an event pass to react or reply to comments.",
+                )}
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={styles.readOnlySignIn}
+              onPress={() => router.push("/(shared)/auth" as any)}
+              accessibilityRole="button"
+              accessibilityLabel={translate("eventChat.signIn", "Sign in")}
+            >
+              <Text style={styles.readOnlySignInText}>
+                {translate("eventChat.signIn", "Sign in")}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
         {!loading && passType === "general" && (
           <View style={styles.upgradeNotice}>
             <Text style={styles.readOnlyNote}>
@@ -862,21 +1366,23 @@ export default function EventRoomChat({
             <View style={styles.upgradeActions}>
               <TouchableOpacity
                 style={styles.upgradeButton}
-                onPress={() => openUpgrade("business")}
+                onPress={() => openTicketPurchase("business")}
                 accessibilityRole="button"
-                accessibilityLabel="Upgrade to Business"
+                accessibilityLabel={translate("eventChat.upgradeBusiness", "Upgrade to Business")}
               >
                 <Text style={styles.upgradeButtonText}>
-                  Upgrade to Business
+                  {translate("eventChat.upgradeBusiness", "Upgrade to Business")}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.upgradeButton, styles.vipButton]}
-                onPress={() => openUpgrade("vip")}
+                onPress={() => openTicketPurchase("vip")}
                 accessibilityRole="button"
-                accessibilityLabel="Upgrade to VIP"
+                accessibilityLabel={translate("eventChat.upgradeVip", "Upgrade to VIP")}
               >
-                <Text style={styles.upgradeButtonText}>Upgrade to VIP</Text>
+                <Text style={styles.upgradeButtonText}>
+                  {translate("eventChat.upgradeVip", "Upgrade to VIP")}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -973,7 +1479,9 @@ export default function EventRoomChat({
                 placeholder={
                   channel === "direct"
                     ? "Write a direct message"
-                    : "Write to the event room"
+                    : isVipRoom
+                      ? "Write to the VIP room"
+                      : "Write to the event room"
                 }
                 placeholderTextColor={colors.text.secondary}
                 style={styles.input}
@@ -1034,15 +1542,19 @@ const getStyles = (colors: any) =>
     channelTabs: {
       flexDirection: "row",
       paddingHorizontal: 16,
-      paddingTop: 14,
+      paddingTop: 12,
+      paddingBottom: 2,
       gap: 8,
     },
     channelTab: {
       borderRadius: 18,
       borderWidth: 1,
       borderColor: colors.divider,
-      paddingHorizontal: 15,
-      paddingVertical: 9,
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 5,
     },
     channelTabActive: {
       backgroundColor: colors.primary,
@@ -1058,18 +1570,19 @@ const getStyles = (colors: any) =>
       flexDirection: "row",
       alignItems: "center",
       paddingHorizontal: 18,
-      paddingVertical: 10,
+      paddingVertical: 11,
       borderBottomWidth: 1,
       borderBottomColor: colors.divider,
       gap: 8,
     },
-    presenceAvatars: { flexDirection: "row", minWidth: 40 },
+    presenceAvatars: { flexDirection: "row", minWidth: 40, height: 28 },
     presenceAvatar: {
       width: 28,
       height: 28,
       borderRadius: 14,
       borderWidth: 2,
       borderColor: colors.background.primary,
+      overflow: "hidden",
     },
     presenceAvatarOffset: { marginLeft: -8 },
     presenceText: {
@@ -1095,16 +1608,24 @@ const getStyles = (colors: any) =>
       fontWeight: "800",
       textTransform: "uppercase",
     },
-    memberRail: { paddingHorizontal: 16, paddingVertical: 12, gap: 8 },
+    memberRail: { paddingHorizontal: 16, paddingVertical: 10, gap: 8 },
     memberChip: {
-      maxWidth: 160,
+      maxWidth: 190,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
       borderRadius: 16,
       borderWidth: 1,
       borderColor: colors.divider,
       paddingHorizontal: 12,
-      paddingVertical: 7,
+      paddingVertical: 6,
     },
-    memberAvatar: { width: 24, height: 24, borderRadius: 12, marginBottom: 4 },
+    memberAvatar: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      overflow: "hidden",
+    },
     memberChipActive: {
       backgroundColor: colors.text.primary,
       borderColor: colors.text.primary,
@@ -1122,27 +1643,35 @@ const getStyles = (colors: any) =>
       paddingBottom: 6,
     },
     messageScroll: { flex: 1 },
-    messageContent: { padding: 16, paddingBottom: 28 },
+    messageContent: { paddingHorizontal: 16, paddingTop: 18, paddingBottom: 30 },
     messageRow: {
       flexDirection: "row",
       alignSelf: "flex-start",
-      maxWidth: "92%",
-      marginBottom: 14,
+      alignItems: "flex-start",
+      maxWidth: "96%",
+      marginBottom: 18,
       gap: 10,
     },
     messageRowOwn: { alignSelf: "flex-end", flexDirection: "row-reverse" },
+    replyThreadRow: {
+      borderLeftWidth: 2,
+      borderLeftColor: `${colors.primary}45`,
+      paddingLeft: 10,
+    },
     avatar: {
       width: 38,
       height: 38,
       borderRadius: 19,
       backgroundColor: colors.background.secondary,
+      overflow: "hidden",
     },
-    messageColumn: { flexShrink: 1, maxWidth: "86%" },
+    messageColumn: { flexShrink: 1, maxWidth: "88%" },
     messageMeta: {
       flexDirection: "row",
       alignItems: "center",
+      flexWrap: "wrap",
       gap: 8,
-      marginBottom: 5,
+      marginBottom: 6,
     },
     messageAuthor: { color: colors.primary, fontSize: 12, fontWeight: "800" },
     messageTime: { color: colors.text.secondary, fontSize: 11 },
@@ -1150,15 +1679,171 @@ const getStyles = (colors: any) =>
       backgroundColor: colors.background.secondary,
       borderRadius: 16,
       borderTopLeftRadius: 5,
+      borderWidth: 1,
+      borderColor: colors.divider,
       paddingHorizontal: 13,
       paddingVertical: 10,
     },
     messageBubbleOwn: {
       backgroundColor: colors.primary + "18",
+      borderColor: colors.primary + "30",
       borderTopLeftRadius: 16,
       borderTopRightRadius: 5,
     },
     messageText: { color: colors.text.primary, fontSize: 15, lineHeight: 21 },
+    reactionBar: {
+      flexDirection: "row",
+      alignItems: "center",
+      flexWrap: "wrap",
+      gap: 5,
+      marginTop: 6,
+    },
+    reactionTrigger: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+      paddingHorizontal: 6,
+      paddingVertical: 4,
+      borderRadius: uiTokens.radius.pill,
+    },
+    reactionTriggerText: {
+      color: colors.text.secondary,
+      fontSize: 11,
+      fontWeight: "700",
+    },
+    reactionCount: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 3,
+      paddingHorizontal: 6,
+      paddingVertical: 3,
+      borderRadius: uiTokens.radius.pill,
+      backgroundColor: colors.background.secondary,
+      borderWidth: 1,
+      borderColor: colors.divider,
+    },
+    reactionChipContainer: {
+      position: "relative",
+      zIndex: 2,
+    },
+    reactionUsersPopover: {
+      position: "absolute",
+      left: 0,
+      bottom: 34,
+      minWidth: 150,
+      maxWidth: 230,
+      paddingHorizontal: 10,
+      paddingVertical: 8,
+      borderRadius: uiTokens.radius.small,
+      zIndex: 20,
+      elevation: 8,
+      shadowColor: colors.text.primary,
+      shadowOpacity: 0.18,
+      shadowRadius: 8,
+      shadowOffset: { width: 0, height: 3 },
+    },
+    reactionUsersTitle: {
+      color: colors.text.primary,
+      fontSize: 11,
+      fontWeight: "800",
+      marginBottom: 4,
+    },
+    reactionUserName: {
+      color: colors.text.secondary,
+      fontSize: 11,
+      lineHeight: 17,
+    },
+    reactionUsersMore: {
+      color: colors.primary,
+      fontSize: 10,
+      fontWeight: "700",
+      marginTop: 2,
+    },
+    reactionModalBackdrop: { flex: 1 },
+    reactionModalDismissArea: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      padding: uiTokens.space.lg,
+    },
+    reactionModalCard: {
+      width: "100%",
+      maxWidth: 560,
+      maxHeight: "82%",
+      padding: 0,
+      overflow: "hidden",
+    },
+    reactionModalHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: uiTokens.space.xl,
+      paddingVertical: uiTokens.space.lg,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.divider,
+    },
+    reactionModalTitle: {
+      color: colors.text.primary,
+      fontSize: uiTokens.type.title,
+      fontWeight: "800",
+    },
+    reactionModalTabEmoji: {
+      color: colors.text.primary,
+      fontSize: uiTokens.type.label,
+    },
+    reactionModalList: {
+      flex: 1,
+      minHeight: uiTokens.control.minHeight,
+    },
+    reactionModalListContent: {
+      paddingHorizontal: uiTokens.space.xl,
+      paddingBottom: uiTokens.space.md,
+    },
+    reactionModalRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: uiTokens.space.md,
+      paddingVertical: uiTokens.space.md,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.divider,
+    },
+    reactionModalAvatar: {
+      width: uiTokens.control.minHeight,
+      height: uiTokens.control.minHeight,
+      borderRadius: uiTokens.radius.circle,
+      overflow: "hidden",
+    },
+    reactionModalUserCopy: { flex: 1, gap: uiTokens.space.xs },
+    reactionModalUserName: {
+      color: colors.text.primary,
+      fontSize: uiTokens.type.body,
+      fontWeight: "800",
+    },
+    reactionModalReaction: {
+      color: colors.text.secondary,
+      fontSize: uiTokens.type.label,
+    },
+    reactionModalEmpty: {
+      color: colors.text.secondary,
+      fontSize: uiTokens.type.body,
+      paddingVertical: uiTokens.space.xl,
+      textAlign: "center",
+    },
+    reactionCountActive: {
+      backgroundColor: `${colors.primary}18`,
+      borderColor: colors.primary,
+    },
+    reactionCountText: {
+      color: colors.text.secondary,
+      fontSize: 10,
+      fontWeight: "800",
+    },
+    reactionEmoji: { fontSize: 15, lineHeight: 18 },
+    reactionPicker: {
+      gap: 5,
+      paddingVertical: 4,
+      paddingRight: 6,
+    },
     replyQuote: {
       borderLeftWidth: 3,
       borderLeftColor: colors.primary,
@@ -1168,15 +1853,15 @@ const getStyles = (colors: any) =>
       marginBottom: 4,
       borderRadius: 6,
     },
+    replyQuoteHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+    },
     replyQuoteAuthor: {
       color: colors.primary,
       fontSize: 10,
       fontWeight: "800",
-    },
-    replyQuoteText: {
-      color: colors.text.secondary,
-      fontSize: 11,
-      marginTop: 2,
     },
     replyButton: {
       flexDirection: "row",
@@ -1247,8 +1932,42 @@ const getStyles = (colors: any) =>
       paddingVertical: 10,
       lineHeight: 17,
     },
-    upgradeNotice: { paddingBottom: 10 },
-    upgradeActions: { flexDirection: "row", gap: 8, paddingHorizontal: 16 },
+    readOnlyBanner: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      marginHorizontal: 16,
+      marginBottom: 10,
+      padding: 12,
+      borderRadius: uiTokens.radius.input,
+      borderWidth: 1,
+      borderColor: `${colors.primary}45`,
+      backgroundColor: `${colors.primary}10`,
+    },
+    readOnlyBannerCopy: { flex: 1, gap: 2 },
+    readOnlyBannerTitle: {
+      color: colors.text.primary,
+      fontSize: 12,
+      fontWeight: "800",
+    },
+    readOnlyBannerText: {
+      color: colors.text.secondary,
+      fontSize: 11,
+      lineHeight: 16,
+    },
+    readOnlySignIn: {
+      borderRadius: uiTokens.radius.card,
+      paddingHorizontal: 11,
+      paddingVertical: 8,
+      backgroundColor: colors.primary,
+    },
+    readOnlySignInText: { color: colors.primaryContrastText, fontSize: 11, fontWeight: "800" },
+    upgradeNotice: { paddingBottom: 10, gap: 4 },
+    upgradeActions: {
+      flexDirection: "row",
+      gap: 8,
+      paddingHorizontal: 16,
+    },
     upgradeButton: {
       flex: 1,
       backgroundColor: colors.primary,
@@ -1385,6 +2104,7 @@ const getStyles = (colors: any) =>
       borderColor: colors.primary,
       backgroundColor: `${colors.primary}12`,
     },
+    identityOptionDisabled: { opacity: 0.55 },
     identityRadio: {
       width: 18,
       height: 18,

@@ -69,6 +69,75 @@ describe("event chat client", () => {
     );
   });
 
+  it("loads and sends through the VIP room channel", async () => {
+    mockGet.mockResolvedValue({
+      success: true,
+      data: {
+        data: {
+          eventId: "colombia2026",
+          passType: "vip",
+          permissions: { canReadRoom: true, canSendRoom: true, canSendDirect: true },
+          messages: [],
+        },
+      },
+    });
+    mockPost.mockResolvedValue({ success: true, data: { data: { id: "vip-message-1" } } });
+
+    /* eslint-disable-next-line @typescript-eslint/no-require-imports */
+    const { loadEventChat, sendEventChatMessage } = require("../../lib/event-chat");
+    await expect(loadEventChat("colombia2026", "vip")).resolves.toMatchObject({
+      eventId: "colombia2026",
+      passType: "vip",
+    });
+    await sendEventChatMessage({
+      eventId: "colombia2026",
+      channel: "vip",
+      message: "VIP hello",
+    });
+
+    expect(mockGet).toHaveBeenCalledWith(
+      "/events/colombia2026/chat",
+      expect.objectContaining({ params: { channel: "vip", recipientId: undefined } }),
+    );
+    expect(mockPost).toHaveBeenCalledWith(
+      "/events/colombia2026/chat",
+      expect.objectContaining({ action: "send", channel: "vip", message: "VIP hello" }),
+      { skipEventSegment: true },
+    );
+  });
+
+  it("posts a LinkedIn-style reaction through the event chat endpoint", async () => {
+    mockPost.mockResolvedValue({
+      success: true,
+      data: {
+        data: {
+          messageId: "message-1",
+          reaction: { counts: { like: 1 }, viewerReaction: "like" },
+        },
+      },
+    });
+
+    /* eslint-disable-next-line @typescript-eslint/no-require-imports */
+    const { reactToEventChatMessage } = require("../../lib/event-chat");
+    await expect(
+      reactToEventChatMessage({
+        eventId: "colombia2026",
+        messageId: "message-1",
+        reactionType: "like",
+      }),
+    ).resolves.toMatchObject({ messageId: "message-1" });
+    expect(mockPost).toHaveBeenCalledWith(
+      "/events/colombia2026/chat",
+      {
+        action: "react",
+        channel: "room",
+        messageId: "message-1",
+        reactionType: "like",
+      },
+      { skipEventSegment: true },
+    );
+  });
+
   it("preserves a forbidden response so the room can stop polling", async () => {
     mockGet.mockResolvedValue({
       success: false,
@@ -141,6 +210,32 @@ describe("event chat client", () => {
       "/events/colombia2026/chat",
       { action: "presence", channel: "presence" },
       { skipEventSegment: true },
+    );
+  });
+
+  it("uses a separate presence channel for the VIP room", async () => {
+    mockPost.mockResolvedValue({
+      success: true,
+      data: { data: { eventId: "colombia2026", presence: { peopleCount: 1, avatarUrls: [null] } } },
+    });
+    mockGet.mockResolvedValue({
+      success: true,
+      data: { data: { eventId: "colombia2026", presence: { peopleCount: 1, avatarUrls: [null] } } },
+    });
+
+    /* eslint-disable-next-line @typescript-eslint/no-require-imports */
+    const { heartbeatEventChatPresence, loadEventChatPresence } = require("../../lib/event-chat");
+    await heartbeatEventChatPresence("colombia2026", "vip");
+    await loadEventChatPresence("colombia2026", "vip");
+
+    expect(mockPost).toHaveBeenCalledWith(
+      "/events/colombia2026/chat",
+      { action: "presence", channel: "presence", roomChannel: "vip" },
+      { skipEventSegment: true },
+    );
+    expect(mockGet).toHaveBeenCalledWith(
+      "/events/colombia2026/chat",
+      expect.objectContaining({ params: { channel: "presence", roomChannel: "vip" } }),
     );
   });
 

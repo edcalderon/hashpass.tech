@@ -122,7 +122,11 @@
     "replyToMessage": "Auf Nachricht antworten",
     "replyingTo": "Antwort an {name}",
     "cancelReply": "Antwort abbrechen",
-    "replyBeforeSending": "Du hast {count} Nachrichten hintereinander gesendet. Warte auf eine Antwort von einem anderen Teilnehmer, bevor du weitere Nachrichten sendest."
+    "replyBeforeSending": "Du hast {count} Nachrichten hintereinander gesendet. Warte auf eine Antwort von einem anderen Teilnehmer, bevor du weitere Nachrichten sendest.",
+    "reactions": "Reaktionen",
+    "reactionFilters": "Reaktionsfilter",
+    "allReactions": "Alle",
+    "noReactions": "Noch keine Reaktionen"
   },
   "common": {
     "back": "Zurück",

@@ -22,25 +22,66 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610251739, // Updated to current timestamp
-  releaseDate: '2026-10-25',
+  buildNumber: 202610260112, // Updated to current timestamp
+  releaseDate: '2026-10-26',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'refine event card badges',
-    'add spacious event grid cards',
-    'reveal bookmark labels on hover',
-    'refine event card room actions'
+    'add pass lifecycle and event chat workflows'
   ],
   bugfixes: [
-    'quiet networking telemetry logs'
+    'reuse shared wallet action buttons',
+    'use shared reaction controls',
+    'retain ticket QR proof on resubmission',
+    'preserve automatic pass QR issuance',
+    'harden external ticket claims',
+    'bind pass QR issuance to owner and recover failed transfer emails',
+    'prevent duplicate pass entitlements',
+    'harden public pass transfers'
   ],
   breakingChanges: [],
-  notes: 'refine event card badges; add spacious event grid cards; reveal bookmark labels on hover; refine event card room actions; quiet networking telemetry logs'
+  notes: 'add pass lifecycle and event chat workflows; reuse shared wallet action buttons; use shared reaction controls; retain ticket QR proof on resubmission; preserve automatic pass QR issuance; harden external ticket claims; bind pass QR issuance to owner and recover failed transfer emails; prevent duplicate pass entitlements; harden public pass transfers'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.149': {
+    version: '1.9.149',
+    buildNumber: 202610260112,
+    releaseDate: '2026-10-26',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'add pass lifecycle and event chat workflows'
+    ],
+    bugfixes: [
+      'reuse shared wallet action buttons',
+      'use shared reaction controls',
+      'retain ticket QR proof on resubmission',
+      'preserve automatic pass QR issuance',
+      'harden external ticket claims',
+      'bind pass QR issuance to owner and recover failed transfer emails',
+      'prevent duplicate pass entitlements',
+      'harden public pass transfers'
+    ],
+    breakingChanges: [],
+    notes: 'add pass lifecycle and event chat workflows; reuse shared wallet action buttons; use shared reaction controls; retain ticket QR proof on resubmission; preserve automatic pass QR issuance; harden external ticket claims; bind pass QR issuance to owner and recover failed transfer emails; prevent duplicate pass entitlements; harden public pass transfers'
+  },
+  '1.9.148': {
+    version: '1.9.148',
+    buildNumber: 202610252350,
+    releaseDate: '2026-10-25',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'add pass lifecycle and event chat workflows'
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'add pass lifecycle and event chat workflows'
+  },
   '1.9.147': {
     version: '1.9.147',
     buildNumber: 202610251739,

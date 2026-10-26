@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, Alert, ActivityIndicator, ScrollView, Platform } from 'react-native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { ActionButton } from '@hashpass/ui/primitives';
 import { useTheme } from '../hooks/useTheme';
 import { useAuth } from '../hooks/useAuth';
 import { qrSystemService, QRScanResult, QRCode } from '../lib/qr-system';
@@ -11,6 +12,7 @@ import { PassType } from '../lib/pass-system';
 import { qrScannerService } from '../lib/qr-scanner-service';
 import { resolveHashpassQrPayload } from '../lib/qr-payload-resolver';
 import type { HashpassQrResolution, ParsedHashpassQrPayload } from '../types/qr-payload.types';
+import type { ExternalTicketClaimInspection } from '../types/ExternalTicketClaim.types';
 import { useQrCameraSession } from '../hooks/qr-camera-machine';
 import { BarCodeScanner, type BarCodeScannerResult } from '../lib/barcode-scanner-compat';
 
@@ -45,6 +47,7 @@ export default function AdminQRScanner({
   const [isProcessing, setIsProcessing] = useState(false);
   const [scanResult, setScanResult] = useState<QRScanResult | null>(null);
   const [resolvedPayload, setResolvedPayload] = useState<HashpassQrResolution | null>(null);
+  const [externalTicketClaim, setExternalTicketClaim] = useState<ExternalTicketClaimInspection | null>(null);
   const [qrDetails, setQrDetails] = useState<QRCode | null>(null);
   const [isUserAdmin, setIsUserAdmin] = useState(false);
   const [adminCheckLoading, setAdminCheckLoading] = useState(true); // Track admin check status
@@ -76,6 +79,7 @@ export default function AdminQRScanner({
       setIsProcessing(false);
       setScanResult(null);
       setResolvedPayload(null);
+      setExternalTicketClaim(null);
       setQrDetails(null);
       setShowDetails(false);
       setCameraReady(false);
@@ -396,6 +400,7 @@ export default function AdminQRScanner({
     setIsProcessing(false);
     setScanResult(null);
     setResolvedPayload(null);
+    setExternalTicketClaim(null);
     setQrDetails(null);
     setShowDetails(false);
     
@@ -412,9 +417,57 @@ export default function AdminQRScanner({
     }
   }, [useWebFallback, hasPermission]);
 
+  // Original event tickets are not HashPass payloads. Ask the backend to
+  // inspect the raw value so admins can verify a submitted Blockchain Summit
+  // ticket without exposing the source QR to the client database.
+  const inspectExternalTicket = useCallback(async (data: string): Promise<ExternalTicketClaimInspection | null> => {
+    const inspectionResponse = await apiClient.post(
+      '/admin/pass-ticket-claims',
+      { action: 'inspect', qrPayload: data },
+      { skipEventSegment: true },
+    );
+    if (!inspectionResponse.success) return null;
+    const inspectionPayload = inspectionResponse.data as { data?: ExternalTicketClaimInspection } | ExternalTicketClaimInspection;
+    return ('data' in inspectionPayload
+      ? inspectionPayload.data
+      : inspectionPayload) as ExternalTicketClaimInspection;
+  }, []);
+
+  const showExternalInspection = useCallback((inspection: ExternalTicketClaimInspection) => {
+    setExternalTicketClaim(inspection);
+    setResolvedPayload(null);
+    setQrDetails(null);
+    setScanResult({
+      valid: inspection.valid,
+      status: inspection.valid ? 'valid' : 'invalid',
+      message: inspection.message || (
+        inspection.status === 'converted'
+          ? 'This original ticket has already been converted.'
+          : inspection.status === 'unregistered'
+            ? 'This original ticket has not been submitted for verification.'
+            : 'Original ticket QR inspected.'
+      ),
+      display_data: inspection,
+    });
+    setShowDetails(true);
+    if (onScanSuccess) onScanSuccess({
+      valid: inspection.valid,
+      status: inspection.valid ? 'valid' : 'invalid',
+      message: inspection.message || 'Original ticket QR inspected.',
+      display_data: inspection,
+    });
+  }, [onScanSuccess]);
+
   const processScanData = useCallback(async (data: string) => {
     const parsed = qrScannerService.parseHashpassPayload(data);
-    if (!parsed.isValid) throw new Error('Unsupported QR code. Scan a HashPass ID, pass, network, or minted QR.');
+    if (!parsed.isValid || parsed.kind === 'url') {
+      const inspection = await inspectExternalTicket(data);
+      if (!inspection) {
+        throw new Error('Unsupported QR code. Scan a HashPass QR or an original event ticket QR.');
+      }
+      showExternalInspection(inspection);
+      return;
+    }
 
     if (parsed.kind !== 'qr_token') {
       const resolved = await resolveHashpassQrPayload(parsed);
@@ -438,11 +491,28 @@ export default function AdminQRScanner({
 
     const token = parsed.token!;
     let result = await qrSystemService.checkQRValidity(token);
+    if (!result.valid && result.status === 'invalid') {
+      // An original ticket QR can carry a `token` field or `?token=` URL that
+      // looks like a HashPass token. The validity check above does not consume
+      // anything, so when no native QR matches, see if the value is a
+      // submitted external ticket before reporting a plain failure.
+      let inspection: ExternalTicketClaimInspection | null = null;
+      try {
+        inspection = await inspectExternalTicket(data);
+      } catch (error) {
+        console.warn('External ticket inspection unavailable:', error);
+      }
+      if (inspection && inspection.status !== 'unregistered') {
+        showExternalInspection(inspection);
+        return;
+      }
+    }
     if (result.valid) {
       result = await qrSystemService.validateAndUseQR(token, user?.id, 'admin-scanner');
     }
     setScanResult(result);
     setResolvedPayload(null);
+    setExternalTicketClaim(null);
     const qr = await qrSystemService.getQRByToken(token);
     setQrDetails(qr);
     if (qr?.pass_id || qr?.display_data?.pass_number) {
@@ -463,7 +533,7 @@ export default function AdminQRScanner({
     }
     setShowDetails(true);
     if (onScanSuccess) onScanSuccess(result);
-  }, [onPassResolved, onScanSuccess, user?.id]);
+  }, [inspectExternalTicket, onPassResolved, onScanSuccess, showExternalInspection, user?.id]);
 
   // Memoize scan callback to prevent unnecessary re-renders of BarCodeScanner
   const scanCallback = useCallback(async ({ data }: BarCodeScannerResult) => {
@@ -591,6 +661,58 @@ export default function AdminQRScanner({
       Alert.alert('Error', error.message || 'Failed to reactivate QR code');
     }
   };
+
+  const approveExternalTicketClaim = useCallback(() => {
+    const claim = externalTicketClaim?.claim;
+    if (!claim) return;
+
+    Alert.alert(
+      'Create HashPass pass',
+      `Approve the ${claim.requested_pass_type.toUpperCase()} claim for ticket ending in ${claim.ticket_code_last4}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Approve',
+          onPress: async () => {
+            try {
+              const response = await apiClient.post(
+                '/admin/pass-ticket-claims',
+                {
+                  action: 'approve',
+                  claimId: claim.id,
+                  passType: claim.requested_pass_type,
+                },
+                { skipEventSegment: true },
+              );
+              if (!response.success) throw new Error(response.error || 'Unable to approve this claim');
+              const payload = response.data as { data?: { status?: string; pass_id?: string | null } };
+              const result = payload.data || {};
+              setExternalTicketClaim((current) => current ? {
+                ...current,
+                valid: false,
+                status: 'converted',
+                message: 'The original ticket was converted into a HashPass pass.',
+                claim: current.claim ? {
+                  ...current.claim,
+                  status: 'converted',
+                  hashpass_pass_id: result.pass_id || current.claim.hashpass_pass_id,
+                } : current.claim,
+              } : current);
+              setScanResult((current: QRScanResult | null) => current ? {
+                ...current,
+                valid: false,
+                status: 'invalid',
+                message: 'The original ticket was converted into a HashPass pass.',
+              } : current);
+              Alert.alert('Pass created', 'The verified ticket is now represented by a HashPass-managed pass.');
+            } catch (error) {
+              Alert.alert('Claim not approved', error instanceof Error ? error.message : 'Please try again.');
+            }
+          },
+        },
+      ],
+    );
+  }, [externalTicketClaim]);
 
   if (!visible) return null;
 
@@ -774,7 +896,7 @@ export default function AdminQRScanner({
         />
         
         {/* Show QR details in a separate modal when showDetails is true */}
-        {showDetails && scanResult && (qrDetails || resolvedPayload) && (
+        {showDetails && scanResult && (qrDetails || resolvedPayload || externalTicketClaim) && (
           <Modal visible={showDetails} animationType="slide" transparent>
             <View style={styles.modalContainer}>
               <View style={styles.scannerContainer}>
@@ -821,6 +943,33 @@ export default function AdminQRScanner({
                       </>}
                       {resolvedPayload.network && <View style={styles.detailRow}><Text style={styles.detailLabel}>Network:</Text><Text style={styles.detailValue}>{resolvedPayload.network}</Text></View>}
                       {resolvedPayload.address && <View style={styles.detailRow}><Text style={styles.detailLabel}>Address:</Text><Text style={styles.detailValue} selectable>{resolvedPayload.address}</Text></View>}
+                    </View>
+                  )}
+
+                  {externalTicketClaim && (
+                    <View style={styles.detailsSection}>
+                      <Text style={styles.sectionTitle}>Original ticket verification</Text>
+                      {externalTicketClaim.claim ? (
+                        <>
+                          <View style={styles.detailRow}><Text style={styles.detailLabel}>Issuer:</Text><Text style={styles.detailValue}>{externalTicketClaim.claim.issuer}</Text></View>
+                          <View style={styles.detailRow}><Text style={styles.detailLabel}>Event:</Text><Text style={styles.detailValue}>{externalTicketClaim.claim.event_id}</Text></View>
+                          <View style={styles.detailRow}><Text style={styles.detailLabel}>Code:</Text><Text style={styles.detailValue}>••••{externalTicketClaim.claim.ticket_code_last4}</Text></View>
+                          <View style={styles.detailRow}><Text style={styles.detailLabel}>Claim status:</Text><Text style={styles.detailValue}>{externalTicketClaim.claim.status.toUpperCase()}</Text></View>
+                          {externalTicketClaim.claim.hashpass_pass_id && <View style={styles.detailRow}><Text style={styles.detailLabel}>HashPass pass:</Text><Text style={styles.detailValue} selectable>{externalTicketClaim.claim.hashpass_pass_id}</Text></View>}
+                        </>
+                      ) : (
+                        <Text style={styles.detailValue}>No matching claim is registered for this QR yet.</Text>
+                      )}
+                      {externalTicketClaim.claim &&
+                        (externalTicketClaim.claim.status === 'pending' || externalTicketClaim.claim.status === 'validated') && (
+                          <ActionButton
+                            mode={isDark ? 'dark' : 'light'}
+                            variant="secondary"
+                            label="Approve & create pass"
+                            leadingIcon={<MaterialIcons name="verified" size={20} color={colors.primary} />}
+                            onPress={approveExternalTicketClaim}
+                          />
+                        )}
                     </View>
                   )}
 
@@ -1075,6 +1224,33 @@ export default function AdminQRScanner({
                   </>}
                   {resolvedPayload.network && <View style={styles.detailRow}><Text style={styles.detailLabel}>Network:</Text><Text style={styles.detailValue}>{resolvedPayload.network}</Text></View>}
                   {resolvedPayload.address && <View style={styles.detailRow}><Text style={styles.detailLabel}>Address:</Text><Text style={styles.detailValue} selectable>{resolvedPayload.address}</Text></View>}
+                </View>
+              )}
+
+              {externalTicketClaim && (
+                <View style={styles.detailsSection}>
+                  <Text style={styles.sectionTitle}>Original ticket verification</Text>
+                  {externalTicketClaim.claim ? (
+                    <>
+                      <View style={styles.detailRow}><Text style={styles.detailLabel}>Issuer:</Text><Text style={styles.detailValue}>{externalTicketClaim.claim.issuer}</Text></View>
+                      <View style={styles.detailRow}><Text style={styles.detailLabel}>Event:</Text><Text style={styles.detailValue}>{externalTicketClaim.claim.event_id}</Text></View>
+                      <View style={styles.detailRow}><Text style={styles.detailLabel}>Code:</Text><Text style={styles.detailValue}>••••{externalTicketClaim.claim.ticket_code_last4}</Text></View>
+                      <View style={styles.detailRow}><Text style={styles.detailLabel}>Claim status:</Text><Text style={styles.detailValue}>{externalTicketClaim.claim.status.toUpperCase()}</Text></View>
+                      {externalTicketClaim.claim.hashpass_pass_id && <View style={styles.detailRow}><Text style={styles.detailLabel}>HashPass pass:</Text><Text style={styles.detailValue} selectable>{externalTicketClaim.claim.hashpass_pass_id}</Text></View>}
+                    </>
+                  ) : (
+                    <Text style={styles.detailValue}>No matching claim is registered for this QR yet.</Text>
+                  )}
+                  {externalTicketClaim.claim &&
+                    (externalTicketClaim.claim.status === 'pending' || externalTicketClaim.claim.status === 'validated') && (
+                      <ActionButton
+                        mode={isDark ? 'dark' : 'light'}
+                        variant="secondary"
+                        label="Approve & create pass"
+                        leadingIcon={<MaterialIcons name="verified" size={20} color={colors.primary} />}
+                        onPress={approveExternalTicketClaim}
+                      />
+                    )}
                 </View>
               )}
 

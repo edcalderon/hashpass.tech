@@ -1,6 +1,6 @@
 import DesignSystemStyles from '../components/DesignSystemStyles';
 import MarketingActivityObserver from '../components/MarketingActivityObserver';
-import { isPublicEventRoute } from '../lib/public-routes';
+import { isPublicEventRoute, isPublicPassLinkRoute } from '../lib/public-routes';
 import '../config/reanimated'; // CRITICAL: Ensure Reanimated is imported and configured first
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -350,9 +350,11 @@ function ThemedContent() {
   // Check if we're in the auth flow
   const isAuthFlow = (segments[0] === '(shared)' && (segments as string[])[1] === 'auth') || pathname.startsWith('/(shared)/auth') || pathname.startsWith('/auth');
   const isEventPublic = isPublicEventRoute(pathname);
+  const isPublicPassLink = isPublicPassLinkRoute(pathname);
   const isHomePage = pathname === '/home' || pathname === '/' || pathname === '/index';
   // Public pages that don't require authentication
   const isPublicPage =
+    isPublicPassLink ||
     pathname === '/contacts' ||
     pathname === '/docs' ||
     pathname === '/(shared)/docs' ||

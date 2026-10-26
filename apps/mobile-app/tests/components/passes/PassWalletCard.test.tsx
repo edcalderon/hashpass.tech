@@ -31,6 +31,10 @@ jest.mock('expo-clipboard', () => ({
   setStringAsync: jest.fn(),
 }));
 
+jest.mock('../../../lib/api-client', () => ({
+  apiClient: { post: jest.fn() },
+}));
+
 jest.mock('react-native-svg', () => ({
   __esModule: true,
   default: 'Svg',
@@ -65,8 +69,9 @@ jest.mock('../../../hooks/useTheme', () => ({
 
 jest.mock('../../../i18n/i18n', () => ({
   useTranslation: () => ({
-    t: (key: string) =>
-      ({
+    t: (key: string | { message?: string }) => {
+      if (typeof key === 'object') return key.message ?? '';
+      return ({
         passSummary: 'Pass Summary',
         quickOverview: 'Quick overview',
         accessIncluded: 'Access included',
@@ -76,7 +81,8 @@ jest.mock('../../../i18n/i18n', () => ({
         // success path -- returning the translated string as-is, rather
         // than falling back to the caller's message -- gets exercised too.
         'type.vip': 'VIP',
-      })[key] ?? key,
+      })[key] ?? key;
+    },
   }),
 }));
 
@@ -157,7 +163,8 @@ describe('PassWalletCard', () => {
     act(() => {
       pressText(renderer, 'QR Code');
     });
-    expect(renderer.root.findByType('Modal').props.visible).toBe(true);
+    const modals = renderer.root.findAllByType('Modal');
+    expect(modals.some((modal: any) => modal.props.visible)).toBe(true);
     expect(renderer.root.findByType('DynamicQRDisplay').props.passId).toBe('pass-1');
 
     act(() => {
@@ -166,7 +173,7 @@ describe('PassWalletCard', () => {
     expect(renderer.root.findByProps({ children: 'Pass Summary' })).toBeTruthy();
 
     act(() => {
-      pressText(renderer, 'View Full Details');
+      pressText(renderer, 'More details');
     });
     expect(routerPush).toHaveBeenCalledWith({
       pathname: '/dashboard/pass-details',
@@ -174,15 +181,40 @@ describe('PassWalletCard', () => {
     });
   });
 
-  it('falls back to copying share text when browser sharing is unavailable', async () => {
+  it('offers the next-tier purchase and existing-ticket claim on the back face', () => {
+    const generalPass = { ...pass, pass_type: 'general' as const };
+    const renderer = render(<PassWalletCard pass={generalPass} />);
+
+    act(() => {
+      pressText(renderer, 'Details');
+    });
+    expect(renderer.root.findByProps({ children: 'Upgrade' })).toBeTruthy();
+    expect(renderer.root.findAll((node: any) => node.type === 'Text' && String(node.props.children).includes('Already have a Business or VIP ticket?')).length).toBeGreaterThan(0);
+    expect(renderer.root.findByProps({ children: 'Claim it here' })).toBeTruthy();
+
+    act(() => {
+      pressText(renderer, 'Upgrade');
+    });
+    expect(routerPush).toHaveBeenCalledWith({
+      pathname: '/events/[eventSlug]/tickets',
+      params: { eventSlug: 'chile2026', openTicketModal: 'true' },
+    });
+
+    act(() => {
+      pressText(renderer, 'Claim it here');
+    });
+    expect(renderer.root.findAllByType('Modal').some((modal: any) => modal.props.visible)).toBe(true);
+  });
+
+  it('opens safe share options instead of sharing admission data immediately', async () => {
     const renderer = render(<PassWalletCard pass={pass} />);
 
-    await act(async () => {
+    act(() => {
       pressText(renderer, 'Share');
     });
 
-    expect(Clipboard.setStringAsync).toHaveBeenCalledWith(expect.stringContaining('BSL Chile 2026'));
-    expect(mockShowSuccess).toHaveBeenCalledWith('Pass Information Copied', expect.any(String));
+    expect(renderer.root.findAllByType('Modal').some((modal: any) => modal.props.visible)).toBe(true);
+    expect(Clipboard.setStringAsync).not.toHaveBeenCalled();
   });
 
   it('copies the complete pass number from the ticket face', async () => {
@@ -244,48 +276,24 @@ describe('PassWalletCard', () => {
     expect(renderer.root.findAllByProps({ children: passType.toUpperCase() }).length).toBeGreaterThan(0);
   });
 
-  it('uses the Web Share API directly when the browser supports it', async () => {
-    const nativeShare = jest.fn().mockResolvedValue(undefined);
-    Object.assign(global.navigator, { share: nativeShare });
+  it('keeps share actions behind the modal on web', async () => {
     const renderer = render(<PassWalletCard pass={pass} />);
 
-    await act(async () => {
+    act(() => {
       pressText(renderer, 'Share');
     });
 
-    expect(nativeShare).toHaveBeenCalledWith({
-      title: 'BSL Chile 2026 VIP Pass',
-      text: expect.stringContaining('BSL Chile 2026'),
-    });
-    expect(Clipboard.setStringAsync).not.toHaveBeenCalled();
+    expect(renderer.root.findAllByType('Modal').some((modal: any) => modal.props.visible)).toBe(true);
   });
 
-  it('does not treat a cancelled share sheet as an error', async () => {
-    (Clipboard.setStringAsync as jest.Mock).mockRejectedValueOnce(new Error('User cancelled the share sheet'));
+  it('does not expose the private pass number from the share entry point', async () => {
     const renderer = render(<PassWalletCard pass={pass} />);
 
-    await act(async () => {
+    act(() => {
       pressText(renderer, 'Share');
     });
 
-    // The message contains "cancel" -> early return, no fallback attempt,
-    // no error toast.
-    expect(Clipboard.setStringAsync).toHaveBeenCalledTimes(1);
-    expect(mockShowError).not.toHaveBeenCalled();
-  });
-
-  it('shows an error toast when even the clipboard fallback fails', async () => {
-    (Clipboard.setStringAsync as jest.Mock)
-      .mockRejectedValueOnce(new Error('clipboard unavailable'))
-      .mockRejectedValueOnce(new Error('clipboard unavailable'));
-    const renderer = render(<PassWalletCard pass={pass} />);
-
-    await act(async () => {
-      pressText(renderer, 'Share');
-    });
-
-    expect(Clipboard.setStringAsync).toHaveBeenCalledTimes(2);
-    expect(mockShowError).toHaveBeenCalledWith('Error', 'Unable to share pass. Please try again.');
+    expect(renderer.root.findAllByType('Modal').some((modal: any) => modal.props.visible)).toBe(true);
   });
 });
 

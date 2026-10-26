@@ -79,6 +79,14 @@ const adminPassCursorMigrationPath = path.join(
   root,
   'db/migrations/V140__fix_admin_pass_cursor_type.sql',
 );
+const eventChatReactionsMigrationPath = path.join(
+  root,
+  'db/migrations/V141__event_chat_reactions.sql',
+);
+const passUpgradeRequestsMigrationPath = path.join(
+  root,
+  'db/migrations/V142__pass_upgrade_requests.sql',
+);
 const meetingChatRealtimeMigrationPath = path.join(
   root,
   'db/migrations/V054__meeting_chat_realtime_and_participant_profiles.sql',
@@ -124,6 +132,34 @@ const eventScopedSpeakersMigrationPath = path.join(
 const eventScopedSpeakerAdminMigrationPath = path.join(
   root,
   'db/migrations/V108__enforce_event_scoped_speaker_admin_roles.sql',
+);
+const backendQrAndExternalTicketClaimsMigrationPath = path.join(
+  root,
+  'db/migrations/V145__backend_qr_and_external_ticket_claims.sql',
+);
+const passTransferQrHardeningMigrationPath = path.join(
+  root,
+  'db/migrations/V146__harden_pass_transfer_qr_revocation.sql',
+);
+const passEntitlementTransitionsMigrationPath = path.join(
+  root,
+  'db/migrations/V147__harden_pass_entitlement_transitions.sql',
+);
+const passQrOwnerBindingMigrationPath = path.join(
+  root,
+  'db/migrations/V148__bind_pass_qr_issuance_to_owner.sql',
+);
+const externalTicketClaimFingerprintMigrationPath = path.join(
+  root,
+  'db/migrations/V149__harden_external_ticket_claim_fingerprints.sql',
+);
+const passQrOwnerBoundCallerMigrationPath = path.join(
+  root,
+  'db/migrations/V150__update_pass_qr_owner_bound_callers.sql',
+);
+const pendingTicketQrProofMigrationPath = path.join(
+  root,
+  'db/migrations/V151__attach_qr_proof_to_pending_ticket_claims.sql',
 );
 
 describe('setup and PIN migration plan', () => {
@@ -356,6 +392,19 @@ describe('event chat migration plan', () => {
       'db/migrations/V075__event_chat_reply_throttle.sql',
     ]));
   });
+
+  it('ships reactions with server-only access and keeps the migration portable across pass id types', () => {
+    const migration = fs.readFileSync(eventChatReactionsMigrationPath, 'utf8');
+    const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+
+    expect(config.groups['event-chat']).toContain(
+      'db/migrations/V141__event_chat_reactions.sql',
+    );
+    expect(migration).toMatch(/CREATE TABLE IF NOT EXISTS public\.event_chat_message_reactions/i);
+    expect(migration).toMatch(/CREATE TABLE IF NOT EXISTS public\.event_chat_direct_message_reactions/i);
+    expect(migration).toMatch(/REVOKE ALL ON TABLE public\.event_chat_message_reactions FROM anon, authenticated/i);
+    expect(migration).toMatch(/GRANT ALL ON TABLE public\.event_chat_direct_message_reactions TO service_role/i);
+  });
 });
 
 describe('event auth allies migration plan', () => {
@@ -391,6 +440,20 @@ describe('admin pass management migration contract', () => {
       'db/migrations/V140__fix_admin_pass_cursor_type.sql',
     );
     expect(cursorMigration).toMatch(/pc\.id::text = p_cursor/i);
+  });
+
+  it('ships the pass-upgrade request ledger through the default tenant migration command', () => {
+    const migration = fs.readFileSync(passUpgradeRequestsMigrationPath, 'utf8');
+    const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+
+    expect(config.groups['admin-pass-management']).toContain(
+      'db/migrations/V142__pass_upgrade_requests.sql',
+    );
+    expect(migration).toMatch(/CREATE TABLE IF NOT EXISTS public\.pass_upgrade_requests/i);
+    expect(migration).toMatch(/pass_id text NOT NULL/i);
+    expect(migration).toMatch(/current_pass_type = 'general' AND requested_pass_type = 'business'/i);
+    expect(migration).toMatch(/REVOKE ALL ON public\.pass_upgrade_requests FROM PUBLIC, anon, authenticated/i);
+    expect(migration).toMatch(/GRANT ALL ON public\.pass_upgrade_requests TO service_role/i);
   });
 });
 
@@ -791,5 +854,138 @@ describe('backend-only pass contract migration', () => {
     expect(config.groups['upcoming-bsl-passes']).toContain(
       'db/migrations/V070__harden_default_pass_provisioning.sql',
     );
+  });
+});
+
+describe('backend QR and original ticket claim migration', () => {
+  it('keeps QR data and external ticket claims behind the service-role API', () => {
+    const migration = fs.readFileSync(backendQrAndExternalTicketClaimsMigrationPath, 'utf8');
+    const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+
+    expect(config.defaultGroups).toContain('qr-system');
+    expect(config.groups['qr-system']).toContain(
+      'db/migrations/V145__backend_qr_and_external_ticket_claims.sql',
+    );
+    expect(migration).toMatch(/CREATE TABLE IF NOT EXISTS public\.qr_codes/i);
+    expect(migration).toMatch(/CREATE TABLE IF NOT EXISTS public\.qr_scan_logs/i);
+    expect(migration).toMatch(/REVOKE ALL ON TABLE public\.qr_codes FROM PUBLIC, anon, authenticated/i);
+    expect(migration).toMatch(/GRANT ALL ON TABLE public\.qr_codes TO service_role/i);
+    expect(migration).toMatch(/CREATE OR REPLACE FUNCTION public\.validate_and_use_qr/i);
+    expect(migration).toMatch(/FOR UPDATE/i);
+    expect(migration).toMatch(/CREATE TABLE IF NOT EXISTS public\.external_ticket_claims/i);
+    expect(migration).toMatch(/external_ticket_claim_qr_key/i);
+    expect(migration).toMatch(/external_ticket_claim_code_key/i);
+    expect(migration).toMatch(/REVOKE ALL ON FUNCTION public\.submit_external_ticket_claim[\s\S]*authenticated/i);
+    expect(migration).toMatch(/GRANT EXECUTE ON FUNCTION public\.review_external_ticket_claim[\s\S]*service_role/i);
+  });
+});
+
+describe('pass transfer QR hardening migration', () => {
+  it('expires stale transfers and revokes active QR codes during an ownership change', () => {
+    const migration = fs.readFileSync(passTransferQrHardeningMigrationPath, 'utf8');
+    const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+
+    expect(config.groups['admin-pass-management']).toContain(
+      'db/migrations/V146__harden_pass_transfer_qr_revocation.sql',
+    );
+    expect(migration).toMatch(/CREATE OR REPLACE FUNCTION public\.complete_pass_transfer/i);
+    expect(migration).toMatch(/transfer_row\.expires_at <= now\(\)[\s\S]*?status = 'expired'/i);
+    expect(migration).toMatch(/UPDATE public\.qr_codes[\s\S]*?status = 'revoked'/i);
+    expect(migration).toMatch(/revoked_reason = 'Pass ownership transferred'/i);
+    expect(migration).toMatch(/WHERE pass_id = transfer_row\.pass_id[\s\S]*?AND status = 'active'/i);
+  });
+});
+
+describe('pass entitlement transition hardening migration', () => {
+  it('updates existing claimants and cancels recipient-conflicting transfers', () => {
+    const migration = fs.readFileSync(passEntitlementTransitionsMigrationPath, 'utf8');
+    const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+
+    expect(config.groups['admin-pass-management']).toContain(
+      'db/migrations/V147__harden_pass_entitlement_transitions.sql',
+    );
+    expect(migration).toMatch(/CREATE OR REPLACE FUNCTION public\.review_external_ticket_claim/i);
+    expect(migration).toMatch(/WHERE user_id::text = v_claim\.claimant_user_id::text[\s\S]*?event_id = v_claim\.event_id[\s\S]*?FOR UPDATE/i);
+    expect(migration).toMatch(/'update', v_claim\.claimant_user_id, v_existing_pass_id, v_type/i);
+    expect(migration).toMatch(/CREATE OR REPLACE FUNCTION public\.complete_pass_transfer/i);
+    expect(migration).toMatch(/WHERE user_id::text = transfer_row\.recipient_user_id[\s\S]*?event_id = transfer_row\.event_id[\s\S]*?FOR UPDATE/i);
+    expect(migration).toMatch(/status = 'cancelled'/i);
+    expect(migration).toMatch(/EXCEPTION WHEN unique_violation/i);
+  });
+});
+
+describe('pass QR issuance owner binding migration', () => {
+  const migration = fs.readFileSync(passQrOwnerBindingMigrationPath, 'utf8');
+
+  it('is registered after the entitlement transition migration', () => {
+    const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+    const group = config.groups['admin-pass-management'];
+
+    expect(group.indexOf('db/migrations/V148__bind_pass_qr_issuance_to_owner.sql'))
+      .toBeGreaterThan(group.indexOf('db/migrations/V147__harden_pass_entitlement_transitions.sql'));
+  });
+
+  it('drops the unbound signature and requires the authorized owner', () => {
+    expect(migration).toMatch(/DROP FUNCTION IF EXISTS public\.generate_pass_qr\(text, integer, integer\)/i);
+    expect(migration).toMatch(/p_expected_owner_id text,/i);
+    expect(migration).toMatch(/The authorized pass owner is required/i);
+  });
+
+  it('checks ownership under a lock that conflicts with the transfer lock', () => {
+    expect(migration).toMatch(/AND p\.status = 'active'\s+FOR SHARE/i);
+    expect(migration).toMatch(/v_pass\.user_id::text <> btrim\(p_expected_owner_id\)[\s\S]*?ERRCODE = '55000'/i);
+    expect(migration.indexOf('FOR SHARE')).toBeLessThan(migration.indexOf('INSERT INTO public.qr_codes'));
+  });
+
+  it('keeps issuance service-role only', () => {
+    expect(migration).toMatch(/REVOKE ALL ON FUNCTION public\.generate_pass_qr\(text, text, integer, integer\)\s+FROM PUBLIC, anon, authenticated/i);
+    expect(migration).toMatch(/GRANT EXECUTE ON FUNCTION public\.generate_pass_qr\(text, text, integer, integer\)\s+TO service_role/i);
+  });
+});
+
+describe('external ticket claim fingerprint hardening migration', () => {
+  it('uses the pgcrypto extension explicitly and ships with the QR claim schema', () => {
+    const migration = fs.readFileSync(externalTicketClaimFingerprintMigrationPath, 'utf8');
+    const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+
+    expect(config.groups['qr-system']).toContain(
+      'db/migrations/V149__harden_external_ticket_claim_fingerprints.sql',
+    );
+    expect(migration).toMatch(/CREATE OR REPLACE FUNCTION public\.submit_external_ticket_claim/i);
+    expect(migration).toMatch(/encode\(extensions\.digest\(v_code, 'sha256'\), 'hex'\)/i);
+    expect(migration).toMatch(/SET search_path = public, pg_temp/i);
+    expect(migration).toMatch(/GRANT EXECUTE ON FUNCTION public\.submit_external_ticket_claim[\s\S]*?TO service_role/i);
+  });
+});
+
+describe('pass QR owner-bound caller migration', () => {
+  it('updates automatic issuance and backfill helpers after V148', () => {
+    const migration = fs.readFileSync(passQrOwnerBoundCallerMigrationPath, 'utf8');
+    const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+    const group = config.groups['admin-pass-management'];
+
+    expect(group.indexOf('db/migrations/V150__update_pass_qr_owner_bound_callers.sql'))
+      .toBeGreaterThan(group.indexOf('db/migrations/V148__bind_pass_qr_issuance_to_owner.sql'));
+    expect(migration).toMatch(/CREATE OR REPLACE FUNCTION public\.auto_generate_pass_qr\(\)/i);
+    expect(migration).toMatch(/generate_pass_qr\(NEW\.id::text, NEW\.user_id::text, 30, 1\)/i);
+    expect(migration).toMatch(/CREATE OR REPLACE FUNCTION public\.update_existing_passes_with_qr\(\)/i);
+    expect(migration).toMatch(/generate_pass_qr\(v_pass\.id::text, v_pass\.user_id::text, 30, 1\)/i);
+    expect(migration).toMatch(/qr\.pass_id = p\.id::text/i);
+  });
+});
+
+describe('pending ticket QR proof migration', () => {
+  it('upgrades an owner-owned pending manual claim without allowing QR reuse', () => {
+    const migration = fs.readFileSync(pendingTicketQrProofMigrationPath, 'utf8');
+    const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+    const group = config.groups['qr-system'];
+
+    expect(group.indexOf('db/migrations/V151__attach_qr_proof_to_pending_ticket_claims.sql'))
+      .toBeGreaterThan(group.indexOf('db/migrations/V149__harden_external_ticket_claim_fingerprints.sql'));
+    expect(migration).toMatch(/source_qr_digest LIKE 'manual:%'/i);
+    expect(migration).toMatch(/v_claim\.status = 'pending'/i);
+    expect(migration).toMatch(/SET source_qr_digest = v_digest,[\s\S]*?source_qr_payload = coalesce\(p_source_qr_payload/i);
+    expect(migration).toMatch(/source_qr_digest = v_digest[\s\S]*?id <> v_claim\.id/i);
+    expect(migration).toMatch(/RAISE EXCEPTION 'This original ticket has already been claimed' USING ERRCODE = '23505'/i);
   });
 });
