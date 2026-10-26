@@ -21,7 +21,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { MaterialIcons } from "../lib/vector-icons";
-import { uiTokens } from "@hashpass/ui/tokens";
+import { uiPalette, uiTokens } from "@hashpass/ui/tokens";
 import { FilterChip, ModalBackdrop, SegmentedTabs, Surface } from "@hashpass/ui/primitives";
 import { useTheme } from "../hooks/useTheme";
 import { useAuth } from "../hooks/useAuth";
@@ -84,7 +84,7 @@ export default function EventRoomChat({
   const { isLoggedIn, dbUserId, user } = useAuth();
   const { t: translate } = useTranslation();
   const { showInfo, showError } = useToastHelpers();
-  const styles = useMemo(() => getStyles(colors), [colors]);
+  const styles = useMemo(() => getStyles(colors, uiPalette(isDark)), [colors, isDark]);
   const [channel, setChannel] =
     useState<Exclude<EventChatChannel, "members">>("room");
   const [messages, setMessages] = useState<EventChatMessage[]>([]);
@@ -818,7 +818,7 @@ export default function EventRoomChat({
               <MaterialIcons
                 name="star"
                 size={14}
-                color={channel === "vip" ? "#fff" : colors.primary}
+                color={channel === "vip" ? uiPalette(isDark).onAccent : colors.primary}
               />
               <Text
                 style={[
@@ -1380,7 +1380,7 @@ export default function EventRoomChat({
                 accessibilityRole="button"
                 accessibilityLabel={translate("eventChat.upgradeVip", "Upgrade to VIP")}
               >
-                <Text style={styles.upgradeButtonText}>
+                <Text style={[styles.upgradeButtonText, styles.vipButtonText]}>
                   {translate("eventChat.upgradeVip", "Upgrade to VIP")}
                 </Text>
               </TouchableOpacity>
@@ -1516,7 +1516,7 @@ export default function EventRoomChat({
   );
 }
 
-const getStyles = (colors: any) =>
+const getStyles = (colors: any, palette: ReturnType<typeof uiPalette>) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background.primary },
     header: {
@@ -1557,15 +1557,15 @@ const getStyles = (colors: any) =>
       gap: 5,
     },
     channelTabActive: {
-      backgroundColor: colors.primary,
-      borderColor: colors.primary,
+      backgroundColor: palette.accentFill,
+      borderColor: palette.accentFill,
     },
     channelTabText: {
       color: colors.text.secondary,
       fontWeight: "700",
       fontSize: 13,
     },
-    channelTabTextActive: { color: "#fff" },
+    channelTabTextActive: { color: palette.onAccent },
     presenceBar: {
       flexDirection: "row",
       alignItems: "center",
@@ -1970,15 +1970,16 @@ const getStyles = (colors: any) =>
     },
     upgradeButton: {
       flex: 1,
-      backgroundColor: colors.primary,
+      backgroundColor: palette.accentFill,
       borderRadius: 12,
       alignItems: "center",
       paddingVertical: 10,
       paddingHorizontal: 8,
     },
-    vipButton: { backgroundColor: colors.text.primary },
+    vipButton: { backgroundColor: palette.vipFill },
+    vipButtonText: { color: palette.onVip },
     upgradeButtonText: {
-      color: "#fff",
+      color: palette.onAccent,
       fontSize: 12,
       fontWeight: "800",
       textAlign: "center",

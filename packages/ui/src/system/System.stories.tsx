@@ -12,7 +12,7 @@ import {
   HoverText,
   Surface,
 } from "./primitives";
-import { uiPalette, uiTokens, type ColorMode } from "./tokens";
+import { contrastRatio, onFillPairs, uiPalette, uiTokens, type ColorMode } from "./tokens";
 function Catalog({ mode = "light" }: { mode?: ColorMode }) {
   const palette = uiPalette(mode);
   return (
@@ -117,6 +117,23 @@ function Catalog({ mode = "light" }: { mode?: ColorMode }) {
         <ActionButton mode={mode} label="Cancel" variant="ghost" />
         <ActionButton mode={mode} label="Saving" loading />
         <ActionButton mode={mode} label="Unavailable" disabled />
+      </View>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: uiTokens.space.sm }}>
+        {onFillPairs.map(([fill, on]) => (
+          <View
+            key={fill}
+            style={{
+              backgroundColor: palette[fill],
+              borderRadius: uiTokens.radius.input,
+              paddingHorizontal: uiTokens.space.lg,
+              paddingVertical: uiTokens.space.md,
+            }}
+          >
+            <Text style={{ color: palette[on], fontWeight: "800" }}>
+              {fill} / {on}: {contrastRatio(palette[on], palette[fill]).toFixed(1)}:1
+            </Text>
+          </View>
+        ))}
       </View>
       <View
         style={{
