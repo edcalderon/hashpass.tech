@@ -145,6 +145,10 @@ const passEntitlementTransitionsMigrationPath = path.join(
   root,
   'db/migrations/V147__harden_pass_entitlement_transitions.sql',
 );
+const passQrOwnerBindingMigrationPath = path.join(
+  root,
+  'db/migrations/V148__bind_pass_qr_issuance_to_owner.sql',
+);
 
 describe('setup and PIN migration plan', () => {
   it('runs the setup/PIN schema before the dependent SMS auth migrations', () => {
@@ -895,5 +899,34 @@ describe('pass entitlement transition hardening migration', () => {
     expect(migration).toMatch(/WHERE user_id::text = transfer_row\.recipient_user_id[\s\S]*?event_id = transfer_row\.event_id[\s\S]*?FOR UPDATE/i);
     expect(migration).toMatch(/status = 'cancelled'/i);
     expect(migration).toMatch(/EXCEPTION WHEN unique_violation/i);
+  });
+});
+
+describe('pass QR issuance owner binding migration', () => {
+  const migration = fs.readFileSync(passQrOwnerBindingMigrationPath, 'utf8');
+
+  it('is registered after the entitlement transition migration', () => {
+    const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+    const group = config.groups['admin-pass-management'];
+
+    expect(group.indexOf('db/migrations/V148__bind_pass_qr_issuance_to_owner.sql'))
+      .toBeGreaterThan(group.indexOf('db/migrations/V147__harden_pass_entitlement_transitions.sql'));
+  });
+
+  it('drops the unbound signature and requires the authorized owner', () => {
+    expect(migration).toMatch(/DROP FUNCTION IF EXISTS public\.generate_pass_qr\(text, integer, integer\)/i);
+    expect(migration).toMatch(/p_expected_owner_id text,/i);
+    expect(migration).toMatch(/The authorized pass owner is required/i);
+  });
+
+  it('checks ownership under a lock that conflicts with the transfer lock', () => {
+    expect(migration).toMatch(/AND p\.status = 'active'\s+FOR SHARE/i);
+    expect(migration).toMatch(/v_pass\.user_id::text <> btrim\(p_expected_owner_id\)[\s\S]*?ERRCODE = '55000'/i);
+    expect(migration.indexOf('FOR SHARE')).toBeLessThan(migration.indexOf('INSERT INTO public.qr_codes'));
+  });
+
+  it('keeps issuance service-role only', () => {
+    expect(migration).toMatch(/REVOKE ALL ON FUNCTION public\.generate_pass_qr\(text, text, integer, integer\)\s+FROM PUBLIC, anon, authenticated/i);
+    expect(migration).toMatch(/GRANT EXECUTE ON FUNCTION public\.generate_pass_qr\(text, text, integer, integer\)\s+TO service_role/i);
   });
 });

@@ -145,8 +145,25 @@ describe("POST /api/qr/pass", () => {
     const res = await POST({ passId: "p1", expiresInMinutes: 99999, maxUses: 0 });
     expect(await res.json()).toEqual({ data: { id: "qr", token: "t" } });
     expect(mockRpc).toHaveBeenCalledWith("generate_pass_qr", {
-      p_pass_id: "p1", p_expires_in_minutes: 1440, p_max_uses: 1,
+      p_pass_id: "p1", p_expected_owner_id: userId, p_expires_in_minutes: 1440, p_max_uses: 1,
     });
+  });
+
+  it("binds issuance to the owner it authorized, even for an admin", async () => {
+    mockAuthorizeAdmin.mockResolvedValue({ userId: "admin" });
+    mockFrom.mockReturnValueOnce(activePass("other")).mockReturnValueOnce(chain({ data: { id: "qr" } }));
+    mockRpc.mockResolvedValueOnce({ data: "qr", error: null });
+    await POST({ passId: "p1" });
+    expect(mockRpc.mock.calls[0][1].p_expected_owner_id).toBe("other");
+  });
+
+  it("returns 409 when ownership changed between authorization and issuance", async () => {
+    mockFrom.mockReturnValueOnce(activePass());
+    mockRpc.mockResolvedValueOnce({ data: null, error: { code: "55000", message: "Pass ownership changed" } });
+    const res = await POST({ passId: "p1" });
+    expect(res.status).toBe(409);
+    expect((await res.json()).error).toMatch(/changed owners/);
+    expect(console.error).not.toHaveBeenCalled();
   });
 
   it("uses defaults for non-numeric limits and surfaces generation failures", async () => {

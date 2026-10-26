@@ -248,4 +248,56 @@ describe("POST /api/pass-transfers request", () => {
       expect(mail.actionUrl).not.toContain(row.recipient_token_hash);
     }
   });
+
+  describe("when a confirmation email cannot be delivered", () => {
+    const cancel = () => {
+      const c = chain({});
+      return c;
+    };
+    const arrange = (cancelChain = cancel()) => {
+      happyUntilInsert();
+      seq(chain({ data: { id: "tr1", expires_at: "2026-10-26T00:00:00Z" } }), cancelChain);
+      return cancelChain;
+    };
+
+    it.each([
+      ["sender email reports failure", [{ success: false }, { success: true }]],
+      ["recipient email reports failure", [{ success: true }, { success: false, error: "smtp" }]],
+      ["both report failure", [{ success: false }, { success: false }]],
+      ["an email resolves empty", [undefined, { success: true }]],
+    ])("cancels the pending request and tells the sender to retry when %s", async (_n, results) => {
+      jest.spyOn(console, "error").mockImplementation(() => undefined);
+      mockSendEmail.mockReset();
+      results.forEach((r) => mockSendEmail.mockResolvedValueOnce(r));
+      const cancelChain = arrange();
+      const res = await POST(body());
+      expect(res.status).toBe(503);
+      expect((await res.json()).error).toMatch(/could not send the confirmation emails/i);
+      expect(cancelChain.update).toHaveBeenCalledWith(expect.objectContaining({ status: "cancelled" }));
+      expect(cancelChain.eq).toHaveBeenCalledWith("id", "tr1");
+      expect(cancelChain.eq).toHaveBeenCalledWith("status", "pending");
+    });
+
+    it("cancels even when a send throws, without losing the other result", async () => {
+      jest.spyOn(console, "error").mockImplementation(() => undefined);
+      mockSendEmail.mockReset().mockRejectedValueOnce(new Error("boom")).mockResolvedValueOnce({ success: true });
+      const cancelChain = arrange();
+      expect((await POST(body())).status).toBe(503);
+      expect(cancelChain.update).toHaveBeenCalledWith(expect.objectContaining({ status: "cancelled" }));
+    });
+
+    it("still reports the delivery failure if the cancellation itself fails", async () => {
+      const errors = jest.spyOn(console, "error").mockImplementation(() => undefined);
+      mockSendEmail.mockReset().mockResolvedValue({ success: false });
+      arrange(chain({ error: { message: "db down" } }));
+      expect((await POST(body())).status).toBe(503);
+      expect(errors).toHaveBeenCalledWith(expect.stringContaining("unable to cancel"), "tr1");
+    });
+
+    it("keeps the request when both emails are delivered", async () => {
+      const cancelChain = arrange();
+      expect((await POST(body())).status).toBe(201);
+      expect(cancelChain.update).not.toHaveBeenCalled();
+    });
+  });
 });

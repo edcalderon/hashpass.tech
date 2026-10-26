@@ -160,7 +160,7 @@ export async function POST(request: Request) {
 
     const senderUrl = `${APP_ORIGIN}/transfer/confirm?token=${encodeURIComponent(senderToken)}`;
     const recipientUrl = `${APP_ORIGIN}/transfer/confirm?token=${encodeURIComponent(recipientToken)}`;
-    await Promise.all([
+    const deliveries = await Promise.allSettled([
       sendCriticalNotificationEmail({
         recipientEmail: auth.email,
         title: "Confirm your HASHPASS ticket transfer",
@@ -178,6 +178,21 @@ export async function POST(request: Request) {
         actionLabel: "Accept ticket",
       }),
     ]);
+
+    // Both confirmations are mandatory and only token hashes are stored, so a
+    // lost email cannot be recovered. Cancel the request (which also releases
+    // the one-pending-transfer-per-pass index) and let the sender retry; the
+    // links that did go out then resolve to an unavailable transfer.
+    if (!deliveries.every((d) => d.status === "fulfilled" && d.value?.success)) {
+      console.error("[pass-transfer] confirmation email delivery failed; cancelling request", transfer.id);
+      const { error: cancelError } = await supabase
+        .from("pass_transfer_requests")
+        .update({ status: "cancelled", updated_at: new Date().toISOString() })
+        .eq("id", transfer.id)
+        .eq("status", "pending");
+      if (cancelError) console.error("[pass-transfer] unable to cancel undeliverable request:", transfer.id);
+      return json({ error: "We could not send the confirmation emails. Please try again." }, 503);
+    }
     return json({ data: { requestId: transfer.id, status: "pending", expiresAt: transfer.expires_at } }, 201);
   }
 

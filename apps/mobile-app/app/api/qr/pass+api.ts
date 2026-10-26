@@ -33,11 +33,16 @@ export async function POST(request: Request) {
     if ("response" in admin) return json({ error: "You do not own this pass" }, 403);
   }
 
+  // Bind issuance to the owner this request was authorized against. The
+  // function re-checks it under the pass row lock, so a transfer that commits
+  // after the lookup above cannot yield a QR for the new owner to the old one.
   const { data: qrId, error } = await supabase.rpc("generate_pass_qr", {
     p_pass_id: passId,
+    p_expected_owner_id: String(pass.user_id),
     p_expires_in_minutes: Math.min(Math.max(Math.floor(expiresInMinutes), 1), 1440),
     p_max_uses: Math.min(Math.max(Math.floor(maxUses), 1), 25),
   });
+  if (error?.code === "55000") return json({ error: "This pass changed owners. Refresh and try again." }, 409);
   if (error || !qrId) {
     console.error("[qr] pass QR generation failed:", error);
     return json({ error: "Unable to generate a pass QR" }, 503);
