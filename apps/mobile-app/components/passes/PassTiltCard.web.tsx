@@ -121,7 +121,9 @@ const PassTiltCard: React.FC<PassTiltCardProps> = ({
             `perspective(${PERSPECTIVE_PX}px) ` +
             `rotateX(${(-py * 2 * MAX_TILT_DEG).toFixed(2)}deg) ` +
             `rotateY(${(px * 2 * MAX_TILT_DEG).toFixed(2)}deg) ` +
-            'translateZ(12px)';
+            // No translateZ pop: changing the layer's depth changes its raster
+            // scale, which makes the SVG icons re-rasterize and blink mid-tilt.
+            'translateZ(0px)';
         }
 
         const sheen = sheenRef.current;
@@ -196,8 +198,9 @@ const PassTiltCard: React.FC<PassTiltCardProps> = ({
                 borderRadius,
                 opacity: 0,
                 pointerEvents: 'none',
-                mixBlendMode: isDark ? 'soft-light' : 'overlay',
-                transform: 'translateZ(1px)',
+                // A plain translucent gradient on the card's own plane. A blend
+                // mode or a separate translateZ plane inside preserve-3d forces
+                // the whole card, icons included, to be re-composited each frame.
               }}
             />
           ) : null}
