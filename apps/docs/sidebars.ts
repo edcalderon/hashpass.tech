@@ -116,6 +116,7 @@ const sidebars = {
       label: 'Reference',
       items: [
         'reference/README',
+        'reference/doorready-foundation',
         {
           type: 'category',
           label: 'Performance',

@@ -114,3 +114,8 @@ export * from './analytics/privacy';
 export * from './auth-qr/challenge';
 export * from './auth-qr/session';
 export * from './captcha/cap-instance';
+export * from './passport/types';
+export * from './passport/normalize';
+export * from './doorready/extraction';
+export * from './doorready/reconcile';
+export * from './doorready/types';
