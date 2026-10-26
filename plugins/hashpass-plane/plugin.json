@@ -1,0 +1,40 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "hashpass-plane",
+  "version": "1.0.1",
+  "description": "Manage HASHPASS Plane projects, work items, and workspace data from ChatGPT through a secure OAuth-protected MCP server.",
+  "author": {
+    "name": "HASHPASS",
+    "url": "https://hashpass.tech"
+  },
+  "homepage": "https://hashpass.tech",
+  "keywords": [
+    "hashpass",
+    "plane",
+    "mcp",
+    "project-management"
+  ],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "HASHPASS Plane",
+        "shortDescription": "Manage Plane and HASHPASS workspace data",
+        "longDescription": "Securely read and manage HASHPASS Plane workspaces from ChatGPT. Covers projects, work items, cycles, modules, pages, customers, initiatives, releases, members, labels, states, templates, attachments, links, comments, activity, work logs, and workspace metadata.",
+        "developerName": "HASHPASS",
+        "category": "Productivity",
+        "capabilities": [
+          "Read",
+          "Write"
+        ],
+        "websiteURL": "https://hashpass.tech",
+        "composerIcon": "./assets/hashpass-symbol.png",
+        "logo": "./assets/hashpass-symbol.png",
+        "defaultPrompt": [
+          "List my HASHPASS Plane projects and their active work items.",
+          "Create and assign a Plane work item in the selected project.",
+          "Summarize recent Plane activity, comments, attachments, and work logs."
+        ]
+      }
+    }
+  }
+}
