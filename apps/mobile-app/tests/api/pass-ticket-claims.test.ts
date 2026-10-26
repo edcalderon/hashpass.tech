@@ -106,6 +106,19 @@ describe("/api/pass-ticket-claims", () => {
     expect(args.p_source_qr_digest).toMatch(/^manual:[0-9a-f]{64}$/);
   });
 
+  it("derives a stable reference when a scanned QR carries no readable code", async () => {
+    mockRpc.mockResolvedValue({ data: { id: "c" }, error: null });
+    await load().POST(post(USER_URL, { eventId: "colombia2026", qrPayload: "opaque ticket payload" }));
+    await load().POST(post(USER_URL, { eventId: "colombia2026", qrPayload: "opaque ticket payload" }));
+    const first = mockRpc.mock.calls[0][1];
+    expect(first.p_ticket_code).toMatch(/^[0-9A-F]{24}$/);
+    expect(mockRpc.mock.calls[1][1].p_ticket_code).toBe(first.p_ticket_code);
+  });
+
+  it("rejects an unsafe issuer identifier", async () => {
+    expect((await load().POST(post(USER_URL, { eventId: "colombia2026", issuer: "a b!", ticketCode: "ABCD" }))).status).toBe(400);
+  });
+
   it("scopes manual ticket fingerprints to the issuer and event", async () => {
     mockRpc.mockResolvedValue({ data: { id: "c" }, error: null });
     await load().POST(post(USER_URL, {

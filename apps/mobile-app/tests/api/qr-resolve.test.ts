@@ -3,6 +3,13 @@
 const mockIdentity = jest.fn();
 const mockSupabase = { from: jest.fn() };
 const mockRateLimitOk = jest.fn(() => true);
+const mockCanView = jest.fn();
+const mockLoadContact = jest.fn();
+
+jest.mock("@/lib/server/qr-holder-contact", () => ({
+  canViewHolderContact: (...args: unknown[]) => mockCanView(...args),
+  loadHolderContact: (...args: unknown[]) => mockLoadContact(...args),
+}));
 
 jest.mock("@/lib/server/resolve-notification-identity", () => ({
   isResolveIdentityError: (value: { status?: number }) => typeof value?.status === "number",
@@ -31,6 +38,8 @@ describe("/api/qr/resolve", () => {
     mockIdentity.mockReset();
     mockSupabase.from.mockReset();
     mockRateLimitOk.mockReset().mockReturnValue(true);
+    mockCanView.mockReset().mockResolvedValue(false);
+    mockLoadContact.mockReset().mockResolvedValue({ email: "ada@example.com", username: "ada" });
     mockIdentity.mockResolvedValue({
       supabaseUserId: "caller-id",
       registryUserId: "registry-id",
@@ -135,6 +144,20 @@ describe("/api/qr/resolve", () => {
       },
     });
     expect(JSON.stringify(body)).not.toContain("email");
+  });
+
+  it("adds the holder's email and username only for staff viewers", async () => {
+    const pass = { id: "pass-1", user_id: "user-1", event_id: "colombia2026", pass_type: "general", status: "active", pass_number: "BSL-GENERAL-0001" };
+    mockCanView.mockResolvedValueOnce(true);
+    mockSupabase.from
+      .mockReturnValueOnce(queryResult({ data: pass, error: null }))
+      .mockReturnValueOnce(queryResult({ data: { id: "user-1", full_name: "Ada Lovelace" }, error: null }));
+
+    const body = await (await post({ kind: "pass_id", passId: "pass-1", raw: "pass-1" })).json();
+
+    expect(body.user).toEqual({ id: "user-1", name: "Ada Lovelace", username: "ada", email: "ada@example.com" });
+    expect(mockCanView).toHaveBeenCalledWith(mockSupabase, "caller-id", "colombia2026");
+    expect(mockLoadContact).toHaveBeenCalledWith(mockSupabase, "user-1");
   });
 
   it("recognizes wallet/network payloads without querying private pass data", async () => {

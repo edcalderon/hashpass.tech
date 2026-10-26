@@ -161,6 +161,10 @@ const pendingTicketQrProofMigrationPath = path.join(
   root,
   'db/migrations/V151__attach_qr_proof_to_pending_ticket_claims.sql',
 );
+const externalTicketOwnershipMigrationPath = path.join(
+  root,
+  'db/migrations/V152__external_ticket_ownership_and_reports.sql',
+);
 
 describe('setup and PIN migration plan', () => {
   it('runs the setup/PIN schema before the dependent SMS auth migrations', () => {
@@ -987,5 +991,36 @@ describe('pending ticket QR proof migration', () => {
     expect(migration).toMatch(/SET source_qr_digest = v_digest,[\s\S]*?source_qr_payload = coalesce\(p_source_qr_payload/i);
     expect(migration).toMatch(/source_qr_digest = v_digest[\s\S]*?id <> v_claim\.id/i);
     expect(migration).toMatch(/RAISE EXCEPTION 'This original ticket has already been claimed' USING ERRCODE = '23505'/i);
+  });
+});
+
+describe('external ticket ownership and report migration', () => {
+  const migration = fs.readFileSync(externalTicketOwnershipMigrationPath, 'utf8');
+
+  it('ships after V151 and keeps one active owner per ticket', () => {
+    const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+    const group = config.groups['qr-system'];
+
+    expect(group.indexOf('db/migrations/V152__external_ticket_ownership_and_reports.sql'))
+      .toBeGreaterThan(group.indexOf('db/migrations/V151__attach_qr_proof_to_pending_ticket_claims.sql'));
+    expect(migration).toMatch(/CREATE UNIQUE INDEX external_ticket_claim_code_key[\s\S]*?WHERE revoked_at IS NULL/i);
+    expect(migration).toMatch(/CREATE UNIQUE INDEX external_ticket_claim_qr_key[\s\S]*?WHERE revoked_at IS NULL/i);
+    expect(migration).toMatch(/revoked_at IS NULL/i);
+  });
+
+  it('keeps report storage and functions service-role only', () => {
+    expect(migration).toMatch(/ALTER TABLE public\.external_ticket_reports ENABLE ROW LEVEL SECURITY/i);
+    for (const fn of ['submit_external_ticket_claim', 'report_external_ticket', 'resolve_external_ticket_report']) {
+      expect(migration).toMatch(new RegExp(`CREATE OR REPLACE FUNCTION public\\.${fn}`, 'i'));
+      expect(migration).toMatch(new RegExp(`REVOKE ALL ON FUNCTION public\\.${fn}[\\s\\S]*?FROM PUBLIC, anon, authenticated`, 'i'));
+      expect(migration).toMatch(new RegExp(`GRANT EXECUTE ON FUNCTION public\\.${fn}[\\s\\S]*?TO service_role`, 'i'));
+    }
+    expect(migration.match(/SET search_path = public, pg_temp/gi)?.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it('revokes the claim, suspends passes and revokes QR codes on a confirmed report', () => {
+    expect(migration).toMatch(/status = 'rejected'[\s\S]*?revoked_at/i);
+    expect(migration).toMatch(/'suspended'/i);
+    expect(migration).toMatch(/'revoked'/i);
   });
 });

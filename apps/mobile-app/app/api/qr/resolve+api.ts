@@ -4,6 +4,7 @@ import {
   isResolveIdentityError,
   resolveNotificationIdentity,
 } from "@/lib/server/resolve-notification-identity";
+import { canViewHolderContact, loadHolderContact } from "@/lib/server/qr-holder-contact";
 import type {
   HashpassQrKind,
   HashpassQrResolution,
@@ -79,7 +80,7 @@ async function findPass(supabase: any, payload: ParsedHashpassQrPayload): Promis
   return null;
 }
 
-async function findProfile(supabase: any, userId: string) {
+async function findProfile(supabase: any, userId: string): Promise<NonNullable<HashpassQrResolution["user"]>> {
   const lookups = [
     ["user_profiles", "user_id", "user_id,full_name,display_name"] as const,
     ["users", "id", "id,full_name,first_name,last_name"] as const,
@@ -202,6 +203,11 @@ export async function POST(request: Request) {
   }
 
   const user = await findProfile(supabase, pass.user_id);
+  if (await canViewHolderContact(supabase, identity.supabaseUserId, pass.event_id)) {
+    const contact = await loadHolderContact(supabase, pass.user_id);
+    user.email = contact.email;
+    user.username = contact.username || user.username;
+  }
   const qrExpired = Boolean(qr?.expires_at && Date.parse(qr.expires_at) < Date.now());
   const qrUsable = !qr || (qr.status === "active" && !qrExpired);
   const response: HashpassQrResolution = {

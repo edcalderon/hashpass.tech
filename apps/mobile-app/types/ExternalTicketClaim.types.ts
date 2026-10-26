@@ -4,8 +4,9 @@ export type ExternalTicketClaimStatus = "pending" | "validated" | "rejected" | "
 
 export type ExternalTicketClaimInput = {
   eventId: string;
-  ticketCode: string;
-  qrPayload: string;
+  issuer?: string;
+  ticketCode?: string;
+  qrPayload?: string;
   requestedPassType: PassType;
   ticketMetadata?: Record<string, unknown>;
 };
@@ -25,6 +26,7 @@ export type ExternalTicketClaimInspection = {
     event_id: string;
     issuer: string;
     claimant_user_id: string;
+    claimant_email?: string | null;
     ticket_code_last4: string;
     source_ticket_metadata: Record<string, unknown>;
     requested_pass_type: PassType;
@@ -50,4 +52,33 @@ export type ExternalTicketClaimRequest = {
   status: ExternalTicketClaimStatus;
   reviewer_note: string | null;
   submitted_at: string;
+};
+
+export type ExternalTicketReportReason = "impersonation" | "stolen" | "duplicate" | "other";
+
+export type ExternalTicketReportInput = {
+  eventId: string;
+  issuer?: string;
+  ticketCode?: string;
+  qrPayload?: string;
+  reason?: ExternalTicketReportReason;
+  details?: string;
+};
+
+/** A report as listed in the admin review queue. */
+export type ExternalTicketReportRequest = {
+  id: string;
+  claim_id: string | null;
+  event_id: string;
+  issuer: string;
+  ticket_code_last4: string;
+  reason: ExternalTicketReportReason;
+  details: string | null;
+  status: "open" | "confirmed" | "dismissed";
+  reviewer_note: string | null;
+  created_at: string;
+  reporter_email: string | null;
+  claimant_email: string | null;
+  claimant_user_id: string | null;
+  claim_status: ExternalTicketClaimStatus | null;
 };

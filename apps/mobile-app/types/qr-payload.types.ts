@@ -38,6 +38,8 @@ export interface HashpassQrResolution {
     id: string;
     name: string | null;
     username: string | null;
+    /** Present only when the viewer is an admin or manager of the pass's event. */
+    email?: string | null;
   };
   pass?: {
     id: string;
