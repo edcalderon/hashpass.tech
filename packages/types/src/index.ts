@@ -26,3 +26,4 @@ export { networkingTips } from "./networking";
 export * from "./theme";
 export * from "./navigation";
 export * from "./doorready";
+export * from "./companion";
