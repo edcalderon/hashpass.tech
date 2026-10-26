@@ -1,3 +1,17 @@
+## [1.9.150](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.149...v1.9.150) (2026-10-26)
+### Released
+- die-cut perforation and robust web camera permissions; universal ticket QR scanning with one-owner claims and misuse reports; annotate scanner camera mount error parameter; pair solid fills with on-fill tokens to fix dark-mode upgrade button contrast
+
+### Release scope
+- Compared with: `v1.9.149` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Shared UI
+- Database migrations
+- Documentation
+- Release tooling
+
 ## [1.9.149](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.147...v1.9.149) (2026-10-26)
 ### Released
 - add pass lifecycle and event chat workflows; reuse shared wallet action buttons; use shared reaction controls; retain ticket QR proof on resubmission; preserve automatic pass QR issuance; harden external ticket claims; bind pass QR issuance to owner and recover failed transfer emails; prevent duplicate pass entitlements; harden public pass transfers

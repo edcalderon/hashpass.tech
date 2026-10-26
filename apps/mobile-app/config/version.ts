@@ -22,29 +22,41 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610260112, // Updated to current timestamp
+  buildNumber: 202610260342, // Updated to current timestamp
   releaseDate: '2026-10-26',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'add pass lifecycle and event chat workflows'
+    'die-cut perforation and robust web camera permissions',
+    'universal ticket QR scanning with one-owner claims and misuse reports'
   ],
   bugfixes: [
-    'reuse shared wallet action buttons',
-    'use shared reaction controls',
-    'retain ticket QR proof on resubmission',
-    'preserve automatic pass QR issuance',
-    'harden external ticket claims',
-    'bind pass QR issuance to owner and recover failed transfer emails',
-    'prevent duplicate pass entitlements',
-    'harden public pass transfers'
+    'annotate scanner camera mount error parameter',
+    'pair solid fills with on-fill tokens to fix dark-mode upgrade button contrast'
   ],
   breakingChanges: [],
-  notes: 'add pass lifecycle and event chat workflows; reuse shared wallet action buttons; use shared reaction controls; retain ticket QR proof on resubmission; preserve automatic pass QR issuance; harden external ticket claims; bind pass QR issuance to owner and recover failed transfer emails; prevent duplicate pass entitlements; harden public pass transfers'
+  notes: 'die-cut perforation and robust web camera permissions; universal ticket QR scanning with one-owner claims and misuse reports; annotate scanner camera mount error parameter; pair solid fills with on-fill tokens to fix dark-mode upgrade button contrast'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.150': {
+    version: '1.9.150',
+    buildNumber: 202610260342,
+    releaseDate: '2026-10-26',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'die-cut perforation and robust web camera permissions',
+      'universal ticket QR scanning with one-owner claims and misuse reports'
+    ],
+    bugfixes: [
+      'annotate scanner camera mount error parameter',
+      'pair solid fills with on-fill tokens to fix dark-mode upgrade button contrast'
+    ],
+    breakingChanges: [],
+    notes: 'die-cut perforation and robust web camera permissions; universal ticket QR scanning with one-owner claims and misuse reports; annotate scanner camera mount error parameter; pair solid fills with on-fill tokens to fix dark-mode upgrade button contrast'
+  },
   '1.9.149': {
     version: '1.9.149',
     buildNumber: 202610260112,
