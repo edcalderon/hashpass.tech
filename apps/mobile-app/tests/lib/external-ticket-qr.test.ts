@@ -1,6 +1,6 @@
 /// <reference types="jest" />
 
-import { guessTicketEvent, parseExternalTicketQr } from "../../lib/external-ticket-qr";
+import { guessTicketEvent, parseExternalTicketQr, upcomingTicketEvents } from "../../lib/external-ticket-qr";
 
 describe("parseExternalTicketQr", () => {
   it("reads a BSL ticket link", () => {
@@ -42,5 +42,13 @@ describe("parseExternalTicketQr", () => {
     expect(parseExternalTicketQr("a".repeat(9000))).toBeNull();
     expect(guessTicketEvent("Bogotá")).toBe("colombia2026");
     expect(guessTicketEvent("nowhere")).toBeUndefined();
+  });
+});
+
+describe("upcomingTicketEvents", () => {
+  it("drops events that have already ended", () => {
+    expect(upcomingTicketEvents(new Date("2026-10-26T12:00:00Z")).map((event) => event.id)).toEqual(["colombia2026"]);
+    expect(upcomingTicketEvents(new Date("2026-06-01T00:00:00Z")).map((event) => event.id)).toEqual(["chile2026", "colombia2026"]);
+    expect(upcomingTicketEvents(new Date("2027-01-01T00:00:00Z"))).toEqual([]);
   });
 });

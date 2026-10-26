@@ -17,7 +17,7 @@ export default function ScanResultCard({ resolution, mode, showUsage = false }: 
   const palette = uiPalette(mode);
   const { user, pass } = resolution;
   const usable = resolution.valid;
-  const displayName = user?.name || (user?.username ? `@${user.username}` : "HashPass member");
+  const displayName = user?.name || (user?.username ? `@${user.username}` : "HASHPASS member");
   const statusColor = pass?.status === "active" ? palette.success : palette.danger;
 
   const rows: [string, string, string?][] = pass
@@ -45,7 +45,7 @@ export default function ScanResultCard({ resolution, mode, showUsage = false }: 
         />
         <View style={styles.headerCopy}>
           <Text style={[styles.title, { color: palette.text }]}>
-            {usable ? (pass ? "Valid pass" : "HashPass member") : "Pass unavailable"}
+            {usable ? (pass ? "Valid pass" : "HASHPASS member") : "Pass unavailable"}
           </Text>
           <Text style={[styles.message, { color: palette.muted }]}>{resolution.message}</Text>
         </View>

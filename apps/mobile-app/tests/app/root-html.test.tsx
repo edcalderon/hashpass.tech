@@ -44,6 +44,18 @@ it('publishes a mobile PWA viewport without disabling browser zoom', () => {
   expect(viewport?.props.content).not.toContain('user-scalable=no');
 });
 
+it('opts out of browser auto-translation that detaches React-managed DOM nodes', () => {
+  act(() => {
+    view = create(<Root><main>HASHPASS</main></Root>);
+  });
+
+  const html = view.root.findByType('html');
+  expect(html.props.translate).toBe('no');
+  expect(html.props.className).toContain('notranslate');
+  const googleMeta = view.root.findAllByType('meta').find(node => node.props.name === 'google');
+  expect(googleMeta?.props.content).toBe('notranslate');
+});
+
 it('allows route metadata to override the fallback viewport', () => {
   act(() => {
     view = create(

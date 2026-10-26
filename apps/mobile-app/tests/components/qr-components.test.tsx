@@ -148,21 +148,54 @@ describe('ExternalTicketSheet', () => {
     expect(text).not.toContain('ABCD1234');
   });
 
-  it('requires an event before creating a pass', async () => {
-    const { renderer } = render({ eventId: undefined });
-    await press(renderer, 'Create my HashPass pass');
-    expect(mockSubmit).not.toHaveBeenCalled();
-    expect(textOf(renderer)).toContain('Choose the event this ticket is for.');
+  it('lists only upcoming events and preselects one when the scan names none', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-10-26T12:00:00Z'));
+    try {
+      mockSubmit.mockResolvedValue({ status: 'pending' });
+      const { renderer } = render({ eventId: undefined });
+      const text = textOf(renderer);
+      expect(text).toContain('BSL Colombia 2026');
+      expect(text).not.toContain('BSL Chile 2026');
+      await press(renderer, 'Create my HASHPASS pass');
+      expect(textOf(renderer)).not.toContain('Choose the event this ticket is for.');
+      expect(mockSubmit).toHaveBeenCalledWith(expect.objectContaining({ eventId: 'colombia2026' }));
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('ignores a scanned event that has already happened', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-10-26T12:00:00Z'));
+    try {
+      mockSubmit.mockResolvedValue({ status: 'pending' });
+      const { renderer } = render({ eventId: 'chile2026' });
+      await press(renderer, 'Create my HASHPASS pass');
+      expect(mockSubmit).toHaveBeenCalledWith(expect.objectContaining({ eventId: 'colombia2026' }));
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('explains when no upcoming event remains', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2027-02-01T00:00:00Z'));
+    try {
+      const { renderer } = render({ eventId: undefined });
+      await press(renderer, 'Create my HASHPASS pass');
+      expect(mockSubmit).not.toHaveBeenCalled();
+      expect(textOf(renderer)).toContain('There are no upcoming events to redeem this ticket for.');
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   it('submits the claim and confirms it', async () => {
     mockSubmit.mockResolvedValue({ status: 'pending' });
     const { renderer, onDone } = render();
-    await press(renderer, 'Create my HashPass pass');
+    await press(renderer, 'Create my HASHPASS pass');
     expect(mockSubmit).toHaveBeenCalledWith(expect.objectContaining({
       eventId: 'colombia2026', issuer: 'blockchain_summit_latam', ticketCode: 'ABCD1234', requestedPassType: 'general',
     }));
-    expect(textOf(renderer)).toContain('Ticket sent for verification');
+    expect(textOf(renderer)).toContain('Approval request sent');
     await press(renderer, 'Scan another code');
     expect(onDone).toHaveBeenCalled();
   });
@@ -170,14 +203,14 @@ describe('ExternalTicketSheet', () => {
   it('reports a converted claim as ready', async () => {
     mockSubmit.mockResolvedValue({ status: 'converted' });
     const { renderer } = render();
-    await press(renderer, 'Create my HashPass pass');
-    expect(textOf(renderer)).toContain('Your HashPass pass is ready');
+    await press(renderer, 'Create my HASHPASS pass');
+    expect(textOf(renderer)).toContain('Your HASHPASS pass is ready');
   });
 
   it('surfaces other failures and lets the user retry', async () => {
     mockSubmit.mockRejectedValue(new Error('boom'));
     const { renderer } = render();
-    await press(renderer, 'Create my HashPass pass');
+    await press(renderer, 'Create my HASHPASS pass');
     expect(textOf(renderer)).toContain('boom');
   });
 
@@ -185,7 +218,7 @@ describe('ExternalTicketSheet', () => {
     mockSubmit.mockRejectedValue(Object.assign(new Error('claimed'), { status: 409 }));
     mockReport.mockResolvedValue(undefined);
     const { renderer } = render();
-    await press(renderer, 'Create my HashPass pass');
+    await press(renderer, 'Create my HASHPASS pass');
     expect(textOf(renderer)).toContain('Ticket already claimed');
 
     const input = renderer.root.findByProps({ accessibilityLabel: 'Report details' });
@@ -201,7 +234,7 @@ describe('ExternalTicketSheet', () => {
     mockSubmit.mockRejectedValue(Object.assign(new Error('claimed'), { status: 409 }));
     mockReport.mockRejectedValue(new Error('offline'));
     const { renderer } = render();
-    await press(renderer, 'Create my HashPass pass');
+    await press(renderer, 'Create my HASHPASS pass');
     await press(renderer, 'Report ticket misuse');
     expect(textOf(renderer)).toContain('offline');
     expect(mockReport).toHaveBeenCalledWith(expect.objectContaining({ details: undefined }));

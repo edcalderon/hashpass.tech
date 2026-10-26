@@ -12,6 +12,10 @@ jest.mock("@/lib/server/resolve-notification-identity", () => ({
 jest.mock("@/lib/server/global-admin", () => ({
   authorizeGlobalAdmin: (...args: unknown[]) => mockAuthorizeAdmin(...args),
 }));
+const mockSendEmail = jest.fn();
+jest.mock("@/lib/email", () => ({
+  sendCriticalNotificationEmail: (...args: unknown[]) => mockSendEmail(...args),
+}));
 jest.mock("@/lib/supabase-server", () => ({
   getSupabaseServerForRequest: () => ({
     from: (...args: unknown[]) => mockFrom(...args),
@@ -46,6 +50,7 @@ describe("/api/pass-ticket-claims", () => {
     mockResolveIdentity.mockReset().mockResolvedValue({ supabaseUserId: userId });
     mockFrom.mockReset();
     mockRpc.mockReset();
+    mockSendEmail.mockReset().mockResolvedValue({ success: true });
   });
   afterEach(() => jest.restoreAllMocks());
 
@@ -147,6 +152,81 @@ describe("/api/pass-ticket-claims", () => {
     expect(args.p_source_qr_payload.raw).toHaveLength(4096);
     expect(args.p_source_ticket_metadata).toEqual({ seat: "A1" });
     expect(args.p_requested_pass_type).toBe("vip");
+  });
+
+  it("auto-approves a new general ticket without emailing reviewers", async () => {
+    mockRpc
+      .mockResolvedValueOnce({ data: { id: "c1", status: "pending", created: true }, error: null })
+      .mockResolvedValueOnce({ data: { id: "c1", status: "converted", pass_id: "p1" }, error: null });
+    const res = await load().POST(post(USER_URL, { eventId: "colombia2026", ticketCode: "abcd1234" }));
+    expect(await res.json()).toEqual({ data: { id: "c1", status: "converted", pass_id: "p1" } });
+    expect(mockRpc.mock.calls[1]).toEqual(["auto_approve_external_ticket_claim", { p_claim_id: "c1" }]);
+    expect(mockSendEmail).not.toHaveBeenCalled();
+  });
+
+  it("queues a general ticket for review when auto-approval fails", async () => {
+    mockRpc
+      .mockResolvedValueOnce({ data: { id: "c1", status: "pending", created: true }, error: null })
+      .mockResolvedValueOnce({ data: null, error: { message: "no admin" } })
+      .mockResolvedValueOnce({ data: [], error: null });
+    const res = await load().POST(post(USER_URL, { eventId: "colombia2026", ticketCode: "abcd1234" }));
+    expect(res.status).toBe(200);
+    expect(mockRpc.mock.calls[2][0]).toBe("notify_ticket_claim_reviewers");
+    expect(mockSendEmail).toHaveBeenCalledTimes(2);
+  });
+
+  it.each(["business", "vip"])("sends a %s ticket for approval to admins, edward and support", async (passType) => {
+    mockRpc
+      .mockResolvedValueOnce({ data: { id: "c9", status: "pending", created: true }, error: null })
+      .mockResolvedValueOnce({ data: ["admin-1"], error: null });
+    const res = await load().POST(post(USER_URL, {
+      eventId: "colombia2026", ticketCode: "abcd1234", requestedPassType: passType,
+      ticketMetadata: { holder: "Grace Hopper" },
+    }));
+    expect(await res.json()).toEqual({ data: { id: "c9", status: "pending", created: true } });
+    expect(mockRpc.mock.calls[1]).toEqual(["notify_ticket_claim_reviewers", { p_claim_id: "c9" }]);
+    expect(mockRpc.mock.calls.map((call: unknown[]) => call[0])).not.toContain("auto_approve_external_ticket_claim");
+    const recipients = mockSendEmail.mock.calls.map((call: any[]) => call[0].recipientEmail);
+    expect(recipients).toEqual(["edward@hashpass.app", "support@hashpass.app"]);
+    const first = mockSendEmail.mock.calls[0][0];
+    expect(first.title).toBe(`HASHPASS ${passType.toUpperCase()} pass approval request`);
+    expect(first.message).toContain("••••1234");
+    expect(first.message).toContain("Grace Hopper");
+    expect(first.message).not.toContain("ABCD1234");
+  });
+
+  it("does not notify again for a retried or existing claim", async () => {
+    mockRpc.mockResolvedValueOnce({ data: { id: "c1", status: "pending", created: false }, error: null });
+    await load().POST(post(USER_URL, { eventId: "colombia2026", ticketCode: "abcd", requestedPassType: "vip" }));
+    expect(mockRpc).toHaveBeenCalledTimes(1);
+    expect(mockSendEmail).not.toHaveBeenCalled();
+  });
+
+  it("keeps the claim when reviewer notification or email fails", async () => {
+    mockRpc
+      .mockResolvedValueOnce({ data: { id: "c9", status: "pending", created: true }, error: null })
+      .mockResolvedValueOnce({ data: null, error: { message: "db" } });
+    mockSendEmail.mockRejectedValueOnce(new Error("smtp")).mockResolvedValueOnce({ success: false });
+    jest.spyOn(console, "warn").mockImplementation(() => undefined);
+    const res = await load().POST(post(USER_URL, { eventId: "colombia2026", ticketCode: "abcd", requestedPassType: "vip" }));
+    expect(res.status).toBe(200);
+  });
+
+  it("rejects a claim for an event that already happened with a clear message", async () => {
+    mockRpc.mockResolvedValueOnce({ data: null, error: { code: "22023", message: "This event has already taken place" } });
+    const res = await load().POST(post(USER_URL, { eventId: "chile2026", ticketCode: "abcd" }));
+    expect(res.status).toBe(422);
+    expect((await res.json()).error).toBe("This event has already taken place");
+  });
+
+  it("rate limits repeated claim attempts per account", async () => {
+    mockRpc.mockResolvedValue({ data: { id: "c" }, error: null });
+    const statuses: number[] = [];
+    for (let i = 0; i < 7; i += 1) {
+      statuses.push((await load().POST(post(USER_URL, { eventId: "colombia2026", ticketCode: "abcd" }))).status);
+    }
+    expect(statuses.slice(0, 5)).toEqual([200, 200, 200, 200, 200]);
+    expect(statuses[6]).toBe(429);
   });
 
   it("maps duplicate claims to 409 and other failures to 503", async () => {

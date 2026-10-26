@@ -1,9 +1,9 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { StyleSheet, Text, TextInput, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { ActionButton, Badge, FilterChip, Surface } from "@hashpass/ui/primitives";
 import { uiPalette, uiTokens } from "@hashpass/ui/tokens";
-import { EXTERNAL_TICKET_EVENTS } from "../../lib/external-ticket-qr";
+import { upcomingTicketEvents } from "../../lib/external-ticket-qr";
 import { reportExternalTicket, submitExternalTicketClaim } from "../../lib/external-ticket-claims";
 import type { ExternalTicketClaimResult } from "../../types/ExternalTicketClaim.types";
 import type { ExternalTicketSheetProps, ExternalTicketSheetPhase as Phase } from "../../types/qr-ui.types";
@@ -12,12 +12,17 @@ const PASS_TYPES = ["general", "business", "vip"] as const;
 
 /**
  * Shown when a scan is an original (third-party) event ticket. The holder can
- * exchange it for a HashPass pass; each original ticket can be claimed once,
+ * exchange it for a HASHPASS pass; each original ticket can be claimed once,
  * so a second person gets the "already claimed" state and may report it.
  */
 export default function ExternalTicketSheet({ ticket, mode, onDone }: ExternalTicketSheetProps) {
   const palette = uiPalette(mode);
-  const [eventId, setEventId] = useState<string>(ticket.eventId || "");
+  // Only events that have not happened yet can be redeemed. A scan that hints
+  // at a finished event falls back to the first upcoming one.
+  const events = useMemo(() => upcomingTicketEvents(), []);
+  const [eventId, setEventId] = useState<string>(
+    events.find((event) => event.id === ticket.eventId)?.id ?? events[0]?.id ?? "",
+  );
   const [passType, setPassType] = useState<(typeof PASS_TYPES)[number]>("general");
   const [phase, setPhase] = useState<Phase>("form");
   const [busy, setBusy] = useState(false);
@@ -30,7 +35,7 @@ export default function ExternalTicketSheet({ ticket, mode, onDone }: ExternalTi
 
   const create = async () => {
     if (!eventId) {
-      setError("Choose the event this ticket is for.");
+      setError(events.length ? "Choose the event this ticket is for." : "There are no upcoming events to redeem this ticket for.");
       return;
     }
     setBusy(true);
@@ -78,10 +83,10 @@ export default function ExternalTicketSheet({ ticket, mode, onDone }: ExternalTi
   const statusCopy: Record<Exclude<Phase, "form" | "claimed-elsewhere">, { icon: "checkmark-circle" | "shield-checkmark"; title: string; body: string }> = {
     submitted: {
       icon: "checkmark-circle",
-      title: claim?.status === "converted" ? "Your HashPass pass is ready" : "Ticket sent for verification",
+      title: claim?.status === "converted" ? "Your HASHPASS pass is ready" : "Approval request sent",
       body: claim?.status === "converted"
         ? "This ticket is now linked to your account."
-        : "The event team checks the original ticket, then your HashPass pass is created. This ticket is now reserved for your account.",
+        : "The event team has been notified and will check the original ticket, then your HASHPASS pass is created. This ticket is now reserved for your account.",
     },
     reported: {
       icon: "shield-checkmark",
@@ -120,8 +125,8 @@ export default function ExternalTicketSheet({ ticket, mode, onDone }: ExternalTi
           </Text>
           <Text style={[styles.message, { color: palette.muted }]}>
             {phase === "claimed-elsewhere"
-              ? "Another HashPass account already holds this ticket. Each original ticket works for one person only."
-              : "Exchange it for an equivalent HashPass pass. Each original ticket can be claimed once."}
+              ? "Another HASHPASS account already holds this ticket. Each original ticket works for one person only."
+              : "Exchange it for an equivalent HASHPASS pass. Each original ticket can be claimed once."}
           </Text>
         </View>
       </View>
@@ -154,7 +159,7 @@ export default function ExternalTicketSheet({ ticket, mode, onDone }: ExternalTi
           <View style={styles.group}>
             <Text style={[styles.label, { color: palette.muted }]}>Event</Text>
             <View style={styles.chips}>
-              {EXTERNAL_TICKET_EVENTS.map((event) => (
+              {events.map((event) => (
                 <FilterChip
                   key={event.id}
                   mode={mode}
@@ -180,7 +185,7 @@ export default function ExternalTicketSheet({ ticket, mode, onDone }: ExternalTi
             </View>
           </View>
           {error ? <Text style={[styles.error, { color: palette.danger }]}>{error}</Text> : null}
-          <ActionButton mode={mode} label="Create my HashPass pass" loading={busy} onPress={create} />
+          <ActionButton mode={mode} label="Create my HASHPASS pass" loading={busy} onPress={create} />
           <ActionButton mode={mode} variant="ghost" label="Scan another code" onPress={onDone} />
         </>
       ) : (

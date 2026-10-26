@@ -107,7 +107,9 @@ export default function NotificationsScreen() {
     }
     
     // Navigate based on notification type
-    if (notification.type === 'business_invite_review_required') {
+    if (notification.type === 'ticket_claim_review_required') {
+      router.push('/dashboard/admin' as any);
+    } else if (notification.type === 'business_invite_review_required') {
       router.push('/dashboard/business-invites' as any);
     } else if (
       notification.type === 'business_invite_approved' ||
@@ -261,6 +263,7 @@ export default function NotificationsScreen() {
       case 'boost_received':
         return 'trending-up';
       case 'business_invite_review_required':
+      case 'ticket_claim_review_required':
         return 'verified-user';
       case 'business_invite_approved':
         return 'verified';

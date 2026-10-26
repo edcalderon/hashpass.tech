@@ -487,7 +487,7 @@ export default function AdminQRScanner({
     if (!parsed.isValid || parsed.kind === 'url') {
       const inspection = await inspectExternalTicket(data);
       if (!inspection) {
-        throw new Error('Unsupported QR code. Scan a HashPass QR or an original event ticket QR.');
+        throw new Error('Unsupported QR code. Scan a HASHPASS QR or an original event ticket QR.');
       }
       showExternalInspection(inspection);
       return;
@@ -691,7 +691,7 @@ export default function AdminQRScanner({
     if (!claim) return;
 
     Alert.alert(
-      'Create HashPass pass',
+      'Create HASHPASS pass',
       `Approve the ${claim.requested_pass_type.toUpperCase()} claim for ticket ending in ${claim.ticket_code_last4}?`,
       [
         { text: 'Cancel', style: 'cancel' },
@@ -715,7 +715,7 @@ export default function AdminQRScanner({
                 ...current,
                 valid: false,
                 status: 'converted',
-                message: 'The original ticket was converted into a HashPass pass.',
+                message: 'The original ticket was converted into a HASHPASS pass.',
                 claim: current.claim ? {
                   ...current.claim,
                   status: 'converted',
@@ -726,9 +726,9 @@ export default function AdminQRScanner({
                 ...current,
                 valid: false,
                 status: 'invalid',
-                message: 'The original ticket was converted into a HashPass pass.',
+                message: 'The original ticket was converted into a HASHPASS pass.',
               } : current);
-              Alert.alert('Pass created', 'The verified ticket is now represented by a HashPass-managed pass.');
+              Alert.alert('Pass created', 'The verified ticket is now represented by a HASHPASS-managed pass.');
             } catch (error) {
               Alert.alert('Claim not approved', error instanceof Error ? error.message : 'Please try again.');
             }
