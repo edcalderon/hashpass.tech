@@ -22,24 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610261815, // Updated to current timestamp
+  buildNumber: 202610261924, // Updated to current timestamp
   releaseDate: '2026-10-26',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'define safe action contracts',
-    'add evidence-based capsule reconciliation'
+    // No new features
   ],
   bugfixes: [
-    'keep confirmation secrets out of model turns',
-    'clear filled fields and stop mutating previous evidence'
+    'harden authorization handoff'
   ],
   breakingChanges: [],
-  notes: 'define safe action contracts; add evidence-based capsule reconciliation; keep confirmation secrets out of model turns; clear filled fields and stop mutating previous evidence'
+  notes: 'harden authorization handoff'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.153': {
+    version: '1.9.153',
+    buildNumber: 202610261924,
+    releaseDate: '2026-10-26',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'harden authorization handoff'
+    ],
+    breakingChanges: [],
+    notes: 'harden authorization handoff'
+  },
   '1.9.152': {
     version: '1.9.152',
     buildNumber: 202610261815,

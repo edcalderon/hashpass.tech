@@ -6,7 +6,7 @@ import {
 } from '../../../lib/auth/mcp-login';
 
 const signedQuery =
-  '?client_id=chatgpt&response_type=code&redirect_uri=https%3A%2F%2Fchatgpt.com%2Foauth%2Fcallback&scope=openid+plane%3Aread&state=state-123&exp=1790620000&sig=signed-value';
+  `?client_id=chatgpt&response_type=code&redirect_uri=https%3A%2F%2Fchatgpt.com%2Foauth%2Fcallback&scope=openid+plane%3Aread&state=state-123&exp=${Math.floor(Date.now() / 1000) + 60}&sig=signed-value`;
 
 describe('MCP OAuth login continuation', () => {
   it('recognizes only the MCP login route and its signed query', () => {
@@ -42,6 +42,50 @@ describe('MCP OAuth login continuation', () => {
     expect(continuation?.authorizeUrl).toBe(
       `https://api.hashpass.tech/api/auth/oauth2/authorize${signedQuery}`,
     );
+  });
+
+  it('should reject a complete OAuth query whose expiry is in the past', () => {
+    const rawSearch = new URLSearchParams({
+      client_id: 'mcp-client',
+      response_type: 'code',
+      redirect_uri: 'https://client.example/callback',
+      exp: String(Math.floor(Date.now() / 1000) - 1),
+      sig: 'signed-request',
+    }).toString();
+
+    const continuation = buildMcpLoginContinuation(
+      rawSearch,
+      'https://api.example',
+    );
+
+    expect(continuation).toBeNull();
+  });
+
+  it('keeps router-only parameters out of signed MCP login continuation URLs', () => {
+    const futureExpiry = String(Math.floor(Date.now() / 1000) + 60);
+    const rawSearch = new URLSearchParams([
+      ['client_id', 'chatgpt'],
+      ['response_type', 'code'],
+      ['redirect_uri', 'https://chatgpt.com/oauth/callback'],
+      ['exp', futureExpiry],
+      ['sig', 'signed-value'],
+      ['ba_param', 'client_id'],
+      ['ba_param', 'response_type'],
+      ['ba_param', 'redirect_uri'],
+      ['ba_param', 'exp'],
+      ['router', 'ignored'],
+    ]).toString();
+
+    const continuation = buildMcpLoginContinuation(
+      rawSearch,
+      'https://api.hashpass.tech/api',
+    );
+
+    expect(continuation).not.toBeNull();
+    if (!continuation) throw new Error('Expected a login continuation');
+
+    expect(continuation.authorizeUrl).not.toContain('router=ignored');
+    expect(continuation.returnTo).not.toContain('router=ignored');
   });
 
   it.each([

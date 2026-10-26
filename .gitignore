@@ -160,6 +160,9 @@ apps/web-app/public/openproof/*.mp4
 !/ops/self-hosted/plane/
 /ops/self-hosted/plane/*
 !/ops/self-hosted/plane/compose.yaml
+!/ops/self-hosted/scripts/
+/ops/self-hosted/scripts/*
+!/ops/self-hosted/scripts/validate-mcp-access-policy.sh
 !/ops/self-hosted/mcp/
 /ops/self-hosted/mcp/*
 !/ops/self-hosted/mcp/README.md

@@ -6,6 +6,10 @@ const mockGetSession = jest.fn();
 const mockReplace = jest.fn();
 const mockLocationReplace = jest.fn();
 
+function mockActionButton(props: Record<string, unknown>) {
+  return React.createElement('ActionButton', props);
+}
+
 jest.mock('better-auth/client', () => ({
   createAuthClient: () => ({ getSession: (...args: unknown[]) => mockGetSession(...args) }),
 }));
@@ -13,12 +17,16 @@ jest.mock('expo-router', () => ({ useRouter: () => ({ replace: mockReplace }) })
 jest.mock('@hashpass/config', () => ({
   ENV_CONFIG: { getApiUrl: () => 'https://api.hashpass.tech/api/' },
 }));
-jest.mock('@hashpass/ui/primitives', () => ({ Badge: 'Badge', Surface: 'Surface' }));
+jest.mock('@hashpass/ui/primitives', () => ({
+  Badge: 'Badge',
+  Surface: 'Surface',
+  ActionButton: mockActionButton,
+}));
 jest.mock('../../hooks/useTheme', () => ({ useTheme: () => ({ isDark: false }) }));
 jest.mock('react-native-safe-area-context', () => ({ SafeAreaView: 'SafeAreaView' }));
 
 const signedQuery =
-  '?client_id=chatgpt&response_type=code&redirect_uri=https%3A%2F%2Fchatgpt.com%2Foauth%2Fcallback&scope=openid+plane%3Aread&state=state-123&exp=1790620000&sig=signed-value';
+  `?client_id=chatgpt&response_type=code&redirect_uri=https%3A%2F%2Fchatgpt.com%2Foauth%2Fcallback&scope=openid+plane%3Aread&state=state-123&exp=${Math.floor(Date.now() / 1000) + 60}&sig=signed-value`;
 
 describe('MCP login screen', () => {
   let renderer: ReactTestRenderer | null = null;
@@ -80,7 +88,7 @@ describe('MCP login screen', () => {
       await Promise.resolve();
     });
     expect(root().findByProps({ accessibilityRole: 'alert' }).props.children).toContain(
-      'missing, invalid, or has expired',
+      'missing or invalid',
     );
 
     act(() => renderer?.unmount());
