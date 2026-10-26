@@ -51,6 +51,8 @@ import { getEventChatPermissions } from "../lib/event-chat-permissions";
 import type {
   EventRoomReactionFilter,
   EventRoomReactionModalSelection,
+  EventRoomReactionModalEntry,
+  EventRoomReactionOption,
 } from "../types/EventRoomChat.types";
 
 type EventRoomChatProps = {
@@ -481,10 +483,10 @@ export default function EventRoomChat({
         : null,
     [messages, reactionModal],
   );
-  const reactionModalEntries = useMemo(() => {
+  const reactionModalEntries = useMemo<EventRoomReactionModalEntry[]>(() => {
     const users = reactionModalMessage?.reactions?.users || {};
-    return EVENT_CHAT_REACTIONS.flatMap((reaction) =>
-      (users[reaction.type] || []).map((name, index) => ({
+    return EVENT_CHAT_REACTIONS.flatMap((reaction: EventRoomReactionOption) =>
+      (users[reaction.type] || []).map((name: string, index: number) => ({
         id: `${reaction.type}:${name}:${index}`,
         name,
         reactionType: reaction.type,
@@ -496,14 +498,14 @@ export default function EventRoomChat({
       reactionModal?.reactionType === "all"
         ? reactionModalEntries
         : reactionModalEntries.filter(
-            (entry) => entry.reactionType === reactionModal?.reactionType,
+            (entry: EventRoomReactionModalEntry) => entry.reactionType === reactionModal?.reactionType,
           ),
     [reactionModal, reactionModalEntries],
   );
   const reactionModalTotal = useMemo(
     () =>
       EVENT_CHAT_REACTIONS.reduce(
-        (total, reaction) =>
+        (total: number, reaction: EventRoomReactionOption) =>
         total + (reactionModalMessage?.reactions?.counts?.[reaction.type] || 0),
         0,
       ),
@@ -681,8 +683,8 @@ export default function EventRoomChat({
               <SegmentedTabs<EventRoomReactionFilter>
                 mode={isDark ? "dark" : "light"}
                 value={reactionModal?.reactionType || "all"}
-                onChange={(reactionType) =>
-                  setReactionModal((current) =>
+                onChange={(reactionType: EventRoomReactionFilter) =>
+                  setReactionModal((current: EventRoomReactionModalSelection | null) =>
                     current ? { ...current, reactionType } : current,
                   )
                 }
@@ -697,10 +699,10 @@ export default function EventRoomChat({
                     count: reactionModalTotal,
                   },
                   ...EVENT_CHAT_REACTIONS.filter(
-                    (reaction) =>
+                    (reaction: EventRoomReactionOption) =>
                       (reactionModalMessage?.reactions?.counts?.[reaction.type] ||
                         0) > 0,
-                  ).map((reaction) => ({
+                  ).map((reaction: EventRoomReactionOption) => ({
                     id: reaction.type,
                     label: reaction.label,
                     count:
@@ -720,9 +722,9 @@ export default function EventRoomChat({
                 contentContainerStyle={styles.reactionModalListContent}
                 showsVerticalScrollIndicator={false}
               >
-                {reactionModalRows.map((entry) => {
+                {reactionModalRows.map((entry: EventRoomReactionModalEntry) => {
                   const reaction = EVENT_CHAT_REACTIONS.find(
-                    (candidate) => candidate.type === entry.reactionType,
+                    (candidate: EventRoomReactionOption) => candidate.type === entry.reactionType,
                   );
                   return (
                     <View key={entry.id} style={styles.reactionModalRow}>
@@ -1037,7 +1039,7 @@ export default function EventRoomChat({
                   : null;
                 const reactionCounts = message.reactions?.counts || {};
                 const visibleReactions = EVENT_CHAT_REACTIONS.filter(
-                  (reaction) => (reactionCounts[reaction.type] || 0) > 0,
+                  (reaction: EventRoomReactionOption) => (reactionCounts[reaction.type] || 0) > 0,
                 );
                 return (
                   <View
@@ -1186,7 +1188,7 @@ export default function EventRoomChat({
                             </Text>
                           </TouchableOpacity>
                         )}
-                        {visibleReactions.map((reaction) => (
+                        {visibleReactions.map((reaction: EventRoomReactionOption) => (
                           (() => {
                             const reactionKey = `${message.id}:${reaction.type}`;
                             const reactionUsers =
@@ -1247,7 +1249,7 @@ export default function EventRoomChat({
                                     <Text style={styles.reactionUsersTitle}>
                                       {reaction.emoji} {reaction.label}
                                     </Text>
-                                    {reactionUsers.slice(0, 8).map((name, index) => (
+                                    {reactionUsers.slice(0, 8).map((name: string, index: number) => (
                                       <Text
                                         key={`${name}-${index}`}
                                         style={styles.reactionUserName}
@@ -1274,7 +1276,7 @@ export default function EventRoomChat({
                           showsHorizontalScrollIndicator={false}
                           contentContainerStyle={styles.reactionPicker}
                         >
-                          {EVENT_CHAT_REACTIONS.map((reaction) => (
+                          {EVENT_CHAT_REACTIONS.map((reaction: EventRoomReactionOption) => (
                             <FilterChip
                               key={reaction.type}
                               mode={isDark ? "dark" : "light"}
