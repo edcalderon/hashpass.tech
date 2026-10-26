@@ -35,6 +35,8 @@ export function reconcileDoorReadyCapsule(input: ReconcileDoorReadyInput): Recon
   if (!/^[a-f\d]{64}$/i.test(source.sha256)) throw new Error('Source SHA256 is invalid');
   if (!isIsoTimestamp(receivedAt) || !isIsoTimestamp(source.receivedAt)) throw new Error('Received timestamp is invalid');
   if (previous && previous.userId !== userId) throw new Error('Capsule does not belong to the authenticated user');
+  // The caller selects one capsule; never update a different one silently.
+  if (previous && previous.id !== capsuleId) throw new Error('Selected capsule does not match the previous capsule');
   // Source-ID deduplication is authoritative here. Persisted SHA deduplication
   // is checked by the repository before calling this domain function.
   if (previous?.sourceDocumentIds.includes(source.id)) return { kind: 'duplicate', capsule: previous };

@@ -216,6 +216,16 @@ test('ownership, evidence provenance, hashes and timestamps are enforced', () =>
   }), /Capsule does not belong/);
 });
 
+test('a previous capsule must be the selected capsule', () => {
+  const original = capsule('source-a');
+  const before = JSON.stringify(original);
+  assert.throws(() => reconcileDoorReadyCapsule({
+    userId: 'user-1', capsuleId: 'another-capsule', source: source('source-b'),
+    evidence: baseEvidence('source-b'), receivedAt: '2026-10-26T13:00:00.000Z', previous: original,
+  }), /does not match the previous capsule/);
+  assert.equal(JSON.stringify(original), before);
+});
+
 test('source IDs are idempotent and immutable original ticket reference is never replaced', () => {
   const original = capsule('source-a');
   const duplicate = reconcileDoorReadyCapsule({
