@@ -4,8 +4,20 @@ import McpConsentScreen from '../../app/(shared)/mcp/consent';
 
 const mockGet = jest.fn();
 const mockConsent = jest.fn();
+const mockGetSession = jest.fn();
 const mockAssign = jest.fn();
-const signedQuery = 'client_id=chatgpt&sig=signed&ba_param=client_id';
+const mockReplace = jest.fn();
+const signedQuery = new URLSearchParams([
+  ['client_id', 'chatgpt'],
+  ['response_type', 'code'],
+  ['redirect_uri', 'https://chatgpt.com/oauth/callback'],
+  ['exp', String(Math.floor(Date.now() / 1000) + 60)],
+  ['sig', 'signed'],
+  ['ba_param', 'client_id'],
+  ['ba_param', 'response_type'],
+  ['ba_param', 'redirect_uri'],
+  ['ba_param', 'exp'],
+]).toString();
 
 function mockActionButton(props: Record<string, unknown>) {
   return React.createElement('ActionButton', props);
@@ -15,12 +27,16 @@ jest.mock('../../lib/api-client', () => ({
   apiClient: { get: (...args: unknown[]) => mockGet(...args) },
 }));
 jest.mock('better-auth/client', () => ({
-  createAuthClient: () => ({ oauth2: { consent: (...args: unknown[]) => mockConsent(...args) } }),
+  createAuthClient: () => ({
+    getSession: (...args: unknown[]) => mockGetSession(...args),
+    oauth2: { consent: (...args: unknown[]) => mockConsent(...args) },
+  }),
 }));
 jest.mock('@better-auth/oauth-provider/client', () => ({ oauthProviderClient: () => ({}) }));
 jest.mock('@hashpass/config', () => ({
   ENV_CONFIG: { getApiUrl: () => 'https://api.hashpass.tech/api' },
 }));
+jest.mock('expo-router', () => ({ useRouter: () => ({ replace: mockReplace }) }));
 jest.mock('@hashpass/ui/primitives', () => ({
   Badge: 'Badge',
   Surface: 'Surface',
@@ -39,6 +55,7 @@ describe('MCP consent screen', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockGetSession.mockResolvedValue({ data: { user: { id: 'user-1' } } });
     Object.defineProperty(global, 'window', {
       configurable: true,
       value: { location: { search: `?${signedQuery}`, assign: mockAssign } },
@@ -67,6 +84,8 @@ describe('MCP consent screen', () => {
     await act(async () => {
       renderer = create(<McpConsentScreen />);
       await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
     });
 
     expect(mockGet).toHaveBeenCalledWith(`/auth/mcp-consent-query?${signedQuery}`, {
@@ -94,6 +113,8 @@ describe('MCP consent screen', () => {
     await act(async () => {
       renderer = create(<McpConsentScreen />);
       await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
     });
     await act(async () => renderer?.root.findAllByType('ActionButton' as never)[1].props.onPress());
     expect(mockConsent).toHaveBeenCalledWith({ accept: false });
@@ -105,7 +126,7 @@ describe('MCP consent screen', () => {
       renderer = create(<McpConsentScreen />);
       await Promise.resolve();
     });
-    expect(root().findByProps({ accessibilityRole: 'alert' }).props.children).toBe('Request expired');
+    expect(root().findByProps({ accessibilityRole: 'alert' }).props.children).toContain('has expired');
   });
 
   it('rejects missing requests and reports consent errors', async () => {
@@ -116,8 +137,11 @@ describe('MCP consent screen', () => {
     await act(async () => {
       renderer = create(<McpConsentScreen />);
       await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
     });
-    expect(root().findByProps({ accessibilityRole: 'alert' }).props.children).toContain('missing or has expired');
+    expect(root().findByProps({ accessibilityRole: 'alert' }).props.children).toContain('missing or invalid');
+    expect(root().findAllByType('ActionButton' as never)).toHaveLength(0);
 
     act(() => renderer?.unmount());
     renderer = null;
@@ -133,8 +157,28 @@ describe('MCP consent screen', () => {
     await act(async () => {
       renderer = create(<McpConsentScreen />);
       await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
     });
     await act(async () => renderer?.root.findAllByType('ActionButton' as never)[0].props.onPress());
     expect(root().findByProps({ accessibilityRole: 'alert' }).props.children).toBe('Consent failed');
+  });
+
+  it('redirects an anonymous visitor to sign-in before verifying MCP consent', async () => {
+    mockGetSession.mockResolvedValue({ data: null });
+
+    await act(async () => {
+      renderer = create(<McpConsentScreen />);
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mockGetSession).toHaveBeenCalled();
+    expect(mockReplace).toHaveBeenCalledWith(
+      `/auth?returnTo=${encodeURIComponent(`/mcp/login?${signedQuery}`)}`,
+    );
+    expect(mockGet).not.toHaveBeenCalled();
+    expect(root().findAllByType('ActionButton' as never)).toHaveLength(0);
   });
 });

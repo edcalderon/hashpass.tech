@@ -1,3 +1,5 @@
+import type { McpAuthorizationRequest } from '@/types/mcp-authorization-machine.types';
+
 export const MCP_LOGIN_PATH = '/mcp/login';
 
 export const isMcpLoginContinuation = (returnTo: string): boolean => {
@@ -39,6 +41,32 @@ const REQUIRED_SIGNED_PARAMETERS = [
   'sig',
 ] as const;
 
+export const getMcpAuthorizationRequest = (
+  rawSearch: string,
+  now = Date.now(),
+): McpAuthorizationRequest => {
+  const query = rawSearch.startsWith('?') ? rawSearch.slice(1) : rawSearch;
+  if (!query) return { isValid: false, isExpired: false };
+
+  const params = new URLSearchParams(query);
+  if (REQUIRED_SIGNED_PARAMETERS.some((name) => !params.get(name))) {
+    return { isValid: false, isExpired: false };
+  }
+  if (params.get('response_type') !== 'code') {
+    return { isValid: false, isExpired: false };
+  }
+
+  const expiresAt = Number(params.get('exp'));
+  if (!Number.isFinite(expiresAt) || expiresAt <= 0) {
+    return { isValid: false, isExpired: false };
+  }
+
+  return {
+    isValid: true,
+    isExpired: expiresAt * 1000 <= now,
+  };
+};
+
 export const buildMcpLoginContinuation = (
   rawSearch: string,
   apiBaseUrl: string,
@@ -46,14 +74,14 @@ export const buildMcpLoginContinuation = (
   const query = rawSearch.startsWith('?') ? rawSearch.slice(1) : rawSearch;
   if (!query) return null;
 
-  const params = new URLSearchParams(query);
-  if (REQUIRED_SIGNED_PARAMETERS.some((name) => !params.get(name))) return null;
-  if (params.get('response_type') !== 'code') return null;
+  const queryParams = new URLSearchParams(query);
+  const signedQuery = queryParams.has('ba_param') ? extractSignedOAuthQuery(query) : query;
+  if (!signedQuery) return null;
 
-  const expiresAt = Number(params.get('exp'));
-  if (!Number.isFinite(expiresAt) || expiresAt <= 0) return null;
+  const request = getMcpAuthorizationRequest(signedQuery);
+  if (!request.isValid || request.isExpired) return null;
 
-  const preservedSearch = `?${query}`;
+  const preservedSearch = `?${signedQuery}`;
   const normalizedApiBaseUrl = apiBaseUrl.replace(/\/$/, '');
 
   return {

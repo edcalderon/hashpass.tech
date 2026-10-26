@@ -42,8 +42,11 @@ migration `V106__better_auth_mcp_oauth.sql` before enabling the auth plugin.
 
 The private runtime file `/opt/hashpass/mcp/secrets/plane.env` supplies only
 `PLANE_API_KEY`, `PLANE_WORKSPACE_SLUG`, and `PLANE_BASE_URL`. Configure
-`MCP_ALLOWED_EMAIL_DOMAINS` in the operator `.env`; domain access is accepted
-only when the Hashpass OAuth token carries an explicit verified-email claim.
+`MCP_ALLOWED_EMAIL_DOMAINS` in the operator `.env` must be exactly
+`hashpass.app,hashpass.tech`. Domain access is accepted only when the Hashpass
+OAuth token carries an explicit verified-email claim. The deployment preflight
+rejects a missing, duplicate, or external domain rather than broadening the
+private MCP boundary.
 Optional `MCP_ALLOWED_EMAILS` and immutable `MCP_ALLOWED_SUBJECTS` entries can
 grant narrower exceptions. Never place the Plane token in a browser, connector
 form, or tracked file.

@@ -1,34 +1,35 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { createAuthClient } from 'better-auth/client';
 import { ENV_CONFIG } from '@hashpass/config';
-import { Badge, Surface } from '@hashpass/ui/primitives';
+import { ActionButton, Badge, Surface } from '@hashpass/ui/primitives';
 import { uiPalette, uiTokens } from '@hashpass/ui/tokens';
+import { useMcpAuthorizationMachine } from '../../../hooks/mcp-authorization-machine';
 import { useTheme } from '../../../hooks/useTheme';
-import { buildMcpLoginContinuation } from '../../../lib/auth/mcp-login';
+import {
+  buildMcpLoginContinuation,
+  getMcpAuthorizationRequest,
+} from '../../../lib/auth/mcp-login';
 
 export default function McpLoginScreen() {
   const router = useRouter();
   const { isDark } = useTheme();
   const mode = isDark ? 'dark' : 'light';
   const palette = uiPalette(mode);
-  const [error, setError] = useState('');
   const apiBaseUrl = ENV_CONFIG.getApiUrl().replace(/\/$/, '');
+  const rawSearch = typeof window === 'undefined' ? '' : window.location.search;
+  const request = useMemo(() => getMcpAuthorizationRequest(rawSearch), [rawSearch]);
   const continuation = useMemo(
-    () => buildMcpLoginContinuation(
-      typeof window === 'undefined' ? '' : window.location.search,
-      apiBaseUrl,
-    ),
-    [apiBaseUrl],
+    () => buildMcpLoginContinuation(rawSearch, apiBaseUrl),
+    [apiBaseUrl, rawSearch],
   );
+  const { send, view } = useMcpAuthorizationMachine({ flow: 'login', request });
+  const hasNavigated = useRef(false);
 
   useEffect(() => {
-    if (!continuation) {
-      setError('This authorization request is missing, invalid, or has expired.');
-      return;
-    }
+    if (view.phase !== 'checkingSession') return;
 
     let active = true;
     const authClient = createAuthClient({ baseURL: `${apiBaseUrl}/auth` });
@@ -36,21 +37,42 @@ export default function McpLoginScreen() {
     authClient.getSession()
       .then((result) => {
         if (!active) return;
-        if (result.data?.user) {
-          window.location.replace(continuation.authorizeUrl);
-          return;
-        }
-
-        router.replace(`/auth?returnTo=${encodeURIComponent(continuation.returnTo)}` as never);
+        send({ type: result.data?.user ? 'SESSION_AUTHENTICATED' : 'SESSION_ANONYMOUS' });
       })
       .catch(() => {
-        if (active) setError('We could not verify your HASHPASS session. Please try again.');
+        if (active) {
+          send({
+            type: 'SESSION_CHECK_FAILED',
+            message: 'We could not verify your HASHPASS session. Please try again.',
+          });
+        }
       });
 
     return () => {
       active = false;
     };
-  }, [apiBaseUrl, continuation, router]);
+  }, [apiBaseUrl, send, view.phase]);
+
+  useEffect(() => {
+    if (!continuation || hasNavigated.current) return;
+
+    if (view.canRedirectToAuthorization) {
+      hasNavigated.current = true;
+      window.location.replace(continuation.authorizeUrl);
+      return;
+    }
+
+    if (view.phase === 'signInRequired') {
+      hasNavigated.current = true;
+      router.replace(`/auth?returnTo=${encodeURIComponent(continuation.returnTo)}` as never);
+    }
+  }, [continuation, router, view.canRedirectToAuthorization, view.phase]);
+
+  const statusMessage = view.phase === 'signInRequired'
+    ? 'Opening HASHPASS sign in…'
+    : view.phase === 'authorizationRedirect'
+      ? 'Continuing your secure connection…'
+      : 'Checking your HASHPASS session…';
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: palette.canvas }]}>
@@ -58,12 +80,17 @@ export default function McpLoginScreen() {
         <Surface mode={mode} style={styles.surface}>
           <Badge mode={mode}>HASHPASS Plane</Badge>
           <Text style={[styles.title, { color: palette.text }]}>Securely connecting your workspace</Text>
-          {error ? (
-            <Text accessibilityRole="alert" style={[styles.body, { color: palette.danger }]}>{error}</Text>
+          {view.error ? (
+            <>
+              <Text accessibilityRole="alert" style={[styles.body, { color: palette.danger }]}>{view.error}</Text>
+              {view.canRetry && (
+                <ActionButton mode={mode} label="Try again" onPress={() => send({ type: 'RETRY' })} />
+              )}
+            </>
           ) : (
-            <View style={styles.progress} accessibilityRole="progressbar" accessibilityLabel="Checking your HASHPASS session">
+            <View style={styles.progress} accessibilityRole="progressbar" accessibilityLabel={statusMessage}>
               <ActivityIndicator color={palette.accent} />
-              <Text style={[styles.body, { color: palette.muted }]}>Checking your HASHPASS session…</Text>
+              <Text style={[styles.body, { color: palette.muted }]}>{statusMessage}</Text>
             </View>
           )}
         </Surface>
