@@ -19,7 +19,26 @@ export async function GET(request: Request) {
   if (eventId) query = query.eq("event_id", eventId);
   const { data, error } = await query;
   if (error) return json({ error: "Unable to load ticket claims" }, 503);
-  return json({ data: data || [] });
+  const claims = data || [];
+  // Reviewers need to know who is asking for the pass. Resolve each distinct
+  // claimant once; a failed lookup leaves the email empty instead of hiding
+  // the claim from the review queue.
+  const claimantIds = [...new Set(claims.map((claim: { claimant_user_id: string }) => claim.claimant_user_id))];
+  const emails = new Map<string, string | null>();
+  await Promise.all(claimantIds.map(async (id) => {
+    try {
+      const { data: lookup } = await admin.supabase.auth.admin.getUserById(id as string);
+      emails.set(id as string, lookup?.user?.email ?? null);
+    } catch {
+      emails.set(id as string, null);
+    }
+  }));
+  return json({
+    data: claims.map((claim: { claimant_user_id: string }) => ({
+      ...claim,
+      claimant_email: emails.get(claim.claimant_user_id) ?? null,
+    })),
+  });
 }
 
 export async function POST(request: Request) {

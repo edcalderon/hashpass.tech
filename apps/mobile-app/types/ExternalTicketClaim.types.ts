@@ -36,3 +36,18 @@ export type ExternalTicketClaimInspection = {
     converted_at?: string | null;
   };
 };
+
+/** A claim as listed in the admin review queue, with the claimant resolved. */
+export type ExternalTicketClaimRequest = {
+  id: string;
+  event_id: string;
+  issuer: string;
+  claimant_user_id: string;
+  claimant_email?: string | null;
+  ticket_code_last4: string;
+  source_qr_payload?: { format?: string } | null;
+  requested_pass_type: PassType;
+  status: ExternalTicketClaimStatus;
+  reviewer_note: string | null;
+  submitted_at: string;
+};

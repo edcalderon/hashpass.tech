@@ -148,13 +148,18 @@ describe("/api/pass-ticket-claims", () => {
 });
 
 describe("/api/admin/pass-ticket-claims", () => {
-  const adminSupabase = { from: (...a: unknown[]) => mockFrom(...a) };
+  const mockGetUserById = jest.fn();
+  const adminSupabase = {
+    from: (...a: unknown[]) => mockFrom(...a),
+    auth: { admin: { getUserById: (...a: unknown[]) => mockGetUserById(...a) } },
+  };
 
   beforeEach(() => {
     jest.resetModules();
     jest.spyOn(console, "error").mockImplementation(() => undefined);
     mockFrom.mockReset();
     mockRpc.mockReset();
+    mockGetUserById.mockReset().mockResolvedValue({ data: { user: { email: "claimant@example.com" } } });
     mockAuthorizeAdmin.mockReset().mockResolvedValue({ userId: "admin-1", supabase: adminSupabase });
   });
   afterEach(() => jest.restoreAllMocks());
@@ -169,12 +174,31 @@ describe("/api/admin/pass-ticket-claims", () => {
   });
 
   it("filters claims by status and event", async () => {
-    const q = chain({ data: [{ id: "c1" }] });
+    const q = chain({ data: [{ id: "c1", claimant_user_id: "u1" }] });
     mockFrom.mockReturnValueOnce(q);
     const res = await load().GET(new Request(`${ADMIN_URL}?status=pending&eventId=e1`));
-    expect(await res.json()).toEqual({ data: [{ id: "c1" }] });
+    expect(await res.json()).toEqual({
+      data: [{ id: "c1", claimant_user_id: "u1", claimant_email: "claimant@example.com" }],
+    });
     expect(q.eq).toHaveBeenCalledWith("status", "pending");
     expect(q.eq).toHaveBeenCalledWith("event_id", "e1");
+  });
+
+  it("looks each claimant up once and keeps a claim whose email lookup fails", async () => {
+    mockFrom.mockReturnValueOnce(chain({ data: [
+      { id: "c1", claimant_user_id: "u1" },
+      { id: "c2", claimant_user_id: "u1" },
+      { id: "c3", claimant_user_id: "u2" },
+      { id: "c4", claimant_user_id: "u3" },
+    ] }));
+    mockGetUserById.mockImplementation(async (id: string) => {
+      if (id === "u2") throw new Error("auth down");
+      if (id === "u3") return { data: { user: null } };
+      return { data: { user: { email: "claimant@example.com" } } };
+    });
+    const body = await (await load().GET(new Request(ADMIN_URL))).json();
+    expect(body.data.map((c: any) => c.claimant_email)).toEqual(["claimant@example.com", "claimant@example.com", null, null]);
+    expect(mockGetUserById).toHaveBeenCalledTimes(3);
   });
 
   it("lists unfiltered, tolerating null data, and reports errors", async () => {

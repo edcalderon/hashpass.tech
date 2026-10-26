@@ -18,6 +18,7 @@ import { useTheme } from "../../../hooks/useTheme";
 import MarketingManager from '../../../components/admin/MarketingManager';
 import { useAuth } from "../../../hooks/useAuth";
 import type { AdminRole } from "../../../lib/admin-utils";
+import type { ExternalTicketClaimRequest } from "../../../types/ExternalTicketClaim.types";
 import { getCurrentAdminAccess } from "../../../lib/admin-access";
 import { supabase } from "../../../lib/supabase";
 import {
@@ -56,7 +57,8 @@ type TabType =
   | "meetings"
   | "emails"
   | "roles"
-  | "speaker-roles";
+  | "speaker-roles"
+  | "ticket-claims";
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -303,6 +305,8 @@ export default function AdminPanel() {
   const [newSpeakerAccountEmail, setNewSpeakerAccountEmail] = useState("");
   const [speakerClaims, setSpeakerClaims] = useState<SpeakerClaimRequest[]>([]);
   const [speakerClaimsLoading, setSpeakerClaimsLoading] = useState(false);
+  const [ticketClaims, setTicketClaims] = useState<ExternalTicketClaimRequest[]>([]);
+  const [ticketClaimsLoading, setTicketClaimsLoading] = useState(false);
 
   const styles = getStyles(isDark, colors);
   const updateTabScrollState = (offsetX = 0) => {
@@ -448,7 +452,63 @@ export default function AdminPanel() {
       ]);
     } else if (activeTab === "speaker-roles") {
       await Promise.all([loadSpeakerRoles(), loadSpeakerClaims()]);
+    } else if (activeTab === "ticket-claims") {
+      await loadTicketClaims();
     }
+  };
+
+  const loadTicketClaims = async () => {
+    setTicketClaimsLoading(true);
+    try {
+      const result = await apiClient.get(
+        `/admin/pass-ticket-claims?eventId=${encodeURIComponent(selectedEventId)}`,
+        { skipEventSegment: true },
+      );
+      if (!result.success) throw new Error(result.error || "Unable to load ticket claims");
+      setTicketClaims((result.data as { data?: ExternalTicketClaimRequest[] })?.data || []);
+    } catch (error: any) {
+      Alert.alert("Error", "Failed to load ticket claims: " + (error.message || "Unknown error"));
+    } finally {
+      setTicketClaimsLoading(false);
+    }
+  };
+
+  const reviewTicketClaim = (claim: ExternalTicketClaimRequest, action: "approve" | "reject", reviewNote = "") => {
+    const note = reviewNote.trim();
+    if (action === "reject" && !note) {
+      Alert.alert("Add a note", "Explain why the claim is declined so the claimant knows what to fix.");
+      return;
+    }
+    const verb = action === "approve" ? "Approve" : "Reject";
+    Alert.alert(
+      `${verb} ticket claim?`,
+      `${verb} the ${claim.requested_pass_type.toUpperCase()} claim for ticket ending in ${claim.ticket_code_last4}?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: verb,
+          style: action === "reject" ? "destructive" : "default",
+          onPress: () => {
+            void (async () => {
+              try {
+                setTicketClaimsLoading(true);
+                const result = await apiClient.post(
+                  "/admin/pass-ticket-claims",
+                  { claimId: claim.id, action, passType: action === "approve" ? claim.requested_pass_type : undefined, note: note || undefined },
+                  { skipEventSegment: true },
+                );
+                if (!result.success) throw new Error(result.error || "Unable to review claim");
+                await loadTicketClaims();
+              } catch (error: any) {
+                Alert.alert("Claim not updated", error.message || "Please try again.");
+              } finally {
+                setTicketClaimsLoading(false);
+              }
+            })();
+          },
+        },
+      ],
+    );
   };
 
   const loadSpeakerRoles = async () => {
@@ -1637,6 +1697,24 @@ export default function AdminPanel() {
               </Text>
             </TouchableOpacity>
           )}
+          {isGlobalAdmin && (
+            <TouchableOpacity
+              style={[styles.tab, activeTab === "ticket-claims" && styles.tabActive]}
+              onPress={() => setActiveTab("ticket-claims")}
+            >
+              <MaterialIcons
+                name="confirmation-number"
+                size={20}
+                color={activeTab === "ticket-claims" ? "#fff" : colors.text.secondary}
+              />
+              <Text
+                numberOfLines={1}
+                style={[styles.tabText, activeTab === "ticket-claims" && styles.tabTextActive]}
+              >
+                Ticket Claims
+              </Text>
+            </TouchableOpacity>
+          )}
         </ScrollView>
         {tabsOverflow && (
           <TouchableOpacity
@@ -1807,6 +1885,19 @@ export default function AdminPanel() {
             onReviewClaim={reviewSpeakerClaim}
             onRefresh={() => {
               void Promise.all([loadSpeakerRoles(), loadSpeakerClaims()]);
+            }}
+          />
+        )}
+
+        {activeTab === "ticket-claims" && isGlobalAdmin && (
+          <TicketClaimsTab
+            styles={styles}
+            colors={colors}
+            claims={ticketClaims}
+            loading={ticketClaimsLoading}
+            onReview={reviewTicketClaim}
+            onRefresh={() => {
+              void loadTicketClaims();
             }}
           />
         )}
@@ -3175,6 +3266,78 @@ function RolesTab({
           )}
         </View>
       )}
+    </View>
+  );
+}
+
+function TicketClaimsTab({ styles, colors, claims, loading, onReview, onRefresh }: any) {
+  const [notes, setNotes] = useState<Record<string, string>>({});
+  const open = claims.filter(
+    (claim: ExternalTicketClaimRequest) => claim.status === "pending" || claim.status === "validated",
+  );
+  return (
+    <View>
+      <TouchableOpacity style={styles.actionButton} onPress={onRefresh} disabled={loading}>
+        <Text style={styles.actionButtonText}>Refresh</Text>
+      </TouchableOpacity>
+      <View style={[styles.passCard, { marginTop: 16 }]}>
+        <View style={styles.passCardHeader}>
+          <View style={styles.speakerRoleTitleWrap}>
+            <Text style={styles.passNumber}>Original ticket claims</Text>
+            <Text style={styles.passInfo}>
+              Check the ticket with its issuer before approving. Claims without a QR upload have only a typed code to verify.
+            </Text>
+          </View>
+          {loading && <ActivityIndicator size="small" color="#007AFF" />}
+        </View>
+        {open.map((claim: ExternalTicketClaimRequest) => (
+          <View key={claim.id} style={[styles.passCard, { marginTop: 10 }]}>
+            <View style={styles.passCardHeader}>
+              <View style={styles.speakerRoleTitleWrap}>
+                <Text style={styles.passNumber}>{claim.claimant_email || claim.claimant_user_id}</Text>
+                <Text style={styles.passInfo}>
+                  {claim.issuer} · {claim.event_id} · ticket ending {claim.ticket_code_last4}
+                </Text>
+              </View>
+              <View style={[styles.statusBadge, styles.actionButtonWarning]}>
+                <Text style={styles.statusBadgeText}>{claim.requested_pass_type.toUpperCase()}</Text>
+              </View>
+            </View>
+            <Text style={styles.passInfo}>
+              {claim.source_qr_payload?.format === "manual_ticket_code" ? "Typed code only (no QR)" : "Original QR attached"}
+            </Text>
+            <Text style={styles.speakerClaimDate}>
+              Submitted {new Date(claim.submitted_at).toLocaleDateString()}
+            </Text>
+            <TextInput
+              style={styles.searchInput}
+              value={notes[claim.id] || ""}
+              onChangeText={(value) => setNotes((current) => ({ ...current, [claim.id]: value }))}
+              placeholder="Review note (required to reject)"
+              placeholderTextColor={colors.text.secondary}
+              maxLength={1000}
+              multiline
+            />
+            <View style={styles.passActions}>
+              <TouchableOpacity
+                style={[styles.actionButton, styles.actionButtonSuccess]}
+                onPress={() => onReview(claim, "approve", notes[claim.id])}
+              >
+                <Text style={styles.actionButtonText}>Approve</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={() => onReview(claim, "reject", notes[claim.id])}
+              >
+                <Text style={styles.actionButtonText}>Reject</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ))}
+        {!loading && open.length === 0 && (
+          <Text style={styles.emptyText}>No ticket claims awaiting review</Text>
+        )}
+      </View>
     </View>
   );
 }

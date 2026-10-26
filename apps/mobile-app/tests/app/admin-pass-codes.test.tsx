@@ -413,4 +413,107 @@ describe('AdminPanel pass codes', () => {
       reviewNote: 'The roster lists a different email.',
     }, { skipEventSegment: true });
   });
+  it('lists open ticket claims for review, including code-only claims, and approves one', async () => {
+    const codeOnlyClaim = {
+      id: 'claim-1',
+      event_id: 'chile2026',
+      issuer: 'blockchain_summit_latam',
+      claimant_user_id: 'user-1',
+      claimant_email: 'holder@example.com',
+      ticket_code_last4: '9XQ2',
+      source_qr_payload: { format: 'manual_ticket_code' },
+      requested_pass_type: 'business',
+      status: 'pending',
+      reviewer_note: null,
+      submitted_at: '2026-10-20T00:00:00.000Z',
+    };
+    const qrClaim = {
+      ...codeOnlyClaim,
+      id: 'claim-2',
+      claimant_email: null,
+      source_qr_payload: { format: 'external_ticket_qr', raw: 'x' },
+    };
+    const rejected = { ...codeOnlyClaim, id: 'claim-3', status: 'rejected' };
+    mockGet.mockImplementation(async (path: string) => path.startsWith('/admin/pass-ticket-claims')
+      ? { success: true, data: { data: [codeOnlyClaim, qrClaim, rejected] } }
+      : { success: true, data: { data: [] } });
+    const renderer = await renderPanel();
+    await act(async () => {
+      triggerPress(renderer.root.findByProps({ children: 'Ticket Claims' }).parent);
+      await Promise.resolve();
+    });
+    await flush();
+
+    expect(mockGet).toHaveBeenCalledWith('/admin/pass-ticket-claims?eventId=chile2026', { skipEventSegment: true });
+    expect(renderer.root.findAllByProps({ children: 'Typed code only (no QR)' }).length).toBeGreaterThan(0);
+    expect(renderer.root.findAllByProps({ children: 'Original QR attached' }).length).toBeGreaterThan(0);
+    expect(renderer.root.findAllByProps({ children: 'Approve' }).length).toBeGreaterThan(0);
+    expect(renderer.root.findAllByProps({ children: 'holder@example.com' }).length).toBeGreaterThan(0);
+    expect(renderer.root.findAllByProps({ placeholder: 'Review note (required to reject)' })).toHaveLength(4);
+
+    await act(async () => {
+      triggerPress(renderer.root.findAllByProps({ children: 'Reject' })[0].parent);
+    });
+    expect(mockAlert.mock.calls.at(-1)?.[0]).toBe('Add a note');
+    await act(async () => {
+      triggerPress(renderer.root.findAllByProps({ children: 'Approve' })[0].parent);
+    });
+    const approveAlert = mockAlert.mock.calls.at(-1);
+    expect(approveAlert?.[0]).toBe('Approve ticket claim?');
+    const approve = (approveAlert?.[2] as Array<{ text: string; onPress?: () => void }>)
+      .find((button) => button.text === 'Approve');
+    await act(async () => {
+      approve?.onPress?.();
+      await Promise.resolve();
+    });
+    expect(mockPost).toHaveBeenCalledWith('/admin/pass-ticket-claims', {
+      claimId: 'claim-1',
+      action: 'approve',
+      passType: 'business',
+      note: undefined,
+    }, { skipEventSegment: true });
+  });
+
+  it('rejects a ticket claim with a note and shows an empty queue message', async () => {
+    mockGet.mockImplementation(async (path: string) => path.startsWith('/admin/pass-ticket-claims')
+      ? { success: true, data: { data: [{
+        id: 'claim-9', event_id: 'chile2026', issuer: 'x', claimant_user_id: 'u',
+        ticket_code_last4: '1234', source_qr_payload: null, requested_pass_type: 'general',
+        status: 'pending', reviewer_note: null, submitted_at: '2026-10-20T00:00:00.000Z',
+      }] } }
+      : { success: true, data: { data: [] } });
+    const renderer = await renderPanel();
+    await act(async () => {
+      triggerPress(renderer.root.findByProps({ children: 'Ticket Claims' }).parent);
+      await Promise.resolve();
+    });
+    await flush();
+    await act(async () => {
+      renderer.root.findByProps({ placeholder: 'Review note (required to reject)' }).props.onChangeText('Code not in issuer list');
+    });
+    await act(async () => {
+      triggerPress(renderer.root.findAllByProps({ children: 'Reject' })[0].parent);
+    });
+    const rejectAlert = mockAlert.mock.calls.at(-1);
+    expect(rejectAlert?.[0]).toBe('Reject ticket claim?');
+    mockPost.mockResolvedValueOnce({ success: false, error: 'boom' });
+    const reject = (rejectAlert?.[2] as Array<{ text: string; onPress?: () => void }>)
+      .find((button) => button.text === 'Reject');
+    await act(async () => {
+      reject?.onPress?.();
+      await Promise.resolve();
+    });
+    expect(mockPost).toHaveBeenCalledWith('/admin/pass-ticket-claims', {
+      claimId: 'claim-9', action: 'reject', passType: undefined, note: 'Code not in issuer list',
+    }, { skipEventSegment: true });
+    expect(mockAlert.mock.calls.at(-1)?.[0]).toBe('Claim not updated');
+
+    mockGet.mockResolvedValue({ success: true, data: { data: [] } });
+    await act(async () => {
+      triggerPress(renderer.root.findByProps({ children: 'Refresh' }).parent);
+      await Promise.resolve();
+    });
+    await flush();
+    expect(renderer.root.findByProps({ children: 'No ticket claims awaiting review' })).toBeTruthy();
+  });
 });
