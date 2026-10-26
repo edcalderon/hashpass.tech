@@ -10,7 +10,7 @@ This records the initial typed boundary for the HASHPASS Muse Companion tracked 
 | Navigate | `navigate_to_event_or_schedule` | Return a typed in-app route intent. The client must resolve it through an allowlist; model text is never treated as a URL or executable route. |
 | Propose write | `propose_import_source` | Create a reviewable proposal with source evidence. Saving requires a separate, explicit confirmation from the user and a server-validated confirmation token. |
 
-Confirmation is deliberately not a model capability. Payment, transfer, destructive actions, organizer administration and arbitrary screen or browser automation are outside the MVP boundary. Types express the contract only; they do not implement authentication, authorization, token generation, persistence, a Meta request or a running capability registry.
+Confirmation is deliberately not a model capability. A tool result carries only the safe proposal view; the opaque confirmation token exists in the app's pending-confirmation state and must never be forwarded in model turns, prompts or logs. Payment, transfer, destructive actions, organizer administration and arbitrary screen or browser automation are outside the MVP boundary. Types express the contract only; they do not implement authentication, authorization, token generation, persistence, a Meta request or a running capability registry.
 
 ## Request trust boundary
 

@@ -87,6 +87,14 @@ export interface ActionProposal {
   expiresAt: string;
 }
 
+/** Safe to return in a model tool result; contains no owner ID or confirmation secret. */
+export interface ActionProposalView {
+  proposalId: string;
+  summary: string;
+  evidence: ActionProposal["evidence"];
+  expiresAt: string;
+}
+
 /** Sent only by the app's explicit confirmation flow, never as a model tool call. */
 export interface ConfirmActionRequest {
   proposalId: string;
@@ -95,7 +103,7 @@ export interface ConfirmActionRequest {
 
 export type ActionResult =
   | { status: "succeeded"; summary: string; data?: unknown }
-  | { status: "needs_confirmation"; proposal: ActionProposal }
+  | { status: "needs_confirmation"; proposal: ActionProposalView }
   | {
       status: "rejected";
       code: "not_allowed" | "invalid_arguments" | "not_found" | "expired";
@@ -113,7 +121,11 @@ export type CompanionState =
   | { status: "listening" }
   | { status: "transcribing" }
   | { status: "thinking"; requestId: string }
-  | { status: "awaiting_confirmation"; proposal: ActionProposal }
+  | {
+      status: "awaiting_confirmation";
+      proposal: ActionProposalView;
+      confirmationToken: ConfirmationToken;
+    }
   | { status: "executing"; requestId: string }
   | { status: "responded"; requestId: string; text: string }
   | { status: "error"; requestId?: string; message: string };
