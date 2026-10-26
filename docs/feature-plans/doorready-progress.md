@@ -12,7 +12,7 @@ Tracking: [Meta AI Hackathon DoorReady MVP issue #455](https://github.com/hashpa
 
 ## Verified on 26 Oct 2026
 
-- `pnpm --filter @hashpass/backend test`: 80 tests passed, including 20 DoorReady synthetic schema fixtures.
+- `pnpm --filter @hashpass/backend test`: 82 tests passed, including 20 DoorReady synthetic schema fixtures and regressions for missing-field clearing and previous-capsule immutability.
 - `pnpm --filter @hashpass/backend build`, `pnpm --filter @hashpass/types build`, and `pnpm typecheck`: passed.
 - Targeted ESLint for the changed DoorReady/Passport and type files: passed with no warnings after cleanup.
 - `pnpm check:design-system` and `pnpm check:type-placement`: passed.

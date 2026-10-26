@@ -152,6 +152,35 @@ test('later venue or time conflicts keep the prior value and require review', ()
   assert.equal(original.revision, 1);
 });
 
+test('a later supported source clears fields that were only missing', () => {
+  const first = reconcileDoorReadyCapsule({
+    userId: 'user-1', capsuleId: 'capsule-fill', source: source('source-a'),
+    evidence: [fact('title', 'Partial import', 'source-a')], receivedAt: '2026-10-26T12:00:00.000Z',
+  });
+  const second = reconcileDoorReadyCapsule({
+    userId: 'user-1', capsuleId: 'capsule-fill', source: source('source-b'),
+    evidence: [
+      fact('startAt', '2026-10-30T14:00:00.000Z', 'source-b'),
+      fact('timezone', 'America/Bogota', 'source-b'),
+      fact('venue', 'Bogotá Convention Center', 'source-b'),
+    ],
+    receivedAt: '2026-10-26T13:00:00.000Z', previous: first.capsule,
+  });
+  assert.deepEqual(second.capsule.unresolved, []);
+});
+
+test('evaluating a conflicting update does not mutate the previous capsule evidence', () => {
+  const original = capsule('source-a');
+  const before = JSON.stringify(original);
+  reconcileDoorReadyCapsule({
+    userId: 'user-1', capsuleId: original.id, source: source('source-b', 'user-1', 'email_text'),
+    evidence: [fact('venue', 'Riverside Hall', 'source-b')],
+    receivedAt: '2026-10-29T10:00:00.000Z', previous: original,
+  });
+  assert.equal(JSON.stringify(original), before);
+  assert.ok(original.evidence.every((entry) => entry.status !== 'conflicting'));
+});
+
 test('same-value follow-up adds provenance without an unnecessary conflict', () => {
   const original = capsule('source-a');
   const result = reconcileDoorReadyCapsule({

@@ -44,7 +44,7 @@ export function reconcileDoorReadyCapsule(input: ReconcileDoorReadyInput): Recon
 
   const created = !previous;
   const capsule: DoorReadyEventCapsule = previous
-    ? { ...previous, sourceDocumentIds: [...previous.sourceDocumentIds], evidence: [...previous.evidence], unresolved: [...previous.unresolved] }
+    ? { ...previous, sourceDocumentIds: [...previous.sourceDocumentIds], evidence: previous.evidence.map((fact) => ({ ...fact })), unresolved: [...previous.unresolved] }
     : {
       schemaVersion: 1, id: capsuleId, userId, revision: 0,
       title: null, startsAt: null, endsAt: null, timezone: null, venue: null, organizer: null,
@@ -95,10 +95,20 @@ export function reconcileDoorReadyCapsule(input: ReconcileDoorReadyInput): Recon
     capsule.endsAt = previous?.endsAt ?? null;
   }
 
-  for (const fact of evidence) if (fact.status !== 'supported') unresolved.add(fact.field);
-  for (const [field, value] of [
-    ['title', capsule.title], ['startAt', capsule.startsAt], ['timezone', capsule.timezone], ['venue', capsule.venue],
-  ] as const) if (value === null) unresolved.add(field);
+  // Recompute from the current values and evidence rather than only adding to
+  // the inherited set: a field a later source now fills stops being "missing",
+  // while genuine conflicts and ambiguity stay unresolved.
+  const REQUIRED: readonly DoorReadyFactField[] = ['title', 'startAt', 'timezone', 'venue'];
+  const recomputed = new Set<DoorReadyFactField>();
+  for (const field of Object.keys(FIELD_TO_CAPSULE) as DoorReadyFactField[]) {
+    const filled = capsule[FIELD_TO_CAPSULE[field]] !== null;
+    const facts = capsule.evidence.filter((fact) => fact.field === field);
+    const disputed = facts.some((fact) => fact.status === 'conflicting' || fact.status === 'ambiguous');
+    const missing = !filled && (REQUIRED.includes(field) || facts.some((fact) => fact.status !== 'supported' || fact.proposedValue === null));
+    if (disputed || missing) recomputed.add(field);
+  }
+  unresolved.clear();
+  for (const field of recomputed) unresolved.add(field);
   capsule.unresolved = [...unresolved];
   if (evidence.length > 0) capsule.trustState = 'source_extracted';
   capsule.revision += 1;
