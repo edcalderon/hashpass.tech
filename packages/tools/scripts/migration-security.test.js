@@ -153,6 +153,10 @@ const externalTicketClaimFingerprintMigrationPath = path.join(
   root,
   'db/migrations/V149__harden_external_ticket_claim_fingerprints.sql',
 );
+const passQrOwnerBoundCallerMigrationPath = path.join(
+  root,
+  'db/migrations/V150__update_pass_qr_owner_bound_callers.sql',
+);
 
 describe('setup and PIN migration plan', () => {
   it('runs the setup/PIN schema before the dependent SMS auth migrations', () => {
@@ -947,5 +951,20 @@ describe('external ticket claim fingerprint hardening migration', () => {
     expect(migration).toMatch(/encode\(extensions\.digest\(v_code, 'sha256'\), 'hex'\)/i);
     expect(migration).toMatch(/SET search_path = public, pg_temp/i);
     expect(migration).toMatch(/GRANT EXECUTE ON FUNCTION public\.submit_external_ticket_claim[\s\S]*?TO service_role/i);
+  });
+});
+
+describe('pass QR owner-bound caller migration', () => {
+  it('updates automatic issuance and backfill helpers after V148', () => {
+    const migration = fs.readFileSync(passQrOwnerBoundCallerMigrationPath, 'utf8');
+    const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+    const group = config.groups['admin-pass-management'];
+
+    expect(group.indexOf('db/migrations/V150__update_pass_qr_owner_bound_callers.sql'))
+      .toBeGreaterThan(group.indexOf('db/migrations/V148__bind_pass_qr_issuance_to_owner.sql'));
+    expect(migration).toMatch(/CREATE OR REPLACE FUNCTION public\.auto_generate_pass_qr\(\)/i);
+    expect(migration).toMatch(/generate_pass_qr\(NEW\.id::text, NEW\.user_id::text, 30, 1\)/i);
+    expect(migration).toMatch(/CREATE OR REPLACE FUNCTION public\.update_existing_passes_with_qr\(\)/i);
+    expect(migration).toMatch(/generate_pass_qr\(v_pass\.id::text, v_pass\.user_id::text, 30, 1\)/i);
   });
 });
