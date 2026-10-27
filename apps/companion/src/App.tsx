@@ -4,6 +4,9 @@ import { capabilities, houseRules, proposedGuestTurns, stageKeys } from './conte
 import { BUILD_INFO, CURRENT_VERSION, getCompanionVersionLabel } from './config/version';
 import { CompanionSettings } from './settings/CompanionSettings';
 import { useSettings } from './settings/SettingsContext';
+import { SmaMemoryPanel } from './sma/SmaMemoryPanel';
+import { SmaSetup } from './sma/SmaSetup';
+import { useSmaArchive } from './sma/useSmaArchive';
 import type { CapabilityValue, DemoAction, IconKey, PetMood } from './types';
 
 const QuestGame = lazy(() => import('./game/QuestGame').then((m) => ({ default: m.QuestGame })));
@@ -316,6 +319,11 @@ function Footer() {
 
 export function App() {
   const { t } = useSettings();
+  const sma = useSmaArchive();
+
+  if (sma.status === 'loading') return <main className="sma-gate"><p role="status">{t('sma.loading')}</p></main>;
+  if (sma.status === 'setup' || !sma.archive) return <SmaSetup onComplete={sma.setup} error={sma.error} />;
+
   return (
     <>
       <a className="skip" href="#grow">{t('app.skip')}</a>
@@ -323,6 +331,7 @@ export function App() {
       <main>
         <Evolution />
         <GuestStart />
+        <SmaMemoryPanel archive={sma.archive} onRemember={sma.remember} onReset={sma.reset} onExport={sma.exportArchive} error={sma.error} />
         <Capabilities />
         <Rules />
       </main>
