@@ -1,6 +1,7 @@
 import http from "node:http";
 import {createGatewayHandler} from "./gateway.mjs";
 import {createTokenVerifier} from "./token-verifier.mjs";
+import {createPlanePages} from "./plane-pages.mjs";
 
 const required = (name) => {
   const value = process.env[name]?.trim();
@@ -13,7 +14,20 @@ const resource = process.env.MCP_RESOURCE_URL?.trim() || "https://mcp.hashpass.t
 const issuer = process.env.MCP_OAUTH_ISSUER?.trim() || "https://api.hashpass.tech/api/auth";
 const port = Number.parseInt(process.env.PORT || "8220", 10);
 
+// Optional: a dedicated Plane account that lets the gateway serve the `page` tool (see plane-pages.mjs).
+const pageEmail = process.env.PLANE_PAGES_EMAIL?.trim();
+const pagePassword = process.env.PLANE_PAGES_PASSWORD;
+const planePages = pageEmail && pagePassword
+  ? createPlanePages({
+      baseUrl: required("PLANE_BASE_URL"),
+      workspaceSlug: required("PLANE_WORKSPACE_SLUG"),
+      email: pageEmail,
+      password: pagePassword,
+    })
+  : null;
+
 const handler = createGatewayHandler({
+  planePages,
   resource,
   authorizationServers: [issuer],
   scopesSupported: ["openid", "profile", "email", "offline_access", "plane:read", "plane:write"],

@@ -54,3 +54,24 @@ private MCP boundary.
 Optional `MCP_ALLOWED_EMAILS` and immutable `MCP_ALLOWED_SUBJECTS` entries can
 grant narrower exceptions. Never place the Plane token in a browser, connector
 form, or tracked file.
+
+## Plane pages (optional page service account)
+
+Self-hosted Plane Community has no page routes on its public `/api/v1` (verified through v1.4.3-rc2 and the
+`preview` branch), so the upstream MCP server's `page` tool always returns 404 there, whatever its version. Pages
+only exist on the web app's own session-authenticated API.
+
+When `PLANE_PAGES_EMAIL` and `PLANE_PAGES_PASSWORD` are set in `/opt/hashpass/mcp/secrets/plane.env`, the gateway
+answers `page` tool calls itself (`packages/plane-mcp-gateway/src/plane-pages.mjs`): it signs in to Plane with that
+account, keeps the session in memory, and re-signs in when Plane rejects it. All other tools still go to
+`plane-mcp-http` unchanged. Without those two variables, page calls keep going upstream and fail as before.
+
+- Use a **dedicated** Plane account (email + password sign-in must be enabled on the instance) that is an
+  Admin or Member of the HASHPASS project. Do not reuse a person's login, and never put the password in a
+  tracked file, tunnel profile or connector form.
+- Supported actions: `list`, `retrieve`, `create`, `update`, `archive` (`archive=false` restores), `delete`
+  (Plane requires the page to be archived first). `project_id` is required; workspace-level pages, collections and
+  work-item attachment are not available on this edition.
+- OAuth scopes still apply: `list` and `retrieve` need `plane:read`, the rest need `plane:write`.
+- This rests on Plane's undocumented internal API. After any Plane upgrade, create and read back a throwaway page
+  before relying on it.
