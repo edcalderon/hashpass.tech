@@ -20,6 +20,7 @@ const mockEq = jest.fn();
 const mockIn = jest.fn();
 const mockNeq = jest.fn();
 const mockOrder = jest.fn().mockResolvedValue({ data: [], error: null });
+const mockOrderTieBreak = jest.fn();
 const mockMaybeSingle = jest.fn().mockResolvedValue({ data: null, error: null });
 const mockMeetingRequestMaybeSingle = jest
   .fn()
@@ -50,7 +51,7 @@ function createChain(table?: string): {
   eq: (...args: unknown[]) => unknown;
   neq: (...args: unknown[]) => unknown;
   in: (...args: unknown[]) => unknown;
-  order: jest.Mock;
+  order: (...args: unknown[]) => unknown;
   maybeSingle: jest.Mock;
 } {
   return {
@@ -66,7 +67,17 @@ function createChain(table?: string): {
       mockIn(...args);
       return createChain(table);
     },
-    order: mockOrder,
+    // order() ends the query, but the incoming list chains a tie-break order(): the
+    // first call resolves the rows, a chained one only records its column.
+    order: (...args: unknown[]) => {
+      const result = mockOrder(...args);
+      return Object.assign(result, {
+        order: (...next: unknown[]) => {
+          mockOrderTieBreak(...next);
+          return result;
+        },
+      });
+    },
     maybeSingle:
       table === "meeting_requests"
         ? mockMeetingRequestMaybeSingle
@@ -90,6 +101,7 @@ describe("meeting-requests api", () => {
     mockNeq.mockReset();
     mockOrder.mockReset();
     mockOrder.mockResolvedValue({ data: [], error: null });
+    mockOrderTieBreak.mockReset();
     mockMaybeSingle.mockReset();
     mockMaybeSingle.mockResolvedValue({ data: null, error: null });
     mockMeetingRequestMaybeSingle.mockReset();
@@ -181,6 +193,9 @@ describe("meeting-requests api", () => {
           { id: "incoming-request", _direction: "incoming" },
         ],
       });
+      // The speaker inbox ranks boosted requests first, newest first within a score.
+      expect(mockOrder).toHaveBeenLastCalledWith("priority_score", { ascending: false });
+      expect(mockOrderTieBreak).toHaveBeenCalledWith("created_at", { ascending: false });
     });
 
     it("adds the claimed speaker’s current role and company to request details", async () => {
@@ -631,7 +646,7 @@ describe("meeting-requests api", () => {
             message: "Let's meet",
             note: "Bring notes",
             boostAmount: 12,
-            durationMinutes: 30,
+            durationMinutes: 5,
           }),
         }),
       );
@@ -648,11 +663,12 @@ describe("meeting-requests api", () => {
         p_requester_company: "Analytical Engines",
         p_requester_title: "Programmer",
         p_requester_ticket_type: "vip",
-        p_meeting_type: "partnership",
+        // Anything that is not a coffee break is a quick stand-up.
+        p_meeting_type: "speed",
         p_message: "Let's meet",
         p_note: "Bring notes",
         p_boost_amount: 12,
-        p_duration_minutes: 30,
+        p_duration_minutes: 5,
         p_event_id: "bsl",
       });
     });
@@ -662,7 +678,8 @@ describe("meeting-requests api", () => {
       ["a zero duration", 0],
       ["a NaN duration", "NaN"],
       ["an infinite duration", "Infinity"],
-      ["a duration above the 30-minute meeting limit", 31],
+      ["a duration above the 45-minute meeting limit", 46],
+      ["a duration below the 5-minute baseline", 4],
     ])("rejects %s before invoking the meeting request RPC", async (_label, durationMinutes) => {
       mockResolveNotificationIdentity.mockResolvedValue({
         supabaseUserId: "550e8400-e29b-41d4-a716-446655440000",
@@ -685,7 +702,7 @@ describe("meeting-requests api", () => {
 
       expect(response.status).toBe(400);
       expect(await response.json()).toEqual({
-        error: "durationMinutes must be between 5 and 30 minutes",
+        error: "durationMinutes must be between 5 and 45 minutes",
       });
       expect(mockRpc).not.toHaveBeenCalled();
     });
@@ -719,6 +736,75 @@ describe("meeting-requests api", () => {
         "insert_meeting_request",
         expect.objectContaining({ p_duration_minutes: 15 }),
       );
+    });
+
+    it("defaults to a 5-minute stand-up and a 15-minute coffee break", async () => {
+      mockResolveNotificationIdentity.mockResolvedValue({
+        supabaseUserId: "550e8400-e29b-41d4-a716-446655440000",
+      });
+      mockIsResolveIdentityError.mockReturnValue(false);
+      mockRpc.mockResolvedValue({ data: { id: "request-123", status: "pending" }, error: null });
+
+      /* eslint-disable @typescript-eslint/no-require-imports */
+      const { POST } = require("../../app/api/events/[eventId]/meetings/requests+api");
+      const send = (extra: Record<string, unknown>) => POST(
+        new Request("https://api.hashpass.tech/api/events/bsl/meetings/requests", {
+          method: "POST",
+          body: JSON.stringify({
+            speakerId: "claudia-sotelo",
+            speakerName: "Claudia Sotelo",
+            requesterName: "Ada Lovelace",
+            ...extra,
+          }),
+        }),
+      );
+
+      expect((await send({})).status).toBe(201);
+      expect(mockRpc).toHaveBeenLastCalledWith(
+        "insert_meeting_request",
+        expect.objectContaining({ p_meeting_type: "speed", p_duration_minutes: 5 }),
+      );
+      expect((await send({ meetingType: "coffee" })).status).toBe(201);
+      expect(mockRpc).toHaveBeenLastCalledWith(
+        "insert_meeting_request",
+        expect.objectContaining({ p_meeting_type: "coffee", p_duration_minutes: 15 }),
+      );
+      expect((await send({ meetingType: "coffee", durationMinutes: 45 })).status).toBe(201);
+      expect(mockRpc).toHaveBeenLastCalledWith(
+        "insert_meeting_request",
+        expect.objectContaining({ p_meeting_type: "coffee", p_duration_minutes: 45 }),
+      );
+    });
+
+    it("answers 403 when the pass cannot book a coffee break", async () => {
+      mockResolveNotificationIdentity.mockResolvedValue({
+        supabaseUserId: "550e8400-e29b-41d4-a716-446655440000",
+      });
+      mockIsResolveIdentityError.mockReturnValue(false);
+      mockRpc.mockResolvedValue({
+        data: null,
+        error: { code: "HP403", message: "Coffee meetings require a business or VIP pass" },
+      });
+
+      /* eslint-disable @typescript-eslint/no-require-imports */
+      const { POST } = require("../../app/api/events/[eventId]/meetings/requests+api");
+      const response = await POST(
+        new Request("https://api.hashpass.tech/api/events/bsl/meetings/requests", {
+          method: "POST",
+          body: JSON.stringify({
+            speakerId: "claudia-sotelo",
+            speakerName: "Claudia Sotelo",
+            requesterName: "Ada Lovelace",
+            meetingType: "coffee",
+          }),
+        }),
+      );
+
+      expect(response.status).toBe(403);
+      expect(await response.json()).toEqual({
+        error: "Coffee meetings require a business or VIP pass",
+        code: "coffee_requires_business_pass",
+      });
     });
 
     it("rejects unauthenticated, unlinked, malformed, and incomplete requests", async () => {

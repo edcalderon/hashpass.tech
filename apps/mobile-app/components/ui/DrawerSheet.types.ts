@@ -29,5 +29,7 @@ export type DrawerSheetProps = {
    *  mid-height sheet (~60% of the screen) so information drawers feel substantial
    *  without covering the page; content scrolls inside. */
   defaultHeight?: 'content' | 'medium';
+  /** Pinned below the scrolling body (primary actions). Omit for a body-only sheet. */
+  footer?: React.ReactNode;
   children: React.ReactNode;
 };

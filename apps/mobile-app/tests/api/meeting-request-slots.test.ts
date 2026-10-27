@@ -192,7 +192,7 @@ describe("meeting-request slots api", () => {
       {
         p_speaker_id: "speaker-id",
         p_date: null,
-        p_duration_minutes: 15,
+        p_duration_minutes: 5,
         p_event_id: "bsl",
       },
     );
@@ -251,7 +251,7 @@ describe("meeting-request slots api", () => {
     expect(mockRpc).toHaveBeenCalledWith("get_speaker_available_slots", {
       p_speaker_id: "speaker-id",
       p_date: null,
-      p_duration_minutes: 15,
+      p_duration_minutes: 5,
       p_requester_id: "requester-id",
       p_event_id: "bsl",
     });

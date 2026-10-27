@@ -308,7 +308,7 @@ named table that superseded it.
 | `user_request_limits` | Live | `canRequestMeeting` in `matchmaking.ts`, called from real screens |
 | `user_tutorial_progress` | Live | `useTutorialPreferences.ts`, `useAuth.ts` |
 | `user_email_tracking` | Live | Cleaned up in `delete-account+api.ts` |
-| `meeting_slots` | Live | Core to the meeting-request system across 13+ migrations |
+| `meeting_slots` | Live | Core to the meeting-request system across 13+ migrations. Since `V156` a confirmed meeting holds a `booked` row for both the host and the requester; see [Meeting request rules](../reference/mobile-app/meeting-request-rules.md) |
 | `profiles` | Live (indirect) | Populated by a sync trigger; read as a fallback in `get_meeting_chat_participant`, called from `MeetingChat.tsx` |
 | `support_*` (7 tables) | **Mid-flight, do not touch** | See Finding 6 |
 | **`user_transactions`** | **Dead — deletion candidate** | No reader/writer anywhere; superseded by `reward_transactions` (V023). 0 rows on BSL prod/dev; doesn't exist on core prod at all |

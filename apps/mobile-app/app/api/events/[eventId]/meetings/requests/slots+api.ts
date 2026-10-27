@@ -46,7 +46,8 @@ export async function GET(request: Request) {
 
   const url = new URL(request.url);
   const speakerId = url.searchParams.get("speakerId");
-  const duration = Number(url.searchParams.get("durationMinutes")) || 15;
+  // Stand-ups default to the 5-minute baseline; the RPC clamps to 5-45.
+  const duration = Number(url.searchParams.get("durationMinutes")) || 5;
   if (!speakerId)
     return Response.json({ error: "speakerId is required" }, { status: 400 });
   const eventId = eventIdFromRequest(request);

@@ -1317,7 +1317,7 @@
     "currentPass": "Your Current Pass",
     "unknown": "Unknown",
     "requestAllowed": "You can send a meeting request.",
-    "requestPending": "⏳ Meeting request pending",
+    "requestPending": "Meeting request pending",
     "requestPendingDescription": "Your request is waiting for the speaker’s response.",
     "requestInProgressDescription": "You already have an active request with this speaker.",
     "viewRequest": "View request",
@@ -1328,8 +1328,8 @@
       "revoked": "Revoked",
       "pending": "Pending"
     },
-    "canRequestMeeting": "✅ Can Request Meeting",
-    "cannotRequestMeeting": "❌ Cannot Request Meeting",
+    "canRequestMeeting": "Can Request Meeting",
+    "cannotRequestMeeting": "Cannot Request Meeting",
     "qrCode": "QR Code",
     "details": "Details",
     "share": "Share",
@@ -1543,21 +1543,27 @@
     },
     "meetingRequestModal": {
       "title": "Request Meeting with {speakerName}",
-      "messageLabel": "Message (Optional)",
-      "messageHint": "💡 Including a message increases approval chances by 3x",
-      "messagePlaceholder": "Tell the speaker why you'd like to meet (optional but recommended)...",
-      "intentionLabel": "Meeting Intention (Optional)",
-      "intentionHint": "💡 Select up to 3 intentions for the meeting (or choose \"No specific intention\")",
+      "typeLabel": "Meeting type",
+      "types": {
+        "speed": {
+          "title": "Quick stand-up",
+          "hint": "5 minutes, up to 30 with boost."
+        },
+        "coffee": {
+          "title": "Coffee break",
+          "hint": "15, 30 or 45 minutes."
+        }
+      },
+      "coffeeLocked": "Business and VIP passes only",
+      "messageLabel": "Message",
+      "messagePlaceholder": "Why would you like to meet? (optional)",
+      "intentionLabel": "Purpose",
       "intentions": {
-        "coffee": "Just to grab a coffee and chat",
-        "pitch": "I want to pitch you my startup idea",
-        "consultation": "Quick 5-minute consultation",
-        "networking": "General networking and connection",
-        "collaboration": "Explore potential collaboration",
-        "advice": "Seek advice on my career/project",
-        "fun": "Just for fun and interesting conversation",
-        "learning": "Learn from your experience",
-        "none": "No specific intention"
+        "coffee": "Coffee chat",
+        "pitch": "Pitch an idea",
+        "advice": "Seek advice",
+        "collaboration": "Collaborate",
+        "networking": "Networking"
       },
       "cancel": "Cancel",
       "sending": "Sending...",
@@ -1566,7 +1572,44 @@
       "cancelMessage": "Are you sure you want to cancel this meeting request?",
       "cancelWarning": "Your request quota will NOT be restored after cancellation.",
       "cancelling": "Cancelling Request...",
-      "confirmCancel": "Yes, Cancel Request"
+      "confirmCancel": "Yes, Cancel Request",
+      "boostLabel": "Boost",
+      "boostAvailable": "{points} points available",
+      "boostNone": "None",
+      "intentionLimit": "{count} of {max}",
+      "boostPoints": "+{points} pts",
+      "priorityPoints": "Priority +{points}",
+      "boostDecrease": "Decrease boost",
+      "boostIncrease": "Increase boost",
+      "boostLength": "Meeting length",
+      "minutes": "{minutes} min",
+      "boostPriority": "Queue priority",
+      "boostNote": {
+        "speed": "Every 10 points adds 5 minutes, up to 30.",
+        "coffee": "Boost raises your queue priority. Coffee length stays as you chose it."
+      },
+      "boostTier": {
+        "standard": {
+          "title": "Standard",
+          "hint": "In order of arrival. Slide to boost your place in the queue."
+        },
+        "boosted": {
+          "title": "Boosted",
+          "hint": "Your request moves ahead of standard ones."
+        },
+        "priority": {
+          "title": "Priority",
+          "hint": "You rank above lighter boosts in the speaker's queue."
+        },
+        "high": {
+          "title": "High priority",
+          "hint": "Your request is near the top of the speaker's queue."
+        },
+        "top": {
+          "title": "Top priority",
+          "hint": "Maximum boost: first in line for the speaker."
+        }
+      }
     },
     "requestView": {
       "title": "Request Details",

@@ -36,6 +36,20 @@ export const uiTokens = {
     used: '#5E5CE6',
     cancelled: '#6B7280',
   },
+  /**
+   * Categorical hues for markers that must be told apart at a glance (speaker
+   * status dots, meeting purposes). Every value reaches 3:1 against `raised` for
+   * graphics and 4.5:1 on its own 14-22% tint, so it may colour an icon. Titles
+   * and labels stay on `text`; the hue marks, it does not carry the words.
+   */
+  speakerStatus: {
+    light: { active: '#187548', passive: '#1d4ed8', dnd: '#6d28d9', inactive: '#6b7280', past: '#6b7280' },
+    dark: { active: '#63d79a', passive: '#60a5fa', dnd: '#a78bfa', inactive: '#9ca3af', past: '#9ca3af' },
+  },
+  intention: {
+    light: { coffee: '#a21caf', pitch: '#6d28d9', advice: '#0f766e', collaboration: '#166534', networking: '#1d4ed8' },
+    dark: { coffee: '#f0abfc', pitch: '#c4b5fd', advice: '#5eead4', collaboration: '#86efac', networking: '#93c5fd' },
+  },
 } as const;
 export type ColorMode = 'light' | 'dark';
 export const uiPalette = (dark: boolean | ColorMode) => uiTokens.colors[dark === true || dark === 'dark' ? 'dark' : 'light'];

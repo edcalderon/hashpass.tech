@@ -147,6 +147,7 @@ const sidebars = {
             'reference/mobile-app/event-scoped-api-client',
             'reference/mobile-app/event-api-architecture',
             'reference/mobile-app/e2e-meeting-chat',
+            'reference/mobile-app/meeting-request-rules',
             'reference/mobile-app/db-user-id-pattern',
             'reference/mobile-app/wallet-onboarding',
             'reference/mobile-app/speaker-statuses',

@@ -161,7 +161,8 @@ describe('/api/admin/matchmaking', () => {
       p_requester_id: attendeeId,
       p_speaker_id: speakerId,
       p_requester_ticket_type: 'vip',
-      p_meeting_type: 'networking',
+      p_meeting_type: 'speed',
+      p_duration_minutes: 5,
       p_message: 'Come say hi',
       p_event_id: 'chile2026',
     }));

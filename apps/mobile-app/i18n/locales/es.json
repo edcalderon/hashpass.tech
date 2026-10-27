@@ -1316,7 +1316,7 @@
     "currentPass": "Tu Pase Actual",
     "unknown": "Desconocido",
     "requestAllowed": "Puedes enviar una solicitud de reunión.",
-    "requestPending": "⏳ Solicitud de reunión pendiente",
+    "requestPending": "Solicitud de reunión pendiente",
     "requestPendingDescription": "Tu solicitud está esperando la respuesta del ponente.",
     "requestInProgressDescription": "Ya tienes una solicitud activa con este ponente.",
     "viewRequest": "Ver solicitud",
@@ -1327,8 +1327,8 @@
       "revoked": "Revocado",
       "pending": "Pendiente"
     },
-    "canRequestMeeting": "✅ Puede Solicitar Reunión",
-    "cannotRequestMeeting": "❌ No Puede Solicitar Reunión",
+    "canRequestMeeting": "Puede Solicitar Reunión",
+    "cannotRequestMeeting": "No Puede Solicitar Reunión",
     "qrCode": "Código QR",
     "details": "Detalles",
     "share": "Compartir",
@@ -1542,21 +1542,27 @@
     },
     "meetingRequestModal": {
       "title": "Solicitar Reunión con {speakerName}",
-      "messageLabel": "Mensaje (Opcional)",
-      "messageHint": "💡 Incluir un mensaje aumenta las posibilidades de aprobación en 3x",
-      "messagePlaceholder": "Cuéntale al ponente por qué te gustaría reunirte (opcional pero recomendado)...",
-      "intentionLabel": "Intención de la Reunión (Opcional)",
-      "intentionHint": "💡 Selecciona hasta 3 intenciones para la reunión (o elige \"Sin intención específica\")",
+      "typeLabel": "Tipo de reunión",
+      "types": {
+        "speed": {
+          "title": "Charla rápida",
+          "hint": "5 minutos, hasta 30 con impulso."
+        },
+        "coffee": {
+          "title": "Pausa para el café",
+          "hint": "15, 30 o 45 minutos."
+        }
+      },
+      "coffeeLocked": "Solo pases Business y VIP",
+      "messageLabel": "Mensaje",
+      "messagePlaceholder": "¿Por qué te gustaría reunirte? (opcional)",
+      "intentionLabel": "Propósito",
       "intentions": {
-        "coffee": "Solo para tomar un café y charlar",
-        "pitch": "Quiero presentarte mi idea de startup",
-        "consultation": "Consulta rápida de 5 minutos",
-        "networking": "Networking general y conexión",
-        "collaboration": "Explorar posible colaboración",
-        "advice": "Buscar consejo sobre mi carrera/proyecto",
-        "fun": "Solo por diversión y conversación interesante",
-        "learning": "Aprender de tu experiencia",
-        "none": "Sin intención específica"
+        "coffee": "Café y charla",
+        "pitch": "Presentar una idea",
+        "advice": "Pedir consejo",
+        "collaboration": "Colaborar",
+        "networking": "Networking"
       },
       "cancel": "Cancelar",
       "sending": "Enviando...",
@@ -1565,7 +1571,44 @@
       "cancelMessage": "¿Estás seguro de que quieres cancelar esta solicitud de reunión?",
       "cancelWarning": "Tu cuota de solicitudes NO se restaurará después de la cancelación.",
       "cancelling": "Cancelando Solicitud...",
-      "confirmCancel": "Sí, Cancelar Solicitud"
+      "confirmCancel": "Sí, Cancelar Solicitud",
+      "boostLabel": "Impulso",
+      "boostAvailable": "{points} puntos disponibles",
+      "boostNone": "Ninguno",
+      "intentionLimit": "{count} de {max}",
+      "boostPoints": "+{points} pts",
+      "priorityPoints": "Prioridad +{points}",
+      "boostDecrease": "Reducir impulso",
+      "boostIncrease": "Aumentar impulso",
+      "boostLength": "Duración",
+      "minutes": "{minutes} min",
+      "boostPriority": "Prioridad en la cola",
+      "boostNote": {
+        "speed": "Cada 10 puntos suma 5 minutos, hasta 30.",
+        "coffee": "El impulso sube tu prioridad en la cola. La duración del café es la que elegiste."
+      },
+      "boostTier": {
+        "standard": {
+          "title": "Estándar",
+          "hint": "Por orden de llegada. Desliza para adelantar tu lugar en la cola."
+        },
+        "boosted": {
+          "title": "Con impulso",
+          "hint": "Tu solicitud pasa delante de las estándar."
+        },
+        "priority": {
+          "title": "Prioridad",
+          "hint": "Quedas por encima de los impulsos menores en la cola del orador."
+        },
+        "high": {
+          "title": "Prioridad alta",
+          "hint": "Tu solicitud queda cerca del inicio de la cola del orador."
+        },
+        "top": {
+          "title": "Prioridad máxima",
+          "hint": "Impulso máximo: primero en la fila del orador."
+        }
+      }
     },
     "requestView": {
       "title": "Detalles de la Solicitud",

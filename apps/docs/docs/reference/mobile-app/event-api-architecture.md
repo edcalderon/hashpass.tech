@@ -43,9 +43,14 @@ The meeting-limits route forwards that validated ID to the count provider as
 an explicit argument. Provider functions must not fall back to a session
 setting or default event, because RPC calls do not carry that ambient context.
 
-`POST /meetings/requests` accepts whole durations from **5 to 30 minutes**.
-The API rejects invalid values before calling the provider, and the
-meeting-request table enforces the same range as a database backstop.
+`POST /meetings/requests` accepts a `meetingType` of `speed` (quick stand-up,
+the default) or `coffee`, and whole durations from **5 to 45 minutes**. The API
+rejects invalid values before calling the provider, and the meeting-request
+table enforces the same range as a database backstop. The database derives the
+length that is actually stored: a stand-up starts at 5 minutes and boost
+extends it to at most 30, while a coffee break (business and VIP passes only)
+runs 15, 30 or 45. A confirmed meeting blocks both participants' time. See
+[Meeting request rules](./meeting-request-rules.md).
 
 ## Participant identity and notifications
 

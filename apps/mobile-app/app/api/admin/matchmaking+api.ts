@@ -67,9 +67,9 @@ export async function POST(request: Request) {
       p_requester_company: null,
       p_requester_title: null,
       p_requester_ticket_type: attendee.ticketType || 'general',
-      p_meeting_type: 'networking',
+      p_meeting_type: 'speed',
       p_message: message,
-      p_duration_minutes: 15,
+      p_duration_minutes: 5,
       p_event_id: eventId,
     });
     if (error) { failures.push({ pair, error: error.message }); continue; }

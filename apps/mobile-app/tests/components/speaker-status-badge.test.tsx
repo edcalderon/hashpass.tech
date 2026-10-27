@@ -42,4 +42,47 @@ describe('SpeakerStatusBadge', () => {
     });
     expect(renderer!.root.findByProps({ transparent: true }).props.visible).toBe(false);
   });
+
+  it('marks a confirmed speaker with a check and a live dot, other statuses with info', async () => {
+    let confirmed: ReturnType<typeof create>;
+    await act(async () => {
+      confirmed = create(<SpeakerStatusBadge status="active" />);
+    });
+    const icons = (renderer: ReturnType<typeof create>) =>
+      renderer.root.findAllByType('MaterialIcons' as any).map((node: any) => node.props.name);
+    expect(icons(confirmed!)).toContain('check');
+    expect(icons(confirmed!)).not.toContain('info-outline');
+
+    let passive: ReturnType<typeof create>;
+    await act(async () => {
+      passive = create(<SpeakerStatusBadge status="passive" />);
+    });
+    expect(icons(passive!)).toContain('info-outline');
+    expect(icons(passive!)).not.toContain('check');
+  });
+
+  it('pings only for live statuses and stays still under reduced motion', async () => {
+    const { AccessibilityInfo } = require('react-native');
+    const rings = (renderer: ReturnType<typeof create>) =>
+      renderer.root.findAll((node: any) => node.type === 'Animated.View');
+
+    let live: ReturnType<typeof create>;
+    await act(async () => {
+      live = create(<SpeakerStatusBadge status="active" />);
+    });
+    expect(rings(live!)).toHaveLength(1);
+
+    let inactive: ReturnType<typeof create>;
+    await act(async () => {
+      inactive = create(<SpeakerStatusBadge status="inactive" />);
+    });
+    expect(rings(inactive!)).toHaveLength(0);
+
+    (AccessibilityInfo.isReduceMotionEnabled as jest.Mock).mockResolvedValueOnce(true);
+    let reduced: ReturnType<typeof create>;
+    await act(async () => {
+      reduced = create(<SpeakerStatusBadge status="active" />);
+    });
+    expect(rings(reduced!)).toHaveLength(0);
+  });
 });

@@ -21,10 +21,28 @@ jest.mock('react-native', () => ({
     },
     timing: (value, { toValue }) => ({
       start: (done) => { value.setValue(toValue); done?.({ finished: true }); },
+      stop: () => {},
     }),
     parallel: (animations) => ({
       start: (done) => { for (const animation of animations) animation.start(); done?.({ finished: true }); },
+      stop: () => {},
     }),
+    sequence: (animations) => ({
+      start: (done) => { for (const animation of animations) animation.start(); done?.({ finished: true }); },
+      stop: () => {},
+    }),
+    // Looping decorations (status ping): run one pass, stop is a no-op.
+    loop: (animation) => ({ start: () => animation.start(), stop: () => {} }),
+  },
+  Easing: {
+    linear: (t) => t,
+    ease: (t) => t,
+    quad: (t) => t,
+    cubic: (t) => t,
+    bezier: () => (t) => t,
+    in: (easing) => easing,
+    out: (easing) => easing,
+    inOut: (easing) => easing,
   },
   AccessibilityInfo: {
     addEventListener: jest.fn(() => ({ remove: jest.fn() })),
@@ -72,6 +90,12 @@ jest.mock('react-native', () => ({
     OS: 'web',
     select: (options) => options.web ?? options.default,
   },
+  // Gesture config is surfaced as handlers so tests can drive grant/move directly.
+  PanResponder: {
+    create: (config) => ({
+      panHandlers: { onPanResponderGrant: config.onPanResponderGrant, onPanResponderMove: config.onPanResponderMove },
+    }),
+  },
   Pressable: 'Pressable',
   RefreshControl: 'RefreshControl',
   SafeAreaView: 'SafeAreaView',
@@ -91,6 +115,13 @@ jest.mock('react-native', () => ({
   View: 'View',
   useColorScheme: () => 'light',
   useWindowDimensions: () => ({ width: 1024, height: 768, scale: 1, fontScale: 1 }),
+}));
+
+// AnimationProvider (read by motion-aware components) imports native AsyncStorage at load time.
+// Suites that exercise storage mock it themselves; this only keeps unrelated suites loadable.
+jest.mock('@react-native-async-storage/async-storage', () => ({
+  __esModule: true,
+  default: { getItem: jest.fn(async () => null), setItem: jest.fn(async () => undefined), removeItem: jest.fn(async () => undefined), getAllKeys: jest.fn(async () => []) },
 }));
 
 // The native Apple module reaches Expo view-manager internals while loading.
