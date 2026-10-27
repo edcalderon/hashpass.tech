@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.0.5] - 2026-10-27
+
+- Harden MCP discovery compatibility after OAuth and publish the corrected Plane connector package.
+
 ## [1.0.4] - 2026-10-27
 
 - Document that the Plane workspace slug is 'plane' (not 'hashpass'); a wrong PLANE_WORKSPACE_SLUG on the MCP gateway makes every Plane tool call fail with 403. No change to the OAuth endpoint, scopes or discovery metadata.
