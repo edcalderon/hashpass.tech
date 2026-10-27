@@ -2,7 +2,10 @@
  * The Mission Command Center as a visual Plane page: a one-screen directory of the company's divisions, live
  * engineering progress from GitHub, Plane work-item counts, surface health and the knowledge map.
  *
- * Uses only markup Plane's editor round-trips (callouts, task lists, tinted table cells, highlights, toggles,
+ * One data set, two renderers (the "kit"): `planeKit` emits markup Plane's editor stores, `webKit` emits the same
+ * structure for the public status page at work.hashpass.tech/status, so both always show the same content.
+ *
+ * The Plane kit uses only markup Plane's editor round-trips (callouts, task lists, tinted table cells, highlights, toggles,
  * emoji), so the page stays editable in the Plane UI. Everything dynamic is read at publish time and the page
  * says when; any source that cannot be reached degrades to a dash instead of blocking the publish.
  */
@@ -19,15 +22,23 @@ const a = (href, label) => `<a href="${esc(href)}">${esc(label)}</a>`;
 const p = (inner) => `<p>${inner}</p>`;
 const ink = (token, inner) => `<span data-text-color="var(--editor-colors-${token}-text)" style="color: var(--editor-colors-${token}-text)">${inner}</span>`;
 const tag = (token, label) => `<mark data-background-color="var(--editor-colors-${token}-background)" style="background-color: var(--editor-colors-${token}-background)">${esc(label)}</mark>`;
-const cell = (inner, bg) => `<td${bg ? ` background="var(--editor-colors-${bg}-background)"` : ""}>${p(inner)}</td>`;
-const head = (inner, bg) => `<th${bg ? ` background="var(--editor-colors-${bg}-background)"` : ""}>${p(inner)}</th>`;
-const table = (heads, rows) => `<table><tbody><tr>${heads.map((h) => head(h, "gray")).join("")}</tr>${rows.map((r) => `<tr>${r.join("")}</tr>`).join("")}</tbody></table>`;
-
-/** A callout block; `emoji` is the hex code point, `bg` one of Plane's editor colour keys. */
-const callout = (emoji, bg, inner) =>
-  `<div data-block-type="callout-component" data-background="${bg}" data-logo-in-use="emoji" data-emoji-unicode="${parseInt(emoji, 16)}" data-emoji-url="https://cdn.jsdelivr.net/npm/emoji-datasource-apple/img/apple/64/${emoji}.png">${inner}</div>`;
 const toggle = (summary, inner) => `<details><summary>${esc(summary)}</summary>${inner}</details>`;
-const tasks = (items) => `<ul data-type="taskList">${items.map(([done, inner]) => `<li data-type="taskItem" data-checked="${done}">${p(inner)}</li>`).join("")}</ul>`;
+const color = (c) => `var(--editor-colors-${c}-background)`;
+
+/** Plane's editor stores a cell tint as a `background` attribute and a callout as a block component. */
+export const planeKit = {
+  bg: (c) => ` background="${color(c)}"`,
+  callout: (emoji, bg, inner) =>
+    `<div data-block-type="callout-component" data-background="${bg}" data-logo-in-use="emoji" data-emoji-unicode="${parseInt(emoji, 16)}" data-emoji-url="https://cdn.jsdelivr.net/npm/emoji-datasource-apple/img/apple/64/${emoji}.png">${inner}</div>`,
+  tasks: (items) => `<ul data-type="taskList">${items.map(([done, inner]) => `<li data-type="taskItem" data-checked="${done}">${p(inner)}</li>`).join("")}</ul>`,
+};
+
+/** The public page defines the same `--editor-colors-*` variables, so tags and ink render identically. */
+export const webKit = {
+  bg: (c) => ` style="background:${color(c)}"`,
+  callout: (emoji, bg, inner) => `<aside class="callout" style="background:${color(bg)}"><span class="emoji">${String.fromCodePoint(parseInt(emoji, 16))}</span><div>${inner}</div></aside>`,
+  tasks: (items) => `<ul class="tasks">${items.map(([done, inner]) => `<li class="${done ? "done" : ""}"><span class="box">${done ? "☑" : "☐"}</span>${p(inner)}</li>`).join("")}</ul>`,
+};
 
 /** ▰▰▰▱▱▱ plus a percentage, coloured by how far along it is. */
 export function bar(done, total, width = 10) {
@@ -116,7 +127,13 @@ const DIVISIONS = [
 
 const PROJECT_URL = `${PLANE}/plane/projects/${PROJECT}`;
 
-export function buildMissionControlHtml(d) {
+export function buildMissionControlHtml(d, kit = planeKit, { publicView = false } = {}) {
+  const cell = (inner, bg) => `<td${bg ? kit.bg(bg) : ""}>${p(inner)}</td>`;
+  const head = (inner, bg) => `<th${bg ? kit.bg(bg) : ""}>${p(inner)}</th>`;
+  const table = (heads, rows) => `<table><tbody><tr>${heads.map((h) => head(h, "gray")).join("")}</tr>${rows.map((r) => `<tr>${r.join("")}</tr>`).join("")}</tbody></table>`;
+  const callout = kit.callout;
+  const tasks = kit.tasks;
+  const tint = (bg) => kit.bg(bg);
   const stamp = d.now.toISOString().replace("T", " ").slice(0, 16) + " UTC";
   const done = (list) => list.filter((i) => i.state === "closed").length;
   const epicDone = done(d.epic);
@@ -125,7 +142,7 @@ export function buildMissionControlHtml(d) {
   const planeOpen = d.modules.reduce((n, m) => n + (m.open ?? 0), 0);
 
   const kpi = (emoji, label, value, sub, bg) =>
-    `<td background="var(--editor-colors-${bg}-background)">${p(`${emoji} ${esc(label)}`)}${p(`<strong>${value}</strong>`)}${p(sub)}</td>`;
+    `<td${tint(bg)}>${p(`${emoji} ${esc(label)}`)}${p(`<strong>${value}</strong>`)}${p(sub)}</td>`;
 
   const out = [];
   out.push(callout("1f6f0", "light-blue", p(`<strong>The front door to HASHPASS.</strong> ${tag("light-blue", "🐙 GitHub")} code, config and infrastructure · ${tag("green", "✈️ Plane")} everything else · ${tag("gray", "📝 Notion")} CEO drafts only, nothing depends on it.`) + p(`<em>Refreshed ${esc(stamp)} (commit <code>${esc(d.sha)}</code>). No secrets on this page.</em>`)));
@@ -136,26 +153,28 @@ export function buildMissionControlHtml(d) {
     ["🗂️", "Company work", "Plane issues", `${PROJECT_URL}/issues/`, "green"],
     ["📦", "Modules", "Plane divisions", `${PROJECT_URL}/modules/`, "orange"],
     ["📚", "Docs and ADRs", "Architecture folder", `${DOCS}docs/architecture/`, "purple"],
-  ].map(([e, t, s, h, bg]) => `<td background="var(--editor-colors-${bg}-background)">${p(`${e} <strong>${esc(t)}</strong>`)}${p(a(h, s))}</td>`).join("")}</tr></tbody></table>`);
+  ].filter(([, , , h]) => !(publicView && h.startsWith(PLANE))).map(([e, t, s, h, bg]) => `<td${tint(bg)}>${p(`${e} <strong>${esc(t)}</strong>`)}${p(a(h, s))}</td>`).join("")}</tr></tbody></table>`);
 
   out.push("<h2>📊 At a glance</h2>");
   out.push(`<table><tbody><tr>${[
     kpi("🎯", "Epic #455 progress", `${epicDone} of ${epicTotal || "—"} done`, bar(epicDone, epicTotal), "green"),
     kpi("🔥", "Open P0 engineering", String(d.epic.filter((i) => i.state === "open" && /P0/.test(i.title)).length), "sub-issues under the Companion epic", "pink"),
-    kpi("🗂️", "Open company work", d.modules.length ? String(planeOpen) : "—", "Plane items across 6 divisions", "orange"),
+    ...(publicView ? [] : [kpi("🗂️", "Open company work", d.modules.length ? String(planeOpen) : "—", "Plane items across 6 divisions", "orange")]),
     kpi("🛰️", "Live surfaces", `${up} of ${d.surfaces.length} up`, bar(up, d.surfaces.length), up === d.surfaces.length ? "green" : "peach"),
   ].join("")}</tr></tbody></table>`);
 
   out.push("<h2>🏢 Company directory</h2>");
-  out.push(table(
-    ["Division", "What it covers", "Work items", "Health", "Open"],
-    DIVISIONS.map((dv) => {
-      const m = d.modules.find((x) => x.name.includes(dv.match));
-      const load = m?.open == null ? "—" : `${m.open} open of ${m.total}`;
-      const health = m ? (m.status === "completed" ? tag("green", "done") : m.status === "planned" ? tag("light-blue", "planned") : m.status === "paused" ? tag("peach", "paused") : tag("green", "in progress")) : tag("gray", "unknown");
-      return [cell(`${dv.emoji} <strong>${esc(dv.name)}</strong>`, dv.color), cell(esc(dv.focus)), cell(esc(load)), cell(health), cell(m ? a(`${PROJECT_URL}/modules/${m.id}/`, "Open module →") : a(`${PROJECT_URL}/modules/`, "All modules →"))];
-    }),
-  ));
+  out.push(publicView
+    ? table(["Division", "What it covers"], DIVISIONS.map((dv) => [cell(`${dv.emoji} <strong>${esc(dv.name)}</strong>`, dv.color), cell(esc(dv.focus))]))
+    : table(
+        ["Division", "What it covers", "Work items", "Health", "Open"],
+        DIVISIONS.map((dv) => {
+          const m = d.modules.find((x) => x.name.includes(dv.match));
+          const load = m?.open == null ? "—" : `${m.open} open of ${m.total}`;
+          const health = m ? (m.status === "completed" ? tag("green", "done") : m.status === "planned" ? tag("light-blue", "planned") : m.status === "paused" ? tag("peach", "paused") : tag("green", "in progress")) : tag("gray", "unknown");
+          return [cell(`${dv.emoji} <strong>${esc(dv.name)}</strong>`, dv.color), cell(esc(dv.focus)), cell(esc(load)), cell(health), cell(m ? a(`${PROJECT_URL}/modules/${m.id}/`, "Open module →") : a(`${PROJECT_URL}/modules/`, "All modules →"))];
+        }),
+      ));
 
   out.push("<h2>⚙️ Engineering progress</h2>");
   out.push(`<h3>Epic ${a(`${GH}/issues/455`, "#455")} — HASHPASS Companion (Meta hackathon)</h3>`);
@@ -184,9 +203,9 @@ export function buildMissionControlHtml(d) {
     ["🏗️ Architecture & decisions", "light-blue", [["Workspace operating model", "docs/architecture/workspace-operating-model.md"], ["Companion vision and system", "docs/architecture/meta-companion-vision-and-system.md"], ["Passport MVP", "docs/feature-plans/passport-mvp.md"]]],
     ["🔧 Platform reference", "green", [["Deployment map", "apps/docs/docs/infra/DEPLOYMENT_MAP.md"], ["Play Console release flow", "apps/docs/docs/reference/release/PLAY_CONSOLE_RELEASE_FLOW.md"], ["OTA updates", "apps/docs/docs/reference/mobile-app/eas-update-ota.md"], ["Auth flow", "apps/docs/docs/auth/AUTH_FLOW.md"], ["User registry", "apps/docs/docs/auth/USER_REGISTRY.md"]]],
     ["🎨 Product & agents", "purple", [["PRODUCT.md", "PRODUCT.md"], ["DESIGN.md", "DESIGN.md"], ["Design system and Storybook", "docs/design-system-storybook.md"], ["AGENTS.md", "AGENTS.md"], ["Active tasks", "https://github.com/hashpass-tech/hashpass.tech/tree/develop/.agents/active"]]],
-  ].map(([t, bg, items]) => `<td background="var(--editor-colors-${bg}-background)">${p(`<strong>${t}</strong>`)}${links(items)}</td>`).join("")}</tr></tbody></table>`);
+  ].map(([t, bg, items]) => `<td${tint(bg)}>${p(`<strong>${t}</strong>`)}${links(items)}</td>`).join("")}</tr></tbody></table>`);
   out.push(p(`🧠 <strong>Code questions:</strong> use <code>codebase-memory-mcp</code> (<code>search_graph</code>, <code>trace_path</code>, <code>get_code_snippet</code>) before grep.`));
   out.push("<hr>");
-  out.push(p(`<em>Generated by <code>packages/tools/scripts/mission-control-page.mjs</code> — edit that, not this page.</em>`));
+  if (!publicView) out.push(p(`<em>Public version: ${a("https://work.hashpass.tech/status", "work.hashpass.tech/status")}. Both are generated by <code>packages/tools/scripts/mission-control-page.mjs</code> — edit that, not this page.</em>`));
   return out.join("\n");
 }

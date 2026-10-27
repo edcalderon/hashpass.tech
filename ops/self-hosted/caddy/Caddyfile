@@ -19,7 +19,21 @@
 
 {$PLANE_DOMAIN:plane.example.invalid} {
   import common_security
-  reverse_proxy proxy:80
+
+  # Public status page, generated from the same source as the Plane command-center page and written to the
+  # read-only /srv/status mount by .github/workflows/status-page-publish.yml. Everything else stays Plane.
+  @status path /status /status/
+  handle @status {
+    root * /srv/status
+    rewrite * /index.html
+    header Cache-Control "no-cache"
+    header X-Robots-Tag "noindex"
+    file_server
+  }
+
+  handle {
+    reverse_proxy proxy:80
+  }
 }
 
 {$HELPDESK_DOMAIN:support.example.invalid} {
