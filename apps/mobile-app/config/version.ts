@@ -22,22 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610270058, // Updated to current timestamp
+  buildNumber: 202610270209, // Updated to current timestamp
   releaseDate: '2026-10-27',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    // No new features
+    'verify Muse Spark and Voice Transcribe access, document exemplars'
   ],
   bugfixes: [
-    // No bugfixes
+    'correct workspace slug to \'plane\' and release plugin v1.0.4'
   ],
   breakingChanges: [],
-  notes: 'Version 1.9.156 release'
+  notes: 'verify Muse Spark and Voice Transcribe access, document exemplars; correct workspace slug to \'plane\' and release plugin v1.0.4'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.157': {
+    version: '1.9.157',
+    buildNumber: 202610270209,
+    releaseDate: '2026-10-27',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'verify Muse Spark and Voice Transcribe access, document exemplars'
+    ],
+    bugfixes: [
+      'correct workspace slug to \'plane\' and release plugin v1.0.4'
+    ],
+    breakingChanges: [],
+    notes: 'verify Muse Spark and Voice Transcribe access, document exemplars; correct workspace slug to \'plane\' and release plugin v1.0.4'
+  },
   '1.9.156': {
     version: '1.9.156',
     buildNumber: 202610270058,
