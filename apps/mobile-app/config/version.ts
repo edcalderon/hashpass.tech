@@ -22,23 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610270443, // Updated to current timestamp
+  buildNumber: 202610270548, // Updated to current timestamp
   releaseDate: '2026-10-27',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'en/es/ja, shared settings, narrated intro film and landing polish',
-    'shared settings menu and model for Club, Companion and mobile'
+    'serve Plane page tool from the gateway via a service account'
   ],
   bugfixes: [
-    'bridge modern discovery to legacy Plane'
+    // No bugfixes
   ],
   breakingChanges: [],
-  notes: 'en/es/ja, shared settings, narrated intro film and landing polish; shared settings menu and model for Club, Companion and mobile; bridge modern discovery to legacy Plane'
+  notes: 'serve Plane page tool from the gateway via a service account'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.161': {
+    version: '1.9.161',
+    buildNumber: 202610270548,
+    releaseDate: '2026-10-27',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'serve Plane page tool from the gateway via a service account'
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'serve Plane page tool from the gateway via a service account'
+  },
   '1.9.160': {
     version: '1.9.160',
     buildNumber: 202610270443,

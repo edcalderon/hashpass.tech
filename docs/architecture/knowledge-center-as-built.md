@@ -72,3 +72,5 @@ No Plane page has been written yet.
 On 2026-10-27, `POST /api/v1/workspaces/plane/projects/<id>/pages/` returned 404 on this instance, so the REST API with a personal token cannot create pages. Pages can be created through the Plane web UI or through the `page` tool family of the Plane MCP gateway (`packages/plane-mcp-gateway`) from an MCP client. Publishing remains pending until one of those is used.
 
 On 2026-10-27 the "HASHPASS Mission Command Center" page was authored in the repo as [mission-command-center.md](mission-command-center.md) and added to `build-plane-pages.mjs` as page `MC`. It is built but **not yet published** to Plane; record the Plane URL and read-back here once it is.
+
+On 2026-10-27 the gateway's `page` tool was found to 404 on this Plane (1.4.2): its public API has no page routes in any release through v1.4.3-rc2. The gateway now serves `page` calls itself through a dedicated Plane account (see `ops/self-hosted/mcp/README.md`, "Plane pages"). That path is unit-tested against a fake Plane only; it has not yet been exercised against the live instance, so the Mission Command Center page is still unpublished.

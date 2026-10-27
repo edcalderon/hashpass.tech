@@ -97,7 +97,14 @@ const protocolVersionForUpstream = (request, body) => {
     : declaredBody || "2025-06-18";
 };
 
-const modernDiscoveryResponse = (id, serverName, serverVersion) => Response.json({
+const pageToolResult = (id, payload, isError = false) =>
+  Response.json({
+    jsonrpc: "2.0",
+    id: id ?? null,
+    result: {content: [{type: "text", text: typeof payload === "string" ? payload : JSON.stringify(payload)}], isError},
+  }, {headers: {"cache-control": "no-store", ...corsHeaders}});
+
+const modernDiscoveryResponse =(id, serverName, serverVersion) => Response.json({
   jsonrpc: "2.0",
   id: id ?? null,
   result: {
@@ -125,6 +132,7 @@ export function createGatewayHandler(options) {
     allowedEmails,
     allowedEmailDomains,
     verifyRequest,
+    planePages = null,
     fetch: fetchImpl = globalThis.fetch,
     maxBodyBytes = 1024 * 1024,
     serverName = "HASHPASS Plane MCP Gateway",
@@ -223,6 +231,18 @@ export function createGatewayHandler(options) {
     // to the legacy upstream below.
     if (body.method === "server/discover" && isModernProtocolRequest(request, body)) {
       return modernDiscoveryResponse(body.id, serverName, serverVersion);
+    }
+
+    // Self-hosted Plane has no page routes on its public API, so the MCP server's `page` tool can only 404.
+    // When a page service account is configured, answer page calls here; everything else still goes upstream.
+    if (planePages && body.method === "tools/call" && body.params?.name === "page") {
+      try {
+        const data = await planePages.run(body.params.arguments);
+        return pageToolResult(body.id, {result: data});
+      } catch (error) {
+        const status = error?.status ? ` (HTTP ${error.status})` : "";
+        return pageToolResult(body.id, `Plane page request failed${status}: ${error?.message ?? "unknown error"}`, true);
+      }
     }
 
     try {

@@ -1,3 +1,18 @@
+## [1.9.161](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.160...v1.9.161) (2026-10-27)
+
+
+### Features
+
+* **mcp:** serve Plane page tool from the gateway via a service account ([b20bcba](https://github.com/hashpass-tech/hashpass.tech/commit/b20bcba9e5ef5d342913beddaff2215c2cb8994f))
+### Release Highlights
+- serve Plane page tool from the gateway via a service account
+
+### Release scope
+- Compared with: `v1.9.160` (the previous global release tag)
+
+### Affected products & packages
+- Self-hosted operations
+
 ## [1.9.160](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.158...v1.9.160) (2026-10-27)
 
 
