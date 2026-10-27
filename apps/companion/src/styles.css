@@ -147,6 +147,49 @@ ul, ol { padding: 0; list-style: none; }
 .sma-records li { display: grid; gap: 2px; padding: 10px 12px; border-left: 4px solid var(--accent); background: var(--surface); }
 .sma-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; }
 
+/* Control plane: a local-first preview of the authenticated Companion workspace. */
+.section--control { background: linear-gradient(135deg, var(--surface) 0%, var(--canvas) 58%, var(--surface) 100%); }
+.control-plane__intro { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; margin-bottom: 32px; }
+.control-plane__intro .lead { margin-bottom: 0; }
+.control-plane__preview { display: inline-flex; align-items: center; gap: 8px; flex: none; min-height: 36px; padding: 4px 12px; border: 3px solid var(--border); background: var(--raised); color: var(--muted); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; }
+.control-plane__preview .tag__dot { background: #ffd84d; animation: none; }
+.control-plane__overview { display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 16px; margin-bottom: 24px; }
+.control-plane__overview-card { display: grid; gap: 6px; min-height: 150px; }
+.control-plane__label { display: inline-flex; align-items: center; gap: 8px; color: var(--accent); font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+.control-plane__label .icon { width: 16px; height: 16px; }
+.control-plane__quota { align-content: start; }
+.control-plane__quota-bar { height: 12px; margin-top: 4px; border: 3px solid var(--border); background: var(--surface); }
+.control-plane__quota-bar span { display: block; height: 100%; background: var(--glow); transition: width 240ms steps(3, end); }
+.control-plane__fineprint { font-size: 12px; }
+.control-plane__grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(280px, 0.8fr); gap: 24px; align-items: start; }
+.control-plane__fleet, .control-plane__auth { display: grid; gap: 16px; }
+.control-plane__section-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.control-plane__section-heading .btn { min-height: 44px; padding-inline: 16px; }
+.control-plane__fleet-lead { max-width: 64ch; }
+.control-plane__companions { display: grid; gap: 12px; }
+.control-plane__companion { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 12px; padding: 16px; background: var(--surface); border: 3px solid var(--border); }
+.control-plane__companion-mark { display: grid; place-items: center; width: 48px; height: 48px; background: var(--night-2); color: #ffd84d; border: 3px solid var(--border); }
+.control-plane__companion-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.control-plane__companion-heading .h3 { margin-bottom: 0; }
+.control-plane__status { display: inline-flex; align-items: center; min-height: 28px; padding: 3px 8px; border: 2px solid var(--border); font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; }
+.control-plane__status--active { background: #d7f7e7; color: #146c43; }
+.control-plane__status--draft { background: #fff3c4; color: #6f4e00; }
+.control-plane__facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 14px 0 0; }
+.control-plane__facts div { min-width: 0; }
+.control-plane__facts dt { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; }
+.control-plane__facts dd { margin: 2px 0 0; font-size: 13px; overflow-wrap: anywhere; }
+.control-plane__id { display: block; margin-top: 12px; padding: 8px; overflow-wrap: anywhere; background: var(--raised); color: var(--muted); font-size: 11px; }
+.control-plane__create { display: grid; gap: 10px; padding: 16px; border: 3px dashed var(--accent); background: var(--surface); }
+.control-plane__create input { width: 100%; min-height: 48px; padding: 10px 12px; border: 3px solid var(--border); background: var(--raised); color: var(--text); font: inherit; }
+.control-plane__create input:focus { outline: 3px solid var(--glow); outline-offset: 2px; }
+.control-plane__create-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; }
+.control-plane__checks { display: grid; gap: 10px; }
+.control-plane__checks li { display: flex; align-items: flex-start; gap: 8px; font-size: 14px; }
+.control-plane__checks .icon { flex: none; color: #146c43; }
+.control-plane__notice { padding: 10px 12px; border-left: 4px solid var(--glow); background: var(--surface); font-weight: 700; }
+.control-plane__export { display: grid; gap: 12px; padding-top: 16px; border-top: 2px solid var(--border); }
+.control-plane__export .btn { min-height: 44px; }
+
 /* Evolution */
 .stages { display: grid; gap: 24px; grid-template-columns: repeat(3, 1fr); margin-bottom: 32px; }
 .stage { display: grid; align-content: start; gap: 4px; opacity: 0.55; transition: opacity 240ms steps(3, end); }
@@ -217,7 +260,7 @@ ul, ol { padding: 0; list-style: none; }
 .chip--stage { border-color: #ffd84d; color: #ffd84d; }
 
 @media (max-width: 860px) {
-  .stages, .rules, .split, .footer__top { grid-template-columns: 1fr; }
+  .stages, .rules, .split, .footer__top, .control-plane__overview, .control-plane__grid { grid-template-columns: 1fr; }
   .split { gap: 32px; }
   .demo { grid-template-columns: 1fr; }
   .section { padding: 48px 0; }
@@ -225,6 +268,9 @@ ul, ol { padding: 0; list-style: none; }
 @media (max-width: 480px) {
   .hero__cta .btn { width: 100%; }
   .footer__cols { grid-template-columns: 1fr 1fr; }
+  .control-plane__intro, .control-plane__section-heading, .control-plane__companion-heading { display: grid; }
+  .control-plane__facts { grid-template-columns: 1fr; }
+  .control-plane__section-heading .btn { width: 100%; }
 }
 
 /* Motion off: everything stays visible and still. The OS preference and the in-app setting share these rules;

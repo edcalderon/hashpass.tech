@@ -4,6 +4,7 @@ import { capabilities, houseRules, proposedGuestTurns, stageKeys } from './conte
 import { BUILD_INFO, CURRENT_VERSION, getCompanionVersionLabel } from './config/version';
 import { CompanionSettings } from './settings/CompanionSettings';
 import { useSettings } from './settings/SettingsContext';
+import { CompanionControlPanel } from './control-plane/CompanionControlPanel';
 import { SmaMemoryPanel } from './sma/SmaMemoryPanel';
 import { SmaSetup } from './sma/SmaSetup';
 import { useSmaArchive } from './sma/useSmaArchive';
@@ -57,6 +58,7 @@ function Hero() {
             <Icon name="book" /> {t('hero.film')}
           </button>
           <a className="btn btn--ghost" href="#grow">{t('hero.meet')}</a>
+          <a className="btn btn--ghost" href="#dashboard">{t('hero.control')}</a>
           <a className="btn btn--ghost" href="#start">{t('hero.guests')}</a>
         </div>
         <div className="hero__stage">
@@ -329,6 +331,7 @@ export function App() {
       <a className="skip" href="#grow">{t('app.skip')}</a>
       <Hero />
       <main>
+        <CompanionControlPanel archive={sma.archive} onExport={sma.exportArchive} />
         <Evolution />
         <GuestStart />
         <SmaMemoryPanel archive={sma.archive} onRemember={sma.remember} onReset={sma.reset} onExport={sma.exportArchive} error={sma.error} />
