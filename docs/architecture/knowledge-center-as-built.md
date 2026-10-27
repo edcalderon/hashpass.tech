@@ -83,3 +83,9 @@ Created with `node packages/tools/scripts/publish-plane-pages.mjs --only MC` thr
 - Source: `docs/architecture/mission-command-center.md`, built into `dist/plane-pages/` by `build-plane-pages.mjs`. Re-running the publisher updates the page in place by exact title.
 - Not yet published: pages 00-08.
 - Verified path: the page client was exercised against live Plane (list, create, retrieve, archive, delete on a throwaway page) before this publish. The gateway's MCP `page` tool using the same client remains untested live until PR #482 is merged and the gateway is redeployed with `PLANE_PAGES_EMAIL`/`PLANE_PAGES_PASSWORD`.
+
+### MCP page tool verified live 2026-10-27
+
+PR #482 deployed the gateway page client to the VPS, and `PLANE_PAGES_EMAIL`/`PLANE_PAGES_PASSWORD` were added to `/opt/hashpass/mcp/secrets/plane.env` over SSM Run Command (a timestamped `.bak-` copy of the file sits beside it). Only the `plane-mcp-gateway` container was recreated. Through the public path (OAuth, then `https://mcp.hashpass.tech/mcp`) the `page` tool then listed pages and created, archived and deleted a throwaway page; the project was left with only the Mission Command Center page. This supersedes the earlier note that the path was tested against a fake Plane only.
+
+Operational notes: the compose working directory on the host is `/opt/hashpass/self-hosted/mcp` (not `/opt/hashpass/mcp`), and the gateway reads its env file only at start, so changing `plane.env` needs a gateway recreate: `docker compose --env-file .env -f mcp/compose.yaml up -d --no-deps --force-recreate plane-mcp-gateway`.
