@@ -19,6 +19,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createPlanePages } from "../../plane-mcp-gateway/src/plane-pages.mjs";
+import { buildMissionControlHtml, collectLiveData } from "./mission-control-page.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const dir = join(root, "dist/plane-pages");
@@ -92,12 +93,14 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const baseUrl = process.env.PLANE_BASE_URL || "https://work.hashpass.tech";
   const slug = process.env.PLANE_WORKSPACE_SLUG || "plane";
   const projectId = process.env.PLANE_PROJECT_ID || "8c6755ef-6d32-4076-9173-a6b06db7fc40";
-  const plan = publishable.map(({ f, text }) => {
+  const plan = await Promise.all(publishable.map(async ({ f, text }) => {
     // "MC" only orders the generated file; the Plane title is the plain name. Drop a repeated source heading too.
     const title = text.match(/^#\s+(.*)$/m)[1].trim().replace(/^MC\s+/, "");
     const body = text.replace(/^#\s+.*\n/, "").replace(new RegExp(`^#\\s+${title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*$`, "m"), "");
-    return { f, title, html: markdownToHtml(body) };
-  });
+    // The Mission Command Center is a live dashboard, built from GitHub/Plane/health data instead of converted Markdown.
+    const html = title === "HASHPASS Mission Command Center" ? buildMissionControlHtml(await collectLiveData()) : markdownToHtml(body);
+    return { f, title, html };
+  }));
   if (dryRun) {
     for (const p of plan) console.log(`[dry-run] ${p.title} (${p.f}): ${p.html.length} bytes of HTML`);
     process.exit(0);
@@ -115,9 +118,17 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     const saved = match
       ? await pages.run({ action: "update", project_id: projectId, page_id: match.id, name: p.title, description_html: p.html })
       : await pages.run({ action: "create", project_id: projectId, name: p.title, description_html: p.html, access: 0 });
-    const back = await pages.run({ action: "retrieve", project_id: projectId, page_id: saved.id });
+    // Plane's PATCH reply omits the page id, so fall back to the id we matched on.
+    const pageId = saved.id ?? match?.id;
+    const back = await pages.run({ action: "retrieve", project_id: projectId, page_id: pageId });
     const bodyOk = typeof back.description_html === "string" && back.description_html.length > 0;
-    if (back.name !== p.title || !bodyOk) throw new Error(`Read-back mismatch for "${p.title}" (page ${saved.id})`);
-    console.log(`${match ? "updated" : "created"}: ${p.title}\n  ${baseUrl}/${slug}/projects/${projectId}/pages/${saved.id}/  (body ${back.description_html.length} bytes, ${back.access === 0 ? "public" : "private"})`);
+    if (back.name !== p.title || !bodyOk) throw new Error(`Read-back mismatch for "${p.title}" (page ${pageId})`);
+    // A stale or concurrently open editor can CRDT-merge the old body back in; the stored page must hold each section once.
+    const stored = [...back.description_html.matchAll(/<h[1-3][^>]*>(.*?)<\/h[1-3]>/gs)].map((m) => m[1].replace(/<[^>]+>/g, "").trim());
+    const repeated = stored.filter((h, i) => stored.indexOf(h) !== i);
+    if (repeated.length || back.description_html.length > p.html.length * 1.5) {
+      throw new Error(`"${p.title}" holds duplicated content after the write (${repeated.join(", ") || "body larger than published"}); close editors open on the page and republish`);
+    }
+    console.log(`${match ? "updated" : "created"}: ${p.title}\n  ${baseUrl}/${slug}/projects/${projectId}/pages/${pageId}/  (body ${back.description_html.length} bytes, ${back.access === 0 ? "public" : "private"})`);
   }
 }

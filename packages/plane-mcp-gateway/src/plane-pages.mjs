@@ -116,6 +116,23 @@ export function createPlanePages({baseUrl, workspaceSlug, email, password, fetch
     return data;
   }
 
+  /** The page's stored Y.js state, or null when it has none yet. */
+  async function binary(path, retried = false) {
+    await ensureSession();
+    const response = await fetchImpl(`${origin}/api/workspaces/${workspaceSlug}/${path}`, {
+      headers: {...baseHeaders(), accept: "application/octet-stream"},
+      redirect: "manual",
+    });
+    jar.absorb(response);
+    if ((response.status === 401 || response.status === 403) && !retried) {
+      jar.clear();
+      return binary(path, true);
+    }
+    if (!response.ok) return null;
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    return bytes.length ? bytes : null;
+  }
+
   const pick = (source, keys) => Object.fromEntries(keys.filter((k) => source[k] !== undefined && source[k] !== "").map((k) => [k, source[k]]));
 
   return {
@@ -150,7 +167,7 @@ export function createPlanePages({baseUrl, workspaceSlug, email, password, fetch
         if (!hasName && !hasHtml) throw new PlanePageError("update needs name, description_html, or both", 400);
         if (hasName) await call("PATCH", `${pages}${page}/`, {name: args.name});
         if (!hasHtml) return {};
-        const formats = documentFormatsFromHtml(args.description_html);
+        const formats = documentFormatsFromHtml(args.description_html, await binary(`${pages}${page}/description/`));
         return call("PATCH", `${pages}${page}/description/`, {
           description_binary: formats.description_binary,
           description_html: args.description_html,
