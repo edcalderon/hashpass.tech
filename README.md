@@ -20,24 +20,16 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.155)
+## 📋 Latest Changes (v1.9.156)
 
-### Bug Fixes
-
-* **mcp:** accept standard OIDC identity claims ([7555aa3](https://github.com/hashpass-tech/hashpass.tech/commit/7555aa3935b2683277955d83d619486ebe7b7520))
-
-
-### Features
-
-* **db-backups:** explain freshness alerts in plain language ([5594d1a](https://github.com/hashpass-tech/hashpass.tech/commit/5594d1a666e0ef83d43eb7609fe8ac6a3d2328f0))
-### Release Highlights
-- explain freshness alerts in plain language; accept standard OIDC identity claims
+### Released
+- Version 1.9.156 release
 
 ### Release scope
-- Compared with: `v1.9.154` (the previous global release tag)
+- Compared with: `v1.9.155` (the previous global release tag)
 
 ### Affected products & packages
-- Infrastructure
+- Shared repository changes only
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
