@@ -11,6 +11,10 @@ only that exact wrapper through sudo; it does not receive Docker-group access.
 Required private files:
 
 - `plane.env`: `PLANE_API_KEY`, `PLANE_WORKSPACE_SLUG`, and `PLANE_BASE_URL`.
+  `PLANE_WORKSPACE_SLUG` must be `plane`, the slug in the Plane URL
+  (`https://work.hashpass.tech/plane/...`). A wrong slug such as `hashpass`
+  makes every Plane call return 403, which an MCP client shows as a generic
+  tool error.
 - `openai-plane-tunnel.env`: `CONTROL_PLANE_API_KEY` only.
 
 The tunnel profile is initialized with the OpenAI tunnel ID and this command:

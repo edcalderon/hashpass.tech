@@ -1,0 +1,71 @@
+# HASHPASS knowledge center — as built (GitHub, Plane, Notion)
+
+**Date:** 2026-10-27 (revised) | **Status:** Current state, verified against the repo, live Plane and GitHub where stated. Supersedes the "Current constraints" section of [knowledge-governance-github-plane-notion.md](knowledge-governance-github-plane-notion.md).
+
+## Decision (revised 2026-10-27)
+
+GitHub tracks code work. Plane holds everything that is not a code issue: project setup, business tracking, and the knowledge center. Notion is the transitional CEO layer.
+
+| System | Holds | Does not hold |
+| --- | --- | --- |
+| GitHub | Code issues and sub-issues, PRs, the single org project #4, ADR drafts, deploy evidence | Business, legal, finance, partnership or validation tracking; secrets |
+| Plane | Non-code work items grouped in modules, plus curated knowledge pages | Code issues, which stay on GitHub only |
+| Notion | CEO briefing, dates, decisions that need the CEO | Long technical docs, duplicated tasks |
+
+This reverses the earlier same-day decision to move all Plane work items to GitHub. The six per-module GitHub projects (#5–#10) were deleted once the items were back in Plane and verified.
+
+## Work tracking on GitHub (org `hashpass-tech`)
+
+One project: [#4 HASHPASS](https://github.com/orgs/hashpass-tech/projects/4). Epic #455 with sub-issues #457–#462, #464, #465, #469 and views for the Companion, Board, Roadmap and Backlog. Further engineering scope is added as sub-issues of this project, not as new projects. (`JACKKERNEL`, #3, is an unrelated project.)
+
+## Plane (live, checked 2026-10-27)
+
+- Instance `https://work.hashpass.tech`, workspace slug `plane`, one project `HASHPASS`.
+- Work items: **17**, restored from the local backup after the earlier deletion. Plane assigned new numbers (#18–#34), so old numbers #1–#17 no longer resolve. Titles, priorities, states and description text were compared with the backup; the only difference is that Plane wraps each description in a `<div>`.
+- Sub-items: the Passport validation items (old #3, #4, #6–#10) are children of "Validate HASHPASS Passport" (new #22).
+- Labels: passport, bsl, radar, funding, legal, partnership, payments (assigned from title keywords).
+- Modules: 6, now populated: Corporate & Legal 1, BSL Bogotá 2027 Planning 1, Strategy & Validation 4, Finance & Cloud 1, Product & Operations 6, Commercial & Partnerships 4.
+- Pages: see the publication log at the end of this document. Do not assume a page exists unless it is listed there.
+- Cycles and intake: none.
+- Local backups outside the repo: `~/.hashpass-backups/plane-hashpass-inventory-2026-10-27.json` and the migration map.
+
+## Components in the repo
+
+| Component | Path | Purpose | Verified |
+| --- | --- | --- | --- |
+| Self-hosted Plane and Frappe Helpdesk | `ops/self-hosted/` | Compose templates, Caddy, backup and restore scripts; deployed by `.github/workflows/self-hosted-vps-deploy.yml` through SSM | Template read; deployment not re-run |
+| Plane MCP gateway | `packages/plane-mcp-gateway/` | OAuth 2.1 front for Plane's MCP server; read and write actions classified by `policy.mjs`; scopes `plane:read` / `plane:write` | Code and tests present; live discovery checked by the ChatGPT plugin script |
+| ChatGPT plugin package | `plugins/hashpass-plane/` | Connection metadata for the gateway (v1.0.2) | Validated and tested earlier |
+| Plane object storage | `packages/infra/terraform/stacks/hashpass-plane-storage/` | Private versioned encrypted S3 bucket for Plane uploads | Terraform present; applied state not checked |
+| Notion archive | `packages/infra/terraform/stacks/hashpass-notion-archive/`, `packages/notion-plane-sync/` | Read-only Notion archive into private S3 with a DynamoDB hash registry. Schedule defaults off until a manual archive and restore drill pass | Code and tests present; whether it is applied or scheduled is not checked |
+| Campaign import | `campaigns/bsl-2026/import-plane.mjs` | One-off script that created the BSL26 work plan in Plane | Historical. It creates work items, so it must not be run again under this model |
+
+Authorization policy for the MCP gateway: [plane-mcp-authorization](../../apps/docs/docs/auth/plane-mcp-authorization.md).
+
+## Open items
+
+- `campaigns/bsl-2026/import-plane.mjs` created the BSL26 work plan in Plane and is historical. Do not run it again: it would duplicate items. Its `work-plan.json` now names the correct workspace slug `plane`.
+- The `notion-plane-sync` package name implies Plane work-item sync. Its README says work-item materialization is deliberately off. Treat it as a Notion archive only.
+- Restored items still end with "Plane is the shared execution layer; Notion remains the private knowledge source". That is the original wording; edit it if the model should be restated in the items themselves.
+
+## Future work: GitHub to Plane mirror (not built)
+
+Not started. If wanted, a one-way sync would publish accepted knowledge, not tasks:
+
+1. GitHub remains the writer. Plane pages are read-only mirrors with a link back to the source commit or issue.
+2. Source: ADRs and architecture docs in `docs/architecture/` marked Accepted.
+3. A workflow on merge to `main` upserts one Plane page per document, keyed by a stable ID in the front matter.
+4. It never creates or edits Plane work items or GitHub issues, and never reads from Plane.
+5. Needs a decision first: a least-privilege Plane token stored as a GitHub secret, and whether business work items are ever mirrored to pages. They hold commercial detail, so the default is no.
+
+## Page taxonomy to publish in Plane
+
+00 Architecture Index and Terminology; 01 Architecture Decision Records; 02 Platform and Capability Registry; 03 Muse Models, Speech, Cost and Benchmarks; 04 Event Knowledge and Agenda Intelligence; 05 Networking, Consent and Meeting Protocol; 06 Security, Privacy, Compliance and Data Retention; 07 Experiments and Evaluation Evidence; 08 Historical Hackathons, Releases and Postmortems.
+
+Per the governance rule, only accepted ADRs are published as accepted. ADR-HMC-001/002/003 are still "Proposed", so they appear as drafts with a link to the source.
+
+## Publication log
+
+No Plane page has been written yet.
+
+On 2026-10-27, `POST /api/v1/workspaces/plane/projects/<id>/pages/` returned 404 on this instance, so the REST API with a personal token cannot create pages. Pages can be created through the Plane web UI or through the `page` tool family of the Plane MCP gateway (`packages/plane-mcp-gateway`) from an MCP client. Publishing remains pending until one of those is used.

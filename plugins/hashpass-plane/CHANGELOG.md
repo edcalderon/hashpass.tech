@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.0.4] - 2026-10-27
+
+- Document that the Plane workspace slug is 'plane' (not 'hashpass'); a wrong PLANE_WORKSPACE_SLUG on the MCP gateway makes every Plane tool call fail with 403. No change to the OAuth endpoint, scopes or discovery metadata.
+
 ## [1.0.3] - 2026-10-26
 
 - Accept standard OIDC email claims in the MCP gateway
