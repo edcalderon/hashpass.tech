@@ -20,6 +20,7 @@ const sha = execFileSync("git", ["rev-parse", "--short", "HEAD"], { cwd: root })
 const repo = "https://github.com/hashpass-tech/hashpass.tech/blob/develop/";
 
 const PAGES = [
+  ["MC", "HASHPASS Mission Command Center", ["docs/architecture/mission-command-center.md"]],
   ["00", "Architecture Index and Terminology", ["docs/architecture/workspace-operating-model.md", "docs/architecture/knowledge-center-as-built.md"]],
   ["01", "Architecture Decision Records", ["docs/architecture/meta-companion-vision-and-system.md", "docs/architecture/meta-companion-agenda-networking.md", "docs/architecture/knowledge-governance-github-plane-notion.md"]],
   ["02", "Platform and Capability Registry", ["docs/feature-plans/muse-companion-contracts.md"]],
