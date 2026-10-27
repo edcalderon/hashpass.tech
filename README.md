@@ -20,28 +20,19 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.160)
-
-### Bug Fixes
-
-* **mcp:** bridge modern discovery to legacy Plane ([beae037](https://github.com/hashpass-tech/hashpass.tech/commit/beae0378ebb87ac0575a95905db83121951eb480))
-
+## 📋 Latest Changes (v1.9.161)
 
 ### Features
 
-* **companion:** en/es/ja, shared settings, narrated intro film and landing polish ([bad2ef3](https://github.com/hashpass-tech/hashpass.tech/commit/bad2ef364ee718efff5d72cc64295df63261b7ea))
-* **ui:** shared settings menu and model for Club, Companion and mobile ([20f8cd6](https://github.com/hashpass-tech/hashpass.tech/commit/20f8cd6501cfcdeb667ba14c1913165f8f60307e))
+* **mcp:** serve Plane page tool from the gateway via a service account ([b20bcba](https://github.com/hashpass-tech/hashpass.tech/commit/b20bcba9e5ef5d342913beddaff2215c2cb8994f))
 ### Release Highlights
-- en/es/ja, shared settings, narrated intro film and landing polish; shared settings menu and model for Club, Companion and mobile; bridge modern discovery to legacy Plane
+- serve Plane page tool from the gateway via a service account
 
 ### Release scope
-- Compared with: `v1.9.158` (the previous global release tag)
+- Compared with: `v1.9.160` (the previous global release tag)
 
 ### Affected products & packages
-- Club web
-- Companion
-- Shared UI
-- Release tooling
+- Self-hosted operations
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
