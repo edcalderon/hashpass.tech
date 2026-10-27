@@ -117,6 +117,12 @@ classified by the gateway as follows:
   `update_features`, `update_member`, `update_option`, `update_point`,
   `upload_from_url`.
 
+## Stability
+
+`1.1.0` is the first stable release: the connection was confirmed working from a real client and the live
+discovery checks pass. What that covers, and the semver rules from here on, are in
+`apps/docs/docs/auth/plane-mcp-stable.md`.
+
 ## Versioning workflow
 
 From this directory:
