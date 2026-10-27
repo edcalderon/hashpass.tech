@@ -2,6 +2,8 @@ import http from "node:http";
 import {createGatewayHandler} from "./gateway.mjs";
 import {createTokenVerifier} from "./token-verifier.mjs";
 import {createPlanePages} from "./plane-pages.mjs";
+import {createStatusGate} from "./status-gate.mjs";
+import {sendResponse} from "./http-response.mjs";
 
 const required = (name) => {
   const value = process.env[name]?.trim();
@@ -44,6 +46,20 @@ const handler = createGatewayHandler({
   }),
 });
 
+// Sign-in gate for work.hashpass.tech/status: same issuer, JWKS and email allowlist as the MCP resource above.
+const statusGate = createStatusGate({
+  publicOrigin: process.env.STATUS_PUBLIC_ORIGIN?.trim() || `https://${process.env.PLANE_DOMAIN?.trim() || "work.hashpass.tech"}`,
+  issuer,
+  resource,
+  clientId: process.env.STATUS_OAUTH_CLIENT_ID?.trim() || undefined,
+  sessionSecret: process.env.STATUS_SESSION_SECRET?.trim() || undefined,
+  serviceSecret: required("PLANE_API_KEY"),
+  jwksUrl: process.env.MCP_OAUTH_JWKS_URL?.trim() || `${issuer}/jwks`,
+  allowedSubjects: csv("MCP_ALLOWED_SUBJECTS"),
+  allowedEmails: csv("MCP_ALLOWED_EMAILS"),
+  allowedEmailDomains: csv("MCP_ALLOWED_EMAIL_DOMAINS"),
+});
+
 const server = http.createServer(async (incoming, outgoing) => {
   try {
     const origin = `http://${incoming.headers.host || "127.0.0.1"}`;
@@ -54,11 +70,8 @@ const server = http.createServer(async (incoming, outgoing) => {
       body,
       duplex: body ? "half" : undefined,
     });
-    const response = await handler(request);
-    outgoing.writeHead(response.status, Object.fromEntries(response.headers.entries()));
-    if (!response.body) return outgoing.end();
-    for await (const chunk of response.body) outgoing.write(chunk);
-    outgoing.end();
+    const response = (await statusGate(request)) ?? (await handler(request));
+    await sendResponse(response, outgoing);
   } catch {
     outgoing.writeHead(500, {"content-type": "text/plain", "cache-control": "no-store"});
     outgoing.end("Internal Server Error\n");

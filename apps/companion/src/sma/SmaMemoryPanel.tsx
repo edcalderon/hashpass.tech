@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
+import { FormField } from '@hashpass/ui/primitives';
 import { Icon } from '../Pixel';
 import { useSettings } from '../settings/SettingsContext';
 import type { SmaMemoryInput, SmaMemoryPanelProps } from './types';
 
 export function SmaMemoryPanel({archive, onRemember, onReset, onExport, error}: SmaMemoryPanelProps) {
-  const {t} = useSettings();
+  const {t, isDark} = useSettings();
   const [content, setContent] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -21,8 +22,9 @@ export function SmaMemoryPanel({archive, onRemember, onReset, onExport, error}: 
       provenanceMethod: 'user-statement',
     };
     setSaving(true);
-    await onRemember(input);
-    setContent('');
+    // Keep the draft when the save failed, so the user can retry without retyping.
+    const saved = await onRemember(input);
+    if (saved) setContent('');
     setSaving(false);
   };
 
@@ -52,8 +54,7 @@ export function SmaMemoryPanel({archive, onRemember, onReset, onExport, error}: 
             <code className="sma-id">{archive.manifest.agent.did}</code>
           </div>
           <form className="sma-form" onSubmit={submit}>
-            <label htmlFor="companion-memory">{t('sma.memory.label')}</label>
-            <textarea id="companion-memory" value={content} onChange={(event) => setContent(event.target.value)} rows={3} placeholder={t('sma.memory.placeholder')} />
+            <FormField mode={isDark ? 'dark' : 'light'} label={t('sma.memory.label')} value={content} onChangeText={setContent} multiline numberOfLines={3} placeholder={t('sma.memory.placeholder')} />
             <button type="submit" className="btn btn--primary" disabled={saving || !content.trim()}>{saving ? t('sma.memory.saving') : t('sma.memory.save')}</button>
           </form>
           {archive.records.length > 0 && (

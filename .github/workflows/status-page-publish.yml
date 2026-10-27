@@ -92,4 +92,25 @@ jobs:
       - name: Verify the live page
         run: |
           set -euo pipefail
-          curl --fail --silent --show-error --location --retry 5 --retry-delay 5 --max-time 20 https://work.hashpass.tech/status | grep -q 'HASHPASS status'
+          # The page is private. An anonymous request must be sent to sign-in and must not receive any page content;
+          # retry because the gateway and Caddy roll out separately from this job.
+          for attempt in 1 2 3 4 5 6; do
+            headers="$(mktemp)"
+            body="$(mktemp)"
+            code="$(curl --silent --show-error --max-time 20 --dump-header "$headers" --output "$body" --write-out '%{http_code}' https://work.hashpass.tech/status || true)"
+            location="$(grep -i '^location:' "$headers" | tr -d '\r' | head -n1 || true)"
+            leaked=false
+            grep -q 'HASHPASS status' "$body" && leaked=true
+            if [ "$leaked" = true ]; then
+              echo "::error::The status page is served without sign-in"
+              exit 1
+            fi
+            if [ "$code" = 302 ] && echo "$location" | grep -qi '/status/login'; then
+              echo "Anonymous /status redirects to sign-in"
+              exit 0
+            fi
+            echo "Attempt $attempt: HTTP $code, not yet gated; waiting for the deploy"
+            sleep 10
+          done
+          echo "::error::Anonymous /status did not redirect to /status/login"
+          exit 1

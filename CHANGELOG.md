@@ -1,3 +1,25 @@
+## [1.9.163](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.162...v1.9.163) (2026-10-27)
+
+
+### Bug Fixes
+
+* **companion:** reuse the shared FormField and keep the memory draft on failure ([c1d466a](https://github.com/hashpass-tech/hashpass.tech/commit/c1d466afdcd55a9f0665b9b7b5d73361096866f7))
+
+
+### Features
+
+* **status:** make the status page private behind HASHPASS sign-in and fix its mobile layout ([f1c1e13](https://github.com/hashpass-tech/hashpass.tech/commit/f1c1e1320e6941964e0e4686a43574df578b8d53))
+### Release Highlights
+- connect dashboard auth flow; make the status page private behind HASHPASS sign-in and fix its mobile layout; add local agent control plane; reuse the shared FormField and keep the memory draft on failure
+
+### Release scope
+- Compared with: `v1.9.162` (the previous global release tag)
+
+### Affected products & packages
+- Companion
+- Self-hosted operations
+- Release tooling
+
 ## [1.9.162](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.161...v1.9.162) (2026-10-27)
 
 

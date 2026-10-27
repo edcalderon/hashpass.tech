@@ -59,7 +59,11 @@ jobs:
           cache: pnpm
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile --prefer-offline
+        # pnpm can leave an existing workspace package file in place when a
+        # cached dependency tree is relinked. Force reconciliation so the
+        # mobile workspace does not fail on duplicate LICENSE links such as
+        # @noble/hashes/LICENSE before the smoke build starts.
+        run: pnpm install --frozen-lockfile --prefer-offline --force
 
       - name: Verify dashboard translations
         run: pnpm --dir apps/mobile-app run check:dashboard-translations

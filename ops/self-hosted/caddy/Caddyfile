@@ -20,14 +20,25 @@
 {$PLANE_DOMAIN:plane.example.invalid} {
   import common_security
 
-  # Public status page, generated from the same source as the Plane command-center page and written to the
-  # read-only /srv/status mount by .github/workflows/status-page-publish.yml. Everything else stays Plane.
+  # Private status page, generated from the same source as the Plane command-center page and written to the
+  # read-only /srv/status mount by .github/workflows/status-page-publish.yml. Visitors sign in with a HASHPASS
+  # account through the gateway's status gate; only approved email domains pass. Everything else stays Plane.
+  @statusFlow path /status/login /status/callback /status/logout
+  handle @statusFlow {
+    reverse_proxy plane-mcp-gateway:8220
+  }
+
   @status path /status /status/
   handle @status {
+    # An unauthenticated or unapproved visitor never reaches file_server: the gate's 302 is returned instead.
+    forward_auth plane-mcp-gateway:8220 {
+      uri /status-gate/verify
+    }
     root * /srv/status
     rewrite * /index.html
-    header Cache-Control "no-cache"
+    header Cache-Control "no-store"
     header X-Robots-Tag "noindex"
+    header Content-Security-Policy "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
     file_server
   }
 

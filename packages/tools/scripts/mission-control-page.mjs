@@ -3,7 +3,7 @@
  * engineering progress from GitHub, Plane work-item counts, surface health and the knowledge map.
  *
  * One data set, two renderers (the "kit"): `planeKit` emits markup Plane's editor stores, `webKit` emits the same
- * structure for the public status page at work.hashpass.tech/status, so both always show the same content.
+ * structure for the team-only status page at work.hashpass.tech/status, so both always show the same content.
  *
  * The Plane kit uses only markup Plane's editor round-trips (callouts, task lists, tinted table cells, highlights, toggles,
  * emoji), so the page stays editable in the Plane UI. Everything dynamic is read at publish time and the page
@@ -28,14 +28,22 @@ const color = (c) => `var(--editor-colors-${c}-background)`;
 /** Plane's editor stores a cell tint as a `background` attribute and a callout as a block component. */
 export const planeKit = {
   bg: (c) => ` background="${color(c)}"`,
+  // One row of equal cells: a single-row table in Plane's editor.
+  tile: (inner, bg) => `<td${` background="${color(bg)}"`}>${inner}</td>`,
+  tiles: (cells) => `<table><tbody><tr>${cells.join("")}</tr></tbody></table>`,
   callout: (emoji, bg, inner) =>
     `<div data-block-type="callout-component" data-background="${bg}" data-logo-in-use="emoji" data-emoji-unicode="${parseInt(emoji, 16)}" data-emoji-url="https://cdn.jsdelivr.net/npm/emoji-datasource-apple/img/apple/64/${emoji}.png">${inner}</div>`,
   tasks: (items) => `<ul data-type="taskList">${items.map(([done, inner]) => `<li data-type="taskItem" data-checked="${done}">${p(inner)}</li>`).join("")}</ul>`,
 };
 
-/** The public page defines the same `--editor-colors-*` variables, so tags and ink render identically. */
+/** The status page defines the same `--editor-colors-*` variables, so tags and ink render identically. */
 export const webKit = {
+  // The web table repeats each column title inside its cells (data-label), so a phone can stack a row as a card.
+  labelled: true,
   bg: (c) => ` style="background:${color(c)}"`,
+  // A responsive grid, so summary rows wrap on a phone instead of scrolling sideways.
+  tile: (inner, bg) => `<div class="tile" style="background:${color(bg)}">${inner}</div>`,
+  tiles: (cells) => `<div class="tiles">${cells.join("")}</div>`,
   callout: (emoji, bg, inner) => `<aside class="callout" style="background:${color(bg)}"><span class="emoji">${String.fromCodePoint(parseInt(emoji, 16))}</span><div>${inner}</div></aside>`,
   tasks: (items) => `<ul class="tasks">${items.map(([done, inner]) => `<li class="${done ? "done" : ""}"><span class="box">${done ? "☑" : "☐"}</span>${p(inner)}</li>`).join("")}</ul>`,
 };
@@ -130,10 +138,10 @@ const PROJECT_URL = `${PLANE}/plane/projects/${PROJECT}`;
 export function buildMissionControlHtml(d, kit = planeKit, { publicView = false } = {}) {
   const cell = (inner, bg) => `<td${bg ? kit.bg(bg) : ""}>${p(inner)}</td>`;
   const head = (inner, bg) => `<th${bg ? kit.bg(bg) : ""}>${p(inner)}</th>`;
-  const table = (heads, rows) => `<table><tbody><tr>${heads.map((h) => head(h, "gray")).join("")}</tr>${rows.map((r) => `<tr>${r.join("")}</tr>`).join("")}</tbody></table>`;
+  const labelled = (heads, row) => row.map((c, i) => (kit.labelled ? c.replace(/^<td/, `<td data-label="${esc(heads[i] ?? "")}"`) : c));
+  const table = (heads, rows) => `<table><tbody><tr>${heads.map((h) => head(h, "gray")).join("")}</tr>${rows.map((r) => `<tr>${labelled(heads, r).join("")}</tr>`).join("")}</tbody></table>`;
   const callout = kit.callout;
   const tasks = kit.tasks;
-  const tint = (bg) => kit.bg(bg);
   const stamp = d.now.toISOString().replace("T", " ").slice(0, 16) + " UTC";
   const done = (list) => list.filter((i) => i.state === "closed").length;
   const epicDone = done(d.epic);
@@ -142,27 +150,27 @@ export function buildMissionControlHtml(d, kit = planeKit, { publicView = false 
   const planeOpen = d.modules.reduce((n, m) => n + (m.open ?? 0), 0);
 
   const kpi = (emoji, label, value, sub, bg) =>
-    `<td${tint(bg)}>${p(`${emoji} ${esc(label)}`)}${p(`<strong>${value}</strong>`)}${p(sub)}</td>`;
+    kit.tile(`${p(`${emoji} ${esc(label)}`)}${p(`<strong>${value}</strong>`)}${p(sub)}`, bg);
 
   const out = [];
   out.push(callout("1f6f0", "light-blue", p(`<strong>The front door to HASHPASS.</strong> ${tag("light-blue", "🐙 GitHub")} code, config and infrastructure · ${tag("green", "✈️ Plane")} everything else · ${tag("gray", "📝 Notion")} CEO drafts only, nothing depends on it.`) + p(`<em>Refreshed ${esc(stamp)} (commit <code>${esc(d.sha)}</code>). No secrets on this page.</em>`)));
 
   out.push("<h2>🚀 Jump to</h2>");
-  out.push(`<table><tbody><tr>${[
+  out.push(kit.tiles([
     ["📋", "Engineering board", "GitHub project #4", "https://github.com/orgs/hashpass-tech/projects/4", "light-blue"],
     ["🗂️", "Company work", "Plane issues", `${PROJECT_URL}/issues/`, "green", true],
     ["📦", "Modules", "Plane divisions", `${PROJECT_URL}/modules/`, "orange", true],
     ["📚", "Docs and ADRs", "Architecture folder", `${DOCS}docs/architecture/`, "purple"],
-  // The sixth field marks entries that need a Plane login, so the public page drops them by flag, not by URL match.
-  ].filter(([, , , , , needsLogin]) => !(publicView && needsLogin)).map(([e, t, s, h, bg]) => `<td${tint(bg)}>${p(`${e} <strong>${esc(t)}</strong>`)}${p(a(h, s))}</td>`).join("")}</tr></tbody></table>`);
+  // The sixth field marks entries that need a Plane login, so the status page drops them by flag, not by URL match.
+  ].filter(([, , , , , needsLogin]) => !(publicView && needsLogin)).map(([e, t, s, h, bg]) => kit.tile(`${p(`${e} <strong>${esc(t)}</strong>`)}${p(a(h, s))}`, bg))));
 
   out.push("<h2>📊 At a glance</h2>");
-  out.push(`<table><tbody><tr>${[
+  out.push(kit.tiles([
     kpi("🎯", "Epic #455 progress", `${epicDone} of ${epicTotal || "—"} done`, bar(epicDone, epicTotal), "green"),
     kpi("🔥", "Open P0 engineering", String(d.epic.filter((i) => i.state === "open" && /P0/.test(i.title)).length), "sub-issues under the Companion epic", "pink"),
     ...(publicView ? [] : [kpi("🗂️", "Open company work", d.modules.length ? String(planeOpen) : "—", "Plane items across 6 divisions", "orange")]),
     kpi("🛰️", "Live surfaces", `${up} of ${d.surfaces.length} up`, bar(up, d.surfaces.length), up === d.surfaces.length ? "green" : "peach"),
-  ].join("")}</tr></tbody></table>`);
+  ]));
 
   out.push("<h2>🏢 Company directory</h2>");
   out.push(publicView
@@ -200,13 +208,13 @@ export function buildMissionControlHtml(d, kit = planeKit, { publicView = false 
 
   out.push("<h2>📚 Knowledge map</h2>");
   const links = (items) => `<ul>${items.map(([label, path]) => `<li>${p(a(path.startsWith("http") ? path : DOCS + path, label))}</li>`).join("")}</ul>`;
-  out.push(`<table><tbody><tr>${[
+  out.push(kit.tiles([
     ["🏗️ Architecture & decisions", "light-blue", [["Workspace operating model", "docs/architecture/workspace-operating-model.md"], ["Companion vision and system", "docs/architecture/meta-companion-vision-and-system.md"], ["Passport MVP", "docs/feature-plans/passport-mvp.md"]]],
     ["🔧 Platform reference", "green", [["Deployment map", "apps/docs/docs/infra/DEPLOYMENT_MAP.md"], ["Play Console release flow", "apps/docs/docs/reference/release/PLAY_CONSOLE_RELEASE_FLOW.md"], ["OTA updates", "apps/docs/docs/reference/mobile-app/eas-update-ota.md"], ["Auth flow", "apps/docs/docs/auth/AUTH_FLOW.md"], ["User registry", "apps/docs/docs/auth/USER_REGISTRY.md"]]],
     ["🎨 Product & agents", "purple", [["PRODUCT.md", "PRODUCT.md"], ["DESIGN.md", "DESIGN.md"], ["Design system and Storybook", "docs/design-system-storybook.md"], ["AGENTS.md", "AGENTS.md"], ["Active tasks", "https://github.com/hashpass-tech/hashpass.tech/tree/develop/.agents/active"]]],
-  ].map(([t, bg, items]) => `<td${tint(bg)}>${p(`<strong>${t}</strong>`)}${links(items)}</td>`).join("")}</tr></tbody></table>`);
+  ].map(([t, bg, items]) => kit.tile(`${p(`<strong>${t}</strong>`)}${links(items)}`, bg))));
   out.push(p(`🧠 <strong>Code questions:</strong> use <code>codebase-memory-mcp</code> (<code>search_graph</code>, <code>trace_path</code>, <code>get_code_snippet</code>) before grep.`));
   out.push("<hr>");
-  if (!publicView) out.push(p(`<em>Public version: ${a("https://work.hashpass.tech/status", "work.hashpass.tech/status")}. Both are generated by <code>packages/tools/scripts/mission-control-page.mjs</code> — edit that, not this page.</em>`));
+  if (!publicView) out.push(p(`<em>Team-only web version (HASHPASS sign-in): ${a("https://work.hashpass.tech/status", "work.hashpass.tech/status")}. This page and that one are generated by <code>packages/tools/scripts/mission-control-page.mjs</code> — edit that, not this page.</em>`));
   return out.join("\n");
 }

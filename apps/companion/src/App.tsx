@@ -4,9 +4,11 @@ import { capabilities, houseRules, proposedGuestTurns, stageKeys } from './conte
 import { BUILD_INFO, CURRENT_VERSION, getCompanionVersionLabel } from './config/version';
 import { CompanionSettings } from './settings/CompanionSettings';
 import { useSettings } from './settings/SettingsContext';
+import { CompanionControlPanel } from './control-plane/CompanionControlPanel';
 import { SmaMemoryPanel } from './sma/SmaMemoryPanel';
 import { SmaSetup } from './sma/SmaSetup';
 import { useSmaArchive } from './sma/useSmaArchive';
+import { useCompanionAuth } from './auth/useCompanionAuth';
 import type { CapabilityValue, DemoAction, IconKey, PetMood } from './types';
 
 const QuestGame = lazy(() => import('./game/QuestGame').then((m) => ({ default: m.QuestGame })));
@@ -57,6 +59,7 @@ function Hero() {
             <Icon name="book" /> {t('hero.film')}
           </button>
           <a className="btn btn--ghost" href="#grow">{t('hero.meet')}</a>
+          <a className="btn btn--ghost" href="#dashboard">{t('hero.control')}</a>
           <a className="btn btn--ghost" href="#start">{t('hero.guests')}</a>
         </div>
         <div className="hero__stage">
@@ -320,6 +323,7 @@ function Footer() {
 export function App() {
   const { t } = useSettings();
   const sma = useSmaArchive();
+  const auth = useCompanionAuth();
 
   if (sma.status === 'loading') return <main className="sma-gate"><p role="status">{t('sma.loading')}</p></main>;
   if (sma.status === 'setup' || !sma.archive) return <SmaSetup onComplete={sma.setup} error={sma.error} />;
@@ -329,6 +333,14 @@ export function App() {
       <a className="skip" href="#grow">{t('app.skip')}</a>
       <Hero />
       <main>
+        <CompanionControlPanel
+          archive={sma.archive}
+          onExport={sma.exportArchive}
+          auth={auth}
+          onSignIn={auth.signIn}
+          onSignOut={auth.signOut}
+          onRetryAuth={auth.refresh}
+        />
         <Evolution />
         <GuestStart />
         <SmaMemoryPanel archive={sma.archive} onRemember={sma.remember} onReset={sma.reset} onExport={sma.exportArchive} error={sma.error} />

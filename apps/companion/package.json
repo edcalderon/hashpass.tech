@@ -1,7 +1,7 @@
 {
   "name": "@hashpass/companion",
   "private": true,
-  "version": "0.0.4",
+  "version": "0.0.5",
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
@@ -9,11 +9,15 @@
     "test": "node --test tests/*.test.mjs"
   },
   "dependencies": {
+    "@hashpass/ui": "workspace:*",
     "@vitejs/plugin-react": "6.1.1",
-    "vite": "8.3.2",
-    "typescript": "~5.8.3",
+    "better-auth": "1.7.6",
     "react": "19.0.0",
-    "react-dom": "19.0.0"
+    "react-dom": "19.0.0",
+    "react-native": "0.79.6",
+    "react-native-web": "^0.20.0",
+    "typescript": "~5.8.3",
+    "vite": "8.3.2"
   },
   "devDependencies": {
     "@types/react": "~19.0.10",
