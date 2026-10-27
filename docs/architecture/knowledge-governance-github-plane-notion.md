@@ -52,5 +52,7 @@ Later: update canonical ADR version in GitHub and Plane; no task duplication
 5. Put Plane permalink into GitHub ADR and Notion CEO summary; do not create Plane work items to mirror GitHub tasks.
 6. On subsequent revisions, update/supersede same Plane page, keep version history.
 
+> Update 2026-10-27: Plane access now works and its work items were migrated to GitHub projects. Current state: [knowledge-center-as-built.md](knowledge-center-as-built.md).
+
 ## Current constraints
 As of this documentation turn, the **$hashpass-plane** link is known from user conversation but no Plane read/write action is available in the connected tool catalog. Therefore actual Plane changes are **pending**, and this Markdown is an intentionally import-ready source. Do not claim that Plane was updated.
