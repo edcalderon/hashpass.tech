@@ -378,7 +378,22 @@ ul, ol { padding: 0; list-style: none; }
 @keyframes pulse-border { 50% { border-color: var(--glow); } }
 
 /* Settings control in the hero corner */
-.hero__bar { position: absolute; top: 12px; right: 16px; z-index: 5; }
+.hero__bar { position: absolute; top: 12px; right: 16px; z-index: 5; display: flex; gap: 8px; align-items: center; }
+.inbox { position: relative; }
+.inbox__trigger { position: relative; display: grid; place-items: center; width: 44px; height: 44px; padding: 0; cursor: pointer; }
+.inbox__trigger .icon { width: 22px; height: 22px; margin: 0; }
+.inbox__count { position: absolute; top: -8px; right: -8px; min-width: 20px; height: 20px; padding: 0 5px; display: grid; place-items: center; background: #ff5c8a; color: #1a0610; border: 2px solid #0b1230; font-size: 12px; font-weight: 800; line-height: 1; }
+.inbox__panel { position: absolute; top: 52px; right: 0; width: min(380px, calc(100vw - 32px)); max-height: min(70vh, 560px); overflow: auto; padding: 16px; display: grid; gap: 12px; background: var(--surface); color: var(--text); border: 3px solid var(--glow); box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.35); }
+.inbox__panel:focus { outline: none; }
+.inbox__head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.inbox__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.inbox__item { display: grid; gap: 8px; padding: 12px; border: 3px solid var(--border, #6f86c9); }
+.inbox__item--unconfirmed-email { border-color: #ffb020; }
+.inbox__item--link-invalid { border-color: #ff5c8a; }
+.inbox__item--email-confirmed { border-color: #2fbf84; }
+.inbox__item-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.inbox__item p { margin: 0; overflow-wrap: anywhere; }
+.inbox__confirm { display: grid; gap: 8px; }
 .settings-trigger { background: #0b1230; color: #e9fdff; border: 3px solid var(--glow); }
 .settings-trigger:hover { background: #1b2150; }
 :root[lang='ja'] body { font-family: var(--font), 'Hiragino Sans', 'Noto Sans JP', 'Yu Gothic', Meiryo, sans-serif; line-height: 1.75; }

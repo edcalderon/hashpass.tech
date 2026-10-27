@@ -10,7 +10,9 @@ import { SmaSetup } from './sma/SmaSetup';
 import { useSmaArchive } from './sma/useSmaArchive';
 import { useCompanionAuth } from './auth/useCompanionAuth';
 import { resolveGate } from './sma/gate';
-import type { CapabilityValue, DemoAction, IconKey, PetMood } from './types';
+import { InboxBell } from './confirm/InboxBell';
+import { useEmailConfirmation } from './confirm/useEmailConfirmation';
+import type { CapabilityValue, DemoAction, HeroProps, IconKey, PetMood } from './types';
 
 const QuestGame = lazy(() => import('./game/QuestGame').then((m) => ({ default: m.QuestGame })));
 const IntroFilm = lazy(() => import('./film/IntroFilm').then((m) => ({ default: m.IntroFilm })));
@@ -25,7 +27,7 @@ const demoActions: DemoAction[] = [
   { id: 'chat', unlocks: null, mood: 'hi' },
 ];
 
-function Hero({ hasArchive, onSetup }: { hasArchive: boolean; onSetup: () => void }) {
+function Hero({ hasArchive, onSetup, inbox }: HeroProps) {
   const { t } = useSettings();
   const [ref, inView] = useInView<HTMLElement>();
   const [mode, setMode] = useState<'none' | 'quest' | 'film'>('none');
@@ -35,6 +37,7 @@ function Hero({ hasArchive, onSetup }: { hasArchive: boolean; onSetup: () => voi
       <div className="cloud cloud--a" aria-hidden="true"><Sprite name="cloud" /></div>
       <div className="cloud cloud--b" aria-hidden="true"><Sprite name="cloud" /></div>
       <div className="hero__bar">
+        <InboxBell {...inbox} />
         <CompanionSettings />
       </div>
       <div className="wrap hero__inner">
@@ -329,6 +332,7 @@ export function App() {
   const { t } = useSettings();
   const sma = useSmaArchive();
   const auth = useCompanionAuth();
+  const confirmation = useEmailConfirmation(sma.archive?.ownerEmail ?? null);
   const [setupDismissed, setSetupDismissed] = useState(false);
   const view = resolveGate(sma.status, sma.archive !== null, setupDismissed);
 
@@ -339,7 +343,11 @@ export function App() {
   return (
     <>
       <a className="skip" href="#grow">{t('app.skip')}</a>
-      <Hero hasArchive={archive !== null} onSetup={() => setSetupDismissed(false)} />
+      <Hero
+        hasArchive={archive !== null}
+        onSetup={() => setSetupDismissed(false)}
+        inbox={{ items: confirmation.items, ownerEmail: sma.archive?.ownerEmail ?? null, status: confirmation.status, errorKey: confirmation.errorKey, onSend: confirmation.send, onVerify: confirmation.verify }}
+      />
       <main>
         {archive && <CompanionControlPanel
           archive={archive}
