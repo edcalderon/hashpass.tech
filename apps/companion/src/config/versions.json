@@ -1,0 +1,29 @@
+{
+  "_comment": "⚠️ AUTO-GENERATED FILE - DO NOT EDIT MANUALLY ⚠️",
+  "_source": "This file is generated from apps/companion/package.json",
+  "_instructions": "Run npm run version:companion or npm run release:companion:patch from the repo root to update it.",
+  "currentVersion": {
+    "version": "0.0.1",
+    "buildNumber": 20261026000000,
+    "releaseDate": "2026-10-26",
+    "releaseType": "alpha",
+    "environment": "development",
+    "features": [],
+    "bugfixes": [],
+    "breakingChanges": [],
+    "notes": "Staging preview: pixel-art landing page. No conversation, calendar or sign-in yet."
+  },
+  "versions": [
+    {
+      "version": "0.0.1",
+      "buildNumber": 20261026000000,
+      "releaseDate": "2026-10-26",
+      "releaseType": "alpha",
+      "environment": "development",
+      "features": [],
+      "bugfixes": [],
+      "breakingChanges": [],
+      "notes": "Staging preview: pixel-art landing page. No conversation, calendar or sign-in yet."
+    }
+  ]
+}

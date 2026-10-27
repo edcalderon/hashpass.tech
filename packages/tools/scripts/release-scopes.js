@@ -1,5 +1,6 @@
 const RELEASE_SCOPE_DEFINITIONS = [
   ['Club web', (file) => file.startsWith('apps/web-app/')],
+  ['Companion', (file) => file.startsWith('apps/companion/')],
   ['Mobile app', (file) => file.startsWith('apps/mobile-app/') || file === 'app.json'],
   ['QR links API', (file) => file.startsWith('packages/hashpass-links-api/') || file.startsWith('packages/backend/src/qr-links/')],
   ['SDK', (file) => file.startsWith('packages/sdk/')],
@@ -26,6 +27,10 @@ const GENERATED_RELEASE_ARTIFACTS = new Set([
   'apps/mobile-app/config/version.ts',
   'apps/mobile-app/config/versions.json',
   'packages/infra/lambda/package.json',
+  'apps/companion/package.json',
+  'apps/companion/CHANGELOG.md',
+  'apps/companion/src/config/git-info.json',
+  'apps/companion/src/config/versions.json',
 ]);
 
 function normalizeFiles(files) {

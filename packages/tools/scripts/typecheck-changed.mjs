@@ -585,9 +585,12 @@ function main() {
   // It already gets real, correct coverage from its own `build` script
   // (`tsc --noEmit && vite build`) via .github/workflows/localpass.yml, so
   // skip it here the same way apps/web-app and apps/docs are skipped.
+  // apps/companion is the same kind of standalone Vite app: its `build` script
+  // (`tsc --noEmit && vite build`) is its own typecheck, run by
+  // .github/workflows/companion.yml.
   const allChangedFiles = getChangedFiles(baseCommit)
     .filter(isTypeScriptFile)
-    .filter(f => !f.startsWith('apps/web-app/') && !f.startsWith('apps/docs/') && !f.startsWith('apps/localpass/') && !f.startsWith('archive/'));
+    .filter(f => !f.startsWith('apps/web-app/') && !f.startsWith('apps/docs/') && !f.startsWith('apps/localpass/') && !f.startsWith('apps/companion/') && !f.startsWith('archive/'));
 
   // packages/* files are checked separately below (see typecheckPackageFiles);
   // everything else keeps the original single-sandbox behavior unchanged.

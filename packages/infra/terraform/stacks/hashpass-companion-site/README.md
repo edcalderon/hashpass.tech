@@ -38,4 +38,5 @@ aws cloudfront create-invalidation --distribution-id "$(terraform output -raw di
 ```
 
 Not built yet: a GitHub Actions deploy role and workflow (model them on `lukas-landing-deploy.yml`).
-`apps/companion` is not committed because adding the workspace package requires a lockfile change.
+The site source lives in `apps/companion` (own `companion-vX.Y.Z` release stream; see CLAUDE.md "Companion release").
+CI for it is `.github/workflows/companion.yml` (test and build only, no deploy).

@@ -155,6 +155,25 @@ hours until caught from a real screenshot and released again as
 a global release PR for unrelated reasons — still needs its own
 `release:club:web:patch` to actually reach hashpass.club.**
 
+### Companion release (separate version stream)
+
+`apps/companion` (`companion-dev.hashpass.tech`, a staging preview) has its own
+version and `companion-vX.Y.Z` tag stream, mirroring Club web and LocalPass. Do
+not use the root `release:patch` or `release:promote` for a Companion-only
+change. From a clean `develop`:
+
+```bash
+pnpm run release:companion:patch   # or :minor / :major; --dry-run previews
+```
+
+This updates only `apps/companion` version metadata (`package.json`,
+`src/config/versions.json`, `git-info.json`, `CHANGELOG.md`, README block),
+commits `chore(companion): release vX.Y.Z`, and pushes the branch and
+`companion-vX.Y.Z` tag to `origin`. It deploys nothing: there is no Companion
+deploy workflow yet, so publishing to companion-dev is a manual S3 sync plus
+CloudFront invalidation (see the stack README). Global release PRs list
+Companion as its own affected scope. Never edit its version files by hand.
+
 ### Mobile Android Release Workflow
 
 **Default-to-OTA posture (added 2026-07-28):** every release ships its JS via

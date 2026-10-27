@@ -1,0 +1,34 @@
+name: Companion
+
+on:
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'apps/companion/**'
+      - 'packages/tools/scripts/*companion*'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/companion.yml'
+  push:
+    branches: [main, develop]
+    paths:
+      - 'apps/companion/**'
+      - 'packages/tools/scripts/*companion*'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/companion.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  companion:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --prefer-offline
+      - run: pnpm --filter @hashpass/companion test
+      - run: pnpm --filter @hashpass/companion build

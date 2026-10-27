@@ -12,6 +12,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { rewriteRelativeLinks } from "./plane-link-rewrite.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const out = resolve(process.argv[2] ?? join(root, "dist/plane-pages"));
@@ -36,7 +37,9 @@ for (const [num, title, sources] of PAGES) {
   const present = sources.filter((s) => existsSync(join(root, s)));
   const file = `${num}-${title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-$/, "")}.md`;
   const body = present.length
-    ? present.map((s) => `<!-- source: ${repo}${s} -->\n\n${readFileSync(join(root, s), "utf8").trim()}`).join("\n\n---\n\n")
+    ? present
+        .map((s) => `<!-- source: ${repo}${s} -->\n\n${rewriteRelativeLinks(readFileSync(join(root, s), "utf8").trim(), s, repo)}`)
+        .join("\n\n---\n\n")
     : "_No source document exists yet. This page is intentionally empty; do not publish it as content._";
   const head = `# ${num} ${title}\n\n_Generated from commit ${sha}. Source of truth: the linked repo files. Edit them in GitHub, not here._\n\n${present.map((s) => `- [${s}](${repo}${s})`).join("\n")}\n\n`;
   writeFileSync(join(out, file), head + body + "\n");
