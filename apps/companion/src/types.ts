@@ -1,5 +1,6 @@
 import type { en } from './i18n/en.ts';
 import type { InboxBellProps } from './confirm/types';
+import type { CompanionAuthState } from './auth/types';
 import type { AnimationLevel, AppSettings, LocaleCode, ThemeMode } from '@hashpass/ui/settings';
 import type { icons } from './icons';
 import type { sprites } from './sprites';
@@ -149,4 +150,11 @@ export type HeroProps = {
   hasArchive: boolean;
   onSetup: () => void;
   inbox: InboxBellProps;
+};
+
+export type GuestStartProps = {
+  auth: CompanionAuthState;
+  hasArchive: boolean;
+  onSignIn: () => Promise<void>;
+  onEmail: () => void;
 };

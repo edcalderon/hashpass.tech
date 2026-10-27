@@ -78,7 +78,10 @@ export const en = {
   'guest.per': '/ 24h',
   'guest.proposed': 'Proposed, not live yet.',
   'guest.cta': 'Continue with HASHPASS ID',
-  'guest.note': 'Sign-in is not connected yet.',
+  'guest.note': 'Use your HASHPASS ID, or continue with just your email. Confirming it is optional.',
+  'guest.noteEmail': 'Your email is saved on this device. Confirm it from the bell at the top.',
+  'guest.email': 'Continue with email',
+  'guest.signedIn': 'Signed in as {email}.',
 
   'cap.eyebrow': 'What you get',
   'cap.title': 'Guest or HASHPASS ID',

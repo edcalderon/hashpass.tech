@@ -80,7 +80,10 @@ export const es: Record<MessageKey, string> = {
   'guest.per': '/ 24 h',
   'guest.proposed': 'Propuesta, aún no está en vivo.',
   'guest.cta': 'Continuar con HASHPASS ID',
-  'guest.note': 'El inicio de sesión aún no está conectado.',
+  'guest.note': 'Usa tu HASHPASS ID o continúa solo con tu correo. Confirmarlo es opcional.',
+  'guest.noteEmail': 'Tu correo está guardado en este dispositivo. Confírmalo desde la campana de arriba.',
+  'guest.email': 'Continuar con correo',
+  'guest.signedIn': 'Sesión iniciada como {email}.',
 
   'cap.eyebrow': 'Qué obtienes',
   'cap.title': 'Invitado o HASHPASS ID',

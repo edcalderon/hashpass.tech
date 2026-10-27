@@ -12,7 +12,7 @@ import { useCompanionAuth } from './auth/useCompanionAuth';
 import { resolveGate } from './sma/gate';
 import { InboxBell } from './confirm/InboxBell';
 import { useEmailConfirmation } from './confirm/useEmailConfirmation';
-import type { CapabilityValue, DemoAction, HeroProps, IconKey, PetMood } from './types';
+import type { CapabilityValue, DemoAction, GuestStartProps, HeroProps, IconKey, PetMood } from './types';
 
 const QuestGame = lazy(() => import('./game/QuestGame').then((m) => ({ default: m.QuestGame })));
 const IntroFilm = lazy(() => import('./film/IntroFilm').then((m) => ({ default: m.IntroFilm })));
@@ -158,7 +158,7 @@ function Evolution() {
   );
 }
 
-function GuestStart() {
+function GuestStart({ auth, hasArchive, onSignIn, onEmail }: GuestStartProps) {
   const { t } = useSettings();
   const reveal = useReveal<HTMLDivElement>();
   return (
@@ -184,10 +184,22 @@ function GuestStart() {
             <strong>{t('guest.turns', { n: proposedGuestTurns })}</strong> {t('guest.per')}
           </p>
           <p className="muted">{t('guest.proposed')}</p>
-          <button type="button" className="btn btn--primary btn--block" disabled aria-describedby="id-note">
-            {t('guest.cta')}
-          </button>
-          <p id="id-note" className="muted meter__note">{t('guest.note')}</p>
+          {auth.status === 'signed-in' && auth.user ? (
+            <p className="meter__line" role="status">{t('guest.signedIn', { email: auth.user.email })}</p>
+          ) : (
+            <div className="meter__actions">
+              <button type="button" className="btn btn--primary btn--block" onClick={() => void onSignIn()} disabled={auth.status === 'loading'} aria-describedby="id-note">
+                <Icon name="lock" /> {t('guest.cta')}
+              </button>
+              {!hasArchive && (
+                <button type="button" className="btn btn--ghost btn--block" onClick={onEmail} aria-describedby="id-note">
+                  <Icon name="chat" /> {t('guest.email')}
+                </button>
+              )}
+            </div>
+          )}
+          {auth.status === 'error' && <p className="muted meter__note" role="alert">{auth.error || t('control.auth.error')}</p>}
+          <p id="id-note" className="muted meter__note">{t(hasArchive ? 'guest.noteEmail' : 'guest.note')}</p>
         </div>
       </div>
     </section>
@@ -358,7 +370,7 @@ export function App() {
           onRetryAuth={auth.refresh}
         />}
         <Evolution />
-        <GuestStart />
+        <GuestStart auth={auth} hasArchive={sma.archive !== null} onSignIn={auth.signIn} onEmail={() => setSetupDismissed(false)} />
         {archive && <SmaMemoryPanel archive={archive} onRemember={sma.remember} onReset={sma.reset} onExport={sma.exportArchive} error={sma.error} />}
         <Capabilities />
         <Rules />

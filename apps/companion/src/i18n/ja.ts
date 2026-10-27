@@ -80,7 +80,10 @@ export const ja: Record<MessageKey, string> = {
   'guest.per': '/ 24時間',
   'guest.proposed': '提案段階で、まだ公開されていません。',
   'guest.cta': 'HASHPASS ID で続ける',
-  'guest.note': 'サインインはまだ接続されていません。',
+  'guest.note': 'HASHPASS ID を使うか、メールだけで続けられます。確認は任意です。',
+  'guest.noteEmail': 'メールはこの端末に保存されています。上部のベルから確認できます。',
+  'guest.email': 'メールで続ける',
+  'guest.signedIn': '{email} としてサインイン中です。',
 
   'cap.eyebrow': 'できること',
   'cap.title': 'ゲストか HASHPASS ID か',

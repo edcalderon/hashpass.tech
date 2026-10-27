@@ -322,7 +322,8 @@
     "non-custodial-wallet": [
       "db/migrations/V097__non_custodial_wallet_enrollment.sql",
       "db/migrations/V137__wallet_vault.sql",
-      "db/migrations/V138__wallet_pin_recovery.sql"
+      "db/migrations/V138__wallet_pin_recovery.sql",
+      "db/migrations/V154__companion_email_confirmation_purpose.sql"
     ],
     "speaker-directory-status": [
       "db/migrations/V139__speaker_directory_status.sql"
