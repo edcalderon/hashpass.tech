@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
+import { ActionButton, Badge, FormField, Surface } from '@hashpass/ui/primitives';
 import { Icon } from '../Pixel';
 import { useSettings } from '../settings/SettingsContext';
 import { createControlPlaneModel, createDraftCompanion } from './model';
@@ -15,9 +16,12 @@ function downloadArchive(serialized: string) {
 }
 
 function CompanionCard({companion}: CompanionCardProps) {
-  const {t} = useSettings();
+  const {t, isDark} = useSettings();
+  const mode = isDark ? 'dark' : 'light';
   return (
-    <li className="control-plane__companion">
+    <li>
+      <Surface mode={mode}>
+      <div className="control-plane__companion">
       <div className="control-plane__companion-mark" aria-hidden="true"><Icon name={companion.role === 'manager' ? 'star' : 'book'} /></div>
       <div className="control-plane__companion-main">
         <div className="control-plane__companion-heading">
@@ -25,9 +29,9 @@ function CompanionCard({companion}: CompanionCardProps) {
             <h4 className="h3">{companion.name}</h4>
             <p className="muted">{t(`control.companion.role.${companion.role}`)}</p>
           </div>
-          <span className={`control-plane__status control-plane__status--${companion.status}`}>
+          <Badge mode={mode} tone={companion.status === 'active' ? 'accent' : 'neutral'} compact>
             {t(`control.companion.status.${companion.status}`)}
-          </span>
+          </Badge>
         </div>
         <dl className="control-plane__facts">
           <div><dt>{t('control.companion.controller')}</dt><dd>{t(`control.companion.controller.${companion.controller}`)}</dd></div>
@@ -36,12 +40,15 @@ function CompanionCard({companion}: CompanionCardProps) {
         </dl>
         <code className="control-plane__id">{companion.id}</code>
       </div>
+      </div>
+      </Surface>
     </li>
   );
 }
 
 export function CompanionControlPanel({archive, onExport, auth, onSignIn, onSignOut, onRetryAuth}: CompanionControlPanelProps) {
-  const {t} = useSettings();
+  const {t, isDark} = useSettings();
+  const mode = isDark ? 'dark' : 'light';
   const model = useMemo(() => createControlPlaneModel(archive), [archive]);
   const [companions, setCompanions] = useState(model.companions);
   const [showCreate, setShowCreate] = useState(false);
@@ -55,8 +62,8 @@ export function CompanionControlPanel({archive, onExport, auth, onSignIn, onSign
   }, [model]);
 
   const slotsRemaining = model.plan.included - companions.length;
-  const createCompanion = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const createCompanion = (event?: FormEvent<HTMLFormElement>) => {
+    event?.preventDefault();
     const trimmed = name.trim();
     if (!trimmed || slotsRemaining <= 0) return;
     setCompanions((current) => [...current, createDraftCompanion(trimmed, current.length + 1)]);
@@ -106,27 +113,28 @@ export function CompanionControlPanel({archive, onExport, auth, onSignIn, onSign
                 <p className="control-plane__label">{t('control.fleet.label')}</p>
                 <h3 className="h3">{t('control.fleet.title')}</h3>
               </div>
-              <button type="button" className="btn btn--tint" onClick={() => setShowCreate((current) => !current)} disabled={slotsRemaining <= 0}>
-                <Icon name="star" /> {t('control.create.button')}
-              </button>
+              <ActionButton mode={mode} variant="secondary" label={t('control.create.button')} leadingIcon={<Icon name="star" />} onPress={() => setShowCreate((current) => !current)} disabled={slotsRemaining <= 0} />
             </div>
             <p className="muted control-plane__fleet-lead">{t('control.fleet.lead')}</p>
             <ul className="control-plane__companions" aria-label={t('control.fleet.title')}>
               {companions.map((companion) => <CompanionCard key={companion.id} companion={companion} />)}
             </ul>
             {showCreate && (
-              <form className="control-plane__create" onSubmit={createCompanion}>
+              <form onSubmit={createCompanion}>
+               <Surface mode={mode}>
+                <div className="control-plane__create">
                 <div>
                   <p className="control-plane__label">{t('control.create.eyebrow')}</p>
                   <h4 className="h3">{t('control.create.title')}</h4>
                   <p className="muted">{t('control.create.body')}</p>
                 </div>
-                <label htmlFor="draft-companion-name">{t('control.create.name')}</label>
-                <input id="draft-companion-name" value={name} onChange={(event) => setName(event.target.value)} required />
+                <FormField mode={mode} label={t('control.create.name')} value={name} onChangeText={setName} onSubmitEditing={() => createCompanion()} returnKeyType="done" />
                 <div className="control-plane__create-actions">
-                  <button type="submit" className="btn btn--primary"><Icon name="check" /> {t('control.create.submit')}</button>
-                  <button type="button" className="link" onClick={() => setShowCreate(false)}>{t('control.create.cancel')}</button>
+                  <ActionButton mode={mode} label={t('control.create.submit')} leadingIcon={<Icon name="check" />} onPress={() => createCompanion()} disabled={!name.trim()} />
+                  <ActionButton mode={mode} variant="ghost" label={t('control.create.cancel')} onPress={() => setShowCreate(false)} />
                 </div>
+                </div>
+               </Surface>
               </form>
             )}
             {notice && <p className="control-plane__notice" role="status">{notice}</p>}
@@ -148,17 +156,17 @@ export function CompanionControlPanel({archive, onExport, auth, onSignIn, onSign
             {auth.status === 'error' && (
               <>
                 <p className="control-plane__auth-error">{auth.error || t('control.auth.error')}</p>
-                <button type="button" className="btn btn--tint btn--block" onClick={() => void onRetryAuth()}>{t('control.auth.retry')}</button>
+                <ActionButton mode={mode} variant="secondary" label={t('control.auth.retry')} onPress={() => void onRetryAuth()} />
               </>
             )}
             {auth.status === 'signed-out' && (
-              <button type="button" className="btn btn--primary btn--block" onClick={() => void onSignIn()}>{t('control.auth.cta')}</button>
+              <ActionButton mode={mode} label={t('control.auth.cta')} onPress={() => void onSignIn()} />
             )}
             {auth.status === 'signed-in' && auth.user && (
               <div className="control-plane__identity">
                 <strong>{auth.user.name || auth.user.email}</strong>
                 <code>{auth.user.email}</code>
-                <button type="button" className="btn btn--tint btn--block" onClick={() => void onSignOut()}>{t('control.auth.signOut')}</button>
+                <ActionButton mode={mode} variant="secondary" label={t('control.auth.signOut')} onPress={() => void onSignOut()} />
               </div>
             )}
             <p className="muted control-plane__fineprint">{t('control.auth.note')}</p>
@@ -167,7 +175,7 @@ export function CompanionControlPanel({archive, onExport, auth, onSignIn, onSign
                 <p className="control-plane__label">{t('control.export.label')}</p>
                 <p className="muted">{t('control.export.body')}</p>
               </div>
-              <button type="button" className="btn btn--tint btn--block" onClick={() => downloadArchive(onExport())}>{t('control.export.cta')}</button>
+              <ActionButton mode={mode} variant="secondary" label={t('control.export.cta')} onPress={() => downloadArchive(onExport())} />
             </div>
           </aside>
         </div>

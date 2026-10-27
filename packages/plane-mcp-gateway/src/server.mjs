@@ -3,6 +3,7 @@ import {createGatewayHandler} from "./gateway.mjs";
 import {createTokenVerifier} from "./token-verifier.mjs";
 import {createPlanePages} from "./plane-pages.mjs";
 import {createStatusGate} from "./status-gate.mjs";
+import {sendResponse} from "./http-response.mjs";
 
 const required = (name) => {
   const value = process.env[name]?.trim();
@@ -70,10 +71,7 @@ const server = http.createServer(async (incoming, outgoing) => {
       duplex: body ? "half" : undefined,
     });
     const response = (await statusGate(request)) ?? (await handler(request));
-    outgoing.writeHead(response.status, Object.fromEntries(response.headers.entries()));
-    if (!response.body) return outgoing.end();
-    for await (const chunk of response.body) outgoing.write(chunk);
-    outgoing.end();
+    await sendResponse(response, outgoing);
   } catch {
     outgoing.writeHead(500, {"content-type": "text/plain", "cache-control": "no-store"});
     outgoing.end("Internal Server Error\n");
