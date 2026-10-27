@@ -185,6 +185,13 @@ export async function checkCompanionDeploymentOrder({
     );
   }
 
+  if (compareVersions(development.version, expected) < 0) {
+    console.warn(
+      `Companion development is stale: live ${development.version}, source ${expected}. ` +
+        'Republish the exact develop artifact before the next Companion release.',
+    );
+  }
+
   return { expected, production, development };
 }
 

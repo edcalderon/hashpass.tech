@@ -213,7 +213,12 @@ function ensureLiveDeploymentOrder(options, sourceVersion) {
     return;
   }
 
-  const args = [COMPANION_DEPLOYMENT_GUARD, '--source-version', sourceVersion];
+  const args = [
+    COMPANION_DEPLOYMENT_GUARD,
+    '--source-version',
+    sourceVersion,
+    '--require-development-match',
+  ];
   if (process.env.COMPANION_PRODUCTION_URL) {
     args.push('--production-url', process.env.COMPANION_PRODUCTION_URL);
   }

@@ -179,8 +179,9 @@ Before the bump, `release-companion.js` runs
 in `.github/workflows/companion.yml` on every Companion PR and push. It fails
 if either live host is newer than the checked-out `develop` version; this
 prevents a manually published production artifact from getting ahead of the
-source release stream. Existing stale development artifacts are reported and
-must be republished from `develop` with the generated
+source release stream. The release command additionally requires development
+parity before creating a new Companion tag. Existing stale development
+artifacts are reported and must be republished from `develop` with the generated
 `/companion-version.json` manifest. `COMPANION_SKIP_LIVE_GUARD=1` is an
 emergency recovery escape hatch only.
 
