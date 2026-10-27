@@ -1,6 +1,6 @@
 import {parseFragment} from "parse5";
 import {Schema} from "prosemirror-model";
-import {prosemirrorJSONToYDoc, yXmlFragmentToProseMirrorRootNode} from "y-prosemirror";
+import {prosemirrorJSONToYDoc, prosemirrorJSONToYXmlFragment, yXmlFragmentToProseMirrorRootNode} from "y-prosemirror";
 import * as Y from "yjs";
 
 const nodeAttrs = (node) => Object.fromEntries((node.attrs ?? []).map(({name, value}) => [name, value]));
@@ -253,9 +253,25 @@ export function htmlToDocumentJson(html) {
   return {type: "doc", content: content.length ? content : [{type: "paragraph", attrs: {textAlign: null}}]};
 }
 
-export function documentFormatsFromHtml(html) {
+/**
+ * Formats Plane stores for a page body. With `existingBinary` (the page's current Y.js state) the new content
+ * REPLACES the old inside that same document: a fresh document has new client ids, so Plane would merge it with
+ * the stored one and keep both versions stacked.
+ */
+export function documentFormatsFromHtml(html, existingBinary = null) {
   const documentJson = htmlToDocumentJson(html);
-  const yDoc = prosemirrorJSONToYDoc(schema, documentJson, "default");
+  let yDoc;
+  if (existingBinary?.length) {
+    yDoc = new Y.Doc();
+    Y.applyUpdate(yDoc, existingBinary);
+    const fragment = yDoc.getXmlFragment("default");
+    yDoc.transact(() => {
+      fragment.delete(0, fragment.length);
+      prosemirrorJSONToYXmlFragment(schema, documentJson, fragment);
+    });
+  } else {
+    yDoc = prosemirrorJSONToYDoc(schema, documentJson, "default");
+  }
   const normalizedJson = yXmlFragmentToProseMirrorRootNode(yDoc.getXmlFragment("default"), schema).toJSON();
   return {
     description_binary: Buffer.from(Y.encodeStateAsUpdate(yDoc)).toString("base64"),

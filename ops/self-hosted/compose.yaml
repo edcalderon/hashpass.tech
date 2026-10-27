@@ -10,6 +10,8 @@ services:
     env_file: .env
     volumes:
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      # Outside the rsync-managed runtime root, so a deploy never deletes the published page.
+      - /opt/hashpass/status:/srv/status:ro
       - caddy_data:/data
       - caddy_config:/config
     networks: [ops]

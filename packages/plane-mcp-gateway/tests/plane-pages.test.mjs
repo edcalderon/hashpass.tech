@@ -1,7 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
+import * as Y from "yjs";
 import {createGatewayHandler} from "../src/gateway.mjs";
+import {documentFormatsFromHtml, htmlToDocumentJson} from "../src/plane-document.mjs";
 import {createPlanePages, PlanePageError} from "../src/plane-pages.mjs";
 
 const PROJECT = "8c6755ef-6d32-4076-9173-a6b06db7fc40";
@@ -32,6 +34,7 @@ function fakePlane({signInWorks = true, expireSessionOnce = false} = {}) {
       return new Response(JSON.stringify({detail: "Authentication credentials were not provided."}), {status: 401});
     }
     if (!(init.headers?.cookie ?? "").includes("session-id=")) return new Response("{}", {status: 401});
+    if (pathname.endsWith("/description/") && (init.method ?? "GET") === "GET") return new Response(new Uint8Array(), {status: 200});
     if (init.method === "DELETE" && pathname.endsWith(`${PAGE}/`)) return new Response(null, {status: 204});
     return new Response(JSON.stringify({id: PAGE, name: "Echo", pathname}), {status: init.method === "POST" ? 201 : 200});
   };
@@ -218,4 +221,28 @@ test("without a page account configured, page calls keep going upstream", async 
   await handler(toolCall({action: "list", project_id: PROJECT}));
 
   assert.equal(upstreamHit, true);
+});
+
+const headings = (formats) => formats.description_json.content.filter((n) => n.type === "heading").map((n) => n.content[0].text);
+
+test("updating replaces the stored document instead of merging a second copy into it", () => {
+  const first = documentFormatsFromHtml("<h2>Old</h2><p>one</p><h2>Shared</h2>");
+  const stored = Buffer.from(first.description_binary, "base64");
+
+  const next = documentFormatsFromHtml("<h2>New</h2><p>two</p>", stored);
+
+  assert.deepEqual(headings(next), ["New"]);
+  const reloaded = new Y.Doc();
+  Y.applyUpdate(reloaded, Buffer.from(next.description_binary, "base64"));
+  assert.equal(reloaded.getXmlFragment("default").length, 2);
+});
+
+test("a fresh document merged with a stored one keeps both, which is why updates must reuse the stored state", () => {
+  const stored = documentFormatsFromHtml("<h2>Old</h2>");
+  const fresh = documentFormatsFromHtml("<h2>New</h2>");
+  const merged = new Y.Doc();
+  Y.applyUpdate(merged, Buffer.from(stored.description_binary, "base64"));
+  Y.applyUpdate(merged, Buffer.from(fresh.description_binary, "base64"));
+  assert.equal(merged.getXmlFragment("default").length, 2);
+  assert.ok(htmlToDocumentJson("<h2>x</h2>").content.length === 1);
 });

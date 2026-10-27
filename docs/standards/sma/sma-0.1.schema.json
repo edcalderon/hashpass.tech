@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hashpass.tech/spec/sma/0.1/schema.json",
+  "title": "Sovereign Memory Archive v0.1 manifest",
+  "type": "object",
+  "required": ["$schema", "type", "smaVersion", "archiveId", "agent", "soul", "memory", "storage", "privacy", "proofs"],
+  "properties": {
+    "$schema": { "const": "https://hashpass.tech/spec/sma/0.1/schema.json" },
+    "type": { "const": "sma.manifest" },
+    "smaVersion": { "const": "0.1" },
+    "archiveId": { "type": "string", "minLength": 1 },
+    "agent": {
+      "type": "object",
+      "required": ["did", "kind", "controller"],
+      "properties": {
+        "did": { "type": "string", "pattern": "^did:" },
+        "kind": { "type": "string", "minLength": 1 },
+        "controller": { "type": "string", "minLength": 1 },
+        "name": { "type": "string" },
+        "verificationMethods": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    },
+    "soul": {
+      "type": "object",
+      "required": ["version", "digest", "visibility"],
+      "properties": {
+        "version": { "type": "integer", "minimum": 1 },
+        "digest": { "$ref": "#/$defs/digest" },
+        "visibility": { "$ref": "#/$defs/visibility" },
+        "previous": { "$ref": "#/$defs/objectRef" },
+        "object": { "type": "object" },
+        "objectRef": { "$ref": "#/$defs/objectRef" }
+      },
+      "additionalProperties": false
+    },
+    "memory": {
+      "type": "object",
+      "required": ["root", "sequence"],
+      "properties": {
+        "root": { "$ref": "#/$defs/digest" },
+        "sequence": { "type": "integer", "minimum": 0 },
+        "previousRoot": { "$ref": "#/$defs/digest" },
+        "recordCount": { "type": "integer", "minimum": 0 },
+        "rootRef": { "$ref": "#/$defs/objectRef" }
+      },
+      "additionalProperties": false
+    },
+    "storage": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["kind", "role"],
+        "properties": {
+          "kind": { "enum": ["filesystem", "database", "object-store", "ipfs", "ipns", "ens", "ethereum", "other"] },
+          "role": { "enum": ["archive", "current-root", "backup", "anchor"] },
+          "uri": { "type": "string" },
+          "contentDigest": { "$ref": "#/$defs/digest" },
+          "encryption": { "type": "string" },
+          "retention": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "privacy": {
+      "type": "object",
+      "required": ["defaultVisibility", "encryption", "publicAnchor"],
+      "properties": {
+        "defaultVisibility": { "$ref": "#/$defs/visibility" },
+        "encryption": { "enum": ["required", "optional", "none"] },
+        "publicAnchor": { "enum": ["none", "commitment-only", "encrypted-pointer"] },
+        "deletion": { "type": "string" },
+        "keyManagement": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "proofs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["type", "verificationMethod", "created", "proofValue", "objectDigest"],
+        "properties": {
+          "type": { "type": "string", "minLength": 1 },
+          "verificationMethod": { "type": "string", "minLength": 1 },
+          "created": { "type": "string", "format": "date-time" },
+          "proofPurpose": { "enum": ["assertionMethod", "authentication", "controllerSignature", "anchorAuthorization"] },
+          "proofValue": { "type": "string", "minLength": 1 },
+          "objectDigest": { "$ref": "#/$defs/digest" }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "patternProperties": {
+    "^x-": {}
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "digest": {
+      "type": "string",
+      "pattern": "^(sha256|cid):[^\\s]+$"
+    },
+    "objectRef": {
+      "type": "string",
+      "minLength": 1
+    },
+    "visibility": {
+      "enum": ["public", "internal", "private", "sensitive", "secret"]
+    }
+  }
+}

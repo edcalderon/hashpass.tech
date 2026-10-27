@@ -22,22 +22,43 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610270548, // Updated to current timestamp
+  buildNumber: 202610270748, // Updated to current timestamp
   releaseDate: '2026-10-27',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'serve Plane page tool from the gateway via a service account'
+    'publish the command center at work.hashpass.tech/status',
+    'replace page bodies in place and publish the visual command center',
+    'publish generated pages through the page account',
+    'add local SMA companion memory'
   ],
   bugfixes: [
     // No bugfixes
   ],
   breakingChanges: [],
-  notes: 'serve Plane page tool from the gateway via a service account'
+  notes: 'publish the command center at work.hashpass.tech/status; replace page bodies in place and publish the visual command center; publish generated pages through the page account; add local SMA companion memory'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.162': {
+    version: '1.9.162',
+    buildNumber: 202610270748,
+    releaseDate: '2026-10-27',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'publish the command center at work.hashpass.tech/status',
+      'replace page bodies in place and publish the visual command center',
+      'publish generated pages through the page account',
+      'add local SMA companion memory'
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'publish the command center at work.hashpass.tech/status; replace page bodies in place and publish the visual command center; publish generated pages through the page account; add local SMA companion memory'
+  },
   '1.9.161': {
     version: '1.9.161',
     buildNumber: 202610270548,

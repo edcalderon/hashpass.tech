@@ -102,3 +102,13 @@ test("validates and recreates Caddy after deploying mounted route changes", () =
   assert.ok(recreate > validate);
   assert.doesNotMatch(deploy, /caddy reload/);
 });
+
+test("serves the public status page from a read-only mount and keeps Plane behind the default handler", async () => {
+  const edge = await readFile(new URL("../compose.yaml", import.meta.url), "utf8");
+  assert.match(caddy, /@status path \/status \/status\//);
+  assert.match(caddy, /root \* \/srv\/status/);
+  assert.match(caddy, /handle \{\s*reverse_proxy proxy:80\s*\}/);
+  assert.match(edge, /\/opt\/hashpass\/status:\/srv\/status:ro/);
+  // The runtime root is rsynced with --delete-delay, so the page must live outside it.
+  assert.doesNotMatch(edge, /\.\/status:/);
+});
