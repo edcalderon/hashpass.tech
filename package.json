@@ -1,7 +1,7 @@
 {
   "name": "hashpass.tech",
   "main": "index.js",
-  "version": "1.9.158",
+  "version": "1.9.160",
   "packageManager": "pnpm@9.15.5",
   "pnpm": {
     "overrides": {
@@ -68,6 +68,7 @@
     "dev:mobile": "npm run env:propagate local && pnpm --filter hashpass-mobile-app dev",
     "dev:club": "pnpm --filter hashpass-club-web dev",
     "dev:web-app": "pnpm --filter hashpass-club-web dev",
+    "dev:companion": "pnpm --filter @hashpass/companion dev",
     "dev:directus": "pnpm --filter hashpass-directus dev",
     "dev:video-studio": "pnpm --filter hashpass-video-studio dev",
     "dev:all": "npm run env:propagate local && bash ./packages/tools/scripts/dev-all.sh",

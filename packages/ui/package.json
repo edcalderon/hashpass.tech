@@ -8,7 +8,9 @@
     ".": "./src/index.ts",
     "./CaptchaWidget": "./src/CaptchaWidget.tsx",
     "./tokens": "./src/system/tokens.ts",
-    "./primitives": "./src/system/primitives.tsx"
+    "./primitives": "./src/system/primitives.tsx",
+    "./settings": "./src/settings/index.ts",
+    "./settings-menu": "./src/settings/SettingsMenu.tsx"
   },
   "scripts": {
     "build": "tsc --noEmit",

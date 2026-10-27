@@ -147,8 +147,8 @@ test("write tools require plane:write", () => {
   assert.equal(allowed.allowed, true);
 });
 
-test("MCP initialize, tools/list, and ping require plane:read", () => {
-  for (const method of ["initialize", "tools/list", "ping"]) {
+test("MCP initialize, discovery, tools/list, and ping require plane:read", () => {
+  for (const method of ["initialize", "server/discover", "tools/list", "ping"]) {
     const body = {jsonrpc: "2.0", id: 1, method, params: {}};
     const denied = authorizePlaneRequest(request({body, scopes: []}));
     const allowed = authorizePlaneRequest(request({body, scopes: ["plane:read"]}));

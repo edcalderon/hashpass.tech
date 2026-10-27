@@ -5,6 +5,7 @@ MOBILE_PID=""
 CLUB_PID=""
 DOCS_PID=""
 VIDEO_STUDIO_PID=""
+COMPANION_PID=""
 LINKS_API_PID=""
 LOCALPROOF_PID=""
 LUKAS_PID=""
@@ -13,6 +14,9 @@ declare -a RESERVED_PORTS=()
 CLUB_PORT="${CLUB_PORT:-3000}"
 DOCS_PORT="${DOCS_PORT:-3101}"
 VIDEO_STUDIO_PORT="${VIDEO_STUDIO_PORT:-3105}"
+# Companion preview (apps/companion, Vite). Same port the Vite default uses; --strictPort below
+# makes a clash a hard failure like every other service here.
+COMPANION_PORT="${COMPANION_PORT:-5173}"
 LOCALPROOF_PORT="${LOCALPROOF_PORT:-3200}"
 LUKAS_LANDING_PORT="${LUKAS_LANDING_PORT:-4173}"
 # Keep the Expo web app on 8081 so it stays out of the club app's 3000 slot.
@@ -320,6 +324,11 @@ stop_background_apps() {
     wait "${VIDEO_STUDIO_PID}" >/dev/null 2>&1 || true
   fi
 
+  if [[ -n "${COMPANION_PID}" ]]; then
+    kill "${COMPANION_PID}" >/dev/null 2>&1 || true
+    wait "${COMPANION_PID}" >/dev/null 2>&1 || true
+  fi
+
   if [[ -n "${LINKS_API_PID}" ]]; then
     kill "${LINKS_API_PID}" >/dev/null 2>&1 || true
     wait "${LINKS_API_PID}" >/dev/null 2>&1 || true
@@ -391,6 +400,8 @@ claim_port "video studio" "${VIDEO_STUDIO_PORT}" || exit 1
 VIDEO_STUDIO_PORT="${REPLY_PORT}"
 claim_port "hashpass-links-api" "${LINKS_API_PORT}" || exit 1
 LINKS_API_PORT="${REPLY_PORT}"
+claim_port "companion app" "${COMPANION_PORT}" || exit 1
+COMPANION_PORT="${REPLY_PORT}"
 
 if [[ "${INCLUDE_LUKAS_LANDING}" == "true" ]]; then
   claim_port "Lukas landing" "${LUKAS_LANDING_PORT}" || exit 1
@@ -431,13 +442,13 @@ if [[ "${INCLUDE_LOCALPROOF}" == "true" ]]; then
 fi
 
 if [[ "${SKIP_FRAPPE_HELPDESK}" != "true" && "${INCLUDE_LOCALPROOF}" == "true" ]]; then
-  echo "Using ports: mobile=${MOBILE_PORT}, club=${CLUB_PORT}, docs=${DOCS_PORT}, video-studio=${VIDEO_STUDIO_PORT}, links-api=${LINKS_API_PORT}, frappe-helpdesk=${FRAPPE_HELPDESK_PORT}, localproof=${LOCALPROOF_PORT}"
+  echo "Using ports: mobile=${MOBILE_PORT}, club=${CLUB_PORT}, docs=${DOCS_PORT}, video-studio=${VIDEO_STUDIO_PORT}, companion=${COMPANION_PORT}, links-api=${LINKS_API_PORT}, frappe-helpdesk=${FRAPPE_HELPDESK_PORT}, localproof=${LOCALPROOF_PORT}"
 elif [[ "${SKIP_FRAPPE_HELPDESK}" != "true" ]]; then
-  echo "Using ports: mobile=${MOBILE_PORT}, club=${CLUB_PORT}, docs=${DOCS_PORT}, video-studio=${VIDEO_STUDIO_PORT}, links-api=${LINKS_API_PORT}, frappe-helpdesk=${FRAPPE_HELPDESK_PORT}"
+  echo "Using ports: mobile=${MOBILE_PORT}, club=${CLUB_PORT}, docs=${DOCS_PORT}, video-studio=${VIDEO_STUDIO_PORT}, companion=${COMPANION_PORT}, links-api=${LINKS_API_PORT}, frappe-helpdesk=${FRAPPE_HELPDESK_PORT}"
 elif [[ "${INCLUDE_LOCALPROOF}" == "true" ]]; then
-  echo "Using ports: mobile=${MOBILE_PORT}, club=${CLUB_PORT}, docs=${DOCS_PORT}, video-studio=${VIDEO_STUDIO_PORT}, links-api=${LINKS_API_PORT}, localproof=${LOCALPROOF_PORT} (Frappe Helpdesk skipped)"
+  echo "Using ports: mobile=${MOBILE_PORT}, club=${CLUB_PORT}, docs=${DOCS_PORT}, video-studio=${VIDEO_STUDIO_PORT}, companion=${COMPANION_PORT}, links-api=${LINKS_API_PORT}, localproof=${LOCALPROOF_PORT} (Frappe Helpdesk skipped)"
 else
-  echo "Using ports: mobile=${MOBILE_PORT}, club=${CLUB_PORT}, docs=${DOCS_PORT}, video-studio=${VIDEO_STUDIO_PORT}, links-api=${LINKS_API_PORT} (Frappe Helpdesk skipped)"
+  echo "Using ports: mobile=${MOBILE_PORT}, club=${CLUB_PORT}, docs=${DOCS_PORT}, video-studio=${VIDEO_STUDIO_PORT}, companion=${COMPANION_PORT}, links-api=${LINKS_API_PORT} (Frappe Helpdesk skipped)"
 fi
 
 if [[ "${INCLUDE_LUKAS_LANDING}" == "true" ]]; then
@@ -521,6 +532,13 @@ echo "Starting docs app on port ${DOCS_PORT}..."
 ) &
 DOCS_PID=$!
 
+echo "Starting Companion preview on port ${COMPANION_PORT}..."
+(
+  cd apps/companion
+  pnpm exec vite --host 0.0.0.0 --port "${COMPANION_PORT}" --strictPort
+) &
+COMPANION_PID=$!
+
 echo "Starting video studio (Remotion) on port ${VIDEO_STUDIO_PORT}..."
 (
   cd apps/video-studio
@@ -570,7 +588,7 @@ echo "Starting mobile app..."
 MOBILE_PID=$!
 
 set +e
-WAIT_PIDS=("$MOBILE_PID" "$CLUB_PID" "$DOCS_PID" "$VIDEO_STUDIO_PID" "$LINKS_API_PID")
+WAIT_PIDS=("$MOBILE_PID" "$CLUB_PID" "$DOCS_PID" "$VIDEO_STUDIO_PID" "$COMPANION_PID" "$LINKS_API_PID")
 if [[ -n "${LUKAS_PID}" ]]; then
   WAIT_PIDS+=("${LUKAS_PID}")
 fi

@@ -1,29 +1,40 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { localeInfo } from '@hashpass/ui/settings';
 import { Sprite } from '../Pixel';
+import { useSettings } from '../settings/SettingsContext';
+import { cancelSpeech, speak } from '../voice';
 import type { Dialog, Game, Hud, Phase, StageKey } from '../types';
 import { advance, answer, openDialog } from './dialog';
 import { completeQuest, createGame, talkState, tickGame } from './engine';
 import { levels } from './levels';
+import { createPixelMusic } from './music';
 import { VIEW_H, VIEW_W, drawGame } from './render';
 
 const STEP_MS = 1000 / 60;
 const stageOrder: StageKey[] = ['hatchling', 'curious', 'helpful'];
 
 export function QuestGame({ onClose }: { onClose: () => void }) {
+  const { settings, t } = useSettings();
+  const tag = localeInfo(settings.language).speechTag;
   const dialogEl = useRef<HTMLDialogElement | null>(null);
   const canvasEl = useRef<HTMLCanvasElement | null>(null);
   const gameRef = useRef<Game>(createGame(levels[0]));
   const keys = useRef({ left: false, right: false, jump: false });
   const phaseRef = useRef<Phase>('intro');
   const stageRef = useRef<StageKey>('hatchling');
+  const musicRef = useRef(createPixelMusic());
+  const musicInteracted = useRef(false);
 
   const [levelIndex, setLevelIndex] = useState(0);
   const [phase, setPhaseState] = useState<Phase>('intro');
   const [stage, setStage] = useState<StageKey>('hatchling');
   const [talk, setTalk] = useState<Dialog>(openDialog());
   const [hud, setHud] = useState<Hud>({ collected: 0, need: 0, near: false, state: 'locked', falls: 0 });
+  const [musicPlaying, setMusicPlaying] = useState(false);
+  const [musicVolume, setMusicVolume] = useState(0.22);
 
   const level = levels[levelIndex];
+  const lv = (suffix: string) => t(`level.${level.id}.${suffix}`);
   const setPhase = useCallback((next: Phase) => {
     phaseRef.current = next;
     setPhaseState(next);
@@ -37,6 +48,26 @@ export function QuestGame({ onClose }: { onClose: () => void }) {
     };
   }, []);
 
+  useEffect(() => () => musicRef.current.dispose(), []);
+
+  const startMusic = () => {
+    musicInteracted.current = true;
+    void musicRef.current.start().then(
+      () => setMusicPlaying(true),
+      () => setMusicPlaying(false),
+    );
+  };
+
+  const toggleMusic = () => {
+    musicInteracted.current = true;
+    if (musicPlaying) {
+      musicRef.current.stop();
+      setMusicPlaying(false);
+    } else {
+      startMusic();
+    }
+  };
+
   const startLevel = useCallback(
     (index: number) => {
       gameRef.current = createGame(levels[index]);
@@ -49,6 +80,7 @@ export function QuestGame({ onClose }: { onClose: () => void }) {
   );
 
   const beginPlay = () => {
+    if (!musicInteracted.current) startMusic();
     setPhase('play');
     canvasEl.current?.focus();
   };
@@ -167,15 +199,21 @@ export function QuestGame({ onClose }: { onClose: () => void }) {
     canvasEl.current?.focus();
   };
 
-  const talkLine = () => {
-    const g = gameRef.current;
-    const state = talkState(g);
-    if (state === 'locked') return level.npcLockedSay;
-    if (state === 'done') return level.npcDoneSay;
-    return step?.say ?? '';
-  };
-
   const stateNow = talkState(gameRef.current);
+  const pickedReply = talk.picked !== null ? lv(`s${talk.step}.r${talk.picked}`) : null;
+  const talkLine = (() => {
+    if (stateNow === 'locked') return lv('locked');
+    if (stateNow === 'done') return lv('done');
+    return pickedReply ?? lv(`s${talk.step}`);
+  })();
+
+  // Voice-over: read the line the quest giver is showing right now, when the player turned voice on.
+  useEffect(() => {
+    if (phase !== 'talk' || !settings.voice) return undefined;
+    speak(talkLine, { lang: tag });
+    return () => cancelSpeech();
+  }, [phase, settings.voice, talkLine, tag]);
+
   const nextLevel = levels[levelIndex + 1];
 
   return (
@@ -190,17 +228,17 @@ export function QuestGame({ onClose }: { onClose: () => void }) {
     >
       <div className="quest__bar">
         <p id="quest-title" className="quest__title">
-          Quest {levelIndex + 1} of {levels.length} · {level.title}
+          {t('quest.title', { n: levelIndex + 1, total: levels.length, title: lv('title') })}
         </p>
-        <ol className="quest__stages" aria-label="Pet stage">
+        <ol className="quest__stages" aria-label={t('stage.aria')}>
           {stageOrder.map((s) => (
             <li key={s} className={s === stage ? 'is-now' : stageOrder.indexOf(s) < stageOrder.indexOf(stage) ? 'is-past' : ''} aria-current={s === stage ? 'step' : undefined}>
-              {s}
+              {t(`stage.${s}.name`)}
             </li>
           ))}
         </ol>
         <button type="button" className="btn btn--ghost quest__close" onClick={onClose}>
-          Close
+          {t('quest.close')}
         </button>
       </div>
 
@@ -212,52 +250,92 @@ export function QuestGame({ onClose }: { onClose: () => void }) {
           height={VIEW_H}
           tabIndex={0}
           role="img"
-          aria-label={`Platformer level ${levelIndex + 1}: ${level.title}. ${level.objective} Use arrow keys or A and D to move, Space to jump, E to talk.`}
+          aria-label={t('quest.canvas', { n: levelIndex + 1, title: lv('title'), objective: lv('objective') })}
         />
 
         <div className="quest__hud" aria-live="polite">
-          <span>{level.objective}</span>
+          <span>{lv('objective')}</span>
           {level.needTokens > 0 && (
             <strong>
-              {Math.min(hud.collected, level.needTokens)} / {level.needTokens} {level.tokenLabel}
+              {Math.min(hud.collected, level.needTokens)} / {level.needTokens} {lv('token')}
             </strong>
           )}
-          {hud.state === 'done' && <strong className="ok">Flag open</strong>}
+          {hud.state === 'done' && <strong className="ok">{t('quest.flagOpen')}</strong>}
+        </div>
+
+        <div className="quest__audio" aria-label={t('quest.musicControls')}>
+          <button type="button" className="quest__audio-toggle" aria-pressed={musicPlaying} onClick={toggleMusic}>
+            <span aria-hidden="true">♫</span> {musicPlaying ? t('quest.musicOn') : t('quest.musicOff')}
+          </button>
+          <label className="quest__volume">
+            <span>{t('quest.volume')}</span>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              value={musicVolume}
+              aria-label={t('quest.volume')}
+              onChange={(e) => {
+                const next = Number(e.currentTarget.value);
+                setMusicVolume(next);
+                musicRef.current.setVolume(next);
+              }}
+            />
+          </label>
         </div>
 
         {phase === 'intro' && (
-          <div className="quest__panel" role="group" aria-label="Level briefing">
-            <p className="eyebrow">{level.badge}</p>
-            <h2 className="h2">{level.title}</h2>
-            <p className="lead">{level.teaches}.</p>
-            <p>{level.objective}</p>
-            <p className="muted">Arrow keys or A / D to move, Space to jump, E to talk. On a phone use the buttons below.</p>
+          <div className="quest__panel" role="group" aria-label={t('quest.briefing')}>
+            <p className="eyebrow">{lv('badge')}</p>
+            <h2 className="h2">{lv('title')}</h2>
+            <p className="lead">{lv('teaches')}</p>
+            <p>{lv('objective')}</p>
+            <div className="quest__control-guide" aria-label={t('quest.controls')}>
+              <p className="quest__control-title">{t('quest.controlsTitle')}</p>
+              <div className="quest__control-grid">
+                <div className="quest__control-item">
+                  <div className="quest__keys" aria-hidden="true"><kbd>←</kbd><kbd>→</kbd><kbd>A</kbd><kbd>D</kbd></div>
+                  <span>{t('quest.move')}</span>
+                </div>
+                <div className="quest__control-item">
+                  <div className="quest__keys" aria-hidden="true"><kbd>SPACE</kbd><kbd>↑</kbd></div>
+                  <span>{t('quest.jump')}</span>
+                </div>
+                <div className="quest__control-item">
+                  <div className="quest__keys" aria-hidden="true"><kbd>E</kbd><kbd>ENTER</kbd></div>
+                  <span>{t('quest.talk')}</span>
+                </div>
+              </div>
+              <p className="muted quest__touch-note">{t('quest.touchHint')}</p>
+              <p className="muted quest__music-note"><span aria-hidden="true">♫</span> {t('quest.musicHint')}</p>
+            </div>
             <button type="button" className="btn btn--primary" onClick={beginPlay} autoFocus>
-              {levelIndex === 0 ? 'Start playing' : 'Go'}
+              {levelIndex === 0 ? t('quest.start') : t('quest.go')}
             </button>
           </div>
         )}
 
         {phase === 'talk' && (
-          <div className="quest__panel quest__panel--talk" role="group" aria-label={`${level.npcName} says`}>
-            <p className="eyebrow">{level.npcName}</p>
+          <div className="quest__panel quest__panel--talk" role="group" aria-label={t('quest.says', { name: lv('npc') })}>
+            <p className="eyebrow">{lv('npc')}</p>
             <p className="quest__say" role="status" aria-live="polite">
-              {stateNow === 'ready' ? (talk.feedback ?? step?.say ?? '') : talkLine()}
+              {talkLine}
             </p>
             {stateNow === 'ready' && step?.choices && !talk.right && (
               <div className="quest__choices">
-                {step.choices.map((c, i) => (
-                  <button key={c.label} type="button" className="btn btn--tint" onClick={() => setTalk((d) => answer(level, d, i))} autoFocus={i === 0}>
-                    {c.label}
+                {step.choices.map((_, i) => (
+                  <button key={i} type="button" className="btn btn--tint" onClick={() => setTalk((d) => answer(level, d, i))} autoFocus={i === 0}>
+                    {lv(`s${talk.step}.c${i}`)}
                   </button>
                 ))}
               </div>
             )}
-            {stateNow === 'ready' && talk.feedback && !talk.right && <p className="muted">Try again.</p>}
+            {stateNow === 'ready' && talk.picked !== null && !talk.right && <p className="muted">{t('quest.tryAgain')}</p>}
             <div className="quest__row">
               {stateNow !== 'ready' && (
                 <button type="button" className="btn btn--primary" onClick={() => setPhase('play')} autoFocus>
-                  Back to the map
+                  {t('quest.back')}
                 </button>
               )}
               {stateNow === 'ready' && (talk.right || (step && !step.choices)) && (
@@ -271,7 +349,7 @@ export function QuestGame({ onClose }: { onClose: () => void }) {
                     else setTalk(next);
                   }}
                 >
-                  {talk.step === level.npcSteps.length - 1 ? 'Done' : 'Next'}
+                  {talk.step === level.npcSteps.length - 1 ? t('quest.done') : t('quest.next')}
                 </button>
               )}
             </div>
@@ -279,57 +357,54 @@ export function QuestGame({ onClose }: { onClose: () => void }) {
         )}
 
         {phase === 'cleared' && (
-          <div className="quest__panel" role="group" aria-label="Level complete">
-            <p className="eyebrow">Level complete</p>
-            <h2 className="h2">{level.title}</h2>
-            {level.rewardStage && <p className="lead">Your pet grew into <strong>{level.rewardStage}</strong>.</p>}
-            {!level.rewardStage && <p className="lead">Nicely done. Next up: {nextLevel?.title}.</p>}
-            {hud.falls > 0 && <p className="muted">Falls: {hud.falls}. Nobody is counting.</p>}
+          <div className="quest__panel" role="group" aria-label={t('quest.cleared')}>
+            <p className="eyebrow">{t('quest.cleared')}</p>
+            <h2 className="h2">{lv('title')}</h2>
+            {level.rewardStage && <p className="lead">{t('quest.grew', { stage: t(`stage.${level.rewardStage}.name`) })}</p>}
+            {!level.rewardStage && <p className="lead">{t('quest.nextUp', { title: t(`level.${nextLevel?.id}.title`) })}</p>}
+            {hud.falls > 0 && <p className="muted">{t('quest.falls', { n: hud.falls })}</p>}
             <button type="button" className="btn btn--primary" onClick={() => startLevel(levelIndex + 1)} autoFocus>
-              Next quest
+              {t('quest.nextQuest')}
             </button>
           </div>
         )}
 
         {phase === 'end' && (
-          <div className="quest__panel" role="group" aria-label="Tutorial complete">
-            <p className="eyebrow">Tutorial complete</p>
-            <h2 className="h2">Flag captured</h2>
+          <div className="quest__panel" role="group" aria-label={t('quest.endEyebrow')}>
+            <p className="eyebrow">{t('quest.endEyebrow')}</p>
+            <h2 className="h2">{t('quest.endTitle')}</h2>
             <div className="quest__final">
               <Sprite name={stage} className="pet pet--card" />
-              <p className="lead">
-                That was a short showcase. The real Companion is not live yet: this page is a staging preview, nothing you did here was saved or sent, and
-                sign-in is not connected.
-              </p>
+              <p className="lead">{t('quest.endBody')}</p>
             </div>
             <div className="quest__row">
               <button type="button" className="btn btn--primary" disabled aria-describedby="quest-id-note">
-                Continue with HASHPASS ID
+                {t('quest.endId')}
               </button>
               <button type="button" className="btn btn--ghost" onClick={() => startLevel(0)}>
-                Play again
+                {t('quest.again')}
               </button>
               <button type="button" className="btn btn--ghost" onClick={onClose} autoFocus>
-                Back to the page
+                {t('quest.backPage')}
               </button>
             </div>
-            <p id="quest-id-note" className="muted">Sign-in is not connected on this preview.</p>
+            <p id="quest-id-note" className="muted">{t('quest.endNote')}</p>
           </div>
         )}
       </div>
 
-      <div className="quest__pad" aria-label="Touch controls">
+      <div className="quest__pad" aria-label={t('quest.pad')}>
         <div className="quest__pad-move">
-          <button type="button" className="pad" aria-label="Move left" {...hold('left')}>◀</button>
-          <button type="button" className="pad" aria-label="Move right" {...hold('right')}>▶</button>
+          <button type="button" className="pad" aria-label={t('quest.left')} {...hold('left')}>◀</button>
+          <button type="button" className="pad" aria-label={t('quest.right')} {...hold('right')}>▶</button>
         </div>
         <div className="quest__pad-act">
           {hud.near && phase === 'play' && (
             <button type="button" className="pad pad--talk" onClick={openTalk}>
-              Talk
+              {t('quest.talk')}
             </button>
           )}
-          <button type="button" className="pad pad--jump" aria-label="Jump" {...hold('jump')}>▲</button>
+          <button type="button" className="pad pad--jump" aria-label={t('quest.jump')} {...hold('jump')}>▲</button>
         </div>
       </div>
     </dialog>

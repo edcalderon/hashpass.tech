@@ -111,6 +111,7 @@ const READ_PROTOCOL_METHODS = new Set([
   "notifications/cancelled",
   "notifications/initialized",
   "ping",
+  "server/discover",
   "tools/list",
 ]);
 
