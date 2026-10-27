@@ -1,6 +1,7 @@
 import type { en } from './i18n/en.ts';
 import type { InboxBellProps } from './confirm/types';
 import type { CompanionAuthState } from './auth/types';
+import type { AccountMenuProps } from './account/types';
 import type { AnimationLevel, AppSettings, LocaleCode, ThemeMode } from '@hashpass/ui/settings';
 import type { icons } from './icons';
 import type { sprites } from './sprites';
@@ -149,7 +150,9 @@ export type FilmScene = {
 export type HeroProps = {
   hasArchive: boolean;
   onSetup: () => void;
-  inbox: InboxBellProps;
+  /** Both are null until someone is connected with a HASHPASS ID or a setup email. */
+  inbox: InboxBellProps | null;
+  account: AccountMenuProps | null;
 };
 
 export type GuestStartProps = {

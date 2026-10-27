@@ -11,6 +11,8 @@ import { useSmaArchive } from './sma/useSmaArchive';
 import { useCompanionAuth } from './auth/useCompanionAuth';
 import { resolveGate } from './sma/gate';
 import { InboxBell } from './confirm/InboxBell';
+import { AccountMenu } from './account/AccountMenu';
+import { buildAccountSummary, inboxOwnerEmail } from './account/model';
 import { useEmailConfirmation } from './confirm/useEmailConfirmation';
 import type { CapabilityValue, DemoAction, GuestStartProps, HeroProps, IconKey, PetMood } from './types';
 
@@ -27,7 +29,7 @@ const demoActions: DemoAction[] = [
   { id: 'chat', unlocks: null, mood: 'hi' },
 ];
 
-function Hero({ hasArchive, onSetup, inbox }: HeroProps) {
+function Hero({ hasArchive, onSetup, inbox, account }: HeroProps) {
   const { t } = useSettings();
   const [ref, inView] = useInView<HTMLElement>();
   const [mode, setMode] = useState<'none' | 'quest' | 'film'>('none');
@@ -37,8 +39,9 @@ function Hero({ hasArchive, onSetup, inbox }: HeroProps) {
       <div className="cloud cloud--a" aria-hidden="true"><Sprite name="cloud" /></div>
       <div className="cloud cloud--b" aria-hidden="true"><Sprite name="cloud" /></div>
       <div className="hero__bar">
-        <InboxBell {...inbox} />
+        {inbox && <InboxBell {...inbox} />}
         <CompanionSettings />
+        {account && <AccountMenu {...account} />}
       </div>
       <div className="wrap hero__inner">
         <p className="tag">
@@ -344,13 +347,15 @@ export function App() {
   const { t } = useSettings();
   const sma = useSmaArchive();
   const auth = useCompanionAuth();
-  const confirmation = useEmailConfirmation(sma.archive?.ownerEmail ?? null);
+  const authEmail = auth.status === 'signed-in' && auth.user ? auth.user.email : null;
+  const confirmation = useEmailConfirmation(inboxOwnerEmail(sma.archive?.ownerEmail ?? null, authEmail));
   const [setupDismissed, setSetupDismissed] = useState(false);
   const view = resolveGate(sma.status, sma.archive !== null, setupDismissed);
 
   if (view === 'loading') return <main className="sma-gate"><p role="status">{t('sma.loading')}</p></main>;
   if (view === 'setup') return <SmaSetup onComplete={sma.setup} onDismiss={() => setSetupDismissed(true)} error={sma.error} />;
   const archive = view === 'workspace' ? sma.archive : null;
+  const summary = buildAccountSummary({ authUser: auth.user ?? null, archive: sma.archive, setupEmailConfirmed: !confirmation.items.some((item) => item.kind === 'unconfirmed-email') });
 
   return (
     <>
@@ -358,7 +363,8 @@ export function App() {
       <Hero
         hasArchive={archive !== null}
         onSetup={() => setSetupDismissed(false)}
-        inbox={{ items: confirmation.items, ownerEmail: sma.archive?.ownerEmail ?? null, status: confirmation.status, errorKey: confirmation.errorKey, onSend: confirmation.send, onVerify: confirmation.verify }}
+        inbox={summary ? { items: confirmation.items, ownerEmail: inboxOwnerEmail(sma.archive?.ownerEmail ?? null, authEmail), status: confirmation.status, errorKey: confirmation.errorKey, onSend: confirmation.send, onVerify: confirmation.verify } : null}
+        account={summary ? { summary, signedIn: auth.status === 'signed-in', onSignIn: auth.signIn, onSignOut: auth.signOut, onExport: sma.exportArchive, onReset: sma.reset } : null}
       />
       <main>
         {archive && <CompanionControlPanel
