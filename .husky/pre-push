@@ -2,6 +2,7 @@
 set -e
 
 echo "🔍 Running pre-push validation..."
+node packages/tools/scripts/check-lockfiles.mjs
 if pnpm -s run typecheck; then
   echo "✅ Typecheck passed."
 else

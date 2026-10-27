@@ -63,6 +63,7 @@
     "legal:check": "node packages/tools/scripts/generate-legal-content.mjs --check",
     "legal:test": "node --test packages/tools/scripts/legal-content.test.mjs",
     "check:node": "node packages/tools/scripts/check-node-baseline.mjs",
+    "check:lockfiles": "node packages/tools/scripts/check-lockfiles.mjs",
     "preinstall": "node packages/tools/scripts/check-node-baseline.mjs",
     "dev": "npm run env:propagate local && pnpm --filter hashpass-mobile-app dev",
     "dev:mobile": "npm run env:propagate local && pnpm --filter hashpass-mobile-app dev",

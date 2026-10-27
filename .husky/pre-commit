@@ -27,6 +27,10 @@ if [ "$secret_scan_ran" -eq 0 ]; then
   exit 1
 fi
 
+# A manifest change without its lockfile passes every local check and then fails every CI job at the install
+# step (ERR_PNPM_OUTDATED_LOCKFILE), so catch it here. Skips itself when no manifest or lockfile is staged.
+node packages/tools/scripts/check-lockfiles.mjs --staged
+
 echo "📐 Checking type placement on staged changes..."
 TYPE_PLACEMENT_STAGED=1 pnpm -s run check:type-placement
 
