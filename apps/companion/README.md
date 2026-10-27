@@ -23,7 +23,7 @@ durable Companion creation still use the existing HASHPASS/Better Auth flow from
 browser session boundary without sending the local SMA to a service.
 
 <!-- COMPANION_RELEASE:START -->
-> **Current MVP release:** [v0.0.6](./CHANGELOG.md) · stable · 2026-10-27
+> **Current MVP release:** [v0.0.7](./CHANGELOG.md) · stable · 2026-10-27
 <!-- COMPANION_RELEASE:END -->
 
 ## Develop
