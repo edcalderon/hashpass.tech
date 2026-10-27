@@ -1,4 +1,5 @@
 import type { en } from './i18n/en.ts';
+import type { InboxBellProps } from './confirm/types';
 import type { AnimationLevel, AppSettings, LocaleCode, ThemeMode } from '@hashpass/ui/settings';
 import type { icons } from './icons';
 import type { sprites } from './sprites';
@@ -142,4 +143,10 @@ export type FilmScene = {
   /** Catalog keys are film.<id>.title and film.<id>.line. */
   sprite: StageKey;
   icon: IconKey;
+};
+
+export type HeroProps = {
+  hasArchive: boolean;
+  onSetup: () => void;
+  inbox: InboxBellProps;
 };

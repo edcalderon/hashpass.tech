@@ -21,6 +21,7 @@ const path = require('path');
 const ROOT_DIR = path.resolve(__dirname, '../../..');
 const VALID_BUMPS = new Set(['patch', 'minor', 'major']);
 const TAG_PREFIX = 'companion-v';
+const COMPANION_DEPLOYMENT_GUARD = 'packages/tools/scripts/check-companion-deployment.mjs';
 const STAGED_FILES = [
   'apps/companion/package.json',
   'apps/companion/README.md',
@@ -159,6 +160,10 @@ function printUsage() {
       '  --no-commit           Skip the release commit',
       '  --no-tag              Skip the release tag',
       '  --notes "<text>"      Release notes for the changelog entry',
+      '',
+      'The release guard reads both live Companion hosts and refuses to release when',
+      'production or development is newer than the source checkout. Set',
+      'COMPANION_SKIP_LIVE_GUARD=1 only for an approved recovery.',
       '  -h, --help            Show this help',
       '',
       'Releases must run from "develop". Set',
@@ -198,6 +203,30 @@ function readPackageVersion() {
   }
 
   return version;
+}
+
+function ensureLiveDeploymentOrder(options, sourceVersion) {
+  if (options.dryRun) return;
+
+  if (process.env.COMPANION_SKIP_LIVE_GUARD === '1') {
+    console.warn('⚠️  COMPANION_SKIP_LIVE_GUARD=1 set -- skipping the live deployment order guard.');
+    return;
+  }
+
+  const args = [
+    COMPANION_DEPLOYMENT_GUARD,
+    '--source-version',
+    sourceVersion,
+    '--require-development-match',
+  ];
+  if (process.env.COMPANION_PRODUCTION_URL) {
+    args.push('--production-url', process.env.COMPANION_PRODUCTION_URL);
+  }
+  if (process.env.COMPANION_DEVELOPMENT_URL) {
+    args.push('--development-url', process.env.COMPANION_DEVELOPMENT_URL);
+  }
+
+  runInherit('node', args, options);
 }
 
 function bumpVersion(version, bumpType = 'patch') {
@@ -304,6 +333,7 @@ function main() {
     ensureCleanGitState(options);
 
     const currentVersion = readPackageVersion();
+    ensureLiveDeploymentOrder(options, currentVersion);
     const bump = options.bump || 'patch';
     if (!VALID_BUMPS.has(bump)) {
       throw new Error(`Invalid bump type "${bump}"`);

@@ -20,26 +20,19 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.163)
-
-### Bug Fixes
-
-* **companion:** reuse the shared FormField and keep the memory draft on failure ([c1d466a](https://github.com/hashpass-tech/hashpass.tech/commit/c1d466afdcd55a9f0665b9b7b5d73361096866f7))
-
+## 📋 Latest Changes (v1.9.165)
 
 ### Features
 
-* **status:** make the status page private behind HASHPASS sign-in and fix its mobile layout ([f1c1e13](https://github.com/hashpass-tech/hashpass.tech/commit/f1c1e1320e6941964e0e4686a43574df578b8d53))
+* **companion:** closing first setup shows the public landing, not the dashboard ([5e5f176](https://github.com/hashpass-tech/hashpass.tech/commit/5e5f176e6ec60e282d66c5b1f92b8f6f4bfabfc4))
 ### Release Highlights
-- connect dashboard auth flow; make the status page private behind HASHPASS sign-in and fix its mobile layout; add local agent control plane; reuse the shared FormField and keep the memory draft on failure
+- closing first setup shows the public landing, not the dashboard
 
 ### Release scope
-- Compared with: `v1.9.162` (the previous global release tag)
+- Compared with: `v1.9.164` (the previous global release tag)
 
 ### Affected products & packages
 - Companion
-- Self-hosted operations
-- Release tooling
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.1.0] - 2026-10-27
+
+- First stable release. The MCP connection is confirmed working end to end (OAuth, gateway, tools and pages); see apps/docs/docs/auth/plane-mcp-stable.md.
+
 ## [1.0.5] - 2026-10-27
 
 - Harden MCP discovery compatibility after OAuth and publish the corrected Plane connector package.

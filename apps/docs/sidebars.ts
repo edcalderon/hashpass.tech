@@ -100,7 +100,7 @@ const sidebars = {
     {
       type: 'category',
       label: 'Authentication',
-      items: ['auth/plane-mcp-authorization'],
+      items: ['auth/plane-mcp-authorization', 'auth/plane-mcp-stable'],
     },
     {
       type: 'category',

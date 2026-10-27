@@ -81,8 +81,12 @@ export type SmaArchiveState = {
   error: string | null;
 };
 
+/** What the page shows: the loading note, the first-setup dialog, the public landing, or the full workspace. */
+export type GateView = 'loading' | 'setup' | 'landing' | 'workspace';
+
 export type SmaSetupProps = {
   onComplete: (email: string) => Promise<void>;
+  onDismiss: () => void;
   error: string | null;
 };
 

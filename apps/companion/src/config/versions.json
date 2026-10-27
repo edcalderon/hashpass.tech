@@ -3,17 +3,28 @@
   "_source": "This file is generated from apps/companion/package.json",
   "_instructions": "Run npm run version:companion or npm run release:companion:patch from the repo root to update it.",
   "currentVersion": {
-    "version": "0.0.5",
-    "buildNumber": 20261027083715,
+    "version": "0.0.6",
+    "buildNumber": 20261027092751,
     "releaseDate": "2026-10-27",
     "releaseType": "stable",
     "environment": "production",
     "features": [],
     "bugfixes": [],
     "breakingChanges": [],
-    "notes": "Connect Better Auth session checks and Google signup to the Companion dashboard while preserving local SMA ownership."
+    "notes": "Version 0.0.6 release"
   },
   "versions": [
+    {
+      "version": "0.0.6",
+      "buildNumber": 20261027092751,
+      "releaseDate": "2026-10-27",
+      "releaseType": "stable",
+      "environment": "production",
+      "features": [],
+      "bugfixes": [],
+      "breakingChanges": [],
+      "notes": "Version 0.0.6 release"
+    },
     {
       "version": "0.0.5",
       "buildNumber": 20261027083715,

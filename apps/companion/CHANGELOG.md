@@ -5,6 +5,17 @@ All notable changes to HASHPASS Companion (apps/companion) will be documented in
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and the project follows Semantic Versioning.
 
+## [0.0.6] - 2026-10-27
+
+### Stable
+- Version 0.0.6 release
+
+### Technical Details
+- Version: 0.0.6
+- Release Type: stable
+- Build Number: 20261027092751
+- Release Date: 2026-10-27
+
 ## [0.0.5] - 2026-10-27
 
 ### Stable

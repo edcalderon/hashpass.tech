@@ -32,3 +32,14 @@ jobs:
       - run: pnpm install --frozen-lockfile --prefer-offline
       - run: pnpm --filter @hashpass/companion test
       - run: pnpm --filter @hashpass/companion build
+      - name: Guard live Companion release ordering
+        env:
+          COMPANION_PRODUCTION_URL: https://companion.hashpass.tech
+          COMPANION_DEVELOPMENT_URL: https://companion-dev.hashpass.tech
+        run: |
+          set -euo pipefail
+          source_version="$(node -p "require('./apps/companion/package.json').version")"
+          node packages/tools/scripts/check-companion-deployment.mjs \
+            --source-version "${source_version}" \
+            --production-url "${COMPANION_PRODUCTION_URL}" \
+            --development-url "${COMPANION_DEVELOPMENT_URL}"
