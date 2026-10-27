@@ -67,10 +67,19 @@ Per the governance rule, only accepted ADRs are published as accepted. ADR-HMC-0
 
 ## Publication log
 
-No Plane page has been written yet.
+The first Plane page was published on 2026-10-27 (see below).
 
 On 2026-10-27, `POST /api/v1/workspaces/plane/projects/<id>/pages/` returned 404 on this instance, so the REST API with a personal token cannot create pages. Pages can be created through the Plane web UI or through the `page` tool family of the Plane MCP gateway (`packages/plane-mcp-gateway`) from an MCP client. Publishing remains pending until one of those is used.
 
 On 2026-10-27 the "HASHPASS Mission Command Center" page was authored in the repo as [mission-command-center.md](mission-command-center.md) and added to `build-plane-pages.mjs` as page `MC`. It is built but **not yet published** to Plane; record the Plane URL and read-back here once it is.
 
 On 2026-10-27 the gateway's `page` tool was found to 404 on this Plane (1.4.2): its public API has no page routes in any release through v1.4.3-rc2. The gateway now serves `page` calls itself through a dedicated Plane account (see `ops/self-hosted/mcp/README.md`, "Plane pages"). That path is unit-tested against a fake Plane only; it has not yet been exercised against the live instance, so the Mission Command Center page is still unpublished.
+
+### Published 2026-10-27: HASHPASS Mission Command Center
+
+Created with `node packages/tools/scripts/publish-plane-pages.mjs --only MC` through the dedicated page account (`mcp-pages@hashpass.tech`, project Member). The script reads the page back after writing and fails on a title or body mismatch; an independent read-back confirmed title, six sections, five tables, 48 links, not archived, not locked, and no secret-like strings.
+
+- Page: `https://work.hashpass.tech/plane/projects/8c6755ef-6d32-4076-9173-a6b06db7fc40/pages/1016c8e8-adaa-41b3-aaff-094c54e0740d/` (access 0 = public within the project)
+- Source: `docs/architecture/mission-command-center.md`, built into `dist/plane-pages/` by `build-plane-pages.mjs`. Re-running the publisher updates the page in place by exact title.
+- Not yet published: pages 00-08.
+- Verified path: the page client was exercised against live Plane (list, create, retrieve, archive, delete on a throwaway page) before this publish. The gateway's MCP `page` tool using the same client remains untested live until PR #482 is merged and the gateway is redeployed with `PLANE_PAGES_EMAIL`/`PLANE_PAGES_PASSWORD`.
