@@ -3,9 +3,9 @@
 /**
  * Verify the ordering of the live Companion deployments.
  *
- * Production may never be newer than the Companion version on the source
- * ref being released. Development may be stale while a new develop build is
- * waiting to publish, but it must never be ahead of that source ref either.
+ * Production may never be newer than development or the Companion version on
+ * the source ref being released. Development may be behind the source ref
+ * during a staged publication, but production must never pass it.
  *
  * The preferred source is the generated /companion-version.json manifest.
  * Older manually published Companion sites do not have that file, so the
@@ -175,6 +175,14 @@ export async function checkCompanionDeploymentOrder({
     throw new Error(
       `Companion development ${development.version} is ahead of source ${expected}. ` +
         `Refusing to validate this source (read from ${development.source}).`,
+    );
+  }
+
+  if (compareVersions(production.version, development.version) > 0) {
+    throw new Error(
+      `Companion production ${production.version} is ahead of development ${development.version}. ` +
+        'Refusing to validate a release with production ahead of staging; publish and verify development first ' +
+        `(read production from ${production.source}, development from ${development.source}).`,
     );
   }
 
