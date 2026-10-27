@@ -6,6 +6,15 @@
 - Treat `CLAUDE.md` as the source of truth for versioning, push order, and release flow.
 - If `CLAUDE.md` and `README.md` differ, stop and ask before changing the release path.
 
+## Work tracking and knowledge systems
+
+- GitHub is the shared code execution planner: all code work is an issue in the single org project `#4 HASHPASS`, as sub-issues of epic #455 or its children. Do not create other GitHub projects, boards or master issues.
+- Plane (`https://work.hashpass.tech`, workspace slug `plane`) is the shared collaboration knowledge center for non-code work items and curated pages. It never holds code issues or mirrors GitHub tasks.
+- Notion is CEO-only draft notes: private, non-authoritative, not written to unless asked.
+- Classify before you create: code, config or infrastructure change in this repo goes to GitHub; everything else goes to Plane.
+- Plane's REST API cannot create pages; do not claim a page is published until you have read it back. Never print or commit `PLANE_API_TOKEN` or other keys.
+- Full model, current state and the open to-do list: `docs/architecture/workspace-operating-model.md` and `.agents/active/task-workspace-operating-model.md`.
+
 ## Codebase Memory MCP
 
 Use `codebase-memory-mcp` first for repo discovery and fast checks.

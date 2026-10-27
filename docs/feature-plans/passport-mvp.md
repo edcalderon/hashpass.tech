@@ -87,6 +87,10 @@ The first slice is a tested in-process normalization foundation. It does **not**
 - `pnpm --filter @hashpass/backend build` (TypeScript, no emit).
 - Baseline environment: club web typecheck/build, local home/events HTTP checks, and 19 existing mobile pass-wallet tests passed before feature implementation.
 
+## Delivery issues
+
+Sub-issues of #425, all in HASHPASS project #4: #474 persistence and schema, #475 private inbox, #476 secondary adapters, #477 Capsule UI and export/delete, #478 pilot evidence and decision gate. #425 is itself a sub-issue of the hackathon epic #455.
+
 ## Publication
 
 Published as [#425](https://github.com/hashpass-tech/hashpass.tech/issues/425). Keep this plan and the issue synchronized as delivery slices land. The initial implementation remains local on `develop`; no commit, push, version bump, or release was performed.

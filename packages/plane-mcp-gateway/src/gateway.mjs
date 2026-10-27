@@ -53,6 +53,24 @@ const readBodyWithLimit = async (request, maxBodyBytes) => {
   }
   return {body: new TextDecoder().decode(bytes), tooLarge: false};
 };
+
+// Legacy MCP clients negotiate the protocol version in initialize.params and
+// omit the HTTP header on that first request.  Forwarding a hard-coded header
+// in that case can make the upstream session negotiate a different version
+// from the one the client requested; the next tools/list request then fails
+// even though OAuth succeeded.  Preserve an explicit header, otherwise use
+// the initialize payload, and retain the pre-header version as the fallback
+// for non-initialize requests from older clients.
+const protocolVersionForUpstream = (request, body) => {
+  const declaredHeader = request.headers.get("mcp-protocol-version")?.trim();
+  if (declaredHeader) return declaredHeader;
+
+  const declaredBody = body?.method === "initialize" && typeof body.params?.protocolVersion === "string"
+    ? body.params.protocolVersion.trim()
+    : "";
+  return declaredBody || "2025-06-18";
+};
+
 export function createGatewayHandler(options) {
   const {
     resource,
@@ -159,7 +177,7 @@ export function createGatewayHandler(options) {
       const upstreamHeaders = new Headers({
         authorization: `Bearer ${serviceToken}`,
         "content-type": "application/json",
-        "mcp-protocol-version": request.headers.get("mcp-protocol-version") || "2025-06-18",
+        "mcp-protocol-version": protocolVersionForUpstream(request, body),
         "x-workspace-slug": workspaceSlug,
       });
       for (const headerName of ["accept", "mcp-session-id"]) {

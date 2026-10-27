@@ -16,15 +16,16 @@ This reverses the earlier same-day decision to move all Plane work items to GitH
 
 ## Work tracking on GitHub (org `hashpass-tech`)
 
-One project: [#4 HASHPASS](https://github.com/orgs/hashpass-tech/projects/4). Epic #455 with sub-issues #457–#462, #464, #465, #469 and views for the Companion, Board, Roadmap and Backlog. Further engineering scope is added as sub-issues of this project, not as new projects. (`JACKKERNEL`, #3, is an unrelated project.)
+One project: [#4 HASHPASS](https://github.com/orgs/hashpass-tech/projects/4). Epic #455 with sub-issues #457–#462, #464, #465, #469, #425 and views for the Companion, Board, Roadmap and Backlog.
+
+**Passport (moved from Plane, 2026-10-27).** Passport is a code product, so its Plane items became GitHub issues. [#425](https://github.com/hashpass-tech/hashpass.tech/issues/425) (Passport MVP, now a sub-issue of #455) has five P1 children: [#474](https://github.com/hashpass-tech/hashpass.tech/issues/474) persistence and schema, [#475](https://github.com/hashpass-tech/hashpass.tech/issues/475) private inbox and inbound email, [#476](https://github.com/hashpass-tech/hashpass.tech/issues/476) URL/ICS/image adapters, [#477](https://github.com/hashpass-tech/hashpass.tech/issues/477) Capsule UI, correction and export/delete, [#478](https://github.com/hashpass-tech/hashpass.tech/issues/478) pilot evidence and Go/Narrow/Stop decision. Done so far: the normalization contract and the DoorReady domain types (PR #456). Nothing else is built. #461 (DoorReady) is the P0 hackathon slice and shares the upload path with #474. Further engineering scope is added as sub-issues of this project, not as new projects. (`JACKKERNEL`, #3, is an unrelated project.)
 
 ## Plane (live, checked 2026-10-27)
 
 - Instance `https://work.hashpass.tech`, workspace slug `plane`, one project `HASHPASS`.
-- Work items: **17**, restored from the local backup after the earlier deletion. Plane assigned new numbers (#18–#34), so old numbers #1–#17 no longer resolve. Titles, priorities, states and description text were compared with the backup; the only difference is that Plane wraps each description in a `<div>`.
-- Sub-items: the Passport validation items (old #3, #4, #6–#10) are children of "Validate HASHPASS Passport" (new #22).
-- Labels: passport, bsl, radar, funding, legal, partnership, payments (assigned from title keywords).
-- Modules: 6, now populated: Corporate & Legal 1, BSL Bogotá 2027 Planning 1, Strategy & Validation 4, Finance & Cloud 1, Product & Operations 6, Commercial & Partnerships 4.
+- Work items: **9**, all non-code. 17 were restored from the local backup, then the 8 Passport items were removed because Passport is a code product (see below). Plane assigned new numbers on restore, so the old #1–#17 no longer resolve.
+- Labels: bsl, radar, funding, legal, partnership, payments (assigned from title keywords).
+- Modules: 6: Corporate & Legal 1, BSL Bogotá 2027 Planning 1, Strategy & Validation 1, Finance & Cloud 1, Product & Operations 1, Commercial & Partnerships 4.
 - Pages: see the publication log at the end of this document. Do not assume a page exists unless it is listed there.
 - Cycles and intake: none.
 - Local backups outside the repo: `~/.hashpass-backups/plane-hashpass-inventory-2026-10-27.json` and the migration map.

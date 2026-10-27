@@ -138,6 +138,18 @@ describe('release promotion PR body', () => {
     expect(summary).toContain('- QR links API');
   });
 
+  it('labels Companion changes but not its generated version files', () => {
+    expect(classifyAffectedReleaseScopes(['apps/companion/src/App.tsx'])).toEqual(['Companion']);
+    expect(
+      classifyAffectedReleaseScopes([
+        'apps/companion/package.json',
+        'apps/companion/CHANGELOG.md',
+        'apps/companion/src/config/versions.json',
+        'apps/companion/src/config/git-info.json',
+      ]),
+    ).toEqual([]);
+  });
+
   it('does not label an app solely because the release updates generated version files', () => {
     const scopes = classifyAffectedReleaseScopes([
       'apps/mobile-app/config/version.ts',

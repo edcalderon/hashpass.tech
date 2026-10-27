@@ -126,6 +126,34 @@ test("forwards an authorized JSON-RPC request using only the Plane service crede
   });
 });
 
+test("forwards the initialize payload protocol version when the client omits the header", async () => {
+  let upstreamCall;
+  const handler = createGatewayHandler(createOptions({
+    fetch: async (url, init) => {
+      upstreamCall = {url: String(url), init};
+      return Response.json({jsonrpc: "2.0", id: 1, result: {protocolVersion: "2025-11-25"}});
+    },
+  }));
+
+  const response = await handler(new Request(resourceUrl, {
+    method: "POST",
+    headers: {
+      authorization: "Bearer end-user-oauth-token",
+      accept: "application/json, text/event-stream",
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "initialize",
+      params: {protocolVersion: "2025-11-25", capabilities: {}, clientInfo: {name: "ChatGPT", version: "1"}},
+    }),
+  }));
+
+  assert.equal(response.status, 200);
+  assert.equal(new Headers(upstreamCall.init.headers).get("mcp-protocol-version"), "2025-11-25");
+});
+
 test("returns 403 on policy denial without contacting Plane", async () => {
   let upstreamCalls = 0;
   const handler = createGatewayHandler(createOptions({

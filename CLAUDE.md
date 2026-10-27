@@ -61,6 +61,20 @@ Use the installed browser tools in this order for web fetch, QA, and responsive 
 
 Keep screenshots, recordings, logs, and copied page text free of credentials, cookies, auth tokens, account IDs, and private environment values. Prefer Playwright or the repo test scripts for deterministic regression checks, and use these browser tools to inspect or reproduce live UI issues.
 
+### Where work and knowledge live (set 2026-10-27)
+
+Three systems, three jobs. Full detail: `docs/architecture/workspace-operating-model.md`.
+
+| System | Role | Rule |
+|--------|------|------|
+| GitHub | Shared **code execution planner** | Every code task is an issue in the single org project `#4 HASHPASS` (sub-issues of epic #455 or its children). Never create another GitHub project, board or master issue; never track code work anywhere else. |
+| Plane (`work.hashpass.tech`, workspace slug `plane`, project HASHPASS) | Shared **collaboration knowledge center** for non-code work | Non-code work items (legal, finance, partnerships, validation, operations) in modules, plus curated knowledge pages. Never a code issue and never a mirror of a GitHub issue. |
+| Notion | **CEO-only draft notes** | Private and non-authoritative. Do not read it as a source of truth, do not write to it unless asked, and never park tasks or technical docs there. |
+
+Before creating any item, classify it: does it change code, config or infrastructure in this repo? GitHub. Otherwise Plane. A CEO scratch thought? Notion, and nothing depends on it.
+
+Agent rules: Plane item numbers are not stable and the REST API cannot create pages (pages need the Plane UI or the MCP `page` tools), so never claim a Plane page was published without reading it back. Never print or commit `PLANE_API_TOKEN` or any other key. Keep your own memory and `.agents/` to-dos pointing at these rules rather than restating them.
+
 ### Branching: work from `develop`
 
 **Default flow (set 2026-10-19):** do not create feature branches. Check out
@@ -140,6 +154,25 @@ hours until caught from a real screenshot and released again as
 `club-v1.0.26`). **Any `apps/web-app` change — even one that rode along in
 a global release PR for unrelated reasons — still needs its own
 `release:club:web:patch` to actually reach hashpass.club.**
+
+### Companion release (separate version stream)
+
+`apps/companion` (`companion-dev.hashpass.tech`, a staging preview) has its own
+version and `companion-vX.Y.Z` tag stream, mirroring Club web and LocalPass. Do
+not use the root `release:patch` or `release:promote` for a Companion-only
+change. From a clean `develop`:
+
+```bash
+pnpm run release:companion:patch   # or :minor / :major; --dry-run previews
+```
+
+This updates only `apps/companion` version metadata (`package.json`,
+`src/config/versions.json`, `git-info.json`, `CHANGELOG.md`, README block),
+commits `chore(companion): release vX.Y.Z`, and pushes the branch and
+`companion-vX.Y.Z` tag to `origin`. It deploys nothing: there is no Companion
+deploy workflow yet, so publishing to companion-dev is a manual S3 sync plus
+CloudFront invalidation (see the stack README). Global release PRs list
+Companion as its own affected scope. Never edit its version files by hand.
 
 ### Mobile Android Release Workflow
 
