@@ -103,9 +103,19 @@ test("validates and recreates Caddy after deploying mounted route changes", () =
   assert.doesNotMatch(deploy, /caddy reload/);
 });
 
-test("serves the public status page from a read-only mount and keeps Plane behind the default handler", async () => {
+test("serves the status page only after the gateway signs the visitor in, from a read-only mount", async () => {
   const edge = await readFile(new URL("../compose.yaml", import.meta.url), "utf8");
+  const mcp = await readFile(new URL("../mcp/compose.yaml", import.meta.url), "utf8");
+  assert.match(caddy, /@statusFlow path \/status\/login \/status\/callback \/status\/logout/);
+  assert.match(caddy, /handle @statusFlow \{\s*reverse_proxy plane-mcp-gateway:8220\s*\}/);
   assert.match(caddy, /@status path \/status \/status\//);
+  // The file is only reachable inside the handler that first calls forward_auth, so a gateway failure cannot serve it.
+  const block = (caddy.match(/handle @status \{[\s\S]*?\n  \}/)?.[0] ?? "").replace(/^\s*#.*$/gm, "");
+  assert.match(block, /forward_auth plane-mcp-gateway:8220 \{\s*uri \/status-gate\/verify\s*\}/);
+  assert.ok(block.indexOf("forward_auth") < block.indexOf("file_server"));
+  assert.match(block, /Cache-Control "no-store"/);
+  assert.match(block, /X-Robots-Tag "noindex"/);
+  assert.match(mcp, /STATUS_PUBLIC_ORIGIN: https:\/\/\$\{PLANE_DOMAIN\}/);
   assert.match(caddy, /root \* \/srv\/status/);
   assert.match(caddy, /handle \{\s*reverse_proxy proxy:80\s*\}/);
   assert.match(edge, /\/opt\/hashpass\/status:\/srv\/status:ro/);
