@@ -350,10 +350,14 @@ export function App() {
   const authEmail = auth.status === 'signed-in' && auth.user ? auth.user.email : null;
   const confirmation = useEmailConfirmation(inboxOwnerEmail(sma.archive?.ownerEmail ?? null, authEmail));
   const [setupDismissed, setSetupDismissed] = useState(false);
+  const completeSetup = async (email: string) => {
+    const created = await sma.setup(email);
+    if (created && inboxOwnerEmail(created, authEmail)) void confirmation.send(created);
+  };
   const view = resolveGate(sma.status, sma.archive !== null, setupDismissed);
 
   if (view === 'loading') return <main className="sma-gate"><p role="status">{t('sma.loading')}</p></main>;
-  if (view === 'setup') return <SmaSetup onComplete={sma.setup} onDismiss={() => setSetupDismissed(true)} error={sma.error} />;
+  if (view === 'setup') return <SmaSetup onComplete={completeSetup} onDismiss={() => setSetupDismissed(true)} error={sma.error} />;
   const archive = view === 'workspace' ? sma.archive : null;
   const summary = buildAccountSummary({ authUser: auth.user ?? null, archive: sma.archive, setupEmailConfirmed: !confirmation.items.some((item) => item.kind === 'unconfirmed-email') });
 

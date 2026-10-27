@@ -284,7 +284,7 @@ export const en = {
   'sma.setup.title': 'Give your Companion a home',
   'sma.setup.lead': 'Use an email as your local setup identifier. Your Companion ID and private memory stay in this browser until you explicitly connect HASHPASS ID.',
   'sma.setup.emailLabel': 'Your email',
-  'sma.setup.emailNote': 'This identifies the local archive. It creates no account, and you can confirm it later from the inbox.',
+  'sma.setup.emailNote': 'We email you a six-digit code and a link to confirm it. It creates no account, and confirming is optional.',
   'sma.setup.submit': 'Create my Companion',
   'sma.setup.creating': 'Creating Companion…',
   'sma.setup.skip': 'Not now — explore first',

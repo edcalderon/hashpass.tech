@@ -39,6 +39,11 @@ export function InboxBell({ items, ownerEmail, status, errorKey, onSend, onVerif
     if (!unconfirmed) setCode('');
   }, [unconfirmed]);
 
+  // A code was just mailed: show where to type it instead of leaving the notice unseen.
+  useEffect(() => {
+    if (status === 'sent') setOpen(true);
+  }, [status]);
+
   return (
     <div className="inbox" ref={root}>
       <button

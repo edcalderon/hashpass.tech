@@ -286,7 +286,7 @@ export const ja: Record<MessageKey, string> = {
   'sma.setup.title': 'Companion に居場所をつくる',
   'sma.setup.lead': 'ローカル設定の識別子としてメールアドレスを使います。HASHPASS ID に接続するまで、Companion ID と非公開メモリはこのブラウザに残ります。',
   'sma.setup.emailLabel': 'メールアドレス',
-  'sma.setup.emailNote': 'これはローカルのアーカイブを識別するものです。アカウントは作成されず、確認は後で受信トレイからできます。',
+  'sma.setup.emailNote': '確認用の6桁コードとリンクをメールでお送りします。アカウントは作成されず、確認は任意です。',
   'sma.setup.submit': 'Companion を作成',
   'sma.setup.creating': 'Companion を作成中…',
   'sma.setup.skip': '今はしない。まず見て回る',

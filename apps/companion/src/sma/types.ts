@@ -85,7 +85,7 @@ export type SmaArchiveState = {
 export type GateView = 'loading' | 'setup' | 'landing' | 'workspace';
 
 export type SmaSetupProps = {
-  onComplete: (email: string) => Promise<void>;
+  onComplete: (email: string) => Promise<unknown>;
   onDismiss: () => void;
   error: string | null;
 };

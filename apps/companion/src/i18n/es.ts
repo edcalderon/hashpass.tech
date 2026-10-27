@@ -286,7 +286,7 @@ export const es: Record<MessageKey, string> = {
   'sma.setup.title': 'Dale un hogar a tu Companion',
   'sma.setup.lead': 'Usa un correo como identificador local. El ID y la memoria privada de tu Companion permanecen en este navegador hasta que conectes HASHPASS ID.',
   'sma.setup.emailLabel': 'Tu correo',
-  'sma.setup.emailNote': 'Identifica el archivo local. No crea una cuenta y puedes confirmarlo más tarde desde la bandeja.',
+  'sma.setup.emailNote': 'Te enviamos por correo un código de seis dígitos y un enlace para confirmarlo. No crea ninguna cuenta y confirmar es opcional.',
   'sma.setup.submit': 'Crear mi Companion',
   'sma.setup.creating': 'Creando Companion…',
   'sma.setup.skip': 'Ahora no, quiero explorar',
