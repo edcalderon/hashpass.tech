@@ -28,6 +28,21 @@ const makeServiceRoleKey = (ref: string): string => {
   return `${header}.${payload}.signature`;
 };
 
+describe('resolveSupabaseProfile for the Companion sites', () => {
+  it('sends the staging Companion to development and the live Companion to production, whatever the build profile', () => {
+    const previousProfile = process.env.EXPO_PUBLIC_SUPABASE_PROFILE;
+    try {
+      process.env.EXPO_PUBLIC_SUPABASE_PROFILE = 'core-production';
+      expect(resolveSupabaseProfile({ hostname: 'companion-dev.hashpass.tech' }).id).toBe('core-development');
+      process.env.EXPO_PUBLIC_SUPABASE_PROFILE = 'core-development';
+      expect(resolveSupabaseProfile({ hostname: 'companion.hashpass.tech' }).id).toBe('core-production');
+    } finally {
+      if (previousProfile === undefined) delete process.env.EXPO_PUBLIC_SUPABASE_PROFILE;
+      else process.env.EXPO_PUBLIC_SUPABASE_PROFILE = previousProfile;
+    }
+  });
+});
+
 describe('resolvePublicSupabaseConfig', () => {
   it('uses a recognized BSL hostname over the ambient build profile', () => {
     const previousProfile = process.env.EXPO_PUBLIC_SUPABASE_PROFILE;
