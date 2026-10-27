@@ -78,7 +78,11 @@ NODE
 corepack prepare "pnpm@${PNPM_VERSION}" --activate
 corepack pnpm config set store-dir "${PNPM_STORE_DIR}"
 corepack pnpm --version
-corepack pnpm install --frozen-lockfile --prefer-offline
+# The root node_modules directory is cleared above, but apps/mobile-app has
+# its own workspace node_modules tree. Force pnpm to reconcile both trees so
+# duplicate package files (for example @noble/hashes/LICENSE) cannot abort
+# the build before Expo starts.
+corepack pnpm install --frozen-lockfile --prefer-offline --force
 
 # Resolve BSL's per-stage EXPO_PUBLIC_* env (packages/infra/src/domains.ts) so
 # this build matches what the old SST-managed site used to set.
