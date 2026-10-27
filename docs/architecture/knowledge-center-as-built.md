@@ -1,7 +1,7 @@
 # HASHPASS institutional knowledge center — as built
 
-**Date:** 2026-10-27  
-**Status:** Current operating state recorded from the cross-platform reconciliation  
+**Date:** 2026-10-27
+**Status:** Current operating state recorded from the cross-platform reconciliation
 **Canonical decisions:** [ADR-ORG-001](adr-company-knowledge-system.md) and [ADR-ORG-002](adr-institutional-reconciliation.md)
 
 ## Authority map

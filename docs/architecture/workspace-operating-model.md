@@ -1,7 +1,7 @@
 # HASHPASS workspace operating model
 
-**Date:** 2026-10-27  
-**Status:** Adopted and reconciled  
+**Date:** 2026-10-27
+**Status:** Adopted and reconciled
 **Canonical decisions:** [ADR-ORG-001](adr-company-knowledge-system.md) and [ADR-ORG-002](adr-institutional-reconciliation.md)
 
 HASHPASS uses four complementary systems. Each system has a bounded authority; no system is a universal mirror of the others.
