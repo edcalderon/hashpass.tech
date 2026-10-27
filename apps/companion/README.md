@@ -31,6 +31,7 @@ tags `companion-vX.Y.Z` and pushes the branch and tag to `origin`. It does not o
 
 `https://companion-dev.hashpass.tech` (S3 + CloudFront, Terraform in `packages/infra/terraform/stacks/hashpass-companion-site`).
 There is no deploy workflow yet; publishing is manual. Production `companion.hashpass.tech` is not provisioned.
+
 ## Portable memory baseline
 
 The standalone product's proposed persistence boundary is the vendor-neutral
