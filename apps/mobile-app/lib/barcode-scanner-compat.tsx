@@ -1,8 +1,7 @@
 import React from 'react';
 import {
+  Camera,
   CameraView,
-  getCameraPermissionsAsync,
-  requestCameraPermissionsAsync,
   type BarcodeScanningResult,
   type BarcodeType,
   type CameraType,
@@ -42,8 +41,8 @@ export const BarCodeScanner = Object.assign(BarCodeScannerComponent, {
       qr: 'qr' as BarcodeType,
     },
   },
-  requestPermissionsAsync: requestCameraPermissionsAsync,
-  getPermissionsAsync: getCameraPermissionsAsync,
+  requestPermissionsAsync: Camera.requestCameraPermissionsAsync,
+  getPermissionsAsync: Camera.getCameraPermissionsAsync,
 });
 
 export type { BarcodeType };

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   ImageBackground,
   Modal,
+  Platform,
   Text,
   TouchableOpacity,
   View,
@@ -54,6 +55,7 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
   const [isFlipped, setIsFlipped] = useState(false);
   const { supports3d, reducedMotion } = usePassMotionPreferences();
   const passNumber = normalizePassNumber(pass.pass_number);
+  const isNative = Platform.OS !== 'web';
 
   // A card behind the front one is already non-interactive (disabled via
   // `interactive`), but an archived pass (cancelled/expired/used/suspended)
@@ -628,13 +630,13 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
         <View style={{ marginBottom: 16 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
             <MaterialIcons name="event" size={18} color={colors.text.secondary} />
-            <Text style={{ fontSize: 12, color: colors.text.secondary, marginLeft: 8 }} numberOfLines={1}>
+            <Text style={{ flex: 1, minWidth: 0, fontSize: 12, color: colors.text.secondary, marginLeft: 8 }} numberOfLines={1} ellipsizeMode="middle">
               {passEventShortName}{passEventDate ? ` • ${passEventDate}` : ''}
             </Text>
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
             <MaterialIcons name="label" size={18} color={colors.text.secondary} />
-            <Text style={{ fontSize: 12, color: colors.text.secondary, marginLeft: 8 }}>
+            <Text style={{ flex: 1, minWidth: 0, fontSize: 12, color: colors.text.secondary, marginLeft: 8 }} numberOfLines={1} ellipsizeMode="tail">
               {getPassTypeLabel(pass.pass_type)} {t({ id: 'passes.pass', message: 'Pass' })} • {(pass.status || '').toUpperCase()}
             </Text>
           </View>
@@ -663,14 +665,14 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
 
         <View
           style={{
-            position: 'absolute',
-            left: uiTokens.space.lg,
-            right: uiTokens.space.lg,
-            top: '60%',
-            bottom: 52,
+            ...(isNative
+              ? { marginTop: 'auto', gap: uiTokens.space.sm, width: '100%' }
+              : { position: 'absolute', left: uiTokens.space.lg, right: uiTokens.space.lg, top: '60%', bottom: 52 }),
           }}
         >
-          <View style={{ flexDirection: 'row', alignItems: 'stretch', minHeight: 48 }}>
+          <View style={isNative
+            ? { flexDirection: 'column', alignItems: 'stretch', gap: uiTokens.space.sm, width: '100%' }
+            : { flexDirection: 'row', alignItems: 'stretch', minHeight: 48 }}>
             {upgradeTarget && (
               <>
               <ActionButton
@@ -683,9 +685,11 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
                 accessibilityLabel={t({ id: `passes.upgradeTo.${upgradeTarget}`, message: `Upgrade to ${getPassTypeLabel(upgradeTarget)}` })}
                 leadingIcon={<MaterialIcons name="confirmation-number" size={18} color={colors.primary} />}
                 trailingIcon={<MaterialIcons name="chevron-right" size={20} color={colors.text.secondary} />}
-                style={{ flex: 1, minHeight: 48, paddingHorizontal: uiTokens.space.sm }}
+                style={isNative
+                  ? { width: '100%', minHeight: 48, paddingHorizontal: uiTokens.space.md }
+                  : { flex: 1, minHeight: 48, paddingHorizontal: uiTokens.space.sm }}
               />
-              <View style={{ width: 1, height: 32, alignSelf: 'center', backgroundColor: colors.divider }} />
+              {!isNative && <View style={{ width: 1, height: 32, alignSelf: 'center', backgroundColor: colors.divider }} />}
               </>
             )}
               <ActionButton
@@ -704,12 +708,14 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
                 accessibilityLabel={t({ id: 'passes.viewFullDetails', message: 'View Full Details' })}
                 leadingIcon={<MaterialIcons name="description" size={18} color={colors.primary} />}
                 trailingIcon={<MaterialIcons name="chevron-right" size={20} color={colors.text.secondary} />}
-                style={{ flex: upgradeTarget ? 1 : 2, minHeight: 48, paddingHorizontal: uiTokens.space.sm }}
+                style={isNative
+                  ? { width: '100%', minHeight: 48, paddingHorizontal: uiTokens.space.md }
+                  : { flex: upgradeTarget ? 1 : 2, minHeight: 48, paddingHorizontal: uiTokens.space.sm }}
               />
           </View>
 
           {upgradeTarget && (
-            <View style={{ alignSelf: 'center', minHeight: 28, maxWidth: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <View style={{ alignSelf: 'center', minHeight: 28, maxWidth: '100%', width: isNative ? '100%' : undefined, flexDirection: isNative ? 'column' : 'row', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', gap: uiTokens.space.xs }}>
               <Text style={{ color: colors.text.secondary, fontSize: uiTokens.type.caption, textAlign: 'center' }}>
                 {t({ id: 'passes.claimExistingTicketPrompt', message: 'Already have a Business or VIP ticket?' })}{' '}
               </Text>

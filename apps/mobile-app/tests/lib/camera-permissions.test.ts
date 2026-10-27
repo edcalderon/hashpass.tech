@@ -4,10 +4,12 @@ import { Platform } from 'react-native';
 const mockNativeGetPermissions = jest.fn();
 const mockNativeRequestPermissions = jest.fn();
 
-jest.mock('../../lib/barcode-scanner-compat', () => ({
-  BarCodeScanner: {
-    getPermissionsAsync: mockNativeGetPermissions,
-    requestPermissionsAsync: mockNativeRequestPermissions,
+jest.mock('expo-camera', () => ({
+  __esModule: true,
+  CameraView: 'CameraView',
+  Camera: {
+    getCameraPermissionsAsync: () => mockNativeGetPermissions(),
+    requestCameraPermissionsAsync: () => mockNativeRequestPermissions(),
   },
 }));
 
@@ -175,6 +177,39 @@ describe('web camera permissions', () => {
 
     await expect(cameraPermissionManager.isCameraInUse()).resolves.toEqual({ inUse: false });
     expect(mockGetUserMedia).not.toHaveBeenCalled();
+  });
+});
+describe('native camera permissions', () => {
+  beforeEach(() => {
+    Platform.OS = 'android';
+    mockNativeGetPermissions.mockReset();
+    mockNativeRequestPermissions.mockReset();
+  });
+
+  afterEach(() => {
+    Platform.OS = 'web';
+  });
+
+  it('uses the native grant response without probing or immediately re-reading it', async () => {
+    mockNativeGetPermissions.mockResolvedValue({ status: 'undetermined', granted: false, canAskAgain: true });
+    mockNativeRequestPermissions.mockResolvedValue({ status: 'granted', granted: true, canAskAgain: false });
+
+    await expect(cameraPermissionManager.requestWithFallback(true)).resolves.toMatchObject({
+      status: 'granted',
+      canAskAgain: false,
+    });
+    expect(mockNativeGetPermissions).toHaveBeenCalledTimes(1);
+    expect(mockNativeRequestPermissions).toHaveBeenCalledTimes(1);
+  });
+
+  it('maps a native denial that cannot be asked again to blocked', async () => {
+    mockNativeGetPermissions.mockResolvedValue({ status: 'denied', granted: false, canAskAgain: true });
+    mockNativeRequestPermissions.mockResolvedValue({ status: 'denied', granted: false, canAskAgain: false });
+
+    await expect(cameraPermissionManager.requestWithFallback(true)).resolves.toMatchObject({
+      status: 'blocked',
+      canAskAgain: false,
+    });
   });
 });
 

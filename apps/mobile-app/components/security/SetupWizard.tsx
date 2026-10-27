@@ -96,7 +96,8 @@ export default function SetupWizard({ mode, view, context, send, pin, onClose }:
   const heading = headingByStep[view.step as SetupWizardStep];
 
   return (
-    <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    <View style={styles.shell}>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <Animated.View style={{ opacity: entrance, transform: [{ translateY: entrance.interpolate({ inputRange: [0, 1], outputRange: [18, 0] }) }] }}>
         <SetupArtwork mode={mode} pulse={pulse} />
         <View style={styles.progressHeader}>
@@ -172,14 +173,17 @@ export default function SetupWizard({ mode, view, context, send, pin, onClose }:
 
       {view.error === 'save_failed' && <Text accessibilityRole="alert" style={styles.error}>{t('saveFailed', 'We could not save your setup. Your answers are kept, so you can try again.')}</Text>}
 
-      <View style={styles.actions}>
-        {view.canGoBack && <ActionButton mode={mode} variant="ghost" label={t('back', 'Back')} disabled={finishing} onPress={() => send({ type: 'BACK' })} />}
-        {onClose && context.revisiting && <ActionButton mode={mode} variant="ghost" label={t('close', 'Close')} disabled={finishing} onPress={onClose} />}
-        {view.step === 'privacy'
-          ? <ActionButton mode={mode} label={t('finish', 'Finish setup')} loading={finishing} disabled={!view.canFinish} onPress={() => send({ type: 'FINISH' })} />
-          : <ActionButton mode={mode} label={t('next', 'Continue')} onPress={() => send({ type: 'NEXT' })} />}
+      </ScrollView>
+      <View style={styles.actionFooter}>
+        <View style={styles.actions}>
+          {view.canGoBack && <ActionButton mode={mode} variant="ghost" label={t('back', 'Back')} disabled={finishing} onPress={() => send({ type: 'BACK' })} style={styles.actionButton} />}
+          {onClose && context.revisiting && <ActionButton mode={mode} variant="ghost" label={t('close', 'Close')} disabled={finishing} onPress={onClose} style={styles.actionButton} />}
+          {view.step === 'privacy'
+            ? <ActionButton mode={mode} label={t('finish', 'Finish setup')} loading={finishing} disabled={!view.canFinish} onPress={() => send({ type: 'FINISH' })} style={styles.actionButton} />
+            : <ActionButton mode={mode} label={t('next', 'Continue')} onPress={() => send({ type: 'NEXT' })} style={styles.actionButton} />}
+        </View>
       </View>
-    </ScrollView>
+    </View>
   );
 }
 
@@ -218,7 +222,9 @@ function SetupArtwork({ mode, pulse }: { mode: ColorMode; pulse: Animated.Value 
 const makeStyles = (mode: ColorMode) => {
   const p = uiPalette(mode);
   return StyleSheet.create({
-    content: { width: '100%', maxWidth: 640, alignSelf: 'center', paddingHorizontal: uiTokens.space.lg, paddingTop: uiTokens.space.xl, paddingBottom: uiTokens.space.section, gap: uiTokens.space.xl },
+    shell: { flex: 1, minHeight: 0, backgroundColor: p.canvas },
+    scroll: { flex: 1, minHeight: 0 },
+    content: { width: '100%', maxWidth: 640, alignSelf: 'center', paddingHorizontal: uiTokens.space.lg, paddingTop: uiTokens.space.xl, paddingBottom: uiTokens.space.xl, gap: uiTokens.space.xl, flexGrow: 1 },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: uiTokens.space.lg, padding: uiTokens.space.xl },
     progressHeader: { gap: uiTokens.space.md },
     progress: { flexDirection: 'row', gap: uiTokens.space.sm },
@@ -236,7 +242,9 @@ const makeStyles = (mode: ColorMode) => {
     stack: { gap: uiTokens.space.lg },
     row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: uiTokens.space.lg, padding: uiTokens.space.lg },
     rowText: { flex: 1, gap: uiTokens.space.xs },
-    actions: { flexDirection: 'row', flexWrap: 'wrap', gap: uiTokens.space.md, justifyContent: 'flex-end' },
+    actionFooter: { borderTopWidth: 1, borderTopColor: p.border, backgroundColor: p.canvas, paddingHorizontal: uiTokens.space.lg, paddingVertical: uiTokens.space.md },
+    actions: { width: '100%', maxWidth: 640, alignSelf: 'center', flexDirection: 'column', gap: uiTokens.space.sm },
+    actionButton: { width: '100%' },
   });
 };
 

@@ -120,6 +120,12 @@
     },
     "plugins": [
       "expo-router",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow HASHPASS to use your camera to scan QR codes."
+        }
+      ],
       "./plugins/withAndroidRemoveAdIdPermission",
       "./plugins/withAndroidReleaseMinification",
       "./plugins/withAndroidTargetSdk",
