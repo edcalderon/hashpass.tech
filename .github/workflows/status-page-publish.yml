@@ -31,6 +31,7 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       AWS_REGION: ${{ vars.SELF_HOSTED_VPS_AWS_REGION }}
       SSM_MANAGED_INSTANCE_ID: ${{ vars.SELF_HOSTED_VPS_SSM_MANAGED_INSTANCE_ID }}
+      EXPECTED_AWS_ACCOUNT_ID: ${{ vars.SELF_HOSTED_VPS_AWS_ACCOUNT_ID }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -54,6 +55,21 @@ jobs:
           role-to-assume: ${{ vars.SELF_HOSTED_VPS_DEPLOY_ROLE_ARN }}
           role-session-name: hashpass-status-page-publish
           mask-aws-account-id: true
+
+      - name: Verify assumed AWS account
+        run: |
+          set -euo pipefail
+          [[ -n "$EXPECTED_AWS_ACCOUNT_ID" && -n "$SSM_MANAGED_INSTANCE_ID" ]] || {
+            echo '::error::SELF_HOSTED_VPS_AWS_ACCOUNT_ID and SELF_HOSTED_VPS_SSM_MANAGED_INSTANCE_ID must be configured.'
+            exit 1
+          }
+          echo "::add-mask::${EXPECTED_AWS_ACCOUNT_ID}"
+          caller_account="$(aws sts get-caller-identity --query 'Account' --output text)"
+          echo "::add-mask::${caller_account}"
+          [[ "$caller_account" == "$EXPECTED_AWS_ACCOUNT_ID" ]] || {
+            echo '::error::The assumed AWS account does not match the configured deployment target.'
+            exit 1
+          }
 
       - name: Write the page to the VPS
         run: |

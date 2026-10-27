@@ -67,6 +67,21 @@ if [ ! -f "$BETTER_AUTH_ROUTE" ]; then
   exit 1
 fi
 
+# Every route the manifest advertises must exist in the bundle. A missing file (for example a dot-directory
+# dropped by an artifact upload) makes @expo/server answer 405 for that route instead of failing the build.
+node -e '
+const fs = require("fs"), path = require("path");
+const root = process.argv[1];
+const manifest = JSON.parse(fs.readFileSync(path.join(root, "_expo/routes.json"), "utf8"));
+const files = (manifest.apiRoutes || []).map((r) => r.file).filter(Boolean);
+const missing = files.filter((f) => !fs.existsSync(path.join(root, f)));
+if (missing.length) { console.error("Routes listed in routes.json but missing from the bundle:\n  " + missing.join("\n  ")); process.exit(1); }
+' "$PACKAGE_DIR/server" || {
+  echo "❌ Expo server export is incomplete (see routes above)."
+  echo "   Hidden directories such as _expo/functions/.well-known must survive the build artifact upload."
+  exit 1
+}
+
 VERSION_ROUTE="$PACKAGE_DIR/server/_expo/functions/api/config/versions+api.js"
 EXPECTED_VERSION="$(node -p "require('$PROJECT_ROOT/package.json').version")"
 if [ ! -f "$VERSION_ROUTE" ]; then

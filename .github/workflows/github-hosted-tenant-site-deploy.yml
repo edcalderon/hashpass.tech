@@ -105,6 +105,8 @@ jobs:
         with:
           name: site-${{ matrix.environment }}
           path: ${{ matrix.artifactPath }}
+          # Keep dot-directories such as server/_expo/functions/.well-known/ (skipped by default).
+          include-hidden-files: true
           if-no-files-found: error
           retention-days: 1
 

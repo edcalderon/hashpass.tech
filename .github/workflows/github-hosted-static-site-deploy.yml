@@ -136,6 +136,9 @@ jobs:
           # client-only export missing the API routes entirely (caught in
           # the first real observed deploy, run 33899558488, 2026-09-04).
           path: dist
+          # upload-artifact@v4 skips dot-directories by default, which silently dropped
+          # server/_expo/functions/.well-known/ (RFC 8414 OAuth discovery) from the Lambda.
+          include-hidden-files: true
           if-no-files-found: error
           retention-days: 1
 
