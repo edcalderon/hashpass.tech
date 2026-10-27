@@ -74,6 +74,7 @@ export default function QRScanner({
   const { send: sendCameraEvent, status: cameraStatus, canAskAgain: cameraCanAskAgain } = useQrCameraSession();
   const videoRef = React.useRef<HTMLVideoElement | null>(null);
   const scannerWrapperRef = React.useRef<any>(null);
+  const permissionRequestRef = React.useRef<Promise<void> | null>(null);
 
   const styles = getStyles(isDark, colors);
 
@@ -201,103 +202,47 @@ export default function QRScanner({
   };
 
   const requestCameraPermission = async (forceFresh: boolean = true) => {
-    try {
-      sendCameraEvent({ type: 'REQUEST' });
-      setHasPermission(null); // Show loading state
-      
-      // On web, requestWithFallback must be the first camera call made from
-      // this button's user gesture. A preflight getUserMedia can consume the
-      // browser prompt and leave the scanner stuck in a denied state.
-      if (Platform.OS !== 'web') {
-        const cameraCheck = await cameraPermissionManager.isCameraInUse();
-        if (cameraCheck.inUse) {
-          console.warn('Camera is in use:', cameraCheck.message);
-          Alert.alert(
-            'Camera In Use',
-            cameraCheck.message || 'Camera is being used by another application. Please close other apps using the camera and try again.',
-            [
-              {
-                text: 'Retry',
-                onPress: () => {
-                  setTimeout(() => requestCameraPermission(forceFresh), 1000);
-                },
-              },
-              {
-                text: 'Cancel',
-                style: 'cancel',
-                onPress: () => setHasPermission(false),
-              },
-          ]
-          );
+    if (permissionRequestRef.current) return permissionRequestRef.current;
+
+    const request = (async () => {
+      try {
+        sendCameraEvent({ type: 'REQUEST' });
+        setHasPermission(null); // Show loading state
+
+        // Keep this request single-flight. Android can otherwise receive two
+        // runtime permission calls while the first system sheet is still open.
+        const result = await cameraPermissionManager.requestWithFallback(forceFresh);
+
+        if (result.status === 'granted') {
+          // Trust the successful request. Re-reading immediately can race the
+          // native permission sheet and report a transient stale status.
+          setCameraError(null);
+          setHasPermission(true);
+          sendCameraEvent({ type: 'PERMISSION_GRANTED' });
+        } else if (result.status === 'blocked' || (result.status === 'denied' && !result.canAskAgain)) {
           setHasPermission(false);
-          setCameraError(cameraCheck.message || 'Camera is in use.');
-          sendCameraEvent({ type: 'ERROR', message: cameraCheck.message || 'Camera is in use.' });
-          return;
+          sendCameraEvent({ type: 'PERMISSION_REQUIRED', message: result.message, canAskAgain: false });
+          if (Platform.OS === 'web') {
+            cameraPermissionManager.showSettingsAlert(() => cameraPermissionManager.openSettings());
+          }
+        } else {
+          setCameraError(result.message || 'Unable to access the camera.');
+          setHasPermission(false);
+          sendCameraEvent({ type: 'PERMISSION_REQUIRED', message: result.message, canAskAgain: result.canAskAgain });
         }
-      }
-      
-      // Use permission manager with force fresh to avoid cache issues
-      const result = await cameraPermissionManager.requestWithFallback(forceFresh);
-      
-      // Check if result indicates camera in use
-      if (result.message?.toLowerCase().includes('being used') || result.message?.toLowerCase().includes('in use')) {
-        Alert.alert(
-          'Camera In Use',
-          result.message || 'Camera is being used by another application.',
-          [
-            {
-              text: 'Retry',
-              onPress: () => {
-                setTimeout(() => requestCameraPermission(forceFresh), 1000);
-              },
-            },
-            {
-              text: 'Cancel',
-              style: 'cancel',
-              onPress: () => setHasPermission(false),
-            },
-        ]
-        );
+      } catch (error) {
+        console.error('Error requesting camera permission:', error);
+        setCameraError(error instanceof Error ? error.message : 'Unable to access the camera.');
         setHasPermission(false);
-        setCameraError(result.message || 'Camera is in use.');
-        sendCameraEvent({ type: 'ERROR', message: result.message || 'Camera is in use.' });
-        return;
+        sendCameraEvent({ type: 'ERROR', message: error instanceof Error ? error.message : 'Unable to access the camera.' });
       }
-      
-      if (result.status === 'granted') {
-        // Re-read status without prompting a second time. On web this keeps
-        // the original button gesture as the only getUserMedia request.
-        // Safari and some embedded browsers do not implement the Permissions
-        // API, so trust the successful stream opened by the button on web.
-        const verified = Platform.OS === 'web'
-          ? result
-          : await cameraPermissionManager.getPermissionStatus(false);
-        setCameraError(null);
-        setHasPermission(verified.status === 'granted');
-        sendCameraEvent(verified.status === 'granted'
-          ? { type: 'PERMISSION_GRANTED' }
-          : { type: 'PERMISSION_REQUIRED', message: verified.message, canAskAgain: verified.canAskAgain });
-      } else if (result.status === 'blocked' || (result.status === 'denied' && !result.canAskAgain)) {
-        // Permission is blocked - show settings option
-        setHasPermission(false);
-        sendCameraEvent({ type: 'PERMISSION_REQUIRED', message: result.message, canAskAgain: false });
-        if (Platform.OS === 'web') {
-          cameraPermissionManager.showSettingsAlert(() => cameraPermissionManager.openSettings());
-        }
-      } else {
-        setCameraError(result.message || 'Unable to access the camera.');
-        setHasPermission(false);
-        sendCameraEvent({ type: 'PERMISSION_REQUIRED', message: result.message, canAskAgain: result.canAskAgain });
-        // Re-check status after request with fresh check
-        setTimeout(async () => {
-          await checkPermissionStatus(true);
-        }, 500);
-      }
-    } catch (error) {
-      console.error('Error requesting camera permission:', error);
-      setCameraError(error instanceof Error ? error.message : 'Unable to access the camera.');
-      setHasPermission(false);
-      sendCameraEvent({ type: 'ERROR', message: error instanceof Error ? error.message : 'Unable to access the camera.' });
+    })();
+
+    permissionRequestRef.current = request;
+    try {
+      await request;
+    } finally {
+      if (permissionRequestRef.current === request) permissionRequestRef.current = null;
     }
   };
 

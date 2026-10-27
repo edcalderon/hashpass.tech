@@ -1,3 +1,29 @@
+## [1.9.166](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.165...v1.9.166) (2026-10-27)
+
+
+### Bug Fixes
+
+* **api:** route Companion origins to their own Supabase profile ([45d024f](https://github.com/hashpass-tech/hashpass.tech/commit/45d024f08574b487dfd346c55e3d3e554d3e3568))
+
+
+### Features
+
+* **companion:** continue with HASHPASS ID or email from the guest card ([0b7582e](https://github.com/hashpass-tech/hashpass.tech/commit/0b7582e77a1e99e50c0be1467e658dc202b05d22))
+* **companion:** email a confirmation code and link right after first setup ([d78aca5](https://github.com/hashpass-tech/hashpass.tech/commit/d78aca557f40e9e3f676ad62a41266505a811fb2))
+* **companion:** explain the optional HASHPASS ID upgrade on the account page ([60b9da8](https://github.com/hashpass-tech/hashpass.tech/commit/60b9da82625d3e4c00a74537109919f943738da4))
+* **companion:** show inbox only when connected, add profile picture and account page ([28a501e](https://github.com/hashpass-tech/hashpass.tech/commit/28a501ed0ff346bc919d872061686d49a347c189))
+### Release Highlights
+- explain the optional HASHPASS ID upgrade on the account page; email a confirmation code and link right after first setup; show inbox only when connected, add profile picture and account page; continue with HASHPASS ID or email from the guest card; harden native mobile UI and camera flow; route Companion origins to their own Supabase profile; prevent production ahead of staging
+
+### Release scope
+- Compared with: `v1.9.165` (the previous global release tag)
+
+### Affected products & packages
+- Companion
+- Mobile app
+- Documentation
+- Release tooling
+
 ## [1.9.165](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.164...v1.9.165) (2026-10-27)
 
 

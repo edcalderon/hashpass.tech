@@ -23,7 +23,7 @@ durable Companion creation still use the existing HASHPASS/Better Auth flow from
 browser session boundary without sending the local SMA to a service.
 
 <!-- COMPANION_RELEASE:START -->
-> **Current MVP release:** [v0.0.6](./CHANGELOG.md) · stable · 2026-10-27
+> **Current MVP release:** [v0.0.7](./CHANGELOG.md) · stable · 2026-10-27
 <!-- COMPANION_RELEASE:END -->
 
 ## Develop
@@ -53,8 +53,8 @@ Production `https://companion.hashpass.tech` is provisioned from the same stack 
 There is no deploy workflow yet; publishing to either site is manual.
 
 Companion CI runs `check-companion-deployment.mjs` on every Companion PR and
-push. It refuses any source that would leave production or development ahead
-of the checked-out `develop` version. Each build also emits
+push. It refuses any source that would leave production ahead of development
+or either live host ahead of the checked-out `develop` version. Each build also emits
 `/companion-version.json`, which is the authoritative deployment manifest.
 Until the automated publisher is enabled, any manual publication must be
 built from `develop`, publish that manifest with the rest of `dist`, and run

@@ -28,6 +28,6 @@ export type InboxBellProps = {
   ownerEmail: string | null;
   status: ConfirmStatus;
   errorKey: string | null;
-  onSend: () => Promise<void>;
+  onSend: (email?: string | null) => Promise<void>;
   onVerify: (code: string) => Promise<void>;
 };

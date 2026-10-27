@@ -17,8 +17,10 @@ export function useSmaArchive() {
       const archive = await createLocalArchive(email);
       saveLocalArchive(archive);
       setState({status: 'ready', archive, error: null});
+      return archive.ownerEmail;
     } catch (error: unknown) {
       setState((current) => ({...current, status: 'setup', error: error instanceof Error ? error.message : 'Companion setup failed.'}));
+      return null;
     }
   }, []);
 
@@ -52,7 +54,7 @@ export function useSmaArchive() {
     status: SmaArchiveState['status'];
     archive: LocalSmaArchive | null;
     error: string | null;
-    setup: (email: string) => Promise<void>;
+    setup: (email: string) => Promise<string | null>;
     remember: (input: SmaMemoryInput) => Promise<boolean>;
     reset: () => void;
     exportArchive: () => string;

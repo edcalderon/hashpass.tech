@@ -14,8 +14,10 @@ const mockAlert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
 
 jest.mock('expo-camera', () => ({
   CameraView: 'CameraView',
-  getCameraPermissionsAsync: jest.fn(),
-  requestCameraPermissionsAsync: jest.fn(),
+  Camera: {
+    getCameraPermissionsAsync: jest.fn(),
+    requestCameraPermissionsAsync: jest.fn(),
+  },
 }));
 jest.mock('../../hooks/useTheme', () => ({
   useTheme: () => ({

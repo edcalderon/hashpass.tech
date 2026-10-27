@@ -4,8 +4,10 @@ import { qrScannerService } from "../../lib/qr-scanner-service";
 
 jest.mock("expo-camera", () => ({
   CameraView: "CameraView",
-  getCameraPermissionsAsync: jest.fn(),
-  requestCameraPermissionsAsync: jest.fn(),
+  Camera: {
+    getCameraPermissionsAsync: jest.fn(),
+    requestCameraPermissionsAsync: jest.fn(),
+  },
 }));
 
 describe("qrScannerService.parseHashpassPayload", () => {

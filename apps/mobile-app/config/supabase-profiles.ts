@@ -233,7 +233,8 @@ const PROFILES: SupabaseProfile[] = [
     id: 'core-development',
     tenant: 'core',
     environment: 'development',
-    hosts: ['localhost', '127.0.0.1', 'dev.hashpass.tech', 'api-dev.hashpass.tech'],
+    // companion-dev is the Companion staging site; its API calls must reach the development database.
+    hosts: ['localhost', '127.0.0.1', 'dev.hashpass.tech', 'api-dev.hashpass.tech', 'companion-dev.hashpass.tech'],
     publicUrlEnv: [
       'EXPO_PUBLIC_SUPABASE_URL_DEV',
       'EXPO_PUBLIC_SUPABASE_URL',
@@ -254,7 +255,7 @@ const PROFILES: SupabaseProfile[] = [
     tenant: 'core',
     environment: 'production',
     // bsl.hashpass.tech is a whitelabel front for the same production database.
-    hosts: ['hashpass.tech', 'www.hashpass.tech', 'api.hashpass.tech', 'bsl.hashpass.tech'],
+    hosts: ['hashpass.tech', 'www.hashpass.tech', 'api.hashpass.tech', 'bsl.hashpass.tech', 'companion.hashpass.tech'],
     publicUrlEnv: [
       'EXPO_PUBLIC_SUPABASE_URL_PROD',
       'EXPO_PUBLIC_SUPABASE_URL',

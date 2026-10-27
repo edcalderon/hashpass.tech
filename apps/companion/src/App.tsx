@@ -11,8 +11,10 @@ import { useSmaArchive } from './sma/useSmaArchive';
 import { useCompanionAuth } from './auth/useCompanionAuth';
 import { resolveGate } from './sma/gate';
 import { InboxBell } from './confirm/InboxBell';
+import { AccountMenu } from './account/AccountMenu';
+import { buildAccountSummary, inboxOwnerEmail } from './account/model';
 import { useEmailConfirmation } from './confirm/useEmailConfirmation';
-import type { CapabilityValue, DemoAction, HeroProps, IconKey, PetMood } from './types';
+import type { CapabilityValue, DemoAction, GuestStartProps, HeroProps, IconKey, PetMood } from './types';
 
 const QuestGame = lazy(() => import('./game/QuestGame').then((m) => ({ default: m.QuestGame })));
 const IntroFilm = lazy(() => import('./film/IntroFilm').then((m) => ({ default: m.IntroFilm })));
@@ -27,7 +29,7 @@ const demoActions: DemoAction[] = [
   { id: 'chat', unlocks: null, mood: 'hi' },
 ];
 
-function Hero({ hasArchive, onSetup, inbox }: HeroProps) {
+function Hero({ hasArchive, onSetup, inbox, account }: HeroProps) {
   const { t } = useSettings();
   const [ref, inView] = useInView<HTMLElement>();
   const [mode, setMode] = useState<'none' | 'quest' | 'film'>('none');
@@ -37,8 +39,9 @@ function Hero({ hasArchive, onSetup, inbox }: HeroProps) {
       <div className="cloud cloud--a" aria-hidden="true"><Sprite name="cloud" /></div>
       <div className="cloud cloud--b" aria-hidden="true"><Sprite name="cloud" /></div>
       <div className="hero__bar">
-        <InboxBell {...inbox} />
+        {inbox && <InboxBell {...inbox} />}
         <CompanionSettings />
+        {account && <AccountMenu {...account} />}
       </div>
       <div className="wrap hero__inner">
         <p className="tag">
@@ -158,7 +161,7 @@ function Evolution() {
   );
 }
 
-function GuestStart() {
+function GuestStart({ auth, hasArchive, onSignIn, onEmail }: GuestStartProps) {
   const { t } = useSettings();
   const reveal = useReveal<HTMLDivElement>();
   return (
@@ -184,10 +187,22 @@ function GuestStart() {
             <strong>{t('guest.turns', { n: proposedGuestTurns })}</strong> {t('guest.per')}
           </p>
           <p className="muted">{t('guest.proposed')}</p>
-          <button type="button" className="btn btn--primary btn--block" disabled aria-describedby="id-note">
-            {t('guest.cta')}
-          </button>
-          <p id="id-note" className="muted meter__note">{t('guest.note')}</p>
+          {auth.status === 'signed-in' && auth.user ? (
+            <p className="meter__line" role="status">{t('guest.signedIn', { email: auth.user.email })}</p>
+          ) : (
+            <div className="meter__actions">
+              <button type="button" className="btn btn--primary btn--block" onClick={() => void onSignIn()} disabled={auth.status === 'loading'} aria-describedby="id-note">
+                <Icon name="lock" /> {t('guest.cta')}
+              </button>
+              {!hasArchive && (
+                <button type="button" className="btn btn--ghost btn--block" onClick={onEmail} aria-describedby="id-note">
+                  <Icon name="chat" /> {t('guest.email')}
+                </button>
+              )}
+            </div>
+          )}
+          {auth.status === 'error' && <p className="muted meter__note" role="alert">{auth.error || t('control.auth.error')}</p>}
+          <p id="id-note" className="muted meter__note">{t(hasArchive ? 'guest.noteEmail' : 'guest.note')}</p>
         </div>
       </div>
     </section>
@@ -332,13 +347,19 @@ export function App() {
   const { t } = useSettings();
   const sma = useSmaArchive();
   const auth = useCompanionAuth();
-  const confirmation = useEmailConfirmation(sma.archive?.ownerEmail ?? null);
+  const authEmail = auth.status === 'signed-in' && auth.user ? auth.user.email : null;
+  const confirmation = useEmailConfirmation(inboxOwnerEmail(sma.archive?.ownerEmail ?? null, authEmail));
   const [setupDismissed, setSetupDismissed] = useState(false);
+  const completeSetup = async (email: string) => {
+    const created = await sma.setup(email);
+    if (created && inboxOwnerEmail(created, authEmail)) void confirmation.send(created);
+  };
   const view = resolveGate(sma.status, sma.archive !== null, setupDismissed);
 
   if (view === 'loading') return <main className="sma-gate"><p role="status">{t('sma.loading')}</p></main>;
-  if (view === 'setup') return <SmaSetup onComplete={sma.setup} onDismiss={() => setSetupDismissed(true)} error={sma.error} />;
+  if (view === 'setup') return <SmaSetup onComplete={completeSetup} onDismiss={() => setSetupDismissed(true)} error={sma.error} />;
   const archive = view === 'workspace' ? sma.archive : null;
+  const summary = buildAccountSummary({ authUser: auth.user ?? null, archive: sma.archive, setupEmailConfirmed: !confirmation.items.some((item) => item.kind === 'unconfirmed-email') });
 
   return (
     <>
@@ -346,7 +367,8 @@ export function App() {
       <Hero
         hasArchive={archive !== null}
         onSetup={() => setSetupDismissed(false)}
-        inbox={{ items: confirmation.items, ownerEmail: sma.archive?.ownerEmail ?? null, status: confirmation.status, errorKey: confirmation.errorKey, onSend: confirmation.send, onVerify: confirmation.verify }}
+        inbox={summary ? { items: confirmation.items, ownerEmail: inboxOwnerEmail(sma.archive?.ownerEmail ?? null, authEmail), status: confirmation.status, errorKey: confirmation.errorKey, onSend: confirmation.send, onVerify: confirmation.verify } : null}
+        account={summary ? { summary, signedIn: auth.status === 'signed-in', onSignIn: auth.signIn, onSignOut: auth.signOut, onExport: sma.exportArchive, onReset: sma.reset } : null}
       />
       <main>
         {archive && <CompanionControlPanel
@@ -358,7 +380,7 @@ export function App() {
           onRetryAuth={auth.refresh}
         />}
         <Evolution />
-        <GuestStart />
+        <GuestStart auth={auth} hasArchive={sma.archive !== null} onSignIn={auth.signIn} onEmail={() => setSetupDismissed(false)} />
         {archive && <SmaMemoryPanel archive={archive} onRemember={sma.remember} onReset={sma.reset} onExport={sma.exportArchive} error={sma.error} />}
         <Capabilities />
         <Rules />

@@ -96,26 +96,26 @@ test('rejects production ahead of source', async () => {
   );
 });
 
-test('accepts equal production and stale development during migration', async () => {
+test('rejects production ahead of development even when both are at or below source', async () => {
   const routes = {
     'https://prod.example.test/companion-version.json': response('{"version":"0.0.5"}'),
     'https://dev.example.test/companion-version.json': response('{"version":"0.0.2"}'),
   };
 
-  const result = await checkCompanionDeploymentOrder({
-    sourceVersion: '0.0.5',
-    productionUrl: 'https://prod.example.test',
-    developmentUrl: 'https://dev.example.test',
-    fetchImpl: fakeFetch(routes),
-  });
-
-  assert.equal(result.production.version, '0.0.5');
-  assert.equal(result.development.version, '0.0.2');
+  await assert.rejects(
+    checkCompanionDeploymentOrder({
+      sourceVersion: '0.0.6',
+      productionUrl: 'https://prod.example.test',
+      developmentUrl: 'https://dev.example.test',
+      fetchImpl: fakeFetch(routes),
+    }),
+    /production 0\.0\.5 is ahead of development 0\.0\.2/,
+  );
 });
 
 test('can require development parity after a guarded publication', async () => {
   const routes = {
-    'https://prod.example.test/companion-version.json': response('{"version":"0.0.5"}'),
+    'https://prod.example.test/companion-version.json': response('{"version":"0.0.2"}'),
     'https://dev.example.test/companion-version.json': response('{"version":"0.0.2"}'),
   };
 

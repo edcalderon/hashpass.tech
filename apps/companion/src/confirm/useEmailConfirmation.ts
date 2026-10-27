@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { getCompanionAuthBaseUrl } from '../auth/client';
 import { useSettings } from '../settings/SettingsContext';
-import { addConfirmed, buildInbox, callConfirmation, CODE_PATTERN, confirmationEndpoint, takeConfirmToken } from './model';
+import { addConfirmed, buildInbox, callConfirmation, CODE_PATTERN, confirmationEndpoint, isConfirmed, takeConfirmToken } from './model';
 import { loadConfirmedEmails, saveConfirmedEmails } from './storage';
 import type { ConfirmStatus } from './types';
 
@@ -42,14 +42,15 @@ export function useEmailConfirmation(ownerEmail: string | null) {
     });
   }, [endpoint, markConfirmed]);
 
-  const send = useCallback(async () => {
-    if (!ownerEmail) return;
+  /** Sends a code and link. First setup passes the address itself, since no archive exists yet. */
+  const send = useCallback(async (email: string | null = ownerEmail) => {
+    if (!email || isConfirmed(confirmedEmails, email)) return;
     setStatus('sending');
     setErrorKey(null);
-    const result = await callConfirmation(endpoint, { action: 'send', email: ownerEmail, locale: settings.language });
+    const result = await callConfirmation(endpoint, { action: 'send', email, locale: settings.language });
     setStatus(result.ok ? 'sent' : 'idle');
     if (!result.ok) setErrorKey(result.errorKey);
-  }, [endpoint, ownerEmail, settings.language]);
+  }, [confirmedEmails, endpoint, ownerEmail, settings.language]);
 
   const verify = useCallback(async (code: string) => {
     if (!ownerEmail) return;

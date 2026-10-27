@@ -1,6 +1,7 @@
 import { Platform, Linking, Alert } from 'react-native';
-import { BarCodeScanner } from './barcode-scanner-compat';
+import { Camera } from 'expo-camera';
 import { detectWebBrowser, probeWebVideoInputs, subscribeToWebCameraSignals } from './web-camera-support';
+import type { WebCameraSignal } from '../types/web-camera.types';
 
 export type CameraPermissionStatus = 'granted' | 'denied' | 'undetermined' | 'blocked';
 
@@ -44,7 +45,8 @@ class CameraPermissionManager {
         return this.getWebPermissionStatus();
       }
 
-      const { status, canAskAgain } = await BarCodeScanner.getPermissionsAsync();
+      const response = await Camera.getCameraPermissionsAsync();
+      const { status, canAskAgain } = this.normalizeNativePermissionResponse(response);
 
       return {
         status: status as CameraPermissionStatus,
@@ -79,17 +81,13 @@ class CameraPermissionManager {
 
       const currentStatus = await this.getPermissionStatus(forceFresh);
       
-      // If already granted, verify it's actually working
-      if (currentStatus.status === 'granted') {
-        const verified = await this.verifyPermissionStatus('granted');
-        if (verified.status === 'granted') {
-          return verified;
-        }
-        // If verification failed, continue to request
-      }
+      // A successful native response is authoritative. Re-reading the status
+      // here can race Android's permission sheet and turn a valid grant into
+      // a transient undetermined result.
+      if (currentStatus.status === 'granted') return currentStatus;
 
       // If blocked or denied without canAskAgain, show settings prompt
-      if (currentStatus.status === 'denied' && !currentStatus.canAskAgain) {
+      if (currentStatus.status === 'blocked' || (currentStatus.status === 'denied' && !currentStatus.canAskAgain)) {
         return {
           status: 'blocked',
           canAskAgain: false,
@@ -98,15 +96,13 @@ class CameraPermissionManager {
       }
 
       // Request permission with fresh check
-      const { status, canAskAgain } = await BarCodeScanner.requestPermissionsAsync();
-      
-      // Verify the permission actually works
-      const verified = await this.verifyPermissionStatus(status as CameraPermissionStatus);
+      const response = await Camera.requestCameraPermissionsAsync();
+      const { status, canAskAgain } = this.normalizeNativePermissionResponse(response);
       
       return {
-        status: verified.status,
-        canAskAgain: canAskAgain ?? true,
-        message: verified.message || this.getStatusMessage(status as CameraPermissionStatus, canAskAgain ?? true),
+        status,
+        canAskAgain,
+        message: this.getStatusMessage(status, canAskAgain),
       };
     } catch (error: any) {
       console.error('Error requesting camera permission:', error);
@@ -116,11 +112,7 @@ class CameraPermissionManager {
         return this.reconcileWebPermissionFailure(error);
       }
       
-      return {
-        status: 'undetermined',
-        canAskAgain: true,
-        message: 'Error requesting camera permission',
-      };
+      return this.reconcileNativePermissionFailure(error);
     }
   }
 
@@ -191,50 +183,6 @@ class CameraPermissionManager {
     
     // Check for specific error codes (browser-specific)
     return false;
-  }
-
-  /**
-   * Verify that a granted permission actually works
-   */
-  private async verifyPermissionStatus(status: CameraPermissionStatus): Promise<CameraPermissionResult> {
-    if (status !== 'granted') {
-      return {
-        status,
-        canAskAgain: true,
-        message: this.getStatusMessage(status, true),
-      };
-    }
-
-    // On web, requestPermission already opened and closed a real media stream.
-    // A second getUserMedia call here can create a second prompt or race the
-    // scanner on Safari/iOS, so use the browser permission state only.
-    if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.mediaDevices) {
-      try {
-        const permissionState = await this.getWebPermissionState();
-        if (permissionState === 'denied') {
-          return {
-            status: 'blocked',
-            canAskAgain: false,
-            message: 'Camera permission is blocked. Allow camera access in your browser settings.',
-          };
-        }
-        return {
-          status: 'granted',
-          canAskAgain: false,
-          message: 'Camera permission is granted and working',
-        };
-      } catch (mediaError: any) {
-        console.warn('Permission verification failed:', mediaError);
-        return this.reconcileWebPermissionFailure(mediaError);
-      }
-    }
-
-    // For native platforms, assume granted status is correct
-    return {
-      status: 'granted',
-      canAskAgain: false,
-      message: 'Camera permission is granted',
-    };
   }
 
   /**
@@ -409,18 +357,11 @@ class CameraPermissionManager {
       }
     }
 
-    const shouldForceFresh = forceFresh;
-
-    const cameraCheck = await this.isCameraInUse();
-    if (cameraCheck.inUse) {
-      return {
-        status: 'undetermined',
-        canAskAgain: true,
-        message: cameraCheck.message || 'Camera is being used by another application. Please close other apps using the camera and try again.',
-      };
-    }
-    
-    let result = await this.requestPermission(shouldForceFresh);
+    // Native permission APIs are the source of truth. A camera-in-use probe
+    // cannot distinguish a denied runtime permission from a busy camera and
+    // can race the actual request on Android, so request exactly once and let
+    // CameraView report hardware errors after the grant.
+    const result = await this.requestPermission(forceFresh);
     
     // If blocked, show settings alert
     if (result.status === 'blocked' || (result.status === 'denied' && !result.canAskAgain)) {
@@ -431,6 +372,41 @@ class CameraPermissionManager {
     }
     
     return result;
+  }
+
+  private normalizeNativePermissionResponse(response: { status?: unknown; granted?: boolean; canAskAgain?: boolean }): {
+    status: CameraPermissionStatus;
+    canAskAgain: boolean;
+  } {
+    const canAskAgain = response.canAskAgain ?? true;
+    const status = response.granted === true
+      ? 'granted'
+      : response.status === 'blocked'
+        ? 'blocked'
+        : response.status === 'denied'
+          ? canAskAgain ? 'denied' : 'blocked'
+          : 'undetermined';
+
+    return { status, canAskAgain: status === 'granted' ? false : canAskAgain };
+  }
+
+  private async reconcileNativePermissionFailure(error: unknown): Promise<CameraPermissionResult> {
+    try {
+      const current = await this.getPermissionStatus(true);
+      if (current.status === 'blocked' || (current.status === 'denied' && !current.canAskAgain)) {
+        return current;
+      }
+    } catch {
+      // Preserve the original request failure below when the native module
+      // cannot even read its permission state.
+    }
+
+    const detail = error instanceof Error && error.message ? ` ${error.message}` : '';
+    return {
+      status: 'undetermined',
+      canAskAgain: true,
+      message: `Camera permission could not be requested.${detail}`,
+    };
   }
 
   /**
@@ -450,7 +426,7 @@ class CameraPermissionManager {
   watchWebPermission(onChange: (result: CameraPermissionResult) => void): () => void {
     if (Platform.OS !== 'web' || typeof navigator === 'undefined') return () => undefined;
 
-    const unsubscribe = subscribeToWebCameraSignals(async (signal) => {
+    const unsubscribe = subscribeToWebCameraSignals(async (signal: WebCameraSignal) => {
       if (signal.type === 'permission-changed') {
         if (signal.state === 'granted') {
           this.webPermissionGrantedOnce = true;

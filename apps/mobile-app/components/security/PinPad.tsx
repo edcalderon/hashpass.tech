@@ -16,7 +16,11 @@ export function pinKeyAction(key: string): PinKeyAction {
   return null;
 }
 
-const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9'] as const;
+const KEY_ROWS = [
+  ['1', '2', '3'],
+  ['4', '5', '6'],
+  ['7', '8', '9'],
+] as const;
 
 /**
  * Four-digit entry. The digits live only in this component's state and are cleared the
@@ -77,10 +81,16 @@ export default function PinPad({ mode, title, hint, error, busy = false, disable
           : !!error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
       </View>
       <View accessibilityLabel={t('keypad', 'PIN keypad')} style={styles.grid}>
-        {KEYS.map(digit => key(digit, () => press(digit)))}
-        <View style={styles.spacer} />
-        {key('0', () => press('0'))}
-        {key('⌫', erase, t('delete', 'Delete last digit'))}
+        {KEY_ROWS.map(row => (
+          <View key={row.join('')} style={styles.keyRow}>
+            {row.map(digit => key(digit, () => press(digit)))}
+          </View>
+        ))}
+        <View style={styles.keyRow}>
+          <View accessible={false} style={styles.keyPlaceholder} />
+          {key('0', () => press('0'))}
+          {key('⌫', erase, t('delete', 'Delete last digit'))}
+        </View>
       </View>
     </View>
   );
@@ -89,16 +99,17 @@ export default function PinPad({ mode, title, hint, error, busy = false, disable
 const makeStyles = (mode: ColorMode) => {
   const p = uiPalette(mode);
   return StyleSheet.create({
-    root: { alignItems: 'center', gap: uiTokens.space.lg, width: '100%', maxWidth: 320, alignSelf: 'center' },
+    root: { alignItems: 'center', gap: uiTokens.space.lg, width: '100%', maxWidth: 360, alignSelf: 'center', minWidth: 0 },
     title: { color: p.text, fontSize: uiTokens.type.title, fontWeight: '700', textAlign: 'center' },
     hint: { color: p.muted, fontSize: uiTokens.type.label, lineHeight: 22, textAlign: 'center' },
     dots: { flexDirection: 'row', gap: uiTokens.space.lg, paddingVertical: uiTokens.space.sm },
     dot: { width: 16, height: 16, borderRadius: uiTokens.radius.circle, borderWidth: 2, borderColor: p.border },
     status: { minHeight: 44, justifyContent: 'center', alignItems: 'center' },
     error: { color: p.danger, fontSize: uiTokens.type.label, textAlign: 'center' },
-    grid: { flexDirection: 'row', flexWrap: 'wrap', width: '100%', gap: uiTokens.space.md, justifyContent: 'center' },
-    key: { width: '30%', flexGrow: 1, minHeight: uiTokens.control.minHeight + uiTokens.space.md, alignItems: 'center', justifyContent: 'center', borderRadius: uiTokens.radius.card, backgroundColor: p.raised, borderWidth: uiTokens.control.borderWidth, borderColor: p.border },
-    spacer: { width: '30%', flexGrow: 1 },
+    grid: { width: '100%', gap: uiTokens.space.sm, minWidth: 0 },
+    keyRow: { flexDirection: 'row', gap: uiTokens.space.sm, width: '100%', minWidth: 0 },
+    key: { flex: 1, minWidth: 0, minHeight: 56, alignItems: 'center', justifyContent: 'center', borderRadius: uiTokens.radius.card, backgroundColor: p.raised, borderWidth: uiTokens.control.borderWidth, borderColor: p.border },
+    keyPlaceholder: { flex: 1, minWidth: 0, minHeight: 56 },
     keyLabel: { color: p.text, fontSize: uiTokens.type.title, fontWeight: '600' },
   });
 };
