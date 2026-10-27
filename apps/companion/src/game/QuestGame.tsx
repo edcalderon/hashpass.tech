@@ -7,6 +7,7 @@ import type { Dialog, Game, Hud, Phase, StageKey } from '../types';
 import { advance, answer, openDialog } from './dialog';
 import { completeQuest, createGame, talkState, tickGame } from './engine';
 import { levels } from './levels';
+import { createPixelMusic } from './music';
 import { VIEW_H, VIEW_W, drawGame } from './render';
 
 const STEP_MS = 1000 / 60;
@@ -21,12 +22,16 @@ export function QuestGame({ onClose }: { onClose: () => void }) {
   const keys = useRef({ left: false, right: false, jump: false });
   const phaseRef = useRef<Phase>('intro');
   const stageRef = useRef<StageKey>('hatchling');
+  const musicRef = useRef(createPixelMusic());
+  const musicInteracted = useRef(false);
 
   const [levelIndex, setLevelIndex] = useState(0);
   const [phase, setPhaseState] = useState<Phase>('intro');
   const [stage, setStage] = useState<StageKey>('hatchling');
   const [talk, setTalk] = useState<Dialog>(openDialog());
   const [hud, setHud] = useState<Hud>({ collected: 0, need: 0, near: false, state: 'locked', falls: 0 });
+  const [musicPlaying, setMusicPlaying] = useState(false);
+  const [musicVolume, setMusicVolume] = useState(0.22);
 
   const level = levels[levelIndex];
   const lv = (suffix: string) => t(`level.${level.id}.${suffix}`);
@@ -43,6 +48,26 @@ export function QuestGame({ onClose }: { onClose: () => void }) {
     };
   }, []);
 
+  useEffect(() => () => musicRef.current.dispose(), []);
+
+  const startMusic = () => {
+    musicInteracted.current = true;
+    void musicRef.current.start().then(
+      () => setMusicPlaying(true),
+      () => setMusicPlaying(false),
+    );
+  };
+
+  const toggleMusic = () => {
+    musicInteracted.current = true;
+    if (musicPlaying) {
+      musicRef.current.stop();
+      setMusicPlaying(false);
+    } else {
+      startMusic();
+    }
+  };
+
   const startLevel = useCallback(
     (index: number) => {
       gameRef.current = createGame(levels[index]);
@@ -55,6 +80,7 @@ export function QuestGame({ onClose }: { onClose: () => void }) {
   );
 
   const beginPlay = () => {
+    if (!musicInteracted.current) startMusic();
     setPhase('play');
     canvasEl.current?.focus();
   };
@@ -237,13 +263,53 @@ export function QuestGame({ onClose }: { onClose: () => void }) {
           {hud.state === 'done' && <strong className="ok">{t('quest.flagOpen')}</strong>}
         </div>
 
+        <div className="quest__audio" aria-label={t('quest.musicControls')}>
+          <button type="button" className="quest__audio-toggle" aria-pressed={musicPlaying} onClick={toggleMusic}>
+            <span aria-hidden="true">♫</span> {musicPlaying ? t('quest.musicOn') : t('quest.musicOff')}
+          </button>
+          <label className="quest__volume">
+            <span>{t('quest.volume')}</span>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              value={musicVolume}
+              aria-label={t('quest.volume')}
+              onChange={(e) => {
+                const next = Number(e.currentTarget.value);
+                setMusicVolume(next);
+                musicRef.current.setVolume(next);
+              }}
+            />
+          </label>
+        </div>
+
         {phase === 'intro' && (
           <div className="quest__panel" role="group" aria-label={t('quest.briefing')}>
             <p className="eyebrow">{lv('badge')}</p>
             <h2 className="h2">{lv('title')}</h2>
             <p className="lead">{lv('teaches')}</p>
             <p>{lv('objective')}</p>
-            <p className="muted">{t('quest.controls')}</p>
+            <div className="quest__control-guide" aria-label={t('quest.controls')}>
+              <p className="quest__control-title">{t('quest.controlsTitle')}</p>
+              <div className="quest__control-grid">
+                <div className="quest__control-item">
+                  <div className="quest__keys" aria-hidden="true"><kbd>←</kbd><kbd>→</kbd><kbd>A</kbd><kbd>D</kbd></div>
+                  <span>{t('quest.move')}</span>
+                </div>
+                <div className="quest__control-item">
+                  <div className="quest__keys" aria-hidden="true"><kbd>SPACE</kbd><kbd>↑</kbd></div>
+                  <span>{t('quest.jump')}</span>
+                </div>
+                <div className="quest__control-item">
+                  <div className="quest__keys" aria-hidden="true"><kbd>E</kbd><kbd>ENTER</kbd></div>
+                  <span>{t('quest.talk')}</span>
+                </div>
+              </div>
+              <p className="muted quest__touch-note">{t('quest.touchHint')}</p>
+              <p className="muted quest__music-note"><span aria-hidden="true">♫</span> {t('quest.musicHint')}</p>
+            </div>
             <button type="button" className="btn btn--primary" onClick={beginPlay} autoFocus>
               {levelIndex === 0 ? t('quest.start') : t('quest.go')}
             </button>
