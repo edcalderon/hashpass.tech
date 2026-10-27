@@ -10,8 +10,9 @@ test('staging page is not indexable', () => {
 
 test('page says it is a staging preview and does not claim working features', () => {
   const app = read('../src/App.tsx');
-  assert.match(app, /Staging preview/);
-  assert.match(app, /previews, not working features/);
+  const en = read('../src/i18n/en.ts');
+  assert.match(en, /Staging preview/);
+  assert.match(en, /previews, not working features/);
   assert.match(app, /disabled/); // HASHPASS ID sign-in button stays disabled until it is connected
   assert.match(read('../src/content.ts'), /proposedGuestTurns = 5/);
 });
@@ -33,7 +34,8 @@ test('every sprite is a rectangular grid with only known palette colors', () => 
 test('footer shows the tracked version from the generated version files', () => {
   const app = read('../src/App.tsx');
   assert.match(app, /getCompanionVersionLabel\(\)/);
-  assert.match(app, /Build \$\{CURRENT_VERSION\.buildNumber\}/);
+  assert.match(app, /t\('foot\.build', \{ build: CURRENT_VERSION\.buildNumber/);
+  assert.match(read('../src/i18n/en.ts'), /'foot\.build': 'Build \{build\}/);
   const pkg = JSON.parse(read('../package.json'));
   const tracked = JSON.parse(read('../src/config/versions.json'));
   assert.equal(tracked.currentVersion.version, pkg.version, 'versions.json matches package.json');

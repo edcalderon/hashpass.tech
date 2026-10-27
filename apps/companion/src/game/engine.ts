@@ -2,10 +2,8 @@
  * Game state for one level: pure functions over plain data, no DOM. The canvas renderer and the React dialog
  * only read this state, and the node tests drive it directly.
  */
-import type { Game, LevelDef, Spot, TalkState, Token } from '../types.ts';
+import type { Body, Game, Input, LevelDef, Spot, TalkState, Token } from '../types.ts';
 import { BODY_H, BODY_W, TILE, makeGrid, overlaps, spawn, stepBody } from './physics.ts';
-import type { Body } from '../types.ts';
-import type { Input } from '../types.ts';
 
 /** Hitbox sizes shared by the engine, the renderer and the reachability test. */
 export const NPC_ZONE = { padX: 20, up: 32, w: TILE + 40, h: 48 };

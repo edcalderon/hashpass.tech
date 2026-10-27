@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { icons } from './icons';
 import { sprites } from './sprites';
-import type { SpriteKey } from './types';
+import type { IconKey, SpriteKey } from './types';
 
 /** Draws a sprite as merged horizontal runs of crisp SVG rects. Decorative: the parent names it. */
 export function Sprite({ name, className }: { name: SpriteKey; className?: string }) {
@@ -112,4 +113,45 @@ export function useInView<T extends Element>() {
     return () => observer.disconnect();
   }, []);
   return [ref, inView] as const;
+}
+
+/** One-colour pixel icon in the current text colour. Decorative: the label next to it carries the meaning. */
+export function Icon({ name, className }: { name: IconKey; className?: string }) {
+  const rects = useMemo(
+    () => icons[name].flatMap((row, y) => [...row].map((c, x) => (c === '1' ? { x, y } : null)).filter((c): c is { x: number; y: number } => c !== null)),
+    [name],
+  );
+  return (
+    <svg className={`icon${className ? ` ${className}` : ''}`} viewBox="0 0 8 8" shapeRendering="crispEdges" aria-hidden="true" focusable="false">
+      {rects.map((r) => (
+        <rect key={`${r.x}-${r.y}`} x={r.x} y={r.y} width={1} height={1} fill="currentColor" />
+      ))}
+    </svg>
+  );
+}
+
+/**
+ * Fades a block in the first time it scrolls into view. Content is visible by default; the hidden state is only
+ * applied (before paint) when IntersectionObserver exists, so nothing stays invisible if the observer never fires.
+ * Reduced motion is handled in CSS, which shows everything immediately.
+ */
+export function useReveal<T extends HTMLElement>() {
+  const ref = useRef<T | null>(null);
+  useLayoutEffect(() => {
+    const node = ref.current;
+    if (!node || typeof IntersectionObserver === 'undefined') return undefined;
+    node.dataset.reveal = 'hide';
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          node.dataset.reveal = 'show';
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.15 },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+  return ref;
 }

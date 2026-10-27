@@ -4,11 +4,16 @@
  * and the quiz copy only states things the Companion page itself already promises.
  *
  * Map legend: '.' air, '#' solid, '=' one-way plank, 'c' token, 'P' start, 'N' quest giver, 'F' flag.
+ * All words (titles, objectives, quiz questions, answers and replies) live in the i18n catalogs under
+ * `level.<id>.*`; this file holds only structure: maps, colours and which answer is correct.
  * Files under src/game that the node tests import use explicit .ts specifiers (Node type stripping).
  */
-import type { Brush, LevelDef } from '../types.ts';
+import type { Brush, LevelDef, Step } from '../types.ts';
 
 export const ROWS = 12;
+
+/** A quiz step whose answers appear in catalog order; `true` marks the one correct answer. */
+const pick = (...correct: boolean[]): Step => ({ choices: correct.map((c) => ({ correct: c })) });
 const GROUND_ROW = 10;
 
 function build(cols: number, draw: (b: Brush) => void): string[] {
@@ -33,10 +38,6 @@ function build(cols: number, draw: (b: Brush) => void): string[] {
 export const levels: LevelDef[] = [
   {
     id: 'wake-up',
-    title: 'Wake up',
-    badge: 'Basics',
-    teaches: 'Starting as a guest, and staying safe',
-    objective: 'Talk to the Pixel Guide, then reach the flag.',
     needTokens: 0,
     tokenLabel: 'bonus stars',
     skyTop: '#0b1230',
@@ -45,28 +46,9 @@ export const levels: LevelDef[] = [
     grass: '#2fbf84',
     dirt: '#1d5a47',
     stars: true,
-    npcName: 'Pixel Guide',
     npcLook: 'guide',
-    npcLockedSay: '',
-    npcDoneSay: 'The flag is open. Go on, Hatchling!',
     rewardStage: null,
-    npcSteps: [
-      {
-        say: 'Welcome! Do you need an account to start chatting with me?',
-        choices: [
-          { label: 'No, guests can start right away', correct: true, reply: 'Right. A HASHPASS ID is only for keeping things.' },
-          { label: 'Yes, sign up first', correct: false, reply: 'Not quite. Guests start first; a HASHPASS ID comes later, when you want to keep something.' },
-        ],
-      },
-      {
-        say: 'One safety question about wallets. Who should ever see your wallet seed phrase?',
-        choices: [
-          { label: 'Nobody, not even support', correct: true, reply: 'Correct. Nobody legitimate will ever ask for it.' },
-          { label: 'The event team, if they ask', correct: false, reply: 'Never. A seed phrase gives full control of a wallet.' },
-          { label: 'Anyone who says they are support', correct: false, reply: 'Never. Scammers pretend to be support all the time.' },
-        ],
-      },
-    ],
+    npcSteps: [pick(true, false), pick(true, false, false)],
     map: build(46, (b) => {
       b.ground(0, 21);
       b.ground(24, 45);
@@ -85,10 +67,6 @@ export const levels: LevelDef[] = [
   },
   {
     id: 'programme',
-    title: 'The programme',
-    badge: 'Programme',
-    teaches: 'Answers that come from the event catalog',
-    objective: 'Collect 3 session cards, then ask the Speaker.',
     needTokens: 3,
     tokenLabel: 'session cards',
     skyTop: '#10264a',
@@ -97,27 +75,9 @@ export const levels: LevelDef[] = [
     grass: '#7bd26a',
     dirt: '#27506a',
     stars: true,
-    npcName: 'Speaker Spark',
     npcLook: 'speaker',
-    npcLockedSay: 'Collect 3 session cards first. I only answer once you have seen the programme.',
-    npcDoneSay: 'You are curious now. Take the flag!',
     rewardStage: 'curious',
-    npcSteps: [
-      {
-        say: 'Where do my answers about talks and speakers come from?',
-        choices: [
-          { label: 'The event catalog', correct: true, reply: 'Yes. I answer from the real programme, not from guesses.' },
-          { label: 'I make them up', correct: false, reply: 'Never! I read from the event catalog.' },
-        ],
-      },
-      {
-        say: 'And if the catalog has no answer, what should I say?',
-        choices: [
-          { label: 'That I do not know', correct: true, reply: 'Honest beats invented.' },
-          { label: 'Invent something plausible', correct: false, reply: 'No. A made-up session time could send you to the wrong room.' },
-        ],
-      },
-    ],
+    npcSteps: [pick(true, false), pick(true, false)],
     map: build(56, (b) => {
       b.ground(0, 15);
       b.ground(19, 33);
@@ -136,10 +96,6 @@ export const levels: LevelDef[] = [
   },
   {
     id: 'plan-your-day',
-    title: 'Plan your day',
-    badge: 'Calendar',
-    teaches: 'Turning an answer into a real action',
-    objective: 'Collect 3 time slots, then use the calendar post.',
     needTokens: 3,
     tokenLabel: 'time slots',
     skyTop: '#3a2a6e',
@@ -148,23 +104,9 @@ export const levels: LevelDef[] = [
     grass: '#9bd75f',
     dirt: '#6b4a2f',
     stars: false,
-    npcName: 'Calendar Post',
     npcLook: 'calendar',
-    npcLockedSay: 'Collect 3 time slots first. I need them to build your day.',
-    npcDoneSay: 'Your day is drafted. The flag is open!',
     rewardStage: 'helpful',
-    npcSteps: [
-      {
-        say: 'Day drafted! In the real Companion this is a calendar file you download. Here it is just a preview.',
-      },
-      {
-        say: 'Does downloading a calendar draft need a HASHPASS ID?',
-        choices: [
-          { label: 'No, guests can do it', correct: true, reply: 'Right. Guests can download a draft; saving to your agenda needs a HASHPASS ID.' },
-          { label: 'Yes, always', correct: false, reply: 'Not for this one. Guests can download a draft.' },
-        ],
-      },
-    ],
+    npcSteps: [{}, pick(true, false)],
     map: build(56, (b) => {
       b.ground(0, 25);
       b.ground(29, 55);
@@ -184,10 +126,6 @@ export const levels: LevelDef[] = [
   },
   {
     id: 'meet-someone',
-    title: 'Meet someone',
-    badge: 'Meetings',
-    teaches: 'Meetings that need both people to agree',
-    objective: 'Say hi to Sky, then reach the final flag.',
     needTokens: 0,
     tokenLabel: 'bonus stars',
     skyTop: '#1b0f3a',
@@ -196,27 +134,9 @@ export const levels: LevelDef[] = [
     grass: '#43d6a1',
     dirt: '#2a3a5c',
     stars: true,
-    npcName: 'Sky',
     npcLook: 'mate',
-    npcLockedSay: '',
-    npcDoneSay: 'See you at the event! The flag is open.',
     rewardStage: null,
-    npcSteps: [
-      {
-        say: 'Hi! I am Sky, another attendee’s pet. Want to request a meeting?',
-        choices: [
-          { label: 'Send a request', correct: true, reply: 'Request sent. This one is simulated: nobody real was contacted.' },
-          { label: 'Maybe later', correct: false, reply: 'No rush. Ask when you are ready.' },
-        ],
-      },
-      {
-        say: 'Accepted! Real meetings always need both people to agree. Who decides if it happens?',
-        choices: [
-          { label: 'Both people', correct: true, reply: 'Yes. Consent comes first. Networking is planned for after launch.' },
-          { label: 'Only the one asking', correct: false, reply: 'Both must agree, or it does not happen.' },
-        ],
-      },
-    ],
+    npcSteps: [pick(true, false), pick(true, false)],
     map: build(60, (b) => {
       b.ground(0, 19);
       b.ground(22, 39);
