@@ -49,7 +49,8 @@ tags `companion-vX.Y.Z` and pushes the branch and tag to `origin`. It does not o
 ## Staging hosting
 
 `https://companion-dev.hashpass.tech` (S3 + CloudFront, Terraform in `packages/infra/terraform/stacks/hashpass-companion-site`).
-There is no deploy workflow yet; publishing is manual. Production `companion.hashpass.tech` is not provisioned.
+Production `https://companion.hashpass.tech` is provisioned from the same stack (workspace `production`) and has no build published yet.
+There is no deploy workflow yet; publishing to either site is manual.
 
 ## Portable memory baseline
 

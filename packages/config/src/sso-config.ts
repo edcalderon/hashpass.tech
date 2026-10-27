@@ -50,6 +50,7 @@ export const SSO_CONFIG = {
       'https://blockchainsummit-dev.hashpass.lat',
       'https://api.hashpass.tech',
       'https://api-dev.hashpass.tech',
+      'https://companion.hashpass.tech',
       'https://companion-dev.hashpass.tech',
       'https://sso-dev.hashpass.co',
       'http://localhost:19006',
