@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "hashpass-plane",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Manage HASHPASS Plane projects, work items, and workspace data from ChatGPT through a secure OAuth-protected MCP server.",
   "author": {
     "name": "HASHPASS",

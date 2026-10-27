@@ -1,3 +1,23 @@
+## [1.9.155](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.154...v1.9.155) (2026-10-26)
+
+
+### Bug Fixes
+
+* **mcp:** accept standard OIDC identity claims ([7555aa3](https://github.com/hashpass-tech/hashpass.tech/commit/7555aa3935b2683277955d83d619486ebe7b7520))
+
+
+### Features
+
+* **db-backups:** explain freshness alerts in plain language ([5594d1a](https://github.com/hashpass-tech/hashpass.tech/commit/5594d1a666e0ef83d43eb7609fe8ac6a3d2328f0))
+### Release Highlights
+- explain freshness alerts in plain language; accept standard OIDC identity claims
+
+### Release scope
+- Compared with: `v1.9.154` (the previous global release tag)
+
+### Affected products & packages
+- Infrastructure
+
 ## [1.9.154](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.153...v1.9.154) (2026-10-26)
 ### Released
 - stop icon flicker during 3D pass tilt; emit trailing-slash login and consent URLs so the signed OAuth query survives

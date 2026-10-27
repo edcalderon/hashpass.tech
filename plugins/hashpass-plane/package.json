@@ -1,6 +1,6 @@
 {
   "name": "@hashpass/hashpass-plane-chatgpt-plugin",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "private": true,
   "description": "Portable ChatGPT plugin package for the HASHPASS Plane MCP server.",
   "type": "module",
