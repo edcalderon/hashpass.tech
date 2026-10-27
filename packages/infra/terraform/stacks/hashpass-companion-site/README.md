@@ -20,6 +20,10 @@ Production is provisioned but **empty**: until a build is published, CloudFront 
 from the same machine or move the state to a remote backend first; the workspaces live in
 `terraform.tfstate.d/`.
 
+The guarded publication path must preserve the generated
+`/companion-version.json` manifest. Never publish either hostname from an
+untracked local build.
+
 ## Safety gates (from #469)
 
 - The `domain` variable only accepts `companion.hashpass.tech` or `companion-dev.hashpass.tech`; the default is staging.
@@ -45,10 +49,14 @@ moving it to the staging names.
 
 ```bash
 pnpm --filter @hashpass/companion build
+node packages/tools/scripts/check-companion-deployment.mjs \
+  --source-version "$(node -p "require('./apps/companion/package.json').version")"
 aws s3 sync apps/companion/dist "s3://$(terraform output -raw bucket_name)" --delete --profile hashpass
 aws cloudfront create-invalidation --distribution-id "$(terraform output -raw distribution_id)" --paths '/*' --profile hashpass
 ```
 
-Not built yet: a GitHub Actions deploy role and workflow (model them on `lukas-landing-deploy.yml`).
-The site source lives in `apps/companion` (own `companion-vX.Y.Z` release stream; see CLAUDE.md "Companion release").
-CI for it is `.github/workflows/companion.yml` (test and build only, no deploy).
+The site source lives in `apps/companion` (own `companion-vX.Y.Z` release
+stream; see CLAUDE.md "Companion release"). CI for it is
+`.github/workflows/companion.yml`; it tests, builds, emits the deployment
+manifest, and checks live release ordering. A future publisher must preserve
+the same manifest and guard rather than introducing another manual path.

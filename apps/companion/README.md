@@ -46,11 +46,20 @@ pnpm run release:companion:patch   # also :minor and :major; add --dry-run to pr
 The script requires a clean worktree on `develop`, bumps the version files, commits `chore(companion): release vX.Y.Z`,
 tags `companion-vX.Y.Z` and pushes the branch and tag to `origin`. It does not open a global release PR and does not deploy.
 
-## Staging hosting
+## Hosting and release safety
 
 `https://companion-dev.hashpass.tech` (S3 + CloudFront, Terraform in `packages/infra/terraform/stacks/hashpass-companion-site`).
 Production `https://companion.hashpass.tech` is provisioned from the same stack (workspace `production`) and has no build published yet.
 There is no deploy workflow yet; publishing to either site is manual.
+
+Companion CI runs `check-companion-deployment.mjs` on every Companion PR and
+push. It refuses any source that would leave production or development ahead
+of the checked-out `develop` version. Each build also emits
+`/companion-version.json`, which is the authoritative deployment manifest.
+Until the automated publisher is enabled, any manual publication must be
+built from `develop`, publish that manifest with the rest of `dist`, and run
+the same guard before invalidating CloudFront. Never publish production from
+an uncommitted workspace or from a ref that is not reachable from `develop`.
 
 ## Portable memory baseline
 
