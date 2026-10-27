@@ -1,3 +1,18 @@
+## [1.9.165](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.164...v1.9.165) (2026-10-27)
+
+
+### Features
+
+* **companion:** closing first setup shows the public landing, not the dashboard ([5e5f176](https://github.com/hashpass-tech/hashpass.tech/commit/5e5f176e6ec60e282d66c5b1f92b8f6f4bfabfc4))
+### Release Highlights
+- closing first setup shows the public landing, not the dashboard
+
+### Release scope
+- Compared with: `v1.9.164` (the previous global release tag)
+
+### Affected products & packages
+- Companion
+
 ## [1.9.164](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.163...v1.9.164) (2026-10-27)
 
 
