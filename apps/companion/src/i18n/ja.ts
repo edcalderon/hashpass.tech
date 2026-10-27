@@ -36,6 +36,7 @@ export const ja: Record<MessageKey, string> = {
   'hero.meet': 'ペットに会う',
   'hero.control': 'コントロールプレーンを開く',
   'hero.guests': 'ゲストの始め方',
+  'hero.setup': 'Companion を設定',
   'hero.bubble': 'こんにちは！ たまごから生まれたよ。',
   'hero.loading': 'クエストを読み込み中…',
 
@@ -267,6 +268,7 @@ export const ja: Record<MessageKey, string> = {
   'sma.setup.emailNote': 'ローカルアーカイブを識別します。所有権の確認やアカウント作成は行いません。',
   'sma.setup.submit': 'Companion を作成',
   'sma.setup.creating': 'Companion を作成中…',
+  'sma.setup.skip': '今はしない。まず見て回る',
   'sma.memory.eyebrow': 'ポータブルメモリ · SMA 0.1',
   'sma.memory.title': 'Companion に慎重に教える',
   'sma.memory.lead': 'Companion は管理された魂のスナップショットから始まります。メモリは追記式で非公開です。明示的な訂正で更新し、隠れたプロンプトにはしません。',

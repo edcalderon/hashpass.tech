@@ -34,6 +34,7 @@ export const en = {
   'hero.meet': 'Meet your pet',
   'hero.control': 'Open control plane',
   'hero.guests': 'How guests start',
+  'hero.setup': 'Set up my Companion',
   'hero.bubble': 'Hi! I just hatched.',
   'hero.loading': 'Loading the quest…',
 
@@ -265,6 +266,7 @@ export const en = {
   'sma.setup.emailNote': 'This identifies the local archive; it does not verify ownership or create an account.',
   'sma.setup.submit': 'Create my Companion',
   'sma.setup.creating': 'Creating Companion…',
+  'sma.setup.skip': 'Not now — explore first',
   'sma.memory.eyebrow': 'Portable memory · SMA 0.1',
   'sma.memory.title': 'Teach your Companion carefully',
   'sma.memory.lead': 'Your Companion starts with one governed soul snapshot. Memories are append-only, private and editable through explicit corrections—not hidden prompt rewrites.',

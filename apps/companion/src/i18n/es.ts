@@ -36,6 +36,7 @@ export const es: Record<MessageKey, string> = {
   'hero.meet': 'Conoce a tu mascota',
   'hero.control': 'Abrir panel de control',
   'hero.guests': 'Cómo empiezan los invitados',
+  'hero.setup': 'Configurar mi Companion',
   'hero.bubble': '¡Hola! Acabo de nacer.',
   'hero.loading': 'Cargando la misión…',
 
@@ -267,6 +268,7 @@ export const es: Record<MessageKey, string> = {
   'sma.setup.emailNote': 'Identifica el archivo local; no verifica la propiedad ni crea una cuenta.',
   'sma.setup.submit': 'Crear mi Companion',
   'sma.setup.creating': 'Creando Companion…',
+  'sma.setup.skip': 'Ahora no, quiero explorar',
   'sma.memory.eyebrow': 'Memoria portable · SMA 0.1',
   'sma.memory.title': 'Enseña a tu Companion con cuidado',
   'sma.memory.lead': 'Tu Companion empieza con un alma gobernada. Las memorias son privadas, acumulativas y se corrigen explícitamente; no son instrucciones ocultas.',

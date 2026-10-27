@@ -9,6 +9,7 @@ import { SmaMemoryPanel } from './sma/SmaMemoryPanel';
 import { SmaSetup } from './sma/SmaSetup';
 import { useSmaArchive } from './sma/useSmaArchive';
 import { useCompanionAuth } from './auth/useCompanionAuth';
+import { resolveGate } from './sma/gate';
 import type { CapabilityValue, DemoAction, IconKey, PetMood } from './types';
 
 const QuestGame = lazy(() => import('./game/QuestGame').then((m) => ({ default: m.QuestGame })));
@@ -24,7 +25,7 @@ const demoActions: DemoAction[] = [
   { id: 'chat', unlocks: null, mood: 'hi' },
 ];
 
-function Hero() {
+function Hero({ hasArchive, onSetup }: { hasArchive: boolean; onSetup: () => void }) {
   const { t } = useSettings();
   const [ref, inView] = useInView<HTMLElement>();
   const [mode, setMode] = useState<'none' | 'quest' | 'film'>('none');
@@ -59,7 +60,11 @@ function Hero() {
             <Icon name="book" /> {t('hero.film')}
           </button>
           <a className="btn btn--ghost" href="#grow">{t('hero.meet')}</a>
-          <a className="btn btn--ghost" href="#dashboard">{t('hero.control')}</a>
+          {hasArchive ? (
+            <a className="btn btn--ghost" href="#dashboard">{t('hero.control')}</a>
+          ) : (
+            <button type="button" className="btn btn--ghost" onClick={onSetup}>{t('hero.setup')}</button>
+          )}
           <a className="btn btn--ghost" href="#start">{t('hero.guests')}</a>
         </div>
         <div className="hero__stage">
@@ -324,26 +329,29 @@ export function App() {
   const { t } = useSettings();
   const sma = useSmaArchive();
   const auth = useCompanionAuth();
+  const [setupDismissed, setSetupDismissed] = useState(false);
+  const view = resolveGate(sma.status, sma.archive !== null, setupDismissed);
 
-  if (sma.status === 'loading') return <main className="sma-gate"><p role="status">{t('sma.loading')}</p></main>;
-  if (sma.status === 'setup' || !sma.archive) return <SmaSetup onComplete={sma.setup} error={sma.error} />;
+  if (view === 'loading') return <main className="sma-gate"><p role="status">{t('sma.loading')}</p></main>;
+  if (view === 'setup') return <SmaSetup onComplete={sma.setup} onDismiss={() => setSetupDismissed(true)} error={sma.error} />;
+  const archive = view === 'workspace' ? sma.archive : null;
 
   return (
     <>
       <a className="skip" href="#grow">{t('app.skip')}</a>
-      <Hero />
+      <Hero hasArchive={archive !== null} onSetup={() => setSetupDismissed(false)} />
       <main>
-        <CompanionControlPanel
-          archive={sma.archive}
+        {archive && <CompanionControlPanel
+          archive={archive}
           onExport={sma.exportArchive}
           auth={auth}
           onSignIn={auth.signIn}
           onSignOut={auth.signOut}
           onRetryAuth={auth.refresh}
-        />
+        />}
         <Evolution />
         <GuestStart />
-        <SmaMemoryPanel archive={sma.archive} onRemember={sma.remember} onReset={sma.reset} onExport={sma.exportArchive} error={sma.error} />
+        {archive && <SmaMemoryPanel archive={archive} onRemember={sma.remember} onReset={sma.reset} onExport={sma.exportArchive} error={sma.error} />}
         <Capabilities />
         <Rules />
       </main>

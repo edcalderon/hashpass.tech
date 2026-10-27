@@ -1,13 +1,21 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
-import { FormField } from '@hashpass/ui/primitives';
+import { ActionButton, FormField } from '@hashpass/ui/primitives';
 import { useSettings } from '../settings/SettingsContext';
 import type { SmaSetupProps } from './types';
 
-export function SmaSetup({onComplete, error}: SmaSetupProps) {
+export function SmaSetup({onComplete, onDismiss, error}: SmaSetupProps) {
   const {t, isDark} = useSettings();
   const [email, setEmail] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onDismiss();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onDismiss]);
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -40,6 +48,7 @@ export function SmaSetup({onComplete, error}: SmaSetupProps) {
             {submitting ? t('sma.setup.creating') : t('sma.setup.submit')}
           </button>
         </form>
+        <ActionButton mode={isDark ? 'dark' : 'light'} variant="ghost" label={t('sma.setup.skip')} onPress={onDismiss} />
       </section>
     </main>
   );
