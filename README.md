@@ -20,24 +20,16 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.157)
+## 📋 Latest Changes (v1.9.158)
 
-### Bug Fixes
-
-* **plane:** correct workspace slug to 'plane' and release plugin v1.0.4 ([e7ab796](https://github.com/hashpass-tech/hashpass.tech/commit/e7ab7965fabd2ce71898a84238d41f70bb6db525))
-
-
-### Features
-
-* **companion:** verify Muse Spark and Voice Transcribe access, document exemplars ([d16e731](https://github.com/hashpass-tech/hashpass.tech/commit/d16e73141691dcaaedfa421323b4a2ed6b14b4d0)), closes [#457](https://github.com/hashpass-tech/hashpass.tech/issues/457)
-### Release Highlights
-- verify Muse Spark and Voice Transcribe access, document exemplars; correct workspace slug to 'plane' and release plugin v1.0.4
+### Released
+- Version 1.9.158 release
 
 ### Release scope
-- Compared with: `v1.9.156` (the previous global release tag)
+- Compared with: `v1.9.157` (the previous global release tag)
 
 ### Affected products & packages
-- Self-hosted operations
+- Documentation
 - Release tooling
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)

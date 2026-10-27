@@ -1,3 +1,14 @@
+## [1.9.158](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.157...v1.9.158) (2026-10-27)
+### Released
+- Version 1.9.158 release
+
+### Release scope
+- Compared with: `v1.9.157` (the previous global release tag)
+
+### Affected products & packages
+- Documentation
+- Release tooling
+
 ## [1.9.157](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.156...v1.9.157) (2026-10-27)
 
 

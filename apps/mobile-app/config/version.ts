@@ -22,22 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610270209, // Updated to current timestamp
+  buildNumber: 202610270228, // Updated to current timestamp
   releaseDate: '2026-10-27',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'verify Muse Spark and Voice Transcribe access, document exemplars'
+    // No new features
   ],
   bugfixes: [
-    'correct workspace slug to \'plane\' and release plugin v1.0.4'
+    // No bugfixes
   ],
   breakingChanges: [],
-  notes: 'verify Muse Spark and Voice Transcribe access, document exemplars; correct workspace slug to \'plane\' and release plugin v1.0.4'
+  notes: 'Version 1.9.158 release'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.158': {
+    version: '1.9.158',
+    buildNumber: 202610270228,
+    releaseDate: '2026-10-27',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'Version 1.9.158 release'
+  },
   '1.9.157': {
     version: '1.9.157',
     buildNumber: 202610270209,
