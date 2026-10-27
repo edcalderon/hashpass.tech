@@ -36,12 +36,12 @@ One project: [#4 HASHPASS](https://github.com/orgs/hashpass-tech/projects/4). Ep
 | --- | --- | --- | --- |
 | Self-hosted Plane and Frappe Helpdesk | `ops/self-hosted/` | Compose templates, Caddy, backup and restore scripts; deployed by `.github/workflows/self-hosted-vps-deploy.yml` through SSM | Template read; deployment not re-run |
 | Plane MCP gateway | `packages/plane-mcp-gateway/` | OAuth 2.1 front for Plane's MCP server; read and write actions classified by `policy.mjs`; scopes `plane:read` / `plane:write` | Code and tests present; live discovery checked by the ChatGPT plugin script |
-| ChatGPT plugin package | `plugins/hashpass-plane/` | Connection metadata for the gateway (v1.0.2) | Validated and tested earlier |
+| ChatGPT plugin package | `plugins/hashpass-plane/` | Connection metadata for the gateway (v1.1.0, first stable) | Validated, tested and live-checked 2026-10-27 |
 | Plane object storage | `packages/infra/terraform/stacks/hashpass-plane-storage/` | Private versioned encrypted S3 bucket for Plane uploads | Terraform present; applied state not checked |
 | Notion archive | `packages/infra/terraform/stacks/hashpass-notion-archive/`, `packages/notion-plane-sync/` | Read-only Notion archive into private S3 with a DynamoDB hash registry. Schedule defaults off until a manual archive and restore drill pass | Code and tests present; whether it is applied or scheduled is not checked |
 | Campaign import | `campaigns/bsl-2026/import-plane.mjs` | One-off script that created the BSL26 work plan in Plane | Historical. It creates work items, so it must not be run again under this model |
 
-Authorization policy for the MCP gateway: [plane-mcp-authorization](../../apps/docs/docs/auth/plane-mcp-authorization.md).
+Authorization policy for the MCP gateway: [plane-mcp-authorization](../../apps/docs/docs/auth/plane-mcp-authorization.md). What "stable" covers, how it was verified and how to re-check it: [plane-mcp-stable](../../apps/docs/docs/auth/plane-mcp-stable.md).
 
 ## Open items
 
