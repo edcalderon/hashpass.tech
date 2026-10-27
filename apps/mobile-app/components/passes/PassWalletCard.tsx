@@ -32,11 +32,12 @@ import PassShareModal from './PassShareModal';
 import { usePassMotionPreferences } from './pass-motion-preferences';
 import { nextPassType } from '../../lib/pass-upgrade-requests';
 
-// The original ticket proportions. Kept exact: the layout below positions the
-// perforation, notches and stats block as percentages of this height, so
-// changing it silently drifts all three out of alignment.
+// Keep the original web ticket proportions. Native needs extra vertical room
+// for the stacked upgrade/details actions and claim link on the back face;
+// using the same exported value everywhere keeps the deck and each card in
+// sync without changing the web layout.
 export const PASS_CARD_WIDTH = 340;
-export const PASS_CARD_HEIGHT = 390;
+export const PASS_CARD_HEIGHT = Platform.OS === 'web' ? 390 : 480;
 
 interface PassWalletCardProps {
   pass: WalletPass;
