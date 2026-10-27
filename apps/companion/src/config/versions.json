@@ -3,17 +3,28 @@
   "_source": "This file is generated from apps/companion/package.json",
   "_instructions": "Run npm run version:companion or npm run release:companion:patch from the repo root to update it.",
   "currentVersion": {
-    "version": "0.0.1",
-    "buildNumber": 20261026000000,
-    "releaseDate": "2026-10-26",
-    "releaseType": "alpha",
-    "environment": "development",
+    "version": "0.0.2",
+    "buildNumber": 20261027040809,
+    "releaseDate": "2026-10-27",
+    "releaseType": "stable",
+    "environment": "production",
     "features": [],
     "bugfixes": [],
     "breakingChanges": [],
-    "notes": "Staging preview: pixel-art landing page. No conversation, calendar or sign-in yet."
+    "notes": "Version 0.0.2 release"
   },
   "versions": [
+    {
+      "version": "0.0.2",
+      "buildNumber": 20261027040809,
+      "releaseDate": "2026-10-27",
+      "releaseType": "stable",
+      "environment": "production",
+      "features": [],
+      "bugfixes": [],
+      "breakingChanges": [],
+      "notes": "Version 0.0.2 release"
+    },
     {
       "version": "0.0.1",
       "buildNumber": 20261026000000,

@@ -4,7 +4,7 @@ Pixel-art landing page for the standalone Companion MVP. It is a **staging previ
 quota or HASHPASS ID sign-in exist yet, and the page collects no data. Roadmap: [issue #469](https://github.com/hashpass-tech/hashpass.tech/issues/469).
 
 <!-- COMPANION_RELEASE:START -->
-> **Current MVP release:** [v0.0.1](./CHANGELOG.md) · alpha · 2026-10-26
+> **Current MVP release:** [v0.0.2](./CHANGELOG.md) · stable · 2026-10-27
 <!-- COMPANION_RELEASE:END -->
 
 ## Develop
