@@ -1,4 +1,5 @@
 import type { LocalSmaArchive } from '../sma/types';
+import type { CompanionAuthState } from '../auth/types';
 
 export type CompanionControlStatus = 'active' | 'draft';
 export type CompanionControlRole = 'manager' | 'coder' | 'assistant';
@@ -28,6 +29,10 @@ export type ControlPlaneModel = {
 export type CompanionControlPanelProps = {
   archive: LocalSmaArchive;
   onExport: () => string;
+  auth: CompanionAuthState;
+  onSignIn: () => Promise<void>;
+  onSignOut: () => Promise<void>;
+  onRetryAuth: () => Promise<void>;
 };
 
 export type CompanionCardProps = {

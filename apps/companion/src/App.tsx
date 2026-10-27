@@ -8,6 +8,7 @@ import { CompanionControlPanel } from './control-plane/CompanionControlPanel';
 import { SmaMemoryPanel } from './sma/SmaMemoryPanel';
 import { SmaSetup } from './sma/SmaSetup';
 import { useSmaArchive } from './sma/useSmaArchive';
+import { useCompanionAuth } from './auth/useCompanionAuth';
 import type { CapabilityValue, DemoAction, IconKey, PetMood } from './types';
 
 const QuestGame = lazy(() => import('./game/QuestGame').then((m) => ({ default: m.QuestGame })));
@@ -322,6 +323,7 @@ function Footer() {
 export function App() {
   const { t } = useSettings();
   const sma = useSmaArchive();
+  const auth = useCompanionAuth();
 
   if (sma.status === 'loading') return <main className="sma-gate"><p role="status">{t('sma.loading')}</p></main>;
   if (sma.status === 'setup' || !sma.archive) return <SmaSetup onComplete={sma.setup} error={sma.error} />;
@@ -331,7 +333,14 @@ export function App() {
       <a className="skip" href="#grow">{t('app.skip')}</a>
       <Hero />
       <main>
-        <CompanionControlPanel archive={sma.archive} onExport={sma.exportArchive} />
+        <CompanionControlPanel
+          archive={sma.archive}
+          onExport={sma.exportArchive}
+          auth={auth}
+          onSignIn={auth.signIn}
+          onSignOut={auth.signOut}
+          onRetryAuth={auth.refresh}
+        />
         <Evolution />
         <GuestStart />
         <SmaMemoryPanel archive={sma.archive} onRemember={sma.remember} onReset={sma.reset} onExport={sma.exportArchive} error={sma.error} />

@@ -40,7 +40,7 @@ function CompanionCard({companion}: CompanionCardProps) {
   );
 }
 
-export function CompanionControlPanel({archive, onExport}: CompanionControlPanelProps) {
+export function CompanionControlPanel({archive, onExport, auth, onSignIn, onSignOut, onRetryAuth}: CompanionControlPanelProps) {
   const {t} = useSettings();
   const model = useMemo(() => createControlPlaneModel(archive), [archive]);
   const [companions, setCompanions] = useState(model.companions);
@@ -141,7 +141,26 @@ export function CompanionControlPanel({archive, onExport}: CompanionControlPanel
               <li><Icon name="check" /> {t('control.auth.check2')}</li>
               <li><Icon name="clock" /> {t('control.auth.check3')}</li>
             </ul>
-            <button type="button" className="btn btn--primary btn--block" disabled>{t('control.auth.cta')}</button>
+            <p className={`control-plane__auth-state control-plane__auth-state--${auth.status}`} role={auth.status === 'error' ? 'alert' : undefined}>
+              {t(`control.auth.state.${auth.status}`)}
+            </p>
+            {auth.status === 'loading' && <p className="muted" role="status">{t('control.auth.checking')}</p>}
+            {auth.status === 'error' && (
+              <>
+                <p className="control-plane__auth-error">{auth.error || t('control.auth.error')}</p>
+                <button type="button" className="btn btn--tint btn--block" onClick={() => void onRetryAuth()}>{t('control.auth.retry')}</button>
+              </>
+            )}
+            {auth.status === 'signed-out' && (
+              <button type="button" className="btn btn--primary btn--block" onClick={() => void onSignIn()}>{t('control.auth.cta')}</button>
+            )}
+            {auth.status === 'signed-in' && auth.user && (
+              <div className="control-plane__identity">
+                <strong>{auth.user.name || auth.user.email}</strong>
+                <code>{auth.user.email}</code>
+                <button type="button" className="btn btn--tint btn--block" onClick={() => void onSignOut()}>{t('control.auth.signOut')}</button>
+              </div>
+            )}
             <p className="muted control-plane__fineprint">{t('control.auth.note')}</p>
             <div className="control-plane__export">
               <div>

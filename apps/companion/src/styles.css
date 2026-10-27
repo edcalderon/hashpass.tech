@@ -186,6 +186,12 @@ ul, ol { padding: 0; list-style: none; }
 .control-plane__checks { display: grid; gap: 10px; }
 .control-plane__checks li { display: flex; align-items: flex-start; gap: 8px; font-size: 14px; }
 .control-plane__checks .icon { flex: none; color: #146c43; }
+.control-plane__auth-state { margin: 0; padding: 8px 10px; border-left: 4px solid var(--accent); background: var(--surface); color: var(--text); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; }
+.control-plane__auth-state--signed-in { border-color: #2fbf84; color: #146c43; }
+.control-plane__auth-state--error { border-color: #ff5c8a; color: #a61d4d; }
+.control-plane__auth-error { margin: 0; padding: 10px 12px; border: 3px solid #ff5c8a; background: var(--surface); color: var(--text); font-weight: 700; }
+.control-plane__identity { display: grid; gap: 8px; padding: 12px; border: 3px solid #2fbf84; background: var(--surface); }
+.control-plane__identity code { overflow-wrap: anywhere; color: var(--muted); font-size: 12px; }
 .control-plane__notice { padding: 10px 12px; border-left: 4px solid var(--glow); background: var(--surface); font-weight: 700; }
 .control-plane__export { display: grid; gap: 12px; padding-top: 16px; border-top: 2px solid var(--border); }
 .control-plane__export .btn { min-height: 44px; }

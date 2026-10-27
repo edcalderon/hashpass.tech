@@ -1,7 +1,8 @@
 # HASHPASS Companion
 
 Pixel-art landing page and local control-plane preview for the standalone Companion MVP. It is a **staging preview**:
-conversation, calendar drafts, quota enforcement, hosted orchestration and HASHPASS ID sign-in are not connected yet.
+conversation, calendar drafts, quota enforcement and hosted orchestration are not connected yet. The dashboard now
+performs a real Better Auth session check and opens shared Google sign-in for HASHPASS ID signup or return visits.
 The local SMA and dashboard draft stay in the browser; no Companion data is sent to a service by this app. Roadmap:
 [issue #469](https://github.com/hashpass-tech/hashpass.tech/issues/469) and the hosted-agent scope in
 [issue #490](https://github.com/hashpass-tech/hashpass.tech/issues/490).
@@ -18,7 +19,8 @@ HASHPASS workspace
 
 The panel can add a local draft Companion, displays the proposed free two-Companion quota, and exports the current SMA.
 Draft creation does not create an account, mailbox, hosted runtime or external tool grant. Production ownership and
-signup must use the existing HASHPASS/Better Auth flow from #491 before this model becomes durable.
+durable Companion creation still use the existing HASHPASS/Better Auth flow from #491; this milestone establishes the
+browser session boundary without sending the local SMA to a service.
 
 <!-- COMPANION_RELEASE:START -->
 > **Current MVP release:** [v0.0.4](./CHANGELOG.md) · stable · 2026-10-27
