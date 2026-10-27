@@ -9,9 +9,26 @@ const jsonRpcError = (status, id, code, message, headers = {}) =>
 const corsHeaders = {
   "access-control-allow-origin": "*",
   "access-control-allow-methods": "POST, OPTIONS",
-  "access-control-allow-headers": "authorization, content-type, dpop, mcp-protocol-version, mcp-session-id",
-  "access-control-expose-headers": "mcp-session-id, www-authenticate",
+  "access-control-allow-headers": "authorization, content-type, dpop, mcp-method, mcp-name, mcp-protocol-version, mcp-session-id",
+  "access-control-expose-headers": "mcp-method, mcp-name, mcp-protocol-version, mcp-session-id, www-authenticate",
 };
+
+const MODERN_PROTOCOL_VERSION = "2026-07-28";
+const LEGACY_UPSTREAM_PROTOCOL_VERSION = "2025-11-25";
+const MODERN_PROTOCOL_VERSION_META = "io.modelcontextprotocol/protocolVersion";
+
+const protocolVersionFromBody = (body) => {
+  const metadata = body?.params?._meta;
+  return typeof metadata?.[MODERN_PROTOCOL_VERSION_META] === "string"
+    ? metadata[MODERN_PROTOCOL_VERSION_META].trim()
+    : "";
+};
+
+const protocolVersionForRequest = (request, body) =>
+  request.headers.get("mcp-protocol-version")?.trim() || protocolVersionFromBody(body);
+
+const isModernProtocolRequest = (request, body) =>
+  protocolVersionForRequest(request, body) === MODERN_PROTOCOL_VERSION;
 
 const normalizedList = (values) =>
   Array.isArray(values) ? values.map((value) => String(value).trim()).filter(Boolean) : [];
@@ -63,13 +80,38 @@ const readBodyWithLimit = async (request, maxBodyBytes) => {
 // for non-initialize requests from older clients.
 const protocolVersionForUpstream = (request, body) => {
   const declaredHeader = request.headers.get("mcp-protocol-version")?.trim();
-  if (declaredHeader) return declaredHeader;
+  if (declaredHeader) {
+    // Plane MCP v0.3.x is a legacy server. Keep the modern client-facing
+    // protocol at the gateway boundary, but downgrade the upstream header so
+    // Plane accepts the request instead of returning Unsupported protocol.
+    return declaredHeader === MODERN_PROTOCOL_VERSION
+      ? LEGACY_UPSTREAM_PROTOCOL_VERSION
+      : declaredHeader;
+  }
 
   const declaredBody = body?.method === "initialize" && typeof body.params?.protocolVersion === "string"
     ? body.params.protocolVersion.trim()
-    : "";
-  return declaredBody || "2025-06-18";
+    : protocolVersionFromBody(body);
+  return declaredBody === MODERN_PROTOCOL_VERSION
+    ? LEGACY_UPSTREAM_PROTOCOL_VERSION
+    : declaredBody || "2025-06-18";
 };
+
+const modernDiscoveryResponse = (id, serverName, serverVersion) => Response.json({
+  jsonrpc: "2.0",
+  id: id ?? null,
+  result: {
+    resultType: "complete",
+    supportedVersions: [MODERN_PROTOCOL_VERSION],
+    capabilities: {tools: {}},
+    _meta: {
+      "io.modelcontextprotocol/serverInfo": {
+        name: serverName,
+        version: serverVersion,
+      },
+    },
+  },
+}, {headers: {"cache-control": "no-store", ...corsHeaders}});
 
 export function createGatewayHandler(options) {
   const {
@@ -85,6 +127,8 @@ export function createGatewayHandler(options) {
     verifyRequest,
     fetch: fetchImpl = globalThis.fetch,
     maxBodyBytes = 1024 * 1024,
+    serverName = "HASHPASS Plane MCP Gateway",
+    serverVersion = "0.1.0",
   } = options ?? {};
 
   if (!resource || !upstreamUrl || !serviceToken || !workspaceSlug || typeof verifyRequest !== "function") {
@@ -171,6 +215,14 @@ export function createGatewayHandler(options) {
         ? {"www-authenticate": `Bearer resource_metadata="${metadataUrl}", error="insufficient_scope", scope="${decision.requiredScope}"`}
         : {};
       return jsonRpcError(403, body?.id, -32003, "Forbidden", {...challenge, ...corsHeaders});
+    }
+
+    // Modern MCP clients use server/discover before any legacy initialize
+    // handshake. The deployed Plane MCP server is legacy-only, so answer this
+    // capability probe at the gateway and bridge subsequent modern requests
+    // to the legacy upstream below.
+    if (body.method === "server/discover" && isModernProtocolRequest(request, body)) {
+      return modernDiscoveryResponse(body.id, serverName, serverVersion);
     }
 
     try {

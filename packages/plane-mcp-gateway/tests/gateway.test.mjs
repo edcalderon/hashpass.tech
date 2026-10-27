@@ -154,6 +154,85 @@ test("forwards the initialize payload protocol version when the client omits the
   assert.equal(new Headers(upstreamCall.init.headers).get("mcp-protocol-version"), "2025-11-25");
 });
 
+test("answers modern server discovery at the gateway", async () => {
+  let upstreamCalls = 0;
+  const handler = createGatewayHandler(createOptions({
+    fetch: async () => {
+      upstreamCalls += 1;
+      return Response.json({});
+    },
+  }));
+
+  const response = await handler(new Request(resourceUrl, {
+    method: "POST",
+    headers: {
+      authorization: "Bearer end-user-oauth-token",
+      accept: "application/json, text/event-stream",
+      "content-type": "application/json",
+      "mcp-protocol-version": "2026-07-28",
+    },
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      id: "discover-1",
+      method: "server/discover",
+      params: {
+        _meta: {"io.modelcontextprotocol/protocolVersion": "2026-07-28"},
+      },
+    }),
+  }));
+
+  assert.equal(response.status, 200);
+  assert.equal(upstreamCalls, 0);
+  assert.deepEqual(await response.json(), {
+    jsonrpc: "2.0",
+    id: "discover-1",
+    result: {
+      resultType: "complete",
+      supportedVersions: ["2026-07-28"],
+      capabilities: {tools: {}},
+      _meta: {
+        "io.modelcontextprotocol/serverInfo": {
+          name: "HASHPASS Plane MCP Gateway",
+          version: "0.1.0",
+        },
+      },
+    },
+  });
+});
+
+test("downgrades modern requests for the legacy Plane upstream", async () => {
+  let upstreamCall;
+  const handler = createGatewayHandler(createOptions({
+    fetch: async (url, init) => {
+      upstreamCall = {url: String(url), init};
+      return Response.json({jsonrpc: "2.0", id: 2, result: {tools: []}});
+    },
+  }));
+
+  const rawBody = JSON.stringify({
+    jsonrpc: "2.0",
+    id: 2,
+    method: "tools/list",
+    params: {
+      _meta: {"io.modelcontextprotocol/protocolVersion": "2026-07-28"},
+    },
+  });
+  const response = await handler(new Request(resourceUrl, {
+    method: "POST",
+    headers: {
+      authorization: "Bearer end-user-oauth-token",
+      accept: "application/json, text/event-stream",
+      "content-type": "application/json",
+      "mcp-protocol-version": "2026-07-28",
+    },
+    body: rawBody,
+  }));
+
+  assert.equal(response.status, 200);
+  assert.equal(upstreamCall.init.body, rawBody);
+  assert.equal(new Headers(upstreamCall.init.headers).get("mcp-protocol-version"), "2025-11-25");
+});
+
 test("returns 403 on policy denial without contacting Plane", async () => {
   let upstreamCalls = 0;
   const handler = createGatewayHandler(createOptions({
