@@ -3,17 +3,28 @@
   "_source": "This file is generated from apps/companion/package.json",
   "_instructions": "Run npm run version:companion or npm run release:companion:patch from the repo root to update it.",
   "currentVersion": {
-    "version": "0.0.2",
-    "buildNumber": 20261027040809,
+    "version": "0.0.3",
+    "buildNumber": 20261027050605,
     "releaseDate": "2026-10-27",
     "releaseType": "stable",
     "environment": "production",
     "features": [],
     "bugfixes": [],
     "breakingChanges": [],
-    "notes": "Version 0.0.2 release"
+    "notes": "Version 0.0.3 release"
   },
   "versions": [
+    {
+      "version": "0.0.3",
+      "buildNumber": 20261027050605,
+      "releaseDate": "2026-10-27",
+      "releaseType": "stable",
+      "environment": "production",
+      "features": [],
+      "bugfixes": [],
+      "breakingChanges": [],
+      "notes": "Version 0.0.3 release"
+    },
     {
       "version": "0.0.2",
       "buildNumber": 20261027040809,
