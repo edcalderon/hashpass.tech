@@ -80,3 +80,54 @@ export type Brush = {
   plank: (from: number, to: number, y: number) => void;
   pillar: (x: number, height: number) => void;
 };
+
+/* Quest game */
+export type Phase = 'intro' | 'play' | 'talk' | 'cleared' | 'end';
+export type TalkState = 'locked' | 'ready' | 'done';
+export type Hud = { collected: number; need: number; near: boolean; state: TalkState; falls: number };
+export type Rows = { rows: string[]; palette: Record<string, string> };
+
+export type Dialog = {
+  step: number;
+  /** Reply to the last answer, or null before one is given. */
+  feedback: string | null;
+  right: boolean;
+  done: boolean;
+};
+
+export type Body = {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  ground: boolean;
+  coyote: number;
+  buffer: number;
+  wasJump: boolean;
+  facing: 1 | -1;
+};
+export type Input = { dir: -1 | 0 | 1; jump: boolean };
+export type Grid = {
+  cols: number;
+  rows: number;
+  /** '#' solid, '=' one-way plank, anything else is open. */
+  at: (tx: number, ty: number) => string;
+};
+
+export type Token = { tx: number; ty: number; got: boolean };
+export type Spot = { tx: number; ty: number };
+export type Game = {
+  level: LevelDef;
+  grid: Grid;
+  body: Body;
+  start: Spot;
+  npc: Spot | null;
+  flag: Spot;
+  tokens: Token[];
+  collected: number;
+  questDone: boolean;
+  finished: boolean;
+  nearNpc: boolean;
+  falls: number;
+  ticks: number;
+};

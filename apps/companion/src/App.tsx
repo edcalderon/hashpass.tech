@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { Suspense, lazy, useState } from 'react';
 import { PixelWord, Sprite, Stars, useInView } from './Pixel';
 import { capabilities, houseRules, proposedGuestTurns, stages } from './content';
 import { BUILD_INFO, CURRENT_VERSION, getCompanionVersionLabel } from './config/version';
 import type { DemoAction, PetMood, StageKey } from './types';
+
+const QuestGame = lazy(() => import('./game/QuestGame').then((m) => ({ default: m.QuestGame })));
 
 const stageOrder: StageKey[] = ['hatchling', 'curious', 'helpful'];
 
@@ -14,6 +16,7 @@ const demoActions: DemoAction[] = [
 
 function Hero() {
   const [ref, inView] = useInView<HTMLElement>();
+  const [playing, setPlaying] = useState(false);
   return (
     <header className="hero" ref={ref} data-paused={inView ? 'false' : 'true'}>
       <Stars />
@@ -32,7 +35,11 @@ function Hero() {
           A tiny pixel pet that helps you plan your conference. Ask it about the programme, sketch a day in your calendar, and watch it grow
           with every real thing you finish.
         </p>
+        <p className="hero__hint">New here? A short platformer shows how it works. No sign-in, nothing is saved.</p>
         <div className="hero__cta">
+          <button type="button" className="btn btn--play" onClick={() => setPlaying(true)}>
+            <span className="btn__tri" aria-hidden="true" /> Play the quest
+          </button>
           <a className="btn btn--primary" href="#grow">Meet your pet</a>
           <a className="btn btn--ghost" href="#start">How guests start</a>
         </div>
@@ -42,6 +49,11 @@ function Hero() {
           <div className="ground" aria-hidden="true" />
         </div>
       </div>
+      {playing && (
+        <Suspense fallback={<p className="quest-loading" role="status">Loading the quest…</p>}>
+          <QuestGame onClose={() => setPlaying(false)} />
+        </Suspense>
+      )}
     </header>
   );
 }

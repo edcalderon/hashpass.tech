@@ -211,3 +211,42 @@ ul, ol { padding: 0; list-style: none; }
   .cloud--a { left: 8%; }
   .cloud--b { left: 62%; }
 }
+
+/* Quest game */
+.hero__hint { max-width: 56ch; font-size: 14px; color: #9fb4d9; margin-top: -8px; }
+.btn--play { background: #ffd84d; color: #3a2406; }
+.btn__tri { width: 0; height: 0; margin-right: 12px; border-style: solid; border-width: 8px 0 8px 13px; border-color: transparent transparent transparent currentColor; }
+.quest-loading { position: fixed; inset: auto 16px 16px auto; z-index: 30; padding: 8px 16px; background: #fff; color: #10243a; border: 4px solid #10243a; }
+.quest { width: min(960px, 100vw); max-width: 100vw; max-height: 100dvh; margin: auto; padding: 0; border: 4px solid #10243a; background: #070b1f; color: #f4f7ff; font: inherit; overflow: hidden auto; }
+.quest::backdrop { background: rgba(5, 8, 24, 0.86); }
+.quest__bar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 8px 12px; background: #0b1230; border-bottom: 4px solid #10243a; }
+.quest__title { font-weight: 700; font-size: 14px; margin-right: auto; }
+.quest__stages { display: flex; gap: 4px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; }
+.quest__stages li { padding: 4px 8px; border: 2px solid #3b4a86; color: #b8c4e8; }
+.quest__stages .is-past { border-color: #2fbf84; color: #7be0a2; }
+.quest__stages .is-now { border-color: #ffd84d; color: #ffd84d; background: #1b2150; }
+.quest__close { min-height: 40px; padding: 4px 16px; box-shadow: 3px 3px 0 #10243a; }
+.quest__stage { position: relative; background: #000; }
+.quest__canvas { display: block; width: 100%; height: auto; aspect-ratio: 320 / 192; max-height: calc(100dvh - 190px); margin-inline: auto; image-rendering: pixelated; touch-action: none; background: #0b1230; }
+.quest__canvas:focus-visible { outline-offset: -3px; }
+.quest__hud { position: absolute; top: 8px; left: 8px; right: 8px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; pointer-events: none; font-size: 12px; }
+.quest__hud > * { padding: 4px 8px; background: rgba(11, 18, 48, 0.82); border: 2px solid #3b4a86; }
+.quest__hud .ok { border-color: #2fbf84; color: #7be0a2; }
+.quest__panel { position: absolute; inset: 0; display: grid; align-content: center; justify-items: start; gap: 12px; padding: 24px clamp(16px, 5vw, 56px); background: rgba(7, 11, 31, 0.9); overflow: auto; }
+.quest__panel--talk { inset: auto 0 0 0; background: rgba(7, 11, 31, 0.95); border-top: 4px solid #22d3ee; }
+.quest__panel .h2 { margin: 0; }
+.quest__panel .lead { margin: 0; color: #d5def5; }
+.quest__panel .muted { color: #b8c4e8; }
+.quest__say { font-size: 16px; min-height: 3em; }
+.quest__choices { display: grid; gap: 8px; width: 100%; max-width: 560px; }
+.quest__choices .btn--tint, .quest .btn--tint { background: #141b4a; color: #f4f7ff; border-color: #6f86c9; box-shadow: 4px 4px 0 #6f86c9; }
+.quest__row { display: flex; flex-wrap: wrap; gap: 12px; }
+.quest__final { display: flex; align-items: center; gap: 16px; }
+.quest__final .pet--card { flex: none; width: 96px; height: auto; }
+.quest__pad { display: none; justify-content: space-between; align-items: flex-end; gap: 12px; padding: 12px; background: #0b1230; border-top: 4px solid #10243a; }
+.quest__pad-move, .quest__pad-act { display: flex; gap: 12px; align-items: flex-end; }
+.pad { min-width: 64px; min-height: 64px; padding: 0 16px; font: inherit; font-size: 20px; font-weight: 700; color: #f4f7ff; background: #141b4a; border: 4px solid #6f86c9; box-shadow: 4px 4px 0 #6f86c9; touch-action: none; user-select: none; -webkit-user-select: none; cursor: pointer; }
+.pad:active { transform: translate(3px, 3px); box-shadow: 0 0 0 #6f86c9; }
+.pad--jump { background: #22d3ee; color: #06222a; border-color: #10243a; box-shadow: 4px 4px 0 #10243a; min-width: 80px; }
+.pad--talk { background: #ffd84d; color: #3a2406; border-color: #10243a; box-shadow: 4px 4px 0 #10243a; font-size: 16px; }
+@media (hover: none), (max-width: 760px) { .quest__pad { display: flex; } .quest__canvas { max-height: calc(100dvh - 210px); } }
