@@ -140,9 +140,6 @@ ul, ol { padding: 0; list-style: none; }
 .sma-gate { min-height: 100vh; display: grid; place-items: center; padding: 24px; background: var(--canvas); }
 .sma-gate__card { width: min(560px, 100%); }
 .sma-form { display: grid; gap: 10px; }
-.sma-form label { font-weight: 700; }
-.sma-form input, .sma-form textarea { width: 100%; padding: 12px; border: 3px solid var(--border); background: var(--surface); color: var(--text); font: inherit; resize: vertical; }
-.sma-form input:focus, .sma-form textarea:focus { outline: 3px solid var(--glow); outline-offset: 2px; }
 .sma-error { padding: 10px 12px; border: 3px solid var(--accent); background: var(--surface); color: var(--text); font-weight: 700; }
 .sma-panel { display: grid; gap: 20px; }
 .sma-id { display: block; overflow-wrap: anywhere; margin-top: 8px; padding: 8px; background: var(--surface); color: var(--muted); font-size: 12px; }

@@ -23,13 +23,15 @@ export function useSmaArchive() {
   }, []);
 
   const remember = useCallback(async (input: SmaMemoryInput) => {
-    if (!state.archive) return;
+    if (!state.archive) return false;
     try {
       const archive = await appendMemory(state.archive, input);
       saveLocalArchive(archive);
       setState({status: 'ready', archive, error: null});
+      return true;
     } catch (error: unknown) {
       setState((current) => ({...current, error: error instanceof Error ? error.message : 'Memory could not be saved.'}));
+      return false;
     }
   }, [state.archive]);
 
@@ -51,7 +53,7 @@ export function useSmaArchive() {
     archive: LocalSmaArchive | null;
     error: string | null;
     setup: (email: string) => Promise<void>;
-    remember: (input: SmaMemoryInput) => Promise<void>;
+    remember: (input: SmaMemoryInput) => Promise<boolean>;
     reset: () => void;
     exportArchive: () => string;
   };

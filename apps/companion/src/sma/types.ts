@@ -88,7 +88,7 @@ export type SmaSetupProps = {
 
 export type SmaMemoryPanelProps = {
   archive: LocalSmaArchive;
-  onRemember: (input: SmaMemoryInput) => Promise<void>;
+  onRemember: (input: SmaMemoryInput) => Promise<boolean>;
   onReset: () => void;
   onExport: () => string;
   error: string | null;
