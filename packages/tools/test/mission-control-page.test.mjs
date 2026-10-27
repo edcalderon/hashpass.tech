@@ -46,3 +46,11 @@ test('the status document is a complete, indexable-off page', () => {
   assert.match(doc, /^<!doctype html>/);
   assert.match(doc, /name="robots" content="noindex"/);
 });
+
+test('the public page drops login-only links by flag, not by matching the URL prefix', () => {
+  const html = buildMissionControlHtml(data, webKit, { publicView: true });
+  assert.doesNotMatch(html, /Plane issues/);
+  assert.doesNotMatch(html, /Plane divisions/);
+  assert.match(html, /GitHub project #4/);
+  assert.match(buildMissionControlHtml(data, planeKit), /Plane issues/);
+});

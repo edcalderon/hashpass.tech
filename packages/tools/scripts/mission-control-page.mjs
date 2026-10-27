@@ -150,10 +150,11 @@ export function buildMissionControlHtml(d, kit = planeKit, { publicView = false 
   out.push("<h2>🚀 Jump to</h2>");
   out.push(`<table><tbody><tr>${[
     ["📋", "Engineering board", "GitHub project #4", "https://github.com/orgs/hashpass-tech/projects/4", "light-blue"],
-    ["🗂️", "Company work", "Plane issues", `${PROJECT_URL}/issues/`, "green"],
-    ["📦", "Modules", "Plane divisions", `${PROJECT_URL}/modules/`, "orange"],
+    ["🗂️", "Company work", "Plane issues", `${PROJECT_URL}/issues/`, "green", true],
+    ["📦", "Modules", "Plane divisions", `${PROJECT_URL}/modules/`, "orange", true],
     ["📚", "Docs and ADRs", "Architecture folder", `${DOCS}docs/architecture/`, "purple"],
-  ].filter(([, , , h]) => !(publicView && h.startsWith(PLANE))).map(([e, t, s, h, bg]) => `<td${tint(bg)}>${p(`${e} <strong>${esc(t)}</strong>`)}${p(a(h, s))}</td>`).join("")}</tr></tbody></table>`);
+  // The sixth field marks entries that need a Plane login, so the public page drops them by flag, not by URL match.
+  ].filter(([, , , , , needsLogin]) => !(publicView && needsLogin)).map(([e, t, s, h, bg]) => `<td${tint(bg)}>${p(`${e} <strong>${esc(t)}</strong>`)}${p(a(h, s))}</td>`).join("")}</tr></tbody></table>`);
 
   out.push("<h2>📊 At a glance</h2>");
   out.push(`<table><tbody><tr>${[

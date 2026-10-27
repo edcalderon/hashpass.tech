@@ -41,7 +41,13 @@ function inline(text) {
 
 /** Markdown subset used by our repo docs: headings, paragraphs, lists, tables, fenced code, rules. */
 export function markdownToHtml(markdown) {
-  const lines = markdown.replace(/<!--[\s\S]*?-->/g, "").split("\n");
+  // One pass can expose a new "<!--" when comments are nested or split ("<!<!-- x -->-- y -->"), so strip to a fixed point.
+  let source = markdown;
+  for (let previous = null; previous !== source;) {
+    previous = source;
+    source = source.replace(/<!--[\s\S]*?-->/g, "");
+  }
+  const lines = source.split("\n");
   const html = [];
   let i = 0;
   while (i < lines.length) {
@@ -124,7 +130,8 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     const bodyOk = typeof back.description_html === "string" && back.description_html.length > 0;
     if (back.name !== p.title || !bodyOk) throw new Error(`Read-back mismatch for "${p.title}" (page ${pageId})`);
     // A stale or concurrently open editor can CRDT-merge the old body back in; the stored page must hold each section once.
-    const stored = [...back.description_html.matchAll(/<h[1-3][^>]*>(.*?)<\/h[1-3]>/gs)].map((m) => m[1].replace(/<[^>]+>/g, "").trim());
+    // Headings are compared as stored (markup included): this is an equality check, so nothing needs stripping.
+    const stored = [...back.description_html.matchAll(/<h[1-3][^>]*>(.*?)<\/h[1-3]>/gs)].map((m) => m[1].trim());
     const repeated = stored.filter((h, i) => stored.indexOf(h) !== i);
     if (repeated.length || back.description_html.length > p.html.length * 1.5) {
       throw new Error(`"${p.title}" holds duplicated content after the write (${repeated.join(", ") || "body larger than published"}); close editors open on the page and republish`);
