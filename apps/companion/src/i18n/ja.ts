@@ -94,6 +94,7 @@ export const ja: Record<MessageKey, string> = {
   'account.status.confirmed': '確認済み',
   'account.status.unconfirmed': '未確認',
   'account.confirmHint': '上部のベルから確認できます。その間も Companion は使えます。',
+  'account.upgradeHint': 'メールだけでも使えます。HASHPASS ID はいつでも接続でき、プレミアムアカウントへの第一歩になります。',
   'account.data': 'この端末',
   'account.archive': 'アーカイブ',
   'account.memories': 'メモリ',

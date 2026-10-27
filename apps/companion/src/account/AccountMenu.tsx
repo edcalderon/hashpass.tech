@@ -80,6 +80,7 @@ export function AccountMenu({ summary, signedIn, onSignIn, onSignOut, onExport, 
                   </li>
                 ))}
               </ul>
+              {!signedIn && <p className="muted account__hint">{t('account.upgradeHint')}</p>}
               {summary.identities.some((identity) => identity.status === 'unconfirmed') && (
                 <p className="muted account__hint">{t('account.confirmHint')}</p>
               )}

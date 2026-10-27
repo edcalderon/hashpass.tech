@@ -92,6 +92,7 @@ export const en = {
   'account.status.confirmed': 'Confirmed',
   'account.status.unconfirmed': 'Not confirmed',
   'account.confirmHint': 'Confirm it from the bell at the top. The Companion keeps working in the meantime.',
+  'account.upgradeHint': 'Your email works on its own. Connect a HASHPASS ID whenever you like; it is the step toward a premium account.',
   'account.data': 'On this device',
   'account.archive': 'Archive',
   'account.memories': 'Memories',

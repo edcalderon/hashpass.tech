@@ -94,6 +94,7 @@ export const es: Record<MessageKey, string> = {
   'account.status.confirmed': 'Confirmado',
   'account.status.unconfirmed': 'Sin confirmar',
   'account.confirmHint': 'Confírmalo desde la campana de arriba. Mientras tanto, el Companion sigue funcionando.',
+  'account.upgradeHint': 'Tu correo funciona por sí solo. Conecta un HASHPASS ID cuando quieras; es el paso hacia una cuenta premium.',
   'account.data': 'En este dispositivo',
   'account.archive': 'Archivo',
   'account.memories': 'Recuerdos',
