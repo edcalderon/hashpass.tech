@@ -22,22 +22,47 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610271001, // Updated to current timestamp
+  buildNumber: 202610272032, // Updated to current timestamp
   releaseDate: '2026-10-27',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'closing first setup shows the public landing, not the dashboard'
+    'explain the optional HASHPASS ID upgrade on the account page',
+    'email a confirmation code and link right after first setup',
+    'show inbox only when connected, add profile picture and account page',
+    'continue with HASHPASS ID or email from the guest card'
   ],
   bugfixes: [
-    // No bugfixes
+    'harden native mobile UI and camera flow',
+    'route Companion origins to their own Supabase profile',
+    'prevent production ahead of staging'
   ],
   breakingChanges: [],
-  notes: 'closing first setup shows the public landing, not the dashboard'
+  notes: 'explain the optional HASHPASS ID upgrade on the account page; email a confirmation code and link right after first setup; show inbox only when connected, add profile picture and account page; continue with HASHPASS ID or email from the guest card; harden native mobile UI and camera flow; route Companion origins to their own Supabase profile; prevent production ahead of staging'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.166': {
+    version: '1.9.166',
+    buildNumber: 202610272032,
+    releaseDate: '2026-10-27',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'explain the optional HASHPASS ID upgrade on the account page',
+      'email a confirmation code and link right after first setup',
+      'show inbox only when connected, add profile picture and account page',
+      'continue with HASHPASS ID or email from the guest card'
+    ],
+    bugfixes: [
+      'harden native mobile UI and camera flow',
+      'route Companion origins to their own Supabase profile',
+      'prevent production ahead of staging'
+    ],
+    breakingChanges: [],
+    notes: 'explain the optional HASHPASS ID upgrade on the account page; email a confirmation code and link right after first setup; show inbox only when connected, add profile picture and account page; continue with HASHPASS ID or email from the guest card; harden native mobile UI and camera flow; route Companion origins to their own Supabase profile; prevent production ahead of staging'
+  },
   '1.9.165': {
     version: '1.9.165',
     buildNumber: 202610271001,
