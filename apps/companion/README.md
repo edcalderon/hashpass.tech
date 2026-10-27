@@ -4,7 +4,7 @@ Pixel-art landing page for the standalone Companion MVP. It is a **staging previ
 quota or HASHPASS ID sign-in exist yet, and the page collects no data. Roadmap: [issue #469](https://github.com/hashpass-tech/hashpass.tech/issues/469).
 
 <!-- COMPANION_RELEASE:START -->
-> **Current MVP release:** [v0.0.3](./CHANGELOG.md) · stable · 2026-10-27
+> **Current MVP release:** [v0.0.1](./CHANGELOG.md) · alpha · 2026-10-26
 <!-- COMPANION_RELEASE:END -->
 
 ## Develop
@@ -31,3 +31,11 @@ tags `companion-vX.Y.Z` and pushes the branch and tag to `origin`. It does not o
 
 `https://companion-dev.hashpass.tech` (S3 + CloudFront, Terraform in `packages/infra/terraform/stacks/hashpass-companion-site`).
 There is no deploy workflow yet; publishing is manual. Production `companion.hashpass.tech` is not provisioned.
+
+## Portable memory baseline
+
+The standalone product's proposed persistence boundary is the vendor-neutral
+[Sovereign Memory Archive (SMA) v0.1](../../docs/standards/sma/README.md).
+It is a draft profile for opt-in, encrypted, user-owned soul and memory export;
+it is not required for the Meta Hackathon P0 and does not authorize public
+pinning, blockchain deployment or production data migration.

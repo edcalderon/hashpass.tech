@@ -1,0 +1,59 @@
+{
+  "$schema": "https://hashpass.tech/spec/sma/0.1/schema.json",
+  "type": "sma.manifest",
+  "smaVersion": "0.1",
+  "archiveId": "urn:sma:example:aster",
+  "agent": {
+    "did": "did:key:z6Mkexampleaster",
+    "kind": "companion",
+    "controller": "did:key:z6Mkexamplecontroller",
+    "name": "Aster"
+  },
+  "soul": {
+    "version": 3,
+    "digest": "sha256:2c2f3f78b7c7e3f2a5318fb40f20baf8f68ae1e59f0e4f1de7d2d2a2a6c7d8e9",
+    "visibility": "private",
+    "previous": "cid:bafybeigdyrzt5exampleprevioussoul",
+    "objectRef": "cid:bafybeihqexampleencryptedsoul"
+  },
+  "memory": {
+    "root": "sha256:1f5a4ea9c7a8e54d7a6c3e1a9b2c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e",
+    "sequence": 12,
+    "previousRoot": "sha256:0f4a3ea8c6a7e43c6a5b2d0a8b1c3d4e5f60718293a4b5c6d7e8f901a2b3c4d5",
+    "recordCount": 3,
+    "rootRef": "cid:bafybeihqexamplecurrentroot"
+  },
+  "storage": [
+    {
+      "kind": "ipfs",
+      "role": "archive",
+      "uri": "ipfs://bafybeihqexampleencryptedarchive",
+      "contentDigest": "cid:bafybeihqexampleencryptedarchive",
+      "encryption": "age-x25519-envelope",
+      "retention": "controller-pinned; replicas disclosed separately"
+    },
+    {
+      "kind": "ipns",
+      "role": "current-root",
+      "uri": "ipns://k51qexampleasterroot",
+      "encryption": "pointer-only"
+    }
+  ],
+  "privacy": {
+    "defaultVisibility": "private",
+    "encryption": "required",
+    "publicAnchor": "commitment-only",
+    "deletion": "tombstone-plus-cryptographic-erasure",
+    "keyManagement": "controller-held; rotate on compromise"
+  },
+  "proofs": [
+    {
+      "type": "DataIntegrityProof",
+      "verificationMethod": "did:key:z6Mkexamplecontroller#z6Mkexamplecontroller",
+      "created": "2026-10-27T00:00:00Z",
+      "proofPurpose": "controllerSignature",
+      "proofValue": "zExampleDetachedSignature",
+      "objectDigest": "sha256:2c2f3f78b7c7e3f2a5318fb40f20baf8f68ae1e59f0e4f1de7d2d2a2a6c7d8e9"
+    }
+  ]
+}
