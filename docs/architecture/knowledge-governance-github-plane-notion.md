@@ -5,7 +5,7 @@
 | System | Canonical responsibility | Must NOT become |
 |---|---|---|
 | **GitHub** | Active engineering issues, subtask delegation, code/PR review, implementation notes, acceptance tests, deploy evidence and chronological status. Technical specifications and versioned ADR drafts live in-repo alongside code. | A secret store or marketing archive. |
-| **Plane** | **Final curated architecture knowledge center**: stabilized system docs, accepted ADR snapshots, canonical designs, schema/index, vendor evaluations, privacy/security requirements, experiments, lessons learned, historical releases and hackathon postmortems. Link back to source commits/issues. | A parallel sprint tracker or duplicate GitHub issue database. |
+| **Plane** | **Final curated architecture knowledge center**: stabilized system docs, accepted ADR snapshots, canonical designs, schema/index, vendor evaluations, privacy/security requirements, experiments, lessons learned, historical releases and hackathon postmortems. Link back to source commits/issues. | Code issues or a duplicate of the GitHub issue database. It does track non-code work (legal, finance, partnerships, validation) as work items. |
 | **Notion** | **Temporary CEO workspace**: executive briefing, funding/partner/high-level risk decisions, accepted program dates, calendar links and escalation; links to GitHub & Plane. | Permanent engineering documentation or duplicate task maintenance. |
 | **Calendar** | Time-bound engineering work sessions, hard deadlines, external meetings. | Issue tracker or knowledge warehouse. |
 
@@ -52,7 +52,7 @@ Later: update canonical ADR version in GitHub and Plane; no task duplication
 5. Put Plane permalink into GitHub ADR and Notion CEO summary; do not create Plane work items to mirror GitHub tasks.
 6. On subsequent revisions, update/supersede same Plane page, keep version history.
 
-> Update 2026-10-27: Plane access now works and its work items were migrated to GitHub projects. Current state: [knowledge-center-as-built.md](knowledge-center-as-built.md).
+> Update 2026-10-27: Plane access now works. Code issues stay on GitHub (single project #4); non-code project tracking lives in Plane work items and modules, alongside the knowledge pages. Current state: [knowledge-center-as-built.md](knowledge-center-as-built.md).
 
 ## Current constraints
 As of this documentation turn, the **$hashpass-plane** link is known from user conversation but no Plane read/write action is available in the connected tool catalog. Therefore actual Plane changes are **pending**, and this Markdown is an intentionally import-ready source. Do not claim that Plane was updated.

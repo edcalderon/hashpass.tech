@@ -1,38 +1,33 @@
 # HASHPASS knowledge center — as built (GitHub, Plane, Notion)
 
-**Date:** 2026-10-27 | **Status:** Current state, verified against the repo and live Plane where stated. Supersedes the "Current constraints" section of [knowledge-governance-github-plane-notion.md](knowledge-governance-github-plane-notion.md).
+**Date:** 2026-10-27 (revised) | **Status:** Current state, verified against the repo, live Plane and GitHub where stated. Supersedes the "Current constraints" section of [knowledge-governance-github-plane-notion.md](knowledge-governance-github-plane-notion.md).
 
-## Decision
+## Decision (revised 2026-10-27)
 
-GitHub is the single source of truth for work. Plane is the knowledge center (architecture, decisions, reference) and holds no work items. Notion is the transitional CEO layer.
+GitHub tracks code work. Plane holds everything that is not a code issue: project setup, business tracking, and the knowledge center. Notion is the transitional CEO layer.
 
 | System | Holds | Does not hold |
 | --- | --- | --- |
-| GitHub | Issues, PRs, org Projects, in-repo ADR drafts, deploy evidence | Secrets |
-| Plane | Curated pages and modules (knowledge) | Work items. A GitHub task is never mirrored here |
+| GitHub | Code issues and sub-issues, PRs, the single org project #4, ADR drafts, deploy evidence | Business, legal, finance, partnership or validation tracking; secrets |
+| Plane | Non-code work items grouped in modules, plus curated knowledge pages | Code issues, which stay on GitHub only |
 | Notion | CEO briefing, dates, decisions that need the CEO | Long technical docs, duplicated tasks |
 
-## Work tracking on GitHub (org `hashpass-tech`, all private)
+This reverses the earlier same-day decision to move all Plane work items to GitHub. The six per-module GitHub projects (#5–#10) were deleted once the items were back in Plane and verified.
 
-| Project | Scope |
-| --- | --- |
-| [#4 HASHPASS](https://github.com/orgs/hashpass-tech/projects/4) | Engineering work for the Meta hackathon Muse Companion; views for the Companion, Board, Roadmap, Backlog |
-| #5 Corporate & Legal | Migrated from Plane module of the same name (1 item) |
-| #6 BSL Bogotá 2027 Planning | 1 item |
-| #7 Strategy & Validation | 4 items (Passport validation, competitor radar) |
-| #8 Finance & Cloud | 1 item (AWS credits and runway) |
-| #9 Product & Operations | 6 items (payments pilot, Passport build items) |
-| #10 Commercial & Partnerships | 4 items (event leads, events radar, BSL Bogotá 2026 charter) |
+## Work tracking on GitHub (org `hashpass-tech`)
 
-Projects #5–#10 hold draft items, not repository issues, because they are business items and do not belong in the public code repository. Each draft carries the original text, Plane priority, state and module in its body.
+One project: [#4 HASHPASS](https://github.com/orgs/hashpass-tech/projects/4). Epic #455 with sub-issues #457–#462, #464, #465, #469 and views for the Companion, Board, Roadmap and Backlog. Further engineering scope is added as sub-issues of this project, not as new projects. (`JACKKERNEL`, #3, is an unrelated project.)
 
 ## Plane (live, checked 2026-10-27)
 
-- Instance `https://work.hashpass.tech`, workspace slug `plane`, one project `HASHPASS` (identifier `HASHPASS`).
-- Work items: **0**. The 17 items that existed were copied to GitHub projects #5–#10, verified item by item (title, status, body text, links), backed up locally, then deleted.
-- Modules: 6 (BSL Bogotá 2027 — Planning, Strategy & Validation, Finance & Cloud, Product & Operations, Commercial & Partnerships, Corporate & Legal). They are now empty. They map one to one to GitHub projects #6–#10 and #5, and are kept as the knowledge areas until the page taxonomy replaces them.
+- Instance `https://work.hashpass.tech`, workspace slug `plane`, one project `HASHPASS`.
+- Work items: **17**, restored from the local backup after the earlier deletion. Plane assigned new numbers (#18–#34), so old numbers #1–#17 no longer resolve. Titles, priorities, states and description text were compared with the backup; the only difference is that Plane wraps each description in a `<div>`.
+- Sub-items: the Passport validation items (old #3, #4, #6–#10) are children of "Validate HASHPASS Passport" (new #22).
+- Labels: passport, bsl, radar, funding, legal, partnership, payments (assigned from title keywords).
+- Modules: 6, now populated: Corporate & Legal 1, BSL Bogotá 2027 Planning 1, Strategy & Validation 4, Finance & Cloud 1, Product & Operations 6, Commercial & Partnerships 4.
 - Pages: see the publication log at the end of this document. Do not assume a page exists unless it is listed there.
-- Cycles, labels and intake: none.
+- Cycles and intake: none.
+- Local backups outside the repo: `~/.hashpass-backups/plane-hashpass-inventory-2026-10-27.json` and the migration map.
 
 ## Components in the repo
 
@@ -47,11 +42,11 @@ Projects #5–#10 hold draft items, not repository issues, because they are busi
 
 Authorization policy for the MCP gateway: [plane-mcp-authorization](../../apps/docs/docs/auth/plane-mcp-authorization.md).
 
-## Conflicts with the current model to resolve
+## Open items
 
-- `campaigns/bsl-2026/import-plane.mjs` and `OPERATIONS.md` describe creating Plane work items. The BSL26 project no longer exists in the Plane workspace, and its work plan should live on GitHub if still needed.
+- `campaigns/bsl-2026/import-plane.mjs` created the BSL26 work plan in Plane and is historical. Do not run it again: it would duplicate items. Its `work-plan.json` now names the correct workspace slug `plane`.
 - The `notion-plane-sync` package name implies Plane work-item sync. Its README says work-item materialization is deliberately off. Treat it as a Notion archive only.
-- The deleted Plane items ended with "Plane is the shared execution layer; Notion remains the private knowledge source". That wording is now wrong. If the same text exists in Notion or in the import tooling, correct it there; I did not check Notion.
+- Restored items still end with "Plane is the shared execution layer; Notion remains the private knowledge source". That is the original wording; edit it if the model should be restated in the items themselves.
 
 ## Future work: GitHub to Plane mirror (not built)
 
@@ -60,8 +55,8 @@ Not started. If wanted, a one-way sync would publish accepted knowledge, not tas
 1. GitHub remains the writer. Plane pages are read-only mirrors with a link back to the source commit or issue.
 2. Source: ADRs and architecture docs in `docs/architecture/` marked Accepted.
 3. A workflow on merge to `main` upserts one Plane page per document, keyed by a stable ID in the front matter.
-4. It never creates or edits Plane work items, and never reads from Plane.
-5. Needs a decision first: a least-privilege Plane token stored as a GitHub secret, and whether business drafts (projects #5–#10) are ever mirrored. They hold commercial detail, so the default is no.
+4. It never creates or edits Plane work items or GitHub issues, and never reads from Plane.
+5. Needs a decision first: a least-privilege Plane token stored as a GitHub secret, and whether business work items are ever mirrored to pages. They hold commercial detail, so the default is no.
 
 ## Page taxonomy to publish in Plane
 
