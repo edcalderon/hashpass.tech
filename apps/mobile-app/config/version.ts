@@ -22,24 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610270839, // Updated to current timestamp
+  buildNumber: 202610270935, // Updated to current timestamp
   releaseDate: '2026-10-27',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'connect dashboard auth flow',
-    'make the status page private behind HASHPASS sign-in and fix its mobile layout',
-    'add local agent control plane'
+    'provision production site and trust its origin'
   ],
   bugfixes: [
-    'reuse the shared FormField and keep the memory draft on failure'
+    // No bugfixes
   ],
   breakingChanges: [],
-  notes: 'connect dashboard auth flow; make the status page private behind HASHPASS sign-in and fix its mobile layout; add local agent control plane; reuse the shared FormField and keep the memory draft on failure'
+  notes: 'provision production site and trust its origin'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.164': {
+    version: '1.9.164',
+    buildNumber: 202610270935,
+    releaseDate: '2026-10-27',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'provision production site and trust its origin'
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'provision production site and trust its origin'
+  },
   '1.9.163': {
     version: '1.9.163',
     buildNumber: 202610270839,
