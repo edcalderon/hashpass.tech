@@ -1,4 +1,4 @@
-import { cameraPermissionManager } from '../../lib/camera-permissions';
+import { cameraPermissionManager, type CameraPermissionResult } from '../../lib/camera-permissions';
 import { Platform } from 'react-native';
 
 const mockNativeGetPermissions = jest.fn();
@@ -202,6 +202,131 @@ describe('native camera permissions', () => {
     expect(mockNativeRequestPermissions).toHaveBeenCalledTimes(1);
   });
 
+  it('returns an existing native grant without requesting again', async () => {
+    mockNativeGetPermissions.mockResolvedValue({ status: 'granted', granted: true, canAskAgain: false });
+
+    await expect(cameraPermissionManager.requestWithFallback()).resolves.toMatchObject({
+      status: 'granted',
+      canAskAgain: false,
+    });
+    expect(mockNativeRequestPermissions).not.toHaveBeenCalled();
+  });
+
+  it('stops before requesting when native permission is already blocked', async () => {
+    mockNativeGetPermissions.mockResolvedValue({ status: 'denied', granted: false, canAskAgain: false });
+
+    await expect(cameraPermissionManager.requestWithFallback()).resolves.toMatchObject({
+      status: 'blocked',
+      canAskAgain: false,
+      message: 'Please enable camera permission in device settings to scan QR codes.',
+    });
+    expect(mockNativeRequestPermissions).not.toHaveBeenCalled();
+  });
+
+  it('normalizes an explicit native blocked response', async () => {
+    mockNativeGetPermissions.mockResolvedValue({ status: 'blocked', granted: false, canAskAgain: false });
+
+    await expect(cameraPermissionManager.getPermissionStatus()).resolves.toMatchObject({
+      status: 'blocked',
+      canAskAgain: false,
+    });
+  });
+
+  it('defaults a missing native canAskAgain flag to true', async () => {
+    mockNativeGetPermissions.mockResolvedValue({ status: 'undetermined', granted: false });
+
+    await expect(cameraPermissionManager.getPermissionStatus()).resolves.toMatchObject({
+      status: 'undetermined',
+      canAskAgain: true,
+    });
+  });
+
+  it('reports a native status lookup failure as undetermined', async () => {
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    mockNativeGetPermissions.mockRejectedValue(new Error('native module unavailable'));
+
+    try {
+      await expect(cameraPermissionManager.getPermissionStatus()).resolves.toMatchObject({
+        status: 'undetermined',
+        canAskAgain: true,
+        message: 'Unable to check camera permission status',
+      });
+    } finally {
+      errorSpy.mockRestore();
+    }
+  });
+
+  it('reconciles a failed native request with a blocked status', async () => {
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    mockNativeGetPermissions
+      .mockResolvedValueOnce({ status: 'undetermined', granted: false, canAskAgain: true })
+      .mockResolvedValueOnce({ status: 'denied', granted: false, canAskAgain: false });
+    mockNativeRequestPermissions.mockRejectedValue(new Error('permission sheet failed'));
+
+    try {
+      await expect(cameraPermissionManager.requestPermission()).resolves.toMatchObject({
+        status: 'blocked',
+        canAskAgain: false,
+      });
+    } finally {
+      errorSpy.mockRestore();
+    }
+  });
+
+  it('keeps the native request error detail when status reconciliation is inconclusive', async () => {
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    mockNativeGetPermissions
+      .mockResolvedValueOnce({ status: 'undetermined', granted: false, canAskAgain: true })
+      .mockResolvedValueOnce({ status: 'undetermined', granted: false, canAskAgain: true });
+    mockNativeRequestPermissions.mockRejectedValue(new Error('permission sheet failed'));
+
+    try {
+      await expect(cameraPermissionManager.requestPermission()).resolves.toMatchObject({
+        status: 'undetermined',
+        canAskAgain: true,
+        message: 'Camera permission could not be requested. permission sheet failed',
+      });
+    } finally {
+      errorSpy.mockRestore();
+    }
+  });
+
+  it('handles a still-denied native status that can be requested again', async () => {
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    mockNativeGetPermissions
+      .mockResolvedValueOnce({ status: 'undetermined', granted: false, canAskAgain: true })
+      .mockResolvedValueOnce({ status: 'denied', granted: false, canAskAgain: true });
+    mockNativeRequestPermissions.mockRejectedValue('permission sheet failed');
+
+    try {
+      await expect(cameraPermissionManager.requestPermission()).resolves.toMatchObject({
+        status: 'undetermined',
+        canAskAgain: true,
+        message: 'Camera permission could not be requested.',
+      });
+    } finally {
+      errorSpy.mockRestore();
+    }
+  });
+
+  it('preserves the request error when native status reconciliation also fails', async () => {
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    const getStatusSpy = jest.spyOn(cameraPermissionManager, 'getPermissionStatus')
+      .mockRejectedValue(new Error('native status unavailable'));
+    mockNativeRequestPermissions.mockRejectedValue(new Error('permission sheet failed'));
+
+    try {
+      await expect(cameraPermissionManager.requestPermission()).resolves.toMatchObject({
+        status: 'undetermined',
+        canAskAgain: true,
+        message: 'Camera permission could not be requested. native status unavailable',
+      });
+    } finally {
+      getStatusSpy.mockRestore();
+      errorSpy.mockRestore();
+    }
+  });
+
   it('maps a native denial that cannot be asked again to blocked', async () => {
     mockNativeGetPermissions.mockResolvedValue({ status: 'denied', granted: false, canAskAgain: true });
     mockNativeRequestPermissions.mockResolvedValue({ status: 'denied', granted: false, canAskAgain: false });
@@ -328,7 +453,7 @@ describe('web camera permission upgrades', () => {
       },
     }));
 
-    const unsubscribe = manager.watchWebPermission((result) => seen.push(result.status));
+    const unsubscribe = manager.watchWebPermission((result: CameraPermissionResult) => seen.push(result.status));
     await Promise.resolve(); // let the permissions query settle
     expect(changeHandlers.size).toBeGreaterThan(0);
 
@@ -366,7 +491,7 @@ describe('web camera permission upgrades', () => {
     mockQuery.mockResolvedValue({ state: 'prompt' });
 
     const seen: Array<string> = [];
-    const unsubscribe = manager.watchWebPermission((result) => seen.push(result.status));
+    const unsubscribe = manager.watchWebPermission((result: CameraPermissionResult) => seen.push(result.status));
     fireDeviceChange();
     // The device signal resolves the permission status through an async
     // chain (handler -> getWebPermissionStatus -> permissions query).

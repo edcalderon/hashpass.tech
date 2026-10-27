@@ -38,6 +38,8 @@ describe('PinPad', () => {
     await act(async () => { view = create(<PinPad mode="dark" title="t" onComplete={onComplete} />); });
     await tap(view, 'Delete last digit');
     expect(progress(view)).toBe('0 of 4 digits entered');
+    await tap(view, '0', 'Delete last digit');
+    expect(progress(view)).toBe('0 of 4 digits entered');
     await tap(view, '9', '8', 'Delete last digit');
     expect(progress(view)).toBe('1 of 4 digits entered');
     await tap(view, '7', '6', '5');

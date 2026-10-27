@@ -37,7 +37,7 @@ import { nextPassType } from '../../lib/pass-upgrade-requests';
 // using the same exported value everywhere keeps the deck and each card in
 // sync without changing the web layout.
 export const PASS_CARD_WIDTH = 340;
-export const PASS_CARD_HEIGHT = Platform.OS === 'web' ? 390 : 480;
+export const PASS_CARD_HEIGHT = Platform.select({ web: 390, default: 480 });
 
 interface PassWalletCardProps {
   pass: WalletPass;

@@ -1,7 +1,7 @@
 /// <reference types="jest" />
 
 import React from 'react';
-import { Text } from 'react-native';
+import { Platform, Text } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { useRouter } from 'expo-router';
 
@@ -204,6 +204,27 @@ describe('PassWalletCard', () => {
       pressText(renderer, 'Claim it here');
     });
     expect(renderer.root.findAllByType('Modal').some((modal: any) => modal.props.visible)).toBe(true);
+  });
+
+  it('keeps the native back-face actions in a vertical flow with room for the claim link', () => {
+    const originalPlatform = Platform.OS;
+    Platform.OS = 'android';
+    try {
+      const generalPass = { ...pass, pass_type: 'general' as const, eventDateLabel: null };
+      const renderer = render(<PassWalletCard pass={generalPass} />);
+
+      act(() => {
+        pressText(renderer, 'Details');
+      });
+
+      expect(renderer.root.findByProps({ children: 'Upgrade' })).toBeTruthy();
+      expect(renderer.root.findByProps({ children: 'More details' })).toBeTruthy();
+      expect(renderer.root.findByProps({ children: 'Claim it here' })).toBeTruthy();
+
+      act(() => renderer.unmount());
+    } finally {
+      Platform.OS = originalPlatform;
+    }
   });
 
   it('opens safe share options instead of sharing admission data immediately', async () => {
