@@ -20,19 +20,23 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.161)
+## 📋 Latest Changes (v1.9.162)
 
 ### Features
 
-* **mcp:** serve Plane page tool from the gateway via a service account ([b20bcba](https://github.com/hashpass-tech/hashpass.tech/commit/b20bcba9e5ef5d342913beddaff2215c2cb8994f))
+* **plane:** publish generated pages through the page account ([c432b78](https://github.com/hashpass-tech/hashpass.tech/commit/c432b78539534298f125e7d9522f243e42013718))
+* **plane:** replace page bodies in place and publish the visual command center ([509db5a](https://github.com/hashpass-tech/hashpass.tech/commit/509db5af053f038852dbbdaea1db3ae4b576ca54))
+* **status:** publish the command center at work.hashpass.tech/status ([e44a6d6](https://github.com/hashpass-tech/hashpass.tech/commit/e44a6d6fdeefb53bbcb6b49bee49e31b11153de1))
 ### Release Highlights
-- serve Plane page tool from the gateway via a service account
+- publish the command center at work.hashpass.tech/status; replace page bodies in place and publish the visual command center; publish generated pages through the page account; add local SMA companion memory
 
 ### Release scope
-- Compared with: `v1.9.160` (the previous global release tag)
+- Compared with: `v1.9.161` (the previous global release tag)
 
 ### Affected products & packages
+- Companion
 - Self-hosted operations
+- Release tooling
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
