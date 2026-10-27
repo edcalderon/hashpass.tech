@@ -68,6 +68,33 @@ test("creates a page on the project route with the CSRF header and session cooki
   assert.deepEqual(JSON.parse(create.body), {name: "Mission Command Center", description_html: "<h1>Hi</h1>", access: 0});
 });
 
+test("updates page content through the description endpoint with synchronized representations", async () => {
+  const plane = fakePlane();
+  const html = "<h1>Updated</h1><p><strong>content</strong></p>";
+
+  await client(plane).run({action: "update", project_id: PROJECT, page_id: PAGE, description_html: html});
+
+  const description = plane.calls.find((call) => call.method === "PATCH" && call.pathname.endsWith("/description/"));
+  assert.ok(description);
+  const body = JSON.parse(description.body);
+  assert.equal(body.description_html, html);
+  assert.equal(typeof body.description_binary, "string");
+  assert.ok(body.description_binary.length > 0);
+  assert.equal(body.description_json.type, "doc");
+  assert.equal(body.description_json.content[0].type, "heading");
+  assert.equal(plane.calls.filter((call) => call.method === "PATCH" && call.pathname.endsWith(`${PAGE}/`)).length, 0);
+});
+
+test("rejects nested page creation before sending a request", async () => {
+  const plane = fakePlane();
+
+  await assert.rejects(
+    () => client(plane).run({action: "create", project_id: PROJECT, page_id: PAGE, parent_id: PAGE, name: "Child"}),
+    (error) => error instanceof PlanePageError && /nested.*parent_id|parent_id.*nested/i.test(error.message),
+  );
+  assert.equal(plane.calls.length, 0);
+});
+
 test("maps retrieve, update, archive, unarchive and delete onto Plane's routes", async () => {
   const plane = fakePlane();
   const pages = client(plane);

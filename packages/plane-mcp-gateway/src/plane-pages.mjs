@@ -7,6 +7,8 @@
  * session in memory, and re-signs in when Plane rejects it. Credentials never leave this process.
  */
 
+import {documentFormatsFromHtml} from "./plane-document.mjs";
+
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const SLUG = /^[a-z0-9][a-z0-9_-]{0,63}$/i;
 
@@ -132,17 +134,28 @@ export function createPlanePages({baseUrl, workspaceSlug, email, password, fetch
       if (action === "list") return call("GET", pages);
       if (action === "create") {
         if (!args.name) throw new PlanePageError("name is required", 400);
+        if (args.parent_id !== undefined && args.parent_id !== null && args.parent_id !== "") {
+          requireId(args.parent_id, "parent_id");
+          throw new PlanePageError("Nested page creation with parent_id is not supported safely on Plane 1.4.2", 400);
+        }
         const body = pick({name: args.name, description_html: args.description_html, color: args.color, parent: args.parent_id}, ["name", "description_html", "color", "parent"]);
         if (typeof args.access === "number") body.access = args.access;
-        if (body.parent) requireId(body.parent, "parent_id");
         return call("POST", pages, body);
       }
       const page = requireId(args.page_id, "page_id");
       if (action === "retrieve") return call("GET", `${pages}${page}/`);
       if (action === "update") {
-        const body = pick({name: args.name, description_html: args.description_html}, ["name", "description_html"]);
-        if (!Object.keys(body).length) throw new PlanePageError("update needs name, description_html, or both", 400);
-        return call("PATCH", `${pages}${page}/`, body);
+        const hasName = args.name !== undefined && args.name !== "";
+        const hasHtml = args.description_html !== undefined;
+        if (!hasName && !hasHtml) throw new PlanePageError("update needs name, description_html, or both", 400);
+        if (hasName) await call("PATCH", `${pages}${page}/`, {name: args.name});
+        if (!hasHtml) return {};
+        const formats = documentFormatsFromHtml(args.description_html);
+        return call("PATCH", `${pages}${page}/description/`, {
+          description_binary: formats.description_binary,
+          description_html: args.description_html,
+          description_json: formats.description_json,
+        });
       }
       if (action === "archive") return call(args.archive === false ? "DELETE" : "POST", `${pages}${page}/archive/`);
       return call("DELETE", `${pages}${page}/`);
