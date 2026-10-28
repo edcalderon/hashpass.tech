@@ -148,14 +148,24 @@ def build(output):
             },
         }) + "\n")
         (source / "app/_layout.tsx").write_text("""import 'react-native-reanimated';
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Stack } from 'expo-router';
 import { ThemeProvider } from '../providers/ThemeProvider';
 import { LanguageProvider } from '../providers/LanguageProvider';
 import { useThemeProvider } from '../hooks/useTheme';
+import { lightColors } from '../lib/theme';
 export default function Layout() {
   const theme = useThemeProvider();
-  return <ThemeProvider value={theme}><LanguageProvider><Stack screenOptions={{headerShown:false}} /></LanguageProvider></ThemeProvider>;
+  // The static export is rendered with the light scheme and React keeps those server classes when a
+  // dark browser hydrates, which left dark pages with light-mode text. Hydrate with the same light
+  // theme the server used, then switch to the visitor's real theme so the classes are patched.
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => setHydrated(true), []);
+  const value = useMemo(
+    () => (hydrated ? theme : { ...theme, isDark: false, colors: lightColors }),
+    [hydrated, theme],
+  );
+  return <ThemeProvider value={value}><LanguageProvider><Stack screenOptions={{headerShown:false}} /></LanguageProvider></ThemeProvider>;
 }
 """)
         (source / "app/index.tsx").write_text("""import React from 'react';

@@ -1,3 +1,6 @@
+import type { ReactNode } from 'react';
+import type { PressableProps, StyleProp, ViewStyle } from 'react-native';
+
 export type LukasAnimationLevel = 'full' | 'reduced' | 'none';
 
 export type LukasGlyphName =
@@ -14,6 +17,8 @@ export type LukasGlyphName =
 export type LukasGlyphProps = {
   name: LukasGlyphName;
   size?: number;
+  /** Overrides the page-level motion setting for this glyph. */
+  animationLevel?: LukasAnimationLevel;
 };
 
 export type LukasCoinProps = {
@@ -62,3 +67,27 @@ export type LukasClickResult = {
   reachedCap: boolean;
   rapid: boolean;
 };
+
+export type LukasPalette = {
+  fill: string; onFill: string; accent: string; text: string; body: string; muted: string;
+  card: string; cardRaised: string; border: string; borderStrong: string; tint: string;
+  danger: string; glow: string; canvas: string;
+};
+
+export type LukasButtonProps = Omit<PressableProps, 'children' | 'style'> & {
+  label: string;
+  palette: LukasPalette;
+  variant?: 'primary' | 'secondary' | 'ghost';
+  loading?: boolean;
+  fullWidth?: boolean;
+  leadingIcon?: ReactNode;
+  style?: StyleProp<ViewStyle>;
+};
+
+export type LukasCardProps = { palette: LukasPalette; compact?: boolean; raised?: boolean; style?: StyleProp<ViewStyle>; children?: ReactNode };
+
+export type LukasDialogProps = { visible: boolean; onClose: () => void; isDark: boolean; isMobile: boolean; palette: LukasPalette; closeLabel?: string; children: ReactNode };
+
+export type LukasChipProps = Omit<PressableProps, 'children' | 'style'> & { label: string; palette: LukasPalette; selected?: boolean; trailing?: ReactNode; style?: StyleProp<ViewStyle> };
+
+export type LukasGlyphTone = { a: string; b: string; glow: string; delay: string };

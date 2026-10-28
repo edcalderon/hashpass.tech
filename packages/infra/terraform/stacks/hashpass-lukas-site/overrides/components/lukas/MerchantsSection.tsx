@@ -10,6 +10,7 @@ import Animated, {
   withDelay,
 } from 'react-native-reanimated';
 import { LukasGlyph } from './LukasGlyph';
+import { lukasPalette, lukasSectionTitle } from './lukas-ui';
 
 export function MerchantsSection() {
   const { colors, isDark } = useTheme();
@@ -90,7 +91,7 @@ export function MerchantsSection() {
               ]}
             >
               <View style={styles.cardIconContainer}>
-                <LukasGlyph name={category.glyph} size={68} />
+                <LukasGlyph name={category.glyph} size={72} />
               </View>
               <Text style={styles.cardTitle}>{category.title}</Text>
               <Text style={styles.cardSubtitle}>{category.subtitle}</Text>
@@ -108,15 +109,7 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     maxWidth: 1200,
     alignSelf: 'center',
   },
-  title: {
-    fontSize: isMobile ? 28 : 40,
-    fontWeight: '900',
-    color: isDark ? '#F5FFFA' : '#10271C',
-    textAlign: 'center',
-    marginBottom: isMobile ? 40 : 60,
-    letterSpacing: -0.5,
-    lineHeight: isMobile ? 36 : 48,
-  },
+  title: { ...lukasSectionTitle(lukasPalette(isDark), isMobile), marginBottom: isMobile ? 40 : 60 },
   scrollView: {
     width: '100%',
     flexGrow: 0,
@@ -126,6 +119,7 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     flexDirection: isMobile ? 'column' : 'row',
     gap: isMobile ? 16 : 18,
     paddingVertical: 10,
+    justifyContent: 'center',
   },
   card: {
     width: isMobile ? '100%' : 250,
@@ -134,10 +128,10 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     flexShrink: 1,
     marginBottom: 0,
     padding: isMobile ? 20 : 24,
-    borderRadius: 22,
+    borderRadius: 24,
     backgroundColor: isDark ? 'rgba(7, 28, 42, 0.72)' : 'rgba(247, 252, 249, 0.92)',
     borderWidth: 1,
-    borderColor: isDark ? 'rgba(139, 224, 176, 0.24)' : '#D7EADF',
+    borderColor: lukasPalette(isDark).border,
     alignItems: 'center',
     gap: 16,
     shadowColor: '#000',
@@ -150,7 +144,7 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     width: 82,
     height: 82,
     borderRadius: 24,
-    backgroundColor: isDark ? 'rgba(18, 66, 62, 0.42)' : '#E9F7EE',
+    backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
   },

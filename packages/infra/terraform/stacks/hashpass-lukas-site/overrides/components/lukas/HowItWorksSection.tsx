@@ -14,6 +14,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { LukasGlyph } from './LukasGlyph';
+import { lukasPalette, lukasSectionTitle } from './lukas-ui';
 
 export function HowItWorksSection() {
   const { colors, isDark } = useTheme();
@@ -97,7 +98,7 @@ export function HowItWorksSection() {
             <React.Fragment key={index}>
               <Animated.View style={[styles.step, animatedStyle]}>
                 <View style={styles.stepIconContainer}>
-                  <LukasGlyph name={step.glyph} size={isMobile ? 52 : 66} />
+                  <LukasGlyph name={step.glyph} size={isMobile ? 56 : 72} />
                 </View>
                 <View style={styles.stepNumber}>
                   <Text style={styles.stepNumberText}>{step.number}</Text>
@@ -136,14 +137,7 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     maxWidth: 1200,
     alignSelf: 'center',
   },
-  title: {
-    fontSize: isMobile ? 32 : 48,
-    fontWeight: '900',
-    color: isDark ? '#F5FFFA' : '#10271C',
-    textAlign: 'center',
-    marginBottom: isMobile ? 40 : 60,
-    letterSpacing: -0.5,
-  },
+  title: { ...lukasSectionTitle(lukasPalette(isDark), isMobile), marginBottom: isMobile ? 40 : 60 },
   timelineContainer: {
     width: '100%',
     flexDirection: isMobile ? 'column' : 'row',
@@ -158,18 +152,18 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     width: isMobile ? '100%' : undefined,
     alignItems: 'center',
     padding: 24,
-    borderRadius: 20,
+    borderRadius: 24,
     backgroundColor: isDark ? 'rgba(7, 28, 42, 0.72)' : 'rgba(247, 252, 249, 0.92)',
     borderWidth: 1,
-    borderColor: isDark ? 'rgba(139, 224, 176, 0.24)' : '#D7EADF',
+    borderColor: lukasPalette(isDark).border,
     minHeight: isMobile ? 180 : 280,
     position: 'relative',
   },
   stepIconContainer: {
     width: isMobile ? 60 : 80,
     height: isMobile ? 60 : 80,
-    borderRadius: 999,
-    backgroundColor: isDark ? 'rgba(12, 67, 58, 0.42)' : '#E7F7EC',
+    borderRadius: 24,
+    backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
@@ -181,14 +175,14 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     width: isMobile ? 32 : 40,
     height: isMobile ? 32 : 40,
     borderRadius: 999,
-    backgroundColor: '#3BCD70',
+    backgroundColor: lukasPalette(isDark).fill,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
     borderColor: isDark ? '#050816' : '#FFFFFF',
   },
   stepNumberText: {
-    color: '#061B10',
+    color: lukasPalette(isDark).onFill,
     fontSize: isMobile ? 16 : 20,
     fontWeight: '800',
   },

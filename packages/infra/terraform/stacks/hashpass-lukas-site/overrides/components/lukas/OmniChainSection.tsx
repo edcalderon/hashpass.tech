@@ -14,6 +14,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import Svg, { Circle, Path, Line } from 'react-native-svg';
 import { LukasGlyph } from './LukasGlyph';
+import { lukasPalette, lukasSectionTitle } from './lukas-ui';
 
 export function OmniChainSection() {
   const { colors, isDark } = useTheme();
@@ -161,7 +162,7 @@ export function OmniChainSection() {
         {/* Central Vault */}
         <View style={styles.vaultContainer}>
           <Animated.View style={[styles.vault, vaultPulseStyle]}>
-            <LukasGlyph name="reserve" size={isMobile ? 58 : 76} />
+            <LukasGlyph name="reserve" size={isMobile ? 62 : 80} />
             <Text style={styles.vaultLabel}>{t('omnichain.vaultLabel')}</Text>
           </Animated.View>
         </View>
@@ -203,15 +204,15 @@ export function OmniChainSection() {
       {/* Features */}
       <View style={styles.featuresContainer}>
         <View style={styles.feature}>
-          <LukasGlyph name="network" size={42} />
+          <LukasGlyph name="network" size={46} />
           <Text style={styles.featureText}>{t('omnichain.feature1')}</Text>
         </View>
         <View style={styles.feature}>
-          <LukasGlyph name="shield" size={42} />
+          <LukasGlyph name="shield" size={46} />
           <Text style={styles.featureText}>{t('omnichain.feature2')}</Text>
         </View>
         <View style={styles.feature}>
-          <LukasGlyph name="token" size={42} />
+          <LukasGlyph name="token" size={50} />
           <Text style={styles.featureText}>{t('omnichain.feature3')}</Text>
         </View>
       </View>
@@ -225,14 +226,7 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     maxWidth: 1200,
     alignSelf: 'center',
   },
-  title: {
-    fontSize: isMobile ? 32 : 48,
-    fontWeight: '900',
-    color: isDark ? '#F5FFFA' : '#10271C',
-    textAlign: 'center',
-    marginBottom: isMobile ? 40 : 60,
-    letterSpacing: -0.5,
-  },
+  title: { ...lukasSectionTitle(lukasPalette(isDark), isMobile), marginBottom: isMobile ? 40 : 60 },
   visualizationContainer: {
     // Enlarged (was 300/400) to fit the widened vertical orbit (radiusY) plus the
     // network node's own height at full pulse scale, so nothing bleeds into the
@@ -293,7 +287,7 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
   vault: {
     width: isMobile ? 120 : 160,
     height: isMobile ? 120 : 160,
-    borderRadius: 26,
+    borderRadius: 24,
     backgroundColor: isDark ? 'rgba(9, 69, 58, 0.5)' : '#E7F7EC',
     borderWidth: 1,
     borderColor: isDark ? '#76EEA8' : '#4ABF76',
@@ -327,10 +321,10 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     alignItems: 'center',
     gap: 12,
     padding: 16,
-    borderRadius: 18,
+    borderRadius: 16,
     backgroundColor: isDark ? 'rgba(7, 28, 42, 0.72)' : 'rgba(247, 252, 249, 0.92)',
     borderWidth: 1,
-    borderColor: isDark ? 'rgba(139, 224, 176, 0.2)' : '#D7EADF',
+    borderColor: lukasPalette(isDark).border,
   },
   featureText: {
     flex: 1,

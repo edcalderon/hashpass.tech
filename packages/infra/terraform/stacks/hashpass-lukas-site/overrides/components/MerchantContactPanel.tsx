@@ -1,10 +1,12 @@
 import React, { useMemo, useState } from 'react';
 import { Linking, Platform, StyleSheet, Text, View } from 'react-native';
-import { ActionButton, FilterChip, FormField, Surface } from '@hashpass/ui/primitives';
+import { FormField } from '@hashpass/ui/primitives';
 import { uiTokens } from '@hashpass/ui/tokens';
 import { useTheme } from '../hooks/useTheme';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { LukasCaptcha } from './LukasCaptcha';
+import { LukasButton, LukasCard, LukasChip, LukasEyebrow, lukasPalette, lukasSectionTitle } from './lukas/lukas-ui';
+import { LukasGlyph } from './lukas/LukasGlyph';
 
 const API_BASE = 'https://api.hashpass.tech/api';
 const BOOKING_URL = 'https://calendar.app.google/vYsTa9GpamSVccAt9';
@@ -14,7 +16,8 @@ export function MerchantContactPanel() {
   const { isDark } = useTheme();
   const isMobile = useIsMobile();
   const mode = isDark ? 'dark' : 'light';
-  const styles = useMemo(() => getStyles(isDark, isMobile), [isDark, isMobile]);
+  const palette = useMemo(() => lukasPalette(isDark), [isDark]);
+  const styles = useMemo(() => getStyles(isDark, isMobile, palette), [isDark, isMobile, palette]);
   const [contactName, setContactName] = useState('');
   const [email, setEmail] = useState('');
   const [merchantType, setMerchantType] = useState(MERCHANT_TYPES[0]);
@@ -60,60 +63,55 @@ export function MerchantContactPanel() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.eyebrow}>FOR MERCHANTS</Text>
+        <View style={styles.eyebrowRow}><LukasGlyph name="market" size={44} /><LukasEyebrow palette={palette}>For merchants</LukasEyebrow></View>
         <Text style={styles.title}>Bring LUKAS to your counter.</Text>
         <Text style={styles.description}>Tell us where you operate and how you want to use the LatAm index. We will reply from contact@hashpass.tech.</Text>
       </View>
       {sent ? (
-        <Surface mode={mode} style={styles.successCard}>
-          <Text style={styles.successIcon}>✓</Text>
+        <LukasCard palette={palette} raised style={styles.successCard}>
+          <LukasGlyph name="shield" size={64} />
           <Text style={styles.successTitle}>Request sent</Text>
           <Text style={styles.successCopy}>We sent a confirmation to {email.trim()}. Prefer a faster conversation?</Text>
-          <ActionButton
-            mode={mode}
-            label="Book directly"
-            variant="primary"
-            onPress={() => { if (Platform.OS === 'web' && typeof window !== 'undefined') window.open(BOOKING_URL, '_blank', 'noopener,noreferrer'); else void Linking.openURL(BOOKING_URL); }}
-            style={styles.primaryButton}
+          <LukasButton palette={palette} label="Book directly" onPress={() => { if (Platform.OS === 'web' && typeof window !== 'undefined') window.open(BOOKING_URL, '_blank', 'noopener,noreferrer'); else void Linking.openURL(BOOKING_URL); }}
+            fullWidth
           />
-        </Surface>
+        </LukasCard>
       ) : (
-        <Surface mode={mode} style={styles.formCard}>
+        <LukasCard palette={palette} raised style={styles.formCard}>
           <FormField mode={mode} label="Your name" value={contactName} onChangeText={setContactName} autoComplete="name" />
           <FormField mode={mode} label="Work email" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" autoComplete="email" />
           <Text style={styles.fieldLabel}>Merchant type</Text>
-          <View style={styles.options}>{MERCHANT_TYPES.map((type) => <FilterChip key={type} mode={mode} label={type} selected={merchantType === type} onPress={() => setMerchantType(type)} style={styles.option} />)}</View>
+          <View style={styles.options}>{MERCHANT_TYPES.map((type) => <LukasChip key={type} palette={palette} label={type} selected={merchantType === type} onPress={() => setMerchantType(type)} style={styles.option} />)}</View>
           <FormField mode={mode} label="What would you like to enable?" value={description} onChangeText={setDescription} multiline numberOfLines={4} style={styles.messageInput} />
           <Text style={styles.fieldLabel}>Follow-up</Text>
           <View style={styles.options}>
-            {['Book a call', 'Email me first'].map((preference) => <FilterChip key={preference} mode={mode} label={preference} selected={bookingPreference === preference} onPress={() => setBookingPreference(preference)} style={styles.option} />)}
+            {['Book a call', 'Email me first'].map((preference) => <LukasChip key={preference} palette={palette} label={preference} selected={bookingPreference === preference} onPress={() => setBookingPreference(preference)} style={styles.option} />)}
           </View>
           <LukasCaptcha resetKey={resetKey} onSolve={setCaptchaToken} onReset={() => setCaptchaToken('')} />
-          <ActionButton mode={mode} label="Send merchant request" variant="primary" loading={busy} disabled={!captchaToken} onPress={submit} style={styles.primaryButton} />
+          <LukasButton palette={palette} label="Send merchant request" loading={busy} disabled={!captchaToken} onPress={submit} fullWidth style={styles.primaryButton} />
           {error ? <Text style={styles.error}>{error}</Text> : null}
           <Text style={styles.footnote}>We only use this information to respond to your request. See our privacy policy for details.</Text>
-        </Surface>
+        </LukasCard>
       )}
     </View>
   );
 }
 
-const getStyles = (isDark: boolean, isMobile: boolean) => StyleSheet.create({
+const getStyles = (isDark: boolean, isMobile: boolean, palette: ReturnType<typeof lukasPalette>) => StyleSheet.create({
   container: { width: '100%', maxWidth: 900, alignSelf: 'center', marginTop: isMobile ? 48 : 72 },
   header: { marginBottom: 22 },
-  eyebrow: { color: '#35C66B', fontSize: 11, fontWeight: '800', letterSpacing: 1.5 },
-  title: { color: isDark ? '#F8FAFC' : '#0F172A', fontSize: isMobile ? 28 : 38, lineHeight: isMobile ? 34 : 44, fontWeight: '800', marginTop: 8 },
-  description: { color: isDark ? '#A8B6C8' : '#526174', fontSize: 15, lineHeight: 23, marginTop: 10, maxWidth: 680 },
+  eyebrowRow: { flexDirection: 'row', alignItems: 'center', gap: uiTokens.space.md },
+  title: { ...lukasSectionTitle(palette, isMobile), textAlign: 'left', marginTop: uiTokens.space.md },
+  description: { color: palette.body, fontSize: 15, lineHeight: 23, marginTop: 10, maxWidth: 680 },
   formCard: { padding: isMobile ? uiTokens.space.lg : uiTokens.space.xxl, borderRadius: uiTokens.radius.card, gap: uiTokens.space.md },
   messageInput: { minHeight: 110, textAlignVertical: 'top', paddingTop: 14 },
-  fieldLabel: { color: isDark ? '#C6D1DF' : '#475569', fontSize: uiTokens.type.caption, fontWeight: '800', marginTop: 4 },
+  fieldLabel: { color: palette.text, fontSize: uiTokens.type.label, fontWeight: '600', marginTop: 4 },
   options: { flexDirection: 'row', flexWrap: 'wrap', gap: uiTokens.space.sm },
-  option: { minHeight: uiTokens.control.minHeight, paddingHorizontal: uiTokens.space.lg },
-  primaryButton: { width: '100%', backgroundColor: uiTokens.feature.green, borderColor: uiTokens.feature.green, marginTop: uiTokens.space.sm },
-  error: { color: '#FCA5A5', fontSize: 13, textAlign: 'center' },
-  footnote: { color: isDark ? '#8193A8' : '#64748B', fontSize: 12, lineHeight: 18, textAlign: 'center' },
-  successCard: { padding: isMobile ? 22 : 32, borderRadius: uiTokens.radius.card, borderColor: isDark ? '#365314' : '#A7F3D0', alignItems: 'center', gap: uiTokens.space.md },
-  successIcon: { color: '#35C66B', fontSize: 42, fontWeight: '900' },
-  successTitle: { color: isDark ? '#BBF7D0' : '#137A42', fontSize: 24, fontWeight: '800' },
-  successCopy: { color: isDark ? '#C6D1DF' : '#526174', textAlign: 'center', lineHeight: 22 },
+  option: {},
+  primaryButton: { marginTop: uiTokens.space.sm },
+  error: { color: palette.danger, fontSize: 13, textAlign: 'center' },
+  footnote: { color: palette.muted, fontSize: 12, lineHeight: 18, textAlign: 'center' },
+  successCard: { padding: isMobile ? 22 : 32, borderRadius: uiTokens.radius.card, borderColor: palette.border, alignItems: 'center', gap: uiTokens.space.md },
+  successTitle: { color: palette.accent, fontSize: 24, fontWeight: '800' },
+  successCopy: { color: palette.body, textAlign: 'center', lineHeight: 22 },
 });
