@@ -2,6 +2,7 @@ import {
   applyLukasClick,
   createInitialLukasRewardState,
   LUKAS_REWARD_CAP,
+  resolveLukasAnimationLevel,
 } from '../../../../packages/infra/terraform/stacks/hashpass-lukas-site/overrides/components/lukas/lukas-rewards';
 
 describe('LUKAS landing reward interaction', () => {
@@ -36,5 +37,11 @@ describe('LUKAS landing reward interaction', () => {
     expect(result.awarded).toBe(0);
     expect(result.state).toEqual(full);
     expect(result.reachedCap).toBe(true);
+  });
+
+  it('downgrades full effects when the system requests reduced motion', () => {
+    expect(resolveLukasAnimationLevel('full', true)).toBe('reduced');
+    expect(resolveLukasAnimationLevel('reduced', false)).toBe('reduced');
+    expect(resolveLukasAnimationLevel('none', true)).toBe('none');
   });
 });

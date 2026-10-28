@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../hooks/useTheme';
 import { getAvailableLocales, useTranslation } from '../i18n/i18n';
 import { useLanguage } from '../providers/LanguageProvider';
-import type { LukasSettingsMenuProps } from '../types/lukas.types';
+import type { LukasAnimationLevel, LukasSettingsMenuProps } from '../types/lukas.types';
 
 const ANIMATION_STORAGE_KEY = 'lukas.animation.v1';
 const PRIVACY_STORAGE_KEY = 'lukas.privacy.analytics.v1';

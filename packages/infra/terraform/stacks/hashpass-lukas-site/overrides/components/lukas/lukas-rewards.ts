@@ -1,8 +1,16 @@
-import type { LukasClickResult, LukasRewardState } from '../../types/lukas.types';
+import type { LukasAnimationLevel, LukasClickResult, LukasRewardState } from '../../types/lukas.types';
 
 export const LUKAS_REWARD_CAP = 10;
 const RAPID_CLICK_WINDOW_MS = 650;
 const STREAK_WINDOW_MS = 1_500;
+
+export function resolveLukasAnimationLevel(
+  localLevel: LukasAnimationLevel,
+  systemReducedMotion: boolean,
+): LukasAnimationLevel {
+  if (localLevel === 'none') return 'none';
+  return systemReducedMotion ? 'reduced' : localLevel;
+}
 
 export function createInitialLukasRewardState(): LukasRewardState {
   return { total: 0, clickCount: 0, lastClickAt: null, streak: 0 };

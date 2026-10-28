@@ -27,7 +27,8 @@ import { OmniChainSection } from '../components/lukas/OmniChainSection';
 import { GetLukasSection } from '../components/lukas/GetLukasSection';
 import { FAQSection } from '../components/lukas/FAQSection';
 import { LukasFooter } from '../components/lukas/LukasFooter';
-import { applyLukasClick, createInitialLukasRewardState, playLukasClickSound } from '../components/lukas/lukas-rewards';
+import { applyLukasClick, createInitialLukasRewardState, playLukasClickSound, resolveLukasAnimationLevel } from '../components/lukas/lukas-rewards';
+import { useSystemReducedMotion } from '../components/lukas/useLukasMotion';
 
 export default function LukasLanding() {
   const { colors, isDark } = useTheme();
@@ -39,6 +40,8 @@ export default function LukasLanding() {
   const [rewardDelta, setRewardDelta] = useState(0);
   const [animationLevel, setAnimationLevel] = useState<LukasAnimationLevel>('full');
   const [claimVisible, setClaimVisible] = useState(false);
+  const systemReducedMotion = useSystemReducedMotion();
+  const effectiveAnimationLevel = resolveLukasAnimationLevel(animationLevel, systemReducedMotion);
 
   useEffect(() => {
     AsyncStorage.getItem('lukas.animation.v1').then((value) => {
@@ -58,7 +61,7 @@ export default function LukasLanding() {
     const result = applyLukasClick(rewardState, Date.now());
     setRewardState(result.state);
     setRewardDelta(result.awarded);
-    if (animationLevel === 'full') playLukasClickSound(result.awarded);
+    if (effectiveAnimationLevel === 'full') playLukasClickSound(result.awarded);
     if (rewardState.total === 0 || result.reachedCap) handleScrollToSection('get-lukas');
     if (result.reachedCap) setClaimVisible(true);
   };
@@ -94,7 +97,7 @@ export default function LukasLanding() {
           onForMerchants={() => handleScrollToSection('merchants')}
           rewardTotal={rewardState.total}
           rewardDelta={rewardDelta}
-          animationEnabled={animationLevel !== 'none'}
+          animationLevel={effectiveAnimationLevel}
         />
         
         <View id="why" style={styles.section}>

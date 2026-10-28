@@ -5,18 +5,19 @@ import { useIsMobile } from '../../hooks/useIsMobile';
 import { useTranslation } from '../../i18n/i18n';
 import { LinearGradient } from 'expo-linear-gradient';
 import { LukasCoin } from './LukasCoin';
+import type { LukasAnimationLevel } from '../../types/lukas.types';
 
 interface HeroSectionProps {
   onGetLukas: () => void;
   onForMerchants: () => void;
   rewardTotal: number;
   rewardDelta: number;
-  animationEnabled: boolean;
+  animationLevel: LukasAnimationLevel;
 }
 
 const PEG_CURRENCIES = ['COP', 'ARS', 'BRL', 'MXN', 'CLP'];
 
-export function HeroSection({ onGetLukas, onForMerchants, rewardTotal, rewardDelta, animationEnabled }: HeroSectionProps) {
+export function HeroSection({ onGetLukas, onForMerchants, rewardTotal, rewardDelta, animationLevel }: HeroSectionProps) {
   const { colors, isDark } = useTheme();
   const isMobile = useIsMobile();
   const { t } = useTranslation('lukas');
@@ -31,16 +32,21 @@ export function HeroSection({ onGetLukas, onForMerchants, rewardTotal, rewardDel
   const [rewardTranslateY] = useState(() => new Animated.Value(8));
 
   useEffect(() => {
-    if (!animationEnabled || rewardDelta <= 0) return;
-    rewardScale.setValue(0.72);
+    if (animationLevel === 'none' || rewardDelta <= 0) return;
+    const fullMotion = animationLevel === 'full';
+    rewardScale.setValue(fullMotion ? 0.72 : 1);
     rewardOpacity.setValue(1);
-    rewardTranslateY.setValue(8);
-    Animated.parallel([
-      Animated.spring(rewardScale, { toValue: 1, friction: 5, tension: 150, useNativeDriver: true }),
-      Animated.timing(rewardTranslateY, { toValue: -32, duration: 700, easing: Easing.out(Easing.quad), useNativeDriver: true }),
-      Animated.timing(rewardOpacity, { toValue: 0, duration: 700, delay: 240, useNativeDriver: true }),
-    ]).start();
-  }, [animationEnabled, rewardDelta, rewardOpacity, rewardScale, rewardTranslateY]);
+    rewardTranslateY.setValue(fullMotion ? 8 : 0);
+    const animation = fullMotion
+      ? Animated.parallel([
+          Animated.spring(rewardScale, { toValue: 1, friction: 5, tension: 150, useNativeDriver: true }),
+          Animated.timing(rewardTranslateY, { toValue: -32, duration: 700, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+          Animated.timing(rewardOpacity, { toValue: 0, duration: 700, delay: 240, useNativeDriver: true }),
+        ])
+      : Animated.timing(rewardOpacity, { toValue: 0, duration: 280, useNativeDriver: true });
+    animation.start();
+    return () => animation.stop();
+  }, [animationLevel, rewardDelta, rewardOpacity, rewardScale, rewardTranslateY]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -131,8 +137,8 @@ export function HeroSection({ onGetLukas, onForMerchants, rewardTotal, rewardDel
               <Animated.Text style={[styles.rewardFloat, { color: isDark ? '#BBF7D0' : '#059669', opacity: rewardOpacity, transform: [{ translateY: rewardTranslateY }, { scale: rewardScale }] }]}>
                 +{rewardDelta}
               </Animated.Text>
-              <Animated.Text style={[styles.sparkleOne, { color: isDark ? '#D9F99D' : '#16A34A', opacity: rewardOpacity, transform: [{ translateY: rewardTranslateY }, { scale: rewardScale }] }]}>✦</Animated.Text>
-              <Animated.Text style={[styles.sparkleTwo, { color: isDark ? '#A7F3D0' : '#059669', opacity: rewardOpacity, transform: [{ translateY: rewardTranslateY }, { scale: rewardScale }] }]}>✧</Animated.Text>
+              {animationLevel === 'full' ? <Animated.Text style={[styles.sparkleOne, { color: isDark ? '#D9F99D' : '#16A34A', opacity: rewardOpacity, transform: [{ translateY: rewardTranslateY }, { scale: rewardScale }] }]}>✦</Animated.Text> : null}
+              {animationLevel === 'full' ? <Animated.Text style={[styles.sparkleTwo, { color: isDark ? '#A7F3D0' : '#059669', opacity: rewardOpacity, transform: [{ translateY: rewardTranslateY }, { scale: rewardScale }] }]}>✧</Animated.Text> : null}
             </View>
 
             <TouchableOpacity
