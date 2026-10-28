@@ -5,6 +5,7 @@ import { useTheme } from '../hooks/useTheme';
 import { getAvailableLocales, useTranslation } from '../i18n/i18n';
 import { useLanguage } from '../providers/LanguageProvider';
 import type { LukasAnimationLevel, LukasSettingsMenuProps } from '../types/lukas.types';
+import { LukasGlyph } from './lukas/LukasGlyph';
 
 const ANIMATION_STORAGE_KEY = 'lukas.animation.v1';
 const PRIVACY_STORAGE_KEY = 'lukas.privacy.analytics.v1';
@@ -83,7 +84,7 @@ export function LukasSettingsMenu({ animation, onAnimationChange }: LukasSetting
         accessibilityLabel={t('settings.open')}
         style={[styles.trigger, { borderColor: colors.divider, backgroundColor: colors.surface }]}
       >
-        <Text style={{ color: colors.text.primary, fontSize: 20 }}>⚙</Text>
+        <LukasGlyph name="settings" size={28} />
       </Pressable>
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
         <View style={styles.modalRoot}>
@@ -138,7 +139,7 @@ export function LukasSettingsMenu({ animation, onAnimationChange }: LukasSetting
 }
 
 const styles = StyleSheet.create({
-  trigger: { width: 46, height: 46, borderRadius: 23, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  trigger: { width: 48, height: 48, borderRadius: 24, borderWidth: 1, alignItems: 'center', justifyContent: 'center', shadowColor: '#061523', shadowOpacity: 0.18, shadowRadius: 12, shadowOffset: { width: 0, height: 5 }, elevation: 6 },
   modalRoot: { flex: 1, justifyContent: 'flex-start', alignItems: 'flex-end', paddingTop: 76, paddingHorizontal: 18 },
   backdrop: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(3, 8, 18, 0.56)' },
   panel: { width: '100%', maxWidth: 380, maxHeight: '82%', borderWidth: 1, borderRadius: 24, overflow: 'hidden', shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 26, elevation: 10 },

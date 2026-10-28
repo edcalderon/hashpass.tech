@@ -9,6 +9,7 @@ import Animated, {
   withTiming,
   withDelay,
 } from 'react-native-reanimated';
+import { LukasGlyph } from './LukasGlyph';
 
 export function WhySection() {
   const { colors, isDark } = useTheme();
@@ -55,17 +56,17 @@ export function WhySection() {
     {
       title: t('why.bullet1.title'),
       description: t('why.bullet1.description'),
-      emoji: '☕',
+      glyph: 'coffee' as const,
     },
     {
       title: t('why.bullet2.title'),
       description: t('why.bullet2.description'),
-      emoji: '🏪',
+      glyph: 'market' as const,
     },
     {
       title: t('why.bullet3.title'),
       description: t('why.bullet3.description'),
-      emoji: '🔒',
+      glyph: 'shield' as const,
     },
   ];
 
@@ -74,18 +75,16 @@ export function WhySection() {
       <Text style={styles.title}>{t('why.title')}</Text>
 
       <View style={styles.content}>
-        {/* Left side - Illustration placeholder */}
         <View style={styles.illustrationContainer}>
           <View style={styles.illustration}>
-            <Text style={styles.illustrationEmoji}>💰</Text>
+            <LukasGlyph name="token" size={isMobile ? 112 : 146} />
             <Text style={styles.illustrationText}>LUKAS</Text>
           </View>
         </View>
 
-        {/* Right side - Bullet points */}
         <View style={styles.bulletsContainer}>
           <Animated.View style={[styles.bullet, animatedStyle1]}>
-            <Text style={styles.bulletEmoji}>{bullets[0].emoji}</Text>
+            <LukasGlyph name={bullets[0].glyph} size={isMobile ? 46 : 54} />
             <View style={styles.bulletContent}>
               <Text style={styles.bulletTitle}>{bullets[0].title}</Text>
               <Text style={styles.bulletDescription}>{bullets[0].description}</Text>
@@ -93,7 +92,7 @@ export function WhySection() {
           </Animated.View>
 
           <Animated.View style={[styles.bullet, animatedStyle2]}>
-            <Text style={styles.bulletEmoji}>{bullets[1].emoji}</Text>
+            <LukasGlyph name={bullets[1].glyph} size={isMobile ? 46 : 54} />
             <View style={styles.bulletContent}>
               <Text style={styles.bulletTitle}>{bullets[1].title}</Text>
               <Text style={styles.bulletDescription}>{bullets[1].description}</Text>
@@ -101,7 +100,7 @@ export function WhySection() {
           </Animated.View>
 
           <Animated.View style={[styles.bullet, animatedStyle3]}>
-            <Text style={styles.bulletEmoji}>{bullets[2].emoji}</Text>
+            <LukasGlyph name={bullets[2].glyph} size={isMobile ? 46 : 54} />
             <View style={styles.bulletContent}>
               <Text style={styles.bulletTitle}>{bullets[2].title}</Text>
               <Text style={styles.bulletDescription}>{bullets[2].description}</Text>
@@ -121,8 +120,8 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
   },
   title: {
     fontSize: isMobile ? 32 : 48,
-    fontWeight: '800',
-    color: isDark ? '#F9FAFB' : '#111827',
+    fontWeight: '900',
+    color: isDark ? '#F5FFFA' : '#10271C',
     textAlign: 'center',
     marginBottom: isMobile ? 40 : 60,
     letterSpacing: -0.5,
@@ -142,24 +141,27 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     marginBottom: isMobile ? 28 : 0,
   },
   illustration: {
-    width: isMobile ? '100%' : 300,
+    width: isMobile ? '100%' : 320,
     maxWidth: isMobile ? 320 : undefined,
-    height: isMobile ? 220 : 300,
-    borderRadius: 20,
-    backgroundColor: isDark ? 'rgba(34, 197, 94, 0.1)' : 'rgba(34, 197, 94, 0.05)',
+    height: isMobile ? 236 : 320,
+    borderRadius: 24,
+    backgroundColor: isDark ? 'rgba(10, 39, 51, 0.9)' : '#F0F8F2',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: isDark ? 'rgba(34, 197, 94, 0.3)' : 'rgba(34, 197, 94, 0.2)',
-  },
-  illustrationEmoji: {
-    fontSize: isMobile ? 80 : 120,
-    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: isDark ? 'rgba(120, 234, 173, 0.28)' : '#CCE5D5',
+    gap: 12,
+    shadowColor: '#061523',
+    shadowOpacity: isDark ? 0.28 : 0.08,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 5,
   },
   illustrationText: {
     fontSize: isMobile ? 24 : 32,
     fontWeight: '800',
-    color: isDark ? '#22C55E' : '#059669',
+    color: isDark ? '#9BEABB' : '#087A4A',
+    letterSpacing: 1.4,
   },
   bulletsContainer: {
     flex: isMobile ? 0 : 1,
@@ -174,15 +176,9 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     gap: 12,
     padding: isMobile ? 16 : 20,
     borderRadius: 16,
-    backgroundColor: isDark ? 'rgba(17, 24, 39, 0.5)' : 'rgba(249, 250, 251, 0.8)',
+    backgroundColor: isDark ? 'rgba(7, 28, 42, 0.72)' : 'rgba(247, 252, 249, 0.92)',
     borderWidth: 1,
-    borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
-  },
-  bulletEmoji: {
-    width: isMobile ? 36 : 44,
-    flexShrink: 0,
-    fontSize: isMobile ? 30 : 40,
-    textAlign: 'center',
+    borderColor: isDark ? 'rgba(139, 224, 176, 0.2)' : '#D7EADF',
   },
   bulletContent: {
     flex: 1,
@@ -192,12 +188,12 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
   bulletTitle: {
     fontSize: isMobile ? 18 : 22,
     fontWeight: '700',
-    color: isDark ? '#F9FAFB' : '#111827',
+    color: isDark ? '#F5FFFA' : '#10271C',
     marginBottom: 4,
   },
   bulletDescription: {
     fontSize: isMobile ? 14 : 16,
-    color: isDark ? '#9CA3AF' : '#6B7280',
+    color: isDark ? '#BED2C6' : '#425D4D',
     lineHeight: isMobile ? 20 : 24,
   },
 });

@@ -13,6 +13,7 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 import Svg, { Path, Circle } from 'react-native-svg';
+import { LukasGlyph } from './LukasGlyph';
 
 export function HowItWorksSection() {
   const { colors, isDark } = useTheme();
@@ -66,19 +67,19 @@ export function HowItWorksSection() {
   const steps = [
     {
       number: '1',
-      icon: '🔐',
+      glyph: 'shield' as const,
       title: t('howItWorks.step1.title'),
       description: t('howItWorks.step1.description'),
     },
     {
       number: '2',
-      icon: '🪙',
+      glyph: 'token' as const,
       title: t('howItWorks.step2.title'),
       description: t('howItWorks.step2.description'),
     },
     {
       number: '3',
-      icon: '🏪',
+      glyph: 'market' as const,
       title: t('howItWorks.step3.title'),
       description: t('howItWorks.step3.description'),
     },
@@ -96,7 +97,7 @@ export function HowItWorksSection() {
             <React.Fragment key={index}>
               <Animated.View style={[styles.step, animatedStyle]}>
                 <View style={styles.stepIconContainer}>
-                  <Text style={styles.stepIcon}>{step.icon}</Text>
+                  <LukasGlyph name={step.glyph} size={isMobile ? 52 : 66} />
                 </View>
                 <View style={styles.stepNumber}>
                   <Text style={styles.stepNumberText}>{step.number}</Text>
@@ -112,7 +113,7 @@ export function HowItWorksSection() {
                     <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                       <Path
                         d="M9 18l6-6-6-6"
-                        stroke={isDark ? '#22C55E' : '#059669'}
+                        stroke={isDark ? '#9BEABB' : '#087A4A'}
                         strokeWidth="2"
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -137,8 +138,8 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
   },
   title: {
     fontSize: isMobile ? 32 : 48,
-    fontWeight: '800',
-    color: isDark ? '#F9FAFB' : '#111827',
+    fontWeight: '900',
+    color: isDark ? '#F5FFFA' : '#10271C',
     textAlign: 'center',
     marginBottom: isMobile ? 40 : 60,
     letterSpacing: -0.5,
@@ -158,9 +159,9 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     alignItems: 'center',
     padding: 24,
     borderRadius: 20,
-    backgroundColor: isDark ? 'rgba(17, 24, 39, 0.5)' : 'rgba(249, 250, 251, 0.8)',
-    borderWidth: 2,
-    borderColor: isDark ? 'rgba(34, 197, 94, 0.3)' : 'rgba(34, 197, 94, 0.2)',
+    backgroundColor: isDark ? 'rgba(7, 28, 42, 0.72)' : 'rgba(247, 252, 249, 0.92)',
+    borderWidth: 1,
+    borderColor: isDark ? 'rgba(139, 224, 176, 0.24)' : '#D7EADF',
     minHeight: isMobile ? 180 : 280,
     position: 'relative',
   },
@@ -168,13 +169,10 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     width: isMobile ? 60 : 80,
     height: isMobile ? 60 : 80,
     borderRadius: 999,
-    backgroundColor: isDark ? 'rgba(34, 197, 94, 0.2)' : 'rgba(34, 197, 94, 0.1)',
+    backgroundColor: isDark ? 'rgba(12, 67, 58, 0.42)' : '#E7F7EC',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
-  },
-  stepIcon: {
-    fontSize: isMobile ? 32 : 40,
   },
   stepNumber: {
     position: 'absolute',
@@ -183,27 +181,27 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     width: isMobile ? 32 : 40,
     height: isMobile ? 32 : 40,
     borderRadius: 999,
-    backgroundColor: '#22C55E',
+    backgroundColor: '#3BCD70',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
     borderColor: isDark ? '#050816' : '#FFFFFF',
   },
   stepNumberText: {
-    color: '#022C22',
+    color: '#061B10',
     fontSize: isMobile ? 16 : 20,
     fontWeight: '800',
   },
   stepTitle: {
     fontSize: isMobile ? 18 : 22,
     fontWeight: '700',
-    color: isDark ? '#F9FAFB' : '#111827',
+    color: isDark ? '#F5FFFA' : '#10271C',
     marginBottom: 8,
     textAlign: 'center',
   },
   stepDescription: {
     fontSize: isMobile ? 14 : 16,
-    color: isDark ? '#9CA3AF' : '#6B7280',
+    color: isDark ? '#BED2C6' : '#425D4D',
     textAlign: 'center',
     lineHeight: isMobile ? 20 : 24,
   },
@@ -218,7 +216,7 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
   connectorLine: {
     width: isMobile ? 2 : '100%',
     height: isMobile ? '100%' : 2,
-    backgroundColor: isDark ? 'rgba(34, 197, 94, 0.3)' : 'rgba(34, 197, 94, 0.2)',
+    backgroundColor: isDark ? 'rgba(139, 224, 176, 0.3)' : '#BDE5CA',
   },
   connectorArrow: {
     position: 'absolute',

@@ -9,6 +9,7 @@ import Animated, {
   withTiming,
   withDelay,
 } from 'react-native-reanimated';
+import { LukasGlyph } from './LukasGlyph';
 
 export function MerchantsSection() {
   const { colors, isDark } = useTheme();
@@ -41,26 +42,22 @@ export function MerchantsSection() {
     {
       title: t('merchants.category1.title'),
       subtitle: t('merchants.category1.subtitle'),
-      icon: '🎪',
-      color: '#8B5CF6',
+      glyph: 'event' as const,
     },
     {
       title: t('merchants.category2.title'),
       subtitle: t('merchants.category2.subtitle'),
-      icon: '☕',
-      color: '#F59E0B',
+      glyph: 'coffee' as const,
     },
     {
       title: t('merchants.category3.title'),
       subtitle: t('merchants.category3.subtitle'),
-      icon: '💼',
-      color: '#3B82F6',
+      glyph: 'wallet' as const,
     },
     {
       title: t('merchants.category4.title'),
       subtitle: t('merchants.category4.subtitle'),
-      icon: '🌃',
-      color: '#EC4899',
+      glyph: 'market' as const,
     },
   ];
 
@@ -89,12 +86,11 @@ export function MerchantsSection() {
               key={index}
               style={[
                 styles.card,
-                { borderColor: category.color + '40' },
                 animatedStyle,
               ]}
             >
-              <View style={[styles.cardIconContainer, { backgroundColor: category.color + '20' }]}>
-                <Text style={styles.cardIcon}>{category.icon}</Text>
+              <View style={styles.cardIconContainer}>
+                <LukasGlyph name={category.glyph} size={68} />
               </View>
               <Text style={styles.cardTitle}>{category.title}</Text>
               <Text style={styles.cardSubtitle}>{category.subtitle}</Text>
@@ -114,8 +110,8 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
   },
   title: {
     fontSize: isMobile ? 28 : 40,
-    fontWeight: '800',
-    color: isDark ? '#F9FAFB' : '#111827',
+    fontWeight: '900',
+    color: isDark ? '#F5FFFA' : '#10271C',
     textAlign: 'center',
     marginBottom: isMobile ? 40 : 60,
     letterSpacing: -0.5,
@@ -128,7 +124,7 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
   cardsContainer: {
     width: '100%',
     flexDirection: isMobile ? 'column' : 'row',
-    gap: 0,
+    gap: isMobile ? 16 : 18,
     paddingVertical: 10,
   },
   card: {
@@ -136,40 +132,40 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     maxWidth: '100%',
     alignSelf: 'stretch',
     flexShrink: 1,
-    marginBottom: isMobile ? 16 : 0,
+    marginBottom: 0,
     padding: isMobile ? 20 : 24,
-    borderRadius: 20,
-    backgroundColor: isDark ? 'rgba(17, 24, 39, 0.5)' : 'rgba(249, 250, 251, 0.8)',
-    borderWidth: 2,
+    borderRadius: 22,
+    backgroundColor: isDark ? 'rgba(7, 28, 42, 0.72)' : 'rgba(247, 252, 249, 0.92)',
+    borderWidth: 1,
+    borderColor: isDark ? 'rgba(139, 224, 176, 0.24)' : '#D7EADF',
     alignItems: 'center',
     gap: 16,
     shadowColor: '#000',
-    shadowOpacity: isDark ? 0.3 : 0.1,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: isDark ? 0.26 : 0.08,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 8 },
     elevation: 5,
   },
   cardIconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 999,
+    width: 82,
+    height: 82,
+    borderRadius: 24,
+    backgroundColor: isDark ? 'rgba(18, 66, 62, 0.42)' : '#E9F7EE',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  cardIcon: {
-    fontSize: 40,
   },
   cardTitle: {
     maxWidth: '100%',
     fontSize: isMobile ? 20 : 22,
     fontWeight: '700',
-    color: isDark ? '#F9FAFB' : '#111827',
+    color: isDark ? '#F5FFFA' : '#10271C',
     textAlign: 'center',
   },
   cardSubtitle: {
     maxWidth: '100%',
     fontSize: isMobile ? 14 : 16,
-    color: isDark ? '#9CA3AF' : '#6B7280',
+    color: isDark ? '#BED2C6' : '#425D4D',
+    lineHeight: isMobile ? 21 : 24,
     textAlign: 'center',
   },
 });

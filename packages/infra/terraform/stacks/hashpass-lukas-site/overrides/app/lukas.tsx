@@ -62,8 +62,10 @@ export default function LukasLanding() {
     setRewardState(result.state);
     setRewardDelta(result.awarded);
     if (effectiveAnimationLevel === 'full') playLukasClickSound(result.awarded);
-    if (rewardState.total === 0 || result.reachedCap) handleScrollToSection('get-lukas');
-    if (result.reachedCap) setClaimVisible(true);
+    if (result.reachedCap) {
+      handleScrollToSection('get-lukas');
+      setClaimVisible(true);
+    }
   };
 
   const handleScrollToSection = (sectionId: string) => {
@@ -100,7 +102,7 @@ export default function LukasLanding() {
           animationLevel={effectiveAnimationLevel}
         />
         
-        <View id="why" style={styles.section}>
+        <View id="why" style={[styles.section, styles.sectionRaised]}>
           <WhySection />
         </View>
 
@@ -108,7 +110,7 @@ export default function LukasLanding() {
           <HowItWorksSection />
         </View>
 
-        <View id="merchants" style={styles.section}>
+        <View id="merchants" style={[styles.section, styles.sectionRaised]}>
           <MerchantsSection />
           <MerchantContactPanel />
         </View>
@@ -117,7 +119,7 @@ export default function LukasLanding() {
           <OmniChainSection />
         </View>
 
-        <View id="get-lukas" style={styles.section}>
+        <View id="get-lukas" style={[styles.section, styles.sectionRaised]}>
           <GetLukasSection />
         </View>
 
@@ -135,12 +137,12 @@ export default function LukasLanding() {
 const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: isDark ? '#050816' : '#FFFFFF',
+    backgroundColor: isDark ? '#06111E' : '#F7FAF8',
   },
   settingsTrigger: {
     position: 'absolute',
-    top: 18,
-    right: 20,
+    top: isMobile ? 16 : 22,
+    right: isMobile ? 16 : 28,
     zIndex: 50,
   },
   scrollView: {
@@ -148,9 +150,15 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
   },
   section: {
     width: '100%',
-    minHeight: isMobile ? 400 : 600,
+    minHeight: 0,
     paddingHorizontal: isMobile ? 20 : 40,
-    paddingVertical: isMobile ? 60 : 100,
+    paddingVertical: isMobile ? 56 : 104,
+  },
+  sectionRaised: {
+    backgroundColor: isDark ? '#091A29' : '#FFFFFF',
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: isDark ? 'rgba(139, 203, 171, 0.12)' : '#DEECE3',
   },
   footer: {
     backgroundColor: isDark ? '#0A0A0A' : '#F9FAFB',
@@ -183,4 +191,3 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     fontWeight: '600',
   },
 });
-
