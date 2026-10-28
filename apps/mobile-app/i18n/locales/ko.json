@@ -1922,6 +1922,13 @@
       "privateTitle": "아직 공개되지 않은 일정입니다",
       "privateSubtitle": "주최자가 이 이벤트의 일정을 아직 공개하지 않았습니다"
     },
+    "bookmarks": {
+      "label": "일정 보기",
+      "all": "전체 세션",
+      "saved": "북마크",
+      "emptyTitle": "북마크한 세션이 없습니다",
+      "emptySubtitle": "세션의 북마크를 눌러 여기에 저장하세요."
+    },
     "badges": {
       "past": "지난"
     },
@@ -1956,6 +1963,8 @@
     "actions": {
       "addToFavorites": "즐겨찾기에 추가",
       "removeFromFavorites": "즐겨찾기에서 제거",
+      "bookmark": "세션 북마크",
+      "removeBookmark": "북마크 해제",
       "favorite": "즐겨찾기",
       "favorited": "즐겨찾기 추가됨",
       "addToAgenda": "일정에 추가",

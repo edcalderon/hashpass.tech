@@ -1,8 +1,8 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useState } from 'react';
+import { Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { MaterialIcons } from '../lib/vector-icons';
 import { useTranslation } from '../i18n/i18n';
-import { useMotionAllowed } from '../hooks/useMotionAllowed';
+import StatusPill from './StatusPill';
 import { uiPalette, uiTokens } from '@hashpass/ui/tokens';
 import type {
   SpeakerBadgeStatus,
@@ -19,41 +19,7 @@ const ICONS: Record<SpeakerBadgeStatus, string> = {
   inactive: 'pause-circle-outline',
   past: 'history',
 };
-const DOT = 8;
-
 const ORDER: SpeakerBadgeStatus[] = ['active', 'passive', 'dnd'];
-
-/** Status dot; live statuses emit a soft ping ring unless motion is reduced. */
-function StatusDot({ color, live }: { color: string; live: boolean }) {
-  const motionAllowed = useMotionAllowed();
-  const ping = useRef(new Animated.Value(0)).current;
-  const pinging = live && motionAllowed;
-  useEffect(() => {
-    if (!pinging) {
-      ping.setValue(0);
-      return undefined;
-    }
-    const loop = Animated.loop(
-      Animated.timing(ping, { toValue: 1, duration: 1800, easing: Easing.out(Easing.quad), useNativeDriver: true }),
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [pinging, ping]);
-  return (
-    <View style={styles.dotSlot} accessible={false} importantForAccessibility="no-hide-descendants">
-      {pinging ? (
-        <Animated.View
-          style={[styles.dotRing, {
-            backgroundColor: color,
-            opacity: ping.interpolate({ inputRange: [0, 1], outputRange: [0.45, 0] }),
-            transform: [{ scale: ping.interpolate({ inputRange: [0, 1], outputRange: [1, 2.6] }) }],
-          }]}
-        />
-      ) : null}
-      <View style={[styles.dot, { backgroundColor: color }]} />
-    </View>
-  );
-}
 
 /** Status pill; pressing it opens a modal that explains every speaker status. */
 export default function SpeakerStatusBadge({ status, label, isDark = false }: SpeakerStatusBadgeProps) {
@@ -70,20 +36,18 @@ export default function SpeakerStatusBadge({ status, label, isDark = false }: Sp
 
   return (
     <>
-      <TouchableOpacity
-        accessibilityRole="button"
+      <StatusPill
+        label={text}
+        color={hue}
+        isDark={isDark}
+        live={LIVE.includes(status)}
         accessibilityLabel={t('speakerView.status.explainA11y', { status: text })}
-        hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
         onPress={() => setOpen(true)}
-        style={[styles.badge, { backgroundColor: palette.raised, borderColor: palette.border }]}
-        testID={`speaker-status-${status}`}
-      >
-        <StatusDot color={hue} live={LIVE.includes(status)} />
-        <Text style={[styles.badgeText, { color: palette.text }]}>{text}</Text>
-        {status === 'active'
+        pillTestID={`speaker-status-${status}`}
+        trailingIcon={status === 'active'
           ? <MaterialIcons name="check" size={14} color={hue} />
           : <MaterialIcons name="info-outline" size={12} color={palette.muted} />}
-      </TouchableOpacity>
+      />
 
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
         <Pressable style={[styles.overlay, { backgroundColor: palette.overlay }]} onPress={() => setOpen(false)} accessibilityLabel={t('speakerView.status.close')}>
@@ -118,19 +82,6 @@ export default function SpeakerStatusBadge({ status, label, isDark = false }: Sp
 }
 
 const styles = StyleSheet.create({
-  badge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: uiTokens.space.sm,
-    paddingHorizontal: uiTokens.space.md,
-    paddingVertical: uiTokens.space.xs + 2,
-    borderRadius: uiTokens.radius.pill,
-    borderWidth: uiTokens.control.borderWidth,
-  },
-  badgeText: { fontSize: uiTokens.type.caption, fontWeight: '600', letterSpacing: 0.2 },
-  dotSlot: { width: DOT, height: DOT, alignItems: 'center', justifyContent: 'center' },
-  dot: { width: DOT, height: DOT, borderRadius: uiTokens.radius.circle },
-  dotRing: { position: 'absolute', width: DOT, height: DOT, borderRadius: uiTokens.radius.circle },
   overlay: {
     flex: 1,
     justifyContent: 'center',

@@ -1289,6 +1289,13 @@
       "privateTitle": "Agenda ainda não é pública",
       "privateSubtitle": "O organizador ainda não tornou a programação deste evento pública"
     },
+    "bookmarks": {
+      "label": "Vista da agenda",
+      "all": "Todas as sessões",
+      "saved": "Guardadas",
+      "emptyTitle": "Ainda sem sessões guardadas",
+      "emptySubtitle": "Toque no marcador de uma sessão para guardá-la aqui."
+    },
     "badges": {
       "past": "PASSADO"
     },
@@ -1317,6 +1324,8 @@
     "actions": {
       "addToFavorites": "Adicionar aos favoritos",
       "removeFromFavorites": "Remover dos favoritos",
+      "bookmark": "Guardar sessão",
+      "removeBookmark": "Remover marcador",
       "markAttending": "Marcar como presente",
       "unmarkAttending": "Desmarcar presença"
     },

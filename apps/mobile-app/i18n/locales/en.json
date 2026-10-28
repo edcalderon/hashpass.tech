@@ -1927,6 +1927,13 @@
       "privateTitle": "Agenda not public yet",
       "privateSubtitle": "The organizer hasn't made this event's schedule public"
     },
+    "bookmarks": {
+      "label": "Agenda view",
+      "all": "All sessions",
+      "saved": "Bookmarked",
+      "emptyTitle": "No bookmarked sessions yet",
+      "emptySubtitle": "Tap the bookmark on a session to save it here."
+    },
     "badges": {
       "past": "PAST"
     },
@@ -1961,6 +1968,8 @@
     "actions": {
       "addToFavorites": "Add to favorites",
       "removeFromFavorites": "Remove from favorites",
+      "bookmark": "Bookmark session",
+      "removeBookmark": "Remove bookmark",
       "favorite": "Favorite",
       "favorited": "Favorited",
       "addToAgenda": "Add to agenda",

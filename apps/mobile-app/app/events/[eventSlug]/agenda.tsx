@@ -39,8 +39,9 @@ import * as Haptics from 'expo-haptics';
 import { parseISO } from 'date-fns';
 import LoadingScreen from '../../../components/LoadingScreen';
 import { useTranslation, getCurrentLocale } from '../../../i18n/i18n';
-import { ActionButton, Badge, HoverText, IconButton, Surface } from '@hashpass/ui/primitives';
-import { uiTokens } from '@hashpass/ui/tokens';
+import { ActionButton, HoverText, IconButton, SegmentedTabs, Surface } from '@hashpass/ui/primitives';
+import { uiPalette, uiTokens } from '@hashpass/ui/tokens';
+import StatusPill from '../../../components/StatusPill';
 import {
   buildGoogleCalendarUrl,
   buildICalendarFile,
@@ -267,6 +268,8 @@ export default function BSL2025AgendaScreen() {
   const { isDark, colors } = useTheme();
   const { width: viewportWidth } = useWindowDimensions();
   const interfaceMode = isDark ? 'dark' : 'light';
+  const palette = uiPalette(interfaceMode);
+  const speakerStatusHues = uiTokens.speakerStatus[interfaceMode];
   const router = useRouter();
   const params = useLocalSearchParams<{ session?: string; scrollTo?: string; day?: string }>();
   const styles = getStyles(isDark, colors);
@@ -297,6 +300,9 @@ export default function BSL2025AgendaScreen() {
   const userSelectedTabRef = useRef(false); // Track if user manually selected a tab
   const [isLive, setIsLive] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  // "Bookmarked" view: every bookmarked session across all days. Bookmarks
+  // are the persisted is_favorite flag, so they follow the user across devices.
+  const [bookmarkedOnly, setBookmarkedOnly] = useState(false);
   const [agendaLayout, setAgendaLayout] = useState<'compact' | 'list' | 'grid'>('compact');
   const isCompactAgenda = agendaLayout === 'compact';
   const isAgendaGrid = agendaLayout === 'grid';
@@ -1455,6 +1461,20 @@ export default function BSL2025AgendaScreen() {
     return now > endTime;
   };
 
+  // Bookmarked sessions across every day, still honouring search and filters,
+  // grouped by day in programme order.
+  const bookmarkFilteredIds = new Set(filteredAgenda.map((item) => String(item.id)));
+  const bookmarkedGroups = Object.keys(agendaByDay)
+    .map((dayKey) => ({
+      dayKey,
+      items: (agendaByDay[dayKey] || []).filter((item) => (
+        favoriteStatus[item.id] && bookmarkFilteredIds.has(String(item.id))
+      )),
+    }))
+    .filter((group) => group.items.length > 0);
+  const bookmarkedCount = Object.values(agendaByDay)
+    .reduce((total, items) => total + items.filter((item) => favoriteStatus[item.id]).length, 0);
+
   // Render a single agenda card
   /* istanbul ignore next -- rendered by the platform agenda screen */
   const renderAgendaItem = (item: AgendaItem) => {
@@ -1502,7 +1522,7 @@ export default function BSL2025AgendaScreen() {
         labelNumberOfLines={1}
         tooltipText={label}
         accessibilityLabel={label}
-        variant="primary"
+        variant={isConfirmed ? 'ghost' : 'secondary'}
         leadingIcon={icon}
         accessibilityHint={t('actions.actionHint', 'Opens this session action')}
         onPress={onPress}
@@ -1514,7 +1534,7 @@ export default function BSL2025AgendaScreen() {
     );
 
     const renderAgendaIconAction = (
-      action: 'calendar' | 'favorite',
+      action: 'calendar',
       label: string,
       accentColor: string,
       icon: React.ReactNode,
@@ -1602,6 +1622,25 @@ export default function BSL2025AgendaScreen() {
                   <Text style={styles.agendaMediaCountText}>+{resolvedSpeakers.length - 1}</Text>
                 </View>
               ) : null}
+              <IconButton
+                mode="dark"
+                accentColor="#ffffff"
+                preserveBaseStyleOnReveal
+                size={30}
+                label={isFavorite
+                  ? t('actions.removeBookmark', 'Remove bookmark')
+                  : t('actions.bookmark', 'Bookmark session')}
+                accessibilityState={{ selected: isFavorite }}
+                style={styles.agendaBookmark}
+                onPress={() => { void handleToggleFavorite(item); }}
+                testID={`agenda-card-bookmark-${item.id}`}
+              >
+                <MaterialIcons
+                  name={isFavorite ? 'bookmark' : 'bookmark-border'}
+                  size={19}
+                  color="#FFFFFF"
+                />
+              </IconButton>
               <View
                 testID={`agenda-card-time-footer-${item.id}`}
                 style={styles.agendaMediaFooter}
@@ -1619,20 +1658,28 @@ export default function BSL2025AgendaScreen() {
 
             <View style={[styles.agendaItemContent, isCompactAgenda && styles.agendaItemContentCompact]}>
               <View style={styles.agendaHeaderRow}>
-                <Badge
-                  mode={interfaceMode}
-                  tone="neutral"
-                  compact
-                  markerColor={typeColor}
-                  leadingIcon={<NativeSafeIcon name={getAgendaTypeIcon(item.type) as NativeSafeIconName} size={13} color={colors.text.secondary} />}
-                >
-                  {typeLabel}
-                </Badge>
                 {isPast ? (
-                  <Badge mode={interfaceMode} tone="neutral" compact>
-                    {t('badges.past')}
-                  </Badge>
+                  <StatusPill
+                    isDark={isDark}
+                    label={t('badges.past')}
+                    color={speakerStatusHues.past}
+                    trailingIcon={<MaterialIcons name="history" size={13} color={palette.muted} />}
+                  />
                 ) : null}
+                {isConfirmed ? (
+                  <StatusPill
+                    isDark={isDark}
+                    label={t('actions.onAgenda', 'On agenda')}
+                    color={speakerStatusHues.active}
+                    trailingIcon={<MaterialIcons name="check" size={14} color={speakerStatusHues.active} />}
+                  />
+                ) : null}
+                <StatusPill
+                  isDark={isDark}
+                  label={typeLabel}
+                  color={typeColor}
+                  trailingIcon={<NativeSafeIcon name={getAgendaTypeIcon(item.type) as NativeSafeIconName} size={13} color={palette.muted} />}
+                />
               </View>
               <HoverText
                 mode={interfaceMode}
@@ -1707,17 +1754,10 @@ export default function BSL2025AgendaScreen() {
                 ]}>
                   {renderAgendaAction(
                     isConfirmed ? t('actions.removeFromAgenda', 'Remove from agenda') : t('actions.addToAgenda', 'Add to agenda'),
-                    <MaterialIcons name={isConfirmed ? 'check-circle' : 'add-circle-outline'} size={19} color={colors.primaryContrastText} />,
+                    <MaterialIcons name={isConfirmed ? 'check-circle' : 'add-circle-outline'} size={19} color={palette.accent} />,
                     () => { void handleAgendaAction(item, startTime); },
                   )}
                   <View style={styles.agendaSecondaryActions}>
-                    {renderAgendaIconAction(
-                      'favorite',
-                      isFavorite ? t('actions.removeFromFavorites', 'Remove from favorites') : t('actions.addToFavorites', 'Add to favorites'),
-                      isFavorite ? colors.primary : colors.text.secondary,
-                      <MaterialIcons name={isFavorite ? 'star' : 'star-border'} size={18} color={isFavorite ? colors.primary : colors.text.secondary} />,
-                      () => { void handleToggleFavorite(item); },
-                    )}
                     {renderAgendaIconAction(
                       'calendar',
                       t('calendar.openPicker', 'Add to an external calendar'),
@@ -1898,9 +1938,41 @@ export default function BSL2025AgendaScreen() {
         </View>
       )}
 
+      {/* Bookmarks: the same is_favorite flag the card's bookmark toggles. */}
+      {agenda.length > 0 && (
+        <View style={styles.bookmarkSwitcher}>
+          <SegmentedTabs
+            mode={interfaceMode}
+            accessibilityLabel={t('bookmarks.label', 'Agenda view')}
+            accentColor={colors.primary}
+            value={bookmarkedOnly ? 'bookmarked' : 'all'}
+            onChange={(id) => setBookmarkedOnly(id === 'bookmarked')}
+            tabs={[
+              { id: 'all', label: t('bookmarks.all', 'All sessions') },
+              { id: 'bookmarked', label: t('bookmarks.saved', 'Bookmarked'), count: bookmarkedCount },
+            ]}
+          />
+        </View>
+      )}
+
       {/* Tab Content */}
       <View style={styles.contentContainer}>
-        {activeTab && agendaByDay[activeTab] ? (
+        {bookmarkedOnly ? (
+          <View testID="agenda-bookmarks" style={[styles.agendaList, isAgendaGrid && styles.agendaGridList]}>
+            {bookmarkedGroups.length === 0 ? (
+              <View style={styles.noResultsContainer}>
+                <MaterialIcons name="bookmark-border" size={48} color={colors.text.secondary} />
+                <Text style={styles.noResultsText}>{t('bookmarks.emptyTitle', 'No bookmarked sessions yet')}</Text>
+                <Text style={styles.noResultsSubtext}>{t('bookmarks.emptySubtitle', 'Tap the bookmark on a session to save it here.')}</Text>
+              </View>
+            ) : bookmarkedGroups.map(({ dayKey, items }) => (
+              <View key={dayKey} style={styles.bookmarkGroup}>
+                <Text style={styles.bookmarkGroupLabel}>{getTabLabel(dayKey)}</Text>
+                {items.map(renderAgendaItem)}
+              </View>
+            ))}
+          </View>
+        ) : activeTab && agendaByDay[activeTab] ? (
           <View
             testID={isAgendaGrid ? 'agenda-grid' : 'agenda-list'}
             style={[styles.agendaList, isAgendaGrid && styles.agendaGridList]}
@@ -2188,6 +2260,21 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     paddingTop: uiTokens.space.lg,
     paddingBottom: uiTokens.space.sm,
   },
+  bookmarkSwitcher: {
+    paddingHorizontal: uiTokens.space.xl,
+    paddingBottom: uiTokens.space.sm,
+  },
+  bookmarkGroup: {
+    gap: uiTokens.space.sm,
+  },
+  bookmarkGroupLabel: {
+    color: colors.text.primary,
+    fontSize: uiTokens.type.label,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+    marginTop: uiTokens.space.sm,
+    textTransform: 'uppercase',
+  },
   dayHeaderCopy: {
     flex: 1,
     gap: uiTokens.space.xs,
@@ -2313,9 +2400,15 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     height: 30,
     justifyContent: 'center',
     position: 'absolute',
-    right: uiTokens.space.sm,
+    left: uiTokens.space.sm,
     top: uiTokens.space.sm,
     width: 30,
+  },
+  agendaBookmark: {
+    position: 'absolute',
+    right: uiTokens.space.sm,
+    top: uiTokens.space.sm,
+    zIndex: 2,
   },
   agendaMediaCountText: {
     color: '#FFFFFF',
@@ -2379,6 +2472,7 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: uiTokens.space.sm,
+    justifyContent: 'flex-end',
   },
   agendaItemContentCompact: {
     gap: uiTokens.space.xs,
@@ -2430,8 +2524,10 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     alignSelf: 'flex-start',
     flexShrink: 1,
     maxWidth: '100%',
+    minHeight: uiTokens.control.compactHeight - 4,
     minWidth: 0,
     paddingHorizontal: uiTokens.space.lg,
+    paddingVertical: uiTokens.space.sm,
   },
   agendaActionButtonMobile: {
     alignSelf: 'stretch',

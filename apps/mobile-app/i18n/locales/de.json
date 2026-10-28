@@ -1289,6 +1289,13 @@
       "privateTitle": "Agenda noch nicht öffentlich",
       "privateSubtitle": "Der Veranstalter hat den Zeitplan dieser Veranstaltung noch nicht veröffentlicht"
     },
+    "bookmarks": {
+      "label": "Agenda-Ansicht",
+      "all": "Alle Sitzungen",
+      "saved": "Gemerkt",
+      "emptyTitle": "Noch keine gemerkten Sitzungen",
+      "emptySubtitle": "Tippe auf das Lesezeichen einer Sitzung, um sie hier zu speichern."
+    },
     "badges": {
       "past": "VERGANGEN"
     },
@@ -1317,6 +1324,8 @@
     "actions": {
       "addToFavorites": "Zu Favoriten hinzufügen",
       "removeFromFavorites": "Aus Favoriten entfernen",
+      "bookmark": "Sitzung merken",
+      "removeBookmark": "Lesezeichen entfernen",
       "markAttending": "Als teilnehmend markieren",
       "unmarkAttending": "Teilnahme aufheben"
     },

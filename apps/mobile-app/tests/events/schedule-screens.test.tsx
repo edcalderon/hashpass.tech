@@ -5,7 +5,7 @@ import TestRenderer, { act } from 'react-test-renderer';
 import { Text, TouchableOpacity } from 'react-native';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { uiTokens } from '@hashpass/ui/tokens';
+import { uiPalette, uiTokens } from '@hashpass/ui/tokens';
 
 const myScheduleSource = readFileSync(
   resolve(__dirname, '../../app/events/[eventSlug]/networking/my-schedule.tsx'),
@@ -286,6 +286,11 @@ describe('event schedule screens', () => {
     return renderer!;
   };
 
+  const findBookmarkedTab = (renderer: TestRenderer.ReactTestRenderer) => renderer.root.findAll(
+    (node) => node.props.accessibilityRole === 'tab'
+      && node.findAllByType(Text).some((text) => text.children.join('') === 'bookmarks.saved'),
+  )[0];
+
   const openCalendarPicker = async (renderer: TestRenderer.ReactTestRenderer) => {
     const openPicker = renderer.root.findByProps({ accessibilityLabel: 'calendar.openPicker' });
     await act(async () => {
@@ -420,7 +425,10 @@ describe('event schedule screens', () => {
       await flushPromises();
     });
 
-    const dayTabs = renderer!.root.findAll((node) => node.props.accessibilityRole === 'tab');
+    const dayTabs = renderer!.root.findAll(
+      (node) => node.props.accessibilityRole === 'tab'
+        && String(node.props.accessibilityLabel ?? '').includes('tabs.sessions'),
+    );
     expect(dayTabs).toHaveLength(2);
     expect(dayTabs[0].props.accessibilityLabel).toContain('2 tabs.sessions');
 
@@ -649,7 +657,7 @@ describe('event schedule screens', () => {
     expect(agendaLabel.length).toBeGreaterThan(0);
     const calendarLabel = renderer.root.findAllByProps({ accessibilityLabel: 'calendar.openPicker' });
     expect(calendarLabel.length).toBeGreaterThan(0);
-    const favoriteLabel = renderer.root.findAllByProps({ accessibilityLabel: 'actions.addToFavorites' });
+    const favoriteLabel = renderer.root.findAllByProps({ accessibilityLabel: 'actions.bookmark' });
     expect(favoriteLabel.length).toBeGreaterThan(0);
     expect(renderer.root.findAllByProps({ accessibilityLabel: 'actions.sectionLabel' }).length).toBeGreaterThan(0);
     expect(agendaSource).toContain('revealLabel');
@@ -658,13 +666,13 @@ describe('event schedule screens', () => {
     await act(async () => renderer.unmount());
   });
 
-  it('keeps the primary agenda icon readable against the primary button fill', async () => {
+  it('keeps the quiet agenda action icon on the shared accent colour', async () => {
     const renderer = await renderCalendarAgenda();
     const primaryIcon = renderer.root.findAll(
       (node: any) => node.type === 'MaterialIcons' && node.props.name === 'add-circle-outline',
     )[0];
 
-    expect(primaryIcon.props.color).toBe(mockThemeColors.primaryContrastText);
+    expect(primaryIcon.props.color).toBe(uiPalette('light').accent);
 
     await act(async () => renderer.unmount());
   });
@@ -752,7 +760,7 @@ describe('event schedule screens', () => {
     });
 
     const favoriteButton = renderer!.root.findByProps({
-      accessibilityLabel: 'actions.addToFavorites',
+      accessibilityLabel: 'actions.bookmark',
     });
     await act(async () => {
       await favoriteButton.props.onPress();
@@ -765,6 +773,63 @@ describe('event schedule screens', () => {
       method: 'POST',
       body: { agendaId: 'session-1', isFavorite: true },
     });
+    await act(async () => renderer!.unmount());
+  });
+
+  it('lists only bookmarked sessions in the Bookmarked view and explains an empty one', async () => {
+    mockAuthState = { ...mockAuthState, user: { id: 'better-auth-user', email: 'attendee@example.test' } };
+    mockApiRequest.mockImplementation((path: string) => Promise.resolve({
+      success: true,
+      data: {
+        data: path.endsWith('agenda/status')
+          ? [{ agenda_id: 'session-1', status: null, is_favorite: true }]
+          : [
+            { id: 'session-1', day: '1', time: '09:00', title: 'Saved opening', type: 'keynote' },
+            { id: 'session-2', day: '1', time: '10:00', title: 'Unsaved panel', type: 'panel' },
+          ],
+      },
+    }));
+
+    let renderer: TestRenderer.ReactTestRenderer;
+    await act(async () => {
+      renderer = TestRenderer.create(<AgendaScreen />);
+      for (let index = 0; index < 4; index += 1) await flushPromises();
+    });
+
+    const textOf = () => renderer!.root.findAllByType(Text).map((node) => node.children.join(''));
+    expect(textOf()).toEqual(expect.arrayContaining(['Saved opening', 'Unsaved panel']));
+    expect(renderer!.root.findAllByProps({ testID: 'agenda-card-bookmark-session-1' }).length).toBeGreaterThan(0);
+
+    const bookmarkedTab = findBookmarkedTab(renderer!);
+    await act(async () => {
+      bookmarkedTab.props.onPress();
+      await flushPromises();
+    });
+    expect(renderer!.root.findAllByProps({ testID: 'agenda-bookmarks' }).length).toBeGreaterThan(0);
+    expect(textOf()).toContain('Saved opening');
+    expect(textOf()).not.toContain('Unsaved panel');
+
+    await act(async () => renderer!.unmount());
+  });
+
+  it('shows the empty bookmarks state when nothing is saved', async () => {
+    mockUserAgendaStatusRows = [];
+    mockApiRequest.mockImplementation(() => Promise.resolve({
+      success: true,
+      data: { data: [{ id: 'session-1', day: '1', time: '09:00', title: 'Opening', type: 'keynote' }] },
+    }));
+
+    let renderer: TestRenderer.ReactTestRenderer;
+    await act(async () => {
+      renderer = TestRenderer.create(<AgendaScreen />);
+      for (let index = 0; index < 4; index += 1) await flushPromises();
+    });
+    const bookmarkedTab = findBookmarkedTab(renderer!);
+    await act(async () => {
+      bookmarkedTab.props.onPress();
+      await flushPromises();
+    });
+    expect(renderer!.root.findAllByProps({ children: 'bookmarks.emptyTitle' }).length).toBeGreaterThan(0);
     await act(async () => renderer!.unmount());
   });
 
