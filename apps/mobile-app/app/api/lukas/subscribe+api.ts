@@ -1,4 +1,6 @@
 import { getSupabaseServerForRequest } from '@/lib/supabase-server';
+import cap from '@/lib/cap-instance';
+import { rateLimitOk } from '@/lib/bsl/rateLimit';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -17,6 +19,8 @@ export function OPTIONS() {
 }
 
 export async function POST(request: Request) {
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+  if (!rateLimitOk(`lukas-subscribe:ip:${ip}`)) return json({ error: 'Too many requests' }, 429);
   if (request.headers.get('content-type') !== 'application/json') {
     return json({ error: 'Content-Type must be application/json' }, 400);
   }
@@ -25,12 +29,25 @@ export async function POST(request: Request) {
     const body = await request.json().catch(() => ({}));
     const email = typeof body?.email === 'string' ? body.email.trim().toLowerCase() : '';
     const hashpassOptIn = body?.hashpassOptIn === true;
+    const captchaToken = typeof body?.captchaToken === 'string' ? body.captchaToken.trim() : '';
     const source = typeof body?.source === 'string' && body.source.trim()
       ? body.source.trim().slice(0, 80)
       : 'lukas_landing';
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return json({ error: 'Please enter a valid email address' }, 400);
+    }
+    if (!captchaToken || captchaToken.length > 2_048) {
+      return json({ error: 'Security check required. Please solve the captcha again.', captchaExpired: true }, 400);
+    }
+    let captchaValid = false;
+    try {
+      captchaValid = (await cap.validateToken(captchaToken)).success;
+    } catch (captchaError) {
+      console.error('[lukas/subscribe] captcha validation failed:', captchaError);
+    }
+    if (!captchaValid) {
+      return json({ error: 'Security check expired. Please solve the captcha again.', captchaExpired: true }, 400);
     }
 
     const supabase = getSupabaseServerForRequest(request);

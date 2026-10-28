@@ -1,5 +1,6 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../hooks/useTheme';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { useTranslation } from '../i18n/i18n';
@@ -14,7 +15,10 @@ import Animated, {
   withSequence,
   Easing,
 } from 'react-native-reanimated';
-import ThemeAndLanguageSwitcher from '../components/ThemeAndLanguageSwitcher';
+import { LukasSettingsMenu } from '../components/LukasSettingsMenu';
+import type { LukasAnimationLevel } from '../types/lukas.types';
+import { MerchantContactPanel } from '../components/MerchantContactPanel';
+import { LukasClaimModal } from '../components/lukas/LukasClaimModal';
 import { HeroSection } from '../components/lukas/HeroSection';
 import { WhySection } from '../components/lukas/WhySection';
 import { HowItWorksSection } from '../components/lukas/HowItWorksSection';
@@ -23,20 +27,24 @@ import { OmniChainSection } from '../components/lukas/OmniChainSection';
 import { GetLukasSection } from '../components/lukas/GetLukasSection';
 import { FAQSection } from '../components/lukas/FAQSection';
 import { LukasFooter } from '../components/lukas/LukasFooter';
+import { applyLukasClick, createInitialLukasRewardState, playLukasClickSound } from '../components/lukas/lukas-rewards';
 
 export default function LukasLanding() {
-  const { colors, isDark, setTheme } = useTheme();
+  const { colors, isDark } = useTheme();
   const isMobile = useIsMobile();
   const { t } = useTranslation('lukas');
   const scrollY = useSharedValue(0);
   const scrollRef = useRef<ScrollView>(null);
+  const [rewardState, setRewardState] = useState(createInitialLukasRewardState);
+  const [rewardDelta, setRewardDelta] = useState(0);
+  const [animationLevel, setAnimationLevel] = useState<LukasAnimationLevel>('full');
+  const [claimVisible, setClaimVisible] = useState(false);
 
-  // Set default theme to dark for LUKAS landing page
   useEffect(() => {
-    if (!isDark) {
-      setTheme('dark');
-    }
-  }, []); // Only run once on mount
+    AsyncStorage.getItem('lukas.animation.v1').then((value) => {
+      if (value === 'full' || value === 'reduced' || value === 'none') setAnimationLevel(value);
+    }).catch(() => undefined);
+  }, []);
 
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: (event) => {
@@ -45,6 +53,15 @@ export default function LukasLanding() {
   });
 
   const styles = getStyles(isDark, colors, isMobile);
+
+  const handleLukasClick = () => {
+    const result = applyLukasClick(rewardState, Date.now());
+    setRewardState(result.state);
+    setRewardDelta(result.awarded);
+    if (animationLevel === 'full') playLukasClickSound(result.awarded);
+    if (rewardState.total === 0 || result.reachedCap) handleScrollToSection('get-lukas');
+    if (result.reachedCap) setClaimVisible(true);
+  };
 
   const handleScrollToSection = (sectionId: string) => {
     // For web, use anchor scrolling
@@ -62,7 +79,9 @@ export default function LukasLanding() {
 
   return (
     <View style={styles.container}>
-      <ThemeAndLanguageSwitcher />
+      <View style={styles.settingsTrigger}>
+        <LukasSettingsMenu animation={animationLevel} onAnimationChange={setAnimationLevel} />
+      </View>
       <Animated.ScrollView
         ref={scrollRef}
         onScroll={scrollHandler}
@@ -71,8 +90,11 @@ export default function LukasLanding() {
         showsVerticalScrollIndicator={false}
       >
         <HeroSection 
-          onGetLukas={() => handleScrollToSection('get-lukas')}
+          onGetLukas={handleLukasClick}
           onForMerchants={() => handleScrollToSection('merchants')}
+          rewardTotal={rewardState.total}
+          rewardDelta={rewardDelta}
+          animationEnabled={animationLevel !== 'none'}
         />
         
         <View id="why" style={styles.section}>
@@ -85,6 +107,7 @@ export default function LukasLanding() {
 
         <View id="merchants" style={styles.section}>
           <MerchantsSection />
+          <MerchantContactPanel />
         </View>
 
         <View id="omnichain" style={styles.section}>
@@ -101,6 +124,7 @@ export default function LukasLanding() {
 
         <LukasFooter />
       </Animated.ScrollView>
+      <LukasClaimModal visible={claimVisible} onClose={() => setClaimVisible(false)} />
     </View>
   );
 }
@@ -109,6 +133,12 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
   container: {
     flex: 1,
     backgroundColor: isDark ? '#050816' : '#FFFFFF',
+  },
+  settingsTrigger: {
+    position: 'absolute',
+    top: 18,
+    right: 20,
+    zIndex: 50,
   },
   scrollView: {
     flex: 1,

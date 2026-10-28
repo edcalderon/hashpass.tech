@@ -9,6 +9,7 @@ import { supabaseServer } from './supabase-server';
 import type { HealthCheck } from './server/system-health';
 import type { SecondarySender } from '../types/email.types';
 import type { MarketingMail } from '../types/marketing';
+import type { LukasMerchantInquiryEmailDetails } from '../types/lukas-merchant-inquiry.types';
 import { getEventEmailBranding } from './email-event-branding';
 
 // Load .env.local before reading NODEMAILER_* vars — Metro/Expo may not inject
@@ -759,6 +760,56 @@ export interface EventProposalEmailDetails {
   contactName: string;
   email: string;
   eventDetails: string;
+}
+
+/** Sends a merchant lead to the fixed HASHPASS inbox and confirms receipt to the lead. */
+export async function sendLukasMerchantInquiry(
+  details: LukasMerchantInquiryEmailDetails,
+): Promise<{ success: boolean; error?: string; messageId?: string }> {
+  if (!emailEnabled || !transporter) return { success: false, error: 'Email service is not configured' };
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(details.email) || details.email.length > 254) {
+    return { success: false, error: 'Invalid reply-to email address' };
+  }
+
+  const bookingUrl = 'https://calendar.app.google/vYsTa9GpamSVccAt9';
+  const safeName = details.contactName.replace(/[\r\n\u0000-\u001f\u007f]+/g, ' ').trim();
+  const safeType = details.merchantType.replace(/[\r\n\u0000-\u001f\u007f]+/g, ' ').trim();
+  const subject = `[LUKAS merchant] ${safeType || 'New merchant inquiry'}`;
+  const text = [
+    'New LUKAS merchant inquiry',
+    '',
+    `Contact: ${safeName}`,
+    `Email: ${details.email}`,
+    `Merchant type: ${safeType}`,
+    `Booking preference: ${details.bookingPreference}`,
+    '',
+    'Description:',
+    details.description,
+    '',
+    `Booking link: ${bookingUrl}`,
+  ].join('\n');
+  const html = `<h1>New LUKAS merchant inquiry</h1><p><strong>Contact:</strong> ${escapeEmailHtml(safeName)}</p><p><strong>Email:</strong> ${escapeEmailHtml(details.email)}</p><p><strong>Merchant type:</strong> ${escapeEmailHtml(safeType)}</p><p><strong>Booking preference:</strong> ${escapeEmailHtml(details.bookingPreference)}</p><h2>Description</h2><div style="white-space:pre-wrap">${escapeEmailHtml(details.description)}</div><p><a href="${bookingUrl}">Book a conversation</a></p>`;
+
+  try {
+    const inbox = await transporter.sendMail({
+      from: `HASHPASS <${smtpFrom}>`,
+      to: 'contact@hashpass.tech',
+      replyTo: details.email,
+      subject,
+      text,
+      html,
+    });
+    await transporter.sendMail({
+      from: `HASHPASS <${smtpFrom}>`,
+      to: details.email,
+      subject: 'We received your LUKAS merchant request',
+      text: `Thanks ${safeName}. We received your LUKAS merchant request and will be in touch. If you prefer, book directly here: ${bookingUrl}`,
+      html: `<p>Thanks ${escapeEmailHtml(safeName)} — we received your LUKAS merchant request.</p><p>We will be in touch shortly. If you prefer, <a href="${bookingUrl}">book directly with our team</a>.</p>`,
+    });
+    return { success: true, messageId: inbox.messageId };
+  } catch (error: any) {
+    return { success: false, error: error?.message || 'Email delivery failed' };
+  }
 }
 
 /** Delivers a public event proposal to the configured HASHPASS support inbox. */

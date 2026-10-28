@@ -2,6 +2,12 @@
 
 const mockGetSupabaseServerForRequest = jest.fn();
 const mockFrom = jest.fn();
+const mockValidateToken = jest.fn();
+
+jest.mock('@/lib/cap-instance', () => ({
+  __esModule: true,
+  default: { validateToken: (...args: unknown[]) => mockValidateToken(...args) },
+}));
 
 jest.mock('@/lib/supabase-server', () => ({
   getSupabaseServerForRequest: (request: Request) => mockGetSupabaseServerForRequest(request),
@@ -17,7 +23,7 @@ const requestFor = (body: unknown, contentType = 'application/json') =>
   new Request('https://api.hashpass.tech/api/lukas/subscribe', {
     method: 'POST',
     headers: { 'content-type': contentType },
-    body: typeof body === 'string' ? body : JSON.stringify(body),
+    body: typeof body === 'string' ? body : JSON.stringify({ captchaToken: 'cap-token-once', ...(body as object) }),
   });
 
 const configureSupabase = (tables: Record<string, TableState>) => {
@@ -42,6 +48,7 @@ describe('Lukas newsletter API', () => {
     jest.resetModules();
     mockFrom.mockReset();
     mockGetSupabaseServerForRequest.mockReset();
+    mockValidateToken.mockReset().mockResolvedValue({ success: true });
   });
 
   it('exposes the Lukas CORS preflight', async () => {
@@ -55,6 +62,15 @@ describe('Lukas newsletter API', () => {
     const { POST } = require('../../app/api/lukas/subscribe+api');
     expect((await POST(requestFor({ email: 'reader@example.com' }, 'text/plain'))).status).toBe(400);
     expect((await POST(requestFor({ email: 'not-an-email' }))).status).toBe(400);
+    expect(mockGetSupabaseServerForRequest).not.toHaveBeenCalled();
+  });
+
+  it('rejects missing or invalid CAPTCHA proof before touching subscriber data', async () => {
+    configureSupabase({});
+    const { POST } = require('../../app/api/lukas/subscribe+api');
+    expect((await POST(requestFor({ email: 'reader@example.com', captchaToken: '' }))).status).toBe(400);
+    mockValidateToken.mockResolvedValueOnce({ success: false });
+    expect((await POST(requestFor({ email: 'reader@example.com' }))).status).toBe(400);
     expect(mockGetSupabaseServerForRequest).not.toHaveBeenCalled();
   });
 

@@ -1,4 +1,26 @@
 {
+  "settings": {
+    "eyebrow": "LUKAS / preferences",
+    "eyebrow_es": "LUKAS / preferencias",
+    "eyebrow_pt": "LUKAS / preferências",
+    "title": "Tune your experience",
+    "title_es": "Configura tu experiencia",
+    "title_pt": "Ajuste sua experiência",
+    "open": "Open LUKAS settings",
+    "close": "Close settings",
+    "appearance": "Appearance",
+    "language": "Language",
+    "motion": "Motion",
+    "system": "System",
+    "light": "Light",
+    "dark": "Dark",
+    "motionFull": "Full",
+    "motionReduced": "Reduced",
+    "motionOff": "Off",
+    "analytics": "Privacy-friendly analytics",
+    "analyticsDescription": "Help us improve the landing page. No wallet or seed data is collected.",
+    "privacyPolicy": "Read the privacy policy"
+  },
   "hero": {
     "badge": "Backed by HashPass merchants",
     "badge_es": "Respaldado por comercios de HashPass",
