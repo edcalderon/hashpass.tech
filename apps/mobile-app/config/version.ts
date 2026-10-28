@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610281950, // Updated to current timestamp
+  buildNumber: 202610282026, // Updated to current timestamp
   releaseDate: '2026-10-28',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,6 +30,7 @@ export const CURRENT_VERSION: VersionInfo = {
     'real 3D LKS coin, animated icons, consistent landing UI'
   ],
   bugfixes: [
+    'recover stale dashboard drawer open state',
     'match BSL media and captions to locale',
     'prepare BSL assets before rendering',
     'compile LUKAS FAQ catalog messages',
@@ -37,11 +38,31 @@ export const CURRENT_VERSION: VersionInfo = {
     'typecheck video-studio against its own tsconfig'
   ],
   breakingChanges: [],
-  notes: 'add narrated, locale-aware BSL Bogotá campaign; compile LUKAS FAQ catalogs without warnings; refresh the LUKAS landing with shared UI primitives'
+  notes: 'real 3D LKS coin, animated icons, consistent landing UI; recover stale dashboard drawer open state; match BSL media and captions to locale; prepare BSL assets before rendering; compile LUKAS FAQ catalog messages; generate and validate welcome narration in the publish workflow; typecheck video-studio against its own tsconfig'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.173': {
+    version: '1.9.173',
+    buildNumber: 202610282026,
+    releaseDate: '2026-10-28',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'real 3D LKS coin, animated icons, consistent landing UI'
+    ],
+    bugfixes: [
+      'recover stale dashboard drawer open state',
+      'match BSL media and captions to locale',
+      'prepare BSL assets before rendering',
+      'compile LUKAS FAQ catalog messages',
+      'generate and validate welcome narration in the publish workflow',
+      'typecheck video-studio against its own tsconfig'
+    ],
+    breakingChanges: [],
+    notes: 'real 3D LKS coin, animated icons, consistent landing UI; recover stale dashboard drawer open state; match BSL media and captions to locale; prepare BSL assets before rendering; compile LUKAS FAQ catalog messages; generate and validate welcome narration in the publish workflow; typecheck video-studio against its own tsconfig'
+  },
   '1.9.172': {
     version: '1.9.172',
     buildNumber: 202610281950,

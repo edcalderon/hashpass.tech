@@ -79,8 +79,8 @@ export function ClubShell({
 }>) {
   return (
     <View style={[styles.shell, style]}>
-      <View pointerEvents="none" style={styles.glowTopLeft} />
-      <View pointerEvents="none" style={styles.glowBottomRight} />
+      <View style={[styles.glowTopLeft, { pointerEvents: "none" }]} />
+      <View style={[styles.glowBottomRight, { pointerEvents: "none" }]} />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}

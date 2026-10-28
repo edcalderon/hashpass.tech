@@ -1492,22 +1492,45 @@ function AuthenticatedDashboardLayout() {
       const wasOpen = drawerOpenRef.current;
 
       // Primary path: the imperative ref into the patched DrawerView's own
-      // state (see DrawerOpenControlRef comment above). Fall back to the old
-      // dispatch-based path only on the first render, before the patched
-      // DrawerView's effect has populated the ref.
+      // state (see DrawerOpenControlRef comment above). Resetting to closed
+      // before opening is deliberate: a few Android builds have reported the
+      // navigation state as "open" while the native drawer was visibly closed.
+      // Calling setOpen(true) in that state leaves the effective `open` prop
+      // unchanged, so the hamburger appears dead. A separate task gives the
+      // drawer a real closed -> open edge to animate from.
       if (drawerOpenControlRef.current?.setOpen) {
-        drawerOpenControlRef.current.setOpen(true);
+        drawerOpenControlRef.current.setOpen(false);
+        setTimeout(() => {
+          drawerOpenControlRef.current?.setOpen(true);
+          // Keep the regular React Navigation state in sync as well. The
+          // imperative override is needed for stale native builds, while the
+          // web drawer's normal reducer is the reliable source of its
+          // transition lifecycle and status callbacks.
+          openTargetedDashboardDrawer({
+            navigation,
+            drawerNavigation: drawerNavRef.current,
+            openDrawerAction: DrawerActions.openDrawer(),
+          });
+        }, 0);
       } else {
-        const opened = openTargetedDashboardDrawer({
+        const reset = openTargetedDashboardDrawer({
           navigation,
           drawerNavigation: drawerNavRef.current,
-          openDrawerAction: DrawerActions.openDrawer(),
+          openDrawerAction: DrawerActions.closeDrawer(),
         });
 
-        if (!opened) {
-          console.warn("Drawer navigation unavailable, skipping openDrawer");
+        if (!reset) {
+          console.warn("Drawer navigation unavailable, skipping drawer open");
           return;
         }
+
+        setTimeout(() => {
+          openTargetedDashboardDrawer({
+            navigation,
+            drawerNavigation: drawerNavRef.current,
+            openDrawerAction: DrawerActions.openDrawer(),
+          });
+        }, 0);
       }
 
       // React Navigation owns its animation lifecycle. In particular, do not
@@ -1813,6 +1836,9 @@ function AuthenticatedDashboardLayout() {
                 style={styles.headerIconButton}
                 activeOpacity={0.8}
                 hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+                accessibilityRole="button"
+                accessibilityLabel="Open navigation menu"
+                testID="dashboard-menu-button"
                 // Make sure this is clickable even during tutorial
               >
                 <Ionicons
@@ -1824,10 +1850,25 @@ function AuthenticatedDashboardLayout() {
             </View>
           </CopilotStep>
 
-          <View style={[styles.headerLogoContainer, { pointerEvents: "box-none" }]}>
+          <View
+            // React Native's `box-none` is not emitted as a CSS pointer-events
+            // rule by React Native Web. The logo wrapper spans the entire
+            // header, so its web hit box otherwise sits above the hamburger.
+            // Use CSS pass-through on web and retain native box-none semantics.
+            {...(Platform.OS === "web"
+              ? {}
+              : { pointerEvents: "box-none" as const })}
+            style={[
+              styles.headerLogoContainer,
+              Platform.OS === "web" ? { pointerEvents: "none" } : undefined,
+            ]}
+          >
             <TouchableOpacity
               onPress={() => headerRouter.replace("./explore?reset=1" as any)}
-              style={styles.headerLogoButton}
+              style={[
+                styles.headerLogoButton,
+                Platform.OS === "web" ? { pointerEvents: "auto" } : undefined,
+              ]}
               activeOpacity={0.8}
             >
               <Image
@@ -2151,12 +2192,15 @@ const getStyles = (
         : "rgba(0, 0, 0, 0.1)",
     },
     headerContent: {
+      position: "relative",
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
       paddingHorizontal: 12,
       paddingVertical: 8,
       height: "100%",
+      zIndex: 2,
+      pointerEvents: "auto",
     },
     headerButton: {
       padding: 12,
@@ -2178,6 +2222,8 @@ const getStyles = (
       alignItems: "center",
       justifyContent: "center",
       backgroundColor: "transparent",
+      pointerEvents: "auto",
+      zIndex: 3,
     },
     headerLogoContainer: {
       position: "absolute",
@@ -2185,15 +2231,11 @@ const getStyles = (
       right: 0,
       top: 0,
       bottom: 0,
+      zIndex: 0,
       alignItems: "center",
       justifyContent: "center",
-      // A negative zIndex here previously made the logo invisible on Android
-      // (negative zIndex doesn't just sit behind the hamburger/QR buttons the
-      // way it does on web — it can drop behind the header's own background on
-      // Android's native compositor). pointerEvents: 'box-none' does the actual
-      // job negative zIndex was trying to do — letting taps on the empty parts
-      // of this full-width overlay fall through to the buttons underneath —
-      // without needing to hide the view to get there.
+      // Web receives pointer-events: none at render time; native receives the
+      // box-none prop above so the centered logo remains independently tappable.
     },
     headerLogoButton: {
       width: 180,

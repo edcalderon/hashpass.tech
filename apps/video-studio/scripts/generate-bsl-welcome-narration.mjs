@@ -51,9 +51,12 @@ function assertPlayableNarration(mediaPath, timelineSeconds, locale) {
 }
 
 function main() {
-  const available = spawnSync("edge-tts", ["--list-voices"], {stdio: "ignore"});
-  if (available.error || available.status !== 0) {
-    throw new Error("edge-tts is required. Install it with: pip install edge-tts");
+  const captionsOnly = process.argv.includes("--captions-only");
+  if (!captionsOnly) {
+    const available = spawnSync("edge-tts", ["--list-voices"], {stdio: "ignore"});
+    if (available.error || available.status !== 0) {
+      throw new Error("edge-tts is required. Install it with: pip install edge-tts");
+    }
   }
 
   const campaign = JSON.parse(readFileSync(campaignPath, "utf8"));
@@ -65,18 +68,24 @@ function main() {
 
     const mediaPath = join(languageDirectory, "bsl-bogota-welcome.mp3");
     const captionPath = join(captionDirectory, "bsl-bogota-welcome.vtt");
-    const result = spawnSync(
-      "edge-tts",
-      ["--voice", content.voice, `--rate=${content.rate}`, "--text", content.voiceover, "--write-media", mediaPath],
-      {stdio: "inherit"},
-    );
-    if (result.status !== 0) {
-      rmSync(mediaPath, {force: true});
-      throw new Error(`Could not synthesize the ${locale} BSL welcome narration`);
+    if (!captionsOnly) {
+      const result = spawnSync(
+        "edge-tts",
+        ["--voice", content.voice, `--rate=${content.rate}`, "--text", content.voiceover, "--write-media", mediaPath],
+        {stdio: "inherit"},
+      );
+      if (result.status !== 0) {
+        rmSync(mediaPath, {force: true});
+        throw new Error(`Could not synthesize the ${locale} BSL welcome narration`);
+      }
+      assertPlayableNarration(mediaPath, content.scenes.at(-1).endSecond, locale);
     }
-    assertPlayableNarration(mediaPath, content.scenes.at(-1).endSecond, locale);
     writeFileSync(captionPath, webVttFor(content.scenes));
-    console.log(`Generated ${locale}: ${mediaPath} and ${captionPath}`);
+    console.log(
+      captionsOnly
+        ? `Generated ${locale} captions: ${captionPath}`
+        : `Generated ${locale}: ${mediaPath} and ${captionPath}`,
+    );
   }
 }
 
