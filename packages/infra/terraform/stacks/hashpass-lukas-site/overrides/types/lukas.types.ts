@@ -25,6 +25,12 @@ export type LukasCoinProps = {
   animationLevel?: LukasAnimationLevel;
 };
 
+export type LukasWhyVideoProps = {
+  locale: string;
+  animationLevel: LukasAnimationLevel;
+  isDark: boolean;
+};
+
 export type HeroSectionProps = {
   onGetLukas: () => void;
   onForMerchants: () => void;

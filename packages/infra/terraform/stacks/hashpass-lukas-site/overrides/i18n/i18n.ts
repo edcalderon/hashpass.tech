@@ -144,5 +144,5 @@ export const useTranslation = (ns?: string) => {
     [ns, currentLocale]
   );
 
-  return { t };
+  return { t, locale: currentLocale || 'en' };
 };

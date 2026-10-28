@@ -1,0 +1,32 @@
+{
+  "en": {
+    "voice": "en-US-GuyNeural",
+    "rate": "+15%",
+    "text": "LUKAS follows one regional index across five local currencies. One LUKAS equals one LatAm peso, backed by HashPass merchants and omni-chain collateral."
+  },
+  "es": {
+    "voice": "es-CO-SalomeNeural",
+    "rate": "+15%",
+    "text": "LUKAS sigue un índice regional de cinco monedas locales. Un LUKAS equivale a un peso LatAm, respaldado por comercios HashPass y colateral omni-chain."
+  },
+  "ko": {
+    "voice": "ko-KR-SunHiNeural",
+    "rate": "+18%",
+    "text": "LUKAS는 다섯 개 통화를 반영한 지역 지수입니다. 라틴아메리카 페소 하나의 가치를 담고, HashPass 가맹점과 옴니체인 담보가 뒷받침합니다."
+  },
+  "fr": {
+    "voice": "fr-FR-DeniseNeural",
+    "rate": "+15%",
+    "text": "LUKAS suit un indice régional composé de cinq monnaies locales. Un LUKAS équivaut à un peso latino-américain, garanti par les commerces HashPass et une garantie omni-chain."
+  },
+  "pt": {
+    "voice": "pt-BR-FranciscaNeural",
+    "rate": "+15%",
+    "text": "LUKAS acompanha um índice regional com cinco moedas locais. Um LUKAS equivale a um peso latino-americano, respaldado por comércios HashPass e colateral omni-chain."
+  },
+  "de": {
+    "voice": "de-DE-KatjaNeural",
+    "rate": "+15%",
+    "text": "LUKAS folgt einem regionalen Index aus fünf lokalen Währungen. Ein LUKAS entspricht einem LatAm-Peso, besichert durch HashPass-Händler und Omni-Chain-Kollateral."
+  }
+}

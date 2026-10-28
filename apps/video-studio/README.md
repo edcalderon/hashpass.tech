@@ -376,6 +376,28 @@ pnpm --filter hashpass-video-studio render AppTutorialNarratedES
 pnpm --filter hashpass-video-studio render BslShowcase
 ```
 
+The Lukas landing's “why stable” panel uses one twelve-second explainer
+per supported locale. Render the six cuts into `out/lukas-why/`, or copy them
+into the landing override's versioned public assets with `--publish`:
+
+```bash
+# The repo's CI workflow pins this client because older edge-tts clients can
+# fail the speech service handshake.
+python3 -m venv /tmp/hashpass-edge-tts
+/tmp/hashpass-edge-tts/bin/pip install edge-tts==7.3.1
+PATH=/tmp/hashpass-edge-tts/bin:$PATH \
+pnpm --filter hashpass-video-studio lukas:why:audio
+pnpm --filter hashpass-video-studio lukas:why:render
+pnpm --filter hashpass-video-studio lukas:why:render --publish
+```
+
+The audio command creates one localized neural voice track per supported
+locale. The render mixes that narration with the shared music bed and writes
+an AAC track into each MP4. The landing selects `why-{locale}.mp4` and its
+matching WebVTT track at runtime, keeps the coin illustration as the poster
+until the visitor presses play, pauses off-screen or reduced-motion playback,
+and falls back to the coin card if a media request fails.
+
 `out/`, `public/recordings/*` (contents, not the folders), and
 `.recording-state/` are gitignored — they're large/sensitive artifacts
 regenerated from the compositions/flows, not source.

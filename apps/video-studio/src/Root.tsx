@@ -21,6 +21,12 @@ import {
   eventHeroSpecs,
   type EventHeroSpec,
 } from './content/event-hero-specs';
+import {LukasWhyExplainer} from './compositions/LukasWhyExplainer';
+import {
+  LUKAS_WHY_DURATION_IN_FRAMES,
+  LUKAS_WHY_LOCALES,
+} from './content/lukas-why';
+import type {LukasWhyLocale} from './types/LukasWhy.types';
 
 // Real recordings vary a lot in length (a landing scroll vs. a 30s OTP
 // sign-in with a manual-entry pause), so each composition's duration and
@@ -67,6 +73,18 @@ export const RemotionRoot: React.FC = () => {
       <Composition id="BslColombiaHeroLoop" component={BslColombiaHeroLoop} durationInFrames={300} fps={FPS} width={WIDTH} height={HEIGHT}/>
       <Composition id="HashpassDiscoveryCoverLoop" component={DiscoveryCoverLoop} durationInFrames={360} fps={FPS} width={WIDTH} height={HEIGHT}/>
       <Composition id="HashpassPartnersCoverLoop" component={PartnersCoverLoop} durationInFrames={360} fps={FPS} width={WIDTH} height={HEIGHT}/>
+      {LUKAS_WHY_LOCALES.map((locale: LukasWhyLocale) => (
+        <Composition
+          key={`lukas-why-${locale}`}
+          id={`LukasWhy-${locale}`}
+          component={LukasWhyExplainer}
+          durationInFrames={LUKAS_WHY_DURATION_IN_FRAMES}
+          fps={FPS}
+          width={WIDTH}
+          height={HEIGHT}
+          defaultProps={{locale}}
+        />
+      ))}
       {eventHeroSpecs.map((hero: EventHeroSpec) => (
         <Composition
           key={hero.id}
