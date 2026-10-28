@@ -558,16 +558,16 @@ class MatchmakingService {
 
     const stats = {
       totalRequests: data.length,
-      pendingRequests: data.filter(r => r.status === 'pending').length,
-      acceptedRequests: data.filter(r => r.status === 'accepted').length,
-      declinedRequests: data.filter(r => r.status === 'declined').length,
+      pendingRequests: data.filter((r: MeetingRequest) => r.status === 'pending').length,
+      acceptedRequests: data.filter((r: MeetingRequest) => r.status === 'accepted').length,
+      declinedRequests: data.filter((r: MeetingRequest) => r.status === 'declined').length,
       averageResponseTime: 0,
     };
 
     // Calculate average response time
-    const respondedRequests = data.filter(r => r.speaker_response_at);
+    const respondedRequests = data.filter((r: MeetingRequest) => r.speaker_response_at);
     if (respondedRequests.length > 0) {
-      const totalResponseTime = respondedRequests.reduce((sum, request) => {
+      const totalResponseTime = respondedRequests.reduce((sum: number, request: MeetingRequest) => {
         const responseTime = new Date(request.speaker_response_at!).getTime() - new Date(request.created_at).getTime();
         return sum + responseTime;
       }, 0);

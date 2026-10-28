@@ -290,32 +290,79 @@ function resolveTempModulePath(tempBaseDir, sourceFilePath, specifier, aliasEntr
   return `${resolved}.d.ts`;
 }
 
-// A type-only import of an unchanged file that imports nothing itself (for
-// example apps/mobile-app/types/contacts.ts) is safe to copy verbatim. Stubbing
-// it as `any` collapses every field the changed file reads from it, which shows
-// up as a cascade of implicit-any errors on callback parameters.
+// A type-only import of an unchanged file whose own imports are nothing but
+// further type-only imports of local modules (for example
+// apps/mobile-app/types/contacts.ts, or types/speaker-status-badge.types.ts
+// building on types/speaker-status.types.ts) is safe to copy verbatim,
+// following that chain transitively. Stubbing it as `any` collapses every
+// field the changed file reads from it, which shows up as a cascade of
+// implicit-any / implicit-index errors on code that typechecks clean in the
+// real project (confirmed: SpeakerBadgeStatus stubbed to `any` made
+// `hues[status]` fail with TS7053 in the sandbox while an unsandboxed
+// `tsc -p tsconfig.json` pass had zero errors on the same files).
+// A value import, or a type-only import that does not resolve to a local
+// .ts/.d.ts file, still refuses the copy so the caller falls back to the
+// `any` stub exactly as before -- runtime code never enters the sandbox here.
 function copySelfContainedTypeModule(specifier, sourceFilePath, tempBaseDir, tempFilePath, aliasEntries) {
   const realBaseDir = path.join(ROOT_DIR, 'apps', 'mobile-app');
-  let realBase;
-  if (isRelativeSpecifier(specifier)) {
-    const tempTarget = path.resolve(path.dirname(tempFilePath), specifier);
-    realBase = path.join(realBaseDir, path.relative(tempBaseDir, tempTarget));
-  } else {
-    const aliasTarget = resolveAliasTarget(specifier, aliasEntries);
-    if (!aliasTarget) return null;
-    realBase = path.resolve(realBaseDir, aliasTarget);
-  }
 
-  for (const extension of ['.ts', '.d.ts']) {
-    const realFile = `${realBase}${extension}`;
-    if (!fs.existsSync(realFile)) continue;
-    if (collectImportSpecifiers(fs.readFileSync(realFile, 'utf8')).length > 0) return null;
+  // Resolve a local specifier the way the importing file would: relative
+  // specifiers against that file's directory, aliased ones ("@/*") through
+  // the tsconfig paths table. fromTempFile mirrors the real module's location
+  // inside the sandbox so both resolve identically.
+  const resolveRealModule = (spec, fromTempFile) => {
+    let realBase;
+    if (isRelativeSpecifier(spec)) {
+      const tempTarget = path.resolve(path.dirname(fromTempFile), spec);
+      realBase = path.join(realBaseDir, path.relative(tempBaseDir, tempTarget));
+    } else {
+      const aliasTarget = resolveAliasTarget(spec, aliasEntries);
+      if (!aliasTarget) return null;
+      realBase = path.resolve(realBaseDir, aliasTarget);
+    }
+    for (const extension of ['.ts', '.d.ts']) {
+      const realFile = `${realBase}${extension}`;
+      if (fs.existsSync(realFile)) return realFile;
+    }
+    return null;
+  };
+
+  // `copiedModules` are verified and copied; `visiting` are mid-walk. A module
+  // seen again while still walking is a cycle between type modules and can be
+  // trusted as copyable, since the original caller is still responsible for
+  // copying it. Both sets are updated on success and failure so a failed
+  // branch never leaves a stale "cycle" answer behind for a sibling branch.
+  const copiedModules = new Set();
+  const visiting = new Set();
+  const copyTypeModuleChain = (realFile) => {
+    if (copiedModules.has(realFile) || visiting.has(realFile)) return true;
+    visiting.add(realFile);
+    const specs = collectImportSpecifiers(fs.readFileSync(realFile, 'utf8'));
+    for (const spec of specs) {
+      if (!spec.isTypeOnly) {
+        visiting.delete(realFile);
+        return false;
+      }
+      const next = resolveRealModule(
+        spec.specifier,
+        path.join(tempBaseDir, path.relative(realBaseDir, realFile)),
+      );
+      if (!next || !copyTypeModuleChain(next)) {
+        visiting.delete(realFile);
+        return false;
+      }
+    }
     const tempFile = path.join(tempBaseDir, path.relative(realBaseDir, realFile));
     ensureParentDir(tempFile);
     fs.copyFileSync(realFile, tempFile);
-    return tempFile;
-  }
-  return null;
+    copiedModules.add(realFile);
+    visiting.delete(realFile);
+    return true;
+  };
+
+  const entry = resolveRealModule(specifier, tempFilePath);
+  if (!entry || !copyTypeModuleChain(entry)) return null;
+  return path.join(tempBaseDir, path.relative(realBaseDir, entry));
 }
 
 function ensureParentDir(filePath) {
