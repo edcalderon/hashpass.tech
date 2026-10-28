@@ -20,35 +20,26 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.171)
+## 📋 Latest Changes (v1.9.172)
 
 ### Bug Fixes
 
-* **api:** route Companion origins to their own Supabase profile ([45d024f](https://github.com/hashpass-tech/hashpass.tech/commit/45d024f08574b487dfd346c55e3d3e554d3e3568))
-* clear stale mobile links before BSL builds ([023a1dc](https://github.com/hashpass-tech/hashpass.tech/commit/023a1dc660c79a2f45ce119a9a79e68a2b45853a))
-* **tools:** follow type-only import chains in typecheck-changed sandbox ([4698492](https://github.com/hashpass-tech/hashpass.tech/commit/4698492ece7b50e302923a795a57e168550512f5))
-* **web:** keep local campaign and API requests local ([6dabd1f](https://github.com/hashpass-tech/hashpass.tech/commit/6dabd1f568c77e993428a02c533e96e8bf21dd5e))
+* **tools:** typecheck video-studio against its own tsconfig ([bc5b445](https://github.com/hashpass-tech/hashpass.tech/commit/bc5b44552c87a95a07ed4ae37c72cf5fd5c668de))
 
 
 ### Features
 
-* **companion:** continue with HASHPASS ID or email from the guest card ([0b7582e](https://github.com/hashpass-tech/hashpass.tech/commit/0b7582e77a1e99e50c0be1467e658dc202b05d22))
-* **companion:** email a confirmation code and link right after first setup ([d78aca5](https://github.com/hashpass-tech/hashpass.tech/commit/d78aca557f40e9e3f676ad62a41266505a811fb2))
-* **companion:** explain the optional HASHPASS ID upgrade on the account page ([60b9da8](https://github.com/hashpass-tech/hashpass.tech/commit/60b9da82625d3e4c00a74537109919f943738da4))
-* **companion:** show inbox only when connected, add profile picture and account page ([28a501e](https://github.com/hashpass-tech/hashpass.tech/commit/28a501ed0ff346bc919d872061686d49a347c189))
-* **lukas:** redesign responsive landing ([028086f](https://github.com/hashpass-tech/hashpass.tech/commit/028086f4a62de0860a6cd32f1d73492d919a86ed))
-* **video:** add scheduled BSL Bogota campaign films ([8c1dcf2](https://github.com/hashpass-tech/hashpass.tech/commit/8c1dcf23a20b2b879fea5f646cff9ee8713c4ca7))
+* **lukas:** real 3D LKS coin, animated icons, consistent landing UI ([ce11df3](https://github.com/hashpass-tech/hashpass.tech/commit/ce11df3dc9a41dd97e19879bb95aa8433019508a)), closes [#514](https://github.com/hashpass-tech/hashpass.tech/issues/514)
 ### Release Highlights
-- redesign responsive landing; add scheduled BSL Bogota campaign films; ship live Mission Control metrics and dashboard; improve Lukas landing responsiveness; upgrade LUKAS landing experience; speed-style meeting requests with mutual agenda blocking; explain the optional HASHPASS ID upgrade on the account page; email a confirmation code and link right after first setup; show inbox only when connected, add profile picture and account page; continue with HASHPASS ID or email from the guest card; keep local campaign and API requests local; clear stale mobile links before BSL builds; address mission control review findings; recover releases when push events are skipped; reconcile cached pnpm links in CI; prevent skipped production release automation; centralize mobile API CORS handling; resolve meeting and Lukas review findings; stabilize meeting entitlements and coffee access; follow type-only import chains in typecheck-changed sandbox; address release review findings; harden native mobile UI and camera flow; route Companion origins to their own Supabase profile; prevent production ahead of staging
+- add narrated, locale-aware BSL Bogotá campaign; compile LUKAS FAQ catalogs without warnings; refresh the LUKAS landing with shared UI primitives
 
 ### Release scope
-- Compared with: `v1.9.168` (the previous global release tag)
+- Compared with: `v1.9.171` (the previous global release tag)
 
 ### Affected products & packages
 - Mobile app
-- Database migrations
+- Shared UI
 - Infrastructure
-- Self-hosted operations
 - Release tooling
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
@@ -136,7 +127,7 @@ pnpm run dev          # run the mobile app from root (delegates to apps/mobile-a
 pnpm run dev:mobile   # run the mobile app explicitly
 pnpm run dev:club     # run the new hashpass.club Next.js app
 pnpm run dev:directus # run Directus Docker stack from apps/directus
-pnpm run dev:all      # run mobile app + club web app + Companion + docs + Directus (fixed ports; Companion on 5173)
+pnpm run dev:all      # run mobile app + club web app + Companion + docs + Directus + Remotion + Lukas landing (Lukas at http://127.0.0.1:4173/lukas)
 pnpm run build:mobile # build the mobile app
 pnpm run build:club   # build the hashpass.club Next.js app
 pnpm run release:club:web # release the production club web app and publish the GitHub tag

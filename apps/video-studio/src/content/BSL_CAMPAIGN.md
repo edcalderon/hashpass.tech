@@ -1,19 +1,33 @@
 # BSL Bogotá campaign
 
-The campaign is defined in `bsl-bogota-campaign.json` and registered as three
-Remotion compositions: `BslCampaign-welcome`, `BslCampaign-walkthrough`, and
-`BslCampaign-recap`.
+The campaign is defined in `bsl-bogota-campaign.json`. The three banner films
+remain `BslCampaign-welcome`, `BslCampaign-walkthrough`, and
+`BslCampaign-recap`; `BslCampaign-welcome-en` is the English-localised
+welcome cut. Web playback follows the browser language; native playback follows
+the app's selected language. Both localized cuts expose English and Spanish
+WebVTT tracks, defaulting to the language of the selected cut.
 
 Run the manual `BSL Bogotá initial campaign publish` workflow on `main` before
 the event to render and publish the welcome and walkthrough films. The scheduled
 `BSL Bogotá closing recap` workflow captures the 17:30 Bogotá metrics snapshot,
 renders the 90-second recap, and replaces the manifest at 18:00.
 
-The editorial source is the official [BSL Colombia 2026 page](https://blockchainsummit.la/colombia2026/), checked on 2026-10-27: November 4–6, Bogotá, Universidad Externado, with themes covering regulation, payments, capital markets, stablecoins, tokenization, and digital infrastructure. Speaker names used by the welcome script are Ana María Prieto, Juan Pablo Córdoba, and Nagel Paulino, as listed on that page. The script does not infer speaker-to-session assignments.
+The editorial source is the official [BSL Colombia 2026 page](https://blockchainsummit.la/colombia2026/), checked on 2026-10-28: November 4–6 in Bogotá at Universidad Externado, with sessions on regulation, payments, capital markets, stablecoins, tokenization, and digital infrastructure. The welcome cut highlights the supplied featured panel, **El sistema financiero en transformación: infraestructura, innovación y nuevos modelos institucionales**, on Wednesday 4 from 12:50 to 13:40, with Luis Botello, Jaime Rincón, Sandra Meza Cuervo, Juan Sebastián Peredo, and Nicolás Molina.
 
-Narration is Spanish and the caption track is English. The render uses the
-existing licensed studio audio bed and BSL recordings as a local fallback;
-production narration assets must be generated and reviewed before publication.
+The Spanish welcome uses the Colombian feminine `es-CO-SalomeNeural` voice;
+the English welcome uses the male `en-US-GuyNeural` voice. The initial-publish
+workflow installs pinned `edge-tts==7.3.1`, generates both narration tracks and
+timed WebVTT captions, verifies all four files are non-empty, then renders and
+publishes the campaign films. Local generation is also available with:
+
+```bash
+pnpm --filter hashpass-video-studio bsl:welcome:narration
+```
+
+Both cuts use the licensed studio bed, an official high-contrast Colombia
+lockup, a verified HASHPASS wordmark, staged panel speaker cards, and scene
+transitions. Narration synthesis is automated in the manually dispatched,
+production-environment-gated workflow; there is no separate audio-review gate.
 The recap metrics use a repeatable-read, event-scoped query with a fixed
 17:30 America/Bogota cutoff. It counts new pass-holding accounts, meeting
 requests, event and meeting-chat messages, and verified agenda actions. It

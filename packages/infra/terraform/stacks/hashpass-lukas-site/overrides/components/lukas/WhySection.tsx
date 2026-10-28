@@ -10,11 +10,16 @@ import Animated, {
   withDelay,
 } from 'react-native-reanimated';
 import { LukasGlyph } from './LukasGlyph';
+import { LukasCoin } from './LukasCoin';
+import { lukasPalette, lukasSectionTitle } from './lukas-ui';
+import { useLukasAnimationLevel } from './useLukasMotion';
 
 export function WhySection() {
   const { colors, isDark } = useTheme();
   const isMobile = useIsMobile();
   const { t } = useTranslation('lukas');
+  const palette = lukasPalette(isDark);
+  const animationLevel = useLukasAnimationLevel();
 
   const opacity1 = useSharedValue(0);
   const opacity2 = useSharedValue(0);
@@ -50,7 +55,7 @@ export function WhySection() {
     transform: [{ translateY: translateY3.value }],
   }));
 
-  const styles = getStyles(isDark, colors, isMobile);
+  const styles = getStyles(isDark, colors, isMobile, palette);
 
   const bullets = [
     {
@@ -77,7 +82,7 @@ export function WhySection() {
       <View style={styles.content}>
         <View style={styles.illustrationContainer}>
           <View style={styles.illustration}>
-            <LukasGlyph name="token" size={isMobile ? 112 : 146} />
+            <LukasCoin size={isMobile ? 132 : 168} animationLevel={animationLevel} />
             <Text style={styles.illustrationText}>LUKAS</Text>
           </View>
         </View>
@@ -112,20 +117,13 @@ export function WhySection() {
   );
 }
 
-const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleSheet.create({
+const getStyles = (isDark: boolean, colors: any, isMobile: boolean, palette: ReturnType<typeof lukasPalette>) => StyleSheet.create({
   container: {
     width: '100%',
     maxWidth: 1200,
     alignSelf: 'center',
   },
-  title: {
-    fontSize: isMobile ? 32 : 48,
-    fontWeight: '900',
-    color: isDark ? '#F5FFFA' : '#10271C',
-    textAlign: 'center',
-    marginBottom: isMobile ? 40 : 60,
-    letterSpacing: -0.5,
-  },
+  title: { ...lukasSectionTitle(palette, isMobile), marginBottom: isMobile ? 40 : 60 },
   content: {
     flexDirection: isMobile ? 'column' : 'row',
     gap: 0,
@@ -141,27 +139,24 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     marginBottom: isMobile ? 28 : 0,
   },
   illustration: {
-    width: isMobile ? '100%' : 320,
-    maxWidth: isMobile ? 320 : undefined,
-    height: isMobile ? 236 : 320,
+    width: isMobile ? '100%' : 360,
+    maxWidth: isMobile ? 360 : undefined,
+    paddingVertical: isMobile ? 8 : 16,
     borderRadius: 24,
     backgroundColor: isDark ? 'rgba(10, 39, 51, 0.9)' : '#F0F8F2',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: isDark ? 'rgba(120, 234, 173, 0.28)' : '#CCE5D5',
-    gap: 12,
-    shadowColor: '#061523',
-    shadowOpacity: isDark ? 0.28 : 0.08,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 5,
+    borderColor: palette.border,
+    overflow: 'hidden',
   },
   illustrationText: {
-    fontSize: isMobile ? 24 : 32,
+    fontSize: isMobile ? 20 : 24,
     fontWeight: '800',
-    color: isDark ? '#9BEABB' : '#087A4A',
-    letterSpacing: 1.4,
+    color: palette.accent,
+    letterSpacing: 3,
+    marginTop: -12,
+    marginBottom: 12,
   },
   bulletsContainer: {
     flex: isMobile ? 0 : 1,
@@ -176,9 +171,9 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     gap: 12,
     padding: isMobile ? 16 : 20,
     borderRadius: 16,
-    backgroundColor: isDark ? 'rgba(7, 28, 42, 0.72)' : 'rgba(247, 252, 249, 0.92)',
+    backgroundColor: palette.card,
     borderWidth: 1,
-    borderColor: isDark ? 'rgba(139, 224, 176, 0.2)' : '#D7EADF',
+    borderColor: palette.border,
   },
   bulletContent: {
     flex: 1,

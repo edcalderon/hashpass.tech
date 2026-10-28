@@ -24,6 +24,10 @@ packages/infra/lambda/autodiscover/autodiscover-lambda.zip
 # large binaries that don't belong in git — keep only the folder structure.
 apps/video-studio/out/
 apps/video-studio/public/event-heroes/
+# BSL welcome narration and captions are synthesized by the campaign workflow
+# (pnpm bsl:welcome:narration), so they are never committed.
+apps/video-studio/public/audio/narration/campaign/
+apps/video-studio/public/audio/subtitles/campaign/
 apps/video-studio/public/recordings/**
 !apps/video-studio/public/recordings/**/
 !apps/video-studio/public/recordings/**/.gitkeep

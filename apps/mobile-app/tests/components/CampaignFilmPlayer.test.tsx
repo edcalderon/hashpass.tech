@@ -4,6 +4,12 @@ import {act, create} from "react-test-renderer";
 import NativeCampaignFilmPlayer from "../../components/CampaignFilmPlayer.native";
 import WebCampaignFilmPlayer from "../../components/CampaignFilmPlayer.web";
 
+const mockLingui = {locale: "es"};
+
+jest.mock("@lingui/react", () => ({
+  useLingui: () => ({i18n: mockLingui}),
+}));
+
 const mockPlayer = {
   loop: true,
   muted: true,
@@ -33,10 +39,63 @@ const film = {
 
 describe("CampaignFilmPlayer", () => {
   beforeEach(() => {
+    mockLingui.locale = "es";
     mockPlayer.loop = true;
     mockPlayer.muted = true;
     mockPlayer.pause.mockClear();
     mockUseVideoPlayer.mockClear();
+  });
+
+  it("selects the English alternate for an English native-app locale", () => {
+    const englishFilm = {
+      ...film,
+      title: "Bienvenidos a BSL Bogotá",
+      alternateLocales: {
+        en: {
+          title: "Welcome to BSL Bogotá",
+          durationMs: 50_000,
+          url: "https://media.example/events/colombia2026/branding/campaign/welcome-en.mp4",
+          poster: "https://media.example/events/colombia2026/branding/campaign/welcome-en.jpg",
+          captions: "https://media.example/events/colombia2026/branding/campaign/welcome-en.vtt",
+        },
+      },
+    };
+    mockLingui.locale = "en";
+
+    let renderer!: ReturnType<typeof create>;
+    act(() => {
+      renderer = create(<NativeCampaignFilmPlayer film={englishFilm} />);
+    });
+
+    expect(mockUseVideoPlayer).toHaveBeenCalledWith(englishFilm.alternateLocales.en.url, expect.any(Function));
+    expect(renderer.root.findByType("VideoView" as never).props.accessibilityLabel).toBe("Welcome to BSL Bogotá");
+    act(() => renderer.unmount());
+  });
+
+  it("keeps the Spanish base cut for a Spanish native-app locale", () => {
+    const spanishFilm = {
+      ...film,
+      title: "Bienvenidos a BSL Bogotá",
+      alternateLocales: {
+        en: {
+          title: "Welcome to BSL Bogotá",
+          durationMs: 50_000,
+          url: "https://media.example/events/colombia2026/branding/campaign/welcome-en.mp4",
+          poster: "https://media.example/events/colombia2026/branding/campaign/welcome-en.jpg",
+          captions: "https://media.example/events/colombia2026/branding/campaign/welcome-en.vtt",
+        },
+      },
+    };
+    mockLingui.locale = "es-CO";
+
+    let renderer!: ReturnType<typeof create>;
+    act(() => {
+      renderer = create(<NativeCampaignFilmPlayer film={spanishFilm} />);
+    });
+
+    expect(mockUseVideoPlayer).toHaveBeenCalledWith(spanishFilm.url, expect.any(Function));
+    expect(renderer.root.findByType("VideoView" as never).props.accessibilityLabel).toBe("Bienvenidos a BSL Bogotá");
+    act(() => renderer.unmount());
   });
 
   it("configures the native player and pauses it on background and unmount", () => {
@@ -94,5 +153,54 @@ describe("CampaignFilmPlayer", () => {
     expect(renderer.root.findByProps({accessibilityRole: "alert"})).toBeTruthy();
 
     expect(() => act(() => renderer.unmount())).not.toThrow();
+  });
+
+  describe("web locale selection", () => {
+    const english = {
+      title: "Welcome to BSL Bogotá (EN)",
+      durationMs: 50_000,
+      url: "https://media.example/events/colombia2026/branding/campaign/welcome-en.mp4",
+      poster: "https://media.example/events/colombia2026/branding/campaign/welcome-en.jpg",
+      captions: "https://media.example/events/colombia2026/branding/campaign/welcome-en.vtt",
+      captionTracks: [
+        {src: "https://media.example/events/colombia2026/branding/campaign/welcome-en.vtt", language: "en" as const, label: "English", default: true},
+        {src: "https://media.example/events/colombia2026/branding/campaign/welcome-es.vtt", language: "es" as const, label: "Español"},
+      ],
+    };
+    const localised = {...film, alternateLocales: {en: english}};
+    const originalLanguage = Object.getOwnPropertyDescriptor(globalThis.navigator ?? {}, "language");
+    const setLanguage = (language: string) => Object.defineProperty(globalThis, "navigator", {value: {language}, configurable: true});
+    const render = (value: typeof localised | typeof film) => {
+      let renderer!: ReturnType<typeof create>;
+      act(() => {
+        renderer = create(<WebCampaignFilmPlayer film={value} />, {createNodeMock: () => ({pause: jest.fn()})});
+      });
+      return renderer;
+    };
+    afterEach(() => {
+      if (originalLanguage) Object.defineProperty(globalThis.navigator, "language", originalLanguage);
+      else Reflect.deleteProperty(globalThis, "navigator");
+    });
+
+    it("plays the English alternate with every caption track for English browsers", () => {
+      setLanguage("en-US");
+      const root = render(localised).root;
+      expect(root.findByType("video" as never).props).toMatchObject({src: english.url, poster: english.poster, "aria-label": english.title});
+      const tracks = root.findAllByType("track" as never);
+      expect(tracks.map((track) => track.props.srcLang)).toEqual(["en", "es"]);
+      expect(tracks[0].props.default).toBe(true);
+    });
+
+    it("keeps the default film for other languages and without an alternate", () => {
+      setLanguage("es-CO");
+      expect(render(localised).root.findByType("video" as never).props.src).toBe(film.url);
+      setLanguage("en-US");
+      expect(render(film).root.findByType("video" as never).props.src).toBe(film.url);
+    });
+
+    it("falls back to the default film when the browser language is unavailable", () => {
+      Reflect.deleteProperty(globalThis, "navigator");
+      expect(render(localised).root.findByType("video" as never).props.src).toBe(film.url);
+    });
   });
 });

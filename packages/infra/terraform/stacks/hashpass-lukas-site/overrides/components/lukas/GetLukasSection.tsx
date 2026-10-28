@@ -2,20 +2,22 @@ import React, { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Linking,
-  Modal,
   Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Switch,
   Text,
-  TextInput,
   View,
 } from 'react-native';
+import { FormField } from '@hashpass/ui/primitives';
+import { uiTokens } from '@hashpass/ui/tokens';
 import { useTheme } from '../../hooks/useTheme';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { useTranslation } from '../../i18n/i18n';
 import { LukasCaptcha } from '../LukasCaptcha';
+import { ActionButton, Surface } from '@hashpass/ui/primitives';
+import { LukasDialog, dialogCopy, dialogTitle, lukasFullWidth, lukasPalette, lukasSectionTitle, lukasSkin, lukasSurface } from './lukas-ui';
+import { LukasGlyph } from './LukasGlyph';
 
 const API_BASE = 'https://api.hashpass.tech/api';
 const SUCCESS_COPY = "You're already listed for $LKS airdrops and prizes until the LUKAS $LKS TGE. We're currently in testnet.";
@@ -104,7 +106,10 @@ export function GetLukasSection() {
   const [hashPassOptIn, setHashPassOptIn] = useState(false);
   const [captchaToken, setCaptchaToken] = useState('');
   const [captchaResetKey, setCaptchaResetKey] = useState(0);
-  const styles = useMemo(() => getStyles(isDark, isMobile), [isDark, isMobile]);
+  const palette = useMemo(() => lukasPalette(isDark), [isDark]);
+  const mode = isDark ? 'dark' : 'light';
+  const skin = useMemo(() => lukasSkin(palette), [palette]);
+  const styles = useMemo(() => getStyles(isDark, isMobile, palette), [isDark, isMobile, palette]);
 
   const openModal = (nextView: ModalView = 'choices') => {
     setView(nextView);
@@ -218,82 +223,99 @@ export function GetLukasSection() {
             [t('getLukas.step2.title'), t('getLukas.step2.description')],
             [t('getLukas.step3.title'), t('getLukas.step3.description')],
           ].map(([title, description], index) => (
-            <View key={title} style={styles.step}>
+            <Surface key={title} mode={mode} style={[lukasSurface(palette), styles.step]}>
               <View style={styles.stepNumberContainer}><Text style={styles.stepNumber}>{index + 1}</Text></View>
               <View style={styles.stepContent}><Text style={styles.stepTitle}>{title}</Text><Text style={styles.stepDescription}>{description}</Text></View>
-            </View>
+            </Surface>
           ))}
         </View>
         <View style={styles.ctaContainer}>
-          <Pressable onPress={() => openModal()} style={styles.primaryButton} accessibilityRole="button"><Text style={styles.primaryButtonText}>{t('getLukas.connectWallet')}</Text></Pressable>
-          <Pressable onPress={() => openModal('newsletter')} style={styles.secondaryButton} accessibilityRole="button"><Text style={styles.secondaryButtonText}>Join the LUKAS Newsletter</Text></Pressable>
+          <ActionButton mode={mode} skin={skin} label={t('getLukas.connectWallet')} onPress={() => openModal()} style={styles.cta} />
+          <ActionButton mode={mode} skin={skin} variant="secondary" label="Join the LUKAS Newsletter" onPress={() => openModal('newsletter')} style={styles.cta} />
         </View>
-        <View style={styles.comingSoonContainer}><Text style={styles.comingSoonText}>LUKAS $LKS · Testnet until TGE</Text><Text style={styles.comingSoonSubtext}>Stay listed for airdrops, prizes, and launch pricing.</Text></View>
+        <Surface mode={mode} style={[lukasSurface(palette), styles.comingSoonContainer]}>
+          <LukasGlyph name="token" size={56} />
+          <Text style={styles.comingSoonText}>LUKAS $LKS · Testnet until TGE</Text>
+          <Text style={styles.comingSoonSubtext}>Stay listed for airdrops, prizes, and launch pricing.</Text>
+        </Surface>
       </View>
 
-      <Modal visible={modalVisible} transparent animationType="fade" onRequestClose={closeModal}>
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
-            <ScrollView contentContainerStyle={styles.modalScroll} keyboardShouldPersistTaps="handled">
-              {view !== 'choices' && view !== 'success' ? <Pressable onPress={() => { setError(''); setView('choices'); }} style={styles.backButton}><Text style={styles.backButtonText}>‹ Back</Text></Pressable> : null}
-              <Pressable onPress={closeModal} style={styles.closeButton} accessibilityLabel="Close"><Text style={styles.closeButtonText}>×</Text></Pressable>
-              {view === 'choices' ? <>
-                <Text style={styles.modalTitle}>Connect to LUKAS</Text>
-                <Text style={styles.modalSubtitle}>Choose how you want to reserve your place in the $LKS community.</Text>
-                <Pressable onPress={connectHashPass} style={styles.modalPrimaryButton}><Text style={styles.modalPrimaryText}>Connect with HASHPASS</Text></Pressable>
-                <Pressable onPress={() => setView('wallets')} style={styles.modalOutlineButton}><Text style={styles.modalOutlineText}>Connect Wallet</Text></Pressable>
-                <Pressable onPress={() => setView('newsletter')} style={styles.modalLinkButton}><Text style={styles.modalLinkText}>Join the LUKAS newsletter instead</Text></Pressable>
-              </> : null}
-              {view === 'hashpass' ? <>
-                <Text style={styles.modalTitle}>Connect with HASHPASS</Text>
-                <Text style={styles.modalSubtitle}>Sign in in the new tab, then return here to confirm your HashPass account and reserve your LUKAS place.</Text>
-                <Pressable disabled={busy} onPress={checkHashPass} style={styles.modalPrimaryButton}>{busy ? <ActivityIndicator color="#07111F" /> : <Text style={styles.modalPrimaryText}>I’ve signed in — continue</Text>}</Pressable>
-              </> : null}
-              {view === 'wallets' ? <>
-                <Text style={styles.modalTitle}>Choose a wallet</Text>
-                <Text style={styles.modalSubtitle}>You will sign one message. LUKAS never asks for your seed phrase or private key.</Text>
-                <Pressable disabled={busy} onPress={() => connectWallet('ethereum', 'Browser wallet')} style={styles.walletOption}><Text style={styles.walletOptionTitle}>MetaMask / Browser wallet</Text><Text style={styles.walletOptionCopy}>Ethereum · EVM</Text></Pressable>
-                <Pressable disabled={busy} onPress={() => connectWallet('solana', 'Phantom')} style={styles.walletOption}><Text style={styles.walletOptionTitle}>Phantom</Text><Text style={styles.walletOptionCopy}>Solana</Text></Pressable>
-                <Text style={styles.walletHint}>WalletConnect and Coinbase Wallet work when their browser provider is enabled.</Text>
-              </> : null}
-              {view === 'newsletter' ? <>
-                <Text style={styles.modalTitle}>Join the LUKAS newsletter</Text>
-                <Text style={styles.modalSubtitle}>Get independent LUKAS updates, LatAm index mechanics, launch timing, and $LKS airdrop news.</Text>
-                <TextInput value={email} onChangeText={setEmail} autoCapitalize="none" autoCorrect={false} keyboardType="email-address" placeholder="you@example.com" placeholderTextColor={isDark ? '#718096' : '#94A3B8'} style={styles.emailInput} />
-                <View style={styles.optInRow}><Switch value={hashPassOptIn} onValueChange={setHashPassOptIn} trackColor={{ false: '#475569', true: '#35C66B' }} /><Text style={styles.optInText}>Also send me HASHPASS ecosystem updates.</Text></View>
-                <LukasCaptcha resetKey={captchaResetKey} onSolve={setCaptchaToken} onReset={() => setCaptchaToken('')} />
-                <Pressable disabled={busy || !captchaToken} onPress={joinNewsletter} style={[styles.modalPrimaryButton, (!captchaToken || busy) && styles.disabledButton]}>{busy ? <ActivityIndicator color="#07111F" /> : <Text style={styles.modalPrimaryText}>Join LUKAS updates</Text>}</Pressable>
-              </> : null}
-              {view === 'success' ? <>
-                <View style={styles.successIcon}><Text style={styles.successIconText}>✓</Text></View>
-                <Text style={styles.modalTitle}>You’re on the list</Text>
-                {connectedWallet ? <Text style={styles.connectedWallet}>{connectedWallet}</Text> : null}
-                <Text style={styles.modalSubtitle}>{SUCCESS_COPY}</Text>
-                <Pressable onPress={closeModal} style={styles.modalPrimaryButton}><Text style={styles.modalPrimaryText}>Done</Text></Pressable>
-              </> : null}
-              {busy && (view === 'wallets' || view === 'hashpass') ? <ActivityIndicator color="#35C66B" style={styles.loader} /> : null}
-              {error ? <Text style={styles.errorText}>{error}</Text> : null}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
+      <LukasDialog visible={modalVisible} onClose={closeModal} isDark={isDark} isMobile={isMobile} palette={palette}>
+        {view !== 'choices' && view !== 'success' ? <Pressable onPress={() => { setError(''); setView('choices'); }} style={styles.backButton} accessibilityRole="button"><Text style={styles.backButtonText}>‹ Back</Text></Pressable> : null}
+        {view === 'choices' ? <>
+          <Text style={styles.modalTitle}>Connect to LUKAS</Text>
+          <Text style={styles.modalSubtitle}>Choose how you want to reserve your place in the $LKS community.</Text>
+          <ActionButton mode={mode} skin={skin} label="Connect with HASHPASS" onPress={connectHashPass} style={lukasFullWidth} />
+          <ActionButton mode={mode} skin={skin} variant="secondary" label="Connect Wallet" onPress={() => setView('wallets')} style={lukasFullWidth} />
+          <ActionButton mode={mode} skin={skin} variant="ghost" label="Join the LUKAS newsletter instead" onPress={() => setView('newsletter')} style={lukasFullWidth} />
+        </> : null}
+        {view === 'hashpass' ? <>
+          <Text style={styles.modalTitle}>Connect with HASHPASS</Text>
+          <Text style={styles.modalSubtitle}>Sign in in the new tab, then return here to confirm your HashPass account and reserve your LUKAS place.</Text>
+          <ActionButton mode={mode} skin={skin} label="I’ve signed in — continue" loading={busy} onPress={checkHashPass} style={lukasFullWidth} />
+        </> : null}
+        {view === 'wallets' ? <>
+          <Text style={styles.modalTitle}>Choose a wallet</Text>
+          <Text style={styles.modalSubtitle}>You will sign one message. LUKAS never asks for your seed phrase or private key.</Text>
+          <Pressable disabled={busy} onPress={() => connectWallet('ethereum', 'Browser wallet')} accessibilityRole="button" style={({ pressed }) => [styles.walletOption, pressed && styles.pressed, busy && styles.disabled]}><Text style={styles.walletOptionTitle}>MetaMask / Browser wallet</Text><Text style={styles.walletOptionCopy}>Ethereum · EVM</Text></Pressable>
+          <Pressable disabled={busy} onPress={() => connectWallet('solana', 'Phantom')} accessibilityRole="button" style={({ pressed }) => [styles.walletOption, pressed && styles.pressed, busy && styles.disabled]}><Text style={styles.walletOptionTitle}>Phantom</Text><Text style={styles.walletOptionCopy}>Solana</Text></Pressable>
+          <Text style={styles.walletHint}>WalletConnect and Coinbase Wallet work when their browser provider is enabled.</Text>
+        </> : null}
+        {view === 'newsletter' ? <>
+          <Text style={styles.modalTitle}>Join the LUKAS newsletter</Text>
+          <Text style={styles.modalSubtitle}>Get independent LUKAS updates, LatAm index mechanics, launch timing, and $LKS airdrop news.</Text>
+          <FormField mode={mode} label="Email" value={email} onChangeText={setEmail} autoCapitalize="none" autoCorrect={false} keyboardType="email-address" autoComplete="email" placeholder="you@example.com" />
+          <View style={styles.optInRow}><Switch value={hashPassOptIn} onValueChange={setHashPassOptIn} trackColor={{ false: palette.borderStrong, true: palette.fill }} accessibilityLabel="Also send me HASHPASS ecosystem updates" /><Text style={styles.optInText}>Also send me HASHPASS ecosystem updates.</Text></View>
+          <LukasCaptcha resetKey={captchaResetKey} onSolve={setCaptchaToken} onReset={() => setCaptchaToken('')} />
+          <ActionButton mode={mode} skin={skin} label="Join LUKAS updates" loading={busy} disabled={!captchaToken} onPress={joinNewsletter} style={lukasFullWidth} />
+        </> : null}
+        {view === 'success' ? <>
+          <View style={styles.successIcon}><Text style={styles.successIconText}>✓</Text></View>
+          <Text style={[styles.modalTitle, styles.centered]}>You’re on the list</Text>
+          {connectedWallet ? <Text style={styles.connectedWallet}>{connectedWallet}</Text> : null}
+          <Text style={[styles.modalSubtitle, styles.centered]}>{SUCCESS_COPY}</Text>
+          <ActionButton mode={mode} skin={skin} label="Done" onPress={closeModal} style={lukasFullWidth} />
+        </> : null}
+        {busy && (view === 'wallets' || view === 'hashpass') ? <ActivityIndicator color={palette.fill} style={styles.loader} /> : null}
+        {error ? <Text accessibilityRole="alert" style={styles.errorText}>{error}</Text> : null}
+      </LukasDialog>
     </View>
   );
 }
 
-const getStyles = (isDark: boolean, isMobile: boolean) => StyleSheet.create({
+const getStyles = (isDark: boolean, isMobile: boolean, palette: ReturnType<typeof lukasPalette>) => StyleSheet.create({
   container: { width: '100%', maxWidth: 1200, alignSelf: 'center' },
-  title: { fontSize: isMobile ? 32 : 48, fontWeight: '800', color: isDark ? '#F9FAFB' : '#111827', textAlign: 'center', marginBottom: 12, letterSpacing: -0.5 },
-  intro: { color: isDark ? '#A8B6C8' : '#526174', fontSize: isMobile ? 15 : 17, lineHeight: 24, textAlign: 'center', maxWidth: 680, alignSelf: 'center', marginBottom: isMobile ? 32 : 48 },
-  content: { width: '100%', gap: 32 }, stepsContainer: { width: '100%', gap: 16 },
-  step: { width: '100%', flexDirection: 'row', alignItems: 'flex-start', gap: 16, padding: isMobile ? 18 : 22, borderRadius: 16, backgroundColor: isDark ? 'rgba(17, 24, 39, 0.55)' : 'rgba(249, 250, 251, 0.8)', borderWidth: 1, borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' },
-  stepNumberContainer: { flexShrink: 0, width: isMobile ? 40 : 48, height: isMobile ? 40 : 48, borderRadius: 999, backgroundColor: '#35C66B', alignItems: 'center', justifyContent: 'center' }, stepNumber: { color: '#07111F', fontSize: isMobile ? 18 : 22, fontWeight: '800' }, stepContent: { flex: 1, minWidth: 0, gap: 4 },
-  stepTitle: { fontSize: isMobile ? 18 : 22, fontWeight: '700', color: isDark ? '#F9FAFB' : '#111827' }, stepDescription: { fontSize: isMobile ? 14 : 16, color: isDark ? '#A8B6C8' : '#526174', lineHeight: isMobile ? 20 : 24 },
-  ctaContainer: { width: '100%', gap: 16, alignItems: 'center' }, primaryButton: { width: isMobile ? '100%' : undefined, paddingHorizontal: 32, paddingVertical: 16, borderRadius: 999, backgroundColor: '#35C66B', alignItems: 'center', justifyContent: 'center', minWidth: isMobile ? 0 : 300 }, primaryButtonText: { color: '#07111F', fontSize: isMobile ? 16 : 18, fontWeight: '700', textAlign: 'center' },
-  secondaryButton: { width: isMobile ? '100%' : undefined, paddingHorizontal: 32, paddingVertical: 16, borderRadius: 999, borderWidth: 1.5, borderColor: isDark ? '#546477' : '#CBD5E1', alignItems: 'center', justifyContent: 'center', minWidth: isMobile ? 0 : 300 }, secondaryButtonText: { color: isDark ? '#E5E7EB' : '#1F2937', fontSize: isMobile ? 16 : 18, fontWeight: '600', textAlign: 'center' },
-  comingSoonContainer: { padding: 22, borderRadius: 16, backgroundColor: isDark ? 'rgba(53,198,107,0.1)' : 'rgba(53,198,107,0.07)', borderWidth: 1, borderColor: 'rgba(53,198,107,0.3)', alignItems: 'center', gap: 8 }, comingSoonText: { fontSize: isMobile ? 16 : 18, fontWeight: '700', color: isDark ? '#7EE6A0' : '#137A42', textAlign: 'center' }, comingSoonSubtext: { fontSize: isMobile ? 14 : 16, color: isDark ? '#A8B6C8' : '#526174', textAlign: 'center', lineHeight: isMobile ? 20 : 24 },
-  modalBackdrop: { flex: 1, backgroundColor: 'rgba(2, 8, 23, 0.78)', alignItems: 'center', justifyContent: 'center', padding: 20 }, modalCard: { width: '100%', maxWidth: 500, maxHeight: '90%', borderRadius: 24, backgroundColor: isDark ? '#101B2B' : '#FFFFFF', borderWidth: 1, borderColor: isDark ? '#2D4059' : '#E2E8F0', overflow: 'hidden' }, modalScroll: { padding: isMobile ? 24 : 32, gap: 16 },
-  modalTitle: { color: isDark ? '#F8FAFC' : '#0F172A', fontSize: isMobile ? 25 : 30, fontWeight: '800', paddingRight: 28 }, modalSubtitle: { color: isDark ? '#A8B6C8' : '#526174', fontSize: 15, lineHeight: 22 }, closeButton: { position: 'absolute', right: 14, top: 12, zIndex: 2, padding: 6 }, closeButtonText: { color: isDark ? '#D5DFEC' : '#64748B', fontSize: 28, lineHeight: 28 }, backButton: { alignSelf: 'flex-start', paddingVertical: 2 }, backButtonText: { color: '#35C66B', fontWeight: '700', fontSize: 15 },
-  modalPrimaryButton: { minHeight: 52, borderRadius: 999, backgroundColor: '#35C66B', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20 }, disabledButton: { opacity: 0.45 }, modalPrimaryText: { color: '#07111F', fontWeight: '800', fontSize: 16 }, modalOutlineButton: { minHeight: 52, borderRadius: 999, borderWidth: 1, borderColor: isDark ? '#53677F' : '#CBD5E1', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20 }, modalOutlineText: { color: isDark ? '#F8FAFC' : '#0F172A', fontWeight: '700', fontSize: 16 }, modalLinkButton: { alignItems: 'center', paddingVertical: 8 }, modalLinkText: { color: '#35C66B', fontWeight: '700', fontSize: 14 }, walletOption: { borderRadius: 16, borderWidth: 1, borderColor: isDark ? '#344B66' : '#D7E0EA', padding: 16, gap: 4 }, walletOptionTitle: { color: isDark ? '#F8FAFC' : '#0F172A', fontSize: 16, fontWeight: '800' }, walletOptionCopy: { color: isDark ? '#A8B6C8' : '#526174', fontSize: 13 }, walletHint: { color: isDark ? '#8193A8' : '#64748B', fontSize: 12, lineHeight: 18 },
-  emailInput: { minHeight: 52, borderRadius: 12, borderWidth: 1, borderColor: isDark ? '#425A73' : '#CBD5E1', color: isDark ? '#F8FAFC' : '#0F172A', paddingHorizontal: 16, fontSize: 16 }, optInRow: { flexDirection: 'row', gap: 10, alignItems: 'center' }, optInText: { flex: 1, color: isDark ? '#C6D1DF' : '#475569', fontSize: 14, lineHeight: 20 }, loader: { marginTop: 4 }, errorText: { color: '#FCA5A5', fontSize: 13, lineHeight: 19, textAlign: 'center' }, successIcon: { width: 64, height: 64, borderRadius: 999, backgroundColor: 'rgba(53,198,107,0.18)', alignItems: 'center', justifyContent: 'center', alignSelf: 'center' }, successIconText: { color: '#35C66B', fontSize: 38, fontWeight: '800' }, connectedWallet: { color: '#35C66B', fontWeight: '700', textAlign: 'center', fontSize: 14 },
+  title: { ...lukasSectionTitle(palette, isMobile), marginBottom: 12 },
+  intro: { color: palette.body, fontSize: isMobile ? 15 : 17, lineHeight: 24, textAlign: 'center', maxWidth: 680, alignSelf: 'center', marginBottom: isMobile ? 32 : 48 },
+  content: { width: '100%', gap: 32 },
+  stepsContainer: { width: '100%', gap: uiTokens.space.lg },
+  step: { width: '100%', flexDirection: 'row', alignItems: 'flex-start', gap: uiTokens.space.lg, padding: isMobile ? 18 : 22, borderRadius: uiTokens.radius.media },
+  stepNumberContainer: { flexShrink: 0, width: isMobile ? 40 : 48, height: isMobile ? 40 : 48, borderRadius: uiTokens.radius.circle, backgroundColor: palette.fill, alignItems: 'center', justifyContent: 'center' },
+  stepNumber: { color: palette.onFill, fontSize: isMobile ? 18 : 22, fontWeight: '800' },
+  stepContent: { flex: 1, minWidth: 0, gap: 4 },
+  stepTitle: { fontSize: isMobile ? 18 : 22, fontWeight: '700', color: palette.text },
+  stepDescription: { fontSize: isMobile ? 14 : 16, color: palette.body, lineHeight: isMobile ? 20 : 24 },
+  ctaContainer: { width: '100%', gap: uiTokens.space.lg, alignItems: 'center' },
+  cta: { width: isMobile ? '100%' : undefined, minWidth: isMobile ? 0 : 320, alignSelf: isMobile ? 'stretch' : 'center' },
+  comingSoonContainer: { alignItems: 'center', gap: 8, backgroundColor: palette.tint },
+  comingSoonText: { fontSize: isMobile ? 16 : 18, fontWeight: '700', color: palette.accent, textAlign: 'center' },
+  comingSoonSubtext: { fontSize: isMobile ? 14 : 16, color: palette.body, textAlign: 'center', lineHeight: isMobile ? 20 : 24 },
+  modalTitle: dialogTitle(palette, isMobile),
+  modalSubtitle: dialogCopy(palette),
+  centered: { textAlign: 'center', paddingRight: 0 },
+  backButton: { alignSelf: 'flex-start', minHeight: uiTokens.control.compactHeight, justifyContent: 'center' },
+  backButtonText: { color: palette.accent, fontWeight: '700', fontSize: 15 },
+  walletOption: { minHeight: uiTokens.control.minHeight, borderRadius: uiTokens.radius.media, borderWidth: 1, borderColor: palette.border, backgroundColor: palette.card, padding: uiTokens.space.lg, gap: 4 },
+  walletOptionTitle: { color: palette.text, fontSize: 16, fontWeight: '800' },
+  walletOptionCopy: { color: palette.body, fontSize: 13 },
+  walletHint: { color: palette.muted, fontSize: 12, lineHeight: 18 },
+  pressed: { opacity: 0.78 },
+  disabled: { opacity: 0.45 },
+  optInRow: { flexDirection: 'row', gap: 10, alignItems: 'center' },
+  optInText: { flex: 1, color: palette.body, fontSize: 14, lineHeight: 20 },
+  loader: { marginTop: 4 },
+  errorText: { color: palette.danger, fontSize: 13, lineHeight: 19, textAlign: 'center' },
+  successIcon: { width: 64, height: 64, borderRadius: uiTokens.radius.circle, backgroundColor: palette.tint, alignItems: 'center', justifyContent: 'center', alignSelf: 'center' },
+  successIconText: { color: palette.accent, fontSize: 38, fontWeight: '800' },
+  connectedWallet: { color: palette.accent, fontWeight: '700', textAlign: 'center', fontSize: 14 },
 });

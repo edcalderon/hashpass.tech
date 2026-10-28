@@ -19,7 +19,7 @@ function readCampaignMetrics() {
   return metrics.counts;
 }
 
-const COMPOSITIONS = ['BslShowcase', 'AppTutorialEN', 'AppTutorialES', 'BslCampaign-welcome', 'BslCampaign-walkthrough', 'BslCampaign-recap'];
+const COMPOSITIONS = ['BslShowcase', 'AppTutorialEN', 'AppTutorialES', 'BslCampaign-welcome', 'BslCampaign-welcome-en', 'BslCampaign-walkthrough', 'BslCampaign-recap'];
 
 const targets = process.argv[2] ? [process.argv[2]] : COMPOSITIONS;
 const metricValues = readCampaignMetrics();

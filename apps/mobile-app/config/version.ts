@@ -22,44 +22,45 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610280736, // Updated to current timestamp
+  buildNumber: 202610281950, // Updated to current timestamp
   releaseDate: '2026-10-28',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'redesign responsive landing',
-    'add scheduled BSL Bogota campaign films',
-    'ship live Mission Control metrics and dashboard',
-    'improve Lukas landing responsiveness',
-    'upgrade LUKAS landing experience',
-    'speed-style meeting requests with mutual agenda blocking',
-    'explain the optional HASHPASS ID upgrade on the account page',
-    'email a confirmation code and link right after first setup',
-    'show inbox only when connected, add profile picture and account page',
-    'continue with HASHPASS ID or email from the guest card'
+    'real 3D LKS coin, animated icons, consistent landing UI'
   ],
   bugfixes: [
-    'keep local campaign and API requests local',
-    'clear stale mobile links before BSL builds',
-    'address mission control review findings',
-    'recover releases when push events are skipped',
-    'reconcile cached pnpm links in CI',
-    'prevent skipped production release automation',
-    'centralize mobile API CORS handling',
-    'resolve meeting and Lukas review findings',
-    'stabilize meeting entitlements and coffee access',
-    'follow type-only import chains in typecheck-changed sandbox',
-    'address release review findings',
-    'harden native mobile UI and camera flow',
-    'route Companion origins to their own Supabase profile',
-    'prevent production ahead of staging'
+    'match BSL media and captions to locale',
+    'prepare BSL assets before rendering',
+    'compile LUKAS FAQ catalog messages',
+    'generate and validate welcome narration in the publish workflow',
+    'typecheck video-studio against its own tsconfig'
   ],
   breakingChanges: [],
-  notes: 'redesign responsive landing; add scheduled BSL Bogota campaign films; ship live Mission Control metrics and dashboard; improve Lukas landing responsiveness; upgrade LUKAS landing experience; speed-style meeting requests with mutual agenda blocking; explain the optional HASHPASS ID upgrade on the account page; email a confirmation code and link right after first setup; show inbox only when connected, add profile picture and account page; continue with HASHPASS ID or email from the guest card; keep local campaign and API requests local; clear stale mobile links before BSL builds; address mission control review findings; recover releases when push events are skipped; reconcile cached pnpm links in CI; prevent skipped production release automation; centralize mobile API CORS handling; resolve meeting and Lukas review findings; stabilize meeting entitlements and coffee access; follow type-only import chains in typecheck-changed sandbox; address release review findings; harden native mobile UI and camera flow; route Companion origins to their own Supabase profile; prevent production ahead of staging'
+  notes: 'add narrated, locale-aware BSL Bogotá campaign; compile LUKAS FAQ catalogs without warnings; refresh the LUKAS landing with shared UI primitives'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.172': {
+    version: '1.9.172',
+    buildNumber: 202610281950,
+    releaseDate: '2026-10-28',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'real 3D LKS coin, animated icons, consistent landing UI'
+    ],
+    bugfixes: [
+      'match BSL media and captions to locale',
+      'prepare BSL assets before rendering',
+      'compile LUKAS FAQ catalog messages',
+      'generate and validate welcome narration in the publish workflow',
+      'typecheck video-studio against its own tsconfig'
+    ],
+    breakingChanges: [],
+    notes: 'add narrated, locale-aware BSL Bogotá campaign; compile LUKAS FAQ catalogs without warnings; refresh the LUKAS landing with shared UI primitives'
+  },
   '1.9.171': {
     version: '1.9.171',
     buildNumber: 202610280736,

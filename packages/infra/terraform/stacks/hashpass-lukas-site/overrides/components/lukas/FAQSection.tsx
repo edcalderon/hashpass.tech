@@ -9,6 +9,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import Svg, { Path } from 'react-native-svg';
+import { lukasPalette, lukasSectionTitle } from './lukas-ui';
 
 // lukas.lat/documentation is the real, separate protocol docs site (Docusaurus),
 // same GitHub org as this repo (hashpass-tech/lukas-protocol) — the authoritative
@@ -83,7 +84,7 @@ function FAQItem({ question, answer, isOpen, onToggle, isDark, isMobile }: FAQIt
           <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
             <Path
               d="M6 9l6 6 6-6"
-              stroke={isDark ? '#9CA3AF' : '#6B7280'}
+              stroke={lukasPalette(isDark).accent}
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -181,17 +182,10 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     maxWidth: 1200,
     alignSelf: 'center',
   },
-  title: {
-    fontSize: isMobile ? 32 : 48,
-    fontWeight: '800',
-    color: isDark ? '#F9FAFB' : '#111827',
-    textAlign: 'center',
-    marginBottom: 12,
-    letterSpacing: -0.5,
-  },
+  title: { ...lukasSectionTitle(lukasPalette(isDark), isMobile), marginBottom: 12 },
   subtitle: {
     fontSize: isMobile ? 16 : 18,
-    color: isDark ? '#9CA3AF' : '#6B7280',
+    color: lukasPalette(isDark).body,
     textAlign: 'center',
     marginBottom: isMobile ? 40 : 60,
   },
@@ -200,9 +194,9 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
   },
   faqItem: {
     borderRadius: 16,
-    backgroundColor: isDark ? 'rgba(17, 24, 39, 0.5)' : 'rgba(249, 250, 251, 0.8)',
+    backgroundColor: lukasPalette(isDark).card,
     borderWidth: 1,
-    borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+    borderColor: lukasPalette(isDark).border,
     overflow: 'hidden',
   },
   faqQuestion: {
@@ -218,7 +212,7 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     minWidth: 0,
     fontSize: isMobile ? 16 : 18,
     fontWeight: '700',
-    color: isDark ? '#F9FAFB' : '#111827',
+    color: lukasPalette(isDark).text,
     lineHeight: isMobile ? 24 : 28,
   },
   faqAnswer: {
@@ -228,7 +222,7 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
   },
   faqAnswerText: {
     fontSize: isMobile ? 14 : 16,
-    color: isDark ? '#9CA3AF' : '#6B7280',
+    color: lukasPalette(isDark).body,
     lineHeight: isMobile ? 22 : 26,
   },
   moreInfoRow: {
@@ -240,7 +234,7 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
   },
   moreInfoText: {
     fontSize: isMobile ? 14 : 16,
-    color: isDark ? '#9CA3AF' : '#6B7280',
+    color: lukasPalette(isDark).body,
     textAlign: 'center',
   },
   moreInfoLink: {
@@ -250,6 +244,6 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
   moreInfoLinkText: {
     fontSize: isMobile ? 14 : 16,
     fontWeight: '700',
-    color: isDark ? '#7EE6A0' : '#137A42',
+    color: lukasPalette(isDark).accent,
   },
 });

@@ -22,7 +22,19 @@ const upload = (file, key, contentType) => {
   const result = spawnSync("aws", ["--profile", "hashpass", "s3api", "put-object", "--bucket", bucket, "--key", key, "--body", file, "--content-type", contentType, "--cache-control", "public,max-age=300"], {stdio: "inherit"});
   if (result.status !== 0) process.exit(result.status ?? 1);
 };
-const prepareAndUploadFilm = (id, title, durationSeconds) => {
+const welcomeCaptionTrack = (locale) => ({
+  src: resolve(`apps/video-studio/public/audio/subtitles/campaign/${locale}/bsl-bogota-welcome.vtt`),
+  key: keyFor(`welcome-${locale}`, "vtt"),
+  language: locale,
+  label: locale === "es" ? "Español" : "English",
+});
+const publicWelcomeCaptionTracks = (defaultLocale) => ["en", "es"].map((locale) => ({
+  src: `${mediaRoot}/welcome-${locale}.vtt`,
+  language: locale,
+  label: locale === "es" ? "Español" : "English",
+  default: locale === defaultLocale,
+}));
+const prepareAndUploadFilm = (id, title, durationSeconds, captionTracks = []) => {
   const film = resolve(`apps/video-studio/out/bsl-bogota-2026/${id}.mp4`);
   if (!existsSync(film)) throw new Error(`Missing ${id} film at ${film}`);
   const poster = film.replace(/\.mp4$/, ".jpg");
@@ -32,9 +44,15 @@ const prepareAndUploadFilm = (id, title, durationSeconds) => {
   upload(film, keyFor(id), "video/mp4");
   upload(poster, keyFor(id, "jpg"), "image/jpeg");
   upload(captions, keyFor(id, "vtt"), "text/vtt");
+  for (const track of captionTracks) {
+    if (!existsSync(track.src)) throw new Error(`Missing ${track.language} captions for ${id}`);
+    upload(track.src, track.key, "text/vtt");
+  }
 };
 if (initialPublish) {
-  prepareAndUploadFilm("welcome", "Welcome to BSL Bogotá.", 50);
+  const welcomeCaptions = [welcomeCaptionTrack("en"), welcomeCaptionTrack("es")];
+  prepareAndUploadFilm("welcome", "Welcome to BSL Bogotá.", 50, welcomeCaptions);
+  prepareAndUploadFilm("welcome-en", "Welcome to BSL Bogotá.", 50, welcomeCaptions);
   prepareAndUploadFilm("walkthrough", "Your BSL experience in HASHPASS.", 30);
 } else {
   if (!existsSync(metricsFile)) {
@@ -44,7 +62,7 @@ if (initialPublish) {
   const metrics = JSON.parse(readFileSync(metricsFile, "utf8"));
   if (metrics.eventId !== "colombia2026" || metrics.cutoff !== "2026-11-06T22:30:00Z" || !metrics.counts) throw new Error("Invalid BSL recap metrics file");
   prepareAndUploadFilm("recap", "Thank you, BSL community.", 90);
-  for (const id of ["welcome", "walkthrough"]) {
+  for (const id of ["welcome", "welcome-en", "walkthrough"]) {
     for (const extension of ["mp4", "jpg", "vtt"]) {
       const check = spawnSync("aws", ["--profile", "hashpass", "s3api", "head-object", "--bucket", bucket, "--key", keyFor(id, extension)], {stdio: "ignore"});
       if (check.status !== 0) throw new Error(`The initial ${id} ${extension} asset is not published`);
@@ -52,8 +70,15 @@ if (initialPublish) {
   }
 }
 const metrics = closingDay ? JSON.parse(readFileSync(metricsFile, "utf8")) : {cutoff: "2026-11-06T22:30:00Z"};
+const spanishWelcomeCaptionTracks = publicWelcomeCaptionTracks("es");
+const englishWelcomeCaptionTracks = publicWelcomeCaptionTracks("en");
 const manifest = {version: 1, campaignId: "bsl-bogota-2026", eventId: "colombia2026", closesAt: "2026-11-06T23:00:00.000Z", metricsCutoff: metrics.cutoff, films: [
-  {id: "welcome", title: "Bienvenidos a BSL Bogotá", durationMs: 50000, url: `${mediaRoot}/welcome.mp4`, poster: `${mediaRoot}/welcome.jpg`, captions: `${mediaRoot}/welcome.vtt`},
+  {
+    id: "welcome", title: "Bienvenidos a BSL Bogotá", durationMs: 50000, url: `${mediaRoot}/welcome.mp4`, poster: `${mediaRoot}/welcome.jpg`, captions: `${mediaRoot}/welcome-es.vtt`, captionTracks: spanishWelcomeCaptionTracks,
+    alternateLocales: {
+      en: {title: "Welcome to BSL Bogotá", durationMs: 50000, url: `${mediaRoot}/welcome-en.mp4`, poster: `${mediaRoot}/welcome-en.jpg`, captions: `${mediaRoot}/welcome-en.vtt`, captionTracks: englishWelcomeCaptionTracks},
+    },
+  },
   {id: "walkthrough", title: "Tu BSL en HASHPASS", durationMs: 30000, url: `${mediaRoot}/walkthrough.mp4`, poster: `${mediaRoot}/walkthrough.jpg`, captions: `${mediaRoot}/walkthrough.vtt`},
   {id: "recap", title: "Gracias, comunidad BSL", durationMs: 90000, url: `${mediaRoot}/recap.mp4`, poster: `${mediaRoot}/recap.jpg`, captions: `${mediaRoot}/recap.vtt`}
 ]};

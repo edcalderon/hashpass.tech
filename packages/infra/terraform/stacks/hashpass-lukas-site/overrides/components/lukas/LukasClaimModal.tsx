@@ -1,8 +1,11 @@
 import React, { useMemo, useState } from 'react';
-import { ActivityIndicator, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Linking, Platform, StyleSheet, Text } from 'react-native';
+import { FormField } from '@hashpass/ui/primitives';
 import { useTheme } from '../../hooks/useTheme';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { LukasCaptcha } from '../LukasCaptcha';
+import { ActionButton } from '@hashpass/ui/primitives';
+import { LukasDialog, LukasEyebrow, dialogCopy, dialogTitle, lukasFullWidth, lukasPalette, lukasSkin } from './lukas-ui';
 import type { LukasClaimModalProps, LukasClaimSession, LukasClaimStep } from '../../types/lukas.types';
 
 const API_BASE = 'https://api.hashpass.tech/api';
@@ -10,7 +13,10 @@ const API_BASE = 'https://api.hashpass.tech/api';
 export function LukasClaimModal({ visible, onClose }: LukasClaimModalProps) {
   const { isDark } = useTheme();
   const isMobile = useIsMobile();
-  const styles = useMemo(() => getStyles(isDark, isMobile), [isDark, isMobile]);
+  const palette = useMemo(() => lukasPalette(isDark), [isDark]);
+  const mode = isDark ? 'dark' : 'light';
+  const skin = useMemo(() => lukasSkin(palette), [palette]);
+  const styles = useMemo(() => getStyles(isMobile, palette), [isMobile, palette]);
   const [step, setStep] = useState<LukasClaimStep>('email');
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
@@ -98,51 +104,34 @@ export function LukasClaimModal({ visible, onClose }: LukasClaimModalProps) {
   };
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={reset}>
-      <View style={styles.backdrop}>
-        <View style={styles.card}>
-          <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-            <Pressable onPress={reset} accessibilityRole="button" accessibilityLabel="Close claim dialog" style={styles.close}><Text style={styles.closeText}>×</Text></Pressable>
-            <Text style={styles.eyebrow}>10 LUKAS UNLOCKED</Text>
-            <Text style={styles.title}>{step === 'verified' ? 'Email verified' : 'Claim securely'}</Text>
-            {step === 'email' ? <>
-              <Text style={styles.copy}>Verify your email to continue into HashPass wallet setup. A one-time code protects the claim.</Text>
-              <TextInput value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" placeholder="you@example.com" placeholderTextColor={isDark ? '#718096' : '#94A3B8'} style={styles.input} />
-              <LukasCaptcha resetKey={captchaResetKey} onSolve={setCaptchaToken} onReset={() => setCaptchaToken('')} />
-              <Pressable disabled={busy || !captchaToken} onPress={requestCode} style={[styles.primary, (!captchaToken || busy) && styles.disabled]}>{busy ? <ActivityIndicator color="#07111F" /> : <Text style={styles.primaryText}>Send verification code</Text>}</Pressable>
-            </> : null}
-            {step === 'code' ? <>
-              <Text style={styles.copy}>Enter the six-digit code sent to {email.trim().toLowerCase()}.</Text>
-              <TextInput value={code} onChangeText={setCode} keyboardType="number-pad" maxLength={6} placeholder="000000" placeholderTextColor={isDark ? '#718096' : '#94A3B8'} style={[styles.input, styles.codeInput]} />
-              <Pressable disabled={busy} onPress={verifyCode} style={styles.primary}>{busy ? <ActivityIndicator color="#07111F" /> : <Text style={styles.primaryText}>Verify email</Text>}</Pressable>
-            </> : null}
-            {step === 'verified' ? <>
-              <Text style={styles.copy}>Your email is verified. Continue in HashPass to create or secure your compatible wallet. Seed phrases and private keys stay local and are never emailed.</Text>
-              <Pressable onPress={openWallet} style={styles.primary}><Text style={styles.primaryText}>Open HashPass wallet</Text></Pressable>
-              <Text style={styles.note}>For your protection, HashPass will never send a seed phrase or private key in email or ZIP attachments.</Text>
-            </> : null}
-            {error ? <Text style={styles.error}>{error}</Text> : null}
-          </ScrollView>
-        </View>
-      </View>
-    </Modal>
+    <LukasDialog visible={visible} onClose={reset} isDark={isDark} isMobile={isMobile} palette={palette} closeLabel="Close claim dialog">
+      <LukasEyebrow palette={palette}>10 LUKAS UNLOCKED</LukasEyebrow>
+      <Text style={styles.title}>{step === 'verified' ? 'Email verified' : 'Claim securely'}</Text>
+      {step === 'email' ? <>
+        <Text style={styles.copy}>Verify your email to continue into HashPass wallet setup. A one-time code protects the claim.</Text>
+        <FormField mode={mode} label="Email" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" autoComplete="email" placeholder="you@example.com" />
+        <LukasCaptcha resetKey={captchaResetKey} onSolve={setCaptchaToken} onReset={() => setCaptchaToken('')} />
+        <ActionButton mode={mode} skin={skin} label="Send verification code" loading={busy} disabled={!captchaToken} onPress={requestCode} style={lukasFullWidth} />
+      </> : null}
+      {step === 'code' ? <>
+        <Text style={styles.copy}>Enter the six-digit code sent to {email.trim().toLowerCase()}.</Text>
+        <FormField mode={mode} label="Verification code" value={code} onChangeText={setCode} keyboardType="number-pad" maxLength={6} autoComplete="one-time-code" placeholder="000000" style={styles.codeInput} />
+        <ActionButton mode={mode} skin={skin} label="Verify email" loading={busy} onPress={verifyCode} style={lukasFullWidth} />
+      </> : null}
+      {step === 'verified' ? <>
+        <Text style={styles.copy}>Your email is verified. Continue in HashPass to create or secure your compatible wallet. Seed phrases and private keys stay local and are never emailed.</Text>
+        <ActionButton mode={mode} skin={skin} label="Open HashPass wallet" onPress={openWallet} style={lukasFullWidth} />
+        <Text style={styles.note}>For your protection, HashPass will never send a seed phrase or private key in email or ZIP attachments.</Text>
+      </> : null}
+      {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
+    </LukasDialog>
   );
 }
 
-const getStyles = (isDark: boolean, isMobile: boolean) => StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: 'rgba(2, 8, 23, 0.78)', alignItems: 'center', justifyContent: 'center', padding: 18 },
-  card: { width: '100%', maxWidth: 500, maxHeight: '90%', borderRadius: 24, backgroundColor: isDark ? '#101B2B' : '#FFFFFF', borderWidth: 1, borderColor: isDark ? '#2D4059' : '#E2E8F0', overflow: 'hidden' },
-  content: { padding: isMobile ? 24 : 32, gap: 16 },
-  close: { position: 'absolute', right: 14, top: 10, zIndex: 2, padding: 6 },
-  closeText: { color: isDark ? '#D5DFEC' : '#64748B', fontSize: 28, lineHeight: 28 },
-  eyebrow: { color: '#35C66B', fontSize: 11, fontWeight: '800', letterSpacing: 1.4 },
-  title: { color: isDark ? '#F8FAFC' : '#0F172A', fontSize: isMobile ? 26 : 32, fontWeight: '800', paddingRight: 28 },
-  copy: { color: isDark ? '#A8B6C8' : '#526174', fontSize: 15, lineHeight: 22 },
-  input: { minHeight: 52, borderRadius: 12, borderWidth: 1, borderColor: isDark ? '#425A73' : '#CBD5E1', color: isDark ? '#F8FAFC' : '#0F172A', paddingHorizontal: 16, fontSize: 16 },
-  codeInput: { letterSpacing: 8, textAlign: 'center', fontWeight: '800' },
-  primary: { minHeight: 52, borderRadius: 999, backgroundColor: '#35C66B', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20 },
-  primaryText: { color: '#07111F', fontWeight: '800', fontSize: 16 },
-  disabled: { opacity: 0.45 },
-  error: { color: '#FCA5A5', fontSize: 13, lineHeight: 19, textAlign: 'center' },
-  note: { color: isDark ? '#8193A8' : '#64748B', fontSize: 12, lineHeight: 18, textAlign: 'center' },
+const getStyles = (isMobile: boolean, palette: ReturnType<typeof lukasPalette>) => StyleSheet.create({
+  title: dialogTitle(palette, isMobile),
+  copy: dialogCopy(palette),
+  codeInput: { textAlign: 'center', fontSize: 24, letterSpacing: 8, fontWeight: '800' },
+  note: { color: palette.muted, fontSize: 12, lineHeight: 18, textAlign: 'center' },
+  error: { color: palette.danger, fontSize: 13, lineHeight: 19, textAlign: 'center' },
 });

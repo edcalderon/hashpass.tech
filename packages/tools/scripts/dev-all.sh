@@ -55,9 +55,11 @@ SKIP_FRAPPE_HELPDESK="${SKIP_FRAPPE_HELPDESK:-false}"
 # docs page unrelated to most dev work. Start it with --local-proof (or
 # INCLUDE_LOCALPROOF=true) to serve it on LOCALPROOF_PORT (default 3200).
 INCLUDE_LOCALPROOF="${INCLUDE_LOCALPROOF:-false}"
-# Opt-in: serve the restored Lukas landing locally with the same clean /lukas
-# route used by CloudFront. Build output is isolated in a temporary directory.
-INCLUDE_LUKAS_LANDING="${INCLUDE_LUKAS_LANDING:-false}"
+# The Lukas landing is part of the regular local product surface. Serve it by
+# default at the same clean /lukas route used by CloudFront. Build output is
+# isolated in a temporary directory; set INCLUDE_LUKAS_LANDING=false only for
+# a deliberately lighter-weight session.
+INCLUDE_LUKAS_LANDING="${INCLUDE_LUKAS_LANDING:-true}"
 
 for arg in "$@"; do
   case "${arg}" in

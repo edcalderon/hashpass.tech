@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 export type LukasAnimationLevel = 'full' | 'reduced' | 'none';
 
 export type LukasGlyphName =
@@ -14,6 +16,8 @@ export type LukasGlyphName =
 export type LukasGlyphProps = {
   name: LukasGlyphName;
   size?: number;
+  /** Overrides the page-level motion setting for this glyph. */
+  animationLevel?: LukasAnimationLevel;
 };
 
 export type LukasCoinProps = {
@@ -62,3 +66,13 @@ export type LukasClickResult = {
   reachedCap: boolean;
   rapid: boolean;
 };
+
+export type LukasPalette = {
+  fill: string; onFill: string; accent: string; text: string; body: string; muted: string;
+  card: string; cardRaised: string; border: string; borderStrong: string; tint: string;
+  danger: string; glow: string; canvas: string;
+};
+
+export type LukasDialogProps = { visible: boolean; onClose: () => void; isDark: boolean; isMobile: boolean; palette: LukasPalette; closeLabel?: string; children: ReactNode };
+
+export type LukasGlyphTone = { a: string; b: string; glow: string; delay: string };

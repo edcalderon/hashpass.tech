@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { Animated, Dimensions, Easing, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, Dimensions, Easing, Platform, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../hooks/useTheme';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { useTranslation } from '../../i18n/i18n';
 import type { HeroSectionProps } from '../../types/lukas.types';
 import { LukasCoin } from './LukasCoin';
+import { ActionButton } from '@hashpass/ui/primitives';
+import { lukasPalette, lukasSkin } from './lukas-ui';
 
 const PEG_CURRENCIES = ['COP', 'ARS', 'BRL', 'MXN', 'CLP'];
 const REWARD_SEGMENTS = Array.from({ length: 10 }, (_, index) => index);
@@ -15,9 +17,8 @@ export function HeroSection({ onGetLukas, onForMerchants, rewardTotal, rewardDel
   const isMobile = useIsMobile();
   const { t } = useTranslation('lukas');
   const [pegCurrencyIndex, setPegCurrencyIndex] = useState(0);
-  const [screenWidth, setScreenWidth] = useState(
-    Platform.OS === 'web' && typeof window !== 'undefined' ? window.innerWidth : Dimensions.get('window').width,
-  );
+  // Starts at the static export's width (no viewport) so hydration matches; measured after mount.
+  const [screenWidth, setScreenWidth] = useState(0);
   const [rewardScale] = useState(() => new Animated.Value(1));
   const [rewardOpacity] = useState(() => new Animated.Value(0));
   const [rewardTranslateY] = useState(() => new Animated.Value(8));
@@ -47,6 +48,7 @@ export function HeroSection({ onGetLukas, onForMerchants, rewardTotal, rewardDel
 
   useEffect(() => {
     const updateDimensions = () => setScreenWidth(Platform.OS === 'web' && typeof window !== 'undefined' ? window.innerWidth : Dimensions.get('window').width);
+    updateDimensions();
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
       window.addEventListener('resize', updateDimensions);
       return () => window.removeEventListener('resize', updateDimensions);
@@ -60,6 +62,9 @@ export function HeroSection({ onGetLukas, onForMerchants, rewardTotal, rewardDel
   const coinSize = isSmallMobile ? 132 : isMobile ? 152 : isTablet ? 194 : 230;
   const styles = getStyles(isDark, isMobile, isSmallMobile, isTablet);
   const peg = PEG_CURRENCIES[pegCurrencyIndex];
+  const palette = lukasPalette(isDark);
+  const mode = isDark ? 'dark' : 'light';
+  const skin = lukasSkin(palette);
 
   return (
     <LinearGradient
@@ -90,12 +95,8 @@ export function HeroSection({ onGetLukas, onForMerchants, rewardTotal, rewardDel
 
           <View style={styles.actionStack}>
             <View style={styles.buttonRow}>
-              <TouchableOpacity onPress={onGetLukas} style={styles.primaryButton} activeOpacity={0.84} accessibilityRole="button">
-                <Text style={styles.primaryButtonText}>{t('hero.getLukas')}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={onForMerchants} style={styles.secondaryButton} activeOpacity={0.84} accessibilityRole="button">
-                <Text style={styles.secondaryButtonText}>{t('hero.forMerchants')}</Text>
-              </TouchableOpacity>
+              <ActionButton mode={mode} skin={skin} label={t('hero.getLukas')} onPress={onGetLukas} style={styles.heroButton} />
+              <ActionButton mode={mode} skin={skin} variant="secondary" label={t('hero.forMerchants')} onPress={onForMerchants} style={styles.heroButton} />
             </View>
 
             <View style={styles.rewardPanel} accessibilityLiveRegion="polite">
@@ -152,9 +153,7 @@ const getStyles = (isDark: boolean, isMobile: boolean, isSmallMobile: boolean, i
   },
   visualColumn: {
     width: isMobile ? '100%' : undefined,
-    flexGrow: 0,
-    flexShrink: 0,
-    ...(isMobile ? {} : { flex: 0.9 }),
+    ...(isMobile ? { flexGrow: 0, flexShrink: 0 } : { flexGrow: 0.9, flexShrink: 1, flexBasis: 0 }),
     minWidth: 0,
     paddingTop: isMobile ? 36 : 0,
     alignItems: 'center',
@@ -169,7 +168,7 @@ const getStyles = (isDark: boolean, isMobile: boolean, isSmallMobile: boolean, i
   pegDot: { width: 7, height: 7, borderRadius: 999, backgroundColor: isDark ? '#73E9A5' : '#0C8A58' },
   coinPeg: { color: isDark ? '#D5F7E1' : '#113F2B', fontSize: isSmallMobile ? 11 : 12, fontWeight: '800', letterSpacing: 0.15 },
   textColumn: {
-    width: isMobile ? '100%' : undefined, flexGrow: 0, flexShrink: 1, ...(isMobile ? {} : { flex: 1.1 }), minWidth: 0, maxWidth: isMobile ? 520 : 600,
+    width: isMobile ? '100%' : undefined, ...(isMobile ? { flexGrow: 0, flexShrink: 1 } : { flexGrow: 1.1, flexShrink: 1, flexBasis: 0 }), minWidth: 0, maxWidth: isMobile ? 520 : 600,
     gap: isMobile ? 14 : 18, alignItems: isMobile ? 'center' : 'flex-start',
   },
   badge: { width: '100%', color: isDark ? '#9BEABB' : '#0B7147', fontSize: 12, fontWeight: '900', letterSpacing: 1.55, textTransform: 'uppercase', textAlign: isMobile ? 'center' : 'left' },
@@ -179,11 +178,8 @@ const getStyles = (isDark: boolean, isMobile: boolean, isSmallMobile: boolean, i
   subtitle: { width: '100%', color: isDark ? '#C1D3CA' : '#40564A', fontSize: isSmallMobile ? 15 : isMobile ? 16 : 18, lineHeight: isSmallMobile ? 22 : isMobile ? 24 : 28, textAlign: isMobile ? 'center' : 'left' },
   actionStack: { width: '100%', gap: 12, marginTop: 4 },
   buttonRow: { width: '100%', flexDirection: isMobile ? 'column' : 'row', gap: 12 },
-  primaryButton: { minHeight: 54, flex: isMobile ? 0 : 1, paddingHorizontal: 24, borderRadius: 999, backgroundColor: '#36C66B', borderWidth: 1, borderColor: '#76F2A8', alignItems: 'center', justifyContent: 'center', shadowColor: '#1BBC5E', shadowOpacity: isDark ? 0.42 : 0.22, shadowRadius: 16, shadowOffset: { width: 0, height: 8 }, elevation: 8 },
-  primaryButtonText: { color: '#061B10', fontSize: 16, fontWeight: '900' },
-  secondaryButton: { minHeight: 54, flex: isMobile ? 0 : 1, paddingHorizontal: 24, borderRadius: 999, borderWidth: 1.5, borderColor: isDark ? '#789486' : '#729583', backgroundColor: isDark ? 'rgba(6, 24, 36, 0.32)' : 'rgba(255, 255, 255, 0.58)', alignItems: 'center', justifyContent: 'center' },
-  secondaryButtonText: { color: isDark ? '#E8F8EE' : '#153C29', fontSize: 16, fontWeight: '800' },
-  rewardPanel: { width: '100%', minHeight: 70, borderRadius: 18, padding: 13, backgroundColor: isDark ? 'rgba(5, 27, 38, 0.76)' : 'rgba(255, 255, 255, 0.74)', borderWidth: 1, borderColor: isDark ? 'rgba(115, 233, 165, 0.28)' : 'rgba(18, 132, 85, 0.24)', overflow: 'visible' },
+  heroButton: { flex: isMobile ? 0 : 1, minHeight: 54, alignSelf: 'stretch' },
+  rewardPanel: { width: '100%', minHeight: 70, borderRadius: 16, padding: 13, backgroundColor: isDark ? 'rgba(5, 27, 38, 0.76)' : 'rgba(255, 255, 255, 0.74)', borderWidth: 1, borderColor: isDark ? 'rgba(115, 233, 165, 0.28)' : 'rgba(18, 132, 85, 0.24)', overflow: 'visible' },
   rewardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', position: 'relative' },
   rewardOverline: { color: isDark ? '#A8C7B3' : '#527261', fontSize: 10, fontWeight: '900', letterSpacing: 1.1 },
   rewardPillText: { color: isDark ? '#F0FFF5' : '#0E422A', fontSize: 16, fontWeight: '900', marginTop: 1 },

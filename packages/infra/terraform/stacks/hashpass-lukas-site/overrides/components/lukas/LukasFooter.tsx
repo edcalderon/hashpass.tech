@@ -89,7 +89,7 @@ const getStyles = (isDark: boolean, isMobile: boolean) => StyleSheet.create({
   disclaimer: { color: isDark ? '#8193A8' : '#64748B', fontSize: 12, lineHeight: 18 },
   linkColumns: { width: '100%', flexDirection: 'row', justifyContent: 'space-between', gap: isMobile ? 20 : 72 },
   linkColumn: { flex: 1, gap: 8, minWidth: 0 },
-  columnTitle: { color: isDark ? '#7EE6A0' : '#137A42', fontSize: 12, fontWeight: '800', letterSpacing: 1.5, marginBottom: 4 },
+  columnTitle: { color: isDark ? '#7EE6A0' : '#087A4A', fontSize: 12, fontWeight: '800', letterSpacing: 1.5, marginBottom: 4 },
   linkButton: { minHeight: 32, justifyContent: 'center' },
   linkText: { color: isDark ? '#D5DFEC' : '#334155', fontSize: 14 },
   bottomRow: {
@@ -107,5 +107,5 @@ const getStyles = (isDark: boolean, isMobile: boolean) => StyleSheet.create({
   copyright: { color: isDark ? '#8193A8' : '#64748B', fontSize: 12, flex: 1 },
   version: { color: isDark ? '#8193A8' : '#64748B', fontSize: 12 },
   hashPassLink: { minHeight: 32, justifyContent: 'center' },
-  hashPassLinkText: { color: isDark ? '#7EE6A0' : '#137A42', fontSize: 12, fontWeight: '700' },
+  hashPassLinkText: { color: isDark ? '#7EE6A0' : '#087A4A', fontSize: 12, fontWeight: '700' },
 });

@@ -28,7 +28,7 @@ import { GetLukasSection } from '../components/lukas/GetLukasSection';
 import { FAQSection } from '../components/lukas/FAQSection';
 import { LukasFooter } from '../components/lukas/LukasFooter';
 import { applyLukasClick, createInitialLukasRewardState, playLukasClickSound, resolveLukasAnimationLevel } from '../components/lukas/lukas-rewards';
-import { useSystemReducedMotion } from '../components/lukas/useLukasMotion';
+import { LukasMotionContext, useSystemReducedMotion } from '../components/lukas/useLukasMotion';
 
 export default function LukasLanding() {
   const { colors, isDark } = useTheme();
@@ -83,6 +83,7 @@ export default function LukasLanding() {
   };
 
   return (
+    <LukasMotionContext.Provider value={effectiveAnimationLevel}>
     <View style={styles.container}>
       <View style={styles.settingsTrigger}>
         <LukasSettingsMenu animation={animationLevel} onAnimationChange={setAnimationLevel} />
@@ -131,6 +132,7 @@ export default function LukasLanding() {
       </Animated.ScrollView>
       <LukasClaimModal visible={claimVisible} onClose={() => setClaimVisible(false)} />
     </View>
+    </LukasMotionContext.Provider>
   );
 }
 
