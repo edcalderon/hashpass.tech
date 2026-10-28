@@ -1,6 +1,6 @@
 {
   "name": "@hashpass/status-page",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "Authenticated HASHPASS Mission Control status surface"
 }
