@@ -34,6 +34,42 @@ test("rejects another event, another origin, unsafe media and malformed timing",
   expect(parseEventVideoCampaign({...manifest, films: manifest.films.map((film) => ({...film, durationMs: 0}))}, "colombia2026", origin)).toBeNull();
 });
 
+describe("localised welcome film", () => {
+  const track = (language: string, name: string) => ({src: `${base}welcome-${name}.vtt`, language, label: name});
+  const alternate = {
+    title: "Welcome to BSL Bogotá",
+    durationMs: 50000,
+    url: `${base}welcome-en.mp4`,
+    poster: `${base}welcome-en.jpg`,
+    captions: `${base}welcome-en.vtt`,
+    captionTracks: [{...track("en", "en"), default: true}, track("es", "es")],
+  };
+  const withWelcome = (change: Record<string, unknown>) => ({
+    ...manifest,
+    films: manifest.films.map((film) => (film.id === "welcome" ? {...film, ...change} : film)),
+  });
+
+  test("accepts same-origin alternate locales and caption tracks", () => {
+    const parsed = parseEventVideoCampaign(withWelcome({alternateLocales: {en: alternate}, captionTracks: alternate.captionTracks}), "colombia2026", origin);
+    expect(parsed?.films.find((film) => film.id === "welcome")?.alternateLocales?.en?.url).toBe(alternate.url);
+  });
+
+  test.each([
+    ["an unknown alternate locale", {alternateLocales: {fr: alternate}}],
+    ["a non-object alternate locales value", {alternateLocales: "en"}],
+    ["an alternate on another origin", {alternateLocales: {en: {...alternate, url: "https://other.example/events/colombia2026/branding/campaign/x.mp4"}}}],
+    ["an alternate with an invalid duration", {alternateLocales: {en: {...alternate, durationMs: 0}}}],
+    ["an empty caption track list", {captionTracks: []}],
+    ["a caption track list that is not an array", {captionTracks: "en"}],
+    ["a caption track in an unsupported language", {captionTracks: [track("fr", "fr")]}],
+    ["a caption track without a label", {captionTracks: [{src: `${base}x.vtt`, language: "en", label: ""}]}],
+    ["a caption track outside the campaign path", {captionTracks: [{src: `${origin}/other/x.vtt`, language: "en", label: "English"}]}],
+    ["a film without a title", {title: ""}],
+  ])("rejects %s", (_name, change) => {
+    expect(parseEventVideoCampaign(withWelcome(change), "colombia2026", origin)).toBeNull();
+  });
+});
+
 test("uses a same-origin campaign manifest during local web development", () => {
   const originalPlatform = Platform.OS;
   const originalEnvironment = process.env.EXPO_PUBLIC_ENV;

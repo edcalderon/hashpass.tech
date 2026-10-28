@@ -95,4 +95,53 @@ describe("CampaignFilmPlayer", () => {
 
     expect(() => act(() => renderer.unmount())).not.toThrow();
   });
+
+  describe("web locale selection", () => {
+    const english = {
+      title: "Welcome to BSL Bogotá (EN)",
+      durationMs: 50_000,
+      url: "https://media.example/events/colombia2026/branding/campaign/welcome-en.mp4",
+      poster: "https://media.example/events/colombia2026/branding/campaign/welcome-en.jpg",
+      captions: "https://media.example/events/colombia2026/branding/campaign/welcome-en.vtt",
+      captionTracks: [
+        {src: "https://media.example/events/colombia2026/branding/campaign/welcome-en.vtt", language: "en" as const, label: "English", default: true},
+        {src: "https://media.example/events/colombia2026/branding/campaign/welcome-es.vtt", language: "es" as const, label: "Español"},
+      ],
+    };
+    const localised = {...film, alternateLocales: {en: english}};
+    const originalLanguage = Object.getOwnPropertyDescriptor(globalThis.navigator ?? {}, "language");
+    const setLanguage = (language: string) => Object.defineProperty(globalThis, "navigator", {value: {language}, configurable: true});
+    const render = (value: typeof localised | typeof film) => {
+      let renderer!: ReturnType<typeof create>;
+      act(() => {
+        renderer = create(<WebCampaignFilmPlayer film={value} />, {createNodeMock: () => ({pause: jest.fn()})});
+      });
+      return renderer;
+    };
+    afterEach(() => {
+      if (originalLanguage) Object.defineProperty(globalThis.navigator, "language", originalLanguage);
+      else Reflect.deleteProperty(globalThis, "navigator");
+    });
+
+    it("plays the English alternate with every caption track for English browsers", () => {
+      setLanguage("en-US");
+      const root = render(localised).root;
+      expect(root.findByType("video" as never).props).toMatchObject({src: english.url, poster: english.poster, "aria-label": english.title});
+      const tracks = root.findAllByType("track" as never);
+      expect(tracks.map((track) => track.props.srcLang)).toEqual(["en", "es"]);
+      expect(tracks[0].props.default).toBe(true);
+    });
+
+    it("keeps the default film for other languages and without an alternate", () => {
+      setLanguage("es-CO");
+      expect(render(localised).root.findByType("video" as never).props.src).toBe(film.url);
+      setLanguage("en-US");
+      expect(render(film).root.findByType("video" as never).props.src).toBe(film.url);
+    });
+
+    it("falls back to the default film when the browser language is unavailable", () => {
+      Reflect.deleteProperty(globalThis, "navigator");
+      expect(render(localised).root.findByType("video" as never).props.src).toBe(film.url);
+    });
+  });
 });
