@@ -55,6 +55,12 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      merge_sha:
+        description: Full SHA of the already-merged develop-to-main release commit to recover
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -80,9 +86,22 @@ jobs:
         id: resolve
         env:
           GH_TOKEN: ${{ github.token }}
-          COMMIT_SHA: ${{ github.sha }}
+          COMMIT_SHA: ${{ inputs.merge_sha || github.sha }}
         run: |
           set -euo pipefail
+
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+            if [[ ! "${COMMIT_SHA}" =~ ^[0-9a-f]{40}$ ]]; then
+              echo "::error::Manual recovery requires a full 40-character merge commit SHA."
+              exit 1
+            fi
+            main_sha=$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/main" --jq '.object.sha')
+            if [[ "${COMMIT_SHA}" != "${main_sha}" ]]; then
+              echo "::error::Manual recovery SHA must be the current main tip (${main_sha})."
+              exit 1
+            fi
+            echo "Manual release recovery requested for main commit ${COMMIT_SHA}."
+          fi
 
           # GitHub does not consistently associate a merge commit with its
           # pull request through /commits/{sha}/pulls (notably for promotion
