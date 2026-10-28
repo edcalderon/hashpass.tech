@@ -57,6 +57,7 @@ const statusHealthChecks = [
   ["BSL", "https://bsl.hashpass.tech"],
   ["Lukas landing", "https://lukas.hashpass.tech"],
   ["Plane", "https://work.hashpass.tech/auth/get-csrf-token/"],
+  ["MCP gateway", "https://mcp.hashpass.tech/.well-known/oauth-protected-resource/mcp"],
 ].map(([name, url]) => ({name, url}));
 
 const statusGate = createStatusGate({
