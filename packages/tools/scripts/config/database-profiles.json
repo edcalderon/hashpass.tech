@@ -90,6 +90,7 @@
       "event-search-aliases",
       "business-invite-campaigns",
       "lukas-site",
+      "mission-control",
       "non-custodial-wallet",
       "chat-key-backup",
       "event-public-flags"
@@ -100,6 +101,7 @@
       "event-search-aliases",
       "business-invite-campaigns",
       "lukas-site",
+      "mission-control",
       "non-custodial-wallet",
       "core-speaker-shape",
       "event-scoped-speakers",
@@ -159,6 +161,9 @@
     ],
     "lukas-site": [
       "db/migrations/V110__lukas_newsletter_subscribers.sql"
+    ],
+    "mission-control": [
+      "db/migrations/V157__mission_control_metrics.sql"
     ],
     "meeting-chat-e2e": [
       "db/migrations/V053__e2e_encrypted_persistent_meeting_chat.sql",

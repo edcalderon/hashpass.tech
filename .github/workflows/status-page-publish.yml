@@ -42,6 +42,19 @@ jobs:
         with:
           node-version-file: .nvmrc
 
+      - name: Use the latest independent status release for scheduled publishes
+        if: github.event_name == 'schedule'
+        run: |
+          set -euo pipefail
+          git fetch --force --tags origin
+          latest_tag="$(git tag --list 'status-v*.*.*' --sort=-v:refname | head -n1)"
+          if [ -z "$latest_tag" ]; then
+            echo "No independent status release tag exists yet; keeping the scheduled source at main."
+            exit 0
+          fi
+          echo "Scheduled publish source: $latest_tag"
+          git checkout --detach "$latest_tag"
+
       - name: Build the page
         env:
           MISSION_CONTROL_METRICS_URL: ${{ vars.MISSION_CONTROL_METRICS_URL }}
