@@ -314,7 +314,7 @@ describe("Android layout event crash guards", () => {
     );
   });
 
-  it("always forwards the first native hamburger tap to the drawer navigator", () => {
+  it("resets a stale drawer state before forwarding the native hamburger tap", () => {
     const dashboardSource = readSource(
       "../../app/(shared)/dashboard/_layout.tsx",
     );
@@ -323,24 +323,30 @@ describe("Android layout event crash guards", () => {
       dashboardSource.indexOf("const closeDashboardDrawer = useCallback"),
     );
 
-    // Regression for v1.8.258: a local "opening" transition lock could be
-    // set before React Navigation handled the action, but never resolve on
-    // some production Android devices. That made the first (and every later)
-    // hamburger press a no-op. The navigator owns its transition state; the
-    // header must always dispatch the initial open action.
+    // Regression for Android builds where the navigation state reported
+    // "open" while the native drawer was visibly closed. Sending only
+    // setOpen(true) then left the effective `open` prop unchanged. The
+    // explicit close -> next-task open edge makes the action observable by
+    // the drawer even when its navigation state is stale.
     expect(dashboardSource).toContain('swipeEnabled: Platform.OS === "web"');
     expect(dashboardSource).not.toContain("drawerTransitionRef");
     expect(openDrawerSource).toContain(
       "const wasOpen = drawerOpenRef.current;",
     );
     expect(openDrawerSource).toContain(
-      "const opened = openTargetedDashboardDrawer({",
+      "drawerOpenControlRef.current.setOpen(false);",
+    );
+    expect(openDrawerSource).toContain(
+      "drawerOpenControlRef.current?.setOpen(true);",
+    );
+    expect(openDrawerSource).toContain(
+      "openDrawerAction: DrawerActions.closeDrawer(),",
     );
     expect(openDrawerSource).toContain(
       "openDrawerAction: DrawerActions.openDrawer(),",
     );
     expect(
-      openDrawerSource.indexOf("const opened = openTargetedDashboardDrawer({"),
+      openDrawerSource.indexOf("drawerOpenControlRef.current.setOpen(false);"),
     ).toBeLessThan(openDrawerSource.indexOf("if (wasOpen) {"));
   });
 

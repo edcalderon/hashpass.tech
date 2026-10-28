@@ -1492,22 +1492,36 @@ function AuthenticatedDashboardLayout() {
       const wasOpen = drawerOpenRef.current;
 
       // Primary path: the imperative ref into the patched DrawerView's own
-      // state (see DrawerOpenControlRef comment above). Fall back to the old
-      // dispatch-based path only on the first render, before the patched
-      // DrawerView's effect has populated the ref.
+      // state (see DrawerOpenControlRef comment above). Resetting to closed
+      // before opening is deliberate: a few Android builds have reported the
+      // navigation state as "open" while the native drawer was visibly closed.
+      // Calling setOpen(true) in that state leaves the effective `open` prop
+      // unchanged, so the hamburger appears dead. A separate task gives the
+      // drawer a real closed -> open edge to animate from.
       if (drawerOpenControlRef.current?.setOpen) {
-        drawerOpenControlRef.current.setOpen(true);
+        drawerOpenControlRef.current.setOpen(false);
+        setTimeout(() => {
+          drawerOpenControlRef.current?.setOpen(true);
+        }, 0);
       } else {
-        const opened = openTargetedDashboardDrawer({
+        const reset = openTargetedDashboardDrawer({
           navigation,
           drawerNavigation: drawerNavRef.current,
-          openDrawerAction: DrawerActions.openDrawer(),
+          openDrawerAction: DrawerActions.closeDrawer(),
         });
 
-        if (!opened) {
-          console.warn("Drawer navigation unavailable, skipping openDrawer");
+        if (!reset) {
+          console.warn("Drawer navigation unavailable, skipping drawer open");
           return;
         }
+
+        setTimeout(() => {
+          openTargetedDashboardDrawer({
+            navigation,
+            drawerNavigation: drawerNavRef.current,
+            openDrawerAction: DrawerActions.openDrawer(),
+          });
+        }, 0);
       }
 
       // React Navigation owns its animation lifecycle. In particular, do not

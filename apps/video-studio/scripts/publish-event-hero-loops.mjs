@@ -22,10 +22,11 @@ function usage() {
 }
 
 function parseArgs(args) {
-  const values = {studio: defaultStudio, output: '', publish: false, postersOnly: false};
+  const values = {studio: defaultStudio, output: '', publish: false, postersOnly: false, help: false};
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
-    if (arg === '--studio') values.studio = args[++index] ?? '';
+    if (arg === '--help' || arg === '-h') values.help = true;
+    else if (arg === '--studio') values.studio = args[++index] ?? '';
     else if (arg === '--output') values.output = args[++index] ?? '';
     else if (arg === '--posters-only') values.postersOnly = true;
     else if (arg === '--publish') values.publish = true;
@@ -38,6 +39,7 @@ function parseArgs(args) {
     output: path.resolve(values.output || path.join(studio, 'out', 'event-heroes')),
     publish: values.publish,
     postersOnly: values.postersOnly,
+    help: values.help,
   };
 }
 
@@ -48,7 +50,11 @@ function requiredEnvironment(name) {
 }
 
 async function main() {
-  const {studio, output, publish, postersOnly} = parseArgs(process.argv.slice(2));
+  const {studio, output, publish, postersOnly, help} = parseArgs(process.argv.slice(2));
+  if (help) {
+    console.log(usage());
+    return;
+  }
   const bucket = requiredEnvironment('EVENT_MEDIA_BUCKET');
   const region = requiredEnvironment('EVENT_MEDIA_REGION');
   const mediaBaseUrl = requiredEnvironment('EVENT_MEDIA_PUBLIC_BASE_URL');
