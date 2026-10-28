@@ -10,6 +10,7 @@
   "welcomeLocales": {
     "es": {
       "voice": "es-CO-SalomeNeural",
+      "rate": "+14%",
       "voiceProfile": "female",
       "audioFile": "audio/narration/campaign/es/bsl-bogota-welcome.mp3",
       "captionFile": "audio/subtitles/campaign/es/bsl-bogota-welcome.vtt",
@@ -68,6 +69,7 @@
     },
     "en": {
       "voice": "en-US-GuyNeural",
+      "rate": "+0%",
       "voiceProfile": "male",
       "audioFile": "audio/narration/campaign/en/bsl-bogota-welcome.mp3",
       "captionFile": "audio/subtitles/campaign/en/bsl-bogota-welcome.vtt",

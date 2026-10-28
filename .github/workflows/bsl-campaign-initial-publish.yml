@@ -45,7 +45,16 @@ jobs:
             echo "aws_secret_access_key=$AWS_SECRET_ACCESS_KEY"
             echo "aws_session_token=$AWS_SESSION_TOKEN"
           } > "$HOME/.aws/credentials"
-      - name: Render and validate the three campaign films
+      - name: Generate and validate the welcome narration and captions
+        run: |
+          python3 -m pip install --user edge-tts==7.3.1
+          export PATH="$HOME/.local/bin:$PATH"
+          node apps/video-studio/scripts/generate-bsl-welcome-narration.mjs
+          for locale in en es; do
+            test -s "apps/video-studio/public/audio/narration/campaign/$locale/bsl-bogota-welcome.mp3"
+            test -s "apps/video-studio/public/audio/subtitles/campaign/$locale/bsl-bogota-welcome.vtt"
+          done
+      - name: Render and validate the campaign films
         run: node apps/video-studio/scripts/render-bsl-campaign.mjs
       - name: Publish the welcome and walkthrough films
         run: node apps/video-studio/scripts/publish-bsl-campaign.mjs --initial

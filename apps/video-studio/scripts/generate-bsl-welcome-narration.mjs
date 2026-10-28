@@ -4,7 +4,7 @@
 // English cut uses a male voice. Scene captions are emitted as WebVTT with
 // the exact timeline used by BslCampaignWelcome.
 import {spawnSync} from "node:child_process";
-import {mkdirSync, readFileSync, rmSync, writeFileSync} from "node:fs";
+import {mkdirSync, readFileSync, rmSync, statSync, writeFileSync} from "node:fs";
 import {dirname, join, resolve} from "node:path";
 import {fileURLToPath} from "node:url";
 
@@ -33,6 +33,23 @@ const webVttFor = (scenes) => [
   ]),
 ].join("\n");
 
+// A failed or empty synthesis must stop the workflow before Remotion renders silent or corrupt audio.
+function assertPlayableNarration(mediaPath, timelineSeconds, locale) {
+  if (statSync(mediaPath).size === 0) throw new Error(`The ${locale} BSL welcome narration is empty`);
+  const probe = spawnSync(
+    "ffprobe",
+    ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", mediaPath],
+    {encoding: "utf8"},
+  );
+  const duration = Number(probe.stdout);
+  if (probe.status !== 0 || !Number.isFinite(duration) || duration <= 0) {
+    throw new Error(`The ${locale} BSL welcome narration is not valid audio`);
+  }
+  if (duration > timelineSeconds) {
+    throw new Error(`The ${locale} BSL welcome narration runs ${duration.toFixed(1)}s, past the ${timelineSeconds}s film`);
+  }
+}
+
 function main() {
   const available = spawnSync("edge-tts", ["--list-voices"], {stdio: "ignore"});
   if (available.error || available.status !== 0) {
@@ -50,13 +67,14 @@ function main() {
     const captionPath = join(captionDirectory, "bsl-bogota-welcome.vtt");
     const result = spawnSync(
       "edge-tts",
-      ["--voice", content.voice, "--text", content.voiceover, "--write-media", mediaPath],
+      ["--voice", content.voice, `--rate=${content.rate}`, "--text", content.voiceover, "--write-media", mediaPath],
       {stdio: "inherit"},
     );
     if (result.status !== 0) {
       rmSync(mediaPath, {force: true});
       throw new Error(`Could not synthesize the ${locale} BSL welcome narration`);
     }
+    assertPlayableNarration(mediaPath, content.scenes.at(-1).endSecond, locale);
     writeFileSync(captionPath, webVttFor(content.scenes));
     console.log(`Generated ${locale}: ${mediaPath} and ${captionPath}`);
   }
