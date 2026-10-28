@@ -55,7 +55,11 @@ echo "  Mode:          $([[ "${BSL_BUILD_ONLY:-false}" == "true" ]] && echo buil
 export METRO_CACHE_DIR="${METRO_CACHE_DIR:-${ROOT_DIR}/apps/mobile-app/.expo/metro-cache}"
 rm -rf "${METRO_CACHE_DIR}"
 
-rm -rf node_modules
+# Clear both the workspace root and the mobile package tree. The BSL export
+# installs the full workspace, and a stale package-local link can otherwise
+# survive the root cleanup and make pnpm fail with EEXIST while relinking a
+# shared dependency such as @noble/hashes.
+rm -rf node_modules apps/mobile-app/node_modules
 
 PNPM_VERSION="$(
   node <<'NODE'
