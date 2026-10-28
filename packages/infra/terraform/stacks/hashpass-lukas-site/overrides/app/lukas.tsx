@@ -147,6 +147,7 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     flex: 1,
   },
   section: {
+    width: '100%',
     minHeight: isMobile ? 400 : 600,
     paddingHorizontal: isMobile ? 20 : 40,
     paddingVertical: isMobile ? 60 : 100,

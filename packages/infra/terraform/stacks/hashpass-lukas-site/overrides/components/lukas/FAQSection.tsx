@@ -206,14 +206,16 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     overflow: 'hidden',
   },
   faqQuestion: {
+    width: '100%',
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
-    padding: 20,
+    padding: isMobile ? 16 : 20,
     gap: 16,
   },
   faqQuestionText: {
     flex: 1,
+    minWidth: 0,
     fontSize: isMobile ? 16 : 18,
     fontWeight: '700',
     color: isDark ? '#F9FAFB' : '#111827',

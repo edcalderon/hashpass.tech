@@ -315,13 +315,17 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     textAlign: 'center',
   },
   featuresContainer: {
+    width: '100%',
     flexDirection: isMobile ? 'column' : 'row',
     gap: 20,
     justifyContent: 'center',
     flexWrap: 'wrap',
   },
   feature: {
+    width: '100%',
+    minWidth: 0,
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'center',
     gap: 12,
     padding: 16,
@@ -334,6 +338,8 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     fontSize: 24,
   },
   featureText: {
+    flex: 1,
+    minWidth: 0,
     fontSize: isMobile ? 14 : 16,
     fontWeight: '600',
     color: isDark ? '#E5E7EB' : '#1F2937',
