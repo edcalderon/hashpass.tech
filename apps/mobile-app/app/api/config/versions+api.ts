@@ -1,18 +1,21 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { compareAppVersions, getRuntimeEnvironment, getRuntimeVersion } from '../../../config/runtime-version';
+import { createCorsPreflightResponse, getCorsHeaders } from '@/lib/cors';
+
+const corsOptions = {
+  methods: ['GET', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control', 'Pragma', 'Expires', 'X-Client-Version'],
+  maxAge: 86400,
+} as const;
+
+const responseHeaders = (request: Request, extra: Record<string, string> = {}) => {
+  return { ...getCorsHeaders(request, corsOptions), ...extra };
+};
 
 // Handle CORS preflight requests
-export async function OPTIONS() {
-  return new Response(null, {
-    status: 204,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization, Cache-Control, Pragma, Expires, X-Client-Version',
-      'Access-Control-Max-Age': '86400',
-    },
-  });
+export async function OPTIONS(request?: Request) {
+  return createCorsPreflightResponse(request, corsOptions);
 }
 
 export async function GET(request: Request) {
@@ -118,7 +121,7 @@ export async function GET(request: Request) {
       },
     }), {
       status: 200,
-      headers: {
+      headers: responseHeaders(request, {
         'Content-Type': 'application/json',
         'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, private',
         'Pragma': 'no-cache',
@@ -126,11 +129,7 @@ export async function GET(request: Request) {
         'X-Version-Source': versionsPath || 'unknown',
         'X-Current-Version': backendVersion,
         'X-Timestamp': Date.now().toString(),
-        // Ensure CORS headers for cross-origin requests (if needed)
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization, Cache-Control, Pragma, Expires, X-Client-Version',
-      },
+      }),
     });
   } catch (error: any) {
     console.error('[API] Error reading versions.json:', error);
@@ -164,14 +163,11 @@ export async function GET(request: Request) {
         }),
           {
           status: 200, // Always return 200 - don't fail on version mismatches
-          headers: {
+          headers: responseHeaders(request, {
             'Content-Type': 'application/json',
             'Cache-Control': 'no-store, no-cache, must-revalidate',
             'X-Version-Source': 'runtime-version-fallback',
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'GET, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type, Authorization, Cache-Control, Pragma, Expires, X-Client-Version',
-          },
+          }),
         }
       );
     } catch {
@@ -193,14 +189,11 @@ export async function GET(request: Request) {
         }),
         {
           status: 200, // Always return 200 - version mismatches are not errors
-          headers: {
+          headers: responseHeaders(request, {
             'Content-Type': 'application/json',
             'Cache-Control': 'no-store',
             'X-Version-Source': 'hardcoded-fallback',
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'GET, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type, Authorization, Cache-Control, Pragma, Expires, X-Client-Version',
-          },
+          }),
         }
       );
     }

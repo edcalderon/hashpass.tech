@@ -1,27 +1,27 @@
 import { getAuth } from '@/lib/server/better-auth';
 import { verifySignedOAuthQuery } from '@/lib/server/verify-signed-oauth-query';
+import {
+  createCorsPreflightResponse,
+  getCorsHeaders,
+  MCP_CONSENT_CORS_ALLOWED_ORIGINS,
+} from '@/lib/cors';
 
-const allowedOrigins = new Set([
-  'https://hashpass.tech',
-  'https://www.hashpass.tech',
-  'https://dev.hashpass.tech',
-  'http://localhost:8081',
-]);
+const corsOptions = {
+  allowedOrigins: MCP_CONSENT_CORS_ALLOWED_ORIGINS,
+  allowCredentials: true,
+  methods: ['GET', 'OPTIONS'],
+  allowedHeaders: ['Authorization', 'Content-Type'],
+} as const;
 
 const corsHeaders = (request: Request) => {
-  const origin = request.headers.get('origin') || '';
   return {
-    ...(allowedOrigins.has(origin) ? { 'Access-Control-Allow-Origin': origin } : {}),
-    'Access-Control-Allow-Credentials': 'true',
-    'Access-Control-Allow-Methods': 'GET, OPTIONS',
-    'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+    ...getCorsHeaders(request, corsOptions),
     'Cache-Control': 'no-store',
-    Vary: 'Origin',
   };
 };
 
 export function OPTIONS(request: Request) {
-  return new Response(null, { status: 204, headers: corsHeaders(request) });
+  return createCorsPreflightResponse(request, corsOptions);
 }
 
 export async function GET(request: Request) {

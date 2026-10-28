@@ -1,17 +1,22 @@
 import { getSystemHealthCheck, type HealthCheck } from '@/lib/server/system-health';
+import { createCorsPreflightResponse, getCorsHeaders } from '@/lib/cors';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization, Cache-Control, Pragma, Expires, X-Client-Version',
-  'Access-Control-Max-Age': '86400',
+const corsOptions = {
+  methods: ['GET', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control', 'Pragma', 'Expires', 'X-Client-Version'],
+  maxAge: 86400,
+} as const;
+
+const responseHeaders = (request: Request) => {
+  return {
+    ...getCorsHeaders(request, corsOptions),
+    'Content-Type': 'application/json',
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+  };
 };
 
-export async function OPTIONS() {
-  return new Response(null, {
-    status: 204,
-    headers: corsHeaders,
-  });
+export async function OPTIONS(request?: Request) {
+  return createCorsPreflightResponse(request, corsOptions);
 }
 
 export async function GET(request: Request) {
@@ -23,11 +28,7 @@ export async function GET(request: Request) {
 
     return new Response(JSON.stringify(healthCheck, null, 2), {
       status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        ...corsHeaders,
-      },
+      headers: responseHeaders(request),
     });
   } catch (e: any) {
     console.error('Health check API error:', e);
@@ -63,11 +64,7 @@ export async function GET(request: Request) {
 
     return new Response(JSON.stringify(errorHealthCheck, null, 2), {
       status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        ...corsHeaders,
-      },
+      headers: responseHeaders(request),
     });
   }
 }

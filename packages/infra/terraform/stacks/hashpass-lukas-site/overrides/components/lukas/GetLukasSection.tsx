@@ -15,6 +15,7 @@ import {
 import { useTheme } from '../../hooks/useTheme';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { useTranslation } from '../../i18n/i18n';
+import { LukasCaptcha } from '../LukasCaptcha';
 
 const API_BASE = 'https://api.hashpass.tech/api';
 const SUCCESS_COPY = "You're already listed for $LKS airdrops and prizes until the LUKAS $LKS TGE. We're currently in testnet.";
@@ -101,11 +102,14 @@ export function GetLukasSection() {
   const [connectedWallet, setConnectedWallet] = useState('');
   const [email, setEmail] = useState('');
   const [hashPassOptIn, setHashPassOptIn] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState('');
+  const [captchaResetKey, setCaptchaResetKey] = useState(0);
   const styles = useMemo(() => getStyles(isDark, isMobile), [isDark, isMobile]);
 
   const openModal = (nextView: ModalView = 'choices') => {
     setView(nextView);
     setError('');
+    setCaptchaToken('');
     setModalVisible(true);
   };
   const closeModal = () => {
@@ -158,16 +162,22 @@ export function GetLukasSection() {
       setError('Enter a valid email address to join the LUKAS newsletter.');
       return;
     }
+    if (!captchaToken) {
+      setError('Complete the security check before joining the newsletter.');
+      return;
+    }
     setBusy(true);
     setError('');
     try {
-      await postJson('/lukas/subscribe', { email: normalizedEmail, hashpassOptIn: hashPassOptIn, source: 'lukas_landing' });
+      await postJson('/lukas/subscribe', { email: normalizedEmail, hashpassOptIn: hashPassOptIn, source: 'lukas_landing', captchaToken });
       setView('success');
       setConnectedWallet('');
     } catch (newsletterError) {
       setError(newsletterError instanceof Error ? newsletterError.message : 'Newsletter signup failed. Please try again.');
     } finally {
       setBusy(false);
+      setCaptchaToken('');
+      setCaptchaResetKey((key) => key + 1);
     }
   };
 
@@ -251,7 +261,8 @@ export function GetLukasSection() {
                 <Text style={styles.modalSubtitle}>Get independent LUKAS updates, LatAm index mechanics, launch timing, and $LKS airdrop news.</Text>
                 <TextInput value={email} onChangeText={setEmail} autoCapitalize="none" autoCorrect={false} keyboardType="email-address" placeholder="you@example.com" placeholderTextColor={isDark ? '#718096' : '#94A3B8'} style={styles.emailInput} />
                 <View style={styles.optInRow}><Switch value={hashPassOptIn} onValueChange={setHashPassOptIn} trackColor={{ false: '#475569', true: '#35C66B' }} /><Text style={styles.optInText}>Also send me HASHPASS ecosystem updates.</Text></View>
-                <Pressable disabled={busy} onPress={joinNewsletter} style={styles.modalPrimaryButton}>{busy ? <ActivityIndicator color="#07111F" /> : <Text style={styles.modalPrimaryText}>Join LUKAS updates</Text>}</Pressable>
+                <LukasCaptcha resetKey={captchaResetKey} onSolve={setCaptchaToken} onReset={() => setCaptchaToken('')} />
+                <Pressable disabled={busy || !captchaToken} onPress={joinNewsletter} style={[styles.modalPrimaryButton, (!captchaToken || busy) && styles.disabledButton]}>{busy ? <ActivityIndicator color="#07111F" /> : <Text style={styles.modalPrimaryText}>Join LUKAS updates</Text>}</Pressable>
               </> : null}
               {view === 'success' ? <>
                 <View style={styles.successIcon}><Text style={styles.successIconText}>✓</Text></View>
@@ -274,15 +285,15 @@ const getStyles = (isDark: boolean, isMobile: boolean) => StyleSheet.create({
   container: { width: '100%', maxWidth: 1200, alignSelf: 'center' },
   title: { fontSize: isMobile ? 32 : 48, fontWeight: '800', color: isDark ? '#F9FAFB' : '#111827', textAlign: 'center', marginBottom: 12, letterSpacing: -0.5 },
   intro: { color: isDark ? '#A8B6C8' : '#526174', fontSize: isMobile ? 15 : 17, lineHeight: 24, textAlign: 'center', maxWidth: 680, alignSelf: 'center', marginBottom: isMobile ? 32 : 48 },
-  content: { gap: 32 }, stepsContainer: { gap: 16 },
-  step: { flexDirection: 'row', gap: 20, padding: 22, borderRadius: 16, backgroundColor: isDark ? 'rgba(17, 24, 39, 0.55)' : 'rgba(249, 250, 251, 0.8)', borderWidth: 1, borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' },
-  stepNumberContainer: { width: isMobile ? 40 : 48, height: isMobile ? 40 : 48, borderRadius: 999, backgroundColor: '#35C66B', alignItems: 'center', justifyContent: 'center' }, stepNumber: { color: '#07111F', fontSize: isMobile ? 18 : 22, fontWeight: '800' }, stepContent: { flex: 1, gap: 4 },
+  content: { width: '100%', gap: 32 }, stepsContainer: { width: '100%', gap: 16 },
+  step: { width: '100%', flexDirection: 'row', alignItems: 'flex-start', gap: 16, padding: isMobile ? 18 : 22, borderRadius: 16, backgroundColor: isDark ? 'rgba(17, 24, 39, 0.55)' : 'rgba(249, 250, 251, 0.8)', borderWidth: 1, borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' },
+  stepNumberContainer: { flexShrink: 0, width: isMobile ? 40 : 48, height: isMobile ? 40 : 48, borderRadius: 999, backgroundColor: '#35C66B', alignItems: 'center', justifyContent: 'center' }, stepNumber: { color: '#07111F', fontSize: isMobile ? 18 : 22, fontWeight: '800' }, stepContent: { flex: 1, minWidth: 0, gap: 4 },
   stepTitle: { fontSize: isMobile ? 18 : 22, fontWeight: '700', color: isDark ? '#F9FAFB' : '#111827' }, stepDescription: { fontSize: isMobile ? 14 : 16, color: isDark ? '#A8B6C8' : '#526174', lineHeight: isMobile ? 20 : 24 },
-  ctaContainer: { gap: 16, alignItems: 'center' }, primaryButton: { paddingHorizontal: 32, paddingVertical: 16, borderRadius: 999, backgroundColor: '#35C66B', alignItems: 'center', justifyContent: 'center', minWidth: isMobile ? '100%' : 300 }, primaryButtonText: { color: '#07111F', fontSize: isMobile ? 16 : 18, fontWeight: '700' },
-  secondaryButton: { paddingHorizontal: 32, paddingVertical: 16, borderRadius: 999, borderWidth: 1.5, borderColor: isDark ? '#546477' : '#CBD5E1', alignItems: 'center', justifyContent: 'center', minWidth: isMobile ? '100%' : 300 }, secondaryButtonText: { color: isDark ? '#E5E7EB' : '#1F2937', fontSize: isMobile ? 16 : 18, fontWeight: '600' },
+  ctaContainer: { width: '100%', gap: 16, alignItems: 'center' }, primaryButton: { width: isMobile ? '100%' : undefined, paddingHorizontal: 32, paddingVertical: 16, borderRadius: 999, backgroundColor: '#35C66B', alignItems: 'center', justifyContent: 'center', minWidth: isMobile ? 0 : 300 }, primaryButtonText: { color: '#07111F', fontSize: isMobile ? 16 : 18, fontWeight: '700', textAlign: 'center' },
+  secondaryButton: { width: isMobile ? '100%' : undefined, paddingHorizontal: 32, paddingVertical: 16, borderRadius: 999, borderWidth: 1.5, borderColor: isDark ? '#546477' : '#CBD5E1', alignItems: 'center', justifyContent: 'center', minWidth: isMobile ? 0 : 300 }, secondaryButtonText: { color: isDark ? '#E5E7EB' : '#1F2937', fontSize: isMobile ? 16 : 18, fontWeight: '600', textAlign: 'center' },
   comingSoonContainer: { padding: 22, borderRadius: 16, backgroundColor: isDark ? 'rgba(53,198,107,0.1)' : 'rgba(53,198,107,0.07)', borderWidth: 1, borderColor: 'rgba(53,198,107,0.3)', alignItems: 'center', gap: 8 }, comingSoonText: { fontSize: isMobile ? 16 : 18, fontWeight: '700', color: isDark ? '#7EE6A0' : '#137A42', textAlign: 'center' }, comingSoonSubtext: { fontSize: isMobile ? 14 : 16, color: isDark ? '#A8B6C8' : '#526174', textAlign: 'center', lineHeight: isMobile ? 20 : 24 },
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(2, 8, 23, 0.78)', alignItems: 'center', justifyContent: 'center', padding: 20 }, modalCard: { width: '100%', maxWidth: 500, maxHeight: '90%', borderRadius: 24, backgroundColor: isDark ? '#101B2B' : '#FFFFFF', borderWidth: 1, borderColor: isDark ? '#2D4059' : '#E2E8F0', overflow: 'hidden' }, modalScroll: { padding: isMobile ? 24 : 32, gap: 16 },
   modalTitle: { color: isDark ? '#F8FAFC' : '#0F172A', fontSize: isMobile ? 25 : 30, fontWeight: '800', paddingRight: 28 }, modalSubtitle: { color: isDark ? '#A8B6C8' : '#526174', fontSize: 15, lineHeight: 22 }, closeButton: { position: 'absolute', right: 14, top: 12, zIndex: 2, padding: 6 }, closeButtonText: { color: isDark ? '#D5DFEC' : '#64748B', fontSize: 28, lineHeight: 28 }, backButton: { alignSelf: 'flex-start', paddingVertical: 2 }, backButtonText: { color: '#35C66B', fontWeight: '700', fontSize: 15 },
-  modalPrimaryButton: { minHeight: 52, borderRadius: 999, backgroundColor: '#35C66B', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20 }, modalPrimaryText: { color: '#07111F', fontWeight: '800', fontSize: 16 }, modalOutlineButton: { minHeight: 52, borderRadius: 999, borderWidth: 1, borderColor: isDark ? '#53677F' : '#CBD5E1', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20 }, modalOutlineText: { color: isDark ? '#F8FAFC' : '#0F172A', fontWeight: '700', fontSize: 16 }, modalLinkButton: { alignItems: 'center', paddingVertical: 8 }, modalLinkText: { color: '#35C66B', fontWeight: '700', fontSize: 14 }, walletOption: { borderRadius: 16, borderWidth: 1, borderColor: isDark ? '#344B66' : '#D7E0EA', padding: 16, gap: 4 }, walletOptionTitle: { color: isDark ? '#F8FAFC' : '#0F172A', fontSize: 16, fontWeight: '800' }, walletOptionCopy: { color: isDark ? '#A8B6C8' : '#526174', fontSize: 13 }, walletHint: { color: isDark ? '#8193A8' : '#64748B', fontSize: 12, lineHeight: 18 },
+  modalPrimaryButton: { minHeight: 52, borderRadius: 999, backgroundColor: '#35C66B', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20 }, disabledButton: { opacity: 0.45 }, modalPrimaryText: { color: '#07111F', fontWeight: '800', fontSize: 16 }, modalOutlineButton: { minHeight: 52, borderRadius: 999, borderWidth: 1, borderColor: isDark ? '#53677F' : '#CBD5E1', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20 }, modalOutlineText: { color: isDark ? '#F8FAFC' : '#0F172A', fontWeight: '700', fontSize: 16 }, modalLinkButton: { alignItems: 'center', paddingVertical: 8 }, modalLinkText: { color: '#35C66B', fontWeight: '700', fontSize: 14 }, walletOption: { borderRadius: 16, borderWidth: 1, borderColor: isDark ? '#344B66' : '#D7E0EA', padding: 16, gap: 4 }, walletOptionTitle: { color: isDark ? '#F8FAFC' : '#0F172A', fontSize: 16, fontWeight: '800' }, walletOptionCopy: { color: isDark ? '#A8B6C8' : '#526174', fontSize: 13 }, walletHint: { color: isDark ? '#8193A8' : '#64748B', fontSize: 12, lineHeight: 18 },
   emailInput: { minHeight: 52, borderRadius: 12, borderWidth: 1, borderColor: isDark ? '#425A73' : '#CBD5E1', color: isDark ? '#F8FAFC' : '#0F172A', paddingHorizontal: 16, fontSize: 16 }, optInRow: { flexDirection: 'row', gap: 10, alignItems: 'center' }, optInText: { flex: 1, color: isDark ? '#C6D1DF' : '#475569', fontSize: 14, lineHeight: 20 }, loader: { marginTop: 4 }, errorText: { color: '#FCA5A5', fontSize: 13, lineHeight: 19, textAlign: 'center' }, successIcon: { width: 64, height: 64, borderRadius: 999, backgroundColor: 'rgba(53,198,107,0.18)', alignItems: 'center', justifyContent: 'center', alignSelf: 'center' }, successIconText: { color: '#35C66B', fontSize: 38, fontWeight: '800' }, connectedWallet: { color: '#35C66B', fontWeight: '700', textAlign: 'center', fontSize: 14 },
 });

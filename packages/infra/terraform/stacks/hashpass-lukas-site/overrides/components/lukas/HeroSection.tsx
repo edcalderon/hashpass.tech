@@ -1,19 +1,23 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Linking, Dimensions, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Linking, Dimensions, Platform, Animated, Easing } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { useTranslation } from '../../i18n/i18n';
 import { LinearGradient } from 'expo-linear-gradient';
 import { LukasCoin } from './LukasCoin';
+import type { LukasAnimationLevel } from '../../types/lukas.types';
 
 interface HeroSectionProps {
   onGetLukas: () => void;
   onForMerchants: () => void;
+  rewardTotal: number;
+  rewardDelta: number;
+  animationLevel: LukasAnimationLevel;
 }
 
 const PEG_CURRENCIES = ['COP', 'ARS', 'BRL', 'MXN', 'CLP'];
 
-export function HeroSection({ onGetLukas, onForMerchants }: HeroSectionProps) {
+export function HeroSection({ onGetLukas, onForMerchants, rewardTotal, rewardDelta, animationLevel }: HeroSectionProps) {
   const { colors, isDark } = useTheme();
   const isMobile = useIsMobile();
   const { t } = useTranslation('lukas');
@@ -23,6 +27,26 @@ export function HeroSection({ onGetLukas, onForMerchants }: HeroSectionProps) {
       ? window.innerWidth
       : Dimensions.get('window').width
   );
+  const [rewardScale] = useState(() => new Animated.Value(1));
+  const [rewardOpacity] = useState(() => new Animated.Value(0));
+  const [rewardTranslateY] = useState(() => new Animated.Value(8));
+
+  useEffect(() => {
+    if (animationLevel === 'none' || rewardDelta <= 0) return;
+    const fullMotion = animationLevel === 'full';
+    rewardScale.setValue(fullMotion ? 0.72 : 1);
+    rewardOpacity.setValue(1);
+    rewardTranslateY.setValue(fullMotion ? 8 : 0);
+    const animation = fullMotion
+      ? Animated.parallel([
+          Animated.spring(rewardScale, { toValue: 1, friction: 5, tension: 150, useNativeDriver: true }),
+          Animated.timing(rewardTranslateY, { toValue: -32, duration: 700, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+          Animated.timing(rewardOpacity, { toValue: 0, duration: 700, delay: 240, useNativeDriver: true }),
+        ])
+      : Animated.timing(rewardOpacity, { toValue: 0, duration: 280, useNativeDriver: true });
+    animation.start();
+    return () => animation.stop();
+  }, [animationLevel, rewardDelta, rewardOpacity, rewardScale, rewardTranslateY]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -108,6 +132,14 @@ export function HeroSection({ onGetLukas, onForMerchants }: HeroSectionProps) {
                 {t('hero.getLukas')}
               </Text>
             </TouchableOpacity>
+            <View style={[styles.rewardPill, { borderColor: isDark ? '#365314' : '#A7F3D0', backgroundColor: isDark ? 'rgba(20, 83, 45, 0.4)' : 'rgba(236, 253, 245, 0.9)' }]}>
+              <Text style={[styles.rewardPillText, { color: isDark ? '#BBF7D0' : '#047857' }]}>{rewardTotal}/10 LUKAS</Text>
+              <Animated.Text style={[styles.rewardFloat, { color: isDark ? '#BBF7D0' : '#059669', opacity: rewardOpacity, transform: [{ translateY: rewardTranslateY }, { scale: rewardScale }] }]}>
+                +{rewardDelta}
+              </Animated.Text>
+              {animationLevel === 'full' ? <Animated.Text style={[styles.sparkleOne, { color: isDark ? '#D9F99D' : '#16A34A', opacity: rewardOpacity, transform: [{ translateY: rewardTranslateY }, { scale: rewardScale }] }]}>✦</Animated.Text> : null}
+              {animationLevel === 'full' ? <Animated.Text style={[styles.sparkleTwo, { color: isDark ? '#A7F3D0' : '#059669', opacity: rewardOpacity, transform: [{ translateY: rewardTranslateY }, { scale: rewardScale }] }]}>✧</Animated.Text> : null}
+            </View>
 
             <TouchableOpacity
               onPress={onForMerchants}
@@ -276,6 +308,29 @@ const getStyles = (
     fontSize: isSmallMobile ? 14 : isMobile ? 15 : isTablet ? 17 : 18,
     fontWeight: '700',
   },
+  rewardPill: {
+    minHeight: 44,
+    paddingHorizontal: 14,
+    borderRadius: 999,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  rewardPillText: {
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 0.4,
+  },
+  rewardFloat: {
+    position: 'absolute',
+    top: -2,
+    right: 8,
+    fontSize: 18,
+    fontWeight: '900',
+  },
+  sparkleOne: { position: 'absolute', top: -18, left: 8, fontSize: 14, fontWeight: '900' },
+  sparkleTwo: { position: 'absolute', top: 6, right: -8, fontSize: 11, fontWeight: '900' },
   secondaryButton: {
     paddingHorizontal: isSmallMobile ? 20 : isMobile ? 24 : 28,
     paddingVertical: isSmallMobile ? 12 : 14,

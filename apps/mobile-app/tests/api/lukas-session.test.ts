@@ -14,7 +14,9 @@ describe('Lukas session API', () => {
 
   it('returns the restricted CORS preflight', async () => {
     const { OPTIONS } = require('../../app/api/lukas/session+api');
-    const response = OPTIONS();
+    const response = OPTIONS(new Request('https://api.hashpass.tech/api/lukas/session', {
+      headers: { Origin: 'https://lukas.hashpass.tech' },
+    }));
     expect(response.status).toBe(204);
     expect(response.headers.get('access-control-allow-origin')).toBe('https://lukas.hashpass.tech');
   });

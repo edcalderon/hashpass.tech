@@ -130,6 +130,23 @@ def build(output):
             archive.stdout.close()
         if archive.wait() != 0:
             raise SystemExit("Could not extract the pinned Lukas source.")
+        # The pinned landing-page commit predates the monorepo UI package, but
+        # the override still uses the production primitives. Vendor the small
+        # shared system surface into the isolated export so the static build
+        # resolves the same implementation as the main app.
+        shared_ui_source = REPO / "packages/ui/src/system"
+        shared_ui_target = source / "node_modules/@hashpass/ui"
+        shared_ui_target.mkdir(parents=True, exist_ok=True)
+        for filename in ("primitives.tsx", "primitives.types.ts", "tokens.ts"):
+            shutil.copy2(shared_ui_source / filename, shared_ui_target / filename)
+        (shared_ui_target / "package.json").write_text(json.dumps({
+            "name": "@hashpass/ui",
+            "private": True,
+            "exports": {
+                "./primitives": "./primitives.tsx",
+                "./tokens": "./tokens.ts",
+            },
+        }) + "\n")
         (source / "app/_layout.tsx").write_text("""import 'react-native-reanimated';
 import React from 'react';
 import { Stack } from 'expo-router';

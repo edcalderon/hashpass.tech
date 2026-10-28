@@ -13,12 +13,18 @@ import {
   createEmailLookupHash,
   createOtpCodeHash,
 } from "../../../../lib/server/sms-auth";
+import {
+  createCorsPreflightResponse,
+  getCorsHeaders,
+} from "../../../../lib/cors";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization",
-};
+const corsOptions = {
+  methods: ["POST", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+} as const;
+
+const corsHeaders = (request: Request) =>
+  getCorsHeaders(request, corsOptions);
 
 type ParsedTokenHash = {
   tokenHash: string;
@@ -125,11 +131,8 @@ function resolveAnonConfigForServiceProject(request: Request): {
 }
 
 // Handle CORS preflight requests
-export async function OPTIONS() {
-  return new Response(null, {
-    status: 204,
-    headers: corsHeaders,
-  });
+export async function OPTIONS(request?: Request) {
+  return createCorsPreflightResponse(request, corsOptions);
 }
 
 /**
@@ -155,7 +158,7 @@ export async function POST(request: Request) {
         JSON.stringify({ error: "Email and code are required" }),
         {
           status: 400,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
+          headers: { "Content-Type": "application/json", ...corsHeaders(request) },
         },
       );
     }
@@ -167,7 +170,7 @@ export async function POST(request: Request) {
         JSON.stringify({ error: "Authentication service unavailable" }),
         {
           status: 503,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
+          headers: { "Content-Type": "application/json", ...corsHeaders(request) },
         },
       );
     }
@@ -202,7 +205,7 @@ export async function POST(request: Request) {
         }),
         {
           status: 503,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
+          headers: { "Content-Type": "application/json", ...corsHeaders(request) },
         },
       );
     }
@@ -213,7 +216,7 @@ export async function POST(request: Request) {
         JSON.stringify({ error: "Invalid verification code" }),
         {
           status: 400,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
+          headers: { "Content-Type": "application/json", ...corsHeaders(request) },
         },
       );
     }
@@ -224,7 +227,7 @@ export async function POST(request: Request) {
         JSON.stringify({ error: "Invalid verification token payload" }),
         {
           status: 500,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
+          headers: { "Content-Type": "application/json", ...corsHeaders(request) },
         },
       );
     }
@@ -248,7 +251,7 @@ export async function POST(request: Request) {
         }),
         {
           status: 503,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
+          headers: { "Content-Type": "application/json", ...corsHeaders(request) },
         },
       );
     }
@@ -357,7 +360,7 @@ export async function POST(request: Request) {
         }),
         {
           status: 401,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
+          headers: { "Content-Type": "application/json", ...corsHeaders(request) },
         },
       );
     }
@@ -377,7 +380,7 @@ export async function POST(request: Request) {
           }),
           {
             status: 400,
-            headers: { "Content-Type": "application/json", ...corsHeaders },
+            headers: { "Content-Type": "application/json", ...corsHeaders(request) },
           },
         );
       }
@@ -401,7 +404,7 @@ export async function POST(request: Request) {
           }),
           {
             status: 400,
-            headers: { "Content-Type": "application/json", ...corsHeaders },
+            headers: { "Content-Type": "application/json", ...corsHeaders(request) },
           },
         );
       }
@@ -468,7 +471,7 @@ export async function POST(request: Request) {
       }),
       {
         status: 200,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
+        headers: { "Content-Type": "application/json", ...corsHeaders(request) },
       },
     );
   } catch (error: any) {
@@ -477,7 +480,7 @@ export async function POST(request: Request) {
       JSON.stringify({ error: error.message || "Failed to verify OTP" }),
       {
         status: 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
+        headers: { "Content-Type": "application/json", ...corsHeaders(request) },
       },
     );
   }

@@ -1,18 +1,22 @@
 import { getSupabaseServerForRequest } from '@/lib/supabase-server';
 import { eventIdFromRequest, isEventSectionPublic } from '@/lib/server/event-api';
 import { resolveNotificationIdentity, isResolveIdentityError } from '@/lib/server/resolve-notification-identity';
+import { createCorsPreflightResponse, getCorsHeaders } from '@/lib/cors';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+const corsOptions = {
+  methods: ['GET', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+} as const;
+
+const responseHeaders = (request: Request) => {
+  return {
+    'Content-Type': 'application/json',
+    ...getCorsHeaders(request, corsOptions),
+  };
 };
 
-export async function OPTIONS() {
-  return new Response(null, {
-    status: 204,
-    headers: corsHeaders
-  });
+export async function OPTIONS(request?: Request) {
+  return createCorsPreflightResponse(request, corsOptions);
 }
 
 export async function GET(request: Request) {
@@ -21,7 +25,7 @@ export async function GET(request: Request) {
   if (!eventId) {
     return new Response(JSON.stringify({ error: 'A valid event id is required' }), {
       status: 400,
-      headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      headers: responseHeaders(request),
     });
   }
 
@@ -44,7 +48,7 @@ export async function GET(request: Request) {
         // would defeat this gate entirely.
         return new Response(JSON.stringify({ data: [], public: false }), {
           status: 200,
-          headers: { 'Content-Type': 'application/json', ...corsHeaders },
+          headers: responseHeaders(request),
         });
       }
     }
@@ -59,10 +63,7 @@ export async function GET(request: Request) {
       console.error('Agenda fetch error:', error);
       return new Response(JSON.stringify({ error: 'Failed to fetch agenda' }), {
         status: 500,
-        headers: { 
-          'Content-Type': 'application/json',
-          ...corsHeaders 
-        }
+        headers: responseHeaders(request),
       });
     }
 
@@ -70,19 +71,13 @@ export async function GET(request: Request) {
       data: data || []
     }), { 
       status: 200, 
-      headers: { 
-        'Content-Type': 'application/json',
-        ...corsHeaders 
-      } 
+      headers: responseHeaders(request),
     });
   } catch (e) {
     console.error('Agenda API error:', e);
     return new Response(JSON.stringify({ error: 'Unexpected server error' }), { 
       status: 500,
-      headers: { 
-        'Content-Type': 'application/json',
-        ...corsHeaders 
-      }
+      headers: responseHeaders(request),
     });
   }
 }

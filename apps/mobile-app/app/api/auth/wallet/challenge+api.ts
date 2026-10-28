@@ -1,17 +1,29 @@
 import { getSupabaseServerForRequest } from '../../../../lib/supabase-server';
+import {
+  createCorsPreflightResponse,
+  getCorsHeaders,
+  LUKAS_CORS_ALLOWED_ORIGINS,
+} from '../../../../lib/cors';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': 'https://lukas.hashpass.tech',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+const corsOptions = {
+  allowedOrigins: LUKAS_CORS_ALLOWED_ORIGINS,
+  methods: ['POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+} as const;
+
+const jsonHeaders = (request: Request) => {
+  return {
+    'Content-Type': 'application/json',
+    ...getCorsHeaders(request, corsOptions),
+  };
 };
 
-export function OPTIONS() {
-  return new Response(null, { status: 204, headers: corsHeaders });
+export function OPTIONS(request?: Request) {
+  return createCorsPreflightResponse(request, corsOptions);
 }
 
-function badRequest(message: string) {
-  return new Response(JSON.stringify({ error: message }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+function badRequest(message: string, request: Request) {
+  return new Response(JSON.stringify({ error: message }), { status: 400, headers: jsonHeaders(request) });
 }
 
 /**
@@ -25,21 +37,21 @@ export async function POST(request: Request) {
     const { walletAddress, walletType, ipAddress } = body;
 
     if (!walletAddress || !walletType) {
-      return badRequest('walletAddress and walletType are required');
+      return badRequest('walletAddress and walletType are required', request);
     }
 
     if (!['ethereum', 'solana'].includes(walletType)) {
-      return badRequest('walletType must be "ethereum" or "solana"');
+      return badRequest('walletType must be "ethereum" or "solana"', request);
     }
 
     // Validate Ethereum address format
     if (walletType === 'ethereum' && !/^0x[a-fA-F0-9]{40}$/.test(walletAddress)) {
-      return badRequest('Invalid Ethereum address format');
+      return badRequest('Invalid Ethereum address format', request);
     }
 
     // Validate Solana address format (base58, 32-44 chars)
     if (walletType === 'solana' && !/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(walletAddress)) {
-      return badRequest('Invalid Solana address format');
+      return badRequest('Invalid Solana address format', request);
     }
 
     // Check rate limits
@@ -57,7 +69,7 @@ export async function POST(request: Request) {
 
     if (rateLimitError) {
       console.error('Rate limit check error:', rateLimitError);
-      return new Response(JSON.stringify({ error: 'Rate limit check failed' }), { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+      return new Response(JSON.stringify({ error: 'Rate limit check failed' }), { status: 500, headers: jsonHeaders(request) });
     }
 
     if (rateLimitData && rateLimitData.length > 0) {
@@ -66,7 +78,7 @@ export async function POST(request: Request) {
         return new Response(JSON.stringify({
           error: 'Too many requests. Please try again later.',
           blockedUntil: rateLimit.blocked_until
-        }), { status: 429, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+        }), { status: 429, headers: jsonHeaders(request) });
       }
     }
 
@@ -95,16 +107,16 @@ export async function POST(request: Request) {
 
     if (nonceError) {
       console.error('Nonce storage error:', nonceError);
-      return new Response(JSON.stringify({ error: 'Failed to generate challenge' }), { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+      return new Response(JSON.stringify({ error: 'Failed to generate challenge' }), { status: 500, headers: jsonHeaders(request) });
     }
 
     return new Response(JSON.stringify({
       nonce,
       message: `Sign this message to authenticate with ${walletType === 'ethereum' ? 'Ethereum' : 'Solana'}: ${nonce}`,
       expiresAt: expiresAt.toISOString()
-    }), { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+    }), { status: 200, headers: jsonHeaders(request) });
   } catch (error: any) {
     console.error('Challenge generation error:', error);
-    return new Response(JSON.stringify({ error: 'Internal server error' }), { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+    return new Response(JSON.stringify({ error: 'Internal server error' }), { status: 500, headers: jsonHeaders(request) });
   }
 }

@@ -14,6 +14,10 @@ import {
 } from "../../../lib/server/sms-auth";
 import { randomUUID } from "crypto";
 import * as nodemailer from "nodemailer";
+import {
+  createCorsPreflightResponse,
+  getCorsHeaders,
+} from "../../../lib/cors";
 
 async function findSupabaseUserByEmailForSms(client: any, email: string) {
   const perPage = 200;
@@ -34,18 +38,17 @@ async function findSupabaseUserByEmailForSms(client: any, email: string) {
   return { user: null, available: true };
 }
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization",
-};
+const corsOptions = {
+  methods: ["POST", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+} as const;
+
+const corsHeaders = (request: Request) =>
+  getCorsHeaders(request, corsOptions);
 
 // Handle CORS preflight requests
-export async function OPTIONS() {
-  return new Response(null, {
-    status: 204,
-    headers: corsHeaders,
-  });
+export async function OPTIONS(request?: Request) {
+  return createCorsPreflightResponse(request, corsOptions);
 }
 
 /**
@@ -69,7 +72,7 @@ export async function POST(request: Request) {
         }),
         {
           status: 400,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
+          headers: { "Content-Type": "application/json", ...corsHeaders(request) },
         },
       );
     }
@@ -82,7 +85,7 @@ export async function POST(request: Request) {
         JSON.stringify({ error: "Valid email is required" }),
         {
           status: 400,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
+          headers: { "Content-Type": "application/json", ...corsHeaders(request) },
         },
       );
     }
@@ -126,7 +129,7 @@ export async function POST(request: Request) {
         }),
         {
           status: 503,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
+          headers: { "Content-Type": "application/json", ...corsHeaders(request) },
         },
       );
     }
@@ -165,7 +168,7 @@ export async function POST(request: Request) {
           }),
           {
             status: 400,
-            headers: { "Content-Type": "application/json", ...corsHeaders },
+          headers: { "Content-Type": "application/json", ...corsHeaders(request) },
           },
         );
       }
@@ -186,7 +189,7 @@ export async function POST(request: Request) {
           }),
           {
             status: 503,
-            headers: { "Content-Type": "application/json", ...corsHeaders },
+          headers: { "Content-Type": "application/json", ...corsHeaders(request) },
           },
         );
       }
@@ -210,7 +213,7 @@ export async function POST(request: Request) {
             }),
             {
               status: 503,
-              headers: { "Content-Type": "application/json", ...corsHeaders },
+          headers: { "Content-Type": "application/json", ...corsHeaders(request) },
             },
           );
         }
@@ -232,7 +235,7 @@ export async function POST(request: Request) {
               }),
               {
                 status: 503,
-                headers: { "Content-Type": "application/json", ...corsHeaders },
+          headers: { "Content-Type": "application/json", ...corsHeaders(request) },
               },
             );
           }
@@ -246,7 +249,7 @@ export async function POST(request: Request) {
               }),
               {
                 status: 409,
-                headers: { "Content-Type": "application/json", ...corsHeaders },
+          headers: { "Content-Type": "application/json", ...corsHeaders(request) },
               },
             );
           }
@@ -270,7 +273,7 @@ export async function POST(request: Request) {
             }),
             {
               status: 503,
-              headers: { "Content-Type": "application/json", ...corsHeaders },
+          headers: { "Content-Type": "application/json", ...corsHeaders(request) },
             },
           );
         }
@@ -282,7 +285,7 @@ export async function POST(request: Request) {
             }),
             {
               status: 403,
-              headers: { "Content-Type": "application/json", ...corsHeaders },
+          headers: { "Content-Type": "application/json", ...corsHeaders(request) },
             },
           );
         }
@@ -301,7 +304,7 @@ export async function POST(request: Request) {
           }),
           {
             status: 503,
-            headers: { "Content-Type": "application/json", ...corsHeaders },
+          headers: { "Content-Type": "application/json", ...corsHeaders(request) },
           },
         );
       }
@@ -313,7 +316,7 @@ export async function POST(request: Request) {
           }),
           {
             status: 429,
-            headers: { "Content-Type": "application/json", ...corsHeaders },
+          headers: { "Content-Type": "application/json", ...corsHeaders(request) },
           },
         );
       }
@@ -347,7 +350,7 @@ export async function POST(request: Request) {
           }),
           {
             status: 503,
-            headers: { "Content-Type": "application/json", ...corsHeaders },
+          headers: { "Content-Type": "application/json", ...corsHeaders(request) },
           },
         );
       }
@@ -367,7 +370,7 @@ export async function POST(request: Request) {
           }),
           {
             status: 503,
-            headers: { "Content-Type": "application/json", ...corsHeaders },
+          headers: { "Content-Type": "application/json", ...corsHeaders(request) },
           },
         );
       }
@@ -413,7 +416,7 @@ export async function POST(request: Request) {
           }),
           {
             status: 429,
-            headers: { "Content-Type": "application/json", ...corsHeaders },
+          headers: { "Content-Type": "application/json", ...corsHeaders(request) },
           },
         );
       }
@@ -444,7 +447,7 @@ export async function POST(request: Request) {
         ),
         {
           status: responseStatus,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
+          headers: { "Content-Type": "application/json", ...corsHeaders(request) },
         },
       );
     }
@@ -483,7 +486,7 @@ export async function POST(request: Request) {
         JSON.stringify({ error: "Failed to extract OTP token" }),
         {
           status: 500,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
+          headers: { "Content-Type": "application/json", ...corsHeaders(request) },
         },
       );
     }
@@ -542,7 +545,7 @@ export async function POST(request: Request) {
           }),
           {
             status: 503,
-            headers: { "Content-Type": "application/json", ...corsHeaders },
+          headers: { "Content-Type": "application/json", ...corsHeaders(request) },
           },
         );
       }
@@ -557,7 +560,7 @@ export async function POST(request: Request) {
         }),
         {
           status: 500,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
+          headers: { "Content-Type": "application/json", ...corsHeaders(request) },
         },
       );
     }
@@ -594,7 +597,7 @@ export async function POST(request: Request) {
           }),
           {
             status: 503,
-            headers: { "Content-Type": "application/json", ...corsHeaders },
+          headers: { "Content-Type": "application/json", ...corsHeaders(request) },
           },
         );
       }
@@ -619,7 +622,7 @@ export async function POST(request: Request) {
           }),
           {
             status: 500,
-            headers: { "Content-Type": "application/json", ...corsHeaders },
+          headers: { "Content-Type": "application/json", ...corsHeaders(request) },
           },
         );
       }
@@ -704,7 +707,7 @@ export async function POST(request: Request) {
             }),
             {
               status: 429,
-              headers: { "Content-Type": "application/json", ...corsHeaders },
+          headers: { "Content-Type": "application/json", ...corsHeaders(request) },
             },
           );
         }
@@ -719,7 +722,7 @@ export async function POST(request: Request) {
           }),
           {
             status: 500,
-            headers: { "Content-Type": "application/json", ...corsHeaders },
+          headers: { "Content-Type": "application/json", ...corsHeaders(request) },
           },
         );
       }
@@ -738,7 +741,7 @@ export async function POST(request: Request) {
           }),
           {
             status: smsDelivery.status,
-            headers: { "Content-Type": "application/json", ...corsHeaders },
+          headers: { "Content-Type": "application/json", ...corsHeaders(request) },
           },
         );
       }
@@ -761,7 +764,7 @@ export async function POST(request: Request) {
         status: smsEnrollmentFlow ? 202 : 200,
         headers: {
           "Content-Type": "application/json",
-          ...corsHeaders,
+          ...corsHeaders(request),
         },
       },
     );
@@ -784,7 +787,7 @@ export async function POST(request: Request) {
         }),
         {
           status: 429,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
+          headers: { "Content-Type": "application/json", ...corsHeaders(request) },
         },
       );
     }
@@ -796,7 +799,7 @@ export async function POST(request: Request) {
       }),
       {
         status: 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
+          headers: { "Content-Type": "application/json", ...corsHeaders(request) },
       },
     );
   }

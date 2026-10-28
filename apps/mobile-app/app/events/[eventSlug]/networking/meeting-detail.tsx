@@ -165,7 +165,7 @@ export default function MeetingDetailScreen() {
         const { data, error } = await supabase
           .from('meetings')
           .select('id, speaker_name, requester_name, scheduled_at, end_time, status')
-          .eq('requester_id', dbUserId)
+          .or(`requester_id.eq.${dbUserId},host_id.eq.${dbUserId},attendee_id.eq.${dbUserId}`)
           .neq('id', meeting.id)
           .in('status', ['scheduled', 'confirmed', 'accepted', 'tentative', 'in_progress'])
           .lt('scheduled_at', endTime)
