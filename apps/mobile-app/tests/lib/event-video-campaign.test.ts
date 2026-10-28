@@ -1,6 +1,7 @@
 import {campaignFilmsAt, parseEventVideoCampaign} from "../../lib/event-video-campaign";
 import {resolveCampaignManifestUrl} from "../../lib/event-video-campaign";
 import {Platform} from "react-native";
+import type {EventVideoCampaignFilm} from "../../types/event-video-campaign";
 
 const origin = "https://media.example";
 const base = `${origin}/events/colombia2026/branding/campaign/bsl-bogota-2026/`;
@@ -23,8 +24,8 @@ const manifest = {
 test("switches all pre-close films to the recap at exactly 18:00 Bogotá", () => {
   const parsed = parseEventVideoCampaign(manifest, "colombia2026", origin);
   expect(parsed).not.toBeNull();
-  expect(campaignFilmsAt(parsed!, Date.parse(manifest.closesAt) - 1).map((film) => film.id)).toEqual(["welcome", "walkthrough"]);
-  expect(campaignFilmsAt(parsed!, Date.parse(manifest.closesAt)).map((film) => film.id)).toEqual(["recap"]);
+  expect(campaignFilmsAt(parsed!, Date.parse(manifest.closesAt) - 1).map((film: EventVideoCampaignFilm) => film.id)).toEqual(["welcome", "walkthrough"]);
+  expect(campaignFilmsAt(parsed!, Date.parse(manifest.closesAt)).map((film: EventVideoCampaignFilm) => film.id)).toEqual(["recap"]);
 });
 
 test("rejects another event, another origin, unsafe media and malformed timing", () => {
@@ -51,7 +52,7 @@ describe("localised welcome film", () => {
 
   test("accepts same-origin alternate locales and caption tracks", () => {
     const parsed = parseEventVideoCampaign(withWelcome({alternateLocales: {en: alternate}, captionTracks: alternate.captionTracks}), "colombia2026", origin);
-    expect(parsed?.films.find((film) => film.id === "welcome")?.alternateLocales?.en?.url).toBe(alternate.url);
+    expect(parsed?.films.find((film: EventVideoCampaignFilm) => film.id === "welcome")?.alternateLocales?.en?.url).toBe(alternate.url);
   });
 
   test.each([
