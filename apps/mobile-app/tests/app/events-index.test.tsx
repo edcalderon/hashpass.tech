@@ -14,6 +14,7 @@ jest.mock('../../components/icons/SettingsIcons', () => ({ LogInIcon: () => null
 jest.mock('../../components/QuickSettingsPanel', () => 'QuickSettingsPanel');
 jest.mock('../../app/(shared)/auth', () => 'EmbeddedAuth');
 jest.mock('../../lib/vector-icons', () => ({ NativeSafeIcon: () => null }));
+jest.mock('expo-video', () => ({ VideoView: 'VideoView', useVideoPlayer: () => ({ play: jest.fn(), pause: jest.fn() }) }));
 jest.mock('../../components/PassesDisplay', () => () => null);
 jest.mock('../../components/banner/SliderProgressBar', () => ({ SliderProgressBar: () => null }));
 jest.mock('../../lib/hooks/useAutoAdvanceProgress', () => ({ useAutoAdvanceProgress: (options: any) => { options.durationMs?.(0); return { activeIndex: mockHeroIndex, progress: { value: 0 }, pause: jest.fn(), resume: jest.fn(), goTo: jest.fn() }; } }));
