@@ -27,8 +27,13 @@ const welcomeCaptionTrack = (locale) => ({
   key: keyFor(`welcome-${locale}`, "vtt"),
   language: locale,
   label: locale === "es" ? "Español" : "English",
-  default: locale === "en",
 });
+const publicWelcomeCaptionTracks = (defaultLocale) => ["en", "es"].map((locale) => ({
+  src: `${mediaRoot}/welcome-${locale}.vtt`,
+  language: locale,
+  label: locale === "es" ? "Español" : "English",
+  default: locale === defaultLocale,
+}));
 const prepareAndUploadFilm = (id, title, durationSeconds, captionTracks = []) => {
   const film = resolve(`apps/video-studio/out/bsl-bogota-2026/${id}.mp4`);
   if (!existsSync(film)) throw new Error(`Missing ${id} film at ${film}`);
@@ -65,15 +70,13 @@ if (initialPublish) {
   }
 }
 const metrics = closingDay ? JSON.parse(readFileSync(metricsFile, "utf8")) : {cutoff: "2026-11-06T22:30:00Z"};
-const welcomeCaptionTracks = [
-  {src: `${mediaRoot}/welcome-en.vtt`, language: "en", label: "English", default: true},
-  {src: `${mediaRoot}/welcome-es.vtt`, language: "es", label: "Español"},
-];
+const spanishWelcomeCaptionTracks = publicWelcomeCaptionTracks("es");
+const englishWelcomeCaptionTracks = publicWelcomeCaptionTracks("en");
 const manifest = {version: 1, campaignId: "bsl-bogota-2026", eventId: "colombia2026", closesAt: "2026-11-06T23:00:00.000Z", metricsCutoff: metrics.cutoff, films: [
   {
-    id: "welcome", title: "Bienvenidos a BSL Bogotá", durationMs: 50000, url: `${mediaRoot}/welcome.mp4`, poster: `${mediaRoot}/welcome.jpg`, captions: `${mediaRoot}/welcome-en.vtt`, captionTracks: welcomeCaptionTracks,
+    id: "welcome", title: "Bienvenidos a BSL Bogotá", durationMs: 50000, url: `${mediaRoot}/welcome.mp4`, poster: `${mediaRoot}/welcome.jpg`, captions: `${mediaRoot}/welcome-es.vtt`, captionTracks: spanishWelcomeCaptionTracks,
     alternateLocales: {
-      en: {title: "Welcome to BSL Bogotá", durationMs: 50000, url: `${mediaRoot}/welcome-en.mp4`, poster: `${mediaRoot}/welcome-en.jpg`, captions: `${mediaRoot}/welcome-en.vtt`, captionTracks: welcomeCaptionTracks},
+      en: {title: "Welcome to BSL Bogotá", durationMs: 50000, url: `${mediaRoot}/welcome-en.mp4`, poster: `${mediaRoot}/welcome-en.jpg`, captions: `${mediaRoot}/welcome-en.vtt`, captionTracks: englishWelcomeCaptionTracks},
     },
   },
   {id: "walkthrough", title: "Tu BSL en HASHPASS", durationMs: 30000, url: `${mediaRoot}/walkthrough.mp4`, poster: `${mediaRoot}/walkthrough.jpg`, captions: `${mediaRoot}/walkthrough.vtt`},

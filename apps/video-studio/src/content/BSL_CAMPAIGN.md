@@ -3,8 +3,9 @@
 The campaign is defined in `bsl-bogota-campaign.json`. The three banner films
 remain `BslCampaign-welcome`, `BslCampaign-walkthrough`, and
 `BslCampaign-recap`; `BslCampaign-welcome-en` is the English-localised
-welcome cut. The web player selects that alternate for English browser
-preferences and exposes English and Spanish WebVTT caption tracks.
+welcome cut. Web playback follows the browser language; native playback follows
+the app's selected language. Both localized cuts expose English and Spanish
+WebVTT tracks, defaulting to the language of the selected cut.
 
 Run the manual `BSL Bogotá initial campaign publish` workflow on `main` before
 the event to render and publish the welcome and walkthrough films. The scheduled

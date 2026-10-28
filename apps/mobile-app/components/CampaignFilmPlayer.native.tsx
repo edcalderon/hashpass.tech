@@ -1,11 +1,15 @@
 import React, {useEffect} from "react";
+import {useLingui} from "@lingui/react";
 import {AppState, View} from "react-native";
 import {useVideoPlayer, VideoView} from "expo-video";
 import {uiTokens} from "@hashpass/ui/tokens";
+import {preferredCampaignPlayback} from "../lib/event-video-campaign";
 import type {EventVideoCampaignFilm} from "../types/event-video-campaign";
 
 export default function CampaignFilmPlayer({film}: {film: EventVideoCampaignFilm}) {
-  const player = useVideoPlayer(film.url, (instance) => {
+  const {i18n} = useLingui();
+  const playback = preferredCampaignPlayback(film, i18n.locale);
+  const player = useVideoPlayer(playback.url, (instance) => {
     instance.loop = false;
     instance.muted = false;
   });
@@ -21,7 +25,7 @@ export default function CampaignFilmPlayer({film}: {film: EventVideoCampaignFilm
   return (
     <View style={{width: "100%", aspectRatio: 16 / 9, backgroundColor: uiTokens.colors.dark.canvas}}>
       <VideoView
-        accessibilityLabel={film.title}
+        accessibilityLabel={playback.title ?? film.title}
         player={player}
         nativeControls
         contentFit="contain"

@@ -4,6 +4,12 @@ import {act, create} from "react-test-renderer";
 import NativeCampaignFilmPlayer from "../../components/CampaignFilmPlayer.native";
 import WebCampaignFilmPlayer from "../../components/CampaignFilmPlayer.web";
 
+const mockLingui = {locale: "es"};
+
+jest.mock("@lingui/react", () => ({
+  useLingui: () => ({i18n: mockLingui}),
+}));
+
 const mockPlayer = {
   loop: true,
   muted: true,
@@ -33,10 +39,63 @@ const film = {
 
 describe("CampaignFilmPlayer", () => {
   beforeEach(() => {
+    mockLingui.locale = "es";
     mockPlayer.loop = true;
     mockPlayer.muted = true;
     mockPlayer.pause.mockClear();
     mockUseVideoPlayer.mockClear();
+  });
+
+  it("selects the English alternate for an English native-app locale", () => {
+    const englishFilm = {
+      ...film,
+      title: "Bienvenidos a BSL Bogotá",
+      alternateLocales: {
+        en: {
+          title: "Welcome to BSL Bogotá",
+          durationMs: 50_000,
+          url: "https://media.example/events/colombia2026/branding/campaign/welcome-en.mp4",
+          poster: "https://media.example/events/colombia2026/branding/campaign/welcome-en.jpg",
+          captions: "https://media.example/events/colombia2026/branding/campaign/welcome-en.vtt",
+        },
+      },
+    };
+    mockLingui.locale = "en";
+
+    let renderer!: ReturnType<typeof create>;
+    act(() => {
+      renderer = create(<NativeCampaignFilmPlayer film={englishFilm} />);
+    });
+
+    expect(mockUseVideoPlayer).toHaveBeenCalledWith(englishFilm.alternateLocales.en.url, expect.any(Function));
+    expect(renderer.root.findByType("VideoView" as never).props.accessibilityLabel).toBe("Welcome to BSL Bogotá");
+    act(() => renderer.unmount());
+  });
+
+  it("keeps the Spanish base cut for a Spanish native-app locale", () => {
+    const spanishFilm = {
+      ...film,
+      title: "Bienvenidos a BSL Bogotá",
+      alternateLocales: {
+        en: {
+          title: "Welcome to BSL Bogotá",
+          durationMs: 50_000,
+          url: "https://media.example/events/colombia2026/branding/campaign/welcome-en.mp4",
+          poster: "https://media.example/events/colombia2026/branding/campaign/welcome-en.jpg",
+          captions: "https://media.example/events/colombia2026/branding/campaign/welcome-en.vtt",
+        },
+      },
+    };
+    mockLingui.locale = "es-CO";
+
+    let renderer!: ReturnType<typeof create>;
+    act(() => {
+      renderer = create(<NativeCampaignFilmPlayer film={spanishFilm} />);
+    });
+
+    expect(mockUseVideoPlayer).toHaveBeenCalledWith(spanishFilm.url, expect.any(Function));
+    expect(renderer.root.findByType("VideoView" as never).props.accessibilityLabel).toBe("Bienvenidos a BSL Bogotá");
+    act(() => renderer.unmount());
   });
 
   it("configures the native player and pauses it on background and unmount", () => {

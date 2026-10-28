@@ -1,15 +1,12 @@
 import React, {useEffect, useRef, useState} from "react";
 import {Text, View} from "react-native";
 import {uiTokens} from "@hashpass/ui/tokens";
-import type {EventVideoCampaignFilm, EventVideoCampaignFilmMedia} from "../types/event-video-campaign";
-
-function preferredPlayback(film: EventVideoCampaignFilm): EventVideoCampaignFilmMedia {
-  const language = typeof navigator === "undefined" ? "" : navigator.language.toLowerCase();
-  return language.startsWith("en") && film.alternateLocales?.en ? film.alternateLocales.en : film;
-}
+import {preferredCampaignPlayback} from "../lib/event-video-campaign";
+import type {EventVideoCampaignFilm} from "../types/event-video-campaign";
 
 export default function CampaignFilmPlayer({film}: {film: EventVideoCampaignFilm}) {
-  const playback = preferredPlayback(film);
+  const language = typeof navigator === "undefined" ? "" : navigator.language;
+  const playback = preferredCampaignPlayback(film, language);
   const title = playback.title ?? film.title;
   const video = useRef<HTMLVideoElement>(null);
   const [failed, setFailed] = useState(false);

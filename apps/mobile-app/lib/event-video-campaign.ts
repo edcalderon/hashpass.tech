@@ -2,6 +2,11 @@ import {Platform} from "react-native";
 import type {EventVideoCampaign, EventVideoCampaignCaptionTrack, EventVideoCampaignFilm, EventVideoCampaignFilmMedia} from "../types/event-video-campaign";
 
 const CAMPAIGN_PATH = "/events/colombia2026/branding/campaign/";
+
+export function preferredCampaignPlayback(film: EventVideoCampaignFilm, locale: string): EventVideoCampaignFilmMedia {
+  const language = locale.trim().toLowerCase().split(/[-_]/, 1)[0];
+  return language === "en" && film.alternateLocales?.en ? film.alternateLocales.en : film;
+}
 const LOCAL_WEB_ORIGIN = /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?$/i;
 
 export function resolveCampaignManifestUrl(heroVideo: string): URL | null {
