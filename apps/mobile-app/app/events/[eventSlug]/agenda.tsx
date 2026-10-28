@@ -42,6 +42,7 @@ import { useTranslation, getCurrentLocale } from '../../../i18n/i18n';
 import { ActionButton, HoverText, IconButton, SegmentedTabs, Surface } from '@hashpass/ui/primitives';
 import { uiPalette, uiTokens } from '@hashpass/ui/tokens';
 import StatusPill from '../../../components/StatusPill';
+import WorkshopShimmer from '../../../components/WorkshopShimmer';
 import {
   buildGoogleCalendarUrl,
   buildICalendarFile,
@@ -302,7 +303,9 @@ export default function BSL2025AgendaScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   // "Bookmarked" view: every bookmarked session across all days. Bookmarks
   // are the persisted is_favorite flag, so they follow the user across devices.
-  const [bookmarkedOnly, setBookmarkedOnly] = useState(false);
+  const [agendaView, setAgendaView] = useState<'all' | 'bookmarked' | 'workshops'>('all');
+  const bookmarkedOnly = agendaView === 'bookmarked';
+  const workshopsOnly = agendaView === 'workshops';
   const [agendaLayout, setAgendaLayout] = useState<'compact' | 'list' | 'grid'>('compact');
   const isCompactAgenda = agendaLayout === 'compact';
   const isAgendaGrid = agendaLayout === 'grid';
@@ -1475,6 +1478,18 @@ export default function BSL2025AgendaScreen() {
   const bookmarkedCount = Object.values(agendaByDay)
     .reduce((total, items) => total + items.filter((item) => favoriteStatus[item.id]).length, 0);
 
+  // Workshops (parallel-room sessions) across every day, honouring search and filters.
+  const workshopGroups = Object.keys(agendaByDay)
+    .map((dayKey) => ({
+      dayKey,
+      items: (agendaByDay[dayKey] || []).filter((item) => (
+        item.type === 'workshop' && bookmarkFilteredIds.has(String(item.id))
+      )),
+    }))
+    .filter((group) => group.items.length > 0);
+  const workshopCount = Object.values(agendaByDay)
+    .reduce((total, items) => total + items.filter((item) => item.type === 'workshop').length, 0);
+
   // Render a single agenda card
   /* istanbul ignore next -- rendered by the platform agenda screen */
   const renderAgendaItem = (item: AgendaItem) => {
@@ -1484,6 +1499,7 @@ export default function BSL2025AgendaScreen() {
     const isPast = isEventPast(item);
     const startTime = parseEventISO((item as any).time || '');
     const typeColor = getAgendaTypeColor(item.type);
+    const isWorkshop = item.type === 'workshop';
     const typeLabel = t(`types.${item.type}`, item.type).toUpperCase();
     const displayDescription = getDisplayAgendaDescription(item.description);
     const location = item.location?.trim()
@@ -1571,9 +1587,13 @@ export default function BSL2025AgendaScreen() {
             isCompactAgenda && styles.agendaItemCompact,
             isAgendaGrid && styles.agendaItemGrid,
             { borderLeftColor: typeColor },
+            isWorkshop && { boxShadow: `0 6px 22px ${typeColor}${isDark ? '55' : '33'}`, borderColor: `${typeColor}88`, borderWidth: 1 },
             isPast && styles.agendaItemPast,
           ]}
         >
+          {isWorkshop ? (
+            <WorkshopShimmer testID={`agenda-card-workshop-fx-${item.id}`} color={typeColor} isDark={isDark} />
+          ) : null}
           <View
             testID={`agenda-card-layout-${item.id}`}
             style={[
@@ -1617,8 +1637,19 @@ export default function BSL2025AgendaScreen() {
                   />
                 </View>
               ) : null}
+              {isConfirmed ? (
+                <View
+                  testID={`agenda-card-on-agenda-${item.id}`}
+                  accessible
+                  accessibilityRole="image"
+                  accessibilityLabel={t('actions.onAgenda', 'On agenda')}
+                  style={[styles.agendaOnAgenda, { backgroundColor: speakerStatusHues.active }]}
+                >
+                  <MaterialIcons name="check" size={18} color="#FFFFFF" />
+                </View>
+              ) : null}
               {usesSpeakerPortrait && resolvedSpeakers.length > 1 ? (
-                <View style={styles.agendaMediaCount}>
+                <View style={[styles.agendaMediaCount, isConfirmed && styles.agendaMediaCountBelow]}>
                   <Text style={styles.agendaMediaCountText}>+{resolvedSpeakers.length - 1}</Text>
                 </View>
               ) : null}
@@ -1658,41 +1689,35 @@ export default function BSL2025AgendaScreen() {
 
             <View style={[styles.agendaItemContent, isCompactAgenda && styles.agendaItemContentCompact]}>
               <View style={styles.agendaHeaderRow}>
-                {isPast ? (
+                <HoverText
+                  mode={interfaceMode}
+                  style={[
+                    styles.agendaTitle,
+                    isCompactAgenda && styles.agendaTitleCompact,
+                    isWideAgenda && !isCompactAgenda && !isAgendaGrid && styles.agendaTitleWide,
+                  ]}
+                  numberOfLines={isCompactAgenda ? 3 : 4}
+                  tooltipText={cleanSessionTitle(item.title)}
+                >
+                  {cleanSessionTitle(item.title)}
+                </HoverText>
+                <View style={styles.agendaBadges}>
+                  {isPast ? (
+                    <StatusPill
+                      isDark={isDark}
+                      label={t('badges.past')}
+                      color={speakerStatusHues.past}
+                      trailingIcon={<MaterialIcons name="history" size={13} color={palette.muted} />}
+                    />
+                  ) : null}
                   <StatusPill
                     isDark={isDark}
-                    label={t('badges.past')}
-                    color={speakerStatusHues.past}
-                    trailingIcon={<MaterialIcons name="history" size={13} color={palette.muted} />}
+                    label={typeLabel}
+                    color={typeColor}
+                    trailingIcon={<NativeSafeIcon name={getAgendaTypeIcon(item.type) as NativeSafeIconName} size={13} color={palette.muted} />}
                   />
-                ) : null}
-                {isConfirmed ? (
-                  <StatusPill
-                    isDark={isDark}
-                    label={t('actions.onAgenda', 'On agenda')}
-                    color={speakerStatusHues.active}
-                    trailingIcon={<MaterialIcons name="check" size={14} color={speakerStatusHues.active} />}
-                  />
-                ) : null}
-                <StatusPill
-                  isDark={isDark}
-                  label={typeLabel}
-                  color={typeColor}
-                  trailingIcon={<NativeSafeIcon name={getAgendaTypeIcon(item.type) as NativeSafeIconName} size={13} color={palette.muted} />}
-                />
+                </View>
               </View>
-              <HoverText
-                mode={interfaceMode}
-                style={[
-                  styles.agendaTitle,
-                  isCompactAgenda && styles.agendaTitleCompact,
-                  isWideAgenda && !isCompactAgenda && !isAgendaGrid && styles.agendaTitleWide,
-                ]}
-                numberOfLines={isCompactAgenda ? 3 : 4}
-                tooltipText={cleanSessionTitle(item.title)}
-              >
-                {cleanSessionTitle(item.title)}
-              </HoverText>
 
               <View style={styles.locationContainer}>
                 <MaterialIcons
@@ -1949,10 +1974,13 @@ export default function BSL2025AgendaScreen() {
             mode={interfaceMode}
             accessibilityLabel={t('bookmarks.label', 'Agenda view')}
             accentColor={colors.primary}
-            value={bookmarkedOnly ? 'bookmarked' : 'all'}
-            onChange={(id) => setBookmarkedOnly(id === 'bookmarked')}
+            value={agendaView}
+            onChange={(id) => setAgendaView(id as 'all' | 'bookmarked' | 'workshops')}
             tabs={[
               { id: 'all', label: t('bookmarks.all', 'All sessions') },
+              ...(workshopCount > 0
+                ? [{ id: 'workshops', label: t('workshops.label', 'Workshops') }]
+                : []),
               { id: 'bookmarked', label: t('bookmarks.saved', 'Bookmarked'), count: bookmarkedCount },
             ]}
           />
@@ -1970,6 +1998,21 @@ export default function BSL2025AgendaScreen() {
                 <Text style={styles.noResultsSubtext}>{t('bookmarks.emptySubtitle', 'Tap the bookmark on a session to save it here.')}</Text>
               </View>
             ) : bookmarkedGroups.map(({ dayKey, items }) => (
+              <View key={dayKey} style={styles.bookmarkGroup}>
+                <Text style={styles.bookmarkGroupLabel}>{getTabLabel(dayKey)}</Text>
+                {items.map(renderAgendaItem)}
+              </View>
+            ))}
+          </View>
+        ) : workshopsOnly ? (
+          <View testID="agenda-workshops" style={[styles.agendaList, isAgendaGrid && styles.agendaGridList]}>
+            {workshopGroups.length === 0 ? (
+              <View style={styles.noResultsContainer}>
+                <MaterialIcons name="build" size={48} color={colors.text.secondary} />
+                <Text style={styles.noResultsText}>{t('workshops.emptyTitle', 'No workshops match')}</Text>
+                <Text style={styles.noResultsSubtext}>{t('workshops.emptySubtitle', 'Clear the search or filters to see parallel-room workshops.')}</Text>
+              </View>
+            ) : workshopGroups.map(({ dayKey, items }) => (
               <View key={dayKey} style={styles.bookmarkGroup}>
                 <Text style={styles.bookmarkGroupLabel}>{getTabLabel(dayKey)}</Text>
                 {items.map(renderAgendaItem)}
@@ -2408,6 +2451,24 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     top: uiTokens.space.sm,
     width: 30,
   },
+  // Round check badge on the photo (same size as the bookmark button, opposite corner).
+  agendaOnAgenda: {
+    alignItems: 'center',
+    borderColor: uiTokens.effects.mediaBorder,
+    borderRadius: uiTokens.radius.circle,
+    borderWidth: 1.5,
+    height: 30,
+    justifyContent: 'center',
+    left: uiTokens.space.sm,
+    position: 'absolute',
+    top: uiTokens.space.sm,
+    width: 30,
+    zIndex: 2,
+    boxShadow: '0 2px 10px rgba(3, 12, 24, 0.35)',
+  },
+  agendaMediaCountBelow: {
+    top: uiTokens.space.sm + 30 + uiTokens.space.xs,
+  },
   agendaBookmark: {
     position: 'absolute',
     right: uiTokens.space.sm,
@@ -2471,13 +2532,17 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     paddingBottom: uiTokens.space.lg,
     position: 'relative',
   },
+  // Title and badges share one row: the title takes the free width on the
+  // left, the badges stack in a right-aligned column that never shrinks.
   agendaHeaderRow: {
-    alignItems: 'center',
+    alignItems: 'flex-start',
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: uiTokens.space.sm,
-    justifyContent: 'flex-end',
-    marginBottom: uiTokens.space.xs,
+    gap: uiTokens.space.md,
+  },
+  agendaBadges: {
+    alignItems: 'flex-end',
+    flexShrink: 0,
+    gap: uiTokens.space.xs + 2,
   },
   agendaItemContentCompact: {
     gap: uiTokens.space.xs,
@@ -2488,7 +2553,8 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   // The session title is the card's primary read: largest, heaviest text,
   // left-aligned under the badges, stepping up with the available width.
   agendaTitle: {
-    alignSelf: 'stretch',
+    flex: 1,
+    minWidth: 0,
     fontSize: uiTokens.type.title - 4,
     fontWeight: '800',
     color: colors.text.primary,

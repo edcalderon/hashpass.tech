@@ -1289,6 +1289,11 @@
       "privateTitle": "Agenda ainda não é pública",
       "privateSubtitle": "O organizador ainda não tornou a programação deste evento pública"
     },
+    "workshops": {
+      "label": "Workshops",
+      "emptyTitle": "Nenhum workshop encontrado",
+      "emptySubtitle": "Limpe a busca ou os filtros para ver os workshops da sala paralela."
+    },
     "bookmarks": {
       "label": "Vista da agenda",
       "all": "Todas as sessões",

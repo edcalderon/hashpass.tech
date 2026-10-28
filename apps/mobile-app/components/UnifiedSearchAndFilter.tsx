@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Pressable, Platform, useWindowDimensions } from 'react-native';
 // lib/vector-icons routes web to SVG-based Lucide icons instead of the raw
 // font glyphs @expo/vector-icons renders directly; the raw font can show its
 // tofu/"?" fallback glyph for a window before the icon font loads on web.
@@ -50,6 +50,11 @@ interface UnifiedSearchAndFilterProps<T extends BaseItem> {
    */
   externalFilters?: { [key: string]: any };
 }
+
+// Soft tint of a hex colour; non-hex values are returned untouched.
+const tint = (color: string, alpha: number) => (
+  /^#[0-9a-f]{6}$/i.test(color) ? `${color}${alpha.toString(16).padStart(2, '0')}` : color
+);
 
 export default function UnifiedSearchAndFilter<T extends BaseItem>({
   data,
@@ -244,8 +249,15 @@ export default function UnifiedSearchAndFilter<T extends BaseItem>({
                 style={[
                   styles.filterOption,
                   { width: useSingleColumnFilters ? '100%' : '48.5%' },
+                  option.color && {
+                    backgroundColor: tint(optionColor, isDark ? 0x1f : 0x12),
+                    borderColor: tint(optionColor, isDark ? 0x66 : 0x4d),
+                  },
                   selected && styles.filterOptionSelected,
-                  selected && { borderColor: optionColor, backgroundColor: `${optionColor}14` },
+                  selected && {
+                    borderColor: optionColor,
+                    backgroundColor: tint(optionColor, isDark ? 0x38 : 0x24),
+                  },
                 ]}
                 onPress={() => handleFilterChange(group.key, selected ? '' : option.key)}
               >
@@ -283,6 +295,16 @@ export default function UnifiedSearchAndFilter<T extends BaseItem>({
       </View>
     );
   };
+
+  // Escape closes the open filter card on web.
+  useEffect(() => {
+    if (!showFiltersDropdown || Platform.OS !== 'web' || typeof document === 'undefined') return undefined;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setShowFiltersDropdown(false);
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [showFiltersDropdown]);
 
   // Initialize with all data
   useEffect(() => {
@@ -347,6 +369,17 @@ export default function UnifiedSearchAndFilter<T extends BaseItem>({
           </TouchableOpacity>
         )}
       </View>
+
+      {/* Tap anywhere outside the card to close it */}
+      {showFiltersDropdown && filterGroups.length > 0 && (
+        <Pressable
+          testID="filters-backdrop"
+          accessibilityRole="button"
+          accessibilityLabel="Close filters"
+          style={styles.filtersBackdrop}
+          onPress={() => setShowFiltersDropdown(false)}
+        />
+      )}
 
       {/* Filters Dropdown */}
       {showFiltersDropdown && filterGroups.length > 0 && (
@@ -419,6 +452,15 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    position: 'relative',
+    zIndex: 36,
+  },
+  // Full-viewport catcher on web; on native, an oversized hit area around the card.
+  filtersBackdrop: {
+    zIndex: 35,
+    ...(Platform.OS === 'web'
+      ? ({ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 } as any)
+      : { position: 'absolute', top: -2000, left: -2000, right: -2000, bottom: -2000 }),
   },
   // Search Container - expands to left
   searchContainer: {
@@ -561,7 +603,7 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     minHeight: uiTokens.control.compactHeight,
     paddingVertical: uiTokens.space.sm,
     paddingHorizontal: uiTokens.space.md,
-    borderRadius: uiTokens.radius.input,
+    borderRadius: uiTokens.radius.pill,
     borderWidth: 1,
     borderColor: colors.divider,
     backgroundColor: isDark ? 'rgba(255,255,255,0.025)' : 'rgba(7,17,30,0.018)',

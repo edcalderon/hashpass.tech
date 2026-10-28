@@ -1927,6 +1927,11 @@
       "privateTitle": "Agenda not public yet",
       "privateSubtitle": "The organizer hasn't made this event's schedule public"
     },
+    "workshops": {
+      "label": "Workshops",
+      "emptyTitle": "No workshops match",
+      "emptySubtitle": "Clear the search or filters to see parallel-room workshops."
+    },
     "bookmarks": {
       "label": "Agenda view",
       "all": "All sessions",

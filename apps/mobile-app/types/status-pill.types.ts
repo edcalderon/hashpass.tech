@@ -3,11 +3,9 @@ import type { StyleProp, ViewStyle } from 'react-native';
 
 export interface StatusPillProps {
   label: string;
-  /** Colour of the leading status dot. */
+  /** Hue of the pill: tints the background and contour. */
   color: string;
   isDark?: boolean;
-  /** The dot emits a soft ping ring (unless motion is reduced). */
-  live?: boolean;
   /** Trailing affordance, e.g. a check or an info glyph. */
   trailingIcon?: ReactNode;
   /** Makes the pill a button. */

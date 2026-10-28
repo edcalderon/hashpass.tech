@@ -812,6 +812,65 @@ describe('event schedule screens', () => {
     await act(async () => renderer!.unmount());
   });
 
+  it('adds a Workshops view and gives workshop cards the special effect', async () => {
+    mockApiRequest.mockImplementation(() => Promise.resolve({
+      success: true,
+      data: {
+        data: [
+          { id: 'ws-1', day: '1', time: '12:00 - 13:00', title: 'Workshop Meru', type: 'workshop', location: 'Workshop · Sala paralela' },
+          { id: 'talk-1', day: '1', time: '09:00 - 09:15', title: 'Opening talk', type: 'keynote' },
+        ],
+      },
+    }));
+
+    let renderer: TestRenderer.ReactTestRenderer;
+    await act(async () => {
+      renderer = TestRenderer.create(<AgendaScreen />);
+      for (let index = 0; index < 4; index += 1) await flushPromises();
+    });
+    const textOf = () => renderer!.root.findAllByType(Text).map((node) => node.children.join(''));
+    expect(renderer!.root.findAllByProps({ testID: 'agenda-card-workshop-fx-ws-1' }).length).toBeGreaterThan(0);
+    expect(renderer!.root.findAllByProps({ testID: 'agenda-card-workshop-fx-talk-1' })).toHaveLength(0);
+
+    const workshopsTab = renderer!.root.findAll(
+      (node) => node.props.accessibilityRole === 'tab'
+        && node.findAllByType(Text).some((text) => text.children.join('') === 'workshops.label'),
+    )[0];
+    await act(async () => {
+      workshopsTab.props.onPress();
+      await flushPromises();
+    });
+    expect(renderer!.root.findAllByProps({ testID: 'agenda-workshops' }).length).toBeGreaterThan(0);
+    expect(textOf()).toContain('Workshop Meru');
+    expect(textOf()).not.toContain('Opening talk');
+    await act(async () => renderer!.unmount());
+  });
+
+  it('shows a check badge over the photo for sessions already on the agenda', async () => {
+    mockAuthState = { ...mockAuthState, user: { id: 'better-auth-user', email: 'attendee@example.test' } };
+    mockApiRequest.mockImplementation((path: string) => Promise.resolve({
+      success: true,
+      data: {
+        data: path.endsWith('agenda/status')
+          ? [{ agenda_id: 'on-1', status: 'confirmed', is_favorite: false }]
+          : [
+            { id: 'on-1', day: '1', time: '09:00', title: 'Confirmed session', type: 'keynote' },
+            { id: 'off-1', day: '1', time: '10:00', title: 'Other session', type: 'panel' },
+          ],
+      },
+    }));
+
+    let renderer: TestRenderer.ReactTestRenderer;
+    await act(async () => {
+      renderer = TestRenderer.create(<AgendaScreen />);
+      for (let index = 0; index < 4; index += 1) await flushPromises();
+    });
+    expect(renderer!.root.findAllByProps({ testID: 'agenda-card-on-agenda-on-1' }).length).toBeGreaterThan(0);
+    expect(renderer!.root.findAllByProps({ testID: 'agenda-card-on-agenda-off-1' })).toHaveLength(0);
+    expect(renderer!.root.findAllByProps({ name: 'check' }).length).toBeGreaterThan(0);
+    await act(async () => renderer!.unmount());
+  });
+
   it('shows the empty bookmarks state when nothing is saved', async () => {
     mockUserAgendaStatusRows = [];
     mockApiRequest.mockImplementation(() => Promise.resolve({

@@ -1,53 +1,23 @@
-import React, { useEffect, useRef } from 'react';
-import { Animated, Easing, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useMotionAllowed } from '../hooks/useMotionAllowed';
+import React from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { uiPalette, uiTokens } from '@hashpass/ui/tokens';
 import type { StatusPillProps } from '../types/status-pill.types';
 
-const DOT = 8;
-
-/** Status dot; a live dot emits a soft ping ring unless motion is reduced. */
-function StatusDot({ color, live }: { color: string; live: boolean }) {
-  const motionAllowed = useMotionAllowed();
-  const ping = useRef(new Animated.Value(0)).current;
-  const pinging = live && motionAllowed;
-  useEffect(() => {
-    if (!pinging) {
-      ping.setValue(0);
-      return undefined;
-    }
-    const loop = Animated.loop(
-      Animated.timing(ping, { toValue: 1, duration: 1800, easing: Easing.out(Easing.quad), useNativeDriver: true }),
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [pinging, ping]);
-  return (
-    <View style={styles.dotSlot} accessible={false} importantForAccessibility="no-hide-descendants">
-      {pinging ? (
-        <Animated.View
-          style={[styles.dotRing, {
-            backgroundColor: color,
-            opacity: ping.interpolate({ inputRange: [0, 1], outputRange: [0.45, 0] }),
-            transform: [{ scale: ping.interpolate({ inputRange: [0, 1], outputRange: [1, 2.6] }) }],
-          }]}
-        />
-      ) : null}
-      <View style={[styles.dot, { backgroundColor: color }]} />
-    </View>
-  );
-}
+/** `#rrggbb` + 0-255 alpha -> `#rrggbbaa`; non-hex colours pass through. */
+const tint = (color: string, alpha: number) => (
+  /^#[0-9a-f]{6}$/i.test(color) ? `${color}${alpha.toString(16).padStart(2, '0')}` : color
+);
 
 /**
- * The one status pill: dot, label and an optional trailing glyph on a raised
- * surface with a hairline border. Speaker status and every agenda card badge
- * (session type, "On agenda", "Past") render through it so they stay identical.
+ * The one status pill: a label and an optional trailing glyph on a soft tint
+ * of its colour with a matching contour. Speaker status and every agenda card
+ * badge (session type, "On agenda", "Past") render through it so they stay
+ * identical. The label keeps the neutral text colour so any hue stays legible.
  */
 export default function StatusPill({
   label,
   color,
   isDark = false,
-  live = false,
   trailingIcon,
   onPress,
   accessibilityLabel,
@@ -55,10 +25,13 @@ export default function StatusPill({
   style,
 }: StatusPillProps) {
   const palette = uiPalette(isDark ? 'dark' : 'light');
-  const pillStyle = [styles.pill, { backgroundColor: palette.raised, borderColor: palette.border }, style];
+  const pillStyle = [
+    styles.pill,
+    { backgroundColor: tint(color, isDark ? 0x2e : 0x1a), borderColor: tint(color, isDark ? 0x80 : 0x66) },
+    style,
+  ];
   const content = (
     <>
-      <StatusDot color={color} live={live} />
       <Text numberOfLines={1} style={[styles.label, { color: palette.text }]}>{label}</Text>
       {trailingIcon}
     </>
@@ -90,15 +63,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
-    gap: uiTokens.space.sm,
-    paddingHorizontal: uiTokens.space.md,
+    gap: uiTokens.space.xs + 2,
+    paddingHorizontal: uiTokens.space.md - 2,
     paddingVertical: uiTokens.space.xs + 2,
     borderRadius: uiTokens.radius.pill,
     borderWidth: uiTokens.control.borderWidth,
     maxWidth: '100%',
   },
-  label: { flexShrink: 1, fontSize: uiTokens.type.caption, fontWeight: '600', letterSpacing: 0.2 },
-  dotSlot: { width: DOT, height: DOT, alignItems: 'center', justifyContent: 'center' },
-  dot: { width: DOT, height: DOT, borderRadius: uiTokens.radius.circle },
-  dotRing: { position: 'absolute', width: DOT, height: DOT, borderRadius: uiTokens.radius.circle },
+  label: { flexShrink: 1, fontSize: uiTokens.type.caption, fontWeight: '700', letterSpacing: 0.3 },
 });

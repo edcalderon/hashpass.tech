@@ -83,7 +83,6 @@ function SpeakerCard({
         {speaker.title && <Text style={styles.speakerTitle}>{speaker.title}</Text>}
         {speaker.company && <Text style={styles.speakerCompany}>{speaker.company}</Text>}
       </View>
-      {isInteractive && <MaterialIcons name="chevron-right" size={20} color="#666" />}
     </TouchableOpacity>
   );
 }
@@ -420,7 +419,7 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   },
   speakerNameRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: 4,
     gap: 8,
   },
@@ -429,6 +428,7 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     fontWeight: '700',
     color: colors.text.primary,
     letterSpacing: 0.2,
+    lineHeight: 26,
     flex: 1,
   },
   statusLabel: {

@@ -11,7 +11,6 @@ import type {
 export type { SpeakerBadgeStatus } from '../types/speaker-status-badge.types';
 
 // Statuses that are "live" ping; a switched-off or past profile stays still.
-const LIVE: SpeakerBadgeStatus[] = ['active', 'passive', 'dnd'];
 const ICONS: Record<SpeakerBadgeStatus, string> = {
   active: 'verified',
   passive: 'hourglass-empty',
@@ -40,7 +39,6 @@ export default function SpeakerStatusBadge({ status, label, isDark = false }: Sp
         label={text}
         color={hue}
         isDark={isDark}
-        live={LIVE.includes(status)}
         accessibilityLabel={t('speakerView.status.explainA11y', { status: text })}
         onPress={() => setOpen(true)}
         pillTestID={`speaker-status-${status}`}

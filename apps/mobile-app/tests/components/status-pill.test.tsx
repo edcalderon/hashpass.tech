@@ -20,12 +20,12 @@ describe('StatusPill', () => {
     expect(renderer!.root.findByProps({ testID: 'pill' }).props.onPress).toBeUndefined();
   });
 
-  it('becomes pressable when onPress is provided, in dark mode with a live ring', async () => {
+  it('becomes pressable when onPress is provided, in dark mode', async () => {
     const onPress = jest.fn();
     let renderer: ReturnType<typeof create>;
     await act(async () => {
       renderer = create(
-        <StatusPill label="Live" color="#22c55e" isDark live onPress={onPress} accessibilityLabel="Live now" pillTestID="live" />,
+        <StatusPill label="Live" color="#22c55e" isDark onPress={onPress} accessibilityLabel="Live now" pillTestID="live" />,
       );
     });
     const pill = renderer!.root.findByProps({ testID: 'live' });

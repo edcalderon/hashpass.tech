@@ -1290,6 +1290,11 @@
       "privateTitle": "Programme pas encore public",
       "privateSubtitle": "L'organisateur n'a pas encore rendu public le programme de cet événement"
     },
+    "workshops": {
+      "label": "Ateliers",
+      "emptyTitle": "Aucun atelier trouvé",
+      "emptySubtitle": "Effacez la recherche ou les filtres pour voir les ateliers de la salle parallèle."
+    },
     "bookmarks": {
       "label": "Vue de l’agenda",
       "all": "Toutes les sessions",

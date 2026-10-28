@@ -55,6 +55,7 @@ export const getAgendaTypeIcon = (type: string): string => {
 // Helper to get default duration in minutes for different agenda types
 export const getDefaultDurationMinutes = (type?: string): number => {
   if (type === 'panel') return 60;
+  if (type === 'workshop') return 60;
   if (type === 'keynote') return 30;
   if (type === 'break') return 15;
   if (type === 'meal') return 60;
