@@ -112,7 +112,7 @@ export default function SpeakerDetail() {
   const [meetingRequests, setMeetingRequests] = useState<any[]>([]);
   const [loadingRequestStatus, setLoadingRequestStatus] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
-  const [isCurrentUserSpeaker, setIsCurrentUserSpeaker] = useState(false);
+  const isCurrentUserSpeaker = Boolean(dbUserId && speaker?.user_id === dbUserId);
   const [isCancellingRequest, setIsCancellingRequest] = useState(false);
   const [cancelledRequests, setCancelledRequests] = useState<any[]>([]);
   const [loadingCancelledRequests, setLoadingCancelledRequests] = useState(false);
@@ -127,6 +127,9 @@ export default function SpeakerDetail() {
   const [passRefreshTrigger, setPassRefreshTrigger] = useState(0);
   const [userPassType, setUserPassType] = useState<'general' | 'business' | 'vip'>('general');
   const attendeeProfileRef = useRef<AttendeeProfile | null>(null);
+  const requestLimitsInFlightRef = useRef<{ key: string; promise: Promise<void> } | null>(null);
+  const requestLimitsSettledKeyRef = useRef<string | null>(null);
+  const requestLimitsGenerationRef = useRef(0);
   
   const [meetingMessage, setMeetingMessage] = useState('');
   const [selectedIntentions, setSelectedIntentions] = useState<string[]>([]);
@@ -229,7 +232,6 @@ export default function SpeakerDetail() {
           showError('Speaker Not Available', 'This speaker profile is not public yet.');
           return;
         }
-        setIsCurrentUserSpeaker(Boolean(dbUserId && dbSpeaker.user_id === dbUserId));
         setSpeaker({
           id: String(dbSpeaker.id),
           name: dbSpeaker.name,
@@ -264,15 +266,9 @@ export default function SpeakerDetail() {
   };
 
   useEffect(() => {
-    if (!id) return;
-    
-    loadSpeaker();
-    
-    // User ticket removed - now using pass system
-    
-    // Load user request limits
-    loadRequestLimits();
-  }, [dbUserId, event?.speakers, id, speakerPath]);
+    if (!id || !speakerPath) return;
+    void loadSpeaker();
+  }, [id, speakerPath]);
 
   useEffect(() => {
     let cancelled = false;
@@ -298,25 +294,25 @@ export default function SpeakerDetail() {
   }, [isLoggedIn, user?.id]);
 
   useEffect(() => {
-    if (dbUserId && speaker) {
-      loadMeetingRequestStatus();
-      loadCancelledRequests();
-      loadRequestLimits();
+    if (dbUserId && speaker?.id) {
+      void loadMeetingRequestStatus();
+      void loadCancelledRequests();
+      void loadRequestLimits();
     }
-  }, [dbUserId, speaker, isCurrentUserSpeaker]);
+  }, [dbUserId, eventId, speaker?.id, isCurrentUserSpeaker]);
 
   // Keep this screen behind the authenticated event API boundary. Polling is
   // deliberately used here until backend push delivery is available, avoiding
   // a second browser-to-Supabase data path with different tenant semantics.
   useEffect(() => {
-    if (!dbUserId || !speaker) return;
+    if (!dbUserId || !speaker?.id) return;
     const refresh = () => {
       void loadMeetingRequestStatus();
       void loadCancelledRequests();
     };
     const interval = setInterval(refresh, 30000);
     return () => clearInterval(interval);
-  }, [dbUserId, eventId, speaker, isCurrentUserSpeaker]);
+  }, [dbUserId, eventId, speaker?.id, isCurrentUserSpeaker]);
 
   const loadMeetingRequestStatus = async () => {
     if (!dbUserId || !speaker) return;
@@ -576,7 +572,7 @@ export default function SpeakerDetail() {
       
       // Refresh request limits to update available requests
       console.log('🔄 Refreshing request limits...');
-      await loadRequestLimits();
+      await loadRequestLimits(true);
       
       // Trigger pass display refresh
       setPassRefreshTrigger(prev => prev + 1);
@@ -611,58 +607,84 @@ export default function SpeakerDetail() {
 
 
 
-  const loadRequestLimits = async () => {
-    if (!dbUserId || !speaker) return;
-    setLoadingRequestLimits(true);
-    try {
-      await retryDatabaseSession?.();
-      const response = await apiClient.request(meetingRequestLimitsPath, {
-        skipEventSegment: true,
-      });
-      if (!response.success) throw new Error(response.error);
-      const data = (response.data as any)?.data;
+  const loadRequestLimits = async (force = false) => {
+    const currentDbUserId = dbUserId;
+    const currentSpeakerId = speaker?.id;
+    if (!currentDbUserId || !currentSpeakerId) return;
 
-      if (data) {
-        setRequestLimits({
-          ticketType: data.pass_type || 'general',
-          totalRequests: data.total_requests || 0,
-          remainingRequests: data.remaining_requests || 0,
-          canSendRequest: (data.remaining_requests || 0) > 0,
-          requestLimit: data.max_requests || 0,
-          remainingBoost: Math.max(0, Number(data.remaining_boost) || 0),
-          reason: data.remaining_requests > 0 ? 'Request allowed' : 'No remaining requests',
+    const requestKey = `${eventId}:${currentDbUserId}:${currentSpeakerId}`;
+    const inFlight = requestLimitsInFlightRef.current;
+    if (inFlight?.key === requestKey) return inFlight.promise;
+    if (!force && requestLimitsSettledKeyRef.current === requestKey) return;
+
+    const generation = ++requestLimitsGenerationRef.current;
+    const requestPromise = (async () => {
+      setLoadingRequestLimits(true);
+      try {
+        // The auth bridge is already resolved before this effect runs. Calling
+        // it again for every limits fetch can update auth state while React is
+        // rendering and re-enter this effect indefinitely.
+        const response = await apiClient.request(meetingRequestLimitsPath, {
+          skipEventSegment: true,
         });
-        
-        // Update userPassType from the data
-        if (data.pass_type) {
-          setUserPassType(data.pass_type as 'general' | 'business' | 'vip');
+        if (!response.success) throw new Error(response.error);
+        const data = (response.data as any)?.data;
+
+        // Do not let a response for a previous event/user/speaker tuple win
+        // after navigation or auth reconciliation.
+        if (generation !== requestLimitsGenerationRef.current) return;
+
+        if (data) {
+          setRequestLimits({
+            ticketType: data.pass_type || 'general',
+            totalRequests: data.total_requests || 0,
+            remainingRequests: data.remaining_requests || 0,
+            canSendRequest: (data.remaining_requests || 0) > 0,
+            requestLimit: data.max_requests || 0,
+            remainingBoost: Math.max(0, Number(data.remaining_boost) || 0),
+            reason: data.remaining_requests > 0 ? 'Request allowed' : 'No remaining requests',
+          });
+          if (data.pass_type) {
+            setUserPassType(data.pass_type as 'general' | 'business' | 'vip');
+          }
+        } else {
+          setRequestLimits({
+            ticketType: 'general',
+            totalRequests: 0,
+            remainingRequests: 0,
+            canSendRequest: false,
+            requestLimit: 0,
+            remainingBoost: 0,
+            reason: 'No active pass found',
+          });
         }
-      } else {
-        // No pass found or other issue
+      } catch (error) {
+        if (generation !== requestLimitsGenerationRef.current) return;
+        console.error('❌ Error loading request limits:', error);
         setRequestLimits({
-          ticketType: 'business',
+          ticketType: 'general',
           totalRequests: 0,
           remainingRequests: 0,
           canSendRequest: false,
           requestLimit: 0,
           remainingBoost: 0,
-          reason: 'No active pass found',
+          reason: 'Error loading request limits',
         });
+      } finally {
+        if (generation === requestLimitsGenerationRef.current) {
+          requestLimitsSettledKeyRef.current = requestKey;
+          setLoadingRequestLimits(false);
+        }
       }
-    } catch (error) {
-      console.error('❌ Error loading request limits:', error);
-      // Set default limits to prevent meeting requests if database is unavailable
-      setRequestLimits({
-        ticketType: 'business',
-        totalRequests: 0,
-        remainingRequests: 0,
-        canSendRequest: false,
-        requestLimit: 0,
-        remainingBoost: 0,
-        reason: 'Error loading request limits',
-      });
+    })();
+
+    requestLimitsInFlightRef.current = { key: requestKey, promise: requestPromise };
+    try {
+      await requestPromise;
     } finally {
-      setLoadingRequestLimits(false);
+      if (requestLimitsInFlightRef.current?.promise === requestPromise) {
+        requestLimitsInFlightRef.current = null;
+      }
     }
   };
 
@@ -721,6 +743,13 @@ export default function SpeakerDetail() {
     setMeetingKind('speed');
     setCoffeeMinutes(15);
     setShowMeetingModal(true);
+  };
+
+  const openTicketPurchase = () => {
+    router.push({
+      pathname: '/events/[eventSlug]/tickets' as any,
+      params: { eventSlug: eventId, openTicketModal: 'true' },
+    });
   };
 
   const submitMeetingRequestDirectly = async () => {
@@ -784,7 +813,7 @@ export default function SpeakerDetail() {
       );
 
       // Reload request limits to update the UI
-      await loadRequestLimits();
+      await loadRequestLimits(true);
       
       // Trigger pass display refresh
       setPassRefreshTrigger(prev => prev + 1);
@@ -966,7 +995,7 @@ export default function SpeakerDetail() {
       setMeetingKind('speed');
       
       // Refresh request limits and meeting request status after sending (for data consistency)
-      await loadRequestLimits();
+      await loadRequestLimits(true);
       await loadMeetingRequestStatus();
       
       // Check if this is a demo response
@@ -1543,7 +1572,8 @@ export default function SpeakerDetail() {
         onMeetingTypeChange={setMeetingKind}
         coffeeMinutes={coffeeMinutes}
         onCoffeeMinutesChange={setCoffeeMinutes}
-        coffeeAllowed={canBookCoffee(requestLimits?.ticketType || userPassType)}
+        coffeeAllowed={!loadingRequestLimits && canBookCoffee(requestLimits?.ticketType || userPassType)}
+        onCoffeeLockedPress={openTicketPurchase}
         submitting={isRequestingMeeting}
         onSubmit={submitMeetingRequest}
       />

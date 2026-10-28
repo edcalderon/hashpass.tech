@@ -269,6 +269,31 @@ describe('speaker detail screen', () => {
     await act(async () => renderer.unmount());
   });
 
+  it('does not refetch limits when the event speaker collection gets a new identity', async () => {
+    let renderer: any;
+    await act(async () => {
+      renderer = renderSpeaker();
+      await flushPromises();
+    });
+
+    const countCalls = (path: string) =>
+      mockApiRequest.mock.calls.filter(([calledPath]) => calledPath === path).length;
+
+    expect(countCalls('events/bsl/speakers/speaker-1')).toBe(1);
+    expect(countCalls('events/bsl/meetings/limits')).toBe(1);
+
+    mockEventSpeakers = [{ id: 'speaker-1', name: 'Ada Lovelace' }];
+    await act(async () => {
+      renderer.update(<SpeakerDetail />);
+      await flushPromises();
+    });
+
+    expect(countCalls('events/bsl/speakers/speaker-1')).toBe(1);
+    expect(countCalls('events/bsl/meetings/limits')).toBe(1);
+
+    await act(async () => renderer.unmount());
+  });
+
   it('renders an unclaimed published profile and exposes the meeting request action', async () => {
     mockApiRequest.mockImplementation((path: string, options?: { method?: string }) =>
       path === 'events/bsl/speakers/speaker-1'

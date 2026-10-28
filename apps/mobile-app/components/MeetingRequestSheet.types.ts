@@ -23,6 +23,8 @@ export type MeetingRequestSheetProps = {
   onCoffeeMinutesChange: (value: CoffeeDuration) => void;
   /** Coffee breaks are for business and VIP passes. */
   coffeeAllowed: boolean;
+  /** Opens the event ticket flow when a locked coffee break is selected. */
+  onCoffeeLockedPress?: () => void;
 };
 
 export type BoostBarProps = {

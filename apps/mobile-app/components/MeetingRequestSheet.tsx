@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { PanResponder, Platform, Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
-import { ActionButton, FormField, Surface } from '@hashpass/ui/primitives';
+import { ActionButton, Badge, FormField, Surface } from '@hashpass/ui/primitives';
 import { uiPalette, uiTokens } from '@hashpass/ui/tokens';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../i18n/i18n';
@@ -159,6 +159,7 @@ export default function MeetingRequestSheet({
   open, onClose, speakerName, message, onMessageChange, intentions, onIntentionsChange,
   boostAmount, onBoostChange, remainingBoost, submitting, onSubmit,
   meetingType, onMeetingTypeChange, coffeeMinutes, onCoffeeMinutesChange, coffeeAllowed,
+  onCoffeeLockedPress,
 }: MeetingRequestSheetProps) {
   const { isDark } = useTheme();
   const { t } = useTranslation('networking');
@@ -214,9 +215,14 @@ export default function MeetingRequestSheet({
                   accessibilityRole="radio"
                   accessibilityLabel={t(`meetingRequestModal.types.${id}.title`)}
                   accessibilityHint={locked ? t('meetingRequestModal.coffeeLocked') : undefined}
-                  accessibilityState={{ selected, disabled: locked }}
-                  disabled={locked}
-                  onPress={() => onMeetingTypeChange(id)}
+                  accessibilityState={{ selected }}
+                  onPress={() => {
+                    if (locked) {
+                      onCoffeeLockedPress?.();
+                      return;
+                    }
+                    onMeetingTypeChange(id);
+                  }}
                   testID={`meeting-type-${id}`}
                   style={({ pressed }) => [
                     styles.typeCard,
@@ -231,9 +237,24 @@ export default function MeetingRequestSheet({
                     <MaterialIcons name={locked ? 'lock' : icon} size={20} color={selected ? palette.onAccent : palette.text} />
                   </View>
                   <View style={styles.typeText}>
-                    <Text style={[styles.label, { color: palette.text }]}>{t(`meetingRequestModal.types.${id}.title`)}</Text>
+                    <View style={styles.typeTitleRow}>
+                      <Text style={[styles.label, { color: palette.text }]}>{t(`meetingRequestModal.types.${id}.title`)}</Text>
+                      {locked ? (
+                        <Badge
+                          mode={mode}
+                          tone="neutral"
+                          compact
+                          leadingIcon={<MaterialIcons name="lock" size={12} color={palette.accent} />}
+                          accessibilityLabel={t('meetingRequestModal.coffeeLocked')}
+                        >
+                          {t('meetingRequestModal.coffeeLocked')}
+                        </Badge>
+                      ) : null}
+                    </View>
                     <Text style={[styles.caption, { color: palette.muted }]} numberOfLines={2}>
-                      {locked ? t('meetingRequestModal.coffeeLocked') : t(`meetingRequestModal.types.${id}.hint`)}
+                      {locked
+                        ? t('meetingRequestModal.coffeeLockedHint', 'Upgrade your pass to unlock Coffee break.')
+                        : t(`meetingRequestModal.types.${id}.hint`)}
                     </Text>
                   </View>
                 </Pressable>
@@ -457,6 +478,12 @@ const styles = StyleSheet.create({
     padding: uiTokens.space.md,
     borderRadius: uiTokens.radius.media,
     borderWidth: uiTokens.control.borderWidth,
+  },
+  typeTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: uiTokens.space.xs,
   },
   typeText: { flex: 1, gap: 2 },
   chips: { flexDirection: 'row', gap: uiTokens.space.sm },

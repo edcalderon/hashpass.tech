@@ -678,7 +678,8 @@ describe("meeting-requests api", () => {
       ["a zero duration", 0],
       ["a NaN duration", "NaN"],
       ["an infinite duration", "Infinity"],
-      ["a duration above the 45-minute meeting limit", 46],
+      ["a duration above the 30-minute stand-up limit", 31],
+      ["a duration above the 30-minute stand-up limit", 46],
       ["a duration below the 5-minute baseline", 4],
     ])("rejects %s before invoking the meeting request RPC", async (_label, durationMinutes) => {
       mockResolveNotificationIdentity.mockResolvedValue({
@@ -702,7 +703,7 @@ describe("meeting-requests api", () => {
 
       expect(response.status).toBe(400);
       expect(await response.json()).toEqual({
-        error: "durationMinutes must be between 5 and 45 minutes",
+        error: "durationMinutes must be between 5 and 30 minutes",
       });
       expect(mockRpc).not.toHaveBeenCalled();
     });

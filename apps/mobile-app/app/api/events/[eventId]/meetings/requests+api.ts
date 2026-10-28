@@ -14,7 +14,8 @@ const ACTIONS = new Set(["accept", "decline", "cancel", "block"]);
 // Quick stand-ups start at 5 minutes and boost up to 30; coffee breaks run 15-45.
 // The RPC derives the real length from type + boost, this only rejects nonsense early.
 const MIN_MEETING_DURATION_MINUTES = 5;
-const MAX_MEETING_DURATION_MINUTES = 45;
+const MAX_SPEED_DURATION_MINUTES = 30;
+const MAX_COFFEE_DURATION_MINUTES = 45;
 const COFFEE_NOT_ALLOWED_CODE = 'HP403';
 
 async function deliverMeetingEmail(details: Record<string, unknown>) {
@@ -241,6 +242,9 @@ export async function POST(request: Request) {
     );
   }
   const meetingType = body.meetingType === 'coffee' ? 'coffee' : 'speed';
+  const maxDurationMinutes = meetingType === 'coffee'
+    ? MAX_COFFEE_DURATION_MINUTES
+    : MAX_SPEED_DURATION_MINUTES;
   const durationMinutes = body.durationMinutes === undefined
     ? (meetingType === 'coffee' ? 15 : MIN_MEETING_DURATION_MINUTES)
     : Number(body.durationMinutes);
@@ -248,10 +252,10 @@ export async function POST(request: Request) {
     !Number.isFinite(durationMinutes) ||
     !Number.isInteger(durationMinutes) ||
     durationMinutes < MIN_MEETING_DURATION_MINUTES ||
-    durationMinutes > MAX_MEETING_DURATION_MINUTES
+    durationMinutes > maxDurationMinutes
   ) {
     return Response.json(
-      { error: "durationMinutes must be between 5 and 45 minutes" },
+      { error: `durationMinutes must be between 5 and ${maxDurationMinutes} minutes` },
       { status: 400 },
     );
   }

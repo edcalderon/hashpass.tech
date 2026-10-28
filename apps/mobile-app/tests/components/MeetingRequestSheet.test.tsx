@@ -44,6 +44,7 @@ const baseProps = {
   coffeeMinutes: 15 as 15 | 30 | 45,
   onCoffeeMinutesChange: jest.fn(),
   coffeeAllowed: true,
+  onCoffeeLockedPress: jest.fn(),
   submitting: false,
   onSubmit: jest.fn(),
 };
@@ -170,12 +171,15 @@ describe('MeetingRequestSheet', () => {
     expect(onMeetingTypeChange).toHaveBeenLastCalledWith('coffee');
   });
 
-  it('locks the coffee break for passes that are not business or VIP', () => {
-    const renderer = render({ coffeeAllowed: false, meetingType: 'coffee' });
+  it('locks the coffee break for passes that are not business or VIP and opens tickets when tapped', () => {
+    const onCoffeeLockedPress = jest.fn();
+    const renderer = render({ coffeeAllowed: false, meetingType: 'coffee', onCoffeeLockedPress });
     const coffee = renderer.root.findByProps({ testID: 'meeting-type-coffee' });
-    expect(coffee.props.disabled).toBe(true);
-    expect(coffee.props.accessibilityState).toMatchObject({ selected: false, disabled: true });
+    expect(coffee.props.disabled).toBeUndefined();
+    expect(coffee.props.accessibilityState).toMatchObject({ selected: false });
     expect(JSON.stringify(renderer.toJSON())).toContain('meetingRequestModal.coffeeLocked');
+    act(() => coffee.props.onPress());
+    expect(onCoffeeLockedPress).toHaveBeenCalledTimes(1);
     // A stale coffee choice falls back to the stand-up rules, never a locked coffee break.
     expect(renderer.root.findAllByProps({ testID: 'meeting-coffee-lengths' })).toHaveLength(0);
     expect(renderer.root.findByProps({ testID: 'meeting-boost-length' }).props.children).toBe(
