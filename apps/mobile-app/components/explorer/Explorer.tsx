@@ -84,6 +84,9 @@ import {
 } from "../../lib/event-banners";
 import { getEventBannerCtaLayout } from "../../lib/banner-cta";
 import EventHeroBackground from "./EventHeroBackground";
+import {useEventVideoCampaign} from "../../hooks/useEventVideoCampaign";
+import {campaignFilmsAt} from "../../lib/event-video-campaign";
+import CampaignFilmPlayer from "../CampaignFilmPlayer";
 import ExplorerHeroAction, {
   ExplorerExpandableAction,
 } from "./ExplorerHeroAction";
@@ -467,10 +470,25 @@ export default function Explorer({
   const layout = getExplorerLayout(mode);
   const wideGrid = mode === "grid" && viewportWidth >= 760;
   const gridCoverSize = wideGrid ? 176 : layout.coverSize;
-  const selectedHeroSlides = useMemo<ResolvedEventBannerSlide[]>(
-    () => (selectedEvent ? getEventBannerSlides(selectedEvent) : []),
-    [selectedEvent],
+  const {campaign: bslCampaign, now: bslCampaignNow} = useEventVideoCampaign(
+    selectedEvent?.id,
+    selectedEvent?.heroVideo,
   );
+  const selectedHeroSlides = useMemo<ResolvedEventBannerSlide[]>(() => {
+    if (!selectedEvent) return [];
+    const base = getEventBannerSlides(selectedEvent);
+    if (!bslCampaign) return base;
+    const campaignSlides = campaignFilmsAt(bslCampaign, bslCampaignNow).map((film) => ({
+      ...base[0],
+      id: `campaign-${film.id}`,
+      title: film.title,
+      subtitle: "BSL × HASHPASS",
+      durationMs: film.durationMs,
+      media: {type: "video" as const, url: film.url},
+      campaignFilm: film,
+    }));
+    return [...base, ...campaignSlides] as ResolvedEventBannerSlide[];
+  }, [selectedEvent, bslCampaign, bslCampaignNow]);
 
   // The global dashboard carousel is a projection of the event registry.
   // Keeping the media contract here means a new event automatically gains a
@@ -662,6 +680,26 @@ export default function Explorer({
       const heroSlide = selectedHeroSlide || selectedHeroSlides[0];
       if (!heroSlide) return null;
       const localizedHeroSlide = localizeEventBannerSlide(heroSlide, translate);
+      const campaignFilm = (heroSlide as ResolvedEventBannerSlide & {campaignFilm?: import("../../types/event-video-campaign").EventVideoCampaignFilm}).campaignFilm;
+      if (campaignFilm) {
+        return (
+          <View style={styles.hero}>
+            <CampaignFilmPlayer film={campaignFilm} />
+            <View style={styles.heroContent}>
+              <Text style={styles.heroTitle}>{localizedHeroSlide.title}</Text>
+              <Text style={styles.heroSubtitle}>{localizedHeroSlide.subtitle}</Text>
+            </View>
+            <SliderProgressBar
+              count={selectedHeroSlides.length}
+              activeIndex={selectedHeroSlideIndex}
+              progress={selectedHeroSlider.progress}
+              onSegmentPress={selectedHeroSlider.goTo}
+              containerStyle={styles.heroProgress}
+              accessibilityLabel={translate("explore.rework.eventBannerSlides", "Event banner slides")}
+            />
+          </View>
+        );
+      }
       const fallbackImage =
         heroSlide.media.type === "image"
           ? heroSlide.media.url
@@ -1131,7 +1169,7 @@ export default function Explorer({
           { label },
         )}
       >
-        <View style={styles.discoveryCounterWatermark} pointerEvents="none">
+        <View style={[styles.discoveryCounterWatermark, { pointerEvents: "none" }]}>
           <Icon name={iconName} color={colors.primary} size={40} />
         </View>
         <View style={styles.discoveryCounterTopRow}>

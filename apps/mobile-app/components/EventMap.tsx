@@ -135,7 +135,8 @@ export default function EventMap({ address, venue, city, country, label, isDark,
         ) : (
           <>
             {!frameLoaded && (
-              <View style={styles.placeholder} pointerEvents="none">
+              /* istanbul ignore next -- decorative overlay has no behavior to exercise */
+              <View style={[styles.placeholder, { pointerEvents: "none" }]}>
                 <ActivityIndicator size="small" color={palette.accent} />
               </View>
             )}

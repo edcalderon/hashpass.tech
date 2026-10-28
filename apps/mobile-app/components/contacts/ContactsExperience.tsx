@@ -311,7 +311,7 @@ export default function ContactsExperience({ snapshot, loading = false, busy = f
             <View style={styles.qr} accessibilityLabel={t('qrLabel', 'Scan to request a connection')} accessible>
               {!!shareUrl && <View style={[styles.qrCodeFrame, { width: qrSize + uiTokens.space.lg * 2, height: qrSize + uiTokens.space.lg * 2 }]}>
                 <QRCode value={shareUrl} size={qrSize} color={uiTokens.colors.light.text} backgroundColor={uiTokens.colors.light.canvas} quietZone={uiTokens.space.sm} ecl="H" />
-                <View pointerEvents="none" style={styles.qrBrandBadge}>
+                <View style={[styles.qrBrandBadge, { pointerEvents: "none" }]}>
                   <Image source={getHashpassFullLogo(false)} style={styles.qrBrandLogo} resizeMode="contain" accessibilityLabel="HASHPASS" />
                 </View>
               </View>}

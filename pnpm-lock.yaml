@@ -1130,6 +1130,8 @@ importers:
         specifier: ^5.102.1
         version: 5.105.2(esbuild@0.25.12)
 
+  apps/status-page: {}
+
   apps/video-studio:
     dependencies:
       '@remotion/cli':

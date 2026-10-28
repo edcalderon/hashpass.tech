@@ -25,7 +25,7 @@ export interface PassDepthLayerProps {
  * layer that also translated would read as the card coming apart.
  */
 export const PassDepthLayer: React.FC<PassDepthLayerProps> = ({ children, style, pointerEvents }) => (
-  <View style={style} pointerEvents={pointerEvents}>
+  <View style={[style, { pointerEvents }]}>
     {children}
   </View>
 );

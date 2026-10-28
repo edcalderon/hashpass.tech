@@ -266,6 +266,35 @@ describe('EventApiClient credential handling', () => {
       expect(url).toBe('/api/status');
     });
 
+    it('keeps an Expo LAN web origin on the same-origin API in local development', async () => {
+      Platform.OS = 'web';
+      setEnv('EXPO_PUBLIC_API_BASE_URL', 'https://api-dev.hashpass.tech/api');
+      setEnv('EXPO_PUBLIC_API_TARGET', undefined);
+      setEnv('EXPO_PUBLIC_ENV', 'local');
+      setEnv('NODE_ENV', 'development');
+      setWindow({
+        location: {
+          hostname: '192.168.1.20',
+          origin: 'http://192.168.1.20:8081',
+          protocol: 'http:',
+        },
+      });
+
+      const fetchMock = jest.fn(async () => ({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        headers: { get: () => 'application/json' },
+        json: async () => ({ status: 'healthy' }),
+      }));
+      global.fetch = fetchMock as unknown as typeof fetch;
+
+      const response = await new EventApiClient().request('status', { skipEventSegment: true, skipAuth: true });
+      expect(response.success).toBe(true);
+      const [url] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+      expect(url).toBe('/api/status');
+    });
+
     it('points localhost web at the development Lambda when EXPO_PUBLIC_API_TARGET=dev', async () => {
       Platform.OS = 'web';
       setEnv('EXPO_PUBLIC_API_TARGET', 'dev');

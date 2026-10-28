@@ -131,8 +131,7 @@ const MagicLinkSparkIcon = ({
   return (
     <View
       accessible={false}
-      pointerEvents="none"
-      style={[styles.container, { width: size, height: size }]}
+      style={[styles.container, { width: size, height: size, pointerEvents: "none" }]}
       testID="magic-link-spark-icon"
     >
       <Animated.View

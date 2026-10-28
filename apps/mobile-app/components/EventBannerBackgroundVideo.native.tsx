@@ -61,8 +61,7 @@ export default function EventBannerBackgroundVideo({
       ) : null}
       {playbackEnabled && !hasFirstFrame && showLoadingIndicator && (
         <View
-          style={styles.loader}
-          pointerEvents="none"
+          style={[styles.loader, { pointerEvents: "none" }]}
           accessibilityLabel={loadingLabel}
         >
           {loadingLogoSource ? (

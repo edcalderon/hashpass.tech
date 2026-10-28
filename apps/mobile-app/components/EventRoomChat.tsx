@@ -1243,8 +1243,7 @@ export default function EventRoomChat({
                                 {detailsVisible && (
                                   <Surface
                                     mode={isDark ? "dark" : "light"}
-                                    style={styles.reactionUsersPopover}
-                                    pointerEvents="none"
+                                    style={[styles.reactionUsersPopover, { pointerEvents: "none" }]}
                                   >
                                     <Text style={styles.reactionUsersTitle}>
                                       {reaction.emoji} {reaction.label}

@@ -151,7 +151,7 @@ export function LiquidEffectAnimation({ isDark = false, colors }: LiquidEffectAn
       ];
 
   return (
-    <View style={styles.container} pointerEvents="none">
+    <View style={[styles.container, { pointerEvents: "none" }]}>
       {/* Liquid blob 1 - smaller sizes for header */}
       <Animated.View
         style={[
@@ -244,4 +244,3 @@ const styles = StyleSheet.create({
     position: 'absolute',
   },
 });
-

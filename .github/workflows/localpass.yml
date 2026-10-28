@@ -29,7 +29,10 @@ jobs:
         with:
           node-version-file: '.nvmrc'
           cache: pnpm
-      - run: pnpm install --frozen-lockfile --prefer-offline
+      # Reconcile restored pnpm links before running the LocalPass tests. A
+      # cached workspace can otherwise fail with EEXIST while relinking a
+      # shared package such as @noble/hashes.
+      - run: pnpm install --frozen-lockfile --prefer-offline --force
       - run: pnpm --filter @hashpass/localpass test
       - run: pnpm --filter @hashpass/localpass build
       - run: pnpm exec playwright install --with-deps chromium

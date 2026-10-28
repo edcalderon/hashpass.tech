@@ -1,0 +1,67 @@
+name: BSL Bogotá closing recap
+
+on:
+  schedule:
+    - cron: "30 22 6 11 *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  render-and-publish:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 35
+    concurrency:
+      group: bsl-bogota-campaign-recap
+      cancel-in-progress: false
+    env:
+      EVENT_MEDIA_BUCKET: ${{ vars.EVENT_VIDEO_MEDIA_BUCKET }}
+      EVENT_MEDIA_PUBLIC_BASE_URL: ${{ vars.EVENT_VIDEO_MEDIA_BASE_URL }}
+      EVENT_VIDEO_ROLE_ARN: ${{ vars.EVENT_VIDEO_ROLE_ARN }}
+      EVENT_VIDEO_ACCOUNT_ID: ${{ vars.EVENT_VIDEO_ACCOUNT_ID }}
+      EVENT_CAMPAIGN_DATABASE_URL: ${{ secrets.DB_BACKUP_CORE_DB_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --filter hashpass-video-studio...
+      - run: sudo apt-get update -qq && sudo apt-get install -y ffmpeg postgresql-client
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.EVENT_VIDEO_ROLE_ARN }}
+          aws-region: us-east-2
+      - name: Configure the required hashpass AWS profile
+        shell: bash
+        run: |
+          umask 077
+          mkdir -p "$HOME/.aws"
+          {
+            echo '[hashpass]'
+            echo "aws_access_key_id=$AWS_ACCESS_KEY_ID"
+            echo "aws_secret_access_key=$AWS_SECRET_ACCESS_KEY"
+            echo "aws_session_token=$AWS_SESSION_TOKEN"
+          } > "$HOME/.aws/credentials"
+      - name: Capture aggregate metrics at the fixed 17:30 Bogotá cutoff
+        env:
+          EVENT_CAMPAIGN_METRICS_FILE: apps/video-studio/out/bsl-bogota-2026/metrics.json
+        run: node apps/video-studio/scripts/capture-bsl-recap-metrics.mjs --output "$EVENT_CAMPAIGN_METRICS_FILE"
+      - name: Render the recap with the fixed 17:30 Bogotá cutoff
+        env:
+          EVENT_CAMPAIGN_METRICS_FILE: apps/video-studio/out/bsl-bogota-2026/metrics.json
+        run: pnpm --filter hashpass-video-studio render BslCampaign-recap
+      - name: Validate the closing asset before publication
+        run: |
+          test -s apps/video-studio/out/bsl-bogota-2026/recap.mp4
+          duration=$(ffprobe -v error -show_entries format=duration -of csv=p=0 apps/video-studio/out/bsl-bogota-2026/recap.mp4)
+          awk "BEGIN { if (duration < 89.8 || duration > 90.2) exit 1 }" duration="$duration"
+      - name: Publish through the reviewed campaign publisher
+        env:
+          EVENT_CAMPAIGN_METRICS_FILE: apps/video-studio/out/bsl-bogota-2026/metrics.json
+        run: node apps/video-studio/scripts/publish-bsl-campaign.mjs --closing-day

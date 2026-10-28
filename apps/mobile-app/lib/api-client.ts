@@ -73,18 +73,21 @@ export const readBuildEnvironment = (): 'development' | 'production' | null => {
   return null;
 };
 
-/** True when the web app runs from a localhost dev server, which also hosts the `app/api/**` routes. */
-const isLocalhostWebDev = () =>
+/** True when the web app runs from an Expo dev server, which also hosts the `app/api/**` routes. */
+const isLocalWebDev = () =>
   Platform.OS === 'web' &&
   typeof window !== 'undefined' &&
   typeof window.location?.origin === 'string' &&
-  LOCALHOST_API_PATTERN.test(window.location.origin);
+  (LOCALHOST_API_PATTERN.test(window.location.origin) ||
+    (window.location.protocol === 'http:' &&
+      process.env.NODE_ENV !== 'production' &&
+      process.env.EXPO_PUBLIC_ENV !== 'production'));
 
 const resolveFallbackApiBaseUrl = () => {
   // Localhost web dev talks to itself (see resolveRuntimeApiBaseUrl); returning null
   // lets the client fall back to the same-origin `/api` base. Production web is
   // static assets on a real domain (never localhost), so it keeps the remote Lambda.
-  if (isLocalhostWebDev()) return null;
+  if (isLocalWebDev()) return null;
 
   const environment = readBuildEnvironment();
   if (environment) {
@@ -154,7 +157,7 @@ const resolveRuntimeApiBaseUrl = () => {
   // pinned `EXPO_PUBLIC_API_BASE_URL` (aimed at deployed/native builds) must not
   // drag it to a remote Lambda. `EXPO_PUBLIC_API_TARGET=dev|prod` opts back into a
   // remote backend; a null return selects the same-origin `/api` base.
-  if (isLocalhostWebDev()) return resolveLocalWebApiTarget();
+  if (isLocalWebDev()) return resolveLocalWebApiTarget();
 
   const envBase =
     ((process.env.EXPO_PUBLIC_API_BASE_URL || '') ||

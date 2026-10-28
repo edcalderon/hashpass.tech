@@ -1680,7 +1680,6 @@ function AuthenticatedDashboardLayout() {
     // Animated.View from reanimated doesn't support old Animated.Interpolation directly
     return (
       <RNAnimated.View
-        pointerEvents="auto"
         style={[
           styles.header,
           Platform.OS !== "web" && {
@@ -1696,6 +1695,7 @@ function AuthenticatedDashboardLayout() {
               : "0 3px 6px rgba(15, 23, 42, 0.18)",
             overflow: "hidden",
           },
+          { pointerEvents: "auto" },
         ]}
         onLayout={
           Platform.OS === "android"
@@ -1704,7 +1704,7 @@ function AuthenticatedDashboardLayout() {
         }
       >
         {/* Background with blur and gloss effect */}
-        <View style={StyleSheet.absoluteFill} pointerEvents="none">
+        <View style={[StyleSheet.absoluteFill, { pointerEvents: "none" }]}>
           {/* Blur effect - only when animations enabled */}
           {animationsEnabled ? (
             Platform.OS === "web" ? (
@@ -1754,9 +1754,9 @@ function AuthenticatedDashboardLayout() {
                 {
                   opacity: glossOpacity as any,
                   transform: [{ translateX: glossPosition as any }],
+                  pointerEvents: "none",
                 },
               ]}
-              pointerEvents="none"
             >
               <View
                 style={{
@@ -1783,7 +1783,6 @@ function AuthenticatedDashboardLayout() {
           )}
         </View>
         <RNAnimated.View
-          pointerEvents="auto"
           style={[
             styles.headerContent,
             animationsEnabled
@@ -1825,7 +1824,7 @@ function AuthenticatedDashboardLayout() {
             </View>
           </CopilotStep>
 
-          <View pointerEvents="box-none" style={styles.headerLogoContainer}>
+          <View style={[styles.headerLogoContainer, { pointerEvents: "box-none" }]}>
             <TouchableOpacity
               onPress={() => headerRouter.replace("./explore?reset=1" as any)}
               style={styles.headerLogoButton}
@@ -1910,7 +1909,6 @@ function AuthenticatedDashboardLayout() {
   const ScreenWithHeader = () => {
     return (
       <View
-        pointerEvents="auto"
         style={[
           styles.headerContainer,
           {
@@ -1919,6 +1917,7 @@ function AuthenticatedDashboardLayout() {
               ? "rgba(18, 18, 18, 0.95)"
               : "rgba(255, 255, 255, 0.95)",
             zIndex: 1000,
+            pointerEvents: "auto",
           },
         ]}
       >

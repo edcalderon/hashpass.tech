@@ -767,7 +767,7 @@ export default function WebQRScanner({
 
             {/* Scanning Line Animation - Visual feedback */}
             {isScanning && !error && hasPermission && (
-              <View style={styles.scanningOverlay} pointerEvents="none">
+              <View style={[styles.scanningOverlay, { pointerEvents: "none" }]}>
                 <View 
                   style={[
                     styles.scanLine,

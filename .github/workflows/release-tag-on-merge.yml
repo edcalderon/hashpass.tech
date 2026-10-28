@@ -32,9 +32,12 @@ name: Release tag on merge
 #   remote) — that remote lives under a different GitHub account, so no
 #   token available here can authenticate to it anyway. Re-sync upstream
 #   manually if needed, same as CLAUDE.md already documents elsewhere.
-# - It listens to the post-merge push on main, rather than pull_request:
-#   closed, so the production environment sees refs/heads/main instead of
-#   refs/pull/*/merge and applies its normal branch protection rules.
+# - It listens to the post-merge push on main and to the trusted
+#   pull_request_target closed event. The latter is a recovery-safe fallback
+#   for merge commits whose inherited history contains a [skip ci] marker:
+#   GitHub suppresses push workflows for those commits, but does not suppress
+#   the merged-PR event. pull_request_target keeps this secret-bearing release
+#   workflow on the trusted base branch rather than executing PR code.
 # - On failure, comments on the merged PR directly (where a human will
 #   actually look) rather than relying on the Actions tab status alone.
 #
@@ -53,6 +56,11 @@ name: Release tag on merge
 
 on:
   push:
+    branches:
+      - main
+  pull_request_target:
+    types:
+      - closed
     branches:
       - main
   workflow_dispatch:
@@ -86,7 +94,7 @@ jobs:
         id: resolve
         env:
           GH_TOKEN: ${{ github.token }}
-          COMMIT_SHA: ${{ inputs.merge_sha || github.sha }}
+          COMMIT_SHA: ${{ inputs.merge_sha || github.event.pull_request.merge_commit_sha || github.sha }}
         run: |
           set -euo pipefail
 

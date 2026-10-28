@@ -7,9 +7,13 @@ on:
     - cron: '17 * * * *'
   push:
     branches: [main]
+    tags: ['status-v*.*.*']
     paths:
       - 'packages/tools/scripts/mission-control-page.mjs'
       - 'packages/tools/scripts/build-status-page.mjs'
+      - 'packages/tools/scripts/release-status-page.mjs'
+      - 'apps/status-page/**'
+      - 'package.json'
       - '.github/workflows/status-page-publish.yml'
   workflow_dispatch:
 
@@ -24,7 +28,7 @@ concurrency:
 jobs:
   publish:
     name: Build and publish the status page
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/status-v')
     runs-on: ubuntu-latest
     environment: production
     env:
@@ -38,7 +42,23 @@ jobs:
         with:
           node-version-file: .nvmrc
 
+      - name: Use the latest independent status release for scheduled publishes
+        if: github.event_name == 'schedule'
+        run: |
+          set -euo pipefail
+          git fetch --force --tags origin
+          latest_tag="$(git tag --list 'status-v*.*.*' --sort=-v:refname | head -n1)"
+          if [ -z "$latest_tag" ]; then
+            echo "No independent status release tag exists yet; keeping the scheduled source at main."
+            exit 0
+          fi
+          echo "Scheduled publish source: $latest_tag"
+          git checkout --detach "$latest_tag"
+
       - name: Build the page
+        env:
+          MISSION_CONTROL_METRICS_URL: ${{ vars.MISSION_CONTROL_METRICS_URL }}
+          MISSION_CONTROL_METRICS_TOKEN: ${{ secrets.MISSION_CONTROL_METRICS_TOKEN }}
         run: node packages/tools/scripts/build-status-page.mjs --out dist/status/index.html
 
       - name: Refuse an empty or private-looking page
@@ -47,6 +67,8 @@ jobs:
           test "$(wc -c < dist/status/index.html)" -gt 5000
           grep -q 'Company directory' dist/status/index.html
           ! grep -q 'Open company work' dist/status/index.html
+          test -s dist/status/status-page.js
+          test -s dist/status/status-version.json
 
       - name: Configure AWS credentials with OIDC
         uses: aws-actions/configure-aws-credentials@v4
@@ -75,8 +97,9 @@ jobs:
         run: |
           set -euo pipefail
           echo "::add-mask::${SSM_MANAGED_INSTANCE_ID}"
-          payload="$(base64 -w0 dist/status/index.html)"
-          remote="install -d -m 0755 /opt/hashpass/status && echo ${payload} | base64 -d > /opt/hashpass/status/index.html.tmp && chmod 0644 /opt/hashpass/status/index.html.tmp && mv /opt/hashpass/status/index.html.tmp /opt/hashpass/status/index.html"
+          tar -C dist/status -czf dist/status-page.tgz index.html status-page.js status-version.json
+          payload="$(base64 -w0 dist/status-page.tgz)"
+          remote="install -d -m 0755 /opt/hashpass/status && echo ${payload} | base64 -d > /tmp/hashpass-status.tgz && tar -xzf /tmp/hashpass-status.tgz -C /opt/hashpass/status && chmod 0644 /opt/hashpass/status/index.html /opt/hashpass/status/status-page.js /opt/hashpass/status/status-version.json && rm -f /tmp/hashpass-status.tgz"
           parameters_file="$(mktemp)"
           trap 'rm -f "$parameters_file"' EXIT
           jq -n --arg command "$remote" '{commands: [$command]}' > "$parameters_file"

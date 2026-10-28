@@ -368,8 +368,8 @@ describe('PassTiltCard', () => {
     );
 
     const view = renderer.root.findByType('View');
-    expect(view.props.style).toEqual({ opacity: 0.5 });
-    expect(view.props.pointerEvents).toBe('none');
+    expect(view.props.style).toEqual([{ opacity: 0.5 }, { pointerEvents: 'none' }]);
+    expect(view.props.pointerEvents).toBeUndefined();
     expect(renderer.root.findByProps({ children: 'Layer content' })).toBeTruthy();
   });
 });

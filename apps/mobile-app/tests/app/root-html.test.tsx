@@ -27,7 +27,7 @@ const runRuntimeScript = (hostname: string, origin: string) => {
     .findAllByType('script')
     .map(node => node.props.dangerouslySetInnerHTML?.__html as string | undefined)
     .find(html => html?.includes('window.__API_BASE_URL__ ='));
-  const fakeWindow: Record<string, any> = { location: { hostname, origin } };
+  const fakeWindow: Record<string, any> = { location: { hostname, origin, protocol: new URL(origin).protocol } };
   new Function('window', script as string)(fakeWindow);
   return fakeWindow;
 };
@@ -119,6 +119,15 @@ describe('inline API base URL', () => {
   it('uses the pinned base on a deployed host', () => {
     process.env.EXPO_PUBLIC_API_BASE_URL = pinned;
     expect(runRuntimeScript('hashpass.tech', 'https://hashpass.tech').__API_BASE_URL__).toBe(pinned);
+  });
+
+  it('keeps an Expo LAN origin on its same-origin API in local development', () => {
+    process.env.EXPO_PUBLIC_API_BASE_URL = pinned;
+    process.env.EXPO_PUBLIC_ENV = 'local';
+    expect(runRuntimeScript('192.168.1.20', 'http://192.168.1.20:8081').__API_BASE_URL__).toBe(
+      'http://192.168.1.20:8081/api'
+    );
+    delete process.env.EXPO_PUBLIC_ENV;
   });
 
   it('falls back to the production API on a deployed host with nothing pinned', () => {

@@ -537,7 +537,7 @@ export default function HomeScreen() {
                 style={styles.logo}
                 resizeMode="contain"
               />
-              <View style={styles.taglineContainer} pointerEvents="none">
+              <View style={[styles.taglineContainer, { pointerEvents: "none" }]}>
                 {isHeroAnimationEnabled ? (
                   <FlipWords words={words} textStyle={styles.taglineAnimated} />
                 ) : (
@@ -581,8 +581,8 @@ export default function HomeScreen() {
                 style={[
                   styles.scrollDownContent,
                   isPhoneLayout && styles.scrollDownContentMobile,
+                  { pointerEvents: "box-none" },
                 ]}
-                pointerEvents="box-none"
               >
                 <Text
                   style={[

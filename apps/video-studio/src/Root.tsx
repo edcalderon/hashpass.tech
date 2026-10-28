@@ -12,6 +12,9 @@ import {BslColombiaHeroLoop} from './compositions/BslColombiaHeroLoop';
 import {EventHeroLoop} from './compositions/EventHeroLoop';
 import {DiscoveryCoverLoop} from './compositions/DiscoveryCoverLoop';
 import {PartnersCoverLoop} from './compositions/PartnersCoverLoop';
+import BslCampaignFilm from './compositions/BslCampaignFilm';
+import {BSL_CAMPAIGN, validateBslCampaign} from './lib/bsl-campaign';
+import type {BslCampaignFilmConfig} from './types/BslCampaign.types';
 import {
   EVENT_HERO_DURATION_IN_FRAMES,
   eventHeroSpecs,
@@ -26,8 +29,21 @@ import {
 // required initial value before calculateMetadata resolves.
 
 export const RemotionRoot: React.FC = () => {
+  validateBslCampaign();
   return (
     <>
+      {BSL_CAMPAIGN.films.map((film: BslCampaignFilmConfig) => (
+        <Composition
+          key={film.id}
+          id={`BslCampaign-${film.id}`}
+          component={BslCampaignFilm}
+          durationInFrames={film.durationSeconds * FPS}
+          fps={FPS}
+          width={WIDTH}
+          height={HEIGHT}
+          defaultProps={{film, audioFile: film.id === 'welcome' ? 'audio/narration/es/bsl-event-landing.mp3' : film.id === 'walkthrough' ? 'audio/narration/es/bsl-agenda-browse.mp3' : 'audio/narration/es/bsl-meeting-request.mp3'}}
+        />
+      ))}
       <Composition id="OpenProof" component={OpenProof} durationInFrames={2520} fps={30} width={1920} height={1080}/>
       <Composition id="BslColombiaHeroLoop" component={BslColombiaHeroLoop} durationInFrames={300} fps={FPS} width={WIDTH} height={HEIGHT}/>
       <Composition id="HashpassDiscoveryCoverLoop" component={DiscoveryCoverLoop} durationInFrames={360} fps={FPS} width={WIDTH} height={HEIGHT}/>

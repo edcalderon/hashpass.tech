@@ -142,8 +142,8 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
       {/* Toast Container - Using absolute positioning to avoid blocking interactions */}
       {toasts.length > 0 && (
         <Modal transparent visible animationType="none" statusBarTranslucent onRequestClose={() => {}}>
-          <View style={styles.toastContainer} pointerEvents="box-none">
-            <SafeAreaView edges={['top', 'left', 'right']} style={styles.toastSafeArea} pointerEvents="box-none">
+          <View style={[styles.toastContainer, { pointerEvents: "box-none" }]}>
+            <SafeAreaView edges={['top', 'left', 'right']} style={[styles.toastSafeArea, { pointerEvents: "box-none" }]}>
               {toasts.map((toast, index) => (
                 <ToastItem
                   key={toast.id}
@@ -326,8 +326,8 @@ const ToastItem: React.FC<ToastItemProps> = ({
           transform: [{ translateY: slideAnim }],
           marginTop: index * 12,
         },
+        { pointerEvents: "auto" },
       ]}
-      pointerEvents="auto"
     >
       <Pressable
         style={[

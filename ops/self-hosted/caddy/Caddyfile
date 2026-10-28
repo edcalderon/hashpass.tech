@@ -28,6 +28,23 @@
     reverse_proxy plane-mcp-gateway:8220
   }
 
+  @statusMetrics path /status/metrics
+  handle @statusMetrics {
+    reverse_proxy plane-mcp-gateway:8220
+  }
+
+  @statusAsset path /status/status-page.js /status/status-version.json
+  handle @statusAsset {
+    forward_auth plane-mcp-gateway:8220 {
+      uri /status-gate/verify
+    }
+    root * /srv/status
+    uri strip_prefix /status
+    header Cache-Control "no-store"
+    header X-Robots-Tag "noindex"
+    file_server
+  }
+
   @status path /status /status/
   handle @status {
     # An unauthenticated or unapproved visitor never reaches file_server: the gate's 302 is returned instead.
@@ -38,7 +55,7 @@
     rewrite * /index.html
     header Cache-Control "no-store"
     header X-Robots-Tag "noindex"
-    header Content-Security-Policy "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+    header Content-Security-Policy "default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
     file_server
   }
 

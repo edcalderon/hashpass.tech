@@ -10,6 +10,10 @@ import {
 import { IconButton } from "@hashpass/ui/primitives";
 import AuthScreen from "../../app/(shared)/auth";
 
+// Coverage instrumentation makes the large auth render occasionally exceed
+// Jest's five-second hook default on CI workers.
+jest.setTimeout(15000);
+
 const mockPost = jest.fn();
 const mockSetSession = jest.fn();
 const mockReplace = jest.fn();

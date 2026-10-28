@@ -288,10 +288,18 @@ export default function Root({
                     ? (process.env.EXPO_PUBLIC_API_TARGET || '').trim().toLowerCase()
                     : ''
                 )};
+                var runtimeEnvironment = ${JSON.stringify(
+                  typeof process !== 'undefined' ? process.env.EXPO_PUBLIC_ENV || process.env.NODE_ENV || '' : ''
+                )}.toLowerCase();
 
                 if (typeof window !== 'undefined') {
                   var host = (window.location.hostname || '').toLowerCase();
-                  if (host === 'localhost' || host === '127.0.0.1' || host.endsWith('.local')) {
+                  var localDevOrigin =
+                    host === 'localhost' ||
+                    host === '127.0.0.1' ||
+                    host.endsWith('.local') ||
+                    (window.location.protocol === 'http:' && runtimeEnvironment !== 'production');
+                  if (localDevOrigin) {
                     // Local dev serves the app/api routes itself, so it must not inherit the
                     // deployed base pinned in EXPO_PUBLIC_API_BASE_URL. Same switch as
                     // lib/api-client.ts: EXPO_PUBLIC_API_TARGET=dev|prod opts into a Lambda.

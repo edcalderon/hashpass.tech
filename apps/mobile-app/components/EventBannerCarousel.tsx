@@ -1010,7 +1010,7 @@ export default function EventBannerCarousel({
           </View>
           {/* Soft gradient fade at the bottom edge of the card — replaces the
               hard straight-line cutoff with a smooth transparency transition. */}
-          <View style={styles.bottomFadeOverlay} pointerEvents="none">
+          <View style={[styles.bottomFadeOverlay, { pointerEvents: "none" }]}>
             <SafeLinearGradient
               colors={[
                 "transparent",
@@ -1045,7 +1045,7 @@ export default function EventBannerCarousel({
             />
           </View>
           {/* Same soft bottom-edge gradient for logo slides. */}
-          <View style={styles.bottomFadeOverlay} pointerEvents="none">
+          <View style={[styles.bottomFadeOverlay, { pointerEvents: "none" }]}>
             <SafeLinearGradient
               colors={[
                 "transparent",
@@ -1143,7 +1143,7 @@ export default function EventBannerCarousel({
               </View>
             </View>
           )}
-          <View style={styles.bottomFadeOverlay} pointerEvents="none">
+          <View style={[styles.bottomFadeOverlay, { pointerEvents: "none" }]}>
             <SafeLinearGradient
               colors={["transparent", "rgba(7,7,10,0.14)", "rgba(7,7,10,0.34)"]}
               locations={[0, 0.4, 1]}
@@ -1165,9 +1165,9 @@ export default function EventBannerCarousel({
             end={{ x: 1, y: 1 }}
             style={styles.proposalCard}
           >
-            <Animated.View style={[styles.proposalOrbOne, proposalOrbOneStyle]} pointerEvents="none" />
-            <Animated.View style={[styles.proposalOrbTwo, proposalOrbTwoStyle]} pointerEvents="none" />
-            <Animated.View style={[styles.proposalGloss, proposalGlossStyle]} pointerEvents="none">
+            <Animated.View style={[styles.proposalOrbOne, proposalOrbOneStyle, { pointerEvents: "none" }]} />
+            <Animated.View style={[styles.proposalOrbTwo, proposalOrbTwoStyle, { pointerEvents: "none" }]} />
+            <Animated.View style={[styles.proposalGloss, proposalGlossStyle, { pointerEvents: "none" }]}>
               <SafeLinearGradient
                 colors={["transparent", isDark ? "rgba(255,255,255,0.16)" : "rgba(255,255,255,0.7)", "transparent"]}
                 start={{ x: 0, y: 0 }}
@@ -1392,8 +1392,7 @@ export default function EventBannerCarousel({
                   />
                 </TouchableOpacity>
                 <Animated.View
-                  style={[styles.searchInputWrap, searchInputAnimatedStyle]}
-                  pointerEvents={shouldExpandSearch ? "auto" : "none"}
+                  style={[styles.searchInputWrap, searchInputAnimatedStyle, { pointerEvents: shouldExpandSearch ? "auto" : "none" }]}
                 >
                   <TextInput
                     ref={searchInputRef}

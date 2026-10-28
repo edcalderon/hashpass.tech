@@ -20,7 +20,7 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.168)
+## 📋 Latest Changes (v1.9.170)
 
 ### Bug Fixes
 
@@ -34,18 +34,17 @@
 * **companion:** email a confirmation code and link right after first setup ([d78aca5](https://github.com/hashpass-tech/hashpass.tech/commit/d78aca557f40e9e3f676ad62a41266505a811fb2))
 * **companion:** explain the optional HASHPASS ID upgrade on the account page ([60b9da8](https://github.com/hashpass-tech/hashpass.tech/commit/60b9da82625d3e4c00a74537109919f943738da4))
 * **companion:** show inbox only when connected, add profile picture and account page ([28a501e](https://github.com/hashpass-tech/hashpass.tech/commit/28a501ed0ff346bc919d872061686d49a347c189))
+* **video:** add scheduled BSL Bogota campaign films ([8c1dcf2](https://github.com/hashpass-tech/hashpass.tech/commit/8c1dcf23a20b2b879fea5f646cff9ee8713c4ca7))
 ### Release Highlights
-- upgrade LUKAS landing experience; speed-style meeting requests with mutual agenda blocking; explain the optional HASHPASS ID upgrade on the account page; email a confirmation code and link right after first setup; show inbox only when connected, add profile picture and account page; continue with HASHPASS ID or email from the guest card; stabilize meeting entitlements and coffee access; follow type-only import chains in typecheck-changed sandbox; address release review findings; harden native mobile UI and camera flow; route Companion origins to their own Supabase profile; prevent production ahead of staging
+- add scheduled BSL Bogota campaign films; ship live Mission Control metrics and dashboard; improve Lukas landing responsiveness; upgrade LUKAS landing experience; speed-style meeting requests with mutual agenda blocking; explain the optional HASHPASS ID upgrade on the account page; email a confirmation code and link right after first setup; show inbox only when connected, add profile picture and account page; continue with HASHPASS ID or email from the guest card; address mission control review findings; recover releases when push events are skipped; reconcile cached pnpm links in CI; prevent skipped production release automation; centralize mobile API CORS handling; resolve meeting and Lukas review findings; stabilize meeting entitlements and coffee access; follow type-only import chains in typecheck-changed sandbox; address release review findings; harden native mobile UI and camera flow; route Companion origins to their own Supabase profile; prevent production ahead of staging
 
 ### Release scope
-- Compared with: `v1.9.166` (the previous global release tag)
+- Compared with: `v1.9.168` (the previous global release tag)
 
 ### Affected products & packages
 - Mobile app
-- Shared UI
 - Database migrations
-- Infrastructure
-- Documentation
+- Self-hosted operations
 - Release tooling
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
