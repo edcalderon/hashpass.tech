@@ -15,7 +15,8 @@ export function parseEventVideoCampaign(value: unknown, eventId: string, origin:
     for (const media of [film.url, film.poster, film.captions]) {
       try {
         const parsed = new URL(media);
-        if (parsed.protocol !== "https:" || parsed.origin !== origin || !parsed.pathname.startsWith(CAMPAIGN_PATH)) return null;
+        const localHttpOrigin = parsed.protocol === "http:" && /^http:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?$/i.test(parsed.origin);
+        if ((parsed.protocol !== "https:" && !localHttpOrigin) || parsed.origin !== origin || !parsed.pathname.startsWith(CAMPAIGN_PATH)) return null;
       } catch { return null; }
     }
   }

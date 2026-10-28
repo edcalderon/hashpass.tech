@@ -1169,7 +1169,7 @@ export default function Explorer({
           { label },
         )}
       >
-        <View style={styles.discoveryCounterWatermark} pointerEvents="none">
+        <View style={[styles.discoveryCounterWatermark, { pointerEvents: "none" }]}>
           <Icon name={iconName} color={colors.primary} size={40} />
         </View>
         <View style={styles.discoveryCounterTopRow}>

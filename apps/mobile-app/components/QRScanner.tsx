@@ -5,7 +5,7 @@ import { uiPalette, uiTokens } from '@hashpass/ui/tokens';
 import { useTheme } from '../hooks/useTheme';
 import { useAuth } from '../hooks/useAuth';
 import { qrSystemService, QRScanResult, QRCode } from '../lib/qr-system';
-import { cameraPermissionManager } from '../lib/camera-permissions';
+import { cameraPermissionManager, type CameraPermissionResult } from '../lib/camera-permissions';
 import { qrScannerService } from '../lib/qr-scanner-service';
 import { resolveHashpassQrPayload } from '../lib/qr-payload-resolver';
 import type { HashpassQrResolution } from '../types/qr-payload.types';
@@ -150,7 +150,7 @@ export default function QRScanner({
   useEffect(() => {
     if (Platform.OS !== 'web' || !visible || hasPermission !== false) return;
 
-    const unsubscribe = cameraPermissionManager.watchWebPermission((result) => {
+    const unsubscribe = cameraPermissionManager.watchWebPermission((result: CameraPermissionResult) => {
       if (result.status === 'granted') {
         setCameraError(null);
         setHasPermission(true);
@@ -657,7 +657,7 @@ export default function QRScanner({
             )}
 
             {cameraError && hasPermission === true && cameraStatus === 'error' && (
-              <View style={styles.cameraErrorBanner} pointerEvents="auto">
+              <View style={[styles.cameraErrorBanner, { pointerEvents: "auto" }]}>
                 <Ionicons name="alert-circle" size={20} color={colors.error.main} />
                 <Text style={styles.cameraErrorText}>{cameraError}</Text>
                 <ActionButton
@@ -670,7 +670,7 @@ export default function QRScanner({
             )}
 
             {/* Overlay with scanning frame - pointerEvents none to not block camera */}
-            <View style={styles.overlay} pointerEvents="none">
+            <View style={[styles.overlay, { pointerEvents: "none" }]}>
               {/* Top overlay */}
               <View style={styles.overlayTop} />
               

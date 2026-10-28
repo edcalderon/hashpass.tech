@@ -50,8 +50,8 @@ export default function ContactsGraph({ contacts, topics, grouping, selected, mo
       <Circle cx={cx} cy={cy} r={44} fill={palette.accentSoft} stroke={palette.accent} strokeOpacity={0.2} />
       <Circle cx={cx} cy={cy} r={30} fill={palette.accentSoft} stroke={palette.accent} strokeWidth={2} />
     </Svg>
-    <View pointerEvents="none" style={[styles.center, { left: cx - 30, top: cy - 30 }]}><Text style={[styles.you, { color: palette.accent }]}>{youLabel}</Text></View>
-    {hubs.map(hub => <View key={hub.label} pointerEvents="none" style={[styles.hubLabel, { left: Math.max(0, Math.min(width - 104, hub.x - 52)), top: hub.y + (contacts.length ? hub.y >= cy ? 28 : -56 : -12) }]}>
+    <View style={[styles.center, { left: cx - 30, top: cy - 30, pointerEvents: "none" }]}><Text style={[styles.you, { color: palette.accent }]}>{youLabel}</Text></View>
+    {hubs.map(hub => <View key={hub.label} style={[styles.hubLabel, { left: Math.max(0, Math.min(width - 104, hub.x - 52)), top: hub.y + (contacts.length ? hub.y >= cy ? 28 : -56 : -12), pointerEvents: "none" }]}>
       <Text numberOfLines={2} style={[styles.label, { color: palette.text }]}>{grouping === 'topic' || !contacts.length ? topicLabel(hub.label) : hub.label}</Text>
       {!contacts.length && <View style={[styles.dot, { backgroundColor: hub.color }]} />}
     </View>)}

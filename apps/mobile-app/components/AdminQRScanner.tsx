@@ -711,7 +711,7 @@ export default function AdminQRScanner({
               if (!response.success) throw new Error(response.error || 'Unable to approve this claim');
               const payload = response.data as { data?: { status?: string; pass_id?: string | null } };
               const result = payload.data || {};
-              setExternalTicketClaim((current) => current ? {
+              setExternalTicketClaim((current: ExternalTicketClaimInspection | null) => current ? {
                 ...current,
                 valid: false,
                 status: 'converted',
@@ -1111,7 +1111,7 @@ export default function AdminQRScanner({
                     )}
                     {/* Only show loading overlay briefly, then hide it to show camera */}
                     {!cameraReady && !cameraError && hasPermission === true && (
-                      <View style={styles.cameraLoadingOverlay} pointerEvents="none">
+                      <View style={[styles.cameraLoadingOverlay, { pointerEvents: "none" }]}>
                         <ActivityIndicator size="large" color={colors.primary} />
                         <Text style={styles.cameraLoadingText}>Starting camera...</Text>
                       </View>
@@ -1147,7 +1147,7 @@ export default function AdminQRScanner({
 
                 {/* Overlay - only show when camera is ready, pointerEvents none to not block camera */}
                 {cameraReady && hasPermission === true && (
-                  <View style={styles.overlay} pointerEvents="none">
+                  <View style={[styles.overlay, { pointerEvents: "none" }]}>
                   <View style={styles.overlayTop} />
                   <View style={styles.overlayMiddle}>
                     <View style={styles.overlaySide} />

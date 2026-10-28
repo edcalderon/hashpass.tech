@@ -48,7 +48,13 @@ jobs:
             echo "aws_secret_access_key=$AWS_SECRET_ACCESS_KEY"
             echo "aws_session_token=$AWS_SESSION_TOKEN"
           } > "$HOME/.aws/credentials"
+      - name: Capture aggregate metrics at the fixed 17:30 Bogotá cutoff
+        env:
+          EVENT_CAMPAIGN_METRICS_FILE: apps/video-studio/out/bsl-bogota-2026/metrics.json
+        run: node apps/video-studio/scripts/capture-bsl-recap-metrics.mjs --output "$EVENT_CAMPAIGN_METRICS_FILE"
       - name: Render the recap with the fixed 17:30 Bogotá cutoff
+        env:
+          EVENT_CAMPAIGN_METRICS_FILE: apps/video-studio/out/bsl-bogota-2026/metrics.json
         run: pnpm --filter hashpass-video-studio render BslCampaign-recap
       - name: Validate the closing asset before publication
         run: |
@@ -56,4 +62,6 @@ jobs:
           duration=$(ffprobe -v error -show_entries format=duration -of csv=p=0 apps/video-studio/out/bsl-bogota-2026/recap.mp4)
           awk "BEGIN { if (duration < 89.8 || duration > 90.2) exit 1 }" duration="$duration"
       - name: Publish through the reviewed campaign publisher
+        env:
+          EVENT_CAMPAIGN_METRICS_FILE: apps/video-studio/out/bsl-bogota-2026/metrics.json
         run: node apps/video-studio/scripts/publish-bsl-campaign.mjs --closing-day

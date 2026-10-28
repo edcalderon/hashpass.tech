@@ -90,8 +90,7 @@ export default function FeatureIcon({ name, color, compact = false, active = fal
       accessible={false}
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
-      pointerEvents="none"
-      style={[styles.frame, { width: size, height: size, borderColor: `${color}66`, backgroundColor: `${color}12` }]}
+      style={[styles.frame, { width: size, height: size, borderColor: `${color}66`, backgroundColor: `${color}12`, pointerEvents: "none" }]}
     >
       <Animated.View style={glyphStyle}>
         <Icon size={compact ? uiTokens.space.lg : uiTokens.space.xxl} color={color} strokeWidth={1.6} />

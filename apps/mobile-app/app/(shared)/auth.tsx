@@ -2194,7 +2194,7 @@ export default function AuthScreen({
           ]}
         >
           {showDesktopFormBackground ? (
-            <View style={styles.desktopFormShader} pointerEvents="none">
+            <View style={[styles.desktopFormShader, { pointerEvents: "none" }]}>
               <ShaderAnimation />
             </View>
           ) : null}

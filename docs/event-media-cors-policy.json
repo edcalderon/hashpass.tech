@@ -1,0 +1,19 @@
+{
+  "CORSRules": [
+    {
+      "AllowedOrigins": [
+        "https://hashpass.tech",
+        "https://www.hashpass.tech",
+        "https://bsl.hashpass.tech",
+        "https://bsl-dev.hashpass.tech",
+        "https://blockchainsummit.hashpass.lat",
+        "https://blockchainsummit-dev.hashpass.lat",
+        "http://localhost:8081"
+      ],
+      "AllowedMethods": ["GET", "HEAD"],
+      "AllowedHeaders": ["*"],
+      "ExposeHeaders": ["ETag", "Content-Length", "Content-Range"],
+      "MaxAgeSeconds": 300
+    }
+  ]
+}

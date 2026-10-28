@@ -1,0 +1,51 @@
+name: BSL Bogotá initial campaign publish
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  render-and-publish:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 45
+    concurrency:
+      group: bsl-bogota-campaign-initial-publish
+      cancel-in-progress: false
+    env:
+      EVENT_MEDIA_BUCKET: ${{ vars.EVENT_VIDEO_MEDIA_BUCKET }}
+      EVENT_MEDIA_PUBLIC_BASE_URL: ${{ vars.EVENT_VIDEO_MEDIA_BASE_URL }}
+      EVENT_VIDEO_ROLE_ARN: ${{ vars.EVENT_VIDEO_ROLE_ARN }}
+      EVENT_VIDEO_ACCOUNT_ID: ${{ vars.EVENT_VIDEO_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --filter hashpass-video-studio...
+      - run: sudo apt-get update -qq && sudo apt-get install -y ffmpeg
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.EVENT_VIDEO_ROLE_ARN }}
+          aws-region: us-east-2
+      - name: Configure the required hashpass AWS profile
+        shell: bash
+        run: |
+          umask 077
+          mkdir -p "$HOME/.aws"
+          {
+            echo '[hashpass]'
+            echo "aws_access_key_id=$AWS_ACCESS_KEY_ID"
+            echo "aws_secret_access_key=$AWS_SECRET_ACCESS_KEY"
+            echo "aws_session_token=$AWS_SESSION_TOKEN"
+          } > "$HOME/.aws/credentials"
+      - name: Render and validate the three campaign films
+        run: node apps/video-studio/scripts/render-bsl-campaign.mjs
+      - name: Publish the welcome and walkthrough films
+        run: node apps/video-studio/scripts/publish-bsl-campaign.mjs --initial

@@ -1583,7 +1583,7 @@ export default function BSL2025AgendaScreen() {
                     style={styles.agendaVenueImage}
                     accessible={false}
                   />
-                  <View pointerEvents="none" style={styles.agendaVenueScrim} />
+                  <View style={[styles.agendaVenueScrim, { pointerEvents: "none" }]} />
                 </>
               ) : null}
               {usesSpeakerPortrait && featuredSpeaker ? (

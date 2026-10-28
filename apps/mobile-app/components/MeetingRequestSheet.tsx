@@ -128,7 +128,7 @@ function BoostBar({ value, max, onChange, label, valueText }: BoostBarProps) {
       {...keyboard}
       {...pan.panHandlers}
     >
-      <View style={styles.barInner} pointerEvents="none">
+      <View style={[styles.barInner, { pointerEvents: "none" }]}>
         <View style={[styles.track, { backgroundColor: palette.border }]} />
         <View style={[styles.fill, { width: `${percent}%`, backgroundColor: palette.accent }]} />
         {ticks.map((tier) => {
@@ -263,7 +263,7 @@ export default function MeetingRequestSheet({
           </View>
           {coffee ? (
             <View style={styles.chips} testID="meeting-coffee-lengths">
-              {COFFEE_DURATIONS.map((minutes) => {
+              {COFFEE_DURATIONS.map((minutes: (typeof COFFEE_DURATIONS)[number]) => {
                 const selected = coffeeMinutes === minutes;
                 return (
                   <Pressable
@@ -387,7 +387,7 @@ export default function MeetingRequestSheet({
                   label={t('meetingRequestModal.boostLabel')}
                   valueText={`${t('meetingRequestModal.boostPoints', { points })}, ${tierTitle}`}
                 />
-                <View style={styles.tickLabels} pointerEvents="none" accessible={false}>
+                <View style={[styles.tickLabels, { pointerEvents: "none" }]} accessible={false}>
                   {ticks.map((candidate) => (
                     <Text
                       key={candidate.id}

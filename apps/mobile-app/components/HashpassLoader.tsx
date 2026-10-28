@@ -158,7 +158,7 @@ export default function HashpassLoader({
           />
         </Svg>
       </Animated.View>
-      <View style={[styles.center, { width: markSize, height: markSize }]} pointerEvents="none">
+      <View style={[styles.center, { width: markSize, height: markSize, pointerEvents: "none" }]}>
         <Animated.View style={[StyleSheet.absoluteFill, styles.center, brandStyle]}>
           <Svg width={markSize} height={markSize} viewBox={CHEVRON_VIEWBOX}>
             <Path d={CHEVRON_MARK_D} fill={MARK_CHEVRON_COLOR} />
