@@ -641,8 +641,11 @@ function main() {
 
   // packages/* files are checked separately below (see typecheckPackageFiles);
   // everything else keeps the original single-sandbox behavior unchanged.
-  const packageFiles = allChangedFiles.filter((f) => f.startsWith('packages/'));
-  const nonPackageFiles = allChangedFiles.filter((f) => !f.startsWith('packages/'));
+  // apps/video-studio imports JSON content (resolveJsonModule) that the stub sandbox does not copy,
+  // so it is checked against its own tsconfig the same way a standalone package is.
+  const isOwnTsconfigRoot = (f) => f.startsWith('packages/') || f.startsWith('apps/video-studio/');
+  const packageFiles = allChangedFiles.filter(isOwnTsconfigRoot);
+  const nonPackageFiles = allChangedFiles.filter((f) => !isOwnTsconfigRoot(f));
 
   const { exitCode: packageExitCode, unhandledFiles } =
     packageFiles.length > 0 ? typecheckPackageFiles(packageFiles) : { exitCode: 0, unhandledFiles: [] };
