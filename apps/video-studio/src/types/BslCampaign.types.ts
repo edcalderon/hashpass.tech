@@ -6,6 +6,8 @@ export type BslCampaignLocale = "en" | "es";
 
 export type BslCampaignWelcomeLocale = (typeof campaign.welcomeLocales)[BslCampaignLocale];
 
+export type WelcomeScene = BslCampaignWelcomeLocale["scenes"][number];
+
 export type BslCampaignFilmProps = {
   film: BslCampaignFilmConfig;
   audioFile: string;

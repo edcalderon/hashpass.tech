@@ -10,7 +10,7 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import type {BslCampaignWelcomeLocale, BslCampaignWelcomeProps} from "../types/BslCampaign.types";
+import type {BslCampaignWelcomeProps, WelcomeScene} from "../types/BslCampaign.types";
 
 const FPS = 30;
 const MIDNIGHT = "#06111F";
@@ -24,8 +24,6 @@ const panelSpeakers = [
   "Juan Sebastián Peredo",
   "Nicolás Molina",
 ];
-
-type WelcomeScene = BslCampaignWelcomeLocale["scenes"][number];
 
 const SpeakerChips: React.FC<{visible: boolean}> = ({visible}) => {
   const frame = useCurrentFrame();
