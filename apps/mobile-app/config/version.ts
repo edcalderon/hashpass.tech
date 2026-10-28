@@ -22,27 +22,53 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610272032, // Updated to current timestamp
-  releaseDate: '2026-10-27',
+  buildNumber: 202610280036, // Updated to current timestamp
+  releaseDate: '2026-10-28',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
+    'speed-style meeting requests with mutual agenda blocking',
     'explain the optional HASHPASS ID upgrade on the account page',
     'email a confirmation code and link right after first setup',
     'show inbox only when connected, add profile picture and account page',
     'continue with HASHPASS ID or email from the guest card'
   ],
   bugfixes: [
+    'follow type-only import chains in typecheck-changed sandbox',
+    'address release review findings',
     'harden native mobile UI and camera flow',
     'route Companion origins to their own Supabase profile',
     'prevent production ahead of staging'
   ],
   breakingChanges: [],
-  notes: 'explain the optional HASHPASS ID upgrade on the account page; email a confirmation code and link right after first setup; show inbox only when connected, add profile picture and account page; continue with HASHPASS ID or email from the guest card; harden native mobile UI and camera flow; route Companion origins to their own Supabase profile; prevent production ahead of staging'
+  notes: 'speed-style meeting requests with mutual agenda blocking; explain the optional HASHPASS ID upgrade on the account page; email a confirmation code and link right after first setup; show inbox only when connected, add profile picture and account page; continue with HASHPASS ID or email from the guest card; follow type-only import chains in typecheck-changed sandbox; address release review findings; harden native mobile UI and camera flow; route Companion origins to their own Supabase profile; prevent production ahead of staging'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.167': {
+    version: '1.9.167',
+    buildNumber: 202610280036,
+    releaseDate: '2026-10-28',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'speed-style meeting requests with mutual agenda blocking',
+      'explain the optional HASHPASS ID upgrade on the account page',
+      'email a confirmation code and link right after first setup',
+      'show inbox only when connected, add profile picture and account page',
+      'continue with HASHPASS ID or email from the guest card'
+    ],
+    bugfixes: [
+      'follow type-only import chains in typecheck-changed sandbox',
+      'address release review findings',
+      'harden native mobile UI and camera flow',
+      'route Companion origins to their own Supabase profile',
+      'prevent production ahead of staging'
+    ],
+    breakingChanges: [],
+    notes: 'speed-style meeting requests with mutual agenda blocking; explain the optional HASHPASS ID upgrade on the account page; email a confirmation code and link right after first setup; show inbox only when connected, add profile picture and account page; continue with HASHPASS ID or email from the guest card; follow type-only import chains in typecheck-changed sandbox; address release review findings; harden native mobile UI and camera flow; route Companion origins to their own Supabase profile; prevent production ahead of staging'
+  },
   '1.9.166': {
     version: '1.9.166',
     buildNumber: 202610272032,

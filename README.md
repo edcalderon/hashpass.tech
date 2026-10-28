@@ -20,11 +20,12 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.166)
+## 📋 Latest Changes (v1.9.167)
 
 ### Bug Fixes
 
 * **api:** route Companion origins to their own Supabase profile ([45d024f](https://github.com/hashpass-tech/hashpass.tech/commit/45d024f08574b487dfd346c55e3d3e554d3e3568))
+* **tools:** follow type-only import chains in typecheck-changed sandbox ([4698492](https://github.com/hashpass-tech/hashpass.tech/commit/4698492ece7b50e302923a795a57e168550512f5))
 
 
 ### Features
@@ -34,14 +35,15 @@
 * **companion:** explain the optional HASHPASS ID upgrade on the account page ([60b9da8](https://github.com/hashpass-tech/hashpass.tech/commit/60b9da82625d3e4c00a74537109919f943738da4))
 * **companion:** show inbox only when connected, add profile picture and account page ([28a501e](https://github.com/hashpass-tech/hashpass.tech/commit/28a501ed0ff346bc919d872061686d49a347c189))
 ### Release Highlights
-- explain the optional HASHPASS ID upgrade on the account page; email a confirmation code and link right after first setup; show inbox only when connected, add profile picture and account page; continue with HASHPASS ID or email from the guest card; harden native mobile UI and camera flow; route Companion origins to their own Supabase profile; prevent production ahead of staging
+- speed-style meeting requests with mutual agenda blocking; explain the optional HASHPASS ID upgrade on the account page; email a confirmation code and link right after first setup; show inbox only when connected, add profile picture and account page; continue with HASHPASS ID or email from the guest card; follow type-only import chains in typecheck-changed sandbox; address release review findings; harden native mobile UI and camera flow; route Companion origins to their own Supabase profile; prevent production ahead of staging
 
 ### Release scope
-- Compared with: `v1.9.165` (the previous global release tag)
+- Compared with: `v1.9.166` (the previous global release tag)
 
 ### Affected products & packages
-- Companion
 - Mobile app
+- Shared UI
+- Database migrations
 - Documentation
 - Release tooling
 
