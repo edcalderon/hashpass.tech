@@ -48,6 +48,14 @@ export type LukasCaptchaProps = {
   resetKey?: number;
 };
 
+export type LukasCapSolveResult = { success: boolean; token: string };
+export type LukasCapInstance = {
+  solve: () => Promise<LukasCapSolveResult>;
+  widget: { remove: () => void };
+};
+export type LukasCapConstructor = new (config: { apiEndpoint: string }) => LukasCapInstance;
+export type LukasCapWindow = Window & { Cap?: LukasCapConstructor };
+
 export type LukasSettingsMenuProps = {
   animation: LukasAnimationLevel;
   onAnimationChange: (level: LukasAnimationLevel) => void;
@@ -125,5 +133,3 @@ export type LukasPalette = {
 };
 
 export type LukasDialogProps = { visible: boolean; onClose: () => void; isDark: boolean; isMobile: boolean; palette: LukasPalette; closeLabel?: string; children: ReactNode };
-
-export type LukasGlyphTone = { a: string; b: string; glow: string; delay: string };
