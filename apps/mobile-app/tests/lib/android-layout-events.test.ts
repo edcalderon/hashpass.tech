@@ -373,6 +373,16 @@ describe("Android layout event crash guards", () => {
     expect(dashboardSource).toMatch(
       /onPress=\{\(\) =>\s*openDashboardDrawerFromHeader\(navigationFromContext\)\s*\}/,
     );
+    // The centered logo is an absolute full-width layer. Keep the header row
+    // above it and make the menu target explicit so the icon cannot look
+    // tappable while an invisible sibling owns the pointer event.
+    expect(dashboardSource).toContain('testID="dashboard-menu-button"');
+    expect(dashboardSource).toContain(
+      'accessibilityLabel="Open navigation menu"',
+    );
+    expect(dashboardSource).toContain("zIndex: 2");
+    expect(dashboardSource).toContain("zIndex: 3");
+    expect(dashboardSource).toContain('pointerEvents: "box-none"');
     expect(dashboardSource).not.toContain(
       "onPress={() => toggleDashboardDrawer(navigation)}",
     );

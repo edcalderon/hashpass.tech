@@ -1827,6 +1827,9 @@ function AuthenticatedDashboardLayout() {
                 style={styles.headerIconButton}
                 activeOpacity={0.8}
                 hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+                accessibilityRole="button"
+                accessibilityLabel="Open navigation menu"
+                testID="dashboard-menu-button"
                 // Make sure this is clickable even during tutorial
               >
                 <Ionicons
@@ -2165,12 +2168,15 @@ const getStyles = (
         : "rgba(0, 0, 0, 0.1)",
     },
     headerContent: {
+      position: "relative",
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
       paddingHorizontal: 12,
       paddingVertical: 8,
       height: "100%",
+      zIndex: 2,
+      pointerEvents: "auto",
     },
     headerButton: {
       padding: 12,
@@ -2192,6 +2198,8 @@ const getStyles = (
       alignItems: "center",
       justifyContent: "center",
       backgroundColor: "transparent",
+      pointerEvents: "auto",
+      zIndex: 3,
     },
     headerLogoContainer: {
       position: "absolute",
@@ -2199,6 +2207,8 @@ const getStyles = (
       right: 0,
       top: 0,
       bottom: 0,
+      zIndex: 0,
+      pointerEvents: "box-none",
       alignItems: "center",
       justifyContent: "center",
       // A negative zIndex here previously made the logo invisible on Android
