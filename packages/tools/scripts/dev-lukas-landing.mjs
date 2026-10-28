@@ -101,7 +101,7 @@ const runBuild = (reason) => new Promise((resolve) => {
   log(`Rebuilding Lukas landing (${reason})...`);
   const child = spawn('python3', [buildScript, output], {
     cwd: repoRoot,
-    env: { ...process.env, CI: '1', EXPO_NO_DOTENV: '1' },
+    env: { ...process.env, CI: '1', EXPO_NO_DOTENV: '1', LUKAS_EXPORT_MAX_WORKERS: process.env.LUKAS_EXPORT_MAX_WORKERS || '2' },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   buildProcess = child;
@@ -128,6 +128,17 @@ const runBuild = (reason) => new Promise((resolve) => {
     resolve(true);
   });
 });
+
+const initialBuildWithRetries = async () => {
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    if (await runBuild(attempt === 1 ? 'initial start' : `initial retry ${attempt - 1}`)) return true;
+    if (attempt < 3 && !stopping) {
+      log('Initial Lukas export did not complete; retrying in 2 seconds.');
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+    }
+  }
+  return false;
+};
 
 const requestBuild = (reason) => {
   if (stopping) return;
@@ -257,7 +268,7 @@ process.on('SIGINT', close);
 process.on('SIGTERM', close);
 
 await fs.mkdir(buildRoot, { recursive: true });
-const built = await runBuild('initial start');
+const built = await initialBuildWithRetries();
 if (!built) process.exit(1);
 await refreshWatchers();
 server.listen(port, '127.0.0.1', () => {
