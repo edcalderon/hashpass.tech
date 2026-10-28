@@ -1683,8 +1683,12 @@ export default function BSL2025AgendaScreen() {
               </View>
               <HoverText
                 mode={interfaceMode}
-                style={[styles.agendaTitle, isCompactAgenda && styles.agendaTitleCompact]}
-                numberOfLines={isCompactAgenda ? 2 : 3}
+                style={[
+                  styles.agendaTitle,
+                  isCompactAgenda && styles.agendaTitleCompact,
+                  isWideAgenda && !isCompactAgenda && !isAgendaGrid && styles.agendaTitleWide,
+                ]}
+                numberOfLines={isCompactAgenda ? 3 : 4}
                 tooltipText={cleanSessionTitle(item.title)}
               >
                 {cleanSessionTitle(item.title)}
@@ -2473,6 +2477,7 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     flexWrap: 'wrap',
     gap: uiTokens.space.sm,
     justifyContent: 'flex-end',
+    marginBottom: uiTokens.space.xs,
   },
   agendaItemContentCompact: {
     gap: uiTokens.space.xs,
@@ -2480,16 +2485,24 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     paddingVertical: uiTokens.space.md,
     paddingBottom: uiTokens.space.md,
   },
+  // The session title is the card's primary read: largest, heaviest text,
+  // left-aligned under the badges, stepping up with the available width.
   agendaTitle: {
-    fontSize: uiTokens.type.body + 1,
-    fontWeight: '700',
+    alignSelf: 'stretch',
+    fontSize: uiTokens.type.title - 4,
+    fontWeight: '800',
     color: colors.text.primary,
-    letterSpacing: -0.1,
-    lineHeight: 24,
+    letterSpacing: -0.3,
+    lineHeight: 26,
+    textAlign: 'left',
   },
   agendaTitleCompact: {
-    fontSize: uiTokens.type.label,
-    lineHeight: 18,
+    fontSize: uiTokens.type.body + 2,
+    lineHeight: 23,
+  },
+  agendaTitleWide: {
+    fontSize: uiTokens.type.title - 2,
+    lineHeight: 30,
   },
   agendaItemTools: {
     borderTopColor: colors.divider,
@@ -2688,7 +2701,7 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     gap: uiTokens.space.xs,
   },
   agendaLocation: {
-    fontSize: uiTokens.type.caption,
+    fontSize: uiTokens.type.label - 1,
     color: colors.text.secondary,
     flexShrink: 1,
     fontWeight: '600',
