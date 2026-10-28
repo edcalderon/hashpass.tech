@@ -1,6 +1,6 @@
 import {useEffect, useState} from "react";
-import {AppState, Platform} from "react-native";
-import {parseEventVideoCampaign} from "../lib/event-video-campaign";
+import {AppState} from "react-native";
+import {parseEventVideoCampaign, resolveCampaignManifestUrl} from "../lib/event-video-campaign";
 import type {EventVideoCampaign} from "../types/event-video-campaign";
 
 export function useEventVideoCampaign(eventId?: string, heroVideo?: string) {
@@ -41,30 +41,4 @@ export function useEventVideoCampaign(eventId?: string, heroVideo?: string) {
   }, [campaign, now]);
 
   return {campaign: campaign?.eventId === eventId ? campaign : null, now};
-}
-
-const LOCAL_WEB_ORIGIN = /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?$/i;
-
-export function resolveCampaignManifestUrl(heroVideo: string): URL | null {
-  const explicitManifestUrl = String(process.env.EXPO_PUBLIC_EVENT_VIDEO_MANIFEST_URL || "").trim();
-  if (explicitManifestUrl) {
-    try { return new URL(explicitManifestUrl); } catch { return null; }
-  }
-
-  const isLocalWeb = Platform.OS === "web" && typeof window !== "undefined" && (
-    LOCAL_WEB_ORIGIN.test(window.location.origin) ||
-    (window.location.protocol === "http:" && process.env.NODE_ENV !== "production" && process.env.EXPO_PUBLIC_ENV !== "production")
-  );
-  if (isLocalWeb) {
-    // Local web development must never derive a request from the production
-    // hero URL. A missing local fixture is intentionally handled as a normal
-    // fallback to the canonical event hero.
-    return new URL("/events/colombia2026/branding/campaign/bsl-bogota-2026/manifest.json", window.location.origin);
-  }
-
-  // Native development has no local HTTP origin to serve campaign media from;
-  // keep the existing hero and avoid a request to production S3.
-  if (typeof __DEV__ !== "undefined" && __DEV__) return null;
-
-  try { return new URL("campaign/bsl-bogota-2026/manifest.json", heroVideo); } catch { return null; }
 }
