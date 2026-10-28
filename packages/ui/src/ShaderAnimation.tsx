@@ -150,7 +150,7 @@ export const ShaderAnimation: FC = () => {
   };
 
   return (
-    <View pointerEvents="none" style={styles.root}>
+    <View style={[styles.root, { pointerEvents: "none" }]}>
       <View style={styles.base} />
       <Animated.View style={[styles.glow, styles.glowA, blobAStyle]} />
       <Animated.View style={[styles.glow, styles.glowB, blobBStyle]} />

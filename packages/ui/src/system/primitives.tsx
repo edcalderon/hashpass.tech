@@ -133,7 +133,7 @@ export function Badge({
         />
       ) : null}
       {leadingIcon ? (
-        <View accessible={false} pointerEvents="none">
+        <View accessible={false} style={{ pointerEvents: "none" }}>
           {leadingIcon}
         </View>
       ) : null}
@@ -243,9 +243,9 @@ export function ActionButton({
         typeof style === "function" ? style(state) : style,
       ]}
     >
-      {loading ? <ActivityIndicator size="small" color={foreground} /> : leadingIcon && <View accessible={false} pointerEvents="none">{leadingIcon}</View>}
+      {loading ? <ActivityIndicator size="small" color={foreground} /> : leadingIcon && <View accessible={false} style={{ pointerEvents: "none" }}>{leadingIcon}</View>}
       <Text numberOfLines={labelNumberOfLines} ellipsizeMode="tail" style={[styles.buttonLabel, { color: foreground }]}>{label}</Text>
-      {!loading && trailingIcon ? <View accessible={false} pointerEvents="none">{trailingIcon}</View> : null}
+      {!loading && trailingIcon ? <View accessible={false} style={{ pointerEvents: "none" }}>{trailingIcon}</View> : null}
     </Pressable>
   );
 }
@@ -327,7 +327,7 @@ export function SegmentedTabs<T extends string = string>({
             >
               {tab.label}
             </Text>
-            {tab.trailingIcon ? <View accessible={false} pointerEvents="none">{tab.trailingIcon}</View> : null}
+            {tab.trailingIcon ? <View accessible={false} style={{ pointerEvents: "none" }}>{tab.trailingIcon}</View> : null}
             {tab.count ? (
               <View
                 style={[
@@ -505,9 +505,9 @@ export function IconButton({
         >
           <View
             accessible={false}
-            pointerEvents="none"
             style={[
               styles.revealIconButton,
+              { pointerEvents: "none" },
               {
                 height: edge,
                 width: visualWidth,
