@@ -41,7 +41,10 @@ jobs:
           cache: pnpm
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile --prefer-offline
+        # pnpm can leave a workspace package link in place when the restored
+        # store contains a duplicate inode (for example @noble/hashes). Force
+        # reconciliation so coverage starts from a consistent dependency tree.
+        run: pnpm install --frozen-lockfile --prefer-offline --force
 
       - name: Check shared design system
         run: |
