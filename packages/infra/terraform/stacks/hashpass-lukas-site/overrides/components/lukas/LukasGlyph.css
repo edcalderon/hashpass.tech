@@ -1,57 +1,20 @@
-/* Glyph artwork is intrinsic brand illustration; tones below are the Lukas icon palette. */
-.lk-glyph { --s: 64px; position: relative; flex: none; width: var(--s); height: var(--s); display: inline-block; isolation: isolate; transition: transform 240ms cubic-bezier(.22,1,.36,1); }
-.lk-glyph:hover { transform: translateY(-2px) scale(1.06); }
-.lk-glyph__body { position: absolute; inset: 0; }
-.lk-glyph__tile { position: absolute; inset: 0; border-radius: 30%; overflow: hidden; background: linear-gradient(150deg, var(--lk-a), var(--lk-b)); box-shadow: inset 0 1px 0 rgba(255,255,255,.55), inset 0 -8px 14px rgba(0,0,0,.18), 0 10px 20px -8px var(--lk-glow); }
-.lk-glyph__tile::before { content: ''; position: absolute; inset: 0 0 52% 0; background: linear-gradient(180deg, rgba(255,255,255,.4), rgba(255,255,255,0)); }
-.lk-glyph__tile::after { content: ''; position: absolute; top: -10%; bottom: -10%; left: 0; width: 38%; background: linear-gradient(100deg, transparent, rgba(255,255,255,.5), transparent); transform: translateX(-150%) skewX(-18deg); }
-.lk-glyph__icon { position: absolute; inset: 21%; width: 58%; height: 58%; overflow: visible; color: #fff; fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 2px 2px rgba(0,0,0,.28)); }
-.lk-glyph__icon * { transform-box: fill-box; transform-origin: center; }
-.lk-fill { fill: currentColor; fill-opacity: .24; }
-.lk-solid { fill: currentColor; stroke: none; }
+/* Geometry-first glyphs share one navy/emerald line treatment across the landing. */
+.lk-glyph { --s: 64px; position: relative; display: inline-grid; place-items: center; flex: none; width: var(--s); height: var(--s); }
+.lk-glyph__body { position: absolute; inset: 0; display: grid; place-items: center; }
+.lk-glyph__icon { display: block; width: 84%; height: 84%; overflow: visible; color: var(--lk-ink); fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+.lk-fill { fill: var(--lk-accent); fill-opacity: .12; }
+.lk-solid { fill: var(--lk-accent); stroke: none; }
+.lk-check, .lk-link { stroke: var(--lk-accent); }
+.lk-glyph[data-motion="full"]:not(.lk-glyph--coin) .lk-glyph__icon { animation: lk-line-float 6s ease-in-out infinite; animation-delay: var(--lk-delay, -2s); }
+.lk-glyph[data-active="false"]:not(.lk-glyph--coin) .lk-glyph__icon { animation-play-state: paused !important; }
 
-/* Real LKS coin used as the "token" glyph. */
+/* The LKS coin remains a brand asset rather than a UI glyph. */
 .lk-glyph--coin { perspective: 320px; }
 .lk-glyph--coin .lk-glyph__body { display: flex; align-items: center; justify-content: center; }
 .lk-glyph__coin { display: block; width: 92%; height: 92%; object-fit: contain; filter: drop-shadow(2px 4px 0 #7e4919) drop-shadow(0 8px 10px rgba(0,0,0,.4)); }
+.lk-glyph[data-motion="full"].lk-glyph--coin .lk-glyph__coin { animation: lk-turn 7s ease-in-out infinite; animation-delay: var(--lk-delay, -2s); }
+.lk-glyph[data-active="false"].lk-glyph--coin .lk-glyph__coin { animation-play-state: paused !important; }
+@media (prefers-reduced-motion: reduce) { .lk-glyph, .lk-glyph * { animation: none !important; transition: none !important; } }
 
-/* Motion: full only; paused while off-screen. */
-.lk-glyph[data-motion="full"] .lk-glyph__body { animation: lk-bob 6s ease-in-out infinite; animation-delay: var(--lk-delay, 0s); }
-.lk-glyph[data-motion="full"] .lk-glyph__tile::after { animation: lk-sweep 6.5s ease-in-out infinite; animation-delay: var(--lk-delay, 0s); }
-.lk-glyph[data-motion="full"].lk-glyph--coin .lk-glyph__coin { animation: lk-turn 7s ease-in-out infinite; animation-delay: var(--lk-delay, 0s); }
-.lk-glyph[data-motion="full"] .lk-steam { animation: lk-steam 2.6s ease-in-out infinite; }
-.lk-glyph[data-motion="full"] .lk-steam--2 { animation-delay: -.9s; }
-.lk-glyph[data-motion="full"] .lk-steam--3 { animation-delay: -1.7s; }
-.lk-glyph[data-motion="full"] .lk-dot { animation: lk-twinkle 2.4s ease-in-out infinite; }
-.lk-glyph[data-motion="full"] .lk-dot--2 { animation-delay: -.5s; }
-.lk-glyph[data-motion="full"] .lk-dot--3 { animation-delay: -1s; }
-.lk-glyph[data-motion="full"] .lk-dot--4 { animation-delay: -1.5s; }
-.lk-glyph[data-motion="full"] .lk-dot--5 { animation-delay: -2s; }
-.lk-glyph[data-motion="full"] .lk-link { stroke-dasharray: 3 5; animation: lk-flow 1.4s linear infinite; }
-.lk-glyph[data-motion="full"] .lk-node { animation: lk-pulse 2.6s ease-in-out infinite; }
-.lk-glyph[data-motion="full"] .lk-node--2 { animation-delay: -.8s; }
-.lk-glyph[data-motion="full"] .lk-node--3 { animation-delay: -1.6s; }
-.lk-glyph[data-motion="full"] .lk-stack-top { animation: lk-lift 2.8s ease-in-out infinite; }
-.lk-glyph[data-motion="full"] .lk-check { stroke-dasharray: 1; animation: lk-draw 3.8s ease-in-out infinite; }
-.lk-glyph[data-motion="full"] .lk-spin { animation: lk-rotate 18s linear infinite; }
-.lk-glyph[data-motion="full"] .lk-awning { transform-origin: 50% 0; animation: lk-sway 3.6s ease-in-out infinite; }
-.lk-glyph[data-motion="full"] .lk-wallet { animation: lk-tilt 5s ease-in-out infinite; }
-.lk-glyph[data-motion="full"] .lk-clasp { animation: lk-pulse 2.2s ease-in-out infinite; }
-.lk-glyph[data-active="false"] .lk-glyph__body,
-.lk-glyph[data-active="false"] .lk-glyph__body *,
-.lk-glyph[data-active="false"] .lk-glyph__body *::after { animation-play-state: paused !important; }
-.lk-check { stroke-dasharray: 1; stroke-dashoffset: 0; }
-@media (prefers-reduced-motion: reduce) { .lk-glyph, .lk-glyph * , .lk-glyph *::after { animation: none !important; transition: none !important; } }
-
-@keyframes lk-bob { 0%,100% { transform: translateY(1%); } 50% { transform: translateY(-3%); } }
-@keyframes lk-sweep { 0%,58% { transform: translateX(-150%) skewX(-18deg); } 100% { transform: translateX(420%) skewX(-18deg); } }
-@keyframes lk-turn { 0%,100% { transform: rotateY(-24deg); } 50% { transform: rotateY(24deg); } }
-@keyframes lk-steam { 0% { opacity: 0; transform: translateY(3px); } 40% { opacity: .95; } 100% { opacity: 0; transform: translateY(-4px); } }
-@keyframes lk-twinkle { 0%,100% { opacity: .35; } 50% { opacity: 1; } }
-@keyframes lk-flow { to { stroke-dashoffset: -8; } }
-@keyframes lk-pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.2); } }
-@keyframes lk-lift { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-2.5px); } }
-@keyframes lk-draw { 0% { stroke-dashoffset: 1; } 40%,85% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: -1; } }
-@keyframes lk-rotate { to { transform: rotate(360deg); } }
-@keyframes lk-sway { 0%,100% { transform: rotate(-1.6deg); } 50% { transform: rotate(1.6deg); } }
-@keyframes lk-tilt { 0%,100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
+@keyframes lk-line-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
+@keyframes lk-turn { 0%,100% { transform: rotateY(-18deg); } 50% { transform: rotateY(18deg); } }
