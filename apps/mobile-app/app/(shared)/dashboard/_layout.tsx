@@ -1502,6 +1502,15 @@ function AuthenticatedDashboardLayout() {
         drawerOpenControlRef.current.setOpen(false);
         setTimeout(() => {
           drawerOpenControlRef.current?.setOpen(true);
+          // Keep the regular React Navigation state in sync as well. The
+          // imperative override is needed for stale native builds, while the
+          // web drawer's normal reducer is the reliable source of its
+          // transition lifecycle and status callbacks.
+          openTargetedDashboardDrawer({
+            navigation,
+            drawerNavigation: drawerNavRef.current,
+            openDrawerAction: DrawerActions.openDrawer(),
+          });
         }, 0);
       } else {
         const reset = openTargetedDashboardDrawer({
