@@ -21,7 +21,8 @@ import {
 import { resolveActiveEventId } from "@/lib/event-path";
 import { useTranslation } from "@/i18n/i18n";
 import * as Sentry from "@sentry/react-native";
-import { uiTokens } from "@hashpass/ui/tokens";
+import { uiPalette, uiTokens } from "@hashpass/ui/tokens";
+import { ActionButton, Badge, Surface } from "@hashpass/ui/primitives";
 import PassesWallet from "./passes/PassesWallet";
 import type { PassTimelineFilter, PassTypeFilter } from "../lib/pass-wallet";
 
@@ -115,7 +116,11 @@ function PassesDisplayInner({
   refreshTrigger,
 }: PassesDisplayProps) {
   const { t: translate } = useTranslation("passes");
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
+  // The speaker-mode card uses the shared system palette so it reads as part of
+  // the dashboard: neutral surfaces, one accent, amber reserved for VIP.
+  const uiMode = isDark ? "dark" : "light";
+  const palette = uiPalette(uiMode);
   const { dbUserId, retryDatabaseSession } = useAuth();
   const router = useRouter();
   const [passInfo, setPassInfo] = useState<PassInfo | null>(null);
@@ -234,11 +239,11 @@ function PassesDisplayInner({
     return (
       <View
         style={{
-          marginBottom: 16,
-          backgroundColor: colors.background.default,
-          borderRadius: uiTokens.radius.small,
-          borderWidth: 1,
-          borderColor: colors.divider,
+          marginBottom: uiTokens.space.lg,
+          backgroundColor: palette.canvas,
+          borderRadius: uiTokens.radius.input,
+          borderWidth: uiTokens.control.borderWidth,
+          borderColor: palette.border,
           overflow: "hidden",
         }}
         testID="pass-tier-showcase"
@@ -253,15 +258,15 @@ function PassesDisplayInner({
             flexDirection: "row",
             alignItems: "center",
             justifyContent: "space-between",
-            minHeight: 44,
-            paddingHorizontal: 12,
+            minHeight: uiTokens.control.compactHeight,
+            paddingHorizontal: uiTokens.space.lg,
           }}
         >
           <Text
             style={{
-              fontSize: 14,
+              fontSize: uiTokens.type.label,
               fontWeight: "600",
-              color: colors.text.primary,
+              color: palette.text,
             }}
           >
             {t({ id: "passes.tiersTitle", message: "Pass tiers" })}
@@ -269,11 +274,16 @@ function PassesDisplayInner({
           <MaterialIcons
             name={tiersOpen ? "expand-less" : "expand-more"}
             size={24}
-            color={colors.text.secondary}
+            color={palette.muted}
           />
         </TouchableOpacity>
         {tiersOpen && (
-          <View style={{ paddingHorizontal: 12, paddingBottom: 12 }}>
+          <View
+            style={{
+              paddingHorizontal: uiTokens.space.lg,
+              paddingBottom: uiTokens.space.lg,
+            }}
+          >
             {tierTypes.map((passType) => {
               const tier = getTier(passType);
               const isCurrent = passInfo?.pass_type === passType;
@@ -282,9 +292,9 @@ function PassesDisplayInner({
                   key={passType}
                   testID={`pass-tier-${passType}`}
                   style={{
-                    paddingVertical: 8,
-                    borderTopWidth: 1,
-                    borderTopColor: colors.divider,
+                    paddingVertical: uiTokens.space.md,
+                    borderTopWidth: uiTokens.control.borderWidth,
+                    borderTopColor: palette.border,
                   }}
                 >
                   <View
@@ -296,27 +306,25 @@ function PassesDisplayInner({
                   >
                     <Text
                       style={{
-                        fontSize: 14,
-                        fontWeight: "700",
-                        color: getPassTypeColor(passType),
+                        fontSize: uiTokens.type.label,
+                        fontWeight: isCurrent ? "700" : "600",
+                        color: palette.text,
                       }}
                     >
                       {getPassTypeDisplayName(passType)}
                     </Text>
                     {isCurrent && (
-                      <Text
-                        style={{ fontSize: 12, color: colors.text.secondary }}
-                      >
+                      <Badge mode={uiMode} compact>
                         {t({ id: "passes.yourPass", message: "Your pass" })}
-                      </Text>
+                      </Badge>
                     )}
                   </View>
                   {tier && (
                     <Text
                       style={{
-                        fontSize: 12,
-                        color: colors.text.secondary,
-                        marginTop: 2,
+                        fontSize: uiTokens.type.caption,
+                        color: palette.muted,
+                        marginTop: uiTokens.space.xs,
                       }}
                     >
                       {`${tier.max_meeting_requests} ${t({
@@ -331,38 +339,18 @@ function PassesDisplayInner({
                 </View>
               );
             })}
-            <TouchableOpacity
-              accessibilityRole="link"
+            <ActionButton
+              mode={uiMode}
+              variant="secondary"
+              label={t({ id: "passes.acquireTicket", message: "Acquire ticket" })}
               accessibilityLabel="Acquire ticket"
+              accessibilityRole="link"
               onPress={openEventTickets}
-              activeOpacity={0.7}
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "space-between",
-                minHeight: 44,
-                marginTop: 4,
-                paddingHorizontal: 12,
-                borderRadius: uiTokens.radius.small,
-                borderWidth: 1,
-                borderColor: colors.primary,
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: 14,
-                  fontWeight: "600",
-                  color: colors.primary,
-                }}
-              >
-                {t({ id: "passes.acquireTicket", message: "Acquire ticket" })}
-              </Text>
-              <MaterialIcons
-                name="arrow-forward"
-                size={20}
-                color={colors.primary}
-              />
-            </TouchableOpacity>
+              trailingIcon={
+                <MaterialIcons name="arrow-forward" size={20} color={palette.accent} />
+              }
+              style={{ alignSelf: "stretch", marginTop: uiTokens.space.xs }}
+            />
           </View>
         )}
       </View>
@@ -1369,50 +1357,55 @@ function PassesDisplayInner({
     );
   }
 
+  const isVipPass = passInfo.pass_type === "vip";
+  const passAccent = isVipPass ? palette.vipFill : palette.accent;
   return (
-    <View
+    <Surface
+      mode={uiMode}
       style={{
-        padding: 20,
-        backgroundColor: colors.background.paper,
-        borderRadius: 12,
-        margin: 16,
-        borderWidth: 1,
-        borderColor: colors.divider,
+        backgroundColor: palette.raised,
+        margin: uiTokens.space.lg,
       }}
     >
       {/* Pass Header */}
       <View
-        style={{ flexDirection: "row", alignItems: "center", marginBottom: 16 }}
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          marginBottom: uiTokens.space.lg,
+          gap: uiTokens.space.md,
+        }}
       >
         <View
           style={{
-            width: 48,
-            height: 48,
-            borderRadius: 24,
-            backgroundColor: `${getPassTypeColor(passInfo.pass_type)}20`,
+            width: 44,
+            height: 44,
+            borderRadius: uiTokens.radius.circle,
+            backgroundColor: palette.surface,
+            borderWidth: uiTokens.control.borderWidth,
+            borderColor: palette.border,
             alignItems: "center",
             justifyContent: "center",
-            marginRight: 12,
           }}
         >
           <MaterialIcons
             name={
-              passInfo.pass_type === "vip"
+              isVipPass
                 ? "star"
                 : passInfo.pass_type === "business"
                   ? "business"
                   : "person"
             }
-            size={24}
-            color={getPassTypeColor(passInfo.pass_type)}
+            size={22}
+            color={passAccent}
           />
         </View>
         <View style={{ flex: 1 }}>
           <Text
             style={{
-              fontSize: 20,
+              fontSize: 18,
               fontWeight: "700",
-              color: colors.text.primary,
+              color: palette.text,
             }}
           >
             {getPassTypeDisplayName(passInfo.pass_type)}
@@ -1428,90 +1421,75 @@ function PassesDisplayInner({
               alignSelf: "flex-start",
               flexDirection: "row",
               alignItems: "center",
-              gap: 5,
+              gap: uiTokens.space.xs,
             }}
           >
             <Text
               style={{
-                fontSize: 14,
-                color: colors.primary,
-                textDecorationLine: "underline",
+                fontSize: uiTokens.type.caption,
+                color: palette.muted,
               }}
             >
               {`${t({ id: "passes.pass", message: "Pass" })} #${displayPassNumber}`}
             </Text>
-            <MaterialIcons
-              name="open-in-new"
-              size={14}
-              color={colors.primary}
-            />
+            <MaterialIcons name="open-in-new" size={14} color={palette.muted} />
           </TouchableOpacity>
         </View>
-        <View
-          style={{
-            paddingHorizontal: 12,
-            paddingVertical: 6,
-            backgroundColor: `${getPassTypeColor(passInfo.pass_type)}20`,
-            borderRadius: 16,
-          }}
+        <Badge
+          mode={uiMode}
+          tone="neutral"
+          compact
+          markerColor={
+            passInfo.status === "active" ? palette.success : palette.muted
+          }
         >
-          <Text
-            style={{
-              fontSize: 12,
-              fontWeight: "600",
-              color: getPassTypeColor(passInfo.pass_type),
-            }}
-          >
-            {t({
-              id: `passes.status.${passInfo.status}`,
-              message: passInfo.status,
-            })}
-          </Text>
-        </View>
+          {t({
+            id: `passes.status.${passInfo.status}`,
+            message: passInfo.status,
+          })}
+        </Badge>
       </View>
 
       {/* Pass Stats */}
       <View
         style={{
           flexDirection: "row",
-          justifyContent: "space-between",
-          marginBottom: 16,
+          marginBottom: uiTokens.space.lg,
+          paddingVertical: uiTokens.space.md,
+          borderRadius: uiTokens.radius.input,
+          backgroundColor: palette.surface,
+          borderWidth: uiTokens.control.borderWidth,
+          borderColor: palette.border,
         }}
       >
         <View style={{ flex: 1, alignItems: "center" }}>
-          <Text
-            style={{
-              fontSize: 24,
-              fontWeight: "700",
-              color: colors.text.primary,
-            }}
-          >
+          <Text style={{ fontSize: 24, fontWeight: "700", color: palette.text }}>
             {passInfo.max_requests || 0}
           </Text>
           <Text
             style={{
-              fontSize: 12,
-              color: colors.text.secondary,
+              fontSize: uiTokens.type.caption,
+              color: palette.muted,
               textAlign: "center",
             }}
           >
             {translate("meetingRequests", {})}
           </Text>
         </View>
+        <View
+          style={{
+            width: uiTokens.control.borderWidth,
+            backgroundColor: palette.border,
+          }}
+        />
         <View style={{ flex: 1, alignItems: "center" }}>
-          <Text
-            style={{
-              fontSize: 24,
-              fontWeight: "700",
-              color: colors.text.primary,
-            }}
-          >
+          <Text style={{ fontSize: 24, fontWeight: "700", color: palette.text }}>
             {passInfo.max_boost || 0}
           </Text>
           <Text
             style={{
-              fontSize: 12,
-              color: colors.text.secondary,
+              fontSize: uiTokens.type.caption,
+              color: palette.muted,
               textAlign: "center",
             }}
           >
@@ -1942,192 +1920,151 @@ function PassesDisplayInner({
       {passInfo && requestLimits && (
         <View
           style={{
-            padding: 12,
-            backgroundColor: requestLimits.canSendRequest
-              ? `${colors.primary}10`
-              : hasExistingRequest
-                ? `${colors.warning?.main || "#FF9500"}10`
-                : `${colors.error.main}10`,
-            borderRadius: 8,
-            marginBottom: 16,
+            flexDirection: "row",
+            alignItems: "flex-start",
+            gap: uiTokens.space.md,
+            marginBottom: uiTokens.space.lg,
           }}
         >
-          <Text
+          <View
             style={{
-              fontSize: 14,
-              fontWeight: "600",
-              color: requestLimits.canSendRequest
-                ? colors.primary
-                : hasExistingRequest
-                  ? colors.warning?.main || "#FF9500"
-                  : colors.error.main,
-              marginBottom: 4,
+              width: 8,
+              height: 8,
+              borderRadius: uiTokens.radius.pill,
+              marginTop: 6,
+              backgroundColor:
+                requestStatusLoading || hasExistingRequest
+                  ? palette.muted
+                  : requestLimits.canSendRequest
+                    ? palette.success
+                    : palette.danger,
             }}
-          >
-            {requestStatusLoading
-              ? t({
-                  id: "passes.checkingRequest",
-                  message: "Checking meeting request status…",
-                })
-              : requestLimits.canSendRequest
-                ? t({
-                    id: "passes.canRequestMeeting",
-                    message: "✅ Can Request Meeting",
-                  })
-                : hasExistingRequest
-                  ? t({
-                      id: "passes.requestPending",
-                      message: "⏳ Meeting request pending",
-                    })
-                  : t({
-                      id: "passes.cannotRequestMeeting",
-                      message: "❌ Cannot Request Meeting",
-                    })}
-          </Text>
-          <Text
-            style={{
-              fontSize: 12,
-              color: colors.text.secondary,
-            }}
-          >
-            {requestStatusLoading
-              ? t({
-                  id: "passes.checkingRequestDescription",
-                  message: "Confirming the latest response from this speaker.",
-                })
-              : requestLimits.canSendRequest
-                ? t({
-                    id: "passes.requestAllowed",
-                    message: "You can send a meeting request.",
-                  })
-                : hasExistingRequest
-                  ? isPendingExistingRequest
-                    ? t({
-                        id: "passes.requestPendingDescription",
-                        message:
-                          "Your request is waiting for the speaker’s response.",
-                      })
-                    : t({
-                        id: "passes.requestInProgressDescription",
-                        message:
-                          "You already have an active request with this speaker.",
-                      })
-                  : passSystemService.getPassValidationMessage(requestLimits)}
-          </Text>
-          {canResetRequestLimits && (
-            <TouchableOpacity
-              accessibilityRole="button"
-              accessibilityLabel={t({
-                id: "passes.resetMeetingRequestLimit",
-                message: "Reset limit",
-              })}
-              onPress={resetRequestLimits}
-              disabled={resettingLimits}
+          />
+          <View style={{ flex: 1 }}>
+            <Text
               style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "center",
-                marginTop: uiTokens.space.md,
-                paddingVertical: uiTokens.space.sm,
-                paddingHorizontal: uiTokens.space.lg,
-                borderRadius: uiTokens.radius.pill,
-                borderWidth: 1,
-                borderColor: colors.primary,
-                opacity: resettingLimits ? 0.5 : 1,
+                fontSize: uiTokens.type.label,
+                fontWeight: "600",
+                color: palette.text,
+                marginBottom: uiTokens.space.xs,
               }}
             >
-              {resettingLimits && <ActivityIndicator size="small" color={colors.primary} />}
-              <Text
+              {requestStatusLoading
+                ? t({
+                    id: "passes.checkingRequest",
+                    message: "Checking meeting request status…",
+                  })
+                : requestLimits.canSendRequest
+                  ? t({
+                      id: "passes.canRequestMeeting",
+                      message: "Can request meeting",
+                    })
+                  : hasExistingRequest
+                    ? t({
+                        id: "passes.requestPending",
+                        message: "Meeting request pending",
+                      })
+                    : t({
+                        id: "passes.cannotRequestMeeting",
+                        message: "Cannot request meeting",
+                      })}
+            </Text>
+            <Text style={{ fontSize: uiTokens.type.caption, color: palette.muted }}>
+              {requestStatusLoading
+                ? t({
+                    id: "passes.checkingRequestDescription",
+                    message: "Confirming the latest response from this speaker.",
+                  })
+                : requestLimits.canSendRequest
+                  ? t({
+                      id: "passes.requestAllowed",
+                      message: "You can send a meeting request.",
+                    })
+                  : hasExistingRequest
+                    ? isPendingExistingRequest
+                      ? t({
+                          id: "passes.requestPendingDescription",
+                          message:
+                            "Your request is waiting for the speaker’s response.",
+                        })
+                      : t({
+                          id: "passes.requestInProgressDescription",
+                          message:
+                            "You already have an active request with this speaker.",
+                        })
+                    : passSystemService.getPassValidationMessage(requestLimits)}
+            </Text>
+            {canResetRequestLimits && (
+              <TouchableOpacity
+                accessibilityRole="button"
+                accessibilityLabel={t({
+                  id: "passes.resetMeetingRequestLimit",
+                  message: "Reset limit",
+                })}
+                onPress={resetRequestLimits}
+                disabled={resettingLimits}
                 style={{
-                  color: colors.primary,
-                  fontSize: 14,
-                  fontWeight: "600",
-                  marginLeft: resettingLimits ? 8 : 0,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  alignSelf: "flex-start",
+                  marginTop: uiTokens.space.md,
+                  minHeight: uiTokens.control.compactHeight,
+                  paddingHorizontal: uiTokens.space.lg,
+                  borderRadius: uiTokens.radius.pill,
+                  borderWidth: uiTokens.control.borderWidth,
+                  borderColor: palette.border,
+                  opacity: resettingLimits ? 0.5 : 1,
                 }}
               >
-                {t({
-                  id: "passes.resetMeetingRequestLimit",
-                  message: `Reset limit · ${MEETING_REQUEST_LIMIT_RESET_COST} Boost points`,
-                })}
-              </Text>
-            </TouchableOpacity>
-          )}
+                {resettingLimits && (
+                  <ActivityIndicator size="small" color={palette.accent} />
+                )}
+                <Text
+                  style={{
+                    color: palette.accent,
+                    fontSize: uiTokens.type.label,
+                    fontWeight: "600",
+                    marginLeft: resettingLimits ? uiTokens.space.sm : 0,
+                  }}
+                >
+                  {t({
+                    id: "passes.resetMeetingRequestLimit",
+                    message: `Reset limit · ${MEETING_REQUEST_LIMIT_RESET_COST} Boost points`,
+                  })}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
       )}
 
       {/* Request Button - Always show but disabled when no pass or limit reached */}
       {showRequestButton && onRequestPress && (
-        <TouchableOpacity
-          style={{
-            backgroundColor:
-              passInfo &&
-              !requestStatusLoading &&
-              (requestLimits?.canSendRequest || hasExistingRequest)
-                ? colors.primary
-                : colors.divider,
-            paddingVertical: 12,
-            paddingHorizontal: 24,
-            borderRadius: 8,
-            alignItems: "center",
-            opacity:
-              passInfo &&
-              !requestStatusLoading &&
-              (requestLimits?.canSendRequest || hasExistingRequest)
-                ? 1
-                : 0.5,
-          }}
-          onPress={
-            passInfo &&
-            !requestStatusLoading &&
-            (requestLimits?.canSendRequest || hasExistingRequest)
-              ? hasExistingRequest
-                ? onExistingRequestPress
-                : onRequestPress
-              : undefined
+        <ActionButton
+          mode={uiMode}
+          label={
+            !passInfo
+              ? t({ id: "passes.button.passRequired", message: "Pass Required" })
+              : requestStatusLoading
+                ? t({ id: "passes.button.checking", message: "Checking requests…" })
+                : hasExistingRequest
+                  ? t({ id: "passes.viewRequest", message: "View request" })
+                  : !requestLimits?.canSendRequest
+                    ? t({ id: "passes.button.limitReached", message: "Limit Reached" })
+                    : t({ id: "passes.button.requestMeeting", message: "Request Meeting" })
           }
+          variant={hasExistingRequest ? "secondary" : "primary"}
+          onPress={hasExistingRequest ? onExistingRequestPress : onRequestPress}
           disabled={
             !passInfo ||
             requestStatusLoading ||
             (!requestLimits?.canSendRequest && !hasExistingRequest)
           }
-        >
-          <Text
-            style={{
-              color:
-                passInfo &&
-                !requestStatusLoading &&
-                (requestLimits?.canSendRequest || hasExistingRequest)
-                  ? "white"
-                  : colors.text.secondary,
-              fontSize: 16,
-              fontWeight: "600",
-            }}
-          >
-            {!passInfo
-              ? t({
-                  id: "passes.button.passRequired",
-                  message: "Pass Required",
-                })
-              : requestStatusLoading
-                ? t({
-                    id: "passes.button.checking",
-                    message: "Checking requests…",
-                  })
-                : hasExistingRequest
-                  ? t({ id: "passes.viewRequest", message: "View request" })
-                  : !requestLimits?.canSendRequest
-                    ? t({
-                        id: "passes.button.limitReached",
-                        message: "Limit Reached",
-                      })
-                    : t({
-                        id: "passes.button.requestMeeting",
-                        message: "Request Meeting",
-                      })}
-          </Text>
-        </TouchableOpacity>
+          style={{ alignSelf: "stretch" }}
+        />
       )}
-    </View>
+    </Surface>
   );
 }
 

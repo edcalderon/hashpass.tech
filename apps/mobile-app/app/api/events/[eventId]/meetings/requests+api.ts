@@ -11,8 +11,12 @@ import type { MeetingRequesterProfile } from '@hashpass/types';
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ACTIONS = new Set(["accept", "decline", "cancel", "block"]);
+// Quick stand-ups start at 5 minutes and boost up to 30; coffee breaks run 15-45.
+// The RPC derives the real length from type + boost, this only rejects nonsense early.
 const MIN_MEETING_DURATION_MINUTES = 5;
-const MAX_MEETING_DURATION_MINUTES = 30;
+const MAX_SPEED_DURATION_MINUTES = 30;
+const MAX_COFFEE_DURATION_MINUTES = 45;
+const COFFEE_NOT_ALLOWED_CODE = 'HP403';
 
 async function deliverMeetingEmail(details: Record<string, unknown>) {
   // Await email completion in Lambda so the runtime cannot freeze it after the
@@ -202,9 +206,10 @@ export async function GET(request: Request) {
         // but never surfaced in the speaker's incoming list.
         .neq("status", "archived");
       if (status) incomingQuery = incomingQuery.eq("status", status);
-      const { data, error } = await incomingQuery.order("created_at", {
-        ascending: false,
-      });
+      // Boosted requests surface first; ties fall back to newest first.
+      const { data, error } = await incomingQuery
+        .order("priority_score", { ascending: false })
+        .order("created_at", { ascending: false });
       if (error) throw error;
       incoming = data || [];
     }
@@ -236,15 +241,21 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
-  const durationMinutes = body.durationMinutes === undefined ? 15 : Number(body.durationMinutes);
+  const meetingType = body.meetingType === 'coffee' ? 'coffee' : 'speed';
+  const maxDurationMinutes = meetingType === 'coffee'
+    ? MAX_COFFEE_DURATION_MINUTES
+    : MAX_SPEED_DURATION_MINUTES;
+  const durationMinutes = body.durationMinutes === undefined
+    ? (meetingType === 'coffee' ? 15 : MIN_MEETING_DURATION_MINUTES)
+    : Number(body.durationMinutes);
   if (
     !Number.isFinite(durationMinutes) ||
     !Number.isInteger(durationMinutes) ||
     durationMinutes < MIN_MEETING_DURATION_MINUTES ||
-    durationMinutes > MAX_MEETING_DURATION_MINUTES
+    durationMinutes > maxDurationMinutes
   ) {
     return Response.json(
-      { error: "durationMinutes must be between 5 and 30 minutes" },
+      { error: `durationMinutes must be between 5 and ${maxDurationMinutes} minutes` },
       { status: 400 },
     );
   }
@@ -259,7 +270,7 @@ export async function POST(request: Request) {
       p_requester_company: body.requesterCompany || null,
       p_requester_title: body.requesterTitle || null,
       p_requester_ticket_type: body.requesterTicketType || "general",
-      p_meeting_type: body.meetingType || "networking",
+      p_meeting_type: meetingType,
       p_message: body.message || "",
       p_note: body.note || null,
       p_boost_amount: Number(body.boostAmount) || 0,
@@ -287,8 +298,8 @@ export async function POST(request: Request) {
       speakerName: body.speakerName,
       message: body.message,
       note: body.note,
-      meetingType: body.meetingType,
-      durationMinutes,
+      meetingType,
+      durationMinutes: result?.duration_minutes ?? durationMinutes,
       appUrl: `${meetingFrontendOrigin(request)}/events/${encodeURIComponent(eventId)}/networking/my-requests`,
     } as const;
     // Both people receive a clear transactional record: the speaker gets the
@@ -305,6 +316,12 @@ export async function POST(request: Request) {
     });
     return Response.json({ data: result }, { status: 201 });
   } catch (error: any) {
+    // Coffee breaks are gated to business/VIP passes inside the RPC.
+    if (error?.code === COFFEE_NOT_ALLOWED_CODE)
+      return Response.json(
+        { error: "Coffee meetings require a business or VIP pass", code: "coffee_requires_business_pass" },
+        { status: 403 },
+      );
     console.error("[meeting-requests] create error:", error);
     return Response.json(
       { error: error?.message || "Failed to create meeting request" },

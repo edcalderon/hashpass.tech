@@ -1,6 +1,6 @@
 import { rateLimitOk } from '@/lib/bsl/rateLimit';
 import { sendMeetingNotificationEmail } from '@/lib/email';
-import { authorizeEventAdmin, listEventAttendees } from '@/lib/server/event-admin';
+import { authorizeEventAdmin, listEventAttendees, type EventAttendee } from '@/lib/server/event-admin';
 
 const value = (x: unknown, n = 200) => String(x || '').trim().slice(0, n);
 
@@ -35,7 +35,7 @@ export async function POST(request: Request) {
   } catch (error: any) {
     return Response.json({ error: error?.message || 'Unable to load event attendees' }, { status: 500 });
   }
-  const attendeesById = new Map(attendees.map(a => [a.id, a]));
+  const attendeesById = new Map<string, EventAttendee>(attendees.map((a: EventAttendee) => [a.id, a]));
 
   const { data: speakerRows } = await auth.supabase.from('bsl_speakers').select('id, user_id, name').eq('is_active', true).eq('is_accepting_meetings', true).not('user_id', 'is', null);
   const speakers = new Map((speakerRows || []).map((s: any) => [String(s.id), s]));
@@ -67,9 +67,9 @@ export async function POST(request: Request) {
       p_requester_company: null,
       p_requester_title: null,
       p_requester_ticket_type: attendee.ticketType || 'general',
-      p_meeting_type: 'networking',
+      p_meeting_type: 'speed',
       p_message: message,
-      p_duration_minutes: 15,
+      p_duration_minutes: 5,
       p_event_id: eventId,
     });
     if (error) { failures.push({ pair, error: error.message }); continue; }

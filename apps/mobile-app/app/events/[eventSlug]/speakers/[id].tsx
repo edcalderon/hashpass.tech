@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput, Modal } from 'react-native';
+import { ActivityIndicator, View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTheme } from '../../../../hooks/useTheme';
 import { useEvent } from '@contexts/EventContext';
@@ -10,6 +10,8 @@ import { useBalance } from '@contexts/BalanceContext';
 import { apiClient, eventApiPath } from '@/lib/api-client';
 import { resolveActiveEventId } from '@/lib/event-path';
 import SpeakerAvatar from '../../../../components/SpeakerAvatar';
+import MeetingRequestSheet from '../../../../components/MeetingRequestSheet';
+import { canBookCoffee, meetingDurationMinutes, meetingTypeLabel, type CoffeeDuration, type MeetingKind } from '../../../../lib/meeting-rules';
 import PassesDisplay from '../../../../components/PassesDisplay';
 import { getSpeakerAvatarUrl, getSpeakerLinkedInUrl, getSpeakerTwitterUrl } from '../../../../lib/string-utils';
 import SpeakerClaimModal from '../../../../components/SpeakerClaimModal';
@@ -110,7 +112,7 @@ export default function SpeakerDetail() {
   const [meetingRequests, setMeetingRequests] = useState<any[]>([]);
   const [loadingRequestStatus, setLoadingRequestStatus] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
-  const [isCurrentUserSpeaker, setIsCurrentUserSpeaker] = useState(false);
+  const isCurrentUserSpeaker = Boolean(dbUserId && speaker?.user_id === dbUserId);
   const [isCancellingRequest, setIsCancellingRequest] = useState(false);
   const [cancelledRequests, setCancelledRequests] = useState<any[]>([]);
   const [loadingCancelledRequests, setLoadingCancelledRequests] = useState(false);
@@ -125,9 +127,15 @@ export default function SpeakerDetail() {
   const [passRefreshTrigger, setPassRefreshTrigger] = useState(0);
   const [userPassType, setUserPassType] = useState<'general' | 'business' | 'vip'>('general');
   const attendeeProfileRef = useRef<AttendeeProfile | null>(null);
+  const requestLimitsInFlightRef = useRef<{ key: string; promise: Promise<void> } | null>(null);
+  const requestLimitsSettledKeyRef = useRef<string | null>(null);
+  const requestLimitsGenerationRef = useRef(0);
   
   const [meetingMessage, setMeetingMessage] = useState('');
-  const [selectedIntentions, setSelectedIntentions] = useState<string[]>(['none']);
+  const [selectedIntentions, setSelectedIntentions] = useState<string[]>([]);
+  const [boostAmount, setBoostAmount] = useState(0);
+  const [meetingKind, setMeetingKind] = useState<MeetingKind>('speed');
+  const [coffeeMinutes, setCoffeeMinutes] = useState<CoffeeDuration>(15);
   const [requestLimits, setRequestLimits] = useState<{
     ticketType: 'general' | 'business' | 'vip';
     totalRequests: number;
@@ -135,6 +143,7 @@ export default function SpeakerDetail() {
     nextRequestAllowedAt?: string;
     canSendRequest: boolean;
     requestLimit: number;
+    remainingBoost: number;
     reason?: string;
   } | null>(null);
   const [loadingRequestLimits, setLoadingRequestLimits] = useState(false);
@@ -223,7 +232,6 @@ export default function SpeakerDetail() {
           showError('Speaker Not Available', 'This speaker profile is not public yet.');
           return;
         }
-        setIsCurrentUserSpeaker(Boolean(dbUserId && dbSpeaker.user_id === dbUserId));
         setSpeaker({
           id: String(dbSpeaker.id),
           name: dbSpeaker.name,
@@ -258,15 +266,9 @@ export default function SpeakerDetail() {
   };
 
   useEffect(() => {
-    if (!id) return;
-    
-    loadSpeaker();
-    
-    // User ticket removed - now using pass system
-    
-    // Load user request limits
-    loadRequestLimits();
-  }, [dbUserId, event?.speakers, id, speakerPath]);
+    if (!id || !speakerPath) return;
+    void loadSpeaker();
+  }, [id, speakerPath]);
 
   useEffect(() => {
     let cancelled = false;
@@ -292,25 +294,25 @@ export default function SpeakerDetail() {
   }, [isLoggedIn, user?.id]);
 
   useEffect(() => {
-    if (dbUserId && speaker) {
-      loadMeetingRequestStatus();
-      loadCancelledRequests();
-      loadRequestLimits();
+    if (dbUserId && speaker?.id) {
+      void loadMeetingRequestStatus();
+      void loadCancelledRequests();
+      void loadRequestLimits();
     }
-  }, [dbUserId, speaker, isCurrentUserSpeaker]);
+  }, [dbUserId, eventId, speaker?.id, isCurrentUserSpeaker]);
 
   // Keep this screen behind the authenticated event API boundary. Polling is
   // deliberately used here until backend push delivery is available, avoiding
   // a second browser-to-Supabase data path with different tenant semantics.
   useEffect(() => {
-    if (!dbUserId || !speaker) return;
+    if (!dbUserId || !speaker?.id) return;
     const refresh = () => {
       void loadMeetingRequestStatus();
       void loadCancelledRequests();
     };
     const interval = setInterval(refresh, 30000);
     return () => clearInterval(interval);
-  }, [dbUserId, eventId, speaker, isCurrentUserSpeaker]);
+  }, [dbUserId, eventId, speaker?.id, isCurrentUserSpeaker]);
 
   const loadMeetingRequestStatus = async () => {
     if (!dbUserId || !speaker) return;
@@ -421,7 +423,7 @@ export default function SpeakerDetail() {
         params: {
           speakerId,
           requesterId: request.requester_id,
-          durationMinutes: request.duration_minutes || 15,
+          durationMinutes: request.duration_minutes || 5,
         },
       });
       if (!response.success) throw new Error(response.error);
@@ -570,7 +572,7 @@ export default function SpeakerDetail() {
       
       // Refresh request limits to update available requests
       console.log('🔄 Refreshing request limits...');
-      await loadRequestLimits();
+      await loadRequestLimits(true);
       
       // Trigger pass display refresh
       setPassRefreshTrigger(prev => prev + 1);
@@ -605,55 +607,84 @@ export default function SpeakerDetail() {
 
 
 
-  const loadRequestLimits = async () => {
-    if (!dbUserId || !speaker) return;
-    setLoadingRequestLimits(true);
-    try {
-      await retryDatabaseSession?.();
-      const response = await apiClient.request(meetingRequestLimitsPath, {
-        skipEventSegment: true,
-      });
-      if (!response.success) throw new Error(response.error);
-      const data = (response.data as any)?.data;
+  const loadRequestLimits = async (force = false) => {
+    const currentDbUserId = dbUserId;
+    const currentSpeakerId = speaker?.id;
+    if (!currentDbUserId || !currentSpeakerId) return;
 
-      if (data) {
-        setRequestLimits({
-          ticketType: data.pass_type || 'general',
-          totalRequests: data.total_requests || 0,
-          remainingRequests: data.remaining_requests || 0,
-          canSendRequest: (data.remaining_requests || 0) > 0,
-          requestLimit: data.max_requests || 0,
-          reason: data.remaining_requests > 0 ? 'Request allowed' : 'No remaining requests',
+    const requestKey = `${eventId}:${currentDbUserId}:${currentSpeakerId}`;
+    const inFlight = requestLimitsInFlightRef.current;
+    if (inFlight?.key === requestKey) return inFlight.promise;
+    if (!force && requestLimitsSettledKeyRef.current === requestKey) return;
+
+    const generation = ++requestLimitsGenerationRef.current;
+    const requestPromise = (async () => {
+      setLoadingRequestLimits(true);
+      try {
+        // The auth bridge is already resolved before this effect runs. Calling
+        // it again for every limits fetch can update auth state while React is
+        // rendering and re-enter this effect indefinitely.
+        const response = await apiClient.request(meetingRequestLimitsPath, {
+          skipEventSegment: true,
         });
-        
-        // Update userPassType from the data
-        if (data.pass_type) {
-          setUserPassType(data.pass_type as 'general' | 'business' | 'vip');
+        if (!response.success) throw new Error(response.error);
+        const data = (response.data as any)?.data;
+
+        // Do not let a response for a previous event/user/speaker tuple win
+        // after navigation or auth reconciliation.
+        if (generation !== requestLimitsGenerationRef.current) return;
+
+        if (data) {
+          setRequestLimits({
+            ticketType: data.pass_type || 'general',
+            totalRequests: data.total_requests || 0,
+            remainingRequests: data.remaining_requests || 0,
+            canSendRequest: (data.remaining_requests || 0) > 0,
+            requestLimit: data.max_requests || 0,
+            remainingBoost: Math.max(0, Number(data.remaining_boost) || 0),
+            reason: data.remaining_requests > 0 ? 'Request allowed' : 'No remaining requests',
+          });
+          if (data.pass_type) {
+            setUserPassType(data.pass_type as 'general' | 'business' | 'vip');
+          }
+        } else {
+          setRequestLimits({
+            ticketType: 'general',
+            totalRequests: 0,
+            remainingRequests: 0,
+            canSendRequest: false,
+            requestLimit: 0,
+            remainingBoost: 0,
+            reason: 'No active pass found',
+          });
         }
-      } else {
-        // No pass found or other issue
+      } catch (error) {
+        if (generation !== requestLimitsGenerationRef.current) return;
+        console.error('❌ Error loading request limits:', error);
         setRequestLimits({
-          ticketType: 'business',
+          ticketType: 'general',
           totalRequests: 0,
           remainingRequests: 0,
           canSendRequest: false,
           requestLimit: 0,
-          reason: 'No active pass found',
+          remainingBoost: 0,
+          reason: 'Error loading request limits',
         });
+      } finally {
+        if (generation === requestLimitsGenerationRef.current) {
+          requestLimitsSettledKeyRef.current = requestKey;
+          setLoadingRequestLimits(false);
+        }
       }
-    } catch (error) {
-      console.error('❌ Error loading request limits:', error);
-      // Set default limits to prevent meeting requests if database is unavailable
-      setRequestLimits({
-        ticketType: 'business',
-        totalRequests: 0,
-        remainingRequests: 0,
-        canSendRequest: false,
-        requestLimit: 0,
-        reason: 'Error loading request limits',
-      });
+    })();
+
+    requestLimitsInFlightRef.current = { key: requestKey, promise: requestPromise };
+    try {
+      await requestPromise;
     } finally {
-      setLoadingRequestLimits(false);
+      if (requestLimitsInFlightRef.current?.promise === requestPromise) {
+        requestLimitsInFlightRef.current = null;
+      }
     }
   };
 
@@ -708,7 +739,17 @@ export default function SpeakerDetail() {
 
     // Show the meeting request modal directly - authentication will be checked on submit
     // This allows users to fill out the form (message and intentions) before being prompted to login
+    setBoostAmount(0);
+    setMeetingKind('speed');
+    setCoffeeMinutes(15);
     setShowMeetingModal(true);
+  };
+
+  const openTicketPurchase = () => {
+    router.push({
+      pathname: '/events/[eventSlug]/tickets' as any,
+      params: { eventSlug: eventId, openTicketModal: 'true' },
+    });
   };
 
   const submitMeetingRequestDirectly = async () => {
@@ -735,7 +776,7 @@ export default function SpeakerDetail() {
         requester_company: requesterIdentity.company,
         requester_title: requesterIdentity.title,
         requester_ticket_type: 'general', // Default ticket type, will be validated by pass system
-        meeting_type: 'networking',
+        meeting_type: 'speed',
         message: '', // No message
         note: '', // No note
         boost_amount: 0 // No boost system yet
@@ -772,7 +813,7 @@ export default function SpeakerDetail() {
       );
 
       // Reload request limits to update the UI
-      await loadRequestLimits();
+      await loadRequestLimits(true);
       
       // Trigger pass display refresh
       setPassRefreshTrigger(prev => prev + 1);
@@ -819,27 +860,10 @@ export default function SpeakerDetail() {
     }
   };
 
-  const getIntentionText = (intentionId: string): string => {
-    const intentions = {
-      'coffee': '☕ Just to grab a coffee and chat',
-      'pitch': '💡 I want to pitch you my startup idea',
-      'consultation': '🔍 Quick 5-minute consultation',
-      'networking': '🤝 General networking and connection',
-      'collaboration': '🚀 Explore potential collaboration',
-      'advice': '💭 Seek advice on my career/project',
-      'fun': '😄 Just for fun and interesting conversation',
-      'learning': '📚 Learn from your experience',
-      'none': '⚪ No specific intention'
-    };
-    return intentions[intentionId as keyof typeof intentions] || '';
-  };
-
-  const getSelectedIntentionsText = (): string => {
-    if (selectedIntentions.length === 0) return '';
-    if (selectedIntentions.includes('none')) return '⚪ No specific intention';
-    
-    return selectedIntentions.map(id => getIntentionText(id)).join('; ');
-  };
+  const getSelectedIntentionsText = (): string =>
+    selectedIntentions
+      .map((id) => t(`meetingRequestModal.intentions.${id}`))
+      .join('; ');
 
   const submitMeetingRequest = async () => {
     if (!speaker) {
@@ -886,8 +910,24 @@ export default function SpeakerDetail() {
         setShowMeetingModal(false);
         return;
       }
+      if (boostAmount > Math.max(0, Number(limits.remaining_boost) || 0)) {
+        showError(
+          'Boost Unavailable',
+          'You do not have enough boost points left for this request.',
+        );
+        return;
+      }
       if (limits.pass_type) {
         setUserPassType(limits.pass_type as 'general' | 'business' | 'vip');
+      }
+      // The server re-checks this; stopping here just avoids a round trip that cannot succeed.
+      if (meetingKind === 'coffee' && !canBookCoffee(limits.pass_type || userPassType)) {
+        showError(
+          'Coffee Unavailable',
+          'Coffee meetings are available with a business or VIP pass.',
+        );
+        setMeetingKind('speed');
+        return;
       }
     } catch {
       showError(
@@ -901,6 +941,7 @@ export default function SpeakerDetail() {
     setIsRequestingMeeting(true);
 
     try {
+      const sentDuration = meetingDurationMinutes(meetingKind, boostAmount, coffeeMinutes);
       const meetingData: CreateMeetingRequestData = {
         requester_id: dbUserId,
         speaker_id: speaker.id,
@@ -909,10 +950,12 @@ export default function SpeakerDetail() {
         requester_company: requesterIdentity.company,
         requester_title: requesterIdentity.title,
         requester_ticket_type: userPassType, // Use actual pass type from user's pass
-        meeting_type: 'networking',
+        meeting_type: meetingKind,
         message: meetingMessage || '', // Allow empty message
         note: getSelectedIntentionsText(),
-        boost_amount: 0, // No boost system yet
+        boost_amount: boostAmount,
+        // The server re-derives the length; this keeps the optimistic row honest.
+        duration_minutes: sentDuration,
       };
 
       const meetingRequest = await createMeetingRequest(meetingData);
@@ -928,11 +971,12 @@ export default function SpeakerDetail() {
           requester_company: requesterIdentity.company,
           requester_title: requesterIdentity.title,
           requester_ticket_type: 'business',
-          meeting_type: 'networking',
+          meeting_type: meetingKind,
           message: meetingMessage || '',
           note: getSelectedIntentionsText(),
-          boost_amount: 0,
-          duration_minutes: 15,
+          boost_amount: boostAmount,
+          duration_minutes: sentDuration,
+          priority_score: 50 + boostAmount,
           status: 'pending',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
@@ -947,9 +991,11 @@ export default function SpeakerDetail() {
       setShowMeetingModal(false);
       setMeetingMessage('');
       setSelectedIntentions([]);
+      setBoostAmount(0);
+      setMeetingKind('speed');
       
       // Refresh request limits and meeting request status after sending (for data consistency)
-      await loadRequestLimits();
+      await loadRequestLimits(true);
       await loadMeetingRequestStatus();
       
       // Check if this is a demo response
@@ -985,10 +1031,14 @@ export default function SpeakerDetail() {
       setShowMeetingModal(false);
       setMeetingMessage('');
       setSelectedIntentions([]);
+      setBoostAmount(0);
+      setMeetingKind('speed');
       
       // Show specific error messages based on the error type
       if (error instanceof Error) {
-        if (error.message.includes('Invalid data format') || error.message.includes('Invalid speaker or user ID format')) {
+        if (error.message.includes('Coffee meetings require')) {
+          showError('Coffee Unavailable', 'Coffee meetings are available with a business or VIP pass.');
+        } else if (error.message.includes('Invalid data format') || error.message.includes('Invalid speaker or user ID format')) {
           showError('Data Format Error', error.message);
         } else if (error.message.includes('Invalid request data')) {
           showError('Invalid Request', error.message);
@@ -1143,19 +1193,25 @@ export default function SpeakerDetail() {
               />
             </View>
           )}
-          {/* Floating status badge near avatar */}
-          {speaker.isActive !== undefined && (
-            <View style={styles.floatingStatusBadge}>
-              <SpeakerStatusBadge status={badgeStatus} label={onlineLabel} isDark={isDark} />
-            </View>
-          )}
         </View>
-        
-        <View style={styles.speakerInfo}>
+
+        <View style={[styles.speakerInfo, speaker.isActive !== undefined && styles.speakerInfoWithBadge]}>
           <Text style={styles.speakerName}>{speaker.name}</Text>
-          {speaker.title && <Text style={styles.speakerTitle}>{speaker.title}</Text>}
-          {speaker.company && <Text style={styles.speakerCompany}>{speaker.company}</Text>}
+          {speaker.company ? (
+            <View style={styles.speakerCompanyRow} testID="speaker-company">
+              <MaterialIcons name="business" size={16} color={colors.text.secondary} />
+              <Text style={styles.speakerCompany} numberOfLines={2}>{speaker.company}</Text>
+            </View>
+          ) : null}
+          {speaker.title ? <Text style={styles.speakerTitle}>{speaker.title}</Text> : null}
         </View>
+
+        {/* Status sits in the card's top-right corner, clear of the photo. */}
+        {speaker.isActive !== undefined && (
+          <View style={styles.statusBadgeCorner}>
+            <SpeakerStatusBadge status={badgeStatus} label={onlineLabel} isDark={isDark} />
+          </View>
+        )}
 
       <SpeakerClaimModal
         visible={claimModalOpen}
@@ -1500,128 +1556,27 @@ export default function SpeakerDetail() {
 
       </View>
 
-      {/* Meeting Request Modal */}
-      <Modal
-        visible={showMeetingModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>{t('meetingRequestModal.title', { speakerName: speaker?.name || '' })}</Text>
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={() => setShowMeetingModal(false)}
-            >
-              <MaterialIcons name="close" size={24} color={colors.text.primary} />
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView style={styles.modalContent}>
-            <View style={styles.inputGroup}>
-              <View style={styles.inputLabelRow}>
-                <Text style={styles.inputLabel}>{t('meetingRequestModal.messageLabel')}</Text>
-                <Text style={styles.inputHint}>{t('meetingRequestModal.messageHint')}</Text>
-              </View>
-              <TextInput
-                style={styles.textInput}
-                placeholder={t('meetingRequestModal.messagePlaceholder')}
-                placeholderTextColor={colors.text.secondary}
-                value={meetingMessage}
-                onChangeText={setMeetingMessage}
-                multiline
-                numberOfLines={4}
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>{t('meetingRequestModal.intentionLabel')}</Text>
-              <Text style={styles.inputHint}>{t('meetingRequestModal.intentionHint')}</Text>
-              
-              <View style={styles.intentionChecklist}>
-                {[
-                  { id: 'coffee', emoji: '☕' },
-                  { id: 'pitch', emoji: '💡' },
-                  { id: 'consultation', emoji: '🔍' },
-                  { id: 'networking', emoji: '🤝' },
-                  { id: 'collaboration', emoji: '🚀' },
-                  { id: 'advice', emoji: '💭' },
-                  { id: 'fun', emoji: '😄' },
-                  { id: 'learning', emoji: '📚' },
-                  { id: 'none', emoji: '⚪' }
-                ].map((intention) => {
-                  const text = t(`meetingRequestModal.intentions.${intention.id}`);
-                  return (
-                  <TouchableOpacity
-                    key={intention.id}
-                    style={[
-                      styles.intentionOption,
-                      selectedIntentions.includes(intention.id) && styles.intentionOptionSelected
-                    ]}
-                    onPress={() => {
-                      if (intention.id === 'none') {
-                        // If "No Intention" is selected, clear all others
-                        setSelectedIntentions(['none']);
-                      } else {
-                        // Remove 'none' if it was selected
-                        let newSelections = selectedIntentions.filter(id => id !== 'none');
-                        
-                        if (newSelections.includes(intention.id)) {
-                          // Remove if already selected
-                          newSelections = newSelections.filter(id => id !== intention.id);
-                        } else {
-                          // Add if not selected and under limit
-                          if (newSelections.length < 3) {
-                            newSelections.push(intention.id);
-                          }
-                        }
-                        setSelectedIntentions(newSelections);
-                      }
-                    }}
-                  >
-                    <View style={styles.intentionOptionContent}>
-                      <Text style={styles.intentionEmoji}>{intention.emoji}</Text>
-                      <Text style={[
-                        styles.intentionText,
-                        selectedIntentions.includes(intention.id) && styles.intentionTextSelected
-                      ]}>
-                        {text}
-                      </Text>
-                    </View>
-                    {selectedIntentions.includes(intention.id) && (
-                      <MaterialIcons name="check-circle" size={20} color="#007AFF" />
-                    )}
-                  </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </View>
-
-          </ScrollView>
-
-          <View style={styles.modalFooter}>
-            <TouchableOpacity
-              style={styles.cancelButton}
-              onPress={() => setShowMeetingModal(false)}
-            >
-              <Text style={styles.cancelButtonText}>{t('meetingRequestModal.cancel')}</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={[
-                styles.submitButton,
-                isRequestingMeeting && styles.disabledButton
-              ]}
-              onPress={submitMeetingRequest}
-              disabled={isRequestingMeeting}
-            >
-              <Text style={styles.submitButtonText}>
-                {isRequestingMeeting ? t('meetingRequestModal.sending') : t('meetingRequestModal.sendRequest')}
-              </Text>
-            </TouchableOpacity>
-      </View>
-    </View>
-      </Modal>
+      {/* Meeting Request Sheet */}
+      <MeetingRequestSheet
+        open={showMeetingModal}
+        onClose={() => setShowMeetingModal(false)}
+        speakerName={speaker?.name || ''}
+        message={meetingMessage}
+        onMessageChange={setMeetingMessage}
+        intentions={selectedIntentions}
+        onIntentionsChange={setSelectedIntentions}
+        boostAmount={boostAmount}
+        onBoostChange={setBoostAmount}
+        remainingBoost={requestLimits?.remainingBoost || 0}
+        meetingType={meetingKind}
+        onMeetingTypeChange={setMeetingKind}
+        coffeeMinutes={coffeeMinutes}
+        onCoffeeMinutesChange={setCoffeeMinutes}
+        coffeeAllowed={!loadingRequestLimits && canBookCoffee(requestLimits?.ticketType || userPassType)}
+        onCoffeeLockedPress={openTicketPurchase}
+        submitting={isRequestingMeeting}
+        onSubmit={submitMeetingRequest}
+      />
 
       {/* Cancel Request Confirmation Modal */}
       <Modal
@@ -1744,7 +1699,7 @@ export default function SpeakerDetail() {
                         <Text style={styles.slotPickerOptionSubtitle}>
                           {startsAt.toLocaleTimeString(undefined, {
                             hour: 'numeric', minute: '2-digit',
-                          })} · {slot.duration_minutes || selectedRequestDetail?.duration_minutes || 15} minutes
+                          })} · {slot.duration_minutes || selectedRequestDetail?.duration_minutes || 5} minutes
                         </Text>
                       </View>
                       {selected && <MaterialIcons name="check-circle" size={24} color={colors.primary} />}
@@ -1894,7 +1849,7 @@ export default function SpeakerDetail() {
                 
                 <View style={styles.detailInfoRow}>
                   <Text style={styles.detailInfoLabel}>{t('requestView.meetingType')}</Text>
-                  <Text style={styles.detailInfoValue}>{selectedRequestDetail.meeting_type}</Text>
+                  <Text style={styles.detailInfoValue}>{meetingTypeLabel(selectedRequestDetail.meeting_type, t)}</Text>
                 </View>
                 
                 <View style={styles.detailInfoRow}>
@@ -1970,7 +1925,7 @@ export default function SpeakerDetail() {
                             requesterName: selectedRequestDetail.requester_name,
                             status: 'confirmed',
                             scheduledAt: selectedRequestDetail.meeting_scheduled_at || '',
-                            duration: selectedRequestDetail.duration_minutes || 15,
+                            duration: selectedRequestDetail.duration_minutes || 5,
                             isSpeaker: isCurrentUserSpeaker ? 'true' : 'false',
                           },
                         });
@@ -2081,28 +2036,21 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     color: colors.text.primary,
     marginBottom: 4,
   },
-  floatingStatusBadge: {
+  statusBadgeCorner: {
     position: 'absolute',
-    bottom: -6,
-    left: 0,
-    right: 0,
+    top: uiTokens.space.md,
+    right: uiTokens.space.md,
+    zIndex: 2,
+  },
+  speakerInfoWithBadge: {
+    // Keeps the name clear of the status badge in the corner.
+    paddingTop: uiTokens.space.xl + uiTokens.space.sm,
+  },
+  speakerCompanyRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.background.paper,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    shadowColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    gap: 6,
-    alignSelf: 'center',
-    minWidth: 70,
+    gap: uiTokens.space.sm,
+    marginBottom: uiTokens.space.xs,
   },
   statusIndicator: {
     width: 8,
@@ -2138,9 +2086,10 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     marginBottom: 2,
   },
   speakerCompany: {
-    fontSize: 14,
-    color: colors.text.secondary,
-    fontWeight: '500',
+    flexShrink: 1,
+    fontSize: 16,
+    color: colors.text.primary,
+    fontWeight: '600',
   },
   section: {
     margin: 16,
@@ -2487,110 +2436,18 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     fontWeight: '600',
     color: colors.text.primary,
   },
-  closeButton: {
-    padding: 4,
-  },
   modalContent: {
     flex: 1,
     padding: 20,
-  },
-  inputGroup: {
-    marginBottom: 20,
-  },
-  inputLabel: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: colors.text.primary,
-    marginBottom: 8,
-  },
-  inputLabelRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
   },
   characterCount: {
     fontSize: 12,
     color: colors.text.secondary,
     fontWeight: '500',
   },
-  textInput: {
-    backgroundColor: colors.background.paper,
-    borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
-    color: colors.text.primary,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    textAlignVertical: 'top',
-  },
   textInputError: {
     borderColor: '#F44336',
     backgroundColor: 'rgba(244, 67, 54, 0.05)',
-  },
-  inputHint: {
-    fontSize: 12,
-    color: colors.text.secondary,
-    fontStyle: 'italic',
-    marginTop: 8,
-    lineHeight: 16,
-  },
-  intentionChecklist: {
-    marginTop: 12,
-    gap: 8,
-  },
-  intentionOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 12,
-    backgroundColor: colors.background.paper,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.divider,
-  },
-  intentionOptionSelected: {
-    borderColor: '#007AFF',
-    backgroundColor: 'rgba(0, 122, 255, 0.05)',
-  },
-  intentionOptionContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  intentionEmoji: {
-    fontSize: 16,
-    marginRight: 12,
-  },
-  intentionText: {
-    fontSize: 14,
-    color: colors.text.primary,
-    flex: 1,
-  },
-  intentionTextSelected: {
-    color: '#007AFF',
-    fontWeight: '500',
-  },
-  modalFooter: {
-    flexDirection: 'row',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: colors.background.paper,
-    borderTopWidth: 1,
-    borderTopColor: colors.divider,
-    gap: 12,
-  },
-  submitButton: {
-    flex: 2,
-    paddingVertical: 16,
-    borderRadius: 12,
-    backgroundColor: '#007AFF',
-    alignItems: 'center',
-  },
-  submitButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
   },
   // Request Status Styles
   requestStatusCard: {

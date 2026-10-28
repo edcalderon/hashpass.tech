@@ -207,10 +207,17 @@ describe('PassesDisplay', () => {
       await new Promise((resolve) => setTimeout(resolve, 320));
     });
 
-    const requestControls = renderer.root.findAll((node: any) =>
+    const matchingControls = renderer.root.findAll((node: any) =>
       typeof node.props?.onPress === 'function'
       && node.findAllByProps({ children: 'View request' }).length > 0,
     );
+    // The shared button wraps a Pressable; count each control once, outermost only.
+    const requestControls = matchingControls.filter((node: any) => {
+      for (let parent = node.parent; parent; parent = parent.parent) {
+        if (matchingControls.includes(parent)) return false;
+      }
+      return true;
+    });
     expect(requestControls).toHaveLength(1);
 
     const requestControl = requestControls[0];

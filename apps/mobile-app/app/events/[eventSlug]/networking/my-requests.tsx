@@ -25,6 +25,7 @@ import { useNotifications } from '@contexts/NotificationContext';
 import { lukasRewardService } from '../../../../lib/lukas-reward-service';
 import { useBalance } from '@contexts/BalanceContext';
 import { useTranslation } from '../../../../i18n/i18n';
+import { meetingTypeLabel } from '../../../../lib/meeting-rules';
 import { apiClient, eventApiPath } from '@/lib/api-client';
 import { resolveActiveEventId } from '@/lib/event-path';
 import { getSpeakerAvatarUrl } from '../../../../lib/string-utils';
@@ -1013,7 +1014,7 @@ export default function MyRequestsView() {
                 </View>
                 <View style={styles.detailRow}>
                   <Text style={styles.detailRowLabel}>{t('requestView.type')}</Text>
-                  <Text style={styles.detailRowValue}>{selectedRequest.meeting_type}</Text>
+                  <Text style={styles.detailRowValue}>{meetingTypeLabel(selectedRequest.meeting_type, t)}</Text>
                 </View>
                 {selectedRequest.boost_amount && selectedRequest.boost_amount > 0 && (
                   <View style={styles.detailRow}>

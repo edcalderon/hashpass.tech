@@ -1,6 +1,6 @@
 import { uiTokens } from '@hashpass/ui/tokens';
 import React, { useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, Animated, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View, type ViewStyle } from 'react-native';
+import { AccessibilityInfo, Animated, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View, type ViewStyle } from 'react-native';
 import { useAnimations } from '../../providers/AnimationProvider';
 import { useTheme } from '../../hooks/useTheme';
 import type { ThemeColors } from '../../lib/theme';
@@ -9,14 +9,27 @@ export type { DrawerSheetProps } from './DrawerSheet.types';
 
 const ENTRANCE_MS = 220;
 
+/**
+ * The app-level "disable animations" setting. DrawerSheet is also used on screens that sit
+ * outside the dashboard's AnimationProvider (event pages), where the hook throws; animations
+ * are then simply on. The context read happens before the throw, so hook order stays stable.
+ */
+function useAppAnimationsEnabled(): boolean {
+  try {
+    return useAnimations().animationsEnabled;
+  } catch {
+    return true;
+  }
+}
+
 export default function DrawerSheet({
   open, onClose, title, closeLabel = 'Close', expandLabel = 'Expand', shrinkLabel = 'Shrink',
-  defaultHeight = 'content', children,
+  defaultHeight = 'content', footer, children,
 }: DrawerSheetProps) {
   const { colors } = useTheme();
   // Respect both motion preferences (AGENTS.md): the app-level "disable animations" setting
   // and the system reduced-motion flag, including changes while the sheet is open.
-  const { animationsEnabled } = useAnimations();
+  const animationsEnabled = useAppAnimationsEnabled();
   const [systemReducedMotion, setSystemReducedMotion] = useState(false);
   useEffect(() => {
     let active = true;
@@ -55,7 +68,7 @@ export default function DrawerSheet({
     ? [styles.backdrop, { backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' } as ViewStyle]
     : styles.backdrop;
   return <Modal visible={open} transparent animationType="none" onRequestClose={onClose} accessibilityViewIsModal>
-    <View style={styles.root}>
+    <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       {/* The dim/blur layer fades in and absolutely fills the modal: the area above the
           panel is always dimmed, and a tap anywhere on it closes the sheet. */}
       <Animated.View style={[styles.backdropLayer, backdrop, { opacity: fade }]}>
@@ -81,10 +94,12 @@ export default function DrawerSheet({
           {/* With a fixed medium height the ScrollView must fill the remaining panel so it
               scrolls rather than sizing to its content inside an oversized sheet. */}
           <ScrollView style={[styles.body, defaultHeight === 'medium' && styles.bodyFill]}
-            contentContainerStyle={styles.bodyContent}>{children}</ScrollView>
+            contentContainerStyle={styles.bodyContent} keyboardShouldPersistTaps="handled">{children}</ScrollView>
+          {/* Pinned under the scrolling body so the primary action never scrolls away. */}
+          {footer !== undefined && <View style={styles.footer}>{footer}</View>}
         </View>
       </Animated.View>
-    </View>
+    </KeyboardAvoidingView>
   </Modal>;
 }
 
@@ -116,4 +131,5 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
   body: { paddingHorizontal: uiTokens.space.lg },
   bodyFill: { flex: 1 },
   bodyContent: { gap: 12, paddingBottom: 8 },
+  footer: { paddingHorizontal: uiTokens.space.lg, paddingTop: uiTokens.space.sm },
 });

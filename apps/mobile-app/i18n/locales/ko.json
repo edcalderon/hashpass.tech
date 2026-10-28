@@ -1312,7 +1312,7 @@
     "currentPass": "현재 패스",
     "unknown": "알 수 없음",
     "requestAllowed": "미팅 요청을 보낼 수 있습니다.",
-    "requestPending": "⏳ 미팅 요청 대기 중",
+    "requestPending": "미팅 요청 대기 중",
     "requestPendingDescription": "요청이 발표자의 응답을 기다리고 있습니다.",
     "requestInProgressDescription": "이 발표자에게 이미 활성 요청이 있습니다.",
     "viewRequest": "요청 보기",
@@ -1323,8 +1323,8 @@
       "revoked": "취소됨",
       "pending": "대기 중"
     },
-    "canRequestMeeting": "✅ 미팅 요청 가능",
-    "cannotRequestMeeting": "❌ 미팅 요청 불가",
+    "canRequestMeeting": "미팅 요청 가능",
+    "cannotRequestMeeting": "미팅 요청 불가",
     "qrCode": "QR 코드",
     "details": "세부 정보",
     "share": "공유",
@@ -1538,21 +1538,27 @@
     },
     "meetingRequestModal": {
       "title": "{speakerName}와 미팅 요청",
-      "messageLabel": "메시지 (선택사항)",
-      "messageHint": "💡 메시지를 포함하면 승인 확률이 3배 증가합니다",
-      "messagePlaceholder": "연사에게 왜 만나고 싶은지 알려주세요 (선택사항이지만 권장)...",
-      "intentionLabel": "미팅 의도 (선택사항)",
-      "intentionHint": "💡 미팅에 대해 최대 3개의 의도를 선택하세요 (또는 \"특정 의도 없음\" 선택)",
+      "typeLabel": "미팅 유형",
+      "types": {
+        "speed": {
+          "title": "빠른 스탠드업",
+          "hint": "5분, 부스트로 최대 30분."
+        },
+        "coffee": {
+          "title": "커피 브레이크",
+          "hint": "15, 30 또는 45분."
+        }
+      },
+      "coffeeLocked": "비즈니스 및 VIP 패스 전용",
+      "messageLabel": "메시지",
+      "messagePlaceholder": "만나고 싶은 이유를 알려주세요 (선택사항)",
+      "intentionLabel": "목적",
       "intentions": {
-        "coffee": "커피를 마시며 대화하기",
-        "pitch": "스타트업 아이디어를 제안하고 싶습니다",
-        "consultation": "5분 빠른 상담",
-        "networking": "일반적인 네트워킹 및 연결",
-        "collaboration": "잠재적 협업 탐색",
-        "advice": "내 경력/프로젝트에 대한 조언 구하기",
-        "fun": "재미있고 흥미로운 대화를 위해",
-        "learning": "당신의 경험에서 배우기",
-        "none": "특정 의도 없음"
+        "coffee": "커피 한잔",
+        "pitch": "아이디어 제안",
+        "advice": "조언 구하기",
+        "collaboration": "협업",
+        "networking": "네트워킹"
       },
       "cancel": "취소",
       "sending": "전송 중...",
@@ -1561,7 +1567,44 @@
       "cancelMessage": "이 미팅 요청을 취소하시겠습니까?",
       "cancelWarning": "취소 후 요청 할당량은 복원되지 않습니다.",
       "cancelling": "요청 취소 중...",
-      "confirmCancel": "예, 요청 취소"
+      "confirmCancel": "예, 요청 취소",
+      "boostLabel": "부스트",
+      "boostAvailable": "사용 가능 {points}포인트",
+      "boostNone": "사용 안 함",
+      "intentionLimit": "{count}/{max}",
+      "boostPoints": "+{points}포인트",
+      "priorityPoints": "우선순위 +{points}",
+      "boostDecrease": "부스트 줄이기",
+      "boostIncrease": "부스트 늘리기",
+      "boostLength": "미팅 시간",
+      "minutes": "{minutes}분",
+      "boostPriority": "대기열 우선순위",
+      "boostNote": {
+        "speed": "10포인트마다 5분 추가, 최대 30분.",
+        "coffee": "부스트는 대기열 우선순위만 높입니다. 커피 시간은 선택한 길이 그대로입니다."
+      },
+      "boostTier": {
+        "standard": {
+          "title": "기본",
+          "hint": "도착 순서대로 진행됩니다. 슬라이더로 대기열 순서를 앞당겨 보세요."
+        },
+        "boosted": {
+          "title": "부스트",
+          "hint": "일반 요청보다 먼저 처리됩니다."
+        },
+        "priority": {
+          "title": "우선",
+          "hint": "낮은 부스트보다 연사의 대기열에서 앞섭니다."
+        },
+        "high": {
+          "title": "높은 우선순위",
+          "hint": "요청이 연사의 대기열 상단 근처에 놓입니다."
+        },
+        "top": {
+          "title": "최우선",
+          "hint": "최대 부스트: 연사의 대기열 맨 앞입니다."
+        }
+      }
     },
     "requestView": {
       "title": "요청 세부정보",

@@ -16,7 +16,7 @@ export interface MeetingRequest {
   preferred_date?: string;
   preferred_time?: string;
   duration_minutes: number;
-  meeting_type: 'networking' | 'business' | 'mentorship' | 'collaboration';
+  meeting_type: 'speed' | 'coffee' | 'networking' | 'business' | 'mentorship' | 'collaboration';
   
   // Request Content
   message: string;
@@ -73,7 +73,7 @@ export interface CreateMeetingRequestData {
   preferred_date?: string;
   preferred_time?: string;
   duration_minutes?: number;
-  meeting_type: 'networking' | 'business' | 'mentorship' | 'collaboration';
+  meeting_type: 'speed' | 'coffee' | 'networking' | 'business' | 'mentorship' | 'collaboration';
   message: string;
   note?: string;
   boost_amount?: number;
@@ -164,7 +164,7 @@ class MatchmakingService {
     const insertData = {
       ...data,
       speaker_id: speakerId, // Use the converted speaker ID
-      duration_minutes: data.duration_minutes || 15,
+      duration_minutes: data.duration_minutes || 5,
       boost_amount: data.boost_amount || 0,
       expires_at: new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString(), // 3 days
     };
@@ -186,7 +186,7 @@ class MatchmakingService {
           p_message: data.message || '',
           p_note: data.note || null,
           p_boost_amount: data.boost_amount || 0,
-          p_duration_minutes: data.duration_minutes || 15
+          p_duration_minutes: data.duration_minutes || 5
         })
         .single();
 
@@ -558,16 +558,16 @@ class MatchmakingService {
 
     const stats = {
       totalRequests: data.length,
-      pendingRequests: data.filter(r => r.status === 'pending').length,
-      acceptedRequests: data.filter(r => r.status === 'accepted').length,
-      declinedRequests: data.filter(r => r.status === 'declined').length,
+      pendingRequests: data.filter((r: MeetingRequest) => r.status === 'pending').length,
+      acceptedRequests: data.filter((r: MeetingRequest) => r.status === 'accepted').length,
+      declinedRequests: data.filter((r: MeetingRequest) => r.status === 'declined').length,
       averageResponseTime: 0,
     };
 
     // Calculate average response time
-    const respondedRequests = data.filter(r => r.speaker_response_at);
+    const respondedRequests = data.filter((r: MeetingRequest) => r.speaker_response_at);
     if (respondedRequests.length > 0) {
-      const totalResponseTime = respondedRequests.reduce((sum, request) => {
+      const totalResponseTime = respondedRequests.reduce((sum: number, request: MeetingRequest) => {
         const responseTime = new Date(request.speaker_response_at!).getTime() - new Date(request.created_at).getTime();
         return sum + responseTime;
       }, 0);
