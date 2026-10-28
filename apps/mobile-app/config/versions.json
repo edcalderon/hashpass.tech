@@ -6,7 +6,7 @@
   "versions": [
     {
       "version": "1.9.172",
-      "buildNumber": 202610281817,
+      "buildNumber": 202610281950,
       "releaseDate": "2026-10-28",
       "releaseType": "stable",
       "environment": "development",
@@ -14,10 +14,14 @@
         "real 3D LKS coin, animated icons, consistent landing UI"
       ],
       "bugfixes": [
+        "match BSL media and captions to locale",
+        "prepare BSL assets before rendering",
+        "compile LUKAS FAQ catalog messages",
+        "generate and validate welcome narration in the publish workflow",
         "typecheck video-studio against its own tsconfig"
       ],
       "breakingChanges": [],
-      "notes": "real 3D LKS coin, animated icons, consistent landing UI; typecheck video-studio against its own tsconfig"
+      "notes": "add narrated, locale-aware BSL Bogotá campaign; compile LUKAS FAQ catalogs without warnings; refresh the LUKAS landing with shared UI primitives"
     },
     {
       "version": "1.9.171",

@@ -10,15 +10,17 @@
 
 * **lukas:** real 3D LKS coin, animated icons, consistent landing UI ([ce11df3](https://github.com/hashpass-tech/hashpass.tech/commit/ce11df3dc9a41dd97e19879bb95aa8433019508a)), closes [#514](https://github.com/hashpass-tech/hashpass.tech/issues/514)
 ### Release Highlights
-- real 3D LKS coin, animated icons, consistent landing UI; typecheck video-studio against its own tsconfig
+- add narrated, locale-aware BSL Bogotá campaign; compile LUKAS FAQ catalogs without warnings; refresh the LUKAS landing with shared UI primitives
 
 ### Release scope
 - Compared with: `v1.9.171` (the previous global release tag)
 
 ### Affected products & packages
 - Mobile app
+- Shared UI
 - Infrastructure
 - Release tooling
+
 
 ## [1.9.171](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.168...v1.9.171) (2026-10-28)
 
