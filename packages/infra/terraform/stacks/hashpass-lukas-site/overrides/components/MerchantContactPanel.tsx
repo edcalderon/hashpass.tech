@@ -5,7 +5,8 @@ import { uiTokens } from '@hashpass/ui/tokens';
 import { useTheme } from '../hooks/useTheme';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { LukasCaptcha } from './LukasCaptcha';
-import { LukasButton, LukasCard, LukasChip, LukasEyebrow, lukasPalette, lukasSectionTitle } from './lukas/lukas-ui';
+import { ActionButton, FilterChip, Surface } from '@hashpass/ui/primitives';
+import { LukasEyebrow, lukasFullWidth, lukasPalette, lukasSectionTitle, lukasSkin, lukasSurface } from './lukas/lukas-ui';
 import { LukasGlyph } from './lukas/LukasGlyph';
 
 const API_BASE = 'https://api.hashpass.tech/api';
@@ -17,6 +18,7 @@ export function MerchantContactPanel() {
   const isMobile = useIsMobile();
   const mode = isDark ? 'dark' : 'light';
   const palette = useMemo(() => lukasPalette(isDark), [isDark]);
+  const skin = useMemo(() => lukasSkin(palette), [palette]);
   const styles = useMemo(() => getStyles(isDark, isMobile, palette), [isDark, isMobile, palette]);
   const [contactName, setContactName] = useState('');
   const [email, setEmail] = useState('');
@@ -68,30 +70,30 @@ export function MerchantContactPanel() {
         <Text style={styles.description}>Tell us where you operate and how you want to use the LatAm index. We will reply from contact@hashpass.tech.</Text>
       </View>
       {sent ? (
-        <LukasCard palette={palette} raised style={styles.successCard}>
+        <Surface mode={mode} style={[lukasSurface(palette, { raised: true }), styles.successCard]}>
           <LukasGlyph name="shield" size={64} />
           <Text style={styles.successTitle}>Request sent</Text>
           <Text style={styles.successCopy}>We sent a confirmation to {email.trim()}. Prefer a faster conversation?</Text>
-          <LukasButton palette={palette} label="Book directly" onPress={() => { if (Platform.OS === 'web' && typeof window !== 'undefined') window.open(BOOKING_URL, '_blank', 'noopener,noreferrer'); else void Linking.openURL(BOOKING_URL); }}
-            fullWidth
+          <ActionButton mode={mode} skin={skin} label="Book directly" onPress={() => { if (Platform.OS === 'web' && typeof window !== 'undefined') window.open(BOOKING_URL, '_blank', 'noopener,noreferrer'); else void Linking.openURL(BOOKING_URL); }}
+            style={lukasFullWidth}
           />
-        </LukasCard>
+        </Surface>
       ) : (
-        <LukasCard palette={palette} raised style={styles.formCard}>
+        <Surface mode={mode} style={[lukasSurface(palette, { raised: true }), styles.formCard]}>
           <FormField mode={mode} label="Your name" value={contactName} onChangeText={setContactName} autoComplete="name" />
           <FormField mode={mode} label="Work email" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" autoComplete="email" />
           <Text style={styles.fieldLabel}>Merchant type</Text>
-          <View style={styles.options}>{MERCHANT_TYPES.map((type) => <LukasChip key={type} palette={palette} label={type} selected={merchantType === type} onPress={() => setMerchantType(type)} style={styles.option} />)}</View>
+          <View style={styles.options}>{MERCHANT_TYPES.map((type) => <FilterChip key={type} mode={mode} skin={skin} label={type} selected={merchantType === type} onPress={() => setMerchantType(type)} style={styles.option} />)}</View>
           <FormField mode={mode} label="What would you like to enable?" value={description} onChangeText={setDescription} multiline numberOfLines={4} style={styles.messageInput} />
           <Text style={styles.fieldLabel}>Follow-up</Text>
           <View style={styles.options}>
-            {['Book a call', 'Email me first'].map((preference) => <LukasChip key={preference} palette={palette} label={preference} selected={bookingPreference === preference} onPress={() => setBookingPreference(preference)} style={styles.option} />)}
+            {['Book a call', 'Email me first'].map((preference) => <FilterChip key={preference} mode={mode} skin={skin} label={preference} selected={bookingPreference === preference} onPress={() => setBookingPreference(preference)} style={styles.option} />)}
           </View>
           <LukasCaptcha resetKey={resetKey} onSolve={setCaptchaToken} onReset={() => setCaptchaToken('')} />
-          <LukasButton palette={palette} label="Send merchant request" loading={busy} disabled={!captchaToken} onPress={submit} fullWidth style={styles.primaryButton} />
+          <ActionButton mode={mode} skin={skin} label="Send merchant request" loading={busy} disabled={!captchaToken} onPress={submit} style={[lukasFullWidth, styles.primaryButton]} />
           {error ? <Text style={styles.error}>{error}</Text> : null}
           <Text style={styles.footnote}>We only use this information to respond to your request. See our privacy policy for details.</Text>
-        </LukasCard>
+        </Surface>
       )}
     </View>
   );

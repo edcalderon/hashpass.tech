@@ -20,7 +20,7 @@ import {
   type ViewProps,
 } from "react-native";
 import { uiPalette, uiTokens, type ColorMode } from "./tokens";
-import type { SegmentedTab } from "./primitives.types";
+import type { ControlSkin, SegmentedTab } from "./primitives.types";
 type Themed = { mode?: ColorMode };
 
 // Android needs this opt-in once per process before LayoutAnimation calls
@@ -185,6 +185,8 @@ export type ActionButtonProps = Omit<PressableProps, "children"> &
     trailingIcon?: React.ReactNode;
     variant?: "primary" | "secondary" | "ghost";
     loading?: boolean;
+    /** Brand colours for a product skin; geometry and states stay shared. */
+    skin?: ControlSkin;
   };
 export function ActionButton({
   mode = "light",
@@ -195,6 +197,7 @@ export function ActionButton({
   trailingIcon,
   variant = "primary",
   loading = false,
+  skin,
   disabled,
   style,
   accessibilityLabel,
@@ -203,7 +206,10 @@ export function ActionButton({
 }: ActionButtonProps) {
   const palette = uiPalette(mode);
   const blocked = disabled || loading;
-  const foreground = variant === "primary" ? palette.onAccent : palette.accent;
+  const fill = skin?.fill ?? palette.accentFill;
+  const soft = skin?.soft ?? palette.accentSoft;
+  const border = skin?.border ?? palette.border;
+  const foreground = variant === "primary" ? (skin?.onFill ?? palette.onAccent) : (skin?.accent ?? palette.accent);
   const tooltipProps = tooltipText ? ({ title: tooltipText } as Record<string, string>) : {};
   return (
     <Pressable
@@ -223,16 +229,16 @@ export function ActionButton({
           opacity: blocked ? 0.45 : state.pressed ? 0.75 : 1,
           backgroundColor:
             variant === "primary"
-              ? palette.accentFill
+              ? fill
               : variant === "secondary"
-                ? palette.accentSoft
+                ? soft
                 : "transparent",
           borderColor:
             variant === "ghost"
               ? "transparent"
               : variant === "primary"
-                ? palette.accentFill
-                : palette.border,
+                ? fill
+                : border,
         },
         typeof style === "function" ? style(state) : style,
       ]}
@@ -260,7 +266,7 @@ export function FilterChip({
     />
   );
 }
-export type { SegmentedTab } from "./primitives.types";
+export type { ControlSkin, SegmentedTab } from "./primitives.types";
 
 /**
  * The one tab control: a rounded pill track with a filled selected segment,

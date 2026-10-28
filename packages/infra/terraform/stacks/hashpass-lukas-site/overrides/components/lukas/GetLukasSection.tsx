@@ -15,7 +15,8 @@ import { useTheme } from '../../hooks/useTheme';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { useTranslation } from '../../i18n/i18n';
 import { LukasCaptcha } from '../LukasCaptcha';
-import { LukasButton, LukasCard, LukasDialog, dialogCopy, dialogTitle, lukasPalette, lukasSectionTitle } from './lukas-ui';
+import { ActionButton, Surface } from '@hashpass/ui/primitives';
+import { LukasDialog, dialogCopy, dialogTitle, lukasFullWidth, lukasPalette, lukasSectionTitle, lukasSkin, lukasSurface } from './lukas-ui';
 import { LukasGlyph } from './LukasGlyph';
 
 const API_BASE = 'https://api.hashpass.tech/api';
@@ -107,6 +108,7 @@ export function GetLukasSection() {
   const [captchaResetKey, setCaptchaResetKey] = useState(0);
   const palette = useMemo(() => lukasPalette(isDark), [isDark]);
   const mode = isDark ? 'dark' : 'light';
+  const skin = useMemo(() => lukasSkin(palette), [palette]);
   const styles = useMemo(() => getStyles(isDark, isMobile, palette), [isDark, isMobile, palette]);
 
   const openModal = (nextView: ModalView = 'choices') => {
@@ -221,21 +223,21 @@ export function GetLukasSection() {
             [t('getLukas.step2.title'), t('getLukas.step2.description')],
             [t('getLukas.step3.title'), t('getLukas.step3.description')],
           ].map(([title, description], index) => (
-            <LukasCard key={title} palette={palette} style={styles.step}>
+            <Surface key={title} mode={mode} style={[lukasSurface(palette), styles.step]}>
               <View style={styles.stepNumberContainer}><Text style={styles.stepNumber}>{index + 1}</Text></View>
               <View style={styles.stepContent}><Text style={styles.stepTitle}>{title}</Text><Text style={styles.stepDescription}>{description}</Text></View>
-            </LukasCard>
+            </Surface>
           ))}
         </View>
         <View style={styles.ctaContainer}>
-          <LukasButton palette={palette} label={t('getLukas.connectWallet')} onPress={() => openModal()} style={styles.cta} />
-          <LukasButton palette={palette} variant="secondary" label="Join the LUKAS Newsletter" onPress={() => openModal('newsletter')} style={styles.cta} />
+          <ActionButton mode={mode} skin={skin} label={t('getLukas.connectWallet')} onPress={() => openModal()} style={styles.cta} />
+          <ActionButton mode={mode} skin={skin} variant="secondary" label="Join the LUKAS Newsletter" onPress={() => openModal('newsletter')} style={styles.cta} />
         </View>
-        <LukasCard palette={palette} style={styles.comingSoonContainer}>
+        <Surface mode={mode} style={[lukasSurface(palette), styles.comingSoonContainer]}>
           <LukasGlyph name="token" size={56} />
           <Text style={styles.comingSoonText}>LUKAS $LKS · Testnet until TGE</Text>
           <Text style={styles.comingSoonSubtext}>Stay listed for airdrops, prizes, and launch pricing.</Text>
-        </LukasCard>
+        </Surface>
       </View>
 
       <LukasDialog visible={modalVisible} onClose={closeModal} isDark={isDark} isMobile={isMobile} palette={palette}>
@@ -243,14 +245,14 @@ export function GetLukasSection() {
         {view === 'choices' ? <>
           <Text style={styles.modalTitle}>Connect to LUKAS</Text>
           <Text style={styles.modalSubtitle}>Choose how you want to reserve your place in the $LKS community.</Text>
-          <LukasButton palette={palette} label="Connect with HASHPASS" onPress={connectHashPass} fullWidth />
-          <LukasButton palette={palette} variant="secondary" label="Connect Wallet" onPress={() => setView('wallets')} fullWidth />
-          <LukasButton palette={palette} variant="ghost" label="Join the LUKAS newsletter instead" onPress={() => setView('newsletter')} fullWidth />
+          <ActionButton mode={mode} skin={skin} label="Connect with HASHPASS" onPress={connectHashPass} style={lukasFullWidth} />
+          <ActionButton mode={mode} skin={skin} variant="secondary" label="Connect Wallet" onPress={() => setView('wallets')} style={lukasFullWidth} />
+          <ActionButton mode={mode} skin={skin} variant="ghost" label="Join the LUKAS newsletter instead" onPress={() => setView('newsletter')} style={lukasFullWidth} />
         </> : null}
         {view === 'hashpass' ? <>
           <Text style={styles.modalTitle}>Connect with HASHPASS</Text>
           <Text style={styles.modalSubtitle}>Sign in in the new tab, then return here to confirm your HashPass account and reserve your LUKAS place.</Text>
-          <LukasButton palette={palette} label="I’ve signed in — continue" loading={busy} onPress={checkHashPass} fullWidth />
+          <ActionButton mode={mode} skin={skin} label="I’ve signed in — continue" loading={busy} onPress={checkHashPass} style={lukasFullWidth} />
         </> : null}
         {view === 'wallets' ? <>
           <Text style={styles.modalTitle}>Choose a wallet</Text>
@@ -265,14 +267,14 @@ export function GetLukasSection() {
           <FormField mode={mode} label="Email" value={email} onChangeText={setEmail} autoCapitalize="none" autoCorrect={false} keyboardType="email-address" autoComplete="email" placeholder="you@example.com" />
           <View style={styles.optInRow}><Switch value={hashPassOptIn} onValueChange={setHashPassOptIn} trackColor={{ false: palette.borderStrong, true: palette.fill }} accessibilityLabel="Also send me HASHPASS ecosystem updates" /><Text style={styles.optInText}>Also send me HASHPASS ecosystem updates.</Text></View>
           <LukasCaptcha resetKey={captchaResetKey} onSolve={setCaptchaToken} onReset={() => setCaptchaToken('')} />
-          <LukasButton palette={palette} label="Join LUKAS updates" loading={busy} disabled={!captchaToken} onPress={joinNewsletter} fullWidth />
+          <ActionButton mode={mode} skin={skin} label="Join LUKAS updates" loading={busy} disabled={!captchaToken} onPress={joinNewsletter} style={lukasFullWidth} />
         </> : null}
         {view === 'success' ? <>
           <View style={styles.successIcon}><Text style={styles.successIconText}>✓</Text></View>
           <Text style={[styles.modalTitle, styles.centered]}>You’re on the list</Text>
           {connectedWallet ? <Text style={styles.connectedWallet}>{connectedWallet}</Text> : null}
           <Text style={[styles.modalSubtitle, styles.centered]}>{SUCCESS_COPY}</Text>
-          <LukasButton palette={palette} label="Done" onPress={closeModal} fullWidth />
+          <ActionButton mode={mode} skin={skin} label="Done" onPress={closeModal} style={lukasFullWidth} />
         </> : null}
         {busy && (view === 'wallets' || view === 'hashpass') ? <ActivityIndicator color={palette.fill} style={styles.loader} /> : null}
         {error ? <Text accessibilityRole="alert" style={styles.errorText}>{error}</Text> : null}
@@ -294,7 +296,7 @@ const getStyles = (isDark: boolean, isMobile: boolean, palette: ReturnType<typeo
   stepTitle: { fontSize: isMobile ? 18 : 22, fontWeight: '700', color: palette.text },
   stepDescription: { fontSize: isMobile ? 14 : 16, color: palette.body, lineHeight: isMobile ? 20 : 24 },
   ctaContainer: { width: '100%', gap: uiTokens.space.lg, alignItems: 'center' },
-  cta: { width: isMobile ? '100%' : undefined, minWidth: isMobile ? 0 : 320 },
+  cta: { width: isMobile ? '100%' : undefined, minWidth: isMobile ? 0 : 320, alignSelf: isMobile ? 'stretch' : 'center' },
   comingSoonContainer: { alignItems: 'center', gap: 8, backgroundColor: palette.tint },
   comingSoonText: { fontSize: isMobile ? 16 : 18, fontWeight: '700', color: palette.accent, textAlign: 'center' },
   comingSoonSubtext: { fontSize: isMobile ? 14 : 16, color: palette.body, textAlign: 'center', lineHeight: isMobile ? 20 : 24 },

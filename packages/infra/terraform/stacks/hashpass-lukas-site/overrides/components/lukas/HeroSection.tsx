@@ -6,7 +6,8 @@ import { useIsMobile } from '../../hooks/useIsMobile';
 import { useTranslation } from '../../i18n/i18n';
 import type { HeroSectionProps } from '../../types/lukas.types';
 import { LukasCoin } from './LukasCoin';
-import { LukasButton, lukasPalette } from './lukas-ui';
+import { ActionButton } from '@hashpass/ui/primitives';
+import { lukasPalette, lukasSkin } from './lukas-ui';
 
 const PEG_CURRENCIES = ['COP', 'ARS', 'BRL', 'MXN', 'CLP'];
 const REWARD_SEGMENTS = Array.from({ length: 10 }, (_, index) => index);
@@ -62,6 +63,8 @@ export function HeroSection({ onGetLukas, onForMerchants, rewardTotal, rewardDel
   const styles = getStyles(isDark, isMobile, isSmallMobile, isTablet);
   const peg = PEG_CURRENCIES[pegCurrencyIndex];
   const palette = lukasPalette(isDark);
+  const mode = isDark ? 'dark' : 'light';
+  const skin = lukasSkin(palette);
 
   return (
     <LinearGradient
@@ -92,8 +95,8 @@ export function HeroSection({ onGetLukas, onForMerchants, rewardTotal, rewardDel
 
           <View style={styles.actionStack}>
             <View style={styles.buttonRow}>
-              <LukasButton palette={palette} label={t('hero.getLukas')} onPress={onGetLukas} style={styles.heroButton} />
-              <LukasButton palette={palette} variant="secondary" label={t('hero.forMerchants')} onPress={onForMerchants} style={styles.heroButton} />
+              <ActionButton mode={mode} skin={skin} label={t('hero.getLukas')} onPress={onGetLukas} style={styles.heroButton} />
+              <ActionButton mode={mode} skin={skin} variant="secondary" label={t('hero.forMerchants')} onPress={onForMerchants} style={styles.heroButton} />
             </View>
 
             <View style={styles.rewardPanel} accessibilityLiveRegion="polite">
@@ -175,7 +178,7 @@ const getStyles = (isDark: boolean, isMobile: boolean, isSmallMobile: boolean, i
   subtitle: { width: '100%', color: isDark ? '#C1D3CA' : '#40564A', fontSize: isSmallMobile ? 15 : isMobile ? 16 : 18, lineHeight: isSmallMobile ? 22 : isMobile ? 24 : 28, textAlign: isMobile ? 'center' : 'left' },
   actionStack: { width: '100%', gap: 12, marginTop: 4 },
   buttonRow: { width: '100%', flexDirection: isMobile ? 'column' : 'row', gap: 12 },
-  heroButton: { flex: isMobile ? 0 : 1, minHeight: 54 },
+  heroButton: { flex: isMobile ? 0 : 1, minHeight: 54, alignSelf: 'stretch' },
   rewardPanel: { width: '100%', minHeight: 70, borderRadius: 16, padding: 13, backgroundColor: isDark ? 'rgba(5, 27, 38, 0.76)' : 'rgba(255, 255, 255, 0.74)', borderWidth: 1, borderColor: isDark ? 'rgba(115, 233, 165, 0.28)' : 'rgba(18, 132, 85, 0.24)', overflow: 'visible' },
   rewardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', position: 'relative' },
   rewardOverline: { color: isDark ? '#A8C7B3' : '#527261', fontSize: 10, fontWeight: '900', letterSpacing: 1.1 },

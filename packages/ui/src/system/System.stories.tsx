@@ -11,6 +11,7 @@ import {
   FormField,
   HoverText,
   Surface,
+  type ControlSkin,
 } from "./primitives";
 import { contrastRatio, onFillPairs, uiPalette, uiTokens, type ColorMode } from "./tokens";
 function Catalog({ mode = "light" }: { mode?: ColorMode }) {
@@ -144,6 +145,8 @@ function Catalog({ mode = "light" }: { mode?: ColorMode }) {
       >
         <FilterChip mode={mode} label="All events" />
         <FilterChip mode={mode} label="Upcoming" selected />
+        <FilterChip mode={mode} skin={productSkin(mode)} label="Product skin" selected />
+        <ActionButton mode={mode} skin={productSkin(mode)} label="Product skin" />
         <FilterChip
           mode={mode}
           label="A longer translated filter that wraps without clipping"
@@ -328,6 +331,12 @@ function Catalog({ mode = "light" }: { mode?: ColorMode }) {
     </View>
   );
 }
+
+// A product skin swaps colour only; radius, height, states and focus stay shared.
+const productSkin = (mode: ColorMode): ControlSkin =>
+  mode === "dark"
+    ? { fill: "#36C66B", onFill: "#062414", accent: "#7EE6A0", soft: "rgba(54, 198, 107, 0.12)", border: "#4B6B5C" }
+    : { fill: "#36C66B", onFill: "#062414", accent: "#087A4A", soft: "rgba(54, 198, 107, 0.12)", border: "#9DBBA9" };
 
 const meta = {
   title: "Design System/Foundations and Controls",

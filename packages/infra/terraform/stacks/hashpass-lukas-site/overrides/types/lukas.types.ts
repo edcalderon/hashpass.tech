@@ -1,5 +1,4 @@
 import type { ReactNode } from 'react';
-import type { PressableProps, StyleProp, ViewStyle } from 'react-native';
 
 export type LukasAnimationLevel = 'full' | 'reduced' | 'none';
 
@@ -74,20 +73,6 @@ export type LukasPalette = {
   danger: string; glow: string; canvas: string;
 };
 
-export type LukasButtonProps = Omit<PressableProps, 'children' | 'style'> & {
-  label: string;
-  palette: LukasPalette;
-  variant?: 'primary' | 'secondary' | 'ghost';
-  loading?: boolean;
-  fullWidth?: boolean;
-  leadingIcon?: ReactNode;
-  style?: StyleProp<ViewStyle>;
-};
-
-export type LukasCardProps = { palette: LukasPalette; compact?: boolean; raised?: boolean; style?: StyleProp<ViewStyle>; children?: ReactNode };
-
 export type LukasDialogProps = { visible: boolean; onClose: () => void; isDark: boolean; isMobile: boolean; palette: LukasPalette; closeLabel?: string; children: ReactNode };
-
-export type LukasChipProps = Omit<PressableProps, 'children' | 'style'> & { label: string; palette: LukasPalette; selected?: boolean; trailing?: ReactNode; style?: StyleProp<ViewStyle> };
 
 export type LukasGlyphTone = { a: string; b: string; glow: string; delay: string };

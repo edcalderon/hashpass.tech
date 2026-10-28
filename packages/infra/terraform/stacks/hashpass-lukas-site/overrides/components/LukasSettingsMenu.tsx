@@ -6,7 +6,8 @@ import { getAvailableLocales, useTranslation } from '../i18n/i18n';
 import { useLanguage } from '../providers/LanguageProvider';
 import type { LukasAnimationLevel, LukasSettingsMenuProps } from '../types/lukas.types';
 import { LukasGlyph } from './lukas/LukasGlyph';
-import { LukasChip, lukasPalette } from './lukas/lukas-ui';
+import { FilterChip } from '@hashpass/ui/primitives';
+import { lukasPalette, lukasSkin } from './lukas/lukas-ui';
 
 const ANIMATION_STORAGE_KEY = 'lukas.animation.v1';
 const PRIVACY_STORAGE_KEY = 'lukas.privacy.analytics.v1';
@@ -41,6 +42,8 @@ const writeStorage = async (key: string, value: string) => {
 export function LukasSettingsMenu({ animation, onAnimationChange }: LukasSettingsMenuProps) {
   const { theme, setTheme, isDark } = useTheme();
   const palette = lukasPalette(isDark);
+  const mode = isDark ? 'dark' : 'light';
+  const skin = lukasSkin(palette);
   const { locale, setLocale } = useLanguage();
   const { t } = useTranslation('lukas');
   const [open, setOpen] = useState(false);
@@ -66,7 +69,7 @@ export function LukasSettingsMenu({ animation, onAnimationChange }: LukasSetting
   };
 
   const option = (label: string, value: string, active: boolean, onPress: () => void) => (
-    <LukasChip key={value} palette={palette} label={label} selected={active} onPress={onPress} />
+    <FilterChip key={value} mode={mode} skin={skin} label={label} selected={active} onPress={onPress} />
   );
 
   return (

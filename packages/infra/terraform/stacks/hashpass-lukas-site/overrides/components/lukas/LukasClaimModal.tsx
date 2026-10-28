@@ -4,7 +4,8 @@ import { FormField } from '@hashpass/ui/primitives';
 import { useTheme } from '../../hooks/useTheme';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { LukasCaptcha } from '../LukasCaptcha';
-import { LukasButton, LukasDialog, LukasEyebrow, dialogCopy, dialogTitle, lukasPalette } from './lukas-ui';
+import { ActionButton } from '@hashpass/ui/primitives';
+import { LukasDialog, LukasEyebrow, dialogCopy, dialogTitle, lukasFullWidth, lukasPalette, lukasSkin } from './lukas-ui';
 import type { LukasClaimModalProps, LukasClaimSession, LukasClaimStep } from '../../types/lukas.types';
 
 const API_BASE = 'https://api.hashpass.tech/api';
@@ -14,6 +15,7 @@ export function LukasClaimModal({ visible, onClose }: LukasClaimModalProps) {
   const isMobile = useIsMobile();
   const palette = useMemo(() => lukasPalette(isDark), [isDark]);
   const mode = isDark ? 'dark' : 'light';
+  const skin = useMemo(() => lukasSkin(palette), [palette]);
   const styles = useMemo(() => getStyles(isMobile, palette), [isMobile, palette]);
   const [step, setStep] = useState<LukasClaimStep>('email');
   const [email, setEmail] = useState('');
@@ -109,16 +111,16 @@ export function LukasClaimModal({ visible, onClose }: LukasClaimModalProps) {
         <Text style={styles.copy}>Verify your email to continue into HashPass wallet setup. A one-time code protects the claim.</Text>
         <FormField mode={mode} label="Email" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" autoComplete="email" placeholder="you@example.com" />
         <LukasCaptcha resetKey={captchaResetKey} onSolve={setCaptchaToken} onReset={() => setCaptchaToken('')} />
-        <LukasButton palette={palette} label="Send verification code" loading={busy} disabled={!captchaToken} onPress={requestCode} fullWidth />
+        <ActionButton mode={mode} skin={skin} label="Send verification code" loading={busy} disabled={!captchaToken} onPress={requestCode} style={lukasFullWidth} />
       </> : null}
       {step === 'code' ? <>
         <Text style={styles.copy}>Enter the six-digit code sent to {email.trim().toLowerCase()}.</Text>
         <FormField mode={mode} label="Verification code" value={code} onChangeText={setCode} keyboardType="number-pad" maxLength={6} autoComplete="one-time-code" placeholder="000000" style={styles.codeInput} />
-        <LukasButton palette={palette} label="Verify email" loading={busy} onPress={verifyCode} fullWidth />
+        <ActionButton mode={mode} skin={skin} label="Verify email" loading={busy} onPress={verifyCode} style={lukasFullWidth} />
       </> : null}
       {step === 'verified' ? <>
         <Text style={styles.copy}>Your email is verified. Continue in HashPass to create or secure your compatible wallet. Seed phrases and private keys stay local and are never emailed.</Text>
-        <LukasButton palette={palette} label="Open HashPass wallet" onPress={openWallet} fullWidth />
+        <ActionButton mode={mode} skin={skin} label="Open HashPass wallet" onPress={openWallet} style={lukasFullWidth} />
         <Text style={styles.note}>For your protection, HashPass will never send a seed phrase or private key in email or ZIP attachments.</Text>
       </> : null}
       {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
