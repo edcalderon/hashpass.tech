@@ -32,10 +32,13 @@ pnpm dev:all                   # studio + mobile app + club web + docs + Directu
 ```
 
 `dev:all` claims `VIDEO_STUDIO_PORT` (default `3105`) and opens Remotion
-Studio there alongside the other development servers. It also builds and
-serves the Lukas landing by default at `http://127.0.0.1:4173/lukas`, using
-the same clean route as CloudFront. Set `INCLUDE_LUKAS_LANDING=false` only
-when a deliberately lighter-weight session is needed.
+Studio there alongside the other development servers. It also serves the
+Lukas landing by default at `http://127.0.0.1:4173/lukas`, using the same clean
+route as CloudFront. The local Lukas process watches its override components
+and shared UI sources, rebuilds the isolated static export after a change, and
+refreshes connected browsers automatically. Set
+`INCLUDE_LUKAS_LANDING=false` only when a deliberately lighter-weight session
+is needed.
 
 ## Diffusion Studio handoff
 

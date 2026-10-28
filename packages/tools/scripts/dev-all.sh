@@ -536,11 +536,9 @@ if [[ "${INCLUDE_LUKAS_LANDING}" == "true" ]]; then
   # generated export into it. `mktemp -d` creates the directory for us; remove
   # that empty placeholder before handing the path to the builder.
   rmdir "${LUKAS_BUILD_DIR}"
-  say lukas "Building Lukas landing for local development..."
-  run_prefixed lukas python3 packages/infra/terraform/stacks/hashpass-lukas-site/build.py "${LUKAS_BUILD_DIR}"
-  say lukas "Starting Lukas landing on port ${LUKAS_LANDING_PORT}..."
+  say lukas "Starting Lukas landing with live rebuilds on port ${LUKAS_LANDING_PORT}..."
   (
-    node packages/tools/scripts/serve-lukas-landing.mjs "${LUKAS_BUILD_DIR}" "${LUKAS_LANDING_PORT}"
+    node packages/tools/scripts/dev-lukas-landing.mjs "${LUKAS_BUILD_DIR}" "${LUKAS_LANDING_PORT}"
   ) > >(prefix_stream lukas) 2>&1 &
   LUKAS_PID=$!
 fi
