@@ -1,4 +1,5 @@
 import { i18n as coreI18n } from '@lingui/core';
+import { compileMessage } from '@lingui/message-utils/compileMessage';
 import * as Localization from 'expo-localization';
 import { useEffect, useState, useCallback } from 'react';
 
@@ -81,6 +82,7 @@ const messagesByLocale: Record<string, Record<string, string>> = {
 
 // Use the global singleton so @lingui/macro can see current locale
 export const i18n = coreI18n;
+i18n.setMessagesCompiler(compileMessage);
 
 // Synchronously set a safe default locale to avoid race conditions with t()/Trans
 if (!(i18n as any).locale) {
