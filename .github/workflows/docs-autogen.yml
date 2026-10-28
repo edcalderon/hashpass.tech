@@ -144,7 +144,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           branch: docs/auto-${{ github.run_id }}
           base: ${{ github.ref_name }}
-          commit-message: "docs: auto-update from ${{ github.sha }} [skip ci]\n\nChanged areas: ${{ env.CHANGED_AREAS }}"
+          commit-message: "docs: auto-update from ${{ github.sha }}\n\nChanged areas: ${{ env.CHANGED_AREAS }}"
           title: "${{ env.TIER == 'critical' && '🚨 ' || '' }}docs: auto-update — ${{ env.CHANGED_AREAS }}"
           body: |
             ## Documentation auto-update
