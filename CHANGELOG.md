@@ -1,3 +1,25 @@
+## [1.9.172](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.171...v1.9.172) (2026-10-28)
+
+
+### Bug Fixes
+
+* **tools:** typecheck video-studio against its own tsconfig ([bc5b445](https://github.com/hashpass-tech/hashpass.tech/commit/bc5b44552c87a95a07ed4ae37c72cf5fd5c668de))
+
+
+### Features
+
+* **lukas:** real 3D LKS coin, animated icons, consistent landing UI ([ce11df3](https://github.com/hashpass-tech/hashpass.tech/commit/ce11df3dc9a41dd97e19879bb95aa8433019508a)), closes [#514](https://github.com/hashpass-tech/hashpass.tech/issues/514)
+### Release Highlights
+- real 3D LKS coin, animated icons, consistent landing UI; typecheck video-studio against its own tsconfig
+
+### Release scope
+- Compared with: `v1.9.171` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Infrastructure
+- Release tooling
+
 ## [1.9.171](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.168...v1.9.171) (2026-10-28)
 
 
