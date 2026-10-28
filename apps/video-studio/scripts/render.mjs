@@ -3,7 +3,7 @@
 // Usage: pnpm --filter hashpass-video-studio render [compositionId]
 import {spawnSync} from 'node:child_process';
 
-const COMPOSITIONS = ['BslShowcase', 'AppTutorialEN', 'AppTutorialES'];
+const COMPOSITIONS = ['BslShowcase', 'AppTutorialEN', 'AppTutorialES', 'BslCampaign-welcome', 'BslCampaign-walkthrough', 'BslCampaign-recap'];
 
 const targets = process.argv[2] ? [process.argv[2]] : COMPOSITIONS;
 

@@ -1,0 +1,29 @@
+import type {EventVideoCampaign, EventVideoCampaignFilm} from "../types/event-video-campaign";
+
+const CAMPAIGN_PATH = "/events/colombia2026/branding/campaign/";
+
+export function parseEventVideoCampaign(value: unknown, eventId: string, origin: string): EventVideoCampaign | null {
+  if (!value || typeof value !== "object") return null;
+  const campaign = value as EventVideoCampaign;
+  if (campaign.version !== 1 || campaign.eventId !== eventId || !campaign.campaignId || !Number.isFinite(Date.parse(campaign.closesAt))) return null;
+  if (!Array.isArray(campaign.films) || campaign.films.length !== 3) return null;
+  const ids = new Set<EventVideoCampaignFilm["id"]>(campaign.films.map((film) => film.id));
+  const requiredIds: EventVideoCampaignFilm["id"][] = ["welcome", "walkthrough", "recap"];
+  if (ids.size !== 3 || !requiredIds.every((id) => ids.has(id))) return null;
+  for (const film of campaign.films) {
+    if (!film || !Number.isFinite(film.durationMs) || film.durationMs < 1000 || film.durationMs > 180000 || !film.title) return null;
+    for (const media of [film.url, film.poster, film.captions]) {
+      try {
+        const parsed = new URL(media);
+        if (parsed.protocol !== "https:" || parsed.origin !== origin || !parsed.pathname.startsWith(CAMPAIGN_PATH)) return null;
+      } catch { return null; }
+    }
+  }
+  return campaign;
+}
+
+export function campaignFilmsAt(campaign: EventVideoCampaign, now: number): EventVideoCampaignFilm[] {
+  return now >= Date.parse(campaign.closesAt)
+    ? campaign.films.filter((film) => film.id === "recap")
+    : campaign.films.filter((film) => film.id !== "recap");
+}

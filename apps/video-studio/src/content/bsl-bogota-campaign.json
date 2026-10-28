@@ -1,0 +1,33 @@
+{
+  "id": "bsl-bogota-2026",
+  "eventId": "colombia2026",
+  "timeZone": "America/Bogota",
+  "startsAt": "2026-11-04T00:00:00-05:00",
+  "recapCaptureAt": "2026-11-06T17:30:00-05:00",
+  "closesAt": "2026-11-06T18:00:00-05:00",
+  "locale": "es-CO",
+  "captionLocale": "en",
+  "films": [
+    {
+      "id": "welcome",
+      "durationSeconds": 50,
+      "title": "Bienvenidos a BSL Bogotá",
+      "caption": "Welcome to BSL Bogotá",
+      "voiceover": "Bienvenidos a Bogotá. Blockchain Summit Latam reúne regulación, banca, mercados, tecnología y academia del cuatro al seis de noviembre en la Universidad Externado. Con HASHPASS puedes preparar tu agenda, encontrar personas y convertir cada encuentro en una conexión que continúa."
+    },
+    {
+      "id": "walkthrough",
+      "durationSeconds": 30,
+      "title": "Tu BSL en HASHPASS",
+      "caption": "Your BSL experience in HASHPASS",
+      "voiceover": "Completa tu perfil, explora la agenda, guarda tus sesiones y solicita reuniones. Espera la aceptación antes de confirmar el horario y usa el chat disponible para coordinar."
+    },
+    {
+      "id": "recap",
+      "durationSeconds": 90,
+      "title": "Gracias, comunidad BSL",
+      "caption": "Thank you, BSL community",
+      "voiceover": "Gracias, Bogotá. Detrás de cada conversación hay una persona y una posibilidad. Este resumen usa métricas agregadas del evento con corte a las cinco y treinta de la tarde. El contenido de los mensajes y los datos personales permanecen privados. Nos vemos en la próxima conexión."
+    }
+  ]
+}
