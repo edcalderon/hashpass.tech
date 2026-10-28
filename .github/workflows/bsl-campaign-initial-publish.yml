@@ -30,6 +30,19 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile --filter hashpass-video-studio...
       - run: sudo apt-get update -qq && sudo apt-get install -y ffmpeg
+      - name: Install pinned edge-tts
+        run: |
+          python3 -m venv "$RUNNER_TEMP/edge-tts"
+          "$RUNNER_TEMP/edge-tts/bin/python" -m pip install --disable-pip-version-check "edge-tts==7.3.1"
+          echo "$RUNNER_TEMP/edge-tts/bin" >> "$GITHUB_PATH"
+      - name: Generate localized welcome narration and captions
+        run: pnpm --filter hashpass-video-studio bsl:welcome:narration
+      - name: Validate generated welcome assets
+        run: |
+          for locale in es en; do
+            test -s "apps/video-studio/public/audio/narration/campaign/$locale/bsl-bogota-welcome.mp3"
+            test -s "apps/video-studio/public/audio/subtitles/campaign/$locale/bsl-bogota-welcome.vtt"
+          done
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ env.EVENT_VIDEO_ROLE_ARN }}
@@ -45,16 +58,9 @@ jobs:
             echo "aws_secret_access_key=$AWS_SECRET_ACCESS_KEY"
             echo "aws_session_token=$AWS_SESSION_TOKEN"
           } > "$HOME/.aws/credentials"
-      - name: Generate and validate the welcome narration and captions
-        run: |
-          python3 -m pip install --user edge-tts==7.3.1
-          export PATH="$HOME/.local/bin:$PATH"
-          node apps/video-studio/scripts/generate-bsl-welcome-narration.mjs
-          for locale in en es; do
-            test -s "apps/video-studio/public/audio/narration/campaign/$locale/bsl-bogota-welcome.mp3"
-            test -s "apps/video-studio/public/audio/subtitles/campaign/$locale/bsl-bogota-welcome.vtt"
-          done
-      - name: Render and validate the campaign films
+      - name: Prepare reviewed event logo assets
+        run: node apps/video-studio/scripts/prepare-event-hero-assets.mjs
+      - name: Render and validate all campaign films
         run: node apps/video-studio/scripts/render-bsl-campaign.mjs
       - name: Publish the welcome and walkthrough films
         run: node apps/video-studio/scripts/publish-bsl-campaign.mjs --initial
