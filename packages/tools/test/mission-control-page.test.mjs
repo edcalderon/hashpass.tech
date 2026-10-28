@@ -56,7 +56,7 @@ test('the status document is team-only: sign-out link, no "public" claim, noinde
 
 test('summary rows are a wrapping grid on the web and a single-row table in Plane', () => {
   const web = buildMissionControlHtml(data, webKit, { publicView: true });
-  assert.match(web, /<div class="tiles">/);
+  assert.match(web, /<div class="tiles (?:jump|metric)-grid">/);
   assert.doesNotMatch(web, /<table><tbody><tr><td/);
   assert.match(buildMissionControlHtml(data, planeKit), /<table><tbody><tr><td background=/);
   assert.match(statusDocument('', 'now'), /\.tiles\{display:grid;/);
@@ -65,7 +65,7 @@ test('summary rows are a wrapping grid on the web and a single-row table in Plan
 test('web table cells carry their column title so a phone can stack rows as cards', () => {
   const web = buildMissionControlHtml(data, webKit, { publicView: true });
   assert.match(web, /<td data-label="Surface"/);
-  assert.match(web, /<td data-label="Status" style=/);
+  assert.match(web, /<td data-label="Status" data-surface-status="API" style=/);
   assert.doesNotMatch(buildMissionControlHtml(data, planeKit), /data-label/);
 });
 
@@ -75,4 +75,30 @@ test('the status page drops login-only links by flag, not by matching the URL pr
   assert.doesNotMatch(html, /Plane divisions/);
   assert.match(html, /GitHub project #4/);
   assert.match(buildMissionControlHtml(data, planeKit), /Plane issues/);
+});
+
+test('the Plane page opens with a highlighted link to the live status equivalent', () => {
+  const html = buildMissionControlHtml(data, planeKit);
+  assert.match(html, /Live Mission Control/);
+  assert.match(html, /href="https:\/\/work\.hashpass\.tech\/status"/);
+});
+
+test('the web command view exposes stable live KPI targets and focus detail boundaries', () => {
+  const html = buildMissionControlHtml(data, webKit, { publicView: true });
+  for (const metric of ['users-total', 'users-active30d', 'users-new7d', 'events-total', 'passes-active', 'meetings-scheduled', 'incidents-active']) {
+    assert.match(html, new RegExp(`data-metric="${metric}"`));
+  }
+  assert.match(html, /class="pulse/);
+  assert.match(html, /data-focus-detail/);
+});
+
+test('the status shell ships reusable appearance settings and an external module', () => {
+  const doc = statusDocument('<p>x</p>', 'now', {version: '0.1.0'});
+  assert.match(doc, /id="status-settings"/);
+  assert.match(doc, /name="theme"/);
+  assert.match(doc, /name="density"/);
+  assert.match(doc, /name="focus"/);
+  assert.match(doc, /src="\/status\/status-page\.js"/);
+  assert.doesNotMatch(doc, /<script>(?!<)/);
+  assert.match(doc, /Status v0\.1\.0/);
 });

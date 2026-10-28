@@ -86,6 +86,10 @@ export function createStatusGate(options = {}) {
     allowedEmails = [],
     allowedEmailDomains = [],
     sessionSeconds = 12 * 60 * 60,
+    metricsUrl = "",
+    metricsToken = "",
+    metricsCacheSeconds = 45,
+    healthChecks = [],
     fetch: fetchImpl = globalThis.fetch,
   } = options;
 
@@ -136,14 +140,67 @@ export function createStatusGate(options = {}) {
   };
 
   const retry = {href: "/status/login", label: "Sign in again"};
+  let metricsCache = null;
 
-  async function verify(request) {
+  async function allowedSession(request) {
     const session = await read(parseCookies(request.headers.get("cookie"))[SESSION_COOKIE]);
     // The allowlist is re-checked on every request, so removing a domain takes effect before a session expires.
-    if (session && isAllowed({subject: session.sub, email: session.email, emailVerified: true})) {
-      return new Response("ok\n", {headers: {"cache-control": "no-store"}});
+    return session && isAllowed({subject: session.sub, email: session.email, emailVerified: true})
+      ? session
+      : null;
+  }
+
+  async function verify(request) {
+    return (await allowedSession(request))
+      ? new Response("ok\n", {headers: {"cache-control": "no-store"}})
+      : redirect("/status/login");
+  }
+
+  async function metrics(request) {
+    if (!await allowedSession(request)) return redirect("/status/login");
+    if (!metricsUrl || metricsToken.length < 32) {
+      return Response.json({error: "Mission Control metrics are not configured"}, {status: 503, headers: {"cache-control": "no-store"}});
     }
-    return redirect("/status/login");
+
+    const now = Date.now();
+    if (metricsCache && now - metricsCache.at < metricsCacheSeconds * 1000) {
+      return Response.json(metricsCache.body, {headers: {"cache-control": "no-store"}});
+    }
+
+    try {
+      const response = await fetchImpl(metricsUrl, {
+        headers: {Authorization: `Bearer ${metricsToken}`, Accept: "application/json"},
+        signal: AbortSignal.timeout(10000),
+      });
+      const body = response.ok ? await response.json() : null;
+      if (!body?.data) throw new Error("invalid aggregate response");
+      if (healthChecks.length) {
+        const surfaces = await Promise.all(healthChecks.map(async ({name, url}) => {
+          try {
+            const probe = await fetchImpl(url, {method: "GET", redirect: "manual", signal: AbortSignal.timeout(8000)});
+            return {name, up: probe.status < 500};
+          } catch {
+            return {name, up: false};
+          }
+        }));
+        body.data.operations = {
+          up: surfaces.filter((surface) => surface.up).length,
+          total: surfaces.length,
+          incidents: surfaces.filter((surface) => !surface.up).map(({name}) => ({name})),
+          surfaces,
+        };
+      }
+      metricsCache = {at: now, body};
+      return Response.json(body, {headers: {"cache-control": "no-store"}});
+    } catch {
+      if (metricsCache) {
+        return Response.json(
+          {...metricsCache.body, meta: {stale: true, lastSuccessfulSync: new Date(metricsCache.at).toISOString()}},
+          {headers: {"cache-control": "no-store", warning: '110 - "Response is stale"'}},
+        );
+      }
+      return Response.json({error: "Mission Control metrics are unavailable"}, {status: 503, headers: {"cache-control": "no-store"}});
+    }
   }
 
   async function login() {
@@ -223,6 +280,7 @@ export function createStatusGate(options = {}) {
     const {pathname} = new URL(request.url);
     if (pathname === "/status-gate/verify") return verify(request);
     if (request.method !== "GET" && request.method !== "HEAD") return pathname.startsWith("/status/") ? new Response("Method Not Allowed", {status: 405}) : null;
+    if (pathname === "/status/metrics") return metrics(request);
     if (pathname === "/status/login") return login();
     if (pathname === "/status/callback") return callback(request);
     if (pathname === "/status/logout") return logout();

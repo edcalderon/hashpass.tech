@@ -108,6 +108,92 @@ test("an approved domain gets a session that unlocks the page", async () => {
   assert.ok(exchange.get("code_verifier"));
 });
 
+test("the live metrics endpoint requires a valid status session and caches aggregate responses", async () => {
+  const metricsToken = "m".repeat(32);
+  const server = authServer({token: () => accessToken()});
+  const originalFetch = server.fetch;
+  server.fetch = async (url, init = {}) => {
+    if (String(url) === "https://api.example.com/api/internal/mission-control-metrics") {
+      server.calls.push({pathname: "/api/internal/mission-control-metrics", headers: init.headers});
+      return Response.json({data: {users: {total: 12}}});
+    }
+    return originalFetch(url, init);
+  };
+  const handle = gate(server, {
+    metricsUrl: "https://api.example.com/api/internal/mission-control-metrics",
+    metricsToken,
+    metricsCacheSeconds: 60,
+  });
+
+  assert.equal((await get(handle, "/status/metrics")).status, 302);
+  const session = cookiesOf((await signIn(handle)).callback);
+  const first = await get(handle, "/status/metrics", session);
+  const second = await get(handle, "/status/metrics", session);
+
+  assert.equal(first.status, 200);
+  assert.deepEqual(await first.json(), {data: {users: {total: 12}}});
+  assert.equal(first.headers.get("cache-control"), "no-store");
+  assert.equal(second.status, 200);
+  const metricCalls = server.calls.filter((call) => call.pathname === "/api/internal/mission-control-metrics");
+  assert.equal(metricCalls.length, 1);
+  assert.equal(metricCalls[0].headers.Authorization, `Bearer ${metricsToken}`);
+});
+
+test("live metrics include current health probes and convert failed surfaces into incidents", async () => {
+  const metricsToken = "m".repeat(32);
+  const server = authServer({token: () => accessToken()});
+  const originalFetch = server.fetch;
+  server.fetch = async (url, init = {}) => {
+    if (String(url).includes("mission-control-metrics")) return Response.json({data: {users: {total: 12}}});
+    if (String(url) === "https://good.example.com") return new Response("ok");
+    if (String(url) === "https://bad.example.com") return new Response("down", {status: 503});
+    return originalFetch(url, init);
+  };
+  const handle = gate(server, {
+    metricsUrl: "https://api.example.com/api/internal/mission-control-metrics",
+    metricsToken,
+    healthChecks: [
+      {name: "Good surface", url: "https://good.example.com"},
+      {name: "Bad surface", url: "https://bad.example.com"},
+    ],
+  });
+  const session = cookiesOf((await signIn(handle)).callback);
+  const body = await (await get(handle, "/status/metrics", session)).json();
+  assert.deepEqual(body.data.operations, {
+    up: 1,
+    total: 2,
+    incidents: [{name: "Bad surface"}],
+    surfaces: [{name: "Good surface", up: true}, {name: "Bad surface", up: false}],
+  });
+});
+
+test("live metrics preserve the last successful aggregate when the upstream becomes unavailable", async () => {
+  const metricsToken = "m".repeat(32);
+  const server = authServer({token: () => accessToken()});
+  const originalFetch = server.fetch;
+  let available = true;
+  server.fetch = async (url, init = {}) => {
+    if (String(url).includes("mission-control-metrics")) {
+      return available ? Response.json({data: {users: {total: 12}}}) : new Response("down", {status: 503});
+    }
+    return originalFetch(url, init);
+  };
+  const handle = gate(server, {
+    metricsUrl: "https://api.example.com/api/internal/mission-control-metrics",
+    metricsToken,
+    metricsCacheSeconds: -1,
+  });
+  const session = cookiesOf((await signIn(handle)).callback);
+  assert.equal((await get(handle, "/status/metrics", session)).status, 200);
+  available = false;
+  const stale = await get(handle, "/status/metrics", session);
+  const body = await stale.json();
+  assert.equal(stale.status, 200);
+  assert.equal(stale.headers.get("warning"), '110 - "Response is stale"');
+  assert.equal(body.meta.stale, true);
+  assert.equal(body.data.users.total, 12);
+});
+
 test("a verified account outside the approved domains is refused and gets no session", async () => {
   const handle = gate(authServer({token: () => accessToken({email: "mallory@example.com"})}));
   const {callback} = await signIn(handle);

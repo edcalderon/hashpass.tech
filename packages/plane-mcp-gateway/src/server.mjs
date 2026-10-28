@@ -47,6 +47,18 @@ const handler = createGatewayHandler({
 });
 
 // Sign-in gate for work.hashpass.tech/status: same issuer, JWKS and email allowlist as the MCP resource above.
+const statusHealthChecks = [
+  ["Core site", "https://hashpass.tech"],
+  ["Core site (dev)", "https://dev.hashpass.tech"],
+  ["API", "https://api.hashpass.tech/api/config/versions"],
+  ["API (dev)", "https://api-dev.hashpass.tech/api/config/versions"],
+  ["Club web", "https://hashpass.club"],
+  ["Companion preview", "https://companion-dev.hashpass.tech"],
+  ["BSL", "https://bsl.hashpass.tech"],
+  ["Lukas landing", "https://lukas.hashpass.tech"],
+  ["Plane", "https://work.hashpass.tech/auth/get-csrf-token/"],
+].map(([name, url]) => ({name, url}));
+
 const statusGate = createStatusGate({
   publicOrigin: process.env.STATUS_PUBLIC_ORIGIN?.trim() || `https://${process.env.PLANE_DOMAIN?.trim() || "work.hashpass.tech"}`,
   issuer,
@@ -58,6 +70,9 @@ const statusGate = createStatusGate({
   allowedSubjects: csv("MCP_ALLOWED_SUBJECTS"),
   allowedEmails: csv("MCP_ALLOWED_EMAILS"),
   allowedEmailDomains: csv("MCP_ALLOWED_EMAIL_DOMAINS"),
+  metricsUrl: process.env.STATUS_METRICS_URL?.trim() || "https://api.hashpass.tech/api/internal/mission-control-metrics",
+  metricsToken: process.env.STATUS_METRICS_TOKEN?.trim() || "",
+  healthChecks: statusHealthChecks,
 });
 
 const server = http.createServer(async (incoming, outgoing) => {

@@ -10,6 +10,7 @@
  * says when; any source that cannot be reached degrades to a dash instead of blocking the publish.
  */
 import { execFileSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 
 const REPO = "hashpass-tech/hashpass.tech";
 const GH = `https://github.com/${REPO}`;
@@ -24,6 +25,9 @@ const ink = (token, inner) => `<span data-text-color="var(--editor-colors-${toke
 const tag = (token, label) => `<mark data-background-color="var(--editor-colors-${token}-background)" style="background-color: var(--editor-colors-${token}-background)">${esc(label)}</mark>`;
 const toggle = (summary, inner) => `<details><summary>${esc(summary)}</summary>${inner}</details>`;
 const color = (c) => `var(--editor-colors-${c}-background)`;
+const packageVersion = (path) => {
+  try { return JSON.parse(readFileSync(new URL(path, import.meta.url), "utf8")).version; } catch { return null; }
+};
 
 /** Plane's editor stores a cell tint as a `background` attribute and a callout as a block component. */
 export const planeKit = {
@@ -43,7 +47,7 @@ export const webKit = {
   bg: (c) => ` style="background:${color(c)}"`,
   // A responsive grid, so summary rows wrap on a phone instead of scrolling sideways.
   tile: (inner, bg) => `<div class="tile" style="background:${color(bg)}">${inner}</div>`,
-  tiles: (cells) => `<div class="tiles">${cells.join("")}</div>`,
+  tiles: (cells, className = "") => `<div class="tiles${className ? ` ${className}` : ""}">${cells.join("")}</div>`,
   callout: (emoji, bg, inner) => `<aside class="callout" style="background:${color(bg)}"><span class="emoji">${String.fromCodePoint(parseInt(emoji, 16))}</span><div>${inner}</div></aside>`,
   tasks: (items) => `<ul class="tasks">${items.map(([done, inner]) => `<li class="${done ? "done" : ""}"><span class="box">${done ? "☑" : "☐"}</span>${p(inner)}</li>`).join("")}</ul>`,
 };
@@ -117,11 +121,31 @@ export async function collectLiveData({ planeKey = process.env.PLANE_PERSONAL_AP
     ].map(async ([name, url]) => ({ name, url, up: await probe(url) })),
   );
 
+  let metrics = null;
+  if (process.env.MISSION_CONTROL_METRICS_URL && process.env.MISSION_CONTROL_METRICS_TOKEN) {
+    try {
+      const response = await fetch(process.env.MISSION_CONTROL_METRICS_URL, {
+        headers: { Authorization: `Bearer ${process.env.MISSION_CONTROL_METRICS_TOKEN}`, Accept: "application/json" },
+        signal: AbortSignal.timeout(10000),
+      });
+      if (response.ok) {
+        const payload = await response.json();
+        metrics = payload.data ?? payload;
+      }
+    } catch {}
+  }
+
   let sha = "unknown";
   try {
     sha = execFileSync("git", ["rev-parse", "--short", "HEAD"], { encoding: "utf8" }).trim();
   } catch {}
-  return { now, sha, epic, passport, passportKids, modules, surfaces };
+  const versions = {
+    global: packageVersion("../../../package.json"),
+    club: packageVersion("../../../apps/web-app/package.json"),
+    companion: packageVersion("../../../apps/companion/package.json"),
+    status: packageVersion("../../../apps/status-page/package.json"),
+  };
+  return { now, sha, epic, passport, passportKids, modules, surfaces, metrics, versions };
 }
 
 const DIVISIONS = [
@@ -139,7 +163,7 @@ export function buildMissionControlHtml(d, kit = planeKit, { publicView = false 
   const cell = (inner, bg) => `<td${bg ? kit.bg(bg) : ""}>${p(inner)}</td>`;
   const head = (inner, bg) => `<th${bg ? kit.bg(bg) : ""}>${p(inner)}</th>`;
   const labelled = (heads, row) => row.map((c, i) => (kit.labelled ? c.replace(/^<td/, `<td data-label="${esc(heads[i] ?? "")}"`) : c));
-  const table = (heads, rows) => `<table><tbody><tr>${heads.map((h) => head(h, "gray")).join("")}</tr>${rows.map((r) => `<tr>${labelled(heads, r).join("")}</tr>`).join("")}</tbody></table>`;
+  const table = (heads, rows, className = "") => `<table${kit.labelled && className ? ` class="${esc(className)}"` : ""}><tbody><tr>${heads.map((h) => head(h, "gray")).join("")}</tr>${rows.map((r) => `<tr>${labelled(heads, r).join("")}</tr>`).join("")}</tbody></table>`;
   const callout = kit.callout;
   const tasks = kit.tasks;
   const stamp = d.now.toISOString().replace("T", " ").slice(0, 16) + " UTC";
@@ -148,12 +172,19 @@ export function buildMissionControlHtml(d, kit = planeKit, { publicView = false 
   const epicTotal = d.epic.length;
   const up = d.surfaces.filter((s) => s.up).length;
   const planeOpen = d.modules.reduce((n, m) => n + (m.open ?? 0), 0);
-
-  const kpi = (emoji, label, value, sub, bg) =>
-    kit.tile(`${p(`${emoji} ${esc(label)}`)}${p(`<strong>${value}</strong>`)}${p(sub)}`, bg);
+  const metrics = d.metrics ?? {};
+  const metric = (path, fallback = "—") => path.split(".").reduce((value, key) => value?.[key], metrics) ?? fallback;
+  const liveValue = (key, value) => `<strong class="metric-value"${kit.labelled ? ` data-metric="${esc(key)}"` : ""}>${esc(value)}</strong>`;
+  const kpi = (label, key, value, sub, bg) =>
+    kit.tile(`${p(esc(label))}${p(liveValue(key, value))}${p(`<span class="metric-note">${sub}</span>`)}`, bg);
+  const detail = (html) => kit.labelled ? `<section data-focus-detail>${html}</section>` : html;
+  const detailHeading = (level, html) => kit.labelled ? `<h${level} data-focus-detail>${html}</h${level}>` : `<h${level}>${html}</h${level}>`;
 
   const out = [];
-  out.push(callout("1f6f0", "light-blue", p(`<strong>The front door to HASHPASS.</strong> ${tag("light-blue", "🐙 GitHub")} code, config and infrastructure · ${tag("green", "✈️ Plane")} everything else · ${tag("gray", "📝 Notion")} CEO drafts only, nothing depends on it.`) + p(`<em>Refreshed ${esc(stamp)} (commit <code>${esc(d.sha)}</code>). No secrets on this page.</em>`)));
+  if (!publicView) {
+    out.push(callout("1f4e1", "light-blue", p(`<strong>Live Mission Control:</strong> ${a("https://work.hashpass.tech/status", "Open the authenticated real-time dashboard →")}`) + p(`This editable Plane page is the publish-time snapshot. The live equivalent refreshes aggregate business and platform metrics every minute.`)));
+  }
+  out.push(callout("1f6f0", "light-blue", p(`<strong>The front door to HASHPASS.</strong> ${tag("light-blue", "🐙 GitHub")} code, config and infrastructure · ${tag("green", "✈️ Plane")} everything else · ${tag("gray", "📝 Notion")} CEO drafts only, nothing depends on it.`) + p(`<em>Refreshed ${esc(stamp)} (commit <code>${esc(d.sha)}</code>). Aggregate metrics only; no personal records.</em>`)));
 
   out.push("<h2>🚀 Jump to</h2>");
   out.push(kit.tiles([
@@ -162,18 +193,33 @@ export function buildMissionControlHtml(d, kit = planeKit, { publicView = false 
     ["📦", "Modules", "Plane divisions", `${PROJECT_URL}/modules/`, "orange", true],
     ["📚", "Docs and ADRs", "Architecture folder", `${DOCS}docs/architecture/`, "purple"],
   // The sixth field marks entries that need a Plane login, so the status page drops them by flag, not by URL match.
-  ].filter(([, , , , , needsLogin]) => !(publicView && needsLogin)).map(([e, t, s, h, bg]) => kit.tile(`${p(`${e} <strong>${esc(t)}</strong>`)}${p(a(h, s))}`, bg))));
+  ].filter(([, , , , , needsLogin]) => !(publicView && needsLogin)).map(([e, t, s, h, bg]) => kit.tile(`${p(`${e} <strong>${esc(t)}</strong>`)}${p(a(h, s))}`, bg)), "jump-grid"));
 
   out.push("<h2>📊 At a glance</h2>");
+  if (publicView) {
+    const healthy = up === d.surfaces.length;
+    out.push(`<section class="pulse ${healthy ? "pulse--healthy" : "pulse--degraded"}" aria-labelledby="pulse-title"><div><p class="pulse__title" id="pulse-title"><strong data-operational-headline>${healthy ? "All monitored systems operational" : `${d.surfaces.length - up} surface${d.surfaces.length - up === 1 ? "" : "s"} need attention`}</strong></p><p data-operational-detail>${healthy ? "No active incidents detected across the monitored platform." : "Failed health probes are treated as active operational incidents."}</p></div><p class="pulse__meta"><span data-sync-status>Snapshot · ${esc(stamp)}</span></p></section>`);
+  }
   out.push(kit.tiles([
-    kpi("🎯", "Epic #455 progress", `${epicDone} of ${epicTotal || "—"} done`, bar(epicDone, epicTotal), "green"),
-    kpi("🔥", "Open P0 engineering", String(d.epic.filter((i) => i.state === "open" && /P0/.test(i.title)).length), "sub-issues under the Companion epic", "pink"),
-    ...(publicView ? [] : [kpi("🗂️", "Open company work", d.modules.length ? String(planeOpen) : "—", "Plane items across 6 divisions", "orange")]),
-    kpi("🛰️", "Live surfaces", `${up} of ${d.surfaces.length} up`, bar(up, d.surfaces.length), up === d.surfaces.length ? "green" : "peach"),
+    kpi("Total users", "users-total", String(metric("users.total")), "active, non-deleted accounts", "light-blue"),
+    kpi("Active users · 30d", "users-active30d", String(metric("users.active30d")), `verified actions + observed app use ${kit.labelled ? '<span class="trend" data-trend="active-users7d" aria-label="Seven day active-user trend"></span>' : ''}`, "green"),
+    kpi("New users · 7d", "users-new7d", String(metric("users.new7d")), `account growth ${kit.labelled ? '<span class="trend" data-trend="new-users7d" aria-label="Seven day new-user trend"></span>' : ''}`, "purple"),
+    kpi("Events", "events-total", String(metric("events.total")), `${liveValue("events-published", String(metric("events.published")))} published`, "orange"),
+    kpi("Active passes", "passes-active", String(metric("passes.active")), `${liveValue("passes-total", String(metric("passes.total")))} issued total`, "peach"),
+    kpi("Scheduled meetings", "meetings-scheduled", String(metric("meetings.scheduled")), `${liveValue("meetings-total", String(metric("meetings.total")))} meetings total`, "light-blue"),
+    kpi("Live surfaces", "surfaces-up", `${up} / ${d.surfaces.length}`, "current direct health probes", up === d.surfaces.length ? "green" : "peach"),
+    kpi("Active incidents", "incidents-active", String(d.surfaces.length - up), "failed monitored surfaces", up === d.surfaces.length ? "green" : "pink"),
+  ], "metric-grid"));
+
+  out.push("<h2>Business and engagement</h2>");
+  out.push(table(["Indicator", "Current", "Scope"], [
+    [cell("Verified product actions"), cell(liveValue("activity-verified30d", String(metric("activity.verified30d")))), cell("Trailing 30 days")],
+    [cell("Epic #455 delivery"), cell(`${epicDone} of ${epicTotal || "—"}`), cell(bar(epicDone, epicTotal))],
+    ...(!publicView ? [[cell("Open company work"), cell(d.modules.length ? String(planeOpen) : "—"), cell("Plane items across 6 divisions")]] : []),
   ]));
 
-  out.push("<h2>🏢 Company directory</h2>");
-  out.push(publicView
+  out.push(detailHeading(2, "🏢 Company directory"));
+  out.push(detail(publicView
     ? table(["Division", "What it covers"], DIVISIONS.map((dv) => [cell(`${dv.emoji} <strong>${esc(dv.name)}</strong>`, dv.color), cell(esc(dv.focus))]))
     : table(
         ["Division", "What it covers", "Work items", "Health", "Open"],
@@ -183,36 +229,37 @@ export function buildMissionControlHtml(d, kit = planeKit, { publicView = false 
           const health = m ? (m.status === "completed" ? tag("green", "done") : m.status === "planned" ? tag("light-blue", "planned") : m.status === "paused" ? tag("peach", "paused") : tag("green", "in progress")) : tag("gray", "unknown");
           return [cell(`${dv.emoji} <strong>${esc(dv.name)}</strong>`, dv.color), cell(esc(dv.focus)), cell(esc(load)), cell(health), cell(m ? a(`${PROJECT_URL}/modules/${m.id}/`, "Open module →") : a(`${PROJECT_URL}/modules/`, "All modules →"))];
         }),
-      ));
+      )));
 
-  out.push("<h2>⚙️ Engineering progress</h2>");
-  out.push(`<h3>Epic ${a(`${GH}/issues/455`, "#455")} — HASHPASS Companion (Meta hackathon)</h3>`);
-  out.push(p(bar(epicDone, epicTotal, 20)));
-  out.push(tasks(d.epic.map((i) => [i.state === "closed", `${a(i.html_url, `#${i.number}`)} ${esc(i.title.replace(/^\[[^\]]*\]\s*/g, "").replace(/^\[[^\]]*\]\s*/g, ""))} ${/P0/.test(i.title) ? tag("pink", "P0") : tag("light-blue", "P1")}`])));
+  out.push(detailHeading(2, "⚙️ Engineering progress"));
+  out.push(detailHeading(3, `Epic ${a(`${GH}/issues/455`, "#455")} — HASHPASS Companion (Meta hackathon)`));
+  out.push(detail(p(bar(epicDone, epicTotal, 20))));
+  out.push(detail(tasks(d.epic.map((i) => [i.state === "closed", `${a(i.html_url, `#${i.number}`)} ${esc(i.title.replace(/^\[[^\]]*\]\s*/g, "").replace(/^\[[^\]]*\]\s*/g, ""))} ${/P0/.test(i.title) ? tag("pink", "P0") : tag("light-blue", "P1")}`]))));
   if (d.passport) {
     const kidsDone = done(d.passportKids);
-    out.push(`<h3>Passport MVP ${a(`${GH}/issues/425`, "#425")} — Universal Event Inbox</h3>`);
-    out.push(p(bar(kidsDone, d.passportKids.length, 20)));
-    out.push(tasks(d.passportKids.map((i) => [i.state === "closed", `${a(i.html_url, `#${i.number}`)} ${esc(i.title.replace(/^(\[[^\]]*\]\s*)+/, ""))}`])));
+    out.push(detailHeading(3, `Passport MVP ${a(`${GH}/issues/425`, "#425")} — Universal Event Inbox`));
+    out.push(detail(p(bar(kidsDone, d.passportKids.length, 20))));
+    out.push(detail(tasks(d.passportKids.map((i) => [i.state === "closed", `${a(i.html_url, `#${i.number}`)} ${esc(i.title.replace(/^(\[[^\]]*\]\s*)+/, ""))}`]))));
   }
 
   out.push("<h2>🛰️ Live operations</h2>");
-  out.push(table(["Surface", "Status", "Address"], d.surfaces.map((s) => [cell(`<strong>${esc(s.name)}</strong>`), cell(status(s.up), s.up ? "green" : "pink"), cell(a(s.url.replace(/\/api\/config\/versions$|\/\.well-known.*$|\/auth\/get-csrf-token\/$/, ""), new URL(s.url).host))])));
+  out.push(table(["Surface", "Status", "Address"], d.surfaces.map((s) => [cell(`<strong>${esc(s.name)}</strong>`), kit.labelled ? `<td data-surface-status="${esc(s.name)}"${kit.bg(s.up ? "green" : "pink")}>${p(status(s.up))}</td>` : cell(status(s.up), s.up ? "green" : "pink"), cell(a(s.url.replace(/\/api\/config\/versions$|\/\.well-known.*$|\/auth\/get-csrf-token\/$/, ""), new URL(s.url).host))]), "status-table"));
   out.push(`<h2>🚢 Release streams</h2>`);
-  out.push(table(["Stream", "Command", "Tag", "Ships"], [
-    [cell("🌐 <strong>Global / mobile</strong>", "light-blue"), cell("<code>npm run release:promote</code>"), cell("<code>vX.Y.Z</code>"), cell("Protected develop → main PR, then Android tag flow")],
-    [cell("🏛️ <strong>Club web</strong>", "green"), cell("<code>pnpm run release:club:web:patch</code>"), cell("<code>club-vX.Y.Z</code>"), cell("hashpass.club (needs its own tag)")],
-    [cell("🐣 <strong>Companion</strong>", "orange"), cell("<code>node packages/tools/scripts/release-companion.js patch</code>"), cell("<code>companion-vX.Y.Z</code>"), cell("Manual S3 sync to companion-dev")],
-  ]));
+  out.push(table(["Stream", "Version", "Command", "Tag", "Ships"], [
+    [cell("🌐 <strong>Global / mobile</strong>", "light-blue"), cell(`<code>${esc(d.versions?.global ?? "—")}</code>`), cell("<code>npm run release:promote</code>"), cell(`<code>v${esc(d.versions?.global ?? "X.Y.Z")}</code>`), cell("Protected develop → main PR, then Android tag flow")],
+    [cell("🏛️ <strong>Club web</strong>", "green"), cell(`<code>${esc(d.versions?.club ?? "—")}</code>`), cell("<code>pnpm run release:club:web:patch</code>"), cell(`<code>club-v${esc(d.versions?.club ?? "X.Y.Z")}</code>`), cell("hashpass.club (needs its own tag)")],
+    [cell("🐣 <strong>Companion</strong>", "orange"), cell(`<code>${esc(d.versions?.companion ?? "—")}</code>`), cell("<code>npm run release:companion:patch</code>"), cell(`<code>companion-v${esc(d.versions?.companion ?? "X.Y.Z")}</code>`), cell("Independent companion deployment")],
+    [cell("📡 <strong>Status page</strong>", "purple"), cell(`<code>${esc(d.versions?.status ?? "—")}</code>`), cell("<code>npm run release:status:patch</code>"), cell(`<code>status-v${esc(d.versions?.status ?? "X.Y.Z")}</code>`), cell("Authenticated Mission Control publisher")],
+  ], "release-table"));
   out.push(callout("1f4b8", "peach", p(`<strong>Cost guard:</strong> the monthly AWS budget is USD 50 in the <code>hashpass</code> account. Do not provision EC2 runners or other paid capacity without explicit owner approval. See ${a(`${DOCS}.agents/active/task-aws-cost-audit-and-controls.md`, "the AWS cost audit")}.`)));
 
-  out.push("<h2>📚 Knowledge map</h2>");
+  out.push(detail("<h2>📚 Knowledge map</h2>"));
   const links = (items) => `<ul>${items.map(([label, path]) => `<li>${p(a(path.startsWith("http") ? path : DOCS + path, label))}</li>`).join("")}</ul>`;
-  out.push(kit.tiles([
+  out.push(detail(kit.tiles([
     ["🏗️ Architecture & decisions", "light-blue", [["Workspace operating model", "docs/architecture/workspace-operating-model.md"], ["Companion vision and system", "docs/architecture/meta-companion-vision-and-system.md"], ["Passport MVP", "docs/feature-plans/passport-mvp.md"]]],
     ["🔧 Platform reference", "green", [["Deployment map", "apps/docs/docs/infra/DEPLOYMENT_MAP.md"], ["Play Console release flow", "apps/docs/docs/reference/release/PLAY_CONSOLE_RELEASE_FLOW.md"], ["OTA updates", "apps/docs/docs/reference/mobile-app/eas-update-ota.md"], ["Auth flow", "apps/docs/docs/auth/AUTH_FLOW.md"], ["User registry", "apps/docs/docs/auth/USER_REGISTRY.md"]]],
     ["🎨 Product & agents", "purple", [["PRODUCT.md", "PRODUCT.md"], ["DESIGN.md", "DESIGN.md"], ["Design system and Storybook", "docs/design-system-storybook.md"], ["AGENTS.md", "AGENTS.md"], ["Active tasks", "https://github.com/hashpass-tech/hashpass.tech/tree/develop/.agents/active"]]],
-  ].map(([t, bg, items]) => kit.tile(`${p(`<strong>${t}</strong>`)}${links(items)}`, bg))));
+  ].map(([t, bg, items]) => kit.tile(`${p(`<strong>${t}</strong>`)}${links(items)}`, bg)), "knowledge-grid")));
   out.push(p(`🧠 <strong>Code questions:</strong> use <code>codebase-memory-mcp</code> (<code>search_graph</code>, <code>trace_path</code>, <code>get_code_snippet</code>) before grep.`));
   out.push("<hr>");
   if (!publicView) out.push(p(`<em>Team-only web version (HASHPASS sign-in): ${a("https://work.hashpass.tech/status", "work.hashpass.tech/status")}. This page and that one are generated by <code>packages/tools/scripts/mission-control-page.mjs</code> — edit that, not this page.</em>`));
