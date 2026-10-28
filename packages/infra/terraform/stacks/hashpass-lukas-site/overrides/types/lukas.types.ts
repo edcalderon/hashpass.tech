@@ -29,13 +29,16 @@ export type LukasWhyVideoProps = {
   locale: string;
   animationLevel: LukasAnimationLevel;
   isDark: boolean;
+  onReward?: () => void;
 };
 
 export type HeroSectionProps = {
   onGetLukas: () => void;
   onForMerchants: () => void;
   rewardTotal: number;
+  rewardMax?: number;
   rewardDelta: number;
+  rewardClaimed?: boolean;
   animationLevel: LukasAnimationLevel;
 };
 
@@ -50,7 +53,12 @@ export type LukasSettingsMenuProps = {
   onAnimationChange: (level: LukasAnimationLevel) => void;
 };
 
-export type LukasClaimModalProps = { visible: boolean; onClose: () => void };
+export type LukasClaimModalProps = {
+  visible: boolean;
+  onClose: () => void;
+  rewardTotal?: number;
+  onClaimed?: (email: string) => void;
+};
 export type LukasClaimStep = 'email' | 'code' | 'verified';
 export type LukasClaimSession = {
   access_token: string;
@@ -64,7 +72,44 @@ export type LukasRewardState = {
   clickCount: number;
   lastClickAt: number | null;
   streak: number;
+  completed: Partial<Record<LukasRewardId, true>>;
+  claimed: boolean;
+  claimedEmail: string | null;
+  lastRewardId: LukasRewardId | null;
+  lastAwarded: number;
 };
+
+export type LukasRewardId =
+  | 'hero'
+  | 'video'
+  | 'how-collateral'
+  | 'how-mint'
+  | 'how-merchant'
+  | 'merchant'
+  | 'wallet'
+  | 'join';
+
+export type LukasRewardDefinition = {
+  id: LukasRewardId;
+  amount: number;
+};
+
+export type LukasRewardResult = {
+  state: LukasRewardState;
+  awarded: number;
+  reachedCap: boolean;
+};
+
+export type LukasRewardsContextValue = {
+  state: LukasRewardState;
+  total: number;
+  max: number;
+  rewardDelta: number;
+  earn: (id: LukasRewardId) => LukasRewardResult | null;
+  markClaimed: (email: string) => void;
+};
+
+export type LukasRewardWalletProps = { onOpenClaim: () => void };
 
 export type LukasClickResult = {
   state: LukasRewardState;

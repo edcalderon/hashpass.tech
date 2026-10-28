@@ -19,7 +19,7 @@ const fallbackCopy: Record<string, { label: string; detail: string; play: string
   de: { label: 'Wie LUKAS stabil bleibt', detail: 'Ein regionaler Index, fünf lokale Währungen.', play: 'Video abspielen', loading: 'Erklärung wird geladen…', expand: 'Video vergrößern', collapse: 'Vollbild verlassen' },
 };
 
-export function LukasWhyVideo({ locale, animationLevel, isDark }: LukasWhyVideoProps) {
+export function LukasWhyVideo({ locale, animationLevel, isDark, onReward }: LukasWhyVideoProps) {
   const videoLocale = normalizeLocale(locale);
   const copy = fallbackCopy[videoLocale];
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -111,7 +111,10 @@ export function LukasWhyVideo({ locale, animationLevel, isDark }: LukasWhyVideoP
           setReady(true);
           if (started && animationLevel === 'full') void videoRef.current?.play().catch(() => undefined);
         }}
-        onPlay={() => setStarted(true)}
+        onPlay={() => {
+          setStarted(true);
+          onReward?.();
+        }}
         onEnded={() => {
           if (videoRef.current) videoRef.current.currentTime = 0;
           setPlayButtonActive(false);

@@ -8,6 +8,7 @@ import { LukasCaptcha } from './LukasCaptcha';
 import { ActionButton, FilterChip, Surface } from '@hashpass/ui/primitives';
 import { LukasEyebrow, lukasFullWidth, lukasPalette, lukasSectionTitle, lukasSkin, lukasSurface } from './lukas/lukas-ui';
 import { LukasGlyph } from './lukas/LukasGlyph';
+import { useLukasRewards } from './lukas/LukasRewards';
 
 const API_BASE = 'https://api.hashpass.tech/api';
 const BOOKING_URL = 'https://calendar.app.google/vYsTa9GpamSVccAt9';
@@ -20,6 +21,7 @@ export function MerchantContactPanel() {
   const palette = useMemo(() => lukasPalette(isDark), [isDark]);
   const skin = useMemo(() => lukasSkin(palette), [palette]);
   const styles = useMemo(() => getStyles(isDark, isMobile, palette), [isDark, isMobile, palette]);
+  const { earn } = useLukasRewards();
   const [contactName, setContactName] = useState('');
   const [email, setEmail] = useState('');
   const [merchantType, setMerchantType] = useState(MERCHANT_TYPES[0]);
@@ -51,6 +53,7 @@ export function MerchantContactPanel() {
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload?.error || 'The merchant request could not be sent.');
       setSent(true);
+      earn('merchant');
       setCaptchaToken('');
       setResetKey((key) => key + 1);
     } catch (submitError) {

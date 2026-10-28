@@ -41,8 +41,14 @@ function transformMessages(nested: any): Record<string, string> {
 // nothing would ever select between them per active locale — every locale's catalog
 // ended up with the identical (English) hero.title value. This resolves the suffix
 // per target locale instead, falling back to the base (English) key when no
-// locale-specific sibling exists (lukas.json currently only has _es/_pt variants).
-const LUKAS_LOCALE_SUFFIXES: Record<string, string> = { es: '_es', pt: '_pt' };
+// locale-specific sibling exists.
+const LUKAS_LOCALE_SUFFIXES: Record<string, string> = {
+  es: '_es',
+  pt: '_pt',
+  ko: '_ko',
+  fr: '_fr',
+  de: '_de',
+};
 
 function buildLukasCatalog(nested: any, locale: string): Record<string, string> {
   const suffix = LUKAS_LOCALE_SUFFIXES[locale];
@@ -51,7 +57,7 @@ function buildLukasCatalog(nested: any, locale: string): Record<string, string> 
     Object.keys(obj || {}).forEach((k) => {
       // Locale-variant sibling keys (e.g. "title_es") are resolved via the base key's
       // lookup below, not emitted as their own top-level keys.
-      if (/_(es|pt)$/.test(k)) return;
+      if (/_(es|pt|ko|fr|de)$/.test(k)) return;
       const v = (obj as any)[k];
       const key = prefix ? `${prefix}.${k}` : k;
       if (v && typeof v === 'object') {

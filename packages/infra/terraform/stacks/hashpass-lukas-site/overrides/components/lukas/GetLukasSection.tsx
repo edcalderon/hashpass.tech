@@ -18,6 +18,7 @@ import { LukasCaptcha } from '../LukasCaptcha';
 import { ActionButton, Surface } from '@hashpass/ui/primitives';
 import { LukasDialog, dialogCopy, dialogTitle, lukasFullWidth, lukasPalette, lukasSectionTitle, lukasSkin, lukasSurface } from './lukas-ui';
 import { LukasGlyph } from './LukasGlyph';
+import { useLukasRewards } from './LukasRewards';
 
 const API_BASE = 'https://api.hashpass.tech/api';
 const SUCCESS_COPY = "You're already listed for $LKS airdrops and prizes until the LUKAS $LKS TGE. We're currently in testnet.";
@@ -110,6 +111,7 @@ export function GetLukasSection() {
   const mode = isDark ? 'dark' : 'light';
   const skin = useMemo(() => lukasSkin(palette), [palette]);
   const styles = useMemo(() => getStyles(isDark, isMobile, palette), [isDark, isMobile, palette]);
+  const { earn } = useLukasRewards();
 
   const openModal = (nextView: ModalView = 'choices') => {
     setView(nextView);
@@ -153,6 +155,7 @@ export function GetLukasSection() {
         await postJson('/auth/wallet/solana', { message, signature, walletAddress: address });
         setConnectedWallet(`${label} · ${address.slice(0, 6)}…${address.slice(-4)}`);
       }
+      earn('wallet');
       setView('success');
     } catch (walletError) {
       setError(walletError instanceof Error ? walletError.message : 'Wallet connection failed. Please try again.');
@@ -175,6 +178,7 @@ export function GetLukasSection() {
     setError('');
     try {
       await postJson('/lukas/subscribe', { email: normalizedEmail, hashpassOptIn: hashPassOptIn, source: 'lukas_landing', captchaToken });
+      earn('join');
       setView('success');
       setConnectedWallet('');
     } catch (newsletterError) {
@@ -204,6 +208,7 @@ export function GetLukasSection() {
       const payload = await getJson('/lukas/session');
       const email = payload?.user?.email || 'verified HashPass account';
       setConnectedWallet(`HASHPASS · ${email}`);
+      earn('wallet');
       setView('success');
     } catch (sessionError) {
       setError(sessionError instanceof Error ? sessionError.message : 'Sign in with HASHPASS first, then try again.');

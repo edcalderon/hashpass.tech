@@ -13,6 +13,7 @@ import { LukasGlyph } from './LukasGlyph';
 import { LukasWhyVideo } from './LukasWhyVideo';
 import { lukasPalette, lukasSectionTitle } from './lukas-ui';
 import { useLukasAnimationLevel } from './useLukasMotion';
+import { useLukasRewards } from './LukasRewards';
 
 export function WhySection() {
   const { colors, isDark } = useTheme();
@@ -20,6 +21,7 @@ export function WhySection() {
   const { t, locale } = useTranslation('lukas');
   const palette = lukasPalette(isDark);
   const animationLevel = useLukasAnimationLevel();
+  const { earn } = useLukasRewards();
 
   const opacity1 = useSharedValue(0);
   const opacity2 = useSharedValue(0);
@@ -82,7 +84,7 @@ export function WhySection() {
       <View style={styles.content}>
         <View style={styles.illustrationContainer}>
           <View style={styles.illustration}>
-            <LukasWhyVideo locale={locale} animationLevel={animationLevel} isDark={isDark} />
+            <LukasWhyVideo locale={locale} animationLevel={animationLevel} isDark={isDark} onReward={() => earn('video')} />
           </View>
         </View>
 
