@@ -225,6 +225,42 @@ function Catalog({ mode = "light" }: { mode?: ColorMode }) {
           >
             <Text style={{ color: palette.accent }}>↻</Text>
           </IconButton>
+          <View
+            style={{
+              backgroundColor: palette.overlay,
+              borderRadius: uiTokens.radius.media,
+              flexDirection: "row",
+              gap: uiTokens.space.sm,
+              justifyContent: "space-between",
+              minWidth: 260,
+              padding: uiTokens.space.sm,
+            }}
+          >
+            <IconButton
+              mode="dark"
+              label="On agenda"
+              accentColor="#FFFFFF"
+              revealLabel
+              preserveBaseStyleOnReveal
+              size={30}
+              surfaceStyle={{ backgroundColor: uiTokens.effects.mediaOverlayStrong, borderColor: uiTokens.effects.mediaBorder }}
+            >
+              <Text style={{ color: palette.success }}>✓</Text>
+            </IconButton>
+            <IconButton
+              mode="dark"
+              label="Bookmark session"
+              revealText="Bookmark"
+              accentColor="#FFFFFF"
+              revealLabel
+              pinnedOpen
+              preserveBaseStyleOnReveal
+              size={30}
+              surfaceStyle={{ backgroundColor: uiTokens.effects.mediaOverlayStrong, borderColor: uiTokens.effects.mediaBorder }}
+            >
+              <Text style={{ color: "#FFFFFF" }}>☆</Text>
+            </IconButton>
+          </View>
           <IconButton mode={mode} label="Disabled action" revealLabel disabled>
             <Text style={{ color: palette.accent }}>↻</Text>
           </IconButton>

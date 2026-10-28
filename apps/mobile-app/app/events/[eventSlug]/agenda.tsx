@@ -303,6 +303,18 @@ export default function BSL2025AgendaScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   // "Bookmarked" view: every bookmarked session across all days. Bookmarks
   // are the persisted is_favorite flag, so they follow the user across devices.
+  // Photo chips (on-agenda check, bookmark) expand on hover/focus; a tap pins one open briefly
+  // so touch screens, which have no hover, can read the label too.
+  const [pinnedBadge, setPinnedBadge] = useState<string | null>(null);
+  const pinnedBadgeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pinBadge = useCallback((key: string) => {
+    if (pinnedBadgeTimer.current) clearTimeout(pinnedBadgeTimer.current);
+    setPinnedBadge(key);
+    pinnedBadgeTimer.current = setTimeout(() => setPinnedBadge(null), 2200);
+  }, []);
+  useEffect(() => () => {
+    if (pinnedBadgeTimer.current) clearTimeout(pinnedBadgeTimer.current);
+  }, []);
   const [agendaView, setAgendaView] = useState<'all' | 'bookmarked' | 'workshops'>('all');
   const bookmarkedOnly = agendaView === 'bookmarked';
   const workshopsOnly = agendaView === 'workshops';
@@ -1638,15 +1650,21 @@ export default function BSL2025AgendaScreen() {
                 </View>
               ) : null}
               {isConfirmed ? (
-                <View
+                <IconButton
+                  mode="dark"
+                  accentColor="#FFFFFF"
+                  revealLabel
+                  preserveBaseStyleOnReveal
+                  size={30}
+                  label={t('actions.onAgenda', 'On agenda')}
+                  pinnedOpen={pinnedBadge === `agenda:${item.id}`}
+                  surfaceStyle={styles.agendaMediaChip}
+                  style={styles.agendaOnAgenda}
+                  onPress={() => pinBadge(`agenda:${item.id}`)}
                   testID={`agenda-card-on-agenda-${item.id}`}
-                  accessible
-                  accessibilityRole="image"
-                  accessibilityLabel={t('actions.onAgenda', 'On agenda')}
-                  style={[styles.agendaOnAgenda, { backgroundColor: speakerStatusHues.active }]}
                 >
-                  <MaterialIcons name="check" size={18} color="#FFFFFF" />
-                </View>
+                  <MaterialIcons name="check" size={18} color={speakerStatusHues.active} />
+                </IconButton>
               ) : null}
               {usesSpeakerPortrait && resolvedSpeakers.length > 1 ? (
                 <View style={[styles.agendaMediaCount, isConfirmed && styles.agendaMediaCountBelow]}>
@@ -1655,15 +1673,24 @@ export default function BSL2025AgendaScreen() {
               ) : null}
               <IconButton
                 mode="dark"
-                accentColor="#ffffff"
+                accentColor="#FFFFFF"
+                revealLabel
                 preserveBaseStyleOnReveal
                 size={30}
                 label={isFavorite
                   ? t('actions.removeBookmark', 'Remove bookmark')
                   : t('actions.bookmark', 'Bookmark session')}
+                revealText={isFavorite
+                  ? t('actions.bookmarked', 'Bookmarked')
+                  : t('actions.bookmarkShort', 'Bookmark')}
+                pinnedOpen={pinnedBadge === `bookmark:${item.id}`}
                 accessibilityState={{ selected: isFavorite }}
+                surfaceStyle={styles.agendaMediaChip}
                 style={styles.agendaBookmark}
-                onPress={() => { void handleToggleFavorite(item); }}
+                onPress={() => {
+                  pinBadge(`bookmark:${item.id}`);
+                  void handleToggleFavorite(item);
+                }}
                 testID={`agenda-card-bookmark-${item.id}`}
               >
                 <MaterialIcons
@@ -2451,24 +2478,23 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     top: uiTokens.space.sm,
     width: 30,
   },
-  // Round check badge on the photo (same size as the bookmark button, opposite corner).
-  agendaOnAgenda: {
-    alignItems: 'center',
+  // Shared glass chip for the on-agenda check and the bookmark: same size, border and shadow.
+  agendaMediaChip: {
+    backgroundColor: uiTokens.effects.mediaOverlayStrong,
     borderColor: uiTokens.effects.mediaBorder,
-    borderRadius: uiTokens.radius.circle,
-    borderWidth: 1.5,
-    height: 30,
-    justifyContent: 'center',
+    boxShadow: '0 2px 10px rgba(3, 12, 24, 0.35)',
+  },
+  // Top-left of the photo; opens rightwards.
+  agendaOnAgenda: {
     left: uiTokens.space.sm,
     position: 'absolute',
     top: uiTokens.space.sm,
-    width: 30,
     zIndex: 2,
-    boxShadow: '0 2px 10px rgba(3, 12, 24, 0.35)',
   },
   agendaMediaCountBelow: {
     top: uiTokens.space.sm + 30 + uiTokens.space.xs,
   },
+  // Top-right of the photo; opens leftwards.
   agendaBookmark: {
     position: 'absolute',
     right: uiTokens.space.sm,

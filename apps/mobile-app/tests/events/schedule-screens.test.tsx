@@ -868,6 +868,13 @@ describe('event schedule screens', () => {
     expect(renderer!.root.findAllByProps({ testID: 'agenda-card-on-agenda-on-1' }).length).toBeGreaterThan(0);
     expect(renderer!.root.findAllByProps({ testID: 'agenda-card-on-agenda-off-1' })).toHaveLength(0);
     expect(renderer!.root.findAllByProps({ name: 'check' }).length).toBeGreaterThan(0);
+
+    // Same reveal chip as the bookmark: tapping expands it to read "On agenda".
+    const chip = () => renderer!.root.findAllByProps({ testID: 'agenda-card-on-agenda-on-1' })
+      .find((node) => typeof node.props.onPress === 'function')!;
+    expect(renderer!.root.findAllByType('Text' as any).some((n) => n.props.children === 'actions.onAgenda')).toBe(false);
+    act(() => chip().props.onPress());
+    expect(renderer!.root.findAll((n) => n.props.children === 'actions.onAgenda').length).toBeGreaterThan(0);
     await act(async () => renderer!.unmount());
   });
 

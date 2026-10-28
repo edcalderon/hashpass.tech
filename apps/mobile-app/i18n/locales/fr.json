@@ -1332,6 +1332,8 @@
       "removeFromFavorites": "Retirer des favoris",
       "bookmark": "Enregistrer la session",
       "removeBookmark": "Retirer le marque-page",
+      "bookmarked": "Enregistrée",
+      "bookmarkShort": "Enregistrer",
       "markAttending": "Marquer comme présent",
       "unmarkAttending": "Annuler la présence"
     },

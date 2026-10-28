@@ -1974,6 +1974,8 @@
       "removeFromFavorites": "Quitar de favoritos",
       "bookmark": "Guardar sesión",
       "removeBookmark": "Quitar marcador",
+      "bookmarked": "Guardada",
+      "bookmarkShort": "Guardar",
       "favorite": "Favorito",
       "favorited": "En favoritos",
       "addToAgenda": "Añadir a la agenda",

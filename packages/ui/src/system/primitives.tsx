@@ -361,6 +361,12 @@ export type IconButtonProps = Omit<PressableProps, "children"> &
     loadingLabel?: string;
     /** Reveal buttons only: square edge in px, to line up with neighbouring pills. */
     size?: number;
+    /** Reveal buttons only: text shown when expanded, when it should differ from `label`. */
+    revealText?: string;
+    /** Reveal buttons only: keeps the label open (e.g. after a press on touch screens). */
+    pinnedOpen?: boolean;
+    /** Reveal buttons only: overrides the resting surface, e.g. glass over a photo. */
+    surfaceStyle?: ViewStyle;
   };
 
 export function IconButton({
@@ -375,6 +381,9 @@ export function IconButton({
   loading = false,
   loadingLabel,
   size,
+  revealText,
+  pinnedOpen = false,
+  surfaceStyle,
   onHoverIn,
   onHoverOut,
   onFocus,
@@ -387,7 +396,7 @@ export function IconButton({
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
   const [reduceMotion, setReduceMotion] = useState(true);
-  const expanded = revealLabel && (hovered || focused);
+  const expanded = revealLabel && (hovered || focused || pinnedOpen);
   // Retracting immediately on the first onHoverOut/onBlur is jarring when the
   // pointer only grazes past the control -- give it one beat to settle
   // before collapsing back, same debounce the agenda action icons used to
@@ -516,13 +525,14 @@ export function IconButton({
                 borderColor:
                   expanded && !preserveBaseStyleOnReveal ? `${color}52` : palette.border,
               },
+              surfaceStyle,
               transitionStyle,
             ]}
           >
             <View style={[styles.revealIcon, { height: edge, width: edge }]}>{content}</View>
             {expanded ? (
               <View style={[styles.revealLabelClip, transitionStyle]}>
-                <Text numberOfLines={1} style={[styles.revealLabel, { color }]}>{loading && loadingLabel ? loadingLabel : label}</Text>
+                <Text numberOfLines={1} style={[styles.revealLabel, { color }]}>{loading && loadingLabel ? loadingLabel : revealText ?? label}</Text>
               </View>
             ) : null}
           </View>

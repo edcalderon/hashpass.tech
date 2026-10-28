@@ -1331,6 +1331,8 @@
       "removeFromFavorites": "Remover dos favoritos",
       "bookmark": "Guardar sessão",
       "removeBookmark": "Remover marcador",
+      "bookmarked": "Salva",
+      "bookmarkShort": "Salvar",
       "markAttending": "Marcar como presente",
       "unmarkAttending": "Desmarcar presença"
     },

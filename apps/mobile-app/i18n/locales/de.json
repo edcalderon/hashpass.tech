@@ -1331,6 +1331,8 @@
       "removeFromFavorites": "Aus Favoriten entfernen",
       "bookmark": "Sitzung merken",
       "removeBookmark": "Lesezeichen entfernen",
+      "bookmarked": "Gemerkt",
+      "bookmarkShort": "Merken",
       "markAttending": "Als teilnehmend markieren",
       "unmarkAttending": "Teilnahme aufheben"
     },
