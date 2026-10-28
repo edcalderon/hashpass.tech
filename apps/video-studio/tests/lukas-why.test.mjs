@@ -47,4 +47,7 @@ test('Lukas why composition keeps the locale set and actual coin asset reference
   assert.match(landingVideo, /onMouseEnter=\{\(\) => setPlayButtonActive\(true\)\}/);
   assert.match(landingVideo, /play: 'Play video'/);
   assert.match(landingVideo, /playButtonActive/);
+  assert.doesNotMatch(landingVideo, /\n\s+loop\n/);
+  assert.match(landingVideo, /onEnded=\{\(\) =>/);
+  assert.match(landingVideo, /setStarted\(false\)/);
 });

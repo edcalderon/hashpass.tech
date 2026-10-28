@@ -101,7 +101,6 @@ export function LukasWhyVideo({ locale, animationLevel, isDark }: LukasWhyVideoP
       <video
         ref={videoRef}
         src={source}
-        loop
         playsInline
         preload="metadata"
         poster="/lukas-social-card.png"
@@ -113,6 +112,11 @@ export function LukasWhyVideo({ locale, animationLevel, isDark }: LukasWhyVideoP
           if (started && animationLevel === 'full') void videoRef.current?.play().catch(() => undefined);
         }}
         onPlay={() => setStarted(true)}
+        onEnded={() => {
+          if (videoRef.current) videoRef.current.currentTime = 0;
+          setPlayButtonActive(false);
+          setStarted(false);
+        }}
         onError={() => setHasFailed(true)}
       >
         <track kind="captions" src={captions} srcLang={videoLocale} label={videoLocale.toUpperCase()} default />
