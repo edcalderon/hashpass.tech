@@ -1,3 +1,28 @@
+## [1.9.173](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.172...v1.9.173) (2026-10-28)
+
+
+### Bug Fixes
+
+* **campaign:** match BSL media and captions to locale ([430e8a9](https://github.com/hashpass-tech/hashpass.tech/commit/430e8a9a26e698b37c8a74e6ab38f9b986d84331))
+* **i18n:** compile LUKAS FAQ catalog messages ([187c857](https://github.com/hashpass-tech/hashpass.tech/commit/187c85759da05d1f26392ed1f71f8051ac9ace56))
+* **mobile:** recover stale dashboard drawer open state ([0ded9fe](https://github.com/hashpass-tech/hashpass.tech/commit/0ded9feddab6a8b8b711d74d062484a069d86f27))
+* **tools:** typecheck video-studio against its own tsconfig ([bc5b445](https://github.com/hashpass-tech/hashpass.tech/commit/bc5b44552c87a95a07ed4ae37c72cf5fd5c668de))
+* **video-studio:** generate and validate welcome narration in the publish workflow ([e3d7876](https://github.com/hashpass-tech/hashpass.tech/commit/e3d787655df5c31d9945a9cd54a28656e0eeb67b))
+* **video:** prepare BSL assets before rendering ([8425868](https://github.com/hashpass-tech/hashpass.tech/commit/84258689eedbc6b6f4e82793dd3cf153a0fe444e))
+
+
+### Features
+
+* **lukas:** real 3D LKS coin, animated icons, consistent landing UI ([ce11df3](https://github.com/hashpass-tech/hashpass.tech/commit/ce11df3dc9a41dd97e19879bb95aa8433019508a)), closes [#514](https://github.com/hashpass-tech/hashpass.tech/issues/514)
+### Release Highlights
+- real 3D LKS coin, animated icons, consistent landing UI; recover stale dashboard drawer open state; match BSL media and captions to locale; prepare BSL assets before rendering; compile LUKAS FAQ catalog messages; generate and validate welcome narration in the publish workflow; typecheck video-studio against its own tsconfig
+
+### Release scope
+- Compared with: `v1.9.172` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+
 ## [1.9.172](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.171...v1.9.172) (2026-10-28)
 
 
