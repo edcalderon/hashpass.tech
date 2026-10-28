@@ -1850,10 +1850,25 @@ function AuthenticatedDashboardLayout() {
             </View>
           </CopilotStep>
 
-          <View style={[styles.headerLogoContainer, { pointerEvents: "box-none" }]}>
+          <View
+            // React Native's `box-none` is not emitted as a CSS pointer-events
+            // rule by React Native Web. The logo wrapper spans the entire
+            // header, so its web hit box otherwise sits above the hamburger.
+            // Use CSS pass-through on web and retain native box-none semantics.
+            {...(Platform.OS === "web"
+              ? {}
+              : { pointerEvents: "box-none" as const })}
+            style={[
+              styles.headerLogoContainer,
+              Platform.OS === "web" ? { pointerEvents: "none" } : undefined,
+            ]}
+          >
             <TouchableOpacity
               onPress={() => headerRouter.replace("./explore?reset=1" as any)}
-              style={styles.headerLogoButton}
+              style={[
+                styles.headerLogoButton,
+                Platform.OS === "web" ? { pointerEvents: "auto" } : undefined,
+              ]}
               activeOpacity={0.8}
             >
               <Image
@@ -2217,16 +2232,10 @@ const getStyles = (
       top: 0,
       bottom: 0,
       zIndex: 0,
-      pointerEvents: "box-none",
       alignItems: "center",
       justifyContent: "center",
-      // A negative zIndex here previously made the logo invisible on Android
-      // (negative zIndex doesn't just sit behind the hamburger/QR buttons the
-      // way it does on web — it can drop behind the header's own background on
-      // Android's native compositor). pointerEvents: 'box-none' does the actual
-      // job negative zIndex was trying to do — letting taps on the empty parts
-      // of this full-width overlay fall through to the buttons underneath —
-      // without needing to hide the view to get there.
+      // Web receives pointer-events: none at render time; native receives the
+      // box-none prop above so the centered logo remains independently tappable.
     },
     headerLogoButton: {
       width: 180,
