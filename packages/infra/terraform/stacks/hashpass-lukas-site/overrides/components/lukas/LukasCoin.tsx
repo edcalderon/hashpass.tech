@@ -1,7 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import './LukasCoin.css';
-
-export interface LukasCoinProps { size?: number; }
+import type { LukasCoinProps } from '../../types/lukas.types';
 
 const currencies = [
   { code: 'brl', name: 'Brazilian real', position: 'brl' },
@@ -12,7 +11,7 @@ const currencies = [
 ];
 
 // Brand illustration: original protocol SVGs, layered in a web-only 3D scene.
-export function LukasCoin({ size = 220 }: LukasCoinProps) {
+export function LukasCoin({ size = 220, animationLevel = 'full' }: LukasCoinProps) {
   const scene = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const element = scene.current;
@@ -26,7 +25,7 @@ export function LukasCoin({ size = 220 }: LukasCoinProps) {
   }, []);
 
   return (
-    <div ref={scene} className="lukas-scene" data-active="false" style={{ width: size * 1.6, height: size * 1.6 }}>
+    <div ref={scene} className="lukas-scene" data-active="false" data-motion={animationLevel} style={{ width: size * 1.6, height: size * 1.6 }}>
       <div className="lukas-scene__halo" aria-hidden="true" />
       <div className="lukas-scene__ring lukas-scene__ring--outer" aria-hidden="true" />
       <div className="lukas-scene__ring lukas-scene__ring--inner" aria-hidden="true" />

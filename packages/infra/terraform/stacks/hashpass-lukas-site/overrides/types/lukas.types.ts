@@ -1,5 +1,34 @@
 export type LukasAnimationLevel = 'full' | 'reduced' | 'none';
 
+export type LukasGlyphName =
+  | 'coffee'
+  | 'event'
+  | 'market'
+  | 'network'
+  | 'reserve'
+  | 'shield'
+  | 'settings'
+  | 'token'
+  | 'wallet';
+
+export type LukasGlyphProps = {
+  name: LukasGlyphName;
+  size?: number;
+};
+
+export type LukasCoinProps = {
+  size?: number;
+  animationLevel?: LukasAnimationLevel;
+};
+
+export type HeroSectionProps = {
+  onGetLukas: () => void;
+  onForMerchants: () => void;
+  rewardTotal: number;
+  rewardDelta: number;
+  animationLevel: LukasAnimationLevel;
+};
+
 export type LukasCaptchaProps = {
   onSolve: (token: string) => void;
   onReset?: () => void;

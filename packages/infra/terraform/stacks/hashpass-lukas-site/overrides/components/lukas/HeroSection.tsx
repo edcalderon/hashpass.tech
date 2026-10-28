@@ -1,31 +1,22 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Linking, Dimensions, Platform, Animated, Easing } from 'react-native';
+import { Animated, Dimensions, Easing, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../hooks/useTheme';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { useTranslation } from '../../i18n/i18n';
-import { LinearGradient } from 'expo-linear-gradient';
+import type { HeroSectionProps } from '../../types/lukas.types';
 import { LukasCoin } from './LukasCoin';
-import type { LukasAnimationLevel } from '../../types/lukas.types';
-
-interface HeroSectionProps {
-  onGetLukas: () => void;
-  onForMerchants: () => void;
-  rewardTotal: number;
-  rewardDelta: number;
-  animationLevel: LukasAnimationLevel;
-}
 
 const PEG_CURRENCIES = ['COP', 'ARS', 'BRL', 'MXN', 'CLP'];
+const REWARD_SEGMENTS = Array.from({ length: 10 }, (_, index) => index);
 
 export function HeroSection({ onGetLukas, onForMerchants, rewardTotal, rewardDelta, animationLevel }: HeroSectionProps) {
-  const { colors, isDark } = useTheme();
+  const { isDark } = useTheme();
   const isMobile = useIsMobile();
   const { t } = useTranslation('lukas');
   const [pegCurrencyIndex, setPegCurrencyIndex] = useState(0);
   const [screenWidth, setScreenWidth] = useState(
-    Platform.OS === 'web' && typeof window !== 'undefined'
-      ? window.innerWidth
-      : Dimensions.get('window').width
+    Platform.OS === 'web' && typeof window !== 'undefined' ? window.innerWidth : Dimensions.get('window').width,
   );
   const [rewardScale] = useState(() => new Animated.Value(1));
   const [rewardOpacity] = useState(() => new Animated.Value(0));
@@ -36,11 +27,11 @@ export function HeroSection({ onGetLukas, onForMerchants, rewardTotal, rewardDel
     const fullMotion = animationLevel === 'full';
     rewardScale.setValue(fullMotion ? 0.72 : 1);
     rewardOpacity.setValue(1);
-    rewardTranslateY.setValue(fullMotion ? 8 : 0);
+    rewardTranslateY.setValue(fullMotion ? 12 : 0);
     const animation = fullMotion
       ? Animated.parallel([
           Animated.spring(rewardScale, { toValue: 1, friction: 5, tension: 150, useNativeDriver: true }),
-          Animated.timing(rewardTranslateY, { toValue: -32, duration: 700, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+          Animated.timing(rewardTranslateY, { toValue: -38, duration: 700, easing: Easing.out(Easing.quad), useNativeDriver: true }),
           Animated.timing(rewardOpacity, { toValue: 0, duration: 700, delay: 240, useNativeDriver: true }),
         ])
       : Animated.timing(rewardOpacity, { toValue: 0, duration: 280, useNativeDriver: true });
@@ -49,121 +40,82 @@ export function HeroSection({ onGetLukas, onForMerchants, rewardTotal, rewardDel
   }, [animationLevel, rewardDelta, rewardOpacity, rewardScale, rewardTranslateY]);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setPegCurrencyIndex((current) => (current + 1) % PEG_CURRENCIES.length);
-    }, 2400);
+    if (animationLevel === 'none') return;
+    const timer = setInterval(() => setPegCurrencyIndex((current) => (current + 1) % PEG_CURRENCIES.length), animationLevel === 'full' ? 2400 : 4800);
     return () => clearInterval(timer);
-  }, []);
-
-  // Responsive breakpoints
-  const isSmallMobile = screenWidth < 375;
-  const isTablet = screenWidth >= 768 && screenWidth < 1024;
-  const isDesktop = screenWidth >= 1024;
+  }, [animationLevel]);
 
   useEffect(() => {
-    const updateDimensions = () => {
-      if (Platform.OS === 'web' && typeof window !== 'undefined') {
-        setScreenWidth(window.innerWidth);
-      } else {
-        setScreenWidth(Dimensions.get('window').width);
-      }
-    };
-
+    const updateDimensions = () => setScreenWidth(Platform.OS === 'web' && typeof window !== 'undefined' ? window.innerWidth : Dimensions.get('window').width);
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
       window.addEventListener('resize', updateDimensions);
       return () => window.removeEventListener('resize', updateDimensions);
-    } else {
-      const subscription = Dimensions.addEventListener('change', ({ window }) => {
-        setScreenWidth(window.width);
-      });
-      return () => subscription?.remove();
     }
+    const subscription = Dimensions.addEventListener('change', updateDimensions);
+    return () => subscription.remove();
   }, []);
 
-  const styles = getStyles(isDark, colors, isMobile, isSmallMobile, isTablet, isDesktop, screenWidth);
-
-  // Calculate coin size based on screen width
-  const coinSize = isSmallMobile ? 140 : isMobile ? 160 : isTablet ? 200 : 220;
+  const isSmallMobile = screenWidth < 375;
+  const isTablet = screenWidth >= 768 && screenWidth < 1024;
+  const coinSize = isSmallMobile ? 132 : isMobile ? 152 : isTablet ? 194 : 230;
+  const styles = getStyles(isDark, isMobile, isSmallMobile, isTablet);
+  const peg = PEG_CURRENCIES[pegCurrencyIndex];
 
   return (
     <LinearGradient
-      colors={isDark
-        ? ['#0B1223', '#101D32', '#112C39', '#17243B']
-        : ['#F0F5FA', '#E7EFF7', '#DDEDF2', '#E9EAF7']
-      }
+      colors={isDark ? ['#061524', '#0B2431', '#10263E'] : ['#F6FAF5', '#EEF8F2', '#EDF2FC']}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={styles.container}
     >
+      <View style={styles.gridGlow} />
       <View style={styles.content}>
-        {/* Left side - Animated Coin */}
-        <View style={styles.coinContainer}>
-          <View style={{ width: coinSize * 1.6, height: coinSize * 1.6, overflow: 'hidden' }}>
-            <LukasCoin size={coinSize} />
+        <View style={styles.visualColumn}>
+          <View style={[styles.sceneFrame, { width: coinSize * 1.6, height: coinSize * 1.6 }]}>
+            <LukasCoin size={coinSize} animationLevel={animationLevel} />
           </View>
-          <Text style={styles.coinPeg} numberOfLines={1} adjustsFontSizeToFit>
-            1 LUKAS = 1 {PEG_CURRENCIES[pegCurrencyIndex]}
-          </Text>
+          <View style={styles.pegPill}>
+            <View style={styles.pegDot} />
+            <Text style={styles.coinPeg}>1 LUKAS = 1 {peg}</Text>
+          </View>
         </View>
 
-        {/* Right side - Text + CTAs */}
-        <View style={styles.textContainer}>
-          <Text style={styles.badge} numberOfLines={1}>
-            {t('hero.badge')}
-          </Text>
-
-          <Text style={styles.title} numberOfLines={3} adjustsFontSizeToFit>
-            {t('hero.title')} <Text style={styles.titleHighlight}>{t('hero.titleHighlight')}</Text>
-            {'\n'}
+        <View style={styles.textColumn}>
+          <Text style={styles.badge}>{t('hero.badge')}</Text>
+          <Text style={styles.title}>
+            {t('hero.title')} <Text style={styles.titleHighlight}>{t('hero.titleHighlight')}</Text>{'\n'}
             {t('hero.titleSuffix')} <Text style={styles.titleGreen}>{t('hero.titleGreen')}</Text>.
           </Text>
+          <Text style={styles.subtitle}>{t('hero.subtitle')}</Text>
 
-          <Text style={styles.subtitle} numberOfLines={4}>
-            {t('hero.subtitle')}
-          </Text>
-
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity
-              onPress={onGetLukas}
-              style={styles.primaryButton}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.primaryButtonText} numberOfLines={1}>
-                {t('hero.getLukas')}
-              </Text>
-            </TouchableOpacity>
-            <View style={[styles.rewardPill, { borderColor: isDark ? '#365314' : '#A7F3D0', backgroundColor: isDark ? 'rgba(20, 83, 45, 0.4)' : 'rgba(236, 253, 245, 0.9)' }]}>
-              <Text style={[styles.rewardPillText, { color: isDark ? '#BBF7D0' : '#047857' }]}>{rewardTotal}/10 LUKAS</Text>
-              <Animated.Text style={[styles.rewardFloat, { color: isDark ? '#BBF7D0' : '#059669', opacity: rewardOpacity, transform: [{ translateY: rewardTranslateY }, { scale: rewardScale }] }]}>
-                +{rewardDelta}
-              </Animated.Text>
-              {animationLevel === 'full' ? <Animated.Text style={[styles.sparkleOne, { color: isDark ? '#D9F99D' : '#16A34A', opacity: rewardOpacity, transform: [{ translateY: rewardTranslateY }, { scale: rewardScale }] }]}>✦</Animated.Text> : null}
-              {animationLevel === 'full' ? <Animated.Text style={[styles.sparkleTwo, { color: isDark ? '#A7F3D0' : '#059669', opacity: rewardOpacity, transform: [{ translateY: rewardTranslateY }, { scale: rewardScale }] }]}>✧</Animated.Text> : null}
+          <View style={styles.actionStack}>
+            <View style={styles.buttonRow}>
+              <TouchableOpacity onPress={onGetLukas} style={styles.primaryButton} activeOpacity={0.84} accessibilityRole="button">
+                <Text style={styles.primaryButtonText}>{t('hero.getLukas')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={onForMerchants} style={styles.secondaryButton} activeOpacity={0.84} accessibilityRole="button">
+                <Text style={styles.secondaryButtonText}>{t('hero.forMerchants')}</Text>
+              </TouchableOpacity>
             </View>
 
-            <TouchableOpacity
-              onPress={onForMerchants}
-              style={styles.secondaryButton}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.secondaryButtonText} numberOfLines={1}>
-                {t('hero.forMerchants')}
-              </Text>
-            </TouchableOpacity>
+            <View style={styles.rewardPanel} accessibilityLiveRegion="polite">
+              <View style={styles.rewardHeader}>
+                <View>
+                  <Text style={styles.rewardOverline}>CLAIM PROGRESS</Text>
+                  <Text style={styles.rewardPillText}>{rewardTotal}/10 LUKAS</Text>
+                </View>
+                <View style={styles.rewardOrb}><View style={styles.rewardOrbCore} /></View>
+                <Animated.Text style={[styles.rewardFloat, { opacity: rewardOpacity, transform: [{ translateY: rewardTranslateY }, { scale: rewardScale }] }]}>+{rewardDelta}</Animated.Text>
+              </View>
+              <View style={styles.rewardSegments}>
+                {REWARD_SEGMENTS.map((segment) => <View key={segment} style={[styles.rewardSegment, segment < rewardTotal && styles.rewardSegmentFilled]} />)}
+              </View>
+            </View>
           </View>
 
-          {/* Micro badges */}
           <View style={styles.badgesContainer}>
-            {[
-              `Peg 1:1 ${PEG_CURRENCIES[pegCurrencyIndex]}`,
-              t('hero.badges.merchants'),
-              t('hero.badges.collateral'),
-            ].map((badge, index) => (
-              <View key={`${badge}-${index}`} style={styles.badgeItem}>
-                <Text style={styles.badgeText} numberOfLines={1} adjustsFontSizeToFit>
-                  {badge}
-                </Text>
-              </View>
+            {[`Peg 1:1 ${peg}`, t('hero.badges.merchants'), t('hero.badges.collateral')].map((label) => (
+              <View key={label} style={styles.badgeItem}><Text style={styles.badgeText}>{label}</Text></View>
             ))}
           </View>
         </View>
@@ -172,202 +124,76 @@ export function HeroSection({ onGetLukas, onForMerchants, rewardTotal, rewardDel
   );
 }
 
-const getStyles = (
-  isDark: boolean,
-  colors: any,
-  isMobile: boolean,
-  isSmallMobile: boolean,
-  isTablet: boolean,
-  isDesktop: boolean,
-  screenWidth: number
-) => StyleSheet.create({
+const getStyles = (isDark: boolean, isMobile: boolean, isSmallMobile: boolean, isTablet: boolean) => StyleSheet.create({
   container: {
-    minHeight: isSmallMobile ? 500 : isMobile ? 600 : isTablet ? 700 : 800,
     width: '100%',
-    paddingVertical: isSmallMobile ? 32 : isMobile ? 48 : isTablet ? 80 : 100,
-    paddingHorizontal: isSmallMobile ? 16 : isMobile ? 20 : isTablet ? 32 : 40,
-    justifyContent: 'center',
-    alignItems: 'center',
+    paddingTop: isMobile ? 96 : isTablet ? 116 : 128,
+    paddingBottom: isMobile ? 52 : isTablet ? 88 : 112,
+    paddingHorizontal: isSmallMobile ? 16 : isMobile ? 20 : 40,
     overflow: 'hidden',
+  },
+  gridGlow: {
+    position: 'absolute',
+    width: isMobile ? 310 : 540,
+    height: isMobile ? 310 : 540,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: isDark ? 'rgba(93, 230, 175, 0.16)' : 'rgba(17, 127, 83, 0.12)',
+    top: isMobile ? 116 : 92,
+    left: isMobile ? -142 : -180,
   },
   content: {
     width: '100%',
-    maxWidth: 1200,
-    flexDirection: isMobile ? 'column' : 'row',
-    alignItems: 'center',
-    justifyContent: isMobile ? 'center' : 'space-between',
-    gap: isSmallMobile ? 20 : isMobile ? 24 : isTablet ? 48 : 60,
-    flexWrap: 'wrap',
-  },
-  coinContainer: {
-    flex: isMobile ? 0 : 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: isMobile ? '100%' : 'auto',
-    minWidth: isSmallMobile ? 140 : isMobile ? 160 : isTablet ? 200 : 220,
-    maxWidth: isMobile ? '100%' : 420,
-    paddingHorizontal: isMobile ? 0 : 0,
-  },
-  coin: {
-    width: isSmallMobile ? 140 : isMobile ? 160 : isTablet ? 200 : 220,
-    height: isSmallMobile ? 140 : isMobile ? 160 : isTablet ? 200 : 220,
-    position: 'relative',
-    alignItems: 'center',
-    justifyContent: 'center',
+    maxWidth: 1160,
     alignSelf: 'center',
-  },
-  coinPeg: {
-    color: isDark ? '#A7F3D0' : '#022C22',
-    fontSize: isSmallMobile ? 10 : isMobile ? 12 : 14,
-    fontWeight: '700',
-    marginTop: 18,
-    textAlign: 'center',
-    maxWidth: '100%',
-  },
-  coinGlow: {
-    position: 'absolute',
-    width: '140%',
-    height: '140%',
-    borderRadius: 999,
-    backgroundColor: '#10B981',
-    opacity: 0.3,
-    top: '-20%',
-    left: '-20%',
-    zIndex: -1,
-  },
-  textContainer: {
-    flex: isMobile ? 0 : 1,
-    gap: isSmallMobile ? 12 : isMobile ? 14 : 16,
-    maxWidth: isMobile ? '100%' : isTablet ? 500 : 600,
-    minWidth: isMobile ? '100%' : 280,
-    width: isMobile ? '100%' : 'auto',
-    alignItems: isMobile ? 'center' : 'flex-start',
-    flexShrink: 1,
-    paddingHorizontal: isMobile ? 0 : 0,
-  },
-  badge: {
-    color: isDark ? '#9CA3AF' : '#6B7280',
-    fontSize: isSmallMobile ? 10 : isMobile ? 11 : isTablet ? 13 : 14,
-    textTransform: 'uppercase',
-    letterSpacing: isSmallMobile ? 1.2 : 1.8,
-    fontWeight: '600',
-    textAlign: isMobile ? 'center' : 'left',
-    width: '100%',
-  },
-  title: {
-    color: isDark ? '#F9FAFB' : '#111827',
-    fontSize: isSmallMobile ? 22 : isMobile ? 28 : isTablet ? 36 : 48,
-    fontWeight: '800',
-    lineHeight: isSmallMobile ? 28 : isMobile ? 36 : isTablet ? 44 : 56,
-    letterSpacing: -0.5,
-    flexShrink: 1,
-    textAlign: isMobile ? 'center' : 'left',
-    width: '100%',
-  },
-  titleHighlight: {
-    color: isDark ? '#22C55E' : '#059669',
-  },
-  titleGreen: {
-    color: '#22C55E',
-  },
-  subtitle: {
-    color: isDark ? '#9CA3AF' : '#6B7280',
-    fontSize: isSmallMobile ? 14 : isMobile ? 15 : isTablet ? 17 : 18,
-    lineHeight: isSmallMobile ? 20 : isMobile ? 22 : isTablet ? 26 : 28,
-    marginTop: 4,
-    flexShrink: 1,
-    textAlign: isMobile ? 'center' : 'left',
-    width: '100%',
-  },
-  buttonContainer: {
     flexDirection: isMobile ? 'column' : 'row',
-    gap: isSmallMobile ? 8 : 12,
-    marginTop: isSmallMobile ? 8 : 12,
-    width: '100%',
-    flexWrap: 'wrap',
-    alignItems: isMobile ? 'stretch' : 'flex-start',
-    justifyContent: isMobile ? 'center' : 'flex-start',
+    alignItems: 'center',
+    gap: isMobile ? 36 : isTablet ? 56 : 76,
   },
-  primaryButton: {
-    paddingHorizontal: isSmallMobile ? 20 : isMobile ? 24 : 28,
-    paddingVertical: isSmallMobile ? 12 : 14,
-    borderRadius: 999,
-    backgroundColor: '#22C55E',
+  visualColumn: {
+    width: isMobile ? '100%' : undefined,
+    flexGrow: 0,
+    flexShrink: 0,
+    ...(isMobile ? {} : { flex: 0.9 }),
+    minWidth: 0,
+    paddingTop: isMobile ? 36 : 0,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#22C55E',
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 8,
-    flex: isMobile ? 1 : 0,
-    minWidth: isMobile ? '100%' : 180,
   },
-  primaryButtonText: {
-    color: '#022C22',
-    fontSize: isSmallMobile ? 14 : isMobile ? 15 : isTablet ? 17 : 18,
-    fontWeight: '700',
+  sceneFrame: { alignItems: 'center', justifyContent: 'center', overflow: 'visible' },
+  pegPill: {
+    flexDirection: 'row', alignItems: 'center', alignSelf: 'center', gap: 8, minHeight: 36, paddingHorizontal: 14, borderRadius: 999,
+    backgroundColor: isDark ? 'rgba(5, 22, 35, 0.72)' : 'rgba(255, 255, 255, 0.78)', borderWidth: 1,
+    borderColor: isDark ? 'rgba(132, 234, 186, 0.34)' : 'rgba(23, 133, 88, 0.24)', marginTop: 4,
   },
-  rewardPill: {
-    minHeight: 44,
-    paddingHorizontal: 14,
-    borderRadius: 999,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
+  pegDot: { width: 7, height: 7, borderRadius: 999, backgroundColor: isDark ? '#73E9A5' : '#0C8A58' },
+  coinPeg: { color: isDark ? '#D5F7E1' : '#113F2B', fontSize: isSmallMobile ? 11 : 12, fontWeight: '800', letterSpacing: 0.15 },
+  textColumn: {
+    width: isMobile ? '100%' : undefined, flexGrow: 0, flexShrink: 1, ...(isMobile ? {} : { flex: 1.1 }), minWidth: 0, maxWidth: isMobile ? 520 : 600,
+    gap: isMobile ? 14 : 18, alignItems: isMobile ? 'center' : 'flex-start',
   },
-  rewardPillText: {
-    fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: 0.4,
-  },
-  rewardFloat: {
-    position: 'absolute',
-    top: -2,
-    right: 8,
-    fontSize: 18,
-    fontWeight: '900',
-  },
-  sparkleOne: { position: 'absolute', top: -18, left: 8, fontSize: 14, fontWeight: '900' },
-  sparkleTwo: { position: 'absolute', top: 6, right: -8, fontSize: 11, fontWeight: '900' },
-  secondaryButton: {
-    paddingHorizontal: isSmallMobile ? 20 : isMobile ? 24 : 28,
-    paddingVertical: isSmallMobile ? 12 : 14,
-    borderRadius: 999,
-    borderWidth: 1.5,
-    borderColor: isDark ? '#4B5563' : '#D1D5DB',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: isMobile ? 1 : 0,
-    minWidth: isMobile ? '100%' : 180,
-  },
-  secondaryButtonText: {
-    color: isDark ? '#E5E7EB' : '#1F2937',
-    fontSize: isSmallMobile ? 14 : isMobile ? 15 : isTablet ? 17 : 18,
-    fontWeight: '600',
-  },
-  badgesContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: isSmallMobile ? 6 : 8,
-    marginTop: isSmallMobile ? 8 : 10,
-    width: '100%',
-    justifyContent: isMobile ? 'center' : 'flex-start',
-    alignItems: 'center',
-  },
-  badgeItem: {
-    paddingHorizontal: isSmallMobile ? 10 : 12,
-    paddingVertical: isSmallMobile ? 5 : 6,
-    borderRadius: 999,
-    backgroundColor: isDark ? 'rgba(17, 24, 39, 0.8)' : 'rgba(249, 250, 251, 0.8)',
-    borderWidth: 1,
-    borderColor: isDark ? '#1F2937' : '#E5E7EB',
-    flexShrink: 1,
-  },
-  badgeText: {
-    color: isDark ? '#9CA3AF' : '#6B7280',
-    fontSize: isSmallMobile ? 9 : isMobile ? 10 : isTablet ? 11 : 12,
-    fontWeight: '500',
-  },
+  badge: { width: '100%', color: isDark ? '#9BEABB' : '#0B7147', fontSize: 12, fontWeight: '900', letterSpacing: 1.55, textTransform: 'uppercase', textAlign: isMobile ? 'center' : 'left' },
+  title: { width: '100%', color: isDark ? '#F5FFFA' : '#10271C', fontSize: isSmallMobile ? 29 : isMobile ? 35 : isTablet ? 42 : 52, fontWeight: '900', lineHeight: isSmallMobile ? 35 : isMobile ? 42 : isTablet ? 50 : 60, letterSpacing: -1.2, textAlign: isMobile ? 'center' : 'left' },
+  titleHighlight: { color: isDark ? '#97F5BC' : '#087A4A' },
+  titleGreen: { color: isDark ? '#64E89B' : '#0A9356' },
+  subtitle: { width: '100%', color: isDark ? '#C1D3CA' : '#40564A', fontSize: isSmallMobile ? 15 : isMobile ? 16 : 18, lineHeight: isSmallMobile ? 22 : isMobile ? 24 : 28, textAlign: isMobile ? 'center' : 'left' },
+  actionStack: { width: '100%', gap: 12, marginTop: 4 },
+  buttonRow: { width: '100%', flexDirection: isMobile ? 'column' : 'row', gap: 12 },
+  primaryButton: { minHeight: 54, flex: isMobile ? 0 : 1, paddingHorizontal: 24, borderRadius: 999, backgroundColor: '#36C66B', borderWidth: 1, borderColor: '#76F2A8', alignItems: 'center', justifyContent: 'center', shadowColor: '#1BBC5E', shadowOpacity: isDark ? 0.42 : 0.22, shadowRadius: 16, shadowOffset: { width: 0, height: 8 }, elevation: 8 },
+  primaryButtonText: { color: '#061B10', fontSize: 16, fontWeight: '900' },
+  secondaryButton: { minHeight: 54, flex: isMobile ? 0 : 1, paddingHorizontal: 24, borderRadius: 999, borderWidth: 1.5, borderColor: isDark ? '#789486' : '#729583', backgroundColor: isDark ? 'rgba(6, 24, 36, 0.32)' : 'rgba(255, 255, 255, 0.58)', alignItems: 'center', justifyContent: 'center' },
+  secondaryButtonText: { color: isDark ? '#E8F8EE' : '#153C29', fontSize: 16, fontWeight: '800' },
+  rewardPanel: { width: '100%', minHeight: 70, borderRadius: 18, padding: 13, backgroundColor: isDark ? 'rgba(5, 27, 38, 0.76)' : 'rgba(255, 255, 255, 0.74)', borderWidth: 1, borderColor: isDark ? 'rgba(115, 233, 165, 0.28)' : 'rgba(18, 132, 85, 0.24)', overflow: 'visible' },
+  rewardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', position: 'relative' },
+  rewardOverline: { color: isDark ? '#A8C7B3' : '#527261', fontSize: 10, fontWeight: '900', letterSpacing: 1.1 },
+  rewardPillText: { color: isDark ? '#F0FFF5' : '#0E422A', fontSize: 16, fontWeight: '900', marginTop: 1 },
+  rewardOrb: { width: 30, height: 30, borderRadius: 999, backgroundColor: isDark ? '#1A7650' : '#CBF7D8', borderWidth: 1, borderColor: isDark ? '#6EEAA4' : '#29975B', alignItems: 'center', justifyContent: 'center' },
+  rewardOrbCore: { width: 11, height: 11, borderRadius: 999, backgroundColor: '#75EEA4' },
+  rewardFloat: { position: 'absolute', right: 28, top: -7, color: isDark ? '#B9FFD2' : '#087A4A', fontSize: 21, fontWeight: '900' },
+  rewardSegments: { flexDirection: 'row', gap: 4, marginTop: 10 },
+  rewardSegment: { flex: 1, minWidth: 3, height: 5, borderRadius: 999, backgroundColor: isDark ? '#315044' : '#CEE1D5' },
+  rewardSegmentFilled: { backgroundColor: '#39CD70' },
+  badgesContainer: { width: '100%', flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: isMobile ? 'center' : 'flex-start' },
+  badgeItem: { minHeight: 30, maxWidth: '100%', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, backgroundColor: isDark ? 'rgba(17, 42, 54, 0.68)' : 'rgba(255, 255, 255, 0.7)', borderWidth: 1, borderColor: isDark ? '#294859' : '#D2E2D8' },
+  badgeText: { color: isDark ? '#C9DAD1' : '#385545', fontSize: 12, fontWeight: '700', textAlign: 'center' },
 });

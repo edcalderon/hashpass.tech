@@ -60,7 +60,12 @@ jobs:
           cache: pnpm
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile --prefer-offline
+        # The pnpm store cache can retain workspace links from a prior run.
+        # Recreate the two participating trees so duplicate @noble/hashes
+        # links cannot make the static-export gate fail with ERR_PNPM_EEXIST.
+        run: |
+          rm -rf node_modules apps/mobile-app/node_modules
+          pnpm install --frozen-lockfile --prefer-offline
 
       - name: Typecheck
         run: pnpm --filter hashpass-club-web run typecheck

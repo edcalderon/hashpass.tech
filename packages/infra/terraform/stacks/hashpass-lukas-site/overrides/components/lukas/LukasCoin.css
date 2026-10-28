@@ -14,6 +14,9 @@
 .lukas-scene__satellite--brl { left: 2%; bottom: 16%; animation-delay: -4s; }
 .lukas-scene__satellite--clp { right: 17%; bottom: 6%; animation-delay: -5s; }
 .lukas-scene[data-active="false"] * { animation-play-state: paused; }
+.lukas-scene[data-motion="reduced"] .lukas-scene__core { animation-duration: 12s; }
+.lukas-scene[data-motion="reduced"] .lukas-scene__satellite { animation-duration: 11s; }
+.lukas-scene[data-motion="none"] * { animation: none !important; }
 @keyframes lukas-coin-float { 0%,100% { transform: translateY(3px) rotateX(9deg) rotateY(-16deg) rotateZ(-5deg); } 50% { transform: translateY(-7px) rotateX(-5deg) rotateY(13deg) rotateZ(3deg); } }
 @keyframes lukas-satellite-float { 0%,100% { transform: translateY(3px); } 50% { transform: translateY(-5px); } }
 @media (prefers-reduced-motion: reduce) { .lukas-scene *, .lukas-scene *::before, .lukas-scene *::after { animation: none !important; transition: none !important; } .lukas-scene__core { transform: rotateX(7deg) rotateY(-10deg); } }

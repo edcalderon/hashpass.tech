@@ -13,6 +13,7 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 import Svg, { Circle, Path, Line } from 'react-native-svg';
+import { LukasGlyph } from './LukasGlyph';
 
 export function OmniChainSection() {
   const { colors, isDark } = useTheme();
@@ -160,7 +161,7 @@ export function OmniChainSection() {
         {/* Central Vault */}
         <View style={styles.vaultContainer}>
           <Animated.View style={[styles.vault, vaultPulseStyle]}>
-            <Text style={styles.vaultIcon}>🔐</Text>
+            <LukasGlyph name="reserve" size={isMobile ? 58 : 76} />
             <Text style={styles.vaultLabel}>{t('omnichain.vaultLabel')}</Text>
           </Animated.View>
         </View>
@@ -202,15 +203,15 @@ export function OmniChainSection() {
       {/* Features */}
       <View style={styles.featuresContainer}>
         <View style={styles.feature}>
-          <Text style={styles.featureIcon}>🌐</Text>
+          <LukasGlyph name="network" size={42} />
           <Text style={styles.featureText}>{t('omnichain.feature1')}</Text>
         </View>
         <View style={styles.feature}>
-          <Text style={styles.featureIcon}>🔍</Text>
+          <LukasGlyph name="shield" size={42} />
           <Text style={styles.featureText}>{t('omnichain.feature2')}</Text>
         </View>
         <View style={styles.feature}>
-          <Text style={styles.featureIcon}>📊</Text>
+          <LukasGlyph name="token" size={42} />
           <Text style={styles.featureText}>{t('omnichain.feature3')}</Text>
         </View>
       </View>
@@ -226,8 +227,8 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
   },
   title: {
     fontSize: isMobile ? 32 : 48,
-    fontWeight: '800',
-    color: isDark ? '#F9FAFB' : '#111827',
+    fontWeight: '900',
+    color: isDark ? '#F5FFFA' : '#10271C',
     textAlign: 'center',
     marginBottom: isMobile ? 40 : 60,
     letterSpacing: -0.5,
@@ -260,7 +261,7 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     height: isMobile ? 60 : 80,
     borderRadius: 999,
     borderWidth: 3,
-    backgroundColor: isDark ? 'rgba(17, 24, 39, 0.8)' : 'rgba(255, 255, 255, 0.9)',
+    backgroundColor: isDark ? 'rgba(7, 28, 42, 0.9)' : 'rgba(255, 255, 255, 0.96)',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
@@ -276,7 +277,7 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
   networkName: {
     fontSize: isMobile ? 12 : 14,
     fontWeight: '600',
-    color: isDark ? '#9CA3AF' : '#6B7280',
+    color: isDark ? '#C8DCD0' : '#385545',
     marginTop: 4,
   },
   vaultContainer: {
@@ -292,32 +293,29 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
   vault: {
     width: isMobile ? 120 : 160,
     height: isMobile ? 120 : 160,
-    borderRadius: 20,
-    backgroundColor: isDark ? 'rgba(34, 197, 94, 0.2)' : 'rgba(34, 197, 94, 0.1)',
-    borderWidth: 3,
-    borderColor: '#22C55E',
+    borderRadius: 26,
+    backgroundColor: isDark ? 'rgba(9, 69, 58, 0.5)' : '#E7F7EC',
+    borderWidth: 1,
+    borderColor: isDark ? '#76EEA8' : '#4ABF76',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
-    shadowColor: '#22C55E',
-    shadowOpacity: 0.5,
+    gap: 8,
+    shadowColor: '#28B965',
+    shadowOpacity: 0.35,
     shadowRadius: 20,
     shadowOffset: { width: 0, height: 0 },
     elevation: 10,
   },
-  vaultIcon: {
-    fontSize: isMobile ? 48 : 64,
-  },
   vaultLabel: {
     fontSize: isMobile ? 14 : 18,
     fontWeight: '700',
-    color: '#22C55E',
+    color: isDark ? '#B9FFD2' : '#087A4A',
     textAlign: 'center',
   },
   featuresContainer: {
     width: '100%',
     flexDirection: isMobile ? 'column' : 'row',
-    gap: 20,
+    gap: 16,
     justifyContent: 'center',
     flexWrap: 'wrap',
   },
@@ -329,19 +327,16 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     alignItems: 'center',
     gap: 12,
     padding: 16,
-    borderRadius: 12,
-    backgroundColor: isDark ? 'rgba(17, 24, 39, 0.5)' : 'rgba(249, 250, 251, 0.8)',
+    borderRadius: 18,
+    backgroundColor: isDark ? 'rgba(7, 28, 42, 0.72)' : 'rgba(247, 252, 249, 0.92)',
     borderWidth: 1,
-    borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
-  },
-  featureIcon: {
-    fontSize: 24,
+    borderColor: isDark ? 'rgba(139, 224, 176, 0.2)' : '#D7EADF',
   },
   featureText: {
     flex: 1,
     minWidth: 0,
     fontSize: isMobile ? 14 : 16,
     fontWeight: '600',
-    color: isDark ? '#E5E7EB' : '#1F2937',
+    color: isDark ? '#E6F4EB' : '#173E2A',
   },
 });
