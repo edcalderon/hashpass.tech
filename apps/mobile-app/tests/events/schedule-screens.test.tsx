@@ -651,7 +651,7 @@ describe('event schedule screens', () => {
     expect(calendarLabel.length).toBeGreaterThan(0);
     const favoriteLabel = renderer.root.findAllByProps({ accessibilityLabel: 'actions.addToFavorites' });
     expect(favoriteLabel.length).toBeGreaterThan(0);
-    expect(renderer.root.findAllByProps({ children: 'actions.sectionLabel' }).length).toBeGreaterThan(0);
+    expect(renderer.root.findAllByProps({ accessibilityLabel: 'actions.sectionLabel' }).length).toBeGreaterThan(0);
     expect(agendaSource).toContain('revealLabel');
     expect(agendaSource).toContain('styles.agendaIconAction');
 

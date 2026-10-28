@@ -1618,32 +1618,30 @@ export default function BSL2025AgendaScreen() {
             </View>
 
             <View style={[styles.agendaItemContent, isCompactAgenda && styles.agendaItemContentCompact]}>
-              <Badge
-                mode={interfaceMode}
-                tone="neutral"
-                compact
-                markerColor={typeColor}
-                leadingIcon={<NativeSafeIcon name={getAgendaTypeIcon(item.type) as NativeSafeIconName} size={13} color={colors.text.secondary} />}
-              >
-                {typeLabel}
-              </Badge>
-              <View style={styles.agendaTitleRow}>
-                <View style={styles.agendaTitleMeta}>
-                  <HoverText
-                    mode={interfaceMode}
-                    style={[styles.agendaTitle, isCompactAgenda && styles.agendaTitleCompact]}
-                    numberOfLines={isCompactAgenda ? 2 : 3}
-                    tooltipText={cleanSessionTitle(item.title)}
-                  >
-                    {cleanSessionTitle(item.title)}
-                  </HoverText>
-                  {isPast ? (
-                    <Badge mode={interfaceMode} tone="neutral">
-                      {t('badges.past')}
-                    </Badge>
-                  ) : null}
-                </View>
+              <View style={styles.agendaHeaderRow}>
+                <Badge
+                  mode={interfaceMode}
+                  tone="neutral"
+                  compact
+                  markerColor={typeColor}
+                  leadingIcon={<NativeSafeIcon name={getAgendaTypeIcon(item.type) as NativeSafeIconName} size={13} color={colors.text.secondary} />}
+                >
+                  {typeLabel}
+                </Badge>
+                {isPast ? (
+                  <Badge mode={interfaceMode} tone="neutral" compact>
+                    {t('badges.past')}
+                  </Badge>
+                ) : null}
               </View>
+              <HoverText
+                mode={interfaceMode}
+                style={[styles.agendaTitle, isCompactAgenda && styles.agendaTitleCompact]}
+                numberOfLines={isCompactAgenda ? 2 : 3}
+                tooltipText={cleanSessionTitle(item.title)}
+              >
+                {cleanSessionTitle(item.title)}
+              </HoverText>
 
               <View style={styles.locationContainer}>
                 <MaterialIcons
@@ -1653,42 +1651,6 @@ export default function BSL2025AgendaScreen() {
                   accessibilityLabel={t('labels.location')}
                 />
                 <HoverText mode={interfaceMode} style={styles.agendaLocation} numberOfLines={1}>{location}</HoverText>
-              </View>
-
-              <View style={[
-                styles.agendaItemTools,
-                isCompactAgenda && styles.agendaItemToolsCompact,
-                isWideAgenda && !isAgendaGrid && styles.agendaItemToolsWide,
-              ]}>
-                <Text style={styles.agendaActionsIntro}>
-                  {t('actions.sectionLabel', 'Session actions')}
-                </Text>
-                <View style={[
-                  styles.agendaActionsRow,
-                  !isWideAgenda && styles.agendaActionsRowMobile,
-                ]}>
-                  {renderAgendaAction(
-                    isConfirmed ? t('actions.removeFromAgenda', 'Remove from agenda') : t('actions.addToAgenda', 'Add to agenda'),
-                    <MaterialIcons name={isConfirmed ? 'check-circle' : 'add-circle-outline'} size={19} color={colors.primaryContrastText} />,
-                    () => { void handleAgendaAction(item, startTime); },
-                  )}
-                  <View style={styles.agendaSecondaryActions}>
-                    {renderAgendaIconAction(
-                      'favorite',
-                      isFavorite ? t('actions.removeFromFavorites', 'Remove from favorites') : t('actions.addToFavorites', 'Add to favorites'),
-                      isFavorite ? colors.primary : colors.text.secondary,
-                      <MaterialIcons name={isFavorite ? 'star' : 'star-border'} size={18} color={isFavorite ? colors.primary : colors.text.secondary} />,
-                      () => { void handleToggleFavorite(item); },
-                    )}
-                    {renderAgendaIconAction(
-                      'calendar',
-                      t('calendar.openPicker', 'Add to an external calendar'),
-                      colors.primary,
-                      <MaterialIcons name="event" size={18} color={colors.primary} />,
-                      () => setCalendarPickerItem(item),
-                    )}
-                  </View>
-                </View>
               </View>
 
               {!isCompactAgenda && displayDescription ? (
@@ -1731,6 +1693,41 @@ export default function BSL2025AgendaScreen() {
                   </View>
                 </View>
               ) : null}
+
+              <View
+                accessibilityLabel={t('actions.sectionLabel', 'Session actions')}
+                style={[
+                styles.agendaItemTools,
+                isCompactAgenda && styles.agendaItemToolsCompact,
+                isWideAgenda && !isAgendaGrid && styles.agendaItemToolsWide,
+              ]}>
+                <View style={[
+                  styles.agendaActionsRow,
+                  !isWideAgenda && styles.agendaActionsRowMobile,
+                ]}>
+                  {renderAgendaAction(
+                    isConfirmed ? t('actions.removeFromAgenda', 'Remove from agenda') : t('actions.addToAgenda', 'Add to agenda'),
+                    <MaterialIcons name={isConfirmed ? 'check-circle' : 'add-circle-outline'} size={19} color={colors.primaryContrastText} />,
+                    () => { void handleAgendaAction(item, startTime); },
+                  )}
+                  <View style={styles.agendaSecondaryActions}>
+                    {renderAgendaIconAction(
+                      'favorite',
+                      isFavorite ? t('actions.removeFromFavorites', 'Remove from favorites') : t('actions.addToFavorites', 'Add to favorites'),
+                      isFavorite ? colors.primary : colors.text.secondary,
+                      <MaterialIcons name={isFavorite ? 'star' : 'star-border'} size={18} color={isFavorite ? colors.primary : colors.text.secondary} />,
+                      () => { void handleToggleFavorite(item); },
+                    )}
+                    {renderAgendaIconAction(
+                      'calendar',
+                      t('calendar.openPicker', 'Add to an external calendar'),
+                      colors.primary,
+                      <MaterialIcons name="event" size={18} color={colors.primary} />,
+                      () => setCalendarPickerItem(item),
+                    )}
+                  </View>
+                </View>
+              </View>
             </View>
           </View>
         </Surface>
@@ -2244,7 +2241,7 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   },
   agendaItem: {
     backgroundColor: colors.background.paper,
-    borderLeftWidth: 3,
+    borderLeftWidth: 4,
     marginBottom: uiTokens.space.md,
     overflow: 'hidden',
     padding: 0,
@@ -2335,7 +2332,7 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     gap: uiTokens.space.xs,
     left: 0,
     minHeight: 40,
-    paddingHorizontal: uiTokens.space.sm,
+    paddingHorizontal: uiTokens.space.md,
     paddingVertical: uiTokens.space.xs,
     position: 'absolute',
     right: 0,
@@ -2371,70 +2368,62 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   },
   agendaItemContent: {
     flex: 1,
+    gap: uiTokens.space.sm,
     overflow: 'hidden',
     padding: uiTokens.space.xl,
-    paddingBottom: uiTokens.space.xl,
+    paddingBottom: uiTokens.space.lg,
     position: 'relative',
   },
-  agendaItemContentCompact: {
-    paddingHorizontal: uiTokens.space.md,
-    paddingVertical: uiTokens.space.sm,
-    paddingBottom: uiTokens.space.md,
-  },
-  agendaTitleRow: {
-    marginBottom: uiTokens.space.sm,
-    marginTop: uiTokens.space.xs,
-  },
-  agendaTitleMeta: {
+  agendaHeaderRow: {
     alignItems: 'center',
     flexDirection: 'row',
     flexWrap: 'wrap',
+    gap: uiTokens.space.sm,
+  },
+  agendaItemContentCompact: {
     gap: uiTokens.space.xs,
-    width: '100%',
+    paddingHorizontal: uiTokens.space.lg,
+    paddingVertical: uiTokens.space.md,
+    paddingBottom: uiTokens.space.md,
   },
   agendaTitle: {
-    fontSize: uiTokens.type.body,
+    fontSize: uiTokens.type.body + 1,
     fontWeight: '700',
     color: colors.text.primary,
-    flexShrink: 1,
-    lineHeight: 22,
+    letterSpacing: -0.1,
+    lineHeight: 24,
   },
   agendaTitleCompact: {
     fontSize: uiTokens.type.label,
     lineHeight: 18,
   },
   agendaItemTools: {
-    gap: uiTokens.space.xs,
-    marginBottom: uiTokens.space.md,
+    borderTopColor: colors.divider,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    marginTop: 'auto',
+    paddingTop: uiTokens.space.md,
   },
   agendaItemToolsCompact: {
-    marginBottom: uiTokens.space.sm,
+    paddingTop: uiTokens.space.sm,
   },
   agendaItemToolsWide: {
-    alignItems: 'flex-start',
-  },
-  agendaActionsIntro: {
-    color: colors.text.secondary,
-    fontSize: uiTokens.type.caption,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
+    alignItems: 'stretch',
   },
   agendaActionsRow: {
     alignItems: 'center',
     flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: uiTokens.space.sm,
+    justifyContent: 'space-between',
   },
   agendaActionsRowMobile: {
-    alignItems: 'stretch',
-    flexDirection: 'column',
-    flexWrap: 'nowrap',
+    alignItems: 'center',
+    flexDirection: 'row',
     width: '100%',
   },
   agendaSecondaryActions: {
     alignItems: 'center',
     flexDirection: 'row',
+    flexShrink: 0,
     gap: uiTokens.space.sm,
   },
   agendaActionButton: {
@@ -2446,7 +2435,7 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   },
   agendaActionButtonMobile: {
     alignSelf: 'stretch',
-    width: '100%',
+    flex: 1,
   },
   agendaIconAction: {
     flexShrink: 0,
@@ -2559,12 +2548,10 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     fontSize: 14,
     color: colors.text.secondary,
     lineHeight: 20,
-    marginBottom: 12,
   },
   speakersContainer: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 8,
     gap: 6,
   },
   speakersList: {
@@ -2603,7 +2590,6 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: uiTokens.space.xs,
-    marginBottom: uiTokens.space.sm,
   },
   agendaLocation: {
     fontSize: uiTokens.type.caption,
