@@ -40,6 +40,26 @@ describe('POST /api/lukas/claim/otp', () => {
     await expect(forwardedRequest.json()).resolves.toEqual({ email: 'ada@example.com' });
   });
 
+  it('exposes the native-client preflight and rate-limit guard', async () => {
+    const { OPTIONS, POST } = require('../../app/api/lukas/claim/otp+api');
+    expect(OPTIONS().status).toBe(204);
+
+    mockRateLimitOk.mockReturnValueOnce(false);
+    expect((await POST(requestFor({ email: 'ada@example.com', captchaToken: 'cap-token-once' }))).status).toBe(429);
+    expect(mockValidateToken).not.toHaveBeenCalled();
+  });
+
+  it('returns the expired response when CAPTCHA validation throws', async () => {
+    const { POST } = require('../../app/api/lukas/claim/otp+api');
+    mockValidateToken.mockRejectedValueOnce(new Error('captcha unavailable'));
+
+    const response = await POST(requestFor({ email: 'ada@example.com', captchaToken: 'cap-token-once' }));
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({ captchaExpired: true });
+    expect(mockSendAuthOtp).not.toHaveBeenCalled();
+  });
+
   it('rejects invalid or replayed CAPTCHA proof without sending an OTP', async () => {
     const { POST } = require('../../app/api/lukas/claim/otp+api');
     expect((await POST(requestFor({ email: 'not-an-email', captchaToken: 'cap-token-once' }))).status).toBe(400);

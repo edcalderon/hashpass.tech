@@ -3,6 +3,7 @@
 const mockGetSupabaseServerForRequest = jest.fn();
 const mockFrom = jest.fn();
 const mockValidateToken = jest.fn();
+const mockRateLimitOk = jest.fn();
 
 jest.mock('@/lib/cap-instance', () => ({
   __esModule: true,
@@ -11,6 +12,10 @@ jest.mock('@/lib/cap-instance', () => ({
 
 jest.mock('@/lib/supabase-server', () => ({
   getSupabaseServerForRequest: (request: Request) => mockGetSupabaseServerForRequest(request),
+}));
+
+jest.mock('@/lib/bsl/rateLimit', () => ({
+  rateLimitOk: (...args: unknown[]) => mockRateLimitOk(...args),
 }));
 
 type TableState = {
@@ -49,6 +54,7 @@ describe('Lukas newsletter API', () => {
     mockFrom.mockReset();
     mockGetSupabaseServerForRequest.mockReset();
     mockValidateToken.mockReset().mockResolvedValue({ success: true });
+    mockRateLimitOk.mockReset().mockReturnValue(true);
   });
 
   it('exposes the Lukas CORS preflight', async () => {
@@ -62,6 +68,27 @@ describe('Lukas newsletter API', () => {
     const { POST } = require('../../app/api/lukas/subscribe+api');
     expect((await POST(requestFor({ email: 'reader@example.com' }, 'text/plain'))).status).toBe(400);
     expect((await POST(requestFor({ email: 'not-an-email' }))).status).toBe(400);
+    expect(mockGetSupabaseServerForRequest).not.toHaveBeenCalled();
+  });
+
+  it('rejects an IP that has exceeded the subscription rate limit', async () => {
+    const { POST } = require('../../app/api/lukas/subscribe+api');
+    mockRateLimitOk.mockReturnValue(false);
+
+    const response = await POST(requestFor({ email: 'reader@example.com' }));
+
+    expect(response.status).toBe(429);
+    expect(mockValidateToken).not.toHaveBeenCalled();
+    expect(mockGetSupabaseServerForRequest).not.toHaveBeenCalled();
+  });
+
+  it('handles malformed JSON and CAPTCHA service errors', async () => {
+    const { POST } = require('../../app/api/lukas/subscribe+api');
+    const malformed = await POST(requestFor('{malformed'));
+    expect(malformed.status).toBe(400);
+
+    mockValidateToken.mockRejectedValueOnce(new Error('captcha unavailable'));
+    expect((await POST(requestFor({ email: 'reader@example.com' }))).status).toBe(400);
     expect(mockGetSupabaseServerForRequest).not.toHaveBeenCalled();
   });
 
@@ -108,6 +135,35 @@ describe('Lukas newsletter API', () => {
       alreadySubscribed: true,
       hashpassOptIn: true,
     });
+  });
+
+  it('keeps an existing opt-in when the update and HashPass lookup report errors', async () => {
+    configureSupabase({
+      lukas_newsletter_subscribers: {
+        lookup: { data: { email: 'reader@example.com', hashpass_opt_in: false }, error: null },
+        update: { error: { message: 'update failed' } },
+      },
+      newsletter_subscribers: { lookup: { data: { email: 'reader@example.com' }, error: null } },
+    });
+    const { POST } = require('../../app/api/lukas/subscribe+api');
+
+    const response = await POST(requestFor({ email: 'reader@example.com', hashpassOptIn: true }));
+
+    expect(response.status).toBe(200);
+    expect(mockFrom).toHaveBeenCalledWith('newsletter_subscribers');
+  });
+
+  it('treats duplicate subscriber writes as successful and does not duplicate HashPass opt-in', async () => {
+    configureSupabase({
+      lukas_newsletter_subscribers: { insert: { error: { code: '23505', message: 'already exists' } } },
+      newsletter_subscribers: { lookup: { data: { email: 'reader@example.com' }, error: null } },
+    });
+    const { POST } = require('../../app/api/lukas/subscribe+api');
+
+    const response = await POST(requestFor({ email: 'reader@example.com', hashpassOptIn: true }));
+
+    expect(response.status).toBe(201);
+    await expect(response.json()).resolves.toMatchObject({ alreadySubscribed: false, hashpassOptIn: true });
   });
 
   it('returns a service error when Lukas lookup or insert fails', async () => {

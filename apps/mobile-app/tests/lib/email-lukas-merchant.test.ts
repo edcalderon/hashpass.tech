@@ -62,4 +62,49 @@ describe('sendLukasMerchantInquiry', () => {
     expect(confirmation.to).toBe('ada@example.com');
     expect(confirmation.html).toContain('calendar.app.google');
   });
+
+  it('rejects invalid reply-to addresses before opening an SMTP delivery', async () => {
+    const { sendLukasMerchantInquiry } = require('../../lib/email');
+
+    await expect(sendLukasMerchantInquiry({
+      contactName: 'Ada',
+      email: 'not-an-email',
+      merchantType: 'Coffee shop',
+      description: 'Interested in LUKAS.',
+      bookingPreference: 'Book a call',
+    })).resolves.toEqual({ success: false, error: 'Invalid reply-to email address' });
+    expect(mockSendMail).not.toHaveBeenCalled();
+  });
+
+  it('returns the SMTP error when either merchant email cannot be delivered', async () => {
+    const { sendLukasMerchantInquiry } = require('../../lib/email');
+    mockSendMail
+      .mockResolvedValueOnce({ messageId: 'merchant-message' })
+      .mockRejectedValueOnce(new Error('confirmation delivery failed'));
+
+    await expect(sendLukasMerchantInquiry({
+      contactName: 'Ada',
+      email: 'ada@example.com',
+      merchantType: 'Coffee shop',
+      description: 'Interested in LUKAS.',
+      bookingPreference: 'Book a call',
+    })).resolves.toEqual({ success: false, error: 'confirmation delivery failed' });
+  });
+
+  it('reports missing SMTP configuration without attempting delivery', async () => {
+    Object.keys(process.env)
+      .filter((key) => key.startsWith('NODEMAILER_'))
+      .forEach((key) => delete process.env[key]);
+    jest.resetModules();
+    const { sendLukasMerchantInquiry } = require('../../lib/email');
+
+    await expect(sendLukasMerchantInquiry({
+      contactName: 'Ada',
+      email: 'ada@example.com',
+      merchantType: 'Coffee shop',
+      description: 'Interested in LUKAS.',
+      bookingPreference: 'Book a call',
+    })).resolves.toEqual({ success: false, error: 'Email service is not configured' });
+    expect(mockSendMail).not.toHaveBeenCalled();
+  });
 });

@@ -54,6 +54,49 @@ describe('POST /api/lukas/merchant', () => {
     await expect(response.json()).resolves.toMatchObject({ success: true, bookingUrl: 'https://calendar.app.google/vYsTa9GpamSVccAt9' });
   });
 
+  it('handles preflight, content-type, and request-rate-limit guards', async () => {
+    const { OPTIONS, POST } = require('../../app/api/lukas/merchant+api');
+    expect(OPTIONS().status).toBe(204);
+
+    expect((await POST(new Request('https://api.hashpass.tech/api/lukas/merchant', {
+      method: 'POST',
+      headers: { 'content-type': 'text/plain' },
+      body: JSON.stringify(validBody),
+    }))).status).toBe(400);
+
+    mockRateLimitOk.mockReturnValueOnce(false);
+    expect((await POST(requestFor(validBody))).status).toBe(429);
+    expect(mockValidateToken).not.toHaveBeenCalled();
+  });
+
+  it('rejects malformed requests and handles email-rate-limit and CAPTCHA failures', async () => {
+    const { POST } = require('../../app/api/lukas/merchant+api');
+    const malformed = await POST(new Request('https://api.hashpass.tech/api/lukas/merchant', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: '{malformed',
+    }));
+    expect(malformed.status).toBe(400);
+
+    mockRateLimitOk.mockReturnValueOnce(true).mockReturnValueOnce(false);
+    expect((await POST(requestFor(validBody))).status).toBe(429);
+
+    mockRateLimitOk.mockReturnValue(true);
+    mockValidateToken.mockRejectedValueOnce(new Error('captcha service unavailable'));
+    expect((await POST(requestFor(validBody))).status).toBe(400);
+    expect(mockSendLukasMerchantInquiry).not.toHaveBeenCalled();
+  });
+
+  it('returns a gateway error when inquiry delivery fails', async () => {
+    const { POST } = require('../../app/api/lukas/merchant+api');
+    mockSendLukasMerchantInquiry.mockResolvedValueOnce({ success: false, error: 'smtp unavailable' });
+
+    const response = await POST(requestFor(validBody));
+
+    expect(response.status).toBe(502);
+    await expect(response.json()).resolves.toEqual({ error: 'Unable to send the merchant request right now.' });
+  });
+
   it('rejects missing or replayed CAPTCHA proof before delivery', async () => {
     const { POST } = require('../../app/api/lukas/merchant+api');
     const missing = await POST(requestFor({ ...validBody, captchaToken: '' }));
