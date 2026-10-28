@@ -1,28 +1,25 @@
 import { getSupabaseServerForRequest } from '@/lib/supabase-server';
 import cap from '@/lib/cap-instance';
 import { rateLimitOk } from '@/lib/bsl/rateLimit';
+import { createCorsPreflightResponse, withCors } from '@/lib/cors';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+const corsOptions = {
+  methods: ['POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type'],
+} as const;
 
-const json = (body: object, status = 200) =>
-  new Response(JSON.stringify(body), {
-    status,
-    headers: { 'Content-Type': 'application/json', ...corsHeaders },
-  });
+const json = (request: Request, body: object, status = 200) =>
+  withCors(Response.json(body, { status }), request, corsOptions);
 
-export function OPTIONS() {
-  return new Response(null, { status: 204, headers: corsHeaders });
+export function OPTIONS(request?: Request) {
+  return createCorsPreflightResponse(request, corsOptions);
 }
 
 export async function POST(request: Request) {
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
-  if (!rateLimitOk(`lukas-subscribe:ip:${ip}`)) return json({ error: 'Too many requests' }, 429);
+  if (!rateLimitOk(`lukas-subscribe:ip:${ip}`)) return json(request, { error: 'Too many requests' }, 429);
   if (request.headers.get('content-type') !== 'application/json') {
-    return json({ error: 'Content-Type must be application/json' }, 400);
+    return json(request, { error: 'Content-Type must be application/json' }, 400);
   }
 
   try {
@@ -35,10 +32,10 @@ export async function POST(request: Request) {
       : 'lukas_landing';
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return json({ error: 'Please enter a valid email address' }, 400);
+      return json(request, { error: 'Please enter a valid email address' }, 400);
     }
     if (!captchaToken || captchaToken.length > 2_048) {
-      return json({ error: 'Security check required. Please solve the captcha again.', captchaExpired: true }, 400);
+      return json(request, { error: 'Security check required. Please solve the captcha again.', captchaExpired: true }, 400);
     }
     let captchaValid = false;
     try {
@@ -47,7 +44,7 @@ export async function POST(request: Request) {
       console.error('[lukas/subscribe] captcha validation failed:', captchaError);
     }
     if (!captchaValid) {
-      return json({ error: 'Security check expired. Please solve the captcha again.', captchaExpired: true }, 400);
+      return json(request, { error: 'Security check expired. Please solve the captcha again.', captchaExpired: true }, 400);
     }
 
     const supabase = getSupabaseServerForRequest(request);
@@ -59,7 +56,7 @@ export async function POST(request: Request) {
 
     if (lookupError) {
       console.error('[lukas/subscribe] lookup error:', lookupError);
-      return json({ error: 'Unable to save your subscription right now' }, 503);
+      return json(request, { error: 'Unable to save your subscription right now' }, 503);
     }
 
     if (!existingLukas) {
@@ -68,7 +65,7 @@ export async function POST(request: Request) {
         .insert([{ email, source, hashpass_opt_in: hashpassOptIn }]);
       if (insertError && insertError.code !== '23505') {
         console.error('[lukas/subscribe] insert error:', insertError);
-        return json({ error: 'Unable to save your subscription right now' }, 503);
+        return json(request, { error: 'Unable to save your subscription right now' }, 503);
       }
     } else if (hashpassOptIn && !existingLukas.hashpass_opt_in) {
       const { error: updateError } = await supabase
@@ -96,7 +93,7 @@ export async function POST(request: Request) {
       }
     }
 
-    return json({
+    return json(request, {
       success: true,
       alreadySubscribed: Boolean(existingLukas),
       hashpassOptIn,
@@ -104,6 +101,6 @@ export async function POST(request: Request) {
     }, existingLukas ? 200 : 201);
   } catch (error) {
     console.error('[lukas/subscribe] unhandled error:', error);
-    return json({ error: 'Unable to save your subscription right now' }, 500);
+    return json(request, { error: 'Unable to save your subscription right now' }, 500);
   }
 }

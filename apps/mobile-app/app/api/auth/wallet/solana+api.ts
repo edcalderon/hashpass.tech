@@ -1,20 +1,31 @@
-import { getSupabaseServerForRequest } from '../../../../lib/supabase-server';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': 'https://lukas.hashpass.tech',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
-
-export function OPTIONS() {
-  return new Response(null, { status: 204, headers: corsHeaders });
-}
 import { PublicKey } from '@solana/web3.js';
 import bs58 from 'bs58';
 import { syncPublicUserRegistry } from '../../../../lib/auth/public-user-registry';
+import { getSupabaseServerForRequest } from '../../../../lib/supabase-server';
+import {
+  createCorsPreflightResponse,
+  getCorsHeaders,
+  LUKAS_CORS_ALLOWED_ORIGINS,
+} from '../../../../lib/cors';
 
-function badRequest(message: string) {
-  return new Response(JSON.stringify({ error: message }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+const corsOptions = {
+  allowedOrigins: LUKAS_CORS_ALLOWED_ORIGINS,
+  methods: ['POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+} as const;
+
+const jsonHeaders = (request: Request) => {
+  return {
+    'Content-Type': 'application/json',
+    ...getCorsHeaders(request, corsOptions),
+  };
+};
+
+export function OPTIONS(request?: Request) {
+  return createCorsPreflightResponse(request, corsOptions);
+}
+function badRequest(message: string, request: Request) {
+  return new Response(JSON.stringify({ error: message }), { status: 400, headers: jsonHeaders(request) });
 }
 
 /**
@@ -28,12 +39,12 @@ export async function POST(request: Request) {
     const { message, signature, walletAddress } = body;
 
     if (!message || !signature || !walletAddress) {
-      return badRequest('message, signature, and walletAddress are required');
+      return badRequest('message, signature, and walletAddress are required', request);
     }
 
     // Validate Solana address format
     if (!/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(walletAddress)) {
-      return badRequest('Invalid Solana address format');
+      return badRequest('Invalid Solana address format', request);
     }
 
     const clientIp = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
@@ -51,7 +62,7 @@ export async function POST(request: Request) {
 
     if (rateLimitError) {
       console.error('Rate limit check error:', rateLimitError);
-      return new Response(JSON.stringify({ error: 'Rate limit check failed' }), { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+      return new Response(JSON.stringify({ error: 'Rate limit check failed' }), { status: 500, headers: jsonHeaders(request) });
     }
 
     if (rateLimitData && rateLimitData.length > 0) {
@@ -60,7 +71,7 @@ export async function POST(request: Request) {
         return new Response(JSON.stringify({
           error: 'Too many authentication attempts. Please try again later.',
           blockedUntil: rateLimit.blocked_until
-        }), { status: 429, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+        }), { status: 429, headers: jsonHeaders(request) });
       }
     }
 
@@ -69,7 +80,7 @@ export async function POST(request: Request) {
     const nonce = nonceMatch ? nonceMatch[1].trim() : null;
 
     if (!nonce) {
-      return badRequest('Nonce not found in message');
+      return badRequest('Nonce not found in message', request);
     }
 
     // Check if nonce exists and is valid
@@ -81,15 +92,15 @@ export async function POST(request: Request) {
       .single();
 
     if (walletError || !walletAuth) {
-      return badRequest('No valid challenge found. Please request a new challenge.');
+      return badRequest('No valid challenge found. Please request a new challenge.', request);
     }
 
     if (!walletAuth.nonce || nonce !== walletAuth.nonce) {
-      return badRequest('Invalid or expired nonce');
+      return badRequest('Invalid or expired nonce', request);
     }
 
     if (new Date(walletAuth.nonce_expires_at) < new Date()) {
-      return badRequest('Challenge expired. Please request a new one.');
+      return badRequest('Challenge expired. Please request a new one.', request);
     }
 
     // An authenticated HashPass user may attach another wallet. A wallet that
@@ -101,7 +112,7 @@ export async function POST(request: Request) {
       authenticatedUserId = authenticated.user?.id ?? null;
     }
     if (authenticatedUserId && walletAuth.user_id && walletAuth.user_id !== authenticatedUserId) {
-      return new Response(JSON.stringify({ error: 'This wallet is already linked to another user.' }), { status: 409, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+      return new Response(JSON.stringify({ error: 'This wallet is already linked to another user.' }), { status: 409, headers: jsonHeaders(request) });
     }
 
     // Verify signature
@@ -116,11 +127,11 @@ export async function POST(request: Request) {
       const isValid = await verify(signatureBytes, messageBytes, publicKeyBytes);
 
       if (!isValid) {
-        return new Response(JSON.stringify({ error: 'Invalid signature' }), { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+        return new Response(JSON.stringify({ error: 'Invalid signature' }), { status: 401, headers: jsonHeaders(request) });
       }
     } catch (error: any) {
       console.error('Signature verification error:', error);
-      return new Response(JSON.stringify({ error: 'Signature verification failed: ' + error.message }), { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+      return new Response(JSON.stringify({ error: 'Signature verification failed: ' + error.message }), { status: 401, headers: jsonHeaders(request) });
     }
 
     // Get or create user
@@ -141,7 +152,7 @@ export async function POST(request: Request) {
 
       if (createError || !newUser.user) {
         console.error('User creation error:', createError);
-        return new Response(JSON.stringify({ error: 'Failed to create user account' }), { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+        return new Response(JSON.stringify({ error: 'Failed to create user account' }), { status: 500, headers: jsonHeaders(request) });
       }
 
       userId = newUser.user.id;
@@ -191,7 +202,7 @@ export async function POST(request: Request) {
         userId,
         walletAddress,
         linkedToExistingUser: true,
-      }), { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+      }), { status: 200, headers: jsonHeaders(request) });
     }
 
     // Generate a session for the user using admin API
@@ -212,7 +223,7 @@ export async function POST(request: Request) {
       console.error('Link generation error:', linkError);
       return new Response(JSON.stringify({ 
         error: 'Failed to create session: ' + linkError.message 
-      }), { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+      }), { status: 500, headers: jsonHeaders(request) });
     }
 
     // The magic link contains the token we need
@@ -238,9 +249,9 @@ export async function POST(request: Request) {
       magicLink: magicLink,
       // Also return the full redirect URL for fallback
       redirectUrl: magicLink
-    }), { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+    }), { status: 200, headers: jsonHeaders(request) });
   } catch (error: any) {
     console.error('Solana auth error:', error);
-    return new Response(JSON.stringify({ error: 'Internal server error: ' + error.message }), { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+    return new Response(JSON.stringify({ error: 'Internal server error: ' + error.message }), { status: 500, headers: jsonHeaders(request) });
   }
 }

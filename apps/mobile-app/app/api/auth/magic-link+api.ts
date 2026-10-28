@@ -2,26 +2,23 @@ import { getSupabaseServerForRequest } from "../../../lib/supabase-server";
 import { normalizeMagicLinkRedirect } from "../../../lib/auth/magic-link-request";
 import { sendAuthenticationMagicLink } from "../../../lib/email";
 import { rateLimitOk } from "../../../lib/bsl/rateLimit";
+import { createCorsPreflightResponse, withCors } from "../../../lib/cors";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization",
-};
+const corsOptions = {
+  methods: ["POST", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+} as const;
 
-const json = (body: Record<string, unknown>, status: number) =>
-  new Response(JSON.stringify(body), {
-    status,
-    headers: { "Content-Type": "application/json", ...corsHeaders },
-  });
+const json = (request: Request, body: Record<string, unknown>, status: number) =>
+  withCors(Response.json(body, { status }), request, corsOptions);
 
 const clientIpFromRequest = (request: Request) =>
   request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
   request.headers.get("x-real-ip")?.trim() ||
   "unknown";
 
-export async function OPTIONS() {
-  return new Response(null, { status: 204, headers: corsHeaders });
+export async function OPTIONS(request?: Request) {
+  return createCorsPreflightResponse(request, corsOptions);
 }
 
 /**
@@ -35,7 +32,7 @@ export async function POST(request: Request) {
   try {
     body = await request.json();
   } catch {
-    return json({ error: "Invalid request body", code: "invalid_json" }, 400);
+    return json(request, { error: "Invalid request body", code: "invalid_json" }, 400);
   }
 
   const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
@@ -43,11 +40,11 @@ export async function POST(request: Request) {
   const locale = typeof body.locale === "string" ? body.locale : "en";
 
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return json({ error: "A valid email is required", code: "invalid_email" }, 400);
+    return json(request, { error: "A valid email is required", code: "invalid_email" }, 400);
   }
 
   if (!redirectTo) {
-    return json({ error: "Invalid sign-in callback", code: "invalid_redirect" }, 400);
+    return json(request, { error: "Invalid sign-in callback", code: "invalid_redirect" }, 400);
   }
 
   // Guard both a sender and a recipient. The recipient guard also prevents a
@@ -58,6 +55,7 @@ export async function POST(request: Request) {
     !rateLimitOk(`magic-link:email:${email}`)
   ) {
     return json(
+      request,
       { error: "Please wait before requesting another link", code: "rate_limited" },
       429,
     );
@@ -79,6 +77,7 @@ export async function POST(request: Request) {
     if (error || !tokenHash) {
       const status = (error as { status?: number } | null)?.status === 429 ? 429 : 502;
       return json(
+        request,
         {
           error: status === 429 ? "Please wait before requesting another link" : "Could not create sign-in link",
           code: status === 429 ? "rate_limited" : "magic_link_generation_failed",
@@ -112,17 +111,18 @@ export async function POST(request: Request) {
     });
     if (!delivery.success) {
       return json(
+        request,
         { error: "Could not send sign-in email", code: delivery.code },
         delivery.code === "email_not_configured" ? 503 : 502,
       );
     }
 
-    return json({ success: true, message: "Sign-in link sent" }, 200);
+    return json(request, { success: true, message: "Sign-in link sent" }, 200);
   } catch (error) {
     console.error(
       "[auth] Magic link delivery failed:",
       error instanceof Error ? error.message : String(error),
     );
-    return json({ error: "Could not send sign-in email", code: "magic_link_send_failed" }, 502);
+    return json(request, { error: "Could not send sign-in email", code: "magic_link_send_failed" }, 502);
   }
 }
