@@ -136,7 +136,7 @@ pnpm run dev          # run the mobile app from root (delegates to apps/mobile-a
 pnpm run dev:mobile   # run the mobile app explicitly
 pnpm run dev:club     # run the new hashpass.club Next.js app
 pnpm run dev:directus # run Directus Docker stack from apps/directus
-pnpm run dev:all      # run mobile app + club web app + Companion + docs + Directus (fixed ports; Companion on 5173)
+pnpm run dev:all      # run mobile app + club web app + Companion + docs + Directus + Remotion + Lukas landing (Lukas at http://127.0.0.1:4173/lukas)
 pnpm run build:mobile # build the mobile app
 pnpm run build:club   # build the hashpass.club Next.js app
 pnpm run release:club:web # release the production club web app and publish the GitHub tag

@@ -1,5 +1,5 @@
 import {Platform} from "react-native";
-import type {EventVideoCampaign, EventVideoCampaignFilm} from "../types/event-video-campaign";
+import type {EventVideoCampaign, EventVideoCampaignCaptionTrack, EventVideoCampaignFilm, EventVideoCampaignFilmMedia} from "../types/event-video-campaign";
 
 const CAMPAIGN_PATH = "/events/colombia2026/branding/campaign/";
 const LOCAL_WEB_ORIGIN = /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?$/i;
@@ -38,14 +38,28 @@ export function parseEventVideoCampaign(value: unknown, eventId: string, origin:
   const ids = new Set<EventVideoCampaignFilm["id"]>(campaign.films.map((film) => film.id));
   const requiredIds: EventVideoCampaignFilm["id"][] = ["welcome", "walkthrough", "recap"];
   if (ids.size !== 3 || !requiredIds.every((id) => ids.has(id))) return null;
-  for (const film of campaign.films) {
-    if (!film || !Number.isFinite(film.durationMs) || film.durationMs < 1000 || film.durationMs > 180000 || !film.title) return null;
-    for (const media of [film.url, film.poster, film.captions]) {
+
+  const hasSafeMedia = (media: EventVideoCampaignFilmMedia): boolean => {
+    if (!media || !Number.isFinite(media.durationMs) || media.durationMs < 1000 || media.durationMs > 180000) return false;
+    const captionTracks = media.captionTracks;
+    if (captionTracks && (!Array.isArray(captionTracks) || captionTracks.length === 0 || captionTracks.some((track: EventVideoCampaignCaptionTrack) => !track || !["en", "es"].includes(track.language) || !track.label || !track.src))) return false;
+    const urls = [media.url, media.poster, media.captions, ...(captionTracks ?? []).map((track) => track.src)];
+    return urls.every((mediaUrl) => {
       try {
-        const parsed = new URL(media);
+        const parsed = new URL(mediaUrl);
         const localHttpOrigin = parsed.protocol === "http:" && /^http:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?$/i.test(parsed.origin);
-        if ((parsed.protocol !== "https:" && !localHttpOrigin) || parsed.origin !== origin || !parsed.pathname.startsWith(CAMPAIGN_PATH)) return null;
-      } catch { return null; }
+        return (parsed.protocol === "https:" || localHttpOrigin) && parsed.origin === origin && parsed.pathname.startsWith(CAMPAIGN_PATH);
+      } catch { return false; }
+    });
+  };
+
+  for (const film of campaign.films) {
+    if (!film || !film.title || !hasSafeMedia(film)) return null;
+    if (film.alternateLocales) {
+      if (typeof film.alternateLocales !== "object") return null;
+      for (const [locale, alternate] of Object.entries(film.alternateLocales)) {
+        if (!["en", "es"].includes(locale) || !hasSafeMedia(alternate as EventVideoCampaignFilmMedia)) return null;
+      }
     }
   }
   return campaign;

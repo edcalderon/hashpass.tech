@@ -13,6 +13,7 @@ import {EventHeroLoop} from './compositions/EventHeroLoop';
 import {DiscoveryCoverLoop} from './compositions/DiscoveryCoverLoop';
 import {PartnersCoverLoop} from './compositions/PartnersCoverLoop';
 import BslCampaignFilm from './compositions/BslCampaignFilm';
+import {BslCampaignWelcome} from './compositions/BslCampaignWelcome';
 import {BSL_CAMPAIGN, validateBslCampaign} from './lib/bsl-campaign';
 import type {BslCampaignFilmConfig} from './types/BslCampaign.types';
 import {
@@ -32,7 +33,25 @@ export const RemotionRoot: React.FC = () => {
   validateBslCampaign();
   return (
     <>
-      {BSL_CAMPAIGN.films.map((film: BslCampaignFilmConfig) => (
+      <Composition
+        id="BslCampaign-welcome"
+        component={BslCampaignWelcome}
+        durationInFrames={50 * FPS}
+        fps={FPS}
+        width={WIDTH}
+        height={HEIGHT}
+        defaultProps={{locale: 'es' as const, content: BSL_CAMPAIGN.welcomeLocales.es}}
+      />
+      <Composition
+        id="BslCampaign-welcome-en"
+        component={BslCampaignWelcome}
+        durationInFrames={50 * FPS}
+        fps={FPS}
+        width={WIDTH}
+        height={HEIGHT}
+        defaultProps={{locale: 'en' as const, content: BSL_CAMPAIGN.welcomeLocales.en}}
+      />
+      {BSL_CAMPAIGN.films.filter((film: BslCampaignFilmConfig) => film.id !== 'welcome').map((film: BslCampaignFilmConfig) => (
         <Composition
           key={film.id}
           id={`BslCampaign-${film.id}`}
@@ -41,7 +60,7 @@ export const RemotionRoot: React.FC = () => {
           fps={FPS}
           width={WIDTH}
           height={HEIGHT}
-          defaultProps={{film, audioFile: film.id === 'welcome' ? 'audio/narration/es/bsl-event-landing.mp3' : film.id === 'walkthrough' ? 'audio/narration/es/bsl-agenda-browse.mp3' : 'audio/narration/es/bsl-meeting-request.mp3'}}
+          defaultProps={{film, audioFile: film.id === 'walkthrough' ? 'audio/narration/es/bsl-agenda-browse.mp3' : 'audio/narration/es/bsl-meeting-request.mp3'}}
         />
       ))}
       <Composition id="OpenProof" component={OpenProof} durationInFrames={2520} fps={30} width={1920} height={1080}/>

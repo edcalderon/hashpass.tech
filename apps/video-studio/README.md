@@ -28,14 +28,14 @@ custom build.
 ```bash
 pnpm dev:video-studio          # just the studio
 # or
-pnpm dev:all                   # studio + mobile app + club web + docs + directus
+pnpm dev:all                   # studio + mobile app + club web + docs + Directus + Lukas landing
 ```
 
-`dev:all` claims a port starting at `VIDEO_STUDIO_PORT` (default `3105`,
-auto-bumps if busy — check the "Using ports:" line it prints) and opens
-Remotion Studio there alongside the other dev servers, so you can record a
-flow from the running mobile-app/web-app dev server and drop the capture
-straight into the studio without leaving the `dev:all` session.
+`dev:all` claims `VIDEO_STUDIO_PORT` (default `3105`) and opens Remotion
+Studio there alongside the other development servers. It also builds and
+serves the Lukas landing by default at `http://127.0.0.1:4173/lukas`, using
+the same clean route as CloudFront. Set `INCLUDE_LUKAS_LANDING=false` only
+when a deliberately lighter-weight session is needed.
 
 ## Diffusion Studio handoff
 
