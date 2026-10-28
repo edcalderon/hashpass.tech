@@ -16,4 +16,7 @@ test('dev:all keeps the Lukas landing live with rebuilds and browser refreshes',
   assert.match(server, /__lukas_live_reload/);
   assert.match(server, /EventSource/);
   assert.match(server, /notifyReload/);
+  assert.match(server, /openBrowser/);
+  assert.match(server, /LUKAS_AUTO_OPEN_BROWSER/);
+  assert.match(devAll, /--no-open-browser/);
 });

@@ -36,7 +36,9 @@ Studio there alongside the other development servers. It also serves the
 Lukas landing by default at `http://127.0.0.1:4173/lukas`, using the same clean
 route as CloudFront. The local Lukas process watches its override components
 and shared UI sources, rebuilds the isolated static export after a change, and
-refreshes connected browsers automatically. Set
+refreshes connected browsers automatically. It opens the Lukas URL in the
+default browser when the local server is ready; use `--no-open-browser` or
+`LUKAS_AUTO_OPEN_BROWSER=false` for headless sessions. Set
 `INCLUDE_LUKAS_LANDING=false` only when a deliberately lighter-weight session
 is needed.
 

@@ -22,6 +22,7 @@ const watchRoots = [
 ];
 const watchFiles = [buildScript];
 const port = Number(portArg);
+const landingUrl = `http://127.0.0.1:${port}/lukas`;
 
 const contentTypes = {
   '.css': 'text/css; charset=utf-8',
@@ -52,6 +53,20 @@ const liveReloadClients = new Set();
 const watchers = new Map();
 
 const log = (message) => console.log(`[lukas] ${message}`);
+
+const openBrowser = (url) => {
+  const browserSetting = String(process.env.BROWSER || '').trim().toLowerCase();
+  const disabled = ['0', 'false', 'no', 'none'].includes(String(process.env.LUKAS_AUTO_OPEN_BROWSER || '').toLowerCase())
+    || ['0', 'false', 'no', 'none'].includes(browserSetting);
+  const ci = ['1', 'true'].includes(String(process.env.CI || '').toLowerCase());
+  if (disabled || ci) return;
+
+  const command = process.env.BROWSER || (process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'cmd.exe' : 'xdg-open');
+  const args = process.platform === 'win32' && !process.env.BROWSER ? ['/d', '/c', 'start', '', url] : [url];
+  const browser = spawn(command, args, { detached: true, stdio: 'ignore' });
+  browser.on('error', (error) => log(`Could not open the browser automatically: ${error.message}`));
+  browser.unref();
+};
 
 const routeToFile = (requestPath) => {
   const rawPath = requestPath.split('?', 1)[0];
@@ -246,6 +261,7 @@ const built = await runBuild('initial start');
 if (!built) process.exit(1);
 await refreshWatchers();
 server.listen(port, '127.0.0.1', () => {
-  log(`Live landing ready at http://127.0.0.1:${port}/lukas`);
+  log(`Live landing ready at ${landingUrl}`);
   log('Watching Lukas overrides and shared UI sources for changes.');
+  openBrowser(landingUrl);
 });

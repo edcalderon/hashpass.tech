@@ -19,6 +19,7 @@ VIDEO_STUDIO_PORT="${VIDEO_STUDIO_PORT:-3105}"
 COMPANION_PORT="${COMPANION_PORT:-5173}"
 LOCALPROOF_PORT="${LOCALPROOF_PORT:-3200}"
 LUKAS_LANDING_PORT="${LUKAS_LANDING_PORT:-4173}"
+LUKAS_AUTO_OPEN_BROWSER="${LUKAS_AUTO_OPEN_BROWSER:-true}"
 # Keep the Expo web app on 8081 so it stays out of the club app's 3000 slot.
 MOBILE_PORT="${MOBILE_PORT:-8081}"
 # Matches NEXT_PUBLIC_LINKS_API_BASE_URL / EXPO_PUBLIC_LINKS_API_BASE_URL's
@@ -75,13 +76,17 @@ for arg in "$@"; do
     --lukas-landing|--lukas)
       INCLUDE_LUKAS_LANDING=true
       ;;
+    --no-open-browser)
+      LUKAS_AUTO_OPEN_BROWSER=false
+      ;;
     *)
       echo "Unknown argument: ${arg}" >&2
-      echo "Usage: dev-all.sh [--kill-allowed] [--skip-frappe-helpdesk] [--local-proof] [--lukas-landing]" >&2
+      echo "Usage: dev-all.sh [--kill-allowed] [--skip-frappe-helpdesk] [--local-proof] [--lukas-landing] [--no-open-browser]" >&2
       exit 1
       ;;
   esac
 done
+export LUKAS_AUTO_OPEN_BROWSER
 
 # Snapshot of the user's actual request, before a failed startup below can
 # flip SKIP_FRAPPE_HELPDESK for the rest of this run -- see cleanup()'s use
