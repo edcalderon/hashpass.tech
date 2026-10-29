@@ -131,7 +131,7 @@ export function LukasWhyVideo({ locale, animationLevel, isDark, onReward }: Luka
         <div style={styles.poster as React.CSSProperties}>
           <div style={styles.posterVisual as React.CSSProperties}>
             <LukasCoin size={142} animationLevel="none" />
-            <span style={styles.posterWordmark as React.CSSProperties}>LUKAS</span>
+            <span style={styles.posterWordmark as React.CSSProperties}>$LKS</span>
           </div>
           {started ? (
             <span style={styles.loading as React.CSSProperties}>{copy.loading}</span>

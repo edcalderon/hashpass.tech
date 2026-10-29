@@ -110,3 +110,84 @@ describe('mixHex', () => {
     expect(mixHex('rgba(0,0,0,0.5)', '#ffffff', 0.5)).toBe('rgba(0,0,0,0.5)');
   });
 });
+
+describe('shared Badge interaction and tones', () => {
+  const mount = async (element: React.ReactElement) => {
+    let renderer!: ReturnType<typeof create>;
+    await act(async () => {
+      renderer = create(element);
+    });
+    return renderer;
+  };
+  const press = (r: ReturnType<typeof create>, id: string) => r.root.findAllByProps({ testID: id })
+    .find((node) => typeof node.props.onPress === 'function')!;
+
+  it('swaps an untinted pressable badge to the solid accent on hover, focus and press', async () => {
+    const r = await mount(<Badge onPress={() => undefined} badgeTestID="b">Go</Badge>);
+    const idle = flat(press(r, 'b').props.style).backgroundColor;
+    act(() => press(r, 'b').props.onHoverIn());
+    const hovered = flat(press(r, 'b').props.style).backgroundColor;
+    expect(hovered).not.toBe(idle);
+    act(() => press(r, 'b').props.onHoverOut());
+    expect(flat(press(r, 'b').props.style).backgroundColor).toBe(idle);
+    act(() => press(r, 'b').props.onFocus());
+    expect(flat(press(r, 'b').props.style).backgroundColor).toBe(hovered);
+    act(() => press(r, 'b').props.onBlur());
+    act(() => press(r, 'b').props.onPressIn());
+    expect(flat(press(r, 'b').props.style).backgroundColor).toBe(hovered);
+    act(() => press(r, 'b').props.onPressOut());
+    expect(flat(press(r, 'b').props.style).backgroundColor).toBe(idle);
+  });
+
+  it('keeps a tinted pressable badge on its hue and dims it while pressed', async () => {
+    const r = await mount(<Badge tint="#22c55e" onPress={() => undefined} badgeTestID="t">Live</Badge>);
+    const idle = flat(press(r, 't').props.style);
+    act(() => press(r, 't').props.onHoverIn());
+    expect(flat(press(r, 't').props.style).backgroundColor).toBe(idle.backgroundColor);
+    act(() => press(r, 't').props.onPressIn());
+    expect(flat(press(r, 't').props.style).opacity).toBe(0.75);
+  });
+
+  it('renders tone variants with marker, leading icon, radius and compact sizing', async () => {
+    for (const tone of ['accent', 'neutral', 'onMedia'] as const) {
+      const r = await mount(
+        <Badge tone={tone} compact radius={6} markerColor="#ff0000" leadingIcon={<Text>i</Text>} badgeTestID="x" accessibilityLabel="x">
+          Tone
+        </Badge>,
+      );
+      expect(flat(r.root.findByProps({ testID: 'x' }).props.style).borderRadius).toBe(6);
+      expect(r.root.findAllByProps({ children: 'Tone' }).length).toBeGreaterThan(0);
+      act(() => r.unmount());
+    }
+  });
+
+  it('tints in dark mode and over media with a white label', async () => {
+    const dark = await mount(<Badge mode="dark" tint="#22c55e" badgeTestID="d">Dark</Badge>);
+    expect(flat(dark.root.findByProps({ testID: 'd' }).props.style).backgroundColor).toBe(withAlpha('#22c55e', 0x2e));
+    const media = await mount(<Badge tone="onMedia" tint="#22c55e" badgeTestID="m">Media</Badge>);
+    const label = media.root.findAllByType(Text).find((n) => n.props.children === 'Media')!;
+    expect(flat(label.props.style).color).toBe('#ffffff');
+  });
+
+  it('follows the system reduced-motion setting when no override is given', async () => {
+    const info = require('react-native').AccessibilityInfo;
+    const spy = jest.spyOn(info, 'isReduceMotionEnabled').mockResolvedValue(false);
+    const r = await mount(
+      <Badge revealLabel leadingIcon={<Text>i</Text>} badgeTestID="s">System</Badge>,
+    );
+    act(() => press(r, 's').props.onHoverIn());
+    expect(r.root.findAllByType(Text).some((n) => n.props.children === 'System')).toBe(true);
+    act(() => r.unmount());
+    spy.mockRestore();
+  });
+
+  it('measures the label and sizes the expanded pill to fit it', async () => {
+    const r = await mount(
+      <Badge revealLabel motionAllowed={false} leadingIcon={<Text>i</Text>} badgeTestID="w">Measured</Badge>,
+    );
+    act(() => press(r, 'w').props.onHoverIn());
+    const label = r.root.findAllByType(Text).find((n) => n.props.children === 'Measured')!;
+    act(() => label.props.onLayout({ nativeEvent: { layout: { width: 60 } } }));
+    expect(flat(press(r, 'w').props.style).width).toBe(28 + 60 + 12);
+  });
+});
