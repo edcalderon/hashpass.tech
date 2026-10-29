@@ -9,7 +9,7 @@ import { ClubSettingsMenu } from '../components/ClubSettingsMenu';
 import { Footer } from '../components/Footer';
 import { useTheme } from '../components/ThemeProvider';
 import { formatAttendingEventDate } from '../../lib/attending-date';
-import { getAttendingEventUrl } from '../../lib/attending-url';
+import { getAttendingEventHref } from '../../lib/attending-url';
 import styles from './landing.module.css';
 
 export function AttendingLandingExperience({ events }: AttendingLandingProps) {
@@ -98,7 +98,7 @@ export function AttendingLandingExperience({ events }: AttendingLandingProps) {
                   return (
                     <article className={styles.eventSlide} key={event.slug}>
                       <Surface mode={mode} style={{ padding: 0, overflow: 'hidden', height: '100%' }}>
-                        <a className={styles.eventLink} href={getAttendingEventUrl(event.slug)}>
+                        <a className={styles.eventLink} href={getAttendingEventHref(event.slug)}>
                           <div className={styles.eventArtwork} style={{ background: `radial-gradient(circle at 84% 18%, ${event.color}70, transparent 42%), linear-gradient(138deg, #071321 8%, #102c3d 100%)` }}>
                             <div className={styles.artworkGrid} />
                             <span className={styles.eventBadge}><Badge mode="dark" tone="onMedia" compact>{t('landingUpcoming')}</Badge></span>

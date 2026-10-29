@@ -16,3 +16,9 @@ export function getAttendingEventUrl(eventSlug: string): string {
   if (subdomain === 'bsl') return `https://${subdomain}.hashpass.tech/attending/bsl/`;
   return `https://${subdomain}.hashpass.tech/`;
 }
+
+export function getAttendingEventHref(eventSlug: string): string {
+  const subdomain = getAttendingEventSubdomain(eventSlug);
+  if (process.env.NODE_ENV === 'development') return `/attending/${subdomain}/`;
+  return getAttendingEventUrl(subdomain);
+}
