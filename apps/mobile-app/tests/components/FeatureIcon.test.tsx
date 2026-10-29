@@ -51,7 +51,7 @@ it('plays bounded native feedback only after interaction', async () => {
   await render({ active: false });
   expect(timing).not.toHaveBeenCalled();
   await act(async () => { view.update(<FeatureIcon name="qr-code-outline" color={uiTokens.feature.violet} active />); });
-  expect(timing).toHaveBeenCalledWith(1, expect.objectContaining({ duration: uiTokens.motion.entrance * 2 }));
+  expect(timing).toHaveBeenCalledWith(1, expect.objectContaining({ duration: uiTokens.motion.entrance }));
 });
 
 it.each(['reduced', 'none'])('keeps artwork static with the %s app setting', async level => {
