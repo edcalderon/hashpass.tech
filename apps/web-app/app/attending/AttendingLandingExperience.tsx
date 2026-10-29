@@ -11,6 +11,7 @@ import { useTheme } from '../components/ThemeProvider';
 import { formatAttendingEventDate } from '../../lib/attending-date';
 import {
   getAttendingEventHref,
+  getAttendingLandingBrandUrl,
   getAttendingLandingUrl,
   getGenericAttendingHref,
 } from '../../lib/attending-url';
@@ -33,7 +34,7 @@ export function AttendingLandingExperience({ events, showCustomEventCard = true 
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <a className={styles.brand} href={getAttendingLandingUrl()} aria-label="HASHPASS Club attending home">
+        <a className={styles.brand} href={getAttendingLandingBrandUrl()} aria-label="HASHPASS Club attending home">
           <img src="/attending/logo-hashpass.svg" alt="" />
           <span>HASHPASS <b>CLUB</b></span>
         </a>

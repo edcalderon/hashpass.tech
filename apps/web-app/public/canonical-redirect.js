@@ -32,6 +32,10 @@
       }
     } else if (host === 'club.hashpass.tech') {
       target = 'https://hashpass.club' + path + search + hash;
+    } else if (host === 'hashpass.club') {
+      if (/^\/attending\/?$/i.test(path)) {
+        target = 'https://hashpass.club/' + search + hash;
+      }
     } else if (host === 'docs.hashpass.tech') {
       if (path === '/' || path === '/documentation' || path === '/documentation/') {
         target = 'https://hashpass.club/documentation/' + search + hash;
