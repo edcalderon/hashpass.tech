@@ -20,18 +20,16 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.189)
+## 📋 Latest Changes (v1.9.190)
 
-### Features
-
-* animate landing icons and metrics ([9d440c9](https://github.com/hashpass-tech/hashpass.tech/commit/9d440c9f4b8e4ccac35d8e54c1cd8bd6909a50e1))
-### Release Highlights
-- animate landing icons and metrics
+### Released
+- show version in event artwork footer
 
 ### Release scope
-- Compared with: `v1.9.188` (the previous global release tag)
+- Compared with: `v1.9.189` (the previous global release tag)
 
 ### Affected products & packages
+- Club web
 - Mobile app
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)

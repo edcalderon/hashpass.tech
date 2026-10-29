@@ -16,6 +16,7 @@ jest.mock('react-native-svg', () => ({
 let view: ReactTestRenderer;
 let timing: jest.SpyInstance;
 let cancel: jest.SpyInstance;
+let delay: jest.SpyInstance;
 const originalPlatform = Platform.OS;
 
 beforeEach(() => {
@@ -25,6 +26,7 @@ beforeEach(() => {
   jest.mocked(AccessibilityInfo.addEventListener).mockClear();
   jest.mocked(AppState.addEventListener).mockClear();
   timing = jest.spyOn(Reanimated, 'withTiming');
+  delay = jest.spyOn(Reanimated, 'withDelay');
   cancel = jest.spyOn(Reanimated, 'cancelAnimation');
 });
 afterEach(() => { act(() => view?.unmount()); jest.restoreAllMocks(); Platform.OS = originalPlatform; });
@@ -51,6 +53,13 @@ it('plays bounded native feedback only after interaction', async () => {
   await render({ active: false });
   expect(timing).not.toHaveBeenCalled();
   await act(async () => { view.update(<FeatureIcon name="qr-code-outline" color={uiTokens.feature.violet} active />); });
+  expect(timing).toHaveBeenCalledWith(1, expect.objectContaining({ duration: uiTokens.motion.entrance }));
+});
+
+it('stagger-delays an entering icon when an entrance delay is provided', async () => {
+  await render({ entranceDelay: uiTokens.motion.stagger });
+
+  expect(delay).toHaveBeenCalledWith(uiTokens.motion.stagger, expect.anything());
   expect(timing).toHaveBeenCalledWith(1, expect.objectContaining({ duration: uiTokens.motion.entrance }));
 });
 

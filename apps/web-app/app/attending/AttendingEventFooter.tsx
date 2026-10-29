@@ -2,6 +2,8 @@
 
 import { ArrowUpRight } from 'lucide-react';
 import { useTranslation } from '@hashpass/i18n';
+import { Badge } from '@hashpass/ui/primitives';
+import { CURRENT_VERSION, getClubVersionLabel } from '../../config/version';
 import { useTheme } from '../components/ThemeProvider';
 import type { AttendingEventFooterProps } from './types/attending.types';
 import styles from './event-footer.module.css';
@@ -11,6 +13,8 @@ export function AttendingEventFooter({ event, returnHref }: AttendingEventFooter
   const { t: tFooter } = useTranslation('footer');
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
+  const versionLabel = getClubVersionLabel(CURRENT_VERSION);
+  const versionTooltip = `Build ${CURRENT_VERSION.buildNumber} · Released ${CURRENT_VERSION.releaseDate}`;
 
   return (
     <footer className={styles.footer}>
@@ -34,16 +38,28 @@ export function AttendingEventFooter({ event, returnHref }: AttendingEventFooter
           </a>
         </div>
 
-        <nav className={styles.links} aria-label={`${event.name} · ${tFooter('legal')}`}>
-          <a href={returnHref}>{t('landingEventsTitle')}</a>
-          {event.website && (
-            <a href={event.website} target="_blank" rel="noopener noreferrer">
-              {t('eventWebsite')} <ArrowUpRight size={14} aria-hidden="true" />
-            </a>
-          )}
-          <a href="https://hashpass.club/documentation/legal/privacy-policy/">{tFooter('privacy')}</a>
-          <a href="https://hashpass.club/documentation/legal/terms-of-service/">{tFooter('terms')}</a>
-        </nav>
+        <div className={styles.meta}>
+          <nav className={styles.links} aria-label={`${event.name} · ${tFooter('legal')}`}>
+            <a href={returnHref}>{t('landingEventsTitle')}</a>
+            {event.website && (
+              <a href={event.website} target="_blank" rel="noopener noreferrer">
+                {t('eventWebsite')} <ArrowUpRight size={14} aria-hidden="true" />
+              </a>
+            )}
+            <a href="https://hashpass.club/documentation/legal/privacy-policy/">{tFooter('privacy')}</a>
+            <a href="https://hashpass.club/documentation/legal/terms-of-service/">{tFooter('terms')}</a>
+          </nav>
+          <span className={styles.version} title={versionTooltip}>
+            <Badge
+              mode={isDark ? 'dark' : 'light'}
+              tone="neutral"
+              compact
+              accessibilityLabel={`HASHPASS Club ${versionLabel}`}
+            >
+              {versionLabel}
+            </Badge>
+          </span>
+        </div>
       </div>
     </footer>
   );

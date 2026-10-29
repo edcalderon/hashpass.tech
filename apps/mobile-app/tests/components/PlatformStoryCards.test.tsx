@@ -3,6 +3,7 @@
 
 import React from 'react';
 import { act, create, type ReactTestInstance, type ReactTestRenderer } from 'react-test-renderer';
+import { AccessibilityInfo, AppState } from 'react-native';
 import type { PlatformStoryCard } from '../../components/types/PlatformStory.types';
 
 jest.mock('react-native', () => ({
@@ -153,13 +154,14 @@ const expectNoInteractiveTargets = (root: ReactTestInstance) => {
 };
 
 describe('platform story cards', () => {
-  it('renders the truthful capability cards with the shared surface and feature icon', () => {
+  it('renders the truthful capability cards with the shared surface and feature icon', async () => {
     /* eslint-disable @typescript-eslint/no-require-imports */
     const PlatformStoryCards = require('../../components/PlatformStoryCards').default;
     let renderer!: ReactTestRenderer;
 
-    act(() => {
+    await act(async () => {
       renderer = create(<PlatformStoryCards stories={[...stories]} />);
+      await Promise.resolve();
     });
 
     const text = renderer.root.findAllByType('Text' as any).map((node) => node.props.children);
@@ -168,6 +170,49 @@ describe('platform story cards', () => {
     expect(renderer.root.findAllByType('FeatureIcon' as any)).toHaveLength(9);
     expect(renderer.root.findAllByType('Image' as any)).toHaveLength(0);
     expectNoInteractiveTargets(renderer.root);
+    act(() => renderer.unmount());
+  });
+
+  it('updates native motion for accessibility and foreground changes, then removes listeners', async () => {
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    const PlatformStoryCards = require('../../components/PlatformStoryCards').default;
+    const preferenceRemove = jest.fn();
+    const appRemove = jest.fn();
+    jest.mocked(AccessibilityInfo.isReduceMotionEnabled).mockClear();
+    jest.mocked(AccessibilityInfo.addEventListener).mockClear();
+    jest.mocked(AppState.addEventListener).mockClear();
+    jest.mocked(AccessibilityInfo.isReduceMotionEnabled).mockResolvedValue(false);
+    jest.mocked(AccessibilityInfo.addEventListener).mockReturnValue({ remove: preferenceRemove } as never);
+    jest.mocked(AppState.addEventListener).mockReturnValue({ remove: appRemove } as never);
+
+    let renderer!: ReactTestRenderer;
+    await act(async () => {
+      renderer = create(<PlatformStoryCards stories={[...stories]} />);
+      await Promise.resolve();
+    });
+
+    const icons = () => renderer.root.findAllByType('FeatureIcon' as any);
+    expect(icons()[0].props.active).toBe(true);
+
+    const preferenceCalls = jest.mocked(AccessibilityInfo.addEventListener).mock.calls as unknown as
+      [string, (enabled: boolean) => void][];
+    const preferenceListener = preferenceCalls
+      .filter(([event]) => event === 'reduceMotionChanged').at(-1)?.[1];
+    const appStateListener = jest.mocked(AppState.addEventListener).mock.calls
+      .filter(([event]) => event === 'change').at(-1)?.[1] as ((state: string) => void) | undefined;
+
+    act(() => preferenceListener?.(true));
+    expect(icons()[0].props.active).toBe(false);
+    act(() => preferenceListener?.(false));
+    expect(icons()[0].props.active).toBe(true);
+    act(() => appStateListener?.('background'));
+    expect(icons()[0].props.active).toBe(false);
+    act(() => appStateListener?.('active'));
+    expect(icons()[0].props.active).toBe(true);
+
+    act(() => renderer.unmount());
+    expect(preferenceRemove).toHaveBeenCalledTimes(1);
+    expect(appRemove).toHaveBeenCalledTimes(1);
   });
 
   it('keeps the web layout responsive and presentational', () => {
@@ -190,6 +235,16 @@ describe('platform story cards', () => {
     act(() => {
       renderer = create(<PlatformStoryCardsWeb stories={[...stories]} />);
     });
+
+    const storyCards = renderer.root.findAllByType('motion.div' as any)
+      .filter((node) => typeof node.props.onViewportEnter === 'function');
+    expect(storyCards.length).toBeGreaterThan(0);
+    const metricValues = () => renderer.root.findAll((node) =>
+      typeof node.type === 'function' && node.type.name === 'PlatformStoryMetricValue',
+    );
+    expect(metricValues()[0].props.animate).toBe(false);
+    act(() => storyCards[0].props.onViewportEnter());
+    expect(metricValues().some((node) => node.props.animate)).toBe(true);
 
     const grid = renderer.root.findAllByType('div' as any).find((node) =>
       String(node.props.className).includes('max-h-[740px]'),
