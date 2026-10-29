@@ -1,3 +1,30 @@
+## [1.9.178](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.177...v1.9.178) (2026-10-29)
+
+
+### Bug Fixes
+
+* **lukas:** keep testnet CTA in the current tab ([3268100](https://github.com/hashpass-tech/hashpass.tech/commit/32681006071604c86f99f11bf774d6acb28b24f0))
+* **lukas:** replace default share favicon ([f009ad4](https://github.com/hashpass-tech/hashpass.tech/commit/f009ad4b0164007434e1ba18ead74a8ec0545741))
+
+
+### Features
+
+* **lukas:** add localized testnet CTA ([19410c9](https://github.com/hashpass-tech/hashpass.tech/commit/19410c9a301731006ba71901f51f3f64ab26567d))
+### Release Highlights
+- add localized testnet CTA; keep testnet CTA in the current tab; replace default share favicon
+
+### Release scope
+- Compared with: `v1.9.177` (the previous global release tag)
+
+### Affected products & packages
+- Club web
+- Mobile app
+- QR links API
+- Shared UI
+- Database migrations
+- Infrastructure
+- Release tooling
+
 ## [1.9.177](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.176...v1.9.177) (2026-10-29)
 
 
