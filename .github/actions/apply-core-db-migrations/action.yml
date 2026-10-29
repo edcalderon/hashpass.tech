@@ -1,0 +1,73 @@
+name: Apply core database migrations
+description: Apply the configured core migration profile before deploying application artifacts.
+inputs:
+  profile:
+    description: Explicit migration profile (core-development or core-production).
+    required: true
+  database-url:
+    description: IPv4-reachable session-mode Postgres pooler URL with permission to apply migrations.
+    required: true
+  backup-writer-role-arn:
+    description: OIDC role for storing production pre-migration dumps.
+    required: false
+  backup-bucket:
+    description: Private S3 bucket for production pre-migration dumps.
+    required: false
+  aws-account-id:
+    description: Expected HASHPASS AWS account ID for backup uploads.
+    required: false
+runs:
+  using: composite
+  steps:
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version-file: .nvmrc
+
+    - name: Install PostgreSQL client
+      shell: bash
+      run: |
+        set -euo pipefail
+        sudo apt-get update
+        sudo apt-get install --yes postgresql-client
+
+    - name: Validate migration target
+      shell: bash
+      env:
+        PROFILE: ${{ inputs.profile }}
+        DATABASE_URL: ${{ inputs.database-url }}
+        BACKUP_ROLE_ARN: ${{ inputs.backup-writer-role-arn }}
+        BACKUP_BUCKET: ${{ inputs.backup-bucket }}
+        AWS_ACCOUNT_ID: ${{ inputs.aws-account-id }}
+      run: |
+        set -euo pipefail
+        case "$PROFILE" in
+          core-development|core-production) ;;
+          *) echo "::error::Unsupported core migration profile: $PROFILE"; exit 1 ;;
+        esac
+        test -n "$DATABASE_URL" || { echo "::error::Migration database URL secret is missing for $PROFILE."; exit 1; }
+        if [ "$PROFILE" = "core-production" ]; then
+          test -n "$BACKUP_ROLE_ARN" || { echo "::error::DB_BACKUP_WRITER_ROLE_ARN is missing."; exit 1; }
+          test -n "$BACKUP_BUCKET" || { echo "::error::DB_BACKUP_BUCKET is missing."; exit 1; }
+          test -n "$AWS_ACCOUNT_ID" || { echo "::error::AWS_TARGET_ACCOUNT_ID is missing."; exit 1; }
+        fi
+
+    - name: Configure production pre-migration backup credentials
+      if: inputs.profile == 'core-production'
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: ${{ inputs.backup-writer-role-arn }}
+        role-session-name: db-migrate-${{ github.run_id }}
+        aws-region: us-east-2
+        mask-aws-account-id: true
+
+    - name: Apply pending migrations
+      shell: bash
+      env:
+        PROFILE: ${{ inputs.profile }}
+        SUPABASE_DB_URL_DEV: ${{ inputs.profile == 'core-development' && inputs.database-url || '' }}
+        SUPABASE_DB_URL_PROD: ${{ inputs.profile == 'core-production' && inputs.database-url || '' }}
+        DB_BACKUP_BUCKET: ${{ inputs.profile == 'core-production' && inputs.backup-bucket || '' }}
+        AWS_TARGET_ACCOUNT_ID: ${{ inputs.aws-account-id }}
+        AWS_REGION: us-east-2
+      run: node packages/tools/scripts/migrate-tenant-db.mjs --profile="$PROFILE"

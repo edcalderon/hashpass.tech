@@ -16,15 +16,15 @@ test('dump file names carry the profile and a sortable UTC stamp', () => {
   );
 });
 
-test('a failing dump aborts and never leaks the database URL', () => {
+test('a failing dump aborts and never leaks the database URL', async () => {
   const url = 'postgresql://user:secret@db.example:5432/postgres';
   const run = () => {
     const error = new Error('boom');
     error.stderr = Buffer.from(`could not connect to ${url}`);
     throw error;
   };
-  assert.throws(
-    () => takePreMigrationDump({ databaseUrl: url, profile: 'core-production', pending: 1, run }),
+  await assert.rejects(
+    takePreMigrationDump({ databaseUrl: url, profile: 'core-production', pending: 1, run }),
     (error) => /Pre-migration backup failed/.test(error.message) && !error.message.includes('secret'),
   );
 });

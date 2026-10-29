@@ -169,7 +169,7 @@ resource "aws_s3_bucket_policy" "db_backups" {
 # --- GitHub Actions access (OIDC, no long-lived keys) -----------------------
 #
 # Two roles with deliberately split powers:
-#   writer - may only PutObject under prod/core/ and dev/shared/ (nightly dumps).
+#   writer - may only PutObject under prod/core/, prod/pre-migration/, and dev/shared/.
 #            It cannot read, list, overwrite-by-delete, or touch prod/bsl-final/.
 #   reader - may only read those prefixes plus prod/pre-migration/ (quarterly restore drill).
 # Both trust only workflows running on this repository's main branch (scheduled
@@ -216,10 +216,14 @@ resource "aws_iam_role_policy" "writer" {
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
-      Sid      = "PutDumpsOnly"
-      Effect   = "Allow"
-      Action   = ["s3:PutObject", "s3:PutObjectTagging"]
-      Resource = ["${aws_s3_bucket.db_backups.arn}/prod/core/*", "${aws_s3_bucket.db_backups.arn}/dev/shared/*"]
+      Sid    = "PutDumpsOnly"
+      Effect = "Allow"
+      Action = ["s3:PutObject", "s3:PutObjectTagging"]
+      Resource = [
+        "${aws_s3_bucket.db_backups.arn}/prod/core/*",
+        "${aws_s3_bucket.db_backups.arn}/prod/pre-migration/*",
+        "${aws_s3_bucket.db_backups.arn}/dev/shared/*",
+      ]
     }]
   })
 }

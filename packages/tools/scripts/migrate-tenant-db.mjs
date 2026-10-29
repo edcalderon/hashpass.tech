@@ -1,21 +1,164 @@
 #!/usr/bin/env node
 
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { config as loadDotenv } from 'dotenv';
 import { needsPreMigrationDump, takePreMigrationDump } from './db-backup/pre-migration-dump.mjs';
 
 const REPO_ROOT = resolve(new URL('../../..', import.meta.url).pathname);
 const CONFIG_PATH = resolve(REPO_ROOT, 'packages/tools/scripts/config/database-profiles.json');
+const MIGRATION_LOCK_KEY = '760231847';
 
 function loadEnv() {
   for (const file of ['.env.local', '.env']) {
     const envPath = resolve(REPO_ROOT, file);
     if (existsSync(envPath)) {
-      loadDotenv({ path: envPath, override: false, quiet: true });
+      process.loadEnvFile(envPath);
     }
   }
+}
+
+function migrationLock(databaseUrl, profileName) {
+  const child = spawn('psql', [databaseUrl, '-X', '-qAt', '-v', 'ON_ERROR_STOP=1'], {
+    stdio: ['pipe', 'pipe', 'pipe'],
+    env: { ...process.env, PGCONNECT_TIMEOUT: '30' },
+  });
+  let output = '';
+  let errorOutput = '';
+  let exitStatus = null;
+  let released = false;
+  let heartbeatError = null;
+  let heartbeatTimer = null;
+  let commandChain = Promise.resolve();
+  const waiters = new Map();
+
+  child.stdout.setEncoding('utf8');
+  child.stderr.setEncoding('utf8');
+  child.stdout.on('data', (chunk) => {
+    output += chunk;
+    for (const [marker, waiter] of waiters) {
+      if (output.includes(marker)) {
+        waiters.delete(marker);
+        clearTimeout(waiter.timeout);
+        output = output.slice(output.indexOf(marker) + marker.length);
+        waiter.resolve();
+        break;
+      }
+    }
+    if (output.length > 1_000_000) output = output.slice(-1_000_000);
+  });
+  child.stderr.on('data', (chunk) => { errorOutput += chunk; });
+  child.on('error', (error) => {
+    exitStatus = { code: 'spawn-error', signal: null };
+    for (const [marker, waiter] of waiters) {
+      waiters.delete(marker);
+      clearTimeout(waiter.timeout);
+      waiter.reject(error);
+    }
+  });
+  child.on('exit', (code, signal) => {
+    exitStatus = { code, signal };
+    for (const [marker, waiter] of waiters) {
+      waiters.delete(marker);
+      clearTimeout(waiter.timeout);
+      waiter.reject(new Error(
+        `Database migration lock connection ended (${signal || code}): ${errorOutput.trim().slice(-4000).replaceAll(databaseUrl, '[REDACTED_DATABASE_URL]')}`,
+      ));
+    }
+  });
+
+  function command(sql) {
+    const execute = () => {
+      if (exitStatus) {
+        throw new Error(`Database migration lock connection is closed (${exitStatus.signal || exitStatus.code}).`);
+      }
+
+      const marker = `__HASHPASS_MIGRATION_${randomUUID().replaceAll('-', '')}__`;
+      return new Promise((resolveCommand, rejectCommand) => {
+        const timeout = setTimeout(() => {
+          waiters.delete(marker);
+          rejectCommand(new Error(`Timed out waiting for database migration lock command (${profileName}).`));
+          child.kill('SIGTERM');
+        }, 60 * 60 * 1000);
+        waiters.set(marker, { resolve: resolveCommand, reject: rejectCommand, timeout });
+
+        try {
+          child.stdin.write(`${sql}\n\\echo ${marker}\n`, (error) => {
+            if (!error) return;
+            waiters.delete(marker);
+            clearTimeout(timeout);
+            rejectCommand(error);
+          });
+        } catch (error) {
+          waiters.delete(marker);
+          clearTimeout(timeout);
+          rejectCommand(error);
+        }
+      });
+    };
+
+    const pending = commandChain.then(execute);
+    commandChain = pending.catch(() => {});
+    return pending;
+  }
+
+  const acquired = command(`SELECT pg_advisory_lock(${MIGRATION_LOCK_KEY}::bigint);`)
+    .then(() => {
+      console.log(`Acquired database migration lock for ${profileName}.`);
+      heartbeatTimer = setInterval(() => {
+        command('SELECT 1;').catch((error) => { heartbeatError = error; });
+      }, 30_000);
+      return {
+        assertHeld() {
+          if (exitStatus) {
+            throw new Error(`Database migration lock was lost (${exitStatus.signal || exitStatus.code}).`);
+          }
+          if (heartbeatError) {
+            throw new Error(`Database migration lock heartbeat failed: ${heartbeatError.message}`);
+          }
+        },
+        async apply(filePath, migrationId) {
+          this.assertHeld();
+          const id = migrationId.replaceAll("'", "''");
+          const path = filePath.replaceAll("'", "''");
+          await command(`\\i '${path}'\nINSERT INTO public.hashpass_schema_migrations (id, file_path)\nVALUES ('${id}', '${path}')\nON CONFLICT (id) DO NOTHING;`);
+          this.assertHeld();
+        },
+        async release() {
+          if (released) return;
+          released = true;
+          if (heartbeatTimer) clearInterval(heartbeatTimer);
+          if (exitStatus) return;
+          try {
+            await command(`SELECT pg_advisory_unlock(${MIGRATION_LOCK_KEY}::bigint);`);
+            const closed = new Promise((resolveExit, rejectExit) => {
+              child.once('exit', (code, signal) => {
+                if (code === 0) resolveExit();
+                else rejectExit(new Error(`Database migration lock did not close cleanly (${signal || code}).`));
+              });
+              child.once('error', rejectExit);
+            });
+            child.stdin.end('\\q\n');
+            await closed;
+          } catch (error) {
+            child.kill('SIGTERM');
+            throw error;
+          }
+        },
+      };
+    });
+
+  return {
+    async acquire() {
+      try {
+        return await acquired;
+      } catch (error) {
+        child.kill('SIGTERM');
+        throw error;
+      }
+    },
+  };
 }
 
 function parseArgs(argv) {
@@ -116,17 +259,6 @@ function hasMigration(databaseUrl, id) {
   return output.trim() === '1';
 }
 
-function markMigration(databaseUrl, id, filePath) {
-  psql(databaseUrl, [
-    '-v',
-    'ON_ERROR_STOP=1',
-    '-c',
-    `INSERT INTO public.hashpass_schema_migrations (id, file_path)
-     VALUES ($SQL$${id}$SQL$, $SQL$${filePath}$SQL$)
-     ON CONFLICT (id) DO NOTHING;`,
-  ]);
-}
-
 function resolveMigrationFiles(config, groupNames) {
   const files = [];
 
@@ -142,7 +274,7 @@ function resolveMigrationFiles(config, groupNames) {
   return [...new Set(files)];
 }
 
-function main() {
+async function main() {
   loadEnv();
 
   const args = parseArgs(process.argv.slice(2));
@@ -180,38 +312,46 @@ function main() {
     throw new Error(`Missing database URL. Set one of: ${profile.databaseUrlEnv.join(', ')}`);
   }
 
-  ensureMigrationTable(databaseUrl.value);
+  const lock = await migrationLock(databaseUrl.value, args.profile).acquire();
+  try {
+    ensureMigrationTable(databaseUrl.value);
 
-  // Production gets a verified dump before the first pending migration is applied.
-  const pending = migrationFiles.filter((filePath) => !hasMigration(databaseUrl.value, migrationIdFromPath(filePath)));
-  if (needsPreMigrationDump({ environment: profile.environment, pendingCount: pending.length, skip: args.skipBackup })) {
-    takePreMigrationDump({ databaseUrl: databaseUrl.value, profile: args.profile, pending: pending.length });
-  } else if (profile.environment === 'production' && pending.length > 0) {
-    console.warn('WARNING: --skip-backup given; applying production migrations without a pre-migration dump.');
-  }
-
-  for (const filePath of migrationFiles) {
-    const absolutePath = resolve(REPO_ROOT, filePath);
-    if (!existsSync(absolutePath)) {
-      throw new Error(`Migration file not found: ${filePath}`);
+    // Hold one database-scoped advisory lock across planning, the production
+    // safety dump, and every migration so independent CI deploy workflows
+    // cannot race each other or snapshot a half-applied schema.
+    lock.assertHeld();
+    const pending = migrationFiles.filter((filePath) => !hasMigration(databaseUrl.value, migrationIdFromPath(filePath)));
+    if (needsPreMigrationDump({ environment: profile.environment, pendingCount: pending.length, skip: args.skipBackup })) {
+      await takePreMigrationDump({ databaseUrl: databaseUrl.value, profile: args.profile, pending: pending.length });
+    } else if (profile.environment === 'production' && pending.length > 0) {
+      console.warn('WARNING: --skip-backup given; applying production migrations without a pre-migration dump.');
     }
 
-    const id = migrationIdFromPath(filePath);
-    if (hasMigration(databaseUrl.value, id)) {
-      console.log(`Skipping ${id}; already applied.`);
-      continue;
+    for (const filePath of migrationFiles) {
+      const absolutePath = resolve(REPO_ROOT, filePath);
+      if (!existsSync(absolutePath)) {
+        throw new Error(`Migration file not found: ${filePath}`);
+      }
+
+      const id = migrationIdFromPath(filePath);
+      if (hasMigration(databaseUrl.value, id)) {
+        console.log(`Skipping ${id}; already applied.`);
+        continue;
+      }
+
+      lock.assertHeld();
+      console.log(`Applying ${id}...`);
+      await lock.apply(absolutePath, id);
     }
 
-    console.log(`Applying ${id}...`);
-    psql(databaseUrl.value, ['-v', 'ON_ERROR_STOP=1', '-f', absolutePath], { stdio: 'inherit' });
-    markMigration(databaseUrl.value, id, filePath);
+    console.log('Tenant DB migration completed.');
+  } finally {
+    await lock.release();
   }
-
-  console.log('Tenant DB migration completed.');
 }
 
 try {
-  main();
+  await main();
 } catch (error) {
   console.error(`Migration failed: ${error.message}`);
   process.exit(1);

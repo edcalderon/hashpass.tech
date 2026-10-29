@@ -11,6 +11,12 @@ on:
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
       - '.nvmrc'
+      - 'db/migrations/**'
+      - 'db/migrations-mobile-bootstrap/**'
+      - 'packages/tools/scripts/config/database-profiles.json'
+      - 'packages/tools/scripts/migrate-tenant-db.mjs'
+      - 'packages/tools/scripts/db-backup/**'
+      - '.github/actions/apply-core-db-migrations/**'
       - '.github/workflows/github-hosted-tenant-site-deploy.yml'
   workflow_dispatch:
     inputs:
@@ -120,8 +126,27 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
+  migrate-database:
+    needs: targets
+    if: github.event_name == 'push' || inputs.deploy == true
+    name: Migrate core database (${{ github.ref_name == 'main' && 'production' || 'development' }})
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply core database migrations
+        uses: ./.github/actions/apply-core-db-migrations
+        with:
+          profile: ${{ github.ref_name == 'main' && 'core-production' || 'core-development' }}
+          database-url: ${{ github.ref_name == 'main' && secrets.SUPABASE_DB_URL_PROD || secrets.SUPABASE_DB_URL_DEV }}
+          backup-writer-role-arn: ${{ vars.DB_BACKUP_WRITER_ROLE_ARN }}
+          backup-bucket: ${{ vars.DB_BACKUP_BUCKET }}
+          aws-account-id: ${{ vars.AWS_TARGET_ACCOUNT_ID }}
+
   deploy:
-    needs: [targets, build]
+    needs: [targets, build, migrate-database]
     if: github.event_name == 'push' || inputs.deploy == true
     strategy:
       fail-fast: false

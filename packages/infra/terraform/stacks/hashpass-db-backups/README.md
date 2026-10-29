@@ -7,6 +7,7 @@ is local and git-ignored; do not store it in this bucket.
 | Prefix | Source | Notes |
 |--------|--------|-------|
 | `prod/core/` | core production `fxgftanraszjjyeidvia` | The only production database. |
+| `prod/pre-migration/` | core production | Verified snapshots taken by the migration runner before pending production migrations. |
 | `prod/bsl-final/` | BSL production `mnnqryrdlhddorqsrtbn` | Final dump, frozen at the 2026-10-21 consolidation. Not a restore source for current production. |
 | `dev/shared/` | shared dev `gsugeqozyeokncpbndna` | |
 
@@ -45,8 +46,8 @@ Compare the S3 `ChecksumSHA256` with the local file before deleting the local co
 
 AWS access is OIDC only, restricted to this repository's `main` branch:
 
-* `hashpass-db-backups-writer`: `PutObject` under `prod/core/*` and `dev/shared/*` only.
-* `hashpass-db-backups-reader`: `GetObject`/`ListBucket` on the same prefixes only.
+* `hashpass-db-backups-writer`: `PutObject` under `prod/core/*`, `prod/pre-migration/*`, and `dev/shared/*` only.
+* `hashpass-db-backups-reader`: `GetObject`/`ListBucket` under the current core, pre-migration, and shared-dev prefixes.
 
 Neither role can touch `prod/bsl-final/`, delete, or change the bucket.
 
@@ -63,7 +64,8 @@ Repository configuration (names only):
 * Object Lock GOVERNANCE, 14 days, on both buckets. Irreversible once enabled.
 * Replica: `hashpass-db-backups-replica-<account>-us-west-2`, versioned, locked, encrypted, no delete-marker replication.
   Same account, so it does not protect against account compromise.
-* `pnpm run db:migrate` dumps production first (`packages/tools/scripts/db-backup/pre-migration-dump.mjs`).
+* `pnpm run db:migrate` dumps production first (`packages/tools/scripts/db-backup/pre-migration-dump.mjs`). The production CI deploy jobs use the writer OIDC role to copy that verified dump to `prod/pre-migration/`; it remains outside the scheduled-backup freshness and restore-drill prefixes.
+* The writer permission for `prod/pre-migration/*` is Terraform-managed. Apply this stack's policy update before expecting production CI dumps to persist in S3; until then, CI warns and keeps only its runner-local dump.
 
 ## Freshness alarm
 
