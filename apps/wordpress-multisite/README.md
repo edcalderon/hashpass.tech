@@ -44,4 +44,6 @@ The smoke test uses a per-run unique Compose project, temporary credentials, and
 
 ## Production boundary
 
-The target architecture is one AWS Lightsail WordPress Multisite blueprint with two custom-domain sites, but this local Compose file is not the production image or deployment path. Production provisioning remains gated on a current account-level cost forecast within the $50/month cap, secret delivery, backup/restore validation, and the user's Route 53 hosted zones / reviewed DNS cutover. Do not copy local credentials, sample content, or this local database into production. Do not reuse Directus authentication or its database.
+This Compose setup remains a local-only prototype; its scripts do not provision AWS resources or DNS. The separate production Lightsail stack now serves [hashpass.blog](https://hashpass.blog) and [hashpass.news](https://hashpass.news) over HTTPS.
+
+The local demo credentials, sample posts, and database were not copied to production. Production still needs real writer/editor accounts, mail delivery, a browser-based editorial trial, and a snapshot-restore rehearsal. Do not reuse Directus authentication or its database.
