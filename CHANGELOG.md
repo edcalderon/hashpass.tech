@@ -1,3 +1,19 @@
+## [1.9.182](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.181...v1.9.182) (2026-10-29)
+
+
+### Bug Fixes
+
+* **web:** share Club navigation on attending landing ([7f8d4d0](https://github.com/hashpass-tech/hashpass.tech/commit/7f8d4d029b9917b41a57b4bb061973d3098391f4))
+### Release Highlights
+- share Club navigation on attending landing
+
+### Release scope
+- Compared with: `v1.9.181` (the previous global release tag)
+
+### Affected products & packages
+- Club web
+- Release tooling
+
 ## [1.9.181](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.180...v1.9.181) (2026-10-29)
 ### Released
 - make duplicate release tags idempotent (#538)

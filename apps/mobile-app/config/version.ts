@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610290936, // Updated to current timestamp
+  buildNumber: 202610291045, // Updated to current timestamp
   releaseDate: '2026-10-29',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,14 +30,29 @@ export const CURRENT_VERSION: VersionInfo = {
     // No new features
   ],
   bugfixes: [
-    'make duplicate release tags idempotent (#538)'
+    'share Club navigation on attending landing'
   ],
   breakingChanges: [],
-  notes: 'make duplicate release tags idempotent (#538)'
+  notes: 'share Club navigation on attending landing'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.182': {
+    version: '1.9.182',
+    buildNumber: 202610291045,
+    releaseDate: '2026-10-29',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'share Club navigation on attending landing'
+    ],
+    breakingChanges: [],
+    notes: 'share Club navigation on attending landing'
+  },
   '1.9.181': {
     version: '1.9.181',
     buildNumber: 202610290936,
