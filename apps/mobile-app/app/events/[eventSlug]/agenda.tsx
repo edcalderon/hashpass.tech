@@ -1585,6 +1585,118 @@ export default function BSL2025AgendaScreen() {
       </IconButton>
     );
 
+    if (isAgendaRow) {
+      const addLabel = isConfirmed ? t('actions.removeFromAgenda', 'Remove from agenda') : t('actions.addToAgenda', 'Add to agenda');
+      const bookmarkLabel = isFavorite ? t('actions.removeBookmark', 'Remove bookmark') : t('actions.bookmark', 'Bookmark session');
+      const title = cleanSessionTitle(item.title);
+      return (
+        <View
+          key={item.id}
+          testID={`agenda-card-${item.id}`}
+          ref={(ref) => {
+            sessionItemRefs.current[item.id] = ref;
+          }}
+        >
+          <Surface
+            mode={interfaceMode}
+            style={[
+              styles.agendaItem,
+              styles.agendaRowCard,
+              { borderLeftColor: typeColor },
+              isPast && styles.agendaItemPast,
+            ]}
+          >
+            <View testID={`agenda-card-layout-${item.id}`} style={styles.agendaRowLayout}>
+              <View testID={`agenda-card-icon-${item.id}`} style={styles.agendaRowLead}>
+                <View style={[styles.agendaRowIcon, { backgroundColor: `${typeColor}22`, borderColor: `${typeColor}66` }]}>
+                  <NativeSafeIcon name={getAgendaTypeIcon(item.type) as NativeSafeIconName} size={20} color={typeColor} />
+                </View>
+                {isConfirmed ? (
+                  <View
+                    testID={`agenda-card-on-agenda-${item.id}`}
+                    accessible
+                    accessibilityLabel={t('actions.onAgenda', 'On agenda')}
+                    style={[styles.agendaRowCheck, { backgroundColor: speakerStatusHues.active, borderColor: palette.surface }]}
+                  >
+                    <MaterialIcons name="check" size={10} color="#FFFFFF" />
+                  </View>
+                ) : null}
+              </View>
+              <View style={styles.agendaRowBody}>
+                <HoverText
+                  mode={interfaceMode}
+                  style={styles.agendaRowTitle}
+                  numberOfLines={1}
+                  tooltipText={title}
+                >
+                  {title}
+                </HoverText>
+                <View style={styles.agendaRowMeta}>
+                  <Text testID={`agenda-card-time-${item.id}`} style={styles.agendaRowTime} numberOfLines={1}>
+                    {formatAgendaCardTime(item, eventTzOffset)}
+                  </Text>
+                  <Text style={styles.agendaRowType} numberOfLines={1}>{typeLabel}</Text>
+                  <Text style={styles.agendaRowLocation} numberOfLines={1}>{location}</Text>
+                </View>
+              </View>
+              <View accessibilityLabel={t('actions.sectionLabel', 'Session actions')} style={styles.agendaRowActions}>
+                {isPast ? (
+                  <Badge
+                    revealLabel
+                    mode={isDark ? 'dark' : 'light'}
+                    tone="neutral"
+                    tint={speakerStatusHues.past}
+                    surfaceColor={palette.surface}
+                    motionAllowed={motionAllowed}
+                    leadingIcon={<MaterialIcons name="history" size={15} color={palette.muted} />}
+                    badgeTestID={`agenda-card-past-${item.id}`}
+                  >
+                    {t('badges.past')}
+                  </Badge>
+                ) : null}
+                <IconButton
+                  mode={interfaceMode}
+                  accentColor={palette.text}
+                  size={uiTokens.control.compactHeight - 8}
+                  label={bookmarkLabel}
+                  accessibilityState={{ selected: isFavorite }}
+                  onPress={() => { void handleToggleFavorite(item); }}
+                  testID={`agenda-card-bookmark-${item.id}`}
+                >
+                  <MaterialIcons
+                    name={isFavorite ? 'bookmark' : 'bookmark-border'}
+                    size={18}
+                    color={isFavorite ? bookmarkSavedColor : palette.muted}
+                  />
+                </IconButton>
+                <IconButton
+                  mode={interfaceMode}
+                  accentColor={palette.accent}
+                  size={uiTokens.control.compactHeight - 8}
+                  label={addLabel}
+                  accessibilityHint={t('actions.actionHint', 'Opens this session action')}
+                  onPress={() => { void handleAgendaAction(item, startTime); }}
+                  testID={`agenda-card-agenda-action-${item.id}`}
+                >
+                  <MaterialIcons name={isConfirmed ? 'remove-circle-outline' : 'add-circle-outline'} size={19} color={palette.accent} />
+                </IconButton>
+                <IconButton
+                  mode={interfaceMode}
+                  accentColor={colors.primary}
+                  size={uiTokens.control.compactHeight - 8}
+                  label={t('calendar.openPicker', 'Add to an external calendar')}
+                  onPress={() => setCalendarPickerItem(item)}
+                  testID={`agenda-card-calendar-${item.id}`}
+                >
+                  <MaterialIcons name="event" size={18} color={colors.primary} />
+                </IconButton>
+              </View>
+            </View>
+          </Surface>
+        </View>
+      );
+    }
+
     return (
       <View
         key={item.id}
@@ -1619,24 +1731,7 @@ export default function BSL2025AgendaScreen() {
               isCompactAgenda && !isWideAgenda && styles.agendaItemLayoutMobile,
             ]}
           >
-            {isAgendaRow ? (
-              <View testID={`agenda-card-icon-${item.id}`} style={styles.agendaRowLead}>
-                <View style={[styles.agendaRowIcon, { backgroundColor: `${typeColor}22`, borderColor: `${typeColor}66` }]}>
-                  <NativeSafeIcon name={getAgendaTypeIcon(item.type) as NativeSafeIconName} size={24} color={typeColor} />
-                </View>
-                {isConfirmed ? (
-                  <View
-                    testID={`agenda-card-on-agenda-${item.id}`}
-                    accessible
-                    accessibilityLabel={t('actions.onAgenda', 'On agenda')}
-                    style={[styles.agendaRowCheck, { backgroundColor: speakerStatusHues.active, borderColor: palette.surface }]}
-                  >
-                    <MaterialIcons name="check" size={12} color="#FFFFFF" />
-                  </View>
-                ) : null}
-              </View>
-            ) : (
-              <View
+            <View
                 testID={`agenda-card-media-${item.id}`}
                 style={[
                   styles.agendaMedia,
@@ -1719,7 +1814,6 @@ export default function BSL2025AgendaScreen() {
                   </Text>
                 </View>
               </View>
-            )}
 
             <View style={[styles.agendaItemContent, isCompactAgenda && styles.agendaItemContentCompact]}>
               <View style={styles.agendaHeaderRow}>
@@ -1783,16 +1877,6 @@ export default function BSL2025AgendaScreen() {
                   ) : null}
                 </View>
               </View>
-
-              {isAgendaRow ? (
-                <View style={styles.locationContainer}>
-                  <MaterialIcons name="schedule" size={15} color={typeColor} />
-                  <Text testID={`agenda-card-time-${item.id}`} style={styles.agendaRowTime} numberOfLines={1}>
-                    {formatAgendaCardTime(item, eventTzOffset)}
-                  </Text>
-                  <Text style={styles.agendaRowType} numberOfLines={1}>{typeLabel}</Text>
-                </View>
-              ) : null}
 
               <View style={styles.locationContainer}>
                 <MaterialIcons
@@ -2566,43 +2650,80 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
         } as any)
       : {}),
   },
-  // List view: a type-icon tile leads the row instead of the photo.
+  // List view: one compact row, a type-icon tile followed by a one-line title/meta pair and icon actions.
+  agendaRowCard: {
+    marginBottom: uiTokens.space.xs + 2,
+  },
+  agendaRowLayout: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: uiTokens.space.sm,
+    minHeight: 56,
+    paddingHorizontal: uiTokens.space.sm,
+    paddingVertical: uiTokens.space.xs + 2,
+  },
   agendaRowLead: {
-    paddingLeft: uiTokens.space.lg,
-    paddingTop: uiTokens.space.xl,
     position: 'relative',
   },
   agendaRowIcon: {
     alignItems: 'center',
-    borderRadius: uiTokens.radius.media,
+    borderRadius: uiTokens.radius.input,
     borderWidth: 1,
-    height: 48,
+    height: 40,
     justifyContent: 'center',
-    width: 48,
+    width: 40,
   },
   agendaRowCheck: {
     alignItems: 'center',
     borderRadius: uiTokens.radius.circle,
     borderWidth: 2,
     bottom: -4,
-    height: 20,
+    height: 16,
     justifyContent: 'center',
     position: 'absolute',
     right: -4,
-    width: 20,
+    width: 16,
+  },
+  agendaRowBody: {
+    flex: 1,
+    gap: 2,
+    minWidth: 0,
+  },
+  agendaRowTitle: {
+    color: colors.text.primary,
+    fontSize: uiTokens.type.label,
+    fontWeight: '700',
+  },
+  agendaRowMeta: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: uiTokens.space.sm,
+    minWidth: 0,
   },
   agendaRowTime: {
     color: colors.text.primary,
-    flexShrink: 1,
-    fontSize: uiTokens.type.label - 1,
+    flexShrink: 0,
+    fontSize: uiTokens.type.caption,
     fontWeight: '700',
   },
   agendaRowType: {
     color: colors.text.secondary,
-    flexShrink: 1,
-    fontSize: uiTokens.type.caption,
+    flexShrink: 0,
+    fontSize: uiTokens.type.caption - 1,
     fontWeight: '800',
     letterSpacing: 0.6,
+  },
+  agendaRowLocation: {
+    color: colors.text.secondary,
+    flexShrink: 1,
+    fontSize: uiTokens.type.caption,
+    minWidth: 0,
+  },
+  agendaRowActions: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    flexShrink: 0,
+    gap: 2,
   },
   agendaItemLayoutCompact: {
     minHeight: 118,

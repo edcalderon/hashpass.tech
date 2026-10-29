@@ -447,6 +447,14 @@ describe('event schedule screens', () => {
     // List view is a row card: a type-icon tile leads it and no photo is rendered.
     expect(renderer!.root.findAll((node) => String(node.props.testID ?? '').startsWith('agenda-card-media-'))).toHaveLength(0);
     expect(renderer!.root.findAll((node) => String(node.props.testID ?? '').startsWith('agenda-card-icon-')).length).toBeGreaterThan(0);
+    // Each row is one compact line: a single-line title, a meta line and icon-only actions (no wide buttons).
+    const rowIcon = renderer!.root.findAll((node) => String(node.props.testID ?? '').startsWith('agenda-card-icon-'))[0];
+    const rowId = String(rowIcon.props.testID).replace('agenda-card-icon-', '');
+    const rowCard = renderer!.root.findByProps({ testID: `agenda-card-${rowId}` });
+    expect(rowCard.findAllByType(Text).some((node) => node.props.numberOfLines === 1)).toBe(true);
+    for (const action of ['bookmark', 'agenda-action', 'calendar']) {
+      expect(rowCard.findAllByProps({ testID: `agenda-card-${action}-${rowId}` }).length).toBeGreaterThan(0);
+    }
 
     const gridButton = renderer!.root.findByProps({ accessibilityLabel: 'viewMode.grid' });
     await act(async () => {
