@@ -1,3 +1,18 @@
+## [1.9.184](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.183...v1.9.184) (2026-10-29)
+
+
+### Bug Fixes
+
+* **club-web:** show signed-in profile avatars ([fe0250a](https://github.com/hashpass-tech/hashpass.tech/commit/fe0250a6d33101aea24c8a1a93dbeb0787c31e08))
+### Release Highlights
+- show signed-in profile avatars
+
+### Release scope
+- Compared with: `v1.9.183` (the previous global release tag)
+
+### Affected products & packages
+- Club web
+
 ## [1.9.183](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.182...v1.9.183) (2026-10-29)
 
 

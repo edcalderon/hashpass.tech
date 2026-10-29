@@ -381,10 +381,6 @@
   color: var(--accent);
 }
 
-.sourceAvatar {
-  object-fit: cover;
-}
-
 .initialsPreview {
   font-family: var(--font-mono);
   font-size: 10px;

@@ -103,7 +103,15 @@ function migrationLock(databaseUrl, profileName) {
     return pending;
   }
 
-  const acquired = command(`SELECT pg_advisory_lock(${MIGRATION_LOCK_KEY}::bigint);`)
+  // Separate deploy workflows can migrate the same database concurrently. The
+  // session lock serializes them, but the database's default statement_timeout
+  // may expire while a later workflow waits for the active migration batch.
+  // Extend the timeout only for lock acquisition; SET LOCAL resets at COMMIT,
+  // so migration statements keep the database's configured timeout.
+  const acquired = command(
+    `BEGIN;\nSET LOCAL statement_timeout = '30min';\n` +
+      `SELECT pg_advisory_lock(${MIGRATION_LOCK_KEY}::bigint);\nCOMMIT;`,
+  )
     .then(() => {
       console.log(`Acquired database migration lock for ${profileName}.`);
       heartbeatTimer = setInterval(() => {
