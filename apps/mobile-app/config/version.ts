@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610292015, // Updated to current timestamp
+  buildNumber: 202610292101, // Updated to current timestamp
   releaseDate: '2026-10-29',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,14 +30,29 @@ export const CURRENT_VERSION: VersionInfo = {
     // No new features
   ],
   bugfixes: [
-    'never publish HTML with the immutable cache header'
+    'route tenant footer links to Club'
   ],
   breakingChanges: [],
-  notes: 'never publish HTML with the immutable cache header'
+  notes: 'route tenant footer links to Club'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.188': {
+    version: '1.9.188',
+    buildNumber: 202610292101,
+    releaseDate: '2026-10-29',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'route tenant footer links to Club'
+    ],
+    breakingChanges: [],
+    notes: 'route tenant footer links to Club'
+  },
   '1.9.187': {
     version: '1.9.187',
     buildNumber: 202610292015,

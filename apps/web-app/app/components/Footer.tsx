@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useTranslation } from '@hashpass/i18n';
 import { uiTokens } from '@hashpass/ui/tokens';
 import { CURRENT_VERSION, getClubVersionLabel } from '../../config/version';
+import { getClubRouteHref, isExternalClubFooterHref } from '../../lib/club-route';
 import { scrollToAnchor } from '../../lib/scroll-to-anchor';
 import { PricingDialog } from './PricingDialog';
 import { useTheme } from './ThemeProvider';
@@ -25,27 +26,27 @@ export function Footer() {
           label: t('features'),
           href: '#features',
           children: [
-            { label: t('qrLinks'), href: '/qr' },
-            { label: t('attending'), href: '/attendings/' },
+            { label: t('qrLinks'), href: getClubRouteHref('/qr') },
+            { label: t('attending'), href: getClubRouteHref('/attendings/') },
           ],
         },
         { label: t('pricing'), href: '#pricing', children: [] },
-        { label: t('docs'), href: '/documentation/', children: [] },
+        { label: t('docs'), href: getClubRouteHref('/documentation/'), children: [] },
         { label: t('status'), href: 'https://hashpass.tech/status', children: [] },
       ],
     },
     {
       title: t('company'),
       links: [
-        { label: t('about'), href: '/about/', children: [] },
+        { label: t('about'), href: getClubRouteHref('/about/'), children: [] },
         { label: t('blog'), href: '#', children: [] },
       ],
     },
     {
       title: t('legal'),
       links: [
-        { label: t('privacy'), href: '/documentation/legal/privacy-policy/', children: [] },
-        { label: t('terms'), href: '/documentation/legal/terms-of-service/', children: [] },
+        { label: t('privacy'), href: getClubRouteHref('/documentation/legal/privacy-policy/'), children: [] },
+        { label: t('terms'), href: getClubRouteHref('/documentation/legal/terms-of-service/'), children: [] },
         { label: t('deleteAccount'), href: 'https://hashpass.tech/delete-account', children: [] },
       ],
     },
@@ -167,7 +168,7 @@ export function Footer() {
                           event.preventDefault();
                           scrollToAnchor('features');
                         } : undefined}
-                        {...(link.href.startsWith('http')
+                        {...(isExternalClubFooterHref(link.href)
                           ? { target: '_blank', rel: 'noopener noreferrer' }
                           : {})}
                         style={{
@@ -198,7 +199,7 @@ export function Footer() {
                           <li key={child.label}>
                             <a
                               href={child.href}
-                              {...(child.href.startsWith('http')
+                              {...(isExternalClubFooterHref(child.href)
                                 ? { target: '_blank', rel: 'noopener noreferrer' }
                                 : {})}
                               style={{

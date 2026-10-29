@@ -1,99 +1,128 @@
-# Hashpass WordPress Multisite on AWS Lightsail
+# Hashpass WordPress Multisite operations
 
-Tracks [issue #543](https://github.com/hashpass-tech/hashpass.tech/issues/543).
+Tracks [issue #543](https://github.com/hashpass-tech/hashpass.tech/issues/543). This runbook covers the production WordPress network at `hashpass.blog` and `hashpass.news`; local editorial workflows are in [`apps/wordpress-multisite/README.md`](../../../../../apps/wordpress-multisite/README.md).
 
-This stack provisions one AWS Lightsail **Lightsail-packaged** WordPress Multisite instance and a static IPv4 in `us-east-2`. It is separate from the existing Directus SSO service and the `hashpass.club` static Next.js site. It does not import Directus users/data.
+## Production footprint
 
-The selected blueprint is `wordpress_multisite_ls_1_0` (version 7.1 in the read-only AWS check), not the older Bitnami `wordpress_multisite` blueprint. AWS has announced the Bitnami blueprints stopped receiving updates May 19, 2026, and new instances cannot be created from them starting November 19, 2026. The Lightsail-packaged blueprint is the maintained choice for a new instance.
+| Area | Deployed configuration |
+|---|---|
+| Compute | Lightsail instance `hashpass-editorial-wordpress`, blueprint `wordpress_multisite_ls_1_0`, bundle `micro_3_0` (1 GiB RAM, 40 GB SSD, 2 TiB transfer; about $7/month), availability zone `us-east-2a` |
+| Region | `us-east-2` |
+| Network | Both domains resolve to the same Lightsail static IPv4. Route 53 A records have TTL 300; Terraform looks up the existing public zones and manages the records when enabled. Get the current address with `terraform output -raw static_ip`; do not paste it into public tickets or docs. |
+| Ingress | Public TCP 80/443 for HTTP redirect and HTTPS. SSH is restricted to the approved operator workspace `/32`; do not publish the range. |
+| TLS | Let's Encrypt DNS-01 certificate covers both domains and expires **2027-01-27**. HTTP redirects to HTTPS. Renewal and expiry alerts are not automated. |
+| Snapshots | Lightsail automatic instance snapshots enabled daily at 06:00 UTC. Snapshot storage is billed separately. |
+| Editorial | Twenty Twenty-Five Multisite; Blog has its approved welcome post and native Site Editor branding. News has no real posts. No local sample content or credentials were copied to production. |
 
-## Cost baseline
+The two sites are a separate WordPress network. They do not use Directus users/data, and `hashpass.club` is unchanged. WordPress content, users, media, TLS, mail, and Site Editor customizations are not managed by Terraform.
 
-| Configuration | Instance | Two Route 53 zones | Snapshots | Approx. added monthly cost |
-|---|---:|---:|---:|---:|
-| Minimum viable start | `micro_3_0`: $7 (1 GiB RAM, 40 GB SSD, 2 TiB transfer) | ~$1 total | Seven daily snapshots; billed by stored GB | ~$8 base + actual snapshot storage |
-| Capacity fallback | `small_3_0`: $12 (2 GiB RAM, 60 GB SSD, 3 TiB transfer) | ~$1 total | Seven daily snapshots; billed by stored GB | ~$13 base + actual snapshot storage |
+### Current production gates
 
-The Lightsail bundle prices and specifications were checked read-only in `us-east-2`. AWS bills actual provisioned/used services. Estimates exclude domain registration, mail delivery, taxes, transfer above the Lightsail plan allowance, and optional services. A 1-GiB instance must pass low-volume performance/memory checks; switch to `small_3_0` if it does not. Automatic snapshots are enabled by default and their stored capacity is an additional charge.
+- No named production writers or editors have completed role acceptance in a browser. The disposable local browser trial is not production acceptance.
+- SMTP is not configured; do not rely on invitations, notifications, moderation, or password-reset email.
+- The initial administrator credential has not been securely rotated. **Do not retrieve or display the existing generated password.** Complete an approved reset/rotation that does not reveal it before onboarding writers.
+- No snapshot restore rehearsal has been completed, and actual snapshot storage cost has not yet been recorded. Rehearsal is blocked until an isolated restore path can prevent public ingress from the moment a production snapshot clone starts.
+- Certificate renewal and alerting are outstanding; complete them well before 2027-01-27.
+- Low-volume memory/load checks remain outstanding before deciding whether `micro_3_0` is sufficient.
 
-## Current deployment
+## Terraform ownership and safe changes
 
-- `hashpass.blog` is the primary site and `hashpass.news` is mapped as the second site. Both use the network-enabled Twenty Twenty-Five theme and serve distinct site titles over HTTPS.
-- Each root domain has a Route 53 A record with TTL 300 pointing to the same Lightsail static IP. Public TCP 80/443 are open; SSH remains restricted to the approved workspace IPv4 `/32`.
-- A Let's Encrypt DNS-01 certificate covers both domains and currently expires **2027-01-27**. HTTP redirects to HTTPS. Renewal is not automated and no notification email is configured; schedule renewal well before expiry.
-- The default WordPress “Hello world!” post and “Sample Page” were removed. Both sites currently have zero posts; no local test credentials or sample database were copied.
-- No named production writers/editors are configured yet. SMTP setup, a browser-based editorial trial, and a snapshot restore rehearsal remain outstanding.
+The stack in this directory manages the Lightsail instance, static IPv4 and attachment, public-port rules, automatic-snapshot schedule, and (when enabled) the two Route 53 A records. Its AWS provider is pinned to the `hashpass` profile and `us-east-2`, with an `allowed_account_ids` guard tied to the private `expected_account_id`. It does not create hosted zones or change registrar delegation. It does not configure WordPress domain mapping, accounts, passwords, themes, posts, mail, TLS/Certbot, or snapshot restoration.
 
-The account has a USD 50/month production ceiling. Before any `terraform apply`, use the `hashpass` profile, verify account identity non-printingly against the private expected account ID, and verify a current month-end account cost forecast that includes the added Lightsail and DNS/snapshot costs. Stop if the forecast is unavailable or could exceed the cap. Never apply with the legacy `default` profile.
+This stack has **no remote Terraform backend**. Its state is the local `terraform.tfstate`, ignored by Git. Preserve and protect the existing operator copy; do not initialize a fresh worktree and plan/apply against live resources without the matching state. If state is absent or resource addresses do not match, stop rather than create/import infrastructure ad hoc. `prevent_destroy` protects the Lightsail instance from an accidental destroy plan, but it does not protect the state file or the other resources.
 
-## Production gates
+The stack is excluded from `.github/workflows/infra-deploy.yml`; pushes do not apply it. Changes are operator-run and must follow these gates:
 
-1. The domain owner creates the `hashpass.blog` and `hashpass.news` public Route 53 hosted zones and reviews existing registrar delegation. This stack does not change registrar delegation.
-2. Review the current AWS bill and forecast. Month-to-date spend alone is not a complete month forecast.
-3. Confirm the account through a non-printing check against the private value; do not echo account IDs or credentials. From this directory:
+1. Use the `hashpass` AWS profile only. Before any mutation, compare its caller identity non-printingly with the private expected account ID. From the repository root, run this without shell tracing; it reads only the expected ID and never prints either value:
 
    ```bash
    set -euo pipefail
    expected_id="$(python3 - <<'PY'
    from pathlib import Path
-   for line in Path("../../../../../.env").read_text().splitlines():
-       key, separator, value = line.partition("=")
-       if separator and key.strip() == "AWS_TARGET_ACCOUNT_ID":
-           print(value.strip().strip("\\\"'").strip())
+   for line in Path('.env').read_text().splitlines():
+       key, separator, value = line.partition('=')
+       if separator and key.strip() == 'AWS_TARGET_ACCOUNT_ID':
+           print(value.strip().strip(chr(34) + chr(39)).strip())
            break
    PY
    )"
-   if [[ -z "$expected_id" ]]; then
-     echo 'Private expected AWS account ID is missing; stopping.' >&2
+   if [[ -z "$expected_id" ]] || ! actual_id="$(aws sts get-caller-identity --profile hashpass --query Account --output text 2>/dev/null)" || [[ "$actual_id" != "$expected_id" ]]; then
+     echo 'The hashpass AWS identity could not be verified; stopping.' >&2
+     unset expected_id actual_id
      exit 1
    fi
-   if ! actual="$(aws sts get-caller-identity --profile hashpass --query Account --output text 2>/dev/null)"; then
-     echo 'Could not verify the hashpass AWS identity; stopping.' >&2
-     unset expected_id
-     exit 1
-   fi
-   if [[ "$actual" != "$expected_id" ]]; then
-     echo 'The hashpass AWS identity does not match the private expected account; stopping.' >&2
-     unset actual expected_id
-     exit 1
-   fi
-   unset actual expected_id
+   unset expected_id actual_id
+   echo 'AWS identity verified.'
    ```
 
-   This reads only the expected-account setting without sourcing/evaluating the full private `.env`. Adjust the path if the repository layout changes. Do not paste credentials or account identifiers into issue comments/logs.
-4. Create a private `terraform.tfvars` from the example; set `expected_account_id` privately and replace the documentation-only `admin_ssh_cidr` with a trusted IPv4 CIDR. Never use `0.0.0.0/0` for SSH. Do not commit the private file.
-5. Keep `public_web_enabled = false` for initial provisioning. The Lightsail firewall exposes only SSH from `admin_ssh_cidr`; HTTP and HTTPS remain closed.
-6. Configure and verify valid TLS for **both** root domains and an HTTP-to-HTTPS redirect before setting `public_web_enabled = true` or entering WordPress admin credentials. The Lightsail-managed HTTPS setup is documented for the regular WordPress blueprint, not as a turnkey solution for this Multisite blueprint; the Bitnami `bncert-tool` steps do not apply to the selected image. Validate the exact Certbot/Apache procedure against the Lightsail-packaged image before production use. Do not bypass this gate or log in over HTTP.
-7. Only after the owner has created both hosted zones and reviewed the exact A-record changes, set `enable_dns_records = true` and inspect the DNS plan.
+   Never print or commit account IDs, credentials, private `.env`, or filled `terraform.tfvars`.
+2. Check the current month-end cost forecast and the `hashpass-production-monthly-max-50-usd` budget. Stop if the forecast is unavailable or could exceed the **$50/month** ceiling.
+3. Confirm the existing local state is present and matches the live stack. Review the complete plan; stop on any unexpected replacement, deletion, ingress, or DNS change.
+4. Keep SSH limited to the currently approved operator `/32`. The Terraform variable validation rejects `0.0.0.0/0` but does not enforce `/32`; review the exact planned SSH range manually. Never reuse the example CIDR in `terraform.tfvars.example`.
+5. Only change DNS after reviewing the two A-record plans. Keep public web ingress enabled only while the approved public sites require it and TLS remains valid.
 
-## Plan/apply commands
-
-Run from this directory. `terraform apply` is production provisioning and must wait for every gate above.
+From the repository root, the stack wrapper can validate and plan using the private `terraform.tfvars` in this stack directory:
 
 ```bash
-terraform init
-terraform fmt -check
-terraform validate
-terraform plan -out=tfplan
-# Apply only after reviewing the complete plan and confirming all gates:
-terraform apply tfplan
+packages/infra/terraform/scripts/stack.sh hashpass-wordpress-multisite validate
+packages/infra/terraform/scripts/stack.sh hashpass-wordpress-multisite plan
 ```
 
-Terraform restricts the stack to the supplied expected account ID. Do not output that value. Instance deletion is protected with `prevent_destroy` to avoid accidental content loss.
+Apply only after the checks above and a human review of the full plan:
 
-## Remaining production operations
+```bash
+packages/infra/terraform/scripts/stack.sh hashpass-wordpress-multisite apply
+```
 
-1. Retrieve the initial application password privately from the Lightsail SSH session using `cat ~/application_credentials`. Never print it in logs or put it in Terraform outputs. Store it in the approved password manager and rotate it after the first secure sign-in.
-2. Create named accounts using real editorial email addresses. Keep Blog Contributors scoped to Blog, News Contributors scoped to News, and assign shared Editors to each site separately. Keep Super Admin membership minimal.
-3. Complete a browser trial with separate writer and editor accounts, including draft/publish permissions, site isolation, login cookies, and mobile behavior. The local smoke test already covers role boundaries, but production accounts still need live verification.
-4. Configure mail delivery before relying on invitations, notifications, or password resets.
-5. Complete and document a snapshot restore rehearsal; record actual snapshot storage cost.
-6. Establish a certificate renewal process and renew before 2027-01-27. The current certificate was issued with Route 53 DNS-01; do not store AWS credentials on the Lightsail instance.
+The wrapper defaults to `terraform.tfvars`. Keep that file, `terraform.tfstate`, and saved plans out of Git; saved plans can contain resolved sensitive values. Do not run `destroy` for this production stack.
 
-Useful AWS documentation:
+### Host access
 
-- [Migrate from Bitnami to Lightsail-packaged blueprints](https://docs.aws.amazon.com/lightsail/latest/userguide/migrate-from-bitnami-to-lightsail-blueprints.html)
-- [Set up WordPress Multisite on Lightsail](https://docs.aws.amazon.com/lightsail/latest/userguide/amazon-lightsail-quick-start-guide-wordpress-multisite.html)
-- [Add blogs as domains to WordPress Multisite](https://docs.aws.amazon.com/lightsail/latest/userguide/amazon-lightsail-add-blogs-as-domains-to-your-wordpress-multisite.html)
-- [Lightsail WordPress Let's Encrypt walkthrough](https://docs.aws.amazon.com/lightsail/latest/userguide/amazon-lightsail-lets-encrypt-certbot-wordpress.html) — it documents a related regular WordPress image; validate compatibility before adapting it to Multisite.
+Routine publishing and site appearance changes belong in WordPress Admin, not an SSH session. For approved host maintenance, obtain short-lived Lightsail SSH access from the operator workstation using the `hashpass` profile. Keep returned key material only in a mode-0700 temporary directory with mode-0600 key files, verify host fingerprints against an independently trusted value, run only the required command, then remove the temporary files. Never print the access-details response, put AWS credentials on the instance, or put credentials in shell history, logs, issues, or screenshots. If this verified short-lived access path is unavailable, stop rather than opening SSH more broadly.
 
-The stack deliberately does not create WordPress users/passwords, install paid plugins, import Directus data, or publish content. Those are handled after an administrator securely completes first-run setup.
+Use WP-CLI only for narrowly scoped maintenance after the host is verified. Do not read the blueprint's initial password file; rotate the administrator credential through an approved non-disclosing reset path. See the editorial runbook for dashboard and role workflows.
+
+## Snapshots and recovery
+
+Daily Lightsail instance snapshots are the only configured backup in this stack; there is no separate WordPress database/content export or automated restore. Snapshot storage cost has not been reconciled. A successful snapshot is not a substitute for a tested restore, and no RTO/RPO is claimed yet.
+
+### Blocking isolation gate
+
+AWS documents that custom firewall rules do not copy from the source instance when restoring from a snapshot. A new WordPress Lightsail instance receives default rules allowing SSH, HTTP, and HTTPS from all IP addresses; IPv4 and IPv6 firewalls are independent. The documented create-from-snapshot workflow does not accept custom firewall rules in the create request. Closing ports immediately afterward reduces the exposure window but does **not** prevent exposure from the moment the public clone starts.
+
+**Do not create a public Lightsail clone of a production snapshot for rehearsal unless a verified control prevents all public ingress from the moment the clone starts.** Use an approved isolated restore environment that has no public ingress at boot (for example, a separately validated private-network restore path). That alternative is not currently configured and must be costed against the $50/month ceiling. If pre-ingress isolation cannot be guaranteed, keep the rehearsal blocked and agree on another recovery-validation method; immediate firewall lockdown alone is not an acceptable control.
+
+Once an isolated test instance exists:
+
+1. Treat it as production-sensitive: it contains production data and TLS/authentication key material. Do not attach the production static IP or change public DNS.
+2. Verify both independent IPv4 and IPv6 firewalls before connecting. Remove broad defaults, allow SSH only from the approved operator `/32`, and keep 80/443 closed unless temporarily restricted to the operator for testing.
+3. Use an isolated hostname/host override to verify both sites, posts/media, site mapping, roles, theme customizations, HTTPS behavior, and admin access.
+4. Record snapshot age, restore duration, missing data, and snapshot storage cost. Confirm the recovery procedure remains within budget, then remove the test instance and its snapshots when the rehearsal is complete.
+
+Until an isolated rehearsal passes, treat recovery as **unverified**. Instance snapshots do not include Terraform's local state file; protect the state separately.
+
+## TLS and monthly operations
+
+The active Let's Encrypt certificate uses DNS-01 for both hostnames. No automatic renewal or expiry alert is configured. Schedule and test renewal before **2027-01-27** without installing AWS credentials on the Lightsail instance. After renewal, verify the certificate chain, both SANs, HTTPS responses, and HTTP-to-HTTPS redirects for both domains. The selected Lightsail-packaged Multisite image is not the old Bitnami image; do not apply Bitnami-only `bncert-tool` instructions.
+
+At initial deployment the recorded monthly forecast was **$20.63**; a conservative additional **$10** allowance kept it below the $50 ceiling. This is a historical forecast, not the current bill. The `micro_3_0` bundle is about $7/month and the two Route 53 zones about $1 total; actual snapshot storage, tax, mail, and excess transfer are additional. If memory/load checks require it, `small_3_0` provides 2 GiB RAM, 60 GB SSD, and 3 TiB transfer for about $12/month before those additions. Recheck actual usage and forecast monthly and before every infrastructure change.
+
+Monthly operator checks:
+
+- Confirm the automatic snapshot completed and review stored-snapshot cost.
+- Check the 50 USD monthly budget/forecast, instance disk and memory/load, and whether resize is needed.
+- Check certificate expiry and both public HTTPS/redirect paths.
+- Review WordPress core/theme updates and account/role membership; confirm a recent Lightsail snapshot before high-impact changes, remembering that restore is not yet rehearsed.
+- Keep mail, writer/editor browser acceptance, and restore rehearsal tracked on issue #543 until complete.
+
+## Reference
+
+- [Terraform stack source](./main.tf)
+- [Stack variables and example](./variables.tf) · [`terraform.tfvars.example`](./terraform.tfvars.example)
+- [Local Multisite prototype and editorial workflow](../../../../../apps/wordpress-multisite/README.md)
+- [AWS Lightsail Multisite guide](https://docs.aws.amazon.com/lightsail/latest/userguide/amazon-lightsail-quick-start-guide-wordpress-multisite.html)
+- [Create an instance from a snapshot](https://docs.aws.amazon.com/lightsail/latest/userguide/lightsail-how-to-create-instance-from-snapshot.html) — notes that custom firewall rules do not copy.
+- [Lightsail firewall defaults and IPv4/IPv6 rules](https://docs.aws.amazon.com/lightsail/latest/userguide/understanding-firewall-and-port-mappings-in-amazon-lightsail.html)
+- [Map domains to WordPress Multisite](https://docs.aws.amazon.com/lightsail/latest/userguide/amazon-lightsail-add-blogs-as-domains-to-your-wordpress-multisite.html)
+- [Lightsail packaged-blueprint migration notes](https://docs.aws.amazon.com/lightsail/latest/userguide/migrate-from-bitnami-to-lightsail-blueprints.html)
+- [Lightsail Let's Encrypt walkthrough](https://docs.aws.amazon.com/lightsail/latest/userguide/amazon-lightsail-lets-encrypt-certbot-wordpress.html) — for a related regular WordPress image; verify compatibility before adapting it to Multisite.

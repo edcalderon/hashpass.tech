@@ -1,3 +1,14 @@
+## [1.9.188](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.187...v1.9.188) (2026-10-29)
+### Released
+- route tenant footer links to Club
+
+### Release scope
+- Compared with: `v1.9.187` (the previous global release tag)
+
+### Affected products & packages
+- Club web
+- Infrastructure
+
 ## [1.9.187](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.186...v1.9.187) (2026-10-29)
 
 

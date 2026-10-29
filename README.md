@@ -20,19 +20,17 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.187)
+## 📋 Latest Changes (v1.9.188)
 
-### Bug Fixes
-
-* **deploy:** never publish HTML with the immutable cache header ([8d7ea7b](https://github.com/hashpass-tech/hashpass.tech/commit/8d7ea7b4f6599e2e3dc9faa8996faab5ab6d9316))
-### Release Highlights
-- never publish HTML with the immutable cache header
+### Released
+- route tenant footer links to Club
 
 ### Release scope
-- Compared with: `v1.9.186` (the previous global release tag)
+- Compared with: `v1.9.187` (the previous global release tag)
 
 ### Affected products & packages
-- Release tooling
+- Club web
+- Infrastructure
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
