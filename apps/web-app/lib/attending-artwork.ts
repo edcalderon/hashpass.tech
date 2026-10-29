@@ -540,7 +540,7 @@ function drawBslColombiaArtwork(
     lightMode ? '#607f99' : accentColor,
     lightMode ? '#3c5f7d' : secondaryAccentColor,
     options.transparentPortrait,
-    { x: 470, y: 22, width: 570, height: 910, radius: 208, verticalAnchor: 0.36 },
+    { x: 470, y: 22, width: 554, height: 910, radius: 208, verticalAnchor: 0.36 },
   );
 
   // Event mark and the Colombian colors anchor the upper-left corner while
