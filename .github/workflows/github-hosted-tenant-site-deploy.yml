@@ -5,6 +5,7 @@ on:
     branches: [develop, main]
     paths:
       - 'apps/mobile-app/**'
+      - 'apps/web-app/**'
       - 'packages/**'
       - 'package.json'
       - 'pnpm-lock.yaml'
@@ -101,6 +102,14 @@ jobs:
       - name: Build BSL site without AWS credentials
         if: matrix.bsl
         run: bash packages/tools/scripts/build-bsl-static-site.sh
+      - name: Add the BSL attending artwork route
+        if: matrix.environment == 'bsl-production'
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          NEXT_PUBLIC_LINKS_API_BASE_URL: ${{ vars.NEXT_PUBLIC_LINKS_API_BASE_URL }}
+        run: |
+          bash packages/tools/scripts/overlay-attending-static-site.sh apps/mobile-app/dist
       - uses: actions/upload-artifact@v4
         with:
           name: site-${{ matrix.environment }}

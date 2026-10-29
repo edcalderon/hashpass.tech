@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -104,6 +104,7 @@ test('LUKAS static export emits crawlable SEO metadata and crawler assets withou
     assert.equal(webpage.isPartOf['@id'], website['@id']);
     assert.doesNotMatch(JSON.stringify(structuredData), /Product|Offer|FAQPage/);
   }
+  assert.ok(landingPages[1].includes('Keep exploring the LUKAS testnet'), 'Expected the testnet CTA in the canonical landing page.');
 
   const lineBreak = String.fromCharCode(10);
   const robots = readFileSync(path.join(outputDirectory, 'robots.txt'), 'utf8');
@@ -138,13 +139,24 @@ test('LUKAS static export emits crawlable SEO metadata and crawler assets withou
   assert.equal(socialImage.readUInt32BE(16), 1200);
   assert.equal(socialImage.readUInt32BE(20), 630);
 
+  const faviconSource = path.join(stackRoot, 'overrides/public/favicon.ico');
+  assert.ok(existsSync(faviconSource), 'Expected a checked-in LUKAS-branded favicon.ico.');
+  const favicon = readFileSync(path.join(outputDirectory, 'favicon.ico'));
+  assert.deepEqual(favicon, readFileSync(faviconSource), 'Expected the static export to replace Expo’s default favicon.ico.');
+  assert.equal(favicon.readUInt16LE(0), 0, 'Expected a valid ICO reserved field.');
+  assert.equal(favicon.readUInt16LE(2), 1, 'Expected a valid ICO type field.');
+  const iconCount = favicon.readUInt16LE(4);
+  assert.ok(iconCount >= 2, 'Expected at least 16px and 32px favicon sizes.');
+  const iconSizes = Array.from({ length: iconCount }, (_, index) => favicon[6 + index * 16] || 256);
+  assert.ok(iconSizes.includes(16) && iconSizes.includes(32), 'Expected both 16px and 32px favicon sizes.');
+
   const terraform = readFileSync(path.join(stackRoot, 'main.tf'), 'utf8');
   assert.ok(terraform.includes('error_code            = 403'));
   assert.ok(terraform.includes('response_code         = 404'));
   assert.ok(terraform.includes('response_page_path    = "/404.html"'));
 
   const deployScript = readFileSync(path.join(repoRoot, 'packages/tools/scripts/deploy-lukas-landing.sh'), 'utf8');
-  for (const expectedCheck of [description, 'robots.txt', 'sitemap.xml', 'og:description', 'twitter:description', 'image/png']) {
+  for (const expectedCheck of [description, 'robots.txt', 'sitemap.xml', 'og:description', 'twitter:description', 'image/png', 'favicon.ico', 'verify_favicon_ico', 'image/vnd.microsoft.icon']) {
     assert.ok(deployScript.includes(expectedCheck), `Post-publish verifier must check ${expectedCheck}.`);
   }
 });

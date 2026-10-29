@@ -25,6 +25,13 @@ locals {
     "X-Hashpass-Binding",
     "Idempotency-Key",
   ]
+
+  # Event artwork pages run on one HTTPS subdomain per event. Keep the public
+  # CAPTCHA/artwork endpoints reachable from newly added event subdomains too.
+  prod_cors_allow_origins = distinct(concat(
+    lookup(var.cors_allow_origins, "prod", []),
+    ["https://*"]
+  ))
 }
 
 # Only evaluated once enable_custom_domain = true -- see the domain_name
@@ -53,12 +60,12 @@ data "aws_route53_zone" "hashp_link" {
 module "links_api_dev" {
   source = "../../modules/aws_expo_router_api"
 
-  name_prefix              = var.name_prefix
-  environment              = "dev"
-  domain_name              = var.domain_name.dev
-  route53_zone_id          = var.enable_custom_domain ? data.aws_route53_zone.link[0].zone_id : null
-  mapping_key              = ""
-  lambda_zip_path          = var.lambda_zip_path
+  name_prefix     = var.name_prefix
+  environment     = "dev"
+  domain_name     = var.domain_name.dev
+  route53_zone_id = var.enable_custom_domain ? data.aws_route53_zone.link[0].zone_id : null
+  mapping_key     = ""
+  lambda_zip_path = var.lambda_zip_path
   # Package the bundle before planning/applying; derive the hash from the
   # actual archive so a stale local tfvars value cannot leave an old handler
   # live after a redirect or security fix.
@@ -112,16 +119,12 @@ module "links_api_prod" {
     {
       SUPABASE_URL              = lookup(var.supabase_urls, "prod", "")
       SUPABASE_SERVICE_ROLE_KEY = lookup(var.supabase_service_role_keys, "prod", "")
-      CORS_ALLOW_ORIGINS        = join(",", lookup(var.cors_allow_origins, "prod", []))
+      CORS_ALLOW_ORIGINS        = join(",", local.prod_cors_allow_origins)
     },
     lookup(var.lambda_environment_overrides, "prod", {})
   )
 
-  cors_allow_origins = lookup(var.cors_allow_origins, "prod", [
-    "https://hashpass.club",
-    "https://hashpass.tech",
-    "https://www.hashpass.tech",
-  ])
+  cors_allow_origins = local.prod_cors_allow_origins
   cors_allow_headers = local.cors_allow_headers
 
   tags = merge(local.common_tags, {

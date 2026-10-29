@@ -316,7 +316,8 @@
       "db/migrations/V079__hashpass_links_dynamic_qr.sql",
       "db/migrations/V080__qr_link_availability_windows.sql",
       "db/migrations/V081__qr_link_custom_slugs.sql",
-      "db/migrations/V084__repair_legacy_email_auth_identities.sql"
+      "db/migrations/V084__repair_legacy_email_auth_identities.sql",
+      "db/migrations/V159__attending_artwork_shares.sql"
     ],
     "marketing-campaigns": [
       "db/migrations/V132__marketing_campaigns.sql",

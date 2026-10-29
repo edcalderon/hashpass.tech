@@ -1,50 +1,23 @@
 'use client';
 
 import { useRef } from 'react';
-import { useLocale, useSetLocale, useTranslation } from '@hashpass/i18n';
-import { Badge, IconButton, SegmentedTabs, Surface } from '@hashpass/ui/primitives';
-import { ArrowDownRight, ArrowLeft, ArrowRight, CalendarDays, Check, Image, MapPin, Moon, Share2, ShieldCheck, Sun } from 'lucide-react';
-import type { AttendingEventData, AttendingLandingProps, AttendingLandingStepProps, AttendingLocale } from './types/attending.types';
+import { useLocale, useTranslation } from '@hashpass/i18n';
+import { Badge, IconButton, Surface } from '@hashpass/ui/primitives';
+import { ArrowDownRight, ArrowLeft, ArrowRight, CalendarDays, Check, Image, MapPin, Share2, ShieldCheck } from 'lucide-react';
+import type { AttendingEventData, AttendingLandingProps, AttendingLandingStepProps } from './types/attending.types';
+import { ClubSettingsMenu } from '../components/ClubSettingsMenu';
+import { Footer } from '../components/Footer';
 import { useTheme } from '../components/ThemeProvider';
+import { formatAttendingEventDate } from '../../lib/attending-date';
+import { getAttendingEventUrl } from '../../lib/attending-url';
 import styles from './landing.module.css';
-
-function formatDatePart(dateValue: string, locale: AttendingLocale, options: Intl.DateTimeFormatOptions): string {
-  const [year, month, day] = dateValue.slice(0, 10).split('-').map(Number);
-  if (!year || !month || !day) return '';
-  return new Intl.DateTimeFormat(locale === 'es' ? 'es-CO' : 'en-US', {
-    ...options,
-    timeZone: 'UTC',
-  }).format(new Date(Date.UTC(year, month - 1, day, 12)));
-}
-
-function formatEventDate(event: AttendingEventData, locale: AttendingLocale): string {
-  if (!event.startDate) return event.dateFallback || '';
-
-  const fallbackRange = event.dateFallback?.match(/[A-Za-z]+\s+(\d{1,2})\s*[-–]\s*(\d{1,2}),?\s*(\d{4})/);
-  const startDay = fallbackRange?.[1] || formatDatePart(event.startDate, locale, { day: 'numeric' });
-  const endDay = fallbackRange?.[2];
-  const month = formatDatePart(event.startDate, locale, { month: 'short' });
-  const year = fallbackRange?.[3] || formatDatePart(event.startDate, locale, { year: 'numeric' });
-
-  if (endDay) {
-    return locale === 'es' ? `${startDay}–${endDay} ${month} ${year}` : `${month} ${startDay}–${endDay}, ${year}`;
-  }
-  if (!event.endDate || event.endDate.slice(0, 10) === event.startDate.slice(0, 10)) {
-    return `${month} ${startDay}, ${year}`;
-  }
-  const end = formatDatePart(event.endDate, locale, { month: 'short', day: 'numeric', year: 'numeric' });
-  return `${month} ${startDay} – ${end}`;
-}
 
 export function AttendingLandingExperience({ events }: AttendingLandingProps) {
   const { t } = useTranslation('attending');
   const locale = useLocale();
-  const setLocale = useSetLocale();
-  const { resolvedTheme, setTheme, theme } = useTheme();
+  const { resolvedTheme } = useTheme();
   const carouselRef = useRef<HTMLDivElement | null>(null);
-  const language: AttendingLocale = locale === 'es' ? 'es' : 'en';
   const mode = resolvedTheme;
-  const isDark = resolvedTheme === 'dark';
 
   function scrollEvents(direction: -1 | 1) {
     const carousel = carouselRef.current;
@@ -53,28 +26,24 @@ export function AttendingLandingExperience({ events }: AttendingLandingProps) {
     carousel.scrollBy({ left: direction * Math.max(carousel.clientWidth * 0.82, 280), behavior });
   }
 
-  function handleLanguageChange(value: string) {
-    if (value === 'en' || value === 'es') setLocale(value);
-  }
-
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <a className={styles.brand} href="https://hashpass.club/" aria-label="HASHPASS Club home">
-          <img src="/logo-hashpass.svg" alt="" />
+        <a className={styles.brand} href="/attending/" aria-label="HASHPASS Club attending home">
+          <img src="/attending/logo-hashpass.svg" alt="" />
           <span>HASHPASS <b>CLUB</b></span>
         </a>
         <div className={styles.headerActions}>
-          <div className={styles.languageControl} aria-label={t('languageLabel')}>
-            <SegmentedTabs mode={mode} value={language} onChange={handleLanguageChange} tabs={[{ id: 'en', label: 'EN' }, { id: 'es', label: 'ES' }]} />
-          </div>
-          <IconButton
-            mode={mode}
-            label={isDark ? t('switchLight') : t('switchDark')}
-            onPress={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-          >
-            {isDark ? <Sun size={18} /> : <Moon size={18} />}
-          </IconButton>
+          <ClubSettingsMenu
+            size={42}
+            triggerStyle={{
+              background: 'var(--bg-surface-raised)',
+              border: '1px solid var(--border)',
+              color: 'var(--text-primary)',
+              backdropFilter: 'none',
+              WebkitBackdropFilter: 'none',
+            }}
+          />
         </div>
       </header>
 
@@ -124,29 +93,32 @@ export function AttendingLandingExperience({ events }: AttendingLandingProps) {
           {events.length ? (
             <div className={styles.carousel} role="region" aria-roledescription="carousel" aria-label={t('landingCarouselLabel')}>
               <div className={styles.carouselTrack} ref={carouselRef}>
-                {events.map((event) => (
-                  <article className={styles.eventSlide} key={event.slug}>
-                    <Surface mode={mode} style={{ padding: 0, overflow: 'hidden', height: '100%' }}>
-                      <a className={styles.eventLink} href={`/${event.slug}/`}>
-                        <div className={styles.eventArtwork} style={{ background: `radial-gradient(circle at 84% 18%, ${event.color}70, transparent 42%), linear-gradient(138deg, #071321 8%, #102c3d 100%)` }}>
-                          <div className={styles.artworkGrid} />
-                          <span className={styles.eventBadge}><Badge mode="dark" tone="onMedia" compact>{t('landingUpcoming')}</Badge></span>
-                          <img src={event.logoSrc} alt="" aria-hidden="true" />
-                          <span className={styles.artworkCode}>{event.shortName} / 2026</span>
-                        </div>
-                        <div className={styles.eventInfo}>
-                          <div className={styles.eventKicker}>{event.shortName}<span>·</span>{event.city}</div>
-                          <h3>{event.name}</h3>
-                          <div className={styles.eventMeta}>
-                            {formatEventDate(event, language) && <span><CalendarDays size={15} />{formatEventDate(event, language)}</span>}
-                            {event.city && <span><MapPin size={15} />{[event.city, event.country].filter(Boolean).join(', ')}</span>}
+                {events.map((event) => {
+                  const eventDate = formatAttendingEventDate(event, locale);
+                  return (
+                    <article className={styles.eventSlide} key={event.slug}>
+                      <Surface mode={mode} style={{ padding: 0, overflow: 'hidden', height: '100%' }}>
+                        <a className={styles.eventLink} href={getAttendingEventUrl(event.slug)}>
+                          <div className={styles.eventArtwork} style={{ background: `radial-gradient(circle at 84% 18%, ${event.color}70, transparent 42%), linear-gradient(138deg, #071321 8%, #102c3d 100%)` }}>
+                            <div className={styles.artworkGrid} />
+                            <span className={styles.eventBadge}><Badge mode="dark" tone="onMedia" compact>{t('landingUpcoming')}</Badge></span>
+                            <img src={event.logoSrc} alt="" aria-hidden="true" />
+                            <span className={styles.artworkCode}>{event.shortName} / 2026</span>
                           </div>
-                          <span className={styles.eventCta}>{t('landingCreateArtwork')} <ArrowRight size={17} /></span>
-                        </div>
-                      </a>
-                    </Surface>
-                  </article>
-                ))}
+                          <div className={styles.eventInfo}>
+                            <div className={styles.eventKicker}>{event.shortName}<span>·</span>{event.city}</div>
+                            <h3>{event.name}</h3>
+                            <div className={styles.eventMeta}>
+                              {eventDate && <span><CalendarDays size={15} />{eventDate}</span>}
+                              {event.city && <span><MapPin size={15} />{[event.city, event.country].filter(Boolean).join(', ')}</span>}
+                            </div>
+                            <span className={styles.eventCta}>{t('landingCreateArtwork')} <ArrowRight size={17} /></span>
+                          </div>
+                        </a>
+                      </Surface>
+                    </article>
+                  );
+                })}
               </div>
               {events.length > 1 && <p className={styles.scrollHint}>{t('landingScrollHint')}</p>}
             </div>
@@ -177,11 +149,7 @@ export function AttendingLandingExperience({ events }: AttendingLandingProps) {
         </section>
       </main>
 
-      <footer className={styles.footer}>
-        <span>{t('footerBrand')}</span>
-        <a href="https://hashpass.club/">HASHPASS Club</a>
-        <span>{t('landingPrivacy')}</span>
-      </footer>
+      <Footer />
     </div>
   );
 }

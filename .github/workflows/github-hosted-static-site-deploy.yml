@@ -17,6 +17,7 @@ on:
     # extra build on an excluded path costs nothing.
     paths:
       - 'apps/mobile-app/**'
+      - 'apps/web-app/**'
       - 'packages/**'
       - 'package.json'
       - 'pnpm-lock.yaml'
@@ -48,6 +49,9 @@ jobs:
       EXPO_PUBLIC_SUPABASE_URL: ${{ vars.EXPO_PUBLIC_SUPABASE_URL_DEV }}
       EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.EXPO_PUBLIC_SUPABASE_ANON_KEY_DEV }}
       EXPO_PUBLIC_SUPABASE_KEY: ${{ vars.EXPO_PUBLIC_SUPABASE_ANON_KEY_DEV }}
+      NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL_DEV }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY_DEV }}
+      NEXT_PUBLIC_LINKS_API_BASE_URL: ${{ vars.NEXT_PUBLIC_LINKS_API_BASE_URL_DEV }}
       EXPO_PUBLIC_BSL_SUPABASE_URL: ${{ vars.EXPO_PUBLIC_BSL_SUPABASE_URL_DEV }}
       EXPO_PUBLIC_BSL_SUPABASE_KEY: ${{ vars.EXPO_PUBLIC_BSL_SUPABASE_KEY_DEV }}
       # Same site id everywhere (see apps/mobile-app/app/+html.tsx) -- no _DEV

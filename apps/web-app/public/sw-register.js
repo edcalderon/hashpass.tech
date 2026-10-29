@@ -17,6 +17,12 @@
       return;
     }
 
+    // Event subdomains may already have their own app and service worker.
+    // The attending tool must not replace a host's root-scoped worker.
+    if (location.hostname.toLowerCase().endsWith('.hashpass.tech')) {
+      return;
+    }
+
     window.addEventListener('load', function () {
       navigator.serviceWorker.register('/sw.js').catch(function (error) {
         console.warn('Service worker registration failed', error);

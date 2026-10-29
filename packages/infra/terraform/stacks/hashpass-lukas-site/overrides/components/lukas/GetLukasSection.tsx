@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 import { FormField } from '@hashpass/ui/primitives';
-import { uiTokens } from '@hashpass/ui/tokens';
+import { uiPalette, uiTokens } from '@hashpass/ui/tokens';
 import { useTheme } from '../../hooks/useTheme';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { useTranslation } from '../../i18n/i18n';
@@ -110,6 +110,10 @@ export function GetLukasSection() {
   const palette = useMemo(() => lukasPalette(isDark), [isDark]);
   const mode = isDark ? 'dark' : 'light';
   const skin = useMemo(() => lukasSkin(palette), [palette]);
+  const premiumSkin = useMemo(() => {
+    const premium = uiPalette(mode);
+    return { ...skin, fill: premium.vipFill, onFill: premium.onVip, accent: premium.vipFill };
+  }, [mode, skin]);
   const styles = useMemo(() => getStyles(isDark, isMobile, palette), [isDark, isMobile, palette]);
   const { earn } = useLukasRewards();
 
@@ -242,6 +246,19 @@ export function GetLukasSection() {
           <LukasGlyph name="token" size={56} />
           <Text style={styles.comingSoonText}>LUKAS $LKS · Testnet until TGE</Text>
           <Text style={styles.comingSoonSubtext}>Stay listed for airdrops, prizes, and launch pricing.</Text>
+          <ActionButton
+            mode={mode}
+            skin={premiumSkin}
+            label={t('getLukas.exploreTestnet')}
+            onPress={() => {
+              if (Platform.OS === 'web' && typeof window !== 'undefined') {
+                window.location.assign('https://lukas.lat');
+                return;
+              }
+              Linking.openURL('https://lukas.lat');
+            }}
+            style={styles.comingSoonAction}
+          />
         </Surface>
       </View>
 
@@ -305,6 +322,7 @@ const getStyles = (isDark: boolean, isMobile: boolean, palette: ReturnType<typeo
   comingSoonContainer: { alignItems: 'center', gap: 8, backgroundColor: palette.tint },
   comingSoonText: { fontSize: isMobile ? 16 : 18, fontWeight: '700', color: palette.accent, textAlign: 'center' },
   comingSoonSubtext: { fontSize: isMobile ? 14 : 16, color: palette.body, textAlign: 'center', lineHeight: isMobile ? 20 : 24 },
+  comingSoonAction: { alignSelf: isMobile ? 'stretch' : 'center', marginTop: uiTokens.space.md },
   modalTitle: dialogTitle(palette, isMobile),
   modalSubtitle: dialogCopy(palette),
   centered: { textAlign: 'center', paddingRight: 0 },

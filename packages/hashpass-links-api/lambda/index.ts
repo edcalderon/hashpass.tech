@@ -7,6 +7,7 @@
 // Expo's createRequestHandler().
 import { handleRequest } from '../src/router';
 import { archiveExpiredQrLinks } from '../src/routes/qr-links';
+import { deleteExpiredAttendingArtworks } from '../src/routes/attending-artworks';
 
 interface ApiGatewayEvent {
   httpMethod?: string;
@@ -42,6 +43,7 @@ interface ScheduledEvent {
 const DEFAULT_CORS_ALLOWED_ORIGINS = [
   'http://localhost:3000',
   'https://hashpass.club',
+  'https://attending.hashpass.tech',
   // The Club opens this approval screen on the HashPass app domain. The
   // browser then calls this API directly from hashpass.tech, so that origin
   // must be allowed on both the Lambda response and API Gateway's preflight
@@ -130,11 +132,14 @@ function buildRequestHeaders(event: ApiGatewayEvent): Headers {
 export async function handleLambdaEvent(event: ApiGatewayEvent | ScheduledEvent): Promise<ApiGatewayResponse> {
   try {
     if (event.source === 'aws.events' && event['detail-type'] === 'Scheduled Event') {
-      const archived = await archiveExpiredQrLinks();
+      const [archived, deletedAttendingArtworks] = await Promise.all([
+        archiveExpiredQrLinks(),
+        deleteExpiredAttendingArtworks(),
+      ]);
       return {
         statusCode: 200,
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ archived }),
+        body: JSON.stringify({ archived, deletedAttendingArtworks }),
         isBase64Encoded: false,
       };
     }

@@ -37,6 +37,6 @@ test('an EventBridge scheduled event archives expired QR links', async () => {
   const response = await handler({ source: 'aws.events', 'detail-type': 'Scheduled Event' });
 
   assert.equal(response.statusCode, 200);
-  assert.deepEqual(JSON.parse(response.body), { archived: 1 });
+  assert.deepEqual(JSON.parse(response.body), { archived: 1, deletedAttendingArtworks: 0 });
   assert.equal(client._tables.get('qr_links')?.get(id)?.status, 'archived');
 });

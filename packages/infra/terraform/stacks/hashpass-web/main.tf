@@ -16,6 +16,7 @@ locals {
   lambda_deployment_bucket_name = "${var.name_prefix}-lambda-deployments-${data.aws_caller_identity.current.account_id}-${var.lambda_region}"
   site_custom_domain_name       = trimspace(var.site_custom_domain_name)
   site_acm_certificate_arn      = trimspace(var.site_acm_certificate_arn)
+  attending_event_hosts_enabled = var.enable_attending_event_hosts && var.enable_cloudfront
   site_route53_zone_name        = trim(var.site_route53_zone_name, ".")
   site_route53_a_records = [
     for ip_address in var.site_route53_a_records : trimspace(ip_address)
@@ -55,6 +56,7 @@ locals {
   # new terraform stack or tools script that's specific to one pipeline.
   site_trigger_includes = [
     "apps/mobile-app/**",
+    "apps/web-app/**",
     "packages/**",
     "package.json",
     "pnpm-lock.yaml",
@@ -106,6 +108,9 @@ locals {
       EXPO_PUBLIC_SUPABASE_ANON_KEY      = var.supabase_key
       EXPO_PUBLIC_SUPABASE_ANON_KEY_PROD = var.supabase_key
       EXPO_PUBLIC_LINKS_API_BASE_URL     = var.links_api_base_url
+      NEXT_PUBLIC_SUPABASE_URL           = var.supabase_url
+      NEXT_PUBLIC_SUPABASE_ANON_KEY      = var.supabase_key
+      NEXT_PUBLIC_LINKS_API_BASE_URL     = var.links_api_base_url
       NODE_MAX_OLD_SPACE_SIZE            = "6144"
       EXPO_EXPORT_MAX_WORKERS            = "1"
       SITE_LAMBDA_FUNCTION_NAME          = var.lambda_function_name
@@ -134,6 +139,9 @@ locals {
       EXPO_PUBLIC_SUPABASE_ANON_KEY     = trimspace(var.supabase_key_dev) != "" ? var.supabase_key_dev : var.supabase_key
       EXPO_PUBLIC_SUPABASE_ANON_KEY_DEV = trimspace(var.supabase_key_dev) != "" ? var.supabase_key_dev : var.supabase_key
       EXPO_PUBLIC_LINKS_API_BASE_URL    = trimspace(var.links_api_base_url_dev) != "" ? var.links_api_base_url_dev : var.links_api_base_url
+      NEXT_PUBLIC_SUPABASE_URL          = trimspace(var.supabase_url_dev) != "" ? var.supabase_url_dev : var.supabase_url
+      NEXT_PUBLIC_SUPABASE_ANON_KEY     = trimspace(var.supabase_key_dev) != "" ? var.supabase_key_dev : var.supabase_key
+      NEXT_PUBLIC_LINKS_API_BASE_URL    = trimspace(var.links_api_base_url_dev) != "" ? var.links_api_base_url_dev : var.links_api_base_url
       NODE_MAX_OLD_SPACE_SIZE           = "6144"
       EXPO_EXPORT_MAX_WORKERS           = "1"
       SITE_LAMBDA_FUNCTION_NAME         = var.dev_lambda_function_name
@@ -249,9 +257,12 @@ check "site_cloudfront_inputs" {
   assert {
     condition = (
       !var.enable_cloudfront
-      || (local.site_custom_domain_name != "" && local.site_acm_certificate_arn != "")
+      || (
+        local.site_custom_domain_name != "" &&
+        (local.attending_event_hosts_enabled || local.site_acm_certificate_arn != "")
+      )
     )
-    error_message = "site_custom_domain_name and site_acm_certificate_arn must be set when enable_cloudfront is true."
+    error_message = "site_custom_domain_name and a production ACM certificate must be configured when enable_cloudfront is true."
   }
 }
 
@@ -439,6 +450,61 @@ data "aws_route53_zone" "tech" {
 locals {
   site_alias_name = var.enable_cloudfront ? aws_cloudfront_distribution.site[0].domain_name : replace(module.site.site_website_endpoint, "http://", "")
   site_alias_zone = var.enable_cloudfront ? aws_cloudfront_distribution.site[0].hosted_zone_id : module.site.site_bucket_hosted_zone_id
+  site_aliases = concat(
+    [local.site_custom_domain_name],
+    local.attending_event_hosts_enabled ? ["*.${local.site_custom_domain_name}", "attending.${local.site_custom_domain_name}"] : [],
+  )
+  site_certificate_arn = local.attending_event_hosts_enabled ? aws_acm_certificate_validation.attending_event_hosts[0].certificate_arn : local.site_acm_certificate_arn
+}
+
+resource "aws_acm_certificate" "attending_event_hosts" {
+  count    = local.attending_event_hosts_enabled ? 1 : 0
+  provider = aws.use1
+
+  domain_name               = local.site_custom_domain_name
+  subject_alternative_names = ["*.${local.site_custom_domain_name}"]
+  validation_method         = "DNS"
+
+  lifecycle {
+    create_before_destroy = true
+    precondition {
+      condition     = local.site_custom_domain_name == "hashpass.tech" && local.site_route53_zone_name == "hashpass.tech"
+      error_message = "Attending event host routing is only configured for the hashpass.tech production zone."
+    }
+  }
+
+  tags = var.tags
+}
+
+resource "aws_route53_record" "attending_event_hosts_cert_validation" {
+  count = local.attending_event_hosts_enabled ? 1 : 0
+
+  allow_overwrite = true
+  zone_id         = data.aws_route53_zone.tech.zone_id
+  name            = one([for option in aws_acm_certificate.attending_event_hosts[0].domain_validation_options : option.resource_record_name if option.domain_name == local.site_custom_domain_name])
+  type            = one([for option in aws_acm_certificate.attending_event_hosts[0].domain_validation_options : option.resource_record_type if option.domain_name == local.site_custom_domain_name])
+  records         = [one([for option in aws_acm_certificate.attending_event_hosts[0].domain_validation_options : option.resource_record_value if option.domain_name == local.site_custom_domain_name])]
+  ttl             = 60
+}
+
+resource "aws_acm_certificate_validation" "attending_event_hosts" {
+  count    = local.attending_event_hosts_enabled ? 1 : 0
+  provider = aws.use1
+
+  certificate_arn         = aws_acm_certificate.attending_event_hosts[0].arn
+  validation_record_fqdns = [aws_route53_record.attending_event_hosts_cert_validation[0].fqdn]
+}
+
+resource "aws_cloudfront_function" "attending_event_hosts" {
+  count = local.attending_event_hosts_enabled ? 1 : 0
+
+  name    = "${var.name_prefix}-attending-event-host-routing"
+  runtime = "cloudfront-js-2.0"
+  comment = "Serve attending landing and event artwork routes on hashpass.tech hosts"
+  publish = true
+  code    = file("${path.module}/attending-host-routing.js")
+
+  tags = var.tags
 }
 
 resource "aws_cloudfront_distribution" "site" {
@@ -447,7 +513,7 @@ resource "aws_cloudfront_distribution" "site" {
   enabled             = true
   comment             = "${var.name_prefix} ${var.environment} static site"
   default_root_object = "index.html"
-  aliases             = [local.site_custom_domain_name]
+  aliases             = local.site_aliases
   price_class         = "PriceClass_100"
   is_ipv6_enabled     = true
   wait_for_deployment = true
@@ -478,6 +544,15 @@ resource "aws_cloudfront_distribution" "site" {
         forward = "none"
       }
     }
+
+    dynamic "function_association" {
+      for_each = local.attending_event_hosts_enabled ? [aws_cloudfront_function.attending_event_hosts[0].arn] : []
+
+      content {
+        event_type   = "viewer-request"
+        function_arn = function_association.value
+      }
+    }
   }
 
   custom_error_response {
@@ -501,7 +576,7 @@ resource "aws_cloudfront_distribution" "site" {
   }
 
   viewer_certificate {
-    acm_certificate_arn            = local.site_acm_certificate_arn
+    acm_certificate_arn            = local.site_certificate_arn
     cloudfront_default_certificate = false
     ssl_support_method             = "sni-only"
     minimum_protocol_version       = "TLSv1.2_2021"
@@ -536,6 +611,62 @@ resource "aws_route53_record" "site_ipv6" {
 
   zone_id = data.aws_route53_zone.tech.zone_id
   name    = local.site_custom_domain_name
+  type    = "AAAA"
+
+  alias {
+    evaluate_target_health = false
+    name                   = local.site_alias_name
+    zone_id                = local.site_alias_zone
+  }
+}
+
+resource "aws_route53_record" "attending_event_hosts" {
+  count = local.attending_event_hosts_enabled ? 1 : 0
+
+  zone_id = data.aws_route53_zone.tech.zone_id
+  name    = "*.${local.site_custom_domain_name}"
+  type    = "A"
+
+  alias {
+    evaluate_target_health = false
+    name                   = local.site_alias_name
+    zone_id                = local.site_alias_zone
+  }
+}
+
+resource "aws_route53_record" "attending_event_hosts_ipv6" {
+  count = local.attending_event_hosts_enabled ? 1 : 0
+
+  zone_id = data.aws_route53_zone.tech.zone_id
+  name    = "*.${local.site_custom_domain_name}"
+  type    = "AAAA"
+
+  alias {
+    evaluate_target_health = false
+    name                   = local.site_alias_name
+    zone_id                = local.site_alias_zone
+  }
+}
+
+resource "aws_route53_record" "attending_landing" {
+  count = local.attending_event_hosts_enabled ? 1 : 0
+
+  zone_id = data.aws_route53_zone.tech.zone_id
+  name    = "attending.${local.site_custom_domain_name}"
+  type    = "A"
+
+  alias {
+    evaluate_target_health = false
+    name                   = local.site_alias_name
+    zone_id                = local.site_alias_zone
+  }
+}
+
+resource "aws_route53_record" "attending_landing_ipv6" {
+  count = local.attending_event_hosts_enabled ? 1 : 0
+
+  zone_id = data.aws_route53_zone.tech.zone_id
+  name    = "attending.${local.site_custom_domain_name}"
   type    = "AAAA"
 
   alias {

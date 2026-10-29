@@ -1,13 +1,24 @@
 import type { ReactNode } from 'react';
+import type { SupportedLocale } from '@hashpass/i18n';
 
-export type AttendingLocale = 'en' | 'es';
+export type AttendingLocale = SupportedLocale;
 
 export type AttendeePhotoSource = 'hashpass' | 'upload' | 'initials';
+
+export interface ProcessedAttendeePhoto {
+  source: string;
+  url: string;
+}
 
 export type AttendingRoutePageProps = { params: Promise<{ eventSlug: string }> };
 
 export interface AttendingLandingProps {
   events: AttendingEventData[];
+}
+
+export interface AttendingExperienceProps {
+  event: AttendingEventData;
+  generic?: boolean;
 }
 
 export interface AttendingLandingStepProps {
@@ -46,14 +57,16 @@ export interface AttendingEventData {
 export interface AttendingArtworkOptions {
   eventName: string;
   shortName: string;
+  genericArtwork?: boolean;
   location: string;
   venue: string;
   dateLabel: string;
   attendeeName: string;
   attendeeRole: string;
-  attendeeSocialHandle: string;
+  attendeeSocialHandles: AttendeeSocialHandles;
   logoSrc: string;
   avatarSrc: string | null;
+  transparentPortrait: boolean;
   artworkTemplate: AttendingArtworkTemplate;
   poweredByLabel: string;
   pastEvent: boolean;
@@ -62,4 +75,29 @@ export interface AttendingArtworkOptions {
     past: string;
     emptyName: string;
   };
+}
+
+export interface AttendeeSocialHandles {
+  x: string;
+  instagram: string;
+}
+
+export type AttendeeSocialPlatform = keyof AttendeeSocialHandles;
+
+export type AttendingPublicShareIntent = 'share' | 'x' | 'linkedin' | 'copy';
+
+export interface AttendingPublicShare {
+  url: string;
+  imageUrl: string;
+  expiresAt: string;
+  emailStatus: 'sent' | 'unavailable' | 'not_requested';
+}
+
+export interface AttendingPublicShareResponse {
+  shareUrl?: string;
+  imageUrl?: string;
+  expiresAt?: string;
+  emailStatus?: 'sent' | 'unavailable' | 'not_requested';
+  message?: string;
+  captchaExpired?: boolean;
 }

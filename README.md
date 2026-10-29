@@ -20,29 +20,30 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.177)
+## 📋 Latest Changes (v1.9.178)
 
 ### Bug Fixes
 
-* improve Lukas mobile scroll and cover Plane pages ([35399ca](https://github.com/hashpass-tech/hashpass.tech/commit/35399ca014afddf978d592106cefc5cf90701034))
-* **mobile:** isolate Metro cache per worktree ([#528](https://github.com/hashpass-tech/hashpass.tech/issues/528)) ([a73c340](https://github.com/hashpass-tech/hashpass.tech/commit/a73c34076cc7e87d7ec657f5299fc6bd7beef0cf))
+* **lukas:** keep testnet CTA in the current tab ([3268100](https://github.com/hashpass-tech/hashpass.tech/commit/32681006071604c86f99f11bf774d6acb28b24f0))
+* **lukas:** replace default share favicon ([f009ad4](https://github.com/hashpass-tech/hashpass.tech/commit/f009ad4b0164007434e1ba18ead74a8ec0545741))
 
 
 ### Features
 
-* **lukas:** gate claims with a knowledge quiz ([7b200d4](https://github.com/hashpass-tech/hashpass.tech/commit/7b200d4b9653d0396c2007560117a905449470e7))
-* **lukas:** improve SEO and social previews ([f88aa48](https://github.com/hashpass-tech/hashpass.tech/commit/f88aa48c81056028ceefce90fae8aaf2e117070f))
+* **lukas:** add localized testnet CTA ([19410c9](https://github.com/hashpass-tech/hashpass.tech/commit/19410c9a301731006ba71901f51f3f64ab26567d))
 ### Release Highlights
-- gate claims with a knowledge quiz; improve SEO and social previews; improve Lukas mobile scroll and cover Plane pages; isolate Metro cache per worktree (#528)
+- add localized testnet CTA; keep testnet CTA in the current tab; replace default share favicon
 
 ### Release scope
-- Compared with: `v1.9.176` (the previous global release tag)
+- Compared with: `v1.9.177` (the previous global release tag)
 
 ### Affected products & packages
 - Club web
 - Mobile app
+- QR links API
+- Shared UI
+- Database migrations
 - Infrastructure
-- Self-hosted operations
 - Release tooling
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
@@ -137,6 +138,11 @@ pnpm run release:club:web # release the production club web app and publish the 
 pnpm run release:club:web:patch # convenience patch release for the club web app
 pnpm run build:all    # build the mobile app and the new club web app
 ```
+
+Pass `--kill-allowed` to any root development command (for example,
+`pnpm run dev:club -- --kill-allowed`) to free its configured port before
+startup. This explicitly allows the launcher to stop whichever process is
+holding that port; `dev:all` applies the flag to all of its managed ports.
 
 Historical Amplify configs and helper scripts now live under [`archive/amplify/`](archive/amplify/). They are deprecated reference material only and are not part of the active CLI surface.
 
