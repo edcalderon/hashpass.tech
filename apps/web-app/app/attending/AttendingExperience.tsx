@@ -9,7 +9,7 @@ import { SettingsToggle } from '@hashpass/ui/settings-menu';
 import { ArrowDownToLine, ArrowUpRight, CalendarDays, Check, ImagePlus, Instagram, MapPin, Share2, UserRound } from 'lucide-react';
 import { drawAttendingArtwork } from '../../lib/attending-artwork';
 import { formatAttendingEventDate } from '../../lib/attending-date';
-import { getAttendingEventUrl, getAttendingLandingUrl, getGenericAttendingLandingHref, getGenericAttendingUrl } from '../../lib/attending-url';
+import { getAttendingArtworkPublishEventUrl, getAttendingEventUrl, getAttendingLandingUrl, getGenericAttendingLandingHref, getGenericAttendingUrl } from '../../lib/attending-url';
 import { getLinksApiOrigin } from '../../lib/links-api-origin';
 import { removePersonBackground } from '../../lib/remove-person-background';
 import { ClubSettingsMenu } from '../components/ClubSettingsMenu';
@@ -587,7 +587,7 @@ export function AttendingExperience({
           eventName,
           attendeeName: normalizedName,
           caption: shareText,
-          eventUrl: shareUrl,
+          eventUrl: getAttendingArtworkPublishEventUrl(event.slug, customEvent),
           locale,
           email: shareEmail.trim() || undefined,
         }),

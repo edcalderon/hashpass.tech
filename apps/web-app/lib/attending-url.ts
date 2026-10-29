@@ -43,6 +43,14 @@ export function getAttendingEventUrl(eventSlug: string): string {
   return `https://${subdomain}.hashpass.tech/`;
 }
 
+/**
+ * The artwork API publishes public links on an event tenant. Keep that URL
+ * separate from a mirrored Club event page such as /attendings/bsl/.
+ */
+export function getAttendingArtworkPublishEventUrl(eventSlug: string, customEvent = false): string {
+  return customEvent ? getGenericAttendingUrl() : getAttendingEventUrl(eventSlug);
+}
+
 export function getAttendingClubEventUrl(eventSlug: string): string {
   return `${GENERIC_ATTENDING_ORIGIN}/attendings/${getAttendingEventSubdomain(eventSlug)}/`;
 }
