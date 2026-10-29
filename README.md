@@ -20,7 +20,7 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.179)
+## 📋 Latest Changes (v1.9.180)
 
 ### Bug Fixes
 
@@ -33,15 +33,18 @@
 
 * **club:** add personal artwork creator ([8fb7006](https://github.com/hashpass-tech/hashpass.tech/commit/8fb7006228a628a590a243fed424e411141f7380))
 * **club:** refine BSL artwork template ([b784e5a](https://github.com/hashpass-tech/hashpass.tech/commit/b784e5a7e0920fb70387e404c76836a9862aed31))
+* **club:** support artwork for custom events ([1c2d584](https://github.com/hashpass-tech/hashpass.tech/commit/1c2d584fa9850a1c077967579631679b3d9356ab))
 * **lukas:** add localized testnet CTA ([19410c9](https://github.com/hashpass-tech/hashpass.tech/commit/19410c9a301731006ba71901f51f3f64ab26567d))
 ### Release Highlights
-- refine BSL artwork template; add personal artwork creator; add localized testnet CTA; resolve release regressions and localized artwork; keep testnet CTA in the current tab; replace default share favicon
+- support artwork for custom events; refine attendance artwork themes; refine BSL artwork template; add personal artwork creator; add localized testnet CTA; keep local attendance links local; resolve release regressions and localized artwork; keep testnet CTA in the current tab; replace default share favicon
 
 ### Release scope
 - Compared with: `v1.9.178` (the previous global release tag)
 
 ### Affected products & packages
-- Shared repository changes only
+- Club web
+- QR links API
+- Release tooling
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

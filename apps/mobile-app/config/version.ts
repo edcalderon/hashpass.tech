@@ -22,26 +22,51 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610290845, // Updated to current timestamp
+  buildNumber: 202610290857, // Updated to current timestamp
   releaseDate: '2026-10-29',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
+    'support artwork for custom events',
+    'refine attendance artwork themes',
     'refine BSL artwork template',
     'add personal artwork creator',
     'add localized testnet CTA'
   ],
   bugfixes: [
+    'keep local attendance links local',
     'resolve release regressions and localized artwork',
     'keep testnet CTA in the current tab',
     'replace default share favicon'
   ],
   breakingChanges: [],
-  notes: 'refine BSL artwork template; add personal artwork creator; add localized testnet CTA; resolve release regressions and localized artwork; keep testnet CTA in the current tab; replace default share favicon'
+  notes: 'support artwork for custom events; refine attendance artwork themes; refine BSL artwork template; add personal artwork creator; add localized testnet CTA; keep local attendance links local; resolve release regressions and localized artwork; keep testnet CTA in the current tab; replace default share favicon'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.180': {
+    version: '1.9.180',
+    buildNumber: 202610290857,
+    releaseDate: '2026-10-29',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'support artwork for custom events',
+      'refine attendance artwork themes',
+      'refine BSL artwork template',
+      'add personal artwork creator',
+      'add localized testnet CTA'
+    ],
+    bugfixes: [
+      'keep local attendance links local',
+      'resolve release regressions and localized artwork',
+      'keep testnet CTA in the current tab',
+      'replace default share favicon'
+    ],
+    breakingChanges: [],
+    notes: 'support artwork for custom events; refine attendance artwork themes; refine BSL artwork template; add personal artwork creator; add localized testnet CTA; keep local attendance links local; resolve release regressions and localized artwork; keep testnet CTA in the current tab; replace default share favicon'
+  },
   '1.9.179': {
     version: '1.9.179',
     buildNumber: 202610290845,
