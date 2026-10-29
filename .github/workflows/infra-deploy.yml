@@ -30,11 +30,12 @@ jobs:
   deploy:
     if: github.repository == 'hashpass-tech/hashpass.tech' && (github.ref_name == 'main' || github.ref_name == 'develop')
     runs-on: ubuntu-latest
+    environment: ${{ github.ref_name == 'main' && 'production' || 'development' }}
     permissions:
       contents: read
       id-token: write
     env:
-      EXPECTED_AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+      EXPECTED_AWS_ACCOUNT_ID: ${{ vars.AWS_TARGET_ACCOUNT_ID }}
       HASHPASS_INFRA_TARGET: bsl
       AWS_WEB_PIPELINE_ROLE_ARN: ${{ vars.AWS_WEB_PIPELINE_ROLE_ARN }}
 
