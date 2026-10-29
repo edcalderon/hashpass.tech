@@ -263,6 +263,9 @@ data "aws_iam_policy_document" "site_deploy_trust" {
       identifiers = [data.aws_iam_openid_connect_provider.github.arn]
     }
 
+    # Environment-scoped GitHub OIDC subjects omit the branch ref. AWS cannot
+    # match GitHub's custom ref claim, so enforce main through the environment's
+    # deployment branch policy instead.
     condition {
       test     = "StringEquals"
       variable = "token.actions.githubusercontent.com:aud"
@@ -273,12 +276,6 @@ data "aws_iam_policy_document" "site_deploy_trust" {
       test     = "StringEquals"
       variable = "token.actions.githubusercontent.com:sub"
       values   = ["repo:${var.github_repository}:environment:${each.value.github_environment}"]
-    }
-
-    condition {
-      test     = "StringEquals"
-      variable = "token.actions.githubusercontent.com:ref"
-      values   = ["refs/heads/main"]
     }
   }
 }

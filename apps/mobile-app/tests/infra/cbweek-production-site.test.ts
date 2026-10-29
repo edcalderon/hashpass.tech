@@ -34,11 +34,17 @@ describe('production event-site infrastructure', () => {
     expect(main).toContain('s3:DeleteObject');
   });
 
-  it('restricts the publisher role to the approved repo, production environment, and main ref', () => {
+  it('restricts the publisher role to the approved repo and production environment', () => {
     const main = read('main.tf');
+    const workflow = fs.readFileSync(path.join(ROOT, '.github/workflows/github-hosted-tenant-site-deploy.yml'), 'utf8');
+
     expect(main).toContain('repo:${var.github_repository}:environment:${each.value.github_environment}');
-    expect(main).toContain('token.actions.githubusercontent.com:ref');
-    expect(main).toContain('refs/heads/main');
+    expect(main).toContain('variable = "token.actions.githubusercontent.com:aud"');
+    expect(main).toContain('values   = ["sts.amazonaws.com"]');
+    expect(main).not.toContain('token.actions.githubusercontent.com:ref');
+    expect(workflow).toContain("environment: target === 'cbweek-production' ? 'production' : target");
+    expect(workflow).toContain("process.env.BRANCH === 'main' ? ['production', 'bsl-production', 'cbweek-production'] : []");
+    expect(workflow).toContain("process.env.EVENT_NAME !== 'workflow_dispatch'");
     expect(main).toContain('aws_cloudfront_distribution.site[each.key].arn');
   });
 

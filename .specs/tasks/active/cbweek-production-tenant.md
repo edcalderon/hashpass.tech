@@ -18,7 +18,7 @@ Production event data and API calls use the documented shared `core-production` 
 - Use GitHub-hosted build/deploy automation with least-privilege OIDC permissions; do not add an automatically triggered paid CodePipeline/CodeBuild path.
 - Keep development and production artifacts, hostnames, data profiles, and indexing behavior separate.
 - Do not apply Terraform, mutate AWS, or deploy production as part of this task. Deliver a reviewed IaC/code PR only.
-- Preserve protected-branch review/check requirements. The existing `production` GitHub environment is restricted to `main`; the active `MAIN` ruleset requires one PR approval and required checks. Reuse that environment with `CBWEEK_`-prefixed variables, and make the CBWeek production target explicit-dispatch-only so the default main-push matrix remains unchanged. Do not create an unprotected GitHub environment.
+- Preserve protected-branch review/check requirements. The existing `production` GitHub environment is restricted to `main`; the active `MAIN` ruleset requires one PR approval and required checks. Reuse that environment with `CBWEEK_`-prefixed variables, and make the CBWeek production target explicit-dispatch-only so the default main-push matrix remains unchanged. The AWS OIDC trust must match the exact repository and environment subject plus the `sts.amazonaws.com` audience; enforce `main` through the GitHub environment branch policy, not an unsupported OIDC `ref` condition. Do not create an unprotected GitHub environment.
 
 ## Requirements
 
@@ -26,7 +26,7 @@ Production event data and API calls use the documented shared `core-production` 
 2. Resolve production requests for the CBWeek event to the `core-production` profile and production API; preserve the existing development profile for `cbweek2026.hashpass.tech`.
 3. Add the required in-repository auth, CORS, trusted-origin, and callback-origin allowlists for the production hostname without removing existing CBWeek development origins. Do not mutate external OAuth/Supabase/DNS allowlists.
 4. Provision a dedicated production S3 static origin, CloudFront distribution, ACM certificate, and Route 53 A/AAAA alias records. Do not attach the demo site's noindex response-header policy to production.
-5. Add an explicitly selected `cbweek-production` target to the existing tenant workflow. Permit it only from `main`, keep it out of the default push matrix, upload only its CBWeek artifact, use `CBWEEK_`-prefixed variables in the existing `production` environment, and use an OIDC role scoped to its bucket/distribution and `main`. The role must not have Lambda permissions, and a static-site dispatch must skip core database migrations.
+5. Add an explicitly selected `cbweek-production` target to the existing tenant workflow. Permit it only from `main`, keep it out of the default push matrix, upload only its CBWeek artifact, use `CBWEEK_`-prefixed variables in the existing `production` environment, and use an OIDC role scoped to its bucket/distribution and exact repository/environment subject. The existing `production` environment's deployment branch policy enforces `main`; do not use the unsupported OIDC `ref` claim. The role must not have Lambda permissions, and a static-site dispatch must skip core database migrations.
 6. Leave the BSL site, current CBWeek development distribution/bucket/pipeline, and all existing production resources outside this change untouched.
 
 ## Acceptance criteria

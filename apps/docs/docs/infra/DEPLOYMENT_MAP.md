@@ -12,6 +12,7 @@ existing S3 origins or CloudFront delivery.
 | `hashpass.tech`, `www.hashpass.tech` | CloudFront + S3 static site | `hashpass` | [`github-hosted-tenant-site-deploy.yml`](../../../../.github/workflows/github-hosted-tenant-site-deploy.yml), target `production`, matching `main` pushes |
 | `dev.hashpass.tech` | CloudFront + S3 static site | `hashpass` | [`github-hosted-static-site-deploy.yml`](../../../../.github/workflows/github-hosted-static-site-deploy.yml), matching `develop` pushes |
 | CBWeek development | Existing CloudFront + S3 static site | `hashpass` | Tenant workflow, target `cbweek-development`, matching `develop` pushes |
+| `cbweek.hashpass.tech` | Dedicated CloudFront + private S3 static site | `hashpass` | Tenant workflow, explicit `cbweek-production` dispatch from `main` with `deploy=true`; uses the main-only `production` GitHub environment, builds tenant `cbweek2026` against `core-production`, and skips Lambda deployment and database migrations |
 | `api.hashpass.tech`, `api-dev.hashpass.tech` | Lambda + API Gateway, `us-east-1` | `hashpass` | Corresponding core web deploy with version-endpoint guard |
 | `bsl.hashpass.tech`, `bsl-dev.hashpass.tech` | Existing cross-account CloudFront + production-account static origins | `hashpass` for origin deployment | Tenant workflow, targets `bsl-production` / `bsl-development`, matching `main` / `develop` pushes. Since 2026-10-21 `bsl-production` is only the static-site hosting target; its build env points at core production, not the BSL project |
 | `hashpass.club` | GitHub Pages | n/a | `club-v*` release workflow |
@@ -19,6 +20,22 @@ existing S3 origins or CloudFront delivery.
 | `hashpass.lat`, `www.hashpass.lat` | CloudFront Function 301 to `https://hashpass.tech` (path and query preserved), unused OAC S3 origin | `hashpass` | `packages/infra/terraform/stacks/hashpass-lat-redirect` (reuses `modules/aws_domain_redirect`; reads the existing Route 53 zone, leaves the `blockchainsummit*` records untouched) |
 | `localproof.org`, `www.localproof.org` (current, live as of 2026-10-03) | CloudFront + private OAC-protected S3, serving the LocalPass offline-tourism MVP (`apps/localpass`) | `hashpass` | `packages/infra/terraform/stacks/localproof` provisions the infra (`apex_target = "cloudfront"`, the default); deploy is a manual `pnpm --filter @hashpass/localpass build` + `aws s3 sync` + CloudFront invalidation (no GitHub Actions deploy workflow yet — hackathon MVP). Registrar NS records are already cut over to this zone's Route53 name servers and the ACM cert is `ISSUED` — the apex is reachable over HTTPS today, not just the `*.cloudfront.net` fallback. |
 | `localproof.org`, `www.localproof.org` → GitHub Pages (prepared, **not yet applied**) | GitHub Pages serving [`hashpass-tech/localproof.org`](https://github.com/hashpass-tech/localproof.org)'s own hand-authored marketing/docs site; `app.localproof.org` takes over serving `apps/localpass`'s PWA via the same CloudFront+S3 stack | `hashpass` | Flip `apex_target = "github_pages"` in the `localproof` Terraform stack (`terraform plan` already verified: 8 to add, 2 to change, 8 to destroy — ACM cert replaced with `create_before_destroy`, no validation gap). The standalone repo already has its own Pages deploy workflow (`.github/workflows/pages.yml`) and `CNAME` file, pushed and verified live-deploying at its `*.github.io` URL; it only needs DNS to actually point at it. Pending an explicit go/no-go since it changes what the bare `localproof.org` apex currently serves to real visitors. |
+
+## CBWeek production trust boundary
+
+The `cbweek-production` target is available only as an explicit `workflow_dispatch`
+from `main` with `deploy=true`. It builds the `cbweek2026` tenant against the
+`core-production` API/Supabase profile, then uploads the static artifact to its
+own private S3 bucket and CloudFront distribution; it does not deploy a Lambda
+or run core database migrations.
+
+The deploy role trust matches `sts.amazonaws.com` and the exact
+`hashpass-tech/hashpass.tech` repository plus `production` environment subject.
+Environment-scoped GitHub OIDC subjects omit the branch ref, and AWS does not
+support GitHub's custom `ref` claim as a trust condition. The `production`
+GitHub environment's deployment branch policy must therefore remain restricted
+to `main` (verified 2026-10-29); do not add a `token.actions.githubusercontent.com:ref`
+condition to the IAM trust policy.
 | `apps/localproof-site` (monorepo) ↔ [`hashpass-tech/localproof.org`](https://github.com/hashpass-tech/localproof.org) | Two-way `git subtree` sync, not a one-way mirror | n/a | Monorepo → standalone: [`localproof-site-sync.yml`](../../../../.github/workflows/localproof-site-sync.yml), triggered on `main` pushes touching `apps/localproof-site/**`, needs a `LOCALPROOF_SITE_SYNC_TOKEN` repo secret. Standalone → monorepo: `sync-to-monorepo.yml` in that repo opens a PR against `develop` on every push to its `main`, needs a `MONOREPO_SYNC_TOKEN` secret set there. Replaces the old one-way `localpass-mirror.yml`, which mirrored `apps/localpass` (app source) onto a repo that had already diverged into independent hand-authored content — running it would have overwritten that content. |
 
 ## Account boundary

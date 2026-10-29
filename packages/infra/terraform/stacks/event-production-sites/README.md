@@ -2,7 +2,7 @@
 
 This isolated Terraform stack provisions dedicated static hosting for production event tenants. Each entry in `event_sites` gets a private, versioned, encrypted S3 origin; a CloudFront distribution and ACM certificate; Route 53 A/AAAA aliases; and a GitHub Actions OIDC role scoped to that event's bucket and distribution. The production event sites share only the stack's cache policy, not origins or deploy permissions.
 
-The stack currently declares `cbweek.hashpass.tech`. Add one `event_sites` map entry per future production event site. It does not manage `cbweek2026.hashpass.tech`, BSL, or any core/tenant API Lambda. It uses the existing `production` GitHub environment, whose deployment branch policy is `main`; the role also requires the OIDC `ref` claim to be `refs/heads/main`.
+The stack currently declares `cbweek.hashpass.tech`. Add one `event_sites` map entry per future production event site. It does not manage `cbweek2026.hashpass.tech`, BSL, or any core/tenant API Lambda. The deploy role requires the `sts.amazonaws.com` audience and the exact repository plus environment OIDC subject. GitHub environment-scoped subjects omit the branch ref, and AWS does not support GitHub's custom `ref` claim as a trust condition; the existing `production` GitHub environment therefore enforces the `main`-only deployment branch policy.
 
 ## Hosting and cost choices
 
@@ -29,6 +29,8 @@ Review the plan and the exact target account before any apply. This code change 
 ## GitHub production environment settings
 
 After infrastructure is separately approved and applied, add the following non-secret variables to the existing `production` GitHub environment. Do not create a new environment or place credentials in the repository.
+
+Keep this environment's deployment branch policy restricted to `main`. The IAM role trust uses the audience and environment-scoped subject; it must not add a `token.actions.githubusercontent.com:ref` condition.
 
 - `CBWEEK_STATIC_SITE_BUCKET`
 - `CBWEEK_STATIC_SITE_DISTRIBUTION_ID`
