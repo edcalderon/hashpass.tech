@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
+import { uiTokens } from '@hashpass/ui/tokens';
 import type { LukasRewardState, LukasRewardsContextValue, LukasRewardWalletProps } from '../../types/lukas.types';
 import { createInitialLukasRewardState, applyLukasReward, LUKAS_REWARD_TOTAL, playLukasClickSound } from './lukas-rewards';
 import { useTheme } from '../../hooks/useTheme';
@@ -76,6 +77,7 @@ export function LukasRewardsProvider({ children }: { children: React.ReactNode }
     total: state.total,
     max: LUKAS_REWARD_TOTAL,
     rewardDelta,
+    hydrated,
     earn,
     markClaimed,
   };
@@ -114,13 +116,13 @@ export function LukasRewardWallet({ onOpenClaim }: LukasRewardWalletProps) {
     <Animated.View style={[styles.wallet, { backgroundColor: palette.cardRaised, borderColor: claimed ? '#D9A72A' : palette.border, transform: [{ scale }] }, isMobile && styles.walletMobile]}>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={claimed ? 'LUKAS claimed' : `LUKAS progress ${total} of ${max}`}
-        accessibilityHint="Claim will be granted at the LUKAS TGE event."
-        disabled={!claimed && total === 0}
+        accessibilityLabel={claimed ? t('rewards.claimed') : t('rewards.counterAccessibility', { total, max, progress })}
+        accessibilityHint={t('rewards.counterHint')}
+        disabled={claimed || total === 0}
         onPress={onOpenClaim}
         onHoverIn={() => setHovered(true)}
         onHoverOut={() => setHovered(false)}
-        style={({ pressed }) => [styles.walletButton, pressed && styles.walletPressed, !claimed && total === 0 && styles.walletDisabled]}
+        style={({ pressed }) => [styles.walletButton, pressed && styles.walletPressed, (claimed || total === 0) && styles.walletDisabled]}
       >
         <View style={[styles.ticketDot, { backgroundColor: claimed ? '#D9A72A' : palette.fill }]} />
         <View style={styles.walletCopy}>
@@ -135,16 +137,16 @@ export function LukasRewardWallet({ onOpenClaim }: LukasRewardWalletProps) {
 }
 
 const styles = StyleSheet.create({
-  wallet: { position: 'absolute', top: 18, left: 18, zIndex: 60, minWidth: 210, maxWidth: 285, borderRadius: 18, borderWidth: 1, shadowColor: '#000', shadowOpacity: 0.16, shadowRadius: 14, shadowOffset: { width: 0, height: 8 }, elevation: 8 },
-  walletMobile: { top: 72, left: 14, right: 14, minWidth: 0, maxWidth: 'none' },
-  walletButton: { minHeight: 58, flexDirection: 'row', alignItems: 'center', gap: 9, paddingHorizontal: 12, paddingVertical: 9, borderRadius: 18 },
+  wallet: { flexShrink: 1, minWidth: 144, maxWidth: 260, borderRadius: uiTokens.radius.pill, borderWidth: uiTokens.control.borderWidth, shadowColor: '#000', shadowOpacity: 0.16, shadowRadius: 12, shadowOffset: { width: 0, height: 5 }, elevation: 6 },
+  walletMobile: { maxWidth: '78%' },
+  walletButton: { minHeight: uiTokens.control.minHeight, flexDirection: 'row', alignItems: 'center', gap: uiTokens.space.sm, paddingHorizontal: uiTokens.space.md, paddingVertical: uiTokens.space.xs, borderRadius: uiTokens.radius.pill },
   walletPressed: { opacity: 0.82 },
   walletDisabled: { opacity: 0.76 },
-  ticketDot: { width: 12, height: 12, borderRadius: 99 },
+  ticketDot: { width: 10, height: 10, borderRadius: uiTokens.radius.circle },
   walletCopy: { flex: 1, minWidth: 0 },
-  walletLabel: { fontSize: 10, fontWeight: '900', letterSpacing: 1.1 },
-  walletValue: { fontSize: 13, fontWeight: '800', marginTop: 2 },
-  delta: { fontSize: 18, fontWeight: '900' },
-  tooltip: { position: 'absolute', top: 64, left: 0, right: 0, marginTop: 7, borderRadius: 12, borderWidth: 1, padding: 9 },
-  tooltipText: { fontSize: 12, lineHeight: 17, fontWeight: '600' },
+  walletLabel: { fontSize: uiTokens.type.caption - 2, fontWeight: '900', letterSpacing: 0.8 },
+  walletValue: { fontSize: uiTokens.type.caption, fontWeight: '800', marginTop: 1 },
+  delta: { fontSize: uiTokens.type.title, fontWeight: '900' },
+  tooltip: { position: 'absolute', top: 56, left: 0, right: 0, marginTop: uiTokens.space.xs, borderRadius: uiTokens.radius.input, borderWidth: 1, padding: uiTokens.space.sm },
+  tooltipText: { fontSize: uiTokens.type.caption, lineHeight: 17, fontWeight: '600' },
 });

@@ -34,6 +34,7 @@ export type LukasWhyVideoProps = {
 
 export type HeroSectionProps = {
   onGetLukas: () => void;
+  getLukasDisabled?: boolean;
   onForMerchants: () => void;
   rewardTotal: number;
   rewardMax?: number;
@@ -67,7 +68,7 @@ export type LukasClaimModalProps = {
   rewardTotal?: number;
   onClaimed?: (email: string) => void;
 };
-export type LukasClaimStep = 'email' | 'code' | 'verified';
+export type LukasClaimStep = 'quiz' | 'email' | 'code' | 'verified';
 export type LukasClaimSession = {
   access_token: string;
   refresh_token: string;
@@ -113,6 +114,7 @@ export type LukasRewardsContextValue = {
   total: number;
   max: number;
   rewardDelta: number;
+  hydrated: boolean;
   earn: (id: LukasRewardId) => LukasRewardResult | null;
   markClaimed: (email: string) => void;
 };
