@@ -30,6 +30,8 @@ import { LukasFooter } from '../components/lukas/LukasFooter';
 import { resolveLukasAnimationLevel } from '../components/lukas/lukas-rewards';
 import { LukasRewardWallet, LukasRewardsProvider, useLukasRewards } from '../components/lukas/LukasRewards';
 import { LukasMotionContext, useSystemReducedMotion } from '../components/lukas/useLukasMotion';
+import { lukasPalette } from '../components/lukas/lukas-ui';
+import { uiTokens } from '@hashpass/ui/tokens';
 
 export default function LukasLanding() {
   return <LukasRewardsProvider><LukasLandingContent /></LukasRewardsProvider>;
@@ -41,11 +43,15 @@ function LukasLandingContent() {
   const { t } = useTranslation('lukas');
   const scrollY = useSharedValue(0);
   const scrollRef = useRef<ScrollView>(null);
-  const { state: rewardState, total: rewardTotal, max: rewardMax, rewardDelta, earn, markClaimed } = useLukasRewards();
+  const { state: rewardState, total: rewardTotal, max: rewardMax, rewardDelta, earn, markClaimed, hydrated: rewardHydrated } = useLukasRewards();
   const [animationLevel, setAnimationLevel] = useState<LukasAnimationLevel>('full');
   const [claimVisible, setClaimVisible] = useState(false);
+  const [toastVisible, setToastVisible] = useState(false);
   const systemReducedMotion = useSystemReducedMotion();
   const effectiveAnimationLevel = resolveLukasAnimationLevel(animationLevel, systemReducedMotion);
+  const palette = lukasPalette(isDark);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const heroRewardHandledRef = useRef(false);
 
   useEffect(() => {
     AsyncStorage.getItem('lukas.animation.v1').then((value) => {
@@ -61,8 +67,33 @@ function LukasLandingContent() {
 
   const styles = getStyles(isDark, colors, isMobile);
 
+  useEffect(() => {
+    if (rewardState.completed.hero) heroRewardHandledRef.current = true;
+  }, [rewardState.completed.hero]);
+
+  useEffect(() => () => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+  }, []);
+
+  const showMoreRewardsToast = () => {
+    setToastVisible(true);
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => setToastVisible(false), 3600);
+  };
+
   const handleLukasClick = () => {
+    if (!rewardHydrated) return;
+    if (heroRewardHandledRef.current || rewardState.completed.hero) {
+      heroRewardHandledRef.current = true;
+      showMoreRewardsToast();
+      return;
+    }
+    heroRewardHandledRef.current = true;
     const result = earn('hero');
+    if (!result?.awarded) {
+      showMoreRewardsToast();
+      return;
+    }
     if (result?.reachedCap) {
       handleScrollToSection('get-lukas');
       setClaimVisible(true);
@@ -90,8 +121,8 @@ function LukasLandingContent() {
   return (
     <LukasMotionContext.Provider value={effectiveAnimationLevel}>
     <View style={styles.container}>
-      <LukasRewardWallet onOpenClaim={() => setClaimVisible(true)} />
-      <View style={styles.settingsTrigger}>
+      <View style={styles.utilityRow} pointerEvents="box-none">
+        <LukasRewardWallet onOpenClaim={() => setClaimVisible(true)} />
         <LukasSettingsMenu animation={animationLevel} onAnimationChange={setAnimationLevel} />
       </View>
       <Animated.ScrollView
@@ -108,6 +139,7 @@ function LukasLandingContent() {
           rewardMax={rewardMax}
           rewardDelta={rewardDelta}
           rewardClaimed={rewardState.claimed}
+          getLukasDisabled={!rewardHydrated}
           animationLevel={effectiveAnimationLevel}
         />
         
@@ -138,6 +170,17 @@ function LukasLandingContent() {
 
         <LukasFooter />
       </Animated.ScrollView>
+      {toastVisible ? (
+        <View
+          style={[styles.rewardToast, { backgroundColor: palette.cardRaised, borderColor: palette.border }]}
+          accessible
+          accessibilityRole="alert"
+          accessibilityLiveRegion="polite"
+        >
+          <View style={[styles.toastDot, { backgroundColor: palette.fill }]} />
+          <Text style={[styles.toastText, { color: palette.text }]}>{t('rewards.moreQuestsToast')}</Text>
+        </View>
+      ) : null}
       <LukasClaimModal
         visible={claimVisible}
         rewardTotal={rewardTotal}
@@ -154,11 +197,48 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     flex: 1,
     backgroundColor: isDark ? '#06111E' : '#F7FAF8',
   },
-  settingsTrigger: {
+  utilityRow: {
     position: 'absolute',
     top: isMobile ? 16 : 22,
-    right: isMobile ? 16 : 28,
+    left: isMobile ? 14 : 28,
+    right: isMobile ? 14 : 28,
     zIndex: 50,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: uiTokens.space.sm,
+  },
+  rewardToast: {
+    position: 'absolute',
+    bottom: isMobile ? uiTokens.space.md : uiTokens.space.lg,
+    left: uiTokens.space.md,
+    right: uiTokens.space.md,
+    maxWidth: 560,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: uiTokens.space.md,
+    borderWidth: uiTokens.control.borderWidth,
+    borderRadius: uiTokens.radius.input,
+    paddingHorizontal: uiTokens.space.md,
+    paddingVertical: uiTokens.space.sm,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 10,
+    zIndex: 80,
+  },
+  toastDot: {
+    width: 10,
+    height: 10,
+    borderRadius: uiTokens.radius.circle,
+  },
+  toastText: {
+    flex: 1,
+    fontSize: uiTokens.type.body,
+    lineHeight: 22,
+    fontWeight: '700',
   },
   scrollView: {
     flex: 1,

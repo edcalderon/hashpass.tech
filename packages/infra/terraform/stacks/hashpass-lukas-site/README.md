@@ -46,25 +46,34 @@ without rewriting JavaScript/assets or masking failures as successful pages.
 
 ## SEO metadata and social assets
 
-`build.py` rewrites `<title>`, the meta description, `robots`/`googlebot`,
-`theme-color`, the canonical link, Open Graph tags, and a Twitter
-`summary_large_image` card directly into `index.html` and `lukas.html` after
-the static export, replacing any existing tag of the same name/property
-in-place rather than appending a duplicate. `404.html` gets the same
-treatment with `noindex, nofollow, noarchive` instead, so a missing route
-never gets indexed. The canonical URL and `og:url` always point at
-`/lukas`, not `/` or `/404`, matching the route visitors actually land on.
+`build.py` writes crawlable metadata directly into the static HTML before
+publication. `index.html` and `lukas.html` retain the title
+`LUKAS | Stable value for LatAm payments`, use one consistent search/Open
+Graph/Twitter description, advertise the English Open Graph locale, and point
+the canonical URL and `og:url` at `/lukas`. The Open Graph and Twitter cards
+reference the existing absolute HTTPS `lukas-social-card.png` URL as a
+1200×630 PNG.
+
+The builder patches both `404.html` and `+not-found.html` with a not-found
+title and `noindex, nofollow, noarchive` directives. Those documents have no
+canonical, social-card, description, or JSON-LD metadata. CloudFront continues
+to serve `/404.html` with HTTP status 404 for missing objects. The build also
+writes a permissive `robots.txt` pointing at `sitemap.xml`; the sitemap lists
+only the canonical `/lukas` URL. Landing documents include minimal `WebSite`
+and `WebPage` JSON-LD using the verified site name, URL, description, and
+English language only. The schema adds no Product/Offer/FAQ data or unverified claims.
 
 The build fails outright (`SystemExit`) if any of the four required assets —
 `favicon.svg`, `favicon-32.png`, `apple-touch-icon.png`,
 `lukas-social-card.png` — is missing from `overrides/public/`, instead of
 silently shipping a page with a broken social card or favicon. `recovery.json`
-additionally records `seo.canonical` and `seo.socialImage` alongside the
-existing source provenance. `deploy-lukas-landing.sh`'s post-publish
-verification re-fetches the live page and greps for the exact title, the
-canonical link, the `og:image` URL, and the Twitter card tag before
-considering the release confirmed — a metadata regression fails the deploy
-the same way a missing favicon or stale version already did.
+records `seo.canonical` and `seo.socialImage` alongside the existing source
+provenance. `deploy-lukas-landing.sh` verifies the live title and descriptions,
+canonical and card tags, crawler files, JSON-LD, the PNG response content type
+and dimensions, and that an unmatched route remains a noindex HTTP 404. A
+verification failure prevents the deployment from being reported as
+successful. Social platforms may continue showing cached previews until they
+re-scrape the canonical URL.
 
 ## Local development
 

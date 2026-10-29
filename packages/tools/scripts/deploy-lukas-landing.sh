@@ -5,6 +5,7 @@ BUILD_DIR="${LUKAS_BUILD_DIR:-}"
 BUCKET_NAME="${LUKAS_SITE_BUCKET:-hashpass-lukas-landing-site}"
 SITE_URL="${LUKAS_SITE_URL:-https://lukas.hashpass.tech}"
 EXPECTED_VERSION="${LUKAS_RELEASE_VERSION:-}"
+EXPECTED_DESCRIPTION='$LUKAS tracks a weighted LatAm currency basket and is designed for payments with HashPass merchants, backed by omni-chain crypto collateral.'
 AWS_REGION="${AWS_REGION:-us-east-2}"
 LOCK_PREFIX="${LUKAS_LOCK_PREFIX:-_locks/lukas-landing}"
 LOCK_WAIT_SECONDS="${LUKAS_LOCK_WAIT_SECONDS:-10800}"
@@ -265,6 +266,58 @@ if (manifest.releaseVersion !== expected) {
 NODE
 }
 
+verify_social_image() {
+  local image_file content_type
+  image_file="${tmp_dir}/lukas-social-card.png"
+  content_type="$(curl --fail --silent --show-error --location --output "${image_file}" --write-out '%{content_type}' "${SITE_URL%/}/lukas-social-card.png?release=${EXPECTED_VERSION}")" || return 1
+  if [[ "${content_type}" != "image/png" ]]; then
+    echo "ERROR: Lukas social card returned content type ${content_type:-<missing>}, expected image/png." >&2
+    return 1
+  fi
+  node - "${image_file}" <<'NODE'
+const fs = require('node:fs');
+const image = fs.readFileSync(process.argv[2]);
+const signature = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
+if (image.length < 24 || !image.subarray(0, 8).equals(signature)) {
+  throw new Error('Lukas social card is not a valid PNG.');
+}
+const width = image.readUInt32BE(16);
+const height = image.readUInt32BE(20);
+if (width !== 1200 || height !== 630) {
+  throw new Error(`Expected a 1200x630 Lukas social card, received ${width}x${height}.`);
+}
+NODE
+}
+
+verify_sitemap() {
+  node - "${tmp_dir}/sitemap.xml" "${SITE_URL%/}/lukas" <<'NODE'
+const fs = require('node:fs');
+const xml = fs.readFileSync(process.argv[2], 'utf8');
+const expected = process.argv[3];
+const locations = [...xml.matchAll(/<loc>\s*([^<]+)\s*<\/loc>/g)].map((match) => match[1].trim());
+if (locations.length !== 1 || locations[0] !== expected) {
+  throw new Error(`Expected the sitemap to contain only ${expected}; received ${JSON.stringify(locations)}.`);
+}
+NODE
+}
+
+verify_not_found() {
+  local not_found_file status
+  not_found_file="${tmp_dir}/not-found.html"
+  status="$(curl --silent --show-error --location --output "${not_found_file}" --write-out '%{http_code}' "${SITE_URL%/}/seo-verification-${EXPECTED_VERSION}?release=${EXPECTED_VERSION}")" || return 1
+  if [[ "${status}" != "404" ]]; then
+    echo "ERROR: Unknown Lukas route returned HTTP ${status}, expected 404." >&2
+    return 1
+  fi
+  if ! grep -Fq '<meta name="robots" content="noindex, nofollow, noarchive"' "${not_found_file}" || ! grep -Fq '<meta name="googlebot" content="noindex, nofollow, noarchive"' "${not_found_file}"; then
+    return 1
+  fi
+  if grep -Eiq 'rel="canonical"|property="og:|name="twitter:' "${not_found_file}" || grep -Fq 'application/ld+json' "${not_found_file}"; then
+    echo "ERROR: Lukas not-found page contains a canonical or social/schema metadata tag." >&2
+    return 1
+  fi
+}
+
 verified="false"
 for attempt in $(seq 1 12); do
   if curl --fail --silent --show-error --location \
@@ -275,17 +328,32 @@ for attempt in $(seq 1 12); do
       && curl --fail --silent --show-error --location \
         "${SITE_URL%/}/favicon.svg?release=${EXPECTED_VERSION}" \
         -o /dev/null \
+      && verify_social_image \
       && curl --fail --silent --show-error --location \
-        "${SITE_URL%/}/lukas-social-card.png?release=${EXPECTED_VERSION}" \
-        -o /dev/null \
+        "${SITE_URL%/}/robots.txt?release=${EXPECTED_VERSION}" \
+        -o "${tmp_dir}/robots.txt" \
+      && grep -Fq 'User-agent: *' "${tmp_dir}/robots.txt" \
+      && grep -Fq 'Allow: /' "${tmp_dir}/robots.txt" \
+      && grep -Fq 'Sitemap: https://lukas.hashpass.tech/sitemap.xml' "${tmp_dir}/robots.txt" \
+      && curl --fail --silent --show-error --location \
+        "${SITE_URL%/}/sitemap.xml?release=${EXPECTED_VERSION}" \
+        -o "${tmp_dir}/sitemap.xml" \
+      && verify_sitemap \
       && curl --fail --silent --show-error --location \
         "${SITE_URL%/}/lukas?release=${EXPECTED_VERSION}" \
         -o "${tmp_dir}/lukas.html" \
-      && grep -q '<title>LUKAS | Stable value for LatAm payments</title>' "${tmp_dir}/lukas.html" \
-      && grep -q 'rel="canonical" href="https://lukas.hashpass.tech/lukas"' "${tmp_dir}/lukas.html" \
-      && grep -q 'property="og:image" content="https://lukas.hashpass.tech/lukas-social-card.png"' "${tmp_dir}/lukas.html" \
-      && grep -q 'name="twitter:card" content="summary_large_image"' "${tmp_dir}/lukas.html" \
-      && grep -q 'favicon.svg' "${tmp_dir}/lukas.html"; then
+      && grep -Fq '<title>LUKAS | Stable value for LatAm payments</title>' "${tmp_dir}/lukas.html" \
+      && grep -Fq "name=\"description\" content=\"${EXPECTED_DESCRIPTION}\"" "${tmp_dir}/lukas.html" \
+      && grep -Fq "property=\"og:description\" content=\"${EXPECTED_DESCRIPTION}\"" "${tmp_dir}/lukas.html" \
+      && grep -Fq "name=\"twitter:description\" content=\"${EXPECTED_DESCRIPTION}\"" "${tmp_dir}/lukas.html" \
+      && grep -Fq 'property="og:locale" content="en_US"' "${tmp_dir}/lukas.html" \
+      && grep -Fq 'rel="canonical" href="https://lukas.hashpass.tech/lukas"' "${tmp_dir}/lukas.html" \
+      && grep -Fq 'property="og:image" content="https://lukas.hashpass.tech/lukas-social-card.png"' "${tmp_dir}/lukas.html" \
+      && grep -Fq 'name="twitter:card" content="summary_large_image"' "${tmp_dir}/lukas.html" \
+      && grep -Fq '"@type":"WebSite"' "${tmp_dir}/lukas.html" \
+      && grep -Fq '"@type":"WebPage"' "${tmp_dir}/lukas.html" \
+      && verify_not_found \
+      && grep -Fq 'favicon.svg' "${tmp_dir}/lukas.html"; then
     verified="true"
     break
   fi

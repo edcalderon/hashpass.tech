@@ -22,10 +22,11 @@ SOURCE_PATHS = [
     "node_modules",
 ]
 SITE_URL = "https://lukas.hashpass.tech"
+CANONICAL_URL = f"{SITE_URL}/lukas"
 PAGE_TITLE = "LUKAS | Stable value for LatAm payments"
 PAGE_DESCRIPTION = (
-    "LUKAS is the stable meme coin pegged 1:1 to the LatAm peso index, "
-    "designed for real payments across Latin America."
+    "$LUKAS tracks a weighted LatAm currency basket and is designed for payments "
+    "with HashPass merchants, backed by omni-chain crypto collateral."
 )
 SOCIAL_IMAGE = f"{SITE_URL}/lukas-social-card.png"
 
@@ -35,53 +36,121 @@ def _attr(value):
 
 
 def _upsert(html_text, pattern, tag):
-    if re.search(pattern, html_text, flags=re.IGNORECASE):
-        return re.sub(pattern, tag, html_text, count=1, flags=re.IGNORECASE)
-    return html_text.replace("</head>", f"{tag}</head>", 1)
+    matches = list(re.finditer(pattern, html_text, flags=re.IGNORECASE | re.DOTALL))
+    if not matches:
+        if "</head>" not in html_text:
+            raise ValueError("Cannot inject SEO metadata: document has no closing head tag.")
+        return html_text.replace("</head>", f"{tag}</head>", 1)
+
+    parts = []
+    cursor = 0
+    for index, match in enumerate(matches):
+        parts.append(html_text[cursor:match.start()])
+        if index == 0:
+            parts.append(tag)
+        cursor = match.end()
+    parts.append(html_text[cursor:])
+    return "".join(parts)
+
+
+def _strip_landing_metadata(html_text):
+    patterns = [
+        r'<meta\b(?=[^>]*(?:name|property)=["\'](?:description|og:[^"\']+|twitter:[^"\']+)["\'])[^>]*>',
+        r'<link\b(?=[^>]*rel=["\']canonical["\'])[^>]*>',
+        r'<script\b(?=[^>]*type=["\']application/ld\+json["\'])[^>]*>.*?</script>',
+    ]
+    for pattern in patterns:
+        html_text = re.sub(pattern, "", html_text, flags=re.IGNORECASE | re.DOTALL)
+    return html_text
+
+
+def _json_ld_tag():
+    website_id = f"{SITE_URL}/#website"
+    webpage = {
+        "@type": "WebPage",
+        "@id": f"{CANONICAL_URL}#webpage",
+        "url": CANONICAL_URL,
+        "name": PAGE_TITLE,
+        "description": PAGE_DESCRIPTION,
+        "inLanguage": "en",
+        "isPartOf": {"@id": website_id},
+    }
+    website = {
+        "@type": "WebSite",
+        "@id": website_id,
+        "url": SITE_URL,
+        "name": "LUKAS",
+        "description": PAGE_DESCRIPTION,
+        "inLanguage": "en",
+    }
+    structured_data = {
+        "@context": "https://schema.org",
+        "@graph": [website, webpage],
+    }
+    payload = json.dumps(structured_data, ensure_ascii=False, separators=(",", ":"))
+    payload = payload.replace("<", r"\u003c")
+    return f'<script type="application/ld+json">{payload}</script>'
 
 
 def _patch_seo(html_text, *, noindex=False):
+    if noindex:
+        html_text = _strip_landing_metadata(html_text)
+
     robots = "noindex, nofollow, noarchive" if noindex else (
         "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
     )
     tags = [
         f"<title>{_attr(PAGE_TITLE if not noindex else 'LUKAS | Page not found')}</title>",
-        f'<meta name="description" content="{_attr(PAGE_DESCRIPTION)}"/>',
         f'<meta name="robots" content="{_attr(robots)}"/>',
         f'<meta name="googlebot" content="{_attr(robots)}"/>',
-        f'<meta name="theme-color" content="#050816"/>',
-        '<meta property="og:type" content="website"/>',
-        '<meta property="og:site_name" content="LUKAS"/>',
-        f'<meta property="og:title" content="{_attr(PAGE_TITLE)}"/>',
-        f'<meta property="og:description" content="{_attr(PAGE_DESCRIPTION)}"/>',
-        f'<meta property="og:url" content="{_attr(SITE_URL + ("/404" if noindex else "/lukas"))}"/>',
-        f'<meta property="og:image" content="{_attr(SOCIAL_IMAGE)}"/>',
-        f'<meta property="og:image:secure_url" content="{_attr(SOCIAL_IMAGE)}"/>',
-        '<meta property="og:image:type" content="image/png"/>',
-        '<meta property="og:image:width" content="1200"/>',
-        '<meta property="og:image:height" content="630"/>',
-        '<meta property="og:image:alt" content="LUKAS stable value for LatAm payments"/>',
-        '<meta name="twitter:card" content="summary_large_image"/>',
-        f'<meta name="twitter:title" content="{_attr(PAGE_TITLE)}"/>',
-        f'<meta name="twitter:description" content="{_attr(PAGE_DESCRIPTION)}"/>',
-        f'<meta name="twitter:image" content="{_attr(SOCIAL_IMAGE)}"/>',
-        '<meta name="twitter:image:alt" content="LUKAS stable value for LatAm payments"/>',
-        '<link rel="canonical" href="https://lukas.hashpass.tech/lukas"/>',
+        '<meta name="theme-color" content="#050816"/>',
+    ]
+    if not noindex:
+        tags.extend([
+            f'<meta name="description" content="{_attr(PAGE_DESCRIPTION)}"/>',
+            '<meta property="og:type" content="website"/>',
+            '<meta property="og:site_name" content="LUKAS"/>',
+            '<meta property="og:locale" content="en_US"/>',
+            f'<meta property="og:title" content="{_attr(PAGE_TITLE)}"/>',
+            f'<meta property="og:description" content="{_attr(PAGE_DESCRIPTION)}"/>',
+            f'<meta property="og:url" content="{_attr(CANONICAL_URL)}"/>',
+            f'<meta property="og:image" content="{_attr(SOCIAL_IMAGE)}"/>',
+            f'<meta property="og:image:secure_url" content="{_attr(SOCIAL_IMAGE)}"/>',
+            '<meta property="og:image:type" content="image/png"/>',
+            '<meta property="og:image:width" content="1200"/>',
+            '<meta property="og:image:height" content="630"/>',
+            '<meta property="og:image:alt" content="LUKAS stable value for LatAm payments"/>',
+            '<meta name="twitter:card" content="summary_large_image"/>',
+            f'<meta name="twitter:title" content="{_attr(PAGE_TITLE)}"/>',
+            f'<meta name="twitter:description" content="{_attr(PAGE_DESCRIPTION)}"/>',
+            f'<meta name="twitter:image" content="{_attr(SOCIAL_IMAGE)}"/>',
+            '<meta name="twitter:image:alt" content="LUKAS stable value for LatAm payments"/>',
+            f'<link rel="canonical" href="{_attr(CANONICAL_URL)}"/>',
+            _json_ld_tag(),
+        ])
+    tags.extend([
         '<link rel="icon" type="image/svg+xml" href="/favicon.svg"/>',
         '<link rel="alternate icon" type="image/png" sizes="32x32" href="/favicon-32.png"/>',
         '<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"/>',
-    ]
+    ])
+
     for tag in tags:
         if tag.startswith("<title"):
             html_text = _upsert(html_text, r"<title[^>]*>.*?</title>", tag)
-        elif 'name="description"' in tag:
-            html_text = _upsert(html_text, r'<meta\s+name=["\']description["\'][^>]*>', tag)
+        elif tag.startswith("<script"):
+            html_text = _upsert(
+                html_text,
+                r'<script\s+type=["\']application/ld\+json["\'][^>]*>.*?</script>',
+                tag,
+            )
         elif 'name="robots"' in tag:
             html_text = _upsert(html_text, r'<meta\s+name=["\']robots["\'][^>]*>', tag)
         elif 'name="googlebot"' in tag:
             html_text = _upsert(html_text, r'<meta\s+name=["\']googlebot["\'][^>]*>', tag)
         elif 'name="theme-color"' in tag:
             html_text = _upsert(html_text, r'<meta\s+name=["\']theme-color["\'][^>]*>', tag)
+        elif 'name="description"' in tag:
+            html_text = _upsert(html_text, r'<meta\s+name=["\']description["\'][^>]*>', tag)
         elif 'rel="canonical"' in tag:
             html_text = _upsert(html_text, r'<link\s+rel=["\']canonical["\'][^>]*>', tag)
         elif 'rel="icon"' in tag and 'alternate' not in tag:
@@ -228,13 +297,27 @@ export default function Index() { return <Redirect href='/lukas' />; }
         for html_path in site.glob("*.html"):
             if html_path.name in {"index.html", "lukas.html"}:
                 html_path.write_text(_patch_seo(html_path.read_text()))
+            elif html_path.name in {"404.html", "+not-found.html"}:
+                html_path.write_text(_patch_seo(html_path.read_text(), noindex=True))
+
+        (site / "robots.txt").write_text(
+            f"User-agent: *\nAllow: /\nSitemap: {SITE_URL}/sitemap.xml\n",
+            encoding="utf-8",
+        )
+        (site / "sitemap.xml").write_text(
+            '<?xml version="1.0" encoding="UTF-8"?>\n'
+            '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+            f"  <url><loc>{CANONICAL_URL}</loc></url>\n"
+            "</urlset>\n",
+            encoding="utf-8",
+        )
 
         (site / "recovery.json").write_text(json.dumps({
             "sourceCommit": SOURCE_COMMIT,
             "releaseVersion": release_version,
             "scope": "original-lukas-landing",
             "seo": {
-                "canonical": f"{SITE_URL}/lukas",
+                "canonical": CANONICAL_URL,
                 "socialImage": SOCIAL_IMAGE,
             },
             "overrides": override_hashes,

@@ -12,7 +12,7 @@ import { lukasPalette, lukasSkin } from './lukas-ui';
 const PEG_CURRENCIES = ['COP', 'ARS', 'BRL', 'MXN', 'CLP'];
 const REWARD_SEGMENTS = Array.from({ length: 10 }, (_, index) => index);
 
-export function HeroSection({ onGetLukas, onForMerchants, rewardTotal, rewardMax = 20, rewardDelta, rewardClaimed = false, animationLevel }: HeroSectionProps) {
+export function HeroSection({ onGetLukas, getLukasDisabled = false, onForMerchants, rewardTotal, rewardMax = 20, rewardDelta, rewardClaimed = false, animationLevel }: HeroSectionProps) {
   const { isDark } = useTheme();
   const isMobile = useIsMobile();
   const { t } = useTranslation('lukas');
@@ -95,7 +95,7 @@ export function HeroSection({ onGetLukas, onForMerchants, rewardTotal, rewardMax
 
           <View style={styles.actionStack}>
             <View style={styles.buttonRow}>
-              <ActionButton mode={mode} skin={skin} label={t('hero.getLukas')} onPress={onGetLukas} style={styles.heroButton} />
+              <ActionButton mode={mode} skin={skin} label={t('hero.getLukas')} disabled={getLukasDisabled} onPress={onGetLukas} style={styles.heroButton} />
               <ActionButton mode={mode} skin={skin} variant="secondary" label={t('hero.forMerchants')} onPress={onForMerchants} style={styles.heroButton} />
             </View>
 
