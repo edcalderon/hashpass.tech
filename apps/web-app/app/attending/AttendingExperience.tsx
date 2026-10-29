@@ -13,7 +13,7 @@ import { getAttendingArtworkPublishEventUrl, getAttendingEventUrl, getAttendingL
 import { getLinksApiOrigin } from '../../lib/links-api-origin';
 import { resolveProfileAvatarUrl } from '../../lib/profile-avatar';
 import { removePersonBackground } from '../../lib/remove-person-background';
-import { ClubSettingsMenu } from '../components/ClubSettingsMenu';
+import { Navbar } from '../components/Navbar';
 import { ProfileAvatar } from '../components/ProfileAvatar';
 import { useSession } from '../components/SessionProvider';
 import { SignInModal } from '../components/SignInModal';
@@ -624,24 +624,7 @@ export function AttendingExperience({
 
   return (
     <div className={styles.page}>
-      <header className={styles.header}>
-        <a className={styles.brand} href={landingHref} aria-label="HASHPASS Club attending home">
-          <img src="/attending/logo-hashpass.svg" alt="" />
-          <span>HASHPASS <b>CLUB</b></span>
-        </a>
-        <div className={styles.headerActions}>
-          <ClubSettingsMenu
-            size={42}
-            triggerStyle={{
-              background: 'var(--bg-surface-raised)',
-              border: '1px solid var(--border)',
-              color: 'var(--text-primary)',
-              backdropFilter: 'none',
-              WebkitBackdropFilter: 'none',
-            }}
-          />
-        </div>
-      </header>
+      <Navbar showMarketingLinks={false} hasHero={false} brandHref={landingHref} />
 
       <main className={styles.main}>
         <section className={styles.intro}>

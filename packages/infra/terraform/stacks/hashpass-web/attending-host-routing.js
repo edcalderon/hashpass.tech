@@ -3,6 +3,7 @@ function handler(event) {
   var host = request.headers.host ? request.headers.host.value.toLowerCase() : '';
   var uri = request.uri || '/';
   var eventHosts = {
+    bsl: true,
     'bsl-on-tour': true,
     bsl2025: true,
     chile2026: true,

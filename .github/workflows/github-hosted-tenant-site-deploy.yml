@@ -162,6 +162,7 @@ jobs:
     if: github.event_name == 'push' || (inputs.deploy == true && inputs.target != 'cbweek-production')
     name: Migrate core database (${{ github.ref_name == 'main' && 'production' || 'development' }})
     runs-on: ubuntu-latest
+    environment: ${{ github.ref_name == 'main' && 'production' || 'development' }}
     permissions:
       contents: read
       id-token: write

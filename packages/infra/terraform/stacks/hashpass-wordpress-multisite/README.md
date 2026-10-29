@@ -2,7 +2,7 @@
 
 Tracks [issue #543](https://github.com/hashpass-tech/hashpass.tech/issues/543).
 
-This stack is prepared for one AWS Lightsail **Lightsail-packaged** WordPress Multisite blueprint and a static IPv4 in `us-east-2`. It is separate from the existing Directus SSO service and the `hashpass.club` static Next.js site. It does not import Directus users/data.
+This stack provisions one AWS Lightsail **Lightsail-packaged** WordPress Multisite instance and a static IPv4 in `us-east-2`. It is separate from the existing Directus SSO service and the `hashpass.club` static Next.js site. It does not import Directus users/data.
 
 The selected blueprint is `wordpress_multisite_ls_1_0` (version 7.1 in the read-only AWS check), not the older Bitnami `wordpress_multisite` blueprint. AWS has announced the Bitnami blueprints stopped receiving updates May 19, 2026, and new instances cannot be created from them starting November 19, 2026. The Lightsail-packaged blueprint is the maintained choice for a new instance.
 
@@ -14,6 +14,14 @@ The selected blueprint is `wordpress_multisite_ls_1_0` (version 7.1 in the read-
 | Capacity fallback | `small_3_0`: $12 (2 GiB RAM, 60 GB SSD, 3 TiB transfer) | ~$1 total | Seven daily snapshots; billed by stored GB | ~$13 base + actual snapshot storage |
 
 The Lightsail bundle prices and specifications were checked read-only in `us-east-2`. AWS bills actual provisioned/used services. Estimates exclude domain registration, mail delivery, taxes, transfer above the Lightsail plan allowance, and optional services. A 1-GiB instance must pass low-volume performance/memory checks; switch to `small_3_0` if it does not. Automatic snapshots are enabled by default and their stored capacity is an additional charge.
+
+## Current deployment
+
+- `hashpass.blog` is the primary site and `hashpass.news` is mapped as the second site. Both use the network-enabled Twenty Twenty-Five theme and serve distinct site titles over HTTPS.
+- Each root domain has a Route 53 A record with TTL 300 pointing to the same Lightsail static IP. Public TCP 80/443 are open; SSH remains restricted to the approved workspace IPv4 `/32`.
+- A Let's Encrypt DNS-01 certificate covers both domains and currently expires **2027-01-27**. HTTP redirects to HTTPS. Renewal is not automated and no notification email is configured; schedule renewal well before expiry.
+- The default WordPress “Hello world!” post and “Sample Page” were removed. Both sites currently have zero posts; no local test credentials or sample database were copied.
+- No named production writers/editors are configured yet. SMTP setup, a browser-based editorial trial, and a snapshot restore rehearsal remain outstanding.
 
 The account has a USD 50/month production ceiling. Before any `terraform apply`, use the `hashpass` profile, verify account identity non-printingly against the private expected account ID, and verify a current month-end account cost forecast that includes the added Lightsail and DNS/snapshot costs. Stop if the forecast is unavailable or could exceed the cap. Never apply with the legacy `default` profile.
 
@@ -72,14 +80,14 @@ terraform apply tfplan
 
 Terraform restricts the stack to the supplied expected account ID. Do not output that value. Instance deletion is protected with `prevent_destroy` to avoid accidental content loss.
 
-## Configure the network after TLS is verified
+## Remaining production operations
 
-1. Retrieve the initial application password privately from the Lightsail SSH session using `cat ~/application_credentials`. Never print it in logs or put it in Terraform outputs. Store it in the approved password manager, then replace it after the first secure sign-in.
-2. Define the primary domain as `hashpass.blog`. In Network Admin, create the News site and map its site address to `hashpass.news`. Follow the AWS Multisite guide for domain mapping and add the documented `COOKIE_DOMAIN` configuration so sign-in works across mapped domains.
-3. Create named user accounts. Assign Blog writers as Contributors on Blog only; News writers as Contributors on News only; assign shared Editors separately to both sites. Keep Super Admin membership minimal. Test authorizations from separate accounts.
-4. Confirm each site serves its own content over HTTPS and HTTP redirects to HTTPS. Check canonical URLs, feeds, sitemap, mobile layout, and browser/editor access.
-5. Configure mail delivery before relying on invitations, notifications, or password reset emails.
-6. Confirm automatic snapshots are enabled and complete a documented restore rehearsal before publishing real content. Record the actual snapshot storage cost.
+1. Retrieve the initial application password privately from the Lightsail SSH session using `cat ~/application_credentials`. Never print it in logs or put it in Terraform outputs. Store it in the approved password manager and rotate it after the first secure sign-in.
+2. Create named accounts using real editorial email addresses. Keep Blog Contributors scoped to Blog, News Contributors scoped to News, and assign shared Editors to each site separately. Keep Super Admin membership minimal.
+3. Complete a browser trial with separate writer and editor accounts, including draft/publish permissions, site isolation, login cookies, and mobile behavior. The local smoke test already covers role boundaries, but production accounts still need live verification.
+4. Configure mail delivery before relying on invitations, notifications, or password resets.
+5. Complete and document a snapshot restore rehearsal; record actual snapshot storage cost.
+6. Establish a certificate renewal process and renew before 2027-01-27. The current certificate was issued with Route 53 DNS-01; do not store AWS credentials on the Lightsail instance.
 
 Useful AWS documentation:
 

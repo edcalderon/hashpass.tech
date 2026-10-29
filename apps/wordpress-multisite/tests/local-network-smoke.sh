@@ -29,6 +29,38 @@ cleanup() {
 }
 trap cleanup EXIT
 
+assert_news_login_uses_mapped_domain() {
+  local news_url=http://news.localhost:8088
+  local news_home news_siteurl news_login_form news_login_headers
+
+  news_home="$("${WP_CLI[@]}" option get home --url="$news_url")"
+  news_siteurl="$("${WP_CLI[@]}" option get siteurl --url="$news_url")"
+  [[ "$news_home" == "$news_url" ]] || {
+    echo "Expected News home URL $news_url, got $news_home" >&2
+    return 1
+  }
+  [[ "$news_siteurl" == "$news_url" ]] || {
+    echo "Expected News site URL $news_url, got $news_siteurl" >&2
+    return 1
+  }
+
+  news_login_form="$(curl --silent --show-error --resolve news.localhost:8088:127.0.0.1 "$news_url/wp-login.php")"
+  grep -Fq 'action="http://news.localhost:8088/wp-login.php"' <<<"$news_login_form" || {
+    echo 'News login form action does not use the mapped domain' >&2
+    return 1
+  }
+  grep -Fq 'value="http://news.localhost:8088/wp-admin/"' <<<"$news_login_form" || {
+    echo 'News login redirect does not use the mapped domain' >&2
+    return 1
+  }
+
+  news_login_headers="$(curl --silent --show-error --resolve news.localhost:8088:127.0.0.1 --dump-header - --output /dev/null "$news_url/wp-login.php")"
+  grep -Eiq 'Set-Cookie: wordpress_test_cookie=[^;]+;[[:space:]]*path=/;[[:space:]]*domain=\.?news\.localhost;' <<<"$news_login_headers" || {
+    echo 'News login test cookie does not use the mapped domain' >&2
+    return 1
+  }
+}
+
 # Use a unique project and throw away all test data on exit.
 docker compose --env-file "$ENV_FILE" -p "$PROJECT" -f "$COMPOSE_FILE" up -d db wordpress
 WP_ENV_FILE="$ENV_FILE" WP_PROJECT="$PROJECT" "$ROOT_DIR/scripts/setup-local.sh"
@@ -36,6 +68,7 @@ WP_ENV_FILE="$ENV_FILE" WP_PROJECT="$PROJECT" "$ROOT_DIR/scripts/setup-local.sh"
 sites="$("${WP_CLI[@]}" site list --fields=domain --format=csv)"
 grep -Eq '^blog\.localhost(:8088)?$' <<<"$sites"
 grep -Eq '^news\.localhost(:8088)?$' <<<"$sites"
+assert_news_login_uses_mapped_domain
 
 blog_role="$("${WP_CLI[@]}" user get blogwriter --field=roles --url=http://blog.localhost:8088)"
 news_role="$("${WP_CLI[@]}" user get newswriter --field=roles --url=http://news.localhost:8088)"
@@ -84,6 +117,7 @@ news_site_id="$("${WP_CLI[@]}" site list --fields=blog_id,domain --format=csv --
 WP_ENV_FILE="$ENV_FILE" WP_PROJECT="$PROJECT" "$ROOT_DIR/scripts/setup-local.sh"
 restored_sites="$("${WP_CLI[@]}" site list --fields=domain --format=csv --url=http://blog.localhost:8088)"
 grep -Eq '^news\.localhost(:8088)?$' <<<"$restored_sites"
+assert_news_login_uses_mapped_domain
 restored_news_role="$("${WP_CLI[@]}" user get newswriter --field=roles --url=http://news.localhost:8088)"
 [[ "$restored_news_role" == *contributor* ]]
 [[ "$("${WP_CLI[@]}" user get blogwriter --field=ID --url=http://blog.localhost:8088)" == "$blogwriter_id_before" ]]

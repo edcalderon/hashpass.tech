@@ -3,17 +3,28 @@
   "_source": "This file is generated from apps/web-app/package.json",
   "_instructions": "Run npm run version:update or npm run release:patch from apps/web-app to update it.",
   "currentVersion": {
-    "version": "1.0.52",
-    "buildNumber": 20261029130115,
+    "version": "1.0.53",
+    "buildNumber": 20261029140504,
     "releaseDate": "2026-10-29",
     "releaseType": "stable",
     "environment": "production",
     "features": [],
     "bugfixes": [],
     "breakingChanges": [],
-    "notes": "Version 1.0.52 release"
+    "notes": "Align attending artwork details and shared account navigation"
   },
   "versions": [
+    {
+      "version": "1.0.53",
+      "buildNumber": 20261029140504,
+      "releaseDate": "2026-10-29",
+      "releaseType": "stable",
+      "environment": "production",
+      "features": [],
+      "bugfixes": [],
+      "breakingChanges": [],
+      "notes": "Align attending artwork details and shared account navigation"
+    },
     {
       "version": "1.0.52",
       "buildNumber": 20261029130115,

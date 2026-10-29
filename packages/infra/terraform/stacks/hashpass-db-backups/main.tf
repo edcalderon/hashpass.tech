@@ -172,14 +172,42 @@ resource "aws_s3_bucket_policy" "db_backups" {
 #   writer - may only PutObject under prod/core/, prod/pre-migration/, and dev/shared/.
 #            It cannot read, list, overwrite-by-delete, or touch prod/bsl-final/.
 #   reader - may only read those prefixes plus prod/pre-migration/ (quarterly restore drill).
-# Both trust only workflows running on this repository's main branch (scheduled
-# workflows always run there).
+# The writer also trusts the production GitHub Environment subject used by
+# pre-migration backups. Scheduled backups and restore drills keep their main
+# branch subject; the reader remains restricted to main.
 
 data "aws_iam_openid_connect_provider" "github" {
   url = "https://token.actions.githubusercontent.com"
 }
 
-data "aws_iam_policy_document" "github_assume" {
+data "aws_iam_policy_document" "github_writer_assume" {
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+
+    principals {
+      type        = "Federated"
+      identifiers = [data.aws_iam_openid_connect_provider.github.arn]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "token.actions.githubusercontent.com:aud"
+      values   = ["sts.amazonaws.com"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "token.actions.githubusercontent.com:sub"
+      values = [
+        "repo:${var.github_repository}:ref:refs/heads/main",
+        "repo:${var.github_repository}:environment:production",
+      ]
+    }
+  }
+}
+
+data "aws_iam_policy_document" "github_reader_assume" {
   statement {
     effect  = "Allow"
     actions = ["sts:AssumeRoleWithWebIdentity"]
@@ -205,7 +233,7 @@ data "aws_iam_policy_document" "github_assume" {
 
 resource "aws_iam_role" "writer" {
   name               = "hashpass-db-backups-writer"
-  assume_role_policy = data.aws_iam_policy_document.github_assume.json
+  assume_role_policy = data.aws_iam_policy_document.github_writer_assume.json
   tags               = { Purpose = "database-backups", ManagedBy = "terraform", Stack = "hashpass-db-backups" }
 }
 
@@ -230,7 +258,7 @@ resource "aws_iam_role_policy" "writer" {
 
 resource "aws_iam_role" "reader" {
   name               = "hashpass-db-backups-reader"
-  assume_role_policy = data.aws_iam_policy_document.github_assume.json
+  assume_role_policy = data.aws_iam_policy_document.github_reader_assume.json
   tags               = { Purpose = "database-backups", ManagedBy = "terraform", Stack = "hashpass-db-backups" }
 }
 

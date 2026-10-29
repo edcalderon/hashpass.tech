@@ -329,6 +329,44 @@ function drawBuilding(context: CanvasRenderingContext2D, x: number, y: number, c
   context.restore();
 }
 
+function drawCenteredEventDetail(
+  context: CanvasRenderingContext2D,
+  icon: 'calendar' | 'location',
+  text: string,
+  centerX: number,
+  iconY: number,
+  textY: number,
+  maxGroupWidth: number,
+  iconColor: string,
+  textColor: string,
+  iconSize = 30,
+) {
+  const iconGap = 12;
+  const textMaxWidth = maxGroupWidth - iconSize - iconGap;
+  let fontSize = 28;
+  context.font = `700 ${fontSize}px Manrope, sans-serif`;
+  while (fontSize > 19 && context.measureText(text).width > textMaxWidth) {
+    fontSize = Math.max(19, fontSize - 2);
+    context.font = `700 ${fontSize}px Manrope, sans-serif`;
+  }
+
+  const textWidth = Math.min(context.measureText(text).width, textMaxWidth);
+  const groupWidth = iconSize + iconGap + textWidth;
+  const groupStart = centerX - groupWidth / 2;
+  const iconCenter = groupStart + iconSize / 2;
+
+  if (icon === 'calendar') {
+    drawCalendar(context, iconCenter, iconY, iconColor, iconSize);
+  } else {
+    drawLocationPin(context, iconCenter, iconY, iconColor, iconSize);
+  }
+
+  context.fillStyle = textColor;
+  context.textAlign = 'left';
+  context.font = `700 ${fontSize}px Manrope, sans-serif`;
+  context.fillText(text, groupStart + iconSize + iconGap, textY, textMaxWidth);
+}
+
 function drawFittedText(
   context: CanvasRenderingContext2D,
   text: string,
@@ -601,10 +639,7 @@ function drawBslColombiaArtwork(
   context.stroke();
 
   context.textAlign = 'left';
-  drawCalendar(context, 132, 860, iconAccent, 30);
-  context.fillStyle = detailColor;
-  context.font = '700 28px Manrope, sans-serif';
-  drawFittedText(context, options.dateLabel, 170, 870, 330, 700, 'Manrope, sans-serif', 28, 19);
+  drawCenteredEventDetail(context, 'calendar', options.dateLabel, 325, 860, 870, 386, iconAccent, detailColor);
 
   context.strokeStyle = colorWithAlpha(themeAccent, lightMode ? 0.22 : 0.42);
   context.beginPath();
@@ -612,10 +647,7 @@ function drawBslColombiaArtwork(
   context.lineTo(532, 890);
   context.stroke();
 
-  drawLocationPin(context, 562, 863, iconAccent, 30);
-  context.fillStyle = detailColor;
-  context.font = '700 28px Manrope, sans-serif';
-  drawFittedText(context, options.location, 596, 870, 365, 700, 'Manrope, sans-serif', 28, 19);
+  drawCenteredEventDetail(context, 'location', options.location, 747, 863, 870, 400, iconAccent, detailColor);
 
   context.strokeStyle = colorWithAlpha(themeAccent, lightMode ? 0.28 : 0.5);
   context.beginPath();
@@ -843,16 +875,10 @@ export async function drawAttendingArtwork(
 
   context.textAlign = 'left';
   if (options.dateLabel) {
-    drawCalendar(context, 145, 969, options.artworkTemplate.accentColor, 32);
-    context.fillStyle = '#f3f8ff';
-    context.font = '700 28px Manrope, sans-serif';
-    drawFittedText(context, options.dateLabel, 178, 980, 340, 700, 'Manrope, sans-serif', 28, 20);
+    drawCenteredEventDetail(context, 'calendar', options.dateLabel, 326, 969, 980, 400, options.artworkTemplate.accentColor, '#f3f8ff', 32);
   }
   if (options.location) {
-    drawLocationPin(context, 586, 969, options.artworkTemplate.accentColor, 32);
-    context.fillStyle = '#f3f8ff';
-    context.font = '700 28px Manrope, sans-serif';
-    drawFittedText(context, options.location, 618, 980, 340, 700, 'Manrope, sans-serif', 28, 20);
+    drawCenteredEventDetail(context, 'location', options.location, 754, 969, 980, 400, options.artworkTemplate.accentColor, '#f3f8ff', 32);
   }
 
   context.strokeStyle = colorWithAlpha(options.artworkTemplate.accentColor, 0.42);

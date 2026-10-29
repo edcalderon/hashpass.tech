@@ -27,7 +27,29 @@ on:
   workflow_dispatch: {}
 
 jobs:
+  migrate-database:
+    name: Migrate core database (${{ github.ref_name == 'main' && 'production' || 'development' }})
+    if: github.repository == 'hashpass-tech/hashpass.tech' && (github.ref_name == 'main' || github.ref_name == 'develop')
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref_name == 'main' && 'production' || 'development' }}
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Apply core database migrations before deployment
+        uses: ./.github/actions/apply-core-db-migrations
+        with:
+          profile: ${{ github.ref_name == 'main' && 'core-production' || 'core-development' }}
+          database-url: ${{ github.ref_name == 'main' && secrets.SUPABASE_DB_URL_PROD || secrets.SUPABASE_DB_URL_DEV }}
+          backup-writer-role-arn: ${{ vars.DB_BACKUP_WRITER_ROLE_ARN }}
+          backup-bucket: ${{ vars.DB_BACKUP_BUCKET }}
+          aws-account-id: ${{ vars.AWS_TARGET_ACCOUNT_ID }}
+
   deploy:
+    needs: migrate-database
     if: github.repository == 'hashpass-tech/hashpass.tech' && (github.ref_name == 'main' || github.ref_name == 'develop')
     runs-on: ubuntu-latest
     permissions:
@@ -60,15 +82,6 @@ jobs:
         run: |
           rm -rf node_modules
           pnpm install --no-frozen-lockfile
-
-      - name: Apply core database migrations before deployment
-        uses: ./.github/actions/apply-core-db-migrations
-        with:
-          profile: ${{ github.ref_name == 'main' && 'core-production' || 'core-development' }}
-          database-url: ${{ github.ref_name == 'main' && secrets.SUPABASE_DB_URL_PROD || secrets.SUPABASE_DB_URL_DEV }}
-          backup-writer-role-arn: ${{ vars.DB_BACKUP_WRITER_ROLE_ARN }}
-          backup-bucket: ${{ vars.DB_BACKUP_BUCKET }}
-          aws-account-id: ${{ vars.AWS_TARGET_ACCOUNT_ID }}
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4

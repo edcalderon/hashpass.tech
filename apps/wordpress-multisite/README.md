@@ -27,6 +27,8 @@ The WordPress service binds only to `127.0.0.1:8088`; MariaDB has no published p
 - `newswriter`: contributor on News only; cannot publish.
 - `sharededitor`: editor on both sites; can review/publish content.
 
+The News site is mapped to `news.localhost` rather than WordPress's generated `news.blog.localhost` subdomain. Bootstrap updates its `home` and `siteurl` values, and local auth cookies follow the request host, so login and editor links stay on the mapped site.
+
 The local bootstrap creates sample posts so each site's public rendering can be checked immediately. The setup is idempotent once the network is installed. To reset the disposable local network, run:
 
 ```bash
@@ -40,8 +42,10 @@ docker compose --env-file apps/wordpress-multisite/.env \
 apps/wordpress-multisite/tests/local-network-smoke.sh
 ```
 
-The smoke test uses a per-run unique Compose project, temporary credentials, and disposable volumes, then removes them. It verifies both hostnames serve content, tests contributor isolation and publishing permissions on both sites, checks Super Admin boundaries, and simulates recovery from a partially provisioned network.
+The smoke test uses a per-run unique Compose project, temporary credentials, and disposable volumes, then removes them. It verifies both hostnames serve content, checks mapped News login URLs and cookie scope, tests contributor isolation and publishing permissions on both sites, checks Super Admin boundaries, and simulates recovery from a partially provisioned network.
 
 ## Production boundary
 
-The target architecture is one AWS Lightsail WordPress Multisite blueprint with two custom-domain sites, but this local Compose file is not the production image or deployment path. Production provisioning remains gated on a current account-level cost forecast within the $50/month cap, secret delivery, backup/restore validation, and the user's Route 53 hosted zones / reviewed DNS cutover. Do not copy local credentials, sample content, or this local database into production. Do not reuse Directus authentication or its database.
+This Compose setup remains a local-only prototype; its scripts do not provision AWS resources or DNS. The separate production Lightsail stack now serves [hashpass.blog](https://hashpass.blog) and [hashpass.news](https://hashpass.news) over HTTPS.
+
+The local demo credentials, sample posts, and database were not copied to production. Production still needs real writer/editor accounts, mail delivery, browser-based role verification with those real accounts, and a snapshot-restore rehearsal. Do not reuse Directus authentication or its database.

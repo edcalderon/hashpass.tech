@@ -1,3 +1,18 @@
+## [1.9.185](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.184...v1.9.185) (2026-10-29)
+
+
+### Bug Fixes
+
+* **infra:** bind migrations to deployment environments ([6a0ddfa](https://github.com/hashpass-tech/hashpass.tech/commit/6a0ddfac4c0c49d4f2160b96d5db60fe1630383b))
+### Release Highlights
+- bind migrations to deployment environments
+
+### Release scope
+- Compared with: `v1.9.184` (the previous global release tag)
+
+### Affected products & packages
+- Release tooling
+
 ## [1.9.184](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.183...v1.9.184) (2026-10-29)
 
 

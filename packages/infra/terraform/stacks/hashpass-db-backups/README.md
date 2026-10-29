@@ -44,7 +44,10 @@ Compare the S3 `ChecksumSHA256` with the local file before deleting the local co
 | `.github/workflows/db-backup.yml` | core production every 6 hours (:30 past 00/06/12/18 UTC); shared dev Sundays 06:45 UTC | `pg_dump` (postgres:17) + per-table row counts, size/`pg_restore -l` sanity checks, upload to `prod/core/` or `dev/shared/` |
 | `.github/workflows/db-restore-drill.yml` | quarterly (Jan/Apr/Jul/Oct, day 5) | Restores the newest dump into a throwaway postgres:17 and compares every public table's row count with the counts captured at backup time |
 
-AWS access is OIDC only, restricted to this repository's `main` branch:
+AWS access is OIDC only. Both roles retain the repository's `main` branch
+subject for scheduled backups and restore drills. The writer additionally
+accepts the `production` environment subject used by migration jobs, which
+upload pre-migration backups before applying production migrations:
 
 * `hashpass-db-backups-writer`: `PutObject` under `prod/core/*`, `prod/pre-migration/*`, and `dev/shared/*` only.
 * `hashpass-db-backups-reader`: `GetObject`/`ListBucket` under the current core, pre-migration, and shared-dev prefixes.
