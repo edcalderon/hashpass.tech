@@ -36,7 +36,7 @@ export function AttendingLandingExperience({
 
   return (
     <div className={styles.page}>
-      <Navbar showMarketingLinks={false} brandHref={brandHref} />
+      <Navbar showMarketingLinks={false} hasHero={false} brandHref={brandHref} />
 
       <main className={styles.main}>
         <section className={styles.hero} aria-labelledby="attending-landing-title">
