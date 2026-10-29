@@ -5,6 +5,14 @@ const ART_HEIGHT = 1350;
 const imageCache = new Map<string, Promise<HTMLImageElement | null>>();
 const canvasRenderIds = new WeakMap<HTMLCanvasElement, number>();
 
+export function getAttendingArtworkHeadline(
+  options: Pick<AttendingArtworkOptions, 'genericArtwork' | 'pastEvent' | 'intentions'>,
+): string {
+  return options.genericArtwork
+    ? options.intentions.upcoming
+    : options.pastEvent ? options.intentions.past : options.intentions.upcoming;
+}
+
 function colorWithAlpha(color: string, alpha: number): string {
   const match = color.match(/^#([\da-f]{3}|[\da-f]{6})$/i);
   if (!match) return `rgba(14, 116, 144, ${alpha})`;
@@ -458,19 +466,17 @@ function drawBslColombiaArtwork(
 
   context.textAlign = 'center';
   context.textBaseline = 'alphabetic';
+  const headline = getAttendingArtworkHeadline(options);
   if (options.pastEvent) {
     context.fillStyle = '#f7fbff';
-    drawFittedText(context, options.intentions.past, ART_WIDTH / 2, 834, 870, 800, 'Manrope, sans-serif', 88, 54);
   } else {
-    context.fillStyle = '#f7fbff';
-    drawFittedText(context, 'I’M ATTENDING', ART_WIDTH / 2, 798, 880, 800, 'Manrope, sans-serif', 88, 58);
     const headlineGlow = context.createLinearGradient(260, 0, 820, 0);
     headlineGlow.addColorStop(0, '#20d9f5');
     headlineGlow.addColorStop(0.58, accentColor);
     headlineGlow.addColorStop(1, '#2586ff');
     context.fillStyle = headlineGlow;
-    drawFittedText(context, 'VOY A ASISTIR', ART_WIDTH / 2, 883, 900, 800, 'Manrope, sans-serif', 88, 58);
   }
+  drawFittedText(context, headline, ART_WIDTH / 2, 842, 900, 800, 'Manrope, sans-serif', 88, 58);
 
   context.fillStyle = '#eaf7ff';
   context.font = '800 37px Manrope, sans-serif';
@@ -665,9 +671,7 @@ export async function drawAttendingArtwork(
   context.font = '600 18px "IBM Plex Mono", monospace';
   context.fillText(options.shortName.toLocaleUpperCase(), 84, 414, 420);
 
-  const headline = options.genericArtwork
-    ? options.intentions.upcoming
-    : options.pastEvent ? options.intentions.past : options.intentions.upcoming;
+  const headline = getAttendingArtworkHeadline(options);
   context.textAlign = 'left';
   context.fillStyle = '#ffffff';
   context.shadowColor = 'rgba(0, 0, 0, 0.34)';

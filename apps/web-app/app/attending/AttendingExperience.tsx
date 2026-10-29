@@ -185,13 +185,11 @@ export function AttendingExperience({ event, generic = false }: AttendingExperie
   const eventName = generic ? t('genericArtworkTitle') : event.name || event.shortName;
   const location = [event.city, event.country].filter(Boolean).join(', ');
   const dateLabel = formatAttendingEventDate(event, locale);
-  const intentionLabel = generic
-    ? t('genericArtUpcoming')
-    : pastEvent ? t('artPast') : t('artUpcoming');
   const displayName = isNameValid ? normalizedName : t('yourName');
   const shareUrl = generic ? 'https://hashpass.club/attendings/' : getAttendingEventUrl(event.slug);
   const artUpcoming = generic ? t('genericArtUpcoming') : t('artUpcoming');
   const artPast = t('artPast');
+  const intentionLabel = generic ? artUpcoming : pastEvent ? artPast : artUpcoming;
   const artEmptyName = t('yourName');
   const artPoweredBy = t('poweredBy');
   const shareText = generic

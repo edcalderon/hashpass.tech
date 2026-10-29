@@ -20,7 +20,8 @@
     if (host === 'attending.hashpass.tech' && (path === '/' || path === '/index.html')) {
       target = 'https://attending.hashpass.tech/attending/' + search + hash;
     } else if (host === 'attending.hashpass.tech') {
-      var legacyEvent = path.match(/^\/([a-z0-9][a-z0-9-]{0,79})\/?$/i);
+      var isAttendingLanding = /^\/attending\/?$/i.test(path);
+      var legacyEvent = isAttendingLanding ? null : path.match(/^\/([a-z0-9][a-z0-9-]{0,79})\/?$/i);
       var attendingEvent = path.match(/^\/attending\/([a-z0-9][a-z0-9-]{0,79})\/?$/i);
       var eventSlug = legacyEvent ? legacyEvent[1] : attendingEvent ? attendingEvent[1] : null;
       if (eventSlug) {

@@ -31,7 +31,9 @@ export METRO_CACHE_DIR="${METRO_CACHE_DIR:-${ROOT_DIR}/apps/mobile-app/.expo/met
 export EXPO_PUBLIC_RELEASE_COMMIT="${EXPO_PUBLIC_RELEASE_COMMIT:-${CODEBUILD_RESOLVED_SOURCE_VERSION:-$(git rev-parse HEAD 2>/dev/null || echo '')}}"
 echo "  Release commit:  ${EXPO_PUBLIC_RELEASE_COMMIT:-<unknown>}"
 
-rm -rf node_modules dist apps/mobile-app/.expo apps/mobile-app/.metro
+# Clear both workspace dependency trees so stale app-local links cannot make
+# pnpm fail with EEXIST while relinking shared packages such as @noble/hashes.
+rm -rf node_modules apps/mobile-app/node_modules dist apps/mobile-app/.expo apps/mobile-app/.metro
 
 PNPM_VERSION="$(
   node <<'NODE'

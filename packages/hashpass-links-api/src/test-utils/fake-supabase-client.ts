@@ -25,6 +25,7 @@ class FakeQueryBuilder implements PromiseLike<{ data: unknown; error: { message:
   private wantsSingle = false;
   private sortBy: { column: string; ascending: boolean } | undefined;
   private rowRange: { from: number; to: number } | undefined;
+  private rowLimit: number | undefined;
 
   constructor(private readonly tableName: string, private readonly table: Map<string, Row>) {}
 
@@ -87,6 +88,11 @@ class FakeQueryBuilder implements PromiseLike<{ data: unknown; error: { message:
     return this;
   }
 
+  limit(count: number): this {
+    this.rowLimit = count;
+    return this;
+  }
+
   single(): this {
     this.wantsSingle = true;
     return this;
@@ -104,8 +110,10 @@ class FakeQueryBuilder implements PromiseLike<{ data: unknown; error: { message:
         return (left > right ? 1 : -1) * (ascending ? 1 : -1);
       });
 
-    if (this.rowRange) return orderedRows.slice(this.rowRange.from, this.rowRange.to + 1);
-    return this.tableName === 'qr_scan_events' ? orderedRows.slice(0, 1000) : orderedRows;
+    const rangedRows = this.rowRange
+      ? orderedRows.slice(this.rowRange.from, this.rowRange.to + 1)
+      : this.tableName === 'qr_scan_events' ? orderedRows.slice(0, 1000) : orderedRows;
+    return this.rowLimit === undefined ? rangedRows : rangedRows.slice(0, this.rowLimit);
   }
 
   private execute(): { data: unknown; error: { message: string; code?: string } | null } {
