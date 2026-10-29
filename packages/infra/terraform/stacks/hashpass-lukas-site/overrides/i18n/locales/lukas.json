@@ -450,7 +450,13 @@
     "comingSoon_pt": "🚧 Integração de carteira em breve",
     "comingSoonDesc": "We're building the infrastructure to make $LUKAS accessible to everyone. Join the waitlist to be notified when it's ready!",
     "comingSoonDesc_es": "Estamos construyendo la infraestructura para hacer $LUKAS accesible para todos. ¡Únete a la lista de espera para ser notificado cuando esté listo!",
-    "comingSoonDesc_pt": "Estamos construindo a infraestrutura para tornar $LUKAS acessível para todos. Junte-se à lista de espera para ser notificado quando estiver pronto!"
+    "comingSoonDesc_pt": "Estamos construindo a infraestrutura para tornar $LUKAS acessível para todos. Junte-se à lista de espera para ser notificado quando estiver pronto!",
+    "exploreTestnet": "Keep exploring the LUKAS testnet",
+    "exploreTestnet_es": "Sigue explorando la testnet de LUKAS",
+    "exploreTestnet_ko": "LUKAS 테스트넷 계속 둘러보기",
+    "exploreTestnet_fr": "Continuer à explorer le testnet LUKAS",
+    "exploreTestnet_pt": "Continue explorando a testnet da LUKAS",
+    "exploreTestnet_de": "Das LUKAS-Testnet weiter erkunden"
   },
   "faq": {
     "title": "FAQ",

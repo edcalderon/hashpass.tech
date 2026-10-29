@@ -104,6 +104,7 @@ test('LUKAS static export emits crawlable SEO metadata and crawler assets withou
     assert.equal(webpage.isPartOf['@id'], website['@id']);
     assert.doesNotMatch(JSON.stringify(structuredData), /Product|Offer|FAQPage/);
   }
+  assert.ok(landingPages[1].includes('Keep exploring the LUKAS testnet'), 'Expected the testnet CTA in the canonical landing page.');
 
   const lineBreak = String.fromCharCode(10);
   const robots = readFileSync(path.join(outputDirectory, 'robots.txt'), 'utf8');
