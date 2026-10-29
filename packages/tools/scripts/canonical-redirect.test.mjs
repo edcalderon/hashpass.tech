@@ -42,10 +42,20 @@ test('leaves the attending host root for the edge rewrite', () => {
   assert.deepEqual(redirectsFor('https://attending.hashpass.tech/?campaign=summer#events'), []);
 });
 
-test('returns the Club attending path to the Club homepage', () => {
+test('keeps the Club attending routes accessible and canonicalizes the plural landing', () => {
+  assert.deepEqual(redirectsFor('https://hashpass.club/attending/'), []);
   assert.deepEqual(
-    redirectsFor('https://hashpass.club/attending/?campaign=summer#events'),
-    ['https://hashpass.club/?campaign=summer#events'],
+    redirectsFor('https://hashpass.club/attending?campaign=summer#events'),
+    ['https://hashpass.club/attending/?campaign=summer#events'],
+  );
+  assert.deepEqual(redirectsFor('https://hashpass.club/attendings/'), []);
+  assert.deepEqual(
+    redirectsFor('https://hashpass.club/attendings?campaign=summer#events'),
+    ['https://hashpass.club/attendings/?campaign=summer#events'],
+  );
+  assert.deepEqual(
+    redirectsFor('https://hashpass.club/attendings/index.html?campaign=summer#events'),
+    ['https://hashpass.club/attendings/?campaign=summer#events'],
   );
 });
 

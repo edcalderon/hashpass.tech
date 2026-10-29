@@ -28,6 +28,7 @@ const BSL_COLOMBIA_ARTWORK_TEMPLATE: Partial<AttendingArtworkTemplate> = {
   secondaryAccentColor: '#156BFF',
   flagColors: ['#FCD116', '#003893', '#CE1126'],
   hashtags: ['#BlockchainSummitLatam', '#BSLOnTour2026', '#BSLColombia2026'],
+  xHandle: '@BlockSummitLA',
 };
 
 const ARTWORK_TEMPLATE_OVERRIDES: Record<string, Partial<AttendingArtworkTemplate>> = {

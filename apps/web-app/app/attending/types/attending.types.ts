@@ -15,6 +15,7 @@ export type AttendingRoutePageProps = { params: Promise<{ eventSlug: string }> }
 export interface AttendingLandingProps {
   events: AttendingEventData[];
   showCustomEventCard?: boolean;
+  brandHref?: string;
 }
 
 export interface AttendingExperienceProps {
@@ -35,6 +36,7 @@ export interface AttendingArtworkTemplate {
   secondaryAccentColor: string;
   flagColors: string[];
   hashtags: string[];
+  xHandle?: string;
   poweredByLogoSrc: string;
 }
 

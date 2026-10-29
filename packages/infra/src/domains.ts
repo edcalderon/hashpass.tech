@@ -14,6 +14,22 @@ export const BSL_DOMAINS = {
 // viewer-request function, where `event` is already in scope.
 export const BSL_SPA_FALLBACK_REWRITE = `
 const uri = event.request.uri || "/";
+const host = event.request.headers && event.request.headers.host ? event.request.headers.host.value.toLowerCase() : "";
+const artworkShare = uri.match(/^\\/attending\\/bsl\\/a\\/([A-Za-z0-9_-]{40,64})(\\/image)?\\/?$/);
+
+if (artworkShare && (host === "bsl.hashpass.tech" || host === "bsl-dev.hashpass.tech")) {
+  const apiOrigin = host === "bsl-dev.hashpass.tech" ? "https://api-dev.hashpass.tech" : "https://api.hashpass.tech";
+  const apiPath = artworkShare[2] ? "/a/" + artworkShare[1] + "/image" : "/a/" + artworkShare[1];
+  return {
+    statusCode: 302,
+    statusDescription: "Found",
+    headers: {
+      location: { value: apiOrigin + apiPath },
+      "cache-control": { value: "no-store" },
+    },
+  };
+}
+
 const isStaticAsset =
   uri.startsWith("/_expo/") ||
   uri.startsWith("/assets/") ||

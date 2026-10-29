@@ -518,8 +518,11 @@ export function AttendingExperience({ event: baseEvent, customEvent = false }: A
       return;
     }
 
+    const xShareText = event.artworkTemplate.xHandle
+      ? `${shareText}\n${event.artworkTemplate.xHandle}`
+      : shareText;
     const target = network === 'x'
-      ? `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(publishedShare.url)}`
+      ? `https://twitter.com/intent/tweet?text=${encodeURIComponent(xShareText)}&url=${encodeURIComponent(publishedShare.url)}`
       : `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(publishedShare.url)}`;
 
     if (network === 'x') {

@@ -145,11 +145,18 @@ their own `NEXT_PUBLIC_LINKS_API_BASE_URL` / `EXPO_PUBLIC_LINKS_API_BASE_URL`
 | `POST` | `/api/v1/auth/qr/exchange` | `x-hashpass-binding` header | Browser trades the one-time authorization code + PKCE verifier for a real session |
 | `GET` | `/q/:slug` | none | Public QR redirect — 302s to the link's destination (with campaign UTM params merged in) and logs a scan event; 404 if the slug is unknown, paused, archived, or expired |
 | `GET` | `/w/:network/:chain/:address` | none | Public non-custodial wallet-share redirect to the chain explorer for a validated public receiving address; no wallet secrets are accepted or stored |
+
 | `GET` | `/api/v1/qr-links` | bearer token | Lists every QR link the caller owns |
 | `POST` | `/api/v1/qr-links` | bearer token | Creates a new QR link owned by the caller |
 | `GET` | `/api/v1/qr-links/:id` | bearer token, owner-only | Fetches one QR link |
 | `PATCH` | `/api/v1/qr-links/:id` | bearer token, owner-only | Edits a QR link's fields, or transitions its status (`active`/`paused`/`archived`) |
 | `GET` | `/api/v1/qr-links/:id/analytics` | bearer token, owner-only | Scan counts and device/bot breakdown over the trailing 30 days |
+
+Published event artwork returns tenant-branded `shareUrl` and `imageUrl` values
+at `https://<event>.hashpass.tech/attending/<event>/a/:token`. The tenant
+CloudFront route forwards those opaque paths to this service's `/a/:token`
+Open Graph page and `/a/:token/image` image redirect. Custom community events
+continue to use the API's `/a/:token` URLs.
 
 Security properties, in one place since they're spread across a few files:
 opaque/random/single-use/short-lived challenge IDs and codes

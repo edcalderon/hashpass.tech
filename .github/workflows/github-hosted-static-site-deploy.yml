@@ -22,6 +22,12 @@ on:
       - 'package.json'
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
+      - 'db/migrations/**'
+      - 'db/migrations-mobile-bootstrap/**'
+      - 'packages/tools/scripts/config/database-profiles.json'
+      - 'packages/tools/scripts/migrate-tenant-db.mjs'
+      - 'packages/tools/scripts/db-backup/**'
+      - '.github/actions/apply-core-db-migrations/**'
   workflow_dispatch:
     inputs:
       deploy:
@@ -155,9 +161,23 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+  migrate-database:
+    name: Migrate core database (development)
+    if: github.event_name == 'push' || inputs.deploy == true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply core development migrations
+        uses: ./.github/actions/apply-core-db-migrations
+        with:
+          profile: core-development
+          database-url: ${{ secrets.SUPABASE_DB_URL_DEV }}
+
   deploy:
     name: Deploy static site (development)
-    needs: build
+    needs: [build, migrate-database]
     # Automatic push runs are the real replacement for the AWS pipeline and
     # must deploy, not just build. Manual dispatches keep the opt-in checkbox.
     if: github.event_name == 'push' || inputs.deploy == true

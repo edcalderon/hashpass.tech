@@ -4,20 +4,23 @@ import { useRef } from 'react';
 import { useLocale, useTranslation } from '@hashpass/i18n';
 import { Badge, IconButton, Surface } from '@hashpass/ui/primitives';
 import { ArrowDownRight, ArrowLeft, ArrowRight, CalendarDays, Check, Image, MapPin, Share2, ShieldCheck } from 'lucide-react';
-import type { AttendingEventData, AttendingLandingProps, AttendingLandingStepProps } from './types/attending.types';
-import { ClubSettingsMenu } from '../components/ClubSettingsMenu';
+import type { AttendingLandingProps, AttendingLandingStepProps } from './types/attending.types';
 import { Footer } from '../components/Footer';
+import { Navbar } from '../components/Navbar';
 import { useTheme } from '../components/ThemeProvider';
 import { formatAttendingEventDate } from '../../lib/attending-date';
 import {
   getAttendingEventHref,
   getAttendingLandingBrandUrl,
-  getAttendingLandingUrl,
   getGenericAttendingHref,
 } from '../../lib/attending-url';
 import styles from './landing.module.css';
 
-export function AttendingLandingExperience({ events, showCustomEventCard = true }: AttendingLandingProps) {
+export function AttendingLandingExperience({
+  events,
+  showCustomEventCard = true,
+  brandHref = getAttendingLandingBrandUrl(),
+}: AttendingLandingProps) {
   const { t } = useTranslation('attending');
   const locale = useLocale();
   const { resolvedTheme } = useTheme();
@@ -33,24 +36,7 @@ export function AttendingLandingExperience({ events, showCustomEventCard = true 
 
   return (
     <div className={styles.page}>
-      <header className={styles.header}>
-        <a className={styles.brand} href={getAttendingLandingBrandUrl()} aria-label="HASHPASS Club attending home">
-          <img src="/attending/logo-hashpass.svg" alt="" />
-          <span>HASHPASS <b>CLUB</b></span>
-        </a>
-        <div className={styles.headerActions}>
-          <ClubSettingsMenu
-            size={42}
-            triggerStyle={{
-              background: 'var(--bg-surface-raised)',
-              border: '1px solid var(--border)',
-              color: 'var(--text-primary)',
-              backdropFilter: 'none',
-              WebkitBackdropFilter: 'none',
-            }}
-          />
-        </div>
-      </header>
+      <Navbar showMarketingLinks={false} hasHero={false} brandHref={brandHref} />
 
       <main className={styles.main}>
         <section className={styles.hero} aria-labelledby="attending-landing-title">

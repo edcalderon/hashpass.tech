@@ -5,6 +5,39 @@ All notable changes to the HashPass Club web app will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and the project follows Semantic Versioning.
 
+## [1.0.46] - 2026-10-29
+
+### Stable
+- Version 1.0.46 release
+
+### Technical Details
+- Version: 1.0.46
+- Release Type: stable
+- Build Number: 20261029110013
+- Release Date: 2026-10-29
+
+## [1.0.45] - 2026-10-29
+
+### Stable
+- Version 1.0.45 release
+
+### Technical Details
+- Version: 1.0.45
+- Release Type: stable
+- Build Number: 20261029105642
+- Release Date: 2026-10-29
+
+## [1.0.44] - 2026-10-29
+
+### Stable
+- Use the shared Club navbar on the attending landing page and keep the route accessible.
+
+### Technical Details
+- Version: 1.0.44
+- Release Type: stable
+- Build Number: 20261029104325
+- Release Date: 2026-10-29
+
 ## [1.0.43] - 2026-10-29
 
 ### Stable
