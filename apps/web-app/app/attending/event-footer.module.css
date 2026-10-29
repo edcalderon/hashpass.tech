@@ -104,6 +104,19 @@
   flex-wrap: wrap;
 }
 
+.meta {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.version {
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+
 .links a {
   display: inline-flex;
   align-items: center;
@@ -136,6 +149,12 @@
 
   .links {
     justify-content: flex-start;
+  }
+
+  .meta {
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
   }
 }
 
@@ -175,6 +194,11 @@
 
   .links {
     gap: 12px 16px;
+  }
+
+  .meta {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }
 
