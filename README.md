@@ -20,29 +20,46 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.173)
+## 📋 Latest Changes (v1.9.174)
 
 ### Bug Fixes
 
 * **campaign:** match BSL media and captions to locale ([430e8a9](https://github.com/hashpass-tech/hashpass.tech/commit/430e8a9a26e698b37c8a74e6ab38f9b986d84331))
 * **i18n:** compile LUKAS FAQ catalog messages ([187c857](https://github.com/hashpass-tech/hashpass.tech/commit/187c85759da05d1f26392ed1f71f8051ac9ace56))
+* **lukas:** keep footer columns responsive ([aa76e17](https://github.com/hashpass-tech/hashpass.tech/commit/aa76e172feb68ba036c82744df6e637773c044f0))
+* **lukas:** polish landing icons and merchant form ([df58c23](https://github.com/hashpass-tech/hashpass.tech/commit/df58c235ac6f58ab533b533c5afdc18c7e02ef92))
+* **mobile:** let web hamburger receive taps ([a8c063f](https://github.com/hashpass-tech/hashpass.tech/commit/a8c063f5ce190bad0710dfc2328e3317f06e9a54))
 * **mobile:** recover stale dashboard drawer open state ([0ded9fe](https://github.com/hashpass-tech/hashpass.tech/commit/0ded9feddab6a8b8b711d74d062484a069d86f27))
+* **mobile:** restore dashboard menu hit target ([7aebc92](https://github.com/hashpass-tech/hashpass.tech/commit/7aebc92bbbde38ee27cc88f5cf7a42e3c878b683))
+* **mobile:** sync drawer navigation open action ([0fac05a](https://github.com/hashpass-tech/hashpass.tech/commit/0fac05a4868362d6af58300730a836f4703749d3))
 * **tools:** typecheck video-studio against its own tsconfig ([bc5b445](https://github.com/hashpass-tech/hashpass.tech/commit/bc5b44552c87a95a07ed4ae37c72cf5fd5c668de))
+* **ui:** use style pointer events on web ([c255e98](https://github.com/hashpass-tech/hashpass.tech/commit/c255e9816034dfb3c2c7600db0d519d4b56d141c))
 * **video-studio:** generate and validate welcome narration in the publish workflow ([e3d7876](https://github.com/hashpass-tech/hashpass.tech/commit/e3d787655df5c31d9945a9cd54a28656e0eeb67b))
 * **video:** prepare BSL assets before rendering ([8425868](https://github.com/hashpass-tech/hashpass.tech/commit/84258689eedbc6b6f4e82793dd3cf153a0fe444e))
 
 
 ### Features
 
+* **lukas:** add interactive reward journey ([6e170ab](https://github.com/hashpass-tech/hashpass.tech/commit/6e170ab4457bc911505d3d4ee264f81d7edfd9f0))
 * **lukas:** real 3D LKS coin, animated icons, consistent landing UI ([ce11df3](https://github.com/hashpass-tech/hashpass.tech/commit/ce11df3dc9a41dd97e19879bb95aa8433019508a)), closes [#514](https://github.com/hashpass-tech/hashpass.tech/issues/514)
+* **mobile:** make agenda card titles the primary read ([473c570](https://github.com/hashpass-tech/hashpass.tech/commit/473c570862bbc8635fb7221256c159c9073770e3)), closes [#519](https://github.com/hashpass-tech/hashpass.tech/issues/519)
+* **mobile:** match the on-agenda check and bookmark chips, expand on hover or tap ([6fbab65](https://github.com/hashpass-tech/hashpass.tech/commit/6fbab65d2b340f26714936c8afd71841917cd8ad)), closes [#519](https://github.com/hashpass-tech/hashpass.tech/issues/519)
+* **mobile:** polish agenda session cards ([76309fa](https://github.com/hashpass-tech/hashpass.tech/commit/76309fadbe237fc731e56d8d32f248bf3385e5d9)), closes [#518](https://github.com/hashpass-tech/hashpass.tech/issues/518)
+* **mobile:** shared StatusPill, top-right agenda badges and session bookmarks ([447f1a6](https://github.com/hashpass-tech/hashpass.tech/commit/447f1a6763f5475e42165a3a9ef2b11e4050fd76)), closes [#519](https://github.com/hashpass-tech/hashpass.tech/issues/519)
+* **mobile:** workshop agenda type, tinted dot-free badges and filter polish ([7dd8d51](https://github.com/hashpass-tech/hashpass.tech/commit/7dd8d510ece4fb6c360e35185b85f6cb1f27fa43)), closes [#519](https://github.com/hashpass-tech/hashpass.tech/issues/519)
+* **tools:** colour-coded, aligned per-process logs in dev:all ([5d78f5e](https://github.com/hashpass-tech/hashpass.tech/commit/5d78f5ec845aa537c1236e22b98383d231045b0d)), closes [#517](https://github.com/hashpass-tech/hashpass.tech/issues/517)
 ### Release Highlights
-- real 3D LKS coin, animated icons, consistent landing UI; recover stale dashboard drawer open state; match BSL media and captions to locale; prepare BSL assets before rendering; compile LUKAS FAQ catalog messages; generate and validate welcome narration in the publish workflow; typecheck video-studio against its own tsconfig
+- match the on-agenda check and bookmark chips, expand on hover or tap; workshop agenda type, tinted dot-free badges and filter polish; make agenda card titles the primary read; add interactive reward journey; shared StatusPill, top-right agenda badges and session bookmarks; open Lukas landing in dev browser; add Lukas landing live reload; add localized Lukas explainer videos; polish agenda session cards; colour-coded, aligned per-process logs in dev:all; real 3D LKS coin, animated icons, consistent landing UI; keep footer columns responsive; polish landing icons and merchant form; stabilize Lukas dev export startup; reset Lukas video poster after playback; let web hamburger receive taps; sync drawer navigation open action; use style pointer events on web; restore dashboard menu hit target; recover stale dashboard drawer open state; match BSL media and captions to locale; prepare BSL assets before rendering; compile LUKAS FAQ catalog messages; generate and validate welcome narration in the publish workflow; typecheck video-studio against its own tsconfig
 
 ### Release scope
-- Compared with: `v1.9.172` (the previous global release tag)
+- Compared with: `v1.9.173` (the previous global release tag)
 
 ### Affected products & packages
 - Mobile app
+- Shared UI
+- Database migrations
+- Infrastructure
+- Release tooling
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
