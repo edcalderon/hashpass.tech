@@ -20,13 +20,14 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.175)
+## 📋 Latest Changes (v1.9.176)
 
 ### Features
 
+* **lukas:** gate claims with a knowledge quiz ([7b200d4](https://github.com/hashpass-tech/hashpass.tech/commit/7b200d4b9653d0396c2007560117a905449470e7))
 * **lukas:** improve SEO and social previews ([f88aa48](https://github.com/hashpass-tech/hashpass.tech/commit/f88aa48c81056028ceefce90fae8aaf2e117070f))
 ### Release Highlights
-- improve SEO and social previews
+- gate claims with a knowledge quiz; improve SEO and social previews
 
 ### Release scope
 - Compared with: `v1.9.174` (the previous global release tag)

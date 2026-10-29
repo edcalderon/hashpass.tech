@@ -22,22 +22,39 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610290246, // Updated to current timestamp
+  buildNumber: 202610290315, // Updated to current timestamp
   releaseDate: '2026-10-29',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
+    'gate claims with a knowledge quiz',
     'improve SEO and social previews'
   ],
   bugfixes: [
     // No bugfixes
   ],
   breakingChanges: [],
-  notes: 'improve SEO and social previews'
+  notes: 'gate claims with a knowledge quiz; improve SEO and social previews'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.176': {
+    version: '1.9.176',
+    buildNumber: 202610290315,
+    releaseDate: '2026-10-29',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'gate claims with a knowledge quiz',
+      'improve SEO and social previews'
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'gate claims with a knowledge quiz; improve SEO and social previews'
+  },
   '1.9.175': {
     version: '1.9.175',
     buildNumber: 202610290246,
