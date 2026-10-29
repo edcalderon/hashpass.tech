@@ -3,17 +3,28 @@
   "_source": "This file is generated from apps/web-app/package.json",
   "_instructions": "Run npm run version:update or npm run release:patch from apps/web-app to update it.",
   "currentVersion": {
-    "version": "1.0.43",
-    "buildNumber": 20261029101358,
+    "version": "1.0.44",
+    "buildNumber": 20261029104325,
     "releaseDate": "2026-10-29",
     "releaseType": "stable",
     "environment": "production",
     "features": [],
     "bugfixes": [],
     "breakingChanges": [],
-    "notes": "Return the Club attending landing logo to the hashpass.club homepage."
+    "notes": "Use the shared Club navbar on the attending landing page and keep the route accessible."
   },
   "versions": [
+    {
+      "version": "1.0.44",
+      "buildNumber": 20261029104325,
+      "releaseDate": "2026-10-29",
+      "releaseType": "stable",
+      "environment": "production",
+      "features": [],
+      "bugfixes": [],
+      "breakingChanges": [],
+      "notes": "Use the shared Club navbar on the attending landing page and keep the route accessible."
+    },
     {
       "version": "1.0.43",
       "buildNumber": 20261029101358,
