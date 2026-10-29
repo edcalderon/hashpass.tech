@@ -25,6 +25,7 @@ This Terraform setup deploys the live HASHPASS infra surfaces:
 - `stacks/aws`: source CloudFront front door + GitHub Pages DNS for `hashpass.club`
 - `stacks/gcp`: GCP Directus VM(s) + optional Cloud DNS records
 - `stacks/hashpass-dns`: target-account Route 53 hosted zones for the migration cutover
+- `stacks/hashpass-wordpress-multisite`: production Lightsail Multisite for `hashpass.blog` and `hashpass.news`; see its [operations runbook](stacks/hashpass-wordpress-multisite/README.md)
 - `stacks/hashpass-api-target`: target-account API Gateway + Lambda stack for `api.hashpass.tech`
 - `stacks/hashpass-web`: target-account CodePipeline + EC2 worker stack for `hashpass.tech` and `dev.hashpass.tech`
 - `stacks/hashpass-vps-access`: provider-neutral VPS access adapter: a one-node SSM Hybrid activation and an opt-in IAM Roles Anywhere workload role with exact resource allowlists
