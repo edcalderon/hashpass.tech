@@ -173,6 +173,11 @@ variable "cors_allow_origins" {
     ]
     prod = [
       "https://hashpass.club",
+      "https://attending.hashpass.tech",
+      # Event artwork pages use one event subdomain each, so the static event
+      # route can call the public CAPTCHA and artwork publication endpoints.
+      # API Gateway accepts HTTPS wildcard origins for this public API.
+      "https://*",
       # The Club's web-app approval link opens at hashpass.tech. API Gateway
       # owns OPTIONS, so this must be listed here as well as in the Lambda.
       "https://hashpass.tech",
@@ -182,9 +187,10 @@ variable "cors_allow_origins" {
 }
 
 variable "lambda_environment_overrides" {
-  description = "Additional Lambda environment variables by environment"
+  description = "Additional Lambda environment variables by environment (may contain SMTP credentials)"
   type        = map(map(string))
   default     = {}
+  sensitive   = true
 }
 
 variable "log_retention_days" {

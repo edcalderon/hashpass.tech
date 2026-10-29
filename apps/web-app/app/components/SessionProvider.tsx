@@ -16,6 +16,27 @@ const SessionContext = createContext<SessionContextValue>({
   isLoading: true,
 });
 
+async function restoreSession(client: ReturnType<typeof supabaseClient>): Promise<Session | null> {
+  let lastError: unknown;
+
+  // A second tab or a Strict Mode effect replay can briefly hold Supabase's
+  // browser lock. Retry once after it has had a chance to release the lock.
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const { data, error } = await client.auth.getSession();
+      if (error) throw error;
+      return data.session;
+    } catch (error) {
+      lastError = error;
+      if (attempt === 0) {
+        await new Promise((resolve) => setTimeout(resolve, 150));
+      }
+    }
+  }
+
+  throw lastError;
+}
+
 // Tracks the Supabase session app-wide so the navbar (and anything else)
 // can react the moment SignInModal's setSession() call lands, without each
 // consumer polling or re-fetching on its own. Mounted once in app/layout.tsx.
@@ -42,11 +63,20 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    client.auth.getSession().then(({ data }) => {
-      if (!active) return;
-      setSession(data.session);
-      setIsLoading(false);
-    });
+    void restoreSession(client)
+      .then((nextSession) => {
+        if (!active) return;
+        setSession(nextSession);
+        setIsLoading(false);
+      })
+      .catch((error: unknown) => {
+        if (!active) return;
+        // Keep public pages usable when auth storage is temporarily locked or
+        // unavailable. The auth-state listener can still provide a session.
+        console.warn('SessionProvider: could not restore the current session', error);
+        setSession(null);
+        setIsLoading(false);
+      });
 
     const { data: listener } = client.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession);

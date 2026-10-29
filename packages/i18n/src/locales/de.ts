@@ -1,3 +1,5 @@
+import { en } from './en';
+
 export const de = {
   nav: {
     features: 'Funktionen',
@@ -136,6 +138,44 @@ export const de = {
     terms: 'Nutzungsbedingungen',
     deleteAccount: 'Konto löschen',
     copyright: '© {year} HASHPASS. Alle Rechte vorbehalten.',
+    pricingDialog: {
+      eyebrow: 'Preise je Dienst',
+      title: 'Kostenlos starten. Nur zahlen, was du nutzt.',
+      description:
+        'HASHPASS hat einen dauerhaft kostenlosen Tarif. Wähle Dienste nach Bedarf; Preise siehst du vor deiner Entscheidung.',
+      close: 'Preisinformationen schließen',
+      freeTierTitle: 'Dauerhaft kostenlos bei HASHPASS',
+      freeTierDescription:
+        'Starte kostenlos und ergänze kostenpflichtige Dienste nach Bedarf.',
+      productsHeading: 'Dienste entdecken',
+      companionTitle: 'Companion',
+      companionBadge: 'MVP-Vorschau',
+      companionDescription: 'Frühe Vorschau. Die Abrechnung ist noch nicht verbunden.',
+      companionLink: 'Companion-Vorschau öffnen',
+      qrTitle: 'QR-Links',
+      qrBadge: 'Kostenlose Links',
+      qrDescription: 'Kostenlose Links auf hpass.id; aktuelle Optionen findest du auf der QR-Seite.',
+      qrLink: 'QR-Links ansehen',
+      hashpassTitle: 'HASHPASS-Dienste',
+      hashpassBadge: 'Preis vor dem Kauf',
+      hashpassDescription: 'Gebühren der Hauptdienste stehen vor dem Kauf oder im Geschäftsvertrag fest.',
+      hashpassLink: 'HASHPASS-Dokumentation lesen',
+      termsNote: 'Zahlungs- und Erstattungsbedingungen richten sich nach Dienst und Händler.',
+      termsLink: 'Nutzungsbedingungen',
+    },
+  },
+  attending: {
+    ...en.attending,
+    languageLabel: 'Seitensprache auswählen', switchLight: 'Zum hellen Erscheinungsbild wechseln', switchDark: 'Zum dunklen Erscheinungsbild wechseln',
+    settingsOpen: 'Einstellungen öffnen', settingsClose: 'Einstellungen schließen', settingsPanel: 'Club-Einstellungen', settingsAppearance: 'Erscheinungsbild', settingsLanguage: 'Sprache', settingsAnimation: 'Bewegung der Startseite',
+    themeDark: 'Dunkel', themeAuto: 'Automatisch', themeLight: 'Hell', animationFull: 'Voll', animationFullDescription: 'Maximale visuelle Bewegung', animationLow: 'Reduziert', animationLowDescription: 'Ausgewogene Leistung', animationStatic: 'Statisch', animationStaticDescription: 'Kein animierter Hintergrund',
+    landingEyebrow: 'Teilnahmeabsichten · HASHPASS Club', landingTitle: 'Sei da, bevor sich die Türen öffnen.', landingDescription: 'Wähle eine bevorstehende Veranstaltung, erstelle ein persönliches Teilnahmebild mit deinem Namen, Handle oder Foto und teile es mit deiner Community.',
+    landingCardEyebrow: 'DEINE ABSICHT', landingCardMade: 'ZUM TEILEN', landingCardTitle: 'Zeig dich, wie du bist.', landingCardNote: 'Eine offene Einladung, dabei zu sein.', landingCardEdition: '01 / 03', landingNoRsvpTag: 'Ohne Anmeldung erstellen',
+    landingEventsEyebrow: 'Wähle dein nächstes Event', landingEventsTitle: 'Wo sehen wir dich?', landingEventsDescription: 'Wähle ein Event und erstelle ein persönliches Bild zum Teilen.', landingCarouselLabel: 'Seiten für kommende Event-Bilder', landingPreviousEvents: 'Vorherige Events anzeigen', landingNextEvents: 'Nächste Events anzeigen', landingUpcoming: 'DEMNÄCHST', landingScrollHint: 'Wische, um Events zu entdecken', landingCreateArtwork: 'Mein Bild erstellen', landingNoUpcoming: 'Derzeit gibt es keine vorgestellten Events. Schau bald wieder vorbei.',
+    landingHowEyebrow: 'Ein einfacher Ablauf in drei Schritten', landingHowTitle: 'Deine Absicht zum Teilen.', landingStepOneTitle: 'Event auswählen', landingStepOneBody: 'Beginne mit einem der hier gezeigten Community-Events.', landingStepTwoTitle: 'Gestalte es persönlich', landingStepTwoBody: 'Füge deinen Namen, optional ein Social-Media-Handle und ein Profilfoto oder deine Initialen hinzu.', landingStepThreeTitle: 'Teile dein Zeichen', landingStepThreeBody: 'Sieh dir das Bild an, lade es herunter oder teile es von deinem Gerät.', landingDisclaimerTitle: 'Eine persönliche Absicht, keine Anmeldung.', landingDisclaimerBody: 'Das Bild meldet dich nicht an, reserviert keinen Platz und bestätigt keine Teilnahme. Nutze die offizielle Event-Seite des Veranstalters für Tickets und Anmeldung.', landingPrivacy: 'Deine Angaben bleiben beim Erstellen des Bildes in diesem Browser. Sie werden keiner Teilnehmerliste hinzugefügt.',
+    socialHandleLabel: 'Soziale Profile · optional', xHandleLabel: 'X- / Twitter-Handle', instagramHandleLabel: 'Instagram-Handle', socialHandlePlaceholder: '@nutzername oder Profil-URL', socialHandleHint: 'Füge einen oder beide Handles hinzu. Ihre Symbole erscheinen auf deinem Bild. Wir importieren keine Profile oder Beiträge.', pageEyebrow: 'Ein Moment zum Teilen', pageTitle: 'Ich bin dabei.', pastPageTitle: 'Ich war dabei.', pageDescription: 'Erstelle ein Event-Bild mit deinem Namen und Foto. Gestalte es und teile es auf deine Weise.', eventWebsite: 'Eventdetails', personalizeTitle: 'Mach es zu deinem', personalizeBody: 'Nutze dein HASHPASS-Profil, lade ein Foto hoch oder verwende nur deine Initialen.', profilePhotoLabel: 'Fotoquelle auswählen', hashpassProfile: 'HASHPASS-Profil', profileConnected: 'Kontofoto und Namen verwenden', checkingProfile: 'Konto wird geprüft …', profileSignInHint: 'Melde dich an, um dein Profil zu verwenden', uploadPhoto: 'Foto hochladen', uploadPhotoHint: 'JPG, PNG oder WebP · bis zu 8 MB',
+    removeBackground: 'Fotohintergrund entfernen', removeBackgroundHint: 'Person behalten und den Rest transparent machen.', removeBackgroundProcessing: 'Person wird auf diesem Gerät vom Hintergrund getrennt …', removeBackgroundPrivacy: 'Die Verarbeitung erfolgt im Browser. Dein Foto bleibt auf diesem Gerät.', removeBackgroundError: 'Der Hintergrund konnte nicht entfernt werden. Das Originalfoto wird weiterhin verwendet.', noPhoto: 'Initialen verwenden', noPhotoHint: 'Eine einfache, private Option', socialConnectionNote: 'Wir importieren keine Fotos aus sozialen Netzwerken. Nutze dein HASHPASS-Profil, lade ein Foto hoch oder verwende deine Initialen; unten kannst du ein öffentliches Handle hinzufügen.', nameLabel: 'Name auf dem Bild', namePlaceholder: 'z. B. Alex Rivera', requiredField: 'erforderlich', nameRequiredFeedback: 'Gib deinen Namen ein, bevor du dieses Bild teilst oder herunterlädst.', nameInvalidFeedback: 'Gib einen gültigen Namen mit mindestens 2 Zeichen und einem Buchstaben ein.', nameActionHint: 'Teilen und Download werden aktiviert, sobald dein Name gültig ist.', roleLabel: 'Position oder Organisation · optional', rolePlaceholder: 'z. B. Produktdesigner bei Acme', privacyNote: 'Deine Angaben werden in diesem Browser zum Erstellen des Bildes verwendet. Sie werden keiner Teilnehmerliste hinzugefügt und nicht für diesen Beitrag gespeichert.',
+    previewEyebrow: 'Dein Event-Bild', previewTitle: 'Bereit zum Teilen', artAccessibleName: 'Teilnahmebild von {attendee} bei {event}', makingPreview: 'Vorschau wird erstellt …', artUpcoming: 'ICH BIN DABEI', artPast: 'ICH WAR DABEI', yourName: 'Dein Name', poweredBy: 'UNTERSTÜTZT VON', intentionDisclaimer: 'Dieses Bild zeigt deine persönliche Absicht. Es ist keine Anmeldung, Eintrittskarte oder Teilnahmebestätigung.', photoExportWarning: 'Dieses Profilfoto konnte nicht in die PNG-Datei eingebettet werden. Lade ein Foto hoch, um es im Download zu verwenden.', shareImage: 'Bild teilen', downloadImage: 'PNG herunterladen', shareOn: 'Event-Seite teilen', copyPageLink: 'Link kopieren', shareHint: 'X und LinkedIn öffnen sich mit dem Event-Link. Lade zuerst die PNG-Datei herunter, wenn du das Bild an deinen Beitrag anhängen möchtest.', footerBrand: 'Für die Momente, die du teilst.', footerPrivacy: 'Dein Foto bleibt auf diesem Gerät, solange du das Bild nicht teilst.', uploadInvalid: 'Wähle ein JPG-, PNG- oder WebP-Bild aus.', uploadTooLarge: 'Wähle ein Bild mit weniger als 8 MB.', artNotReady: 'Das Bild wird noch vorbereitet.', downloaded: 'Dein Bild kann jetzt geteilt werden.', downloadError: 'Das Bild konnte nicht heruntergeladen werden. Bitte versuche es erneut.', shareTitle: 'Ich nehme teil an', shareFallback: 'Dein Browser hat das Bild heruntergeladen. Hänge es an deinen Beitrag an, um es zu teilen.', shareError: 'Das Bild konnte nicht geteilt werden. Lade es herunter und versuche es erneut.', linkCopied: 'Event-Link kopiert.', copyError: 'Der Event-Link konnte nicht kopiert werden.',
   },
   theme: { toggle: 'Design umschalten', dark: 'Dunkel', light: 'Hell', system: 'System' },
   lang: { select: 'Sprache', en: 'English', es: 'Español', ko: '한국어', fr: 'Français', pt: 'Português', de: 'Deutsch', et: 'Eesti' },

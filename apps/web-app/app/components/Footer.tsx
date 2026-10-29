@@ -1,13 +1,18 @@
 'use client';
 
+import { useState } from 'react';
 import { useTranslation } from '@hashpass/i18n';
+import { uiTokens } from '@hashpass/ui/tokens';
 import { CURRENT_VERSION, getClubVersionLabel } from '../../config/version';
+import { scrollToAnchor } from '../../lib/scroll-to-anchor';
+import { PricingDialog } from './PricingDialog';
 import { useTheme } from './ThemeProvider';
 
 export function Footer() {
   const { t } = useTranslation('footer');
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
+  const [pricingOpen, setPricingOpen] = useState(false);
   const year = new Date().getFullYear();
   const versionLabel = getClubVersionLabel(CURRENT_VERSION);
   const versionTooltip = `Build ${CURRENT_VERSION.buildNumber} · Released ${CURRENT_VERSION.releaseDate}`;
@@ -16,32 +21,39 @@ export function Footer() {
     {
       title: t('product'),
       links: [
-        { label: t('features'), href: 'https://hashpass.tech' },
-        { label: t('qrLinks'), href: '/qr' },
-        { label: t('pricing'), href: '#pricing' },
-        { label: t('docs'), href: '/documentation/' },
-        { label: t('status'), href: 'https://hashpass.tech/status' },
+        {
+          label: t('features'),
+          href: '#features',
+          children: [
+            { label: t('qrLinks'), href: '/qr' },
+            { label: t('attending'), href: '/attending/' },
+          ],
+        },
+        { label: t('pricing'), href: '#pricing', children: [] },
+        { label: t('docs'), href: '/documentation/', children: [] },
+        { label: t('status'), href: 'https://hashpass.tech/status', children: [] },
       ],
     },
     {
       title: t('company'),
       links: [
-        { label: t('about'), href: '#' },
-        { label: t('blog'), href: '#' },
+        { label: t('about'), href: '#', children: [] },
+        { label: t('blog'), href: '#', children: [] },
       ],
     },
     {
       title: t('legal'),
       links: [
-        { label: t('privacy'), href: '/documentation/legal/privacy-policy/' },
-        { label: t('terms'), href: '/documentation/legal/terms-of-service/' },
-        { label: t('deleteAccount'), href: 'https://hashpass.tech/delete-account' },
+        { label: t('privacy'), href: '/documentation/legal/privacy-policy/', children: [] },
+        { label: t('terms'), href: '/documentation/legal/terms-of-service/', children: [] },
+        { label: t('deleteAccount'), href: 'https://hashpass.tech/delete-account', children: [] },
       ],
     },
   ];
 
   return (
     <footer
+      id="features"
       style={{
         flexShrink: 0,
         background: 'var(--bg-canvas)',
@@ -127,22 +139,83 @@ export function Footer() {
               <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {section.links.map((link) => (
                   <li key={link.label}>
-                    <a
-                      href={link.href}
-                      {...(link.href.startsWith('http')
-                        ? { target: '_blank', rel: 'noopener noreferrer' }
-                        : {})}
-                      style={{
-                        fontSize: 'clamp(13px, 1.5vw, 14px)',
-                        color: 'var(--text-secondary)',
-                        transition: 'color 0.2s',
-                        textDecoration: 'none',
-                      }}
-                      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--text-primary)'; }}
-                      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--text-secondary)'; }}
-                    >
-                      {link.label}
-                    </a>
+                    {link.href === '#pricing' ? (
+                      <button
+                        type="button"
+                        onClick={() => setPricingOpen(true)}
+                        style={{
+                          appearance: 'none',
+                          background: 'none',
+                          border: 0,
+                          padding: 0,
+                          font: 'inherit',
+                          fontSize: 'clamp(13px, 1.5vw, 14px)',
+                          color: 'var(--text-secondary)',
+                          transition: 'color 0.2s',
+                          textAlign: 'left',
+                          cursor: 'pointer',
+                        }}
+                        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--text-primary)'; }}
+                        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--text-secondary)'; }}
+                      >
+                        {link.label}
+                      </button>
+                    ) : (
+                      <a
+                        href={link.href}
+                        onClick={link.href === '#features' ? (event) => {
+                          event.preventDefault();
+                          scrollToAnchor('features');
+                        } : undefined}
+                        {...(link.href.startsWith('http')
+                          ? { target: '_blank', rel: 'noopener noreferrer' }
+                          : {})}
+                        style={{
+                          fontSize: 'clamp(13px, 1.5vw, 14px)',
+                          color: 'var(--text-secondary)',
+                          transition: 'color 0.2s',
+                          textDecoration: 'none',
+                        }}
+                        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--text-primary)'; }}
+                        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--text-secondary)'; }}
+                      >
+                        {link.label}
+                      </a>
+                    )}
+                    {link.children.length > 0 && (
+                      <ul
+                        style={{
+                          margin: `${uiTokens.space.xs}px 0 0 ${uiTokens.space.xs}px`,
+                          padding: `0 0 0 ${uiTokens.space.md}px`,
+                          listStyle: 'none',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: uiTokens.space.sm,
+                          borderLeft: `${uiTokens.control.borderWidth}px solid var(--border)`,
+                        }}
+                      >
+                        {link.children.map((child) => (
+                          <li key={child.label}>
+                            <a
+                              href={child.href}
+                              {...(child.href.startsWith('http')
+                                ? { target: '_blank', rel: 'noopener noreferrer' }
+                                : {})}
+                              style={{
+                                fontSize: 'clamp(13px, 1.5vw, 14px)',
+                                color: 'var(--text-secondary)',
+                                transition: 'color 0.2s',
+                                textDecoration: 'none',
+                              }}
+                              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--text-primary)'; }}
+                              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--text-secondary)'; }}
+                            >
+                              {child.label}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -187,6 +260,7 @@ export function Footer() {
           </span>
         </div>
       </div>
+      <PricingDialog open={pricingOpen} onClose={() => setPricingOpen(false)} />
     </footer>
   );
 }

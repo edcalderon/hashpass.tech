@@ -1,4 +1,4 @@
-import type { AttendingArtworkOptions } from '../app/attending/types/attending.types';
+import type { AttendeeSocialPlatform, AttendingArtworkOptions } from '../app/attending/types/attending.types';
 
 const ART_WIDTH = 1080;
 const ART_HEIGHT = 1350;
@@ -112,18 +112,96 @@ function drawContainedImage(
   context.drawImage(image, x + (width - drawWidth) / 2, y + (height - drawHeight) / 2, drawWidth, drawHeight);
 }
 
+function drawSocialIcon(
+  context: CanvasRenderingContext2D,
+  platform: AttendeeSocialPlatform,
+  x: number,
+  y: number,
+  size: number,
+  color: string,
+) {
+  context.save();
+  context.strokeStyle = color;
+  context.fillStyle = color;
+  context.lineWidth = 2.2;
+  if (platform === 'x') {
+    const path = new Path2D('M18.901 1.153h3.68l-8.04 9.19 9.46 12.504h-7.41l-5.804-7.588-6.64 7.588H.466l8.6-9.83L0 1.153h7.598l5.245 6.932z');
+    context.translate(x, y);
+    context.scale(size / 24, size / 24);
+    context.fill(path);
+  } else {
+    drawRoundRect(context, x + 1, y + 1, size - 2, size - 2, size * 0.27);
+    context.stroke();
+    context.beginPath();
+    context.arc(x + size / 2, y + size / 2, size * 0.22, 0, Math.PI * 2);
+    context.stroke();
+    context.beginPath();
+    context.arc(x + size * 0.72, y + size * 0.29, size * 0.065, 0, Math.PI * 2);
+    context.fill();
+  }
+  context.restore();
+}
+
+function drawSocialHandles(context: CanvasRenderingContext2D, options: AttendingArtworkOptions) {
+  const handles = [
+    { platform: 'x' as const, handle: options.attendeeSocialHandles.x },
+    { platform: 'instagram' as const, handle: options.attendeeSocialHandles.instagram },
+  ].filter(({ handle }) => handle);
+  if (!handles.length) return;
+
+  context.save();
+  context.font = '600 22px Manrope, sans-serif';
+  const iconSize = 22;
+  const iconGap = 9;
+  const itemGap = 36;
+  const widths = handles.map(({ handle }) => iconSize + iconGap + context.measureText(handle).width);
+  const totalWidth = widths.reduce((total, width) => total + width, 0) + itemGap * (handles.length - 1);
+  let x = (ART_WIDTH - totalWidth) / 2;
+  handles.forEach(({ platform, handle }, index) => {
+    drawSocialIcon(context, platform, x, 1182, iconSize, '#f3f8ff');
+    context.fillStyle = '#f3f8ff';
+    context.textAlign = 'left';
+    context.fillText(handle, x + iconSize + iconGap, 1201);
+    x += widths[index] + itemGap;
+  });
+  context.restore();
+}
+
 function drawPortrait(
   context: CanvasRenderingContext2D,
   image: HTMLImageElement | null,
   name: string,
   accentColor: string,
   secondaryAccentColor: string,
+  transparentPortrait: boolean,
 ) {
   const x = 548;
   const y = 78;
   const width = 470;
   const height = 785;
   const radius = 196;
+
+  if (image && transparentPortrait) {
+    const scale = Math.max(width / image.naturalWidth, height / image.naturalHeight);
+    const drawWidth = image.naturalWidth * scale;
+    const drawHeight = image.naturalHeight * scale;
+    context.save();
+    context.beginPath();
+    context.rect(x, y, width, height);
+    context.clip();
+    context.shadowColor = 'rgba(0, 0, 0, 0.24)';
+    context.shadowBlur = 20;
+    context.shadowOffsetY = 10;
+    context.drawImage(
+      image,
+      x + (width - drawWidth) / 2,
+      y + (height - drawHeight) / 2,
+      drawWidth,
+      drawHeight,
+    );
+    context.restore();
+    return;
+  }
 
   context.save();
   context.shadowColor = colorWithAlpha(accentColor, 0.55);
@@ -149,7 +227,7 @@ function drawPortrait(
   } else {
     const initials = name.trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toLocaleUpperCase() || '★';
     context.fillStyle = '#ffffff';
-    context.font = '800 112px Manrope, sans-serif';
+    context.font = '700 126px Fraunces, Georgia, serif';
     context.textAlign = 'center';
     context.textBaseline = 'middle';
     context.fillText(initials, x + width / 2, y + height / 2);
@@ -286,6 +364,7 @@ export async function drawAttendingArtwork(
     loadImage(options.artworkTemplate.poweredByLogoSrc),
     loadImage(options.avatarSrc),
   ]);
+  await document.fonts?.ready;
   if (canvasRenderIds.get(canvas) !== renderId) {
     return { avatarIncluded: false, logoIncluded: false };
   }
@@ -294,21 +373,21 @@ export async function drawAttendingArtwork(
   canvas.height = ART_HEIGHT;
   context.clearRect(0, 0, ART_WIDTH, ART_HEIGHT);
 
-  context.fillStyle = '#03123b';
+  context.fillStyle = '#06142e';
   context.fillRect(0, 0, ART_WIDTH, ART_HEIGHT);
   if (backgroundImage) drawCoverImage(context, backgroundImage, 0, 0, ART_WIDTH, ART_HEIGHT);
 
-  const backgroundOverlay = context.createLinearGradient(0, 0, ART_WIDTH * 0.75, ART_HEIGHT);
-  backgroundOverlay.addColorStop(0, 'rgba(1, 10, 43, 0.68)');
-  backgroundOverlay.addColorStop(0.46, 'rgba(2, 15, 53, 0.52)');
-  backgroundOverlay.addColorStop(1, 'rgba(2, 10, 39, 0.96)');
+  const backgroundOverlay = context.createLinearGradient(0, 0, ART_WIDTH, ART_HEIGHT);
+  backgroundOverlay.addColorStop(0, 'rgba(1, 10, 35, 0.72)');
+  backgroundOverlay.addColorStop(0.5, 'rgba(2, 15, 47, 0.48)');
+  backgroundOverlay.addColorStop(1, 'rgba(2, 10, 35, 0.96)');
   context.fillStyle = backgroundOverlay;
   context.fillRect(0, 0, ART_WIDTH, ART_HEIGHT);
 
   const leftOverlay = context.createLinearGradient(0, 0, 630, 0);
-  leftOverlay.addColorStop(0, 'rgba(0, 9, 42, 0.82)');
-  leftOverlay.addColorStop(0.72, 'rgba(0, 15, 54, 0.4)');
-  leftOverlay.addColorStop(1, 'rgba(0, 15, 54, 0)');
+  leftOverlay.addColorStop(0, 'rgba(0, 9, 38, 0.88)');
+  leftOverlay.addColorStop(0.72, 'rgba(0, 15, 48, 0.48)');
+  leftOverlay.addColorStop(1, 'rgba(0, 15, 48, 0)');
   context.fillStyle = leftOverlay;
   context.fillRect(0, 0, 720, 890);
 
@@ -359,89 +438,87 @@ export async function drawAttendingArtwork(
     });
   }
 
-  const locationLabel = [options.location, options.shortName].filter(Boolean).join('  ·  ').toLocaleUpperCase();
-  context.fillStyle = colorWithAlpha(options.artworkTemplate.accentColor, 0.96);
-  context.font = '800 22px "IBM Plex Mono", monospace';
-  drawFittedText(context, locationLabel, 125, 364, 390, 800, '"IBM Plex Mono", monospace', 22, 16);
-
-  drawLocationPin(context, 89, 418, options.artworkTemplate.accentColor, 35);
-  context.fillStyle = '#ffffff';
-  context.font = '700 32px Manrope, sans-serif';
-  drawFittedText(context, options.location || options.shortName, 126, 429, 385, 700, 'Manrope, sans-serif', 32, 22);
-
-  drawCalendar(context, 89, 500, options.artworkTemplate.accentColor, 36);
-  context.fillStyle = '#ffffff';
-  context.font = '700 32px Manrope, sans-serif';
-  drawFittedText(context, options.dateLabel, 126, 511, 385, 700, 'Manrope, sans-serif', 32, 22);
-
-  drawBuilding(context, 89, 589, options.artworkTemplate.accentColor, 37);
-  context.fillStyle = '#ffffff';
-  context.font = '600 27px Manrope, sans-serif';
-  wrapText(context, compactVenue(options.venue), 126, 581, 385, 34, 3);
-
   drawPortrait(
     context,
     avatar,
     options.attendeeName,
     options.artworkTemplate.accentColor,
     options.artworkTemplate.secondaryAccentColor,
+    options.transparentPortrait,
   );
 
-  drawRoundRect(context, 58, 817, 964, 466, 34);
-  const panel = context.createLinearGradient(0, 817, 0, 1283);
-  panel.addColorStop(0, 'rgba(2, 13, 46, 0.93)');
-  panel.addColorStop(1, 'rgba(2, 10, 37, 0.98)');
-  context.fillStyle = panel;
-  context.shadowColor = colorWithAlpha(options.artworkTemplate.accentColor, 0.4);
-  context.shadowBlur = 28;
-  context.fill();
+  context.fillStyle = options.artworkTemplate.accentColor;
+  context.font = '600 18px "IBM Plex Mono", monospace';
+  context.fillText(options.shortName.toLocaleUpperCase(), 84, 414, 420);
+
+  const headline = options.pastEvent ? options.intentions.past : options.intentions.upcoming;
+  context.textAlign = 'left';
+  context.fillStyle = '#ffffff';
+  context.shadowColor = 'rgba(0, 0, 0, 0.34)';
+  context.shadowBlur = 18;
+  context.font = '700 90px Fraunces, Georgia, serif';
+  wrapText(context, headline, 82, 502, 430, 96, 2);
   context.shadowBlur = 0;
-  context.strokeStyle = colorWithAlpha(options.artworkTemplate.accentColor, 0.78);
+  context.shadowColor = 'transparent';
+  context.fillStyle = options.artworkTemplate.accentColor;
+  context.fillRect(84, 690, 116, 8);
+  context.fillStyle = colorWithAlpha(options.artworkTemplate.secondaryAccentColor, 0.9);
+  context.fillRect(210, 690, 48, 8);
+
+  drawRoundRect(context, 58, 757, 964, 570, 34);
+  context.fillStyle = 'rgba(2, 12, 39, 0.97)';
+  context.fill();
+  context.strokeStyle = colorWithAlpha(options.artworkTemplate.accentColor, 0.76);
   context.lineWidth = 3;
   context.stroke();
 
   context.textAlign = 'center';
-  context.fillStyle = '#ffffff';
-  context.font = '900 88px Manrope, sans-serif';
-  const headline = options.pastEvent ? options.intentions.past : options.intentions.upcoming;
-  const headlineGradient = context.createLinearGradient(150, 872, 930, 970);
-  headlineGradient.addColorStop(0, '#ffffff');
-  headlineGradient.addColorStop(0.52, '#dffaff');
-  headlineGradient.addColorStop(1, options.artworkTemplate.accentColor);
-  context.fillStyle = headlineGradient;
-  drawFittedText(context, headline, ART_WIDTH / 2, 926, 850, 900, 'Manrope, sans-serif', 88, 58);
+  context.fillStyle = options.artworkTemplate.accentColor;
+  context.font = '600 18px "IBM Plex Mono", monospace';
+  drawFittedText(context, options.shortName.toLocaleUpperCase(), ART_WIDTH / 2, 817, 820, 600, '"IBM Plex Mono", monospace', 18, 15);
 
-  context.strokeStyle = colorWithAlpha(options.artworkTemplate.accentColor, 0.52);
+  context.fillStyle = '#ffffff';
+  context.font = '700 54px Fraunces, Georgia, serif';
+  drawFittedText(context, options.eventName, ART_WIDTH / 2, 883, 850, 700, 'Fraunces, Georgia, serif', 54, 30);
+
+  context.strokeStyle = colorWithAlpha(options.artworkTemplate.accentColor, 0.48);
   context.lineWidth = 2;
   context.beginPath();
-  context.moveTo(111, 970);
-  context.lineTo(969, 970);
+  context.moveTo(112, 913);
+  context.lineTo(968, 913);
   context.stroke();
 
-  context.fillStyle = '#ffffff';
-  context.font = '800 40px Manrope, sans-serif';
-  drawFittedText(context, options.eventName, ART_WIDTH / 2, 1023, 864, 800, 'Manrope, sans-serif', 40, 27);
-
-  const venueLabel = compactVenue(options.venue).replace(/\s*[·•]\s*La Candelaria$/i, '');
-  const detailY = 1082;
   context.textAlign = 'left';
-  drawLocationPin(context, 148, detailY - 7, options.artworkTemplate.accentColor, 29);
-  context.fillStyle = '#edf7ff';
-  context.font = '600 25px Manrope, sans-serif';
-  drawFittedText(context, options.location.split(',')[0] || options.location, 178, detailY, 205, 600, 'Manrope, sans-serif', 25, 18);
+  if (options.dateLabel) {
+    drawCalendar(context, 145, 969, options.artworkTemplate.accentColor, 32);
+    context.fillStyle = '#f3f8ff';
+    context.font = '700 28px Manrope, sans-serif';
+    drawFittedText(context, options.dateLabel, 178, 980, 340, 700, 'Manrope, sans-serif', 28, 20);
+  }
+  if (options.location) {
+    drawLocationPin(context, 586, 969, options.artworkTemplate.accentColor, 32);
+    context.fillStyle = '#f3f8ff';
+    context.font = '700 28px Manrope, sans-serif';
+    drawFittedText(context, options.location, 618, 980, 340, 700, 'Manrope, sans-serif', 28, 20);
+  }
 
-  drawCalendar(context, 411, detailY - 7, options.artworkTemplate.accentColor, 29);
-  context.fillStyle = '#edf7ff';
-  context.font = '600 25px Manrope, sans-serif';
-  drawFittedText(context, options.dateLabel, 440, detailY, 260, 600, 'Manrope, sans-serif', 25, 16);
+  context.strokeStyle = colorWithAlpha(options.artworkTemplate.accentColor, 0.42);
+  context.lineWidth = 2;
+  context.beginPath();
+  context.moveTo(112, 1011);
+  context.lineTo(968, 1011);
+  context.stroke();
 
-  drawBuilding(context, 731, detailY - 7, options.artworkTemplate.accentColor, 29);
-  context.fillStyle = '#edf7ff';
-  context.font = '600 24px Manrope, sans-serif';
-  drawFittedText(context, venueLabel, 762, detailY, 210, 600, 'Manrope, sans-serif', 24, 16);
+  const venueLabel = compactVenue(options.venue);
+  if (venueLabel) {
+    drawBuilding(context, 145, 1049, options.artworkTemplate.accentColor, 32);
+    context.fillStyle = '#f3f8ff';
+    context.font = '600 27px Manrope, sans-serif';
+    drawFittedText(context, venueLabel, 178, 1060, 780, 600, 'Manrope, sans-serif', 27, 20);
+  }
 
-  drawRoundRect(context, 175, 1124, 730, 67, 34);
-  context.fillStyle = 'rgba(5, 29, 75, 0.78)';
+  drawRoundRect(context, 160, 1090, 760, 74, 37);
+  context.fillStyle = 'rgba(8, 30, 70, 0.86)';
   context.fill();
   context.strokeStyle = colorWithAlpha(options.artworkTemplate.accentColor, 0.9);
   context.lineWidth = 2;
@@ -450,32 +527,32 @@ export async function drawAttendingArtwork(
   const identity = [
     options.attendeeName.trim() || options.intentions.emptyName,
     options.attendeeRole.trim(),
-    options.attendeeSocialHandle,
   ].filter(Boolean).join('  ·  ');
   context.textAlign = 'center';
   context.fillStyle = '#ffffff';
   context.font = '700 33px Manrope, sans-serif';
-  drawFittedText(context, identity, ART_WIDTH / 2, 1168, 680, 700, 'Manrope, sans-serif', 33, 20);
+  drawFittedText(context, identity, ART_WIDTH / 2, 1136, 700, 700, 'Manrope, sans-serif', 33, 20);
+
+  drawSocialHandles(context, options);
 
   context.fillStyle = options.artworkTemplate.accentColor;
-  context.font = '700 23px "IBM Plex Mono", monospace';
-  context.fillText(options.artworkTemplate.hashtags.join('   '), ART_WIDTH / 2, 1245, 850);
+  context.font = '600 22px "IBM Plex Mono", monospace';
+  context.fillText(options.artworkTemplate.hashtags.join('   '), ART_WIDTH / 2, 1244, 850);
 
   context.textAlign = 'right';
   context.fillStyle = 'rgba(230, 244, 255, 0.66)';
-  context.font = '600 16px Manrope, sans-serif';
+  context.font = '500 15px "IBM Plex Mono", monospace';
   const labelWidth = context.measureText(options.poweredByLabel).width;
-  const brandWidth = 155;
+  const brandWidth = 150;
   const groupStart = (ART_WIDTH - labelWidth - 12 - brandWidth) / 2;
   context.textAlign = 'left';
-  context.fillText(options.poweredByLabel, groupStart, 1321);
+  context.fillText(options.poweredByLabel, groupStart, 1295);
   if (poweredByLogo) {
-    drawContainedImage(context, poweredByLogo, groupStart + labelWidth + 12, 1299, brandWidth, 39);
+    drawContainedImage(context, poweredByLogo, groupStart + labelWidth + 12, 1276, brandWidth, 36);
   } else {
-    context.textAlign = 'left';
     context.fillStyle = 'rgba(230, 244, 255, 0.76)';
     context.font = '800 18px Manrope, sans-serif';
-    context.fillText('HASHPASS', groupStart + labelWidth + 12, 1321);
+    context.fillText('HASHPASS', groupStart + labelWidth + 12, 1295);
   }
   context.textAlign = 'left';
 

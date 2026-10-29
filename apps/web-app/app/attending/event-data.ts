@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { EVENTS } from '@hashpass/config';
 import type { EventConfig } from '@hashpass/types';
+import { getAttendingEventUrl } from '../../lib/attending-url';
 import type { AttendingArtworkTemplate, AttendingEventData } from './types/attending.types';
 
 const ROUTE_EVENT_IDS: Record<string, string> = {
@@ -12,14 +13,14 @@ const ROUTE_EVENT_IDS: Record<string, string> = {
 
 export const FEATURED_ATTENDING_EVENT_SLUGS = ['bsl', 'cbweek'] as const;
 
-const POWERED_BY_LOGO = '/logo-full-hashpass-white-cyan.svg';
+const POWERED_BY_LOGO = '/attending/logo-full-hashpass-white-cyan.svg';
 
 const BSL_COLOMBIA_ARTWORK_TEMPLATE: Partial<AttendingArtworkTemplate> = {
   backgroundSrc: '/attending/backgrounds/bsl-colombia-2026.png',
   accentColor: '#27D8FF',
   secondaryAccentColor: '#156BFF',
   flagColors: ['#FCD116', '#003893', '#CE1126'],
-  hashtags: ['#BSL2026', '#BSLColombia'],
+  hashtags: ['#BlockchainSummitLatam', '#BSLOnTour2026', '#BSLColombia2026'],
 };
 
 const ARTWORK_TEMPLATE_OVERRIDES: Record<string, Partial<AttendingArtworkTemplate>> = {
@@ -115,12 +116,11 @@ export function makeAttendingEventData(event: EventConfig, eventSlug: string): A
   };
 }
 
-export function makeAttendingMetadata(event: EventConfig, eventSlug: string, standaloneHostRoute = false): Metadata {
+export function makeAttendingMetadata(event: EventConfig, eventSlug: string): Metadata {
   const eventName = event.title || event.name;
   const logoSrc = makeAttendingEventData(event, eventSlug).logoSrc;
-  const pageUrl = standaloneHostRoute
-    ? `https://attending.hashpass.club/${eventSlug}/`
-    : `https://hashpass.club/attending/${eventSlug}/`;
+  const pageUrl = getAttendingEventUrl(eventSlug);
+  const socialImageUrl = new URL(logoSrc, pageUrl).toString();
   return {
     title: { absolute: `Attending ${eventName} | HASHPASS Club` },
     description: `Create a personal, event-branded image for ${eventName}. A shared image expresses your intention; it is not an RSVP or ticket.`,
@@ -130,13 +130,13 @@ export function makeAttendingMetadata(event: EventConfig, eventSlug: string, sta
       url: pageUrl,
       title: `Attending ${eventName}`,
       description: `Make a personal event image for ${eventName}.`,
-      images: [logoSrc],
+      images: [socialImageUrl],
     },
     twitter: {
       card: 'summary_large_image',
       title: `Attending ${eventName}`,
       description: `Make a personal event image for ${eventName}.`,
-      images: [logoSrc],
+      images: [socialImageUrl],
     },
   };
 }

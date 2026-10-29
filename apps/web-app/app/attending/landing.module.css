@@ -8,8 +8,7 @@
 }
 
 .header,
-.main,
-.footer {
+.main {
   width: min(1240px, calc(100% - 48px));
   margin: 0 auto;
 }
@@ -51,8 +50,6 @@
   align-items: center;
   gap: 12px;
 }
-
-.languageControl { width: 126px; }
 
 .main { padding-bottom: 56px; }
 
@@ -330,7 +327,11 @@
   letter-spacing: 0.14em;
 }
 
-.eventInfo { padding: 20px 21px 21px; }
+.eventInfo {
+  padding: 20px 21px 21px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+}
 
 .eventKicker {
   display: flex;
@@ -444,28 +445,13 @@
 .disclaimer h2 { margin: 2px 0 5px; font-size: 13px; font-weight: 800; }
 .disclaimer p { max-width: 850px; margin: 0; color: var(--text-secondary); font-size: 11px; line-height: 1.6; }
 
-.footer {
-  display: flex;
-  justify-content: space-between;
-  gap: 18px;
-  padding: 19px 0 25px;
-  border-top: 1px solid var(--border);
-  color: var(--text-faint);
-  font-size: 10px;
-  line-height: 1.5;
-}
-
-.footer a { color: var(--text-secondary); font-weight: 700; text-decoration: none; }
-.footer a:hover { color: var(--accent); }
-
 @media (min-width: 1000px) {
   .carouselTrack { grid-auto-columns: calc((100% - 18px) / 2); }
 }
 
 @media (max-width: 760px) {
   .header,
-  .main,
-  .footer { width: min(100% - 32px, 620px); }
+  .main { width: min(100% - 32px, 620px); }
   .hero { min-height: auto; grid-template-columns: 1fr; gap: 26px; padding: 58px 0 48px; }
   .hero h1 { max-width: 620px; font-size: clamp(47px, 11vw, 72px); }
   .heroVisual { min-height: 290px; }
@@ -481,13 +467,9 @@
   .step h3 { margin: 2px 0 6px; }
   .step p { grid-column: 2; }
   .disclaimer { padding: 17px 15px; }
-  .footer { flex-wrap: wrap; justify-content: flex-start; }
-  .footer span:last-child { width: 100%; }
 }
 
 @media (max-width: 420px) {
-  .languageControl { width: 112px; }
-  .headerActions { gap: 7px; }
   .brand { font-size: 10px; gap: 7px; }
   .sectionTop { align-items: flex-start; }
   .sectionTop h2 { font-size: 32px; }

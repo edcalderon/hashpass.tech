@@ -13,9 +13,11 @@ import {
   Surface,
   type ControlSkin,
 } from "./primitives";
+import { SettingsToggle } from "../settings/SettingsMenu";
 import { contrastRatio, onFillPairs, uiPalette, uiTokens, type ColorMode } from "./tokens";
 function Catalog({ mode = "light" }: { mode?: ColorMode }) {
   const palette = uiPalette(mode);
+  const [removeBackground, setRemoveBackground] = React.useState(false);
   return (
     <View
       style={{
@@ -205,6 +207,27 @@ function Catalog({ mode = "light" }: { mode?: ColorMode }) {
           { id: "archive", label: "Archive" },
         ]}
       />
+      <View style={{ gap: uiTokens.space.sm }}>
+        <Text style={{ color: palette.text, fontSize: uiTokens.type.label, fontWeight: "700" }}>
+          Standalone settings switch
+        </Text>
+        <SettingsToggle
+          mode={mode}
+          label="Remove photo background"
+          description="Keep the person and turn the rest of the photo transparent, with a longer description that wraps cleanly."
+          note="Processed on this device."
+          checked={removeBackground}
+          onChange={setRemoveBackground}
+        />
+        <SettingsToggle
+          mode={mode}
+          label="Removing background…"
+          description="Your photo is being processed."
+          checked
+          disabled
+          onChange={() => undefined}
+        />
+      </View>
       <SegmentedTabs
         mode={mode}
         fullWidth

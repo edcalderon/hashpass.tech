@@ -6,6 +6,7 @@ const nextConfig = {
     unoptimized: true,
   },
   reactStrictMode: true,
+  allowedDevOrigins: ['127.0.0.1'],
   transpilePackages: ['@hashpass/ui', '@hashpass/utils', '@hashpass/types', '@hashpass/i18n', '@hashpass/config'],
   webpack(config) {
     config.resolve.alias = {

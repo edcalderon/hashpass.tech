@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
 import { AttendingLandingExperience } from './AttendingLandingExperience';
 import { getUpcomingFeaturedAttendingEvents } from './event-data';
+import { getAttendingLandingUrl } from '../../lib/attending-url';
 
-const ATTENDING_SITE_URL = 'https://attending.hashpass.club';
+const ATTENDING_SITE_URL = getAttendingLandingUrl();
 
 export const metadata: Metadata = {
   title: { absolute: 'Create your event intention image | HASHPASS Club' },
@@ -14,13 +15,13 @@ export const metadata: Metadata = {
     siteName: 'HASHPASS Club · Attending',
     title: 'Show up before the doors open.',
     description: 'Make a personal event intention image and share it with your community.',
-    images: [`${ATTENDING_SITE_URL}/og-image.png`],
+    images: [`${ATTENDING_SITE_URL}og-image.png`],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'HASHPASS Club · Event intentions',
     description: 'Make a personal event intention image and share it with your community.',
-    images: [`${ATTENDING_SITE_URL}/og-image.png`],
+    images: [`${ATTENDING_SITE_URL}og-image.png`],
   },
 };
 

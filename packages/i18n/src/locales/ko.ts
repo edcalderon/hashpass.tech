@@ -1,3 +1,5 @@
+import { en } from './en';
+
 export const ko = {
   nav: {
     features: '기능',
@@ -135,6 +137,44 @@ export const ko = {
     terms: '이용약관',
     deleteAccount: '계정 삭제',
     copyright: '© {year} HASHPASS. All rights reserved.',
+    pricingDialog: {
+      eyebrow: '서비스별 요금 안내',
+      title: '무료로 시작하고 사용한 만큼 결제하세요.',
+      description:
+        'HASHPASS에는 항상 무료 요금제가 있습니다. 필요한 서비스를 선택하고 이용 전에 가격을 확인하세요.',
+      close: '요금 안내 닫기',
+      freeTierTitle: 'HASHPASS의 상시 무료 요금제',
+      freeTierDescription:
+        '무료로 시작하고 필요한 유료 서비스만 추가하세요.',
+      productsHeading: '서비스 둘러보기',
+      companionTitle: 'Companion',
+      companionBadge: 'MVP 미리보기',
+      companionDescription: '초기 미리보기입니다. 아직 결제 기능은 연결되지 않았습니다.',
+      companionLink: 'Companion 미리보기 열기',
+      qrTitle: 'QR 링크',
+      qrBadge: '무료 링크',
+      qrDescription: '무료 hpass.id 링크를 만들고 QR 페이지에서 현재 옵션을 확인하세요.',
+      qrLink: 'QR 링크 살펴보기',
+      hashpassTitle: 'HASHPASS 서비스',
+      hashpassBadge: '구매 전 요금 안내',
+      hashpassDescription: '주요 서비스 요금은 구매 전 또는 비즈니스 계약에서 안내합니다.',
+      hashpassLink: 'HASHPASS 문서 읽기',
+      termsNote: '결제와 환불 조건은 서비스와 판매자에 따라 다릅니다.',
+      termsLink: '서비스 이용약관',
+    },
+  },
+  attending: {
+    ...en.attending,
+    languageLabel: '페이지 언어 선택', switchLight: '라이트 모드로 전환', switchDark: '다크 모드로 전환',
+    settingsOpen: '설정 열기', settingsClose: '설정 닫기', settingsPanel: '클럽 설정', settingsAppearance: '화면 모드', settingsLanguage: '언어', settingsAnimation: '랜딩 페이지 움직임',
+    themeDark: '다크', themeAuto: '자동', themeLight: '라이트', animationFull: '전체', animationFullDescription: '최대 시각 효과', animationLow: '낮음', animationLowDescription: '움직임과 성능의 균형', animationStatic: '정적', animationStaticDescription: '애니메이션 배경 없음',
+    landingEyebrow: '참여 의사 · HASHPASS Club', landingTitle: '문이 열리기 전에 먼저 도착하세요.', landingDescription: '다가오는 이벤트를 선택하고 이름, 소셜 계정 또는 사진이 담긴 나만의 참석 이미지를 만들어 커뮤니티와 공유하세요.',
+    landingCardEyebrow: '나의 참여 의사', landingCardMade: '공유하기 위해 제작', landingCardTitle: '나답게 참여하세요.', landingCardNote: '함께하자는 열린 초대입니다.', landingCardEdition: '01 / 03', landingNoRsvpTag: '등록 없이 만들기',
+    landingEventsEyebrow: '다음 만남을 선택하세요', landingEventsTitle: '어디에서 만날까요?', landingEventsDescription: '이벤트를 선택하고 나만의 공유 이미지를 만들어 보세요.', landingCarouselLabel: '예정된 이벤트 이미지 페이지', landingPreviousEvents: '이전 이벤트 보기', landingNextEvents: '다음 이벤트 보기', landingUpcoming: '예정', landingScrollHint: '밀어서 이벤트 둘러보기', landingCreateArtwork: '내 이미지 만들기', landingNoUpcoming: '현재 소개 중인 예정 이벤트가 없습니다. 곧 다시 확인해 주세요.',
+    landingHowEyebrow: '간단한 3단계 과정', landingHowTitle: '공유할 수 있는 나의 참여 의사.', landingStepOneTitle: '이벤트 선택', landingStepOneBody: '여기에 표시된 커뮤니티 모임 중 하나를 선택해 시작하세요.', landingStepTwoTitle: '나만의 이미지 만들기', landingStepTwoBody: '이름, 선택 사항인 소셜 계정, 프로필 사진 또는 이니셜을 추가하세요.', landingStepThreeTitle: '나의 신호 공유하기', landingStepThreeBody: '이미지를 미리 보고 다운로드하거나 기기에서 공유하세요.', landingDisclaimerTitle: '개인적인 참여 의사이며 RSVP가 아닙니다.', landingDisclaimerBody: '이 이미지는 등록이나 좌석 예약, 참석 확인을 하지 않습니다. 티켓과 등록은 주최자의 공식 이벤트 페이지를 이용하세요.', landingPrivacy: '이미지를 만드는 동안 입력한 정보는 이 브라우저에 남습니다. 참석자 목록에는 추가되지 않습니다.',
+    socialHandleLabel: '소셜 프로필 · 선택 사항', xHandleLabel: 'X / Twitter 사용자 이름', instagramHandleLabel: 'Instagram 사용자 이름', socialHandlePlaceholder: '@사용자 이름 또는 프로필 URL', socialHandleHint: '하나 또는 두 계정 이름을 모두 추가할 수 있습니다. 아이콘은 이미지에 표시되며 프로필이나 게시물은 가져오지 않습니다.', pageEyebrow: '공유할 순간', pageTitle: '참석할게요.', pastPageTitle: '그곳에 다녀왔어요.', pageDescription: '이름과 사진이 담긴 이벤트 이미지를 만들어 나만의 방식으로 공유하세요.', eventWebsite: '이벤트 정보', personalizeTitle: '나만의 이미지 만들기', personalizeBody: 'HASHPASS 프로필을 사용하거나 사진을 올리거나 이니셜만 사용할 수 있습니다.', profilePhotoLabel: '사진 선택', hashpassProfile: 'HASHPASS 프로필', profileConnected: '계정 사진과 이름 사용', checkingProfile: '계정 확인 중…', profileSignInHint: '프로필을 사용하려면 로그인하세요', uploadPhoto: '사진 업로드', uploadPhotoHint: 'JPG, PNG 또는 WebP · 최대 8MB',
+    removeBackground: '사진 배경 제거', removeBackgroundHint: '인물은 남기고 나머지 배경을 투명하게 만듭니다.', removeBackgroundProcessing: '이 기기에서 인물과 배경을 분리하는 중…', removeBackgroundPrivacy: '브라우저에서 처리되며 사진은 이 기기에 남습니다.', removeBackgroundError: '배경을 제거할 수 없습니다. 원본 사진을 계속 사용합니다.', noPhoto: '이니셜 사용', noPhotoHint: '간편하고 비공개로 사용할 수 있습니다', socialConnectionNote: '소셜 계정에서 사진을 가져오지 않습니다. HASHPASS 프로필을 사용하거나 사진을 업로드하거나 이니셜을 사용하세요. 아래에 공개 계정을 추가할 수도 있습니다.', nameLabel: '이미지에 표시할 이름', namePlaceholder: '예: Alex Rivera', requiredField: '필수', nameRequiredFeedback: '이미지를 공유하거나 다운로드하려면 이름을 입력하세요.', nameInvalidFeedback: '문자 2개 이상과 글자 1개 이상을 포함한 이름을 입력하세요.', nameActionHint: '유효한 이름을 입력하면 이미지 공유와 다운로드가 활성화됩니다.', roleLabel: '직책 또는 조직 · 선택 사항', rolePlaceholder: '예: Acme 제품 디자이너', privacyNote: '정보는 이 브라우저에서 이미지를 만드는 데 사용됩니다. 참석자 목록에 추가되거나 이 공유를 위해 저장되지 않습니다.',
+    previewEyebrow: '이벤트 이미지', previewTitle: '공유할 준비가 됐어요', artAccessibleName: '{event}에 참석하는 {attendee}의 이미지', makingPreview: '미리 보기 만드는 중…', artUpcoming: '참석합니다', artPast: '다녀왔습니다', yourName: '이름', poweredBy: '제작', intentionDisclaimer: '이 이미지는 개인적인 참여 의사를 나타냅니다. RSVP, 티켓 또는 참석 증명이 아닙니다.', photoExportWarning: '프로필 사진을 PNG에 포함할 수 없습니다. 다운로드에 포함하려면 사진을 업로드하세요.', shareImage: '이미지 공유', downloadImage: 'PNG 다운로드', shareOn: '이벤트 페이지 공유', copyPageLink: '링크 복사', shareHint: 'X와 LinkedIn은 이벤트 링크와 함께 열립니다. 게시물에 이미지를 첨부하려면 먼저 PNG를 다운로드하세요.', footerBrand: '함께 나누는 순간을 위해.', footerPrivacy: '이미지를 공유하지 않는 한 사진은 이 기기에 남습니다.', uploadInvalid: 'JPG, PNG 또는 WebP 이미지를 선택하세요.', uploadTooLarge: '8MB보다 작은 이미지를 선택하세요.', artNotReady: '이미지를 준비하고 있습니다.', downloaded: '이미지를 공유할 준비가 됐습니다.', downloadError: '이미지를 다운로드할 수 없습니다. 다시 시도해 주세요.', shareTitle: '참석합니다:', shareFallback: '브라우저에서 이미지를 다운로드했습니다. 게시물에 첨부해 공유하세요.', shareError: '이미지를 공유할 수 없습니다. 다운로드한 후 다시 시도하세요.', linkCopied: '이벤트 페이지 링크를 복사했습니다.', copyError: '이벤트 링크를 복사할 수 없습니다.',
   },
   theme: { toggle: '테마 전환', dark: '다크', light: '라이트', system: '시스템' },
   lang: { select: '언어', en: 'English', es: 'Español', ko: '한국어', fr: 'Français', pt: 'Português', de: 'Deutsch', et: 'Eesti' },

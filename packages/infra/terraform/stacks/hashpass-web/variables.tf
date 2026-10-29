@@ -195,6 +195,12 @@ variable "site_acm_certificate_arn" {
   default     = ""
 }
 
+variable "enable_attending_event_hosts" {
+  description = "Route attending.hashpass.tech and known event subdomains through the production static site distribution"
+  type        = bool
+  default     = true
+}
+
 variable "site_route53_a_records" {
   description = "Optional literal A records for the production site when CloudFront is unavailable"
   type        = list(string)

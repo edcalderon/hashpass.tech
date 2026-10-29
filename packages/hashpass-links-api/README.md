@@ -9,7 +9,7 @@ session.
 This package is intentionally its own service, separate from the main
 `api.hashpass.tech` (Expo Router) API — see "Why a separate service?" below.
 
-## Status: Phase 1 (auth-QR login) and Phase 2 (QR link lifecycle) are both live
+## Status: Auth-QR login, QR links, and public attending artwork links
 
 Phase 1 is the auth-QR login flow, end to end, on real infra (Lambda + API
 Gateway, real Supabase-backed sessions).
@@ -21,6 +21,12 @@ part of `.agents/active/task-panel-web-club-events-qr.md`. It's consumed by
 `apps/web-app`'s `/panel/qr` section via `@hashpass-tech/sdk`'s `QrLinksClient`
 (`client.qrLinks`). See "Routes" below for the live route table; there are
 no more Phase-2 stub routes.
+
+The attending artwork flow publishes a user-generated image only after Cap
+proof-of-work verification. It creates an opaque `/a/:token` page with Open
+Graph/Twitter metadata and a hosted PNG preview; links expire after 90 days.
+An email address is optional, used only for delivery, and is never stored.
+Email delivery requires the optional `NODEMAILER_*` settings below.
 
 Still outstanding for Phase 2: real end-to-end verification against a live
 (non-fake) Supabase project and a deployed Lambda (this service's own tests
@@ -83,7 +89,7 @@ does in production. Point `apps/web-app`'s
 `NEXT_PUBLIC_LINKS_API_BASE_URL` (and `apps/mobile-app`'s
 `EXPO_PUBLIC_LINKS_API_BASE_URL`, for the approve side) at that URL for
 local end-to-end testing. Requires the `V079__hashpass_links_dynamic_qr.sql`
-migration to have been applied to whichever Supabase project you point it
+and `V159__attending_artwork_shares.sql` migrations to have been applied to whichever Supabase project you point it
 at (`node packages/tools/scripts/migrate-tenant-db.mjs --profile=core-development --groups=hashpass-auth-qr`
 for the shared dev database).
 
@@ -105,7 +111,13 @@ install step, unlike the Expo Router API's packaging script.
 |---|---|---|
 | `SUPABASE_URL` | yes | Admin Supabase client (`src/server.ts`'s `adminDb()`) |
 | `SUPABASE_SERVICE_ROLE_KEY` | yes | Same — service-role key, never exposed to clients |
+| `PUBLIC_ARTWORK_SHARE_ORIGIN` | no | Branded origin for public artwork pages (for example `https://hpass.id`); defaults to the API request origin |
 | `CORS_ALLOW_ORIGINS` | no | Comma-separated extra allowed origins, added to the built-in default list (`lambda/index.ts`'s `DEFAULT_CORS_ALLOWED_ORIGINS`: `hashpass.club`, `hashpass.link`, `localhost:3000`) |
+| `NODEMAILER_HOST` | no | SMTP host for optional artwork-link email delivery |
+| `NODEMAILER_PORT` | no | SMTP port (defaults to 587; port 465 uses implicit TLS) |
+| `NODEMAILER_USER` | no | SMTP username |
+| `NODEMAILER_PASS` | no | SMTP password; pass only through protected Terraform inputs |
+| `NODEMAILER_FROM` | no | Verified sender email address |
 | `QR_ANALYTICS_SECRET` | no, but recommended | HMAC secret (32+ chars) `logScan()` in `src/routes/qr-links.ts` passes to `anonymizeVisitor()` to hash a scanning visitor's IP. Missing it doesn't break the redirect — every scan just collapses into one `'unconfigured'` visitor bucket instead of being individually anonymized-and-distinguished, so scan *counts* stay correct but per-visitor uniqueness doesn't. Rotate periodically; `anonymizeVisitor` itself already rotates the hash monthly so old and new hashes for the same visitor can't be correlated. |
 
 The `qrUrl` returned by `POST /api/v1/auth/qr/challenges` is built from the
@@ -124,6 +136,9 @@ their own `NEXT_PUBLIC_LINKS_API_BASE_URL` / `EXPO_PUBLIC_LINKS_API_BASE_URL`
 | Method | Path | Auth | Purpose |
 |---|---|---|---|
 | `GET` | `/api/health` | none | Liveness check |
+| `POST` | `/api/v1/attending-artworks` | Cap token | Publishes a PNG and optionally emails its public link |
+| `GET` | `/a/:token` | opaque public token | Open Graph page for a public event artwork; expires after 90 days |
+| `GET` | `/a/:token/image` | opaque public token | Redirects to the hosted PNG preview |
 | `POST` | `/api/v1/auth/qr/challenges` | none | Browser starts a login attempt (PKCE `codeChallenge` in, `qrUrl`/`state`/`binding` out) |
 | `GET` | `/api/v1/auth/qr/challenges/:id` | `x-hashpass-binding` header + `state` | Browser polls for the mobile app's decision |
 | `POST` | `/api/v1/auth/qr/challenges/:id/approve` | bearer token (app's own session) | Mobile app approves/denies, called under the user's own authenticated session |

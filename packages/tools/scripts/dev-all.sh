@@ -47,8 +47,8 @@ FRAPPE_HELPDESK_READY_TIMEOUT_SECONDS="${FRAPPE_HELPDESK_READY_TIMEOUT_SECONDS:-
 # port (that's what caused hours of "why is my browser talking to a stale
 # process on the wrong port" confusion before this existed). Default is off:
 # a busy port is a hard failure with a clear diagnostic, not a quiet retry.
-# Settable either as an env var (KILL_BUSY_PORTS=true npm run dev:all) or as
-# a CLI flag (npm run dev:all -- --kill-allowed) -- the flag wins if both are
+# Settable either as an env var (KILL_BUSY_PORTS=true pnpm run dev:all) or as
+# a CLI flag (pnpm run dev:all -- --kill-allowed) -- the flag wins if both are
 # given, since it's the more explicit, harder-to-leave-on-by-accident form.
 KILL_BUSY_PORTS="${KILL_BUSY_PORTS:-false}"
 # On by default -- the point of wiring this in is so `npm run dev:all`
@@ -68,6 +68,12 @@ INCLUDE_LOCALPROOF="${INCLUDE_LOCALPROOF:-false}"
 INCLUDE_LUKAS_LANDING="${INCLUDE_LUKAS_LANDING:-true}"
 
 for arg in "$@"; do
+  # pnpm preserves the `--` separator when forwarding args to a script.
+  # It is only an argument delimiter here, not a dev-all option.
+  if [[ "${arg}" == "--" ]]; then
+    continue
+  fi
+
   case "${arg}" in
     --kill-allowed|--kill-busy-ports)
       KILL_BUSY_PORTS=true

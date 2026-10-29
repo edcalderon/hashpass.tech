@@ -61,3 +61,4 @@ corepack pnpm --filter hashpass-mobile-app build
 # public catalog and letting /storybook fall back to the application shell.
 corepack pnpm build:storybook
 npm run postbuild:web
+bash packages/tools/scripts/overlay-attending-static-site.sh "${ROOT_DIR}/dist/client"

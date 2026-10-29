@@ -6,6 +6,11 @@ import { redirectPassShare } from './routes/pass-share';
 import { approveChallenge, createChallenge, exchangeChallenge, pollChallenge } from './routes/auth-qr';
 import { createCaptchaChallenge, redeemCaptchaChallenge } from './routes/captcha';
 import {
+  createAttendingArtwork,
+  getAttendingArtworkShare,
+  redirectAttendingArtworkImage,
+} from './routes/attending-artworks';
+import {
   createQrLink,
   deleteQrLink,
   getQrLink,
@@ -27,6 +32,9 @@ const ROUTES: Array<[string, RegExp, Handler]> = [
   ['GET', /^\/api\/health$/, () => health()],
   ['POST', /^\/api\/captcha\/challenge$/, () => createCaptchaChallenge()],
   ['POST', /^\/api\/captcha\/redeem$/, (request) => redeemCaptchaChallenge(request)],
+  ['POST', /^\/api\/v1\/attending-artworks$/, (request) => createAttendingArtwork(request)],
+  ['GET', /^\/a\/([^/]+)$/, (request, match) => getAttendingArtworkShare(request, match[1])],
+  ['GET', /^\/a\/([^/]+)\/image$/, (request, match) => redirectAttendingArtworkImage(request, match[1])],
   ['POST', /^\/api\/v1\/auth\/qr\/challenges$/, (request) => createChallenge(request)],
   ['GET', /^\/api\/v1\/auth\/qr\/challenges\/([^/]+)$/, (request, match) => pollChallenge(request, match[1])],
   [

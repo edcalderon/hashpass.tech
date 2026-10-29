@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import type { ColorMode } from '../system/tokens';
 
 /** Framework-free settings model shared by the Companion web app, and importable by Club and the mobile app. */
 export type LocaleCode = 'en' | 'es' | 'ja';
@@ -89,6 +90,8 @@ export type SettingsMenuProps = {
 };
 
 export type SettingsToggleProps = {
+  /** Explicit palette for standalone use outside a SettingsMenu. */
+  mode?: ColorMode;
   label: string;
   description?: string;
   /** Small print under the row, e.g. why it is disabled. */

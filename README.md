@@ -138,6 +138,11 @@ pnpm run release:club:web:patch # convenience patch release for the club web app
 pnpm run build:all    # build the mobile app and the new club web app
 ```
 
+Pass `--kill-allowed` to any root development command (for example,
+`pnpm run dev:club -- --kill-allowed`) to free its configured port before
+startup. This explicitly allows the launcher to stop whichever process is
+holding that port; `dev:all` applies the flag to all of its managed ports.
+
 Historical Amplify configs and helper scripts now live under [`archive/amplify/`](archive/amplify/). They are deprecated reference material only and are not part of the active CLI surface.
 
 Use the `hashpass` AWS CLI profile and verify its identity against the private `AWS_TARGET_ACCOUNT_ID` with a non-printing STS comparison before any AWS mutation, as documented in [CLAUDE.md](CLAUDE.md#target-aws-account-access). The repository-level `AWS_ACCOUNT_ID` variable belongs to legacy infrastructure and is not the production account; do not copy it into the current deploy workflows or change it without auditing its consumers.

@@ -1,0 +1,290 @@
+import { createHash, randomBytes } from 'node:crypto';
+import nodemailer from 'nodemailer';
+import { adminDb, apiError } from '../server';
+import { validateCaptchaToken } from './captcha';
+import type {
+  AttendingArtworkEmailStatus,
+  AttendingArtworkShareRow,
+  CreateAttendingArtworkBody,
+} from './attending-artworks.types';
+
+const BUCKET = 'attending-artworks';
+const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
+const TOKEN_PATTERN = /^[A-Za-z0-9_-]{40,64}$/;
+const EVENT_SLUG_PATTERN = /^[a-z0-9][a-z0-9-]{0,79}$/;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+const EVENT_URL_PATTERN = /^https:\/\/[a-z0-9][a-z0-9-]{0,62}\.hashpass\.tech(?:\/attending\/[a-z0-9][a-z0-9-]{0,79})?\/?$/;
+
+function mailerEnvironmentValue(name: string): string | undefined {
+  return process.env[`NODEMAILER_${name}`];
+}
+
+function hashToken(token: string): string {
+  return createHash('sha256').update(token).digest('hex');
+}
+
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>"']/g, (character) => {
+    const entities: Record<string, string> = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;',
+    };
+    return entities[character];
+  });
+}
+
+function absoluteUrl(request: Request, path: string): string {
+  const publicOrigin = process.env.PUBLIC_ARTWORK_SHARE_ORIGIN || new URL(request.url).origin;
+  return new URL(path, publicOrigin).toString();
+}
+
+function readArtworkBytes(value: unknown): Buffer | null {
+  if (typeof value !== 'string') return null;
+  const encoded = value.replace(/^data:image\/png;base64,/i, '');
+  if (!encoded || !/^[A-Za-z0-9+/]*={0,2}$/.test(encoded) || encoded.length % 4 !== 0) return null;
+  const bytes = Buffer.from(encoded, 'base64');
+  if (bytes.length === 0 || bytes.length > MAX_IMAGE_BYTES) return null;
+  if (!bytes.subarray(0, PNG_SIGNATURE.length).equals(PNG_SIGNATURE)) return null;
+  return bytes;
+}
+
+function validLocale(value: unknown): string {
+  if (typeof value !== 'string') return 'en';
+  return /^[a-z]{2}(?:-[A-Z]{2})?$/.test(value) ? value : 'en';
+}
+
+function mailIsConfigured(): boolean {
+  return Boolean(
+    mailerEnvironmentValue('HOST')
+      && mailerEnvironmentValue('USER')
+      && mailerEnvironmentValue('PASS')
+      && mailerEnvironmentValue('FROM'),
+  );
+}
+
+async function sendArtworkEmail(input: {
+  email: string;
+  attendeeName: string;
+  eventName: string;
+  shareUrl: string;
+  imageUrl: string;
+}): Promise<boolean> {
+  if (!mailIsConfigured()) return false;
+
+  const host = mailerEnvironmentValue('HOST')!;
+  const port = Number.parseInt(mailerEnvironmentValue('PORT') || '587', 10);
+  const secure = port === 465;
+  const normalizedHost = host.trim().toLowerCase().replace(/\.$/, '').split(':')[0];
+  const isBrevo = normalizedHost === 'brevo.com'
+    || normalizedHost.endsWith('.brevo.com')
+    || normalizedHost === 'sendinblue.com'
+    || normalizedHost.endsWith('.sendinblue.com');
+  const name = escapeHtml(input.attendeeName);
+  const event = escapeHtml(input.eventName);
+  const shareUrl = escapeHtml(input.shareUrl);
+  const imageUrl = escapeHtml(input.imageUrl);
+  let closeTransporter: (() => void) | undefined;
+  try {
+    const transporter = nodemailer.createTransport({
+      host,
+      port,
+      secure,
+      auth: { user: mailerEnvironmentValue('USER'), pass: mailerEnvironmentValue('PASS') },
+      connectionTimeout: 10_000,
+      tls: isBrevo
+        ? { rejectUnauthorized: process.env.NODE_ENV === 'production', checkServerIdentity: () => undefined }
+        : { rejectUnauthorized: process.env.NODE_ENV === 'production' },
+      requireTLS: !secure,
+    });
+    closeTransporter = () => transporter.close();
+    await transporter.sendMail({
+      from: `HASHPASS <${mailerEnvironmentValue('FROM')}>`,
+      to: input.email,
+      subject: `Your event artwork for ${input.eventName}`,
+      text: `Hi ${input.attendeeName},\n\nYour shareable attendance artwork for ${input.eventName} is ready.\n\nOpen your public artwork: ${input.shareUrl}\nThe link is available for 90 days.`,
+      html: `<!doctype html><html><body style="margin:0;background:#f4f7fb;font-family:Arial,sans-serif;color:#101b2c"><main style="max-width:560px;margin:32px auto;padding:28px;background:#fff;border:1px solid #dbe4ef;border-radius:20px"><p style="font-size:12px;letter-spacing:.12em;font-weight:700;color:#1976d2">HASHPASS · EVENT ARTWORK</p><h1 style="font-size:24px">Your artwork is ready, ${name}</h1><p>Your shareable attendance image for <strong>${event}</strong> is ready.</p><p><a href="${shareUrl}" style="display:inline-block;padding:13px 20px;background:#1976d2;color:#fff;border-radius:999px;text-decoration:none;font-weight:700">Open your artwork</a></p><p><img src="${imageUrl}" alt="Your event artwork" style="display:block;width:100%;height:auto;border-radius:14px"></p><p style="font-size:13px;color:#64748b">This public link expires in 90 days. Your image is visible to anyone who has the link.</p></main></body></html>`,
+    });
+    return true;
+  } catch {
+    return false;
+  } finally {
+    closeTransporter?.();
+  }
+}
+
+async function findShare(token: string): Promise<AttendingArtworkShareRow | null> {
+  if (!TOKEN_PATTERN.test(token)) return null;
+  const { data, error } = await adminDb()
+    .from('attending_artwork_shares')
+    .select('id,token_hash,object_path,event_slug,event_name,attendee_name,caption,event_url,locale,created_at,expires_at')
+    .eq('token_hash', hashToken(token))
+    .gt('expires_at', new Date().toISOString())
+    .maybeSingle();
+  if (error || !data) return null;
+  return data as AttendingArtworkShareRow;
+}
+
+// POST /api/v1/attending-artworks -- publish one user-created PNG after Cap verification.
+export async function createAttendingArtwork(request: Request): Promise<Response> {
+  const contentLength = Number.parseInt(request.headers.get('content-length') || '0', 10);
+  if (contentLength > MAX_IMAGE_BYTES * 1.4 + 16_384) return apiError('Artwork is larger than 4 MB', 413);
+
+  const body = await request.json().catch(() => ({})) as CreateAttendingArtworkBody;
+  const captchaValid = await validateCaptchaToken(body.captchaToken);
+  if (!captchaValid) {
+    return Response.json({ message: 'Security check expired. Please solve the captcha again.', captchaExpired: true }, { status: 400 });
+  }
+
+  const image = readArtworkBytes(body.imageBase64);
+  if (!image) return apiError('A PNG artwork smaller than 4 MB is required');
+  if (typeof body.eventSlug !== 'string' || !EVENT_SLUG_PATTERN.test(body.eventSlug)) return apiError('Invalid event');
+  if (typeof body.eventName !== 'string' || !body.eventName.trim() || body.eventName.length > 180) return apiError('Invalid event name');
+  if (typeof body.attendeeName !== 'string' || Array.from(body.attendeeName.trim()).length < 2 || Array.from(body.attendeeName.trim()).length > 100) {
+    return apiError('Enter a valid name before publishing the artwork');
+  }
+  if (typeof body.caption !== 'string' || !body.caption.trim() || body.caption.length > 500) return apiError('Invalid share caption');
+  if (typeof body.eventUrl !== 'string' || !EVENT_URL_PATTERN.test(body.eventUrl)) return apiError('Invalid event page URL');
+  const eventUrl = new URL(body.eventUrl);
+  const expectedPath = body.eventSlug === 'bsl' ? `/attending/${body.eventSlug}` : '';
+  if (eventUrl.hostname !== `${body.eventSlug}.hashpass.tech` || eventUrl.pathname.replace(/\/$/, '') !== expectedPath) {
+    return apiError('Event URL must match the selected event');
+  }
+
+  const email = typeof body.email === 'string' ? body.email.trim() : '';
+  if (email && (email.length > 254 || !EMAIL_PATTERN.test(email))) return apiError('Enter a valid email address or leave it blank');
+
+  const token = randomBytes(32).toString('base64url');
+  const tokenHash = hashToken(token);
+  const objectPath = `${tokenHash}.png`;
+  const db = adminDb();
+  const { error: uploadError } = await db.storage.from(BUCKET).upload(objectPath, image, {
+    contentType: 'image/png',
+    cacheControl: '3600',
+    upsert: false,
+  });
+  if (uploadError) return apiError('Could not publish the artwork. Please try again.', 500);
+
+  const expiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString();
+  const row = {
+    token_hash: tokenHash,
+    object_path: objectPath,
+    event_slug: body.eventSlug,
+    event_name: body.eventName.trim(),
+    attendee_name: body.attendeeName.trim().replace(/\s+/gu, ' '),
+    caption: body.caption.trim(),
+    event_url: body.eventUrl,
+    locale: validLocale(body.locale),
+    expires_at: expiresAt,
+  };
+  const { error: insertError } = await db.from('attending_artwork_shares').insert(row);
+  if (insertError) {
+    await db.storage.from(BUCKET).remove([objectPath]);
+    return apiError('Could not publish the artwork. Please try again.', 500);
+  }
+
+  const shareUrl = absoluteUrl(request, `/a/${token}`);
+  const imageUrl = db.storage.from(BUCKET).getPublicUrl(objectPath).data.publicUrl;
+  let emailStatus: AttendingArtworkEmailStatus = 'not_requested';
+  if (email) {
+    emailStatus = await sendArtworkEmail({
+      email,
+      attendeeName: row.attendee_name,
+      eventName: row.event_name,
+      shareUrl,
+      imageUrl,
+    }) ? 'sent' : 'unavailable';
+  }
+
+  return Response.json({ shareUrl, imageUrl, expiresAt, emailStatus }, { status: 201 });
+}
+
+// GET /a/:token -- a small, crawlable Open Graph page for social previews.
+export async function getAttendingArtworkShare(request: Request, token: string): Promise<Response> {
+  const share = await findShare(token);
+  if (!share) return apiError('Artwork link not found or expired', 404);
+
+  const shareUrl = absoluteUrl(request, `/a/${token}`);
+  const imageUrl = adminDb().storage.from(BUCKET).getPublicUrl(share.object_path).data.publicUrl;
+  const title = `${share.attendee_name} · ${share.event_name} | HASHPASS`;
+  const description = `${share.attendee_name} made a shareable attendance artwork for ${share.event_name}. This is a personal intention, not an RSVP or ticket.`;
+  const html = `<!doctype html>
+<html lang="${escapeHtml(share.locale)}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>${escapeHtml(title)}</title>
+  <meta name="description" content="${escapeHtml(description)}">
+  <link rel="canonical" href="${escapeHtml(shareUrl)}">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="HASHPASS">
+  <meta property="og:title" content="${escapeHtml(title)}">
+  <meta property="og:description" content="${escapeHtml(description)}">
+  <meta property="og:url" content="${escapeHtml(shareUrl)}">
+  <meta property="og:image" content="${escapeHtml(imageUrl)}">
+  <meta property="og:image:type" content="image/png">
+  <meta property="og:image:width" content="1080">
+  <meta property="og:image:height" content="1350">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="${escapeHtml(title)}">
+  <meta name="twitter:description" content="${escapeHtml(description)}">
+  <meta name="twitter:image" content="${escapeHtml(imageUrl)}">
+  <style>body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;box-sizing:border-box;background:#071a29;color:#f5f8fb;font:16px/1.5 system-ui,sans-serif}.card{width:min(100%,560px);padding:20px;border:1px solid #294657;border-radius:24px;background:#0d2232;box-sizing:border-box}.card img{display:block;width:min(100%,432px);height:auto;margin:0 auto 20px;border-radius:16px}.card h1{font-size:24px;line-height:1.2}.card p{color:#b8c9d4}.actions{display:flex;gap:12px;flex-wrap:wrap}.actions a{display:inline-flex;align-items:center;min-height:44px;padding:0 18px;border-radius:999px;background:#18c49a;color:#06231d;text-decoration:none;font-weight:700}.actions a.secondary{background:#173a4b;color:#d7f5ee}</style>
+</head>
+<body>
+  <main class="card">
+    <img src="${escapeHtml(imageUrl)}" width="1080" height="1350" alt="${escapeHtml(share.attendee_name)}’s artwork for ${escapeHtml(share.event_name)}">
+    <h1>${escapeHtml(share.attendee_name)} · ${escapeHtml(share.event_name)}</h1>
+    <p>${escapeHtml(share.caption)}</p>
+    <p>A personal intention, not an RSVP, ticket, or proof of attendance. This artwork link expires in 90 days.</p>
+    <div class="actions"><a href="${escapeHtml(imageUrl)}">View image</a><a class="secondary" href="${escapeHtml(share.event_url)}">Event details</a></div>
+  </main>
+</body>
+</html>`;
+
+  return new Response(html, {
+    headers: {
+      'content-type': 'text/html; charset=utf-8',
+      'cache-control': 'public, max-age=300, stale-while-revalidate=3600',
+      'x-content-type-options': 'nosniff',
+      'referrer-policy': 'no-referrer',
+      'content-security-policy': "default-src 'none'; style-src 'unsafe-inline'; img-src 'self' https://*.supabase.co; base-uri 'none'; frame-ancestors 'none'",
+    },
+  });
+}
+
+// GET /a/:token/image -- redirect crawlers and people to the public PNG.
+export async function redirectAttendingArtworkImage(request: Request, token: string): Promise<Response> {
+  const share = await findShare(token);
+  if (!share) return apiError('Artwork link not found or expired', 404);
+  const imageUrl = adminDb().storage.from(BUCKET).getPublicUrl(share.object_path).data.publicUrl;
+  return new Response(null, {
+    status: 302,
+    headers: {
+      location: imageUrl,
+      'cache-control': 'public, max-age=300',
+      'referrer-policy': 'no-referrer',
+    },
+  });
+}
+
+// Called by the existing EventBridge expiry sweep, which already runs every
+// few minutes for QR links. Keep uploaded artwork in step with its 90-day URL.
+export async function deleteExpiredAttendingArtworks(): Promise<number> {
+  const db = adminDb();
+  const { data, error } = await db
+    .from('attending_artwork_shares')
+    .select('id,object_path')
+    .lt('expires_at', new Date().toISOString())
+    .limit(200);
+  if (error || !data?.length) return 0;
+
+  const expired = data as Array<{ id: string; object_path: string }>;
+  const { error: storageError } = await db.storage.from(BUCKET).remove(expired.map((share) => share.object_path));
+  if (storageError) return 0;
+  const { error: deleteError } = await db.from('attending_artwork_shares').delete().in('id', expired.map((share) => share.id));
+  return deleteError ? 0 : expired.length;
+}

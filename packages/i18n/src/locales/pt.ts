@@ -1,3 +1,5 @@
+import { en } from './en';
+
 export const pt = {
   nav: {
     features: 'Recursos',
@@ -136,6 +138,44 @@ export const pt = {
     terms: 'Termos',
     deleteAccount: 'Excluir conta',
     copyright: '© {year} HASHPASS. Todos os direitos reservados.',
+    pricingDialog: {
+      eyebrow: 'Preços por serviço',
+      title: 'Comece grátis. Pague pelo que usar.',
+      description:
+        'O HASHPASS tem um plano sempre gratuito. Escolha os serviços conforme precisar; os preços aparecem antes da contratação.',
+      close: 'Fechar informações de preços',
+      freeTierTitle: 'Plano sempre grátis no HASHPASS',
+      freeTierDescription:
+        'Comece grátis e adicione serviços pagos quando fizer sentido.',
+      productsHeading: 'Explore os serviços',
+      companionTitle: 'Companion',
+      companionBadge: 'Prévia do MVP',
+      companionDescription: 'Prévia inicial. A cobrança ainda não está conectada.',
+      companionLink: 'Abrir prévia do Companion',
+      qrTitle: 'Links QR',
+      qrBadge: 'Links gratuitos',
+      qrDescription: 'Links gratuitos no hpass.id; veja as opções atuais na página de QR.',
+      qrLink: 'Conhecer os links QR',
+      hashpassTitle: 'Serviços HASHPASS',
+      hashpassBadge: 'Preço antes da compra',
+      hashpassDescription: 'Os custos principais são informados antes da compra ou em acordos comerciais.',
+      hashpassLink: 'Ler a documentação HASHPASS',
+      termsNote: 'As condições de pagamento e reembolso dependem do serviço e do comerciante.',
+      termsLink: 'Termos de Serviço',
+    },
+  },
+  attending: {
+    ...en.attending,
+    languageLabel: 'Escolher idioma da página', switchLight: 'Mudar para o tema claro', switchDark: 'Mudar para o tema escuro',
+    settingsOpen: 'Abrir configurações', settingsClose: 'Fechar configurações', settingsPanel: 'Configurações do clube', settingsAppearance: 'Aparência', settingsLanguage: 'Idioma', settingsAnimation: 'Movimento da página',
+    themeDark: 'Escuro', themeAuto: 'Automático', themeLight: 'Claro', animationFull: 'Completo', animationFullDescription: 'Movimento visual máximo', animationLow: 'Reduzido', animationLowDescription: 'Equilíbrio entre movimento e desempenho', animationStatic: 'Estático', animationStaticDescription: 'Sem fundo animado',
+    landingEyebrow: 'Intenções de presença · HASHPASS Club', landingTitle: 'Chegue antes de as portas abrirem.', landingDescription: 'Escolha um próximo evento, crie uma imagem pessoal com seu nome, perfil social ou foto e compartilhe com sua comunidade.',
+    landingCardEyebrow: 'SUA INTENÇÃO', landingCardMade: 'FEITA PARA COMPARTILHAR', landingCardTitle: 'Apareça do seu jeito.', landingCardNote: 'Um convite aberto para estar presente.', landingCardEdition: '01 / 03', landingNoRsvpTag: 'Criar sem inscrição',
+    landingEventsEyebrow: 'Escolha seu próximo encontro', landingEventsTitle: 'Onde vamos nos encontrar?', landingEventsDescription: 'Escolha um evento e crie uma imagem pessoal para compartilhar.', landingCarouselLabel: 'Páginas de imagens dos próximos eventos', landingPreviousEvents: 'Ver eventos anteriores', landingNextEvents: 'Ver próximos eventos', landingUpcoming: 'EM BREVE', landingScrollHint: 'Deslize para explorar os eventos', landingCreateArtwork: 'Criar minha imagem', landingNoUpcoming: 'Não há eventos em destaque no momento. Volte em breve.',
+    landingHowEyebrow: 'Um fluxo simples em três etapas', landingHowTitle: 'Sua intenção, pronta para compartilhar.', landingStepOneTitle: 'Escolha um evento', landingStepOneBody: 'Comece por um dos próximos encontros da comunidade exibidos aqui.', landingStepTwoTitle: 'Personalize', landingStepTwoBody: 'Adicione seu nome, um perfil social opcional e uma foto de perfil ou suas iniciais.', landingStepThreeTitle: 'Compartilhe seu sinal', landingStepThreeBody: 'Visualize a imagem, baixe ou compartilhe pelo seu dispositivo.', landingDisclaimerTitle: 'Uma intenção pessoal, não uma inscrição.', landingDisclaimerBody: 'Sua imagem não faz sua inscrição, não reserva um lugar nem confirma presença. Use a página oficial do evento para ingressos e inscrições.', landingPrivacy: 'Seus dados ficam neste navegador enquanto a imagem é criada. Nada é adicionado a uma lista de participantes.',
+    socialHandleLabel: 'Perfis sociais · opcional', xHandleLabel: 'Perfil do X / Twitter', instagramHandleLabel: 'Perfil do Instagram', socialHandlePlaceholder: '@usuario ou URL do perfil', socialHandleHint: 'Adicione um ou os dois perfis. Os ícones aparecerão na imagem. Não importamos perfis nem publicações.', pageEyebrow: 'Um momento para compartilhar', pageTitle: 'Estarei lá.', pastPageTitle: 'Estive lá.', pageDescription: 'Crie uma imagem do evento com seu nome e foto. Personalize e compartilhe do seu jeito.', eventWebsite: 'Detalhes do evento', personalizeTitle: 'Deixe com a sua cara', personalizeBody: 'Use seu perfil HASHPASS, envie uma foto ou mantenha apenas suas iniciais.', profilePhotoLabel: 'Escolha uma foto', hashpassProfile: 'Perfil HASHPASS', profileConnected: 'Usar a foto e o nome da sua conta', checkingProfile: 'Verificando sua conta…', profileSignInHint: 'Entre para usar seu perfil', uploadPhoto: 'Enviar uma foto', uploadPhotoHint: 'JPG, PNG ou WebP · até 8 MB',
+    removeBackground: 'Remover o fundo da foto', removeBackgroundHint: 'Mantenha a pessoa e deixe o restante transparente.', removeBackgroundProcessing: 'Separando a pessoa do fundo neste dispositivo…', removeBackgroundPrivacy: 'O processamento ocorre no navegador. Sua foto permanece neste dispositivo.', removeBackgroundError: 'Não foi possível remover o fundo. A foto original continua em uso.', noPhoto: 'Usar iniciais', noPhotoHint: 'Uma opção simples e privada', socialConnectionNote: 'Não importamos fotos de redes sociais. Use seu perfil HASHPASS, envie uma foto ou mantenha suas iniciais; você pode adicionar um perfil público abaixo.', nameLabel: 'Nome na imagem', namePlaceholder: 'ex.: Alex Rivera', requiredField: 'obrigatório', nameRequiredFeedback: 'Informe seu nome antes de compartilhar ou baixar esta imagem.', nameInvalidFeedback: 'Digite um nome válido com pelo menos 2 caracteres e uma letra.', nameActionHint: 'Você poderá compartilhar e baixar a imagem quando o nome for válido.', roleLabel: 'Cargo ou organização · opcional', rolePlaceholder: 'ex.: Designer de produto na Acme', privacyNote: 'Seus dados são usados neste navegador para criar a imagem. Nada é adicionado a uma lista de participantes nem armazenado para este compartilhamento.',
+    previewEyebrow: 'Sua imagem do evento', previewTitle: 'Pronta para compartilhar', artAccessibleName: 'Imagem de presença de {attendee} em {event}', makingPreview: 'Criando sua prévia…', artUpcoming: 'VOU PARTICIPAR', artPast: 'ESTIVE LÁ', yourName: 'Seu nome', poweredBy: 'FEITO COM', intentionDisclaimer: 'Esta imagem expressa sua intenção pessoal. Não é uma inscrição, ingresso ou comprovante de presença.', photoExportWarning: 'Não foi possível incluir esta foto de perfil no PNG. Envie uma foto para incluí-la no download.', shareImage: 'Compartilhar imagem', downloadImage: 'Baixar PNG', shareOn: 'Compartilhar a página do evento', copyPageLink: 'Copiar link', shareHint: 'X e LinkedIn serão abertos com o link do evento. Baixe o PNG primeiro se quiser anexar a imagem à publicação.', footerBrand: 'Feito para os momentos que você compartilha.', footerPrivacy: 'Sua foto permanece neste dispositivo, a menos que você compartilhe a imagem.', uploadInvalid: 'Escolha uma imagem JPG, PNG ou WebP.', uploadTooLarge: 'Escolha uma imagem menor que 8 MB.', artNotReady: 'A imagem ainda está sendo preparada.', downloaded: 'Sua imagem está pronta para compartilhar.', downloadError: 'Não foi possível baixar a imagem. Tente novamente.', shareTitle: 'Vou participar de', shareFallback: 'Seu navegador baixou a imagem. Anexe-a à publicação para compartilhar.', shareError: 'Não foi possível compartilhar a imagem. Baixe-a e tente novamente.', linkCopied: 'Link do evento copiado.', copyError: 'Não foi possível copiar o link do evento.',
   },
   theme: { toggle: 'Alternar tema', dark: 'Escuro', light: 'Claro', system: 'Sistema' },
   lang: { select: 'Idioma', en: 'English', es: 'Español', ko: '한국어', fr: 'Français', pt: 'Português', de: 'Deutsch', et: 'Eesti' },

@@ -8,6 +8,8 @@ import { SignInModal } from './SignInModal';
 import { useSession } from './SessionProvider';
 import { UserMenu } from './UserMenu';
 import { ClubSettingsMenu } from './ClubSettingsMenu';
+import { scrollToAnchor } from '../../lib/scroll-to-anchor';
+import { PricingDialog } from './PricingDialog';
 
 // ── Pill / icon-button shared styles ─────────────────────────────────────────
 type PillStyle = {
@@ -104,6 +106,7 @@ export function Navbar({ showMarketingLinks = true, hasHero = true }: NavbarProp
   const { t } = useTranslation('nav');
   const [scrolled, setScrolled] = useState(false);
   const [signInOpen, setSignInOpen] = useState(false);
+  const [pricingOpen, setPricingOpen] = useState(false);
   const { user, isLoading: sessionLoading } = useSession();
   const isSignedIn = !sessionLoading && !!user;
 
@@ -215,7 +218,69 @@ export function Navbar({ showMarketingLinks = true, hasHero = true }: NavbarProp
               // (GET /documentation/__next.<tree>.txt?_rsc=...). A plain
               // anchor navigates fine (full page load resolves the real
               // static file) without ever attempting that prefetch.
-              href === '/documentation/' ? (
+              key === 'pricing' ? (
+                <button
+                  key={key}
+                  type="button"
+                  aria-haspopup="dialog"
+                  onClick={() => setPricingOpen(true)}
+                  style={{
+                    appearance: 'none',
+                    border: 0,
+                    cursor: 'pointer',
+                    background: 'transparent',
+                    padding: '6px 14px',
+                    borderRadius: 8,
+                    fontFamily: 'inherit',
+                    fontSize: 14,
+                    fontWeight: 500,
+                    color: linkColor,
+                    transition: 'color 0.2s, background 0.2s',
+                  }}
+                  onMouseEnter={(e) => {
+                    const el = e.currentTarget as HTMLElement;
+                    el.style.color = linkHoverColor;
+                    el.style.background = overHero ? 'rgba(255,255,255,0.1)' : 'var(--bg-overlay)';
+                  }}
+                  onMouseLeave={(e) => {
+                    const el = e.currentTarget as HTMLElement;
+                    el.style.color = linkColor;
+                    el.style.background = 'transparent';
+                  }}
+                >
+                  {t(key)}
+                </button>
+              ) : key === 'features' ? (
+                <a
+                  key={key}
+                  href={href}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    scrollToAnchor('features');
+                  }}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: 8,
+                    fontSize: 14,
+                    fontWeight: 500,
+                    color: linkColor,
+                    transition: 'color 0.2s, background 0.2s',
+                    textDecoration: 'none',
+                  }}
+                  onMouseEnter={(e) => {
+                    const el = e.currentTarget as HTMLElement;
+                    el.style.color = linkHoverColor;
+                    el.style.background = overHero ? 'rgba(255,255,255,0.1)' : 'var(--bg-overlay)';
+                  }}
+                  onMouseLeave={(e) => {
+                    const el = e.currentTarget as HTMLElement;
+                    el.style.color = linkColor;
+                    el.style.background = 'transparent';
+                  }}
+                >
+                  {t(key)}
+                </a>
+              ) : href === '/documentation/' ? (
                 <a
                   key={key}
                   href={href}
@@ -241,32 +306,6 @@ export function Navbar({ showMarketingLinks = true, hasHero = true }: NavbarProp
                 >
                   {t(key)}
                 </a>
-              ) : href.startsWith('/') ? (
-                <Link
-                  key={key}
-                  href={href}
-                  style={{
-                    padding: '6px 14px',
-                    borderRadius: 8,
-                    fontSize: 14,
-                    fontWeight: 500,
-                    color: linkColor,
-                    transition: 'color 0.2s, background 0.2s',
-                    textDecoration: 'none',
-                  }}
-                  onMouseEnter={(e) => {
-                    const el = e.currentTarget as HTMLElement;
-                    el.style.color = linkHoverColor;
-                    el.style.background = overHero ? 'rgba(255,255,255,0.1)' : 'var(--bg-overlay)';
-                  }}
-                  onMouseLeave={(e) => {
-                    const el = e.currentTarget as HTMLElement;
-                    el.style.color = linkColor;
-                    el.style.background = 'transparent';
-                  }}
-                >
-                  {t(key)}
-                </Link>
               ) : (
                 <a
                   key={key}
@@ -340,6 +379,7 @@ export function Navbar({ showMarketingLinks = true, hasHero = true }: NavbarProp
       </header>
 
       <SignInModal open={signInOpen} onClose={() => setSignInOpen(false)} />
+      <PricingDialog open={pricingOpen} onClose={() => setPricingOpen(false)} />
 
       <style>{`
         @media (max-width: 768px) {

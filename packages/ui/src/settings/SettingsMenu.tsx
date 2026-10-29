@@ -36,8 +36,9 @@ function Icon({ name, size = 16 }: { name: keyof typeof paths; size?: number }) 
 }
 
 /** On/off row for extra settings (for example voice-over). Use inside the menu's children. */
-export function SettingsToggle({ label, description, note, checked, onChange, disabled }: SettingsToggleProps): ReactElement {
-  const palette = useContext(PaletteContext);
+export function SettingsToggle({ mode, label, description, note, checked, onChange, disabled }: SettingsToggleProps): ReactElement {
+  const inheritedPalette = useContext(PaletteContext);
+  const palette = mode ? SETTINGS_PALETTES.cool[mode] : inheritedPalette;
   return (
     <div>
       <button

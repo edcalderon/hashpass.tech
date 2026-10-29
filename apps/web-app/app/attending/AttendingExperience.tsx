@@ -1,18 +1,35 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
-import { useLocale, useSetLocale, useTranslation } from '@hashpass/i18n';
-import { ActionButton, Badge, FormField, IconButton, SegmentedTabs, Surface } from '@hashpass/ui/primitives';
-import { ArrowDownToLine, ArrowUpRight, CalendarDays, Check, ImagePlus, MapPin, Moon, Share2, Sun, UserRound } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { useLocale, useTranslation } from '@hashpass/i18n';
+import { ActionButton, Badge, FormField, IconButton, ModalBackdrop, Surface } from '@hashpass/ui/primitives';
+import { CaptchaWidget } from '@hashpass/ui/CaptchaWidget';
+import { SettingsToggle } from '@hashpass/ui/settings-menu';
+import { ArrowDownToLine, ArrowUpRight, CalendarDays, Check, ImagePlus, Instagram, MapPin, Share2, UserRound } from 'lucide-react';
 import { drawAttendingArtwork } from '../../lib/attending-artwork';
+import { formatAttendingEventDate } from '../../lib/attending-date';
+import { getAttendingEventUrl, getAttendingLandingUrl } from '../../lib/attending-url';
+import { removePersonBackground } from '../../lib/remove-person-background';
+import { ClubSettingsMenu } from '../components/ClubSettingsMenu';
 import { useSession } from '../components/SessionProvider';
 import { SignInModal } from '../components/SignInModal';
 import { useTheme } from '../components/ThemeProvider';
 import { useToast } from '../components/Toast';
-import type { AttendingEventData, AttendingLocale, AttendeePhotoSource } from './types/attending.types';
+import { Footer } from '../components/Footer';
+import type {
+  AttendingEventData,
+  AttendeePhotoSource,
+  AttendingPublicShare,
+  AttendingPublicShareIntent,
+  AttendingPublicShareResponse,
+  ProcessedAttendeePhoto,
+} from './types/attending.types';
 import styles from './attending.module.css';
 
 const MAX_PHOTO_BYTES = 8 * 1024 * 1024;
+const LINKS_API_ORIGIN = (process.env.NEXT_PUBLIC_LINKS_API_BASE_URL || '').replace(/\/+$/, '');
+const MAX_PUBLIC_ARTWORK_BYTES = 4 * 1024 * 1024;
 
 function metadataText(metadata: Record<string, unknown>, keys: string[]): string {
   for (const key of keys) {
@@ -20,39 +37,6 @@ function metadataText(metadata: Record<string, unknown>, keys: string[]): string
     if (typeof value === 'string' && value.trim()) return value.trim();
   }
   return '';
-}
-
-function formatDatePart(dateValue: string, locale: AttendingLocale, options: Intl.DateTimeFormatOptions): string {
-  const datePart = dateValue.slice(0, 10);
-  const [year, month, day] = datePart.split('-').map(Number);
-  if (!year || !month || !day) return '';
-  const date = new Date(Date.UTC(year, month - 1, day, 12));
-  return new Intl.DateTimeFormat(locale === 'es' ? 'es-CO' : 'en-US', {
-    ...options,
-    timeZone: 'UTC',
-  }).format(date);
-}
-
-function formatEventDate(event: AttendingEventData, locale: AttendingLocale): string {
-  if (!event.startDate) return event.dateFallback || '';
-  const start = formatDatePart(event.startDate, locale, { month: 'short', day: 'numeric' });
-  if (!event.endDate) {
-    const year = formatDatePart(event.startDate, locale, { year: 'numeric' });
-    return `${start}, ${year}`;
-  }
-  const startParts = event.startDate.slice(0, 10).split('-').map(Number);
-  const endParts = event.endDate.slice(0, 10).split('-').map(Number);
-  if (startParts[0] === endParts[0] && startParts[1] === endParts[1]) {
-    const month = formatDatePart(event.startDate, locale, { month: 'short' });
-    const startDay = formatDatePart(event.startDate, locale, { day: 'numeric' });
-    const endDay = formatDatePart(event.endDate, locale, { day: 'numeric' });
-    const year = formatDatePart(event.startDate, locale, { year: 'numeric' });
-    return locale === 'es'
-      ? `${startDay}–${endDay} ${month} ${year}`
-      : `${month} ${startDay}–${endDay}, ${year}`;
-  }
-  const end = formatDatePart(event.endDate, locale, { month: 'short', day: 'numeric', year: 'numeric' });
-  return start && end ? `${start} – ${end}` : event.dateFallback || '';
 }
 
 function initials(name: string): string {
@@ -68,7 +52,7 @@ function normalizeSocialHandle(value: string): string {
     try {
       const parsed = new URL(trimmed.startsWith('http') ? trimmed : `https://${trimmed}`);
       const pathParts = parsed.pathname.split('/').filter(Boolean);
-      handle = pathParts[pathParts.length - 1] || parsed.hostname.replace(/^www\./i, '');
+      handle = pathParts[0] || parsed.hostname.replace(/^www\./i, '');
     } catch {
       handle = trimmed;
     }
@@ -84,30 +68,92 @@ function canvasBlob(canvas: HTMLCanvasElement): Promise<Blob> {
   });
 }
 
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Could not read artwork file.'));
+    reader.onload = () => {
+      const dataUrl = typeof reader.result === 'string' ? reader.result : '';
+      const separator = dataUrl.indexOf(',');
+      if (separator < 0) {
+        reject(new Error('Could not encode artwork file.'));
+        return;
+      }
+      resolve(dataUrl.slice(separator + 1));
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 export function AttendingExperience({ event }: { event: AttendingEventData }) {
   const { t } = useTranslation('attending');
   const locale = useLocale();
-  const setLocale = useSetLocale();
-  const { resolvedTheme, setTheme, theme } = useTheme();
+  const { resolvedTheme } = useTheme();
   const { user, isLoading: sessionLoading } = useSession();
   const toast = useToast();
   const mode = resolvedTheme;
-  const language: AttendingLocale = locale === 'es' ? 'es' : 'en';
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const uploadRef = useRef<HTMLInputElement | null>(null);
   const uploadedPhotoRef = useRef<string | null>(null);
   const previousUserIdRef = useRef<string | null>(null);
 
   const [name, setName] = useState('');
+  const [nameTouched, setNameTouched] = useState(false);
   const [role, setRole] = useState('');
-  const [socialProfile, setSocialProfile] = useState('');
+  const [xProfile, setXProfile] = useState('');
+  const [instagramProfile, setInstagramProfile] = useState('');
   const [photoSource, setPhotoSource] = useState<AttendeePhotoSource>('initials');
   const [uploadedPhoto, setUploadedPhoto] = useState<string | null>(null);
+  const [removePhotoBackground, setRemovePhotoBackground] = useState(false);
+  const [processedPhoto, setProcessedPhoto] = useState<ProcessedAttendeePhoto | null>(null);
+  const [backgroundRemovalProcessing, setBackgroundRemovalProcessing] = useState(false);
+  const [backgroundRemovalFailed, setBackgroundRemovalFailed] = useState(false);
   const [signInOpen, setSignInOpen] = useState(false);
+  const [hasHydrated, setHasHydrated] = useState(false);
   const [artReady, setArtReady] = useState(false);
   const [pastEvent, setPastEvent] = useState(false);
   const [photoExportWarning, setPhotoExportWarning] = useState(false);
   const [lastAction, setLastAction] = useState<'copy' | 'download' | null>(null);
+  const [shareDialogIntent, setShareDialogIntent] = useState<AttendingPublicShareIntent | null>(null);
+  const [shareEmail, setShareEmail] = useState('');
+  const [shareEmailError, setShareEmailError] = useState<string | undefined>();
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaResetKey, setCaptchaResetKey] = useState(0);
+  const [isPublishingArtwork, setIsPublishingArtwork] = useState(false);
+  const [publishedShare, setPublishedShare] = useState<AttendingPublicShare | null>(null);
+
+  useEffect(() => {
+    setHasHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    const hostname = window.location.hostname.toLowerCase();
+    const eventHost = hostname.match(/^([a-z0-9][a-z0-9-]{0,62})\.hashpass\.tech$/);
+    if (!eventHost || !eventHost[1]) return;
+    if (eventHost[1] !== event.slug.toLowerCase()) return;
+    if (new URL(getAttendingEventUrl(event.slug)).pathname !== '/') return;
+    if (window.location.pathname === '/') return;
+
+    window.history.replaceState(
+      window.history.state,
+      '',
+      `/${window.location.search}${window.location.hash}`,
+    );
+  }, [event.slug]);
+
+  useEffect(() => {
+    if (!shareDialogIntent) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !isPublishingArtwork) setShareDialogIntent(null);
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [shareDialogIntent, isPublishingArtwork]);
 
   const userMetadata = useMemo(
     () => (user?.user_metadata || {}) as Record<string, unknown>,
@@ -125,17 +171,27 @@ export function AttendingExperience({ event }: { event: AttendingEventData }) {
     : photoSource === 'upload'
       ? uploadedPhoto
       : null;
+  const artworkPhoto = removePhotoBackground && processedPhoto?.source === currentPhoto
+    ? processedPhoto.url
+    : currentPhoto;
+  const transparentPortrait = removePhotoBackground && processedPhoto?.source === currentPhoto;
 
+  const normalizedName = name.trim().replace(/\s+/gu, ' ');
+  const isNameValid = Array.from(normalizedName).length >= 2 && /\p{L}/u.test(normalizedName);
+  const nameError = nameTouched && !isNameValid
+    ? normalizedName ? t('nameInvalidFeedback') : t('nameRequiredFeedback')
+    : undefined;
   const eventName = event.name || event.shortName;
   const location = [event.city, event.country].filter(Boolean).join(', ');
-  const dateLabel = formatEventDate(event, language);
+  const dateLabel = formatAttendingEventDate(event, locale);
   const intentionLabel = pastEvent ? t('artPast') : t('artUpcoming');
-  const displayName = name.trim() || t('yourName');
-  const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
+  const displayName = isNameValid ? normalizedName : t('yourName');
+  const shareUrl = getAttendingEventUrl(event.slug);
   const artUpcoming = t('artUpcoming');
   const artPast = t('artPast');
   const artEmptyName = t('yourName');
   const artPoweredBy = t('poweredBy');
+  const shareText = `${intentionLabel} ${eventName}\n${event.artworkTemplate.hashtags.join(' ')}`;
 
   useEffect(() => {
     setPastEvent(!!event.endDate && event.endDate.slice(0, 10) < new Date().toISOString().slice(0, 10));
@@ -146,7 +202,8 @@ export function AttendingExperience({ event }: { event: AttendingEventData }) {
       if (previousUserIdRef.current) {
         setName('');
         setRole('');
-        setSocialProfile('');
+        setXProfile('');
+        setInstagramProfile('');
         setPhotoSource('initials');
         setUploadedPhoto(null);
         if (uploadedPhotoRef.current) URL.revokeObjectURL(uploadedPhotoRef.current);
@@ -160,7 +217,10 @@ export function AttendingExperience({ event }: { event: AttendingEventData }) {
     previousUserIdRef.current = user.id;
     if (profileName) setName(profileName);
     if (profileRole) setRole(profileRole);
-    if (profileSocial) setSocialProfile(profileSocial);
+    if (profileSocial) {
+      if (/instagram\.com/i.test(profileSocial)) setInstagramProfile(profileSocial);
+      else setXProfile(profileSocial);
+    }
     if (profilePhoto) setPhotoSource('hashpass');
     setSignInOpen(false);
   }, [user, profileName, profileRole, profileSocial, profilePhoto]);
@@ -168,6 +228,43 @@ export function AttendingExperience({ event }: { event: AttendingEventData }) {
   useEffect(() => () => {
     if (uploadedPhotoRef.current) URL.revokeObjectURL(uploadedPhotoRef.current);
   }, []);
+
+  useEffect(() => {
+    if (!removePhotoBackground || !currentPhoto) {
+      setProcessedPhoto(null);
+      setBackgroundRemovalProcessing(false);
+      setBackgroundRemovalFailed(false);
+      return;
+    }
+
+    let active = true;
+    let generatedPhotoUrl: string | null = null;
+    setProcessedPhoto(null);
+    setBackgroundRemovalProcessing(true);
+    setBackgroundRemovalFailed(false);
+
+    void removePersonBackground(currentPhoto)
+      .then((url) => {
+        if (!active) {
+          URL.revokeObjectURL(url);
+          return;
+        }
+        generatedPhotoUrl = url;
+        setProcessedPhoto({ source: currentPhoto, url });
+      })
+      .catch((error: unknown) => {
+        console.error('Attending photo background removal failed', error);
+        if (active) setBackgroundRemovalFailed(true);
+      })
+      .finally(() => {
+        if (active) setBackgroundRemovalProcessing(false);
+      });
+
+    return () => {
+      active = false;
+      if (generatedPhotoUrl) URL.revokeObjectURL(generatedPhotoUrl);
+    };
+  }, [currentPhoto, removePhotoBackground]);
 
   const artOptions = useMemo(() => ({
     eventName,
@@ -177,9 +274,13 @@ export function AttendingExperience({ event }: { event: AttendingEventData }) {
     dateLabel,
     attendeeName: displayName,
     attendeeRole: role,
-    attendeeSocialHandle: normalizeSocialHandle(socialProfile),
+    attendeeSocialHandles: {
+      x: normalizeSocialHandle(xProfile),
+      instagram: normalizeSocialHandle(instagramProfile),
+    },
     logoSrc: event.logoSrc,
-    avatarSrc: currentPhoto,
+    avatarSrc: artworkPhoto,
+    transparentPortrait,
     artworkTemplate: event.artworkTemplate,
     poweredByLabel: artPoweredBy,
     pastEvent,
@@ -188,7 +289,11 @@ export function AttendingExperience({ event }: { event: AttendingEventData }) {
       past: artPast,
       emptyName: artEmptyName,
     },
-  }), [eventName, event.shortName, event.logoSrc, event.artworkTemplate, event.venue, location, dateLabel, displayName, role, socialProfile, currentPhoto, pastEvent, artUpcoming, artPast, artEmptyName, artPoweredBy]);
+  }), [eventName, event.shortName, event.logoSrc, event.artworkTemplate, event.venue, location, dateLabel, displayName, role, xProfile, instagramProfile, artworkPhoto, transparentPortrait, pastEvent, artUpcoming, artPast, artEmptyName, artPoweredBy]);
+
+  useEffect(() => {
+    setPublishedShare(null);
+  }, [artOptions]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -208,10 +313,6 @@ export function AttendingExperience({ event }: { event: AttendingEventData }) {
 
     return () => { active = false; };
   }, [artOptions, currentPhoto]);
-
-  function handleLanguageChange(value: string) {
-    if (value === 'en' || value === 'es') setLocale(value);
-  }
 
   function useHashpassProfile() {
     if (!user) {
@@ -261,7 +362,15 @@ export function AttendingExperience({ event }: { event: AttendingEventData }) {
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
+  function requireValidName(): boolean {
+    if (isNameValid) return true;
+    setNameTouched(true);
+    toast.error(normalizedName ? t('nameInvalidFeedback') : t('nameRequiredFeedback'));
+    return false;
+  }
+
   async function downloadArtwork() {
+    if (!requireValidName()) return;
     try {
       const file = await getArtFile();
       saveFile(file);
@@ -273,32 +382,35 @@ export function AttendingExperience({ event }: { event: AttendingEventData }) {
   }
 
   async function shareArtwork() {
+    if (!requireValidName()) return;
+    if (!publishedShare) {
+      setShareDialogIntent('share');
+      return;
+    }
     try {
-      const file = await getArtFile();
       const navigatorWithShare = navigator as Navigator & {
         canShare?: (data?: ShareData) => boolean;
         share?: (data?: ShareData) => Promise<void>;
       };
-      if (navigatorWithShare.share && navigatorWithShare.canShare?.({ files: [file] })) {
+      if (navigatorWithShare.share) {
         await navigatorWithShare.share({
-          files: [file],
           title: `${t('shareTitle')} ${eventName}`,
-          text: `${intentionLabel} ${eventName}`,
+          text: shareText,
+          url: publishedShare.url,
         });
         return;
       }
-      saveFile(file);
-      setLastAction('download');
-      toast.info(t('shareFallback'));
+      await copyPublicLink();
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') return;
       toast.error(t('shareError'));
     }
   }
 
-  async function copyEventLink() {
+  async function copyPublicLink() {
+    if (!publishedShare) return;
     try {
-      await navigator.clipboard.writeText(shareUrl);
+      await navigator.clipboard.writeText(publishedShare.url);
       setLastAction('copy');
       toast.success(t('linkCopied'));
     } catch {
@@ -306,39 +418,129 @@ export function AttendingExperience({ event }: { event: AttendingEventData }) {
     }
   }
 
-  function openSocialShare(network: 'x' | 'linkedin') {
-    const text = `${intentionLabel} ${eventName}`;
-    const target = network === 'x'
-      ? `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`
-      : `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`;
-    window.open(target, '_blank', 'noopener,noreferrer');
+  async function copyEventLink() {
+    if (!requireValidName()) return;
+    if (publishedShare) {
+      await copyPublicLink();
+      return;
+    }
+    setShareDialogIntent('copy');
   }
 
-  const isDark = resolvedTheme === 'dark';
+  async function openSocialShare(network: 'x' | 'linkedin') {
+    if (!requireValidName()) return;
+    if (!publishedShare) {
+      setShareDialogIntent(network);
+      return;
+    }
+
+    const target = network === 'x'
+      ? `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(publishedShare.url)}`
+      : `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(publishedShare.url)}`;
+
+    if (network === 'x') {
+      window.open(target, '_blank', 'noopener,noreferrer');
+      return;
+    }
+
+    // LinkedIn's share-offsite endpoint accepts a URL only; it silently
+    // ignores post text parameters. Open the composer from this user gesture,
+    // then copy the localized caption so it can be pasted into the post.
+    const shareWindow = window.open('about:blank', '_blank');
+    if (shareWindow) shareWindow.opener = null;
+    try {
+      await navigator.clipboard.writeText(shareText);
+      if (shareWindow) shareWindow.location.href = target;
+      toast.info(t('shareLinkedInHint'));
+    } catch {
+      if (shareWindow) shareWindow.location.href = target;
+      toast.info(t('copyError'));
+    }
+  }
+
+  async function publishArtwork() {
+    if (!requireValidName()) return;
+    if (!LINKS_API_ORIGIN) {
+      toast.error(t('shareApiUnavailable'));
+      return;
+    }
+    if (!captchaToken) {
+      toast.error(t('shareCaptchaPrompt'));
+      return;
+    }
+    if (shareEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(shareEmail.trim())) {
+      setShareEmailError(t('shareEmailInvalid'));
+      return;
+    }
+
+    setIsPublishingArtwork(true);
+    try {
+      const file = await getArtFile();
+      if (file.size > MAX_PUBLIC_ARTWORK_BYTES) {
+        toast.error(t('shareImageTooLarge'));
+        return;
+      }
+      const response = await fetch(`${LINKS_API_ORIGIN}/api/v1/attending-artworks`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          captchaToken,
+          imageBase64: await fileToBase64(file),
+          eventSlug: event.slug,
+          eventName,
+          attendeeName: normalizedName,
+          caption: shareText,
+          eventUrl: shareUrl,
+          locale,
+          email: shareEmail.trim() || undefined,
+        }),
+      });
+      const result = await response.json().catch(() => ({})) as AttendingPublicShareResponse;
+      if (!response.ok || typeof result.shareUrl !== 'string' || typeof result.imageUrl !== 'string') {
+        setCaptchaToken(null);
+        setCaptchaResetKey((key) => key + 1);
+        toast.error(result.captchaExpired ? t('shareCaptchaPrompt') : result.message || t('sharePublishError'));
+        return;
+      }
+
+      setPublishedShare({
+        url: result.shareUrl,
+        imageUrl: result.imageUrl,
+        expiresAt: result.expiresAt || '',
+        emailStatus: result.emailStatus || 'not_requested',
+      });
+      setCaptchaToken(null);
+      setShareEmailError(undefined);
+      toast.success(t('sharePublicReady'));
+      if (result.emailStatus === 'sent') toast.info(t('shareEmailSent'));
+      else if (shareEmail.trim()) toast.info(t('shareEmailUnavailable'));
+    } catch {
+      setCaptchaToken(null);
+      setCaptchaResetKey((key) => key + 1);
+      toast.error(t('sharePublishError'));
+    } finally {
+      setIsPublishingArtwork(false);
+    }
+  }
 
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <a className={styles.brand} href="https://hashpass.club/" aria-label="HASHPASS Club home">
-          <img src="/logo-hashpass.svg" alt="" />
-          <span>HASHPASS</span>
+        <a className={styles.brand} href={getAttendingLandingUrl()} aria-label="HASHPASS Club attending home">
+          <img src="/attending/logo-hashpass.svg" alt="" />
+          <span>HASHPASS <b>CLUB</b></span>
         </a>
         <div className={styles.headerActions}>
-          <div className={styles.languageControl} aria-label={t('languageLabel')}>
-            <SegmentedTabs
-              mode={mode}
-              value={language}
-              onChange={handleLanguageChange}
-              tabs={[{ id: 'en', label: 'EN' }, { id: 'es', label: 'ES' }]}
-            />
-          </div>
-          <IconButton
-            mode={mode}
-            label={isDark ? t('switchLight') : t('switchDark')}
-            onPress={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-          >
-            {isDark ? <Sun size={18} /> : <Moon size={18} />}
-          </IconButton>
+          <ClubSettingsMenu
+            size={42}
+            triggerStyle={{
+              background: 'var(--bg-surface-raised)',
+              border: '1px solid var(--border)',
+              color: 'var(--text-primary)',
+              backdropFilter: 'none',
+              WebkitBackdropFilter: 'none',
+            }}
+          />
         </div>
       </header>
 
@@ -409,18 +611,35 @@ export function AttendingExperience({ event }: { event: AttendingEventData }) {
                   {photoSource === 'initials' && <Check className={styles.sourceCheck} size={16} />}
                 </button>
               </div>
+              {currentPhoto && (
+                <SettingsToggle
+                  mode={mode}
+                  label={t('removeBackground')}
+                  description={backgroundRemovalProcessing ? t('removeBackgroundProcessing') : t('removeBackgroundHint')}
+                  note={t('removeBackgroundPrivacy')}
+                  checked={removePhotoBackground}
+                  onChange={(nextValue) => {
+                    setBackgroundRemovalFailed(false);
+                    setRemovePhotoBackground(nextValue);
+                  }}
+                />
+              )}
+              {backgroundRemovalFailed && <p className={styles.socialNote} role="alert">{t('removeBackgroundError')}</p>}
               <p className={styles.socialNote}>{t('socialConnectionNote')}</p>
             </div>
 
             <div className={styles.fields}>
               <FormField
                 mode={mode}
-                label={t('nameLabel')}
+                label={`${t('nameLabel')} · ${t('requiredField')}`}
                 value={name}
                 onChangeText={setName}
                 placeholder={t('namePlaceholder')}
                 maxLength={42}
-                accessibilityLabel={t('nameLabel')}
+                onBlur={() => setNameTouched(true)}
+                error={nameError}
+                accessibilityLabel={`${t('nameLabel')} · ${t('requiredField')}`}
+                accessibilityHint={t('nameActionHint')}
               />
               <FormField
                 mode={mode}
@@ -431,19 +650,45 @@ export function AttendingExperience({ event }: { event: AttendingEventData }) {
                 maxLength={54}
                 accessibilityLabel={t('roleLabel')}
               />
-              <FormField
-                mode={mode}
-                label={t('socialHandleLabel')}
-                value={socialProfile}
-                onChangeText={setSocialProfile}
-                placeholder={t('socialHandlePlaceholder')}
-                maxLength={120}
-                autoCapitalize="none"
-                autoCorrect={false}
-                accessibilityLabel={t('socialHandleLabel')}
-              />
             </div>
-            <p className={styles.socialNote}>{t('socialHandleHint')}</p>
+            <div className={styles.socialHandleFields}>
+              <p className={styles.socialFieldsLabel}>{t('socialHandleLabel')}</p>
+              <div className={styles.socialHandleField}>
+                <span className={styles.socialHandleIcon} aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="19" height="19" focusable="false">
+                    <path fill="currentColor" d="M18.901 1.153h3.68l-8.04 9.19 9.46 12.504h-7.41l-5.804-7.588-6.64 7.588H.466l8.6-9.83L0 1.153h7.598l5.245 6.932z" />
+                  </svg>
+                </span>
+                <FormField
+                  mode={mode}
+                  label={t('xHandleLabel')}
+                  value={xProfile}
+                  onChangeText={setXProfile}
+                  placeholder={t('socialHandlePlaceholder')}
+                  maxLength={120}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  accessibilityLabel={t('xHandleLabel')}
+                  style={{ paddingLeft: 43 }}
+                />
+              </div>
+              <div className={styles.socialHandleField}>
+                <span className={styles.socialHandleIcon} aria-hidden="true"><Instagram size={19} strokeWidth={2} /></span>
+                <FormField
+                  mode={mode}
+                  label={t('instagramHandleLabel')}
+                  value={instagramProfile}
+                  onChangeText={setInstagramProfile}
+                  placeholder={t('socialHandlePlaceholder')}
+                  maxLength={120}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  accessibilityLabel={t('instagramHandleLabel')}
+                  style={{ paddingLeft: 43 }}
+                />
+              </div>
+              <p className={styles.socialNote}>{t('socialHandleHint')}</p>
+            </div>
 
             <div className={styles.privacyNote}>
               <span className={styles.privacyIcon}><Check size={16} /></span>
@@ -485,7 +730,7 @@ export function AttendingExperience({ event }: { event: AttendingEventData }) {
                 label={t('shareImage')}
                 leadingIcon={<Share2 size={17} />}
                 onPress={shareArtwork}
-                disabled={!artReady}
+                disabled={!hasHydrated || !artReady || !isNameValid}
                 style={{ flex: 1 }}
               />
               <ActionButton
@@ -494,10 +739,11 @@ export function AttendingExperience({ event }: { event: AttendingEventData }) {
                 leadingIcon={<ArrowDownToLine size={17} />}
                 variant="secondary"
                 onPress={downloadArtwork}
-                disabled={!artReady}
+                disabled={!hasHydrated || !artReady || !isNameValid}
                 style={{ flex: 1 }}
               />
             </div>
+            {!isNameValid && <p className={styles.nameRequirement} role="status">{t('nameActionHint')}</p>}
 
             <div className={styles.socialShare}>
               <span>{t('shareOn')}</span>
@@ -507,6 +753,7 @@ export function AttendingExperience({ event }: { event: AttendingEventData }) {
                 trailingIcon={<ArrowUpRight size={14} />}
                 variant="ghost"
                 onPress={() => openSocialShare('x')}
+                disabled={!isNameValid}
               />
               <ActionButton
                 mode={mode}
@@ -514,6 +761,7 @@ export function AttendingExperience({ event }: { event: AttendingEventData }) {
                 trailingIcon={<ArrowUpRight size={14} />}
                 variant="ghost"
                 onPress={() => openSocialShare('linkedin')}
+                disabled={!isNameValid}
               />
               <ActionButton
                 mode={mode}
@@ -521,6 +769,7 @@ export function AttendingExperience({ event }: { event: AttendingEventData }) {
                 leadingIcon={lastAction === 'copy' ? <Check size={14} /> : undefined}
                 variant="ghost"
                 onPress={copyEventLink}
+                disabled={!isNameValid}
               />
             </div>
             <p className={styles.shareHint}>{t('shareHint')}</p>
@@ -529,13 +778,147 @@ export function AttendingExperience({ event }: { event: AttendingEventData }) {
           </aside>
         </div>
 
-        <footer className={styles.footer}>
-          <span>{t('footerBrand')}</span>
-          <span>{t('footerPrivacy')}</span>
-        </footer>
       </main>
 
+      <Footer />
       <SignInModal open={signInOpen} onClose={() => setSignInOpen(false)} />
+      {shareDialogIntent && typeof document !== 'undefined' && createPortal(
+        <div
+          className={styles.shareDialogRoot}
+          role="presentation"
+          onMouseDown={(mouseEvent) => {
+            if (mouseEvent.target === mouseEvent.currentTarget && !isPublishingArtwork) {
+              setShareDialogIntent(null);
+              setCaptchaToken(null);
+            }
+          }}
+        >
+          <ModalBackdrop mode={mode} pointerEvents="none" style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }} />
+          <div className={styles.shareDialogPanel} role="dialog" aria-modal="true" aria-labelledby="attending-share-title">
+            <Surface mode={mode} style={{ width: '100%', padding: 0, overflow: 'hidden' }}>
+              <div className={styles.shareDialogContent}>
+                <div className={styles.shareDialogHeader}>
+                  <div>
+                    <p className={styles.previewEyebrow}>{t('previewEyebrow')}</p>
+                    <h2 id="attending-share-title">{publishedShare ? t('sharePublicReady') : t('shareDialogTitle')}</h2>
+                  </div>
+                  <IconButton
+                    mode={mode}
+                    label={t('shareDialogClose')}
+                    onPress={() => {
+                      setShareDialogIntent(null);
+                      setCaptchaToken(null);
+                    }}
+                    disabled={isPublishingArtwork}
+                  >
+                    <span aria-hidden="true">×</span>
+                  </IconButton>
+                </div>
+
+                {!publishedShare ? (
+                  <>
+                    <p className={styles.shareDialogDescription}>{t('shareDialogDescription')}</p>
+                    <FormField
+                      mode={mode}
+                      label={t('shareEmailLabel')}
+                      value={shareEmail}
+                      onChangeText={(value) => {
+                        setShareEmail(value);
+                        setShareEmailError(undefined);
+                      }}
+                      placeholder={t('shareEmailPlaceholder')}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      autoComplete="email"
+                      maxLength={254}
+                      error={shareEmailError}
+                    />
+                    <p className={styles.shareDialogPrivacy}>{t('shareEmailPrivacy')}</p>
+
+                    {LINKS_API_ORIGIN ? (
+                      <div className={styles.shareCaptcha}>
+                        <CaptchaWidget
+                          apiEndpoint={`${LINKS_API_ORIGIN}/api/captcha`}
+                          lang={['es', 'fr', 'de', 'pt'].includes(locale.split('-')[0]) ? locale.split('-')[0] : undefined}
+                          resetKey={captchaResetKey}
+                          onSolve={setCaptchaToken}
+                          onReset={() => setCaptchaToken(null)}
+                          onError={() => {
+                            setCaptchaToken(null);
+                            toast.error(t('sharePublishError'));
+                          }}
+                        />
+                        <p className={styles.shareCaptchaStatus} role="status">
+                          {captchaToken ? t('shareCaptchaComplete') : t('shareCaptchaPrompt')}
+                        </p>
+                      </div>
+                    ) : (
+                      <p className={styles.shareDialogError} role="alert">{t('shareApiUnavailable')}</p>
+                    )}
+
+                    <div className={styles.shareDialogActions}>
+                      <ActionButton
+                        mode={mode}
+                        label={t('shareCancel')}
+                        variant="secondary"
+                        onPress={() => {
+                          setShareDialogIntent(null);
+                          setCaptchaToken(null);
+                        }}
+                        disabled={isPublishingArtwork}
+                      />
+                      <ActionButton
+                        mode={mode}
+                        label={isPublishingArtwork ? t('sharePublishingButton') : t('sharePublishButton')}
+                        onPress={publishArtwork}
+                        disabled={isPublishingArtwork || !captchaToken || !LINKS_API_ORIGIN}
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <p className={styles.shareDialogDescription}>{t('sharePublicReady')}</p>
+                    <FormField
+                      mode={mode}
+                      label={t('sharePublicLinkLabel')}
+                      value={publishedShare.url}
+                      editable={false}
+                      selectTextOnFocus
+                      autoCapitalize="none"
+                    />
+                    <div className={styles.shareDialogActions}>
+                      <ActionButton
+                        mode={mode}
+                        label={t('shareCopyAction')}
+                        leadingIcon={<Check size={16} />}
+                        variant="secondary"
+                        onPress={copyPublicLink}
+                      />
+                      <ActionButton
+                        mode={mode}
+                        label={t('shareLinkedInAction')}
+                        trailingIcon={<ArrowUpRight size={14} />}
+                        onPress={() => openSocialShare('linkedin')}
+                      />
+                      <ActionButton
+                        mode={mode}
+                        label={t('shareXAction')}
+                        trailingIcon={<ArrowUpRight size={14} />}
+                        variant="secondary"
+                        onPress={() => openSocialShare('x')}
+                      />
+                    </div>
+                    {publishedShare.emailStatus === 'sent' && <p className={styles.shareDialogSuccess} role="status">{t('shareEmailSent')}</p>}
+                    {publishedShare.emailStatus === 'unavailable' && <p className={styles.shareDialogError} role="status">{t('shareEmailUnavailable')}</p>}
+                    {shareDialogIntent === 'linkedin' && <p className={styles.shareDialogPrivacy}>{t('shareLinkedInHint')}</p>}
+                  </>
+                )}
+              </div>
+            </Surface>
+          </div>
+        </div>,
+        document.body,
+      )}
     </div>
   );
 }

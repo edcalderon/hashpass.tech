@@ -8,8 +8,8 @@ import {
 } from '../attending/event-data';
 import type { AttendingRoutePageProps } from '../attending/types/attending.types';
 
-// Root-level event pages are used when this static app is served from the
-// proposed attending.hashpass.club host, so its public URLs can be /bsl.
+// Legacy short event paths remain available. Production event links use the
+// event's own host; BSL keeps its existing homepage and uses /attending/bsl/.
 export const dynamicParams = false;
 
 export function generateStaticParams() {
@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: AttendingRoutePageProps) {
   const { eventSlug } = await params;
   const event = resolveAttendingEvent(eventSlug);
   if (!event) return { title: 'Attending image' };
-  return makeAttendingMetadata(event, eventSlug, true);
+  return makeAttendingMetadata(event, eventSlug);
 }
 
 export default async function StandaloneAttendingPage({ params }: AttendingRoutePageProps) {
