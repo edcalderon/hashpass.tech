@@ -1,5 +1,5 @@
 export * from "./agenda";
-export {
+export type {
   Speaker,
   EventConfig,
   EventBannerSlide,

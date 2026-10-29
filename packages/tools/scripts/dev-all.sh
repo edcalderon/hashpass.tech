@@ -12,6 +12,11 @@ LUKAS_PID=""
 LUKAS_BUILD_DIR=""
 declare -a RESERVED_PORTS=()
 CLUB_PORT="${CLUB_PORT:-3000}"
+# Open the event-attending landing in the Club dev server once its route is
+# responding. Set CLUB_AUTO_OPEN_BROWSER=false to keep the stack headless.
+CLUB_AUTO_OPEN_BROWSER="${CLUB_AUTO_OPEN_BROWSER:-true}"
+# Only delays browser launch; an unavailable Club route does not stop dev:all.
+CLUB_READY_TIMEOUT_SECONDS="${CLUB_READY_TIMEOUT_SECONDS:-120}"
 DOCS_PORT="${DOCS_PORT:-3101}"
 VIDEO_STUDIO_PORT="${VIDEO_STUDIO_PORT:-3105}"
 # Companion preview (apps/companion, Vite). Same port the Vite default uses; --strictPort below
@@ -77,6 +82,7 @@ for arg in "$@"; do
       INCLUDE_LUKAS_LANDING=true
       ;;
     --no-open-browser)
+      CLUB_AUTO_OPEN_BROWSER=false
       LUKAS_AUTO_OPEN_BROWSER=false
       ;;
     *)
@@ -332,6 +338,79 @@ wait_for_directus() {
 
   echo "Directus did not become ready within ${DIRECTUS_READY_TIMEOUT_SECONDS}s." >&2
   return 1
+}
+
+club_browser_enabled() {
+  case "${CLUB_AUTO_OPEN_BROWSER}" in
+    0|false|no|none) return 1 ;;
+  esac
+
+  case "${BROWSER:-}" in
+    0|false|no|none) return 1 ;;
+  esac
+
+  case "${CI:-}" in
+    1|true) return 1 ;;
+  esac
+
+  return 0
+}
+
+wait_for_club_landing() {
+  local deadline=$((SECONDS + CLUB_READY_TIMEOUT_SECONDS))
+  local landing_url="http://127.0.0.1:${CLUB_PORT}/attending/"
+
+  say club "Waiting for the attending landing at ${landing_url} before opening the browser..."
+
+  while (( SECONDS < deadline )); do
+    if command -v curl >/dev/null 2>&1; then
+      if curl -fsS --max-time 3 "${landing_url}" >/dev/null 2>&1; then
+        say club "The attending landing is ready."
+        return 0
+      fi
+    elif command -v wget >/dev/null 2>&1; then
+      if wget --quiet --tries=1 --spider "${landing_url}" >/dev/null 2>&1; then
+        say club "The attending landing is ready."
+        return 0
+      fi
+    else
+      say club "Neither curl nor wget is available; skipping the Club landing browser launch."
+      return 1
+    fi
+
+    sleep 2
+  done
+
+  say club "The attending landing did not become ready within ${CLUB_READY_TIMEOUT_SECONDS}s; continuing without opening the browser."
+  return 1
+}
+
+open_club_landing() {
+  local landing_url="http://127.0.0.1:${CLUB_PORT}/attending/"
+  local browser_command="${BROWSER:-}"
+
+  if ! club_browser_enabled; then
+    return 0
+  fi
+
+  if [[ -n "${browser_command}" ]]; then
+    if ! command -v "${browser_command}" >/dev/null 2>&1; then
+      say club "BROWSER is set to '${browser_command}', but that command is unavailable; open ${landing_url} manually."
+      return 0
+    fi
+    "${browser_command}" "${landing_url}" >/dev/null 2>&1 &
+  elif [[ "${OSTYPE:-}" == darwin* ]]; then
+    open "${landing_url}" >/dev/null 2>&1 &
+  elif command -v xdg-open >/dev/null 2>&1; then
+    xdg-open "${landing_url}" >/dev/null 2>&1 &
+  elif command -v cmd.exe >/dev/null 2>&1; then
+    cmd.exe /d /c start "" "${landing_url}" >/dev/null 2>&1 &
+  else
+    say club "No browser launcher was found; open ${landing_url} manually."
+    return 0
+  fi
+
+  say club "Opened the attending landing at ${landing_url}."
 }
 
 wait_for_frappe_helpdesk() {
@@ -664,6 +743,12 @@ say mobile "Starting mobile app..."
   EXPO_NO_METRO_WORKSPACE_ROOT=1 NODE_OPTIONS="--max-old-space-size=${NODE_MAX_OLD_SPACE_SIZE}" pnpm exec expo start --web --max-workers "${EXPO_WEB_MAX_WORKERS}" --port "${MOBILE_PORT}"
 ) > >(prefix_stream mobile) 2>&1 &
 MOBILE_PID=$!
+
+if club_browser_enabled; then
+  if wait_for_club_landing; then
+    open_club_landing
+  fi
+fi
 
 set +e
 WAIT_PIDS=("$MOBILE_PID" "$CLUB_PID" "$DOCS_PID" "$VIDEO_STUDIO_PID" "$COMPANION_PID" "$LINKS_API_PID")
