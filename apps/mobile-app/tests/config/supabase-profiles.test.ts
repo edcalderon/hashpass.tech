@@ -66,6 +66,19 @@ describe('resolvePublicSupabaseConfig', () => {
     }
   });
 
+  it('routes CBWeek production to core despite the development build profile', () => {
+    const previousProfile = process.env.EXPO_PUBLIC_SUPABASE_PROFILE;
+
+    try {
+      process.env.EXPO_PUBLIC_SUPABASE_PROFILE = 'bsl-development';
+      expect(resolveSupabaseProfile({ hostname: 'cbweek.hashpass.tech' }).id).toBe('core-production');
+      expect(resolveSupabaseProfile({ hostname: 'cbweek2026.hashpass.tech' }).id).toBe('bsl-development');
+    } finally {
+      if (previousProfile === undefined) delete process.env.EXPO_PUBLIC_SUPABASE_PROFILE;
+      else process.env.EXPO_PUBLIC_SUPABASE_PROFILE = previousProfile;
+    }
+  });
+
   it('resolves the retired bsl-production profile id to core-production', () => {
     const env: Record<string, string> = {
       [PUBLIC_SUPABASE_URL_ENV]: 'https://generic-project.supabase.co',

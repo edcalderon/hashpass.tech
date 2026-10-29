@@ -4,7 +4,12 @@ import test from 'node:test';
 
 // The Companion signs in with `credentials: 'include'`, which browsers only honour when the API answers with the
 // exact origin (never "*"). The Lambda CORS list and Better Auth's trusted origins must therefore both name it.
-const ORIGINS = ['https://companion.hashpass.tech', 'https://companion-dev.hashpass.tech', 'http://localhost:5173'];
+const ORIGINS = [
+  'https://companion.hashpass.tech',
+  'https://companion-dev.hashpass.tech',
+  'https://cbweek.hashpass.tech',
+  'http://localhost:5173',
+];
 const read = (path) => readFile(new URL(`../../../${path}`, import.meta.url), 'utf8');
 
 test('the API Lambda allows the Companion origins with credentials', async () => {

@@ -46,6 +46,7 @@ export const SSO_CONFIG = {
       'https://chile2026.hashpass.tech',
       'https://colombia2026.hashpass.tech',
       'https://cbweek2026.hashpass.tech',
+      'https://cbweek.hashpass.tech',
       'https://blockchainsummit.hashpass.lat',
       'https://blockchainsummit-dev.hashpass.lat',
       'https://api.hashpass.tech',
@@ -135,6 +136,20 @@ export const SSO_CONFIG = {
       slug: 'cbweek2026',
       authProvider: 'better-auth',
       apiBaseUrl: 'https://api-dev.hashpass.tech/api',
+      supabaseProfile: 'bsl-development',
+      theme: {
+        primary: '#FCD116',
+        secondary: '#050507',
+      },
+    } as TenantConfig,
+    'cbweek-production': {
+      id: 'cbweek-production',
+      name: 'Colombia Blockchain Week 2026',
+      domain: 'cbweek.hashpass.tech',
+      slug: 'cbweek2026',
+      authProvider: 'better-auth',
+      apiBaseUrl: 'https://api.hashpass.tech/api',
+      supabaseProfile: 'core-production',
       theme: {
         primary: '#FCD116',
         secondary: '#050507',
@@ -174,6 +189,7 @@ export interface TenantConfig {
   hostnames?: string[];
   authProvider?: TenantAuthProvider;
   apiBaseUrl?: string;
+  supabaseProfile?: 'core-development' | 'core-production' | 'bsl-development';
   theme?: {
     primary: string;
     secondary: string;

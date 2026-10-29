@@ -175,6 +175,17 @@ describe("event tenant detection", () => {
     ).toBe(true);
   });
 
+  it("maps the production CBWeek host to the same event while keeping the demo host", () => {
+    const productionTenant = getEventTenantContext("cbweek.hashpass.tech");
+    const developmentTenant = getEventTenantContext("cbweek2026.hashpass.tech");
+
+    expect(productionTenant.id).toBe("cbweek2026");
+    expect(developmentTenant.id).toBe("cbweek2026");
+    expect(getAvailableEvents("cbweek.hashpass.tech").map((event: { id: string }) => event.id))
+      .toEqual(["cbweek2026"]);
+    expect(EVENTS.cbweek2026.domain).toBe("cbweek.hashpass.tech");
+  });
+
   it("resolves route slugs to event ids for route-aware event pages", () => {
     expect(getRouteEventIdFromPathname("/events/peru2026/agenda")).toBe(
       "peru2026",
