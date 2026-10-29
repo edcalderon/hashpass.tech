@@ -1,3 +1,18 @@
+## [1.9.187](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.186...v1.9.187) (2026-10-29)
+
+
+### Bug Fixes
+
+* **deploy:** never publish HTML with the immutable cache header ([8d7ea7b](https://github.com/hashpass-tech/hashpass.tech/commit/8d7ea7b4f6599e2e3dc9faa8996faab5ab6d9316))
+### Release Highlights
+- never publish HTML with the immutable cache header
+
+### Release scope
+- Compared with: `v1.9.186` (the previous global release tag)
+
+### Affected products & packages
+- Release tooling
+
 ## [1.9.186](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.185...v1.9.186) (2026-10-29)
 
 
