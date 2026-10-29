@@ -30,6 +30,14 @@ if (artworkShare && (host === "bsl.hashpass.tech" || host === "bsl-dev.hashpass.
   };
 }
 
+const isAttendingArtworkPage =
+  (host === "bsl.hashpass.tech" || host === "bsl-dev.hashpass.tech") &&
+  (uri === "/attending/bsl" || uri === "/attending/bsl/" || uri === "/attending/bsl/index.html");
+
+if (isAttendingArtworkPage) {
+  event.request.uri = "/attending/bsl/index.html";
+}
+
 const isStaticAsset =
   uri.startsWith("/_expo/") ||
   uri.startsWith("/assets/") ||
@@ -38,7 +46,7 @@ const isStaticAsset =
   uri.startsWith("/.well-known/") ||
   /\\/[^/]+\\.[A-Za-z0-9]+$/.test(uri);
 
-if (!isStaticAsset && uri !== "/index.html") {
+if (!isStaticAsset && !isAttendingArtworkPage && uri !== "/index.html") {
   event.request.uri = "/index.html";
 }
 `;

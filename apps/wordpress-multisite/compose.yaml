@@ -1,0 +1,86 @@
+services:
+  db:
+    image: mariadb:11.4
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: wordpress
+      MARIADB_USER: wordpress
+      MARIADB_PASSWORD: ${WORDPRESS_DB_PASSWORD:?Set WORDPRESS_DB_PASSWORD in .env}
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:?Set MARIADB_ROOT_PASSWORD in .env}
+    volumes:
+      - database:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  wordpress:
+    image: wordpress:6.9.4-php8.3-apache
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8088:80"
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: ${WORDPRESS_DB_PASSWORD:?Set WORDPRESS_DB_PASSWORD in .env}
+      WORDPRESS_CONFIG_EXTRA: |
+        define('WP_ALLOW_MULTISITE', true);
+        define('WP_ENVIRONMENT_TYPE', 'local');
+        define('WP_AUTO_UPDATE_CORE', 'minor');
+    volumes:
+      - wordpress:/var/www/html
+    healthcheck:
+      test: ["CMD-SHELL", "php -r 'exit(@fsockopen(\"127.0.0.1\", 80) ? 0 : 1);'"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  wp-cli:
+    image: wordpress:cli-php8.3
+    profiles: ["tools"]
+    depends_on:
+      wordpress:
+        condition: service_healthy
+    working_dir: /var/www/html
+    user: "33:33"
+    entrypoint: ["wp"]
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: ${WORDPRESS_DB_PASSWORD:?Set WORDPRESS_DB_PASSWORD in .env}
+    volumes:
+      - wordpress:/var/www/html
+
+  setup:
+    image: wordpress:cli-php8.3
+    profiles: ["tools"]
+    depends_on:
+      wordpress:
+        condition: service_healthy
+    working_dir: /var/www/html
+    user: "33:33"
+    entrypoint: ["/bin/sh", "/scripts/setup-network.sh"]
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: ${WORDPRESS_DB_PASSWORD:?Set WORDPRESS_DB_PASSWORD in .env}
+      WP_ADMIN_USER: ${WP_ADMIN_USER:?Set WP_ADMIN_USER in .env}
+      WP_ADMIN_PASSWORD: ${WP_ADMIN_PASSWORD:?Set WP_ADMIN_PASSWORD in .env}
+      WP_ADMIN_EMAIL: ${WP_ADMIN_EMAIL:?Set WP_ADMIN_EMAIL in .env}
+      BLOG_WRITER_PASSWORD: ${BLOG_WRITER_PASSWORD:?Set BLOG_WRITER_PASSWORD in .env}
+      NEWS_WRITER_PASSWORD: ${NEWS_WRITER_PASSWORD:?Set NEWS_WRITER_PASSWORD in .env}
+      SHARED_EDITOR_PASSWORD: ${SHARED_EDITOR_PASSWORD:?Set SHARED_EDITOR_PASSWORD in .env}
+    volumes:
+      - wordpress:/var/www/html
+      - ./scripts:/scripts:ro
+
+volumes:
+  database:
+  wordpress:

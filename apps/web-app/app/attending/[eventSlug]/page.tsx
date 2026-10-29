@@ -21,5 +21,10 @@ export default async function AttendingPage({ params }: AttendingRoutePageProps)
   const { eventSlug } = await params;
   const event = resolveAttendingEvent(eventSlug);
   if (!event) notFound();
-  return <AttendingExperience event={makeAttendingEventData(event, eventSlug)} />;
+  return (
+    <AttendingExperience
+      event={makeAttendingEventData(event, eventSlug)}
+      {...(eventSlug === 'bsl' ? { brandHref: '/attending/', footerHref: '/attending/' } : {})}
+    />
+  );
 }
