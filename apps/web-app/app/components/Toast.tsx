@@ -92,7 +92,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           position: 'fixed',
           top: 'max(16px, env(safe-area-inset-top))',
           right: 16,
-          zIndex: 1000,
+          // Above modal dialogs (the attending share dialog is z-index 1000 and
+          // portaled later in the DOM), or errors raised inside them are hidden.
+          zIndex: 2000,
           display: 'flex',
           flexDirection: 'column',
           gap: 10,
@@ -113,7 +115,7 @@ function ToastCard({ toast, onDismiss }: { toast: ToastItem; onDismiss: () => vo
 
   return (
     <div
-      role="status"
+      role={toast.type === 'error' ? 'alert' : 'status'}
       style={{
         pointerEvents: 'auto',
         display: 'flex',

@@ -19,6 +19,7 @@ import { useSession } from '../components/SessionProvider';
 import { SignInModal } from '../components/SignInModal';
 import { useTheme } from '../components/ThemeProvider';
 import { useToast } from '../components/Toast';
+import { getPublishErrorKey } from './publish-feedback';
 import { Footer } from '../components/Footer';
 import { AttendingEventFooter } from './AttendingEventFooter';
 import type {
@@ -596,9 +597,15 @@ export function AttendingExperience({
       });
       const result = await response.json().catch(() => ({})) as AttendingPublicShareResponse;
       if (!response.ok || typeof result.shareUrl !== 'string' || typeof result.imageUrl !== 'string') {
+        console.error('Attending artwork publish failed', response.status, result.message);
         setCaptchaToken(null);
         setCaptchaResetKey((key) => key + 1);
-        toast.error(result.captchaExpired ? t('shareCaptchaPrompt') : result.message || t('sharePublishError'));
+        // The API's own message is only worth showing for validation errors
+        // (400), which name the field the visitor can fix; every other status
+        // gets a translated, actionable message instead of e.g. "Not found".
+        toast.error(response.status === 400 && !result.captchaExpired && result.message
+          ? result.message
+          : t(getPublishErrorKey(response.status, result.captchaExpired)));
         return;
       }
 
@@ -613,10 +620,12 @@ export function AttendingExperience({
       toast.success(t('sharePublicReady'));
       if (result.emailStatus === 'sent') toast.info(t('shareEmailSent'));
       else if (shareEmail.trim()) toast.info(t('shareEmailUnavailable'));
-    } catch {
+    } catch (error) {
+      console.error('Attending artwork publish failed', error);
       setCaptchaToken(null);
       setCaptchaResetKey((key) => key + 1);
-      toast.error(t('sharePublishError'));
+      // fetch() rejects with a TypeError when the service cannot be reached.
+      toast.error(t(error instanceof TypeError ? 'sharePublishNetworkError' : 'sharePublishError'));
     } finally {
       setIsPublishingArtwork(false);
     }
