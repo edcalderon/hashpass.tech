@@ -1,3 +1,14 @@
+## [1.9.190](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.189...v1.9.190) (2026-10-29)
+### Released
+- show version in event artwork footer
+
+### Release scope
+- Compared with: `v1.9.189` (the previous global release tag)
+
+### Affected products & packages
+- Club web
+- Mobile app
+
 ## [1.9.189](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.188...v1.9.189) (2026-10-29)
 
 
