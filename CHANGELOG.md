@@ -1,3 +1,19 @@
+## [1.9.175](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.174...v1.9.175) (2026-10-29)
+
+
+### Features
+
+* **lukas:** improve SEO and social previews ([f88aa48](https://github.com/hashpass-tech/hashpass.tech/commit/f88aa48c81056028ceefce90fae8aaf2e117070f))
+### Release Highlights
+- improve SEO and social previews
+
+### Release scope
+- Compared with: `v1.9.174` (the previous global release tag)
+
+### Affected products & packages
+- Infrastructure
+- Release tooling
+
 ## [1.9.174](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.173...v1.9.174) (2026-10-29)
 
 
