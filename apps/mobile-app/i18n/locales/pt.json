@@ -1289,6 +1289,18 @@
       "privateTitle": "Agenda ainda não é pública",
       "privateSubtitle": "O organizador ainda não tornou a programação deste evento pública"
     },
+    "workshops": {
+      "label": "Workshops",
+      "emptyTitle": "Nenhum workshop encontrado",
+      "emptySubtitle": "Limpe a busca ou os filtros para ver os workshops da sala paralela."
+    },
+    "bookmarks": {
+      "label": "Vista da agenda",
+      "all": "Todas as sessões",
+      "saved": "Guardadas",
+      "emptyTitle": "Ainda sem sessões guardadas",
+      "emptySubtitle": "Toque no marcador de uma sessão para guardá-la aqui."
+    },
     "badges": {
       "past": "PASSADO"
     },
@@ -1317,6 +1329,10 @@
     "actions": {
       "addToFavorites": "Adicionar aos favoritos",
       "removeFromFavorites": "Remover dos favoritos",
+      "bookmark": "Guardar sessão",
+      "removeBookmark": "Remover marcador",
+      "bookmarked": "Salva",
+      "bookmarkShort": "Salvar",
       "markAttending": "Marcar como presente",
       "unmarkAttending": "Desmarcar presença"
     },

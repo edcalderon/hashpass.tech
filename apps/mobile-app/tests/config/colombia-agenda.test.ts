@@ -10,7 +10,7 @@ describe("Colombia 2026 published agenda", () => {
     expect(event.tour?.venue).toBe(
       "Edificios H e I · Universidad Externado de Colombia, La Candelaria, Bogotá",
     );
-    expect(agenda).toHaveLength(36);
+    expect(agenda).toHaveLength(40);
     expect(agenda.every((item) => Boolean(item.location))).toBe(true);
     expect(new Set(agenda.map((item) => item.location))).toEqual(
       new Set(["Auditorio", "Panel central", "Hall principal"]),

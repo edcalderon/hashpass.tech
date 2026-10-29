@@ -27,17 +27,21 @@ import { OmniChainSection } from '../components/lukas/OmniChainSection';
 import { GetLukasSection } from '../components/lukas/GetLukasSection';
 import { FAQSection } from '../components/lukas/FAQSection';
 import { LukasFooter } from '../components/lukas/LukasFooter';
-import { applyLukasClick, createInitialLukasRewardState, playLukasClickSound, resolveLukasAnimationLevel } from '../components/lukas/lukas-rewards';
+import { resolveLukasAnimationLevel } from '../components/lukas/lukas-rewards';
+import { LukasRewardWallet, LukasRewardsProvider, useLukasRewards } from '../components/lukas/LukasRewards';
 import { LukasMotionContext, useSystemReducedMotion } from '../components/lukas/useLukasMotion';
 
 export default function LukasLanding() {
+  return <LukasRewardsProvider><LukasLandingContent /></LukasRewardsProvider>;
+}
+
+function LukasLandingContent() {
   const { colors, isDark } = useTheme();
   const isMobile = useIsMobile();
   const { t } = useTranslation('lukas');
   const scrollY = useSharedValue(0);
   const scrollRef = useRef<ScrollView>(null);
-  const [rewardState, setRewardState] = useState(createInitialLukasRewardState);
-  const [rewardDelta, setRewardDelta] = useState(0);
+  const { state: rewardState, total: rewardTotal, max: rewardMax, rewardDelta, earn, markClaimed } = useLukasRewards();
   const [animationLevel, setAnimationLevel] = useState<LukasAnimationLevel>('full');
   const [claimVisible, setClaimVisible] = useState(false);
   const systemReducedMotion = useSystemReducedMotion();
@@ -58,15 +62,16 @@ export default function LukasLanding() {
   const styles = getStyles(isDark, colors, isMobile);
 
   const handleLukasClick = () => {
-    const result = applyLukasClick(rewardState, Date.now());
-    setRewardState(result.state);
-    setRewardDelta(result.awarded);
-    if (effectiveAnimationLevel === 'full') playLukasClickSound(result.awarded);
-    if (result.reachedCap) {
+    const result = earn('hero');
+    if (result?.reachedCap) {
       handleScrollToSection('get-lukas');
       setClaimVisible(true);
     }
   };
+
+  useEffect(() => {
+    if (rewardState.total >= rewardMax && !rewardState.claimed) setClaimVisible(true);
+  }, [rewardMax, rewardState.claimed, rewardState.total]);
 
   const handleScrollToSection = (sectionId: string) => {
     // For web, use anchor scrolling
@@ -85,6 +90,7 @@ export default function LukasLanding() {
   return (
     <LukasMotionContext.Provider value={effectiveAnimationLevel}>
     <View style={styles.container}>
+      <LukasRewardWallet onOpenClaim={() => setClaimVisible(true)} />
       <View style={styles.settingsTrigger}>
         <LukasSettingsMenu animation={animationLevel} onAnimationChange={setAnimationLevel} />
       </View>
@@ -98,8 +104,10 @@ export default function LukasLanding() {
         <HeroSection 
           onGetLukas={handleLukasClick}
           onForMerchants={() => handleScrollToSection('merchants')}
-          rewardTotal={rewardState.total}
+          rewardTotal={rewardTotal}
+          rewardMax={rewardMax}
           rewardDelta={rewardDelta}
+          rewardClaimed={rewardState.claimed}
           animationLevel={effectiveAnimationLevel}
         />
         
@@ -130,7 +138,12 @@ export default function LukasLanding() {
 
         <LukasFooter />
       </Animated.ScrollView>
-      <LukasClaimModal visible={claimVisible} onClose={() => setClaimVisible(false)} />
+      <LukasClaimModal
+        visible={claimVisible}
+        rewardTotal={rewardTotal}
+        onClaimed={markClaimed}
+        onClose={() => setClaimVisible(false)}
+      />
     </View>
     </LukasMotionContext.Provider>
   );

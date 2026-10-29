@@ -1,6 +1,24 @@
-import type { LukasAnimationLevel, LukasClickResult, LukasRewardState } from '../../types/lukas.types';
+import type {
+  LukasAnimationLevel,
+  LukasClickResult,
+  LukasRewardDefinition,
+  LukasRewardId,
+  LukasRewardResult,
+  LukasRewardState,
+} from '../../types/lukas.types';
 
 export const LUKAS_REWARD_CAP = 10;
+export const LUKAS_REWARD_DEFINITIONS: readonly LukasRewardDefinition[] = [
+  { id: 'hero', amount: 1 },
+  { id: 'video', amount: 2 },
+  { id: 'how-collateral', amount: 3 },
+  { id: 'how-mint', amount: 3 },
+  { id: 'how-merchant', amount: 3 },
+  { id: 'merchant', amount: 6 },
+  { id: 'wallet', amount: 2 },
+  { id: 'join', amount: 2 },
+];
+export const LUKAS_REWARD_TOTAL = LUKAS_REWARD_DEFINITIONS.reduce((sum, reward) => sum + reward.amount, 0);
 const RAPID_CLICK_WINDOW_MS = 650;
 const STREAK_WINDOW_MS = 1_500;
 
@@ -13,7 +31,47 @@ export function resolveLukasAnimationLevel(
 }
 
 export function createInitialLukasRewardState(): LukasRewardState {
-  return { total: 0, clickCount: 0, lastClickAt: null, streak: 0 };
+  return {
+    total: 0,
+    clickCount: 0,
+    lastClickAt: null,
+    streak: 0,
+    completed: {},
+    claimed: false,
+    claimedEmail: null,
+    lastRewardId: null,
+    lastAwarded: 0,
+  };
+}
+
+export function getLukasRewardAmount(id: LukasRewardId): number {
+  return LUKAS_REWARD_DEFINITIONS.find((reward) => reward.id === id)?.amount ?? 0;
+}
+
+/**
+ * Awards a landing action once. These points are a local progress mechanic,
+ * never a wallet balance; the backend still owns eligibility and TGE grants.
+ */
+export function applyLukasReward(state: LukasRewardState, id: LukasRewardId): LukasRewardResult {
+  if (state.claimed || state.completed[id]) {
+    return { state, awarded: 0, reachedCap: state.total >= LUKAS_REWARD_TOTAL };
+  }
+
+  const awarded = getLukasRewardAmount(id);
+  if (awarded <= 0) return { state, awarded: 0, reachedCap: false };
+
+  const nextState: LukasRewardState = {
+    ...state,
+    total: Math.min(LUKAS_REWARD_TOTAL, state.total + awarded),
+    completed: { ...state.completed, [id]: true },
+    lastRewardId: id,
+    lastAwarded: awarded,
+  };
+  return {
+    state: nextState,
+    awarded,
+    reachedCap: nextState.total >= LUKAS_REWARD_TOTAL,
+  };
 }
 
 /** Plays a tiny user-gesture sound without shipping an audio asset or loading

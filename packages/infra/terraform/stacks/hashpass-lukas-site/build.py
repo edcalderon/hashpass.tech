@@ -198,13 +198,17 @@ export default function Index() { return <Redirect href='/lukas' />; }
             override_hashes[str(relative)] = hashlib.sha256(override.read_bytes()).hexdigest()
         env = {k: v for k, v in os.environ.items() if not k.startswith(("EXPO_PUBLIC_", "AMPLIFY_"))}
         env.update(EXPO_NO_DOTENV="1", CI="1")
+        export_max_workers = os.environ.get("LUKAS_EXPORT_MAX_WORKERS", "4")
+        if not export_max_workers.isdigit() or int(export_max_workers) < 1:
+            raise SystemExit("LUKAS_EXPORT_MAX_WORKERS must be a positive integer")
         subprocess.run(
-            ["node", "node_modules/expo/bin/cli", "export", "--platform", "web", "--output-dir", "site", "--max-workers", "4"],
+            ["node", "node_modules/expo/bin/cli", "export", "--platform", "web", "--output-dir", "site", "--max-workers", export_max_workers],
             cwd=source, env=env, check=True,
         )
         site = source / "site"
         if not (site / "lukas.html").is_file():
-            raise SystemExit("Export is missing the Lukas landing page.")
+            generated_html = ", ".join(sorted(path.name for path in site.glob("*.html"))) if site.is_dir() else "none"
+            raise SystemExit(f"Export is missing the Lukas landing page (generated HTML: {generated_html}).")
         forbidden = [p for p in site.rglob("*") if p.suffix in (".map", ".ts", ".tsx") or "+api" in p.name]
         if forbidden:
             raise SystemExit("Unexpected source/server files in static export.")

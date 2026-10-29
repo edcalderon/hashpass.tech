@@ -86,6 +86,7 @@ import { getEventBannerCtaLayout } from "../../lib/banner-cta";
 import EventHeroBackground from "./EventHeroBackground";
 import {useEventVideoCampaign} from "../../hooks/useEventVideoCampaign";
 import {campaignFilmsAt} from "../../lib/event-video-campaign";
+import type {EventVideoCampaignFilm} from "../../types/event-video-campaign";
 import CampaignFilmPlayer from "../CampaignFilmPlayer";
 import ExplorerHeroAction, {
   ExplorerExpandableAction,
@@ -478,7 +479,7 @@ export default function Explorer({
     if (!selectedEvent) return [];
     const base = getEventBannerSlides(selectedEvent);
     if (!bslCampaign) return base;
-    const campaignSlides = campaignFilmsAt(bslCampaign, bslCampaignNow).map((film) => ({
+    const campaignSlides = campaignFilmsAt(bslCampaign, bslCampaignNow).map((film: EventVideoCampaignFilm) => ({
       ...base[0],
       id: `campaign-${film.id}`,
       title: film.title,
@@ -680,7 +681,7 @@ export default function Explorer({
       const heroSlide = selectedHeroSlide || selectedHeroSlides[0];
       if (!heroSlide) return null;
       const localizedHeroSlide = localizeEventBannerSlide(heroSlide, translate);
-      const campaignFilm = (heroSlide as ResolvedEventBannerSlide & {campaignFilm?: import("../../types/event-video-campaign").EventVideoCampaignFilm}).campaignFilm;
+      const campaignFilm = (heroSlide as ResolvedEventBannerSlide & {campaignFilm?: EventVideoCampaignFilm}).campaignFilm;
       if (campaignFilm) {
         return (
           <View style={styles.hero}>
@@ -1433,6 +1434,12 @@ export default function Explorer({
                 ? translate("explore.rework.removeBookmark", "Remove bookmark")
                 : translate("explore.rework.bookmark", "Bookmark")
             } ${event.title}`}
+            revealText={
+              bookmarked
+                ? translate("actions.bookmarked", "Bookmarked")
+                : translate("actions.bookmarkShort", "Bookmark")
+            }
+            revealWidth={128}
             style={styles.bookmarkButton}
             accessibilityState={{ selected: bookmarked }}
             onPress={() => toggleBookmark(event.id)}

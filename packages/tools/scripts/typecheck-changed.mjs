@@ -252,6 +252,17 @@ function collectImportSpecifiers(content) {
     });
   }
 
+  // Re-exports (`export { A as B } from '...'`) need the same stub: the
+  // source-side name is what the stubbed module must declare.
+  const reExportRegex = /^\s*export\s+(type\s+)?(\{[^}]*\})\s*from\s+['"]([^'"]+)['"];?/gm;
+  for (const match of content.matchAll(reExportRegex)) {
+    imports.push({
+      specifier: match[3],
+      clause: match[2],
+      isTypeOnly: Boolean(match[1]),
+    });
+  }
+
   for (const match of content.matchAll(sideEffectRegex)) {
     imports.push({
       specifier: match[1],

@@ -11,6 +11,8 @@
     "narration:generate": "node scripts/generate-narration.mjs",
     "bsl:welcome:narration": "node scripts/generate-bsl-welcome-narration.mjs",
     "bsl:welcome:captions": "node scripts/generate-bsl-welcome-narration.mjs --captions-only",
+    "lukas:why:render": "node scripts/render-lukas-why.mjs",
+    "lukas:why:audio": "node scripts/generate-lukas-why-narration.mjs",
     "audio:generate": "node scripts/generate-audio-bed.mjs",
     "typecheck": "tsc --noEmit",
     "upgrade": "remotion upgrade",

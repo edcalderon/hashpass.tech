@@ -1509,7 +1509,10 @@
       "removeSessionMessage": "La sesión se eliminará de tu plan del día. Podrás deshacerlo durante unos segundos.",
       "sessionRemoved": "Sesión eliminada de tu plan",
       "sessionRestored": "Sesión restaurada en tu plan",
-      "excludePastSessions": "Excluir sesiones que ya han pasado"
+      "excludePastSessions": "Excluir sesiones que ya han pasado",
+      "cancel": "Cancelar",
+      "bookmark": "Guardar",
+      "bookmarked": "Guardado"
     },
     "tips": {
       "title": "Consejos de Networking",
@@ -1926,6 +1929,18 @@
       "privateTitle": "La agenda aún no es pública",
       "privateSubtitle": "El organizador no ha hecho público el programa de este evento"
     },
+    "workshops": {
+      "label": "Workshops",
+      "emptyTitle": "Ningún workshop coincide",
+      "emptySubtitle": "Borra la búsqueda o los filtros para ver los workshops de la sala paralela."
+    },
+    "bookmarks": {
+      "label": "Vista de agenda",
+      "all": "Todas las sesiones",
+      "saved": "Guardadas",
+      "emptyTitle": "Aún no has guardado sesiones",
+      "emptySubtitle": "Toca el marcador de una sesión para guardarla aquí."
+    },
     "badges": {
       "past": "PASADO"
     },
@@ -1960,6 +1975,10 @@
     "actions": {
       "addToFavorites": "Añadir a favoritos",
       "removeFromFavorites": "Quitar de favoritos",
+      "bookmark": "Guardar sesión",
+      "removeBookmark": "Quitar marcador",
+      "bookmarked": "Guardada",
+      "bookmarkShort": "Guardar",
       "favorite": "Favorito",
       "favorited": "En favoritos",
       "addToAgenda": "Añadir a la agenda",

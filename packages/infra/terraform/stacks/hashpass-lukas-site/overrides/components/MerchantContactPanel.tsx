@@ -4,14 +4,26 @@ import { FormField } from '@hashpass/ui/primitives';
 import { uiTokens } from '@hashpass/ui/tokens';
 import { useTheme } from '../hooks/useTheme';
 import { useIsMobile } from '../hooks/useIsMobile';
-import { LukasCaptcha } from './LukasCaptcha';
+import { solveLukasCaptcha } from './LukasCaptcha';
 import { ActionButton, FilterChip, Surface } from '@hashpass/ui/primitives';
 import { LukasEyebrow, lukasFullWidth, lukasPalette, lukasSectionTitle, lukasSkin, lukasSurface } from './lukas/lukas-ui';
 import { LukasGlyph } from './lukas/LukasGlyph';
+import { useLukasRewards } from './lukas/LukasRewards';
 
 const API_BASE = 'https://api.hashpass.tech/api';
 const BOOKING_URL = 'https://calendar.app.google/vYsTa9GpamSVccAt9';
 const MERCHANT_TYPES = ['Coffee shop', 'Events & conferences', 'Coworking', 'Restaurant or retail', 'Other'];
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const validateMerchantForm = (contactName: string, email: string, description: string) => ({
+  contactName: contactName.trim() ? '' : 'Enter your name.',
+  email: !email.trim()
+    ? 'Enter your work email.'
+    : EMAIL_PATTERN.test(email.trim())
+      ? ''
+      : 'Enter a valid email address.',
+  description: description.trim() ? '' : 'Add a short description.',
+});
 
 export function MerchantContactPanel() {
   const { isDark } = useTheme();
@@ -20,44 +32,55 @@ export function MerchantContactPanel() {
   const palette = useMemo(() => lukasPalette(isDark), [isDark]);
   const skin = useMemo(() => lukasSkin(palette), [palette]);
   const styles = useMemo(() => getStyles(isDark, isMobile, palette), [isDark, isMobile, palette]);
+  const { earn } = useLukasRewards();
   const [contactName, setContactName] = useState('');
   const [email, setEmail] = useState('');
   const [merchantType, setMerchantType] = useState(MERCHANT_TYPES[0]);
   const [description, setDescription] = useState('');
   const [bookingPreference, setBookingPreference] = useState('Book a call');
-  const [captchaToken, setCaptchaToken] = useState('');
-  const [resetKey, setResetKey] = useState(0);
+  const [touched, setTouched] = useState({ contactName: false, email: false, description: false });
+  const [submitted, setSubmitted] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [checkingSecurity, setCheckingSecurity] = useState(false);
   const [error, setError] = useState('');
   const [sent, setSent] = useState(false);
+  const validation = validateMerchantForm(contactName, email, description);
 
   const submit = async () => {
-    if (!contactName.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) || !description.trim()) {
-      setError('Add your name, a valid email, and a short description.');
+    if (busy) return;
+    setSubmitted(true);
+    const errors = validateMerchantForm(contactName, email, description);
+    if (Object.values(errors).some(Boolean)) {
+      setError('');
       return;
     }
-    if (!captchaToken) {
-      setError('Complete the security check before sending.');
-      return;
-    }
+
     setBusy(true);
+    setCheckingSecurity(true);
     setError('');
     try {
+      const captchaToken = await solveLukasCaptcha();
+      setCheckingSecurity(false);
       const response = await fetch(`${API_BASE}/lukas/merchant`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contactName, email, merchantType, description, bookingPreference, captchaToken }),
+        body: JSON.stringify({
+          contactName: contactName.trim(),
+          email: email.trim(),
+          merchantType,
+          description: description.trim(),
+          bookingPreference,
+          captchaToken,
+        }),
       });
       const payload = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(payload?.error || 'The merchant request could not be sent.');
+      if (!response.ok) throw new Error(payload?.error || 'The merchant request could not be sent. Please try again.');
       setSent(true);
-      setCaptchaToken('');
-      setResetKey((key) => key + 1);
+      earn('merchant');
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : 'The merchant request could not be sent.');
-      setCaptchaToken('');
-      setResetKey((key) => key + 1);
+      setError(submitError instanceof Error ? submitError.message : 'The merchant request could not be sent. Please try again.');
     } finally {
+      setCheckingSecurity(false);
       setBusy(false);
     }
   };
@@ -72,7 +95,7 @@ export function MerchantContactPanel() {
       {sent ? (
         <Surface mode={mode} style={[lukasSurface(palette, { raised: true }), styles.successCard]}>
           <LukasGlyph name="shield" size={64} />
-          <Text style={styles.successTitle}>Request sent</Text>
+          <Text role="status" accessibilityLiveRegion="polite" style={styles.successTitle}>Request sent</Text>
           <Text style={styles.successCopy}>We sent a confirmation to {email.trim()}. Prefer a faster conversation?</Text>
           <ActionButton mode={mode} skin={skin} label="Book directly" onPress={() => { if (Platform.OS === 'web' && typeof window !== 'undefined') window.open(BOOKING_URL, '_blank', 'noopener,noreferrer'); else void Linking.openURL(BOOKING_URL); }}
             style={lukasFullWidth}
@@ -80,18 +103,63 @@ export function MerchantContactPanel() {
         </Surface>
       ) : (
         <Surface mode={mode} style={[lukasSurface(palette, { raised: true }), styles.formCard]}>
-          <FormField mode={mode} label="Your name" value={contactName} onChangeText={setContactName} autoComplete="name" />
-          <FormField mode={mode} label="Work email" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" autoComplete="email" />
+          <FormField
+            mode={mode}
+            disabled={busy}
+            label="Your name"
+            value={contactName}
+            onChangeText={(value) => { setContactName(value); setError(''); }}
+            onBlur={() => setTouched((current) => ({ ...current, contactName: true }))}
+            error={(submitted || touched.contactName) ? validation.contactName : undefined}
+            autoComplete="name"
+          />
+          <FormField
+            mode={mode}
+            disabled={busy}
+            label="Work email"
+            value={email}
+            onChangeText={(value) => { setEmail(value); setError(''); }}
+            onBlur={() => setTouched((current) => ({ ...current, email: true }))}
+            error={(submitted || touched.email) ? validation.email : undefined}
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="email-address"
+            autoComplete="email"
+            placeholder="you@business.com"
+          />
           <Text style={styles.fieldLabel}>Merchant type</Text>
-          <View style={styles.options}>{MERCHANT_TYPES.map((type) => <FilterChip key={type} mode={mode} skin={skin} label={type} selected={merchantType === type} onPress={() => setMerchantType(type)} style={styles.option} />)}</View>
-          <FormField mode={mode} label="What would you like to enable?" value={description} onChangeText={setDescription} multiline numberOfLines={4} style={styles.messageInput} />
+          <View style={styles.options}>{MERCHANT_TYPES.map((type) => <FilterChip key={type} mode={mode} skin={skin} label={type} selected={merchantType === type} disabled={busy} onPress={() => setMerchantType(type)} style={styles.option} />)}</View>
+          <FormField
+            mode={mode}
+            disabled={busy}
+            label="What would you like to enable?"
+            value={description}
+            onChangeText={(value) => { setDescription(value); setError(''); }}
+            onBlur={() => setTouched((current) => ({ ...current, description: true }))}
+            error={(submitted || touched.description) ? validation.description : undefined}
+            multiline
+            numberOfLines={4}
+            style={styles.messageInput}
+          />
           <Text style={styles.fieldLabel}>Follow-up</Text>
           <View style={styles.options}>
-            {['Book a call', 'Email me first'].map((preference) => <FilterChip key={preference} mode={mode} skin={skin} label={preference} selected={bookingPreference === preference} onPress={() => setBookingPreference(preference)} style={styles.option} />)}
+            {['Book a call', 'Email me first'].map((preference) => <FilterChip key={preference} mode={mode} skin={skin} label={preference} selected={bookingPreference === preference} disabled={busy} onPress={() => setBookingPreference(preference)} style={styles.option} />)}
           </View>
-          <LukasCaptcha resetKey={resetKey} onSolve={setCaptchaToken} onReset={() => setCaptchaToken('')} />
-          <ActionButton mode={mode} skin={skin} label="Send merchant request" loading={busy} disabled={!captchaToken} onPress={submit} style={[lukasFullWidth, styles.primaryButton]} />
-          {error ? <Text style={styles.error}>{error}</Text> : null}
+          <ActionButton
+            mode={mode}
+            skin={skin}
+            label={busy ? (checkingSecurity ? 'Checking security…' : 'Sending…') : 'Send merchant request'}
+            loading={busy}
+            disabled={busy}
+            aria-busy={busy}
+            onPress={submit}
+            style={[lukasFullWidth, styles.primaryButton]}
+          />
+          {error ? (
+            <Text accessibilityRole="alert" accessibilityLiveRegion="assertive" style={styles.error}>
+              {error}
+            </Text>
+          ) : null}
           <Text style={styles.footnote}>We only use this information to respond to your request. See our privacy policy for details.</Text>
         </Surface>
       )}

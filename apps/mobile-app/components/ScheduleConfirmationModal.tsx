@@ -1,16 +1,12 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  Modal,
-  TouchableOpacity,
-  StyleSheet,
-  Platform,
-} from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import { StyleSheet, Text, View } from 'react-native';
+import { ActionButton } from '@hashpass/ui/primitives';
+import { uiPalette, uiTokens } from '@hashpass/ui/tokens';
+import { MaterialIcons } from '../lib/vector-icons';
 import { useTheme } from '../hooks/useTheme';
 import { DEFAULT_EVENT_TZ_OFFSET, formatEventClock } from '../lib/event-time';
 import { useTranslation } from '../i18n/i18n';
+import AgendaDialog from './AgendaDialog';
 
 interface ScheduleConfirmationModalProps {
   visible: boolean;
@@ -57,494 +53,200 @@ export default function ScheduleConfirmationModal({
   onToggleBlocked,
   onViewAgenda,
 }: ScheduleConfirmationModalProps) {
-  const { colors } = useTheme();
+  const { isDark } = useTheme();
   const { t } = useTranslation('networking');
-  
-  // Handle free slot display differently
+  const mode = isDark ? 'dark' : 'light';
+  const palette = uiPalette(mode);
+  // Destructive actions keep the shared button geometry with the danger hue.
+  const dangerSkin = { fill: palette.danger, onFill: palette.canvas, accent: palette.danger, soft: palette.surface, border: palette.border };
+  const neutralSkin = { fill: palette.accentFill, onFill: palette.onAccent, accent: palette.text, soft: palette.surface, border: palette.border };
+
+  const translateKey = (value?: string) => {
+    if (value?.startsWith('networking.')) {
+      const key = value.replace('networking.', '');
+      const translated = t(key);
+      return translated !== `networking.${key}` ? translated : value;
+    }
+    return value;
+  };
+
+  const infoRow = (icon: string, text: string, key: string) => (
+    <View key={key} style={styles.infoRow}>
+      <MaterialIcons name={icon as any} size={16} color={palette.muted} />
+      <Text style={[styles.infoText, { color: palette.muted }]} numberOfLines={2}>{text}</Text>
+    </View>
+  );
+
+  const cancelButton = (
+    <ActionButton
+      mode={mode}
+      variant="secondary"
+      skin={neutralSkin}
+      label={t('mySchedule.cancel', 'Cancel')}
+      onPress={onCancel}
+      disabled={isLoading}
+      style={styles.half}
+    />
+  );
+
   if (isFreeSlot) {
     const isInterested = freeSlotStatus === 'interested';
     const isBlocked = freeSlotStatus === 'blocked';
-    
+    const subtitle = isBlocked
+      ? t('mySchedule.freeSlot.blockedMessage')
+      : isInterested
+        ? t('mySchedule.freeSlot.interestedMessage')
+        : t('mySchedule.freeSlot.availableMessage');
+    const heading = isBlocked
+      ? t('mySchedule.freeSlot.unblockSlot')
+      : isInterested
+        ? t('mySchedule.freeSlot.removeInterest')
+        : t('mySchedule.freeSlot.markFreeSlot');
+
     return (
-      <Modal
+      <AgendaDialog
         visible={visible}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={onCancel}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[
-            styles.modalContent,
-            {
-              backgroundColor: colors.background.paper,
-              borderColor: colors.divider,
-            }
-          ]}>
-            {/* Close X Button */}
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={onCancel}
+        tone={isBlocked ? 'danger' : isInterested ? 'accent' : 'success'}
+        icon={isBlocked ? 'block' : isInterested ? 'favorite' : 'schedule'}
+        title={heading}
+        subtitle={subtitle}
+        onClose={onCancel}
+        closeDisabled={isLoading}
+        testID="schedule-free-slot-dialog"
+        actions={!isBlocked && !isInterested ? (
+          <>
+            <ActionButton
+              mode={mode}
+              label={t('mySchedule.freeSlot.interested')}
+              leadingIcon={<MaterialIcons name="favorite" size={18} color={palette.onAccent} />}
+              onPress={onConfirm}
               disabled={isLoading}
-            >
-              <MaterialIcons name="close" size={24} color={colors.text.secondary} />
-            </TouchableOpacity>
-            
-            <View style={styles.modalHeader}>
-              <MaterialIcons
-                name={isBlocked ? "block" : isInterested ? "favorite" : "schedule"}
-                size={32}
-                color={isBlocked ? colors.error.main : isInterested ? '#F44336' : colors.text.secondary}
-              />
-              <Text style={[styles.modalTitle, { color: colors.text.primary }]}>
-                {isBlocked ? t('mySchedule.freeSlot.unblockSlot') : isInterested ? t('mySchedule.freeSlot.removeInterest') : t('mySchedule.freeSlot.markFreeSlot')}
-              </Text>
-            </View>
-
-            <View style={styles.eventDetails}>
-              <Text style={[styles.eventTitle, { color: colors.text.primary }]}>
-                {t('mySchedule.freeSlot.freeSlotAvailable')}
-              </Text>
-              
-              <View style={styles.eventInfoRow}>
-                <MaterialIcons
-                  name="schedule"
-                  size={18}
-                  color={colors.text.secondary}
-                />
-                <Text style={[styles.eventInfoText, { color: colors.text.secondary }]}>
-                  {formatEventClock(startTime, eventTzOffset)}
-                </Text>
-              </View>
-            </View>
-
-            <View style={[
-              styles.messageBox,
-              {
-                backgroundColor: isBlocked 
-                  ? `${colors.error.main}15` 
-                  : isInterested 
-                  ? `#F4433615` 
-                  : `${colors.info || '#2196F3'}15`,
-                borderColor: isBlocked 
-                  ? colors.error.main 
-                  : isInterested 
-                  ? '#F44336' 
-                  : (colors.info || '#2196F3'),
-              }
-            ]}>
-              <MaterialIcons
-                name={isBlocked ? "block" : isInterested ? "info" : "info"}
-                size={20}
-                color={isBlocked ? colors.error.main : isInterested ? '#F44336' : (colors.info || '#2196F3')}
-              />
-              <Text style={[
-                styles.messageText,
-                { color: isBlocked ? colors.error.main : isInterested ? '#F44336' : (colors.info || '#2196F3') }
-              ]}>
-                {isBlocked
-                  ? t('mySchedule.freeSlot.blockedMessage')
-                  : isInterested
-                  ? t('mySchedule.freeSlot.interestedMessage')
-                  : t('mySchedule.freeSlot.availableMessage')}
-              </Text>
-            </View>
-
-            {/* Action buttons for free slots */}
-            <View style={styles.buttonContainer}>
-              {!isBlocked && !isInterested && (
-                <>
-                  <TouchableOpacity
-                    style={[
-                      styles.confirmButton,
-                      {
-                        backgroundColor: colors.error.main,
-                        flex: 1,
-                      },
-                      isLoading && styles.confirmButtonDisabled
-                    ]}
-                    onPress={() => onToggleBlocked && onToggleBlocked()}
-                    disabled={isLoading}
-                  >
-                    <MaterialIcons name="block" size={20} color="#FFFFFF" />
-                    <Text style={styles.confirmButtonText}>{t('mySchedule.freeSlot.block')}</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[
-                      styles.confirmButton,
-                      {
-                        backgroundColor: colors.success.main,
-                        flex: 1,
-                      },
-                      isLoading && styles.confirmButtonDisabled
-                    ]}
-                    onPress={onConfirm}
-                    disabled={isLoading}
-                  >
-                    <MaterialIcons name="favorite" size={20} color="#FFFFFF" />
-                    <Text style={styles.confirmButtonText}>{t('mySchedule.freeSlot.interested')}</Text>
-                  </TouchableOpacity>
-                </>
-              )}
-
-              {(isBlocked || isInterested) && (
-                <TouchableOpacity
-                  style={[
-                    styles.confirmButton,
-                    {
-                      backgroundColor: isBlocked ? colors.error.main : '#F44336',
-                    },
-                    isLoading && styles.confirmButtonDisabled
-                  ]}
-                  onPress={onConfirm}
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <>
-                      <MaterialIcons name="hourglass-empty" size={20} color="#FFFFFF" />
-                      <Text style={styles.confirmButtonText}>
-                        {isBlocked ? t('mySchedule.freeSlot.unblocking') : t('mySchedule.freeSlot.removing')}
-                      </Text>
-                    </>
-                  ) : (
-                    <>
-                      <MaterialIcons
-                        name={isBlocked ? "block" : "favorite-border"}
-                        size={20}
-                        color="#FFFFFF"
-                      />
-                      <Text style={styles.confirmButtonText}>
-                        {isBlocked ? t('mySchedule.freeSlot.unblock') : t('mySchedule.freeSlot.remove')}
-                      </Text>
-                    </>
-                  )}
-                </TouchableOpacity>
-              )}
-            </View>
+              style={styles.full}
+            />
+            <ActionButton
+              mode={mode}
+              variant="secondary"
+              skin={dangerSkin}
+              label={t('mySchedule.freeSlot.block')}
+              leadingIcon={<MaterialIcons name="block" size={18} color={palette.danger} />}
+              onPress={() => onToggleBlocked && onToggleBlocked()}
+              disabled={isLoading}
+              style={styles.full}
+            />
+          </>
+        ) : (
+          <View style={styles.row}>
+            {cancelButton}
+            <ActionButton
+              mode={mode}
+              skin={isBlocked ? dangerSkin : undefined}
+              label={isLoading
+                ? (isBlocked ? t('mySchedule.freeSlot.unblocking') : t('mySchedule.freeSlot.removing'))
+                : (isBlocked ? t('mySchedule.freeSlot.unblock') : t('mySchedule.freeSlot.remove'))}
+              leadingIcon={<MaterialIcons name={isBlocked ? 'block' : 'favorite-border'} size={18} color={isBlocked ? palette.canvas : palette.onAccent} />}
+              onPress={onConfirm}
+              loading={isLoading}
+              style={styles.wide}
+            />
           </View>
+        )}
+      >
+        <View style={[styles.details, { backgroundColor: palette.surface, borderColor: palette.border }]}>
+          <Text style={[styles.detailsTitle, { color: palette.text }]}>{t('mySchedule.freeSlot.freeSlotAvailable')}</Text>
+          {infoRow('schedule', formatEventClock(startTime, eventTzOffset), 'time')}
         </View>
-      </Modal>
+      </AgendaDialog>
     );
   }
 
+  const resolvedLocation = translateKey(location);
   return (
-    <Modal
+    <AgendaDialog
       visible={visible}
-      transparent={true}
-      animationType="fade"
-      onRequestClose={onCancel}
-    >
-      <View style={styles.modalOverlay}>
-        <View style={[
-          styles.modalContent,
-          {
-            backgroundColor: colors.background.paper,
-            borderColor: colors.divider,
-          }
-        ]}>
-          {/* Close X Button */}
-          <TouchableOpacity
-            style={styles.closeButton}
-            onPress={onCancel}
-            disabled={isLoading}
-          >
-            <MaterialIcons name="close" size={24} color={colors.text.secondary} />
-          </TouchableOpacity>
-          
-          {/* Header */}
-          <View style={styles.modalHeader}>
-            <MaterialIcons
-              name={isConfirmed ? "event-busy" : "event-available"}
-              size={32}
-              color={isConfirmed ? colors.error.main : colors.success.main}
-            />
-            <Text style={[styles.modalTitle, { color: colors.text.primary }]}>
-              {isConfirmed ? t('mySchedule.unconfirmAttendance') : t('mySchedule.confirmAttendance')}
-            </Text>
-          </View>
-
-          {/* Event Details */}
-          <View style={styles.eventDetails}>
-            <Text style={[styles.eventTitle, { color: colors.text.primary }]}>
-              {(() => {
-                // If title looks like a translation key, try to translate it
-                if (title?.startsWith('networking.')) {
-                  const key = title.replace('networking.', '');
-                  const translated = t(key);
-                  return translated !== `networking.${key}` ? translated : title;
-                }
-                if (title?.startsWith('agenda.')) {
-                  // For agenda keys, we'd need to use a different namespace or handle differently
-                  return title;
-                }
-                return title;
-              })()}
-            </Text>
-            
-            <View style={styles.eventInfoRow}>
-              <MaterialIcons
-                name="schedule"
-                size={18}
-                color={colors.text.secondary}
-              />
-              <Text style={[styles.eventInfoText, { color: colors.text.secondary }]}>
-                {formatEventClock(startTime, eventTzOffset)}
-              </Text>
-            </View>
-
-            {location && (
-              <View style={styles.eventInfoRow}>
+      tone={isConfirmed ? 'danger' : 'success'}
+      icon={isConfirmed ? 'event-busy' : 'event'}
+      title={isConfirmed ? t('mySchedule.unconfirmAttendance') : t('mySchedule.confirmAttendance')}
+      subtitle={isConfirmed ? t('mySchedule.unconfirmMessage') : t('mySchedule.confirmMessage')}
+      onClose={onCancel}
+      closeDisabled={isLoading}
+      testID="schedule-confirmation-dialog"
+      actions={(
+        <>
+          <View style={styles.row}>
+            {cancelButton}
+            <ActionButton
+              mode={mode}
+              skin={isConfirmed ? dangerSkin : undefined}
+              label={isLoading
+                ? (isConfirmed ? t('mySchedule.unconfirming') : t('mySchedule.confirming'))
+                : (isConfirmed ? t('mySchedule.unconfirm') : t('mySchedule.confirm'))}
+              leadingIcon={(
                 <MaterialIcons
-                  name="location-on"
+                  name={isConfirmed ? 'remove-circle-outline' : 'check'}
                   size={18}
-                  color={colors.text.secondary}
+                  color={isConfirmed ? palette.canvas : palette.onAccent}
                 />
-                <Text style={[styles.eventInfoText, { color: colors.text.secondary }]}>
-                  {(() => {
-                    // If location looks like a translation key, try to translate it
-                    if (location?.startsWith('networking.')) {
-                      const key = location.replace('networking.', '');
-                      const translated = t(key);
-                      return translated !== `networking.${key}` ? translated : location;
-                    }
-                    return location;
-                  })()}
-                </Text>
-              </View>
-            )}
-          </View>
-
-          {/* Message */}
-          <View style={[
-            styles.messageBox,
-            {
-              backgroundColor: isConfirmed 
-                ? `${colors.error.main}15` 
-                : `${colors.success.main}15`,
-              borderColor: isConfirmed 
-                ? colors.error.main 
-                : colors.success.main,
-            }
-          ]}>
-            <MaterialIcons
-              name={isConfirmed ? "info" : "check-circle"}
-              size={20}
-              color={isConfirmed ? colors.error.main : colors.success.main}
+              )}
+              onPress={onConfirm}
+              loading={isLoading}
+              style={styles.wide}
             />
-            <Text style={[
-              styles.messageText,
-              { color: isConfirmed ? colors.error.main : colors.success.main }
-            ]}>
-              {isConfirmed
-                ? t('mySchedule.unconfirmMessage')
-                : t('mySchedule.confirmMessage')}
-            </Text>
           </View>
-
-          {/* "Check your agenda first" — only relevant before removing something,
-              not before adding it. */}
-          {isConfirmed && onViewAgenda && (
-            <TouchableOpacity
-              style={styles.viewAgendaLink}
+          {isConfirmed && onViewAgenda ? (
+            <ActionButton
+              mode={mode}
+              variant="ghost"
+              skin={neutralSkin}
+              label={t('mySchedule.checkAgendaFirst', 'Check your agenda first')}
+              leadingIcon={<MaterialIcons name="event" size={18} color={palette.text} />}
               onPress={onViewAgenda}
               disabled={isLoading}
-            >
-              <MaterialIcons name="event" size={16} color={colors.primary} />
-              <Text style={[styles.viewAgendaLinkText, { color: colors.primary }]}>
-                {t('mySchedule.checkAgendaFirst', 'Check your agenda first')}
-              </Text>
-            </TouchableOpacity>
-          )}
-
-          {/* Action Buttons */}
-          <View style={styles.buttonContainer}>
-            {/* Favorite button for agenda events (confirmed or tentative) */}
-            {isAgendaEvent && onToggleFavorite && (
-              <TouchableOpacity
-                style={[
-                  styles.favoriteButton,
-                  {
-                    backgroundColor: isFavorite ? '#FFD700' : colors.surface,
-                    borderColor: isFavorite ? '#FFD700' : colors.divider,
-                  }
-                ]}
-                onPress={onToggleFavorite}
-                disabled={isLoading}
-              >
-                <MaterialIcons
-                  name={isFavorite ? "star" : "star-border"}
-                  size={20}
-                  color={isFavorite ? "#000000" : colors.text.secondary}
-                />
-              </TouchableOpacity>
-            )}
-
-            <TouchableOpacity
-              style={[
-                styles.confirmButton,
-                {
-                  backgroundColor: isConfirmed ? colors.error.main : colors.success.main,
-                },
-                isLoading && styles.confirmButtonDisabled
-              ]}
-              onPress={onConfirm}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <MaterialIcons name="hourglass-empty" size={20} color="#FFFFFF" />
-                  <Text style={styles.confirmButtonText}>
-                    {isConfirmed ? t('mySchedule.unconfirming') : t('mySchedule.confirming')}
-                  </Text>
-                </>
-              ) : (
-                <>
-                  <MaterialIcons
-                    name={isConfirmed ? "cancel" : "check"}
-                    size={20}
-                    color="#FFFFFF"
-                  />
-                  <Text style={styles.confirmButtonText}>
-                    {isConfirmed ? t('mySchedule.unconfirm') : t('mySchedule.confirm')}
-                  </Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </View>
-        </View>
+              style={styles.full}
+            />
+          ) : null}
+        </>
+      )}
+    >
+      <View style={[styles.details, { backgroundColor: palette.surface, borderColor: palette.border }]}>
+        <Text style={[styles.detailsTitle, { color: palette.text }]} numberOfLines={3}>{translateKey(title)}</Text>
+        {infoRow('schedule', formatEventClock(startTime, eventTzOffset), 'time')}
+        {resolvedLocation ? infoRow('location-on', resolvedLocation, 'location') : null}
       </View>
-    </Modal>
+      {isAgendaEvent && onToggleFavorite ? (
+        <ActionButton
+          mode={mode}
+          variant="secondary"
+          skin={neutralSkin}
+          label={isFavorite ? t('mySchedule.bookmarked', 'Bookmarked') : t('mySchedule.bookmark', 'Bookmark')}
+          leadingIcon={(
+            <MaterialIcons
+              name={isFavorite ? 'bookmark' : 'bookmark-border'}
+              size={18}
+              color={isFavorite ? palette.danger : palette.muted}
+            />
+          )}
+          accessibilityState={{ selected: isFavorite }}
+          onPress={onToggleFavorite}
+          disabled={isLoading}
+          style={styles.full}
+        />
+      ) : null}
+    </AgendaDialog>
   );
 }
 
 const styles = StyleSheet.create({
-  viewAgendaLink: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    marginBottom: 14,
-    paddingVertical: 6,
+  row: { alignSelf: 'stretch', flexDirection: 'row', gap: uiTokens.space.sm },
+  half: { alignSelf: 'stretch', flex: 1 },
+  wide: { alignSelf: 'stretch', flex: 2 },
+  full: { alignSelf: 'stretch' },
+  details: {
+    borderRadius: uiTokens.radius.media,
+    borderWidth: uiTokens.control.borderWidth,
+    gap: uiTokens.space.sm,
+    padding: uiTokens.space.lg,
   },
-  viewAgendaLinkText: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  modalContent: {
-    width: '100%',
-    maxWidth: 400,
-    borderRadius: 16,
-    padding: 24,
-    borderWidth: 1,
-    position: 'relative',
-    ...Platform.select({
-      web: {
-        boxShadow: '0px 4px 24px rgba(0, 0, 0, 0.18)',
-      },
-      default: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 8,
-      },
-    }),
-  },
-  closeButton: {
-    position: 'absolute',
-    top: 16,
-    right: 16,
-    zIndex: 10,
-    padding: 4,
-  },
-  modalHeader: {
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    marginTop: 12,
-    textAlign: 'center',
-  },
-  eventDetails: {
-    marginBottom: 20,
-  },
-  eventTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 12,
-  },
-  eventInfoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-    gap: 8,
-  },
-  eventInfoText: {
-    fontSize: 14,
-  },
-  messageBox: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    padding: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    marginBottom: 24,
-    gap: 12,
-  },
-  messageText: {
-    flex: 1,
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  cancelButton: {
-    flex: 1,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cancelButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  confirmButton: {
-    flex: 1,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  confirmButtonDisabled: {
-    opacity: 0.6,
-  },
-  confirmButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  favoriteButton: {
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  detailsTitle: { fontSize: uiTokens.type.body, fontWeight: '700', lineHeight: 22 },
+  infoRow: { alignItems: 'center', flexDirection: 'row', gap: uiTokens.space.sm },
+  infoText: { flex: 1, fontSize: uiTokens.type.label, lineHeight: 20 },
 });

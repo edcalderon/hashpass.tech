@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { Pressable, View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { useTranslation } from '../../i18n/i18n';
@@ -14,12 +14,17 @@ import Animated, {
 } from 'react-native-reanimated';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { LukasGlyph } from './LukasGlyph';
-import { lukasPalette, lukasSectionTitle } from './lukas-ui';
+import { lukasPalette, lukasSectionTitle, lukasSkin } from './lukas-ui';
+import { ActionButton } from '@hashpass/ui/primitives';
+import { useLukasRewards } from './LukasRewards';
 
 export function HowItWorksSection() {
   const { colors, isDark } = useTheme();
   const isMobile = useIsMobile();
   const { t } = useTranslation('lukas');
+  const { state: rewardState, earn } = useLukasRewards();
+  const palette = lukasPalette(isDark);
+  const skin = lukasSkin(palette);
 
   const step1Scale = useSharedValue(0.9);
   const step2Scale = useSharedValue(0.9);
@@ -69,18 +74,21 @@ export function HowItWorksSection() {
     {
       number: '1',
       glyph: 'shield' as const,
+      rewardId: 'how-collateral' as const,
       title: t('howItWorks.step1.title'),
       description: t('howItWorks.step1.description'),
     },
     {
       number: '2',
       glyph: 'token' as const,
+      rewardId: 'how-mint' as const,
       title: t('howItWorks.step2.title'),
       description: t('howItWorks.step2.description'),
     },
     {
       number: '3',
       glyph: 'market' as const,
+      rewardId: 'how-merchant' as const,
       title: t('howItWorks.step3.title'),
       description: t('howItWorks.step3.description'),
     },
@@ -96,15 +104,30 @@ export function HowItWorksSection() {
 
           return (
             <React.Fragment key={index}>
-              <Animated.View style={[styles.step, animatedStyle]}>
-                <View style={styles.stepIconContainer}>
-                  <LukasGlyph name={step.glyph} size={isMobile ? 56 : 72} />
-                </View>
-                <View style={styles.stepNumber}>
-                  <Text style={styles.stepNumberText}>{step.number}</Text>
-                </View>
-                <Text style={styles.stepTitle}>{step.title}</Text>
-                <Text style={styles.stepDescription}>{step.description}</Text>
+              <Animated.View style={[styles.step, animatedStyle, rewardState.completed[step.rewardId] && styles.stepSolved]}>
+                <Pressable
+                  onPress={() => earn(step.rewardId)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${step.title}. ${rewardState.completed[step.rewardId] ? 'Solved' : 'Solve puzzle for 3 LUKAS'}`}
+                  style={({ pressed }) => [styles.stepContentPressable, pressed && styles.stepPressed]}
+                >
+                  <View style={styles.stepIconContainer}>
+                    <LukasGlyph name={step.glyph} size={isMobile ? 56 : 72} />
+                  </View>
+                  <View style={styles.stepNumber}>
+                    <Text style={styles.stepNumberText}>{step.number}</Text>
+                  </View>
+                  <Text style={styles.stepTitle}>{step.title}</Text>
+                  <Text style={styles.stepDescription}>{step.description}</Text>
+                </Pressable>
+                <ActionButton
+                  mode={isDark ? 'dark' : 'light'}
+                  skin={skin}
+                  variant={rewardState.completed[step.rewardId] ? 'ghost' : 'secondary'}
+                  label={rewardState.completed[step.rewardId] ? t('rewards.cardSolved') : t('rewards.cardAction')}
+                  onPress={() => earn(step.rewardId)}
+                  style={styles.solveButton}
+                />
               </Animated.View>
 
               {index < steps.length - 1 && (
@@ -159,6 +182,17 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     minHeight: isMobile ? 180 : 280,
     position: 'relative',
   },
+  stepSolved: {
+    borderColor: isDark ? '#D9A72A' : '#C58C16',
+    shadowColor: '#D9A72A',
+    shadowOpacity: 0.18,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 5,
+  },
+  stepContentPressable: { width: '100%', alignItems: 'center' },
+  stepPressed: { opacity: 0.78, transform: [{ scale: 0.985 }] },
+  solveButton: { marginTop: 16, minHeight: 42, alignSelf: 'stretch' },
   stepIconContainer: {
     width: isMobile ? 60 : 80,
     height: isMobile ? 60 : 80,

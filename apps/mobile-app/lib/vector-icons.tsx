@@ -43,6 +43,7 @@ import {
   Copy,
   CircleAlert,
   CircleCheck,
+  CircleMinus,
   CircleHelp,
   CirclePause,
   CirclePlay,
@@ -265,6 +266,7 @@ const WEB_MATERIAL_ICONS: Record<string, WebIconComponent> = {
   // before using them in UI copy or controls.
   add: Plus,
   "add-circle-outline": CirclePlus,
+  "remove-circle-outline": CircleMinus,
   "more-vert": EllipsisVertical,
   "file-download": Download,
   "north-east": ArrowUpRight,
@@ -450,8 +452,12 @@ function WebMaterialIcons({ name, ...props }: IconProps) {
   // Lucide's Star renders as an outline by default; MaterialIcons distinguishes
   // the filled 'star' from the hollow 'star-border' as two different glyphs, so
   // fill it here to preserve that same filled/outline contrast.
+  // 'bookmark' is the saved state and 'bookmark-border' the outline, so only the
+  // former is filled.
   const fillProps =
-    name === "star" ? { fill: (props as { color?: string }).color } : undefined;
+    name === "star" || name === "bookmark"
+      ? { fill: (props as { color?: string }).color }
+      : undefined;
   return <MappedIcon {...props} {...fillProps} />;
 }
 

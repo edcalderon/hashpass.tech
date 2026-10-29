@@ -1,6 +1,5 @@
 import React, { useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
 import { useTheme } from '../hooks/useTheme';
 import SpeakerAvatar from './SpeakerAvatar';
 import SpeakerQuickScroll from './SpeakerQuickScroll';
@@ -125,7 +124,6 @@ export default function SpeakerListWithDividers({
                     {speaker.title && <Text style={styles.speakerTitle}>{speaker.title}</Text>}
                     {speaker.company && <Text style={styles.speakerCompany}>{speaker.company}</Text>}
                   </View>
-                  <MaterialIcons name="chevron-right" size={20} color="#666" />
                 </TouchableOpacity>
     );
   }, [onSpeakerPress, styles, getGroupLabel, getGroupSubtitle]);

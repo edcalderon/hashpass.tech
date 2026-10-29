@@ -1510,7 +1510,10 @@
       "removeSessionMessage": "This will remove the session from your day plan. You can undo it briefly after removal.",
       "sessionRemoved": "Session removed from your plan",
       "sessionRestored": "Session restored to your plan",
-      "excludePastSessions": "Exclude sessions that have already passed"
+      "excludePastSessions": "Exclude sessions that have already passed",
+      "cancel": "Cancel",
+      "bookmark": "Bookmark",
+      "bookmarked": "Bookmarked"
     },
     "tips": {
       "title": "Networking Tips",
@@ -1927,6 +1930,18 @@
       "privateTitle": "Agenda not public yet",
       "privateSubtitle": "The organizer hasn't made this event's schedule public"
     },
+    "workshops": {
+      "label": "Workshops",
+      "emptyTitle": "No workshops match",
+      "emptySubtitle": "Clear the search or filters to see parallel-room workshops."
+    },
+    "bookmarks": {
+      "label": "Agenda view",
+      "all": "All sessions",
+      "saved": "Bookmarked",
+      "emptyTitle": "No bookmarked sessions yet",
+      "emptySubtitle": "Tap the bookmark on a session to save it here."
+    },
     "badges": {
       "past": "PAST"
     },
@@ -1961,6 +1976,10 @@
     "actions": {
       "addToFavorites": "Add to favorites",
       "removeFromFavorites": "Remove from favorites",
+      "bookmark": "Bookmark session",
+      "removeBookmark": "Remove bookmark",
+      "bookmarked": "Bookmarked",
+      "bookmarkShort": "Bookmark",
       "favorite": "Favorite",
       "favorited": "Favorited",
       "addToAgenda": "Add to agenda",

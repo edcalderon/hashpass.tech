@@ -71,6 +71,48 @@ function Catalog({ mode = "light" }: { mode?: ColorMode }) {
           Interactive
         </Badge>
       </View>
+      <View
+        style={{
+          flexDirection: "row",
+          flexWrap: "wrap",
+          gap: uiTokens.space.sm,
+          alignItems: "center",
+        }}
+      >
+        <Badge
+          mode={mode}
+          tone="neutral"
+          tint={uiPalette(mode).success}
+          trailingIcon={<Text style={{ color: uiPalette(mode).success }}>✓</Text>}
+          onPress={() => undefined}
+          accessibilityLabel="Tinted status badge"
+        >
+          Active
+        </Badge>
+        <Badge mode={mode} tone="neutral" tint={uiTokens.feature.cyan}>
+          Workshop with a long translated label that must truncate
+        </Badge>
+        <Badge
+          revealLabel
+          mode={mode}
+          tone="neutral"
+          tint={uiTokens.feature.green}
+          surfaceColor={palette.surface}
+          leadingIcon={<Text style={{ color: palette.accent }}>◎</Text>}
+          badgeTestID="story-reveal-badge"
+        >
+          Keynote
+        </Badge>
+        <Badge
+          revealLabel
+          mode="dark"
+          tone="onMedia"
+          tint={uiTokens.feature.cyan}
+          leadingIcon={<Text style={{ color: uiTokens.feature.cyan }}>◎</Text>}
+        >
+          Over media
+        </Badge>
+      </View>
       <Surface mode={mode}>
         <Text
           style={{
@@ -225,6 +267,42 @@ function Catalog({ mode = "light" }: { mode?: ColorMode }) {
           >
             <Text style={{ color: palette.accent }}>↻</Text>
           </IconButton>
+          <View
+            style={{
+              backgroundColor: palette.overlay,
+              borderRadius: uiTokens.radius.media,
+              flexDirection: "row",
+              gap: uiTokens.space.sm,
+              justifyContent: "space-between",
+              minWidth: 260,
+              padding: uiTokens.space.sm,
+            }}
+          >
+            <IconButton
+              mode="dark"
+              label="On agenda"
+              accentColor="#FFFFFF"
+              revealLabel
+              preserveBaseStyleOnReveal
+              size={30}
+              surfaceStyle={{ backgroundColor: uiTokens.effects.mediaOverlayStrong, borderColor: uiTokens.effects.mediaBorder }}
+            >
+              <Text style={{ color: palette.success }}>✓</Text>
+            </IconButton>
+            <IconButton
+              mode="dark"
+              label="Bookmark session"
+              revealText="Bookmark"
+              accentColor="#FFFFFF"
+              revealLabel
+              pinnedOpen
+              preserveBaseStyleOnReveal
+              size={30}
+              surfaceStyle={{ backgroundColor: uiTokens.effects.mediaOverlayStrong, borderColor: uiTokens.effects.mediaBorder }}
+            >
+              <Text style={{ color: "#FFFFFF" }}>☆</Text>
+            </IconButton>
+          </View>
           <IconButton mode={mode} label="Disabled action" revealLabel disabled>
             <Text style={{ color: palette.accent }}>↻</Text>
           </IconButton>

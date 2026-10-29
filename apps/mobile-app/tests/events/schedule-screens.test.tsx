@@ -2,10 +2,10 @@
 
 import React from 'react';
 import TestRenderer, { act } from 'react-test-renderer';
-import { Text, TouchableOpacity } from 'react-native';
+import { Image, Text, TouchableOpacity } from 'react-native';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { uiTokens } from '@hashpass/ui/tokens';
+import { uiPalette, uiTokens } from '@hashpass/ui/tokens';
 
 const myScheduleSource = readFileSync(
   resolve(__dirname, '../../app/events/[eventSlug]/networking/my-schedule.tsx'),
@@ -286,6 +286,11 @@ describe('event schedule screens', () => {
     return renderer!;
   };
 
+  const findBookmarkedTab = (renderer: TestRenderer.ReactTestRenderer) => renderer.root.findAll(
+    (node) => node.props.accessibilityRole === 'tab'
+      && node.findAllByType(Text).some((text) => text.children.join('') === 'bookmarks.saved'),
+  )[0];
+
   const openCalendarPicker = async (renderer: TestRenderer.ReactTestRenderer) => {
     const openPicker = renderer.root.findByProps({ accessibilityLabel: 'calendar.openPicker' });
     await act(async () => {
@@ -420,7 +425,10 @@ describe('event schedule screens', () => {
       await flushPromises();
     });
 
-    const dayTabs = renderer!.root.findAll((node) => node.props.accessibilityRole === 'tab');
+    const dayTabs = renderer!.root.findAll(
+      (node) => node.props.accessibilityRole === 'tab'
+        && String(node.props.accessibilityLabel ?? '').includes('tabs.sessions'),
+    );
     expect(dayTabs).toHaveLength(2);
     expect(dayTabs[0].props.accessibilityLabel).toContain('2 tabs.sessions');
 
@@ -436,6 +444,19 @@ describe('event schedule screens', () => {
       await flushPromises();
     });
     expect(renderer!.root.findByProps({ accessibilityLabel: 'viewMode.list' }).props.accessibilityState.selected).toBe(true);
+    // List view is a row card: a type-icon tile leads it and no photo is rendered.
+    expect(renderer!.root.findAll((node) => String(node.props.testID ?? '').startsWith('agenda-card-media-'))).toHaveLength(0);
+    expect(renderer!.root.findAll((node) => String(node.props.testID ?? '').startsWith('agenda-card-icon-')).length).toBeGreaterThan(0);
+    // Each row is one compact line: a single-line title, a meta line and icon-only actions (no wide buttons).
+    const rowIcon = renderer!.root.findAll((node) => String(node.props.testID ?? '').startsWith('agenda-card-icon-'))[0];
+    const rowId = String(rowIcon.props.testID).replace('agenda-card-icon-', '');
+    const rowCard = renderer!.root.findByProps({ testID: `agenda-card-${rowId}` });
+    expect(rowCard.findAllByType(Text).some((node) => node.props.numberOfLines === 1)).toBe(true);
+    // The tile leads with the session photo (venue/portrait) and swaps to the icon on hover.
+    expect(rowIcon.findAllByType(Image).length + rowIcon.findAllByType('NativeSafeIcon' as any).length).toBeGreaterThan(0);
+    for (const action of ['bookmark', 'agenda-action', 'calendar']) {
+      expect(rowCard.findAllByProps({ testID: `agenda-card-${action}-${rowId}` }).length).toBeGreaterThan(0);
+    }
 
     const gridButton = renderer!.root.findByProps({ accessibilityLabel: 'viewMode.grid' });
     await act(async () => {
@@ -586,16 +607,11 @@ describe('event schedule screens', () => {
     ))).toBe(true);
     expect(media.findByProps({ accessibilityLabel: 'Ada Lovelace avatar' })).toBeTruthy();
     expect(media.findByProps({ testID: 'agenda-card-venue-keynote-session' })).toBeTruthy();
-    const timeFooterStyles = renderer!.root
-      .findByProps({ testID: 'agenda-card-time-footer-keynote-session' })
-      .props.style;
-    expect(timeFooterStyles).toEqual(expect.objectContaining({
-      backgroundColor: 'rgba(3, 12, 24, 0.42)',
-      borderTopWidth: 1,
-    }));
-    const keynoteTime = renderer!.root.findByProps({ testID: 'agenda-card-time-keynote-session' });
-    expect(keynoteTime.children.join('')).toBe('8:00 – 9:00 AM');
-    expect(keynoteTime.props.numberOfLines).toBe(1);
+    // The time lives in the calendar rail beside the card, not inside the photo.
+    expect(renderer!.root.findAllByProps({ testID: 'agenda-card-time-footer-keynote-session' })).toHaveLength(0);
+    const keynoteSlot = renderer!.root.findByProps({ testID: 'agenda-slot-keynote-session' });
+    const slotTexts = keynoteSlot.findAllByType(Text).map((node) => node.children.join(''));
+    expect(slotTexts).toEqual(expect.arrayContaining(['8:00 AM', '9:00 AM']));
     expect(renderer!.root.findAllByProps({ accessibilityLabel: 'actions.addToAgenda' }).some((node) => (
       Array.isArray(node.props.style)
         && node.props.style.some((style: unknown) => (
@@ -607,15 +623,25 @@ describe('event schedule screens', () => {
     ))).toHaveLength(0);
     expect(renderer!.root.findByProps({ children: 'Auditorio Principal' })).toBeTruthy();
     const networkingMedia = renderer!.root.findByProps({ testID: 'agenda-card-media-networking-session' });
-    expect(networkingMedia.findAllByType('NativeSafeIcon' as any).some((node) => node.props.name === 'people')).toBe(false);
+    // The type badge sits on the photo (where the bookmark used to be) as an icon that opens to its label.
+    const typeBadge = (id: string) => renderer!.root.findAllByProps({ testID: `agenda-card-type-${id}` })
+      .find((node) => typeof node.props.onPress === 'function')!;
+    expect(networkingMedia.findAllByType('NativeSafeIcon' as any).some((node) => node.props.name === 'people')).toBe(true);
+    expect(typeBadge('networking-session').props.accessibilityLabel).toBe('TYPES.NETWORKING');
     const networkingCard = renderer!.root.findByProps({ testID: 'agenda-card-networking-session' });
-    expect(networkingCard.findAllByProps({ children: 'TYPES.NETWORKING' }).length).toBeGreaterThan(0);
-    expect(networkingCard.findAllByProps({ accessibilityLabel: 'types.revealLabel' })).toHaveLength(0);
+    const typeLabelText = () => networkingCard.findAll((node) => node.type === Text && node.props.children === 'TYPES.NETWORKING');
+    expect(typeLabelText()).toHaveLength(0);
+    act(() => typeBadge('networking-session').props.onHoverIn());
+    expect(typeLabelText().length).toBeGreaterThan(0);
+    act(() => typeBadge('networking-session').props.onHoverOut());
+    // The bookmark moved to the top-right of the card body, outside the photo.
+    expect(networkingMedia.findAllByProps({ testID: 'agenda-card-bookmark-networking-session' })).toHaveLength(0);
+    expect(networkingCard.findAllByProps({ testID: 'agenda-card-bookmark-networking-session' }).length).toBeGreaterThan(0);
     expect(networkingMedia.findByProps({ testID: 'agenda-card-venue-networking-session' })).toBeTruthy();
     const panelMedia = renderer!.root.findByProps({ testID: 'agenda-card-media-panel-session' });
     expect(panelMedia.findByProps({ testID: 'agenda-card-venue-panel-session' })).toBeTruthy();
     const workshopMedia = renderer!.root.findByProps({ testID: 'agenda-card-media-workshop-session' });
-    expect(workshopMedia.findAllByType('NativeSafeIcon' as any).some((node) => node.props.name === 'build')).toBe(false);
+    expect(workshopMedia.findAllByType('NativeSafeIcon' as any).some((node) => node.props.name === 'build')).toBe(true);
     expect(workshopMedia.findAllByProps({ testID: 'agenda-card-venue-workshop-session' })).toHaveLength(0);
 
     const gridButton = renderer!.root.findByProps({ accessibilityLabel: 'viewMode.grid' });
@@ -649,22 +675,22 @@ describe('event schedule screens', () => {
     expect(agendaLabel.length).toBeGreaterThan(0);
     const calendarLabel = renderer.root.findAllByProps({ accessibilityLabel: 'calendar.openPicker' });
     expect(calendarLabel.length).toBeGreaterThan(0);
-    const favoriteLabel = renderer.root.findAllByProps({ accessibilityLabel: 'actions.addToFavorites' });
+    const favoriteLabel = renderer.root.findAllByProps({ accessibilityLabel: 'actions.bookmark' });
     expect(favoriteLabel.length).toBeGreaterThan(0);
-    expect(renderer.root.findAllByProps({ children: 'actions.sectionLabel' }).length).toBeGreaterThan(0);
+    expect(renderer.root.findAllByProps({ accessibilityLabel: 'actions.sectionLabel' }).length).toBeGreaterThan(0);
     expect(agendaSource).toContain('revealLabel');
     expect(agendaSource).toContain('styles.agendaIconAction');
 
     await act(async () => renderer.unmount());
   });
 
-  it('keeps the primary agenda icon readable against the primary button fill', async () => {
+  it('keeps the quiet agenda action icon on the shared accent colour', async () => {
     const renderer = await renderCalendarAgenda();
     const primaryIcon = renderer.root.findAll(
       (node: any) => node.type === 'MaterialIcons' && node.props.name === 'add-circle-outline',
     )[0];
 
-    expect(primaryIcon.props.color).toBe(mockThemeColors.primaryContrastText);
+    expect(primaryIcon.props.color).toBe(uiPalette('light').accent);
 
     await act(async () => renderer.unmount());
   });
@@ -694,7 +720,8 @@ describe('event schedule screens', () => {
     expect(mediaStyles).toEqual(expect.arrayContaining([
       expect.objectContaining({ height: 156, minHeight: 156, width: '100%' }),
     ]));
-    expect(renderer.root.findByProps({ testID: 'agenda-card-time-calendar-agenda-1' }).props.numberOfLines).toBe(1);
+    const calendarSlot = renderer.root.findByProps({ testID: 'agenda-slot-calendar-agenda-1' });
+    expect(calendarSlot.findAllByType(Text).some((node) => node.props.numberOfLines === 1 && /\d:\d{2} [AP]M/.test(node.children.join('')))).toBe(true);
 
     await act(async () => renderer.unmount());
     dimensionsSpy.mockRestore();
@@ -752,7 +779,7 @@ describe('event schedule screens', () => {
     });
 
     const favoriteButton = renderer!.root.findByProps({
-      accessibilityLabel: 'actions.addToFavorites',
+      accessibilityLabel: 'actions.bookmark',
     });
     await act(async () => {
       await favoriteButton.props.onPress();
@@ -765,6 +792,137 @@ describe('event schedule screens', () => {
       method: 'POST',
       body: { agendaId: 'session-1', isFavorite: true },
     });
+    await act(async () => renderer!.unmount());
+  });
+
+  it('lists only bookmarked sessions in the Bookmarked view and explains an empty one', async () => {
+    mockAuthState = { ...mockAuthState, user: { id: 'better-auth-user', email: 'attendee@example.test' } };
+    mockApiRequest.mockImplementation((path: string) => Promise.resolve({
+      success: true,
+      data: {
+        data: path.endsWith('agenda/status')
+          ? [{ agenda_id: 'session-1', status: null, is_favorite: true }]
+          : [
+            { id: 'session-1', day: '1', time: '09:00', title: 'Saved opening', type: 'keynote' },
+            { id: 'session-2', day: '1', time: '10:00', title: 'Unsaved panel', type: 'panel' },
+          ],
+      },
+    }));
+
+    let renderer: TestRenderer.ReactTestRenderer;
+    await act(async () => {
+      renderer = TestRenderer.create(<AgendaScreen />);
+      for (let index = 0; index < 4; index += 1) await flushPromises();
+    });
+
+    const textOf = () => renderer!.root.findAllByType(Text).map((node) => node.children.join(''));
+    expect(textOf()).toEqual(expect.arrayContaining(['Saved opening', 'Unsaved panel']));
+    expect(renderer!.root.findAllByProps({ testID: 'agenda-card-bookmark-session-1' }).length).toBeGreaterThan(0);
+
+    // A saved session shows a filled red bookmark; an unsaved one stays an outlined muted one.
+    const bookmarkIcon = (id: string) => renderer!.root
+      .findAllByProps({ testID: `agenda-card-bookmark-${id}` })
+      .find((node) => typeof node.props.onPress === 'function')!
+      .findByType('MaterialIcons' as any);
+    expect(bookmarkIcon('session-1').props).toMatchObject({ name: 'bookmark', color: uiPalette('light').danger });
+    expect(bookmarkIcon('session-2').props).toMatchObject({ name: 'bookmark-border', color: uiPalette('light').muted });
+
+    const bookmarkedTab = findBookmarkedTab(renderer!);
+    await act(async () => {
+      bookmarkedTab.props.onPress();
+      await flushPromises();
+    });
+    expect(renderer!.root.findAllByProps({ testID: 'agenda-bookmarks' }).length).toBeGreaterThan(0);
+    expect(textOf()).toContain('Saved opening');
+    expect(textOf()).not.toContain('Unsaved panel');
+
+    await act(async () => renderer!.unmount());
+  });
+
+  it('adds a Workshops view and gives workshop cards the special effect', async () => {
+    mockApiRequest.mockImplementation(() => Promise.resolve({
+      success: true,
+      data: {
+        data: [
+          { id: 'ws-1', day: '1', time: '12:00 - 13:00', title: 'Workshop Meru', type: 'workshop', location: 'Workshop · Sala paralela' },
+          { id: 'talk-1', day: '1', time: '09:00 - 09:15', title: 'Opening talk', type: 'keynote' },
+        ],
+      },
+    }));
+
+    let renderer: TestRenderer.ReactTestRenderer;
+    await act(async () => {
+      renderer = TestRenderer.create(<AgendaScreen />);
+      for (let index = 0; index < 4; index += 1) await flushPromises();
+    });
+    const textOf = () => renderer!.root.findAllByType(Text).map((node) => node.children.join(''));
+    expect(renderer!.root.findAllByProps({ testID: 'agenda-card-workshop-fx-ws-1' }).length).toBeGreaterThan(0);
+    expect(renderer!.root.findAllByProps({ testID: 'agenda-card-workshop-fx-talk-1' })).toHaveLength(0);
+
+    const workshopsTab = renderer!.root.findAll(
+      (node) => node.props.accessibilityRole === 'tab'
+        && node.findAllByType(Text).some((text) => text.children.join('') === 'workshops.label'),
+    )[0];
+    await act(async () => {
+      workshopsTab.props.onPress();
+      await flushPromises();
+    });
+    expect(renderer!.root.findAllByProps({ testID: 'agenda-workshops' }).length).toBeGreaterThan(0);
+    expect(textOf()).toContain('Workshop Meru');
+    expect(textOf()).not.toContain('Opening talk');
+    await act(async () => renderer!.unmount());
+  });
+
+  it('shows a check badge over the photo for sessions already on the agenda', async () => {
+    mockAuthState = { ...mockAuthState, user: { id: 'better-auth-user', email: 'attendee@example.test' } };
+    mockApiRequest.mockImplementation((path: string) => Promise.resolve({
+      success: true,
+      data: {
+        data: path.endsWith('agenda/status')
+          ? [{ agenda_id: 'on-1', status: 'confirmed', is_favorite: false }]
+          : [
+            { id: 'on-1', day: '1', time: '09:00', title: 'Confirmed session', type: 'keynote' },
+            { id: 'off-1', day: '1', time: '10:00', title: 'Other session', type: 'panel' },
+          ],
+      },
+    }));
+
+    let renderer: TestRenderer.ReactTestRenderer;
+    await act(async () => {
+      renderer = TestRenderer.create(<AgendaScreen />);
+      for (let index = 0; index < 4; index += 1) await flushPromises();
+    });
+    expect(renderer!.root.findAllByProps({ testID: 'agenda-card-on-agenda-on-1' }).length).toBeGreaterThan(0);
+    expect(renderer!.root.findAllByProps({ testID: 'agenda-card-on-agenda-off-1' })).toHaveLength(0);
+    expect(renderer!.root.findAllByProps({ name: 'check' }).length).toBeGreaterThan(0);
+
+    // Same reveal chip as the bookmark: tapping expands it to read "On agenda".
+    const chip = () => renderer!.root.findAllByProps({ testID: 'agenda-card-on-agenda-on-1' })
+      .find((node) => typeof node.props.onPress === 'function')!;
+    expect(renderer!.root.findAllByType('Text' as any).some((n) => n.props.children === 'actions.onAgenda')).toBe(false);
+    act(() => chip().props.onPress());
+    expect(renderer!.root.findAll((n) => n.props.children === 'actions.onAgenda').length).toBeGreaterThan(0);
+    await act(async () => renderer!.unmount());
+  });
+
+  it('shows the empty bookmarks state when nothing is saved', async () => {
+    mockUserAgendaStatusRows = [];
+    mockApiRequest.mockImplementation(() => Promise.resolve({
+      success: true,
+      data: { data: [{ id: 'session-1', day: '1', time: '09:00', title: 'Opening', type: 'keynote' }] },
+    }));
+
+    let renderer: TestRenderer.ReactTestRenderer;
+    await act(async () => {
+      renderer = TestRenderer.create(<AgendaScreen />);
+      for (let index = 0; index < 4; index += 1) await flushPromises();
+    });
+    const bookmarkedTab = findBookmarkedTab(renderer!);
+    await act(async () => {
+      bookmarkedTab.props.onPress();
+      await flushPromises();
+    });
+    expect(renderer!.root.findAllByProps({ children: 'bookmarks.emptyTitle' }).length).toBeGreaterThan(0);
     await act(async () => renderer!.unmount());
   });
 

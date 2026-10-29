@@ -10,16 +10,18 @@ import Animated, {
   withDelay,
 } from 'react-native-reanimated';
 import { LukasGlyph } from './LukasGlyph';
-import { LukasCoin } from './LukasCoin';
+import { LukasWhyVideo } from './LukasWhyVideo';
 import { lukasPalette, lukasSectionTitle } from './lukas-ui';
 import { useLukasAnimationLevel } from './useLukasMotion';
+import { useLukasRewards } from './LukasRewards';
 
 export function WhySection() {
   const { colors, isDark } = useTheme();
   const isMobile = useIsMobile();
-  const { t } = useTranslation('lukas');
+  const { t, locale } = useTranslation('lukas');
   const palette = lukasPalette(isDark);
   const animationLevel = useLukasAnimationLevel();
+  const { earn } = useLukasRewards();
 
   const opacity1 = useSharedValue(0);
   const opacity2 = useSharedValue(0);
@@ -82,8 +84,7 @@ export function WhySection() {
       <View style={styles.content}>
         <View style={styles.illustrationContainer}>
           <View style={styles.illustration}>
-            <LukasCoin size={isMobile ? 132 : 168} animationLevel={animationLevel} />
-            <Text style={styles.illustrationText}>LUKAS</Text>
+            <LukasWhyVideo locale={locale} animationLevel={animationLevel} isDark={isDark} onReward={() => earn('video')} />
           </View>
         </View>
 

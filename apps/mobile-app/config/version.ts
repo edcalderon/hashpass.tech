@@ -22,14 +22,32 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610282026, // Updated to current timestamp
-  releaseDate: '2026-10-28',
+  buildNumber: 202610290007, // Updated to current timestamp
+  releaseDate: '2026-10-29',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
+    'match the on-agenda check and bookmark chips, expand on hover or tap',
+    'workshop agenda type, tinted dot-free badges and filter polish',
+    'make agenda card titles the primary read',
+    'add interactive reward journey',
+    'shared StatusPill, top-right agenda badges and session bookmarks',
+    'open Lukas landing in dev browser',
+    'add Lukas landing live reload',
+    'add localized Lukas explainer videos',
+    'polish agenda session cards',
+    'colour-coded, aligned per-process logs in dev:all',
     'real 3D LKS coin, animated icons, consistent landing UI'
   ],
   bugfixes: [
+    'keep footer columns responsive',
+    'polish landing icons and merchant form',
+    'stabilize Lukas dev export startup',
+    'reset Lukas video poster after playback',
+    'let web hamburger receive taps',
+    'sync drawer navigation open action',
+    'use style pointer events on web',
+    'restore dashboard menu hit target',
     'recover stale dashboard drawer open state',
     'match BSL media and captions to locale',
     'prepare BSL assets before rendering',
@@ -38,11 +56,49 @@ export const CURRENT_VERSION: VersionInfo = {
     'typecheck video-studio against its own tsconfig'
   ],
   breakingChanges: [],
-  notes: 'real 3D LKS coin, animated icons, consistent landing UI; recover stale dashboard drawer open state; match BSL media and captions to locale; prepare BSL assets before rendering; compile LUKAS FAQ catalog messages; generate and validate welcome narration in the publish workflow; typecheck video-studio against its own tsconfig'
+  notes: 'match the on-agenda check and bookmark chips, expand on hover or tap; workshop agenda type, tinted dot-free badges and filter polish; make agenda card titles the primary read; add interactive reward journey; shared StatusPill, top-right agenda badges and session bookmarks; open Lukas landing in dev browser; add Lukas landing live reload; add localized Lukas explainer videos; polish agenda session cards; colour-coded, aligned per-process logs in dev:all; real 3D LKS coin, animated icons, consistent landing UI; keep footer columns responsive; polish landing icons and merchant form; stabilize Lukas dev export startup; reset Lukas video poster after playback; let web hamburger receive taps; sync drawer navigation open action; use style pointer events on web; restore dashboard menu hit target; recover stale dashboard drawer open state; match BSL media and captions to locale; prepare BSL assets before rendering; compile LUKAS FAQ catalog messages; generate and validate welcome narration in the publish workflow; typecheck video-studio against its own tsconfig'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.174': {
+    version: '1.9.174',
+    buildNumber: 202610290007,
+    releaseDate: '2026-10-29',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'match the on-agenda check and bookmark chips, expand on hover or tap',
+      'workshop agenda type, tinted dot-free badges and filter polish',
+      'make agenda card titles the primary read',
+      'add interactive reward journey',
+      'shared StatusPill, top-right agenda badges and session bookmarks',
+      'open Lukas landing in dev browser',
+      'add Lukas landing live reload',
+      'add localized Lukas explainer videos',
+      'polish agenda session cards',
+      'colour-coded, aligned per-process logs in dev:all',
+      'real 3D LKS coin, animated icons, consistent landing UI'
+    ],
+    bugfixes: [
+      'keep footer columns responsive',
+      'polish landing icons and merchant form',
+      'stabilize Lukas dev export startup',
+      'reset Lukas video poster after playback',
+      'let web hamburger receive taps',
+      'sync drawer navigation open action',
+      'use style pointer events on web',
+      'restore dashboard menu hit target',
+      'recover stale dashboard drawer open state',
+      'match BSL media and captions to locale',
+      'prepare BSL assets before rendering',
+      'compile LUKAS FAQ catalog messages',
+      'generate and validate welcome narration in the publish workflow',
+      'typecheck video-studio against its own tsconfig'
+    ],
+    breakingChanges: [],
+    notes: 'match the on-agenda check and bookmark chips, expand on hover or tap; workshop agenda type, tinted dot-free badges and filter polish; make agenda card titles the primary read; add interactive reward journey; shared StatusPill, top-right agenda badges and session bookmarks; open Lukas landing in dev browser; add Lukas landing live reload; add localized Lukas explainer videos; polish agenda session cards; colour-coded, aligned per-process logs in dev:all; real 3D LKS coin, animated icons, consistent landing UI; keep footer columns responsive; polish landing icons and merchant form; stabilize Lukas dev export startup; reset Lukas video poster after playback; let web hamburger receive taps; sync drawer navigation open action; use style pointer events on web; restore dashboard menu hit target; recover stale dashboard drawer open state; match BSL media and captions to locale; prepare BSL assets before rendering; compile LUKAS FAQ catalog messages; generate and validate welcome narration in the publish workflow; typecheck video-studio against its own tsconfig'
+  },
   '1.9.173': {
     version: '1.9.173',
     buildNumber: 202610282026,

@@ -1289,6 +1289,18 @@
       "privateTitle": "Agenda noch nicht öffentlich",
       "privateSubtitle": "Der Veranstalter hat den Zeitplan dieser Veranstaltung noch nicht veröffentlicht"
     },
+    "workshops": {
+      "label": "Workshops",
+      "emptyTitle": "Keine Workshops gefunden",
+      "emptySubtitle": "Suche oder Filter zurücksetzen, um die Workshops im Parallelraum zu sehen."
+    },
+    "bookmarks": {
+      "label": "Agenda-Ansicht",
+      "all": "Alle Sitzungen",
+      "saved": "Gemerkt",
+      "emptyTitle": "Noch keine gemerkten Sitzungen",
+      "emptySubtitle": "Tippe auf das Lesezeichen einer Sitzung, um sie hier zu speichern."
+    },
     "badges": {
       "past": "VERGANGEN"
     },
@@ -1317,6 +1329,10 @@
     "actions": {
       "addToFavorites": "Zu Favoriten hinzufügen",
       "removeFromFavorites": "Aus Favoriten entfernen",
+      "bookmark": "Sitzung merken",
+      "removeBookmark": "Lesezeichen entfernen",
+      "bookmarked": "Gemerkt",
+      "bookmarkShort": "Merken",
       "markAttending": "Als teilnehmend markieren",
       "unmarkAttending": "Teilnahme aufheben"
     },

@@ -19,6 +19,7 @@ VIDEO_STUDIO_PORT="${VIDEO_STUDIO_PORT:-3105}"
 COMPANION_PORT="${COMPANION_PORT:-5173}"
 LOCALPROOF_PORT="${LOCALPROOF_PORT:-3200}"
 LUKAS_LANDING_PORT="${LUKAS_LANDING_PORT:-4173}"
+LUKAS_AUTO_OPEN_BROWSER="${LUKAS_AUTO_OPEN_BROWSER:-true}"
 # Keep the Expo web app on 8081 so it stays out of the club app's 3000 slot.
 MOBILE_PORT="${MOBILE_PORT:-8081}"
 # Matches NEXT_PUBLIC_LINKS_API_BASE_URL / EXPO_PUBLIC_LINKS_API_BASE_URL's
@@ -75,18 +76,95 @@ for arg in "$@"; do
     --lukas-landing|--lukas)
       INCLUDE_LUKAS_LANDING=true
       ;;
+    --no-open-browser)
+      LUKAS_AUTO_OPEN_BROWSER=false
+      ;;
     *)
       echo "Unknown argument: ${arg}" >&2
-      echo "Usage: dev-all.sh [--kill-allowed] [--skip-frappe-helpdesk] [--local-proof] [--lukas-landing]" >&2
+      echo "Usage: dev-all.sh [--kill-allowed] [--skip-frappe-helpdesk] [--local-proof] [--lukas-landing] [--no-open-browser]" >&2
       exit 1
       ;;
   esac
 done
+export LUKAS_AUTO_OPEN_BROWSER
 
 # Snapshot of the user's actual request, before a failed startup below can
 # flip SKIP_FRAPPE_HELPDESK for the rest of this run -- see cleanup()'s use
 # of this vs. the mutable flag.
 readonly SKIP_FRAPPE_HELPDESK_REQUESTED="${SKIP_FRAPPE_HELPDESK}"
+
+# --- Per-service log prefixes -------------------------------------------------
+# Every service's output is piped through `prefix_stream`, so each line reads
+# `name   | message` with a stable colour per service and a fixed-width column.
+# Colour is on only for an interactive terminal; it honours NO_COLOR
+# (https://no-color.org), DEV_ALL_COLOR=false, and FORCE_COLOR=1 to force it
+# on when stdout is piped (e.g. a terminal multiplexer capturing the output).
+LOG_NAME_WIDTH=10
+LOG_COLOR_ENABLED=false
+if [[ "${DEV_ALL_COLOR:-}" == "false" || -n "${NO_COLOR:-}" ]]; then
+  LOG_COLOR_ENABLED=false
+elif [[ -t 1 || ( -n "${FORCE_COLOR:-}" && "${FORCE_COLOR}" != "0" ) ]]; then
+  LOG_COLOR_ENABLED=true
+fi
+
+# xterm-256 colour per service, picked to stay distinct on dark and light
+# terminals and to avoid red/yellow, which child tools use for errors/warnings.
+declare -A LOG_COLORS=(
+  [dev:all]=250
+  [mobile]=39
+  [club]=171
+  [docs]=41
+  [video]=208
+  [companion]=135
+  [links-api]=37
+  [lukas]=77
+  [localproof]=180
+  [directus]=105
+  [frappe]=74
+)
+
+log_prefix() {
+  local name="$1"
+  local padded
+  printf -v padded "%-${LOG_NAME_WIDTH}s" "${name}"
+
+  if [[ "${LOG_COLOR_ENABLED}" == "true" ]]; then
+    printf '\033[1;38;5;%sm%s\033[0m\033[2m |\033[0m ' "${LOG_COLORS[${name}]:-250}" "${padded}"
+  else
+    printf '%s | ' "${padded}"
+  fi
+}
+
+# Reads stdin, writes it with the service prefix. A plain read loop (rather
+# than sed) keeps output line-by-line as produced and needs no escaping of the
+# prefix, which contains `|` and ANSI escapes. The `|| [[ -n ... ]]` flushes a
+# final line that has no trailing newline.
+prefix_stream() {
+  local prefix line
+  prefix="$(log_prefix "$1")"
+  while IFS= read -r line || [[ -n "${line}" ]]; do
+    printf '%s%s\n' "${prefix}" "${line}"
+  done
+}
+
+# Orchestrator messages share the same column so they line up with service logs.
+say() {
+  local name="$1"
+  shift
+  printf '%s%s\n' "$(log_prefix "${name}")" "$*"
+}
+
+# Runs a foreground command with its output prefixed; keeps the exit status.
+run_prefixed() {
+  local name="$1"
+  shift
+  "$@" 2>&1 | prefix_stream "${name}"
+}
+
+# Child tools see a pipe, not a TTY, and would drop their own colours.
+if [[ "${LOG_COLOR_ENABLED}" == "true" ]]; then
+  export FORCE_COLOR="${FORCE_COLOR:-1}"
+fi
 
 port_is_busy() {
   local port="$1"
@@ -211,7 +289,7 @@ claim_port() {
   fi
 
   RESERVED_PORTS+=("${port}")
-  echo "${label}: using port ${port}" >&2
+  say dev:all "${label}: using port ${port}" >&2
   REPLY_PORT="${port}"
 }
 
@@ -231,21 +309,21 @@ wait_for_directus() {
   local deadline=$((SECONDS + DIRECTUS_READY_TIMEOUT_SECONDS))
   local ping_url="$DIRECTUS_PING_URL"
 
-  echo "Waiting for Directus at ${ping_url}..."
+  say directus "Waiting for Directus at ${ping_url}..."
 
   while (( SECONDS < deadline )); do
     if command -v curl >/dev/null 2>&1; then
       if curl -fsS --max-time 2 "${ping_url}" >/dev/null 2>&1; then
-        echo "Directus is ready."
+        say directus "Directus is ready."
         return 0
       fi
     elif command -v wget >/dev/null 2>&1; then
       if wget --quiet --tries=1 --spider "${ping_url}" >/dev/null 2>&1; then
-        echo "Directus is ready."
+        say directus "Directus is ready."
         return 0
       fi
     else
-      echo "Neither curl nor wget is available; skipping Directus readiness check."
+      say directus "Neither curl nor wget is available; skipping Directus readiness check."
       return 0
     fi
 
@@ -260,21 +338,21 @@ wait_for_frappe_helpdesk() {
   local deadline=$((SECONDS + FRAPPE_HELPDESK_READY_TIMEOUT_SECONDS))
   local ping_url="$FRAPPE_HELPDESK_PING_URL"
 
-  echo "Waiting for local Frappe Helpdesk at ${ping_url}..."
+  say frappe "Waiting for local Frappe Helpdesk at ${ping_url}..."
 
   while (( SECONDS < deadline )); do
     if command -v curl >/dev/null 2>&1; then
       if curl -fsS --max-time 2 "${ping_url}" >/dev/null 2>&1; then
-        echo "Local Frappe Helpdesk is ready."
+        say frappe "Local Frappe Helpdesk is ready."
         return 0
       fi
     elif command -v wget >/dev/null 2>&1; then
       if wget --quiet --tries=1 --spider "${ping_url}" >/dev/null 2>&1; then
-        echo "Local Frappe Helpdesk is ready."
+        say frappe "Local Frappe Helpdesk is ready."
         return 0
       fi
     else
-      echo "Neither curl nor wget is available; skipping Frappe Helpdesk readiness check."
+      say frappe "Neither curl nor wget is available; skipping Frappe Helpdesk readiness check."
       return 0
     fi
 
@@ -368,9 +446,9 @@ cleanup() {
   stop_background_apps
 
   if [[ "${HASHPASS_KEEP_DIRECTUS_ON_EXIT:-false}" == "true" ]]; then
-    echo "Keeping Directus running (HASHPASS_KEEP_DIRECTUS_ON_EXIT=true)."
+    say directus "Keeping Directus running (HASHPASS_KEEP_DIRECTUS_ON_EXIT=true)."
   else
-    echo "Stopping Directus..."
+    say directus "Stopping Directus..."
     pnpm --filter hashpass-directus run down >/dev/null 2>&1 || true
   fi
 
@@ -380,9 +458,9 @@ cleanup() {
   # containers that never came up at all is a harmless no-op.
   if [[ "${SKIP_FRAPPE_HELPDESK_REQUESTED}" != "true" ]]; then
     if [[ "${HASHPASS_KEEP_FRAPPE_ON_EXIT:-false}" == "true" ]]; then
-      echo "Keeping local Frappe Helpdesk running (HASHPASS_KEEP_FRAPPE_ON_EXIT=true)."
+      say frappe "Keeping local Frappe Helpdesk running (HASHPASS_KEEP_FRAPPE_ON_EXIT=true)."
     else
-      echo "Stopping local Frappe Helpdesk..."
+      say frappe "Stopping local Frappe Helpdesk..."
       pnpm --filter hashpass-frappe-helpdesk-dev run down >/dev/null 2>&1 || true
     fi
   fi
@@ -444,17 +522,17 @@ if [[ "${INCLUDE_LOCALPROOF}" == "true" ]]; then
 fi
 
 if [[ "${SKIP_FRAPPE_HELPDESK}" != "true" && "${INCLUDE_LOCALPROOF}" == "true" ]]; then
-  echo "Using ports: mobile=${MOBILE_PORT}, club=${CLUB_PORT}, docs=${DOCS_PORT}, video-studio=${VIDEO_STUDIO_PORT}, companion=${COMPANION_PORT}, links-api=${LINKS_API_PORT}, frappe-helpdesk=${FRAPPE_HELPDESK_PORT}, localproof=${LOCALPROOF_PORT}"
+  say dev:all "Using ports: mobile=${MOBILE_PORT}, club=${CLUB_PORT}, docs=${DOCS_PORT}, video-studio=${VIDEO_STUDIO_PORT}, companion=${COMPANION_PORT}, links-api=${LINKS_API_PORT}, frappe-helpdesk=${FRAPPE_HELPDESK_PORT}, localproof=${LOCALPROOF_PORT}"
 elif [[ "${SKIP_FRAPPE_HELPDESK}" != "true" ]]; then
-  echo "Using ports: mobile=${MOBILE_PORT}, club=${CLUB_PORT}, docs=${DOCS_PORT}, video-studio=${VIDEO_STUDIO_PORT}, companion=${COMPANION_PORT}, links-api=${LINKS_API_PORT}, frappe-helpdesk=${FRAPPE_HELPDESK_PORT}"
+  say dev:all "Using ports: mobile=${MOBILE_PORT}, club=${CLUB_PORT}, docs=${DOCS_PORT}, video-studio=${VIDEO_STUDIO_PORT}, companion=${COMPANION_PORT}, links-api=${LINKS_API_PORT}, frappe-helpdesk=${FRAPPE_HELPDESK_PORT}"
 elif [[ "${INCLUDE_LOCALPROOF}" == "true" ]]; then
-  echo "Using ports: mobile=${MOBILE_PORT}, club=${CLUB_PORT}, docs=${DOCS_PORT}, video-studio=${VIDEO_STUDIO_PORT}, companion=${COMPANION_PORT}, links-api=${LINKS_API_PORT}, localproof=${LOCALPROOF_PORT} (Frappe Helpdesk skipped)"
+  say dev:all "Using ports: mobile=${MOBILE_PORT}, club=${CLUB_PORT}, docs=${DOCS_PORT}, video-studio=${VIDEO_STUDIO_PORT}, companion=${COMPANION_PORT}, links-api=${LINKS_API_PORT}, localproof=${LOCALPROOF_PORT} (Frappe Helpdesk skipped)"
 else
-  echo "Using ports: mobile=${MOBILE_PORT}, club=${CLUB_PORT}, docs=${DOCS_PORT}, video-studio=${VIDEO_STUDIO_PORT}, companion=${COMPANION_PORT}, links-api=${LINKS_API_PORT} (Frappe Helpdesk skipped)"
+  say dev:all "Using ports: mobile=${MOBILE_PORT}, club=${CLUB_PORT}, docs=${DOCS_PORT}, video-studio=${VIDEO_STUDIO_PORT}, companion=${COMPANION_PORT}, links-api=${LINKS_API_PORT} (Frappe Helpdesk skipped)"
 fi
 
 if [[ "${INCLUDE_LUKAS_LANDING}" == "true" ]]; then
-  echo "Lukas landing will be available at http://127.0.0.1:${LUKAS_LANDING_PORT}/lukas"
+  say lukas "Lukas landing will be available at http://127.0.0.1:${LUKAS_LANDING_PORT}/lukas"
 fi
 
 if [[ "${INCLUDE_LUKAS_LANDING}" == "true" ]]; then
@@ -463,20 +541,18 @@ if [[ "${INCLUDE_LUKAS_LANDING}" == "true" ]]; then
   # generated export into it. `mktemp -d` creates the directory for us; remove
   # that empty placeholder before handing the path to the builder.
   rmdir "${LUKAS_BUILD_DIR}"
-  echo "Building Lukas landing for local development..."
-  python3 packages/infra/terraform/stacks/hashpass-lukas-site/build.py "${LUKAS_BUILD_DIR}"
-  echo "Starting Lukas landing on port ${LUKAS_LANDING_PORT}..."
+  say lukas "Starting Lukas landing with live rebuilds on port ${LUKAS_LANDING_PORT}..."
   (
-    node packages/tools/scripts/serve-lukas-landing.mjs "${LUKAS_BUILD_DIR}" "${LUKAS_LANDING_PORT}"
-  ) &
+    node packages/tools/scripts/dev-lukas-landing.mjs "${LUKAS_BUILD_DIR}" "${LUKAS_LANDING_PORT}"
+  ) > >(prefix_stream lukas) 2>&1 &
   LUKAS_PID=$!
 fi
 
-echo "Starting Directus (detached)..."
-pnpm --filter hashpass-directus run up
+say directus "Starting Directus (detached)..."
+run_prefixed directus pnpm --filter hashpass-directus run up
 
 if [[ "${SKIP_FRAPPE_HELPDESK}" != "true" ]]; then
-  echo "Starting local Frappe Helpdesk (detached) on port ${FRAPPE_HELPDESK_PORT}..."
+  say frappe "Starting local Frappe Helpdesk (detached) on port ${FRAPPE_HELPDESK_PORT}..."
   # FRAPPE_LOCAL_HTTP_PORT is the name apps/frappe-helpdesk-dev's own compose
   # override and compose.sh already read (see that package's README) --
   # exporting it here is what makes docker compose's own port interpolation
@@ -489,21 +565,21 @@ if [[ "${SKIP_FRAPPE_HELPDESK}" != "true" ]]; then
   # error rather than crashing -- dev:all shouldn't take down club/docs/mobile
   # over it. Falls back to SKIP_FRAPPE_HELPDESK for the rest of this run so
   # the later wait/seed steps don't also try and fail.
-  if ! FRAPPE_LOCAL_HTTP_PORT="${FRAPPE_HELPDESK_PORT}" pnpm --filter hashpass-frappe-helpdesk-dev run up; then
+  if ! run_prefixed frappe env FRAPPE_LOCAL_HTTP_PORT="${FRAPPE_HELPDESK_PORT}" pnpm --filter hashpass-frappe-helpdesk-dev run up; then
     echo "WARNING: failed to start local Frappe Helpdesk -- Contact Support / ticket chat will show its config error locally. See apps/frappe-helpdesk-dev/README.md." >&2
     SKIP_FRAPPE_HELPDESK=true
   fi
 fi
 
-echo "Starting club web app on port ${CLUB_PORT}..."
+say club "Starting club web app on port ${CLUB_PORT}..."
 CLUB_RUNTIME_DIR="$(node packages/tools/scripts/prepare-club-dev-runtime.mjs "${CLUB_PORT}")"
 (
   cd "${CLUB_RUNTIME_DIR}"
   pnpm exec next dev --webpack --port "${CLUB_PORT}"
-) &
+) > >(prefix_stream club) 2>&1 &
 CLUB_PID=$!
 
-echo "Starting hashpass-links-api on port ${LINKS_API_PORT}..."
+say links-api "Starting hashpass-links-api on port ${LINKS_API_PORT}..."
 # HashPass Auth (QR login) needs its session-issuing backend talking to the
 # SAME Supabase project apps/mobile-app's core-development profile already
 # resolves to on localhost (EXPO_PUBLIC_SUPABASE_URL_DEV) and apps/web-app's
@@ -524,36 +600,36 @@ fi
   cd packages/hashpass-links-api
   PORT="${LINKS_API_PORT}" SUPABASE_URL="${LINKS_API_SUPABASE_URL}" SUPABASE_SERVICE_ROLE_KEY="${LINKS_API_SERVICE_ROLE_KEY}" \
     pnpm exec tsx dev-server.ts
-) &
+) > >(prefix_stream links-api) 2>&1 &
 LINKS_API_PID=$!
 
-echo "Starting docs app on port ${DOCS_PORT}..."
+say docs "Starting docs app on port ${DOCS_PORT}..."
 (
   cd apps/docs
   pnpm exec docusaurus start --port "${DOCS_PORT}"
-) &
+) > >(prefix_stream docs) 2>&1 &
 DOCS_PID=$!
 
-echo "Starting Companion preview on port ${COMPANION_PORT}..."
+say companion "Starting Companion preview on port ${COMPANION_PORT}..."
 (
   cd apps/companion
   pnpm exec vite --host 0.0.0.0 --port "${COMPANION_PORT}" --strictPort
-) &
+) > >(prefix_stream companion) 2>&1 &
 COMPANION_PID=$!
 
-echo "Starting video studio (Remotion) on port ${VIDEO_STUDIO_PORT}..."
+say video "Starting video studio (Remotion) on port ${VIDEO_STUDIO_PORT}..."
 (
   cd apps/video-studio
   pnpm exec remotion studio --port "${VIDEO_STUDIO_PORT}"
-) &
+) > >(prefix_stream video) 2>&1 &
 VIDEO_STUDIO_PID=$!
 
 if [[ "${INCLUDE_LOCALPROOF}" == "true" ]]; then
-  echo "Starting LocalProof site on port ${LOCALPROOF_PORT}..."
+  say localproof "Starting LocalProof site on port ${LOCALPROOF_PORT}..."
   (
     cd apps/localproof-site
     python3 -m http.server "${LOCALPROOF_PORT}"
-  ) &
+  ) > >(prefix_stream localproof) 2>&1 &
   LOCALPROOF_PID=$!
 fi
 
@@ -574,19 +650,19 @@ fi
 
 if [[ "${SKIP_FRAPPE_HELPDESK}" != "true" ]]; then
   if frappe_helpdesk_needs_seed; then
-    echo "Seeding local Frappe Helpdesk service users (apps/mobile-app/.env.local is missing or incomplete)..."
-    FRAPPE_LOCAL_HTTP_PORT="${FRAPPE_HELPDESK_PORT}" pnpm --filter hashpass-frappe-helpdesk-dev run seed
+    say frappe "Seeding local Frappe Helpdesk service users (apps/mobile-app/.env.local is missing or incomplete)..."
+    run_prefixed frappe env FRAPPE_LOCAL_HTTP_PORT="${FRAPPE_HELPDESK_PORT}" pnpm --filter hashpass-frappe-helpdesk-dev run seed
   else
-    echo "apps/mobile-app/.env.local already has Frappe Helpdesk credentials -- skipping seed."
+    say frappe "apps/mobile-app/.env.local already has Frappe Helpdesk credentials -- skipping seed."
   fi
 fi
 
-echo "Starting mobile app..."
+say mobile "Starting mobile app..."
 (
   cd apps/mobile-app
   npm run env:propagate local
   EXPO_NO_METRO_WORKSPACE_ROOT=1 NODE_OPTIONS="--max-old-space-size=${NODE_MAX_OLD_SPACE_SIZE}" pnpm exec expo start --web --max-workers "${EXPO_WEB_MAX_WORKERS}" --port "${MOBILE_PORT}"
-) &
+) > >(prefix_stream mobile) 2>&1 &
 MOBILE_PID=$!
 
 set +e

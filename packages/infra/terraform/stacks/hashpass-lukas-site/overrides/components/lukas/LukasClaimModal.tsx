@@ -10,7 +10,7 @@ import type { LukasClaimModalProps, LukasClaimSession, LukasClaimStep } from '..
 
 const API_BASE = 'https://api.hashpass.tech/api';
 
-export function LukasClaimModal({ visible, onClose }: LukasClaimModalProps) {
+export function LukasClaimModal({ visible, onClose, rewardTotal = 0, onClaimed }: LukasClaimModalProps) {
   const { isDark } = useTheme();
   const isMobile = useIsMobile();
   const palette = useMemo(() => lukasPalette(isDark), [isDark]);
@@ -79,6 +79,7 @@ export function LukasClaimModal({ visible, onClose }: LukasClaimModalProps) {
         throw new Error('Email verified, but the wallet session could not be created. Please try again.');
       }
       setSessionPayload(payload.session);
+      onClaimed?.(email.trim().toLowerCase());
       setStep('verified');
     } catch (verifyError) {
       setError(verifyError instanceof Error ? verifyError.message : 'That code is invalid or expired.');
@@ -105,7 +106,7 @@ export function LukasClaimModal({ visible, onClose }: LukasClaimModalProps) {
 
   return (
     <LukasDialog visible={visible} onClose={reset} isDark={isDark} isMobile={isMobile} palette={palette} closeLabel="Close claim dialog">
-      <LukasEyebrow palette={palette}>10 LUKAS UNLOCKED</LukasEyebrow>
+      <LukasEyebrow palette={palette}>{rewardTotal} LUKAS EARNED · TGE RESERVED</LukasEyebrow>
       <Text style={styles.title}>{step === 'verified' ? 'Email verified' : 'Claim securely'}</Text>
       {step === 'email' ? <>
         <Text style={styles.copy}>Verify your email to continue into HashPass wallet setup. A one-time code protects the claim.</Text>
@@ -119,7 +120,7 @@ export function LukasClaimModal({ visible, onClose }: LukasClaimModalProps) {
         <ActionButton mode={mode} skin={skin} label="Verify email" loading={busy} onPress={verifyCode} style={lukasFullWidth} />
       </> : null}
       {step === 'verified' ? <>
-        <Text style={styles.copy}>Your email is verified. Continue in HashPass to create or secure your compatible wallet. Seed phrases and private keys stay local and are never emailed.</Text>
+        <Text style={styles.copy}>Your email is verified and your LUKAS progress is reserved for the TGE event. Continue in HashPass to create or secure your compatible wallet. Seed phrases and private keys stay local and are never emailed.</Text>
         <ActionButton mode={mode} skin={skin} label="Open HashPass wallet" onPress={openWallet} style={lukasFullWidth} />
         <Text style={styles.note}>For your protection, HashPass will never send a seed phrase or private key in email or ZIP attachments.</Text>
       </> : null}

@@ -12,7 +12,7 @@ import { lukasPalette, lukasSkin } from './lukas-ui';
 const PEG_CURRENCIES = ['COP', 'ARS', 'BRL', 'MXN', 'CLP'];
 const REWARD_SEGMENTS = Array.from({ length: 10 }, (_, index) => index);
 
-export function HeroSection({ onGetLukas, onForMerchants, rewardTotal, rewardDelta, animationLevel }: HeroSectionProps) {
+export function HeroSection({ onGetLukas, onForMerchants, rewardTotal, rewardMax = 20, rewardDelta, rewardClaimed = false, animationLevel }: HeroSectionProps) {
   const { isDark } = useTheme();
   const isMobile = useIsMobile();
   const { t } = useTranslation('lukas');
@@ -99,17 +99,17 @@ export function HeroSection({ onGetLukas, onForMerchants, rewardTotal, rewardDel
               <ActionButton mode={mode} skin={skin} variant="secondary" label={t('hero.forMerchants')} onPress={onForMerchants} style={styles.heroButton} />
             </View>
 
-            <View style={styles.rewardPanel} accessibilityLiveRegion="polite">
+            <View style={[styles.rewardPanel, rewardClaimed && styles.rewardPanelClaimed]} accessibilityLiveRegion="polite">
               <View style={styles.rewardHeader}>
                 <View>
-                  <Text style={styles.rewardOverline}>CLAIM PROGRESS</Text>
-                  <Text style={styles.rewardPillText}>{rewardTotal}/10 LUKAS</Text>
+                  <Text style={styles.rewardOverline}>{rewardClaimed ? t('rewards.claimed') : t('rewards.progress')}</Text>
+                  <Text style={styles.rewardPillText}>{rewardClaimed ? t('rewards.claimed') : `${rewardTotal}/${rewardMax} LUKAS`}</Text>
                 </View>
-                <View style={styles.rewardOrb}><View style={styles.rewardOrbCore} /></View>
+                <View style={[styles.rewardOrb, rewardClaimed && styles.rewardOrbClaimed]}><View style={[styles.rewardOrbCore, rewardClaimed && styles.rewardOrbCoreClaimed]} /></View>
                 <Animated.Text style={[styles.rewardFloat, { opacity: rewardOpacity, transform: [{ translateY: rewardTranslateY }, { scale: rewardScale }] }]}>+{rewardDelta}</Animated.Text>
               </View>
               <View style={styles.rewardSegments}>
-                {REWARD_SEGMENTS.map((segment) => <View key={segment} style={[styles.rewardSegment, segment < rewardTotal && styles.rewardSegmentFilled]} />)}
+                {REWARD_SEGMENTS.map((segment) => <View key={segment} style={[styles.rewardSegment, segment < Math.ceil((rewardTotal / rewardMax) * REWARD_SEGMENTS.length) && (rewardClaimed ? styles.rewardSegmentClaimed : styles.rewardSegmentFilled)]} />)}
               </View>
             </View>
           </View>
@@ -180,15 +180,19 @@ const getStyles = (isDark: boolean, isMobile: boolean, isSmallMobile: boolean, i
   buttonRow: { width: '100%', flexDirection: isMobile ? 'column' : 'row', gap: 12 },
   heroButton: { flex: isMobile ? 0 : 1, minHeight: 54, alignSelf: 'stretch' },
   rewardPanel: { width: '100%', minHeight: 70, borderRadius: 16, padding: 13, backgroundColor: isDark ? 'rgba(5, 27, 38, 0.76)' : 'rgba(255, 255, 255, 0.74)', borderWidth: 1, borderColor: isDark ? 'rgba(115, 233, 165, 0.28)' : 'rgba(18, 132, 85, 0.24)', overflow: 'visible' },
+  rewardPanelClaimed: { borderColor: '#D9A72A', backgroundColor: isDark ? 'rgba(63, 43, 7, 0.34)' : 'rgba(255, 249, 224, 0.82)' },
   rewardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', position: 'relative' },
   rewardOverline: { color: isDark ? '#A8C7B3' : '#527261', fontSize: 10, fontWeight: '900', letterSpacing: 1.1 },
   rewardPillText: { color: isDark ? '#F0FFF5' : '#0E422A', fontSize: 16, fontWeight: '900', marginTop: 1 },
   rewardOrb: { width: 30, height: 30, borderRadius: 999, backgroundColor: isDark ? '#1A7650' : '#CBF7D8', borderWidth: 1, borderColor: isDark ? '#6EEAA4' : '#29975B', alignItems: 'center', justifyContent: 'center' },
+  rewardOrbClaimed: { backgroundColor: '#FFF0B3', borderColor: '#D9A72A' },
   rewardOrbCore: { width: 11, height: 11, borderRadius: 999, backgroundColor: '#75EEA4' },
+  rewardOrbCoreClaimed: { backgroundColor: '#D9A72A' },
   rewardFloat: { position: 'absolute', right: 28, top: -7, color: isDark ? '#B9FFD2' : '#087A4A', fontSize: 21, fontWeight: '900' },
   rewardSegments: { flexDirection: 'row', gap: 4, marginTop: 10 },
   rewardSegment: { flex: 1, minWidth: 3, height: 5, borderRadius: 999, backgroundColor: isDark ? '#315044' : '#CEE1D5' },
   rewardSegmentFilled: { backgroundColor: '#39CD70' },
+  rewardSegmentClaimed: { backgroundColor: '#D9A72A' },
   badgesContainer: { width: '100%', flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: isMobile ? 'center' : 'flex-start' },
   badgeItem: { minHeight: 30, maxWidth: '100%', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, backgroundColor: isDark ? 'rgba(17, 42, 54, 0.68)' : 'rgba(255, 255, 255, 0.7)', borderWidth: 1, borderColor: isDark ? '#294859' : '#D2E2D8' },
   badgeText: { color: isDark ? '#C9DAD1' : '#385545', fontSize: 12, fontWeight: '700', textAlign: 'center' },

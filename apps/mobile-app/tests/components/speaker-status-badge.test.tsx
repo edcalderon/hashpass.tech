@@ -61,28 +61,15 @@ describe('SpeakerStatusBadge', () => {
     expect(icons(passive!)).not.toContain('check');
   });
 
-  it('pings only for live statuses and stays still under reduced motion', async () => {
-    const { AccessibilityInfo } = require('react-native');
-    const rings = (renderer: ReturnType<typeof create>) =>
-      renderer.root.findAll((node: any) => node.type === 'Animated.View');
-
-    let live: ReturnType<typeof create>;
+  it('tints the pill with the status hue instead of drawing a dot', async () => {
+    let renderer: ReturnType<typeof create>;
     await act(async () => {
-      live = create(<SpeakerStatusBadge status="active" />);
+      renderer = create(<SpeakerStatusBadge status="passive" />);
     });
-    expect(rings(live!)).toHaveLength(1);
-
-    let inactive: ReturnType<typeof create>;
-    await act(async () => {
-      inactive = create(<SpeakerStatusBadge status="inactive" />);
-    });
-    expect(rings(inactive!)).toHaveLength(0);
-
-    (AccessibilityInfo.isReduceMotionEnabled as jest.Mock).mockResolvedValueOnce(true);
-    let reduced: ReturnType<typeof create>;
-    await act(async () => {
-      reduced = create(<SpeakerStatusBadge status="active" />);
-    });
-    expect(rings(reduced!)).toHaveLength(0);
+    const flat = (style: any) => Object.assign({}, ...[].concat(style).flat(Infinity).filter(Boolean));
+    const pill = flat(renderer!.root.findByProps({ testID: 'speaker-status-passive' }).props.style);
+    expect(pill.backgroundColor).toMatch(/^#1d4ed8[0-9a-f]{2}$/i);
+    expect(pill.borderColor).toMatch(/^#1d4ed8[0-9a-f]{2}$/i);
+    expect(renderer!.root.findAll((node: any) => node.type === 'Animated.View')).toHaveLength(0);
   });
 });
