@@ -86,6 +86,10 @@ export async function takePreMigrationDump({ databaseUrl, profile, pending, run 
   // They go under their own prefix: the restore drill and the freshness alarm read
   // prod/core/ and expect scheduled dumps with matching row-count files there.
   const bucket = process.env.DB_BACKUP_BUCKET;
+  const requireUpload = process.env.REQUIRE_PRE_MIGRATION_UPLOAD === 'true';
+  if (requireUpload && !bucket) {
+    throw new Error(`A durable S3 pre-migration backup is required for ${profile}, but DB_BACKUP_BUCKET is missing.`);
+  }
   if (bucket) {
     try {
       const expectedAccount = process.env.AWS_TARGET_ACCOUNT_ID;
@@ -106,10 +110,14 @@ export async function takePreMigrationDump({ databaseUrl, profile, pending, run 
       );
       console.log(`Pre-migration backup uploaded: s3://${bucket}/prod/pre-migration/${file}`);
     } catch (error) {
+      const detail = (error.stderr || error.message).toString().trim().split('\n')[0];
+      if (requireUpload) {
+        throw new Error(`Required S3 pre-migration backup upload failed for ${profile}; no migration was applied. ${redact(detail, databaseUrl)}`);
+      }
       const localCopyNote = process.env.CI
         ? 'The local copy only remains on this CI runner.'
         : `Local copy kept at ${target}.`;
-      console.warn(`Warning: S3 upload skipped (${(error.stderr || error.message).toString().trim().split('\n')[0]}). ${localCopyNote}`);
+      console.warn(`Warning: S3 upload skipped (${detail}). ${localCopyNote}`);
     }
   }
   return target;

@@ -69,5 +69,6 @@ runs:
         SUPABASE_DB_URL_PROD: ${{ inputs.profile == 'core-production' && inputs.database-url || '' }}
         DB_BACKUP_BUCKET: ${{ inputs.profile == 'core-production' && inputs.backup-bucket || '' }}
         AWS_TARGET_ACCOUNT_ID: ${{ inputs.aws-account-id }}
+        REQUIRE_PRE_MIGRATION_UPLOAD: ${{ inputs.profile == 'core-production' && 'true' || 'false' }}
         AWS_REGION: us-east-2
       run: node packages/tools/scripts/migrate-tenant-db.mjs --profile="$PROFILE"

@@ -65,7 +65,7 @@ Repository configuration (names only):
 * Replica: `hashpass-db-backups-replica-<account>-us-west-2`, versioned, locked, encrypted, no delete-marker replication.
   Same account, so it does not protect against account compromise.
 * `pnpm run db:migrate` dumps production first (`packages/tools/scripts/db-backup/pre-migration-dump.mjs`). The production CI deploy jobs use the writer OIDC role to copy that verified dump to `prod/pre-migration/`; it remains outside the scheduled-backup freshness and restore-drill prefixes.
-* The writer permission for `prod/pre-migration/*` is Terraform-managed. Apply this stack's policy update before expecting production CI dumps to persist in S3; until then, CI warns and keeps only its runner-local dump.
+* The writer permission for `prod/pre-migration/*` is Terraform-managed. Apply this stack's policy update before running a production migration; CI blocks that deployment if the verified dump cannot be persisted in S3.
 
 ## Freshness alarm
 
