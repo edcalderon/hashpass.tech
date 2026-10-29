@@ -39,11 +39,33 @@ if [[ -n "${API_VERSION_URL}" && "${SKIP_API_VERSION_VERIFY}" != "true" ]]; then
   echo "  API verify:   ${API_VERSION_URL}"
 fi
 
+# Documents and manifests must never be published with the immutable asset
+# header, even briefly: a CloudFront edge (or browser) that fetches one between
+# the two passes keeps it for a year, and tenant distributions such as BSL have
+# no invalidation to clear it. Pass 1 therefore skips them, and pass 2 syncs
+# only them (including deletions) with the no-cache header.
+NO_CACHE_PATTERNS=('*.html' '*.json' 'sw.js' '*.txt' '*.xml')
+NO_CACHE_EXCLUDES=()
+NO_CACHE_INCLUDES=()
+for pattern in "${NO_CACHE_PATTERNS[@]}"; do
+  NO_CACHE_EXCLUDES+=(--exclude "${pattern}")
+  NO_CACHE_INCLUDES+=(--include "${pattern}")
+done
+
 echo "Syncing site assets to S3..."
 aws s3 sync "${BUILD_DIR}" "s3://${SITE_BUCKET_NAME}" \
   --delete \
   --exclude 'events/*/speakers/*' \
+  "${NO_CACHE_EXCLUDES[@]}" \
   --cache-control "${ASSET_CACHE_CONTROL}"
+
+echo "Syncing HTML and manifest files to S3 with no-cache headers..."
+aws s3 sync "${BUILD_DIR}" "s3://${SITE_BUCKET_NAME}" \
+  --delete \
+  --exclude '*' \
+  "${NO_CACHE_INCLUDES[@]}" \
+  --exclude 'events/*/speakers/*' \
+  --cache-control "${HTML_CACHE_CONTROL}"
 
 # Older copied email signatures used stable filenames before the assets were
 # fingerprinted. A missing static key otherwise falls through to the SPA
