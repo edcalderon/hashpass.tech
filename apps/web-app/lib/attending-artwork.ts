@@ -673,6 +673,7 @@ function drawBslColombiaArtwork(
   context.fillStyle = lightMode ? '#526b82' : themeAccent;
   context.font = '700 22px "IBM Plex Mono", monospace';
   drawFittedText(context, hashtags.join('   '), ART_WIDTH / 2, hasSocial ? 1161 : 1114, 850, 700, '"IBM Plex Mono", monospace', 22, 15);
+  const poweredByY = hasSocial ? 1270 : 1200;
 
   context.textAlign = 'left';
   context.fillStyle = lightMode ? 'rgba(116, 45, 43, 0.82)' : 'rgba(230, 244, 255, 0.78)';
@@ -681,13 +682,13 @@ function drawBslColombiaArtwork(
   const brandWidth = 150;
   const groupStart = (ART_WIDTH - labelWidth - 12 - brandWidth) / 2;
   context.fillStyle = lightMode ? 'rgba(116, 45, 43, 0.82)' : 'rgba(230, 244, 255, 0.78)';
-  context.fillText(options.poweredByLabel, groupStart, 1270);
+  context.fillText(options.poweredByLabel, groupStart, poweredByY);
   if (poweredByLogo) {
-    drawContainedImage(context, poweredByLogo, groupStart + labelWidth + 12, 1251, brandWidth, 36);
+    drawContainedImage(context, poweredByLogo, groupStart + labelWidth + 12, poweredByY - 19, brandWidth, 36);
   } else {
     context.fillStyle = 'rgba(230, 244, 255, 0.84)';
     context.font = '800 18px Manrope, sans-serif';
-    context.fillText('HASHPASS', groupStart + labelWidth + 12, 1270);
+    context.fillText('HASHPASS', groupStart + labelWidth + 12, poweredByY);
   }
   context.textAlign = 'left';
 }
