@@ -6,6 +6,7 @@ import { LazyMotion, domAnimation, m } from 'motion/react';
 import { Surface } from '@hashpass/ui/primitives';
 import { uiTokens } from '@hashpass/ui/tokens';
 import FeatureIcon from './FeatureIcon';
+import PlatformStoryMetricValue from './PlatformStoryMetricValue';
 import { useTheme } from '../hooks/useTheme';
 import { useAnimationLevel } from '../contexts/AnimationLevelContext';
 import type { PlatformStoryCard } from './types/PlatformStory.types';
@@ -51,6 +52,106 @@ function useStreamMotion(ref: React.RefObject<HTMLDivElement | null>) {
   return animationLevel === 'full' && systemAllowsMotion && inView && foreground;
 }
 
+function StoryCard({
+  story,
+  index,
+  shouldAnimate,
+}: {
+  story: PlatformStoryCard;
+  index: number;
+  shouldAnimate: boolean;
+}) {
+  const { colors, isDark } = useTheme();
+  const [entered, setEntered] = useState(false);
+  const motionDelay = Math.min(index, 3) * uiTokens.motion.stagger;
+
+  return (
+    <m.div
+      className="min-w-0"
+      onViewportEnter={() => setEntered(true)}
+      viewport={{ once: true, amount: 0.35 }}
+    >
+      <Surface
+        mode={isDark ? 'dark' : 'light'}
+        style={{
+          minHeight: uiTokens.space.hero * 4,
+          justifyContent: 'space-between',
+          gap: uiTokens.space.xl,
+        }}
+      >
+        <View>
+          <Text
+            style={{
+              color: colors.text.secondary,
+              fontSize: uiTokens.type.caption,
+              lineHeight: 18,
+              fontWeight: '700',
+              letterSpacing: 1.1,
+              marginBottom: uiTokens.space.md,
+            }}
+          >
+            {story.eyebrow}
+          </Text>
+          <Text
+            style={{
+              color: colors.text.primary,
+              fontSize: uiTokens.type.title,
+              lineHeight: 30,
+              fontWeight: '700',
+              marginBottom: uiTokens.space.sm,
+            }}
+          >
+            {story.title}
+          </Text>
+          <Text
+            style={{
+              color: colors.text.secondary,
+              fontSize: uiTokens.type.body,
+              lineHeight: 24,
+              opacity: 0.9,
+            }}
+          >
+            {story.description}
+          </Text>
+        </View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: uiTokens.space.md }}>
+          <m.div
+            whileHover={shouldAnimate ? {
+              y: -2,
+              scale: 1.06,
+              transition: {
+                duration: uiTokens.motion.fast / 1000,
+                ease: uiTokens.motion.easeOut,
+              },
+            } : undefined}
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
+          >
+            <FeatureIcon name={story.icon} color={story.accentColor} compact entranceDelay={motionDelay} />
+          </m.div>
+          <View style={{ flex: 1 }}>
+            <PlatformStoryMetricValue
+              value={story.metricValue}
+              animate={shouldAnimate && entered}
+              delay={motionDelay}
+              style={{ color: colors.text.primary }}
+            />
+            <Text
+              style={{
+                color: colors.text.secondary,
+                fontSize: uiTokens.type.caption,
+                lineHeight: 18,
+                opacity: 0.78,
+              }}
+            >
+              {story.metric}
+            </Text>
+          </View>
+        </View>
+      </Surface>
+    </m.div>
+  );
+}
+
 function StoryStream({
   stories,
   className,
@@ -62,7 +163,6 @@ function StoryStream({
   duration: number;
   shouldAnimate: boolean;
 }) {
-  const { colors, isDark } = useTheme();
   const copies = shouldAnimate ? [0, 1] : [0];
 
   return (
@@ -81,77 +181,13 @@ function StoryStream({
       >
         {copies.map((copy) => (
           <div key={copy} aria-hidden={copy > 0} className="flex flex-col gap-6 pb-6">
-            {stories.map((story) => (
-              <Surface
-                key={story.id}
-                mode={isDark ? 'dark' : 'light'}
-                style={{
-                  minHeight: uiTokens.space.hero * 4,
-                  justifyContent: 'space-between',
-                  gap: uiTokens.space.xl,
-                }}
-              >
-                <View>
-                  <Text
-                    style={{
-                      color: colors.text.secondary,
-                      fontSize: uiTokens.type.caption,
-                      lineHeight: 18,
-                      fontWeight: '700',
-                      letterSpacing: 1.1,
-                      marginBottom: uiTokens.space.md,
-                    }}
-                  >
-                    {story.eyebrow}
-                  </Text>
-                  <Text
-                    style={{
-                      color: colors.text.primary,
-                      fontSize: uiTokens.type.title,
-                      lineHeight: 30,
-                      fontWeight: '700',
-                      marginBottom: uiTokens.space.sm,
-                    }}
-                  >
-                    {story.title}
-                  </Text>
-                  <Text
-                    style={{
-                      color: colors.text.secondary,
-                      fontSize: uiTokens.type.body,
-                      lineHeight: 24,
-                      opacity: 0.9,
-                    }}
-                  >
-                    {story.description}
-                  </Text>
-                </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: uiTokens.space.md }}>
-                  <FeatureIcon name={story.icon} color={story.accentColor} compact />
-                  <View style={{ flex: 1 }}>
-                    <Text
-                      style={{
-                        color: colors.text.primary,
-                        fontSize: uiTokens.type.label,
-                        lineHeight: 20,
-                        fontWeight: '700',
-                      }}
-                    >
-                      {story.metricValue}
-                    </Text>
-                    <Text
-                      style={{
-                        color: colors.text.secondary,
-                        fontSize: uiTokens.type.caption,
-                        lineHeight: 18,
-                        opacity: 0.78,
-                      }}
-                    >
-                      {story.metric}
-                    </Text>
-                  </View>
-                </View>
-              </Surface>
+            {stories.map((story, index) => (
+              <StoryCard
+                key={`${copy}-${story.id}`}
+                story={story}
+                index={index}
+                shouldAnimate={shouldAnimate}
+              />
             ))}
           </div>
         ))}

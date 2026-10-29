@@ -349,7 +349,14 @@ const Features: React.FC<FeaturesProps> = ({
                     padding: 8,
                   }}>
                     <View style={featureStyles.iconContainer}>
-                      <FeatureIcon name={feature.icon} color={feature.color} reduceMotion={reduceMotion} visible={!nativeFlipped[feature.id]} />
+                      <FeatureIcon
+                        name={feature.icon}
+                        color={feature.color}
+                        reduceMotion={reduceMotion}
+                        visible={!nativeFlipped[feature.id]}
+                        active={!nativeFlipped[feature.id]}
+                        entranceDelay={Math.min(index, 3) * uiTokens.motion.stagger}
+                      />
                     </View>
                     <Text style={featureStyles.featureTitle}>{feature.title}</Text>
                     <Text style={featureStyles.featureHint}>{t('tapToRead', 'Tap to read more')}</Text>

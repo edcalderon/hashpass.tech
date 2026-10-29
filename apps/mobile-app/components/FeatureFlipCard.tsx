@@ -52,6 +52,9 @@ export default function FeatureFlipCard({
   }, [metricValue]);
 
   const isFlipped = controlledIsFlipped ?? uncontrolledIsFlipped;
+  const iconHoverMotion = reduceMotion
+    ? ''
+    : 'motion-safe:transition-transform motion-safe:duration-200 motion-safe:ease-out motion-safe:hover:-translate-y-0.5 motion-safe:hover:scale-105';
   const setFlipped = (nextIsFlipped: boolean, card: HTMLDivElement) => {
     if (controlledIsFlipped === undefined) {
       setUncontrolledIsFlipped(nextIsFlipped);
@@ -106,7 +109,9 @@ export default function FeatureFlipCard({
           data-active={!isFlipped}
         >
           <div className="relative z-10 flex h-full flex-col items-center justify-center gap-3 px-5 py-4 text-center">
-            <FeatureIcon name={icon} color={color} visible={!isFlipped} reduceMotion={reduceMotion} />
+            <div className={cn('inline-flex', iconHoverMotion)}>
+              <FeatureIcon name={icon} color={color} visible={!isFlipped} reduceMotion={reduceMotion} />
+            </div>
 
             <h3 className={cn('text-[22px] font-bold leading-tight tracking-tight', isDark ? 'text-white' : 'text-zinc-900')}>
               {title}
@@ -134,7 +139,9 @@ export default function FeatureFlipCard({
         >
           <div className="relative z-10 flex h-full min-h-0 flex-col">
             <div className="mb-2 flex items-center gap-2">
-              <FeatureIcon name={icon} color={color} compact visible={isFlipped} reduceMotion={reduceMotion} />
+              <div className={cn('inline-flex shrink-0', iconHoverMotion)}>
+                <FeatureIcon name={icon} color={color} compact visible={isFlipped} reduceMotion={reduceMotion} />
+              </div>
               <h3 className={cn('text-sm font-semibold tracking-tight', isDark ? 'text-white' : 'text-zinc-900')}>{title}</h3>
             </div>
 
