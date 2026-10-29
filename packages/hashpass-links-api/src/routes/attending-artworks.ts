@@ -72,7 +72,6 @@ async function sendArtworkEmail(input: {
   eventName: string;
   shareUrl: string;
   imageUrl: string;
-  genericArtwork: boolean;
 }): Promise<boolean> {
   if (!mailIsConfigured()) return false;
 
@@ -88,16 +87,10 @@ async function sendArtworkEmail(input: {
   const event = escapeHtml(input.eventName);
   const shareUrl = escapeHtml(input.shareUrl);
   const imageUrl = escapeHtml(input.imageUrl);
-  const subject = input.genericArtwork
-    ? 'Your HASHPASS artwork is ready'
-    : `Your event artwork for ${input.eventName}`;
-  const heading = input.genericArtwork
-    ? `Your personal artwork is ready, ${name}`
-    : `Your artwork is ready, ${name}`;
-  const description = input.genericArtwork
-    ? 'Your shareable HASHPASS artwork is ready.'
-    : `Your shareable attendance artwork for ${event} is ready.`;
-  const imageAlt = input.genericArtwork ? 'Your personal HASHPASS artwork' : 'Your event artwork';
+  const subject = `Your event artwork for ${input.eventName}`;
+  const heading = `Your artwork is ready, ${name}`;
+  const description = `Your shareable attendance artwork for ${event} is ready.`;
+  const imageAlt = 'Your event artwork';
   let closeTransporter: (() => void) | undefined;
   try {
     const transporter = nodemailer.createTransport({
@@ -112,15 +105,19 @@ async function sendArtworkEmail(input: {
       requireTLS: !secure,
     });
     closeTransporter = () => transporter.close();
-    await transporter.sendMail({
+    const delivery = await transporter.sendMail({
       from: `HASHPASS <${mailerEnvironmentValue('FROM')}>`,
       to: input.email,
       subject,
-      text: `Hi ${input.attendeeName},\n\n${input.genericArtwork ? 'Your personal HASHPASS artwork is ready.' : `Your shareable attendance artwork for ${input.eventName} is ready.`}\n\nOpen your public artwork: ${input.shareUrl}\nThe link is available for 90 days.`,
-      html: `<!doctype html><html><body style="margin:0;background:#f4f7fb;font-family:Arial,sans-serif;color:#101b2c"><main style="max-width:560px;margin:32px auto;padding:28px;background:#fff;border:1px solid #dbe4ef;border-radius:20px"><p style="font-size:12px;letter-spacing:.12em;font-weight:700;color:#1976d2">HASHPASS · ${input.genericArtwork ? 'PERSONAL ARTWORK' : 'EVENT ARTWORK'}</p><h1 style="font-size:24px">${heading}</h1><p>${description}</p><p><a href="${shareUrl}" style="display:inline-block;padding:13px 20px;background:#1976d2;color:#fff;border-radius:999px;text-decoration:none;font-weight:700">Open your artwork</a></p><p><img src="${imageUrl}" alt="${imageAlt}" style="display:block;width:100%;height:auto;border-radius:14px"></p><p style="font-size:13px;color:#64748b">This public link expires in 90 days. Your image is visible to anyone who has the link.</p></main></body></html>`,
+      text: `Hi ${input.attendeeName},\n\nYour shareable attendance artwork for ${input.eventName} is ready.\n\nOpen your public artwork: ${input.shareUrl}\nThe link is available for 90 days.`,
+      html: `<!doctype html><html><body style="margin:0;background:#f4f7fb;font-family:Arial,sans-serif;color:#101b2c"><main style="max-width:560px;margin:32px auto;padding:28px;background:#fff;border:1px solid #dbe4ef;border-radius:20px"><p style="font-size:12px;letter-spacing:.12em;font-weight:700;color:#1976d2">HASHPASS · EVENT ARTWORK</p><h1 style="font-size:24px">${heading}</h1><p>${description}</p><p><a href="${shareUrl}" style="display:inline-block;padding:13px 20px;background:#1976d2;color:#fff;border-radius:999px;text-decoration:none;font-weight:700">Open your artwork</a></p><p><img src="${imageUrl}" alt="${imageAlt}" style="display:block;width:100%;height:auto;border-radius:14px"></p><p style="font-size:13px;color:#64748b">This public link expires in 90 days. Your image is visible to anyone who has the link.</p></main></body></html>`,
     });
-    return true;
-  } catch {
+    return delivery.accepted.length > 0;
+  } catch (error) {
+    const code = typeof error === 'object' && error !== null && 'code' in error
+      ? String(error.code)
+      : 'unknown';
+    console.error(`[hashpass-links-api] Artwork email delivery failed (${code}).`);
     return false;
   } finally {
     closeTransporter?.();
@@ -160,12 +157,14 @@ export async function createAttendingArtwork(request: Request): Promise<Response
   if (typeof body.caption !== 'string' || !body.caption.trim() || body.caption.length > 500) return apiError('Invalid share caption');
   if (typeof body.eventUrl !== 'string' || !PUBLIC_ARTWORK_URL_PATTERN.test(body.eventUrl)) return apiError('Invalid event page URL');
   const eventUrl = new URL(body.eventUrl);
-  const genericArtwork = body.eventSlug === 'community';
-  const expectedPath = genericArtwork
-    ? '/attendings'
-    : body.eventSlug === 'bsl' ? `/attending/${body.eventSlug}` : '';
-  const expectedHost = genericArtwork ? 'hashpass.club' : `${body.eventSlug}.hashpass.tech`;
-  if (eventUrl.hostname !== expectedHost || eventUrl.pathname.replace(/\/$/, '') !== expectedPath) {
+  const eventPath = eventUrl.pathname.replace(/\/$/, '');
+  const isCommunityEvent = body.eventSlug === 'community'
+    && eventUrl.hostname === 'hashpass.club'
+    && eventPath === '/attendings';
+  const expectedPath = body.eventSlug === 'bsl' ? `/attending/${body.eventSlug}` : '';
+  const expectedHost = `${body.eventSlug}.hashpass.tech`;
+  const isConfiguredEvent = eventUrl.hostname === expectedHost && eventPath === expectedPath;
+  if (!isCommunityEvent && !isConfiguredEvent) {
     return apiError('Event URL must match the selected event');
   }
 
@@ -211,7 +210,6 @@ export async function createAttendingArtwork(request: Request): Promise<Response
       eventName: row.event_name,
       shareUrl,
       imageUrl,
-      genericArtwork,
     }) ? 'sent' : 'unavailable';
   }
 
@@ -225,15 +223,11 @@ export async function getAttendingArtworkShare(request: Request, token: string):
 
   const shareUrl = absoluteUrl(request, `/a/${token}`);
   const imageUrl = adminDb().storage.from(BUCKET).getPublicUrl(share.object_path).data.publicUrl;
-  const genericArtwork = share.event_slug === 'community';
+  const customEventArtwork = share.event_slug === 'community';
   const title = `${share.attendee_name} · ${share.event_name} | HASHPASS`;
-  const description = genericArtwork
-    ? `${share.attendee_name} made a personal, shareable HASHPASS artwork.`
-    : `${share.attendee_name} made a shareable attendance artwork for ${share.event_name}. This is a personal intention, not an RSVP or ticket.`;
-  const disclaimer = genericArtwork
-    ? 'This is personal artwork for self-expression. The public link expires in 90 days.'
-    : 'A personal intention, not an RSVP, ticket, or proof of attendance. This artwork link expires in 90 days.';
-  const sourceLinkLabel = genericArtwork ? 'Create personal artwork' : 'Event details';
+  const description = `${share.attendee_name} made a shareable attendance artwork for ${share.event_name}. This is a personal intention, not an RSVP or ticket.`;
+  const disclaimer = 'A personal intention, not an RSVP, ticket, or proof of attendance. This artwork link expires in 90 days.';
+  const sourceLinkLabel = customEventArtwork ? 'Create artwork for your event' : 'Event details';
   const html = `<!doctype html>
 <html lang="${escapeHtml(share.locale)}">
 <head>
@@ -259,7 +253,7 @@ export async function getAttendingArtworkShare(request: Request, token: string):
 </head>
 <body>
   <main class="card">
-    <img src="${escapeHtml(imageUrl)}" width="1080" height="1350" alt="${genericArtwork ? `${escapeHtml(share.attendee_name)}’s personal artwork` : `${escapeHtml(share.attendee_name)}’s artwork for ${escapeHtml(share.event_name)}`}">
+    <img src="${escapeHtml(imageUrl)}" width="1080" height="1350" alt="${escapeHtml(share.attendee_name)}’s artwork for ${escapeHtml(share.event_name)}">
     <h1>${escapeHtml(share.attendee_name)} · ${escapeHtml(share.event_name)}</h1>
     <p>${escapeHtml(share.caption)}</p>
     <p>${escapeHtml(disclaimer)}</p>

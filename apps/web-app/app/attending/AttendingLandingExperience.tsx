@@ -9,7 +9,7 @@ import { ClubSettingsMenu } from '../components/ClubSettingsMenu';
 import { Footer } from '../components/Footer';
 import { useTheme } from '../components/ThemeProvider';
 import { formatAttendingEventDate } from '../../lib/attending-date';
-import { getAttendingEventHref } from '../../lib/attending-url';
+import { getAttendingEventHref, getGenericAttendingHref } from '../../lib/attending-url';
 import styles from './landing.module.css';
 
 export function AttendingLandingExperience({ events }: AttendingLandingProps) {
@@ -82,7 +82,7 @@ export function AttendingLandingExperience({ events }: AttendingLandingProps) {
               <h2 id="attending-events-title">{t('landingEventsTitle')}</h2>
               <p className={styles.sectionDescription}>{t('landingEventsDescription')}</p>
             </div>
-            {events.length > 1 && (
+            {events.length > 0 && (
               <div className={styles.carouselControls}>
                 <IconButton mode={mode} label={t('landingPreviousEvents')} onPress={() => scrollEvents(-1)}><ArrowLeft size={18} /></IconButton>
                 <IconButton mode={mode} label={t('landingNextEvents')} onPress={() => scrollEvents(1)}><ArrowRight size={18} /></IconButton>
@@ -90,41 +90,56 @@ export function AttendingLandingExperience({ events }: AttendingLandingProps) {
             )}
           </div>
 
-          {events.length ? (
-            <div className={styles.carousel} role="region" aria-roledescription="carousel" aria-label={t('landingCarouselLabel')}>
-              <div className={styles.carouselTrack} ref={carouselRef}>
-                {events.map((event) => {
-                  const eventDate = formatAttendingEventDate(event, locale);
-                  return (
-                    <article className={styles.eventSlide} key={event.slug}>
-                      <Surface mode={mode} style={{ padding: 0, overflow: 'hidden', height: '100%' }}>
-                        <a className={styles.eventLink} href={getAttendingEventHref(event.slug)}>
-                          <div className={styles.eventArtwork} style={{ background: `radial-gradient(circle at 84% 18%, ${event.color}70, transparent 42%), linear-gradient(138deg, #071321 8%, #102c3d 100%)` }}>
-                            <div className={styles.artworkGrid} />
-                            <span className={styles.eventBadge}><Badge mode="dark" tone="onMedia" compact>{t('landingUpcoming')}</Badge></span>
-                            <img src={event.logoSrc} alt="" aria-hidden="true" />
-                            <span className={styles.artworkCode}>{event.shortName} / 2026</span>
+          {!events.length && <p className={styles.emptyEvents}>{t('landingNoUpcoming')}</p>}
+          <div className={styles.carousel} role="region" aria-roledescription="carousel" aria-label={t('landingCarouselLabel')}>
+            <div className={styles.carouselTrack} ref={carouselRef}>
+              {events.map((event) => {
+                const eventDate = formatAttendingEventDate(event, locale);
+                return (
+                  <article className={styles.eventSlide} key={event.slug}>
+                    <Surface mode={mode} style={{ padding: 0, overflow: 'hidden', height: '100%' }}>
+                      <a className={styles.eventLink} href={getAttendingEventHref(event.slug)}>
+                        <div className={styles.eventArtwork} style={{ background: `radial-gradient(circle at 84% 18%, ${event.color}70, transparent 42%), linear-gradient(138deg, #071321 8%, #102c3d 100%)` }}>
+                          <div className={styles.artworkGrid} />
+                          <span className={styles.eventBadge}><Badge mode="dark" tone="onMedia" compact>{t('landingUpcoming')}</Badge></span>
+                          <img src={event.logoSrc} alt="" aria-hidden="true" />
+                          <span className={styles.artworkCode}>{event.shortName} / 2026</span>
+                        </div>
+                        <div className={styles.eventInfo}>
+                          <div className={styles.eventKicker}>{event.shortName}<span>·</span>{event.city}</div>
+                          <h3>{event.name}</h3>
+                          <div className={styles.eventMeta}>
+                            {eventDate && <span><CalendarDays size={15} />{eventDate}</span>}
+                            {event.city && <span><MapPin size={15} />{[event.city, event.country].filter(Boolean).join(', ')}</span>}
                           </div>
-                          <div className={styles.eventInfo}>
-                            <div className={styles.eventKicker}>{event.shortName}<span>·</span>{event.city}</div>
-                            <h3>{event.name}</h3>
-                            <div className={styles.eventMeta}>
-                              {eventDate && <span><CalendarDays size={15} />{eventDate}</span>}
-                              {event.city && <span><MapPin size={15} />{[event.city, event.country].filter(Boolean).join(', ')}</span>}
-                            </div>
-                            <span className={styles.eventCta}>{t('landingCreateArtwork')} <ArrowRight size={17} /></span>
-                          </div>
-                        </a>
-                      </Surface>
-                    </article>
-                  );
-                })}
-              </div>
-              {events.length > 1 && <p className={styles.scrollHint}>{t('landingScrollHint')}</p>}
+                          <span className={styles.eventCta}>{t('landingCreateArtwork')} <ArrowRight size={17} /></span>
+                        </div>
+                      </a>
+                    </Surface>
+                  </article>
+                );
+              })}
+              <article className={styles.eventSlide} key="bring-your-event">
+                <Surface mode={mode} style={{ padding: 0, overflow: 'hidden', height: '100%' }}>
+                  <a className={styles.eventLink} href={getGenericAttendingHref()}>
+                    <div className={`${styles.eventArtwork} ${styles.customEventArtwork}`}>
+                      <div className={styles.artworkGrid} />
+                      <span className={styles.eventBadge}><Badge mode="dark" tone="onMedia" compact>{t('customEventCardEyebrow')}</Badge></span>
+                      <div className={styles.customEventMark} aria-hidden="true"><CalendarDays size={42} /><span>+</span></div>
+                      <span className={styles.artworkCode}>HASHPASS CLUB / OPEN</span>
+                    </div>
+                    <div className={styles.eventInfo}>
+                      <div className={styles.eventKicker}>{t('customEventCardKicker')}</div>
+                      <h3>{t('customEventCardTitle')}</h3>
+                      <p className={styles.customEventDescription}>{t('customEventCardDescription')}</p>
+                      <span className={styles.eventCta}>{t('customEventCardCta')} <ArrowRight size={17} /></span>
+                    </div>
+                  </a>
+                </Surface>
+              </article>
             </div>
-          ) : (
-            <Surface mode={mode} style={{ padding: 24 }}><p className={styles.emptyEvents}>{t('landingNoUpcoming')}</p></Surface>
-          )}
+            {events.length > 0 && <p className={styles.scrollHint}>{t('landingScrollHint')}</p>}
+          </div>
         </section>
 
         <section className={styles.howSection} aria-labelledby="attending-how-title">

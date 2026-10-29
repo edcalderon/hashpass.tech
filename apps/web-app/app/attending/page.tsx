@@ -6,7 +6,7 @@ import { getAttendingLandingUrl } from '../../lib/attending-url';
 const ATTENDING_SITE_URL = getAttendingLandingUrl();
 
 export const metadata: Metadata = {
-  title: { absolute: 'Create your event intention image | HASHPASS Club' },
+  title: { absolute: 'Show up before the doors open. | HASHPASS Club' },
   description: 'Choose an upcoming event, make a personal attending image, and share your intention. It is not an RSVP, ticket, or proof of attendance.',
   alternates: { canonical: ATTENDING_SITE_URL },
   openGraph: {

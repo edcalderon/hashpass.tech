@@ -677,13 +677,32 @@ say links-api "Starting hashpass-links-api on port ${LINKS_API_PORT}..."
 # mobile app still reported "Login approved".
 LINKS_API_SUPABASE_URL="$(read_root_env_value EXPO_PUBLIC_SUPABASE_URL_DEV)"
 LINKS_API_SERVICE_ROLE_KEY="$(read_root_env_value SUPABASE_SERVICE_ROLE_KEY_DEV)"
+LINKS_API_MAILER_HOST="$(read_root_env_value NODEMAILER_HOST)"
+LINKS_API_MAILER_PORT="$(read_root_env_value NODEMAILER_PORT)"
+LINKS_API_MAILER_USER="$(read_root_env_value NODEMAILER_USER)"
+LINKS_API_MAILER_CREDENTIAL="$(read_root_env_value NODEMAILER_PASS)"
+LINKS_API_MAILER_FROM="$(read_root_env_value NODEMAILER_FROM)"
 if [[ -z "${LINKS_API_SUPABASE_URL}" || -z "${LINKS_API_SERVICE_ROLE_KEY}" ]]; then
   echo "EXPO_PUBLIC_SUPABASE_URL_DEV / SUPABASE_SERVICE_ROLE_KEY_DEV missing from .env -- cannot start hashpass-links-api." >&2
   exit 1
 fi
+CREDENTIAL_ENV_KEY='NODEMAILER_PASS'
+if [[ -n "${LINKS_API_MAILER_HOST}" && -n "${LINKS_API_MAILER_USER}" && -n "${LINKS_API_MAILER_CREDENTIAL}" && -n "${LINKS_API_MAILER_FROM}" ]]; then
+  say links-api "Optional artwork email delivery is configured."
+else
+  say links-api "Optional artwork email delivery is unavailable; configure NODEMAILER_HOST/USER/PASS/FROM in .env."
+fi
 (
   cd packages/hashpass-links-api
-  PORT="${LINKS_API_PORT}" SUPABASE_URL="${LINKS_API_SUPABASE_URL}" SUPABASE_SERVICE_ROLE_KEY="${LINKS_API_SERVICE_ROLE_KEY}" \
+  env \
+    "PORT=${LINKS_API_PORT}" \
+    "SUPABASE_URL=${LINKS_API_SUPABASE_URL}" \
+    "SUPABASE_SERVICE_ROLE_KEY=${LINKS_API_SERVICE_ROLE_KEY}" \
+    "NODEMAILER_HOST=${LINKS_API_MAILER_HOST}" \
+    "NODEMAILER_PORT=${LINKS_API_MAILER_PORT}" \
+    "NODEMAILER_USER=${LINKS_API_MAILER_USER}" \
+    "${CREDENTIAL_ENV_KEY}=${LINKS_API_MAILER_CREDENTIAL}" \
+    "NODEMAILER_FROM=${LINKS_API_MAILER_FROM}" \
     pnpm exec tsx dev-server.ts
 ) > >(prefix_stream links-api) 2>&1 &
 LINKS_API_PID=$!

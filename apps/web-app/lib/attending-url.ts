@@ -1,8 +1,23 @@
 const ATTENDING_LANDING_ORIGIN = 'https://attending.hashpass.tech';
+const GENERIC_ATTENDING_ORIGIN = 'https://hashpass.club';
 
 export function getAttendingLandingUrl(): string {
   if (process.env.NODE_ENV === 'development') return '/attending/';
   return `${ATTENDING_LANDING_ORIGIN}/attending/`;
+}
+
+export function getGenericAttendingUrl(): string {
+  return `${GENERIC_ATTENDING_ORIGIN}/attendings/`;
+}
+
+export function getGenericAttendingHref(): string {
+  if (process.env.NODE_ENV === 'development') return '/attendings/custom/';
+  return `${GENERIC_ATTENDING_ORIGIN}/attendings/custom/`;
+}
+
+export function getGenericAttendingLandingHref(): string {
+  if (process.env.NODE_ENV === 'development') return '/attendings/';
+  return getGenericAttendingUrl();
 }
 
 export function getAttendingEventSubdomain(eventSlug: string): string {

@@ -60,10 +60,6 @@
   margin-bottom: 50px;
 }
 
-.genericIntro {
-  grid-template-columns: minmax(0, 1fr);
-}
-
 .eyebrow,
 .previewEyebrow {
   display: flex;
@@ -214,6 +210,82 @@
   color: var(--text-secondary);
   font-size: 13px;
   line-height: 1.55;
+}
+
+.customEventForm {
+  margin-bottom: 30px;
+  padding-bottom: 28px;
+  border-bottom: 1px solid var(--border);
+}
+
+.customEventFields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.customEventWideField { grid-column: 1 / -1; }
+
+.customEventDateField {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  gap: 8px;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.customEventDateInput {
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-surface-raised);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 14px;
+}
+
+.customEventDateInput:focus-visible {
+  border-color: var(--accent);
+  outline: 2px solid color-mix(in srgb, var(--accent) 28%, transparent);
+  outline-offset: 1px;
+}
+
+.customEventDateInput[aria-invalid='true'] { border-color: var(--danger); }
+
+.customEventFieldError {
+  margin: 0;
+  color: var(--danger);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.customEventLogoField { display: grid; gap: 10px; }
+.customEventLogoField .fieldHeading { margin-bottom: 0; }
+.customEventLogoField .sourceCard { max-width: 460px; }
+
+.customEventLogoPreview {
+  display: flex;
+  max-width: 460px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--bg-canvas);
+}
+
+.customEventLogoPreview img {
+  width: 88px;
+  height: 52px;
+  object-fit: contain;
 }
 
 .profileSource {
@@ -723,6 +795,13 @@
   .sourceCard {
     min-height: 68px;
   }
+
+  .customEventFields {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .customEventWideField { grid-column: auto; }
 
   .fields {
     grid-template-columns: 1fr;
