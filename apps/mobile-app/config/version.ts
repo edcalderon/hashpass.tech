@@ -22,25 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610291210, // Updated to current timestamp
+  buildNumber: 202610291302, // Updated to current timestamp
   releaseDate: '2026-10-29',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'add WordPress Multisite baseline',
-    'add host-aware BSL artwork routes',
-    'animate attending landing'
+    // No new features
   ],
   bugfixes: [
-    'show host-specific attending footers',
-    'ship footer logos in tenant overlays'
+    'show signed-in profile avatars'
   ],
   breakingChanges: [],
-  notes: 'add WordPress Multisite baseline; add host-aware BSL artwork routes; animate attending landing; show host-specific attending footers; ship footer logos in tenant overlays'
+  notes: 'show signed-in profile avatars'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.184': {
+    version: '1.9.184',
+    buildNumber: 202610291302,
+    releaseDate: '2026-10-29',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'show signed-in profile avatars'
+    ],
+    breakingChanges: [],
+    notes: 'show signed-in profile avatars'
+  },
   '1.9.183': {
     version: '1.9.183',
     buildNumber: 202610291210,
