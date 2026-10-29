@@ -89,7 +89,7 @@ Daily Lightsail instance snapshots are the only configured backup in this stack;
 A restore rehearsal is still required:
 
 1. Select a known-good snapshot and create a separate test instance in `us-east-2`; do not overwrite or delete production. A clone contains production data and TLS/authentication key material, so treat it as production-sensitive.
-2. Keep test access restricted to the approved operator. Do not attach the production static IP or change public DNS. Use a temporary host override or equivalent isolated access to verify both WordPress sites, posts/media, site mapping, roles, theme customizations, HTTPS behavior, and admin access.
+2. **Harden the clone's Lightsail firewall before using it or testing it.** Snapshot restores do not inherit the source instance's custom firewall rules; a new clone may have default SSH/HTTP/HTTPS rules open to the internet. Remove broad defaults, restrict SSH to the approved operator IPv4 `/32`, keep ports 80/443 closed unless temporarily restricted to the operator, and verify both IPv4 and IPv6 ingress rules. Do not attach the production static IP or change public DNS. Use a temporary host override or equivalent isolated access to verify both WordPress sites, posts/media, site mapping, roles, theme customizations, HTTPS behavior, and admin access.
 3. Record snapshot age, restore duration, missing data, and snapshot storage cost. Confirm the recovery procedure can remain under the monthly budget, then remove the test instance and its snapshots when the rehearsal is complete.
 4. Rehearse any static-IP reattachment or DNS change separately. Do not move the production IP or change public DNS until the owner approves an actual recovery.
 
