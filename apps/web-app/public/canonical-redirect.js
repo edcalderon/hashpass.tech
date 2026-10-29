@@ -17,9 +17,10 @@
       peru2026: true,
     };
 
-    if (host === 'attending.hashpass.tech' && (path === '/' || path === '/index.html')) {
-      target = 'https://attending.hashpass.tech/attending/' + search + hash;
-    } else if (host === 'attending.hashpass.tech') {
+    if (host === 'attending.hashpass.tech') {
+      if (path === '/attending' || path === '/attending/' || path === '/attending/index.html') {
+        target = 'https://attending.hashpass.tech/' + search + hash;
+      }
       var isAttendingLanding = /^\/attending\/?$/i.test(path);
       var legacyEvent = isAttendingLanding ? null : path.match(/^\/([a-z0-9][a-z0-9-]{0,79})\/?$/i);
       var attendingEvent = path.match(/^\/attending\/([a-z0-9][a-z0-9-]{0,79})\/?$/i);

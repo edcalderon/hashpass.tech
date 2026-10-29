@@ -9,10 +9,14 @@ import { ClubSettingsMenu } from '../components/ClubSettingsMenu';
 import { Footer } from '../components/Footer';
 import { useTheme } from '../components/ThemeProvider';
 import { formatAttendingEventDate } from '../../lib/attending-date';
-import { getAttendingEventHref, getGenericAttendingHref } from '../../lib/attending-url';
+import {
+  getAttendingEventHref,
+  getAttendingLandingUrl,
+  getGenericAttendingHref,
+} from '../../lib/attending-url';
 import styles from './landing.module.css';
 
-export function AttendingLandingExperience({ events }: AttendingLandingProps) {
+export function AttendingLandingExperience({ events, showCustomEventCard = true }: AttendingLandingProps) {
   const { t } = useTranslation('attending');
   const locale = useLocale();
   const { resolvedTheme } = useTheme();
@@ -29,7 +33,7 @@ export function AttendingLandingExperience({ events }: AttendingLandingProps) {
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <a className={styles.brand} href="/attending/" aria-label="HASHPASS Club attending home">
+        <a className={styles.brand} href={getAttendingLandingUrl()} aria-label="HASHPASS Club attending home">
           <img src="/attending/logo-hashpass.svg" alt="" />
           <span>HASHPASS <b>CLUB</b></span>
         </a>
@@ -119,24 +123,26 @@ export function AttendingLandingExperience({ events }: AttendingLandingProps) {
                   </article>
                 );
               })}
-              <article className={styles.eventSlide} key="bring-your-event">
-                <Surface mode={mode} style={{ padding: 0, overflow: 'hidden', height: '100%' }}>
-                  <a className={styles.eventLink} href={getGenericAttendingHref()}>
-                    <div className={`${styles.eventArtwork} ${styles.customEventArtwork}`}>
-                      <div className={styles.artworkGrid} />
-                      <span className={styles.eventBadge}><Badge mode="dark" tone="onMedia" compact>{t('customEventCardEyebrow')}</Badge></span>
-                      <div className={styles.customEventMark} aria-hidden="true"><CalendarDays size={42} /><span>+</span></div>
-                      <span className={styles.artworkCode}>HASHPASS CLUB / OPEN</span>
-                    </div>
-                    <div className={styles.eventInfo}>
-                      <div className={styles.eventKicker}>{t('customEventCardKicker')}</div>
-                      <h3>{t('customEventCardTitle')}</h3>
-                      <p className={styles.customEventDescription}>{t('customEventCardDescription')}</p>
-                      <span className={styles.eventCta}>{t('customEventCardCta')} <ArrowRight size={17} /></span>
-                    </div>
-                  </a>
-                </Surface>
-              </article>
+              {showCustomEventCard && (
+                <article className={styles.eventSlide} key="bring-your-event">
+                  <Surface mode={mode} style={{ padding: 0, overflow: 'hidden', height: '100%' }}>
+                    <a className={styles.eventLink} href={getGenericAttendingHref()}>
+                      <div className={`${styles.eventArtwork} ${styles.customEventArtwork}`}>
+                        <div className={styles.artworkGrid} />
+                        <span className={styles.eventBadge}><Badge mode="dark" tone="onMedia" compact>{t('customEventCardEyebrow')}</Badge></span>
+                        <div className={styles.customEventMark} aria-hidden="true"><CalendarDays size={42} /><span>+</span></div>
+                        <span className={styles.artworkCode}>HASHPASS CLUB / OPEN</span>
+                      </div>
+                      <div className={styles.eventInfo}>
+                        <div className={styles.eventKicker}>{t('customEventCardKicker')}</div>
+                        <h3>{t('customEventCardTitle')}</h3>
+                        <p className={styles.customEventDescription}>{t('customEventCardDescription')}</p>
+                        <span className={styles.eventCta}>{t('customEventCardCta')} <ArrowRight size={17} /></span>
+                      </div>
+                    </a>
+                  </Surface>
+                </article>
+              )}
             </div>
             {events.length > 0 && <p className={styles.scrollHint}>{t('landingScrollHint')}</p>}
           </div>

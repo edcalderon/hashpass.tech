@@ -17,6 +17,9 @@ TARGET_DIRECTORY="$(cd "$(dirname "${TARGET_DIRECTORY}")" && pwd)/$(basename "${
 export NEXT_PUBLIC_SUPABASE_URL="${NEXT_PUBLIC_SUPABASE_URL:-${EXPO_PUBLIC_SUPABASE_URL:-${EXPO_PUBLIC_SUPABASE_URL_PROD:-}}}"
 export NEXT_PUBLIC_SUPABASE_ANON_KEY="${NEXT_PUBLIC_SUPABASE_ANON_KEY:-${EXPO_PUBLIC_SUPABASE_ANON_KEY:-${EXPO_PUBLIC_SUPABASE_KEY:-${EXPO_PUBLIC_SUPABASE_KEY_PROD:-}}}}"
 export NEXT_PUBLIC_LINKS_API_BASE_URL="${NEXT_PUBLIC_LINKS_API_BASE_URL:-${EXPO_PUBLIC_LINKS_API_BASE_URL:-${EXPO_PUBLIC_LINKS_API_BASE_URL_PROD:-}}}"
+# The BSL deployment passes this explicitly; the general site clears it so
+# both builds cannot accidentally share the BSL-only landing content.
+export NEXT_PUBLIC_ATTENDING_SITE_EVENT_SLUG="${ATTENDING_SITE_EVENT_SLUG:-}"
 
 corepack pnpm --filter hashpass-club-web build
 
