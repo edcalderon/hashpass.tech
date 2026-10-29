@@ -101,3 +101,16 @@ it('keeps both faces inside a bounded shell for 2D browser fallbacks', () => {
   expect(faces).toHaveLength(2);
   expect(faces.map((face) => face.props['data-active'])).toEqual([true, false]);
 });
+
+it('respects reduced motion on the icon hover affordances', () => {
+  act(() => { view = create(<FeatureFlipCard title="Quiet" description="Details" reduceMotion />); });
+
+  const iconWrappers = view.root.findAllByType('div').filter(({ props }) =>
+    String(props.className).startsWith('inline-flex'),
+  );
+
+  expect(iconWrappers.map(({ props }) => props.className)).toEqual([
+    'inline-flex',
+    'inline-flex shrink-0',
+  ]);
+});
