@@ -19,8 +19,8 @@ import {
   type ViewStyle,
   type ViewProps,
 } from "react-native";
-import { uiPalette, uiTokens, type ColorMode } from "./tokens";
-import type { ControlSkin, SegmentedTab } from "./primitives.types";
+import { mixHex, uiPalette, uiTokens, withAlpha, type ColorMode } from "./tokens";
+import type { BadgeProps, ControlSkin, SegmentedTab } from "./primitives.types";
 type Themed = { mode?: ColorMode };
 
 // Android needs this opt-in once per process before LayoutAnimation calls
@@ -92,53 +92,171 @@ export function Surface({
     />
   );
 }
-export function Badge({
+const REVEAL_SIZE = 28;
+/** Generous per-character estimate for the first open, before the label has been measured. */
+const REVEAL_CHARACTER_WIDTH = 10;
+const REVEAL_NATIVE_HOLD_MS = 2200;
+
+function useMotionPreference(override?: boolean) {
+  const [systemReduced, setSystemReduced] = useState(true);
+  useEffect(() => {
+    if (override !== undefined) return undefined;
+    let active = true;
+    void AccessibilityInfo.isReduceMotionEnabled()
+      .then((value) => {
+        if (active) setSystemReduced(value);
+      })
+      .catch(() => {
+        if (active) setSystemReduced(true);
+      });
+    const subscription = AccessibilityInfo.addEventListener("reduceMotionChanged", setSystemReduced);
+    return () => {
+      active = false;
+      subscription?.remove?.();
+    };
+  }, [override]);
+  return override ?? !systemReduced;
+}
+
+function tintColors(
+  palette: ReturnType<typeof uiPalette>,
+  tone: NonNullable<BadgeProps["tone"]>,
+  tint: string,
+  dark: boolean,
+  surfaceColor?: string,
+) {
+  const onMedia = tone === "onMedia";
+  const surface = surfaceColor ?? (onMedia ? uiTokens.effects.mediaChipBase : palette.raised);
+  return {
+    surface,
+    backgroundColor: mixHex(tint, surface, dark || onMedia ? 0.18 : 0.1),
+    borderColor: mixHex(tint, surface, dark || onMedia ? 0.5 : 0.4),
+    textColor: onMedia ? "#ffffff" : palette.text,
+  };
+}
+
+function RevealBadge({
+  mode = "light",
+  children,
+  tone = "neutral",
+  tint,
+  leadingIcon,
+  surfaceColor,
+  motionAllowed: motionOverride,
+  accessibilityLabel,
+  badgeTestID,
+}: BadgeProps) {
+  const palette = uiPalette(mode);
+  const motionAllowed = useMotionPreference(motionOverride);
+  const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const [tapped, setTapped] = useState(false);
+  const [labelWidth, setLabelWidth] = useState<number | null>(null);
+  const tapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const label = typeof children === "string" ? children : accessibilityLabel ?? "";
+  const expanded = hovered || focused || tapped;
+  useEffect(() => () => {
+    if (tapTimer.current) clearTimeout(tapTimer.current);
+  }, []);
+  const change = (apply: () => void) => {
+    animateRevealChange(motionAllowed);
+    apply();
+  };
+  const colors = tintColors(palette, tone, tint ?? palette.accent, mode === "dark", surfaceColor);
+  const textWidth = labelWidth ?? label.length * REVEAL_CHARACTER_WIDTH;
+  const width = expanded ? REVEAL_SIZE + textWidth + uiTokens.space.md : REVEAL_SIZE;
+  const transition = Platform.OS === "web" && motionAllowed
+    ? ({
+        transitionDuration: `${uiTokens.motion.fast}ms`,
+        transitionProperty: "width",
+        transitionTimingFunction: "ease-out",
+      } as object)
+    : null;
+  return (
+    <View style={styles.badgeRevealSlot}>
+      <Pressable
+        testID={badgeTestID}
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel ?? label}
+        accessibilityState={{ expanded }}
+        onPress={() => {
+          if (tapTimer.current) clearTimeout(tapTimer.current);
+          change(() => setTapped(true));
+          tapTimer.current = setTimeout(() => change(() => setTapped(false)), REVEAL_NATIVE_HOLD_MS);
+        }}
+        onHoverIn={() => change(() => setHovered(true))}
+        onHoverOut={() => change(() => setHovered(false))}
+        onFocus={() => change(() => setFocused(true))}
+        onBlur={() => change(() => setFocused(false))}
+        style={[
+          styles.badgeRevealPill,
+          { width, backgroundColor: colors.backgroundColor, borderColor: colors.borderColor },
+          transition,
+        ]}
+      >
+        {expanded ? (
+          <Text
+            numberOfLines={1}
+            onLayout={(event) => setLabelWidth(Math.ceil(event.nativeEvent.layout.width))}
+            style={[styles.badgeRevealLabel, { color: colors.textColor }]}
+          >
+            {label}
+          </Text>
+        ) : null}
+        <View accessible={false} style={styles.badgeRevealIcon}>{leadingIcon}</View>
+      </Pressable>
+    </View>
+  );
+}
+
+function BadgeBase({
   mode = "light",
   children,
   tone = "accent",
   radius,
   markerColor,
   leadingIcon,
+  trailingIcon,
+  tint,
   compact = false,
   onPress,
   accessibilityLabel,
-}: React.PropsWithChildren<
-  Themed & {
-    tone?: "accent" | "neutral" | "onMedia";
-    radius?: number;
-    markerColor?: string;
-    leadingIcon?: React.ReactNode;
-    compact?: boolean;
-    onPress?: PressableProps["onPress"];
-    accessibilityLabel?: string;
-  }
->) {
+  badgeTestID,
+}: BadgeProps) {
   const palette = uiPalette(mode);
   const onMedia = tone === "onMedia";
   const interactive = typeof onPress === "function";
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
   const [pressed, setPressed] = useState(false);
-  const active = interactive && (hovered || focused || pressed);
+  // A tinted badge keeps its hue; only an untinted one swaps to the solid accent on interaction.
+  const active = !tint && interactive && (hovered || focused || pressed);
+  const tinted = tint ? tintColors(palette, tone, tint, mode === "dark") : null;
   const backgroundColor = active
     ? palette.accent
-    : onMedia
-      ? "#111114e6"
-      : tone === "accent"
-        ? palette.accentSoft
-        : palette.surface;
+    : tinted
+      ? withAlpha(tint as string, mode === "dark" ? 0x2e : 0x1a)
+      : onMedia
+        ? "#111114e6"
+        : tone === "accent"
+          ? palette.accentSoft
+          : palette.surface;
   const borderColor = active
     ? palette.accent
-    : onMedia
-      ? "#ffffff40"
-      : palette.border;
+    : tinted
+      ? withAlpha(tint as string, mode === "dark" ? 0x80 : 0x66)
+      : onMedia
+        ? "#ffffff40"
+        : palette.border;
   const textColor = active
     ? palette.onAccent
-    : onMedia
-      ? "#ffffff"
-      : tone === "accent"
-        ? palette.accent
-        : palette.muted;
+    : tinted
+      ? tinted.textColor
+      : onMedia
+        ? "#ffffff"
+        : tone === "accent"
+          ? palette.accent
+          : palette.muted;
   const content = (
     <View style={styles.badgeContent}>
       {markerColor ? (
@@ -153,29 +271,43 @@ export function Badge({
         </View>
       ) : null}
       <Text
+        numberOfLines={tint ? 1 : undefined}
         style={[
           styles.badgeLabel,
           compact && styles.badgeLabelCompact,
+          tint ? styles.badgeLabelTint : null,
           { color: textColor },
         ]}
       >
         {children}
       </Text>
+      {trailingIcon ? (
+        <View accessible={false} style={{ pointerEvents: "none" }}>
+          {trailingIcon}
+        </View>
+      ) : null}
     </View>
   );
   const style = [
     styles.badge,
     compact && styles.badgeCompact,
+    tint ? styles.badgeTint : null,
     radius === undefined ? undefined : { borderRadius: radius },
     { backgroundColor, borderColor },
   ];
   if (!interactive) {
-    return <View style={style}>{content}</View>;
+    return (
+      <View accessibilityLabel={accessibilityLabel} style={style} testID={badgeTestID}>
+        {content}
+      </View>
+    );
   }
   return (
     <Pressable
+      testID={badgeTestID}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
+      hitSlop={tint ? { top: 12, bottom: 12, left: 8, right: 8 } : undefined}
       onPress={onPress}
       onHoverIn={() => setHovered(true)}
       onHoverOut={() => setHovered(false)}
@@ -183,11 +315,15 @@ export function Badge({
       onBlur={() => setFocused(false)}
       onPressIn={() => setPressed(true)}
       onPressOut={() => setPressed(false)}
-      style={style}
+      style={[style, tint && pressed ? { opacity: 0.75 } : null]}
     >
       {content}
     </Pressable>
   );
+}
+
+export function Badge(props: BadgeProps) {
+  return props.revealLabel ? <RevealBadge {...props} /> : <BadgeBase {...props} />;
 }
 export type ActionButtonProps = Omit<PressableProps, "children"> &
   Themed & {
@@ -816,6 +952,42 @@ const styles = StyleSheet.create({
     borderWidth: uiTokens.control.borderWidth,
     justifyContent: "center",
     maxWidth: "100%",
+  },
+  badgeTint: {
+    alignSelf: "flex-start",
+    gap: uiTokens.space.xs + 2,
+    minHeight: REVEAL_SIZE,
+    paddingHorizontal: uiTokens.space.md - 2,
+    paddingVertical: uiTokens.space.xs + 2,
+  },
+  badgeLabelTint: {
+    flexShrink: 1,
+    fontWeight: "700",
+    letterSpacing: 0.3,
+    textTransform: "none",
+  },
+  badgeRevealSlot: { height: REVEAL_SIZE, width: REVEAL_SIZE },
+  badgeRevealPill: {
+    alignItems: "center",
+    borderRadius: uiTokens.radius.pill,
+    borderWidth: uiTokens.control.borderWidth,
+    flexDirection: "row",
+    height: REVEAL_SIZE,
+    justifyContent: "flex-end",
+    overflow: "hidden",
+    position: "absolute",
+    right: 0,
+    top: 0,
+    zIndex: 5,
+  },
+  badgeRevealIcon: { alignItems: "center", height: REVEAL_SIZE - 2, justifyContent: "center", width: REVEAL_SIZE - 2 },
+  badgeRevealLabel: {
+    flexShrink: 0,
+    fontSize: uiTokens.type.caption,
+    fontWeight: "700",
+    letterSpacing: 0.3,
+    paddingLeft: uiTokens.space.md,
+    paddingRight: uiTokens.space.xs,
   },
   badgeCompact: {
     minHeight: uiTokens.space.md * 2,

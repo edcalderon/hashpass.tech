@@ -624,9 +624,10 @@ describe('event schedule screens', () => {
     expect(networkingMedia.findAllByType('NativeSafeIcon' as any).some((node) => node.props.name === 'people')).toBe(true);
     expect(typeBadge('networking-session').props.accessibilityLabel).toBe('TYPES.NETWORKING');
     const networkingCard = renderer!.root.findByProps({ testID: 'agenda-card-networking-session' });
-    expect(networkingCard.findAllByProps({ children: 'TYPES.NETWORKING' })).toHaveLength(0);
+    const typeLabelText = () => networkingCard.findAll((node) => node.type === Text && node.props.children === 'TYPES.NETWORKING');
+    expect(typeLabelText()).toHaveLength(0);
     act(() => typeBadge('networking-session').props.onHoverIn());
-    expect(networkingCard.findAllByProps({ children: 'TYPES.NETWORKING' }).length).toBeGreaterThan(0);
+    expect(typeLabelText().length).toBeGreaterThan(0);
     act(() => typeBadge('networking-session').props.onHoverOut());
     // The bookmark moved to the top-right of the card body, outside the photo.
     expect(networkingMedia.findAllByProps({ testID: 'agenda-card-bookmark-networking-session' })).toHaveLength(0);

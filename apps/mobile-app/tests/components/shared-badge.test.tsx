@@ -3,30 +3,59 @@
 import React from 'react';
 import { Text } from 'react-native';
 import { act, create } from 'react-test-renderer';
-import RevealBadge from '../../components/RevealBadge';
-import { mixHex } from '../../lib/color-mix';
+import { Badge } from '@hashpass/ui/primitives';
+import { mixHex, withAlpha } from '@hashpass/ui/tokens';
 
-jest.mock('../../hooks/useMotionAllowed', () => ({ useMotionAllowed: () => false }));
-jest.mock('@hashpass/ui/primitives', () => ({ animateRevealChange: jest.fn() }));
+jest.mock('@hashpass/ui/primitives', () => {
+  const actual = jest.requireActual('@hashpass/ui/primitives');
+  return { ...actual, animateRevealChange: jest.fn() };
+});
 
 const flat = (style: unknown): Record<string, any> => Object.assign({}, ...[style].flat(Infinity).filter(Boolean));
 
-describe('RevealBadge', () => {
-  const render = async () => {
-    let renderer: ReturnType<typeof create>;
+describe('shared Badge tint and trailing icon', () => {
+  it('renders a static tinted badge with its label, trailing icon and a single testID match', async () => {
+    let renderer!: ReturnType<typeof create>;
     await act(async () => {
       renderer = create(
-        <RevealBadge
-          testID="badge"
-          label="KEYNOTE"
-          color="#2563EB"
-          surfaceColor="#ffffff"
-          textColor="#111111"
-          icon={<Text>i</Text>}
-        />,
+        <Badge tint="#af0d01" trailingIcon={<Text>check</Text>} badgeTestID="pill">Keynote</Badge>,
       );
     });
-    return renderer!;
+    expect(renderer.root.findAllByProps({ children: 'Keynote' }).length).toBeGreaterThan(0);
+    expect(renderer.root.findAllByProps({ testID: 'pill' })).toHaveLength(1);
+    expect(renderer.root.findAllByProps({ children: 'check' }).length).toBeGreaterThan(0);
+    expect(renderer.root.findByProps({ testID: 'pill' }).props.onPress).toBeUndefined();
+    expect(flat(renderer.root.findByProps({ testID: 'pill' }).props.style).backgroundColor).toBe(withAlpha('#af0d01', 0x1a));
+  });
+
+  it('becomes pressable when onPress is provided, in dark mode', async () => {
+    const onPress = jest.fn();
+    let renderer!: ReturnType<typeof create>;
+    await act(async () => {
+      renderer = create(
+        <Badge mode="dark" tint="#22c55e" onPress={onPress} accessibilityLabel="Live now" badgeTestID="live">Live</Badge>,
+      );
+    });
+    const pill = renderer.root.findAllByProps({ testID: 'live' }).find((node) => typeof node.props.onPress === 'function')!;
+    await act(async () => {
+      pill.props.onPress();
+    });
+    expect(onPress).toHaveBeenCalledTimes(1);
+    expect(pill.props.accessibilityLabel).toBe('Live now');
+  });
+});
+
+describe('shared Badge revealLabel', () => {
+  const render = async () => {
+    let renderer!: ReturnType<typeof create>;
+    await act(async () => {
+      renderer = create(
+        <Badge revealLabel motionAllowed={false} tint="#2563EB" surfaceColor="#ffffff" leadingIcon={<Text>i</Text>} badgeTestID="badge">
+          KEYNOTE
+        </Badge>,
+      );
+    });
+    return renderer;
   };
   const pressable = (r: ReturnType<typeof create>) => r.root.findAllByProps({ testID: 'badge' })
     .find((node) => typeof node.props.onPress === 'function')!;
@@ -47,7 +76,6 @@ describe('RevealBadge', () => {
     expect(flat(pressable(renderer).props.style).width).toBeGreaterThan(28);
     act(() => pressable(renderer).props.onHoverOut());
     expect(labels(renderer)).toHaveLength(0);
-
     act(() => pressable(renderer).props.onFocus());
     expect(labels(renderer)).toHaveLength(1);
     act(() => pressable(renderer).props.onBlur());

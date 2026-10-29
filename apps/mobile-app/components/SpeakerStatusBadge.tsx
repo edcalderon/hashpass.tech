@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { MaterialIcons } from '../lib/vector-icons';
 import { useTranslation } from '../i18n/i18n';
-import StatusPill from './StatusPill';
+import { Badge } from '@hashpass/ui/primitives';
 import { uiPalette, uiTokens } from '@hashpass/ui/tokens';
 import type {
   SpeakerBadgeStatus,
@@ -35,17 +35,19 @@ export default function SpeakerStatusBadge({ status, label, isDark = false }: Sp
 
   return (
     <>
-      <StatusPill
-        label={text}
-        color={hue}
-        isDark={isDark}
+      <Badge
+        mode={mode}
+        tone="neutral"
+        tint={hue}
         accessibilityLabel={t('speakerView.status.explainA11y', { status: text })}
         onPress={() => setOpen(true)}
-        pillTestID={`speaker-status-${status}`}
+        badgeTestID={`speaker-status-${status}`}
         trailingIcon={status === 'active'
           ? <MaterialIcons name="check" size={14} color={hue} />
           : <MaterialIcons name="info-outline" size={12} color={palette.muted} />}
-      />
+      >
+        {text}
+      </Badge>
 
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
         <Pressable style={[styles.overlay, { backgroundColor: palette.overlay }]} onPress={() => setOpen(false)} accessibilityLabel={t('speakerView.status.close')}>

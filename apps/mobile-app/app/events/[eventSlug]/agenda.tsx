@@ -39,9 +39,9 @@ import * as Haptics from 'expo-haptics';
 import { parseISO } from 'date-fns';
 import LoadingScreen from '../../../components/LoadingScreen';
 import { useTranslation, getCurrentLocale } from '../../../i18n/i18n';
-import { ActionButton, HoverText, IconButton, SegmentedTabs, Surface } from '@hashpass/ui/primitives';
+import { ActionButton, Badge, HoverText, IconButton, SegmentedTabs, Surface } from '@hashpass/ui/primitives';
 import { uiPalette, uiTokens } from '@hashpass/ui/tokens';
-import RevealBadge from '../../../components/RevealBadge';
+import { useMotionAllowed } from '../../../hooks/useMotionAllowed';
 import WorkshopShimmer from '../../../components/WorkshopShimmer';
 import {
   buildGoogleCalendarUrl,
@@ -284,6 +284,7 @@ export default function BSL2025AgendaScreen() {
   const eventTzOffset = event?.eventStartDate?.match(/([+-]\d{2}:?\d{2})$/)?.[1] || EVENT_TZ_OFFSET;
   const { showSuccess, showError, showWarning } = useToastHelpers();
   const { t } = useTranslation('agenda');
+  const motionAllowed = useMotionAllowed();
   const scrollViewRef = useRef<ScrollView>(null);
   const sessionItemRefs = useRef<{ [key: string]: View | null }>({});
   const handledSessionRef = useRef<string | null>(null); // Track which session we've already handled
@@ -1692,15 +1693,17 @@ export default function BSL2025AgendaScreen() {
                   </View>
                 ) : null}
                 <View style={styles.agendaMediaType}>
-                  <RevealBadge
-                    isDark
-                    label={typeLabel}
-                    color={typeColor}
-                    surfaceColor={uiTokens.effects.mediaChipBase}
-                    textColor="#FFFFFF"
-                    icon={<NativeSafeIcon name={getAgendaTypeIcon(item.type) as NativeSafeIconName} size={15} color={typeColor} />}
-                    testID={`agenda-card-type-${item.id}`}
-                  />
+                  <Badge
+                    revealLabel
+                    mode="dark"
+                    tone="onMedia"
+                    tint={typeColor}
+                    motionAllowed={motionAllowed}
+                    leadingIcon={<NativeSafeIcon name={getAgendaTypeIcon(item.type) as NativeSafeIconName} size={15} color={typeColor} />}
+                    badgeTestID={`agenda-card-type-${item.id}`}
+                  >
+                    {typeLabel}
+                  </Badge>
                 </View>
                 <View
                   testID={`agenda-card-time-footer-${item.id}`}
@@ -1765,15 +1768,18 @@ export default function BSL2025AgendaScreen() {
                     </IconButton>
                   </View>
                   {isPast ? (
-                    <RevealBadge
-                      isDark={isDark}
-                      label={t('badges.past')}
-                      color={speakerStatusHues.past}
+                    <Badge
+                      revealLabel
+                      mode={isDark ? 'dark' : 'light'}
+                      tone="neutral"
+                      tint={speakerStatusHues.past}
                       surfaceColor={palette.surface}
-                      textColor={palette.text}
-                      icon={<MaterialIcons name="history" size={15} color={palette.muted} />}
-                      testID={`agenda-card-past-${item.id}`}
-                    />
+                      motionAllowed={motionAllowed}
+                      leadingIcon={<MaterialIcons name="history" size={15} color={palette.muted} />}
+                      badgeTestID={`agenda-card-past-${item.id}`}
+                    >
+                      {t('badges.past')}
+                    </Badge>
                   ) : null}
                 </View>
               </View>

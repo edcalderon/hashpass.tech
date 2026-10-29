@@ -71,6 +71,48 @@ function Catalog({ mode = "light" }: { mode?: ColorMode }) {
           Interactive
         </Badge>
       </View>
+      <View
+        style={{
+          flexDirection: "row",
+          flexWrap: "wrap",
+          gap: uiTokens.space.sm,
+          alignItems: "center",
+        }}
+      >
+        <Badge
+          mode={mode}
+          tone="neutral"
+          tint={uiPalette(mode).success}
+          trailingIcon={<Text style={{ color: uiPalette(mode).success }}>✓</Text>}
+          onPress={() => undefined}
+          accessibilityLabel="Tinted status badge"
+        >
+          Active
+        </Badge>
+        <Badge mode={mode} tone="neutral" tint={uiTokens.feature.cyan}>
+          Workshop with a long translated label that must truncate
+        </Badge>
+        <Badge
+          revealLabel
+          mode={mode}
+          tone="neutral"
+          tint={uiTokens.feature.green}
+          surfaceColor={palette.surface}
+          leadingIcon={<Text style={{ color: palette.accent }}>◎</Text>}
+          badgeTestID="story-reveal-badge"
+        >
+          Keynote
+        </Badge>
+        <Badge
+          revealLabel
+          mode="dark"
+          tone="onMedia"
+          tint={uiTokens.feature.cyan}
+          leadingIcon={<Text style={{ color: uiTokens.feature.cyan }}>◎</Text>}
+        >
+          Over media
+        </Badge>
+      </View>
       <Surface mode={mode}>
         <Text
           style={{
