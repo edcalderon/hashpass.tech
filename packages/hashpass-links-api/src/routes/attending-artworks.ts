@@ -84,6 +84,7 @@ async function sendArtworkEmail(input: {
   eventName: string;
   shareUrl: string;
   imageUrl: string;
+  image: Buffer;
 }): Promise<boolean> {
   if (!mailIsConfigured()) return false;
 
@@ -121,8 +122,14 @@ async function sendArtworkEmail(input: {
       from: `HASHPASS <${mailerEnvironmentValue('FROM')}>`,
       to: input.email,
       subject,
-      text: `Hi ${input.attendeeName},\n\nYour shareable attendance artwork for ${input.eventName} is ready.\n\nOpen your public artwork: ${input.shareUrl}\nThe link is available for 90 days.`,
-      html: `<!doctype html><html><body style="margin:0;background:#f4f7fb;font-family:Arial,sans-serif;color:#101b2c"><main style="max-width:560px;margin:32px auto;padding:28px;background:#fff;border:1px solid #dbe4ef;border-radius:20px"><p style="font-size:12px;letter-spacing:.12em;font-weight:700;color:#1976d2">HASHPASS · EVENT ARTWORK</p><h1 style="font-size:24px">${heading}</h1><p>${description}</p><p><a href="${shareUrl}" style="display:inline-block;padding:13px 20px;background:#1976d2;color:#fff;border-radius:999px;text-decoration:none;font-weight:700">Open your artwork</a></p><p><img src="${imageUrl}" alt="${imageAlt}" style="display:block;width:100%;height:auto;border-radius:14px"></p><p style="font-size:13px;color:#64748b">This public link expires in 90 days. Your image is visible to anyone who has the link.</p></main></body></html>`,
+      text: `Hi ${input.attendeeName},\n\nYour shareable attendance artwork for ${input.eventName} is ready.\n\nOpen your public artwork: ${input.shareUrl}\nDownload the PNG: ${input.imageUrl}\nA PNG copy is also attached to this email. The public link is available for 90 days.`,
+      html: `<!doctype html><html><body style="margin:0;background:#f4f7fb;font-family:Arial,sans-serif;color:#101b2c"><main style="max-width:560px;margin:32px auto;padding:28px;background:#fff;border:1px solid #dbe4ef;border-radius:20px"><p style="font-size:12px;letter-spacing:.12em;font-weight:700;color:#1976d2">HASHPASS · EVENT ARTWORK</p><h1 style="font-size:24px">${heading}</h1><p>${description}</p><p><a href="${shareUrl}" style="display:inline-block;padding:13px 20px;background:#1976d2;color:#fff;border-radius:999px;text-decoration:none;font-weight:700">Open your artwork</a> <a href="${imageUrl}" style="display:inline-block;padding:13px 20px;background:#e8eef7;color:#173454;border-radius:999px;text-decoration:none;font-weight:700">Download PNG</a></p><p><img src="${imageUrl}" alt="${imageAlt}" style="display:block;width:100%;height:auto;border-radius:14px"></p><p style="font-size:13px;color:#64748b">A PNG copy is attached to this email. The public link expires in 90 days and is visible to anyone who has it.</p></main></body></html>`,
+      attachments: [{
+        filename: 'hashpass-event-artwork.png',
+        content: input.image,
+        contentType: 'image/png',
+        contentDisposition: 'attachment',
+      }],
     });
     return delivery.accepted.length > 0;
   } catch (error) {
@@ -222,6 +229,7 @@ export async function createAttendingArtwork(request: Request): Promise<Response
       eventName: row.event_name,
       shareUrl,
       imageUrl,
+      image,
     }) ? 'sent' : 'unavailable';
   }
 
