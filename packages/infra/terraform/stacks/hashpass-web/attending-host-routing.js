@@ -24,6 +24,19 @@ function handler(event) {
   var eventSlug = host.slice(0, -suffix.length);
   if (eventSlug.indexOf('.') !== -1 || eventHosts[eventSlug] !== true) return request;
 
+  var artworkShare = uri.match(/^\/attending\/([a-z0-9][a-z0-9-]{0,79})\/a\/([A-Za-z0-9_-]{40,64})(\/image)?\/?$/i);
+  if (artworkShare && artworkShare[1].toLowerCase() === eventSlug) {
+    var apiPath = artworkShare[3] ? '/a/' + artworkShare[2] + '/image' : '/a/' + artworkShare[2];
+    return {
+      statusCode: 302,
+      statusDescription: 'Found',
+      headers: {
+        location: { value: 'https://api.hashpass.tech' + apiPath },
+        'cache-control': { value: 'no-store' },
+      },
+    };
+  }
+
   if (uri === '/' || uri === '/index.html') {
     request.uri = '/attending/' + eventSlug + '/index.html';
     return request;

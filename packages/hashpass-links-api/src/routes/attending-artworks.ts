@@ -42,6 +42,18 @@ function absoluteUrl(request: Request, path: string): string {
   return new URL(path, publicOrigin).toString();
 }
 
+function eventArtworkShareUrl(request: Request, eventSlug: string, eventUrl: string, token: string): string {
+  if (eventSlug === 'community') return absoluteUrl(request, `/a/${token}`);
+  const origin = new URL(eventUrl).origin;
+  return new URL(`/attending/${eventSlug}/a/${token}`, origin).toString();
+}
+
+function eventArtworkImageUrl(request: Request, eventSlug: string, eventUrl: string, token: string): string {
+  if (eventSlug === 'community') return absoluteUrl(request, `/a/${token}/image`);
+  const origin = new URL(eventUrl).origin;
+  return new URL(`/attending/${eventSlug}/a/${token}/image`, origin).toString();
+}
+
 function readArtworkBytes(value: unknown): Buffer | null {
   if (typeof value !== 'string') return null;
   const encoded = value.replace(/^data:image\/png;base64,/i, '');
@@ -200,8 +212,8 @@ export async function createAttendingArtwork(request: Request): Promise<Response
     return apiError('Could not publish the artwork. Please try again.', 500);
   }
 
-  const shareUrl = absoluteUrl(request, `/a/${token}`);
-  const imageUrl = db.storage.from(BUCKET).getPublicUrl(objectPath).data.publicUrl;
+  const shareUrl = eventArtworkShareUrl(request, row.event_slug, row.event_url, token);
+  const imageUrl = eventArtworkImageUrl(request, row.event_slug, row.event_url, token);
   let emailStatus: AttendingArtworkEmailStatus = 'not_requested';
   if (email) {
     emailStatus = await sendArtworkEmail({
@@ -221,8 +233,8 @@ export async function getAttendingArtworkShare(request: Request, token: string):
   const share = await findShare(token);
   if (!share) return apiError('Artwork link not found or expired', 404);
 
-  const shareUrl = absoluteUrl(request, `/a/${token}`);
-  const imageUrl = adminDb().storage.from(BUCKET).getPublicUrl(share.object_path).data.publicUrl;
+  const shareUrl = eventArtworkShareUrl(request, share.event_slug, share.event_url, token);
+  const imageUrl = eventArtworkImageUrl(request, share.event_slug, share.event_url, token);
   const customEventArtwork = share.event_slug === 'community';
   const title = `${share.attendee_name} · ${share.event_name} | HASHPASS`;
   const description = `${share.attendee_name} made a shareable attendance artwork for ${share.event_name}. This is a personal intention, not an RSVP or ticket.`;

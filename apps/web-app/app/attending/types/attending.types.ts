@@ -36,6 +36,7 @@ export interface AttendingArtworkTemplate {
   secondaryAccentColor: string;
   flagColors: string[];
   hashtags: string[];
+  xHandle?: string;
   poweredByLogoSrc: string;
 }
 
