@@ -122,6 +122,76 @@
     "unlockPotential": "Ava oma potentsiaal",
     "getStartedNow": "Alusta kohe",
     "exploreAllEvents": "Avasta kõik sündmused",
+    "platformStory": {
+      "eyebrow": "MEIE MISSIOON",
+      "title": "Muudame kogukonda kuulumise korraldamise lihtsaks ja osalemise ligipääsetavaks.",
+      "description": "Ühendatud koht inimestele, programmidele ja hetkedele, mis kogukondi kokku toovad.",
+      "cards": {
+        "lifecycle": {
+          "metricValue": "1",
+          "metric": "KONTO · TÄIELIK ELUKAAR",
+          "eyebrow": "ÜHENDATUD KOGUKONNARUUM",
+          "title": "Üks konto kogu teekonna jaoks",
+          "description": "Ühenda liikmed, üritused ja inimesed nende ümber ühte kohta."
+        },
+        "membership": {
+          "metricValue": "4",
+          "metric": "LIIKMELISUSE SAMMU",
+          "eyebrow": "LIIKMELISUS JA JUURDEPÄÄS",
+          "title": "Selge viis liitumiseks",
+          "description": "Kutsed, kinnitused, uuendamised ja rollid aitavad korraldajatel liikmeid vastu võtta ja toetada."
+        },
+        "eventTools": {
+          "metricValue": "4",
+          "metric": "ÜRITUSE PÕHIELEMENTI",
+          "eyebrow": "ÜRITUSED JA PROGRAMMID",
+          "title": "Kõik kohtumise ümber",
+          "description": "Hoia ürituse pääsmed, päevakavad, esinejad ja kohtumised ühes kohas."
+        },
+        "sharingTools": {
+          "metricValue": "2",
+          "metric": "JAGATAVAT TÖÖRIISTA",
+          "eyebrow": "JAGATAVAD TÖÖRIISTAD",
+          "title": "Jaga üritust ka väljaspool toimumiskohta",
+          "description": "Jälgitavad QR-lingid ja isikupärased ürituse kujundused aitavad üritust jagada."
+        },
+        "surfaces": {
+          "metricValue": "2",
+          "metric": "PLATVORMI · VEEB + MOBIIL",
+          "eyebrow": "LOODUD ÜHENDUSE LOOMISEKS",
+          "title": "Kohtu liikmetega seal, kus nad on",
+          "description": "HASHPASSi kogukonnatööriistad on saadaval veebis ja mobiilis."
+        },
+        "languages": {
+          "metricValue": "7",
+          "metric": "RAKENDUSE KEELT",
+          "eyebrow": "LOKALISEERITUD KOGEMUS",
+          "title": "Kõneta rohkem kogukondi",
+          "description": "Kasuta HASHPASSi eesti, inglise, hispaania, korea, prantsuse, portugali või saksa keeles."
+        },
+        "truthful": {
+          "metricValue": "TÕENE",
+          "metric": "VAIKIMISI",
+          "eyebrow": "TÕENE VAIKIMISI",
+          "title": "Alusta päris infost",
+          "description": "Ürituste ja kontode andmed jäävad kanooniliseks. Me ei mõtle välja nimekirju, saldosid ega soovitusi."
+        },
+        "private": {
+          "metricValue": "PRIVAATNE",
+          "metric": "DISAINI JÄRGI",
+          "eyebrow": "PRIVAATSUS ON DISAINI OSA",
+          "title": "Austa iga kogukonda",
+          "description": "Privaatsus on HASHPASSi loomise üks juhtpõhimõtteid."
+        },
+        "open": {
+          "metricValue": "AVATUD",
+          "metric": "KÕIGILE",
+          "eyebrow": "AVATUD KÕIGILE",
+          "title": "Muuda osalemine lihtsaks",
+          "description": "Iga kogukond väärib tööriistu, mis aitavad inimestel liituda."
+        }
+      }
+    },
     "copyright": "© {year} HASHPASS. Kõik õigused kaitstud.",
     "footer": {
       "resources": "Ressursid",
@@ -131,6 +201,46 @@
       "legal": "Juriidiline",
       "privacy": "Privaatsus",
       "terms": "Kasutustingimused"
+    },
+    "features": {
+      "secure": {
+        "title": "Turvaline ja privaatne",
+        "action": "Kaitse minu andmeid",
+        "metric": "Läbivalt krüptitud vestlused",
+        "metricLabel": "kinnitatud esinejat",
+        "description": "Kasuta ürituse privaatvestlust, et osalejate ja esinejatega suhelda ilma vestlust avalikuks muutmata.",
+        "moreInfo": "Kasuta ürituse privaatvestlust, et osalejate ja esinejatega suhelda ilma vestlust avalikuks muutmata."
+      },
+      "management": {
+        "title": "Lihtne haldus",
+        "action": "Halda minu võtmeid",
+        "metric": "Üks pääse sinu ürituste võrgustikule",
+        "metricLabel": "väljastatud pääset",
+        "description": "Ava rahakotis vajalik üritusepääse või liikmekaart ja hoia selle kood sissepääsuks valmis.",
+        "moreInfo": "Ava rahakotis vajalik üritusepääse või liikmekaart ja hoia selle kood sissepääsuks valmis."
+      },
+      "sync": {
+        "title": "Platvormideülene sünkroonimine",
+        "action": "Luba turvaline sünkroonimine",
+        "metric": "3 klienti: veeb, Android ja iOS",
+        "metricLabel": "toetatud platvormi",
+        "description": "Logi sisse veebis, Androidis või iOS-is, et jätkata sama kontoga käepärases seadmes.",
+        "moreInfo": "Logi sisse veebis, Androidis või iOS-is, et jätkata sama kontoga käepärases seadmes."
+      },
+      "entry": {
+        "title": "Kiire sissepääs",
+        "metric": "Reaalajas QR-koodi valideerimine",
+        "metricLabel": "aktiivset pääset",
+        "description": "Ava sissepääsu juures üritusepääse ja näita korraldajale selle reaalajas QR-koodi.",
+        "moreInfo": "Ava sissepääsu juures üritusepääse ja näita korraldajale selle reaalajas QR-koodi."
+      },
+      "network": {
+        "title": "Privaatne võrgustumine",
+        "metric": "Kohtumised ja krüptitud vestlus",
+        "metricLabel": "broneeritud kohtumist",
+        "description": "Sirvi osalejaid, küsi kohtumist ja jätka vestlust privaatses vestluses.",
+        "moreInfo": "Sirvi osalejaid, küsi kohtumist ja jätka vestlust privaatses vestluses."
+      }
     }
   },
   "publicEvents": {

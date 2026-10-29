@@ -334,7 +334,7 @@ const loadHomeScreen = ({
     }));
 
     jest.doMock("../../components/Features", () => "Features");
-    jest.doMock("../../components/Testimonials", () => "Testimonials");
+    jest.doMock("../../components/PlatformStory", () => "PlatformStory");
     jest.doMock("../../components/InteractiveHoverButton", () => ({
       InteractiveHoverButton: "InteractiveHoverButton",
     }));

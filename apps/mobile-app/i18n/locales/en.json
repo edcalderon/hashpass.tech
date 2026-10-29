@@ -738,36 +738,41 @@
       "subtitle": "One private identity for entry, connections, passes and rewards.",
       "secure": {
         "title": "Secure & Private",
-        "description": "Your data is encrypted and protected with industry-leading security protocols. We prioritize your privacy above all else.",
+        "description": "Use private event chat to coordinate with attendees and speakers without publishing the conversation.",
         "action": "Secure my data",
         "metric": "End-to-end encrypted conversations",
-        "metricLabel": "verified speakers"
+        "metricLabel": "verified speakers",
+        "moreInfo": "Use private event chat to coordinate with attendees and speakers without publishing the conversation."
       },
       "management": {
         "title": "Effortless Management",
-        "description": "Organize all your digital credentials, loyalty cards, and communities in one intuitive place.",
+        "description": "Open your wallet to find the pass or membership card you need, and keep its code ready for check-in.",
         "action": "Manage my keys",
         "metric": "One pass for your event network",
-        "metricLabel": "passes issued"
+        "metricLabel": "passes issued",
+        "moreInfo": "Open your wallet to find the pass or membership card you need, and keep its code ready for check-in."
       },
       "sync": {
         "title": "Cross-Platform Sync",
-        "description": "Access your data across all your devices with our secure cloud sync.",
+        "description": "Sign in on the web, Android, or iOS to return to the same account from the device at hand.",
         "action": "Enable secure sync",
         "metric": "3 clients: web, Android and iOS",
-        "metricLabel": "supported platforms"
+        "metricLabel": "supported platforms",
+        "moreInfo": "Sign in on the web, Android, or iOS to return to the same account from the device at hand."
       },
       "entry": {
         "title": "Fast entry",
-        "description": "Use a live QR pass for quick, reliable event access.",
+        "description": "At the door, open your event pass and show its live QR code for the organizer to validate.",
         "metric": "Live QR validation",
-        "metricLabel": "live passes"
+        "metricLabel": "live passes",
+        "moreInfo": "At the door, open your event pass and show its live QR code for the organizer to validate."
       },
       "network": {
         "title": "Private networking",
-        "description": "Find attendees, book meetings and keep conversations private.",
+        "description": "Browse attendees, request a meeting, and continue the conversation in private chat.",
         "metric": "Meetings and encrypted chat",
-        "metricLabel": "meetings booked"
+        "metricLabel": "meetings booked",
+        "moreInfo": "Browse attendees, request a meeting, and continue the conversation in private chat."
       }
     },
     "howItWorks": {
@@ -857,10 +862,75 @@
     "eventsExplorerSubtitle": "Discover events across the world — find yours.",
     "noEventsFound": "No events found.",
     "trustedByThousands": "Trusted by Thousands",
-    "testimonials": {
-      "title": "Testimonials",
-      "subtitle": "What our users say",
-      "description": "See what our customers have to say about us."
+    "platformStory": {
+      "eyebrow": "OUR MISSION",
+      "title": "Make belonging simple to run—and easy to join.",
+      "description": "One connected home for the people, programmes and moments that bring a community together.",
+      "cards": {
+        "lifecycle": {
+          "metricValue": "1",
+          "metric": "ACCOUNT · FULL LIFECYCLE",
+          "eyebrow": "ONE CONNECTED HOME",
+          "title": "One account, the whole lifecycle",
+          "description": "Bring members, events and the people around them into one connected place."
+        },
+        "membership": {
+          "metricValue": "4",
+          "metric": "MEMBERSHIP ACTIONS",
+          "eyebrow": "MEMBERSHIP & ACCESS",
+          "title": "A clear way to join",
+          "description": "Invitations, approvals, renewals and roles help organizers welcome and support members."
+        },
+        "eventTools": {
+          "metricValue": "4",
+          "metric": "EVENT BUILDING BLOCKS",
+          "eyebrow": "EVENTS & PROGRAMMES",
+          "title": "Everything around the gathering",
+          "description": "Keep event passes, agendas, speakers and meetings together in one place."
+        },
+        "sharingTools": {
+          "metricValue": "2",
+          "metric": "SHAREABLE TOOLS",
+          "eyebrow": "SHAREABLE TOOLS",
+          "title": "Take the event beyond the room",
+          "description": "Trackable QR links and personal event artwork give people simple ways to share an event."
+        },
+        "surfaces": {
+          "metricValue": "2",
+          "metric": "PLATFORMS · WEB + MOBILE",
+          "eyebrow": "BUILT FOR THE WAY PEOPLE CONNECT",
+          "title": "Meet members where they are",
+          "description": "HASHPASS brings community tools to the web and mobile."
+        },
+        "languages": {
+          "metricValue": "7",
+          "metric": "APP LANGUAGES",
+          "eyebrow": "LOCALIZED EXPERIENCE",
+          "title": "Speak to more communities",
+          "description": "Use HASHPASS in English, Spanish, Korean, French, Portuguese, German or Estonian."
+        },
+        "truthful": {
+          "metricValue": "TRUE",
+          "metric": "BY DEFAULT",
+          "eyebrow": "TRUTHFUL BY DEFAULT",
+          "title": "Start with what is real",
+          "description": "Event and account data stay canonical. Listings, balances and testimonials are never invented."
+        },
+        "private": {
+          "metricValue": "PRIVATE",
+          "metric": "BY DESIGN",
+          "eyebrow": "PRIVATE BY DESIGN",
+          "title": "Respect each community",
+          "description": "Privacy is a core principle in how we build HASHPASS."
+        },
+        "open": {
+          "metricValue": "OPEN",
+          "metric": "TO EVERYONE",
+          "eyebrow": "OPEN TO EVERYONE",
+          "title": "Make it easy to join",
+          "description": "Every community deserves infrastructure that helps people take part."
+        }
+      }
     },
     "copyright": " 2025 HASHPASS™ All rights reserved.",
     "footer": {

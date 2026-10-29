@@ -39,7 +39,7 @@ import Features from "../components/Features";
 import HowItWorks from "../components/HowItWorks";
 import QuickSettingsPanel from "../components/QuickSettingsPanel";
 import BackToTop from "../components/BackToTop";
-import Testimonials from "../components/Testimonials";
+import PlatformStory from "../components/PlatformStory";
 import { InteractiveHoverButton } from "../components/InteractiveHoverButton";
 import FlipWords from "../components/FlipWords";
 import Newsletter from "../components/Newsletter";
@@ -637,13 +637,11 @@ export default function HomeScreen() {
 
 
 
-        {/* Generic HASHPASS testimonials aren't specific to any single
-            whitelabel tenant's event -- only show them on the global
-            explorer (hashpass.tech), never on a single-tenant domain like
-            bsl.hashpass.tech. */}
+        {/* Keep the global platform story off single-tenant event explorers
+            such as bsl.hashpass.tech. */}
         {isGlobalEventTenant() && (
           <Animated.View style={[styles.socialProof, featuresAnimatedStyle]}>
-            <Testimonials locale={getCurrentLocale()} />
+            <PlatformStory />
           </Animated.View>
         )}
 
@@ -1349,25 +1347,6 @@ const getStyles = (
       paddingHorizontal: 24,
       marginHorizontal: 16,
       marginBottom: 32,
-    },
-    testimonialContainer: {
-      borderRadius: 12,
-      borderWidth: 1,
-      borderColor: "#2F2F2F",
-    },
-    testimonialText: {
-      fontSize: 18,
-      fontStyle: "italic",
-      color: "#FFFFFF",
-      textAlign: "center",
-      marginBottom: 10,
-      lineHeight: 26,
-    },
-    testimonialAuthor: {
-      fontSize: 16,
-      fontWeight: "bold",
-      color: "#A3A3A3",
-      textAlign: "right",
     },
     scrollDownContainer: {
       width: "100%",

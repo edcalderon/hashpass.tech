@@ -805,36 +805,41 @@
       "subtitle": "입장, 연결, 패스, 혜택을 위한 하나의 개인 ID입니다.",
       "secure": {
         "title": "안전하고 개인적",
-        "description": "업계 최고 수준의 보안으로 데이터를 보호합니다.",
+        "description": "이벤트 비공개 채팅에서 참석자와 발표자에게 연락하고 대화를 공개하지 않은 채 조율하세요.",
         "action": "데이터 보호",
         "metric": "종단 간 암호화된 대화",
-        "metricLabel": "검증된 연사"
+        "metricLabel": "검증된 연사",
+        "moreInfo": "이벤트 비공개 채팅에서 참석자와 발표자에게 연락하고 대화를 공개하지 않은 채 조율하세요."
       },
       "management": {
         "title": "손쉬운 관리",
-        "description": "디지털 자격증, 멤버십, 커뮤니티를 한 곳에서 관리하세요.",
+        "description": "지갑에서 필요한 이벤트 패스나 멤버십 카드를 열고 입장할 때 QR 코드를 준비하세요.",
         "action": "키 관리",
         "metric": "이벤트 네트워크를 위한 하나의 패스",
-        "metricLabel": "발급된 패스"
+        "metricLabel": "발급된 패스",
+        "moreInfo": "지갑에서 필요한 이벤트 패스나 멤버십 카드를 열고 입장할 때 QR 코드를 준비하세요."
       },
       "sync": {
         "title": "크로스 플랫폼 동기화",
-        "description": "모든 기기에서 안전하게 접근하세요.",
+        "description": "웹, Android 또는 iOS에서 로그인해 사용하는 기기에서 같은 계정으로 이어서 이용하세요.",
         "action": "동기화 활성화",
         "metric": "3개 클라이언트: 웹, Android, iOS",
-        "metricLabel": "지원 플랫폼"
+        "metricLabel": "지원 플랫폼",
+        "moreInfo": "웹, Android 또는 iOS에서 로그인해 사용하는 기기에서 같은 계정으로 이어서 이용하세요."
       },
       "entry": {
         "title": "빠른 입장",
-        "description": "실시간 QR 패스로 빠르고 안정적으로 이벤트에 입장하세요.",
+        "description": "입장할 때 이벤트 패스를 열고 실시간 QR 코드를 보여 주면 운영진이 확인합니다.",
         "metric": "실시간 QR 검증",
-        "metricLabel": "활성 패스"
+        "metricLabel": "활성 패스",
+        "moreInfo": "입장할 때 이벤트 패스를 열고 실시간 QR 코드를 보여 주면 운영진이 확인합니다."
       },
       "network": {
         "title": "비공개 네트워킹",
-        "description": "참석자를 찾고, 미팅을 예약하고, 대화를 비공개로 유지하세요.",
+        "description": "참석자를 찾아 미팅을 요청하고 비공개 채팅에서 대화를 이어가세요.",
         "metric": "미팅 및 암호화 채팅",
-        "metricLabel": "예약된 미팅"
+        "metricLabel": "예약된 미팅",
+        "moreInfo": "참석자를 찾아 미팅을 요청하고 비공개 채팅에서 대화를 이어가세요."
       }
     },
     "welcomeBack": "다시 오신 것을 환영합니다!",
@@ -846,10 +851,75 @@
     "scroll": "스크롤",
     "getStartedNow": "지금 시작",
     "trustedByThousands": "수천 명이 신뢰합니다",
-    "testimonials": {
-      "title": "사용자 후기",
-      "subtitle": "사용자들의 이야기",
-      "description": "고객들의 후기를 확인하세요."
+    "platformStory": {
+      "eyebrow": "우리의 사명",
+      "title": "소속감을 운영하기 쉽게, 참여하기 쉽게.",
+      "description": "사람, 프로그램, 모임을 하나로 연결해 커뮤니티가 함께하는 순간을 지원합니다.",
+      "cards": {
+        "lifecycle": {
+          "metricValue": "1",
+          "metric": "계정 · 전체 여정",
+          "eyebrow": "하나로 연결된 공간",
+          "title": "하나의 계정으로 이어지는 여정",
+          "description": "멤버, 이벤트, 그리고 함께하는 사람들을 한곳에서 연결합니다."
+        },
+        "membership": {
+          "metricValue": "4",
+          "metric": "멤버십 주요 기능",
+          "eyebrow": "멤버십 및 참여",
+          "title": "명확한 참여 경로",
+          "description": "초대, 승인, 갱신, 역할 설정으로 운영자가 구성원을 맞이하고 지원할 수 있습니다."
+        },
+        "eventTools": {
+          "metricValue": "4",
+          "metric": "이벤트 구성 요소",
+          "eyebrow": "이벤트 및 프로그램",
+          "title": "모임에 필요한 모든 것",
+          "description": "이벤트 패스, 일정, 발표자, 미팅을 한곳에 모읍니다."
+        },
+        "sharingTools": {
+          "metricValue": "2",
+          "metric": "공유 도구",
+          "eyebrow": "공유 도구",
+          "title": "행사장 밖으로 이어지는 이벤트",
+          "description": "추적 가능한 QR 링크와 개인화된 이벤트 이미지를 공유할 수 있습니다."
+        },
+        "surfaces": {
+          "metricValue": "2",
+          "metric": "플랫폼 · 웹 + 모바일",
+          "eyebrow": "연결을 위해 설계",
+          "title": "멤버가 있는 곳에서 만나세요",
+          "description": "HASHPASS의 커뮤니티 도구는 웹과 모바일에서 사용할 수 있습니다."
+        },
+        "languages": {
+          "metricValue": "7",
+          "metric": "앱 지원 언어",
+          "eyebrow": "현지화된 경험",
+          "title": "더 많은 커뮤니티와 소통하세요",
+          "description": "한국어, 영어, 스페인어, 프랑스어, 포르투갈어, 독일어, 에스토니아어를 지원합니다."
+        },
+        "truthful": {
+          "metricValue": "사실",
+          "metric": "기본 원칙",
+          "eyebrow": "사실을 기본으로",
+          "title": "실제 정보에서 시작하기",
+          "description": "이벤트와 계정 데이터는 기준 데이터로 유지합니다. 등록 정보, 잔액, 후기를 만들어내지 않습니다."
+        },
+        "private": {
+          "metricValue": "비공개",
+          "metric": "설계 원칙",
+          "eyebrow": "개인정보 보호를 설계에 반영",
+          "title": "각 커뮤니티를 존중합니다",
+          "description": "개인정보 보호는 HASHPASS를 만드는 원칙 중 하나입니다."
+        },
+        "open": {
+          "metricValue": "개방",
+          "metric": "모두에게",
+          "eyebrow": "모두에게 열린 플랫폼",
+          "title": "참여를 쉽게 만드세요",
+          "description": "모든 커뮤니티는 사람들이 쉽게 참여할 수 있는 도구를 누릴 자격이 있습니다."
+        }
+      }
     },
     "copyright": " 2025 HASHPASS™ 무단 복제 금지.",
     "footer": {

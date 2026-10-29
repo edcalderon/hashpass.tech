@@ -1,3 +1,18 @@
+## [1.9.186](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.185...v1.9.186) (2026-10-29)
+
+
+### Features
+
+* **mobile:** replace landing testimonials with platform story ([02a1f9c](https://github.com/hashpass-tech/hashpass.tech/commit/02a1f9c88d85158d36a3494a21da41b8da5fed1b))
+### Release Highlights
+- replace landing testimonials with platform story
+
+### Release scope
+- Compared with: `v1.9.185` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+
 ## [1.9.185](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.184...v1.9.185) (2026-10-29)
 
 
