@@ -26,7 +26,7 @@ export function Footer() {
           href: '#features',
           children: [
             { label: t('qrLinks'), href: '/qr' },
-            { label: t('attending'), href: '/attending/' },
+            { label: t('attending'), href: '/attendings/' },
           ],
         },
         { label: t('pricing'), href: '#pricing', children: [] },

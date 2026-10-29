@@ -16,6 +16,11 @@ export interface AttendingLandingProps {
   events: AttendingEventData[];
 }
 
+export interface AttendingExperienceProps {
+  event: AttendingEventData;
+  generic?: boolean;
+}
+
 export interface AttendingLandingStepProps {
   icon: ReactNode;
   number: string;
@@ -52,6 +57,7 @@ export interface AttendingEventData {
 export interface AttendingArtworkOptions {
   eventName: string;
   shortName: string;
+  genericArtwork?: boolean;
   location: string;
   venue: string;
   dateLabel: string;

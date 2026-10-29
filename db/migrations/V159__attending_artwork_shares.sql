@@ -1,4 +1,4 @@
--- Public event-artwork pages created by the attending experience. The API
+-- Public event and personal artwork pages created by the attending experience. The API
 -- stores artwork in a public, unlistable bucket only after a valid Cap token;
 -- links expire after 90 days and the scheduled API sweep removes old files.
 
@@ -11,7 +11,8 @@ CREATE TABLE attending_artwork_shares (
   attendee_name text NOT NULL CHECK (char_length(attendee_name) BETWEEN 2 AND 100),
   caption text NOT NULL CHECK (char_length(caption) BETWEEN 1 AND 500),
   event_url text NOT NULL CHECK (
-    (event_slug <> 'bsl' AND event_url ~ ('^https://' || event_slug || '\.hashpass\.tech/?$'))
+    (event_slug = 'community' AND event_url ~ '^https://hashpass\.club/attendings/?$')
+    OR (event_slug NOT IN ('bsl', 'community') AND event_url ~ ('^https://' || event_slug || '\.hashpass\.tech/?$'))
     OR (event_slug = 'bsl' AND event_url ~ '^https://bsl\.hashpass\.tech/attending/bsl/?$')
   ),
   locale text NOT NULL DEFAULT 'en' CHECK (locale ~ '^[a-z]{2}(-[A-Z]{2})?$'),

@@ -116,6 +116,32 @@ export function makeAttendingEventData(event: EventConfig, eventSlug: string): A
   };
 }
 
+export function makeGenericAttendingData(): AttendingEventData {
+  return {
+    slug: 'community',
+    id: 'community',
+    name: 'HASHPASS Club',
+    shortName: 'COMMUNITY',
+    city: '',
+    country: '',
+    venue: '',
+    color: '#27D8FF',
+    logoSrc: '/attending/logo-full-hashpass-white-cyan.svg',
+    startDate: null,
+    endDate: null,
+    dateFallback: null,
+    website: '',
+    artworkTemplate: {
+      backgroundSrc: null,
+      accentColor: '#27D8FF',
+      secondaryAccentColor: '#156BFF',
+      flagColors: [],
+      hashtags: ['#HASHPASSClub'],
+      poweredByLogoSrc: POWERED_BY_LOGO,
+    },
+  };
+}
+
 export function makeAttendingMetadata(event: EventConfig, eventSlug: string): Metadata {
   const eventName = event.title || event.name;
   const logoSrc = makeAttendingEventData(event, eventSlug).logoSrc;

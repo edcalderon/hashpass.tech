@@ -23,6 +23,7 @@ import type {
   AttendingPublicShare,
   AttendingPublicShareIntent,
   AttendingPublicShareResponse,
+  AttendingExperienceProps,
   ProcessedAttendeePhoto,
 } from './types/attending.types';
 import styles from './attending.module.css';
@@ -85,7 +86,7 @@ function fileToBase64(file: File): Promise<string> {
   });
 }
 
-export function AttendingExperience({ event }: { event: AttendingEventData }) {
+export function AttendingExperience({ event, generic = false }: AttendingExperienceProps) {
   const { t } = useTranslation('attending');
   const locale = useLocale();
   const { resolvedTheme } = useTheme();
@@ -181,17 +182,21 @@ export function AttendingExperience({ event }: { event: AttendingEventData }) {
   const nameError = nameTouched && !isNameValid
     ? normalizedName ? t('nameInvalidFeedback') : t('nameRequiredFeedback')
     : undefined;
-  const eventName = event.name || event.shortName;
+  const eventName = generic ? t('genericArtworkTitle') : event.name || event.shortName;
   const location = [event.city, event.country].filter(Boolean).join(', ');
   const dateLabel = formatAttendingEventDate(event, locale);
-  const intentionLabel = pastEvent ? t('artPast') : t('artUpcoming');
+  const intentionLabel = generic
+    ? t('genericArtUpcoming')
+    : pastEvent ? t('artPast') : t('artUpcoming');
   const displayName = isNameValid ? normalizedName : t('yourName');
-  const shareUrl = getAttendingEventUrl(event.slug);
-  const artUpcoming = t('artUpcoming');
+  const shareUrl = generic ? 'https://hashpass.club/attendings/' : getAttendingEventUrl(event.slug);
+  const artUpcoming = generic ? t('genericArtUpcoming') : t('artUpcoming');
   const artPast = t('artPast');
   const artEmptyName = t('yourName');
   const artPoweredBy = t('poweredBy');
-  const shareText = `${intentionLabel} ${eventName}\n${event.artworkTemplate.hashtags.join(' ')}`;
+  const shareText = generic
+    ? t('genericShareCaption')
+    : `${intentionLabel} ${eventName}\n${event.artworkTemplate.hashtags.join(' ')}`;
 
   useEffect(() => {
     setPastEvent(!!event.endDate && event.endDate.slice(0, 10) < new Date().toISOString().slice(0, 10));
@@ -269,6 +274,7 @@ export function AttendingExperience({ event }: { event: AttendingEventData }) {
   const artOptions = useMemo(() => ({
     eventName,
     shortName: event.shortName,
+    genericArtwork: generic,
     location,
     venue: event.venue,
     dateLabel,
@@ -289,7 +295,7 @@ export function AttendingExperience({ event }: { event: AttendingEventData }) {
       past: artPast,
       emptyName: artEmptyName,
     },
-  }), [eventName, event.shortName, event.logoSrc, event.artworkTemplate, event.venue, location, dateLabel, displayName, role, xProfile, instagramProfile, artworkPhoto, transparentPortrait, pastEvent, artUpcoming, artPast, artEmptyName, artPoweredBy]);
+  }), [eventName, event.shortName, generic, event.logoSrc, event.artworkTemplate, event.venue, location, dateLabel, displayName, role, xProfile, instagramProfile, artworkPhoto, transparentPortrait, pastEvent, artUpcoming, artPast, artEmptyName, artPoweredBy]);
 
   useEffect(() => {
     setPublishedShare(null);
@@ -348,7 +354,7 @@ export function AttendingExperience({ event }: { event: AttendingEventData }) {
     const canvas = canvasRef.current;
     if (!canvas || !artReady) throw new Error(t('artNotReady'));
     const blob = await canvasBlob(canvas);
-    return new File([blob], `${event.slug}-attending.png`, { type: 'image/png' });
+    return new File([blob], generic ? 'hashpass-personal-artwork.png' : `${event.slug}-attending.png`, { type: 'image/png' });
   }
 
   function saveFile(file: File) {
@@ -394,7 +400,7 @@ export function AttendingExperience({ event }: { event: AttendingEventData }) {
       };
       if (navigatorWithShare.share) {
         await navigatorWithShare.share({
-          title: `${t('shareTitle')} ${eventName}`,
+          title: generic ? t('genericArtworkTitle') : `${t('shareTitle')} ${eventName}`,
           text: shareText,
           url: publishedShare.url,
         });
@@ -486,7 +492,7 @@ export function AttendingExperience({ event }: { event: AttendingEventData }) {
         body: JSON.stringify({
           captchaToken,
           imageBase64: await fileToBase64(file),
-          eventSlug: event.slug,
+          eventSlug: generic ? 'community' : event.slug,
           eventName,
           attendeeName: normalizedName,
           caption: shareText,
@@ -526,7 +532,7 @@ export function AttendingExperience({ event }: { event: AttendingEventData }) {
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <a className={styles.brand} href={getAttendingLandingUrl()} aria-label="HASHPASS Club attending home">
+        <a className={styles.brand} href={generic ? '/attendings/' : getAttendingLandingUrl()} aria-label="HASHPASS Club attending home">
           <img src="/attending/logo-hashpass.svg" alt="" />
           <span>HASHPASS <b>CLUB</b></span>
         </a>
@@ -545,13 +551,13 @@ export function AttendingExperience({ event }: { event: AttendingEventData }) {
       </header>
 
       <main className={styles.main}>
-        <section className={styles.intro}>
+        <section className={`${styles.intro} ${generic ? styles.genericIntro : ''}`}>
           <div>
-            <p className={styles.eyebrow}><span className={styles.liveDot} />{t('pageEyebrow')}</p>
-            <h1>{pastEvent ? t('pastPageTitle') : t('pageTitle')}</h1>
-            <p className={styles.lead}>{t('pageDescription')}</p>
+            <p className={styles.eyebrow}><span className={styles.liveDot} />{generic ? t('genericPageEyebrow') : t('pageEyebrow')}</p>
+            <h1>{generic ? t('genericPageTitle') : pastEvent ? t('pastPageTitle') : t('pageTitle')}</h1>
+            <p className={styles.lead}>{generic ? t('genericPageDescription') : t('pageDescription')}</p>
           </div>
-          <div className={styles.eventMeta}>
+          {!generic && <div className={styles.eventMeta}>
             <Badge mode={mode} tone="neutral" compact>{event.shortName}</Badge>
             <span className={styles.eventName}>{eventName}</span>
             <span className={styles.eventDetails}>
@@ -559,7 +565,7 @@ export function AttendingExperience({ event }: { event: AttendingEventData }) {
               {location && <span><MapPin size={15} />{location}</span>}
             </span>
             {event.website && <a href={event.website} target="_blank" rel="noopener noreferrer">{t('eventWebsite')} <ArrowUpRight size={14} /></a>}
-          </div>
+          </div>}
         </section>
 
         <div className={styles.workspace}>
@@ -703,7 +709,7 @@ export function AttendingExperience({ event }: { event: AttendingEventData }) {
               <div className={styles.previewInner}>
             <div className={styles.previewHeading}>
               <div>
-                <p className={styles.previewEyebrow}>{t('previewEyebrow')}</p>
+                <p className={styles.previewEyebrow}>{generic ? t('genericPreviewEyebrow') : t('previewEyebrow')}</p>
                 <h2 id="attending-preview-title">{t('previewTitle')}</h2>
               </div>
               <span className={styles.previewRatio}>4:5</span>
@@ -716,12 +722,14 @@ export function AttendingExperience({ event }: { event: AttendingEventData }) {
                 width={1080}
                 height={1350}
                 role="img"
-                aria-label={t('artAccessibleName', { event: eventName, attendee: displayName })}
+                aria-label={generic
+                  ? t('genericArtAccessibleName', { attendee: displayName })
+                  : t('artAccessibleName', { event: eventName, attendee: displayName })}
               />
               {!artReady && <div className={styles.artLoading} aria-live="polite">{t('makingPreview')}</div>}
             </div>
 
-            <p className={styles.disclaimer}>{t('intentionDisclaimer')}</p>
+            <p className={styles.disclaimer}>{generic ? t('genericIntentionDisclaimer') : t('intentionDisclaimer')}</p>
             {photoExportWarning && <p className={styles.exportWarning}>{t('photoExportWarning')}</p>}
 
             <div className={styles.actions}>
@@ -799,7 +807,7 @@ export function AttendingExperience({ event }: { event: AttendingEventData }) {
               <div className={styles.shareDialogContent}>
                 <div className={styles.shareDialogHeader}>
                   <div>
-                    <p className={styles.previewEyebrow}>{t('previewEyebrow')}</p>
+                    <p className={styles.previewEyebrow}>{generic ? t('genericPreviewEyebrow') : t('previewEyebrow')}</p>
                     <h2 id="attending-share-title">{publishedShare ? t('sharePublicReady') : t('shareDialogTitle')}</h2>
                   </div>
                   <IconButton
@@ -817,7 +825,7 @@ export function AttendingExperience({ event }: { event: AttendingEventData }) {
 
                 {!publishedShare ? (
                   <>
-                    <p className={styles.shareDialogDescription}>{t('shareDialogDescription')}</p>
+                    <p className={styles.shareDialogDescription}>{generic ? t('genericShareDialogDescription') : t('shareDialogDescription')}</p>
                     <FormField
                       mode={mode}
                       label={t('shareEmailLabel')}

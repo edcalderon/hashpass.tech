@@ -142,7 +142,7 @@ function drawSocialIcon(
   context.restore();
 }
 
-function drawSocialHandles(context: CanvasRenderingContext2D, options: AttendingArtworkOptions) {
+function drawSocialHandles(context: CanvasRenderingContext2D, options: AttendingArtworkOptions, top = 1182) {
   const handles = [
     { platform: 'x' as const, handle: options.attendeeSocialHandles.x },
     { platform: 'instagram' as const, handle: options.attendeeSocialHandles.instagram },
@@ -158,10 +158,10 @@ function drawSocialHandles(context: CanvasRenderingContext2D, options: Attending
   const totalWidth = widths.reduce((total, width) => total + width, 0) + itemGap * (handles.length - 1);
   let x = (ART_WIDTH - totalWidth) / 2;
   handles.forEach(({ platform, handle }, index) => {
-    drawSocialIcon(context, platform, x, 1182, iconSize, '#f3f8ff');
+    drawSocialIcon(context, platform, x, top, iconSize, '#f3f8ff');
     context.fillStyle = '#f3f8ff';
     context.textAlign = 'left';
-    context.fillText(handle, x + iconSize + iconGap, 1201);
+    context.fillText(handle, x + iconSize + iconGap, top + 19);
     x += widths[index] + itemGap;
   });
   context.restore();
@@ -451,7 +451,9 @@ export async function drawAttendingArtwork(
   context.font = '600 18px "IBM Plex Mono", monospace';
   context.fillText(options.shortName.toLocaleUpperCase(), 84, 414, 420);
 
-  const headline = options.pastEvent ? options.intentions.past : options.intentions.upcoming;
+  const headline = options.genericArtwork
+    ? options.intentions.upcoming
+    : options.pastEvent ? options.intentions.past : options.intentions.upcoming;
   context.textAlign = 'left';
   context.fillStyle = '#ffffff';
   context.shadowColor = 'rgba(0, 0, 0, 0.34)';
@@ -484,40 +486,43 @@ export async function drawAttendingArtwork(
   context.strokeStyle = colorWithAlpha(options.artworkTemplate.accentColor, 0.48);
   context.lineWidth = 2;
   context.beginPath();
-  context.moveTo(112, 913);
-  context.lineTo(968, 913);
+  context.moveTo(112, options.genericArtwork ? 930 : 913);
+  context.lineTo(968, options.genericArtwork ? 930 : 913);
   context.stroke();
 
   context.textAlign = 'left';
-  if (options.dateLabel) {
+  if (!options.genericArtwork && options.dateLabel) {
     drawCalendar(context, 145, 969, options.artworkTemplate.accentColor, 32);
     context.fillStyle = '#f3f8ff';
     context.font = '700 28px Manrope, sans-serif';
     drawFittedText(context, options.dateLabel, 178, 980, 340, 700, 'Manrope, sans-serif', 28, 20);
   }
-  if (options.location) {
+  if (!options.genericArtwork && options.location) {
     drawLocationPin(context, 586, 969, options.artworkTemplate.accentColor, 32);
     context.fillStyle = '#f3f8ff';
     context.font = '700 28px Manrope, sans-serif';
     drawFittedText(context, options.location, 618, 980, 340, 700, 'Manrope, sans-serif', 28, 20);
   }
 
-  context.strokeStyle = colorWithAlpha(options.artworkTemplate.accentColor, 0.42);
-  context.lineWidth = 2;
-  context.beginPath();
-  context.moveTo(112, 1011);
-  context.lineTo(968, 1011);
-  context.stroke();
+  if (!options.genericArtwork) {
+    context.strokeStyle = colorWithAlpha(options.artworkTemplate.accentColor, 0.42);
+    context.lineWidth = 2;
+    context.beginPath();
+    context.moveTo(112, 1011);
+    context.lineTo(968, 1011);
+    context.stroke();
+  }
 
   const venueLabel = compactVenue(options.venue);
-  if (venueLabel) {
+  if (!options.genericArtwork && venueLabel) {
     drawBuilding(context, 145, 1049, options.artworkTemplate.accentColor, 32);
     context.fillStyle = '#f3f8ff';
     context.font = '600 27px Manrope, sans-serif';
     drawFittedText(context, venueLabel, 178, 1060, 780, 600, 'Manrope, sans-serif', 27, 20);
   }
 
-  drawRoundRect(context, 160, 1090, 760, 74, 37);
+  const identityPillY = options.genericArtwork ? 970 : 1090;
+  drawRoundRect(context, 160, identityPillY, 760, 74, 37);
   context.fillStyle = 'rgba(8, 30, 70, 0.86)';
   context.fill();
   context.strokeStyle = colorWithAlpha(options.artworkTemplate.accentColor, 0.9);
@@ -531,13 +536,14 @@ export async function drawAttendingArtwork(
   context.textAlign = 'center';
   context.fillStyle = '#ffffff';
   context.font = '700 33px Manrope, sans-serif';
-  drawFittedText(context, identity, ART_WIDTH / 2, 1136, 700, 700, 'Manrope, sans-serif', 33, 20);
+  drawFittedText(context, identity, ART_WIDTH / 2, identityPillY + 46, 700, 700, 'Manrope, sans-serif', 33, 20);
 
-  drawSocialHandles(context, options);
+  const socialTop = options.genericArtwork ? 1080 : 1182;
+  drawSocialHandles(context, options, socialTop);
 
   context.fillStyle = options.artworkTemplate.accentColor;
   context.font = '600 22px "IBM Plex Mono", monospace';
-  context.fillText(options.artworkTemplate.hashtags.join('   '), ART_WIDTH / 2, 1244, 850);
+  context.fillText(options.artworkTemplate.hashtags.join('   '), ART_WIDTH / 2, options.genericArtwork ? 1178 : 1244, 850);
 
   context.textAlign = 'right';
   context.fillStyle = 'rgba(230, 244, 255, 0.66)';
