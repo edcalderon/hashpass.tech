@@ -1,17 +1,42 @@
-import React from 'react';
-import { Text, View, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { AccessibilityInfo, AppState, Text, View, StyleSheet } from 'react-native';
 import { Surface } from '@hashpass/ui/primitives';
 import { uiTokens } from '@hashpass/ui/tokens';
 import FeatureIcon from './FeatureIcon';
+import PlatformStoryMetricValue from './PlatformStoryMetricValue';
+import { useAnimationLevel } from '../contexts/AnimationLevelContext';
 import { useTheme } from '../hooks/useTheme';
 import type { PlatformStoryCard } from './types/PlatformStory.types';
 
 const PlatformStoryCards = ({ stories }: { stories: PlatformStoryCard[] }) => {
   const { colors, isDark } = useTheme();
+  const { animationLevel } = useAnimationLevel();
+  const [systemReduced, setSystemReduced] = useState(true);
+  const [foreground, setForeground] = useState(AppState.currentState === 'active');
+
+  useEffect(() => {
+    let mounted = true;
+    let preferenceChanged = false;
+    void AccessibilityInfo.isReduceMotionEnabled().then((value) => {
+      if (mounted && !preferenceChanged) setSystemReduced(value);
+    }).catch(() => {});
+    const preference = AccessibilityInfo.addEventListener('reduceMotionChanged', (value) => {
+      preferenceChanged = true;
+      setSystemReduced(value);
+    });
+    const app = AppState.addEventListener('change', (state) => setForeground(state === 'active'));
+    return () => {
+      mounted = false;
+      preference.remove();
+      app.remove();
+    };
+  }, []);
+
+  const shouldAnimate = animationLevel === 'full' && !systemReduced && foreground;
 
   return (
     <View style={styles.grid}>
-      {stories.map((story) => (
+      {stories.map((story, index) => (
         <Surface
           key={story.id}
           mode={isDark ? 'dark' : 'light'}
@@ -31,11 +56,20 @@ const PlatformStoryCards = ({ stories }: { stories: PlatformStoryCard[] }) => {
             </Text>
           </View>
           <View style={styles.metricRow}>
-            <FeatureIcon name={story.icon} color={story.accentColor} compact />
+            <FeatureIcon
+              name={story.icon}
+              color={story.accentColor}
+              compact
+              active={shouldAnimate}
+              entranceDelay={Math.min(index, 3) * uiTokens.motion.stagger}
+            />
             <View style={styles.metricCopy}>
-              <Text selectable={false} style={[styles.metricValue, { color: colors.text.primary }]}>
-                {story.metricValue}
-              </Text>
+              <PlatformStoryMetricValue
+                value={story.metricValue}
+                animate={shouldAnimate}
+                delay={Math.min(index, 3) * uiTokens.motion.stagger}
+                style={[styles.metricValue, { color: colors.text.primary }]}
+              />
               <Text selectable={false} style={[styles.metric, { color: colors.text.secondary }]}>
                 {story.metric}
               </Text>

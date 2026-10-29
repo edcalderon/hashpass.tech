@@ -1,3 +1,18 @@
+## [1.9.189](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.188...v1.9.189) (2026-10-29)
+
+
+### Features
+
+* animate landing icons and metrics ([9d440c9](https://github.com/hashpass-tech/hashpass.tech/commit/9d440c9f4b8e4ccac35d8e54c1cd8bd6909a50e1))
+### Release Highlights
+- animate landing icons and metrics
+
+### Release scope
+- Compared with: `v1.9.188` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+
 ## [1.9.188](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.187...v1.9.188) (2026-10-29)
 ### Released
 - route tenant footer links to Club

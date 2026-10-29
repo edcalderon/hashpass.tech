@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, AppState, Platform, StyleSheet, View } from 'react-native';
-import Animated, { cancelAnimation, Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, { cancelAnimation, Easing, useAnimatedStyle, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
 import { CalendarDays, Globe2, KeyRound, MonitorSmartphone, QrCode, RefreshCcw, ShieldCheck, UsersRound } from 'lucide-react-native';
 import { uiTokens } from '@hashpass/ui/tokens';
 import { useAnimationLevel } from '../contexts/AnimationLevelContext';
@@ -20,14 +20,15 @@ export interface FeatureIconProps {
   name: string;
   color: string;
   compact?: boolean;
-  /** Native plays one short acknowledgement when the card is opened. */
+  /** Native plays a short acknowledgement when the icon enters or becomes active. */
   active?: boolean;
+  entranceDelay?: number;
   visible?: boolean;
   reduceMotion?: boolean;
 }
 
 /** One SVG icon family and circular artwork frame on web, iOS and Android. */
-export default function FeatureIcon({ name, color, compact = false, active = false, visible = true, reduceMotion = false }: FeatureIconProps) {
+export default function FeatureIcon({ name, color, compact = false, active = false, entranceDelay = 0, visible = true, reduceMotion = false }: FeatureIconProps) {
   const Icon = icons[name as keyof typeof icons] ?? ShieldCheck;
   const size = compact ? uiTokens.space.xxl : uiTokens.space.hero;
   const frameRef = useRef<View>(null);
@@ -67,20 +68,29 @@ export default function FeatureIcon({ name, color, compact = false, active = fal
     cancelAnimation(progress);
     progress.value = 0;
     if (animate) {
-      // Finite, not an ambient loop: replay only on entry/open, and cancel on
-      // exit, background or a preference change. Native only translates/fades.
-      progress.value = withTiming(1, { duration: uiTokens.motion.entrance * 2, easing: Easing.inOut(Easing.cubic) });
+      // Finite, not an ambient loop: replay on entry/open, and cancel on exit,
+      // background or a motion preference change.
+      const entrance = withTiming(1, { duration: uiTokens.motion.entrance, easing: Easing.inOut(Easing.cubic) });
+      progress.value = entranceDelay > 0 ? withDelay(entranceDelay, entrance) : entrance;
     }
     return () => cancelAnimation(progress);
-  }, [animate, progress]);
+  }, [animate, entranceDelay, progress]);
 
   const glyphStyle = useAnimatedStyle(() => {
     const pulse = Math.sin(progress.value * Math.PI);
+    const entryProgress = animate ? progress.value : 1;
     const rotate = Platform.OS === 'web' && name === 'sync'
       ? `${progress.value * 180}deg`
       : `${Platform.OS === 'web' && name === 'key' ? pulse * -12 : 0}deg`;
-    return { opacity: 1 - pulse * 0.12, transform: [{ translateY: -pulse * 2 }, { rotate }] };
-  }, [name, progress]);
+    return {
+      opacity: animate ? 0.9 + entryProgress * 0.1 : 1,
+      transform: [
+        { translateY: animate ? (1 - entryProgress) * 3 - pulse : -pulse * 2 },
+        { scale: animate ? 0.94 + entryProgress * 0.06 : 1 },
+        { rotate },
+      ],
+    };
+  }, [animate, name, progress]);
   const detailStyle = useAnimatedStyle(() => ({
     opacity: Math.sin(progress.value * Math.PI) * 0.8,
     transform: [{ translateY: name === 'qr-code-outline' ? (progress.value - 0.5) * size / 2 : 0 }],
