@@ -27,6 +27,7 @@ describe('BSL SPA viewer-request fallback', () => {
     '/assets/logo.png',
     '/config/versions.json',
     '/manifest.json',
+    '/manifest.webmanifest',
     '/sw.js',
     '/favicon.ico',
   ])('keeps the real asset %s on its requested path', (uri) => {

@@ -1,9 +1,10 @@
 import React from 'react';
+import fs from 'fs';
+import path from 'path';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
+import Root from '../../app/+html';
 
 jest.mock('expo-router/html', () => ({ ScrollViewStyleReset: () => null }));
-
-import Root from '../../app/+html';
 
 let view: ReactTestRenderer;
 
@@ -42,6 +43,18 @@ it('publishes a mobile PWA viewport without disabling browser zoom', () => {
     'width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content'
   );
   expect(viewport?.props.content).not.toContain('user-scalable=no');
+});
+
+it('links to the valid webmanifest compatibility asset', () => {
+  act(() => {
+    view = create(<Root><main>HASHPASS</main></Root>);
+  });
+
+  const manifestLink = view.root.findAllByType('link').find(node => node.props.rel === 'manifest');
+  expect(manifestLink?.props.href).toBe('/manifest.webmanifest');
+  expect(() => JSON.parse(
+    fs.readFileSync(path.resolve(__dirname, '../../public/manifest.webmanifest'), 'utf8'),
+  )).not.toThrow();
 });
 
 it('opts out of browser auto-translation that detaches React-managed DOM nodes', () => {
