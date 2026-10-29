@@ -16,6 +16,7 @@ import type { NativeSafeIconName } from '../../../lib/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import EventBanner from '../../../components/EventBanner';
+import AgendaRowLead from '../../../components/AgendaRowLead';
 import SpeakerAvatar from '../../../components/SpeakerAvatar';
 import UnifiedSearchAndFilter from '../../../components/UnifiedSearchAndFilter';
 import { apiClient, eventApiPath } from '@/lib/api-client';
@@ -1607,10 +1608,13 @@ export default function BSL2025AgendaScreen() {
             ]}
           >
             <View testID={`agenda-card-layout-${item.id}`} style={styles.agendaRowLayout}>
-              <View testID={`agenda-card-icon-${item.id}`} style={styles.agendaRowLead}>
-                <View style={[styles.agendaRowIcon, { backgroundColor: `${typeColor}22`, borderColor: `${typeColor}66` }]}>
-                  <NativeSafeIcon name={getAgendaTypeIcon(item.type) as NativeSafeIconName} size={20} color={typeColor} />
-                </View>
+              <AgendaRowLead
+                testID={`agenda-card-icon-${item.id}`}
+                label={typeLabel}
+                color={typeColor}
+                image={usesSpeakerPortrait && featuredSpeaker?.image ? { uri: featuredSpeaker.image } : venueImage}
+                icon={<NativeSafeIcon name={getAgendaTypeIcon(item.type) as NativeSafeIconName} size={20} color={typeColor} />}
+              >
                 {isConfirmed ? (
                   <View
                     testID={`agenda-card-on-agenda-${item.id}`}
@@ -1621,7 +1625,7 @@ export default function BSL2025AgendaScreen() {
                     <MaterialIcons name="check" size={10} color="#FFFFFF" />
                   </View>
                 ) : null}
-              </View>
+              </AgendaRowLead>
               <View style={styles.agendaRowBody}>
                 <HoverText
                   mode={interfaceMode}
@@ -2661,17 +2665,6 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     minHeight: 56,
     paddingHorizontal: uiTokens.space.sm,
     paddingVertical: uiTokens.space.xs + 2,
-  },
-  agendaRowLead: {
-    position: 'relative',
-  },
-  agendaRowIcon: {
-    alignItems: 'center',
-    borderRadius: uiTokens.radius.input,
-    borderWidth: 1,
-    height: 40,
-    justifyContent: 'center',
-    width: 40,
   },
   agendaRowCheck: {
     alignItems: 'center',

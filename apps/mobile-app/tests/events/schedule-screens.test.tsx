@@ -2,7 +2,7 @@
 
 import React from 'react';
 import TestRenderer, { act } from 'react-test-renderer';
-import { Text, TouchableOpacity } from 'react-native';
+import { Image, Text, TouchableOpacity } from 'react-native';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { uiPalette, uiTokens } from '@hashpass/ui/tokens';
@@ -452,6 +452,8 @@ describe('event schedule screens', () => {
     const rowId = String(rowIcon.props.testID).replace('agenda-card-icon-', '');
     const rowCard = renderer!.root.findByProps({ testID: `agenda-card-${rowId}` });
     expect(rowCard.findAllByType(Text).some((node) => node.props.numberOfLines === 1)).toBe(true);
+    // The tile leads with the session photo (venue/portrait) and swaps to the icon on hover.
+    expect(rowIcon.findAllByType(Image).length + rowIcon.findAllByType('NativeSafeIcon' as any).length).toBeGreaterThan(0);
     for (const action of ['bookmark', 'agenda-action', 'calendar']) {
       expect(rowCard.findAllByProps({ testID: `agenda-card-${action}-${rowId}` }).length).toBeGreaterThan(0);
     }
