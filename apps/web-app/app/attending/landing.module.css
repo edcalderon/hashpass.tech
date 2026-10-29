@@ -7,51 +7,12 @@
     var(--bg-canvas);
 }
 
-.header,
 .main {
   width: min(1240px, calc(100% - 48px));
   margin: 0 auto;
 }
 
-.header {
-  min-height: 76px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid var(--border);
-}
-
-.brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  color: var(--text-primary);
-  text-decoration: none;
-  font-family: var(--font-mono);
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-}
-
-.brand img {
-  width: 28px;
-  height: 28px;
-  object-fit: contain;
-}
-
-.brand b {
-  color: var(--accent);
-  font-size: 10px;
-  letter-spacing: 0.16em;
-}
-
-.headerActions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.main { padding-bottom: 56px; }
+.main { padding: 76px 0 56px; }
 
 .hero {
   min-height: 512px;
@@ -496,7 +457,6 @@
 }
 
 @media (max-width: 760px) {
-  .header,
   .main { width: min(100% - 32px, 620px); }
   .hero { min-height: auto; grid-template-columns: 1fr; gap: 26px; padding: 58px 0 48px; }
   .hero h1 { max-width: 620px; font-size: clamp(47px, 11vw, 72px); }
@@ -516,7 +476,6 @@
 }
 
 @media (max-width: 420px) {
-  .brand { font-size: 10px; gap: 7px; }
   .sectionTop { align-items: flex-start; }
   .sectionTop h2 { font-size: 32px; }
   .carouselControls { gap: 5px; }

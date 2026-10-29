@@ -10,6 +10,7 @@ import { UserMenu } from './UserMenu';
 import { ClubSettingsMenu } from './ClubSettingsMenu';
 import { scrollToAnchor } from '../../lib/scroll-to-anchor';
 import { PricingDialog } from './PricingDialog';
+import type { NavbarProps } from './types/Navbar.types';
 
 // ── Pill / icon-button shared styles ─────────────────────────────────────────
 type PillStyle = {
@@ -87,21 +88,7 @@ function IconPill({
   );
 }
 
-interface NavbarProps {
-  // The #features/#pricing anchors only resolve on the landing page itself,
-  // and /documentation/ reads oddly as primary nav once you're inside an
-  // authenticated area like /panel -- pages that aren't the marketing
-  // landing page pass false here instead of duplicating the whole Navbar.
-  showMarketingLinks?: boolean;
-  // Only the landing page renders a dark/colorful hero behind the top of
-  // the page, which is what the white logo + light link colors below are
-  // designed to sit on. Pages without a hero (panel, qr) start directly on
-  // the plain theme background, so they must skip the "over hero" styling
-  // entirely or the white variant renders washed-out on a light background.
-  hasHero?: boolean;
-}
-
-export function Navbar({ showMarketingLinks = true, hasHero = true }: NavbarProps) {
+export function Navbar({ showMarketingLinks = true, hasHero = true, brandHref = '/' }: NavbarProps) {
   const { resolvedTheme } = useTheme();
   const { t } = useTranslation('nav');
   const [scrolled, setScrolled] = useState(false);
@@ -162,7 +149,7 @@ export function Navbar({ showMarketingLinks = true, hasHero = true }: NavbarProp
         >
           {/* ── Logo ── */}
           <Link
-            href="/"
+            href={brandHref}
             style={{
               display: 'flex',
               alignItems: 'center',
