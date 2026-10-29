@@ -21,7 +21,7 @@ The two sites are a separate WordPress network. They do not use Directus users/d
 - No named production writers or editors have completed role acceptance in a browser. The disposable local browser trial is not production acceptance.
 - SMTP is not configured; do not rely on invitations, notifications, moderation, or password-reset email.
 - The initial administrator credential has not been securely rotated. **Do not retrieve or display the existing generated password.** Complete an approved reset/rotation that does not reveal it before onboarding writers.
-- No snapshot restore rehearsal has been completed, and actual snapshot storage cost has not yet been recorded.
+- No snapshot restore rehearsal has been completed, and actual snapshot storage cost has not yet been recorded. Rehearsal is blocked until an isolated restore path can prevent public ingress from the moment a production snapshot clone starts.
 - Certificate renewal and alerting are outstanding; complete them well before 2027-01-27.
 - Low-volume memory/load checks remain outstanding before deciding whether `micro_3_0` is sufficient.
 
@@ -86,14 +86,20 @@ Use WP-CLI only for narrowly scoped maintenance after the host is verified. Do n
 
 Daily Lightsail instance snapshots are the only configured backup in this stack; there is no separate WordPress database/content export or automated restore. Snapshot storage cost has not been reconciled. A successful snapshot is not a substitute for a tested restore, and no RTO/RPO is claimed yet.
 
-A restore rehearsal is still required:
+### Blocking isolation gate
 
-1. Select a known-good snapshot and create a separate test instance in `us-east-2`; do not overwrite or delete production. A clone contains production data and TLS/authentication key material, so treat it as production-sensitive.
-2. **Harden the clone's Lightsail firewall before using it or testing it.** Snapshot restores do not inherit the source instance's custom firewall rules; a new clone may have default SSH/HTTP/HTTPS rules open to the internet. Remove broad defaults, restrict SSH to the approved operator IPv4 `/32`, keep ports 80/443 closed unless temporarily restricted to the operator, and verify both IPv4 and IPv6 ingress rules. Do not attach the production static IP or change public DNS. Use a temporary host override or equivalent isolated access to verify both WordPress sites, posts/media, site mapping, roles, theme customizations, HTTPS behavior, and admin access.
-3. Record snapshot age, restore duration, missing data, and snapshot storage cost. Confirm the recovery procedure can remain under the monthly budget, then remove the test instance and its snapshots when the rehearsal is complete.
-4. Rehearse any static-IP reattachment or DNS change separately. Do not move the production IP or change public DNS until the owner approves an actual recovery.
+AWS documents that custom firewall rules do not copy from the source instance when restoring from a snapshot. A new WordPress Lightsail instance receives default rules allowing SSH, HTTP, and HTTPS from all IP addresses; IPv4 and IPv6 firewalls are independent. The documented create-from-snapshot workflow does not accept custom firewall rules in the create request. Closing ports immediately afterward reduces the exposure window but does **not** prevent exposure from the moment the public clone starts.
 
-Until this rehearsal passes, treat recovery as **unverified**. Instance snapshots do not include Terraform's local state file; protect the state separately.
+**Do not create a public Lightsail clone of a production snapshot for rehearsal unless a verified control prevents all public ingress from the moment the clone starts.** Use an approved isolated restore environment that has no public ingress at boot (for example, a separately validated private-network restore path). That alternative is not currently configured and must be costed against the $50/month ceiling. If pre-ingress isolation cannot be guaranteed, keep the rehearsal blocked and agree on another recovery-validation method; immediate firewall lockdown alone is not an acceptable control.
+
+Once an isolated test instance exists:
+
+1. Treat it as production-sensitive: it contains production data and TLS/authentication key material. Do not attach the production static IP or change public DNS.
+2. Verify both independent IPv4 and IPv6 firewalls before connecting. Remove broad defaults, allow SSH only from the approved operator `/32`, and keep 80/443 closed unless temporarily restricted to the operator for testing.
+3. Use an isolated hostname/host override to verify both sites, posts/media, site mapping, roles, theme customizations, HTTPS behavior, and admin access.
+4. Record snapshot age, restore duration, missing data, and snapshot storage cost. Confirm the recovery procedure remains within budget, then remove the test instance and its snapshots when the rehearsal is complete.
+
+Until an isolated rehearsal passes, treat recovery as **unverified**. Instance snapshots do not include Terraform's local state file; protect the state separately.
 
 ## TLS and monthly operations
 
@@ -115,6 +121,8 @@ Monthly operator checks:
 - [Stack variables and example](./variables.tf) · [`terraform.tfvars.example`](./terraform.tfvars.example)
 - [Local Multisite prototype and editorial workflow](../../../../../apps/wordpress-multisite/README.md)
 - [AWS Lightsail Multisite guide](https://docs.aws.amazon.com/lightsail/latest/userguide/amazon-lightsail-quick-start-guide-wordpress-multisite.html)
+- [Create an instance from a snapshot](https://docs.aws.amazon.com/lightsail/latest/userguide/lightsail-how-to-create-instance-from-snapshot.html) — notes that custom firewall rules do not copy.
+- [Lightsail firewall defaults and IPv4/IPv6 rules](https://docs.aws.amazon.com/lightsail/latest/userguide/understanding-firewall-and-port-mappings-in-amazon-lightsail.html)
 - [Map domains to WordPress Multisite](https://docs.aws.amazon.com/lightsail/latest/userguide/amazon-lightsail-add-blogs-as-domains-to-your-wordpress-multisite.html)
 - [Lightsail packaged-blueprint migration notes](https://docs.aws.amazon.com/lightsail/latest/userguide/migrate-from-bitnami-to-lightsail-blueprints.html)
 - [Lightsail Let's Encrypt walkthrough](https://docs.aws.amazon.com/lightsail/latest/userguide/amazon-lightsail-lets-encrypt-certbot-wordpress.html) — for a related regular WordPress image; verify compatibility before adapting it to Multisite.
