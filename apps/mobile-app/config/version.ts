@@ -22,29 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610290857, // Updated to current timestamp
+  buildNumber: 202610290936, // Updated to current timestamp
   releaseDate: '2026-10-29',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'support artwork for custom events',
-    'refine attendance artwork themes',
-    'refine BSL artwork template',
-    'add personal artwork creator',
-    'add localized testnet CTA'
+    // No new features
   ],
   bugfixes: [
-    'keep local attendance links local',
-    'resolve release regressions and localized artwork',
-    'keep testnet CTA in the current tab',
-    'replace default share favicon'
+    'make duplicate release tags idempotent (#538)'
   ],
   breakingChanges: [],
-  notes: 'support artwork for custom events; refine attendance artwork themes; refine BSL artwork template; add personal artwork creator; add localized testnet CTA; keep local attendance links local; resolve release regressions and localized artwork; keep testnet CTA in the current tab; replace default share favicon'
+  notes: 'make duplicate release tags idempotent (#538)'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.181': {
+    version: '1.9.181',
+    buildNumber: 202610290936,
+    releaseDate: '2026-10-29',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'make duplicate release tags idempotent (#538)'
+    ],
+    breakingChanges: [],
+    notes: 'make duplicate release tags idempotent (#538)'
+  },
   '1.9.180': {
     version: '1.9.180',
     buildNumber: 202610290857,
