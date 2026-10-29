@@ -24,6 +24,7 @@ export function LukasWhyVideo({ locale, animationLevel, isDark, onReward }: Luka
   const copy = fallbackCopy[videoLocale];
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const frameRef = useRef<HTMLDivElement | null>(null);
+  const syncPlaybackRef = useRef<(() => void) | null>(null);
   const [hasFailed, setHasFailed] = useState(false);
   const [started, setStarted] = useState(false);
   const [ready, setReady] = useState(false);
@@ -49,6 +50,7 @@ export function LukasWhyVideo({ locale, animationLevel, isDark, onReward }: Luka
       if (shouldPlay) void video.play().catch(() => undefined);
       else video.pause();
     };
+    syncPlaybackRef.current = syncPlayback;
     const observer = typeof IntersectionObserver === 'undefined'
       ? null
       : new IntersectionObserver(([entry]) => {
@@ -63,6 +65,7 @@ export function LukasWhyVideo({ locale, animationLevel, isDark, onReward }: Luka
     return () => {
       observer?.disconnect();
       document.removeEventListener('visibilitychange', onVisibilityChange);
+      syncPlaybackRef.current = null;
       video.pause();
     };
   }, [animationLevel, source, started]);
@@ -109,7 +112,7 @@ export function LukasWhyVideo({ locale, animationLevel, isDark, onReward }: Luka
         style={{ ...styles.video, opacity: ready && started ? 1 : 0 } as React.CSSProperties}
         onCanPlay={() => {
           setReady(true);
-          if (started && animationLevel === 'full') void videoRef.current?.play().catch(() => undefined);
+          syncPlaybackRef.current?.();
         }}
         onPlay={() => {
           setStarted(true);
