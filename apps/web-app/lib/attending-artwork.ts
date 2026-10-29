@@ -174,12 +174,9 @@ function drawPortrait(
   accentColor: string,
   secondaryAccentColor: string,
   transparentPortrait: boolean,
+  layout = { x: 548, y: 78, width: 470, height: 785, radius: 196, verticalAnchor: 0.5 },
 ) {
-  const x = 548;
-  const y = 78;
-  const width = 470;
-  const height = 785;
-  const radius = 196;
+  const { x, y, width, height, radius, verticalAnchor } = layout;
 
   if (image && transparentPortrait) {
     const scale = Math.max(width / image.naturalWidth, height / image.naturalHeight);
@@ -195,7 +192,7 @@ function drawPortrait(
     context.drawImage(
       image,
       x + (width - drawWidth) / 2,
-      y + (height - drawHeight) / 2,
+      y + (height - drawHeight) * verticalAnchor,
       drawWidth,
       drawHeight,
     );
@@ -223,7 +220,7 @@ function drawPortrait(
     const scale = Math.max(width / image.naturalWidth, height / image.naturalHeight);
     const drawWidth = image.naturalWidth * scale;
     const drawHeight = image.naturalHeight * scale;
-    context.drawImage(image, x + (width - drawWidth) / 2, y + (height - drawHeight) / 2, drawWidth, drawHeight);
+    context.drawImage(image, x + (width - drawWidth) / 2, y + (height - drawHeight) * verticalAnchor, drawWidth, drawHeight);
   } else {
     const initials = name.trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toLocaleUpperCase() || '★';
     context.fillStyle = '#ffffff';
@@ -349,6 +346,218 @@ function compactVenue(venue: string): string {
     .trim();
 }
 
+function drawColombiaFlagRibbon(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  colors: string[],
+) {
+  if (colors.length < 3) return;
+  const yellowWidth = width / 2;
+  const blueWidth = width / 4;
+  context.fillStyle = colors[0];
+  context.fillRect(x, y, yellowWidth, height);
+  context.fillStyle = colors[1];
+  context.fillRect(x + yellowWidth, y, blueWidth, height);
+  context.fillStyle = colors[2];
+  context.fillRect(x + yellowWidth + blueWidth, y, width - yellowWidth - blueWidth, height);
+}
+
+function drawBslColombiaArtwork(
+  context: CanvasRenderingContext2D,
+  options: AttendingArtworkOptions,
+  assets: {
+    backgroundImage: HTMLImageElement | null;
+    logo: HTMLImageElement | null;
+    poweredByLogo: HTMLImageElement | null;
+    avatar: HTMLImageElement | null;
+  },
+) {
+  const { backgroundImage, logo, poweredByLogo, avatar } = assets;
+  const { accentColor, secondaryAccentColor, flagColors, hashtags } = options.artworkTemplate;
+
+  context.fillStyle = '#06142e';
+  context.fillRect(0, 0, ART_WIDTH, ART_HEIGHT);
+  if (backgroundImage) drawCoverImage(context, backgroundImage, 0, 0, ART_WIDTH, ART_HEIGHT);
+
+  // Let Bogotá's skyline and Monserrate read through the poster instead of
+  // burying the photograph under the previous heavy all-over tint.
+  const photoWash = context.createLinearGradient(0, 0, 0, ART_HEIGHT);
+  photoWash.addColorStop(0, 'rgba(2, 12, 42, 0.24)');
+  photoWash.addColorStop(0.45, 'rgba(2, 12, 42, 0.08)');
+  photoWash.addColorStop(0.68, 'rgba(2, 12, 42, 0.2)');
+  photoWash.addColorStop(1, 'rgba(2, 12, 42, 0.64)');
+  context.fillStyle = photoWash;
+  context.fillRect(0, 0, ART_WIDTH, ART_HEIGHT);
+
+  const leftWash = context.createLinearGradient(0, 0, 620, 0);
+  leftWash.addColorStop(0, 'rgba(1, 9, 35, 0.62)');
+  leftWash.addColorStop(0.66, 'rgba(1, 9, 35, 0.28)');
+  leftWash.addColorStop(1, 'rgba(1, 9, 35, 0)');
+  context.fillStyle = leftWash;
+  context.fillRect(0, 0, 660, 760);
+
+  context.save();
+  context.strokeStyle = colorWithAlpha(accentColor, 0.3);
+  context.lineWidth = 2;
+  for (let radius = 245; radius <= 515; radius += 54) {
+    context.beginPath();
+    context.arc(1115, 90, radius, Math.PI * 0.56, Math.PI * 1.43);
+    context.stroke();
+    context.beginPath();
+    context.arc(-26, 714, radius, -Math.PI * 0.48, Math.PI * 0.39);
+    context.stroke();
+  }
+  context.restore();
+
+  drawPortrait(
+    context,
+    avatar,
+    options.attendeeName,
+    accentColor,
+    secondaryAccentColor,
+    options.transparentPortrait,
+    { x: 374, y: 28, width: 690, height: 900, radius: 224, verticalAnchor: 0.38 },
+  );
+
+  // Event mark and the Colombian colors anchor the upper-left corner while
+  // the larger portrait carries the visual weight of the composition.
+  drawRoundRect(context, 54, 44, 448, 248, 34);
+  context.fillStyle = 'rgba(2, 11, 38, 0.64)';
+  context.fill();
+  context.strokeStyle = colorWithAlpha(accentColor, 0.38);
+  context.lineWidth = 1.5;
+  context.stroke();
+  if (logo) {
+    drawContainedImage(context, logo, 78, 57, 400, 178);
+  } else {
+    context.fillStyle = '#ffffff';
+    context.font = '800 56px Manrope, sans-serif';
+    context.fillText(options.shortName.toLocaleUpperCase(), 84, 157);
+  }
+  drawColombiaFlagRibbon(context, 82, 254, 338, 10, flagColors);
+  context.fillStyle = '#f3f8ff';
+  context.font = '700 19px "IBM Plex Mono", monospace';
+  context.textAlign = 'left';
+  context.fillText('BSL  ·  COLOMBIA 2026', 82, 330);
+
+  drawRoundRect(context, 62, 704, 956, 625, 42);
+  const panelFill = context.createLinearGradient(0, 704, 0, 1329);
+  panelFill.addColorStop(0, 'rgba(2, 12, 42, 0.76)');
+  panelFill.addColorStop(1, 'rgba(1, 8, 31, 0.86)');
+  context.fillStyle = panelFill;
+  context.shadowColor = 'rgba(0, 5, 22, 0.38)';
+  context.shadowBlur = 26;
+  context.fill();
+  context.shadowBlur = 0;
+  context.strokeStyle = colorWithAlpha(accentColor, 0.38);
+  context.lineWidth = 1.5;
+  context.stroke();
+
+  context.textAlign = 'center';
+  context.textBaseline = 'alphabetic';
+  if (options.pastEvent) {
+    context.fillStyle = '#f7fbff';
+    drawFittedText(context, options.intentions.past, ART_WIDTH / 2, 834, 870, 800, 'Manrope, sans-serif', 88, 54);
+  } else {
+    context.fillStyle = '#f7fbff';
+    drawFittedText(context, 'I’M ATTENDING', ART_WIDTH / 2, 798, 880, 800, 'Manrope, sans-serif', 88, 58);
+    const headlineGlow = context.createLinearGradient(260, 0, 820, 0);
+    headlineGlow.addColorStop(0, '#20d9f5');
+    headlineGlow.addColorStop(0.58, accentColor);
+    headlineGlow.addColorStop(1, '#2586ff');
+    context.fillStyle = headlineGlow;
+    drawFittedText(context, 'VOY A ASISTIR', ART_WIDTH / 2, 883, 900, 800, 'Manrope, sans-serif', 88, 58);
+  }
+
+  context.fillStyle = '#eaf7ff';
+  context.font = '800 37px Manrope, sans-serif';
+  drawFittedText(context, options.eventName, ART_WIDTH / 2, 949, 865, 800, 'Manrope, sans-serif', 37, 25);
+
+  context.strokeStyle = colorWithAlpha(accentColor, 0.66);
+  context.lineWidth = 2;
+  context.beginPath();
+  context.moveTo(118, 974);
+  context.lineTo(962, 974);
+  context.stroke();
+
+  const detailTop = 1020;
+  const detailTextY = 1030;
+  context.textAlign = 'left';
+  drawLocationPin(context, 124, detailTop, accentColor, 29);
+  context.fillStyle = '#f3f8ff';
+  context.font = '700 25px Manrope, sans-serif';
+  drawFittedText(context, options.location, 153, detailTextY, 205, 700, 'Manrope, sans-serif', 25, 17);
+
+  context.strokeStyle = colorWithAlpha(accentColor, 0.42);
+  context.beginPath();
+  context.moveTo(374, 991);
+  context.lineTo(374, 1048);
+  context.stroke();
+
+  drawCalendar(context, 409, detailTop, accentColor, 29);
+  context.fillStyle = '#f3f8ff';
+  context.font = '700 24px Manrope, sans-serif';
+  drawFittedText(context, options.dateLabel, 438, detailTextY, 205, 700, 'Manrope, sans-serif', 24, 17);
+
+  context.strokeStyle = colorWithAlpha(accentColor, 0.42);
+  context.beginPath();
+  context.moveTo(674, 991);
+  context.lineTo(674, 1048);
+  context.stroke();
+
+  drawBuilding(context, 711, detailTop, accentColor, 29);
+  context.fillStyle = '#f3f8ff';
+  context.font = '700 22px Manrope, sans-serif';
+  drawFittedText(context, compactVenue(options.venue), 741, detailTextY, 235, 700, 'Manrope, sans-serif', 22, 15);
+
+  context.strokeStyle = colorWithAlpha(accentColor, 0.4);
+  context.beginPath();
+  context.moveTo(118, 1060);
+  context.lineTo(962, 1060);
+  context.stroke();
+
+  drawRoundRect(context, 214, 1077, 652, 60, 30);
+  context.fillStyle = 'rgba(8, 30, 70, 0.66)';
+  context.fill();
+  context.strokeStyle = colorWithAlpha(accentColor, 0.58);
+  context.lineWidth = 1.5;
+  context.stroke();
+  const identity = [
+    options.attendeeName.trim() || options.intentions.emptyName,
+    options.attendeeRole.trim(),
+  ].filter(Boolean).join('  ·  ');
+  context.textAlign = 'center';
+  context.fillStyle = '#ffffff';
+  context.font = '800 34px Manrope, sans-serif';
+  drawFittedText(context, identity, ART_WIDTH / 2, 1117, 596, 800, 'Manrope, sans-serif', 34, 20);
+
+  const hasSocial = !!(options.attendeeSocialHandles.x || options.attendeeSocialHandles.instagram);
+  if (hasSocial) drawSocialHandles(context, options, 1157);
+
+  context.fillStyle = accentColor;
+  context.font = '700 22px "IBM Plex Mono", monospace';
+  drawFittedText(context, hashtags.join('   '), ART_WIDTH / 2, hasSocial ? 1210 : 1186, 850, 700, '"IBM Plex Mono", monospace', 22, 15);
+
+  context.textAlign = 'left';
+  context.fillStyle = 'rgba(230, 244, 255, 0.78)';
+  context.font = '500 15px "IBM Plex Mono", monospace';
+  const labelWidth = context.measureText(options.poweredByLabel).width;
+  const brandWidth = 150;
+  const groupStart = (ART_WIDTH - labelWidth - 12 - brandWidth) / 2;
+  context.fillText(options.poweredByLabel, groupStart, 1286);
+  if (poweredByLogo) {
+    drawContainedImage(context, poweredByLogo, groupStart + labelWidth + 12, 1267, brandWidth, 36);
+  } else {
+    context.fillStyle = 'rgba(230, 244, 255, 0.84)';
+    context.font = '800 18px Manrope, sans-serif';
+    context.fillText('HASHPASS', groupStart + labelWidth + 12, 1286);
+  }
+  context.textAlign = 'left';
+}
+
 export async function drawAttendingArtwork(
   canvas: HTMLCanvasElement,
   options: AttendingArtworkOptions,
@@ -372,6 +581,11 @@ export async function drawAttendingArtwork(
   canvas.width = ART_WIDTH;
   canvas.height = ART_HEIGHT;
   context.clearRect(0, 0, ART_WIDTH, ART_HEIGHT);
+
+  if (options.artworkTemplate.backgroundSrc?.endsWith('/bsl-colombia-2026.png')) {
+    drawBslColombiaArtwork(context, options, { backgroundImage, logo, poweredByLogo, avatar });
+    return { avatarIncluded: !!avatar, logoIncluded: !!logo };
+  }
 
   context.fillStyle = '#06142e';
   context.fillRect(0, 0, ART_WIDTH, ART_HEIGHT);
