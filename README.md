@@ -20,19 +20,21 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.182)
+## 📋 Latest Changes (v1.9.183)
 
-### Bug Fixes
+### Features
 
-* **web:** share Club navigation on attending landing ([7f8d4d0](https://github.com/hashpass-tech/hashpass.tech/commit/7f8d4d029b9917b41a57b4bb061973d3098391f4))
+* **club-web:** animate attending landing ([693b5ee](https://github.com/hashpass-tech/hashpass.tech/commit/693b5ee69a9c971732e5596cd808fa15fcb6f3ce))
+* **content:** add WordPress Multisite baseline ([ff10bb1](https://github.com/hashpass-tech/hashpass.tech/commit/ff10bb1b97c3120818d63836539659e11ba6475c))
 ### Release Highlights
-- share Club navigation on attending landing
+- add WordPress Multisite baseline; add host-aware BSL artwork routes; animate attending landing; show host-specific attending footers; ship footer logos in tenant overlays
 
 ### Release scope
-- Compared with: `v1.9.181` (the previous global release tag)
+- Compared with: `v1.9.182` (the previous global release tag)
 
 ### Affected products & packages
 - Club web
+- Infrastructure
 - Release tooling
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)

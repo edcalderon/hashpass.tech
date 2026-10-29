@@ -117,6 +117,28 @@ describe('resolveAuthProviderConfig', () => {
     expect(config.supabase?.anonKey).toBe('prod-key');
   });
 
+  it('uses the production CBWeek API and core Supabase profile without inheriting BSL credentials', () => {
+    clearAuthProviderOverrides();
+    setEnv('EXPO_PUBLIC_SUPABASE_PROFILE', 'core-production');
+    setEnv('EXPO_PUBLIC_SUPABASE_URL_PROD', 'https://core-prod.supabase.co');
+    setEnv('EXPO_PUBLIC_SUPABASE_KEY_PROD', 'core-prod-key');
+    setEnv('EXPO_PUBLIC_BSL_SUPABASE_URL_PROD', 'https://retired-bsl.supabase.co');
+    setEnv('EXPO_PUBLIC_BSL_SUPABASE_KEY_PROD', 'retired-bsl-key');
+    setEnv('EXPO_PUBLIC_BSL_SUPABASE_URL_DEV', 'https://bsl-dev.supabase.co');
+    setEnv('EXPO_PUBLIC_BSL_SUPABASE_KEY_DEV', 'bsl-dev-key');
+
+    const production = resolveAuthProviderConfig({ hostname: 'cbweek.hashpass.tech' });
+    const development = resolveAuthProviderConfig({ hostname: 'cbweek2026.hashpass.tech' });
+
+    expect(production.provider).toBe('better-auth');
+    expect(production.betterAuth?.baseURL).toBe('https://api.hashpass.tech/api/auth');
+    expect(production.supabase?.url).toBe('https://core-prod.supabase.co');
+    expect(production.supabase?.anonKey).toBe('core-prod-key');
+    expect(development.betterAuth?.baseURL).toBe('https://api-dev.hashpass.tech/api/auth');
+    expect(development.supabase?.url).toBe('https://bsl-dev.supabase.co');
+    expect(development.supabase?.anonKey).toBe('bsl-dev-key');
+  });
+
   it('prefers core development expo Supabase envs over NEXT_PUBLIC fallbacks on localhost', () => {
     delete process.env.AUTH_PROVIDER;
     setEnv('NEXT_PUBLIC_SUPABASE_URL', 'https://stale-next.supabase.co');

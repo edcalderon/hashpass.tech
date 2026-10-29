@@ -176,6 +176,7 @@ variable "cors_allow_origins" {
       "https://attending.hashpass.tech",
       "https://bsl.hashpass.tech",
       "https://cbweek2026.hashpass.tech",
+      "https://cbweek.hashpass.tech",
       # The Club's web-app approval link opens at hashpass.tech. API Gateway
       # owns OPTIONS, so this must be listed here as well as in the Lambda.
       "https://hashpass.tech",

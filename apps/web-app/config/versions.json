@@ -3,17 +3,72 @@
   "_source": "This file is generated from apps/web-app/package.json",
   "_instructions": "Run npm run version:update or npm run release:patch from apps/web-app to update it.",
   "currentVersion": {
-    "version": "1.0.46",
-    "buildNumber": 20261029110013,
+    "version": "1.0.51",
+    "buildNumber": 20261029123951,
     "releaseDate": "2026-10-29",
     "releaseType": "stable",
     "environment": "production",
     "features": [],
     "bugfixes": [],
     "breakingChanges": [],
-    "notes": "Version 1.0.46 release"
+    "notes": "Version 1.0.51 release"
   },
   "versions": [
+    {
+      "version": "1.0.51",
+      "buildNumber": 20261029123951,
+      "releaseDate": "2026-10-29",
+      "releaseType": "stable",
+      "environment": "production",
+      "features": [],
+      "bugfixes": [],
+      "breakingChanges": [],
+      "notes": "Version 1.0.51 release"
+    },
+    {
+      "version": "1.0.50",
+      "buildNumber": 20261029122028,
+      "releaseDate": "2026-10-29",
+      "releaseType": "stable",
+      "environment": "production",
+      "features": [],
+      "bugfixes": [],
+      "breakingChanges": [],
+      "notes": "Fix artwork publishing from mirrored Club event pages."
+    },
+    {
+      "version": "1.0.49",
+      "buildNumber": 20261029120720,
+      "releaseDate": "2026-10-29",
+      "releaseType": "stable",
+      "environment": "production",
+      "features": [],
+      "bugfixes": [],
+      "breakingChanges": [],
+      "notes": "Version 1.0.49 release"
+    },
+    {
+      "version": "1.0.48",
+      "buildNumber": 20261029115013,
+      "releaseDate": "2026-10-29",
+      "releaseType": "stable",
+      "environment": "production",
+      "features": [],
+      "bugfixes": [],
+      "breakingChanges": [],
+      "notes": "Version 1.0.48 release"
+    },
+    {
+      "version": "1.0.47",
+      "buildNumber": 20261029111952,
+      "releaseDate": "2026-10-29",
+      "releaseType": "stable",
+      "environment": "production",
+      "features": [],
+      "bugfixes": [],
+      "breakingChanges": [],
+      "notes": "Version 1.0.47 release"
+    },
     {
       "version": "1.0.46",
       "buildNumber": 20261029110013,

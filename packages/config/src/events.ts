@@ -2423,7 +2423,7 @@ export const EVENTS: Record<string, EventConfig> = {
       "#cbw2026",
       "#cbweek2026",
     ],
-    domain: "cbweek2026.hashpass.tech",
+    domain: "cbweek.hashpass.tech",
     website: "https://colombiablockchainweek.com/",
     speakerApplicationUrl: "https://colombiablockchainweek.com/ser-speaker#postulacion",
     speakerApplicationLabel: "Colombia Blockchain Week",

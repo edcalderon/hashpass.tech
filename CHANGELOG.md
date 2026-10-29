@@ -1,3 +1,21 @@
+## [1.9.183](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.182...v1.9.183) (2026-10-29)
+
+
+### Features
+
+* **club-web:** animate attending landing ([693b5ee](https://github.com/hashpass-tech/hashpass.tech/commit/693b5ee69a9c971732e5596cd808fa15fcb6f3ce))
+* **content:** add WordPress Multisite baseline ([ff10bb1](https://github.com/hashpass-tech/hashpass.tech/commit/ff10bb1b97c3120818d63836539659e11ba6475c))
+### Release Highlights
+- add WordPress Multisite baseline; add host-aware BSL artwork routes; animate attending landing; show host-specific attending footers; ship footer logos in tenant overlays
+
+### Release scope
+- Compared with: `v1.9.182` (the previous global release tag)
+
+### Affected products & packages
+- Club web
+- Infrastructure
+- Release tooling
+
 ## [1.9.182](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.181...v1.9.182) (2026-10-29)
 
 

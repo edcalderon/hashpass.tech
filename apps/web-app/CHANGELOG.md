@@ -5,6 +5,61 @@ All notable changes to the HashPass Club web app will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and the project follows Semantic Versioning.
 
+## [1.0.51] - 2026-10-29
+
+### Stable
+- Version 1.0.51 release
+
+### Technical Details
+- Version: 1.0.51
+- Release Type: stable
+- Build Number: 20261029123951
+- Release Date: 2026-10-29
+
+## [1.0.50] - 2026-10-29
+
+### Stable
+- Fix artwork publishing from mirrored Club event pages.
+
+### Technical Details
+- Version: 1.0.50
+- Release Type: stable
+- Build Number: 20261029122028
+- Release Date: 2026-10-29
+
+## [1.0.49] - 2026-10-29
+
+### Stable
+- Version 1.0.49 release
+
+### Technical Details
+- Version: 1.0.49
+- Release Type: stable
+- Build Number: 20261029120720
+- Release Date: 2026-10-29
+
+## [1.0.48] - 2026-10-29
+
+### Stable
+- Version 1.0.48 release
+
+### Technical Details
+- Version: 1.0.48
+- Release Type: stable
+- Build Number: 20261029115013
+- Release Date: 2026-10-29
+
+## [1.0.47] - 2026-10-29
+
+### Stable
+- Version 1.0.47 release
+
+### Technical Details
+- Version: 1.0.47
+- Release Type: stable
+- Build Number: 20261029111952
+- Release Date: 2026-10-29
+
 ## [1.0.46] - 2026-10-29
 
 ### Stable

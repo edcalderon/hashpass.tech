@@ -24,6 +24,7 @@ fmt:
 	terraform -chdir=stacks/hashpass-dns fmt -recursive
 	terraform -chdir=stacks/hashpass-api-target fmt -recursive
 	terraform -chdir=stacks/hashpass-web fmt -recursive
+	terraform -chdir=stacks/event-production-sites fmt -recursive
 	terraform -chdir=stacks/bsl-target fmt -recursive
 	terraform -chdir=modules/aws_expo_router_api fmt -recursive
 	terraform -chdir=modules/aws_amplify_domain fmt -recursive
@@ -44,6 +45,8 @@ validate:
 	terraform -chdir=stacks/hashpass-api-target validate
 	terraform -chdir=stacks/hashpass-web init -backend=false
 	terraform -chdir=stacks/hashpass-web validate
+	terraform -chdir=stacks/event-production-sites init -backend=false
+	terraform -chdir=stacks/event-production-sites validate
 	terraform -chdir=stacks/bsl-target init -backend=false
 	terraform -chdir=stacks/bsl-target validate
 	terraform -chdir=modules/aws_github_actions_runner init -backend=false

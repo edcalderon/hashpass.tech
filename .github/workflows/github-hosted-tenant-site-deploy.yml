@@ -23,7 +23,7 @@ on:
       target:
         description: Target (development targets require develop; production targets require main)
         type: choice
-        options: [cbweek-development, bsl-development, production, bsl-production]
+        options: [cbweek-development, bsl-development, production, bsl-production, cbweek-production]
         default: cbweek-development
       deploy:
         description: Deploy the verified artifact
@@ -43,20 +43,26 @@ jobs:
         env:
           BRANCH: ${{ github.ref_name }}
           TARGET: ${{ inputs.target }}
+          EVENT_NAME: ${{ github.event_name }}
         run: |
           node <<'NODE'
           const fs = require('node:fs');
           const allowed = process.env.BRANCH === 'develop'
             ? ['cbweek-development', 'bsl-development']
+            : process.env.BRANCH === 'main' ? ['production', 'bsl-production', 'cbweek-production'] : [];
+          const defaults = process.env.BRANCH === 'develop'
+            ? ['cbweek-development', 'bsl-development']
             : process.env.BRANCH === 'main' ? ['production', 'bsl-production'] : [];
-          const targets = process.env.TARGET ? [process.env.TARGET] : allowed;
-          if (!targets.length || targets.some(target => !allowed.includes(target))) {
-            throw new Error('Target does not match the protected source branch');
+          const targets = process.env.TARGET ? [process.env.TARGET] : defaults;
+          if (!targets.length || targets.some(target => !allowed.includes(target))
+              || (targets.includes('cbweek-production') && process.env.EVENT_NAME !== 'workflow_dispatch')) {
+            throw new Error('Target does not match the protected source branch or dispatch path');
           }
-          const include = targets.map(environment => ({
-            environment,
-            bsl: environment.startsWith('bsl-'),
-            artifactPath: environment.startsWith('bsl-') ? 'apps/mobile-app/dist' : 'dist',
+          const include = targets.map(target => ({
+            target,
+            environment: target === 'cbweek-production' ? 'production' : target,
+            bsl: target.startsWith('bsl-'),
+            artifactPath: target.startsWith('bsl-') ? 'apps/mobile-app/dist' : 'dist',
           }));
           fs.appendFileSync(process.env.GITHUB_OUTPUT, `matrix=${JSON.stringify({ include })}\n`);
           NODE
@@ -70,7 +76,7 @@ jobs:
     timeout-minutes: 35
     environment: ${{ matrix.environment }}
     concurrency:
-      group: tenant-site-build-${{ matrix.environment }}-${{ github.ref }}
+      group: tenant-site-build-${{ matrix.target }}-${{ github.ref }}
       cancel-in-progress: true
     env:
       PNPM_STORE_DIR: ${{ github.workspace }}/.pnpm-store
@@ -87,11 +93,36 @@ jobs:
           cache: pnpm
       - name: Load public target configuration
         env:
-          PUBLIC_BUILD_ENV: ${{ vars.STATIC_SITE_PUBLIC_BUILD_ENV }}
+          TARGET: ${{ matrix.target }}
+          PUBLIC_BUILD_ENV: ${{ matrix.target == 'cbweek-production' && vars.CBWEEK_STATIC_SITE_PUBLIC_BUILD_ENV || (matrix.target != 'cbweek-production' && vars.STATIC_SITE_PUBLIC_BUILD_ENV) }}
+          CBWEEK_PUBLIC_BUILD_ENV: ${{ vars.CBWEEK_STATIC_SITE_PUBLIC_BUILD_ENV }}
         run: |
           node <<'NODE'
           const fs = require('node:fs');
           const config = JSON.parse(process.env.PUBLIC_BUILD_ENV || '{}');
+          if (process.env.TARGET === 'cbweek-production'
+              && (!process.env.CBWEEK_PUBLIC_BUILD_ENV || process.env.PUBLIC_BUILD_ENV !== process.env.CBWEEK_PUBLIC_BUILD_ENV)) {
+            throw new Error('Missing CBWeek production public build configuration');
+          }
+          if (process.env.TARGET === 'cbweek-production') {
+            const required = {
+              EXPO_PUBLIC_API_BASE_URL: 'https://api.hashpass.tech/api',
+              EXPO_PUBLIC_EVENT_TENANT: 'cbweek2026',
+              EXPO_PUBLIC_SITE_URL: 'https://cbweek.hashpass.tech',
+              EXPO_PUBLIC_SUPABASE_PROFILE: 'core-production',
+            };
+            for (const [key, value] of Object.entries(required)) {
+              if (config[key] !== value) throw new Error(`Invalid CBWeek production setting: ${key}`);
+            }
+            const coreProductionSupabaseUrl = 'https://fxgftanraszjjyeidvia.supabase.co';
+            if (config.EXPO_PUBLIC_SUPABASE_URL_PROD !== coreProductionSupabaseUrl
+                || !(config.EXPO_PUBLIC_SUPABASE_KEY_PROD || config.EXPO_PUBLIC_SUPABASE_ANON_KEY_PROD)) {
+              throw new Error('CBWeek production requires core production Supabase public credentials');
+            }
+            if (Object.keys(config).some(key => key.includes('BSL'))) {
+              throw new Error('CBWeek production cannot use BSL Supabase aliases');
+            }
+          }
           if (!Object.keys(config).length) throw new Error('Missing public target configuration');
           for (const [key, value] of Object.entries(config)) {
             if (!/^(EXPO_PUBLIC_[A-Z0-9_]+|NEXT_PUBLIC_[A-Z0-9_]+|BUILD_ENV|TARGET_STAGE|SITE_URL|FRONTEND_URL)$/.test(key)
@@ -119,7 +150,7 @@ jobs:
           bash packages/tools/scripts/overlay-attending-static-site.sh apps/mobile-app/dist
       - uses: actions/upload-artifact@v4
         with:
-          name: site-${{ matrix.environment }}
+          name: site-${{ matrix.target }}
           path: ${{ matrix.artifactPath }}
           # Keep dot-directories such as server/_expo/functions/.well-known/ (skipped by default).
           include-hidden-files: true
@@ -128,7 +159,7 @@ jobs:
 
   migrate-database:
     needs: targets
-    if: github.event_name == 'push' || inputs.deploy == true
+    if: github.event_name == 'push' || (inputs.deploy == true && inputs.target != 'cbweek-production')
     name: Migrate core database (${{ github.ref_name == 'main' && 'production' || 'development' }})
     runs-on: ubuntu-latest
     permissions:
@@ -147,7 +178,16 @@ jobs:
 
   deploy:
     needs: [targets, build, migrate-database]
-    if: github.event_name == 'push' || inputs.deploy == true
+    if: >-
+      always() &&
+      !cancelled() &&
+      needs.targets.result == 'success' &&
+      needs.build.result == 'success' &&
+      (
+        (github.event_name == 'push' && needs.migrate-database.result == 'success') ||
+        (inputs.deploy == true &&
+          (inputs.target == 'cbweek-production' || needs.migrate-database.result == 'success'))
+      )
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.targets.outputs.matrix) }}
@@ -155,19 +195,28 @@ jobs:
     timeout-minutes: 15
     environment: ${{ matrix.environment }}
     concurrency:
-      group: static-site-deploy-${{ matrix.environment }}
+      group: static-site-deploy-${{ matrix.target }}
       cancel-in-progress: false
     permissions:
       contents: read
       id-token: write
     env:
       AWS_REGION: us-east-2
+      TARGET: ${{ matrix.target }}
       SITE_BUILD_DIR: ${{ matrix.bsl && 'dist' || 'dist/client' }}
-      SITE_BUCKET_NAME: ${{ vars.STATIC_SITE_BUCKET }}
-      SITE_CLOUDFRONT_DISTRIBUTION_ID: ${{ vars.STATIC_SITE_DISTRIBUTION_ID }}
+      SITE_BUCKET_NAME: ${{ matrix.target == 'cbweek-production' && vars.CBWEEK_STATIC_SITE_BUCKET || vars.STATIC_SITE_BUCKET }}
+      SITE_CLOUDFRONT_DISTRIBUTION_ID: ${{ matrix.target == 'cbweek-production' && vars.CBWEEK_STATIC_SITE_DISTRIBUTION_ID || vars.STATIC_SITE_DISTRIBUTION_ID }}
       SITE_LAMBDA_FUNCTION_NAME: ${{ vars.STATIC_SITE_LAMBDA_FUNCTION }}
       SITE_LAMBDA_REGION: us-east-1
-      SITE_API_VERSION_URL: ${{ vars.STATIC_SITE_API_VERSION_URL }}
+      SITE_SKIP_LAMBDA_DEPLOY: ${{ matrix.target == 'cbweek-production' && 'true' || 'false' }}
+      SITE_API_VERSION_URL: ${{ matrix.target == 'cbweek-production' && vars.CBWEEK_STATIC_SITE_API_VERSION_URL || vars.STATIC_SITE_API_VERSION_URL }}
+      STATIC_SITE_BUCKET: ${{ vars.STATIC_SITE_BUCKET }}
+      STATIC_SITE_DISTRIBUTION_ID: ${{ vars.STATIC_SITE_DISTRIBUTION_ID }}
+      STATIC_SITE_DEPLOY_ROLE_ARN: ${{ vars.AWS_STATIC_SITE_DEPLOY_ROLE_ARN }}
+      CBWEEK_SITE_BUCKET: ${{ vars.CBWEEK_STATIC_SITE_BUCKET }}
+      CBWEEK_SITE_DISTRIBUTION_ID: ${{ vars.CBWEEK_STATIC_SITE_DISTRIBUTION_ID }}
+      CBWEEK_DEPLOY_ROLE_ARN: ${{ vars.CBWEEK_AWS_STATIC_SITE_DEPLOY_ROLE_ARN }}
+      CBWEEK_API_VERSION_URL: ${{ vars.CBWEEK_STATIC_SITE_API_VERSION_URL }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -175,12 +224,31 @@ jobs:
           node-version-file: '.nvmrc'
       - uses: actions/download-artifact@v4
         with:
-          name: site-${{ matrix.environment }}
+          name: site-${{ matrix.target }}
           path: dist
+      - name: Validate dedicated CBWeek deployment configuration
+        if: matrix.target == 'cbweek-production'
+        shell: bash
+        run: |
+          set -euo pipefail
+          for required in CBWEEK_SITE_BUCKET CBWEEK_SITE_DISTRIBUTION_ID CBWEEK_DEPLOY_ROLE_ARN CBWEEK_API_VERSION_URL; do
+            if [[ -z "${!required:-}" ]]; then
+              echo "Missing required production setting: ${required}" >&2
+              exit 1
+            fi
+          done
+          [[ "${SITE_BUCKET_NAME}" == "${CBWEEK_SITE_BUCKET}" ]]
+          [[ "${SITE_CLOUDFRONT_DISTRIBUTION_ID}" == "${CBWEEK_SITE_DISTRIBUTION_ID}" ]]
+          [[ "${SITE_API_VERSION_URL}" == "${CBWEEK_API_VERSION_URL}" ]]
+          [[ "${SITE_BUCKET_NAME}" != "${STATIC_SITE_BUCKET}" ]]
+          [[ "${SITE_CLOUDFRONT_DISTRIBUTION_ID}" != "${STATIC_SITE_DISTRIBUTION_ID}" ]]
+          [[ "${CBWEEK_DEPLOY_ROLE_ARN}" != "${STATIC_SITE_DEPLOY_ROLE_ARN}" ]]
+          [[ "${CBWEEK_API_VERSION_URL}" == "https://api.hashpass.tech/api/config/versions" ]]
+          [[ "${SITE_SKIP_LAMBDA_DEPLOY}" == "true" ]]
       - name: Configure deployment credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ vars.AWS_STATIC_SITE_DEPLOY_ROLE_ARN }}
+          role-to-assume: ${{ matrix.target == 'cbweek-production' && vars.CBWEEK_AWS_STATIC_SITE_DEPLOY_ROLE_ARN || vars.AWS_STATIC_SITE_DEPLOY_ROLE_ARN }}
           allowed-account-ids: ${{ vars.AWS_TARGET_ACCOUNT_ID }}
           aws-region: us-east-2
           mask-aws-account-id: true
@@ -188,7 +256,7 @@ jobs:
         run: bash packages/tools/scripts/deploy-static-site.sh
       - name: Record deployment
         env:
-          TARGET: ${{ matrix.environment }}
+          TARGET: ${{ matrix.target }}
           REVISION: ${{ github.sha }}
         run: |
           printf 'Deployed %s from commit %s using standard GitHub-hosted compute.\n' "$TARGET" "$REVISION" >> "$GITHUB_STEP_SUMMARY"

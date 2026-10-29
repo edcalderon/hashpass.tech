@@ -1,0 +1,21 @@
+# Keep the actual file untracked. Supply expected_account_id privately from
+# AWS_TARGET_ACCOUNT_ID and verify it against the hashpass profile first.
+expected_account_id = "<AWS_TARGET_ACCOUNT_ID>"
+aws_region          = "us-east-2"
+availability_zone    = "us-east-2a"
+bundle_id           = "micro_3_0"
+
+# Restrict SSH to a trusted current/fixed IPv4 range. Never use 0.0.0.0/0.
+# Replace this documentation-only example before planning.
+admin_ssh_cidr = "203.0.113.10/32"
+
+# Keep all public web ingress closed until a valid TLS certificate and HTTPS
+# redirect are configured and verified for both domains over restricted SSH.
+public_web_enabled = false
+
+# Leave false until the owner creates both Route 53 hosted zones and reviews
+# the exact DNS records/cutover plan.
+enable_dns_records = false
+
+enable_auto_snapshots = true
+snapshot_time_utc     = "06:00"

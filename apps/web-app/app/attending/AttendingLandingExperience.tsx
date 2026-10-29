@@ -20,6 +20,7 @@ export function AttendingLandingExperience({
   events,
   showCustomEventCard = true,
   brandHref = getAttendingLandingBrandUrl(),
+  eventLinkOrigin = 'tenant',
 }: AttendingLandingProps) {
   const { t } = useTranslation('attending');
   const locale = useLocale();
@@ -89,7 +90,7 @@ export function AttendingLandingExperience({
                 return (
                   <article className={styles.eventSlide} key={event.slug}>
                     <Surface mode={mode} style={{ padding: 0, overflow: 'hidden', height: '100%' }}>
-                      <a className={styles.eventLink} href={getAttendingEventHref(event.slug)}>
+                      <a className={styles.eventLink} href={getAttendingEventHref(event.slug, eventLinkOrigin)}>
                         <div className={styles.eventArtwork} style={{ background: `radial-gradient(circle at 84% 18%, ${event.color}70, transparent 42%), linear-gradient(138deg, #071321 8%, #102c3d 100%)` }}>
                           <div className={styles.artworkGrid} />
                           <span className={styles.eventBadge}><Badge mode="dark" tone="onMedia" compact>{t('landingUpcoming')}</Badge></span>

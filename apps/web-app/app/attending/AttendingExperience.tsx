@@ -9,7 +9,7 @@ import { SettingsToggle } from '@hashpass/ui/settings-menu';
 import { ArrowDownToLine, ArrowUpRight, CalendarDays, Check, ImagePlus, Instagram, MapPin, Share2, UserRound } from 'lucide-react';
 import { drawAttendingArtwork } from '../../lib/attending-artwork';
 import { formatAttendingEventDate } from '../../lib/attending-date';
-import { getAttendingEventUrl, getAttendingLandingUrl, getGenericAttendingLandingHref, getGenericAttendingUrl } from '../../lib/attending-url';
+import { getAttendingArtworkPublishEventUrl, getAttendingEventUrl, getAttendingLandingUrl, getGenericAttendingLandingHref, getGenericAttendingUrl } from '../../lib/attending-url';
 import { getLinksApiOrigin } from '../../lib/links-api-origin';
 import { removePersonBackground } from '../../lib/remove-person-background';
 import { ClubSettingsMenu } from '../components/ClubSettingsMenu';
@@ -18,6 +18,7 @@ import { SignInModal } from '../components/SignInModal';
 import { useTheme } from '../components/ThemeProvider';
 import { useToast } from '../components/Toast';
 import { Footer } from '../components/Footer';
+import { AttendingEventFooter } from './AttendingEventFooter';
 import type {
   AttendingEventData,
   AttendeePhotoSource,
@@ -97,7 +98,14 @@ function fileToDataUrl(file: File): Promise<string> {
   });
 }
 
-export function AttendingExperience({ event: baseEvent, customEvent = false }: AttendingExperienceProps) {
+export function AttendingExperience({
+  event: baseEvent,
+  customEvent = false,
+  brandHref,
+  footerHref,
+  eventPageUrl,
+  footerMode = 'tenant',
+}: AttendingExperienceProps) {
   const { t } = useTranslation('attending');
   const locale = useLocale();
   const { resolvedTheme } = useTheme();
@@ -156,6 +164,8 @@ export function AttendingExperience({ event: baseEvent, customEvent = false }: A
       logoSrc: customEventLogo || baseEvent.logoSrc,
     };
   }, [baseEvent, customEvent, customEventDate, customEventLocation, customEventLogo, customEventName, t]);
+  const isBslEvent = !customEvent && (event.slug === 'bsl' || event.id === 'bsl' || event.id === 'colombia2026');
+  const landingHref = brandHref ?? (customEvent ? getGenericAttendingLandingHref() : getAttendingLandingUrl());
 
   useEffect(() => {
     setHasHydrated(true);
@@ -236,7 +246,7 @@ export function AttendingExperience({ event: baseEvent, customEvent = false }: A
   const location = [event.city, event.country].filter(Boolean).join(', ');
   const dateLabel = formatAttendingEventDate(event, locale);
   const displayName = isNameValid ? normalizedName : t('yourName');
-  const shareUrl = customEvent ? getGenericAttendingUrl() : getAttendingEventUrl(event.slug);
+  const shareUrl = customEvent ? getGenericAttendingUrl() : eventPageUrl ?? getAttendingEventUrl(event.slug);
   const artUpcoming = t('artUpcoming');
   const artPast = t('artPast');
   const intentionLabel = pastEvent ? artPast : artUpcoming;
@@ -577,7 +587,7 @@ export function AttendingExperience({ event: baseEvent, customEvent = false }: A
           eventName,
           attendeeName: normalizedName,
           caption: shareText,
-          eventUrl: shareUrl,
+          eventUrl: getAttendingArtworkPublishEventUrl(event.slug, customEvent),
           locale,
           email: shareEmail.trim() || undefined,
         }),
@@ -613,7 +623,7 @@ export function AttendingExperience({ event: baseEvent, customEvent = false }: A
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <a className={styles.brand} href={customEvent ? getGenericAttendingLandingHref() : getAttendingLandingUrl()} aria-label="HASHPASS Club attending home">
+        <a className={styles.brand} href={landingHref} aria-label="HASHPASS Club attending home">
           <img src="/attending/logo-hashpass.svg" alt="" />
           <span>HASHPASS <b>CLUB</b></span>
         </a>
@@ -950,7 +960,11 @@ export function AttendingExperience({ event: baseEvent, customEvent = false }: A
 
       </main>
 
-      <Footer />
+      {isBslEvent && footerMode === 'tenant' ? (
+        <AttendingEventFooter event={event} returnHref={footerHref ?? landingHref} />
+      ) : (
+        <Footer />
+      )}
       <SignInModal open={signInOpen} onClose={() => setSignInOpen(false)} />
       {shareDialogIntent && typeof document !== 'undefined' && createPortal(
         <div

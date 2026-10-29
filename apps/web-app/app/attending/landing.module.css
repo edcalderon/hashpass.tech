@@ -116,6 +116,30 @@
   transform: rotate(3deg);
 }
 
+@keyframes attending-hero-float {
+  0%,
+  100% { transform: translate3d(0, 0, 0) rotate(3deg); }
+  50% { transform: translate3d(0, -9px, 0) rotate(1.5deg); }
+}
+
+@keyframes attending-orb-breathe {
+  0%,
+  100% { opacity: 0.72; transform: scale(0.98); }
+  50% { opacity: 1; transform: scale(1.025); }
+}
+
+@keyframes attending-live-pulse {
+  0% { opacity: 0.6; transform: scale(0.72); }
+  75%,
+  100% { opacity: 0; transform: scale(1.5); }
+}
+
+@keyframes attending-live-led {
+  0%,
+  100% { opacity: 0.86; transform: scale(0.92); filter: brightness(0.9); }
+  50% { opacity: 1; transform: scale(1.12); filter: brightness(1.25); }
+}
+
 .heroArtworkTop,
 .heroArtworkFooter {
   display: flex;
@@ -128,20 +152,33 @@
 }
 
 .heroSignal {
+  position: relative;
+  color: #57dc9d;
   width: 20px;
   height: 20px;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(122, 233, 192, 0.46);
+  border: 1px solid color-mix(in srgb, currentColor 46%, transparent);
   border-radius: 50%;
 }
 
+.heroSignal::before {
+  position: absolute;
+  inset: -4px;
+  border: 1px solid currentColor;
+  border-radius: inherit;
+  content: '';
+  opacity: 0;
+}
+
 .heroSignal i {
+  position: relative;
+  z-index: 1;
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #57dc9d;
-  box-shadow: 0 0 13px #57dc9d;
+  background: currentColor;
+  box-shadow: 0 0 13px currentColor;
 }
 
 .heroArtworkContent { padding: 12px 0 22px; }
@@ -454,6 +491,13 @@
 
 @media (min-width: 1000px) {
   .carouselTrack { grid-auto-columns: calc((100% - 18px) / 2); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .heroArtwork { animation: attending-hero-float 6s ease-in-out infinite; }
+  .heroOrb { animation: attending-orb-breathe 7s ease-in-out infinite; }
+  .heroSignal::before { animation: attending-live-pulse 2.4s ease-out infinite; }
+  .heroSignal i { animation: attending-live-led 2.4s ease-in-out infinite; }
 }
 
 @media (max-width: 760px) {

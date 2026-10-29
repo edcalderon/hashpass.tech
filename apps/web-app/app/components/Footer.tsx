@@ -37,7 +37,7 @@ export function Footer() {
     {
       title: t('company'),
       links: [
-        { label: t('about'), href: '#', children: [] },
+        { label: t('about'), href: '/about/', children: [] },
         { label: t('blog'), href: '#', children: [] },
       ],
     },

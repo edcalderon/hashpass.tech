@@ -1,0 +1,15 @@
+aws_region       = "us-east-2"
+route53_zone_name = "hashpass.tech"
+github_repository = "hashpass-tech/hashpass.tech"
+
+event_sites = {
+  cbweek = {
+    hostname           = "cbweek.hashpass.tech"
+    github_environment = "production"
+  }
+}
+
+tags = {
+  Environment = "production"
+  Project     = "hashpass"
+}

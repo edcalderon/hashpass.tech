@@ -1,7 +1,7 @@
 {
   "name": "hashpass.tech",
   "main": "index.js",
-  "version": "1.9.182",
+  "version": "1.9.183",
   "packageManager": "pnpm@9.15.5",
   "pnpm": {
     "overrides": {
@@ -92,6 +92,9 @@
     "infra:mobile-release:apply": "bash packages/infra/terraform/scripts/stack.sh mobile-release-target apply",
     "infra:mobile-release:destroy": "bash packages/infra/terraform/scripts/stack.sh mobile-release-target destroy",
     "infra:mobile-release:validate": "bash packages/infra/terraform/scripts/stack.sh mobile-release-target validate",
+    "infra:event-production-sites:plan": "bash packages/infra/terraform/scripts/stack.sh event-production-sites plan",
+    "infra:event-production-sites:apply": "bash packages/infra/terraform/scripts/stack.sh event-production-sites apply",
+    "infra:event-production-sites:validate": "bash packages/infra/terraform/scripts/stack.sh event-production-sites validate",
     "release:infra": "node packages/tools/scripts/release-infra-pipeline.js",
     "release:infra:patch": "node packages/tools/scripts/release-infra-pipeline.js --env production --bump patch",
     "release:infra:dev": "node packages/tools/scripts/release-infra-pipeline.js --env development --bump patch",

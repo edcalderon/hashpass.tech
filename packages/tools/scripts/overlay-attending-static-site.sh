@@ -32,7 +32,9 @@ for required_file in \
   "${ATTENDING_EXPORT}/attending/bsl/index.html" \
   "${ATTENDING_EXPORT}/canonical-redirect.js" \
   "${ATTENDING_EXPORT}/theme-init.js" \
-  "${ATTENDING_EXPORT}/sw-register.js"; do
+  "${ATTENDING_EXPORT}/sw-register.js" \
+  "${ATTENDING_EXPORT}/logo-full-hashpass-white-cyan.svg" \
+  "${ATTENDING_EXPORT}/logo-full-hashpass-black-cyan.svg"; do
   if [[ ! -f "${required_file}" ]]; then
     echo "Missing attending export output: ${required_file}" >&2
     exit 1
@@ -45,5 +47,9 @@ cp -R "${ATTENDING_EXPORT}/_next/." "${TARGET_DIRECTORY}/_next/"
 cp "${ATTENDING_EXPORT}/canonical-redirect.js" "${TARGET_DIRECTORY}/canonical-redirect.js"
 cp "${ATTENDING_EXPORT}/theme-init.js" "${TARGET_DIRECTORY}/theme-init.js"
 cp "${ATTENDING_EXPORT}/sw-register.js" "${TARGET_DIRECTORY}/sw-register.js"
+# The shared Club footer switches between these root-relative variants by
+# theme. Copy both into tenant overlays so they resolve on bsl.hashpass.tech.
+cp "${ATTENDING_EXPORT}/logo-full-hashpass-white-cyan.svg" "${TARGET_DIRECTORY}/logo-full-hashpass-white-cyan.svg"
+cp "${ATTENDING_EXPORT}/logo-full-hashpass-black-cyan.svg" "${TARGET_DIRECTORY}/logo-full-hashpass-black-cyan.svg"
 
 echo "Attending artwork routes overlaid into ${TARGET_DIRECTORY}"
