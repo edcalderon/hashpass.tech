@@ -56,12 +56,14 @@ describe('free GitHub tenant builds', () => {
   });
 
   it('uses credentialless free builds and serialized, target-scoped deployments', () => {
-    const build = workflow.split('\n  build:\n')[1].split('\n  deploy:\n')[0];
+    const build = workflow.split('\n  build:\n')[1].split('\n  migrate-database:\n')[0];
+    const migrate = workflow.split('\n  migrate-database:\n')[1].split('\n  deploy:\n')[0];
     const deploy = workflow.split('\n  deploy:\n')[1];
     expect(build).toContain('runs-on: ubuntu-latest');
     expect(build).toContain('retention-days: 1');
     expect(build).not.toContain('id-token: write');
     expect(build).not.toContain('configure-aws-credentials');
+    expect(migrate).toContain('id-token: write');
     expect(deploy).toContain('runs-on: ubuntu-latest');
     expect(deploy).toContain('environment: ${{ matrix.environment }}');
     expect(deploy).toContain('group: static-site-deploy-${{ matrix.environment }}');
