@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, AppState, Platform, StyleSheet, View } from 'react-native';
 import Animated, { cancelAnimation, Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
-import { KeyRound, QrCode, RefreshCcw, ShieldCheck, UsersRound } from 'lucide-react-native';
+import { CalendarDays, Globe2, KeyRound, MonitorSmartphone, QrCode, RefreshCcw, ShieldCheck, UsersRound } from 'lucide-react-native';
 import { uiTokens } from '@hashpass/ui/tokens';
 import { useAnimationLevel } from '../contexts/AnimationLevelContext';
 
@@ -11,6 +11,9 @@ const icons = {
   sync: RefreshCcw,
   'qr-code-outline': QrCode,
   'people-outline': UsersRound,
+  'calendar-days': CalendarDays,
+  'globe-2': Globe2,
+  'monitor-smartphone': MonitorSmartphone,
 } as const;
 
 export interface FeatureIconProps {

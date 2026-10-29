@@ -498,36 +498,41 @@
       "subtitle": "Une identité privée pour l'accès, les connexions, les pass et les avantages.",
       "secure": {
         "title": "Sécurisé et privé",
-        "description": "Vos données sont cryptées et protégées par des protocoles de sécurité de pointe. Nous accordons la priorité à votre vie privée avant tout.",
-        "action": "Protéger mes données"
-        ,"metric": "Conversations chiffrées de bout en bout",
-        "metricLabel": "intervenants vérifiés"
+        "description": "Utilisez le chat privé de l’événement pour échanger avec les participants et les intervenants sans rendre la conversation publique.",
+        "action": "Protéger mes données",
+        "metric": "Conversations chiffrées de bout en bout",
+        "metricLabel": "intervenants vérifiés",
+        "moreInfo": "Utilisez le chat privé de l’événement pour échanger avec les participants et les intervenants sans rendre la conversation publique."
       },
       "management": {
         "title": "Gestion sans effort",
-        "description": "Organisez toutes vos identifications numériques, cartes de fidélité et communautés en un seul endroit intuitif.",
-        "action": "Gérer mes clés"
-        ,"metric": "Un pass pour votre réseau d'événements",
-        "metricLabel": "pass émis"
+        "description": "Ouvrez votre portefeuille pour retrouver le pass ou l’adhésion souhaité, puis gardez son code prêt pour l’accueil.",
+        "action": "Gérer mes clés",
+        "metric": "Un pass pour votre réseau d'événements",
+        "metricLabel": "pass émis",
+        "moreInfo": "Ouvrez votre portefeuille pour retrouver le pass ou l’adhésion souhaité, puis gardez son code prêt pour l’accueil."
       },
       "sync": {
         "title": "Synchronisation multiplateforme",
-        "description": "Accédez à vos données sur tous vos appareils avec notre synchronisation cloud sécurisée.",
-        "action": "Activer la synchronisation"
-        ,"metric": "3 clients : web, Android et iOS",
-        "metricLabel": "plateformes prises en charge"
+        "description": "Connectez-vous sur le web, Android ou iOS pour retrouver le même compte sur l’appareil à portée de main.",
+        "action": "Activer la synchronisation",
+        "metric": "3 clients : web, Android et iOS",
+        "metricLabel": "plateformes prises en charge",
+        "moreInfo": "Connectez-vous sur le web, Android ou iOS pour retrouver le même compte sur l’appareil à portée de main."
       },
       "entry": {
         "title": "Accès rapide",
-        "description": "Utilisez un pass QR en direct pour accéder à vos événements rapidement et de façon fiable.",
+        "description": "À l’entrée, ouvrez votre pass et présentez son QR code en direct pour validation par l’équipe.",
         "metric": "Validation QR en direct",
-        "metricLabel": "pass actifs"
+        "metricLabel": "pass actifs",
+        "moreInfo": "À l’entrée, ouvrez votre pass et présentez son QR code en direct pour validation par l’équipe."
       },
       "network": {
         "title": "Réseautage privé",
-        "description": "Trouvez des participants, planifiez des rendez-vous et gardez vos conversations privées.",
+        "description": "Consultez les participants, demandez un rendez-vous et poursuivez l’échange dans le chat privé.",
         "metric": "Rendez-vous et chat chiffré",
-        "metricLabel": "rendez-vous planifiés"
+        "metricLabel": "rendez-vous planifiés",
+        "moreInfo": "Consultez les participants, demandez un rendez-vous et poursuivez l’échange dans le chat privé."
       }
     },
     "welcomeBack": "Bon retour !",
@@ -539,10 +544,75 @@
     "scroll": "Défiler",
     "getStartedNow": "Commencer maintenant",
     "trustedByThousands": "Fait confiance par des milliers",
-    "testimonials": {
-      "title": "Témoignages",
-      "subtitle": "Ce que disent nos utilisateurs",
-      "description": "Découvrez ce que nos clients disent de nous."
+    "platformStory": {
+      "eyebrow": "NOTRE MISSION",
+      "title": "Faciliter la gestion du sentiment d’appartenance et l’accès à la communauté.",
+      "description": "Un espace commun pour les membres, les programmes et les moments qui rassemblent une communauté.",
+      "cards": {
+        "lifecycle": {
+          "metricValue": "1",
+          "metric": "COMPTE · CYCLE COMPLET",
+          "eyebrow": "UN ESPACE CONNECTÉ",
+          "title": "Un compte pour tout le parcours",
+          "description": "Réunissez les membres, les événements et les personnes qui les font vivre au même endroit."
+        },
+        "membership": {
+          "metricValue": "4",
+          "metric": "ACTIONS D’ADHÉSION",
+          "eyebrow": "ADHÉSION ET ACCÈS",
+          "title": "Un parcours d’adhésion clair",
+          "description": "Invitations, validations, renouvellements et rôles aident les organisateurs à accueillir et accompagner leurs membres."
+        },
+        "eventTools": {
+          "metricValue": "4",
+          "metric": "ÉLÉMENTS D’UN ÉVÉNEMENT",
+          "eyebrow": "ÉVÉNEMENTS ET PROGRAMMES",
+          "title": "Tout autour de l’événement",
+          "description": "Réunissez billets, agendas, intervenants et réunions au même endroit."
+        },
+        "sharingTools": {
+          "metricValue": "2",
+          "metric": "OUTILS À PARTAGER",
+          "eyebrow": "OUTILS À PARTAGER",
+          "title": "Prolongez l’événement au-delà du lieu",
+          "description": "Des liens QR traçables et des visuels personnalisés permettent de partager un événement."
+        },
+        "surfaces": {
+          "metricValue": "2",
+          "metric": "PLATEFORMES · WEB + MOBILE",
+          "eyebrow": "CONÇU POUR LES ÉCHANGES",
+          "title": "Retrouvez les membres où qu’ils soient",
+          "description": "HASHPASS propose ses outils communautaires sur le web et mobile."
+        },
+        "languages": {
+          "metricValue": "7",
+          "metric": "LANGUES DE L’APPLICATION",
+          "eyebrow": "EXPÉRIENCE LOCALISÉE",
+          "title": "Parlez à plus de communautés",
+          "description": "Utilisez HASHPASS en français, anglais, espagnol, coréen, portugais, allemand ou estonien."
+        },
+        "truthful": {
+          "metricValue": "VRAI",
+          "metric": "PAR DÉFAUT",
+          "eyebrow": "LA VÉRITÉ PAR DÉFAUT",
+          "title": "Partir de ce qui existe",
+          "description": "Les données d’événement et de compte restent canoniques. Les annonces, soldes et témoignages ne sont pas inventés."
+        },
+        "private": {
+          "metricValue": "PRIVÉ",
+          "metric": "PAR CONCEPTION",
+          "eyebrow": "CONFIDENTIALITÉ PAR CONCEPTION",
+          "title": "Respecter chaque communauté",
+          "description": "La confidentialité est un principe qui guide la conception de HASHPASS."
+        },
+        "open": {
+          "metricValue": "OUVERT",
+          "metric": "À TOUT LE MONDE",
+          "eyebrow": "OUVERT À TOUT LE MONDE",
+          "title": "Faciliter la participation",
+          "description": "Chaque communauté mérite des outils qui aident ses membres à la rejoindre."
+        }
+      }
     },
     "copyright": " 2025 HASHPASS™ Tous droits réservés.",
     "footer": {
@@ -568,8 +638,14 @@
       "moreInfo": "Plus d’informations",
       "closeInfo": "Fermer les informations",
       "scenes": {
-        "eventPass": "PASS ÉVÉNEMENT", "eventExplorer": "EXPLORATEUR D’ÉVÉNEMENTS", "agenda": "AGENDA", "speakers": "INTERVENANTS",
-        "findAttendees": "TROUVER DES PARTICIPANTS", "meet": "RENCONTRER", "lksWallet": "PORTEFEUILLE $LKS", "availableBalance": "SOLDE DISPONIBLE"
+        "eventPass": "PASS ÉVÉNEMENT",
+        "eventExplorer": "EXPLORATEUR D’ÉVÉNEMENTS",
+        "agenda": "AGENDA",
+        "speakers": "INTERVENANTS",
+        "findAttendees": "TROUVER DES PARTICIPANTS",
+        "meet": "RENCONTRER",
+        "lksWallet": "PORTEFEUILLE $LKS",
+        "availableBalance": "SOLDE DISPONIBLE"
       },
       "cards": {
         "scan": {
@@ -619,17 +695,17 @@
       "webSubmitError": "Nous n’avons pas pu envoyer votre proposition. Réessayez ou écrivez à support@hashpass.tech."
     },
     "eventSearch": {
-    "placeholder": "Rechercher des événements",
-    "mobilePlaceholder": "Nom, référence ou #hashtag",
-    "accessibilityLabel": "Rechercher des événements dans le carrousel",
-    "exploreAll": "Tout voir",
-    "exploreAllLabel": "Explorer tous les événements",
-    "or": "ou",
-    "previous": "Diapositive précédente",
-    "next": "Diapositive suivante",
-    "pause": "Mettre le carrousel en pause",
-    "play": "Lire le carrousel",
-    "restart": "Revenir à la première diapositive"
+      "placeholder": "Rechercher des événements",
+      "mobilePlaceholder": "Nom, référence ou #hashtag",
+      "accessibilityLabel": "Rechercher des événements dans le carrousel",
+      "exploreAll": "Tout voir",
+      "exploreAllLabel": "Explorer tous les événements",
+      "or": "ou",
+      "previous": "Diapositive précédente",
+      "next": "Diapositive suivante",
+      "pause": "Mettre le carrousel en pause",
+      "play": "Lire le carrousel",
+      "restart": "Revenir à la première diapositive"
     },
     "eventsExplorerSubtitle": "Découvrez les événements du monde entier et trouvez le vôtre.",
     "noEventsFound": "Aucun événement trouvé.",

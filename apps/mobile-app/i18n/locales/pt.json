@@ -497,36 +497,41 @@
       "subtitle": "Uma identidade privada para acesso, conexões, passes e benefícios.",
       "secure": {
         "title": "Seguro e privado",
-        "description": "Seus dados são criptografados e protegidos com protocolos de segurança líderes do setor. Priorizamos sua privacidade acima de tudo.",
-        "action": "Proteger meus dados"
-        ,"metric": "Conversas criptografadas de ponta a ponta",
-        "metricLabel": "palestrantes verificados"
+        "description": "Use o chat privado do evento para conversar com participantes e palestrantes sem tornar a conversa pública.",
+        "action": "Proteger meus dados",
+        "metric": "Conversas criptografadas de ponta a ponta",
+        "metricLabel": "palestrantes verificados",
+        "moreInfo": "Use o chat privado do evento para conversar com participantes e palestrantes sem tornar a conversa pública."
       },
       "management": {
         "title": "Gerenciamento sem esforço",
-        "description": "Organize todas as suas credenciais digitais, cartões de fidelidade e comunidades em um lugar intuitivo.",
-        "action": "Gerenciar minhas chaves"
-        ,"metric": "Um passe para sua rede de eventos",
-        "metricLabel": "passes emitidos"
+        "description": "Abra sua carteira para encontrar o passe ou a membresia desejada e deixe o código pronto para a entrada.",
+        "action": "Gerenciar minhas chaves",
+        "metric": "Um passe para sua rede de eventos",
+        "metricLabel": "passes emitidos",
+        "moreInfo": "Abra sua carteira para encontrar o passe ou a membresia desejada e deixe o código pronto para a entrada."
       },
       "sync": {
         "title": "Sincronização multiplataforma",
-        "description": "Acesse seus dados em todos os seus dispositivos com nossa sincronização em nuvem segura.",
-        "action": "Ativar sincronização"
-        ,"metric": "3 clientes: web, Android e iOS",
-        "metricLabel": "plataformas compatíveis"
+        "description": "Entre pela web, Android ou iOS para acessar a mesma conta no dispositivo que estiver com você.",
+        "action": "Ativar sincronização",
+        "metric": "3 clientes: web, Android e iOS",
+        "metricLabel": "plataformas compatíveis",
+        "moreInfo": "Entre pela web, Android ou iOS para acessar a mesma conta no dispositivo que estiver com você."
       },
       "entry": {
         "title": "Entrada rápida",
-        "description": "Use um passe QR ao vivo para acessar seus eventos com rapidez e confiança.",
+        "description": "Na entrada, abra o passe do evento e mostre o QR code ao vivo para a equipe validar seu acesso.",
         "metric": "Validação QR ao vivo",
-        "metricLabel": "passes ativos"
+        "metricLabel": "passes ativos",
+        "moreInfo": "Na entrada, abra o passe do evento e mostre o QR code ao vivo para a equipe validar seu acesso."
       },
       "network": {
         "title": "Networking privado",
-        "description": "Encontre participantes, marque reuniões e mantenha suas conversas privadas.",
+        "description": "Veja a lista de participantes, solicite uma reunião e continue a conversa pelo chat privado.",
         "metric": "Reuniões e chat criptografado",
-        "metricLabel": "reuniões marcadas"
+        "metricLabel": "reuniões marcadas",
+        "moreInfo": "Veja a lista de participantes, solicite uma reunião e continue a conversa pelo chat privado."
       }
     },
     "welcomeBack": "Bem-vindo de volta!",
@@ -538,10 +543,75 @@
     "scroll": "Deslize",
     "getStartedNow": "Começar agora",
     "trustedByThousands": "Confiado por milhares",
-    "testimonials": {
-      "title": "Depoimentos",
-      "subtitle": "O que nossos usuários dizem",
-      "description": "Veja o que nossos clientes têm a dizer sobre nós."
+    "platformStory": {
+      "eyebrow": "NOSSA MISSÃO",
+      "title": "Facilitar a organização e a participação em comunidades.",
+      "description": "Um espaço conectado para as pessoas, a programação e os encontros que aproximam uma comunidade.",
+      "cards": {
+        "lifecycle": {
+          "metricValue": "1",
+          "metric": "CONTA · CICLO COMPLETO",
+          "eyebrow": "UM ESPAÇO CONECTADO",
+          "title": "Uma conta para todo o ciclo",
+          "description": "Reúna membros, eventos e as pessoas ao redor deles em um só lugar."
+        },
+        "membership": {
+          "metricValue": "4",
+          "metric": "AÇÕES DE MEMBRESIA",
+          "eyebrow": "MEMBROS E ACESSO",
+          "title": "Um caminho claro para participar",
+          "description": "Convites, aprovações, renovações e funções ajudam organizadores a receber e apoiar os membros."
+        },
+        "eventTools": {
+          "metricValue": "4",
+          "metric": "RECURSOS PARA EVENTOS",
+          "eyebrow": "EVENTOS E PROGRAMAÇÃO",
+          "title": "Tudo em torno do encontro",
+          "description": "Reúna passes, agendas, palestrantes e reuniões de cada evento em um só lugar."
+        },
+        "sharingTools": {
+          "metricValue": "2",
+          "metric": "FERRAMENTAS PARA COMPARTILHAR",
+          "eyebrow": "FERRAMENTAS PARA COMPARTILHAR",
+          "title": "Leve o evento além do local",
+          "description": "Links QR rastreáveis e artes personalizadas ajudam a compartilhar cada evento."
+        },
+        "surfaces": {
+          "metricValue": "2",
+          "metric": "PLATAFORMAS · WEB + MOBILE",
+          "eyebrow": "FEITO PARA CONECTAR",
+          "title": "Encontre os membros onde eles estão",
+          "description": "O HASHPASS reúne ferramentas comunitárias para web e dispositivos móveis."
+        },
+        "languages": {
+          "metricValue": "7",
+          "metric": "IDIOMAS DO APP",
+          "eyebrow": "EXPERIÊNCIA LOCALIZADA",
+          "title": "Conecte-se com mais comunidades",
+          "description": "Use o HASHPASS em português, inglês, espanhol, coreano, francês, alemão ou estoniano."
+        },
+        "truthful": {
+          "metricValue": "REAL",
+          "metric": "POR PADRÃO",
+          "eyebrow": "VERDADEIRO POR PADRÃO",
+          "title": "Comece pelo que existe",
+          "description": "Os dados de eventos e contas permanecem canônicos. Não inventamos listagens, saldos ou depoimentos."
+        },
+        "private": {
+          "metricValue": "PRIVADO",
+          "metric": "POR DESIGN",
+          "eyebrow": "PRIVACIDADE POR DESIGN",
+          "title": "Respeite cada comunidade",
+          "description": "A privacidade é um princípio que orienta a criação do HASHPASS."
+        },
+        "open": {
+          "metricValue": "ABERTO",
+          "metric": "PARA TODAS AS PESSOAS",
+          "eyebrow": "ABERTO A TODOS",
+          "title": "Facilite a participação",
+          "description": "Toda comunidade merece ferramentas que ajudem as pessoas a participar."
+        }
+      }
     },
     "copyright": " 2025 HASHPASS™ Todos os direitos reservados.",
     "footer": {
@@ -567,8 +637,14 @@
       "moreInfo": "Mais informações",
       "closeInfo": "Fechar informações",
       "scenes": {
-        "eventPass": "PASSE DO EVENTO", "eventExplorer": "EXPLORADOR DE EVENTOS", "agenda": "AGENDA", "speakers": "PALESTRANTES",
-        "findAttendees": "BUSCAR PARTICIPANTES", "meet": "ENCONTRAR", "lksWallet": "CARTEIRA $LKS", "availableBalance": "SALDO DISPONÍVEL"
+        "eventPass": "PASSE DO EVENTO",
+        "eventExplorer": "EXPLORADOR DE EVENTOS",
+        "agenda": "AGENDA",
+        "speakers": "PALESTRANTES",
+        "findAttendees": "BUSCAR PARTICIPANTES",
+        "meet": "ENCONTRAR",
+        "lksWallet": "CARTEIRA $LKS",
+        "availableBalance": "SALDO DISPONÍVEL"
       },
       "cards": {
         "scan": {
@@ -618,17 +694,17 @@
       "webSubmitError": "Não foi possível enviar sua proposta. Tente novamente ou envie um e-mail para support@hashpass.tech."
     },
     "eventSearch": {
-    "placeholder": "Pesquisar eventos",
-    "mobilePlaceholder": "Nome, referência ou #hashtag",
-    "accessibilityLabel": "Pesquisar eventos no carrossel",
-    "exploreAll": "Ver todos",
-    "exploreAllLabel": "Explorar todos os eventos",
-    "or": "ou",
-    "previous": "Slide anterior",
-    "next": "Próximo slide",
-    "pause": "Pausar carrossel",
-    "play": "Reproduzir carrossel",
-    "restart": "Voltar ao primeiro slide"
+      "placeholder": "Pesquisar eventos",
+      "mobilePlaceholder": "Nome, referência ou #hashtag",
+      "accessibilityLabel": "Pesquisar eventos no carrossel",
+      "exploreAll": "Ver todos",
+      "exploreAllLabel": "Explorar todos os eventos",
+      "or": "ou",
+      "previous": "Slide anterior",
+      "next": "Próximo slide",
+      "pause": "Pausar carrossel",
+      "play": "Reproduzir carrossel",
+      "restart": "Voltar ao primeiro slide"
     },
     "eventsExplorerSubtitle": "Descubra eventos pelo mundo e encontre o seu.",
     "noEventsFound": "Nenhum evento encontrado.",
