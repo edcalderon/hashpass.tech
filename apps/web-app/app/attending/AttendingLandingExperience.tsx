@@ -16,7 +16,11 @@ import {
 } from '../../lib/attending-url';
 import styles from './landing.module.css';
 
-export function AttendingLandingExperience({ events, showCustomEventCard = true }: AttendingLandingProps) {
+export function AttendingLandingExperience({
+  events,
+  showCustomEventCard = true,
+  brandHref = getAttendingLandingBrandUrl(),
+}: AttendingLandingProps) {
   const { t } = useTranslation('attending');
   const locale = useLocale();
   const { resolvedTheme } = useTheme();
@@ -32,7 +36,7 @@ export function AttendingLandingExperience({ events, showCustomEventCard = true 
 
   return (
     <div className={styles.page}>
-      <Navbar showMarketingLinks={false} brandHref={getAttendingLandingBrandUrl()} />
+      <Navbar showMarketingLinks={false} brandHref={brandHref} />
 
       <main className={styles.main}>
         <section className={styles.hero} aria-labelledby="attending-landing-title">

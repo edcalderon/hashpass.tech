@@ -35,8 +35,8 @@
     } else if (host === 'hashpass.club') {
       if (path === '/attending') {
         target = 'https://hashpass.club/attending/' + search + hash;
-      } else if (/^\/attendings(?:\/index\.html)?\/?$/i.test(path)) {
-        target = 'https://hashpass.club/attending/' + search + hash;
+      } else if (/^\/attendings(?:\/index\.html)?$/i.test(path)) {
+        target = 'https://hashpass.club/attendings/' + search + hash;
       }
     } else if (host === 'docs.hashpass.tech') {
       if (path === '/' || path === '/documentation' || path === '/documentation/') {

@@ -26,5 +26,5 @@ export const metadata: Metadata = {
 };
 
 export default function AttendingEventsPage() {
-  return <AttendingLandingExperience events={getUpcomingFeaturedAttendingEvents()} />;
+  return <AttendingLandingExperience events={getUpcomingFeaturedAttendingEvents()} brandHref="/" />;
 }
