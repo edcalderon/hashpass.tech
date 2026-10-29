@@ -33,6 +33,7 @@ export default async function ClubAttendingEventPage({ params }: AttendingRouteP
       brandHref="/attendings/"
       footerHref="/attendings/"
       eventPageUrl={getAttendingClubEventUrl(eventSlug)}
+      footerMode="club"
     />
   );
 }

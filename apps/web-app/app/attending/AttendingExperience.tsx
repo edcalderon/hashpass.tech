@@ -104,6 +104,7 @@ export function AttendingExperience({
   brandHref,
   footerHref,
   eventPageUrl,
+  footerMode = 'tenant',
 }: AttendingExperienceProps) {
   const { t } = useTranslation('attending');
   const locale = useLocale();
@@ -959,7 +960,7 @@ export function AttendingExperience({
 
       </main>
 
-      {isBslEvent ? (
+      {isBslEvent && footerMode === 'tenant' ? (
         <AttendingEventFooter event={event} returnHref={footerHref ?? landingHref} />
       ) : (
         <Footer />

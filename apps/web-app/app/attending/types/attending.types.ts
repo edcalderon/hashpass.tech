@@ -27,6 +27,7 @@ export interface AttendingExperienceProps {
   brandHref?: string;
   footerHref?: string;
   eventPageUrl?: string;
+  footerMode?: 'club' | 'tenant';
 }
 
 export interface AttendingEventFooterProps {
