@@ -55,18 +55,20 @@ function StoryStream({
   stories,
   className,
   duration,
+  shouldAnimate,
 }: {
   stories: PlatformStoryCard[];
   className: string;
   duration: number;
+  shouldAnimate: boolean;
 }) {
   const { colors, isDark } = useTheme();
-  const viewportRef = useRef<HTMLDivElement>(null);
-  const shouldAnimate = useStreamMotion(viewportRef);
   const copies = shouldAnimate ? [0, 1] : [0];
 
   return (
-    <div ref={viewportRef} className={`h-full min-w-0 overflow-hidden ${className}`}>
+    <div
+      className={`${shouldAnimate ? 'h-full overflow-hidden' : 'overflow-visible'} min-w-0 ${className}`}
+    >
       <m.div
         animate={shouldAnimate ? { y: '-50%' } : { y: 0 }}
         transition={shouldAnimate ? {
@@ -159,18 +161,62 @@ function StoryStream({
 }
 
 const PlatformStoryCards = ({ stories }: { stories: PlatformStoryCard[] }) => (
-  <LazyMotion features={domAnimation}>
-    <div
-      className="mt-10 flex max-h-[740px] justify-center gap-6 overflow-hidden [mask-image:linear-gradient(to_bottom,transparent,black_25%,black_75%,transparent)]"
-    >
-      <StoryStream stories={stories} className="w-full max-w-xs md:hidden" duration={42} />
-      <StoryStream stories={stories.slice(0, 5)} className="hidden w-full max-w-xs md:block lg:hidden" duration={18} />
-      <StoryStream stories={stories.slice(5, 9)} className="hidden w-full max-w-xs md:block lg:hidden" duration={21} />
-      <StoryStream stories={stories.slice(0, 3)} className="hidden w-full max-w-xs lg:block" duration={18} />
-      <StoryStream stories={stories.slice(3, 6)} className="hidden w-full max-w-xs lg:mt-8 lg:block" duration={21} />
-      <StoryStream stories={stories.slice(6, 9)} className="hidden w-full max-w-xs lg:mt-4 lg:block" duration={19} />
-    </div>
-  </LazyMotion>
+  <StoryStreamContainer stories={stories} />
 );
+
+function StoryStreamContainer({ stories }: { stories: PlatformStoryCard[] }) {
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const shouldAnimate = useStreamMotion(viewportRef);
+
+  return (
+    <LazyMotion features={domAnimation}>
+      <div
+        ref={viewportRef}
+        className={`mt-10 flex justify-center gap-6 ${
+          shouldAnimate
+            ? 'max-h-[740px] overflow-hidden [mask-image:linear-gradient(to_bottom,transparent,black_25%,black_75%,transparent)]'
+            : 'overflow-visible'
+          }`}
+      >
+        <StoryStream
+          stories={stories}
+          className="w-full max-w-xs md:hidden"
+          duration={42}
+          shouldAnimate={shouldAnimate}
+        />
+        <StoryStream
+          stories={stories.slice(0, 5)}
+          className="hidden w-full max-w-xs md:block lg:hidden"
+          duration={18}
+          shouldAnimate={shouldAnimate}
+        />
+        <StoryStream
+          stories={stories.slice(5, 9)}
+          className="hidden w-full max-w-xs md:block lg:hidden"
+          duration={21}
+          shouldAnimate={shouldAnimate}
+        />
+        <StoryStream
+          stories={stories.slice(0, 3)}
+          className="hidden w-full max-w-xs lg:block"
+          duration={18}
+          shouldAnimate={shouldAnimate}
+        />
+        <StoryStream
+          stories={stories.slice(3, 6)}
+          className="hidden w-full max-w-xs lg:mt-8 lg:block"
+          duration={21}
+          shouldAnimate={shouldAnimate}
+        />
+        <StoryStream
+          stories={stories.slice(6, 9)}
+          className="hidden w-full max-w-xs lg:mt-4 lg:block"
+          duration={19}
+          shouldAnimate={shouldAnimate}
+        />
+      </div>
+    </LazyMotion>
+  );
+}
 
 export default PlatformStoryCards;
