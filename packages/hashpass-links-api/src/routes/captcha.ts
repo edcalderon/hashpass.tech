@@ -1,16 +1,29 @@
-import { getCapInstance } from '@hashpass/backend';
-import { apiError } from '../server';
+import { createSupabaseCaptchaStorage, getCapInstance } from '@hashpass/backend';
+import { adminDb, apiError } from '../server';
 
 // Shared Cap (proof-of-work captcha, no third-party keys/network calls)
 // instance for this service -- same implementation apps/mobile-app's
 // newsletter signup uses, via the factory extracted to
 // packages/backend/src/captcha/cap-instance.ts. This namespace keeps this
 // service's challenge/token storage isolated from other services.
-const cap = getCapInstance('hashpass-links-api');
+//
+// Storage must be shared across Lambda instances: a challenge is created on
+// one instance and its token redeemed/validated on others, and each instance
+// has its own /tmp. The filesystem fallback made attending-artwork publishing
+// fail with "Security check expired" in production.
+//
+// Created lazily: Cap registers process-exit cleanup that talks to storage, and
+// that must not run (or need Supabase credentials) in code paths that never
+// touch the captcha.
+let cachedCap: ReturnType<typeof getCapInstance> | null = null;
+function cap() {
+  cachedCap ??= getCapInstance('hashpass-links-api', createSupabaseCaptchaStorage('hashpass-links-api', adminDb()));
+  return cachedCap;
+}
 
 export async function createCaptchaChallenge(): Promise<Response> {
   try {
-    const challenge = await cap.createChallenge({
+    const challenge = await cap().createChallenge({
       challengeCount: 10,
       challengeSize: 32,
       challengeDifficulty: 3,
@@ -30,7 +43,7 @@ export async function redeemCaptchaChallenge(request: Request): Promise<Response
   }
 
   try {
-    const result = await cap.redeemChallenge({ token, solutions });
+    const result = await cap().redeemChallenge({ token, solutions });
     if (!result.success) {
       return Response.json({ success: false, error: result.message || 'Verification failed' });
     }
@@ -58,7 +71,7 @@ export async function validateCaptchaToken(token: unknown): Promise<boolean> {
   if (validatorOverride) return validatorOverride(token);
   if (typeof token !== 'string' || !token) return false;
   try {
-    const result = await cap.validateToken(token);
+    const result = await cap().validateToken(token);
     return result.success;
   } catch {
     return false;
