@@ -55,6 +55,7 @@ export interface AttendingEventData {
 }
 
 export interface AttendingArtworkOptions {
+  themeMode: 'dark' | 'light';
   eventName: string;
   shortName: string;
   genericArtwork?: boolean;

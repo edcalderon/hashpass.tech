@@ -270,6 +270,7 @@ export function AttendingExperience({ event, generic = false }: AttendingExperie
   }, [currentPhoto, removePhotoBackground]);
 
   const artOptions = useMemo(() => ({
+    themeMode: mode,
     eventName,
     shortName: event.shortName,
     genericArtwork: generic,
@@ -293,7 +294,7 @@ export function AttendingExperience({ event, generic = false }: AttendingExperie
       past: artPast,
       emptyName: artEmptyName,
     },
-  }), [eventName, event.shortName, generic, event.logoSrc, event.artworkTemplate, event.venue, location, dateLabel, displayName, role, xProfile, instagramProfile, artworkPhoto, transparentPortrait, pastEvent, artUpcoming, artPast, artEmptyName, artPoweredBy]);
+  }), [mode, eventName, event.shortName, generic, event.logoSrc, event.artworkTemplate, event.venue, location, dateLabel, displayName, role, xProfile, instagramProfile, artworkPhoto, transparentPortrait, pastEvent, artUpcoming, artPast, artEmptyName, artPoweredBy]);
 
   useEffect(() => {
     setPublishedShare(null);

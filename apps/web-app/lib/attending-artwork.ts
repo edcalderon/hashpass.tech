@@ -150,7 +150,12 @@ function drawSocialIcon(
   context.restore();
 }
 
-function drawSocialHandles(context: CanvasRenderingContext2D, options: AttendingArtworkOptions, top = 1182) {
+function drawSocialHandles(
+  context: CanvasRenderingContext2D,
+  options: AttendingArtworkOptions,
+  top = 1182,
+  color = '#f3f8ff',
+) {
   const handles = [
     { platform: 'x' as const, handle: options.attendeeSocialHandles.x },
     { platform: 'instagram' as const, handle: options.attendeeSocialHandles.instagram },
@@ -166,8 +171,8 @@ function drawSocialHandles(context: CanvasRenderingContext2D, options: Attending
   const totalWidth = widths.reduce((total, width) => total + width, 0) + itemGap * (handles.length - 1);
   let x = (ART_WIDTH - totalWidth) / 2;
   handles.forEach(({ platform, handle }, index) => {
-    drawSocialIcon(context, platform, x, top, iconSize, '#f3f8ff');
-    context.fillStyle = '#f3f8ff';
+    drawSocialIcon(context, platform, x, top, iconSize, color);
+    context.fillStyle = color;
     context.textAlign = 'left';
     context.fillText(handle, x + iconSize + iconGap, top + 19);
     x += widths[index] + itemGap;
@@ -373,6 +378,58 @@ function drawColombiaFlagRibbon(
   context.fillRect(x + yellowWidth + blueWidth, y, width - yellowWidth - blueWidth, height);
 }
 
+function drawFrostedArtworkPanel(context: CanvasRenderingContext2D, lightMode: boolean) {
+  const x = 62;
+  const y = 704;
+  const width = 956;
+  const height = 625;
+  const radius = 42;
+  const inset = 20;
+  const backdrop = document.createElement('canvas');
+  backdrop.width = width + inset * 2;
+  backdrop.height = height + inset * 2;
+  const backdropContext = backdrop.getContext('2d');
+  backdropContext?.drawImage(
+    context.canvas,
+    x - inset,
+    y - inset,
+    backdrop.width,
+    backdrop.height,
+    0,
+    0,
+    backdrop.width,
+    backdrop.height,
+  );
+
+  context.save();
+  drawRoundRect(context, x, y, width, height, radius);
+  context.clip();
+  if (backdropContext) {
+    context.filter = 'blur(14px)';
+    context.drawImage(backdrop, x - inset, y - inset);
+    context.filter = 'none';
+  }
+  const glass = context.createLinearGradient(0, y, 0, y + height);
+  glass.addColorStop(0, lightMode ? 'rgba(249, 250, 252, 0.68)' : 'rgba(2, 12, 42, 0.68)');
+  glass.addColorStop(1, lightMode ? 'rgba(243, 245, 248, 0.78)' : 'rgba(1, 8, 31, 0.8)');
+  context.fillStyle = glass;
+  context.fillRect(x, y, width, height);
+  context.restore();
+
+  context.save();
+  drawRoundRect(context, x, y, width, height, radius);
+  context.strokeStyle = lightMode ? 'rgba(93, 111, 132, 0.24)' : 'rgba(39, 216, 255, 0.38)';
+  context.lineWidth = 1.5;
+  context.stroke();
+  context.beginPath();
+  context.moveTo(x + 38, y + 1);
+  context.lineTo(x + width - 38, y + 1);
+  context.strokeStyle = lightMode ? 'rgba(255, 255, 255, 0.68)' : 'rgba(217, 244, 255, 0.16)';
+  context.lineWidth = 1;
+  context.stroke();
+  context.restore();
+}
+
 function drawBslColombiaArtwork(
   context: CanvasRenderingContext2D,
   options: AttendingArtworkOptions,
@@ -385,6 +442,11 @@ function drawBslColombiaArtwork(
 ) {
   const { backgroundImage, logo, poweredByLogo, avatar } = assets;
   const { accentColor, secondaryAccentColor, flagColors, hashtags } = options.artworkTemplate;
+  const lightMode = options.themeMode === 'light';
+  const themeAccent = lightMode ? '#536d85' : accentColor;
+  const iconAccent = lightMode ? '#af0d01' : themeAccent;
+  const headingColor = lightMode ? '#101b30' : '#f7fbff';
+  const detailColor = lightMode ? '#243248' : '#f3f8ff';
 
   context.fillStyle = '#06142e';
   context.fillRect(0, 0, ART_WIDTH, ART_HEIGHT);
@@ -393,22 +455,22 @@ function drawBslColombiaArtwork(
   // Let Bogotá's skyline and Monserrate read through the poster instead of
   // burying the photograph under the previous heavy all-over tint.
   const photoWash = context.createLinearGradient(0, 0, 0, ART_HEIGHT);
-  photoWash.addColorStop(0, 'rgba(2, 12, 42, 0.24)');
-  photoWash.addColorStop(0.45, 'rgba(2, 12, 42, 0.08)');
-  photoWash.addColorStop(0.68, 'rgba(2, 12, 42, 0.2)');
-  photoWash.addColorStop(1, 'rgba(2, 12, 42, 0.64)');
+  photoWash.addColorStop(0, lightMode ? 'rgba(235, 240, 248, 0.1)' : 'rgba(2, 12, 42, 0.24)');
+  photoWash.addColorStop(0.45, lightMode ? 'rgba(235, 240, 248, 0.04)' : 'rgba(2, 12, 42, 0.08)');
+  photoWash.addColorStop(0.68, lightMode ? 'rgba(235, 240, 248, 0.1)' : 'rgba(2, 12, 42, 0.2)');
+  photoWash.addColorStop(1, lightMode ? 'rgba(235, 240, 248, 0.2)' : 'rgba(2, 12, 42, 0.64)');
   context.fillStyle = photoWash;
   context.fillRect(0, 0, ART_WIDTH, ART_HEIGHT);
 
   const leftWash = context.createLinearGradient(0, 0, 620, 0);
-  leftWash.addColorStop(0, 'rgba(1, 9, 35, 0.62)');
-  leftWash.addColorStop(0.66, 'rgba(1, 9, 35, 0.28)');
+  leftWash.addColorStop(0, lightMode ? 'rgba(1, 9, 35, 0.3)' : 'rgba(1, 9, 35, 0.62)');
+  leftWash.addColorStop(0.66, lightMode ? 'rgba(1, 9, 35, 0.1)' : 'rgba(1, 9, 35, 0.28)');
   leftWash.addColorStop(1, 'rgba(1, 9, 35, 0)');
   context.fillStyle = leftWash;
   context.fillRect(0, 0, 660, 760);
 
   context.save();
-  context.strokeStyle = colorWithAlpha(accentColor, 0.3);
+  context.strokeStyle = colorWithAlpha(themeAccent, lightMode ? 0.14 : 0.3);
   context.lineWidth = 2;
   for (let radius = 245; radius <= 515; radius += 54) {
     context.beginPath();
@@ -424,18 +486,18 @@ function drawBslColombiaArtwork(
     context,
     avatar,
     options.attendeeName,
-    accentColor,
-    secondaryAccentColor,
+    lightMode ? '#607f99' : accentColor,
+    lightMode ? '#3c5f7d' : secondaryAccentColor,
     options.transparentPortrait,
-    { x: 374, y: 28, width: 690, height: 900, radius: 224, verticalAnchor: 0.38 },
+    { x: 350, y: 28, width: 668, height: 900, radius: 224, verticalAnchor: 0.38 },
   );
 
   // Event mark and the Colombian colors anchor the upper-left corner while
   // the larger portrait carries the visual weight of the composition.
-  drawRoundRect(context, 54, 44, 448, 248, 34);
+  drawRoundRect(context, 54, 44, 448, 256, 34);
   context.fillStyle = 'rgba(2, 11, 38, 0.64)';
   context.fill();
-  context.strokeStyle = colorWithAlpha(accentColor, 0.38);
+  context.strokeStyle = colorWithAlpha(themeAccent, 0.38);
   context.lineWidth = 1.5;
   context.stroke();
   if (logo) {
@@ -445,90 +507,73 @@ function drawBslColombiaArtwork(
     context.font = '800 56px Manrope, sans-serif';
     context.fillText(options.shortName.toLocaleUpperCase(), 84, 157);
   }
-  drawColombiaFlagRibbon(context, 82, 254, 338, 10, flagColors);
+  drawColombiaFlagRibbon(context, 109, 244, 338, 9, flagColors);
   context.fillStyle = '#f3f8ff';
-  context.font = '700 19px "IBM Plex Mono", monospace';
-  context.textAlign = 'left';
-  context.fillText('BSL  ·  COLOMBIA 2026', 82, 330);
+  context.font = '700 16px "IBM Plex Mono", monospace';
+  context.textAlign = 'center';
+  context.fillText('BSL  ·  COLOMBIA 2026', 278, 282);
 
-  drawRoundRect(context, 62, 704, 956, 625, 42);
-  const panelFill = context.createLinearGradient(0, 704, 0, 1329);
-  panelFill.addColorStop(0, 'rgba(2, 12, 42, 0.76)');
-  panelFill.addColorStop(1, 'rgba(1, 8, 31, 0.86)');
-  context.fillStyle = panelFill;
-  context.shadowColor = 'rgba(0, 5, 22, 0.38)';
-  context.shadowBlur = 26;
-  context.fill();
-  context.shadowBlur = 0;
-  context.strokeStyle = colorWithAlpha(accentColor, 0.38);
-  context.lineWidth = 1.5;
-  context.stroke();
+  drawFrostedArtworkPanel(context, lightMode);
 
   context.textAlign = 'center';
   context.textBaseline = 'alphabetic';
   const headline = getAttendingArtworkHeadline(options);
-  if (options.pastEvent) {
-    context.fillStyle = '#f7fbff';
-  } else {
-    const headlineGlow = context.createLinearGradient(260, 0, 820, 0);
-    headlineGlow.addColorStop(0, '#20d9f5');
-    headlineGlow.addColorStop(0.58, accentColor);
-    headlineGlow.addColorStop(1, '#2586ff');
-    context.fillStyle = headlineGlow;
-  }
-  drawFittedText(context, headline, ART_WIDTH / 2, 842, 900, 800, 'Manrope, sans-serif', 88, 58);
+  context.fillStyle = headingColor;
+  drawFittedText(context, headline, ART_WIDTH / 2, 830, 900, 800, 'Manrope, sans-serif', 88, 52);
 
-  context.fillStyle = '#eaf7ff';
+  context.fillStyle = lightMode ? '#17243a' : '#eaf7ff';
   context.font = '800 37px Manrope, sans-serif';
-  drawFittedText(context, options.eventName, ART_WIDTH / 2, 949, 865, 800, 'Manrope, sans-serif', 37, 25);
+  drawFittedText(context, options.eventName, ART_WIDTH / 2, 919, 865, 800, 'Manrope, sans-serif', 37, 25);
 
-  context.strokeStyle = colorWithAlpha(accentColor, 0.66);
-  context.lineWidth = 2;
+  context.strokeStyle = colorWithAlpha(themeAccent, lightMode ? 0.26 : 0.66);
+  context.lineWidth = lightMode ? 1.5 : 2;
   context.beginPath();
-  context.moveTo(118, 974);
-  context.lineTo(962, 974);
+  context.moveTo(118, 946);
+  context.lineTo(962, 946);
   context.stroke();
 
-  const detailTop = 1020;
-  const detailTextY = 1030;
+  const detailTop = 990;
+  const detailTextY = 1000;
   context.textAlign = 'left';
-  drawLocationPin(context, 124, detailTop, accentColor, 29);
-  context.fillStyle = '#f3f8ff';
+  drawLocationPin(context, 124, detailTop, iconAccent, 29);
+  context.fillStyle = detailColor;
   context.font = '700 25px Manrope, sans-serif';
   drawFittedText(context, options.location, 153, detailTextY, 205, 700, 'Manrope, sans-serif', 25, 17);
 
-  context.strokeStyle = colorWithAlpha(accentColor, 0.42);
+  context.strokeStyle = colorWithAlpha(themeAccent, lightMode ? 0.22 : 0.42);
   context.beginPath();
-  context.moveTo(374, 991);
-  context.lineTo(374, 1048);
+  context.moveTo(374, 961);
+  context.lineTo(374, 1018);
   context.stroke();
 
-  drawCalendar(context, 409, detailTop, accentColor, 29);
-  context.fillStyle = '#f3f8ff';
+  drawCalendar(context, 409, detailTop, iconAccent, 29);
+  context.fillStyle = detailColor;
   context.font = '700 24px Manrope, sans-serif';
   drawFittedText(context, options.dateLabel, 438, detailTextY, 205, 700, 'Manrope, sans-serif', 24, 17);
 
-  context.strokeStyle = colorWithAlpha(accentColor, 0.42);
+  context.strokeStyle = colorWithAlpha(themeAccent, lightMode ? 0.22 : 0.42);
   context.beginPath();
-  context.moveTo(674, 991);
-  context.lineTo(674, 1048);
+  context.moveTo(674, 961);
+  context.lineTo(674, 1018);
   context.stroke();
 
-  drawBuilding(context, 711, detailTop, accentColor, 29);
-  context.fillStyle = '#f3f8ff';
+  drawBuilding(context, 711, detailTop, iconAccent, 29);
+  context.fillStyle = detailColor;
   context.font = '700 22px Manrope, sans-serif';
   drawFittedText(context, compactVenue(options.venue), 741, detailTextY, 235, 700, 'Manrope, sans-serif', 22, 15);
 
-  context.strokeStyle = colorWithAlpha(accentColor, 0.4);
+  context.strokeStyle = colorWithAlpha(themeAccent, lightMode ? 0.22 : 0.4);
   context.beginPath();
-  context.moveTo(118, 1060);
-  context.lineTo(962, 1060);
+  context.moveTo(118, 1030);
+  context.lineTo(962, 1030);
   context.stroke();
 
-  drawRoundRect(context, 214, 1077, 652, 60, 30);
-  context.fillStyle = 'rgba(8, 30, 70, 0.66)';
+  drawRoundRect(context, 214, 1047, 652, 60, 30);
+  context.fillStyle = lightMode ? 'rgba(175, 13, 1, 0.08)' : 'rgba(8, 30, 70, 0.66)';
   context.fill();
-  context.strokeStyle = colorWithAlpha(accentColor, 0.58);
+  context.strokeStyle = lightMode
+    ? 'rgba(175, 13, 1, 0.28)'
+    : colorWithAlpha(themeAccent, 0.58);
   context.lineWidth = 1.5;
   context.stroke();
   const identity = [
@@ -536,30 +581,31 @@ function drawBslColombiaArtwork(
     options.attendeeRole.trim(),
   ].filter(Boolean).join('  ·  ');
   context.textAlign = 'center';
-  context.fillStyle = '#ffffff';
+  context.fillStyle = lightMode ? '#142238' : '#ffffff';
   context.font = '800 34px Manrope, sans-serif';
-  drawFittedText(context, identity, ART_WIDTH / 2, 1117, 596, 800, 'Manrope, sans-serif', 34, 20);
+  drawFittedText(context, identity, ART_WIDTH / 2, 1087, 596, 800, 'Manrope, sans-serif', 34, 20);
 
   const hasSocial = !!(options.attendeeSocialHandles.x || options.attendeeSocialHandles.instagram);
-  if (hasSocial) drawSocialHandles(context, options, 1157);
+  if (hasSocial) drawSocialHandles(context, options, 1128, detailColor);
 
-  context.fillStyle = accentColor;
+  context.fillStyle = lightMode ? '#526b82' : themeAccent;
   context.font = '700 22px "IBM Plex Mono", monospace';
-  drawFittedText(context, hashtags.join('   '), ART_WIDTH / 2, hasSocial ? 1210 : 1186, 850, 700, '"IBM Plex Mono", monospace', 22, 15);
+  drawFittedText(context, hashtags.join('   '), ART_WIDTH / 2, hasSocial ? 1180 : 1156, 850, 700, '"IBM Plex Mono", monospace', 22, 15);
 
   context.textAlign = 'left';
-  context.fillStyle = 'rgba(230, 244, 255, 0.78)';
+  context.fillStyle = lightMode ? 'rgba(116, 45, 43, 0.82)' : 'rgba(230, 244, 255, 0.78)';
   context.font = '500 15px "IBM Plex Mono", monospace';
   const labelWidth = context.measureText(options.poweredByLabel).width;
   const brandWidth = 150;
   const groupStart = (ART_WIDTH - labelWidth - 12 - brandWidth) / 2;
-  context.fillText(options.poweredByLabel, groupStart, 1286);
+  context.fillStyle = lightMode ? 'rgba(116, 45, 43, 0.82)' : 'rgba(230, 244, 255, 0.78)';
+  context.fillText(options.poweredByLabel, groupStart, 1270);
   if (poweredByLogo) {
-    drawContainedImage(context, poweredByLogo, groupStart + labelWidth + 12, 1267, brandWidth, 36);
+    drawContainedImage(context, poweredByLogo, groupStart + labelWidth + 12, 1251, brandWidth, 36);
   } else {
     context.fillStyle = 'rgba(230, 244, 255, 0.84)';
     context.font = '800 18px Manrope, sans-serif';
-    context.fillText('HASHPASS', groupStart + labelWidth + 12, 1286);
+    context.fillText('HASHPASS', groupStart + labelWidth + 12, 1270);
   }
   context.textAlign = 'left';
 }
@@ -573,10 +619,14 @@ export async function drawAttendingArtwork(
   const context = canvas.getContext('2d');
   if (!context) return { avatarIncluded: false, logoIncluded: false };
 
+  const isBslColombia = options.artworkTemplate.backgroundSrc?.endsWith('/bsl-colombia-2026.png') || false;
+  const poweredByLogoSrc = isBslColombia && options.themeMode === 'light'
+    ? '/logo-full-hashpass-black-red.svg'
+    : options.artworkTemplate.poweredByLogoSrc;
   const [backgroundImage, logo, poweredByLogo, avatar] = await Promise.all([
     loadImage(options.artworkTemplate.backgroundSrc),
     loadImage(options.logoSrc),
-    loadImage(options.artworkTemplate.poweredByLogoSrc),
+    loadImage(poweredByLogoSrc),
     loadImage(options.avatarSrc),
   ]);
   await document.fonts?.ready;
@@ -588,7 +638,7 @@ export async function drawAttendingArtwork(
   canvas.height = ART_HEIGHT;
   context.clearRect(0, 0, ART_WIDTH, ART_HEIGHT);
 
-  if (options.artworkTemplate.backgroundSrc?.endsWith('/bsl-colombia-2026.png')) {
+  if (isBslColombia) {
     drawBslColombiaArtwork(context, options, { backgroundImage, logo, poweredByLogo, avatar });
     return { avatarIncluded: !!avatar, logoIncluded: !!logo };
   }
