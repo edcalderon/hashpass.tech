@@ -20,20 +20,29 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.176)
+## 📋 Latest Changes (v1.9.177)
+
+### Bug Fixes
+
+* improve Lukas mobile scroll and cover Plane pages ([35399ca](https://github.com/hashpass-tech/hashpass.tech/commit/35399ca014afddf978d592106cefc5cf90701034))
+* **mobile:** isolate Metro cache per worktree ([#528](https://github.com/hashpass-tech/hashpass.tech/issues/528)) ([a73c340](https://github.com/hashpass-tech/hashpass.tech/commit/a73c34076cc7e87d7ec657f5299fc6bd7beef0cf))
+
 
 ### Features
 
 * **lukas:** gate claims with a knowledge quiz ([7b200d4](https://github.com/hashpass-tech/hashpass.tech/commit/7b200d4b9653d0396c2007560117a905449470e7))
 * **lukas:** improve SEO and social previews ([f88aa48](https://github.com/hashpass-tech/hashpass.tech/commit/f88aa48c81056028ceefce90fae8aaf2e117070f))
 ### Release Highlights
-- gate claims with a knowledge quiz; improve SEO and social previews
+- gate claims with a knowledge quiz; improve SEO and social previews; improve Lukas mobile scroll and cover Plane pages; isolate Metro cache per worktree (#528)
 
 ### Release scope
-- Compared with: `v1.9.174` (the previous global release tag)
+- Compared with: `v1.9.176` (the previous global release tag)
 
 ### Affected products & packages
+- Club web
+- Mobile app
 - Infrastructure
+- Self-hosted operations
 - Release tooling
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
