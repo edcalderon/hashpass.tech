@@ -17,6 +17,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import EventBanner from '../../../components/EventBanner';
 import AgendaRowLead from '../../../components/AgendaRowLead';
+import AgendaTimeSlot from '../../../components/AgendaTimeSlot';
 import SpeakerAvatar from '../../../components/SpeakerAvatar';
 import UnifiedSearchAndFilter from '../../../components/UnifiedSearchAndFilter';
 import { apiClient, eventApiPath } from '@/lib/api-client';
@@ -50,7 +51,8 @@ import {
   createAgendaCalendarEvent,
   resolveAgendaCalendarSpeakerNames,
 } from '../../../lib/agenda-calendar';
-import { parseAgendaTime } from '../../../lib/event-time';
+import { formatEventClock, parseAgendaTime } from '../../../lib/event-time';
+import { getAgendaSessionWindow, placeNowIndicator } from '../../../lib/agenda-timeline';
 import { getDisplayAgendaDescription } from '../../../lib/agenda-description';
 
 // Custom filter logic for agenda items
@@ -286,6 +288,17 @@ export default function BSL2025AgendaScreen() {
   const { showSuccess, showError, showWarning } = useToastHelpers();
   const { t } = useTranslation('agenda');
   const motionAllowed = useMotionAllowed();
+  // Wall clock for the current-time line; only changes when the minute does.
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNowMs((previous) => {
+        const next = Date.now();
+        return Math.floor(next / 60_000) === Math.floor(previous / 60_000) ? previous : next;
+      });
+    }, 15_000);
+    return () => clearInterval(timer);
+  }, []);
   const scrollViewRef = useRef<ScrollView>(null);
   const sessionItemRefs = useRef<{ [key: string]: View | null }>({});
   const handledSessionRef = useRef<string | null>(null); // Track which session we've already handled
@@ -1636,9 +1649,6 @@ export default function BSL2025AgendaScreen() {
                   {title}
                 </HoverText>
                 <View style={styles.agendaRowMeta}>
-                  <Text testID={`agenda-card-time-${item.id}`} style={styles.agendaRowTime} numberOfLines={1}>
-                    {formatAgendaCardTime(item, eventTzOffset)}
-                  </Text>
                   <Text style={styles.agendaRowType} numberOfLines={1}>{typeLabel}</Text>
                   <Text style={styles.agendaRowLocation} numberOfLines={1}>{location}</Text>
                 </View>
@@ -1804,19 +1814,21 @@ export default function BSL2025AgendaScreen() {
                     {typeLabel}
                   </Badge>
                 </View>
+                {isAgendaGrid ? (
                 <View
-                  testID={`agenda-card-time-footer-${item.id}`}
-                  style={styles.agendaMediaFooter}
-                >
-                  <NativeSafeIcon name="schedule" size={14} color="#FFFFFF" />
-                  <Text
-                    testID={`agenda-card-time-${item.id}`}
-                    style={styles.agendaTime}
-                    numberOfLines={isWideAgenda || isCompactAgenda || isAgendaGrid ? 1 : 2}
+                    testID={`agenda-card-time-footer-${item.id}`}
+                    style={styles.agendaMediaFooter}
                   >
-                    {formatAgendaCardTime(item, eventTzOffset)}
-                  </Text>
-                </View>
+                    <NativeSafeIcon name="schedule" size={14} color="#FFFFFF" />
+                    <Text
+                      testID={`agenda-card-time-${item.id}`}
+                      style={styles.agendaTime}
+                      numberOfLines={isWideAgenda || isCompactAgenda || isAgendaGrid ? 1 : 2}
+                    >
+                      {formatAgendaCardTime(item, eventTzOffset)}
+                    </Text>
+                  </View>
+                ) : null}
               </View>
 
             <View style={[styles.agendaItemContent, isCompactAgenda && styles.agendaItemContentCompact]}>
@@ -1966,6 +1978,39 @@ export default function BSL2025AgendaScreen() {
       </View>
     );
   };
+  // Calendar layout: each session's time sits in a left rail outside the card and, on the
+  // day of the event, a red line tracks the current time. The grid keeps plain cards.
+  const renderAgendaTimeline = (items: AgendaItem[]) => {
+    if (isAgendaGrid) return items.map(renderAgendaItem);
+    const windows = items.map((item) => getAgendaSessionWindow(item, event?.eventStartDate, eventTzOffset));
+    const now = placeNowIndicator(windows, nowMs, eventTzOffset);
+    return items.map((item, index) => {
+      const window = windows[index];
+      const previous = windows[index - 1];
+      const sameStart = Boolean(window && previous && previous.start === window.start);
+      // Without a readable window (no event date) fall back to the card's own time text.
+      const [fallbackStart, fallbackEnd] = formatTimeRange(item, eventTzOffset).split(/\s+-\s+/);
+      const railLabels = window
+        ? { start: formatEventClock(new Date(window.start), eventTzOffset), end: formatEventClock(new Date(window.end), eventTzOffset) }
+        : { start: fallbackStart, end: fallbackEnd };
+      return (
+        <AgendaTimeSlot
+          key={item.id}
+          testID={`agenda-slot-${item.id}`}
+          color={getAgendaTypeColor(item.type)}
+          isDark={isDark}
+          startLabel={sameStart ? undefined : railLabels.start}
+          endLabel={sameStart ? undefined : railLabels.end}
+          nowLine={now && now.index === index
+            ? { mode: now.mode, fraction: now.fraction, label: formatEventClock(new Date(nowMs), eventTzOffset) }
+            : null}
+        >
+          {renderAgendaItem(item)}
+        </AgendaTimeSlot>
+      );
+    });
+  };
+
   // Show global loader while loading. Also cover the gap between agenda
   // finishing its load and the separate grouping effect (deps: [agenda,
   // loading]) actually running: that effect only fires on the render AFTER
@@ -2163,7 +2208,7 @@ export default function BSL2025AgendaScreen() {
             ) : bookmarkedGroups.map(({ dayKey, items }) => (
               <View key={dayKey} style={styles.bookmarkGroup}>
                 <Text style={styles.bookmarkGroupLabel}>{getTabLabel(dayKey)}</Text>
-                {items.map(renderAgendaItem)}
+                {renderAgendaTimeline(items)}
               </View>
             ))}
           </View>
@@ -2178,7 +2223,7 @@ export default function BSL2025AgendaScreen() {
             ) : workshopGroups.map(({ dayKey, items }) => (
               <View key={dayKey} style={styles.bookmarkGroup}>
                 <Text style={styles.bookmarkGroupLabel}>{getTabLabel(dayKey)}</Text>
-                {items.map(renderAgendaItem)}
+                {renderAgendaTimeline(items)}
               </View>
             ))}
           </View>
@@ -2209,7 +2254,7 @@ export default function BSL2025AgendaScreen() {
                 );
               }
 
-              return filteredItems.map(renderAgendaItem);
+              return renderAgendaTimeline(filteredItems);
             })()}
           </View>
         ) : agenda.length > 0 ? (
@@ -2692,12 +2737,6 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     flexDirection: 'row',
     gap: uiTokens.space.sm,
     minWidth: 0,
-  },
-  agendaRowTime: {
-    color: colors.text.primary,
-    flexShrink: 0,
-    fontSize: uiTokens.type.caption,
-    fontWeight: '700',
   },
   agendaRowType: {
     color: colors.text.secondary,

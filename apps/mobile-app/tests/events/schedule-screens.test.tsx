@@ -607,16 +607,11 @@ describe('event schedule screens', () => {
     ))).toBe(true);
     expect(media.findByProps({ accessibilityLabel: 'Ada Lovelace avatar' })).toBeTruthy();
     expect(media.findByProps({ testID: 'agenda-card-venue-keynote-session' })).toBeTruthy();
-    const timeFooterStyles = renderer!.root
-      .findByProps({ testID: 'agenda-card-time-footer-keynote-session' })
-      .props.style;
-    expect(timeFooterStyles).toEqual(expect.objectContaining({
-      backgroundColor: 'rgba(3, 12, 24, 0.42)',
-      borderTopWidth: 1,
-    }));
-    const keynoteTime = renderer!.root.findByProps({ testID: 'agenda-card-time-keynote-session' });
-    expect(keynoteTime.children.join('')).toBe('8:00 – 9:00 AM');
-    expect(keynoteTime.props.numberOfLines).toBe(1);
+    // The time lives in the calendar rail beside the card, not inside the photo.
+    expect(renderer!.root.findAllByProps({ testID: 'agenda-card-time-footer-keynote-session' })).toHaveLength(0);
+    const keynoteSlot = renderer!.root.findByProps({ testID: 'agenda-slot-keynote-session' });
+    const slotTexts = keynoteSlot.findAllByType(Text).map((node) => node.children.join(''));
+    expect(slotTexts).toEqual(expect.arrayContaining(['8:00 AM', '9:00 AM']));
     expect(renderer!.root.findAllByProps({ accessibilityLabel: 'actions.addToAgenda' }).some((node) => (
       Array.isArray(node.props.style)
         && node.props.style.some((style: unknown) => (
@@ -725,7 +720,8 @@ describe('event schedule screens', () => {
     expect(mediaStyles).toEqual(expect.arrayContaining([
       expect.objectContaining({ height: 156, minHeight: 156, width: '100%' }),
     ]));
-    expect(renderer.root.findByProps({ testID: 'agenda-card-time-calendar-agenda-1' }).props.numberOfLines).toBe(1);
+    const calendarSlot = renderer.root.findByProps({ testID: 'agenda-slot-calendar-agenda-1' });
+    expect(calendarSlot.findAllByType(Text).some((node) => node.props.numberOfLines === 1 && /\d:\d{2} [AP]M/.test(node.children.join('')))).toBe(true);
 
     await act(async () => renderer.unmount());
     dimensionsSpy.mockRestore();
