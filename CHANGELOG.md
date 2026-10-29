@@ -1,3 +1,15 @@
+## [1.9.191](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.190...v1.9.191) (2026-10-29)
+### Released
+- share captcha state across links API Lambda instances
+
+### Release scope
+- Compared with: `v1.9.190` (the previous global release tag)
+
+### Affected products & packages
+- Club web
+- Mobile app
+- QR links API
+
 ## [1.9.190](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.189...v1.9.190) (2026-10-29)
 ### Released
 - show version in event artwork footer
