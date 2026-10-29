@@ -284,6 +284,7 @@ export default function Index() { return <Redirect href='/lukas' />; }
         shutil.copy2(site / "+not-found.html", site / "404.html")
         required_assets = [
             "favicon.svg",
+            "favicon.ico",
             "favicon-32.png",
             "apple-touch-icon.png",
             "lukas-social-card.png",
