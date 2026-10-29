@@ -15,6 +15,11 @@ Required private files:
   (`https://work.hashpass.tech/plane/...`). A wrong slug such as `hashpass`
   makes every Plane call return 403, which an MCP client shows as a generic
   tool error.
+- To enable the gateway's session-backed `page` tool, add the dedicated
+  service-account credentials `PLANE_PAGES_EMAIL` and `PLANE_PAGES_PASSWORD`
+  to the same private file. Without both values, page calls continue to the
+  upstream MCP server. Never reuse an end-user credential or commit these
+  values.
 - `openai-plane-tunnel.env`: `CONTROL_PLANE_API_KEY` only.
 
 The tunnel profile is initialized with the OpenAI tunnel ID and this command:
@@ -44,8 +49,9 @@ client registration, authorization-code + PKCE, consent, refresh-token
 rotation, JWKS discovery, and audience-bound JWT access tokens. Apply database
 migration `V106__better_auth_mcp_oauth.sql` before enabling the auth plugin.
 
-The private runtime file `/opt/hashpass/mcp/secrets/plane.env` supplies only
-`PLANE_API_KEY`, `PLANE_WORKSPACE_SLUG`, and `PLANE_BASE_URL`. Configure
+The private runtime file `/opt/hashpass/mcp/secrets/plane.env` supplies
+`PLANE_API_KEY`, `PLANE_WORKSPACE_SLUG`, and `PLANE_BASE_URL`, plus the
+optional page service-account credentials described above. Configure
 `MCP_ALLOWED_EMAIL_DOMAINS` in the operator `.env` must be exactly
 `hashpass.app,hashpass.tech`. Domain access is accepted only when the Hashpass
 OAuth token carries an explicit verified-email claim. The deployment preflight

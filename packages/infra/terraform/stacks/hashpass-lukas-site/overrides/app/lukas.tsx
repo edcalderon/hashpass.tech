@@ -1,20 +1,9 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../hooks/useTheme';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { useTranslation } from '../i18n/i18n';
-import Animated, {
-  useAnimatedScrollHandler,
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  interpolate,
-  Extrapolation,
-  withRepeat,
-  withSequence,
-  Easing,
-} from 'react-native-reanimated';
 import { LukasSettingsMenu } from '../components/LukasSettingsMenu';
 import type { LukasAnimationLevel } from '../types/lukas.types';
 import { MerchantContactPanel } from '../components/MerchantContactPanel';
@@ -41,8 +30,6 @@ function LukasLandingContent() {
   const { colors, isDark } = useTheme();
   const isMobile = useIsMobile();
   const { t } = useTranslation('lukas');
-  const scrollY = useSharedValue(0);
-  const scrollRef = useRef<ScrollView>(null);
   const { state: rewardState, total: rewardTotal, max: rewardMax, rewardDelta, earn, markClaimed, hydrated: rewardHydrated } = useLukasRewards();
   const [animationLevel, setAnimationLevel] = useState<LukasAnimationLevel>('full');
   const [claimVisible, setClaimVisible] = useState(false);
@@ -58,12 +45,6 @@ function LukasLandingContent() {
       if (value === 'full' || value === 'reduced' || value === 'none') setAnimationLevel(value);
     }).catch(() => undefined);
   }, []);
-
-  const scrollHandler = useAnimatedScrollHandler({
-    onScroll: (event) => {
-      scrollY.value = event.contentOffset.y;
-    },
-  });
 
   const styles = getStyles(isDark, colors, isMobile);
 
@@ -125,10 +106,7 @@ function LukasLandingContent() {
         <LukasRewardWallet onOpenClaim={() => setClaimVisible(true)} />
         <LukasSettingsMenu animation={animationLevel} onAnimationChange={setAnimationLevel} />
       </View>
-      <Animated.ScrollView
-        ref={scrollRef}
-        onScroll={scrollHandler}
-        scrollEventThrottle={16}
+      <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
       >
@@ -169,7 +147,7 @@ function LukasLandingContent() {
         </View>
 
         <LukasFooter />
-      </Animated.ScrollView>
+      </ScrollView>
       {toastVisible ? (
         <View
           style={[styles.rewardToast, { backgroundColor: palette.cardRaised, borderColor: palette.border }]}
