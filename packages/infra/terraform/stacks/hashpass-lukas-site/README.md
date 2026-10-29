@@ -63,10 +63,11 @@ only the canonical `/lukas` URL. Landing documents include minimal `WebSite`
 and `WebPage` JSON-LD using the verified site name, URL, description, and
 English language only. The schema adds no Product/Offer/FAQ data or unverified claims.
 
-The build fails outright (`SystemExit`) if any of the four required assets —
-`favicon.svg`, `favicon-32.png`, `apple-touch-icon.png`,
-`lukas-social-card.png` — is missing from `overrides/public/`, instead of
-silently shipping a page with a broken social card or favicon. `recovery.json`
+The build fails outright (`SystemExit`) if any of the five required assets —
+`favicon.svg`, `favicon.ico`, `favicon-32.png`, `apple-touch-icon.png`,
+`lukas-social-card.png` — is missing from `overrides/public/`. The checked-in
+LUKAS ICO replaces Expo's generated default so crawlers that request the
+conventional `/favicon.ico` path receive the brand mark. `recovery.json`
 records `seo.canonical` and `seo.socialImage` alongside the existing source
 provenance. `deploy-lukas-landing.sh` verifies the live title and descriptions,
 canonical and card tags, crawler files, JSON-LD, the PNG response content type

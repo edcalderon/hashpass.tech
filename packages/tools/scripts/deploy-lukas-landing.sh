@@ -289,6 +289,45 @@ if (width !== 1200 || height !== 630) {
 NODE
 }
 
+verify_favicon_ico() {
+  local favicon_file content_type
+  favicon_file="${tmp_dir}/favicon.ico"
+  content_type="$(curl --fail --silent --show-error --location --output "${favicon_file}" --write-out '%{content_type}' "${SITE_URL%/}/favicon.ico?release=${EXPECTED_VERSION}")" || return 1
+  case "${content_type,,}" in
+    image/vnd.microsoft.icon|image/x-icon) ;;
+    *)
+      echo "ERROR: Lukas favicon returned content type ${content_type:-<missing>}, expected an ICO." >&2
+      return 1
+      ;;
+  esac
+  node - "${favicon_file}" <<'NODE'
+const fs = require('node:fs');
+const icon = fs.readFileSync(process.argv[2]);
+if (icon.length < 6 || icon.readUInt16LE(0) !== 0 || icon.readUInt16LE(2) !== 1) {
+  throw new Error('Lukas favicon is not a valid ICO file.');
+}
+const count = icon.readUInt16LE(4);
+if (count < 2 || icon.length < 6 + count * 16) {
+  throw new Error('Lukas favicon is missing its multi-size directory.');
+}
+const sizes = [];
+for (let index = 0; index < count; index += 1) {
+  const entry = 6 + index * 16;
+  const width = icon[entry] || 256;
+  const height = icon[entry + 1] || 256;
+  const bytes = icon.readUInt32LE(entry + 8);
+  const offset = icon.readUInt32LE(entry + 12);
+  if (bytes === 0 || offset + bytes > icon.length) {
+    throw new Error('Lukas favicon contains an invalid ICO image entry.');
+  }
+  sizes.push(`${width}x${height}`);
+}
+if (!sizes.includes('16x16') || !sizes.includes('32x32')) {
+  throw new Error(`Expected 16x16 and 32x32 LUKAS favicon images; received ${sizes.join(', ')}.`);
+}
+NODE
+}
+
 verify_sitemap() {
   node - "${tmp_dir}/sitemap.xml" "${SITE_URL%/}/lukas" <<'NODE'
 const fs = require('node:fs');
@@ -328,6 +367,7 @@ for attempt in $(seq 1 12); do
       && curl --fail --silent --show-error --location \
         "${SITE_URL%/}/favicon.svg?release=${EXPECTED_VERSION}" \
         -o /dev/null \
+      && verify_favicon_ico \
       && verify_social_image \
       && curl --fail --silent --show-error --location \
         "${SITE_URL%/}/robots.txt?release=${EXPECTED_VERSION}" \
