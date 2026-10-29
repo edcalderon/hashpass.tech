@@ -2,7 +2,7 @@
 
 import React from 'react';
 import TestRenderer, { act } from 'react-test-renderer';
-import { Linking } from 'react-native';
+import { Linking, Platform } from 'react-native';
 import { uiPalette, uiTokens } from '@hashpass/ui/tokens';
 
 const mockTheme = { isDark: false };
@@ -51,8 +51,19 @@ const getTestnetPanel = (renderer: TestRenderer.ReactTestRenderer) =>
     surface.findAllByType('Text' as never).some((text) => text.props.children === 'LUKAS $LKS · Testnet until TGE'),
   );
 
+const originalPlatformOS = Platform.OS;
+const originalWindowDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'window');
+
 describe('LUKAS testnet CTA', () => {
-  afterEach(() => jest.restoreAllMocks());
+  afterEach(() => {
+    jest.restoreAllMocks();
+    Object.defineProperty(Platform, 'OS', { configurable: true, value: originalPlatformOS });
+    if (originalWindowDescriptor) {
+      Object.defineProperty(globalThis, 'window', originalWindowDescriptor);
+    } else {
+      Reflect.deleteProperty(globalThis, 'window');
+    }
+  });
 
   it.each([
     ['light mobile', false, true, 'stretch'],
@@ -86,14 +97,35 @@ describe('LUKAS testnet CTA', () => {
     act(() => renderer.unmount());
   });
 
-  it('opens the approved LUKAS destination when the CTA is pressed', async () => {
+  it('opens the approved LUKAS destination with native Linking when the CTA is pressed', async () => {
+    Object.defineProperty(Platform, 'OS', { configurable: true, value: 'ios' });
     const openURL = jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined);
+    openURL.mockClear();
     const renderer = renderSection();
     const button = getTestnetPanel(renderer)!.findByType('ActionButton' as never);
 
     await act(async () => { await button.props.onPress(); });
 
     expect(openURL).toHaveBeenCalledWith('https://lukas.lat');
+    act(() => renderer.unmount());
+  });
+
+  it('navigates the current browser tab on web', async () => {
+    Object.defineProperty(Platform, 'OS', { configurable: true, value: 'web' });
+    const assign = jest.fn();
+    Object.defineProperty(globalThis, 'window', {
+      configurable: true,
+      value: { location: { assign } },
+    });
+    const openURL = jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined);
+    openURL.mockClear();
+    const renderer = renderSection();
+    const button = getTestnetPanel(renderer)!.findByType('ActionButton' as never);
+
+    await act(async () => { await button.props.onPress(); });
+
+    expect(assign).toHaveBeenCalledWith('https://lukas.lat');
+    expect(openURL).not.toHaveBeenCalled();
     act(() => renderer.unmount());
   });
 });

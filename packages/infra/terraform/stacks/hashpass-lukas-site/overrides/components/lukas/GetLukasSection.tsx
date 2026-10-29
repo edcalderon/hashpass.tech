@@ -250,7 +250,13 @@ export function GetLukasSection() {
             mode={mode}
             skin={premiumSkin}
             label={t('getLukas.exploreTestnet')}
-            onPress={() => Linking.openURL('https://lukas.lat')}
+            onPress={() => {
+              if (Platform.OS === 'web' && typeof window !== 'undefined') {
+                window.location.assign('https://lukas.lat');
+                return;
+              }
+              Linking.openURL('https://lukas.lat');
+            }}
             style={styles.comingSoonAction}
           />
         </Surface>
