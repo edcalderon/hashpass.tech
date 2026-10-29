@@ -1,0 +1,125 @@
+.footer {
+  border-top: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg-canvas) 84%, transparent);
+}
+
+.inner {
+  width: min(1240px, calc(100% - 48px));
+  min-height: 104px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 20px 0;
+}
+
+.eventBrand {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: var(--text-primary);
+}
+
+.logoFrame {
+  width: 116px;
+  height: 56px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #071321;
+  padding: 8px 10px;
+}
+
+.logoFrame img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.eventCopy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.eventCopy strong {
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.eventCopy span {
+  color: var(--text-faint);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.links {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 20px;
+  flex: 0 0 auto;
+}
+
+.links a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 650;
+  text-decoration: none;
+  transition: color 160ms ease;
+}
+
+.links a:hover {
+  color: var(--text-primary);
+}
+
+.links a:focus-visible,
+.eventBrand:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+
+@media (max-width: 640px) {
+  .inner {
+    width: min(100% - 32px, 1240px);
+    min-height: 0;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 16px;
+    padding: 20px 0 24px;
+  }
+
+  .logoFrame {
+    width: 96px;
+    height: 48px;
+  }
+
+  .eventCopy strong {
+    white-space: normal;
+  }
+
+  .links {
+    gap: 16px;
+    padding-left: 110px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .links a {
+    transition: none;
+  }
+}

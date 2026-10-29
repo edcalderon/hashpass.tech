@@ -5,6 +5,8 @@ export type AttendingLocale = SupportedLocale;
 
 export type AttendeePhotoSource = 'hashpass' | 'upload' | 'initials';
 
+export type AttendingEventLinkOrigin = 'club' | 'tenant';
+
 export interface ProcessedAttendeePhoto {
   source: string;
   url: string;
@@ -16,11 +18,20 @@ export interface AttendingLandingProps {
   events: AttendingEventData[];
   showCustomEventCard?: boolean;
   brandHref?: string;
+  eventLinkOrigin?: AttendingEventLinkOrigin;
 }
 
 export interface AttendingExperienceProps {
   event: AttendingEventData;
   customEvent?: boolean;
+  brandHref?: string;
+  footerHref?: string;
+  eventPageUrl?: string;
+}
+
+export interface AttendingEventFooterProps {
+  event: AttendingEventData;
+  returnHref: string;
 }
 
 export interface AttendingLandingStepProps {

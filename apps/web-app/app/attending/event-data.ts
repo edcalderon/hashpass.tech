@@ -155,10 +155,13 @@ export function makeCustomAttendingEventData(): AttendingEventData {
   };
 }
 
-export function makeAttendingMetadata(event: EventConfig, eventSlug: string): Metadata {
+export function makeAttendingMetadata(
+  event: EventConfig,
+  eventSlug: string,
+  pageUrl = getAttendingEventUrl(eventSlug),
+): Metadata {
   const eventName = event.title || event.name;
   const logoSrc = makeAttendingEventData(event, eventSlug).logoSrc;
-  const pageUrl = getAttendingEventUrl(eventSlug);
   const socialImageUrl = new URL(logoSrc, pageUrl).toString();
   return {
     title: { absolute: `Attending ${eventName} | HASHPASS Club` },

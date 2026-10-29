@@ -1,3 +1,5 @@
+import type { AttendingEventLinkOrigin } from '../app/attending/types/attending.types';
+
 const ATTENDING_LANDING_ORIGIN = 'https://attending.hashpass.tech';
 const BSL_ATTENDING_ORIGIN = 'https://bsl.hashpass.tech';
 const GENERIC_ATTENDING_ORIGIN = 'https://hashpass.club';
@@ -41,8 +43,16 @@ export function getAttendingEventUrl(eventSlug: string): string {
   return `https://${subdomain}.hashpass.tech/`;
 }
 
-export function getAttendingEventHref(eventSlug: string): string {
+export function getAttendingClubEventUrl(eventSlug: string): string {
+  return `${GENERIC_ATTENDING_ORIGIN}/attendings/${getAttendingEventSubdomain(eventSlug)}/`;
+}
+
+export function getAttendingEventHref(
+  eventSlug: string,
+  linkOrigin: AttendingEventLinkOrigin = 'tenant',
+): string {
   const subdomain = getAttendingEventSubdomain(eventSlug);
+  if (linkOrigin === 'club' && subdomain === 'bsl') return `/attendings/${subdomain}`;
   if (process.env.NODE_ENV === 'development') return `/attending/${subdomain}/`;
   return getAttendingEventUrl(subdomain);
 }
