@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610290315, // Updated to current timestamp
+  buildNumber: 202610290501, // Updated to current timestamp
   releaseDate: '2026-10-29',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -31,14 +31,32 @@ export const CURRENT_VERSION: VersionInfo = {
     'improve SEO and social previews'
   ],
   bugfixes: [
-    // No bugfixes
+    'improve Lukas mobile scroll and cover Plane pages',
+    'isolate Metro cache per worktree (#528)'
   ],
   breakingChanges: [],
-  notes: 'gate claims with a knowledge quiz; improve SEO and social previews'
+  notes: 'gate claims with a knowledge quiz; improve SEO and social previews; improve Lukas mobile scroll and cover Plane pages; isolate Metro cache per worktree (#528)'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.177': {
+    version: '1.9.177',
+    buildNumber: 202610290501,
+    releaseDate: '2026-10-29',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'gate claims with a knowledge quiz',
+      'improve SEO and social previews'
+    ],
+    bugfixes: [
+      'improve Lukas mobile scroll and cover Plane pages',
+      'isolate Metro cache per worktree (#528)'
+    ],
+    breakingChanges: [],
+    notes: 'gate claims with a knowledge quiz; improve SEO and social previews; improve Lukas mobile scroll and cover Plane pages; isolate Metro cache per worktree (#528)'
+  },
   '1.9.176': {
     version: '1.9.176',
     buildNumber: 202610290315,

@@ -310,3 +310,43 @@ test("stops reading a streamed body as soon as it exceeds the limit", async () =
   assert.equal(cancelled, true);
   assert.equal(upstreamCalls, 0);
 });
+
+test("handles page tool calls with the session-backed page client", async () => {
+  let upstreamCalls = 0;
+  let pageArguments;
+  const handler = createGatewayHandler(createOptions({
+    verifyRequest: async () => ({subject: "auth0|operator-123", scopes: ["plane:read", "plane:write"]}),
+    planePages: {
+      run: async (args) => {
+        pageArguments = args;
+        return {id: "page-1"};
+      },
+    },
+    fetch: async () => {
+      upstreamCalls += 1;
+      return Response.json({});
+    },
+  }));
+
+  const response = await handler(new Request(resourceUrl, {
+    method: "POST",
+    headers: {"content-type": "application/json"},
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      id: 9,
+      method: "tools/call",
+      params: {name: "page", arguments: {action: "update", project_id: "project-1", page_id: "page-1", description_html: "<p>x</p>"}},
+    }),
+  }));
+
+  const payload = await response.json();
+  assert.equal(upstreamCalls, 0);
+  assert.deepEqual(pageArguments, {
+    action: "update",
+    project_id: "project-1",
+    page_id: "page-1",
+    description_html: "<p>x</p>",
+  });
+  assert.equal(payload.result.isError, false);
+  assert.deepEqual(JSON.parse(payload.result.content[0].text), {result: {id: "page-1"}});
+});

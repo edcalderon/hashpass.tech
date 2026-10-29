@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { useTranslation } from '../../i18n/i18n';
+import type { MerchantCategory, MerchantCategoryCardProps } from '../../types/MerchantsSection.types';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -12,30 +13,47 @@ import Animated, {
 import { LukasGlyph } from './LukasGlyph';
 import { lukasPalette, lukasSectionTitle } from './lukas-ui';
 
+function MerchantCategoryCard({ category, opacity, translateY, styles }: MerchantCategoryCardProps) {
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateY: translateY.value }],
+  }));
+
+  return (
+    <Animated.View style={[styles.card, animatedStyle]}>
+      <View style={styles.cardIconContainer}>
+        <LukasGlyph name={category.glyph} size={72} />
+      </View>
+      <Text style={styles.cardTitle}>{category.title}</Text>
+      <Text style={styles.cardSubtitle}>{category.subtitle}</Text>
+    </Animated.View>
+  );
+}
+
 export function MerchantsSection() {
   const { colors, isDark } = useTheme();
   const isMobile = useIsMobile();
   const { t } = useTranslation('lukas');
 
-  const cardOpacities = [
-    useSharedValue(0),
-    useSharedValue(0),
-    useSharedValue(0),
-    useSharedValue(0),
-  ];
-  const cardTranslates = [
-    useSharedValue(30),
-    useSharedValue(30),
-    useSharedValue(30),
-    useSharedValue(30),
-  ];
+  const cardOpacity0 = useSharedValue(0);
+  const cardOpacity1 = useSharedValue(0);
+  const cardOpacity2 = useSharedValue(0);
+  const cardOpacity3 = useSharedValue(0);
+  const cardTranslate0 = useSharedValue(30);
+  const cardTranslate1 = useSharedValue(30);
+  const cardTranslate2 = useSharedValue(30);
+  const cardTranslate3 = useSharedValue(30);
+  const cardOpacities = [cardOpacity0, cardOpacity1, cardOpacity2, cardOpacity3];
+  const cardTranslates = [cardTranslate0, cardTranslate1, cardTranslate2, cardTranslate3];
 
   useEffect(() => {
-    cardOpacities.forEach((opacity, index) => {
+    [cardOpacity0, cardOpacity1, cardOpacity2, cardOpacity3].forEach((opacity, index) => {
       opacity.value = withDelay(index * 150, withTiming(1, { duration: 600 }));
-      cardTranslates[index].value = withDelay(index * 150, withTiming(0, { duration: 600 }));
     });
-  }, []);
+    [cardTranslate0, cardTranslate1, cardTranslate2, cardTranslate3].forEach((translate, index) => {
+      translate.value = withDelay(index * 150, withTiming(0, { duration: 600 }));
+    });
+  }, [cardOpacity0, cardOpacity1, cardOpacity2, cardOpacity3, cardTranslate0, cardTranslate1, cardTranslate2, cardTranslate3]);
 
   const styles = getStyles(isDark, colors, isMobile);
 
@@ -43,24 +61,34 @@ export function MerchantsSection() {
     {
       title: t('merchants.category1.title'),
       subtitle: t('merchants.category1.subtitle'),
-      glyph: 'event' as const,
+      glyph: 'event',
     },
     {
       title: t('merchants.category2.title'),
       subtitle: t('merchants.category2.subtitle'),
-      glyph: 'coffee' as const,
+      glyph: 'coffee',
     },
     {
       title: t('merchants.category3.title'),
       subtitle: t('merchants.category3.subtitle'),
-      glyph: 'wallet' as const,
+      glyph: 'wallet',
     },
     {
       title: t('merchants.category4.title'),
       subtitle: t('merchants.category4.subtitle'),
-      glyph: 'market' as const,
+      glyph: 'market',
     },
-  ];
+  ] satisfies MerchantCategory[];
+
+  const cards = merchantCategories.map((category, index) => (
+    <MerchantCategoryCard
+      key={category.glyph}
+      category={category}
+      opacity={cardOpacities[index]}
+      translateY={cardTranslates[index]}
+      styles={styles}
+    />
+  ));
 
   return (
     <View style={styles.container}>
@@ -68,37 +96,19 @@ export function MerchantsSection() {
         {t('merchants.title')}
       </Text>
 
-      <ScrollView
-        horizontal={!isMobile}
-        scrollEnabled={!isMobile}
-        nestedScrollEnabled
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.cardsContainer}
-        style={styles.scrollView}
-      >
-        {merchantCategories.map((category, index) => {
-          const animatedStyle = useAnimatedStyle(() => ({
-            opacity: cardOpacities[index].value,
-            transform: [{ translateY: cardTranslates[index].value }],
-          }));
-
-          return (
-            <Animated.View
-              key={index}
-              style={[
-                styles.card,
-                animatedStyle,
-              ]}
-            >
-              <View style={styles.cardIconContainer}>
-                <LukasGlyph name={category.glyph} size={72} />
-              </View>
-              <Text style={styles.cardTitle}>{category.title}</Text>
-              <Text style={styles.cardSubtitle}>{category.subtitle}</Text>
-            </Animated.View>
-          );
-        })}
-      </ScrollView>
+      {isMobile ? (
+        <View style={styles.cardsContainer}>{cards}</View>
+      ) : (
+        <ScrollView
+          horizontal
+          nestedScrollEnabled
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.cardsContainer}
+          style={styles.scrollView}
+        >
+          {cards}
+        </ScrollView>
+      )}
     </View>
   );
 }

@@ -1,5 +1,6 @@
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const { execSync } = require('child_process');
 
 // Auto-propagate environment from root .env in local dev only.
@@ -51,13 +52,15 @@ const runtimeWorkspacePackageFolders = runtimeWorkspacePackages.map((packageName
   path.resolve(workspaceRoot, 'packages', packageName)
 );
 
-// Persist Metro's per-file transform cache to a stable directory.
-// On the EC2 runner METRO_CACHE_DIR=/home/runner/.metro-cache (set in the workflow),
-// so the cache survives between builds on the same EBS volume.
-// Locally falls back to the OS temp dir (Metro's default behaviour).
-if (process.env.METRO_CACHE_DIR) {
-  config.cacheStores = [new FileStore({ root: process.env.METRO_CACHE_DIR })];
-}
+// Metro's transform output can contain absolute paths from node_modules. Keep
+// each checkout's cache separate so parallel worktrees cannot reuse transforms
+// that point into a sibling checkout. The CI parent directory remains stable on
+// EBS, while local development stores its cache inside this checkout's .expo.
+const workspaceCacheKey = crypto.createHash('sha256').update(workspaceRoot).digest('hex').slice(0, 16);
+const metroCacheRoot = process.env.METRO_CACHE_DIR
+  ? path.join(process.env.METRO_CACHE_DIR, workspaceCacheKey)
+  : path.join(workspaceRoot, 'apps/mobile-app/.expo/metro-cache');
+config.cacheStores = [new FileStore({ root: metroCacheRoot })];
 const originalResolveRequest = config.resolver?.resolveRequest;
 let zustandPackageDir;
 

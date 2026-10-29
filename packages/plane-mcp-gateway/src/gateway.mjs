@@ -119,7 +119,6 @@ const modernDiscoveryResponse =(id, serverName, serverVersion) => Response.json(
     },
   },
 }, {headers: {"cache-control": "no-store", ...corsHeaders}});
-
 export function createGatewayHandler(options) {
   const {
     resource,
