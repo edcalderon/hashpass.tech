@@ -32,6 +32,7 @@ services:
         define('WP_ALLOW_MULTISITE', true);
         define('WP_ENVIRONMENT_TYPE', 'local');
         define('WP_AUTO_UPDATE_CORE', 'minor');
+        define('COOKIE_DOMAIN', isset($$_SERVER['HTTP_HOST']) ? parse_url('http://' . $$_SERVER['HTTP_HOST'], PHP_URL_HOST) : false);
     volumes:
       - wordpress:/var/www/html
     healthcheck:

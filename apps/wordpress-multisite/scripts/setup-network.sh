@@ -25,6 +25,8 @@ if [ -z "$news_id" ]; then
   news_id="$(wp site create --slug=news --title='HASHPASS News' --email="$WP_ADMIN_EMAIL" --porcelain)"
 fi
 wp eval "update_blog_details((int) '$news_id', array('domain' => 'news.localhost:8088', 'path' => '/'));" --url="$BLOG_URL"
+wp option update home "$NEWS_URL" --url="$NEWS_URL"
+wp option update siteurl "$NEWS_URL" --url="$NEWS_URL"
 
 ensure_site_user() {
   login="$1"
